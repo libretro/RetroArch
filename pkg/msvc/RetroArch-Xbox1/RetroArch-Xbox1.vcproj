@@ -21,8 +21,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\deps\zlib&quot;"
-				PreprocessorDefinitions="_DEBUG;_XBOX;_XBOX1;HAVE_RMENU;HAVE_MENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DSOUND;HAVE_D3D;HAVE_D3D8;RARCH_INTERNAL;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_THREADS;HAVE_FILTERS_BUILTIN;HAVE_BUILTIN_AUTOCONFIG"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\..\deps\zlib&quot;"
+				PreprocessorDefinitions="_DEBUG;_XBOX;_XBOX1;DONT_HAVE_STATE_TRACKER;HAVE_RMENU;HAVE_MENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DSOUND;HAVE_D3D;HAVE_D3D8;RARCH_INTERNAL;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_THREADS;HAVE_FILTERS_BUILTIN;HAVE_BUILTIN_AUTOCONFIG"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -71,8 +71,8 @@
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\deps\zlib&quot;"
-				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;HAVE_RMENU;HAVE_MENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;__STDC_CONSTANT_MACROS;HAVE_ZLIB;PROFILE;HAVE_GRIFFIN;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DSOUND;HAVE_D3D;HAVE_D3D8;RARCH_INTERNAL;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_THREADS;HAVE_FILTERS_BUILTIN;HAVE_BUILTIN_AUTOCONFIG"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\..\deps\zlib&quot;"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;DONT_HAVE_STATE_TRACKER;HAVE_RMENU;HAVE_MENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;__STDC_CONSTANT_MACROS;HAVE_ZLIB;PROFILE;HAVE_GRIFFIN;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DSOUND;HAVE_D3D;HAVE_D3D8;RARCH_INTERNAL;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_THREADS;HAVE_FILTERS_BUILTIN;HAVE_BUILTIN_AUTOCONFIG"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="TRUE"
@@ -126,8 +126,8 @@
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\deps\zlib&quot;"
-				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;HAVE_RMENU;HAVE_MENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;__STDC_CONSTANT_MACROS;HAVE_ZLIB;PROFILE;FASTCAP;HAVE_GRIFFIN;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DSOUND;HAVE_D3D;HAVE_D3D8;RARCH_INTERNAL;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_THREADS;HAVE_FILTERS_BUILTIN;HAVE_BUILTIN_AUTOCONFIG"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\..\deps\zlib&quot;"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;DONT_HAVE_STATE_TRACKER;HAVE_RMENU;HAVE_MENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;__STDC_CONSTANT_MACROS;HAVE_ZLIB;PROFILE;FASTCAP;HAVE_GRIFFIN;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DSOUND;HAVE_D3D;HAVE_D3D8;RARCH_INTERNAL;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_THREADS;HAVE_FILTERS_BUILTIN;HAVE_BUILTIN_AUTOCONFIG"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="TRUE"
@@ -187,8 +187,8 @@
 				OmitFramePointers="TRUE"
 				EnableFiberSafeOptimizations="TRUE"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\deps\zlib&quot;"
-				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;HAVE_RMENU;HAVE_MENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN;inline=_inline;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DSOUND;HAVE_D3D;HAVE_D3D8;RARCH_INTERNAL;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_THREADS;HAVE_FILTERS_BUILTIN;HAVE_BUILTIN_AUTOCONFIG"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\..\deps\zlib&quot;"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;DONT_HAVE_STATE_TRACKER;HAVE_RMENU;HAVE_MENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN;inline=_inline;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DSOUND;HAVE_D3D;HAVE_D3D8;RARCH_INTERNAL;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_THREADS;HAVE_FILTERS_BUILTIN;HAVE_BUILTIN_AUTOCONFIG"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="TRUE"
@@ -240,8 +240,8 @@
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\deps\zlib&quot;"
-				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;HAVE_RMENU;HAVE_MENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;__STDC_CONSTANT_MACROS;HAVE_ZLIB;LTCG;HAVE_GRIFFIN;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DSOUND;HAVE_D3D;HAVE_D3D8;RARCH_INTERNAL;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_THREADS;HAVE_FILTERS_BUILTIN;HAVE_BUILTIN_AUTOCONFIG"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\..\deps\zlib&quot;"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;DONT_HAVE_STATE_TRACKER;HAVE_RMENU;HAVE_MENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;__STDC_CONSTANT_MACROS;HAVE_ZLIB;LTCG;HAVE_GRIFFIN;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DSOUND;HAVE_D3D;HAVE_D3D8;RARCH_INTERNAL;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_THREADS;HAVE_FILTERS_BUILTIN;HAVE_BUILTIN_AUTOCONFIG"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="TRUE"
@@ -299,8 +299,8 @@
 				OmitFramePointers="TRUE"
 				EnableFiberSafeOptimizations="TRUE"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\deps\zlib&quot;"
-				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;HAVE_RMENU;HAVE_MENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN;inline=_inline;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DSOUND;HAVE_D3D;HAVE_D3D8;RARCH_INTERNAL;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_THREADS;HAVE_FILTERS_BUILTIN;HAVE_BUILTIN_AUTOCONFIG"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\..\deps\zlib&quot;"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;DONT_HAVE_STATE_TRACKER;HAVE_RMENU;HAVE_MENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN;inline=_inline;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DSOUND;HAVE_D3D;HAVE_D3D8;RARCH_INTERNAL;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_THREADS;HAVE_FILTERS_BUILTIN;HAVE_BUILTIN_AUTOCONFIG"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="TRUE"
@@ -352,8 +352,8 @@
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\deps\zlib&quot;"
-				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;HAVE_RMENU;HAVE_MENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;__STDC_CONSTANT_MACROS;HAVE_ZLIB;LTCG;HAVE_GRIFFIN;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DSOUND;HAVE_D3D;HAVE_D3D8;RARCH_INTERNAL;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_THREADS;HAVE_FILTERS_BUILTIN;HAVE_BUILTIN_AUTOCONFIG"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\..\deps\zlib&quot;"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;DONT_HAVE_STATE_TRACKER;HAVE_RMENU;HAVE_MENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;__STDC_CONSTANT_MACROS;HAVE_ZLIB;LTCG;HAVE_GRIFFIN;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DSOUND;HAVE_D3D;HAVE_D3D8;RARCH_INTERNAL;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_THREADS;HAVE_FILTERS_BUILTIN;HAVE_BUILTIN_AUTOCONFIG"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="TRUE"
@@ -403,7 +403,7 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
-				RelativePath="..\..\griffin\griffin.c">
+				RelativePath="..\..\..\griffin\griffin.c">
 				<FileConfiguration
 					Name="Debug|Xbox">
 					<Tool
@@ -448,7 +448,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\griffin\griffin_cpp.cpp">
+				RelativePath="..\..\..\griffin\griffin_cpp.cpp">
 			</File>
 		</Filter>
 		<Filter

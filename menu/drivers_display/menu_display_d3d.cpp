@@ -15,6 +15,8 @@
 
 #include <retro_miscellaneous.h>
 
+#include <gfx/math/matrix_4x4.h>
+
 #include "../../config.def.h"
 #include "../../gfx/font_renderer_driver.h"
 #include "../../gfx/video_context_driver.h"
@@ -129,7 +131,7 @@ static void menu_display_d3d_draw(
    vp.MaxZ   = 1.0f;
 
    d3d_set_viewport(d3d->dev, &vp);
-   d3d_set_texture(d3d->dev, 0, (LPDIRECT3DTEXTURE9)texture);
+   d3d_set_texture(d3d->dev, 0, (LPDIRECT3DTEXTURE)texture);
 
 #if 0
    gl->shader->set_coords(coords);

@@ -31,6 +31,9 @@
 #include "../../general.h"
 #ifndef IS_SALAMANDER
 #include "../../retroarch.h"
+#ifdef HAVE_MENU
+#include "../../menu/menu.h"
+#endif
 #endif
 
 static bool exit_spawn;

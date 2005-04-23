@@ -998,10 +998,6 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 
 #ifdef _XBOX
 
-#ifdef HAVE_RMENU
-extern struct texture_image *menu_texture;
-#endif
-
 #ifdef _XBOX1
 #include <formats/image.h>
 
@@ -1059,28 +1055,6 @@ static bool texture_image_render(d3d_video_t *d3d,
    d3d_draw_primitive(d3dr, D3DPT_QUADLIST, 0, 1);
 
    return true;
-}
-#endif
-
-#ifdef HAVE_MENU
-static void d3d_draw_texture(d3d_video_t *d3d)
-{
-   if (!d3d)
-      return;
-
-#if defined(HAVE_RMENU)
-   menu_texture->x = 0;
-   menu_texture->y = 0;
-
-   if (d3d->menu->enabled)
-   {
-      d3d_enable_blend_func(d3d->dev);
-      texture_image_render(d3d, menu_texture,
-            menu_texture->x, menu_texture->y,
-         d3d->screen_width, d3d->screen_height, true);
-      d3d_disable_blend_func(d3d->dev);
-   }
-#endif
 }
 #endif
 
@@ -1571,12 +1545,6 @@ static bool d3d_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    if (menu_driver_alive())
       menu_driver_frame();
-
-#ifdef _XBOX
-   /* TODO - should be refactored. */
-   if (d3d && d3d->menu->enabled)
-      d3d_draw_texture(d3d);
-#endif
 #endif
 
    retro_perf_stop(&d3d_frame);
