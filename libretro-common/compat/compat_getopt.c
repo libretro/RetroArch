@@ -167,11 +167,11 @@ static void shuffle_block(char **begin, char **last, char **end)
 
    retro_assert(tmp);
 
-   memcpy(tmp, begin, len * sizeof(const char*));
+   memcpy((void*)tmp, begin, len * sizeof(const char*));
    memmove(begin, last, (end - last) * sizeof(const char*));
    memcpy(end - len, tmp, len * sizeof(const char*));
 
-   free(tmp);
+   free((void*)tmp);
 }
 
 int getopt_long(int argc, char *argv[],
