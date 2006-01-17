@@ -67,6 +67,37 @@ extern void *dinput;
 
 /* Power Request APIs */
 
+#if !defined(_XBOX) && (_MSC_VER == 1310)
+typedef struct _REASON_CONTEXT 
+{
+   ULONG Version;
+   DWORD Flags;
+   union
+   {
+      struct
+      {
+         HMODULE LocalizedReasonModule;
+         ULONG LocalizedreasonId;
+         ULONG ReasonStringCount;
+         LPWSTR *ReasonStrings;
+      } Detailed;
+      LPWSTR SimpleReasonString;
+   } Reason;
+} REASON_CONTEXT, *PREASON_CONTEXT;
+
+typedef enum _POWER_REQUEST_TYPE
+{
+   PowerRequestDisplayRequired,
+   PowerRequestSystemRequired,
+   PowerRequestAwayModeRequired,
+   PowerRequestExecutionRequired
+} POWER_REQUEST_TYPE, *PPOWER_REQUEST_TYPE;
+
+#define POWER_REQUEST_CONTEXT_VERSION         0
+#define POWER_REQUEST_CONTEXT_SIMPLE_STRING   1
+#define POWER_REQUEST_CONTEXT_DETAILED_STRING 2
+#endif
+
 typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_REQUEST_CONTEXT;
 
 #ifndef MAX_MONITORS

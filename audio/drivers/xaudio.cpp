@@ -14,6 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if !defined(_XBOX) && (_MSC_VER == 1310)
+#ifndef _WIN32_DCOM
+#define _WIN32_DCOM
+#endif
+#endif
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
