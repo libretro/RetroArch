@@ -25,6 +25,10 @@
 #define WM_MOUSEHWHEEL 0x20e
 #endif
 
+#ifndef WM_MOUSEWHEEL
+#define WM_MOUSEWHEEL 0x020A
+#endif
+
 #include <dinput.h>
 
 #include <stdlib.h>
@@ -635,19 +639,15 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
             return true;
          }
       case WM_DEVICECHANGE:
-         {
             if (di->joypad)
                di->joypad->destroy();
             di->joypad = input_joypad_init_driver(settings->input.joypad_driver, di);
-            break;
-         }
+         break;
       case WM_MOUSEWHEEL:
-         {
             if (((short) HIWORD(wParam))/120 > 0)
                di->mouse_wu = true;
             if (((short) HIWORD(wParam))/120 < 0)
                di->mouse_wd = true;
-         }
          break;
       case WM_MOUSEHWHEEL:
          {
