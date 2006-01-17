@@ -31,7 +31,9 @@
 #include <retro_inline.h>
 
 #ifdef _MSC_VER
+#if (_MSC_VER > 1310)
 #include <intrin.h>
+#endif
 #endif
 
 RETRO_BEGIN_DECLS

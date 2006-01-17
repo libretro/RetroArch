@@ -50,6 +50,7 @@
 #endif
 
 #include <limits.h>
+#include <math.h>
 
 #ifdef _MSC_VER
 #include <compat/msvc.h>

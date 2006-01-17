@@ -137,6 +137,10 @@ static void xaudio2_free(xaudio2_t *handle)
    delete handle;
 }
 
+#ifndef COINIT_MULTITHREADED
+#define COINIT_MULTITHREADED 0x00
+#endif
+
 static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
       size_t size, unsigned device)
 {
