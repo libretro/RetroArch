@@ -36,7 +36,6 @@
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
-#include <intrin.h>
 #endif
 
 #if defined(__CELLOS_LV2__)
@@ -216,7 +215,9 @@ retro_time_t cpu_features_get_time_usec(void)
 #endif
 
 #if defined(_MSC_VER) && !defined(_XBOX)
+#if (_MSC_VER > 1310)
 #include <intrin.h>
+#endif
 #endif
 
 #if defined(CPU_X86) && !defined(__MACH__)

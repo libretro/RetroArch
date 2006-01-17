@@ -693,6 +693,7 @@ static void *gl_glsl_init(void *data, const char *path)
 {
    unsigned i;
    struct shader_program_info shader_prog_info;
+   bool shader_support        = false;
    config_file_t *conf        = NULL;
    const char *stock_vertex   = NULL;
    const char *stock_fragment = NULL;
@@ -702,9 +703,11 @@ static void *gl_glsl_init(void *data, const char *path)
    if (!glsl)
       return NULL;
 
+   (void)shader_support;
+
 #ifndef HAVE_OPENGLES
    RARCH_LOG("Checking GLSL shader support ...\n");
-   bool shader_support = glCreateProgram && glUseProgram && glCreateShader
+   shader_support = glCreateProgram && glUseProgram && glCreateShader
       && glDeleteShader && glShaderSource && glCompileShader && glAttachShader
       && glDetachShader && glLinkProgram && glGetUniformLocation
       && glUniform1i && glUniform1f && glUniform2fv && glUniform4fv 

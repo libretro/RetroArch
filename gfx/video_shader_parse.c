@@ -403,14 +403,14 @@ static struct video_shader_parameter *video_shader_parse_find_parameter(
 bool video_shader_resolve_current_parameters(config_file_t *conf,
       struct video_shader *shader)
 {
-   if (!conf)
-      return false;
-
-   /* Read in parameters which override the defaults. */
    char parameters[4096] = {0};
    const char *id        = NULL;
    char *save            = NULL;
 
+   if (!conf)
+      return false;
+
+   /* Read in parameters which override the defaults. */
    if (!config_get_array(conf, "parameters",
             parameters, sizeof(parameters)))
       return true;
