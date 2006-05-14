@@ -47,7 +47,9 @@ typedef struct xdk_renderchain
 static void renderchain_set_mvp(void *data, unsigned vp_width,
       unsigned vp_height, unsigned rotation)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    video_shader_ctx_mvp_t mvp;
+#endif
    d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
@@ -141,9 +143,11 @@ static bool renderchain_create_first_pass(void *data,
 static void renderchain_set_vertices(void *data, unsigned pass,
       unsigned vert_width, unsigned vert_height, uint64_t frame_count)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 #ifdef _XBOX
    video_shader_ctx_params_t params;
    video_shader_ctx_info_t shader_info;
+#endif
 #endif
    unsigned width, height;
    d3d_video_t *d3d         = (d3d_video_t*)data;
