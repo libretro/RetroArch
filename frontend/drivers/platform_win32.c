@@ -321,6 +321,7 @@ static uint64_t frontend_win32_get_mem_used(void)
 static void frontend_win32_attach_console(void)
 {
 #ifdef _WIN32
+#if(_WIN32_WINNT >= 0x0500)
    if (!AttachConsole(ATTACH_PARENT_PROCESS))
    {
       AllocConsole();
@@ -329,17 +330,20 @@ static void frontend_win32_attach_console(void)
       freopen( "CON", "w", stderr );
    }
 #endif
+#endif
 }
 
 static void frontend_win32_detach_console(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
+#if(_WIN32_WINNT >= 0x0500)
    if (!AttachConsole(ATTACH_PARENT_PROCESS))
    {
       HWND wnd = GetConsoleWindow();
       FreeConsole();
       PostMessage(wnd, WM_CLOSE, 0, 0);
    }
+#endif
 #endif
 }
 
