@@ -1167,7 +1167,6 @@ static void *d3d_init(const video_info_t *info,
    d3d->keep_aspect       = info->force_aspect;
 #ifdef _XBOX
    video_driver_set_own_driver();
-   video_input_ctl(RARCH_INPUT_CTL_SET_OWN_DRIVER, NULL);
 #endif
 
    return d3d;
@@ -1236,7 +1235,6 @@ static bool texture_image_render(d3d_video_t *d3d,
       struct texture_image *out_img,
       int x, int y, int w, int h, bool force_fullscreen)
 {
-   LPDIRECT3DTEXTURE d3dt;
    LPDIRECT3DVERTEXBUFFER d3dv;
    void *verts           = NULL;
    float fX              = (float)(x);
@@ -1245,10 +1243,9 @@ static bool texture_image_render(d3d_video_t *d3d,
    if (!d3d)
       return false;
 
-   d3dt = (LPDIRECT3DTEXTURE)out_img->texture_buf;
    d3dv = (LPDIRECT3DVERTEXBUFFER)out_img->vertex_buf;
 
-   if (!d3dt || !d3dv)
+   if (!d3dv)
       return false;
 
    /* Create the new vertices. */
@@ -1275,7 +1272,7 @@ static bool texture_image_render(d3d_video_t *d3d,
    d3d_enable_alpha_blend_texture_func(d3d->dev);
 
    /* Draw the quad. */
-   d3d_set_texture(d3d->dev, 0, d3dt);
+   d3d_set_texture(d3d->dev, 0, out_img->texture_buf);
    d3d_set_stream_source(d3d->dev, 0,
          d3dv, 0, sizeof(Vertex));
    d3d_set_vertex_shader(d3d->dev, D3DFVF_CUSTOMVERTEX, NULL);
