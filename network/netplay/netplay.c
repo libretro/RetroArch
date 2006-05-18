@@ -85,7 +85,14 @@ static int init_tcp_connection(const struct addrinfo *res,
 #if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
    {
       int flag = 1;
-      if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void*)&flag, sizeof(int)) < 0)
+      if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
+#ifdef _WIN32
+         (const char*)
+#else
+         (const void*)
+#endif
+         &flag,
+         sizeof(int)) < 0)
          RARCH_WARN("Could not set netplay TCP socket to nodelay. Expect jitter.\n");
    }
 #endif
