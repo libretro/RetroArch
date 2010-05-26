@@ -10,6 +10,7 @@
 ///// RSound
 static rsound_t *rd = NULL;
 static void audio_write(const void *data, size_t size);
+static void uninit_audio(void);
 
 
 ///// samplerate
@@ -21,7 +22,10 @@ static uint8_t* gl_buffer;
 static void GLFWCALL resize(int width, int height);
 static void init_gl(void);
 static void uninit_gl(void);
-static void uninit_audio(void);
+
+
+static void load_state(const char* path, uint8_t* data, size_t size);
+static void write_state(const char* path, uint8_t* data, size_t size);
 
 static void uninit_gl(void)
 {
@@ -364,14 +368,8 @@ int main(int argc, char *argv[])
    uint8_t *serial_data = malloc(serial_size);
    snes_serialize(serial_data, serial_size);
 
-   file = fopen(savefile_name, "rb");
-   if ( file != NULL )
-   {
-      fread(serial_data, 1, serial_size, file);
-      fclose(file);
-      snes_unserialize(serial_data, serial_size);
-      snes_reset();
-   }
+   load_state(savefile_name, serial_data, serial_size);
+   snes_reset();
 
    for(;;)
    {
@@ -381,9 +379,13 @@ int main(int argc, char *argv[])
          break;
 
       if ( glfwGetKey( SAVE_STATE_KEY ))
-         snes_serialize(serial_data, serial_size);
+      {
+         write_state(savefile_name, serial_data, serial_size);
+      }
+
       else if ( glfwGetKey( LOAD_STATE_KEY ) )
-         snes_unserialize(serial_data, serial_size);
+         load_state(savefile_name, serial_data, serial_size);
+
       else if ( glfwGetKey( TOGGLE_FULLSCREEN ) )
       {
          fullscreen = !fullscreen;
@@ -396,13 +398,7 @@ int main(int argc, char *argv[])
       snes_run();
    }
 
-   file = fopen(savefile_name, "wb");
-   if ( file != NULL )
-   {
-      snes_serialize(serial_data, serial_size);
-      fwrite(serial_data, 1, serial_size, file);
-      fclose(file);
-   }
+   write_state(savefile_name, serial_data, serial_size);
 
    snes_unload();
    snes_term();
@@ -411,4 +407,26 @@ int main(int argc, char *argv[])
    uninit_audio();
 
    return 0;
+}
+
+static void write_state(const char* path, uint8_t* data, size_t size)
+{
+   FILE *file = fopen(path, "wb");
+   if ( file != NULL )
+   {
+      snes_serialize(data, size);
+      fwrite(data, 1, size, file);
+      fclose(file);
+   }
+}
+
+static void load_state(const char* path, uint8_t* data, size_t size)
+{
+   FILE *file = fopen(path, "rb");
+   if ( file != NULL )
+   {
+      fread(data, 1, size, file);
+      fclose(file);
+      snes_unserialize(data, size);
+   }
 }
