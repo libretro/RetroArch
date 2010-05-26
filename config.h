@@ -16,6 +16,11 @@ struct snes_keybind
    int joykey;
 };
 
+#define SAVE_STATE_KEY GLFW_KEY_F2
+#define LOAD_STATE_KEY GLFW_KEY_F4
+
+#define TOGGLE_FULLSCREEN 'F'
+
 static const bool force_aspect = true; // On resize and fullscreen, rendering area will stay 8:7
 
 // Windowed
@@ -23,7 +28,8 @@ static const float xscale = 5.0; // Real x res = 256 * xscale
 static const float yscale = 5.0; // Real y res = 224 * yscale
 
 // Fullscreen
-static const bool fullscreen = false;
+
+static bool fullscreen = false; // To start in Fullscreen on not
 static const unsigned fullscreen_x = 1920;
 static const unsigned fullscreen_y = 1200;
 

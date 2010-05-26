@@ -117,6 +117,12 @@ static void init_audio(void)
    }
 }
 
+static void uninit_audio(void)
+{
+   rsd_stop(rd);
+   rsd_free(rd);
+}
+
 static void video_refresh_GL(const uint16_t* data, unsigned width, unsigned height)
 {
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -308,10 +314,18 @@ int main(int argc, char *argv[])
       if ( quitting )
          break;
 
-      if ( glfwGetKey( GLFW_KEY_F2 ))
+      if ( glfwGetKey( SAVE_STATE_KEY ))
          snes_serialize(serial_data, serial_size);
-      else if ( glfwGetKey(GLFW_KEY_F4) )
+      else if ( glfwGetKey( LOAD_STATE_KEY ) )
          snes_unserialize(serial_data, serial_size);
+      else if ( glfwGetKey( TOGGLE_FULLSCREEN ) )
+      {
+         fullscreen = !fullscreen;
+         uninit_gl();
+         init_gl();
+         uninit_audio();
+         init_audio();
+      }
 
       snes_run();
    }
@@ -328,9 +342,7 @@ int main(int argc, char *argv[])
    snes_term();
 
    uninit_gl();
-
-   rsd_stop(rd);
-   rsd_free(rd);
+   uninit_audio();
 
    return 0;
 }
