@@ -1,7 +1,7 @@
 TARGET = ssnes
 
 SOURCE = ssnes.c
-CFLAGS = -Wall -g
+CFLAGS = -Wall -O3 -march=native
 
 OBJ = ssnes.o
 SOBJ = libsnes.so

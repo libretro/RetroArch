@@ -14,12 +14,6 @@ static void audio_write(const void *data, size_t size);
 
 ///// samplerate
 static SRC_STATE* source = NULL;
-static float *src_input = NULL;
-static float *src_output = NULL;
-static size_t src_input_size = 0;
-static size_t src_output_size = 0;
-static size_t src_input_ptr = 0;
-
 
 ///// GL
 static GLuint texture;
@@ -143,10 +137,6 @@ static void init_audio(void)
 
    src_set_ratio(source, (double)out_rate / (double)in_rate);
 
-   src_input_size = in_rate / 20;
-   src_output_size = out_rate / 20;
-   src_input = malloc ( src_input_size * sizeof(float) );
-   src_output = malloc ( src_output_size * sizeof(float) );
 }
 
 static void uninit_audio(void)
@@ -162,25 +152,20 @@ static void uninit_audio(void)
       src_delete(source);
       source = NULL;
    }
-   free (src_input); src_input = NULL;
-   free (src_output); src_output = NULL;
 }
 
 static void video_refresh_GL(const uint16_t* data, unsigned width, unsigned height)
 {
-   fprintf(stderr, "#1\n");
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 
-   fprintf(stderr, "#2\n");
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-   fprintf(stderr, "#3\n");
    glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
 
    uint32_t output[width*height];
@@ -201,10 +186,8 @@ static void video_refresh_GL(const uint16_t* data, unsigned width, unsigned heig
       }
    }
 
-   fprintf(stderr, "#4\n");
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, output);
 
-   fprintf(stderr, "#5\n");
    glLoadIdentity();
    glColor3f(1,1,1);
 
@@ -220,38 +203,37 @@ static void video_refresh_GL(const uint16_t* data, unsigned width, unsigned heig
    glEnd();
 
    glfwSwapBuffers();
-   fprintf(stderr, "#6\n");
 }
 
 static void audio_refresh(uint16_t left, uint16_t right)
 {
-   src_input[src_input_ptr++] = (float)left / 0x7FFF;
-   src_input[src_input_ptr++] = (float)right / 0x7FFF;
+   static float data[256];
+   static int data_ptr = 0;
 
-   SRC_DATA data;
+   data[data_ptr++] = (float)(*(int16_t*)&left)/0x7FFF; 
+   data[data_ptr++] = (float)(*(int16_t*)&right)/0x7FFF;
 
-   if ( src_input_ptr == src_input_size )
+   if ( data_ptr == 256 )
    {
-      data.input_frames = src_input_size;
-      data.output_frames = src_output_size;
-      data.data_in = src_input;
-      data.data_out = src_output;
-      data.src_ratio = (double)out_rate / (double)in_rate;
+      float outsamples[2048];
+      int16_t temp_outsamples[4096];
 
-      src_process(source, &data);
-      fprintf(stderr, "Input frames used: %ld\n"
-            "Output frames used: %ld\n"
-            , data.input_frames_used, data.output_frames_gen);
+      SRC_DATA src_data;
 
-      memmove(src_input, src_input + data.input_frames_used, (src_input_size - data.input_frames_used) * sizeof(float));
+      src_data.data_in = data;
+      src_data.data_out = outsamples;
+      src_data.input_frames = 128;
+      src_data.output_frames = 1024;
+      src_data.end_of_input = 0;
+      src_data.src_ratio = (double)out_rate / (double)in_rate;
 
-      int16_t outdata[src_output_size * sizeof(float) / 2];
+      src_process(source, &src_data);
 
-      src_float_to_short_array (src_output, outdata, data.output_frames_gen);
+      src_float_to_short_array(outsamples, temp_outsamples, src_data.output_frames_gen * 4);
 
-      audio_write(outdata, data.output_frames_gen);
+      audio_write(temp_outsamples, src_data.output_frames_gen * 4);
+      data_ptr = 0;
    }
-      
 }
 
 static void audio_write(const void* data, size_t size)
