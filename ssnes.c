@@ -31,8 +31,8 @@ static void uninit_audio(void);
 
 static void uninit_gl(void)
 {
-   free(gl_buffer);
    glfwTerminate();
+   free(gl_buffer);
 }
 
 static void init_gl(void)
@@ -60,6 +60,11 @@ static void init_gl(void)
       glfwSwapInterval(0);
 
    gl_buffer = malloc(256 * 256 * 4);
+   if ( !gl_buffer )
+   {
+      fprintf(stderr, "Couldn't allocate memory :<\n");
+      exit(1);
+   }
 
    glEnable(GL_TEXTURE_2D);
    glEnable(GL_DITHER);
@@ -138,10 +143,10 @@ static void init_audio(void)
 
    src_set_ratio(source, (double)out_rate / (double)in_rate);
 
-   src_input_size = in_rate * 2 * sizeof(float) / 100;
-   src_output_size = out_rate * 2 * sizeof(float) / 100;
-   src_input = malloc ( src_input_size );
-   src_output = malloc ( src_output_size );
+   src_input_size = in_rate / 20;
+   src_output_size = out_rate / 20;
+   src_input = malloc ( src_input_size * sizeof(float) );
+   src_output = malloc ( src_output_size * sizeof(float) );
 }
 
 static void uninit_audio(void)
@@ -163,16 +168,19 @@ static void uninit_audio(void)
 
 static void video_refresh_GL(const uint16_t* data, unsigned width, unsigned height)
 {
+   fprintf(stderr, "#1\n");
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 
+   fprintf(stderr, "#2\n");
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
+   fprintf(stderr, "#3\n");
    glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
 
    uint32_t output[width*height];
@@ -193,8 +201,10 @@ static void video_refresh_GL(const uint16_t* data, unsigned width, unsigned heig
       }
    }
 
+   fprintf(stderr, "#4\n");
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, output);
 
+   fprintf(stderr, "#5\n");
    glLoadIdentity();
    glColor3f(1,1,1);
 
@@ -210,42 +220,48 @@ static void video_refresh_GL(const uint16_t* data, unsigned width, unsigned heig
    glEnd();
 
    glfwSwapBuffers();
+   fprintf(stderr, "#6\n");
 }
 
 static void audio_refresh(uint16_t left, uint16_t right)
 {
-   src_input[src_input_ptr++] = (float)left;
-   src_input[src_input_ptr++] = (float)right;
+   src_input[src_input_ptr++] = (float)left / 0x7FFF;
+   src_input[src_input_ptr++] = (float)right / 0x7FFF;
 
    SRC_DATA data;
 
    if ( src_input_ptr == src_input_size )
    {
-      data.input_frames = src_input_ptr / 4;
-      data.output_frames = src_output_size / 4;
+      data.input_frames = src_input_size;
+      data.output_frames = src_output_size;
       data.data_in = src_input;
       data.data_out = src_output;
       data.src_ratio = (double)out_rate / (double)in_rate;
 
       src_process(source, &data);
+      fprintf(stderr, "Input frames used: %ld\n"
+            "Output frames used: %ld\n"
+            , data.input_frames_used, data.output_frames_gen);
+
+      memmove(src_input, src_input + data.input_frames_used, (src_input_size - data.input_frames_used) * sizeof(float));
+
+      int16_t outdata[src_output_size * sizeof(float) / 2];
+
+      src_float_to_short_array (src_output, outdata, data.output_frames_gen);
+
+      audio_write(outdata, data.output_frames_gen);
    }
-
-   memmove(src_input, (uint32_t*)src_input + data.input_frames_used, src_input_size - data.input_frames_used * 4);
-
-   uint16_t outdata[data.output_frames_gen * 2];
-
-   int i;
-   for ( i = 0; i < data.output_frames_gen * 2; i++ )
-   {
-      outdata[i] = (uint16_t)src_output[i];
-   }
-
-   audio_write(outdata, data.output_frames_gen * 2);
       
 }
 
 static void audio_write(const void* data, size_t size)
 {
+   if ( size == 0 )
+   {
+      fprintf(stderr, "WTF, no data?!\n");
+      return;
+   }
+
    rsd_delay_wait(rd);
    if ( rsd_write(rd, data, size) == 0 )
       fprintf(stderr, "WTF!!\n");
