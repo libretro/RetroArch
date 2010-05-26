@@ -36,6 +36,13 @@ static const unsigned fullscreen_y = 1200;
 // Video VSYNC (recommended)
 static const bool vsync = true;
 
+// Audio
+static const unsigned out_rate = 48000;
+
+static const unsigned in_rate = 31950; 
+// Input samplerate from libSNES. 
+// Lower this if you are experiencing frequent audio dropouts and vsync is enabled.
+
 // Keybinds
 static const struct snes_keybind snes_keybinds[] = {
    { SNES_DEVICE_ID_JOYPAD_A, 'X', 1 },

@@ -6,7 +6,7 @@ CFLAGS = -O3 -march=native -Wall
 OBJ = ssnes.o
 SOBJ = libsnes.so
 
-LIBS = -lrsound -lglfw
+LIBS = -lrsound -lglfw -lsamplerate
 
 all:
 	$(CC) $(CFLAGS) -o $(TARGET) $(SOURCE) $(SOBJ) $(LIBS)

@@ -1,4 +1,5 @@
 #include <GL/glfw.h>
+#include <samplerate.h>
 #include "libsnes.hpp"
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,7 +8,17 @@
 #include "config.h"
 
 ///// RSound
-static rsound_t *rd;
+static rsound_t *rd = NULL;
+static void audio_write(const void *data, size_t size);
+
+
+///// samplerate
+static SRC_STATE* source = NULL;
+static float *src_input = NULL;
+static float *src_output = NULL;
+static size_t src_input_size = 0;
+static size_t src_output_size = 0;
+static size_t src_input_ptr = 0;
 
 
 ///// GL
@@ -16,6 +27,7 @@ static uint8_t* gl_buffer;
 static void GLFWCALL resize(int width, int height);
 static void init_gl(void);
 static void uninit_gl(void);
+static void uninit_audio(void);
 
 static void uninit_gl(void)
 {
@@ -103,9 +115,9 @@ static void init_audio(void)
 {
    rsd_init(&rd);
    int channels = 2;
-   int rate = 32000;
+   int rate = out_rate;
    int format = RSD_S16_LE;
-   int latency = 64;
+   int latency = 80;
    rsd_set_param(rd, RSD_CHANNELS, &channels);
    rsd_set_param(rd, RSD_SAMPLERATE, &rate);
    rsd_set_param(rd, RSD_FORMAT, &format);
@@ -115,12 +127,38 @@ static void init_audio(void)
       fprintf(stderr, "FAILED TO START RSD\n");
       exit(1);
    }
+
+   int err;
+   source = src_new(SRC_SINC_MEDIUM_QUALITY, 2, &err);
+   if ( source == NULL )
+   {
+      fprintf(stderr, "Couldn't init libsamplerate\n");
+      exit(1);
+   }
+
+   src_set_ratio(source, (double)out_rate / (double)in_rate);
+
+   src_input_size = in_rate * 2 * sizeof(float) / 100;
+   src_output_size = out_rate * 2 * sizeof(float) / 100;
+   src_input = malloc ( src_input_size );
+   src_output = malloc ( src_output_size );
 }
 
 static void uninit_audio(void)
 {
-   rsd_stop(rd);
-   rsd_free(rd);
+   if ( rd )
+   {
+      rsd_stop(rd);
+      rsd_free(rd);
+      rd = NULL;
+   }
+   if ( source )
+   {
+      src_delete(source);
+      source = NULL;
+   }
+   free (src_input); src_input = NULL;
+   free (src_output); src_output = NULL;
 }
 
 static void video_refresh_GL(const uint16_t* data, unsigned width, unsigned height)
@@ -176,16 +214,46 @@ static void video_refresh_GL(const uint16_t* data, unsigned width, unsigned heig
 
 static void audio_refresh(uint16_t left, uint16_t right)
 {
-   uint16_t samples[2] = {left, right};
+   src_input[src_input_ptr++] = (float)left;
+   src_input[src_input_ptr++] = (float)right;
 
+   SRC_DATA data;
+
+   if ( src_input_ptr == src_input_size )
+   {
+      data.input_frames = src_input_ptr / 4;
+      data.output_frames = src_output_size / 4;
+      data.data_in = src_input;
+      data.data_out = src_output;
+      data.src_ratio = (double)out_rate / (double)in_rate;
+
+      src_process(source, &data);
+   }
+
+   memmove(src_input, (uint32_t*)src_input + data.input_frames_used, src_input_size - data.input_frames_used * 4);
+
+   uint16_t outdata[data.output_frames_gen * 2];
+
+   int i;
+   for ( i = 0; i < data.output_frames_gen * 2; i++ )
+   {
+      outdata[i] = (uint16_t)src_output[i];
+   }
+
+   audio_write(outdata, data.output_frames_gen * 2);
+      
+}
+
+static void audio_write(const void* data, size_t size)
+{
    rsd_delay_wait(rd);
-   if ( rsd_write(rd, samples, 4) < 4 )
+   if ( rsd_write(rd, data, size) == 0 )
       fprintf(stderr, "WTF!!\n");
 
-   if ( rsd_delay_ms(rd) < 32 )
+   if ( rsd_delay_ms(rd) < 40 )
    {
-      int ms = 32;
-      size_t size = (ms * 32000 * 4) / 1000;
+      int ms = 30;
+      size_t size = (ms * out_rate * 4) / 1000;
       void *temp = calloc(1, size);
       rsd_write(rd, temp, size);
       free(temp);
