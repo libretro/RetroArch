@@ -58,7 +58,7 @@ static void init_gl(void)
    else
       glfwSwapInterval(0);
 
-   gl_buffer = malloc(256 * 256 * 4);
+   gl_buffer = malloc(256 * 256 * 2);
    if ( !gl_buffer )
    {
       fprintf(stderr, "Couldn't allocate memory :<\n");
@@ -79,7 +79,8 @@ static void init_gl(void)
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 256);
    glTexImage2D(GL_TEXTURE_2D,
          0, GL_RGB, 256, 256, 0, GL_RGBA,
-         GL_UNSIGNED_INT_8_8_8_8, gl_buffer);
+         GL_UNSIGNED_SHORT_1_5_5_5_REV, gl_buffer);
+
 }
 
 static void GLFWCALL resize(int width, int height)
@@ -173,25 +174,17 @@ static void video_refresh_GL(const uint16_t* data, unsigned width, unsigned heig
 
    glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
 
-   uint32_t output[width*height];
+   uint16_t output[width*height];
    int y;
    for ( y = 0; y < height; y++ )
    {
       const uint16_t *src = data + y * 1024;
-      uint32_t *dst = output + y * width;
+      uint16_t *dst = output + y * width;
 
-      int x;
-      for ( x = 0; x < width; x++ )
-      {
-         uint16_t pixel = *src++;
-         int r = (pixel & 0x001f) << 3;
-         int g = (pixel & 0x03e0) >> 2;
-         int b = (pixel & 0x7c00) >> 7;
-         *dst++ = (r << 24) | (g << 16) | (b << 8);
-      }
+      memcpy(dst, src, width * 2);
    }
 
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, output);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, output);
 
    glLoadIdentity();
    glColor3f(1,1,1);
