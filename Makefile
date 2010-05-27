@@ -11,10 +11,6 @@ LIBS = -lrsound -lglfw -lsamplerate
 all:
 	$(CC) $(CFLAGS) -o $(TARGET) $(SOURCE) $(SOBJ) $(LIBS)
 
-ssnes.o:
-	$(CC) -c -o ssnes.o ssnes.c $(CFLAGS)
-
-
 clean:
 	rm -rf $(OBJ)
 	rm -rf $(TARGET)
