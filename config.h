@@ -5,9 +5,9 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
+#include <stdbool.h>
 #include <GL/glfw.h>
 #include "libsnes.hpp"
-#include <stdbool.h>
 
 struct snes_keybind
 {
