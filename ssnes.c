@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <GL/glfw.h>
 #include <samplerate.h>
 #include "libsnes.hpp"
@@ -414,8 +415,10 @@ static void write_state(const char* path, uint8_t* data, size_t size)
    FILE *file = fopen(path, "wb");
    if ( file != NULL )
    {
+      fprintf(stderr, "SSNES: Saving state. Size: %d bytes.\n", (int)size);
       snes_serialize(data, size);
-      fwrite(data, 1, size, file);
+      if ( fwrite(data, 1, size, file) != size )
+         fprintf(stderr, "SSNES [WARN]: Did not save state properly.");
       fclose(file);
    }
 }
@@ -425,7 +428,9 @@ static void load_state(const char* path, uint8_t* data, size_t size)
    FILE *file = fopen(path, "rb");
    if ( file != NULL )
    {
-      fread(data, 1, size, file);
+      fprintf(stderr, "SSNES: Loading state. Size: %d bytes.\n", (int)size);
+      if ( fread(data, 1, size, file) != size )
+         fprintf(stderr, "SSNES [WARN]: Did not load state properly.");
       fclose(file);
       snes_unserialize(data, size);
    }
