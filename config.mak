@@ -1,0 +1,9 @@
+
+BUILD_OPENGL = 1
+
+BUILD_RSOUND = 0
+BUILD_OSS = 0
+BUILD_ALSA = 1
+
+PREFIX = /usr/local
+
