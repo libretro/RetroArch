@@ -76,17 +76,17 @@ static void* __alsa_init(const char* device, int rate, int latency)
 
    TRY_ALSA(snd_pcm_hw_params(alsa->pcm, params));
 
-   snd_pcm_uframes_t alsa_sizes;
-   snd_pcm_hw_params_get_period_size(params, &alsa_sizes, NULL);
+   snd_pcm_uframes_t buffer_size;
+   //snd_pcm_hw_params_get_period_size(params, &buffer_size, NULL);
    //fprintf(stderr, "ALSA Period size: %d frames\n", (int)alsa_sizes);
-   snd_pcm_hw_params_get_buffer_size(params, &alsa_sizes);
+   snd_pcm_hw_params_get_buffer_size(params, &buffer_size);
    //fprintf(stderr, "Buffer size: %d frames\n", (int)alsa_sizes);
 
    if (snd_pcm_sw_params_malloc(&sw_params) < 0)
       goto error;
 
    TRY_ALSA(snd_pcm_sw_params_current(alsa->pcm, sw_params));
-   TRY_ALSA(snd_pcm_sw_params_set_start_threshold(alsa->pcm, sw_params, alsa_sizes));
+   TRY_ALSA(snd_pcm_sw_params_set_start_threshold(alsa->pcm, sw_params, buffer_size/2));
    TRY_ALSA(snd_pcm_sw_params(alsa->pcm, sw_params));
 
    snd_pcm_sw_params_free(sw_params);
