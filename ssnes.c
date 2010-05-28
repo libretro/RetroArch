@@ -20,8 +20,12 @@ extern const video_driver_t video_gl;
 ////////////////////////////////////////////////
 
 static driver_t driver = {
-   .audio = &audio_rsound,
-   .video = &video_gl
+#if VIDEO_DRIVER == VIDEO_GL
+   .video = &video_gl,
+#endif
+#if AUDIO_DRIVER == AUDIO_RSOUND
+   .audio = &audio_rsound
+#endif
 };
 
 static void init_drivers(void);

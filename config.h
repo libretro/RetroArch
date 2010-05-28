@@ -6,7 +6,6 @@
 #define __CONFIG_H
 
 #include <stdbool.h>
-#include <GL/glfw.h>
 #include "libsnes.hpp"
 #include "driver.h"
 
@@ -15,6 +14,14 @@
 
 #define TOGGLE_FULLSCREEN 'F'
 
+
+//////////// Drivers
+#define VIDEO_GL 0
+#define AUDIO_RSOUND 1
+
+#define VIDEO_DRIVER VIDEO_GL
+#define AUDIO_DRIVER AUDIO_RSOUND
+
 static const bool force_aspect = true; // On resize and fullscreen, rendering area will stay 8:7
 
 // Windowed
@@ -22,7 +29,6 @@ static const float xscale = 5.0; // Real x res = 256 * xscale
 static const float yscale = 5.0; // Real y res = 224 * yscale
 
 // Fullscreen
-
 static bool fullscreen = false; // To start in Fullscreen on not
 static const unsigned fullscreen_x = 1920;
 static const unsigned fullscreen_y = 1200;
@@ -32,13 +38,15 @@ static const bool vsync = true;
 
 // Audio
 static const unsigned out_rate = 48000;
-
 static const unsigned in_rate = 31950; 
-static const int out_latency = 64;
-static const char* audio_device = NULL;
 // Input samplerate from libSNES. 
 // Lower this if you are experiencing frequent audio dropouts and vsync is enabled.
 
+// Audio device. If NULL, will use defaults.
+static const char* audio_device = NULL;
+
+// Desired audio latency in ms.
+static const int out_latency = 64;
 
 // Keybinds
 static const struct snes_keybind snes_keybinds[] = {
