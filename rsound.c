@@ -98,6 +98,7 @@ static void __rsd_free(void *data)
 
    rsd_stop(rsd->rd);
    rsd_free(rsd->rd);
+   free(rsd);
 }
 
 const audio_driver_t audio_rsound = {

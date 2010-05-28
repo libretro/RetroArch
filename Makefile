@@ -12,6 +12,10 @@ endif
 ifeq ($(BUILD_OSS), 1)
    SOURCE += oss.c
 endif
+ifeq ($(BUILD_ALSA), 1)
+   SOURCE += alsa.c
+   LIBS += -lasound
+endif
 
 ifeq ($(BUILD_OPENGL), 1)
    SOURCE += gl.c

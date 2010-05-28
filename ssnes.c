@@ -17,6 +17,7 @@ static SRC_STATE* source = NULL;
 //////////////////////////////////////////////// Backends
 extern const audio_driver_t audio_rsound;
 extern const audio_driver_t audio_oss;
+extern const audio_driver_t audio_alsa;
 extern const video_driver_t video_gl;
 ////////////////////////////////////////////////
 
@@ -28,6 +29,8 @@ static driver_t driver = {
    .audio = &audio_rsound,
 #elif AUDIO_DRIVER == AUDIO_OSS
    .audio = &audio_oss,
+#elif AUDIO_DRIVER == AUDIO_ALSA
+   .audio = &audio_alsa,
 #endif
 };
 
