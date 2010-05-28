@@ -24,6 +24,8 @@ static void* __alsa_init(const char* device, int rate, int latency)
    if ( device != NULL )
       alsa_dev = device;
 
+   //fprintf(stderr, "Opening device: %s\n", alsa_dev);
+
    TRY_ALSA(snd_pcm_open(&alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, 0));
 
    unsigned int latency_usec = latency * 1000;
@@ -38,17 +40,29 @@ static void* __alsa_init(const char* device, int rate, int latency)
    TRY_ALSA(snd_pcm_hw_params_set_format(alsa->pcm, params, format));
    TRY_ALSA(snd_pcm_hw_params_set_channels(alsa->pcm, params, channels));
    TRY_ALSA(snd_pcm_hw_params_set_rate(alsa->pcm, params, rate, 0));
-   TRY_ALSA(snd_pcm_hw_params_set_buffer_time_near(alsa->pcm, params, &latency_usec, NULL));
-   latency_usec = latency * 250;
-   TRY_ALSA(snd_pcm_hw_params_set_period_time_near(alsa->pcm, params, &latency_usec, NULL));
+
+   // We test if we can run the latencies we are allowed, if not, fallback to *_near.
+
+   if ( snd_pcm_hw_params_set_buffer_time_max(alsa->pcm, params, &latency_usec, NULL) < 0)
+   {
+      latency_usec = latency * 1000;
+      TRY_ALSA(snd_pcm_hw_params_set_buffer_time_near(alsa->pcm, params, &latency_usec, NULL))
+   }
+
+   latency_usec = (latency < 32) ? 10000 : latency * 250;
+   if ( snd_pcm_hw_params_set_period_time_max(alsa->pcm, params, &latency_usec, NULL) )
+   {
+      latency_usec = (latency < 32) ? 10000 : latency * 250;
+      TRY_ALSA(snd_pcm_hw_params_set_period_time_near(alsa->pcm, params, &latency_usec, NULL));
+   }
 
    TRY_ALSA(snd_pcm_hw_params(alsa->pcm, params));
 
    snd_pcm_uframes_t alsa_sizes;
    snd_pcm_hw_params_get_period_size(params, &alsa_sizes, NULL);
-   fprintf(stderr, "Period size: %d\n", (int)alsa_sizes);
+   //fprintf(stderr, "ALSA Period size: %d frames\n", (int)alsa_sizes);
    snd_pcm_hw_params_get_buffer_size(params, &alsa_sizes);
-   fprintf(stderr, "Buffer size: %d\n", (int)alsa_sizes);
+   //fprintf(stderr, "Buffer size: %d frames\n", (int)alsa_sizes);
 
    if (snd_pcm_sw_params_malloc(&sw_params) < 0)
       goto error;
