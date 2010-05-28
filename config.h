@@ -8,13 +8,7 @@
 #include <stdbool.h>
 #include <GL/glfw.h>
 #include "libsnes.hpp"
-
-struct snes_keybind
-{
-   int id;
-   int key;
-   int joykey;
-};
+#include "driver.h"
 
 #define SAVE_STATE_KEY GLFW_KEY_F2
 #define LOAD_STATE_KEY GLFW_KEY_F4

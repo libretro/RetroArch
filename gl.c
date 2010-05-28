@@ -1,12 +1,12 @@
 #include "driver.h"
 #include <GL/glfw.h>
 #include <stdint.h>
-#include "config.h"
 #include "libsnes.hpp"
 #include <stdio.h>
 
 static GLuint texture;
 static uint8_t *gl_buffer;
+static bool keep_aspect = true;
 
 typedef struct gl
 {
@@ -20,8 +20,9 @@ static void glfw_input_poll(void *data)
    glfwPollEvents();
 }
 
-static int16_t glfw_input_state(void *data, bool port, unsigned device, unsigned index, unsigned id)
+static int16_t glfw_input_state(void *data, const struct snes_keybind *snes_keybinds, bool port, unsigned device, unsigned index, unsigned id)
 {
+
    (void)data;
 
     if ( port != 0 || device != SNES_DEVICE_JOYPAD )
@@ -79,7 +80,7 @@ static void GLFWCALL resize(int width, int height)
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
 
-   if ( force_aspect )
+   if ( keep_aspect )
    {
       float desired_aspect = 256.0/224.0;
       float in_aspect = (float)width / height;
@@ -150,11 +151,13 @@ static void gl_free(void *data)
    free(gl_buffer);
 }
 
-static void* gl_init(int width, int height, bool fullscreen, bool vsync, input_driver_t **input)
+static void* gl_init(int width, int height, bool fullscreen, bool vsync, bool force_aspect, input_driver_t **input)
 {
    gl_t *foo = malloc(sizeof(gl_t));
    if ( foo == NULL )
       return NULL;
+
+   keep_aspect = force_aspect;
 
    glfwInit();
 

@@ -68,7 +68,7 @@ static void uninit_audio(void)
 
 static void init_video_input(void)
 {
-   driver.video_data = driver.video->init((fullscreen) ? fullscreen_x : (256 * xscale), (fullscreen) ? fullscreen_y : (224 * yscale), fullscreen, vsync, (input_driver_t**)&(driver.input));
+   driver.video_data = driver.video->init((fullscreen) ? fullscreen_x : (256 * xscale), (fullscreen) ? fullscreen_y : (224 * yscale), fullscreen, vsync, force_aspect, (input_driver_t**)&(driver.input));
 
    if ( driver.video_data == NULL )
    {
@@ -159,7 +159,7 @@ static void input_poll(void)
 
 static int16_t input_state(bool port, unsigned device, unsigned index, unsigned id)
 {
-   return driver.input->input_state(driver.input_data, port, device, index, id);
+   return driver.input->input_state(driver.input_data, snes_keybinds, port, device, index, id);
 }
 
 
