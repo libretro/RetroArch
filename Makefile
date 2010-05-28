@@ -1,15 +1,36 @@
+include config.mak
+
 TARGET = ssnes
 
-SOURCE = ssnes.c rsound.c gl.c
+SOURCE = ssnes.c 
+LIBS = -lsamplerate -lsnes
+
+ifeq ($(BUILD_RSOUND), 1)
+   SOURCE += rsound.c
+   LIBS += -lrsound
+endif
+
+ifeq ($(BUILD_OPENGL), 1)
+   SOURCE += gl.c
+   LIBS += -lglfw
+endif
+
 CFLAGS = -Wall -O3 -march=native
 
 OBJ = ssnes.o
-SOBJ = libsnes.so
 
-LIBS = -lrsound -lglfw -lsamplerate
 
-all:
-	$(CC) $(CFLAGS) -o $(TARGET) $(SOURCE) $(SOBJ) $(LIBS)
+
+all: $(TARGET)
+
+$(TARGET):
+	$(CC) $(CFLAGS) -o $(TARGET) $(SOURCE) $(LIBS)
+
+install: $(TARGET)
+	install -m755 $(TARGET) $(PREFIX)/bin 
+
+uninstall: $(TARGET)
+	rm -rf $(PREFIX)/bin/$(TARGET)
 
 clean:
 	rm -rf $(OBJ)
