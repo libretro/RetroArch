@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <GL/glfw.h>
 #include <samplerate.h>
-#include "libsnes.hpp"
+#include <libsnes.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 #include <rsound.h>

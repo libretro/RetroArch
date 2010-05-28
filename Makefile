@@ -28,9 +28,7 @@ OBJ = ssnes.o
 
 
 
-all: $(TARGET)
-
-$(TARGET):
+all:
 	$(CC) $(CFLAGS) -o $(TARGET) $(SOURCE) $(LIBS)
 
 install: $(TARGET)
