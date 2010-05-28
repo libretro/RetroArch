@@ -16,6 +16,7 @@ static SRC_STATE* source = NULL;
 
 //////////////////////////////////////////////// Backends
 extern const audio_driver_t audio_rsound;
+extern const audio_driver_t audio_oss;
 extern const video_driver_t video_gl;
 ////////////////////////////////////////////////
 
@@ -24,7 +25,9 @@ static driver_t driver = {
    .video = &video_gl,
 #endif
 #if AUDIO_DRIVER == AUDIO_RSOUND
-   .audio = &audio_rsound
+   .audio = &audio_rsound,
+#elif AUDIO_DRIVER == AUDIO_OSS
+   .audio = &audio_oss,
 #endif
 };
 
@@ -204,13 +207,13 @@ int main(int argc, char *argv[])
    void *rom_buf = malloc(length);
    if ( rom_buf == NULL )
    {
-      fprintf(stderr, "Couldn't allocate memory!\n");
+      fprintf(stderr, "SSNES [ERROR] :: Couldn't allocate memory!\n");
       exit(1);
    }
 
    if ( fread(rom_buf, 1, length, file) < length )
    {
-      fprintf(stderr, "Didn't read whole file.\n");
+      fprintf(stderr, "SSNES [ERROR] :: Didn't read whole file.\n");
       exit(1);
    }
 
@@ -268,7 +271,7 @@ static void write_state(const char* path, uint8_t* data, size_t size)
    FILE *file = fopen(path, "wb");
    if ( file != NULL )
    {
-      fprintf(stderr, "SSNES: Saving state. Size: %d bytes.\n", (int)size);
+      //fprintf(stderr, "SSNES: Saving state. Size: %d bytes.\n", (int)size);
       snes_serialize(data, size);
       if ( fwrite(data, 1, size, file) != size )
          fprintf(stderr, "SSNES [WARN]: Did not save state properly.");
@@ -281,7 +284,7 @@ static void load_state(const char* path, uint8_t* data, size_t size)
    FILE *file = fopen(path, "rb");
    if ( file != NULL )
    {
-      fprintf(stderr, "SSNES: Loading state. Size: %d bytes.\n", (int)size);
+      //fprintf(stderr, "SSNES: Loading state. Size: %d bytes.\n", (int)size);
       if ( fread(data, 1, size, file) != size )
          fprintf(stderr, "SSNES [WARN]: Did not load state properly.");
       fclose(file);

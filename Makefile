@@ -9,13 +9,16 @@ ifeq ($(BUILD_RSOUND), 1)
    SOURCE += rsound.c
    LIBS += -lrsound
 endif
+ifeq ($(BUILD_OSS), 1)
+   SOURCE += oss.c
+endif
 
 ifeq ($(BUILD_OPENGL), 1)
    SOURCE += gl.c
    LIBS += -lglfw
 endif
 
-CFLAGS = -Wall -O3 -march=native
+CFLAGS = -Wall -O2 -march=native -s
 
 OBJ = ssnes.o
 

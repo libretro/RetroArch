@@ -18,9 +18,10 @@
 //////////// Drivers
 #define VIDEO_GL 0
 #define AUDIO_RSOUND 1
+#define AUDIO_OSS 2
 
 #define VIDEO_DRIVER VIDEO_GL
-#define AUDIO_DRIVER AUDIO_RSOUND
+#define AUDIO_DRIVER AUDIO_OSS
 
 static const bool force_aspect = true; // On resize and fullscreen, rendering area will stay 8:7
 
