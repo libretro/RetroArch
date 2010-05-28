@@ -1,6 +1,6 @@
 TARGET = ssnes
 
-SOURCE = ssnes.c
+SOURCE = ssnes.c rsound.c gl.c
 CFLAGS = -Wall -O3 -march=native
 
 OBJ = ssnes.o

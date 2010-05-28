@@ -40,8 +40,11 @@ static const bool vsync = true;
 static const unsigned out_rate = 48000;
 
 static const unsigned in_rate = 31950; 
+static const int out_latency = 64;
+static const char* audio_device = NULL;
 // Input samplerate from libSNES. 
 // Lower this if you are experiencing frequent audio dropouts and vsync is enabled.
+
 
 // Keybinds
 static const struct snes_keybind snes_keybinds[] = {

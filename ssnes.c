@@ -7,204 +7,120 @@
 #include <rsound.h>
 #include <string.h>
 #include "config.h"
+#include "driver.h"
 
-///// RSound
-static rsound_t *rd = NULL;
-static void audio_write(const void *data, size_t size);
-static void uninit_audio(void);
+static bool video_active = true;
+static bool audio_active = true;
 
-
-///// samplerate
 static SRC_STATE* source = NULL;
 
-///// GL
-static GLuint texture;
-static uint8_t* gl_buffer;
-static void GLFWCALL resize(int width, int height);
-static void init_gl(void);
-static void uninit_gl(void);
+//////////////////////////////////////////////// Backends
+extern const audio_driver_t audio_rsound;
+extern const video_driver_t video_gl;
+////////////////////////////////////////////////
 
+static driver_t driver = {
+   .audio = &audio_rsound,
+   .video = &video_gl
+};
+
+static void init_drivers(void);
+static void uninit_drivers(void);
+
+static void init_video_input(void);
+static void uninit_video_input(void);
+static void init_audio(void);
+static void uninit_audio(void);
 
 static void load_state(const char* path, uint8_t* data, size_t size);
 static void write_state(const char* path, uint8_t* data, size_t size);
 
-static void uninit_gl(void)
+static void init_drivers(void)
 {
-   glfwTerminate();
-   free(gl_buffer);
+   init_video_input();
+   init_audio();
 }
 
-static void init_gl(void)
+static void uninit_drivers(void)
 {
-   glfwInit();
-
-   int res;
-   if ( fullscreen )
-      res = glfwOpenWindow(fullscreen_x, fullscreen_y, 0, 0, 0, 0, 0, 0, GLFW_FULLSCREEN);
-
-   else
-      res = glfwOpenWindow(256 * xscale, 224 * yscale, 0, 0, 0, 0, 0, 0, GLFW_WINDOW);
-
-   if ( !res )
-   {
-      glfwTerminate();
-      exit(1);
-   }
-
-   glfwSetWindowSizeCallback(resize);
-
-   if ( vsync )
-      glfwSwapInterval(1); // Force vsync
-   else
-      glfwSwapInterval(0);
-
-   gl_buffer = malloc(256 * 256 * 2);
-   if ( !gl_buffer )
-   {
-      fprintf(stderr, "Couldn't allocate memory :<\n");
-      exit(1);
-   }
-
-   glEnable(GL_TEXTURE_2D);
-   glEnable(GL_DITHER);
-   glEnable(GL_DEPTH_TEST);
-
-   glfwSetWindowTitle("SSNES");
-
-   glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
-
-   glGenTextures(1, &texture);
-   glBindTexture(GL_TEXTURE_2D, texture);
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, 256);
-   glTexImage2D(GL_TEXTURE_2D,
-         0, GL_RGB, 256, 256, 0, GL_RGBA,
-         GL_UNSIGNED_SHORT_1_5_5_5_REV, gl_buffer);
-
-}
-
-static void GLFWCALL resize(int width, int height)
-{
-   glMatrixMode(GL_PROJECTION);
-   glLoadIdentity();
-
-   if ( force_aspect )
-   {
-      float desired_aspect = 256.0/224.0;
-      float in_aspect = (float)width / height;
-
-      if ( (int)(in_aspect*100) > (int)(desired_aspect*100) )
-      {
-         float delta = (in_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         glOrtho(0.5 - delta, 0.5 + delta, 0, 1, -1, 1);
-      }
-
-      else if ( (int)(in_aspect*100) < (int)(desired_aspect*100) )
-      {
-         float delta = (desired_aspect / in_aspect - 1.0) / 2.0 + 0.5;
-         glOrtho(0, 1, 0.5 - delta, 0.5 + delta, -1, 1);
-      }
-      else
-         glOrtho(0, 1, 0, 1, -1, 1);
-
-   }
-   else
-      glOrtho(0, 1, 0, 1, -1, 1);
-
-   glViewport(0, 0, width, height);
-   glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
+   uninit_video_input();
+   uninit_audio();
 }
 
 static void init_audio(void)
 {
-   rsd_init(&rd);
-   int channels = 2;
-   int rate = out_rate;
-   int format = RSD_S16_LE;
-   int latency = 80;
-   rsd_set_param(rd, RSD_CHANNELS, &channels);
-   rsd_set_param(rd, RSD_SAMPLERATE, &rate);
-   rsd_set_param(rd, RSD_FORMAT, &format);
-   rsd_set_param(rd, RSD_LATENCY, &latency);
-   if ( rsd_start(rd) < 0 )
-   {
-      fprintf(stderr, "FAILED TO START RSD\n");
-      exit(1);
-   }
+   driver.audio_data = driver.audio->init(audio_device, out_rate, out_latency);
+   if ( driver.audio_data == NULL )
+      audio_active = false;
 
    int err;
    source = src_new(SRC_SINC_MEDIUM_QUALITY, 2, &err);
-   if ( source == NULL )
-   {
-      fprintf(stderr, "Couldn't init libsamplerate\n");
-      exit(1);
-   }
-
-   src_set_ratio(source, (double)out_rate / (double)in_rate);
-
 }
 
 static void uninit_audio(void)
 {
-   if ( rd )
-   {
-      rsd_stop(rd);
-      rsd_free(rd);
-      rd = NULL;
-   }
+   if ( driver.audio_data && driver.audio )
+      driver.audio->free(driver.audio_data);
+
    if ( source )
-   {
       src_delete(source);
-      source = NULL;
+}
+
+static void init_video_input(void)
+{
+   driver.video_data = driver.video->init((fullscreen) ? fullscreen_x : (256 * xscale), (fullscreen) ? fullscreen_y : (224 * yscale), fullscreen, vsync, (input_driver_t**)&(driver.input));
+
+   if ( driver.video_data == NULL )
+   {
+      exit(1);
+   }
+
+   if ( driver.input != NULL )
+   {
+      driver.input_data = driver.video_data;
+   }
+   else
+   {
+      driver.input_data = driver.input->init();
+      if ( driver.input_data == NULL )
+         exit(1);
    }
 }
 
-static void video_refresh_GL(const uint16_t* data, unsigned width, unsigned height)
+static void uninit_video_input(void)
 {
-   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+   if ( driver.video_data && driver.video )
+      driver.video->free(driver.video_data);
 
-   glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
+   if ( driver.input_data != driver.video_data && driver.input )
+      driver.input->free(driver.input_data);
+}
 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+static void video_frame(const uint16_t *data, unsigned width, unsigned height)
+{
+   if ( !video_active )
+      return;
 
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
+   uint16_t output[width * height];
 
-   uint16_t output[width*height];
    int y;
    for ( y = 0; y < height; y++ )
    {
       const uint16_t *src = data + y * 1024;
       uint16_t *dst = output + y * width;
 
-      memcpy(dst, src, width * 2);
+      memcpy(dst, src, width * sizeof(uint16_t));
    }
 
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, output);
-
-   glLoadIdentity();
-   glColor3f(1,1,1);
-
-   glBegin(GL_QUADS);
-
-   float h = 224.0/256.0;
-
-   glTexCoord2f(0, h); glVertex3i(0, 0, 0);
-   glTexCoord2f(0, 0); glVertex3i(0, 1, 0);
-   glTexCoord2f(1, 0); glVertex3i(1, 1, 0);
-   glTexCoord2f(1, h); glVertex3i(1, 0, 0);
-
-   glEnd();
-
-   glfwSwapBuffers();
+   if ( !driver.video->frame(driver.video_data, output, width, height) )
+      video_active = false;
 }
 
-static void audio_refresh(uint16_t left, uint16_t right)
+static void audio_sample(uint16_t left, uint16_t right)
 {
+   if ( !audio_active )
+      return;
+
    static float data[256];
    static int data_ptr = 0;
 
@@ -229,78 +145,21 @@ static void audio_refresh(uint16_t left, uint16_t right)
 
       src_float_to_short_array(outsamples, temp_outsamples, src_data.output_frames_gen * 4);
 
-      audio_write(temp_outsamples, src_data.output_frames_gen * 4);
+      if ( driver.audio->write(driver.audio_data, temp_outsamples, src_data.output_frames_gen * 4) < 0 )
+         audio_active = false;
+
       data_ptr = 0;
    }
 }
 
-static void audio_write(const void* data, size_t size)
+static void input_poll(void)
 {
-   if ( size == 0 )
-   {
-      fprintf(stderr, "WTF, no data?!\n");
-      return;
-   }
-
-   rsd_delay_wait(rd);
-   if ( rsd_write(rd, data, size) == 0 )
-      fprintf(stderr, "WTF!!\n");
-
-   if ( rsd_delay_ms(rd) < 40 )
-   {
-      int ms = 30;
-      size_t size = (ms * out_rate * 4) / 1000;
-      void *temp = calloc(1, size);
-      rsd_write(rd, temp, size);
-      free(temp);
-   }
-}
-
-static void snes_input_poll(void)
-{
-   glfwPollEvents();
+   driver.input->poll(driver.input_data);
 }
 
 static int16_t input_state(bool port, unsigned device, unsigned index, unsigned id)
 {
-
-   if ( port != 0 || device != SNES_DEVICE_JOYPAD )
-      return 0;
-
-   int i;
-   int joypad_id = -1;
-   int joypad_buttons = -1;
-
-   // Finds the first joypad that's alive
-   for ( i = GLFW_JOYSTICK_1; i <= GLFW_JOYSTICK_LAST; i++ )
-   {
-      if ( glfwGetJoystickParam(i, GLFW_PRESENT) == GL_TRUE )
-      {
-         joypad_id = i;
-         joypad_buttons = glfwGetJoystickParam(i, GLFW_BUTTONS);
-         break;
-      }
-   }
-
-   unsigned char buttons[128];
-   if ( joypad_id != -1 )
-   {
-      glfwGetJoystickButtons(joypad_id, buttons, joypad_buttons);
-   }
-
-   for ( i = 0; snes_keybinds[i].id != -1; i++ )
-   {
-      if ( snes_keybinds[i].id == (int)id )
-      {
-         if ( glfwGetKey(snes_keybinds[i].key ))
-            return 1;
-         
-         if ( snes_keybinds[i].joykey < joypad_buttons && buttons[snes_keybinds[i].joykey] == GLFW_PRESS )
-            return 1;
-      }
-   }
-
-   return 0;
+   return driver.input->input_state(driver.input_data, port, device, index, id);
 }
 
 
@@ -315,16 +174,15 @@ int main(int argc, char *argv[])
    strcpy(savefile_name, argv[1]);
    strcat(savefile_name, ".sav");
 
-   init_gl();
+   init_drivers();
 
    snes_init();
 
-   snes_set_video_refresh(video_refresh_GL);
-   snes_set_audio_sample(audio_refresh);
-   snes_set_input_poll(snes_input_poll);
+   snes_set_video_refresh(video_frame);
+   snes_set_audio_sample(audio_sample);
+   snes_set_input_poll(input_poll);
    snes_set_input_state(input_state);
 
-   init_audio();
 
    FILE *file = fopen(argv[1], "rb");
    if ( file == NULL )
@@ -365,6 +223,7 @@ int main(int argc, char *argv[])
    load_state(savefile_name, serial_data, serial_size);
    snes_reset();
 
+   ///// TODO: Modular friendly!!!
    for(;;)
    {
       int quitting = glfwGetKey(GLFW_KEY_ESC) || !glfwGetWindowParam(GLFW_OPENED);
@@ -383,10 +242,8 @@ int main(int argc, char *argv[])
       else if ( glfwGetKey( TOGGLE_FULLSCREEN ) )
       {
          fullscreen = !fullscreen;
-         uninit_gl();
-         init_gl();
-         uninit_audio();
-         init_audio();
+         uninit_drivers();
+         init_drivers();
       }
 
       snes_run();
@@ -397,8 +254,7 @@ int main(int argc, char *argv[])
    snes_unload();
    snes_term();
 
-   uninit_gl();
-   uninit_audio();
+   uninit_drivers();
 
    return 0;
 }
