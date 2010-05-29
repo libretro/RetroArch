@@ -30,6 +30,16 @@ struct snes_keybind
    int joykey;
 };
 
+typedef struct video_info
+{
+   int width;
+   int height;
+   bool fullscreen;
+   bool vsync;
+   bool force_aspect;
+   bool smooth;
+} video_info_t;
+
 typedef struct audio_driver
 {
    void* (*init)(const char* device, int rate, int latency);
@@ -49,7 +59,7 @@ typedef struct input_driver
 
 typedef struct video_driver
 {
-   void* (*init)(int width, int height, bool fullscreen, bool vsync, bool force_aspect, input_driver_t **input); 
+   void* (*init)(video_info_t *video, input_driver_t **input); 
    // Should the video driver act as an input driver as well? :)
    bool (*frame)(void* data, const uint16_t* frame, int width, int height);
    void (*free)(void* data);

@@ -25,6 +25,7 @@
 static GLuint texture;
 static uint8_t *gl_buffer;
 static bool keep_aspect = true;
+static GLuint tex_filter;
 
 typedef struct gl
 {
@@ -137,8 +138,8 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height)
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex_filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex_filter);
 
    glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
 
@@ -169,18 +170,22 @@ static void gl_free(void *data)
    free(gl_buffer);
 }
 
-static void* gl_init(int width, int height, bool fullscreen, bool vsync, bool force_aspect, input_driver_t **input)
+static void* gl_init(video_info_t *video, input_driver_t **input)
 {
    gl_t *foo = malloc(sizeof(gl_t));
    if ( foo == NULL )
       return NULL;
 
-   keep_aspect = force_aspect;
+   keep_aspect = video->force_aspect;
+   if ( video->smooth )
+      tex_filter = GL_LINEAR;
+   else
+      tex_filter = GL_NEAREST;
 
    glfwInit();
 
    int res;
-   res = glfwOpenWindow(width, height, 0, 0, 0, 0, 0, 0, (fullscreen) ? GLFW_FULLSCREEN : GLFW_WINDOW);
+   res = glfwOpenWindow(video->width, video->height, 0, 0, 0, 0, 0, 0, (video->fullscreen) ? GLFW_FULLSCREEN : GLFW_WINDOW);
 
    if ( !res )
    {
@@ -190,7 +195,7 @@ static void* gl_init(int width, int height, bool fullscreen, bool vsync, bool fo
 
    glfwSetWindowSizeCallback(resize);
 
-   if ( vsync )
+   if ( video->vsync )
       glfwSwapInterval(1); // Force vsync
    else
       glfwSwapInterval(0);

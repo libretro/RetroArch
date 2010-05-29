@@ -54,6 +54,7 @@ static const unsigned fullscreen_y = 720;
 
 // Video VSYNC (recommended)
 static const bool vsync = true;
+static const bool video_smooth = true; // Smooths picture
 
 // Audio
 static const unsigned out_rate = 44100;

@@ -101,7 +101,16 @@ static void uninit_audio(void)
 
 static void init_video_input(void)
 {
-   driver.video_data = driver.video->init((fullscreen) ? fullscreen_x : (256 * xscale), (fullscreen) ? fullscreen_y : (224 * yscale), fullscreen, vsync, force_aspect, (input_driver_t**)&(driver.input));
+   video_info_t video = {
+      .width = (fullscreen) ? fullscreen_x : (256 * xscale),
+      .height = (fullscreen) ? fullscreen_y : (224 * yscale),
+      .fullscreen = fullscreen,
+      .vsync = vsync,
+      .force_aspect = force_aspect,
+      .smooth = video_smooth
+   };
+
+   driver.video_data = driver.video->init(&video, (input_driver_t**)&(driver.input));
 
    if ( driver.video_data == NULL )
    {
