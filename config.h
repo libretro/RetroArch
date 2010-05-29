@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include "libsnes.hpp"
 #include "driver.h"
+#include <samplerate.h>
 
 
 
@@ -81,6 +82,9 @@ static const char* audio_device = NULL;
 
 // Desired audio latency in ms.
 static const int out_latency = 64;
+
+// Defines the quality (and cpu reqirements) of samplerate conversion.
+#define SAMPLERATE_QUALITY SRC_SINC_MEDIUM_QUALITY
 
 
 

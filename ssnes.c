@@ -87,7 +87,7 @@ static void init_audio(void)
       audio_active = false;
 
    int err;
-   source = src_new(SRC_SINC_MEDIUM_QUALITY, 2, &err);
+   source = src_new(SAMPLERATE_QUALITY, 2, &err);
 }
 
 static void uninit_audio(void)
