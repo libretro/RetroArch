@@ -1,4 +1,4 @@
-include config.mak
+include config.mk
 
 TARGET = ssnes
 

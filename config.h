@@ -38,7 +38,7 @@
 #define AUDIO_ALSA 3
 ////////////////////////
 
-// Chooses which video and audio subsystem to use. Remember to update config.mak if you change these.
+// Chooses which video and audio subsystem to use. Remember to update config.mk if you change these.
 #define VIDEO_DRIVER VIDEO_GL
 #define AUDIO_DRIVER AUDIO_ALSA
 
@@ -71,7 +71,7 @@ static const bool force_aspect = true;
 #define FILTER_HQ4X 2
 ////////////////////////
 
-// If you change this to something other than the HQ filters, make sure that you build the filter module in config.mak.
+// If you change this to something other than the HQ filters, make sure that you build the filter module in config.mk.
 #define VIDEO_FILTER FILTER_NONE
 
 
