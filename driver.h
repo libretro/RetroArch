@@ -38,6 +38,7 @@ typedef struct video_info
    bool vsync;
    bool force_aspect;
    bool smooth;
+   int input_scale; // HQ2X => 2, HQ4X => 4, None => 1
 } video_info_t;
 
 typedef struct audio_driver

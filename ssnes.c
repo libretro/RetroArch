@@ -26,6 +26,7 @@
 #include <string.h>
 #include "config.h"
 #include "driver.h"
+#include "hqflt/pastlib.h"
 
 static bool video_active = true;
 static bool audio_active = true;
@@ -101,13 +102,25 @@ static void uninit_audio(void)
 
 static void init_video_input(void)
 {
+   int scale;
+#if VIDEO_FILTER == FILTER_NONE
+   scale = 1;
+#elif VIDEO_FILTER == FILTER_HQ2X
+   scale = 2;
+#elif VIDEO_FILTER == FILTER_HQ4X
+   scale = 4;
+#else
+   scale = 1;
+#endif
+
    video_info_t video = {
       .width = (fullscreen) ? fullscreen_x : (256 * xscale),
       .height = (fullscreen) ? fullscreen_y : (224 * yscale),
       .fullscreen = fullscreen,
       .vsync = vsync,
       .force_aspect = force_aspect,
-      .smooth = video_smooth
+      .smooth = video_smooth,
+      .input_scale = scale,
    };
 
    driver.video_data = driver.video->init(&video, (input_driver_t**)&(driver.input));
@@ -144,6 +157,12 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
       return;
 
    uint16_t output[width * height];
+#if VIDEO_FILTER == FILTER_HQ2X
+   uint16_t outputHQ2x[width * height * 2 * 2];
+#endif
+#if VIDEO_FILTER == FILTER_HQ4X
+   uint16_t outputHQ4x[width * height * 4 * 4];
+#endif
 
    int y;
    for ( y = 0; y < height; y++ )
@@ -154,8 +173,22 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
       memcpy(dst, src, width * sizeof(uint16_t));
    }
 
+#if VIDEO_FILTER == FILTER_NONE
    if ( !driver.video->frame(driver.video_data, output, width, height) )
       video_active = false;
+#elif VIDEO_FILTER == FILTER_HQ2X
+   ProcessHQ2x(output, outputHQ2x);
+   if ( !driver.video->frame(driver.video_data, outputHQ2x, width * 2, height * 2) )
+      video_active = false;
+#elif VIDEO_FILTER == FILTER_HQ4X
+   ProcessHQ4x(output, outputHQ4x);
+   if ( !driver.video->frame(driver.video_data, outputHQ4x, width * 4, height * 4) )
+      video_active = false;
+#else
+   if ( !driver.video->frame(driver.video_data, output, width, height) )
+      video_active = false;
+#endif
+
 }
 
 static void audio_sample(uint16_t left, uint16_t right)

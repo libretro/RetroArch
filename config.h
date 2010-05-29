@@ -48,8 +48,8 @@
 ////////////////
 
 // Windowed
-static const float xscale = 3.0; // Real x res = 256 * xscale
-static const float yscale = 3.0; // Real y res = 224 * yscale
+static const float xscale = 4.0; // Real x res = 256 * xscale
+static const float yscale = 4.0; // Real y res = 224 * yscale
 
 // Fullscreen
 static bool fullscreen = false; // To start in Fullscreen on not
@@ -64,6 +64,15 @@ static const bool video_smooth = true;
 
 // On resize and fullscreen, rendering area will stay 8:7
 static const bool force_aspect = true; 
+
+/////////// Video filters
+#define FILTER_NONE 0
+#define FILTER_HQ2X 1
+#define FILTER_HQ4X 2
+////////////////////////
+
+// If you change this to something other than the HQ filters, make sure that you build the filter module in config.mak.
+#define VIDEO_FILTER FILTER_NONE
 
 
 ////////////////

@@ -200,7 +200,7 @@ static void* gl_init(video_info_t *video, input_driver_t **input)
    else
       glfwSwapInterval(0);
 
-   gl_buffer = malloc(256 * 256 * 2);
+   gl_buffer = malloc(256 * 256 * 2 * video->input_scale * video->input_scale);
    if ( !gl_buffer )
    {
       fprintf(stderr, "Couldn't allocate memory :<\n");
@@ -218,9 +218,9 @@ static void* gl_init(video_info_t *video, input_driver_t **input)
 
    glGenTextures(1, &texture);
    glBindTexture(GL_TEXTURE_2D, texture);
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, 256);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 256 * video->input_scale);
    glTexImage2D(GL_TEXTURE_2D,
-         0, GL_RGB, 256, 256, 0, GL_RGBA,
+         0, GL_RGB, 256 * video->input_scale, 256 * video->input_scale, 0, GL_RGBA,
          GL_UNSIGNED_SHORT_1_5_5_5_REV, gl_buffer);
 
    *input = (input_driver_t*)&input_glfw;

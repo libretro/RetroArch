@@ -2,7 +2,7 @@ include config.mak
 
 TARGET = ssnes
 
-SOURCE = ssnes.c 
+SOURCE = ssnes.c
 LIBS = -lsamplerate -lsnes
 
 ifeq ($(BUILD_RSOUND), 1)
@@ -20,6 +20,9 @@ endif
 ifeq ($(BUILD_OPENGL), 1)
    SOURCE += gl.c
    LIBS += -lglfw
+endif
+ifeq ($(BUILD_FILTER), 1)
+   SOURCE += hqflt/hq.c
 endif
 
 CFLAGS = -Wall -O2 -march=native -s
