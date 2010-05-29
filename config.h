@@ -26,22 +26,25 @@
 #include "libsnes.hpp"
 #include "driver.h"
 
-#define SAVE_STATE_KEY GLFW_KEY_F2
-#define LOAD_STATE_KEY GLFW_KEY_F4
-
-#define TOGGLE_FULLSCREEN 'F'
 
 
-//////////// Drivers
+
+///////////////// Drivers
 #define VIDEO_GL 0
+////////////////////////
 #define AUDIO_RSOUND 1
 #define AUDIO_OSS 2
 #define AUDIO_ALSA 3
+////////////////////////
 
+// Chooses which video and audio subsystem to use. Remember to update config.mak if you change these.
 #define VIDEO_DRIVER VIDEO_GL
 #define AUDIO_DRIVER AUDIO_ALSA
 
-static const bool force_aspect = true; // On resize and fullscreen, rendering area will stay 8:7
+
+////////////////
+// Video
+////////////////
 
 // Windowed
 static const float xscale = 3.0; // Real x res = 256 * xscale
@@ -54,13 +57,24 @@ static const unsigned fullscreen_y = 720;
 
 // Video VSYNC (recommended)
 static const bool vsync = true;
-static const bool video_smooth = true; // Smooths picture
 
+// Smooths picture
+static const bool video_smooth = true;
+
+// On resize and fullscreen, rendering area will stay 8:7
+static const bool force_aspect = true; 
+
+
+////////////////
 // Audio
-static const unsigned out_rate = 44100;
-static const unsigned in_rate = 31950; 
+////////////////
+
+// Output samplerate
+static const unsigned out_rate = 48000; 
+
 // Input samplerate from libSNES. 
 // Lower this if you are experiencing frequent audio dropouts and vsync is enabled.
+static const unsigned in_rate = 31950; 
 
 // Audio device. If NULL, will use defaults.
 static const char* audio_device = NULL;
@@ -68,22 +82,41 @@ static const char* audio_device = NULL;
 // Desired audio latency in ms.
 static const int out_latency = 64;
 
-// Keybinds
+
+
+
+////////////////////
+// Keybinds, Joypad
+////////////////////
+
+// To figure out which joypad buttons to use, check jstest or similar.
+
 static const struct snes_keybind snes_keybinds[] = {
-   { SNES_DEVICE_ID_JOYPAD_A, 'X', 1 },
-   { SNES_DEVICE_ID_JOYPAD_B, 'Z', 0 },
-   { SNES_DEVICE_ID_JOYPAD_X, 'S', 3 },
-   { SNES_DEVICE_ID_JOYPAD_Y, 'A', 2 },
-   { SNES_DEVICE_ID_JOYPAD_L, 'Q', 4 },
-   { SNES_DEVICE_ID_JOYPAD_R, 'W', 5 },
-   { SNES_DEVICE_ID_JOYPAD_LEFT, GLFW_KEY_LEFT, 12 },
-   { SNES_DEVICE_ID_JOYPAD_RIGHT, GLFW_KEY_RIGHT, 13 },
-   { SNES_DEVICE_ID_JOYPAD_UP, GLFW_KEY_UP, 10 },
-   { SNES_DEVICE_ID_JOYPAD_DOWN, GLFW_KEY_DOWN, 11 },
-   { SNES_DEVICE_ID_JOYPAD_START, GLFW_KEY_ENTER, 6 },
-   { SNES_DEVICE_ID_JOYPAD_SELECT, GLFW_KEY_RSHIFT, 14 },
+   // SNES button                 |   keyboard key   |   joypad button   |
+   { SNES_DEVICE_ID_JOYPAD_A,             'X',                 1 },
+   { SNES_DEVICE_ID_JOYPAD_B,             'Z',                 0 },
+   { SNES_DEVICE_ID_JOYPAD_X,             'S',                 3 },
+   { SNES_DEVICE_ID_JOYPAD_Y,             'A',                 2 },
+   { SNES_DEVICE_ID_JOYPAD_L,             'Q',                 4 },
+   { SNES_DEVICE_ID_JOYPAD_R,             'W',                 5 },
+   { SNES_DEVICE_ID_JOYPAD_LEFT,    GLFW_KEY_LEFT,             12 },
+   { SNES_DEVICE_ID_JOYPAD_RIGHT,   GLFW_KEY_RIGHT,            13 },
+   { SNES_DEVICE_ID_JOYPAD_UP,      GLFW_KEY_UP,               10 },
+   { SNES_DEVICE_ID_JOYPAD_DOWN,    GLFW_KEY_DOWN,             11 },
+   { SNES_DEVICE_ID_JOYPAD_START,   GLFW_KEY_ENTER,            6 },
+   { SNES_DEVICE_ID_JOYPAD_SELECT,  GLFW_KEY_RSHIFT,           14 },
    { -1 }
 };
+
+///// Save state
+#define SAVE_STATE_KEY GLFW_KEY_F2
+///// Load state
+#define LOAD_STATE_KEY GLFW_KEY_F4
+
+//// Toggles between fullscreen and windowed mode.
+#define TOGGLE_FULLSCREEN 'F'
+
+
 
 #endif
 
