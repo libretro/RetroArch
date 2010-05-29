@@ -212,6 +212,14 @@ int main(int argc, char *argv[])
       fprintf(stderr, "Usage: %s file\n", argv[0]);
       exit(1);
    }
+
+   FILE *file = fopen(argv[1], "rb");
+   if ( file == NULL )
+   {
+      fprintf(stderr, "Could not open file: \"%s\"\n", argv[1]);
+      exit(1);
+   }
+
    char savefile_name[strlen(argv[1]+5)];
    strcpy(savefile_name, argv[1]);
    strcat(savefile_name, ".sav");
@@ -225,10 +233,6 @@ int main(int argc, char *argv[])
    snes_set_input_poll(input_poll);
    snes_set_input_state(input_state);
 
-
-   FILE *file = fopen(argv[1], "rb");
-   if ( file == NULL )
-      exit(1);
 
    fseek(file, 0, SEEK_END);
    long length = ftell(file);
