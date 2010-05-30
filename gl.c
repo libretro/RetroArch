@@ -101,7 +101,8 @@ static void GLFWCALL resize(int width, int height)
 
    if ( keep_aspect )
    {
-      float desired_aspect = 256.0/224.0;
+      //float desired_aspect = 256.0/224.0;
+      float desired_aspect = 296.0/224.0;
       float in_aspect = (float)width / height;
 
       if ( (int)(in_aspect*100) > (int)(desired_aspect*100) )

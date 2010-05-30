@@ -114,7 +114,7 @@ static void init_video_input(void)
 #endif
 
    video_info_t video = {
-      .width = (fullscreen) ? fullscreen_x : (256 * xscale),
+      .width = (fullscreen) ? fullscreen_x : (296 * xscale),
       .height = (fullscreen) ? fullscreen_y : (224 * yscale),
       .fullscreen = fullscreen,
       .vsync = vsync,

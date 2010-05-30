@@ -48,7 +48,7 @@
 ////////////////
 
 // Windowed
-static const float xscale = 4.0; // Real x res = 256 * xscale
+static const float xscale = 4.0; // Real x res = 296 * xscale
 static const float yscale = 4.0; // Real y res = 224 * yscale
 
 // Fullscreen
@@ -62,7 +62,7 @@ static const bool vsync = true;
 // Smooths picture
 static const bool video_smooth = true;
 
-// On resize and fullscreen, rendering area will stay 8:7
+// On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 
 
 /////////// Video filters
