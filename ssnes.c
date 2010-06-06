@@ -22,7 +22,6 @@
 #include <libsnes.hpp>
 #include <stdio.h>
 #include <stdlib.h>
-#include <rsound.h>
 #include <string.h>
 #include "config.h"
 #include "driver.h"
