@@ -88,7 +88,7 @@ static void glfw_free_input(void *data)
    free(data);
 }
 
-static input_driver_t input_glfw = {
+static const input_driver_t input_glfw = {
    .poll = glfw_input_poll,
    .input_state = glfw_input_state,
    .free = glfw_free_input
@@ -171,7 +171,7 @@ static void gl_free(void *data)
    free(gl_buffer);
 }
 
-static void* gl_init(video_info_t *video, input_driver_t **input)
+static void* gl_init(video_info_t *video, const input_driver_t **input)
 {
    gl_t *foo = malloc(sizeof(gl_t));
    if ( foo == NULL )

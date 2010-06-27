@@ -61,7 +61,7 @@ typedef struct input_driver
 
 typedef struct video_driver
 {
-   void* (*init)(video_info_t *video, input_driver_t **input); 
+   void* (*init)(video_info_t *video, const input_driver_t **input); 
    // Should the video driver act as an input driver as well? :)
    bool (*frame)(void* data, const uint16_t* frame, int width, int height);
    void (*free)(void* data);

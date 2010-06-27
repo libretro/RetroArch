@@ -122,7 +122,7 @@ static void init_video_input(void)
       .input_scale = scale,
    };
 
-   driver.video_data = driver.video->init(&video, (input_driver_t**)&(driver.input));
+   driver.video_data = driver.video->init(&video, &(driver.input));
 
    if ( driver.video_data == NULL )
    {
@@ -155,16 +155,15 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if ( !video_active )
       return;
 
-   uint16_t output[width * height];
 #if VIDEO_FILTER == FILTER_HQ2X
    uint16_t outputHQ2x[width * height * 2 * 2];
-#endif
-#if VIDEO_FILTER == FILTER_HQ4X
+#elif VIDEO_FILTER == FILTER_HQ4X
    uint16_t outputHQ4x[width * height * 4 * 4];
+#else
+   uint16_t output[width * height];
 #endif
 
-   int y;
-   for ( y = 0; y < height; y++ )
+   for ( int y = 0; y < height; y++ )
    {
       const uint16_t *src = data + y * 1024;
       uint16_t *dst = output + y * width;
