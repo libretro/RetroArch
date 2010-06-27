@@ -151,7 +151,7 @@ static void uninit_video_input(void)
 }
 
 // Temporary hack. Needs to do some color space switching for some unknown reason. Worked in 0.064 without hack at least.
-#define USE_HACK 0
+#define USE_HACK 1
 static inline void process_frame (uint16_t * restrict out, const uint16_t * restrict in, unsigned width, unsigned height)
 {
    for ( int y = 0; y < height; y++ )
