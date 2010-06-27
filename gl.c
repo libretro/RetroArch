@@ -144,7 +144,7 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height)
 
    glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
 
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, frame);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, frame);
 
    glLoadIdentity();
    glColor3f(1,1,1);
@@ -221,7 +221,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    glBindTexture(GL_TEXTURE_2D, texture);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 256 * video->input_scale);
    glTexImage2D(GL_TEXTURE_2D,
-         0, GL_RGB, 256 * video->input_scale, 256 * video->input_scale, 0, GL_RGBA,
+         0, GL_RGB, 256 * video->input_scale, 256 * video->input_scale, 0, GL_BGRA,
          GL_UNSIGNED_SHORT_1_5_5_5_REV, gl_buffer);
 
    *input = &input_glfw;

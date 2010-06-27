@@ -46,7 +46,7 @@ uninstall: $(TARGET)
 	rm -rf $(PREFIX)/bin/$(TARGET)
 
 clean:
-	rm -rf $(OBJ)
+	rm -rf *.o hqflt/*.o
 	rm -rf $(TARGET)
 
 .PHONY: all install uninstall clean

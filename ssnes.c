@@ -150,8 +150,6 @@ static void uninit_video_input(void)
       driver.input->free(driver.input_data);
 }
 
-// Temporary hack. Needs to do some color space switching for some unknown reason. Worked in 0.064 without hack at least.
-#define USE_HACK 1
 static inline void process_frame (uint16_t * restrict out, const uint16_t * restrict in, unsigned width, unsigned height)
 {
    for ( int y = 0; y < height; y++ )
@@ -159,18 +157,12 @@ static inline void process_frame (uint16_t * restrict out, const uint16_t * rest
       const uint16_t *src = in + y * 1024;
       uint16_t *dst = out + y * width;
 
-#if USE_HACK
-      for ( int x = 0; x < width; x++ )
-      {
-         uint16_t color = src[x];
-         *dst++ = ((color >> 10) & 0x1f) | (color & 0x3e0) | ((color & 0x1f) << 10);
-      }
-#else
       memcpy(dst, src, width * sizeof(uint16_t));
-#endif
    }
 }
 
+// libsnes: 0.065
+// Format received is 16-bit 0RRRRRGGGGGBBBBB
 static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 {
    if ( !video_active )
