@@ -88,7 +88,7 @@ static void glfw_free_input(void *data)
    free(data);
 }
 
-static const input_driver_t input_glfw = {
+static input_driver_t input_glfw = {
    .poll = glfw_input_poll,
    .input_state = glfw_input_state,
    .free = glfw_free_input
@@ -224,7 +224,7 @@ static void* gl_init(video_info_t *video, input_driver_t **input)
          0, GL_RGB, 256 * video->input_scale, 256 * video->input_scale, 0, GL_RGBA,
          GL_UNSIGNED_SHORT_1_5_5_5_REV, gl_buffer);
 
-   *input = (input_driver_t*)&input_glfw;
+   *input = &input_glfw;
    return foo;
 }
 

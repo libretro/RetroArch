@@ -329,7 +329,7 @@ int main(int argc, char *argv[])
 
    write_state(savefile_name, serial_data, serial_size);
 
-   snes_unload();
+   snes_unload_cartridge();
    snes_term();
 
    uninit_drivers();

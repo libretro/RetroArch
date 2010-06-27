@@ -25,7 +25,7 @@ ifeq ($(BUILD_FILTER), 1)
    SOURCE += hqflt/hq.c
 endif
 
-CFLAGS = -Wall -O3 -fomit-frame-pointer -march=native -s
+CFLAGS = -Wall -O3 -march=native -std=c99
 
 OBJ = ssnes.o
 

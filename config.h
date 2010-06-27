@@ -29,7 +29,6 @@
 
 
 
-
 ///////////////// Drivers
 #define VIDEO_GL 0
 ////////////////////////
@@ -80,20 +79,20 @@ static const bool force_aspect = true;
 ////////////////
 
 // Output samplerate
-static const unsigned out_rate = 48000; 
+static const unsigned out_rate = 44100; 
 
 // Input samplerate from libSNES. 
-// Lower this if you are experiencing frequent audio dropouts and vsync is enabled.
+// Lower this (slightly) if you are experiencing frequent audio dropouts and vsync is enabled.
 static const unsigned in_rate = 31950; 
 
-// Audio device. If NULL, will use defaults.
+// Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults.
 static const char* audio_device = NULL;
 
-// Desired audio latency in ms.
+// Desired audio latency in milliseconds. Might not be honored if driver can't provide given latency.
 static const int out_latency = 64;
 
 // Defines the quality (and cpu reqirements) of samplerate conversion.
-#define SAMPLERATE_QUALITY SRC_SINC_MEDIUM_QUALITY
+#define SAMPLERATE_QUALITY SRC_SINC_FASTEST
 
 
 
