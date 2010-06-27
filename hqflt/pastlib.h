@@ -36,19 +36,19 @@ typedef uint16_t pixel;
  * guard-bits and masking.
  */
 
-static __inline__ uint32_t RGBUnpack(pixel i) {
+static inline uint32_t RGBUnpack(pixel i) {
 	uint32_t o = i;
 	o = (o * 0x10001);
 	o = o & 0x03E07C1F;
 	return o;
 }
-static __inline__ pixel RGBPack(uint32_t x) {
+static inline pixel RGBPack(uint32_t x) {
 	x &= 0x03E07C1F;
 	x |= (x >> 16);
 	return x;
 }
 
-void ProcessHQ2x(const pixel *inbuffer, pixel *outbuffer);
-void ProcessHQ4x(const pixel *inbuffer, pixel *outbuffer);
+void ProcessHQ2x(const pixel * restrict inbuffer, pixel * restrict outbuffer);
+void ProcessHQ4x(const pixel * restrict inbuffer, pixel * restrict outbuffer);
 
 #endif /* __PAST_LIBRARY_H */

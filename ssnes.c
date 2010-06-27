@@ -150,6 +150,27 @@ static void uninit_video_input(void)
       driver.input->free(driver.input_data);
 }
 
+// Temporary hack. Needs to do some color space switching for some unknown reason. Worked in 0.064 without hack at least.
+#define USE_HACK 0
+static inline void process_frame (uint16_t * restrict out, const uint16_t * restrict in, unsigned width, unsigned height)
+{
+   for ( int y = 0; y < height; y++ )
+   {
+      const uint16_t *src = in + y * 1024;
+      uint16_t *dst = out + y * width;
+
+#if USE_HACK
+      for ( int x = 0; x < width; x++ )
+      {
+         uint16_t color = src[x];
+         *dst++ = ((color >> 10) & 0x1f) | (color & 0x3e0) | ((color & 0x1f) << 10);
+      }
+#else
+      memcpy(dst, src, width * sizeof(uint16_t));
+#endif
+   }
+}
+
 static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 {
    if ( !video_active )
@@ -159,17 +180,10 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    uint16_t outputHQ2x[width * height * 2 * 2];
 #elif VIDEO_FILTER == FILTER_HQ4X
    uint16_t outputHQ4x[width * height * 4 * 4];
-#else
-   uint16_t output[width * height];
 #endif
+   uint16_t output[width * height];
 
-   for ( int y = 0; y < height; y++ )
-   {
-      const uint16_t *src = data + y * 1024;
-      uint16_t *dst = output + y * width;
-
-      memcpy(dst, src, width * sizeof(uint16_t));
-   }
+   process_frame(output, data, width, height);
 
 #if VIDEO_FILTER == FILTER_NONE
    if ( !driver.video->frame(driver.video_data, output, width, height) )
@@ -278,13 +292,13 @@ int main(int argc, char *argv[])
    if ( rom_buf == NULL )
    {
       fprintf(stderr, "SSNES [ERROR] :: Couldn't allocate memory!\n");
-      exit(1);
+      goto error;
    }
 
    if ( fread(rom_buf, 1, length, file) < length )
    {
       fprintf(stderr, "SSNES [ERROR] :: Didn't read whole file.\n");
-      exit(1);
+      goto error;
    }
 
    fclose(file);
@@ -295,6 +309,14 @@ int main(int argc, char *argv[])
 
    unsigned serial_size = snes_serialize_size();
    uint8_t *serial_data = malloc(serial_size);
+
+   if ( serial_size > (unsigned)length )
+   {
+      fprintf(stderr, "SSNES [ERROR] :: Length of save file does match size given by libsnes.\n");
+      fprintf(stderr, "\tserial_size = %u, length = %u\n", serial_size, (unsigned)length);
+      goto error;
+   }
+
    snes_serialize(serial_data, serial_size);
 
    load_state(savefile_name, serial_data, serial_size);
@@ -330,10 +352,16 @@ int main(int argc, char *argv[])
 
    snes_unload_cartridge();
    snes_term();
-
    uninit_drivers();
 
    return 0;
+
+error:
+   snes_unload_cartridge();
+   snes_term();
+   uninit_drivers();
+
+   return 1;
 }
 
 static void write_state(const char* path, uint8_t* data, size_t size)

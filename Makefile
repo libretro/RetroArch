@@ -2,37 +2,42 @@ include config.mk
 
 TARGET = ssnes
 
-SOURCE = ssnes.c
+OBJ = ssnes.o
 LIBS = -lsamplerate -lsnes
 
 ifeq ($(BUILD_RSOUND), 1)
-   SOURCE += rsound.c
+   OBJ += rsound.o
    LIBS += -lrsound
 endif
 ifeq ($(BUILD_OSS), 1)
-   SOURCE += oss.c
+   OBJ += oss.o
 endif
 ifeq ($(BUILD_ALSA), 1)
-   SOURCE += alsa.c
+   OBJ += alsa.o
    LIBS += -lasound
 endif
 
 ifeq ($(BUILD_OPENGL), 1)
-   SOURCE += gl.c
+   OBJ += gl.o
    LIBS += -lglfw
 endif
 ifeq ($(BUILD_FILTER), 1)
-   SOURCE += hqflt/hq.c
+   OBJ += hqflt/hq.o
 endif
 
 CFLAGS = -Wall -O3 -march=native -std=c99
 
-OBJ = ssnes.o
 
 
+all: $(TARGET) 
 
-all:
-	$(CC) $(CFLAGS) -o $(TARGET) $(SOURCE) $(LIBS)
+ssnes: $(OBJ)
+	@$(CC) -o $@ $(OBJ) $(LIBS)
+	@echo "LD $@"
+
+%.o: %.c config.h config.mk
+	@$(CC) $(CFLAGS) -c -o $@ $<
+	@echo "CC $<"
 
 install: $(TARGET)
 	install -m755 $(TARGET) $(PREFIX)/bin 
@@ -43,3 +48,5 @@ uninstall: $(TARGET)
 clean:
 	rm -rf $(OBJ)
 	rm -rf $(TARGET)
+
+.PHONY: all install uninstall clean

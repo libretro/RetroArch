@@ -261,7 +261,7 @@ uint8_t lastLineDiffs[__PAST_LIBRARY_WIDTH];
 
 #define RotatePattern(x) ((((x) & 0x777) << 1) | (((x) & 0x888) >> 3))
 
-void ProcessHQ2x(const pixel *in, pixel *out) {
+void ProcessHQ2x(const pixel * restrict in, pixel * restrict out) {
 	signed int y, x;
 	unsigned int pattern, newpattern;
 	uint32_t pixels[9];
@@ -377,7 +377,7 @@ void ProcessHQ2x(const pixel *in, pixel *out) {
 	} while (y >= 0);
 }
 
-void ProcessHQ4x(const pixel *in, pixel *out) {
+void ProcessHQ4x(const pixel * restrict in, pixel * restrict out) {
 	signed int y, x;
 	unsigned int pattern, newpattern;
 	uint32_t pixels[9];
