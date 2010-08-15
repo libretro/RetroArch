@@ -66,8 +66,9 @@ static void init_audio(void);
 static void uninit_audio(void);
 
 static void load_state(const char* path, uint8_t* data, size_t size);
-static void write_state(const char* path, uint8_t* data, size_t size);
-static void copy_file(const char* path_out, const char* path_in);
+static void write_file(const char* path, uint8_t* data, size_t size);
+static void load_save_file(const char* path, int type);
+static void save_file(const char* path, int type);
 
 static void init_drivers(void)
 {
@@ -263,20 +264,18 @@ int main(int argc, char *argv[])
 
    const char *statefile_tok = NULL;
    char statefile_name[strlen(argv[1])+strlen("state")+1];
-   char backup_statefile_name[strlen(argv[1])+strlen("state.bak")+1];
-   char savefile_name[strlen(argv[1])+strlen("rtc")+1];
+   char savefile_name_rtc[strlen(argv[1])+strlen("rtc")+1];
+   char savefile_name_srm[strlen(argv[1])+strlen("srm")+1];
 
    statefile_tok = strtok(argv[1], ".");
    strcpy(statefile_name, statefile_tok);
    strcat(statefile_name, ".state");
 
-   strcpy(savefile_name, statefile_tok);
-   strcat(savefile_name, ".rtc");
-
-   strcpy(backup_statefile_name, statefile_name);
-   strcat(backup_statefile_name, ".bak");
-
-   //copy_file(backup_statefile_name, statefile_name);
+   
+   strcpy(savefile_name_rtc, statefile_tok);
+   strcat(savefile_name_rtc, ".rtc");
+   strcpy(savefile_name_srm, statefile_tok);
+   strcat(savefile_name_srm, ".srm");
 
    init_drivers();
 
@@ -326,10 +325,8 @@ int main(int argc, char *argv[])
       goto error;
    }
 
-   snes_serialize(serial_data, serial_size);
-
-   load_state(statefile_name, serial_data, serial_size);
-   snes_reset();
+   load_save_file(savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
+   load_save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
 
    ///// TODO: Modular friendly!!!
    for(;;)
@@ -341,7 +338,7 @@ int main(int argc, char *argv[])
 
       if ( glfwGetKey( SAVE_STATE_KEY ))
       {
-         write_state(statefile_name, serial_data, serial_size);
+         write_file(statefile_name, serial_data, serial_size);
       }
 
       else if ( glfwGetKey( LOAD_STATE_KEY ) )
@@ -357,17 +354,8 @@ int main(int argc, char *argv[])
       snes_run();
    }
 
-   size_t rtc_size = snes_get_memory_size(SNES_MEMORY_CARTRIDGE_RTC);
-   uint8_t *rtc_data = snes_get_memory_data(SNES_MEMORY_CARTRIDGE_RTC);
-
-   if ( !rtc_data && rtc_size > 0 )
-      write_state(savefile_name, rtc_data, rtc_size);
-   else if ( rtc_size == 0 )
-      fprintf(stderr, "SSNES [WARN]: RTC size is 0.\n");
-   else
-      fprintf(stderr, "SSNES [WARN]: Could not fetch rtc data.\n");
-
-   write_state(statefile_name, serial_data, serial_size);
+   save_file(savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
+   save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
 
    snes_unload_cartridge();
    snes_term();
@@ -383,7 +371,7 @@ error:
    return 1;
 }
 
-static void write_state(const char* path, uint8_t* data, size_t size)
+static void write_file(const char* path, uint8_t* data, size_t size)
 {
    FILE *file = fopen(path, "wb");
    if ( file != NULL )
@@ -414,53 +402,41 @@ static void load_state(const char* path, uint8_t* data, size_t size)
    }
 }
 
-static void copy_file(const char *path_out, const char *path_in)
+static void load_save_file(const char* path, int type)
 {
-   FILE *file_in;
-   FILE *file_out;
-   char *buf = NULL;
+   FILE *file;
 
-   size_t len;
-
-   file_in = fopen(path_in, "rb");
-   file_out = fopen(path_out, "wb");
-
-   if ( !file_in || !file_out )
+   file = fopen(path, "rb");
+   if ( !file )
    {
-      fprintf(stderr, "SSNES [ERROR]: Could not open files for output.\n");
-      goto end;
+      return;
    }
 
-   fseek(file_in, SEEK_END, 0);
-   len = ftell(file_in);
-   rewind(file_in);
+   size_t size = snes_get_memory_size(type);
+   uint8_t *data = snes_get_memory_data(type);
 
-   buf = malloc(len);
-   if (!buf)
+   if (size == 0 || !data)
    {
-      fprintf(stderr, "SSNES [ERROR]: Could not allocate memory.\n");
-      goto end;
+      fclose(file);
+      return;
    }
 
-   int rc = fread(buf, 1, len, file_in);
-   if ( rc != len )
+   int rc = fread(data, 1, size, file);
+   if ( rc != size )
    {
-      fprintf(stderr, "SSNES [ERROR]: Could not read whole file.\n");
-      goto end;
+      fprintf(stderr, "SSNES [ERROR]: Couldn't load save file.\n");
    }
 
-   rc = fwrite(buf, 1, len, file_out);
-   if ( rc != len )
-   {
-      fprintf(stderr, "SSNES [ERROR]: Could not write whole file.\n");
-      goto end;
-   }
+   fprintf(stderr, "SSNES: Loaded save file: \"%s\"\n", path);
 
-end:
-   if (file_in)
-      fclose(file_in);
-   if (file_out)
-      fclose(file_out);
-   free(buf);
+   fclose(file);
 }
 
+static void save_file(const char* path, int type)
+{
+   size_t size = snes_get_memory_size(type);
+   uint8_t *data = snes_get_memory_data(type);
+
+   if ( data && size > 0 )
+      write_file(path, data, size);
+}
