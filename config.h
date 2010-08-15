@@ -39,7 +39,7 @@
 
 // Chooses which video and audio subsystem to use. Remember to update config.mk if you change these.
 #define VIDEO_DRIVER VIDEO_GL
-#define AUDIO_DRIVER AUDIO_RSOUND
+#define AUDIO_DRIVER AUDIO_ALSA
 
 
 ////////////////
@@ -52,8 +52,8 @@ static const float yscale = 4.0; // Real y res = 224 * yscale
 
 // Fullscreen
 static bool fullscreen = false; // To start in Fullscreen or not
-static const unsigned fullscreen_x = 1920;
-static const unsigned fullscreen_y = 1200;
+static const unsigned fullscreen_x = 1280;
+static const unsigned fullscreen_y = 720;
 
 // Video VSYNC (recommended)
 static const bool vsync = true;
