@@ -43,7 +43,7 @@ static driver_t driver = {
 #if VIDEO_DRIVER == VIDEO_GL
    .video = &video_gl,
 #else
-#error "Define a video driver in config.h"
+#error "Define a valid video driver in config.h"
 #endif
 
 #if AUDIO_DRIVER == AUDIO_RSOUND
@@ -53,7 +53,7 @@ static driver_t driver = {
 #elif AUDIO_DRIVER == AUDIO_ALSA
    .audio = &audio_alsa,
 #else
-#error "Define an audio driver in config.h"
+#error "Define a valid audio driver in config.h"
 #endif
 };
 
@@ -67,6 +67,7 @@ static void uninit_audio(void);
 
 static void load_state(const char* path, uint8_t* data, size_t size);
 static void write_state(const char* path, uint8_t* data, size_t size);
+static void copy_file(const char* path_out, const char* path_in);
 
 static void init_drivers(void)
 {
@@ -195,34 +196,36 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 
 }
 
+#define SRC_SAMPLES 64
+
 static void audio_sample(uint16_t left, uint16_t right)
 {
    if ( !audio_active )
       return;
 
-   static float data[256];
+   static float data[SRC_SAMPLES];
    static int data_ptr = 0;
 
    data[data_ptr++] = (float)(*(int16_t*)&left)/0x7FFF; 
    data[data_ptr++] = (float)(*(int16_t*)&right)/0x7FFF;
 
-   if ( data_ptr == 256 )
+   if ( data_ptr == SRC_SAMPLES )
    {
-      float outsamples[2048];
-      int16_t temp_outsamples[4096];
+      float outsamples[SRC_SAMPLES * 16];
+      int16_t temp_outsamples[SRC_SAMPLES * 16];
 
       SRC_DATA src_data;
 
       src_data.data_in = data;
       src_data.data_out = outsamples;
-      src_data.input_frames = 128;
-      src_data.output_frames = 1024;
+      src_data.input_frames = SRC_SAMPLES / 2;
+      src_data.output_frames = SRC_SAMPLES * 8;
       src_data.end_of_input = 0;
       src_data.src_ratio = (double)out_rate / (double)in_rate;
 
       src_process(source, &src_data);
 
-      src_float_to_short_array(outsamples, temp_outsamples, src_data.output_frames_gen * 4);
+      src_float_to_short_array(outsamples, temp_outsamples, src_data.output_frames_gen * 2);
 
       if ( driver.audio->write(driver.audio_data, temp_outsamples, src_data.output_frames_gen * 4) < 0 )
          audio_active = false;
@@ -250,16 +253,30 @@ int main(int argc, char *argv[])
       exit(1);
    }
 
+   fprintf(stderr, "SSNES: Opening file: \"%s\"\n", argv[1]);
    FILE *file = fopen(argv[1], "rb");
    if ( file == NULL )
    {
-      fprintf(stderr, "Could not open file: \"%s\"\n", argv[1]);
+      fprintf(stderr, "SSNES [ERROR]: Could not open file: \"%s\"\n", argv[1]);
       exit(1);
    }
 
-   char savefile_name[strlen(argv[1]+5)];
-   strcpy(savefile_name, argv[1]);
-   strcat(savefile_name, ".sav");
+   const char *statefile_tok = NULL;
+   char statefile_name[strlen(argv[1])+strlen("state")+1];
+   char backup_statefile_name[strlen(argv[1])+strlen("state.bak")+1];
+   char savefile_name[strlen(argv[1])+strlen("rtc")+1];
+
+   statefile_tok = strtok(argv[1], ".");
+   strcpy(statefile_name, statefile_tok);
+   strcat(statefile_name, ".state");
+
+   strcpy(savefile_name, statefile_tok);
+   strcat(savefile_name, ".rtc");
+
+   strcpy(backup_statefile_name, statefile_name);
+   strcat(backup_statefile_name, ".bak");
+
+   //copy_file(backup_statefile_name, statefile_name);
 
    init_drivers();
 
@@ -311,7 +328,7 @@ int main(int argc, char *argv[])
 
    snes_serialize(serial_data, serial_size);
 
-   load_state(savefile_name, serial_data, serial_size);
+   load_state(statefile_name, serial_data, serial_size);
    snes_reset();
 
    ///// TODO: Modular friendly!!!
@@ -324,11 +341,11 @@ int main(int argc, char *argv[])
 
       if ( glfwGetKey( SAVE_STATE_KEY ))
       {
-         write_state(savefile_name, serial_data, serial_size);
+         write_state(statefile_name, serial_data, serial_size);
       }
 
       else if ( glfwGetKey( LOAD_STATE_KEY ) )
-         load_state(savefile_name, serial_data, serial_size);
+         load_state(statefile_name, serial_data, serial_size);
 
       else if ( glfwGetKey( TOGGLE_FULLSCREEN ) )
       {
@@ -340,7 +357,17 @@ int main(int argc, char *argv[])
       snes_run();
    }
 
-   write_state(savefile_name, serial_data, serial_size);
+   size_t rtc_size = snes_get_memory_size(SNES_MEMORY_CARTRIDGE_RTC);
+   uint8_t *rtc_data = snes_get_memory_data(SNES_MEMORY_CARTRIDGE_RTC);
+
+   if ( !rtc_data && rtc_size > 0 )
+      write_state(savefile_name, rtc_data, rtc_size);
+   else if ( rtc_size == 0 )
+      fprintf(stderr, "SSNES [WARN]: RTC size is 0.\n");
+   else
+      fprintf(stderr, "SSNES [WARN]: Could not fetch rtc data.\n");
+
+   write_state(statefile_name, serial_data, serial_size);
 
    snes_unload_cartridge();
    snes_term();
@@ -361,7 +388,7 @@ static void write_state(const char* path, uint8_t* data, size_t size)
    FILE *file = fopen(path, "wb");
    if ( file != NULL )
    {
-      //fprintf(stderr, "SSNES: Saving state. Size: %d bytes.\n", (int)size);
+      fprintf(stderr, "SSNES: Saving state \"%s\". Size: %d bytes.\n", path, (int)size);
       snes_serialize(data, size);
       if ( fwrite(data, 1, size, file) != size )
          fprintf(stderr, "SSNES [WARN]: Did not save state properly.");
@@ -371,6 +398,7 @@ static void write_state(const char* path, uint8_t* data, size_t size)
 
 static void load_state(const char* path, uint8_t* data, size_t size)
 {
+   fprintf(stderr, "SSNES: Loading state: \"%s\".\n", path);
    FILE *file = fopen(path, "rb");
    if ( file != NULL )
    {
@@ -380,4 +408,59 @@ static void load_state(const char* path, uint8_t* data, size_t size)
       fclose(file);
       snes_unserialize(data, size);
    }
+   else
+   {
+      fprintf(stderr, "SSNES: No state file found. Will create new.\n");
+   }
 }
+
+static void copy_file(const char *path_out, const char *path_in)
+{
+   FILE *file_in;
+   FILE *file_out;
+   char *buf = NULL;
+
+   size_t len;
+
+   file_in = fopen(path_in, "rb");
+   file_out = fopen(path_out, "wb");
+
+   if ( !file_in || !file_out )
+   {
+      fprintf(stderr, "SSNES [ERROR]: Could not open files for output.\n");
+      goto end;
+   }
+
+   fseek(file_in, SEEK_END, 0);
+   len = ftell(file_in);
+   rewind(file_in);
+
+   buf = malloc(len);
+   if (!buf)
+   {
+      fprintf(stderr, "SSNES [ERROR]: Could not allocate memory.\n");
+      goto end;
+   }
+
+   int rc = fread(buf, 1, len, file_in);
+   if ( rc != len )
+   {
+      fprintf(stderr, "SSNES [ERROR]: Could not read whole file.\n");
+      goto end;
+   }
+
+   rc = fwrite(buf, 1, len, file_out);
+   if ( rc != len )
+   {
+      fprintf(stderr, "SSNES [ERROR]: Could not write whole file.\n");
+      goto end;
+   }
+
+end:
+   if (file_in)
+      fclose(file_in);
+   if (file_out)
+      fclose(file_out);
+   free(buf);
+}
+
