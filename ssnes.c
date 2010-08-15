@@ -311,19 +311,16 @@ int main(int argc, char *argv[])
 
    fclose(file);
 
-   snes_load_cartridge_normal(NULL, rom_buf, length);
+   if (!snes_load_cartridge_normal(NULL, rom_buf, length))
+   {
+      fprintf(stderr, "SSNES [ERROR] :: ROM file \"%s\" is not valid!\n", argv[1]);;
+      goto error;
+   }
 
    free(rom_buf);
 
    unsigned serial_size = snes_serialize_size();
    uint8_t *serial_data = malloc(serial_size);
-
-   if ( serial_size > (unsigned)length )
-   {
-      fprintf(stderr, "SSNES [ERROR] :: Length of save file does match size given by libsnes.\n");
-      fprintf(stderr, "\tserial_size = %u, length = %u\n", serial_size, (unsigned)length);
-      goto error;
-   }
 
    load_save_file(savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
    load_save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
