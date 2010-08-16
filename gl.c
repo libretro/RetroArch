@@ -73,8 +73,12 @@ static int16_t glfw_input_state(void *data, const struct snes_keybind *snes_keyb
    {
       if ( snes_keybinds[i].id == SNES_FAST_FORWARD_KEY )
       {
-         if ( snes_keybinds[i].joykey < joypad_buttons )
-            set_fast_forward_button(buttons[snes_keybinds[i].joykey] == GLFW_PRESS);
+         bool pressed = false;
+         if ( glfwGetKey(snes_keybinds[i].key) )
+            pressed = true;
+         else if ( snes_keybinds[i].joykey < joypad_buttons && buttons[snes_keybinds[i].joykey] == GLFW_PRESS )
+            pressed = true;
+         set_fast_forward_button(pressed);
          break;
       }
    }
