@@ -40,7 +40,7 @@
 
 // Chooses which video and audio subsystem to use. Remember to update config.mk if you change these.
 #define VIDEO_DRIVER VIDEO_GL
-#define AUDIO_DRIVER AUDIO_RSOUND
+#define AUDIO_DRIVER AUDIO_ALSA
 
 
 ////////////////
@@ -80,7 +80,7 @@ static const bool force_aspect = true;
 ////////////////
 
 // Output samplerate
-static const unsigned out_rate = 48000; 
+static const unsigned out_rate = 44100; 
 
 // Input samplerate from libSNES. 
 // Lower this (slightly) if you are experiencing frequent audio dropouts and vsync is enabled.
