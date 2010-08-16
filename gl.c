@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include "libsnes.hpp"
 #include <stdio.h>
+#include <sys/time.h>
 
 static GLuint texture;
 static uint8_t *gl_buffer;
@@ -29,7 +30,7 @@ static GLuint tex_filter;
 
 typedef struct gl
 {
-   int foo;
+   bool vsync;
 } gl_t;
 
 
@@ -68,11 +69,26 @@ static int16_t glfw_input_state(void *data, const struct snes_keybind *snes_keyb
       glfwGetJoystickButtons(joypad_id, buttons, joypad_buttons);
    }
 
+   // Finds fast forwarding state.
+   for ( i = 0; snes_keybinds[i].id != -1; i++ )
+   {
+      if ( snes_keybinds[i].id == SNES_FAST_FORWARD_KEY )
+      {
+         bool pressed = false;
+         if ( glfwGetKey(snes_keybinds[i].key) )
+            pressed = true;
+         else if ( snes_keybinds[i].joykey < joypad_buttons && buttons[snes_keybinds[i].joykey] == GLFW_PRESS )
+            pressed = true;
+         set_fast_forward_button(pressed);
+         break;
+      }
+   }
+
    for ( i = 0; snes_keybinds[i].id != -1; i++ )
    {
       if ( snes_keybinds[i].id == (int)id )
       {
-         if ( glfwGetKey(snes_keybinds[i].key ))
+         if ( glfwGetKey(snes_keybinds[i].key) )
             return 1;
          
          if ( snes_keybinds[i].joykey < joypad_buttons && buttons[snes_keybinds[i].joykey] == GLFW_PRESS )
@@ -128,6 +144,12 @@ static void GLFWCALL resize(int width, int height)
    glLoadIdentity();
 }
 
+static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)
+{
+   float time = new_tv->tv_sec - tv->tv_sec + (new_tv->tv_usec - tv->tv_usec)/1000000.0;
+   return frames/time;
+}
+
 static bool gl_frame(void *data, const uint16_t* frame, int width, int height)
 {
    (void)data;
@@ -160,6 +182,31 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height)
 
    glEnd();
 
+   // Shows FPS in taskbar.
+   static int frames = 0;
+   static struct timeval tv;
+   struct timeval new_tv;
+   
+   if (frames == 0)
+      gettimeofday(&tv, NULL);
+
+   if ((frames % 60) == 0 && frames > 0)
+   {
+      gettimeofday(&new_tv, NULL);
+      struct timeval tmp_tv = {
+         .tv_sec = tv.tv_sec,
+         .tv_usec = tv.tv_usec
+      };
+      gettimeofday(&tv, NULL);
+      char tmpstr[256] = {0};
+
+      float fps = tv_to_fps(&tmp_tv, &new_tv, 60);
+
+      snprintf(tmpstr, sizeof(tmpstr) - 1, "SSNES || FPS: %6.1f || Frames: %d", fps, frames);
+      glfwSetWindowTitle(tmpstr);
+   }
+   frames++;
+
    glfwSwapBuffers();
 
    return true;
@@ -171,10 +218,22 @@ static void gl_free(void *data)
    free(gl_buffer);
 }
 
+static void gl_set_nonblock_state(void *data, bool state)
+{
+   gl_t *gl = data;
+   if (gl->vsync)
+   {
+      if (state)
+         glfwSwapInterval(0);
+      else
+         glfwSwapInterval(1);
+   }
+}
+
 static void* gl_init(video_info_t *video, const input_driver_t **input)
 {
-   gl_t *foo = malloc(sizeof(gl_t));
-   if ( foo == NULL )
+   gl_t *gl = malloc(sizeof(gl_t));
+   if ( gl == NULL )
       return NULL;
 
    keep_aspect = video->force_aspect;
@@ -200,6 +259,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
       glfwSwapInterval(1); // Force vsync
    else
       glfwSwapInterval(0);
+   gl->vsync = video->vsync;
 
    gl_buffer = malloc(256 * 256 * 2 * video->input_scale * video->input_scale);
    if ( !gl_buffer )
@@ -225,12 +285,13 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
          GL_UNSIGNED_SHORT_1_5_5_5_REV, gl_buffer);
 
    *input = &input_glfw;
-   return foo;
+   return gl;
 }
 
 const video_driver_t video_gl = {
    .init = gl_init,
    .frame = gl_frame,
+   .set_nonblock_state = gl_set_nonblock_state,
    .free = gl_free
 };
    
