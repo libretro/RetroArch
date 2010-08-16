@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <errno.h>
 
 static void* __oss_init(const char* device, int rate, int latency)
 {
@@ -86,7 +87,11 @@ static ssize_t __oss_write(void* data, const void* buf, size_t size)
 
    ssize_t ret;
    if ( (ret = write(*fd, buf, size)) <= 0 )
+   {
+      if ( (fcntl(*fd, F_GETFL) & O_NONBLOCK) && errno == EAGAIN )
+         return 0;
       return -1;
+   }
 
    return ret;
 }
@@ -103,6 +108,15 @@ static bool __oss_start(void *data)
    return true;
 }
 
+static void __oss_set_nonblock_state(void *data, bool state)
+{
+   int *fd = data;
+   if (state)
+      fcntl(*fd, F_SETFL, fcntl(*fd, F_GETFL) | O_NONBLOCK);
+   else
+      fcntl(*fd, F_SETFL, fcntl(*fd, F_GETFL) & (~O_NONBLOCK));
+}
+
 static void __oss_free(void *data)
 {
    int *fd = data;
@@ -117,6 +131,7 @@ const audio_driver_t audio_oss = {
    .write = __oss_write,
    .stop = __oss_stop,
    .start = __oss_start,
+   .set_nonblock_state = __oss_set_nonblock_state,
    .free = __oss_free
 };
 

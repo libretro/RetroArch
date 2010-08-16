@@ -244,7 +244,10 @@ static void audio_sample(uint16_t left, uint16_t right)
       src_float_to_short_array(outsamples, temp_outsamples, src_data.output_frames_gen * 2);
 
       if ( driver.audio->write(driver.audio_data, temp_outsamples, src_data.output_frames_gen * 4) < 0 )
+      {
+         fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
          audio_active = false;
+      }
 
       data_ptr = 0;
    }

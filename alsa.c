@@ -27,6 +27,7 @@
 typedef struct alsa
 {
    snd_pcm_t *pcm;
+   bool nonblock;
 } alsa_t;
 
 static void* __alsa_init(const char* device, int rate, int latency)
@@ -125,7 +126,8 @@ static ssize_t __alsa_write(void* data, const void* buf, size_t size)
 
       return size;
    }
-
+   else if ( alsa->nonblock && frames == -EAGAIN )
+      return 0;
    else if ( frames < 0 )
       return -1;
 
@@ -134,9 +136,14 @@ static ssize_t __alsa_write(void* data, const void* buf, size_t size)
 
 static bool __alsa_stop(void *data)
 {
-/*   int *fd = data;
-   ioctl(*fd, SNDCTL_DSP_RESET, 0);*/
    return true;
+}
+
+static void __alsa_set_nonblock_state(void *data, bool state)
+{
+   alsa_t *alsa = data;
+   snd_pcm_nonblock(alsa->pcm, state);
+   alsa->nonblock = state;
 }
 
 static bool __alsa_start(void *data)
@@ -163,6 +170,7 @@ const audio_driver_t audio_alsa = {
    .write = __alsa_write,
    .stop = __alsa_stop,
    .start = __alsa_start,
+   .set_nonblock_state = __alsa_set_nonblock_state,
    .free = __alsa_free
 };
 
