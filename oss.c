@@ -23,6 +23,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdio.h>
 
 static void* __oss_init(const char* device, int rate, int latency)
 {
