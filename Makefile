@@ -16,6 +16,10 @@ ifeq ($(BUILD_ALSA), 1)
    OBJ += alsa.o
    LIBS += -lasound
 endif
+ifeq ($(BUILD_ROAR), 1)
+   OBJ += roar.o
+   LIBS += -lroar
+endif
 
 ifeq ($(BUILD_OPENGL), 1)
    OBJ += gl.o
@@ -25,7 +29,7 @@ ifeq ($(BUILD_FILTER), 1)
    OBJ += hqflt/hq.o
 endif
 
-CFLAGS = -Wall -O3 -march=native -std=c99
+CFLAGS = -Wall -O3 -march=native -std=gnu99
 
 
 
