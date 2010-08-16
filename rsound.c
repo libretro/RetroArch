@@ -25,6 +25,7 @@ typedef struct rsd
    rsound_t *rd;
    int latency;
    int rate;
+   int nonblock;
 } rsd_t;
 
 static void* __rsd_init(const char* device, int rate, int latency)
@@ -74,6 +75,9 @@ static ssize_t __rsd_write(void* data, const void* buf, size_t size)
 {
    rsd_t *rsd = data;
 
+   if ( rsd_delay_ms(rsd->rd) > rsd->latency && rsd->nonblock )
+      return 0;
+
    if ( size == 0 )
       return 0;
 
@@ -101,6 +105,12 @@ static bool __rsd_stop(void *data)
    return true;
 }
 
+static void __rsd_set_nonblock_state(void *data, bool state)
+{
+   rsd_t *rsd = data;
+   rsd->nonblock = state;
+}
+
 static bool __rsd_start(void *data)
 {
    rsd_t *rsd = data;
@@ -124,6 +134,7 @@ const audio_driver_t audio_rsound = {
    .write = __rsd_write,
    .stop = __rsd_stop,
    .start = __rsd_start,
+   .set_nonblock_state = __rsd_set_nonblock_state,
    .free = __rsd_free
 };
 

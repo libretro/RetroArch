@@ -24,6 +24,9 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#define SNES_FAST_FORWARD_KEY 0x666 // Hurr, durr
+void set_fast_forward_button(bool state);
+
 struct snes_keybind
 {
    int id;
@@ -48,6 +51,7 @@ typedef struct audio_driver
    ssize_t (*write)(void* data, const void* buf, size_t size);
    bool (*stop)(void* data);
    bool (*start)(void* data);
+   void (*set_nonblock_state)(void* data, bool toggle); // Should we care about blocking in audio thread? Fast forwarding.
    void (*free)(void* data);
 } audio_driver_t;
 
@@ -64,6 +68,7 @@ typedef struct video_driver
    void* (*init)(video_info_t *video, const input_driver_t **input); 
    // Should the video driver act as an input driver as well? :)
    bool (*frame)(void* data, const uint16_t* frame, int width, int height);
+   void (*set_nonblock_state)(void* data, bool toggle); // Should we care about syncing to vblank? Fast forwarding.
    void (*free)(void* data);
 } video_driver_t;
 

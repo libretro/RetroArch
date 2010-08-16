@@ -117,6 +117,7 @@ static const struct snes_keybind snes_keybinds[] = {
    { SNES_DEVICE_ID_JOYPAD_DOWN,    GLFW_KEY_DOWN,             11 },
    { SNES_DEVICE_ID_JOYPAD_START,   GLFW_KEY_ENTER,            6 },
    { SNES_DEVICE_ID_JOYPAD_SELECT,  GLFW_KEY_RSHIFT,           14 },
+   { SNES_FAST_FORWARD_KEY,         GLFW_KEY_SPACE,            9 },
    { -1 }
 };
 

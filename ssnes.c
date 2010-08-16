@@ -70,6 +70,21 @@ static void write_file(const char* path, uint8_t* data, size_t size);
 static void load_save_file(const char* path, int type);
 static void save_file(const char* path, int type);
 
+
+// To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
+void set_fast_forward_button(bool new_button_state)
+{
+   static bool old_button_state = false;
+   static bool syncing_state = false;
+   if (new_button_state && !old_button_state)
+   {
+      syncing_state = !syncing_state;
+      driver.video->set_nonblock_state(driver.video_data, syncing_state);
+      driver.audio->set_nonblock_state(driver.audio_data, syncing_state);
+   }
+   old_button_state = new_button_state;
+}
+
 static void init_drivers(void)
 {
    init_video_input();

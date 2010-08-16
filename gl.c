@@ -29,7 +29,7 @@ static GLuint tex_filter;
 
 typedef struct gl
 {
-   int foo;
+   bool vsync;
 } gl_t;
 
 
@@ -68,11 +68,22 @@ static int16_t glfw_input_state(void *data, const struct snes_keybind *snes_keyb
       glfwGetJoystickButtons(joypad_id, buttons, joypad_buttons);
    }
 
+   // Finds fast forwarding state.
+   for ( i = 0; snes_keybinds[i].id != -1; i++ )
+   {
+      if ( snes_keybinds[i].id == SNES_FAST_FORWARD_KEY )
+      {
+         if ( snes_keybinds[i].joykey < joypad_buttons )
+            set_fast_forward_button(buttons[snes_keybinds[i].joykey] == GLFW_PRESS);
+         break;
+      }
+   }
+
    for ( i = 0; snes_keybinds[i].id != -1; i++ )
    {
       if ( snes_keybinds[i].id == (int)id )
       {
-         if ( glfwGetKey(snes_keybinds[i].key ))
+         if ( glfwGetKey(snes_keybinds[i].key) )
             return 1;
          
          if ( snes_keybinds[i].joykey < joypad_buttons && buttons[snes_keybinds[i].joykey] == GLFW_PRESS )
@@ -171,10 +182,22 @@ static void gl_free(void *data)
    free(gl_buffer);
 }
 
+static void gl_set_nonblock_state(void *data, bool state)
+{
+   gl_t *gl = data;
+   if (gl->vsync)
+   {
+      if (state)
+         glfwSwapInterval(0);
+      else
+         glfwSwapInterval(1);
+   }
+}
+
 static void* gl_init(video_info_t *video, const input_driver_t **input)
 {
-   gl_t *foo = malloc(sizeof(gl_t));
-   if ( foo == NULL )
+   gl_t *gl = malloc(sizeof(gl_t));
+   if ( gl == NULL )
       return NULL;
 
    keep_aspect = video->force_aspect;
@@ -200,6 +223,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
       glfwSwapInterval(1); // Force vsync
    else
       glfwSwapInterval(0);
+   gl->vsync = video->vsync;
 
    gl_buffer = malloc(256 * 256 * 2 * video->input_scale * video->input_scale);
    if ( !gl_buffer )
@@ -225,12 +249,13 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
          GL_UNSIGNED_SHORT_1_5_5_5_REV, gl_buffer);
 
    *input = &input_glfw;
-   return foo;
+   return gl;
 }
 
 const video_driver_t video_gl = {
    .init = gl_init,
    .frame = gl_frame,
+   .set_nonblock_state = gl_set_nonblock_state,
    .free = gl_free
 };
    
