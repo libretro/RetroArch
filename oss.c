@@ -111,10 +111,13 @@ static bool __oss_start(void *data)
 static void __oss_set_nonblock_state(void *data, bool state)
 {
    int *fd = data;
+   int rc;
    if (state)
-      fcntl(*fd, F_SETFL, fcntl(*fd, F_GETFL) | O_NONBLOCK);
+      rc = fcntl(*fd, F_SETFL, fcntl(*fd, F_GETFL) | O_NONBLOCK);
    else
-      fcntl(*fd, F_SETFL, fcntl(*fd, F_GETFL) & (~O_NONBLOCK));
+      rc = fcntl(*fd, F_SETFL, fcntl(*fd, F_GETFL) & (~O_NONBLOCK));
+   if (rc != 0)
+      fprintf(stderr, "SSNES [ERROR]: Could not set nonblocking on OSS file descriptor. Will not be able to fast-forward.\n");
 }
 
 static void __oss_free(void *data)

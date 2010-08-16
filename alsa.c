@@ -142,8 +142,10 @@ static bool __alsa_stop(void *data)
 static void __alsa_set_nonblock_state(void *data, bool state)
 {
    alsa_t *alsa = data;
-   snd_pcm_nonblock(alsa->pcm, state);
-   alsa->nonblock = state;
+   if (snd_pcm_nonblock(alsa->pcm, state) < 0)
+      fprintf(stderr, "SSNES [ERROR]: Could not set PCM to non-blocking. Will not be able to fast-forward.\n");
+   else
+      alsa->nonblock = state;
 }
 
 static bool __alsa_start(void *data)

@@ -92,7 +92,7 @@ static const char* audio_device = NULL;
 static const int out_latency = 64;
 
 // Defines the quality (and cpu reqirements) of samplerate conversion.
-#define SAMPLERATE_QUALITY SRC_SINC_FASTEST
+#define SAMPLERATE_QUALITY SRC_LINEAR
 
 
 

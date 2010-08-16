@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include "libsnes.hpp"
 #include <stdio.h>
+#include <sys/time.h>
 
 static GLuint texture;
 static uint8_t *gl_buffer;
@@ -143,6 +144,12 @@ static void GLFWCALL resize(int width, int height)
    glLoadIdentity();
 }
 
+static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)
+{
+   float time = new_tv->tv_sec - tv->tv_sec + (new_tv->tv_usec - tv->tv_usec)/1000000.0;
+   return frames/time;
+}
+
 static bool gl_frame(void *data, const uint16_t* frame, int width, int height)
 {
    (void)data;
@@ -174,6 +181,31 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height)
    glTexCoord2f(1, h); glVertex3i(1, 0, 0);
 
    glEnd();
+
+   // Shows FPS in taskbar.
+   static int frames = 0;
+   static struct timeval tv;
+   struct timeval new_tv;
+   
+   if (frames == 0)
+      gettimeofday(&tv, NULL);
+
+   if ((frames % 60) == 0 && frames > 0)
+   {
+      gettimeofday(&new_tv, NULL);
+      struct timeval tmp_tv = {
+         .tv_sec = tv.tv_sec,
+         .tv_usec = tv.tv_usec
+      };
+      gettimeofday(&tv, NULL);
+      char tmpstr[256] = {0};
+
+      float fps = tv_to_fps(&tmp_tv, &new_tv, 60);
+
+      snprintf(tmpstr, sizeof(tmpstr) - 1, "SSNES || FPS: %6.1f || Frames: %d", fps, frames);
+      glfwSetWindowTitle(tmpstr);
+   }
+   frames++;
 
    glfwSwapBuffers();
 
