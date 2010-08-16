@@ -39,7 +39,7 @@
 
 // Chooses which video and audio subsystem to use. Remember to update config.mk if you change these.
 #define VIDEO_DRIVER VIDEO_GL
-#define AUDIO_DRIVER AUDIO_ALSA
+#define AUDIO_DRIVER AUDIO_RSOUND
 
 
 ////////////////
@@ -52,8 +52,8 @@ static const float yscale = 4.0; // Real y res = 224 * yscale
 
 // Fullscreen
 static bool fullscreen = false; // To start in Fullscreen or not
-static const unsigned fullscreen_x = 1280;
-static const unsigned fullscreen_y = 720;
+static const unsigned fullscreen_x = 1920;
+static const unsigned fullscreen_y = 1200;
 
 // Video VSYNC (recommended)
 static const bool vsync = true;
@@ -83,7 +83,7 @@ static const unsigned out_rate = 48000;
 
 // Input samplerate from libSNES. 
 // Lower this (slightly) if you are experiencing frequent audio dropouts and vsync is enabled.
-static const unsigned in_rate = 31950; 
+static const unsigned in_rate = 31920; 
 
 // Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults.
 static const char* audio_device = NULL;
