@@ -45,7 +45,7 @@ static void* __alsa_init(const char* device, int rate, int latency)
 
    //fprintf(stderr, "Opening device: %s\n", alsa_dev);
 
-   TRY_ALSA(snd_pcm_open(&alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, 0));
+   TRY_ALSA(snd_pcm_open(&alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK));
 
    unsigned int latency_usec = latency * 1000;
 
@@ -117,21 +117,41 @@ static ssize_t __alsa_write(void* data, const void* buf, size_t size)
    alsa_t *alsa = data;
 
    snd_pcm_sframes_t frames;
-   frames = snd_pcm_writei(alsa->pcm, buf, snd_pcm_bytes_to_frames(alsa->pcm, size));
+   snd_pcm_sframes_t written = 0;
+   int rc;
+   size /= 4; // Frames to write
 
-   if ( frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE )
+   while (written < size)
    {
-      if ( snd_pcm_recover(alsa->pcm, frames, 1) < 0 )
+      if (!alsa->nonblock)
+      {
+         rc = snd_pcm_wait(alsa->pcm, -1);
+         if (rc == -EPIPE || rc == -ESTRPIPE)
+         {
+            if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
+               return -1;
+            continue;
+         }
+      }
+
+      frames = snd_pcm_writei(alsa->pcm, (const uint32_t*)buf + written, size - written);
+
+      if ( frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE )
+      {
+         if ( snd_pcm_recover(alsa->pcm, frames, 1) < 0 )
+            return -1;
+
+         return 0;
+      }
+      else if ( frames == -EAGAIN && alsa->nonblock )
+         return 0;
+      else if ( frames < 0 )
          return -1;
 
-      return size;
+      written += frames;
    }
-   else if ( alsa->nonblock && frames == -EAGAIN )
-      return 0;
-   else if ( frames < 0 )
-      return -1;
 
-   return snd_pcm_frames_to_bytes(alsa->pcm, frames);
+   return snd_pcm_frames_to_bytes(alsa->pcm, size);
 }
 
 static bool __alsa_stop(void *data)
@@ -142,10 +162,7 @@ static bool __alsa_stop(void *data)
 static void __alsa_set_nonblock_state(void *data, bool state)
 {
    alsa_t *alsa = data;
-   if (snd_pcm_nonblock(alsa->pcm, state) < 0)
-      fprintf(stderr, "SSNES [ERROR]: Could not set PCM to non-blocking. Will not be able to fast-forward.\n");
-   else
-      alsa->nonblock = state;
+   alsa->nonblock = state;
 }
 
 static bool __alsa_start(void *data)
