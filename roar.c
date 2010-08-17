@@ -21,33 +21,54 @@
 #include <roaraudio.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdbool.h>
+
+typedef struct
+{
+   roar_vs_t *vss;
+   bool nonblocking;
+} roar_t;
 
 static void* __roar_init(const char* device, int rate, int latency)
 {
    int err;
+   roar_t *roar = calloc(1, sizeof(roar_t));
+   if (roar == NULL)
+      return NULL;
+
    roar_vs_t *vss;
    if ( (vss = roar_vs_new_simple(NULL, NULL, rate, 2, ROAR_CODEC_PCM_S_LE, 16, ROAR_DIR_PLAY, &err)) == NULL )
    {
       fprintf(stderr, "roar_vs: \"%s\"\n", roar_vs_strerr(err));
+      free(roar);
       return NULL;
    }
 
-   return vss;
+   roar->vss = vss;
+
+   return roar;
 }
 
 static ssize_t __roar_write(void* data, const void* buf, size_t size)
 {
-   roar_vs_t *vss = data;
+   roar_t *roar = data;
+   ssize_t rc;
 
    if ( size == 0 )
       return 0;
 
    int err;
-   if (roar_vs_write(vss, buf, size, &err) < 0)
+   size_t written = 0;
+   while (written < size)
    {
-      if (err == ROAR_ERROR_NONE)
-         return 0;
-      return -1;
+      if ((rc = roar_vs_write(roar->vss, (const char*)buf + written, size - written, &err)) < size)
+      {
+         if (rc < 0)
+            return -1;
+         else if (roar->nonblocking)
+            return 0;
+      }
+      written += rc;
    }
 
    return size;
@@ -55,25 +76,29 @@ static ssize_t __roar_write(void* data, const void* buf, size_t size)
 
 static bool __roar_stop(void *data)
 {
+   (void)data;
    return true;
 }
 
 static void __roar_set_nonblock_state(void *data, bool state)
 {
-   roar_vs_t *vss = data;
-   if (roar_vs_blocking(vss, (state) ? ROAR_VS_FALSE : ROAR_VS_TRUE, NULL) < 0)
+   roar_t *roar = data;
+   if (roar_vs_blocking(roar->vss, (state) ? ROAR_VS_FALSE : ROAR_VS_TRUE, NULL) < 0)
       fprintf(stderr, "SSNES [ERROR]: Can't set nonblocking. Will not be able to fast-forward.\n");
+   roar->nonblocking = state;
 }
 
 static bool __roar_start(void *data)
 {
+   (void)data;
    return true;
 }
 
 static void __roar_free(void *data)
 {
-   roar_vs_t *vss = data;
-   roar_vs_close(vss, ROAR_VS_TRUE, NULL);
+   roar_t *roar = data;
+   roar_vs_close(roar->vss, ROAR_VS_TRUE, NULL);
+   free(data);
 }
 
 const audio_driver_t audio_roar = {
