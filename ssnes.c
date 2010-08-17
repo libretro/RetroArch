@@ -77,7 +77,7 @@ static void save_file(const char* path, int type);
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
 
 #define AUDIO_CHUNK_SIZE_BLOCKING 64
-#define AUDIO_CHUNK_SIZE_NONBLOCKING 1024 // So we don't get complete line-noise when fast-forwarding audio.
+#define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
 static size_t audio_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
 void set_fast_forward_button(bool new_button_state)
 {
