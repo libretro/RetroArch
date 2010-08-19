@@ -10,7 +10,7 @@
 
 #include "pastlib.h"
 
-static const uint8_t blends_2x[14*4] __attribute__ ((section (".rodata.hq"))) = {
+static const uint8_t blends_2x[14*4] = {
 /*	 5  2  4  1 */
 
 	 8, 4, 4, 0,
@@ -30,7 +30,7 @@ static const uint8_t blends_2x[14*4] __attribute__ ((section (".rodata.hq"))) = 
 	 8, 4, 4, 0, /* Added for secondary blending used in HQ4x */
 }; 	
 
-static const uint8_t blends_4x[14*16] __attribute__ ((section (".rodata.hq"))) = {
+static const uint8_t blends_4x[14*16] = {
 /*	 5  2  4  1	 5  2  4  1	 5  2  4  1	 5  2  4  1 */
 
 	 8, 4, 4, 0,	10, 4, 2, 0,	10, 2, 4, 0,	12, 2, 2, 0, /* Needs to be split. B */
@@ -49,7 +49,7 @@ static const uint8_t blends_4x[14*16] __attribute__ ((section (".rodata.hq"))) =
 	 0, 8, 8, 0,	 8, 8, 0, 0,	 8, 0, 8, 0,	16, 0, 0, 0, /* Needs to be split. B */
 };
 
-static const uint8_t tree_hq[0x800] __attribute__ ((section (".rodata.hq"))) = {
+static const uint8_t tree_hq[0x800] = {
 /*	    6     6     6     6     6     6     6     6
  *	       2  2        2  2        2  2        2  2
  *	             4  4  4  4              4  4  4  4
@@ -193,7 +193,7 @@ static const uint8_t tree_hq[0x800] __attribute__ ((section (".rodata.hq"))) = {
 
 #define RB(y,u,v) (((y)&0x3FF)<<22)|(((u)&0x3FF)<<11)|((v)&0x3FF)
 #define GO(y,v) ((((y)+64)&0x3FF)<<22)|(16<<11)|(((v)+16)&0x3FF)
-static const uint32_t DiffTable[128] __attribute__ ((section (".rodata.diff"))) = {
+static const uint32_t DiffTable[128] = {
 RB(-85, 160,  80), RB(-83, 155,  77), RB(-80, 150,  75), RB(-77, 145,  72),
 RB(-75, 140,  70), RB(-72, 135,  67), RB(-69, 130,  65), RB(-67, 125,  62),
 RB(-64, 120,  60), RB(-61, 115,  57), RB(-59, 110,  55), RB(-56, 105,  52),
@@ -227,7 +227,7 @@ GO( 52,       99), GO( 55,      104), GO( 57,      109), GO( 60,      114),
 GO( 63,      119), GO( 65,      124), GO( 68,      129), GO( 70,      134),
 GO( 73,      139), GO( 76,      144), GO( 78,      149), GO( 81,      154)};
 
-__inline__ static int ExpandedDiff (uint32_t c0, uint32_t c1) {
+inline static int ExpandedDiff (uint32_t c0, uint32_t c1) {
    uint32_t r, g;
    g   = c0;
    g  += 0x4008020;
@@ -257,7 +257,7 @@ __inline__ static int ExpandedDiff (uint32_t c0, uint32_t c1) {
 
 /* lastLineDiffs is previous line's 52, 53, 26, all >> 1 */
 
-uint8_t lastLineDiffs[__PAST_LIBRARY_WIDTH];
+static uint8_t lastLineDiffs[__PAST_LIBRARY_WIDTH];
 
 #define RotatePattern(x) ((((x) & 0x777) << 1) | (((x) & 0x888) >> 3))
 
@@ -267,7 +267,7 @@ void ProcessHQ2x(const pixel * restrict in, pixel * restrict out) {
 	uint32_t pixels[9];
 	int prevline, nextline;
 
-	bzero(lastLineDiffs, sizeof(lastLineDiffs));
+	memset(lastLineDiffs, 0, sizeof(lastLineDiffs));
 	prevline = 1;
 	nextline = 1 + __PAST_LIBRARY_WIDTH;
 	y = __PAST_LIBRARY_HEIGHT - 1;
@@ -383,7 +383,7 @@ void ProcessHQ4x(const pixel * restrict in, pixel * restrict out) {
 	uint32_t pixels[9];
 	int prevline, nextline;
 
-	bzero(lastLineDiffs, sizeof(lastLineDiffs));
+	memset(lastLineDiffs, 0, sizeof(lastLineDiffs));
 	prevline = 1;
 	nextline = 1 + __PAST_LIBRARY_WIDTH;
 	y = __PAST_LIBRARY_HEIGHT - 1;
