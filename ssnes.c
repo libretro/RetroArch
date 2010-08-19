@@ -88,7 +88,7 @@ void set_fast_forward_button(bool new_button_state)
    {
       syncing_state = !syncing_state;
       if (video_active)
-         driver.video->set_nonblock_state(driver.video_data, (audio_sync) ? syncing_state : true);
+         driver.video->set_nonblock_state(driver.video_data, syncing_state);
       if (audio_active)
          driver.audio->set_nonblock_state(driver.audio_data, (audio_sync) ? syncing_state : true);
       if (syncing_state)

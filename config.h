@@ -94,7 +94,7 @@ static const char* audio_device = "hw:0";
 static const int out_latency = 16;
 
 // Will sync audio. (recommended) 
-static const bool audio_sync = true;
+static const bool audio_sync = false;
 
 // Defines the quality (and cpu reqirements) of samplerate conversion.
 #define SAMPLERATE_QUALITY SRC_LINEAR
