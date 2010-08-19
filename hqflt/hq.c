@@ -6,7 +6,8 @@
 /* and is, thus, not a derivative work of the original code, */
 /* only the original equations behind the code.              */
 
-#include <strings.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "pastlib.h"
 
