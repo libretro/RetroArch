@@ -69,9 +69,10 @@ static const bool force_aspect = true;
 #define FILTER_NONE 0
 #define FILTER_HQ2X 1
 #define FILTER_HQ4X 2
+#define FILTER_GRAYSCALE 3
 ////////////////////////
 
-// If you change this to something other than the HQ filters, make sure that you build the filter module in config.mk.
+// If you change this to something other than FILTER_NONE, make sure that you build the filter module in config.mk.
 #define VIDEO_FILTER FILTER_NONE
 
 
