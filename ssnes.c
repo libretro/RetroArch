@@ -87,8 +87,10 @@ void set_fast_forward_button(bool new_button_state)
    if (new_button_state && !old_button_state)
    {
       syncing_state = !syncing_state;
-      driver.video->set_nonblock_state(driver.video_data, syncing_state);
-      driver.audio->set_nonblock_state(driver.audio_data, syncing_state);
+      if (video_active)
+         driver.video->set_nonblock_state(driver.video_data, syncing_state);
+      if (audio_active)
+         driver.audio->set_nonblock_state(driver.audio_data, syncing_state);
       if (syncing_state)
          audio_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
       else

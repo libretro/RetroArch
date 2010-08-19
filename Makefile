@@ -27,6 +27,7 @@ ifeq ($(BUILD_OPENGL), 1)
 endif
 ifeq ($(BUILD_FILTER), 1)
    OBJ += hqflt/hq.o
+   OBJ += hqflt/grayscale.o
 endif
 
 CFLAGS = -Wall -O3 -march=native -std=gnu99
