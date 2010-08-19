@@ -30,7 +30,7 @@ ifeq ($(BUILD_FILTER), 1)
    OBJ += hqflt/grayscale.o
 endif
 
-CFLAGS = -Wall -O3 -march=native -std=gnu99
+CFLAGS = -Wall -O0 -march=native -std=gnu99 -g
 
 
 
@@ -51,7 +51,8 @@ uninstall: $(TARGET)
 	rm -rf $(PREFIX)/bin/$(TARGET)
 
 clean:
-	rm -rf *.o hqflt/*.o
-	rm -rf $(TARGET)
+	rm -f *.o 
+	rm -f hqflt/*.o
+	rm -f $(TARGET)
 
 .PHONY: all install uninstall clean
