@@ -90,7 +90,7 @@ void set_fast_forward_button(bool new_button_state)
       if (video_active)
          driver.video->set_nonblock_state(driver.video_data, syncing_state);
       if (audio_active)
-         driver.audio->set_nonblock_state(driver.audio_data, syncing_state);
+         driver.audio->set_nonblock_state(driver.audio_data, (audio_sync) ? syncing_state : true);
       if (syncing_state)
          audio_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
       else
@@ -113,16 +113,33 @@ static void uninit_drivers(void)
 
 static void init_audio(void)
 {
+   if (!audio_enable)
+   {
+      audio_active = false;
+      return;
+   }
+
    driver.audio_data = driver.audio->init(audio_device, out_rate, out_latency);
    if ( driver.audio_data == NULL )
       audio_active = false;
 
+   if (!audio_sync && audio_active)
+      driver.audio->set_nonblock_state(driver.audio_data, true);
+
    int err;
    source = src_new(SAMPLERATE_QUALITY, 2, &err);
+   if (!source)
+      audio_active = false;
 }
 
 static void uninit_audio(void)
 {
+   if (!audio_enable)
+   {
+      audio_active = false;
+      return;
+   }
+
    if ( driver.audio_data && driver.audio )
       driver.audio->free(driver.audio_data);
 
