@@ -113,6 +113,12 @@ static void uninit_drivers(void)
 
 static void init_audio(void)
 {
+   if (!audio_enable)
+   {
+      audio_active = false;
+      return;
+   }
+
    driver.audio_data = driver.audio->init(audio_device, out_rate, out_latency);
    if ( driver.audio_data == NULL )
       audio_active = false;
@@ -128,6 +134,12 @@ static void init_audio(void)
 
 static void uninit_audio(void)
 {
+   if (!audio_enable)
+   {
+      audio_active = false;
+      return;
+   }
+
    if ( driver.audio_data && driver.audio )
       driver.audio->free(driver.audio_data);
 

@@ -73,19 +73,22 @@ static const bool force_aspect = true;
 ////////////////////////
 
 // If you change this to something other than the HQ filters, make sure that you build the filter module in config.mk.
-#define VIDEO_FILTER FILTER_HQ2X
+#define VIDEO_FILTER FILTER_NONE
 
 
 ////////////////
 // Audio
 ////////////////
 
+// Will enable audio or not.
+static const bool audio_enable = true;
+
 // Output samplerate
 static const unsigned out_rate = 96000; 
 
 // Input samplerate from libSNES. 
 // Lower this (slightly) if you are experiencing frequent audio dropouts and vsync is enabled.
-static const unsigned in_rate = 31940; 
+static const unsigned in_rate = 31950; 
 
 // Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults.
 static const char* audio_device = "hw:0";
@@ -94,7 +97,7 @@ static const char* audio_device = "hw:0";
 static const int out_latency = 16;
 
 // Will sync audio. (recommended) 
-static const bool audio_sync = false;
+static const bool audio_sync = true;
 
 // Defines the quality (and cpu reqirements) of samplerate conversion.
 #define SAMPLERATE_QUALITY SRC_LINEAR
