@@ -30,9 +30,7 @@ ifeq ($(BUILD_FILTER), 1)
    OBJ += hqflt/grayscale.o
 endif
 
-CFLAGS = -Wall -O0 -march=native -std=gnu99 -g
-
-
+CFLAGS = -Wall -O3 -march=native -std=gnu99
 
 all: $(TARGET) 
 
