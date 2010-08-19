@@ -70,6 +70,7 @@ static const bool force_aspect = true;
 #define FILTER_HQ2X 1
 #define FILTER_HQ4X 2
 #define FILTER_GRAYSCALE 3
+#define FILTER_BLEED 4
 ////////////////////////
 
 // If you change this to something other than FILTER_NONE, make sure that you build the filter module in config.mk.
@@ -91,10 +92,10 @@ static const unsigned out_rate = 48000;
 static const unsigned in_rate = 31950; 
 
 // Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults.
-static const char* audio_device = "hw:0";
+static const char* audio_device = NULL;
 
 // Desired audio latency in milliseconds. Might not be honored if driver can't provide given latency.
-static const int out_latency = 16;
+static const int out_latency = 64;
 
 // Will sync audio. (recommended) 
 static const bool audio_sync = true;

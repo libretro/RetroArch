@@ -27,6 +27,7 @@
 #include "driver.h"
 #include "hqflt/pastlib.h"
 #include "hqflt/grayscale.h"
+#include "hqflt/bleed.h"
 
 static bool video_active = true;
 static bool audio_active = true;
@@ -158,6 +159,8 @@ static void init_video_input(void)
    scale = 4;
 #elif VIDEO_FILTER == FILTER_GRAYSCALE
    scale = 1;
+#elif VIDEO_FILTER == FILTER_BLEED
+   scale = 1;
 #else
    scale = 1;
 #endif
@@ -240,6 +243,10 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
       video_active = false;
 #elif VIDEO_FILTER == FILTER_GRAYSCALE
    grayscale_filter(output, width, height);
+   if ( !driver.video->frame(driver.video_data, output, width, height) )
+      video_active = false;
+#elif VIDEO_FILTER == FILTER_BLEED
+   bleed_filter(output, width, height);
    if ( !driver.video->frame(driver.video_data, output, width, height) )
       video_active = false;
 #else

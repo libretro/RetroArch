@@ -28,6 +28,7 @@ endif
 ifeq ($(BUILD_FILTER), 1)
    OBJ += hqflt/hq.o
    OBJ += hqflt/grayscale.o
+   OBJ += hqflt/bleed.o
 endif
 
 CFLAGS = -Wall -O3 -march=native -std=gnu99
