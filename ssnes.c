@@ -150,16 +150,18 @@ static void uninit_audio(void)
 static void init_video_input(void)
 {
    int scale;
+
+   // We multiply scales with 2 to allow for hi-res games.
 #if VIDEO_FILTER == FILTER_NONE
-   scale = 1;
-#elif VIDEO_FILTER == FILTER_HQ2X
    scale = 2;
-#elif VIDEO_FILTER == FILTER_HQ4X
+#elif VIDEO_FILTER == FILTER_HQ2X
    scale = 4;
+#elif VIDEO_FILTER == FILTER_HQ4X
+   scale = 8;
 #elif VIDEO_FILTER == FILTER_GRAYSCALE
-   scale = 1;
+   scale = 2;
 #else
-   scale = 1;
+   scale = 2;
 #endif
 
    video_info_t video = {

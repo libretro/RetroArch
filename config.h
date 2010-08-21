@@ -73,7 +73,7 @@ static const bool force_aspect = true;
 ////////////////////////
 
 // If you change this to something other than the HQ filters, make sure that you build the filter module in config.mk.
-#define VIDEO_FILTER FILTER_NONE
+#define VIDEO_FILTER FILTER_HQ2X
 
 
 ////////////////
