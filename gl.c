@@ -31,6 +31,8 @@ static GLuint tex_filter;
 typedef struct gl
 {
    bool vsync;
+   unsigned real_x;
+   unsigned real_y;
 } gl_t;
 
 
@@ -152,7 +154,7 @@ static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, i
 
 static bool gl_frame(void *data, const uint16_t* frame, int width, int height)
 {
-   (void)data;
+   gl_t *gl = data;
 
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -175,10 +177,10 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height)
 
    float h = 224.0/256.0;
 
-   glTexCoord2f(0, h); glVertex3i(0, 0, 0);
+   glTexCoord2f(0, h*height/gl->real_y); glVertex3i(0, 0, 0);
    glTexCoord2f(0, 0); glVertex3i(0, 1, 0);
-   glTexCoord2f(1, 0); glVertex3i(1, 1, 0);
-   glTexCoord2f(1, h); glVertex3i(1, 0, 0);
+   glTexCoord2f((float)width/gl->real_x, 0); glVertex3i(1, 1, 0);
+   glTexCoord2f((float)width/gl->real_x, h*height/gl->real_y); glVertex3i(1, 0, 0);
 
    glEnd();
 
@@ -267,6 +269,9 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
       fprintf(stderr, "Couldn't allocate memory :<\n");
       exit(1);
    }
+
+   gl->real_x = video->input_scale * 256;
+   gl->real_y = video->input_scale * 224;
 
    glEnable(GL_TEXTURE_2D);
    glEnable(GL_DITHER);
