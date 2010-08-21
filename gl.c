@@ -177,9 +177,9 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height)
 
    float h = 224.0/256.0;
 
-   glTexCoord2f(0, h*height/gl->real_y); glVertex3i(0, 0, 0);
-   glTexCoord2f(0, 0); glVertex3i(0, 1, 0);
-   glTexCoord2f((float)width/gl->real_x, 0); glVertex3i(1, 1, 0);
+   glTexCoord2f(0, h*height/gl->real_y);                       glVertex3i(0, 0, 0);
+   glTexCoord2f(0, 0);                                         glVertex3i(0, 1, 0);
+   glTexCoord2f((float)width/gl->real_x, 0);                   glVertex3i(1, 1, 0);
    glTexCoord2f((float)width/gl->real_x, h*height/gl->real_y); glVertex3i(1, 0, 0);
 
    glEnd();
