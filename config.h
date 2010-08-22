@@ -40,7 +40,7 @@
 
 // Chooses which video and audio subsystem to use. Remember to update config.mk if you change these.
 #define VIDEO_DRIVER VIDEO_GL
-#define AUDIO_DRIVER AUDIO_ALSA
+#define AUDIO_DRIVER AUDIO_RSOUND
 
 
 ////////////////
@@ -89,10 +89,10 @@ static const unsigned out_rate = 48000;
 
 // Input samplerate from libSNES. 
 // Lower this (slightly) if you are experiencing frequent audio dropouts and vsync is enabled.
-static const unsigned in_rate = 31950; 
+static const unsigned in_rate = 31930; 
 
 // Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults.
-static const char* audio_device = NULL;
+static const char* audio_device = "10.0.0.99";
 
 // Desired audio latency in milliseconds. Might not be honored if driver can't provide given latency.
 static const int out_latency = 64;
