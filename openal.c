@@ -73,6 +73,9 @@ static void* __al_init(const char* device, int rate, int latency)
    alGenSources(1, &al->source);
    alGenBuffers(al->num_buffers, al->buffers);
 
+   memcpy(al->res_buf, al->buffers, al->num_buffers * sizeof(ALuint));
+   al->res_ptr = al->num_buffers;
+
    return al;
 
 error:
@@ -160,45 +163,23 @@ static ssize_t __al_write(void* data, const void* buf, size_t size)
       if (al->tmpbuf_ptr != BUFSIZE)
          break;
 
-      if (al->queue < al->num_buffers)
-      {
-         alBufferData(al->buffers[al->queue++], AL_FORMAT_STEREO16, al->tmpbuf, BUFSIZE, al->rate);
-         al->tmpbuf_ptr = 0;
-         if ( alGetError() != AL_NO_ERROR )
-         {
-            return -1;
-         }
+      ALuint buffer;
+      if (!al_get_buffer(al, &buffer))
+         return 0;
 
-         if ( al->queue == al->num_buffers )
-         {
-            alSourceQueueBuffers(al->source, al->num_buffers, al->buffers);
-            alSourcePlay(al->source);
-            if ( alGetError() != AL_NO_ERROR )
-            {
-               return -1;
-            }
-         }
-      }
-      else
-      {
-         ALuint buffer;
-         if (!al_get_buffer(al, &buffer))
-            return 0;
+      alBufferData(buffer, AL_FORMAT_STEREO16, al->tmpbuf, BUFSIZE, al->rate);
+      al->tmpbuf_ptr = 0;
+      alSourceQueueBuffers(al->source, 1, &buffer);
+      if (alGetError() != AL_NO_ERROR)
+         return -1;
 
-         alBufferData(buffer, AL_FORMAT_STEREO16, al->tmpbuf, BUFSIZE, al->rate);
-         al->tmpbuf_ptr = 0;
-         alSourceQueueBuffers(al->source, 1, &buffer);
-         if (alGetError() != AL_NO_ERROR)
-            return -1;
+      ALint val;
+      alGetSourcei(al->source, AL_SOURCE_STATE, &val);
+      if (val != AL_PLAYING)
+         alSourcePlay(al->source);
 
-         ALint val;
-         alGetSourcei(al->source, AL_SOURCE_STATE, &val);
-         if (val != AL_PLAYING)
-            alSourcePlay(al->source);
-
-         if (alGetError() != AL_NO_ERROR)
-            return -1;
-      }
+      if (alGetError() != AL_NO_ERROR)
+         return -1;
    }
 
    return size;
