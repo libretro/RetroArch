@@ -20,6 +20,10 @@ ifeq ($(BUILD_ROAR), 1)
    OBJ += roar.o
    LIBS += -lroar
 endif
+ifeq ($(BUILD_AL), 1)
+   OBJ += openal.o
+   LIBS += -lopenal
+endif
 
 ifeq ($(BUILD_OPENGL), 1)
    OBJ += gl.o

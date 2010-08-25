@@ -19,6 +19,7 @@
 #include "driver.h"
 #include <AL/al.h>
 #include <AL/alc.h>
+#include <sys/time.h>
 
 #define BUFSIZE 128
 

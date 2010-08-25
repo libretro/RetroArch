@@ -57,6 +57,8 @@ static driver_t driver = {
    .audio = &audio_alsa,
 #elif AUDIO_DRIVER == AUDIO_ROAR
    .audio = &audio_roar,
+#elif AUDIO_DRIVER == AUDIO_AL
+   .audio = &audio_openal,
 #else
 #error "Define a valid audio driver in config.h"
 #endif
