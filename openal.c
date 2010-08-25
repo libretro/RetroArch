@@ -19,7 +19,8 @@
 #include "driver.h"
 #include <AL/al.h>
 #include <AL/alc.h>
-#include <sys/time.h>
+#include <time.h>
+#include <string.h>
 
 #define BUFSIZE 128
 
@@ -47,7 +48,7 @@ typedef struct al
 static void* __al_init(const char* device, int rate, int latency)
 {
    (void)device;
-   al_t *al = calloc(1, sizeof(rsd_t));
+   al_t *al = calloc(1, sizeof(al_t));
    if ( al == NULL )
       return NULL;
 
@@ -69,7 +70,7 @@ static void* __al_init(const char* device, int rate, int latency)
    if (al->buffers == NULL || al->res_buf == NULL)
       goto error;
 
-   alGetSources(1, &al->source);
+   alGenSources(1, &al->source);
    alGenBuffers(al->num_buffers, al->buffers);
 
    return al;
@@ -123,7 +124,7 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
          if (al_unqueue_buffers(al))
             break;
 
-         if (al->nonblocking)
+         if (al->nonblock)
             return false;
 
 #ifdef _WIN32
