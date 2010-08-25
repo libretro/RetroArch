@@ -41,7 +41,7 @@
 
 // Chooses which video and audio subsystem to use. Remember to update config.mk if you change these.
 #define VIDEO_DRIVER VIDEO_GL
-#define AUDIO_DRIVER AUDIO_AL
+#define AUDIO_DRIVER AUDIO_ALSA
 
 
 ////////////////
