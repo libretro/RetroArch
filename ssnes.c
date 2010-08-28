@@ -213,9 +213,13 @@ static void uninit_video_input(void)
 
 static inline void process_frame (uint16_t * restrict out, const uint16_t * restrict in, unsigned width, unsigned height)
 {
+   int pitch = 1024;
+   if ( height == 448 || height == 478 )
+      pitch = 512;
+
    for ( int y = 0; y < height; y++ )
    {
-      const uint16_t *src = in + y * 1024;
+      const uint16_t *src = in + y * pitch;
       uint16_t *dst = out + y * width;
 
       memcpy(dst, src, width * sizeof(uint16_t));
