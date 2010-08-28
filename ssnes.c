@@ -319,6 +319,17 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
    return driver.input->input_state(driver.input_data, snes_keybinds, port, device, index, id);
 }
 
+static void fill_pathname(char *out_path, char *in_path, const char *replace)
+{
+   char tmp_path[strlen(in_path) + 1];
+   strcpy(tmp_path, in_path);
+   char *tok = NULL;
+   tok = strrchr(tmp_path, '.');
+   if (tok != NULL)
+      *tok = '\0';
+   strcpy(out_path, tmp_path);
+   strcat(out_path, replace);
+}
 
 int main(int argc, char *argv[])
 {
@@ -336,20 +347,13 @@ int main(int argc, char *argv[])
       exit(1);
    }
 
-   const char *statefile_tok = NULL;
-   char statefile_name[strlen(argv[1])+strlen("state")+1];
-   char savefile_name_rtc[strlen(argv[1])+strlen("rtc")+1];
-   char savefile_name_srm[strlen(argv[1])+strlen("srm")+1];
+   char statefile_name[strlen(argv[1])+strlen(".state")+1];
+   char savefile_name_rtc[strlen(argv[1])+strlen(".rtc")+1];
+   char savefile_name_srm[strlen(argv[1])+strlen(".srm")+1];
 
-   statefile_tok = strtok(argv[1], ".");
-   strcpy(statefile_name, statefile_tok);
-   strcat(statefile_name, ".state");
-
-   
-   strcpy(savefile_name_rtc, statefile_tok);
-   strcat(savefile_name_rtc, ".rtc");
-   strcpy(savefile_name_srm, statefile_tok);
-   strcat(savefile_name_srm, ".srm");
+   fill_pathname(statefile_name, argv[1], ".state");
+   fill_pathname(savefile_name_rtc, argv[1], ".rtc");
+   fill_pathname(savefile_name_srm, argv[1], ".srm");
 
    init_drivers();
 
