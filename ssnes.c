@@ -39,6 +39,7 @@ extern const audio_driver_t audio_rsound;
 extern const audio_driver_t audio_oss;
 extern const audio_driver_t audio_alsa;
 extern const audio_driver_t audio_roar;
+extern const audio_driver_t audio_openal;
 extern const video_driver_t video_gl;
 ////////////////////////////////////////////////
 
@@ -57,6 +58,8 @@ static driver_t driver = {
    .audio = &audio_alsa,
 #elif AUDIO_DRIVER == AUDIO_ROAR
    .audio = &audio_roar,
+#elif AUDIO_DRIVER == AUDIO_AL
+   .audio = &audio_openal,
 #else
 #error "Define a valid audio driver in config.h"
 #endif

@@ -36,6 +36,7 @@
 #define AUDIO_OSS 2
 #define AUDIO_ALSA 3
 #define AUDIO_ROAR 4
+#define AUDIO_AL 5
 ////////////////////////
 
 // Chooses which video and audio subsystem to use. Remember to update config.mk if you change these.

@@ -75,7 +75,7 @@ static ssize_t __rsd_write(void* data, const void* buf, size_t size)
 {
    rsd_t *rsd = data;
 
-   if ( rsd_delay_ms(rsd->rd) > rsd->latency && rsd->nonblock )
+   if ( (rsd_delay_ms(rsd->rd) > rsd->latency || rsd_get_avail(rsd->rd) < size) && rsd->nonblock )
       return 0;
 
    if ( size == 0 )
