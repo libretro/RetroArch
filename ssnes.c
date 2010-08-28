@@ -28,6 +28,7 @@
 #include "hqflt/pastlib.h"
 #include "hqflt/grayscale.h"
 #include "hqflt/bleed.h"
+#include "hqflt/ntsc.h"
 
 static bool video_active = true;
 static bool audio_active = true;
@@ -162,6 +163,8 @@ static void init_video_input(void)
    scale = 4;
 #elif VIDEO_FILTER == FILTER_HQ4X
    scale = 8;
+#elif VIDEO_FILTER == FILTER_NTSC
+   scale = 8;
 #elif VIDEO_FILTER == FILTER_GRAYSCALE
    scale = 2;
 #elif VIDEO_FILTER == FILTER_BLEED
@@ -230,6 +233,8 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    uint16_t outputHQ2x[width * height * 2 * 2];
 #elif VIDEO_FILTER == FILTER_HQ4X
    uint16_t outputHQ4x[width * height * 4 * 4];
+#elif VIDEO_FILTER == FILTER_NTSC
+   uint16_t output_ntsc[SNES_NTSC_OUT_WIDTH(width) * height];
 #endif
    uint16_t output[width * height];
 
@@ -253,6 +258,10 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 #elif VIDEO_FILTER == FILTER_BLEED
    bleed_filter(output, width, height);
    if ( !driver.video->frame(driver.video_data, output, width, height) )
+      video_active = false;
+#elif VIDEO_FILTER == FILTER_NTSC
+   ntsc_filter(output_ntsc, output, width, height);
+   if ( !driver.video->frame(driver.video_data, output_ntsc, SNES_NTSC_OUT_WIDTH(width), height) )
       video_active = false;
 #else
    if ( !driver.video->frame(driver.video_data, output, width, height) )

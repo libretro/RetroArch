@@ -33,6 +33,8 @@ ifeq ($(BUILD_FILTER), 1)
    OBJ += hqflt/hq.o
    OBJ += hqflt/grayscale.o
    OBJ += hqflt/bleed.o
+   OBJ += hqflt/ntsc.o
+   OBJ += hqflt/snes_ntsc/snes_ntsc.o
 endif
 
 CFLAGS = -Wall -O3 -march=native -std=gnu99
@@ -56,6 +58,7 @@ uninstall: $(TARGET)
 clean:
 	rm -f *.o 
 	rm -f hqflt/*.o
+	rm -f hqflt/snes_ntsc/*.o
 	rm -f $(TARGET)
 
 .PHONY: all install uninstall clean
