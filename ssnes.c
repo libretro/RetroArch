@@ -395,7 +395,7 @@ static void parse_input(int argc, char *argv[])
 
    if (optind < argc)
    {
-      fprintf(stderr, "SSNES: Opening file: \"%s\"\n", argv[1]);
+      fprintf(stderr, "SSNES: Opening file: \"%s\"\n", argv[optind]);
       rom_file = fopen(argv[optind], "rb");
       if (rom_file == NULL)
       {
@@ -412,6 +412,7 @@ static ssize_t read_file(FILE* file, void** buf)
    ssize_t ret;
    if (file == NULL) // stdin
    {
+      fprintf(stderr, "SSNES: Reading ROM from stdin ...\n");
       size_t buf_size = 0xFFFFF; // Some initial guesstimate.
       size_t buf_ptr = 0;
       char *rom_buf = malloc(buf_size);
@@ -440,13 +441,14 @@ static ssize_t read_file(FILE* file, void** buf)
          buf_size *= 2;
       }
 
-      if ((buf_size & 0x7fff) == 512)
+      if ((buf_ptr & 0x7fff) == 512)
       {
-         buf_size -= 512;
+         memmove(rom_buf, rom_buf + 512, buf_ptr - 512);
+         buf_ptr -= 512;
       }
 
       *buf = rom_buf;
-      ret = buf_size;
+      ret = buf_ptr;
    }
    else
    {
@@ -489,6 +491,7 @@ int main(int argc, char *argv[])
       fprintf(stderr, "SSNES [ERROR] :: Could not read ROM file.\n");
       exit(1);
    }
+   fprintf(stderr, "SSNES: ROM size: %zi bytes\n", rom_len);
 
    if (rom_file != NULL)
       fclose(rom_file);
