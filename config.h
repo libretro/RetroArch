@@ -114,7 +114,7 @@ static const bool audio_sync = true;
 
 // To figure out which joypad buttons to use, check jstest or similar.
 
-static const struct snes_keybind snes_keybinds[] = {
+static const struct snes_keybind snes_keybinds_1[] = {
    // SNES button                 |   keyboard key   |   joypad button   |
    { SNES_DEVICE_ID_JOYPAD_A,             'X',                 1 },
    { SNES_DEVICE_ID_JOYPAD_B,             'Z',                 0 },
@@ -130,6 +130,24 @@ static const struct snes_keybind snes_keybinds[] = {
    { SNES_DEVICE_ID_JOYPAD_SELECT,  GLFW_KEY_RSHIFT,           14 },
    { SNES_FAST_FORWARD_KEY,         GLFW_KEY_SPACE,            9 },
    { -1 }
+};
+
+static const struct snes_keybind snes_keybinds_2[] = {
+   // SNES button                 |   keyboard key   |   joypad button   |
+   { SNES_DEVICE_ID_JOYPAD_A,             'B',                 1 },
+   { SNES_DEVICE_ID_JOYPAD_B,             'V',                 0 },
+   { SNES_DEVICE_ID_JOYPAD_X,             'G',                 3 },
+   { SNES_DEVICE_ID_JOYPAD_Y,             'F',                 2 },
+   { SNES_DEVICE_ID_JOYPAD_L,             'R',                 4 },
+   { SNES_DEVICE_ID_JOYPAD_R,             'T',                 5 },
+   { SNES_DEVICE_ID_JOYPAD_LEFT,    GLFW_KEY_LEFT,             12 },
+   { SNES_DEVICE_ID_JOYPAD_RIGHT,   GLFW_KEY_RIGHT,            13 },
+   { SNES_DEVICE_ID_JOYPAD_UP,      GLFW_KEY_UP,               10 },
+   { SNES_DEVICE_ID_JOYPAD_DOWN,    GLFW_KEY_DOWN,             11 },
+   { SNES_DEVICE_ID_JOYPAD_START,         'P',            6 },
+   { SNES_DEVICE_ID_JOYPAD_SELECT,        'O',           14 },
+   { -1 }
+   //{ SNES_FAST_FORWARD_KEY,         GLFW_KEY_SPACE,            9 },
 };
 
 ///// Save state

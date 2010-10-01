@@ -42,58 +42,74 @@ static void glfw_input_poll(void *data)
    glfwPollEvents();
 }
 
-static int16_t glfw_input_state(void *data, const struct snes_keybind *snes_keybinds, bool port, unsigned device, unsigned index, unsigned id)
+static int joypad_id[2];
+static int joypad_buttons[2];
+static bool joypad_inited = false;
+static int joypad_count = 0;
+
+static int init_joypads(int max_pads)
 {
-
-   (void)data;
-
-    if ( port != 0 || device != SNES_DEVICE_JOYPAD )
-      return 0;
-
-   int i;
-   int joypad_id = -1;
-   int joypad_buttons = -1;
-
-   // Finds the first joypad that's alive
-   for ( i = GLFW_JOYSTICK_1; i <= GLFW_JOYSTICK_LAST; i++ )
+   // Finds the first (two) joypads that are alive
+   int count = 0;
+   for ( int i = GLFW_JOYSTICK_1; i <= GLFW_JOYSTICK_LAST && count < max_pads; i++ )
    {
       if ( glfwGetJoystickParam(i, GLFW_PRESENT) == GL_TRUE )
       {
-         joypad_id = i;
-         joypad_buttons = glfwGetJoystickParam(i, GLFW_BUTTONS);
-         break;
+         joypad_id[count] = i;
+         joypad_buttons[count] = glfwGetJoystickParam(i, GLFW_BUTTONS);
+         count++;
       }
    }
+   joypad_inited = true;
+   return count;
+}
 
-   unsigned char buttons[128];
-   if ( joypad_id != -1 )
-   {
-      glfwGetJoystickButtons(joypad_id, buttons, joypad_buttons);
-   }
+static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
+{
+
+   if ( device != SNES_DEVICE_JOYPAD )
+      return 0;
+
+   if ( !joypad_inited )
+      joypad_count = init_joypads(2);
+
+   int port_num = port ? 1 : 0;
+   unsigned char buttons[joypad_buttons[port_num]];
+
+   if ( joypad_count > id )
+      glfwGetJoystickButtons(joypad_id[port_num], buttons, joypad_buttons[port_num]);
+
+
+   const struct snes_keybind *snes_keybinds;
+   if (port == SNES_PORT_1)
+      snes_keybinds = binds[0];
+   else
+      snes_keybinds = binds[1];
 
    // Finds fast forwarding state.
-   for ( i = 0; snes_keybinds[i].id != -1; i++ )
+   for ( int i = 0; snes_keybinds[i].id != -1; i++ )
    {
       if ( snes_keybinds[i].id == SNES_FAST_FORWARD_KEY )
       {
          bool pressed = false;
          if ( glfwGetKey(snes_keybinds[i].key) )
             pressed = true;
-         else if ( snes_keybinds[i].joykey < joypad_buttons && buttons[snes_keybinds[i].joykey] == GLFW_PRESS )
+         else if ( (joypad_count > id) && (snes_keybinds[i].joykey < joypad_buttons[port_num]) && (buttons[snes_keybinds[i].joykey] == GLFW_PRESS) )
             pressed = true;
          set_fast_forward_button(pressed);
          break;
       }
    }
 
-   for ( i = 0; snes_keybinds[i].id != -1; i++ )
+   // Checks if button is pressed
+   for ( int i = 0; snes_keybinds[i].id != -1; i++ )
    {
       if ( snes_keybinds[i].id == (int)id )
       {
          if ( glfwGetKey(snes_keybinds[i].key) )
             return 1;
          
-         if ( snes_keybinds[i].joykey < joypad_buttons && buttons[snes_keybinds[i].joykey] == GLFW_PRESS )
+         if ( (joypad_count > port_num) && (snes_keybinds[i].joykey < joypad_buttons[port_num]) && (buttons[snes_keybinds[i].joykey] == GLFW_PRESS) )
             return 1;
       }
    }

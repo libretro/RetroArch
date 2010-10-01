@@ -320,7 +320,8 @@ static void input_poll(void)
 
 static int16_t input_state(bool port, unsigned device, unsigned index, unsigned id)
 {
-   return driver.input->input_state(driver.input_data, snes_keybinds, port, device, index, id);
+   const struct snes_keybind *binds[] = { snes_keybinds_1, snes_keybinds_2 };
+   return driver.input->input_state(driver.input_data, binds, port, device, index, id);
 }
 
 static void fill_pathname(char *out_path, char *in_path, const char *replace)
