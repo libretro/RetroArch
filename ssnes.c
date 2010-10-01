@@ -345,10 +345,21 @@ static void print_help(void)
    puts("Usage: ssnes [rom file] [-h/--help | -s/--save]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
+   puts("\t-v/--verbose: Verbose logging");
 }
 
 static FILE* rom_file = NULL;
 static char savefile_name_srm[256] = {0};
+static bool verbose = false;
+
+#define SSNES_LOG(msg, args...) do { \
+   if (verbose) \
+      fprintf(stderr, "SSNES: " msg, ##args); \
+   } while(0)
+
+#define SSNES_ERR(msg, args...) do { \
+   fprintf(stderr, "SSNES [ERROR] :: " msg, ##args); \
+   } while(0)
 
 static void parse_input(int argc, char *argv[])
 {
@@ -361,11 +372,12 @@ static void parse_input(int argc, char *argv[])
    struct option opts[] = {
       { "help", 0, NULL, 'h' },
       { "save", 1, NULL, 's' },
+      { "verbose", 0, NULL, 'v' },
       { NULL, 0, NULL, 0 }
    };
 
    int option_index = 0;
-   char optstring[] = "hs:";
+   char optstring[] = "hs:v";
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -383,27 +395,38 @@ static void parse_input(int argc, char *argv[])
             strncpy(savefile_name_srm, optarg, sizeof(savefile_name_srm));
             savefile_name_srm[sizeof(savefile_name_srm)-1] = '\0';
             break;
+
+         case 'v':
+            verbose = true;
+            break;
+
          case '?':
             print_help();
             exit(1);
 
          default:
-            fprintf(stderr, "Error parsing arguments.\n");
+            SSNES_ERR("Error parsing arguments.\n");
             exit(1);
       }
    }
 
    if (optind < argc)
    {
-      fprintf(stderr, "SSNES: Opening file: \"%s\"\n", argv[optind]);
+      SSNES_LOG("Opening file: \"%s\"\n", argv[optind]);
       rom_file = fopen(argv[optind], "rb");
       if (rom_file == NULL)
       {
-         fprintf(stderr, "Could not open file: \"%s\"\n", optarg);
+         SSNES_ERR("Could not open file: \"%s\"\n", optarg);
          exit(1);
       }
       if (strlen(savefile_name_srm) == 0)
          fill_pathname(savefile_name_srm, argv[optind], ".srm");
+   }
+   else if (strlen(savefile_name_srm) == 0)
+   {
+      SSNES_ERR("Need savefile argument when reading rom from stdin.\n");
+      print_help();
+      exit(1);
    }
 }
 
@@ -412,13 +435,13 @@ static ssize_t read_file(FILE* file, void** buf)
    ssize_t ret;
    if (file == NULL) // stdin
    {
-      fprintf(stderr, "SSNES: Reading ROM from stdin ...\n");
+      SSNES_LOG("Reading ROM from stdin ...\n");
       size_t buf_size = 0xFFFFF; // Some initial guesstimate.
       size_t buf_ptr = 0;
       char *rom_buf = malloc(buf_size);
       if (rom_buf == NULL)
       {
-         fprintf(stderr, "SSNES [ERROR] :: Couldn't allocate memory!\n");
+         SSNES_ERR("Couldn't allocate memory!\n");
          return -1;
       }
 
@@ -434,7 +457,7 @@ static ssize_t read_file(FILE* file, void** buf)
          rom_buf = realloc(rom_buf, buf_size * 2);
          if (rom_buf == NULL)
          {
-            fprintf(stderr, "SSNES [ERROR] :: Couldn't allocate memory!\n");
+            SSNES_ERR("Couldn't allocate memory!\n");
             return -1;
          }
 
@@ -464,13 +487,13 @@ static ssize_t read_file(FILE* file, void** buf)
       void *rom_buf = malloc(length);
       if ( rom_buf == NULL )
       {
-         fprintf(stderr, "SSNES [ERROR] :: Couldn't allocate memory!\n");
+         SSNES_ERR("Couldn't allocate memory!\n");
          return -1;
       }
 
       if ( fread(rom_buf, 1, length, file) < length )
       {
-         fprintf(stderr, "SSNES [ERROR] :: Didn't read whole file.\n");
+         SSNES_ERR("Didn't read whole file.\n");
          free(rom_buf);
          return -1;
       }
@@ -488,10 +511,10 @@ int main(int argc, char *argv[])
    ssize_t rom_len = 0;
    if ((rom_len = read_file(rom_file, &rom_buf)) == -1)
    {
-      fprintf(stderr, "SSNES [ERROR] :: Could not read ROM file.\n");
+      SSNES_ERR("Could not read ROM file.\n");
       exit(1);
    }
-   fprintf(stderr, "SSNES: ROM size: %zi bytes\n", rom_len);
+   SSNES_LOG("ROM size: %zi bytes\n", rom_len);
 
    if (rom_file != NULL)
       fclose(rom_file);
@@ -513,7 +536,7 @@ int main(int argc, char *argv[])
    
    if (!snes_load_cartridge_normal(NULL, rom_buf, rom_len))
    {
-      fprintf(stderr, "SSNES [ERROR] :: ROM file \"%s\" is not valid!\n", argv[1]);;
+      SSNES_ERR("ROM file is not valid!\n");
       goto error;
    }
 
@@ -523,7 +546,7 @@ int main(int argc, char *argv[])
    uint8_t *serial_data = malloc(serial_size);
    if (serial_data == NULL)
    {
-      fprintf(stderr, "SSNES [ERROR] :: Failed to allocate memory for states!\n");
+      SSNES_ERR("Failed to allocate memory for states!\n");
       goto error;
    }
 
@@ -579,29 +602,29 @@ static void write_file(const char* path, uint8_t* data, size_t size)
    FILE *file = fopen(path, "wb");
    if ( file != NULL )
    {
-      fprintf(stderr, "SSNES: Saving state \"%s\". Size: %d bytes.\n", path, (int)size);
+      SSNES_LOG("Saving state \"%s\". Size: %d bytes.\n", path, (int)size);
       snes_serialize(data, size);
       if ( fwrite(data, 1, size, file) != size )
-         fprintf(stderr, "SSNES [WARN]: Did not save state properly.");
+         SSNES_ERR("Did not save state properly.\n");
       fclose(file);
    }
 }
 
 static void load_state(const char* path, uint8_t* data, size_t size)
 {
-   fprintf(stderr, "SSNES: Loading state: \"%s\".\n", path);
+   SSNES_LOG("Loading state: \"%s\".\n", path);
    FILE *file = fopen(path, "rb");
    if ( file != NULL )
    {
       //fprintf(stderr, "SSNES: Loading state. Size: %d bytes.\n", (int)size);
       if ( fread(data, 1, size, file) != size )
-         fprintf(stderr, "SSNES [WARN]: Did not load state properly.");
+         SSNES_ERR("Did not load state properly.\n");
       fclose(file);
       snes_unserialize(data, size);
    }
    else
    {
-      fprintf(stderr, "SSNES: No state file found. Will create new.\n");
+      SSNES_LOG("No state file found. Will create new.\n");
    }
 }
 
@@ -627,10 +650,10 @@ static void load_save_file(const char* path, int type)
    int rc = fread(data, 1, size, file);
    if ( rc != size )
    {
-      fprintf(stderr, "SSNES [ERROR]: Couldn't load save file.\n");
+      SSNES_ERR("Couldn't load save file.\n");
    }
 
-   fprintf(stderr, "SSNES: Loaded save file: \"%s\"\n", path);
+   SSNES_LOG("Loaded save file: \"%s\"\n", path);
 
    fclose(file);
 }
