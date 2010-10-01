@@ -90,7 +90,7 @@ static const bool audio_enable = true;
 static const unsigned out_rate = 48000; 
 
 // Input samplerate from libSNES. 
-// Lower this (slightly) if you are experiencing frequent audio dropouts and vsync is enabled.
+// Lower this (slightly) if you are experiencing frequent audio dropouts while vsync is enabled.
 static const unsigned in_rate = 31950; 
 
 // Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults.
@@ -114,6 +114,7 @@ static const bool audio_sync = true;
 
 // To figure out which joypad buttons to use, check jstest or similar.
 
+// Player 1
 static const struct snes_keybind snes_keybinds_1[] = {
    // SNES button                 |   keyboard key   |   joypad button   |
    { SNES_DEVICE_ID_JOYPAD_A,             'X',                 1 },
@@ -132,6 +133,7 @@ static const struct snes_keybind snes_keybinds_1[] = {
    { -1 }
 };
 
+// Player 2
 static const struct snes_keybind snes_keybinds_2[] = {
    // SNES button                 |   keyboard key   |   joypad button   |
    { SNES_DEVICE_ID_JOYPAD_A,             'B',                 1 },
@@ -140,14 +142,13 @@ static const struct snes_keybind snes_keybinds_2[] = {
    { SNES_DEVICE_ID_JOYPAD_Y,             'F',                 2 },
    { SNES_DEVICE_ID_JOYPAD_L,             'R',                 4 },
    { SNES_DEVICE_ID_JOYPAD_R,             'T',                 5 },
-   { SNES_DEVICE_ID_JOYPAD_LEFT,          'J',             12 },
-   { SNES_DEVICE_ID_JOYPAD_RIGHT,         'L',            13 },
-   { SNES_DEVICE_ID_JOYPAD_UP,            'I',               10 },
-   { SNES_DEVICE_ID_JOYPAD_DOWN,          'K',             11 },
-   { SNES_DEVICE_ID_JOYPAD_START,         'P',            6 },
-   { SNES_DEVICE_ID_JOYPAD_SELECT,        'O',           14 },
+   { SNES_DEVICE_ID_JOYPAD_LEFT,          'J',                 12 },
+   { SNES_DEVICE_ID_JOYPAD_RIGHT,         'L',                 13 },
+   { SNES_DEVICE_ID_JOYPAD_UP,            'I',                 10 },
+   { SNES_DEVICE_ID_JOYPAD_DOWN,          'K',                 11 },
+   { SNES_DEVICE_ID_JOYPAD_START,         'P',                 6 },
+   { SNES_DEVICE_ID_JOYPAD_SELECT,        'O',                 14 },
    { -1 }
-   //{ SNES_FAST_FORWARD_KEY,         GLFW_KEY_SPACE,            9 },
 };
 
 ///// Save state

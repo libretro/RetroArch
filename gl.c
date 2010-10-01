@@ -42,6 +42,8 @@ static void glfw_input_poll(void *data)
    glfwPollEvents();
 }
 
+#define BUTTONS_MAX 128
+
 static int joypad_id[2];
 static int joypad_buttons[2];
 static bool joypad_inited = false;
@@ -51,12 +53,14 @@ static int init_joypads(int max_pads)
 {
    // Finds the first (two) joypads that are alive
    int count = 0;
-   for ( int i = GLFW_JOYSTICK_1; i <= GLFW_JOYSTICK_LAST && count < max_pads; i++ )
+   for ( int i = GLFW_JOYSTICK_1; (i <= GLFW_JOYSTICK_LAST) && (count < max_pads); i++ )
    {
       if ( glfwGetJoystickParam(i, GLFW_PRESENT) == GL_TRUE )
       {
          joypad_id[count] = i;
          joypad_buttons[count] = glfwGetJoystickParam(i, GLFW_BUTTONS);
+         if (joypad_buttons[count] > BUTTONS_MAX)
+            joypad_buttons[count] = BUTTONS_MAX;
          count++;
       }
    }
@@ -74,7 +78,7 @@ static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, b
       joypad_count = init_joypads(2);
 
    int port_num = port ? 1 : 0;
-   unsigned char buttons[joypad_buttons[port_num]];
+   unsigned char buttons[BUTTONS_MAX];
 
    if ( joypad_count > id )
       glfwGetJoystickButtons(joypad_id[port_num], buttons, joypad_buttons[port_num]);
