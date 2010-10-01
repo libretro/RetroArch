@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
 #include "config.h"
 #include "driver.h"
 #include "hqflt/pastlib.h"
@@ -336,29 +337,167 @@ static void fill_pathname(char *out_path, char *in_path, const char *replace)
    strcat(out_path, replace);
 }
 
+static void print_help(void)
+{
+   puts("===========================================");
+   puts("ssnes: Simple Super Nintendo Emulator (libsnes)");
+   puts("===========================================");
+   puts("Usage: ssnes [rom file] [-h/--help | -s/--save]");
+   puts("\t-h/--help: Show this help message");
+   puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
+}
+
+static FILE* rom_file = NULL;
+static char savefile_name_srm[256] = {0};
+
+static void parse_input(int argc, char *argv[])
+{
+   if (argc < 2)
+   {
+      print_help();
+      exit(1);
+   }
+
+   struct option opts[] = {
+      { "help", 0, NULL, 'h' },
+      { "save", 1, NULL, 's' },
+      { NULL, 0, NULL, 0 }
+   };
+
+   int option_index = 0;
+   char optstring[] = "hs:";
+   for(;;)
+   {
+      int c = getopt_long(argc, argv, optstring, opts, &option_index);
+
+      if (c == -1)
+         break;
+
+      switch (c)
+      {
+         case 'h':
+            print_help();
+            exit(0);
+
+         case 's':
+            strncpy(savefile_name_srm, optarg, sizeof(savefile_name_srm));
+            savefile_name_srm[sizeof(savefile_name_srm)-1] = '\0';
+            break;
+         case '?':
+            print_help();
+            exit(1);
+
+         default:
+            fprintf(stderr, "Error parsing arguments.\n");
+            exit(1);
+      }
+   }
+
+   if (optind < argc)
+   {
+      fprintf(stderr, "SSNES: Opening file: \"%s\"\n", argv[1]);
+      rom_file = fopen(argv[optind], "rb");
+      if (rom_file == NULL)
+      {
+         fprintf(stderr, "Could not open file: \"%s\"\n", optarg);
+         exit(1);
+      }
+      if (strlen(savefile_name_srm) == 0)
+         fill_pathname(savefile_name_srm, argv[optind], ".srm");
+   }
+}
+
+static ssize_t read_file(FILE* file, void** buf)
+{
+   ssize_t ret;
+   if (file == NULL) // stdin
+   {
+      size_t buf_size = 0xFFFFF; // Some initial guesstimate.
+      size_t buf_ptr = 0;
+      char *rom_buf = malloc(buf_size);
+      if (rom_buf == NULL)
+      {
+         fprintf(stderr, "SSNES [ERROR] :: Couldn't allocate memory!\n");
+         return -1;
+      }
+
+      for(;;)
+      {
+         size_t ret = fread(rom_buf + buf_ptr, 1, buf_size - buf_ptr, stdin);
+         buf_ptr += ret;
+
+         // We've reached the end
+         if (buf_ptr < buf_size)
+            break;
+
+         rom_buf = realloc(rom_buf, buf_size * 2);
+         if (rom_buf == NULL)
+         {
+            fprintf(stderr, "SSNES [ERROR] :: Couldn't allocate memory!\n");
+            return -1;
+         }
+
+         buf_size *= 2;
+      }
+
+      if ((buf_size & 0x7fff) == 512)
+      {
+         buf_size -= 512;
+      }
+
+      *buf = rom_buf;
+      ret = buf_size;
+   }
+   else
+   {
+      fseek(file, 0, SEEK_END);
+      long length = ftell(file);
+      rewind(file);
+      if ((length & 0x7fff) == 512)
+      {
+         length -= 512;
+         fseek(file, 512, SEEK_SET);
+      }
+
+      void *rom_buf = malloc(length);
+      if ( rom_buf == NULL )
+      {
+         fprintf(stderr, "SSNES [ERROR] :: Couldn't allocate memory!\n");
+         return -1;
+      }
+
+      if ( fread(rom_buf, 1, length, file) < length )
+      {
+         fprintf(stderr, "SSNES [ERROR] :: Didn't read whole file.\n");
+         free(rom_buf);
+         return -1;
+      }
+      *buf = rom_buf;
+      ret = length;
+   }
+   return ret;
+}
+
 int main(int argc, char *argv[])
 {
-   if ( argc != 2 )
+   parse_input(argc, argv);
+
+   void *rom_buf;
+   ssize_t rom_len = 0;
+   if ((rom_len = read_file(rom_file, &rom_buf)) == -1)
    {
-      fprintf(stderr, "Usage: %s file\n", argv[0]);
+      fprintf(stderr, "SSNES [ERROR] :: Could not read ROM file.\n");
       exit(1);
    }
 
-   fprintf(stderr, "SSNES: Opening file: \"%s\"\n", argv[1]);
-   FILE *file = fopen(argv[1], "rb");
-   if ( file == NULL )
-   {
-      fprintf(stderr, "SSNES [ERROR]: Could not open file: \"%s\"\n", argv[1]);
-      exit(1);
-   }
+   if (rom_file != NULL)
+      fclose(rom_file);
 
-   char statefile_name[strlen(argv[1])+strlen(".state")+1];
-   char savefile_name_rtc[strlen(argv[1])+strlen(".rtc")+1];
-   char savefile_name_srm[strlen(argv[1])+strlen(".srm")+1];
+   char statefile_name[strlen(savefile_name_srm)+strlen(".state")+1];
+   char savefile_name_rtc[strlen(savefile_name_srm)+strlen(".rtc")+1];
 
    fill_pathname(statefile_name, argv[1], ".state");
    fill_pathname(savefile_name_rtc, argv[1], ".rtc");
-   fill_pathname(savefile_name_srm, argv[1], ".srm");
 
    init_drivers();
 
@@ -368,33 +507,8 @@ int main(int argc, char *argv[])
    snes_set_audio_sample(audio_sample);
    snes_set_input_poll(input_poll);
    snes_set_input_state(input_state);
-
-
-   fseek(file, 0, SEEK_END);
-   long length = ftell(file);
-   rewind(file);
-   if ((length & 0x7fff) == 512)
-   {
-      length -= 512;
-      fseek(file, 512, SEEK_SET);
-   }
-
-   void *rom_buf = malloc(length);
-   if ( rom_buf == NULL )
-   {
-      fprintf(stderr, "SSNES [ERROR] :: Couldn't allocate memory!\n");
-      goto error;
-   }
-
-   if ( fread(rom_buf, 1, length, file) < length )
-   {
-      fprintf(stderr, "SSNES [ERROR] :: Didn't read whole file.\n");
-      goto error;
-   }
-
-   fclose(file);
-
-   if (!snes_load_cartridge_normal(NULL, rom_buf, length))
+   
+   if (!snes_load_cartridge_normal(NULL, rom_buf, rom_len))
    {
       fprintf(stderr, "SSNES [ERROR] :: ROM file \"%s\" is not valid!\n", argv[1]);;
       goto error;
@@ -404,6 +518,11 @@ int main(int argc, char *argv[])
 
    unsigned serial_size = snes_serialize_size();
    uint8_t *serial_data = malloc(serial_size);
+   if (serial_data == NULL)
+   {
+      fprintf(stderr, "SSNES [ERROR] :: Failed to allocate memory for states!\n");
+      goto error;
+   }
 
    load_save_file(savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
    load_save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
@@ -411,7 +530,7 @@ int main(int argc, char *argv[])
    ///// TODO: Modular friendly!!!
    for(;;)
    {
-      int quitting = glfwGetKey(GLFW_KEY_ESC) || !glfwGetWindowParam(GLFW_OPENED);
+      bool quitting = glfwGetKey(GLFW_KEY_ESC) || !glfwGetWindowParam(GLFW_OPENED);
       
       if ( quitting )
          break;
@@ -440,6 +559,7 @@ int main(int argc, char *argv[])
    snes_unload_cartridge();
    snes_term();
    uninit_drivers();
+   free(serial_data);
 
    return 0;
 
