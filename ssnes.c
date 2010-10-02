@@ -339,9 +339,9 @@ static void fill_pathname(char *out_path, char *in_path, const char *replace)
 
 static void print_help(void)
 {
-   puts("===========================================");
+   puts("=================================================");
    puts("ssnes: Simple Super Nintendo Emulator (libsnes)");
-   puts("===========================================");
+   puts("=================================================");
    puts("Usage: ssnes [rom file] [-h/--help | -s/--save]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
