@@ -80,7 +80,7 @@ static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, b
    int port_num = port ? 1 : 0;
    unsigned char buttons[BUTTONS_MAX];
 
-   if ( joypad_count > id )
+   if ( joypad_count > port_num )
       glfwGetJoystickButtons(joypad_id[port_num], buttons, joypad_buttons[port_num]);
 
 
