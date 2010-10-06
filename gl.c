@@ -236,6 +236,7 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height)
 
 static void gl_free(void *data)
 {
+   glDeleteTextures(1, &texture);
    glfwTerminate();
    free(gl_buffer);
 }
