@@ -186,23 +186,37 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height)
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex_filter);
 
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
-
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, frame);
 
    glLoadIdentity();
-   glColor3f(1,1,1);
-
-   glBegin(GL_QUADS);
+   glColor4f(1, 1, 1, 1);
 
    float h = 224.0/256.0;
 
-   glTexCoord2f(0, h*height/gl->real_y);                       glVertex3i(0, 0, 0);
-   glTexCoord2f(0, 0);                                         glVertex3i(0, 1, 0);
-   glTexCoord2f((float)width/gl->real_x, 0);                   glVertex3i(1, 1, 0);
-   glTexCoord2f((float)width/gl->real_x, h*height/gl->real_y); glVertex3i(1, 0, 0);
+   GLfloat vertexes[] = {
+      0, 0, 0,
+      0, 1, 0,
+      1, 1, 0,
+      1, 0, 0
+   };
 
-   glEnd();
+   GLfloat tex_coords[] = {
+      0, h*height/gl->real_y,
+      0, 0,
+      (float)width/gl->real_x, 0,
+      (float)width/gl->real_x, h*height/gl->real_y
+   };
+
+   glEnableClientState(GL_VERTEX_ARRAY);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+                     
+   glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), vertexes);
+   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords);
+
+   glDrawArrays(GL_QUADS, 0, 4);
+
+   glDisableClientState(GL_VERTEX_ARRAY);
+   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
    // Shows FPS in taskbar.
    static int frames = 0;
@@ -305,7 +319,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
 
    glGenTextures(1, &texture);
    glBindTexture(GL_TEXTURE_2D, texture);
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, 256 * video->input_scale);
+   //glPixelStorei(GL_UNPACK_ROW_LENGTH, 256 * video->input_scale);
    glTexImage2D(GL_TEXTURE_2D,
          0, GL_RGB, 256 * video->input_scale, 256 * video->input_scale, 0, GL_BGRA,
          GL_UNSIGNED_SHORT_1_5_5_5_REV, gl_buffer);
