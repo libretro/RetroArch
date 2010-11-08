@@ -36,6 +36,13 @@ static const GLfloat vertexes[] = {
    1, 0, 0
 };
 
+static GLfloat tex_coords[] = {
+   0, 224.0/512,
+   0, 0,
+   0.5, 0,
+   0.5, 224.0/512
+};
+
 typedef struct gl
 {
    bool vsync;
@@ -213,23 +220,22 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   GLfloat tex_coords[] = {
-      0, (float)height/gl->real_y,
-      0, 0,
-      (float)width/gl->real_x, 0,
-      (float)width/gl->real_x, (float)height/gl->real_y
-   };
-   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords);
-
-   static int pitch_pixels = 1024;
-   if (pitch_pixels != (pitch >> 1))
+   static int last_width = 256;
+   static int last_height = 224;
+   if (width != last_width || height != last_height)
    {
+      tex_coords[0] = 0; 
+      tex_coords[1] = (float)height/gl->real_y;
+      tex_coords[2] = 0;
+      tex_coords[3] = 0;
+      tex_coords[4] = (float)width/gl->real_x;
+      tex_coords[5] = 0;
+      tex_coords[6] = (float)width/gl->real_x;
+      tex_coords[7] = (float)height/gl->real_y;
       glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 1);
-      pitch_pixels = pitch >> 1;
+      last_width = width;
+      last_height = height;
    }
-
-   glBufferSubData(GL_ARRAY_BUFFER, 128, sizeof(tex_coords), tex_coords);
-   glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, height * pitch, frame);
 
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, frame);
    glDrawArrays(GL_QUADS, 0, 4);
@@ -303,7 +309,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    gl->real_y = video->input_scale * 256;
 
    glEnable(GL_TEXTURE_2D);
-   glEnable(GL_DITHER);
+   glDisable(GL_DITHER);
    glDisable(GL_DEPTH_TEST);
    glColor3f(1, 1, 1);
    glClearColor(0, 0, 0, 0);
@@ -329,6 +335,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
    glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), vertexes);
+   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords);
 
    *input = &input_glfw;
    return gl;
