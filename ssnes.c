@@ -251,23 +251,23 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 
 #if VIDEO_FILTER == FILTER_HQ2X
    ProcessHQ2x(output, outputHQ2x);
-   if ( !driver.video->frame(driver.video_data, outputHQ2x, width * 2, height * 2) )
+   if ( !driver.video->frame(driver.video_data, outputHQ2x, width << 1, height << 1, width << 2) )
       video_active = false;
 #elif VIDEO_FILTER == FILTER_HQ4X
    ProcessHQ4x(output, outputHQ4x);
-   if ( !driver.video->frame(driver.video_data, outputHQ4x, width * 4, height * 4) )
+   if ( !driver.video->frame(driver.video_data, outputHQ4x, width << 2, height << 2, width << 3) )
       video_active = false;
 #elif VIDEO_FILTER == FILTER_GRAYSCALE
    grayscale_filter(output, width, height);
-   if ( !driver.video->frame(driver.video_data, output, width, height) )
+   if ( !driver.video->frame(driver.video_data, output, width, height, width << 1) )
       video_active = false;
 #elif VIDEO_FILTER == FILTER_BLEED
    bleed_filter(output, width, height);
-   if ( !driver.video->frame(driver.video_data, output, width, height) )
+   if ( !driver.video->frame(driver.video_data, output, width, height, width << 1) )
       video_active = false;
 #elif VIDEO_FILTER == FILTER_NTSC
    ntsc_filter(output_ntsc, output, width, height);
-   if ( !driver.video->frame(driver.video_data, output_ntsc, SNES_NTSC_OUT_WIDTH(width), height) )
+   if ( !driver.video->frame(driver.video_data, output_ntsc, SNES_NTSC_OUT_WIDTH(width), height, SNES_NTSC_OUT_WIDTH(width) << 1) )
       video_active = false;
 #else
    if ( !driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048) )

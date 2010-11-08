@@ -76,7 +76,7 @@ static const bool force_aspect = true;
 ////////////////////////
 
 // If you change this to something other than FILTER_NONE, make sure that you build the filter module in config.mk.
-#define VIDEO_FILTER FILTER_NONE
+#define VIDEO_FILTER FILTER_NTSC
 
 
 ////////////////
@@ -84,7 +84,7 @@ static const bool force_aspect = true;
 ////////////////
 
 // Will enable audio or not.
-static const bool audio_enable = true;
+static const bool audio_enable = false;
 
 // Output samplerate
 static const unsigned out_rate = 48000; 

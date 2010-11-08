@@ -42,7 +42,7 @@ CFLAGS = -Wall -O3 -march=native -std=gnu99
 all: $(TARGET) 
 
 ssnes: $(OBJ)
-	@$(CXX) -o $@ $(OBJ) $(LIBS)
+	@$(CXX) -o $@ $(OBJ) $(LIBS) $(CFLAGS)
 	@echo "LD $@"
 
 %.o: %.c config.h config.mk
