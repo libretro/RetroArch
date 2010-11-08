@@ -29,6 +29,7 @@ static uint8_t *gl_buffer;
 static bool keep_aspect = true;
 static GLuint tex_filter;
 
+// Static coordinates for general 256 x 224 video output.
 static const GLfloat vertexes[] = {
    0, 0, 0,
    0, 1, 0,
@@ -186,7 +187,7 @@ static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, i
    return frames/time;
 }
 
-static void show_fps(void)
+static inline void show_fps(void)
 {
 // Shows FPS in taskbar.
    static int frames = 0;
@@ -196,7 +197,7 @@ static void show_fps(void)
    if (frames == 0)
       gettimeofday(&tv, NULL);
 
-   if ((frames % 60) == 0 && frames > 0)
+   if ((frames % 180) == 0 && frames > 0)
    {
       gettimeofday(&new_tv, NULL);
       struct timeval tmp_tv = {
@@ -206,7 +207,7 @@ static void show_fps(void)
       gettimeofday(&tv, NULL);
       char tmpstr[256] = {0};
 
-      float fps = tv_to_fps(&tmp_tv, &new_tv, 60);
+      float fps = tv_to_fps(&tmp_tv, &new_tv, 180);
 
       snprintf(tmpstr, sizeof(tmpstr) - 1, "SSNES || FPS: %6.1f || Frames: %d", fps, frames);
       glfwSetWindowTitle(tmpstr);
