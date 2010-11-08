@@ -84,7 +84,7 @@ static const bool force_aspect = true;
 ////////////////
 
 // Will enable audio or not.
-static const bool audio_enable = false;
+static const bool audio_enable = true;
 
 // Output samplerate
 static const unsigned out_rate = 48000; 
