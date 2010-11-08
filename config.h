@@ -76,7 +76,7 @@ static const bool force_aspect = true;
 ////////////////////////
 
 // If you change this to something other than FILTER_NONE, make sure that you build the filter module in config.mk.
-#define VIDEO_FILTER FILTER_NTSC
+#define VIDEO_FILTER FILTER_NONE
 
 
 ////////////////

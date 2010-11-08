@@ -24,10 +24,17 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-static GLuint texture, pbo, vbo;
-static uint8_t *gl_buffer, *vertex_buf;
+static GLuint texture;
+static uint8_t *gl_buffer;
 static bool keep_aspect = true;
 static GLuint tex_filter;
+
+static const GLfloat vertexes[] = {
+   0, 0, 0,
+   0, 1, 0,
+   1, 1, 0,
+   1, 0, 0
+};
 
 typedef struct gl
 {
@@ -212,11 +219,19 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
       (float)width/gl->real_x, 0,
       (float)width/gl->real_x, (float)height/gl->real_y
    };
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 1);
+   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords);
+
+   static int pitch_pixels = 1024;
+   if (pitch_pixels != (pitch >> 1))
+   {
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 1);
+      pitch_pixels = pitch >> 1;
+   }
+
    glBufferSubData(GL_ARRAY_BUFFER, 128, sizeof(tex_coords), tex_coords);
    glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, height * pitch, frame);
 
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, frame);
    glDrawArrays(GL_QUADS, 0, 4);
    
    show_fps();
@@ -230,11 +245,8 @@ static void gl_free(void *data)
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDeleteTextures(1, &texture);
-   glDeleteBuffers(1, &pbo);
-   glDeleteBuffers(1, &vbo);
    glfwTerminate();
    free(gl_buffer);
-   free(vertex_buf);
 }
 
 static void gl_set_nonblock_state(void *data, bool state)
@@ -281,8 +293,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    gl->vsync = video->vsync;
 
    gl_buffer = calloc(1, 256 * 256 * 2 * video->input_scale * video->input_scale);
-   vertex_buf = calloc(1, 256);
-   if ( !gl_buffer || !vertex_buf )
+   if (!gl_buffer)
    {
       fprintf(stderr, "Couldn't allocate memory :<\n");
       exit(1);
@@ -303,36 +314,21 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    glLoadIdentity();
 
    glGenTextures(1, &texture);
-   glGenBuffers(1, &pbo);
-   glGenBuffers(1, &vbo);
-   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
-   glBufferData(GL_PIXEL_UNPACK_BUFFER, 256 * 256 * 2 * video->input_scale * video->input_scale, gl_buffer, GL_STREAM_DRAW); 
 
    glBindTexture(GL_TEXTURE_2D, texture);
    glTexImage2D(GL_TEXTURE_2D,
          0, GL_RGB, 256 * video->input_scale, 256 * video->input_scale, 0, GL_BGRA,
-         GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+         GL_UNSIGNED_SHORT_1_5_5_5_REV, gl_buffer);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex_filter);
-
-   GLfloat vertexes[] = {
-      0, 0, 0,
-      0, 1, 0,
-      1, 1, 0,
-      1, 0, 0
-   };
-
-   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-   glBufferData(GL_ARRAY_BUFFER, 256, vertex_buf, GL_STREAM_DRAW);
-   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertexes), vertexes);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 1024);
 
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), NULL);
-   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), (void*)128);
+   glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), vertexes);
 
    *input = &input_glfw;
    return gl;
