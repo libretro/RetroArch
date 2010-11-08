@@ -67,7 +67,7 @@ typedef struct video_driver
 {
    void* (*init)(video_info_t *video, const input_driver_t **input); 
    // Should the video driver act as an input driver as well? :)
-   bool (*frame)(void* data, const uint16_t* frame, int width, int height);
+   bool (*frame)(void* data, const uint16_t* frame, int width, int height, int pitch);
    void (*set_nonblock_state)(void* data, bool toggle); // Should we care about syncing to vblank? Fast forwarding.
    void (*free)(void* data);
 } video_driver_t;

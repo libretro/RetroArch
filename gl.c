@@ -15,6 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define GL_GLEXT_PROTOTYPES
 
 #include "driver.h"
 #include <GL/glfw.h>
@@ -23,8 +24,8 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-static GLuint texture;
-static uint8_t *gl_buffer;
+static GLuint texture, pbo, vbo;
+static uint8_t *gl_buffer, *vertex_buf;
 static bool keep_aspect = true;
 static GLuint tex_filter;
 
@@ -70,7 +71,6 @@ static int init_joypads(int max_pads)
 
 static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
 {
-
    if ( device != SNES_DEVICE_JOYPAD )
       return 0;
 
@@ -139,29 +139,29 @@ static void GLFWCALL resize(int width, int height)
 
    if ( keep_aspect )
    {
-      //float desired_aspect = 256.0/224.0;
-      float desired_aspect = 296.0/224.0;
-      float in_aspect = (float)width / height;
+      float desired_aspect = 4.0/3;
+      float device_aspect = (float)width / height;
 
-      if ( (int)(in_aspect*100) > (int)(desired_aspect*100) )
+      // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
+      // assume they are actually equal.
+      if ( (int)(device_aspect*1000) > (int)(desired_aspect*1000) )
       {
-         float delta = (in_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         glOrtho(0.5 - delta, 0.5 + delta, 0, 1, -1, 1);
+         float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
+         glViewport(width * (0.5 - delta), 0, 2.0 * width * delta, height);
       }
 
-      else if ( (int)(in_aspect*100) < (int)(desired_aspect*100) )
+      else if ( (int)(device_aspect*1000) < (int)(desired_aspect*1000) )
       {
-         float delta = (desired_aspect / in_aspect - 1.0) / 2.0 + 0.5;
-         glOrtho(0, 1, 0.5 - delta, 0.5 + delta, -1, 1);
+         float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
+         glViewport(0, height * (0.5 - delta), width, 2.0 * height * delta);
       }
       else
-         glOrtho(0, 1, 0, 1, -1, 1);
-
+         glViewport(0, 0, width, height);
    }
    else
-      glOrtho(0, 1, 0, 1, -1, 1);
+      glViewport(0, 0, width, height);
 
-   glViewport(0, 0, width, height);
+   glOrtho(0, 1, 0, 1, -1, 1);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 }
@@ -172,53 +172,9 @@ static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, i
    return frames/time;
 }
 
-static bool gl_frame(void *data, const uint16_t* frame, int width, int height)
+static void show_fps(void)
 {
-   gl_t *gl = data;
-
-   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-   glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
-
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex_filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex_filter);
-
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, frame);
-
-   glLoadIdentity();
-   glColor4f(1, 1, 1, 1);
-
-   float h = 224.0/256.0;
-
-   GLfloat vertexes[] = {
-      0, 0, 0,
-      0, 1, 0,
-      1, 1, 0,
-      1, 0, 0
-   };
-
-   GLfloat tex_coords[] = {
-      0, h*height/gl->real_y,
-      0, 0,
-      (float)width/gl->real_x, 0,
-      (float)width/gl->real_x, h*height/gl->real_y
-   };
-
-   glEnableClientState(GL_VERTEX_ARRAY);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-                     
-   glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), vertexes);
-   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords);
-
-   glDrawArrays(GL_QUADS, 0, 4);
-
-   glDisableClientState(GL_VERTEX_ARRAY);
-   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-
-   // Shows FPS in taskbar.
+// Shows FPS in taskbar.
    static int frames = 0;
    static struct timeval tv;
    struct timeval new_tv;
@@ -242,7 +198,28 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height)
       glfwSetWindowTitle(tmpstr);
    }
    frames++;
+}
 
+static bool gl_frame(void *data, const uint16_t* frame, int width, int height, int pitch)
+{
+   gl_t *gl = data;
+
+   glClear(GL_COLOR_BUFFER_BIT);
+
+   GLfloat tex_coords[] = {
+      0, (float)height/gl->real_y,
+      0, 0,
+      (float)width/gl->real_x, 0,
+      (float)width/gl->real_x, (float)height/gl->real_y
+   };
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 1);
+   glBufferSubData(GL_ARRAY_BUFFER, 128, sizeof(tex_coords), tex_coords);
+   glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, height * pitch, frame);
+
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+   glDrawArrays(GL_QUADS, 0, 4);
+   
+   show_fps();
    glfwSwapBuffers();
 
    return true;
@@ -250,9 +227,14 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height)
 
 static void gl_free(void *data)
 {
+   glDisableClientState(GL_VERTEX_ARRAY);
+   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDeleteTextures(1, &texture);
+   glDeleteBuffers(1, &pbo);
+   glDeleteBuffers(1, &vbo);
    glfwTerminate();
    free(gl_buffer);
+   free(vertex_buf);
 }
 
 static void gl_set_nonblock_state(void *data, bool state)
@@ -284,7 +266,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    int res;
    res = glfwOpenWindow(video->width, video->height, 0, 0, 0, 0, 0, 0, (video->fullscreen) ? GLFW_FULLSCREEN : GLFW_WINDOW);
 
-   if ( !res )
+   if (!res)
    {
       glfwTerminate();
       return NULL;
@@ -298,19 +280,22 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
       glfwSwapInterval(0);
    gl->vsync = video->vsync;
 
-   gl_buffer = malloc(256 * 256 * 2 * video->input_scale * video->input_scale);
-   if ( !gl_buffer )
+   gl_buffer = calloc(1, 256 * 256 * 2 * video->input_scale * video->input_scale);
+   vertex_buf = calloc(1, 256);
+   if ( !gl_buffer || !vertex_buf )
    {
       fprintf(stderr, "Couldn't allocate memory :<\n");
       exit(1);
    }
 
    gl->real_x = video->input_scale * 256;
-   gl->real_y = video->input_scale * 224;
+   gl->real_y = video->input_scale * 256;
 
    glEnable(GL_TEXTURE_2D);
    glEnable(GL_DITHER);
-   glEnable(GL_DEPTH_TEST);
+   glDisable(GL_DEPTH_TEST);
+   glColor3f(1, 1, 1);
+   glClearColor(0, 0, 0, 0);
 
    glfwSetWindowTitle("SSNES");
 
@@ -318,11 +303,36 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    glLoadIdentity();
 
    glGenTextures(1, &texture);
+   glGenBuffers(1, &pbo);
+   glGenBuffers(1, &vbo);
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
+   glBufferData(GL_PIXEL_UNPACK_BUFFER, 256 * 256 * 2 * video->input_scale * video->input_scale, gl_buffer, GL_STREAM_DRAW); 
+
    glBindTexture(GL_TEXTURE_2D, texture);
-   //glPixelStorei(GL_UNPACK_ROW_LENGTH, 256 * video->input_scale);
    glTexImage2D(GL_TEXTURE_2D,
          0, GL_RGB, 256 * video->input_scale, 256 * video->input_scale, 0, GL_BGRA,
-         GL_UNSIGNED_SHORT_1_5_5_5_REV, gl_buffer);
+         GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex_filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex_filter);
+
+   GLfloat vertexes[] = {
+      0, 0, 0,
+      0, 1, 0,
+      1, 1, 0,
+      1, 0, 0
+   };
+
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+   glBufferData(GL_ARRAY_BUFFER, 256, vertex_buf, GL_STREAM_DRAW);
+   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertexes), vertexes);
+
+   glEnableClientState(GL_VERTEX_ARRAY);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), NULL);
+   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), (void*)128);
 
    *input = &input_glfw;
    return gl;

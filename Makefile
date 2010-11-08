@@ -3,7 +3,7 @@ include config.mk
 TARGET = ssnes
 
 OBJ = ssnes.o
-LIBS = -lsamplerate -lsnes
+LIBS = -lsamplerate libsnes.a
 
 ifeq ($(BUILD_RSOUND), 1)
    OBJ += rsound.o
@@ -42,7 +42,7 @@ CFLAGS = -Wall -O3 -march=native -std=gnu99
 all: $(TARGET) 
 
 ssnes: $(OBJ)
-	@$(CC) -o $@ $(OBJ) $(LIBS)
+	@$(CXX) -o $@ $(OBJ) $(LIBS)
 	@echo "LD $@"
 
 %.o: %.c config.h config.mk

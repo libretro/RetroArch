@@ -212,6 +212,7 @@ static void uninit_video_input(void)
       driver.input->free(driver.input_data);
 }
 
+#if VIDEO_FILTER != FILTER_NONE
 static inline void process_frame (uint16_t * restrict out, const uint16_t * restrict in, unsigned width, unsigned height)
 {
    int pitch = 1024;
@@ -226,6 +227,7 @@ static inline void process_frame (uint16_t * restrict out, const uint16_t * rest
       memcpy(dst, src, width * sizeof(uint16_t));
    }
 }
+#endif
 
 // libsnes: 0.065
 // Format received is 16-bit 0RRRRRGGGGGBBBBB
@@ -241,14 +243,13 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 #elif VIDEO_FILTER == FILTER_NTSC
    uint16_t output_ntsc[SNES_NTSC_OUT_WIDTH(width) * height];
 #endif
+
+#if VIDEO_FILTER != FILTER_NONE
    uint16_t output[width * height];
-
    process_frame(output, data, width, height);
+#endif
 
-#if VIDEO_FILTER == FILTER_NONE
-   if ( !driver.video->frame(driver.video_data, output, width, height) )
-      video_active = false;
-#elif VIDEO_FILTER == FILTER_HQ2X
+#if VIDEO_FILTER == FILTER_HQ2X
    ProcessHQ2x(output, outputHQ2x);
    if ( !driver.video->frame(driver.video_data, outputHQ2x, width * 2, height * 2) )
       video_active = false;
@@ -269,7 +270,7 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if ( !driver.video->frame(driver.video_data, output_ntsc, SNES_NTSC_OUT_WIDTH(width), height) )
       video_active = false;
 #else
-   if ( !driver.video->frame(driver.video_data, output, width, height) )
+   if ( !driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048) )
       video_active = false;
 #endif
 
