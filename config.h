@@ -22,6 +22,7 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
+#include <GL/glfw.h>
 #include <stdbool.h>
 #include "libsnes.hpp"
 #include "driver.h"
@@ -63,6 +64,9 @@ static const bool vsync = true;
 // Smooths picture
 static const bool video_smooth = false;
 
+// Path to custom Cg shader. If using custom shaders, it is recommended to disable video_smooth and VIDEO_FILTER.
+static const char *cg_shader_path = "hqflt/crt.cg";
+
 // On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 
 
@@ -87,7 +91,7 @@ static const bool force_aspect = true;
 static const bool audio_enable = true;
 
 // Output samplerate
-static const unsigned out_rate = 44100; 
+static const unsigned out_rate = 48000; 
 
 // Input samplerate from libSNES. 
 // Lower this (slightly) if you are experiencing frequent audio dropouts while vsync is enabled.

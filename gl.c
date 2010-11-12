@@ -18,20 +18,22 @@
 #define GL_GLEXT_PROTOTYPES
 
 #include "driver.h"
+#include "config.h"
 #include <GL/glfw.h>
 #include <stdint.h>
 #include "libsnes.hpp"
 #include <stdio.h>
 #include <sys/time.h>
 
+#ifdef HAVE_CG
 #include <Cg/cg.h>
 #include <Cg/cgGL.h>
-
-// Lots of globals, yes I know. :(
 static CGcontext cgCtx;
 static CGprogram cgPrg;
 static CGprofile cgVProf;
+#endif
 
+// Lots of globals, yes I know. :(
 static GLuint texture;
 static uint8_t *gl_buffer;
 static bool keep_aspect = true;
@@ -244,6 +246,9 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
 
 static void gl_free(void *data)
 {
+#ifdef HAVE_CG
+   cgDestroyContext(cgCtx);
+#endif
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDeleteTextures(1, &texture);
@@ -319,32 +324,37 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), vertexes);
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords);
 
+#ifdef HAVE_CG
    cgCtx = cgCreateContext();
    if (cgCtx == NULL)
    {
       fprintf(stderr, "Failed to create Cg context\n");
-      return NULL;
+      goto error;
    }
    cgVProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
    if (cgVProf == CG_PROFILE_UNKNOWN)
    {
       fprintf(stderr, "Invalid profile type\n");
-      return NULL;
+      goto error;
    }
    cgGLSetOptimalOptions(cgVProf);
-   cgPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, "hqflt/crt.cg", cgVProf, "main", 0);
+   cgPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, cg_shader_path, cgVProf, "main", 0);
    if (cgPrg == NULL)
    {
       CGerror err = cgGetError();
       fprintf(stderr, "CG error: %s\n", cgGetErrorString(err));
-      return NULL;
+      goto error;
    }
    cgGLLoadProgram(cgPrg);
    cgGLEnableProfile(cgVProf);
    cgGLBindProgram(cgPrg);
+#endif
 
    *input = &input_glfw;
    return gl;
+error:
+   free(gl);
+   return NULL;
 }
 
 const video_driver_t video_gl = {

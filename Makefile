@@ -2,6 +2,7 @@ include config.mk
 
 TARGET = ssnes
 
+DEFINES =
 OBJ = ssnes.o
 LIBS = -lsamplerate libsnes.a
 
@@ -27,8 +28,14 @@ endif
 
 ifeq ($(BUILD_OPENGL), 1)
    OBJ += gl.o
-   LIBS += -lglfw -lCg -lCgGL
+   LIBS += -lglfw
 endif
+
+ifeq ($(BUILD_CG), 1)
+   LIBS += -lCg -lCgGL
+   DEFINES += -DHAVE_CG 
+endif
+
 ifeq ($(BUILD_FILTER), 1)
    OBJ += hqflt/hq.o
    OBJ += hqflt/grayscale.o
@@ -37,7 +44,7 @@ ifeq ($(BUILD_FILTER), 1)
    OBJ += hqflt/snes_ntsc/snes_ntsc.o
 endif
 
-CFLAGS = -Wall -O3 -march=native -std=gnu99 -I.
+CFLAGS = -Wall -O3 -march=native -std=gnu99 -Wno-unused-variable -I. $(DEFINES)
 
 all: $(TARGET) 
 
