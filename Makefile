@@ -37,7 +37,7 @@ ifeq ($(BUILD_FILTER), 1)
    OBJ += hqflt/snes_ntsc/snes_ntsc.o
 endif
 
-CFLAGS = -Wall -O3 -march=native -std=gnu99
+CFLAGS = -Wall -O3 -march=native -std=gnu99 -I.
 
 all: $(TARGET) 
 
