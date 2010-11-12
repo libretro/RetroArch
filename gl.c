@@ -24,6 +24,14 @@
 #include <stdio.h>
 #include <sys/time.h>
 
+#include <Cg/cg.h>
+#include <Cg/cgGL.h>
+
+// Lots of globals, yes I know. :(
+static CGcontext cgCtx;
+static CGprogram cgPrg;
+static CGprofile cgVProf;
+
 static GLuint texture;
 static uint8_t *gl_buffer;
 static bool keep_aspect = true;
@@ -37,11 +45,11 @@ static const GLfloat vertexes[] = {
    1, 0, 0
 };
 
-static GLfloat tex_coords[] = {
-   0, 224.0/512,
+static const GLfloat tex_coords[] = {
+   0, 1,
    0, 0,
-   0.5, 0,
-   0.5, 224.0/512
+   1, 0,
+   1, 1
 };
 
 typedef struct gl
@@ -217,28 +225,15 @@ static inline void show_fps(void)
 
 static bool gl_frame(void *data, const uint16_t* frame, int width, int height, int pitch)
 {
-   gl_t *gl = data;
+   //gl_t *gl = data;
+   (void)data;
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   static int last_width = 256;
-   static int last_height = 224;
-   if (width != last_width || height != last_height)
-   {
-      tex_coords[0] = 0; 
-      tex_coords[1] = (float)height/gl->real_y;
-      tex_coords[2] = 0;
-      tex_coords[3] = 0;
-      tex_coords[4] = (float)width/gl->real_x;
-      tex_coords[5] = 0;
-      tex_coords[6] = (float)width/gl->real_x;
-      tex_coords[7] = (float)height/gl->real_y;
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 1);
-      last_width = width;
-      last_height = height;
-   }
-
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, frame);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 1);
+   glTexImage2D(GL_TEXTURE_2D,
+         0, GL_RGBA, width, height, 0, GL_BGRA,
+         GL_UNSIGNED_SHORT_1_5_5_5_REV, frame);
    glDrawArrays(GL_QUADS, 0, 4);
    
    show_fps();
@@ -299,16 +294,6 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
       glfwSwapInterval(0);
    gl->vsync = video->vsync;
 
-   gl_buffer = calloc(1, 256 * 256 * 2 * video->input_scale * video->input_scale);
-   if (!gl_buffer)
-   {
-      fprintf(stderr, "Couldn't allocate memory :<\n");
-      exit(1);
-   }
-
-   gl->real_x = video->input_scale * 256;
-   gl->real_y = video->input_scale * 256;
-
    glEnable(GL_TEXTURE_2D);
    glDisable(GL_DITHER);
    glDisable(GL_DEPTH_TEST);
@@ -323,20 +308,40 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    glGenTextures(1, &texture);
 
    glBindTexture(GL_TEXTURE_2D, texture);
-   glTexImage2D(GL_TEXTURE_2D,
-         0, GL_RGB, 256 * video->input_scale, 256 * video->input_scale, 0, GL_BGRA,
-         GL_UNSIGNED_SHORT_1_5_5_5_REV, gl_buffer);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex_filter);
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, 1024);
 
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
    glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), vertexes);
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords);
+
+   cgCtx = cgCreateContext();
+   if (cgCtx == NULL)
+   {
+      fprintf(stderr, "Failed to create Cg context\n");
+      return NULL;
+   }
+   cgVProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
+   if (cgVProf == CG_PROFILE_UNKNOWN)
+   {
+      fprintf(stderr, "Invalid profile type\n");
+      return NULL;
+   }
+   cgGLSetOptimalOptions(cgVProf);
+   cgPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, "hqflt/crt.cg", cgVProf, "main", 0);
+   if (cgPrg == NULL)
+   {
+      CGerror err = cgGetError();
+      fprintf(stderr, "CG error: %s\n", cgGetErrorString(err));
+      return NULL;
+   }
+   cgGLLoadProgram(cgPrg);
+   cgGLEnableProfile(cgVProf);
+   cgGLBindProgram(cgPrg);
 
    *input = &input_glfw;
    return gl;

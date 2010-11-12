@@ -1,0 +1,79 @@
+
+#define TEX2D(c) tex2D(decal,(c))
+#define PI 3.141592653589
+#define phase 0.0
+#define gamma 2.5
+
+#define distortion 0.2
+
+struct output 
+{
+  float4 color    : COLOR;
+};
+
+
+//uniform float2 rubyInputSize;
+//uniform float2 rubyOutputSize;
+//uniform float2 rubyTextureSize;
+
+float2 fract(float2 v)
+{
+	float2 ret;
+	
+	ret.x = v.x - floor(v.x);
+	ret.y = v.y - floor(v.y);
+	
+	return ret;
+}
+
+float2 barrelDistortion(float2 coord) {
+  float2 cc = coord - 0.5;
+  float dist = dot(cc, cc);
+  return coord + cc * (dist + distortion * dist * dist) * distortion;
+}
+
+output main(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEXUNIT0)
+{
+	output OUT;
+   	
+	float2 rubyInputSize = float2(256, 224);
+	float2 rubyOutputSize = float2(256, 224);
+	float2 rubyTextureSize = float2(256, 224);   	
+   	
+	float2 xy = barrelDistortion(texCoord.xy);
+	float2 one = 1.0/rubyTextureSize;
+	xy = xy + float2(0.0 , -0.5 * (phase + (1-phase) * rubyInputSize.y/rubyOutputSize.y) * one.y);
+	
+	//float2 uv_ratio = fract(xy*rubyTextureSize);
+	float2 uv_ratio = frac(xy*rubyTextureSize);
+	
+	float4 col, col2;
+	
+	float4 coeffs = float4(1.0 + uv_ratio.x, uv_ratio.x, 1.0 - uv_ratio.x, 2.0 - uv_ratio.x);
+	coeffs = (sin(PI * coeffs) * sin(PI * coeffs / 2.0)) / (coeffs * coeffs);
+	coeffs = coeffs / (coeffs.x+coeffs.y+coeffs.z+coeffs.w);
+	
+	col  = clamp(coeffs.x * TEX2D(xy + float2(-one.x,0.0)) + coeffs.y * TEX2D(xy) + coeffs.z * TEX2D(xy + float2(one.x, 0.0)) + coeffs.w * TEX2D(xy + float2(2 * one.x, 0.0)),0.0,1.0);
+	col2 = clamp(coeffs.x * TEX2D(xy + float2(-one.x,one.y)) + coeffs.y * TEX2D(xy + float2(0.0, one.y)) + coeffs.z * TEX2D(xy + one) + coeffs.w * TEX2D(xy + float2(2 * one.x, one.y)),0.0,1.0);
+	col = pow(col, gamma);
+	col2 = pow(col2, gamma);
+	
+	float4 wid = 2 + 2 * pow(col, 4.0);
+	float4 weights = uv_ratio.y/0.3;
+	weights = 0.51*exp(-pow(weights*sqrt(2/wid),wid))/0.3/(0.6+0.2*wid);
+	wid = 2 + 4 * pow(col2,4.0);
+	float4 weights2 = (1.0-uv_ratio.y)/0.3;
+	weights2 = 0.51*exp(-pow(weights2*sqrt(2/wid),wid))/0.3/(0.6+0.2*wid);
+	
+	float4 mcol = 1.0;
+	if ( fmod(xy.x*rubyOutputSize.x,2.0) < 1.0)
+		mcol.g = 0.7;
+	else
+		mcol.rb = 0.7;
+	
+	OUT.color = pow(mcol*(col * weights + col2 * weights2), 1.0/2.2);
+	
+	return OUT;   	
+}
+
+

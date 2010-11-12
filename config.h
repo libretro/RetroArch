@@ -61,7 +61,7 @@ static const unsigned fullscreen_y = 720;
 static const bool vsync = true;
 
 // Smooths picture
-static const bool video_smooth = true;
+static const bool video_smooth = false;
 
 // On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 
@@ -87,7 +87,7 @@ static const bool force_aspect = true;
 static const bool audio_enable = true;
 
 // Output samplerate
-static const unsigned out_rate = 48000; 
+static const unsigned out_rate = 44100; 
 
 // Input samplerate from libSNES. 
 // Lower this (slightly) if you are experiencing frequent audio dropouts while vsync is enabled.

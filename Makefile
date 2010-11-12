@@ -27,7 +27,7 @@ endif
 
 ifeq ($(BUILD_OPENGL), 1)
    OBJ += gl.o
-   LIBS += -lglfw
+   LIBS += -lglfw -lCg -lCgGL
 endif
 ifeq ($(BUILD_FILTER), 1)
    OBJ += hqflt/hq.o
