@@ -65,7 +65,7 @@ static const bool vsync = true;
 static const bool video_smooth = false;
 
 // Path to custom Cg shader. If using custom shaders, it is recommended to disable video_smooth and VIDEO_FILTER.
-static const char *cg_shader_path = "hqflt/HDR-TV.cg";
+static const char *cg_shader_path = "hqflt/crt.cg";
 
 // On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 

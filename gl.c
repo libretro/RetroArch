@@ -31,11 +31,12 @@
 static CGcontext cgCtx;
 static CGprogram cgPrg;
 static CGprofile cgVProf;
+
+static CGparameter cg_video_size, cg_texture_size;
 #endif
 
 // Lots of globals, yes I know. :(
 static GLuint texture;
-static uint8_t *gl_buffer;
 static bool keep_aspect = true;
 static GLuint tex_filter;
 
@@ -232,6 +233,11 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
 
    glClear(GL_COLOR_BUFFER_BIT);
 
+#if HAVE_CG
+   cgGLSetParameter2f(cg_video_size, width, height);
+   cgGLSetParameter2f(cg_texture_size, width, height);
+#endif
+
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 1);
    glTexImage2D(GL_TEXTURE_2D,
          0, GL_RGBA, width, height, 0, GL_BGRA,
@@ -253,7 +259,6 @@ static void gl_free(void *data)
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDeleteTextures(1, &texture);
    glfwTerminate();
-   free(gl_buffer);
 }
 
 static void gl_set_nonblock_state(void *data, bool state)
@@ -348,6 +353,10 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    cgGLLoadProgram(cgPrg);
    cgGLEnableProfile(cgVProf);
    cgGLBindProgram(cgPrg);
+
+   cg_video_size = cgGetNamedParameter(cgPrg, "IN.video_size");
+   cg_texture_size = cgGetNamedParameter(cgPrg, "IN.texture_size");
+
 #endif
 
    *input = &input_glfw;

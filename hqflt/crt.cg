@@ -11,10 +11,12 @@ struct output
   float4 color    : COLOR;
 };
 
+struct input
+{
+  float2 video_size;
+  float2 texture_size;
+};
 
-//uniform float2 rubyInputSize;
-//uniform float2 rubyOutputSize;
-//uniform float2 rubyTextureSize;
 
 float2 fract(float2 v)
 {
@@ -32,13 +34,13 @@ float2 barrelDistortion(float2 coord) {
   return coord + cc * (dist + distortion * dist * dist) * distortion;
 }
 
-output main(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEXUNIT0)
+output main(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEXUNIT0, uniform input IN)
 {
 	output OUT;
    	
-	float2 rubyInputSize = float2(256, 224);
-	float2 rubyOutputSize = float2(256, 224);
-	float2 rubyTextureSize = float2(256, 224);   	
+	float2 rubyInputSize = IN.video_size;
+	float2 rubyOutputSize = IN.video_size;
+	float2 rubyTextureSize = IN.texture_size;
    	
 	float2 xy = barrelDistortion(texCoord.xy);
 	float2 one = 1.0/rubyTextureSize;
