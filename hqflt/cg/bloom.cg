@@ -1,0 +1,95 @@
+/* Default Vertex shader */
+void main_vertex
+(
+	float4 position	: POSITION,
+	float4 color	: COLOR,
+	float2 texCoord : TEXCOORD0,
+
+    uniform float4x4 modelViewProj,
+
+	out float4 oPosition : POSITION,
+	out float4 oColor    : COLOR,
+	out float2 otexCoord : TEXCOORD
+)
+{
+	oPosition = mul(modelViewProj, position);
+	oColor = color;
+	otexCoord = texCoord;
+}
+
+float Luminance = 0.08f;
+static const float fMiddleGray = 0.18f;
+static const float fWhiteCutoff = 0.8f;
+
+#define NUM 13
+
+float2 PixelOffsets[NUM] =
+{
+   { -0.006, -0.006 },
+   { -0.005, -0.005 },
+   { -0.004, -0.004 },
+   { -0.003, -0.003 },
+   { -0.002, -0.002 },
+   { -0.001, -0.001 },
+   {  0.000,  0.000 },
+   {  0.001,  0.001 },
+   {  0.002,  0.002 },	
+   {  0.003,  0.003 },
+   {  0.004,  0.004 },
+   {  0.005,  0.005 },
+   {  0.006,  0.006 },
+};
+
+static const float BlurWeights[NUM] =
+{
+   0.002216,
+   0.008764,
+   0.026995,
+   0.064759,
+   0.120985,
+   0.176033,
+   0.199471,
+   0.176033,
+   0.120985,
+   0.064759,
+   0.026995,
+   0.008764,
+   0.002216,
+};
+
+struct output 
+{
+  float4 color    : COLOR;
+};
+
+
+output main_fragment( float2 Tex : TEXCOORD0, uniform sampler2D s0 : TEXUNIT0 )
+{
+   float2 BloomSettings;
+   BloomSettings.x = 1;
+   BloomSettings.y = 0.3;
+
+   float3 pixel;
+   float3 Color = 0;
+
+   for(int i = 0; i < NUM; i++)
+   {
+      pixel = tex2D(s0, Tex + PixelOffsets[i] * 5.0f)+BloomSettings.y;
+
+      pixel *= fMiddleGray / (Luminance + 0.001f);
+      pixel *= (1.0f + (pixel / (fWhiteCutoff * fWhiteCutoff)));
+      pixel -= 5.0f;
+
+      pixel = max(pixel,0.0f);
+      pixel /= (10.0f + pixel);
+
+      Color += pixel * BlurWeights[i];
+   }
+
+   Color *= BloomSettings.x;
+
+   output OUT;
+   OUT.color = float4(Color,1.0) + tex2D(s0,Tex);
+   return OUT;
+}
+
