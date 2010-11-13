@@ -33,6 +33,7 @@ struct input
 {
   float2 video_size;
   float2 texture_size;
+  float2 output_size;
 };
 
 
@@ -58,7 +59,7 @@ output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEXU
 	output OUT;
    	
 	float2 rubyInputSize = IN.video_size;
-	float2 rubyOutputSize = IN.video_size;
+	float2 rubyOutputSize = IN.output_size;
 	float2 rubyTextureSize = IN.texture_size;
    	
 	float2 xy = barrelDistortion(texCoord.xy);

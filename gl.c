@@ -48,6 +48,7 @@ static bool keep_aspect = true;
 #ifdef HAVE_CG
 static CGparameter cg_mvp_matrix;
 #endif
+static GLuint gl_width = 0, gl_height = 0;
 typedef struct gl
 {
    bool vsync;
@@ -57,7 +58,7 @@ typedef struct gl
    CGprogram cgVPrg;
    CGprofile cgFProf;
    CGprofile cgVProf;
-   CGparameter cg_video_size, cg_texture_size;
+   CGparameter cg_video_size, cg_texture_size, cg_output_size;
 #endif
    GLuint texture;
    GLuint tex_filter;
@@ -194,6 +195,8 @@ static void GLFWCALL resize(int width, int height)
 #ifdef HAVE_CG
    cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 #endif
+   gl_width = width;
+   gl_height = height;
 }
 
 static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)
@@ -239,6 +242,7 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
 #if HAVE_CG
    cgGLSetParameter2f(gl->cg_video_size, width, height);
    cgGLSetParameter2f(gl->cg_texture_size, width, height);
+   cgGLSetParameter2f(gl->cg_output_size, gl_width, gl_height);
 #endif
 
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 1);
@@ -366,6 +370,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
 
    gl->cg_video_size = cgGetNamedParameter(gl->cgFPrg, "IN.video_size");
    gl->cg_texture_size = cgGetNamedParameter(gl->cgFPrg, "IN.texture_size");
+   gl->cg_output_size = cgGetNamedParameter(gl->cgFPrg, "IN.output_size");
    cg_mvp_matrix = cgGetNamedParameter(gl->cgVPrg, "modelViewProj");
    cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 #endif

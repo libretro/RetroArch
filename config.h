@@ -55,17 +55,17 @@ static const float yscale = 4.0; // Real y res = 224 * yscale
 
 // Fullscreen
 static bool fullscreen = false; // To start in Fullscreen or not
-static const unsigned fullscreen_x = 1280;
-static const unsigned fullscreen_y = 720;
+static const unsigned fullscreen_x = 1920;
+static const unsigned fullscreen_y = 1200;
 
 // Video VSYNC (recommended)
 static const bool vsync = true;
 
 // Smooths picture
-static const bool video_smooth = true;
+static const bool video_smooth = false;
 
 // Path to custom Cg shader. If using custom shaders, it is recommended to disable video_smooth.
-static const char *cg_shader_path = "hqflt/crt.cg";
+static const char *cg_shader_path = "hqflt/hq2x.cg";
 
 // On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 
@@ -91,17 +91,17 @@ static const bool force_aspect = true;
 static const bool audio_enable = true;
 
 // Output samplerate
-static const unsigned out_rate = 48000; 
+static const unsigned out_rate = 96000; 
 
 // Input samplerate from libSNES. 
 // Lower this (slightly) if you are experiencing frequent audio dropouts while vsync is enabled.
 static const unsigned in_rate = 31950; 
 
 // Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults.
-static const char* audio_device = NULL;
+static const char* audio_device = "hw:0";
 
 // Desired audio latency in milliseconds. Might not be honored if driver can't provide given latency.
-static const int out_latency = 64;
+static const int out_latency = 8;
 
 // Will sync audio. (recommended) 
 static const bool audio_sync = true;
