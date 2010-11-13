@@ -45,7 +45,9 @@ static const GLfloat tex_coords[] = {
 };
 
 static bool keep_aspect = true;
+#ifdef HAVE_CG
 static CGparameter cg_mvp_matrix;
+#endif
 typedef struct gl
 {
    bool vsync;
@@ -189,7 +191,9 @@ static void GLFWCALL resize(int width, int height)
    glOrtho(0, 1, 0, 1, -1, 1);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
+#ifdef HAVE_CG
    cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
+#endif
 }
 
 static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)
@@ -368,9 +372,11 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
 
    *input = &input_glfw;
    return gl;
+#ifdef HAVE_CG
 error:
    free(gl);
    return NULL;
+#endif
 }
 
 const video_driver_t video_gl = {

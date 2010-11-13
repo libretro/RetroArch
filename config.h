@@ -62,15 +62,15 @@ static const unsigned fullscreen_y = 720;
 static const bool vsync = true;
 
 // Smooths picture
-static const bool video_smooth = false;
+static const bool video_smooth = true;
 
-// Path to custom Cg shader. If using custom shaders, it is recommended to disable video_smooth and VIDEO_FILTER.
+// Path to custom Cg shader. If using custom shaders, it is recommended to disable video_smooth.
 static const char *cg_shader_path = "hqflt/crt.cg";
 
 // On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 
 
-/////////// Video filters
+/////////// Video filters (CPU based)
 #define FILTER_NONE 0
 #define FILTER_HQ2X 1
 #define FILTER_HQ4X 2
