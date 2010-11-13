@@ -1,9 +1,27 @@
 
+/* Default Vertex shader */
+void main_vertex
+(
+	float4 position	: POSITION,
+	float4 color	: COLOR,
+	float2 texCoord : TEXCOORD0,
+
+    uniform float4x4 modelViewProj,
+
+	out float4 oPosition : POSITION,
+	out float4 oColor    : COLOR,
+	out float2 otexCoord : TEXCOORD
+)
+{
+	oPosition = mul(modelViewProj, position);
+	oColor = color;
+	otexCoord = texCoord;
+}
+
 #define TEX2D(c) tex2D(decal,(c))
 #define PI 3.141592653589
 #define phase 0.0
 #define gamma 2.5
-
 #define distortion 0.2
 
 struct output 
@@ -28,13 +46,14 @@ float2 fract(float2 v)
 	return ret;
 }
 
-float2 barrelDistortion(float2 coord) {
+float2 barrelDistortion(float2 coord) 
+{
   float2 cc = coord - 0.5;
   float dist = dot(cc, cc);
   return coord + cc * (dist + distortion * dist * dist) * distortion;
 }
 
-output main(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEXUNIT0, uniform input IN)
+output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEXUNIT0, uniform input IN)
 {
 	output OUT;
    	

@@ -45,14 +45,15 @@ static const GLfloat tex_coords[] = {
 };
 
 static bool keep_aspect = true;
+static CGparameter cg_mvp_matrix;
 typedef struct gl
 {
    bool vsync;
-   unsigned real_x;
-   unsigned real_y;
 #ifdef HAVE_CG
    CGcontext cgCtx;
-   CGprogram cgPrg;
+   CGprogram cgFPrg;
+   CGprogram cgVPrg;
+   CGprofile cgFProf;
    CGprofile cgVProf;
    CGparameter cg_video_size, cg_texture_size;
 #endif
@@ -188,6 +189,7 @@ static void GLFWCALL resize(int width, int height)
    glOrtho(0, 1, 0, 1, -1, 1);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
+   cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 }
 
 static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)
@@ -334,27 +336,34 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
       fprintf(stderr, "Failed to create Cg context\n");
       goto error;
    }
-   gl->cgVProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
-   if (gl->cgVProf == CG_PROFILE_UNKNOWN)
+   gl->cgFProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
+   gl->cgVProf = cgGLGetLatestProfile(CG_GL_VERTEX);
+   if (gl->cgFProf == CG_PROFILE_UNKNOWN || gl->cgVProf == CG_PROFILE_UNKNOWN)
    {
       fprintf(stderr, "Invalid profile type\n");
       goto error;
    }
+   cgGLSetOptimalOptions(gl->cgFProf);
    cgGLSetOptimalOptions(gl->cgVProf);
-   gl->cgPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, cg_shader_path, gl->cgVProf, "main", 0);
-   if (gl->cgPrg == NULL)
+   gl->cgFPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, cg_shader_path, gl->cgFProf, "main_fragment", 0);
+   gl->cgVPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, cg_shader_path, gl->cgVProf, "main_vertex", 0);
+   if (gl->cgFPrg == NULL || gl->cgVPrg == NULL)
    {
       CGerror err = cgGetError();
       fprintf(stderr, "CG error: %s\n", cgGetErrorString(err));
       goto error;
    }
-   cgGLLoadProgram(gl->cgPrg);
+   cgGLLoadProgram(gl->cgFPrg);
+   cgGLLoadProgram(gl->cgVPrg);
+   cgGLEnableProfile(gl->cgFProf);
    cgGLEnableProfile(gl->cgVProf);
-   cgGLBindProgram(gl->cgPrg);
+   cgGLBindProgram(gl->cgFPrg);
+   cgGLBindProgram(gl->cgVPrg);
 
-   gl->cg_video_size = cgGetNamedParameter(gl->cgPrg, "IN.video_size");
-   gl->cg_texture_size = cgGetNamedParameter(gl->cgPrg, "IN.texture_size");
-
+   gl->cg_video_size = cgGetNamedParameter(gl->cgFPrg, "IN.video_size");
+   gl->cg_texture_size = cgGetNamedParameter(gl->cgFPrg, "IN.texture_size");
+   cg_mvp_matrix = cgGetNamedParameter(gl->cgVPrg, "modelViewProj");
+   cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 #endif
 
    *input = &input_glfw;
