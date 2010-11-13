@@ -36,17 +36,6 @@ struct input
   float2 output_size;
 };
 
-
-float2 fract(float2 v)
-{
-	float2 ret;
-	
-	ret.x = v.x - floor(v.x);
-	ret.y = v.y - floor(v.y);
-	
-	return ret;
-}
-
 float2 barrelDistortion(float2 coord) 
 {
   float2 cc = coord - 0.5;
@@ -65,8 +54,17 @@ output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEXU
 	float2 xy = barrelDistortion(texCoord.xy);
 	float2 one = 1.0/rubyTextureSize;
 	xy = xy + float2(0.0 , -0.5 * (phase + (1-phase) * rubyInputSize.y/rubyOutputSize.y) * one.y);
-	
-	//float2 uv_ratio = fract(xy*rubyTextureSize);
+	float4 texels[8];
+   texels[0] = TEX2D(xy + float2(-one.x,0.0));
+   texels[1] = TEX2D(xy);
+   texels[2] = TEX2D(xy + float2(one.x, 0.0));
+   texels[3] = TEX2D(xy + float2(2 * one.x, 0.0));
+   texels[4] = TEX2D(xy + float2(-one.x,one.y));
+   texels[5] = TEX2D(xy + float2(0.0, one.y));
+   texels[6] = TEX2D(xy + one);
+   texels[7] = TEX2D(xy + float2(2 * one.x, one.y));
+
+
 	float2 uv_ratio = frac(xy*rubyTextureSize);
 	
 	float4 col, col2;
@@ -75,8 +73,8 @@ output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEXU
 	coeffs = (sin(PI * coeffs) * sin(PI * coeffs / 2.0)) / (coeffs * coeffs);
 	coeffs = coeffs / (coeffs.x+coeffs.y+coeffs.z+coeffs.w);
 	
-	col  = clamp(coeffs.x * TEX2D(xy + float2(-one.x,0.0)) + coeffs.y * TEX2D(xy) + coeffs.z * TEX2D(xy + float2(one.x, 0.0)) + coeffs.w * TEX2D(xy + float2(2 * one.x, 0.0)),0.0,1.0);
-	col2 = clamp(coeffs.x * TEX2D(xy + float2(-one.x,one.y)) + coeffs.y * TEX2D(xy + float2(0.0, one.y)) + coeffs.z * TEX2D(xy + one) + coeffs.w * TEX2D(xy + float2(2 * one.x, one.y)),0.0,1.0);
+	col  = clamp(coeffs.x * texels[0] + coeffs.y * texels[1] + coeffs.z * texels[2] + coeffs.w * texels[3], 0.0, 1.0);
+	col2 = clamp(coeffs.x * texels[4] + coeffs.y * texels[5] + coeffs.z * texels[6] + coeffs.w * texels[7], 0.0, 1.0);
 	col = pow(col, gamma);
 	col2 = pow(col2, gamma);
 	
