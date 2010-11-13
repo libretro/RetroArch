@@ -1,0 +1,37 @@
+struct output
+{
+   float4 color : COLOR;
+};
+
+ output main(uniform sampler2D rubyTexture : TEXUNIT0, float2 gl_TexCoord : TEXCOORD0) {
+   float2 rubyTextureSize = float2(256.0, 224.0);
+   float2 texelSize = 1.0 / rubyTextureSize;
+
+   float2 range;
+   range.x = dFdx(gl_TexCoord.x) / 2.0 * 0.99;
+   range.y = dFdy(gl_TexCoord.y) / 2.0 * 0.99;
+
+   float left   = gl_TexCoord.x - range.x;
+   float top    = gl_TexCoord.y + range.y;
+   float right  = gl_TexCoord.x + range.x;
+   float bottom = gl_TexCoord.y - range.y;
+
+   float4 topLeftColor     = tex2D(rubyTexture, (floor(float2(left, top)     / texelSize) + 0.5) * texelSize);
+   float4 bottomRightColor = tex2D(rubyTexture, (floor(float2(right, bottom) / texelSize) + 0.5) * texelSize);
+   float4 bottomLeftColor  = tex2D(rubyTexture, (floor(float2(left, bottom)  / texelSize) + 0.5) * texelSize);
+   float4 topRightColor    = tex2D(rubyTexture, (floor(float2(right, top)    / texelSize) + 0.5) * texelSize);
+
+   float2 border = clamp(round(gl_TexCoord / texelSize) * texelSize, float2(left, bottom), float2(right, top));
+
+   float totalArea = 4.0 * range.x * range.y;
+
+   float4 averageColor;
+   averageColor  = ((border.x - left)  * (top - border.y)    / totalArea) * topLeftColor;
+   averageColor += ((right - border.x) * (border.y - bottom) / totalArea) * bottomRightColor;
+   averageColor += ((border.x - left)  * (border.y - bottom) / totalArea) * bottomLeftColor;
+   averageColor += ((right - border.x) * (top - border.y)    / totalArea) * topRightColor;
+
+   output OUT;
+   OUT.color = averageColor;
+   return OUT;
+ }
