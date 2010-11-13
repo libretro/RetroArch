@@ -1,0 +1,55 @@
+/* Default Vertex shader */
+void main_vertex
+(
+	float4 position	: POSITION,
+	float4 color	: COLOR,
+	float2 texCoord : TEXCOORD0,
+
+    uniform float4x4 modelViewProj,
+
+	out float4 oPosition : POSITION,
+	out float4 oColor    : COLOR,
+	out float2 otexCoord : TEXCOORD
+)
+{
+	oPosition = mul(modelViewProj, position);
+	oColor = color;
+	otexCoord = texCoord;
+}
+
+const float2 samples[12]
+=	{
+		-0.326212, -0.405805,
+		-0.840144, -0.073580,
+		-0.695914,  0.457137,
+		-0.203345,  0.620716,
+		 0.962340, -0.194983,
+		 0.473434, -0.480026,
+		 0.519456,  0.767022,
+		 0.185461, -0.893124,
+		 0.507431,  0.064425,
+		 0.896420,  0.412458,
+		-0.321940, -0.932615,
+		-0.791559, -0.597705
+	};
+
+struct output 
+{
+  float4 col    : COLOR;
+};
+
+output main_fragment(in float2 Tex : TEXCOORD0, uniform sampler2D s0 : TEXUNIT0 )
+{
+	float4 color = tex2D( s0, Tex.xy);
+        float BlurFactor = 0.0025; //set between 0.001 and 0.05 
+
+	for (int i = 0; i < 12; i++)
+	{
+		color += tex2D(s0, Tex + BlurFactor * samples[i]);
+	}
+
+   output OUT;
+   OUT.col = color / 13;
+   return OUT;
+}
+
