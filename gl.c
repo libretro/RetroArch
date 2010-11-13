@@ -164,6 +164,7 @@ static void GLFWCALL resize(int width, int height)
 {
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
+   GLuint out_width = width, out_height = height;
 
    if ( keep_aspect )
    {
@@ -176,12 +177,14 @@ static void GLFWCALL resize(int width, int height)
       {
          float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
          glViewport(width * (0.5 - delta), 0, 2.0 * width * delta, height);
+         out_width = (int)(2.0 * width * delta);
       }
 
       else if ( (int)(device_aspect*1000) < (int)(desired_aspect*1000) )
       {
          float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
          glViewport(0, height * (0.5 - delta), width, 2.0 * height * delta);
+         out_height = (int)(2.0 * height * delta);
       }
       else
          glViewport(0, 0, width, height);
@@ -195,8 +198,8 @@ static void GLFWCALL resize(int width, int height)
 #ifdef HAVE_CG
    cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 #endif
-   gl_width = width;
-   gl_height = height;
+   gl_width = out_width;
+   gl_height = out_height;
 }
 
 static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)
