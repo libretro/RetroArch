@@ -64,7 +64,10 @@ static const bool vsync = true;
 static const bool video_smooth = true;
 
 // Path to custom Cg shader. If using custom shaders, it is recommended to disable video_smooth.
-static const char *cg_shader_path = "hqflt/cg/hq2x.cg";
+#ifdef HAVE_CG
+extern char cg_shader_path[];
+#define DEFAULT_CG_SHADER "hqflt/cg/hq2x.cg"
+#endif
 
 // On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 

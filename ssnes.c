@@ -346,12 +346,18 @@ static void print_help(void)
    puts("Usage: ssnes [rom file] [-h/--help | -s/--save]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
+#ifdef HAVE_CG
+   puts("\t-f/--shader: Path to Cg shader. Will be compiled at runtime.\n");
+#endif
    puts("\t-v/--verbose: Verbose logging");
 }
 
 static FILE* rom_file = NULL;
 static char savefile_name_srm[256] = {0};
 static bool verbose = false;
+#ifdef HAVE_CG
+char cg_shader_path[256] = DEFAULT_CG_SHADER;
+#endif
 
 #define SSNES_LOG(msg, args...) do { \
    if (verbose) \
@@ -374,11 +380,18 @@ static void parse_input(int argc, char *argv[])
       { "help", 0, NULL, 'h' },
       { "save", 1, NULL, 's' },
       { "verbose", 0, NULL, 'v' },
+#ifdef HAVE_CG
+      { "shader", 1, NULL, 'f' },
+#endif
       { NULL, 0, NULL, 0 }
    };
 
    int option_index = 0;
+#ifdef HAVE_CG
+   char optstring[] = "hs:vf:";
+#else
    char optstring[] = "hs:v";
+#endif
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -396,6 +409,12 @@ static void parse_input(int argc, char *argv[])
             strncpy(savefile_name_srm, optarg, sizeof(savefile_name_srm));
             savefile_name_srm[sizeof(savefile_name_srm)-1] = '\0';
             break;
+
+#ifdef HAVE_CG
+         case 'f':
+            strncpy(cg_shader_path, optarg, sizeof(cg_shader_path) - 1);
+            break;
+#endif
 
          case 'v':
             verbose = true;
