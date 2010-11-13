@@ -61,7 +61,7 @@ static const unsigned fullscreen_y = 720;
 static const bool vsync = true;
 
 // Smooths picture
-static const bool video_smooth = true;
+static const bool video_smooth = false;
 
 // Path to custom Cg shader. If using custom shaders, it is recommended to disable video_smooth.
 static const char *cg_shader_path = "hqflt/cg/hq2x.cg";

@@ -22,7 +22,7 @@ void main_vertex
 #define PI 3.141592653589
 #define phase 0.0
 #define gamma 2.5
-#define distortion 0.2
+#define distortion 0.04
 
 struct output 
 {
