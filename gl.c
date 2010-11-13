@@ -28,19 +28,8 @@
 #ifdef HAVE_CG
 #include <Cg/cg.h>
 #include <Cg/cgGL.h>
-static CGcontext cgCtx;
-static CGprogram cgPrg;
-static CGprofile cgVProf;
-
-static CGparameter cg_video_size, cg_texture_size;
 #endif
 
-// Lots of globals, yes I know. :(
-static GLuint texture;
-static bool keep_aspect = true;
-static GLuint tex_filter;
-
-// Static coordinates for general 256 x 224 video output.
 static const GLfloat vertexes[] = {
    0, 0, 0,
    0, 1, 0,
@@ -55,11 +44,20 @@ static const GLfloat tex_coords[] = {
    1, 1
 };
 
+static bool keep_aspect = true;
 typedef struct gl
 {
    bool vsync;
    unsigned real_x;
    unsigned real_y;
+#ifdef HAVE_CG
+   CGcontext cgCtx;
+   CGprogram cgPrg;
+   CGprofile cgVProf;
+   CGparameter cg_video_size, cg_texture_size;
+#endif
+   GLuint texture;
+   GLuint tex_filter;
 } gl_t;
 
 
@@ -228,14 +226,13 @@ static inline void show_fps(void)
 
 static bool gl_frame(void *data, const uint16_t* frame, int width, int height, int pitch)
 {
-   //gl_t *gl = data;
-   (void)data;
+   gl_t *gl = data;
 
    glClear(GL_COLOR_BUFFER_BIT);
 
 #if HAVE_CG
-   cgGLSetParameter2f(cg_video_size, width, height);
-   cgGLSetParameter2f(cg_texture_size, width, height);
+   cgGLSetParameter2f(gl->cg_video_size, width, height);
+   cgGLSetParameter2f(gl->cg_texture_size, width, height);
 #endif
 
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 1);
@@ -252,12 +249,13 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
 
 static void gl_free(void *data)
 {
+   gl_t *gl = data;
 #ifdef HAVE_CG
-   cgDestroyContext(cgCtx);
+   cgDestroyContext(gl->cgCtx);
 #endif
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-   glDeleteTextures(1, &texture);
+   glDeleteTextures(1, &gl->texture);
    glfwTerminate();
 }
 
@@ -281,9 +279,9 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
 
    keep_aspect = video->force_aspect;
    if ( video->smooth )
-      tex_filter = GL_LINEAR;
+      gl->tex_filter = GL_LINEAR;
    else
-      tex_filter = GL_NEAREST;
+      gl->tex_filter = GL_NEAREST;
 
    glfwInit();
 
@@ -315,14 +313,14 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 
-   glGenTextures(1, &texture);
+   glGenTextures(1, &gl->texture);
 
-   glBindTexture(GL_TEXTURE_2D, texture);
+   glBindTexture(GL_TEXTURE_2D, gl->texture);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex_filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex_filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
 
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -330,32 +328,32 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords);
 
 #ifdef HAVE_CG
-   cgCtx = cgCreateContext();
-   if (cgCtx == NULL)
+   gl->cgCtx = cgCreateContext();
+   if (gl->cgCtx == NULL)
    {
       fprintf(stderr, "Failed to create Cg context\n");
       goto error;
    }
-   cgVProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
-   if (cgVProf == CG_PROFILE_UNKNOWN)
+   gl->cgVProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
+   if (gl->cgVProf == CG_PROFILE_UNKNOWN)
    {
       fprintf(stderr, "Invalid profile type\n");
       goto error;
    }
-   cgGLSetOptimalOptions(cgVProf);
-   cgPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, cg_shader_path, cgVProf, "main", 0);
-   if (cgPrg == NULL)
+   cgGLSetOptimalOptions(gl->cgVProf);
+   gl->cgPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, cg_shader_path, gl->cgVProf, "main", 0);
+   if (gl->cgPrg == NULL)
    {
       CGerror err = cgGetError();
       fprintf(stderr, "CG error: %s\n", cgGetErrorString(err));
       goto error;
    }
-   cgGLLoadProgram(cgPrg);
-   cgGLEnableProfile(cgVProf);
-   cgGLBindProgram(cgPrg);
+   cgGLLoadProgram(gl->cgPrg);
+   cgGLEnableProfile(gl->cgVProf);
+   cgGLBindProgram(gl->cgPrg);
 
-   cg_video_size = cgGetNamedParameter(cgPrg, "IN.video_size");
-   cg_texture_size = cgGetNamedParameter(cgPrg, "IN.texture_size");
+   gl->cg_video_size = cgGetNamedParameter(gl->cgPrg, "IN.video_size");
+   gl->cg_texture_size = cgGetNamedParameter(gl->cgPrg, "IN.texture_size");
 
 #endif
 
