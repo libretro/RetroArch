@@ -1,0 +1,94 @@
+/* Default Vertex shader */
+void main_vertex
+(
+	float4 position	: POSITION,
+	float4 color	: COLOR,
+	float2 texCoord : TEXCOORD0,
+
+    uniform float4x4 modelViewProj,
+
+	out float4 oPosition : POSITION,
+	out float4 oColor    : COLOR,
+	out float2 otexCoord : TEXCOORD
+)
+{
+	oPosition = mul(modelViewProj, position);
+	oColor = color;
+	otexCoord = texCoord;
+}
+
+struct output 
+{
+  float4 color    : COLOR;
+};
+
+struct input
+{
+  float2 video_size;
+  float2 texture_size;
+  float2 output_size;
+};
+
+ const float mx = 0.325;      // start smoothing wt.
+ const float k = -0.250;      // wt. decrease factor
+ const float max_w = 0.25;    // max filter weigth
+ const float min_w =-0.05;    // min filter weigth
+ const float lum_add = 0.25;  // effects smoothing
+
+ output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEXUNIT0, uniform input IN) 
+ {
+   float x = 0.5 * (1.0 / IN.texture_size.x);
+   float y = 0.5 * (1.0 / IN.texture_size.y);
+   float2 dg1 = float2( x, y);
+   float2 dg2 = float2(-x, y);
+   float2 dx = float2(x, 0.0);
+   float2 dy = float2(0.0, y);
+
+   float4 TexCoord[5];
+   TexCoord[0] = float4(texCoord, 0.0, 0.0);
+   TexCoord[1].xy = TexCoord[0].xy - dg1;
+   TexCoord[1].zw = TexCoord[0].xy - dy;
+   TexCoord[2].xy = TexCoord[0].xy - dg2;
+   TexCoord[2].zw = TexCoord[0].xy + dx;
+   TexCoord[3].xy = TexCoord[0].xy + dg1;
+   TexCoord[3].zw = TexCoord[0].xy + dy;
+   TexCoord[4].xy = TexCoord[0].xy + dg2;
+   TexCoord[4].zw = TexCoord[0].xy - dx;
+
+   float3 c00 = tex2D(decal, TexCoord[1].xy).xyz; 
+   float3 c10 = tex2D(decal, TexCoord[1].zw).xyz; 
+   float3 c20 = tex2D(decal, TexCoord[2].xy).xyz; 
+   float3 c01 = tex2D(decal, TexCoord[4].zw).xyz; 
+   float3 c11 = tex2D(decal, TexCoord[0].xy).xyz; 
+   float3 c21 = tex2D(decal, TexCoord[2].zw).xyz; 
+   float3 c02 = tex2D(decal, TexCoord[4].xy).xyz; 
+   float3 c12 = tex2D(decal, TexCoord[3].zw).xyz; 
+   float3 c22 = tex2D(decal, TexCoord[3].xy).xyz; 
+   float3 dt = float3(1.0, 1.0, 1.0);
+
+   float md1 = dot(abs(c00 - c22), dt);
+   float md2 = dot(abs(c02 - c20), dt);
+
+   float w1 = dot(abs(c22 - c11), dt) * md2;
+   float w2 = dot(abs(c02 - c11), dt) * md1;
+   float w3 = dot(abs(c00 - c11), dt) * md2;
+   float w4 = dot(abs(c20 - c11), dt) * md1;
+
+   float t1 = w1 + w3;
+   float t2 = w2 + w4;
+   float ww = max(t1, t2) + 0.0001;
+
+   c11 = (w1 * c00 + w2 * c20 + w3 * c22 + w4 * c02 + ww * c11) / (t1 + t2 + ww);
+
+   float lc1 = k / (0.12 * dot(c10 + c12 + c11, dt) + lum_add);
+   float lc2 = k / (0.12 * dot(c01 + c21 + c11, dt) + lum_add);
+
+   w1 = clamp(lc1 * dot(abs(c11 - c10), dt) + mx, min_w, max_w);
+   w2 = clamp(lc2 * dot(abs(c11 - c21), dt) + mx, min_w, max_w);
+   w3 = clamp(lc1 * dot(abs(c11 - c12), dt) + mx, min_w, max_w);
+   w4 = clamp(lc2 * dot(abs(c11 - c01), dt) + mx, min_w, max_w);
+
+   output OUT;
+   OUT.color = float4(w1 * c10 + w2 * c21 + w3 * c12 + w4 * c01 + (1.0 - w1 - w2 - w3 - w4) * c11, 1.0);
+   return OUT;
+ }
