@@ -61,7 +61,7 @@ static const unsigned fullscreen_y = 720;
 static const bool vsync = true;
 
 // Smooths picture
-static const bool video_smooth = false;
+static const bool video_smooth = true;
 
 // Path to custom Cg shader. If using custom shaders, it is recommended to disable video_smooth.
 static const char *cg_shader_path = "hqflt/cg/hq2x.cg";
@@ -100,7 +100,7 @@ static const unsigned in_rate = 31950;
 static const char* audio_device = NULL;
 
 // Desired audio latency in milliseconds. Might not be honored if driver can't provide given latency.
-static const int out_latency = 8;
+static const int out_latency = 64;
 
 // Will sync audio. (recommended) 
 static const bool audio_sync = true;
