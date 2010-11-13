@@ -1,0 +1,38 @@
+
+/* Default Vertex shader */
+void main_vertex
+(
+	float4 position	: POSITION,
+	float4 color	: COLOR,
+	float2 texCoord : TEXCOORD0,
+
+    uniform float4x4 modelViewProj,
+
+	out float4 oPosition : POSITION,
+	out float4 oColor    : COLOR,
+	out float2 otexCoord : TEXCOORD
+)
+{
+	oPosition = mul(modelViewProj, position);
+	oColor = color;
+	otexCoord = texCoord;
+}
+
+struct output 
+{
+  float4 color    : COLOR;
+};
+
+output main_fragment( in float2 Tex : TEXCOORD0, uniform sampler2D s0 : TEXUNIT0 )
+{
+   float4 Color = tex2D( s0, Tex.xy );
+   float Sharpenfactor = 30; //Make this between 10 and 50;
+
+   Color -= tex2D( s0, Tex.xy+0.0001)*Sharpenfactor;
+   Color += tex2D( s0, Tex.xy-0.0001)*Sharpenfactor;
+
+   Color.a = 1.0;
+   output OUT;
+   OUT.color = Color;
+   return OUT;
+}
