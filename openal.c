@@ -22,6 +22,10 @@
 #include <time.h>
 #include <string.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #define BUFSIZE 128
 
 typedef struct al
@@ -217,6 +221,9 @@ static void __al_free(void *data)
          free(al->res_buf);
       }
    }
+   alcMakeContextCurrent(NULL);
+   alcDestroyContext(al->ctx);
+   alcCloseDevice(al->handle);
    free(al);
 }
 

@@ -20,10 +20,12 @@
 #include "driver.h"
 #include "config.h"
 #include <GL/glfw.h>
+#include <GL/glext.h>
 #include <stdint.h>
 #include "libsnes.hpp"
 #include <stdio.h>
 #include <sys/time.h>
+
 
 #ifdef HAVE_CG
 #include <Cg/cg.h>
