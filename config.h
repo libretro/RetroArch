@@ -49,8 +49,8 @@
 ////////////////
 
 // Windowed
-static const float xscale = 4.0; // Real x res = 296 * xscale
-static const float yscale = 4.0; // Real y res = 224 * yscale
+static const float xscale = 3.0; // Real x res = 296 * xscale
+static const float yscale = 3.0; // Real y res = 224 * yscale
 
 // Fullscreen
 static bool fullscreen = false; // To start in Fullscreen or not
