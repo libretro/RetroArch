@@ -1,31 +1,6 @@
 /*
-
-   Copyright (C) 2007 guest(r) - guest.r@gmail.com
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
-
-/*
-
-   The 2xSaL shader processes a gfx. surface and redraws it 2x finer.
-   
-   A linear post-resize can fit the image to any resolution.
-
-   Note: set scaler to normal2x.
-
+   Author: Themaister
+   License: Public domain
 */
 
 /* Default Vertex shader */
@@ -76,9 +51,8 @@ float3 quad_inter(float3 x0, float3 x1, float3 x2, float x)
 output main_fragment (float2 tex : TEXCOORD0, uniform input IN, uniform sampler2D s0 : TEXUNIT0)
 {
    float2 texsize = IN.texture_size;
-   float vid_height = IN.output_size.y;
-   float dx = float(pow(2.0 * texsize.x, -1.0));
-   float dy = float(pow(2.0 * texsize.y, -1.0));
+   float dx = float(pow(1.0 * texsize.x, -1.0));
+   float dy = float(pow(1.0 * texsize.y, -1.0));
 
    float3 c01 = tex2D(s0, tex + float2(-dx, 0)).xyz;
    float3 c10 = tex2D(s0, tex + float2(0, -dy)).xyz;
@@ -86,14 +60,12 @@ output main_fragment (float2 tex : TEXCOORD0, uniform input IN, uniform sampler2
    float3 c12 = tex2D(s0, tex + float2(0, dy)).xyz;
    float3 c21 = tex2D(s0, tex + float2(dx, 0)).xyz;
 
-   float3 xval0 = quad_inter(c01, c11, c21, tex.x * texsize.x - floor(tex.x * texsize.x) + 1.0);
-   float3 yval0 = quad_inter(c10, c11, c12, tex.y * texsize.y - floor(tex.y * texsize.y) + 1.0);
+   float blur = 1.5;
+   float3 xval0 = quad_inter(c01, c11, c21, blur*(frac(tex.x * texsize.x)) + (2.0 - blur) * 0.5);
+   float3 yval0 = quad_inter(c10, c11, c12, blur*(frac(tex.y * texsize.y)) + (2.0 - blur) * 0.5);
 
    output OUT;
-   //float scanline_mod = 1.0 - 0.1 * floor(fmod(vid_height * tex.y, 2.0));
-   float scanline_mod = 1.0;
-
-   OUT.color = float4(lerp(xval0, yval0, 0.5), 1.0) * scanline_mod;
+   OUT.color = float4(lerp(xval0, yval0, 0.5), 1.0);
    return OUT;
 }
 
