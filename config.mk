@@ -1,6 +1,6 @@
 
 BUILD_OPENGL = 1
-BUILD_CG     = 0
+BUILD_CG     = 1
 BUILD_FILTER = 0
 
 BUILD_RSOUND = 0
@@ -10,5 +10,4 @@ BUILD_ROAR = 0
 BUILD_AL = 0
 
 
-PREFIX = /usr/local
-
+PREFIX = /usr
