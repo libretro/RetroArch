@@ -61,7 +61,7 @@ static const unsigned fullscreen_y = 1200;
 static const bool vsync = true;
 
 // Smooths picture
-static const bool video_smooth = false;
+static const bool video_smooth = true;
 
 // Path to custom Cg shader. If using custom shaders, it is recommended to disable video_smooth.
 #ifdef HAVE_CG

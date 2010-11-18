@@ -17,7 +17,7 @@ void main_vertex
 	otexCoord = texCoord;
 }
 
-float Luminance = 0.08f;
+float Luminance = 0.09f;
 static const float fMiddleGray = 0.18f;
 static const float fWhiteCutoff = 0.8f;
 
