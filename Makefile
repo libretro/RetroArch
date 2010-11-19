@@ -4,7 +4,9 @@ TARGET = ssnes
 
 DEFINES =
 OBJ = ssnes.o
-LIBS = -lsamplerate -lsnes
+libsnes = -lsnes
+
+LIBS = -lsamplerate $(libsnes)
 
 ifeq ($(BUILD_RSOUND), 1)
    OBJ += rsound.o
@@ -49,12 +51,10 @@ CFLAGS = -Wall -O3 -march=native -std=gnu99 -Wno-unused-variable -I. $(DEFINES)
 all: $(TARGET) 
 
 ssnes: $(OBJ)
-	@$(CXX) -o $@ $(OBJ) $(LIBS) $(CFLAGS)
-	@echo "LD $@"
+	$(CXX) -o $@ $(OBJ) $(LIBS) $(CFLAGS)
 
 %.o: %.c config.h config.mk
-	@$(CC) $(CFLAGS) -c -o $@ $<
-	@echo "CC $<"
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 install: $(TARGET)
 	install -m755 $(TARGET) $(PREFIX)/bin 

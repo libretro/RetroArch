@@ -49,8 +49,8 @@
 ////////////////
 
 // Windowed
-static const float xscale = 4.0; // Real x res = 296 * xscale
-static const float yscale = 4.0; // Real y res = 224 * yscale
+static const float xscale = 3.0; // Real x res = 296 * xscale
+static const float yscale = 3.0; // Real y res = 224 * yscale
 
 // Fullscreen
 static bool fullscreen = false; // To start in Fullscreen or not
@@ -66,7 +66,7 @@ static const bool video_smooth = true;
 // Path to custom Cg shader. If using custom shaders, it is recommended to disable video_smooth.
 #ifdef HAVE_CG
 extern char cg_shader_path[];
-#define DEFAULT_CG_SHADER "hqflt/cg/hq2x.cg"
+#define DEFAULT_CG_SHADER "hqflt/cg/2xSaI.cg"
 #endif
 
 // On resize and fullscreen, rendering area will stay 4:3
@@ -129,12 +129,12 @@ static const struct snes_keybind snes_keybinds_1[] = {
    { SNES_DEVICE_ID_JOYPAD_Y,             'A',                 2 },
    { SNES_DEVICE_ID_JOYPAD_L,             'Q',                 4 },
    { SNES_DEVICE_ID_JOYPAD_R,             'W',                 5 },
-   { SNES_DEVICE_ID_JOYPAD_LEFT,    GLFW_KEY_LEFT,             12 },
-   { SNES_DEVICE_ID_JOYPAD_RIGHT,   GLFW_KEY_RIGHT,            13 },
-   { SNES_DEVICE_ID_JOYPAD_UP,      GLFW_KEY_UP,               10 },
-   { SNES_DEVICE_ID_JOYPAD_DOWN,    GLFW_KEY_DOWN,             11 },
+   { SNES_DEVICE_ID_JOYPAD_LEFT,    GLFW_KEY_LEFT,             11 },
+   { SNES_DEVICE_ID_JOYPAD_RIGHT,   GLFW_KEY_RIGHT,            12 },
+   { SNES_DEVICE_ID_JOYPAD_UP,      GLFW_KEY_UP,               13 },
+   { SNES_DEVICE_ID_JOYPAD_DOWN,    GLFW_KEY_DOWN,             14 },
    { SNES_DEVICE_ID_JOYPAD_START,   GLFW_KEY_ENTER,            6 },
-   { SNES_DEVICE_ID_JOYPAD_SELECT,  GLFW_KEY_RSHIFT,           14 },
+   { SNES_DEVICE_ID_JOYPAD_SELECT,  GLFW_KEY_RSHIFT,           7 },
    { SNES_FAST_FORWARD_KEY,         GLFW_KEY_SPACE,            9 },
    { -1 }
 };
@@ -148,12 +148,12 @@ static const struct snes_keybind snes_keybinds_2[] = {
    { SNES_DEVICE_ID_JOYPAD_Y,             'F',                 2 },
    { SNES_DEVICE_ID_JOYPAD_L,             'R',                 4 },
    { SNES_DEVICE_ID_JOYPAD_R,             'T',                 5 },
-   { SNES_DEVICE_ID_JOYPAD_LEFT,          'J',                 12 },
-   { SNES_DEVICE_ID_JOYPAD_RIGHT,         'L',                 13 },
-   { SNES_DEVICE_ID_JOYPAD_UP,            'I',                 10 },
-   { SNES_DEVICE_ID_JOYPAD_DOWN,          'K',                 11 },
+   { SNES_DEVICE_ID_JOYPAD_LEFT,          'J',                 11 },
+   { SNES_DEVICE_ID_JOYPAD_RIGHT,         'L',                 12 },
+   { SNES_DEVICE_ID_JOYPAD_UP,            'I',                 13 },
+   { SNES_DEVICE_ID_JOYPAD_DOWN,          'K',                 14 },
    { SNES_DEVICE_ID_JOYPAD_START,         'P',                 6 },
-   { SNES_DEVICE_ID_JOYPAD_SELECT,        'O',                 14 },
+   { SNES_DEVICE_ID_JOYPAD_SELECT,        'O',                 7 },
    { -1 }
 };
 
