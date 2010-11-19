@@ -61,6 +61,7 @@ typedef struct gl
    CGprofile cgFProf;
    CGprofile cgVProf;
    CGparameter cg_video_size, cg_texture_size, cg_output_size;
+   CGparameter cg_Vvideo_size, cg_Vtexture_size, cg_Voutput_size; // Vertexes
 #endif
    GLuint texture;
    GLuint tex_filter;
@@ -248,6 +249,10 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
    cgGLSetParameter2f(gl->cg_video_size, width, height);
    cgGLSetParameter2f(gl->cg_texture_size, width, height);
    cgGLSetParameter2f(gl->cg_output_size, gl_width, gl_height);
+
+   cgGLSetParameter2f(gl->cg_Vvideo_size, width, height);
+   cgGLSetParameter2f(gl->cg_Vtexture_size, width, height);
+   cgGLSetParameter2f(gl->cg_Voutput_size, gl_width, gl_height);
 #endif
 
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 1);
@@ -376,6 +381,9 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    gl->cg_video_size = cgGetNamedParameter(gl->cgFPrg, "IN.video_size");
    gl->cg_texture_size = cgGetNamedParameter(gl->cgFPrg, "IN.texture_size");
    gl->cg_output_size = cgGetNamedParameter(gl->cgFPrg, "IN.output_size");
+   gl->cg_Vvideo_size = cgGetNamedParameter(gl->cgVPrg, "IN.video_size");
+   gl->cg_Vtexture_size = cgGetNamedParameter(gl->cgVPrg, "IN.texture_size");
+   gl->cg_Voutput_size = cgGetNamedParameter(gl->cgVPrg, "IN.output_size");
    cg_mvp_matrix = cgGetNamedParameter(gl->cgVPrg, "modelViewProj");
    cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 #endif

@@ -4,7 +4,7 @@ TARGET = ssnes
 
 DEFINES =
 OBJ = ssnes.o
-LIBS = -lsamplerate -lsnes
+LIBS = -lsamplerate libsnes.a
 
 ifeq ($(BUILD_RSOUND), 1)
    OBJ += rsound.o

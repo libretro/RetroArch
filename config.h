@@ -103,7 +103,7 @@ static const unsigned in_rate = 31950;
 static const char* audio_device = "hw:0";
 
 // Desired audio latency in milliseconds. Might not be honored if driver can't provide given latency.
-static const int out_latency = 16;
+static const int out_latency = 32;
 
 // Will sync audio. (recommended) 
 static const bool audio_sync = true;
