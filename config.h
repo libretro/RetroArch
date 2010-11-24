@@ -41,7 +41,7 @@
 
 // Chooses which video and audio subsystem to use. Remember to update config.mk if you change these.
 #define VIDEO_DRIVER VIDEO_GL
-#define AUDIO_DRIVER AUDIO_ALSA
+#define AUDIO_DRIVER AUDIO_RSOUND
 
 
 ////////////////
@@ -54,14 +54,14 @@ static const float yscale = 3.0; // Real y res = 224 * yscale
 
 // Fullscreen
 static bool fullscreen = false; // To start in Fullscreen or not
-static const unsigned fullscreen_x = 1280;
-static const unsigned fullscreen_y = 720;
+static const unsigned fullscreen_x = 1920;
+static const unsigned fullscreen_y = 1200;
 
 // Video VSYNC (recommended)
 static const bool vsync = true;
 
 // Smooths picture
-static const bool video_smooth = true;
+static const bool video_smooth = false;
 
 // Path to custom Cg shader. If using custom shaders, it is recommended to disable video_smooth.
 #ifdef HAVE_CG
@@ -93,7 +93,7 @@ static const bool force_aspect = true;
 static const bool audio_enable = true;
 
 // Output samplerate
-static const unsigned out_rate = 48000; 
+static const unsigned out_rate = 96000; 
 
 // Input samplerate from libSNES. 
 // Lower this (slightly) if you are experiencing frequent audio dropouts while vsync is enabled.
@@ -103,7 +103,7 @@ static const unsigned in_rate = 31950;
 static const char* audio_device = NULL;
 
 // Desired audio latency in milliseconds. Might not be honored if driver can't provide given latency.
-static const int out_latency = 64;
+static const int out_latency = 32;
 
 // Will sync audio. (recommended) 
 static const bool audio_sync = true;

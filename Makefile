@@ -4,7 +4,7 @@ TARGET = ssnes
 
 DEFINES =
 OBJ = ssnes.o
-libsnes = -lsnes
+libsnes = libsnes.a
 
 LIBS = -lsamplerate $(libsnes)
 
@@ -46,7 +46,7 @@ ifeq ($(BUILD_FILTER), 1)
    OBJ += hqflt/snes_ntsc/snes_ntsc.o
 endif
 
-CFLAGS = -Wall -O3 -march=native -std=gnu99 -Wno-unused-variable -I. $(DEFINES)
+CFLAGS = -Wall -O3 -std=gnu99 -Wno-unused-variable -I. $(DEFINES) -fprofile-use
 
 all: $(TARGET) 
 
