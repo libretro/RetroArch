@@ -4,7 +4,7 @@ TARGET = ssnes
 
 DEFINES =
 OBJ = ssnes.o
-libsnes = libsnes.a
+libsnes = -lsnes
 
 LIBS = -lsamplerate $(libsnes)
 
