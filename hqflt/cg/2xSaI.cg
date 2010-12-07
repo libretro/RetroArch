@@ -68,8 +68,8 @@ struct deltas
 output main_fragment (float2 tex : TEXCOORD0, uniform input IN, uniform sampler2D s_p : TEXUNIT0)
 {
    float2 texsize = IN.texture_size;
-   float dx = 1.0/texsize.x * 0.25;
-   float dy = 1.0/texsize.y * 0.25;
+   float dx = pow(texsize.x, -1.0) * 0.25;
+   float dy = pow(texsize.y, -1.0) * 0.25;
    float3 dt = float3(1.0, 1.0, 1.0);
 
    deltas VAR = { 

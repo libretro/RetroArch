@@ -86,9 +86,9 @@ output main_fragment(in VERTEX_INPUT VAR, uniform sampler2D decal : TEXUNIT0, un
 	float2 rubyOutputSize = IN.output_size;
 	float2 rubyTextureSize = IN.texture_size;
    	
-	//float2 xy = barrelDistortion(texCoord.xy);
-	//float2 one = 1.0/rubyTextureSize;
-	//xy = xy + float2(0.0 , -0.5 * (phase + (1-phase) * rubyInputSize.y/rubyOutputSize.y) * one.y);
+	float2 xy = barrelDistortion(texCoord.xy);
+	float2 one = pow(rubyTextureSize, -1.0);
+	xy = xy + float2(0.0 , -0.5 * (phase + (1-phase) * rubyInputSize.y * pow(rubyOutputSize.y, -1.0) * one.y));
 	float4 texels[8];
    /*
    texels[0] = TEX2D(xy + float2(-one.x,0.0));
@@ -115,8 +115,8 @@ output main_fragment(in VERTEX_INPUT VAR, uniform sampler2D decal : TEXUNIT0, un
 	float4 col, col2;
 	
 	float4 coeffs = float4(1.0 + uv_ratio.x, uv_ratio.x, 1.0 - uv_ratio.x, 2.0 - uv_ratio.x);
-	coeffs = (sin(PI * coeffs) * sin(PI * coeffs / 2.0)) / (coeffs * coeffs);
-	coeffs = coeffs / (coeffs.x+coeffs.y+coeffs.z+coeffs.w);
+	coeffs = (sin(PI * coeffs) * sin(PI * coeffs * 0.5)) / (coeffs * coeffs);
+	coeffs = coeffs * pow(coeffs.x+coeffs.y+coeffs.z+coeffs.w, -1.0);
 	
 	col  = clamp(coeffs.x * texels[0] + coeffs.y * texels[1] + coeffs.z * texels[2] + coeffs.w * texels[3], 0.0, 1.0);
 	col2 = clamp(coeffs.x * texels[4] + coeffs.y * texels[5] + coeffs.z * texels[6] + coeffs.w * texels[7], 0.0, 1.0);
@@ -124,11 +124,11 @@ output main_fragment(in VERTEX_INPUT VAR, uniform sampler2D decal : TEXUNIT0, un
 	col2 = pow(col2, gamma);
 	
 	float4 wid = 2 + 2 * pow(col, 4.0);
-	float4 weights = uv_ratio.y/0.3;
-	weights = 0.51*exp(-pow(weights*sqrt(2/wid),wid))/0.3/(0.6+0.2*wid);
-	wid = 2 + 4 * pow(col2,4.0);
-	float4 weights2 = (1.0-uv_ratio.y)/0.3;
-	weights2 = 0.51*exp(-pow(weights2*sqrt(2/wid),wid))/0.3/(0.6+0.2*wid);
+	float4 weights = uv_ratio.y * 3.333;
+	weights = 0.51*exp(-pow(weights*sqrt(2 * pow(wid, -1.0)),wid)) * 3.333 * pow(0.6+0.2*wid, -1.0);
+	wid = 2 + 4 * pow(col2, 4.0);
+	float4 weights2 = (1.0-uv_ratio.y) * 3.333;
+	weights2 = 0.51*exp(-pow(weights2*sqrt(2 * pow(wid, -1.0)),wid)) * 3.333 * pow(0.6+0.2*wid, -1.0);
 	
 	float4 mcol = 1.0;
 	if ( fmod(VAR.CT.x*rubyOutputSize.x,2.0) < 1.0)
