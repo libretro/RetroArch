@@ -75,9 +75,11 @@ static void glfw_input_poll(void *data)
 }
 
 #define BUTTONS_MAX 128
+#define AXES_MAX 128
 
 static int joypad_id[2];
 static int joypad_buttons[2];
+static int joypad_axes[2];
 static bool joypad_inited = false;
 static int joypad_count = 0;
 
@@ -93,6 +95,9 @@ static int init_joypads(int max_pads)
          joypad_buttons[count] = glfwGetJoystickParam(i, GLFW_BUTTONS);
          if (joypad_buttons[count] > BUTTONS_MAX)
             joypad_buttons[count] = BUTTONS_MAX;
+         joypad_axes[count] = glfwGetJoystickParam(i, GLFW_AXES);
+         if (joypad_axes[count] > AXES_MAX)
+            joypad_axes[count] = AXES_MAX;
          count++;
       }
    }
@@ -100,13 +105,17 @@ static int init_joypads(int max_pads)
    return count;
 }
 
-static bool glfw_is_pressed(int port_num, const struct snes_keybind *key, unsigned char *buttons)
+static bool glfw_is_pressed(int port_num, const struct snes_keybind *key, unsigned char *buttons, float *axes)
 {
    if (glfwGetKey(key->key))
       return true;
    if (port_num >= joypad_count)
       return false;
-   return (key->joykey < joypad_buttons[port_num] && buttons[key->joykey] == GLFW_PRESS);
+   if (key->joykey >= 0)
+      return (key->joykey < joypad_buttons[port_num] && buttons[key->joykey] == GLFW_PRESS);
+   if (key->joyaxis >= 0)
+      return (key->joyaxis < joypad_axes[port_num] && axes[key->joyaxis] >= AXIS_THRESHOLD);
+   return (~key->joyaxis < joypad_axes[port_num] && axes[~key->joyaxis] <= -AXIS_THRESHOLD);
 }
 
 static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
@@ -119,9 +128,12 @@ static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, b
 
    int port_num = port ? 1 : 0;
    unsigned char buttons[BUTTONS_MAX];
+   float axes[AXES_MAX];
 
-   if ( joypad_count > port_num )
+   if ( joypad_count > port_num ) {
       glfwGetJoystickButtons(joypad_id[port_num], buttons, joypad_buttons[port_num]);
+      glfwGetJoystickPos(joypad_id[port_num], axes, joypad_axes[port_num]);
+   }
 
 
    const struct snes_keybind *snes_keybinds;
@@ -134,9 +146,9 @@ static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, b
    bool pressed = false;
    for ( int i = 0; snes_keybinds[i].id != -1; i++ )
       if ( snes_keybinds[i].id == SNES_FAST_FORWARD_KEY )
-         set_fast_forward_button(glfw_is_pressed(port_num, &snes_keybinds[i], buttons));
+         set_fast_forward_button(glfw_is_pressed(port_num, &snes_keybinds[i], buttons, axes));
       else if ( !pressed && snes_keybinds[i].id == (int)id )
-         pressed = glfw_is_pressed(port_num, &snes_keybinds[i], buttons);
+         pressed = glfw_is_pressed(port_num, &snes_keybinds[i], buttons, axes);
 
    return pressed;
 }

@@ -32,6 +32,7 @@ struct snes_keybind
    int id;
    int key;
    int joykey;
+   int joyaxis;
 };
 
 typedef struct video_info
