@@ -100,6 +100,15 @@ static int init_joypads(int max_pads)
    return count;
 }
 
+static bool glfw_is_pressed(int port_num, const struct snes_keybind *key, unsigned char *buttons)
+{
+   if (glfwGetKey(key->key))
+      return true;
+   if (port_num >= joypad_count)
+      return false;
+   return (key->joykey < joypad_buttons[port_num] && buttons[key->joykey] == GLFW_PRESS);
+}
+
 static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
 {
    if ( device != SNES_DEVICE_JOYPAD )
@@ -121,35 +130,15 @@ static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, b
    else
       snes_keybinds = binds[1];
 
-   // Finds fast forwarding state.
+   // Checks if button is pressed, and sets fast-forwarding state
+   bool pressed = false;
    for ( int i = 0; snes_keybinds[i].id != -1; i++ )
-   {
       if ( snes_keybinds[i].id == SNES_FAST_FORWARD_KEY )
-      {
-         bool pressed = false;
-         if ( glfwGetKey(snes_keybinds[i].key) )
-            pressed = true;
-         else if ( (joypad_count > port_num) && (snes_keybinds[i].joykey < joypad_buttons[port_num]) && (buttons[snes_keybinds[i].joykey] == GLFW_PRESS) )
-            pressed = true;
-         set_fast_forward_button(pressed);
-         break;
-      }
-   }
+         set_fast_forward_button(glfw_is_pressed(port_num, &snes_keybinds[i], buttons));
+      else if ( !pressed && snes_keybinds[i].id == (int)id )
+         pressed = glfw_is_pressed(port_num, &snes_keybinds[i], buttons);
 
-   // Checks if button is pressed
-   for ( int i = 0; snes_keybinds[i].id != -1; i++ )
-   {
-      if ( snes_keybinds[i].id == (int)id )
-      {
-         if ( glfwGetKey(snes_keybinds[i].key) )
-            return 1;
-         
-         if ( (joypad_count > port_num) && (snes_keybinds[i].joykey < joypad_buttons[port_num]) && (buttons[snes_keybinds[i].joykey] == GLFW_PRESS) )
-            return 1;
-      }
-   }
-
-   return 0;
+   return pressed;
 }
 
 static void glfw_free_input(void *data)
