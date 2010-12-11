@@ -66,7 +66,7 @@ static const bool video_smooth = false;
 // Path to custom Cg shader. If using custom shaders, it is recommended to disable video_smooth.
 #ifdef HAVE_CG
 extern char cg_shader_path[];
-#define DEFAULT_CG_SHADER "hqflt/cg/2xSaI.cg"
+#define DEFAULT_CG_SHADER "hqflt/cg/quad.cg"
 #endif
 
 // On resize and fullscreen, rendering area will stay 4:3
@@ -103,7 +103,7 @@ static const unsigned in_rate = 31950;
 static const char* audio_device = NULL;
 
 // Desired audio latency in milliseconds. Might not be honored if driver can't provide given latency.
-static const int out_latency = 32;
+static const int out_latency = 64;
 
 // Will sync audio. (recommended) 
 static const bool audio_sync = true;

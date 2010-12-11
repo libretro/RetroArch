@@ -1,62 +1,21 @@
 
-struct input
-{
-  float2 video_size;
-  float2 texture_size;
-  float2 output_size;
-};
-
-struct VERTEX_OUTPUT 
-{
-  float4 position : POSITION;
-  float4 color    : COLOR;
-  float2 texCoord : TEXCOORD0;
-  float4 t1 : TEXCOORD1;
-  float4 t2 : TEXCOORD2;
-  float4 t3 : TEXCOORD3;
-  float4 t4 : TEXCOORD4;
-};
-
-struct VERTEX_INPUT
-{
-	float4 position : POSITION;
-	float4 color    : COLOR;
-	float2 CT : TEXCOORD0;
-	float4 t1 : TEXCOORD1;
-	float4 t2 : TEXCOORD2;
-	float4 t3 : TEXCOORD3;
-	float4 t4 : TEXCOORD4;
-};
-
-VERTEX_OUTPUT main_vertex
+/* Default Vertex shader */
+void main_vertex
 (
 	float4 position	: POSITION,
 	float4 color	: COLOR,
 	float2 texCoord : TEXCOORD0,
 
     uniform float4x4 modelViewProj,
-    uniform input IN
+
+	out float4 oPosition : POSITION,
+	out float4 oColor    : COLOR,
+	out float2 otexCoord : TEXCOORD
 )
 {
-   VERTEX_OUTPUT OUT;
-	OUT.position = mul(modelViewProj, position);
-	OUT.color = color;
-	OUT.texCoord = texCoord;
-
-   float2 ps = float2(1.0/IN.texture_size.x, 1.0/IN.texture_size.y);
-   float dx = ps.x;
-   float dy = ps.y;
-
-   OUT.texCoord = texCoord;
-   OUT.t1.xy = texCoord + float2(-dx, 0);
-   OUT.t2.xy = texCoord + float2( dx, 0);
-   OUT.t3.xy = texCoord + float2( 2 * dx, 0);
-   OUT.t4.xy = texCoord + float2( 0, dy);
-   OUT.t1.zw = texCoord + float2(-dx,-dy);
-   OUT.t2.zw = texCoord + float2(-dx, dy);
-   OUT.t3.zw = texCoord + float2( 2 * dx, dy);
-   OUT.t4.zw = texCoord + float2( dx, dy);
-   return OUT;
+	oPosition = mul(modelViewProj, position);
+	oColor = color;
+	otexCoord = texCoord;
 }
 
 #define TEX2D(c) tex2D(decal,(c))
@@ -70,6 +29,12 @@ struct output
   float4 color    : COLOR;
 };
 
+struct input
+{
+  float2 video_size;
+  float2 texture_size;
+  float2 output_size;
+};
 
 float2 barrelDistortion(float2 coord) 
 {
@@ -78,7 +43,7 @@ float2 barrelDistortion(float2 coord)
   return coord + cc * (dist + distortion * dist * dist) * distortion;
 }
 
-output main_fragment(in VERTEX_INPUT VAR, uniform sampler2D decal : TEXUNIT0, uniform input IN)
+output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEXUNIT0, uniform input IN)
 {
 	output OUT;
    	
@@ -87,10 +52,9 @@ output main_fragment(in VERTEX_INPUT VAR, uniform sampler2D decal : TEXUNIT0, un
 	float2 rubyTextureSize = IN.texture_size;
    	
 	float2 xy = barrelDistortion(texCoord.xy);
-	float2 one = pow(rubyTextureSize, -1.0);
-	xy = xy + float2(0.0 , -0.5 * (phase + (1-phase) * rubyInputSize.y * pow(rubyOutputSize.y, -1.0) * one.y));
+	float2 one = 0.999/rubyTextureSize;
+	xy = xy + float2(0.0 , -0.5 * (phase + (1-phase) * rubyInputSize.y/rubyOutputSize.y) * one.y);
 	float4 texels[8];
-   /*
    texels[0] = TEX2D(xy + float2(-one.x,0.0));
    texels[1] = TEX2D(xy);
    texels[2] = TEX2D(xy + float2(one.x, 0.0));
@@ -99,24 +63,15 @@ output main_fragment(in VERTEX_INPUT VAR, uniform sampler2D decal : TEXUNIT0, un
    texels[5] = TEX2D(xy + float2(0.0, one.y));
    texels[6] = TEX2D(xy + one);
    texels[7] = TEX2D(xy + float2(2 * one.x, one.y));
-   */
-   texels[0] = TEX2D(VAR.t1.xy);
-   texels[1] = TEX2D(VAR.CT);
-   texels[2] = TEX2D(VAR.t2.xy);
-   texels[3] = TEX2D(VAR.t3.xy);
-   texels[4] = TEX2D(VAR.t2.zw);
-   texels[5] = TEX2D(VAR.t4.xy);
-   texels[6] = TEX2D(VAR.t4.zw);
-   texels[7] = TEX2D(VAR.t3.zw);
 
 
-	float2 uv_ratio = frac(VAR.CT * rubyTextureSize);
+	float2 uv_ratio = frac(xy*rubyTextureSize);
 	
 	float4 col, col2;
 	
 	float4 coeffs = float4(1.0 + uv_ratio.x, uv_ratio.x, 1.0 - uv_ratio.x, 2.0 - uv_ratio.x);
-	coeffs = (sin(PI * coeffs) * sin(PI * coeffs * 0.5)) / (coeffs * coeffs);
-	coeffs = coeffs * pow(coeffs.x+coeffs.y+coeffs.z+coeffs.w, -1.0);
+	coeffs = (sin(PI * coeffs) * sin(PI * coeffs / 2.0)) / (coeffs * coeffs);
+	coeffs = coeffs / (coeffs.x+coeffs.y+coeffs.z+coeffs.w);
 	
 	col  = clamp(coeffs.x * texels[0] + coeffs.y * texels[1] + coeffs.z * texels[2] + coeffs.w * texels[3], 0.0, 1.0);
 	col2 = clamp(coeffs.x * texels[4] + coeffs.y * texels[5] + coeffs.z * texels[6] + coeffs.w * texels[7], 0.0, 1.0);
@@ -124,14 +79,14 @@ output main_fragment(in VERTEX_INPUT VAR, uniform sampler2D decal : TEXUNIT0, un
 	col2 = pow(col2, gamma);
 	
 	float4 wid = 2 + 2 * pow(col, 4.0);
-	float4 weights = uv_ratio.y * 3.333;
-	weights = 0.51*exp(-pow(weights*sqrt(2 * pow(wid, -1.0)),wid)) * 3.333 * pow(0.6+0.2*wid, -1.0);
-	wid = 2 + 4 * pow(col2, 4.0);
-	float4 weights2 = (1.0-uv_ratio.y) * 3.333;
-	weights2 = 0.51*exp(-pow(weights2*sqrt(2 * pow(wid, -1.0)),wid)) * 3.333 * pow(0.6+0.2*wid, -1.0);
+	float4 weights = uv_ratio.y/0.3;
+	weights = 0.51*exp(-pow(weights*sqrt(2/wid),wid))/0.3/(0.6+0.2*wid);
+	wid = 2 + 4 * pow(col2,4.0);
+	float4 weights2 = (1.0-uv_ratio.y)/0.3;
+	weights2 = 0.51*exp(-pow(weights2*sqrt(2/wid),wid))/0.3/(0.6+0.2*wid);
 	
 	float4 mcol = 1.0;
-	if ( fmod(VAR.CT.x*rubyOutputSize.x,2.0) < 1.0)
+	if ( fmod(xy.x*rubyOutputSize.x,2.0) < 1.0)
 		mcol.g = 0.7;
 	else
 		mcol.rb = 0.7;
