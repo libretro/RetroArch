@@ -130,7 +130,8 @@ static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, b
    unsigned char buttons[BUTTONS_MAX];
    float axes[AXES_MAX];
 
-   if ( joypad_count > port_num ) {
+   if ( joypad_count > port_num ) 
+   {
       glfwGetJoystickButtons(joypad_id[port_num], buttons, joypad_buttons[port_num]);
       glfwGetJoystickPos(joypad_id[port_num], axes, joypad_axes[port_num]);
    }
