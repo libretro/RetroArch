@@ -215,11 +215,11 @@ static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, i
 
 static inline void show_fps(void)
 {
-// Shows FPS in taskbar.
+   // Shows FPS in taskbar.
    static int frames = 0;
    static struct timeval tv;
    struct timeval new_tv;
-   
+
    if (frames == 0)
       gettimeofday(&tv, NULL);
 
@@ -262,7 +262,7 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
          0, GL_RGBA, width, height, 0, GL_BGRA,
          GL_UNSIGNED_SHORT_1_5_5_5_REV, frame);
    glDrawArrays(GL_QUADS, 0, 4);
-   
+
    show_fps();
    glfwSwapBuffers();
 
@@ -405,6 +405,6 @@ const video_driver_t video_gl = {
    .set_nonblock_state = gl_set_nonblock_state,
    .free = gl_free
 };
-   
+
 
 
