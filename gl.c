@@ -226,10 +226,7 @@ static inline void show_fps(void)
    if ((frames % 180) == 0 && frames > 0)
    {
       gettimeofday(&new_tv, NULL);
-      struct timeval tmp_tv = {
-         .tv_sec = tv.tv_sec,
-         .tv_usec = tv.tv_usec
-      };
+      struct timeval tmp_tv = tv;
       gettimeofday(&tv, NULL);
       char tmpstr[256] = {0};
 
