@@ -75,9 +75,11 @@ static void glfw_input_poll(void *data)
 }
 
 #define BUTTONS_MAX 128
+#define AXES_MAX 128
 
 static int joypad_id[2];
 static int joypad_buttons[2];
+static int joypad_axes[2];
 static bool joypad_inited = false;
 static int joypad_count = 0;
 
@@ -93,11 +95,27 @@ static int init_joypads(int max_pads)
          joypad_buttons[count] = glfwGetJoystickParam(i, GLFW_BUTTONS);
          if (joypad_buttons[count] > BUTTONS_MAX)
             joypad_buttons[count] = BUTTONS_MAX;
+         joypad_axes[count] = glfwGetJoystickParam(i, GLFW_AXES);
+         if (joypad_axes[count] > AXES_MAX)
+            joypad_axes[count] = AXES_MAX;
          count++;
       }
    }
    joypad_inited = true;
    return count;
+}
+
+static bool glfw_is_pressed(int port_num, const struct snes_keybind *key, unsigned char *buttons, float *axes)
+{
+   if (glfwGetKey(key->key))
+      return true;
+   if (port_num >= joypad_count)
+      return false;
+   if (key->joykey >= 0)
+      return (key->joykey < joypad_buttons[port_num] && buttons[key->joykey] == GLFW_PRESS);
+   if (key->joyaxis >= 0)
+      return (key->joyaxis < joypad_axes[port_num] && axes[key->joyaxis] >= AXIS_THRESHOLD);
+   return (~key->joyaxis < joypad_axes[port_num] && axes[~key->joyaxis] <= -AXIS_THRESHOLD);
 }
 
 static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
@@ -110,9 +128,13 @@ static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, b
 
    int port_num = port ? 1 : 0;
    unsigned char buttons[BUTTONS_MAX];
+   float axes[AXES_MAX];
 
-   if ( joypad_count > port_num )
+   if ( joypad_count > port_num ) 
+   {
       glfwGetJoystickButtons(joypad_id[port_num], buttons, joypad_buttons[port_num]);
+      glfwGetJoystickPos(joypad_id[port_num], axes, joypad_axes[port_num]);
+   }
 
 
    const struct snes_keybind *snes_keybinds;
@@ -121,35 +143,15 @@ static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, b
    else
       snes_keybinds = binds[1];
 
-   // Finds fast forwarding state.
+   // Checks if button is pressed, and sets fast-forwarding state
+   bool pressed = false;
    for ( int i = 0; snes_keybinds[i].id != -1; i++ )
-   {
       if ( snes_keybinds[i].id == SNES_FAST_FORWARD_KEY )
-      {
-         bool pressed = false;
-         if ( glfwGetKey(snes_keybinds[i].key) )
-            pressed = true;
-         else if ( (joypad_count > port_num) && (snes_keybinds[i].joykey < joypad_buttons[port_num]) && (buttons[snes_keybinds[i].joykey] == GLFW_PRESS) )
-            pressed = true;
-         set_fast_forward_button(pressed);
-         break;
-      }
-   }
+         set_fast_forward_button(glfw_is_pressed(port_num, &snes_keybinds[i], buttons, axes));
+      else if ( !pressed && snes_keybinds[i].id == (int)id )
+         pressed = glfw_is_pressed(port_num, &snes_keybinds[i], buttons, axes);
 
-   // Checks if button is pressed
-   for ( int i = 0; snes_keybinds[i].id != -1; i++ )
-   {
-      if ( snes_keybinds[i].id == (int)id )
-      {
-         if ( glfwGetKey(snes_keybinds[i].key) )
-            return 1;
-         
-         if ( (joypad_count > port_num) && (snes_keybinds[i].joykey < joypad_buttons[port_num]) && (buttons[snes_keybinds[i].joykey] == GLFW_PRESS) )
-            return 1;
-      }
-   }
-
-   return 0;
+   return pressed;
 }
 
 static void glfw_free_input(void *data)
@@ -213,21 +215,18 @@ static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, i
 
 static inline void show_fps(void)
 {
-// Shows FPS in taskbar.
+   // Shows FPS in taskbar.
    static int frames = 0;
    static struct timeval tv;
    struct timeval new_tv;
-   
+
    if (frames == 0)
       gettimeofday(&tv, NULL);
 
    if ((frames % 180) == 0 && frames > 0)
    {
       gettimeofday(&new_tv, NULL);
-      struct timeval tmp_tv = {
-         .tv_sec = tv.tv_sec,
-         .tv_usec = tv.tv_usec
-      };
+      struct timeval tmp_tv = tv;
       gettimeofday(&tv, NULL);
       char tmpstr[256] = {0};
 
@@ -260,7 +259,7 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
          0, GL_RGBA, width, height, 0, GL_BGRA,
          GL_UNSIGNED_SHORT_1_5_5_5_REV, frame);
    glDrawArrays(GL_QUADS, 0, 4);
-   
+
    show_fps();
    glfwSwapBuffers();
 
@@ -403,6 +402,6 @@ const video_driver_t video_gl = {
    .set_nonblock_state = gl_set_nonblock_state,
    .free = gl_free
 };
-   
+
 
 
