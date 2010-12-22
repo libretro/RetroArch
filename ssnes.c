@@ -432,6 +432,17 @@ static void parse_input(int argc, char *argv[])
 
    if (optind < argc)
    {
+      char tmp[strlen(argv[optind]) + 1];
+      strcpy(tmp, argv[optind]);
+      char *dst = strrchr(tmp, '.');
+      if (dst)
+      {
+         *dst = '\0';
+         snes_set_cartridge_basename(tmp);
+      }
+      else
+         snes_set_cartridge_basename(tmp);
+
       SSNES_LOG("Opening file: \"%s\"\n", argv[optind]);
       rom_file = fopen(argv[optind], "rb");
       if (rom_file == NULL)
@@ -525,6 +536,7 @@ static ssize_t read_file(FILE* file, void** buf)
 
 int main(int argc, char *argv[])
 {
+   snes_init();
    parse_input(argc, argv);
 
    void *rom_buf;
@@ -547,13 +559,11 @@ int main(int argc, char *argv[])
 
    init_drivers();
 
-   snes_init();
-
    snes_set_video_refresh(video_frame);
    snes_set_audio_sample(audio_sample);
    snes_set_input_poll(input_poll);
    snes_set_input_state(input_state);
-   
+
    if (!snes_load_cartridge_normal(NULL, rom_buf, rom_len))
    {
       SSNES_ERR("ROM file is not valid!\n");
