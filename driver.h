@@ -30,9 +30,9 @@ void set_fast_forward_button(bool state);
 struct snes_keybind
 {
    int id;
-   int key;
-   int joykey;
-   int joyaxis;
+   uint16_t key;
+   uint16_t joykey;
+   uint32_t joyaxis;
 };
 
 typedef struct video_info
