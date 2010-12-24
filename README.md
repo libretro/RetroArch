@@ -18,6 +18,7 @@ C programming skills are not necessary to configure it (no programming involved)
 
 SSNES requires these libraries to build:
 
+   - [libsnes](http://byuu.org/bsnes/)
    - GLFW
    - libsamplerate
 
@@ -32,6 +33,16 @@ SSNES needs one of these audio driver libraries:
    - RoarAudio
    - RSound
    - OpenAL
+
+# Building libsnes
+
+   - Download bSNES source (link over).
+   - Add -fPIC to flags in Makefile.
+   - <tt>$ make library profile=performance</tt> (accuracy, compatibility are the other profiles. compatibility is a great choice for decent PCs. :D)
+   - <tt># make prefix=/usr library-install</tt>
+   - <tt># cp snes/libsnes/libsnes.hpp /usr/include/</tt>
+   - ?!?!
+   - Profit!
 
 # Configuring
 
