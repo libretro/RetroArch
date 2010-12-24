@@ -4,7 +4,7 @@ SSNES is a simple frontend for the libsnes library.
 
 # libsnes
 
-libsnes is the emulator core of bSNES, the most accurate SNES emulator to date, in library form.
+libsnes is the emulator core of [bSNES](http://www.byuu.org), the most accurate SNES emulator to date, in library form.
 This enables the possibility of custom front-ends for the emulator.
 
 # Philosophy
