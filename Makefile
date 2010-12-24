@@ -9,27 +9,27 @@ libsnes = -lsnes
 LIBS = -lsamplerate $(libsnes)
 
 ifeq ($(BUILD_RSOUND), 1)
-   OBJ += rsound.o
+   OBJ += audio/rsound.o
    LIBS += -lrsound
 endif
 ifeq ($(BUILD_OSS), 1)
-   OBJ += oss.o
+   OBJ += audio/oss.o
 endif
 ifeq ($(BUILD_ALSA), 1)
-   OBJ += alsa.o
+   OBJ += audio/alsa.o
    LIBS += -lasound
 endif
 ifeq ($(BUILD_ROAR), 1)
-   OBJ += roar.o
+   OBJ += audio/roar.o
    LIBS += -lroar
 endif
 ifeq ($(BUILD_AL), 1)
-   OBJ += openal.o
+   OBJ += audio/openal.o
    LIBS += -lopenal
 endif
 
 ifeq ($(BUILD_OPENGL), 1)
-   OBJ += gl.o
+   OBJ += gfx/gl.o
    LIBS += -lglfw
 endif
 
