@@ -80,6 +80,15 @@ static void write_file(const char* path, uint8_t* data, size_t size);
 static void load_save_file(const char* path, int type);
 static void save_file(const char* path, int type);
 
+#define SSNES_LOG(msg, args...) do { \
+   if (verbose) \
+      fprintf(stderr, "SSNES: " msg, ##args); \
+   } while(0)
+
+#define SSNES_ERR(msg, args...) do { \
+   fprintf(stderr, "SSNES [ERROR] :: " msg, ##args); \
+   } while(0)
+
 
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
 
@@ -184,10 +193,12 @@ static void init_video_input(void)
       .input_scale = scale,
    };
 
+   const input_driver_t *tmp = driver.input;
    driver.video_data = driver.video->init(&video, &(driver.input));
 
    if ( driver.video_data == NULL )
    {
+      SSNES_ERR("Cannot open video driver... Exiting ...\n");
       exit(1);
    }
 
@@ -197,9 +208,18 @@ static void init_video_input(void)
    }
    else
    {
-      driver.input_data = driver.input->init();
-      if ( driver.input_data == NULL )
+      driver.input = tmp;
+      if (driver.input != NULL)
+      {
+         driver.input_data = driver.input->init();
+         if ( driver.input_data == NULL )
+            exit(1);
+      }
+      else
+      {
+         SSNES_ERR("Cannot find input driver. Exiting ...\n");
          exit(1);
+      }
    }
 }
 
@@ -358,15 +378,6 @@ static bool verbose = false;
 #ifdef HAVE_CG
 char cg_shader_path[256] = DEFAULT_CG_SHADER;
 #endif
-
-#define SSNES_LOG(msg, args...) do { \
-   if (verbose) \
-      fprintf(stderr, "SSNES: " msg, ##args); \
-   } while(0)
-
-#define SSNES_ERR(msg, args...) do { \
-   fprintf(stderr, "SSNES [ERROR] :: " msg, ##args); \
-   } while(0)
 
 static void parse_input(int argc, char *argv[])
 {
