@@ -3,7 +3,7 @@ include config.mk
 TARGET = ssnes
 
 DEFINES =
-OBJ = ssnes.o
+OBJ = ssnes.o file.o driver.o
 libsnes = -lsnes
 
 LIBS = -lsamplerate $(libsnes)

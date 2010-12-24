@@ -84,4 +84,25 @@ typedef struct driver
    void *input_data;
 } driver_t;
 
+void init_drivers(void);
+void uninit_drivers(void);
+
+void init_video_input(void);
+void uninit_video_input(void);
+void init_audio(void);
+void uninit_audio(void);
+
+extern bool video_active;
+extern bool audio_active;
+extern driver_t driver;
+
+//////////////////////////////////////////////// Backends
+extern const audio_driver_t audio_rsound;
+extern const audio_driver_t audio_oss;
+extern const audio_driver_t audio_alsa;
+extern const audio_driver_t audio_roar;
+extern const audio_driver_t audio_openal;
+extern const video_driver_t video_gl;
+////////////////////////////////////////////////
+
 #endif

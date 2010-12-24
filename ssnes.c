@@ -26,68 +26,12 @@
 #include <getopt.h>
 #include "config.h"
 #include "driver.h"
+#include "file.h"
 #include "hqflt/pastlib.h"
 #include "hqflt/grayscale.h"
 #include "hqflt/bleed.h"
 #include "hqflt/ntsc.h"
-
-static bool video_active = true;
-static bool audio_active = true;
-
-static SRC_STATE* source = NULL;
-
-//////////////////////////////////////////////// Backends
-extern const audio_driver_t audio_rsound;
-extern const audio_driver_t audio_oss;
-extern const audio_driver_t audio_alsa;
-extern const audio_driver_t audio_roar;
-extern const audio_driver_t audio_openal;
-extern const video_driver_t video_gl;
-////////////////////////////////////////////////
-
-static driver_t driver = {
-#if VIDEO_DRIVER == VIDEO_GL
-   .video = &video_gl,
-#else
-#error "Define a valid video driver in config.h"
-#endif
-
-#if AUDIO_DRIVER == AUDIO_RSOUND
-   .audio = &audio_rsound,
-#elif AUDIO_DRIVER == AUDIO_OSS
-   .audio = &audio_oss,
-#elif AUDIO_DRIVER == AUDIO_ALSA
-   .audio = &audio_alsa,
-#elif AUDIO_DRIVER == AUDIO_ROAR
-   .audio = &audio_roar,
-#elif AUDIO_DRIVER == AUDIO_AL
-   .audio = &audio_openal,
-#else
-#error "Define a valid audio driver in config.h"
-#endif
-};
-
-static void init_drivers(void);
-static void uninit_drivers(void);
-
-static void init_video_input(void);
-static void uninit_video_input(void);
-static void init_audio(void);
-static void uninit_audio(void);
-
-static void load_state(const char* path, uint8_t* data, size_t size);
-static void write_file(const char* path, uint8_t* data, size_t size);
-static void load_save_file(const char* path, int type);
-static void save_file(const char* path, int type);
-
-#define SSNES_LOG(msg, args...) do { \
-   if (verbose) \
-      fprintf(stderr, "SSNES: " msg, ##args); \
-   } while(0)
-
-#define SSNES_ERR(msg, args...) do { \
-   fprintf(stderr, "SSNES [ERROR] :: " msg, ##args); \
-   } while(0)
+#include "general.h"
 
 
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
@@ -112,124 +56,6 @@ void set_fast_forward_button(bool new_button_state)
          audio_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
    }
    old_button_state = new_button_state;
-}
-
-static void init_drivers(void)
-{
-   init_video_input();
-   init_audio();
-}
-
-static void uninit_drivers(void)
-{
-   uninit_video_input();
-   uninit_audio();
-}
-
-static void init_audio(void)
-{
-   if (!audio_enable)
-   {
-      audio_active = false;
-      return;
-   }
-
-   driver.audio_data = driver.audio->init(audio_device, out_rate, out_latency);
-   if ( driver.audio_data == NULL )
-      audio_active = false;
-
-   if (!audio_sync && audio_active)
-      driver.audio->set_nonblock_state(driver.audio_data, true);
-
-   int err;
-   source = src_new(SAMPLERATE_QUALITY, 2, &err);
-   if (!source)
-      audio_active = false;
-}
-
-static void uninit_audio(void)
-{
-   if (!audio_enable)
-   {
-      audio_active = false;
-      return;
-   }
-
-   if ( driver.audio_data && driver.audio )
-      driver.audio->free(driver.audio_data);
-
-   if ( source )
-      src_delete(source);
-}
-
-static void init_video_input(void)
-{
-   int scale;
-
-   // We multiply scales with 2 to allow for hi-res games.
-#if VIDEO_FILTER == FILTER_NONE
-   scale = 2;
-#elif VIDEO_FILTER == FILTER_HQ2X
-   scale = 4;
-#elif VIDEO_FILTER == FILTER_HQ4X
-   scale = 8;
-#elif VIDEO_FILTER == FILTER_NTSC
-   scale = 8;
-#elif VIDEO_FILTER == FILTER_GRAYSCALE
-   scale = 2;
-#elif VIDEO_FILTER == FILTER_BLEED
-   scale = 2;
-#else
-   scale = 2;
-#endif
-
-   video_info_t video = {
-      .width = (fullscreen) ? fullscreen_x : (296 * xscale),
-      .height = (fullscreen) ? fullscreen_y : (224 * yscale),
-      .fullscreen = fullscreen,
-      .vsync = vsync,
-      .force_aspect = force_aspect,
-      .smooth = video_smooth,
-      .input_scale = scale,
-   };
-
-   const input_driver_t *tmp = driver.input;
-   driver.video_data = driver.video->init(&video, &(driver.input));
-
-   if ( driver.video_data == NULL )
-   {
-      SSNES_ERR("Cannot open video driver... Exiting ...\n");
-      exit(1);
-   }
-
-   if ( driver.input != NULL )
-   {
-      driver.input_data = driver.video_data;
-   }
-   else
-   {
-      driver.input = tmp;
-      if (driver.input != NULL)
-      {
-         driver.input_data = driver.input->init();
-         if ( driver.input_data == NULL )
-            exit(1);
-      }
-      else
-      {
-         SSNES_ERR("Cannot find input driver. Exiting ...\n");
-         exit(1);
-      }
-   }
-}
-
-static void uninit_video_input(void)
-{
-   if ( driver.video_data && driver.video )
-      driver.video->free(driver.video_data);
-
-   if ( driver.input_data != driver.video_data && driver.input )
-      driver.input->free(driver.input_data);
 }
 
 #if VIDEO_FILTER != FILTER_NONE
@@ -296,6 +122,7 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 
 }
 
+SRC_STATE* source = NULL;
 static void audio_sample(uint16_t left, uint16_t right)
 {
    if ( !audio_active )
@@ -374,7 +201,7 @@ static void print_help(void)
 
 static FILE* rom_file = NULL;
 static char savefile_name_srm[256] = {0};
-static bool verbose = false;
+bool verbose = false;
 #ifdef HAVE_CG
 char cg_shader_path[256] = DEFAULT_CG_SHADER;
 #endif
@@ -472,79 +299,6 @@ static void parse_input(int argc, char *argv[])
    }
 }
 
-static ssize_t read_file(FILE* file, void** buf)
-{
-   ssize_t ret;
-   if (file == NULL) // stdin
-   {
-      SSNES_LOG("Reading ROM from stdin ...\n");
-      size_t buf_size = 0xFFFFF; // Some initial guesstimate.
-      size_t buf_ptr = 0;
-      char *rom_buf = malloc(buf_size);
-      if (rom_buf == NULL)
-      {
-         SSNES_ERR("Couldn't allocate memory!\n");
-         return -1;
-      }
-
-      for(;;)
-      {
-         size_t ret = fread(rom_buf + buf_ptr, 1, buf_size - buf_ptr, stdin);
-         buf_ptr += ret;
-
-         // We've reached the end
-         if (buf_ptr < buf_size)
-            break;
-
-         rom_buf = realloc(rom_buf, buf_size * 2);
-         if (rom_buf == NULL)
-         {
-            SSNES_ERR("Couldn't allocate memory!\n");
-            return -1;
-         }
-
-         buf_size *= 2;
-      }
-
-      if ((buf_ptr & 0x7fff) == 512)
-      {
-         memmove(rom_buf, rom_buf + 512, buf_ptr - 512);
-         buf_ptr -= 512;
-      }
-
-      *buf = rom_buf;
-      ret = buf_ptr;
-   }
-   else
-   {
-      fseek(file, 0, SEEK_END);
-      long length = ftell(file);
-      rewind(file);
-      if ((length & 0x7fff) == 512)
-      {
-         length -= 512;
-         fseek(file, 512, SEEK_SET);
-      }
-
-      void *rom_buf = malloc(length);
-      if ( rom_buf == NULL )
-      {
-         SSNES_ERR("Couldn't allocate memory!\n");
-         return -1;
-      }
-
-      if ( fread(rom_buf, 1, length, file) < length )
-      {
-         SSNES_ERR("Didn't read whole file.\n");
-         free(rom_buf);
-         return -1;
-      }
-      *buf = rom_buf;
-      ret = length;
-   }
-   return ret;
-}
-
 int main(int argc, char *argv[])
 {
    snes_init();
@@ -638,72 +392,3 @@ error:
    return 1;
 }
 
-static void write_file(const char* path, uint8_t* data, size_t size)
-{
-   FILE *file = fopen(path, "wb");
-   if ( file != NULL )
-   {
-      SSNES_LOG("Saving state \"%s\". Size: %d bytes.\n", path, (int)size);
-      snes_serialize(data, size);
-      if ( fwrite(data, 1, size, file) != size )
-         SSNES_ERR("Did not save state properly.\n");
-      fclose(file);
-   }
-}
-
-static void load_state(const char* path, uint8_t* data, size_t size)
-{
-   SSNES_LOG("Loading state: \"%s\".\n", path);
-   FILE *file = fopen(path, "rb");
-   if ( file != NULL )
-   {
-      //fprintf(stderr, "SSNES: Loading state. Size: %d bytes.\n", (int)size);
-      if ( fread(data, 1, size, file) != size )
-         SSNES_ERR("Did not load state properly.\n");
-      fclose(file);
-      snes_unserialize(data, size);
-   }
-   else
-   {
-      SSNES_LOG("No state file found. Will create new.\n");
-   }
-}
-
-static void load_save_file(const char* path, int type)
-{
-   FILE *file;
-
-   file = fopen(path, "rb");
-   if ( !file )
-   {
-      return;
-   }
-
-   size_t size = snes_get_memory_size(type);
-   uint8_t *data = snes_get_memory_data(type);
-
-   if (size == 0 || !data)
-   {
-      fclose(file);
-      return;
-   }
-
-   int rc = fread(data, 1, size, file);
-   if ( rc != size )
-   {
-      SSNES_ERR("Couldn't load save file.\n");
-   }
-
-   SSNES_LOG("Loaded save file: \"%s\"\n", path);
-
-   fclose(file);
-}
-
-static void save_file(const char* path, int type)
-{
-   size_t size = snes_get_memory_size(type);
-   uint8_t *data = snes_get_memory_data(type);
-
-   if ( data && size > 0 )
-      write_file(path, data, size);
-}
