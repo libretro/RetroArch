@@ -64,6 +64,8 @@ uninstall: $(TARGET)
 
 clean:
 	rm -f *.o 
+	rm -f audio/*.o
+	rm -f gfx/*.o
 	rm -f hqflt/*.o
 	rm -f hqflt/snes_ntsc/*.o
 	rm -f $(TARGET)
