@@ -25,6 +25,7 @@
 #include "libsnes.hpp"
 #include <stdio.h>
 #include <sys/time.h>
+#include <string.h>
 
 
 #ifdef HAVE_CG
@@ -65,6 +66,11 @@ typedef struct gl
 #endif
    GLuint texture;
    GLuint tex_filter;
+
+   unsigned last_width;
+   unsigned last_height;
+   unsigned tex_w, tex_h;
+   GLfloat tex_coords[8];
 } gl_t;
 
 
@@ -252,17 +258,39 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
 
 #if HAVE_CG
    cgGLSetParameter2f(gl->cg_video_size, width, height);
-   cgGLSetParameter2f(gl->cg_texture_size, width, height);
+   cgGLSetParameter2f(gl->cg_texture_size, gl->tex_w, gl->tex_h);
    cgGLSetParameter2f(gl->cg_output_size, gl_width, gl_height);
 
    cgGLSetParameter2f(gl->cg_Vvideo_size, width, height);
-   cgGLSetParameter2f(gl->cg_Vtexture_size, width, height);
+   cgGLSetParameter2f(gl->cg_Vtexture_size, gl->tex_w, gl_tex_h);
    cgGLSetParameter2f(gl->cg_Voutput_size, gl_width, gl_height);
 #endif
 
+   if (width != gl->last_width || height != gl->last_height) // res change. need to clear out texture.
+   {
+      gl->last_width = width;
+      gl->last_height = height;
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
+      uint8_t *tmp = calloc(1, gl->tex_w * gl->tex_h * sizeof(uint16_t));
+      glTexSubImage2D(GL_TEXTURE_2D,
+            0, 0, 0, gl->tex_w, gl->tex_h, GL_BGRA,
+            GL_UNSIGNED_SHORT_1_5_5_5_REV, tmp);
+      free(tmp);
+
+      gl->tex_coords[0] = 0;
+      gl->tex_coords[1] = (GLfloat)height / gl->tex_h;
+      gl->tex_coords[2] = 0;
+      gl->tex_coords[3] = 0;
+      gl->tex_coords[4] = (GLfloat)width / gl->tex_w;
+      gl->tex_coords[5] = 0;
+      gl->tex_coords[6] = (GLfloat)width / gl->tex_w;
+      gl->tex_coords[7] = (GLfloat)height / gl->tex_h;
+   }
+
+
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 1);
-   glTexImage2D(GL_TEXTURE_2D,
-         0, GL_RGBA, width, height, 0, GL_BGRA,
+   glTexSubImage2D(GL_TEXTURE_2D,
+         0, 0, 0, width, height, GL_BGRA,
          GL_UNSIGNED_SHORT_1_5_5_5_REV, frame);
    glDrawArrays(GL_QUADS, 0, 4);
 
@@ -350,7 +378,19 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
    glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), vertexes);
-   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords);
+
+   memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
+   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
+
+   gl->tex_w = 256 * video->input_scale;
+   gl->tex_h = 256 * video->input_scale;
+   uint8_t *tmp = calloc(1, gl->tex_w * gl->tex_h * sizeof(uint16_t));
+   glTexImage2D(GL_TEXTURE_2D,
+         0, GL_RGBA, gl->tex_w, gl->tex_h, 0, GL_BGRA,
+         GL_UNSIGNED_SHORT_1_5_5_5_REV, tmp);
+   free(tmp);
+   gl->last_width = gl->tex_w;
+   gl->last_height = gl->tex_h;
 
 #ifdef HAVE_CG
    gl->cgCtx = cgCreateContext();
