@@ -262,7 +262,7 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
    cgGLSetParameter2f(gl->cg_output_size, gl_width, gl_height);
 
    cgGLSetParameter2f(gl->cg_Vvideo_size, width, height);
-   cgGLSetParameter2f(gl->cg_Vtexture_size, gl->tex_w, gl_tex_h);
+   cgGLSetParameter2f(gl->cg_Vtexture_size, gl->tex_w, gl->tex_h);
    cgGLSetParameter2f(gl->cg_Voutput_size, gl_width, gl_height);
 #endif
 
