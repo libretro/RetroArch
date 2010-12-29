@@ -54,14 +54,19 @@ typedef struct audio_driver
    bool (*start)(void* data);
    void (*set_nonblock_state)(void* data, bool toggle); // Should we care about blocking in audio thread? Fast forwarding.
    void (*free)(void* data);
+   const char *ident;
 } audio_driver_t;
 
+#define AXIS_NEG_GET(x) ((x >> 16) & 0xFFFF)
+#define AXIS_POS_GET(x) (x & 0xFFFF)
+#define AXIS_NONE ((uint32_t)0xFFFFFFFFU)
 typedef struct input_driver
 {
    void* (*init)(void);
    void (*poll)(void* data);
    int16_t (*input_state)(void* data, const struct snes_keybind **snes_keybinds, bool port, unsigned device, unsigned index, unsigned id);
    void (*free)(void* data);
+   const char *ident;
 } input_driver_t;
 
 typedef struct video_driver
@@ -71,6 +76,7 @@ typedef struct video_driver
    bool (*frame)(void* data, const uint16_t* frame, int width, int height, int pitch);
    void (*set_nonblock_state)(void* data, bool toggle); // Should we care about syncing to vblank? Fast forwarding.
    void (*free)(void* data);
+   const char *ident;
 } video_driver_t;
 
 

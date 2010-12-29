@@ -190,7 +190,8 @@ const audio_driver_t audio_alsa = {
    .stop = __alsa_stop,
    .start = __alsa_start,
    .set_nonblock_state = __alsa_set_nonblock_state,
-   .free = __alsa_free
+   .free = __alsa_free,
+   .ident = "alsa"
 };
 
    

@@ -18,7 +18,6 @@
 #define GL_GLEXT_PROTOTYPES
 
 #include "driver.h"
-#include "config.h"
 #include <GL/glfw.h>
 #include <GL/glext.h>
 #include <stdint.h>
@@ -26,6 +25,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <string.h>
+#include "general.h"
 
 
 #ifdef HAVE_CG
@@ -122,9 +122,9 @@ static bool glfw_is_pressed(int port_num, const struct snes_keybind *key, unsign
 
    if (key->joyaxis != AXIS_NONE)
    {
-      if (AXIS_NEG_GET(key->joyaxis) < joypad_axes[port_num] && axes[AXIS_NEG_GET(key->joyaxis)] <= -AXIS_THRESHOLD)
+      if (AXIS_NEG_GET(key->joyaxis) < joypad_axes[port_num] && axes[AXIS_NEG_GET(key->joyaxis)] <= -g_settings.input.axis_threshold)
          return true;
-      if (AXIS_POS_GET(key->joyaxis) < joypad_axes[port_num] && axes[AXIS_POS_GET(key->joyaxis)] >= AXIS_THRESHOLD)
+      if (AXIS_POS_GET(key->joyaxis) < joypad_axes[port_num] && axes[AXIS_POS_GET(key->joyaxis)] >= g_settings.input.axis_threshold)
          return true;
    }
    return false;
@@ -174,7 +174,8 @@ static void glfw_free_input(void *data)
 static const input_driver_t input_glfw = {
    .poll = glfw_input_poll,
    .input_state = glfw_input_state,
-   .free = glfw_free_input
+   .free = glfw_free_input,
+   .ident = "glfw"
 };
 
 static void GLFWCALL resize(int width, int height)
@@ -446,7 +447,8 @@ const video_driver_t video_gl = {
    .init = gl_init,
    .frame = gl_frame,
    .set_nonblock_state = gl_set_nonblock_state,
-   .free = gl_free
+   .free = gl_free,
+   .ident = "glfw"
 };
 
 

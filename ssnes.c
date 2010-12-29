@@ -34,7 +34,10 @@
 
 struct global g_extern = {
    .video_active = true,
-   .audio_active = true
+   .audio_active = true,
+#if HAVE_CG
+   .cg_shader_path = DEFAULT_CG_SHADER
+#endif
 };
 
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.

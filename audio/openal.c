@@ -233,7 +233,8 @@ const audio_driver_t audio_openal = {
    .stop = __al_stop,
    .start = __al_start,
    .set_nonblock_state = __al_set_nonblock_state,
-   .free = __al_free
+   .free = __al_free,
+   .ident = "openal"
 };
 
    

@@ -107,7 +107,8 @@ const audio_driver_t audio_roar = {
    .stop = __roar_stop,
    .start = __roar_start,
    .set_nonblock_state = __roar_set_nonblock_state,
-   .free = __roar_free
+   .free = __roar_free,
+   .ident = "roar"
 };
 
    

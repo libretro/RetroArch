@@ -31,6 +31,7 @@ struct settings
 {
    struct 
    {
+      char driver[32];
       float xscale;
       float yscale;
       bool fullscreen;
@@ -45,6 +46,7 @@ struct settings
 
    struct
    {
+      char driver[32];
       bool enable;
       unsigned out_rate;
       unsigned in_rate;
@@ -56,10 +58,12 @@ struct settings
 
    struct
    {
+      char driver[32];
       struct snes_keybind binds[MAX_PLAYERS][MAX_BINDS];
       int save_state_key;
       int load_state_key;
       int toggle_fullscreen_key;
+      float axis_threshold;
    } input;
 };
 
@@ -73,6 +77,7 @@ struct global
    FILE *rom_file;
    char savefile_name_srm[256];
    char cg_shader_path[256];
+   char config_path[256];
 };
 
 void parse_config(void);

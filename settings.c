@@ -1,6 +1,6 @@
 #include "general.h"
 #include "conf/config_file.h"
-#include "config.h"
+#include "config.h.def"
 #include <assert.h>
 #include <string.h>
 

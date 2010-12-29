@@ -21,6 +21,31 @@
 #include <stdio.h>
 #include <string.h>
 
+static audio_driver_t audio_drivers[] = {
+#ifdef HAVE_ALSA
+   &audio_alsa,
+#endif
+#ifdef HAVE_OSS
+   &audio_oss,
+#endif
+#ifdef HAVE_RSOUND
+   &audio_rsound,
+#endif
+#ifdef HAVE_AL
+   &audio_openal,
+#endif
+#ifdef HAVE_ROAR
+   &audio_roar,
+#endif
+};
+
+static video_driver_t video_drivers[] = {
+#ifdef HAVE_GL
+   &video_gl,
+#endif
+};
+
+
 void init_drivers(void)
 {
    init_video_input();
@@ -142,6 +167,9 @@ void uninit_video_input(void)
       driver.input->free(driver.input_data);
 }
 
+driver_t driver;
+
+#if 0
 driver_t driver = {
 #if VIDEO_DRIVER == VIDEO_GL
    .video = &video_gl,
@@ -163,4 +191,5 @@ driver_t driver = {
 #error "Define a valid audio driver in config.h"
 #endif
 };
+#endif
 
