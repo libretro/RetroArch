@@ -37,36 +37,36 @@ void init_audio(void)
 {
    if (!audio_enable)
    {
-      audio_active = false;
+      g_extern.audio_active = false;
       return;
    }
 
    driver.audio_data = driver.audio->init(audio_device, out_rate, out_latency);
    if ( driver.audio_data == NULL )
-      audio_active = false;
+      g_extern.audio_active = false;
 
-   if (!audio_sync && audio_active)
+   if (!audio_sync && g_extern.audio_active)
       driver.audio->set_nonblock_state(driver.audio_data, true);
 
    int err;
-   source = src_new(SAMPLERATE_QUALITY, 2, &err);
-   if (!source)
-      audio_active = false;
+   g_extern.source = src_new(SAMPLERATE_QUALITY, 2, &err);
+   if (!g_extern.source)
+      g_extern.audio_active = false;
 }
 
 void uninit_audio(void)
 {
    if (!audio_enable)
    {
-      audio_active = false;
+      g_extern.audio_active = false;
       return;
    }
 
    if ( driver.audio_data && driver.audio )
       driver.audio->free(driver.audio_data);
 
-   if ( source )
-      src_delete(source);
+   if ( g_extern.source )
+      src_delete(g_extern.source);
 }
 
 void init_video_input(void)
@@ -138,9 +138,6 @@ void uninit_video_input(void)
    if ( driver.input_data != driver.video_data && driver.input )
       driver.input->free(driver.input_data);
 }
-
-bool video_active = true;
-bool audio_active = true;
 
 driver_t driver = {
 #if VIDEO_DRIVER == VIDEO_GL

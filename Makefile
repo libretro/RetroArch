@@ -46,7 +46,7 @@ ifeq ($(BUILD_FILTER), 1)
    OBJ += hqflt/snes_ntsc/snes_ntsc.o
 endif
 
-CFLAGS = -Wall -O3 -std=gnu99 -Wno-unused-variable -I. $(DEFINES)
+CFLAGS = -Wall -O0 -g -std=gnu99 -Wno-unused-variable -I. $(DEFINES)
 
 all: $(TARGET) 
 

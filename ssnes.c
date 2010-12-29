@@ -33,6 +33,10 @@
 #include "hqflt/ntsc.h"
 #include "general.h"
 
+struct global g_extern = {
+   .video_active = true,
+   .audio_active = true
+};
 
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
 
@@ -46,9 +50,9 @@ void set_fast_forward_button(bool new_button_state)
    if (new_button_state && !old_button_state)
    {
       syncing_state = !syncing_state;
-      if (video_active)
+      if (g_extern.video_active)
          driver.video->set_nonblock_state(driver.video_data, syncing_state);
-      if (audio_active)
+      if (g_extern.audio_active)
          driver.audio->set_nonblock_state(driver.audio_data, (audio_sync) ? syncing_state : true);
       if (syncing_state)
          audio_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
@@ -79,7 +83,7 @@ static inline void process_frame (uint16_t * restrict out, const uint16_t * rest
 // Format received is 16-bit 0RRRRRGGGGGBBBBB
 static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 {
-   if ( !video_active )
+   if ( !g_extern.video_active )
       return;
 
 #if VIDEO_FILTER == FILTER_HQ2X
@@ -117,15 +121,14 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
       video_active = false;
 #else
    if ( !driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048) )
-      video_active = false;
+      g_extern.video_active = false;
 #endif
 
 }
 
-SRC_STATE* source = NULL;
 static void audio_sample(uint16_t left, uint16_t right)
 {
-   if ( !audio_active )
+   if ( !g_extern.audio_active )
       return;
 
    static float data[AUDIO_CHUNK_SIZE_NONBLOCKING];
@@ -148,14 +151,14 @@ static void audio_sample(uint16_t left, uint16_t right)
       src_data.end_of_input = 0;
       src_data.src_ratio = (double)out_rate / (double)in_rate;
 
-      src_process(source, &src_data);
+      src_process(g_extern.source, &src_data);
 
       src_float_to_short_array(outsamples, temp_outsamples, src_data.output_frames_gen * 2);
 
       if ( driver.audio->write(driver.audio_data, temp_outsamples, src_data.output_frames_gen * 4) < 0 )
       {
          fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
-         audio_active = false;
+         g_extern.audio_active = false;
       }
 
       data_ptr = 0;
@@ -199,7 +202,6 @@ static void print_help(void)
    puts("\t-v/--verbose: Verbose logging");
 }
 
-bool fullscreen = START_FULLSCREEN;
 static FILE* rom_file = NULL;
 static char savefile_name_srm[256] = {0};
 bool verbose = false;
@@ -304,6 +306,7 @@ int main(int argc, char *argv[])
 {
    snes_init();
    parse_input(argc, argv);
+   parse_config();
 
    void *rom_buf;
    ssize_t rom_len = 0;
@@ -367,7 +370,7 @@ int main(int argc, char *argv[])
 
       else if ( glfwGetKey( TOGGLE_FULLSCREEN ) )
       {
-         fullscreen = !fullscreen;
+         g_settings.video.fullscreen = !g_settings.video.fullscreen;
          uninit_drivers();
          init_drivers();
       }

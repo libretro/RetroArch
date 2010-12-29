@@ -2,6 +2,7 @@
 #include "conf/config_file.h"
 #include "config.h"
 #include <assert.h>
+#include <string.h>
 
 struct settings g_settings;
 
@@ -9,12 +10,15 @@ static void set_defaults(void)
 {
    g_settings.video.xscale = xscale;
    g_settings.video.yscale = yscale;
+   g_settings.video.fullscreen = fullscreen;
    g_settings.video.fullscreen_x = fullscreen_x;
    g_settings.video.fullscreen_y = fullscreen_y;
    g_settings.video.vsync = vsync;
-   g_settings.video.smootn = video_smooth;
+   g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
+#if HAVE_CG
    strncpy(g_settings.video.cg_shader_path, cg_shader_path, sizeof(g_settings.video.cg_shader_path) - 1);
+#endif
    strncpy(g_settings.video.video_filter, "foo", sizeof(g_settings.video.video_filter) - 1);
 
    g_settings.audio.enable = audio_enable;
@@ -126,7 +130,7 @@ void parse_config(void)
    if (config_get_int(conf, "audio_src_quality", &tmp_int))
    {
       int quals[] = {SRC_ZERO_ORDER_HOLD, SRC_LINEAR, SRC_SINC_FASTEST, 
-         SRC_SINC_MEDIUM, SRC_SINC_BEST};
+         SRC_SINC_MEDIUM_QUALITY, SRC_SINC_BEST_QUALITY};
 
       if (tmp_int > 0 && tmp_int < 6)
          g_settings.audio.src_quality = quals[tmp_int];

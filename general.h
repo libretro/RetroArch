@@ -23,14 +23,6 @@
 #include <samplerate.h>
 #include "driver.h"
 
-#define SSNES_LOG(msg, args...) do { \
-   if (verbose) \
-      fprintf(stderr, "SSNES: " msg, ##args); \
-   } while(0)
-
-#define SSNES_ERR(msg, args...) do { \
-   fprintf(stderr, "SSNES [ERROR] :: " msg, ##args); \
-   } while(0)
 
 #define MAX_PLAYERS 2
 #define MAX_BINDS 14
@@ -40,6 +32,7 @@ struct settings
    {
       float xscale;
       float yscale;
+      bool fullscreen;
       unsigned fullscreen_x;
       unsigned fullscreen_y;
       bool vsync;
@@ -66,8 +59,26 @@ struct settings
    } input;
 };
 
+struct global
+{
+   bool verbose;
+   SRC_STATE *source;
+   bool audio_active;
+   bool video_active;
+};
+
 void parse_config(void);
 
 extern struct settings g_settings;
+extern struct global g_extern;
+
+#define SSNES_LOG(msg, args...) do { \
+   if (g_extern.verbose) \
+      fprintf(stderr, "SSNES: " msg, ##args); \
+   } while(0)
+
+#define SSNES_ERR(msg, args...) do { \
+   fprintf(stderr, "SSNES [ERROR] :: " msg, ##args); \
+   } while(0)
 
 #endif

@@ -92,8 +92,6 @@ void uninit_video_input(void);
 void init_audio(void);
 void uninit_audio(void);
 
-extern bool video_active;
-extern bool audio_active;
 extern driver_t driver;
 
 //////////////////////////////////////////////// Backends
