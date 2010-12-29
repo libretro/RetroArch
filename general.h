@@ -21,6 +21,7 @@
 
 #include <stdbool.h>
 #include <samplerate.h>
+#include "driver.h"
 
 #define SSNES_LOG(msg, args...) do { \
    if (verbose) \
@@ -31,8 +32,42 @@
    fprintf(stderr, "SSNES [ERROR] :: " msg, ##args); \
    } while(0)
 
-extern bool verbose;
-extern SRC_STATE *source;
-extern bool fullscreen;
+#define MAX_PLAYERS 2
+#define MAX_BINDS 14
+struct settings
+{
+   struct 
+   {
+      float xscale;
+      float yscale;
+      unsigned fullscreen_x;
+      unsigned fullscreen_y;
+      bool vsync;
+      bool smooth;
+      bool force_aspect;
+      char cg_shader_path[256];
+      char video_filter[64];
+   } video;
+
+   struct
+   {
+      bool enable;
+      unsigned out_rate;
+      unsigned in_rate;
+      char device[256];
+      unsigned latency;
+      bool sync;
+      int src_quality;
+   } audio;
+
+   struct
+   {
+      struct snes_keybind binds[MAX_PLAYERS][MAX_BINDS];
+   } input;
+};
+
+void parse_config(void);
+
+extern struct settings g_settings;
 
 #endif
