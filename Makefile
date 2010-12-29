@@ -11,26 +11,32 @@ LIBS = -lsamplerate $(libsnes)
 ifeq ($(BUILD_RSOUND), 1)
    OBJ += audio/rsound.o
    LIBS += -lrsound
+   DEFINES += -DHAVE_RSOUND
 endif
 ifeq ($(BUILD_OSS), 1)
    OBJ += audio/oss.o
+   DEFINES += -DHAVE_OSS
 endif
 ifeq ($(BUILD_ALSA), 1)
    OBJ += audio/alsa.o
    LIBS += -lasound
+   DEFINES += -DHAVE_ALSA
 endif
 ifeq ($(BUILD_ROAR), 1)
    OBJ += audio/roar.o
    LIBS += -lroar
+   DEFINES += -DHAVE_ROAR
 endif
 ifeq ($(BUILD_AL), 1)
    OBJ += audio/openal.o
    LIBS += -lopenal
+   DEFINES += -DHAVE_AL
 endif
 
 ifeq ($(BUILD_OPENGL), 1)
    OBJ += gfx/gl.o
    LIBS += -lglfw
+   DEFINES += -DHAVE_GL
 endif
 
 ifeq ($(BUILD_CG), 1)

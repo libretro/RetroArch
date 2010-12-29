@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static audio_driver_t audio_drivers[] = {
+static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA
    &audio_alsa,
 #endif
@@ -39,12 +39,39 @@ static audio_driver_t audio_drivers[] = {
 #endif
 };
 
-static video_driver_t video_drivers[] = {
+static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_GL
    &video_gl,
 #endif
 };
 
+static void find_audio_driver(void)
+{
+   for (int i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
+   {
+      if (strcasecmp(g_settings.audio.driver, audio_drivers[i]->ident) == 0)
+      {
+         driver.audio = audio_drivers[i];
+         return;
+      }
+   }
+   SSNES_ERR("Couldn't find any audio driver named \"%s\"\n", g_settings.audio.driver);
+   exit(1);
+}
+
+static void find_video_driver(void)
+{
+   for (int i = 0; i < sizeof(video_drivers) / sizeof(video_driver_t*); i++)
+   {
+      if (strcasecmp(g_settings.video.driver, video_drivers[i]->ident) == 0)
+      {
+         driver.video = video_drivers[i];
+         return;
+      }
+   }
+   SSNES_ERR("Couldn't find any video driver named \"%s\"\n", g_settings.video.driver);
+   exit(1);
+}
 
 void init_drivers(void)
 {
@@ -65,6 +92,8 @@ void init_audio(void)
       g_extern.audio_active = false;
       return;
    }
+
+   find_audio_driver();
 
    driver.audio_data = driver.audio->init(strlen(g_settings.audio.device) ? g_settings.audio.device : NULL, g_settings.audio.out_rate, g_settings.audio.latency);
    if ( driver.audio_data == NULL )
@@ -97,6 +126,8 @@ void uninit_audio(void)
 void init_video_input(void)
 {
    int scale;
+
+   find_video_driver();
 
    // We multiply scales with 2 to allow for hi-res games.
 #if 0

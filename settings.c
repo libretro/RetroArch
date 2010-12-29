@@ -8,6 +8,46 @@ struct settings g_settings;
 
 static void set_defaults(void)
 {
+   const char *def_video = NULL;
+   const char *def_audio = NULL;
+
+   switch (VIDEO_DEFAULT_DRIVER)
+   {
+      case VIDEO_GL:
+         def_video = "glfw";
+         break;
+      default:
+         break;
+   }
+
+   switch (AUDIO_DEFAULT_DRIVER)
+   {
+      case AUDIO_RSOUND:
+         def_audio = "rsound";
+         break;
+      case AUDIO_OSS:
+         def_audio = "oss";
+         break;
+      case AUDIO_ALSA:
+         def_audio = "alsa";
+         break;
+      case AUDIO_ROAR:
+         def_audio = "roar";
+         break;
+      case AUDIO_AL:
+         def_audio = "openal";
+         break;
+      default:
+         break;
+   }
+
+   // No input atm ... It is in the GLFW driver.
+
+   if (def_video)
+      strncpy(g_settings.video.driver, def_video, sizeof(g_settings.video.driver) - 1);
+   if (def_audio)
+      strncpy(g_settings.audio.driver, def_audio, sizeof(g_settings.audio.driver) - 1);
+
    g_settings.video.xscale = xscale;
    g_settings.video.yscale = yscale;
    g_settings.video.fullscreen = fullscreen;
@@ -138,6 +178,17 @@ void parse_config(void)
 
       if (tmp_int > 0 && tmp_int < 6)
          g_settings.audio.src_quality = quals[tmp_int];
+   }
+
+   if (config_get_string(conf, "video_driver", &tmp_str))
+   {
+      strncpy(g_settings.video.driver, tmp_str, sizeof(g_settings.video.driver) - 1);
+      free(tmp_str);
+   }
+   if (config_get_string(conf, "audio_driver", &tmp_str))
+   {
+      strncpy(g_settings.audio.driver, tmp_str, sizeof(g_settings.audio.driver) - 1);
+      free(tmp_str);
    }
 
    // TODO: Keybinds.
