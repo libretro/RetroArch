@@ -57,7 +57,7 @@ static void set_defaults(void)
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
 #if HAVE_CG
-   strncpy(g_settings.video.cg_shader_path, cg_shader_path, sizeof(g_settings.video.cg_shader_path) - 1);
+   strncpy(g_settings.video.cg_shader_path, DEFAULT_CG_SHADER, sizeof(g_settings.video.cg_shader_path) - 1);
 #endif
    strncpy(g_settings.video.video_filter, "foo", sizeof(g_settings.video.video_filter) - 1);
 
@@ -78,6 +78,7 @@ static void set_defaults(void)
    g_settings.input.save_state_key = SAVE_STATE_KEY;
    g_settings.input.load_state_key = LOAD_STATE_KEY;
    g_settings.input.toggle_fullscreen_key = TOGGLE_FULLSCREEN;
+   g_settings.input.axis_threshold = AXIS_THRESHOLD;
 }
 
 void parse_config(void)
@@ -149,6 +150,10 @@ void parse_config(void)
       free(tmp_str);
    }
 
+   // Input Settings.
+   if (config_get_double(conf, "input_axis_threshold", &tmp_double))
+      g_settings.input.axis_threshold = tmp_double;
+
    // Audio settings.
    if (config_get_bool(conf, "audio_enable", &tmp_bool))
       g_settings.audio.enable = tmp_bool;
@@ -188,6 +193,12 @@ void parse_config(void)
    if (config_get_string(conf, "audio_driver", &tmp_str))
    {
       strncpy(g_settings.audio.driver, tmp_str, sizeof(g_settings.audio.driver) - 1);
+      free(tmp_str);
+   }
+
+   if (config_get_string(conf, "video_cg_shader_path", &tmp_str))
+   {
+      strncpy(g_settings.video.cg_shader_path, tmp_str, sizeof(g_settings.video.cg_shader_path) - 1);
       free(tmp_str);
    }
 

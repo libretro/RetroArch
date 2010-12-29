@@ -35,9 +35,6 @@
 struct global g_extern = {
    .video_active = true,
    .audio_active = true,
-#if HAVE_CG
-   .cg_shader_path = DEFAULT_CG_SHADER
-#endif
 };
 
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
@@ -202,6 +199,7 @@ static void print_help(void)
    puts("Usage: ssnes [rom file] [-h/--help | -s/--save]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
+   puts("\t-c/--config: Path for config file. Defaults to $XDG_CONFIG_HOME/ssnes");
 #ifdef HAVE_CG
    puts("\t-f/--shader: Path to Cg shader. Will be compiled at runtime.\n");
 #endif
@@ -220,6 +218,7 @@ static void parse_input(int argc, char *argv[])
       { "help", 0, NULL, 'h' },
       { "save", 1, NULL, 's' },
       { "verbose", 0, NULL, 'v' },
+      { "config", 0, NULL, 'c' },
 #ifdef HAVE_CG
       { "shader", 1, NULL, 'f' },
 #endif
@@ -228,9 +227,9 @@ static void parse_input(int argc, char *argv[])
 
    int option_index = 0;
 #ifdef HAVE_CG
-   char optstring[] = "hs:vf:";
+   char optstring[] = "hs:vf:c:";
 #else
-   char optstring[] = "hs:v";
+   char optstring[] = "hs:vc:";
 #endif
    for(;;)
    {
@@ -258,6 +257,10 @@ static void parse_input(int argc, char *argv[])
 
          case 'v':
             g_extern.verbose = true;
+            break;
+
+         case 'c':
+            strncpy(g_extern.config_path, optarg, sizeof(g_extern.config_path) - 1);
             break;
 
          case '?':
@@ -304,8 +307,8 @@ static void parse_input(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
    snes_init();
-   parse_input(argc, argv);
    parse_config();
+   parse_input(argc, argv);
 
    void *rom_buf;
    ssize_t rom_len = 0;

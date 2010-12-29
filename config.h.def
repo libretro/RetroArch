@@ -65,7 +65,6 @@ static const bool video_smooth = true;
 
 // Path to custom Cg shader. If using custom shaders, it is recommended to disable video_smooth.
 #ifdef HAVE_CG
-extern char cg_shader_path[];
 #define DEFAULT_CG_SHADER "hqflt/cg/quad.cg"
 #endif
 

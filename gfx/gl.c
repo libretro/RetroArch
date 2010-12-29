@@ -409,8 +409,8 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    }
    cgGLSetOptimalOptions(gl->cgFProf);
    cgGLSetOptimalOptions(gl->cgVProf);
-   gl->cgFPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, cg_shader_path, gl->cgFProf, "main_fragment", 0);
-   gl->cgVPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, cg_shader_path, gl->cgVProf, "main_vertex", 0);
+   gl->cgFPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, g_settings.video.cg_shader_path, gl->cgFProf, "main_fragment", 0);
+   gl->cgVPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, g_settings.video.cg_shader_path, gl->cgVProf, "main_vertex", 0);
    if (gl->cgFPrg == NULL || gl->cgVPrg == NULL)
    {
       CGerror err = cgGetError();
