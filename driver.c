@@ -17,9 +17,9 @@
 
 
 #include "driver.h"
-#include "config.h"
 #include "general.h"
 #include <stdio.h>
+#include <string.h>
 
 void init_drivers(void)
 {
@@ -35,28 +35,28 @@ void uninit_drivers(void)
 
 void init_audio(void)
 {
-   if (!audio_enable)
+   if (!g_settings.audio.enable)
    {
       g_extern.audio_active = false;
       return;
    }
 
-   driver.audio_data = driver.audio->init(audio_device, out_rate, out_latency);
+   driver.audio_data = driver.audio->init(strlen(g_settings.audio.device) ? g_settings.audio.device : NULL, g_settings.audio.out_rate, g_settings.audio.latency);
    if ( driver.audio_data == NULL )
       g_extern.audio_active = false;
 
-   if (!audio_sync && g_extern.audio_active)
+   if (!g_settings.audio.sync && g_extern.audio_active)
       driver.audio->set_nonblock_state(driver.audio_data, true);
 
    int err;
-   g_extern.source = src_new(SAMPLERATE_QUALITY, 2, &err);
+   g_extern.source = src_new(g_settings.audio.src_quality, 2, &err);
    if (!g_extern.source)
       g_extern.audio_active = false;
 }
 
 void uninit_audio(void)
 {
-   if (!audio_enable)
+   if (!g_settings.audio.enable)
    {
       g_extern.audio_active = false;
       return;
@@ -74,6 +74,7 @@ void init_video_input(void)
    int scale;
 
    // We multiply scales with 2 to allow for hi-res games.
+#if 0
 #if VIDEO_FILTER == FILTER_NONE
    scale = 2;
 #elif VIDEO_FILTER == FILTER_HQ2X
@@ -89,14 +90,16 @@ void init_video_input(void)
 #else
    scale = 2;
 #endif
+#endif
+   scale = 2;
 
    video_info_t video = {
-      .width = (fullscreen) ? fullscreen_x : (296 * xscale),
-      .height = (fullscreen) ? fullscreen_y : (224 * yscale),
-      .fullscreen = fullscreen,
-      .vsync = vsync,
-      .force_aspect = force_aspect,
-      .smooth = video_smooth,
+      .width = (g_settings.video.fullscreen) ? g_settings.video.fullscreen_x : (296 * g_settings.video.xscale),
+      .height = (g_settings.video.fullscreen) ? g_settings.video.fullscreen_y : (224 * g_settings.video.yscale),
+      .fullscreen = g_settings.video.fullscreen,
+      .vsync = g_settings.video.vsync,
+      .force_aspect = g_settings.video.force_aspect,
+      .smooth = g_settings.video.smooth,
       .input_scale = scale,
    };
 
@@ -146,12 +149,12 @@ driver_t driver = {
 #error "Define a valid video driver in config.h"
 #endif
 
-#if AUDIO_DRIVER == AUDIO_RSOUND
+#if AUDIO_DRIVER == AUDIO_ALSA
+   .audio = &audio_alsa,
+#elif AUDIO_DRIVER == AUDIO_RSOUND
    .audio = &audio_rsound,
 #elif AUDIO_DRIVER == AUDIO_OSS
    .audio = &audio_oss,
-#elif AUDIO_DRIVER == AUDIO_ALSA
-   .audio = &audio_alsa,
 #elif AUDIO_DRIVER == AUDIO_ROAR
    .audio = &audio_roar,
 #elif AUDIO_DRIVER == AUDIO_AL

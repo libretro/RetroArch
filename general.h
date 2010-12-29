@@ -22,6 +22,7 @@
 #include <stdbool.h>
 #include <samplerate.h>
 #include "driver.h"
+#include <stdio.h>
 
 
 #define MAX_PLAYERS 2
@@ -56,6 +57,9 @@ struct settings
    struct
    {
       struct snes_keybind binds[MAX_PLAYERS][MAX_BINDS];
+      int save_state_key;
+      int load_state_key;
+      int toggle_fullscreen_key;
    } input;
 };
 
@@ -65,6 +69,10 @@ struct global
    SRC_STATE *source;
    bool audio_active;
    bool video_active;
+
+   FILE *rom_file;
+   char savefile_name_srm[256];
+   char cg_shader_path[256];
 };
 
 void parse_config(void);

@@ -24,7 +24,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
-#include "config.h"
 #include "driver.h"
 #include "file.h"
 #include "hqflt/pastlib.h"
@@ -53,7 +52,7 @@ void set_fast_forward_button(bool new_button_state)
       if (g_extern.video_active)
          driver.video->set_nonblock_state(driver.video_data, syncing_state);
       if (g_extern.audio_active)
-         driver.audio->set_nonblock_state(driver.audio_data, (audio_sync) ? syncing_state : true);
+         driver.audio->set_nonblock_state(driver.audio_data, (g_settings.audio.sync) ? syncing_state : true);
       if (syncing_state)
          audio_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
       else
@@ -86,6 +85,7 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if ( !g_extern.video_active )
       return;
 
+#if 0
 #if VIDEO_FILTER == FILTER_HQ2X
    uint16_t outputHQ2x[width * height * 2 * 2];
 #elif VIDEO_FILTER == FILTER_HQ4X
@@ -123,7 +123,10 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if ( !driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048) )
       g_extern.video_active = false;
 #endif
+#endif
 
+   if ( !driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048) )
+      g_extern.video_active = false;
 }
 
 static void audio_sample(uint16_t left, uint16_t right)
@@ -149,7 +152,7 @@ static void audio_sample(uint16_t left, uint16_t right)
       src_data.input_frames = audio_chunk_size / 2;
       src_data.output_frames = audio_chunk_size * 8;
       src_data.end_of_input = 0;
-      src_data.src_ratio = (double)out_rate / (double)in_rate;
+      src_data.src_ratio = (double)g_settings.audio.out_rate / (double)g_settings.audio.in_rate;
 
       src_process(g_extern.source, &src_data);
 
@@ -172,7 +175,7 @@ static void input_poll(void)
 
 static int16_t input_state(bool port, unsigned device, unsigned index, unsigned id)
 {
-   const struct snes_keybind *binds[] = { snes_keybinds_1, snes_keybinds_2 };
+   const struct snes_keybind *binds[] = { g_settings.input.binds[0], g_settings.input.binds[1] }; 
    return driver.input->input_state(driver.input_data, binds, port, device, index, id);
 }
 
@@ -201,13 +204,6 @@ static void print_help(void)
 #endif
    puts("\t-v/--verbose: Verbose logging");
 }
-
-static FILE* rom_file = NULL;
-static char savefile_name_srm[256] = {0};
-bool verbose = false;
-#ifdef HAVE_CG
-char cg_shader_path[256] = DEFAULT_CG_SHADER;
-#endif
 
 static void parse_input(int argc, char *argv[])
 {
@@ -247,18 +243,18 @@ static void parse_input(int argc, char *argv[])
             exit(0);
 
          case 's':
-            strncpy(savefile_name_srm, optarg, sizeof(savefile_name_srm));
-            savefile_name_srm[sizeof(savefile_name_srm)-1] = '\0';
+            strncpy(g_extern.savefile_name_srm, optarg, sizeof(g_extern.savefile_name_srm));
+            g_extern.savefile_name_srm[sizeof(g_extern.savefile_name_srm)-1] = '\0';
             break;
 
 #ifdef HAVE_CG
          case 'f':
-            strncpy(cg_shader_path, optarg, sizeof(cg_shader_path) - 1);
+            strncpy(g_extern.cg_shader_path, optarg, sizeof(g_extern.cg_shader_path) - 1);
             break;
 #endif
 
          case 'v':
-            verbose = true;
+            g_extern.verbose = true;
             break;
 
          case '?':
@@ -285,16 +281,16 @@ static void parse_input(int argc, char *argv[])
          snes_set_cartridge_basename(tmp);
 
       SSNES_LOG("Opening file: \"%s\"\n", argv[optind]);
-      rom_file = fopen(argv[optind], "rb");
-      if (rom_file == NULL)
+      g_extern.rom_file = fopen(argv[optind], "rb");
+      if (g_extern.rom_file == NULL)
       {
          SSNES_ERR("Could not open file: \"%s\"\n", optarg);
          exit(1);
       }
-      if (strlen(savefile_name_srm) == 0)
-         fill_pathname(savefile_name_srm, argv[optind], ".srm");
+      if (strlen(g_extern.savefile_name_srm) == 0)
+         fill_pathname(g_extern.savefile_name_srm, argv[optind], ".srm");
    }
-   else if (strlen(savefile_name_srm) == 0)
+   else if (strlen(g_extern.savefile_name_srm) == 0)
    {
       SSNES_ERR("Need savefile argument when reading rom from stdin.\n");
       print_help();
@@ -310,18 +306,18 @@ int main(int argc, char *argv[])
 
    void *rom_buf;
    ssize_t rom_len = 0;
-   if ((rom_len = read_file(rom_file, &rom_buf)) == -1)
+   if ((rom_len = read_file(g_extern.rom_file, &rom_buf)) == -1)
    {
       SSNES_ERR("Could not read ROM file.\n");
       exit(1);
    }
    SSNES_LOG("ROM size: %zi bytes\n", rom_len);
 
-   if (rom_file != NULL)
-      fclose(rom_file);
+   if (g_extern.rom_file != NULL)
+      fclose(g_extern.rom_file);
 
-   char statefile_name[strlen(savefile_name_srm)+strlen(".state")+1];
-   char savefile_name_rtc[strlen(savefile_name_srm)+strlen(".rtc")+1];
+   char statefile_name[strlen(g_extern.savefile_name_srm)+strlen(".state")+1];
+   char savefile_name_rtc[strlen(g_extern.savefile_name_srm)+strlen(".rtc")+1];
 
    fill_pathname(statefile_name, argv[1], ".state");
    fill_pathname(savefile_name_rtc, argv[1], ".rtc");
@@ -349,7 +345,7 @@ int main(int argc, char *argv[])
       goto error;
    }
 
-   load_save_file(savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
+   load_save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
    load_save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
 
    ///// TODO: Modular friendly!!!
@@ -360,15 +356,15 @@ int main(int argc, char *argv[])
       if ( quitting )
          break;
 
-      if ( glfwGetKey( SAVE_STATE_KEY ))
+      if ( glfwGetKey( g_settings.input.save_state_key ))
       {
          write_file(statefile_name, serial_data, serial_size);
       }
 
-      else if ( glfwGetKey( LOAD_STATE_KEY ) )
+      else if ( glfwGetKey( g_settings.input.load_state_key ) )
          load_state(statefile_name, serial_data, serial_size);
 
-      else if ( glfwGetKey( TOGGLE_FULLSCREEN ) )
+      else if ( glfwGetKey( g_settings.input.toggle_fullscreen_key ) )
       {
          g_settings.video.fullscreen = !g_settings.video.fullscreen;
          uninit_drivers();
@@ -378,7 +374,7 @@ int main(int argc, char *argv[])
       snes_run();
    }
 
-   save_file(savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
+   save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
    save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
 
    snes_unload_cartridge();

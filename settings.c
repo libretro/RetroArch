@@ -34,6 +34,10 @@ static void set_defaults(void)
    assert(sizeof(g_settings.input.binds[1]) >= sizeof(snes_keybinds_2));
    memcpy(g_settings.input.binds[0], snes_keybinds_1, sizeof(snes_keybinds_1));
    memcpy(g_settings.input.binds[1], snes_keybinds_2, sizeof(snes_keybinds_2));
+
+   g_settings.input.save_state_key = SAVE_STATE_KEY;
+   g_settings.input.load_state_key = LOAD_STATE_KEY;
+   g_settings.input.toggle_fullscreen_key = TOGGLE_FULLSCREEN;
 }
 
 void parse_config(void)

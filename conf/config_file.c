@@ -155,7 +155,7 @@ config_file_t *config_file_new(const char *path)
    }
    fclose(file);
 
-   //print_config(conf);
+   print_config(conf);
 
    return conf;
 }
