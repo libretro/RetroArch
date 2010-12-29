@@ -18,7 +18,7 @@ struct config_file
 
 static char *getaline(FILE *file)
 {
-   char *newline = malloc(8);
+   char *newline = malloc(9);
    size_t cur_size = 8;
    size_t index = 0;
 
@@ -28,12 +28,13 @@ static char *getaline(FILE *file)
       if (index == cur_size)
       {
          cur_size *= 2;
-         newline = realloc(newline, cur_size);
+         newline = realloc(newline, cur_size + 1);
       }
 
       newline[index++] = in;
       in = getc(file);
    }
+   newline[index] = '\0';
    return newline; 
 }
 
@@ -48,7 +49,7 @@ static bool parse_line(struct entry_list *list, char *line)
    while (isspace(*line))
       line++;
 
-   char *key = malloc(8);
+   char *key = malloc(9);
    size_t cur_size = 8;
    size_t index = 0;
 
@@ -57,11 +58,12 @@ static bool parse_line(struct entry_list *list, char *line)
       if (index == cur_size)
       {
          cur_size *= 2;
-         key = realloc(key, cur_size);
+         key = realloc(key, cur_size + 1);
       }
 
       key[index++] = *line++;
    }
+   key[index] = '\0';
    list->key = key;
 
    while (isspace(*line))
