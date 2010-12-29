@@ -124,8 +124,6 @@ static const bool audio_sync = true;
 
 #define AXIS_NEG(x) ((uint32_t)(x << 16) | 0xFFFF)
 #define AXIS_POS(x) ((uint32_t)(x) | 0xFFFF0000U)
-#define AXIS_NEG_GET(x) ((x >> 16) & 0xFFFF)
-#define AXIS_POS_GET(x) (x & 0xFFFF)
 #define AXIS_NONE ((uint32_t)0xFFFFFFFFU)
 
 // To figure out which joypad buttons to use, check jstest or similar.
