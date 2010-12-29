@@ -56,6 +56,10 @@ static void find_audio_driver(void)
       }
    }
    SSNES_ERR("Couldn't find any audio driver named \"%s\"\n", g_settings.audio.driver);
+   fprintf(stderr, "Available audio drivers are:\n");
+   for (int i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
+      fprintf(stderr, "\t%s\n", audio_drivers[i]->ident);
+
    exit(1);
 }
 
@@ -70,6 +74,10 @@ static void find_video_driver(void)
       }
    }
    SSNES_ERR("Couldn't find any video driver named \"%s\"\n", g_settings.video.driver);
+   fprintf(stderr, "Available video drivers are:\n");
+   for (int i = 0; i < sizeof(video_drivers) / sizeof(video_driver_t*); i++)
+      fprintf(stderr, "\t%s\n", video_drivers[i]->ident);
+
    exit(1);
 }
 
