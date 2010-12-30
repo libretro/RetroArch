@@ -2,7 +2,7 @@ include config.mk
 
 TARGET = ssnes
 
-OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o
+OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o
 
 LIBS = -lsamplerate $(libsnes)
 
@@ -41,6 +41,10 @@ ifeq ($(HAVE_FILTER), 1)
    OBJ += hqflt/bleed.o
    OBJ += hqflt/ntsc.o
    OBJ += hqflt/snes_ntsc/snes_ntsc.o
+endif
+
+ifeq ($(HAVE_DL), 1)
+   LIBS += -ldl
 endif
 
 CFLAGS = -Wall -O3 -std=gnu99 -I.

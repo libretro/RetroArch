@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <libsnes.hpp>
 #include <string.h>
+#include "dynamic.h"
 
 ssize_t read_file(FILE* file, void** buf)
 {
@@ -101,7 +102,7 @@ void write_file(const char* path, uint8_t* data, size_t size)
    if ( file != NULL )
    {
       SSNES_LOG("Saving state \"%s\". Size: %d bytes.\n", path, (int)size);
-      snes_serialize(data, size);
+      psnes_serialize(data, size);
       if ( fwrite(data, 1, size, file) != size )
          SSNES_ERR("Did not save state properly.\n");
       fclose(file);
@@ -118,7 +119,7 @@ void load_state(const char* path, uint8_t* data, size_t size)
       if ( fread(data, 1, size, file) != size )
          SSNES_ERR("Did not load state properly.\n");
       fclose(file);
-      snes_unserialize(data, size);
+      psnes_unserialize(data, size);
    }
    else
    {
@@ -136,8 +137,8 @@ void load_save_file(const char* path, int type)
       return;
    }
 
-   size_t size = snes_get_memory_size(type);
-   uint8_t *data = snes_get_memory_data(type);
+   size_t size = psnes_get_memory_size(type);
+   uint8_t *data = psnes_get_memory_data(type);
 
    if (size == 0 || !data)
    {
@@ -158,8 +159,8 @@ void load_save_file(const char* path, int type)
 
 void save_file(const char* path, int type)
 {
-   size_t size = snes_get_memory_size(type);
-   uint8_t *data = snes_get_memory_data(type);
+   size_t size = psnes_get_memory_size(type);
+   uint8_t *data = psnes_get_memory_data(type);
 
    if ( data && size > 0 )
       write_file(path, data, size);

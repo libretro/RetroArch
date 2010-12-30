@@ -66,6 +66,8 @@ struct settings
       int exit_emulator_key;
       float axis_threshold;
    } input;
+
+   char libsnes[256];
 };
 
 struct global

@@ -28,6 +28,7 @@
 #include "file.h"
 #include "hqflt/filters.h"
 #include "general.h"
+#include "dynamic.h"
 
 struct global g_extern = {
    .video_active = true,
@@ -260,10 +261,10 @@ static void parse_input(int argc, char *argv[])
       if (dst)
       {
          *dst = '\0';
-         snes_set_cartridge_basename(tmp);
+         psnes_set_cartridge_basename(tmp);
       }
       else
-         snes_set_cartridge_basename(tmp);
+         psnes_set_cartridge_basename(tmp);
 
       SSNES_LOG("Opening file: \"%s\"\n", argv[optind]);
       g_extern.rom_file = fopen(argv[optind], "rb");
@@ -285,10 +286,13 @@ static void parse_input(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-   snes_init();
    parse_input(argc, argv);
    parse_config();
 
+   init_dlsym();
+
+   psnes_init();
+   SSNES_LOG("Version of libsnes API: %u.%u\n", psnes_library_revision_major(), psnes_library_revision_minor());
    void *rom_buf;
    ssize_t rom_len = 0;
    if ((rom_len = read_file(g_extern.rom_file, &rom_buf)) == -1)
@@ -309,12 +313,12 @@ int main(int argc, char *argv[])
 
    init_drivers();
 
-   snes_set_video_refresh(video_frame);
-   snes_set_audio_sample(audio_sample);
-   snes_set_input_poll(input_poll);
-   snes_set_input_state(input_state);
+   psnes_set_video_refresh(video_frame);
+   psnes_set_audio_sample(audio_sample);
+   psnes_set_input_poll(input_poll);
+   psnes_set_input_state(input_state);
 
-   if (!snes_load_cartridge_normal(NULL, rom_buf, rom_len))
+   if (!psnes_load_cartridge_normal(NULL, rom_buf, rom_len))
    {
       SSNES_ERR("ROM file is not valid!\n");
       goto error;
@@ -322,7 +326,7 @@ int main(int argc, char *argv[])
 
    free(rom_buf);
 
-   unsigned serial_size = snes_serialize_size();
+   unsigned serial_size = psnes_serialize_size();
    uint8_t *serial_data = malloc(serial_size);
    if (serial_data == NULL)
    {
@@ -356,23 +360,25 @@ int main(int argc, char *argv[])
          init_drivers();
       }
 
-      snes_run();
+      psnes_run();
    }
 
    save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
    save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
 
-   snes_unload_cartridge();
-   snes_term();
+   psnes_unload_cartridge();
+   psnes_term();
    uninit_drivers();
    free(serial_data);
+   uninit_dlsym();
 
    return 0;
 
 error:
-   snes_unload_cartridge();
-   snes_term();
+   psnes_unload_cartridge();
+   psnes_term();
    uninit_drivers();
+   uninit_dlsym();
 
    return 1;
 }

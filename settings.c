@@ -255,6 +255,11 @@ void parse_config(void)
       strncpy(g_settings.audio.driver, tmp_str, sizeof(g_settings.audio.driver) - 1);
       free(tmp_str);
    }
+   if (config_get_string(conf, "libsnes_path", &tmp_str))
+   {
+      strncpy(g_settings.libsnes, tmp_str, sizeof(g_settings.libsnes) - 1);
+      free(tmp_str);
+   }
 
    read_keybinds(conf);
 
