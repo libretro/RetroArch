@@ -47,7 +47,7 @@ ifeq ($(HAVE_DL), 1)
    LIBS += -ldl
 endif
 
-CFLAGS = -Wall -O3 -std=gnu99 -I.
+CFLAGS = -Wall -O3 -g -std=gnu99 -I.
 
 all: $(TARGET) config.mk
 

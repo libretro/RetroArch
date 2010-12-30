@@ -61,6 +61,7 @@ void (*psnes_term)(void);
 #ifdef HAVE_DL
 static void load_dynamic(void)
 {
+   SSNES_LOG("Loading dynamic libsnes from: \"%s\"\n", g_settings.libsnes);
    lib_handle = dlopen(g_settings.libsnes, RTLD_LAZY);
    if (!lib_handle)
    {

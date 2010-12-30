@@ -259,12 +259,8 @@ static void parse_input(int argc, char *argv[])
       strcpy(tmp, argv[optind]);
       char *dst = strrchr(tmp, '.');
       if (dst)
-      {
          *dst = '\0';
-         psnes_set_cartridge_basename(tmp);
-      }
-      else
-         psnes_set_cartridge_basename(tmp);
+      strncpy(g_extern.basename, tmp, sizeof(g_extern.basename) - 1);
 
       SSNES_LOG("Opening file: \"%s\"\n", argv[optind]);
       g_extern.rom_file = fopen(argv[optind], "rb");
@@ -288,10 +284,12 @@ int main(int argc, char *argv[])
 {
    parse_input(argc, argv);
    parse_config();
-
    init_dlsym();
 
    psnes_init();
+   if (strlen(g_extern.basename) > 0)
+      psnes_set_cartridge_basename(g_extern.basename);
+
    SSNES_LOG("Version of libsnes API: %u.%u\n", psnes_library_revision_major(), psnes_library_revision_minor());
    void *rom_buf;
    ssize_t rom_len = 0;

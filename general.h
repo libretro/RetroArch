@@ -80,6 +80,7 @@ struct global
    FILE *rom_file;
    char savefile_name_srm[256];
    char config_path[256];
+   char basename[256];
 };
 
 void parse_config(void);
