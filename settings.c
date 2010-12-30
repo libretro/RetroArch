@@ -154,6 +154,9 @@ void parse_config(void)
    if (config_get_int(conf, "video_fullscreen_y", &tmp_int))
       g_settings.video.fullscreen_y = tmp_int;
 
+   if (config_get_bool(conf, "video_fullscreen", &tmp_bool))
+      g_settings.video.fullscreen = tmp_bool;
+
    if (config_get_bool(conf, "video_vsync", &tmp_bool))
       g_settings.video.vsync = tmp_bool;
 
@@ -248,11 +251,6 @@ void parse_config(void)
       free(tmp_str);
    }
 
-   if (config_get_string(conf, "video_cg_shader_path", &tmp_str))
-   {
-      strncpy(g_settings.video.cg_shader_path, tmp_str, sizeof(g_settings.video.cg_shader_path) - 1);
-      free(tmp_str);
-   }
 
    // TODO: Keybinds.
 
