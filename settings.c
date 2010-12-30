@@ -420,7 +420,6 @@ static void read_keybinds(config_file_t *conf)
          g_settings.input.load_state_key = key;
       free(tmp_str);
    }
-
 }
 
 
