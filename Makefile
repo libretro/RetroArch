@@ -49,7 +49,7 @@ all: $(TARGET) config.mk
 
 config.mk: configure qb/*
 	@echo "config.mk is outdated or non-existing. Run ./configure again."
-	exit 1
+	@exit 1
 
 ssnes: $(OBJ)
 	$(CXX) -o $@ $(OBJ) $(LIBS) $(CFLAGS)
