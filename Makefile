@@ -59,6 +59,7 @@ ssnes: $(OBJ)
 
 install: $(TARGET)
 	install -m755 $(TARGET) $(PREFIX)/bin 
+	install -m644 ssnes.cfg /etc/ssnes.cfg
 
 uninstall: $(TARGET)
 	rm -rf $(PREFIX)/bin/$(TARGET)
