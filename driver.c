@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "hqflt/filters.h"
+#include "config.h"
 
 static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA
@@ -41,7 +42,7 @@ static const audio_driver_t *audio_drivers[] = {
 };
 
 static const video_driver_t *video_drivers[] = {
-#ifdef HAVE_GL
+#ifdef HAVE_GLFW
    &video_gl,
 #endif
 };

@@ -277,9 +277,9 @@ create_config_make()
    do
       tmpval="HAVE_$1"
       eval tmpval=\$$tmpval
-      if [ $tmpval = yes ]; then
+      if [ "$tmpval" = yes ]; then
          echo "HAVE_$1 = 1" >> "$outfile"
-      elif [ $tmpval = no ]; then
+      elif [ "$tmpval" = no ]; then
          echo "HAVE_$1 = 0" >> "$outfile"
       fi
 

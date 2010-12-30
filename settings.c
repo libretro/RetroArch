@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <string.h>
 #include "hqflt/filters.h"
+#include "config.h"
 
 struct settings g_settings;
 

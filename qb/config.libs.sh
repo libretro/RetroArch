@@ -16,10 +16,12 @@ check_lib ROAR -lroar roar_vs_new
 check_lib GLFW -lglfw glfwInit
 check_critical GLFW "Cannot find GLFW library."
 
+check_lib CG -lCg cgCreateContext
+
 check_lib SRC -lsamplerate src_callback_new
 
 # Creates config.mk.
-VARS="ALSA OSS AL RSOUND ROAR GLFW FILTERS"
+VARS="ALSA OSS AL RSOUND ROAR GLFW FILTER CG"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 

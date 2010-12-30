@@ -26,7 +26,7 @@ ifeq ($(HAVE_AL), 1)
    LIBS += -lopenal
 endif
 
-ifeq ($(HAVE_OPENGL), 1)
+ifeq ($(HAVE_GLFW), 1)
    OBJ += gfx/gl.o
    LIBS += -lglfw
 endif

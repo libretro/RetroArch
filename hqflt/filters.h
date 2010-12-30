@@ -19,6 +19,8 @@
 #ifndef __FILTERS_H
 #define __FILTERS_H
 
+#include "config.h"
+
 #ifdef HAVE_FILTER
 
 #include "pastlib.h"
