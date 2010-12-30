@@ -133,29 +133,25 @@ void uninit_audio(void)
 
 void init_video_input(void)
 {
-   int scale;
+   int scale = 2;
 
    find_video_driver();
 
    // We multiply scales with 2 to allow for hi-res games.
-#if 0
-#if VIDEO_FILTER == FILTER_NONE
-   scale = 2;
-#elif VIDEO_FILTER == FILTER_HQ2X
-   scale = 4;
-#elif VIDEO_FILTER == FILTER_HQ4X
-   scale = 8;
-#elif VIDEO_FILTER == FILTER_NTSC
-   scale = 8;
-#elif VIDEO_FILTER == FILTER_GRAYSCALE
-   scale = 2;
-#elif VIDEO_FILTER == FILTER_BLEED
-   scale = 2;
-#else
-   scale = 2;
+#if HAVE_FILTER
+   switch (g_settings.video.filter)
+   {
+      case FILTER_HQ2X:
+         scale = 4;
+         break;
+      case FILTER_HQ4X:
+      case FILTER_NTSC:
+         scale = 8;
+         break;
+      default:
+         break;
+   }
 #endif
-#endif
-   scale = 2;
 
    video_info_t video = {
       .width = (g_settings.video.fullscreen) ? g_settings.video.fullscreen_x : (296 * g_settings.video.xscale),
@@ -168,7 +164,7 @@ void init_video_input(void)
    };
 
    const input_driver_t *tmp = driver.input;
-   driver.video_data = driver.video->init(&video, &(driver.input));
+   driver.video_data = driver.video->init(&video, &driver.input);
 
    if ( driver.video_data == NULL )
    {

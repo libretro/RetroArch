@@ -26,10 +26,7 @@
 #include <getopt.h>
 #include "driver.h"
 #include "file.h"
-#include "hqflt/pastlib.h"
-#include "hqflt/grayscale.h"
-#include "hqflt/bleed.h"
-#include "hqflt/ntsc.h"
+#include "hqflt/filters.h"
 #include "general.h"
 
 struct global g_extern = {
@@ -61,7 +58,7 @@ void set_fast_forward_button(bool new_button_state)
    old_button_state = new_button_state;
 }
 
-#if VIDEO_FILTER != FILTER_NONE
+#ifdef HAVE_FILTER
 static inline void process_frame (uint16_t * restrict out, const uint16_t * restrict in, unsigned width, unsigned height)
 {
    int pitch = 1024;
@@ -85,48 +82,46 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if ( !g_extern.video_active )
       return;
 
-#if 0
-#if VIDEO_FILTER == FILTER_HQ2X
-   uint16_t outputHQ2x[width * height * 2 * 2];
-#elif VIDEO_FILTER == FILTER_HQ4X
-   uint16_t outputHQ4x[width * height * 4 * 4];
-#elif VIDEO_FILTER == FILTER_NTSC
-   uint16_t output_ntsc[SNES_NTSC_OUT_WIDTH(width) * height];
-#endif
-
-#if VIDEO_FILTER != FILTER_NONE
+#ifdef HAVE_FILTER
+   uint16_t output_filter[width * height * 4 * 4];
    uint16_t output[width * height];
    process_frame(output, data, width, height);
-#endif
 
-#if VIDEO_FILTER == FILTER_HQ2X
-   ProcessHQ2x(output, outputHQ2x);
-   if ( !driver.video->frame(driver.video_data, outputHQ2x, width << 1, height << 1, width << 2) )
-      video_active = false;
-#elif VIDEO_FILTER == FILTER_HQ4X
-   ProcessHQ4x(output, outputHQ4x);
-   if ( !driver.video->frame(driver.video_data, outputHQ4x, width << 2, height << 2, width << 3) )
-      video_active = false;
-#elif VIDEO_FILTER == FILTER_GRAYSCALE
-   grayscale_filter(output, width, height);
-   if ( !driver.video->frame(driver.video_data, output, width, height, width << 1) )
-      video_active = false;
-#elif VIDEO_FILTER == FILTER_BLEED
-   bleed_filter(output, width, height);
-   if ( !driver.video->frame(driver.video_data, output, width, height, width << 1) )
-      video_active = false;
-#elif VIDEO_FILTER == FILTER_NTSC
-   ntsc_filter(output_ntsc, output, width, height);
-   if ( !driver.video->frame(driver.video_data, output_ntsc, SNES_NTSC_OUT_WIDTH(width), height, SNES_NTSC_OUT_WIDTH(width) << 1) )
-      video_active = false;
+   switch (g_settings.video.filter)
+   {
+      case FILTER_HQ2X:
+         ProcessHQ2x(output, output_filter);
+         if ( !driver.video->frame(driver.video_data, output_filter, width << 1, height << 1, width << 2) )
+            video_active = false;
+         break;
+      case FILTER_HQ4X:
+         ProcessHQ4x(output, output_filter);
+         if ( !driver.video->frame(driver.video_data, output_filter, width << 2, height << 2, width << 3) )
+            video_active = false;
+         break;
+      case FILTER_GRAYSCALE:
+         grayscale_filter(output, width, height);
+         if ( !driver.video->frame(driver.video_data, output, width, height, width << 1) )
+            video_active = false;
+         break;
+      case FILTER_BLEED:
+         bleed_filter(output, width, height);
+         if ( !driver.video->frame(driver.video_data, output, width, height, width << 1) )
+            video_active = false;
+         break;
+      case FILTER_NTSC:
+         ntsc_filter(output_filter, output, width, height);
+         if ( !driver.video->frame(driver.video_data, output_filter, SNES_NTSC_OUT_WIDTH(width), height, SNES_NTSC_OUT_WIDTH(width) << 1) )
+            video_active = false;
+         break;
+      default:
+         if ( !driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048) )
+            g_extern.video_active = false;
+   }
 #else
    if ( !driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048) )
       g_extern.video_active = false;
 #endif
-#endif
-
-   if ( !driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048) )
-      g_extern.video_active = false;
 }
 
 static void audio_sample(uint16_t left, uint16_t right)
@@ -200,9 +195,6 @@ static void print_help(void)
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
    puts("\t-c/--config: Path for config file. Defaults to $XDG_CONFIG_HOME/ssnes");
-#ifdef HAVE_CG
-   puts("\t-f/--shader: Path to Cg shader. Will be compiled at runtime.\n");
-#endif
    puts("\t-v/--verbose: Verbose logging");
 }
 
@@ -219,18 +211,11 @@ static void parse_input(int argc, char *argv[])
       { "save", 1, NULL, 's' },
       { "verbose", 0, NULL, 'v' },
       { "config", 0, NULL, 'c' },
-#ifdef HAVE_CG
-      { "shader", 1, NULL, 'f' },
-#endif
       { NULL, 0, NULL, 0 }
    };
 
    int option_index = 0;
-#ifdef HAVE_CG
-   char optstring[] = "hs:vf:c:";
-#else
    char optstring[] = "hs:vc:";
-#endif
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -248,12 +233,6 @@ static void parse_input(int argc, char *argv[])
             strncpy(g_extern.savefile_name_srm, optarg, sizeof(g_extern.savefile_name_srm));
             g_extern.savefile_name_srm[sizeof(g_extern.savefile_name_srm)-1] = '\0';
             break;
-
-#ifdef HAVE_CG
-         case 'f':
-            strncpy(g_extern.cg_shader_path, optarg, sizeof(g_extern.cg_shader_path) - 1);
-            break;
-#endif
 
          case 'v':
             g_extern.verbose = true;
@@ -307,8 +286,8 @@ static void parse_input(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
    snes_init();
-   parse_config();
    parse_input(argc, argv);
+   parse_config();
 
    void *rom_buf;
    ssize_t rom_len = 0;

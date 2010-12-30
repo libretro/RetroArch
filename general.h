@@ -41,7 +41,7 @@ struct settings
       bool smooth;
       bool force_aspect;
       char cg_shader_path[256];
-      char video_filter[64];
+      unsigned filter;
    } video;
 
    struct
@@ -76,7 +76,6 @@ struct global
 
    FILE *rom_file;
    char savefile_name_srm[256];
-   char cg_shader_path[256];
    char config_path[256];
 };
 

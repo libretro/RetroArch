@@ -50,6 +50,7 @@ ifeq ($(BUILD_FILTER), 1)
    OBJ += hqflt/bleed.o
    OBJ += hqflt/ntsc.o
    OBJ += hqflt/snes_ntsc/snes_ntsc.o
+   DEFINES += -DHAVE_FILTER
 endif
 
 CFLAGS = -Wall -O0 -g -std=gnu99 -Wno-unused-variable -I. $(DEFINES)

@@ -50,6 +50,7 @@ static const GLfloat tex_coords[] = {
 static bool keep_aspect = true;
 #ifdef HAVE_CG
 static CGparameter cg_mvp_matrix;
+static bool cg_active = false;
 #endif
 static GLuint gl_width = 0, gl_height = 0;
 typedef struct gl
@@ -214,7 +215,8 @@ static void GLFWCALL resize(int width, int height)
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 #ifdef HAVE_CG
-   cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
+   if (cg_active)
+      cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 #endif
    gl_width = out_width;
    gl_height = out_height;
@@ -258,13 +260,16 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
    glClear(GL_COLOR_BUFFER_BIT);
 
 #if HAVE_CG
-   cgGLSetParameter2f(gl->cg_video_size, width, height);
-   cgGLSetParameter2f(gl->cg_texture_size, gl->tex_w, gl->tex_h);
-   cgGLSetParameter2f(gl->cg_output_size, gl_width, gl_height);
+   if (cg_active)
+   {
+      cgGLSetParameter2f(gl->cg_video_size, width, height);
+      cgGLSetParameter2f(gl->cg_texture_size, gl->tex_w, gl->tex_h);
+      cgGLSetParameter2f(gl->cg_output_size, gl_width, gl_height);
 
-   cgGLSetParameter2f(gl->cg_Vvideo_size, width, height);
-   cgGLSetParameter2f(gl->cg_Vtexture_size, gl->tex_w, gl->tex_h);
-   cgGLSetParameter2f(gl->cg_Voutput_size, gl_width, gl_height);
+      cgGLSetParameter2f(gl->cg_Vvideo_size, width, height);
+      cgGLSetParameter2f(gl->cg_Vtexture_size, gl->tex_w, gl->tex_h);
+      cgGLSetParameter2f(gl->cg_Voutput_size, gl_width, gl_height);
+   }
 #endif
 
    if (width != gl->last_width || height != gl->last_height) // res change. need to clear out texture.
@@ -305,7 +310,8 @@ static void gl_free(void *data)
 {
    gl_t *gl = data;
 #ifdef HAVE_CG
-   cgDestroyContext(gl->cgCtx);
+   if (cg_active)
+      cgDestroyContext(gl->cgCtx);
 #endif
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -327,7 +333,7 @@ static void gl_set_nonblock_state(void *data, bool state)
 
 static void* gl_init(video_info_t *video, const input_driver_t **input)
 {
-   gl_t *gl = malloc(sizeof(gl_t));
+   gl_t *gl = calloc(1, sizeof(gl_t));
    if ( gl == NULL )
       return NULL;
 
@@ -394,44 +400,50 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    gl->last_height = gl->tex_h;
 
 #ifdef HAVE_CG
-   gl->cgCtx = cgCreateContext();
-   if (gl->cgCtx == NULL)
+   cg_active = false;
+   if (strlen(g_settings.video.cg_shader_path) > 0)
    {
-      fprintf(stderr, "Failed to create Cg context\n");
-      goto error;
-   }
-   gl->cgFProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
-   gl->cgVProf = cgGLGetLatestProfile(CG_GL_VERTEX);
-   if (gl->cgFProf == CG_PROFILE_UNKNOWN || gl->cgVProf == CG_PROFILE_UNKNOWN)
-   {
-      fprintf(stderr, "Invalid profile type\n");
-      goto error;
-   }
-   cgGLSetOptimalOptions(gl->cgFProf);
-   cgGLSetOptimalOptions(gl->cgVProf);
-   gl->cgFPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, g_settings.video.cg_shader_path, gl->cgFProf, "main_fragment", 0);
-   gl->cgVPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, g_settings.video.cg_shader_path, gl->cgVProf, "main_vertex", 0);
-   if (gl->cgFPrg == NULL || gl->cgVPrg == NULL)
-   {
-      CGerror err = cgGetError();
-      fprintf(stderr, "CG error: %s\n", cgGetErrorString(err));
-      goto error;
-   }
-   cgGLLoadProgram(gl->cgFPrg);
-   cgGLLoadProgram(gl->cgVPrg);
-   cgGLEnableProfile(gl->cgFProf);
-   cgGLEnableProfile(gl->cgVProf);
-   cgGLBindProgram(gl->cgFPrg);
-   cgGLBindProgram(gl->cgVPrg);
+      gl->cgCtx = cgCreateContext();
+      if (gl->cgCtx == NULL)
+      {
+         fprintf(stderr, "Failed to create Cg context\n");
+         goto error;
+      }
+      gl->cgFProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
+      gl->cgVProf = cgGLGetLatestProfile(CG_GL_VERTEX);
+      if (gl->cgFProf == CG_PROFILE_UNKNOWN || gl->cgVProf == CG_PROFILE_UNKNOWN)
+      {
+         fprintf(stderr, "Invalid profile type\n");
+         goto error;
+      }
+      cgGLSetOptimalOptions(gl->cgFProf);
+      cgGLSetOptimalOptions(gl->cgVProf);
+      puts(g_settings.video.cg_shader_path);
+      gl->cgFPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, g_settings.video.cg_shader_path, gl->cgFProf, "main_fragment", 0);
+      gl->cgVPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, g_settings.video.cg_shader_path, gl->cgVProf, "main_vertex", 0);
+      if (gl->cgFPrg == NULL || gl->cgVPrg == NULL)
+      {
+         CGerror err = cgGetError();
+         fprintf(stderr, "CG error: %s\n", cgGetErrorString(err));
+         goto error;
+      }
+      cgGLLoadProgram(gl->cgFPrg);
+      cgGLLoadProgram(gl->cgVPrg);
+      cgGLEnableProfile(gl->cgFProf);
+      cgGLEnableProfile(gl->cgVProf);
+      cgGLBindProgram(gl->cgFPrg);
+      cgGLBindProgram(gl->cgVPrg);
 
-   gl->cg_video_size = cgGetNamedParameter(gl->cgFPrg, "IN.video_size");
-   gl->cg_texture_size = cgGetNamedParameter(gl->cgFPrg, "IN.texture_size");
-   gl->cg_output_size = cgGetNamedParameter(gl->cgFPrg, "IN.output_size");
-   gl->cg_Vvideo_size = cgGetNamedParameter(gl->cgVPrg, "IN.video_size");
-   gl->cg_Vtexture_size = cgGetNamedParameter(gl->cgVPrg, "IN.texture_size");
-   gl->cg_Voutput_size = cgGetNamedParameter(gl->cgVPrg, "IN.output_size");
-   cg_mvp_matrix = cgGetNamedParameter(gl->cgVPrg, "modelViewProj");
-   cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
+      gl->cg_video_size = cgGetNamedParameter(gl->cgFPrg, "IN.video_size");
+      gl->cg_texture_size = cgGetNamedParameter(gl->cgFPrg, "IN.texture_size");
+      gl->cg_output_size = cgGetNamedParameter(gl->cgFPrg, "IN.output_size");
+      gl->cg_Vvideo_size = cgGetNamedParameter(gl->cgVPrg, "IN.video_size");
+      gl->cg_Vtexture_size = cgGetNamedParameter(gl->cgVPrg, "IN.texture_size");
+      gl->cg_Voutput_size = cgGetNamedParameter(gl->cgVPrg, "IN.output_size");
+      cg_mvp_matrix = cgGetNamedParameter(gl->cgVPrg, "modelViewProj");
+      cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
+      cg_active = true;
+   }
 #endif
 
    *input = &input_glfw;

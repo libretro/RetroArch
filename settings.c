@@ -56,10 +56,6 @@ static void set_defaults(void)
    g_settings.video.vsync = vsync;
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
-#if HAVE_CG
-   strncpy(g_settings.video.cg_shader_path, DEFAULT_CG_SHADER, sizeof(g_settings.video.cg_shader_path) - 1);
-#endif
-   strncpy(g_settings.video.video_filter, "foo", sizeof(g_settings.video.video_filter) - 1);
 
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
@@ -86,25 +82,35 @@ void parse_config(void)
    memset(&g_settings, 0, sizeof(struct settings));
    config_file_t *conf = NULL;
 
-   const char *xdg = getenv("XDG_CONFIG_HOME");
-   if (xdg)
+   if (strlen(g_extern.config_path) > 0)
    {
-      char conf_path[strlen(xdg) + strlen("/ssnes ")];
-      strcpy(conf_path, xdg);
-      strcat(conf_path, "/ssnes");
-      conf = config_file_new(conf_path);
+      conf = config_file_new(g_extern.config_path);
+      if (!conf)
+      {
+         SSNES_ERR("Couldn't find config at path: \"%s\"\n", g_extern.config_path);
+         exit(1);
+      }
    }
    else
    {
+      const char *xdg = getenv("XDG_CONFIG_HOME");
       const char *home = getenv("HOME");
-
-      if (home)
+      if (xdg)
+      {
+         char conf_path[strlen(xdg) + strlen("/ssnes ")];
+         strcpy(conf_path, xdg);
+         strcat(conf_path, "/ssnes");
+         conf = config_file_new(conf_path);
+      }
+      else if (home)
       {
          char conf_path[strlen(home) + strlen("/.ssnesrc ")];
          strcpy(conf_path, xdg);
          strcat(conf_path, "/.ssnesrc");
          conf = config_file_new(conf_path);
       }
+      else // Try /etc/ssnes.conf as a final test ...
+         conf = config_file_new("/etc/ssnes.conf");
    }
 
    set_defaults();
@@ -138,17 +144,43 @@ void parse_config(void)
    if (config_get_bool(conf, "video_force_aspect", &tmp_bool))
       g_settings.video.force_aspect = tmp_bool;
 
-   if (config_get_string(conf, "video_cg_shader_path", &tmp_str))
+   if (config_get_string(conf, "video_cg_shader", &tmp_str))
    {
       strncpy(g_settings.video.cg_shader_path, tmp_str, sizeof(g_settings.video.cg_shader_path) - 1);
       free(tmp_str);
    }
 
-   if (config_get_string(conf, "video_video_filter", &tmp_str))
+#ifdef HAVE_FILTER
+   if (config_get_string(conf, "video_filter", &tmp_str))
    {
-      strncpy(g_settings.video.video_filter, tmp_str, sizeof(g_settings.video.video_filter) - 1);
+      unsigned filter = 0;
+      if (strcasecmp(FILTER_HQ2X_STR, tmp_str) == 0)
+         filter = FILTER_HQ2X;
+      else if (strcasecmp(FILTER_HQ4X_STR, tmp_str) == 0)
+         filter = FILTER_HQ4X;
+      else if (strcasecmp(FILTER_GRAYSCALE_STR, tmp_str) == 0)
+         filter = FILTER_GRAYSCALE;
+      else if (strcasecmp(FILTER_BLEED_STR, tmp_str) == 0)
+         filter = FILTER_BLEED;
+      else if (strcasecmp(FILTER_NTSC_STR, tmp_str) == 0)
+         filter = FILTER_NTSC;
+      else
+      {
+         SSNES_ERR(
+               "Invalid filter... Valid filters are:\n"
+               "\t%s\n"
+               "\t%s\n"
+               "\t%s\n"
+               "\t%s\n"
+               "\t%s\n", 
+               FILTER_HQ2X_STR, FILTER_HQ4X_STR, FILTER_GRAYSCALE_STR,
+               FILTER_BLEED, FILTER_NTSC);
+         exit(1);
+      }
+
       free(tmp_str);
    }
+#endif
 
    // Input Settings.
    if (config_get_double(conf, "input_axis_threshold", &tmp_double))
@@ -178,8 +210,8 @@ void parse_config(void)
 
    if (config_get_int(conf, "audio_src_quality", &tmp_int))
    {
-      int quals[] = {SRC_ZERO_ORDER_HOLD, SRC_LINEAR, SRC_SINC_FASTEST, 
-         SRC_SINC_MEDIUM_QUALITY, SRC_SINC_BEST_QUALITY};
+      int quals[] = { SRC_ZERO_ORDER_HOLD, SRC_LINEAR, SRC_SINC_FASTEST, 
+         SRC_SINC_MEDIUM_QUALITY, SRC_SINC_BEST_QUALITY };
 
       if (tmp_int > 0 && tmp_int < 6)
          g_settings.audio.src_quality = quals[tmp_int];
