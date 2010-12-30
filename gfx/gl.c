@@ -26,6 +26,7 @@
 #include <sys/time.h>
 #include <string.h>
 #include "general.h"
+#include "config.h"
 
 
 #ifdef HAVE_CG
@@ -403,6 +404,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    cg_active = false;
    if (strlen(g_settings.video.cg_shader_path) > 0)
    {
+      SSNES_LOG("Loading Cg file: %s\n", g_settings.video.cg_shader_path);
       gl->cgCtx = cgCreateContext();
       if (gl->cgCtx == NULL)
       {
