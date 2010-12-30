@@ -1,0 +1,13 @@
+#!/bin/sh
+
+echo ""
+
+. qb/config.params.sh
+
+parse_input "$@"
+
+. qb/qb.comp.sh
+. qb/config.libs.sh
+
+
+
