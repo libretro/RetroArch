@@ -65,22 +65,6 @@ static const bool video_smooth = true;
 // On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 
 
-/////////// Video filters (CPU based)
-#ifdef HAVE_FILTER
-#define FILTER_HQ2X 1
-#define FILTER_HQ4X 2
-#define FILTER_GRAYSCALE 3
-#define FILTER_BLEED 4
-#define FILTER_NTSC 5
-#define FILTER_HQ2X_STR "hq2x"
-#define FILTER_HQ4X_STR "hq4x"
-#define FILTER_GRAYSCALE_STR "grayscale"
-#define FILTER_BLEED_STR "bleed"
-#define FILTER_NTSC_STR "ntsc"
-#endif
-////////////////////////
-
-
 ////////////////
 // Audio
 ////////////////
