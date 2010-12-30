@@ -20,10 +20,10 @@ check_lib CG -lCg cgCreateContext
 
 check_lib SRC -lsamplerate src_callback_new
 
-check_lib DL -ldl dlopen
+check_lib DYNAMIC -ldl dlopen
 
 # Creates config.mk.
-VARS="ALSA OSS AL RSOUND ROAR GLFW FILTER CG DL"
+VARS="ALSA OSS AL RSOUND ROAR GLFW FILTER CG DYNAMIC"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 

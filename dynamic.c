@@ -20,7 +20,7 @@
 #include <string.h>
 #include "config.h"
 
-#ifdef HAVE_DL
+#ifdef HAVE_DYNAMIC
 #include <dlfcn.h>
 
 #define SYM(x) do { \
@@ -58,7 +58,7 @@ unsigned (*psnes_get_memory_size)(unsigned);
 void (*psnes_unload_cartridge)(void);
 void (*psnes_term)(void);
 
-#ifdef HAVE_DL
+#ifdef HAVE_DYNAMIC
 static void load_dynamic(void)
 {
    SSNES_LOG("Loading dynamic libsnes from: \"%s\"\n", g_settings.libsnes);
@@ -93,6 +93,7 @@ static void load_dynamic(void)
    p##x = x; \
 } while(0)
 
+#ifndef HAVE_DYNAMIC
 static void set_statics(void)
 {
    SSYM(snes_init);
@@ -113,20 +114,26 @@ static void set_statics(void)
    SSYM(snes_unload_cartridge);
    SSYM(snes_term);
 }
+#endif
 
 void init_dlsym(void)
 {
-#ifdef HAVE_DL
+#ifdef HAVE_DYNAMIC
    if (strlen(g_settings.libsnes) > 0)
       load_dynamic();
    else
-#endif
+   {
+      SSNES_ERR("This binary is built to use runtime dynamic binding of libsnes. Set libsnes_path in config to load a libsnes library dynamically.\n");
+      exit(1);
+   }
+#else
       set_statics();
+#endif
 }
 
 void uninit_dlsym(void)
 {
-#ifdef HAVE_DL
+#ifdef HAVE_DYNAMIC
    if (lib_handle)
       dlclose(lib_handle);
 #endif

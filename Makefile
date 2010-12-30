@@ -4,7 +4,7 @@ TARGET = ssnes
 
 OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o
 
-LIBS = -lsamplerate $(libsnes)
+LIBS = -lsamplerate
 
 ifeq ($(HAVE_RSOUND), 1)
    OBJ += audio/rsound.o
@@ -43,8 +43,10 @@ ifeq ($(HAVE_FILTER), 1)
    OBJ += hqflt/snes_ntsc/snes_ntsc.o
 endif
 
-ifeq ($(HAVE_DL), 1)
+ifeq ($(HAVE_DYNAMIC), 1)
    LIBS += -ldl
+else
+   LIBS += $(libsnes)
 endif
 
 CFLAGS = -Wall -O3 -g -std=gnu99 -I.
