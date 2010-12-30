@@ -2,60 +2,54 @@ include config.mk
 
 TARGET = ssnes
 
-DEFINES =
 OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o
-libsnes = -lsnes
 
 LIBS = -lsamplerate $(libsnes)
 
-ifeq ($(BUILD_RSOUND), 1)
+ifeq ($(HAVE_RSOUND), 1)
    OBJ += audio/rsound.o
    LIBS += -lrsound
-   DEFINES += -DHAVE_RSOUND
 endif
-ifeq ($(BUILD_OSS), 1)
+ifeq ($(HAVE_OSS), 1)
    OBJ += audio/oss.o
-   DEFINES += -DHAVE_OSS
 endif
-ifeq ($(BUILD_ALSA), 1)
+ifeq ($(HAVE_ALSA), 1)
    OBJ += audio/alsa.o
    LIBS += -lasound
-   DEFINES += -DHAVE_ALSA
 endif
-ifeq ($(BUILD_ROAR), 1)
+ifeq ($(HAVE_ROAR), 1)
    OBJ += audio/roar.o
    LIBS += -lroar
-   DEFINES += -DHAVE_ROAR
 endif
-ifeq ($(BUILD_AL), 1)
+ifeq ($(HAVE_AL), 1)
    OBJ += audio/openal.o
    LIBS += -lopenal
-   DEFINES += -DHAVE_AL
 endif
 
-ifeq ($(BUILD_OPENGL), 1)
+ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o
    LIBS += -lglfw
-   DEFINES += -DHAVE_GL
 endif
 
-ifeq ($(BUILD_CG), 1)
+ifeq ($(HAVE_CG), 1)
    LIBS += -lCg -lCgGL
-   DEFINES += -DHAVE_CG 
 endif
 
-ifeq ($(BUILD_FILTER), 1)
+ifeq ($(HAVE_FILTER), 1)
    OBJ += hqflt/hq.o
    OBJ += hqflt/grayscale.o
    OBJ += hqflt/bleed.o
    OBJ += hqflt/ntsc.o
    OBJ += hqflt/snes_ntsc/snes_ntsc.o
-   DEFINES += -DHAVE_FILTER
 endif
 
-CFLAGS = -Wall -O3 -std=gnu99 -I. $(DEFINES)
+CFLAGS = -Wall -O3 -std=gnu99 -I.
 
-all: $(TARGET) 
+all: $(TARGET) config.mk
+
+config.mk: configure qb/*
+	@echo "config.mk is outdated or non-existing. Run ./configure again."
+	exit 1
 
 ssnes: $(OBJ)
 	$(CXX) -o $@ $(OBJ) $(LIBS) $(CFLAGS)
