@@ -336,7 +336,7 @@ int main(int argc, char *argv[])
    ///// TODO: Modular friendly!!!
    for(;;)
    {
-      bool quitting = glfwGetKey(GLFW_KEY_ESC) || !glfwGetWindowParam(GLFW_OPENED);
+      bool quitting = glfwGetKey(g_settings.input.exit_emulator_key) || !glfwGetWindowParam(GLFW_OPENED);
       
       if ( quitting )
          break;
