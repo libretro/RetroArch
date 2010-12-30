@@ -20,6 +20,7 @@
 #include "general.h"
 #include <stdio.h>
 #include <string.h>
+#include "hqflt/filters.h"
 
 static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA

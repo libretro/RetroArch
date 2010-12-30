@@ -92,27 +92,27 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
       case FILTER_HQ2X:
          ProcessHQ2x(output, output_filter);
          if ( !driver.video->frame(driver.video_data, output_filter, width << 1, height << 1, width << 2) )
-            video_active = false;
+            g_extern.video_active = false;
          break;
       case FILTER_HQ4X:
          ProcessHQ4x(output, output_filter);
          if ( !driver.video->frame(driver.video_data, output_filter, width << 2, height << 2, width << 3) )
-            video_active = false;
+            g_extern.video_active = false;
          break;
       case FILTER_GRAYSCALE:
          grayscale_filter(output, width, height);
          if ( !driver.video->frame(driver.video_data, output, width, height, width << 1) )
-            video_active = false;
+            g_extern.video_active = false;
          break;
       case FILTER_BLEED:
          bleed_filter(output, width, height);
          if ( !driver.video->frame(driver.video_data, output, width, height, width << 1) )
-            video_active = false;
+            g_extern.video_active = false;
          break;
       case FILTER_NTSC:
          ntsc_filter(output_filter, output, width, height);
          if ( !driver.video->frame(driver.video_data, output_filter, SNES_NTSC_OUT_WIDTH(width), height, SNES_NTSC_OUT_WIDTH(width) << 1) )
-            video_active = false;
+            g_extern.video_active = false;
          break;
       default:
          if ( !driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048) )

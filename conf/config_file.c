@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include "general.h"
 
 struct entry_list
 {
@@ -155,7 +156,8 @@ config_file_t *config_file_new(const char *path)
    }
    fclose(file);
 
-   print_config(conf);
+   if (g_extern.verbose)
+      print_config(conf);
 
    return conf;
 }

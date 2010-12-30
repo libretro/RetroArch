@@ -3,6 +3,7 @@
 #include "config.h.def"
 #include <assert.h>
 #include <string.h>
+#include "hqflt/filters.h"
 
 struct settings g_settings;
 
@@ -174,11 +175,12 @@ void parse_config(void)
                "\t%s\n"
                "\t%s\n", 
                FILTER_HQ2X_STR, FILTER_HQ4X_STR, FILTER_GRAYSCALE_STR,
-               FILTER_BLEED, FILTER_NTSC);
+               FILTER_BLEED_STR, FILTER_NTSC_STR);
          exit(1);
       }
 
       free(tmp_str);
+      g_settings.video.filter = filter;
    }
 #endif
 
