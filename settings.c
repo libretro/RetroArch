@@ -1,6 +1,6 @@
 #include "general.h"
 #include "conf/config_file.h"
-#include "config.h.def"
+#include "config.def.h"
 #include <assert.h>
 #include <string.h>
 #include "hqflt/filters.h"
