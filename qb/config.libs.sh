@@ -3,9 +3,11 @@
 check_switch_c C99 -std=gnu99
 check_critical C99 "Cannot find C99 compatible compiler."
 
-check_lib_cxx SNES $LIBSNES snes_init -ldl
-check_critical SNES "Cannot find libsnes."
-add_define_make libsnes $LIBSNES
+if [ $HAVE_DYNAMIC != yes ]; then
+   check_lib_cxx SNES $LIBSNES snes_init -ldl
+   check_critical SNES "Cannot find libsnes."
+   add_define_make libsnes $LIBSNES
+fi
 
 check_lib ALSA -lasound snd_pcm_open
 check_header OSS sys/soundcard.h
