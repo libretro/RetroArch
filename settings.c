@@ -22,8 +22,11 @@
 #include <string.h>
 #include "hqflt/filters.h"
 #include "config.h"
+#include <ctype.h>
 
 struct settings g_settings;
+
+static void read_keybinds(config_file_t *conf);
 
 static void set_defaults(void)
 {
@@ -251,8 +254,113 @@ void parse_config(void)
       free(tmp_str);
    }
 
+   read_keybinds(conf);
 
    // TODO: Keybinds.
 
    config_file_free(conf);
+}
+
+struct bind_map
+{
+   const char *key;
+   int snes_key;
+};
+
+static const struct bind_map bind_maps[2][12] = {
+   {
+      { "input_player1_a", SNES_DEVICE_ID_JOYPAD_A }, 
+      { "input_player1_b", SNES_DEVICE_ID_JOYPAD_B }, 
+      { "input_player1_y", SNES_DEVICE_ID_JOYPAD_Y }, 
+      { "input_player1_x", SNES_DEVICE_ID_JOYPAD_X }, 
+      { "input_player1_start", SNES_DEVICE_ID_JOYPAD_START }, 
+      { "input_player1_select", SNES_DEVICE_ID_JOYPAD_SELECT }, 
+      { "input_player1_l", SNES_DEVICE_ID_JOYPAD_L }, 
+      { "input_player1_r", SNES_DEVICE_ID_JOYPAD_R }, 
+      { "input_player1_left", SNES_DEVICE_ID_JOYPAD_LEFT }, 
+      { "input_player1_right", SNES_DEVICE_ID_JOYPAD_RIGHT }, 
+      { "input_player1_up", SNES_DEVICE_ID_JOYPAD_UP }, 
+      { "input_player1_down", SNES_DEVICE_ID_JOYPAD_DOWN }, 
+   }, 
+   {
+      { "input_player2_a", SNES_DEVICE_ID_JOYPAD_A }, 
+      { "input_player2_b", SNES_DEVICE_ID_JOYPAD_B }, 
+      { "input_player2_y", SNES_DEVICE_ID_JOYPAD_Y }, 
+      { "input_player2_x", SNES_DEVICE_ID_JOYPAD_X }, 
+      { "input_player2_start", SNES_DEVICE_ID_JOYPAD_START }, 
+      { "input_player2_select", SNES_DEVICE_ID_JOYPAD_SELECT }, 
+      { "input_player2_l", SNES_DEVICE_ID_JOYPAD_L }, 
+      { "input_player2_r", SNES_DEVICE_ID_JOYPAD_R }, 
+      { "input_player2_left", SNES_DEVICE_ID_JOYPAD_LEFT }, 
+      { "input_player2_right", SNES_DEVICE_ID_JOYPAD_RIGHT }, 
+      { "input_player2_up", SNES_DEVICE_ID_JOYPAD_UP }, 
+      { "input_player2_down", SNES_DEVICE_ID_JOYPAD_DOWN }, 
+   }
+};
+
+struct glfw_map
+{
+   const char *str;
+   int key;
+};
+
+// Edit: Not portable to different input systems atm. Might move this map into the driver itself or something.
+static const struct glfw_map glfw_map[] = {
+   { "left", GLFW_KEY_LEFT },
+   { "right", GLFW_KEY_RIGHT },
+   { "up", GLFW_KEY_UP },
+   { "down", GLFW_KEY_DOWN },
+   { "enter", GLFW_KEY_ENTER },
+   { "rshift", GLFW_KEY_RSHIFT },
+   { "space", GLFW_KEY_SPACE }
+};
+
+static struct snes_keybind *find_snes_bind(unsigned port, int id)
+{
+   struct snes_keybind *binds = g_settings.input.binds[port];
+
+   for (int i = 0; binds[i].id != -1; i++)
+   {
+      if (id == binds[i].id)
+         return &binds[i];
+   }
+   return NULL;
+}
+
+static int find_glfw_bind(const char *str)
+{
+   for (int i = 0; i < sizeof(glfw_map)/sizeof(struct glfw_map); i++)
+   {
+      if (strcasecmp(glfw_map[i].str, str) == 0)
+         return glfw_map[i].key;
+   }
+   return -1;
+}
+
+void read_keybinds(config_file_t *conf)
+{
+   char *tmp_str;
+   int glfw_key;
+
+   for (int j = 0; j < 1; j++)
+   {
+      for (int i = 0; i < sizeof(bind_maps[j])/sizeof(struct bind_map); i++)
+      {
+         if (config_get_string(conf, bind_maps[j][i].key, &tmp_str))
+         {
+            // If the bind is a normal key-press ...
+            if (strlen(tmp_str) == 1 && isalpha(*tmp_str))
+               glfw_key = toupper(*tmp_str);
+            else // Check if we have a special mapping for it.
+               glfw_key = find_glfw_bind(tmp_str);
+
+            struct snes_keybind *bind = find_snes_bind(0, bind_maps[j][i].snes_key);
+
+            if (bind && glfw_key >= 0)
+               bind->key = glfw_key;
+
+            free(tmp_str);
+         }
+      }
+   }
 }
