@@ -131,7 +131,8 @@ void parse_config(void)
          strcat(conf_path, "/.ssnesrc");
          conf = config_file_new(conf_path);
       }
-      else // Try /etc/ssnes.cfg as a final test ...
+      // Try this as a last chance...
+      if (!conf)
          conf = config_file_new("/etc/ssnes.cfg");
    }
 
