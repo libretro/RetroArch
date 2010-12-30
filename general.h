@@ -63,6 +63,7 @@ struct settings
       int save_state_key;
       int load_state_key;
       int toggle_fullscreen_key;
+      int exit_emulator_key;
       float axis_threshold;
    } input;
 };

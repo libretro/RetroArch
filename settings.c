@@ -97,6 +97,7 @@ static void set_defaults(void)
    g_settings.input.load_state_key = LOAD_STATE_KEY;
    g_settings.input.toggle_fullscreen_key = TOGGLE_FULLSCREEN;
    g_settings.input.axis_threshold = AXIS_THRESHOLD;
+   g_settings.input.exit_emulator_key = GLFW_KEY_ESC;
 }
 
 void parse_config(void)
@@ -317,7 +318,23 @@ static const struct glfw_map glfw_map[] = {
    { "down", GLFW_KEY_DOWN },
    { "enter", GLFW_KEY_ENTER },
    { "rshift", GLFW_KEY_RSHIFT },
-   { "space", GLFW_KEY_SPACE }
+   { "shift", GLFW_KEY_LSHIFT },
+   { "ctrl", GLFW_KEY_LCTRL },
+   { "alt", GLFW_KEY_LALT },
+   { "space", GLFW_KEY_SPACE },
+   { "escape", GLFW_KEY_ESC },
+   { "f1", GLFW_KEY_F1 },
+   { "f2", GLFW_KEY_F2 },
+   { "f3", GLFW_KEY_F3 },
+   { "f4", GLFW_KEY_F4 },
+   { "f5", GLFW_KEY_F5 },
+   { "f6", GLFW_KEY_F6 },
+   { "f7", GLFW_KEY_F7 },
+   { "f8", GLFW_KEY_F8 },
+   { "f9", GLFW_KEY_F9 },
+   { "f10", GLFW_KEY_F10 },
+   { "f11", GLFW_KEY_F11 },
+   { "f12", GLFW_KEY_F12 },
 };
 
 static struct snes_keybind *find_snes_bind(unsigned port, int id)
@@ -419,6 +436,13 @@ static void read_keybinds(config_file_t *conf)
       int key = find_glfw_key(tmp_str);
       if (key >= 0)
          g_settings.input.load_state_key = key;
+      free(tmp_str);
+   }
+   if (config_get_string(conf, "input_exit_emulator", &tmp_str))
+   {
+      int key = find_glfw_key(tmp_str);
+      if (key >= 0)
+         g_settings.input.exit_emulator_key = key;
       free(tmp_str);
    }
 }
