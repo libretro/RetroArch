@@ -264,37 +264,41 @@ void parse_config(void)
 struct bind_map
 {
    const char *key;
+   const char *btn;
+   const char *axis;
    int snes_key;
 };
 
-static const struct bind_map bind_maps[2][12] = {
+static const struct bind_map bind_maps[2][13] = {
    {
-      { "input_player1_a", SNES_DEVICE_ID_JOYPAD_A }, 
-      { "input_player1_b", SNES_DEVICE_ID_JOYPAD_B }, 
-      { "input_player1_y", SNES_DEVICE_ID_JOYPAD_Y }, 
-      { "input_player1_x", SNES_DEVICE_ID_JOYPAD_X }, 
-      { "input_player1_start", SNES_DEVICE_ID_JOYPAD_START }, 
-      { "input_player1_select", SNES_DEVICE_ID_JOYPAD_SELECT }, 
-      { "input_player1_l", SNES_DEVICE_ID_JOYPAD_L }, 
-      { "input_player1_r", SNES_DEVICE_ID_JOYPAD_R }, 
-      { "input_player1_left", SNES_DEVICE_ID_JOYPAD_LEFT }, 
-      { "input_player1_right", SNES_DEVICE_ID_JOYPAD_RIGHT }, 
-      { "input_player1_up", SNES_DEVICE_ID_JOYPAD_UP }, 
-      { "input_player1_down", SNES_DEVICE_ID_JOYPAD_DOWN }, 
+      { "input_player1_a",       "input_player1_a_btn",        NULL, SNES_DEVICE_ID_JOYPAD_A }, 
+      { "input_player1_b",       "input_player1_b_btn",        NULL, SNES_DEVICE_ID_JOYPAD_B }, 
+      { "input_player1_y",       "input_player1_y_btn",        NULL, SNES_DEVICE_ID_JOYPAD_Y }, 
+      { "input_player1_x",       "input_player1_x_btn",        NULL, SNES_DEVICE_ID_JOYPAD_X }, 
+      { "input_player1_start",   "input_player1_start_btn",    NULL, SNES_DEVICE_ID_JOYPAD_START }, 
+      { "input_player1_select",  "input_player1_select_btn",   NULL, SNES_DEVICE_ID_JOYPAD_SELECT }, 
+      { "input_player1_l",       "input_player1_l_btn",        NULL, SNES_DEVICE_ID_JOYPAD_L }, 
+      { "input_player1_r",       "input_player1_r_btn",        NULL, SNES_DEVICE_ID_JOYPAD_R }, 
+      { "input_player1_left",    "input_player1_left_btn",     "input_player1_left_axis", SNES_DEVICE_ID_JOYPAD_LEFT }, 
+      { "input_player1_right",   "input_player1_right_btn",    "input_player1_right_axis", SNES_DEVICE_ID_JOYPAD_RIGHT }, 
+      { "input_player1_up",      "input_player1_up_btn",       "input_player1_up_axis", SNES_DEVICE_ID_JOYPAD_UP }, 
+      { "input_player1_down",    "input_player1_down_btn",     "input_player1_down_axis", SNES_DEVICE_ID_JOYPAD_DOWN }, 
+      { "input_toggle_fast_forward", "input_toggle_fast_forward_btn", NULL, SNES_FAST_FORWARD_KEY }
    }, 
    {
-      { "input_player2_a", SNES_DEVICE_ID_JOYPAD_A }, 
-      { "input_player2_b", SNES_DEVICE_ID_JOYPAD_B }, 
-      { "input_player2_y", SNES_DEVICE_ID_JOYPAD_Y }, 
-      { "input_player2_x", SNES_DEVICE_ID_JOYPAD_X }, 
-      { "input_player2_start", SNES_DEVICE_ID_JOYPAD_START }, 
-      { "input_player2_select", SNES_DEVICE_ID_JOYPAD_SELECT }, 
-      { "input_player2_l", SNES_DEVICE_ID_JOYPAD_L }, 
-      { "input_player2_r", SNES_DEVICE_ID_JOYPAD_R }, 
-      { "input_player2_left", SNES_DEVICE_ID_JOYPAD_LEFT }, 
-      { "input_player2_right", SNES_DEVICE_ID_JOYPAD_RIGHT }, 
-      { "input_player2_up", SNES_DEVICE_ID_JOYPAD_UP }, 
-      { "input_player2_down", SNES_DEVICE_ID_JOYPAD_DOWN }, 
+      { "input_player2_a",       "input_player2_a_btn",        NULL, SNES_DEVICE_ID_JOYPAD_A }, 
+      { "input_player2_b",       "input_player2_b_btn",        NULL, SNES_DEVICE_ID_JOYPAD_B }, 
+      { "input_player2_y",       "input_player2_y_btn",        NULL, SNES_DEVICE_ID_JOYPAD_Y }, 
+      { "input_player2_x",       "input_player2_x_btn",        NULL, SNES_DEVICE_ID_JOYPAD_X }, 
+      { "input_player2_start",   "input_player2_start_btn",    NULL, SNES_DEVICE_ID_JOYPAD_START }, 
+      { "input_player2_select",  "input_player2_select_btn",   NULL, SNES_DEVICE_ID_JOYPAD_SELECT }, 
+      { "input_player2_l",       "input_player2_l_btn",        NULL, SNES_DEVICE_ID_JOYPAD_L }, 
+      { "input_player2_r",       "input_player2_r_btn",        NULL, SNES_DEVICE_ID_JOYPAD_R }, 
+      { "input_player2_left",    "input_player2_left_btn",     "input_player2_left_axis", SNES_DEVICE_ID_JOYPAD_LEFT }, 
+      { "input_player2_right",   "input_player2_right_btn",    "input_player2_right_axis", SNES_DEVICE_ID_JOYPAD_RIGHT }, 
+      { "input_player2_up",      "input_player2_up_btn",       "input_player2_up_axis", SNES_DEVICE_ID_JOYPAD_UP }, 
+      { "input_player2_down",    "input_player2_down_btn",     "input_player2_down_axis", SNES_DEVICE_ID_JOYPAD_DOWN }, 
+      { "input_toggle_fast_forward", "input_toggle_fast_forward_btn", NULL, SNES_FAST_FORWARD_KEY }
    }
 };
 
@@ -337,30 +341,88 @@ static int find_glfw_bind(const char *str)
    return -1;
 }
 
-void read_keybinds(config_file_t *conf)
+static int find_glfw_key(const char *str)
 {
-   char *tmp_str;
-   int glfw_key;
+   // If the bind is a normal key-press ...
+   if (strlen(str) == 1 && isalpha(*str))
+      return toupper(*str);
+   else // Check if we have a special mapping for it.
+      return find_glfw_bind(str);
+}
+
+static void read_keybinds(config_file_t *conf)
+{
+   char *tmp_key = NULL;
+   int tmp_btn;
+   char *tmp_axis = NULL;
 
    for (int j = 0; j < 1; j++)
    {
       for (int i = 0; i < sizeof(bind_maps[j])/sizeof(struct bind_map); i++)
       {
-         if (config_get_string(conf, bind_maps[j][i].key, &tmp_str))
+         struct snes_keybind *bind = find_snes_bind(j, bind_maps[j][i].snes_key);
+         if (!bind)
+            continue;
+
+         if (bind_maps[j][i].key && config_get_string(conf, bind_maps[j][i].key, &tmp_key))
          {
-            // If the bind is a normal key-press ...
-            if (strlen(tmp_str) == 1 && isalpha(*tmp_str))
-               glfw_key = toupper(*tmp_str);
-            else // Check if we have a special mapping for it.
-               glfw_key = find_glfw_bind(tmp_str);
+            int key = find_glfw_key(tmp_key);
 
-            struct snes_keybind *bind = find_snes_bind(0, bind_maps[j][i].snes_key);
+            if (key >= 0)
+               bind->key = key;
 
-            if (bind && glfw_key >= 0)
-               bind->key = glfw_key;
+            free(tmp_key);
+            tmp_key = NULL;
+         }
 
-            free(tmp_str);
+         if (bind_maps[j][i].btn && config_get_int(conf, bind_maps[j][i].btn, &tmp_btn))
+         {
+            if (tmp_btn >= 0)
+               bind->joykey = tmp_btn;
+         }
+
+         if (bind_maps[j][i].axis && config_get_string(conf, bind_maps[j][i].axis, &tmp_axis))
+         {
+            if (strlen(tmp_axis) >= 2 && (*tmp_axis == '+' || *tmp_axis == '-'))
+            {
+               int axis = strtol(tmp_axis + 1, NULL, 0);
+               if (*tmp_axis == '+')
+                  bind->joyaxis = AXIS_POS(axis);
+               else
+                  bind->joyaxis = AXIS_NEG(axis);
+
+            }
+            free(tmp_axis);
+            tmp_axis = NULL;
          }
       }
    }
+
+   char *tmp_str;
+   if (config_get_string(conf, "input_toggle_fullscreen", &tmp_str))
+   {
+      int key = find_glfw_key(tmp_str);
+      if (key >= 0)
+         g_settings.input.toggle_fullscreen_key = key;
+      free(tmp_str);
+   }
+   if (config_get_string(conf, "input_save_state", &tmp_str))
+   {
+      int key = find_glfw_key(tmp_str);
+      if (key >= 0)
+         g_settings.input.save_state_key = key;
+      free(tmp_str);
+   }
+   if (config_get_string(conf, "input_load_state", &tmp_str))
+   {
+      int key = find_glfw_key(tmp_str);
+      if (key >= 0)
+         g_settings.input.load_state_key = key;
+      free(tmp_str);
+   }
+
 }
+
+
+
+
