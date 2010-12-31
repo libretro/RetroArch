@@ -199,6 +199,7 @@ static void print_help(void)
    puts("\t-v/--verbose: Verbose logging");
 }
 
+bool fullscreen = START_FULLSCREEN;
 static FILE* rom_file = NULL;
 static char savefile_name_srm[256] = {0};
 bool verbose = false;
