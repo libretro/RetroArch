@@ -276,6 +276,7 @@ struct bind_map
    int snes_key;
 };
 
+// Big and nasty bind map... :)
 static const struct bind_map bind_maps[2][13] = {
    {
       { "input_player1_a",       "input_player1_a_btn",        NULL, SNES_DEVICE_ID_JOYPAD_A }, 
@@ -322,6 +323,9 @@ static const struct glfw_map glfw_map[] = {
    { "up", GLFW_KEY_UP },
    { "down", GLFW_KEY_DOWN },
    { "enter", GLFW_KEY_ENTER },
+   { "tab", GLFW_KEY_TAB },
+   { "insert", GLFW_KEY_INSERT },
+   { "del", GLFW_KEY_DEL },
    { "rshift", GLFW_KEY_RSHIFT },
    { "shift", GLFW_KEY_LSHIFT },
    { "ctrl", GLFW_KEY_LCTRL },
