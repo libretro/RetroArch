@@ -33,5 +33,6 @@
 
 extern bool verbose;
 extern SRC_STATE *source;
+extern bool fullscreen;
 
 #endif
