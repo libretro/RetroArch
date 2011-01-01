@@ -91,15 +91,16 @@ parse_input()
 
    while [ ! -z "$1" ]
    do
-      prefix="`echo $1 | sed -e 's|^--prefix=\(\S\S*\)$|\1|' -e 's|\(\S\S*\)/|\1|'`"
-
-      if [ "$prefix" != "$1" ]; then
-         PREFIX="$prefix"
-         shift
-         continue
-      fi
-
+      
       case "$1" in
+
+         --prefix=*)
+            prefix="`echo $1 | sed -e 's|^--prefix=\(\S\S*\)$|\1|' -e 's|\(\S\S*\)/$|\1|'`"
+
+            if [ "$prefix" != "$1" ]; then
+               PREFIX="$prefix"
+            fi
+            ;;
 
          --enable-*)
             enable=`echo $1 | sed 's|^--enable-||'`

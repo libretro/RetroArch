@@ -16,3 +16,4 @@ add_command_line_enable OSS "Enable OSS support" auto
 add_command_line_enable RSOUND "Enable RSound support" auto
 add_command_line_enable ROAR "Enable RoarAudio support" auto
 add_command_line_enable AL "Enable OpenAL support" auto
+add_command_line_enable JACK "Enable JACK support" auto
