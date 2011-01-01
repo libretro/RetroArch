@@ -30,7 +30,9 @@
 
 #endif
 
+#ifdef HAVE_DYNAMIC
 static void *lib_handle = NULL;
+#endif
 
 void (*psnes_init)(void);
 

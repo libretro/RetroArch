@@ -25,6 +25,10 @@ ifeq ($(HAVE_AL), 1)
    OBJ += audio/openal.o
    LIBS += -lopenal
 endif
+ifeq ($(HAVE_JACK),1)
+   OBJ += audio/jack.o
+   LIBS += -ljack
+endif
 
 ifeq ($(HAVE_GLFW), 1)
    OBJ += gfx/gl.o

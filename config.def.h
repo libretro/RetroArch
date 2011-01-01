@@ -37,6 +37,7 @@
 #define AUDIO_ALSA 3
 #define AUDIO_ROAR 4
 #define AUDIO_AL 5
+#define AUDIO_JACK 6
 ////////////////////////
 
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL

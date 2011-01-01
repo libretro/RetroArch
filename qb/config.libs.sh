@@ -14,6 +14,7 @@ check_header OSS sys/soundcard.h
 check_lib AL -lopenal alcOpenDevice
 check_lib RSOUND -lrsound rsd_init
 check_lib ROAR -lroar roar_vs_new
+check_lib JACK -ljack jack_client_open
 
 check_lib GLFW -lglfw glfwInit
 check_critical GLFW "Cannot find GLFW library."
@@ -25,7 +26,7 @@ check_lib SRC -lsamplerate src_callback_new
 check_lib DYNAMIC -ldl dlopen
 
 # Creates config.mk.
-VARS="ALSA OSS AL RSOUND ROAR GLFW FILTER CG DYNAMIC"
+VARS="ALSA OSS AL RSOUND ROAR JACK GLFW FILTER CG DYNAMIC"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 
