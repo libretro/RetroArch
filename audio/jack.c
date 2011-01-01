@@ -56,7 +56,7 @@ static int process_cb(jack_nframes_t nframes, void *data)
    jack_nframes_t avail[2];
    avail[0] = jack_ringbuffer_read_space(jd->buffer[0]);
    avail[1] = jack_ringbuffer_read_space(jd->buffer[1]);
-   jack_nframes_t min_avail = FRAMES((avail[0] < avail[1]) ? avail[0] : avail[1]);
+   jack_nframes_t min_avail = ((avail[0] < avail[1]) ? avail[0] : avail[1]) / sizeof(jack_default_audio_sample_t);
 
    if (min_avail > nframes)
       min_avail = nframes;
@@ -64,7 +64,7 @@ static int process_cb(jack_nframes_t nframes, void *data)
    //static int underrun = 0;
    //if (min_avail < nframes)
    //{
-   //   fprintf(stderr, "underrun count: %d\n", underrun++);
+   //   SSNES_LOG("JACK: Underrun count: %d\n", underrun++);
    //   fprintf(stderr, "required %d frames, got %d.\n", (int)nframes, (int)min_avail);
    //}
 
@@ -111,7 +111,6 @@ static void parse_ports(const char **dest_ports, const char **jports)
       dest_ports[i] = jports[i];
 }
 
-#define JACK_BUFFER_SIZE_MIN_FRAMES 128
 static void* __jack_init(const char* device, int rate, int latency)
 {
    jack_t *jd = calloc(1, sizeof(jack_t));
@@ -140,7 +139,7 @@ static void* __jack_init(const char* device, int rate, int latency)
    jack_nframes_t bufsize;
    jack_nframes_t jack_bufsize = jack_get_buffer_size(jd->client);
    
-   bufsize = (latency * g_settings.audio.out_rate / 1000 + 1)  > jack_bufsize ? (latency * g_settings.audio.out_rate / 1000 + 1) : jack_bufsize;
+   bufsize = (latency * g_settings.audio.out_rate / 1000) > jack_bufsize * 2 ? (latency * g_settings.audio.out_rate / 1000) : jack_bufsize * 2;
    bufsize *= sizeof(jack_default_audio_sample_t);
 
    //fprintf(stderr, "jack buffer size: %d\n", (int)bufsize);
@@ -214,12 +213,19 @@ static size_t write_buffer(jack_t *jd, const void *buf, size_t size)
       avail[1] = jack_ringbuffer_write_space(jd->buffer[1]);
       size_t min_avail = avail[0] < avail[1] ? avail[0] : avail[1];
 
-      if (jd->nonblock && min_avail < FRAMES(size) * sizeof(jack_default_audio_sample_t))
-         return 0;
-
-      //fprintf(stderr, "Write avail is: %d\n", (int)min_avail);
-      if (min_avail >= FRAMES(size) * sizeof(jack_default_audio_sample_t))
+      if (jd->nonblock)
+      {
+         if (min_avail < FRAMES(size) * sizeof(jack_default_audio_sample_t))
+            size = min_avail * 2 * sizeof(int16_t) / sizeof(jack_default_audio_sample_t);
          break;
+      }
+
+      else
+      {
+         //fprintf(stderr, "Write avail is: %d\n", (int)min_avail);
+         if (min_avail >= FRAMES(size) * sizeof(jack_default_audio_sample_t))
+            break;
+      }
 
       pthread_mutex_lock(&jd->cond_lock);
       pthread_cond_wait(&jd->cond, &jd->cond_lock);
@@ -259,6 +265,8 @@ static bool __jack_start(void *data)
 static void __jack_free(void *data)
 {
    jack_t *jd = data;
+
+   jd->shutdown = true;
 
    if (jd->client != NULL)
    {
