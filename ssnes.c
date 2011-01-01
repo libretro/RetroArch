@@ -24,15 +24,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
-#include "config.h"
 #include "driver.h"
 #include "file.h"
-#include "hqflt/pastlib.h"
-#include "hqflt/grayscale.h"
-#include "hqflt/bleed.h"
-#include "hqflt/ntsc.h"
+#include "hqflt/filters.h"
 #include "general.h"
+#include "dynamic.h"
 
+struct global g_extern = {
+   .video_active = true,
+   .audio_active = true,
+};
 
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
 
@@ -46,10 +47,10 @@ void set_fast_forward_button(bool new_button_state)
    if (new_button_state && !old_button_state)
    {
       syncing_state = !syncing_state;
-      if (video_active)
+      if (g_extern.video_active)
          driver.video->set_nonblock_state(driver.video_data, syncing_state);
-      if (audio_active)
-         driver.audio->set_nonblock_state(driver.audio_data, (audio_sync) ? syncing_state : true);
+      if (g_extern.audio_active)
+         driver.audio->set_nonblock_state(driver.audio_data, (g_settings.audio.sync) ? syncing_state : true);
       if (syncing_state)
          audio_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
       else
@@ -58,7 +59,7 @@ void set_fast_forward_button(bool new_button_state)
    old_button_state = new_button_state;
 }
 
-#if VIDEO_FILTER != FILTER_NONE
+#ifdef HAVE_FILTER
 static inline void process_frame (uint16_t * restrict out, const uint16_t * restrict in, unsigned width, unsigned height)
 {
    int pitch = 1024;
@@ -79,53 +80,54 @@ static inline void process_frame (uint16_t * restrict out, const uint16_t * rest
 // Format received is 16-bit 0RRRRRGGGGGBBBBB
 static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 {
-   if ( !video_active )
+   if ( !g_extern.video_active )
       return;
 
-#if VIDEO_FILTER == FILTER_HQ2X
-   uint16_t outputHQ2x[width * height * 2 * 2];
-#elif VIDEO_FILTER == FILTER_HQ4X
-   uint16_t outputHQ4x[width * height * 4 * 4];
-#elif VIDEO_FILTER == FILTER_NTSC
-   uint16_t output_ntsc[SNES_NTSC_OUT_WIDTH(width) * height];
-#endif
-
-#if VIDEO_FILTER != FILTER_NONE
+#ifdef HAVE_FILTER
+   uint16_t output_filter[width * height * 4 * 4];
    uint16_t output[width * height];
    process_frame(output, data, width, height);
-#endif
 
-#if VIDEO_FILTER == FILTER_HQ2X
-   ProcessHQ2x(output, outputHQ2x);
-   if ( !driver.video->frame(driver.video_data, outputHQ2x, width << 1, height << 1, width << 2) )
-      video_active = false;
-#elif VIDEO_FILTER == FILTER_HQ4X
-   ProcessHQ4x(output, outputHQ4x);
-   if ( !driver.video->frame(driver.video_data, outputHQ4x, width << 2, height << 2, width << 3) )
-      video_active = false;
-#elif VIDEO_FILTER == FILTER_GRAYSCALE
-   grayscale_filter(output, width, height);
-   if ( !driver.video->frame(driver.video_data, output, width, height, width << 1) )
-      video_active = false;
-#elif VIDEO_FILTER == FILTER_BLEED
-   bleed_filter(output, width, height);
-   if ( !driver.video->frame(driver.video_data, output, width, height, width << 1) )
-      video_active = false;
-#elif VIDEO_FILTER == FILTER_NTSC
-   ntsc_filter(output_ntsc, output, width, height);
-   if ( !driver.video->frame(driver.video_data, output_ntsc, SNES_NTSC_OUT_WIDTH(width), height, SNES_NTSC_OUT_WIDTH(width) << 1) )
-      video_active = false;
+   switch (g_settings.video.filter)
+   {
+      case FILTER_HQ2X:
+         ProcessHQ2x(output, output_filter);
+         if ( !driver.video->frame(driver.video_data, output_filter, width << 1, height << 1, width << 2) )
+            g_extern.video_active = false;
+         break;
+      case FILTER_HQ4X:
+         ProcessHQ4x(output, output_filter);
+         if ( !driver.video->frame(driver.video_data, output_filter, width << 2, height << 2, width << 3) )
+            g_extern.video_active = false;
+         break;
+      case FILTER_GRAYSCALE:
+         grayscale_filter(output, width, height);
+         if ( !driver.video->frame(driver.video_data, output, width, height, width << 1) )
+            g_extern.video_active = false;
+         break;
+      case FILTER_BLEED:
+         bleed_filter(output, width, height);
+         if ( !driver.video->frame(driver.video_data, output, width, height, width << 1) )
+            g_extern.video_active = false;
+         break;
+      case FILTER_NTSC:
+         ntsc_filter(output_filter, output, width, height);
+         if ( !driver.video->frame(driver.video_data, output_filter, SNES_NTSC_OUT_WIDTH(width), height, SNES_NTSC_OUT_WIDTH(width) << 1) )
+            g_extern.video_active = false;
+         break;
+      default:
+         if ( !driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048) )
+            g_extern.video_active = false;
+   }
 #else
    if ( !driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048) )
-      video_active = false;
+      g_extern.video_active = false;
 #endif
-
 }
 
-SRC_STATE* source = NULL;
 static void audio_sample(uint16_t left, uint16_t right)
 {
-   if ( !audio_active )
+   if ( !g_extern.audio_active )
       return;
 
    static float data[AUDIO_CHUNK_SIZE_NONBLOCKING];
@@ -146,16 +148,16 @@ static void audio_sample(uint16_t left, uint16_t right)
       src_data.input_frames = audio_chunk_size / 2;
       src_data.output_frames = audio_chunk_size * 8;
       src_data.end_of_input = 0;
-      src_data.src_ratio = (double)out_rate / (double)in_rate;
+      src_data.src_ratio = (double)g_settings.audio.out_rate / (double)g_settings.audio.in_rate;
 
-      src_process(source, &src_data);
+      src_process(g_extern.source, &src_data);
 
       src_float_to_short_array(outsamples, temp_outsamples, src_data.output_frames_gen * 2);
 
       if ( driver.audio->write(driver.audio_data, temp_outsamples, src_data.output_frames_gen * 4) < 0 )
       {
          fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
-         audio_active = false;
+         g_extern.audio_active = false;
       }
 
       data_ptr = 0;
@@ -169,7 +171,7 @@ static void input_poll(void)
 
 static int16_t input_state(bool port, unsigned device, unsigned index, unsigned id)
 {
-   const struct snes_keybind *binds[] = { snes_keybinds_1, snes_keybinds_2 };
+   const struct snes_keybind *binds[] = { g_settings.input.binds[0], g_settings.input.binds[1] }; 
    return driver.input->input_state(driver.input_data, binds, port, device, index, id);
 }
 
@@ -193,19 +195,9 @@ static void print_help(void)
    puts("Usage: ssnes [rom file] [-h/--help | -s/--save]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
-#ifdef HAVE_CG
-   puts("\t-f/--shader: Path to Cg shader. Will be compiled at runtime.\n");
-#endif
+   puts("\t-c/--config: Path for config file. Defaults to $XDG_CONFIG_HOME/ssnes/ssnes.cfg");
    puts("\t-v/--verbose: Verbose logging");
 }
-
-bool fullscreen = START_FULLSCREEN;
-static FILE* rom_file = NULL;
-static char savefile_name_srm[256] = {0};
-bool verbose = false;
-#ifdef HAVE_CG
-char cg_shader_path[256] = DEFAULT_CG_SHADER;
-#endif
 
 static void parse_input(int argc, char *argv[])
 {
@@ -219,18 +211,12 @@ static void parse_input(int argc, char *argv[])
       { "help", 0, NULL, 'h' },
       { "save", 1, NULL, 's' },
       { "verbose", 0, NULL, 'v' },
-#ifdef HAVE_CG
-      { "shader", 1, NULL, 'f' },
-#endif
+      { "config", 0, NULL, 'c' },
       { NULL, 0, NULL, 0 }
    };
 
    int option_index = 0;
-#ifdef HAVE_CG
-   char optstring[] = "hs:vf:";
-#else
-   char optstring[] = "hs:v";
-#endif
+   char optstring[] = "hs:vc:";
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -245,18 +231,16 @@ static void parse_input(int argc, char *argv[])
             exit(0);
 
          case 's':
-            strncpy(savefile_name_srm, optarg, sizeof(savefile_name_srm));
-            savefile_name_srm[sizeof(savefile_name_srm)-1] = '\0';
+            strncpy(g_extern.savefile_name_srm, optarg, sizeof(g_extern.savefile_name_srm));
+            g_extern.savefile_name_srm[sizeof(g_extern.savefile_name_srm)-1] = '\0';
             break;
-
-#ifdef HAVE_CG
-         case 'f':
-            strncpy(cg_shader_path, optarg, sizeof(cg_shader_path) - 1);
-            break;
-#endif
 
          case 'v':
-            verbose = true;
+            g_extern.verbose = true;
+            break;
+
+         case 'c':
+            strncpy(g_extern.config_path, optarg, sizeof(g_extern.config_path) - 1);
             break;
 
          case '?':
@@ -275,24 +259,20 @@ static void parse_input(int argc, char *argv[])
       strcpy(tmp, argv[optind]);
       char *dst = strrchr(tmp, '.');
       if (dst)
-      {
          *dst = '\0';
-         snes_set_cartridge_basename(tmp);
-      }
-      else
-         snes_set_cartridge_basename(tmp);
+      strncpy(g_extern.basename, tmp, sizeof(g_extern.basename) - 1);
 
       SSNES_LOG("Opening file: \"%s\"\n", argv[optind]);
-      rom_file = fopen(argv[optind], "rb");
-      if (rom_file == NULL)
+      g_extern.rom_file = fopen(argv[optind], "rb");
+      if (g_extern.rom_file == NULL)
       {
          SSNES_ERR("Could not open file: \"%s\"\n", optarg);
          exit(1);
       }
-      if (strlen(savefile_name_srm) == 0)
-         fill_pathname(savefile_name_srm, argv[optind], ".srm");
+      if (strlen(g_extern.savefile_name_srm) == 0)
+         fill_pathname(g_extern.savefile_name_srm, argv[optind], ".srm");
    }
-   else if (strlen(savefile_name_srm) == 0)
+   else if (strlen(g_extern.savefile_name_srm) == 0)
    {
       SSNES_ERR("Need savefile argument when reading rom from stdin.\n");
       print_help();
@@ -302,35 +282,41 @@ static void parse_input(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-   snes_init();
    parse_input(argc, argv);
+   parse_config();
+   init_dlsym();
 
+   psnes_init();
+   if (strlen(g_extern.basename) > 0)
+      psnes_set_cartridge_basename(g_extern.basename);
+
+   SSNES_LOG("Version of libsnes API: %u.%u\n", psnes_library_revision_major(), psnes_library_revision_minor());
    void *rom_buf;
    ssize_t rom_len = 0;
-   if ((rom_len = read_file(rom_file, &rom_buf)) == -1)
+   if ((rom_len = read_file(g_extern.rom_file, &rom_buf)) == -1)
    {
       SSNES_ERR("Could not read ROM file.\n");
       exit(1);
    }
    SSNES_LOG("ROM size: %zi bytes\n", rom_len);
 
-   if (rom_file != NULL)
-      fclose(rom_file);
+   if (g_extern.rom_file != NULL)
+      fclose(g_extern.rom_file);
 
-   char statefile_name[strlen(savefile_name_srm)+strlen(".state")+1];
-   char savefile_name_rtc[strlen(savefile_name_srm)+strlen(".rtc")+1];
+   char statefile_name[strlen(g_extern.savefile_name_srm)+strlen(".state")+1];
+   char savefile_name_rtc[strlen(g_extern.savefile_name_srm)+strlen(".rtc")+1];
 
    fill_pathname(statefile_name, argv[1], ".state");
    fill_pathname(savefile_name_rtc, argv[1], ".rtc");
 
    init_drivers();
 
-   snes_set_video_refresh(video_frame);
-   snes_set_audio_sample(audio_sample);
-   snes_set_input_poll(input_poll);
-   snes_set_input_state(input_state);
+   psnes_set_video_refresh(video_frame);
+   psnes_set_audio_sample(audio_sample);
+   psnes_set_input_poll(input_poll);
+   psnes_set_input_state(input_state);
 
-   if (!snes_load_cartridge_normal(NULL, rom_buf, rom_len))
+   if (!psnes_load_cartridge_normal(NULL, rom_buf, rom_len))
    {
       SSNES_ERR("ROM file is not valid!\n");
       goto error;
@@ -338,7 +324,7 @@ int main(int argc, char *argv[])
 
    free(rom_buf);
 
-   unsigned serial_size = snes_serialize_size();
+   unsigned serial_size = psnes_serialize_size();
    uint8_t *serial_data = malloc(serial_size);
    if (serial_data == NULL)
    {
@@ -346,49 +332,51 @@ int main(int argc, char *argv[])
       goto error;
    }
 
-   load_save_file(savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
+   load_save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
    load_save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
 
    ///// TODO: Modular friendly!!!
    for(;;)
    {
-      bool quitting = glfwGetKey(GLFW_KEY_ESC) || !glfwGetWindowParam(GLFW_OPENED);
+      bool quitting = glfwGetKey(g_settings.input.exit_emulator_key) || !glfwGetWindowParam(GLFW_OPENED);
       
       if ( quitting )
          break;
 
-      if ( glfwGetKey( SAVE_STATE_KEY ))
+      if ( glfwGetKey( g_settings.input.save_state_key ))
       {
          write_file(statefile_name, serial_data, serial_size);
       }
 
-      else if ( glfwGetKey( LOAD_STATE_KEY ) )
+      else if ( glfwGetKey( g_settings.input.load_state_key ) )
          load_state(statefile_name, serial_data, serial_size);
 
-      else if ( glfwGetKey( TOGGLE_FULLSCREEN ) )
+      else if ( glfwGetKey( g_settings.input.toggle_fullscreen_key ) )
       {
-         fullscreen = !fullscreen;
+         g_settings.video.fullscreen = !g_settings.video.fullscreen;
          uninit_drivers();
          init_drivers();
       }
 
-      snes_run();
+      psnes_run();
    }
 
-   save_file(savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
+   save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
    save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
 
-   snes_unload_cartridge();
-   snes_term();
+   psnes_unload_cartridge();
+   psnes_term();
    uninit_drivers();
    free(serial_data);
+   uninit_dlsym();
 
    return 0;
 
 error:
-   snes_unload_cartridge();
-   snes_term();
+   psnes_unload_cartridge();
+   psnes_term();
    uninit_drivers();
+   uninit_dlsym();
 
    return 1;
 }

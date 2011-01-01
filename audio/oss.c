@@ -136,7 +136,8 @@ const audio_driver_t audio_oss = {
    .stop = __oss_stop,
    .start = __oss_start,
    .set_nonblock_state = __oss_set_nonblock_state,
-   .free = __oss_free
+   .free = __oss_free,
+   .ident = "oss"
 };
 
    

@@ -37,11 +37,11 @@
 #define AUDIO_ALSA 3
 #define AUDIO_ROAR 4
 #define AUDIO_AL 5
+#define AUDIO_JACK 6
 ////////////////////////
 
-// Chooses which video and audio subsystem to use. Remember to update config.mk if you change these.
-#define VIDEO_DRIVER VIDEO_GL
-#define AUDIO_DRIVER AUDIO_ALSA
+#define VIDEO_DEFAULT_DRIVER VIDEO_GL
+#define AUDIO_DEFAULT_DRIVER AUDIO_ALSA
 
 
 ////////////////
@@ -53,7 +53,7 @@ static const float xscale = 3.0; // Real x res = 296 * xscale
 static const float yscale = 3.0; // Real y res = 224 * yscale
 
 // Fullscreen
-#define START_FULLSCREEN false; // To start in Fullscreen or not
+static const bool fullscreen = false;  // To start in Fullscreen or not
 static const unsigned fullscreen_x = 1280;
 static const unsigned fullscreen_y = 720;
 
@@ -63,27 +63,8 @@ static const bool vsync = true;
 // Smooths picture
 static const bool video_smooth = true;
 
-// Path to custom Cg shader. If using custom shaders, it is recommended to disable video_smooth.
-#ifdef HAVE_CG
-extern char cg_shader_path[];
-#define DEFAULT_CG_SHADER "hqflt/cg/quad.cg"
-#endif
-
 // On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 
-
-/////////// Video filters (CPU based)
-#define FILTER_NONE 0
-#define FILTER_HQ2X 1
-#define FILTER_HQ4X 2
-#define FILTER_GRAYSCALE 3
-#define FILTER_BLEED 4
-#define FILTER_NTSC 5
-////////////////////////
-
-// If you change this to something other than FILTER_NONE, make sure that you build the filter module in config.mk.
-#define VIDEO_FILTER FILTER_NONE
-
 
 ////////////////
 // Audio
@@ -124,8 +105,6 @@ static const bool audio_sync = true;
 
 #define AXIS_NEG(x) ((uint32_t)(x << 16) | 0xFFFF)
 #define AXIS_POS(x) ((uint32_t)(x) | 0xFFFF0000U)
-#define AXIS_NEG_GET(x) ((x >> 16) & 0xFFFF)
-#define AXIS_POS_GET(x) (x & 0xFFFF)
 #define AXIS_NONE ((uint32_t)0xFFFFFFFFU)
 
 // To figure out which joypad buttons to use, check jstest or similar.

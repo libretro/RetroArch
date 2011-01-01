@@ -1,0 +1,53 @@
+/*  SSNES - A Super Ninteno Entertainment System (SNES) Emulator frontend for libsnes.
+ *  Copyright (C) 2010 - Hans-Kristian Arntzen
+ *
+ *  Some code herein may be based on code found in BSNES.
+ * 
+ *  SSNES is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with SSNES.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+
+#ifndef __CONFIG_FILE_H
+#define __CONFIG_FILE_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+typedef struct config_file config_file_t;
+
+/////
+// Config file format
+// - # are treated as comments. Rest of the line is ignored.
+// - Format is: key = value. There can be as many spaces as you like in-between.
+// - Value can be wrapped inside "" for multiword strings. (foo = "hai u")
+
+// Loads a config file. Returns NULL if file doesn't exist.
+config_file_t *config_file_new(const char *path);
+// Frees config file.
+void config_file_free(config_file_t *conf);
+
+// All extract functions return true when value is valid and exists. Returns false otherwise.
+
+// Extracts a double from config file.
+bool config_get_double(config_file_t *conf, const char *entry, double *in);
+// Extracts an int from config file.
+bool config_get_int(config_file_t *conf, const char *entry, int *in);
+// Extracts a single char. If value consists of several chars, this is an error.
+bool config_get_char(config_file_t *conf, const char *entry, char *in);
+// Extracts an allocated string in *in. This must be free()-d if this function succeeds.
+bool config_get_string(config_file_t *conf, const char *entry, char **in);
+// Extracts a boolean from config. Valid boolean true are "true" and "1". Valid false are "false" and "0". Other values will be treated as an error.
+bool config_get_bool(config_file_t *conf, const char *entry, bool *in);
+
+
+
+#endif

@@ -21,18 +21,80 @@
 
 #include <stdbool.h>
 #include <samplerate.h>
+#include "driver.h"
+#include <stdio.h>
+
+
+#define MAX_PLAYERS 2
+#define MAX_BINDS 14
+struct settings
+{
+   struct 
+   {
+      char driver[32];
+      float xscale;
+      float yscale;
+      bool fullscreen;
+      unsigned fullscreen_x;
+      unsigned fullscreen_y;
+      bool vsync;
+      bool smooth;
+      bool force_aspect;
+      char cg_shader_path[256];
+      unsigned filter;
+   } video;
+
+   struct
+   {
+      char driver[32];
+      bool enable;
+      unsigned out_rate;
+      unsigned in_rate;
+      char device[256];
+      unsigned latency;
+      bool sync;
+      int src_quality;
+   } audio;
+
+   struct
+   {
+      char driver[32];
+      struct snes_keybind binds[MAX_PLAYERS][MAX_BINDS];
+      int save_state_key;
+      int load_state_key;
+      int toggle_fullscreen_key;
+      int exit_emulator_key;
+      float axis_threshold;
+   } input;
+
+   char libsnes[256];
+};
+
+struct global
+{
+   bool verbose;
+   SRC_STATE *source;
+   bool audio_active;
+   bool video_active;
+
+   FILE *rom_file;
+   char savefile_name_srm[256];
+   char config_path[256];
+   char basename[256];
+};
+
+void parse_config(void);
+
+extern struct settings g_settings;
+extern struct global g_extern;
 
 #define SSNES_LOG(msg, args...) do { \
-   if (verbose) \
+   if (g_extern.verbose) \
       fprintf(stderr, "SSNES: " msg, ##args); \
    } while(0)
 
 #define SSNES_ERR(msg, args...) do { \
    fprintf(stderr, "SSNES [ERROR] :: " msg, ##args); \
    } while(0)
-
-extern bool verbose;
-extern SRC_STATE *source;
-extern bool fullscreen;
 
 #endif

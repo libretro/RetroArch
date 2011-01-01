@@ -2,43 +2,44 @@ include config.mk
 
 TARGET = ssnes
 
-DEFINES =
-OBJ = ssnes.o file.o driver.o
-libsnes = -lsnes
+OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o
 
-LIBS = -lsamplerate $(libsnes)
+LIBS = -lsamplerate
 
-ifeq ($(BUILD_RSOUND), 1)
+ifeq ($(HAVE_RSOUND), 1)
    OBJ += audio/rsound.o
    LIBS += -lrsound
 endif
-ifeq ($(BUILD_OSS), 1)
+ifeq ($(HAVE_OSS), 1)
    OBJ += audio/oss.o
 endif
-ifeq ($(BUILD_ALSA), 1)
+ifeq ($(HAVE_ALSA), 1)
    OBJ += audio/alsa.o
    LIBS += -lasound
 endif
-ifeq ($(BUILD_ROAR), 1)
+ifeq ($(HAVE_ROAR), 1)
    OBJ += audio/roar.o
    LIBS += -lroar
 endif
-ifeq ($(BUILD_AL), 1)
+ifeq ($(HAVE_AL), 1)
    OBJ += audio/openal.o
    LIBS += -lopenal
 endif
+ifeq ($(HAVE_JACK),1)
+   OBJ += audio/jack.o
+   LIBS += -ljack
+endif
 
-ifeq ($(BUILD_OPENGL), 1)
+ifeq ($(HAVE_GLFW), 1)
    OBJ += gfx/gl.o
    LIBS += -lglfw
 endif
 
-ifeq ($(BUILD_CG), 1)
+ifeq ($(HAVE_CG), 1)
    LIBS += -lCg -lCgGL
-   DEFINES += -DHAVE_CG 
 endif
 
-ifeq ($(BUILD_FILTER), 1)
+ifeq ($(HAVE_FILTER), 1)
    OBJ += hqflt/hq.o
    OBJ += hqflt/grayscale.o
    OBJ += hqflt/bleed.o
@@ -46,9 +47,19 @@ ifeq ($(BUILD_FILTER), 1)
    OBJ += hqflt/snes_ntsc/snes_ntsc.o
 endif
 
-CFLAGS = -Wall -O3 -std=gnu99 -Wno-unused-variable -I. $(DEFINES)
+ifeq ($(HAVE_DYNAMIC), 1)
+   LIBS += -ldl
+else
+   LIBS += $(libsnes)
+endif
 
-all: $(TARGET) 
+CFLAGS = -Wall -O3 -g -std=gnu99 -I.
+
+all: $(TARGET) config.mk
+
+config.mk: configure qb/*
+	@echo "config.mk is outdated or non-existing. Run ./configure again."
+	@exit 1
 
 ssnes: $(OBJ)
 	$(CXX) -o $@ $(OBJ) $(LIBS) $(CFLAGS)
@@ -57,14 +68,16 @@ ssnes: $(OBJ)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 install: $(TARGET)
-	install -m755 $(TARGET) $(PREFIX)/bin 
+	install -m755 $(TARGET) $(DESTDIR)/$(PREFIX)/bin 
+	install -m644 ssnes.cfg $(DESTDIR)/etc/ssnes.cfg
 
 uninstall: $(TARGET)
-	rm -rf $(PREFIX)/bin/$(TARGET)
+	rm -rf $(DESTDIR)/$(PREFIX)/bin/$(TARGET)
 
 clean:
 	rm -f *.o 
 	rm -f audio/*.o
+	rm -f conf/*.o
 	rm -f gfx/*.o
 	rm -f hqflt/*.o
 	rm -f hqflt/snes_ntsc/*.o

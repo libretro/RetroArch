@@ -135,7 +135,8 @@ const audio_driver_t audio_rsound = {
    .stop = __rsd_stop,
    .start = __rsd_start,
    .set_nonblock_state = __rsd_set_nonblock_state,
-   .free = __rsd_free
+   .free = __rsd_free,
+   .ident = "rsound"
 };
 
    

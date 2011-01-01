@@ -52,7 +52,7 @@ output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEXU
 	float2 rubyTextureSize = IN.texture_size;
    	
 	float2 xy = barrelDistortion(texCoord.xy);
-	float2 one = 0.999/rubyTextureSize;
+	float2 one = 1.0/rubyTextureSize;
 	xy = xy + float2(0.0 , -0.5 * (phase + (1-phase) * rubyInputSize.y/rubyOutputSize.y) * one.y);
 	float4 texels[8];
    texels[0] = TEX2D(xy + float2(-one.x,0.0));
