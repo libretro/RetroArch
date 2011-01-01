@@ -195,7 +195,7 @@ static void print_help(void)
    puts("Usage: ssnes [rom file] [-h/--help | -s/--save]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
-   puts("\t-c/--config: Path for config file. Defaults to $XDG_CONFIG_HOME/ssnes");
+   puts("\t-c/--config: Path for config file. Defaults to $XDG_CONFIG_HOME/ssnes/ssnes.cfg");
    puts("\t-v/--verbose: Verbose logging");
 }
 

@@ -120,9 +120,9 @@ void parse_config(void)
       const char *home = getenv("HOME");
       if (xdg)
       {
-         char conf_path[strlen(xdg) + strlen("/ssnes ")];
+         char conf_path[strlen(xdg) + strlen("/ssnes/ssnes.cfg ")];
          strcpy(conf_path, xdg);
-         strcat(conf_path, "/ssnes");
+         strcat(conf_path, "/ssnes/ssnes.cfg");
          conf = config_file_new(conf_path);
       }
       else if (home)

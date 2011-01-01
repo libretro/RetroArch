@@ -49,7 +49,7 @@ The default configuration is defined in config.def.h.
 These can later be tweaked by using the ssnes config file. 
 A sample configuration file is installed to /etc/ssnes.cfg. 
 This is the system-wide config file. 
-Each user should create a config file in $XDG\_CONFIG\_HOME/ssnes.
+Each user should create a config file in $XDG\_CONFIG\_HOME/ssnes/ssnes.cfg.
 The users only need to configure a certain option if the desired value deviates from the value defined in config.def.h.
 
 To configure joypads, start up <tt>jstest /dev/input/js0</tt> to determine which joypad buttons (and axis) to use.
