@@ -29,6 +29,8 @@
 #include "hqflt/filters.h"
 #include "general.h"
 #include "dynamic.h"
+#include "record/ffemu.h"
+#include <assert.h>
 
 struct global g_extern = {
    .video_active = true,
@@ -83,6 +85,16 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if ( !g_extern.video_active )
       return;
 
+   /////////////
+   struct ffemu_video_data ffemu_data = {
+      .data = data,
+      .pitch = 2048,
+      .width = width,
+      .height = height
+   };
+   ffemu_push_video(g_extern.rec, &ffemu_data);
+   /////////////
+
 #ifdef HAVE_FILTER
    uint16_t output_filter[width * height * 4 * 4];
    uint16_t output[width * height];
@@ -129,6 +141,17 @@ static void audio_sample(uint16_t left, uint16_t right)
 {
    if ( !g_extern.audio_active )
       return;
+
+   /////////
+   static int16_t static_data[2];
+   static_data[0] = left;
+   static_data[1] = right;
+   struct ffemu_audio_data ffemu_data = {
+      .data = static_data,
+      .frames = 1
+   };
+   ffemu_push_audio(g_extern.rec, &ffemu_data);
+   //////////
 
    static float data[AUDIO_CHUNK_SIZE_NONBLOCKING];
    static int data_ptr = 0;
@@ -335,6 +358,21 @@ int main(int argc, char *argv[])
    load_save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
    load_save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
 
+   ////////
+   struct ffemu_params params = {
+      .vcodec = FFEMU_VIDEO_H264,
+      .acodec = FFEMU_AUDIO_AAC,
+      .out_width = 512,
+      .out_height = 448,
+      .channels = 2,
+      .samplerate = 32040,
+      .fps = {60000, 1001},
+      .aspect_ratio = 4.0/3
+   };
+   g_extern.rec = ffemu_new(&params);
+   assert(g_extern.rec);
+   /////////
+
    ///// TODO: Modular friendly!!!
    for(;;)
    {
@@ -360,6 +398,10 @@ int main(int argc, char *argv[])
 
       psnes_run();
    }
+
+   ///////////
+   ffemu_free(g_extern.rec);
+   ///////////
 
    save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
    save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);

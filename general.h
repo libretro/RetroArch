@@ -23,6 +23,7 @@
 #include <samplerate.h>
 #include "driver.h"
 #include <stdio.h>
+#include "record/ffemu.h"
 
 
 #define MAX_PLAYERS 2
@@ -81,6 +82,8 @@ struct global
    char savefile_name_srm[256];
    char config_path[256];
    char basename[256];
+
+   ffemu_t *rec;
 };
 
 void parse_config(void);

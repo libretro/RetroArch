@@ -2,9 +2,9 @@ include config.mk
 
 TARGET = ssnes
 
-OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o
+OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o record/ffemu.o
 
-LIBS = -lsamplerate
+LIBS = -lsamplerate -lavformat -lavutil -lavcodec -lswscale
 
 ifeq ($(HAVE_RSOUND), 1)
    OBJ += audio/rsound.o

@@ -1,6 +1,7 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/mathematics.h>
 #include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
@@ -12,7 +13,11 @@ struct video_info
 {
    bool enabled;
    AVCodecContext *codec;
-   AVFrame *frame;
+
+   AVFrame *conv_frame;
+   uint8_t *conv_frame_buf;
+   int64_t frame_count;
+
    FILE *file;
    char *file_name;
 
@@ -44,17 +49,16 @@ struct ffemu
    struct ffemu_params params;
 };
 
-static int init_video(struct video_info *video, struct ffemu_params *param)
-{
-   (void)video;
-   (void)param;
-   return -1;
-}
-
 static int map_audio_codec(ffemu_audio_codec codec)
 {
    (void)codec;
    return CODEC_ID_AAC;
+}
+
+static int map_video_codec(ffemu_video_codec codec)
+{
+   (void)codec;
+   return CODEC_ID_MPEG2VIDEO;
 }
 
 static int init_audio(struct audio_info *audio, struct ffemu_params *param)
@@ -83,6 +87,37 @@ static int init_audio(struct audio_info *audio, struct ffemu_params *param)
    audio->outbuf = av_malloc(audio->outbuf_size);
    if (!audio->outbuf)
       return -1;
+
+   return 0;
+}
+
+static int init_video(struct video_info *video, struct ffemu_params *param)
+{
+   AVCodec *codec = avcodec_find_encoder(map_video_codec(param->vcodec));
+   if (!codec)
+      return -1;
+
+   video->codec = avcodec_alloc_context();
+   video->codec->bit_rate = 400000;
+   video->codec->width = param->out_width;
+   video->codec->height = param->out_height;
+   video->codec->time_base = (AVRational) {param->fps.den, param->fps.num};
+   video->codec->gop_size = 10;
+   video->codec->max_b_frames = 1;
+   video->codec->pix_fmt = PIX_FMT_YUV420P;
+
+   if (avcodec_open(video->codec, codec) != 0)
+      return -1;
+
+   video->outbuf_size = 100000;
+   video->outbuf = av_malloc(video->outbuf_size);
+
+   int size = avpicture_get_size(PIX_FMT_YUV420P, param->out_width, param->out_height);
+   video->conv_frame_buf = av_malloc(size);
+   video->conv_frame = avcodec_alloc_frame();
+   avpicture_fill((AVPicture*)video->conv_frame, video->conv_frame_buf, PIX_FMT_YUV420P, param->out_width, param->out_height);
+
+   video->file = fopen("/tmp/video.mpg", "wb");
 
    return 0;
 }
@@ -136,8 +171,11 @@ void ffemu_free(ffemu_t *handle)
          av_free(handle->video.codec);
       }
 
-      if (handle->video.frame)
-         av_free(handle->video.frame);
+      if (handle->video.conv_frame)
+         av_free(handle->video.conv_frame);
+
+      if (handle->video.conv_frame_buf)
+         av_free(handle->video.conv_frame_buf);
 
       if (handle->video.file)
          fclose(handle->video.file);
@@ -150,15 +188,35 @@ void ffemu_free(ffemu_t *handle)
 
 int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
 {
-   (void)handle;
-   (void)data;
    if (!handle->video.enabled)
       return -1;
+
+   struct SwsContext *conv_ctx = sws_getContext(data->width, data->height, PIX_FMT_RGB555LE,
+         handle->params.out_width, handle->params.out_height, PIX_FMT_YUV420P, SWS_BICUBIC,
+         NULL, NULL, NULL);
+
+   int linesize = data->pitch;
+
+   sws_scale(conv_ctx, (const uint8_t* const*)&data->data, &linesize, 0, handle->params.out_width, handle->video.conv_frame->data, handle->video.conv_frame->linesize);
+
+   handle->video.conv_frame->pts = handle->video.frame_count;
+   handle->video.conv_frame->display_picture_number = handle->video.frame_count;
+   handle->video.frame_count++;
+
+   int outsize = avcodec_encode_video(handle->video.codec, handle->video.outbuf, handle->video.outbuf_size, handle->video.conv_frame);
+
+   fwrite(handle->video.outbuf, 1, outsize, handle->video.file);
+
+   sws_freeContext(conv_ctx);
+
    return 0;
 }
 
 int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
 {
+   if (!handle->audio.enabled)
+      return -1;
+
    size_t written_frames = 0;
    while (written_frames < data->frames)
    {

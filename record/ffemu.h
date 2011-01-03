@@ -39,6 +39,12 @@ typedef enum ffemu_container
    FFEMU_CONTAINER_MP4
 } ffemu_container;
 
+struct ffemu_rational
+{
+   unsigned num;
+   unsigned den;
+};
+
 // Parameters passed to ffemu_new()
 struct ffemu_params
 {
@@ -48,12 +54,13 @@ struct ffemu_params
    // Desired output resolution.
    unsigned out_width;
    unsigned out_height;
+   float aspect_ratio;
 
    // Pixel format for video input.
    ffemu_pixel_format format;
 
    // FPS of video input.
-   double fps;
+   struct ffemu_rational fps;
 
    // Relative video quality. 0 is lossless (if available), 10 is very low quality. 
    // A value over 10 is codec defined if it will give even worse quality.
@@ -88,6 +95,7 @@ struct ffemu_video_data
    const void *data;
    unsigned width;
    unsigned height;
+   unsigned pitch;
 };
 
 struct ffemu_audio_data
