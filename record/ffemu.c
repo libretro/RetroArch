@@ -269,6 +269,7 @@ int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
    if (!handle->video.enabled)
       return -1;
 
+   // This is deprecated, can't find a replacement... :(
    struct SwsContext *conv_ctx = sws_getContext(data->width, data->height, PIX_FMT_RGB555LE,
          handle->params.out_width, handle->params.out_height, PIX_FMT_YUV420P, handle->params.rescaler == FFEMU_RESCALER_LANCZOS ? SWS_LANCZOS : SWS_POINT,
          NULL, NULL, NULL);
@@ -276,6 +277,9 @@ int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
    int linesize = data->pitch;
 
    sws_scale(conv_ctx, (const uint8_t* const*)&data->data, &linesize, 0, handle->params.out_width, handle->video.conv_frame->data, handle->video.conv_frame->linesize);
+
+   handle->video.conv_frame->pts = handle->video.frame_cnt;
+   handle->video.conv_frame->display_picture_number = handle->video.frame_cnt;
 
    int outsize = avcodec_encode_video(handle->video.codec, handle->video.outbuf, handle->video.outbuf_size, handle->video.conv_frame);
 
@@ -287,15 +291,18 @@ int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
    pkt.data = handle->video.outbuf;
    pkt.size = outsize;
 
-   pkt.pts = av_rescale_q(handle->video.frame_cnt++, handle->video.codec->time_base, handle->muxer.vstream->time_base);
-   pkt.dts = pkt.pts;
-   fprintf(stderr, "Video PTS: %lld\n", (long long)pkt.pts);
+   pkt.pts = av_rescale_q(handle->video.codec->coded_frame->pts, handle->video.codec->time_base, handle->muxer.vstream->time_base);
 
    if (handle->video.codec->coded_frame->key_frame)
       pkt.flags |= AV_PKT_FLAG_KEY;
 
-   if (av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
-      return -1;
+   if (pkt.size > 0)
+   {
+      if (av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
+         return -1;
+   }
+
+   handle->video.frame_cnt++;
 
    return 0;
 }
@@ -308,7 +315,6 @@ int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
    AVPacket pkt;
    av_init_packet(&pkt);
    pkt.stream_index = handle->muxer.astream->index;
-   pkt.dts = pkt.pts;
    pkt.data = handle->audio.outbuf;
 
    size_t written_frames = 0;
@@ -333,22 +339,21 @@ int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
          if (handle->audio.codec->coded_frame && handle->audio.codec->coded_frame->pts != AV_NOPTS_VALUE)
          {
             pkt.pts = av_rescale_q(handle->audio.codec->coded_frame->pts, handle->audio.codec->time_base, handle->muxer.astream->time_base);
-            pkt.dts = pkt.pts;
-            fprintf(stderr, "Audio PTS: %d\n", (int)pkt.pts);
          }
          else
          {
             pkt.pts = av_rescale_q(handle->audio.frame_cnt, handle->audio.codec->time_base, handle->muxer.astream->time_base);
-            pkt.dts = pkt.pts;
-            fprintf(stderr, "Audio PTS (calculated): %d\n", (int)pkt.pts);
          }
 
          pkt.flags |= AV_PKT_FLAG_KEY;
          handle->audio.frames_in_buffer = 0;
          handle->audio.frame_cnt += handle->audio.codec->frame_size;
 
-         if (av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
-            return -1;
+         if (pkt.size > 0)
+         {
+            if (av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
+               return -1;
+         }
       }
    }
    return 0;
@@ -368,18 +373,19 @@ int ffemu_finalize(ffemu_t *handle)
       do
       {
          out_size = avcodec_encode_video(handle->video.codec, handle->video.outbuf, handle->video.outbuf_size, NULL);
-         pkt.pts = av_rescale_q(handle->video.frame_cnt++, handle->video.codec->time_base, handle->muxer.vstream->time_base);
-         pkt.dts = pkt.pts;
+         pkt.pts = av_rescale_q(handle->video.codec->coded_frame->pts, handle->video.codec->time_base, handle->muxer.vstream->time_base);
 
          if (handle->video.codec->coded_frame->key_frame)
             pkt.flags |= AV_PKT_FLAG_KEY;
 
-
          pkt.size = out_size;
 
-         int err = av_interleaved_write_frame(handle->muxer.ctx, &pkt);
-         if (err < 0)
-            break;
+         if (pkt.size > 0)
+         {
+            int err = av_interleaved_write_frame(handle->muxer.ctx, &pkt);
+            if (err < 0)
+               break;
+         }
 
       } while (out_size > 0);
    }
