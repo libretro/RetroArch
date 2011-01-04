@@ -35,6 +35,8 @@ struct audio_info
    int16_t *buffer;
    size_t frames_in_buffer;
 
+   int64_t frame_cnt;
+
    void *outbuf;
    size_t outbuf_size;
 } audio;
@@ -58,7 +60,7 @@ struct ffemu
 static int map_audio_codec(ffemu_audio_codec codec)
 {
    (void)codec;
-   return CODEC_ID_AAC;
+   return CODEC_ID_VORBIS;
 }
 
 static int map_video_codec(ffemu_video_codec codec)
@@ -74,12 +76,16 @@ static int init_audio(struct audio_info *audio, struct ffemu_params *param)
       return -1;
 
    audio->codec = avcodec_alloc_context();
-   audio->codec->bit_rate = 192000;
-   audio->codec->sample_rate = param->samplerate;
-   audio->codec->channels = param->channels;
 
+   avcodec_get_context_defaults(audio->codec);
+   audio->codec->global_quality = 50000;
+   audio->codec->flags |= CODEC_FLAG_QSCALE;
+   audio->codec->sample_rate = param->samplerate;
+   audio->codec->time_base = (AVRational) { 1, param->samplerate };
+   audio->codec->channels = param->channels;
    if (avcodec_open(audio->codec, codec) != 0)
       return -1;
+
 
    audio->buffer = av_malloc(audio->codec->frame_size * param->channels * sizeof(int16_t));
    if (!audio->buffer)
@@ -134,6 +140,10 @@ static int init_video(struct video_info *video, struct ffemu_params *param)
    video->codec->time_base = (AVRational) {param->fps.den, param->fps.num};
    video->codec->crf = 23;
    video->codec->pix_fmt = PIX_FMT_YUV420P;
+   /////
+   video->codec->thread_count = 2;
+   /////
+   video->codec->sample_aspect_ratio = av_d2q(param->aspect_ratio * param->out_height / param->out_width, 255);
    init_x264_param(video->codec);
 
    if (avcodec_open(video->codec, codec) != 0)
@@ -170,6 +180,7 @@ static int init_muxer(ffemu_t *handle)
       if (ctx->oformat->flags & AVFMT_GLOBALHEADER)
          handle->video.codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
       handle->muxer.vstream = stream;
+      handle->muxer.vstream->sample_aspect_ratio = handle->video.codec->sample_aspect_ratio;
    }
 
    if (handle->audio.enabled)
@@ -292,7 +303,6 @@ int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
    AVPacket pkt;
    av_init_packet(&pkt);
    pkt.stream_index = handle->muxer.astream->index;
-   pkt.pts = AV_NOPTS_VALUE;
    pkt.dts = pkt.pts;
    pkt.data = handle->audio.outbuf;
 
@@ -311,9 +321,13 @@ int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
 
       if (handle->audio.frames_in_buffer == (size_t)handle->audio.codec->frame_size)
       {
+         handle->audio.frame_cnt += handle->audio.codec->frame_size;
+
          size_t out_size = avcodec_encode_audio(handle->audio.codec, handle->audio.outbuf, handle->audio.outbuf_size, handle->audio.buffer);
          //fwrite(handle->audio.outbuf, 1, out_size, handle->audio.file);
          pkt.size = out_size;
+         pkt.pts = av_rescale_q(handle->audio.frame_cnt, handle->audio.codec->time_base, handle->muxer.astream->time_base);
+         pkt.dts = pkt.pts;
          handle->audio.frames_in_buffer = 0;
 
          if (av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
