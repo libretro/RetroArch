@@ -361,7 +361,8 @@ int main(int argc, char *argv[])
    ////////
    struct ffemu_params params = {
       .vcodec = FFEMU_VIDEO_H264,
-      .acodec = FFEMU_AUDIO_AAC,
+      .acodec = FFEMU_AUDIO_VORBIS,
+      .rescaler = FFEMU_RESCALER_POINT,
       .out_width = 512,
       .out_height = 448,
       .channels = 2,

@@ -32,6 +32,12 @@ typedef enum ffemu_pixel_format
    FFEMU_FMT_RGB888,
 } ffemu_pixel_format;
 
+typedef enum ffemu_rescaler
+{
+   FFEMU_RESCALER_LANCZOS,
+   FFEMU_RESCALER_POINT
+} ffemu_rescaler;
+
 struct ffemu_rational
 {
    unsigned num;
@@ -48,6 +54,9 @@ struct ffemu_params
    unsigned out_width;
    unsigned out_height;
    float aspect_ratio;
+
+   // Rescaler for video.
+   ffemu_rescaler rescaler;
 
    // Pixel format for video input.
    ffemu_pixel_format format;
