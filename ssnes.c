@@ -88,7 +88,7 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    /////////////
    struct ffemu_video_data ffemu_data = {
       .data = data,
-      .pitch = 2048,
+      .pitch = height == 448 || height == 478 ? 1024 : 2048,
       .width = width,
       .height = height
    };
@@ -358,6 +358,8 @@ int main(int argc, char *argv[])
    load_save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
    load_save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
 
+   struct ffemu_rational ntsc_fps = {60000, 1001};
+   struct ffemu_rational pal_fps = {50000, 1001};
    ////////
    struct ffemu_params params = {
       .vcodec = FFEMU_VIDEO_H264,
@@ -368,7 +370,7 @@ int main(int argc, char *argv[])
       .channels = 2,
       .samplerate = 32040,
       .filename = "/tmp/ssnes.mkv",
-      .fps = {60000, 1001},
+      .fps = snes_get_region() == SNES_REGION_NTSC ? ntsc_fps : pal_fps,
       .aspect_ratio = 4.0/3
    };
    g_extern.rec = ffemu_new(&params);

@@ -57,12 +57,14 @@ struct ffemu
    struct ffemu_params params;
 };
 
+// Currently hardcoded atm. :)
 static int map_audio_codec(ffemu_audio_codec codec)
 {
    (void)codec;
-   return CODEC_ID_FLAC;
+   return CODEC_ID_VORBIS;
 }
 
+// Currently hardcoded atm. :)
 static int map_video_codec(ffemu_video_codec codec)
 {
    (void)codec;
@@ -78,6 +80,8 @@ static int init_audio(struct audio_info *audio, struct ffemu_params *param)
    audio->codec = avcodec_alloc_context();
 
    avcodec_get_context_defaults(audio->codec);
+
+   // Hardcode this atm.
    audio->codec->global_quality = 100000;
    audio->codec->flags |= CODEC_FLAG_QSCALE;
    audio->codec->sample_rate = param->samplerate;
@@ -100,6 +104,7 @@ static int init_audio(struct audio_info *audio, struct ffemu_params *param)
    return 0;
 }
 
+// Hardcode.
 static void init_x264_param(AVCodecContext *c)
 {
    c->coder_type = 1;  // coder = 1
@@ -141,6 +146,7 @@ static int init_video(struct video_info *video, struct ffemu_params *param)
    video->codec->height = param->out_height;
    video->codec->time_base = (AVRational) {param->fps.den, param->fps.num};
    video->codec->crf = 25;
+   // Might have to change this later to account for RGB codecs.
    video->codec->pix_fmt = PIX_FMT_YUV420P;
    ///// Is this element in all recent ffmpeg versions?
    video->codec->thread_count = 4;
@@ -151,6 +157,7 @@ static int init_video(struct video_info *video, struct ffemu_params *param)
    if (avcodec_open(video->codec, codec) != 0)
       return -1;
 
+   // Allocate a big buffer :p ffmpeg API doesn't seem to give us some clues how big this buffer should be.
    video->outbuf_size = 1000000;
    video->outbuf = av_malloc(video->outbuf_size);
 
@@ -264,12 +271,14 @@ void ffemu_free(ffemu_t *handle)
    }
 }
 
+// Need to make this thread based, but hey.
 int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
 {
    if (!handle->video.enabled)
       return -1;
 
    // This is deprecated, can't find a replacement... :(
+   // Hardcode pixel format for now (SNES)
    struct SwsContext *conv_ctx = sws_getContext(data->width, data->height, PIX_FMT_RGB555LE,
          handle->params.out_width, handle->params.out_height, PIX_FMT_YUV420P, handle->params.rescaler == FFEMU_RESCALER_LANCZOS ? SWS_LANCZOS : SWS_POINT,
          NULL, NULL, NULL);
@@ -282,6 +291,9 @@ int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
    handle->video.conv_frame->display_picture_number = handle->video.frame_cnt;
 
    int outsize = avcodec_encode_video(handle->video.codec, handle->video.outbuf, handle->video.outbuf_size, handle->video.conv_frame);
+
+   if (outsize < 0)
+      return -1;
 
    sws_freeContext(conv_ctx);
 
@@ -333,8 +345,10 @@ int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
       if (handle->audio.frames_in_buffer == (size_t)handle->audio.codec->frame_size)
       {
 
-         size_t out_size = avcodec_encode_audio(handle->audio.codec, handle->audio.outbuf, handle->audio.outbuf_size, handle->audio.buffer);
-         //fwrite(handle->audio.outbuf, 1, out_size, handle->audio.file);
+         int out_size = avcodec_encode_audio(handle->audio.codec, handle->audio.outbuf, handle->audio.outbuf_size, handle->audio.buffer);
+         if (out_size < 0)
+            return -1;
+
          pkt.size = out_size;
          if (handle->audio.codec->coded_frame && handle->audio.codec->coded_frame->pts != AV_NOPTS_VALUE)
          {
@@ -361,7 +375,7 @@ int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
 
 int ffemu_finalize(ffemu_t *handle)
 {
-   // Push out delayed frames.
+   // Push out delayed frames. (MPEG codecs)
    if (handle->video.enabled)
    {
       AVPacket pkt;
@@ -390,6 +404,7 @@ int ffemu_finalize(ffemu_t *handle)
       } while (out_size > 0);
    }
 
+   // Write final data.
    av_write_trailer(handle->muxer.ctx);
 
    return 0;
