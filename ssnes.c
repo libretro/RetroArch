@@ -366,6 +366,7 @@ int main(int argc, char *argv[])
       .out_height = 448,
       .channels = 2,
       .samplerate = 32040,
+      .filename = "/tmp/ssnes.mkv",
       .fps = {60000, 1001},
       .aspect_ratio = 4.0/3
    };
@@ -400,6 +401,7 @@ int main(int argc, char *argv[])
    }
 
    ///////////
+   ffemu_finalize(g_extern.rec);
    ffemu_free(g_extern.rec);
    ///////////
 

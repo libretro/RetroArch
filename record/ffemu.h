@@ -32,13 +32,6 @@ typedef enum ffemu_pixel_format
    FFEMU_FMT_RGB888,
 } ffemu_pixel_format;
 
-// Available muxer containers
-typedef enum ffemu_container
-{
-   FFEMU_CONTAINER_MKV,
-   FFEMU_CONTAINER_MP4
-} ffemu_container;
-
 struct ffemu_rational
 {
    unsigned num;
@@ -88,6 +81,9 @@ struct ffemu_params
 
    // Define some audio codec dependent option.
    uint64_t audio_opt;
+
+   // Filename to dump to.
+   const char *filename;
 };
 
 struct ffemu_video_data
@@ -104,11 +100,6 @@ struct ffemu_audio_data
    size_t frames;
 };
 
-struct ffemu_muxer
-{
-   ffemu_container container;
-};
-
 typedef struct ffemu ffemu_t;
 
 ffemu_t *ffemu_new(const struct ffemu_params *params);
@@ -116,8 +107,8 @@ void ffemu_free(ffemu_t* handle);
 
 int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data);
 int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data);
+int ffemu_finalize(ffemu_t *handle);
 
-int ffemu_mux(ffemu_t *handle, const char *path, const struct ffemu_muxer *muxer);
 
 
 #ifdef __cplusplus

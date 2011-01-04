@@ -1,5 +1,7 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/mathematics.h>
+#include <libavutil/avutil.h>
+#include <libavutil/avstring.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 #include <stdint.h>
@@ -16,13 +18,12 @@ struct video_info
 
    AVFrame *conv_frame;
    uint8_t *conv_frame_buf;
-   int64_t frame_count;
-
-   FILE *file;
-   char *file_name;
+   int64_t frame_cnt;
 
    uint8_t *outbuf;
    size_t outbuf_size;
+
+   AVFormatContext *format;
 
 } video;
 
@@ -36,15 +37,20 @@ struct audio_info
 
    void *outbuf;
    size_t outbuf_size;
-
-   FILE *file;
-   char *file_name;
 } audio;
+
+struct muxer_info
+{
+   AVFormatContext *ctx;
+   AVStream *astream;
+   AVStream *vstream;
+};
 
 struct ffemu
 {
    struct video_info video;
    struct audio_info audio;
+   struct muxer_info muxer;
    
    struct ffemu_params params;
 };
@@ -58,7 +64,7 @@ static int map_audio_codec(ffemu_audio_codec codec)
 static int map_video_codec(ffemu_video_codec codec)
 {
    (void)codec;
-   return CODEC_ID_MPEG2VIDEO;
+   return CODEC_ID_H264;
 }
 
 static int init_audio(struct audio_info *audio, struct ffemu_params *param)
@@ -68,7 +74,7 @@ static int init_audio(struct audio_info *audio, struct ffemu_params *param)
       return -1;
 
    audio->codec = avcodec_alloc_context();
-   audio->codec->bit_rate = 128000;
+   audio->codec->bit_rate = 192000;
    audio->codec->sample_rate = param->samplerate;
    audio->codec->channels = param->channels;
 
@@ -79,16 +85,41 @@ static int init_audio(struct audio_info *audio, struct ffemu_params *param)
    if (!audio->buffer)
       return -1;
 
-   audio->file = fopen("/tmp/audio.aac", "wb");
-   if (!audio->file)
-      return -1;
-
    audio->outbuf_size = 50000;
    audio->outbuf = av_malloc(audio->outbuf_size);
    if (!audio->outbuf)
       return -1;
 
    return 0;
+}
+
+static void init_x264_param(AVCodecContext *c)
+{
+   c->coder_type = 1;  // coder = 1
+   c->flags|=CODEC_FLAG_LOOP_FILTER;   // flags=+loop
+   c->me_cmp|= 1;  // cmp=+chroma, where CHROMA = 1
+   c->partitions|=X264_PART_I8X8+X264_PART_I4X4+X264_PART_P8X8+X264_PART_B8X8; // partitions=+parti8x8+parti4x4+partp8x8+partb8x8
+   c->me_method=ME_HEX;    // me_method=hex
+   c->me_subpel_quality = 7;   // subq=7
+   c->me_range = 16;   // me_range=16
+   c->gop_size = 250;  // g=250
+   c->keyint_min = 25; // keyint_min=25
+   c->scenechange_threshold = 40;  // sc_threshold=40
+   c->i_quant_factor = 0.71; // i_qfactor=0.71
+   c->b_frame_strategy = 1;  // b_strategy=1
+   c->qcompress = 0.6; // qcomp=0.6
+   c->qmin = 10;   // qmin=10
+   c->qmax = 51;   // qmax=51
+   c->max_qdiff = 4;   // qdiff=4
+   c->max_b_frames = 3;    // bf=3
+   c->refs = 3;    // refs=3
+   c->directpred = 1;  // directpred=1
+   c->trellis = 1; // trellis=1
+   c->flags2|=CODEC_FLAG2_BPYRAMID+CODEC_FLAG2_MIXED_REFS+CODEC_FLAG2_WPRED+CODEC_FLAG2_8X8DCT+CODEC_FLAG2_FASTPSKIP;  // flags2=+bpyramid+mixed_refs+wpred+dct8x8+fastpskip
+   c->weighted_p_pred = 2; // wpredp=2
+
+   // libx264-main.ffpreset preset
+   c->flags2|=CODEC_FLAG2_8X8DCT;c->flags2^=CODEC_FLAG2_8X8DCT;
 }
 
 static int init_video(struct video_info *video, struct ffemu_params *param)
@@ -98,13 +129,12 @@ static int init_video(struct video_info *video, struct ffemu_params *param)
       return -1;
 
    video->codec = avcodec_alloc_context();
-   video->codec->bit_rate = 400000;
    video->codec->width = param->out_width;
    video->codec->height = param->out_height;
    video->codec->time_base = (AVRational) {param->fps.den, param->fps.num};
-   video->codec->gop_size = 10;
-   video->codec->max_b_frames = 1;
+   video->codec->crf = 23;
    video->codec->pix_fmt = PIX_FMT_YUV420P;
+   init_x264_param(video->codec);
 
    if (avcodec_open(video->codec, codec) != 0)
       return -1;
@@ -117,8 +147,45 @@ static int init_video(struct video_info *video, struct ffemu_params *param)
    video->conv_frame = avcodec_alloc_frame();
    avpicture_fill((AVPicture*)video->conv_frame, video->conv_frame_buf, PIX_FMT_YUV420P, param->out_width, param->out_height);
 
-   video->file = fopen("/tmp/video.mpg", "wb");
+   return 0;
+}
 
+static int init_muxer(ffemu_t *handle)
+{
+   AVFormatContext *ctx = avformat_alloc_context();
+   av_strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
+   ctx->oformat = av_guess_format(NULL, ctx->filename, NULL);
+   if (url_fopen(&ctx->pb, ctx->filename, URL_WRONLY) < 0)
+   {
+      av_free(ctx);
+      return -1;
+   }
+
+   int stream_cnt = 0;
+   if (handle->video.enabled)
+   {
+      AVStream *stream = av_new_stream(ctx, stream_cnt++);
+      stream->codec = handle->video.codec;
+
+      if (ctx->oformat->flags & AVFMT_GLOBALHEADER)
+         handle->video.codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
+      handle->muxer.vstream = stream;
+   }
+
+   if (handle->audio.enabled)
+   {
+      AVStream *stream = av_new_stream(ctx, stream_cnt++);
+      stream->codec = handle->audio.codec;
+
+      if (ctx->oformat->flags & AVFMT_GLOBALHEADER)
+         handle->audio.codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
+      handle->muxer.astream = stream;
+   }
+
+   if (av_write_header(ctx) < 0)
+      return -1;
+
+   handle->muxer.ctx = ctx;
    return 0;
 }
 
@@ -144,6 +211,9 @@ ffemu_t *ffemu_new(const struct ffemu_params *params)
    if (handle->audio.enabled)
       if (init_audio(&handle->audio, &handle->params) < 0)
          goto error;
+
+   if (init_muxer(handle) < 0)
+      goto error;
 
    return handle;
 
@@ -177,11 +247,6 @@ void ffemu_free(ffemu_t *handle)
       if (handle->video.conv_frame_buf)
          av_free(handle->video.conv_frame_buf);
 
-      if (handle->video.file)
-         fclose(handle->video.file);
-      if (handle->audio.file)
-         fclose(handle->audio.file);
-
       free(handle);
    }
 }
@@ -199,15 +264,22 @@ int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
 
    sws_scale(conv_ctx, (const uint8_t* const*)&data->data, &linesize, 0, handle->params.out_width, handle->video.conv_frame->data, handle->video.conv_frame->linesize);
 
-   handle->video.conv_frame->pts = handle->video.frame_count;
-   handle->video.conv_frame->display_picture_number = handle->video.frame_count;
-   handle->video.frame_count++;
-
    int outsize = avcodec_encode_video(handle->video.codec, handle->video.outbuf, handle->video.outbuf_size, handle->video.conv_frame);
 
-   fwrite(handle->video.outbuf, 1, outsize, handle->video.file);
+   //fwrite(handle->video.outbuf, 1, outsize, handle->video.file);
 
    sws_freeContext(conv_ctx);
+
+   AVPacket pkt;
+   av_init_packet(&pkt);
+   pkt.stream_index = handle->muxer.vstream->index;
+   pkt.data = handle->video.outbuf;
+   pkt.size = outsize;
+   pkt.pts = av_rescale_q(handle->video.frame_cnt++, handle->video.codec->time_base, handle->muxer.vstream->time_base);
+   pkt.dts = pkt.pts;
+
+   if (av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
+      return -1;
 
    return 0;
 }
@@ -216,6 +288,13 @@ int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
 {
    if (!handle->audio.enabled)
       return -1;
+
+   AVPacket pkt;
+   av_init_packet(&pkt);
+   pkt.stream_index = handle->muxer.astream->index;
+   pkt.pts = AV_NOPTS_VALUE;
+   pkt.dts = pkt.pts;
+   pkt.data = handle->audio.outbuf;
 
    size_t written_frames = 0;
    while (written_frames < data->frames)
@@ -233,18 +312,45 @@ int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
       if (handle->audio.frames_in_buffer == (size_t)handle->audio.codec->frame_size)
       {
          size_t out_size = avcodec_encode_audio(handle->audio.codec, handle->audio.outbuf, handle->audio.outbuf_size, handle->audio.buffer);
-         fwrite(handle->audio.outbuf, 1, out_size, handle->audio.file);
+         //fwrite(handle->audio.outbuf, 1, out_size, handle->audio.file);
+         pkt.size = out_size;
          handle->audio.frames_in_buffer = 0;
+
+         if (av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
+            return -1;
       }
    }
    return 0;
 }
 
-int ffemu_mux(ffemu_t *handle, const char *path, const struct ffemu_muxer *muxer)
+int ffemu_finalize(ffemu_t *handle)
 {
-   (void)handle;
-   (void)path;
-   (void)muxer;
-   return -1;
+   // Push out delayed frames.
+   if (handle->video.enabled)
+   {
+      AVPacket pkt;
+      av_init_packet(&pkt);
+      pkt.stream_index = handle->muxer.vstream->index;
+      pkt.data = handle->video.outbuf;
+
+      int out_size = 0;
+      do
+      {
+         out_size = avcodec_encode_video(handle->video.codec, handle->video.outbuf, handle->video.outbuf_size, NULL);
+
+         pkt.size = out_size;
+         pkt.pts = av_rescale_q(handle->video.frame_cnt++, handle->video.codec->time_base, handle->muxer.vstream->time_base);
+         pkt.dts = pkt.pts;
+
+         int err = av_interleaved_write_frame(handle->muxer.ctx, &pkt);
+         if (err < 0)
+            break;
+
+      } while (out_size > 0);
+   }
+
+   av_write_trailer(handle->muxer.ctx);
+
+   return 0;
 }
 
