@@ -24,6 +24,7 @@
 #include "driver.h"
 #include <stdio.h>
 #include "record/ffemu.h"
+#include "config.h"
 
 
 #define MAX_PLAYERS 2
@@ -84,7 +85,11 @@ struct global
    char config_path[256];
    char basename[256];
 
+#ifdef HAVE_FFMPEG
    ffemu_t *rec;
+   char record_path[256];
+   bool recording;
+#endif
 };
 
 void parse_config(void);

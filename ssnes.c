@@ -85,15 +85,18 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if ( !g_extern.video_active )
       return;
 
-   /////////////
-   struct ffemu_video_data ffemu_data = {
-      .data = data,
-      .pitch = height == 448 || height == 478 ? 1024 : 2048,
-      .width = width,
-      .height = height
-   };
-   ffemu_push_video(g_extern.rec, &ffemu_data);
-   /////////////
+#ifdef HAVE_FFMPEG
+   if (g_extern.recording)
+   {
+      struct ffemu_video_data ffemu_data = {
+         .data = data,
+         .pitch = height == 448 || height == 478 ? 1024 : 2048,
+         .width = width,
+         .height = height
+      };
+      ffemu_push_video(g_extern.rec, &ffemu_data);
+   }
+#endif
 
 #ifdef HAVE_FILTER
    uint16_t output_filter[width * height * 4 * 4];
@@ -142,16 +145,19 @@ static void audio_sample(uint16_t left, uint16_t right)
    if ( !g_extern.audio_active )
       return;
 
-   /////////
-   static int16_t static_data[2];
-   static_data[0] = left;
-   static_data[1] = right;
-   struct ffemu_audio_data ffemu_data = {
-      .data = static_data,
-      .frames = 1
-   };
-   ffemu_push_audio(g_extern.rec, &ffemu_data);
-   //////////
+#ifdef HAVE_FFMPEG
+   if (g_extern.recording)
+   {
+      static int16_t static_data[2];
+      static_data[0] = left;
+      static_data[1] = right;
+      struct ffemu_audio_data ffemu_data = {
+         .data = static_data,
+         .frames = 1
+      };
+      ffemu_push_audio(g_extern.rec, &ffemu_data);
+   }
+#endif
 
    static float data[AUDIO_CHUNK_SIZE_NONBLOCKING];
    static int data_ptr = 0;
@@ -210,15 +216,24 @@ static void fill_pathname(char *out_path, char *in_path, const char *replace)
    strcat(out_path, replace);
 }
 
+#ifdef HAVE_FFMPEG
+#define FFMPEG_HELP_QUARK " | -r/--record "
+#else
+#define FFMPEG_HELP_QUARK
+#endif
+
 static void print_help(void)
 {
    puts("=================================================");
    puts("ssnes: Simple Super Nintendo Emulator (libsnes)");
    puts("=================================================");
-   puts("Usage: ssnes [rom file] [-h/--help | -s/--save]");
+   puts("Usage: ssnes [rom file] [-h/--help | -s/--save" FFMPEG_HELP_QUARK "]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
    puts("\t-c/--config: Path for config file. Defaults to $XDG_CONFIG_HOME/ssnes/ssnes.cfg");
+#ifdef HAVE_FFMPEG
+   puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
+#endif
    puts("\t-v/--verbose: Verbose logging");
 }
 
@@ -233,13 +248,23 @@ static void parse_input(int argc, char *argv[])
    struct option opts[] = {
       { "help", 0, NULL, 'h' },
       { "save", 1, NULL, 's' },
+#ifdef HAVE_FFMPEG
+      { "record", 1, NULL, 'r' },
+#endif
       { "verbose", 0, NULL, 'v' },
       { "config", 0, NULL, 'c' },
       { NULL, 0, NULL, 0 }
    };
 
    int option_index = 0;
-   char optstring[] = "hs:vc:";
+
+#ifdef HAVE_FFMPEG
+#define FFMPEG_RECORD_ARG "r:"
+#else
+#define FFMPEG_RECORD_ARG
+#endif
+
+   char optstring[] = "hs:vc:" FFMPEG_RECORD_ARG;
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -265,6 +290,13 @@ static void parse_input(int argc, char *argv[])
          case 'c':
             strncpy(g_extern.config_path, optarg, sizeof(g_extern.config_path) - 1);
             break;
+
+#ifdef HAVE_FFMPEG
+         case 'r':
+            strncpy(g_extern.record_path, optarg, sizeof(g_extern.record_path) - 1);
+            g_extern.recording = true;
+            break;
+#endif
 
          case '?':
             print_help();
@@ -358,24 +390,33 @@ int main(int argc, char *argv[])
    load_save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
    load_save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
 
-   struct ffemu_rational ntsc_fps = {60000, 1001};
-   struct ffemu_rational pal_fps = {50000, 1001};
-   ////////
-   struct ffemu_params params = {
-      .vcodec = FFEMU_VIDEO_H264,
-      .acodec = FFEMU_AUDIO_VORBIS,
-      .rescaler = FFEMU_RESCALER_POINT,
-      .out_width = 512,
-      .out_height = 448,
-      .channels = 2,
-      .samplerate = 32040,
-      .filename = "/tmp/ssnes.mkv",
-      .fps = snes_get_region() == SNES_REGION_NTSC ? ntsc_fps : pal_fps,
-      .aspect_ratio = 4.0/3
-   };
-   g_extern.rec = ffemu_new(&params);
-   assert(g_extern.rec);
-   /////////
+#ifdef HAVE_FFMPEG
+   // Hardcode these options at the moment. Should be specificed in the config file later on.
+   if (g_extern.recording)
+   {
+      struct ffemu_rational ntsc_fps = {60000, 1001};
+      struct ffemu_rational pal_fps = {50000, 1001};
+      struct ffemu_params params = {
+         .vcodec = FFEMU_VIDEO_H264,
+         .acodec = FFEMU_AUDIO_VORBIS,
+         .rescaler = FFEMU_RESCALER_POINT,
+         .out_width = 512,
+         .out_height = 448,
+         .channels = 2,
+         .samplerate = 32040,
+         .filename = g_extern.record_path,
+         .fps = snes_get_region() == SNES_REGION_NTSC ? ntsc_fps : pal_fps,
+         .aspect_ratio = 4.0/3
+      };
+      SSNES_LOG("Recording with FFmpeg to %s.\n", g_extern.record_path);
+      g_extern.rec = ffemu_new(&params);
+      if (!g_extern.rec)
+      {
+         SSNES_ERR("Failed to start FFmpeg recording.\n");
+         g_extern.recording = false;
+      }
+   }
+#endif
 
    ///// TODO: Modular friendly!!!
    for(;;)
@@ -403,10 +444,13 @@ int main(int argc, char *argv[])
       psnes_run();
    }
 
-   ///////////
-   ffemu_finalize(g_extern.rec);
-   ffemu_free(g_extern.rec);
-   ///////////
+#ifdef HAVE_FFMPEG
+   if (g_extern.recording)
+   {
+      ffemu_finalize(g_extern.rec);
+      ffemu_free(g_extern.rec);
+   }
+#endif
 
    save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
    save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
