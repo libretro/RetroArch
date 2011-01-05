@@ -20,13 +20,14 @@ check_lib GLFW -lglfw glfwInit
 check_critical GLFW "Cannot find GLFW library."
 
 check_lib CG -lCg cgCreateContext
+check_pkgconf XML libxml-2.0
 
 check_lib SRC -lsamplerate src_callback_new
 
 check_lib DYNAMIC -ldl dlopen
 
 # Creates config.mk.
-VARS="ALSA OSS AL RSOUND ROAR JACK GLFW FILTER CG DYNAMIC"
+VARS="ALSA OSS AL RSOUND ROAR JACK GLFW FILTER CG XML DYNAMIC"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 
