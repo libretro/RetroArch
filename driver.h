@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#define SNES_FAST_FORWARD_KEY 0x666 // Hurr, durr
+#define SSNES_FAST_FORWARD_KEY 0x666 // Hurr, durr
 void set_fast_forward_button(bool state);
 
 struct snes_keybind

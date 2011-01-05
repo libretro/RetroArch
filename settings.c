@@ -177,6 +177,12 @@ void parse_config(void)
       free(tmp_str);
    }
 
+   if (config_get_string(conf, "video_bsnes_shader", &tmp_str))
+   {
+      strncpy(g_settings.video.bsnes_shader_path, tmp_str, sizeof(g_settings.video.bsnes_shader_path));
+      free(tmp_str);
+   }
+
 #ifdef HAVE_FILTER
    if (config_get_string(conf, "video_filter", &tmp_str))
    {
@@ -263,8 +269,6 @@ void parse_config(void)
 
    read_keybinds(conf);
 
-   // TODO: Keybinds.
-
    config_file_free(conf);
 }
 
@@ -291,7 +295,7 @@ static const struct bind_map bind_maps[2][13] = {
       { "input_player1_right",   "input_player1_right_btn",    "input_player1_right_axis", SNES_DEVICE_ID_JOYPAD_RIGHT }, 
       { "input_player1_up",      "input_player1_up_btn",       "input_player1_up_axis", SNES_DEVICE_ID_JOYPAD_UP }, 
       { "input_player1_down",    "input_player1_down_btn",     "input_player1_down_axis", SNES_DEVICE_ID_JOYPAD_DOWN }, 
-      { "input_toggle_fast_forward", "input_toggle_fast_forward_btn", NULL, SNES_FAST_FORWARD_KEY }
+      { "input_toggle_fast_forward", "input_toggle_fast_forward_btn", NULL, SSNES_FAST_FORWARD_KEY }
    }, 
    {
       { "input_player2_a",       "input_player2_a_btn",        NULL, SNES_DEVICE_ID_JOYPAD_A }, 
@@ -306,7 +310,7 @@ static const struct bind_map bind_maps[2][13] = {
       { "input_player2_right",   "input_player2_right_btn",    "input_player2_right_axis", SNES_DEVICE_ID_JOYPAD_RIGHT }, 
       { "input_player2_up",      "input_player2_up_btn",       "input_player2_up_axis", SNES_DEVICE_ID_JOYPAD_UP }, 
       { "input_player2_down",    "input_player2_down_btn",     "input_player2_down_axis", SNES_DEVICE_ID_JOYPAD_DOWN }, 
-      { "input_toggle_fast_forward", "input_toggle_fast_forward_btn", NULL, SNES_FAST_FORWARD_KEY }
+      { "input_toggle_fast_forward", "input_toggle_fast_forward_btn", NULL, SSNES_FAST_FORWARD_KEY }
    }
 };
 

@@ -150,7 +150,7 @@ static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, b
    // Checks if button is pressed, and sets fast-forwarding state
    bool pressed = false;
    for ( int i = 0; snes_keybinds[i].id != -1; i++ )
-      if ( snes_keybinds[i].id == SNES_FAST_FORWARD_KEY )
+      if ( snes_keybinds[i].id == SSNES_FAST_FORWARD_KEY )
          set_fast_forward_button(glfw_is_pressed(port_num, &snes_keybinds[i], buttons, axes));
       else if ( !pressed && snes_keybinds[i].id == (int)id )
          pressed = glfw_is_pressed(port_num, &snes_keybinds[i], buttons, axes);
