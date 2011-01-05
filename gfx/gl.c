@@ -220,6 +220,8 @@ static inline void gl_shader_set_params(unsigned width, unsigned height,
 #endif
 }
 
+#define SNES_ASPECT_RATIO (4.0/3)
+
 static void GLFWCALL resize(int width, int height)
 {
    glMatrixMode(GL_PROJECTION);
@@ -228,7 +230,7 @@ static void GLFWCALL resize(int width, int height)
 
    if ( keep_aspect )
    {
-      float desired_aspect = 4.0/3;
+      float desired_aspect = SNES_ASPECT_RATIO;
       float device_aspect = (float)width / height;
 
       // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
@@ -405,8 +407,8 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
 
    glBindTexture(GL_TEXTURE_2D, gl->texture);
 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
 
