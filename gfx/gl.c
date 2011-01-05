@@ -30,8 +30,11 @@
 
 
 #ifdef HAVE_CG
-#include <Cg/cg.h>
-#include <Cg/cgGL.h>
+#include "shader_cg.h"
+#endif
+
+#ifdef HAVE_XML
+#include "shader_glsl.h"
 #endif
 
 static const GLfloat vertexes[] = {
@@ -49,23 +52,10 @@ static const GLfloat tex_coords[] = {
 };
 
 static bool keep_aspect = true;
-#ifdef HAVE_CG
-static CGparameter cg_mvp_matrix;
-static bool cg_active = false;
-#endif
 static GLuint gl_width = 0, gl_height = 0;
 typedef struct gl
 {
    bool vsync;
-#ifdef HAVE_CG
-   CGcontext cgCtx;
-   CGprogram cgFPrg;
-   CGprogram cgVPrg;
-   CGprofile cgFProf;
-   CGprofile cgVProf;
-   CGparameter cg_video_size, cg_texture_size, cg_output_size;
-   CGparameter cg_Vvideo_size, cg_Vtexture_size, cg_Voutput_size; // Vertexes
-#endif
    GLuint texture;
    GLuint tex_filter;
 
@@ -160,7 +150,7 @@ static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, b
    // Checks if button is pressed, and sets fast-forwarding state
    bool pressed = false;
    for ( int i = 0; snes_keybinds[i].id != -1; i++ )
-      if ( snes_keybinds[i].id == SNES_FAST_FORWARD_KEY )
+      if ( snes_keybinds[i].id == SSNES_FAST_FORWARD_KEY )
          set_fast_forward_button(glfw_is_pressed(port_num, &snes_keybinds[i], buttons, axes));
       else if ( !pressed && snes_keybinds[i].id == (int)id )
          pressed = glfw_is_pressed(port_num, &snes_keybinds[i], buttons, axes);
@@ -180,6 +170,61 @@ static const input_driver_t input_glfw = {
    .ident = "glfw"
 };
 
+static inline bool gl_shader_init(void)
+{
+   if (strlen(g_settings.video.cg_shader_path) > 0 && strlen(g_settings.video.bsnes_shader_path) > 0)
+      SSNES_WARN("Both Cg and bSNES XML shader are defined in config file. Cg shader will be selected by default.\n");
+
+#ifdef HAVE_CG
+   if (strlen(g_settings.video.cg_shader_path) > 0)
+      return gl_cg_init(g_settings.video.cg_shader_path);
+#endif
+
+#ifdef HAVE_XML
+   if (strlen(g_settings.video.bsnes_shader_path) > 0)
+      return gl_glsl_init(g_settings.video.bsnes_shader_path);
+#endif
+
+   return true;
+}
+
+static inline void gl_shader_deinit(void)
+{
+#ifdef HAVE_CG
+   gl_cg_deinit();
+#endif
+
+#ifdef HAVE_XML
+   gl_glsl_deinit();
+#endif
+}
+
+static inline void gl_shader_set_proj_matrix(void)
+{
+#ifdef HAVE_CG
+   gl_cg_set_proj_matrix();
+#endif
+
+#ifdef HAVE_XML
+   gl_glsl_set_proj_matrix();
+#endif
+}
+
+static inline void gl_shader_set_params(unsigned width, unsigned height, 
+      unsigned tex_width, unsigned tex_height, 
+      unsigned out_width, unsigned out_height)
+{
+#ifdef HAVE_CG
+   gl_cg_set_params(width, height, tex_width, tex_height, out_width, out_height);
+#endif
+
+#ifdef HAVE_XML
+   gl_glsl_set_params(width, height, tex_width, tex_height, out_width, out_height);
+#endif
+}
+
+#define SNES_ASPECT_RATIO (4.0/3)
+
 static void GLFWCALL resize(int width, int height)
 {
    glMatrixMode(GL_PROJECTION);
@@ -188,7 +233,7 @@ static void GLFWCALL resize(int width, int height)
 
    if ( keep_aspect )
    {
-      float desired_aspect = 4.0/3;
+      float desired_aspect = SNES_ASPECT_RATIO;
       float device_aspect = (float)width / height;
 
       // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
@@ -215,10 +260,9 @@ static void GLFWCALL resize(int width, int height)
    glOrtho(0, 1, 0, 1, -1, 1);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
-#ifdef HAVE_CG
-   if (cg_active)
-      cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
-#endif
+
+   gl_shader_set_proj_matrix();
+
    gl_width = out_width;
    gl_height = out_height;
 }
@@ -260,18 +304,7 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-#if HAVE_CG
-   if (cg_active)
-   {
-      cgGLSetParameter2f(gl->cg_video_size, width, height);
-      cgGLSetParameter2f(gl->cg_texture_size, gl->tex_w, gl->tex_h);
-      cgGLSetParameter2f(gl->cg_output_size, gl_width, gl_height);
-
-      cgGLSetParameter2f(gl->cg_Vvideo_size, width, height);
-      cgGLSetParameter2f(gl->cg_Vtexture_size, gl->tex_w, gl->tex_h);
-      cgGLSetParameter2f(gl->cg_Voutput_size, gl_width, gl_height);
-   }
-#endif
+   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl_width, gl_height);
 
    if (width != gl->last_width || height != gl->last_height) // res change. need to clear out texture.
    {
@@ -310,10 +343,8 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
 static void gl_free(void *data)
 {
    gl_t *gl = data;
-#ifdef HAVE_CG
-   if (cg_active)
-      cgDestroyContext(gl->cgCtx);
-#endif
+
+   gl_shader_deinit();
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDeleteTextures(1, &gl->texture);
@@ -352,6 +383,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    if (!res)
    {
       glfwTerminate();
+      free(gl);
       return NULL;
    }
 
@@ -378,8 +410,8 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
 
    glBindTexture(GL_TEXTURE_2D, gl->texture);
 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
 
@@ -400,60 +432,10 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    gl->last_width = gl->tex_w;
    gl->last_height = gl->tex_h;
 
-#ifdef HAVE_CG
-   cg_active = false;
-   if (strlen(g_settings.video.cg_shader_path) > 0)
-   {
-      SSNES_LOG("Loading Cg file: %s\n", g_settings.video.cg_shader_path);
-      gl->cgCtx = cgCreateContext();
-      if (gl->cgCtx == NULL)
-      {
-         fprintf(stderr, "Failed to create Cg context\n");
-         goto error;
-      }
-      gl->cgFProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
-      gl->cgVProf = cgGLGetLatestProfile(CG_GL_VERTEX);
-      if (gl->cgFProf == CG_PROFILE_UNKNOWN || gl->cgVProf == CG_PROFILE_UNKNOWN)
-      {
-         fprintf(stderr, "Invalid profile type\n");
-         goto error;
-      }
-      cgGLSetOptimalOptions(gl->cgFProf);
-      cgGLSetOptimalOptions(gl->cgVProf);
-      gl->cgFPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, g_settings.video.cg_shader_path, gl->cgFProf, "main_fragment", 0);
-      gl->cgVPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, g_settings.video.cg_shader_path, gl->cgVProf, "main_vertex", 0);
-      if (gl->cgFPrg == NULL || gl->cgVPrg == NULL)
-      {
-         CGerror err = cgGetError();
-         fprintf(stderr, "CG error: %s\n", cgGetErrorString(err));
-         goto error;
-      }
-      cgGLLoadProgram(gl->cgFPrg);
-      cgGLLoadProgram(gl->cgVPrg);
-      cgGLEnableProfile(gl->cgFProf);
-      cgGLEnableProfile(gl->cgVProf);
-      cgGLBindProgram(gl->cgFPrg);
-      cgGLBindProgram(gl->cgVPrg);
-
-      gl->cg_video_size = cgGetNamedParameter(gl->cgFPrg, "IN.video_size");
-      gl->cg_texture_size = cgGetNamedParameter(gl->cgFPrg, "IN.texture_size");
-      gl->cg_output_size = cgGetNamedParameter(gl->cgFPrg, "IN.output_size");
-      gl->cg_Vvideo_size = cgGetNamedParameter(gl->cgVPrg, "IN.video_size");
-      gl->cg_Vtexture_size = cgGetNamedParameter(gl->cgVPrg, "IN.texture_size");
-      gl->cg_Voutput_size = cgGetNamedParameter(gl->cgVPrg, "IN.output_size");
-      cg_mvp_matrix = cgGetNamedParameter(gl->cgVPrg, "modelViewProj");
-      cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
-      cg_active = true;
-   }
-#endif
+   gl_shader_init();
 
    *input = &input_glfw;
    return gl;
-#ifdef HAVE_CG
-error:
-   free(gl);
-   return NULL;
-#endif
 }
 
 const video_driver_t video_gl = {

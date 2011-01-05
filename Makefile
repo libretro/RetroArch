@@ -5,6 +5,8 @@ TARGET = ssnes
 OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o record/ffemu.o
 
 LIBS = -lsamplerate -lavformat -lavutil -lavcodec -lswscale
+LIBS = -lsamplerate
+DEFINES =
 
 ifeq ($(HAVE_RSOUND), 1)
    OBJ += audio/rsound.o
@@ -36,7 +38,14 @@ ifeq ($(HAVE_GLFW), 1)
 endif
 
 ifeq ($(HAVE_CG), 1)
+   OBJ += gfx/shader_cg.o
    LIBS += -lCg -lCgGL
+endif
+
+ifeq ($(HAVE_XML), 1)
+   OBJ += gfx/shader_glsl.o
+   LIBS += $(XML_LIBS)
+   DEFINES += $(XML_CFLAGS)
 endif
 
 ifeq ($(HAVE_FILTER), 1)
@@ -65,7 +74,7 @@ ssnes: $(OBJ)
 	$(CXX) -o $@ $(OBJ) $(LIBS) $(CFLAGS)
 
 %.o: %.c config.h config.mk
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 install: $(TARGET)
 	install -m755 $(TARGET) $(DESTDIR)/$(PREFIX)/bin 

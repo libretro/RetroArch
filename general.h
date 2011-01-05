@@ -42,6 +42,7 @@ struct settings
       bool smooth;
       bool force_aspect;
       char cg_shader_path[256];
+      char bsnes_shader_path[256];
       unsigned filter;
    } video;
 
@@ -98,6 +99,10 @@ extern struct global g_extern;
 
 #define SSNES_ERR(msg, args...) do { \
    fprintf(stderr, "SSNES [ERROR] :: " msg, ##args); \
+   } while(0)
+
+#define SSNES_WARN(msg, args...) do { \
+   fprintf(stderr, "SSNES [WARN] :: " msg, ##args); \
    } while(0)
 
 #endif
