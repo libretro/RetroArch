@@ -98,4 +98,8 @@ extern struct global g_extern;
    fprintf(stderr, "SSNES [ERROR] :: " msg, ##args); \
    } while(0)
 
+#define SSNES_WARN(msg, args...) do { \
+   fprintf(stderr, "SSNES [WARN] :: " msg, ##args); \
+   } while(0)
+
 #endif

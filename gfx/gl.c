@@ -172,6 +172,9 @@ static const input_driver_t input_glfw = {
 
 static inline bool gl_shader_init(void)
 {
+   if (strlen(g_settings.video.cg_shader_path) > 0 && strlen(g_settings.video.bsnes_shader_path) > 0)
+      SSNES_WARN("Both Cg and bSNES XML shader are defined in config file. Cg shader will be selected by default.\n");
+
 #ifdef HAVE_CG
    if (strlen(g_settings.video.cg_shader_path) > 0)
       return gl_cg_init(g_settings.video.cg_shader_path);
