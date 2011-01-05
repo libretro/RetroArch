@@ -2,9 +2,8 @@ include config.mk
 
 TARGET = ssnes
 
-OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o record/ffemu.o
+OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o
 
-LIBS = -lsamplerate -lavformat -lavutil -lavcodec -lswscale
 LIBS = -lsamplerate
 DEFINES =
 
@@ -54,6 +53,12 @@ ifeq ($(HAVE_FILTER), 1)
    OBJ += hqflt/bleed.o
    OBJ += hqflt/ntsc.o
    OBJ += hqflt/snes_ntsc/snes_ntsc.o
+endif
+
+ifeq ($(HAVE_FFMPEG), 1)
+   OBJ += record/ffemu.o
+   LIBS += $(AVCODEC_LIBS) $(AVCORE_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS)
+   DEFINES += $(AVCODEC_CFLAGS) $(AVCORE_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS)
 endif
 
 ifeq ($(HAVE_DYNAMIC), 1)
