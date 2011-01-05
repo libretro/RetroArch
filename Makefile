@@ -36,6 +36,7 @@ ifeq ($(HAVE_GLFW), 1)
 endif
 
 ifeq ($(HAVE_CG), 1)
+   OBJ += gfx/shader_cg.o
    LIBS += -lCg -lCgGL
 endif
 
