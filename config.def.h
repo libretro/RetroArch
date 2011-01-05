@@ -19,8 +19,8 @@
 //
 //
 
-#ifndef __CONFIG_H
-#define __CONFIG_H
+#ifndef __CONFIG_DEF_H
+#define __CONFIG_DEF_H
 
 #include <GL/glfw.h>
 #include <stdbool.h>
