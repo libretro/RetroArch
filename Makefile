@@ -4,7 +4,7 @@ TARGET = ssnes
 
 OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o
 
-LIBS = -lsamplerate
+LIBS = -lsamplerate -lSDL
 DEFINES =
 
 ifeq ($(HAVE_RSOUND), 1)
@@ -31,9 +31,10 @@ ifeq ($(HAVE_JACK),1)
    LIBS += -ljack
 endif
 
-ifeq ($(HAVE_GLFW), 1)
-   OBJ += gfx/gl.o
-   LIBS += -lglfw
+ifeq ($(HAVE_SDL), 1)
+   OBJ += gfx/gl.o input/sdl.o
+   LIBS += $(SDL_LIBS) -lGL
+   DEFINES += $(SDL_CFLAGS)
 endif
 
 ifeq ($(HAVE_CG), 1)
@@ -93,6 +94,7 @@ clean:
 	rm -f audio/*.o
 	rm -f conf/*.o
 	rm -f gfx/*.o
+	rm -f record/*.o
 	rm -f hqflt/*.o
 	rm -f hqflt/snes_ntsc/*.o
 	rm -f $(TARGET)

@@ -23,8 +23,11 @@
 #include <string.h>
 #include "general.h"
 
+#define NO_SDL_GLEXT
 #include <GL/gl.h>
-#include <GL/glfw.h>
+//#include <GL/glfw.h>
+#include <SDL/SDL.h>
+#include <SDL/SDL_opengl.h>
 #include <stdlib.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -135,19 +138,19 @@ error:
 bool gl_glsl_init(const char *path)
 {
    // Load shader functions.
-   glCreateProgram = glfwGetProcAddress("glCreateProgram");
-   glUseProgram = glfwGetProcAddress("glUseProgram");
-   glCreateShader = glfwGetProcAddress("glCreateShader");
-   glDeleteShader = glfwGetProcAddress("glDeleteShader");
-   glShaderSource = glfwGetProcAddress("glShaderSource");
-   glCompileShader = glfwGetProcAddress("glCompileShader");
-   glAttachShader = glfwGetProcAddress("glAttachShader");
-   glDetachShader = glfwGetProcAddress("glDetachShader");
-   glLinkProgram = glfwGetProcAddress("glLinkProgram");
-   glGetUniformLocation = glfwGetProcAddress("glGetUniformLocation");
-   glUniform1i = glfwGetProcAddress("glUniform1i");
-   glUniform2fv = glfwGetProcAddress("glUniform2fv");
-   glUniform4fv = glfwGetProcAddress("glUniform4fv");
+   glCreateProgram = SDL_GL_GetProcAddress("glCreateProgram");
+   glUseProgram = SDL_GL_GetProcAddress("glUseProgram");
+   glCreateShader = SDL_GL_GetProcAddress("glCreateShader");
+   glDeleteShader = SDL_GL_GetProcAddress("glDeleteShader");
+   glShaderSource = SDL_GL_GetProcAddress("glShaderSource");
+   glCompileShader = SDL_GL_GetProcAddress("glCompileShader");
+   glAttachShader = SDL_GL_GetProcAddress("glAttachShader");
+   glDetachShader = SDL_GL_GetProcAddress("glDetachShader");
+   glLinkProgram = SDL_GL_GetProcAddress("glLinkProgram");
+   glGetUniformLocation = SDL_GL_GetProcAddress("glGetUniformLocation");
+   glUniform1i = SDL_GL_GetProcAddress("glUniform1i");
+   glUniform2fv = SDL_GL_GetProcAddress("glUniform2fv");
+   glUniform4fv = SDL_GL_GetProcAddress("glUniform4fv");
 
    SSNES_LOG("Checking GLSL shader support ...\n");
    bool shader_support = glCreateProgram && glUseProgram && glCreateShader

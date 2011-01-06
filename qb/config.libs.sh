@@ -16,8 +16,8 @@ check_lib RSOUND -lrsound rsd_init
 check_lib ROAR -lroar roar_vs_new
 check_lib JACK -ljack jack_client_open
 
-check_lib GLFW -lglfw glfwInit
-check_critical GLFW "Cannot find GLFW library."
+check_pkgconf SDL SDL_gfx
+check_critical SDL "Cannot find SDL library."
 
 check_lib CG -lCg cgCreateContext
 check_pkgconf XML libxml-2.0
@@ -37,7 +37,7 @@ check_lib SRC -lsamplerate src_callback_new
 check_lib DYNAMIC -ldl dlopen
 
 # Creates config.mk and config.h.
-VARS="ALSA OSS AL RSOUND ROAR JACK GLFW FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE"
+VARS="ALSA OSS AL RSOUND ROAR JACK SDL FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 

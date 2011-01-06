@@ -50,6 +50,12 @@ static const video_driver_t *video_drivers[] = {
 #endif
 };
 
+static const input_driver_t *input_drivers[] = {
+#ifdef HAVE_SDL
+   &input_sdl,
+#endif
+};
+
 static void find_audio_driver(void)
 {
    for (int i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
@@ -81,6 +87,24 @@ static void find_video_driver(void)
    SSNES_ERR("Couldn't find any video driver named \"%s\"\n", g_settings.video.driver);
    fprintf(stderr, "Available video drivers are:\n");
    for (int i = 0; i < sizeof(video_drivers) / sizeof(video_driver_t*); i++)
+      fprintf(stderr, "\t%s\n", video_drivers[i]->ident);
+
+   exit(1);
+}
+
+static void find_input_driver(void)
+{
+   for (int i = 0; i < sizeof(input_drivers) / sizeof(input_driver_t*); i++)
+   {
+      if (strcasecmp(g_settings.input.driver, input_drivers[i]->ident) == 0)
+      {
+         driver.input = input_drivers[i];
+         return;
+      }
+   }
+   SSNES_ERR("Couldn't find any input driver named \"%s\"\n", g_settings.input.driver);
+   fprintf(stderr, "Available video drivers are:\n");
+   for (int i = 0; i < sizeof(input_drivers) / sizeof(input_driver_t*); i++)
       fprintf(stderr, "\t%s\n", video_drivers[i]->ident);
 
    exit(1);
@@ -141,6 +165,7 @@ void init_video_input(void)
    int scale = 2;
 
    find_video_driver();
+   find_input_driver();
 
    // We multiply scales with 2 to allow for hi-res games.
 #if HAVE_FILTER
@@ -177,18 +202,22 @@ void init_video_input(void)
       exit(1);
    }
 
+   // Video driver also provides an input driver.
    if ( driver.input != NULL )
    {
       driver.input_data = driver.video_data;
    }
-   else
+   else // We use our configured input driver.
    {
       driver.input = tmp;
       if (driver.input != NULL)
       {
          driver.input_data = driver.input->init();
          if ( driver.input_data == NULL )
+         {
+            SSNES_ERR("Cannot init input driver. Exiting ...\n");
             exit(1);
+         }
       }
       else
       {

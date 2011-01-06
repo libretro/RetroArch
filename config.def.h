@@ -22,7 +22,7 @@
 #ifndef __CONFIG_DEF_H
 #define __CONFIG_DEF_H
 
-#include <GL/glfw.h>
+#include <SDL/SDL.h>
 #include <stdbool.h>
 #include "libsnes.hpp"
 #include "driver.h"
@@ -39,9 +39,12 @@
 #define AUDIO_AL 5
 #define AUDIO_JACK 6
 ////////////////////////
+#define INPUT_SDL 7
+////////////////////////
 
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL
 #define AUDIO_DEFAULT_DRIVER AUDIO_ALSA
+#define INPUT_DEFAULT_DRIVER INPUT_SDL
 
 
 ////////////////
@@ -115,48 +118,47 @@ static const bool audio_sync = true;
 // Player 1
 static const struct snes_keybind snes_keybinds_1[] = {
    // SNES button                 |   keyboard key   | js btn | js axis |
-   { SNES_DEVICE_ID_JOYPAD_A,             'X',          1,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_B,             'Z',          0,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_X,             'S',          3,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_Y,             'A',          2,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_L,             'Q',          4,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_R,             'W',          5,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_LEFT,    GLFW_KEY_LEFT,     11,       AXIS_NEG(0) },
-   { SNES_DEVICE_ID_JOYPAD_RIGHT,   GLFW_KEY_RIGHT,    12,       AXIS_POS(0) },
-   { SNES_DEVICE_ID_JOYPAD_UP,      GLFW_KEY_UP,       13,       AXIS_POS(1) },
-   { SNES_DEVICE_ID_JOYPAD_DOWN,    GLFW_KEY_DOWN,     14,       AXIS_NEG(1) },
-   { SNES_DEVICE_ID_JOYPAD_START,   GLFW_KEY_ENTER,     7,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_SELECT,  GLFW_KEY_RSHIFT,    6,       AXIS_NONE },
-   { SSNES_FAST_FORWARD_KEY,        GLFW_KEY_SPACE,    10,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_A,          SDLK_x,          1,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_B,          SDLK_z,          0,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_X,          SDLK_s,          3,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_Y,          SDLK_a,          2,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_L,          SDLK_q,          4,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_R,          SDLK_w,          5,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_LEFT,       SDLK_LEFT,      11,       AXIS_NEG(0) },
+   { SNES_DEVICE_ID_JOYPAD_RIGHT,      SDLK_RIGHT,     12,       AXIS_POS(0) },
+   { SNES_DEVICE_ID_JOYPAD_UP,         SDLK_UP,        13,       AXIS_POS(1) },
+   { SNES_DEVICE_ID_JOYPAD_DOWN,       SDLK_DOWN,      14,       AXIS_NEG(1) },
+   { SNES_DEVICE_ID_JOYPAD_START,      SDLK_RETURN,     7,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_SELECT,     SDLK_RSHIFT,     6,       AXIS_NONE },
+   { SSNES_FAST_FORWARD_KEY,           SDLK_SPACE,     10,       AXIS_NONE },
    { -1 }
 };
 
 // Player 2
 static const struct snes_keybind snes_keybinds_2[] = {
    // SNES button                 |   keyboard key   | js btn | js axis |
-   { SNES_DEVICE_ID_JOYPAD_A,             'B',          1,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_B,             'V',          0,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_X,             'G',          3,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_Y,             'F',          2,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_L,             'R',          4,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_R,             'T',          5,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_LEFT,          'J',         11,       AXIS_NEG(0) },
-   { SNES_DEVICE_ID_JOYPAD_RIGHT,         'L',         12,       AXIS_POS(0) },
-   { SNES_DEVICE_ID_JOYPAD_UP,            'I',         13,       AXIS_POS(1) },
-   { SNES_DEVICE_ID_JOYPAD_DOWN,          'K',         14,       AXIS_NEG(1) },
-   { SNES_DEVICE_ID_JOYPAD_START,         'P',          6,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_SELECT,        'O',          7,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_A,          SDLK_b,          1,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_B,          SDLK_v,          0,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_X,          SDLK_g,          3,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_Y,          SDLK_f,          2,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_L,          SDLK_r,          4,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_R,          SDLK_t,          5,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_LEFT,       SDLK_j,         11,       AXIS_NEG(0) },
+   { SNES_DEVICE_ID_JOYPAD_RIGHT,      SDLK_l,         12,       AXIS_POS(0) },
+   { SNES_DEVICE_ID_JOYPAD_UP,         SDLK_i,         13,       AXIS_POS(1) },
+   { SNES_DEVICE_ID_JOYPAD_DOWN,       SDLK_k,         14,       AXIS_NEG(1) },
+   { SNES_DEVICE_ID_JOYPAD_START,      SDLK_p,          6,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_SELECT,     SDLK_o,          7,       AXIS_NONE },
    { -1 }
 };
 
 ///// Save state
-#define SAVE_STATE_KEY GLFW_KEY_F2
+#define SAVE_STATE_KEY SDLK_F2
 ///// Load state
-#define LOAD_STATE_KEY GLFW_KEY_F4
+#define LOAD_STATE_KEY SDLK_F4
 
 //// Toggles between fullscreen and windowed mode.
-#define TOGGLE_FULLSCREEN 'F'
-
+#define TOGGLE_FULLSCREEN SDLK_f
 
 
 #endif

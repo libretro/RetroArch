@@ -15,11 +15,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define GL_GLEXT_PROTOTYPES
 
 #include "driver.h"
-#include <GL/glfw.h>
-#include <GL/glext.h>
+
 #include <stdint.h>
 #include "libsnes.hpp"
 #include <stdio.h>
@@ -28,6 +26,12 @@
 #include "general.h"
 #include "config.h"
 
+#define NO_SDL_GLEXT
+#include <SDL/SDL.h>
+#include <SDL/SDL_opengl.h>
+
+#define GL_GLEXT_PROTOTYPES
+#include <GL/glext.h>
 
 #ifdef HAVE_CG
 #include "shader_cg.h"
@@ -65,110 +69,6 @@ typedef struct gl
    GLfloat tex_coords[8];
 } gl_t;
 
-
-static void glfw_input_poll(void *data)
-{
-   (void)data;
-   glfwPollEvents();
-}
-
-#define BUTTONS_MAX 128
-#define AXES_MAX 128
-
-static unsigned joypad_id[2];
-static unsigned joypad_buttons[2];
-static unsigned joypad_axes[2];
-static bool joypad_inited = false;
-static unsigned joypad_count = 0;
-
-static int init_joypads(int max_pads)
-{
-   // Finds the first (two) joypads that are alive
-   int count = 0;
-   for ( int i = GLFW_JOYSTICK_1; (i <= GLFW_JOYSTICK_LAST) && (count < max_pads); i++ )
-   {
-      if ( glfwGetJoystickParam(i, GLFW_PRESENT) == GL_TRUE )
-      {
-         joypad_id[count] = i;
-         joypad_buttons[count] = glfwGetJoystickParam(i, GLFW_BUTTONS);
-         if (joypad_buttons[count] > BUTTONS_MAX)
-            joypad_buttons[count] = BUTTONS_MAX;
-         joypad_axes[count] = glfwGetJoystickParam(i, GLFW_AXES);
-         if (joypad_axes[count] > AXES_MAX)
-            joypad_axes[count] = AXES_MAX;
-         count++;
-      }
-   }
-   joypad_inited = true;
-   return count;
-}
-
-static bool glfw_is_pressed(int port_num, const struct snes_keybind *key, unsigned char *buttons, float *axes)
-{
-   if (glfwGetKey(key->key))
-      return true;
-   if (port_num >= joypad_count)
-      return false;
-   if (key->joykey < joypad_buttons[port_num] && buttons[key->joykey] == GLFW_PRESS)
-      return true;
-
-   if (key->joyaxis != AXIS_NONE)
-   {
-      if (AXIS_NEG_GET(key->joyaxis) < joypad_axes[port_num] && axes[AXIS_NEG_GET(key->joyaxis)] <= -g_settings.input.axis_threshold)
-         return true;
-      if (AXIS_POS_GET(key->joyaxis) < joypad_axes[port_num] && axes[AXIS_POS_GET(key->joyaxis)] >= g_settings.input.axis_threshold)
-         return true;
-   }
-   return false;
-}
-
-static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
-{
-   if ( device != SNES_DEVICE_JOYPAD )
-      return 0;
-
-   if ( !joypad_inited )
-      joypad_count = init_joypads(2);
-
-   int port_num = port ? 1 : 0;
-   unsigned char buttons[BUTTONS_MAX];
-   float axes[AXES_MAX];
-
-   if ( joypad_count > port_num ) 
-   {
-      glfwGetJoystickButtons(joypad_id[port_num], buttons, joypad_buttons[port_num]);
-      glfwGetJoystickPos(joypad_id[port_num], axes, joypad_axes[port_num]);
-   }
-
-
-   const struct snes_keybind *snes_keybinds;
-   if (port == SNES_PORT_1)
-      snes_keybinds = binds[0];
-   else
-      snes_keybinds = binds[1];
-
-   // Checks if button is pressed, and sets fast-forwarding state
-   bool pressed = false;
-   for ( int i = 0; snes_keybinds[i].id != -1; i++ )
-      if ( snes_keybinds[i].id == SSNES_FAST_FORWARD_KEY )
-         set_fast_forward_button(glfw_is_pressed(port_num, &snes_keybinds[i], buttons, axes));
-      else if ( !pressed && snes_keybinds[i].id == (int)id )
-         pressed = glfw_is_pressed(port_num, &snes_keybinds[i], buttons, axes);
-
-   return pressed;
-}
-
-static void glfw_free_input(void *data)
-{
-   free(data);
-}
-
-static const input_driver_t input_glfw = {
-   .poll = glfw_input_poll,
-   .input_state = glfw_input_state,
-   .free = glfw_free_input,
-   .ident = "glfw"
-};
 
 static inline bool gl_shader_init(void)
 {
@@ -225,7 +125,7 @@ static inline void gl_shader_set_params(unsigned width, unsigned height,
 
 #define SNES_ASPECT_RATIO (4.0/3)
 
-static void GLFWCALL resize(int width, int height)
+static void set_viewport(int width, int height)
 {
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
@@ -273,7 +173,7 @@ static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, i
    return frames/time;
 }
 
-static inline void show_fps(void)
+static void show_fps(void)
 {
    // Shows FPS in taskbar.
    static int frames = 0;
@@ -292,8 +192,8 @@ static inline void show_fps(void)
 
       float fps = tv_to_fps(&tmp_tv, &new_tv, 180);
 
-      snprintf(tmpstr, sizeof(tmpstr) - 1, "SSNES || FPS: %6.1f || Frames: %d", fps, frames);
-      glfwSetWindowTitle(tmpstr);
+      snprintf(tmpstr, sizeof(tmpstr), "SSNES || FPS: %6.1f || Frames: %d", fps, frames);
+      SDL_WM_SetCaption(tmpstr, NULL);
    }
    frames++;
 }
@@ -335,7 +235,7 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
    glDrawArrays(GL_QUADS, 0, 4);
 
    show_fps();
-   glfwSwapBuffers();
+   SDL_GL_SwapBuffers();
 
    return true;
 }
@@ -348,7 +248,7 @@ static void gl_free(void *data)
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDeleteTextures(1, &gl->texture);
-   glfwTerminate();
+   SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
 static void gl_set_nonblock_state(void *data, bool state)
@@ -356,15 +256,22 @@ static void gl_set_nonblock_state(void *data, bool state)
    gl_t *gl = data;
    if (gl->vsync)
    {
-      if (state)
-         glfwSwapInterval(0);
-      else
-         glfwSwapInterval(1);
+      SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, state ? 0 : 1);
+      //SDL_SetVideoMode(gl->width, gl->height, 32, SDL_OPENGL | (video->fullscreen ? SDL_FULLSCREEN : 0));
    }
 }
 
 static void* gl_init(video_info_t *video, const input_driver_t **input)
 {
+   if (SDL_Init(SDL_INIT_VIDEO) < 0)
+      return NULL;
+
+   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+   SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, video->vsync ? 1 : 0);
+
+   if (!SDL_SetVideoMode(video->width, video->height, 32, SDL_OPENGL | (video->fullscreen ? SDL_FULLSCREEN : 0)))
+      return NULL;
+
    gl_t *gl = calloc(1, sizeof(gl_t));
    if ( gl == NULL )
       return NULL;
@@ -375,25 +282,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    else
       gl->tex_filter = GL_NEAREST;
 
-   glfwInit();
-
-   int res;
-   res = glfwOpenWindow(video->width, video->height, 0, 0, 0, 0, 0, 0, (video->fullscreen) ? GLFW_FULLSCREEN : GLFW_WINDOW);
-
-   if (!res)
-   {
-      glfwTerminate();
-      free(gl);
-      return NULL;
-   }
-
-   glfwSetWindowSizeCallback(resize);
-
-   if ( video->vsync )
-      glfwSwapInterval(1); // Force vsync
-   else
-      glfwSwapInterval(0);
-   gl->vsync = video->vsync;
+   set_viewport(video->width, video->height);
 
    glEnable(GL_TEXTURE_2D);
    glDisable(GL_DITHER);
@@ -401,7 +290,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    glColor3f(1, 1, 1);
    glClearColor(0, 0, 0, 0);
 
-   glfwSetWindowTitle("SSNES");
+   SDL_WM_SetCaption("SSNES", NULL);
 
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
@@ -434,7 +323,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
 
    gl_shader_init();
 
-   *input = &input_glfw;
+   *input = NULL;
    return gl;
 }
 
@@ -443,7 +332,7 @@ const video_driver_t video_gl = {
    .frame = gl_frame,
    .set_nonblock_state = gl_set_nonblock_state,
    .free = gl_free,
-   .ident = "glfw"
+   .ident = "gl"
 };
 
 

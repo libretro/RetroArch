@@ -32,11 +32,12 @@ static void set_defaults(void)
 {
    const char *def_video = NULL;
    const char *def_audio = NULL;
+   const char *def_input = NULL;
 
    switch (VIDEO_DEFAULT_DRIVER)
    {
       case VIDEO_GL:
-         def_video = "glfw";
+         def_video = "gl";
          break;
       default:
          break;
@@ -63,12 +64,23 @@ static void set_defaults(void)
          break;
    }
 
+   switch (INPUT_DEFAULT_DRIVER)
+   {
+      case INPUT_SDL:
+         def_input = "sdl";
+         break;
+      default:
+         break;
+   }
+
    // No input atm ... It is in the GLFW driver.
 
    if (def_video)
       strncpy(g_settings.video.driver, def_video, sizeof(g_settings.video.driver) - 1);
    if (def_audio)
       strncpy(g_settings.audio.driver, def_audio, sizeof(g_settings.audio.driver) - 1);
+   if (def_input)
+      strncpy(g_settings.input.driver, def_input, sizeof(g_settings.input.driver) - 1);
 
    g_settings.video.xscale = xscale;
    g_settings.video.yscale = yscale;
@@ -97,7 +109,7 @@ static void set_defaults(void)
    g_settings.input.load_state_key = LOAD_STATE_KEY;
    g_settings.input.toggle_fullscreen_key = TOGGLE_FULLSCREEN;
    g_settings.input.axis_threshold = AXIS_THRESHOLD;
-   g_settings.input.exit_emulator_key = GLFW_KEY_ESC;
+   g_settings.input.exit_emulator_key = SDLK_ESCAPE;
 }
 
 void parse_config(void)
@@ -261,6 +273,11 @@ void parse_config(void)
       strncpy(g_settings.audio.driver, tmp_str, sizeof(g_settings.audio.driver) - 1);
       free(tmp_str);
    }
+   if (config_get_string(conf, "input_driver", &tmp_str))
+   {
+      strncpy(g_settings.input.driver, tmp_str, sizeof(g_settings.input.driver) - 1);
+      free(tmp_str);
+   }
    if (config_get_string(conf, "libsnes_path", &tmp_str))
    {
       strncpy(g_settings.libsnes, tmp_str, sizeof(g_settings.libsnes) - 1);
@@ -314,40 +331,40 @@ static const struct bind_map bind_maps[2][13] = {
    }
 };
 
-struct glfw_map
+struct key_map
 {
    const char *str;
    int key;
 };
 
 // Edit: Not portable to different input systems atm. Might move this map into the driver itself or something.
-static const struct glfw_map glfw_map[] = {
-   { "left", GLFW_KEY_LEFT },
-   { "right", GLFW_KEY_RIGHT },
-   { "up", GLFW_KEY_UP },
-   { "down", GLFW_KEY_DOWN },
-   { "enter", GLFW_KEY_ENTER },
-   { "tab", GLFW_KEY_TAB },
-   { "insert", GLFW_KEY_INSERT },
-   { "del", GLFW_KEY_DEL },
-   { "rshift", GLFW_KEY_RSHIFT },
-   { "shift", GLFW_KEY_LSHIFT },
-   { "ctrl", GLFW_KEY_LCTRL },
-   { "alt", GLFW_KEY_LALT },
-   { "space", GLFW_KEY_SPACE },
-   { "escape", GLFW_KEY_ESC },
-   { "f1", GLFW_KEY_F1 },
-   { "f2", GLFW_KEY_F2 },
-   { "f3", GLFW_KEY_F3 },
-   { "f4", GLFW_KEY_F4 },
-   { "f5", GLFW_KEY_F5 },
-   { "f6", GLFW_KEY_F6 },
-   { "f7", GLFW_KEY_F7 },
-   { "f8", GLFW_KEY_F8 },
-   { "f9", GLFW_KEY_F9 },
-   { "f10", GLFW_KEY_F10 },
-   { "f11", GLFW_KEY_F11 },
-   { "f12", GLFW_KEY_F12 },
+static const struct key_map sdlk_map[] = {
+   { "left", SDLK_LEFT },
+   { "right", SDLK_RIGHT },
+   { "up", SDLK_UP },
+   { "down", SDLK_DOWN },
+   { "enter", SDLK_RETURN },
+   { "tab", SDLK_TAB },
+   { "insert", SDLK_INSERT },
+   { "del", SDLK_DELETE },
+   { "rshift", SDLK_RSHIFT },
+   { "shift", SDLK_LSHIFT },
+   { "ctrl", SDLK_LCTRL },
+   { "alt", SDLK_LALT },
+   { "space", SDLK_SPACE },
+   { "escape", SDLK_ESCAPE },
+   { "f1", SDLK_F1 },
+   { "f2", SDLK_F2 },
+   { "f3", SDLK_F3 },
+   { "f4", SDLK_F4 },
+   { "f5", SDLK_F5 },
+   { "f6", SDLK_F6 },
+   { "f7", SDLK_F7 },
+   { "f8", SDLK_F8 },
+   { "f9", SDLK_F9 },
+   { "f10", SDLK_F10 },
+   { "f11", SDLK_F11 },
+   { "f12", SDLK_F12 },
 };
 
 static struct snes_keybind *find_snes_bind(unsigned port, int id)
@@ -362,23 +379,23 @@ static struct snes_keybind *find_snes_bind(unsigned port, int id)
    return NULL;
 }
 
-static int find_glfw_bind(const char *str)
+static int find_sdlk_bind(const char *str)
 {
-   for (int i = 0; i < sizeof(glfw_map)/sizeof(struct glfw_map); i++)
+   for (int i = 0; i < sizeof(sdlk_map)/sizeof(struct key_map); i++)
    {
-      if (strcasecmp(glfw_map[i].str, str) == 0)
-         return glfw_map[i].key;
+      if (strcasecmp(sdlk_map[i].str, str) == 0)
+         return sdlk_map[i].key;
    }
    return -1;
 }
 
-static int find_glfw_key(const char *str)
+static int find_sdlk_key(const char *str)
 {
    // If the bind is a normal key-press ...
    if (strlen(str) == 1 && isalpha(*str))
-      return toupper(*str);
+      return (int)SDLK_a + (tolower(*str) - (int)'a');
    else // Check if we have a special mapping for it.
-      return find_glfw_bind(str);
+      return find_sdlk_bind(str);
 }
 
 static void read_keybinds(config_file_t *conf)
@@ -397,7 +414,7 @@ static void read_keybinds(config_file_t *conf)
 
          if (bind_maps[j][i].key && config_get_string(conf, bind_maps[j][i].key, &tmp_key))
          {
-            int key = find_glfw_key(tmp_key);
+            int key = find_sdlk_key(tmp_key);
 
             if (key >= 0)
                bind->key = key;
@@ -432,28 +449,28 @@ static void read_keybinds(config_file_t *conf)
    char *tmp_str;
    if (config_get_string(conf, "input_toggle_fullscreen", &tmp_str))
    {
-      int key = find_glfw_key(tmp_str);
+      int key = find_sdlk_key(tmp_str);
       if (key >= 0)
          g_settings.input.toggle_fullscreen_key = key;
       free(tmp_str);
    }
    if (config_get_string(conf, "input_save_state", &tmp_str))
    {
-      int key = find_glfw_key(tmp_str);
+      int key = find_sdlk_key(tmp_str);
       if (key >= 0)
          g_settings.input.save_state_key = key;
       free(tmp_str);
    }
    if (config_get_string(conf, "input_load_state", &tmp_str))
    {
-      int key = find_glfw_key(tmp_str);
+      int key = find_sdlk_key(tmp_str);
       if (key >= 0)
          g_settings.input.load_state_key = key;
       free(tmp_str);
    }
    if (config_get_string(conf, "input_exit_emulator", &tmp_str))
    {
-      int key = find_glfw_key(tmp_str);
+      int key = find_sdlk_key(tmp_str);
       if (key >= 0)
          g_settings.input.exit_emulator_key = key;
       free(tmp_str);

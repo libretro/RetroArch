@@ -17,7 +17,6 @@
 
 
 #include <stdbool.h>
-#include <GL/glfw.h>
 #include <samplerate.h>
 #include <libsnes.hpp>
 #include <stdio.h>
@@ -421,20 +420,18 @@ int main(int argc, char *argv[])
    ///// TODO: Modular friendly!!!
    for(;;)
    {
-      bool quitting = glfwGetKey(g_settings.input.exit_emulator_key) || !glfwGetWindowParam(GLFW_OPENED);
-      
-      if ( quitting )
+      if (driver.input->key_pressed(driver.input_data, g_settings.input.exit_emulator_key))
          break;
 
-      if ( glfwGetKey( g_settings.input.save_state_key ))
+      if (driver.input->key_pressed(driver.input_data, g_settings.input.save_state_key))
       {
          write_file(statefile_name, serial_data, serial_size);
       }
 
-      else if ( glfwGetKey( g_settings.input.load_state_key ) )
+      else if (driver.input->key_pressed(driver.input_data, g_settings.input.load_state_key))
          load_state(statefile_name, serial_data, serial_size);
 
-      else if ( glfwGetKey( g_settings.input.toggle_fullscreen_key ) )
+      else if (driver.input->key_pressed(driver.input_data, g_settings.input.toggle_fullscreen_key))
       {
          g_settings.video.fullscreen = !g_settings.video.fullscreen;
          uninit_drivers();
