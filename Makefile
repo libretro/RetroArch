@@ -4,7 +4,7 @@ TARGET = ssnes
 
 OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o
 
-LIBS = -lsamplerate -lSDL
+LIBS = -lsamplerate
 DEFINES =
 
 ifeq ($(HAVE_RSOUND), 1)
