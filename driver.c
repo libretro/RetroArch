@@ -45,7 +45,7 @@ static const audio_driver_t *audio_drivers[] = {
 };
 
 static const video_driver_t *video_drivers[] = {
-#ifdef HAVE_GLFW
+#ifdef HAVE_SDL
    &video_gl,
 #endif
 };
