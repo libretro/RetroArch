@@ -26,6 +26,7 @@
 #include <stdbool.h>
 #include "libsnes.hpp"
 #include "driver.h"
+#include "config.h"
 #include <samplerate.h>
 
 
@@ -43,7 +44,21 @@
 ////////////////////////
 
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL
+
+#if HAVE_ALSA
 #define AUDIO_DEFAULT_DRIVER AUDIO_ALSA
+#elif HAVE_OSS
+#define AUDIO_DEFAULT_DRIVER AUDIO_OSS
+#elif HAVE_JACK
+#define AUDIO_DEFAULT_DRIVER AUDIO_JACK
+#elif HAVE_RSOUND
+#define AUDIO_DEFAULT_DRIVER AUDIO_RSOUND
+#elif HAVE_ROAR
+#define AUDIO_DEFAULT_DRIVER AUDIO_ROAR
+#elif HAVE_AL
+#define AUDIO_DEFAULT_DRIVER AUDIO_AL
+#endif
+
 #define INPUT_DEFAULT_DRIVER INPUT_SDL
 
 

@@ -34,6 +34,10 @@
 #define GL_GLEXT_PROTOTYPES
 #include <GL/glext.h>
 
+#ifndef _WIN32
+#include <GL/glx.h>
+#endif
+
 #ifdef HAVE_CG
 #include "shader_cg.h"
 #endif
@@ -271,12 +275,20 @@ static void gl_set_nonblock_state(void *data, bool state)
    if (gl->vsync)
    {
       SSNES_LOG("GL VSync => %s\n", state ? "off" : "on");
-      SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, state ? 0 : 1);
-      int attr = 0;
-      SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &attr);
-      if ((bool)attr == state)
-         SSNES_WARN("Couldn't change VSync settings. Fast forwarding might not work.\n");
-      //SDL_SetVideoMode(gl->win_width, gl->win_height, 32, SDL_OPENGL | SDL_RESIZABLE | (g_settings.video.fullscreen ? SDL_FULLSCREEN : 0));
+#ifdef _WIN32
+      static BOOL (APIENTRY wgl_swap_interval*)(int) = NULL;
+      if (!wgl_swap_interval)
+         SSNES_WARN("SDL VSync toggling seems to be broken, attempting to use WGL VSync call directly instead.\n");
+      if (!wgl_swap_interval) wgl_swap_interval = (BOOL (APIENTRY*)(int)) wglGetProcAddress("wglSwapIntervalEXT");
+      if (wgl_swap_interval) wgl_swap_interval(state ? 0 : 1);
+#else
+      static int (*glx_swap_interval)(int) = NULL;
+      if (!glx_swap_interval)
+         SSNES_WARN("SDL VSync toggling seems to be broken, attempting to use GLX VSync call directly instead.\n");
+      if (!glx_swap_interval) glx_swap_interval = (int (*)(int))glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalSGI");
+      if (!glx_swap_interval) glx_swap_interval = (int (*)(int))glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalMESA");
+      if (glx_swap_interval) glx_swap_interval(state ? 0 : 1);
+#endif
    }
 }
 

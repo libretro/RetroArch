@@ -73,8 +73,6 @@ static void set_defaults(void)
          break;
    }
 
-   // No input atm ... It is in the GLFW driver.
-
    if (def_video)
       strncpy(g_settings.video.driver, def_video, sizeof(g_settings.video.driver) - 1);
    if (def_audio)
@@ -129,6 +127,10 @@ void parse_config(void)
    }
    else
    {
+#ifdef _WIN32
+      // Just do something for now.
+      conf = config_file_new("ssnes.cfg");
+#else
       const char *xdg = getenv("XDG_CONFIG_HOME");
       const char *home = getenv("HOME");
       if (xdg)
@@ -148,6 +150,7 @@ void parse_config(void)
       // Try this as a last chance...
       if (!conf)
          conf = config_file_new("/etc/ssnes.cfg");
+#endif
    }
 
    set_defaults();
