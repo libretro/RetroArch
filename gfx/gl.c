@@ -272,6 +272,10 @@ static void gl_set_nonblock_state(void *data, bool state)
    {
       SSNES_LOG("GL VSync => %s\n", state ? "off" : "on");
       SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, state ? 0 : 1);
+      int attr = 0;
+      SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &attr);
+      if ((bool)attr == state)
+         SSNES_WARN("Couldn't change VSync settings. Fast forwarding might not work.\n");
       //SDL_SetVideoMode(gl->win_width, gl->win_height, 32, SDL_OPENGL | SDL_RESIZABLE | (g_settings.video.fullscreen ? SDL_FULLSCREEN : 0));
    }
 }
