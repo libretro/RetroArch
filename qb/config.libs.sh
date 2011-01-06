@@ -16,7 +16,7 @@ check_lib RSOUND -lrsound rsd_init
 check_lib ROAR -lroar roar_vs_new
 check_lib JACK -ljack jack_client_open
 
-check_pkgconf SDL sdl
+check_pkgconf SDL sdl 1.2.10
 check_critical SDL "Cannot find SDL library."
 
 check_lib CG -lCg cgCreateContext
