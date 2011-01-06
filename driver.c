@@ -103,7 +103,7 @@ static void find_input_driver(void)
       }
    }
    SSNES_ERR("Couldn't find any input driver named \"%s\"\n", g_settings.input.driver);
-   fprintf(stderr, "Available video drivers are:\n");
+   fprintf(stderr, "Available input drivers are:\n");
    for (int i = 0; i < sizeof(input_drivers) / sizeof(input_driver_t*); i++)
       fprintf(stderr, "\t%s\n", video_drivers[i]->ident);
 
@@ -194,7 +194,7 @@ void init_video_input(void)
    };
 
    const input_driver_t *tmp = driver.input;
-   driver.video_data = driver.video->init(&video, &driver.input);
+   driver.video_data = driver.video->init(&video, &driver.input, &driver.input_data);
 
    if ( driver.video_data == NULL )
    {
@@ -202,12 +202,8 @@ void init_video_input(void)
       exit(1);
    }
 
-   // Video driver also provides an input driver.
-   if ( driver.input != NULL )
-   {
-      driver.input_data = driver.video_data;
-   }
-   else // We use our configured input driver.
+   // Video driver didn't provide an input driver so we use configured one.
+   if (driver.input == NULL)
    {
       driver.input = tmp;
       if (driver.input != NULL)

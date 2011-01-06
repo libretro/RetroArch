@@ -23,15 +23,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <libsnes.hpp>
-
-typedef struct sdl_input
-{
-   bool quitting;
-   SDL_Joystick *joysticks[2];
-   unsigned num_axes[2];
-   unsigned num_buttons[2];
-   unsigned num_joysticks;
-} sdl_input_t;
+#include "sdl_input.h"
 
 static void* sdl_input_init(void)
 {
@@ -43,6 +35,8 @@ static void* sdl_input_init(void)
       return NULL;
 
    sdl->num_joysticks = SDL_NumJoysticks();
+   if (sdl->num_joysticks > 2)
+      sdl->num_joysticks = 2;
    for (unsigned i = 0; i < sdl->num_joysticks; i++)
    {
       sdl->joysticks[i] = SDL_JoystickOpen(i);
@@ -64,11 +58,6 @@ static void* sdl_input_init(void)
 
 static bool sdl_key_pressed(void *data, int key)
 {
-   // Check to see if we have to exit.
-   sdl_input_t *sdl = data;
-   if (sdl->quitting && key == g_settings.input.exit_emulator_key)
-      return true;
-
    int num_keys;
    Uint8 *keymap = SDL_GetKeyState(&num_keys);
 
@@ -98,7 +87,7 @@ static bool sdl_is_pressed(sdl_input_t *sdl, int port_num, const struct snes_key
       }
       if (AXIS_POS_GET(key->joyaxis) < sdl->num_axes[port_num])
       {
-         Sint16 val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_NEG_GET(key->joyaxis));
+         Sint16 val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_POS_GET(key->joyaxis));
          float scaled = (float)val / 0x8000;
          if (scaled > g_settings.input.axis_threshold)
             return true;
@@ -136,7 +125,7 @@ static void sdl_input_free(void *data)
    {
       sdl_input_t *sdl = data;
       for (int i = 0; i < sdl->num_joysticks; i++)
-         SDL_JoystickClose(i);
+         SDL_JoystickClose(sdl->joysticks[i]);
 
       free(data);
       SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
@@ -148,14 +137,31 @@ static void sdl_input_poll(void *data)
    SDL_PumpEvents();
    SDL_Event event;
 
-   // Search for SDL_QUIT
+   sdl_input_t *sdl = data;
+   // Search for events...
    while (SDL_PollEvent(&event))
    {
-      if (event.type == SDL_QUIT)
+      switch (event.type)
       {
-         sdl_input_t *sdl = data;
-         sdl->quitting = true;
-         break;
+         case SDL_QUIT:
+            if (sdl->quitting)
+            {
+               *sdl->quitting = true;
+               return;
+            }
+            break;
+
+         case SDL_VIDEORESIZE:
+            if (sdl->should_resize)
+            {
+               *sdl->new_width = event.resize.w;
+               *sdl->new_height = event.resize.h;
+               *sdl->should_resize = true;
+            }
+            break;
+            
+         default:
+            break;
       }
    }
 }

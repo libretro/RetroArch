@@ -72,10 +72,12 @@ typedef struct input_driver
 
 typedef struct video_driver
 {
-   void* (*init)(video_info_t *video, const input_driver_t **input); 
-   // Should the video driver act as an input driver as well? :)
+   void* (*init)(video_info_t *video, const input_driver_t **input, void **input_data); 
+   // Should the video driver act as an input driver as well? :) The video init might preinitialize an input driver to override the settings in case the video driver relies on input driver for event handling, e.g.
    bool (*frame)(void* data, const uint16_t* frame, int width, int height, int pitch);
    void (*set_nonblock_state)(void* data, bool toggle); // Should we care about syncing to vblank? Fast forwarding.
+   // Is the window still active?
+   bool (*alive)(void *data);
    void (*free)(void* data);
    const char *ident;
 } video_driver_t;

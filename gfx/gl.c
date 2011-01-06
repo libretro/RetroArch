@@ -29,6 +29,7 @@
 #define NO_SDL_GLEXT
 #include <SDL/SDL.h>
 #include <SDL/SDL_opengl.h>
+#include "input/sdl_input.h"
 
 #define GL_GLEXT_PROTOTYPES
 #include <GL/glext.h>
@@ -63,6 +64,13 @@ typedef struct gl
    GLuint texture;
    GLuint tex_filter;
 
+   bool should_resize;
+   bool quitting;
+
+   unsigned win_width;
+   unsigned win_height;
+   unsigned vp_width;
+   unsigned vp_height;
    unsigned last_width;
    unsigned last_height;
    unsigned tex_w, tex_h;
@@ -123,39 +131,37 @@ static inline void gl_shader_set_params(unsigned width, unsigned height,
 #endif
 }
 
-#define SNES_ASPECT_RATIO (4.0/3)
-
-static void set_viewport(int width, int height)
+static void set_viewport(gl_t *gl)
 {
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
-   GLuint out_width = width, out_height = height;
+   GLuint out_width = gl->win_width, out_height = gl->win_height;
 
    if ( keep_aspect )
    {
-      float desired_aspect = SNES_ASPECT_RATIO;
-      float device_aspect = (float)width / height;
+      float desired_aspect = g_settings.video.aspect_ratio;
+      float device_aspect = (float)gl->win_width / gl->win_height;
 
       // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
       // assume they are actually equal.
       if ( (int)(device_aspect*1000) > (int)(desired_aspect*1000) )
       {
          float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-         glViewport(width * (0.5 - delta), 0, 2.0 * width * delta, height);
-         out_width = (int)(2.0 * width * delta);
+         glViewport(gl->win_width * (0.5 - delta), 0, 2.0 * gl->win_width * delta, gl->win_height);
+         out_width = (int)(2.0 * gl->win_width * delta);
       }
 
       else if ( (int)(device_aspect*1000) < (int)(desired_aspect*1000) )
       {
          float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         glViewport(0, height * (0.5 - delta), width, 2.0 * height * delta);
-         out_height = (int)(2.0 * height * delta);
+         glViewport(0, gl->win_height * (0.5 - delta), gl->win_width, 2.0 * gl->win_height * delta);
+         out_height = (int)(2.0 * gl->win_height * delta);
       }
       else
-         glViewport(0, 0, width, height);
+         glViewport(0, 0, gl->win_width, gl->win_height);
    }
    else
-      glViewport(0, 0, width, height);
+      glViewport(0, 0, gl->win_width, gl->win_height);
 
    glOrtho(0, 1, 0, 1, -1, 1);
    glMatrixMode(GL_MODELVIEW);
@@ -163,8 +169,8 @@ static void set_viewport(int width, int height)
 
    gl_shader_set_proj_matrix();
 
-   gl_width = out_width;
-   gl_height = out_height;
+   gl->vp_width = out_width;
+   gl->vp_height = out_height;
 }
 
 static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)
@@ -202,6 +208,13 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
 {
    gl_t *gl = data;
 
+   if (gl->should_resize)
+   {
+      gl->should_resize = false;
+      SDL_SetVideoMode(gl->win_width, gl->win_height, 32, SDL_OPENGL | SDL_RESIZABLE | (g_settings.video.fullscreen ? SDL_FULLSCREEN : 0));
+      set_viewport(gl);
+   }
+
    glClear(GL_COLOR_BUFFER_BIT);
 
    gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl_width, gl_height);
@@ -235,6 +248,7 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
    glDrawArrays(GL_QUADS, 0, 4);
 
    show_fps();
+   glFlush();
    SDL_GL_SwapBuffers();
 
    return true;
@@ -256,12 +270,13 @@ static void gl_set_nonblock_state(void *data, bool state)
    gl_t *gl = data;
    if (gl->vsync)
    {
+      SSNES_LOG("GL VSync => %s\n", state ? "off" : "on");
       SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, state ? 0 : 1);
-      //SDL_SetVideoMode(gl->width, gl->height, 32, SDL_OPENGL | (video->fullscreen ? SDL_FULLSCREEN : 0));
+      //SDL_SetVideoMode(gl->win_width, gl->win_height, 32, SDL_OPENGL | SDL_RESIZABLE | (g_settings.video.fullscreen ? SDL_FULLSCREEN : 0));
    }
 }
 
-static void* gl_init(video_info_t *video, const input_driver_t **input)
+static void* gl_init(video_info_t *video, const input_driver_t **input, void **input_data)
 {
    if (SDL_Init(SDL_INIT_VIDEO) < 0)
       return NULL;
@@ -269,12 +284,28 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, video->vsync ? 1 : 0);
 
-   if (!SDL_SetVideoMode(video->width, video->height, 32, SDL_OPENGL | (video->fullscreen ? SDL_FULLSCREEN : 0)))
+   if (!SDL_SetVideoMode(video->width, video->height, 32, SDL_OPENGL | SDL_RESIZABLE | (video->fullscreen ? SDL_FULLSCREEN : 0)))
       return NULL;
+   
+   int attr = 0;
+   SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &attr);
+   if (attr <= 0 && video->vsync)
+      SSNES_WARN("GL VSync has not been enabled!\n");
+   attr = 0;
+   SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &attr);
+   if (attr <= 0)
+      SSNES_WARN("GL double buffer has not been enabled!\n");
+
+   // Remove that ugly mouse :D
+   SDL_ShowCursor(SDL_DISABLE);
 
    gl_t *gl = calloc(1, sizeof(gl_t));
-   if ( gl == NULL )
+   if (!gl)
       return NULL;
+
+   gl->win_width = video->width;
+   gl->win_height = video->height;
+   gl->vsync = video->vsync;
 
    keep_aspect = video->force_aspect;
    if ( video->smooth )
@@ -282,7 +313,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    else
       gl->tex_filter = GL_NEAREST;
 
-   set_viewport(video->width, video->height);
+   set_viewport(gl);
 
    glEnable(GL_TEXTURE_2D);
    glDisable(GL_DITHER);
@@ -323,13 +354,33 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
 
    gl_shader_init();
 
-   *input = NULL;
+   // Hook up SDL input driver to get SDL_QUIT events and RESIZE.
+   sdl_input_t *sdl_input = input_sdl.init();
+   if (sdl_input)
+   {
+      sdl_input->quitting = &gl->quitting;
+      sdl_input->should_resize = &gl->should_resize;
+      sdl_input->new_width = &gl->win_width;
+      sdl_input->new_height = &gl->win_height;
+      *input = &input_sdl;
+      *input_data = sdl_input;
+   }
+   else
+      *input = NULL;
+
    return gl;
+}
+
+static bool gl_alive(void *data)
+{
+   gl_t *gl = data;
+   return !gl->quitting;
 }
 
 const video_driver_t video_gl = {
    .init = gl_init,
    .frame = gl_frame,
+   .alive = gl_alive,
    .set_nonblock_state = gl_set_nonblock_state,
    .free = gl_free,
    .ident = "gl"

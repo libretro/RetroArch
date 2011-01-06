@@ -90,6 +90,7 @@ static void set_defaults(void)
    g_settings.video.vsync = vsync;
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
+   g_settings.video.aspect_ratio = SNES_ASPECT_RATIO;
 
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
@@ -182,6 +183,9 @@ void parse_config(void)
 
    if (config_get_bool(conf, "video_force_aspect", &tmp_bool))
       g_settings.video.force_aspect = tmp_bool;
+
+   if (config_get_double(conf, "video_aspect_ratio", &tmp_double))
+      g_settings.video.aspect_ratio = tmp_double;
 
    if (config_get_string(conf, "video_cg_shader", &tmp_str))
    {

@@ -417,10 +417,10 @@ int main(int argc, char *argv[])
    }
 #endif
 
-   ///// TODO: Modular friendly!!!
    for(;;)
    {
-      if (driver.input->key_pressed(driver.input_data, g_settings.input.exit_emulator_key))
+      if (driver.input->key_pressed(driver.input_data, g_settings.input.exit_emulator_key) ||
+            !driver.video->alive(driver.video_data))
          break;
 
       if (driver.input->key_pressed(driver.input_data, g_settings.input.save_state_key))

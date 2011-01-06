@@ -69,6 +69,8 @@ static const bool video_smooth = true;
 // On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 
 
+#define SNES_ASPECT_RATIO (4.0/3)
+
 ////////////////
 // Audio
 ////////////////
