@@ -17,7 +17,6 @@
 
 
 #include <stdbool.h>
-#include <samplerate.h>
 #include <libsnes.hpp>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,6 +29,9 @@
 #include "dynamic.h"
 #include "record/ffemu.h"
 #include <assert.h>
+#ifdef HAVE_SRC
+#include <samplerate.h>
+#endif
 
 struct global g_extern = {
    .video_active = true,

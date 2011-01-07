@@ -27,7 +27,10 @@
 #include "libsnes.hpp"
 #include "driver.h"
 #include "config.h"
+
+#ifdef HAVE_SRC
 #include <samplerate.h>
+#endif
 
 
 ///////////////// Drivers

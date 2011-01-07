@@ -4,13 +4,19 @@ TARGET = ssnes
 
 OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o
 
-LIBS = -lsamplerate
+LIBS =
 DEFINES =
+
+ifeq ($(HAVE_SRC), 1)
+   LIBS += $(SRC_LIBS)
+   DEFINES += $(SRC_CFLAGS)
+endif
 
 ifeq ($(HAVE_RSOUND), 1)
    OBJ += audio/rsound.o
    LIBS += -lrsound
 endif
+
 ifeq ($(HAVE_OSS), 1)
    OBJ += audio/oss.o
 endif

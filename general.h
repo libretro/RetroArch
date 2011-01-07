@@ -20,11 +20,13 @@
 #define __SSNES_GENERAL_H
 
 #include <stdbool.h>
-#include <samplerate.h>
 #include "driver.h"
 #include <stdio.h>
 #include "record/ffemu.h"
 #include "config.h"
+#ifdef HAVE_SRC
+#include <samplerate.h>
+#endif
 
 
 #define MAX_PLAYERS 2

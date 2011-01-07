@@ -32,12 +32,13 @@ if [ $HAVE_FFMPEG != no ]; then
    ( [ $HAVE_FFMPEG = auto ] && ( [ $HAVE_AVCODEC = no ] || [ $HAVE_AVFORMAT = no ] || [ $HAVE_AVCORE = no ] || [ $HAVE_AVUTIL = no ] || [ $HAVE_SWSCALE = no ] ) && HAVE_FFMPEG=no ) || HAVE_FFMPEG=yes
 fi
 
-check_lib SRC -lsamplerate src_callback_new
+check_pkgconf SRC samplerate
+check_critical SRC "Cannot find libsamplerate."
 
 check_lib DYNAMIC -ldl dlopen
 
 # Creates config.mk and config.h.
-VARS="ALSA OSS AL RSOUND ROAR JACK SDL FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE"
+VARS="ALSA OSS AL RSOUND ROAR JACK SDL FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 
