@@ -32,19 +32,19 @@
 #include <libxml/tree.h>
 #include <GL/glext.h>
 
-static PFNGLCREATEPROGRAMPROC glCreateProgram = NULL;
-static PFNGLUSEPROGRAMPROC glUseProgram = NULL;
-static PFNGLCREATESHADERPROC glCreateShader = NULL;
-static PFNGLDELETESHADERPROC glDeleteShader = NULL;
-static PFNGLSHADERSOURCEPROC glShaderSource = NULL;
-static PFNGLCOMPILESHADERPROC glCompileShader = NULL;
-static PFNGLATTACHSHADERPROC glAttachShader = NULL;
-static PFNGLDETACHSHADERPROC glDetachShader = NULL;
-static PFNGLLINKPROGRAMPROC glLinkProgram = NULL;
-static PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation = NULL;
-static PFNGLUNIFORM1IPROC glUniform1i = NULL;
-static PFNGLUNIFORM2FVPROC glUniform2fv = NULL;
-static PFNGLUNIFORM4FVPROC glUniform4fv = NULL;
+static PFNGLCREATEPROGRAMPROC pglCreateProgram = NULL;
+static PFNGLUSEPROGRAMPROC pglUseProgram = NULL;
+static PFNGLCREATESHADERPROC pglCreateShader = NULL;
+static PFNGLDELETESHADERPROC pglDeleteShader = NULL;
+static PFNGLSHADERSOURCEPROC pglShaderSource = NULL;
+static PFNGLCOMPILESHADERPROC pglCompileShader = NULL;
+static PFNGLATTACHSHADERPROC pglAttachShader = NULL;
+static PFNGLDETACHSHADERPROC pglDetachShader = NULL;
+static PFNGLLINKPROGRAMPROC pglLinkProgram = NULL;
+static PFNGLGETUNIFORMLOCATIONPROC pglGetUniformLocation = NULL;
+static PFNGLUNIFORM1IPROC pglUniform1i = NULL;
+static PFNGLUNIFORM2FVPROC pglUniform2fv = NULL;
+static PFNGLUNIFORM4FVPROC pglUniform4fv = NULL;
 
 static bool glsl_enable = false;
 static GLuint gl_program;
@@ -139,25 +139,25 @@ error:
 bool gl_glsl_init(const char *path)
 {
    // Load shader functions.
-   glCreateProgram = SDL_GL_GetProcAddress("glCreateProgram");
-   glUseProgram = SDL_GL_GetProcAddress("glUseProgram");
-   glCreateShader = SDL_GL_GetProcAddress("glCreateShader");
-   glDeleteShader = SDL_GL_GetProcAddress("glDeleteShader");
-   glShaderSource = SDL_GL_GetProcAddress("glShaderSource");
-   glCompileShader = SDL_GL_GetProcAddress("glCompileShader");
-   glAttachShader = SDL_GL_GetProcAddress("glAttachShader");
-   glDetachShader = SDL_GL_GetProcAddress("glDetachShader");
-   glLinkProgram = SDL_GL_GetProcAddress("glLinkProgram");
-   glGetUniformLocation = SDL_GL_GetProcAddress("glGetUniformLocation");
-   glUniform1i = SDL_GL_GetProcAddress("glUniform1i");
-   glUniform2fv = SDL_GL_GetProcAddress("glUniform2fv");
-   glUniform4fv = SDL_GL_GetProcAddress("glUniform4fv");
+   pglCreateProgram = SDL_GL_GetProcAddress("glCreateProgram");
+   pglUseProgram = SDL_GL_GetProcAddress("glUseProgram");
+   pglCreateShader = SDL_GL_GetProcAddress("glCreateShader");
+   pglDeleteShader = SDL_GL_GetProcAddress("glDeleteShader");
+   pglShaderSource = SDL_GL_GetProcAddress("glShaderSource");
+   pglCompileShader = SDL_GL_GetProcAddress("glCompileShader");
+   pglAttachShader = SDL_GL_GetProcAddress("glAttachShader");
+   pglDetachShader = SDL_GL_GetProcAddress("glDetachShader");
+   pglLinkProgram = SDL_GL_GetProcAddress("glLinkProgram");
+   pglGetUniformLocation = SDL_GL_GetProcAddress("glGetUniformLocation");
+   pglUniform1i = SDL_GL_GetProcAddress("glUniform1i");
+   pglUniform2fv = SDL_GL_GetProcAddress("glUniform2fv");
+   pglUniform4fv = SDL_GL_GetProcAddress("glUniform4fv");
 
    SSNES_LOG("Checking GLSL shader support ...\n");
-   bool shader_support = glCreateProgram && glUseProgram && glCreateShader
-      && glDeleteShader && glShaderSource && glCompileShader && glAttachShader
-      && glDetachShader && glLinkProgram && glGetUniformLocation
-      && glUniform1i && glUniform2fv && glUniform4fv;
+   bool shader_support = pglCreateProgram && pglUseProgram && pglCreateShader
+      && pglDeleteShader && pglShaderSource && pglCompileShader && pglAttachShader
+      && pglDetachShader && pglLinkProgram && pglGetUniformLocation
+      && pglUniform1i && pglUniform2fv && pglUniform4fv;
 
    if (!shader_support)
    {
@@ -165,7 +165,7 @@ bool gl_glsl_init(const char *path)
       return false;
    }
 
-   gl_program = glCreateProgram();
+   gl_program = pglCreateProgram();
 
    char *vertex_prog = NULL;
    char *fragment_prog = NULL;
@@ -174,25 +174,25 @@ bool gl_glsl_init(const char *path)
 
    if (vertex_prog)
    {
-      vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-      glShaderSource(vertex_shader, 1, (const char**)&vertex_prog, 0);
-      glCompileShader(vertex_shader);
-      glAttachShader(gl_program, vertex_shader);
+      vertex_shader = pglCreateShader(GL_VERTEX_SHADER);
+      pglShaderSource(vertex_shader, 1, (const char**)&vertex_prog, 0);
+      pglCompileShader(vertex_shader);
+      pglAttachShader(gl_program, vertex_shader);
       free(vertex_prog);
    }
    if (fragment_prog)
    {
-      fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-      glShaderSource(fragment_shader, 1, (const char**)&fragment_prog, 0);
-      glCompileShader(fragment_shader);
-      glAttachShader(gl_program, fragment_shader);
+      fragment_shader = pglCreateShader(GL_FRAGMENT_SHADER);
+      pglShaderSource(fragment_shader, 1, (const char**)&fragment_prog, 0);
+      pglCompileShader(fragment_shader);
+      pglAttachShader(gl_program, fragment_shader);
       free(fragment_prog);
    }
 
    if (vertex_prog || fragment_prog)
    {
-      glLinkProgram(gl_program);
-      glUseProgram(gl_program);
+      pglLinkProgram(gl_program);
+      pglUseProgram(gl_program);
    }
 
    glsl_enable = true;
@@ -211,16 +211,16 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       GLint location;
 
       float inputSize[2] = {width, height};
-      location = glGetUniformLocation(gl_program, "rubyInputSize");
-      glUniform2fv(location, 1, inputSize);
+      location = pglGetUniformLocation(gl_program, "rubyInputSize");
+      pglUniform2fv(location, 1, inputSize);
 
       float outputSize[2] = {out_width, out_height};
-      location = glGetUniformLocation(gl_program, "rubyOutputSize");
-      glUniform2fv(location, 1, outputSize);
+      location = pglGetUniformLocation(gl_program, "rubyOutputSize");
+      pglUniform2fv(location, 1, outputSize);
 
       float textureSize[2] = {tex_width, tex_height};
-      location = glGetUniformLocation(gl_program, "rubyTextureSize");
-      glUniform2fv(location, 1, textureSize);
+      location = pglGetUniformLocation(gl_program, "rubyTextureSize");
+      pglUniform2fv(location, 1, textureSize);
    }
 }
 
