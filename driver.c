@@ -42,6 +42,9 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_JACK
    &audio_jack,
 #endif
+#ifdef HAVE_SDL
+   &audio_sdl,
+#endif
 };
 
 static const video_driver_t *video_drivers[] = {

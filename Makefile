@@ -38,7 +38,7 @@ ifeq ($(HAVE_JACK),1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/gl.o input/sdl.o
+   OBJ += gfx/gl.o input/sdl.o audio/sdl.o audio/buffer.o
    LIBS += $(SDL_LIBS) -lGL
    DEFINES += $(SDL_CFLAGS)
 endif
