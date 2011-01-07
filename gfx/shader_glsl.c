@@ -45,6 +45,8 @@ static PFNGLGETUNIFORMLOCATIONPROC pglGetUniformLocation = NULL;
 static PFNGLUNIFORM1IPROC pglUniform1i = NULL;
 static PFNGLUNIFORM2FVPROC pglUniform2fv = NULL;
 static PFNGLUNIFORM4FVPROC pglUniform4fv = NULL;
+static PFNGLGETSHADERIVPROC pglGetShaderiv = NULL;
+static PFNGLGETSHADERINFOLOGPROC pglGetShaderInfoLog = NULL;
 
 static bool glsl_enable = false;
 static GLuint gl_program;
@@ -136,6 +138,20 @@ error:
    return false;
 }
 
+static void print_shader_log(GLuint obj)
+{
+   int info_len = 0;
+   int max_len;
+
+   pglGetShaderiv(obj, GL_INFO_LOG_LENGTH, &max_len);
+
+   char info_log[max_len];
+   pglGetShaderInfoLog(obj, max_len, &info_len, info_log);
+
+   if (info_len > 0)
+      SSNES_LOG("Shader log: %s\n", info_log);
+}
+
 bool gl_glsl_init(const char *path)
 {
    // Load shader functions.
@@ -152,12 +168,15 @@ bool gl_glsl_init(const char *path)
    pglUniform1i = SDL_GL_GetProcAddress("glUniform1i");
    pglUniform2fv = SDL_GL_GetProcAddress("glUniform2fv");
    pglUniform4fv = SDL_GL_GetProcAddress("glUniform4fv");
+   pglGetShaderiv = SDL_GL_GetProcAddress("glGetShaderiv");
+   pglGetShaderInfoLog = SDL_GL_GetProcAddress("glGetShaderInfoLog");
 
    SSNES_LOG("Checking GLSL shader support ...\n");
    bool shader_support = pglCreateProgram && pglUseProgram && pglCreateShader
       && pglDeleteShader && pglShaderSource && pglCompileShader && pglAttachShader
       && pglDetachShader && pglLinkProgram && pglGetUniformLocation
-      && pglUniform1i && pglUniform2fv && pglUniform4fv;
+      && pglUniform1i && pglUniform2fv && pglUniform4fv
+      && pglGetShaderiv && pglGetShaderInfoLog;
 
    if (!shader_support)
    {
@@ -177,6 +196,8 @@ bool gl_glsl_init(const char *path)
       vertex_shader = pglCreateShader(GL_VERTEX_SHADER);
       pglShaderSource(vertex_shader, 1, (const char**)&vertex_prog, 0);
       pglCompileShader(vertex_shader);
+      print_shader_log(vertex_shader);
+
       pglAttachShader(gl_program, vertex_shader);
       free(vertex_prog);
    }
@@ -185,6 +206,8 @@ bool gl_glsl_init(const char *path)
       fragment_shader = pglCreateShader(GL_FRAGMENT_SHADER);
       pglShaderSource(fragment_shader, 1, (const char**)&fragment_prog, 0);
       pglCompileShader(fragment_shader);
+      print_shader_log(fragment_shader);
+
       pglAttachShader(gl_program, fragment_shader);
       free(fragment_prog);
    }
