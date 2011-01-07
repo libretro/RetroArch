@@ -5,7 +5,7 @@ TARGET = ssnes
 OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o
 
 LIBS =
-DEFINES =
+DEFINES = -DHAVE_CONFIG_H
 
 ifeq ($(HAVE_SRC), 1)
    LIBS += $(SRC_LIBS)

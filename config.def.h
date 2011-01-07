@@ -22,14 +22,24 @@
 #ifndef __CONFIG_DEF_H
 #define __CONFIG_DEF_H
 
-#include <SDL/SDL.h>
 #include <stdbool.h>
 #include "libsnes.hpp"
 #include "driver.h"
+
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
+#ifdef HAVE_SDL
+#include <SDL/SDL.h>
+#else
+#error HAVE_SDL is not defined!
+#endif
 
 #ifdef HAVE_SRC
 #include <samplerate.h>
+#else
+#error HAVE_SRC is not defined!
 #endif
 
 
@@ -104,7 +114,7 @@ static const unsigned out_rate = 48000;
 
 // Input samplerate from libSNES. 
 // Lower this (slightly) if you are experiencing frequent audio dropouts while vsync is enabled.
-static const unsigned in_rate = 31950; 
+static const unsigned in_rate = 31980; 
 
 // Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults.
 static const char* audio_device = NULL;
@@ -127,7 +137,7 @@ static const bool audio_sync = true;
 
 // Axis threshold (between 0.0 and 1.0)
 // How far an axis must be tilted to result in a button press
-#define AXIS_THRESHOLD 0.8
+#define AXIS_THRESHOLD 0.5
 
 #define AXIS_NEG(x) ((uint32_t)(x << 16) | 0xFFFF)
 #define AXIS_POS(x) ((uint32_t)(x) | 0xFFFF0000U)

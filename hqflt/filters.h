@@ -19,7 +19,9 @@
 #ifndef __FILTERS_H
 #define __FILTERS_H
 
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 
 #ifdef HAVE_FILTER
 

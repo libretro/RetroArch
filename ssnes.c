@@ -223,6 +223,12 @@ static void fill_pathname(char *out_path, char *in_path, const char *replace)
 #define FFMPEG_HELP_QUARK
 #endif
 
+#ifdef _WIN32
+#define SSNES_DEFAULT_CONF_PATH_STR "\n\tDefaults to ssnes.cfg in same directory as ssnes.exe"
+#else
+#define SSNES_DEFAULT_CONF_PATH_STR " Defaults to $XDG_CONFIG_HOME/ssnes/ssnes.cfg"
+#endif
+
 static void print_help(void)
 {
    puts("=================================================");
@@ -231,7 +237,8 @@ static void print_help(void)
    puts("Usage: ssnes [rom file] [-h/--help | -s/--save" FFMPEG_HELP_QUARK "]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
-   puts("\t-c/--config: Path for config file. Defaults to $XDG_CONFIG_HOME/ssnes/ssnes.cfg");
+   puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
+
 #ifdef HAVE_FFMPEG
    puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
 #endif
@@ -354,7 +361,7 @@ int main(int argc, char *argv[])
       SSNES_ERR("Could not read ROM file.\n");
       exit(1);
    }
-   SSNES_LOG("ROM size: %zi bytes\n", rom_len);
+   SSNES_LOG("ROM size: %d bytes\n", (int)rom_len);
 
    if (g_extern.rom_file != NULL)
       fclose(g_extern.rom_file);

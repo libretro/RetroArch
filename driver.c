@@ -21,7 +21,10 @@
 #include <stdio.h>
 #include <string.h>
 #include "hqflt/filters.h"
+
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 
 static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA

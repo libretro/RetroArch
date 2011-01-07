@@ -21,7 +21,11 @@
 #include <assert.h>
 #include <string.h>
 #include "hqflt/filters.h"
+
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
 #include <ctype.h>
 
 struct settings g_settings;
@@ -59,6 +63,9 @@ static void set_defaults(void)
          break;
       case AUDIO_AL:
          def_audio = "openal";
+         break;
+      case AUDIO_SDL:
+         def_audio = "sdl";
          break;
       default:
          break;

@@ -23,7 +23,11 @@
 #include "driver.h"
 #include <stdio.h>
 #include "record/ffemu.h"
+
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
 #ifdef HAVE_SRC
 #include <samplerate.h>
 #endif
@@ -103,14 +107,17 @@ extern struct global g_extern;
 #define SSNES_LOG(msg, args...) do { \
    if (g_extern.verbose) \
       fprintf(stderr, "SSNES: " msg, ##args); \
+      fflush(stderr); \
    } while(0)
 
 #define SSNES_ERR(msg, args...) do { \
-   fprintf(stderr, "SSNES [ERROR] :: " msg, ##args); \
+      fprintf(stderr, "SSNES [ERROR] :: " msg, ##args); \
+      fflush(stderr); \
    } while(0)
 
 #define SSNES_WARN(msg, args...) do { \
-   fprintf(stderr, "SSNES [WARN] :: " msg, ##args); \
+      fprintf(stderr, "SSNES [WARN] :: " msg, ##args); \
+      fflush(stderr); \
    } while(0)
 
 #endif
