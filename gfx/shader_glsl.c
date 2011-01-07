@@ -129,6 +129,7 @@ static bool get_xml_shaders(const char *path, char **vertex_shader, char **fragm
    return true;
 
 error:
+   SSNES_ERR("Failed to load XML shader ...\n");
    if (doc)
       xmlFreeDoc(doc);
    xmlFreeParserCtxt(ctx);
