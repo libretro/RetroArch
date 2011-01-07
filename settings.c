@@ -143,7 +143,7 @@ void parse_config(void)
       else if (home)
       {
          char conf_path[strlen(home) + strlen("/.ssnesrc ")];
-         strcpy(conf_path, xdg);
+         strcpy(conf_path, home);
          strcat(conf_path, "/.ssnesrc");
          conf = config_file_new(conf_path);
       }
