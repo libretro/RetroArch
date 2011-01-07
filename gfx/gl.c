@@ -30,9 +30,9 @@
 #endif
 
 #define NO_SDL_GLEXT
-#include <SDL/SDL.h>
-#include <SDL/SDL_opengl.h>
-#include "input/sdl_input.h"
+#include "SDL.h"
+#include "SDL_opengl.h"
+#include "input/ssnes_sdl_input.h"
 
 #define GL_GLEXT_PROTOTYPES
 #include <GL/glext.h>

@@ -17,13 +17,13 @@
 
 #include "driver.h"
 
-#include <SDL/SDL.h>
+#include "SDL.h"
 #include <stdbool.h>
 #include "general.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <libsnes.hpp>
-#include "sdl_input.h"
+#include "ssnes_sdl_input.h"
 
 static void* sdl_input_init(void)
 {

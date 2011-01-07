@@ -23,9 +23,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_audio.h>
-#include <SDL/SDL_thread.h>
+#include "SDL.h"
+#include "SDL_audio.h"
+#include "SDL_thread.h"
 #include "general.h"
 #include "buffer.h"
 

@@ -18,7 +18,7 @@
 #ifndef __SSNES_SDL_INPUT_H
 #define __SSNES_SDL_INPUT_H
 
-#include <SDL/SDL.h>
+#include "SDL.h"
 typedef struct sdl_input
 {
    SDL_Joystick *joysticks[2];

@@ -6,7 +6,7 @@ CXX = g++
 
 HAVE_SRC = 1
 HAVE_SDL = 1
-libsnes = -lsnes
+libsnes ?= -lsnes
 
 LIBS =
 DEFINES = -I. -DHAVE_SRC -DHAVE_SDL
@@ -14,6 +14,7 @@ LDFLAGS = -L.
 
 SRC_LIBS = -lsamplerate-0
 SDL_LIBS = -lSDLmain -lSDL
+SDL_CFLAGS = -ISDL
 
 ifeq ($(HAVE_SRC), 1)
    LIBS += $(SRC_LIBS)
@@ -37,13 +38,6 @@ $(TARGET): $(OBJ)
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
-
-install: $(TARGET)
-	install -m755 $(TARGET) $(DESTDIR)$(PREFIX)/bin 
-	install -m644 ssnes.cfg $(DESTDIR)/etc/ssnes.cfg
-
-uninstall: $(TARGET)
-	rm -rf $(DESTDIR)/$(PREFIX)/bin/$(TARGET)
 
 clean:
 	rm -f *.o 

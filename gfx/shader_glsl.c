@@ -25,8 +25,8 @@
 
 #define NO_SDL_GLEXT
 #include <GL/gl.h>
-#include <SDL/SDL.h>
-#include <SDL/SDL_opengl.h>
+#include "SDL.h"
+#include "SDL_opengl.h"
 #include <stdlib.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
