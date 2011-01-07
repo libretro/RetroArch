@@ -83,7 +83,7 @@ config.mk: configure qb/*
 	@exit 1
 
 ssnes: $(OBJ)
-	$(CXX) -o $@ $(OBJ) $(LIBS) $(CFLAGS)
+	$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
 
 %.o: %.c config.h config.mk
 	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
