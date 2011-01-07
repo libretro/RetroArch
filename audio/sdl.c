@@ -81,8 +81,8 @@ static void* sdl_audio_init(const char* device, int rate, int latency)
    if (!sdl)
       return NULL;
 
-   // We have to buffer up some data ourselves, so we let SDL carry approx half of the latency.
-   int frames = find_num_frames(rate, latency / 2);
+   // We have to buffer up some data ourselves, so we let SDL carry approx half of the latency. SDL double buffers audio and we do as well.
+   int frames = find_num_frames(rate, latency / 4);
 
    SDL_AudioSpec spec = {
       .freq = rate,
@@ -106,7 +106,7 @@ static void* sdl_audio_init(const char* device, int rate, int latency)
    sdl->lock = SDL_CreateMutex();
    sdl->cond = SDL_CreateCond();
 
-   SSNES_LOG("SDL audio: Requested %d ms latency, got %d ms\n", latency, (int)(out.samples * 3 * 1000 / g_settings.audio.out_rate));
+   SSNES_LOG("SDL audio: Requested %d ms latency, got %d ms\n", latency, (int)(out.samples * 4 * 1000 / g_settings.audio.out_rate));
 
    // Create a buffer twice as big as needed and prefill the buffer.
    size_t bufsize = out.samples * 4 * sizeof(int16_t);
