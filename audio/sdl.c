@@ -51,8 +51,29 @@ static void sdl_audio_cb(void *data, Uint8 *stream, int len)
    memset(stream + write_size, 0, len - write_size);
 }
 
+// Interesting hack from http://www-graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+static inline uint32_t next_pow2(uint32_t v)
+{
+   v--;
+   v |= v >> 1;
+   v |= v >> 2;
+   v |= v >> 4;
+   v |= v >> 8;
+   v |= v >> 16;
+   v++;
+   return v;
+}
+
+static inline int find_num_frames(int rate, int latency)
+{
+   int frames = (rate * latency) / 1000;
+   // SDL only likes 2^n sized buffers.
+   return next_pow2(frames);
+}
+
 static void* sdl_audio_init(const char* device, int rate, int latency)
 {
+   (void)device;
    if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
       return NULL;
 
@@ -60,11 +81,14 @@ static void* sdl_audio_init(const char* device, int rate, int latency)
    if (!sdl)
       return NULL;
 
+   // We have to buffer up some data ourselves, so we let SDL carry approx half of the latency.
+   int frames = find_num_frames(rate, latency / 2);
+
    SDL_AudioSpec spec = {
       .freq = rate,
       .format = AUDIO_S16SYS,
       .channels = 2,
-      .samples = 512,
+      .samples = frames, // This is in audio frames, not samples ... :(
       .callback = sdl_audio_cb,
       .userdata = sdl
    };
@@ -81,6 +105,8 @@ static void* sdl_audio_init(const char* device, int rate, int latency)
 
    sdl->lock = SDL_CreateMutex();
    sdl->cond = SDL_CreateCond();
+
+   SSNES_LOG("SDL audio: Requested %d ms latency, got %d ms\n", latency, (int)(out.samples * 3 * 1000 / g_settings.audio.out_rate));
 
    // Create a buffer twice as big as needed and prefill the buffer.
    size_t bufsize = out.samples * 4 * sizeof(int16_t);
