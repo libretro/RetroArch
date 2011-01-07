@@ -6,10 +6,11 @@ CXX = g++
 
 HAVE_SRC = 1
 HAVE_SDL = 1
+HAVE_XML = 1
 libsnes ?= -lsnes
 
 LIBS =
-DEFINES = -I. -DHAVE_SRC -DHAVE_SDL
+DEFINES = -I.
 LDFLAGS = -L.
 
 SRC_LIBS = -lsamplerate-0
@@ -18,13 +19,19 @@ SDL_CFLAGS = -ISDL
 
 ifeq ($(HAVE_SRC), 1)
    LIBS += $(SRC_LIBS)
-   DEFINES += $(SRC_CFLAGS)
+   DEFINES += $(SRC_CFLAGS) -DHAVE_SRC
 endif
 
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/gl.o input/sdl.o audio/sdl.o audio/buffer.o
    LIBS += $(SDL_LIBS) -lopengl32
-   DEFINES += $(SDL_CFLAGS)
+   DEFINES += $(SDL_CFLAGS) -DHAVE_SDL
+endif
+
+ifeq ($(HAVE_XML), 1)
+   OBJ += gfx/shader_glsl.o
+   DEFINES += $(XML_CFLAGS) -DHAVE_XML
+   LIBS += -lxml2
 endif
 
 LIBS += $(libsnes)
