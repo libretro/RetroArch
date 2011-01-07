@@ -11,7 +11,7 @@ libsnes ?= -lsnes
 
 LIBS =
 DEFINES = -I.
-LDFLAGS = -L.
+LDFLAGS = -L. -static-libgcc
 
 SRC_LIBS = -lsamplerate-0
 SDL_LIBS = -lSDLmain -lSDL

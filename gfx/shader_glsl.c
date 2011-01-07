@@ -30,6 +30,8 @@
 #include <stdlib.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+
+#define GL_GLEXT_PROTOTYPES
 #include <GL/glext.h>
 
 static PFNGLCREATEPROGRAMPROC pglCreateProgram = NULL;
