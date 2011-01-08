@@ -329,7 +329,7 @@ static void parse_input(int argc, char *argv[])
       g_extern.rom_file = fopen(argv[optind], "rb");
       if (g_extern.rom_file == NULL)
       {
-         SSNES_ERR("Could not open file: \"%s\"\n", optarg);
+         SSNES_ERR("Could not open file: \"%s\"\n", argv[optind]);
          exit(1);
       }
       if (strlen(g_extern.savefile_name_srm) == 0)
