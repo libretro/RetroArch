@@ -15,23 +15,38 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define GL_GLEXT_PROTOTYPES
 
 #include "driver.h"
-#include <GL/glfw.h>
-#include <GL/glext.h>
+
 #include <stdint.h>
 #include "libsnes.hpp"
 #include <stdio.h>
 #include <sys/time.h>
 #include <string.h>
 #include "general.h"
-#include "config.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#define NO_SDL_GLEXT
+#include "SDL.h"
+#include "SDL_opengl.h"
+#include "input/ssnes_sdl_input.h"
+
+#define GL_GLEXT_PROTOTYPES
+#include <GL/glext.h>
+
+#ifndef _WIN32
+#include <GL/glx.h>
+#endif
 
 #ifdef HAVE_CG
-#include <Cg/cg.h>
-#include <Cg/cgGL.h>
+#include "shader_cg.h"
+#endif
+
+#ifdef HAVE_XML
+#include "shader_glsl.h"
 #endif
 
 static const GLfloat vertexes[] = {
@@ -49,26 +64,20 @@ static const GLfloat tex_coords[] = {
 };
 
 static bool keep_aspect = true;
-#ifdef HAVE_CG
-static CGparameter cg_mvp_matrix;
-static bool cg_active = false;
-#endif
 static GLuint gl_width = 0, gl_height = 0;
 typedef struct gl
 {
    bool vsync;
-#ifdef HAVE_CG
-   CGcontext cgCtx;
-   CGprogram cgFPrg;
-   CGprogram cgVPrg;
-   CGprofile cgFProf;
-   CGprofile cgVProf;
-   CGparameter cg_video_size, cg_texture_size, cg_output_size;
-   CGparameter cg_Vvideo_size, cg_Vtexture_size, cg_Voutput_size; // Vertexes
-#endif
    GLuint texture;
    GLuint tex_filter;
 
+   bool should_resize;
+   bool quitting;
+
+   unsigned win_width;
+   unsigned win_height;
+   unsigned vp_width;
+   unsigned vp_height;
    unsigned last_width;
    unsigned last_height;
    unsigned tex_w, tex_h;
@@ -76,151 +85,99 @@ typedef struct gl
 } gl_t;
 
 
-static void glfw_input_poll(void *data)
+static inline bool gl_shader_init(void)
 {
-   (void)data;
-   glfwPollEvents();
+   if (strlen(g_settings.video.cg_shader_path) > 0 && strlen(g_settings.video.bsnes_shader_path) > 0)
+      SSNES_WARN("Both Cg and bSNES XML shader are defined in config file. Cg shader will be selected by default.\n");
+
+#ifdef HAVE_CG
+   if (strlen(g_settings.video.cg_shader_path) > 0)
+      return gl_cg_init(g_settings.video.cg_shader_path);
+#endif
+
+#ifdef HAVE_XML
+   if (strlen(g_settings.video.bsnes_shader_path) > 0)
+      return gl_glsl_init(g_settings.video.bsnes_shader_path);
+#endif
+
+   return true;
 }
 
-#define BUTTONS_MAX 128
-#define AXES_MAX 128
-
-static unsigned joypad_id[2];
-static unsigned joypad_buttons[2];
-static unsigned joypad_axes[2];
-static bool joypad_inited = false;
-static unsigned joypad_count = 0;
-
-static int init_joypads(int max_pads)
+static inline void gl_shader_deinit(void)
 {
-   // Finds the first (two) joypads that are alive
-   int count = 0;
-   for ( int i = GLFW_JOYSTICK_1; (i <= GLFW_JOYSTICK_LAST) && (count < max_pads); i++ )
-   {
-      if ( glfwGetJoystickParam(i, GLFW_PRESENT) == GL_TRUE )
-      {
-         joypad_id[count] = i;
-         joypad_buttons[count] = glfwGetJoystickParam(i, GLFW_BUTTONS);
-         if (joypad_buttons[count] > BUTTONS_MAX)
-            joypad_buttons[count] = BUTTONS_MAX;
-         joypad_axes[count] = glfwGetJoystickParam(i, GLFW_AXES);
-         if (joypad_axes[count] > AXES_MAX)
-            joypad_axes[count] = AXES_MAX;
-         count++;
-      }
-   }
-   joypad_inited = true;
-   return count;
+#ifdef HAVE_CG
+   gl_cg_deinit();
+#endif
+
+#ifdef HAVE_XML
+   gl_glsl_deinit();
+#endif
 }
 
-static bool glfw_is_pressed(int port_num, const struct snes_keybind *key, unsigned char *buttons, float *axes)
+static inline void gl_shader_set_proj_matrix(void)
 {
-   if (glfwGetKey(key->key))
-      return true;
-   if (port_num >= joypad_count)
-      return false;
-   if (key->joykey < joypad_buttons[port_num] && buttons[key->joykey] == GLFW_PRESS)
-      return true;
+#ifdef HAVE_CG
+   gl_cg_set_proj_matrix();
+#endif
 
-   if (key->joyaxis != AXIS_NONE)
-   {
-      if (AXIS_NEG_GET(key->joyaxis) < joypad_axes[port_num] && axes[AXIS_NEG_GET(key->joyaxis)] <= -g_settings.input.axis_threshold)
-         return true;
-      if (AXIS_POS_GET(key->joyaxis) < joypad_axes[port_num] && axes[AXIS_POS_GET(key->joyaxis)] >= g_settings.input.axis_threshold)
-         return true;
-   }
-   return false;
+#ifdef HAVE_XML
+   gl_glsl_set_proj_matrix();
+#endif
 }
 
-static int16_t glfw_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
+static inline void gl_shader_set_params(unsigned width, unsigned height, 
+      unsigned tex_width, unsigned tex_height, 
+      unsigned out_width, unsigned out_height)
 {
-   if ( device != SNES_DEVICE_JOYPAD )
-      return 0;
+#ifdef HAVE_CG
+   gl_cg_set_params(width, height, tex_width, tex_height, out_width, out_height);
+#endif
 
-   if ( !joypad_inited )
-      joypad_count = init_joypads(2);
-
-   int port_num = port ? 1 : 0;
-   unsigned char buttons[BUTTONS_MAX];
-   float axes[AXES_MAX];
-
-   if ( joypad_count > port_num ) 
-   {
-      glfwGetJoystickButtons(joypad_id[port_num], buttons, joypad_buttons[port_num]);
-      glfwGetJoystickPos(joypad_id[port_num], axes, joypad_axes[port_num]);
-   }
-
-
-   const struct snes_keybind *snes_keybinds;
-   if (port == SNES_PORT_1)
-      snes_keybinds = binds[0];
-   else
-      snes_keybinds = binds[1];
-
-   // Checks if button is pressed, and sets fast-forwarding state
-   bool pressed = false;
-   for ( int i = 0; snes_keybinds[i].id != -1; i++ )
-      if ( snes_keybinds[i].id == SNES_FAST_FORWARD_KEY )
-         set_fast_forward_button(glfw_is_pressed(port_num, &snes_keybinds[i], buttons, axes));
-      else if ( !pressed && snes_keybinds[i].id == (int)id )
-         pressed = glfw_is_pressed(port_num, &snes_keybinds[i], buttons, axes);
-
-   return pressed;
+#ifdef HAVE_XML
+   gl_glsl_set_params(width, height, tex_width, tex_height, out_width, out_height);
+#endif
 }
 
-static void glfw_free_input(void *data)
-{
-   free(data);
-}
-
-static const input_driver_t input_glfw = {
-   .poll = glfw_input_poll,
-   .input_state = glfw_input_state,
-   .free = glfw_free_input,
-   .ident = "glfw"
-};
-
-static void GLFWCALL resize(int width, int height)
+static void set_viewport(gl_t *gl)
 {
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
-   GLuint out_width = width, out_height = height;
+   GLuint out_width = gl->win_width, out_height = gl->win_height;
 
    if ( keep_aspect )
    {
-      float desired_aspect = 4.0/3;
-      float device_aspect = (float)width / height;
+      float desired_aspect = g_settings.video.aspect_ratio;
+      float device_aspect = (float)gl->win_width / gl->win_height;
 
       // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
       // assume they are actually equal.
       if ( (int)(device_aspect*1000) > (int)(desired_aspect*1000) )
       {
          float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-         glViewport(width * (0.5 - delta), 0, 2.0 * width * delta, height);
-         out_width = (int)(2.0 * width * delta);
+         glViewport(gl->win_width * (0.5 - delta), 0, 2.0 * gl->win_width * delta, gl->win_height);
+         out_width = (int)(2.0 * gl->win_width * delta);
       }
 
       else if ( (int)(device_aspect*1000) < (int)(desired_aspect*1000) )
       {
          float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         glViewport(0, height * (0.5 - delta), width, 2.0 * height * delta);
-         out_height = (int)(2.0 * height * delta);
+         glViewport(0, gl->win_height * (0.5 - delta), gl->win_width, 2.0 * gl->win_height * delta);
+         out_height = (int)(2.0 * gl->win_height * delta);
       }
       else
-         glViewport(0, 0, width, height);
+         glViewport(0, 0, gl->win_width, gl->win_height);
    }
    else
-      glViewport(0, 0, width, height);
+      glViewport(0, 0, gl->win_width, gl->win_height);
 
    glOrtho(0, 1, 0, 1, -1, 1);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
-#ifdef HAVE_CG
-   if (cg_active)
-      cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
-#endif
-   gl_width = out_width;
-   gl_height = out_height;
+
+   gl_shader_set_proj_matrix();
+
+   gl->vp_width = out_width;
+   gl->vp_height = out_height;
 }
 
 static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)
@@ -229,7 +186,7 @@ static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, i
    return frames/time;
 }
 
-static inline void show_fps(void)
+static void show_fps(void)
 {
    // Shows FPS in taskbar.
    static int frames = 0;
@@ -248,8 +205,8 @@ static inline void show_fps(void)
 
       float fps = tv_to_fps(&tmp_tv, &new_tv, 180);
 
-      snprintf(tmpstr, sizeof(tmpstr) - 1, "SSNES || FPS: %6.1f || Frames: %d", fps, frames);
-      glfwSetWindowTitle(tmpstr);
+      snprintf(tmpstr, sizeof(tmpstr), "SSNES || FPS: %6.1f || Frames: %d", fps, frames);
+      SDL_WM_SetCaption(tmpstr, NULL);
    }
    frames++;
 }
@@ -258,20 +215,16 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
 {
    gl_t *gl = data;
 
+   if (gl->should_resize)
+   {
+      gl->should_resize = false;
+      SDL_SetVideoMode(gl->win_width, gl->win_height, 32, SDL_OPENGL | SDL_RESIZABLE | (g_settings.video.fullscreen ? SDL_FULLSCREEN : 0));
+      set_viewport(gl);
+   }
+
    glClear(GL_COLOR_BUFFER_BIT);
 
-#if HAVE_CG
-   if (cg_active)
-   {
-      cgGLSetParameter2f(gl->cg_video_size, width, height);
-      cgGLSetParameter2f(gl->cg_texture_size, gl->tex_w, gl->tex_h);
-      cgGLSetParameter2f(gl->cg_output_size, gl_width, gl_height);
-
-      cgGLSetParameter2f(gl->cg_Vvideo_size, width, height);
-      cgGLSetParameter2f(gl->cg_Vtexture_size, gl->tex_w, gl->tex_h);
-      cgGLSetParameter2f(gl->cg_Voutput_size, gl_width, gl_height);
-   }
-#endif
+   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl_width, gl_height);
 
    if (width != gl->last_width || height != gl->last_height) // res change. need to clear out texture.
    {
@@ -302,7 +255,8 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
    glDrawArrays(GL_QUADS, 0, 4);
 
    show_fps();
-   glfwSwapBuffers();
+   glFlush();
+   SDL_GL_SwapBuffers();
 
    return true;
 }
@@ -310,14 +264,12 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
 static void gl_free(void *data)
 {
    gl_t *gl = data;
-#ifdef HAVE_CG
-   if (cg_active)
-      cgDestroyContext(gl->cgCtx);
-#endif
+
+   gl_shader_deinit();
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDeleteTextures(1, &gl->texture);
-   glfwTerminate();
+   SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
 static void gl_set_nonblock_state(void *data, bool state)
@@ -325,18 +277,54 @@ static void gl_set_nonblock_state(void *data, bool state)
    gl_t *gl = data;
    if (gl->vsync)
    {
-      if (state)
-         glfwSwapInterval(0);
-      else
-         glfwSwapInterval(1);
+      SSNES_LOG("GL VSync => %s\n", state ? "off" : "on");
+#ifdef _WIN32
+      static BOOL (APIENTRY *wgl_swap_interval)(int) = NULL;
+      if (!wgl_swap_interval)
+         SSNES_WARN("SDL VSync toggling seems to be broken, attempting to use WGL VSync call directly instead.\n");
+      if (!wgl_swap_interval) wgl_swap_interval = (BOOL (APIENTRY*)(int)) wglGetProcAddress("wglSwapIntervalEXT");
+      if (wgl_swap_interval) wgl_swap_interval(state ? 0 : 1);
+#else
+      static int (*glx_swap_interval)(int) = NULL;
+      if (!glx_swap_interval)
+         SSNES_WARN("SDL VSync toggling seems to be broken, attempting to use GLX VSync call directly instead.\n");
+      if (!glx_swap_interval) glx_swap_interval = (int (*)(int))glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalSGI");
+      if (!glx_swap_interval) glx_swap_interval = (int (*)(int))glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalMESA");
+      if (glx_swap_interval) glx_swap_interval(state ? 0 : 1);
+#endif
    }
 }
 
-static void* gl_init(video_info_t *video, const input_driver_t **input)
+static void* gl_init(video_info_t *video, const input_driver_t **input, void **input_data)
 {
-   gl_t *gl = calloc(1, sizeof(gl_t));
-   if ( gl == NULL )
+   if (SDL_Init(SDL_INIT_VIDEO) < 0)
       return NULL;
+
+   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+   SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, video->vsync ? 1 : 0);
+
+   if (!SDL_SetVideoMode(video->width, video->height, 32, SDL_OPENGL | SDL_RESIZABLE | (video->fullscreen ? SDL_FULLSCREEN : 0)))
+      return NULL;
+   
+   int attr = 0;
+   SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &attr);
+   if (attr <= 0 && video->vsync)
+      SSNES_WARN("GL VSync has not been enabled!\n");
+   attr = 0;
+   SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &attr);
+   if (attr <= 0)
+      SSNES_WARN("GL double buffer has not been enabled!\n");
+
+   // Remove that ugly mouse :D
+   SDL_ShowCursor(SDL_DISABLE);
+
+   gl_t *gl = calloc(1, sizeof(gl_t));
+   if (!gl)
+      return NULL;
+
+   gl->win_width = video->width;
+   gl->win_height = video->height;
+   gl->vsync = video->vsync;
 
    keep_aspect = video->force_aspect;
    if ( video->smooth )
@@ -344,24 +332,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    else
       gl->tex_filter = GL_NEAREST;
 
-   glfwInit();
-
-   int res;
-   res = glfwOpenWindow(video->width, video->height, 0, 0, 0, 0, 0, 0, (video->fullscreen) ? GLFW_FULLSCREEN : GLFW_WINDOW);
-
-   if (!res)
-   {
-      glfwTerminate();
-      return NULL;
-   }
-
-   glfwSetWindowSizeCallback(resize);
-
-   if ( video->vsync )
-      glfwSwapInterval(1); // Force vsync
-   else
-      glfwSwapInterval(0);
-   gl->vsync = video->vsync;
+   set_viewport(gl);
 
    glEnable(GL_TEXTURE_2D);
    glDisable(GL_DITHER);
@@ -369,7 +340,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    glColor3f(1, 1, 1);
    glClearColor(0, 0, 0, 0);
 
-   glfwSetWindowTitle("SSNES");
+   SDL_WM_SetCaption("SSNES", NULL);
 
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
@@ -378,8 +349,8 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
 
    glBindTexture(GL_TEXTURE_2D, gl->texture);
 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
 
@@ -400,68 +371,38 @@ static void* gl_init(video_info_t *video, const input_driver_t **input)
    gl->last_width = gl->tex_w;
    gl->last_height = gl->tex_h;
 
-#ifdef HAVE_CG
-   cg_active = false;
-   if (strlen(g_settings.video.cg_shader_path) > 0)
+   gl_shader_init();
+
+   // Hook up SDL input driver to get SDL_QUIT events and RESIZE.
+   sdl_input_t *sdl_input = input_sdl.init();
+   if (sdl_input)
    {
-      SSNES_LOG("Loading Cg file: %s\n", g_settings.video.cg_shader_path);
-      gl->cgCtx = cgCreateContext();
-      if (gl->cgCtx == NULL)
-      {
-         fprintf(stderr, "Failed to create Cg context\n");
-         goto error;
-      }
-      gl->cgFProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
-      gl->cgVProf = cgGLGetLatestProfile(CG_GL_VERTEX);
-      if (gl->cgFProf == CG_PROFILE_UNKNOWN || gl->cgVProf == CG_PROFILE_UNKNOWN)
-      {
-         fprintf(stderr, "Invalid profile type\n");
-         goto error;
-      }
-      cgGLSetOptimalOptions(gl->cgFProf);
-      cgGLSetOptimalOptions(gl->cgVProf);
-      gl->cgFPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, g_settings.video.cg_shader_path, gl->cgFProf, "main_fragment", 0);
-      gl->cgVPrg = cgCreateProgramFromFile(gl->cgCtx, CG_SOURCE, g_settings.video.cg_shader_path, gl->cgVProf, "main_vertex", 0);
-      if (gl->cgFPrg == NULL || gl->cgVPrg == NULL)
-      {
-         CGerror err = cgGetError();
-         fprintf(stderr, "CG error: %s\n", cgGetErrorString(err));
-         goto error;
-      }
-      cgGLLoadProgram(gl->cgFPrg);
-      cgGLLoadProgram(gl->cgVPrg);
-      cgGLEnableProfile(gl->cgFProf);
-      cgGLEnableProfile(gl->cgVProf);
-      cgGLBindProgram(gl->cgFPrg);
-      cgGLBindProgram(gl->cgVPrg);
-
-      gl->cg_video_size = cgGetNamedParameter(gl->cgFPrg, "IN.video_size");
-      gl->cg_texture_size = cgGetNamedParameter(gl->cgFPrg, "IN.texture_size");
-      gl->cg_output_size = cgGetNamedParameter(gl->cgFPrg, "IN.output_size");
-      gl->cg_Vvideo_size = cgGetNamedParameter(gl->cgVPrg, "IN.video_size");
-      gl->cg_Vtexture_size = cgGetNamedParameter(gl->cgVPrg, "IN.texture_size");
-      gl->cg_Voutput_size = cgGetNamedParameter(gl->cgVPrg, "IN.output_size");
-      cg_mvp_matrix = cgGetNamedParameter(gl->cgVPrg, "modelViewProj");
-      cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
-      cg_active = true;
+      sdl_input->quitting = &gl->quitting;
+      sdl_input->should_resize = &gl->should_resize;
+      sdl_input->new_width = &gl->win_width;
+      sdl_input->new_height = &gl->win_height;
+      *input = &input_sdl;
+      *input_data = sdl_input;
    }
-#endif
+   else
+      *input = NULL;
 
-   *input = &input_glfw;
    return gl;
-#ifdef HAVE_CG
-error:
-   free(gl);
-   return NULL;
-#endif
+}
+
+static bool gl_alive(void *data)
+{
+   gl_t *gl = data;
+   return !gl->quitting;
 }
 
 const video_driver_t video_gl = {
    .init = gl_init,
    .frame = gl_frame,
+   .alive = gl_alive,
    .set_nonblock_state = gl_set_nonblock_state,
    .free = gl_free,
-   .ident = "glfw"
+   .ident = "gl"
 };
 
 

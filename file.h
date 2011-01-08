@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <sys/types.h>
 
 ssize_t read_file(FILE *file, void **buf);
 

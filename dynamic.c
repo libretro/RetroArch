@@ -18,7 +18,12 @@
 #include "dynamic.h"
 #include "general.h"
 #include <string.h>
+
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
+#include <libsnes.hpp>
 
 #ifdef HAVE_DYNAMIC
 #include <dlfcn.h>

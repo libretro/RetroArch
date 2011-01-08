@@ -21,7 +21,11 @@
 #include <assert.h>
 #include <string.h>
 #include "hqflt/filters.h"
+
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
 #include <ctype.h>
 
 struct settings g_settings;
@@ -32,11 +36,12 @@ static void set_defaults(void)
 {
    const char *def_video = NULL;
    const char *def_audio = NULL;
+   const char *def_input = NULL;
 
    switch (VIDEO_DEFAULT_DRIVER)
    {
       case VIDEO_GL:
-         def_video = "glfw";
+         def_video = "gl";
          break;
       default:
          break;
@@ -59,16 +64,28 @@ static void set_defaults(void)
       case AUDIO_AL:
          def_audio = "openal";
          break;
+      case AUDIO_SDL:
+         def_audio = "sdl";
+         break;
       default:
          break;
    }
 
-   // No input atm ... It is in the GLFW driver.
+   switch (INPUT_DEFAULT_DRIVER)
+   {
+      case INPUT_SDL:
+         def_input = "sdl";
+         break;
+      default:
+         break;
+   }
 
    if (def_video)
       strncpy(g_settings.video.driver, def_video, sizeof(g_settings.video.driver) - 1);
    if (def_audio)
       strncpy(g_settings.audio.driver, def_audio, sizeof(g_settings.audio.driver) - 1);
+   if (def_input)
+      strncpy(g_settings.input.driver, def_input, sizeof(g_settings.input.driver) - 1);
 
    g_settings.video.xscale = xscale;
    g_settings.video.yscale = yscale;
@@ -78,6 +95,7 @@ static void set_defaults(void)
    g_settings.video.vsync = vsync;
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
+   g_settings.video.aspect_ratio = SNES_ASPECT_RATIO;
 
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
@@ -97,7 +115,7 @@ static void set_defaults(void)
    g_settings.input.load_state_key = LOAD_STATE_KEY;
    g_settings.input.toggle_fullscreen_key = TOGGLE_FULLSCREEN;
    g_settings.input.axis_threshold = AXIS_THRESHOLD;
-   g_settings.input.exit_emulator_key = GLFW_KEY_ESC;
+   g_settings.input.exit_emulator_key = SDLK_ESCAPE;
 }
 
 void parse_config(void)
@@ -116,6 +134,10 @@ void parse_config(void)
    }
    else
    {
+#ifdef _WIN32
+      // Just do something for now.
+      conf = config_file_new("ssnes.cfg");
+#else
       const char *xdg = getenv("XDG_CONFIG_HOME");
       const char *home = getenv("HOME");
       if (xdg)
@@ -128,13 +150,14 @@ void parse_config(void)
       else if (home)
       {
          char conf_path[strlen(home) + strlen("/.ssnesrc ")];
-         strcpy(conf_path, xdg);
+         strcpy(conf_path, home);
          strcat(conf_path, "/.ssnesrc");
          conf = config_file_new(conf_path);
       }
       // Try this as a last chance...
       if (!conf)
          conf = config_file_new("/etc/ssnes.cfg");
+#endif
    }
 
    set_defaults();
@@ -171,9 +194,18 @@ void parse_config(void)
    if (config_get_bool(conf, "video_force_aspect", &tmp_bool))
       g_settings.video.force_aspect = tmp_bool;
 
+   if (config_get_double(conf, "video_aspect_ratio", &tmp_double))
+      g_settings.video.aspect_ratio = tmp_double;
+
    if (config_get_string(conf, "video_cg_shader", &tmp_str))
    {
       strncpy(g_settings.video.cg_shader_path, tmp_str, sizeof(g_settings.video.cg_shader_path) - 1);
+      free(tmp_str);
+   }
+
+   if (config_get_string(conf, "video_bsnes_shader", &tmp_str))
+   {
+      strncpy(g_settings.video.bsnes_shader_path, tmp_str, sizeof(g_settings.video.bsnes_shader_path));
       free(tmp_str);
    }
 
@@ -255,6 +287,11 @@ void parse_config(void)
       strncpy(g_settings.audio.driver, tmp_str, sizeof(g_settings.audio.driver) - 1);
       free(tmp_str);
    }
+   if (config_get_string(conf, "input_driver", &tmp_str))
+   {
+      strncpy(g_settings.input.driver, tmp_str, sizeof(g_settings.input.driver) - 1);
+      free(tmp_str);
+   }
    if (config_get_string(conf, "libsnes_path", &tmp_str))
    {
       strncpy(g_settings.libsnes, tmp_str, sizeof(g_settings.libsnes) - 1);
@@ -262,8 +299,6 @@ void parse_config(void)
    }
 
    read_keybinds(conf);
-
-   // TODO: Keybinds.
 
    config_file_free(conf);
 }
@@ -291,7 +326,7 @@ static const struct bind_map bind_maps[2][13] = {
       { "input_player1_right",   "input_player1_right_btn",    "input_player1_right_axis", SNES_DEVICE_ID_JOYPAD_RIGHT }, 
       { "input_player1_up",      "input_player1_up_btn",       "input_player1_up_axis", SNES_DEVICE_ID_JOYPAD_UP }, 
       { "input_player1_down",    "input_player1_down_btn",     "input_player1_down_axis", SNES_DEVICE_ID_JOYPAD_DOWN }, 
-      { "input_toggle_fast_forward", "input_toggle_fast_forward_btn", NULL, SNES_FAST_FORWARD_KEY }
+      { "input_toggle_fast_forward", "input_toggle_fast_forward_btn", NULL, SSNES_FAST_FORWARD_KEY }
    }, 
    {
       { "input_player2_a",       "input_player2_a_btn",        NULL, SNES_DEVICE_ID_JOYPAD_A }, 
@@ -306,44 +341,44 @@ static const struct bind_map bind_maps[2][13] = {
       { "input_player2_right",   "input_player2_right_btn",    "input_player2_right_axis", SNES_DEVICE_ID_JOYPAD_RIGHT }, 
       { "input_player2_up",      "input_player2_up_btn",       "input_player2_up_axis", SNES_DEVICE_ID_JOYPAD_UP }, 
       { "input_player2_down",    "input_player2_down_btn",     "input_player2_down_axis", SNES_DEVICE_ID_JOYPAD_DOWN }, 
-      { "input_toggle_fast_forward", "input_toggle_fast_forward_btn", NULL, SNES_FAST_FORWARD_KEY }
+      { "input_toggle_fast_forward", "input_toggle_fast_forward_btn", NULL, SSNES_FAST_FORWARD_KEY }
    }
 };
 
-struct glfw_map
+struct key_map
 {
    const char *str;
    int key;
 };
 
 // Edit: Not portable to different input systems atm. Might move this map into the driver itself or something.
-static const struct glfw_map glfw_map[] = {
-   { "left", GLFW_KEY_LEFT },
-   { "right", GLFW_KEY_RIGHT },
-   { "up", GLFW_KEY_UP },
-   { "down", GLFW_KEY_DOWN },
-   { "enter", GLFW_KEY_ENTER },
-   { "tab", GLFW_KEY_TAB },
-   { "insert", GLFW_KEY_INSERT },
-   { "del", GLFW_KEY_DEL },
-   { "rshift", GLFW_KEY_RSHIFT },
-   { "shift", GLFW_KEY_LSHIFT },
-   { "ctrl", GLFW_KEY_LCTRL },
-   { "alt", GLFW_KEY_LALT },
-   { "space", GLFW_KEY_SPACE },
-   { "escape", GLFW_KEY_ESC },
-   { "f1", GLFW_KEY_F1 },
-   { "f2", GLFW_KEY_F2 },
-   { "f3", GLFW_KEY_F3 },
-   { "f4", GLFW_KEY_F4 },
-   { "f5", GLFW_KEY_F5 },
-   { "f6", GLFW_KEY_F6 },
-   { "f7", GLFW_KEY_F7 },
-   { "f8", GLFW_KEY_F8 },
-   { "f9", GLFW_KEY_F9 },
-   { "f10", GLFW_KEY_F10 },
-   { "f11", GLFW_KEY_F11 },
-   { "f12", GLFW_KEY_F12 },
+static const struct key_map sdlk_map[] = {
+   { "left", SDLK_LEFT },
+   { "right", SDLK_RIGHT },
+   { "up", SDLK_UP },
+   { "down", SDLK_DOWN },
+   { "enter", SDLK_RETURN },
+   { "tab", SDLK_TAB },
+   { "insert", SDLK_INSERT },
+   { "del", SDLK_DELETE },
+   { "rshift", SDLK_RSHIFT },
+   { "shift", SDLK_LSHIFT },
+   { "ctrl", SDLK_LCTRL },
+   { "alt", SDLK_LALT },
+   { "space", SDLK_SPACE },
+   { "escape", SDLK_ESCAPE },
+   { "f1", SDLK_F1 },
+   { "f2", SDLK_F2 },
+   { "f3", SDLK_F3 },
+   { "f4", SDLK_F4 },
+   { "f5", SDLK_F5 },
+   { "f6", SDLK_F6 },
+   { "f7", SDLK_F7 },
+   { "f8", SDLK_F8 },
+   { "f9", SDLK_F9 },
+   { "f10", SDLK_F10 },
+   { "f11", SDLK_F11 },
+   { "f12", SDLK_F12 },
 };
 
 static struct snes_keybind *find_snes_bind(unsigned port, int id)
@@ -358,23 +393,23 @@ static struct snes_keybind *find_snes_bind(unsigned port, int id)
    return NULL;
 }
 
-static int find_glfw_bind(const char *str)
+static int find_sdlk_bind(const char *str)
 {
-   for (int i = 0; i < sizeof(glfw_map)/sizeof(struct glfw_map); i++)
+   for (int i = 0; i < sizeof(sdlk_map)/sizeof(struct key_map); i++)
    {
-      if (strcasecmp(glfw_map[i].str, str) == 0)
-         return glfw_map[i].key;
+      if (strcasecmp(sdlk_map[i].str, str) == 0)
+         return sdlk_map[i].key;
    }
    return -1;
 }
 
-static int find_glfw_key(const char *str)
+static int find_sdlk_key(const char *str)
 {
    // If the bind is a normal key-press ...
    if (strlen(str) == 1 && isalpha(*str))
-      return toupper(*str);
+      return (int)SDLK_a + (tolower(*str) - (int)'a');
    else // Check if we have a special mapping for it.
-      return find_glfw_bind(str);
+      return find_sdlk_bind(str);
 }
 
 static void read_keybinds(config_file_t *conf)
@@ -393,7 +428,7 @@ static void read_keybinds(config_file_t *conf)
 
          if (bind_maps[j][i].key && config_get_string(conf, bind_maps[j][i].key, &tmp_key))
          {
-            int key = find_glfw_key(tmp_key);
+            int key = find_sdlk_key(tmp_key);
 
             if (key >= 0)
                bind->key = key;
@@ -428,28 +463,28 @@ static void read_keybinds(config_file_t *conf)
    char *tmp_str;
    if (config_get_string(conf, "input_toggle_fullscreen", &tmp_str))
    {
-      int key = find_glfw_key(tmp_str);
+      int key = find_sdlk_key(tmp_str);
       if (key >= 0)
          g_settings.input.toggle_fullscreen_key = key;
       free(tmp_str);
    }
    if (config_get_string(conf, "input_save_state", &tmp_str))
    {
-      int key = find_glfw_key(tmp_str);
+      int key = find_sdlk_key(tmp_str);
       if (key >= 0)
          g_settings.input.save_state_key = key;
       free(tmp_str);
    }
    if (config_get_string(conf, "input_load_state", &tmp_str))
    {
-      int key = find_glfw_key(tmp_str);
+      int key = find_sdlk_key(tmp_str);
       if (key >= 0)
          g_settings.input.load_state_key = key;
       free(tmp_str);
    }
    if (config_get_string(conf, "input_exit_emulator", &tmp_str))
    {
-      int key = find_glfw_key(tmp_str);
+      int key = find_sdlk_key(tmp_str);
       if (key >= 0)
          g_settings.input.exit_emulator_key = key;
       free(tmp_str);

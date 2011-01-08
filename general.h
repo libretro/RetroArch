@@ -20,9 +20,17 @@
 #define __SSNES_GENERAL_H
 
 #include <stdbool.h>
-#include <samplerate.h>
 #include "driver.h"
 #include <stdio.h>
+#include "record/ffemu.h"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_SRC
+#include <samplerate.h>
+#endif
 
 
 #define MAX_PLAYERS 2
@@ -40,7 +48,9 @@ struct settings
       bool vsync;
       bool smooth;
       bool force_aspect;
+      float aspect_ratio;
       char cg_shader_path[256];
+      char bsnes_shader_path[256];
       unsigned filter;
    } video;
 
@@ -81,6 +91,12 @@ struct global
    char savefile_name_srm[256];
    char config_path[256];
    char basename[256];
+
+#ifdef HAVE_FFMPEG
+   ffemu_t *rec;
+   char record_path[256];
+   bool recording;
+#endif
 };
 
 void parse_config(void);
@@ -91,10 +107,17 @@ extern struct global g_extern;
 #define SSNES_LOG(msg, args...) do { \
    if (g_extern.verbose) \
       fprintf(stderr, "SSNES: " msg, ##args); \
+      fflush(stderr); \
    } while(0)
 
 #define SSNES_ERR(msg, args...) do { \
-   fprintf(stderr, "SSNES [ERROR] :: " msg, ##args); \
+      fprintf(stderr, "SSNES [ERROR] :: " msg, ##args); \
+      fflush(stderr); \
+   } while(0)
+
+#define SSNES_WARN(msg, args...) do { \
+      fprintf(stderr, "SSNES [WARN] :: " msg, ##args); \
+      fflush(stderr); \
    } while(0)
 
 #endif

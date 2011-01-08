@@ -17,12 +17,13 @@ It is used through command-line.
 SSNES requires these libraries to build:
 
    - [libsnes](http://byuu.org/bsnes/)
-   - GLFW
+   - SDL
    - libsamplerate
 
 SSNES can utilize these libraries if enabled:
 
    - nvidia-cg-toolkit
+   - libxml2 (bSNES XML shaders)
 
 SSNES needs one of these audio driver libraries:
 
@@ -67,13 +68,14 @@ Do note that these two options are mutually exclusive.
 
 
 
-# Filters and Cg shader support
+# Filters, bSNES XML shaders and Cg shader support
 
 This is not strictly not necessary for an emulator, but it can be enabled if desired. 
-For best performance, Cg shaders are recommended as they do not eat up valuable CPU time. 
-Cg shaders are compiled at run-time, and shaders could be dropped in.
+For best performance, Cg shaders or bSNES XML shaders are recommended as they do not eat up valuable CPU time (assuming your GPU can handle the shaders). 
+Cg shaders and XML shaders (GLSL) are compiled at run-time.
 All shaders share a common interface to pass some essential arguments such as texture size and viewport size. (Common for pixel art scalers)
 Some Cg shaders are included in hqflt/cg/ and could be used as an example.
+bSNES XML shaders can be found on various places on the net. Best place to start looking are the bSNES forums.
 
-While these shaders are Cg, they closely resemble the GLSL shaders found in bSNES shader pack, so porting them is trivial.
+The Cg shaders closely resemble the GLSL shaders found in bSNES shader pack, so porting them is trivial if desired.
 

@@ -16,17 +16,29 @@ check_lib RSOUND -lrsound rsd_init
 check_lib ROAR -lroar roar_vs_new
 check_lib JACK -ljack jack_client_open
 
-check_lib GLFW -lglfw glfwInit
-check_critical GLFW "Cannot find GLFW library."
+check_pkgconf SDL sdl 1.2.10
+check_critical SDL "Cannot find SDL library."
 
 check_lib CG -lCg cgCreateContext
+check_pkgconf XML libxml-2.0
 
-check_lib SRC -lsamplerate src_callback_new
+if [ $HAVE_FFMPEG != no ]; then
+   check_pkgconf AVCODEC libavcodec
+   check_pkgconf AVFORMAT libavformat
+   check_pkgconf AVCORE libavcore
+   check_pkgconf AVUTIL libavutil
+   check_pkgconf SWSCALE libswscale
+
+   ( [ $HAVE_FFMPEG = auto ] && ( [ $HAVE_AVCODEC = no ] || [ $HAVE_AVFORMAT = no ] || [ $HAVE_AVCORE = no ] || [ $HAVE_AVUTIL = no ] || [ $HAVE_SWSCALE = no ] ) && HAVE_FFMPEG=no ) || HAVE_FFMPEG=yes
+fi
+
+check_pkgconf SRC samplerate
+check_critical SRC "Cannot find libsamplerate."
 
 check_lib DYNAMIC -ldl dlopen
 
-# Creates config.mk.
-VARS="ALSA OSS AL RSOUND ROAR JACK GLFW FILTER CG DYNAMIC"
+# Creates config.mk and config.h.
+VARS="ALSA OSS AL RSOUND ROAR JACK SDL FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 

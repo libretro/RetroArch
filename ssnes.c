@@ -17,8 +17,6 @@
 
 
 #include <stdbool.h>
-#include <GL/glfw.h>
-#include <samplerate.h>
 #include <libsnes.hpp>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,6 +27,11 @@
 #include "hqflt/filters.h"
 #include "general.h"
 #include "dynamic.h"
+#include "record/ffemu.h"
+#include <assert.h>
+#ifdef HAVE_SRC
+#include <samplerate.h>
+#endif
 
 struct global g_extern = {
    .video_active = true,
@@ -83,6 +86,19 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if ( !g_extern.video_active )
       return;
 
+#ifdef HAVE_FFMPEG
+   if (g_extern.recording)
+   {
+      struct ffemu_video_data ffemu_data = {
+         .data = data,
+         .pitch = height == 448 || height == 478 ? 1024 : 2048,
+         .width = width,
+         .height = height
+      };
+      ffemu_push_video(g_extern.rec, &ffemu_data);
+   }
+#endif
+
 #ifdef HAVE_FILTER
    uint16_t output_filter[width * height * 4 * 4];
    uint16_t output[width * height];
@@ -129,6 +145,20 @@ static void audio_sample(uint16_t left, uint16_t right)
 {
    if ( !g_extern.audio_active )
       return;
+
+#ifdef HAVE_FFMPEG
+   if (g_extern.recording)
+   {
+      static int16_t static_data[2];
+      static_data[0] = left;
+      static_data[1] = right;
+      struct ffemu_audio_data ffemu_data = {
+         .data = static_data,
+         .frames = 1
+      };
+      ffemu_push_audio(g_extern.rec, &ffemu_data);
+   }
+#endif
 
    static float data[AUDIO_CHUNK_SIZE_NONBLOCKING];
    static int data_ptr = 0;
@@ -187,15 +217,31 @@ static void fill_pathname(char *out_path, char *in_path, const char *replace)
    strcat(out_path, replace);
 }
 
+#ifdef HAVE_FFMPEG
+#define FFMPEG_HELP_QUARK " | -r/--record "
+#else
+#define FFMPEG_HELP_QUARK
+#endif
+
+#ifdef _WIN32
+#define SSNES_DEFAULT_CONF_PATH_STR "\n\tDefaults to ssnes.cfg in same directory as ssnes.exe"
+#else
+#define SSNES_DEFAULT_CONF_PATH_STR " Defaults to $XDG_CONFIG_HOME/ssnes/ssnes.cfg"
+#endif
+
 static void print_help(void)
 {
    puts("=================================================");
    puts("ssnes: Simple Super Nintendo Emulator (libsnes)");
    puts("=================================================");
-   puts("Usage: ssnes [rom file] [-h/--help | -s/--save]");
+   puts("Usage: ssnes [rom file] [-h/--help | -s/--save" FFMPEG_HELP_QUARK "]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
-   puts("\t-c/--config: Path for config file. Defaults to $XDG_CONFIG_HOME/ssnes/ssnes.cfg");
+   puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
+
+#ifdef HAVE_FFMPEG
+   puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
+#endif
    puts("\t-v/--verbose: Verbose logging");
 }
 
@@ -210,13 +256,23 @@ static void parse_input(int argc, char *argv[])
    struct option opts[] = {
       { "help", 0, NULL, 'h' },
       { "save", 1, NULL, 's' },
+#ifdef HAVE_FFMPEG
+      { "record", 1, NULL, 'r' },
+#endif
       { "verbose", 0, NULL, 'v' },
       { "config", 0, NULL, 'c' },
       { NULL, 0, NULL, 0 }
    };
 
    int option_index = 0;
-   char optstring[] = "hs:vc:";
+
+#ifdef HAVE_FFMPEG
+#define FFMPEG_RECORD_ARG "r:"
+#else
+#define FFMPEG_RECORD_ARG
+#endif
+
+   char optstring[] = "hs:vc:" FFMPEG_RECORD_ARG;
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -242,6 +298,13 @@ static void parse_input(int argc, char *argv[])
          case 'c':
             strncpy(g_extern.config_path, optarg, sizeof(g_extern.config_path) - 1);
             break;
+
+#ifdef HAVE_FFMPEG
+         case 'r':
+            strncpy(g_extern.record_path, optarg, sizeof(g_extern.record_path) - 1);
+            g_extern.recording = true;
+            break;
+#endif
 
          case '?':
             print_help();
@@ -298,7 +361,7 @@ int main(int argc, char *argv[])
       SSNES_ERR("Could not read ROM file.\n");
       exit(1);
    }
-   SSNES_LOG("ROM size: %zi bytes\n", rom_len);
+   SSNES_LOG("ROM size: %d bytes\n", (int)rom_len);
 
    if (g_extern.rom_file != NULL)
       fclose(g_extern.rom_file);
@@ -335,23 +398,49 @@ int main(int argc, char *argv[])
    load_save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
    load_save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
 
-   ///// TODO: Modular friendly!!!
+#ifdef HAVE_FFMPEG
+   // Hardcode these options at the moment. Should be specificed in the config file later on.
+   if (g_extern.recording)
+   {
+      struct ffemu_rational ntsc_fps = {60000, 1001};
+      struct ffemu_rational pal_fps = {50000, 1001};
+      struct ffemu_params params = {
+         .vcodec = FFEMU_VIDEO_H264,
+         .acodec = FFEMU_AUDIO_VORBIS,
+         .rescaler = FFEMU_RESCALER_POINT,
+         .out_width = 512,
+         .out_height = 448,
+         .channels = 2,
+         .samplerate = 32040,
+         .filename = g_extern.record_path,
+         .fps = snes_get_region() == SNES_REGION_NTSC ? ntsc_fps : pal_fps,
+         .aspect_ratio = 4.0/3
+      };
+      SSNES_LOG("Recording with FFmpeg to %s.\n", g_extern.record_path);
+      g_extern.rec = ffemu_new(&params);
+      if (!g_extern.rec)
+      {
+         SSNES_ERR("Failed to start FFmpeg recording.\n");
+         g_extern.recording = false;
+      }
+   }
+#endif
+
    for(;;)
    {
-      bool quitting = glfwGetKey(g_settings.input.exit_emulator_key) || !glfwGetWindowParam(GLFW_OPENED);
-      
-      if ( quitting )
+      if (driver.input->key_pressed(driver.input_data, g_settings.input.exit_emulator_key) ||
+            !driver.video->alive(driver.video_data))
          break;
 
-      if ( glfwGetKey( g_settings.input.save_state_key ))
+      if (driver.input->key_pressed(driver.input_data, g_settings.input.save_state_key))
       {
          write_file(statefile_name, serial_data, serial_size);
       }
 
-      else if ( glfwGetKey( g_settings.input.load_state_key ) )
+      else if (driver.input->key_pressed(driver.input_data, g_settings.input.load_state_key))
          load_state(statefile_name, serial_data, serial_size);
 
-      else if ( glfwGetKey( g_settings.input.toggle_fullscreen_key ) )
+      else if (driver.input->key_pressed(driver.input_data, g_settings.input.toggle_fullscreen_key))
       {
          g_settings.video.fullscreen = !g_settings.video.fullscreen;
          uninit_drivers();
@@ -360,6 +449,14 @@ int main(int argc, char *argv[])
 
       psnes_run();
    }
+
+#ifdef HAVE_FFMPEG
+   if (g_extern.recording)
+   {
+      ffemu_finalize(g_extern.rec);
+      ffemu_free(g_extern.rec);
+   }
+#endif
 
    save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
    save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);

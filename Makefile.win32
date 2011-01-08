@@ -1,0 +1,59 @@
+TARGET = ssnes.exe
+OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o
+
+CC = gcc
+CXX = g++
+
+HAVE_SRC = 1
+HAVE_SDL = 1
+HAVE_XML = 1
+libsnes ?= -lsnes
+
+LIBS =
+DEFINES = -I.
+LDFLAGS = -L. -static-libgcc
+
+SRC_LIBS = -lsamplerate-0
+SDL_LIBS = -lSDLmain -lSDL
+SDL_CFLAGS = -ISDL
+
+ifeq ($(HAVE_SRC), 1)
+   LIBS += $(SRC_LIBS)
+   DEFINES += $(SRC_CFLAGS) -DHAVE_SRC
+endif
+
+ifeq ($(HAVE_SDL), 1)
+   OBJ += gfx/gl.o input/sdl.o audio/sdl.o audio/buffer.o
+   LIBS += $(SDL_LIBS) -lopengl32
+   DEFINES += $(SDL_CFLAGS) -DHAVE_SDL
+endif
+
+ifeq ($(HAVE_XML), 1)
+   OBJ += gfx/shader_glsl.o
+   DEFINES += $(XML_CFLAGS) -DHAVE_XML
+   LIBS += -lxml2
+endif
+
+LIBS += $(libsnes)
+
+CFLAGS = -Wall -O3 -g -std=gnu99 -I.
+
+all: $(TARGET)
+
+$(TARGET): $(OBJ)
+	$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+
+clean:
+	rm -f *.o 
+	rm -f audio/*.o
+	rm -f conf/*.o
+	rm -f gfx/*.o
+	rm -f record/*.o
+	rm -f hqflt/*.o
+	rm -f hqflt/snes_ntsc/*.o
+	rm -f $(TARGET)
+
+.PHONY: all install uninstall clean

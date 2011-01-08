@@ -132,7 +132,7 @@ static void print_config(config_file_t *conf)
    struct entry_list *tmp = conf->entries;
    while (tmp != NULL)
    {
-      printf("Key: \"%s\", Value: \"%s\"\n", tmp->key, tmp->value);
+      SSNES_LOG("Config => Key: \"%s\", Value: \"%s\"\n", tmp->key, tmp->value);
       tmp = tmp->next;
    }
 }

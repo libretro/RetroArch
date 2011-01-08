@@ -15,31 +15,22 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef __SSNES_SDL_INPUT_H
+#define __SSNES_SDL_INPUT_H
 
-#ifndef __FILTERS_H
-#define __FILTERS_H
+#include "SDL.h"
+typedef struct sdl_input
+{
+   SDL_Joystick *joysticks[2];
+   unsigned num_axes[2];
+   unsigned num_buttons[2];
+   unsigned num_joysticks;
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#ifdef HAVE_FILTER
-
-#include "pastlib.h"
-#include "grayscale.h"
-#include "bleed.h"
-#include "ntsc.h"
-
-#define FILTER_HQ2X 1
-#define FILTER_HQ4X 2
-#define FILTER_GRAYSCALE 3
-#define FILTER_BLEED 4
-#define FILTER_NTSC 5
-#define FILTER_HQ2X_STR "hq2x"
-#define FILTER_HQ4X_STR "hq4x"
-#define FILTER_GRAYSCALE_STR "grayscale"
-#define FILTER_BLEED_STR "bleed"
-#define FILTER_NTSC_STR "ntsc"
-#endif
+   // A video driver could pre-init with the SDL driver and have it handle resizing events...
+   bool *quitting;
+   bool *should_resize;
+   unsigned *new_width;
+   unsigned *new_height;
+} sdl_input_t;
 
 #endif

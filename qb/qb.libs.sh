@@ -106,14 +106,15 @@ check_pkgconf()
    eval tmpval=\$$tmpval
    [ "$tmpval" = "no" ] && return 0
 
-   echo -n "Checking presence of package $2 ... "
+   echo -n "Checking presence of package $2"
    eval HAVE_$1=no
    eval $1_CFLAGS=""
    eval $1_LIBS=""
    answer=no
    minver=0.0
-   [ ! -z $3 ] && minver=$3
-   pkg-config --atleast-version=$minver --exists "$2" && eval HAVE_$1=yes && eval $1_CFLAGS='"`pkg-config $2 --cflags`"' && eval $1_LIBS='"`pkg-config $2 --libs`"' && answer=yes
+   [ ! -z $3 ] && minver=$3 && echo -n " with minimum version $minver"
+   echo -n " ... "
+   pkg-config --atleast-version=$minver "$2" && eval HAVE_$1=yes && eval $1_CFLAGS='"`pkg-config $2 --cflags`"' && eval $1_LIBS='"`pkg-config $2 --libs`"' && answer=yes
    echo $answer
 
    PKG_CONF_USED="$PKG_CONF_USED $1"

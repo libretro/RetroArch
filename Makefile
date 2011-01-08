@@ -4,12 +4,19 @@ TARGET = ssnes
 
 OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o
 
-LIBS = -lsamplerate
+LIBS =
+DEFINES = -DHAVE_CONFIG_H
+
+ifeq ($(HAVE_SRC), 1)
+   LIBS += $(SRC_LIBS)
+   DEFINES += $(SRC_CFLAGS)
+endif
 
 ifeq ($(HAVE_RSOUND), 1)
    OBJ += audio/rsound.o
    LIBS += -lrsound
 endif
+
 ifeq ($(HAVE_OSS), 1)
    OBJ += audio/oss.o
 endif
@@ -30,13 +37,21 @@ ifeq ($(HAVE_JACK),1)
    LIBS += -ljack
 endif
 
-ifeq ($(HAVE_GLFW), 1)
-   OBJ += gfx/gl.o
-   LIBS += -lglfw
+ifeq ($(HAVE_SDL), 1)
+   OBJ += gfx/gl.o input/sdl.o audio/sdl.o audio/buffer.o
+   LIBS += $(SDL_LIBS) -lGL
+   DEFINES += $(SDL_CFLAGS)
 endif
 
 ifeq ($(HAVE_CG), 1)
+   OBJ += gfx/shader_cg.o
    LIBS += -lCg -lCgGL
+endif
+
+ifeq ($(HAVE_XML), 1)
+   OBJ += gfx/shader_glsl.o
+   LIBS += $(XML_LIBS)
+   DEFINES += $(XML_CFLAGS)
 endif
 
 ifeq ($(HAVE_FILTER), 1)
@@ -45,6 +60,12 @@ ifeq ($(HAVE_FILTER), 1)
    OBJ += hqflt/bleed.o
    OBJ += hqflt/ntsc.o
    OBJ += hqflt/snes_ntsc/snes_ntsc.o
+endif
+
+ifeq ($(HAVE_FFMPEG), 1)
+   OBJ += record/ffemu.o
+   LIBS += $(AVCODEC_LIBS) $(AVCORE_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS)
+   DEFINES += $(AVCODEC_CFLAGS) $(AVCORE_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS)
 endif
 
 ifeq ($(HAVE_DYNAMIC), 1)
@@ -62,13 +83,13 @@ config.mk: configure qb/*
 	@exit 1
 
 ssnes: $(OBJ)
-	$(CXX) -o $@ $(OBJ) $(LIBS) $(CFLAGS)
+	$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
 
 %.o: %.c config.h config.mk
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 install: $(TARGET)
-	install -m755 $(TARGET) $(DESTDIR)/$(PREFIX)/bin 
+	install -m755 $(TARGET) $(DESTDIR)$(PREFIX)/bin 
 	install -m644 ssnes.cfg $(DESTDIR)/etc/ssnes.cfg
 
 uninstall: $(TARGET)
@@ -79,6 +100,7 @@ clean:
 	rm -f audio/*.o
 	rm -f conf/*.o
 	rm -f gfx/*.o
+	rm -f record/*.o
 	rm -f hqflt/*.o
 	rm -f hqflt/snes_ntsc/*.o
 	rm -f $(TARGET)

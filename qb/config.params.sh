@@ -9,8 +9,10 @@ PACKAGE_VERSION=0.1
 # $3: Default arg. auto implies that HAVE_ALSA will be set according to library checks later on.
 add_command_line_enable DYNAMIC "Enable dynamic loading of libsnes library." no
 add_command_line_string LIBSNES "libsnes library used" "-lsnes"
+add_command_line_enable FFMPEG "Enable FFmpeg recording support" auto
 add_command_line_enable FILTER "Disable CPU filter support" yes
-add_command_line_enable CG "Enable CG shader support" auto
+add_command_line_enable CG "Enable Cg shader support" auto
+add_command_line_enable XML "Enable bSNES-style XML shader support" auto
 add_command_line_enable ALSA "Enable ALSA support" auto
 add_command_line_enable OSS "Enable OSS support" auto
 add_command_line_enable RSOUND "Enable RSound support" auto

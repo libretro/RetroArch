@@ -19,12 +19,13 @@
 #ifndef __DRIVER__H
 #define __DRIVER__H
 
+#include <sys/types.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
 
-#define SNES_FAST_FORWARD_KEY 0x666 // Hurr, durr
+#define SSNES_FAST_FORWARD_KEY 0x666 // Hurr, durr
 void set_fast_forward_button(bool state);
 
 struct snes_keybind
@@ -65,16 +66,19 @@ typedef struct input_driver
    void* (*init)(void);
    void (*poll)(void* data);
    int16_t (*input_state)(void* data, const struct snes_keybind **snes_keybinds, bool port, unsigned device, unsigned index, unsigned id);
+   bool (*key_pressed)(void* data, int key);
    void (*free)(void* data);
    const char *ident;
 } input_driver_t;
 
 typedef struct video_driver
 {
-   void* (*init)(video_info_t *video, const input_driver_t **input); 
-   // Should the video driver act as an input driver as well? :)
+   void* (*init)(video_info_t *video, const input_driver_t **input, void **input_data); 
+   // Should the video driver act as an input driver as well? :) The video init might preinitialize an input driver to override the settings in case the video driver relies on input driver for event handling, e.g.
    bool (*frame)(void* data, const uint16_t* frame, int width, int height, int pitch);
    void (*set_nonblock_state)(void* data, bool toggle); // Should we care about syncing to vblank? Fast forwarding.
+   // Is the window still active?
+   bool (*alive)(void *data);
    void (*free)(void* data);
    const char *ident;
 } video_driver_t;
@@ -107,7 +111,9 @@ extern const audio_driver_t audio_alsa;
 extern const audio_driver_t audio_roar;
 extern const audio_driver_t audio_openal;
 extern const audio_driver_t audio_jack;
+extern const audio_driver_t audio_sdl;
 extern const video_driver_t video_gl;
+extern const input_driver_t input_sdl;
 ////////////////////////////////////////////////
 
 #endif

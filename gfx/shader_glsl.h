@@ -16,30 +16,19 @@
  */
 
 
-#ifndef __FILTERS_H
-#define __FILTERS_H
+#ifndef __SSNES_GLSL_H
+#define __SSNES_GLSL_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <stdbool.h>
 
-#ifdef HAVE_FILTER
+bool gl_glsl_init(const char *path);
 
-#include "pastlib.h"
-#include "grayscale.h"
-#include "bleed.h"
-#include "ntsc.h"
+void gl_glsl_deinit(void);
 
-#define FILTER_HQ2X 1
-#define FILTER_HQ4X 2
-#define FILTER_GRAYSCALE 3
-#define FILTER_BLEED 4
-#define FILTER_NTSC 5
-#define FILTER_HQ2X_STR "hq2x"
-#define FILTER_HQ4X_STR "hq4x"
-#define FILTER_GRAYSCALE_STR "grayscale"
-#define FILTER_BLEED_STR "bleed"
-#define FILTER_NTSC_STR "ntsc"
-#endif
+void gl_glsl_set_proj_matrix(void);
+
+void gl_glsl_set_params(unsigned width, unsigned height, 
+      unsigned tex_width, unsigned tex_height, 
+      unsigned out_width, unsigned out_height);
 
 #endif
