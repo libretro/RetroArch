@@ -17,10 +17,10 @@
 
 #include "general.h"
 #include "conf/config_file.h"
-#include "config.def.h"
 #include <assert.h>
 #include <string.h>
 #include "hqflt/filters.h"
+#include "config.def.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -422,7 +422,7 @@ static int find_sdlk_key(const char *str)
 static void read_keybinds(config_file_t *conf)
 {
    char *tmp_key = NULL;
-   int tmp_btn;
+   char *tmp_btn = NULL;
    char *tmp_axis = NULL;
 
    for (int j = 0; j < 1; j++)
@@ -444,10 +444,35 @@ static void read_keybinds(config_file_t *conf)
             tmp_key = NULL;
          }
 
-         if (bind_maps[j][i].btn && config_get_int(conf, bind_maps[j][i].btn, &tmp_btn))
+         if (bind_maps[j][i].btn && config_get_string(conf, bind_maps[j][i].btn, &tmp_btn))
          {
-            if (tmp_btn >= 0)
-               bind->joykey = tmp_btn;
+            const char *btn = tmp_btn;
+            if (*btn++ == 'h')
+            {
+               if (isdigit(*btn))
+               {
+                  char *dir = NULL;
+                  int hat = strtol(btn, &dir, 0);
+                  int hat_dir = 0;
+                  if (dir)
+                  {
+                     if (strcasecmp(dir, "up") == 0)
+                        hat_dir = HAT_UP_MASK;
+                     else if (strcasecmp(dir, "down") == 0)
+                        hat_dir = HAT_DOWN_MASK;
+                     else if (strcasecmp(dir, "left") == 0)
+                        hat_dir = HAT_LEFT_MASK;
+                     else if (strcasecmp(dir, "right") == 0)
+                        hat_dir = HAT_RIGHT_MASK;
+
+                     if (hat_dir)
+                        bind->joykey = HAT_MAP(hat, hat_dir);
+                  }
+               }
+            }
+            else
+               bind->joykey = strtol(tmp_btn, NULL, 0);
+            free(tmp_btn);
          }
 
          if (bind_maps[j][i].axis && config_get_string(conf, bind_maps[j][i].axis, &tmp_axis))

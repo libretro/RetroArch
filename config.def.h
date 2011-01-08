@@ -139,15 +139,7 @@ static const bool audio_sync = true;
 // How far an axis must be tilted to result in a button press
 #define AXIS_THRESHOLD 0.5
 
-#define AXIS_NEG(x) ((uint32_t)(x << 16) | 0xFFFF)
-#define AXIS_POS(x) ((uint32_t)(x) | 0xFFFF0000U)
-#define AXIS_NONE ((uint32_t)0xFFFFFFFFU)
-#define NO_BTN 0xFFFF // I hope no joypad will ever have this many buttons ... ;)
-
 // To figure out which joypad buttons to use, check jstest or similar.
-// Axes are configured using the axis number for the positive (up, right)
-// direction and the number's two's-complement (~) for negative directions.
-// To use the axis, set the button to -1.
 // SDL sometimes reverses the axes for some odd reason, but hey. :D
 
 // Player 1

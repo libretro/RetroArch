@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <libsnes.hpp>
 #include "ssnes_sdl_input.h"
+#include "config.def.h"
 
 static void* sdl_input_init(void)
 {
@@ -52,13 +53,14 @@ static void* sdl_input_init(void)
       SSNES_LOG("Opened Joystick: %s\n", SDL_JoystickName(i));
       sdl->num_axes[i] = SDL_JoystickNumAxes(sdl->joysticks[i]);
       sdl->num_buttons[i] = SDL_JoystickNumButtons(sdl->joysticks[i]);
+      sdl->num_hats[i] = SDL_JoystickNumHats(sdl->joysticks[i]);
    }
 
    return sdl;
 }
 
 
-static bool sdl_key_pressed(void *data, int key)
+static bool sdl_key_pressed(int key)
 {
    int num_keys;
    Uint8 *keymap = SDL_GetKeyState(&num_keys);
@@ -69,27 +71,60 @@ static bool sdl_key_pressed(void *data, int key)
    return keymap[key];
 }
 
-static bool sdl_is_pressed(sdl_input_t *sdl, int port_num, const struct snes_keybind *key)
+static bool sdl_joykey_pressed(sdl_input_t *sdl, int port_num, uint16_t joykey)
 {
-   if (sdl_key_pressed(sdl, key->key))
-      return true;
-   if (port_num >= sdl->num_joysticks)
-      return false;
-   if (key->joykey < sdl->num_buttons[port_num] && SDL_JoystickGetButton(sdl->joysticks[port_num], key->joykey))
-      return true;
-
-   if (key->joyaxis != AXIS_NONE)
+   // Check hat.
+   if (GET_HAT_DIR(joykey))
    {
-      if (AXIS_NEG_GET(key->joyaxis) < sdl->num_axes[port_num])
+      int hat = GET_HAT(joykey);
+      if (hat < sdl->num_hats[port_num])
       {
-         Sint16 val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_NEG_GET(key->joyaxis));
+         Uint8 dir = SDL_JoystickGetHat(sdl->joysticks[port_num], hat);
+         switch (GET_HAT_DIR(joykey))
+         {
+            case HAT_UP_MASK:
+               if (dir == SDL_HAT_UP || dir == SDL_HAT_RIGHTUP || dir == SDL_HAT_LEFTUP)
+                  return true;
+               break;
+            case HAT_DOWN_MASK:
+               if (dir == SDL_HAT_DOWN || dir == SDL_HAT_LEFTDOWN || dir == SDL_HAT_RIGHTDOWN)
+                  return true;
+               break;
+            case HAT_LEFT_MASK:
+               if (dir == SDL_HAT_LEFT || dir == SDL_HAT_LEFTDOWN || dir == SDL_HAT_LEFTUP)
+                  return true;
+               break;
+            case HAT_RIGHT_MASK:
+               if (dir == SDL_HAT_RIGHT || dir == SDL_HAT_RIGHTDOWN || dir == SDL_HAT_RIGHTUP)
+                  return true;
+               break;
+            default:
+               break;
+         }
+      }
+   }
+   else // Check the button
+   {
+      if (joykey < sdl->num_buttons[port_num] && SDL_JoystickGetButton(sdl->joysticks[port_num], joykey))
+         return true;
+   }
+   return false;
+}
+
+static bool sdl_axis_pressed(sdl_input_t *sdl, int port_num, uint32_t joyaxis)
+{
+   if (joyaxis != AXIS_NONE)
+   {
+      if (AXIS_NEG_GET(joyaxis) < sdl->num_axes[port_num])
+      {
+         Sint16 val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_NEG_GET(joyaxis));
          float scaled = (float)val / 0x8000;
          if (scaled < -g_settings.input.axis_threshold)
             return true;
       }
-      if (AXIS_POS_GET(key->joyaxis) < sdl->num_axes[port_num])
+      if (AXIS_POS_GET(joyaxis) < sdl->num_axes[port_num])
       {
-         Sint16 val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_POS_GET(key->joyaxis));
+         Sint16 val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_POS_GET(joyaxis));
          float scaled = (float)val / 0x8000;
          if (scaled > g_settings.input.axis_threshold)
             return true;
@@ -99,8 +134,23 @@ static bool sdl_is_pressed(sdl_input_t *sdl, int port_num, const struct snes_key
    return false;
 }
 
+static bool sdl_is_pressed(sdl_input_t *sdl, int port_num, const struct snes_keybind *key)
+{
+   if (sdl_key_pressed(key->key))
+      return true;
+   if (port_num >= sdl->num_joysticks)
+      return false;
+   if (sdl_joykey_pressed(sdl, port_num, key->joykey))
+      return true;
+   if (sdl_axis_pressed(sdl, port_num, key->joyaxis))
+      return true;
+
+   return false;
+}
+
 static bool sdl_bind_button_pressed(void *data, int key)
 {
+   // Only let player 1 use special binds called from main loop.
    const struct snes_keybind *binds = g_settings.input.binds[0];
    for (int i = 0; binds[i].id != -1; i++)
    {

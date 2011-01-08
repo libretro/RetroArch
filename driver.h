@@ -64,9 +64,26 @@ typedef struct audio_driver
    const char *ident;
 } audio_driver_t;
 
+#define AXIS_NEG(x) ((uint32_t)(x << 16) | 0xFFFF)
+#define AXIS_POS(x) ((uint32_t)(x) | 0xFFFF0000U)
+#define AXIS_NONE ((uint32_t)0xFFFFFFFFU)
+
 #define AXIS_NEG_GET(x) ((x >> 16) & 0xFFFF)
 #define AXIS_POS_GET(x) (x & 0xFFFF)
 #define AXIS_NONE ((uint32_t)0xFFFFFFFFU)
+
+#define NO_BTN 0xFFFF // I hope no joypad will ever have this many buttons ... ;)
+
+#define HAT_UP_MASK (1 << 15)
+#define HAT_DOWN_MASK (1 << 14)
+#define HAT_LEFT_MASK (1 << 13)
+#define HAT_RIGHT_MASK (1 << 12)
+#define HAT_MAP(x, hat) ((x & ((1 << 12) - 1)) | hat)
+
+#define HAT_MASK (HAT_UP_MASK | HAT_DOWN_MASK | HAT_LEFT_MASK | HAT_RIGHT_MASK)
+#define GET_HAT_DIR(x) (x & HAT_MASK)
+#define GET_HAT(x) (x & (~HAT_MASK))
+
 typedef struct input_driver
 {
    void* (*init)(void);

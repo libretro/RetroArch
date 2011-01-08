@@ -24,6 +24,7 @@ typedef struct sdl_input
    SDL_Joystick *joysticks[2];
    unsigned num_axes[2];
    unsigned num_buttons[2];
+   unsigned num_hats[2];
    unsigned num_joysticks;
 
    // A video driver could pre-init with the SDL driver and have it handle resizing events...
