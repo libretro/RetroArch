@@ -33,8 +33,8 @@
 #endif
 
 
-#define MAX_PLAYERS 2
-#define MAX_BINDS 14
+#define MAX_PLAYERS 2 // Should be 5 when multi-tap stuff is added ...
+#define MAX_BINDS 18 // Needs to be increased every time there are new binds added.
 struct settings
 {
    struct 
@@ -70,10 +70,6 @@ struct settings
    {
       char driver[32];
       struct snes_keybind binds[MAX_PLAYERS][MAX_BINDS];
-      int save_state_key;
-      int load_state_key;
-      int toggle_fullscreen_key;
-      int exit_emulator_key;
       float axis_threshold;
    } input;
 

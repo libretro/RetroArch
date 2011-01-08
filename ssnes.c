@@ -43,7 +43,7 @@ struct global g_extern = {
 #define AUDIO_CHUNK_SIZE_BLOCKING 64
 #define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
 static size_t audio_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
-void set_fast_forward_button(bool new_button_state)
+static void set_fast_forward_button(bool new_button_state)
 {
    static bool old_button_state = false;
    static bool syncing_state = false;
@@ -426,21 +426,24 @@ int main(int argc, char *argv[])
    }
 #endif
 
+   // Main loop
    for(;;)
    {
-      if (driver.input->key_pressed(driver.input_data, g_settings.input.exit_emulator_key) ||
+      if (driver.input->key_pressed(driver.input_data, SSNES_QUIT_KEY) ||
             !driver.video->alive(driver.video_data))
          break;
 
-      if (driver.input->key_pressed(driver.input_data, g_settings.input.save_state_key))
+      set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
+
+      if (driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY))
       {
          write_file(statefile_name, serial_data, serial_size);
       }
 
-      else if (driver.input->key_pressed(driver.input_data, g_settings.input.load_state_key))
+      else if (driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY))
          load_state(statefile_name, serial_data, serial_size);
 
-      else if (driver.input->key_pressed(driver.input_data, g_settings.input.toggle_fullscreen_key))
+      else if (driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY))
       {
          g_settings.video.fullscreen = !g_settings.video.fullscreen;
          uninit_drivers();

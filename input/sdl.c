@@ -56,6 +56,7 @@ static void* sdl_input_init(void)
    return sdl;
 }
 
+
 static bool sdl_key_pressed(void *data, int key)
 {
    int num_keys;
@@ -97,6 +98,17 @@ static bool sdl_is_pressed(sdl_input_t *sdl, int port_num, const struct snes_key
    return false;
 }
 
+static bool sdl_bind_button_pressed(void *data, int key)
+{
+   const struct snes_keybind *binds = g_settings.input.binds[0];
+   for (int i = 0; binds[i].id != -1; i++)
+   {
+      if (binds[i].id == key)
+         return sdl_is_pressed(data, 0, &binds[i]);
+   }
+   return false;
+}
+
 static int16_t sdl_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
 {
    sdl_input_t *sdl = data;
@@ -105,18 +117,15 @@ static int16_t sdl_input_state(void *data, const struct snes_keybind **binds, bo
 
    const struct snes_keybind *snes_keybinds = binds[port == SNES_PORT_1 ? 0 : 1];
 
-   // Checks if button is pressed, and sets fast-forwarding state
-   bool pressed = false;
+   // Checks if button is pressed.
    int port_num = port == SNES_PORT_1 ? 0 : 1;
    for (int i = 0; snes_keybinds[i].id != -1; i++)
    {
-      if (snes_keybinds[i].id == SSNES_FAST_FORWARD_KEY)
-         set_fast_forward_button(sdl_is_pressed(sdl, port_num, &snes_keybinds[i]));
-      else if (!pressed && snes_keybinds[i].id == (int)id)
-         pressed = sdl_is_pressed(sdl, port_num, &snes_keybinds[i]);
+      if (snes_keybinds[i].id == (int)id)
+         return sdl_is_pressed(sdl, port_num, &snes_keybinds[i]);
    }
 
-   return pressed;
+   return false;
 }
 
 static void sdl_input_free(void *data)
@@ -170,7 +179,7 @@ const input_driver_t input_sdl = {
    .init = sdl_input_init,
    .poll = sdl_input_poll,
    .input_state = sdl_input_state,
-   .key_pressed = sdl_key_pressed,
+   .key_pressed = sdl_bind_button_pressed,
    .free = sdl_input_free,
    .ident = "sdl"
 };

@@ -111,11 +111,7 @@ static void set_defaults(void)
    memcpy(g_settings.input.binds[0], snes_keybinds_1, sizeof(snes_keybinds_1));
    memcpy(g_settings.input.binds[1], snes_keybinds_2, sizeof(snes_keybinds_2));
 
-   g_settings.input.save_state_key = SAVE_STATE_KEY;
-   g_settings.input.load_state_key = LOAD_STATE_KEY;
-   g_settings.input.toggle_fullscreen_key = TOGGLE_FULLSCREEN;
    g_settings.input.axis_threshold = AXIS_THRESHOLD;
-   g_settings.input.exit_emulator_key = SDLK_ESCAPE;
 }
 
 void parse_config(void)
@@ -311,37 +307,47 @@ struct bind_map
    int snes_key;
 };
 
+
+#define DECLARE_BIND(x, bind) { "input_" #x, "input_" #x "_btn", "input_" #x "_axis", bind },
 // Big and nasty bind map... :)
-static const struct bind_map bind_maps[2][13] = {
+static const struct bind_map bind_maps[2][MAX_BINDS - 1] = {
    {
-      { "input_player1_a",       "input_player1_a_btn",        NULL, SNES_DEVICE_ID_JOYPAD_A }, 
-      { "input_player1_b",       "input_player1_b_btn",        NULL, SNES_DEVICE_ID_JOYPAD_B }, 
-      { "input_player1_y",       "input_player1_y_btn",        NULL, SNES_DEVICE_ID_JOYPAD_Y }, 
-      { "input_player1_x",       "input_player1_x_btn",        NULL, SNES_DEVICE_ID_JOYPAD_X }, 
-      { "input_player1_start",   "input_player1_start_btn",    NULL, SNES_DEVICE_ID_JOYPAD_START }, 
-      { "input_player1_select",  "input_player1_select_btn",   NULL, SNES_DEVICE_ID_JOYPAD_SELECT }, 
-      { "input_player1_l",       "input_player1_l_btn",        NULL, SNES_DEVICE_ID_JOYPAD_L }, 
-      { "input_player1_r",       "input_player1_r_btn",        NULL, SNES_DEVICE_ID_JOYPAD_R }, 
-      { "input_player1_left",    "input_player1_left_btn",     "input_player1_left_axis", SNES_DEVICE_ID_JOYPAD_LEFT }, 
-      { "input_player1_right",   "input_player1_right_btn",    "input_player1_right_axis", SNES_DEVICE_ID_JOYPAD_RIGHT }, 
-      { "input_player1_up",      "input_player1_up_btn",       "input_player1_up_axis", SNES_DEVICE_ID_JOYPAD_UP }, 
-      { "input_player1_down",    "input_player1_down_btn",     "input_player1_down_axis", SNES_DEVICE_ID_JOYPAD_DOWN }, 
-      { "input_toggle_fast_forward", "input_toggle_fast_forward_btn", NULL, SSNES_FAST_FORWARD_KEY }
-   }, 
+      DECLARE_BIND(player1_a,             SNES_DEVICE_ID_JOYPAD_A)
+      DECLARE_BIND(player1_b,             SNES_DEVICE_ID_JOYPAD_B)
+      DECLARE_BIND(player1_y,             SNES_DEVICE_ID_JOYPAD_Y)
+      DECLARE_BIND(player1_x,             SNES_DEVICE_ID_JOYPAD_X)
+      DECLARE_BIND(player1_start,         SNES_DEVICE_ID_JOYPAD_START)
+      DECLARE_BIND(player1_select,        SNES_DEVICE_ID_JOYPAD_SELECT)
+      DECLARE_BIND(player1_l,             SNES_DEVICE_ID_JOYPAD_L)
+      DECLARE_BIND(player1_r,             SNES_DEVICE_ID_JOYPAD_R)
+      DECLARE_BIND(player1_left,          SNES_DEVICE_ID_JOYPAD_LEFT)
+      DECLARE_BIND(player1_right,         SNES_DEVICE_ID_JOYPAD_RIGHT)
+      DECLARE_BIND(player1_up,            SNES_DEVICE_ID_JOYPAD_UP)
+      DECLARE_BIND(player1_down,          SNES_DEVICE_ID_JOYPAD_DOWN)
+      DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
+      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
+      DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
+      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
+   },
    {
-      { "input_player2_a",       "input_player2_a_btn",        NULL, SNES_DEVICE_ID_JOYPAD_A }, 
-      { "input_player2_b",       "input_player2_b_btn",        NULL, SNES_DEVICE_ID_JOYPAD_B }, 
-      { "input_player2_y",       "input_player2_y_btn",        NULL, SNES_DEVICE_ID_JOYPAD_Y }, 
-      { "input_player2_x",       "input_player2_x_btn",        NULL, SNES_DEVICE_ID_JOYPAD_X }, 
-      { "input_player2_start",   "input_player2_start_btn",    NULL, SNES_DEVICE_ID_JOYPAD_START }, 
-      { "input_player2_select",  "input_player2_select_btn",   NULL, SNES_DEVICE_ID_JOYPAD_SELECT }, 
-      { "input_player2_l",       "input_player2_l_btn",        NULL, SNES_DEVICE_ID_JOYPAD_L }, 
-      { "input_player2_r",       "input_player2_r_btn",        NULL, SNES_DEVICE_ID_JOYPAD_R }, 
-      { "input_player2_left",    "input_player2_left_btn",     "input_player2_left_axis", SNES_DEVICE_ID_JOYPAD_LEFT }, 
-      { "input_player2_right",   "input_player2_right_btn",    "input_player2_right_axis", SNES_DEVICE_ID_JOYPAD_RIGHT }, 
-      { "input_player2_up",      "input_player2_up_btn",       "input_player2_up_axis", SNES_DEVICE_ID_JOYPAD_UP }, 
-      { "input_player2_down",    "input_player2_down_btn",     "input_player2_down_axis", SNES_DEVICE_ID_JOYPAD_DOWN }, 
-      { "input_toggle_fast_forward", "input_toggle_fast_forward_btn", NULL, SSNES_FAST_FORWARD_KEY }
+      DECLARE_BIND(player2_a,             SNES_DEVICE_ID_JOYPAD_A)
+      DECLARE_BIND(player2_b,             SNES_DEVICE_ID_JOYPAD_B)
+      DECLARE_BIND(player2_y,             SNES_DEVICE_ID_JOYPAD_Y)
+      DECLARE_BIND(player2_x,             SNES_DEVICE_ID_JOYPAD_X)
+      DECLARE_BIND(player2_start,         SNES_DEVICE_ID_JOYPAD_START)
+      DECLARE_BIND(player2_select,        SNES_DEVICE_ID_JOYPAD_SELECT)
+      DECLARE_BIND(player2_l,             SNES_DEVICE_ID_JOYPAD_L)
+      DECLARE_BIND(player2_r,             SNES_DEVICE_ID_JOYPAD_R)
+      DECLARE_BIND(player2_left,          SNES_DEVICE_ID_JOYPAD_LEFT)
+      DECLARE_BIND(player2_right,         SNES_DEVICE_ID_JOYPAD_RIGHT)
+      DECLARE_BIND(player2_up,            SNES_DEVICE_ID_JOYPAD_UP)
+      DECLARE_BIND(player2_down,          SNES_DEVICE_ID_JOYPAD_DOWN)
+      DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
+      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
+      DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
+      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
    }
 };
 
@@ -352,6 +358,7 @@ struct key_map
 };
 
 // Edit: Not portable to different input systems atm. Might move this map into the driver itself or something.
+// However, this should map nicely over to other systems aswell since the definition are mostly the same anyways.
 static const struct key_map sdlk_map[] = {
    { "left", SDLK_LEFT },
    { "right", SDLK_RIGHT },
@@ -459,38 +466,5 @@ static void read_keybinds(config_file_t *conf)
          }
       }
    }
-
-   char *tmp_str;
-   if (config_get_string(conf, "input_toggle_fullscreen", &tmp_str))
-   {
-      int key = find_sdlk_key(tmp_str);
-      if (key >= 0)
-         g_settings.input.toggle_fullscreen_key = key;
-      free(tmp_str);
-   }
-   if (config_get_string(conf, "input_save_state", &tmp_str))
-   {
-      int key = find_sdlk_key(tmp_str);
-      if (key >= 0)
-         g_settings.input.save_state_key = key;
-      free(tmp_str);
-   }
-   if (config_get_string(conf, "input_load_state", &tmp_str))
-   {
-      int key = find_sdlk_key(tmp_str);
-      if (key >= 0)
-         g_settings.input.load_state_key = key;
-      free(tmp_str);
-   }
-   if (config_get_string(conf, "input_exit_emulator", &tmp_str))
-   {
-      int key = find_sdlk_key(tmp_str);
-      if (key >= 0)
-         g_settings.input.exit_emulator_key = key;
-      free(tmp_str);
-   }
 }
-
-
-
 

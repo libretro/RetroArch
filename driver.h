@@ -25,8 +25,14 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#define SSNES_FAST_FORWARD_KEY 0x666 // Hurr, durr
-void set_fast_forward_button(bool state);
+enum
+{
+   SSNES_FAST_FORWARD_KEY = 0x666, // Hurr, durr
+   SSNES_LOAD_STATE_KEY,
+   SSNES_SAVE_STATE_KEY,
+   SSNES_FULLSCREEN_TOGGLE_KEY,
+   SSNES_QUIT_KEY,
+};
 
 struct snes_keybind
 {

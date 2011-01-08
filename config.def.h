@@ -142,28 +142,34 @@ static const bool audio_sync = true;
 #define AXIS_NEG(x) ((uint32_t)(x << 16) | 0xFFFF)
 #define AXIS_POS(x) ((uint32_t)(x) | 0xFFFF0000U)
 #define AXIS_NONE ((uint32_t)0xFFFFFFFFU)
+#define NO_BTN 0xFFFF // I hope no joypad will ever have this many buttons ... ;)
 
 // To figure out which joypad buttons to use, check jstest or similar.
 // Axes are configured using the axis number for the positive (up, right)
 // direction and the number's two's-complement (~) for negative directions.
 // To use the axis, set the button to -1.
+// SDL sometimes reverses the axes for some odd reason, but hey. :D
 
 // Player 1
 static const struct snes_keybind snes_keybinds_1[] = {
    // SNES button                 |   keyboard key   | js btn | js axis |
-   { SNES_DEVICE_ID_JOYPAD_A,          SDLK_x,          1,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_B,          SDLK_z,          0,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_X,          SDLK_s,          3,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_Y,          SDLK_a,          2,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_L,          SDLK_q,          4,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_R,          SDLK_w,          5,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_LEFT,       SDLK_LEFT,      11,       AXIS_NEG(0) },
-   { SNES_DEVICE_ID_JOYPAD_RIGHT,      SDLK_RIGHT,     12,       AXIS_POS(0) },
-   { SNES_DEVICE_ID_JOYPAD_UP,         SDLK_UP,        13,       AXIS_POS(1) },
-   { SNES_DEVICE_ID_JOYPAD_DOWN,       SDLK_DOWN,      14,       AXIS_NEG(1) },
-   { SNES_DEVICE_ID_JOYPAD_START,      SDLK_RETURN,     7,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_SELECT,     SDLK_RSHIFT,     6,       AXIS_NONE },
-   { SSNES_FAST_FORWARD_KEY,           SDLK_SPACE,     10,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_A,          SDLK_x,           1,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_B,          SDLK_z,           0,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_X,          SDLK_s,           3,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_Y,          SDLK_a,           2,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_L,          SDLK_q,           4,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_R,          SDLK_w,           5,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_LEFT,       SDLK_LEFT,       11,      AXIS_NEG(0) },
+   { SNES_DEVICE_ID_JOYPAD_RIGHT,      SDLK_RIGHT,      12,      AXIS_POS(0) },
+   { SNES_DEVICE_ID_JOYPAD_UP,         SDLK_UP,         13,      AXIS_NEG(1) },
+   { SNES_DEVICE_ID_JOYPAD_DOWN,       SDLK_DOWN,       14,      AXIS_POS(1) },
+   { SNES_DEVICE_ID_JOYPAD_START,      SDLK_RETURN,      7,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_SELECT,     SDLK_RSHIFT,      6,      AXIS_NONE },
+   { SSNES_FAST_FORWARD_KEY,           SDLK_SPACE,      10,      AXIS_NONE },
+   { SSNES_SAVE_STATE_KEY,             SDLK_F2,     NO_BTN,      AXIS_NONE },
+   { SSNES_LOAD_STATE_KEY,             SDLK_F4,     NO_BTN,      AXIS_NONE },
+   { SSNES_FULLSCREEN_TOGGLE_KEY,      SDLK_f,      NO_BTN,      AXIS_NONE },
+   { SSNES_QUIT_KEY,                   SDLK_ESCAPE, NO_BTN,      AXIS_NONE },
    { -1 }
 };
 
@@ -178,21 +184,12 @@ static const struct snes_keybind snes_keybinds_2[] = {
    { SNES_DEVICE_ID_JOYPAD_R,          SDLK_t,          5,       AXIS_NONE },
    { SNES_DEVICE_ID_JOYPAD_LEFT,       SDLK_j,         11,       AXIS_NEG(0) },
    { SNES_DEVICE_ID_JOYPAD_RIGHT,      SDLK_l,         12,       AXIS_POS(0) },
-   { SNES_DEVICE_ID_JOYPAD_UP,         SDLK_i,         13,       AXIS_POS(1) },
-   { SNES_DEVICE_ID_JOYPAD_DOWN,       SDLK_k,         14,       AXIS_NEG(1) },
+   { SNES_DEVICE_ID_JOYPAD_UP,         SDLK_i,         13,       AXIS_NEG(1) },
+   { SNES_DEVICE_ID_JOYPAD_DOWN,       SDLK_k,         14,       AXIS_POS(1) },
    { SNES_DEVICE_ID_JOYPAD_START,      SDLK_p,          6,       AXIS_NONE },
    { SNES_DEVICE_ID_JOYPAD_SELECT,     SDLK_o,          7,       AXIS_NONE },
    { -1 }
 };
-
-///// Save state
-#define SAVE_STATE_KEY SDLK_F2
-///// Load state
-#define LOAD_STATE_KEY SDLK_F4
-
-//// Toggles between fullscreen and windowed mode.
-#define TOGGLE_FULLSCREEN SDLK_f
-
 
 #endif
 
