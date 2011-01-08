@@ -34,6 +34,7 @@ static void* sdl_input_init(void)
    if (SDL_Init(SDL_INIT_JOYSTICK) < 0)
       return NULL;
 
+   SDL_JoystickEventState(SDL_IGNORE);
    sdl->num_joysticks = SDL_NumJoysticks();
    if (sdl->num_joysticks > 2)
       sdl->num_joysticks = 2;
@@ -149,6 +150,7 @@ static void sdl_input_poll(void *data)
 {
    SDL_PumpEvents();
    SDL_Event event;
+   SDL_JoystickUpdate();
 
    sdl_input_t *sdl = data;
    // Search for events...
