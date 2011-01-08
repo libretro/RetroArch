@@ -11,7 +11,7 @@ libsnes ?= -lsnes
 
 LIBS =
 DEFINES = -I.
-LDFLAGS = -L. -static-libgcc
+LDFLAGS = -L. -static-libgcc -s
 
 SRC_LIBS = -lsamplerate-0
 SDL_LIBS = -lSDLmain -lSDL
@@ -36,7 +36,7 @@ endif
 
 LIBS += $(libsnes)
 
-CFLAGS = -Wall -O3 -g -std=gnu99 -I.
+CFLAGS = -Wall -O3 -std=gnu99 -I.
 
 all: $(TARGET)
 
