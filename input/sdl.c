@@ -24,7 +24,6 @@
 #include <stdlib.h>
 #include <libsnes.hpp>
 #include "ssnes_sdl_input.h"
-#include "config.def.h"
 
 static void* sdl_input_init(void)
 {
