@@ -132,6 +132,10 @@ static void sdl_input_free(void *data)
 {
    if (data)
    {
+      // Flush out all pending events.
+      SDL_Event event;
+      while (SDL_PollEvent(&event));
+
       sdl_input_t *sdl = data;
       for (int i = 0; i < sdl->num_joysticks; i++)
          SDL_JoystickClose(sdl->joysticks[i]);
