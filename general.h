@@ -84,9 +84,11 @@ struct global
    bool video_active;
 
    FILE *rom_file;
-   char savefile_name_srm[256];
    char config_path[256];
+
    char basename[256];
+   char savefile_name_srm[256];
+   char savestate_name[256];
 
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;

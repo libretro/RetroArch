@@ -237,6 +237,7 @@ static void print_help(void)
    puts("Usage: ssnes [rom file] [-h/--help | -s/--save" FFMPEG_HELP_QUARK "]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
+   puts("\t-t/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
    puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
 
 #ifdef HAVE_FFMPEG
@@ -261,6 +262,7 @@ static void parse_input(int argc, char *argv[])
 #endif
       { "verbose", 0, NULL, 'v' },
       { "config", 0, NULL, 'c' },
+      { "savestate", 1, NULL, 't' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -272,7 +274,7 @@ static void parse_input(int argc, char *argv[])
 #define FFMPEG_RECORD_ARG
 #endif
 
-   char optstring[] = "hs:vc:" FFMPEG_RECORD_ARG;
+   char optstring[] = "hs:vc:t:" FFMPEG_RECORD_ARG;
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -287,8 +289,11 @@ static void parse_input(int argc, char *argv[])
             exit(0);
 
          case 's':
-            strncpy(g_extern.savefile_name_srm, optarg, sizeof(g_extern.savefile_name_srm));
-            g_extern.savefile_name_srm[sizeof(g_extern.savefile_name_srm)-1] = '\0';
+            strncpy(g_extern.savefile_name_srm, optarg, sizeof(g_extern.savefile_name_srm) - 1);
+            break;
+
+         case 't':
+            strncpy(g_extern.savestate_name, optarg, sizeof(g_extern.savestate_name) - 1);
             break;
 
          case 'v':
@@ -332,12 +337,29 @@ static void parse_input(int argc, char *argv[])
          SSNES_ERR("Could not open file: \"%s\"\n", argv[optind]);
          exit(1);
       }
+      // strl* would be nice :D
       if (strlen(g_extern.savefile_name_srm) == 0)
-         fill_pathname(g_extern.savefile_name_srm, argv[optind], ".srm");
+      {
+         strcpy(g_extern.savefile_name_srm, g_extern.basename);
+         size_t len = strlen(g_extern.savefile_name_srm);
+         strncat(g_extern.savefile_name_srm, ".srm", sizeof(g_extern.savefile_name_srm) - len - 1);
+      }
+      if (strlen(g_extern.savestate_name) == 0)
+      {
+         strcpy(g_extern.savestate_name, g_extern.basename);
+         size_t len = strlen(g_extern.savestate_name);
+         strncat(g_extern.savestate_name, ".state", sizeof(g_extern.savestate_name) - len - 1);
+      }
    }
    else if (strlen(g_extern.savefile_name_srm) == 0)
    {
-      SSNES_ERR("Need savefile argument when reading rom from stdin.\n");
+      SSNES_ERR("Need savefile path argument (--save) when reading rom from stdin.\n");
+      print_help();
+      exit(1);
+   }
+   else if (strlen(g_extern.savestate_name) == 0)
+   {
+      SSNES_ERR("Need savestate path argument (--savefile) when reading rom from stdin.\n");
       print_help();
       exit(1);
    }
@@ -366,11 +388,9 @@ int main(int argc, char *argv[])
    if (g_extern.rom_file != NULL)
       fclose(g_extern.rom_file);
 
-   char statefile_name[strlen(g_extern.savefile_name_srm)+strlen(".state")+1];
+   // Infer .rtc save path from save ram path.
    char savefile_name_rtc[strlen(g_extern.savefile_name_srm)+strlen(".rtc")+1];
-
-   fill_pathname(statefile_name, argv[1], ".state");
-   fill_pathname(savefile_name_rtc, argv[1], ".rtc");
+   fill_pathname(savefile_name_rtc, g_extern.savefile_name_srm, ".rtc");
 
    init_drivers();
 
@@ -379,6 +399,7 @@ int main(int argc, char *argv[])
    psnes_set_input_poll(input_poll);
    psnes_set_input_state(input_state);
 
+   // TODO: Load other types of ROMs as well!
    if (!psnes_load_cartridge_normal(NULL, rom_buf, rom_len))
    {
       SSNES_ERR("ROM file is not valid!\n");
@@ -429,20 +450,20 @@ int main(int argc, char *argv[])
    // Main loop
    for(;;)
    {
+      // Time to drop?
       if (driver.input->key_pressed(driver.input_data, SSNES_QUIT_KEY) ||
             !driver.video->alive(driver.video_data))
          break;
 
       set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
 
+      // Save or load state here.
       if (driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY))
-      {
-         write_file(statefile_name, serial_data, serial_size);
-      }
-
+         write_file(g_extern.savestate_name, serial_data, serial_size);
       else if (driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY))
-         load_state(statefile_name, serial_data, serial_size);
+         load_state(g_extern.savestate_name, serial_data, serial_size);
 
+      // If we go fullscreen we drop all drivers and reinit to be safe.
       else if (driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY))
       {
          g_settings.video.fullscreen = !g_settings.video.fullscreen;
@@ -450,6 +471,7 @@ int main(int argc, char *argv[])
          init_drivers();
       }
 
+      // Run libsnes for one frame.
       psnes_run();
    }
 
@@ -461,6 +483,7 @@ int main(int argc, char *argv[])
    }
 #endif
 
+   // Flush out SRAM (and RTC)
    save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
    save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
 
