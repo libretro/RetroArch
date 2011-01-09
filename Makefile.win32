@@ -14,7 +14,7 @@ DEFINES = -I.
 LDFLAGS = -L. -static-libgcc -s
 
 SRC_LIBS = -lsamplerate-0
-SDL_LIBS = -lmingw32 -lSDLmain -lSDL
+SDL_LIBS = -lSDL
 SDL_CFLAGS = -ISDL
 
 ifeq ($(HAVE_SRC), 1)
@@ -47,8 +47,8 @@ $(TARGET): $(OBJ)
 %.o: %.c
 	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
-ssnes-joyconfig.exe: conf/config_file.o tools/ssnes-joyconfig.o
-	$(CC) -o ssnes-joyconfig.exe conf/config_file.o tools/ssnes-joyconfig.o $(SDL_LIBS) -L. -static-libgcc
+ssnes-joyconfig.exe: conf/config_file.o tools/ssnes-joyconfig.o tools/main-stub.o
+	$(CC) -o ssnes-joyconfig.exe conf/config_file.o tools/ssnes-joyconfig.o $(SDL_LIBS) -L. -static-libgcc tools/main-stub.o
 
 clean:
 	rm -f *.o 

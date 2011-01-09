@@ -250,7 +250,12 @@ static void parse_input(int argc, char *argv[])
 
 }
 
+// Windows is being bitchy.
+#ifdef _WIN32
+int real_main(int argc, char *argv[])
+#else
 int main(int argc, char *argv[])
+#endif
 {
    fprintf(stderr, "hai\n");
    fflush(stderr);
