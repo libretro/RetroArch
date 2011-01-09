@@ -22,10 +22,6 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#ifndef STANDALONE
-#include "general.h"
-#endif
-
 struct entry_list
 {
    char *key;
@@ -130,20 +126,6 @@ static bool parse_line(struct entry_list *list, char *line)
    return true;
 }
 
-static void print_config(config_file_t *conf)
-{
-   struct entry_list *tmp = conf->entries;
-   while (tmp != NULL)
-   {
-#ifdef STANDALONE
-      fprintf(stderr, "Config => Key: \"%s\", Value: \"%s\"\n", tmp->key, tmp->value);
-#else
-      SSNES_LOG("Config => Key: \"%s\", Value: \"%s\"\n", tmp->key, tmp->value);
-#endif
-      tmp = tmp->next;
-   }
-}
-
 config_file_t *config_file_new(const char *path)
 {
 
@@ -187,8 +169,6 @@ config_file_t *config_file_new(const char *path)
       }
    }
    fclose(file);
-
-   print_config(conf);
 
    return conf;
 }
@@ -368,6 +348,16 @@ bool config_file_write(config_file_t *conf, const char *path)
    else
       file = stdout;
 
+   config_file_dump(conf, file);
+
+   if (path)
+      fclose(file);
+
+   return true;
+}
+
+void config_file_dump(config_file_t *conf, FILE *file)
+{
    struct entry_list *list = conf->entries;
 
    while (list != NULL)
@@ -375,9 +365,4 @@ bool config_file_write(config_file_t *conf, const char *path)
       fprintf(file, "%s = \"%s\"\n", list->key, list->value);
       list = list->next;
    }
-
-   if (path)
-      fclose(file);
-
-   return true;
 }

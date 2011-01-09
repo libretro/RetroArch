@@ -160,6 +160,9 @@ void parse_config(void)
    if (conf == NULL)
       return;
 
+   if (g_extern.verbose)
+      config_file_dump(conf, stderr);
+
    int tmp_int;
    double tmp_double;
    bool tmp_bool;
