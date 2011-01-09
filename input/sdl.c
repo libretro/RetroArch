@@ -82,19 +82,19 @@ static bool sdl_joykey_pressed(sdl_input_t *sdl, int port_num, uint16_t joykey)
          switch (GET_HAT_DIR(joykey))
          {
             case HAT_UP_MASK:
-               if (dir == SDL_HAT_UP || dir == SDL_HAT_RIGHTUP || dir == SDL_HAT_LEFTUP)
+               if (dir & SDL_HAT_UP)
                   return true;
                break;
             case HAT_DOWN_MASK:
-               if (dir == SDL_HAT_DOWN || dir == SDL_HAT_LEFTDOWN || dir == SDL_HAT_RIGHTDOWN)
+               if (dir & SDL_HAT_DOWN)
                   return true;
                break;
             case HAT_LEFT_MASK:
-               if (dir == SDL_HAT_LEFT || dir == SDL_HAT_LEFTDOWN || dir == SDL_HAT_LEFTUP)
+               if (dir & SDL_HAT_LEFT)
                   return true;
                break;
             case HAT_RIGHT_MASK:
-               if (dir == SDL_HAT_RIGHT || dir == SDL_HAT_RIGHTDOWN || dir == SDL_HAT_RIGHTUP)
+               if (dir & SDL_HAT_RIGHT)
                   return true;
                break;
             default:
