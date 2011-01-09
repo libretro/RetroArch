@@ -250,18 +250,14 @@ static void parse_input(int argc, char *argv[])
 
 }
 
-// Windows is being bitchy.
+// Windows is being bitchy. Cannot include SDL.h with a file that has main() it seems ... It simply won't run at all even with -lSDLmain.
 #ifdef _WIN32
 int real_main(int argc, char *argv[])
 #else
 int main(int argc, char *argv[])
 #endif
 {
-   fprintf(stderr, "hai\n");
-   fflush(stderr);
    parse_input(argc, argv);
-   fprintf(stderr, "hai\n");
-   fflush(stderr);
 
    config_file_t *conf = config_file_new(g_in_path);
    get_binds(conf, g_player - 1, g_joypad - 1);
