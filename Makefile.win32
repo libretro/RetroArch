@@ -38,10 +38,13 @@ LIBS += $(libsnes)
 
 CFLAGS = -Wall -O3 -std=gnu99 -I.
 
-all: $(TARGET)
+all: $(TARGET) ssnes-joyconfig.exe
 
 $(TARGET): $(OBJ)
 	$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
+
+ssnes-joyconfig.exe: conf/config_file.o tools/ssnes-joyconfig.o
+	$(CC) -o ssnes-joyconfig.exe $(SDL_LIBS) $(LDFLAGS) conf/config_file.o tools/ssnes-joyconfig.o
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
@@ -55,8 +58,10 @@ clean:
 	rm -f hqflt/*.o
 	rm -f hqflt/snes_ntsc/*.o
 	rm -f $(TARGET)
+	rm -f ssnes-joyconfig.exe
+	rm -f tools/*
 
 dist: all
-	zip -r ssnes-win32.zip $(TARGET) ssnes.cfg snes.dll libxml2.dll iconv.dll zlib1.dll SDL.dll libsamplerate-0.dll
+	zip -r ssnes-win32.zip $(TARGET) ssnes.cfg snes.dll libxml2.dll iconv.dll zlib1.dll SDL.dll libsamplerate-0.dll ssnes-joyconfig.exe
 
 .PHONY: all install uninstall clean dist
