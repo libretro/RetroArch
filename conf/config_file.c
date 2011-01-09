@@ -357,9 +357,16 @@ void config_set_bool(config_file_t *conf, const char *key, bool val)
 
 bool config_file_write(config_file_t *conf, const char *path)
 {
-   FILE *file = fopen(path, "w");
-   if (!file)
-      return false;
+   FILE *file;
+
+   if (path)
+   {
+      file = fopen(path, "w");
+      if (!file)
+         return false;
+   }
+   else
+      file = stdout;
 
    struct entry_list *list = conf->entries;
 
@@ -369,6 +376,8 @@ bool config_file_write(config_file_t *conf, const char *path)
       list = list->next;
    }
 
-   fclose(file);
+   if (path)
+      fclose(file);
+
    return true;
 }
