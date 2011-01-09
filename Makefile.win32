@@ -48,7 +48,7 @@ $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 ssnes-joyconfig.exe: conf/config_file.o tools/ssnes-joyconfig.o
-	$(CC) -o ssnes-joyconfig.exe conf/config_file.o tools/ssnes-joyconfig.o $(SDL_LIBS)
+	$(CC) -o ssnes-joyconfig.exe conf/config_file.o tools/ssnes-joyconfig.o $(SDL_LIBS) -L. -static-libgcc
 
 clean:
 	rm -f *.o 
