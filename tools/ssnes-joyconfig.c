@@ -252,7 +252,11 @@ static void parse_input(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+   fprintf(stderr, "hai\n");
+   fflush(stderr);
    parse_input(argc, argv);
+   fprintf(stderr, "hai\n");
+   fflush(stderr);
 
    config_file_t *conf = config_file_new(g_in_path);
    get_binds(conf, g_player - 1, g_joypad - 1);
@@ -262,4 +266,5 @@ int main(int argc, char *argv[])
       free(g_in_path);
    if (g_out_path)
       free(g_out_path);
+   return 0;
 }
