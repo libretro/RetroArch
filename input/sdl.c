@@ -183,6 +183,7 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct snes_keybi
    return false;
 }
 
+// TODO: Broken at the moment. Need more info.
 static int16_t sdl_mouse_device_state(sdl_input_t *sdl, const struct snes_keybind **binds, 
       bool port, unsigned device, unsigned index, unsigned id)
 {
