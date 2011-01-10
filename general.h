@@ -71,6 +71,7 @@ struct settings
       char driver[32];
       struct snes_keybind binds[MAX_PLAYERS][MAX_BINDS];
       float axis_threshold;
+      unsigned joypad_map[2];
    } input;
 
    char libsnes[256];

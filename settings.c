@@ -112,6 +112,8 @@ static void set_defaults(void)
    memcpy(g_settings.input.binds[1], snes_keybinds_2, sizeof(snes_keybinds_2));
 
    g_settings.input.axis_threshold = AXIS_THRESHOLD;
+   g_settings.input.joypad_map[0] = 0;
+   g_settings.input.joypad_map[1] = 1;
 }
 
 void parse_config(void)
@@ -244,6 +246,12 @@ void parse_config(void)
    // Input Settings.
    if (config_get_double(conf, "input_axis_threshold", &tmp_double))
       g_settings.input.axis_threshold = tmp_double;
+
+   if (config_get_int(conf, "input_player1_joypad_index", &tmp_int))
+      g_settings.input.joypad_map[0] = tmp_int;
+
+   if (config_get_int(conf, "input_player2_joypad_index", &tmp_int))
+      g_settings.input.joypad_map[1] = tmp_int;
 
    // Audio settings.
    if (config_get_bool(conf, "audio_enable", &tmp_bool))

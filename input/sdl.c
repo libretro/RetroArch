@@ -36,23 +36,31 @@ static void* sdl_input_init(void)
 
    SDL_JoystickEventState(SDL_IGNORE);
    sdl->num_joysticks = SDL_NumJoysticks();
-   if (sdl->num_joysticks > 2)
-      sdl->num_joysticks = 2;
-   for (unsigned i = 0; i < sdl->num_joysticks; i++)
-   {
-      sdl->joysticks[i] = SDL_JoystickOpen(i);
-      if (!sdl->joysticks[i])
-      {
-         SSNES_ERR("Couldn't open SDL joystick %d\n", i);
-         free(sdl);
-         SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
-         return NULL;
-      }
 
-      SSNES_LOG("Opened Joystick: %s\n", SDL_JoystickName(i));
-      sdl->num_axes[i] = SDL_JoystickNumAxes(sdl->joysticks[i]);
-      sdl->num_buttons[i] = SDL_JoystickNumButtons(sdl->joysticks[i]);
-      sdl->num_hats[i] = SDL_JoystickNumHats(sdl->joysticks[i]);
+   for (unsigned i = 0; i < 2; i++)
+   {
+      if (sdl->num_joysticks > g_settings.input.joypad_map[i])
+      {
+         sdl->joysticks[i] = SDL_JoystickOpen(g_settings.input.joypad_map[i]);
+         if (!sdl->joysticks[i])
+         {
+            SSNES_ERR("Couldn't open SDL joystick #%u on SNES port %u\n", g_settings.input.joypad_map[i], i + 1);
+            free(sdl);
+            SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+            return NULL;
+         }
+
+         SSNES_LOG("Opened Joystick: %s #%u on port %u\n", 
+               SDL_JoystickName(g_settings.input.joypad_map[i]), g_settings.input.joypad_map[i], i + 1);
+         sdl->num_axes[i] = SDL_JoystickNumAxes(sdl->joysticks[i]);
+         sdl->num_buttons[i] = SDL_JoystickNumButtons(sdl->joysticks[i]);
+         sdl->num_hats[i] = SDL_JoystickNumHats(sdl->joysticks[i]);
+      }
+      else
+      {
+         SSNES_WARN("Desired SDL joystick #%u on port %u, but SDL can only detect %u joysticks ...\n", 
+               g_settings.input.joypad_map[i], i + 1, sdl->num_joysticks);
+      }
    }
 
    return sdl;
@@ -137,7 +145,7 @@ static bool sdl_is_pressed(sdl_input_t *sdl, int port_num, const struct snes_key
 {
    if (sdl_key_pressed(key->key))
       return true;
-   if (port_num >= sdl->num_joysticks)
+   if (sdl->joysticks[port_num] == NULL)
       return false;
    if (sdl_joykey_pressed(sdl, port_num, key->joykey))
       return true;
@@ -187,8 +195,11 @@ static void sdl_input_free(void *data)
       while (SDL_PollEvent(&event));
 
       sdl_input_t *sdl = data;
-      for (int i = 0; i < sdl->num_joysticks; i++)
-         SDL_JoystickClose(sdl->joysticks[i]);
+      for (int i = 0; i < 2; i++)
+      {
+         if (sdl->joysticks[i])
+            SDL_JoystickClose(sdl->joysticks[i]);
+      }
 
       free(data);
       SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
