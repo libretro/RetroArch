@@ -39,9 +39,10 @@ static void print_help(void)
    puts("==================");
    puts("ssnes-joyconfig");
    puts("==================");
+   puts("Usage: ssnes-joyconfig [ -p/--player <1|2> | -j/--joypad <num> | -i/--input <file> | -o/--output <file> | -h/--help ]");
    puts("");
    puts("-p/--player: Which player to configure for (1 or 2).");
-   puts("-j/--joypad: Which joypad to use when configuring (1 or 2).");
+   puts("-j/--joypad: Which joypad to use when configuring (first joypad is 1).");
    puts("-i/--input: Input file to configure with. Binds will be added on or overwritten.");
    puts("\tIf not selected, an empty config will be used as a base.");
    puts("-o/--output: Output file to write to. If not selected, config file will be dumped to stdout.");
