@@ -83,6 +83,9 @@ struct global
    bool audio_active;
    bool video_active;
 
+   bool has_mouse;
+   bool has_scope;
+
    FILE *rom_file;
    char config_path[256];
 

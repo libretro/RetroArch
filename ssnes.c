@@ -239,6 +239,8 @@ static void print_help(void)
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
    puts("\t-t/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
    puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
+   puts("\t-m/--mouse: Connect a virtual mouse into port 2 of the SNES.");
+   puts("\t-p/--scope: Connect a virtual SuperScope into port 2 of the SNES.");
 
 #ifdef HAVE_FFMPEG
    puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
@@ -262,6 +264,8 @@ static void parse_input(int argc, char *argv[])
 #endif
       { "verbose", 0, NULL, 'v' },
       { "config", 0, NULL, 'c' },
+      { "mouse", 0, NULL, 'm' },
+      { "scope", 0, NULL, 'p' },
       { "savestate", 1, NULL, 't' },
       { NULL, 0, NULL, 0 }
    };
@@ -274,7 +278,7 @@ static void parse_input(int argc, char *argv[])
 #define FFMPEG_RECORD_ARG
 #endif
 
-   char optstring[] = "hs:vc:t:" FFMPEG_RECORD_ARG;
+   char optstring[] = "hs:vc:t:m" FFMPEG_RECORD_ARG;
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -298,6 +302,14 @@ static void parse_input(int argc, char *argv[])
 
          case 'v':
             g_extern.verbose = true;
+            break;
+
+         case 'm':
+            g_extern.has_mouse = true;
+            break;
+
+         case 'p':
+            g_extern.has_scope = true;
             break;
 
          case 'c':
@@ -407,6 +419,12 @@ int main(int argc, char *argv[])
    }
 
    free(rom_buf);
+
+   if (g_extern.has_mouse)
+      psnes_set_controller_port_device(1, SNES_DEVICE_MOUSE);
+   else if (g_extern.has_scope)
+      psnes_set_controller_port_device(1, SNES_DEVICE_SUPER_SCOPE);
+
 
    unsigned serial_size = psnes_serialize_size();
    uint8_t *serial_data = malloc(serial_size);

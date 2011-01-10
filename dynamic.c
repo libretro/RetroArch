@@ -52,6 +52,7 @@ unsigned (*psnes_library_revision_minor)(void);
 unsigned (*psnes_library_revision_major)(void);
 
 bool (*psnes_load_cartridge_normal)(const char*, const uint8_t*, unsigned);
+void (*psnes_set_controller_port_device)(bool, unsigned);
 
 unsigned (*psnes_serialize_size)(void);
 bool (*psnes_serialize)(uint8_t*, unsigned);
@@ -85,6 +86,7 @@ static void load_dynamic(void)
    SYM(snes_library_revision_major);
    SYM(snes_run);
    SYM(snes_load_cartridge_normal);
+   SYM(snes_set_controller_port_device);
    SYM(snes_serialize_size);
    SYM(snes_serialize);
    SYM(snes_unserialize);
@@ -112,6 +114,7 @@ static void set_statics(void)
    SSYM(snes_library_revision_major);
    SSYM(snes_run);
    SSYM(snes_load_cartridge_normal);
+   SSYM(snes_set_controller_port_device);
    SSYM(snes_serialize_size);
    SSYM(snes_serialize);
    SSYM(snes_unserialize);
