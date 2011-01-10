@@ -4,6 +4,7 @@ TARGET = ssnes tools/ssnes-joyconfig
 
 OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o
 JOYCONFIG_OBJ = tools/ssnes-joyconfig.o conf/config_file.o
+HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
 LIBS =
 DEFINES = -DHAVE_CONFIG_H
@@ -89,7 +90,7 @@ ssnes: $(OBJ)
 tools/ssnes-joyconfig: $(JOYCONFIG_OBJ)
 	$(CC) -o $@ $(JOYCONFIG_OBJ) $(SDL_LIBS) $(LDFLAGS)
 
-%.o: %.c config.h config.mk
+%.o: %.c config.h config.mk $(HEADERS)
 	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 install: $(TARGET)

@@ -183,9 +183,10 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct snes_keybi
    return false;
 }
 
-static int16_t sdl_mouse_device_state(sdl_input_t *sdl, const struct snes_keybind **binds, 
-      bool port, unsigned device, unsigned index, unsigned id)
+static int16_t sdl_mouse_device_state(sdl_input_t *sdl, bool port, unsigned id)
 {
+   // Might implement support for joypad mapping later.
+   (void)port;
    switch (id)
    {
       case SNES_DEVICE_ID_MOUSE_LEFT:
@@ -201,11 +202,24 @@ static int16_t sdl_mouse_device_state(sdl_input_t *sdl, const struct snes_keybin
    }
 }
 
-// TODO: :D
-static int16_t sdl_scope_device_state(sdl_input_t *sdl, const struct snes_keybind **binds,
-      bool port, unsigned device, unsigned index, unsigned id)
+// TODO: Missing some controllers, but hey :)
+static int16_t sdl_scope_device_state(sdl_input_t *sdl, unsigned id)
 {
-   return 0;
+   switch (id)
+   {
+      case SNES_DEVICE_ID_SUPER_SCOPE_X:
+         return sdl->mouse_x;
+      case SNES_DEVICE_ID_SUPER_SCOPE_Y:
+         return sdl->mouse_y;
+      case SNES_DEVICE_ID_SUPER_SCOPE_TRIGGER:
+         return sdl->mouse_l;
+      case SNES_DEVICE_ID_SUPER_SCOPE_CURSOR:
+         return sdl->mouse_m;
+      case SNES_DEVICE_ID_SUPER_SCOPE_TURBO:
+         return sdl->mouse_r;
+      default:
+         return 0;
+   }
 }
 
 static int16_t sdl_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
@@ -215,9 +229,9 @@ static int16_t sdl_input_state(void *data, const struct snes_keybind **binds, bo
       case SNES_DEVICE_JOYPAD:
          return sdl_joypad_device_state(data, binds, port, device, index, id);
       case SNES_DEVICE_MOUSE:
-         return sdl_mouse_device_state(data, binds, port, device, index, id);
+         return sdl_mouse_device_state(data, port, id);
       case SNES_DEVICE_SUPER_SCOPE:
-         return sdl_scope_device_state(data, binds, port, device, index, id);
+         return sdl_scope_device_state(data, id);
 
       default:
          return 0;
@@ -250,8 +264,9 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
    Uint8 btn = SDL_GetRelativeMouseState(&_x, &_y);
    sdl->mouse_x = _x;
    sdl->mouse_y = _y;
-   sdl->mouse_l = SDL_BUTTON(1) & btn ? 1 : 0;
-   sdl->mouse_r = SDL_BUTTON(3) & btn ? 1 : 0;
+   sdl->mouse_l = SDL_BUTTON(SDL_BUTTON_LEFT) & btn ? 1 : 0;
+   sdl->mouse_r = SDL_BUTTON(SDL_BUTTON_RIGHT) & btn ? 1 : 0;
+   sdl->mouse_m = SDL_BUTTON(SDL_BUTTON_MIDDLE) & btn ? 1 : 0;
 }
 
 static void sdl_input_poll(void *data)
