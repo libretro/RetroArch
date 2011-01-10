@@ -163,8 +163,8 @@ static void audio_sample(uint16_t left, uint16_t right)
    static float data[AUDIO_CHUNK_SIZE_NONBLOCKING];
    static int data_ptr = 0;
 
-   data[data_ptr++] = (float)(*(int16_t*)&left)/0x7FFF; 
-   data[data_ptr++] = (float)(*(int16_t*)&right)/0x7FFF;
+   data[data_ptr++] = (float)(*(int16_t*)&left)/0x8000; 
+   data[data_ptr++] = (float)(*(int16_t*)&right)/0x8000;
 
    if ( data_ptr >= audio_chunk_size )
    {
