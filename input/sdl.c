@@ -183,36 +183,22 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct snes_keybi
    return false;
 }
 
-// TODO: Broken at the moment. Need more info.
 static int16_t sdl_mouse_device_state(sdl_input_t *sdl, const struct snes_keybind **binds, 
       bool port, unsigned device, unsigned index, unsigned id)
 {
-   int _x, _y;
-   Uint8 btn = SDL_GetRelativeMouseState(&_x, &_y);
-   sdl->mouse_x += _x;
-   sdl->mouse_y += _y;
-   SSNES_LOG("Mouse rel: %d %d, total %d %d\n", _x, _y, (int)sdl->mouse_x, (int)sdl->mouse_y);
-
-   int16_t retval;
    switch (id)
    {
       case SNES_DEVICE_ID_MOUSE_LEFT:
-         retval = SDL_BUTTON(1) & btn ? 1 : 0;
-         break;
+         return sdl->mouse_l;
       case SNES_DEVICE_ID_MOUSE_RIGHT:
-         retval = SDL_BUTTON(3) & btn ? 1 : 0;
-         break;
+         return sdl->mouse_r;
       case SNES_DEVICE_ID_MOUSE_X:
-         retval = sdl->mouse_x;
-         break;
+         return sdl->mouse_x;
       case SNES_DEVICE_ID_MOUSE_Y:
-         retval = sdl->mouse_y;
-         break;
+         return sdl->mouse_y;
       default:
-         retval = 0;
+         return 0;
    }
-   SSNES_LOG("Retval: %d\n", (int)retval);
-   return retval;
 }
 
 // TODO: :D
@@ -258,11 +244,22 @@ static void sdl_input_free(void *data)
    }
 }
 
+static void sdl_poll_mouse(sdl_input_t *sdl)
+{
+   int _x, _y;
+   Uint8 btn = SDL_GetRelativeMouseState(&_x, &_y);
+   sdl->mouse_x = _x;
+   sdl->mouse_y = _y;
+   sdl->mouse_l = SDL_BUTTON(1) & btn ? 1 : 0;
+   sdl->mouse_r = SDL_BUTTON(3) & btn ? 1 : 0;
+}
+
 static void sdl_input_poll(void *data)
 {
    SDL_PumpEvents();
    SDL_Event event;
    SDL_JoystickUpdate();
+   sdl_poll_mouse(data);
 
    sdl_input_t *sdl = data;
    // Search for events...

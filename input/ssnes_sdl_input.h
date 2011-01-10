@@ -33,6 +33,7 @@ typedef struct sdl_input
    unsigned *new_width;
    unsigned *new_height;
    int16_t mouse_x, mouse_y;
+   int16_t mouse_l, mouse_r;
 } sdl_input_t;
 
 #endif

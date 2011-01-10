@@ -234,13 +234,15 @@ static void print_help(void)
    puts("=================================================");
    puts("ssnes: Simple Super Nintendo Emulator (libsnes)");
    puts("=================================================");
-   puts("Usage: ssnes [rom file] [-h/--help | -s/--save" FFMPEG_HELP_QUARK "]");
+   puts("Usage: ssnes [rom file] [-h/--help | -c/--config | -v/--verbose | -t/--savestate | -m/--mouse | -p/--scope | -s/--save" FFMPEG_HELP_QUARK "]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
    puts("\t-t/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
    puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
-   puts("\t-m/--mouse: Connect a virtual mouse into port 2 of the SNES.");
-   puts("\t-p/--scope: Connect a virtual SuperScope into port 2 of the SNES.");
+   puts("\t-m/--mouse: Connect a virtual mouse into designated port of the SNES (1 or 2)."); 
+   puts("\tThis argument can be specified several times to connect more mice.");
+   puts("\t-p/--scope: Connect a virtual SuperScope into designated port of the SNES (1 or 2).");
+   puts("\tThis argument can be specified several times to connect more scopes.");
 
 #ifdef HAVE_FFMPEG
    puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
@@ -264,8 +266,8 @@ static void parse_input(int argc, char *argv[])
 #endif
       { "verbose", 0, NULL, 'v' },
       { "config", 0, NULL, 'c' },
-      { "mouse", 0, NULL, 'm' },
-      { "scope", 0, NULL, 'p' },
+      { "mouse", 1, NULL, 'm' },
+      { "scope", 1, NULL, 'p' },
       { "savestate", 1, NULL, 't' },
       { NULL, 0, NULL, 0 }
    };
@@ -278,10 +280,11 @@ static void parse_input(int argc, char *argv[])
 #define FFMPEG_RECORD_ARG
 #endif
 
-   char optstring[] = "hs:vc:t:m" FFMPEG_RECORD_ARG;
+   char optstring[] = "hs:vc:t:m:p:" FFMPEG_RECORD_ARG;
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
+      int port;
 
       if (c == -1)
          break;
@@ -305,11 +308,25 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'm':
-            g_extern.has_mouse = true;
+            port = strtol(optarg, NULL, 0);
+            if (port < 1 || port > 2)
+            {
+               SSNES_ERR("Connect mouse to port 1 or 2.\n");
+               print_help();
+               exit(1);
+            }
+            g_extern.has_mouse[port - 1] = true;
             break;
 
          case 'p':
-            g_extern.has_scope = true;
+            port = strtol(optarg, NULL, 0);
+            if (port < 1 || port > 2)
+            {
+               SSNES_ERR("Connect scope to port 1 or 2.\n");
+               print_help();
+               exit(1);
+            }
+            g_extern.has_scope[port - 1] = true;
             break;
 
          case 'c':
@@ -377,6 +394,24 @@ static void parse_input(int argc, char *argv[])
    }
 }
 
+// TODO: Add rest of the controllers.
+static void init_controllers(void)
+{
+   for (int i = 0; i < 2; i++)
+   {
+      if (g_extern.has_mouse[i])
+      {
+         SSNES_LOG("Connecting mouse to port %d\n", i + 1);
+         psnes_set_controller_port_device(i, SNES_DEVICE_MOUSE);
+      }
+      else if (g_extern.has_scope[i])
+      {
+         SSNES_LOG("Connecting scope to port %d\n", i + 1);
+         psnes_set_controller_port_device(i, SNES_DEVICE_SUPER_SCOPE);
+      }
+   }
+}
+
 int main(int argc, char *argv[])
 {
    parse_input(argc, argv);
@@ -420,11 +455,7 @@ int main(int argc, char *argv[])
 
    free(rom_buf);
 
-   if (g_extern.has_mouse)
-      psnes_set_controller_port_device(1, SNES_DEVICE_MOUSE);
-   else if (g_extern.has_scope)
-      psnes_set_controller_port_device(1, SNES_DEVICE_SUPER_SCOPE);
-
+   init_controllers();
 
    unsigned serial_size = psnes_serialize_size();
    uint8_t *serial_data = malloc(serial_size);
