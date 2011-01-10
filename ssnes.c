@@ -468,6 +468,9 @@ int main(int argc, char *argv[])
    // Main loop
    for(;;)
    {
+      // Poll input.
+      driver.input->poll(driver.input_data);
+
       // Time to drop?
       if (driver.input->key_pressed(driver.input_data, SSNES_QUIT_KEY) ||
             !driver.video->alive(driver.video_data))

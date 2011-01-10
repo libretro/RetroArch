@@ -167,12 +167,9 @@ static bool sdl_bind_button_pressed(void *data, int key)
    return false;
 }
 
-static int16_t sdl_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
+static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct snes_keybind **binds, 
+      bool port, unsigned device, unsigned index, unsigned id)
 {
-   sdl_input_t *sdl = data;
-   if (device != SNES_DEVICE_JOYPAD)
-      return 0;
-
    const struct snes_keybind *snes_keybinds = binds[port == SNES_PORT_1 ? 0 : 1];
 
    // Checks if button is pressed.
@@ -184,6 +181,60 @@ static int16_t sdl_input_state(void *data, const struct snes_keybind **binds, bo
    }
 
    return false;
+}
+
+static int16_t sdl_mouse_device_state(sdl_input_t *sdl, const struct snes_keybind **binds, 
+      bool port, unsigned device, unsigned index, unsigned id)
+{
+   int _x, _y;
+   Uint8 btn = SDL_GetRelativeMouseState(&_x, &_y);
+   sdl->mouse_x += _x;
+   sdl->mouse_y += _y;
+   SSNES_LOG("Mouse rel: %d %d, total %d %d\n", _x, _y, (int)sdl->mouse_x, (int)sdl->mouse_y);
+
+   int16_t retval;
+   switch (id)
+   {
+      case SNES_DEVICE_ID_MOUSE_LEFT:
+         retval = SDL_BUTTON(1) & btn ? 1 : 0;
+         break;
+      case SNES_DEVICE_ID_MOUSE_RIGHT:
+         retval = SDL_BUTTON(3) & btn ? 1 : 0;
+         break;
+      case SNES_DEVICE_ID_MOUSE_X:
+         retval = sdl->mouse_x;
+         break;
+      case SNES_DEVICE_ID_MOUSE_Y:
+         retval = sdl->mouse_y;
+         break;
+      default:
+         retval = 0;
+   }
+   SSNES_LOG("Retval: %d\n", (int)retval);
+   return retval;
+}
+
+// TODO: :D
+static int16_t sdl_scope_device_state(sdl_input_t *sdl, const struct snes_keybind **binds,
+      bool port, unsigned device, unsigned index, unsigned id)
+{
+   return 0;
+}
+
+static int16_t sdl_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
+{
+   switch (device)
+   {
+      case SNES_DEVICE_JOYPAD:
+         return sdl_joypad_device_state(data, binds, port, device, index, id);
+      case SNES_DEVICE_MOUSE:
+         return sdl_mouse_device_state(data, binds, port, device, index, id);
+      case SNES_DEVICE_SUPER_SCOPE:
+         return sdl_scope_device_state(data, binds, port, device, index, id);
+
+      default:
+         return 0;
+   }
 }
 
 static void sdl_input_free(void *data)

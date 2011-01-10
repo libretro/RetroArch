@@ -32,6 +32,7 @@ typedef struct sdl_input
    bool *should_resize;
    unsigned *new_width;
    unsigned *new_height;
+   int16_t mouse_x, mouse_y;
 } sdl_input_t;
 
 #endif
