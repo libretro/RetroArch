@@ -216,11 +216,6 @@ static void parse_input(int argc, char *argv[])
                fprintf(stderr, "Joypad number can't be less than 1!\n");
                exit(1);
             }
-            else if (g_joypad > 2)
-            {
-               fprintf(stderr, "Joypad number can't be over 2! (1 or 2 allowed)\n");
-               exit(1);
-            }
             break;
 
          case 'p':
@@ -260,6 +255,15 @@ int main(int argc, char *argv[])
    parse_input(argc, argv);
 
    config_file_t *conf = config_file_new(g_in_path);
+   if (!conf)
+   {
+      fprintf(stderr, "Couldn't open config file ...\n");
+      return 1;
+   }
+
+   config_set_int(conf, g_player == 1 ? "input_player1_joypad_index" : "input_player2_joypad_index", 
+         g_joypad - 1);
+
    get_binds(conf, g_player - 1, g_joypad - 1);
    config_file_write(conf, g_out_path);
    config_file_free(conf);
