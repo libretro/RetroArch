@@ -116,6 +116,7 @@ clean:
 	rm -f record/*.o
 	rm -f hqflt/*.o
 	rm -f hqflt/snes_ntsc/*.o
+	rm -f input/*.o
 	rm -f tools/*.o
 	rm -f $(TARGET)
 

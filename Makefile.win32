@@ -35,7 +35,7 @@ ifeq ($(HAVE_XML), 1)
    LIBS += -lxml2
 endif
 
-ifneq $($(V),1)
+ifneq ($(V),1)
    Q := @
 endif
 
@@ -64,6 +64,7 @@ clean:
 	rm -f gfx/*.o
 	rm -f record/*.o
 	rm -f hqflt/*.o
+	rm -f input/*.o
 	rm -f hqflt/snes_ntsc/*.o
 	rm -f $(TARGET)
 	rm -f ssnes-joyconfig.exe
