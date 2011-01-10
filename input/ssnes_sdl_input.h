@@ -19,12 +19,13 @@
 #define __SSNES_SDL_INPUT_H
 
 #include "SDL.h"
+#include "general.h"
 typedef struct sdl_input
 {
-   SDL_Joystick *joysticks[2];
-   unsigned num_axes[2];
-   unsigned num_buttons[2];
-   unsigned num_hats[2];
+   SDL_Joystick *joysticks[MAX_PLAYERS];
+   unsigned num_axes[MAX_PLAYERS];
+   unsigned num_buttons[MAX_PLAYERS];
+   unsigned num_hats[MAX_PLAYERS];
    unsigned num_joysticks;
 
    // A video driver could pre-init with the SDL driver and have it handle resizing events...

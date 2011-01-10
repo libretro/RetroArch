@@ -183,5 +183,59 @@ static const struct snes_keybind snes_keybinds_2[] = {
    { -1 }
 };
 
+// Player 3
+static const struct snes_keybind snes_keybinds_3[] = {
+   // SNES button                 |   keyboard key   | js btn | js axis |
+   { SNES_DEVICE_ID_JOYPAD_A,          SDLK_b,          1,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_B,          SDLK_v,          0,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_X,          SDLK_g,          3,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_Y,          SDLK_f,          2,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_L,          SDLK_r,          4,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_R,          SDLK_t,          5,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_LEFT,       SDLK_j,         11,       AXIS_NEG(0) },
+   { SNES_DEVICE_ID_JOYPAD_RIGHT,      SDLK_l,         12,       AXIS_POS(0) },
+   { SNES_DEVICE_ID_JOYPAD_UP,         SDLK_i,         13,       AXIS_NEG(1) },
+   { SNES_DEVICE_ID_JOYPAD_DOWN,       SDLK_k,         14,       AXIS_POS(1) },
+   { SNES_DEVICE_ID_JOYPAD_START,      SDLK_p,          6,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_SELECT,     SDLK_o,          7,       AXIS_NONE },
+   { -1 }
+};
+
+// Player 4
+static const struct snes_keybind snes_keybinds_4[] = {
+   // SNES button                 |   keyboard key   | js btn | js axis |
+   { SNES_DEVICE_ID_JOYPAD_A,          SDLK_b,          1,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_B,          SDLK_v,          0,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_X,          SDLK_g,          3,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_Y,          SDLK_f,          2,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_L,          SDLK_r,          4,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_R,          SDLK_t,          5,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_LEFT,       SDLK_j,         11,       AXIS_NEG(0) },
+   { SNES_DEVICE_ID_JOYPAD_RIGHT,      SDLK_l,         12,       AXIS_POS(0) },
+   { SNES_DEVICE_ID_JOYPAD_UP,         SDLK_i,         13,       AXIS_NEG(1) },
+   { SNES_DEVICE_ID_JOYPAD_DOWN,       SDLK_k,         14,       AXIS_POS(1) },
+   { SNES_DEVICE_ID_JOYPAD_START,      SDLK_p,          6,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_SELECT,     SDLK_o,          7,       AXIS_NONE },
+   { -1 }
+};
+
+// Player 5
+static const struct snes_keybind snes_keybinds_5[] = {
+   // SNES button                 |   keyboard key   | js btn | js axis |
+   { SNES_DEVICE_ID_JOYPAD_A,          SDLK_b,          1,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_B,          SDLK_v,          0,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_X,          SDLK_g,          3,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_Y,          SDLK_f,          2,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_L,          SDLK_r,          4,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_R,          SDLK_t,          5,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_LEFT,       SDLK_j,         11,       AXIS_NEG(0) },
+   { SNES_DEVICE_ID_JOYPAD_RIGHT,      SDLK_l,         12,       AXIS_POS(0) },
+   { SNES_DEVICE_ID_JOYPAD_UP,         SDLK_i,         13,       AXIS_NEG(1) },
+   { SNES_DEVICE_ID_JOYPAD_DOWN,       SDLK_k,         14,       AXIS_POS(1) },
+   { SNES_DEVICE_ID_JOYPAD_START,      SDLK_p,          6,       AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_SELECT,     SDLK_o,          7,       AXIS_NONE },
+   { -1 }
+};
+
 #endif
 

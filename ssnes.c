@@ -201,7 +201,10 @@ static void input_poll(void)
 
 static int16_t input_state(bool port, unsigned device, unsigned index, unsigned id)
 {
-   const struct snes_keybind *binds[] = { g_settings.input.binds[0], g_settings.input.binds[1] }; 
+   const struct snes_keybind *binds[MAX_PLAYERS];
+   for (int i = 0; i < MAX_PLAYERS; i++)
+      binds[i] = g_settings.input.binds[i];
+
    return driver.input->input_state(driver.input_data, binds, port, device, index, id);
 }
 
@@ -242,6 +245,9 @@ static void print_help(void)
    puts("\t-m/--mouse: Connect a virtual mouse into designated port of the SNES (1 or 2)."); 
    puts("\tThis argument can be specified several times to connect more mice.");
    puts("\t-p/--scope: Connect a virtual SuperScope into port 2 of the SNES.");
+   puts("\t-j/--justifier: Connect a virtual Konami Justifier into port 2 of the SNES.");
+   puts("\t-k/--justifiers: Daisy chain two virtual Konami Justifiers into port 2 of the SNES.");
+   puts("\t-4/--multitap: Connect a multitap to port 2 of the SNES.");
 
 #ifdef HAVE_FFMPEG
    puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
@@ -268,6 +274,9 @@ static void parse_input(int argc, char *argv[])
       { "mouse", 1, NULL, 'm' },
       { "scope", 0, NULL, 'p' },
       { "savestate", 1, NULL, 't' },
+      { "justifier", 0, NULL, 'j' },
+      { "justifiers", 0, NULL, 'k' },
+      { "multitap", 0, NULL, '4' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -279,7 +288,7 @@ static void parse_input(int argc, char *argv[])
 #define FFMPEG_RECORD_ARG
 #endif
 
-   char optstring[] = "hs:vc:t:m:p" FFMPEG_RECORD_ARG;
+   char optstring[] = "hs:vc:t:m:p4jk" FFMPEG_RECORD_ARG;
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -293,6 +302,18 @@ static void parse_input(int argc, char *argv[])
          case 'h':
             print_help();
             exit(0);
+
+         case '4':
+            g_extern.has_multitap = true;
+            break;
+
+         case 'j':
+            g_extern.has_justifier = true;
+            break;
+
+         case 'k':
+            g_extern.has_justifiers = true;
+            break;
 
          case 's':
             strncpy(g_extern.savefile_name_srm, optarg, sizeof(g_extern.savefile_name_srm) - 1);
@@ -389,17 +410,35 @@ static void parse_input(int argc, char *argv[])
 // TODO: Add rest of the controllers.
 static void init_controllers(void)
 {
-   for (int i = 0; i < 2; i++)
+   if (g_extern.has_justifier)
    {
-      if (g_extern.has_mouse[i])
+      SSNES_LOG("Connecting Justifier to port 2.\n");
+      psnes_set_controller_port_device(SNES_PORT_2, SNES_DEVICE_JUSTIFIER);
+   }
+   else if (g_extern.has_justifiers)
+   {
+      SSNES_LOG("Connecting Justifiers to port 2.\n");
+      psnes_set_controller_port_device(SNES_PORT_2, SNES_DEVICE_JUSTIFIERS);
+   }
+   else if (g_extern.has_multitap)
+   {
+      SSNES_LOG("Connecting multitap to port 2.\n");
+      psnes_set_controller_port_device(SNES_PORT_2, SNES_DEVICE_MULTITAP);
+   }
+   else
+   {
+      for (int i = 0; i < 2; i++)
       {
-         SSNES_LOG("Connecting mouse to port %d\n", i + 1);
-         psnes_set_controller_port_device(i, SNES_DEVICE_MOUSE);
-      }
-      else if (g_extern.has_scope[i])
-      {
-         SSNES_LOG("Connecting scope to port %d\n", i + 1);
-         psnes_set_controller_port_device(i, SNES_DEVICE_SUPER_SCOPE);
+         if (g_extern.has_mouse[i])
+         {
+            SSNES_LOG("Connecting mouse to port %d\n", i + 1);
+            psnes_set_controller_port_device(i, SNES_DEVICE_MOUSE);
+         }
+         else if (g_extern.has_scope[i])
+         {
+            SSNES_LOG("Connecting scope to port %d\n", i + 1);
+            psnes_set_controller_port_device(i, SNES_DEVICE_SUPER_SCOPE);
+         }
       }
    }
 }

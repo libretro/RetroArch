@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include "general.h"
 
 
 static int g_player = 1;
@@ -52,11 +53,11 @@ static void print_help(void)
 struct bind
 {
    char *keystr;
-   char *confbtn[2];
-   char *confaxis[2];
+   char *confbtn[MAX_PLAYERS];
+   char *confaxis[MAX_PLAYERS];
 };
 
-#define BIND(x, k) { x, { "input_player1_" #k "_btn", "input_player2_" #k "_btn" }, {"input_player1_" #k "_axis", "input_player2_" #k "_axis"}},
+#define BIND(x, k) { x, { "input_player1_" #k "_btn", "input_player2_" #k "_btn", "input_player3_" #k "_btn", "input_player4_" #k "_btn", "input_player5_" #k "_btn" }, {"input_player1_" #k "_axis", "input_player2_" #k "_axis", "input_player3_" #k "_axis", "input_player4_" #k "_axis", "input_player5_" #k "_axis"}},
 static struct bind binds[] = {
    BIND("A button (right)", a)
    BIND("B button (down)", b)
@@ -226,9 +227,9 @@ static void parse_input(int argc, char *argv[])
                fprintf(stderr, "Player number must be at least 1!\n");
                exit(1);
             }
-            else if (g_player > 2)
+            else if (g_player > MAX_PLAYERS)
             {
-               fprintf(stderr, "Player number must be 1 or 2.\n");
+               fprintf(stderr, "Player number must be from 1 to %d.\n", MAX_PLAYERS);
                exit(1);
             }
             break;
@@ -262,8 +263,15 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   config_set_int(conf, g_player == 1 ? "input_player1_joypad_index" : "input_player2_joypad_index", 
-         g_joypad - 1);
+   const char *index_list[] = { 
+      "input_player1_joypad_index", 
+      "input_player2_joypad_index", 
+      "input_player3_joypad_index", 
+      "input_player4_joypad_index", 
+      "input_player5_joypad_index"
+   };
+
+   config_set_int(conf, index_list[g_player - 1], g_joypad - 1);
 
    get_binds(conf, g_player - 1, g_joypad - 1);
    config_file_write(conf, g_out_path);

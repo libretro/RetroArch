@@ -37,8 +37,11 @@ static void* sdl_input_init(void)
    SDL_JoystickEventState(SDL_IGNORE);
    sdl->num_joysticks = SDL_NumJoysticks();
 
-   for (unsigned i = 0; i < 2; i++)
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {
+      if (g_settings.input.joypad_map[i] == SSNES_NO_JOYPAD)
+         continue;
+
       if (sdl->num_joysticks > g_settings.input.joypad_map[i])
       {
          sdl->joysticks[i] = SDL_JoystickOpen(g_settings.input.joypad_map[i]);
@@ -168,12 +171,10 @@ static bool sdl_bind_button_pressed(void *data, int key)
 }
 
 static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct snes_keybind **binds, 
-      bool port, unsigned device, unsigned index, unsigned id)
+      int port_num, unsigned device, unsigned index, unsigned id)
 {
-   const struct snes_keybind *snes_keybinds = binds[port == SNES_PORT_1 ? 0 : 1];
+   const struct snes_keybind *snes_keybinds = binds[port_num];
 
-   // Checks if button is pressed.
-   int port_num = port == SNES_PORT_1 ? 0 : 1;
    for (int i = 0; snes_keybinds[i].id != -1; i++)
    {
       if (snes_keybinds[i].id == (int)id)
@@ -222,16 +223,44 @@ static int16_t sdl_scope_device_state(sdl_input_t *sdl, unsigned id)
    }
 }
 
+// TODO: Support two players.
+static int16_t sdl_justifier_device_state(sdl_input_t *sdl, unsigned index, unsigned id)
+{
+   if (index == 0)
+   {
+      switch (id)
+      {
+         case SNES_DEVICE_ID_JUSTIFIER_X:
+            return sdl->mouse_x;
+         case SNES_DEVICE_ID_JUSTIFIER_Y:
+            return sdl->mouse_y;
+         case SNES_DEVICE_ID_JUSTIFIER_TRIGGER:
+            return sdl->mouse_l;
+         case SNES_DEVICE_ID_JUSTIFIER_START:
+            return sdl->mouse_r;
+         default:
+            return 0;
+      }
+   }
+   else
+      return 0;
+}
+
 static int16_t sdl_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
 {
    switch (device)
    {
       case SNES_DEVICE_JOYPAD:
-         return sdl_joypad_device_state(data, binds, port, device, index, id);
+         return sdl_joypad_device_state(data, binds, port == SNES_PORT_1 ? 0 : 1, device, index, id);
+      case SNES_DEVICE_MULTITAP:
+         return sdl_joypad_device_state(data, binds, (port == SNES_PORT_2) ? 1 + index : 0, device, index, id);
       case SNES_DEVICE_MOUSE:
          return sdl_mouse_device_state(data, port, id);
       case SNES_DEVICE_SUPER_SCOPE:
          return sdl_scope_device_state(data, id);
+      case SNES_DEVICE_JUSTIFIER:
+      case SNES_DEVICE_JUSTIFIERS:
+         return sdl_justifier_device_state(data, index, id);
 
       default:
          return 0;
@@ -247,7 +276,7 @@ static void sdl_input_free(void *data)
       while (SDL_PollEvent(&event));
 
       sdl_input_t *sdl = data;
-      for (int i = 0; i < 2; i++)
+      for (int i = 0; i < MAX_PLAYERS; i++)
       {
          if (sdl->joysticks[i])
             SDL_JoystickClose(sdl->joysticks[i]);

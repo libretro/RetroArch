@@ -33,8 +33,9 @@
 #endif
 
 
-#define MAX_PLAYERS 2 // Should be 5 when multi-tap stuff is added ...
+#define MAX_PLAYERS 5
 #define MAX_BINDS 18 // Needs to be increased every time there are new binds added.
+#define SSNES_NO_JOYPAD 0xFFFF
 struct settings
 {
    struct 
@@ -71,7 +72,7 @@ struct settings
       char driver[32];
       struct snes_keybind binds[MAX_PLAYERS][MAX_BINDS];
       float axis_threshold;
-      unsigned joypad_map[2];
+      unsigned joypad_map[MAX_PLAYERS];
    } input;
 
    char libsnes[256];
@@ -86,6 +87,9 @@ struct global
 
    bool has_mouse[2];
    bool has_scope[2];
+   bool has_justifier;
+   bool has_justifiers;
+   bool has_multitap;
 
    FILE *rom_file;
    char config_path[256];
