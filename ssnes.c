@@ -241,8 +241,7 @@ static void print_help(void)
    puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
    puts("\t-m/--mouse: Connect a virtual mouse into designated port of the SNES (1 or 2)."); 
    puts("\tThis argument can be specified several times to connect more mice.");
-   puts("\t-p/--scope: Connect a virtual SuperScope into designated port of the SNES (1 or 2).");
-   puts("\tThis argument can be specified several times to connect more scopes.");
+   puts("\t-p/--scope: Connect a virtual SuperScope into port 2 of the SNES.");
 
 #ifdef HAVE_FFMPEG
    puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
@@ -267,7 +266,7 @@ static void parse_input(int argc, char *argv[])
       { "verbose", 0, NULL, 'v' },
       { "config", 0, NULL, 'c' },
       { "mouse", 1, NULL, 'm' },
-      { "scope", 1, NULL, 'p' },
+      { "scope", 0, NULL, 'p' },
       { "savestate", 1, NULL, 't' },
       { NULL, 0, NULL, 0 }
    };
@@ -280,7 +279,7 @@ static void parse_input(int argc, char *argv[])
 #define FFMPEG_RECORD_ARG
 #endif
 
-   char optstring[] = "hs:vc:t:m:p:" FFMPEG_RECORD_ARG;
+   char optstring[] = "hs:vc:t:m:p" FFMPEG_RECORD_ARG;
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -319,14 +318,7 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'p':
-            port = strtol(optarg, NULL, 0);
-            if (port < 1 || port > 2)
-            {
-               SSNES_ERR("Connect scope to port 1 or 2.\n");
-               print_help();
-               exit(1);
-            }
-            g_extern.has_scope[port - 1] = true;
+            g_extern.has_scope[1] = true;
             break;
 
          case 'c':
