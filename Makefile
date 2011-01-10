@@ -76,6 +76,10 @@ else
    LIBS += $(libsnes)
 endif
 
+ifneq ($(V),1)
+   Q := @
+endif
+
 CFLAGS = -Wall -O3 -g -std=gnu99 -I.
 
 all: $(TARGET) config.mk
@@ -85,13 +89,16 @@ config.mk: configure qb/*
 	@exit 1
 
 ssnes: $(OBJ)
-	$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
+	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
+	@$(if $(Q), $(shell echo echo LD $@),)
 
 tools/ssnes-joyconfig: $(JOYCONFIG_OBJ)
-	$(CC) -o $@ $(JOYCONFIG_OBJ) $(SDL_LIBS) $(LDFLAGS)
+	$(Q)$(CC) -o $@ $(JOYCONFIG_OBJ) $(SDL_LIBS) $(LDFLAGS)
+	@$(if $(Q), $(shell echo echo LD $@),)
 
 %.o: %.c config.h config.mk $(HEADERS)
-	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
 
 install: $(TARGET)
 	install -m755 $(TARGET) $(DESTDIR)$(PREFIX)/bin 

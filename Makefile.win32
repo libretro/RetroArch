@@ -35,6 +35,10 @@ ifeq ($(HAVE_XML), 1)
    LIBS += -lxml2
 endif
 
+ifneq $($(V),1)
+   Q := @
+endif
+
 LIBS += $(libsnes)
 
 CFLAGS = -Wall -O3 -std=gnu99 -I.
@@ -42,16 +46,16 @@ CFLAGS = -Wall -O3 -std=gnu99 -I.
 all: $(TARGET) ssnes-joyconfig.exe
 
 $(TARGET): $(OBJ)
-	$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
-
+	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
+	@$(if $(Q), $(shell echo echo LD $@),)
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
-
-
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
 
 ssnes-joyconfig.exe: $(JOBJ)
-	$(CC) -o ssnes-joyconfig.exe $(JOBJ) $(SDL_LIBS) $(LDFLAGS)
+	$(Q)$(CC) -o ssnes-joyconfig.exe $(JOBJ) $(SDL_LIBS) $(LDFLAGS)
+	@$(if $(Q), $(shell echo echo LD $@),)
 
 clean:
 	rm -f *.o 
