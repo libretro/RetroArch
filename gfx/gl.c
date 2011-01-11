@@ -302,6 +302,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
 
    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, video->vsync ? 1 : 0);
+   SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 
    if (!SDL_SetVideoMode(video->width, video->height, 32, SDL_OPENGL | SDL_RESIZABLE | (video->fullscreen ? SDL_FULLSCREEN : 0)))
       return NULL;
@@ -315,19 +316,21 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    if (attr <= 0)
       SSNES_WARN("GL double buffer has not been enabled!\n");
 
+   gl_t *gl = calloc(1, sizeof(gl_t));
+   if (!gl)
+      return NULL;
+
    // Remove that ugly mouse :D
    SDL_ShowCursor(SDL_DISABLE);
+   set_viewport(gl);
 
    if (!gl_shader_init())
    {
       SSNES_ERR("Shader init failed.\n");
       SDL_QuitSubSystem(SDL_INIT_VIDEO);
+      free(gl);
       return NULL;
    }
-
-   gl_t *gl = calloc(1, sizeof(gl_t));
-   if (!gl)
-      return NULL;
 
    gl->win_width = video->width;
    gl->win_height = video->height;
@@ -339,7 +342,6 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    else
       gl->tex_filter = GL_NEAREST;
 
-   set_viewport(gl);
 
    glEnable(GL_TEXTURE_2D);
    glDisable(GL_DITHER);
