@@ -318,6 +318,13 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    // Remove that ugly mouse :D
    SDL_ShowCursor(SDL_DISABLE);
 
+   if (!gl_shader_init())
+   {
+      SSNES_ERR("Shader init failed.\n");
+      SDL_QuitSubSystem(SDL_INIT_VIDEO);
+      return NULL;
+   }
+
    gl_t *gl = calloc(1, sizeof(gl_t));
    if (!gl)
       return NULL;
@@ -371,7 +378,6 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    gl->last_width = gl->tex_w;
    gl->last_height = gl->tex_h;
 
-   gl_shader_init();
 
    // Hook up SDL input driver to get SDL_QUIT events and RESIZE.
    sdl_input_t *sdl_input = input_sdl.init();
