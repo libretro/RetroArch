@@ -49,6 +49,8 @@
 #include "shader_glsl.h"
 #endif
 
+#include "gl_common.h"
+
 static const GLfloat vertexes[] = {
    0, 0, 0,
    0, 1, 0,
