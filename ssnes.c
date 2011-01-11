@@ -514,7 +514,7 @@ int main(int argc, char *argv[])
          .channels = 2,
          .samplerate = 32040,
          .filename = g_extern.record_path,
-         .fps = snes_get_region() == SNES_REGION_NTSC ? ntsc_fps : pal_fps,
+         .fps = psnes_get_region() == SNES_REGION_NTSC ? ntsc_fps : pal_fps,
          .aspect_ratio = 4.0/3
       };
       SSNES_LOG("Recording with FFmpeg to %s.\n", g_extern.record_path);

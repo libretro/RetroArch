@@ -37,6 +37,8 @@ extern unsigned (*psnes_library_revision_major)(void);
 extern bool (*psnes_load_cartridge_normal)(const char*, const uint8_t*, unsigned);
 extern void (*psnes_set_controller_port_device)(bool, unsigned);
 
+extern bool (*psnes_get_region)(void);
+
 extern unsigned (*psnes_serialize_size)(void);
 extern bool (*psnes_serialize)(uint8_t*, unsigned);
 extern bool (*psnes_unserialize)(const uint8_t*, unsigned);
