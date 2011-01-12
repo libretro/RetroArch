@@ -96,6 +96,7 @@ static void set_defaults(void)
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
    g_settings.video.aspect_ratio = SNES_ASPECT_RATIO;
+   g_settings.video.filter = FILTER_NONE;
 
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;

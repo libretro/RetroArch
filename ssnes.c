@@ -103,7 +103,9 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 #ifdef HAVE_FILTER
    uint16_t output_filter[width * height * 4 * 4];
    uint16_t output[width * height];
-   process_frame(output, data, width, height);
+
+   if (g_settings.video.filter != FILTER_NONE)
+      process_frame(output, data, width, height);
 
    switch (g_settings.video.filter)
    {
