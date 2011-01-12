@@ -78,6 +78,12 @@ struct settings
    char libsnes[256];
 };
 
+enum ssnes_game_type
+{
+   SSNES_CART_NORMAL = 0,
+   SSNES_CART_SGB
+};
+
 struct global
 {
    bool verbose;
@@ -92,10 +98,15 @@ struct global
    bool has_multitap;
 
    FILE *rom_file;
+   enum ssnes_game_type game_type;
+
+   char gb_rom_path[256];
+
    char config_path[256];
 
    char basename[256];
    char savefile_name_srm[256];
+   char savefile_name_rtc[260]; // Make sure that fill_pathname has space.
    char savestate_name[256];
 
 #ifdef HAVE_FFMPEG

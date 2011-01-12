@@ -35,6 +35,10 @@ extern unsigned (*psnes_library_revision_minor)(void);
 extern unsigned (*psnes_library_revision_major)(void);
 
 extern bool (*psnes_load_cartridge_normal)(const char*, const uint8_t*, unsigned);
+extern bool (*psnes_load_cartridge_super_game_boy)(
+         const char*, const uint8_t*, unsigned, 
+         const char*, const uint8_t*, unsigned);
+
 extern void (*psnes_set_controller_port_device)(bool, unsigned);
 
 extern bool (*psnes_get_region)(void);

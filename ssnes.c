@@ -36,6 +36,7 @@
 struct global g_extern = {
    .video_active = true,
    .audio_active = true,
+   .game_type = SSNES_CART_NORMAL,
 };
 
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
@@ -237,11 +238,12 @@ static void print_help(void)
    puts("=================================================");
    puts("ssnes: Simple Super Nintendo Emulator (libsnes)");
    puts("=================================================");
-   puts("Usage: ssnes [rom file] [-h/--help | -c/--config | -v/--verbose | -4/--multitap | -j/--justifier | -k/--justifiers | -t/--savestate | -m/--mouse | -p/--scope | -s/--save" FFMPEG_HELP_QUARK "]");
+   puts("Usage: ssnes [rom file] [-h/--help | -c/--config | -v/--verbose | -4/--multitap | -j/--justifier | -k/--justifiers | -t/--savestate | -m/--mouse | -g/--gameboy | -p/--scope | -s/--save" FFMPEG_HELP_QUARK "]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
    puts("\t-t/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
    puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
+   puts("\t-g/--gameboy: Path to Gameboy ROM. Load SuperGameBoy as the regular rom.");
    puts("\t-m/--mouse: Connect a virtual mouse into designated port of the SNES (1 or 2)."); 
    puts("\t\tThis argument can be specified several times to connect more mice.");
    puts("\t-p/--scope: Connect a virtual SuperScope into port 2 of the SNES.");
@@ -270,6 +272,7 @@ static void parse_input(int argc, char *argv[])
       { "record", 1, NULL, 'r' },
 #endif
       { "verbose", 0, NULL, 'v' },
+      { "gameboy", 1, NULL, 'g' },
       { "config", 0, NULL, 'c' },
       { "mouse", 1, NULL, 'm' },
       { "scope", 0, NULL, 'p' },
@@ -288,7 +291,7 @@ static void parse_input(int argc, char *argv[])
 #define FFMPEG_RECORD_ARG
 #endif
 
-   char optstring[] = "hs:vc:t:m:p4jk" FFMPEG_RECORD_ARG;
+   char optstring[] = "hs:vc:t:m:p4jkg:" FFMPEG_RECORD_ARG;
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -317,6 +320,11 @@ static void parse_input(int argc, char *argv[])
 
          case 's':
             strncpy(g_extern.savefile_name_srm, optarg, sizeof(g_extern.savefile_name_srm) - 1);
+            break;
+
+         case 'g':
+            strncpy(g_extern.gb_rom_path, optarg, sizeof(g_extern.gb_rom_path) - 1);
+            g_extern.game_type = SSNES_CART_SGB;
             break;
 
          case 't':
@@ -443,63 +451,21 @@ static void init_controllers(void)
    }
 }
 
-int main(int argc, char *argv[])
+static inline void load_save_files(void)
 {
-   parse_input(argc, argv);
-   parse_config();
-   init_dlsym();
-
-   psnes_init();
-   if (strlen(g_extern.basename) > 0)
-      psnes_set_cartridge_basename(g_extern.basename);
-
-   SSNES_LOG("Version of libsnes API: %u.%u\n", psnes_library_revision_major(), psnes_library_revision_minor());
-   void *rom_buf;
-   ssize_t rom_len = 0;
-   if ((rom_len = read_file(g_extern.rom_file, &rom_buf)) == -1)
-   {
-      SSNES_ERR("Could not read ROM file.\n");
-      exit(1);
-   }
-   SSNES_LOG("ROM size: %d bytes\n", (int)rom_len);
-
-   if (g_extern.rom_file != NULL)
-      fclose(g_extern.rom_file);
-
-   // Infer .rtc save path from save ram path.
-   char savefile_name_rtc[strlen(g_extern.savefile_name_srm)+strlen(".rtc")+1];
-   fill_pathname(savefile_name_rtc, g_extern.savefile_name_srm, ".rtc");
-
-   init_drivers();
-
-   psnes_set_video_refresh(video_frame);
-   psnes_set_audio_sample(audio_sample);
-   psnes_set_input_poll(input_poll);
-   psnes_set_input_state(input_state);
-
-   // TODO: Load other types of ROMs as well!
-   if (!psnes_load_cartridge_normal(NULL, rom_buf, rom_len))
-   {
-      SSNES_ERR("ROM file is not valid!\n");
-      goto error;
-   }
-
-   free(rom_buf);
-
-   init_controllers();
-
-   unsigned serial_size = psnes_serialize_size();
-   uint8_t *serial_data = malloc(serial_size);
-   if (serial_data == NULL)
-   {
-      SSNES_ERR("Failed to allocate memory for states!\n");
-      goto error;
-   }
-
    load_save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
-   load_save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+   load_save_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+}
+
+static inline void save_files(void)
+{
+   save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
+   save_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+}
 
 #ifdef HAVE_FFMPEG
+static void init_recording(void)
+{
    // Hardcode these options at the moment. Should be specificed in the config file later on.
    if (g_extern.recording)
    {
@@ -525,6 +491,58 @@ int main(int argc, char *argv[])
          g_extern.recording = false;
       }
    }
+}
+
+static void deinit_recording(void)
+{
+   if (g_extern.recording)
+   {
+      ffemu_finalize(g_extern.rec);
+      ffemu_free(g_extern.rec);
+   }
+}
+#endif
+
+
+int main(int argc, char *argv[])
+{
+   parse_input(argc, argv);
+   parse_config();
+   init_dlsym();
+
+   psnes_init();
+   if (strlen(g_extern.basename) > 0)
+      psnes_set_cartridge_basename(g_extern.basename);
+
+   SSNES_LOG("Version of libsnes API: %u.%u\n", psnes_library_revision_major(), psnes_library_revision_minor());
+
+   // Infer .rtc save path from save ram path.
+   fill_pathname(g_extern.savefile_name_rtc, g_extern.savefile_name_srm, ".rtc");
+
+   if (!init_rom_file())
+      goto error;
+
+   init_drivers();
+
+   psnes_set_video_refresh(video_frame);
+   psnes_set_audio_sample(audio_sample);
+   psnes_set_input_poll(input_poll);
+   psnes_set_input_state(input_state);
+   
+   init_controllers();
+
+   unsigned serial_size = psnes_serialize_size();
+   uint8_t *serial_data = malloc(serial_size);
+   if (serial_data == NULL)
+   {
+      SSNES_ERR("Failed to allocate memory for states!\n");
+      goto error;
+   }
+
+   load_save_files();
+
+#ifdef HAVE_FFMPEG
+   init_recording();
 #endif
 
    // Main loop
@@ -556,16 +574,11 @@ int main(int argc, char *argv[])
    }
 
 #ifdef HAVE_FFMPEG
-   if (g_extern.recording)
-   {
-      ffemu_finalize(g_extern.rec);
-      ffemu_free(g_extern.rec);
-   }
+   deinit_recording();
 #endif
 
    // Flush out SRAM (and RTC)
-   save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
-   save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+   save_files();
 
    psnes_unload_cartridge();
    psnes_term();

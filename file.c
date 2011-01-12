@@ -165,3 +165,107 @@ void save_file(const char* path, int type)
    if ( data && size > 0 )
       write_file(path, data, size);
 }
+
+static bool load_sgb_rom(void)
+{
+   void *rom_buf;
+   ssize_t rom_len = 0;
+
+   FILE *extra_rom;
+   void *extra_rom_buf;
+   ssize_t extra_rom_len = 0;
+
+   if ((rom_len = read_file(g_extern.rom_file, &rom_buf)) == -1)
+   {
+      SSNES_ERR("Could not read ROM file.\n");
+      goto error;
+   }
+
+   extra_rom = fopen(g_extern.gb_rom_path, "rb");
+   if (!extra_rom)
+   {
+      SSNES_ERR("Couldn't open GameBoy ROM!\n");
+      goto error;
+   }
+
+   if ((extra_rom_len = read_file(extra_rom, &extra_rom_buf)) == -1)
+   {
+      SSNES_ERR("Cannot read GameBoy rom.\n");
+      goto error;
+   }
+
+   if (!psnes_load_cartridge_super_game_boy(
+            NULL, rom_buf, rom_len,
+            NULL, extra_rom_buf, extra_rom_len))
+   {
+      SSNES_ERR("Cannot load SGB/GameBoy rom.\n");
+      goto error;
+   }
+
+   if (g_extern.rom_file)
+      fclose(g_extern.rom_file);
+   if (extra_rom)
+      fclose(extra_rom);
+   free(rom_buf);
+   free(extra_rom_buf);
+   return true;
+
+error:
+   if (g_extern.rom_file)
+      fclose(g_extern.rom_file);
+   if (extra_rom)
+      fclose(extra_rom);
+   free(rom_buf);
+   free(extra_rom_buf);
+   return false;
+}
+
+static bool load_normal_rom(void)
+{
+   void *rom_buf;
+   ssize_t rom_len = 0;
+
+   if ((rom_len = read_file(g_extern.rom_file, &rom_buf)) == -1)
+   {
+      SSNES_ERR("Could not read ROM file.\n");
+      return false;
+   }
+
+   if (g_extern.rom_file != NULL)
+      fclose(g_extern.rom_file);
+
+   SSNES_LOG("ROM size: %d bytes\n", (int)rom_len);
+
+   if (!psnes_load_cartridge_normal(NULL, rom_buf, rom_len))
+   {
+      SSNES_ERR("ROM file is not valid!\n");
+      free(rom_buf);
+      return false;
+   }
+
+   free(rom_buf);
+   return true;
+}
+
+bool init_rom_file(void)
+{
+   switch (g_extern.game_type)
+   {
+      case SSNES_CART_SGB:
+         if (!load_sgb_rom())
+            return false;
+         break;
+
+      case SSNES_CART_NORMAL:
+         if (!load_normal_rom())
+            return false;
+         break;
+         
+      default:
+         SSNES_ERR("Invalid ROM type!\n");
+         return false;
+   }
+
+   return true;
+}
+
