@@ -241,14 +241,14 @@ static void print_help(void)
    puts("Usage: ssnes [rom file] [-h/--help | -c/--config | -v/--verbose | -4/--multitap | -j/--justifier | -k/--justifiers | -t/--savestate | -m/--mouse | -g/--gameboy | -p/--scope | -s/--save" FFMPEG_HELP_QUARK "]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
-   puts("\t-t/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
+   puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
    puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
    puts("\t-g/--gameboy: Path to Gameboy ROM. Load SuperGameBoy as the regular rom.");
    puts("\t-m/--mouse: Connect a virtual mouse into designated port of the SNES (1 or 2)."); 
    puts("\t\tThis argument can be specified several times to connect more mice.");
    puts("\t-p/--scope: Connect a virtual SuperScope into port 2 of the SNES.");
    puts("\t-j/--justifier: Connect a virtual Konami Justifier into port 2 of the SNES.");
-   puts("\t-k/--justifiers: Daisy chain two virtual Konami Justifiers into port 2 of the SNES.");
+   puts("\t-J/--justifiers: Daisy chain two virtual Konami Justifiers into port 2 of the SNES.");
    puts("\t-4/--multitap: Connect a multitap to port 2 of the SNES.");
 
 #ifdef HAVE_FFMPEG
@@ -276,9 +276,9 @@ static void parse_input(int argc, char *argv[])
       { "config", 0, NULL, 'c' },
       { "mouse", 1, NULL, 'm' },
       { "scope", 0, NULL, 'p' },
-      { "savestate", 1, NULL, 't' },
+      { "savestate", 1, NULL, 'S' },
       { "justifier", 0, NULL, 'j' },
-      { "justifiers", 0, NULL, 'k' },
+      { "justifiers", 0, NULL, 'J' },
       { "multitap", 0, NULL, '4' },
       { NULL, 0, NULL, 0 }
    };
@@ -314,7 +314,7 @@ static void parse_input(int argc, char *argv[])
             g_extern.has_justifier = true;
             break;
 
-         case 'k':
+         case 'J':
             g_extern.has_justifiers = true;
             break;
 
@@ -327,7 +327,7 @@ static void parse_input(int argc, char *argv[])
             g_extern.game_type = SSNES_CART_SGB;
             break;
 
-         case 't':
+         case 'S':
             strncpy(g_extern.savestate_name, optarg, sizeof(g_extern.savestate_name) - 1);
             break;
 
