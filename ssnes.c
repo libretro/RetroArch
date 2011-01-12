@@ -238,7 +238,7 @@ static void print_help(void)
    puts("=================================================");
    puts("ssnes: Simple Super Nintendo Emulator (libsnes)");
    puts("=================================================");
-   puts("Usage: ssnes [rom file] [-h/--help | -c/--config | -v/--verbose | -4/--multitap | -j/--justifier | -k/--justifiers | -t/--savestate | -m/--mouse | -g/--gameboy | -p/--scope | -s/--save" FFMPEG_HELP_QUARK "]");
+   puts("Usage: ssnes [rom file] [-h/--help | -c/--config | -v/--verbose | -4/--multitap | -j/--justifier | -J/--justifiers | -S/--savestate | -m/--mouse | -g/--gameboy | -p/--scope | -s/--save" FFMPEG_HELP_QUARK "]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
    puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");

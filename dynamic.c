@@ -55,6 +55,16 @@ bool (*psnes_load_cartridge_normal)(const char*, const uint8_t*, unsigned);
 bool (*psnes_load_cartridge_super_game_boy)(
          const char*, const uint8_t*, unsigned, 
          const char*, const uint8_t*, unsigned);
+bool (*psnes_load_cartridge_bsx)(
+         const char*, const uint8_t*, unsigned, 
+         const char*, const uint8_t*, unsigned);
+bool (*psnes_load_cartridge_bsx_slotted)(
+         const char*, const uint8_t*, unsigned, 
+         const char*, const uint8_t*, unsigned);
+bool (*psnes_load_cartridge_sufami_turbo)(
+         const char*, const uint8_t*, unsigned, 
+         const char*, const uint8_t*, unsigned, 
+         const char*, const uint8_t*, unsigned);
 
 void (*psnes_set_controller_port_device)(bool, unsigned);
 
@@ -94,6 +104,9 @@ static void load_dynamic(void)
    SYM(snes_get_region);
    SYM(snes_load_cartridge_normal);
    SYM(snes_load_cartridge_super_game_boy);
+   SYM(snes_load_cartridge_bsx);
+   SYM(snes_load_cartridge_bsx_slotted);
+   SYM(snes_load_cartridge_sufami_turbo);
    SYM(snes_set_controller_port_device);
    SYM(snes_serialize_size);
    SYM(snes_serialize);
@@ -124,6 +137,9 @@ static void set_statics(void)
    SSYM(snes_get_region);
    SSYM(snes_load_cartridge_normal);
    SSYM(snes_load_cartridge_super_game_boy);
+   SSYM(snes_load_cartridge_bsx);
+   SSYM(snes_load_cartridge_bsx_slotted);
+   SSYM(snes_load_cartridge_sufami_turbo);
    SSYM(snes_set_controller_port_device);
    SSYM(snes_serialize_size);
    SSYM(snes_serialize);
