@@ -451,16 +451,46 @@ static void init_controllers(void)
    }
 }
 
+static int get_sram_type(enum ssnes_game_type type)
+{
+   switch (type)
+   {
+      case SSNES_CART_SGB:
+         return SNES_MEMORY_GAME_BOY_RAM;
+      case SSNES_CART_NORMAL:
+         return SNES_MEMORY_CARTRIDGE_RAM;
+   }
+   return 0;
+}
+
+static int get_rtc_type(enum ssnes_game_type type)
+{
+   switch (type)
+   {
+      case SSNES_CART_SGB:
+         return SNES_MEMORY_GAME_BOY_RTC;
+      case SSNES_CART_NORMAL:
+         return SNES_MEMORY_CARTRIDGE_RTC;
+   }
+   return 0;
+}
+
 static inline void load_save_files(void)
 {
-   load_save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
-   load_save_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+   int ram_type = get_sram_type(g_extern.game_type);
+   int rtc_type = get_rtc_type(g_extern.game_type);
+
+   load_save_file(g_extern.savefile_name_srm, ram_type);
+   load_save_file(g_extern.savefile_name_rtc, rtc_type);
 }
 
 static inline void save_files(void)
 {
-   save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
-   save_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+   int ram_type = get_sram_type(g_extern.game_type);
+   int rtc_type = get_rtc_type(g_extern.game_type);
+
+   save_file(g_extern.savefile_name_srm, ram_type);
+   save_file(g_extern.savefile_name_rtc, rtc_type);
 }
 
 #ifdef HAVE_FFMPEG
