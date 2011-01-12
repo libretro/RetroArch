@@ -81,7 +81,10 @@ struct settings
 enum ssnes_game_type
 {
    SSNES_CART_NORMAL = 0,
-   SSNES_CART_SGB
+   SSNES_CART_SGB,
+   SSNES_CART_BSX,
+   SSNES_CART_BSX_SLOTTED,
+   SSNES_CART_SUFAMI,
 };
 
 struct global
@@ -101,12 +104,17 @@ struct global
    enum ssnes_game_type game_type;
 
    char gb_rom_path[256];
+   char bsx_rom_path[256];
+   char sufami_rom_path[2][256];
 
    char config_path[256];
 
    char basename[256];
    char savefile_name_srm[256];
-   char savefile_name_rtc[260]; // Make sure that fill_pathname has space.
+   char savefile_name_rtc[512]; // Make sure that fill_pathname has space.
+   char savefile_name_psrm[512];
+   char savefile_name_asrm[512];
+   char savefile_name_bsrm[512];
    char savestate_name[256];
 
 #ifdef HAVE_FFMPEG

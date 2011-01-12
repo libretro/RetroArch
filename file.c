@@ -168,11 +168,11 @@ void save_file(const char* path, int type)
 
 static bool load_sgb_rom(void)
 {
-   void *rom_buf;
+   void *rom_buf = NULL;
    ssize_t rom_len = 0;
 
-   FILE *extra_rom;
-   void *extra_rom_buf;
+   FILE *extra_rom = NULL;
+   void *extra_rom_buf = NULL;
    ssize_t extra_rom_len = 0;
 
    if ((rom_len = read_file(g_extern.rom_file, &rom_buf)) == -1)
@@ -220,9 +220,147 @@ error:
    return false;
 }
 
+static bool load_bsx_rom(bool slotted)
+{
+   void *rom_buf = NULL;
+   ssize_t rom_len = 0;
+
+   FILE *extra_rom = NULL;
+   void *extra_rom_buf = NULL;
+   ssize_t extra_rom_len = 0;
+
+   if ((rom_len = read_file(g_extern.rom_file, &rom_buf)) == -1)
+   {
+      SSNES_ERR("Could not read ROM file.\n");
+      goto error;
+   }
+
+   extra_rom = fopen(g_extern.bsx_rom_path, "rb");
+   if (!extra_rom)
+   {
+      SSNES_ERR("Couldn't open BSX game rom!\n");
+      goto error;
+   }
+
+   if ((extra_rom_len = read_file(extra_rom, &extra_rom_buf)) == -1)
+   {
+      SSNES_ERR("Cannot read BSX game rom.\n");
+      goto error;
+   }
+
+   if (slotted)
+   {   
+      if (!psnes_load_cartridge_bsx_slotted(
+            NULL, rom_buf, rom_len,
+            NULL, extra_rom_buf, extra_rom_len))
+   {
+      SSNES_ERR("Cannot load BSX slotted rom.\n");
+      goto error;
+   }
+
+   }
+   else
+   {
+      if (!psnes_load_cartridge_bsx(
+               NULL, rom_buf, rom_len,
+               NULL, extra_rom_buf, extra_rom_len))
+      {
+         SSNES_ERR("Cannot load BSX rom.\n");
+         goto error;
+      }
+   }
+
+   if (g_extern.rom_file)
+      fclose(g_extern.rom_file);
+   if (extra_rom)
+      fclose(extra_rom);
+   free(rom_buf);
+   free(extra_rom_buf);
+   return true;
+
+error:
+   if (g_extern.rom_file)
+      fclose(g_extern.rom_file);
+   if (extra_rom)
+      fclose(extra_rom);
+   free(rom_buf);
+   free(extra_rom_buf);
+   return false;
+}
+
+static bool load_sufami_rom(void)
+{
+   void *rom_buf = NULL;
+   ssize_t rom_len = 0;
+
+   FILE *extra_rom[2] = {NULL};
+   void *extra_rom_buf[2] = {NULL};
+   ssize_t extra_rom_len[2] = {0};
+
+   if ((rom_len = read_file(g_extern.rom_file, &rom_buf)) == -1)
+   {
+      SSNES_ERR("Could not read ROM file.\n");
+      goto error;
+   }
+   
+   const char *roms[2] = { g_extern.sufami_rom_path[0], g_extern.sufami_rom_path[1] };
+
+   for (int i = 0; i < 2; i++)
+   {
+      if (strlen(roms[i]) > 0)
+      {
+         extra_rom[i] = fopen(roms[i], "rb");
+         if (!extra_rom[i])
+         {
+            SSNES_ERR("Couldn't open BSX game rom!\n");
+            goto error;
+         }
+
+         if ((extra_rom_len[i] = read_file(extra_rom[i], &extra_rom_buf[i])) == -1)
+         {
+            SSNES_ERR("Cannot read BSX game rom.\n");
+            goto error;
+         }
+      }
+   }
+
+   if (!psnes_load_cartridge_sufami_turbo(
+            NULL, rom_buf, rom_len,
+            NULL, extra_rom_buf[0], extra_rom_len[0],
+            NULL, extra_rom_buf[1], extra_rom_len[1]))
+   {
+      SSNES_ERR("Cannot load Sufami Turbo rom.\n");
+      goto error;
+   }
+
+
+   if (g_extern.rom_file)
+      fclose(g_extern.rom_file);
+   for (int i = 0; i < 2; i++)
+   {
+      if (extra_rom[i])
+         fclose(extra_rom[i]);
+      free(extra_rom_buf[i]);
+   }
+   free(rom_buf);
+   return true;
+
+error:
+   if (g_extern.rom_file)
+      fclose(g_extern.rom_file);
+   for (int i = 0; i < 2; i++)
+   {
+      if (extra_rom[i])
+         fclose(extra_rom[i]);
+      free(extra_rom_buf[i]);
+   }
+   free(rom_buf);
+   return false;
+}
+
 static bool load_normal_rom(void)
 {
-   void *rom_buf;
+   void *rom_buf = NULL;
    ssize_t rom_len = 0;
 
    if ((rom_len = read_file(g_extern.rom_file, &rom_buf)) == -1)
@@ -247,9 +385,10 @@ static bool load_normal_rom(void)
    return true;
 }
 
-bool init_rom_file(void)
+
+bool init_rom_file(enum ssnes_game_type type)
 {
-   switch (g_extern.game_type)
+   switch (type)
    {
       case SSNES_CART_SGB:
          if (!load_sgb_rom())
@@ -258,6 +397,21 @@ bool init_rom_file(void)
 
       case SSNES_CART_NORMAL:
          if (!load_normal_rom())
+            return false;
+         break;
+
+      case SSNES_CART_BSX:
+         if (!load_bsx_rom(false))
+            return false;
+         break;
+
+      case SSNES_CART_BSX_SLOTTED:
+         if (!load_bsx_rom(true))
+            return false;
+         break;
+
+      case SSNES_CART_SUFAMI:
+         if (!load_sufami_rom())
             return false;
          break;
          

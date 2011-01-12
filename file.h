@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h>
+#include "general.h"
 
 ssize_t read_file(FILE *file, void **buf);
 
@@ -32,6 +33,6 @@ void write_file(const char* path, uint8_t* data, size_t size);
 void load_save_file(const char* path, int type);
 void save_file(const char* path, int type);
 
-bool init_rom_file(void);
+bool init_rom_file(enum ssnes_game_type type);
 
 #endif

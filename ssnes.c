@@ -240,12 +240,16 @@ static void print_help(void)
    puts("=================================================");
    puts("ssnes: Simple Super Nintendo Emulator (libsnes)");
    puts("=================================================");
-   puts("Usage: ssnes [rom file] [-h/--help | -c/--config | -v/--verbose | -4/--multitap | -j/--justifier | -J/--justifiers | -S/--savestate | -m/--mouse | -g/--gameboy | -p/--scope | -s/--save" FFMPEG_HELP_QUARK "]");
+   puts("Usage: ssnes [rom file] [-h/--help | -c/--config | -v/--verbose | -4/--multitap | -j/--justifier | -J/--justifiers | -S/--savestate | -m/--mouse | -g/--gameboy | -b/--bsx | -B/--bsxslot | --sufamiA | --sufamiB | -p/--scope | -s/--save" FFMPEG_HELP_QUARK "]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
    puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
    puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
    puts("\t-g/--gameboy: Path to Gameboy ROM. Load SuperGameBoy as the regular rom.");
+   puts("\t-b/--bsx: Path to BSX rom. Load BSX BIOS as the regular rom.");
+   puts("\t-B/--bsxslot: Path to BSX slotted rom. Load BSX BIOS as the regular rom.");
+   puts("\t--sufamiA: Path to A slot of Sufami Turbo. Load Sufami base cart as regular rom.");
+   puts("\t--sufamiB: Path to B slot of Sufami Turbo.");
    puts("\t-m/--mouse: Connect a virtual mouse into designated port of the SNES (1 or 2)."); 
    puts("\t\tThis argument can be specified several times to connect more mice.");
    puts("\t-p/--scope: Connect a virtual SuperScope into port 2 of the SNES.");
@@ -279,9 +283,13 @@ static void parse_input(int argc, char *argv[])
       { "mouse", 1, NULL, 'm' },
       { "scope", 0, NULL, 'p' },
       { "savestate", 1, NULL, 'S' },
+      { "bsx", 1, NULL, 'b' },
+      { "bsxslot", 1, NULL, 'B' },
       { "justifier", 0, NULL, 'j' },
       { "justifiers", 0, NULL, 'J' },
       { "multitap", 0, NULL, '4' },
+      { "sufamiA", 1, NULL, 'Y' },
+      { "sufamiB", 1, NULL, 'Z' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -293,7 +301,7 @@ static void parse_input(int argc, char *argv[])
 #define FFMPEG_RECORD_ARG
 #endif
 
-   char optstring[] = "hs:vc:t:m:p4jkg:" FFMPEG_RECORD_ARG;
+   char optstring[] = "hs:vc:S:m:p4jJg:b:B:Y:Z:" FFMPEG_RECORD_ARG;
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -327,6 +335,26 @@ static void parse_input(int argc, char *argv[])
          case 'g':
             strncpy(g_extern.gb_rom_path, optarg, sizeof(g_extern.gb_rom_path) - 1);
             g_extern.game_type = SSNES_CART_SGB;
+            break;
+
+         case 'b':
+            strncpy(g_extern.bsx_rom_path, optarg, sizeof(g_extern.bsx_rom_path) - 1);
+            g_extern.game_type = SSNES_CART_BSX;
+            break;
+
+         case 'B':
+            strncpy(g_extern.bsx_rom_path, optarg, sizeof(g_extern.bsx_rom_path) - 1);
+            g_extern.game_type = SSNES_CART_BSX_SLOTTED;
+            break;
+
+         case 'Y':
+            strncpy(g_extern.sufami_rom_path[0], optarg, sizeof(g_extern.sufami_rom_path[0]) - 1);
+            g_extern.game_type = SSNES_CART_SUFAMI;
+            break;
+
+         case 'Z':
+            strncpy(g_extern.sufami_rom_path[1], optarg, sizeof(g_extern.sufami_rom_path[1]) - 1);
+            g_extern.game_type = SSNES_CART_SUFAMI;
             break;
 
          case 'S':
@@ -453,47 +481,58 @@ static void init_controllers(void)
    }
 }
 
-static int get_sram_type(enum ssnes_game_type type)
-{
-   switch (type)
-   {
-      case SSNES_CART_SGB:
-         return SNES_MEMORY_GAME_BOY_RAM;
-      case SSNES_CART_NORMAL:
-         return SNES_MEMORY_CARTRIDGE_RAM;
-   }
-   return 0;
-}
-
-static int get_rtc_type(enum ssnes_game_type type)
-{
-   switch (type)
-   {
-      case SSNES_CART_SGB:
-         return SNES_MEMORY_GAME_BOY_RTC;
-      case SSNES_CART_NORMAL:
-         return SNES_MEMORY_CARTRIDGE_RTC;
-   }
-   return 0;
-}
-
 static inline void load_save_files(void)
 {
-   int ram_type = get_sram_type(g_extern.game_type);
-   int rtc_type = get_rtc_type(g_extern.game_type);
+   switch (g_extern.game_type)
+   {
+      case SSNES_CART_NORMAL:
+      case SSNES_CART_SGB:
+         load_save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
+         load_save_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+         break;
 
-   load_save_file(g_extern.savefile_name_srm, ram_type);
-   load_save_file(g_extern.savefile_name_rtc, rtc_type);
+      case SSNES_CART_BSX:
+      case SSNES_CART_BSX_SLOTTED:
+         load_save_file(g_extern.savefile_name_srm, SNES_MEMORY_BSX_RAM);
+         load_save_file(g_extern.savefile_name_psrm, SNES_MEMORY_BSX_PRAM);
+         break;
+
+      case SSNES_CART_SUFAMI:
+         load_save_file(g_extern.savefile_name_asrm, SNES_MEMORY_SUFAMI_TURBO_A_RAM);
+         load_save_file(g_extern.savefile_name_bsrm, SNES_MEMORY_SUFAMI_TURBO_B_RAM);
+         break;
+
+      default:
+         break;
+   }
 }
 
 static inline void save_files(void)
 {
-   int ram_type = get_sram_type(g_extern.game_type);
-   int rtc_type = get_rtc_type(g_extern.game_type);
+   switch (g_extern.game_type)
+   {
+      case SSNES_CART_NORMAL:
+      case SSNES_CART_SGB:
+         save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
+         save_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+         break;
 
-   save_file(g_extern.savefile_name_srm, ram_type);
-   save_file(g_extern.savefile_name_rtc, rtc_type);
+      case SSNES_CART_BSX:
+      case SSNES_CART_BSX_SLOTTED:
+         save_file(g_extern.savefile_name_srm, SNES_MEMORY_BSX_RAM);
+         save_file(g_extern.savefile_name_psrm, SNES_MEMORY_BSX_PRAM);
+         break;
+
+      case SSNES_CART_SUFAMI:
+         save_file(g_extern.savefile_name_asrm, SNES_MEMORY_SUFAMI_TURBO_A_RAM);
+         save_file(g_extern.savefile_name_bsrm, SNES_MEMORY_SUFAMI_TURBO_B_RAM);
+         break;
+
+      default:
+         break;
+   }
 }
+
 
 #ifdef HAVE_FFMPEG
 static void init_recording(void)
@@ -535,6 +574,29 @@ static void deinit_recording(void)
 }
 #endif
 
+static void fill_pathnames(void)
+{
+   switch (g_extern.game_type)
+   {
+      case SSNES_CART_BSX:
+      case SSNES_CART_BSX_SLOTTED:
+         // BSX PSRM
+         fill_pathname(g_extern.savefile_name_psrm, g_extern.savefile_name_srm, ".psrm");
+         break;
+
+      case SSNES_CART_SUFAMI:
+         // SUFAMI ARAM
+         fill_pathname(g_extern.savefile_name_asrm, g_extern.savefile_name_srm, ".asrm");
+         // SUFAMI BRAM
+         fill_pathname(g_extern.savefile_name_bsrm, g_extern.savefile_name_srm, ".bsrm");
+         break;
+
+      default:
+         // Infer .rtc save path from save ram path.
+         fill_pathname(g_extern.savefile_name_rtc, g_extern.savefile_name_srm, ".rtc");
+   }
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -548,10 +610,9 @@ int main(int argc, char *argv[])
 
    SSNES_LOG("Version of libsnes API: %u.%u\n", psnes_library_revision_major(), psnes_library_revision_minor());
 
-   // Infer .rtc save path from save ram path.
-   fill_pathname(g_extern.savefile_name_rtc, g_extern.savefile_name_srm, ".rtc");
+   fill_pathnames();
 
-   if (!init_rom_file())
+   if (!init_rom_file(g_extern.game_type))
       goto error;
 
    init_drivers();
