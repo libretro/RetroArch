@@ -66,7 +66,6 @@ static const GLfloat tex_coords[] = {
 };
 
 static bool keep_aspect = true;
-static GLuint gl_width = 0, gl_height = 0;
 typedef struct gl
 {
    bool vsync;
@@ -220,19 +219,19 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
    if (gl->should_resize)
    {
       gl->should_resize = false;
-      SDL_SetVideoMode(gl->win_width, gl->win_height, 32, SDL_OPENGL | SDL_RESIZABLE | (g_settings.video.fullscreen ? SDL_FULLSCREEN : 0));
+      SDL_SetVideoMode(gl->win_width, gl->win_height, 0, SDL_OPENGL | SDL_RESIZABLE | (g_settings.video.fullscreen ? SDL_FULLSCREEN : 0));
       set_viewport(gl);
    }
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl_width, gl_height);
+   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->vp_width, gl->vp_height);
 
    if (width != gl->last_width || height != gl->last_height) // res change. need to clear out texture.
    {
       gl->last_width = width;
       gl->last_height = height;
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
       uint8_t *tmp = calloc(1, gl->tex_w * gl->tex_h * sizeof(uint16_t));
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, gl->tex_w, gl->tex_h, GL_BGRA,
@@ -323,8 +322,10 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    if (!gl)
       return NULL;
 
-   // Remove that ugly mouse :D
-   SDL_ShowCursor(SDL_DISABLE);
+   gl->win_width = video->width;
+   gl->win_height = video->height;
+   gl->vsync = video->vsync;
+   set_viewport(gl);
 
    if (!gl_shader_init())
    {
@@ -334,17 +335,14 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
       return NULL;
    }
 
-   gl->win_width = video->width;
-   gl->win_height = video->height;
-   gl->vsync = video->vsync;
-   set_viewport(gl);
+   // Remove that ugly mouse :D
+   SDL_ShowCursor(SDL_DISABLE);
 
    keep_aspect = video->force_aspect;
    if ( video->smooth )
       gl->tex_filter = GL_LINEAR;
    else
       gl->tex_filter = GL_NEAREST;
-
 
    glEnable(GL_TEXTURE_2D);
    glDisable(GL_DITHER);
@@ -359,6 +357,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
 
    glGenTextures(1, &gl->texture);
 
+   glActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, gl->texture);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -383,7 +382,6 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    gl->last_width = gl->tex_w;
    gl->last_height = gl->tex_h;
 
-
    // Hook up SDL input driver to get SDL_QUIT events and RESIZE.
    sdl_input_t *sdl_input = input_sdl.init();
    if (sdl_input)
@@ -397,7 +395,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    }
    else
       *input = NULL;
-
+   
    if (!gl_check_error())
    {
       SDL_QuitSubSystem(SDL_INIT_VIDEO);

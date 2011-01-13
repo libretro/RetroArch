@@ -239,6 +239,9 @@ bool gl_glsl_init(const char *path)
       pglLinkProgram(gl_program);
       pglUseProgram(gl_program);
       print_linker_log(gl_program);
+
+      GLint location = pglGetUniformLocation(gl_program, "rubyTexture");
+      pglUniform1i(location, 0);
    }
 
    if (!gl_check_error())
@@ -270,6 +273,7 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       float textureSize[2] = {tex_width, tex_height};
       location = pglGetUniformLocation(gl_program, "rubyTextureSize");
       pglUniform2fv(location, 1, textureSize);
+
    }
 }
 
