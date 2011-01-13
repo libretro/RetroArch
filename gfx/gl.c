@@ -306,7 +306,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, video->vsync ? 1 : 0);
    SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 
-   if (!SDL_SetVideoMode(video->width, video->height, 16, SDL_OPENGL | SDL_RESIZABLE | (video->fullscreen ? SDL_FULLSCREEN : 0)))
+   if (!SDL_SetVideoMode(video->width, video->height, 0, SDL_OPENGL | SDL_RESIZABLE | (video->fullscreen ? SDL_FULLSCREEN : 0)))
       return NULL;
 
    int attr = 0;
