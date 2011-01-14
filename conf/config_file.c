@@ -21,7 +21,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
-#include "general.h"
 
 struct entry_list
 {
@@ -127,25 +126,22 @@ static bool parse_line(struct entry_list *list, char *line)
    return true;
 }
 
-static void print_config(config_file_t *conf)
-{
-   struct entry_list *tmp = conf->entries;
-   while (tmp != NULL)
-   {
-      SSNES_LOG("Config => Key: \"%s\", Value: \"%s\"\n", tmp->key, tmp->value);
-      tmp = tmp->next;
-   }
-}
-
 config_file_t *config_file_new(const char *path)
 {
-   FILE *file = fopen(path, "r");
-   if (!file)
-      return NULL;
 
    struct config_file *conf = calloc(1, sizeof(*conf));
    if (conf == NULL)
       return NULL;
+
+   if (path == NULL)
+      return conf;
+
+   FILE *file = fopen(path, "r");
+   if (!file)
+   {
+      free(conf);
+      return NULL;
+   }
 
    struct entry_list *tail = conf->entries;
 
@@ -173,9 +169,6 @@ config_file_t *config_file_new(const char *path)
       }
    }
    fclose(file);
-
-   if (g_extern.verbose)
-      print_config(conf);
 
    return conf;
 }
@@ -290,4 +283,86 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
    return false;
 }
 
+void config_set_string(config_file_t *conf, const char *key, const char *val)
+{
+   struct entry_list *list = conf->entries;
+   struct entry_list *last = list;
+   while (list != NULL)
+   {
+      if (strcmp(key, list->key) == 0)
+      {
+         free(list->value);
+         list->value = strdup(val);
+         return;
+      }
+      last = list;
+      list = list->next;
+   }
 
+   struct entry_list *elem = calloc(1, sizeof(*elem));
+   elem->key = strdup(key);
+   elem->value = strdup(val);
+
+   if (last)
+      last->next = elem;
+   else
+      conf->entries = elem;
+}
+
+void config_set_double(config_file_t *conf, const char *key, double val)
+{
+   char buf[128];
+   snprintf(buf, sizeof(buf), "%lf", val);
+   config_set_string(conf, key, buf);
+}
+
+void config_set_int(config_file_t *conf, const char *key, int val)
+{
+   char buf[128];
+   snprintf(buf, sizeof(buf), "%d", val);
+   config_set_string(conf, key, buf);
+}
+
+void config_set_char(config_file_t *conf, const char *key, char val)
+{
+   char buf[2];
+   snprintf(buf, sizeof(buf), "%c", val);
+   config_set_string(conf, key, buf);
+}
+
+void config_set_bool(config_file_t *conf, const char *key, bool val)
+{
+   config_set_string(conf, key, val ? "true" : "false");
+}
+
+bool config_file_write(config_file_t *conf, const char *path)
+{
+   FILE *file;
+
+   if (path)
+   {
+      file = fopen(path, "w");
+      if (!file)
+         return false;
+   }
+   else
+      file = stdout;
+
+   config_file_dump(conf, file);
+
+   if (path)
+      fclose(file);
+
+   return true;
+}
+
+void config_file_dump(config_file_t *conf, FILE *file)
+{
+   struct entry_list *list = conf->entries;
+
+   while (list != NULL)
+   {
+      fprintf(file, "%s = \"%s\"\n", list->key, list->value);
+      list = list->next;
+   }
+}

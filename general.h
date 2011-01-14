@@ -33,8 +33,9 @@
 #endif
 
 
-#define MAX_PLAYERS 2
-#define MAX_BINDS 14
+#define MAX_PLAYERS 5
+#define MAX_BINDS 18 // Needs to be increased every time there are new binds added.
+#define SSNES_NO_JOYPAD 0xFFFF
 struct settings
 {
    struct 
@@ -70,14 +71,20 @@ struct settings
    {
       char driver[32];
       struct snes_keybind binds[MAX_PLAYERS][MAX_BINDS];
-      int save_state_key;
-      int load_state_key;
-      int toggle_fullscreen_key;
-      int exit_emulator_key;
       float axis_threshold;
+      unsigned joypad_map[MAX_PLAYERS];
    } input;
 
    char libsnes[256];
+};
+
+enum ssnes_game_type
+{
+   SSNES_CART_NORMAL = 0,
+   SSNES_CART_SGB,
+   SSNES_CART_BSX,
+   SSNES_CART_BSX_SLOTTED,
+   SSNES_CART_SUFAMI,
 };
 
 struct global
@@ -87,10 +94,40 @@ struct global
    bool audio_active;
    bool video_active;
 
+   bool has_mouse[2];
+   bool has_scope[2];
+   bool has_justifier;
+   bool has_justifiers;
+   bool has_multitap;
+
    FILE *rom_file;
-   char savefile_name_srm[256];
+   enum ssnes_game_type game_type;
+
+   char gb_rom_path[256];
+   char bsx_rom_path[256];
+   char sufami_rom_path[2][256];
+
    char config_path[256];
+
    char basename[256];
+   char savefile_name_srm[256];
+   char savefile_name_rtc[512]; // Make sure that fill_pathname has space.
+   char savefile_name_psrm[512];
+   char savefile_name_asrm[512];
+   char savefile_name_bsrm[512];
+   char savestate_name[256];
+
+   struct
+   {
+      float *data;
+      size_t data_ptr;
+      size_t chunk_size;
+      size_t nonblock_chunk_size;
+      size_t block_chunk_size;
+
+      float *outsamples;
+      int16_t *conv_outsamples;
+   } audio_data;
 
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;

@@ -35,6 +35,24 @@ extern unsigned (*psnes_library_revision_minor)(void);
 extern unsigned (*psnes_library_revision_major)(void);
 
 extern bool (*psnes_load_cartridge_normal)(const char*, const uint8_t*, unsigned);
+extern bool (*psnes_load_cartridge_super_game_boy)(
+         const char*, const uint8_t*, unsigned, 
+         const char*, const uint8_t*, unsigned);
+extern bool (*psnes_load_cartridge_bsx)(
+         const char*, const uint8_t*, unsigned, 
+         const char*, const uint8_t*, unsigned);
+extern bool (*psnes_load_cartridge_bsx_slotted)(
+         const char*, const uint8_t*, unsigned, 
+         const char*, const uint8_t*, unsigned);
+extern bool (*psnes_load_cartridge_sufami_turbo)(
+         const char*, const uint8_t*, unsigned, 
+         const char*, const uint8_t*, unsigned, 
+         const char*, const uint8_t*, unsigned);
+
+
+extern void (*psnes_set_controller_port_device)(bool, unsigned);
+
+extern bool (*psnes_get_region)(void);
 
 extern unsigned (*psnes_serialize_size)(void);
 extern bool (*psnes_serialize)(uint8_t*, unsigned);

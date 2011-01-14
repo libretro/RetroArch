@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "hqflt/filters.h"
+#include <assert.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -128,6 +129,9 @@ void uninit_drivers(void)
    uninit_audio();
 }
 
+#define AUDIO_CHUNK_SIZE_BLOCKING 64
+#define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
+#define AUDIO_MAX_RATIO 16
 void init_audio(void)
 {
    if (!g_settings.audio.enable)
@@ -138,17 +142,35 @@ void init_audio(void)
 
    find_audio_driver();
 
+   g_extern.audio_data.block_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
+   g_extern.audio_data.nonblock_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
+
    driver.audio_data = driver.audio->init(strlen(g_settings.audio.device) ? g_settings.audio.device : NULL, g_settings.audio.out_rate, g_settings.audio.latency);
    if ( driver.audio_data == NULL )
       g_extern.audio_active = false;
 
+
    if (!g_settings.audio.sync && g_extern.audio_active)
+   {
       driver.audio->set_nonblock_state(driver.audio_data, true);
+      g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
+   }
+   else
+      g_extern.audio_data.chunk_size = g_extern.audio_data.block_chunk_size;
 
    int err;
    g_extern.source = src_new(g_settings.audio.src_quality, 2, &err);
    if (!g_extern.source)
       g_extern.audio_active = false;
+
+   size_t max_bufsamples = g_extern.audio_data.block_chunk_size > g_extern.audio_data.nonblock_chunk_size ?
+      g_extern.audio_data.block_chunk_size : g_extern.audio_data.nonblock_chunk_size;
+
+   assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
+   assert((g_extern.audio_data.data = malloc(max_bufsamples * sizeof(float))));
+   g_extern.audio_data.data_ptr = 0;
+   assert((g_extern.audio_data.outsamples = malloc(max_bufsamples * sizeof(float) * AUDIO_MAX_RATIO)));
+   assert((g_extern.audio_data.conv_outsamples = malloc(max_bufsamples * sizeof(int16_t) * AUDIO_MAX_RATIO)));
 }
 
 void uninit_audio(void)
@@ -164,6 +186,10 @@ void uninit_audio(void)
 
    if ( g_extern.source )
       src_delete(g_extern.source);
+
+   free(g_extern.audio_data.data); g_extern.audio_data.data = NULL;
+   free(g_extern.audio_data.outsamples); g_extern.audio_data.outsamples = NULL;
+   free(g_extern.audio_data.conv_outsamples); g_extern.audio_data.conv_outsamples = NULL;
 }
 
 void init_video_input(void)

@@ -34,6 +34,8 @@
 #define GL_GLEXT_PROTOTYPES
 #include <GL/glext.h>
 
+#include "gl_common.h"
+
 static PFNGLCREATEPROGRAMPROC pglCreateProgram = NULL;
 static PFNGLUSEPROGRAMPROC pglUseProgram = NULL;
 static PFNGLCREATESHADERPROC pglCreateShader = NULL;
@@ -49,6 +51,8 @@ static PFNGLUNIFORM2FVPROC pglUniform2fv = NULL;
 static PFNGLUNIFORM4FVPROC pglUniform4fv = NULL;
 static PFNGLGETSHADERIVPROC pglGetShaderiv = NULL;
 static PFNGLGETSHADERINFOLOGPROC pglGetShaderInfoLog = NULL;
+static PFNGLGETPROGRAMIVPROC pglGetProgramiv = NULL;
+static PFNGLGETPROGRAMINFOLOGPROC pglGetProgramInfoLog = NULL;
 
 static bool glsl_enable = false;
 static GLuint gl_program;
@@ -154,6 +158,20 @@ static void print_shader_log(GLuint obj)
       SSNES_LOG("Shader log: %s\n", info_log);
 }
 
+static void print_linker_log(GLuint obj)
+{
+   int info_len = 0;
+   int max_len;
+
+   pglGetProgramiv(obj, GL_INFO_LOG_LENGTH, &max_len);
+
+   char info_log[max_len];
+   pglGetProgramInfoLog(obj, max_len, &info_len, info_log);
+
+   if (info_len > 0)
+      SSNES_LOG("Linker log: %s\n", info_log);
+}
+
 bool gl_glsl_init(const char *path)
 {
    // Load shader functions.
@@ -172,13 +190,15 @@ bool gl_glsl_init(const char *path)
    pglUniform4fv = SDL_GL_GetProcAddress("glUniform4fv");
    pglGetShaderiv = SDL_GL_GetProcAddress("glGetShaderiv");
    pglGetShaderInfoLog = SDL_GL_GetProcAddress("glGetShaderInfoLog");
+   pglGetProgramiv = SDL_GL_GetProcAddress("glGetProgramiv");
+   pglGetProgramInfoLog = SDL_GL_GetProcAddress("glGetProgramInfoLog");
 
    SSNES_LOG("Checking GLSL shader support ...\n");
    bool shader_support = pglCreateProgram && pglUseProgram && pglCreateShader
       && pglDeleteShader && pglShaderSource && pglCompileShader && pglAttachShader
       && pglDetachShader && pglLinkProgram && pglGetUniformLocation
       && pglUniform1i && pglUniform2fv && pglUniform4fv
-      && pglGetShaderiv && pglGetShaderInfoLog;
+      && pglGetShaderiv && pglGetShaderInfoLog && pglGetProgramiv && pglGetProgramInfoLog;
 
    if (!shader_support)
    {
@@ -218,8 +238,15 @@ bool gl_glsl_init(const char *path)
    {
       pglLinkProgram(gl_program);
       pglUseProgram(gl_program);
+      print_linker_log(gl_program);
+
+      GLint location = pglGetUniformLocation(gl_program, "rubyTexture");
+      pglUniform1i(location, 0);
    }
 
+   if (!gl_check_error())
+      return false;
+   
    glsl_enable = true;
    return true;
 }
@@ -246,6 +273,7 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       float textureSize[2] = {tex_width, tex_height};
       location = pglGetUniformLocation(gl_program, "rubyTextureSize");
       pglUniform2fv(location, 1, textureSize);
+
    }
 }
 

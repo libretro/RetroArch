@@ -30,6 +30,7 @@
 #include "bleed.h"
 #include "ntsc.h"
 
+#define FILTER_NONE 0
 #define FILTER_HQ2X 1
 #define FILTER_HQ4X 2
 #define FILTER_GRAYSCALE 3

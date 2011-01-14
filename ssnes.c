@@ -36,14 +36,11 @@
 struct global g_extern = {
    .video_active = true,
    .audio_active = true,
+   .game_type = SSNES_CART_NORMAL,
 };
 
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
-
-#define AUDIO_CHUNK_SIZE_BLOCKING 64
-#define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
-static size_t audio_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
-void set_fast_forward_button(bool new_button_state)
+static void set_fast_forward_button(bool new_button_state)
 {
    static bool old_button_state = false;
    static bool syncing_state = false;
@@ -54,10 +51,11 @@ void set_fast_forward_button(bool new_button_state)
          driver.video->set_nonblock_state(driver.video_data, syncing_state);
       if (g_extern.audio_active)
          driver.audio->set_nonblock_state(driver.audio_data, (g_settings.audio.sync) ? syncing_state : true);
+
       if (syncing_state)
-         audio_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
+         g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
       else
-         audio_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
+         g_extern.audio_data.chunk_size = g_extern.audio_data.block_chunk_size;
    }
    old_button_state = new_button_state;
 }
@@ -102,7 +100,9 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 #ifdef HAVE_FILTER
    uint16_t output_filter[width * height * 4 * 4];
    uint16_t output[width * height];
-   process_frame(output, data, width, height);
+
+   if (g_settings.video.filter != FILTER_NONE)
+      process_frame(output, data, width, height);
 
    switch (g_settings.video.filter)
    {
@@ -160,37 +160,42 @@ static void audio_sample(uint16_t left, uint16_t right)
    }
 #endif
 
-   static float data[AUDIO_CHUNK_SIZE_NONBLOCKING];
-   static int data_ptr = 0;
+   g_extern.audio_data.data[g_extern.audio_data.data_ptr++] = (float)(*(int16_t*)&left)/0x8000; 
+   g_extern.audio_data.data[g_extern.audio_data.data_ptr++] = (float)(*(int16_t*)&right)/0x8000;
 
-   data[data_ptr++] = (float)(*(int16_t*)&left)/0x7FFF; 
-   data[data_ptr++] = (float)(*(int16_t*)&right)/0x7FFF;
-
-   if ( data_ptr >= audio_chunk_size )
+   if (g_extern.audio_data.data_ptr >= g_extern.audio_data.chunk_size)
    {
-      float outsamples[audio_chunk_size * 16];
-      int16_t temp_outsamples[audio_chunk_size * 16];
-
       SRC_DATA src_data;
 
-      src_data.data_in = data;
-      src_data.data_out = outsamples;
-      src_data.input_frames = audio_chunk_size / 2;
-      src_data.output_frames = audio_chunk_size * 8;
+      src_data.data_in = g_extern.audio_data.data;
+      src_data.data_out = g_extern.audio_data.outsamples;
+      src_data.input_frames = g_extern.audio_data.chunk_size / 2;
+      src_data.output_frames = g_extern.audio_data.chunk_size * 8;
       src_data.end_of_input = 0;
       src_data.src_ratio = (double)g_settings.audio.out_rate / (double)g_settings.audio.in_rate;
 
       src_process(g_extern.source, &src_data);
 
-      src_float_to_short_array(outsamples, temp_outsamples, src_data.output_frames_gen * 2);
-
-      if ( driver.audio->write(driver.audio_data, temp_outsamples, src_data.output_frames_gen * 4) < 0 )
+      if (driver.audio->float_samples)
       {
-         fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
-         g_extern.audio_active = false;
+         if (driver.audio->write(driver.audio_data, g_extern.audio_data.outsamples, src_data.output_frames_gen * sizeof(float) * 2) < 0)
+         {
+            fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
+            g_extern.audio_active = false;
+         }
+      }
+      else
+      {
+         src_float_to_short_array(g_extern.audio_data.outsamples, g_extern.audio_data.conv_outsamples, src_data.output_frames_gen * 2);
+
+         if (driver.audio->write(driver.audio_data, g_extern.audio_data.conv_outsamples, src_data.output_frames_gen * sizeof(int16_t) * 2) < 0)
+         {
+            fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
+            g_extern.audio_active = false;
+         }
       }
 
-      data_ptr = 0;
+      g_extern.audio_data.data_ptr = 0;
    }
 }
 
@@ -201,7 +206,10 @@ static void input_poll(void)
 
 static int16_t input_state(bool port, unsigned device, unsigned index, unsigned id)
 {
-   const struct snes_keybind *binds[] = { g_settings.input.binds[0], g_settings.input.binds[1] }; 
+   const struct snes_keybind *binds[MAX_PLAYERS];
+   for (int i = 0; i < MAX_PLAYERS; i++)
+      binds[i] = g_settings.input.binds[i];
+
    return driver.input->input_state(driver.input_data, binds, port, device, index, id);
 }
 
@@ -234,10 +242,22 @@ static void print_help(void)
    puts("=================================================");
    puts("ssnes: Simple Super Nintendo Emulator (libsnes)");
    puts("=================================================");
-   puts("Usage: ssnes [rom file] [-h/--help | -s/--save" FFMPEG_HELP_QUARK "]");
+   puts("Usage: ssnes [rom file] [-h/--help | -c/--config | -v/--verbose | -4/--multitap | -j/--justifier | -J/--justifiers | -S/--savestate | -m/--mouse | -g/--gameboy | -b/--bsx | -B/--bsxslot | --sufamiA | --sufamiB | -p/--scope | -s/--save" FFMPEG_HELP_QUARK "]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
+   puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
    puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
+   puts("\t-g/--gameboy: Path to Gameboy ROM. Load SuperGameBoy as the regular rom.");
+   puts("\t-b/--bsx: Path to BSX rom. Load BSX BIOS as the regular rom.");
+   puts("\t-B/--bsxslot: Path to BSX slotted rom. Load BSX BIOS as the regular rom.");
+   puts("\t--sufamiA: Path to A slot of Sufami Turbo. Load Sufami base cart as regular rom.");
+   puts("\t--sufamiB: Path to B slot of Sufami Turbo.");
+   puts("\t-m/--mouse: Connect a virtual mouse into designated port of the SNES (1 or 2)."); 
+   puts("\t\tThis argument can be specified several times to connect more mice.");
+   puts("\t-p/--scope: Connect a virtual SuperScope into port 2 of the SNES.");
+   puts("\t-j/--justifier: Connect a virtual Konami Justifier into port 2 of the SNES.");
+   puts("\t-J/--justifiers: Daisy chain two virtual Konami Justifiers into port 2 of the SNES.");
+   puts("\t-4/--multitap: Connect a multitap to port 2 of the SNES.");
 
 #ifdef HAVE_FFMPEG
    puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
@@ -260,7 +280,18 @@ static void parse_input(int argc, char *argv[])
       { "record", 1, NULL, 'r' },
 #endif
       { "verbose", 0, NULL, 'v' },
+      { "gameboy", 1, NULL, 'g' },
       { "config", 0, NULL, 'c' },
+      { "mouse", 1, NULL, 'm' },
+      { "scope", 0, NULL, 'p' },
+      { "savestate", 1, NULL, 'S' },
+      { "bsx", 1, NULL, 'b' },
+      { "bsxslot", 1, NULL, 'B' },
+      { "justifier", 0, NULL, 'j' },
+      { "justifiers", 0, NULL, 'J' },
+      { "multitap", 0, NULL, '4' },
+      { "sufamiA", 1, NULL, 'Y' },
+      { "sufamiB", 1, NULL, 'Z' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -272,10 +303,11 @@ static void parse_input(int argc, char *argv[])
 #define FFMPEG_RECORD_ARG
 #endif
 
-   char optstring[] = "hs:vc:" FFMPEG_RECORD_ARG;
+   char optstring[] = "hs:vc:S:m:p4jJg:b:B:Y:Z:" FFMPEG_RECORD_ARG;
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
+      int port;
 
       if (c == -1)
          break;
@@ -286,13 +318,68 @@ static void parse_input(int argc, char *argv[])
             print_help();
             exit(0);
 
+         case '4':
+            g_extern.has_multitap = true;
+            break;
+
+         case 'j':
+            g_extern.has_justifier = true;
+            break;
+
+         case 'J':
+            g_extern.has_justifiers = true;
+            break;
+
          case 's':
-            strncpy(g_extern.savefile_name_srm, optarg, sizeof(g_extern.savefile_name_srm));
-            g_extern.savefile_name_srm[sizeof(g_extern.savefile_name_srm)-1] = '\0';
+            strncpy(g_extern.savefile_name_srm, optarg, sizeof(g_extern.savefile_name_srm) - 1);
+            break;
+
+         case 'g':
+            strncpy(g_extern.gb_rom_path, optarg, sizeof(g_extern.gb_rom_path) - 1);
+            g_extern.game_type = SSNES_CART_SGB;
+            break;
+
+         case 'b':
+            strncpy(g_extern.bsx_rom_path, optarg, sizeof(g_extern.bsx_rom_path) - 1);
+            g_extern.game_type = SSNES_CART_BSX;
+            break;
+
+         case 'B':
+            strncpy(g_extern.bsx_rom_path, optarg, sizeof(g_extern.bsx_rom_path) - 1);
+            g_extern.game_type = SSNES_CART_BSX_SLOTTED;
+            break;
+
+         case 'Y':
+            strncpy(g_extern.sufami_rom_path[0], optarg, sizeof(g_extern.sufami_rom_path[0]) - 1);
+            g_extern.game_type = SSNES_CART_SUFAMI;
+            break;
+
+         case 'Z':
+            strncpy(g_extern.sufami_rom_path[1], optarg, sizeof(g_extern.sufami_rom_path[1]) - 1);
+            g_extern.game_type = SSNES_CART_SUFAMI;
+            break;
+
+         case 'S':
+            strncpy(g_extern.savestate_name, optarg, sizeof(g_extern.savestate_name) - 1);
             break;
 
          case 'v':
             g_extern.verbose = true;
+            break;
+
+         case 'm':
+            port = strtol(optarg, NULL, 0);
+            if (port < 1 || port > 2)
+            {
+               SSNES_ERR("Connect mouse to port 1 or 2.\n");
+               print_help();
+               exit(1);
+            }
+            g_extern.has_mouse[port - 1] = true;
+            break;
+
+         case 'p':
+            g_extern.has_scope[1] = true;
             break;
 
          case 'c':
@@ -329,76 +416,129 @@ static void parse_input(int argc, char *argv[])
       g_extern.rom_file = fopen(argv[optind], "rb");
       if (g_extern.rom_file == NULL)
       {
-         SSNES_ERR("Could not open file: \"%s\"\n", optarg);
+         SSNES_ERR("Could not open file: \"%s\"\n", argv[optind]);
          exit(1);
       }
+      // strl* would be nice :D
       if (strlen(g_extern.savefile_name_srm) == 0)
-         fill_pathname(g_extern.savefile_name_srm, argv[optind], ".srm");
+      {
+         strcpy(g_extern.savefile_name_srm, g_extern.basename);
+         size_t len = strlen(g_extern.savefile_name_srm);
+         strncat(g_extern.savefile_name_srm, ".srm", sizeof(g_extern.savefile_name_srm) - len - 1);
+      }
+      if (strlen(g_extern.savestate_name) == 0)
+      {
+         strcpy(g_extern.savestate_name, g_extern.basename);
+         size_t len = strlen(g_extern.savestate_name);
+         strncat(g_extern.savestate_name, ".state", sizeof(g_extern.savestate_name) - len - 1);
+      }
    }
    else if (strlen(g_extern.savefile_name_srm) == 0)
    {
-      SSNES_ERR("Need savefile argument when reading rom from stdin.\n");
+      SSNES_ERR("Need savefile path argument (--save) when reading rom from stdin.\n");
+      print_help();
+      exit(1);
+   }
+   else if (strlen(g_extern.savestate_name) == 0)
+   {
+      SSNES_ERR("Need savestate path argument (--savefile) when reading rom from stdin.\n");
       print_help();
       exit(1);
    }
 }
 
-int main(int argc, char *argv[])
+// TODO: Add rest of the controllers.
+static void init_controllers(void)
 {
-   parse_input(argc, argv);
-   parse_config();
-   init_dlsym();
-
-   psnes_init();
-   if (strlen(g_extern.basename) > 0)
-      psnes_set_cartridge_basename(g_extern.basename);
-
-   SSNES_LOG("Version of libsnes API: %u.%u\n", psnes_library_revision_major(), psnes_library_revision_minor());
-   void *rom_buf;
-   ssize_t rom_len = 0;
-   if ((rom_len = read_file(g_extern.rom_file, &rom_buf)) == -1)
+   if (g_extern.has_justifier)
    {
-      SSNES_ERR("Could not read ROM file.\n");
-      exit(1);
+      SSNES_LOG("Connecting Justifier to port 2.\n");
+      psnes_set_controller_port_device(SNES_PORT_2, SNES_DEVICE_JUSTIFIER);
    }
-   SSNES_LOG("ROM size: %d bytes\n", (int)rom_len);
-
-   if (g_extern.rom_file != NULL)
-      fclose(g_extern.rom_file);
-
-   char statefile_name[strlen(g_extern.savefile_name_srm)+strlen(".state")+1];
-   char savefile_name_rtc[strlen(g_extern.savefile_name_srm)+strlen(".rtc")+1];
-
-   fill_pathname(statefile_name, argv[1], ".state");
-   fill_pathname(savefile_name_rtc, argv[1], ".rtc");
-
-   init_drivers();
-
-   psnes_set_video_refresh(video_frame);
-   psnes_set_audio_sample(audio_sample);
-   psnes_set_input_poll(input_poll);
-   psnes_set_input_state(input_state);
-
-   if (!psnes_load_cartridge_normal(NULL, rom_buf, rom_len))
+   else if (g_extern.has_justifiers)
    {
-      SSNES_ERR("ROM file is not valid!\n");
-      goto error;
+      SSNES_LOG("Connecting Justifiers to port 2.\n");
+      psnes_set_controller_port_device(SNES_PORT_2, SNES_DEVICE_JUSTIFIERS);
    }
-
-   free(rom_buf);
-
-   unsigned serial_size = psnes_serialize_size();
-   uint8_t *serial_data = malloc(serial_size);
-   if (serial_data == NULL)
+   else if (g_extern.has_multitap)
    {
-      SSNES_ERR("Failed to allocate memory for states!\n");
-      goto error;
+      SSNES_LOG("Connecting multitap to port 2.\n");
+      psnes_set_controller_port_device(SNES_PORT_2, SNES_DEVICE_MULTITAP);
    }
+   else
+   {
+      for (int i = 0; i < 2; i++)
+      {
+         if (g_extern.has_mouse[i])
+         {
+            SSNES_LOG("Connecting mouse to port %d\n", i + 1);
+            psnes_set_controller_port_device(i, SNES_DEVICE_MOUSE);
+         }
+         else if (g_extern.has_scope[i])
+         {
+            SSNES_LOG("Connecting scope to port %d\n", i + 1);
+            psnes_set_controller_port_device(i, SNES_DEVICE_SUPER_SCOPE);
+         }
+      }
+   }
+}
 
-   load_save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
-   load_save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+static inline void load_save_files(void)
+{
+   switch (g_extern.game_type)
+   {
+      case SSNES_CART_NORMAL:
+      case SSNES_CART_SGB:
+         load_save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
+         load_save_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+         break;
+
+      case SSNES_CART_BSX:
+      case SSNES_CART_BSX_SLOTTED:
+         load_save_file(g_extern.savefile_name_srm, SNES_MEMORY_BSX_RAM);
+         load_save_file(g_extern.savefile_name_psrm, SNES_MEMORY_BSX_PRAM);
+         break;
+
+      case SSNES_CART_SUFAMI:
+         load_save_file(g_extern.savefile_name_asrm, SNES_MEMORY_SUFAMI_TURBO_A_RAM);
+         load_save_file(g_extern.savefile_name_bsrm, SNES_MEMORY_SUFAMI_TURBO_B_RAM);
+         break;
+
+      default:
+         break;
+   }
+}
+
+static inline void save_files(void)
+{
+   switch (g_extern.game_type)
+   {
+      case SSNES_CART_NORMAL:
+      case SSNES_CART_SGB:
+         save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
+         save_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+         break;
+
+      case SSNES_CART_BSX:
+      case SSNES_CART_BSX_SLOTTED:
+         save_file(g_extern.savefile_name_srm, SNES_MEMORY_BSX_RAM);
+         save_file(g_extern.savefile_name_psrm, SNES_MEMORY_BSX_PRAM);
+         break;
+
+      case SSNES_CART_SUFAMI:
+         save_file(g_extern.savefile_name_asrm, SNES_MEMORY_SUFAMI_TURBO_A_RAM);
+         save_file(g_extern.savefile_name_bsrm, SNES_MEMORY_SUFAMI_TURBO_B_RAM);
+         break;
+
+      default:
+         break;
+   }
+}
+
 
 #ifdef HAVE_FFMPEG
+static void init_recording(void)
+{
    // Hardcode these options at the moment. Should be specificed in the config file later on.
    if (g_extern.recording)
    {
@@ -413,7 +553,7 @@ int main(int argc, char *argv[])
          .channels = 2,
          .samplerate = 32040,
          .filename = g_extern.record_path,
-         .fps = snes_get_region() == SNES_REGION_NTSC ? ntsc_fps : pal_fps,
+         .fps = psnes_get_region() == SNES_REGION_NTSC ? ntsc_fps : pal_fps,
          .aspect_ratio = 4.0/3
       };
       SSNES_LOG("Recording with FFmpeg to %s.\n", g_extern.record_path);
@@ -424,42 +564,116 @@ int main(int argc, char *argv[])
          g_extern.recording = false;
       }
    }
+}
+
+static void deinit_recording(void)
+{
+   if (g_extern.recording)
+   {
+      ffemu_finalize(g_extern.rec);
+      ffemu_free(g_extern.rec);
+   }
+}
 #endif
 
+static void fill_pathnames(void)
+{
+   switch (g_extern.game_type)
+   {
+      case SSNES_CART_BSX:
+      case SSNES_CART_BSX_SLOTTED:
+         // BSX PSRM
+         fill_pathname(g_extern.savefile_name_psrm, g_extern.savefile_name_srm, ".psrm");
+         break;
+
+      case SSNES_CART_SUFAMI:
+         // SUFAMI ARAM
+         fill_pathname(g_extern.savefile_name_asrm, g_extern.savefile_name_srm, ".asrm");
+         // SUFAMI BRAM
+         fill_pathname(g_extern.savefile_name_bsrm, g_extern.savefile_name_srm, ".bsrm");
+         break;
+
+      default:
+         // Infer .rtc save path from save ram path.
+         fill_pathname(g_extern.savefile_name_rtc, g_extern.savefile_name_srm, ".rtc");
+   }
+}
+
+
+int main(int argc, char *argv[])
+{
+   parse_input(argc, argv);
+   parse_config();
+   init_dlsym();
+
+   psnes_init();
+   if (strlen(g_extern.basename) > 0)
+      psnes_set_cartridge_basename(g_extern.basename);
+
+   SSNES_LOG("Version of libsnes API: %u.%u\n", psnes_library_revision_major(), psnes_library_revision_minor());
+
+   fill_pathnames();
+
+   if (!init_rom_file(g_extern.game_type))
+      goto error;
+
+   init_drivers();
+
+   psnes_set_video_refresh(video_frame);
+   psnes_set_audio_sample(audio_sample);
+   psnes_set_input_poll(input_poll);
+   psnes_set_input_state(input_state);
+   
+   init_controllers();
+
+   unsigned serial_size = psnes_serialize_size();
+   uint8_t *serial_data = malloc(serial_size);
+   if (serial_data == NULL)
+   {
+      SSNES_ERR("Failed to allocate memory for states!\n");
+      goto error;
+   }
+
+   load_save_files();
+
+#ifdef HAVE_FFMPEG
+   init_recording();
+#endif
+
+   // Main loop
    for(;;)
    {
-      if (driver.input->key_pressed(driver.input_data, g_settings.input.exit_emulator_key) ||
+      // Time to drop?
+      if (driver.input->key_pressed(driver.input_data, SSNES_QUIT_KEY) ||
             !driver.video->alive(driver.video_data))
          break;
 
-      if (driver.input->key_pressed(driver.input_data, g_settings.input.save_state_key))
-      {
-         write_file(statefile_name, serial_data, serial_size);
-      }
+      set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
 
-      else if (driver.input->key_pressed(driver.input_data, g_settings.input.load_state_key))
-         load_state(statefile_name, serial_data, serial_size);
+      // Save or load state here.
+      if (driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY))
+         write_file(g_extern.savestate_name, serial_data, serial_size);
+      else if (driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY))
+         load_state(g_extern.savestate_name, serial_data, serial_size);
 
-      else if (driver.input->key_pressed(driver.input_data, g_settings.input.toggle_fullscreen_key))
+      // If we go fullscreen we drop all drivers and reinit to be safe.
+      else if (driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY))
       {
          g_settings.video.fullscreen = !g_settings.video.fullscreen;
          uninit_drivers();
          init_drivers();
       }
 
+      // Run libsnes for one frame.
       psnes_run();
    }
 
 #ifdef HAVE_FFMPEG
-   if (g_extern.recording)
-   {
-      ffemu_finalize(g_extern.rec);
-      ffemu_free(g_extern.rec);
-   }
+   deinit_recording();
 #endif
 
-   save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
-   save_file(savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+   // Flush out SRAM (and RTC)
+   save_files();
 
    psnes_unload_cartridge();
    psnes_term();

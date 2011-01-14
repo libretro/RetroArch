@@ -1,8 +1,10 @@
 include config.mk
 
-TARGET = ssnes
+TARGET = ssnes tools/ssnes-joyconfig
 
 OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o
+JOYCONFIG_OBJ = tools/ssnes-joyconfig.o conf/config_file.o
+HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
 LIBS =
 DEFINES = -DHAVE_CONFIG_H
@@ -74,6 +76,10 @@ else
    LIBS += $(libsnes)
 endif
 
+ifneq ($(V),1)
+   Q := @
+endif
+
 CFLAGS = -Wall -O3 -g -std=gnu99 -I.
 
 all: $(TARGET) config.mk
@@ -83,17 +89,24 @@ config.mk: configure qb/*
 	@exit 1
 
 ssnes: $(OBJ)
-	$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
+	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
+	@$(if $(Q), $(shell echo echo LD $@),)
 
-%.o: %.c config.h config.mk
-	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+tools/ssnes-joyconfig: $(JOYCONFIG_OBJ)
+	$(Q)$(CC) -o $@ $(JOYCONFIG_OBJ) $(SDL_LIBS) $(LDFLAGS)
+	@$(if $(Q), $(shell echo echo LD $@),)
+
+%.o: %.c config.h config.mk $(HEADERS)
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
 
 install: $(TARGET)
 	install -m755 $(TARGET) $(DESTDIR)$(PREFIX)/bin 
 	install -m644 ssnes.cfg $(DESTDIR)/etc/ssnes.cfg
 
-uninstall: $(TARGET)
-	rm -rf $(DESTDIR)/$(PREFIX)/bin/$(TARGET)
+uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/bin/{ssnes,ssnes-joyconfig}
+	rm -f $(DESTDIR)/etc/ssnes.cfg
 
 clean:
 	rm -f *.o 
@@ -103,6 +116,8 @@ clean:
 	rm -f record/*.o
 	rm -f hqflt/*.o
 	rm -f hqflt/snes_ntsc/*.o
+	rm -f input/*.o
+	rm -f tools/*.o
 	rm -f $(TARGET)
 
 .PHONY: all install uninstall clean

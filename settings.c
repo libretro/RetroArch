@@ -17,10 +17,10 @@
 
 #include "general.h"
 #include "conf/config_file.h"
-#include "config.def.h"
 #include <assert.h>
 #include <string.h>
 #include "hqflt/filters.h"
+#include "config.def.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -96,6 +96,7 @@ static void set_defaults(void)
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
    g_settings.video.aspect_ratio = SNES_ASPECT_RATIO;
+   g_settings.video.filter = FILTER_NONE;
 
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
@@ -108,14 +109,20 @@ static void set_defaults(void)
 
    assert(sizeof(g_settings.input.binds[0]) >= sizeof(snes_keybinds_1));
    assert(sizeof(g_settings.input.binds[1]) >= sizeof(snes_keybinds_2));
+   assert(sizeof(g_settings.input.binds[2]) >= sizeof(snes_keybinds_3));
+   assert(sizeof(g_settings.input.binds[3]) >= sizeof(snes_keybinds_4));
+   assert(sizeof(g_settings.input.binds[4]) >= sizeof(snes_keybinds_5));
    memcpy(g_settings.input.binds[0], snes_keybinds_1, sizeof(snes_keybinds_1));
    memcpy(g_settings.input.binds[1], snes_keybinds_2, sizeof(snes_keybinds_2));
+   memcpy(g_settings.input.binds[2], snes_keybinds_3, sizeof(snes_keybinds_3));
+   memcpy(g_settings.input.binds[3], snes_keybinds_4, sizeof(snes_keybinds_4));
+   memcpy(g_settings.input.binds[4], snes_keybinds_5, sizeof(snes_keybinds_5));
 
-   g_settings.input.save_state_key = SAVE_STATE_KEY;
-   g_settings.input.load_state_key = LOAD_STATE_KEY;
-   g_settings.input.toggle_fullscreen_key = TOGGLE_FULLSCREEN;
    g_settings.input.axis_threshold = AXIS_THRESHOLD;
-   g_settings.input.exit_emulator_key = SDLK_ESCAPE;
+   for (int i = 0; i < 2; i++)
+      g_settings.input.joypad_map[i] = i;
+   for (int i = 2; i < MAX_PLAYERS; i++)
+      g_settings.input.joypad_map[i] = SSNES_NO_JOYPAD;
 }
 
 void parse_config(void)
@@ -163,6 +170,9 @@ void parse_config(void)
    set_defaults();
    if (conf == NULL)
       return;
+
+   if (g_extern.verbose)
+      config_file_dump(conf, stderr);
 
    int tmp_int;
    double tmp_double;
@@ -246,6 +256,22 @@ void parse_config(void)
    if (config_get_double(conf, "input_axis_threshold", &tmp_double))
       g_settings.input.axis_threshold = tmp_double;
 
+   // Joypad mapping.
+   if (config_get_int(conf, "input_player1_joypad_index", &tmp_int))
+      g_settings.input.joypad_map[0] = tmp_int;
+
+   if (config_get_int(conf, "input_player2_joypad_index", &tmp_int))
+      g_settings.input.joypad_map[1] = tmp_int;
+
+   if (config_get_int(conf, "input_player3_joypad_index", &tmp_int))
+      g_settings.input.joypad_map[2] = tmp_int;
+
+   if (config_get_int(conf, "input_player4_joypad_index", &tmp_int))
+      g_settings.input.joypad_map[3] = tmp_int;
+
+   if (config_get_int(conf, "input_player5_joypad_index", &tmp_int))
+      g_settings.input.joypad_map[4] = tmp_int;
+
    // Audio settings.
    if (config_get_bool(conf, "audio_enable", &tmp_bool))
       g_settings.audio.enable = tmp_bool;
@@ -311,38 +337,105 @@ struct bind_map
    int snes_key;
 };
 
+
+#define DECLARE_BIND(x, bind) { "input_" #x, "input_" #x "_btn", "input_" #x "_axis", bind },
 // Big and nasty bind map... :)
-static const struct bind_map bind_maps[2][13] = {
+static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
    {
-      { "input_player1_a",       "input_player1_a_btn",        NULL, SNES_DEVICE_ID_JOYPAD_A }, 
-      { "input_player1_b",       "input_player1_b_btn",        NULL, SNES_DEVICE_ID_JOYPAD_B }, 
-      { "input_player1_y",       "input_player1_y_btn",        NULL, SNES_DEVICE_ID_JOYPAD_Y }, 
-      { "input_player1_x",       "input_player1_x_btn",        NULL, SNES_DEVICE_ID_JOYPAD_X }, 
-      { "input_player1_start",   "input_player1_start_btn",    NULL, SNES_DEVICE_ID_JOYPAD_START }, 
-      { "input_player1_select",  "input_player1_select_btn",   NULL, SNES_DEVICE_ID_JOYPAD_SELECT }, 
-      { "input_player1_l",       "input_player1_l_btn",        NULL, SNES_DEVICE_ID_JOYPAD_L }, 
-      { "input_player1_r",       "input_player1_r_btn",        NULL, SNES_DEVICE_ID_JOYPAD_R }, 
-      { "input_player1_left",    "input_player1_left_btn",     "input_player1_left_axis", SNES_DEVICE_ID_JOYPAD_LEFT }, 
-      { "input_player1_right",   "input_player1_right_btn",    "input_player1_right_axis", SNES_DEVICE_ID_JOYPAD_RIGHT }, 
-      { "input_player1_up",      "input_player1_up_btn",       "input_player1_up_axis", SNES_DEVICE_ID_JOYPAD_UP }, 
-      { "input_player1_down",    "input_player1_down_btn",     "input_player1_down_axis", SNES_DEVICE_ID_JOYPAD_DOWN }, 
-      { "input_toggle_fast_forward", "input_toggle_fast_forward_btn", NULL, SSNES_FAST_FORWARD_KEY }
-   }, 
+      DECLARE_BIND(player1_a,             SNES_DEVICE_ID_JOYPAD_A)
+      DECLARE_BIND(player1_b,             SNES_DEVICE_ID_JOYPAD_B)
+      DECLARE_BIND(player1_y,             SNES_DEVICE_ID_JOYPAD_Y)
+      DECLARE_BIND(player1_x,             SNES_DEVICE_ID_JOYPAD_X)
+      DECLARE_BIND(player1_start,         SNES_DEVICE_ID_JOYPAD_START)
+      DECLARE_BIND(player1_select,        SNES_DEVICE_ID_JOYPAD_SELECT)
+      DECLARE_BIND(player1_l,             SNES_DEVICE_ID_JOYPAD_L)
+      DECLARE_BIND(player1_r,             SNES_DEVICE_ID_JOYPAD_R)
+      DECLARE_BIND(player1_left,          SNES_DEVICE_ID_JOYPAD_LEFT)
+      DECLARE_BIND(player1_right,         SNES_DEVICE_ID_JOYPAD_RIGHT)
+      DECLARE_BIND(player1_up,            SNES_DEVICE_ID_JOYPAD_UP)
+      DECLARE_BIND(player1_down,          SNES_DEVICE_ID_JOYPAD_DOWN)
+      DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
+      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
+      DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
+      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
+   },
    {
-      { "input_player2_a",       "input_player2_a_btn",        NULL, SNES_DEVICE_ID_JOYPAD_A }, 
-      { "input_player2_b",       "input_player2_b_btn",        NULL, SNES_DEVICE_ID_JOYPAD_B }, 
-      { "input_player2_y",       "input_player2_y_btn",        NULL, SNES_DEVICE_ID_JOYPAD_Y }, 
-      { "input_player2_x",       "input_player2_x_btn",        NULL, SNES_DEVICE_ID_JOYPAD_X }, 
-      { "input_player2_start",   "input_player2_start_btn",    NULL, SNES_DEVICE_ID_JOYPAD_START }, 
-      { "input_player2_select",  "input_player2_select_btn",   NULL, SNES_DEVICE_ID_JOYPAD_SELECT }, 
-      { "input_player2_l",       "input_player2_l_btn",        NULL, SNES_DEVICE_ID_JOYPAD_L }, 
-      { "input_player2_r",       "input_player2_r_btn",        NULL, SNES_DEVICE_ID_JOYPAD_R }, 
-      { "input_player2_left",    "input_player2_left_btn",     "input_player2_left_axis", SNES_DEVICE_ID_JOYPAD_LEFT }, 
-      { "input_player2_right",   "input_player2_right_btn",    "input_player2_right_axis", SNES_DEVICE_ID_JOYPAD_RIGHT }, 
-      { "input_player2_up",      "input_player2_up_btn",       "input_player2_up_axis", SNES_DEVICE_ID_JOYPAD_UP }, 
-      { "input_player2_down",    "input_player2_down_btn",     "input_player2_down_axis", SNES_DEVICE_ID_JOYPAD_DOWN }, 
-      { "input_toggle_fast_forward", "input_toggle_fast_forward_btn", NULL, SSNES_FAST_FORWARD_KEY }
-   }
+      DECLARE_BIND(player2_a,             SNES_DEVICE_ID_JOYPAD_A)
+      DECLARE_BIND(player2_b,             SNES_DEVICE_ID_JOYPAD_B)
+      DECLARE_BIND(player2_y,             SNES_DEVICE_ID_JOYPAD_Y)
+      DECLARE_BIND(player2_x,             SNES_DEVICE_ID_JOYPAD_X)
+      DECLARE_BIND(player2_start,         SNES_DEVICE_ID_JOYPAD_START)
+      DECLARE_BIND(player2_select,        SNES_DEVICE_ID_JOYPAD_SELECT)
+      DECLARE_BIND(player2_l,             SNES_DEVICE_ID_JOYPAD_L)
+      DECLARE_BIND(player2_r,             SNES_DEVICE_ID_JOYPAD_R)
+      DECLARE_BIND(player2_left,          SNES_DEVICE_ID_JOYPAD_LEFT)
+      DECLARE_BIND(player2_right,         SNES_DEVICE_ID_JOYPAD_RIGHT)
+      DECLARE_BIND(player2_up,            SNES_DEVICE_ID_JOYPAD_UP)
+      DECLARE_BIND(player2_down,          SNES_DEVICE_ID_JOYPAD_DOWN)
+      DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
+      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
+      DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
+      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
+   },
+   {
+      DECLARE_BIND(player3_a,             SNES_DEVICE_ID_JOYPAD_A)
+      DECLARE_BIND(player3_b,             SNES_DEVICE_ID_JOYPAD_B)
+      DECLARE_BIND(player3_y,             SNES_DEVICE_ID_JOYPAD_Y)
+      DECLARE_BIND(player3_x,             SNES_DEVICE_ID_JOYPAD_X)
+      DECLARE_BIND(player3_start,         SNES_DEVICE_ID_JOYPAD_START)
+      DECLARE_BIND(player3_select,        SNES_DEVICE_ID_JOYPAD_SELECT)
+      DECLARE_BIND(player3_l,             SNES_DEVICE_ID_JOYPAD_L)
+      DECLARE_BIND(player3_r,             SNES_DEVICE_ID_JOYPAD_R)
+      DECLARE_BIND(player3_left,          SNES_DEVICE_ID_JOYPAD_LEFT)
+      DECLARE_BIND(player3_right,         SNES_DEVICE_ID_JOYPAD_RIGHT)
+      DECLARE_BIND(player3_up,            SNES_DEVICE_ID_JOYPAD_UP)
+      DECLARE_BIND(player3_down,          SNES_DEVICE_ID_JOYPAD_DOWN)
+      DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
+      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
+      DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
+      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
+   },
+   {
+      DECLARE_BIND(player4_a,             SNES_DEVICE_ID_JOYPAD_A)
+      DECLARE_BIND(player4_b,             SNES_DEVICE_ID_JOYPAD_B)
+      DECLARE_BIND(player4_y,             SNES_DEVICE_ID_JOYPAD_Y)
+      DECLARE_BIND(player4_x,             SNES_DEVICE_ID_JOYPAD_X)
+      DECLARE_BIND(player4_start,         SNES_DEVICE_ID_JOYPAD_START)
+      DECLARE_BIND(player4_select,        SNES_DEVICE_ID_JOYPAD_SELECT)
+      DECLARE_BIND(player4_l,             SNES_DEVICE_ID_JOYPAD_L)
+      DECLARE_BIND(player4_r,             SNES_DEVICE_ID_JOYPAD_R)
+      DECLARE_BIND(player4_left,          SNES_DEVICE_ID_JOYPAD_LEFT)
+      DECLARE_BIND(player4_right,         SNES_DEVICE_ID_JOYPAD_RIGHT)
+      DECLARE_BIND(player4_up,            SNES_DEVICE_ID_JOYPAD_UP)
+      DECLARE_BIND(player4_down,          SNES_DEVICE_ID_JOYPAD_DOWN)
+      DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
+      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
+      DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
+      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
+   },
+   {
+      DECLARE_BIND(player5_a,             SNES_DEVICE_ID_JOYPAD_A)
+      DECLARE_BIND(player5_b,             SNES_DEVICE_ID_JOYPAD_B)
+      DECLARE_BIND(player5_y,             SNES_DEVICE_ID_JOYPAD_Y)
+      DECLARE_BIND(player5_x,             SNES_DEVICE_ID_JOYPAD_X)
+      DECLARE_BIND(player5_start,         SNES_DEVICE_ID_JOYPAD_START)
+      DECLARE_BIND(player5_select,        SNES_DEVICE_ID_JOYPAD_SELECT)
+      DECLARE_BIND(player5_l,             SNES_DEVICE_ID_JOYPAD_L)
+      DECLARE_BIND(player5_r,             SNES_DEVICE_ID_JOYPAD_R)
+      DECLARE_BIND(player5_left,          SNES_DEVICE_ID_JOYPAD_LEFT)
+      DECLARE_BIND(player5_right,         SNES_DEVICE_ID_JOYPAD_RIGHT)
+      DECLARE_BIND(player5_up,            SNES_DEVICE_ID_JOYPAD_UP)
+      DECLARE_BIND(player5_down,          SNES_DEVICE_ID_JOYPAD_DOWN)
+      DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
+      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
+      DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
+      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
+   },
 };
 
 struct key_map
@@ -352,6 +445,7 @@ struct key_map
 };
 
 // Edit: Not portable to different input systems atm. Might move this map into the driver itself or something.
+// However, this should map nicely over to other systems aswell since the definition are mostly the same anyways.
 static const struct key_map sdlk_map[] = {
    { "left", SDLK_LEFT },
    { "right", SDLK_RIGHT },
@@ -415,12 +509,12 @@ static int find_sdlk_key(const char *str)
 static void read_keybinds(config_file_t *conf)
 {
    char *tmp_key = NULL;
-   int tmp_btn;
+   char *tmp_btn = NULL;
    char *tmp_axis = NULL;
 
-   for (int j = 0; j < 1; j++)
+   for (int j = 0; j < MAX_PLAYERS; j++)
    {
-      for (int i = 0; i < sizeof(bind_maps[j])/sizeof(struct bind_map); i++)
+      for (int i = 0; i < sizeof(bind_maps[0])/sizeof(struct bind_map); i++)
       {
          struct snes_keybind *bind = find_snes_bind(j, bind_maps[j][i].snes_key);
          if (!bind)
@@ -437,10 +531,35 @@ static void read_keybinds(config_file_t *conf)
             tmp_key = NULL;
          }
 
-         if (bind_maps[j][i].btn && config_get_int(conf, bind_maps[j][i].btn, &tmp_btn))
+         if (bind_maps[j][i].btn && config_get_string(conf, bind_maps[j][i].btn, &tmp_btn))
          {
-            if (tmp_btn >= 0)
-               bind->joykey = tmp_btn;
+            const char *btn = tmp_btn;
+            if (*btn++ == 'h')
+            {
+               if (isdigit(*btn))
+               {
+                  char *dir = NULL;
+                  int hat = strtol(btn, &dir, 0);
+                  int hat_dir = 0;
+                  if (dir)
+                  {
+                     if (strcasecmp(dir, "up") == 0)
+                        hat_dir = HAT_UP_MASK;
+                     else if (strcasecmp(dir, "down") == 0)
+                        hat_dir = HAT_DOWN_MASK;
+                     else if (strcasecmp(dir, "left") == 0)
+                        hat_dir = HAT_LEFT_MASK;
+                     else if (strcasecmp(dir, "right") == 0)
+                        hat_dir = HAT_RIGHT_MASK;
+
+                     if (hat_dir)
+                        bind->joykey = HAT_MAP(hat, hat_dir);
+                  }
+               }
+            }
+            else
+               bind->joykey = strtol(tmp_btn, NULL, 0);
+            free(tmp_btn);
          }
 
          if (bind_maps[j][i].axis && config_get_string(conf, bind_maps[j][i].axis, &tmp_axis))
@@ -459,38 +578,5 @@ static void read_keybinds(config_file_t *conf)
          }
       }
    }
-
-   char *tmp_str;
-   if (config_get_string(conf, "input_toggle_fullscreen", &tmp_str))
-   {
-      int key = find_sdlk_key(tmp_str);
-      if (key >= 0)
-         g_settings.input.toggle_fullscreen_key = key;
-      free(tmp_str);
-   }
-   if (config_get_string(conf, "input_save_state", &tmp_str))
-   {
-      int key = find_sdlk_key(tmp_str);
-      if (key >= 0)
-         g_settings.input.save_state_key = key;
-      free(tmp_str);
-   }
-   if (config_get_string(conf, "input_load_state", &tmp_str))
-   {
-      int key = find_sdlk_key(tmp_str);
-      if (key >= 0)
-         g_settings.input.load_state_key = key;
-      free(tmp_str);
-   }
-   if (config_get_string(conf, "input_exit_emulator", &tmp_str))
-   {
-      int key = find_sdlk_key(tmp_str);
-      if (key >= 0)
-         g_settings.input.exit_emulator_key = key;
-      free(tmp_str);
-   }
 }
-
-
-
 
