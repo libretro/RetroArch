@@ -82,19 +82,38 @@ static void shutdown_cb(void *data)
    pthread_cond_signal(&jd->cond);
 }
 
-static void parse_ports(const char **dest_ports, const char **jports)
+static int parse_ports(char **dest_ports, const char **jports)
 {
    int parsed = 0;
 
    const char *con = strtok(g_settings.audio.device, ",");
    if (con)
-      dest_ports[parsed++] = con;
+      dest_ports[parsed++] = strdup(con);
    con = strtok(NULL, ",");
    if (con)
-      dest_ports[parsed++] = con;
+      dest_ports[parsed++] = strdup(con);
 
    for (int i = parsed; i < 2; i++)
-      dest_ports[i] = jports[i];
+      dest_ports[i] = strdup(jports[i]);
+
+   return 2;
+}
+
+static size_t find_buffersize(jack_t *jd, int latency)
+{
+   int frames = latency * g_settings.audio.out_rate / 1000;
+
+   int jack_latency = jack_port_get_total_latency(jd->client, jd->ports[0]);
+   SSNES_LOG("JACK: Jack latency is %d frames.\n", jack_latency);
+
+   int buffer_frames = frames - jack_latency;
+   int min_buffer_frames = jack_get_buffer_size(jd->client) * 2;
+   SSNES_LOG("JACK: Minimum buffer size is %d frames.\n", min_buffer_frames);
+
+   if (buffer_frames < min_buffer_frames)
+      buffer_frames = min_buffer_frames;
+
+   return buffer_frames * sizeof(jack_default_audio_sample_t);
 }
 
 static void* __jack_init(const char* device, int rate, int latency)
@@ -122,24 +141,8 @@ static void* __jack_init(const char* device, int rate, int latency)
       goto error;
    }
 
-   jack_nframes_t bufsize;
-   jack_nframes_t jack_bufsize = jack_get_buffer_size(jd->client);
    
-   bufsize = (latency * g_settings.audio.out_rate / 1000) > jack_bufsize * 2 ? (latency * g_settings.audio.out_rate / 1000) : jack_bufsize * 2;
-   bufsize *= sizeof(jack_default_audio_sample_t);
-
-   SSNES_LOG("Jack buffer size: %d bytes: (~%.2f msec latency)\n", (int)bufsize, (float)bufsize * 1000 / (g_settings.audio.out_rate * sizeof(jack_default_audio_sample_t)));
-   for (int i = 0; i < 2; i++)
-   {
-      jd->buffer[i] = jack_ringbuffer_create(bufsize);
-      if (jd->buffer[i] == NULL)
-      {
-         SSNES_ERR("Failed to create buffers.\n");
-         goto error;
-      }
-   }
-
-   const char *dest_ports[2];
+   char *dest_ports[2];
    jports = jack_get_ports(jd->client, NULL, NULL, JackPortIsPhysical | JackPortIsInput);
    if (jports == NULL)
    {
@@ -147,7 +150,7 @@ static void* __jack_init(const char* device, int rate, int latency)
       goto error;
    }
 
-   parse_ports(dest_ports, jports);
+   int parsed = parse_ports(dest_ports, jports);
 
    if (jack_activate(jd->client) < 0)
    {
@@ -160,6 +163,22 @@ static void* __jack_init(const char* device, int rate, int latency)
       if (jack_connect(jd->client, jack_port_name(jd->ports[i]), dest_ports[i]))
       {
          SSNES_ERR("Failed to connect to Jack port.\n");
+         goto error;
+      }
+   }
+
+   for (int i = 0; i < parsed; i++)
+      free(dest_ports[i]);
+
+   size_t bufsize = find_buffersize(jd, latency);
+
+   SSNES_LOG("JACK: Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));
+   for (int i = 0; i < 2; i++)
+   {
+      jd->buffer[i] = jack_ringbuffer_create(bufsize);
+      if (jd->buffer[i] == NULL)
+      {
+         SSNES_ERR("Failed to create buffers.\n");
          goto error;
       }
    }
@@ -184,7 +203,10 @@ static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
       for (size_t j = 0; j < FRAMES(size); j++)
          out_deinterleaved_buffer[i][j] = buf[j * 2 + i];
 
-   for(;;)
+   size_t frames = FRAMES(size);
+
+   size_t written = 0;
+   while (written < frames)
    {
       if (jd->shutdown)
          return 0;
@@ -193,27 +215,28 @@ static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
       avail[0] = jack_ringbuffer_write_space(jd->buffer[0]);
       avail[1] = jack_ringbuffer_write_space(jd->buffer[1]);
       size_t min_avail = avail[0] < avail[1] ? avail[0] : avail[1];
+      min_avail /= sizeof(float);
 
-      if (jd->nonblock)
+      size_t write_frames = frames - written > min_avail ? min_avail : frames - written;
+
+      if (write_frames > 0)
       {
-         if (min_avail < FRAMES(size) * sizeof(jack_default_audio_sample_t))
-            size = min_avail * 2;
-         break;
+         for (int i = 0; i < 2; i++)
+            jack_ringbuffer_write(jd->buffer[i], (const char*)&out_deinterleaved_buffer[i][written], write_frames * sizeof(jack_default_audio_sample_t));
+         written += write_frames;
       }
       else
       {
-         if (min_avail >= FRAMES(size) * sizeof(jack_default_audio_sample_t))
-            break;
+         pthread_mutex_lock(&jd->cond_lock);
+         pthread_cond_wait(&jd->cond, &jd->cond_lock);
+         pthread_mutex_unlock(&jd->cond_lock);
       }
 
-      pthread_mutex_lock(&jd->cond_lock);
-      pthread_cond_wait(&jd->cond, &jd->cond_lock);
-      pthread_mutex_unlock(&jd->cond_lock);
+      if (jd->nonblock)
+         break;
    }
 
-   for (int i = 0; i < 2; i++)
-      jack_ringbuffer_write(jd->buffer[i], (const char*)out_deinterleaved_buffer[i], FRAMES(size) * sizeof(jack_default_audio_sample_t));
-   return size;
+   return written * sizeof(float) * 2;
 }
 
 static ssize_t __jack_write(void* data, const void* buf, size_t size)
