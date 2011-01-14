@@ -29,8 +29,7 @@
 #include <string.h>
 #include <assert.h>
 
-#define FRAMES(x) (x / (sizeof(int16_t) * 2))
-#define SAMPLES(x) (x / sizeof(int16_t))
+#define FRAMES(x) (x / (sizeof(float) * 2))
 
 typedef struct jack
 {
@@ -61,13 +60,6 @@ static int process_cb(jack_nframes_t nframes, void *data)
    if (min_avail > nframes)
       min_avail = nframes;
 
-   //static int underrun = 0;
-   //if (min_avail < nframes)
-   //{
-   //   SSNES_LOG("JACK: Underrun count: %d\n", underrun++);
-   //   fprintf(stderr, "required %d frames, got %d.\n", (int)nframes, (int)min_avail);
-   //}
-
    for (int i = 0; i < 2; i++)
    {
       jack_default_audio_sample_t *out = jack_port_get_buffer(jd->ports[i], nframes);
@@ -88,12 +80,6 @@ static void shutdown_cb(void *data)
    jack_t *jd = data;
    jd->shutdown = true;
    pthread_cond_signal(&jd->cond);
-}
-
-static inline void s16_to_float(jack_default_audio_sample_t * restrict out, const int16_t * restrict in, size_t samples)
-{
-   for (int i = 0; i < samples; i++)
-      out[i] = (float)in[i] / 0x8000;
 }
 
 static void parse_ports(const char **dest_ports, const char **jports)
@@ -142,7 +128,7 @@ static void* __jack_init(const char* device, int rate, int latency)
    bufsize = (latency * g_settings.audio.out_rate / 1000) > jack_bufsize * 2 ? (latency * g_settings.audio.out_rate / 1000) : jack_bufsize * 2;
    bufsize *= sizeof(jack_default_audio_sample_t);
 
-   //fprintf(stderr, "jack buffer size: %d\n", (int)bufsize);
+   SSNES_LOG("Jack buffer size: %d bytes: (~%.2f msec latency)\n", (int)bufsize, (float)bufsize * 1000 / (g_settings.audio.out_rate * sizeof(jack_default_audio_sample_t)));
    for (int i = 0; i < 2; i++)
    {
       jd->buffer[i] = jack_ringbuffer_create(bufsize);
@@ -181,7 +167,6 @@ static void* __jack_init(const char* device, int rate, int latency)
    pthread_cond_init(&jd->cond, NULL);
    pthread_mutex_init(&jd->cond_lock, NULL);
 
-
    jack_free(jports);
    return jd;
 
@@ -191,17 +176,13 @@ error:
    return NULL;
 }
 
-static size_t write_buffer(jack_t *jd, const void *buf, size_t size)
+static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
 {
-   //fprintf(stderr, "write_buffer: size: %zu\n", size);
-   // Convert our data to float, deinterleave and write.
-   jack_default_audio_sample_t out_buffer[size / sizeof(int16_t)];
    jack_default_audio_sample_t out_deinterleaved_buffer[2][FRAMES(size)];
-   s16_to_float(out_buffer, buf, SAMPLES(size));
 
    for (int i = 0; i < 2; i++)
       for (size_t j = 0; j < FRAMES(size); j++)
-         out_deinterleaved_buffer[i][j] = out_buffer[j * 2 + i];
+         out_deinterleaved_buffer[i][j] = buf[j * 2 + i];
 
    for(;;)
    {
@@ -216,13 +197,11 @@ static size_t write_buffer(jack_t *jd, const void *buf, size_t size)
       if (jd->nonblock)
       {
          if (min_avail < FRAMES(size) * sizeof(jack_default_audio_sample_t))
-            size = min_avail * 2 * sizeof(int16_t) / sizeof(jack_default_audio_sample_t);
+            size = min_avail * 2;
          break;
       }
-
       else
       {
-         //fprintf(stderr, "Write avail is: %d\n", (int)min_avail);
          if (min_avail >= FRAMES(size) * sizeof(jack_default_audio_sample_t))
             break;
       }
@@ -290,6 +269,7 @@ const audio_driver_t audio_jack = {
    .start = __jack_start,
    .set_nonblock_state = __jack_set_nonblock_state,
    .free = __jack_free,
+   .float_samples = true,
    .ident = "jack"
 };
 

@@ -40,10 +40,6 @@ struct global g_extern = {
 };
 
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
-
-#define AUDIO_CHUNK_SIZE_BLOCKING 64
-#define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
-static size_t audio_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
 static void set_fast_forward_button(bool new_button_state)
 {
    static bool old_button_state = false;
@@ -55,10 +51,11 @@ static void set_fast_forward_button(bool new_button_state)
          driver.video->set_nonblock_state(driver.video_data, syncing_state);
       if (g_extern.audio_active)
          driver.audio->set_nonblock_state(driver.audio_data, (g_settings.audio.sync) ? syncing_state : true);
+
       if (syncing_state)
-         audio_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
+         g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
       else
-         audio_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
+         g_extern.audio_data.chunk_size = g_extern.audio_data.block_chunk_size;
    }
    old_button_state = new_button_state;
 }
@@ -163,37 +160,42 @@ static void audio_sample(uint16_t left, uint16_t right)
    }
 #endif
 
-   static float data[AUDIO_CHUNK_SIZE_NONBLOCKING];
-   static int data_ptr = 0;
+   g_extern.audio_data.data[g_extern.audio_data.data_ptr++] = (float)(*(int16_t*)&left)/0x8000; 
+   g_extern.audio_data.data[g_extern.audio_data.data_ptr++] = (float)(*(int16_t*)&right)/0x8000;
 
-   data[data_ptr++] = (float)(*(int16_t*)&left)/0x8000; 
-   data[data_ptr++] = (float)(*(int16_t*)&right)/0x8000;
-
-   if ( data_ptr >= audio_chunk_size )
+   if (g_extern.audio_data.data_ptr >= g_extern.audio_data.chunk_size)
    {
-      float outsamples[audio_chunk_size * 16];
-      int16_t temp_outsamples[audio_chunk_size * 16];
-
       SRC_DATA src_data;
 
-      src_data.data_in = data;
-      src_data.data_out = outsamples;
-      src_data.input_frames = audio_chunk_size / 2;
-      src_data.output_frames = audio_chunk_size * 8;
+      src_data.data_in = g_extern.audio_data.data;
+      src_data.data_out = g_extern.audio_data.outsamples;
+      src_data.input_frames = g_extern.audio_data.chunk_size / 2;
+      src_data.output_frames = g_extern.audio_data.chunk_size * 8;
       src_data.end_of_input = 0;
       src_data.src_ratio = (double)g_settings.audio.out_rate / (double)g_settings.audio.in_rate;
 
       src_process(g_extern.source, &src_data);
 
-      src_float_to_short_array(outsamples, temp_outsamples, src_data.output_frames_gen * 2);
-
-      if ( driver.audio->write(driver.audio_data, temp_outsamples, src_data.output_frames_gen * 4) < 0 )
+      if (driver.audio->float_samples)
       {
-         fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
-         g_extern.audio_active = false;
+         if (driver.audio->write(driver.audio_data, g_extern.audio_data.outsamples, src_data.output_frames_gen * sizeof(float) * 2) < 0)
+         {
+            fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
+            g_extern.audio_active = false;
+         }
+      }
+      else
+      {
+         src_float_to_short_array(g_extern.audio_data.outsamples, g_extern.audio_data.conv_outsamples, src_data.output_frames_gen * 2);
+
+         if (driver.audio->write(driver.audio_data, g_extern.audio_data.conv_outsamples, src_data.output_frames_gen * sizeof(int16_t) * 2) < 0)
+         {
+            fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
+            g_extern.audio_active = false;
+         }
       }
 
-      data_ptr = 0;
+      g_extern.audio_data.data_ptr = 0;
    }
 }
 

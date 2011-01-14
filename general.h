@@ -117,6 +117,18 @@ struct global
    char savefile_name_bsrm[512];
    char savestate_name[256];
 
+   struct
+   {
+      float *data;
+      size_t data_ptr;
+      size_t chunk_size;
+      size_t nonblock_chunk_size;
+      size_t block_chunk_size;
+
+      float *outsamples;
+      int16_t *conv_outsamples;
+   } audio_data;
+
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;
    char record_path[256];
