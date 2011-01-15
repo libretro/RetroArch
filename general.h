@@ -125,6 +125,8 @@ struct global
       size_t nonblock_chunk_size;
       size_t block_chunk_size;
 
+      bool use_float;
+
       float *outsamples;
       int16_t *conv_outsamples;
    } audio_data;

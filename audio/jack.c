@@ -285,6 +285,12 @@ static void __jack_free(void *data)
    free(jd);
 }
 
+static bool __jack_use_float(void *data)
+{
+   (void)data;
+   return true;
+}
+
 const audio_driver_t audio_jack = {
    .init = __jack_init,
    .write = __jack_write,
@@ -292,7 +298,7 @@ const audio_driver_t audio_jack = {
    .start = __jack_start,
    .set_nonblock_state = __jack_set_nonblock_state,
    .free = __jack_free,
-   .float_samples = true,
+   .use_float = __jack_use_float,
    .ident = "jack"
 };
 

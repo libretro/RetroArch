@@ -176,7 +176,7 @@ static void audio_sample(uint16_t left, uint16_t right)
 
       src_process(g_extern.source, &src_data);
 
-      if (driver.audio->float_samples)
+      if (g_extern.audio_data.use_float)
       {
          if (driver.audio->write(driver.audio_data, g_extern.audio_data.outsamples, src_data.output_frames_gen * sizeof(float) * 2) < 0)
          {
