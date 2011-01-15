@@ -56,6 +56,7 @@ static void* __alsa_init(const char* device, int rate, int latency)
       return NULL;
 
    snd_pcm_hw_params_t *params = NULL;
+   snd_pcm_sw_params_t *sw_params = NULL;
 
    const char *alsa_dev = "default";
    if ( device != NULL )
@@ -88,7 +89,13 @@ static void* __alsa_init(const char* device, int rate, int latency)
    snd_pcm_hw_params_get_buffer_size(params, &buffer_size);
    SSNES_LOG("ALSA: Buffer size: %d frames\n", (int)buffer_size);
 
+   TRY_ALSA(snd_pcm_sw_params_malloc(&sw_params));
+   TRY_ALSA(snd_pcm_sw_params_current(alsa->pcm, sw_params));
+   TRY_ALSA(snd_pcm_sw_params_set_start_threshold(alsa->pcm, sw_params, buffer_size / 2));
+   TRY_ALSA(snd_pcm_sw_params(alsa->pcm, sw_params));
+
    snd_pcm_hw_params_free(params);
+   snd_pcm_sw_params_free(sw_params);
 
    return alsa;
 
@@ -96,6 +103,9 @@ error:
    SSNES_ERR("ALSA: Failed to initialize...\n");
    if (params)
       snd_pcm_hw_params_free(params);
+
+   if (sw_params)
+      snd_pcm_sw_params_free(sw_params);
 
    if (alsa)
    {
