@@ -149,6 +149,8 @@ void init_audio(void)
    if ( driver.audio_data == NULL )
       g_extern.audio_active = false;
 
+   if (g_extern.audio_active && driver.audio->use_float && driver.audio->use_float(driver.audio_data))
+      g_extern.audio_data.use_float = true;
 
    if (!g_settings.audio.sync && g_extern.audio_active)
    {

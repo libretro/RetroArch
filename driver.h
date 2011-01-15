@@ -61,7 +61,7 @@ typedef struct audio_driver
    bool (*start)(void* data);
    void (*set_nonblock_state)(void* data, bool toggle); // Should we care about blocking in audio thread? Fast forwarding.
    void (*free)(void* data);
-   bool float_samples; // Defines if driver will take standard floating point samples, or int16_t samples.
+   bool (*use_float)(void *data); // Defines if driver will take standard floating point samples, or int16_t samples.
    const char *ident;
 } audio_driver_t;
 
