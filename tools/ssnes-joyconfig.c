@@ -31,7 +31,7 @@
 
 
 static int g_player = 1;
-static int g_joypad = 1;
+static int g_joypad = 0;
 static char *g_in_path = NULL;
 static char *g_out_path = NULL;
 
@@ -84,7 +84,7 @@ void get_binds(config_file_t *conf, int player, int joypad)
    int num = SDL_NumJoysticks();
    if (joypad >= num)
    {
-      fprintf(stderr, "Cannot find joystick at index #%d, only have %d joystick(s) available ...\n", joypad + 1, num);
+      fprintf(stderr, "Cannot find joystick at index #%d, only have %d joystick(s) available ...\n", joypad, num);
       exit(1);
    }
 
