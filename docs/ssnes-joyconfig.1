@@ -1,0 +1,44 @@
+.\" ssnes-joyconfig.1:
+
+.TH  "SSNES-JOYCONFIG" "1" "January 2011" "SSNES-JOYCONFIG" "System Manager's Manual: ssnes-joyconfig"
+
+.SH NAME
+
+ssnes-joyconfig \- Tool to configure joypad bindings for \fBssnes\fR.
+
+.SH SYNOPSIS
+
+\fBssnes-joyconfig\fR [OPTIONS]...
+
+.SH "DESCRIPTION"
+
+\fBssnes-joyconfig is a simple tool that allows updating or creating a configuration file for \fBssnes\fR.
+It reads in necessary joypad bindings for a certain player and joypad.
+
+.SH "GENERAL OPTIONS"
+
+.TP
+\fB--player PLAYER, -p PLAYER\fR
+Configuration will be done for the SNES player PLAYER. This can be from 1 up to and including 5 (multitap).
+Default is configuration for player 1.
+
+.TP
+\fB--joypad PAD, -j PAD\fR
+Which joypad to use when configuring. Use a numeric indexing. Default here is 0 (first joypad).
+
+.TP
+\fB--input PATH, -i PATH\fR
+Use config file found in PATH as a base. Old configuration values can be overwritten by new values when configuring binds. If not used, an empty config file will be used as a base. Using this option only does \fBnot\fR update the file found in PATH.
+
+.TP
+\fB--output PATH, -o PATH\fR
+Writes the final config to a file, rather than \fBstdout\fR. If -i and -o point to the same file, the file found in PATH will simply be updated with the new configs.
+
+.TP
+\fB--help, -h\fR
+Prints help message.
+
+.SH "SEE ALSO"
+\fBssnes\fR(1)
+
+.\"

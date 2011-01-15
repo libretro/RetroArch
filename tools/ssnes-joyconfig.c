@@ -31,7 +31,7 @@
 
 
 static int g_player = 1;
-static int g_joypad = 1;
+static int g_joypad = 0;
 static char *g_in_path = NULL;
 static char *g_out_path = NULL;
 
@@ -40,10 +40,10 @@ static void print_help(void)
    puts("==================");
    puts("ssnes-joyconfig");
    puts("==================");
-   puts("Usage: ssnes-joyconfig [ -p/--player <1|2> | -j/--joypad <num> | -i/--input <file> | -o/--output <file> | -h/--help ]");
+   puts("Usage: ssnes-joyconfig [ -p/--player <1-5> | -j/--joypad <num> | -i/--input <file> | -o/--output <file> | -h/--help ]");
    puts("");
-   puts("-p/--player: Which player to configure for (1 or 2).");
-   puts("-j/--joypad: Which joypad to use when configuring (first joypad is 1).");
+   puts("-p/--player: Which player to configure for (1 up to and including 5).");
+   puts("-j/--joypad: Which joypad to use when configuring (first joypad is 0).");
    puts("-i/--input: Input file to configure with. Binds will be added on or overwritten.");
    puts("\tIf not selected, an empty config will be used as a base.");
    puts("-o/--output: Output file to write to. If not selected, config file will be dumped to stdout.");
@@ -84,7 +84,7 @@ void get_binds(config_file_t *conf, int player, int joypad)
    int num = SDL_NumJoysticks();
    if (joypad >= num)
    {
-      fprintf(stderr, "Cannot find joystick number %d, only have %d joysticks available ...\n", joypad + 1, num);
+      fprintf(stderr, "Cannot find joystick at index #%d, only have %d joystick(s) available ...\n", joypad, num);
       exit(1);
    }
 
@@ -104,7 +104,7 @@ void get_binds(config_file_t *conf, int player, int joypad)
       initial_axes[i] = SDL_JoystickGetAxis(joystick, i);
 
 
-   fprintf(stderr, "Configuring binds for player #%d on joypad #%d (%s)\n", player + 1, joypad + 1, SDL_JoystickName(joypad));
+   fprintf(stderr, "Configuring binds for player #%d on joypad #%d (%s)\n", player + 1, joypad, SDL_JoystickName(joypad));
    fprintf(stderr, "Press Ctrl-C to exit early.\n");
    fprintf(stderr, "\n");
 
@@ -213,9 +213,9 @@ static void parse_input(int argc, char *argv[])
 
          case 'j':
             g_joypad = strtol(optarg, NULL, 0);
-            if (g_joypad < 1)
+            if (g_joypad < 0)
             {
-               fprintf(stderr, "Joypad number can't be less than 1!\n");
+               fprintf(stderr, "Joypad number can't be negative!\n");
                exit(1);
             }
             break;
@@ -271,9 +271,9 @@ int main(int argc, char *argv[])
       "input_player5_joypad_index"
    };
 
-   config_set_int(conf, index_list[g_player - 1], g_joypad - 1);
+   config_set_int(conf, index_list[g_player - 1], g_joypad);
 
-   get_binds(conf, g_player - 1, g_joypad - 1);
+   get_binds(conf, g_player - 1, g_joypad);
    config_file_write(conf, g_out_path);
    config_file_free(conf);
    if (g_in_path)

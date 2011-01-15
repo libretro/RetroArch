@@ -1,0 +1,108 @@
+.\" ssnes.1:
+
+.TH  "SSNES" "1" "January 2011" "SSNES" "System Manager's Manual: ssnes"
+
+.SH NAME
+
+ssnes \- Simple Super Nintendo Emulator System
+
+.SH SYNOPSIS
+
+\fBssnes\fR [rom file] [OPTIONS]...
+
+.SH "DESCRIPTION"
+
+\fBssnes\fR is an emulator frontend for the libsnes API. 
+libsnes provides emulation of a Super Nintendo system, and can be implemented by any SNES emulator.
+\fBssnes\fR focuses on exposing needed functionality through the use of command line and configuration files.
+
+.SH "GENERAL OPTIONS"
+
+.TP
+\fB[rom file]\fR
+If no rom file path is defined on the command line, \fBssnes\fR will try to load a rom from \fBstdin\fR.
+\fBssnes\fR only supports loading of \fBuncompressed\fR roms, such as *.sfc or *.smc.
+
+.TP
+\fB--help, -h\fR
+Prints help text.
+
+.TP
+\fB--save PATH, -s PATH\fR
+Overrides the path used for save ram (*.srm).
+Without this flag, the save ram path will be inferred from the rom path name, and put in the same directory as the rom file with the extention replaced with '.srm'. 
+When rom is loaded from \fBstdin\fR, this flag is mandatory to define as no path can be inferred.
+
+.TP
+\fB--savestate PATH, -S path\fR
+Overrides the path used for save states.
+Without this flag, the save state path will be inferred from the rom path name, and put in the same directory as the rom file with the extention replace with '.state'.
+When rom is loaded from \fBstdin\fR, this flag is mandatory to define as no path can be inferred.
+Do note that save states are bound to the libsnes implementation being used. Using a different libsnes could invalidate the save state file.
+
+.TP
+\fB--config PATH, -c PATH\fR
+Sets the configuration file path. \fBssnes\fR will use this path to load the configuration file.
+Should this not be defined, \fBssnes\fR will look in platform specific paths to attempt finding the config file.
+/etc/ssnes.cfg (when installed), or ssnes.cfg in the source tarball serves as a skeleton configuration file.
+
+.IP
+Unix-like systems will look in $XDG_CONFIG_HOME/ssnes/ssnes.cfg first. Then it will try $HOME/.ssnesrc. Last, it will try /etc/ssnes.cfg. If no configuration is found, default settings will be assumed. A configuration file does not need to define every possible option, only those that should be overridden.
+
+.IP
+Windows will look in ssnes.cfg in same folder where ssnes.exe resides.
+
+.TP
+\fB--gameboy PATH, -g PATH\fR
+Path to a Nintendo Game Boy ROM. If this flag is set, the Super Game Boy subsystem will be activated. The Super Game Boy BIOS needs to be loaded as the normal rom.
+
+.TP
+\fB--bsx PATH, -b PATH\fR
+Path to BS-X rom. Load BS-X BIOS as the regular rom. 
+When using BS-X, save ram paths will be inferred from the BS-X BIOS path, not BS-X rom path.
+
+.TP
+\fB--bsxslot PATH, -B PATH\fR
+Path to BS-X slotted rom. Load BS-X BIOS as the regular rom.
+When using BS-X, save ram paths will be inferred from the BS-X BIOS path, not BS-X rom path.
+
+.TP
+\fB--sufamiA PATH\fR
+Path to A slot in Sufami Turbo. Load Sufami Turbo BIOS as regular rom.
+When using Sufami, save ram paths will be inferred from the Sufami BIOS path, not slot paths.
+
+.TP
+\fB--sufamiB PATH\fR
+Path to B slot in Sufami Turbo. Load Sufami Turbo BIOS as regular rom.
+When using Sufami, save ram paths will be inferred from the Sufami BIOS path, not slot paths.
+
+.TP
+\fB--mouse PORT, -m PORT\fR
+Connects a Super Nintendo Mouse into port number PORT of the emulated SNES. Possible values for PORT are 1 and 2.
+
+.TP
+\fB--scope, -p\fR
+Connects a Super Scope into port 2 of the SNES. It is controlled with your mouse.
+
+.TP
+\fB--justifier, -j\fR
+Connects a Konami Justifier into port 2 of the SNES. It is controller with your mouse.
+
+.TP
+\fB--justifiers, -J\fR
+Connects two Konami Justifier into port 2 of the SNES. Currently, only player 1 is controlled with the mouse.
+
+.TP
+\fB--multitap, -4\fR
+Connects a four-way multitap into port 2 of the SNES. This allows for up to 5 players.
+
+.TP
+\fB--record PATH, -r PATH\fR
+Activates video recording of gameplay into PATH. Video recording options can be configured in config file.
+
+.TP
+\fB--verbose, -v\fR
+Activates verbose logging.
+
+.SH "SEE ALSO"
+\fBssnes-joyconfig\fR(1)
