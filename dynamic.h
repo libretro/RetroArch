@@ -1,4 +1,4 @@
-/*  SSNES - A Super Ninteno Entertainment System (SNES) Emulator frontend for libsnes.
+/*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
  *  Copyright (C) 2010 - Hans-Kristian Arntzen
  *
  *  Some code herein may be based on code found in BSNES.
