@@ -489,19 +489,19 @@ static inline void load_save_files(void)
    {
       case SSNES_CART_NORMAL:
       case SSNES_CART_SGB:
-         load_save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
-         load_save_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+         load_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
+         load_ram_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
          break;
 
       case SSNES_CART_BSX:
       case SSNES_CART_BSX_SLOTTED:
-         load_save_file(g_extern.savefile_name_srm, SNES_MEMORY_BSX_RAM);
-         load_save_file(g_extern.savefile_name_psrm, SNES_MEMORY_BSX_PRAM);
+         load_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_BSX_RAM);
+         load_ram_file(g_extern.savefile_name_psrm, SNES_MEMORY_BSX_PRAM);
          break;
 
       case SSNES_CART_SUFAMI:
-         load_save_file(g_extern.savefile_name_asrm, SNES_MEMORY_SUFAMI_TURBO_A_RAM);
-         load_save_file(g_extern.savefile_name_bsrm, SNES_MEMORY_SUFAMI_TURBO_B_RAM);
+         load_ram_file(g_extern.savefile_name_asrm, SNES_MEMORY_SUFAMI_TURBO_A_RAM);
+         load_ram_file(g_extern.savefile_name_bsrm, SNES_MEMORY_SUFAMI_TURBO_B_RAM);
          break;
 
       default:
@@ -515,19 +515,19 @@ static inline void save_files(void)
    {
       case SSNES_CART_NORMAL:
       case SSNES_CART_SGB:
-         save_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
-         save_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+         save_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
+         save_ram_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
          break;
 
       case SSNES_CART_BSX:
       case SSNES_CART_BSX_SLOTTED:
-         save_file(g_extern.savefile_name_srm, SNES_MEMORY_BSX_RAM);
-         save_file(g_extern.savefile_name_psrm, SNES_MEMORY_BSX_PRAM);
+         save_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_BSX_RAM);
+         save_ram_file(g_extern.savefile_name_psrm, SNES_MEMORY_BSX_PRAM);
          break;
 
       case SSNES_CART_SUFAMI:
-         save_file(g_extern.savefile_name_asrm, SNES_MEMORY_SUFAMI_TURBO_A_RAM);
-         save_file(g_extern.savefile_name_bsrm, SNES_MEMORY_SUFAMI_TURBO_B_RAM);
+         save_ram_file(g_extern.savefile_name_asrm, SNES_MEMORY_SUFAMI_TURBO_A_RAM);
+         save_ram_file(g_extern.savefile_name_bsrm, SNES_MEMORY_SUFAMI_TURBO_B_RAM);
          break;
 
       default:
@@ -626,14 +626,6 @@ int main(int argc, char *argv[])
    
    init_controllers();
 
-   unsigned serial_size = psnes_serialize_size();
-   uint8_t *serial_data = malloc(serial_size);
-   if (serial_data == NULL)
-   {
-      SSNES_ERR("Failed to allocate memory for states!\n");
-      goto error;
-   }
-
    load_save_files();
 
 #ifdef HAVE_FFMPEG
@@ -652,9 +644,9 @@ int main(int argc, char *argv[])
 
       // Save or load state here.
       if (driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY))
-         write_file(g_extern.savestate_name, serial_data, serial_size);
+         save_state(g_extern.savestate_name);
       else if (driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY))
-         load_state(g_extern.savestate_name, serial_data, serial_size);
+         load_state(g_extern.savestate_name);
 
       // If we go fullscreen we drop all drivers and reinit to be safe.
       else if (driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY))
@@ -672,13 +664,11 @@ int main(int argc, char *argv[])
    deinit_recording();
 #endif
 
-   // Flush out SRAM (and RTC)
    save_files();
 
    psnes_unload_cartridge();
    psnes_term();
    uninit_drivers();
-   free(serial_data);
    uninit_dlsym();
 
    return 0;

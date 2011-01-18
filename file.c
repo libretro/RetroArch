@@ -23,7 +23,8 @@
 #include <string.h>
 #include "dynamic.h"
 
-ssize_t read_file(FILE* file, void** buf)
+// Load SNES rom only. Applies a hack for headered ROMs.
+static ssize_t read_rom_file(FILE* file, void** buf)
 {
    ssize_t ret;
    if (file == NULL) // stdin
@@ -96,74 +97,117 @@ ssize_t read_file(FILE* file, void** buf)
    return ret;
 }
 
-void write_file(const char* path, uint8_t* data, size_t size)
+// Generic file loader.
+static ssize_t read_file(const char *path, void **buf)
 {
-   FILE *file = fopen(path, "wb");
-   if ( file != NULL )
+   void *rom_buf = NULL;
+   FILE *file = fopen(path, "rb");
+   if (!file)
    {
-      SSNES_LOG("Saving state \"%s\". Size: %d bytes.\n", path, (int)size);
-      psnes_serialize(data, size);
-      if ( fwrite(data, 1, size, file) != size )
-         SSNES_ERR("Did not save state properly.\n");
-      fclose(file);
+      SSNES_ERR("Couldn't open file: \"%s\"\n", path);
+      goto error;
    }
+
+   fseek(file, 0, SEEK_END);
+   long len = ftell(file);
+   ssize_t rc = 0;
+   rewind(file);
+   rom_buf = malloc(len);
+   if (!rom_buf)
+   {
+      SSNES_ERR("Couldn't allocate memory!\n");
+      goto error;
+   }
+
+   if ((rc = fread(rom_buf, 1, len, file)) < len)
+      SSNES_WARN("Didn't read whole file.\n");
+
+   *buf = rom_buf;
+   fclose(file);
+   return rc;
+
+error:
+   if (file)
+      fclose(file);
+   free(rom_buf);
+   *buf = NULL;
+   return -1;
 }
 
-void load_state(const char* path, uint8_t* data, size_t size)
+// Dump stuff to file.
+static void dump_to_file(const char *path, const void *data, size_t size)
 {
-   SSNES_LOG("Loading state: \"%s\".\n", path);
-   FILE *file = fopen(path, "rb");
-   if ( file != NULL )
+   FILE *file = fopen(path, "wb");
+   if (!file)
    {
-      //fprintf(stderr, "SSNES: Loading state. Size: %d bytes.\n", (int)size);
-      if ( fread(data, 1, size, file) != size )
-         SSNES_ERR("Did not load state properly.\n");
-      fclose(file);
-      psnes_unserialize(data, size);
+      SSNES_ERR("Couldn't dump to file %s\n", path);
    }
    else
    {
-      SSNES_LOG("No state file found. Will create new.\n");
+      fwrite(data, 1, size, file);
+      fclose(file);
    }
 }
 
-void load_save_file(const char* path, int type)
+void save_state(const char* path)
 {
-   FILE *file;
+   SSNES_LOG("Saving state: \"%s\".\n", path);
+   size_t size = psnes_serialize_size();
+   if (size == 0)
+      return;
 
-   file = fopen(path, "rb");
-   if ( !file )
+   void *data = malloc(size);
+   if (!data)
    {
+      SSNES_ERR("Failed to allocate memory for save state buffer.\n");
       return;
    }
 
+   SSNES_LOG("State size: %d bytes.\n", (int)size);
+   psnes_serialize(data, size);
+   dump_to_file(path, data, size);
+   free(data);
+}
+
+void load_state(const char* path)
+{
+   SSNES_LOG("Loading state: \"%s\".\n", path);
+   void *buf = NULL;
+   ssize_t size = read_file(path, &buf);
+   if (size < 0)
+      SSNES_ERR("Failed to load state.\n");
+   else
+   {
+      SSNES_LOG("State size: %d bytes.\n", (int)size);
+      psnes_unserialize(buf, size);
+   }
+
+   free(buf);
+}
+
+void load_ram_file(const char* path, int type)
+{
    size_t size = psnes_get_memory_size(type);
    uint8_t *data = psnes_get_memory_data(type);
 
    if (size == 0 || !data)
-   {
-      fclose(file);
       return;
-   }
 
-   int rc = fread(data, 1, size, file);
-   if ( rc != size )
-   {
-      SSNES_ERR("Couldn't load save file.\n");
-   }
+   void *buf = NULL;
+   ssize_t rc = read_file(path, &buf);
+   if (rc <= size)
+      memcpy(data, buf, size);
 
-   SSNES_LOG("Loaded save file: \"%s\"\n", path);
-
-   fclose(file);
+   free(buf);
 }
 
-void save_file(const char* path, int type)
+void save_ram_file(const char* path, int type)
 {
    size_t size = psnes_get_memory_size(type);
    uint8_t *data = psnes_get_memory_data(type);
 
    if ( data && size > 0 )
-      write_file(path, data, size);
+      dump_to_file(path, data, size);
 }
 
 static bool load_sgb_rom(void)
@@ -175,7 +219,7 @@ static bool load_sgb_rom(void)
    void *extra_rom_buf = NULL;
    ssize_t extra_rom_len = 0;
 
-   if ((rom_len = read_file(g_extern.rom_file, &rom_buf)) == -1)
+   if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
    {
       SSNES_ERR("Could not read ROM file.\n");
       goto error;
@@ -188,7 +232,7 @@ static bool load_sgb_rom(void)
       goto error;
    }
 
-   if ((extra_rom_len = read_file(extra_rom, &extra_rom_buf)) == -1)
+   if ((extra_rom_len = read_rom_file(extra_rom, &extra_rom_buf)) == -1)
    {
       SSNES_ERR("Cannot read GameBoy rom.\n");
       goto error;
@@ -229,7 +273,7 @@ static bool load_bsx_rom(bool slotted)
    void *extra_rom_buf = NULL;
    ssize_t extra_rom_len = 0;
 
-   if ((rom_len = read_file(g_extern.rom_file, &rom_buf)) == -1)
+   if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
    {
       SSNES_ERR("Could not read ROM file.\n");
       goto error;
@@ -242,7 +286,7 @@ static bool load_bsx_rom(bool slotted)
       goto error;
    }
 
-   if ((extra_rom_len = read_file(extra_rom, &extra_rom_buf)) == -1)
+   if ((extra_rom_len = read_rom_file(extra_rom, &extra_rom_buf)) == -1)
    {
       SSNES_ERR("Cannot read BSX game rom.\n");
       goto error;
@@ -297,7 +341,7 @@ static bool load_sufami_rom(void)
    void *extra_rom_buf[2] = {NULL};
    ssize_t extra_rom_len[2] = {0};
 
-   if ((rom_len = read_file(g_extern.rom_file, &rom_buf)) == -1)
+   if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
    {
       SSNES_ERR("Could not read ROM file.\n");
       goto error;
@@ -316,7 +360,7 @@ static bool load_sufami_rom(void)
             goto error;
          }
 
-         if ((extra_rom_len[i] = read_file(extra_rom[i], &extra_rom_buf[i])) == -1)
+         if ((extra_rom_len[i] = read_rom_file(extra_rom[i], &extra_rom_buf[i])) == -1)
          {
             SSNES_ERR("Cannot read BSX game rom.\n");
             goto error;
@@ -363,7 +407,7 @@ static bool load_normal_rom(void)
    void *rom_buf = NULL;
    ssize_t rom_len = 0;
 
-   if ((rom_len = read_file(g_extern.rom_file, &rom_buf)) == -1)
+   if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
    {
       SSNES_ERR("Could not read ROM file.\n");
       return false;
