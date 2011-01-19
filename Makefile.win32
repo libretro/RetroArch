@@ -35,6 +35,10 @@ ifeq ($(HAVE_XML), 1)
    LIBS += -lxml2
 endif
 
+ifeq ($(DYNAMIC), 1)
+   DEFINES += -DHAVE_DYNAMIC
+endif
+
 ifneq ($(V),1)
    Q := @
 endif
