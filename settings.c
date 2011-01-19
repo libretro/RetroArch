@@ -125,9 +125,23 @@ static void set_defaults(void)
       g_settings.input.joypad_map[i] = SSNES_NO_JOYPAD;
 }
 
+#ifdef HAVE_CONFIGFILE
+static void parse_config_file(void);
+#endif
+
 void parse_config(void)
 {
    memset(&g_settings, 0, sizeof(struct settings));
+   set_defaults();
+
+#ifdef HAVE_CONFIGFILE
+   parse_config_file();
+#endif
+}
+
+#ifdef HAVE_CONFIGFILE
+static void parse_config_file(void)
+{
    config_file_t *conf = NULL;
 
    if (strlen(g_extern.config_path) > 0)
@@ -167,7 +181,6 @@ void parse_config(void)
 #endif
    }
 
-   set_defaults();
    if (conf == NULL)
       return;
 
@@ -328,6 +341,7 @@ void parse_config(void)
 
    config_file_free(conf);
 }
+#endif
 
 struct bind_map
 {

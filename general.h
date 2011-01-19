@@ -107,7 +107,9 @@ struct global
    char bsx_rom_path[256];
    char sufami_rom_path[2][256];
 
+#ifdef HAVE_CONFIGFILE
    char config_path[256];
+#endif
 
    char basename[256];
    char savefile_name_srm[256];

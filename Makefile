@@ -2,7 +2,7 @@ include config.mk
 
 TARGET = ssnes tools/ssnes-joyconfig
 
-OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o
+OBJ = ssnes.o file.o driver.o settings.o dynamic.o
 JOYCONFIG_OBJ = tools/ssnes-joyconfig.o conf/config_file.o
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
@@ -12,6 +12,10 @@ DEFINES = -DHAVE_CONFIG_H
 ifeq ($(HAVE_SRC), 1)
    LIBS += $(SRC_LIBS)
    DEFINES += $(SRC_CFLAGS)
+endif
+
+ifeq ($(HAVE_CONFIGFILE), 1)
+   OBJ += conf/config_file.o
 endif
 
 ifeq ($(HAVE_RSOUND), 1)

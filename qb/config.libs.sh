@@ -3,6 +3,12 @@
 check_switch_c C99 -std=gnu99
 check_critical C99 "Cannot find C99 compatible compiler."
 
+if [ "$HAVE_DYNAMIC" = "yes" ] && [ "$HAVE_CONFIGFILE" = "no" ]; then
+   echo "Cannot have dynamic loading of libsnes and no configfile support."
+   echo "Dynamic loading requires config file support."
+   exit 1
+fi
+
 if [ $HAVE_DYNAMIC != yes ]; then
    check_lib_cxx SNES $LIBSNES snes_init -ldl
    check_critical SNES "Cannot find libsnes."
@@ -38,7 +44,7 @@ check_critical SRC "Cannot find libsamplerate."
 check_lib DYNAMIC -ldl dlopen
 
 # Creates config.mk and config.h.
-VARS="ALSA OSS AL RSOUND ROAR JACK SDL FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC"
+VARS="ALSA OSS AL RSOUND ROAR JACK SDL FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC CONFIGFILE"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 

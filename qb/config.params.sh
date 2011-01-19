@@ -11,6 +11,7 @@ add_command_line_enable DYNAMIC "Enable dynamic loading of libsnes library." no
 add_command_line_string LIBSNES "libsnes library used" "-lsnes"
 add_command_line_enable FFMPEG "Enable FFmpeg recording support" auto
 add_command_line_enable FILTER "Disable CPU filter support" yes
+add_command_line_enable CONFIGFILE "Disable support for config file" yes
 add_command_line_enable CG "Enable Cg shader support" auto
 add_command_line_enable XML "Enable bSNES-style XML shader support" auto
 add_command_line_enable ALSA "Enable ALSA support" auto

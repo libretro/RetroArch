@@ -246,7 +246,9 @@ static void print_help(void)
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
    puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
+#ifdef HAVE_CONFIGFILE
    puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
+#endif
    puts("\t-g/--gameboy: Path to Gameboy ROM. Load SuperGameBoy as the regular rom.");
    puts("\t-b/--bsx: Path to BSX rom. Load BSX BIOS as the regular rom.");
    puts("\t-B/--bsxslot: Path to BSX slotted rom. Load BSX BIOS as the regular rom.");
@@ -281,7 +283,9 @@ static void parse_input(int argc, char *argv[])
 #endif
       { "verbose", 0, NULL, 'v' },
       { "gameboy", 1, NULL, 'g' },
+#ifdef HAVE_CONFIGFILE
       { "config", 0, NULL, 'c' },
+#endif
       { "mouse", 1, NULL, 'm' },
       { "scope", 0, NULL, 'p' },
       { "savestate", 1, NULL, 'S' },
@@ -303,7 +307,13 @@ static void parse_input(int argc, char *argv[])
 #define FFMPEG_RECORD_ARG
 #endif
 
-   char optstring[] = "hs:vc:S:m:p4jJg:b:B:Y:Z:" FFMPEG_RECORD_ARG;
+#ifdef HAVE_CONFIGFILE
+#define CONFIG_FILE_ARG "c:"
+#else
+#define CONFIG_FILE_ARG
+#endif
+
+   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -382,9 +392,11 @@ static void parse_input(int argc, char *argv[])
             g_extern.has_scope[1] = true;
             break;
 
+#ifdef HAVE_CONFIGFILE
          case 'c':
             strncpy(g_extern.config_path, optarg, sizeof(g_extern.config_path) - 1);
             break;
+#endif
 
 #ifdef HAVE_FFMPEG
          case 'r':
