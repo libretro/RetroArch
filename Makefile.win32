@@ -37,13 +37,14 @@ endif
 
 ifeq ($(DYNAMIC), 1)
    DEFINES += -DHAVE_DYNAMIC
+else
+   LIBS += $(libsnes)
 endif
 
 ifneq ($(V),1)
    Q := @
 endif
 
-LIBS += $(libsnes)
 
 CFLAGS = -Wall -O3 -std=gnu99 -I.
 
