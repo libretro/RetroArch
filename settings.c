@@ -30,7 +30,9 @@
 
 struct settings g_settings;
 
+#ifdef HAVE_CONFIGFILE
 static void read_keybinds(config_file_t *conf);
+#endif
 
 static void set_defaults(void)
 {
@@ -96,7 +98,9 @@ static void set_defaults(void)
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
    g_settings.video.aspect_ratio = SNES_ASPECT_RATIO;
+#ifdef HAVE_FILTER
    g_settings.video.filter = FILTER_NONE;
+#endif
 
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
@@ -341,7 +345,6 @@ static void parse_config_file(void)
 
    config_file_free(conf);
 }
-#endif
 
 struct bind_map
 {
@@ -593,4 +596,4 @@ static void read_keybinds(config_file_t *conf)
       }
    }
 }
-
+#endif

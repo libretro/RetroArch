@@ -11,7 +11,7 @@ HAVE_XML = 1
 libsnes ?= -lsnes
 
 LIBS =
-DEFINES = -I.
+DEFINES = -I. -DHAVE_CONFIGFILE
 LDFLAGS = -L. -static-libgcc -s
 
 SRC_LIBS = -lsamplerate-0

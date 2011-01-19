@@ -357,7 +357,6 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
 
    glGenTextures(1, &gl->texture);
 
-   glActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, gl->texture);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
