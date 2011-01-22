@@ -68,6 +68,12 @@ ifeq ($(HAVE_FILTER), 1)
    OBJ += hqflt/snes_ntsc/snes_ntsc.o
 endif
 
+ifeq ($(HAVE_FREETYPE), 1)
+   OBJ += gfx/fonts.o
+   LIBS += $(FREETYPE_LIBS)
+   DEFINES += $(FREETYPE_CFLAGS)
+endif
+
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/ffemu.o
    LIBS += $(AVCODEC_LIBS) $(AVCORE_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS)

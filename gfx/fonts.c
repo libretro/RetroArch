@@ -45,11 +45,7 @@ font_renderer_t *font_renderer_new(const char *font_path, unsigned font_size)
    if (err)
       goto error;
 
-   err = FT_Set_Char_Size(handle->face, 0, 64*64, 1024, 1024);
-   if (err)
-      goto error;
-
-   err = FT_Set_Pixel_Sizes(handle->face, 0, 64);
+   err = FT_Set_Pixel_Sizes(handle->face, 0, font_size);
    if (err)
       goto error;
 
@@ -82,6 +78,8 @@ void font_renderer_msg(font_renderer_t *handle, const char *msg, struct font_out
          struct font_output *tmp = calloc(1, sizeof(*tmp));
          assert(tmp);
 
+         //fprintf(stderr, "Char: %c, off_x: %d, off_y: %d, bmp_left: %d, bmp_top: %d\n", msg[i], off_x, off_y, slot->bitmap_left, slot->bitmap_top);
+
          tmp->output = malloc(slot->bitmap.pitch * slot->bitmap.rows);
          assert(tmp->output);
          memcpy(tmp->output, slot->bitmap.buffer, slot->bitmap.pitch * slot->bitmap.rows);
@@ -90,7 +88,7 @@ void font_renderer_msg(font_renderer_t *handle, const char *msg, struct font_out
          tmp->height = slot->bitmap.rows;
          tmp->pitch = slot->bitmap.pitch;
          tmp->off_x = off_x + slot->bitmap_left;
-         tmp->off_y = off_y - slot->bitmap_top;
+         tmp->off_y = off_y + slot->bitmap_top - slot->bitmap.rows;
          tmp->next = NULL;
 
          if (i == 0)

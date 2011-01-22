@@ -51,6 +51,10 @@
 
 #include "gl_common.h"
 
+#ifdef HAVE_FREETYPE
+#include "fonts.h"
+#endif
+
 static const GLfloat vertexes[] = {
    0, 0, 0,
    0, 1, 0,
@@ -65,7 +69,6 @@ static const GLfloat tex_coords[] = {
    1, 1
 };
 
-static bool keep_aspect = true;
 typedef struct gl
 {
    bool vsync;
@@ -74,6 +77,7 @@ typedef struct gl
 
    bool should_resize;
    bool quitting;
+   bool keep_aspect;
 
    unsigned win_width;
    unsigned win_height;
@@ -83,9 +87,15 @@ typedef struct gl
    unsigned last_height;
    unsigned tex_w, tex_h;
    GLfloat tex_coords[8];
+
+#ifdef HAVE_FREETYPE
+   font_renderer_t *font;
+   GLuint font_tex;
+#endif
+
 } gl_t;
 
-
+////////////////// Shaders
 static inline bool gl_shader_init(void)
 {
    if (strlen(g_settings.video.cg_shader_path) > 0 && strlen(g_settings.video.bsnes_shader_path) > 0)
@@ -103,6 +113,32 @@ static inline bool gl_shader_init(void)
 
    return true;
 }
+
+/*
+static inline void gl_shader_deactivate(void)
+{
+#ifdef HAVE_CG
+   gl_cg_deactivate();
+#endif
+
+#ifdef HAVE_XML
+   gl_glsl_deactivate();
+#endif
+}
+*/
+
+/*
+static inline void gl_shader_activate(void)
+{
+#ifdef HAVE_CG
+   gl_cg_activate();
+#endif
+
+#ifdef HAVE_XML
+   gl_glsl_activate();
+#endif
+}
+*/
 
 static inline void gl_shader_deinit(void)
 {
@@ -138,6 +174,109 @@ static inline void gl_shader_set_params(unsigned width, unsigned height,
    gl_glsl_set_params(width, height, tex_width, tex_height, out_width, out_height);
 #endif
 }
+///////////////////
+
+//////////////// Message rendering
+static inline void gl_init_font(gl_t *gl, const char *font_path)
+{
+#ifdef HAVE_FREETYPE
+   gl->font = font_renderer_new(font_path, 16);
+   if (gl->font)
+   {
+      glGenTextures(1, &gl->font_tex);
+      glBindTexture(GL_TEXTURE_2D, gl->font_tex);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glBindTexture(GL_TEXTURE_2D, gl->texture);
+   }
+   else
+      SSNES_WARN("Couldn't init font renderer...\n");
+#endif
+}
+
+static inline void gl_deinit_font(gl_t *gl)
+{
+#ifdef HAVE_FREETYPE
+   if (gl->font)
+   {
+      font_renderer_free(gl->font);
+      glDeleteTextures(1, &gl->font_tex);
+   }
+#endif
+}
+
+static inline unsigned get_alignment(unsigned pitch)
+{
+   if (pitch & 1)
+      return 1;
+   if (pitch & 2)
+      return 2;
+   if (pitch & 4)
+      return 4;
+   return 8;
+}
+
+static void gl_render_msg(gl_t *gl, const char *msg)
+{
+#ifdef HAVE_FREETYPE
+   if (!gl->font)
+      return;
+
+   GLfloat font_vertex[12]; 
+
+   // Deactivate custom shaders. Enable the font texture.
+   //gl_shader_deactivate();
+   glBindTexture(GL_TEXTURE_2D, gl->font_tex);
+   glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), font_vertex);
+   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords); // Use the static one (uses whole texture).
+
+   // Need blending. 
+   // Using fixed function pipeline here since we cannot guarantee presence of shaders (would be kinda overkill anyways).
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+
+   struct font_output_list out;
+   font_renderer_msg(gl->font, msg, &out);
+   struct font_output *head = out.head;
+
+   while (head != NULL)
+   {
+      GLfloat lx = (GLfloat)head->off_x / gl->vp_width + 0.200;
+      GLfloat hx = (GLfloat)(head->off_x + head->width) / gl->vp_width + 0.200;
+      GLfloat ly = (GLfloat)head->off_y / gl->vp_height + 0.200;
+      GLfloat hy = (GLfloat)(head->off_y + head->height) / gl->vp_height + 0.200;
+
+      font_vertex[0] = lx;
+      font_vertex[1] = ly;
+      font_vertex[3] = lx;
+      font_vertex[4] = hy;
+      font_vertex[6] = hx;
+      font_vertex[7] = hy;
+      font_vertex[9] = hx;
+      font_vertex[10] = ly;
+
+      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(head->pitch));
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, head->pitch);
+      glTexImage2D(GL_TEXTURE_2D,
+            0, GL_RGBA, head->width, head->height, 0, GL_LUMINANCE,
+            GL_UNSIGNED_BYTE, head->output);
+
+      head = head->next;
+      glDrawArrays(GL_QUADS, 0, 4);
+   }
+   font_renderer_free_output(&out);
+
+   // Go back to old rendering path.
+   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
+   glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), vertexes);
+   glBindTexture(GL_TEXTURE_2D, gl->texture);
+   glDisable(GL_BLEND);
+   //gl_shader_activate();
+#endif
+}
+//////////////
 
 static void set_viewport(gl_t *gl)
 {
@@ -145,7 +284,7 @@ static void set_viewport(gl_t *gl)
    glLoadIdentity();
    GLuint out_width = gl->win_width, out_height = gl->win_height;
 
-   if ( keep_aspect )
+   if (gl->keep_aspect)
    {
       float desired_aspect = g_settings.video.aspect_ratio;
       float device_aspect = (float)gl->win_width / gl->win_height;
@@ -212,7 +351,7 @@ static void show_fps(void)
    frames++;
 }
 
-static bool gl_frame(void *data, const uint16_t* frame, int width, int height, int pitch)
+static bool gl_frame(void *data, const uint16_t* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *gl = data;
 
@@ -231,6 +370,7 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
    {
       gl->last_width = width;
       gl->last_height = height;
+      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
       glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
       uint8_t *tmp = calloc(1, gl->tex_w * gl->tex_h * sizeof(uint16_t));
       glTexSubImage2D(GL_TEXTURE_2D,
@@ -255,6 +395,8 @@ static bool gl_frame(void *data, const uint16_t* frame, int width, int height, i
          GL_UNSIGNED_SHORT_1_5_5_5_REV, frame);
    glDrawArrays(GL_QUADS, 0, 4);
 
+   gl_render_msg(gl, "hei paa deg");
+
    show_fps();
    glFlush();
    SDL_GL_SwapBuffers();
@@ -266,6 +408,7 @@ static void gl_free(void *data)
 {
    gl_t *gl = data;
 
+   gl_deinit_font(gl);
    gl_shader_deinit();
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -325,6 +468,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    gl->win_width = video->width;
    gl->win_height = video->height;
    gl->vsync = video->vsync;
+   gl->keep_aspect = video->force_aspect;
    set_viewport(gl);
 
    if (!gl_shader_init())
@@ -338,7 +482,6 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    // Remove that ugly mouse :D
    SDL_ShowCursor(SDL_DISABLE);
 
-   keep_aspect = video->force_aspect;
    if ( video->smooth )
       gl->tex_filter = GL_LINEAR;
    else
@@ -394,6 +537,8 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    }
    else
       *input = NULL;
+
+   gl_init_font(gl, "/usr/share/fonts/TTF/DroidSans.ttf");
    
    if (!gl_check_error())
    {

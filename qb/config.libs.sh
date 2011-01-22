@@ -43,8 +43,10 @@ check_critical SRC "Cannot find libsamplerate."
 
 check_lib DYNAMIC -ldl dlopen
 
+check_pkgconf FREETYPE freetype2
+
 # Creates config.mk and config.h.
-VARS="ALSA OSS AL RSOUND ROAR JACK SDL FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC CONFIGFILE"
+VARS="ALSA OSS AL RSOUND ROAR JACK SDL FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC CONFIGFILE FREETYPE"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 
