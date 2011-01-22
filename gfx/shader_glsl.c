@@ -279,3 +279,15 @@ void gl_glsl_set_params(unsigned width, unsigned height,
 
 void gl_glsl_set_proj_matrix(void)
 {}
+
+void gl_glsl_activate(void)
+{
+   if (glsl_enable)
+      pglUseProgram(gl_program);
+}
+
+void gl_glsl_deactivate(void)
+{
+   if (glsl_enable)
+      pglUseProgram(0);
+}

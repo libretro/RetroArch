@@ -31,4 +31,7 @@ void gl_cg_set_params(unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height);
 
+void gl_cg_activate(void);
+void gl_cg_deactivate(void);
+
 #endif

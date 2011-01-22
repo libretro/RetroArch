@@ -31,4 +31,7 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height);
 
+void gl_glsl_activate(void);
+void gl_glsl_deactivate(void);
+
 #endif

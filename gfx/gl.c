@@ -114,7 +114,6 @@ static inline bool gl_shader_init(void)
    return true;
 }
 
-/*
 static inline void gl_shader_deactivate(void)
 {
 #ifdef HAVE_CG
@@ -125,9 +124,7 @@ static inline void gl_shader_deactivate(void)
    gl_glsl_deactivate();
 #endif
 }
-*/
 
-/*
 static inline void gl_shader_activate(void)
 {
 #ifdef HAVE_CG
@@ -138,7 +135,6 @@ static inline void gl_shader_activate(void)
    gl_glsl_activate();
 #endif
 }
-*/
 
 static inline void gl_shader_deinit(void)
 {
@@ -180,7 +176,7 @@ static inline void gl_shader_set_params(unsigned width, unsigned height,
 static inline void gl_init_font(gl_t *gl, const char *font_path)
 {
 #ifdef HAVE_FREETYPE
-   gl->font = font_renderer_new(font_path, 16);
+   gl->font = font_renderer_new(font_path, 48);
    if (gl->font)
    {
       glGenTextures(1, &gl->font_tex);
@@ -227,7 +223,7 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    GLfloat font_vertex[12]; 
 
    // Deactivate custom shaders. Enable the font texture.
-   //gl_shader_deactivate();
+   gl_shader_deactivate();
    glBindTexture(GL_TEXTURE_2D, gl->font_tex);
    glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), font_vertex);
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords); // Use the static one (uses whole texture).
@@ -243,10 +239,10 @@ static void gl_render_msg(gl_t *gl, const char *msg)
 
    while (head != NULL)
    {
-      GLfloat lx = (GLfloat)head->off_x / gl->vp_width + 0.200;
-      GLfloat hx = (GLfloat)(head->off_x + head->width) / gl->vp_width + 0.200;
-      GLfloat ly = (GLfloat)head->off_y / gl->vp_height + 0.200;
-      GLfloat hy = (GLfloat)(head->off_y + head->height) / gl->vp_height + 0.200;
+      GLfloat lx = (GLfloat)head->off_x / gl->vp_width + 0.05;
+      GLfloat hx = (GLfloat)(head->off_x + head->width) / gl->vp_width + 0.05;
+      GLfloat ly = (GLfloat)head->off_y / gl->vp_height + 0.05;
+      GLfloat hy = (GLfloat)(head->off_y + head->height) / gl->vp_height + 0.05;
 
       font_vertex[0] = lx;
       font_vertex[1] = ly;
@@ -273,7 +269,7 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), vertexes);
    glBindTexture(GL_TEXTURE_2D, gl->texture);
    glDisable(GL_BLEND);
-   //gl_shader_activate();
+   gl_shader_activate();
 #endif
 }
 //////////////
@@ -395,7 +391,8 @@ static bool gl_frame(void *data, const uint16_t* frame, unsigned width, unsigned
          GL_UNSIGNED_SHORT_1_5_5_5_REV, frame);
    glDrawArrays(GL_QUADS, 0, 4);
 
-   gl_render_msg(gl, "hei paa deg");
+   if (msg)
+      gl_render_msg(gl, msg);
 
    show_fps();
    glFlush();
