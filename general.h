@@ -35,7 +35,7 @@
 
 
 #define MAX_PLAYERS 5
-#define MAX_BINDS 18 // Needs to be increased every time there are new binds added.
+#define MAX_BINDS 20 // Needs to be increased every time there are new binds added.
 #define SSNES_NO_JOYPAD 0xFFFF
 struct settings
 {
@@ -125,6 +125,8 @@ struct global
    char savefile_name_asrm[512];
    char savefile_name_bsrm[512];
    char savestate_name[256];
+
+   unsigned state_slot;
 
    struct
    {

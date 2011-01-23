@@ -26,8 +26,8 @@
 #include <sys/types.h>
 #include "general.h"
 
-void load_state(const char* path);
-void save_state(const char* path);
+bool load_state(const char* path);
+bool save_state(const char* path);
 
 void load_ram_file(const char* path, int type);
 void save_ram_file(const char* path, int type);

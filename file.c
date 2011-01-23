@@ -135,47 +135,53 @@ error:
 }
 
 // Dump stuff to file.
-static void dump_to_file(const char *path, const void *data, size_t size)
+static bool dump_to_file(const char *path, const void *data, size_t size)
 {
    FILE *file = fopen(path, "wb");
    if (!file)
    {
       SSNES_ERR("Couldn't dump to file %s\n", path);
+      return false;
    }
    else
    {
       fwrite(data, 1, size, file);
       fclose(file);
+      return true;
    }
 }
 
-void save_state(const char* path)
+bool save_state(const char* path)
 {
    SSNES_LOG("Saving state: \"%s\".\n", path);
    size_t size = psnes_serialize_size();
    if (size == 0)
-      return;
+      return false;
 
    void *data = malloc(size);
    if (!data)
    {
       SSNES_ERR("Failed to allocate memory for save state buffer.\n");
-      return;
+      return false;
    }
 
    SSNES_LOG("State size: %d bytes.\n", (int)size);
    psnes_serialize(data, size);
-   dump_to_file(path, data, size);
+   bool ret = dump_to_file(path, data, size);
    free(data);
+   return ret;
 }
 
-void load_state(const char* path)
+bool load_state(const char* path)
 {
    SSNES_LOG("Loading state: \"%s\".\n", path);
    void *buf = NULL;
    ssize_t size = read_file(path, &buf);
    if (size < 0)
+   {
       SSNES_ERR("Failed to load state.\n");
+      return false;
+   }
    else
    {
       SSNES_LOG("State size: %d bytes.\n", (int)size);
@@ -183,6 +189,7 @@ void load_state(const char* path)
    }
 
    free(buf);
+   return true;
 }
 
 void load_ram_file(const char* path, int type)

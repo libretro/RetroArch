@@ -626,6 +626,102 @@ static void fill_pathnames(void)
    }
 }
 
+// Save or load state here.
+static void check_savestates(void)
+{
+   static bool old_should_savestate = false;
+   bool should_savestate = driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY);
+   if (should_savestate && !old_should_savestate)
+   {
+      char save_path[strlen(g_extern.savestate_name) * 2];
+      snprintf(save_path, sizeof(save_path), g_extern.state_slot > 0 ? "%s%u" : "%s", g_extern.savestate_name, g_extern.state_slot);
+      if(!save_state(save_path))
+      {
+         msg_queue_clear(g_extern.msg_queue);
+         char msg[512];
+         snprintf(msg, sizeof(msg), "Failed to save state to \"%s\"", save_path);
+         msg_queue_push(g_extern.msg_queue, msg, 2, 180);
+      }
+      else
+      {
+         msg_queue_clear(g_extern.msg_queue);
+         msg_queue_push(g_extern.msg_queue, "Saved state!", 1, 180);
+      }
+   }
+   old_should_savestate = should_savestate;
+
+   static bool old_should_loadstate = false;
+   bool should_loadstate = driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY);
+   if (!should_savestate && should_loadstate && !old_should_loadstate)
+   {
+      char load_path[strlen(g_extern.savestate_name) * 2];
+      snprintf(load_path, sizeof(load_path), g_extern.state_slot ? "%s%u" : "%s", g_extern.savestate_name, g_extern.state_slot);
+
+      if(!load_state(load_path))
+      {
+         msg_queue_clear(g_extern.msg_queue);
+         char msg[512];
+         snprintf(msg, sizeof(msg), "Failed to load state from \"%s\"", load_path);
+         msg_queue_push(g_extern.msg_queue, msg, 2, 180);
+      }
+      else
+      {
+         msg_queue_clear(g_extern.msg_queue);
+         msg_queue_push(g_extern.msg_queue, "Loaded state!", 1, 180);
+      }
+   }
+   old_should_loadstate = should_loadstate;
+}
+
+static void check_fullscreen(void)
+{
+   // If we go fullscreen we drop all drivers and reinit to be safe.
+   if (driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY))
+   {
+      g_settings.video.fullscreen = !g_settings.video.fullscreen;
+      uninit_drivers();
+      init_drivers();
+   }
+}
+
+static void check_stateslots(void)
+{
+   // Save state slots
+   static bool old_should_slot_increase = false;
+   bool should_slot_increase = driver.input->key_pressed(driver.input_data, SSNES_STATE_SLOT_PLUS);
+   if (should_slot_increase && !old_should_slot_increase)
+   {
+      g_extern.state_slot++;
+      msg_queue_clear(g_extern.msg_queue);
+      char msg[256];
+      snprintf(msg, sizeof(msg), "Save state slot: %u", g_extern.state_slot);
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   }
+   old_should_slot_increase = should_slot_increase;
+
+   static bool old_should_slot_decrease = false;
+   bool should_slot_decrease = driver.input->key_pressed(driver.input_data, SSNES_STATE_SLOT_MINUS);
+   if (should_slot_decrease && !old_should_slot_decrease)
+   {
+      if (g_extern.state_slot > 0)
+         g_extern.state_slot--;
+      msg_queue_clear(g_extern.msg_queue);
+      char msg[256];
+      snprintf(msg, sizeof(msg), "Save state slot: %u", g_extern.state_slot);
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   }
+   old_should_slot_decrease = should_slot_decrease;
+}
+
+static void do_state_checks(void)
+{
+   set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
+
+   check_stateslots();
+   check_savestates();
+   check_fullscreen();
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -669,38 +765,9 @@ int main(int argc, char *argv[])
             !driver.video->alive(driver.video_data))
          break;
 
-      set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
-
-      // Save or load state here.
+      // Checks for stuff like fullscreen, save states, etc.
+      do_state_checks();
       
-      static bool old_should_savestate = false;
-      bool should_savestate = driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY);
-      if (should_savestate && !old_should_savestate)
-      {
-         msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, "Saving state!", 1, 180);
-         save_state(g_extern.savestate_name);
-      }
-      old_should_savestate = should_savestate;
-
-      static bool old_should_loadstate = false;
-      bool should_loadstate = driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY);
-      if (!should_savestate && should_loadstate && !old_should_loadstate)
-      {
-         msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, "Loading state!", 1, 180);
-         load_state(g_extern.savestate_name);
-      }
-      old_should_loadstate = should_loadstate;
-
-      // If we go fullscreen we drop all drivers and reinit to be safe.
-      if (driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY))
-      {
-         g_settings.video.fullscreen = !g_settings.video.fullscreen;
-         uninit_drivers();
-         init_drivers();
-      }
-
       // Run libsnes for one frame.
       psnes_run();
    }

@@ -169,6 +169,8 @@ static const struct snes_keybind snes_keybinds_1[] = {
    { SSNES_LOAD_STATE_KEY,             SDLK_F4,     NO_BTN,      AXIS_NONE },
    { SSNES_FULLSCREEN_TOGGLE_KEY,      SDLK_f,      NO_BTN,      AXIS_NONE },
    { SSNES_QUIT_KEY,                   SDLK_ESCAPE, NO_BTN,      AXIS_NONE },
+   { SSNES_STATE_SLOT_MINUS,           SDLK_F6,     NO_BTN,      AXIS_NONE },
+   { SSNES_STATE_SLOT_PLUS,            SDLK_F7,     NO_BTN,      AXIS_NONE },
    { -1 }
 };
 

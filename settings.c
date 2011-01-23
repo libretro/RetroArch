@@ -103,8 +103,6 @@ static void set_defaults(void)
 #endif
 
 #ifdef HAVE_FREETYPE
-   // Just grab one font path for now... :)
-   strncpy(g_settings.video.font_path, "/usr/share/fonts/TTF/DejaVuSans.ttf", sizeof(g_settings.video.font_path) - 1);
    g_settings.video.font_size = font_size;
    g_settings.video.msg_pos_x = message_pos_offset_x;
    g_settings.video.msg_pos_y = message_pos_offset_y;
@@ -399,6 +397,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
       DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
       DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS)
+      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
       DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
    },
@@ -418,6 +418,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
       DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
       DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS)
+      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
       DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
    },
@@ -437,6 +439,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
       DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
       DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS)
+      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
       DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
    },
@@ -456,6 +460,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
       DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
       DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS)
+      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
       DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
    },
@@ -475,6 +481,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
       DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
       DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS)
+      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
       DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
    },

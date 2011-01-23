@@ -176,19 +176,22 @@ static inline void gl_shader_set_params(unsigned width, unsigned height,
 static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size)
 {
 #ifdef HAVE_FREETYPE
-   gl->font = font_renderer_new(font_path, font_size);
-   if (gl->font)
+   if (strlen(font_path) > 0)
    {
-      glGenTextures(1, &gl->font_tex);
-      glBindTexture(GL_TEXTURE_2D, gl->font_tex);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glBindTexture(GL_TEXTURE_2D, gl->texture);
+      gl->font = font_renderer_new(font_path, font_size);
+      if (gl->font)
+      {
+         glGenTextures(1, &gl->font_tex);
+         glBindTexture(GL_TEXTURE_2D, gl->font_tex);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+         glBindTexture(GL_TEXTURE_2D, gl->texture);
+      }
+      else
+         SSNES_WARN("Couldn't init font renderer with font \"%s\"...\n", font_path);
    }
-   else
-      SSNES_WARN("Couldn't init font renderer with font \"%s\"...\n", font_path);
 #endif
 }
 
