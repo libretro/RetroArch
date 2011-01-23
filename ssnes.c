@@ -696,6 +696,7 @@ static void check_stateslots(void)
       char msg[256];
       snprintf(msg, sizeof(msg), "Save state slot: %u", g_extern.state_slot);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      SSNES_LOG("%s\n", msg);
    }
    old_should_slot_increase = should_slot_increase;
 
@@ -709,6 +710,7 @@ static void check_stateslots(void)
       char msg[256];
       snprintf(msg, sizeof(msg), "Save state slot: %u", g_extern.state_slot);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      SSNES_LOG("%s\n", msg);
    }
    old_should_slot_decrease = should_slot_decrease;
 }
