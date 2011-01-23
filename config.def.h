@@ -104,8 +104,8 @@ static const bool force_aspect = true;
 static const unsigned font_size = 48;
 
 // Offset for where messages will be placed on-screen. Values are in range [0.0, 1.0].
-static const float message_pos_offset_x = 0.3;
-static const float message_pos_offset_y = 0.3;
+static const float message_pos_offset_x = 0.05;
+static const float message_pos_offset_y = 0.05;
 
 #define SNES_ASPECT_RATIO (4.0/3)
 
