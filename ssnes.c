@@ -97,6 +97,8 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    }
 #endif
 
+   const char *msg = msg_queue_pull(g_extern.msg_queue);
+
 #ifdef HAVE_FILTER
    uint16_t output_filter[width * height * 4 * 4];
    uint16_t output[width * height];
@@ -104,7 +106,6 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if (g_settings.video.filter != FILTER_NONE)
       process_frame(output, data, width, height);
 
-   const char *msg = msg_queue_pull(g_extern.msg_queue);
 
    switch (g_settings.video.filter)
    {
@@ -676,6 +677,7 @@ int main(int argc, char *argv[])
       bool should_savestate = driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY);
       if (should_savestate && !old_should_savestate)
       {
+         msg_queue_clear(g_extern.msg_queue);
          msg_queue_push(g_extern.msg_queue, "Saving state! ^_^", 1, 180);
          save_state(g_extern.savestate_name);
       }
@@ -685,6 +687,7 @@ int main(int argc, char *argv[])
       bool should_loadstate = driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY);
       if (!should_savestate && should_loadstate && !old_should_loadstate)
       {
+         msg_queue_clear(g_extern.msg_queue);
          msg_queue_push(g_extern.msg_queue, "Loading state! ^_^", 1, 180);
          load_state(g_extern.savestate_name);
       }

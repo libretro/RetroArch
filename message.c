@@ -43,7 +43,6 @@ msg_queue_t *msg_queue_new(size_t size)
 
    queue->size = size + 1;
    queue->elems = calloc(queue->size, sizeof(struct queue_elem*)); 
-   // Allocate one extra for scratch space when finding lowest prio elem.
 
    if (!queue->elems)
    {
@@ -56,16 +55,8 @@ msg_queue_t *msg_queue_new(size_t size)
 
 void msg_queue_free(msg_queue_t *queue)
 {
-   for (size_t i = 1; i < queue->ptr; i++)
-   {
-      if (queue->elems[i])
-      {
-         free(queue->elems[i]->msg);
-         free(queue->elems[i]);
-      }
-   }
+   msg_queue_clear(queue);
    free(queue->elems);
-   free(queue->tmp_msg);
    free(queue);
 }
 
@@ -98,6 +89,22 @@ void msg_queue_push(msg_queue_t *queue, const char *msg, unsigned prio, unsigned
    }
 }
 
+void msg_queue_clear(msg_queue_t *queue)
+{
+   for (size_t i = 1; i < queue->ptr; i++)
+   {
+      if (queue->elems[i])
+      {
+         free(queue->elems[i]->msg);
+         free(queue->elems[i]);
+         queue->elems[i] = NULL;
+      }
+   }
+   queue->ptr = 1;
+   free(queue->tmp_msg);
+   queue->tmp_msg = NULL;
+}
+
 const char *msg_queue_pull(msg_queue_t *queue)
 {
    if (queue->ptr == 1) // Nothing in queue. :(
@@ -109,6 +116,7 @@ const char *msg_queue_pull(msg_queue_t *queue)
       return front->msg;
    else
    {
+      free(queue->tmp_msg);
       queue->tmp_msg = front->msg;
       front->msg = NULL;
 
