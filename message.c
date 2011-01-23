@@ -71,6 +71,9 @@ void msg_queue_free(msg_queue_t *queue)
 
 void msg_queue_push(msg_queue_t *queue, const char *msg, unsigned prio, unsigned duration)
 {
+   if (queue->ptr >= queue->size)
+      return;
+
    struct queue_elem *new_elem = calloc(1, sizeof(struct queue_elem));
    new_elem->prio = prio;
    new_elem->duration = duration;
