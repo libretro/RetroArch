@@ -188,7 +188,7 @@ static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_s
       glBindTexture(GL_TEXTURE_2D, gl->texture);
    }
    else
-      SSNES_WARN("Couldn't init font renderer...\n");
+      SSNES_WARN("Couldn't init font renderer with font \"%s\"...\n", font_path);
 #endif
 }
 
