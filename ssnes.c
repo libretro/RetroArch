@@ -108,35 +108,35 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    {
       case FILTER_HQ2X:
          ProcessHQ2x(output, output_filter);
-         if (!driver.video->frame(driver.video_data, output_filter, width << 1, height << 1, width << 2, NULL))
+         if (!driver.video->frame(driver.video_data, output_filter, width << 1, height << 1, width << 2, msg_queue_pull(g_extern.msg_queue)))
             g_extern.video_active = false;
          break;
       case FILTER_HQ4X:
          ProcessHQ4x(output, output_filter);
-         if (!driver.video->frame(driver.video_data, output_filter, width << 2, height << 2, width << 3, NULL))
+         if (!driver.video->frame(driver.video_data, output_filter, width << 2, height << 2, width << 3, msg_queue_pull(g_extern.msg_queue)))
             g_extern.video_active = false;
          break;
       case FILTER_GRAYSCALE:
          grayscale_filter(output, width, height);
-         if (!driver.video->frame(driver.video_data, output, width, height, width << 1, NULL))
+         if (!driver.video->frame(driver.video_data, output, width, height, width << 1, msg_queue_pull(g_extern.msg_queue)))
             g_extern.video_active = false;
          break;
       case FILTER_BLEED:
          bleed_filter(output, width, height);
-         if (!driver.video->frame(driver.video_data, output, width, height, width << 1, NULL))
+         if (!driver.video->frame(driver.video_data, output, width, height, width << 1, msg_queue_pull(g_extern.msg_queue)))
             g_extern.video_active = false;
          break;
       case FILTER_NTSC:
          ntsc_filter(output_filter, output, width, height);
-         if (!driver.video->frame(driver.video_data, output_filter, SNES_NTSC_OUT_WIDTH(width), height, SNES_NTSC_OUT_WIDTH(width) << 1, NULL))
+         if (!driver.video->frame(driver.video_data, output_filter, SNES_NTSC_OUT_WIDTH(width), height, SNES_NTSC_OUT_WIDTH(width) << 1, msg_queue_pull(g_extern.msg_queue)))
             g_extern.video_active = false;
          break;
       default:
-         if (!driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048, NULL))
+         if (!driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048, msg_queue_pull(g_extern.msg_queue)))
             g_extern.video_active = false;
    }
 #else
-   if (!driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048, NULL))
+   if (!driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048, msg_queue_pull(g_extern.msg_queue)))
       g_extern.video_active = false;
 #endif
 }
@@ -588,6 +588,18 @@ static void deinit_recording(void)
 }
 #endif
 
+static void init_msg_queue(void)
+{
+   g_extern.msg_queue = msg_queue_new(8);
+   assert(g_extern.msg_queue);
+}
+
+static void deinit_msg_queue(void)
+{
+   if (g_extern.msg_queue)
+      msg_queue_free(g_extern.msg_queue);
+}
+
 static void fill_pathnames(void)
 {
    switch (g_extern.game_type)
@@ -644,6 +656,8 @@ int main(int argc, char *argv[])
    init_recording();
 #endif
 
+   init_msg_queue();
+
    // Main loop
    for(;;)
    {
@@ -655,13 +669,27 @@ int main(int argc, char *argv[])
       set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
 
       // Save or load state here.
-      if (driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY))
+      
+      static bool old_should_savestate = false;
+      bool should_savestate = driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY);
+      if (should_savestate && !old_should_savestate)
+      {
+         msg_queue_push(g_extern.msg_queue, "Saving state! :D", 1, 180);
          save_state(g_extern.savestate_name);
-      else if (driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY))
+      }
+      old_should_savestate = should_savestate;
+
+      static bool old_should_loadstate = false;
+      bool should_loadstate = driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY);
+      if (!should_savestate && should_loadstate && !old_should_loadstate)
+      {
+         msg_queue_push(g_extern.msg_queue, "Loading state! :D", 1, 180);
          load_state(g_extern.savestate_name);
+      }
+      old_should_loadstate = should_loadstate;
 
       // If we go fullscreen we drop all drivers and reinit to be safe.
-      else if (driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY))
+      if (driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY))
       {
          g_settings.video.fullscreen = !g_settings.video.fullscreen;
          uninit_drivers();
@@ -672,6 +700,7 @@ int main(int argc, char *argv[])
       psnes_run();
    }
 
+   deinit_msg_queue();
 #ifdef HAVE_FFMPEG
    deinit_recording();
 #endif

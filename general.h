@@ -23,6 +23,7 @@
 #include "driver.h"
 #include <stdio.h>
 #include "record/ffemu.h"
+#include "message.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -132,6 +133,8 @@ struct global
       float *outsamples;
       int16_t *conv_outsamples;
    } audio_data;
+
+   msg_queue_t *msg_queue;
 
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;
