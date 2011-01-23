@@ -102,6 +102,11 @@ static void set_defaults(void)
    g_settings.video.filter = FILTER_NONE;
 #endif
 
+#ifdef HAVE_FREETYPE
+   strncpy(g_settings.video.font_path, "/usr/share/fonts/TTF/DejaVuSans.ttf", sizeof(g_settings.video.font_path) - 1);
+   g_settings.video.font_size = font_size;
+#endif
+
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
    g_settings.audio.in_rate = in_rate;
@@ -232,9 +237,19 @@ static void parse_config_file(void)
 
    if (config_get_string(conf, "video_bsnes_shader", &tmp_str))
    {
-      strncpy(g_settings.video.bsnes_shader_path, tmp_str, sizeof(g_settings.video.bsnes_shader_path));
+      strncpy(g_settings.video.bsnes_shader_path, tmp_str, sizeof(g_settings.video.bsnes_shader_path) - 1);
       free(tmp_str);
    }
+
+   if (config_get_string(conf, "video_font_path", &tmp_str))
+   {
+      strncpy(g_settings.video.font_path, tmp_str, sizeof(g_settings.video.font_path) - 1);
+      free(tmp_str);
+   }
+
+   if (config_get_int(conf, "video_font_size", &tmp_int))
+      g_settings.video.font_size = tmp_int;
+
 
 #ifdef HAVE_FILTER
    if (config_get_string(conf, "video_filter", &tmp_str))

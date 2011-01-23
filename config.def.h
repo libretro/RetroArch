@@ -100,6 +100,9 @@ static const bool video_smooth = true;
 // On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 
 
+// Font size for on-screen messages.
+static const unsigned font_size = 48;
+
 #define SNES_ASPECT_RATIO (4.0/3)
 
 ////////////////

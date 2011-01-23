@@ -173,10 +173,10 @@ static inline void gl_shader_set_params(unsigned width, unsigned height,
 ///////////////////
 
 //////////////// Message rendering
-static inline void gl_init_font(gl_t *gl, const char *font_path)
+static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size)
 {
 #ifdef HAVE_FREETYPE
-   gl->font = font_renderer_new(font_path, 48);
+   gl->font = font_renderer_new(font_path, font_size);
    if (gl->font)
    {
       glGenTextures(1, &gl->font_tex);
@@ -535,7 +535,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    else
       *input = NULL;
 
-   gl_init_font(gl, "/usr/share/fonts/TTF/DroidSans.ttf");
+   gl_init_font(gl, g_settings.video.font_path, g_settings.video.font_size);
    
    if (!gl_check_error())
    {

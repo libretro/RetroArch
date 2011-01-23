@@ -54,6 +54,10 @@ struct settings
       char cg_shader_path[256];
       char bsnes_shader_path[256];
       unsigned filter;
+#ifdef HAVE_FREETYPE
+      char font_path[256];
+      unsigned font_size;
+#endif
    } video;
 
    struct
@@ -111,7 +115,7 @@ struct global
 #ifdef HAVE_CONFIGFILE
    char config_path[256];
 #endif
-
+   
    char basename[256];
    char savefile_name_srm[256];
    char savefile_name_rtc[512]; // Make sure that fill_pathname has space.

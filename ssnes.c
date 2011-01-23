@@ -674,7 +674,7 @@ int main(int argc, char *argv[])
       bool should_savestate = driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY);
       if (should_savestate && !old_should_savestate)
       {
-         msg_queue_push(g_extern.msg_queue, "Saving state! :D", 1, 180);
+         msg_queue_push(g_extern.msg_queue, "Saving state! ^_^", 1, 180);
          save_state(g_extern.savestate_name);
       }
       old_should_savestate = should_savestate;
@@ -683,7 +683,7 @@ int main(int argc, char *argv[])
       bool should_loadstate = driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY);
       if (!should_savestate && should_loadstate && !old_should_loadstate)
       {
-         msg_queue_push(g_extern.msg_queue, "Loading state! :D", 1, 180);
+         msg_queue_push(g_extern.msg_queue, "Loading state! ^_^", 1, 180);
          load_state(g_extern.savestate_name);
       }
       old_should_loadstate = should_loadstate;
