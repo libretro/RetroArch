@@ -57,6 +57,8 @@ struct settings
 #ifdef HAVE_FREETYPE
       char font_path[256];
       unsigned font_size;
+      float msg_pos_x;
+      float msg_pos_y;
 #endif
    } video;
 

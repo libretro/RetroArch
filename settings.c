@@ -103,8 +103,11 @@ static void set_defaults(void)
 #endif
 
 #ifdef HAVE_FREETYPE
+   // Just grab one font path for now... :)
    strncpy(g_settings.video.font_path, "/usr/share/fonts/TTF/DejaVuSans.ttf", sizeof(g_settings.video.font_path) - 1);
    g_settings.video.font_size = font_size;
+   g_settings.video.msg_pos_x = message_pos_offset_x;
+   g_settings.video.msg_pos_y = message_pos_offset_y;
 #endif
 
    g_settings.audio.enable = audio_enable;
@@ -241,6 +244,7 @@ static void parse_config_file(void)
       free(tmp_str);
    }
 
+#ifdef HAVE_FREETYPE
    if (config_get_string(conf, "video_font_path", &tmp_str))
    {
       strncpy(g_settings.video.font_path, tmp_str, sizeof(g_settings.video.font_path) - 1);
@@ -249,6 +253,12 @@ static void parse_config_file(void)
 
    if (config_get_int(conf, "video_font_size", &tmp_int))
       g_settings.video.font_size = tmp_int;
+
+   if (config_get_double(conf, "video_message_pos_x", &tmp_double))
+      g_settings.video.msg_pos_x = tmp_double;
+   if (config_get_double(conf, "video_message_pos_y", &tmp_double))
+      g_settings.video.msg_pos_y = tmp_double;
+#endif
 
 
 #ifdef HAVE_FILTER

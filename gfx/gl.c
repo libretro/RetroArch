@@ -239,10 +239,10 @@ static void gl_render_msg(gl_t *gl, const char *msg)
 
    while (head != NULL)
    {
-      GLfloat lx = (GLfloat)head->off_x / gl->vp_width + 0.05;
-      GLfloat hx = (GLfloat)(head->off_x + head->width) / gl->vp_width + 0.05;
-      GLfloat ly = (GLfloat)head->off_y / gl->vp_height + 0.05;
-      GLfloat hy = (GLfloat)(head->off_y + head->height) / gl->vp_height + 0.05;
+      GLfloat lx = (GLfloat)head->off_x / gl->vp_width + g_settings.video.msg_pos_x;
+      GLfloat hx = (GLfloat)(head->off_x + head->width) / gl->vp_width + g_settings.video.msg_pos_x;
+      GLfloat ly = (GLfloat)head->off_y / gl->vp_height + g_settings.video.msg_pos_y;
+      GLfloat hy = (GLfloat)(head->off_y + head->height) / gl->vp_height + g_settings.video.msg_pos_y;
 
       font_vertex[0] = lx;
       font_vertex[1] = ly;
