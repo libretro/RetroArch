@@ -52,11 +52,14 @@ font_renderer_t *font_renderer_new(const char *font_path, unsigned font_size)
    return handle;
 
 error:
-   free(handle);
-   if (handle->face)
-      FT_Done_Face(handle->face);
-   if (handle->lib)
-      FT_Done_FreeType(handle->lib);
+   if (handle)
+   {
+      if (handle->face)
+         FT_Done_Face(handle->face);
+      if (handle->lib)
+         FT_Done_FreeType(handle->lib);
+      free(handle);
+   }
    return NULL;
 }
 
