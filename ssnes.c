@@ -1,5 +1,5 @@
 /*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
- *  Copyright (C) 2010 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2011 - Hans-Kristian Arntzen
  *
  *  Some code herein may be based on code found in BSNES.
  * 
@@ -97,6 +97,8 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    }
 #endif
 
+   const char *msg = msg_queue_pull(g_extern.msg_queue);
+
 #ifdef HAVE_FILTER
    uint16_t output_filter[width * height * 4 * 4];
    uint16_t output[width * height];
@@ -104,39 +106,40 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if (g_settings.video.filter != FILTER_NONE)
       process_frame(output, data, width, height);
 
+
    switch (g_settings.video.filter)
    {
       case FILTER_HQ2X:
          ProcessHQ2x(output, output_filter);
-         if ( !driver.video->frame(driver.video_data, output_filter, width << 1, height << 1, width << 2) )
+         if (!driver.video->frame(driver.video_data, output_filter, width << 1, height << 1, width << 2, msg))
             g_extern.video_active = false;
          break;
       case FILTER_HQ4X:
          ProcessHQ4x(output, output_filter);
-         if ( !driver.video->frame(driver.video_data, output_filter, width << 2, height << 2, width << 3) )
+         if (!driver.video->frame(driver.video_data, output_filter, width << 2, height << 2, width << 3, msg))
             g_extern.video_active = false;
          break;
       case FILTER_GRAYSCALE:
          grayscale_filter(output, width, height);
-         if ( !driver.video->frame(driver.video_data, output, width, height, width << 1) )
+         if (!driver.video->frame(driver.video_data, output, width, height, width << 1, msg))
             g_extern.video_active = false;
          break;
       case FILTER_BLEED:
          bleed_filter(output, width, height);
-         if ( !driver.video->frame(driver.video_data, output, width, height, width << 1) )
+         if (!driver.video->frame(driver.video_data, output, width, height, width << 1, msg))
             g_extern.video_active = false;
          break;
       case FILTER_NTSC:
          ntsc_filter(output_filter, output, width, height);
-         if ( !driver.video->frame(driver.video_data, output_filter, SNES_NTSC_OUT_WIDTH(width), height, SNES_NTSC_OUT_WIDTH(width) << 1) )
+         if (!driver.video->frame(driver.video_data, output_filter, SNES_NTSC_OUT_WIDTH(width), height, SNES_NTSC_OUT_WIDTH(width) << 1, msg))
             g_extern.video_active = false;
          break;
       default:
-         if ( !driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048) )
+         if (!driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048, msg))
             g_extern.video_active = false;
    }
 #else
-   if ( !driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048) )
+   if (!driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048, msg))
       g_extern.video_active = false;
 #endif
 }
@@ -237,11 +240,15 @@ static void fill_pathname(char *out_path, char *in_path, const char *replace)
 #define SSNES_DEFAULT_CONF_PATH_STR " Defaults to $XDG_CONFIG_HOME/ssnes/ssnes.cfg"
 #endif
 
+#ifdef _WIN32
+#define PACKAGE_VERSION "0.2"
+#endif
+
 static void print_help(void)
 {
-   puts("=================================================");
-   puts("ssnes: Simple Super Nintendo Emulator (libsnes)");
-   puts("=================================================");
+   puts("=============================================================");
+   puts("ssnes: Simple Super Nintendo Emulator (libsnes) -- v" PACKAGE_VERSION " --");
+   puts("=============================================================");
    puts("Usage: ssnes [rom file] [-h/--help | -c/--config | -v/--verbose | -4/--multitap | -j/--justifier | -J/--justifiers | -S/--savestate | -m/--mouse | -g/--gameboy | -b/--bsx | -B/--bsxslot | --sufamiA | --sufamiB | -p/--scope | -s/--save" FFMPEG_HELP_QUARK "]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
@@ -588,6 +595,18 @@ static void deinit_recording(void)
 }
 #endif
 
+static void init_msg_queue(void)
+{
+   g_extern.msg_queue = msg_queue_new(8);
+   assert(g_extern.msg_queue);
+}
+
+static void deinit_msg_queue(void)
+{
+   if (g_extern.msg_queue)
+      msg_queue_free(g_extern.msg_queue);
+}
+
 static void fill_pathnames(void)
 {
    switch (g_extern.game_type)
@@ -609,6 +628,104 @@ static void fill_pathnames(void)
          // Infer .rtc save path from save ram path.
          fill_pathname(g_extern.savefile_name_rtc, g_extern.savefile_name_srm, ".rtc");
    }
+}
+
+// Save or load state here.
+static void check_savestates(void)
+{
+   static bool old_should_savestate = false;
+   bool should_savestate = driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY);
+   if (should_savestate && !old_should_savestate)
+   {
+      char save_path[strlen(g_extern.savestate_name) * 2];
+      snprintf(save_path, sizeof(save_path), g_extern.state_slot > 0 ? "%s%u" : "%s", g_extern.savestate_name, g_extern.state_slot);
+      if(!save_state(save_path))
+      {
+         msg_queue_clear(g_extern.msg_queue);
+         char msg[512];
+         snprintf(msg, sizeof(msg), "Failed to save state to \"%s\"", save_path);
+         msg_queue_push(g_extern.msg_queue, msg, 2, 180);
+      }
+      else
+      {
+         msg_queue_clear(g_extern.msg_queue);
+         msg_queue_push(g_extern.msg_queue, "Saved state!", 1, 180);
+      }
+   }
+   old_should_savestate = should_savestate;
+
+   static bool old_should_loadstate = false;
+   bool should_loadstate = driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY);
+   if (!should_savestate && should_loadstate && !old_should_loadstate)
+   {
+      char load_path[strlen(g_extern.savestate_name) * 2];
+      snprintf(load_path, sizeof(load_path), g_extern.state_slot ? "%s%u" : "%s", g_extern.savestate_name, g_extern.state_slot);
+
+      if(!load_state(load_path))
+      {
+         msg_queue_clear(g_extern.msg_queue);
+         char msg[512];
+         snprintf(msg, sizeof(msg), "Failed to load state from \"%s\"", load_path);
+         msg_queue_push(g_extern.msg_queue, msg, 2, 180);
+      }
+      else
+      {
+         msg_queue_clear(g_extern.msg_queue);
+         msg_queue_push(g_extern.msg_queue, "Loaded state!", 1, 180);
+      }
+   }
+   old_should_loadstate = should_loadstate;
+}
+
+static void check_fullscreen(void)
+{
+   // If we go fullscreen we drop all drivers and reinit to be safe.
+   if (driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY))
+   {
+      g_settings.video.fullscreen = !g_settings.video.fullscreen;
+      uninit_drivers();
+      init_drivers();
+   }
+}
+
+static void check_stateslots(void)
+{
+   // Save state slots
+   static bool old_should_slot_increase = false;
+   bool should_slot_increase = driver.input->key_pressed(driver.input_data, SSNES_STATE_SLOT_PLUS);
+   if (should_slot_increase && !old_should_slot_increase)
+   {
+      g_extern.state_slot++;
+      msg_queue_clear(g_extern.msg_queue);
+      char msg[256];
+      snprintf(msg, sizeof(msg), "Save state slot: %u", g_extern.state_slot);
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      SSNES_LOG("%s\n", msg);
+   }
+   old_should_slot_increase = should_slot_increase;
+
+   static bool old_should_slot_decrease = false;
+   bool should_slot_decrease = driver.input->key_pressed(driver.input_data, SSNES_STATE_SLOT_MINUS);
+   if (should_slot_decrease && !old_should_slot_decrease)
+   {
+      if (g_extern.state_slot > 0)
+         g_extern.state_slot--;
+      msg_queue_clear(g_extern.msg_queue);
+      char msg[256];
+      snprintf(msg, sizeof(msg), "Save state slot: %u", g_extern.state_slot);
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      SSNES_LOG("%s\n", msg);
+   }
+   old_should_slot_decrease = should_slot_decrease;
+}
+
+static void do_state_checks(void)
+{
+   set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
+
+   check_stateslots();
+   check_savestates();
+   check_fullscreen();
 }
 
 
@@ -644,6 +761,8 @@ int main(int argc, char *argv[])
    init_recording();
 #endif
 
+   init_msg_queue();
+
    // Main loop
    for(;;)
    {
@@ -652,26 +771,14 @@ int main(int argc, char *argv[])
             !driver.video->alive(driver.video_data))
          break;
 
-      set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
-
-      // Save or load state here.
-      if (driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY))
-         save_state(g_extern.savestate_name);
-      else if (driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY))
-         load_state(g_extern.savestate_name);
-
-      // If we go fullscreen we drop all drivers and reinit to be safe.
-      else if (driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY))
-      {
-         g_settings.video.fullscreen = !g_settings.video.fullscreen;
-         uninit_drivers();
-         init_drivers();
-      }
-
+      // Checks for stuff like fullscreen, save states, etc.
+      do_state_checks();
+      
       // Run libsnes for one frame.
       psnes_run();
    }
 
+   deinit_msg_queue();
 #ifdef HAVE_FFMPEG
    deinit_recording();
 #endif

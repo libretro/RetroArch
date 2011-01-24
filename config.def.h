@@ -1,5 +1,5 @@
 /*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
- *  Copyright (C) 2010 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2011 - Hans-Kristian Arntzen
  *
  *  Some code herein may be based on code found in BSNES.
  * 
@@ -100,6 +100,13 @@ static const bool video_smooth = true;
 // On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 
 
+// Font size for on-screen messages.
+static const unsigned font_size = 48;
+
+// Offset for where messages will be placed on-screen. Values are in range [0.0, 1.0].
+static const float message_pos_offset_x = 0.05;
+static const float message_pos_offset_y = 0.05;
+
 #define SNES_ASPECT_RATIO (4.0/3)
 
 ////////////////
@@ -162,6 +169,8 @@ static const struct snes_keybind snes_keybinds_1[] = {
    { SSNES_LOAD_STATE_KEY,             SDLK_F4,     NO_BTN,      AXIS_NONE },
    { SSNES_FULLSCREEN_TOGGLE_KEY,      SDLK_f,      NO_BTN,      AXIS_NONE },
    { SSNES_QUIT_KEY,                   SDLK_ESCAPE, NO_BTN,      AXIS_NONE },
+   { SSNES_STATE_SLOT_MINUS,           SDLK_F6,     NO_BTN,      AXIS_NONE },
+   { SSNES_STATE_SLOT_PLUS,            SDLK_F7,     NO_BTN,      AXIS_NONE },
    { -1 }
 };
 

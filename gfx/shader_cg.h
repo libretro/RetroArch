@@ -1,5 +1,5 @@
 /*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
- *  Copyright (C) 2010 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2011 - Hans-Kristian Arntzen
  *
  *  Some code herein may be based on code found in BSNES.
  * 
@@ -30,5 +30,8 @@ void gl_cg_set_proj_matrix(void);
 void gl_cg_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height);
+
+void gl_cg_activate(void);
+void gl_cg_deactivate(void);
 
 #endif

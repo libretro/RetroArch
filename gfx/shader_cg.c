@@ -1,5 +1,5 @@
 /*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
- *  Copyright (C) 2010 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2011 - Hans-Kristian Arntzen
  *
  *  Some code herein may be based on code found in BSNES.
  * 
@@ -20,9 +20,45 @@
 #include <Cg/cgGL.h>
 #include "general.h"
 
+// Used when we call deactivate() since just unbinding the program didn't seem to work... :(
+static const char* stock_cg_program =
+      "void main_vertex"
+      "("
+      "	float4 position	: POSITION,"
+      "	float4 color	: COLOR,"
+      "	float2 texCoord : TEXCOORD0,"
+      ""
+      "  uniform float4x4 modelViewProj,"
+      ""
+      "	out float4 oPosition : POSITION,"
+      "	out float4 oColor    : COLOR,"
+      "	out float2 otexCoord : TEXCOORD"
+      ")"
+      "{"
+      "	oPosition = mul(modelViewProj, position);"
+      "	oColor = color;"
+      "	otexCoord = texCoord;"
+      "}"
+      ""
+      ""
+      "struct output "
+      "{"
+      "  float4 color    : COLOR;"
+      "};"
+      ""
+      "output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEXUNIT0) "
+      "{"
+      "   output OUT;"
+      "   OUT.color = tex2D(decal, texCoord);"
+      "   return OUT;"
+      "}";
+
+
 static CGcontext cgCtx;
 static CGprogram cgFPrg;
 static CGprogram cgVPrg;
+static CGprogram cgSFPrg;
+static CGprogram cgSVPrg;
 static CGprofile cgFProf;
 static CGprofile cgVProf;
 static CGparameter cg_video_size, cg_texture_size, cg_output_size;
@@ -78,7 +114,9 @@ bool gl_cg_init(const char *path)
    cgGLSetOptimalOptions(cgVProf);
    cgFPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgFProf, "main_fragment", 0);
    cgVPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgVProf, "main_vertex", 0);
-   if (cgFPrg == NULL || cgVPrg == NULL)
+   cgSFPrg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", 0);
+   cgSVPrg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", 0);
+   if (cgFPrg == NULL || cgVPrg == NULL || cgSFPrg == NULL || cgSVPrg == NULL)
    {
       CGerror err = cgGetError();
       SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
@@ -86,6 +124,8 @@ bool gl_cg_init(const char *path)
    }
    cgGLLoadProgram(cgFPrg);
    cgGLLoadProgram(cgVPrg);
+   cgGLLoadProgram(cgSFPrg);
+   cgGLLoadProgram(cgSVPrg);
    cgGLEnableProfile(cgFProf);
    cgGLEnableProfile(cgVProf);
    cgGLBindProgram(cgFPrg);
@@ -99,6 +139,27 @@ bool gl_cg_init(const char *path)
    cg_Voutput_size = cgGetNamedParameter(cgVPrg, "IN.output_size");
    cg_mvp_matrix = cgGetNamedParameter(cgVPrg, "modelViewProj");
    cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
+   cg_mvp_matrix = cgGetNamedParameter(cgSVPrg, "modelViewProj");
+   cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
    cg_active = true;
    return true;
+}
+
+void gl_cg_activate(void)
+{
+   if (cg_active)
+   {
+      cgGLBindProgram(cgFPrg);
+      cgGLBindProgram(cgVPrg);
+   }
+}
+
+// Just load a dummy shader.
+void gl_cg_deactivate(void)
+{
+   if (cg_active)
+   {
+      cgGLBindProgram(cgSFPrg);
+      cgGLBindProgram(cgSVPrg);
+   }
 }

@@ -2,7 +2,7 @@ include config.mk
 
 TARGET = ssnes tools/ssnes-joyconfig
 
-OBJ = ssnes.o file.o driver.o settings.o dynamic.o
+OBJ = ssnes.o file.o driver.o settings.o dynamic.o message.o
 JOYCONFIG_OBJ = tools/ssnes-joyconfig.o conf/config_file.o
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
@@ -66,6 +66,12 @@ ifeq ($(HAVE_FILTER), 1)
    OBJ += hqflt/bleed.o
    OBJ += hqflt/ntsc.o
    OBJ += hqflt/snes_ntsc/snes_ntsc.o
+endif
+
+ifeq ($(HAVE_FREETYPE), 1)
+   OBJ += gfx/fonts.o
+   LIBS += $(FREETYPE_LIBS)
+   DEFINES += $(FREETYPE_CFLAGS)
 endif
 
 ifeq ($(HAVE_FFMPEG), 1)

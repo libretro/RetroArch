@@ -1,5 +1,5 @@
 /*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
- *  Copyright (C) 2010 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2011 - Hans-Kristian Arntzen
  *
  *  Some code herein may be based on code found in BSNES.
  * 
@@ -100,6 +100,12 @@ static void set_defaults(void)
    g_settings.video.aspect_ratio = SNES_ASPECT_RATIO;
 #ifdef HAVE_FILTER
    g_settings.video.filter = FILTER_NONE;
+#endif
+
+#ifdef HAVE_FREETYPE
+   g_settings.video.font_size = font_size;
+   g_settings.video.msg_pos_x = message_pos_offset_x;
+   g_settings.video.msg_pos_y = message_pos_offset_y;
 #endif
 
    g_settings.audio.enable = audio_enable;
@@ -232,9 +238,26 @@ static void parse_config_file(void)
 
    if (config_get_string(conf, "video_bsnes_shader", &tmp_str))
    {
-      strncpy(g_settings.video.bsnes_shader_path, tmp_str, sizeof(g_settings.video.bsnes_shader_path));
+      strncpy(g_settings.video.bsnes_shader_path, tmp_str, sizeof(g_settings.video.bsnes_shader_path) - 1);
       free(tmp_str);
    }
+
+#ifdef HAVE_FREETYPE
+   if (config_get_string(conf, "video_font_path", &tmp_str))
+   {
+      strncpy(g_settings.video.font_path, tmp_str, sizeof(g_settings.video.font_path) - 1);
+      free(tmp_str);
+   }
+
+   if (config_get_int(conf, "video_font_size", &tmp_int))
+      g_settings.video.font_size = tmp_int;
+
+   if (config_get_double(conf, "video_message_pos_x", &tmp_double))
+      g_settings.video.msg_pos_x = tmp_double;
+   if (config_get_double(conf, "video_message_pos_y", &tmp_double))
+      g_settings.video.msg_pos_y = tmp_double;
+#endif
+
 
 #ifdef HAVE_FILTER
    if (config_get_string(conf, "video_filter", &tmp_str))
@@ -374,6 +397,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
       DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
       DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS)
+      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
       DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
    },
@@ -393,6 +418,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
       DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
       DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS)
+      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
       DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
    },
@@ -412,6 +439,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
       DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
       DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS)
+      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
       DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
    },
@@ -431,6 +460,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
       DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
       DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS)
+      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
       DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
    },
@@ -450,6 +481,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
       DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
       DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
+      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS)
+      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
       DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
    },

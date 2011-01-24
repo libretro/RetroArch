@@ -1,5 +1,5 @@
 /*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
- *  Copyright (C) 2010 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2011 - Hans-Kristian Arntzen
  *
  *  Some code herein may be based on code found in BSNES.
  * 
@@ -23,6 +23,7 @@
 #include "driver.h"
 #include <stdio.h>
 #include "record/ffemu.h"
+#include "message.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -34,7 +35,7 @@
 
 
 #define MAX_PLAYERS 5
-#define MAX_BINDS 18 // Needs to be increased every time there are new binds added.
+#define MAX_BINDS 20 // Needs to be increased every time there are new binds added.
 #define SSNES_NO_JOYPAD 0xFFFF
 struct settings
 {
@@ -53,6 +54,12 @@ struct settings
       char cg_shader_path[256];
       char bsnes_shader_path[256];
       unsigned filter;
+
+      char font_path[256];
+      unsigned font_size;
+      float msg_pos_x;
+      float msg_pos_y;
+
    } video;
 
    struct
@@ -110,7 +117,7 @@ struct global
 #ifdef HAVE_CONFIGFILE
    char config_path[256];
 #endif
-
+   
    char basename[256];
    char savefile_name_srm[256];
    char savefile_name_rtc[512]; // Make sure that fill_pathname has space.
@@ -118,6 +125,8 @@ struct global
    char savefile_name_asrm[512];
    char savefile_name_bsrm[512];
    char savestate_name[256];
+
+   unsigned state_slot;
 
    struct
    {
@@ -132,6 +141,8 @@ struct global
       float *outsamples;
       int16_t *conv_outsamples;
    } audio_data;
+
+   msg_queue_t *msg_queue;
 
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;

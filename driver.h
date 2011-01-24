@@ -1,5 +1,5 @@
 /*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
- *  Copyright (C) 2010 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2011 - Hans-Kristian Arntzen
  *
  *  Some code herein may be based on code found in BSNES.
  * 
@@ -32,6 +32,8 @@ enum
    SSNES_SAVE_STATE_KEY,
    SSNES_FULLSCREEN_TOGGLE_KEY,
    SSNES_QUIT_KEY,
+   SSNES_STATE_SLOT_PLUS,
+   SSNES_STATE_SLOT_MINUS,
 };
 
 struct snes_keybind
@@ -99,7 +101,7 @@ typedef struct video_driver
 {
    void* (*init)(video_info_t *video, const input_driver_t **input, void **input_data); 
    // Should the video driver act as an input driver as well? :) The video init might preinitialize an input driver to override the settings in case the video driver relies on input driver for event handling, e.g.
-   bool (*frame)(void* data, const uint16_t* frame, int width, int height, int pitch);
+   bool (*frame)(void* data, const uint16_t* frame, unsigned width, unsigned height, unsigned pitch, const char *msg); // msg is for showing a message on the screen along with the video frame.
    void (*set_nonblock_state)(void* data, bool toggle); // Should we care about syncing to vblank? Fast forwarding.
    // Is the window still active?
    bool (*alive)(void *data);

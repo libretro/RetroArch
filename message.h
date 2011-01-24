@@ -16,31 +16,26 @@
  */
 
 
-#ifndef __FILTERS_H
-#define __FILTERS_H
+#ifndef __SSNES_MSG_QUEUE_H
+#define __SSNES_MSG_QUEUE_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <stddef.h>
 
-#ifdef HAVE_FILTER
+typedef struct msg_queue msg_queue_t;
 
-#include "pastlib.h"
-#include "grayscale.h"
-#include "bleed.h"
-#include "ntsc.h"
+// Creates a message queue with maximum size different messages. Returns NULL if allocation error.
+msg_queue_t *msg_queue_new(size_t size);
 
-#define FILTER_NONE 0
-#define FILTER_HQ2X 1
-#define FILTER_HQ4X 2
-#define FILTER_GRAYSCALE 3
-#define FILTER_BLEED 4
-#define FILTER_NTSC 5
-#define FILTER_HQ2X_STR "hq2x"
-#define FILTER_HQ4X_STR "hq4x"
-#define FILTER_GRAYSCALE_STR "grayscale"
-#define FILTER_BLEED_STR "bleed"
-#define FILTER_NTSC_STR "ntsc"
-#endif
+// Higher prio is... higher prio :) Duration is how many times a message can be pulled from queue before it vanishes. (E.g. show a message for 3 seconds @ 60fps = 180 duration). 
+
+void msg_queue_push(msg_queue_t *queue, const char *msg, unsigned prio, unsigned duration);
+
+// Pulls highest prio message in queue. Returns NULL if no message in queue.
+const char *msg_queue_pull(msg_queue_t *queue);
+
+// Clear out everything in queue.
+void msg_queue_clear(msg_queue_t *queue);
+
+void msg_queue_free(msg_queue_t *queue);
 
 #endif
