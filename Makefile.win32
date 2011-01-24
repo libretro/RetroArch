@@ -8,6 +8,7 @@ CXX = g++
 HAVE_SRC = 1
 HAVE_SDL = 1
 HAVE_XML = 1
+HAVE_FREETYPE = 1
 libsnes ?= -lsnes
 
 LIBS =
@@ -33,6 +34,12 @@ ifeq ($(HAVE_XML), 1)
    OBJ += gfx/shader_glsl.o
    DEFINES += $(XML_CFLAGS) -DHAVE_XML
    LIBS += -lxml2
+endif
+
+ifeq ($(HAVE_FREETYPE), 1)
+   OBJ += gfx/fonts.o
+   DEFINES += -DHAVE_FREETYPE -Ifreetype2
+   LIBS += -lz -lfreetype6
 endif
 
 ifeq ($(DYNAMIC), 1)
@@ -76,6 +83,10 @@ clean:
 	rm -f tools/*.o
 
 dist: all
-	zip -r ssnes-win32.zip $(TARGET) ssnes.cfg snes.dll libxml2.dll iconv.dll zlib1.dll SDL.dll libsamplerate-0.dll ssnes-joyconfig.exe
+	zip -r ssnes-win32.zip $(TARGET) ssnes.cfg snes.dll libxml2.dll iconv.dll zlib1.dll SDL.dll libsamplerate-0.dll freetype6.dll ssnes-joyconfig.exe
+
+libs:
+	wget https://github.com/downloads/Themaister/SSNES/SSNES-win32-libs.zip --no-check-certificate
+	unzip SSNES-win32-libs.zip
 
 .PHONY: all install uninstall clean dist
