@@ -90,4 +90,4 @@ libs:
 	wget https://github.com/downloads/Themaister/SSNES/SSNES-win32-libs.zip --no-check-certificate
 	unzip SSNES-win32-libs.zip
 
-.PHONY: all install uninstall clean dist
+.PHONY: all install uninstall clean dist libs
