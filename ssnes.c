@@ -240,11 +240,15 @@ static void fill_pathname(char *out_path, char *in_path, const char *replace)
 #define SSNES_DEFAULT_CONF_PATH_STR " Defaults to $XDG_CONFIG_HOME/ssnes/ssnes.cfg"
 #endif
 
+#ifdef _WIN32
+#define PACKAGE_VERSION "0.2"
+#endif
+
 static void print_help(void)
 {
-   puts("=================================================");
-   puts("ssnes: Simple Super Nintendo Emulator (libsnes)");
-   puts("=================================================");
+   puts("=============================================================");
+   puts("ssnes: Simple Super Nintendo Emulator (libsnes) -- v" PACKAGE_VERSION " --");
+   puts("=============================================================");
    puts("Usage: ssnes [rom file] [-h/--help | -c/--config | -v/--verbose | -4/--multitap | -j/--justifier | -J/--justifiers | -S/--savestate | -m/--mouse | -g/--gameboy | -b/--bsx | -B/--bsxslot | --sufamiA | --sufamiB | -p/--scope | -s/--save" FFMPEG_HELP_QUARK "]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");

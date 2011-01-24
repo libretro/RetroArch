@@ -1,4 +1,5 @@
 TARGET = ssnes.exe
+JTARGET = ssnes-joyconfig.exe
 OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o message.o
 JOBJ = conf/config_file.o tools/main-stub.o tools/ssnes-joyconfig.o
 
@@ -55,7 +56,7 @@ endif
 
 CFLAGS = -Wall -O3 -std=gnu99 -I.
 
-all: $(TARGET) ssnes-joyconfig.exe
+all: $(TARGET) $(JTARGET)
 
 $(TARGET): $(OBJ)
 	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
@@ -65,8 +66,8 @@ $(TARGET): $(OBJ)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 	@$(if $(Q), $(shell echo echo CC $<),)
 
-ssnes-joyconfig.exe: $(JOBJ)
-	$(Q)$(CC) -o ssnes-joyconfig.exe $(JOBJ) $(SDL_LIBS) $(LDFLAGS)
+$(JTARGET): $(JOBJ)
+	$(Q)$(CC) -o $@ $(JOBJ) $(SDL_LIBS) $(LDFLAGS)
 	@$(if $(Q), $(shell echo echo LD $@),)
 
 clean:
@@ -83,7 +84,7 @@ clean:
 	rm -f tools/*.o
 
 dist: all
-	zip -r ssnes-win32.zip $(TARGET) ssnes.cfg snes.dll libxml2.dll iconv.dll zlib1.dll SDL.dll libsamplerate-0.dll freetype6.dll ssnes-joyconfig.exe
+	zip -r ssnes-win32-0.2.zip $(TARGET) ssnes.cfg snes.dll libxml2.dll iconv.dll zlib1.dll SDL.dll libsamplerate-0.dll freetype6.dll $(JTARGET)
 
 libs:
 	wget https://github.com/downloads/Themaister/SSNES/SSNES-win32-libs.zip --no-check-certificate
