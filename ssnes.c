@@ -244,6 +244,31 @@ static void fill_pathname(char *out_path, char *in_path, const char *replace)
 #define PACKAGE_VERSION "0.2"
 #endif
 
+#include "config.features.h"
+
+#define _PSUPP(var, name, desc) printf("\t%s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
+static void print_features(void)
+{
+   puts("");
+   puts("Features:");
+   _PSUPP(sdl, "SDL", "SDL drivers");
+   _PSUPP(alsa, "ALSA", "audio driver");
+   _PSUPP(oss, "OSS", "audio driver");
+   _PSUPP(jack, "Jack", "audio driver");
+   _PSUPP(rsound, "RSound", "audio driver");
+   _PSUPP(roar, "RoarAudio", "audio driver");
+   _PSUPP(al, "OpenAL", "audio driver");
+   _PSUPP(filter, "Filter", "CPU based video filters");
+   _PSUPP(cg, "Cg", "Cg pixel shaders");
+   _PSUPP(xml, "XML", "bSNES XML pixel shaders");
+   _PSUPP(dynamic, "Dynamic", "Dynamic run-time loading of libsnes library");
+   _PSUPP(ffmpeg, "FFmpeg", "On-the-fly recording of gameplay with libavcodec");
+   _PSUPP(src, "SRC", "libsamplerate audio resampling");
+   _PSUPP(configfile, "Config file", "Configuration file support");
+   _PSUPP(freetype, "FreeType", "TTF font rendering with FreeType");
+}
+#undef _PSUPP
+
 static void print_help(void)
 {
    puts("=============================================================");
@@ -272,6 +297,8 @@ static void print_help(void)
    puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
 #endif
    puts("\t-v/--verbose: Verbose logging");
+
+   print_features();
 }
 
 static void parse_input(int argc, char *argv[])
