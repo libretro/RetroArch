@@ -72,12 +72,12 @@ Do note that these two options are mutually exclusive.
 <b>Win32</b><br/>
 It is possible with MinGW to compile for Windows in either msys or Linux/Unix based systems. Do note that Windows build uses a static Makefile since configuration scripts create more harm than good on this platform. Libraries, headers, etc, needed to compile and run SSNES can be fetched with a Makefile target.
 
-In Linux/Unix:
-<tt>make -f Makefile.win32 libs</tt>
-<tt>make -f Makefile.win32 CC=i486-mingw32-gcc CXX=i486-mingw32-g++</tt>
+In Linux/Unix:<br/>
+<tt>make -f Makefile.win32 libs</tt></br>
+<tt>make -f Makefile.win32 CC=i486-mingw32-gcc CXX=i486-mingw32-g++</tt></br>
 
 In MSYS:
-<tt>mingw32-make -f Makefile.win32 libs</tt>. You will need to have wget in your patch for this command! MSYS should provide this.
+<tt>mingw32-make -f Makefile.win32 libs</tt>. # You will need to have wget in your patch for this command! MSYS should provide this.</br>
 <tt>mingw32-make -f Makefile.win32</tt>
 
 
