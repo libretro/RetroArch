@@ -59,7 +59,7 @@ To configure joypads, start up <tt>jstest /dev/input/js0</tt> to determine which
 
 # Compiling and installing
 
-<b>Linux/Unix</b>
+<b>Linux/Unix</b><br/>
 As most packages, SSNES is built using the standard <tt>./configure && make && make install</tt>
 Do note that the build system is not autotools based, but resembles it.
 
@@ -69,7 +69,7 @@ Notable options for ./configure:
 
 Do note that these two options are mutually exclusive.
 
-<b>Win32</b>
+<b>Win32</b><br/>
 It is possible with MinGW to compile for Windows in either msys or Linux/Unix based systems. Do note that Windows build uses a static Makefile since configuration scripts create more harm than good on this platform. Libraries, headers, etc, needed to compile and run SSNES can be fetched with a Makefile target.
 
 In Linux/Unix:
