@@ -60,22 +60,24 @@
 
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL
 
-#if HAVE_ALSA
+#if defined(HAVE_ALSA)
 #define AUDIO_DEFAULT_DRIVER AUDIO_ALSA
-#elif HAVE_OSS
+#elif defined(HAVE_OSS)
 #define AUDIO_DEFAULT_DRIVER AUDIO_OSS
-#elif HAVE_JACK
+#elif defined(HAVE_JACK)
 #define AUDIO_DEFAULT_DRIVER AUDIO_JACK
-#elif HAVE_RSOUND
+#elif defined(HAVE_RSOUND)
 #define AUDIO_DEFAULT_DRIVER AUDIO_RSOUND
-#elif HAVE_ROAR
+#elif defined(HAVE_ROAR)
 #define AUDIO_DEFAULT_DRIVER AUDIO_ROAR
-#elif HAVE_XAUDIO
-#define AUDIO_DEFAULT_DRIVER AUDIO_XAUDIO
-#elif HAVE_AL
+#elif defined(HAVE_AL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_AL
-#elif HAVE_SDL
+#elif defined(HAVE_SDL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_SDL
+#elif defined(HAVE_XAUDIO)
+#define AUDIO_DEFAULT_DRIVER AUDIO_XAUDIO
+#else
+#error Need at least one audio driver!
 #endif
 
 #define INPUT_DEFAULT_DRIVER INPUT_SDL
