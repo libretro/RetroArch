@@ -53,6 +53,7 @@
 #define AUDIO_AL 5
 #define AUDIO_JACK 6
 #define AUDIO_SDL 8
+#define AUDIO_XAUDIO 9
 ////////////////////////
 #define INPUT_SDL 7
 ////////////////////////
@@ -69,6 +70,8 @@
 #define AUDIO_DEFAULT_DRIVER AUDIO_RSOUND
 #elif HAVE_ROAR
 #define AUDIO_DEFAULT_DRIVER AUDIO_ROAR
+#elif HAVE_XAUDIO
+#define AUDIO_DEFAULT_DRIVER AUDIO_XAUDIO
 #elif HAVE_AL
 #define AUDIO_DEFAULT_DRIVER AUDIO_AL
 #elif HAVE_SDL

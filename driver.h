@@ -138,6 +138,7 @@ extern const audio_driver_t audio_roar;
 extern const audio_driver_t audio_openal;
 extern const audio_driver_t audio_jack;
 extern const audio_driver_t audio_sdl;
+extern const audio_driver_t audio_xa;
 extern const video_driver_t video_gl;
 extern const input_driver_t input_sdl;
 ////////////////////////////////////////////////

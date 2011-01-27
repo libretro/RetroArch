@@ -49,6 +49,9 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_SDL
    &audio_sdl,
 #endif
+#ifdef HAVE_XAUDIO
+   &audio_xa,
+#endif
 };
 
 static const video_driver_t *video_drivers[] = {
@@ -267,28 +270,4 @@ void uninit_video_input(void)
 }
 
 driver_t driver;
-
-#if 0
-driver_t driver = {
-#if VIDEO_DRIVER == VIDEO_GL
-   .video = &video_gl,
-#else
-#error "Define a valid video driver in config.h"
-#endif
-
-#if AUDIO_DRIVER == AUDIO_ALSA
-   .audio = &audio_alsa,
-#elif AUDIO_DRIVER == AUDIO_RSOUND
-   .audio = &audio_rsound,
-#elif AUDIO_DRIVER == AUDIO_OSS
-   .audio = &audio_oss,
-#elif AUDIO_DRIVER == AUDIO_ROAR
-   .audio = &audio_roar,
-#elif AUDIO_DRIVER == AUDIO_AL
-   .audio = &audio_openal,
-#else
-#error "Define a valid audio driver in config.h"
-#endif
-};
-#endif
 

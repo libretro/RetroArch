@@ -69,6 +69,9 @@ static void set_defaults(void)
       case AUDIO_SDL:
          def_audio = "sdl";
          break;
+      case AUDIO_XAUDIO:
+         def_audio = "xaudio";
+         break;
       default:
          break;
    }
