@@ -23,12 +23,21 @@
 #include <string.h>
 #include "dynamic.h"
 
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#endif
+
 // Load SNES rom only. Applies a hack for headered ROMs.
 static ssize_t read_rom_file(FILE* file, void** buf)
 {
    ssize_t ret;
    if (file == NULL) // stdin
    {
+#ifdef _WIN32
+      setmode(0, O_BINARY);
+#endif
+
       SSNES_LOG("Reading ROM from stdin ...\n");
       size_t buf_size = 0xFFFFF; // Some initial guesstimate.
       size_t buf_ptr = 0;
