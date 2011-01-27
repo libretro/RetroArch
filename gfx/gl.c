@@ -424,14 +424,10 @@ static void gl_set_nonblock_state(void *data, bool state)
       SSNES_LOG("GL VSync => %s\n", state ? "off" : "on");
 #ifdef _WIN32
       static BOOL (APIENTRY *wgl_swap_interval)(int) = NULL;
-      if (!wgl_swap_interval)
-         SSNES_WARN("SDL VSync toggling seems to be broken, attempting to use WGL VSync call directly instead.\n");
       if (!wgl_swap_interval) wgl_swap_interval = (BOOL (APIENTRY*)(int)) wglGetProcAddress("wglSwapIntervalEXT");
       if (wgl_swap_interval) wgl_swap_interval(state ? 0 : 1);
 #else
       static int (*glx_swap_interval)(int) = NULL;
-      if (!glx_swap_interval)
-         SSNES_WARN("SDL VSync toggling seems to be broken, attempting to use GLX VSync call directly instead.\n");
       if (!glx_swap_interval) glx_swap_interval = (int (*)(int))glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalSGI");
       if (!glx_swap_interval) glx_swap_interval = (int (*)(int))glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalMESA");
       if (glx_swap_interval) glx_swap_interval(state ? 0 : 1);

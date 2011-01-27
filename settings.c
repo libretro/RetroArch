@@ -132,10 +132,8 @@ static void set_defaults(void)
    memcpy(g_settings.input.binds[4], snes_keybinds_5, sizeof(snes_keybinds_5));
 
    g_settings.input.axis_threshold = AXIS_THRESHOLD;
-   for (int i = 0; i < 2; i++)
+   for (int i = 0; i < MAX_PLAYERS; i++)
       g_settings.input.joypad_map[i] = i;
-   for (int i = 2; i < MAX_PLAYERS; i++)
-      g_settings.input.joypad_map[i] = SSNES_NO_JOYPAD;
 }
 
 #ifdef HAVE_CONFIGFILE

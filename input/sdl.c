@@ -59,11 +59,6 @@ static void* sdl_input_init(void)
          sdl->num_buttons[i] = SDL_JoystickNumButtons(sdl->joysticks[i]);
          sdl->num_hats[i] = SDL_JoystickNumHats(sdl->joysticks[i]);
       }
-      else
-      {
-         SSNES_WARN("Desired SDL joystick #%u on port %u, but SDL can only detect %u joysticks ...\n", 
-               g_settings.input.joypad_map[i], i + 1, sdl->num_joysticks);
-      }
    }
 
    return sdl;

@@ -112,10 +112,7 @@ static ssize_t read_file(const char *path, void **buf)
    void *rom_buf = NULL;
    FILE *file = fopen(path, "rb");
    if (!file)
-   {
-      SSNES_ERR("Couldn't open file: \"%s\"\n", path);
       goto error;
-   }
 
    fseek(file, 0, SEEK_END);
    long len = ftell(file);
@@ -148,10 +145,7 @@ static bool dump_to_file(const char *path, const void *data, size_t size)
 {
    FILE *file = fopen(path, "wb");
    if (!file)
-   {
-      SSNES_ERR("Couldn't dump to file %s\n", path);
       return false;
-   }
    else
    {
       fwrite(data, 1, size, file);
@@ -178,6 +172,8 @@ bool save_state(const char* path)
    psnes_serialize(data, size);
    bool ret = dump_to_file(path, data, size);
    free(data);
+   if (!ret)
+      SSNES_ERR("Failed to save state to \"%s\".\n", path);
    return ret;
 }
 
@@ -188,7 +184,7 @@ bool load_state(const char* path)
    ssize_t size = read_file(path, &buf);
    if (size < 0)
    {
-      SSNES_ERR("Failed to load state.\n");
+      SSNES_ERR("Failed to load state from \"%s\".\n", path);
       return false;
    }
    else
