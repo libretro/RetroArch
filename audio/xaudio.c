@@ -19,6 +19,7 @@
 #include "driver.h"
 #include <stdlib.h>
 #include "xaudio-c.h"
+#include "general.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -35,6 +36,7 @@ static xaudio2_write_avail_t pxawrite_avail = NULL;
 static xaudio2_free_t pxafree = NULL;
 static HMODULE lib = NULL;
 
+#define LIB_NAME "xaudio-c.dll"
 #define SYM(X) ((void*)GetProcAddress(lib, "xaudio2_" #X))
 
 static void deinit_lib(void)
@@ -48,7 +50,7 @@ static bool init_lib(void)
    if (lib)
       return true;
 
-   lib = LoadLibrary("xaudio-c.dll");
+   lib = LoadLibrary(LIB_NAME);
    if (!lib)
       return false;
 
@@ -87,12 +89,15 @@ static void* __xa_init(const char* device, int rate, int latency)
    if (xa == NULL)
       return NULL;
 
-   size_t bufsize = latency * 4 * rate / 1000;
+   size_t bufsize = latency * rate / 1000;
    bufsize = next_pow2(bufsize);
 
-   xa->xa = pxanew(rate, 2, 16, bufsize);
+   SSNES_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize * rate / 1000);
+
+   xa->xa = pxanew(rate, 2, 16, bufsize << 2);
    if (!xa->xa)
    {
+      SSNES_ERR("Failed to init XAudio2.\n");
       free(xa);
       return NULL;
    }
