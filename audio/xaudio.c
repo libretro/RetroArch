@@ -92,7 +92,7 @@ static void* __xa_init(const char* device, int rate, int latency)
    size_t bufsize = latency * rate / 1000;
    bufsize = next_pow2(bufsize);
 
-   SSNES_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize * rate / 1000);
+   SSNES_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize * 1000 / rate);
 
    xa->xa = pxanew(rate, 2, 16, bufsize << 2);
    if (!xa->xa)
