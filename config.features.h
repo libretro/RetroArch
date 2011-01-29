@@ -50,6 +50,18 @@ static const bool _jack_supp = true;
 static const bool _jack_supp = false;
 #endif
 
+#ifdef HAVE_PULSE
+static const bool _pulse_supp = true;
+#else
+static const bool _pulse_supp = false;
+#endif
+
+#ifdef HAVE_XAUDIO
+static const bool _xaudio_supp = true;
+#else
+static const bool _xaudio_supp = false;
+#endif
+
 #ifdef HAVE_FILTER
 static const bool _filter_supp = true;
 #else
