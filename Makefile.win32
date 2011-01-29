@@ -11,6 +11,7 @@ HAVE_SDL = 1
 HAVE_XML = 1
 HAVE_FREETYPE = 1
 HAVE_XAUDIO = 1
+HAVE_RSOUND = 1
 libsnes ?= -lsnes
 
 LIBS =
@@ -35,6 +36,12 @@ endif
 ifeq ($(HAVE_XAUDIO), 1)
    OBJ += audio/xaudio.o
    DEFINES += -DHAVE_XAUDIO
+endif
+
+ifeq ($(HAVE_RSOUND), 1)
+   OBJ += audio/rsound.o
+   DEFINES += -DHAVE_RSOUND
+   LIBS += -lrsound
 endif
 
 ifeq ($(HAVE_XML), 1)

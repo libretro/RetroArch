@@ -69,16 +69,16 @@
 #define AUDIO_DEFAULT_DRIVER AUDIO_OSS
 #elif defined(HAVE_JACK)
 #define AUDIO_DEFAULT_DRIVER AUDIO_JACK
-#elif defined(HAVE_RSOUND)
-#define AUDIO_DEFAULT_DRIVER AUDIO_RSOUND
-#elif defined(HAVE_ROAR)
-#define AUDIO_DEFAULT_DRIVER AUDIO_ROAR
 #elif defined(HAVE_AL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_AL
 #elif defined(HAVE_SDL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_SDL
 #elif defined(HAVE_XAUDIO)
 #define AUDIO_DEFAULT_DRIVER AUDIO_XAUDIO
+#elif defined(HAVE_RSOUND)
+#define AUDIO_DEFAULT_DRIVER AUDIO_RSOUND
+#elif defined(HAVE_ROAR)
+#define AUDIO_DEFAULT_DRIVER AUDIO_ROAR
 #else
 #error Need at least one audio driver!
 #endif
