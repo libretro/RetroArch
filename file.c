@@ -307,12 +307,12 @@ static bool load_bsx_rom(bool slotted)
    if (slotted)
    {   
       if (!psnes_load_cartridge_bsx_slotted(
-            NULL, rom_buf, rom_len,
-            NULL, extra_rom_buf, extra_rom_len))
-   {
-      SSNES_ERR("Cannot load BSX slotted rom.\n");
-      goto error;
-   }
+               NULL, rom_buf, rom_len,
+               NULL, extra_rom_buf, extra_rom_len))
+      {
+         SSNES_ERR("Cannot load BSX slotted rom.\n");
+         goto error;
+      }
 
    }
    else
