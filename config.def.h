@@ -129,7 +129,10 @@ static const unsigned out_rate = 48000;
 
 // Input samplerate from libSNES. 
 // Lower this (slightly) if you are experiencing frequent audio dropouts while vsync is enabled.
-static const unsigned in_rate = 31980; 
+static const float in_rate = 31980.0; 
+
+// When changing input rate on-the-fly
+static const float audio_rate_step = 0.25;
 
 // Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults.
 static const char* audio_device = NULL;
@@ -179,6 +182,8 @@ static const struct snes_keybind snes_keybinds_1[] = {
    { SSNES_QUIT_KEY,                   SDLK_ESCAPE, NO_BTN,      AXIS_NONE },
    { SSNES_STATE_SLOT_MINUS,           SDLK_F6,     NO_BTN,      AXIS_NONE },
    { SSNES_STATE_SLOT_PLUS,            SDLK_F7,     NO_BTN,      AXIS_NONE },
+   { SSNES_AUDIO_INPUT_RATE_PLUS,      SDLK_KP_PLUS, NO_BTN,     AXIS_NONE },
+   { SSNES_AUDIO_INPUT_RATE_MINUS,     SDLK_KP_MINUS, NO_BTN,    AXIS_NONE },
    { -1 }
 };
 

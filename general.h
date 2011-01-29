@@ -35,7 +35,7 @@
 
 
 #define MAX_PLAYERS 5
-#define MAX_BINDS 20 // Needs to be increased every time there are new binds added.
+#define MAX_BINDS 22 // Needs to be increased every time there are new binds added.
 #define SSNES_NO_JOYPAD 0xFFFF
 struct settings
 {
@@ -67,7 +67,8 @@ struct settings
       char driver[32];
       bool enable;
       unsigned out_rate;
-      unsigned in_rate;
+      float in_rate;
+      float rate_step;
       char device[256];
       unsigned latency;
       bool sync;

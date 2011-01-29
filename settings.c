@@ -117,6 +117,7 @@ static void set_defaults(void)
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
    g_settings.audio.in_rate = in_rate;
+   g_settings.audio.rate_step = audio_rate_step;
    if (audio_device)
       strncpy(g_settings.audio.device, audio_device, sizeof(g_settings.audio.device));
    g_settings.audio.latency = out_latency;
@@ -323,8 +324,11 @@ static void parse_config_file(void)
    if (config_get_int(conf, "audio_out_rate", &tmp_int))
       g_settings.audio.out_rate = tmp_int;
 
-   if (config_get_int(conf, "audio_in_rate", &tmp_int))
-      g_settings.audio.in_rate = tmp_int;
+   if (config_get_double(conf, "audio_in_rate", &tmp_double))
+      g_settings.audio.in_rate = tmp_double;
+
+   if (config_get_double(conf, "audio_rate_step", &tmp_double))
+      g_settings.audio.rate_step = tmp_double;
 
    if (config_get_string(conf, "audio_device", &tmp_str))
    {
@@ -405,6 +409,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
       DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
+      DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS)
+      DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
    },
    {
       DECLARE_BIND(player2_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -426,6 +432,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
       DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
+      DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS)
+      DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
    },
    {
       DECLARE_BIND(player3_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -447,6 +455,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
       DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
+      DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS)
+      DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
    },
    {
       DECLARE_BIND(player4_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -468,6 +478,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
       DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
+      DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS)
+      DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
    },
    {
       DECLARE_BIND(player5_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -489,6 +501,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
       DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
+      DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS)
+      DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
    },
 };
 
@@ -515,6 +529,8 @@ static const struct key_map sdlk_map[] = {
    { "alt", SDLK_LALT },
    { "space", SDLK_SPACE },
    { "escape", SDLK_ESCAPE },
+   { "kp_plus", SDLK_KP_PLUS },
+   { "kp_minus", SDLK_KP_MINUS },
    { "f1", SDLK_F1 },
    { "f2", SDLK_F2 },
    { "f3", SDLK_F3 },

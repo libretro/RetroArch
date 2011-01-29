@@ -746,6 +746,31 @@ static void check_stateslots(void)
    old_should_slot_decrease = should_slot_decrease;
 }
 
+static void check_input_rate(void)
+{
+   bool display = false;
+   if (driver.input->key_pressed(driver.input_data, SSNES_AUDIO_INPUT_RATE_PLUS))
+   {
+      g_settings.audio.in_rate += g_settings.audio.rate_step;
+      display = true;
+   }
+   else if (driver.input->key_pressed(driver.input_data, SSNES_AUDIO_INPUT_RATE_MINUS))
+   {
+      g_settings.audio.in_rate -= g_settings.audio.rate_step;
+      display = true;
+   }
+
+   if (display)
+   {
+      char msg[256];
+      snprintf(msg, sizeof(msg), "Audio input rate: %.2f Hz", g_settings.audio.in_rate);
+
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, msg, 0, 180);
+      SSNES_LOG("%s\n", msg);
+   }
+}
+
 static void do_state_checks(void)
 {
    set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
@@ -753,6 +778,7 @@ static void do_state_checks(void)
    check_stateslots();
    check_savestates();
    check_fullscreen();
+   check_input_rate();
 }
 
 
