@@ -42,6 +42,11 @@ ifeq ($(HAVE_JACK),1)
    OBJ += audio/jack.o
    LIBS += -ljack
 endif
+ifeq ($(HAVE_PULSE), 1)
+   OBJ += audio/pulse.o
+   LIBS += $(PULSE_LIBS)
+   DEFINES += $(PULSE_CFLAGS)
+endif
 
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/gl.o input/sdl.o audio/sdl.o audio/buffer.o

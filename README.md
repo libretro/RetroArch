@@ -26,7 +26,7 @@ SSNES can utilize these libraries if enabled:
    - libxml2 (bSNES XML shaders)
    - libfreetype2 (TTF font rendering on screen)
 
-SSNES needs one of these audio driver libraries:
+SSNES needs at least one of these audio driver libraries:
 
    - ALSA
    - OSS
@@ -35,6 +35,8 @@ SSNES needs one of these audio driver libraries:
    - OpenAL
    - JACK
    - SDL
+   - XAudio2 (Win32)
+   - PulseAudio
 
 # Building libsnes
 

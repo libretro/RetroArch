@@ -72,6 +72,9 @@ static void set_defaults(void)
       case AUDIO_XAUDIO:
          def_audio = "xaudio";
          break;
+      case AUDIO_PULSE:
+         def_audio = "pulse";
+         break;
       default:
          break;
    }

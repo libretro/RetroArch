@@ -54,6 +54,7 @@
 #define AUDIO_JACK 6
 #define AUDIO_SDL 8
 #define AUDIO_XAUDIO 9
+#define AUDIO_PULSE 10
 ////////////////////////
 #define INPUT_SDL 7
 ////////////////////////
@@ -62,6 +63,8 @@
 
 #if defined(HAVE_ALSA)
 #define AUDIO_DEFAULT_DRIVER AUDIO_ALSA
+#elif defined(HAVE_PULSE)
+#define AUDIO_DEFAULT_DRIVER AUDIO_PULSE
 #elif defined(HAVE_OSS)
 #define AUDIO_DEFAULT_DRIVER AUDIO_OSS
 #elif defined(HAVE_JACK)

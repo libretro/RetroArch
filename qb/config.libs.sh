@@ -21,6 +21,7 @@ check_lib AL -lopenal alcOpenDevice
 check_lib RSOUND -lrsound rsd_init
 check_lib ROAR -lroar roar_vs_new
 check_lib JACK -ljack jack_client_open
+check_pkgconf PULSE libpulse
 
 check_pkgconf SDL sdl 1.2.10
 check_critical SDL "Cannot find SDL library."
@@ -46,7 +47,7 @@ check_lib DYNAMIC -ldl dlopen
 check_pkgconf FREETYPE freetype2
 
 # Creates config.mk and config.h.
-VARS="ALSA OSS AL RSOUND ROAR JACK SDL FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC CONFIGFILE FREETYPE"
+VARS="ALSA OSS AL RSOUND ROAR JACK PULSE SDL FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC CONFIGFILE FREETYPE"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 
