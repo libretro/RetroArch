@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <stdbool.h>
 #include "general.h"
 
 
@@ -34,6 +35,7 @@ static int g_player = 1;
 static int g_joypad = 0;
 static char *g_in_path = NULL;
 static char *g_out_path = NULL;
+static bool g_use_misc = false;
 
 static void print_help(void)
 {
@@ -47,6 +49,7 @@ static void print_help(void)
    puts("-i/--input: Input file to configure with. Binds will be added on or overwritten.");
    puts("\tIf not selected, an empty config will be used as a base.");
    puts("-o/--output: Output file to write to. If not selected, config file will be dumped to stdout.");
+   puts("-m/--misc: Also configure various keybinds that are not directly SNES related. These configurations are for player 1 only.");
    puts("-h/--help: This help.");
 }
 
@@ -55,9 +58,13 @@ struct bind
    char *keystr;
    char *confbtn[MAX_PLAYERS];
    char *confaxis[MAX_PLAYERS];
+   bool is_misc;
 };
 
-#define BIND(x, k) { x, { "input_player1_" #k "_btn", "input_player2_" #k "_btn", "input_player3_" #k "_btn", "input_player4_" #k "_btn", "input_player5_" #k "_btn" }, {"input_player1_" #k "_axis", "input_player2_" #k "_axis", "input_player3_" #k "_axis", "input_player4_" #k "_axis", "input_player5_" #k "_axis"}},
+#define BIND(x, k) { x, { "input_player1_" #k "_btn", "input_player2_" #k "_btn", "input_player3_" #k "_btn", "input_player4_" #k "_btn", "input_player5_" #k "_btn" }, {"input_player1_" #k "_axis", "input_player2_" #k "_axis", "input_player3_" #k "_axis", "input_player4_" #k "_axis", "input_player5_" #k "_axis"}, false},
+
+#define MISC_BIND(x, k) { x, { "input_" #k "_btn" }, { "input_" #k "_axis" }, true},
+
 static struct bind binds[] = {
    BIND("A button (right)", a)
    BIND("B button (down)", b)
@@ -71,6 +78,16 @@ static struct bind binds[] = {
    BIND("Up D-pad", up)
    BIND("Right D-pad", right)
    BIND("Down D-pad", down)
+
+   MISC_BIND("Save state", save_state)
+   MISC_BIND("Load state", load_state)
+   MISC_BIND("Exit emulator", exit_emulator)
+   MISC_BIND("Toggle fullscreen", toggle_fullscreen)
+   MISC_BIND("Save state slot increase", state_slot_increase)
+   MISC_BIND("Save state slot decrease", state_slot_decrease)
+   MISC_BIND("Toggle fast forward", toggle_fast_forward)
+   MISC_BIND("Audio input rate step up", rate_step_up)
+   MISC_BIND("Audio input rate step down", rate_step_down)
 };
 
 void get_binds(config_file_t *conf, int player, int joypad)
@@ -95,20 +112,21 @@ void get_binds(config_file_t *conf, int player, int joypad)
       exit(1);
    }
 
-   SDL_JoystickUpdate();
-
    int last_axis = 0xFF;
+   int last_pos = 0;
    int num_axes = SDL_JoystickNumAxes(joystick);
    int initial_axes[num_axes];
+
+   SDL_PumpEvents();
+   SDL_JoystickUpdate();
    for (int i = 0; i < num_axes; i++)
       initial_axes[i] = SDL_JoystickGetAxis(joystick, i);
-
 
    fprintf(stderr, "Configuring binds for player #%d on joypad #%d (%s)\n", player + 1, joypad, SDL_JoystickName(joypad));
    fprintf(stderr, "Press Ctrl-C to exit early.\n");
    fprintf(stderr, "\n");
 
-   for (unsigned i = 0; i < sizeof(binds) / sizeof(struct bind); i++)
+   for (unsigned i = 0; i < sizeof(binds) / sizeof(struct bind) && (g_use_misc || !binds[i].is_misc) ; i++)
    {
       fprintf(stderr, "%s\n", binds[i].keystr);
 
@@ -116,6 +134,7 @@ void get_binds(config_file_t *conf, int player, int joypad)
       SDL_Event event;
       int value;
       const char *quark;
+      unsigned player_index = binds[i].is_misc ? 0 : player;
 
       while (SDL_WaitEvent(&event) && !done)
       {
@@ -124,22 +143,34 @@ void get_binds(config_file_t *conf, int player, int joypad)
             case SDL_JOYBUTTONDOWN:
                fprintf(stderr, "\tJoybutton pressed: %d\n", (int)event.jbutton.button);
                done = true;
-               config_set_int(conf, binds[i].confbtn[player], event.jbutton.button);
+               config_set_int(conf, binds[i].confbtn[player_index], event.jbutton.button);
                break;
 
             case SDL_JOYAXISMOTION:
-               if (abs(event.jaxis.value) > 20000 && 
-                     abs((int)event.jaxis.value - initial_axes[event.jaxis.axis]) > 20000 && 
-                     event.jaxis.axis != last_axis)
+               if ( // This is starting to look like Lisp! :D
+                     (abs((int)event.jaxis.value - initial_axes[event.jaxis.axis]) > 20000) &&
+                     (
+                        (event.jaxis.axis != last_axis) || 
+                        (
+                           (abs(event.jaxis.value) > 20000) && 
+                           (abs((int)event.jaxis.value - last_pos) > 20000)
+                        )
+                     )
+                  )
                {
                   last_axis = event.jaxis.axis;
+                  last_pos = event.jaxis.value;
                   fprintf(stderr, "\tJoyaxis moved: Axis %d, Value %d\n", (int)event.jaxis.axis, (int)event.jaxis.value);
                   done = true;
 
                   char buf[8];
                   snprintf(buf, sizeof(buf), event.jaxis.value > 0 ? "+%d" : "-%d", event.jaxis.axis);
-                  config_set_string(conf, binds[i].confaxis[player], buf);
+                  config_set_string(conf, binds[i].confaxis[player_index], buf);
                }
+               break;
+
+            case SDL_KEYDOWN:
+               fprintf(stderr, ":V\n");
                break;
 
             case SDL_JOYHATMOTION:
@@ -160,7 +191,7 @@ void get_binds(config_file_t *conf, int player, int joypad)
                done = true;
                char buf[16];
                snprintf(buf, sizeof(buf), "h%d%s", event.jhat.hat, quark);
-               config_set_string(conf, binds[i].confbtn[player], buf);
+               config_set_string(conf, binds[i].confbtn[player_index], buf);
                break;
 
 
@@ -180,13 +211,14 @@ end:
 
 static void parse_input(int argc, char *argv[])
 {
-   char optstring[] = "i:o:p:j:h";
+   char optstring[] = "i:o:p:j:hm";
    struct option opts[] = {
       { "input", 1, NULL, 'i' },
       { "output", 1, NULL, 'o' },
       { "player", 1, NULL, 'p' },
       { "joypad", 1, NULL, 'j' },
       { "help", 0, NULL, 'h' },
+      { "misc", 0, NULL, 'm' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -209,6 +241,10 @@ static void parse_input(int argc, char *argv[])
 
          case 'o':
             g_out_path = strdup(optarg);
+            break;
+
+         case 'm':
+            g_use_misc = true;
             break;
 
          case 'j':
