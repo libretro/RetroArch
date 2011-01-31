@@ -376,7 +376,7 @@ static void parse_config_file(void)
    }
 
    if (config_get_bool(conf, "rewind_enable", &tmp_bool))
-      g_settings.rewind_enable = true;
+      g_settings.rewind_enable = tmp_bool;
 
    if (config_get_int(conf, "rewind_buffer_size", &tmp_int))
       g_settings.rewind_buffer_size = tmp_int * 1000000;

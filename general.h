@@ -152,7 +152,6 @@ struct global
    state_manager_t *state_manager;
    void *state_buf;
    bool frame_is_reverse;
-   bool rewind_enable;
 
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;
