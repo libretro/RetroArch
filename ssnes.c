@@ -808,13 +808,17 @@ static void check_rewind(void)
 
    if (driver.input->key_pressed(driver.input_data, SSNES_REWIND))
    {
+      msg_queue_clear(g_extern.msg_queue);
       void *buf;
       if (state_manager_pop(g_extern.state_manager, &buf))
       {
-         msg_queue_clear(g_extern.msg_queue);
          msg_queue_push(g_extern.msg_queue, "Rewinding!", 0, 30);
          snes_unserialize(buf, snes_serialize_size());
          g_extern.frame_is_reverse = true;
+      }
+      else
+      {
+         msg_queue_push(g_extern.msg_queue, "Reached end of rewind buffer!", 0, 30);
       }
    }
    else

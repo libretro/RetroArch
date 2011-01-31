@@ -88,6 +88,7 @@ static struct bind binds[] = {
    MISC_BIND("Toggle fast forward", toggle_fast_forward)
    MISC_BIND("Audio input rate step up", rate_step_up)
    MISC_BIND("Audio input rate step down", rate_step_down)
+   MISC_BIND("Rewind", rewind)
 };
 
 void get_binds(config_file_t *conf, int player, int joypad)
