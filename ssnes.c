@@ -169,6 +169,10 @@ static void audio_sample(uint16_t left, uint16_t right)
 
    if (g_extern.audio_data.data_ptr >= g_extern.audio_data.chunk_size)
    {
+
+      if (g_extern.frame_is_reverse) // Disable fucked up audio when rewinding...
+         memset(g_extern.audio_data.data, 0, g_extern.audio_data.chunk_size * sizeof(float));
+
       SRC_DATA src_data;
 
       src_data.data_in = g_extern.audio_data.data;
@@ -792,6 +796,7 @@ static void check_input_rate(void)
 
 static void check_rewind(void)
 {
+   g_extern.frame_is_reverse = false;
    if (!g_extern.state_manager)
       return;
 
@@ -799,7 +804,10 @@ static void check_rewind(void)
    {
       void *buf;
       if (state_manager_pop(g_extern.state_manager, &buf))
+      {
          snes_unserialize(buf, snes_serialize_size());
+         g_extern.frame_is_reverse = true;
+      }
    }
    else
    {
