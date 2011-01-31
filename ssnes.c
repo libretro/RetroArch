@@ -694,7 +694,12 @@ static void check_savestates(void)
    if (should_savestate && !old_should_savestate)
    {
       char save_path[strlen(g_extern.savestate_name) * 2];
-      snprintf(save_path, sizeof(save_path), g_extern.state_slot > 0 ? "%s%u" : "%s", g_extern.savestate_name, g_extern.state_slot);
+
+      if (g_extern.state_slot > 0)
+         snprintf(save_path, sizeof(save_path), "%s%u", g_extern.savestate_name, g_extern.state_slot);
+      else
+         snprintf(save_path, sizeof(save_path), "%s", g_extern.savestate_name);
+
       if(!save_state(save_path))
       {
          msg_queue_clear(g_extern.msg_queue);
@@ -715,7 +720,11 @@ static void check_savestates(void)
    if (!should_savestate && should_loadstate && !old_should_loadstate)
    {
       char load_path[strlen(g_extern.savestate_name) * 2];
-      snprintf(load_path, sizeof(load_path), g_extern.state_slot ? "%s%u" : "%s", g_extern.savestate_name, g_extern.state_slot);
+
+      if (g_extern.state_slot > 0)
+         snprintf(load_path, sizeof(load_path), "%s%u", g_extern.savestate_name, g_extern.state_slot);
+      else
+         snprintf(load_path, sizeof(load_path), "%s", g_extern.savestate_name);
 
       if(!load_state(load_path))
       {
