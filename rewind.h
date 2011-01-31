@@ -23,9 +23,11 @@
 
 typedef struct state_manager state_manager_t;
 
+// Always pass in at least 4-byte aligned data and sizes!
+
 state_manager_t *state_manager_new(size_t state_size, size_t buffer_size, void *init_buffer);
 void state_manager_free(state_manager_t *state);
 bool state_manager_pop(state_manager_t *state, void **data);
-bool state_manager_push(state_manager_t *state, const void *data, bool aligned);
+bool state_manager_push(state_manager_t *state, const void *data);
 
 #endif

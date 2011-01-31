@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <assert.h>
 
 //#include <stdio.h>
 
@@ -43,14 +44,13 @@ state_manager_t *state_manager_new(size_t state_size, size_t buffer_size, void *
    if (!state)
       return NULL;
 
+   assert(state_size % 4 == 0); // We need 4-byte aligned state_size to avoid having to enforce this with unneeded memcpy's!
    state->top_ptr = 1;
    state->state_size = (state_size + 3) >> 2; // Multiple of 4.
    state->buf_size = (buffer_size + 7) >> 3; // Multiple of 8.
    if (!(state->buffer = calloc(1, state->buf_size * sizeof(uint64_t))))
       goto error;
    if (!(state->tmp_state = calloc(1, state->state_size * sizeof(uint32_t))))
-      goto error;
-   if (!(state->scratch_buf = calloc(1, state->state_size * sizeof(uint32_t))))
       goto error;
 
    memcpy(state->tmp_state, init_buffer, state_size);
@@ -62,7 +62,6 @@ error:
    {
       free(state->buffer);
       free(state->tmp_state);
-      free(state->scratch_buf);
       free(state);
    }
    return NULL;
@@ -72,7 +71,6 @@ void state_manager_free(state_manager_t *state)
 {
    free(state->buffer);
    free(state->tmp_state);
-   free(state->scratch_buf);
    free(state);
 }
 
@@ -120,14 +118,12 @@ static void reassign_bottom(state_manager_t *state)
       state->bottom_ptr = (state->bottom_ptr + 1) % state->buf_size;
 }
 
-static void generate_delta(state_manager_t *state, const void *data, bool aligned)
+static void generate_delta(state_manager_t *state, const void *data)
 {
-   unsigned patch_size = 0;
+   //unsigned patch_size = 0;
    bool crossed = false;
    const uint32_t *old_state = state->tmp_state;
-   uint32_t *new_state = aligned ? (uint32_t*)data : state->scratch_buf;
-   if (!aligned)
-      memcpy(new_state, data, state->state_size * sizeof(uint32_t)); // If not guaranteed to be aligned, we need to make sure it is.
+   const uint32_t *new_state = data;
 
    state->buffer[state->top_ptr++] = 0; // For each separate delta, we have a 0 value sentinel in between.
    if (state->top_ptr == state->bottom_ptr) // Check if top_ptr and bottom_ptr crossed eachother, which means we need to delete old cruft.
@@ -141,7 +137,7 @@ static void generate_delta(state_manager_t *state, const void *data, bool aligne
       // This, if states don't really differ much, we'll save lots of space :) Hopefully this will work really well with save states.
       if (xor)
       {
-         patch_size++;
+         //patch_size++;
          state->buffer[state->top_ptr] = (i << 32) | xor;
          state->top_ptr = (state->top_ptr + 1) % state->buf_size;
 
@@ -156,9 +152,9 @@ static void generate_delta(state_manager_t *state, const void *data, bool aligne
    //fprintf(stderr, "DELTA SIZE: %u, ORIG SIZE: %u\n", (unsigned)patch_size << 3, (unsigned)state->state_size << 2);
 }
 
-bool state_manager_push(state_manager_t *state, const void *data, bool aligned)
+bool state_manager_push(state_manager_t *state, const void *data)
 {
-   generate_delta(state, data, aligned);
+   generate_delta(state, data);
    memcpy(state->tmp_state, data, state->state_size * sizeof(uint32_t));
 
    return true;
