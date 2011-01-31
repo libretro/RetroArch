@@ -2,7 +2,7 @@ include config.mk
 
 TARGET = ssnes tools/ssnes-joyconfig
 
-OBJ = ssnes.o file.o driver.o settings.o dynamic.o message.o
+OBJ = ssnes.o file.o driver.o settings.o dynamic.o message.o rewind.o
 JOYCONFIG_OBJ = tools/ssnes-joyconfig.o conf/config_file.o
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 

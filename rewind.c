@@ -86,7 +86,6 @@ bool state_manager_pop(state_manager_t *state, void **data)
    if (state->top_ptr == state->bottom_ptr) // Our stack is completely empty... :v
    {
       state->top_ptr = (state->top_ptr + 1) % state->buf_size;
-      print_status(state);
       return false;
    }
 
@@ -106,11 +105,9 @@ bool state_manager_pop(state_manager_t *state, void **data)
    if (state->top_ptr == state->bottom_ptr) // Our stack is completely empty... :v
    {
       state->top_ptr = (state->top_ptr + 1) % state->buf_size;
-      print_status(state);
       return true;
    }
 
-   print_status(state);
    return true;
 }
 
@@ -157,8 +154,6 @@ bool state_manager_push(state_manager_t *state, const void *data, bool aligned)
 {
    generate_delta(state, data, aligned);
    memcpy(state->tmp_state, data, state->state_size * sizeof(uint32_t));
-
-   print_status(state);
 
    return true;
 }
