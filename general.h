@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include "record/ffemu.h"
 #include "message.h"
+#include "rewind.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -35,7 +36,7 @@
 
 
 #define MAX_PLAYERS 5
-#define MAX_BINDS 22 // Needs to be increased every time there are new binds added.
+#define MAX_BINDS 23 // Needs to be increased every time there are new binds added.
 #define SSNES_NO_JOYPAD 0xFFFF
 struct settings
 {
@@ -144,6 +145,10 @@ struct global
    } audio_data;
 
    msg_queue_t *msg_queue;
+
+   state_manager_t *state_manager;
+   void *state_buf;
+   bool rewind_enable;
 
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;

@@ -28,6 +28,7 @@
 #include "general.h"
 #include "dynamic.h"
 #include "record/ffemu.h"
+#include "rewind.h"
 #include <assert.h>
 #ifdef HAVE_SRC
 #include <samplerate.h>
@@ -636,6 +637,22 @@ static void deinit_msg_queue(void)
       msg_queue_free(g_extern.msg_queue);
 }
 
+static void init_rewind(void)
+{
+   size_t serial_size = snes_serialize_size();
+   g_extern.state_buf = malloc(serial_size);
+   snes_serialize(g_extern.state_buf, serial_size);
+   g_extern.state_manager = state_manager_new(serial_size, 10 << 20, g_extern.state_buf);
+}
+
+static void deinit_rewind(void)
+{
+   if (g_extern.state_manager)
+      state_manager_free(g_extern.state_manager);
+   if (g_extern.state_buf)
+      free(g_extern.state_buf);
+}
+
 static void fill_pathnames(void)
 {
    switch (g_extern.game_type)
@@ -773,6 +790,24 @@ static void check_input_rate(void)
    }
 }
 
+static void check_rewind(void)
+{
+   if (!g_extern.state_manager)
+      return;
+
+   if (driver.input->key_pressed(driver.input_data, SSNES_REWIND))
+   {
+      void *buf;
+      if (state_manager_pop(g_extern.state_manager, &buf))
+         snes_unserialize(buf, snes_serialize_size());
+   }
+   else
+   {
+      snes_serialize(g_extern.state_buf, snes_serialize_size());
+      state_manager_push(g_extern.state_manager, g_extern.state_buf, true);
+   }
+}
+
 static void do_state_checks(void)
 {
    set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
@@ -781,6 +816,7 @@ static void do_state_checks(void)
    check_savestates();
    check_fullscreen();
    check_input_rate();
+   check_rewind();
 }
 
 
@@ -817,6 +853,7 @@ int main(int argc, char *argv[])
 #endif
 
    init_msg_queue();
+   init_rewind();
 
    // Main loop
    for(;;)
@@ -833,6 +870,7 @@ int main(int argc, char *argv[])
       psnes_run();
    }
 
+   deinit_rewind();
    deinit_msg_queue();
 #ifdef HAVE_FFMPEG
    deinit_recording();

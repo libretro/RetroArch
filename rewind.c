@@ -21,6 +21,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+//#include <stdio.h>
+
 struct state_manager
 {
    uint64_t *buffer;
@@ -120,6 +122,7 @@ static void reassign_bottom(state_manager_t *state)
 
 static void generate_delta(state_manager_t *state, const void *data, bool aligned)
 {
+   unsigned patch_size = 0;
    bool crossed = false;
    const uint32_t *old_state = state->tmp_state;
    uint32_t *new_state = aligned ? (uint32_t*)data : state->scratch_buf;
@@ -138,6 +141,7 @@ static void generate_delta(state_manager_t *state, const void *data, bool aligne
       // This, if states don't really differ much, we'll save lots of space :) Hopefully this will work really well with save states.
       if (xor)
       {
+         patch_size++;
          state->buffer[state->top_ptr] = (i << 32) | xor;
          state->top_ptr = (state->top_ptr + 1) % state->buf_size;
 
@@ -148,6 +152,8 @@ static void generate_delta(state_manager_t *state, const void *data, bool aligne
 
    if (crossed)
       reassign_bottom(state);
+
+   //fprintf(stderr, "DELTA SIZE: %u, ORIG SIZE: %u\n", (unsigned)patch_size << 3, (unsigned)state->state_size << 2);
 }
 
 bool state_manager_push(state_manager_t *state, const void *data, bool aligned)
