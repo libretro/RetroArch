@@ -85,6 +85,9 @@ struct settings
    } input;
 
    char libsnes[256];
+
+   bool rewind_enable;
+   unsigned rewind_buffer_size;
 };
 
 enum ssnes_game_type

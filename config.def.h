@@ -146,6 +146,13 @@ static const bool audio_sync = true;
 // Defines the quality (and cpu reqirements) of samplerate conversion.
 #define SAMPLERATE_QUALITY SRC_LINEAR
 
+// Enables use of rewind. This will incur some memory footprint depending on the save state buffer.
+// This rewind only works when using bSNES core atm.
+static const bool rewind_enable = false;
+
+// The buffer size for the rewind buffer. This needs to be about 15-20MB per minute. Very game dependant.
+static const unsigned rewind_buffer_size = 20 << 20; // 20MiB
+
 
 
 

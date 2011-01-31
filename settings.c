@@ -124,6 +124,9 @@ static void set_defaults(void)
    g_settings.audio.sync = audio_sync;
    g_settings.audio.src_quality = SAMPLERATE_QUALITY;
 
+   g_settings.rewind_enable = rewind_enable;
+   g_settings.rewind_buffer_size = rewind_buffer_size;
+
    assert(sizeof(g_settings.input.binds[0]) >= sizeof(snes_keybinds_1));
    assert(sizeof(g_settings.input.binds[1]) >= sizeof(snes_keybinds_2));
    assert(sizeof(g_settings.input.binds[2]) >= sizeof(snes_keybinds_3));
@@ -372,6 +375,12 @@ static void parse_config_file(void)
       free(tmp_str);
    }
 
+   if (config_get_bool(conf, "rewind_enable", &tmp_bool))
+      g_settings.rewind_enable = true;
+
+   if (config_get_int(conf, "rewind_buffer_size", &tmp_int))
+      g_settings.rewind_buffer_size = tmp_int * 1000000;
+
    read_keybinds(conf);
 
    config_file_free(conf);
@@ -411,6 +420,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
       DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS)
       DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
+      DECLARE_BIND(rewind,                SSNES_REWIND)
    },
    {
       DECLARE_BIND(player2_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -434,6 +444,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
       DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS)
       DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
+      DECLARE_BIND(rewind,                SSNES_REWIND)
    },
    {
       DECLARE_BIND(player3_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -457,6 +468,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
       DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS)
       DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
+      DECLARE_BIND(rewind,                SSNES_REWIND)
    },
    {
       DECLARE_BIND(player4_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -480,6 +492,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
       DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS)
       DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
+      DECLARE_BIND(rewind,                SSNES_REWIND)
    },
    {
       DECLARE_BIND(player5_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -503,6 +516,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
       DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS)
       DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
+      DECLARE_BIND(rewind,                SSNES_REWIND)
    },
 };
 
