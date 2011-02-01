@@ -826,14 +826,17 @@ static void check_rewind(void)
          g_extern.frame_is_reverse = true;
       }
       else
-      {
          msg_queue_push(g_extern.msg_queue, "Reached end of rewind buffer!", 0, 30);
-      }
    }
    else
    {
-      snes_serialize(g_extern.state_buf, snes_serialize_size());
-      state_manager_push(g_extern.state_manager, g_extern.state_buf);
+      static unsigned cnt = 0;
+      cnt = (cnt + 1) % (g_settings.rewind_granularity ? g_settings.rewind_granularity : 1); // Avoid possible SIGFPE.
+      if (cnt == 0)
+      {
+         snes_serialize(g_extern.state_buf, snes_serialize_size());
+         state_manager_push(g_extern.state_manager, g_extern.state_buf);
+      }
    }
 }
 
