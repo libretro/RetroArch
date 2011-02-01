@@ -157,6 +157,24 @@ void parse_config(void)
 #endif
 }
 
+// Macros to ease config getting.
+#define CONFIG_GET_BOOL(var, key) if (config_get_bool(conf, key, &tmp_bool)) \
+   g_settings.var = tmp_bool
+
+#define CONFIG_GET_INT(var, key) if (config_get_int(conf, key, &tmp_int)) \
+   g_settings.var = tmp_int
+
+#define CONFIG_GET_DOUBLE(var, key) if (config_get_double(conf, key, &tmp_double)) \
+   g_settings.var = tmp_double
+
+#define CONFIG_GET_STRING(var, key) do { \
+   if (config_get_string(conf, key, &tmp_str)) \
+   { \
+      strncpy(g_settings.var, tmp_str, sizeof(g_settings.var) - 1); \
+      free(tmp_str); \
+   } \
+} while(0)
+
 #ifdef HAVE_CONFIGFILE
 static void parse_config_file(void)
 {
@@ -210,62 +228,25 @@ static void parse_config_file(void)
    bool tmp_bool;
    char *tmp_str;
 
-   // Video settings.
-   if (config_get_double(conf, "video_xscale", &tmp_double))
-      g_settings.video.xscale = tmp_double;
+   CONFIG_GET_DOUBLE(video.xscale, "video_xscale");
+   CONFIG_GET_DOUBLE(video.yscale, "video_yscale");
+   CONFIG_GET_INT(video.fullscreen_x, "video_fullscreen_x");
+   CONFIG_GET_INT(video.fullscreen_y, "video_fullscreen_y");
+   CONFIG_GET_BOOL(video.fullscreen, "video_fullscreen");
+   CONFIG_GET_BOOL(video.vsync, "video_vsync");
+   CONFIG_GET_BOOL(video.smooth, "video_smooth");
+   CONFIG_GET_BOOL(video.force_aspect, "video_force_aspect");
+   CONFIG_GET_DOUBLE(video.aspect_ratio, "video_aspect_ratio");
 
-   if (config_get_double(conf, "video_yscale", &tmp_double))
-      g_settings.video.yscale = tmp_double;
-
-   if (config_get_int(conf, "video_fullscreen_x", &tmp_int))
-      g_settings.video.fullscreen_x = tmp_int;
-
-   if (config_get_int(conf, "video_fullscreen_y", &tmp_int))
-      g_settings.video.fullscreen_y = tmp_int;
-
-   if (config_get_bool(conf, "video_fullscreen", &tmp_bool))
-      g_settings.video.fullscreen = tmp_bool;
-
-   if (config_get_bool(conf, "video_vsync", &tmp_bool))
-      g_settings.video.vsync = tmp_bool;
-
-   if (config_get_bool(conf, "video_smooth", &tmp_bool))
-      g_settings.video.smooth = tmp_bool;
-
-   if (config_get_bool(conf, "video_force_aspect", &tmp_bool))
-      g_settings.video.force_aspect = tmp_bool;
-
-   if (config_get_double(conf, "video_aspect_ratio", &tmp_double))
-      g_settings.video.aspect_ratio = tmp_double;
-
-   if (config_get_string(conf, "video_cg_shader", &tmp_str))
-   {
-      strncpy(g_settings.video.cg_shader_path, tmp_str, sizeof(g_settings.video.cg_shader_path) - 1);
-      free(tmp_str);
-   }
-
-   if (config_get_string(conf, "video_bsnes_shader", &tmp_str))
-   {
-      strncpy(g_settings.video.bsnes_shader_path, tmp_str, sizeof(g_settings.video.bsnes_shader_path) - 1);
-      free(tmp_str);
-   }
+   CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
+   CONFIG_GET_STRING(video.bsnes_shader_path, "video_bsnes_shader");
 
 #ifdef HAVE_FREETYPE
-   if (config_get_string(conf, "video_font_path", &tmp_str))
-   {
-      strncpy(g_settings.video.font_path, tmp_str, sizeof(g_settings.video.font_path) - 1);
-      free(tmp_str);
-   }
-
-   if (config_get_int(conf, "video_font_size", &tmp_int))
-      g_settings.video.font_size = tmp_int;
-
-   if (config_get_double(conf, "video_message_pos_x", &tmp_double))
-      g_settings.video.msg_pos_x = tmp_double;
-   if (config_get_double(conf, "video_message_pos_y", &tmp_double))
-      g_settings.video.msg_pos_y = tmp_double;
+   CONFIG_GET_STRING(video.font_path, "video_font_path");
+   CONFIG_GET_INT(video.font_size, "video_font_size");
+   CONFIG_GET_DOUBLE(video.msg_pos_x, "video_message_pos_x");
+   CONFIG_GET_DOUBLE(video.msg_pos_y, "video_message_pos_y");
 #endif
-
 
 #ifdef HAVE_FILTER
    if (config_get_string(conf, "video_filter", &tmp_str))
@@ -300,50 +281,22 @@ static void parse_config_file(void)
    }
 #endif
 
-   // Input Settings.
-   if (config_get_double(conf, "input_axis_threshold", &tmp_double))
-      g_settings.input.axis_threshold = tmp_double;
-
-   // Joypad mapping.
-   if (config_get_int(conf, "input_player1_joypad_index", &tmp_int))
-      g_settings.input.joypad_map[0] = tmp_int;
-
-   if (config_get_int(conf, "input_player2_joypad_index", &tmp_int))
-      g_settings.input.joypad_map[1] = tmp_int;
-
-   if (config_get_int(conf, "input_player3_joypad_index", &tmp_int))
-      g_settings.input.joypad_map[2] = tmp_int;
-
-   if (config_get_int(conf, "input_player4_joypad_index", &tmp_int))
-      g_settings.input.joypad_map[3] = tmp_int;
-
-   if (config_get_int(conf, "input_player5_joypad_index", &tmp_int))
-      g_settings.input.joypad_map[4] = tmp_int;
+   CONFIG_GET_DOUBLE(input.axis_threshold, "input_axis_threshold");
+   CONFIG_GET_INT(input.joypad_map[0], "input_player1_joypad_index");
+   CONFIG_GET_INT(input.joypad_map[1], "input_player2_joypad_index");
+   CONFIG_GET_INT(input.joypad_map[2], "input_player3_joypad_index");
+   CONFIG_GET_INT(input.joypad_map[3], "input_player4_joypad_index");
+   CONFIG_GET_INT(input.joypad_map[4], "input_player5_joypad_index");
 
    // Audio settings.
-   if (config_get_bool(conf, "audio_enable", &tmp_bool))
-      g_settings.audio.enable = tmp_bool;
-
-   if (config_get_int(conf, "audio_out_rate", &tmp_int))
-      g_settings.audio.out_rate = tmp_int;
-
-   if (config_get_double(conf, "audio_in_rate", &tmp_double))
-      g_settings.audio.in_rate = tmp_double;
-
-   if (config_get_double(conf, "audio_rate_step", &tmp_double))
-      g_settings.audio.rate_step = tmp_double;
-
-   if (config_get_string(conf, "audio_device", &tmp_str))
-   {
-      strncpy(g_settings.audio.device, tmp_str, sizeof(g_settings.audio.device) - 1);
-      free(tmp_str);
-   }
-
-   if (config_get_int(conf, "audio_latency", &tmp_int))
-      g_settings.audio.latency = tmp_int;
-
-   if (config_get_bool(conf, "audio_sync", &tmp_bool))
-      g_settings.audio.sync = tmp_bool;
+   
+   CONFIG_GET_BOOL(audio.enable, "audio_enable");
+   CONFIG_GET_INT(audio.out_rate, "audio_out_rate");
+   CONFIG_GET_DOUBLE(audio.in_rate, "audio_in_rate");
+   CONFIG_GET_DOUBLE(audio.rate_step, "audio_rate_step");
+   CONFIG_GET_STRING(audio.device, "audio_device");
+   CONFIG_GET_INT(audio.latency, "audio_latency");
+   CONFIG_GET_BOOL(audio.sync, "audio_sync");
 
    if (config_get_int(conf, "audio_src_quality", &tmp_int))
    {
@@ -354,32 +307,13 @@ static void parse_config_file(void)
          g_settings.audio.src_quality = quals[tmp_int];
    }
 
-   if (config_get_string(conf, "video_driver", &tmp_str))
-   {
-      strncpy(g_settings.video.driver, tmp_str, sizeof(g_settings.video.driver) - 1);
-      free(tmp_str);
-   }
-   if (config_get_string(conf, "audio_driver", &tmp_str))
-   {
-      strncpy(g_settings.audio.driver, tmp_str, sizeof(g_settings.audio.driver) - 1);
-      free(tmp_str);
-   }
-   if (config_get_string(conf, "input_driver", &tmp_str))
-   {
-      strncpy(g_settings.input.driver, tmp_str, sizeof(g_settings.input.driver) - 1);
-      free(tmp_str);
-   }
-   if (config_get_string(conf, "libsnes_path", &tmp_str))
-   {
-      strncpy(g_settings.libsnes, tmp_str, sizeof(g_settings.libsnes) - 1);
-      free(tmp_str);
-   }
+   CONFIG_GET_STRING(video.driver, "video_driver");
+   CONFIG_GET_STRING(audio.driver, "audio_driver");
+   CONFIG_GET_STRING(input.driver, "input_driver");
+   CONFIG_GET_STRING(libsnes, "libsnes_path");
 
-   if (config_get_bool(conf, "rewind_enable", &tmp_bool))
-      g_settings.rewind_enable = tmp_bool;
-
-   if (config_get_int(conf, "rewind_buffer_size", &tmp_int))
-      g_settings.rewind_buffer_size = tmp_int * 1000000;
+   CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
+   CONFIG_GET_INT(rewind_buffer_size, "rewind_buffer_size");
 
    read_keybinds(conf);
 
