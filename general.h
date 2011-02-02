@@ -37,7 +37,7 @@
 
 
 #define MAX_PLAYERS 5
-#define MAX_BINDS 23 // Needs to be increased every time there are new binds added.
+#define MAX_BINDS 24 // Needs to be increased every time there are new binds added.
 #define SSNES_NO_JOYPAD 0xFFFF
 struct settings
 {
@@ -157,7 +157,7 @@ struct global
    bool frame_is_reverse;
 
    bsv_movie_t *bsv_movie;
-   char bsv_movie_path[256];
+   char bsv_movie_path[512];
    bool bsv_movie_end;
    bool bsv_movie_playback;
 

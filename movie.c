@@ -135,7 +135,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
    }
 
    uint32_t header[4] = {0};
-   if (fread(header, 4, sizeof(uint32_t), handle->file) != 4)
+   if (fread(header, sizeof(uint32_t), 4, handle->file) != 4)
    {
       SSNES_ERR("Couldn't read movie header!\n");
       return false;
@@ -209,7 +209,7 @@ void bsv_movie_free(bsv_movie_t *handle)
 
 bool bsv_movie_get_input(bsv_movie_t *handle, int16_t *input)
 {
-   if (fread(input, 1, sizeof(int16_t), handle->file) != 1)
+   if (fread(input, sizeof(int16_t), 1, handle->file) != 1)
       return false;
 
    *input = swap_if_big16(*input);
@@ -218,7 +218,7 @@ bool bsv_movie_get_input(bsv_movie_t *handle, int16_t *input)
 
 void bsv_movie_set_input(bsv_movie_t *handle, int16_t input)
 {
-   fwrite(&input, 1, sizeof(int16_t), handle->file);
+   fwrite(&input, sizeof(int16_t), 1, handle->file);
 }
 
 bsv_movie_t *bsv_movie_init(const char *path, enum ssnes_movie_type type)

@@ -689,9 +689,18 @@ static void deinit_rewind(void)
 
 static void init_movie(void)
 {
-   if (strlen(g_extern.bsv_movie_path) > 0)
-      g_extern.bsv_movie = bsv_movie_init(g_extern.bsv_movie_path, 
-            g_extern.bsv_movie_playback ? SSNES_MOVIE_PLAYBACK : SSNES_MOVIE_RECORD);
+   if (g_extern.bsv_movie_playback)
+   {
+      g_extern.bsv_movie = bsv_movie_init(g_extern.bsv_movie_path, SSNES_MOVIE_PLAYBACK);
+      if (!g_extern.bsv_movie)
+      {
+         SSNES_ERR("Failed to load movie file: \"%s\"!\n", g_extern.bsv_movie_path);
+         exit(1);
+      }
+
+      msg_queue_push(g_extern.msg_queue, "Starting movie playback!", 2, 180);
+      SSNES_LOG("Starting movie playback!\n");
+   }
 }
 
 static void deinit_movie(void)
@@ -702,6 +711,9 @@ static void deinit_movie(void)
 
 static void fill_pathnames(void)
 {
+   if (!g_extern.bsv_movie_playback)
+      fill_pathname(g_extern.bsv_movie_path, g_extern.savefile_name_srm, ".bsv");
+
    switch (g_extern.game_type)
    {
       case SSNES_CART_BSX:
@@ -877,6 +889,36 @@ static void check_rewind(void)
    }
 }
 
+static void check_movie_record(void)
+{
+   static bool old_button = false;
+   bool new_button;
+   if ((new_button = driver.input->key_pressed(driver.input_data, SSNES_MOVIE_RECORD_TOGGLE)) && !old_button)
+   {
+      if (g_extern.bsv_movie)
+      {
+         msg_queue_clear(g_extern.msg_queue);
+         msg_queue_push(g_extern.msg_queue, "Stopping movie record!", 2, 180);
+         SSNES_LOG("Stopping movie record!\n");
+         bsv_movie_free(g_extern.bsv_movie);
+         g_extern.bsv_movie = NULL;
+      }
+      else
+      {
+         g_extern.bsv_movie = bsv_movie_init(g_extern.bsv_movie_path, SSNES_MOVIE_RECORD);
+         msg_queue_clear(g_extern.msg_queue);
+         msg_queue_push(g_extern.msg_queue, g_extern.bsv_movie ? "Starting movie record!" : "Failed to start movie record!", 2, 180);
+
+         if (g_extern.bsv_movie)
+            SSNES_LOG("Starting movie record!\n");
+         else
+            SSNES_ERR("Failed to start movie record!\n");
+      }
+   }
+
+   old_button = new_button;
+}
+
 static void do_state_checks(void)
 {
    set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
@@ -889,6 +931,9 @@ static void do_state_checks(void)
    }
    check_fullscreen();
    check_input_rate();
+
+   if (!g_extern.bsv_movie_playback)
+      check_movie_record();
 }
 
 
@@ -916,6 +961,7 @@ int main(int argc, char *argv[])
    psnes_set_input_poll(input_poll);
    psnes_set_input_state(input_state);
    
+   init_msg_queue();
    init_controllers();
    init_movie();
 
@@ -929,7 +975,6 @@ int main(int argc, char *argv[])
    init_recording();
 #endif
 
-   init_msg_queue();
 
    // Main loop
    for(;;)
@@ -946,7 +991,6 @@ int main(int argc, char *argv[])
       psnes_run();
    }
 
-   deinit_msg_queue();
 #ifdef HAVE_FFMPEG
    deinit_recording();
 #endif
@@ -958,6 +1002,8 @@ int main(int argc, char *argv[])
    }
 
    deinit_movie();
+   deinit_msg_queue();
+
    psnes_unload_cartridge();
    psnes_term();
    uninit_drivers();
