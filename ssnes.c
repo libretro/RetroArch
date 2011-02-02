@@ -619,8 +619,9 @@ static void init_recording(void)
    // Hardcode these options at the moment. Should be specificed in the config file later on.
    if (g_extern.recording)
    {
-      struct ffemu_rational ntsc_fps = {60000, 1001};
-      struct ffemu_rational pal_fps = {50000, 1001};
+      // Just record every 2 frames for now.
+      struct ffemu_rational ntsc_fps = {60000, 1000};
+      struct ffemu_rational pal_fps = {30000, 1000};
       struct ffemu_params params = {
          .vcodec = FFEMU_VIDEO_H264,
          .acodec = FFEMU_AUDIO_VORBIS,
@@ -628,7 +629,7 @@ static void init_recording(void)
          .out_width = 512,
          .out_height = 448,
          .channels = 2,
-         .samplerate = 32040,
+         .samplerate = 32000,
          .filename = g_extern.record_path,
          .fps = psnes_get_region() == SNES_REGION_NTSC ? ntsc_fps : pal_fps,
          .aspect_ratio = 4.0/3
