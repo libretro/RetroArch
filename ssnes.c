@@ -619,9 +619,8 @@ static void init_recording(void)
    // Hardcode these options at the moment. Should be specificed in the config file later on.
    if (g_extern.recording)
    {
-      // Just record every 2 frames for now.
       struct ffemu_rational ntsc_fps = {60000, 1000};
-      struct ffemu_rational pal_fps = {30000, 1000};
+      struct ffemu_rational pal_fps = {50000, 1000};
       struct ffemu_params params = {
          .vcodec = FFEMU_VIDEO_H264,
          .acodec = FFEMU_AUDIO_VORBIS,

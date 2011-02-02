@@ -164,6 +164,11 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
       return false;
    }
 
+   if (psnes_serialize_size() != state_size)
+   {
+      SSNES_ERR("Movie format seems to have a different serializer version. Cannot continue.\n");
+      exit(1);
+   }
    // Unserialize to start playback.
    psnes_unserialize(handle->state, state_size);
    return true;
