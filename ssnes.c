@@ -29,6 +29,7 @@
 #include "dynamic.h"
 #include "record/ffemu.h"
 #include "rewind.h"
+#include "movie.h"
 #include <assert.h>
 #ifdef HAVE_SRC
 #include <samplerate.h>
@@ -65,10 +66,10 @@ static void set_fast_forward_button(bool new_button_state)
 static inline void process_frame (uint16_t * restrict out, const uint16_t * restrict in, unsigned width, unsigned height)
 {
    int pitch = 1024;
-   if ( height == 448 || height == 478 )
+   if (height == 448 || height == 478)
       pitch = 512;
 
-   for ( int y = 0; y < height; y++ )
+   for (int y = 0; y < height; y++)
    {
       const uint16_t *src = in + y * pitch;
       uint16_t *dst = out + y * width;
@@ -214,11 +215,27 @@ static void input_poll(void)
 
 static int16_t input_state(bool port, unsigned device, unsigned index, unsigned id)
 {
+   if (g_extern.bsv_movie && g_extern.bsv_movie_playback)
+   {
+      int16_t ret;
+      if (bsv_movie_get_input(g_extern.bsv_movie, &ret))
+         return ret;
+      else
+      {
+         g_extern.bsv_movie_end = true;
+         return 0;
+      }
+   }
+
    const struct snes_keybind *binds[MAX_PLAYERS];
    for (int i = 0; i < MAX_PLAYERS; i++)
       binds[i] = g_settings.input.binds[i];
 
-   return driver.input->input_state(driver.input_data, binds, port, device, index, id);
+   int16_t res = driver.input->input_state(driver.input_data, binds, port, device, index, id);
+   if (g_extern.bsv_movie && !g_extern.bsv_movie_playback)
+      bsv_movie_set_input(g_extern.bsv_movie, res);
+
+   return res;
 }
 
 static void fill_pathname(char *out_path, char *in_path, const char *replace)
@@ -299,6 +316,7 @@ static void print_help(void)
    puts("\t-j/--justifier: Connect a virtual Konami Justifier into port 2 of the SNES.");
    puts("\t-J/--justifiers: Daisy chain two virtual Konami Justifiers into port 2 of the SNES.");
    puts("\t-4/--multitap: Connect a multitap to port 2 of the SNES.");
+   puts("\t-P/--bsvplay: Playback a BSV movie file.");
 
 #ifdef HAVE_FFMPEG
    puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
@@ -337,6 +355,7 @@ static void parse_input(int argc, char *argv[])
       { "multitap", 0, NULL, '4' },
       { "sufamiA", 1, NULL, 'Y' },
       { "sufamiB", 1, NULL, 'Z' },
+      { "bsvplay", 1, NULL, 'P' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -354,7 +373,7 @@ static void parse_input(int argc, char *argv[])
 #define CONFIG_FILE_ARG
 #endif
 
-   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:P:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -445,6 +464,11 @@ static void parse_input(int argc, char *argv[])
             g_extern.recording = true;
             break;
 #endif
+
+         case 'P':
+            strncpy(g_extern.bsv_movie_path, optarg, sizeof(g_extern.bsv_movie_path) - 1);
+            g_extern.bsv_movie_playback = true;
+            break;
 
          case '?':
             print_help();
@@ -663,6 +687,19 @@ static void deinit_rewind(void)
       free(g_extern.state_buf);
 }
 
+static void init_movie(void)
+{
+   if (strlen(g_extern.bsv_movie_path) > 0)
+      g_extern.bsv_movie = bsv_movie_init(g_extern.bsv_movie_path, 
+            g_extern.bsv_movie_playback ? SSNES_MOVIE_PLAYBACK : SSNES_MOVIE_RECORD);
+}
+
+static void deinit_movie(void)
+{
+   if (g_extern.bsv_movie)
+      bsv_movie_free(g_extern.bsv_movie);
+}
+
 static void fill_pathnames(void)
 {
    switch (g_extern.game_type)
@@ -844,11 +881,14 @@ static void do_state_checks(void)
 {
    set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
 
-   check_stateslots();
-   check_savestates();
+   if (!g_extern.bsv_movie)
+   {
+      check_stateslots();
+      check_savestates();
+      check_rewind();
+   }
    check_fullscreen();
    check_input_rate();
-   check_rewind();
 }
 
 
@@ -877,22 +917,26 @@ int main(int argc, char *argv[])
    psnes_set_input_state(input_state);
    
    init_controllers();
+   init_movie();
 
-   load_save_files();
+   if (!g_extern.bsv_movie)
+   {
+      load_save_files();
+      init_rewind();
+   }
 
 #ifdef HAVE_FFMPEG
    init_recording();
 #endif
 
    init_msg_queue();
-   init_rewind();
 
    // Main loop
    for(;;)
    {
       // Time to drop?
       if (driver.input->key_pressed(driver.input_data, SSNES_QUIT_KEY) ||
-            !driver.video->alive(driver.video_data))
+            !driver.video->alive(driver.video_data) || g_extern.bsv_movie_end)
          break;
 
       // Checks for stuff like fullscreen, save states, etc.
@@ -902,14 +946,18 @@ int main(int argc, char *argv[])
       psnes_run();
    }
 
-   deinit_rewind();
    deinit_msg_queue();
 #ifdef HAVE_FFMPEG
    deinit_recording();
 #endif
 
-   save_files();
+   if (!g_extern.bsv_movie)
+   {
+      deinit_rewind();
+      save_files();
+   }
 
+   deinit_movie();
    psnes_unload_cartridge();
    psnes_term();
    uninit_drivers();

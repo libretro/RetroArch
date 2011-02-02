@@ -22,6 +22,7 @@
 #include <libsnes.hpp>
 #include <string.h>
 #include "dynamic.h"
+#include "movie.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -103,6 +104,8 @@ static ssize_t read_rom_file(FILE* file, void** buf)
       *buf = rom_buf;
       ret = length;
    }
+
+   g_extern.cart_crc = crc32_calculate(*buf, ret);
    return ret;
 }
 

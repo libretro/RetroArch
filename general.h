@@ -25,6 +25,7 @@
 #include "record/ffemu.h"
 #include "message.h"
 #include "rewind.h"
+#include "movie.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -154,6 +155,11 @@ struct global
    state_manager_t *state_manager;
    void *state_buf;
    bool frame_is_reverse;
+
+   bsv_movie_t *bsv_movie;
+   char bsv_movie_path[256];
+   bool bsv_movie_end;
+   bool bsv_movie_playback;
 
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;
