@@ -115,6 +115,7 @@ struct global
 
    FILE *rom_file;
    enum ssnes_game_type game_type;
+   uint32_t cart_crc;
 
    char gb_rom_path[256];
    char bsx_rom_path[256];

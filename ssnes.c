@@ -645,9 +645,9 @@ static void init_rewind(void)
 {
    if (g_settings.rewind_enable)
    {
-      size_t serial_size = snes_serialize_size();
+      size_t serial_size = psnes_serialize_size();
       g_extern.state_buf = malloc((serial_size + 3) & ~3); // Make sure we allocate at least 4-byte multiple.
-      snes_serialize(g_extern.state_buf, serial_size);
+      psnes_serialize(g_extern.state_buf, serial_size);
       SSNES_LOG("Initing rewind buffer with size: %u MB\n", (unsigned)g_settings.rewind_buffer_size / 1000000);
       g_extern.state_manager = state_manager_new((serial_size + 3) & ~3, g_settings.rewind_buffer_size, g_extern.state_buf);
       if (!g_extern.state_manager)
@@ -822,7 +822,7 @@ static void check_rewind(void)
       if (state_manager_pop(g_extern.state_manager, &buf))
       {
          msg_queue_push(g_extern.msg_queue, "Rewinding!", 0, 30);
-         snes_unserialize(buf, snes_serialize_size());
+         psnes_unserialize(buf, psnes_serialize_size());
          g_extern.frame_is_reverse = true;
       }
       else
@@ -834,7 +834,7 @@ static void check_rewind(void)
       cnt = (cnt + 1) % (g_settings.rewind_granularity ? g_settings.rewind_granularity : 1); // Avoid possible SIGFPE.
       if (cnt == 0)
       {
-         snes_serialize(g_extern.state_buf, snes_serialize_size());
+         psnes_serialize(g_extern.state_buf, psnes_serialize_size());
          state_manager_push(g_extern.state_manager, g_extern.state_buf);
       }
    }
