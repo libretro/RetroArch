@@ -712,7 +712,7 @@ static void deinit_movie(void)
 static void fill_pathnames(void)
 {
    if (!g_extern.bsv_movie_playback)
-      fill_pathname(g_extern.bsv_movie_path, g_extern.savefile_name_srm, ".bsv");
+      fill_pathname(g_extern.bsv_movie_path, g_extern.savefile_name_srm, "");
 
    switch (g_extern.game_type)
    {
@@ -812,7 +812,7 @@ static void check_stateslots(void)
       g_extern.state_slot++;
       msg_queue_clear(g_extern.msg_queue);
       char msg[256];
-      snprintf(msg, sizeof(msg), "Save state slot: %u", g_extern.state_slot);
+      snprintf(msg, sizeof(msg), "Save state/movie slot: %u", g_extern.state_slot);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
       SSNES_LOG("%s\n", msg);
    }
@@ -826,7 +826,7 @@ static void check_stateslots(void)
          g_extern.state_slot--;
       msg_queue_clear(g_extern.msg_queue);
       char msg[256];
-      snprintf(msg, sizeof(msg), "Save state slot: %u", g_extern.state_slot);
+      snprintf(msg, sizeof(msg), "Save state/movie slot: %u", g_extern.state_slot);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
       SSNES_LOG("%s\n", msg);
    }
@@ -905,7 +905,13 @@ static void check_movie_record(void)
       }
       else
       {
-         g_extern.bsv_movie = bsv_movie_init(g_extern.bsv_movie_path, SSNES_MOVIE_RECORD);
+         char path[512];
+         if (g_extern.state_slot > 0)
+            snprintf(path, sizeof(path), "%s%d.bsv", g_extern.bsv_movie_path, g_extern.state_slot);
+         else
+            snprintf(path, sizeof(path), "%s.bsv", g_extern.bsv_movie_path);
+
+         g_extern.bsv_movie = bsv_movie_init(path, SSNES_MOVIE_RECORD);
          msg_queue_clear(g_extern.msg_queue);
          msg_queue_push(g_extern.msg_queue, g_extern.bsv_movie ? "Starting movie record!" : "Failed to start movie record!", 2, 180);
 

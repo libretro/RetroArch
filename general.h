@@ -157,7 +157,7 @@ struct global
    bool frame_is_reverse;
 
    bsv_movie_t *bsv_movie;
-   char bsv_movie_path[512];
+   char bsv_movie_path[256];
    bool bsv_movie_end;
    bool bsv_movie_playback;
 
