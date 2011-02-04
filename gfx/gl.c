@@ -29,17 +29,20 @@
 #include "config.h"
 #endif
 
+
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+#else
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#include <GL/glext.h>
+#endif
+
 #define NO_SDL_GLEXT
 #include "SDL.h"
 #include "SDL_opengl.h"
 #include "input/ssnes_sdl_input.h"
-
-#define GL_GLEXT_PROTOTYPES
-#include <GL/glext.h>
-
-#ifndef _WIN32
-#include <GL/glx.h>
-#endif
 
 #ifdef HAVE_CG
 #include "shader_cg.h"
@@ -424,12 +427,12 @@ static void gl_set_nonblock_state(void *data, bool state)
       SSNES_LOG("GL VSync => %s\n", state ? "off" : "on");
 #ifdef _WIN32
       static BOOL (APIENTRY *wgl_swap_interval)(int) = NULL;
-      if (!wgl_swap_interval) wgl_swap_interval = (BOOL (APIENTRY*)(int)) wglGetProcAddress("wglSwapIntervalEXT");
+      if (!wgl_swap_interval) wgl_swap_interval = (BOOL (APIENTRY*)(int)) SDL_GL_GetProcAddress("wglSwapIntervalEXT");
       if (wgl_swap_interval) wgl_swap_interval(state ? 0 : 1);
 #else
       static int (*glx_swap_interval)(int) = NULL;
-      if (!glx_swap_interval) glx_swap_interval = (int (*)(int))glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalSGI");
-      if (!glx_swap_interval) glx_swap_interval = (int (*)(int))glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalMESA");
+      if (!glx_swap_interval) glx_swap_interval = (int (*)(int))SDL_GL_GetProcAddress("glXSwapIntervalSGI");
+      if (!glx_swap_interval) glx_swap_interval = (int (*)(int))SDL_GL_GetProcAddress("glXSwapIntervalMESA");
       if (glx_swap_interval) glx_swap_interval(state ? 0 : 1);
 #endif
    }

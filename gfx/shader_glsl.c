@@ -23,16 +23,22 @@
 #include <string.h>
 #include "general.h"
 
-#define NO_SDL_GLEXT
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+#else
+#define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
+#include <GL/glext.h>
+#endif
+
+
+#define NO_SDL_GLEXT
 #include "SDL.h"
 #include "SDL_opengl.h"
 #include <stdlib.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
-
-#define GL_GLEXT_PROTOTYPES
-#include <GL/glext.h>
 
 #include "gl_common.h"
 

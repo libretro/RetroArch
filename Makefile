@@ -50,8 +50,13 @@ endif
 
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/gl.o input/sdl.o audio/sdl.o audio/buffer.o
-   LIBS += $(SDL_LIBS) -lGL
    DEFINES += $(SDL_CFLAGS)
+   LIBS += $(SDL_LIBS)
+ifneq ($(findstring Darwin,$(shell uname -a)),)
+   LIBS += -framework OpenGL
+else
+   LIBS += -lGL
+endif
 endif
 
 ifeq ($(HAVE_CG), 1)

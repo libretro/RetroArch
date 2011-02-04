@@ -6,7 +6,7 @@ TEMP_EXE=.tmp
 
 echo -n "Checking operating system ... "
 OS="Win32" # whatever ;D
-unamestr="`uname -o`"
+unamestr="`uname -a`"
 if [ ! -z "`echo $unamestr | grep -i Linux`" ]; then
    OS="Linux"
 elif [ ! -z "`echo $unamestr | grep -i Darwin`" ]; then
