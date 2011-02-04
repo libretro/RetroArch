@@ -237,7 +237,7 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    // Need blending. 
    // Using fixed function pipeline here since we cannot guarantee presence of shaders (would be kinda overkill anyways).
    glEnable(GL_BLEND);
-   glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
    struct font_output_list out;
    font_renderer_msg(gl->font, msg, &out);
@@ -262,7 +262,7 @@ static void gl_render_msg(gl_t *gl, const char *msg)
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(head->pitch));
       glPixelStorei(GL_UNPACK_ROW_LENGTH, head->pitch);
       glTexImage2D(GL_TEXTURE_2D,
-            0, GL_RGBA, head->width, head->height, 0, GL_LUMINANCE,
+            0, GL_INTENSITY8, head->width, head->height, 0, GL_LUMINANCE,
             GL_UNSIGNED_BYTE, head->output);
 
       head = head->next;
@@ -488,7 +488,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    glEnable(GL_TEXTURE_2D);
    glDisable(GL_DITHER);
    glDisable(GL_DEPTH_TEST);
-   glColor3f(1, 1, 1);
+   glColor4f(1, 1, 1, 1);
    glClearColor(0, 0, 0, 0);
 
    SDL_WM_SetCaption("SSNES", NULL);
