@@ -36,7 +36,10 @@
 #endif
 
 #ifdef __APPLE__
-#include "SDL.h"
+#include "SDL.h" 
+// OSX seems to really need -lSDLmain, 
+// so we include SDL.h here so it can hack our main.
+// I had issues including this in Win32 for some reason. :)
 #endif
 
 struct global g_extern = {

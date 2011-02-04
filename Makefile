@@ -131,10 +131,6 @@ tools/ssnes-joyconfig: $(JOYCONFIG_OBJ)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 	@$(if $(Q), $(shell echo echo CC $<),)
 
-%.o: %.m
-	$(Q)$(CC) -c -o $@ $<
-	@$(if $(Q), $(shell echo echo CC $<),)
-
 install: $(TARGET)
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
 	mkdir -p $(DESTDIR)/etc
