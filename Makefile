@@ -12,7 +12,6 @@ DEFINES = -DHAVE_CONFIG_H
 ifneq ($(findstring Darwin,$(shell uname -a)),)
    OSX := 1
    LIBS += -framework AppKit -lSDLmain
-   OBJ += osx-glue.o
 else
    OSX := 0
 endif
