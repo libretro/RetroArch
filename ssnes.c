@@ -35,6 +35,12 @@
 #include <samplerate.h>
 #endif
 
+#ifdef __APPLE__
+void NSApplicationLoad(void);
+void init_ns_pool(void);
+void deinit_ns_pool(void);
+#endif
+
 struct global g_extern = {
    .video_active = true,
    .audio_active = true,
@@ -945,6 +951,11 @@ static void do_state_checks(void)
 
 int main(int argc, char *argv[])
 {
+#ifdef __APPLE__ // Very unix-y indeed...
+   NSApplicationLoad();
+   init_ns_pool();
+#endif
+
    parse_input(argc, argv);
    parse_config();
    init_dlsym();
@@ -1015,6 +1026,10 @@ int main(int argc, char *argv[])
    uninit_drivers();
    uninit_dlsym();
 
+#ifdef __APPLE__
+   deinit_ns_pool();
+#endif
+
    return 0;
 
 error:
@@ -1023,6 +1038,9 @@ error:
    uninit_drivers();
    uninit_dlsym();
 
+#ifdef __APPLE__
+   deinit_ns_pool();
+#endif
    return 1;
 }
 

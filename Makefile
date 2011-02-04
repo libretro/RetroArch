@@ -9,6 +9,14 @@ HEADERS = $(wildcard */*.h) $(wildcard *.h)
 LIBS =
 DEFINES = -DHAVE_CONFIG_H
 
+ifneq ($(findstring Darwin,$(shell uname -a)),)
+   OSX := 1
+   LIBS += -framework AppKit
+   OBJ += osx-glue.o
+else
+   OSX := 0
+endif
+
 ifeq ($(HAVE_SRC), 1)
    LIBS += $(SRC_LIBS)
    DEFINES += $(SRC_CFLAGS)
@@ -36,7 +44,7 @@ ifeq ($(HAVE_ROAR), 1)
 endif
 ifeq ($(HAVE_AL), 1)
    OBJ += audio/openal.o
-ifneq ($(findstring Darwin,$(shell uname -a)),)
+ifeq ($(OSX),1)
    LIBS += -framework OpenAL
 else
    LIBS += -lopenal
@@ -56,7 +64,7 @@ ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/gl.o input/sdl.o audio/sdl.o audio/buffer.o
    DEFINES += $(SDL_CFLAGS)
    LIBS += $(SDL_LIBS)
-ifneq ($(findstring Darwin,$(shell uname -a)),)
+ifeq ($(OSX),1)
    LIBS += -framework OpenGL
 else
    LIBS += -lGL
@@ -122,6 +130,10 @@ tools/ssnes-joyconfig: $(JOYCONFIG_OBJ)
 
 %.o: %.c config.h config.mk $(HEADERS)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+
+%.o: %.m
+	$(Q)$(CC) -c -o $@ $<
 	@$(if $(Q), $(shell echo echo CC $<),)
 
 install: $(TARGET)
