@@ -17,7 +17,13 @@ fi
 
 check_lib ALSA -lasound snd_pcm_open
 check_header OSS sys/soundcard.h
-check_lib AL -lopenal alcOpenDevice
+
+if [ "$OS" = "Darwin" ]; then
+   check_lib AL "-framework OpenAL" alcOpenDevice
+else
+   check_lib AL -lopenal alcOpenDevice
+fi
+
 check_lib RSOUND -lrsound rsd_init
 check_lib ROAR -lroar roar_vs_new
 check_lib JACK -ljack jack_client_open

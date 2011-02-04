@@ -36,7 +36,11 @@ ifeq ($(HAVE_ROAR), 1)
 endif
 ifeq ($(HAVE_AL), 1)
    OBJ += audio/openal.o
+ifneq ($(findstring Darwin,$(shell uname -a)),)
+   LIBS += -framework OpenAL
+else
    LIBS += -lopenal
+endif
 endif
 ifeq ($(HAVE_JACK),1)
    OBJ += audio/jack.o
