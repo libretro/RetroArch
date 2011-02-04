@@ -11,7 +11,7 @@ DEFINES = -DHAVE_CONFIG_H
 
 ifneq ($(findstring Darwin,$(shell uname -a)),)
    OSX := 1
-   LIBS += -framework AppKit -lSDLmain
+   LIBS += -framework AppKit
 else
    OSX := 0
 endif
