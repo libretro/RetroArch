@@ -36,6 +36,7 @@
 #endif
 
 #ifdef __APPLE__
+#include "SDL.h"
 void NSApplicationLoad(void);
 void init_ns_pool(void);
 void deinit_ns_pool(void);
