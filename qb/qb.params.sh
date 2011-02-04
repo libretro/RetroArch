@@ -95,7 +95,7 @@ parse_input()
       case "$1" in
 
          --prefix=*)
-            prefix="`echo $1 | sed -e 's|^--prefix=\(\S\S*\)$|\1|' -e 's|\(\S\S*\)/$|\1|'`"
+            prefix="`echo $1 | sed -e 's|^--prefix=||' -e 's|^\(.*\)/$|\1|'`"
 
             if [ "$prefix" != "$1" ]; then
                PREFIX="$prefix"
