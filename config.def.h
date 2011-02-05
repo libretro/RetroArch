@@ -156,7 +156,8 @@ static const unsigned rewind_buffer_size = 20 << 20; // 20MiB
 // How many frames to rewind at a time.
 static const unsigned rewind_granularity = 1;
 
-
+// Pause gameplay when gameplay loses focus.
+static const bool pause_nonactive = true;
 
 
 ////////////////////

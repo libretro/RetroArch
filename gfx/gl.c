@@ -553,11 +553,18 @@ static bool gl_alive(void *data)
    return !gl->quitting;
 }
 
+static bool gl_focus(void *data)
+{
+   (void)data;
+   return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
+}
+
 const video_driver_t video_gl = {
    .init = gl_init,
    .frame = gl_frame,
    .alive = gl_alive,
    .set_nonblock_state = gl_set_nonblock_state,
+   .focus = gl_focus,
    .free = gl_free,
    .ident = "gl"
 };

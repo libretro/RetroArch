@@ -110,6 +110,7 @@ typedef struct video_driver
    void (*set_nonblock_state)(void* data, bool toggle); // Should we care about syncing to vblank? Fast forwarding.
    // Is the window still active?
    bool (*alive)(void *data);
+   bool (*focus)(void *data); // Does the window have focus?
    void (*free)(void* data);
    const char *ident;
 } video_driver_t;

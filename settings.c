@@ -127,6 +127,7 @@ static void set_defaults(void)
    g_settings.rewind_enable = rewind_enable;
    g_settings.rewind_buffer_size = rewind_buffer_size;
    g_settings.rewind_granularity = rewind_granularity;
+   g_settings.pause_nonactive = pause_nonactive;
 
    assert(sizeof(g_settings.input.binds[0]) >= sizeof(snes_keybinds_1));
    assert(sizeof(g_settings.input.binds[1]) >= sizeof(snes_keybinds_2));
@@ -319,6 +320,8 @@ static void parse_config_file(void)
       g_settings.rewind_buffer_size = tmp_int * 1000000;
 
    CONFIG_GET_INT(rewind_granularity, "rewind_granularity");
+
+   CONFIG_GET_BOOL(pause_nonactive, "pause_nonactive");
 
    read_keybinds(conf);
 

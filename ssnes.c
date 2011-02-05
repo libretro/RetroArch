@@ -943,7 +943,14 @@ static void check_pause(void)
 {
    static bool old_state = false;
    bool new_state = driver.input->key_pressed(driver.input_data, SSNES_PAUSE_TOGGLE);
-   if (new_state && !old_state)
+
+   static bool old_focus = true;
+   bool focus = true;
+
+   if (g_settings.pause_nonactive)
+      focus = driver.video->focus(driver.video_data);
+
+   if (focus && new_state && !old_state)
    {
       g_extern.is_paused = !g_extern.is_paused;
 
@@ -960,7 +967,22 @@ static void check_pause(void)
             driver.audio->start(driver.audio_data);
       }
    }
+   else if (focus && !old_focus)
+   {
+      SSNES_LOG("Unpaused!\n");
+      g_extern.is_paused = false;
+      if (driver.audio_data)
+         driver.audio->start(driver.audio_data);
+   }
+   else if (!focus && old_focus)
+   {
+      SSNES_LOG("Paused!\n");
+      g_extern.is_paused = true;
+      if (driver.audio_data)
+         driver.audio->stop(driver.audio_data);
+   }
 
+   old_focus = focus;
    old_state = new_state;
 }
 

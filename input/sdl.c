@@ -322,7 +322,7 @@ static void sdl_input_poll(void *data)
                *sdl->should_resize = true;
             }
             break;
-            
+
          default:
             break;
       }
