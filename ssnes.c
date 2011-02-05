@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
+#include <time.h>
 #include "driver.h"
 #include "file.h"
 #include "hqflt/filters.h"
@@ -34,6 +35,12 @@
 #ifdef HAVE_SRC
 #include <samplerate.h>
 #endif
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 
 #ifdef __APPLE__
 #include "SDL.h" 
@@ -932,8 +939,37 @@ static void check_movie_record(void)
    old_button = new_button;
 }
 
+static void check_pause(void)
+{
+   static bool old_state = false;
+   bool new_state = driver.input->key_pressed(driver.input_data, SSNES_PAUSE_TOGGLE);
+   if (new_state && !old_state)
+   {
+      g_extern.is_paused = !g_extern.is_paused;
+
+      if (g_extern.is_paused)
+      {
+         SSNES_LOG("Paused!\n");
+         if (driver.audio_data)
+            driver.audio->stop(driver.audio_data);
+      }
+      else 
+      {
+         SSNES_LOG("Unpaused!\n");
+         if (driver.audio_data)
+            driver.audio->start(driver.audio_data);
+      }
+   }
+
+   old_state = new_state;
+}
+
 static void do_state_checks(void)
 {
+   check_pause();
+   if (g_extern.is_paused)
+      return;
+
    set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
 
    if (!g_extern.bsv_movie)
@@ -1001,7 +1037,21 @@ int main(int argc, char *argv[])
       do_state_checks();
       
       // Run libsnes for one frame.
-      psnes_run();
+      if (!g_extern.is_paused)
+         psnes_run();
+      else
+      {
+         input_poll();
+#ifdef _WIN32
+         Sleep(10);
+#else
+         struct timespec tv = {
+            .tv_sec = 0,
+            .tv_nsec = 10000000
+         };
+         nanosleep(&tv, NULL);
+#endif
+      }
    }
 
 #ifdef HAVE_FFMPEG

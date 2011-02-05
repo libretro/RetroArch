@@ -37,7 +37,7 @@
 
 
 #define MAX_PLAYERS 5
-#define MAX_BINDS 24 // Needs to be increased every time there are new binds added.
+#define MAX_BINDS 25 // Needs to be increased every time there are new binds added.
 #define SSNES_NO_JOYPAD 0xFFFF
 struct settings
 {
@@ -160,6 +160,8 @@ struct global
    char bsv_movie_path[256];
    bool bsv_movie_end;
    bool bsv_movie_playback;
+
+   bool is_paused;
 
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;
