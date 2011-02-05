@@ -314,7 +314,10 @@ static void parse_config_file(void)
    CONFIG_GET_STRING(libsnes, "libsnes_path");
 
    CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
-   CONFIG_GET_INT(rewind_buffer_size, "rewind_buffer_size");
+
+   if (config_get_int(conf, "rewind_buffer_size", &tmp_int))
+      g_settings.rewind_buffer_size = tmp_int * 1000000;
+
    CONFIG_GET_INT(rewind_granularity, "rewind_granularity");
 
    read_keybinds(conf);
