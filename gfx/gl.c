@@ -401,7 +401,6 @@ static bool gl_frame(void *data, const uint16_t* frame, unsigned width, unsigned
       gl_render_msg(gl, msg);
 
    show_fps();
-   glFlush();
    SDL_GL_SwapBuffers();
 
    return true;
