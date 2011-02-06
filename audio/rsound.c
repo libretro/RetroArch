@@ -19,14 +19,43 @@
 #include "driver.h"
 #include <stdlib.h>
 #include <rsound.h>
+#include "buffer.h"
+#include <stdbool.h>
+#include "SDL.h"
 
 typedef struct rsd
 {
    rsound_t *rd;
-   int latency;
-   int rate;
-   int nonblock;
+   bool nonblock;
+   volatile bool has_error;
+
+   rsound_fifo_buffer_t *buffer;
+
+   SDL_mutex *lock;
+   SDL_mutex *cond_lock;
+   SDL_cond *cond;
 } rsd_t;
+
+static ssize_t audio_cb(void *data, size_t bytes, void *userdata)
+{
+   rsd_t *rsd = userdata;
+
+   SDL_mutexP(rsd->lock);
+   size_t avail = rsnd_fifo_read_avail(rsd->buffer);
+   size_t write_size = bytes > avail ? avail : bytes;
+   rsnd_fifo_read(rsd->buffer, data, write_size);
+   SDL_mutexV(rsd->lock);
+   SDL_CondSignal(rsd->cond);
+
+   return write_size;
+}
+
+static void err_cb(void *userdata)
+{
+   rsd_t *rsd = userdata;
+   rsd->has_error = true;
+   SDL_CondSignal(rsd->cond);
+}
 
 static void* __rsd_init(const char* device, int rate, int latency)
 {
@@ -42,16 +71,25 @@ static void* __rsd_init(const char* device, int rate, int latency)
       return NULL;
    }
 
+   rsd->lock = SDL_CreateMutex();
+   rsd->cond_lock = SDL_CreateMutex();
+   rsd->cond = SDL_CreateCond();
+
+   rsd->buffer = rsnd_fifo_new(1024 * 4);
+
    int channels = 2;
    int format = RSD_S16_NE;
 
    rsd_set_param(rd, RSD_CHANNELS, &channels);
    rsd_set_param(rd, RSD_SAMPLERATE, &rate);
+   rsd_set_param(rd, RSD_LATENCY, &latency);
 
    if ( device != NULL )
       rsd_set_param(rd, RSD_HOST, (void*)device);
 
    rsd_set_param(rd, RSD_FORMAT, &format);
+
+   rsd_set_callback(rd, audio_cb, err_cb, 256, rsd);
 
    if ( rsd_start(rd) < 0 )
    {
@@ -60,14 +98,7 @@ static void* __rsd_init(const char* device, int rate, int latency)
       return NULL;
    }
 
-   int min_latency = (rsd_delay_ms(rd) > latency) ? (rsd_delay_ms(rd) * 3 / 2) : latency;
-
-   rsd_set_param(rd, RSD_LATENCY, &min_latency);
-
    rsd->rd = rd;
-   rsd->latency = min_latency;
-   rsd->rate = rate;
-
    return rsd;
 }
 
@@ -75,26 +106,46 @@ static ssize_t __rsd_write(void* data, const void* buf, size_t size)
 {
    rsd_t *rsd = data;
 
-   if ( (rsd_delay_ms(rsd->rd) > rsd->latency || rsd_get_avail(rsd->rd) < size) && rsd->nonblock )
-      return 0;
-
-   if ( size == 0 )
-      return 0;
-
-   rsd_delay_wait(rsd->rd);
-   if ( rsd_write(rsd->rd, buf, size) == 0 )
+   if (rsd->has_error)
       return -1;
 
-   if ( rsd_delay_ms(rsd->rd) < rsd->latency/2 )
+   if (rsd->nonblock)
    {
-      int ms = rsd->latency/2;
-      size_t size = (ms * rsd->rate * 4) / 1000;
-      void *temp = calloc(1, size);
-      rsd_write(rsd->rd, temp, size);
-      free(temp);
+      SDL_mutexP(rsd->lock);
+      size_t avail = rsnd_fifo_write_avail(rsd->buffer);
+      size_t write_amt = avail > size ? size : avail;
+      rsnd_fifo_write(rsd->buffer, buf, write_amt);
+      SDL_mutexV(rsd->lock);
+      return write_amt;
    }
+   else
+   {
+      size_t written = 0;
+      while (written < size && !rsd->has_error)
+      {
+         SDL_mutexP(rsd->lock);
+         size_t avail = rsnd_fifo_write_avail(rsd->buffer);
 
-   return size;
+         if (avail == 0)
+         {
+            SDL_mutexV(rsd->lock);
+            if (!rsd->has_error)
+            {
+               SDL_mutexP(rsd->cond_lock);
+               SDL_CondWait(rsd->cond, rsd->cond_lock);
+               SDL_mutexV(rsd->cond_lock);
+            }
+         }
+         else
+         {
+            size_t write_amt = size - written > avail ? avail : size - written;
+            rsnd_fifo_write(rsd->buffer, (const char*)buf + written, write_amt);
+            SDL_mutexV(rsd->lock);
+            written += write_amt;
+         }
+      }
+      return written;
+   }
 }
 
 static bool __rsd_stop(void *data)
@@ -126,6 +177,12 @@ static void __rsd_free(void *data)
 
    rsd_stop(rsd->rd);
    rsd_free(rsd->rd);
+
+   rsnd_fifo_free(rsd->buffer);
+   SDL_DestroyMutex(rsd->lock);
+   SDL_DestroyMutex(rsd->cond_lock);
+   SDL_DestroyCond(rsd->cond);
+
    free(rsd);
 }
 

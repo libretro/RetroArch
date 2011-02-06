@@ -975,7 +975,13 @@ static void check_pause(void)
       {
          SSNES_LOG("Unpaused!\n");
          if (driver.audio_data)
-            driver.audio->start(driver.audio_data);
+         {
+            if (!driver.audio->start(driver.audio_data))
+            {
+               SSNES_ERR("Failed to resume audio driver! Will continue without audio!\n");
+               g_extern.audio_active = false;
+            }
+         }
       }
    }
    else if (focus && !old_focus)
@@ -983,7 +989,13 @@ static void check_pause(void)
       SSNES_LOG("Unpaused!\n");
       g_extern.is_paused = false;
       if (driver.audio_data)
-         driver.audio->start(driver.audio_data);
+      {
+         if (!driver.audio->start(driver.audio_data))
+         {
+               SSNES_ERR("Failed to resume audio driver! Will continue without audio!\n");
+               g_extern.audio_active = false;
+         }
+      }
    }
    else if (!focus && old_focus)
    {

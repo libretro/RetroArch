@@ -24,7 +24,7 @@ else
    check_lib AL -lopenal alcOpenDevice
 fi
 
-check_lib RSOUND -lrsound rsd_init
+check_pkgconf RSOUND rsound 1.1
 check_lib ROAR -lroar roar_vs_new
 check_lib JACK -ljack jack_client_open
 check_pkgconf PULSE libpulse
