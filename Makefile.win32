@@ -6,7 +6,7 @@ JOBJ = conf/config_file.o tools/main-stub.o tools/ssnes-joyconfig.o
 CC = gcc
 CXX = g++
 
-HAVE_SRC = 1
+HAVE_SRC = 0
 HAVE_SDL = 1
 HAVE_XML = 1
 HAVE_FREETYPE = 1
@@ -25,6 +25,8 @@ SDL_CFLAGS = -ISDL
 ifeq ($(HAVE_SRC), 1)
    LIBS += $(SRC_LIBS)
    DEFINES += $(SRC_CFLAGS) -DHAVE_SRC
+else
+   OBJ += audio/hermite.o
 endif
 
 ifeq ($(HAVE_SDL), 1)
