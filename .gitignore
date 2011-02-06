@@ -1,3 +1,5 @@
 *.o
 ssnes
 /config.h
+/config.mk
+/tools/ssnes-joyconfig
