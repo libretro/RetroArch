@@ -190,6 +190,9 @@ static void audio_sample(uint16_t left, uint16_t right)
 
 #ifdef HAVE_SRC
       SRC_DATA src_data = {
+#else
+      struct hermite_data src_data = {
+#endif
          .data_in = g_extern.audio_data.data,
          .data_out = g_extern.audio_data.outsamples,
          .input_frames = g_extern.audio_data.chunk_size / 2,
@@ -197,28 +200,15 @@ static void audio_sample(uint16_t left, uint16_t right)
          .end_of_input = 0,
          .src_ratio = (double)g_settings.audio.out_rate / (double)g_settings.audio.in_rate,
       };
-#else
-      struct hermite_data re_data = {
-         .in_data = g_extern.audio_data.data,
-         .out_data = g_extern.audio_data.outsamples,
-         .in_frames = g_extern.audio_data.chunk_size / 2,
-         .ratio = (double)g_settings.audio.out_rate / (double)g_settings.audio.in_rate,
-      };
-#endif
 
 #ifdef HAVE_SRC
       src_process(g_extern.audio_data.source, &src_data);
 #else
-      size_t output_frames_gen = hermite_process(g_extern.audio_data.source, &re_data);
+      hermite_process(g_extern.audio_data.source, &src_data);
 #endif
-
       if (g_extern.audio_data.use_float)
       {
-#ifdef HAVE_SRC
          if (driver.audio->write(driver.audio_data, g_extern.audio_data.outsamples, src_data.output_frames_gen * sizeof(float) * 2) < 0)
-#else
-         if (driver.audio->write(driver.audio_data, g_extern.audio_data.outsamples, output_frames_gen * sizeof(float) * 2) < 0)
-#endif
          {
             fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
             g_extern.audio_active = false;
@@ -226,21 +216,13 @@ static void audio_sample(uint16_t left, uint16_t right)
       }
       else
       {
-#ifdef HAVE_SRC
-         src_float_to_short_array(g_extern.audio_data.outsamples, g_extern.audio_data.conv_outsamples, src_data.output_frames_gen * 2);
-#else
-         for (unsigned i = 0; i < output_frames_gen * 2; i++)
+         for (unsigned i = 0; i < src_data.output_frames_gen * 2; i++)
          {
             int32_t val = g_extern.audio_data.outsamples[i] * 0x8000;
             g_extern.audio_data.conv_outsamples[i] = (val > 0x7FFF) ? 0x7FFF : (val < -0x8000 ? -0x8000 : (int16_t)val);
          }
-#endif
 
-#ifdef HAVE_SRC
          if (driver.audio->write(driver.audio_data, g_extern.audio_data.conv_outsamples, src_data.output_frames_gen * sizeof(int16_t) * 2) < 0)
-#else
-         if (driver.audio->write(driver.audio_data, g_extern.audio_data.conv_outsamples, output_frames_gen * sizeof(int16_t) * 2) < 0)
-#endif
          {
             fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
             g_extern.audio_active = false;

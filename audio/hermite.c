@@ -20,10 +20,13 @@
 #include "hermite.h"
 #include <stdlib.h>
 
+#define MAX_CHANS 8
+
 struct hermite_resampler
 {
-   float chan_data[2][4];
+   float chan_data[MAX_CHANS][4];
    double r_frac;
+   unsigned chans;
 };
 
 static inline float hermite_kernel(float mu1, float a, float b, float c, float d)
@@ -44,50 +47,60 @@ static inline float hermite_kernel(float mu1, float a, float b, float c, float d
    return (a0 * b) + (a1 * m0) + (a2 * m1) + (a3 * c);
 }
 
-hermite_resampler_t *hermite_new(void)
+hermite_resampler_t *hermite_new(unsigned channels)
 {
+   if (channels > MAX_CHANS)
+      return NULL;
+
    hermite_resampler_t *re = calloc(1, sizeof(*re));
    if (!re)
       return NULL;
+   re->chans = channels;
    return re;
 }
 
-size_t hermite_process(hermite_resampler_t *re, const struct hermite_data *data)
+void hermite_process(hermite_resampler_t *re, struct hermite_data *data)
 {
-   double r_step = 1.0 / data->ratio;
-   size_t processed = 0;
+   double r_step = 1.0 / data->src_ratio;
+   size_t processed_out = 0;
+   size_t processed_in = 0;
 
-   size_t in_frames = data->in_frames;
-   const float *in_data = data->in_data;
-   float *out_data = data->out_data;
+   size_t in_frames = data->input_frames;
+   size_t out_frames = data->output_frames;
+   const float *in_data = data->data_in;
+   float *out_data = data->data_out;
 
-   while (in_frames > 0)
+   while (processed_in < in_frames && processed_out < out_frames)
    {
-      while (re->r_frac <= 1.0)
+      while (re->r_frac <= 1.0 && processed_out < out_frames)
       {
          re->r_frac += r_step;
-         for (unsigned i = 0; i < 2; i++)
+         for (unsigned i = 0; i < re->chans; i++)
          {
             float res = hermite_kernel(re->r_frac, 
                   re->chan_data[i][0], re->chan_data[i][1], re->chan_data[i][2], re->chan_data[i][3]);
             *out_data++ = res;
          }
-         processed++;
+         processed_out++;
       }
 
-      re->r_frac -= 1.0;
-
-      for (unsigned i = 0; i < 2; i++)
+      if (re->r_frac >= 1.0)
       {
-         re->chan_data[i][0] = re->chan_data[i][1];
-         re->chan_data[i][1] = re->chan_data[i][2];
-         re->chan_data[i][2] = re->chan_data[i][3];
-         re->chan_data[i][3] = *in_data++;
-      }
+         re->r_frac -= 1.0;
 
-      in_frames--;
+         for (unsigned i = 0; i < re->chans; i++)
+         {
+            re->chan_data[i][0] = re->chan_data[i][1];
+            re->chan_data[i][1] = re->chan_data[i][2];
+            re->chan_data[i][2] = re->chan_data[i][3];
+            re->chan_data[i][3] = *in_data++;
+         }
+         processed_in++;
+      }
    }
-   return processed;
+
+   data->input_frames_used = processed_in;
+   data->output_frames_gen = processed_out;
 }
 
 void hermite_free(hermite_resampler_t *re)

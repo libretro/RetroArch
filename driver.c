@@ -172,7 +172,7 @@ void init_audio(void)
    if (!g_extern.audio_data.source)
       g_extern.audio_active = false;
 #else
-   g_extern.audio_data.source = hermite_new();
+   g_extern.audio_data.source = hermite_new(2);
    if (!g_extern.audio_data.source)
       g_extern.audio_active = false;
 #endif

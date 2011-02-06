@@ -16,26 +16,34 @@
  */
 
 // Hermite resampler based on bsnes' audio library.
+// Attempts to be similiar to the libsamplerate process interface.
 
 #ifndef __SSNES_HERMITE_H
 #define __SSNES_HERMITE_H
 
 #include <stddef.h>
+#include <stdbool.h>
 
 typedef struct hermite_resampler hermite_resampler_t;
 
-hermite_resampler_t *hermite_new(void);
+hermite_resampler_t *hermite_new(unsigned channels);
 
 struct hermite_data
 {
-   const float *in_data;
-   float *out_data; // We make it really simple and assume that there is always enough space. :)
+   const float *data_in;
+   float *data_out;
 
-   size_t in_frames;
-   double ratio;
+   size_t input_frames;
+   size_t output_frames;
+
+   size_t input_frames_used;
+   size_t output_frames_gen;
+
+   bool end_of_input; // Just used to clone the SRC API.
+   double src_ratio;
 };
 
-size_t hermite_process(hermite_resampler_t *re, const struct hermite_data *data);
+void hermite_process(hermite_resampler_t *re, struct hermite_data *data);
 void hermite_free(hermite_resampler_t *re);
 
 #endif
