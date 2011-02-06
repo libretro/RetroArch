@@ -31,7 +31,7 @@
 #endif
 
 #ifdef HAVE_SDL
-#include <SDL/SDL.h>
+#include "SDL.h"
 #else
 #error HAVE_SDL is not defined!
 #endif
