@@ -33,6 +33,8 @@
 
 #ifdef HAVE_SRC
 #include <samplerate.h>
+#else
+#include "audio/hermite.h"
 #endif
 
 
@@ -106,7 +108,6 @@ enum ssnes_game_type
 struct global
 {
    bool verbose;
-   SRC_STATE *source;
    bool audio_active;
    bool video_active;
 
@@ -140,6 +141,12 @@ struct global
 
    struct
    {
+#ifdef HAVE_SRC
+      SRC_STATE *source;
+#else
+      hermite_resampler_t *source;
+#endif
+
       float *data;
       size_t data_ptr;
       size_t chunk_size;

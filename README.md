@@ -18,13 +18,13 @@ SSNES requires these libraries to build:
 
    - [libsnes](http://byuu.org/bsnes/)
    - SDL
-   - libsamplerate
 
 SSNES can utilize these libraries if enabled:
 
    - nvidia-cg-toolkit
    - libxml2 (bSNES XML shaders)
    - libfreetype2 (TTF font rendering on screen)
+   - libsamplerate
 
 SSNES needs at least one of these audio driver libraries:
 

@@ -46,7 +46,6 @@ if [ $HAVE_FFMPEG != no ]; then
 fi
 
 check_pkgconf SRC samplerate
-check_critical SRC "Cannot find libsamplerate."
 
 check_lib DYNAMIC -ldl dlopen
 

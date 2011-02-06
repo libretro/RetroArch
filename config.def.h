@@ -38,8 +38,6 @@
 
 #ifdef HAVE_SRC
 #include <samplerate.h>
-#else
-#error HAVE_SRC is not defined!
 #endif
 
 
@@ -144,7 +142,9 @@ static const int out_latency = 64;
 static const bool audio_sync = true;
 
 // Defines the quality (and cpu reqirements) of samplerate conversion.
+#ifdef HAVE_SRC
 #define SAMPLERATE_QUALITY SRC_LINEAR
+#endif
 
 // Enables use of rewind. This will incur some memory footprint depending on the save state buffer.
 // This rewind only works when using bSNES core atm.

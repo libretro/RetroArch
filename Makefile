@@ -19,6 +19,8 @@ endif
 ifeq ($(HAVE_SRC), 1)
    LIBS += $(SRC_LIBS)
    DEFINES += $(SRC_CFLAGS)
+else
+   OBJ += audio/hermite.o
 endif
 
 ifeq ($(HAVE_CONFIGFILE), 1)
