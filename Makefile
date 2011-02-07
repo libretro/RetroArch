@@ -139,7 +139,8 @@ install: $(TARGET)
 	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m755 $(TARGET) $(DESTDIR)$(PREFIX)/bin 
 	install -m644 ssnes.cfg $(DESTDIR)/etc/ssnes.cfg
-	install -m644 docs/{ssnes,ssnes-joyconfig}.1 $(DESTDIR)$(PREFIX)/share/man/man1
+	install -m644 docs/ssnes.1 $(DESTDIR)$(PREFIX)/share/man/man1
+	install -m644 docs/ssnes-joyconfig.1 $(DESTDIR)$(PREFIX)/share/man/man1
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/{ssnes,ssnes-joyconfig}
