@@ -201,6 +201,9 @@ static void parse_config_file(void)
       conf = config_file_new("ssnes.cfg");
 #else
       const char *xdg = getenv("XDG_CONFIG_HOME");
+      if (!xdg)
+         SSNES_WARN("XDG_CONFIG_HOME is not defined. Will look for config in $HOME/.ssnesrc ...\n");
+
       const char *home = getenv("HOME");
       if (xdg)
       {
