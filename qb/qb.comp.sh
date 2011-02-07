@@ -50,7 +50,7 @@ if [ "$USE_LANG_CXX" = "yes" ]; then
       CXX=`which g++ c++ 2> /dev/null | grep ^/ | head -n 1`
    fi
    if [ -z $CXX ]; then
-      echo "Could not find C compiler in path. Exiting ..."
+      echo "Could not find C++ compiler in path. Exiting ..."
       exit 1
    fi
 
