@@ -31,7 +31,6 @@ typedef struct rsd
 
    rsound_fifo_buffer_t *buffer;
 
-   SDL_mutex *lock;
    SDL_mutex *cond_lock;
    SDL_cond *cond;
 } rsd_t;
@@ -40,11 +39,9 @@ static ssize_t audio_cb(void *data, size_t bytes, void *userdata)
 {
    rsd_t *rsd = userdata;
 
-   SDL_mutexP(rsd->lock);
    size_t avail = rsnd_fifo_read_avail(rsd->buffer);
    size_t write_size = bytes > avail ? avail : bytes;
    rsnd_fifo_read(rsd->buffer, data, write_size);
-   SDL_mutexV(rsd->lock);
    SDL_CondSignal(rsd->cond);
 
    return write_size;
@@ -71,7 +68,6 @@ static void* __rsd_init(const char* device, int rate, int latency)
       return NULL;
    }
 
-   rsd->lock = SDL_CreateMutex();
    rsd->cond_lock = SDL_CreateMutex();
    rsd->cond = SDL_CreateCond();
 
@@ -111,11 +107,11 @@ static ssize_t __rsd_write(void* data, const void* buf, size_t size)
 
    if (rsd->nonblock)
    {
-      SDL_mutexP(rsd->lock);
+      rsd_callback_lock(rsd->rd);
       size_t avail = rsnd_fifo_write_avail(rsd->buffer);
       size_t write_amt = avail > size ? size : avail;
       rsnd_fifo_write(rsd->buffer, buf, write_amt);
-      SDL_mutexV(rsd->lock);
+      rsd_callback_unlock(rsd->rd);
       return write_amt;
    }
    else
@@ -123,12 +119,12 @@ static ssize_t __rsd_write(void* data, const void* buf, size_t size)
       size_t written = 0;
       while (written < size && !rsd->has_error)
       {
-         SDL_mutexP(rsd->lock);
+         rsd_callback_lock(rsd->rd);
          size_t avail = rsnd_fifo_write_avail(rsd->buffer);
 
          if (avail == 0)
          {
-            SDL_mutexV(rsd->lock);
+            rsd_callback_unlock(rsd->rd);
             if (!rsd->has_error)
             {
                SDL_mutexP(rsd->cond_lock);
@@ -140,7 +136,7 @@ static ssize_t __rsd_write(void* data, const void* buf, size_t size)
          {
             size_t write_amt = size - written > avail ? avail : size - written;
             rsnd_fifo_write(rsd->buffer, (const char*)buf + written, write_amt);
-            SDL_mutexV(rsd->lock);
+            rsd_callback_unlock(rsd->rd);
             written += write_amt;
          }
       }
@@ -179,7 +175,6 @@ static void __rsd_free(void *data)
    rsd_free(rsd->rd);
 
    rsnd_fifo_free(rsd->buffer);
-   SDL_DestroyMutex(rsd->lock);
    SDL_DestroyMutex(rsd->cond_lock);
    SDL_DestroyCond(rsd->cond);
 
@@ -195,9 +190,4 @@ const audio_driver_t audio_rsound = {
    .free = __rsd_free,
    .ident = "rsound"
 };
-
-   
-
-
-   
    
