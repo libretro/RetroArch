@@ -11,7 +11,7 @@ HAVE_SDL = 1
 HAVE_XML = 1
 HAVE_FREETYPE = 1
 HAVE_XAUDIO = 1
-HAVE_RSOUND = 0
+HAVE_RSOUND = 1
 libsnes ?= -lsnes
 
 LIBS =
