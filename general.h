@@ -26,6 +26,7 @@
 #include "message.h"
 #include "rewind.h"
 #include "movie.h"
+#include "autosave.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -94,6 +95,7 @@ struct settings
    unsigned rewind_granularity;
 
    bool pause_nonactive;
+   unsigned autosave_interval;
 };
 
 enum ssnes_game_type
@@ -171,6 +173,8 @@ struct global
    bool bsv_movie_playback;
 
    bool is_paused;
+
+   autosave_t *autosave;
 
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;

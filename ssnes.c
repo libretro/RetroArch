@@ -734,6 +734,25 @@ static void deinit_movie(void)
       bsv_movie_free(g_extern.bsv_movie);
 }
 
+static void init_autosave(void)
+{
+   if (g_settings.autosave_interval > 0)
+   {
+      g_extern.autosave = autosave_new(g_extern.savefile_name_srm, 
+            psnes_get_memory_data(SNES_MEMORY_CARTRIDGE_RAM), 
+            psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM), 
+            g_settings.autosave_interval);
+      if (!g_extern.autosave)
+         SSNES_WARN("Could not initialize autosave.\n");
+   }
+}
+
+static void deinit_autosave(void)
+{
+   if (g_extern.autosave)
+      autosave_free(g_extern.autosave);
+}
+
 static void fill_pathnames(void)
 {
    if (!g_extern.bsv_movie_playback)
@@ -1069,6 +1088,7 @@ int main(int argc, char *argv[])
    init_recording();
 #endif
 
+   init_autosave();
 
    // Main loop
    for(;;)
@@ -1083,7 +1103,15 @@ int main(int argc, char *argv[])
       
       // Run libsnes for one frame.
       if (!g_extern.is_paused)
+      {
+         if (g_extern.autosave)
+            autosave_lock(g_extern.autosave);
+
          psnes_run();
+
+         if (g_extern.autosave)
+            autosave_unlock(g_extern.autosave);
+      }
       else
       {
          input_poll();
@@ -1098,6 +1126,8 @@ int main(int argc, char *argv[])
 #endif
       }
    }
+
+   deinit_autosave();
 
 #ifdef HAVE_FFMPEG
    deinit_recording();
