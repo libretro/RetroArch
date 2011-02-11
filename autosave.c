@@ -62,7 +62,8 @@ static int autosave_thread(void *data)
       }
 
       SDL_mutexP(save->cond_lock);
-      SDL_CondWaitTimeout(save->cond, save->cond_lock, save->interval * 1000);
+      if (!save->quit)
+         SDL_CondWaitTimeout(save->cond, save->cond_lock, save->interval * 1000);
       SDL_mutexV(save->cond_lock);
    }
 
@@ -108,7 +109,9 @@ void autosave_unlock(autosave_t *handle)
 
 void autosave_free(autosave_t *handle)
 {
+   SDL_mutexP(handle->cond_lock);
    handle->quit = true;
+   SDL_mutexV(handle->cond_lock);
    SDL_CondSignal(handle->cond);
    SDL_WaitThread(handle->thread, NULL);
 
