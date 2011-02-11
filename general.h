@@ -126,6 +126,8 @@ struct global
    char gb_rom_path[256];
    char bsx_rom_path[256];
    char sufami_rom_path[2][256];
+   bool has_set_save_path;
+   bool has_set_state_path;
 
 #ifdef HAVE_CONFIGFILE
    char config_path[256];
