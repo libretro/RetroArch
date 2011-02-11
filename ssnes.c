@@ -590,9 +590,13 @@ static inline void load_save_files(void)
    switch (g_extern.game_type)
    {
       case SSNES_CART_NORMAL:
-      case SSNES_CART_SGB:
          load_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
          load_ram_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+         break;
+
+      case SSNES_CART_SGB:
+         save_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_GAME_BOY_RAM);
+         save_ram_file(g_extern.savefile_name_rtc, SNES_MEMORY_GAME_BOY_RTC);
          break;
 
       case SSNES_CART_BSX:
@@ -616,9 +620,13 @@ static inline void save_files(void)
    switch (g_extern.game_type)
    {
       case SSNES_CART_NORMAL:
-      case SSNES_CART_SGB:
          save_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
          save_ram_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+         break;
+
+      case SSNES_CART_SGB:
+         save_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_GAME_BOY_RAM);
+         save_ram_file(g_extern.savefile_name_rtc, SNES_MEMORY_GAME_BOY_RTC);
          break;
 
       case SSNES_CART_BSX:
@@ -736,21 +744,82 @@ static void deinit_movie(void)
 
 static void init_autosave(void)
 {
+   int ram_types[2] = {-1, -1};
+   const char *ram_paths[2] = {NULL, NULL};
+
+   switch (g_extern.game_type)
+   {
+      case SSNES_CART_BSX:
+      case SSNES_CART_BSX_SLOTTED:
+         ram_types[0] = SNES_MEMORY_BSX_RAM;
+         ram_types[1] = SNES_MEMORY_BSX_PRAM;
+         ram_paths[0] = g_extern.savefile_name_srm;
+         ram_paths[1] = g_extern.savefile_name_psrm;
+         break;
+
+      case SSNES_CART_SUFAMI:
+         ram_types[0] = SNES_MEMORY_SUFAMI_TURBO_A_RAM;
+         ram_types[1] = SNES_MEMORY_SUFAMI_TURBO_B_RAM;
+         ram_paths[0] = g_extern.savefile_name_asrm;
+         ram_paths[1] = g_extern.savefile_name_bsrm;
+         break;
+
+      case SSNES_CART_SGB:
+         ram_types[0] = SNES_MEMORY_GAME_BOY_RAM;
+         ram_types[1] = SNES_MEMORY_GAME_BOY_RTC;
+         ram_paths[0] = g_extern.savefile_name_srm;
+         ram_paths[1] = g_extern.savefile_name_rtc;
+         break;
+
+      default:
+         ram_types[0] = SNES_MEMORY_CARTRIDGE_RAM;
+         ram_types[1] = SNES_MEMORY_CARTRIDGE_RTC;
+         ram_paths[0] = g_extern.savefile_name_srm;
+         ram_paths[1] = g_extern.savefile_name_rtc;
+   }
+
    if (g_settings.autosave_interval > 0)
    {
-      g_extern.autosave = autosave_new(g_extern.savefile_name_srm, 
-            psnes_get_memory_data(SNES_MEMORY_CARTRIDGE_RAM), 
-            psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM), 
-            g_settings.autosave_interval);
-      if (!g_extern.autosave)
-         SSNES_WARN("Could not initialize autosave.\n");
+      for (unsigned i = 0; i < sizeof(g_extern.autosave)/sizeof(g_extern.autosave[0]); i++)
+      {
+         if (ram_paths[i] && strlen(ram_paths[i]) > 0 && psnes_get_memory_size(ram_types[i]) > 0)
+         {
+            g_extern.autosave[i] = autosave_new(ram_paths[i], 
+                  psnes_get_memory_data(ram_types[i]), 
+                  psnes_get_memory_size(ram_types[i]), 
+                  g_settings.autosave_interval);
+            if (!g_extern.autosave[i])
+               SSNES_WARN("Could not initialize autosave.\n");
+         }
+      }
    }
 }
 
 static void deinit_autosave(void)
 {
-   if (g_extern.autosave)
-      autosave_free(g_extern.autosave);
+   for (unsigned i = 0; i < sizeof(g_extern.autosave)/sizeof(g_extern.autosave[0]); i++)
+   {
+      if (g_extern.autosave[i])
+         autosave_free(g_extern.autosave[i]);
+   }
+}
+
+static void lock_autosave(void)
+{
+   for (unsigned i = 0; i < sizeof(g_extern.autosave)/sizeof(g_extern.autosave[0]); i++)
+   {
+      if (g_extern.autosave[i])
+         autosave_lock(g_extern.autosave[i]);
+   }
+}
+
+static void unlock_autosave(void)
+{
+   for (unsigned i = 0; i < sizeof(g_extern.autosave)/sizeof(g_extern.autosave[0]); i++)
+   {
+      if (g_extern.autosave[i])
+         autosave_unlock(g_extern.autosave[i]);
+   }
 }
 
 static void fill_pathnames(void)
@@ -1104,13 +1173,9 @@ int main(int argc, char *argv[])
       // Run libsnes for one frame.
       if (!g_extern.is_paused)
       {
-         if (g_extern.autosave)
-            autosave_lock(g_extern.autosave);
-
+         lock_autosave();
          psnes_run();
-
-         if (g_extern.autosave)
-            autosave_unlock(g_extern.autosave);
+         unlock_autosave();
       }
       else
       {

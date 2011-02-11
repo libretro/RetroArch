@@ -53,9 +53,12 @@ static int autosave_thread(void *data)
       if (file)
       {
          SSNES_LOG("Autosaving SRAM to \"%s\"\n", save->path);
-         fwrite(save->buffer, 1, save->bufsize, file);
-         fflush(file);
-         fclose(file);
+         bool failed = false;
+         failed |= fwrite(save->buffer, 1, save->bufsize, file) != save->bufsize;
+         failed |= fflush(file) != 0;
+         failed |= fclose(file) != 0;
+         if (failed)
+            SSNES_WARN("Failed to autosave SRAM! Disk might be full.\n");
       }
 
       SDL_mutexP(save->cond_lock);

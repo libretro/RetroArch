@@ -174,7 +174,7 @@ struct global
 
    bool is_paused;
 
-   autosave_t *autosave;
+   autosave_t *autosave[2];
 
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;
