@@ -29,6 +29,7 @@
 #include <ws2tcpip.h>
 #define close(x) closesocket(x)
 #define CONST_CAST (const char*)
+#define NONCONST_CAST (char*)
 #else
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -37,6 +38,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #define CONST_CAST
+#define NONCONST_CAST
 #endif
 
 struct netplay
@@ -141,7 +143,7 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
    freeaddrinfo(res);
 
    const int nodelay = 1;
-   setsockopt(handle->fd, SOL_SOCKET, TCP_NODELAY, &nodelay, sizeof(int));
+   setsockopt(handle->fd, SOL_SOCKET, TCP_NODELAY, CONST_CAST &nodelay, sizeof(int));
 
    return true;
 }
@@ -149,7 +151,7 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
 static bool send_info(netplay_t *handle)
 {
    uint32_t header[2] = { htonl(g_extern.cart_crc), htonl(psnes_serialize_size()) };
-   if (send(handle->fd, header, sizeof(header), 0) != sizeof(header))
+   if (send(handle->fd, CONST_CAST header, sizeof(header), 0) != sizeof(header))
       return false;
    return true;
 }
@@ -157,7 +159,7 @@ static bool send_info(netplay_t *handle)
 static bool get_info(netplay_t *handle)
 {
    uint32_t header[2];
-   if (recv(handle->fd, header, sizeof(header), 0) != sizeof(header))
+   if (recv(handle->fd, NONCONST_CAST header, sizeof(header), 0) != sizeof(header))
       return false;
    if (g_extern.cart_crc != ntohl(header[0]))
       return false;
@@ -227,13 +229,13 @@ bool netplay_poll(netplay_t *handle)
    }
 
    state = htons(state);
-   if (send(handle->fd, &state, sizeof(state), 0) != sizeof(state))
+   if (send(handle->fd, CONST_CAST &state, sizeof(state), 0) != sizeof(state))
    {
       handle->has_connection = false;
       return false;
    }
 
-   if (recv(handle->fd, &handle->input_state, sizeof(handle->input_state), 0) != sizeof(handle->input_state))
+   if (recv(handle->fd, NONCONST_CAST &handle->input_state, sizeof(handle->input_state), 0) != sizeof(handle->input_state))
    {
       handle->has_connection = false;
       return false;
