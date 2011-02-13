@@ -81,9 +81,7 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
 {
 #ifdef _WIN32
    WSADATA wsaData;
-   int retval;
-
-   if ((retval = WSAStartup(MAKEWORD(2,2), &wsaData)) != 0)
+   if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0)
    {
       WSACleanup();
       return false;
