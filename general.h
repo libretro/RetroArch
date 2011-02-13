@@ -182,6 +182,7 @@ struct global
    netplay_t *netplay;
    char netplay_server[256];
    bool netplay_enable;
+   bool netplay_is_client;
 
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;

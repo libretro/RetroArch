@@ -27,6 +27,7 @@
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+// Woohoo, Winsock has headers from the STONE AGE! :D
 #define close(x) closesocket(x)
 #define CONST_CAST (const char*)
 #define NONCONST_CAST (char*)
@@ -150,21 +151,49 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
 
 static bool send_info(netplay_t *handle)
 {
-   uint32_t header[2] = { htonl(g_extern.cart_crc), htonl(psnes_serialize_size()) };
+   uint32_t header[3] = { htonl(g_extern.cart_crc), htonl(psnes_serialize_size()), htonl(psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM)) };
    if (send(handle->fd, CONST_CAST header, sizeof(header), 0) != sizeof(header))
       return false;
+
+   // Get SRAM data from Player 1 :)
+   uint8_t *sram = psnes_get_memory_data(SNES_MEMORY_CARTRIDGE_RAM);
+   unsigned sram_size = psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM);
+   while (sram_size > 0)
+   {
+      ssize_t ret = recv(handle->fd, NONCONST_CAST sram, sram_size, 0);
+      if (ret <= 0)
+         return false;
+      sram += ret;
+      sram_size -= ret;
+   }
+
    return true;
 }
 
 static bool get_info(netplay_t *handle)
 {
-   uint32_t header[2];
+   uint32_t header[3];
    if (recv(handle->fd, NONCONST_CAST header, sizeof(header), 0) != sizeof(header))
       return false;
    if (g_extern.cart_crc != ntohl(header[0]))
       return false;
    if (psnes_serialize_size() != ntohl(header[1]))
       return false;
+   if (psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM) != ntohl(header[2]))
+      return false;
+
+   // Send SRAM data to our Player 2 :)
+   const uint8_t *sram = psnes_get_memory_data(SNES_MEMORY_CARTRIDGE_RAM);
+   unsigned sram_size = psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM);
+   while (sram_size > 0)
+   {
+      ssize_t ret = send(handle->fd, CONST_CAST sram, sram_size, 0);
+      if (ret <= 0)
+         return false;
+      sram += ret;
+      sram_size -= ret;
+   }
+
    return true;
 }
 

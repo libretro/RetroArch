@@ -765,9 +765,16 @@ static void init_netplay(void)
          .poll_cb = input_poll,
          .state_cb = input_state
       };
-      g_extern.netplay = netplay_new(strlen(g_extern.netplay_server) > 0 ? g_extern.netplay_server : NULL, 55435, 1, &cbs);
+
+      if (strlen(g_extern.netplay_server) > 0)
+         g_extern.netplay_is_client = true;
+
+      g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL, 55435, 1, &cbs);
       if (!g_extern.netplay)
+      {
+         g_extern.netplay_is_client = false;
          SSNES_WARN("Failed to init netplay...\n");
+      }
    }
 }
 
@@ -1187,6 +1194,14 @@ int main(int argc, char *argv[])
    if (!init_rom_file(g_extern.game_type))
       goto error;
 
+   init_movie();
+
+   if (!g_extern.bsv_movie)
+   {
+      load_save_files();
+      init_rewind();
+   }
+
    init_drivers();
    init_netplay();
 
@@ -1197,19 +1212,13 @@ int main(int argc, char *argv[])
    
    init_msg_queue();
    init_controllers();
-   init_movie();
-
-   if (!g_extern.bsv_movie)
-   {
-      load_save_files();
-      init_rewind();
-   }
-
+   
 #ifdef HAVE_FFMPEG
    init_recording();
 #endif
 
-   init_autosave();
+   if (!g_extern.bsv_movie_playback && !g_extern.netplay_is_client)
+      init_autosave();
 
    // Main loop
    for(;;)
@@ -1245,13 +1254,15 @@ int main(int argc, char *argv[])
    }
 
    deinit_netplay();
-   deinit_autosave();
+
+   if (!g_extern.bsv_movie_playback && !g_extern.netplay_is_client)
+      deinit_autosave();
 
 #ifdef HAVE_FFMPEG
    deinit_recording();
 #endif
 
-   if (!g_extern.bsv_movie)
+   if (!g_extern.bsv_movie_playback && !g_extern.netplay_is_client)
    {
       deinit_rewind();
       save_files();
