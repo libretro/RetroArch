@@ -107,6 +107,7 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
    handle->fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
    if (handle->fd < 0)
    {
+      SSNES_ERR("Failed to init socket...\n");
       freeaddrinfo(res);
       return false;
    }
@@ -115,6 +116,7 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
    {
       if (connect(handle->fd, res->ai_addr, res->ai_addrlen) < 0)
       {
+         SSNES_ERR("Failed to connect to server.\n");
          close(handle->fd);
          freeaddrinfo(res);
          return false;
@@ -122,8 +124,12 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
    }
    else
    {
+      int yes = 1;
+      setsockopt(handle->fd, SOL_SOCKET, SO_REUSEADDR, CONST_CAST &yes, sizeof(int));
+
       if (bind(handle->fd, res->ai_addr, res->ai_addrlen) < 0 || listen(handle->fd, 1) < 0)
       {
+         SSNES_ERR("Failed to bind socket.\n");
          close(handle->fd);
          freeaddrinfo(res);
          return false;
@@ -131,6 +137,7 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
       int new_fd = accept(handle->fd, NULL, NULL);
       if (new_fd < 0)
       {
+         SSNES_ERR("Failed to accept socket.\n");
          close(handle->fd);
          freeaddrinfo(res);
          return false;
@@ -160,7 +167,10 @@ static bool send_info(netplay_t *handle)
    {
       ssize_t ret = recv(handle->fd, NONCONST_CAST sram, sram_size, 0);
       if (ret <= 0)
+      {
+         SSNES_ERR("Failed to receive SRAM data from host.\n");
          return false;
+      }
       sram += ret;
       sram_size -= ret;
    }
@@ -172,13 +182,25 @@ static bool get_info(netplay_t *handle)
 {
    uint32_t header[3];
    if (recv(handle->fd, NONCONST_CAST header, sizeof(header), 0) != sizeof(header))
+   {
+      SSNES_ERR("Failed to receive header from client.\n");
       return false;
+   }
    if (g_extern.cart_crc != ntohl(header[0]))
+   {
+      SSNES_ERR("Cart CRC32s differ! Cannot use different games!\n");
       return false;
+   }
    if (psnes_serialize_size() != ntohl(header[1]))
+   {
+      SSNES_ERR("Serialization sizes differ, make sure you're using exact same libsnes implementations!\n");
       return false;
+   }
    if (psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM) != ntohl(header[2]))
+   {
+      SSNES_ERR("Cartridge SRAM sizes do not correspond!\n");
       return false;
+   }
 
    // Send SRAM data to our Player 2 :)
    const uint8_t *sram = psnes_get_memory_data(SNES_MEMORY_CARTRIDGE_RAM);
@@ -187,7 +209,10 @@ static bool get_info(netplay_t *handle)
    {
       ssize_t ret = send(handle->fd, CONST_CAST sram, sram_size, 0);
       if (ret <= 0)
+      {
+         SSNES_ERR("Failed to send SRAM data to client.\n");
          return false;
+      }
       sram += ret;
       sram_size -= ret;
    }
@@ -258,12 +283,14 @@ bool netplay_poll(netplay_t *handle)
    state = htons(state);
    if (send(handle->fd, CONST_CAST &state, sizeof(state), 0) != sizeof(state))
    {
+      SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
       handle->has_connection = false;
       return false;
    }
 
    if (recv(handle->fd, NONCONST_CAST &handle->input_state, sizeof(handle->input_state), 0) != sizeof(handle->input_state))
    {
+      SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
       handle->has_connection = false;
       return false;
    }
