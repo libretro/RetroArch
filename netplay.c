@@ -272,6 +272,9 @@ bool netplay_is_port(netplay_t *handle, bool port, unsigned index)
 
 bool netplay_poll(netplay_t *handle)
 {
+   if (!handle->has_connection)
+      return false;
+
    uint16_t state = 0;
    snes_input_state_t cb = handle->cbs.state_cb;
    for (int i = 0; i <= 11; i++)
