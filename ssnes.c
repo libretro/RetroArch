@@ -31,6 +31,7 @@
 #include "record/ffemu.h"
 #include "rewind.h"
 #include "movie.h"
+#include "netplay.h"
 #include <assert.h>
 #ifdef HAVE_SRC
 #include <samplerate.h>
@@ -342,6 +343,8 @@ static void print_help(void)
    puts("\t-J/--justifiers: Daisy chain two virtual Konami Justifiers into port 2 of the SNES.");
    puts("\t-4/--multitap: Connect a multitap to port 2 of the SNES.");
    puts("\t-P/--bsvplay: Playback a BSV movie file.");
+   puts("\t-H/--host: Host netplay as player 1.");
+   puts("\t-C/--connect: Connect to netplay as player 2.");
 
 #ifdef HAVE_FFMPEG
    puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
@@ -391,6 +394,8 @@ static void parse_input(int argc, char *argv[])
       { "sufamiA", 1, NULL, 'Y' },
       { "sufamiB", 1, NULL, 'Z' },
       { "bsvplay", 1, NULL, 'P' },
+      { "host", 0, NULL, 'H' },
+      { "connect", 1, NULL, 'C' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -408,7 +413,7 @@ static void parse_input(int argc, char *argv[])
 #define CONFIG_FILE_ARG
 #endif
 
-   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:P:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:P:HC:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -505,6 +510,15 @@ static void parse_input(int argc, char *argv[])
          case 'P':
             strncpy(g_extern.bsv_movie_path, optarg, sizeof(g_extern.bsv_movie_path) - 1);
             g_extern.bsv_movie_playback = true;
+            break;
+
+         case 'H':
+            g_extern.netplay_enable = true;
+            break;
+
+         case 'C':
+            g_extern.netplay_enable = true;
+            strncpy(g_extern.netplay_server, optarg, sizeof(g_extern.netplay_server) - 1);
             break;
 
          case '?':
@@ -739,6 +753,28 @@ static void deinit_movie(void)
 {
    if (g_extern.bsv_movie)
       bsv_movie_free(g_extern.bsv_movie);
+}
+
+static void init_netplay(void)
+{
+   if (g_extern.netplay_enable)
+   {
+      struct snes_callbacks cbs = {
+         .frame_cb = video_frame,
+         .sample_cb = audio_sample,
+         .poll_cb = input_poll,
+         .state_cb = input_state
+      };
+      g_extern.netplay = netplay_new(strlen(g_extern.netplay_server) > 0 ? g_extern.netplay_server : NULL, 55435, 1, &cbs);
+      if (!g_extern.netplay)
+         SSNES_WARN("Failed to init netplay...\n");
+   }
+}
+
+static void deinit_netplay(void)
+{
+   if (g_extern.netplay)
+      netplay_free(g_extern.netplay);
 }
 
 static void init_autosave(void)
@@ -1110,23 +1146,27 @@ static void check_pause(void)
 
 static void do_state_checks(void)
 {
-   check_pause();
-   if (g_extern.is_paused)
-      return;
-
-   set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
-
-   if (!g_extern.bsv_movie)
+   if (!g_extern.netplay)
    {
-      check_stateslots();
-      check_savestates();
-      check_rewind();
+      check_pause();
+      if (g_extern.is_paused)
+         return;
+
+      set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
+
+      if (!g_extern.bsv_movie)
+      {
+         check_stateslots();
+         check_savestates();
+         check_rewind();
+      }
+
+      if (!g_extern.bsv_movie_playback)
+         check_movie_record();
    }
+
    check_fullscreen();
    check_input_rate();
-
-   if (!g_extern.bsv_movie_playback)
-      check_movie_record();
 }
 
 
@@ -1148,11 +1188,12 @@ int main(int argc, char *argv[])
       goto error;
 
    init_drivers();
+   init_netplay();
 
-   psnes_set_video_refresh(video_frame);
-   psnes_set_audio_sample(audio_sample);
-   psnes_set_input_poll(input_poll);
-   psnes_set_input_state(input_state);
+   psnes_set_video_refresh(g_extern.netplay ? video_frame_net : video_frame);
+   psnes_set_audio_sample(g_extern.netplay ? audio_sample_net : audio_sample);
+   psnes_set_input_poll(g_extern.netplay ? input_poll_net : input_poll);
+   psnes_set_input_state(g_extern.netplay ? input_state_net : input_state);
    
    init_msg_queue();
    init_controllers();
@@ -1203,6 +1244,7 @@ int main(int argc, char *argv[])
       }
    }
 
+   deinit_netplay();
    deinit_autosave();
 
 #ifdef HAVE_FFMPEG

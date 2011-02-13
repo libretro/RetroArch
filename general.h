@@ -27,6 +27,7 @@
 #include "rewind.h"
 #include "movie.h"
 #include "autosave.h"
+#include "netplay.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -177,6 +178,10 @@ struct global
    bool is_paused;
 
    autosave_t *autosave[2];
+
+   netplay_t *netplay;
+   char netplay_server[256];
+   bool netplay_enable;
 
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;
