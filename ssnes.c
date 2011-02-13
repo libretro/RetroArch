@@ -1194,6 +1194,7 @@ int main(int argc, char *argv[])
    if (!init_rom_file(g_extern.game_type))
       goto error;
 
+   init_msg_queue();
    init_movie();
 
    if (!g_extern.bsv_movie)
@@ -1202,15 +1203,14 @@ int main(int argc, char *argv[])
       init_rewind();
    }
 
-   init_drivers();
    init_netplay();
+   init_drivers();
 
    psnes_set_video_refresh(g_extern.netplay ? video_frame_net : video_frame);
    psnes_set_audio_sample(g_extern.netplay ? audio_sample_net : audio_sample);
    psnes_set_input_poll(g_extern.netplay ? input_poll_net : input_poll);
    psnes_set_input_state(g_extern.netplay ? input_state_net : input_state);
    
-   init_msg_queue();
    init_controllers();
    
 #ifdef HAVE_FFMPEG

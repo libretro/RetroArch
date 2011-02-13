@@ -52,8 +52,4 @@ int16_t netplay_input_state(netplay_t *handle, bool port, unsigned device, unsig
 // bool netplay_should_skip(netplay_t *handle);
 const struct snes_callbacks* netplay_callbacks(netplay_t *handle);
 
-
-
-
-
 #endif
