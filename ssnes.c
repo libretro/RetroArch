@@ -1085,7 +1085,7 @@ static void check_movie_record(void)
 
          g_extern.bsv_movie = bsv_movie_init(path, SSNES_MOVIE_RECORD);
          msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, g_extern.bsv_movie ? "Starting movie record!" : "Failed to start movie record!", 2, 180);
+         msg_queue_push(g_extern.msg_queue, g_extern.bsv_movie ? "Starting movie record!" : "Failed to start movie record!", 1, 180);
 
          if (g_extern.bsv_movie)
             SSNES_LOG("Starting movie record!\n");

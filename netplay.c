@@ -54,6 +54,7 @@ struct delta_frame
    uint16_t simulated_input_state;
    bool is_simulated;
    uint16_t self_state;
+   bool used_real;
 };
 
 struct netplay
@@ -74,11 +75,12 @@ struct netplay
    size_t state_size;
 
    size_t is_replay; // Are we replaying old frames?
+   bool can_poll;
 };
 
 void input_poll_net(void)
 {
-   if (!netplay_should_skip(g_extern.netplay))
+   if (!netplay_should_skip(g_extern.netplay) && netplay_can_poll(g_extern.netplay))
    {
       netplay_callbacks(g_extern.netplay)->poll_cb();
       netplay_poll(g_extern.netplay);
@@ -181,6 +183,11 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
    setsockopt(handle->fd, SOL_SOCKET, TCP_NODELAY, CONST_CAST &nodelay, sizeof(int));
 
    return true;
+}
+
+bool netplay_can_poll(netplay_t *handle)
+{
+   return handle->can_poll;
 }
 
 static bool send_info(netplay_t *handle)
@@ -344,7 +351,7 @@ static bool get_self_input_state(netplay_t *handle)
       return false;
    }
    ptr->self_state = state;
-   handle->self_ptr = (handle->self_ptr + 1) % handle->buffer_size;
+   handle->self_ptr = NEXT_PTR(handle->self_ptr);
    return true;
 }
 
@@ -354,28 +361,25 @@ static void simulate_input(netplay_t *handle)
    size_t ptr = PREV_PTR(handle->self_ptr);
    size_t prev = PREV_PTR(ptr);
 
-   handle->buffer[ptr].simulated_input_state = handle->buffer[prev].real_input_state;
+   handle->buffer[ptr].simulated_input_state = handle->buffer[prev].is_simulated ? handle->buffer[prev].simulated_input_state : handle->buffer[prev].real_input_state;
    handle->buffer[ptr].is_simulated = true;
+   //fprintf(stderr, "Predicted output: 0x%hx\n", (unsigned short)handle->buffer[ptr].simulated_input_state);
 }
 
 // Poll network to see if we have anything new. If our network buffer is full, we simply have to block for new input data.
-// If we get new data, and our simulation diverges from the real data, we roll back to latest valid data and re-emulate the missing frames
-// in the background.
 bool netplay_poll(netplay_t *handle)
 {
    if (!handle->has_connection)
       return false;
 
-   fprintf(stderr, "===========================\n");
-   fprintf(stderr, "Polling input state...\n");
+   handle->can_poll = false;
+
    if (!get_self_input_state(handle))
       return false;
 
-   fprintf(stderr, "Read ptr: %lu, Self ptr: %lu\n", handle->read_ptr, handle->self_ptr);
    // We might have reached the end of the buffer, where we simply have to block.
-   if (poll_input(handle, handle->read_ptr == handle->self_ptr))
+   if (poll_input(handle, handle->other_ptr == NEXT_PTR(handle->self_ptr)))
    {
-      fprintf(stderr, "Getting some input!\n");
       do 
       {
          struct delta_frame *ptr = &handle->buffer[handle->read_ptr];
@@ -390,11 +394,10 @@ bool netplay_poll(netplay_t *handle)
 
          handle->read_ptr = NEXT_PTR(handle->read_ptr);
 
-      } while ((handle->read_ptr != handle->self_ptr) && poll_input(handle, false));
+      } while ((handle->other_ptr != NEXT_PTR(handle->self_ptr)) && poll_input(handle, false));
    }
    else
    {
-      fprintf(stderr, "Didn't get input. :(\n");
       // Cannot allow this. Should not happen though.
       if (handle->self_ptr == handle->read_ptr)
       {
@@ -402,10 +405,19 @@ bool netplay_poll(netplay_t *handle)
          return false;
       }
 
-      simulate_input(handle);
    }
 
-   fprintf(stderr, "=========================\n");
+   if (handle->read_ptr != handle->self_ptr)
+   {
+      simulate_input(handle);
+      handle->buffer[PREV_PTR(handle->self_ptr)].used_real = false;
+   }
+   else
+   {
+      handle->buffer[PREV_PTR(handle->self_ptr)].used_real = true;
+      //fprintf(stderr, "Frame: %d Used actual input: 0x%hx\n", cnt++, (unsigned short)handle->buffer[handle->self_ptr].real_input_state);
+   }
+
    return true;
 }
 
@@ -419,7 +431,7 @@ int16_t netplay_input_state(netplay_t *handle, bool port, unsigned device, unsig
    else
       ptr = PREV_PTR(handle->self_ptr);
 
-   if (port == handle->port)
+   if ((port ? 1 : 0) == handle->port)
    {
       if (handle->buffer[ptr].is_simulated)
          input_state = handle->buffer[ptr].simulated_input_state;
@@ -456,6 +468,7 @@ bool netplay_should_skip(netplay_t *handle)
 void netplay_pre_frame(netplay_t *handle)
 {
    psnes_serialize(handle->buffer[handle->self_ptr].state, handle->state_size);
+   handle->can_poll = true;
 }
 
 // Here we check if we have new input and replay from recorded input.
@@ -469,7 +482,7 @@ void netplay_post_frame(netplay_t *handle)
    while (handle->other_ptr != handle->read_ptr)
    {
       struct delta_frame *ptr = &handle->buffer[handle->other_ptr];
-      if (ptr->simulated_input_state != ptr->real_input_state)
+      if ((ptr->simulated_input_state != ptr->real_input_state) && !ptr->used_real)
          break;
       handle->other_ptr = NEXT_PTR(handle->other_ptr);
    }
@@ -480,14 +493,22 @@ void netplay_post_frame(netplay_t *handle)
       handle->is_replay = true;
       handle->tmp_ptr = handle->other_ptr;
       psnes_unserialize(handle->buffer[handle->other_ptr].state, handle->state_size);
+      int cnt = 0;
       while (handle->tmp_ptr != handle->self_ptr)
       {
-         fprintf(stderr, "Replaying frame @ ptr: %lu\n", handle->tmp_ptr);
+         cnt++;
+         //fprintf(stderr, "Replaying frame @ ptr: %lu\n", handle->tmp_ptr);
          psnes_run();
          handle->tmp_ptr = NEXT_PTR(handle->tmp_ptr);
       }
+      fprintf(stderr, "Read ptr: %lu, Other ptr: %lu, Self ptr: %lu\n", handle->read_ptr, handle->other_ptr, handle->self_ptr);
+      fprintf(stderr, "Replayed %d frames!\n", cnt);
       handle->other_ptr = handle->read_ptr;
       handle->is_replay = false;
+   }
+   else
+   {
+      //fprintf(stderr, "Perfect prediction: Ratio: %.3f%%\n", (float)perfect_cnt * 100.0f / cnt);
    }
 }
 

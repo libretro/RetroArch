@@ -55,6 +55,7 @@ int16_t netplay_input_state(netplay_t *handle, bool port, unsigned device, unsig
 
 // If we're fast-forward replaying to resync, check if we should actually show frame.
 bool netplay_should_skip(netplay_t *handle);
+bool netplay_can_poll(netplay_t *handle);
 const struct snes_callbacks* netplay_callbacks(netplay_t *handle);
 
 #endif
