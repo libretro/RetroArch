@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sys/select.h>
 #ifdef _WIN32
 #define _WIN32_WINNT 0x0501
 #define WIN32_LEAN_AND_MEAN
@@ -42,36 +43,63 @@
 #define NONCONST_CAST
 #endif
 
+#define PREV_PTR(x) ((x) == 0 ? handle->buffer_size - 1 : (x) - 1)
+#define NEXT_PTR(x) ((x + 1) % handle->buffer_size)
+
+struct delta_frame
+{
+   uint8_t *state;
+
+   uint16_t real_input_state;
+   uint16_t simulated_input_state;
+   bool is_simulated;
+   uint16_t self_state;
+};
+
 struct netplay
 {
    struct snes_callbacks cbs;
    int fd;
-   unsigned port;
+   unsigned port; // Which port is governed by netplay?
    bool has_connection;
-   unsigned frames;
 
-   uint16_t input_state;
+   struct delta_frame *buffer;
+   size_t buffer_size;
+
+   size_t self_ptr; // Ptr where we are now.
+   size_t other_ptr; // Points to the last reliable state that self ever had.
+   size_t read_ptr; // Ptr to where we are reading. Generally, other_ptr <= read_ptr <= self_ptr.
+   size_t tmp_ptr; // A temporary pointer used on replay.
+
+   size_t state_size;
+
+   size_t is_replay; // Are we replaying old frames?
 };
 
 void input_poll_net(void)
 {
-   netplay_callbacks(g_extern.netplay)->poll_cb();
-   netplay_poll(g_extern.netplay);
+   if (!netplay_should_skip(g_extern.netplay))
+   {
+      netplay_callbacks(g_extern.netplay)->poll_cb();
+      netplay_poll(g_extern.netplay);
+   }
 }
 
 void video_frame_net(const uint16_t *data, unsigned width, unsigned height)
 {
-   netplay_callbacks(g_extern.netplay)->frame_cb(data, width, height);
+   if (!netplay_should_skip(g_extern.netplay))
+      netplay_callbacks(g_extern.netplay)->frame_cb(data, width, height);
 }
 
 void audio_sample_net(uint16_t left, uint16_t right)
 {
-   netplay_callbacks(g_extern.netplay)->sample_cb(left, right);
+   if (!netplay_should_skip(g_extern.netplay))
+      netplay_callbacks(g_extern.netplay)->sample_cb(left, right);
 }
 
 int16_t input_state_net(bool port, unsigned device, unsigned index, unsigned id)
 {
-   if (netplay_is_port(g_extern.netplay, port, index))
+   if (netplay_is_alive(g_extern.netplay))
       return netplay_input_state(g_extern.netplay, port, device, index, id);
    else
       return netplay_callbacks(g_extern.netplay)->state_cb(port, device, index, id);
@@ -148,6 +176,7 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
 
    freeaddrinfo(res);
 
+   // No nagle for you!
    const int nodelay = 1;
    setsockopt(handle->fd, SOL_SOCKET, TCP_NODELAY, CONST_CAST &nodelay, sizeof(int));
 
@@ -220,6 +249,14 @@ static bool get_info(netplay_t *handle)
    return true;
 }
 
+static void init_buffers(netplay_t *handle)
+{
+   handle->buffer = calloc(handle->buffer_size, sizeof(*handle->buffer));
+   handle->state_size = psnes_serialize_size();
+   for (unsigned i = 0; i < handle->buffer_size; i++)
+      handle->buffer[i].state = malloc(handle->state_size);
+}
+
 netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames, const struct snes_callbacks *cb)
 {
    netplay_t *handle = calloc(1, sizeof(*handle));
@@ -228,7 +265,6 @@ netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames, const
 
    handle->cbs = *cb;
    handle->port = server ? 0 : 1;
-   handle->frames = frames;
 
    if (!init_socket(handle, server, port))
    {
@@ -255,25 +291,42 @@ netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames, const
       }
    }
 
+   handle->buffer_size = frames + 1;
+   init_buffers(handle);
    handle->has_connection = true;
    return handle;
 }
 
-bool netplay_is_port(netplay_t *handle, bool port, unsigned index)
+
+bool netplay_is_alive(netplay_t *handle)
 {
-   if (!handle->has_connection)
-      return false;
-   unsigned port_num = port ? 1 : 0;
-   if (handle->port == port_num)
-      return true;
-   else
-      return false;
+   return handle->has_connection;
 }
 
-bool netplay_poll(netplay_t *handle)
+
+static bool poll_input(netplay_t *handle, bool block)
 {
-   if (!handle->has_connection)
+   fd_set fds;
+   FD_ZERO(&fds);
+   FD_SET(handle->fd, &fds);
+
+   struct timeval tv = {
+      .tv_sec = 0,
+      .tv_usec = 0
+   };
+
+   if (select(handle->fd + 1, &fds, NULL, NULL, block ? NULL : &tv) < 0)
       return false;
+
+   if (FD_ISSET(handle->fd, &fds))
+      return true;
+   return false;
+}
+
+// Grab our own input state and send this over the network.
+static bool get_self_input_state(netplay_t *handle)
+{
+   struct delta_frame *ptr = &handle->buffer[handle->self_ptr];
 
    uint16_t state = 0;
    snes_input_state_t cb = handle->cbs.state_cb;
@@ -283,33 +336,110 @@ bool netplay_poll(netplay_t *handle)
       state |= tmp ? 1 << i : 0;
    }
 
-   state = htons(state);
-   if (send(handle->fd, CONST_CAST &state, sizeof(state), 0) != sizeof(state))
+   uint16_t send_state = htons(state);
+   if (send(handle->fd, CONST_CAST &send_state, sizeof(send_state), 0) != sizeof(send_state))
    {
       SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
       handle->has_connection = false;
       return false;
    }
+   ptr->self_state = state;
+   handle->self_ptr = (handle->self_ptr + 1) % handle->buffer_size;
+   return true;
+}
 
-   if (recv(handle->fd, NONCONST_CAST &handle->input_state, sizeof(handle->input_state), 0) != sizeof(handle->input_state))
-   {
-      SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
-      handle->has_connection = false;
+// TODO: Somewhat better prediction. :P
+static void simulate_input(netplay_t *handle)
+{
+   size_t ptr = PREV_PTR(handle->self_ptr);
+   size_t prev = PREV_PTR(ptr);
+
+   handle->buffer[ptr].simulated_input_state = handle->buffer[prev].real_input_state;
+   handle->buffer[ptr].is_simulated = true;
+}
+
+// Poll network to see if we have anything new. If our network buffer is full, we simply have to block for new input data.
+// If we get new data, and our simulation diverges from the real data, we roll back to latest valid data and re-emulate the missing frames
+// in the background.
+bool netplay_poll(netplay_t *handle)
+{
+   if (!handle->has_connection)
       return false;
+
+   fprintf(stderr, "===========================\n");
+   fprintf(stderr, "Polling input state...\n");
+   if (!get_self_input_state(handle))
+      return false;
+
+   fprintf(stderr, "Read ptr: %lu, Self ptr: %lu\n", handle->read_ptr, handle->self_ptr);
+   // We might have reached the end of the buffer, where we simply have to block.
+   if (poll_input(handle, handle->read_ptr == handle->self_ptr))
+   {
+      fprintf(stderr, "Getting some input!\n");
+      do 
+      {
+         struct delta_frame *ptr = &handle->buffer[handle->read_ptr];
+         if (recv(handle->fd, NONCONST_CAST &ptr->real_input_state, sizeof(ptr->real_input_state), 0) != sizeof(ptr->real_input_state))
+         {
+            SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
+            handle->has_connection = false;
+            return false;
+         }
+         ptr->real_input_state = ntohs(ptr->real_input_state);
+         ptr->is_simulated = false;
+
+         handle->read_ptr = NEXT_PTR(handle->read_ptr);
+
+      } while ((handle->read_ptr != handle->self_ptr) && poll_input(handle, false));
+   }
+   else
+   {
+      fprintf(stderr, "Didn't get input. :(\n");
+      // Cannot allow this. Should not happen though.
+      if (handle->self_ptr == handle->read_ptr)
+      {
+         SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
+         return false;
+      }
+
+      simulate_input(handle);
    }
 
-   handle->input_state = ntohs(handle->input_state);
+   fprintf(stderr, "=========================\n");
    return true;
 }
 
 int16_t netplay_input_state(netplay_t *handle, bool port, unsigned device, unsigned index, unsigned id)
 {
-   return ((1 << id) & handle->input_state) ? 1 : 0;
+   uint16_t input_state = 0;
+   size_t ptr = 0;
+
+   if (handle->is_replay)
+      ptr = handle->tmp_ptr;
+   else
+      ptr = PREV_PTR(handle->self_ptr);
+
+   if (port == handle->port)
+   {
+      if (handle->buffer[ptr].is_simulated)
+         input_state = handle->buffer[ptr].simulated_input_state;
+      else
+         input_state = handle->buffer[ptr].real_input_state;
+   }
+   else
+      input_state = handle->buffer[ptr].self_state;
+
+   return ((1 << id) & input_state) ? 1 : 0;
 }
 
 void netplay_free(netplay_t *handle)
 {
    close(handle->fd);
+   
+   for (unsigned i = 0; i < handle->buffer_size; i++)
+      free(handle->buffer[i].state);
+
+   free(handle->buffer);
    free(handle);
 }
 
@@ -317,3 +447,48 @@ const struct snes_callbacks* netplay_callbacks(netplay_t *handle)
 {
    return &handle->cbs;
 }
+
+bool netplay_should_skip(netplay_t *handle)
+{
+   return handle->is_replay && handle->has_connection;
+}
+
+void netplay_pre_frame(netplay_t *handle)
+{
+   psnes_serialize(handle->buffer[handle->self_ptr].state, handle->state_size);
+}
+
+// Here we check if we have new input and replay from recorded input.
+void netplay_post_frame(netplay_t *handle)
+{
+   // Nothing to do...
+   if (handle->other_ptr == handle->read_ptr)
+      return;
+
+   // Skip ahead if we predicted correctly. Skip until our simulation failed.
+   while (handle->other_ptr != handle->read_ptr)
+   {
+      struct delta_frame *ptr = &handle->buffer[handle->other_ptr];
+      if (ptr->simulated_input_state != ptr->real_input_state)
+         break;
+      handle->other_ptr = NEXT_PTR(handle->other_ptr);
+   }
+
+   if (handle->other_ptr != handle->read_ptr)
+   {
+      // Replay frames
+      handle->is_replay = true;
+      handle->tmp_ptr = handle->other_ptr;
+      psnes_unserialize(handle->buffer[handle->other_ptr].state, handle->state_size);
+      while (handle->tmp_ptr != handle->self_ptr)
+      {
+         fprintf(stderr, "Replaying frame @ ptr: %lu\n", handle->tmp_ptr);
+         psnes_run();
+         handle->tmp_ptr = NEXT_PTR(handle->tmp_ptr);
+      }
+      handle->other_ptr = handle->read_ptr;
+      handle->is_replay = false;
+   }
+}
+
+

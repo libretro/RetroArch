@@ -42,14 +42,19 @@ struct snes_callbacks
 netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames, const struct snes_callbacks *cb);
 void netplay_free(netplay_t *handle);
 
+// Call this before running snes_run()
+void netplay_pre_frame(netplay_t *handle);
+// Call this after running snes_run()
+void netplay_post_frame(netplay_t *handle);
+
 // Checks if input port/index is controlled by netplay or not.
-bool netplay_is_port(netplay_t *handle, bool port, unsigned index);
+bool netplay_is_alive(netplay_t *handle);
 
 bool netplay_poll(netplay_t *handle);
 int16_t netplay_input_state(netplay_t *handle, bool port, unsigned device, unsigned index, unsigned id);
 
 // If we're fast-forward replaying to resync, check if we should actually show frame.
-// bool netplay_should_skip(netplay_t *handle);
+bool netplay_should_skip(netplay_t *handle);
 const struct snes_callbacks* netplay_callbacks(netplay_t *handle);
 
 #endif

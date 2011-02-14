@@ -774,7 +774,7 @@ static void init_netplay(void)
       else
          SSNES_LOG("Waiting for client...\n");
 
-      g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL, 55435, 1, &cbs);
+      g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL, 55435, 0, &cbs);
       if (!g_extern.netplay)
       {
          g_extern.netplay_is_client = false;
@@ -1240,7 +1240,15 @@ int main(int argc, char *argv[])
       if (!g_extern.is_paused)
       {
          lock_autosave();
+
+         if (g_extern.netplay)
+            netplay_pre_frame(g_extern.netplay);
+
          psnes_run();
+
+         if (g_extern.netplay)
+            netplay_post_frame(g_extern.netplay);
+
          unlock_autosave();
       }
       else
