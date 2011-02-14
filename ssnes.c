@@ -774,7 +774,7 @@ static void init_netplay(void)
       else
          SSNES_LOG("Waiting for client...\n");
 
-      g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL, 55435, 0, &cbs);
+      g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL, 55435, 4, &cbs);
       if (!g_extern.netplay)
       {
          g_extern.netplay_is_client = false;

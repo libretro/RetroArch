@@ -359,9 +359,9 @@ static bool get_self_input_state(netplay_t *handle)
 static void simulate_input(netplay_t *handle)
 {
    size_t ptr = PREV_PTR(handle->self_ptr);
-   size_t prev = PREV_PTR(ptr);
+   size_t prev = PREV_PTR(handle->read_ptr);
 
-   handle->buffer[ptr].simulated_input_state = handle->buffer[prev].is_simulated ? handle->buffer[prev].simulated_input_state : handle->buffer[prev].real_input_state;
+   handle->buffer[ptr].simulated_input_state = handle->buffer[prev].real_input_state;
    handle->buffer[ptr].is_simulated = true;
    //fprintf(stderr, "Predicted output: 0x%hx\n", (unsigned short)handle->buffer[ptr].simulated_input_state);
 }
@@ -394,7 +394,7 @@ bool netplay_poll(netplay_t *handle)
 
          handle->read_ptr = NEXT_PTR(handle->read_ptr);
 
-      } while ((handle->other_ptr != NEXT_PTR(handle->self_ptr)) && poll_input(handle, false));
+      } while ((handle->read_ptr != handle->self_ptr) && poll_input(handle, false));
    }
    else
    {
@@ -414,8 +414,9 @@ bool netplay_poll(netplay_t *handle)
    }
    else
    {
+      handle->buffer[PREV_PTR(handle->self_ptr)].is_simulated = false;
       handle->buffer[PREV_PTR(handle->self_ptr)].used_real = true;
-      //fprintf(stderr, "Frame: %d Used actual input: 0x%hx\n", cnt++, (unsigned short)handle->buffer[handle->self_ptr].real_input_state);
+      fprintf(stderr, "Used actual input: 0x%hx\n", (unsigned short)handle->buffer[PREV_PTR(handle->self_ptr)].real_input_state);
    }
 
    return true;
