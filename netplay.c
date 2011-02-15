@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sys/select.h>
 #ifdef _WIN32
 #define _WIN32_WINNT 0x0501
 #define WIN32_LEAN_AND_MEAN
@@ -33,6 +32,7 @@
 #define CONST_CAST (const char*)
 #define NONCONST_CAST (char*)
 #else
+#include <sys/select.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
