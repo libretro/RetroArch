@@ -113,8 +113,14 @@ Activates verbose logging.
 \fB--host, -H\fR
 Be the host of netplay. Waits until a player connects. The host will always assume player 1.
 
+.TP
 \fB--connect SERVER, -C SERVER\fR
 Connect to a host of netplay. Will always assume player 2.
+
+.TP
+\fB--frames FRAMES, -F FRAMES\fR
+Sync frames to use when using netplay. More frames allow for more latency, but requires more CPU power.
+Set FRAMES to 0 to have perfect sync. 0 frames is only suitable for LAN. Defaults to 0.
 
 .SH "SEE ALSO"
 \fBssnes-joyconfig\fR(1)
