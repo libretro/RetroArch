@@ -134,11 +134,16 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
    if (getaddrinfo(server, port_buf, &hints, &res) < 0)
       return false;
 
+   if (!res)
+      return false;
+
    handle->fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
    if (handle->fd < 0)
    {
       SSNES_ERR("Failed to init socket...\n");
-      freeaddrinfo(res);
+
+      if (res)
+         freeaddrinfo(res);
       return false;
    }
 
@@ -148,7 +153,8 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
       {
          SSNES_ERR("Failed to connect to server.\n");
          close(handle->fd);
-         freeaddrinfo(res);
+         if (res)
+            freeaddrinfo(res);
          return false;
       }
    }
@@ -161,7 +167,8 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
       {
          SSNES_ERR("Failed to bind socket.\n");
          close(handle->fd);
-         freeaddrinfo(res);
+         if (res)
+            freeaddrinfo(res);
          return false;
       }
       int new_fd = accept(handle->fd, NULL, NULL);
@@ -169,14 +176,16 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
       {
          SSNES_ERR("Failed to accept socket.\n");
          close(handle->fd);
-         freeaddrinfo(res);
+         if (res)
+            freeaddrinfo(res);
          return false;
       }
       close(handle->fd);
       handle->fd = new_fd;
    }
 
-   freeaddrinfo(res);
+   if (res)
+      freeaddrinfo(res);
 
    // No nagle for you!
    const int nodelay = 1;
