@@ -345,6 +345,7 @@ static void print_help(void)
    puts("\t-P/--bsvplay: Playback a BSV movie file.");
    puts("\t-H/--host: Host netplay as player 1.");
    puts("\t-C/--connect: Connect to netplay as player 2.");
+   puts("\t-F/--frames: Sync frames when using netplay.");
 
 #ifdef HAVE_FFMPEG
    puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
@@ -396,6 +397,7 @@ static void parse_input(int argc, char *argv[])
       { "bsvplay", 1, NULL, 'P' },
       { "host", 0, NULL, 'H' },
       { "connect", 1, NULL, 'C' },
+      { "frames", 1, NULL, 'F' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -413,7 +415,7 @@ static void parse_input(int argc, char *argv[])
 #define CONFIG_FILE_ARG
 #endif
 
-   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:P:HC:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:P:HC:F:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for(;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
@@ -519,6 +521,12 @@ static void parse_input(int argc, char *argv[])
          case 'C':
             g_extern.netplay_enable = true;
             strncpy(g_extern.netplay_server, optarg, sizeof(g_extern.netplay_server) - 1);
+            break;
+
+         case 'F':
+            g_extern.netplay_sync_frames = strtol(optarg, NULL, 0);
+            if (g_extern.netplay_sync_frames < 32)
+               g_extern.netplay_sync_frames = 32;
             break;
 
          case '?':
@@ -774,7 +782,7 @@ static void init_netplay(void)
       else
          SSNES_LOG("Waiting for client...\n");
 
-      g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL, 55435, 4, &cbs);
+      g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL, 55435, g_extern.netplay_sync_frames, &cbs);
       if (!g_extern.netplay)
       {
          g_extern.netplay_is_client = false;

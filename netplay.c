@@ -363,7 +363,6 @@ static void simulate_input(netplay_t *handle)
 
    handle->buffer[ptr].simulated_input_state = handle->buffer[prev].real_input_state;
    handle->buffer[ptr].is_simulated = true;
-   //fprintf(stderr, "Predicted output: 0x%hx\n", (unsigned short)handle->buffer[ptr].simulated_input_state);
 }
 
 // Poll network to see if we have anything new. If our network buffer is full, we simply have to block for new input data.
@@ -416,7 +415,6 @@ bool netplay_poll(netplay_t *handle)
    {
       handle->buffer[PREV_PTR(handle->self_ptr)].is_simulated = false;
       handle->buffer[PREV_PTR(handle->self_ptr)].used_real = true;
-      //fprintf(stderr, "Used actual input: 0x%hx\n", (unsigned short)handle->buffer[PREV_PTR(handle->self_ptr)].real_input_state);
    }
 
    return true;
@@ -494,23 +492,14 @@ void netplay_post_frame(netplay_t *handle)
       handle->is_replay = true;
       handle->tmp_ptr = handle->other_ptr;
       psnes_unserialize(handle->buffer[handle->other_ptr].state, handle->state_size);
-      int cnt = 0;
       while (handle->tmp_ptr != handle->self_ptr)
       {
-         cnt++;
-         //fprintf(stderr, "Replaying frame @ ptr: %lu\n", handle->tmp_ptr);
          psnes_serialize(handle->buffer[handle->tmp_ptr].state, handle->state_size);
          psnes_run();
          handle->tmp_ptr = NEXT_PTR(handle->tmp_ptr);
       }
-      //fprintf(stderr, "Read ptr: %lu, Other ptr: %lu, Self ptr: %lu\n", handle->read_ptr, handle->other_ptr, handle->self_ptr);
-      //fprintf(stderr, "Replayed %d frames!\n", cnt);
       handle->other_ptr = handle->read_ptr;
       handle->is_replay = false;
-   }
-   else
-   {
-      //fprintf(stderr, "Perfect prediction: Ratio: %.3f%%\n", (float)perfect_cnt * 100.0f / cnt);
    }
 }
 
