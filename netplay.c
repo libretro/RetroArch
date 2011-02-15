@@ -416,7 +416,7 @@ bool netplay_poll(netplay_t *handle)
    {
       handle->buffer[PREV_PTR(handle->self_ptr)].is_simulated = false;
       handle->buffer[PREV_PTR(handle->self_ptr)].used_real = true;
-      fprintf(stderr, "Used actual input: 0x%hx\n", (unsigned short)handle->buffer[PREV_PTR(handle->self_ptr)].real_input_state);
+      //fprintf(stderr, "Used actual input: 0x%hx\n", (unsigned short)handle->buffer[PREV_PTR(handle->self_ptr)].real_input_state);
    }
 
    return true;
@@ -499,11 +499,12 @@ void netplay_post_frame(netplay_t *handle)
       {
          cnt++;
          //fprintf(stderr, "Replaying frame @ ptr: %lu\n", handle->tmp_ptr);
+         psnes_serialize(handle->buffer[handle->tmp_ptr].state, handle->state_size);
          psnes_run();
          handle->tmp_ptr = NEXT_PTR(handle->tmp_ptr);
       }
-      fprintf(stderr, "Read ptr: %lu, Other ptr: %lu, Self ptr: %lu\n", handle->read_ptr, handle->other_ptr, handle->self_ptr);
-      fprintf(stderr, "Replayed %d frames!\n", cnt);
+      //fprintf(stderr, "Read ptr: %lu, Other ptr: %lu, Self ptr: %lu\n", handle->read_ptr, handle->other_ptr, handle->self_ptr);
+      //fprintf(stderr, "Replayed %d frames!\n", cnt);
       handle->other_ptr = handle->read_ptr;
       handle->is_replay = false;
    }
