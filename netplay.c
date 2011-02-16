@@ -39,6 +39,7 @@
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <signal.h>
 #define CONST_CAST
 #define NONCONST_CAST
 #endif
@@ -116,6 +117,8 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
       WSACleanup();
       return false;
    }
+#else
+   signal(SIGPIPE, SIG_IGN); // Do not like SIGPIPE killing our app :(
 #endif
 
    struct addrinfo hints, *res = NULL;
