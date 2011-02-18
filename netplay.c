@@ -418,11 +418,14 @@ static bool get_self_input_state(netplay_t *handle)
    struct delta_frame *ptr = &handle->buffer[handle->self_ptr];
 
    uint32_t state = 0;
-   snes_input_state_t cb = handle->cbs.state_cb;
-   for (int i = 0; i <= 11; i++)
+   if (handle->frame_count > 0) // First frame we always give zero input since relying on input from first frame screws up when we use -F 0.
    {
-      int16_t tmp = cb(!handle->port, SNES_DEVICE_JOYPAD, 0, i);
-      state |= tmp ? 1 << i : 0;
+      snes_input_state_t cb = handle->cbs.state_cb;
+      for (int i = 0; i <= 11; i++)
+      {
+         int16_t tmp = cb(!handle->port, SNES_DEVICE_JOYPAD, 0, i);
+         state |= tmp ? 1 << i : 0;
+      }
    }
 
    memmove(handle->packet_buffer, handle->packet_buffer + 2, sizeof (handle->packet_buffer) - 2 * sizeof(uint32_t));
