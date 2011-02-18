@@ -18,6 +18,7 @@
 #include "netplay.h"
 #include "general.h"
 #include "dynamic.h"
+#include "autosave.h"
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
@@ -387,6 +388,27 @@ bool netplay_is_alive(netplay_t *handle)
    return handle->has_connection;
 }
 
+static bool send_chunk(netplay_t *handle)
+{
+   const struct sockaddr *addr = NULL;
+   if (handle->addr)
+      addr = handle->addr->ai_addr;
+   else if (handle->has_client_addr)
+      addr = (const struct sockaddr*)&handle->their_addr;
+
+   if (addr)
+   {
+      if (sendto(handle->udp_fd, CONST_CAST handle->packet_buffer, sizeof(handle->packet_buffer), 0, addr, sizeof(struct sockaddr)) != sizeof(handle->packet_buffer))
+      {
+         SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
+         handle->has_connection = false;
+         return false;
+      }
+   }
+   return true;
+}
+
+#define MAX_RETRIES 16
 
 static int poll_input(netplay_t *handle, bool block)
 {
@@ -395,19 +417,30 @@ static int poll_input(netplay_t *handle, bool block)
    FD_SET(handle->udp_fd, &fds);
 
    struct timeval tv = {
-      .tv_sec = block ? 5 : 0,
-      .tv_usec = 0
+      .tv_sec = 0,
+      .tv_usec = block ? 500000 : 0
    };
 
-   if (select(handle->udp_fd + 1, &fds, NULL, NULL, &tv) < 0)
+   int i = 0;
+   do
+   {
+      if (select(handle->udp_fd + 1, &fds, NULL, NULL, &tv) < 0)
+         return -1;
+
+      if (FD_ISSET(handle->udp_fd, &fds))
+         return 1;
+
+      if (block && !send_chunk(handle))
+      {
+         SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
+         handle->has_connection = false;
+         return false;
+      }
+
+   } while (i++ < MAX_RETRIES && block);
+
+   if (block)
       return -1;
-
-   if (block && !FD_ISSET(handle->udp_fd, &fds))
-      return -1;
-
-   if (FD_ISSET(handle->udp_fd, &fds))
-      return 1;
-
    return 0;
 }
 
@@ -431,20 +464,11 @@ static bool get_self_input_state(netplay_t *handle)
    handle->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2] = htonl(handle->frame_count); 
    handle->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2 + 1] = htonl(state);
 
-   const struct sockaddr *addr = NULL;
-   if (handle->addr)
-      addr = handle->addr->ai_addr;
-   else if (handle->has_client_addr)
-      addr = (const struct sockaddr*)&handle->their_addr;
-
-   if (addr)
+   if (!send_chunk(handle))
    {
-      if (sendto(handle->udp_fd, CONST_CAST handle->packet_buffer, sizeof(handle->packet_buffer), 0, addr, sizeof(struct sockaddr)) != sizeof(handle->packet_buffer))
-      {
-         SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
-         handle->has_connection = false;
-         return false;
-      }
+      SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
+      handle->has_connection = false;
+      return false;
    }
 
    ptr->self_state = state;
@@ -647,7 +671,9 @@ void netplay_post_frame(netplay_t *handle)
       while (handle->tmp_ptr != handle->self_ptr)
       {
          psnes_serialize(handle->buffer[handle->tmp_ptr].state, handle->state_size);
+         lock_autosave();
          psnes_run();
+         unlock_autosave();
          handle->tmp_ptr = NEXT_PTR(handle->tmp_ptr);
       }
       handle->other_ptr = handle->read_ptr;

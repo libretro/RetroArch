@@ -871,24 +871,6 @@ static void deinit_autosave(void)
    }
 }
 
-static void lock_autosave(void)
-{
-   for (unsigned i = 0; i < sizeof(g_extern.autosave)/sizeof(g_extern.autosave[0]); i++)
-   {
-      if (g_extern.autosave[i])
-         autosave_lock(g_extern.autosave[i]);
-   }
-}
-
-static void unlock_autosave(void)
-{
-   for (unsigned i = 0; i < sizeof(g_extern.autosave)/sizeof(g_extern.autosave[0]); i++)
-   {
-      if (g_extern.autosave[i])
-         autosave_unlock(g_extern.autosave[i]);
-   }
-}
-
 static void fill_pathnames(void)
 {
    switch (g_extern.game_type)

@@ -122,3 +122,23 @@ void autosave_free(autosave_t *handle)
    free(handle->buffer);
    free(handle);
 }
+
+void lock_autosave(void)
+{
+   for (unsigned i = 0; i < sizeof(g_extern.autosave)/sizeof(g_extern.autosave[0]); i++)
+   {
+      if (g_extern.autosave[i])
+         autosave_lock(g_extern.autosave[i]);
+   }
+}
+
+void unlock_autosave(void)
+{
+   for (unsigned i = 0; i < sizeof(g_extern.autosave)/sizeof(g_extern.autosave[0]); i++)
+   {
+      if (g_extern.autosave[i])
+         autosave_unlock(g_extern.autosave[i]);
+   }
+}
+
+

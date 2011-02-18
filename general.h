@@ -43,6 +43,8 @@
 #define MAX_PLAYERS 5
 #define MAX_BINDS 25 // Needs to be increased every time there are new binds added.
 #define SSNES_NO_JOYPAD 0xFFFF
+
+// All config related settings go here.
 struct settings
 {
    struct 
@@ -108,6 +110,7 @@ enum ssnes_game_type
    SSNES_CART_SUFAMI,
 };
 
+// All run-time- / command line flag-related globals go here.
 struct global
 {
    bool verbose;
@@ -166,19 +169,24 @@ struct global
 
    msg_queue_t *msg_queue;
 
+   // Rewind support.
    state_manager_t *state_manager;
    void *state_buf;
    bool frame_is_reverse;
 
+   // Movie record support
    bsv_movie_t *bsv_movie;
    char bsv_movie_path[256];
    bool bsv_movie_end;
    bool bsv_movie_playback;
 
+   // Pausing support
    bool is_paused;
 
+   // Autosave support.
    autosave_t *autosave[2];
 
+   // Netplay.
    netplay_t *netplay;
    char netplay_server[256];
    bool netplay_enable;
@@ -186,6 +194,7 @@ struct global
    unsigned netplay_sync_frames;
    uint16_t netplay_port;
 
+   // FFmpeg record.
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;
    char record_path[256];
