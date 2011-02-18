@@ -378,7 +378,6 @@ netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames, const
    init_buffers(handle);
    handle->has_connection = true;
 
-   memset(handle->packet_buffer, 0xFF, sizeof(handle->packet_buffer));
    return handle;
 }
 
@@ -469,7 +468,7 @@ static void parse_packet(netplay_t *handle, uint32_t *buffer, unsigned size)
    for (unsigned i = 0; i < size * 2; i++)
       buffer[i] = ntohl(buffer[i]);
 
-   for (unsigned i = 0; i < size && handle->read_ptr != handle->self_ptr; i++)
+   for (unsigned i = 0; i < size && handle->read_frame_count <= handle->frame_count; i++)
    {
       uint32_t frame = buffer[2 * i];
       uint32_t state = buffer[2 * i + 1];
@@ -507,11 +506,21 @@ bool netplay_poll(netplay_t *handle)
    // We skip reading the first frame so the host has a change to grab our host info so we don't block forever :')
    if (handle->frame_count == 0)
    {
-      handle->buffer[PREV_PTR(handle->self_ptr)].used_real = true;
-      handle->buffer[handle->read_ptr].is_simulated = false;
+      handle->buffer[0].used_real = true;
+      handle->buffer[0].is_simulated = false;
+      handle->buffer[0].real_input_state = 0;
       handle->read_ptr = NEXT_PTR(handle->read_ptr);
+      handle->read_frame_count++;
       return true;
    }
+
+   //fprintf(stderr, "Other ptr: %lu, Read ptr: %lu, Self ptr: %lu\n", handle->other_ptr, handle->read_ptr, handle->self_ptr);
+   if (handle->buffer_size > 1)
+   {
+      assert(handle->other_ptr != handle->self_ptr);
+      assert(handle->read_ptr != handle->self_ptr);
+   }
+   assert(handle->other_ptr == handle->read_ptr);
 
    // We might have reached the end of the buffer, where we simply have to block.
    int res = poll_input(handle, handle->other_ptr == NEXT_PTR(handle->self_ptr));
@@ -524,7 +533,7 @@ bool netplay_poll(netplay_t *handle)
 
    if (res == 1)
    {
-      size_t first_read = handle->read_ptr;
+      uint32_t first_read = handle->read_frame_count;
       do 
       {
          uint32_t buffer[UDP_FRAME_PACKETS * 2];
@@ -536,7 +545,9 @@ bool netplay_poll(netplay_t *handle)
          }
          parse_packet(handle, buffer, UDP_FRAME_PACKETS);
 
-      } while ((handle->read_ptr != handle->self_ptr) && poll_input(handle, handle->other_ptr == NEXT_PTR(handle->self_ptr) && first_read == handle->read_ptr) == 1);
+      } while ((handle->read_frame_count <= handle->frame_count) && 
+            poll_input(handle, (handle->other_ptr == NEXT_PTR(handle->self_ptr)) && 
+               (first_read == handle->read_frame_count)) == 1);
    }
    else
    {
