@@ -20,6 +20,7 @@
 #include "dynamic.h"
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 #ifdef _WIN32
 #define _WIN32_WINNT 0x0501
@@ -58,10 +59,13 @@ struct delta_frame
    bool used_real;
 };
 
+#define UDP_FRAME_PACKETS 16
+
 struct netplay
 {
    struct snes_callbacks cbs;
-   int fd;
+   int fd; // TCP connection for state sending, etc. Could perhaps be used for messaging later on. :)
+   int udp_fd; // UDP connection for game state updates.
    unsigned port; // Which port is governed by netplay?
    bool has_connection;
 
@@ -76,7 +80,15 @@ struct netplay
    size_t state_size;
 
    size_t is_replay; // Are we replaying old frames?
-   bool can_poll;
+   bool can_poll; // We don't want to poll several times on a frame.
+
+   struct timeval last_tv;
+   uint32_t packet_buffer[UDP_FRAME_PACKETS * 2]; // To compat UDP packet loss we also send old data along with the packets.
+   uint32_t frame_count;
+   uint32_t read_frame_count;
+   struct addrinfo *addr;
+   struct sockaddr_storage their_addr;
+   bool has_client_addr;
 };
 
 void input_poll_net(void)
@@ -108,19 +120,8 @@ int16_t input_state_net(bool port, unsigned device, unsigned index, unsigned id)
       return netplay_callbacks(g_extern.netplay)->state_cb(port, device, index, id);
 }
 
-static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
+static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port)
 {
-#ifdef _WIN32
-   WSADATA wsaData;
-   if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0)
-   {
-      WSACleanup();
-      return false;
-   }
-#else
-   signal(SIGPIPE, SIG_IGN); // Do not like SIGPIPE killing our app :(
-#endif
-
    struct addrinfo hints, *res = NULL;
    memset(&hints, 0, sizeof(hints));
 #ifdef _WIN32 // Lolol, no AF_UNSPEC, wtf.
@@ -156,8 +157,7 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
       {
          SSNES_ERR("Failed to connect to server.\n");
          close(handle->fd);
-         if (res)
-            freeaddrinfo(res);
+         freeaddrinfo(res);
          return false;
       }
    }
@@ -170,8 +170,7 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
       {
          SSNES_ERR("Failed to bind socket.\n");
          close(handle->fd);
-         if (res)
-            freeaddrinfo(res);
+         freeaddrinfo(res);
          return false;
       }
       int new_fd = accept(handle->fd, NULL, NULL);
@@ -179,21 +178,85 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
       {
          SSNES_ERR("Failed to accept socket.\n");
          close(handle->fd);
-         if (res)
-            freeaddrinfo(res);
+         freeaddrinfo(res);
          return false;
       }
       close(handle->fd);
       handle->fd = new_fd;
    }
 
-   if (res)
-      freeaddrinfo(res);
+   freeaddrinfo(res);
 
-   // No nagle for you!
-   const int nodelay = 1;
-   setsockopt(handle->fd, SOL_SOCKET, TCP_NODELAY, CONST_CAST &nodelay, sizeof(int));
+   return true;
+}
 
+static bool init_udp_socket(netplay_t *handle, const char *server, uint16_t port)
+{
+   struct addrinfo hints;
+   memset(&hints, 0, sizeof(hints));
+#ifdef _WIN32 // Lolol, no AF_UNSPEC, wtf.
+   hints.ai_family = AF_INET;
+#else
+   hints.ai_family = AF_UNSPEC;
+#endif
+   hints.ai_socktype = SOCK_DGRAM;
+   if (!server)
+      hints.ai_flags = AI_PASSIVE;
+
+   char port_buf[16];
+   snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
+   if (getaddrinfo(server, port_buf, &hints, &handle->addr) < 0)
+      return false;
+
+   if (!handle->addr)
+      return false;
+
+   handle->udp_fd = socket(handle->addr->ai_family, handle->addr->ai_socktype, handle->addr->ai_protocol);
+   if (handle->udp_fd < 0)
+   {
+      SSNES_ERR("Failed to init socket...\n");
+      return false;
+   }
+
+   if (!server)
+   {
+      // Note sure if we have to do this for UDP, but hey :)
+      int yes = 1;
+      setsockopt(handle->udp_fd, SOL_SOCKET, SO_REUSEADDR, CONST_CAST &yes, sizeof(int));
+
+      if (bind(handle->udp_fd, handle->addr->ai_addr, handle->addr->ai_addrlen) < 0)
+      {
+         SSNES_ERR("Failed to bind socket.\n");
+         close(handle->udp_fd);
+      }
+
+      freeaddrinfo(handle->addr);
+      handle->addr = NULL;
+   }
+
+   // Just get some initial value.
+   gettimeofday(&handle->last_tv, NULL);
+
+   return true;
+}
+
+static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
+{
+#ifdef _WIN32
+   WSADATA wsaData;
+   if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0)
+   {
+      WSACleanup();
+      return false;
+   }
+#else
+   signal(SIGPIPE, SIG_IGN); // Do not like SIGPIPE killing our app :(
+#endif
+
+   if (!init_tcp_socket(handle, server, port))
+      return false;
+   if (!init_udp_socket(handle, server, port))
+      return false;
    return true;
 }
 
@@ -273,7 +336,10 @@ static void init_buffers(netplay_t *handle)
    handle->buffer = calloc(handle->buffer_size, sizeof(*handle->buffer));
    handle->state_size = psnes_serialize_size();
    for (unsigned i = 0; i < handle->buffer_size; i++)
+   {
       handle->buffer[i].state = malloc(handle->state_size);
+      handle->buffer[i].is_simulated = true;
+   }
 }
 
 netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames, const struct snes_callbacks *cb)
@@ -311,8 +377,11 @@ netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames, const
    }
 
    handle->buffer_size = frames + 1;
+
    init_buffers(handle);
    handle->has_connection = true;
+
+   memset(handle->packet_buffer, 0xFF, sizeof(handle->packet_buffer));
    return handle;
 }
 
@@ -323,23 +392,27 @@ bool netplay_is_alive(netplay_t *handle)
 }
 
 
-static bool poll_input(netplay_t *handle, bool block)
+static int poll_input(netplay_t *handle, bool block)
 {
    fd_set fds;
    FD_ZERO(&fds);
-   FD_SET(handle->fd, &fds);
+   FD_SET(handle->udp_fd, &fds);
 
    struct timeval tv = {
-      .tv_sec = 0,
+      .tv_sec = block ? 5 : 0,
       .tv_usec = 0
    };
 
-   if (select(handle->fd + 1, &fds, NULL, NULL, block ? NULL : &tv) < 0)
-      return false;
+   if (select(handle->udp_fd + 1, &fds, NULL, NULL, &tv) < 0)
+      return -1;
 
-   if (FD_ISSET(handle->fd, &fds))
-      return true;
-   return false;
+   if (block && !FD_ISSET(handle->udp_fd, &fds))
+      return -1;
+
+   if (FD_ISSET(handle->udp_fd, &fds))
+      return 1;
+
+   return 0;
 }
 
 // Grab our own input state and send this over the network.
@@ -347,7 +420,7 @@ static bool get_self_input_state(netplay_t *handle)
 {
    struct delta_frame *ptr = &handle->buffer[handle->self_ptr];
 
-   uint16_t state = 0;
+   uint32_t state = 0;
    snes_input_state_t cb = handle->cbs.state_cb;
    for (int i = 0; i <= 11; i++)
    {
@@ -355,13 +428,27 @@ static bool get_self_input_state(netplay_t *handle)
       state |= tmp ? 1 << i : 0;
    }
 
-   uint16_t send_state = htons(state);
-   if (send(handle->fd, CONST_CAST &send_state, sizeof(send_state), 0) != sizeof(send_state))
+   memmove(handle->packet_buffer, handle->packet_buffer + 2, sizeof (handle->packet_buffer) - 2 * sizeof(uint32_t));
+   handle->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2] = htonl(handle->frame_count); 
+   handle->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2 + 1] = htonl(state);
+
+   const struct sockaddr *addr = NULL;
+   if (handle->addr)
+      addr = handle->addr->ai_addr;
+   else if (handle->has_client_addr)
+      addr = (const struct sockaddr*)&handle->their_addr;
+
+   if (addr)
    {
-      SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
-      handle->has_connection = false;
-      return false;
+      fprintf(stderr, "Sending a packet! :D\n");
+      if (sendto(handle->udp_fd, CONST_CAST handle->packet_buffer, sizeof(handle->packet_buffer), 0, addr, sizeof(struct sockaddr)) != sizeof(handle->packet_buffer))
+      {
+         SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
+         handle->has_connection = false;
+         return false;
+      }
    }
+
    ptr->self_state = state;
    handle->self_ptr = NEXT_PTR(handle->self_ptr);
    return true;
@@ -377,6 +464,42 @@ static void simulate_input(netplay_t *handle)
    handle->buffer[ptr].is_simulated = true;
 }
 
+static void parse_packet(netplay_t *handle, uint32_t *buffer, unsigned size)
+{
+   for (unsigned i = 0; i < size * 2; i++)
+      buffer[i] = ntohl(buffer[i]);
+
+   const uint32_t *tmp = buffer + (size - 1) * 2;
+   for (; tmp != buffer; tmp -= 2)
+   {
+      uint32_t frame = tmp[0];
+      uint32_t state = tmp[1];
+
+      if (frame < handle->frame_count && frame >= handle->read_frame_count)
+      {
+         size_t ptr = (handle->read_ptr + frame - handle->read_frame_count) % handle->buffer_size;
+         handle->buffer[ptr].is_simulated = false;
+         handle->buffer[ptr].real_input_state = state;
+      }
+   }
+
+   while (!handle->buffer[handle->read_ptr].is_simulated && handle->read_ptr != handle->self_ptr)
+   {
+      handle->read_ptr = NEXT_PTR(handle->read_ptr);
+      handle->read_frame_count++;
+   }
+}
+
+static bool receive_data(netplay_t *handle, uint32_t *buffer, size_t size)
+{
+   socklen_t addrlen = sizeof(handle->their_addr);
+   if (recvfrom(handle->udp_fd, NONCONST_CAST buffer, sizeof(buffer), 0, (struct sockaddr*)&handle->their_addr, &addrlen) != sizeof(buffer))
+      return false;
+   handle->has_client_addr = true;
+   fprintf(stderr, "Received some data!\n");
+   return true;
+}
+
 // Poll network to see if we have anything new. If our network buffer is full, we simply have to block for new input data.
 bool netplay_poll(netplay_t *handle)
 {
@@ -388,24 +511,37 @@ bool netplay_poll(netplay_t *handle)
    if (!get_self_input_state(handle))
       return false;
 
+   // We skip reading the first frame so the host has a change to grab our host info so we don't block forever :')
+   if (handle->frame_count == 0)
+   {
+      simulate_input(handle);
+      handle->buffer[PREV_PTR(handle->self_ptr)].used_real = false;
+      return true;
+   }
+
    // We might have reached the end of the buffer, where we simply have to block.
-   if (poll_input(handle, handle->other_ptr == NEXT_PTR(handle->self_ptr)))
+   int res = poll_input(handle, handle->other_ptr == NEXT_PTR(handle->self_ptr));
+   if (res == -1)
+   {
+      handle->has_connection = false;
+      SSNES_WARN("Netplay connection timed out. Will continue without netplay.\n");
+      return false;
+   }
+
+   if (res == 1)
    {
       do 
       {
-         struct delta_frame *ptr = &handle->buffer[handle->read_ptr];
-         if (recv(handle->fd, NONCONST_CAST &ptr->real_input_state, sizeof(ptr->real_input_state), 0) != sizeof(ptr->real_input_state))
+         uint32_t buffer[UDP_FRAME_PACKETS * 2];
+         if (!receive_data(handle, buffer, sizeof(buffer)))
          {
             SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
             handle->has_connection = false;
             return false;
          }
-         ptr->real_input_state = ntohs(ptr->real_input_state);
-         ptr->is_simulated = false;
+         parse_packet(handle, buffer, UDP_FRAME_PACKETS);
 
-         handle->read_ptr = NEXT_PTR(handle->read_ptr);
-
-      } while ((handle->read_ptr != handle->self_ptr) && poll_input(handle, false));
+      } while ((handle->read_ptr != handle->self_ptr) && poll_input(handle, false) == 1);
    }
    else
    {
@@ -415,7 +551,6 @@ bool netplay_poll(netplay_t *handle)
          SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
          return false;
       }
-
    }
 
    if (handle->read_ptr != handle->self_ptr)
@@ -458,11 +593,14 @@ int16_t netplay_input_state(netplay_t *handle, bool port, unsigned device, unsig
 void netplay_free(netplay_t *handle)
 {
    close(handle->fd);
+   close(handle->udp_fd);
    
    for (unsigned i = 0; i < handle->buffer_size; i++)
       free(handle->buffer[i].state);
 
    free(handle->buffer);
+   if (handle->addr)
+      freeaddrinfo(handle->addr);
    free(handle);
 }
 
@@ -485,6 +623,8 @@ void netplay_pre_frame(netplay_t *handle)
 // Here we check if we have new input and replay from recorded input.
 void netplay_post_frame(netplay_t *handle)
 {
+   handle->frame_count++;
+
    // Nothing to do...
    if (handle->other_ptr == handle->read_ptr)
       return;
@@ -513,6 +653,7 @@ void netplay_post_frame(netplay_t *handle)
       handle->other_ptr = handle->read_ptr;
       handle->is_replay = false;
    }
+
 }
 
 
