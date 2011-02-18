@@ -276,12 +276,6 @@ static void fill_pathname(char *out_path, char *in_path, const char *replace)
    strcat(out_path, replace);
 }
 
-#ifdef HAVE_FFMPEG
-#define FFMPEG_HELP_QUARK " | -r/--record "
-#else
-#define FFMPEG_HELP_QUARK
-#endif
-
 #ifdef _WIN32
 #define SSNES_DEFAULT_CONF_PATH_STR "\n\tDefaults to ssnes.cfg in same directory as ssnes.exe"
 #else
@@ -324,7 +318,7 @@ static void print_help(void)
    puts("===================================================================");
    puts("ssnes: Simple Super Nintendo Emulator (libsnes) -- v" PACKAGE_VERSION " --");
    puts("===================================================================");
-   puts("Usage: ssnes [rom file] [-h/--help | -c/--config | -v/--verbose | -4/--multitap | -j/--justifier | -J/--justifiers | -S/--savestate | -m/--mouse | -g/--gameboy | -b/--bsx | -B/--bsxslot | --sufamiA | --sufamiB | -p/--scope | -s/--save" FFMPEG_HELP_QUARK "]");
+   puts("Usage: ssnes [rom file] [options...]");
    puts("\t-h/--help: Show this help message");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
    puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
@@ -345,6 +339,7 @@ static void print_help(void)
    puts("\t-P/--bsvplay: Playback a BSV movie file.");
    puts("\t-H/--host: Host netplay as player 1.");
    puts("\t-C/--connect: Connect to netplay as player 2.");
+   puts("\t--port: Port used to netplay. Default is 55435.");
    puts("\t-F/--frames: Sync frames when using netplay.");
 
 #ifdef HAVE_FFMPEG
@@ -373,6 +368,8 @@ static void parse_input(int argc, char *argv[])
       exit(1);
    }
 
+   int val = 0;
+
    struct option opts[] = {
       { "help", 0, NULL, 'h' },
       { "save", 1, NULL, 's' },
@@ -398,6 +395,7 @@ static void parse_input(int argc, char *argv[])
       { "host", 0, NULL, 'H' },
       { "connect", 1, NULL, 'C' },
       { "frames", 1, NULL, 'F' },
+      { "port", 1, &val, 'p' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -418,6 +416,7 @@ static void parse_input(int argc, char *argv[])
    char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:P:HC:F:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for(;;)
    {
+      val = 0;
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
       int port;
 
@@ -527,6 +526,17 @@ static void parse_input(int argc, char *argv[])
             g_extern.netplay_sync_frames = strtol(optarg, NULL, 0);
             if (g_extern.netplay_sync_frames > 32)
                g_extern.netplay_sync_frames = 32;
+            break;
+
+         case 0:
+            switch (val)
+            {
+               case 'p':
+                  g_extern.netplay_port = strtol(optarg, NULL, 0);
+                  break;
+               default:
+                  break;
+            }
             break;
 
          case '?':
@@ -763,6 +773,8 @@ static void deinit_movie(void)
       bsv_movie_free(g_extern.bsv_movie);
 }
 
+#define SSNES_DEFAULT_PORT 55435
+
 static void init_netplay(void)
 {
    if (g_extern.netplay_enable)
@@ -782,7 +794,7 @@ static void init_netplay(void)
       else
          SSNES_LOG("Waiting for client...\n");
 
-      g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL, 55435, g_extern.netplay_sync_frames, &cbs);
+      g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL, g_extern.netplay_port ? g_extern.netplay_port : SSNES_DEFAULT_PORT, g_extern.netplay_sync_frames, &cbs);
       if (!g_extern.netplay)
       {
          g_extern.netplay_is_client = false;

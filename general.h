@@ -184,6 +184,7 @@ struct global
    bool netplay_enable;
    bool netplay_is_client;
    unsigned netplay_sync_frames;
+   uint16_t netplay_port;
 
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;

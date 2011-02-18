@@ -507,8 +507,9 @@ bool netplay_poll(netplay_t *handle)
    // We skip reading the first frame so the host has a change to grab our host info so we don't block forever :')
    if (handle->frame_count == 0)
    {
-      simulate_input(handle);
-      handle->buffer[PREV_PTR(handle->self_ptr)].used_real = false;
+      handle->buffer[PREV_PTR(handle->self_ptr)].used_real = true;
+      handle->buffer[handle->read_ptr].is_simulated = false;
+      handle->read_ptr = NEXT_PTR(handle->read_ptr);
       return true;
    }
 
