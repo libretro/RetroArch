@@ -60,7 +60,7 @@ struct delta_frame
    bool used_real;
 };
 
-#define UDP_FRAME_PACKETS 32
+#define UDP_FRAME_PACKETS 8
 
 struct netplay
 {
@@ -83,7 +83,6 @@ struct netplay
    size_t is_replay; // Are we replaying old frames?
    bool can_poll; // We don't want to poll several times on a frame.
 
-   struct timeval last_tv;
    uint32_t packet_buffer[UDP_FRAME_PACKETS * 2]; // To compat UDP packet loss we also send old data along with the packets.
    uint32_t frame_count;
    uint32_t read_frame_count;
@@ -234,9 +233,6 @@ static bool init_udp_socket(netplay_t *handle, const char *server, uint16_t port
       freeaddrinfo(handle->addr);
       handle->addr = NULL;
    }
-
-   // Just get some initial value.
-   gettimeofday(&handle->last_tv, NULL);
 
    return true;
 }
@@ -441,7 +437,6 @@ static bool get_self_input_state(netplay_t *handle)
 
    if (addr)
    {
-      fprintf(stderr, "Sending a packet! :D\n");
       if (sendto(handle->udp_fd, CONST_CAST handle->packet_buffer, sizeof(handle->packet_buffer), 0, addr, sizeof(struct sockaddr)) != sizeof(handle->packet_buffer))
       {
          SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
@@ -471,25 +466,18 @@ static void parse_packet(netplay_t *handle, uint32_t *buffer, unsigned size)
    for (unsigned i = 0; i < size * 2; i++)
       buffer[i] = ntohl(buffer[i]);
 
-   for (unsigned i = 0; i < size; i++)
+   for (unsigned i = 0; i < size && handle->read_ptr != handle->self_ptr; i++)
    {
       uint32_t frame = buffer[2 * i];
       uint32_t state = buffer[2 * i + 1];
 
-      fprintf(stderr, "Got frame %u, state 0x%x\n", frame, state);
-
-      if (frame <= handle->frame_count && frame >= handle->read_frame_count)
+      if (frame == handle->read_frame_count)
       {
-         size_t ptr = (handle->read_ptr + frame - handle->read_frame_count) % handle->buffer_size;
-         handle->buffer[ptr].is_simulated = false;
-         handle->buffer[ptr].real_input_state = state;
+         handle->buffer[handle->read_ptr].is_simulated = false;
+         handle->buffer[handle->read_ptr].real_input_state = state;
+         handle->read_ptr = NEXT_PTR(handle->read_ptr);
+         handle->read_frame_count++;
       }
-   }
-
-   while (!handle->buffer[handle->read_ptr].is_simulated && handle->read_ptr != handle->self_ptr)
-   {
-      handle->read_ptr = NEXT_PTR(handle->read_ptr);
-      handle->read_frame_count++;
    }
 }
 
@@ -499,7 +487,6 @@ static bool receive_data(netplay_t *handle, uint32_t *buffer, size_t size)
    if (recvfrom(handle->udp_fd, NONCONST_CAST buffer, size, 0, (struct sockaddr*)&handle->their_addr, &addrlen) != size)
       return false;
    handle->has_client_addr = true;
-   fprintf(stderr, "Received some data!\n");
    return true;
 }
 
@@ -530,8 +517,6 @@ bool netplay_poll(netplay_t *handle)
       SSNES_WARN("Netplay connection timed out. Will continue without netplay.\n");
       return false;
    }
-
-   fprintf(stderr, "Other %lu, Read: %lu, Self: %lu, Buffer_size: %lu\n", handle->other_ptr, handle->read_ptr, handle->self_ptr, handle->buffer_size);
 
    if (res == 1)
    {
