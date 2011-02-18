@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <assert.h>
 
 #ifdef _WIN32
 #define _WIN32_WINNT 0x0501
@@ -59,7 +60,7 @@ struct delta_frame
    bool used_real;
 };
 
-#define UDP_FRAME_PACKETS 16
+#define UDP_FRAME_PACKETS 32
 
 struct netplay
 {
@@ -462,6 +463,7 @@ static void simulate_input(netplay_t *handle)
 
    handle->buffer[ptr].simulated_input_state = handle->buffer[prev].real_input_state;
    handle->buffer[ptr].is_simulated = true;
+   handle->buffer[ptr].used_real = false;
 }
 
 static void parse_packet(netplay_t *handle, uint32_t *buffer, unsigned size)
@@ -476,7 +478,7 @@ static void parse_packet(netplay_t *handle, uint32_t *buffer, unsigned size)
 
       fprintf(stderr, "Got frame %u, state 0x%x\n", frame, state);
 
-      if (frame < handle->frame_count && frame >= handle->read_frame_count)
+      if (frame <= handle->frame_count && frame >= handle->read_frame_count)
       {
          size_t ptr = (handle->read_ptr + frame - handle->read_frame_count) % handle->buffer_size;
          handle->buffer[ptr].is_simulated = false;
@@ -529,8 +531,11 @@ bool netplay_poll(netplay_t *handle)
       return false;
    }
 
+   fprintf(stderr, "Other %lu, Read: %lu, Self: %lu, Buffer_size: %lu\n", handle->other_ptr, handle->read_ptr, handle->self_ptr, handle->buffer_size);
+
    if (res == 1)
    {
+      size_t first_read = handle->read_ptr;
       do 
       {
          uint32_t buffer[UDP_FRAME_PACKETS * 2];
@@ -542,12 +547,12 @@ bool netplay_poll(netplay_t *handle)
          }
          parse_packet(handle, buffer, UDP_FRAME_PACKETS);
 
-      } while ((handle->read_ptr != handle->self_ptr) && poll_input(handle, false) == 1);
+      } while ((handle->read_ptr != handle->self_ptr) && poll_input(handle, handle->other_ptr == NEXT_PTR(handle->self_ptr) && first_read == handle->read_ptr) == 1);
    }
    else
    {
       // Cannot allow this. Should not happen though.
-      if (handle->self_ptr == handle->read_ptr)
+      if (NEXT_PTR(handle->self_ptr) == handle->other_ptr)
       {
          SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
          return false;
@@ -555,15 +560,9 @@ bool netplay_poll(netplay_t *handle)
    }
 
    if (handle->read_ptr != handle->self_ptr)
-   {
       simulate_input(handle);
-      handle->buffer[PREV_PTR(handle->self_ptr)].used_real = false;
-   }
    else
-   {
-      handle->buffer[PREV_PTR(handle->self_ptr)].is_simulated = false;
       handle->buffer[PREV_PTR(handle->self_ptr)].used_real = true;
-   }
 
    return true;
 }

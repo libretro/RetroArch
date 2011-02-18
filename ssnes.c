@@ -525,7 +525,7 @@ static void parse_input(int argc, char *argv[])
 
          case 'F':
             g_extern.netplay_sync_frames = strtol(optarg, NULL, 0);
-            if (g_extern.netplay_sync_frames < 32)
+            if (g_extern.netplay_sync_frames > 32)
                g_extern.netplay_sync_frames = 32;
             break;
 
