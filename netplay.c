@@ -469,11 +469,12 @@ static void parse_packet(netplay_t *handle, uint32_t *buffer, unsigned size)
    for (unsigned i = 0; i < size * 2; i++)
       buffer[i] = ntohl(buffer[i]);
 
-   const uint32_t *tmp = buffer + (size - 1) * 2;
-   for (; tmp != buffer; tmp -= 2)
+   for (unsigned i = 0; i < size; i++)
    {
-      uint32_t frame = tmp[0];
-      uint32_t state = tmp[1];
+      uint32_t frame = buffer[2 * i];
+      uint32_t state = buffer[2 * i + 1];
+
+      fprintf(stderr, "Got frame %u, state 0x%x\n", frame, state);
 
       if (frame < handle->frame_count && frame >= handle->read_frame_count)
       {
@@ -493,7 +494,7 @@ static void parse_packet(netplay_t *handle, uint32_t *buffer, unsigned size)
 static bool receive_data(netplay_t *handle, uint32_t *buffer, size_t size)
 {
    socklen_t addrlen = sizeof(handle->their_addr);
-   if (recvfrom(handle->udp_fd, NONCONST_CAST buffer, sizeof(buffer), 0, (struct sockaddr*)&handle->their_addr, &addrlen) != sizeof(buffer))
+   if (recvfrom(handle->udp_fd, NONCONST_CAST buffer, size, 0, (struct sockaddr*)&handle->their_addr, &addrlen) != size)
       return false;
    handle->has_client_addr = true;
    fprintf(stderr, "Received some data!\n");
