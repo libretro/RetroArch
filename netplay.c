@@ -455,7 +455,7 @@ static bool get_self_input_state(netplay_t *handle)
       snes_input_state_t cb = handle->cbs.state_cb;
       for (int i = 0; i <= 11; i++)
       {
-         int16_t tmp = cb(!handle->port, SNES_DEVICE_JOYPAD, 0, i);
+         int16_t tmp = cb(g_settings.input.netplay_client_swap_input ? 0 : !handle->port, SNES_DEVICE_JOYPAD, 0, i);
          state |= tmp ? 1 << i : 0;
       }
    }

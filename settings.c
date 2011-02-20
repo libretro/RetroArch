@@ -145,8 +145,10 @@ static void set_defaults(void)
    memcpy(g_settings.input.binds[4], snes_keybinds_5, sizeof(snes_keybinds_5));
 
    g_settings.input.axis_threshold = AXIS_THRESHOLD;
+   g_settings.input.netplay_client_swap_input = netplay_client_swap_input;
    for (int i = 0; i < MAX_PLAYERS; i++)
       g_settings.input.joypad_map[i] = i;
+
 }
 
 #ifdef HAVE_CONFIGFILE
@@ -291,6 +293,7 @@ static void parse_config_file(void)
 #endif
 
    CONFIG_GET_DOUBLE(input.axis_threshold, "input_axis_threshold");
+   CONFIG_GET_BOOL(input.netplay_client_swap_input, "netplay_client_swap_input");
    CONFIG_GET_INT(input.joypad_map[0], "input_player1_joypad_index");
    CONFIG_GET_INT(input.joypad_map[1], "input_player2_joypad_index");
    CONFIG_GET_INT(input.joypad_map[2], "input_player3_joypad_index");

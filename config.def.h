@@ -162,6 +162,9 @@ static const bool pause_nonactive = true;
 // Saves non-volatile SRAM at a regular interval. It is measured in seconds. A value of 0 disables autosave.
 static const unsigned autosave_interval = 0;
 
+// When being client over netplay, use keybinds for player 1 rather than player 2.
+static const bool netplay_client_swap_input = false;
+
 
 ////////////////////
 // Keybinds, Joypad

@@ -89,6 +89,7 @@ struct settings
       struct snes_keybind binds[MAX_PLAYERS][MAX_BINDS];
       float axis_threshold;
       unsigned joypad_map[MAX_PLAYERS];
+      bool netplay_client_swap_input;
    } input;
 
    char libsnes[256];
