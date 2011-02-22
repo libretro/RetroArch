@@ -165,6 +165,62 @@ void parse_config(void)
 #endif
 }
 
+static config_file_t *open_default_config_file(void)
+{
+   config_file_t *conf = NULL;
+#ifdef _WIN32
+   // Just do something for now.
+   conf = config_file_new("ssnes.cfg");
+   if (!conf)
+   {
+      const char *appdata = getenv("APPDATA");
+      if (appdata)
+      {
+         char conf_path[strlen(appdata) + strlen("/ssnes.cfg ")];
+         strcpy(conf_path, appdata);
+         strcat(conf_path, "/ssnes.cfg");
+         conf = config_file_new(conf_path);
+      }
+   }
+#elif defined(__APPLE__)
+   const char *home = getenv("HOME");
+   if (home)
+   {
+      char conf_path[strlen(home) + strlen("/.ssnes.cfg ")];
+      strcpy(conf_path, home);
+      strcat(conf_path, "/.ssnes.cfg");
+      conf = config_file_new(conf_path);
+   }
+   if (!conf)
+      conf = config_file_new("/etc/ssnes.cfg");
+#else
+   const char *xdg = getenv("XDG_CONFIG_HOME");
+   if (!xdg)
+      SSNES_WARN("XDG_CONFIG_HOME is not defined. Will look for config in $HOME/.ssnesrc ...\n");
+
+   const char *home = getenv("HOME");
+   if (xdg)
+   {
+      char conf_path[strlen(xdg) + strlen("/ssnes/ssnes.cfg ")];
+      strcpy(conf_path, xdg);
+      strcat(conf_path, "/ssnes/ssnes.cfg");
+      conf = config_file_new(conf_path);
+   }
+   else if (home)
+   {
+      char conf_path[strlen(home) + strlen("/.ssnes.cfg ")];
+      strcpy(conf_path, home);
+      strcat(conf_path, "/.ssnes.cfg");
+      conf = config_file_new(conf_path);
+   }
+   // Try this as a last chance...
+   if (!conf)
+      conf = config_file_new("/etc/ssnes.cfg");
+#endif
+
+   return conf;
+}
+
 // Macros to ease config getting.
 #define CONFIG_GET_BOOL(var, key) if (config_get_bool(conf, key, &tmp_bool)) \
    g_settings.var = tmp_bool
@@ -198,35 +254,7 @@ static void parse_config_file(void)
       }
    }
    else
-   {
-#ifdef _WIN32
-      // Just do something for now.
-      conf = config_file_new("ssnes.cfg");
-#else
-      const char *xdg = getenv("XDG_CONFIG_HOME");
-      if (!xdg)
-         SSNES_WARN("XDG_CONFIG_HOME is not defined. Will look for config in $HOME/.ssnesrc ...\n");
-
-      const char *home = getenv("HOME");
-      if (xdg)
-      {
-         char conf_path[strlen(xdg) + strlen("/ssnes/ssnes.cfg ")];
-         strcpy(conf_path, xdg);
-         strcat(conf_path, "/ssnes/ssnes.cfg");
-         conf = config_file_new(conf_path);
-      }
-      else if (home)
-      {
-         char conf_path[strlen(home) + strlen("/.ssnesrc ")];
-         strcpy(conf_path, home);
-         strcat(conf_path, "/.ssnesrc");
-         conf = config_file_new(conf_path);
-      }
-      // Try this as a last chance...
-      if (!conf)
-         conf = config_file_new("/etc/ssnes.cfg");
-#endif
-   }
+      conf = open_default_config_file();
 
    if (conf == NULL)
       return;
