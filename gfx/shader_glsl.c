@@ -25,7 +25,6 @@
 
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
-#include <OpenGL/glext.h>
 #else
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
@@ -42,6 +41,25 @@
 
 #include "gl_common.h"
 
+#ifdef __APPLE__
+#define pglCreateProgram glCreateProgram
+#define pglUseProgram glUseProgram
+#define pglCreateShader glCreateShader
+#define pglDeleteShader glDeleteShader
+#define pglShaderSource glShaderSource
+#define pglCompileShader glCompileShader
+#define pglAttachShader glAttachShader
+#define pglDetachShader glDetachShader
+#define pglLinkProgram glLinkProgram
+#define pglGetUniformLocation glGetUniformLocation
+#define pglUniform1i glUniform1i
+#define pglUniform2fv glUniform2fv
+#define pglUniform4fv glUniform4fv
+#define pglGetShaderiv glGetShaderiv
+#define pglGetShaderInfoLog glGetShaderInfoLog
+#define pglGetProgramiv glGetProgramiv
+#define pglGetProgramInfoLog glGetProgramInfoLog
+#else
 static PFNGLCREATEPROGRAMPROC pglCreateProgram = NULL;
 static PFNGLUSEPROGRAMPROC pglUseProgram = NULL;
 static PFNGLCREATESHADERPROC pglCreateShader = NULL;
@@ -59,6 +77,7 @@ static PFNGLGETSHADERIVPROC pglGetShaderiv = NULL;
 static PFNGLGETSHADERINFOLOGPROC pglGetShaderInfoLog = NULL;
 static PFNGLGETPROGRAMIVPROC pglGetProgramiv = NULL;
 static PFNGLGETPROGRAMINFOLOGPROC pglGetProgramInfoLog = NULL;
+#endif
 
 static bool glsl_enable = false;
 static GLuint gl_program;
@@ -180,6 +199,8 @@ static void print_linker_log(GLuint obj)
 
 bool gl_glsl_init(const char *path)
 {
+
+#ifndef __APPLE__
    // Load shader functions.
    pglCreateProgram = SDL_GL_GetProcAddress("glCreateProgram");
    pglUseProgram = SDL_GL_GetProcAddress("glUseProgram");
@@ -198,13 +219,18 @@ bool gl_glsl_init(const char *path)
    pglGetShaderInfoLog = SDL_GL_GetProcAddress("glGetShaderInfoLog");
    pglGetProgramiv = SDL_GL_GetProcAddress("glGetProgramiv");
    pglGetProgramInfoLog = SDL_GL_GetProcAddress("glGetProgramInfoLog");
+#endif
 
    SSNES_LOG("Checking GLSL shader support ...\n");
+#ifdef __APPLE__
+   const bool shader_support = true;
+#else
    bool shader_support = pglCreateProgram && pglUseProgram && pglCreateShader
       && pglDeleteShader && pglShaderSource && pglCompileShader && pglAttachShader
       && pglDetachShader && pglLinkProgram && pglGetUniformLocation
       && pglUniform1i && pglUniform2fv && pglUniform4fv
       && pglGetShaderiv && pglGetShaderInfoLog && pglGetProgramiv && pglGetProgramInfoLog;
+#endif
 
    if (!shader_support)
    {
