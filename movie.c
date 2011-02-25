@@ -269,9 +269,12 @@ error:
 
 void bsv_movie_set_frame_end(bsv_movie_t *handle)
 {
+   fprintf(stderr, "Current frame count: %u\n", handle->current_frame_count);
    handle->frame_state[handle->frame_ptr] = handle->current_frame_count;
    handle->current_frame_count = 0;
    handle->frame_ptr = (handle->frame_ptr + 1) & handle->frame_mask;
+
+   fprintf(stderr, "Frame end: Current pos: %ld\n", ftell(handle->file) - handle->min_file_pos);
 }
 
 void bsv_movie_frame_rewind(bsv_movie_t *handle)
@@ -290,4 +293,5 @@ void bsv_movie_frame_rewind(bsv_movie_t *handle)
       handle->frame_ptr = (handle->frame_ptr - 1) & handle->frame_mask;
       fseek(handle->file, -((long)handle->frame_state[handle->frame_ptr] * sizeof(int16_t)), SEEK_CUR);
    }
+   fprintf(stderr, "Rewind: Current pos: %ld\n", ftell(handle->file) - handle->min_file_pos);
 }

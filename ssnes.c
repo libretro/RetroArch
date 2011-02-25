@@ -1042,8 +1042,6 @@ static void check_rewind(void)
 
    if (driver.input->key_pressed(driver.input_data, SSNES_REWIND))
    {
-      if (g_extern.bsv_movie)
-         bsv_movie_frame_rewind(g_extern.bsv_movie);
 
       msg_queue_clear(g_extern.msg_queue);
       void *buf;
@@ -1052,6 +1050,11 @@ static void check_rewind(void)
          msg_queue_push(g_extern.msg_queue, "Rewinding!", 0, 30);
          psnes_unserialize(buf, psnes_serialize_size());
          g_extern.frame_is_reverse = true;
+         if (g_extern.bsv_movie)
+         {
+            for (unsigned i = 0; i < (g_settings.rewind_granularity ? g_settings.rewind_granularity : 1); i++)
+               bsv_movie_frame_rewind(g_extern.bsv_movie);
+         }
       }
       else
          msg_queue_push(g_extern.msg_queue, "Reached end of rewind buffer!", 0, 30);
@@ -1254,7 +1257,7 @@ int main(int argc, char *argv[])
 
          psnes_run();
 
-         if (g_extern.bsv_movie)
+         if (g_extern.bsv_movie && !g_extern.frame_is_reverse)
             bsv_movie_set_frame_end(g_extern.bsv_movie);
          if (g_extern.netplay)
             netplay_post_frame(g_extern.netplay);
