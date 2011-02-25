@@ -241,7 +241,7 @@ static void input_poll(void)
 
 static int16_t input_state(bool port, unsigned device, unsigned index, unsigned id)
 {
-   if (g_extern.bsv_movie && g_extern.bsv_movie_playback && !g_extern.frame_is_reverse)
+   if (g_extern.bsv_movie && g_extern.bsv_movie_playback)
    {
       int16_t ret;
       if (bsv_movie_get_input(g_extern.bsv_movie, &ret))
@@ -258,7 +258,7 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
       binds[i] = g_settings.input.binds[i];
 
    int16_t res = driver.input->input_state(driver.input_data, binds, port, device, index, id);
-   if (g_extern.bsv_movie && !g_extern.bsv_movie_playback && !g_extern.frame_is_reverse)
+   if (g_extern.bsv_movie && !g_extern.bsv_movie_playback)
       bsv_movie_set_input(g_extern.bsv_movie, res);
 
    return res;
@@ -1037,19 +1037,26 @@ static void check_input_rate(void)
 static void check_rewind(void)
 {
    g_extern.frame_is_reverse = false;
+   static bool first = true;
+   if (first)
+   {
+      first = false;
+      return;
+   }
+
    if (!g_extern.state_manager)
       return;
 
    if (driver.input->key_pressed(driver.input_data, SSNES_REWIND))
    {
-
       msg_queue_clear(g_extern.msg_queue);
       void *buf;
       if (state_manager_pop(g_extern.state_manager, &buf))
       {
+         g_extern.frame_is_reverse = true;
          msg_queue_push(g_extern.msg_queue, "Rewinding!", 0, 30);
          psnes_unserialize(buf, psnes_serialize_size());
-         g_extern.frame_is_reverse = true;
+
          if (g_extern.bsv_movie)
          {
             for (unsigned i = 0; i < (g_settings.rewind_granularity ? g_settings.rewind_granularity : 1); i++)
@@ -1254,6 +1261,8 @@ int main(int argc, char *argv[])
 
          if (g_extern.netplay)
             netplay_pre_frame(g_extern.netplay);
+         if (g_extern.bsv_movie)
+            bsv_movie_set_frame_start(g_extern.bsv_movie);
 
          psnes_run();
 

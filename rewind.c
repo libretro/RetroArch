@@ -33,6 +33,7 @@ struct state_manager
    size_t top_ptr;
    size_t bottom_ptr;
    size_t state_size;
+   bool first_pop;
 };
 
 state_manager_t *state_manager_new(size_t state_size, size_t buffer_size, void *init_buffer)
@@ -77,6 +78,11 @@ void state_manager_free(state_manager_t *state)
 bool state_manager_pop(state_manager_t *state, void **data)
 { 
    *data = state->tmp_state;
+   if (state->first_pop)
+   {
+      state->first_pop = false;
+      return true;
+   }
 
    if (state->top_ptr == 0)
       state->top_ptr = state->buf_size - 1;
@@ -126,7 +132,7 @@ static void generate_delta(state_manager_t *state, const void *data)
    const uint32_t *new_state = data;
 
    state->buffer[state->top_ptr++] = 0; // For each separate delta, we have a 0 value sentinel in between.
-   if (state->top_ptr == state->bottom_ptr) // Check if top_ptr and bottom_ptr crossed eachother, which means we need to delete old cruft.
+   if (state->top_ptr == state->bottom_ptr) // Check if top_ptr and bottom_ptr crossed each other, which means we need to delete old cruft.
       crossed = true;
 
    for (uint64_t i = 0; i < state->state_size; i++)
@@ -156,6 +162,7 @@ bool state_manager_push(state_manager_t *state, const void *data)
 {
    generate_delta(state, data);
    memcpy(state->tmp_state, data, state->state_size * sizeof(uint32_t));
+   state->first_pop = true;
 
    return true;
 }

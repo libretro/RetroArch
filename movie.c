@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include "general.h"
 #include "dynamic.h"
+#include <assert.h>
 
 // CRC32 implementation taken from BSNES source :)
 
@@ -88,7 +89,7 @@ struct bsv_movie
    FILE *file;
    uint8_t *state;
 
-   uint16_t *frame_state; // A ring buffer keeping track of many key presses were requested per frame.
+   long *frame_pos; // A ring buffer keeping track of many key presses were requested per frame.
    size_t frame_mask;
    uint16_t current_frame_count;
    size_t frame_ptr;
@@ -221,25 +222,32 @@ void bsv_movie_free(bsv_movie_t *handle)
       if (handle->file)
          fclose(handle->file);
       free(handle->state);
-      free(handle->frame_state);
+      free(handle->frame_pos);
       free(handle);
    }
 }
 
 bool bsv_movie_get_input(bsv_movie_t *handle, int16_t *input)
 {
-   if (fread(input, sizeof(int16_t), 1, handle->file) != 1)
-      return false;
+   if (g_extern.frame_is_reverse)
+   {
+      *input = 0;
+      return true;
+   }
+   else
+   {
+      if (fread(input, sizeof(int16_t), 1, handle->file) != 1)
+         return false;
 
-   *input = swap_if_big16(*input);
-   handle->current_frame_count++;
-   return true;
+      *input = swap_if_big16(*input);
+      return true;
+   }
 }
 
 void bsv_movie_set_input(bsv_movie_t *handle, int16_t input)
 {
-   fwrite(&input, sizeof(int16_t), 1, handle->file);
-   handle->current_frame_count++;
+   if (!g_extern.frame_is_reverse)
+      fwrite(&input, sizeof(int16_t), 1, handle->file);
 }
 
 bsv_movie_t *bsv_movie_init(const char *path, enum ssnes_movie_type type)
@@ -256,7 +264,7 @@ bsv_movie_t *bsv_movie_init(const char *path, enum ssnes_movie_type type)
    else if (!init_record(handle, path))
       goto error;
 
-   if (!(handle->frame_state = malloc((1 << 20) * sizeof(uint16_t)))) // Just pick something really large :D
+   if (!(handle->frame_pos = calloc((1 << 20), sizeof(long)))) // Just pick something really large :D
       goto error; 
    handle->frame_mask = (1 << 20) - 1;
 
@@ -267,14 +275,16 @@ error:
    return NULL;
 }
 
+void bsv_movie_set_frame_start(bsv_movie_t *handle)
+{
+   fprintf(stderr, "Starting frame: %u, Pos: %ld\n", (unsigned)handle->frame_ptr, ftell(handle->file));
+   handle->frame_pos[handle->frame_ptr] = ftell(handle->file);
+}
+
 void bsv_movie_set_frame_end(bsv_movie_t *handle)
 {
-   fprintf(stderr, "Current frame count: %u\n", handle->current_frame_count);
-   handle->frame_state[handle->frame_ptr] = handle->current_frame_count;
-   handle->current_frame_count = 0;
+   fprintf(stderr, "Frame++\n");
    handle->frame_ptr = (handle->frame_ptr + 1) & handle->frame_mask;
-
-   fprintf(stderr, "Frame end: Current pos: %ld\n", ftell(handle->file) - handle->min_file_pos);
 }
 
 void bsv_movie_frame_rewind(bsv_movie_t *handle)
@@ -284,14 +294,16 @@ void bsv_movie_frame_rewind(bsv_movie_t *handle)
       if (!handle->playback)
       {
          fseek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
-         psnes_serialize(handle->state, handle->min_file_pos - 4 * sizeof(uint32_t));
-         fwrite(handle->state, 1, handle->min_file_pos - 4 * sizeof(uint32_t), handle->file);
+         psnes_serialize(handle->state, psnes_serialize_size());
+         fwrite(handle->state, 1, psnes_serialize_size(), handle->file);
       }
+      else
+         fseek(handle->file, handle->min_file_pos, SEEK_SET);
    }
    else
    {
+      fprintf(stderr, "Frame--\n");
       handle->frame_ptr = (handle->frame_ptr - 1) & handle->frame_mask;
-      fseek(handle->file, -((long)handle->frame_state[handle->frame_ptr] * sizeof(int16_t)), SEEK_CUR);
+      fseek(handle->file, handle->frame_pos[handle->frame_ptr], SEEK_SET);
    }
-   fprintf(stderr, "Rewind: Current pos: %ld\n", ftell(handle->file) - handle->min_file_pos);
 }
