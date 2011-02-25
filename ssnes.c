@@ -1266,7 +1266,7 @@ int main(int argc, char *argv[])
 
          psnes_run();
 
-         if (g_extern.bsv_movie && !g_extern.frame_is_reverse)
+         if (g_extern.bsv_movie)
             bsv_movie_set_frame_end(g_extern.bsv_movie);
          if (g_extern.netplay)
             netplay_post_frame(g_extern.netplay);

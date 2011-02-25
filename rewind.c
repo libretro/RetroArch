@@ -78,11 +78,11 @@ void state_manager_free(state_manager_t *state)
 bool state_manager_pop(state_manager_t *state, void **data)
 { 
    *data = state->tmp_state;
-   if (state->first_pop)
-   {
-      state->first_pop = false;
-      return true;
-   }
+   //if (state->first_pop)
+   //{
+   //   state->first_pop = false;
+   //   return true;
+   //}
 
    if (state->top_ptr == 0)
       state->top_ptr = state->buf_size - 1;

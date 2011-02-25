@@ -96,6 +96,7 @@ struct bsv_movie
 
    bool playback;
    unsigned min_file_pos;
+   bool first_rewind;
 };
 
 #define BSV_MAGIC 0x42535631
@@ -229,25 +230,16 @@ void bsv_movie_free(bsv_movie_t *handle)
 
 bool bsv_movie_get_input(bsv_movie_t *handle, int16_t *input)
 {
-   if (g_extern.frame_is_reverse)
-   {
-      *input = 0;
-      return true;
-   }
-   else
-   {
-      if (fread(input, sizeof(int16_t), 1, handle->file) != 1)
-         return false;
+   if (fread(input, sizeof(int16_t), 1, handle->file) != 1)
+      return false;
 
-      *input = swap_if_big16(*input);
-      return true;
-   }
+   *input = swap_if_big16(*input);
+   return true;
 }
 
 void bsv_movie_set_input(bsv_movie_t *handle, int16_t input)
 {
-   if (!g_extern.frame_is_reverse)
-      fwrite(&input, sizeof(int16_t), 1, handle->file);
+   fwrite(&input, sizeof(int16_t), 1, handle->file);
 }
 
 bsv_movie_t *bsv_movie_init(const char *path, enum ssnes_movie_type type)
@@ -289,6 +281,15 @@ void bsv_movie_set_frame_end(bsv_movie_t *handle)
 
 void bsv_movie_frame_rewind(bsv_movie_t *handle)
 {
+   fprintf(stderr, "Frame--\n");
+   if (handle->frame_ptr <= 1)
+      handle->frame_ptr = 0;
+   else
+   {
+      handle->frame_ptr = (handle->frame_ptr - 2) & handle->frame_mask;
+      fseek(handle->file, handle->frame_pos[handle->frame_ptr], SEEK_SET);
+   }
+
    if (ftell(handle->file) <= (long)handle->min_file_pos)
    {
       if (!handle->playback)
@@ -299,11 +300,5 @@ void bsv_movie_frame_rewind(bsv_movie_t *handle)
       }
       else
          fseek(handle->file, handle->min_file_pos, SEEK_SET);
-   }
-   else
-   {
-      fprintf(stderr, "Frame--\n");
-      handle->frame_ptr = (handle->frame_ptr - 1) & handle->frame_mask;
-      fseek(handle->file, handle->frame_pos[handle->frame_ptr], SEEK_SET);
    }
 }
