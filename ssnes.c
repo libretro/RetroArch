@@ -241,7 +241,7 @@ static void input_poll(void)
 
 static int16_t input_state(bool port, unsigned device, unsigned index, unsigned id)
 {
-   if (g_extern.bsv_movie && g_extern.bsv_movie_playback)
+   if (g_extern.bsv_movie && g_extern.bsv_movie_playback && !g_extern.frame_is_reverse)
    {
       int16_t ret;
       if (bsv_movie_get_input(g_extern.bsv_movie, &ret))
@@ -258,7 +258,7 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
       binds[i] = g_settings.input.binds[i];
 
    int16_t res = driver.input->input_state(driver.input_data, binds, port, device, index, id);
-   if (g_extern.bsv_movie && !g_extern.bsv_movie_playback)
+   if (g_extern.bsv_movie && !g_extern.bsv_movie_playback && !g_extern.frame_is_reverse)
       bsv_movie_set_input(g_extern.bsv_movie, res);
 
    return res;
@@ -1042,6 +1042,9 @@ static void check_rewind(void)
 
    if (driver.input->key_pressed(driver.input_data, SSNES_REWIND))
    {
+      if (g_extern.bsv_movie)
+         bsv_movie_frame_rewind(g_extern.bsv_movie);
+
       msg_queue_clear(g_extern.msg_queue);
       void *buf;
       if (state_manager_pop(g_extern.state_manager, &buf))
@@ -1174,8 +1177,8 @@ static void do_state_checks(void)
       {
          check_stateslots();
          check_savestates();
-         check_rewind();
       }
+      check_rewind();
 
       if (!g_extern.bsv_movie_playback)
          check_movie_record();
@@ -1207,13 +1210,14 @@ int main(int argc, char *argv[])
    init_movie();
 
    if (!g_extern.bsv_movie)
-   {
       load_save_files();
-      init_rewind();
-   }
+
 
    init_netplay();
    init_drivers();
+
+   if (!g_extern.netplay)
+      init_rewind();
 
    psnes_set_video_refresh(g_extern.netplay ? video_frame_net : video_frame);
    psnes_set_audio_sample(g_extern.netplay ? audio_sample_net : audio_sample);
@@ -1250,6 +1254,8 @@ int main(int argc, char *argv[])
 
          psnes_run();
 
+         if (g_extern.bsv_movie)
+            bsv_movie_set_frame_end(g_extern.bsv_movie);
          if (g_extern.netplay)
             netplay_post_frame(g_extern.netplay);
 
@@ -1280,10 +1286,10 @@ int main(int argc, char *argv[])
 #endif
 
    if (!g_extern.bsv_movie_playback && !g_extern.netplay_is_client)
-   {
-      deinit_rewind();
       save_files();
-   }
+
+   if (!g_extern.netplay)
+      deinit_rewind();
 
    deinit_movie();
    deinit_msg_queue();
