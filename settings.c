@@ -594,6 +594,7 @@ static void read_keybinds(config_file_t *conf)
          if (!bind)
             continue;
 
+         // Check keybind
          if (bind_maps[j][i].key && config_get_string(conf, bind_maps[j][i].key, &tmp_key))
          {
             int key = find_sdlk_key(tmp_key);
@@ -605,6 +606,7 @@ static void read_keybinds(config_file_t *conf)
             tmp_key = NULL;
          }
 
+         // Check joybutton bind (hats too)
          if (bind_maps[j][i].btn && config_get_string(conf, bind_maps[j][i].btn, &tmp_btn))
          {
             const char *btn = tmp_btn;
@@ -643,6 +645,7 @@ static void read_keybinds(config_file_t *conf)
             free(tmp_btn);
          }
 
+         // Check joyaxis binds.
          if (bind_maps[j][i].axis && config_get_string(conf, bind_maps[j][i].axis, &tmp_axis))
          {
             if (strcmp(tmp_axis, "nul") == 0)
