@@ -266,6 +266,7 @@ static void gl_render_msg(gl_t *gl, const char *msg)
             GL_UNSIGNED_BYTE, head->output);
 
       head = head->next;
+      glFlush();
       glDrawArrays(GL_QUADS, 0, 4);
    }
    font_renderer_free_output(&out);
