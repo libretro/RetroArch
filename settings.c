@@ -545,6 +545,7 @@ static const struct key_map sdlk_map[] = {
    { "f10", SDLK_F10 },
    { "f11", SDLK_F11 },
    { "f12", SDLK_F12 },
+   { "nul", SDLK_UNKNOWN },
 };
 
 static struct snes_keybind *find_snes_bind(unsigned port, int id)
@@ -578,6 +579,7 @@ static int find_sdlk_key(const char *str)
       return find_sdlk_bind(str);
 }
 
+// Yes, this function needs a good refactor :)
 static void read_keybinds(config_file_t *conf)
 {
    char *tmp_key = NULL;
@@ -606,37 +608,48 @@ static void read_keybinds(config_file_t *conf)
          if (bind_maps[j][i].btn && config_get_string(conf, bind_maps[j][i].btn, &tmp_btn))
          {
             const char *btn = tmp_btn;
-            if (*btn++ == 'h')
+            if (strcmp(tmp_btn, "nul") == 0)
             {
-               if (isdigit(*btn))
-               {
-                  char *dir = NULL;
-                  int hat = strtol(btn, &dir, 0);
-                  int hat_dir = 0;
-                  if (dir)
-                  {
-                     if (strcasecmp(dir, "up") == 0)
-                        hat_dir = HAT_UP_MASK;
-                     else if (strcasecmp(dir, "down") == 0)
-                        hat_dir = HAT_DOWN_MASK;
-                     else if (strcasecmp(dir, "left") == 0)
-                        hat_dir = HAT_LEFT_MASK;
-                     else if (strcasecmp(dir, "right") == 0)
-                        hat_dir = HAT_RIGHT_MASK;
-
-                     if (hat_dir)
-                        bind->joykey = HAT_MAP(hat, hat_dir);
-                  }
-               }
+               bind->joykey = NO_BTN;
             }
             else
-               bind->joykey = strtol(tmp_btn, NULL, 0);
+            {
+               if (*btn++ == 'h')
+               {
+                  if (isdigit(*btn))
+                  {
+                     char *dir = NULL;
+                     int hat = strtol(btn, &dir, 0);
+                     int hat_dir = 0;
+                     if (dir)
+                     {
+                        if (strcasecmp(dir, "up") == 0)
+                           hat_dir = HAT_UP_MASK;
+                        else if (strcasecmp(dir, "down") == 0)
+                           hat_dir = HAT_DOWN_MASK;
+                        else if (strcasecmp(dir, "left") == 0)
+                           hat_dir = HAT_LEFT_MASK;
+                        else if (strcasecmp(dir, "right") == 0)
+                           hat_dir = HAT_RIGHT_MASK;
+
+                        if (hat_dir)
+                           bind->joykey = HAT_MAP(hat, hat_dir);
+                     }
+                  }
+               }
+               else
+                  bind->joykey = strtol(tmp_btn, NULL, 0);
+            }
             free(tmp_btn);
          }
 
          if (bind_maps[j][i].axis && config_get_string(conf, bind_maps[j][i].axis, &tmp_axis))
          {
-            if (strlen(tmp_axis) >= 2 && (*tmp_axis == '+' || *tmp_axis == '-'))
+            if (strcmp(tmp_axis, "nul") == 0)
+            {
+               bind->joyaxis = AXIS_NONE;
+            }
+            else if (strlen(tmp_axis) >= 2 && (*tmp_axis == '+' || *tmp_axis == '-'))
             {
                int axis = strtol(tmp_axis + 1, NULL, 0);
                if (*tmp_axis == '+')
