@@ -405,6 +405,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
       DECLARE_BIND(rewind,                SSNES_REWIND)
       DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE)
+      DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE)
    },
    {
       DECLARE_BIND(player2_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -430,6 +431,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
       DECLARE_BIND(rewind,                SSNES_REWIND)
       DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE)
+      DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE)
    },
    {
       DECLARE_BIND(player3_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -455,6 +457,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
       DECLARE_BIND(rewind,                SSNES_REWIND)
       DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE)
+      DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE)
    },
    {
       DECLARE_BIND(player4_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -480,6 +483,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
       DECLARE_BIND(rewind,                SSNES_REWIND)
       DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE)
+      DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE)
    },
    {
       DECLARE_BIND(player5_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -505,6 +509,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
       DECLARE_BIND(rewind,                SSNES_REWIND)
       DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE)
+      DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE)
    },
 };
 
