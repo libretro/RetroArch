@@ -96,7 +96,9 @@ struct bsv_movie
 
    bool playback;
    unsigned min_file_pos;
+
    bool first_rewind;
+   bool did_rewind;
 };
 
 #define BSV_MAGIC 0x42535631
@@ -269,24 +271,33 @@ error:
 
 void bsv_movie_set_frame_start(bsv_movie_t *handle)
 {
-   fprintf(stderr, "Starting frame: %u, Pos: %ld\n", (unsigned)handle->frame_ptr, ftell(handle->file));
+   //fprintf(stderr, "Starting frame: %u, Pos: %ld\n", (unsigned)handle->frame_ptr, ftell(handle->file));
    handle->frame_pos[handle->frame_ptr] = ftell(handle->file);
+
 }
 
 void bsv_movie_set_frame_end(bsv_movie_t *handle)
 {
-   fprintf(stderr, "Frame++\n");
+   //fprintf(stderr, "Frame++\n");
    handle->frame_ptr = (handle->frame_ptr + 1) & handle->frame_mask;
+
+   handle->first_rewind = !handle->did_rewind;
+   handle->did_rewind = false;
 }
 
 void bsv_movie_frame_rewind(bsv_movie_t *handle)
 {
-   fprintf(stderr, "Frame--\n");
+   //fprintf(stderr, "Frame--\n");
+
+   handle->did_rewind = true;
    if (handle->frame_ptr <= 1)
+   {
       handle->frame_ptr = 0;
+      fseek(handle->file, handle->min_file_pos, SEEK_SET);
+   }
    else
    {
-      handle->frame_ptr = (handle->frame_ptr - 2) & handle->frame_mask;
+      handle->frame_ptr = (handle->frame_ptr - (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
       fseek(handle->file, handle->frame_pos[handle->frame_ptr], SEEK_SET);
    }
 
