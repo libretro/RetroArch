@@ -78,7 +78,6 @@ typedef struct audio_driver
 
 #define AXIS_NEG_GET(x) (((uint32_t)(x) >> 16) & 0xFFFFU)
 #define AXIS_POS_GET(x) ((uint32_t)(x) & 0xFFFFU)
-#define AXIS_NONE (0xFFFFFFFFU)
 
 #define NO_BTN ((uint16_t)0xFFFFU) // I hope no joypad will ever have this many buttons ... ;)
 
