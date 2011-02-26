@@ -396,6 +396,8 @@ static bool gl_frame(void *data, const uint16_t* frame, unsigned width, unsigned
    glTexSubImage2D(GL_TEXTURE_2D,
          0, 0, 0, width, height, GL_BGRA,
          GL_UNSIGNED_SHORT_1_5_5_5_REV, frame);
+
+   glFlush();
    glDrawArrays(GL_QUADS, 0, 4);
 
    if (msg)
