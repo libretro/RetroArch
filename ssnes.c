@@ -1070,7 +1070,7 @@ static void check_rewind(void)
    {
       static unsigned cnt = 0;
       cnt = (cnt + 1) % (g_settings.rewind_granularity ? g_settings.rewind_granularity : 1); // Avoid possible SIGFPE.
-      if (cnt == 0)
+      if (cnt == 0 || g_extern.bsv_movie)
       {
          psnes_serialize(g_extern.state_buf, psnes_serialize_size());
          state_manager_push(g_extern.state_manager, g_extern.state_buf);
