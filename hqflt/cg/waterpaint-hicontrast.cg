@@ -1,0 +1,71 @@
+/*
+   Author: Themaister
+   License: Public domain
+*/
+
+
+/* Default Vertex shader */
+void main_vertex
+(
+ float4 position	: POSITION,
+ float4 color	: COLOR,
+ float2 texCoord : TEXCOORD0,
+
+ uniform float4x4 modelViewProj,
+
+ out float4 oPosition : POSITION,
+ out float4 oColor    : COLOR,
+ out float2 otexCoord : TEXCOORD
+ )
+{
+   oPosition = mul(modelViewProj, position);
+   oColor = color;
+   otexCoord = texCoord;
+}
+
+
+struct output
+{
+   float4 color : COLOR;
+};
+
+
+struct input
+{
+  float2 video_size;
+  float2 texture_size;
+  float2 output_size;
+};
+
+
+output main_fragment (float2 tex : TEXCOORD0, uniform input IN, uniform sampler2D s0 : TEXUNIT0)
+{
+   float2 texsize = IN.texture_size;
+   const float scale_factor = 1.0;
+   float2 delta = 0.5 / (texsize * scale_factor);
+   float dx = delta.x;
+   float dy = delta.y;
+
+   float3 c00 = tex2D(s0, tex + float2(-dx, -dy)).xyz;
+   float3 c01 = tex2D(s0, tex + float2(-dx, 0)).xyz;
+   float3 c02 = tex2D(s0, tex + float2(-dx, dy)).xyz;
+   float3 c10 = tex2D(s0, tex + float2(0, -dy)).xyz;
+   float3 c11 = tex2D(s0, tex + float2(0, 0)).xyz;
+   float3 c12 = tex2D(s0, tex + float2(0, dy)).xyz;
+   float3 c20 = tex2D(s0, tex + float2(dx, -dy)).xyz;
+   float3 c21 = tex2D(s0, tex + float2(dx, 0)).xyz;
+   float3 c22 = tex2D(s0, tex + float2(dx, dy)).xyz;
+
+   output OUT;
+
+   float3 first = lerp(c00, c20, frac(scale_factor * tex.x * texsize.x + 0.5));
+   float3 second = lerp(c02, c22, frac(scale_factor * tex.x * texsize.x + 0.5));
+
+   float3 mid_horiz = lerp(c01, c21, frac(scale_factor * tex.x * texsize.x + 0.5));
+   float3 mid_vert = lerp(c10, c12, frac(scale_factor * tex.y * texsize.y + 0.5));
+
+   float3 res = lerp(first, second, frac(scale_factor * tex.y * texsize.y + 0.5));
+   OUT.color = float4(0.28 * (res + mid_horiz + mid_vert) + 4.7 * abs(res - lerp(mid_horiz, mid_vert, 0.5)), 1.0);
+
+   return OUT;
+}
