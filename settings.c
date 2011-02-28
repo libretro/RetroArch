@@ -107,6 +107,7 @@ static void set_defaults(void)
 #ifdef HAVE_FILTER
    g_settings.video.filter = FILTER_NONE;
 #endif
+   g_settings.video.shader_type = SSNES_SHADER_AUTO;
 
 #ifdef HAVE_FREETYPE
    g_settings.video.font_size = font_size;
@@ -317,6 +318,22 @@ static void parse_config_file(void)
 
       free(tmp_str);
       g_settings.video.filter = filter;
+   }
+#endif
+
+#if defined(HAVE_CG) || defined(HAVE_XML)
+   if (config_get_string(conf, "video_shader_type", &tmp_str))
+   {
+      if (strcmp("cg", tmp_str) == 0)
+         g_settings.video.shader_type = SSNES_SHADER_CG;
+      else if (strcmp("bsnes", tmp_str) == 0)
+         g_settings.video.shader_type = SSNES_SHADER_BSNES;
+      else if (strcmp("auto", tmp_str) == 0)
+         g_settings.video.shader_type = SSNES_SHADER_AUTO;
+      else if (strcmp("none", tmp_str) == 0)
+         g_settings.video.shader_type = SSNES_SHADER_NONE;
+
+      free(tmp_str);
    }
 #endif
 

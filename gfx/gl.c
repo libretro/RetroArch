@@ -82,6 +82,8 @@ typedef struct gl
    bool quitting;
    bool keep_aspect;
 
+   unsigned full_x, full_y;
+
    unsigned win_width;
    unsigned win_height;
    unsigned vp_width;
@@ -99,20 +101,46 @@ typedef struct gl
 } gl_t;
 
 ////////////////// Shaders
-static inline bool gl_shader_init(void)
+static bool gl_shader_init(void)
 {
-   if (strlen(g_settings.video.cg_shader_path) > 0 && strlen(g_settings.video.bsnes_shader_path) > 0)
-      SSNES_WARN("Both Cg and bSNES XML shader are defined in config file. Cg shader will be selected by default.\n");
+   switch (g_settings.video.shader_type)
+   {
+      case SSNES_SHADER_AUTO:
+      {
+         if (strlen(g_settings.video.cg_shader_path) > 0 && strlen(g_settings.video.bsnes_shader_path) > 0)
+            SSNES_WARN("Both Cg and bSNES XML shader are defined in config file. Cg shader will be selected by default.\n");
 
 #ifdef HAVE_CG
-   if (strlen(g_settings.video.cg_shader_path) > 0)
-      return gl_cg_init(g_settings.video.cg_shader_path);
+         if (strlen(g_settings.video.cg_shader_path) > 0)
+            return gl_cg_init(g_settings.video.cg_shader_path);
 #endif
 
 #ifdef HAVE_XML
-   if (strlen(g_settings.video.bsnes_shader_path) > 0)
-      return gl_glsl_init(g_settings.video.bsnes_shader_path);
+         if (strlen(g_settings.video.bsnes_shader_path) > 0)
+            return gl_glsl_init(g_settings.video.bsnes_shader_path);
 #endif
+         break;
+      }
+
+#ifdef HAVE_CG
+      case SSNES_SHADER_CG:
+      {
+         return gl_cg_init(g_settings.video.cg_shader_path);
+         break;
+      }
+#endif
+
+#ifdef HAVE_XML
+      case SSNES_SHADER_BSNES:
+      {
+         return gl_glsl_init(g_settings.video.bsnes_shader_path);
+         break;
+      }
+#endif
+
+      default:
+         break;
+   }
 
    return true;
 }
@@ -445,6 +473,10 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    if (SDL_Init(SDL_INIT_VIDEO) < 0)
       return NULL;
 
+   const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
+   unsigned full_x = video_info->current_w;
+   unsigned full_y = video_info->current_h;
+
    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, video->vsync ? 1 : 0);
 
@@ -465,8 +497,20 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    if (!gl)
       return NULL;
 
-   gl->win_width = video->width;
-   gl->win_height = video->height;
+   gl->full_x = full_x;
+   gl->full_y = full_y;
+
+   if (video->fullscreen)
+   {
+      gl->win_width = video->width ? video->width : gl->full_x;
+      gl->win_height = video->height ? video->height : gl->full_y;
+   }
+   else
+   {
+      gl->win_width = video->width;
+      gl->win_height = video->height;
+   }
+
    gl->vsync = video->vsync;
    gl->keep_aspect = video->force_aspect;
    set_viewport(gl);

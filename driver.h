@@ -41,6 +41,7 @@ enum
    SSNES_PAUSE_TOGGLE,
 };
 
+
 struct snes_keybind
 {
    int id;

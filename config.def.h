@@ -94,8 +94,8 @@ static const float yscale = 3.0; // Real y res = 224 * yscale
 
 // Fullscreen
 static const bool fullscreen = false;  // To start in Fullscreen or not
-static const unsigned fullscreen_x = 1280;
-static const unsigned fullscreen_y = 720;
+static const unsigned fullscreen_x = 0; // Fullscreen resolution. A value of 0 uses the desktop resolution.
+static const unsigned fullscreen_y = 0;
 
 // Video VSYNC (recommended)
 static const bool vsync = true;

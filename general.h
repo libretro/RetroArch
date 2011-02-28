@@ -44,6 +44,14 @@
 #define MAX_BINDS 25 // Needs to be increased every time there are new binds added.
 #define SSNES_NO_JOYPAD 0xFFFF
 
+enum ssnes_shader_type
+{
+   SSNES_SHADER_CG,
+   SSNES_SHADER_BSNES,
+   SSNES_SHADER_AUTO,
+   SSNES_SHADER_NONE
+};
+
 // All config related settings go here.
 struct settings
 {
@@ -62,6 +70,7 @@ struct settings
       char cg_shader_path[256];
       char bsnes_shader_path[256];
       unsigned filter;
+      enum ssnes_shader_type shader_type;
 
       char font_path[256];
       unsigned font_size;
@@ -110,6 +119,7 @@ enum ssnes_game_type
    SSNES_CART_BSX_SLOTTED,
    SSNES_CART_SUFAMI,
 };
+
 
 // All run-time- / command line flag-related globals go here.
 struct global
