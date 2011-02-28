@@ -50,7 +50,7 @@ check_lib()
 
    extralibs="$4"
 
-   $CC -o $TEMP_EXE $TEMP_C $INCLUDE_DIRS $LIBRARY_DIRS $extralibs $2 2>/dev/null >/dev/null && answer=yes && eval HAVE_$1=yes
+   $CC -o $TEMP_EXE $TEMP_C $INCLUDE_DIRS $LIBRARY_DIRS $CFLAGS $LDFLAGS $extralibs $2 2>/dev/null >/dev/null && answer=yes && eval HAVE_$1=yes
 
    echo $answer
 
@@ -75,7 +75,7 @@ check_lib_cxx()
 
    extralibs="$4"
 
-   $CXX -o $TEMP_EXE $TEMP_CXX $INCLUDE_DIRS $LIBRARY_DIRS $extralibs $2 2>/dev/null >/dev/null && answer=yes && eval HAVE_$1=yes
+   $CXX -o $TEMP_EXE $TEMP_CXX $INCLUDE_DIRS $LIBRARY_DIRS $CFLAGS $LDFLAGS $extralibs $2 2>/dev/null >/dev/null && answer=yes && eval HAVE_$1=yes
 
    echo $answer
 

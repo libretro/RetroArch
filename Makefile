@@ -113,7 +113,7 @@ ifneq ($(V),1)
    Q := @
 endif
 
-CFLAGS = -Wall -O3 -g -std=gnu99 -I.
+CFLAGS += -Wall -O3 -g -std=gnu99 -I.
 
 all: $(TARGET) config.mk
 
