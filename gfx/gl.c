@@ -24,6 +24,7 @@
 #include <sys/time.h>
 #include <string.h>
 #include "general.h"
+#include <assert.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -474,8 +475,10 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
       return NULL;
 
    const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
+   assert(video_info);
    unsigned full_x = video_info->current_w;
    unsigned full_y = video_info->current_h;
+   SSNES_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, video->vsync ? 1 : 0);
@@ -510,6 +513,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
       gl->win_width = video->width;
       gl->win_height = video->height;
    }
+   SSNES_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
 
    gl->vsync = video->vsync;
    gl->keep_aspect = video->force_aspect;

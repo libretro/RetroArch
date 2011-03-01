@@ -408,24 +408,32 @@ static bool send_chunk(netplay_t *handle)
    return true;
 }
 
-#define MAX_RETRIES 16
+#define MAX_RETRIES 64
+#define RETRY_MS 500
 
 static int poll_input(netplay_t *handle, bool block)
 {
    fd_set fds;
    FD_ZERO(&fds);
    FD_SET(handle->udp_fd, &fds);
+   FD_SET(handle->fd, &fds);
+   int max_fd = (handle->fd > handle->udp_fd ? handle->fd : handle->udp_fd) + 1;
 
    struct timeval tv = {
       .tv_sec = 0,
-      .tv_usec = block ? 500000 : 0
+      .tv_usec = block ? (RETRY_MS * 1000) : 0
    };
 
    int i = 0;
    do
    {
-      if (select(handle->udp_fd + 1, &fds, NULL, NULL, &tv) < 0)
+      if (select(max_fd, &fds, NULL, NULL, &tv) < 0)
          return -1;
+
+      // Somewhat hacky, but we aren't using the TCP connection for anything useful atm.
+      // Will probably add some proper messaging system here later.
+      if (FD_ISSET(handle->fd, &fds))
+         return -1; 
 
       if (FD_ISSET(handle->udp_fd, &fds))
          return 1;
@@ -434,10 +442,18 @@ static int poll_input(netplay_t *handle, bool block)
       {
          SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
          handle->has_connection = false;
-         return false;
+         return -1;
       }
 
-   } while (i++ < MAX_RETRIES && block);
+      if (block)
+         SSNES_LOG("Network lag of %d ms, resending packet... Attempt %d of %d ...\n", RETRY_MS, i, MAX_RETRIES);
+
+      // Seems to be necessary on Win32.
+      FD_ZERO(&fds);
+      FD_SET(handle->udp_fd, &fds);
+      FD_SET(handle->fd, &fds);
+
+   } while ((i++ < MAX_RETRIES) && block);
 
    if (block)
       return -1;
