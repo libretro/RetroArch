@@ -91,8 +91,8 @@ output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEXU
 	else
 		mcol.rb = 0.7;
 	
-	//OUT.color = pow(mcol*(col * weights + col2 * weights2), 1.0/2.2);
-   OUT.color = 1.0;
+	OUT.color = pow(mcol*(col * weights + col2 * weights2), 1.0/2.2);
+   //OUT.color = 1.0;
 	
 	return OUT;   	
 }
