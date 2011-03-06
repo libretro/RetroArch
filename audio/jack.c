@@ -103,7 +103,15 @@ static size_t find_buffersize(jack_t *jd, int latency)
 {
    int frames = latency * g_settings.audio.out_rate / 1000;
 
-   int jack_latency = jack_port_get_total_latency(jd->client, jd->ports[0]);
+   jack_latency_range_t range;
+   int jack_latency = 0;
+   for (int i = 0; i < 2; i++)
+   {
+      jack_port_get_latency_range(jd->ports[i], JackPlaybackLatency, &range);
+      if (range.max > jack_latency)
+         jack_latency = range.max;
+   }
+
    SSNES_LOG("JACK: Jack latency is %d frames.\n", jack_latency);
 
    int buffer_frames = frames - jack_latency;
