@@ -72,6 +72,12 @@ struct settings
       unsigned filter;
       enum ssnes_shader_type shader_type;
 
+      bool render_to_texture;
+      double fbo_scale_x;
+      double fbo_scale_y;
+      char second_pass_shader[256];
+      bool second_pass_smooth;
+
       char font_path[256];
       unsigned font_size;
       float msg_pos_x;

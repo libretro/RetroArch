@@ -113,6 +113,12 @@ static const unsigned font_size = 48;
 static const float message_pos_offset_x = 0.05;
 static const float message_pos_offset_y = 0.05;
 
+// Render-to-texture before rendering to screen (multi-pass shaders)
+static const bool render_to_texture = false;
+static const float fbo_scale_x = 2.0;
+static const float fbo_scale_y = 2.0;
+static const bool second_pass_smooth = true;
+
 #define SNES_ASPECT_RATIO (4.0/3)
 
 ////////////////

@@ -115,6 +115,13 @@ static void set_defaults(void)
    g_settings.video.msg_pos_y = message_pos_offset_y;
 #endif
 
+#if defined(HAVE_CG) || defined(HAVE_XML)
+   g_settings.video.render_to_texture = render_to_texture;
+   g_settings.video.fbo_scale_x = fbo_scale_x;
+   g_settings.video.fbo_scale_y = fbo_scale_y;
+   g_settings.video.second_pass_smooth = second_pass_smooth;
+#endif
+
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
    g_settings.audio.in_rate = in_rate;
@@ -280,6 +287,11 @@ static void parse_config_file(void)
 
    CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
    CONFIG_GET_STRING(video.bsnes_shader_path, "video_bsnes_shader");
+   CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
+   CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
+   CONFIG_GET_DOUBLE(video.fbo_scale_x, "video_fbo_scale_x");
+   CONFIG_GET_DOUBLE(video.fbo_scale_x, "video_fbo_scale_y");
+   CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
 
 #ifdef HAVE_FREETYPE
    CONFIG_GET_STRING(video.font_path, "video_font_path");
