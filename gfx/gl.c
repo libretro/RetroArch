@@ -80,6 +80,34 @@ static const GLfloat fbo_tex_coords[] = {
    1, 0
 };
 
+#ifdef _WIN32
+static PFNGLGENFRAMEBUFFERSPROC pglGenFramebuffers = NULL;
+static PFNGLBINDFRAMEBUFFERPROC pglBindFramebuffer = NULL;
+static PFNGLFRAMEBUFFERTEXTURE2DPROC pglFramebufferTexture2D = NULL;
+static PFNGLCHECKFRAMEBUFFERSTATUSPROC pglCheckFramebufferStatus = NULL;
+static PFNGLDELETEFRAMEBUFFERSPROC pglDeleteFramebuffers = NULL;
+
+#define LOAD_SYM(sym) p##sym = ((void*)SDL_GL_GetProcAddress(#sym))
+static bool load_fbo_proc(void)
+{
+   LOAD_SYM(glGenFramebuffers);
+   LOAD_SYM(glBindFramebuffer);
+   LOAD_SYM(glFramebufferTexture2D);
+   LOAD_SYM(glCheckFramebufferStatus);
+   LOAD_SYM(glDeleteFramebuffers);
+
+   return pglGenFramebuffers && pglBindFramebuffer && pglFramebufferTexture2D && 
+      pglCheckFramebufferStatus && pglDeleteFramebuffers;
+}
+#else
+#define pglGenFramebuffers glGenFramebuffers
+#define pglBindFramebuffer glBindFramebuffer
+#define pglFramebufferTexture2D glFramebufferTexture2D
+#define pglCheckFramebufferStatus glCheckFramebufferStatus
+#define pglDeleteFramebuffers glDeleteFramebuffers
+static bool load_fbo_proc(void) { return true; }
+#endif
+
 typedef struct gl
 {
    bool vsync;
@@ -252,6 +280,9 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    if (!g_settings.video.render_to_texture)
       return;
 
+   if (!load_fbo_proc())
+      return;
+
    float scale_x = g_settings.video.fbo_scale_x;
    float scale_y = g_settings.video.fbo_scale_y;
    unsigned xscale = next_pow_2(ceil(scale_x));
@@ -277,11 +308,11 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    free(tmp);
    glBindTexture(GL_TEXTURE_2D, 0);
 
-   glGenFramebuffers(1, &gl->fbo);
-   glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo);
-   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture, 0);
+   pglGenFramebuffers(1, &gl->fbo);
+   pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo);
+   pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture, 0);
 
-   GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+   GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
    if (status == GL_FRAMEBUFFER_COMPLETE)
    {
       gl->fbo_inited = true;
@@ -290,7 +321,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    else
    {
       glDeleteTextures(1, &gl->fbo_texture);
-      glDeleteFramebuffers(1, &gl->fbo);
+      pglDeleteFramebuffers(1, &gl->fbo);
       SSNES_WARN("Failed to set up FBO. Two-pass shading will not work.\n");
    }
 }
@@ -305,6 +336,7 @@ static inline void gl_deinit_font(gl_t *gl)
    }
 #endif
 }
+////////////
 
 static inline unsigned get_alignment(unsigned pitch)
 {
@@ -460,7 +492,7 @@ static bool gl_frame(void *data, const uint16_t* frame, unsigned width, unsigned
    if (gl->fbo_inited)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture);
-      glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo);
+      pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo);
       gl->render_to_tex = true;
       set_viewport(gl, width * gl->fbo_scale_x, height * gl->fbo_scale_y, true);
    }
@@ -510,7 +542,7 @@ static bool gl_frame(void *data, const uint16_t* frame, unsigned width, unsigned
    if (gl->fbo_inited)
    {
       // Render our FBO texture to back buffer.
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      pglBindFramebuffer(GL_FRAMEBUFFER, 0);
       gl_shader_use(2);
 
       glClear(GL_COLOR_BUFFER_BIT);
@@ -552,7 +584,7 @@ static void gl_free(void *data)
    if (gl->fbo_inited)
    {
       glDeleteTextures(1, &gl->fbo_texture);
-      glDeleteFramebuffers(1, &gl->fbo);
+      pglDeleteFramebuffers(1, &gl->fbo);
    }
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
