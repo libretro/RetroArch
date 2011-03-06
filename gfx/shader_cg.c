@@ -19,6 +19,7 @@
 #include <Cg/cg.h>
 #include <Cg/cgGL.h>
 #include "general.h"
+#include <string.h>
 
 // Used when we call deactivate() since just unbinding the program didn't seem to work... :(
 static const char* stock_cg_program =
@@ -55,21 +56,29 @@ static const char* stock_cg_program =
 
 
 static CGcontext cgCtx;
-static CGprogram cgFPrg;
-static CGprogram cgVPrg;
-static CGprogram cgSFPrg;
-static CGprogram cgSVPrg;
-static CGprofile cgFProf;
-static CGprofile cgVProf;
-static CGparameter cg_video_size, cg_texture_size, cg_output_size;
-static CGparameter cg_Vvideo_size, cg_Vtexture_size, cg_Voutput_size; // Vertexes
-static CGparameter cg_mvp_matrix;
+struct cg_program
+{
+   CGprogram prg;
+   CGprogram vprg;
+   CGprogram fprg;
+   CGparameter vid_size_f;
+   CGparameter tex_size_f;
+   CGparameter out_size_f;
+   CGparameter vid_size_v;
+   CGparameter tex_size_v;
+   CGparameter out_size_v;
+   CGparameter mvp;
+};
+
+static struct cg_program prg[3];
 static bool cg_active = false;
+static CGprofile cgVProf, cgFProf;
+static unsigned active_index = 0;
 
 void gl_cg_set_proj_matrix(void)
 {
    if (cg_active)
-      cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
+      cgGLSetStateMatrixParameter(prg[active_index].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 }
 
 void gl_cg_set_params(unsigned width, unsigned height, 
@@ -78,13 +87,13 @@ void gl_cg_set_params(unsigned width, unsigned height,
 {
    if (cg_active)
    {
-      cgGLSetParameter2f(cg_video_size, width, height);
-      cgGLSetParameter2f(cg_texture_size, tex_width, tex_height);
-      cgGLSetParameter2f(cg_output_size, out_width, out_height);
+      cgGLSetParameter2f(prg[active_index].vid_size_f, width, height);
+      cgGLSetParameter2f(prg[active_index].tex_size_f, tex_width, tex_height);
+      cgGLSetParameter2f(prg[active_index].out_size_f, out_width, out_height);
 
-      cgGLSetParameter2f(cg_Vvideo_size, width, height);
-      cgGLSetParameter2f(cg_Vtexture_size, tex_width, tex_height);
-      cgGLSetParameter2f(cg_Voutput_size, out_width, out_height);
+      cgGLSetParameter2f(prg[active_index].vid_size_v, width, height);
+      cgGLSetParameter2f(prg[active_index].tex_size_v, tex_width, tex_height);
+      cgGLSetParameter2f(prg[active_index].out_size_v, out_width, out_height);
    }
 }
 
@@ -97,12 +106,16 @@ void gl_cg_deinit(void)
 bool gl_cg_init(const char *path)
 {
    SSNES_LOG("Loading Cg file: %s\n", path);
+   if (strlen(g_settings.video.second_pass_shader) > 0)
+      SSNES_LOG("Loading 2nd pass: %s\n", g_settings.video.second_pass_shader);
+
    cgCtx = cgCreateContext();
    if (cgCtx == NULL)
    {
       SSNES_ERR("Failed to create Cg context\n");
       return false;
    }
+
    cgFProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
    cgVProf = cgGLGetLatestProfile(CG_GL_VERTEX);
    if (cgFProf == CG_PROFILE_UNKNOWN || cgVProf == CG_PROFILE_UNKNOWN)
@@ -112,54 +125,66 @@ bool gl_cg_init(const char *path)
    }
    cgGLSetOptimalOptions(cgFProf);
    cgGLSetOptimalOptions(cgVProf);
-   cgFPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgFProf, "main_fragment", 0);
-   cgVPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgVProf, "main_vertex", 0);
-   cgSFPrg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", 0);
-   cgSVPrg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", 0);
-   if (cgFPrg == NULL || cgVPrg == NULL || cgSFPrg == NULL || cgSVPrg == NULL)
+
+
+   prg[0].fprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", 0);
+   prg[0].vprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", 0);
+
+   prg[1].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgFProf, "main_fragment", 0);
+   prg[1].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgVProf, "main_vertex", 0);
+
+   if (strlen(g_settings.video.second_pass_shader) > 0)
    {
-      CGerror err = cgGetError();
-      SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
-      return false;
+      prg[2].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgFProf, "main_fragment", 0);
+      prg[2].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgVProf, "main_vertex", 0);
    }
-   cgGLLoadProgram(cgFPrg);
-   cgGLLoadProgram(cgVPrg);
-   cgGLLoadProgram(cgSFPrg);
-   cgGLLoadProgram(cgSVPrg);
+   else
+      prg[2] = prg[0];
+
+   for (int i = 0; i < 3; i++)
+   {
+      if (prg[i].fprg == NULL || prg[i].vprg == NULL)
+      {
+         CGerror err = cgGetError();
+         SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
+         return false;
+      }
+
+      cgGLLoadProgram(prg[i].fprg);
+      cgGLLoadProgram(prg[i].vprg);
+   }
+
    cgGLEnableProfile(cgFProf);
    cgGLEnableProfile(cgVProf);
-   cgGLBindProgram(cgFPrg);
-   cgGLBindProgram(cgVPrg);
 
-   cg_video_size = cgGetNamedParameter(cgFPrg, "IN.video_size");
-   cg_texture_size = cgGetNamedParameter(cgFPrg, "IN.texture_size");
-   cg_output_size = cgGetNamedParameter(cgFPrg, "IN.output_size");
-   cg_Vvideo_size = cgGetNamedParameter(cgVPrg, "IN.video_size");
-   cg_Vtexture_size = cgGetNamedParameter(cgVPrg, "IN.texture_size");
-   cg_Voutput_size = cgGetNamedParameter(cgVPrg, "IN.output_size");
-   cg_mvp_matrix = cgGetNamedParameter(cgVPrg, "modelViewProj");
-   cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
-   cg_mvp_matrix = cgGetNamedParameter(cgSVPrg, "modelViewProj");
-   cgGLSetStateMatrixParameter(cg_mvp_matrix, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
+   for (int i = 0; i < 3; i++)
+   {
+      cgGLBindProgram(prg[i].fprg);
+      cgGLBindProgram(prg[i].vprg);
+
+      prg[i].vid_size_f = cgGetNamedParameter(prg[i].fprg, "IN.video_size");
+      prg[i].tex_size_f = cgGetNamedParameter(prg[i].fprg, "IN.texture_size");
+      prg[i].out_size_f = cgGetNamedParameter(prg[i].fprg, "IN.output_size");
+      prg[i].vid_size_v = cgGetNamedParameter(prg[i].vprg, "IN.video_size");
+      prg[i].tex_size_v = cgGetNamedParameter(prg[i].vprg, "IN.texture_size");
+      prg[i].out_size_v = cgGetNamedParameter(prg[i].vprg, "IN.output_size");
+      prg[i].mvp = cgGetNamedParameter(prg[i].vprg, "modelViewProj");
+      cgGLSetStateMatrixParameter(prg[i].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
+   }
+
+   cgGLBindProgram(prg[1].fprg);
+   cgGLBindProgram(prg[1].vprg);
+
    cg_active = true;
    return true;
 }
 
-void gl_cg_activate(void)
+void gl_cg_use(unsigned index)
 {
    if (cg_active)
    {
-      cgGLBindProgram(cgFPrg);
-      cgGLBindProgram(cgVPrg);
-   }
-}
-
-// Just load a dummy shader.
-void gl_cg_deactivate(void)
-{
-   if (cg_active)
-   {
-      cgGLBindProgram(cgSFPrg);
-      cgGLBindProgram(cgSVPrg);
+      active_index = index;
+      cgGLBindProgram(prg[index].vprg);
+      cgGLBindProgram(prg[index].fprg);
    }
 }

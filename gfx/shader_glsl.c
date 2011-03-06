@@ -80,9 +80,10 @@ static PFNGLGETPROGRAMINFOLOGPROC pglGetProgramInfoLog = NULL;
 #endif
 
 static bool glsl_enable = false;
-static GLuint gl_program;
+static GLuint gl_program[3] = {0};
 static GLuint fragment_shader;
 static GLuint vertex_shader;
+static unsigned active_index = 0;
 
 static bool get_xml_shaders(const char *path, char **vertex_shader, char **fragment_shader)
 {
@@ -238,42 +239,51 @@ bool gl_glsl_init(const char *path)
       return false;
    }
 
-   gl_program = pglCreateProgram();
+   const char *paths[] = {NULL, path, 
+      (strlen(g_settings.video.second_pass_shader) > 0) ? g_settings.video.second_pass_shader : NULL};
 
-   char *vertex_prog = NULL;
-   char *fragment_prog = NULL;
-   if (!get_xml_shaders(path, &vertex_prog, &fragment_prog))
-      return false;
-
-   if (vertex_prog)
+   for (int i = 1; i < 3; i++)
    {
-      vertex_shader = pglCreateShader(GL_VERTEX_SHADER);
-      pglShaderSource(vertex_shader, 1, (const char**)&vertex_prog, 0);
-      pglCompileShader(vertex_shader);
-      print_shader_log(vertex_shader);
+      if (paths[i] == NULL)
+         continue;
 
-      pglAttachShader(gl_program, vertex_shader);
-      free(vertex_prog);
-   }
-   if (fragment_prog)
-   {
-      fragment_shader = pglCreateShader(GL_FRAGMENT_SHADER);
-      pglShaderSource(fragment_shader, 1, (const char**)&fragment_prog, 0);
-      pglCompileShader(fragment_shader);
-      print_shader_log(fragment_shader);
+      gl_program[i] = pglCreateProgram();
 
-      pglAttachShader(gl_program, fragment_shader);
-      free(fragment_prog);
-   }
+      char *vertex_prog = NULL;
+      char *fragment_prog = NULL;
+      if (!get_xml_shaders(paths[i], &vertex_prog, &fragment_prog))
+         return false;
 
-   if (vertex_prog || fragment_prog)
-   {
-      pglLinkProgram(gl_program);
-      pglUseProgram(gl_program);
-      print_linker_log(gl_program);
+      if (vertex_prog)
+      {
+         vertex_shader = pglCreateShader(GL_VERTEX_SHADER);
+         pglShaderSource(vertex_shader, 1, (const char**)&vertex_prog, 0);
+         pglCompileShader(vertex_shader);
+         print_shader_log(vertex_shader);
 
-      GLint location = pglGetUniformLocation(gl_program, "rubyTexture");
-      pglUniform1i(location, 0);
+         pglAttachShader(gl_program[i], vertex_shader);
+         free(vertex_prog);
+      }
+      if (fragment_prog)
+      {
+         fragment_shader = pglCreateShader(GL_FRAGMENT_SHADER);
+         pglShaderSource(fragment_shader, 1, (const char**)&fragment_prog, 0);
+         pglCompileShader(fragment_shader);
+         print_shader_log(fragment_shader);
+
+         pglAttachShader(gl_program[i], fragment_shader);
+         free(fragment_prog);
+      }
+
+      if (vertex_prog || fragment_prog)
+      {
+         pglLinkProgram(gl_program[i]);
+         pglUseProgram(gl_program[i]);
+         print_linker_log(gl_program[i]);
+
+         GLint location = pglGetUniformLocation(gl_program[i], "rubyTexture");
+         pglUniform1i(location, 0);
+      }
    }
 
    if (!gl_check_error())
@@ -290,20 +300,20 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height)
 {
-   if (glsl_enable)
+   if (glsl_enable && gl_program[active_index] > 0)
    {
       GLint location;
 
       float inputSize[2] = {width, height};
-      location = pglGetUniformLocation(gl_program, "rubyInputSize");
+      location = pglGetUniformLocation(gl_program[active_index], "rubyInputSize");
       pglUniform2fv(location, 1, inputSize);
 
       float outputSize[2] = {out_width, out_height};
-      location = pglGetUniformLocation(gl_program, "rubyOutputSize");
+      location = pglGetUniformLocation(gl_program[active_index], "rubyOutputSize");
       pglUniform2fv(location, 1, outputSize);
 
       float textureSize[2] = {tex_width, tex_height};
-      location = pglGetUniformLocation(gl_program, "rubyTextureSize");
+      location = pglGetUniformLocation(gl_program[active_index], "rubyTextureSize");
       pglUniform2fv(location, 1, textureSize);
 
    }
@@ -312,14 +322,11 @@ void gl_glsl_set_params(unsigned width, unsigned height,
 void gl_glsl_set_proj_matrix(void)
 {}
 
-void gl_glsl_activate(void)
+void gl_glsl_use(unsigned index)
 {
    if (glsl_enable)
-      pglUseProgram(gl_program);
-}
-
-void gl_glsl_deactivate(void)
-{
-   if (glsl_enable)
-      pglUseProgram(0);
+   {
+      active_index = index;
+      pglUseProgram(gl_program[index]);
+   }
 }

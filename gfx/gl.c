@@ -25,6 +25,7 @@
 #include <string.h>
 #include "general.h"
 #include <assert.h>
+#include <math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -85,12 +86,16 @@ typedef struct gl
    GLuint texture;
    GLuint tex_filter;
 
-   // Render-to-texture
+   // Render-to-texture, multipass shaders
    GLuint fbo;
    GLuint fbo_texture;
    bool render_to_tex;
    unsigned fbo_width;
    unsigned fbo_height;
+   bool fbo_inited;
+   bool fbo_tex_filter;
+   double fbo_scale_x;
+   double fbo_scale_y;
 
    bool should_resize;
    bool quitting;
@@ -106,6 +111,7 @@ typedef struct gl
    unsigned last_height;
    unsigned tex_w, tex_h;
    GLfloat tex_coords[8];
+   GLfloat fbo_tex_coords[8];
 
 #ifdef HAVE_FREETYPE
    font_renderer_t *font;
@@ -159,25 +165,14 @@ static bool gl_shader_init(void)
    return true;
 }
 
-static inline void gl_shader_deactivate(void)
+static inline void gl_shader_use(unsigned index)
 {
 #ifdef HAVE_CG
-   gl_cg_deactivate();
+   gl_cg_use(index);
 #endif
 
 #ifdef HAVE_XML
-   gl_glsl_deactivate();
-#endif
-}
-
-static inline void gl_shader_activate(void)
-{
-#ifdef HAVE_CG
-   gl_cg_activate();
-#endif
-
-#ifdef HAVE_XML
-   gl_glsl_activate();
+   gl_glsl_use(index);
 #endif
 }
 
@@ -240,17 +235,40 @@ static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_s
 #endif
 }
 
-static bool gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
+static inline unsigned next_pow_2(unsigned v)
 {
-   gl->fbo_width = fbo_width;
-   gl->fbo_height = fbo_height;
+   v--;
+   v |= v >> 1;
+   v |= v >> 2;
+   v |= v >> 4;
+   v |= v >> 8;
+   v |= v >> 16;
+   v++;
+   return v;
+}
+
+static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
+{
+   if (!g_settings.video.render_to_texture)
+      return;
+
+   float scale_x = g_settings.video.fbo_scale_x;
+   float scale_y = g_settings.video.fbo_scale_y;
+   unsigned xscale = next_pow_2(ceil(scale_x));
+   unsigned yscale = next_pow_2(ceil(scale_y));
+   SSNES_LOG("Internal FBO scale: (%u, %u)\n", xscale, yscale);
+
+   gl->fbo_width = width * xscale;
+   gl->fbo_height = height * yscale;
+   gl->fbo_scale_x = scale_x;
+   gl->fbo_scale_y = scale_y;
 
    glGenTextures(1, &gl->fbo_texture);
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, g_settings.video.second_pass_smooth ? GL_LINEAR : GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, g_settings.video.second_pass_smooth ? GL_LINEAR : GL_NEAREST);
 
    void *tmp = calloc(gl->fbo_width * gl->fbo_height, sizeof(uint32_t));
    glTexImage2D(GL_TEXTURE_2D,
@@ -264,8 +282,17 @@ static bool gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture, 0);
 
    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-   assert(status == GL_FRAMEBUFFER_COMPLETE);
-   return true;
+   if (status == GL_FRAMEBUFFER_COMPLETE)
+   {
+      gl->fbo_inited = true;
+      SSNES_LOG("Set up FBO @ %ux%u\n", gl->fbo_width, gl->fbo_height);
+   }
+   else
+   {
+      glDeleteTextures(1, &gl->fbo_texture);
+      glDeleteFramebuffers(1, &gl->fbo);
+      SSNES_WARN("Failed to set up FBO. Two-pass shading will not work.\n");
+   }
 }
 
 static inline void gl_deinit_font(gl_t *gl)
@@ -299,7 +326,7 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    GLfloat font_vertex[12]; 
 
    // Deactivate custom shaders. Enable the font texture.
-   gl_shader_deactivate();
+   gl_shader_use(0);
    glBindTexture(GL_TEXTURE_2D, gl->font_tex);
    glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), font_vertex);
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords); // Use the static one (uses whole texture).
@@ -346,19 +373,17 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), vertexes);
    glBindTexture(GL_TEXTURE_2D, gl->texture);
    glDisable(GL_BLEND);
-   gl_shader_activate();
 #endif
 }
-//////////////
 
-static void set_viewport(gl_t *gl)
+static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full)
 {
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
-   GLuint out_width = gl->render_to_tex ? gl->fbo_width : gl->win_width; 
-   GLuint out_height = gl->render_to_tex ? gl->fbo_height : gl->win_height;
+   GLuint out_width = width; 
+   GLuint out_height = height;
 
-   if (gl->keep_aspect && !gl->render_to_tex)
+   if (gl->keep_aspect && !force_full)
    {
       float desired_aspect = g_settings.video.aspect_ratio;
       float device_aspect = (float)gl->win_width / gl->win_height;
@@ -429,21 +454,27 @@ static bool gl_frame(void *data, const uint16_t* frame, unsigned width, unsigned
 {
    gl_t *gl = data;
 
-   // Render to texture in first pass.
-   glBindTexture(GL_TEXTURE_2D, gl->texture);
-   glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo);
-   gl->render_to_tex = true;
+   gl_shader_use(1);
 
+   // Render to texture in first pass.
+   if (gl->fbo_inited)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->texture);
+      glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo);
+      gl->render_to_tex = true;
+      set_viewport(gl, width * gl->fbo_scale_x, height * gl->fbo_scale_y, true);
+   }
    if (gl->should_resize)
    {
       gl->should_resize = false;
       SDL_SetVideoMode(gl->win_width, gl->win_height, 0, SDL_OPENGL | SDL_RESIZABLE | (g_settings.video.fullscreen ? SDL_FULLSCREEN : 0));
+
+      if (!gl->render_to_tex)
+         set_viewport(gl, gl->win_width, gl->win_height, false);
    }
-   set_viewport(gl);
 
    glClear(GL_COLOR_BUFFER_BIT);
-
-   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->fbo_width, gl->fbo_height);
+   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->vp_width, gl->vp_height);
 
    if (width != gl->last_width || height != gl->last_height) // res change. need to clear out texture.
    {
@@ -476,17 +507,29 @@ static bool gl_frame(void *data, const uint16_t* frame, unsigned width, unsigned
    glFlush();
    glDrawArrays(GL_QUADS, 0, 4);
 
-   // Render our FBO texture to back buffer.
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-   glClear(GL_COLOR_BUFFER_BIT);
-   gl->render_to_tex = false;
-   gl_shader_set_params(gl->fbo_width, gl->fbo_height, gl->fbo_width, gl->fbo_height, gl->vp_width, gl->vp_height);
-   set_viewport(gl);
-   glBindTexture(GL_TEXTURE_2D, gl->fbo_texture);
+   if (gl->fbo_inited)
+   {
+      // Render our FBO texture to back buffer.
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      gl_shader_use(2);
 
-   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), fbo_tex_coords);
-   glDrawArrays(GL_QUADS, 0, 4);
-   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
+      glClear(GL_COLOR_BUFFER_BIT);
+      gl->render_to_tex = false;
+      set_viewport(gl, gl->win_width, gl->win_height, false);
+      gl_shader_set_params(width * gl->fbo_scale_x, height * gl->fbo_scale_y, gl->fbo_width, gl->fbo_height, gl->vp_width, gl->vp_height);
+      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture);
+
+      glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->fbo_tex_coords);
+      GLfloat xamt = (GLfloat)width * gl->fbo_scale_x / gl->fbo_width;
+      GLfloat yamt = (GLfloat)height * gl->fbo_scale_y / gl->fbo_height;
+      gl->fbo_tex_coords[3] = yamt;
+      gl->fbo_tex_coords[4] = xamt;
+      gl->fbo_tex_coords[5] = yamt;
+      gl->fbo_tex_coords[6] = xamt;
+
+      glDrawArrays(GL_QUADS, 0, 4);
+      glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
+   }
 
    if (msg)
       gl_render_msg(gl, msg);
@@ -506,8 +549,11 @@ static void gl_free(void *data)
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDeleteTextures(1, &gl->texture);
-   glDeleteTextures(1, &gl->fbo_texture);
-   glDeleteFramebuffers(1, &gl->fbo);
+   if (gl->fbo_inited)
+   {
+      glDeleteTextures(1, &gl->fbo_texture);
+      glDeleteFramebuffers(1, &gl->fbo);
+   }
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
@@ -575,14 +621,14 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
       gl->win_height = video->height;
    }
 
-   // Set up render to texture.
-   gl_init_fbo(gl, 2 * 256 * video->input_scale, 2 * 256 * video->input_scale);
-
    SSNES_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
+
+   // Set up render to texture.
+   gl_init_fbo(gl, 256 * video->input_scale, 256 * video->input_scale);
 
    gl->vsync = video->vsync;
    gl->keep_aspect = video->force_aspect;
-   set_viewport(gl);
+   set_viewport(gl, gl->win_width, gl->win_height, false);
 
    if (!gl_shader_init())
    {
