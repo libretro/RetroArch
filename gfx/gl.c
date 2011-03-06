@@ -30,7 +30,6 @@
 #include "config.h"
 #endif
 
-
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
@@ -73,11 +72,25 @@ static const GLfloat tex_coords[] = {
    1, 1
 };
 
+static const GLfloat fbo_tex_coords[] = {
+   0, 0,
+   0, 1,
+   1, 1,
+   1, 0
+};
+
 typedef struct gl
 {
    bool vsync;
    GLuint texture;
    GLuint tex_filter;
+
+   // Render-to-texture
+   GLuint fbo;
+   GLuint fbo_texture;
+   bool render_to_tex;
+   unsigned fbo_width;
+   unsigned fbo_height;
 
    bool should_resize;
    bool quitting;
@@ -227,6 +240,34 @@ static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_s
 #endif
 }
 
+static bool gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
+{
+   gl->fbo_width = fbo_width;
+   gl->fbo_height = fbo_height;
+
+   glGenTextures(1, &gl->fbo_texture);
+   glBindTexture(GL_TEXTURE_2D, gl->fbo_texture);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+   void *tmp = calloc(gl->fbo_width * gl->fbo_height, sizeof(uint32_t));
+   glTexImage2D(GL_TEXTURE_2D,
+         0, GL_RGBA, gl->fbo_width, gl->fbo_height, 0, GL_RGBA,
+         GL_UNSIGNED_INT_8_8_8_8, tmp);
+   free(tmp);
+   glBindTexture(GL_TEXTURE_2D, 0);
+
+   glGenFramebuffers(1, &gl->fbo);
+   glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo);
+   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture, 0);
+
+   GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+   assert(status == GL_FRAMEBUFFER_COMPLETE);
+   return true;
+}
+
 static inline void gl_deinit_font(gl_t *gl)
 {
 #ifdef HAVE_FREETYPE
@@ -314,9 +355,10 @@ static void set_viewport(gl_t *gl)
 {
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
-   GLuint out_width = gl->win_width, out_height = gl->win_height;
+   GLuint out_width = gl->render_to_tex ? gl->fbo_width : gl->win_width; 
+   GLuint out_height = gl->render_to_tex ? gl->fbo_height : gl->win_height;
 
-   if (gl->keep_aspect)
+   if (gl->keep_aspect && !gl->render_to_tex)
    {
       float desired_aspect = g_settings.video.aspect_ratio;
       float device_aspect = (float)gl->win_width / gl->win_height;
@@ -340,7 +382,7 @@ static void set_viewport(gl_t *gl)
          glViewport(0, 0, gl->win_width, gl->win_height);
    }
    else
-      glViewport(0, 0, gl->win_width, gl->win_height);
+      glViewport(0, 0, out_width, out_height);
 
    glOrtho(0, 1, 0, 1, -1, 1);
    glMatrixMode(GL_MODELVIEW);
@@ -387,16 +429,21 @@ static bool gl_frame(void *data, const uint16_t* frame, unsigned width, unsigned
 {
    gl_t *gl = data;
 
+   // Render to texture in first pass.
+   glBindTexture(GL_TEXTURE_2D, gl->texture);
+   glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo);
+   gl->render_to_tex = true;
+
    if (gl->should_resize)
    {
       gl->should_resize = false;
       SDL_SetVideoMode(gl->win_width, gl->win_height, 0, SDL_OPENGL | SDL_RESIZABLE | (g_settings.video.fullscreen ? SDL_FULLSCREEN : 0));
-      set_viewport(gl);
    }
+   set_viewport(gl);
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->vp_width, gl->vp_height);
+   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->fbo_width, gl->fbo_height);
 
    if (width != gl->last_width || height != gl->last_height) // res change. need to clear out texture.
    {
@@ -429,6 +476,18 @@ static bool gl_frame(void *data, const uint16_t* frame, unsigned width, unsigned
    glFlush();
    glDrawArrays(GL_QUADS, 0, 4);
 
+   // Render our FBO texture to back buffer.
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   glClear(GL_COLOR_BUFFER_BIT);
+   gl->render_to_tex = false;
+   gl_shader_set_params(gl->fbo_width, gl->fbo_height, gl->fbo_width, gl->fbo_height, gl->vp_width, gl->vp_height);
+   set_viewport(gl);
+   glBindTexture(GL_TEXTURE_2D, gl->fbo_texture);
+
+   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), fbo_tex_coords);
+   glDrawArrays(GL_QUADS, 0, 4);
+   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
+
    if (msg)
       gl_render_msg(gl, msg);
 
@@ -447,6 +506,8 @@ static void gl_free(void *data)
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDeleteTextures(1, &gl->texture);
+   glDeleteTextures(1, &gl->fbo_texture);
+   glDeleteFramebuffers(1, &gl->fbo);
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
@@ -513,6 +574,10 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
       gl->win_width = video->width;
       gl->win_height = video->height;
    }
+
+   // Set up render to texture.
+   gl_init_fbo(gl, 2 * 256 * video->input_scale, 2 * 256 * video->input_scale);
+
    SSNES_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
 
    gl->vsync = video->vsync;
@@ -530,7 +595,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    // Remove that ugly mouse :D
    SDL_ShowCursor(SDL_DISABLE);
 
-   if ( video->smooth )
+   if (video->smooth)
       gl->tex_filter = GL_LINEAR;
    else
       gl->tex_filter = GL_NEAREST;
@@ -564,7 +629,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
 
    gl->tex_w = 256 * video->input_scale;
    gl->tex_h = 256 * video->input_scale;
-   uint8_t *tmp = calloc(1, gl->tex_w * gl->tex_h * sizeof(uint16_t));
+   uint8_t *tmp = calloc(1, gl->tex_w * gl->tex_h * sizeof(uint32_t));
    glTexImage2D(GL_TEXTURE_2D,
          0, GL_RGBA, gl->tex_w, gl->tex_h, 0, GL_BGRA,
          GL_UNSIGNED_SHORT_1_5_5_5_REV, tmp);
