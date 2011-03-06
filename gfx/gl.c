@@ -281,7 +281,10 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
       return;
 
    if (!load_fbo_proc())
+   {
+      SSNES_ERR("Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
       return;
+   }
 
    float scale_x = g_settings.video.fbo_scale_x;
    float scale_y = g_settings.video.fbo_scale_y;
