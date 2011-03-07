@@ -6,7 +6,7 @@ OBJ = ssnes.o file.o driver.o settings.o dynamic.o message.o rewind.o movie.o au
 JOYCONFIG_OBJ = tools/ssnes-joyconfig.o conf/config_file.o
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
-LIBS =
+LIBS = -lm
 DEFINES = -DHAVE_CONFIG_H
 
 ifneq ($(findstring Darwin,$(shell uname -a)),)
