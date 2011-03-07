@@ -24,11 +24,7 @@
 void init_dlsym(void);
 void uninit_dlsym(void);
 
-#ifdef _WIN32
-typedef HMODULE dylib_t;
-#else
-typedef void* dylib_t;
-#endif
+typedef void *dylib_t;
 
 dylib_t dylib_load(const char *path);
 void dylib_close(dylib_t lib);

@@ -17,8 +17,8 @@
 
 #include "netplay.h"
 #include "general.h"
-#include "dynamic.h"
 #include "autosave.h"
+#include "dynamic.h"
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
@@ -46,6 +46,7 @@
 #define CONST_CAST
 #define NONCONST_CAST
 #endif
+
 
 #define PREV_PTR(x) ((x) == 0 ? handle->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % handle->buffer_size)
