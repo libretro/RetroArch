@@ -28,6 +28,7 @@
 #include "movie.h"
 #include "autosave.h"
 #include "netplay.h"
+#include "dynamic.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -184,6 +185,20 @@ struct global
       int16_t *conv_outsamples;
    } audio_data;
 
+   struct
+   {
+      bool active;
+      uint32_t *buffer;
+      uint32_t *colormap;
+      unsigned pitch;
+      dylib_t lib;
+      unsigned scale;
+
+      void (*psize)(unsigned *width, unsigned *height);
+      void (*prender)(uint32_t *colormap, uint32_t *output, unsigned outpitch,
+            const uint16_t *input, unsigned pitch, unsigned width, unsigned height);
+   } filter;
+
    msg_queue_t *msg_queue;
 
    // Rewind support.
@@ -240,4 +255,18 @@ extern struct global g_extern;
       fflush(stderr); \
    } while(0)
 
+static inline uint32_t next_pow2(uint32_t v)
+{
+   v--;
+   v |= v >> 1;
+   v |= v >> 2;
+   v |= v >> 4;
+   v |= v >> 8;
+   v |= v >> 16;
+   v++;
+   return v;
+}
+
 #endif
+
+

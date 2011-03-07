@@ -25,30 +25,23 @@
 
 #include <libsnes.hpp>
 
-#ifdef HAVE_DYNAMIC
-
 #ifdef _WIN32
 #include <windows.h>
-#define SYM(x) do { \
-   p##x = ((void*)GetProcAddress(lib_handle, #x)); \
-   if (p##x == NULL) { SSNES_ERR("Failed to load symbol: \"%s\"\n", #x); exit(1); } \
-} while(0)
 #else
 #include <dlfcn.h>
-#define SYM(x) do { \
-   p##x = dlsym(lib_handle, #x); \
-   if (p##x == NULL) { SSNES_ERR("Failed to load symbol: \"%s\"\n", #x); exit(1); } \
-} while(0)
-#endif // _WIN32
-#endif // HAVE_DYNAMIC
+#endif
 
 #ifdef HAVE_DYNAMIC
-#ifdef _WIN32
-static HMODULE lib_handle;
-#else
-static void *lib_handle = NULL;
+#define DLSYM(lib, x) dylib_proc(lib, #x)
+
+#define SYM(x) do { \
+   p##x = DLSYM(lib_handle, x); \
+   if (p##x == NULL) { SSNES_ERR("Failed to load symbol: \"%s\"\n", #x); exit(1); } \
+} while(0)
+
+static dylib_t lib_handle = NULL;
 #endif
-#endif
+
 
 void (*psnes_init)(void);
 
@@ -97,11 +90,7 @@ void (*psnes_term)(void);
 static void load_dynamic(void)
 {
    SSNES_LOG("Loading dynamic libsnes from: \"%s\"\n", g_settings.libsnes);
-#ifdef _WIN32
-   lib_handle = LoadLibrary(g_settings.libsnes);
-#else
-   lib_handle = dlopen(g_settings.libsnes, RTLD_LAZY);
-#endif
+   lib_handle = dylib_load(g_settings.libsnes);
    if (!lib_handle)
    {
       SSNES_ERR("Failed to open dynamic library: \"%s\"\n", g_settings.libsnes);
@@ -186,12 +175,35 @@ void uninit_dlsym(void)
 {
 #ifdef HAVE_DYNAMIC
    if (lib_handle)
-   {
-#ifdef _WIN32
-      FreeLibrary(lib_handle);
-#else
-      dlclose(lib_handle);
-#endif
-   }
+      dylib_close(lib_handle);
 #endif
 }
+
+// Platform independent dylib loading.
+dylib_t dylib_load(const char *path)
+{
+#ifdef _WIN32
+   return LoadLibrary(path);
+#else
+   return dlopen(path, RTLD_LAZY);
+#endif
+}
+
+void* dylib_proc(dylib_t lib, const char *proc)
+{
+#ifdef _WIN32
+   return GetProcAddress(lib, proc);
+#else
+   return dlsym(lib, proc);
+#endif
+}
+
+void dylib_close(dylib_t lib)
+{
+#ifdef _WIN32
+   FreeLibrary(lib);
+#else
+   dlclose(lib);
+#endif
+}
+

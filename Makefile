@@ -84,11 +84,7 @@ ifeq ($(HAVE_XML), 1)
 endif
 
 ifeq ($(HAVE_FILTER), 1)
-   OBJ += hqflt/hq.o
-   OBJ += hqflt/grayscale.o
-   OBJ += hqflt/bleed.o
-   OBJ += hqflt/ntsc.o
-   OBJ += hqflt/snes_ntsc/snes_ntsc.o
+   LIBS += -ldl
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)

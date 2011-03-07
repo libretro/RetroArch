@@ -20,8 +20,8 @@
 #include "general.h"
 #include <stdio.h>
 #include <string.h>
-#include "hqflt/filters.h"
 #include <assert.h>
+#include <math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -212,28 +212,90 @@ void uninit_audio(void)
    free(g_extern.audio_data.conv_outsamples); g_extern.audio_data.conv_outsamples = NULL;
 }
 
+#ifdef HAVE_FILTER
+static void init_filter(void)
+{
+   if (g_extern.filter.active)
+      return;
+   if (*g_settings.video.filter_path == '\0')
+      return;
+
+   g_extern.filter.lib = dylib_load(g_settings.video.filter_path);
+   if (!g_extern.filter.lib)
+   {
+      SSNES_ERR("Failed to load filter \"%s\"\n", g_settings.video.filter_path);
+      return;
+   }
+
+   g_extern.filter.psize = dylib_proc(g_extern.filter.lib, "video_size");
+   g_extern.filter.prender = dylib_proc(g_extern.filter.lib, "video_render");
+   if (!g_extern.filter.psize || !g_extern.filter.prender)
+   {
+      SSNES_ERR("Failed to find functions in filter...\n");
+      dylib_close(g_extern.filter.lib);
+      g_extern.filter.lib = NULL;
+      return;
+   }
+
+   g_extern.filter.active = true;
+
+   unsigned width = 512;
+   unsigned height = 512;
+   g_extern.filter.psize(&width, &height);
+
+   unsigned pow2_x = next_pow2(ceil(width));
+   unsigned pow2_y = next_pow2(ceil(height));
+   unsigned maxsize = pow2_x > pow2_y ? pow2_x : pow2_y; 
+   g_extern.filter.scale = maxsize / 256;
+
+   g_extern.filter.buffer = malloc(256 * 256 * g_extern.filter.scale * g_extern.filter.scale * sizeof(uint32_t));
+   g_extern.filter.pitch = 256 * g_extern.filter.scale * sizeof(uint32_t);
+   assert(g_extern.filter.buffer);
+
+   g_extern.filter.colormap = malloc(32768 * sizeof(uint32_t));
+   assert(g_extern.filter.colormap);
+
+   // TODO: Taken from bSNES source. WTF does this do?
+   for (int i = 0; i < 32768; i++)
+   {
+      unsigned r = (i >> 10) & 31;
+      unsigned g = (i >>  5) & 31;
+      unsigned b = (i >>  0) & 31;
+
+      r = (r << 3) | (r >> 2);
+      g = (g << 3) | (g >> 2);
+      b = (b << 3) | (b >> 2);
+      g_extern.filter.colormap[i] = (r << 16) | (g << 8) | (b << 0);
+   }
+}
+#endif
+
+static void deinit_filter(void)
+{
+   if (g_extern.filter.active)
+   {
+      g_extern.filter.active = false;
+      dylib_close(g_extern.filter.lib);
+      g_extern.filter.lib = NULL;
+      free(g_extern.filter.buffer);
+      free(g_extern.filter.colormap);
+   }
+}
+
 void init_video_input(void)
 {
-   int scale = 2;
+#ifdef HAVE_FILTER
+   init_filter();
+#endif
+
+   // We use at least 512x512 textures to accomodate for hi-res games.
+   unsigned scale = 2;
 
    find_video_driver();
    find_input_driver();
 
-   // We multiply scales with 2 to allow for hi-res games.
-#if HAVE_FILTER
-   switch (g_settings.video.filter)
-   {
-      case FILTER_HQ2X:
-         scale = 4;
-         break;
-      case FILTER_HQ4X:
-      case FILTER_NTSC:
-         scale = 8;
-         break;
-      default:
-         break;
-   }
-#endif
+   if (g_extern.filter.active)
+      scale = g_extern.filter.scale;
 
    video_info_t video = {
       .width = (g_settings.video.fullscreen) ? g_settings.video.fullscreen_x : (296 * g_settings.video.xscale),

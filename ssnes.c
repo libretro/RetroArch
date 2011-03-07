@@ -25,7 +25,6 @@
 #include <time.h>
 #include "driver.h"
 #include "file.h"
-#include "filters.h"
 #include "general.h"
 #include "dynamic.h"
 #include "record/ffemu.h"
@@ -100,12 +99,14 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    const char *msg = msg_queue_pull(g_extern.msg_queue);
 
 #ifdef HAVE_FILTER
-   unsigned owidth = width;
-   unsigned oheight = height;
-   video_filter_size(&owidth, &oheight);
    if (g_extern.filter.active)
    {
-      video_filter_render(g_extern.filter.buffer, g_extern.filter.pitch >> 2, data, (height == 448 || height == 478) ? 512 : 1024, width, height);
+      unsigned owidth = width;
+      unsigned oheight = height;
+      g_extern.filter.psize(&owidth, &oheight);
+
+      g_extern.filter.prender(g_extern.filter.colormap, g_extern.filter.buffer, 
+            g_extern.filter.pitch >> 2, data, (height == 448 || height == 478) ? 512 : 1024, width, height);
       if (!driver.video->frame(driver.video_data, g_extern.filter.buffer, owidth, oheight, g_extern.filter.pitch, msg))
          g_extern.video_active = false;
    }

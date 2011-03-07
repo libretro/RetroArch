@@ -19,7 +19,6 @@
 #include "conf/config_file.h"
 #include <assert.h>
 #include <string.h>
-#include "hqflt/filters.h"
 #include "config.def.h"
 
 #ifdef HAVE_CONFIG_H

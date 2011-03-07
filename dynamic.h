@@ -24,6 +24,16 @@
 void init_dlsym(void);
 void uninit_dlsym(void);
 
+#ifdef _WIN32
+typedef HMODULE dylib_t;
+#else
+typedef void* dylib_t;
+#endif
+
+dylib_t dylib_load(const char *path);
+void dylib_close(dylib_t lib);
+void* dylib_proc(dylib_t lib, const char *proc);
+
 extern void (*psnes_init)(void);
 
 extern void (*psnes_set_video_refresh)(snes_video_refresh_t);

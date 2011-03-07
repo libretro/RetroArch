@@ -141,6 +141,10 @@ typedef struct gl
    GLfloat tex_coords[8];
    GLfloat fbo_tex_coords[8];
 
+   GLenum texture_type; // XBGR1555 or RGBA
+   GLenum texture_fmt;
+   unsigned base_size; // 2 or 4
+
 #ifdef HAVE_FREETYPE
    font_renderer_t *font;
    GLuint font_tex;
@@ -263,18 +267,6 @@ static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_s
 #endif
 }
 
-static inline unsigned next_pow_2(unsigned v)
-{
-   v--;
-   v |= v >> 1;
-   v |= v >> 2;
-   v |= v >> 4;
-   v |= v >> 8;
-   v |= v >> 16;
-   v++;
-   return v;
-}
-
 static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
    if (!g_settings.video.render_to_texture)
@@ -288,8 +280,8 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
    float scale_x = g_settings.video.fbo_scale_x;
    float scale_y = g_settings.video.fbo_scale_y;
-   unsigned xscale = next_pow_2(ceil(scale_x));
-   unsigned yscale = next_pow_2(ceil(scale_y));
+   unsigned xscale = next_pow2(ceil(scale_x));
+   unsigned yscale = next_pow2(ceil(scale_y));
    SSNES_LOG("Internal FBO scale: (%u, %u)\n", xscale, yscale);
 
    gl->fbo_width = width * xscale;
@@ -485,7 +477,7 @@ static void show_fps(void)
    frames++;
 }
 
-static bool gl_frame(void *data, const uint16_t* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
+static bool gl_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *gl = data;
 
@@ -517,10 +509,11 @@ static bool gl_frame(void *data, const uint16_t* frame, unsigned width, unsigned
       gl->last_height = height;
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
       glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
-      uint8_t *tmp = calloc(1, gl->tex_w * gl->tex_h * sizeof(uint16_t));
+
+      void *tmp = calloc(1, gl->tex_w * gl->tex_h * gl->base_size);
       glTexSubImage2D(GL_TEXTURE_2D,
-            0, 0, 0, gl->tex_w, gl->tex_h, GL_BGRA,
-            GL_UNSIGNED_SHORT_1_5_5_5_REV, tmp);
+            0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
+            gl->texture_fmt, tmp);
       free(tmp);
 
       gl->tex_coords[0] = 0;
@@ -534,10 +527,10 @@ static bool gl_frame(void *data, const uint16_t* frame, unsigned width, unsigned
    }
 
 
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 1);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
    glTexSubImage2D(GL_TEXTURE_2D,
-         0, 0, 0, width, height, GL_BGRA,
-         GL_UNSIGNED_SHORT_1_5_5_5_REV, frame);
+         0, 0, 0, width, height, gl->texture_type,
+         gl->texture_fmt, frame);
 
    glFlush();
    glDrawArrays(GL_QUADS, 0, 4);
@@ -681,6 +674,10 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    else
       gl->tex_filter = GL_NEAREST;
 
+   gl->texture_type = video->rgb32 ? GL_RGBA : GL_BGRA;
+   gl->texture_fmt = video->rgb32 ? GL_UNSIGNED_INT_8_8_8_8 : GL_UNSIGNED_SHORT_1_5_5_5_REV;
+   gl->base_size = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+
    glEnable(GL_TEXTURE_2D);
    glDisable(GL_DITHER);
    glDisable(GL_DEPTH_TEST);
@@ -710,11 +707,13 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
 
    gl->tex_w = 256 * video->input_scale;
    gl->tex_h = 256 * video->input_scale;
-   uint8_t *tmp = calloc(1, gl->tex_w * gl->tex_h * sizeof(uint32_t));
+
+   void *tmp = calloc(1, gl->tex_w * gl->tex_h * gl->base_size);
    glTexImage2D(GL_TEXTURE_2D,
-         0, GL_RGBA, gl->tex_w, gl->tex_h, 0, GL_BGRA,
-         GL_UNSIGNED_SHORT_1_5_5_5_REV, tmp);
+         0, GL_RGBA, gl->tex_w, gl->tex_h, 0, gl->texture_type,
+         gl->texture_fmt, tmp);
    free(tmp);
+
    gl->last_width = gl->tex_w;
    gl->last_height = gl->tex_h;
 

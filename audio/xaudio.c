@@ -67,19 +67,6 @@ static bool init_lib(void)
    return true;
 }
 
-// Interesting hack from http://www-graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-static inline uint32_t next_pow2(uint32_t v)
-{
-   v--;
-   v |= v >> 1;
-   v |= v >> 2;
-   v |= v >> 4;
-   v |= v >> 8;
-   v |= v >> 16;
-   v++;
-   return v;
-}
-
 static void* __xa_init(const char* device, int rate, int latency)
 {
    if (!init_lib())
