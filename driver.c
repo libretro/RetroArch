@@ -220,6 +220,7 @@ static void init_filter(void)
    if (*g_settings.video.filter_path == '\0')
       return;
 
+   SSNES_LOG("Loading bSNES filter from \"%s\"\n", g_settings.video.filter_path);
    g_extern.filter.lib = dylib_load(g_settings.video.filter_path);
    if (!g_extern.filter.lib)
    {
@@ -227,8 +228,8 @@ static void init_filter(void)
       return;
    }
 
-   g_extern.filter.psize = dylib_proc(g_extern.filter.lib, "video_size");
-   g_extern.filter.prender = dylib_proc(g_extern.filter.lib, "video_render");
+   g_extern.filter.psize = dylib_proc(g_extern.filter.lib, "filter_size");
+   g_extern.filter.prender = dylib_proc(g_extern.filter.lib, "filter_render");
    if (!g_extern.filter.psize || !g_extern.filter.prender)
    {
       SSNES_ERR("Failed to find functions in filter...\n");
@@ -255,7 +256,7 @@ static void init_filter(void)
    g_extern.filter.colormap = malloc(32768 * sizeof(uint32_t));
    assert(g_extern.filter.colormap);
 
-   // TODO: Taken from bSNES source. WTF does this do?
+   // Set up conversion map from 16-bit XBGR1555 to 32-bit RGBA.
    for (int i = 0; i < 32768; i++)
    {
       unsigned r = (i >> 10) & 31;
@@ -265,7 +266,7 @@ static void init_filter(void)
       r = (r << 3) | (r >> 2);
       g = (g << 3) | (g >> 2);
       b = (b << 3) | (b >> 2);
-      g_extern.filter.colormap[i] = (r << 16) | (g << 8) | (b << 0);
+      g_extern.filter.colormap[i] = (r << 24) | (g << 16) | (b << 8);
    }
 }
 #endif
@@ -345,6 +346,8 @@ void uninit_video_input(void)
 
    if ( driver.input_data != driver.video_data && driver.input )
       driver.input->free(driver.input_data);
+
+   deinit_filter();
 }
 
 driver_t driver;

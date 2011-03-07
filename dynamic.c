@@ -192,10 +192,14 @@ dylib_t dylib_load(const char *path)
 void* dylib_proc(dylib_t lib, const char *proc)
 {
 #ifdef _WIN32
-   return GetProcAddress(lib, proc);
+   void *sym = (void*)GetProcAddress(lib, proc);
 #else
-   return dlsym(lib, proc);
+   void *sym = dlsym(lib, proc);
 #endif
+
+   if (!sym)
+      SSNES_WARN("Failed to load symbol \"%s\"\n", proc);
+   return sym;
 }
 
 void dylib_close(dylib_t lib)

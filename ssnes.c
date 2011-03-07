@@ -104,9 +104,8 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
       unsigned owidth = width;
       unsigned oheight = height;
       g_extern.filter.psize(&owidth, &oheight);
-
       g_extern.filter.prender(g_extern.filter.colormap, g_extern.filter.buffer, 
-            g_extern.filter.pitch >> 2, data, (height == 448 || height == 478) ? 512 : 1024, width, height);
+            g_extern.filter.pitch, data, (height == 448 || height == 478) ? 1024 : 2048, width, height);
       if (!driver.video->frame(driver.video_data, g_extern.filter.buffer, owidth, oheight, g_extern.filter.pitch, msg))
          g_extern.video_active = false;
    }
