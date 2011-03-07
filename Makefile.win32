@@ -53,6 +53,10 @@ ifeq ($(HAVE_XML), 1)
    LIBS += -lxml2
 endif
 
+ifeq ($(HAVE_FILTER), 1)
+   DEFINES += -DHAVE_FILTER
+endif
+
 ifeq ($(HAVE_FREETYPE), 1)
    OBJ += gfx/fonts.o
    DEFINES += -DHAVE_FREETYPE -Ifreetype2

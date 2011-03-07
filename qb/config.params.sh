@@ -10,7 +10,7 @@ PACKAGE_VERSION=0.3.1
 add_command_line_enable DYNAMIC "Enable dynamic loading of libsnes library." no
 add_command_line_string LIBSNES "libsnes library used" "-lsnes"
 add_command_line_enable FFMPEG "Enable FFmpeg recording support" no
-add_command_line_enable FILTER "Disable CPU filter support" yes
+add_command_line_enable FILTER "Enable CPU filter support" auto
 add_command_line_enable SRC "Enable libsamplerate support" no
 add_command_line_enable CONFIGFILE "Disable support for config file" yes
 add_command_line_enable CG "Enable Cg shader support" auto

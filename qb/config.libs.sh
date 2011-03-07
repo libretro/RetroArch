@@ -15,6 +15,8 @@ if [ $HAVE_DYNAMIC != yes ]; then
    add_define_make libsnes $LIBSNES
 fi
 
+check_lib FILTER -ldl dlopen
+
 check_lib ALSA -lasound snd_pcm_open
 check_header OSS sys/soundcard.h
 
