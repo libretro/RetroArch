@@ -243,6 +243,7 @@ void init_video_input(void)
       .force_aspect = g_settings.video.force_aspect,
       .smooth = g_settings.video.smooth,
       .input_scale = scale,
+      .rgb32 = g_extern.filter.active
    };
 
    const input_driver_t *tmp = driver.input;

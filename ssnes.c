@@ -25,7 +25,7 @@
 #include <time.h>
 #include "driver.h"
 #include "file.h"
-#include "hqflt/filters.h"
+#include "filters.h"
 #include "general.h"
 #include "dynamic.h"
 #include "record/ffemu.h"
@@ -77,23 +77,6 @@ static void set_fast_forward_button(bool new_button_state)
    old_button_state = new_button_state;
 }
 
-#ifdef HAVE_FILTER
-static inline void process_frame (uint16_t * restrict out, const uint16_t * restrict in, unsigned width, unsigned height)
-{
-   int pitch = 1024;
-   if (height == 448 || height == 478)
-      pitch = 512;
-
-   for (int y = 0; y < height; y++)
-   {
-      const uint16_t *src = in + y * pitch;
-      uint16_t *dst = out + y * width;
-
-      memcpy(dst, src, width * sizeof(uint16_t));
-   }
-}
-#endif
-
 // libsnes: 0.065
 // Format received is 16-bit 0RRRRRGGGGGBBBBB
 static void video_frame(const uint16_t *data, unsigned width, unsigned height)
@@ -117,44 +100,17 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    const char *msg = msg_queue_pull(g_extern.msg_queue);
 
 #ifdef HAVE_FILTER
-   uint16_t output_filter[width * height * 4 * 4];
-   uint16_t output[width * height];
-
-   if (g_settings.video.filter != FILTER_NONE)
-      process_frame(output, data, width, height);
-
-
-   switch (g_settings.video.filter)
+   unsigned owidth = width;
+   unsigned oheight = height;
+   video_filter_size(&owidth, &oheight);
+   if (g_extern.filter.active)
    {
-      case FILTER_HQ2X:
-         ProcessHQ2x(output, output_filter);
-         if (!driver.video->frame(driver.video_data, output_filter, width << 1, height << 1, width << 2, msg))
-            g_extern.video_active = false;
-         break;
-      case FILTER_HQ4X:
-         ProcessHQ4x(output, output_filter);
-         if (!driver.video->frame(driver.video_data, output_filter, width << 2, height << 2, width << 3, msg))
-            g_extern.video_active = false;
-         break;
-      case FILTER_GRAYSCALE:
-         grayscale_filter(output, width, height);
-         if (!driver.video->frame(driver.video_data, output, width, height, width << 1, msg))
-            g_extern.video_active = false;
-         break;
-      case FILTER_BLEED:
-         bleed_filter(output, width, height);
-         if (!driver.video->frame(driver.video_data, output, width, height, width << 1, msg))
-            g_extern.video_active = false;
-         break;
-      case FILTER_NTSC:
-         ntsc_filter(output_filter, output, width, height);
-         if (!driver.video->frame(driver.video_data, output_filter, SNES_NTSC_OUT_WIDTH(width), height, SNES_NTSC_OUT_WIDTH(width) << 1, msg))
-            g_extern.video_active = false;
-         break;
-      default:
-         if (!driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048, msg))
-            g_extern.video_active = false;
+      video_filter_render(g_extern.filter.buffer, g_extern.filter.pitch >> 2, data, (height == 448 || height == 478) ? 512 : 1024, width, height);
+      if (!driver.video->frame(driver.video_data, g_extern.filter.buffer, owidth, oheight, g_extern.filter.pitch, msg))
+         g_extern.video_active = false;
    }
+   else if (!driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048, msg))
+      g_extern.video_active = false;
 #else
    if (!driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048, msg))
       g_extern.video_active = false;

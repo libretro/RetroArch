@@ -69,7 +69,7 @@ struct settings
       float aspect_ratio;
       char cg_shader_path[256];
       char bsnes_shader_path[256];
-      unsigned filter;
+      char filter_path[256];
       enum ssnes_shader_type shader_type;
 
       bool render_to_texture;

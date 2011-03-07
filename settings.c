@@ -104,9 +104,6 @@ static void set_defaults(void)
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
    g_settings.video.aspect_ratio = SNES_ASPECT_RATIO;
-#ifdef HAVE_FILTER
-   g_settings.video.filter = FILTER_NONE;
-#endif
    g_settings.video.shader_type = SSNES_SHADER_AUTO;
 
 #ifdef HAVE_FREETYPE
@@ -301,36 +298,7 @@ static void parse_config_file(void)
 #endif
 
 #ifdef HAVE_FILTER
-   if (config_get_string(conf, "video_filter", &tmp_str))
-   {
-      unsigned filter = 0;
-      if (strcasecmp(FILTER_HQ2X_STR, tmp_str) == 0)
-         filter = FILTER_HQ2X;
-      else if (strcasecmp(FILTER_HQ4X_STR, tmp_str) == 0)
-         filter = FILTER_HQ4X;
-      else if (strcasecmp(FILTER_GRAYSCALE_STR, tmp_str) == 0)
-         filter = FILTER_GRAYSCALE;
-      else if (strcasecmp(FILTER_BLEED_STR, tmp_str) == 0)
-         filter = FILTER_BLEED;
-      else if (strcasecmp(FILTER_NTSC_STR, tmp_str) == 0)
-         filter = FILTER_NTSC;
-      else
-      {
-         SSNES_ERR(
-               "Invalid filter... Valid filters are:\n"
-               "\t%s\n"
-               "\t%s\n"
-               "\t%s\n"
-               "\t%s\n"
-               "\t%s\n", 
-               FILTER_HQ2X_STR, FILTER_HQ4X_STR, FILTER_GRAYSCALE_STR,
-               FILTER_BLEED_STR, FILTER_NTSC_STR);
-         exit(1);
-      }
-
-      free(tmp_str);
-      g_settings.video.filter = filter;
-   }
+   CONFIG_GET_STRING(video.filter_path, "video_filter");
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_XML)
