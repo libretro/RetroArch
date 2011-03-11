@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include "general.h"
 
 typedef struct
 {
@@ -37,13 +38,14 @@ static void* __roar_init(const char* device, int rate, int latency)
       return NULL;
 
    roar_vs_t *vss;
-   if ( (vss = roar_vs_new_simple(NULL, NULL, rate, 2, ROAR_CODEC_PCM_S_LE, 16, ROAR_DIR_PLAY, &err)) == NULL )
+   if ((vss = roar_vs_new_simple(device, "SSNES", rate, 2, ROAR_CODEC_PCM_S, 16, ROAR_DIR_PLAY, &err)) == NULL)
    {
-      fprintf(stderr, "roar_vs: \"%s\"\n", roar_vs_strerr(err));
+      SSNES_ERR("RoarAudio: \"%s\"\n", roar_vs_strerr(err));
       free(roar);
       return NULL;
    }
 
+   roar_vs_role(vss, ROAR_ROLE_GAME, NULL);
    roar->vss = vss;
 
    return roar;
@@ -54,19 +56,20 @@ static ssize_t __roar_write(void* data, const void* buf, size_t size)
    roar_t *roar = data;
    ssize_t rc;
 
-   if ( size == 0 )
+   if (size == 0)
       return 0;
 
    int err;
    size_t written = 0;
    while (written < size)
    {
-      if ((rc = roar_vs_write(roar->vss, (const char*)buf + written, size - written, &err)) < size)
+      size_t write_amt = size - written;
+      if ((rc = roar_vs_write(roar->vss, (const char*)buf + written, write_amt, &err)) < write_amt)
       {
-         if (rc < 0)
+         if (roar->nonblocking)
+            return rc;
+         else if (rc < 0)
             return -1;
-         else if (roar->nonblocking)
-            return 0;
       }
       written += rc;
    }
