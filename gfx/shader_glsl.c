@@ -15,10 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//
-// GLSL code here is mostly copypasted from bSNES.
-//
-
 #include <stdbool.h>
 #include <string.h>
 #include "general.h"
