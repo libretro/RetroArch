@@ -33,4 +33,6 @@ void gl_glsl_set_params(unsigned width, unsigned height,
 
 void gl_glsl_use(unsigned index);
 
+unsigned gl_glsl_num(void);
+
 #endif

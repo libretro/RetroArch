@@ -79,13 +79,20 @@ static PFNGLGETPROGRAMIVPROC pglGetProgramiv = NULL;
 static PFNGLGETPROGRAMINFOLOGPROC pglGetProgramInfoLog = NULL;
 #endif
 
+#define MAX_PROGRAMS 16
+
 static bool glsl_enable = false;
-static GLuint gl_program[3] = {0};
-static GLuint fragment_shader;
-static GLuint vertex_shader;
+static GLuint gl_program[MAX_PROGRAMS] = {0};
+static unsigned gl_num_programs = 0;
 static unsigned active_index = 0;
 
-static bool get_xml_shaders(const char *path, char **vertex_shader, char **fragment_shader)
+struct shader_program
+{
+   char *vertex;
+   char *fragment;
+};
+
+static unsigned get_xml_shaders(const char *path, struct shader_program *prog, size_t size)
 {
    LIBXML_TEST_VERSION;
 
@@ -125,10 +132,11 @@ static bool get_xml_shaders(const char *path, char **vertex_shader, char **fragm
    if (!cur) // We couldn't find any GLSL shader :(
       goto error;
 
-   bool vertex_found = false;
-   bool fragment_found = false;
+   unsigned num = 0;
+   memset(prog, 0, sizeof(struct shader_program) * size);
+
    // Iterate to check if we find fragment and/or vertex shaders.
-   for (cur = cur->children; cur; cur = cur->next)
+   for (cur = cur->children; cur && num < size; cur = cur->next)
    {
       if (cur->type != XML_ELEMENT_NODE)
          continue;
@@ -137,37 +145,39 @@ static bool get_xml_shaders(const char *path, char **vertex_shader, char **fragm
       if (!content)
          continue;
 
-      if (strcmp((const char*)cur->name, "vertex") == 0 && !vertex_found)
+      if (strcmp((const char*)cur->name, "vertex") == 0)
       {
-         *vertex_shader = malloc(xmlStrlen(content) + 1);
-         strcpy(*vertex_shader, (const char*)content);
-         vertex_found = true;
+         if (prog[num].vertex)
+         {
+            SSNES_ERR("Cannot have more than one vertex shader in a program.\n");
+            goto error;
+         }
+
+         prog[num].vertex = strdup((const char*)content);
       }
-      else if (strcmp((const char*)cur->name, "fragment") == 0 && !fragment_found)
+      else if (strcmp((const char*)cur->name, "fragment") == 0)
       {
-         *fragment_shader = malloc(xmlStrlen(content) + 1);
-         strcpy(*fragment_shader, (const char*)content);
-         fragment_found = true;
+         prog[num].fragment = strdup((const char*)content);
+         num++;
       }
    }
 
-   if (!vertex_found && !fragment_found)
+   if (num == 0)
    {
       SSNES_ERR("Couldn't find vertex shader nor fragment shader in XML file.\n");
       goto error;
    }
 
-
    xmlFreeDoc(doc);
    xmlFreeParserCtxt(ctx);
-   return true;
+   return num;
 
 error:
    SSNES_ERR("Failed to load XML shader ...\n");
    if (doc)
       xmlFreeDoc(doc);
    xmlFreeParserCtxt(ctx);
-   return false;
+   return 0;
 }
 
 static void print_shader_log(GLuint obj)
@@ -198,9 +208,49 @@ static void print_linker_log(GLuint obj)
       SSNES_LOG("Linker log: %s\n", info_log);
 }
 
+static void compile_programs(GLuint *gl_prog, struct shader_program *progs, size_t num)
+{
+   for (unsigned i = 0; i < num; i++)
+   {
+      gl_prog[i] = pglCreateProgram();
+
+      if (progs[i].vertex)
+      {
+         GLuint shader = pglCreateShader(GL_VERTEX_SHADER);
+         pglShaderSource(shader, 1, (const char**)&progs[i].vertex, 0);
+         pglCompileShader(shader);
+         print_shader_log(shader);
+
+         pglAttachShader(gl_prog[i], shader);
+         free(progs[i].vertex);
+      }
+
+      if (progs[i].vertex)
+      {
+         GLuint shader = pglCreateShader(GL_FRAGMENT_SHADER);
+         pglShaderSource(shader, 1, (const char**)&progs[i].fragment, 0);
+         pglCompileShader(shader);
+         print_shader_log(shader);
+
+         pglAttachShader(gl_prog[i], shader);
+         free(progs[i].fragment);
+      }
+
+      if (progs[i].vertex || progs[i].fragment)
+      {
+         pglLinkProgram(gl_prog[i]);
+         pglUseProgram(gl_prog[i]);
+         print_linker_log(gl_prog[i]);
+
+         GLint location = pglGetUniformLocation(gl_prog[i], "rubyTexture");
+         pglUniform1i(location, 0);
+         pglUseProgram(0);
+      }
+   }
+}
+
 bool gl_glsl_init(const char *path)
 {
-
 #ifndef __APPLE__
    // Load shader functions.
    pglCreateProgram = SDL_GL_GetProcAddress("glCreateProgram");
@@ -239,50 +289,30 @@ bool gl_glsl_init(const char *path)
       return false;
    }
 
-   const char *paths[] = {NULL, path, 
-      (strlen(g_settings.video.second_pass_shader) > 0) ? g_settings.video.second_pass_shader : NULL};
+   struct shader_program progs[MAX_PROGRAMS];
+   unsigned num_progs = get_xml_shaders(path, progs, MAX_PROGRAMS - 1);
 
-   for (int i = 1; i < 3; i++)
+   if (num_progs == 0)
    {
-      if (paths[i] == NULL)
-         continue;
+      SSNES_ERR("Couldn't find any valid shaders in XML file.\n");
+      return false;
+   }
 
-      gl_program[i] = pglCreateProgram();
+   compile_programs(&gl_program[1], progs, num_progs);
 
-      char *vertex_prog = NULL;
-      char *fragment_prog = NULL;
-      if (!get_xml_shaders(paths[i], &vertex_prog, &fragment_prog))
+   // SSNES custom two-pass with two different files.
+   if (num_progs == 1 && *g_settings.video.second_pass_shader)
+   {
+      unsigned secondary_progs = get_xml_shaders(g_settings.video.second_pass_shader, progs, 1);
+      if (secondary_progs == 1)
+      {
+         compile_programs(&gl_program[2], progs, 1);
+         num_progs++;
+      }
+      else
+      {
+         SSNES_ERR("Did not find valid shader in secondary shader file.\n");
          return false;
-
-      if (vertex_prog)
-      {
-         vertex_shader = pglCreateShader(GL_VERTEX_SHADER);
-         pglShaderSource(vertex_shader, 1, (const char**)&vertex_prog, 0);
-         pglCompileShader(vertex_shader);
-         print_shader_log(vertex_shader);
-
-         pglAttachShader(gl_program[i], vertex_shader);
-         free(vertex_prog);
-      }
-      if (fragment_prog)
-      {
-         fragment_shader = pglCreateShader(GL_FRAGMENT_SHADER);
-         pglShaderSource(fragment_shader, 1, (const char**)&fragment_prog, 0);
-         pglCompileShader(fragment_shader);
-         print_shader_log(fragment_shader);
-
-         pglAttachShader(gl_program[i], fragment_shader);
-         free(fragment_prog);
-      }
-
-      if (vertex_prog || fragment_prog)
-      {
-         pglLinkProgram(gl_program[i]);
-         pglUseProgram(gl_program[i]);
-         print_linker_log(gl_program[i]);
-
-         GLint location = pglGetUniformLocation(gl_program[i], "rubyTexture");
-         pglUniform1i(location, 0);
       }
    }
 
@@ -290,6 +320,7 @@ bool gl_glsl_init(const char *path)
       return false;
    
    glsl_enable = true;
+   gl_num_programs = num_progs;
    return true;
 }
 
@@ -315,7 +346,6 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       float textureSize[2] = {tex_width, tex_height};
       location = pglGetUniformLocation(gl_program[active_index], "rubyTextureSize");
       pglUniform2fv(location, 1, textureSize);
-
    }
 }
 
@@ -329,4 +359,9 @@ void gl_glsl_use(unsigned index)
       active_index = index;
       pglUseProgram(gl_program[index]);
    }
+}
+
+unsigned gl_glsl_num(void)
+{
+   return gl_num_programs;
 }

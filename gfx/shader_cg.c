@@ -58,7 +58,6 @@ static const char* stock_cg_program =
 static CGcontext cgCtx;
 struct cg_program
 {
-   CGprogram prg;
    CGprogram vprg;
    CGprogram fprg;
    CGparameter vid_size_f;
@@ -187,4 +186,17 @@ void gl_cg_use(unsigned index)
       cgGLBindProgram(prg[index].vprg);
       cgGLBindProgram(prg[index].fprg);
    }
+}
+
+unsigned gl_cg_num(void)
+{
+   if (cg_active)
+   {
+      if (prg[0].fprg == prg[2].fprg)
+         return 1;
+      else
+         return 2;
+   }
+   else
+      return 0;
 }

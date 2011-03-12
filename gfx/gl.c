@@ -242,6 +242,24 @@ static inline void gl_shader_set_params(unsigned width, unsigned height,
    gl_glsl_set_params(width, height, tex_width, tex_height, out_width, out_height);
 #endif
 }
+
+static inline unsigned gl_shader_num(void)
+{
+   unsigned num = 0;
+#ifdef HAVE_CG
+   unsigned cg_num = gl_cg_num();
+   if (cg_num > num)
+      num = cg_num;
+#endif
+
+#ifdef HAVE_XML
+   unsigned glsl_num = gl_glsl_num();
+   if (glsl_num > num)
+      num = glsl_num;
+#endif
+
+   return num;
+}
 ///////////////////
 
 //////////////// Message rendering
@@ -621,6 +639,9 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    if (!SDL_SetVideoMode(video->width, video->height, 0, SDL_OPENGL | SDL_RESIZABLE | (video->fullscreen ? SDL_FULLSCREEN : 0)))
       return NULL;
 
+   // Remove that ugly mouse :D
+   SDL_ShowCursor(SDL_DISABLE);
+
    int attr = 0;
    SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &attr);
    if (attr <= 0 && video->vsync)
@@ -651,13 +672,6 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
 
    SSNES_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
 
-   // Set up render to texture.
-   gl_init_fbo(gl, 256 * video->input_scale, 256 * video->input_scale);
-
-   gl->vsync = video->vsync;
-   gl->keep_aspect = video->force_aspect;
-   set_viewport(gl, gl->win_width, gl->win_height, false);
-
    if (!gl_shader_init())
    {
       SSNES_ERR("Shader init failed.\n");
@@ -666,8 +680,15 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
       return NULL;
    }
 
-   // Remove that ugly mouse :D
-   SDL_ShowCursor(SDL_DISABLE);
+   SSNES_LOG("GL: Loaded %u shader(s).\n", gl_shader_num());
+
+   // Set up render to texture.
+   gl_init_fbo(gl, 256 * video->input_scale, 256 * video->input_scale);
+
+   gl->vsync = video->vsync;
+   gl->keep_aspect = video->force_aspect;
+   set_viewport(gl, gl->win_width, gl->win_height, false);
+   
 
    if (video->smooth)
       gl->tex_filter = GL_LINEAR;

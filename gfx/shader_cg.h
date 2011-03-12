@@ -33,4 +33,6 @@ void gl_cg_set_params(unsigned width, unsigned height,
 
 void gl_cg_use(unsigned index);
 
+unsigned gl_cg_num(void);
+
 #endif
