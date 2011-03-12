@@ -60,10 +60,10 @@
 #endif
 
 static const GLfloat vertexes[] = {
-   0, 0, 0,
-   0, 1, 0,
-   1, 1, 0,
-   1, 0, 0
+   0, 0,
+   0, 1,
+   1, 1,
+   1, 0
 };
 
 static const GLfloat tex_coords[] = {
@@ -384,12 +384,12 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    if (!gl->font)
       return;
 
-   GLfloat font_vertex[12]; 
+   GLfloat font_vertex[8]; 
 
    // Deactivate custom shaders. Enable the font texture.
    gl_shader_use(0);
    glBindTexture(GL_TEXTURE_2D, gl->font_tex);
-   glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), font_vertex);
+   glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), font_vertex);
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords); // Use the static one (uses whole texture).
 
    // Need blending. 
@@ -409,12 +409,12 @@ static void gl_render_msg(gl_t *gl, const char *msg)
 
       font_vertex[0] = lx;
       font_vertex[1] = ly;
-      font_vertex[3] = lx;
-      font_vertex[4] = hy;
+      font_vertex[2] = lx;
+      font_vertex[3] = hy;
+      font_vertex[4] = hx;
+      font_vertex[5] = hy;
       font_vertex[6] = hx;
-      font_vertex[7] = hy;
-      font_vertex[9] = hx;
-      font_vertex[10] = ly;
+      font_vertex[7] = ly;
 
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(head->pitch));
       glPixelStorei(GL_UNPACK_ROW_LENGTH, head->pitch);
@@ -429,7 +429,7 @@ static void gl_render_msg(gl_t *gl, const char *msg)
 
    // Go back to old rendering path.
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
-   glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), vertexes);
+   glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes);
    glBindTexture(GL_TEXTURE_2D, gl->texture);
    glDisable(GL_BLEND);
 #endif
@@ -727,8 +727,8 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    gl->base_size = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    glEnable(GL_TEXTURE_2D);
-   glDisable(GL_DITHER);
    glDisable(GL_DEPTH_TEST);
+   glDisable(GL_DITHER);
    glColor4f(1, 1, 1, 1);
    glClearColor(0, 0, 0, 1);
 
@@ -748,7 +748,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
 
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), vertexes);
+   glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes);
 
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
