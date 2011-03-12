@@ -424,7 +424,6 @@ static void gl_render_msg(gl_t *gl, const char *msg)
             GL_UNSIGNED_BYTE, head->output);
 
       head = head->next;
-      glFlush();
       glDrawArrays(GL_QUADS, 0, 4);
    }
    font_renderer_free_output(&out);
@@ -566,7 +565,6 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
          0, 0, 0, width, height, gl->texture_type,
          gl->texture_fmt, frame);
 
-   glFlush();
    glDrawArrays(GL_QUADS, 0, 4);
 
    if (gl->fbo_inited)
