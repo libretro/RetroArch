@@ -27,6 +27,7 @@ typedef struct sdl_input
    unsigned num_buttons[MAX_PLAYERS];
    unsigned num_hats[MAX_PLAYERS];
    unsigned num_joysticks;
+   bool use_keyboard;
 
    // A video driver could pre-init with the SDL driver and have it handle resizing events...
    bool *quitting;

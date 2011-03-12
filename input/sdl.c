@@ -61,6 +61,8 @@ static void* sdl_input_init(void)
       }
    }
 
+   sdl->use_keyboard = true;
+
    return sdl;
 }
 
@@ -141,7 +143,7 @@ static bool sdl_axis_pressed(sdl_input_t *sdl, int port_num, uint32_t joyaxis)
 
 static bool sdl_is_pressed(sdl_input_t *sdl, int port_num, const struct snes_keybind *key)
 {
-   if (sdl_key_pressed(key->key))
+   if (sdl->use_keyboard && sdl_key_pressed(key->key))
       return true;
    if (sdl->joysticks[port_num] == NULL)
       return false;
