@@ -216,6 +216,7 @@ static void compile_programs(GLuint *gl_prog, struct shader_program *progs, size
 
       if (progs[i].vertex)
       {
+         SSNES_LOG("Found GLSL vertex shader.\n");
          GLuint shader = pglCreateShader(GL_VERTEX_SHADER);
          pglShaderSource(shader, 1, (const char**)&progs[i].vertex, 0);
          pglCompileShader(shader);
@@ -225,8 +226,9 @@ static void compile_programs(GLuint *gl_prog, struct shader_program *progs, size
          free(progs[i].vertex);
       }
 
-      if (progs[i].vertex)
+      if (progs[i].fragment)
       {
+         SSNES_LOG("Found GLSL fragment shader.\n");
          GLuint shader = pglCreateShader(GL_FRAGMENT_SHADER);
          pglShaderSource(shader, 1, (const char**)&progs[i].fragment, 0);
          pglCompileShader(shader);
@@ -238,6 +240,7 @@ static void compile_programs(GLuint *gl_prog, struct shader_program *progs, size
 
       if (progs[i].vertex || progs[i].fragment)
       {
+         SSNES_LOG("Linking GLSL program.\n");
          pglLinkProgram(gl_prog[i]);
          pglUseProgram(gl_prog[i]);
          print_linker_log(gl_prog[i]);

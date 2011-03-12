@@ -108,6 +108,8 @@ static bool load_fbo_proc(void)
 static bool load_fbo_proc(void) { return true; }
 #endif
 
+#define MAX_SHADERS 16
+
 typedef struct gl
 {
    bool vsync;
@@ -115,11 +117,12 @@ typedef struct gl
    GLuint tex_filter;
 
    // Render-to-texture, multipass shaders
-   GLuint fbo;
-   GLuint fbo_texture;
+   GLuint fbo[MAX_SHADERS];
+   GLuint fbo_texture[MAX_SHADERS];
    bool render_to_tex;
    unsigned fbo_width;
    unsigned fbo_height;
+   int fbo_pass;
    bool fbo_inited;
    bool fbo_tex_filter;
    double fbo_scale_x;
@@ -307,36 +310,49 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    gl->fbo_scale_x = scale_x;
    gl->fbo_scale_y = scale_y;
 
-   glGenTextures(1, &gl->fbo_texture);
-   glBindTexture(GL_TEXTURE_2D, gl->fbo_texture);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+   gl->fbo_pass = gl_shader_num() - 1;
+   if (gl->fbo_pass <= 0)
+      gl->fbo_pass = 1;
+
+   glGenTextures(gl->fbo_pass, gl->fbo_texture);
+   void *tmp = calloc(gl->fbo_width * gl->fbo_height, sizeof(uint32_t));
+
+   for (int i = 0; i < gl->fbo_pass; i++)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+      glTexImage2D(GL_TEXTURE_2D,
+            0, GL_RGBA, gl->fbo_width, gl->fbo_height, 0, GL_RGBA,
+            GL_UNSIGNED_INT_8_8_8_8, tmp);
+   }
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, g_settings.video.second_pass_smooth ? GL_LINEAR : GL_NEAREST);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, g_settings.video.second_pass_smooth ? GL_LINEAR : GL_NEAREST);
-
-   void *tmp = calloc(gl->fbo_width * gl->fbo_height, sizeof(uint32_t));
-   glTexImage2D(GL_TEXTURE_2D,
-         0, GL_RGBA, gl->fbo_width, gl->fbo_height, 0, GL_RGBA,
-         GL_UNSIGNED_INT_8_8_8_8, tmp);
    free(tmp);
    glBindTexture(GL_TEXTURE_2D, 0);
 
-   pglGenFramebuffers(1, &gl->fbo);
-   pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo);
-   pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture, 0);
+   pglGenFramebuffers(gl->fbo_pass, gl->fbo);
+   for (int i = 0; i < gl->fbo_pass; i++)
+   {
+      pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
+      pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
-   GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
-   if (status == GL_FRAMEBUFFER_COMPLETE)
-   {
-      gl->fbo_inited = true;
-      SSNES_LOG("Set up FBO @ %ux%u\n", gl->fbo_width, gl->fbo_height);
+      GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
+      if (status != GL_FRAMEBUFFER_COMPLETE)
+         goto error;
    }
-   else
-   {
-      glDeleteTextures(1, &gl->fbo_texture);
-      pglDeleteFramebuffers(1, &gl->fbo);
-      SSNES_WARN("Failed to set up FBO. Two-pass shading will not work.\n");
-   }
+
+   gl->fbo_inited = true;
+   SSNES_LOG("Set up FBO @ %ux%u\n", gl->fbo_width, gl->fbo_height);
+   return;
+
+error:
+   glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
+   pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
+   SSNES_WARN("Failed to set up FBO. Two-pass shading will not work.\n");
 }
 
 static inline void gl_deinit_font(gl_t *gl)
@@ -505,7 +521,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
    if (gl->fbo_inited)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture);
-      pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo);
+      pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
       gl->render_to_tex = true;
       set_viewport(gl, width * gl->fbo_scale_x, height * gl->fbo_scale_y, true);
    }
@@ -555,16 +571,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 
    if (gl->fbo_inited)
    {
-      // Render our FBO texture to back buffer.
-      pglBindFramebuffer(GL_FRAMEBUFFER, 0);
-      gl_shader_use(2);
-
-      glClear(GL_COLOR_BUFFER_BIT);
-      gl->render_to_tex = false;
-      set_viewport(gl, gl->win_width, gl->win_height, false);
-      gl_shader_set_params(width * gl->fbo_scale_x, height * gl->fbo_scale_y, gl->fbo_width, gl->fbo_height, gl->vp_width, gl->vp_height);
-      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture);
-
+      // Render the rest of our passes. TODO: Proper params and don't assume 1x scale for the interim passes.
       glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->fbo_tex_coords);
       GLfloat xamt = (GLfloat)width * gl->fbo_scale_x / gl->fbo_width;
       GLfloat yamt = (GLfloat)height * gl->fbo_scale_y / gl->fbo_height;
@@ -572,6 +579,28 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       gl->fbo_tex_coords[4] = xamt;
       gl->fbo_tex_coords[5] = yamt;
       gl->fbo_tex_coords[6] = xamt;
+
+      for (int i = 1; i < gl->fbo_pass; i++)
+      {
+         pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
+         gl_shader_use(i + 1);
+         glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
+
+         glClear(GL_COLOR_BUFFER_BIT);
+         set_viewport(gl, width * gl->fbo_scale_x, height * gl->fbo_scale_y, true);
+         gl_shader_set_params(width * gl->fbo_scale_x, height * gl->fbo_scale_y, gl->fbo_width, gl->fbo_height, gl->vp_width, gl->vp_height);
+         glDrawArrays(GL_QUADS, 0, 4);
+      }
+
+      // Render our FBO texture to back buffer.
+      pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+      gl_shader_use(gl->fbo_pass + 1);
+
+      glClear(GL_COLOR_BUFFER_BIT);
+      gl->render_to_tex = false;
+      set_viewport(gl, gl->win_width, gl->win_height, false);
+      gl_shader_set_params(width * gl->fbo_scale_x, height * gl->fbo_scale_y, gl->fbo_width, gl->fbo_height, gl->vp_width, gl->vp_height);
+      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
       glDrawArrays(GL_QUADS, 0, 4);
       glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
@@ -597,8 +626,8 @@ static void gl_free(void *data)
    glDeleteTextures(1, &gl->texture);
    if (gl->fbo_inited)
    {
-      glDeleteTextures(1, &gl->fbo_texture);
-      pglDeleteFramebuffers(1, &gl->fbo);
+      glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
+      pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
    }
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
