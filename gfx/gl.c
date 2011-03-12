@@ -395,7 +395,6 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    // Need blending. 
    // Using fixed function pipeline here since we cannot guarantee presence of shaders (would be kinda overkill anyways).
    glEnable(GL_BLEND);
-   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
    struct font_output_list out;
    font_renderer_msg(gl->font, msg, &out);
@@ -668,6 +667,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
 
    // Remove that ugly mouse :D
    SDL_ShowCursor(SDL_DISABLE);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
    int attr = 0;
    SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &attr);
@@ -730,7 +730,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    glDisable(GL_DITHER);
    glDisable(GL_DEPTH_TEST);
    glColor4f(1, 1, 1, 1);
-   glClearColor(0, 0, 0, 0);
+   glClearColor(0, 0, 0, 1);
 
    SDL_WM_SetCaption("SSNES", NULL);
 
