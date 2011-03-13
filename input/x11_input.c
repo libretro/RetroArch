@@ -35,6 +35,77 @@ typedef struct x11_input
    char state[32];
 } x11_input_t;
 
+struct key_bind
+{
+   int x;
+   int sdl;
+};
+
+static int keysym_lut[SDLK_LAST];
+static const struct key_bind lut_binds[] = {
+   { XK_Left, SDLK_LEFT },
+   { XK_Right, SDLK_RIGHT },
+   { XK_Up, SDLK_UP },
+   { XK_Down, SDLK_DOWN },
+   { XK_Return, SDLK_RETURN },
+   { XK_Tab, SDLK_TAB },
+   { XK_Insert, SDLK_INSERT },
+   { XK_Delete, SDLK_DELETE },
+   { XK_Shift_R, SDLK_RSHIFT },
+   { XK_Shift_L, SDLK_LSHIFT },
+   { XK_Control_L, SDLK_LCTRL },
+   { XK_Alt_L, SDLK_LALT },
+   { XK_space, SDLK_SPACE },
+   { XK_Escape, SDLK_ESCAPE },
+   { XK_KP_Add, SDLK_KP_PLUS },
+   { XK_KP_Subtract, SDLK_KP_MINUS },
+   { XK_F1, SDLK_F1 },
+   { XK_F2, SDLK_F2 },
+   { XK_F3, SDLK_F3 },
+   { XK_F4, SDLK_F4 },
+   { XK_F5, SDLK_F5 },
+   { XK_F6, SDLK_F6 },
+   { XK_F7, SDLK_F7 },
+   { XK_F8, SDLK_F8 },
+   { XK_F9, SDLK_F9 },
+   { XK_F10, SDLK_F10 },
+   { XK_F11, SDLK_F11 },
+   { XK_F12, SDLK_F12 },
+   { XK_a, SDLK_a },
+   { XK_b, SDLK_b },
+   { XK_c, SDLK_c },
+   { XK_d, SDLK_d },
+   { XK_e, SDLK_e },
+   { XK_f, SDLK_f },
+   { XK_g, SDLK_g },
+   { XK_h, SDLK_h },
+   { XK_i, SDLK_i },
+   { XK_j, SDLK_j },
+   { XK_k, SDLK_k },
+   { XK_l, SDLK_l },
+   { XK_m, SDLK_m },
+   { XK_n, SDLK_n },
+   { XK_o, SDLK_o },
+   { XK_p, SDLK_p },
+   { XK_q, SDLK_q },
+   { XK_r, SDLK_r },
+   { XK_s, SDLK_s },
+   { XK_t, SDLK_t },
+   { XK_u, SDLK_u },
+   { XK_v, SDLK_v },
+   { XK_w, SDLK_w },
+   { XK_x, SDLK_x },
+   { XK_y, SDLK_y },
+   { XK_z, SDLK_z },
+};
+
+static void init_lut(void)
+{
+   memset(keysym_lut, 0, sizeof(keysym_lut));
+   for (unsigned i = 0; i < sizeof(lut_binds) / sizeof(lut_binds[0]); i++)
+      keysym_lut[lut_binds[i].sdl] = lut_binds[i].x;
+}
+
 static void* x_input_init(void)
 {
    x11_input_t *x11 = calloc(1, sizeof(*x11));
@@ -55,41 +126,18 @@ static void* x_input_init(void)
       return NULL;
    }
 
+   init_lut();
+
    x11->sdl->use_keyboard = false;
    return x11;
 }
 
-static const int sdl2xlut[] = {
-   0, 0, 0, 0, 0, 0, 0, 0, // 0
-   XK_BackSpace, XK_Tab, 0, 0, 0, XK_Return, 0, 0,
-   0, 0, 0, 0, 0, 0, 0, 0, // 16
-   0, 0, 0, XK_Escape, 0, 0, 0, 0,
-   XK_space, 0, 0, 0, 0, 0, 0, 0, // 32
-   0, 0, 0, 0, 0, 0, 0, 0,
-   XK_0, XK_1, XK_2, XK_3, XK_4, XK_5, XK_6, XK_7, // 48
-   XK_8, XK_9, 0, 0, 0, 0, 0, 0,
-   0, 0, 0, 0, 0, 0, 0, 0, // 64
-   0, 0, 0, 0, 0, 0, 0, 0,
-   0, 0, 0, 0, 0, 0, 0, 0, // 80
-   0, 0, 0, 0, 0, 0, 0, 0,
-   0, 0, 0, 0, 0, 0, 0, 0, // 96
-};
-
-static int sdl_to_xkeysym(int key)
-{
-   if (key < sizeof(sdl2xlut) / sizeof(int))
-      return sdl2xlut[key];
-   else
-      return 0;
-}
-
 static bool x_key_pressed(x11_input_t *x11, int key)
 {
-   key = sdl_to_xkeysym(key);
-
+   key = keysym_lut[key];
    int keycode = XKeysymToKeycode(x11->display, key);
-   fprintf(stderr, "key: %d -> keycode: %d\n", key, keycode);
-   return x11->state[keycode >> 3] & (1 << (keycode & 7));
+   bool ret = x11->state[keycode >> 3] & (1 << (keycode & 7));
+   return ret;
 }
 
 static bool x_is_pressed(x11_input_t *x11, const struct snes_keybind *binds, unsigned id)
@@ -106,18 +154,10 @@ static bool x_is_pressed(x11_input_t *x11, const struct snes_keybind *binds, uns
 static bool x_bind_button_pressed(void *data, int key)
 {
    x11_input_t *x11 = data;
-   const struct snes_keybind *binds = g_settings.input.binds[0];
-   for (int i = 0; binds[i].id != -1; i++)
-   {
-      if (binds[i].id == key)
-      {
-         bool pressed = x_key_pressed(x11, binds[i].key);
-         if (!pressed)
-            return input_sdl.key_pressed(x11->sdl, key);
-      }
-   }
-
-   return false;
+   bool pressed = x_is_pressed(x11, g_settings.input.binds[0], key);
+   if (!pressed)
+      return input_sdl.key_pressed(x11->sdl, key);
+   return pressed;
 }
 
 static int16_t x_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
@@ -156,10 +196,6 @@ static void x_input_poll(void *data)
 {
    x11_input_t *x11 = data;
    XQueryKeymap(x11->display, x11->state);
-   //for (int i = 0; i < 32; i++)
-   //{
-   //   fprintf(stderr, "State %d: 0x%x\n", i, (unsigned)x11->state[i]);
-   //}
    input_sdl.poll(x11->sdl);
 }
 
