@@ -58,7 +58,7 @@ struct xv
    uint8_t *utable;
    uint8_t *vtable;
 
-   void (*render_func)(xv_t*, const uint16_t *frame, unsigned width, unsigned height, unsigned pitch);
+   void (*render_func)(xv_t*, const void *frame, unsigned width, unsigned height, unsigned pitch);
 };
 
 
@@ -149,8 +149,9 @@ static void set_fullscreen(xv_t *xv)
             &xev);
 }
 
-static void render_yuy2(xv_t *xv, const uint16_t *input, unsigned width, unsigned height, unsigned pitch) 
+static void render16_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
 {
+   const uint16_t *input = input_;
    uint16_t *output = (uint16_t*)xv->image->data;
 
    for (unsigned y = 0; y < height; y++) 
@@ -163,6 +164,7 @@ static void render_yuy2(xv_t *xv, const uint16_t *input, unsigned width, unsigne
          uint8_t u = (xv->utable[p0] + xv->utable[p1]) >> 1;
          uint8_t v = (xv->vtable[p0] + xv->vtable[p1]) >> 1;
 
+         // TODO: Will this only work on little-endian?
          *output++ = (u << 8) | xv->ytable[p0];
          *output++ = (v << 8) | xv->ytable[p1];
       }
@@ -171,6 +173,87 @@ static void render_yuy2(xv_t *xv, const uint16_t *input, unsigned width, unsigne
       output += xv->width - width;
    }
 }
+
+static void render16_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
+{
+   const uint16_t *input = input_;
+   uint16_t *output = (uint16_t*)xv->image->data;
+
+   for (unsigned y = 0; y < height; y++) 
+   {
+      for (unsigned x = 0; x < width >> 1; x++) 
+      {
+         uint16_t p0 = *input++;
+         uint16_t p1 = *input++;
+
+         uint8_t u = (xv->utable[p0] + xv->utable[p1]) >> 1;
+         uint8_t v = (xv->vtable[p0] + xv->vtable[p1]) >> 1;
+
+         // TODO: Will this only work on little-endian?
+         *output++ = (xv->ytable[p0] << 8) | u;
+         *output++ = (xv->ytable[p1] << 8) | v;
+      }
+
+      input  += (pitch >> 1) - width;
+      output += xv->width - width;
+   }
+}
+
+static void render32_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
+{
+   const uint32_t *input = input_;
+   uint16_t *output = (uint16_t*)xv->image->data;
+
+   for (unsigned y = 0; y < height; y++) 
+   {
+      for (unsigned x = 0; x < width >> 1; x++) 
+      {
+         uint32_t p0 = *input++;
+         uint32_t p1 = *input++;
+         p0 = ((p0 >> 9) & 0x7c00) | ((p0 >> 6) & 0x03e0) | ((p0 >> 3) & 0x1f); // RGBA -> RGB15
+         p1 = ((p1 >> 9) & 0x7c00) | ((p1 >> 6) & 0x03e0) | ((p1 >> 3) & 0x1f);
+
+         uint8_t u = (xv->utable[p0] + xv->utable[p1]) >> 1;
+         uint8_t v = (xv->vtable[p0] + xv->vtable[p1]) >> 1;
+
+         // TODO: Will this only work on little-endian?
+         *output++ = (u << 8) | xv->ytable[p0];
+         *output++ = (v << 8) | xv->ytable[p1];
+      }
+
+      input  += (pitch >> 2) - width;
+      output += xv->width - width;
+   }
+}
+
+static void render32_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
+{
+   const uint32_t *input = input_;
+   uint16_t *output = (uint16_t*)xv->image->data;
+
+   for (unsigned y = 0; y < height; y++) 
+   {
+      for (unsigned x = 0; x < width >> 1; x++) 
+      {
+         uint32_t p0 = *input++;
+         uint32_t p1 = *input++;
+         p0 = ((p0 >> 9) & 0x7c00) | ((p0 >> 6) & 0x03e0) | ((p0 >> 3) & 0x1f);
+         p1 = ((p1 >> 9) & 0x7c00) | ((p1 >> 6) & 0x03e0) | ((p1 >> 3) & 0x1f);
+
+         uint8_t u = (xv->utable[p0] + xv->utable[p1]) >> 1;
+         uint8_t v = (xv->vtable[p0] + xv->vtable[p1]) >> 1;
+
+         // TODO: Will this only work on little-endian?
+         *output++ = (xv->ytable[p0] << 8) | u;
+         *output++ = (xv->ytable[p1] << 8) | v;
+      }
+
+      input  += (pitch >> 2) - width;
+      output += xv->width - width;
+   }
+}
+
+
 
 static void* xv_init(video_info_t *video, const input_driver_t **input, void **input_data)
 {
@@ -268,11 +351,27 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
          {
             has_format = true;
             xv->fourcc = format[i].id;
-            xv->render_func = render_yuy2;
+            xv->render_func = video->rgb32 ? render32_yuy2 : render16_yuy2;
             break;
          }
       }
    }
+
+   if (!has_format) for (int i = 0; i < format_count; i++) 
+   {
+      if (format[i].type == XvYUV && format[i].bits_per_pixel == 16 && format[i].format == XvPacked) 
+      {
+         if (format[i].component_order[0] == 'U' && format[i].component_order[1] == 'Y'
+               && format[i].component_order[2] == 'V' && format[i].component_order[3] == 'Y') 
+         {
+            has_format = true;
+            xv->fourcc = format[i].id;
+            xv->render_func = video->rgb32 ? render32_uyvy : render16_uyvy;
+            break;
+         }
+      }
+   }
+
 
    free(format);
    if (!has_format) 
