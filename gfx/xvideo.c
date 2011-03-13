@@ -32,7 +32,8 @@
 
 // Adapted from bSNES source.
 
-typedef struct xv
+typedef struct xv xv_t;
+struct xv
 {
    Display *display;
    GC gc;
@@ -56,7 +57,9 @@ typedef struct xv
    uint8_t *ytable;
    uint8_t *utable;
    uint8_t *vtable;
-} xv_t;
+
+   void (*render_func)(xv_t*, const uint16_t *frame, unsigned width, unsigned height, unsigned pitch);
+};
 
 
 static volatile sig_atomic_t g_quit = false;
@@ -120,6 +123,12 @@ static void set_fullscreen(xv_t *xv)
 {
    XA_INIT(_NET_WM_STATE);
    XA_INIT(_NET_WM_STATE_FULLSCREEN);
+
+   if (!XA_NET_WM_STATE || !XA_NET_WM_STATE_FULLSCREEN)
+   {
+      SSNES_WARN("X11: Cannot set fullscreen.\n");
+      return;
+   }
 
    XEvent xev;
 
@@ -235,6 +244,7 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
    XSetWindowBackground(xv->display, xv->window, 0);
 
    XMapWindow(xv->display, xv->window);
+   XStoreName(xv->display, xv->window, "SSNES");
    if (video->fullscreen)
       set_fullscreen(xv);
    hide_mouse(xv);
@@ -258,6 +268,7 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
          {
             has_format = true;
             xv->fourcc = format[i].id;
+            xv->render_func = render_yuy2;
             break;
          }
       }
@@ -406,7 +417,7 @@ static bool xv_frame(void *data, const void* frame, unsigned width, unsigned hei
 
    XWindowAttributes target;
    XGetWindowAttributes(xv->display, xv->window, &target);
-   render_yuy2(xv, frame, width, height, pitch);
+   xv->render_func(xv, frame, width, height, pitch);
 
    unsigned x, y, owidth, oheight;
    calc_out_rect(xv->keep_aspect, &x, &y, &owidth, &oheight, target.width, target.height);
