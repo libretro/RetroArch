@@ -61,12 +61,18 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_SDL
    &video_gl,
 #endif
+#ifdef HAVE_XVIDEO
+   &video_xvideo,
+#endif
 };
 
 static const input_driver_t *input_drivers[] = {
 #ifdef HAVE_SDL
    &input_sdl,
 #endif
+//#ifdef HAVE_XVIDEO
+//   &input_x,
+//#endif
 };
 
 static void find_audio_driver(void)

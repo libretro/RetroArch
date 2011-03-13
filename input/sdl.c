@@ -248,7 +248,7 @@ static int16_t sdl_input_state(void *data, const struct snes_keybind **binds, bo
    switch (device)
    {
       case SNES_DEVICE_JOYPAD:
-         return sdl_joypad_device_state(data, binds, port == SNES_PORT_1 ? 0 : 1, device, index, id);
+         return sdl_joypad_device_state(data, binds, (port == SNES_PORT_1) ? 0 : 1, device, index, id);
       case SNES_DEVICE_MULTITAP:
          return sdl_joypad_device_state(data, binds, (port == SNES_PORT_2) ? 1 + index : 0, device, index, id);
       case SNES_DEVICE_MOUSE:

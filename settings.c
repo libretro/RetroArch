@@ -44,6 +44,9 @@ static void set_defaults(void)
       case VIDEO_GL:
          def_video = "gl";
          break;
+      case VIDEO_XVIDEO:
+         def_video = "xvideo";
+         break;
       default:
          break;
    }
@@ -82,6 +85,9 @@ static void set_defaults(void)
    {
       case INPUT_SDL:
          def_input = "sdl";
+         break;
+      case INPUT_X:
+         def_input = "x";
          break;
       default:
          break;

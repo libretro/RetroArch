@@ -43,6 +43,7 @@
 
 ///////////////// Drivers
 #define VIDEO_GL 0
+#define VIDEO_XVIDEO 11
 ////////////////////////
 #define AUDIO_RSOUND 1
 #define AUDIO_OSS 2
@@ -55,9 +56,14 @@
 #define AUDIO_PULSE 10
 ////////////////////////
 #define INPUT_SDL 7
+#define INPUT_X 12
 ////////////////////////
 
+#if defined(HAVE_SDL)
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL
+#elif defined(HAVE_XVIDEO)
+#define VIDEO_DEFAULT_DRIVER VIDEO_XVIDEO
+#endif
 
 #if defined(HAVE_ALSA)
 #define AUDIO_DEFAULT_DRIVER AUDIO_ALSA
@@ -81,7 +87,11 @@
 #error Need at least one audio driver!
 #endif
 
+#if defined(HAVE_SDL)
 #define INPUT_DEFAULT_DRIVER INPUT_SDL
+#elif defined(HAVE_XVIDEO)
+#define INPUT_DEFAULT_DRIVER INPUT_X
+#endif
 
 
 ////////////////

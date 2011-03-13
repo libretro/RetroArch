@@ -72,6 +72,11 @@ else
 endif
 endif
 
+ifeq ($(HAVE_XVIDEO), 1)
+   OBJ += gfx/xvideo.o input/x11_input.o
+   LIBS += -lXv -lX11
+endif
+
 ifeq ($(HAVE_CG), 1)
    OBJ += gfx/shader_cg.o
    LIBS += -lCg -lCgGL
