@@ -18,6 +18,7 @@
 #include "driver.h"
 #include "general.h"
 #include <stdlib.h>
+#include <string.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -41,9 +42,11 @@ typedef struct xv
    int visualid;
 
    XvImage *image;
+   uint32_t fourcc;
 
    unsigned width;
    unsigned height;
+   bool keep_aspect;
 
    uint8_t *ytable;
    uint8_t *utable;
@@ -111,6 +114,8 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
       goto error;
    }
 
+   xv->keep_aspect = video->force_aspect;
+
    // Find an appropriate Xv port.
    xv->port = -1;
    XvAdaptorInfo *adaptor_info;
@@ -155,12 +160,14 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
    attributes.colormap = xv->colormap;
    attributes.border_pixel = 0;
    attributes.event_mask = StructureNotifyMask;
+
    xv->window = XCreateWindow(xv->display, DefaultRootWindow(xv->display),
-         /* x = */ 0, /* y = */ 0, video->width, video->height,
-         /* border_width = */ 0, xv->depth, InputOutput, visualinfo->visual,
+         0, 0, video->width, video->height,
+         0, xv->depth, InputOutput, visualinfo->visual,
          CWColormap | CWBorderPixel | CWEventMask, &attributes);
+
    XFree(visualinfo);
-   XSetWindowBackground(xv->display, xv->window, /* color = */ 0);
+   XSetWindowBackground(xv->display, xv->window, 0);
    XMapWindow(xv->display, xv->window);
 
    xv->gc = XCreateGC(xv->display, xv->window, 0, 0);
@@ -173,7 +180,6 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
    XvImageFormatValues *format = XvListImageFormats(xv->display, xv->port, &format_count);
 
    bool has_format = false;
-   uint32_t fourcc = 0;
    for (int i = 0; i < format_count; i++) 
    {
       if (format[i].type == XvYUV && format[i].bits_per_pixel == 16 && format[i].format == XvPacked) 
@@ -182,37 +188,41 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
                && format[i].component_order[2] == 'Y' && format[i].component_order[3] == 'V') 
          {
             has_format = true;
-            fourcc = format[i].id;
+            xv->fourcc = format[i].id;
             break;
          }
       }
    }
 
    free(format);
-   if(!has_format) 
+   if (!has_format) 
    {
       SSNES_ERR("XVideo: unable to find a supported image format.\n");
       goto error;
    }
 
-   xv->width  = 256 * video->input_scale;
-   xv->height = 256 * video->input_scale;
+   xv->width = 256;
+   xv->height = 256;
 
-   xv->image = XvShmCreateImage(xv->display, xv->port, fourcc, 0, xv->width, xv->height, &xv->shminfo);
-   if(!xv->image) 
+   xv->image = XvShmCreateImage(xv->display, xv->port, xv->fourcc, NULL, xv->width, xv->height, &xv->shminfo);
+   if (!xv->image) 
    {
       SSNES_ERR("XVideo: XShmCreateImage failed.\n");
       goto error;
    }
+   xv->width = xv->image->width;
+   xv->height = xv->image->height;
 
-   xv->shminfo.shmid    = shmget(IPC_PRIVATE, xv->image->data_size, IPC_CREAT | 0777);
-   xv->shminfo.shmaddr  = xv->image->data = shmat(xv->shminfo.shmid, 0, 0);
+   xv->shminfo.shmid = shmget(IPC_PRIVATE, xv->image->data_size, IPC_CREAT | 0777);
+   xv->shminfo.shmaddr = xv->image->data = shmat(xv->shminfo.shmid, NULL, 0);
    xv->shminfo.readOnly = false;
    if (!XShmAttach(xv->display, &xv->shminfo)) 
    {
       SSNES_ERR("XVideo: XShmAttach failed.\n");
       goto error;
    }
+   XSync(xv->display, False);
+   memset(xv->image->data, 128, xv->image->data_size);
 
    void *xinput = input_x.init();
    if (xinput)
@@ -231,17 +241,98 @@ error:
    return NULL;
 }
 
+static bool check_resize(xv_t *xv, unsigned width, unsigned height)
+{
+   if (xv->width != width || xv->height != height)
+   {
+      xv->width = width;
+      xv->height = height;
+
+      XShmDetach(xv->display, &xv->shminfo);
+      shmdt(xv->shminfo.shmaddr);
+      shmctl(xv->shminfo.shmid, IPC_RMID, NULL);
+      XFree(xv->image);
+
+      memset(&xv->shminfo, 0, sizeof(xv->shminfo));
+      xv->image = XvShmCreateImage(xv->display, xv->port, xv->fourcc, NULL, xv->width, xv->height, &xv->shminfo);
+      if (xv->image == None)
+      {
+         SSNES_ERR("Failed to create image.\n");
+         return false;
+      }
+
+      xv->width = xv->image->width;
+      xv->height = xv->image->height;
+
+      xv->shminfo.shmid = shmget(IPC_PRIVATE, xv->image->data_size, IPC_CREAT | 0777);
+      if (xv->shminfo.shmid < 0)
+      {
+         SSNES_ERR("Failed to init SHM.\n");
+         return false;
+      }
+
+      xv->shminfo.shmaddr = xv->image->data = shmat(xv->shminfo.shmid, NULL, 0);
+      xv->shminfo.readOnly = false;
+      
+      if (!XShmAttach(xv->display, &xv->shminfo))
+      {
+         SSNES_ERR("Failed to reattch XvShm image.\n");
+         return false;
+      }
+      XSync(xv->display, False);
+      memset(xv->image->data, 128, xv->image->data_size);
+   }
+   return true;
+}
+
+static void calc_out_rect(bool keep_aspect, unsigned *x, unsigned *y, unsigned *width, unsigned *height, unsigned vp_width, unsigned vp_height)
+{
+   if (!keep_aspect)
+   {
+      *x = 0; *y = 0; *width = vp_width; *height = vp_height;
+   }
+   else
+   {
+      float desired_aspect = g_settings.video.aspect_ratio;
+      float device_aspect = (float)vp_width / vp_height;
+
+      // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
+      // assume they are actually equal.
+      if ( (int)(device_aspect*1000) > (int)(desired_aspect*1000) )
+      {
+         float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
+         *x = vp_width * (0.5 - delta); *y = 0; *width = 2.0 * vp_width * delta; *height = vp_height;
+      }
+
+      else if ( (int)(device_aspect*1000) < (int)(desired_aspect*1000) )
+      {
+         float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
+         *x = 0; *y = vp_height * (0.5 - delta); *width = vp_width; *height = 2.0 * vp_height * delta;
+      }
+      else
+      {
+         *x = 0; *y = 0; *width = vp_width; *height = vp_height;
+      }
+   }
+}
+
 static bool xv_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    (void)msg;
    xv_t *xv = data;
 
+   if (!check_resize(xv, width, height))
+      return false;
+
    XWindowAttributes target;
    XGetWindowAttributes(xv->display, xv->window, &target);
    render_yuy2(xv, frame, width, height, pitch);
+
+   unsigned x, y, owidth, oheight;
+   calc_out_rect(xv->keep_aspect, &x, &y, &owidth, &oheight, target.width, target.height);
    XvShmPutImage(xv->display, xv->port, xv->window, xv->gc, xv->image,
          0, 0, width, height,
-         0, 0, target.width, target.height,
+         x, y, owidth, oheight,
          true);
 
    return true;
