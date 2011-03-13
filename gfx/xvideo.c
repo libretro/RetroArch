@@ -89,6 +89,7 @@ static void init_yuv_tables(xv_t *xv)
    }
 }
 
+// Source: MPlayer
 static void hide_mouse(xv_t *xv)
 {
    Cursor no_ptr;
@@ -107,6 +108,36 @@ static void hide_mouse(xv_t *xv)
    if (bm_no != None)
       XFreePixmap(xv->display, bm_no);
    XFreeColors(xv->display, colormap, &black.pixel, 1, 0);
+}
+
+static Atom XA_NET_WM_STATE;
+static Atom XA_NET_WM_STATE_FULLSCREEN;
+#define XA_INIT(x) XA##x = XInternAtom(xv->display, #x, False)
+#define _NET_WM_STATE_ADD 1
+
+// Source: MPlayer
+static void set_fullscreen(xv_t *xv)
+{
+   XA_INIT(_NET_WM_STATE);
+   XA_INIT(_NET_WM_STATE_FULLSCREEN);
+
+   XEvent xev;
+
+   xev.xclient.type = ClientMessage;
+   xev.xclient.serial = 0;
+   xev.xclient.send_event = True;
+   xev.xclient.message_type = XA_NET_WM_STATE;
+   xev.xclient.window = xv->window;
+   xev.xclient.format = 32;
+   xev.xclient.data.l[0] = _NET_WM_STATE_ADD;
+   xev.xclient.data.l[1] = XA_NET_WM_STATE_FULLSCREEN;
+   xev.xclient.data.l[2] = 0;
+   xev.xclient.data.l[3] = 0;
+   xev.xclient.data.l[4] = 0;
+
+   XSendEvent(xv->display, DefaultRootWindow(xv->display), False,
+            SubstructureRedirectMask | SubstructureNotifyMask,
+            &xev);
 }
 
 static void render_yuy2(xv_t *xv, const uint16_t *input, unsigned width, unsigned height, unsigned pitch) 
@@ -193,14 +224,20 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
    attributes.border_pixel = 0;
    attributes.event_mask = StructureNotifyMask | DestroyNotify | ClientMessage;
 
+   unsigned width = video->fullscreen ? ((video->width == 0) ? 256 : video->width) : video->width;
+   unsigned height = video->fullscreen ? ((video->height == 0) ? 224 : video->height) : video->height;
    xv->window = XCreateWindow(xv->display, DefaultRootWindow(xv->display),
-         0, 0, video->width, video->height,
+         0, 0, width, height,
          0, xv->depth, InputOutput, visualinfo->visual,
          CWColormap | CWBorderPixel | CWEventMask, &attributes);
 
    XFree(visualinfo);
    XSetWindowBackground(xv->display, xv->window, 0);
+
    XMapWindow(xv->display, xv->window);
+   if (video->fullscreen)
+      set_fullscreen(xv);
+   hide_mouse(xv);
 
    xv->gc = XCreateGC(xv->display, xv->window, 0, 0);
 
@@ -259,8 +296,6 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
    xv->quit_atom = XInternAtom(xv->display, "WM_DELETE_WINDOW", False);
    if (xv->quit_atom)
       XSetWMProtocols(xv->display, xv->window, &xv->quit_atom, 1);
-
-   hide_mouse(xv);
 
    struct sigaction sa;
    sa.sa_handler = sighandler;
