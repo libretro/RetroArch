@@ -53,7 +53,8 @@ endif
 endif
 ifeq ($(HAVE_JACK),1)
    OBJ += audio/jack.o
-   LIBS += -ljack
+   LIBS += $(JACK_LIBS)
+   DEFINES += $(JACK_CFLAGS)
 endif
 ifeq ($(HAVE_PULSE), 1)
    OBJ += audio/pulse.o

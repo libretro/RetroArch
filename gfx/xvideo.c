@@ -30,7 +30,7 @@
 #include <X11/extensions/Xv.h>
 #include <X11/extensions/Xvlib.h>
 
-// Adapted from bSNES source.
+// Adapted from bSNES and MPlayer source.
 
 typedef struct xv xv_t;
 struct xv
@@ -61,6 +61,15 @@ struct xv
    void (*render_func)(xv_t*, const void *frame, unsigned width, unsigned height, unsigned pitch);
 };
 
+static void xv_set_nonblock_state(void *data, bool state)
+{
+   xv_t *xv = data;
+   Atom atom = XInternAtom(xv->display, "XV_SYNC_TO_VBLANK", true);
+   if (atom != None && xv->port >= 0)
+      XvSetPortAttribute(xv->display, xv->port, atom, !state);
+   else
+      SSNES_WARN("Failed to set SYNC_TO_VBLANK attribute.\n");
+}
 
 static volatile sig_atomic_t g_quit = false;
 static void sighandler(int sig)
@@ -425,6 +434,8 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
+   xv_set_nonblock_state(xv, !video->vsync);
+
    void *xinput = input_x.init();
    if (xinput)
    {
@@ -568,13 +579,6 @@ static bool xv_focus(void *data)
    return true;
 }
 
-static void xv_set_nonblock_state(void *data, bool state)
-{
-   xv_t *xv = data;
-   Atom atom = XInternAtom(xv->display, "XV_SYNC_TO_VBLANK", true);
-   if (atom != None && xv->port >= 0)
-      XvSetPortAttribute(xv->display, xv->port, atom, !state);
-}
 
 static void xv_free(void *data)
 {

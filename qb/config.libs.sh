@@ -28,7 +28,7 @@ fi
 
 check_pkgconf RSOUND rsound 1.1
 check_lib ROAR -lroar roar_vs_new
-check_lib JACK -ljack jack_client_open
+check_pkgconf JACK jack 0.120.1
 check_pkgconf PULSE libpulse
 
 check_pkgconf SDL sdl 1.2.10
