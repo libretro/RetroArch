@@ -89,6 +89,26 @@ static void init_yuv_tables(xv_t *xv)
    }
 }
 
+static void hide_mouse(xv_t *xv)
+{
+   Cursor no_ptr;
+   Pixmap bm_no;
+   XColor black, dummy;
+   Colormap colormap;
+   static char bm_no_data[] = {0, 0, 0, 0, 0, 0, 0, 0};
+   colormap = DefaultColormap(xv->display, DefaultScreen(xv->display));
+   if (!XAllocNamedColor(xv->display, colormap, "black", &black, &dummy))
+      return;
+
+   bm_no = XCreateBitmapFromData(xv->display, xv->window, bm_no_data, 8, 8);
+   no_ptr = XCreatePixmapCursor(xv->display, bm_no, bm_no, &black, &black, 0, 0);
+   XDefineCursor(xv->display, xv->window, no_ptr);
+   XFreeCursor(xv->display, no_ptr);
+   if (bm_no != None)
+      XFreePixmap(xv->display, bm_no);
+   XFreeColors(xv->display, colormap, &black.pixel, 1, 0);
+}
+
 static void render_yuy2(xv_t *xv, const uint16_t *input, unsigned width, unsigned height, unsigned pitch) 
 {
    uint16_t *output = (uint16_t*)xv->image->data;
@@ -239,6 +259,8 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
    xv->quit_atom = XInternAtom(xv->display, "WM_DELETE_WINDOW", False);
    if (xv->quit_atom)
       XSetWMProtocols(xv->display, xv->window, &xv->quit_atom, 1);
+
+   hide_mouse(xv);
 
    struct sigaction sa;
    sa.sa_handler = sighandler;
