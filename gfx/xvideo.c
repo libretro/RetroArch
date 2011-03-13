@@ -20,6 +20,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#ifdef HAVE_FREETYPE
+#include "fonts.h"
+#endif
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -42,6 +45,7 @@ struct xv
    XShmSegmentInfo shminfo;
 
    Atom quit_atom;
+   bool focus;
 
    int port;
    int depth;
@@ -57,6 +61,12 @@ struct xv
    uint8_t *ytable;
    uint8_t *utable;
    uint8_t *vtable;
+   unsigned luma_i;
+   unsigned chroma_i;
+
+#ifdef HAVE_FREETYPE
+   font_renderer_t *font;
+#endif
 
    void (*render_func)(xv_t*, const void *frame, unsigned width, unsigned height, unsigned pitch);
 };
@@ -156,6 +166,18 @@ static void set_fullscreen(xv_t *xv)
    XSendEvent(xv->display, DefaultRootWindow(xv->display), False,
             SubstructureRedirectMask | SubstructureNotifyMask,
             &xev);
+}
+
+static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
+{
+#ifdef HAVE_FREETYPE
+   if (*font_path)
+   {
+      xv->font = font_renderer_new(font_path, font_size);
+      if (!xv->font)
+         SSNES_WARN("Failed to init font\n");
+   }
+#endif
 }
 
 static void render16_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
@@ -372,6 +394,7 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
             has_format = true;
             xv->fourcc = format[i].id;
             xv->render_func = video->rgb32 ? render32_yuy2 : render16_yuy2;
+            xv->luma_i = 0; xv->chroma_i = 1;
             break;
          }
       }
@@ -387,6 +410,7 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
             has_format = true;
             xv->fourcc = format[i].id;
             xv->render_func = video->rgb32 ? render32_uyvy : render16_uyvy;
+            xv->chroma_i = 0; xv->luma_i = 1;
             break;
          }
       }
@@ -435,6 +459,9 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
    sigaction(SIGTERM, &sa, NULL);
 
    xv_set_nonblock_state(xv, !video->vsync);
+   xv->focus = true;
+
+   xv_init_font(xv, g_settings.video.font_path, g_settings.video.font_size);
 
    void *xinput = input_x.init();
    if (xinput)
@@ -528,9 +555,58 @@ static void calc_out_rect(bool keep_aspect, unsigned *x, unsigned *y, unsigned *
    }
 }
 
+// TODO: Is there some way to render directly like GL? :(
+static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned height)
+{
+#ifdef HAVE_FREETYPE
+   struct font_output_list out;
+   font_renderer_msg(xv->font, msg, &out);
+   struct font_output *head = out.head;
+
+   int _base_x = g_settings.video.msg_pos_x * width;
+   int _base_y = height - g_settings.video.msg_pos_y * height;
+
+   unsigned luma_i = xv->luma_i;
+   unsigned chroma_i = xv->chroma_i;
+
+   while (head)
+   {
+      int base_x = _base_x + head->off_x;
+      int base_y = _base_y - head->off_y;
+      for (int y = 0; y < head->height && (base_y + y) < height; y++)
+      {
+         if (base_y + y < 0)
+            continue;
+
+         const uint8_t *a = head->output + head->pitch * y;
+         uint8_t *out = (uint8_t*)xv->image->data + (base_y - head->height + y) * (width << 1) + (base_x << 1);
+         for (int x = 0; x < (head->width << 1) && (base_x + x) < width; x += 2)
+         {
+            if (base_x + x < 0)
+               continue;
+
+            // Blend luma
+            uint8_t blend = a[x >> 1];
+            unsigned blended = blend + (((256 - blend) * (unsigned)out[x + luma_i]) >> 8);
+            blended = blended > 255 ? 255 : blended;
+            out[x + luma_i] = blended;
+
+            // Blend chroma
+            blended = (128 * blend + ((256 - blend) * (unsigned)out[x + chroma_i])) >> 8;
+            blended = blended > 255 ? 255 : blended;
+            out[x + chroma_i] = blended;
+         }
+      }
+
+      head = head->next;
+   }
+
+   font_renderer_free_output(&out);
+#endif
+}
+
 static bool xv_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   (void)msg;
    xv_t *xv = data;
 
    if (!check_resize(xv, width, height))
@@ -539,6 +615,9 @@ static bool xv_frame(void *data, const void* frame, unsigned width, unsigned hei
    XWindowAttributes target;
    XGetWindowAttributes(xv->display, xv->window, &target);
    xv->render_func(xv, frame, width, height, pitch);
+
+   if (msg)
+      xv_render_msg(xv, msg, width, height);
 
    unsigned x, y, owidth, oheight;
    calc_out_rect(xv->keep_aspect, &x, &y, &owidth, &oheight, target.width, target.height);
@@ -566,6 +645,12 @@ static bool xv_alive(void *data)
             break;
          case DestroyNotify:
             return false;
+         case MapNotify: // Find something that works better.
+            xv->focus = true;
+            break;
+         case UnmapNotify:
+            xv->focus = false;
+            break;
          default:
             break;
       }
@@ -576,7 +661,8 @@ static bool xv_alive(void *data)
 
 static bool xv_focus(void *data)
 {
-   return true;
+   xv_t *xv = data;
+   return xv->focus;
 }
 
 
@@ -598,6 +684,12 @@ static void xv_free(void *data)
    free(xv->ytable);
    free(xv->utable);
    free(xv->vtable);
+
+#ifdef HAVE_FREETYPE
+   if (xv->font)
+      font_renderer_free(xv->font);
+#endif
+
    free(xv);
 }
 

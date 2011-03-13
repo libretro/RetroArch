@@ -627,6 +627,8 @@ static void gl_free(void *data)
       pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
    }
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
+
+   free(gl);
 }
 
 static void gl_set_nonblock_state(void *data, bool state)
