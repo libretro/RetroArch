@@ -19,6 +19,7 @@
 #include "general.h"
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -29,6 +30,8 @@
 #include <X11/extensions/Xv.h>
 #include <X11/extensions/Xvlib.h>
 
+// Adapted from bSNES source.
+
 typedef struct xv
 {
    Display *display;
@@ -36,6 +39,8 @@ typedef struct xv
    Window window;
    Colormap colormap;
    XShmSegmentInfo shminfo;
+
+   Atom quit_atom;
 
    int port;
    int depth;
@@ -52,6 +57,13 @@ typedef struct xv
    uint8_t *utable;
    uint8_t *vtable;
 } xv_t;
+
+
+static volatile sig_atomic_t g_quit = false;
+static void sighandler(int sig)
+{
+   g_quit = true;
+}
 
 static void init_yuv_tables(xv_t *xv)
 {
@@ -159,7 +171,7 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
    XSetWindowAttributes attributes;
    attributes.colormap = xv->colormap;
    attributes.border_pixel = 0;
-   attributes.event_mask = StructureNotifyMask;
+   attributes.event_mask = StructureNotifyMask | DestroyNotify | ClientMessage;
 
    xv->window = XCreateWindow(xv->display, DefaultRootWindow(xv->display),
          0, 0, video->width, video->height,
@@ -223,6 +235,17 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
    }
    XSync(xv->display, False);
    memset(xv->image->data, 128, xv->image->data_size);
+
+   xv->quit_atom = XInternAtom(xv->display, "WM_DELETE_WINDOW", False);
+   if (xv->quit_atom)
+      XSetWMProtocols(xv->display, xv->window, &xv->quit_atom, 1);
+
+   struct sigaction sa;
+   sa.sa_handler = sighandler;
+   sa.sa_flags = SA_RESTART;
+   sigemptyset(&sa.sa_mask);
+   sigaction(SIGINT, &sa, NULL);
+   sigaction(SIGTERM, &sa, NULL);
 
    void *xinput = input_x.init();
    if (xinput)
@@ -340,7 +363,26 @@ static bool xv_frame(void *data, const void* frame, unsigned width, unsigned hei
 
 static bool xv_alive(void *data)
 {
-   return true;
+   xv_t *xv = data;
+
+   XEvent event;
+   while (XPending(xv->display))
+   {
+      XNextEvent(xv->display, &event);
+      switch (event.type)
+      {
+         case ClientMessage: 
+            if (event.xclient.data.l[0] == xv->quit_atom)
+               return false;
+            break;
+         case DestroyNotify:
+            return false;
+         default:
+            break;
+      }
+   }
+
+   return !g_quit;
 }
 
 static bool xv_focus(void *data)
