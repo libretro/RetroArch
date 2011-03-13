@@ -152,7 +152,7 @@ static void set_fullscreen(xv_t *xv)
 static void render16_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
 {
    const uint16_t *input = input_;
-   uint16_t *output = (uint16_t*)xv->image->data;
+   uint8_t *output = (uint8_t*)xv->image->data;
 
    for (unsigned y = 0; y < height; y++) 
    {
@@ -161,23 +161,26 @@ static void render16_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned
          uint16_t p0 = *input++;
          uint16_t p1 = *input++;
 
-         uint8_t u = (xv->utable[p0] + xv->utable[p1]) >> 1;
-         uint8_t v = (xv->vtable[p0] + xv->vtable[p1]) >> 1;
+         uint8_t y0 = xv->ytable[p0];
+         uint8_t y1 = xv->ytable[p1];
+         uint8_t u = (uint8_t)(((unsigned)xv->utable[p0] + (unsigned)xv->utable[p1]) >> 1);
+         uint8_t v = (uint8_t)(((unsigned)xv->vtable[p0] + (unsigned)xv->vtable[p1]) >> 1);
 
-         // TODO: Will this only work on little-endian?
-         *output++ = (u << 8) | xv->ytable[p0];
-         *output++ = (v << 8) | xv->ytable[p1];
+         *output++ = y0;
+         *output++ = u;
+         *output++ = y1;
+         *output++ = v;
       }
 
       input  += (pitch >> 1) - width;
-      output += xv->width - width;
+      output += (xv->width - width) << 1;
    }
 }
 
 static void render16_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
 {
    const uint16_t *input = input_;
-   uint16_t *output = (uint16_t*)xv->image->data;
+   uint8_t *output = (uint8_t*)xv->image->data;
 
    for (unsigned y = 0; y < height; y++) 
    {
@@ -186,23 +189,26 @@ static void render16_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned
          uint16_t p0 = *input++;
          uint16_t p1 = *input++;
 
-         uint8_t u = (xv->utable[p0] + xv->utable[p1]) >> 1;
-         uint8_t v = (xv->vtable[p0] + xv->vtable[p1]) >> 1;
+         uint8_t y0 = xv->ytable[p0];
+         uint8_t y1 = xv->ytable[p1];
+         uint8_t u = (uint8_t)(((unsigned)xv->utable[p0] + (unsigned)xv->utable[p1]) >> 1);
+         uint8_t v = (uint8_t)(((unsigned)xv->vtable[p0] + (unsigned)xv->vtable[p1]) >> 1);
 
-         // TODO: Will this only work on little-endian?
-         *output++ = (xv->ytable[p0] << 8) | u;
-         *output++ = (xv->ytable[p1] << 8) | v;
+         *output++ = u;
+         *output++ = y0;
+         *output++ = v;
+         *output++ = y1;
       }
 
       input  += (pitch >> 1) - width;
-      output += xv->width - width;
+      output += (xv->width - width) << 1;
    }
 }
 
 static void render32_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
 {
    const uint32_t *input = input_;
-   uint16_t *output = (uint16_t*)xv->image->data;
+   uint8_t *output = (uint8_t*)xv->image->data;
 
    for (unsigned y = 0; y < height; y++) 
    {
@@ -213,16 +219,19 @@ static void render32_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned
          p0 = ((p0 >> 9) & 0x7c00) | ((p0 >> 6) & 0x03e0) | ((p0 >> 3) & 0x1f); // RGBA -> RGB15
          p1 = ((p1 >> 9) & 0x7c00) | ((p1 >> 6) & 0x03e0) | ((p1 >> 3) & 0x1f);
 
-         uint8_t u = (xv->utable[p0] + xv->utable[p1]) >> 1;
-         uint8_t v = (xv->vtable[p0] + xv->vtable[p1]) >> 1;
+         uint8_t y0 = xv->ytable[p0];
+         uint8_t y1 = xv->ytable[p1];
+         uint8_t u = (uint8_t)(((unsigned)xv->utable[p0] + (unsigned)xv->utable[p1]) >> 1);
+         uint8_t v = (uint8_t)(((unsigned)xv->vtable[p0] + (unsigned)xv->vtable[p1]) >> 1);
 
-         // TODO: Will this only work on little-endian?
-         *output++ = (u << 8) | xv->ytable[p0];
-         *output++ = (v << 8) | xv->ytable[p1];
+         *output++ = y0;
+         *output++ = u;
+         *output++ = y1;
+         *output++ = v;
       }
 
       input  += (pitch >> 2) - width;
-      output += xv->width - width;
+      output += (xv->width - width) << 1;
    }
 }
 
@@ -240,19 +249,21 @@ static void render32_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned
          p0 = ((p0 >> 9) & 0x7c00) | ((p0 >> 6) & 0x03e0) | ((p0 >> 3) & 0x1f);
          p1 = ((p1 >> 9) & 0x7c00) | ((p1 >> 6) & 0x03e0) | ((p1 >> 3) & 0x1f);
 
-         uint8_t u = (xv->utable[p0] + xv->utable[p1]) >> 1;
-         uint8_t v = (xv->vtable[p0] + xv->vtable[p1]) >> 1;
+         uint8_t y0 = xv->ytable[p0];
+         uint8_t y1 = xv->ytable[p1];
+         uint8_t u = (uint8_t)(((unsigned)xv->utable[p0] + (unsigned)xv->utable[p1]) >> 1);
+         uint8_t v = (uint8_t)(((unsigned)xv->vtable[p0] + (unsigned)xv->vtable[p1]) >> 1);
 
-         // TODO: Will this only work on little-endian?
-         *output++ = (xv->ytable[p0] << 8) | u;
-         *output++ = (xv->ytable[p1] << 8) | v;
+         *output++ = u;
+         *output++ = y0;
+         *output++ = v;
+         *output++ = y1;
       }
 
       input  += (pitch >> 2) - width;
       output += xv->width - width;
    }
 }
-
 
 
 static void* xv_init(video_info_t *video, const input_driver_t **input, void **input_data)
