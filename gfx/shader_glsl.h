@@ -35,4 +35,6 @@ void gl_glsl_use(unsigned index);
 
 unsigned gl_glsl_num(void);
 
+bool gl_glsl_filter_type(unsigned index, bool *smooth);
+
 #endif

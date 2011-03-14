@@ -263,6 +263,22 @@ static inline unsigned gl_shader_num(void)
 
    return num;
 }
+
+static inline bool gl_shader_filter_type(unsigned num, bool *smooth)
+{
+   bool valid = false;
+#ifdef HAVE_CG
+   if (!valid)
+      valid = gl_cg_filter_type(num, smooth);
+#endif
+
+#ifdef HAVE_XML
+   if (!valid)
+      valid = gl_glsl_filter_type(num, smooth);
+#endif
+
+   return valid;
+}
 ///////////////////
 
 //////////////// Message rendering
@@ -290,7 +306,7 @@ static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_s
 
 static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
-   if (!g_settings.video.render_to_texture)
+   if (!g_settings.video.render_to_texture && gl_shader_num() <= 1)
       return;
 
    if (!load_fbo_proc())
@@ -317,20 +333,26 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    glGenTextures(gl->fbo_pass, gl->fbo_texture);
    void *tmp = calloc(gl->fbo_width * gl->fbo_height, sizeof(uint32_t));
 
+   GLuint base_filt = g_settings.video.second_pass_smooth ? GL_LINEAR : GL_NEAREST;
    for (int i = 0; i < gl->fbo_pass; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+      GLuint filter_type = base_filt;
+      bool smooth;
+      if (gl_shader_filter_type(i + 2, &smooth))
+         filter_type = smooth ? GL_LINEAR : GL_NEAREST;
+
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_type);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_type);
 
       glTexImage2D(GL_TEXTURE_2D,
             0, GL_RGBA, gl->fbo_width, gl->fbo_height, 0, GL_RGBA,
             GL_UNSIGNED_INT_8_8_8_8, tmp);
    }
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, g_settings.video.second_pass_smooth ? GL_LINEAR : GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, g_settings.video.second_pass_smooth ? GL_LINEAR : GL_NEAREST);
+
    free(tmp);
    glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -719,10 +741,11 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    set_viewport(gl, gl->win_width, gl->win_height, false);
    
 
-   if (video->smooth)
-      gl->tex_filter = GL_LINEAR;
+   bool force_smooth;
+   if (gl_shader_filter_type(1, &force_smooth))
+      gl->tex_filter = force_smooth ? GL_LINEAR : GL_NEAREST;
    else
-      gl->tex_filter = GL_NEAREST;
+      gl->tex_filter = video->smooth ? GL_LINEAR : GL_NEAREST;
 
    gl->texture_type = video->rgb32 ? GL_RGBA : GL_BGRA;
    gl->texture_fmt = video->rgb32 ? GL_UNSIGNED_INT_8_8_8_8 : GL_UNSIGNED_SHORT_1_5_5_5_REV;
@@ -745,6 +768,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
 

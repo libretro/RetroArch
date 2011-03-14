@@ -77,8 +77,16 @@ static PFNGLGETPROGRAMINFOLOGPROC pglGetProgramInfoLog = NULL;
 
 #define MAX_PROGRAMS 16
 
+enum filter_type
+{
+   SSNES_GL_NOFORCE,
+   SSNES_GL_LINEAR,
+   SSNES_GL_NEAREST
+};
+
 static bool glsl_enable = false;
 static GLuint gl_program[MAX_PROGRAMS] = {0};
+static enum filter_type gl_filter_type[MAX_PROGRAMS] = {SSNES_GL_NOFORCE};
 static unsigned gl_num_programs = 0;
 static unsigned active_index = 0;
 
@@ -86,6 +94,7 @@ struct shader_program
 {
    char *vertex;
    char *fragment;
+   enum filter_type filter;
 };
 
 static unsigned get_xml_shaders(const char *path, struct shader_program *prog, size_t size)
@@ -154,6 +163,27 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       else if (strcmp((const char*)cur->name, "fragment") == 0)
       {
          prog[num].fragment = strdup((const char*)content);
+
+         // Check if shader forces a certain texture filtering.
+         xmlChar *attr = xmlGetProp(cur, (const xmlChar*)"filter");
+         if (attr)
+         {
+            if (strcmp((const char*)attr, "nearest") == 0)
+            {
+               prog[num].filter = SSNES_GL_NEAREST;
+               SSNES_LOG("XML: Shader forces GL_NEAREST.\n");
+            }
+            else if (strcmp((const char*)attr, "linear") == 0)
+            {
+               prog[num].filter = SSNES_GL_LINEAR;
+               SSNES_LOG("XML: Shader forces GL_LINEAR.\n");
+            }
+            else
+               SSNES_WARN("XML: Invalid property for filter.\n");
+         }
+         else
+            prog[num].filter = SSNES_GL_NOFORCE;
+
          num++;
       }
    }
@@ -297,6 +327,9 @@ bool gl_glsl_init(const char *path)
       return false;
    }
 
+   for (unsigned i = 0; i < num_progs; i++)
+      gl_filter_type[i + 1] = progs[i].filter;
+
    compile_programs(&gl_program[1], progs, num_progs);
 
    // SSNES custom two-pass with two different files.
@@ -363,4 +396,27 @@ void gl_glsl_use(unsigned index)
 unsigned gl_glsl_num(void)
 {
    return gl_num_programs;
+}
+
+bool gl_glsl_filter_type(unsigned index, bool *smooth)
+{
+   if (!glsl_enable)
+      return false;
+
+   switch (gl_filter_type[index])
+   {
+      case SSNES_GL_NOFORCE:
+         return false;
+
+      case SSNES_GL_NEAREST:
+         *smooth = false;
+         return true;
+
+      case SSNES_GL_LINEAR:
+         *smooth = true;
+         return true;
+
+      default:
+         return false;
+   }
 }

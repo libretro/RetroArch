@@ -200,3 +200,11 @@ unsigned gl_cg_num(void)
    else
       return 0;
 }
+
+bool gl_cg_filter_type(unsigned index, bool *smooth)
+{
+   (void)index;
+   (void)smooth;
+   // We don't really care since .cg doesn't have those kinds of semantics by itself ...
+   return false;
+}
