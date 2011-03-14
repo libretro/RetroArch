@@ -67,10 +67,10 @@ static inline bool gl_check_error(void)
 
 struct gl_fbo_rect
 {
+   unsigned img_width;
+   unsigned img_height;
    unsigned width;
    unsigned height;
-   unsigned tex_width;
-   unsigned tex_height;
 };
 
 struct gl_fbo_scale

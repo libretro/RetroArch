@@ -362,6 +362,8 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
          gl->fbo_rect[i].width = width * pow2_x_scale;
          gl->fbo_rect[i].height = height * pow2_x_scale;
       }
+
+      SSNES_LOG("Creating FBO %d @ %ux%u\n", i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
    }
 
    glGenTextures(gl->fbo_pass, gl->fbo_texture);
@@ -571,11 +573,18 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
    // Render to texture in first pass.
    if (gl->fbo_inited)
    {
+      for (int i = 0; i < gl->fbo_pass; i++)
+      {
+         gl->fbo_rect[i].img_width = width * gl->fbo_scale[i].scale_x;
+         gl->fbo_rect[i].img_height = height * gl->fbo_scale[i].scale_y;
+      }
+
       glBindTexture(GL_TEXTURE_2D, gl->texture);
       pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
       gl->render_to_tex = true;
-      set_viewport(gl, width * gl->fbo_scale[0].scale_x, height * gl->fbo_scale[0].scale_y, true);
+      set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
    }
+
    if (gl->should_resize)
    {
       gl->should_resize = false;
@@ -595,6 +604,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
       glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
 
+      // Can we pass NULL here, hmm?
       void *tmp = calloc(1, gl->tex_w * gl->tex_h * gl->base_size);
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
@@ -624,10 +634,16 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       // Render the rest of our passes.
       glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->fbo_tex_coords);
 
+      const struct gl_fbo_rect *prev_rect;
+      const struct gl_fbo_rect *rect;
+
       for (int i = 1; i < gl->fbo_pass; i++)
       {
-         GLfloat xamt = (GLfloat)width * gl->fbo_scale[i - 1].scale_x / gl->fbo_rect[i - 1].width;
-         GLfloat yamt = (GLfloat)height * gl->fbo_scale[i - 1].scale_y / gl->fbo_rect[i - 1].height;
+         prev_rect = &gl->fbo_rect[i - 1];
+         rect = &gl->fbo_rect[i];
+
+         GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
+         GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
 
          gl->fbo_tex_coords[3] = yamt;
          gl->fbo_tex_coords[4] = xamt;
@@ -638,11 +654,20 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
          gl_shader_use(i + 1);
          glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
-         set_viewport(gl, width * gl->fbo_scale[i].scale_x, height * gl->fbo_scale[i].scale_y, true);
+         set_viewport(gl, rect->img_width, rect->img_height, true);
          glClear(GL_COLOR_BUFFER_BIT);
-         gl_shader_set_params(width * gl->fbo_scale[i - 1].scale_x, height * gl->fbo_scale[i - 1].scale_y, gl->fbo_rect[i - 1].width, gl->fbo_rect[i - 1].height, gl->vp_width, gl->vp_height);
+         gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, prev_rect->width, prev_rect->height, gl->vp_width, gl->vp_height);
          glDrawArrays(GL_QUADS, 0, 4);
       }
+
+      prev_rect = &gl->fbo_rect[gl->fbo_pass - 1];
+      GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
+      GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
+
+      gl->fbo_tex_coords[3] = yamt;
+      gl->fbo_tex_coords[4] = xamt;
+      gl->fbo_tex_coords[5] = yamt;
+      gl->fbo_tex_coords[6] = xamt;
 
       // Render our FBO texture to back buffer.
       pglBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -651,7 +676,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       glClear(GL_COLOR_BUFFER_BIT);
       gl->render_to_tex = false;
       set_viewport(gl, gl->win_width, gl->win_height, false);
-      gl_shader_set_params(width * gl->fbo_scale[gl->fbo_pass - 1].scale_x, height * gl->fbo_scale[gl->fbo_pass - 1].scale_y, gl->fbo_rect[gl->fbo_pass - 1].width, gl->fbo_rect[gl->fbo_pass - 1].height, gl->vp_width, gl->vp_height);
+      gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, prev_rect->width, prev_rect->height, gl->vp_width, gl->vp_height);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
       glDrawArrays(GL_QUADS, 0, 4);
@@ -815,11 +840,9 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    gl->tex_w = 256 * video->input_scale;
    gl->tex_h = 256 * video->input_scale;
 
-   void *tmp = calloc(1, gl->tex_w * gl->tex_h * gl->base_size);
    glTexImage2D(GL_TEXTURE_2D,
          0, GL_RGBA, gl->tex_w, gl->tex_h, 0, gl->texture_type,
-         gl->texture_fmt, tmp);
-   free(tmp);
+         gl->texture_fmt, NULL);
 
    gl->last_width = gl->tex_w;
    gl->last_height = gl->tex_h;

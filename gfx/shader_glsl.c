@@ -139,18 +139,21 @@ static void get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       prog->scale_x = scale;
       prog->scale_y = scale;
       prog->valid_scale = true;
+      SSNES_LOG("Got scale attr: %.1f\n", scale);
    }
    else if (attr_scale_x)
    {
-      float scale = strtod((const char*)attr_scale, NULL);
+      float scale = strtod((const char*)attr_scale_x, NULL);
       prog->scale_x = scale;
       prog->valid_scale = true;
+      SSNES_LOG("Got scale_x attr: %.1f\n", scale);
    }
    else if (attr_scale_y)
    {
-      float scale = strtod((const char*)attr_scale, NULL);
+      float scale = strtod((const char*)attr_scale_y, NULL);
       prog->scale_y = scale;
       prog->valid_scale = true;
+      SSNES_LOG("Got scale_y attr: %.1f\n", scale);
    }
    
    if (attr_scale)
