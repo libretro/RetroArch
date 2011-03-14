@@ -420,3 +420,10 @@ bool gl_glsl_filter_type(unsigned index, bool *smooth)
          return false;
    }
 }
+
+bool gl_glsl_shader_rect(unsigned index, struct gl_fbo_rect *rect)
+{
+   (void)index;
+   (void)rect;
+   return false;
+}

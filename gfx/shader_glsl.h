@@ -36,5 +36,6 @@ void gl_glsl_use(unsigned index);
 unsigned gl_glsl_num(void);
 
 bool gl_glsl_filter_type(unsigned index, bool *smooth);
+bool gl_glsl_shader_rect(unsigned index, struct gl_fbo_rect *rect);
 
 #endif

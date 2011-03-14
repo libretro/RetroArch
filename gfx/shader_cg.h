@@ -20,6 +20,7 @@
 #define __SSNES_CG_H
 
 #include <stdbool.h>
+#include "gl_common.h"
 
 bool gl_cg_init(const char *path);
 
@@ -36,5 +37,6 @@ void gl_cg_use(unsigned index);
 unsigned gl_cg_num(void);
 
 bool gl_cg_filter_type(unsigned index, bool *smooth);
+bool gl_cg_shader_rect(unsigned index, struct gl_fbo_rect *rect);
 
 #endif

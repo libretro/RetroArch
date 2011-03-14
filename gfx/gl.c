@@ -31,14 +31,7 @@
 #include "config.h"
 #endif
 
-#ifdef __APPLE__
-#include <OpenGL/gl.h>
-#include <OpenGL/glext.h>
-#else
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
-#endif
+#include "gl_common.h"
 
 #define NO_SDL_GLEXT
 #include "SDL.h"
@@ -53,7 +46,6 @@
 #include "shader_glsl.h"
 #endif
 
-#include "gl_common.h"
 
 #ifdef HAVE_FREETYPE
 #include "fonts.h"
@@ -119,6 +111,7 @@ typedef struct gl
    // Render-to-texture, multipass shaders
    GLuint fbo[MAX_SHADERS];
    GLuint fbo_texture[MAX_SHADERS];
+   struct gl_fbo_rect fbo_rect[MAX_SHADERS];
    bool render_to_tex;
    unsigned fbo_width;
    unsigned fbo_height;
@@ -264,17 +257,33 @@ static inline unsigned gl_shader_num(void)
    return num;
 }
 
-static inline bool gl_shader_filter_type(unsigned num, bool *smooth)
+static inline bool gl_shader_filter_type(unsigned index, bool *smooth)
 {
    bool valid = false;
 #ifdef HAVE_CG
    if (!valid)
-      valid = gl_cg_filter_type(num, smooth);
+      valid = gl_cg_filter_type(index, smooth);
 #endif
 
 #ifdef HAVE_XML
    if (!valid)
-      valid = gl_glsl_filter_type(num, smooth);
+      valid = gl_glsl_filter_type(index, smooth);
+#endif
+
+   return valid;
+}
+
+static inline bool gl_shader_rect(unsigned index, struct gl_fbo_rect *rect)
+{
+   bool valid = false;
+#ifdef HAVE_CG
+   if (!valid)
+      valid = gl_cg_shader_rect(index, rect);
+#endif
+
+#ifdef HAVE_XML
+   if (!valid)
+      valid = gl_glsl_shader_rect(index, rect);
 #endif
 
    return valid;

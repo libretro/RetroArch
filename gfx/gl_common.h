@@ -20,6 +20,15 @@
 
 #include "general.h"
 
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+#else
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#include <GL/glext.h>
+#endif
+
 static inline bool gl_check_error(void)
 {
    int error = glGetError();
@@ -29,7 +38,7 @@ static inline bool gl_check_error(void)
          SSNES_ERR("GL: Invalid enum.\n");
          break;
       case GL_INVALID_VALUE:
-         SSNES_ERR("GL: Invalid value.\n");
+         SSNES_ERR("GL: Invalid value. (You're not alone.)\n");
          break;
       case GL_INVALID_OPERATION:
          SSNES_ERR("GL: Invalid operation.\n");
@@ -55,5 +64,15 @@ static inline bool gl_check_error(void)
 
    return false;
 }
+
+struct gl_fbo_rect
+{
+   unsigned width;
+   unsigned height;
+   unsigned tex_width;
+   unsigned tex_height;
+
+   GLfloat texcoord[8];
+};
 
 #endif
