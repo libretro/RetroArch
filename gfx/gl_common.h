@@ -71,8 +71,13 @@ struct gl_fbo_rect
    unsigned height;
    unsigned tex_width;
    unsigned tex_height;
+};
 
-   GLfloat texcoord[8];
+struct gl_fbo_scale
+{
+   float scale_x;
+   float scale_y;
+   bool valid;
 };
 
 #endif

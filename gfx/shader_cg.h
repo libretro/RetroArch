@@ -37,6 +37,6 @@ void gl_cg_use(unsigned index);
 unsigned gl_cg_num(void);
 
 bool gl_cg_filter_type(unsigned index, bool *smooth);
-bool gl_cg_shader_rect(unsigned index, struct gl_fbo_rect *rect);
+void gl_cg_shader_scale(unsigned index, struct gl_fbo_scale *scale);
 
 #endif

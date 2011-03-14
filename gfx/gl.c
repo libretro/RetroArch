@@ -193,7 +193,7 @@ static bool gl_shader_init(void)
    return true;
 }
 
-static inline void gl_shader_use(unsigned index)
+static void gl_shader_use(unsigned index)
 {
 #ifdef HAVE_CG
    gl_cg_use(index);
@@ -204,7 +204,7 @@ static inline void gl_shader_use(unsigned index)
 #endif
 }
 
-static inline void gl_shader_deinit(void)
+static void gl_shader_deinit(void)
 {
 #ifdef HAVE_CG
    gl_cg_deinit();
@@ -215,7 +215,7 @@ static inline void gl_shader_deinit(void)
 #endif
 }
 
-static inline void gl_shader_set_proj_matrix(void)
+static void gl_shader_set_proj_matrix(void)
 {
 #ifdef HAVE_CG
    gl_cg_set_proj_matrix();
@@ -226,7 +226,7 @@ static inline void gl_shader_set_proj_matrix(void)
 #endif
 }
 
-static inline void gl_shader_set_params(unsigned width, unsigned height, 
+static void gl_shader_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height)
 {
@@ -239,7 +239,7 @@ static inline void gl_shader_set_params(unsigned width, unsigned height,
 #endif
 }
 
-static inline unsigned gl_shader_num(void)
+static unsigned gl_shader_num(void)
 {
    unsigned num = 0;
 #ifdef HAVE_CG
@@ -257,7 +257,7 @@ static inline unsigned gl_shader_num(void)
    return num;
 }
 
-static inline bool gl_shader_filter_type(unsigned index, bool *smooth)
+static bool gl_shader_filter_type(unsigned index, bool *smooth)
 {
    bool valid = false;
 #ifdef HAVE_CG
@@ -273,20 +273,18 @@ static inline bool gl_shader_filter_type(unsigned index, bool *smooth)
    return valid;
 }
 
-static inline bool gl_shader_rect(unsigned index, struct gl_fbo_rect *rect)
+static void gl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
 {
-   bool valid = false;
+   scale->valid = false;
 #ifdef HAVE_CG
-   if (!valid)
-      valid = gl_cg_shader_rect(index, rect);
+   if (!scale->valid)
+      gl_cg_shader_scale(index, scale);
 #endif
 
 #ifdef HAVE_XML
-   if (!valid)
-      valid = gl_glsl_shader_rect(index, rect);
+   if (!scale->valid)
+      gl_glsl_shader_scale(index, scale);
 #endif
-
-   return valid;
 }
 ///////////////////
 

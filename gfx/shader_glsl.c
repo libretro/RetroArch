@@ -87,6 +87,7 @@ enum filter_type
 static bool glsl_enable = false;
 static GLuint gl_program[MAX_PROGRAMS] = {0};
 static enum filter_type gl_filter_type[MAX_PROGRAMS] = {SSNES_GL_NOFORCE};
+static struct gl_fbo_scale gl_scale[MAX_PROGRAMS];
 static unsigned gl_num_programs = 0;
 static unsigned active_index = 0;
 
@@ -95,7 +96,70 @@ struct shader_program
    char *vertex;
    char *fragment;
    enum filter_type filter;
+
+   float scale_x;
+   float scale_y;
+   bool valid_scale;
 };
+
+static void get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
+{
+   prog->scale_x = 1.0;
+   prog->scale_y = 1.0;
+   prog->valid_scale = false;
+
+   // Check if shader forces a certain texture filtering.
+   xmlChar *attr = xmlGetProp(ptr, (const xmlChar*)"filter");
+   if (attr)
+   {
+      if (strcmp((const char*)attr, "nearest") == 0)
+      {
+         prog->filter = SSNES_GL_NEAREST;
+         SSNES_LOG("XML: Shader forces GL_NEAREST.\n");
+      }
+      else if (strcmp((const char*)attr, "linear") == 0)
+      {
+         prog->filter = SSNES_GL_LINEAR;
+         SSNES_LOG("XML: Shader forces GL_LINEAR.\n");
+      }
+      else
+         SSNES_WARN("XML: Invalid property for filter.\n");
+
+      xmlFree(attr);
+   }
+   else
+      prog->filter = SSNES_GL_NOFORCE;
+
+   xmlChar *attr_scale = xmlGetProp(ptr, (const xmlChar*)"scale");
+   xmlChar *attr_scale_x = xmlGetProp(ptr, (const xmlChar*)"scale_x");
+   xmlChar *attr_scale_y = xmlGetProp(ptr, (const xmlChar*)"scale_y");
+   if (attr_scale)
+   {
+      float scale = strtod((const char*)attr_scale, NULL);
+      prog->scale_x = scale;
+      prog->scale_y = scale;
+      prog->valid_scale = true;
+   }
+   else if (attr_scale_x)
+   {
+      float scale = strtod((const char*)attr_scale, NULL);
+      prog->scale_x = scale;
+      prog->valid_scale = true;
+   }
+   else if (attr_scale_y)
+   {
+      float scale = strtod((const char*)attr_scale, NULL);
+      prog->scale_y = scale;
+      prog->valid_scale = true;
+   }
+   
+   if (attr_scale)
+      xmlFree(attr_scale);
+   if (attr_scale_x)
+      xmlFree(attr_scale_x);
+   if (attr_scale_y)
+      xmlFree(attr_scale_y);
+}
 
 static unsigned get_xml_shaders(const char *path, struct shader_program *prog, size_t size)
 {
@@ -129,8 +193,15 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       if (cur->type == XML_ELEMENT_NODE && strcmp((const char*)cur->name, "shader") == 0)
       {
          xmlChar *attr;
-         if ((attr = xmlGetProp(cur, (const xmlChar*)"language")) && strcmp((const char*)attr, "GLSL") == 0)
+         attr = xmlGetProp(cur, (const xmlChar*)"language");
+         if (attr && strcmp((const char*)attr, "GLSL") == 0)
+         {
+            xmlFree(attr);
             break;
+         }
+
+         if (attr)
+            xmlFree(attr);
       }
    }
 
@@ -155,35 +226,16 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
          if (prog[num].vertex)
          {
             SSNES_ERR("Cannot have more than one vertex shader in a program.\n");
+            xmlFree(content);
             goto error;
          }
 
-         prog[num].vertex = strdup((const char*)content);
+         prog[num].vertex = (char*)content;
       }
       else if (strcmp((const char*)cur->name, "fragment") == 0)
       {
-         prog[num].fragment = strdup((const char*)content);
-
-         // Check if shader forces a certain texture filtering.
-         xmlChar *attr = xmlGetProp(cur, (const xmlChar*)"filter");
-         if (attr)
-         {
-            if (strcmp((const char*)attr, "nearest") == 0)
-            {
-               prog[num].filter = SSNES_GL_NEAREST;
-               SSNES_LOG("XML: Shader forces GL_NEAREST.\n");
-            }
-            else if (strcmp((const char*)attr, "linear") == 0)
-            {
-               prog[num].filter = SSNES_GL_LINEAR;
-               SSNES_LOG("XML: Shader forces GL_LINEAR.\n");
-            }
-            else
-               SSNES_WARN("XML: Invalid property for filter.\n");
-         }
-         else
-            prog[num].filter = SSNES_GL_NOFORCE;
-
+         prog[num].fragment = (char*)content;
+         get_xml_attrs(&prog[num], cur);
          num++;
       }
    }
@@ -328,7 +380,12 @@ bool gl_glsl_init(const char *path)
    }
 
    for (unsigned i = 0; i < num_progs; i++)
+   {
       gl_filter_type[i + 1] = progs[i].filter;
+      gl_scale[i + 1].scale_x = progs[i].scale_x;
+      gl_scale[i + 1].scale_y = progs[i].scale_y;
+      gl_scale[i + 1].valid = progs[i].valid_scale;
+   }
 
    compile_programs(&gl_program[1], progs, num_progs);
 
@@ -421,9 +478,10 @@ bool gl_glsl_filter_type(unsigned index, bool *smooth)
    }
 }
 
-bool gl_glsl_shader_rect(unsigned index, struct gl_fbo_rect *rect)
+void gl_glsl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
 {
-   (void)index;
-   (void)rect;
-   return false;
+   if (glsl_enable)
+      *scale = gl_scale[index];
+   else
+      scale->valid = false;
 }

@@ -209,10 +209,9 @@ bool gl_cg_filter_type(unsigned index, bool *smooth)
    return false;
 }
 
-bool gl_cg_shader_rect(unsigned index, struct gl_fbo_rect *rect)
+void gl_cg_shader_scale(unsigned index, struct gl_fbo_scale *scale)
 {
    (void)index;
-   (void)rect;
    // We don't really care since .cg doesn't have those kinds of semantics by itself ...
-   return false;
+   scale->valid = false;
 }
