@@ -573,6 +573,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
    // Render to texture in first pass.
    if (gl->fbo_inited)
    {
+      // Calculate viewports for FBOs.
       for (int i = 0; i < gl->fbo_pass; i++)
       {
          gl->fbo_rect[i].img_width = width * gl->fbo_scale[i].scale_x;
@@ -634,9 +635,11 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       // Render the rest of our passes.
       glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->fbo_tex_coords);
 
+      // It's kinda handy ... :)
       const struct gl_fbo_rect *prev_rect;
       const struct gl_fbo_rect *rect;
 
+      // Calculate viewports, texture coordinates etc, and render all passes from FBOs, to another FBO.
       for (int i = 1; i < gl->fbo_pass; i++)
       {
          prev_rect = &gl->fbo_rect[i - 1];
@@ -654,12 +657,15 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
          gl_shader_use(i + 1);
          glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
-         set_viewport(gl, rect->img_width, rect->img_height, true);
          glClear(GL_COLOR_BUFFER_BIT);
+
+         // Render to FBO with certain size.
+         set_viewport(gl, rect->img_width, rect->img_height, true);
          gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, prev_rect->width, prev_rect->height, gl->vp_width, gl->vp_height);
          glDrawArrays(GL_QUADS, 0, 4);
       }
 
+      // Render our last FBO texture directly to screen.
       prev_rect = &gl->fbo_rect[gl->fbo_pass - 1];
       GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
       GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
