@@ -112,14 +112,10 @@ typedef struct gl
    GLuint fbo[MAX_SHADERS];
    GLuint fbo_texture[MAX_SHADERS];
    struct gl_fbo_rect fbo_rect[MAX_SHADERS];
+   struct gl_fbo_scale fbo_scale[MAX_SHADERS];
    bool render_to_tex;
-   unsigned fbo_width;
-   unsigned fbo_height;
    int fbo_pass;
    bool fbo_inited;
-   bool fbo_tex_filter;
-   double fbo_scale_x;
-   double fbo_scale_y;
 
    bool should_resize;
    bool quitting;
@@ -324,21 +320,51 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
    float scale_x = g_settings.video.fbo_scale_x;
    float scale_y = g_settings.video.fbo_scale_y;
-   unsigned xscale = next_pow2(ceil(scale_x));
-   unsigned yscale = next_pow2(ceil(scale_y));
-   SSNES_LOG("Internal FBO scale: (%u, %u)\n", xscale, yscale);
+   unsigned pow2_x_scale = next_pow2(ceil(scale_x));
+   unsigned pow2_y_scale = next_pow2(ceil(scale_y));
 
-   gl->fbo_width = width * xscale;
-   gl->fbo_height = height * yscale;
-   gl->fbo_scale_x = scale_x;
-   gl->fbo_scale_y = scale_y;
+   gl->fbo_rect[0].width = width * pow2_x_scale;
+   gl->fbo_rect[0].height = height * pow2_y_scale;
+   gl->fbo_scale[0].scale_x = scale_x;
+   gl->fbo_scale[0].scale_y = scale_y;
 
    gl->fbo_pass = gl_shader_num() - 1;
+
+   struct gl_fbo_scale scale;
+   gl_shader_scale(gl_shader_num(), &scale);
+   if (scale.valid)
+      gl->fbo_pass++;
+
    if (gl->fbo_pass <= 0)
       gl->fbo_pass = 1;
 
+   for (int i = 0; i < gl->fbo_pass; i++)
+   {
+      gl_shader_scale(i + 1, &gl->fbo_scale[i]);
+      if (gl->fbo_scale[i].valid)
+      {
+         unsigned _pow2_x_scale = next_pow2(ceil(gl->fbo_scale[i].scale_x));
+         unsigned _pow2_y_scale = next_pow2(ceil(gl->fbo_scale[i].scale_y));
+
+         gl->fbo_rect[i].width = width * _pow2_x_scale;
+         gl->fbo_rect[i].height = height * _pow2_y_scale;
+
+         scale_x = gl->fbo_scale[i].scale_x;
+         scale_y = gl->fbo_scale[i].scale_y;
+         pow2_x_scale = _pow2_x_scale;
+         pow2_y_scale = _pow2_y_scale;
+      }
+      else
+      {
+         // Use previous values, essentially a 1x scale compared to last shader in chain.
+         gl->fbo_scale[i].scale_x = scale_x;
+         gl->fbo_scale[i].scale_y = scale_y;
+         gl->fbo_rect[i].width = width * pow2_x_scale;
+         gl->fbo_rect[i].height = height * pow2_x_scale;
+      }
+   }
+
    glGenTextures(gl->fbo_pass, gl->fbo_texture);
-   void *tmp = calloc(gl->fbo_width * gl->fbo_height, sizeof(uint32_t));
 
    GLuint base_filt = g_settings.video.second_pass_smooth ? GL_LINEAR : GL_NEAREST;
    for (int i = 0; i < gl->fbo_pass; i++)
@@ -356,11 +382,10 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_type);
 
       glTexImage2D(GL_TEXTURE_2D,
-            0, GL_RGBA, gl->fbo_width, gl->fbo_height, 0, GL_RGBA,
-            GL_UNSIGNED_INT_8_8_8_8, tmp);
+            0, GL_RGBA, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_RGBA,
+            GL_UNSIGNED_INT_8_8_8_8, NULL);
    }
 
-   free(tmp);
    glBindTexture(GL_TEXTURE_2D, 0);
 
    pglGenFramebuffers(gl->fbo_pass, gl->fbo);
@@ -375,7 +400,6 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    }
 
    gl->fbo_inited = true;
-   SSNES_LOG("Set up FBO @ %ux%u\n", gl->fbo_width, gl->fbo_height);
    return;
 
 error:
@@ -550,7 +574,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       glBindTexture(GL_TEXTURE_2D, gl->texture);
       pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
       gl->render_to_tex = true;
-      set_viewport(gl, width * gl->fbo_scale_x, height * gl->fbo_scale_y, true);
+      set_viewport(gl, width * gl->fbo_scale[0].scale_x, height * gl->fbo_scale[0].scale_y, true);
    }
    if (gl->should_resize)
    {
@@ -597,24 +621,26 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 
    if (gl->fbo_inited)
    {
-      // Render the rest of our passes. TODO: Proper params and don't assume 1x scale for the interim passes.
+      // Render the rest of our passes.
       glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->fbo_tex_coords);
-      GLfloat xamt = (GLfloat)width * gl->fbo_scale_x / gl->fbo_width;
-      GLfloat yamt = (GLfloat)height * gl->fbo_scale_y / gl->fbo_height;
-      gl->fbo_tex_coords[3] = yamt;
-      gl->fbo_tex_coords[4] = xamt;
-      gl->fbo_tex_coords[5] = yamt;
-      gl->fbo_tex_coords[6] = xamt;
 
       for (int i = 1; i < gl->fbo_pass; i++)
       {
+         GLfloat xamt = (GLfloat)width * gl->fbo_scale[i - 1].scale_x / gl->fbo_rect[i - 1].width;
+         GLfloat yamt = (GLfloat)height * gl->fbo_scale[i - 1].scale_y / gl->fbo_rect[i - 1].height;
+
+         gl->fbo_tex_coords[3] = yamt;
+         gl->fbo_tex_coords[4] = xamt;
+         gl->fbo_tex_coords[5] = yamt;
+         gl->fbo_tex_coords[6] = xamt;
+
          pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
          gl_shader_use(i + 1);
          glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
+         set_viewport(gl, width * gl->fbo_scale[i].scale_x, height * gl->fbo_scale[i].scale_y, true);
          glClear(GL_COLOR_BUFFER_BIT);
-         set_viewport(gl, width * gl->fbo_scale_x, height * gl->fbo_scale_y, true);
-         gl_shader_set_params(width * gl->fbo_scale_x, height * gl->fbo_scale_y, gl->fbo_width, gl->fbo_height, gl->vp_width, gl->vp_height);
+         gl_shader_set_params(width * gl->fbo_scale[i - 1].scale_x, height * gl->fbo_scale[i - 1].scale_y, gl->fbo_rect[i - 1].width, gl->fbo_rect[i - 1].height, gl->vp_width, gl->vp_height);
          glDrawArrays(GL_QUADS, 0, 4);
       }
 
@@ -625,7 +651,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       glClear(GL_COLOR_BUFFER_BIT);
       gl->render_to_tex = false;
       set_viewport(gl, gl->win_width, gl->win_height, false);
-      gl_shader_set_params(width * gl->fbo_scale_x, height * gl->fbo_scale_y, gl->fbo_width, gl->fbo_height, gl->vp_width, gl->vp_height);
+      gl_shader_set_params(width * gl->fbo_scale[gl->fbo_pass - 1].scale_x, height * gl->fbo_scale[gl->fbo_pass - 1].scale_y, gl->fbo_rect[gl->fbo_pass - 1].width, gl->fbo_rect[gl->fbo_pass - 1].height, gl->vp_width, gl->vp_height);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
       glDrawArrays(GL_QUADS, 0, 4);
