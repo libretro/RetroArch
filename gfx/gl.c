@@ -318,49 +318,43 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
       return;
    }
 
-   float scale_x = g_settings.video.fbo_scale_x;
-   float scale_y = g_settings.video.fbo_scale_y;
-   unsigned pow2_x_scale = next_pow2(ceil(scale_x));
-   unsigned pow2_y_scale = next_pow2(ceil(scale_y));
-
-   gl->fbo_rect[0].width = width * pow2_x_scale;
-   gl->fbo_rect[0].height = height * pow2_y_scale;
-   gl->fbo_scale[0].scale_x = scale_x;
-   gl->fbo_scale[0].scale_y = scale_y;
-
    gl->fbo_pass = gl_shader_num() - 1;
 
    struct gl_fbo_scale scale;
    gl_shader_scale(gl_shader_num(), &scale);
    if (scale.valid)
       gl->fbo_pass++;
+   else
+   {
+      scale.scale_x = g_settings.video.fbo_scale_x;
+      scale.scale_y = g_settings.video.fbo_scale_y;
+   }
+
+   gl->fbo_rect[0].width = width * next_pow2(ceil(scale.scale_x));
+   gl->fbo_rect[0].height = height * next_pow2(ceil(scale.scale_y));
+   gl->fbo_scale[0] = scale;
+   if (scale.valid)
+      SSNES_LOG("Creating FBO 0 @ %ux%u\n", gl->fbo_rect[0].width, gl->fbo_rect[0].height);
 
    if (gl->fbo_pass <= 0)
       gl->fbo_pass = 1;
 
-   for (int i = 0; i < gl->fbo_pass; i++)
+   for (int i = 1; i < gl->fbo_pass; i++)
    {
       gl_shader_scale(i + 1, &gl->fbo_scale[i]);
       if (gl->fbo_scale[i].valid)
       {
-         unsigned _pow2_x_scale = next_pow2(ceil(gl->fbo_scale[i].scale_x));
-         unsigned _pow2_y_scale = next_pow2(ceil(gl->fbo_scale[i].scale_y));
+         gl->fbo_scale[i].scale_x *= gl->fbo_scale[i - 1].scale_x;
+         gl->fbo_scale[i].scale_y *= gl->fbo_scale[i - 1].scale_y;
 
-         gl->fbo_rect[i].width = width * _pow2_x_scale;
-         gl->fbo_rect[i].height = height * _pow2_y_scale;
-
-         scale_x = gl->fbo_scale[i].scale_x;
-         scale_y = gl->fbo_scale[i].scale_y;
-         pow2_x_scale = _pow2_x_scale;
-         pow2_y_scale = _pow2_y_scale;
+         gl->fbo_rect[i].width = width * next_pow2(ceil(gl->fbo_scale[i].scale_x));
+         gl->fbo_rect[i].height = height * next_pow2(ceil(gl->fbo_scale[i].scale_y));
       }
       else
       {
          // Use previous values, essentially a 1x scale compared to last shader in chain.
-         gl->fbo_scale[i].scale_x = scale_x;
-         gl->fbo_scale[i].scale_y = scale_y;
-         gl->fbo_rect[i].width = width * pow2_x_scale;
-         gl->fbo_rect[i].height = height * pow2_x_scale;
+         gl->fbo_rect[i] = gl->fbo_rect[i - 1];
+         gl->fbo_scale[i] = gl->fbo_scale[i - 1];
       }
 
       SSNES_LOG("Creating FBO %d @ %ux%u\n", i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
