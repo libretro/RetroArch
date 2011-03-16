@@ -523,6 +523,8 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
 
    gl->vp_width = width;
    gl->vp_height = height;
+
+   //SSNES_LOG("Setting viewport @ %ux%u\n", width, height);
 }
 
 static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)
@@ -611,6 +613,8 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       gl->tex_coords[4] = x;
       gl->tex_coords[6] = x;
       gl->tex_coords[7] = y;
+
+      //SSNES_LOG("Setting last rect: %ux%u\n", width, height);
    }
 
 
@@ -793,8 +797,11 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
 
    gl->vsync = video->vsync;
    gl->keep_aspect = video->force_aspect;
+
+   // Apparently need to set viewport for passes when we aren't using FBOs.
    set_viewport(gl, gl->win_width, gl->win_height, false);
-   
+   gl_shader_use(1);
+   set_viewport(gl, gl->win_width, gl->win_height, false);
 
    bool force_smooth;
    if (gl_shader_filter_type(1, &force_smooth))
