@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "general.h"
+#include "shader_glsl.h"
 
 #ifdef __APPLE__
 #include <OpenGL/gl.h>

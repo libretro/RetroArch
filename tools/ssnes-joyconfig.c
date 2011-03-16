@@ -93,7 +93,7 @@ static struct bind binds[] = {
    MISC_BIND("Pause", pause_toggle)
 };
 
-void get_binds(config_file_t *conf, int player, int joypad)
+static void get_binds(config_file_t *conf, int player, int joypad)
 {
    if (SDL_Init(SDL_INIT_JOYSTICK | SDL_INIT_VIDEO) < 0)
    {

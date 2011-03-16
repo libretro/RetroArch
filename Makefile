@@ -115,7 +115,12 @@ ifneq ($(V),1)
    Q := @
 endif
 
-CFLAGS += -Wall -O3 -g -std=gnu99 -I.
+CFLAGS += -Wall -O3 -g -I.
+ifneq ($(findstring icc,$(CC)),)
+   CFLAGS += -std=c99
+else
+   CFLAGS += -std=gnu99
+endif
 
 all: $(TARGET) config.mk
 

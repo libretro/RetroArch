@@ -20,6 +20,7 @@
 #define __SSNES_GLSL_H
 
 #include <stdbool.h>
+#include "gl_common.h"
 
 bool gl_glsl_init(const char *path);
 
