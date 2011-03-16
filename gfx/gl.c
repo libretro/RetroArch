@@ -333,8 +333,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    gl->fbo_rect[0].width = width * next_pow2(ceil(scale.scale_x));
    gl->fbo_rect[0].height = height * next_pow2(ceil(scale.scale_y));
    gl->fbo_scale[0] = scale;
-   if (scale.valid)
-      SSNES_LOG("Creating FBO 0 @ %ux%u\n", gl->fbo_rect[0].width, gl->fbo_rect[0].height);
+   SSNES_LOG("Creating FBO 0 @ %ux%u\n", gl->fbo_rect[0].width, gl->fbo_rect[0].height);
 
    if (gl->fbo_pass <= 0)
       gl->fbo_pass = 1;
@@ -488,34 +487,33 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
 {
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
-   GLuint out_width = width; 
-   GLuint out_height = height;
 
    if (gl->keep_aspect && !force_full)
    {
       float desired_aspect = g_settings.video.aspect_ratio;
-      float device_aspect = (float)gl->win_width / gl->win_height;
+      float device_aspect = (float)width / height;
 
       // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
       // assume they are actually equal.
-      if ( (int)(device_aspect*1000) > (int)(desired_aspect*1000) )
+      if (fabs(device_aspect - desired_aspect) < 0.0001)
+      {
+         glViewport(0, 0, width, height);
+      }
+      else if (device_aspect > desired_aspect)
       {
          float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-         glViewport(gl->win_width * (0.5 - delta), 0, 2.0 * gl->win_width * delta, gl->win_height);
-         out_width = (int)(2.0 * gl->win_width * delta);
-      }
-
-      else if ( (int)(device_aspect*1000) < (int)(desired_aspect*1000) )
-      {
-         float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         glViewport(0, gl->win_height * (0.5 - delta), gl->win_width, 2.0 * gl->win_height * delta);
-         out_height = (int)(2.0 * gl->win_height * delta);
+         glViewport(width * (0.5 - delta), 0, 2.0 * width * delta, height);
+         width = 2.0 * width * delta;
       }
       else
-         glViewport(0, 0, gl->win_width, gl->win_height);
+      {
+         float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
+         glViewport(0, height * (0.5 - delta), width, 2.0 * height * delta);
+         height = 2.0 * height * delta;
+      }
    }
    else
-      glViewport(0, 0, out_width, out_height);
+      glViewport(0, 0, width, height);
 
    glOrtho(0, 1, 0, 1, -1, 1);
    glMatrixMode(GL_MODELVIEW);
@@ -523,8 +521,8 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
 
    gl_shader_set_proj_matrix();
 
-   gl->vp_width = out_width;
-   gl->vp_height = out_height;
+   gl->vp_width = width;
+   gl->vp_height = height;
 }
 
 static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)
@@ -606,14 +604,13 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
             gl->texture_fmt, tmp);
       free(tmp);
 
-      gl->tex_coords[0] = 0;
-      gl->tex_coords[1] = (GLfloat)height / gl->tex_h;
-      gl->tex_coords[2] = 0;
-      gl->tex_coords[3] = 0;
-      gl->tex_coords[4] = (GLfloat)width / gl->tex_w;
-      gl->tex_coords[5] = 0;
-      gl->tex_coords[6] = (GLfloat)width / gl->tex_w;
-      gl->tex_coords[7] = (GLfloat)height / gl->tex_h;
+      GLfloat x = (GLfloat)width / gl->tex_w;
+      GLfloat y = (GLfloat)height / gl->tex_h;
+
+      gl->tex_coords[1] = y;
+      gl->tex_coords[4] = x;
+      gl->tex_coords[6] = x;
+      gl->tex_coords[7] = y;
    }
 
 
@@ -789,7 +786,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
       return NULL;
    }
 
-   SSNES_LOG("GL: Loaded %u shader(s).\n", gl_shader_num());
+   SSNES_LOG("GL: Loaded %u programs(s).\n", gl_shader_num());
 
    // Set up render to texture.
    gl_init_fbo(gl, 256 * video->input_scale, 256 * video->input_scale);
