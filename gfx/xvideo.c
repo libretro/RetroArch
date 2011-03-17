@@ -369,7 +369,7 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
    XSetWindowBackground(xv->display, xv->window, 0);
 
    XMapWindow(xv->display, xv->window);
-   XStoreName(xv->display, xv->window, "SSNES");
+   XStoreName(xv->display, xv->window, g_extern.title_buf);
    if (video->fullscreen)
       set_fullscreen(xv);
    hide_mouse(xv);

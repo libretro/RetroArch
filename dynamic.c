@@ -39,6 +39,10 @@
    if (p##x == NULL) { SSNES_ERR("Failed to load symbol: \"%s\"\n", #x); exit(1); } \
 } while(0)
 
+#define OPT_SYM(x) do { \
+   p##x = DLSYM(lib_handle, x); \
+} while(0)
+
 static dylib_t lib_handle = NULL;
 #endif
 
@@ -52,6 +56,7 @@ void (*psnes_set_input_state)(snes_input_state_t);
 
 void (*psnes_run)(void);
 
+const char *(*psnes_library_id)(void) = NULL;
 unsigned (*psnes_library_revision_minor)(void);
 unsigned (*psnes_library_revision_major)(void);
 
@@ -102,6 +107,7 @@ static void load_dynamic(void)
    SYM(snes_set_audio_sample);
    SYM(snes_set_input_poll);
    SYM(snes_set_input_state);
+   OPT_SYM(snes_library_id);
    SYM(snes_library_revision_minor);
    SYM(snes_library_revision_major);
    SYM(snes_run);

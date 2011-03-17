@@ -1154,12 +1154,21 @@ static void do_state_checks(void)
    check_input_rate();
 }
 
+static void fill_title_buf(void)
+{
+   if (psnes_library_id)
+      snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "SSNES : %s", psnes_library_id());
+   else
+      snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "SSNES");
+}
+
 
 int main(int argc, char *argv[])
 {
    parse_input(argc, argv);
    parse_config();
    init_dlsym();
+   fill_title_buf();
 
    psnes_init();
    if (strlen(g_extern.basename) > 0)

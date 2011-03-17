@@ -37,6 +37,7 @@ extern void (*psnes_set_audio_sample)(snes_audio_sample_t);
 extern void (*psnes_set_input_poll)(snes_input_poll_t);
 extern void (*psnes_set_input_state)(snes_input_state_t);
 
+extern const char* (*psnes_library_id)(void);
 extern unsigned (*psnes_library_revision_minor)(void);
 extern unsigned (*psnes_library_revision_major)(void);
 
@@ -54,7 +55,6 @@ extern bool (*psnes_load_cartridge_sufami_turbo)(
          const char*, const uint8_t*, unsigned, 
          const char*, const uint8_t*, unsigned, 
          const char*, const uint8_t*, unsigned);
-
 
 extern void (*psnes_set_controller_port_device)(bool, unsigned);
 

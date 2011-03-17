@@ -232,6 +232,8 @@ struct global
    char record_path[256];
    bool recording;
 #endif
+
+   char title_buf[64];
 };
 
 void parse_config(void);

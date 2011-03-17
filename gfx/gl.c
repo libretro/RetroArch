@@ -552,7 +552,7 @@ static void show_fps(void)
 
       float fps = tv_to_fps(&tmp_tv, &new_tv, 180);
 
-      snprintf(tmpstr, sizeof(tmpstr), "SSNES || FPS: %6.1f || Frames: %d", fps, frames);
+      snprintf(tmpstr, sizeof(tmpstr), "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, fps, frames);
       SDL_WM_SetCaption(tmpstr, NULL);
    }
    frames++;
@@ -819,7 +819,7 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    glColor4f(1, 1, 1, 1);
    glClearColor(0, 0, 0, 1);
 
-   SDL_WM_SetCaption("SSNES", NULL);
+   SDL_WM_SetCaption(g_extern.title_buf, NULL);
 
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
