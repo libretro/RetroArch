@@ -241,7 +241,7 @@ static void fill_pathname(char *out_path, char *in_path, const char *replace)
 #endif
 
 #ifdef _WIN32
-#define PACKAGE_VERSION "0.3.1"
+#define PACKAGE_VERSION "0.3.2"
 #endif
 
 #include "config.features.h"
