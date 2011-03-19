@@ -638,6 +638,7 @@ static bool xv_frame(void *data, const void* frame, unsigned width, unsigned hei
          0, 0, width, height,
          x, y, owidth, oheight,
          true);
+   XSync(xv->display, False);
 
    char buf[128];
    if (gfx_window_title(buf, sizeof(buf)))
