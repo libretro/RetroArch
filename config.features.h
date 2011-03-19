@@ -110,4 +110,10 @@ static const bool _freetype_supp = true;
 static const bool _freetype_supp = false;
 #endif
 
+#ifdef HAVE_NETPLAY
+static const bool _netplay_supp = true;
+#else
+static const bool _netplay_supp = false;
+#endif
+
 #endif

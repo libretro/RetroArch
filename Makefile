@@ -2,7 +2,7 @@ include config.mk
 
 TARGET = ssnes tools/ssnes-joyconfig
 
-OBJ = ssnes.o file.o driver.o settings.o dynamic.o message.o rewind.o movie.o autosave.o netplay.o gfx/gfx_common.o
+OBJ = ssnes.o file.o driver.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o
 JOYCONFIG_OBJ = tools/ssnes-joyconfig.o conf/config_file.o
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
@@ -25,6 +25,10 @@ endif
 
 ifeq ($(HAVE_CONFIGFILE), 1)
    OBJ += conf/config_file.o
+endif
+
+ifeq ($(HAVE_NETPLAY), 1)
+   OBJ += netplay.o
 endif
 
 ifeq ($(HAVE_RSOUND), 1)

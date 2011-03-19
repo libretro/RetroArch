@@ -268,6 +268,7 @@ static void print_features(void)
    _PSUPP(src, "SRC", "libsamplerate audio resampling");
    _PSUPP(configfile, "Config file", "Configuration file support");
    _PSUPP(freetype, "FreeType", "TTF font rendering with FreeType");
+   _PSUPP(netplay, "Netplay", "Peer-to-peer netplay");
 }
 #undef _PSUPP
 
@@ -295,10 +296,12 @@ static void print_help(void)
    puts("\t-J/--justifiers: Daisy chain two virtual Konami Justifiers into port 2 of the SNES.");
    puts("\t-4/--multitap: Connect a multitap to port 2 of the SNES.");
    puts("\t-P/--bsvplay: Playback a BSV movie file.");
+#ifdef HAVE_NETPLAY
    puts("\t-H/--host: Host netplay as player 1.");
    puts("\t-C/--connect: Connect to netplay as player 2.");
    puts("\t--port: Port used to netplay. Default is 55435.");
    puts("\t-F/--frames: Sync frames when using netplay.");
+#endif
 
 #ifdef HAVE_FFMPEG
    puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
@@ -733,6 +736,7 @@ static void deinit_movie(void)
 
 #define SSNES_DEFAULT_PORT 55435
 
+#ifdef HAVE_NETPLAY
 static void init_netplay(void)
 {
    if (g_extern.netplay_enable)
@@ -760,12 +764,15 @@ static void init_netplay(void)
       }
    }
 }
+#endif
 
+#ifdef HAVE_NETPLAY
 static void deinit_netplay(void)
 {
    if (g_extern.netplay)
       netplay_free(g_extern.netplay);
 }
+#endif
 
 static void init_autosave(void)
 {
@@ -1187,17 +1194,25 @@ int main(int argc, char *argv[])
    if (!g_extern.bsv_movie)
       load_save_files();
 
-
+#ifdef HAVE_NETPLAY
    init_netplay();
+#endif
    init_drivers();
 
    if (!g_extern.netplay)
       init_rewind();
 
+#ifdef HAVE_NETPLAY
    psnes_set_video_refresh(g_extern.netplay ? video_frame_net : video_frame);
    psnes_set_audio_sample(g_extern.netplay ? audio_sample_net : audio_sample);
    psnes_set_input_poll(g_extern.netplay ? input_poll_net : input_poll);
    psnes_set_input_state(g_extern.netplay ? input_state_net : input_state);
+#else
+   psnes_set_video_refresh(video_frame);
+   psnes_set_audio_sample(audio_sample);
+   psnes_set_input_poll(input_poll);
+   psnes_set_input_state(input_state);
+#endif
    
    init_controllers();
    
@@ -1224,8 +1239,10 @@ int main(int argc, char *argv[])
       {
          lock_autosave();
 
+#ifdef HAVE_NETPLAY
          if (g_extern.netplay)
             netplay_pre_frame(g_extern.netplay);
+#endif
          if (g_extern.bsv_movie)
             bsv_movie_set_frame_start(g_extern.bsv_movie);
 
@@ -1233,8 +1250,10 @@ int main(int argc, char *argv[])
 
          if (g_extern.bsv_movie)
             bsv_movie_set_frame_end(g_extern.bsv_movie);
+#ifdef HAVE_NETPLAY
          if (g_extern.netplay)
             netplay_post_frame(g_extern.netplay);
+#endif
 
          unlock_autosave();
       }
@@ -1253,7 +1272,9 @@ int main(int argc, char *argv[])
       }
    }
 
+#ifdef HAVE_NETPLAY
    deinit_netplay();
+#endif
 
    if (!g_extern.bsv_movie_playback && !g_extern.netplay_is_client)
       deinit_autosave();

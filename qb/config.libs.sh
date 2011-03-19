@@ -16,6 +16,7 @@ if [ $HAVE_DYNAMIC != yes ]; then
 fi
 
 check_lib FILTER -ldl dlopen
+check_lib NETPLAY -lc socket
 
 check_lib ALSA -lasound snd_pcm_open
 check_header OSS sys/soundcard.h
@@ -55,7 +56,7 @@ check_pkgconf FREETYPE freetype2
 check_lib XVIDEO -lXv XvShmCreateImage
 
 # Creates config.mk and config.h.
-VARS="ALSA OSS AL RSOUND ROAR JACK PULSE SDL FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC CONFIGFILE FREETYPE XVIDEO"
+VARS="ALSA OSS AL RSOUND ROAR JACK PULSE SDL FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC CONFIGFILE FREETYPE XVIDEO NETPLAY"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 
