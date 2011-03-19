@@ -372,7 +372,7 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
 
    XMapWindow(xv->display, xv->window);
 
-   char buf[64];
+   char buf[128];
    if (gfx_window_title(buf, sizeof(buf)))
       XStoreName(xv->display, xv->window, buf);
 
@@ -610,6 +610,11 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
    }
 
    font_renderer_free_output(&out);
+#else
+   (void)xv;
+   (void)msg;
+   (void)width;
+   (void)height;
 #endif
 }
 
@@ -634,7 +639,7 @@ static bool xv_frame(void *data, const void* frame, unsigned width, unsigned hei
          x, y, owidth, oheight,
          true);
 
-   char buf[64];
+   char buf[128];
    if (gfx_window_title(buf, sizeof(buf)))
       XStoreName(xv->display, xv->window, buf);
 
