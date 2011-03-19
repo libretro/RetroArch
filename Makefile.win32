@@ -1,6 +1,6 @@
 TARGET = ssnes.exe
 JTARGET = ssnes-joyconfig.exe
-OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o message.o rewind.o movie.o autosave.o netplay.o gfx/gfx_common.o
+OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o
 JOBJ = conf/config_file.o tools/main-stub.o tools/ssnes-joyconfig.o
 
 CC = gcc
@@ -13,9 +13,10 @@ HAVE_FREETYPE = 1
 HAVE_XAUDIO = 1
 HAVE_RSOUND = 1
 HAVE_FILTER = 1
+HAVE_NETPLAY = 1
 libsnes ?= -lsnes
 
-LIBS = -lws2_32 -lm
+LIBS = -lm
 DEFINES = -I. -DHAVE_CONFIGFILE
 LDFLAGS = -L. -static-libgcc -s
 
@@ -55,6 +56,12 @@ endif
 
 ifeq ($(HAVE_FILTER), 1)
    DEFINES += -DHAVE_FILTER
+endif
+
+ifeq ($(HAVE_NETPLAY), 1)
+   DEFINES += -DHAVE_NETPLAY
+   OBJ += netplay.o
+   LIBS += -lws2_32
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)
