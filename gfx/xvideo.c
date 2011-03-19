@@ -49,7 +49,7 @@ struct xv
    Atom quit_atom;
    bool focus;
 
-   int port;
+   XvPortID port;
    int depth;
    int visualid;
 
@@ -83,29 +83,29 @@ static void xv_set_nonblock_state(void *data, bool state)
       SSNES_WARN("Failed to set SYNC_TO_VBLANK attribute.\n");
 }
 
-static volatile sig_atomic_t g_quit = false;
+static volatile sig_atomic_t g_quit = 0;
 static void sighandler(int sig)
 {
-   g_quit = true;
+   g_quit = 1;
 }
 
 static void init_yuv_tables(xv_t *xv)
 {
-   xv->ytable = malloc(0x10000);
-   xv->utable = malloc(0x10000);
-   xv->vtable = malloc(0x10000);
+   xv->ytable = malloc(0x8000);
+   xv->utable = malloc(0x8000);
+   xv->vtable = malloc(0x8000);
 
-   for (unsigned i = 0; i < 0x10000; i++) 
+   for (unsigned i = 0; i < 0x8000; i++) 
    {
       // Extract RGB555 color data from i
-      uint8_t r = (i >> 10) & 31, g = (i >> 5) & 31, b = (i) & 31;
+      uint8_t r = (i >> 10) & 0x1F, g = (i >> 5) & 0x1F, b = (i) & 0x1F;
       r = (r << 3) | (r >> 2);  //R5->R8
       g = (g << 3) | (g >> 2);  //G5->G8
       b = (b << 3) | (b >> 2);  //B5->B8
 
-      int y = (int)( +((double)r * 0.257) + ((double)g * 0.504) + ((double)b * 0.098) +  16.0 );
-      int u = (int)( -((double)r * 0.148) - ((double)g * 0.291) + ((double)b * 0.439) + 128.0 );
-      int v = (int)( +((double)r * 0.439) - ((double)g * 0.368) - ((double)b * 0.071) + 128.0 );
+      int y = (int)(+((double)r * 0.257) + ((double)g * 0.504) + ((double)b * 0.098) +  16.0);
+      int u = (int)(-((double)r * 0.148) - ((double)g * 0.291) + ((double)b * 0.439) + 128.0);
+      int v = (int)(+((double)r * 0.439) - ((double)g * 0.368) - ((double)b * 0.071) + 128.0);
 
       xv->ytable[i] = y < 0 ? 0 : y > 255 ? 255 : y;
       xv->utable[i] = u < 0 ? 0 : u > 255 ? 255 : u;
@@ -182,6 +182,7 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
 #endif
 }
 
+// We render @ 2x scale to combat chroma downsampling. Also makes fonts more bearable :)
 static void render16_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
 {
    const uint16_t *input = input_;
@@ -189,24 +190,24 @@ static void render16_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned
 
    for (unsigned y = 0; y < height; y++) 
    {
-      for (unsigned x = 0; x < width >> 1; x++) 
+      for (unsigned x = 0; x < width; x++) 
       {
-         uint16_t p0 = *input++;
-         uint16_t p1 = *input++;
+         uint16_t p = *input++;
 
-         uint8_t y0 = xv->ytable[p0];
-         uint8_t y1 = xv->ytable[p1];
-         uint8_t u = (uint8_t)(((unsigned)xv->utable[p0] + (unsigned)xv->utable[p1]) >> 1);
-         uint8_t v = (uint8_t)(((unsigned)xv->vtable[p0] + (unsigned)xv->vtable[p1]) >> 1);
+         uint8_t y0 = xv->ytable[p];
+         uint8_t u = xv->utable[p];
+         uint8_t v = xv->vtable[p];
 
-         *output++ = y0;
-         *output++ = u;
-         *output++ = y1;
-         *output++ = v;
+         unsigned img_width = xv->width << 1;
+         output[0] = output[img_width] = y0;
+         output[1] = output[img_width + 1] = u;
+         output[2] = output[img_width + 2] = y0;
+         output[3] = output[img_width + 3] = v;
+         output += 4;
       }
 
       input  += (pitch >> 1) - width;
-      output += (xv->width - width) << 1;
+      output += (xv->width - width) << 2;
    }
 }
 
@@ -217,24 +218,24 @@ static void render16_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned
 
    for (unsigned y = 0; y < height; y++) 
    {
-      for (unsigned x = 0; x < width >> 1; x++) 
+      for (unsigned x = 0; x < width; x++) 
       {
-         uint16_t p0 = *input++;
-         uint16_t p1 = *input++;
+         uint16_t p = *input++;
 
-         uint8_t y0 = xv->ytable[p0];
-         uint8_t y1 = xv->ytable[p1];
-         uint8_t u = (uint8_t)(((unsigned)xv->utable[p0] + (unsigned)xv->utable[p1]) >> 1);
-         uint8_t v = (uint8_t)(((unsigned)xv->vtable[p0] + (unsigned)xv->vtable[p1]) >> 1);
+         uint8_t y0 = xv->ytable[p];
+         uint8_t u = xv->utable[p];
+         uint8_t v = xv->vtable[p];
 
-         *output++ = u;
-         *output++ = y0;
-         *output++ = v;
-         *output++ = y1;
+         unsigned img_width = xv->width << 1;
+         output[0] = output[img_width] = u;
+         output[1] = output[img_width + 1] = y0;
+         output[2] = output[img_width + 2] = v;
+         output[3] = output[img_width + 3] = y0;
+         output += 4;
       }
 
       input  += (pitch >> 1) - width;
-      output += (xv->width - width) << 1;
+      output += (xv->width - width) << 2;
    }
 }
 
@@ -243,28 +244,27 @@ static void render32_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned
    const uint32_t *input = input_;
    uint8_t *output = (uint8_t*)xv->image->data;
 
-   for (unsigned y = 0; y < height; y++) 
+   for (unsigned y = 0; y < height; y++)
    {
-      for (unsigned x = 0; x < width >> 1; x++) 
+      for (unsigned x = 0; x < width; x++)
       {
-         uint32_t p0 = *input++;
-         uint32_t p1 = *input++;
-         p0 = ((p0 >> 9) & 0x7c00) | ((p0 >> 6) & 0x03e0) | ((p0 >> 3) & 0x1f); // RGBA -> RGB15
-         p1 = ((p1 >> 9) & 0x7c00) | ((p1 >> 6) & 0x03e0) | ((p1 >> 3) & 0x1f);
+         uint32_t p = *input++;
+         p = ((p >> 17) & 0x7c00) | ((p >> 14) & 0x03e0) | ((p >> 11) & 0x1f); // RGBA -> RGB15
 
-         uint8_t y0 = xv->ytable[p0];
-         uint8_t y1 = xv->ytable[p1];
-         uint8_t u = (uint8_t)(((unsigned)xv->utable[p0] + (unsigned)xv->utable[p1]) >> 1);
-         uint8_t v = (uint8_t)(((unsigned)xv->vtable[p0] + (unsigned)xv->vtable[p1]) >> 1);
+         uint8_t y0 = xv->ytable[p];
+         uint8_t u = xv->utable[p];
+         uint8_t v = xv->vtable[p];
 
-         *output++ = y0;
-         *output++ = u;
-         *output++ = y1;
-         *output++ = v;
+         unsigned img_width = xv->width << 1;
+         output[0] = output[img_width] = y0;
+         output[1] = output[img_width + 1] = u;
+         output[2] = output[img_width + 2] = y0;
+         output[3] = output[img_width + 3] = v;
+         output += 4;
       }
 
       input  += (pitch >> 2) - width;
-      output += (xv->width - width) << 1;
+      output += (xv->width - width) << 2;
    }
 }
 
@@ -275,26 +275,25 @@ static void render32_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned
 
    for (unsigned y = 0; y < height; y++) 
    {
-      for (unsigned x = 0; x < width >> 1; x++) 
+      for (unsigned x = 0; x < width; x++)
       {
-         uint32_t p0 = *input++;
-         uint32_t p1 = *input++;
-         p0 = ((p0 >> 9) & 0x7c00) | ((p0 >> 6) & 0x03e0) | ((p0 >> 3) & 0x1f);
-         p1 = ((p1 >> 9) & 0x7c00) | ((p1 >> 6) & 0x03e0) | ((p1 >> 3) & 0x1f);
+         uint32_t p = *input++;
+         p = ((p >> 17) & 0x7c00) | ((p >> 14) & 0x03e0) | ((p >> 11) & 0x1f); // RGBA -> RGB15
 
-         uint8_t y0 = xv->ytable[p0];
-         uint8_t y1 = xv->ytable[p1];
-         uint8_t u = (uint8_t)(((unsigned)xv->utable[p0] + (unsigned)xv->utable[p1]) >> 1);
-         uint8_t v = (uint8_t)(((unsigned)xv->vtable[p0] + (unsigned)xv->vtable[p1]) >> 1);
+         uint8_t y0 = xv->ytable[p];
+         uint8_t u = xv->utable[p];
+         uint8_t v = xv->vtable[p];
 
-         *output++ = u;
-         *output++ = y0;
-         *output++ = v;
-         *output++ = y1;
+         unsigned img_width = xv->width << 1;
+         output[0] = output[img_width] = u;
+         output[1] = output[img_width + 1] = y0;
+         output[2] = output[img_width + 2] = v;
+         output[3] = output[img_width + 3] = y0;
+         output += 4;
       }
 
       input  += (pitch >> 2) - width;
-      output += xv->width - width;
+      output += (xv->width - width) << 2;
    }
 }
 
@@ -430,8 +429,8 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
       goto error;
    }
 
-   xv->width = 256;
-   xv->height = 256;
+   xv->width = 512;
+   xv->height = 512;
 
    xv->image = XvShmCreateImage(xv->display, xv->port, xv->fourcc, NULL, xv->width, xv->height, &xv->shminfo);
    if (!xv->image) 
@@ -488,10 +487,11 @@ error:
 
 static bool check_resize(xv_t *xv, unsigned width, unsigned height)
 {
-   if (xv->width != width || xv->height != height)
+   // We render @ 2x scale to combat chroma downsampling.
+   if (xv->width != (width << 1) || xv->height != (height << 1))
    {
-      xv->width = width;
-      xv->height = height;
+      xv->width = width << 1;
+      xv->height = height << 1;
 
       XShmDetach(xv->display, &xv->shminfo);
       shmdt(xv->shminfo.shmaddr);
@@ -581,28 +581,29 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
    {
       int base_x = _base_x + head->off_x;
       int base_y = _base_y - head->off_y;
-      for (int y = 0; y < head->height && (base_y + y) < height; y++)
+      if (base_y >= 0)
       {
-         if (base_y + y < 0)
-            continue;
-
-         const uint8_t *a = head->output + head->pitch * y;
-         uint8_t *out = (uint8_t*)xv->image->data + (base_y - head->height + y) * (width << 1) + (base_x << 1);
-         for (int x = 0; x < (head->width << 1) && (base_x + x) < width; x += 2)
+         for (int y = 0; y < head->height && (base_y + y) < height; y++)
          {
-            if (base_x + x < 0)
+            if (base_x < 0)
                continue;
 
-            // Blend luma
-            uint8_t blend = a[x >> 1];
-            unsigned blended = blend + (((256 - blend) * (unsigned)out[x + luma_i]) >> 8);
-            blended = blended > 255 ? 255 : blended;
-            out[x + luma_i] = blended;
+            const uint8_t *a = head->output + head->pitch * y;
+            uint8_t *out = (uint8_t*)xv->image->data + (base_y - head->height + y) * (width << 1) + (base_x << 1);
 
-            // Blend chroma
-            blended = (128 * blend + ((256 - blend) * (unsigned)out[x + chroma_i])) >> 8;
-            blended = blended > 255 ? 255 : blended;
-            out[x + chroma_i] = blended;
+            for (int x = 0; x < (head->width << 1) && (base_x + x) < width; x += 2)
+            {
+               // Blend luma
+               uint8_t blend = a[x >> 1];
+               unsigned blended = blend + (((256 - blend) * (unsigned)out[x + luma_i]) >> 8);
+               blended = blended > 255 ? 255 : blended;
+               out[x + luma_i] = blended;
+
+               // Blend chroma
+               blended = (128 * blend + ((256 - blend) * (unsigned)out[x + chroma_i])) >> 8;
+               blended = blended > 255 ? 255 : blended;
+               out[x + chroma_i] = blended;
+            }
          }
       }
 
@@ -630,12 +631,12 @@ static bool xv_frame(void *data, const void* frame, unsigned width, unsigned hei
    xv->render_func(xv, frame, width, height, pitch);
 
    if (msg)
-      xv_render_msg(xv, msg, width, height);
+      xv_render_msg(xv, msg, xv->width, xv->height);
 
    unsigned x, y, owidth, oheight;
    calc_out_rect(xv->keep_aspect, &x, &y, &owidth, &oheight, target.width, target.height);
    XvShmPutImage(xv->display, xv->port, xv->window, xv->gc, xv->image,
-         0, 0, width, height,
+         0, 0, width << 1, height << 1,
          x, y, owidth, oheight,
          true);
    XSync(xv->display, False);
