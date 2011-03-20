@@ -427,12 +427,57 @@ static inline unsigned get_alignment(unsigned pitch)
    return 8;
 }
 
+static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full)
+{
+   glMatrixMode(GL_PROJECTION);
+   glLoadIdentity();
+
+   if (gl->keep_aspect && !force_full)
+   {
+      float desired_aspect = g_settings.video.aspect_ratio;
+      float device_aspect = (float)width / height;
+
+      // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
+      // assume they are actually equal.
+      if (fabs(device_aspect - desired_aspect) < 0.0001)
+      {
+         glViewport(0, 0, width, height);
+      }
+      else if (device_aspect > desired_aspect)
+      {
+         float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
+         glViewport(width * (0.5 - delta), 0, 2.0 * width * delta, height);
+         width = 2.0 * width * delta;
+      }
+      else
+      {
+         float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
+         glViewport(0, height * (0.5 - delta), width, 2.0 * height * delta);
+         height = 2.0 * height * delta;
+      }
+   }
+   else
+      glViewport(0, 0, width, height);
+
+   glOrtho(0, 1, 0, 1, -1, 1);
+   glMatrixMode(GL_MODELVIEW);
+   glLoadIdentity();
+
+   gl_shader_set_proj_matrix();
+
+   gl->vp_width = width;
+   gl->vp_height = height;
+
+   //SSNES_LOG("Setting viewport @ %ux%u\n", width, height);
+}
+
 static void gl_render_msg(gl_t *gl, const char *msg)
 {
 #ifdef HAVE_FREETYPE
    if (!gl->font)
       return;
 
+   set_viewport(gl, gl->win_width, gl->win_height, false);
    GLfloat font_vertex[8]; 
 
    // Deactivate custom shaders. Enable the font texture.
@@ -482,50 +527,6 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    glBindTexture(GL_TEXTURE_2D, gl->texture);
    glDisable(GL_BLEND);
 #endif
-}
-
-static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full)
-{
-   glMatrixMode(GL_PROJECTION);
-   glLoadIdentity();
-
-   if (gl->keep_aspect && !force_full)
-   {
-      float desired_aspect = g_settings.video.aspect_ratio;
-      float device_aspect = (float)width / height;
-
-      // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
-      // assume they are actually equal.
-      if (fabs(device_aspect - desired_aspect) < 0.0001)
-      {
-         glViewport(0, 0, width, height);
-      }
-      else if (device_aspect > desired_aspect)
-      {
-         float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-         glViewport(width * (0.5 - delta), 0, 2.0 * width * delta, height);
-         width = 2.0 * width * delta;
-      }
-      else
-      {
-         float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         glViewport(0, height * (0.5 - delta), width, 2.0 * height * delta);
-         height = 2.0 * height * delta;
-      }
-   }
-   else
-      glViewport(0, 0, width, height);
-
-   glOrtho(0, 1, 0, 1, -1, 1);
-   glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
-
-   gl_shader_set_proj_matrix();
-
-   gl->vp_width = width;
-   gl->vp_height = height;
-
-   //SSNES_LOG("Setting viewport @ %ux%u\n", width, height);
 }
 
 static bool gl_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
