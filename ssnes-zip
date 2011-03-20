@@ -3,6 +3,8 @@
 die()
 {
    echo "Error: $1"
+   rm "$TMPROM"
+   rm -r "$TMPDIR"
    exit 1
 }
 
@@ -12,31 +14,41 @@ fi
 
 COMP_FILE="$1"
 TMPROM="`mktemp`"
+TMPDIR="`mktemp -d`"
 shift
 
 extract_zip()
 {
-   ZIP_LOC="`which unzip`"
-   ZIPINFO_LOC="`which zipinfo`"
-   if [ -z "$ZIP_LOC" ]; then
-      die "Cannot find location of unzip"
-   fi
-   if [ -z "$ZIPINFO_LOC" ]; then
-      die "Cannot find location of zipinfo"
-   fi
-
-   FILENAME="`$ZIPINFO_LOC -1 \"$1\" | grep '\.s[mf]c$' | head -n1`"
+   which unzip >/dev/null 2>&1 || die "Cannot find unzip"
+   which zipinfo >/dev/null 2>&1 || die "Cannot find zipinfo"
+   FILENAME="`zipinfo -1 \"$1\" | grep '\.s[mf]c$' | head -n1`"
    if [ -z "$FILENAME" ]; then
       die "Cannot find .smc nor .sfc file in archive"
    fi
 
-   $ZIP_LOC -p "$1" "$FILENAME" > "$2"
+   unzip -p "$1" "$FILENAME" > "$2"
+}
+
+extract_7z()
+{
+   which 7z >/dev/null 2>&1 || die "Cannot find 7z"
+   7z x "$1" -o"$TMPDIR" >/dev/null 2>&1 || die "Couldn't extract from archive"
+   FILENAME="`ls \"$TMPDIR\" | grep '\.s[mf]c$' | head -n1`"
+   if [ -z "$FILENAME" ]; then
+      die "Cannot find .smc nor .sfc file in archive"
+   fi
+
+   mv "${TMPDIR}/${FILENAME}" "$TMPROM"
 }
 
 case "$COMP_FILE" in
    *.zip )
       extract_zip "$COMP_FILE" "$TMPROM"
       EXTENSION=".zip"
+      ;;
+   *.7z )
+      extract_7z "$COMP_FILE" "$TMPROM"
+      EXTENSION=".7z"
       ;;
    * )
       die "Couldn't find valid zipped rom."
@@ -54,4 +66,5 @@ if [ -z "$SSNES_PATH" ]; then
 fi
 
 "$SSNES_PATH" "$TMPROM" -s "${DIRNAME}/${SAVENAME}" "$@"
-rm -f "$TMPROM"
+rm "$TMPROM"
+rm -r "$TMPDIR"
