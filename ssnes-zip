@@ -1,4 +1,9 @@
 #!/bin/sh
+###
+## Wrapper script that enables loading of compresses roms for SSNES.
+## Author: Themaister
+## License: Do whatever you want with it.
+#
 
 die()
 {
@@ -26,7 +31,7 @@ extract_zip()
       die "Cannot find .smc nor .sfc file in archive"
    fi
 
-   unzip -p "$1" "$FILENAME" > "$2"
+   unzip -p "$1" "$FILENAME" > "$TMPROM"
 }
 
 extract_7z()
@@ -41,14 +46,30 @@ extract_7z()
    mv "${TMPDIR}/${FILENAME}" "$TMPROM"
 }
 
+extract_rar()
+{
+   which unrar >/dev/null 2>&1 || die "Cannot find unrar"
+   unrar x "$1" "$TMPDIR" >/dev/null 2>&1 || die "Couldn't extract from archive"
+   FILENAME="`ls \"$TMPDIR\" | grep '\.s[mf]c$' | head -n1`"
+   if [ -z "$FILENAME" ]; then
+      die "Cannot find .smc nor .sfc file in archive"
+   fi
+
+   mv "${TMPDIR}/${FILENAME}" "$TMPROM"
+}
+
 case "$COMP_FILE" in
    *.zip )
-      extract_zip "$COMP_FILE" "$TMPROM"
+      extract_zip "$COMP_FILE"
       EXTENSION=".zip"
       ;;
    *.7z )
-      extract_7z "$COMP_FILE" "$TMPROM"
+      extract_7z "$COMP_FILE"
       EXTENSION=".7z"
+      ;;
+   *.rar )
+      extract_rar "$COMP_FILE"
+      EXTENSION=".rar"
       ;;
    * )
       die "Couldn't find valid zipped rom."
