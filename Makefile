@@ -152,9 +152,10 @@ install: $(TARGET)
 	install -m644 ssnes.cfg $(DESTDIR)/etc/ssnes.cfg
 	install -m644 docs/ssnes.1 $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m644 docs/ssnes-joyconfig.1 $(DESTDIR)$(PREFIX)/share/man/man1
+	install -m755 ssnes-zip $(DESTDIR)$(PREFIX)/bin
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/{ssnes,ssnes-joyconfig}
+	rm -f $(DESTDIR)$(PREFIX)/bin/{ssnes,ssnes-joyconfig,ssnes-zip}
 	rm -f $(DESTDIR)/etc/ssnes.cfg
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/{ssnes,ssnes-joyconfig}.1
 
