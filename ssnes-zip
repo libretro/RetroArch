@@ -1,0 +1,57 @@
+#!/bin/sh
+
+die()
+{
+   echo "Error: $1"
+   exit 1
+}
+
+if [ -z "$1" ]; then
+   die "Need at least one argument"
+fi
+
+COMP_FILE="$1"
+TMPROM="`mktemp`"
+shift
+
+extract_zip()
+{
+   ZIP_LOC="`which unzip`"
+   ZIPINFO_LOC="`which zipinfo`"
+   if [ -z "$ZIP_LOC" ]; then
+      die "Cannot find location of unzip"
+   fi
+   if [ -z "$ZIPINFO_LOC" ]; then
+      die "Cannot find location of zipinfo"
+   fi
+
+   FILENAME="`$ZIPINFO_LOC -1 \"$1\" | grep '\.s[mf]c$' | head -n1`"
+   if [ -z "$FILENAME" ]; then
+      die "Cannot find .smc nor .sfc file in archive"
+   fi
+
+   $ZIP_LOC -p "$1" "$FILENAME" > "$2"
+}
+
+case "$COMP_FILE" in
+   *.zip )
+      extract_zip "$COMP_FILE" "$TMPROM"
+      EXTENSION=".zip"
+      ;;
+   * )
+      die "Couldn't find valid zipped rom."
+      ;;
+esac
+
+SAVENAME="`basename \"$COMP_FILE\" $EXTENSION`"
+DIRNAME="`dirname \"$COMP_FILE\"`"
+SAVENAME="${SAVENAME}.srm"
+echo "Savename: ${DIRNAME}/${SAVENAME}"
+
+SSNES_PATH="`which ssnes`"
+if [ -z "$SSNES_PATH" ]; then
+   die "Cannot find SSNES in path."
+fi
+
+"$SSNES_PATH" "$TMPROM" -s "${DIRNAME}/${SAVENAME}" "$@"
+rm -f "$TMPROM"
