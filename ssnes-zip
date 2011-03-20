@@ -1,6 +1,6 @@
 #!/bin/sh
 ###
-## Wrapper script that enables loading of compresses roms for SSNES.
+## Wrapper script that enables loading of compressed roms for SSNES.
 ## Author: Themaister
 ## License: Do whatever you want with it.
 #
