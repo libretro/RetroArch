@@ -477,11 +477,11 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    if (!gl->font)
       return;
 
-   set_viewport(gl, gl->win_width, gl->win_height, false);
    GLfloat font_vertex[8]; 
 
    // Deactivate custom shaders. Enable the font texture.
    gl_shader_use(0);
+   set_viewport(gl, gl->win_width, gl->win_height, false);
    glBindTexture(GL_TEXTURE_2D, gl->font_tex);
    glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), font_vertex);
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords); // Use the static one (uses whole texture).
