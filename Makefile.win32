@@ -14,6 +14,7 @@ HAVE_XAUDIO = 1
 HAVE_RSOUND = 1
 HAVE_FILTER = 1
 HAVE_NETPLAY = 1
+HAVE_FBO = 1
 libsnes ?= -lsnes
 
 LIBS = -lm
@@ -74,6 +75,10 @@ ifeq ($(DYNAMIC), 1)
    DEFINES += -DHAVE_DYNAMIC
 else
    LIBS += $(libsnes)
+endif
+
+ifeq ($(HAVE_FBO), 1)
+   DEFINES += -DHAVE_FBO
 endif
 
 ifneq ($(V),1)

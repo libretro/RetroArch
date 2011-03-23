@@ -77,6 +77,10 @@ else
 endif
 endif
 
+ifeq ($(HAVE_FBO), 1)
+   DEFINES += -DHAVE_FBO
+endif
+
 ifeq ($(HAVE_XVIDEO), 1)
    OBJ += gfx/xvideo.o input/x11_input.o
    LIBS += -lXv -lX11

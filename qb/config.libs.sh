@@ -27,6 +27,12 @@ else
    check_lib AL -lopenal alcOpenDevice
 fi
 
+if [ "$OS" = "Darwin" ]; then
+   check_lib FBO "-framework OpenGL" glFramebufferTexture2D
+else
+   check_lib FBO -lGL glFramebufferTexture2D
+fi
+
 check_pkgconf RSOUND rsound 1.1
 check_lib ROAR -lroar roar_vs_new
 check_pkgconf JACK jack 0.120.1
@@ -56,7 +62,7 @@ check_pkgconf FREETYPE freetype2
 check_lib XVIDEO -lXv XvShmCreateImage
 
 # Creates config.mk and config.h.
-VARS="ALSA OSS AL RSOUND ROAR JACK PULSE SDL FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC CONFIGFILE FREETYPE XVIDEO NETPLAY"
+VARS="ALSA OSS AL RSOUND ROAR JACK PULSE SDL FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC CONFIGFILE FREETYPE XVIDEO NETPLAY FBO"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 

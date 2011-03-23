@@ -16,6 +16,7 @@ add_command_line_enable SRC "Enable libsamplerate support" no
 add_command_line_enable CONFIGFILE "Disable support for config file" yes
 add_command_line_enable CG "Enable Cg shader support" auto
 add_command_line_enable XML "Enable bSNES-style XML shader support" auto
+add_command_line_enable FBO "Enable render-to-texture (FBO) support" auto
 add_command_line_enable ALSA "Enable ALSA support" auto
 add_command_line_enable OSS "Enable OSS support" auto
 add_command_line_enable RSOUND "Enable RSound support" auto

@@ -73,6 +73,7 @@ static const GLfloat fbo_tex_coords[] = {
    1, 0
 };
 
+#ifdef HAVE_FBO
 #ifdef _WIN32
 static PFNGLGENFRAMEBUFFERSPROC pglGenFramebuffers = NULL;
 static PFNGLBINDFRAMEBUFFERPROC pglBindFramebuffer = NULL;
@@ -100,6 +101,7 @@ static bool load_fbo_proc(void)
 #define pglDeleteFramebuffers glDeleteFramebuffers
 static bool load_fbo_proc(void) { return true; }
 #endif
+#endif
 
 #define MAX_SHADERS 16
 
@@ -109,6 +111,7 @@ typedef struct gl
    GLuint texture;
    GLuint tex_filter;
 
+#ifdef HAVE_FBO
    // Render-to-texture, multipass shaders
    GLuint fbo[MAX_SHADERS];
    GLuint fbo_texture[MAX_SHADERS];
@@ -117,6 +120,7 @@ typedef struct gl
    bool render_to_tex;
    int fbo_pass;
    bool fbo_inited;
+#endif
 
    bool should_resize;
    bool quitting;
@@ -132,7 +136,9 @@ typedef struct gl
    unsigned last_height;
    unsigned tex_w, tex_h;
    GLfloat tex_coords[8];
+#ifdef HAVE_FBO
    GLfloat fbo_tex_coords[8];
+#endif
 
    GLenum texture_type; // XBGR1555 or RGBA
    GLenum texture_fmt;
@@ -270,6 +276,7 @@ static bool gl_shader_filter_type(unsigned index, bool *smooth)
    return valid;
 }
 
+#ifdef HAVE_FBO
 static void gl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
 {
    scale->valid = false;
@@ -283,6 +290,7 @@ static void gl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
       gl_glsl_shader_scale(index, scale);
 #endif
 }
+#endif
 ///////////////////
 
 //////////////// Message rendering
@@ -310,6 +318,7 @@ static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_s
 
 static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
+#ifdef HAVE_FBO
    if (!g_settings.video.render_to_texture && gl_shader_num() <= 1)
       return;
 
@@ -404,6 +413,11 @@ error:
    glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
    pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
    SSNES_WARN("Failed to set up FBO. Two-pass shading will not work.\n");
+#else
+   (void)gl;
+   (void)width;
+   (void)height;
+#endif
 }
 
 static inline void gl_deinit_font(gl_t *gl)
@@ -537,6 +551,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 
    gl_shader_use(1);
 
+#ifdef HAVE_FBO
    // Render to texture in first pass.
    if (gl->fbo_inited)
    {
@@ -552,13 +567,16 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       gl->render_to_tex = true;
       set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
    }
+#endif
 
    if (gl->should_resize)
    {
       gl->should_resize = false;
       SDL_SetVideoMode(gl->win_width, gl->win_height, 0, SDL_OPENGL | SDL_RESIZABLE | (g_settings.video.fullscreen ? SDL_FULLSCREEN : 0));
 
+#ifdef HAVE_FBO
       if (!gl->render_to_tex)
+#endif
          set_viewport(gl, gl->win_width, gl->win_height, false);
    }
 
@@ -597,6 +615,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 
    glDrawArrays(GL_QUADS, 0, 4);
 
+#ifdef HAVE_FBO
    if (gl->fbo_inited)
    {
       // Render the rest of our passes.
@@ -655,6 +674,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       glDrawArrays(GL_QUADS, 0, 4);
       glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
    }
+#endif
 
    if (msg)
       gl_render_msg(gl, msg);
@@ -676,11 +696,14 @@ static void gl_free(void *data)
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDeleteTextures(1, &gl->texture);
+
+#ifdef HAVE_FBO
    if (gl->fbo_inited)
    {
       glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
       pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
    }
+#endif
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
    free(gl);
