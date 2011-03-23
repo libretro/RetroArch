@@ -70,8 +70,7 @@ static const uint32_t crc32_table[256] = {
     0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 };
 
-
-static inline uint32_t crc32_adjust(uint32_t crc32, uint8_t input)
+uint32_t crc32_adjust(uint32_t crc32, uint8_t input)
 {
    return ((crc32 >> 8) & 0x00ffffff) ^ crc32_table[(crc32 ^ input) & 0xff];
 }

@@ -15,37 +15,30 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_MOVIE_H
-#define __SSNES_MOVIE_H
+#ifndef __UPS_H
+#define __UPS_H
 
 #include <stdint.h>
-#include <stdbool.h>
+#include <stddef.h>
 
-typedef struct bsv_movie bsv_movie_t;
+// UPS implementation from bSNES.
 
-enum ssnes_movie_type
+typedef enum ups_error
 {
-   SSNES_MOVIE_PLAYBACK,
-   SSNES_MOVIE_RECORD,
-};
+   UPS_UNKNOWN,
+   UPS_SUCCESS,
+   UPS_PATCH_INVALID,
+   UPS_SOURCE_INVALID,
+   UPS_TARGET_INVALID,
+   UPS_TARGET_TOO_SMALL,
+   UPS_PATCH_CHECKSUM_INVALID,
+   UPS_SOURCE_CHECKSUM_INVALID,
+   UPS_TARGET_CHECKSUM_INVALID
+} ups_error_t;
 
-bsv_movie_t *bsv_movie_init(const char *path, enum ssnes_movie_type type);
-
-// Playback
-bool bsv_movie_get_input(bsv_movie_t *handle, int16_t *input);
-
-// Recording
-void bsv_movie_set_input(bsv_movie_t *handle, int16_t input);
-
-// Used for rewinding while playback/record.
-void bsv_movie_set_frame_start(bsv_movie_t *handle); // Debugging purposes.
-void bsv_movie_set_frame_end(bsv_movie_t *handle);
-void bsv_movie_frame_rewind(bsv_movie_t *handle);
-
-void bsv_movie_free(bsv_movie_t *handle);
-
-uint32_t crc32_calculate(const uint8_t *data, unsigned length);
-uint32_t crc32_adjust(uint32_t crc32, uint8_t input);
+ups_error_t ups_patch(
+      const uint8_t *patch_data, size_t patch_length,
+      const uint8_t *source_data, size_t source_length,
+      uint8_t *target_data, size_t *target_length);
 
 #endif
-
