@@ -23,91 +23,12 @@
 #include <string.h>
 #include "dynamic.h"
 #include "movie.h"
+#include "ups.h"
 
 #ifdef _WIN32
 #include <io.h>
 #include <fcntl.h>
 #endif
-
-// Load SNES rom only. Applies a hack for headered ROMs.
-static ssize_t read_rom_file(FILE* file, void** buf)
-{
-   ssize_t ret;
-   if (file == NULL) // stdin
-   {
-#ifdef _WIN32
-      setmode(0, O_BINARY);
-#endif
-
-      SSNES_LOG("Reading ROM from stdin ...\n");
-      size_t buf_size = 0xFFFFF; // Some initial guesstimate.
-      size_t buf_ptr = 0;
-      char *rom_buf = malloc(buf_size);
-      if (rom_buf == NULL)
-      {
-         SSNES_ERR("Couldn't allocate memory!\n");
-         return -1;
-      }
-
-      for(;;)
-      {
-         size_t ret = fread(rom_buf + buf_ptr, 1, buf_size - buf_ptr, stdin);
-         buf_ptr += ret;
-
-         // We've reached the end
-         if (buf_ptr < buf_size)
-            break;
-
-         rom_buf = realloc(rom_buf, buf_size * 2);
-         if (rom_buf == NULL)
-         {
-            SSNES_ERR("Couldn't allocate memory!\n");
-            return -1;
-         }
-
-         buf_size *= 2;
-      }
-
-      if ((buf_ptr & 0x7fff) == 512)
-      {
-         memmove(rom_buf, rom_buf + 512, buf_ptr - 512);
-         buf_ptr -= 512;
-      }
-
-      *buf = rom_buf;
-      ret = buf_ptr;
-   }
-   else
-   {
-      fseek(file, 0, SEEK_END);
-      long length = ftell(file);
-      rewind(file);
-      if ((length & 0x7fff) == 512)
-      {
-         length -= 512;
-         fseek(file, 512, SEEK_SET);
-      }
-
-      void *rom_buf = malloc(length);
-      if ( rom_buf == NULL )
-      {
-         SSNES_ERR("Couldn't allocate memory!\n");
-         return -1;
-      }
-
-      if ( fread(rom_buf, 1, length, file) < length )
-      {
-         SSNES_ERR("Didn't read whole file.\n");
-         free(rom_buf);
-         return -1;
-      }
-      *buf = rom_buf;
-      ret = length;
-   }
-
-   g_extern.cart_crc = crc32_calculate(*buf, ret);
-   return ret;
-}
 
 // Generic file loader.
 static ssize_t read_file(const char *path, void **buf)
@@ -142,6 +63,117 @@ error:
    *buf = NULL;
    return -1;
 }
+
+// Load SNES rom only. Applies a hack for headered ROMs.
+static ssize_t read_rom_file(FILE* file, void** buf)
+{
+   ssize_t ret = 0;
+   uint8_t *ret_buf = NULL;
+
+   if (file == NULL) // stdin
+   {
+#ifdef _WIN32
+      setmode(0, O_BINARY);
+#endif
+
+      SSNES_LOG("Reading ROM from stdin ...\n");
+      size_t buf_size = 0xFFFFF; // Some initial guesstimate.
+      size_t buf_ptr = 0;
+      uint8_t *rom_buf = malloc(buf_size);
+      if (rom_buf == NULL)
+      {
+         SSNES_ERR("Couldn't allocate memory!\n");
+         return -1;
+      }
+
+      for(;;)
+      {
+         size_t ret = fread(rom_buf + buf_ptr, 1, buf_size - buf_ptr, stdin);
+         buf_ptr += ret;
+
+         // We've reached the end
+         if (buf_ptr < buf_size)
+            break;
+
+         rom_buf = realloc(rom_buf, buf_size * 2);
+         if (rom_buf == NULL)
+         {
+            SSNES_ERR("Couldn't allocate memory!\n");
+            return -1;
+         }
+
+         buf_size *= 2;
+      }
+
+      ret_buf = rom_buf;
+      ret = buf_ptr;
+   }
+   else
+   {
+      fseek(file, 0, SEEK_END);
+      ret = ftell(file);
+      rewind(file);
+
+      void *rom_buf = malloc(ret);
+      if (rom_buf == NULL)
+      {
+         SSNES_ERR("Couldn't allocate memory!\n");
+         return -1;
+      }
+
+      if (fread(rom_buf, 1, ret, file) < ret)
+      {
+         SSNES_ERR("Didn't read whole file.\n");
+         free(rom_buf);
+         return -1;
+      }
+
+      ret_buf = rom_buf;
+   }
+
+   // Patch with UPS.
+   ssize_t ups_patch_size;
+   void *ups_patch = NULL;
+   if (*g_extern.ups_name && (ups_patch_size = read_file(g_extern.ups_name, &ups_patch)) >= 0)
+   {
+      SSNES_LOG("Found UPS file in \"%s\", attempting to patch ...\n", g_extern.ups_name);
+
+      size_t target_size = ret * 4; // Just to be sure ...
+      uint8_t *patched_rom = malloc(target_size);
+      if (patched_rom)
+      {
+         ups_error_t err = ups_apply_patch(ups_patch, ups_patch_size, ret_buf, ret, patched_rom, &target_size);
+         if (err == UPS_SUCCESS)
+         {
+            free(ret_buf);
+            ret_buf = patched_rom;
+            ret = target_size;
+            SSNES_LOG("ROM patched successfully (UPS)!\n");
+         }
+         else
+         {
+            free(patched_rom);
+            SSNES_LOG("ROM failed to patch (UPS).\n");
+         }
+
+         free(ups_patch);
+      }
+   }
+   else if (*g_extern.ups_name)
+      SSNES_LOG("Could not find UPS patch.\n");
+
+   // Remove SMC header if present.
+   if ((ret & 0x7fff) == 512)
+   {
+      memmove(ret_buf, ret_buf + 512, ret - 512);
+      ret -= 512;
+   }
+
+   g_extern.cart_crc = crc32_calculate(ret_buf, ret);
+   *buf = ret_buf;
+   return ret;
+}
+
 
 // Dump stuff to file.
 static bool dump_to_file(const char *path, const void *data, size_t size)

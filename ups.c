@@ -56,16 +56,18 @@ static void target_write(struct ups_data *data, uint8_t n)
       data->target_data[data->target_offset] = n;
       data->target_checksum = crc32_adjust(data->target_checksum, n);
    }
+
+   data->target_offset++;
 }
 
 static uint64_t decode(struct ups_data *data) 
 {
    uint64_t offset = 0, shift = 1;
-   while(true) 
+   while (true) 
    {
       uint8_t x = patch_read(data);
       offset += (x & 0x7f) * shift;
-      if(x & 0x80) 
+      if (x & 0x80) 
          break;
       shift <<= 7;
       offset += shift;
@@ -73,24 +75,24 @@ static uint64_t decode(struct ups_data *data)
    return offset;
 }
 
-ups_error_t ups_patch(
-      const uint8_t *patch_data, size_t patch_length,
-      const uint8_t *source_data, size_t source_length,
-      uint8_t *target_data, size_t *target_length)
+ups_error_t ups_apply_patch(
+      const uint8_t *patchdata, size_t patchlength,
+      const uint8_t *sourcedata, size_t sourcelength,
+      uint8_t *targetdata, size_t *targetlength)
 {
    struct ups_data data = {
-      .patch_data = patch_data,
-      .source_data = source_data,
-      .target_data = target_data,
-      .patch_length = patch_length,
-      .source_length = source_length,
-      .target_length = *target_length,
+      .patch_data = patchdata,
+      .source_data = sourcedata,
+      .target_data = targetdata,
+      .patch_length = patchlength,
+      .source_length = sourcelength,
+      .target_length = *targetlength,
       .patch_checksum = ~0,
       .source_checksum = ~0,
       .target_checksum = ~0
    };
 
-   if (patch_length < 18) 
+   if (data.patch_length < 18) 
       return UPS_PATCH_INVALID;
    if (patch_read(&data) != 'U') 
       return UPS_PATCH_INVALID;
@@ -104,12 +106,12 @@ ups_error_t ups_patch(
    unsigned source_read_length = decode(&data);
    unsigned target_read_length = decode(&data);
 
-   if (source_length != source_read_length && source_length != target_read_length) 
+   if (data.source_length != source_read_length && data.source_length != target_read_length) 
       return UPS_SOURCE_INVALID;
-   *target_length = (data.source_length == source_read_length ? target_read_length : source_read_length);
-   if (data.target_length < *target_length) 
+   *targetlength = (data.source_length == source_read_length ? target_read_length : source_read_length);
+   if (data.target_length < *targetlength) 
       return UPS_TARGET_TOO_SMALL;
-   data.target_length = *target_length;
+   data.target_length = *targetlength;
 
    while (data.patch_offset < data.patch_length - 12) 
    {
@@ -123,20 +125,23 @@ ups_error_t ups_patch(
          if (patch_xor == 0) break;
       }
    }
+
    while (data.source_offset < data.source_length) 
       target_write(&data, source_read(&data));
    while (data.target_offset < data.target_length) 
       target_write(&data, source_read(&data));
 
    uint32_t patch_read_checksum = 0, source_read_checksum = 0, target_read_checksum = 0;
-   for(unsigned i = 0; i < 4; i++) 
+   for (unsigned i = 0; i < 4; i++) 
       source_read_checksum |= patch_read(&data) << (i * 8);
-   for(unsigned i = 0; i < 4; i++) 
+   for (unsigned i = 0; i < 4; i++) 
       target_read_checksum |= patch_read(&data) << (i * 8);
+
    uint32_t patch_result_checksum = ~data.patch_checksum;
    data.source_checksum = ~data.source_checksum;
    data.target_checksum = ~data.target_checksum;
-   for(unsigned i = 0; i < 4; i++) 
+
+   for (unsigned i = 0; i < 4; i++) 
       patch_read_checksum |= patch_read(&data) << (i * 8);
 
    if (patch_result_checksum != patch_read_checksum) 

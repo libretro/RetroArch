@@ -307,6 +307,7 @@ static void print_help(void)
    puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
 #endif
    puts("\t-v/--verbose: Verbose logging");
+   puts("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM.\n");
 
    print_features();
 }
@@ -357,6 +358,7 @@ static void parse_input(int argc, char *argv[])
       { "connect", 1, NULL, 'C' },
       { "frames", 1, NULL, 'F' },
       { "port", 1, &val, 'p' },
+      { "ups", 1, NULL, 'U' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -374,7 +376,7 @@ static void parse_input(int argc, char *argv[])
 #define CONFIG_FILE_ARG
 #endif
 
-   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:P:HC:F:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:P:HC:F:U:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for(;;)
    {
       val = 0;
@@ -487,6 +489,10 @@ static void parse_input(int argc, char *argv[])
             g_extern.netplay_sync_frames = strtol(optarg, NULL, 0);
             if (g_extern.netplay_sync_frames > 32)
                g_extern.netplay_sync_frames = 32;
+            break;
+
+         case 'U':
+            strncpy(g_extern.ups_name, optarg, sizeof(g_extern.ups_name) - 1);
             break;
 
          case 0:
@@ -872,6 +878,9 @@ static void fill_pathnames(void)
 
    if (!g_extern.bsv_movie_playback)
       fill_pathname(g_extern.bsv_movie_path, g_extern.savefile_name_srm, "");
+
+   if (!(*g_extern.ups_name) && *g_extern.basename)
+      fill_pathname(g_extern.ups_name, g_extern.basename, ".ups");
 }
 
 // Save or load state here.

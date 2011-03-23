@@ -126,5 +126,10 @@ Set FRAMES to 0 to have perfect sync. 0 frames is only suitable for LAN. Default
 \fB--port PORT\fR
 Network port used for netplay. This defaults to 55435. This option affects both TCP and UDP.
 
+.TP
+\fB--ups PATCH, -U PATCH\fR
+Attempts to apply an UPS patch to the current ROM image. No files are altered. 
+If this flag is not specified, SSNES will look for a .ups file with same basename as ROM specified.
+
 .SH "SEE ALSO"
 \fBssnes-joyconfig\fR(1)

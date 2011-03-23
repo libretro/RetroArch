@@ -36,7 +36,7 @@ typedef enum ups_error
    UPS_TARGET_CHECKSUM_INVALID
 } ups_error_t;
 
-ups_error_t ups_patch(
+ups_error_t ups_apply_patch(
       const uint8_t *patch_data, size_t patch_length,
       const uint8_t *source_data, size_t source_length,
       uint8_t *target_data, size_t *target_length);
