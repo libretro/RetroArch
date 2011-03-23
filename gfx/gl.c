@@ -325,7 +325,9 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    gl_shader_scale(gl_shader_num(), &scale);
    if (scale.valid)
       gl->fbo_pass++;
-   else
+
+   gl_shader_scale(1, &scale);
+   if (!scale.valid)
    {
       scale.scale_x = g_settings.video.fbo_scale_x;
       scale.scale_y = g_settings.video.fbo_scale_y;
