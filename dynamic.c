@@ -54,6 +54,7 @@ void (*psnes_set_audio_sample)(snes_audio_sample_t);
 void (*psnes_set_input_poll)(snes_input_poll_t);
 void (*psnes_set_input_state)(snes_input_state_t);
 
+void (*psnes_reset)(void);
 void (*psnes_run)(void);
 
 const char *(*psnes_library_id)(void) = NULL;
@@ -110,6 +111,7 @@ static void load_dynamic(void)
    OPT_SYM(snes_library_id);
    SYM(snes_library_revision_minor);
    SYM(snes_library_revision_major);
+   SYM(snes_reset);
    SYM(snes_run);
    SYM(snes_get_region);
    SYM(snes_load_cartridge_normal);
@@ -143,6 +145,7 @@ static void set_statics(void)
    SSYM(snes_set_input_state);
    SSYM(snes_library_revision_minor);
    SSYM(snes_library_revision_major);
+   SSYM(snes_reset);
    SSYM(snes_run);
    SSYM(snes_get_region);
    SSYM(snes_load_cartridge_normal);

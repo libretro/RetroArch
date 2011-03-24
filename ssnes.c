@@ -1146,10 +1146,23 @@ static void check_pause(void)
    old_state = new_state;
 }
 
+static void check_reset(void)
+{
+   if (driver.input->key_pressed(driver.input_data, SSNES_RESET))
+   {
+      SSNES_LOG("Resetting game!\n");
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, "Reset!", 1, 120);
+      psnes_reset();
+      init_controllers(); // bSNES since v073r01 resets controllers to JOYPAD after a reset, so just enforce it here.
+   }
+}
+
 static void do_state_checks(void)
 {
    if (!g_extern.netplay)
    {
+      check_reset();
       check_pause();
       if (g_extern.is_paused)
          return;

@@ -64,6 +64,7 @@ extern unsigned (*psnes_serialize_size)(void);
 extern bool (*psnes_serialize)(uint8_t*, unsigned);
 extern bool (*psnes_unserialize)(const uint8_t*, unsigned);
 
+extern void (*psnes_reset)(void);
 extern void (*psnes_run)(void);
 
 extern void (*psnes_set_cartridge_basename)(const char*);

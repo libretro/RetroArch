@@ -42,7 +42,7 @@
 
 
 #define MAX_PLAYERS 5
-#define MAX_BINDS 25 // Needs to be increased every time there are new binds added.
+#define MAX_BINDS 26 // Needs to be increased every time there are new binds added.
 #define SSNES_NO_JOYPAD 0xFFFF
 
 enum ssnes_shader_type
