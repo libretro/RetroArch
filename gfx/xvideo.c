@@ -20,9 +20,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <math.h>
 #ifdef HAVE_FREETYPE
 #include "fonts.h"
 #endif
+#include "gfx_common.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -369,7 +371,11 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
    XSetWindowBackground(xv->display, xv->window, 0);
 
    XMapWindow(xv->display, xv->window);
-   XStoreName(xv->display, xv->window, g_extern.title_buf);
+
+   char buf[64];
+   if (gfx_window_title(buf, sizeof(buf)))
+      XStoreName(xv->display, xv->window, buf);
+
    if (video->fullscreen)
       set_fullscreen(xv);
    hide_mouse(xv);
@@ -537,20 +543,19 @@ static void calc_out_rect(bool keep_aspect, unsigned *x, unsigned *y, unsigned *
 
       // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
       // assume they are actually equal.
-      if ( (int)(device_aspect*1000) > (int)(desired_aspect*1000) )
+      if (fabs(device_aspect - desired_aspect) < 0.0001)
+      {
+         *x = 0; *y = 0; *width = vp_width; *height = vp_height;
+      }
+      else if (device_aspect > desired_aspect)
       {
          float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
          *x = vp_width * (0.5 - delta); *y = 0; *width = 2.0 * vp_width * delta; *height = vp_height;
       }
-
-      else if ( (int)(device_aspect*1000) < (int)(desired_aspect*1000) )
+      else
       {
          float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
          *x = 0; *y = vp_height * (0.5 - delta); *width = vp_width; *height = 2.0 * vp_height * delta;
-      }
-      else
-      {
-         *x = 0; *y = 0; *width = vp_width; *height = vp_height;
       }
    }
 }
@@ -628,6 +633,10 @@ static bool xv_frame(void *data, const void* frame, unsigned width, unsigned hei
          0, 0, width, height,
          x, y, owidth, oheight,
          true);
+
+   char buf[64];
+   if (gfx_window_title(buf, sizeof(buf)))
+      XStoreName(xv->display, xv->window, buf);
 
    return true;
 }

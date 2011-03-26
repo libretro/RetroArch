@@ -32,6 +32,7 @@
 #endif
 
 #include "gl_common.h"
+#include "gfx_common.h"
 
 #define NO_SDL_GLEXT
 #include "SDL.h"
@@ -527,37 +528,6 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
    //SSNES_LOG("Setting viewport @ %ux%u\n", width, height);
 }
 
-static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)
-{
-   float time = new_tv->tv_sec - tv->tv_sec + (new_tv->tv_usec - tv->tv_usec)/1000000.0;
-   return frames/time;
-}
-
-static void show_fps(void)
-{
-   // Shows FPS in taskbar.
-   static int frames = 0;
-   static struct timeval tv;
-   struct timeval new_tv;
-
-   if (frames == 0)
-      gettimeofday(&tv, NULL);
-
-   if ((frames % 180) == 0 && frames > 0)
-   {
-      gettimeofday(&new_tv, NULL);
-      struct timeval tmp_tv = tv;
-      gettimeofday(&tv, NULL);
-      char tmpstr[256] = {0};
-
-      float fps = tv_to_fps(&tmp_tv, &new_tv, 180);
-
-      snprintf(tmpstr, sizeof(tmpstr), "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, fps, frames);
-      SDL_WM_SetCaption(tmpstr, NULL);
-   }
-   frames++;
-}
-
 static bool gl_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *gl = data;
@@ -616,7 +586,6 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 
       //SSNES_LOG("Setting last rect: %ux%u\n", width, height);
    }
-
 
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
    glTexSubImage2D(GL_TEXTURE_2D,
@@ -687,7 +656,9 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
    if (msg)
       gl_render_msg(gl, msg);
 
-   show_fps();
+   char buf[128];
+   if (gfx_window_title(buf, sizeof(buf)))
+      SDL_WM_SetCaption(buf, NULL);
    SDL_GL_SwapBuffers();
 
    return true;
@@ -819,7 +790,9 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    glColor4f(1, 1, 1, 1);
    glClearColor(0, 0, 0, 1);
 
-   SDL_WM_SetCaption(g_extern.title_buf, NULL);
+   char buf[128];
+   if (gfx_window_title(buf, sizeof(buf)))
+      SDL_WM_SetCaption(buf, NULL);
 
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
