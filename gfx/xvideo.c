@@ -559,6 +559,9 @@ static void calc_out_rect(bool keep_aspect, unsigned *x, unsigned *y, unsigned *
 static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned height)
 {
 #ifdef HAVE_FREETYPE
+   if (!xv->font)
+      return;
+
    struct font_output_list out;
    font_renderer_msg(xv->font, msg, &out);
    struct font_output *head = out.head;
