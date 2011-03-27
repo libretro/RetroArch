@@ -180,7 +180,7 @@ static void get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
    
    if (attr_size)
    {
-      prog->abs_x = prog->abs_y = strtoul((const char*)attr_scale, NULL, 0);
+      prog->abs_x = prog->abs_y = strtoul((const char*)attr_size, NULL, 0);
       prog->valid_scale = true;
       prog->type_x = prog->type_y = SSNES_SCALE_ABSOLUTE;
       SSNES_LOG("Got size attr: %u\n", prog->abs_x);

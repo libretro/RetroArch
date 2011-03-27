@@ -636,6 +636,8 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
    {
       unsigned last_width = width;
       unsigned last_height = height;
+      unsigned last_max_width = 512;
+      unsigned last_max_height = 512;
       // Calculate viewports for FBOs.
       for (int i = 0; i < gl->fbo_pass; i++)
       {
@@ -643,14 +645,15 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
          {
             case SSNES_SCALE_INPUT:
                gl->fbo_rect[i].img_width = last_width * gl->fbo_scale[i].scale_x;
+               gl->fbo_rect[i].max_img_width = last_max_width * gl->fbo_scale[i].scale_x;
                break;
 
             case SSNES_SCALE_ABSOLUTE:
-               gl->fbo_rect[i].img_width = gl->fbo_scale[i].abs_x;
+               gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].abs_x;
                break;
 
             case SSNES_SCALE_VIEWPORT:
-               gl->fbo_rect[i].img_width = gl->fbo_scale[i].scale_x * gl->vp_out_width;
+               gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].scale_x * gl->vp_out_width;
                break;
 
             default:
@@ -661,14 +664,15 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
          {
             case SSNES_SCALE_INPUT:
                gl->fbo_rect[i].img_height = last_height * gl->fbo_scale[i].scale_y;
+               gl->fbo_rect[i].max_img_height = last_max_height * gl->fbo_scale[i].scale_y;
                break;
 
             case SSNES_SCALE_ABSOLUTE:
-               gl->fbo_rect[i].img_height = gl->fbo_scale[i].abs_y;
+               gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].abs_y;
                break;
 
             case SSNES_SCALE_VIEWPORT:
-               gl->fbo_rect[i].img_height = gl->fbo_scale[i].scale_y * gl->vp_out_height;
+               gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].scale_y * gl->vp_out_height;
                break;
 
             default:
@@ -677,6 +681,8 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 
          last_width = gl->fbo_rect[i].img_width;
          last_height = gl->fbo_rect[i].img_height;
+         last_max_width = gl->fbo_rect[i].max_img_width;
+         last_max_height = gl->fbo_rect[i].max_img_height;
       }
 
       glBindTexture(GL_TEXTURE_2D, gl->texture);
@@ -696,18 +702,15 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
          set_viewport(gl, gl->win_width, gl->win_height, false);
       else
       {
-         unsigned factor_x = 512 / width;
-         unsigned factor_y = 512 / height;
-
          // Check if we have to recreate our FBO textures.
          for (int i = 0; i < gl->fbo_pass; i++)
          {
             // Check proactively since we might suddently get sizes of 512 width.
-            if (factor_x * gl->fbo_rect[i].img_width > gl->fbo_rect[i].width ||
-                  factor_y * gl->fbo_rect[i].img_height > gl->fbo_rect[i].height)
+            if (gl->fbo_rect[i].max_img_width > gl->fbo_rect[i].width ||
+                  gl->fbo_rect[i].max_img_height > gl->fbo_rect[i].height)
             {
-               unsigned img_width = gl->fbo_rect[i].img_width * factor_x;
-               unsigned img_height = gl->fbo_rect[i].img_height * factor_y;
+               unsigned img_width = gl->fbo_rect[i].max_img_width;
+               unsigned img_height = gl->fbo_rect[i].max_img_height;
                unsigned max = img_width > img_height ? img_width : img_height;
                unsigned pow2_size = next_pow2(max);
                gl->fbo_rect[i].width = gl->fbo_rect[i].height = pow2_size;

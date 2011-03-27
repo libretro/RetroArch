@@ -69,6 +69,8 @@ struct gl_fbo_rect
 {
    unsigned img_width;
    unsigned img_height;
+   unsigned max_img_width;
+   unsigned max_img_height;
    unsigned width;
    unsigned height;
 };
