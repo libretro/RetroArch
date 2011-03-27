@@ -351,7 +351,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
          break;
 
       case SSNES_SCALE_ABSOLUTE:
-         gl->fbo_rect[0].width = next_pow2(gl->fbo_scale[0].abs_x);
+         gl->fbo_rect[0].width = next_pow2(scale.abs_x);
          break;
 
       case SSNES_SCALE_VIEWPORT:
@@ -369,7 +369,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
          break;
 
       case SSNES_SCALE_ABSOLUTE:
-         gl->fbo_rect[0].height = next_pow2(gl->fbo_scale[0].abs_y);
+         gl->fbo_rect[0].height = next_pow2(scale.abs_y);
          break;
 
       case SSNES_SCALE_VIEWPORT:
@@ -636,8 +636,8 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
    {
       unsigned last_width = width;
       unsigned last_height = height;
-      unsigned last_max_width = 512;
-      unsigned last_max_height = 512;
+      unsigned last_max_width = gl->tex_w;
+      unsigned last_max_height = gl->tex_h;
       // Calculate viewports for FBOs.
       for (int i = 0; i < gl->fbo_pass; i++)
       {
@@ -705,7 +705,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
          // Check if we have to recreate our FBO textures.
          for (int i = 0; i < gl->fbo_pass; i++)
          {
-            // Check proactively since we might suddently get sizes of 512 width.
+            // Check proactively since we might suddently get sizes of tex_w width or tex_h height.
             if (gl->fbo_rect[i].max_img_width > gl->fbo_rect[i].width ||
                   gl->fbo_rect[i].max_img_height > gl->fbo_rect[i].height)
             {

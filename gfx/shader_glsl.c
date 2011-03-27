@@ -112,8 +112,6 @@ static void get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
 {
    prog->scale_x = 1.0;
    prog->scale_y = 1.0;
-   prog->abs_x = 512;
-   prog->abs_y = 512;
    prog->type_x = prog->type_y = SSNES_SCALE_INPUT;
    prog->valid_scale = false;
 
