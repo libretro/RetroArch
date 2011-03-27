@@ -100,6 +100,11 @@ struct shader_program
 
    float scale_x;
    float scale_y;
+   unsigned abs_x;
+   unsigned abs_y;
+   enum gl_scale_type type_x;
+   enum gl_scale_type type_y;
+
    bool valid_scale;
 };
 
@@ -107,6 +112,9 @@ static void get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
 {
    prog->scale_x = 1.0;
    prog->scale_y = 1.0;
+   prog->abs_x = 512;
+   prog->abs_y = 512;
+   prog->type_x = prog->type_y = SSNES_SCALE_INPUT;
    prog->valid_scale = false;
 
    // Check if shader forces a certain texture filtering.
@@ -131,9 +139,16 @@ static void get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
    else
       prog->filter = SSNES_GL_NOFORCE;
 
+   // Check for scaling attributes *lots of code <_<*
    xmlChar *attr_scale = xmlGetProp(ptr, (const xmlChar*)"scale");
    xmlChar *attr_scale_x = xmlGetProp(ptr, (const xmlChar*)"scale_x");
    xmlChar *attr_scale_y = xmlGetProp(ptr, (const xmlChar*)"scale_y");
+   xmlChar *attr_size = xmlGetProp(ptr, (const xmlChar*)"size");
+   xmlChar *attr_size_x = xmlGetProp(ptr, (const xmlChar*)"size_x");
+   xmlChar *attr_size_y = xmlGetProp(ptr, (const xmlChar*)"size_y");
+   xmlChar *attr_outscale = xmlGetProp(ptr, (const xmlChar*)"outscale");
+   xmlChar *attr_outscale_x = xmlGetProp(ptr, (const xmlChar*)"outscale_x");
+   xmlChar *attr_outscale_y = xmlGetProp(ptr, (const xmlChar*)"outscale_y");
 
    if (attr_scale)
    {
@@ -141,6 +156,7 @@ static void get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       prog->scale_x = scale;
       prog->scale_y = scale;
       prog->valid_scale = true;
+      prog->type_x = prog->type_y = SSNES_SCALE_INPUT;
       SSNES_LOG("Got scale attr: %.1f\n", scale);
    }
 
@@ -149,6 +165,7 @@ static void get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       float scale = strtod((const char*)attr_scale_x, NULL);
       prog->scale_x = scale;
       prog->valid_scale = true;
+      prog->type_x = SSNES_SCALE_INPUT;
       SSNES_LOG("Got scale_x attr: %.1f\n", scale);
    }
 
@@ -157,15 +174,82 @@ static void get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       float scale = strtod((const char*)attr_scale_y, NULL);
       prog->scale_y = scale;
       prog->valid_scale = true;
+      prog->type_y = SSNES_SCALE_INPUT;
       SSNES_LOG("Got scale_y attr: %.1f\n", scale);
    }
    
+   if (attr_size)
+   {
+      prog->abs_x = prog->abs_y = strtoul((const char*)attr_scale, NULL, 0);
+      prog->valid_scale = true;
+      prog->type_x = prog->type_y = SSNES_SCALE_ABSOLUTE;
+      SSNES_LOG("Got size attr: %u\n", prog->abs_x);
+   }
+
+   if (attr_size_x)
+   {
+      prog->abs_x = strtoul((const char*)attr_size_x, NULL, 0);
+      prog->valid_scale = true;
+      prog->type_x = SSNES_SCALE_ABSOLUTE;
+      SSNES_LOG("Got size_x attr: %u\n", prog->abs_x);
+   }
+
+   if (attr_size_y)
+   {
+      prog->abs_y = strtoul((const char*)attr_size_y, NULL, 0);
+      prog->valid_scale = true;
+      prog->type_y = SSNES_SCALE_ABSOLUTE;
+      SSNES_LOG("Got size_y attr: %u\n", prog->abs_y);
+   }
+
+   if (attr_outscale)
+   {
+      float scale = strtod((const char*)attr_outscale, NULL);
+      prog->scale_x = scale;
+      prog->scale_y = scale;
+      prog->valid_scale = true;
+      prog->type_x = prog->type_y = SSNES_SCALE_VIEWPORT;
+      SSNES_LOG("Got outscale attr: %.1f\n", scale);
+   }
+
+   if (attr_outscale_x)
+   {
+      float scale = strtod((const char*)attr_outscale_x, NULL);
+      prog->scale_x = scale;
+      prog->valid_scale = true;
+      prog->type_x = SSNES_SCALE_VIEWPORT;
+      SSNES_LOG("Got outscale_x attr: %.1f\n", scale);
+   }
+
+   if (attr_outscale_y)
+   {
+      float scale = strtod((const char*)attr_outscale_y, NULL);
+      prog->scale_y = scale;
+      prog->valid_scale = true;
+      prog->type_y = SSNES_SCALE_VIEWPORT;
+      SSNES_LOG("Got outscale_y attr: %.1f\n", scale);
+   }
+
+
    if (attr_scale)
       xmlFree(attr_scale);
    if (attr_scale_x)
       xmlFree(attr_scale_x);
    if (attr_scale_y)
       xmlFree(attr_scale_y);
+   if (attr_size)
+      xmlFree(attr_size);
+   if (attr_size_x)
+      xmlFree(attr_size_x);
+   if (attr_size_y)
+      xmlFree(attr_size_y);
+   if (attr_outscale)
+      xmlFree(attr_outscale);
+   if (attr_outscale_x)
+      xmlFree(attr_outscale_x);
+   if (attr_outscale_y)
+      xmlFree(attr_outscale_y);
+
 }
 
 static unsigned get_xml_shaders(const char *path, struct shader_program *prog, size_t size)
@@ -389,8 +473,12 @@ bool gl_glsl_init(const char *path)
    for (unsigned i = 0; i < num_progs; i++)
    {
       gl_filter_type[i + 1] = progs[i].filter;
+      gl_scale[i + 1].type_x = progs[i].type_x;
+      gl_scale[i + 1].type_y = progs[i].type_y;
       gl_scale[i + 1].scale_x = progs[i].scale_x;
       gl_scale[i + 1].scale_y = progs[i].scale_y;
+      gl_scale[i + 1].abs_x = progs[i].abs_x;
+      gl_scale[i + 1].abs_y = progs[i].abs_y;
       gl_scale[i + 1].valid = progs[i].valid_scale;
    }
 

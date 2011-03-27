@@ -73,10 +73,21 @@ struct gl_fbo_rect
    unsigned height;
 };
 
+enum gl_scale_type
+{
+   SSNES_SCALE_ABSOLUTE,
+   SSNES_SCALE_INPUT,
+   SSNES_SCALE_VIEWPORT
+};
+
 struct gl_fbo_scale
 {
+   enum gl_scale_type type_x;
+   enum gl_scale_type type_y;
    float scale_x;
    float scale_y;
+   unsigned abs_x;
+   unsigned abs_y;
    bool valid;
 };
 
