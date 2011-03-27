@@ -748,9 +748,12 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
       glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
 
-      glTexImage2D(GL_TEXTURE_2D,
-            0, GL_RGBA, gl->tex_w, gl->tex_h, 0, gl->texture_type,
-            gl->texture_fmt, NULL);
+      // Can we pass NULL here, hmm?
+      void *tmp = calloc(1, gl->tex_w * gl->tex_h * gl->base_size);
+      glTexSubImage2D(GL_TEXTURE_2D,
+            0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
+            gl->texture_fmt, tmp);
+      free(tmp);
 
       GLfloat x = (GLfloat)width / gl->tex_w;
       GLfloat y = (GLfloat)height / gl->tex_h;
