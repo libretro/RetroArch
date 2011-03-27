@@ -344,13 +344,10 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
       scale.type_x = scale.type_y = SSNES_SCALE_INPUT;
    }
 
-   float accum_scale_x = 1.0, accum_scale_y = 1.0;
-
-   switch (gl->fbo_scale[0].type_x)
+   switch (scale.type_x)
    {
       case SSNES_SCALE_INPUT:
-         accum_scale_x *= scale.scale_x;
-         gl->fbo_rect[0].width = width * next_pow2(ceil(accum_scale_x));
+         gl->fbo_rect[0].width = width * next_pow2(ceil(scale.scale_x));
          break;
 
       case SSNES_SCALE_ABSOLUTE:
@@ -365,11 +362,10 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
          break;
    }
 
-   switch (gl->fbo_scale[0].type_y)
+   switch (scale.type_y)
    {
       case SSNES_SCALE_INPUT:
-         accum_scale_y *= scale.scale_y;
-         gl->fbo_rect[0].height = height * next_pow2(ceil(accum_scale_y));
+         gl->fbo_rect[0].height = height * next_pow2(ceil(scale.scale_y));
          break;
 
       case SSNES_SCALE_ABSOLUTE:
@@ -384,6 +380,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
          break;
    }
 
+   unsigned last_width = gl->fbo_rect[0].width, last_height = gl->fbo_rect[0].height;
    gl->fbo_scale[0] = scale;
 
    SSNES_LOG("Creating FBO 0 @ %ux%u\n", gl->fbo_rect[0].width, gl->fbo_rect[0].height);
@@ -399,8 +396,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
          switch (gl->fbo_scale[i].type_x)
          {
             case SSNES_SCALE_INPUT:
-               accum_scale_x *= gl->fbo_scale[i].scale_x;
-               gl->fbo_rect[i].width = width * next_pow2(ceil(accum_scale_x));
+               gl->fbo_rect[i].width = last_width * next_pow2(ceil(gl->fbo_scale[i].scale_x));
                break;
 
             case SSNES_SCALE_ABSOLUTE:
@@ -418,8 +414,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
          switch (gl->fbo_scale[i].type_y)
          {
             case SSNES_SCALE_INPUT:
-               accum_scale_y *= gl->fbo_scale[i].scale_y;
-               gl->fbo_rect[i].height = height * next_pow2(ceil(accum_scale_y));
+               gl->fbo_rect[i].height = last_height * next_pow2(ceil(gl->fbo_scale[i].scale_y));
                break;
 
             case SSNES_SCALE_ABSOLUTE:
@@ -433,6 +428,9 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
             default:
                break;
          }
+
+         last_width = gl->fbo_rect[i].width;
+         last_height = gl->fbo_rect[i].height;
       }
       else
       {
@@ -725,6 +723,8 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
                GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
                if (status != GL_FRAMEBUFFER_COMPLETE)
                   SSNES_WARN("Failed to reinit FBO texture!\n");
+
+               SSNES_LOG("Recreating FBO texture #%d: %ux%u\n", i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
             }
          }
 
