@@ -56,6 +56,8 @@
 #define pglGetShaderInfoLog glGetShaderInfoLog
 #define pglGetProgramiv glGetProgramiv
 #define pglGetProgramInfoLog glGetProgramInfoLog
+#define pglDeleteProgram glDeleteProgram
+#define pglGetAttachedShaders glGetAttachedShaders
 #else
 static PFNGLCREATEPROGRAMPROC pglCreateProgram = NULL;
 static PFNGLUSEPROGRAMPROC pglUseProgram = NULL;
@@ -74,6 +76,8 @@ static PFNGLGETSHADERIVPROC pglGetShaderiv = NULL;
 static PFNGLGETSHADERINFOLOGPROC pglGetShaderInfoLog = NULL;
 static PFNGLGETPROGRAMIVPROC pglGetProgramiv = NULL;
 static PFNGLGETPROGRAMINFOLOGPROC pglGetProgramInfoLog = NULL;
+static PFNGLDELETEPROGRAMPROC pglDeleteProgram = NULL;
+static PFNGLGETATTACHEDSHADERSPROC pglGetAttachedShaders = NULL;
 #endif
 
 #define MAX_PROGRAMS 16
@@ -440,6 +444,8 @@ bool gl_glsl_init(const char *path)
    pglGetShaderInfoLog = SDL_GL_GetProcAddress("glGetShaderInfoLog");
    pglGetProgramiv = SDL_GL_GetProcAddress("glGetProgramiv");
    pglGetProgramInfoLog = SDL_GL_GetProcAddress("glGetProgramInfoLog");
+   pglDeleteProgram = SDL_GL_GetProcAddress("glDeleteProgram");
+   pglGetAttachedShaders = SDL_GL_GetProcAddress("glGetAttachedShaders");
 #endif
 
    SSNES_LOG("Checking GLSL shader support ...\n");
@@ -450,7 +456,8 @@ bool gl_glsl_init(const char *path)
       && pglDeleteShader && pglShaderSource && pglCompileShader && pglAttachShader
       && pglDetachShader && pglLinkProgram && pglGetUniformLocation
       && pglUniform1i && pglUniform2fv && pglUniform4fv
-      && pglGetShaderiv && pglGetShaderInfoLog && pglGetProgramiv && pglGetProgramInfoLog;
+      && pglGetShaderiv && pglGetShaderInfoLog && pglGetProgramiv && pglGetProgramInfoLog 
+      && pglDeleteProgram && pglGetAttachedShaders;
 #endif
 
    if (!shader_support)
@@ -507,7 +514,33 @@ bool gl_glsl_init(const char *path)
 }
 
 void gl_glsl_deinit(void)
-{}
+{
+   if (glsl_enable)
+   {
+      pglUseProgram(0);
+      for (int i = 1; i < MAX_PROGRAMS; i++)
+      {
+         if (gl_program[i] == 0)
+            break;
+
+         GLsizei count;
+         GLuint shaders[2];
+
+         pglGetAttachedShaders(gl_program[i], 2, &count, shaders);
+         for (GLsizei j = 0; j < count; j++)
+         {
+            pglDetachShader(gl_program[i], shaders[j]);
+            pglDeleteShader(shaders[j]);
+         }
+
+         pglDeleteProgram(gl_program[i]);
+      }
+   }
+
+   memset(gl_program, 0, sizeof(gl_program));
+   glsl_enable = false;
+   active_index = 0;
+}
 
 void gl_glsl_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 

@@ -81,7 +81,7 @@ static PFNGLFRAMEBUFFERTEXTURE2DPROC pglFramebufferTexture2D = NULL;
 static PFNGLCHECKFRAMEBUFFERSTATUSPROC pglCheckFramebufferStatus = NULL;
 static PFNGLDELETEFRAMEBUFFERSPROC pglDeleteFramebuffers = NULL;
 
-#define LOAD_SYM(sym) p##sym = ((void*)SDL_GL_GetProcAddress(#sym))
+#define LOAD_SYM(sym) if (!p##sym) p##sym = ((void*)SDL_GL_GetProcAddress(#sym))
 static bool load_fbo_proc(void)
 {
    LOAD_SYM(glGenFramebuffers);
@@ -1049,12 +1049,36 @@ static bool gl_focus(void *data)
    return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
 }
 
+#ifdef HAVE_XML
 static bool gl_xml_shader(void *data, const char *path)
 {
-   (void)data;
-   (void)path;
+   gl_t *gl = data;
+   gl_shader_deinit();
+
+#ifdef HAVE_FBO
+   if (gl->fbo_inited)
+   {
+      glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
+      pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
+      gl->fbo_inited = false;
+   }
+#endif
+
+   if (!gl_glsl_init(path))
+      return false;
+
+   // Set up render to texture.
+   gl_init_fbo(gl, gl->tex_w, gl->tex_h);
+
+   // Apparently need to set viewport for passes when we aren't using FBOs.
+   gl_shader_use(0);
+   set_viewport(gl, gl->win_width, gl->win_height, false);
+   gl_shader_use(1);
+   set_viewport(gl, gl->win_width, gl->win_height, false);
+
    return true;
 }
+#endif
 
 const video_driver_t video_gl = {
    .init = gl_init,
@@ -1063,7 +1087,9 @@ const video_driver_t video_gl = {
    .set_nonblock_state = gl_set_nonblock_state,
    .focus = gl_focus,
    .free = gl_free,
+#ifdef HAVE_XML
    .xml_shader = gl_xml_shader,
+#endif
    .ident = "gl"
 };
 
