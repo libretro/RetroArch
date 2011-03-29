@@ -954,8 +954,6 @@ static void* gl_init(video_info_t *video, const input_driver_t **input, void **i
    gl_init_fbo(gl, 256 * video->input_scale, 256 * video->input_scale);
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
-   gl_shader_use(0);
-   set_viewport(gl, gl->win_width, gl->win_height, false);
    gl_shader_use(1);
    set_viewport(gl, gl->win_width, gl->win_height, false);
 
@@ -1072,8 +1070,6 @@ static bool gl_xml_shader(void *data, const char *path)
    gl_init_fbo(gl, gl->tex_w, gl->tex_h);
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
-   gl_shader_use(0);
-   set_viewport(gl, gl->win_width, gl->win_height, false);
    gl_shader_use(1);
    set_viewport(gl, gl->win_width, gl->win_height, false);
 
