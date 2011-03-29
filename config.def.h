@@ -221,6 +221,8 @@ static const struct snes_keybind snes_keybinds_1[] = {
    { SSNES_MOVIE_RECORD_TOGGLE,        SDLK_o,      NO_BTN,      AXIS_NONE },
    { SSNES_PAUSE_TOGGLE,               SDLK_p,      NO_BTN,      AXIS_NONE },
    { SSNES_RESET,                      SDLK_h,      NO_BTN,      AXIS_NONE },
+   { SSNES_SHADER_NEXT,                SDLK_m,      NO_BTN,      AXIS_NONE },
+   { SSNES_SHADER_PREV,                SDLK_n,      NO_BTN,      AXIS_NONE },
    { -1 }
 };
 

@@ -1158,6 +1158,51 @@ static void check_reset(void)
    }
 }
 
+#ifdef HAVE_XML
+static void check_shader_dir(void)
+{
+   static bool old_pressed_next = false;
+   static bool old_pressed_prev = true;
+
+   if (!g_extern.shader_dir.elems || !driver.video->xml_shader)
+      return;
+
+   bool should_apply = false;
+   bool pressed_next = driver.input->key_pressed(driver.input_data, SSNES_SHADER_NEXT);
+   bool pressed_prev = driver.input->key_pressed(driver.input_data, SSNES_SHADER_PREV);
+   if (pressed_next && !old_pressed_next)
+   {
+      should_apply = true;
+      g_extern.shader_dir.ptr = (g_extern.shader_dir.ptr + 1) % g_extern.shader_dir.size;
+   }
+   else if (pressed_prev && !old_pressed_prev)
+   {
+      should_apply = true;
+      if (g_extern.shader_dir.ptr == 0)
+         g_extern.shader_dir.ptr = g_extern.shader_dir.size - 1;
+      else
+         g_extern.shader_dir.ptr--;
+   }
+
+   if (should_apply)
+   {
+      const char *shader = g_extern.shader_dir.elems[g_extern.shader_dir.ptr];
+      msg_queue_clear(g_extern.msg_queue);
+      char msg[512];
+      snprintf(msg, sizeof(msg), "XML shader #%u: \"%s\"", (unsigned)g_extern.shader_dir.ptr, shader);
+      msg_queue_push(g_extern.msg_queue, msg, 1, 120);
+      SSNES_LOG("Applying shader \"%s\"\n", shader);
+
+      if (!driver.video->xml_shader(driver.video_data, shader))
+         SSNES_WARN("Failed to apply shader!\n");
+   }
+
+   old_pressed_next = pressed_next;
+   old_pressed_prev = pressed_prev;
+
+}
+#endif
+
 static void do_state_checks(void)
 {
    if (!g_extern.netplay)
@@ -1178,6 +1223,10 @@ static void do_state_checks(void)
 
       if (!g_extern.bsv_movie_playback)
          check_movie_record();
+
+#ifdef HAVE_XML
+      check_shader_dir();
+#endif
    }
 
    check_fullscreen();

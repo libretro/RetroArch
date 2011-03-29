@@ -1049,6 +1049,13 @@ static bool gl_focus(void *data)
    return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
 }
 
+static bool gl_xml_shader(void *data, const char *path)
+{
+   (void)data;
+   (void)path;
+   return true;
+}
+
 const video_driver_t video_gl = {
    .init = gl_init,
    .frame = gl_frame,
@@ -1056,6 +1063,7 @@ const video_driver_t video_gl = {
    .set_nonblock_state = gl_set_nonblock_state,
    .focus = gl_focus,
    .free = gl_free,
+   .xml_shader = gl_xml_shader,
    .ident = "gl"
 };
 
