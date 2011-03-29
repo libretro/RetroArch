@@ -402,7 +402,7 @@ static void print_linker_log(GLuint obj)
       SSNES_LOG("Linker log: %s\n", info_log);
 }
 
-static void compile_programs(GLuint *gl_prog, struct shader_program *progs, size_t num)
+static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size_t num)
 {
    for (unsigned i = 0; i < num; i++)
    {
@@ -420,6 +420,12 @@ static void compile_programs(GLuint *gl_prog, struct shader_program *progs, size
          free(progs[i].vertex);
       }
 
+      if (!gl_check_error())
+      {
+         SSNES_ERR("Failed to compile vertex shader #%u\n", i);
+         return false;
+      }
+
       if (progs[i].fragment)
       {
          SSNES_LOG("Found GLSL fragment shader.\n");
@@ -430,6 +436,12 @@ static void compile_programs(GLuint *gl_prog, struct shader_program *progs, size
 
          pglAttachShader(gl_prog[i], shader);
          free(progs[i].fragment);
+      }
+
+      if (!gl_check_error())
+      {
+         SSNES_ERR("Failed to compile fragment shader #%u\n", i);
+         return false;
       }
 
       if (progs[i].vertex || progs[i].fragment)
@@ -443,7 +455,15 @@ static void compile_programs(GLuint *gl_prog, struct shader_program *progs, size
          pglUniform1i(location, 0);
          pglUseProgram(0);
       }
+
+      if (!gl_check_error())
+      {
+         SSNES_ERR("Failed to link program #%u\n", i);
+         return false;
+      }
    }
+
+   return true;
 }
 
 bool gl_glsl_init(const char *path)
@@ -510,7 +530,8 @@ bool gl_glsl_init(const char *path)
       gl_scale[i + 1].valid = progs[i].valid_scale;
    }
 
-   compile_programs(&gl_program[1], progs, num_progs);
+   if (!compile_programs(&gl_program[1], progs, num_progs))
+      return false;
 
    // SSNES custom two-pass with two different files.
    if (num_progs == 1 && *g_settings.video.second_pass_shader)
