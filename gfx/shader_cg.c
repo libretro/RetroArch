@@ -100,6 +100,7 @@ void gl_cg_deinit(void)
 {
    if (cg_active)
       cgDestroyContext(cgCtx);
+   cg_active = false;
 }
 
 bool gl_cg_init(const char *path)
