@@ -573,7 +573,6 @@ char** dir_list_new(const char *dir, const char *ext)
          continue;
       int ret = WideCharToMultiByte(CP_UTF8, 0, ffd.cFileName, wcslen(ffd.cFileName), utf8_buf, MAX_PATH, NULL, NULL);
       utf8_buf[ret] = '\0';
-      fprintf(stderr, "FOUND: %s\n", utf8_buf);
       if (ext && !strstr(utf8_buf, ext))
          continue;
 #else
