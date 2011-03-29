@@ -1187,6 +1187,10 @@ static void check_shader_dir(void)
    if (should_apply)
    {
       const char *shader = g_extern.shader_dir.elems[g_extern.shader_dir.ptr];
+
+      strncpy(g_settings.video.bsnes_shader_path, shader, sizeof(g_settings.video.bsnes_shader_path) - 1);
+      g_settings.video.shader_type = SSNES_SHADER_BSNES;
+
       msg_queue_clear(g_extern.msg_queue);
       char msg[512];
       snprintf(msg, sizeof(msg), "XML shader #%u: \"%s\"", (unsigned)g_extern.shader_dir.ptr, shader);
