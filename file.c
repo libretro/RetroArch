@@ -28,6 +28,7 @@
 #ifdef _WIN32
 #include <io.h>
 #include <fcntl.h>
+#include <windows.h>
 #else
 #include <sys/types.h>
 #include <dirent.h>
@@ -517,44 +518,81 @@ bool init_rom_file(enum ssnes_game_type type)
    return true;
 }
 
-#ifdef _WIN32
-char** dir_list_new(const char *dir)
-{
-   (void)dir;
-   return NULL;
-}
-#else
+// Yep, this is C alright ;)
 char** dir_list_new(const char *dir, const char *ext)
 {
+   size_t path_len = strlen(dir);
+
    size_t cur_ptr = 0;
    size_t cur_size = 32;
    char **dir_list = NULL;
+
+#ifdef _WIN32
+   WIN32_FIND_DATAW ffd;
+   HANDLE hFind = INVALID_HANDLE_VALUE;
+
+
+   size_t final_off = MAX_PATH + path_len + 2;
+
+   wchar_t wchar_buf[MAX_PATH + 1];
+   char utf8_buf[MAX_PATH + 3];
+
+   strncpy(utf8_buf, dir, MAX_PATH);
+   strcat(utf8_buf, "/*");
+   utf8_buf[MAX_PATH + 2] = '\0';
+
+   int ret = MultiByteToWideChar(CP_UTF8, 0, utf8_buf, strlen(utf8_buf), wchar_buf, MAX_PATH);
+   wchar_buf[ret] = 0;
+
+   hFind = FindFirstFileW(wchar_buf, &ffd);
+   if (hFind == INVALID_HANDLE_VALUE)
+      goto error;
+#else
    DIR *directory = NULL;
    const struct dirent *entry = NULL;
-   size_t path_len = strlen(dir);
    size_t final_off = sizeof(entry->d_name) + path_len + 2;
-   
+
    directory = opendir(dir);
    if (!directory)
       goto error;
+#endif
 
    dir_list = calloc(cur_size, sizeof(char*));
    if (!dir_list)
       goto error;
 
+#ifdef _WIN32 // Hard to read? Blame non-POSIX heathens!
+   do
+#else
    while ((entry = readdir(directory)))
+#endif
    {
       // Not a perfect search of course, but hopefully good enough in practice.
+#ifdef _WIN32
+      if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+         continue;
+      int ret = WideCharToMultiByte(CP_UTF8, 0, ffd.cFileName, wcslen(ffd.cFileName), utf8_buf, MAX_PATH, NULL, NULL);
+      utf8_buf[ret] = '\0';
+      fprintf(stderr, "FOUND: %s\n", utf8_buf);
+      if (ext && !strstr(utf8_buf, ext))
+         continue;
+#else
       if (ext && !strstr(entry->d_name, ext))
          continue;
+#endif
 
       dir_list[cur_ptr] = malloc(final_off);
       if (!dir_list[cur_ptr])
          goto error;
 
       strcpy(dir_list[cur_ptr], dir);
+#ifdef _WIN32
+      dir_list[cur_ptr][path_len] = '\\';
+      strcpy(&dir_list[cur_ptr][path_len + 1], utf8_buf);
+#else
       dir_list[cur_ptr][path_len] = '/';
       strcpy(&dir_list[cur_ptr][path_len + 1], entry->d_name);
+#endif
       dir_list[cur_ptr][final_off - 1] = '\0';
 
       cur_ptr++;
@@ -569,17 +607,30 @@ char** dir_list_new(const char *dir, const char *ext)
          memset(dir_list + cur_ptr, 0, (cur_size - cur_ptr) * sizeof(char*));
       }
    }
+#ifdef _WIN32
+   while (FindNextFileW(hFind, &ffd) != 0);
 
+#endif
+
+#ifdef _WIN32
+   FindClose(hFind);
+#else
    closedir(directory);
+#endif
    return dir_list;
 
 error:
+   SSNES_ERR("Failed to open directory: \"%s\"\n", dir);
+#ifdef _WIN32
+   if (hFind != INVALID_HANDLE_VALUE)
+      FindClose(hFind);
+#else
    if (directory)
       closedir(directory);
+#endif
    dir_list_free(dir_list);
    return NULL;
 }
-#endif
 
 void dir_list_free(char **dir_list)
 {
