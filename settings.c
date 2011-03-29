@@ -322,6 +322,10 @@ static void parse_config_file(void)
    }
 #endif
 
+#if defined(HAVE_XML)
+   CONFIG_GET_STRING(video.shader_dir, "video_shader_dir");
+#endif
+
    CONFIG_GET_DOUBLE(input.axis_threshold, "input_axis_threshold");
    CONFIG_GET_BOOL(input.netplay_client_swap_input, "netplay_client_swap_input");
    CONFIG_GET_INT(input.joypad_map[0], "input_player1_joypad_index");
@@ -331,7 +335,6 @@ static void parse_config_file(void)
    CONFIG_GET_INT(input.joypad_map[4], "input_player5_joypad_index");
 
    // Audio settings.
-   
    CONFIG_GET_BOOL(audio.enable, "audio_enable");
    CONFIG_GET_INT(audio.out_rate, "audio_out_rate");
    CONFIG_GET_DOUBLE(audio.in_rate, "audio_in_rate");
@@ -409,6 +412,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE)
       DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE)
       DECLARE_BIND(reset,                 SSNES_RESET)
+      DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT)
+      DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV)
    },
    {
       DECLARE_BIND(player2_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -436,6 +441,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE)
       DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE)
       DECLARE_BIND(reset,                 SSNES_RESET)
+      DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT)
+      DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV)
    },
    {
       DECLARE_BIND(player3_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -463,6 +470,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE)
       DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE)
       DECLARE_BIND(reset,                 SSNES_RESET)
+      DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT)
+      DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV)
    },
    {
       DECLARE_BIND(player4_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -490,6 +499,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE)
       DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE)
       DECLARE_BIND(reset,                 SSNES_RESET)
+      DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT)
+      DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV)
    },
    {
       DECLARE_BIND(player5_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -517,6 +528,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE)
       DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE)
       DECLARE_BIND(reset,                 SSNES_RESET)
+      DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT)
+      DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV)
    },
 };
 

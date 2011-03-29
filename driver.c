@@ -18,6 +18,7 @@
 
 #include "driver.h"
 #include "general.h"
+#include "file.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -289,10 +290,36 @@ static void deinit_filter(void)
    }
 }
 
+static void init_shader_dir(void)
+{
+   if (!*g_settings.video.shader_dir)
+      return;
+
+   g_extern.shader_dir.elems = dir_list_new(g_settings.video.shader_dir, ".shader");
+   if (g_extern.shader_dir.elems)
+   {
+      while (g_extern.shader_dir.elems[g_extern.shader_dir.size])
+      {
+         SSNES_LOG("Found shader \"%s\"\n", g_extern.shader_dir.elems[g_extern.shader_dir.size]);
+         g_extern.shader_dir.size++;
+      }
+   }
+}
+
+static void deinit_shader_dir(void)
+{
+   // It handles NULL, no worries :D
+   dir_list_free(g_extern.shader_dir.elems);
+}
+
 void init_video_input(void)
 {
 #ifdef HAVE_FILTER
    init_filter();
+#endif
+
+#ifdef HAVE_XML
+   init_shader_dir();
 #endif
 
    // We use at least 512x512 textures to accomodate for hi-res games.
@@ -354,6 +381,10 @@ void uninit_video_input(void)
       driver.input->free(driver.input_data);
 
    deinit_filter();
+
+#ifdef HAVE_XML
+   deinit_shader_dir();
+#endif
 }
 
 driver_t driver;

@@ -40,6 +40,8 @@ enum
    SSNES_MOVIE_RECORD_TOGGLE,
    SSNES_PAUSE_TOGGLE,
    SSNES_RESET,
+   SSNES_SHADER_NEXT,
+   SSNES_SHADER_PREV,
 };
 
 
@@ -113,6 +115,7 @@ typedef struct video_driver
    // Is the window still active?
    bool (*alive)(void *data);
    bool (*focus)(void *data); // Does the window have focus?
+   bool (*xml_shader)(void *data, const char *path); // Sets XML-shader. Might not be implemented.
    void (*free)(void* data);
    const char *ident;
 } video_driver_t;

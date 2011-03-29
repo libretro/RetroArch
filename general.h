@@ -42,7 +42,7 @@
 
 
 #define MAX_PLAYERS 5
-#define MAX_BINDS 26 // Needs to be increased every time there are new binds added.
+#define MAX_BINDS 28 // Needs to be increased every time there are new binds added.
 #define SSNES_NO_JOYPAD 0xFFFF
 
 enum ssnes_shader_type
@@ -78,6 +78,7 @@ struct settings
       double fbo_scale_y;
       char second_pass_shader[256];
       bool second_pass_smooth;
+      char shader_dir[256];
 
       char font_path[256];
       unsigned font_size;
@@ -235,6 +236,13 @@ struct global
 #endif
 
    char title_buf[64];
+
+   struct
+   {
+      char** elems;
+      size_t size;
+      size_t ptr;
+   } shader_dir;
 };
 
 void parse_config(void);

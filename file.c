@@ -28,6 +28,9 @@
 #ifdef _WIN32
 #include <io.h>
 #include <fcntl.h>
+#else
+#include <sys/types.h>
+#include <dirent.h>
 #endif
 
 // Generic file loader.
@@ -514,3 +517,77 @@ bool init_rom_file(enum ssnes_game_type type)
    return true;
 }
 
+#ifdef _WIN32
+char** dir_list_new(const char *dir)
+{
+   (void)dir;
+   return NULL;
+}
+#else
+char** dir_list_new(const char *dir, const char *ext)
+{
+   size_t cur_ptr = 0;
+   size_t cur_size = 32;
+   char **dir_list = NULL;
+   DIR *directory = NULL;
+   const struct dirent *entry = NULL;
+   size_t path_len = strlen(dir);
+   size_t final_off = sizeof(entry->d_name) + path_len + 2;
+   
+   directory = opendir(dir);
+   if (!directory)
+      goto error;
+
+   dir_list = calloc(cur_size, sizeof(char*));
+   if (!dir_list)
+      goto error;
+
+   while ((entry = readdir(directory)))
+   {
+      // Not a perfect search of course, but hopefully good enough in practice.
+      if (ext && !strstr(entry->d_name, ext))
+         continue;
+
+      dir_list[cur_ptr] = malloc(final_off);
+      if (!dir_list[cur_ptr])
+         goto error;
+
+      strcpy(dir_list[cur_ptr], dir);
+      dir_list[cur_ptr][path_len] = '/';
+      strcpy(&dir_list[cur_ptr][path_len + 1], entry->d_name);
+      dir_list[cur_ptr][final_off - 1] = '\0';
+
+      cur_ptr++;
+      if (cur_ptr + 1 == cur_size) // Need to reserve for NULL.
+      {
+         cur_size *= 2;
+         dir_list = realloc(dir_list, cur_size * sizeof(char*));
+         if (!dir_list)
+            goto error;
+
+         // Make sure it's all NULL'd out since we cannot rely on realloc to do this.
+         memset(dir_list + cur_ptr, 0, (cur_size - cur_ptr) * sizeof(char*));
+      }
+   }
+
+   closedir(directory);
+   return dir_list;
+
+error:
+   if (directory)
+      closedir(directory);
+   dir_list_free(dir_list);
+   return NULL;
+}
+#endif
+
+void dir_list_free(char **dir_list)
+{
+   if (!dir_list)
+      return;
+
+   char **orig = dir_list;
+   while (*dir_list)
+      free(*dir_list++);
+   free(orig);
+}
