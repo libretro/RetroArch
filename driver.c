@@ -290,6 +290,7 @@ static void deinit_filter(void)
    }
 }
 
+#ifdef HAVE_XML
 static void init_shader_dir(void)
 {
    if (!*g_settings.video.shader_dir)
@@ -313,6 +314,7 @@ static void deinit_shader_dir(void)
    // It handles NULL, no worries :D
    dir_list_free(g_extern.shader_dir.elems);
 }
+#endif
 
 void init_video_input(void)
 {
