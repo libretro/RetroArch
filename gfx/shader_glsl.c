@@ -408,6 +408,12 @@ static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size
    {
       gl_prog[i] = pglCreateProgram();
 
+      if (!gl_check_error() || gl_prog[i] == 0)
+      {
+         SSNES_ERR("Failed to create GL program #%u.\n", i);
+         return false;
+      }
+
       if (progs[i].vertex)
       {
          SSNES_LOG("Found GLSL vertex shader.\n");
@@ -466,29 +472,31 @@ static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size
    return true;
 }
 
+#define LOAD_GL_SYM(SYM) if (!(pgl##SYM)) pgl##SYM = SDL_GL_GetProcAddress("gl" #SYM)
+
 bool gl_glsl_init(const char *path)
 {
 #ifndef __APPLE__
    // Load shader functions.
-   pglCreateProgram = SDL_GL_GetProcAddress("glCreateProgram");
-   pglUseProgram = SDL_GL_GetProcAddress("glUseProgram");
-   pglCreateShader = SDL_GL_GetProcAddress("glCreateShader");
-   pglDeleteShader = SDL_GL_GetProcAddress("glDeleteShader");
-   pglShaderSource = SDL_GL_GetProcAddress("glShaderSource");
-   pglCompileShader = SDL_GL_GetProcAddress("glCompileShader");
-   pglAttachShader = SDL_GL_GetProcAddress("glAttachShader");
-   pglDetachShader = SDL_GL_GetProcAddress("glDetachShader");
-   pglLinkProgram = SDL_GL_GetProcAddress("glLinkProgram");
-   pglGetUniformLocation = SDL_GL_GetProcAddress("glGetUniformLocation");
-   pglUniform1i = SDL_GL_GetProcAddress("glUniform1i");
-   pglUniform2fv = SDL_GL_GetProcAddress("glUniform2fv");
-   pglUniform4fv = SDL_GL_GetProcAddress("glUniform4fv");
-   pglGetShaderiv = SDL_GL_GetProcAddress("glGetShaderiv");
-   pglGetShaderInfoLog = SDL_GL_GetProcAddress("glGetShaderInfoLog");
-   pglGetProgramiv = SDL_GL_GetProcAddress("glGetProgramiv");
-   pglGetProgramInfoLog = SDL_GL_GetProcAddress("glGetProgramInfoLog");
-   pglDeleteProgram = SDL_GL_GetProcAddress("glDeleteProgram");
-   pglGetAttachedShaders = SDL_GL_GetProcAddress("glGetAttachedShaders");
+   LOAD_GL_SYM(CreateProgram);
+   LOAD_GL_SYM(UseProgram);
+   LOAD_GL_SYM(CreateShader);
+   LOAD_GL_SYM(DeleteShader);
+   LOAD_GL_SYM(ShaderSource);
+   LOAD_GL_SYM(CompileShader);
+   LOAD_GL_SYM(AttachShader);
+   LOAD_GL_SYM(DetachShader);
+   LOAD_GL_SYM(LinkProgram);
+   LOAD_GL_SYM(GetUniformLocation);
+   LOAD_GL_SYM(Uniform1i);
+   LOAD_GL_SYM(Uniform2fv);
+   LOAD_GL_SYM(Uniform4fv);
+   LOAD_GL_SYM(GetShaderiv);
+   LOAD_GL_SYM(GetShaderInfoLog);
+   LOAD_GL_SYM(GetProgramiv);
+   LOAD_GL_SYM(GetProgramInfoLog);
+   LOAD_GL_SYM(DeleteProgram);
+   LOAD_GL_SYM(GetAttachedShaders);
 #endif
 
    SSNES_LOG("Checking GLSL shader support ...\n");

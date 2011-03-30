@@ -1057,9 +1057,16 @@ static bool gl_xml_shader(void *data, const char *path)
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
    {
-      glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
       pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
+      glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
+      memset(gl->fbo_texture, 0, gl->fbo_pass * sizeof(GLuint));
+      memset(gl->fbo, 0, gl->fbo_pass * sizeof(GLuint));
       gl->fbo_inited = false;
+      gl->render_to_tex = false;
+      gl->fbo_pass = 0;
+
+      if (!gl_check_error())
+         SSNES_WARN("Failed to deinit FBO properly!\n");
    }
 #endif
 
