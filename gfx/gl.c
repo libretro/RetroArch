@@ -320,7 +320,15 @@ static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_s
 static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
 #ifdef HAVE_FBO
-   if (!g_settings.video.render_to_texture && gl_shader_num() <= 1)
+   if (!g_settings.video.render_to_texture && gl_shader_num() == 0)
+      return;
+
+   struct gl_fbo_scale scale, scale_last;
+   gl_shader_scale(1, &scale);
+   gl_shader_scale(gl_shader_num(), &scale_last);
+
+   // No need to use FBOs.
+   if (gl_shader_num() == 1 && !scale.valid && !g_settings.video.render_to_texture)
       return;
 
    if (!load_fbo_proc())
@@ -330,13 +338,12 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    }
 
    gl->fbo_pass = gl_shader_num() - 1;
-
-   struct gl_fbo_scale scale;
-   gl_shader_scale(gl_shader_num(), &scale);
-   if (scale.valid)
+   if (scale_last.valid)
       gl->fbo_pass++;
 
-   gl_shader_scale(1, &scale);
+   if (gl->fbo_pass <= 0)
+      gl->fbo_pass = 1;
+
    if (!scale.valid)
    {
       scale.scale_x = g_settings.video.fbo_scale_x;
@@ -384,9 +391,6 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    gl->fbo_scale[0] = scale;
 
    SSNES_LOG("Creating FBO 0 @ %ux%u\n", gl->fbo_rect[0].width, gl->fbo_rect[0].height);
-
-   if (gl->fbo_pass <= 0)
-      gl->fbo_pass = 1;
 
    for (int i = 1; i < gl->fbo_pass; i++)
    {
