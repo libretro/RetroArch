@@ -164,7 +164,7 @@ static ssize_t read_rom_file(FILE* file, void** buf)
       }
    }
    else if (*g_extern.ups_name)
-      SSNES_LOG("Could not find UPS patch.\n");
+      SSNES_LOG("Could not find UPS patch in: \"%s\".\n", g_extern.ups_name);
 
    // Remove SMC header if present.
    if ((ret & 0x7fff) == 512)

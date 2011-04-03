@@ -220,7 +220,7 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
    return res;
 }
 
-static void fill_pathname(char *out_path, char *in_path, const char *replace)
+static void fill_pathname(char *out_path, const char *in_path, const char *replace)
 {
    char tmp_path[strlen(in_path) + 1];
    strcpy(tmp_path, in_path);
@@ -229,6 +229,12 @@ static void fill_pathname(char *out_path, char *in_path, const char *replace)
    if (tok != NULL)
       *tok = '\0';
    strcpy(out_path, tmp_path);
+   strcat(out_path, replace);
+}
+
+static void fill_pathname_noext(char *out_path, const char *in_path, const char *replace)
+{
+   strcpy(out_path, in_path);
    strcat(out_path, replace);
 }
 
@@ -530,9 +536,9 @@ static void parse_input(int argc, char *argv[])
       }
       // strl* would be nice :D
       if (!g_extern.has_set_save_path)
-         fill_pathname(g_extern.savefile_name_srm, g_extern.basename, ".srm");
+         fill_pathname_noext(g_extern.savefile_name_srm, g_extern.basename, ".srm");
       if (!g_extern.has_set_state_path)
-         fill_pathname(g_extern.savestate_name, g_extern.basename, ".state");
+         fill_pathname_noext(g_extern.savestate_name, g_extern.basename, ".state");
    }
    else if (strlen(g_extern.savefile_name_srm) == 0)
    {
@@ -881,7 +887,7 @@ static void fill_pathnames(void)
       fill_pathname(g_extern.bsv_movie_path, g_extern.savefile_name_srm, "");
 
    if (!(*g_extern.ups_name) && *g_extern.basename)
-      fill_pathname(g_extern.ups_name, g_extern.basename, ".ups");
+      fill_pathname_noext(g_extern.ups_name, g_extern.basename, ".ups");
 }
 
 // Save or load state here.
