@@ -24,6 +24,7 @@
 #include "dynamic.h"
 #include "movie.h"
 #include "ups.h"
+#include "strl.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -537,8 +538,8 @@ char** dir_list_new(const char *dir, const char *ext)
    wchar_t wchar_buf[MAX_PATH + 1];
    char utf8_buf[MAX_PATH + 3];
 
-   strncpy(utf8_buf, dir, MAX_PATH);
-   strcat(utf8_buf, "/*");
+   strlcpy(utf8_buf, dir, sizeof(utf8_buf));
+   strlcat(utf8_buf, "/*", sizeof(utf8_buf));
    utf8_buf[MAX_PATH + 2] = '\0';
 
    int ret = MultiByteToWideChar(CP_UTF8, 0, utf8_buf, strlen(utf8_buf), wchar_buf, MAX_PATH);

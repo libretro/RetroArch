@@ -18,7 +18,7 @@
 #include "general.h"
 #include "conf/config_file.h"
 #include <assert.h>
-#include <string.h>
+#include "strl.h"
 #include "config.def.h"
 
 #ifdef HAVE_CONFIG_H
@@ -94,11 +94,11 @@ static void set_defaults(void)
    }
 
    if (def_video)
-      strncpy(g_settings.video.driver, def_video, sizeof(g_settings.video.driver) - 1);
+      strlcpy(g_settings.video.driver, def_video, sizeof(g_settings.video.driver));
    if (def_audio)
-      strncpy(g_settings.audio.driver, def_audio, sizeof(g_settings.audio.driver) - 1);
+      strlcpy(g_settings.audio.driver, def_audio, sizeof(g_settings.audio.driver));
    if (def_input)
-      strncpy(g_settings.input.driver, def_input, sizeof(g_settings.input.driver) - 1);
+      strlcpy(g_settings.input.driver, def_input, sizeof(g_settings.input.driver));
 
    g_settings.video.xscale = xscale;
    g_settings.video.yscale = yscale;
@@ -129,7 +129,7 @@ static void set_defaults(void)
    g_settings.audio.in_rate = in_rate;
    g_settings.audio.rate_step = audio_rate_step;
    if (audio_device)
-      strncpy(g_settings.audio.device, audio_device, sizeof(g_settings.audio.device));
+      strlcpy(g_settings.audio.device, audio_device, sizeof(g_settings.audio.device));
    g_settings.audio.latency = out_latency;
    g_settings.audio.sync = audio_sync;
 
@@ -244,7 +244,7 @@ static config_file_t *open_default_config_file(void)
 #define CONFIG_GET_STRING(var, key) do { \
    if (config_get_string(conf, key, &tmp_str)) \
    { \
-      strncpy(g_settings.var, tmp_str, sizeof(g_settings.var) - 1); \
+      strlcpy(g_settings.var, tmp_str, sizeof(g_settings.var)); \
       free(tmp_str); \
    } \
 } while(0)

@@ -31,6 +31,7 @@
 #include "rewind.h"
 #include "movie.h"
 #include "netplay.h"
+#include "strl.h"
 #include <assert.h>
 #ifdef HAVE_SRC
 #include <samplerate.h>
@@ -220,22 +221,22 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
    return res;
 }
 
-static void fill_pathname(char *out_path, const char *in_path, const char *replace)
+static void fill_pathname(char *out_path, const char *in_path, const char *replace, size_t size)
 {
    char tmp_path[strlen(in_path) + 1];
-   strcpy(tmp_path, in_path);
+   strlcpy(tmp_path, in_path, sizeof(tmp_path));
    char *tok = NULL;
    tok = strrchr(tmp_path, '.');
    if (tok != NULL)
       *tok = '\0';
-   strcpy(out_path, tmp_path);
-   strcat(out_path, replace);
+   assert(strlcpy(out_path, tmp_path, size) < size);
+   assert(strlcat(out_path, replace, size) < size);
 }
 
-static void fill_pathname_noext(char *out_path, const char *in_path, const char *replace)
+static void fill_pathname_noext(char *out_path, const char *in_path, const char *replace, size_t size)
 {
-   strcpy(out_path, in_path);
-   strcat(out_path, replace);
+   assert(strlcpy(out_path, in_path, size) < size);
+   assert(strlcat(out_path, replace, size) < size);
 }
 
 #ifdef _WIN32
@@ -326,7 +327,7 @@ static void set_basename(const char *path)
    char *dst = strrchr(tmp, '.');
    if (dst)
       *dst = '\0';
-   strncpy(g_extern.basename, tmp, sizeof(g_extern.basename) - 1);
+   strlcpy(g_extern.basename, tmp, sizeof(g_extern.basename));
 }
 
 static void parse_input(int argc, char *argv[])
@@ -412,37 +413,37 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 's':
-            strncpy(g_extern.savefile_name_srm, optarg, sizeof(g_extern.savefile_name_srm) - 1);
+            strlcpy(g_extern.savefile_name_srm, optarg, sizeof(g_extern.savefile_name_srm));
             g_extern.has_set_save_path = true;
             break;
 
          case 'g':
-            strncpy(g_extern.gb_rom_path, optarg, sizeof(g_extern.gb_rom_path) - 1);
+            strlcpy(g_extern.gb_rom_path, optarg, sizeof(g_extern.gb_rom_path));
             g_extern.game_type = SSNES_CART_SGB;
             break;
 
          case 'b':
-            strncpy(g_extern.bsx_rom_path, optarg, sizeof(g_extern.bsx_rom_path) - 1);
+            strlcpy(g_extern.bsx_rom_path, optarg, sizeof(g_extern.bsx_rom_path));
             g_extern.game_type = SSNES_CART_BSX;
             break;
 
          case 'B':
-            strncpy(g_extern.bsx_rom_path, optarg, sizeof(g_extern.bsx_rom_path) - 1);
+            strlcpy(g_extern.bsx_rom_path, optarg, sizeof(g_extern.bsx_rom_path));
             g_extern.game_type = SSNES_CART_BSX_SLOTTED;
             break;
 
          case 'Y':
-            strncpy(g_extern.sufami_rom_path[0], optarg, sizeof(g_extern.sufami_rom_path[0]) - 1);
+            strlcpy(g_extern.sufami_rom_path[0], optarg, sizeof(g_extern.sufami_rom_path[0]));
             g_extern.game_type = SSNES_CART_SUFAMI;
             break;
 
          case 'Z':
-            strncpy(g_extern.sufami_rom_path[1], optarg, sizeof(g_extern.sufami_rom_path[1]) - 1);
+            strlcpy(g_extern.sufami_rom_path[1], optarg, sizeof(g_extern.sufami_rom_path[1]));
             g_extern.game_type = SSNES_CART_SUFAMI;
             break;
 
          case 'S':
-            strncpy(g_extern.savestate_name, optarg, sizeof(g_extern.savestate_name) - 1);
+            strlcpy(g_extern.savestate_name, optarg, sizeof(g_extern.savestate_name));
             g_extern.has_set_state_path = true;
             break;
 
@@ -467,19 +468,19 @@ static void parse_input(int argc, char *argv[])
 
 #ifdef HAVE_CONFIGFILE
          case 'c':
-            strncpy(g_extern.config_path, optarg, sizeof(g_extern.config_path) - 1);
+            strlcpy(g_extern.config_path, optarg, sizeof(g_extern.config_path));
             break;
 #endif
 
 #ifdef HAVE_FFMPEG
          case 'r':
-            strncpy(g_extern.record_path, optarg, sizeof(g_extern.record_path) - 1);
+            strlcpy(g_extern.record_path, optarg, sizeof(g_extern.record_path));
             g_extern.recording = true;
             break;
 #endif
 
          case 'P':
-            strncpy(g_extern.bsv_movie_path, optarg, sizeof(g_extern.bsv_movie_path) - 1);
+            strlcpy(g_extern.bsv_movie_path, optarg, sizeof(g_extern.bsv_movie_path));
             g_extern.bsv_movie_playback = true;
             break;
 
@@ -489,7 +490,7 @@ static void parse_input(int argc, char *argv[])
 
          case 'C':
             g_extern.netplay_enable = true;
-            strncpy(g_extern.netplay_server, optarg, sizeof(g_extern.netplay_server) - 1);
+            strlcpy(g_extern.netplay_server, optarg, sizeof(g_extern.netplay_server));
             break;
 
          case 'F':
@@ -499,7 +500,7 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'U':
-            strncpy(g_extern.ups_name, optarg, sizeof(g_extern.ups_name) - 1);
+            strlcpy(g_extern.ups_name, optarg, sizeof(g_extern.ups_name));
             break;
 
          case 0:
@@ -536,9 +537,9 @@ static void parse_input(int argc, char *argv[])
       }
       // strl* would be nice :D
       if (!g_extern.has_set_save_path)
-         fill_pathname_noext(g_extern.savefile_name_srm, g_extern.basename, ".srm");
+         fill_pathname_noext(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
       if (!g_extern.has_set_state_path)
-         fill_pathname_noext(g_extern.savestate_name, g_extern.basename, ".state");
+         fill_pathname_noext(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
    }
    else if (strlen(g_extern.savefile_name_srm) == 0)
    {
@@ -857,37 +858,37 @@ static void fill_pathnames(void)
       case SSNES_CART_BSX_SLOTTED:
          // BSX PSRM
          if (!g_extern.has_set_save_path)
-            fill_pathname(g_extern.savefile_name_srm, g_extern.bsx_rom_path, ".srm");
+            fill_pathname(g_extern.savefile_name_srm, g_extern.bsx_rom_path, ".srm", sizeof(g_extern.savefile_name_srm));
          if (!g_extern.has_set_state_path)
-            fill_pathname(g_extern.savestate_name, g_extern.bsx_rom_path, ".state");
-         fill_pathname(g_extern.savefile_name_psrm, g_extern.savefile_name_srm, ".psrm");
+            fill_pathname(g_extern.savestate_name, g_extern.bsx_rom_path, ".state", sizeof(g_extern.savestate_name));
+         fill_pathname(g_extern.savefile_name_psrm, g_extern.savefile_name_srm, ".psrm", sizeof(g_extern.savefile_name_psrm));
          break;
 
       case SSNES_CART_SUFAMI:
          // SUFAMI ARAM
-         fill_pathname(g_extern.savefile_name_asrm, g_extern.savefile_name_srm, ".asrm");
+         fill_pathname(g_extern.savefile_name_asrm, g_extern.savefile_name_srm, ".asrm", sizeof(g_extern.savefile_name_asrm));
          // SUFAMI BRAM
-         fill_pathname(g_extern.savefile_name_bsrm, g_extern.savefile_name_srm, ".bsrm");
+         fill_pathname(g_extern.savefile_name_bsrm, g_extern.savefile_name_srm, ".bsrm", sizeof(g_extern.savefile_name_bsrm));
          break;
 
       case SSNES_CART_SGB:
          if (!g_extern.has_set_save_path)
-            fill_pathname(g_extern.savefile_name_srm, g_extern.gb_rom_path, ".srm");
+            fill_pathname(g_extern.savefile_name_srm, g_extern.gb_rom_path, ".srm", sizeof(g_extern.savefile_name_srm));
          if (!g_extern.has_set_state_path)
-            fill_pathname(g_extern.savestate_name, g_extern.gb_rom_path, ".state");
-         fill_pathname(g_extern.savefile_name_rtc, g_extern.savefile_name_srm, ".rtc");
+            fill_pathname(g_extern.savestate_name, g_extern.gb_rom_path, ".state", sizeof(g_extern.savestate_name));
+         fill_pathname(g_extern.savefile_name_rtc, g_extern.savefile_name_srm, ".rtc", sizeof(g_extern.savefile_name_rtc));
          break;
 
       default:
          // Infer .rtc save path from save ram path.
-         fill_pathname(g_extern.savefile_name_rtc, g_extern.savefile_name_srm, ".rtc");
+         fill_pathname(g_extern.savefile_name_rtc, g_extern.savefile_name_srm, ".rtc", sizeof(g_extern.savefile_name_rtc));
    }
 
    if (!g_extern.bsv_movie_playback)
-      fill_pathname(g_extern.bsv_movie_path, g_extern.savefile_name_srm, "");
+      fill_pathname(g_extern.bsv_movie_path, g_extern.savefile_name_srm, "", sizeof(g_extern.bsv_movie_path));
 
    if (!(*g_extern.ups_name) && *g_extern.basename)
-      fill_pathname_noext(g_extern.ups_name, g_extern.basename, ".ups");
+      fill_pathname_noext(g_extern.ups_name, g_extern.basename, ".ups", sizeof(g_extern.ups_name));
 }
 
 // Save or load state here.
@@ -1194,7 +1195,7 @@ static void check_shader_dir(void)
    {
       const char *shader = g_extern.shader_dir.elems[g_extern.shader_dir.ptr];
 
-      strncpy(g_settings.video.bsnes_shader_path, shader, sizeof(g_settings.video.bsnes_shader_path) - 1);
+      strlcpy(g_settings.video.bsnes_shader_path, shader, sizeof(g_settings.video.bsnes_shader_path));
       g_settings.video.shader_type = SSNES_SHADER_BSNES;
 
       msg_queue_clear(g_extern.msg_queue);
