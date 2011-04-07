@@ -20,7 +20,10 @@
 
 #include <string.h>
 #include <stddef.h>
+
+#ifdef HAVE_CONFIG
 #include "config.h"
+#endif
 
 #ifndef HAVE_STRL
 // Avoid possible naming collitions during link since we prefer to use the actual name.
