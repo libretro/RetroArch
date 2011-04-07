@@ -167,7 +167,7 @@ static ssize_t read_rom_file(FILE* file, void** buf)
    else if (*g_extern.ups_name)
       SSNES_LOG("Could not find UPS patch in: \"%s\".\n", g_extern.ups_name);
 
-   // Remove SMC header if present.
+   // Remove copier header if present (512 first bytes).
    if ((ret & 0x7fff) == 512)
    {
       memmove(ret_buf, ret_buf + 512, ret - 512);
@@ -258,7 +258,7 @@ void save_ram_file(const char* path, int type)
    size_t size = psnes_get_memory_size(type);
    uint8_t *data = psnes_get_memory_data(type);
 
-   if ( data && size > 0 )
+   if (data && size > 0)
       dump_to_file(path, data, size);
 }
 
@@ -277,14 +277,7 @@ static bool load_sgb_rom(void)
       goto error;
    }
 
-   extra_rom = fopen(g_extern.gb_rom_path, "rb");
-   if (!extra_rom)
-   {
-      SSNES_ERR("Couldn't open GameBoy ROM!\n");
-      goto error;
-   }
-
-   if ((extra_rom_len = read_rom_file(extra_rom, &extra_rom_buf)) == -1)
+   if ((extra_rom_len = read_file(g_extern.gb_rom_path, &extra_rom_buf)) == -1)
    {
       SSNES_ERR("Cannot read GameBoy rom.\n");
       goto error;
@@ -331,14 +324,7 @@ static bool load_bsx_rom(bool slotted)
       goto error;
    }
 
-   extra_rom = fopen(g_extern.bsx_rom_path, "rb");
-   if (!extra_rom)
-   {
-      SSNES_ERR("Couldn't open BSX game rom!\n");
-      goto error;
-   }
-
-   if ((extra_rom_len = read_rom_file(extra_rom, &extra_rom_buf)) == -1)
+   if ((extra_rom_len = read_file(g_extern.bsx_rom_path, &extra_rom_buf)) == -1)
    {
       SSNES_ERR("Cannot read BSX game rom.\n");
       goto error;
@@ -405,16 +391,9 @@ static bool load_sufami_rom(void)
    {
       if (strlen(roms[i]) > 0)
       {
-         extra_rom[i] = fopen(roms[i], "rb");
-         if (!extra_rom[i])
+         if ((extra_rom_len[i] = read_file(roms[i], &extra_rom_buf[i])) == -1)
          {
-            SSNES_ERR("Couldn't open BSX game rom!\n");
-            goto error;
-         }
-
-         if ((extra_rom_len[i] = read_rom_file(extra_rom[i], &extra_rom_buf[i])) == -1)
-         {
-            SSNES_ERR("Cannot read BSX game rom.\n");
+            SSNES_ERR("Cannot read Sufami game rom.\n");
             goto error;
          }
       }
