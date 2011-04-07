@@ -248,7 +248,7 @@ static void fill_pathname_noext(char *out_path, const char *in_path, const char 
 #endif
 
 #ifdef _WIN32
-#define PACKAGE_VERSION "0.4-beta"
+#define PACKAGE_VERSION "0.4"
 #endif
 
 #include "config.features.h"
@@ -626,22 +626,26 @@ static inline void save_files(void)
    switch (g_extern.game_type)
    {
       case SSNES_CART_NORMAL:
+         SSNES_LOG("Saving regular SRAM.\n");
          save_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
          save_ram_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
          break;
 
       case SSNES_CART_SGB:
+         SSNES_LOG("Saving Gameboy SRAM.\n");
          save_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_GAME_BOY_RAM);
          save_ram_file(g_extern.savefile_name_rtc, SNES_MEMORY_GAME_BOY_RTC);
          break;
 
       case SSNES_CART_BSX:
       case SSNES_CART_BSX_SLOTTED:
+         SSNES_LOG("Saving BSX (P)RAM.\n");
          save_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_BSX_RAM);
          save_ram_file(g_extern.savefile_name_psrm, SNES_MEMORY_BSX_PRAM);
          break;
 
       case SSNES_CART_SUFAMI:
+         SSNES_LOG("Saving Sufami turbo A/B RAM.\n");
          save_ram_file(g_extern.savefile_name_asrm, SNES_MEMORY_SUFAMI_TURBO_A_RAM);
          save_ram_file(g_extern.savefile_name_bsrm, SNES_MEMORY_SUFAMI_TURBO_B_RAM);
          break;
