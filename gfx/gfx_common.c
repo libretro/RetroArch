@@ -35,7 +35,7 @@ bool gfx_window_title(char *buf, size_t size)
    if (frames == 0)
    {
       gettimeofday(&tv, NULL);
-      snprintf(buf, size, g_extern.title_buf);
+      snprintf(buf, size, "%s", g_extern.title_buf);
       ret = true;
    }
 

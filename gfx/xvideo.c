@@ -77,7 +77,7 @@ static void xv_set_nonblock_state(void *data, bool state)
 {
    xv_t *xv = data;
    Atom atom = XInternAtom(xv->display, "XV_SYNC_TO_VBLANK", true);
-   if (atom != None && xv->port >= 0)
+   if (atom != None && xv->port)
       XvSetPortAttribute(xv->display, xv->port, atom, !state);
    else
       SSNES_WARN("Failed to set SYNC_TO_VBLANK attribute.\n");
@@ -315,7 +315,7 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
    xv->keep_aspect = video->force_aspect;
 
    // Find an appropriate Xv port.
-   xv->port = -1;
+   xv->port = 0;
    XvAdaptorInfo *adaptor_info;
    unsigned adaptor_count = 0;
    XvQueryAdaptors(xv->display, DefaultRootWindow(xv->display), &adaptor_count, &adaptor_info);
@@ -333,7 +333,7 @@ static void* xv_init(video_info_t *video, const input_driver_t **input, void **i
    }
    XvFreeAdaptorInfo(adaptor_info);
 
-   if (xv->port < 0) 
+   if (xv->port == 0) 
    {
       SSNES_ERR("XVideo: Failed to find valid XvPort.\n");
       goto error;
