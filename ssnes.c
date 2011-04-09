@@ -953,13 +953,17 @@ static void check_savestates(void)
 
 static void check_fullscreen(void)
 {
+   static bool was_pressed = false;
+   bool pressed;
    // If we go fullscreen we drop all drivers and reinit to be safe.
-   if (driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY))
+   if ((pressed = driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY)) && !was_pressed)
    {
       g_settings.video.fullscreen = !g_settings.video.fullscreen;
       uninit_drivers();
       init_drivers();
    }
+
+   was_pressed = pressed;
 }
 
 static void check_stateslots(void)
