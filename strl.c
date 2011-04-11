@@ -41,7 +41,12 @@ size_t strlcat(char *dest, const char *source, size_t size)
 {
    size_t len = strlen(dest);
    dest += len;
-   size -= len;
+
+   if (len > size)
+      size = 0;
+   else
+      size -= len;
+
    return len + strlcpy(dest, source, size);
 }
 #endif
