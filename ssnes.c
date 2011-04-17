@@ -32,6 +32,7 @@
 #include "movie.h"
 #include "netplay.h"
 #include "strl.h"
+#include "cheats.h"
 #include <assert.h>
 #ifdef HAVE_SRC
 #include <samplerate.h>
@@ -708,6 +709,20 @@ static void deinit_msg_queue(void)
       msg_queue_free(g_extern.msg_queue);
 }
 
+#ifdef HAVE_XML
+static void init_cheats(void)
+{
+   if (*g_settings.cheat_database)
+      g_extern.cheat = cheat_manager_new(g_settings.cheat_database);
+}
+
+static void deinit_cheats(void)
+{
+   if (g_extern.cheat)
+      cheat_manager_free(g_extern.cheat);
+}
+#endif
+
 static void init_rewind(void)
 {
    if (g_settings.rewind_enable)
@@ -1279,6 +1294,10 @@ int main(int argc, char *argv[])
    if (!init_rom_file(g_extern.game_type))
       goto error;
 
+#ifdef HAVE_XML
+   init_cheats();
+#endif
+
    init_msg_queue();
    init_movie();
 
@@ -1379,6 +1398,10 @@ int main(int argc, char *argv[])
 
    if (!g_extern.netplay)
       deinit_rewind();
+
+#ifdef HAVE_XML
+   deinit_cheats();
+#endif
 
    deinit_movie();
    deinit_msg_queue();

@@ -57,6 +57,9 @@ void (*psnes_set_input_state)(snes_input_state_t);
 void (*psnes_reset)(void);
 void (*psnes_run)(void);
 
+void (*psnes_cheat_reset)(void);
+void (*psnes_cheat_set)(unsigned, bool, const char*);
+
 const char *(*psnes_library_id)(void) = NULL;
 unsigned (*psnes_library_revision_minor)(void);
 unsigned (*psnes_library_revision_major)(void);
@@ -111,6 +114,8 @@ static void load_dynamic(void)
    OPT_SYM(snes_library_id);
    SYM(snes_library_revision_minor);
    SYM(snes_library_revision_major);
+   SYM(snes_cheat_reset);
+   SYM(snes_cheat_set);
    SYM(snes_reset);
    SYM(snes_run);
    SYM(snes_get_region);
@@ -145,6 +150,8 @@ static void set_statics(void)
    SSYM(snes_set_input_state);
    SSYM(snes_library_revision_minor);
    SSYM(snes_library_revision_major);
+   SSYM(snes_cheat_reset);
+   SSYM(snes_cheat_set);
    SSYM(snes_reset);
    SSYM(snes_run);
    SSYM(snes_get_region);

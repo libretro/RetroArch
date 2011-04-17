@@ -29,6 +29,7 @@
 #include "autosave.h"
 #include "netplay.h"
 #include "dynamic.h"
+#include "cheats.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -42,7 +43,7 @@
 
 
 #define MAX_PLAYERS 5
-#define MAX_BINDS 28 // Needs to be increased every time there are new binds added.
+#define MAX_BINDS 31 // Needs to be increased every time there are new binds added.
 #define SSNES_NO_JOYPAD 0xFFFF
 
 enum ssnes_shader_type
@@ -110,6 +111,7 @@ struct settings
    } input;
 
    char libsnes[256];
+   char cheat_database[256];
 
    bool rewind_enable;
    unsigned rewind_buffer_size;
@@ -245,6 +247,10 @@ struct global
    } shader_dir;
 
    char sha256[65];
+
+#ifdef HAVE_XML
+   cheat_manager_t *cheat;
+#endif
 };
 
 void parse_config(void);

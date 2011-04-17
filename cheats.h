@@ -1,0 +1,29 @@
+/*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
+ *  Copyright (C) 2010-2011 - Hans-Kristian Arntzen
+ *
+ *  Some code herein may be based on code found in BSNES.
+ * 
+ *  SSNES is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with SSNES.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef __SSNES_CHEATS_H
+#define __SSNES_CHEATS_H
+
+typedef struct cheat_manager cheat_manager_t;
+
+cheat_manager_t* cheat_manager_new(const char *path);
+void cheat_manager_free(cheat_manager_t *handle);
+
+void cheat_manager_index_offset(cheat_manager_t *handle, int offset);
+void cheat_manager_toggle(cheat_manager_t *handle);
+
+#endif

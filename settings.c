@@ -369,6 +369,8 @@ static void parse_config_file(void)
    CONFIG_GET_BOOL(pause_nonactive, "pause_nonactive");
    CONFIG_GET_INT(autosave_interval, "autosave_interval");
 
+   CONFIG_GET_STRING(cheat_database, "cheat_database_path");
+
    read_keybinds(conf);
 
    config_file_free(conf);
@@ -414,6 +416,9 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(reset,                 SSNES_RESET)
       DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT)
       DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV)
+      DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS)
+      DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS)
+      DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
    },
    {
       DECLARE_BIND(player2_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -443,6 +448,9 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(reset,                 SSNES_RESET)
       DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT)
       DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV)
+      DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS)
+      DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS)
+      DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
    },
    {
       DECLARE_BIND(player3_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -472,6 +480,9 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(reset,                 SSNES_RESET)
       DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT)
       DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV)
+      DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS)
+      DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS)
+      DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
    },
    {
       DECLARE_BIND(player4_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -501,6 +512,9 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(reset,                 SSNES_RESET)
       DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT)
       DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV)
+      DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS)
+      DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS)
+      DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
    },
    {
       DECLARE_BIND(player5_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -530,6 +544,9 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(reset,                 SSNES_RESET)
       DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT)
       DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV)
+      DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS)
+      DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS)
+      DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
    },
 };
 
