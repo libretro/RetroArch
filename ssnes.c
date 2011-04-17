@@ -1192,7 +1192,7 @@ static void check_reset(void)
 static void check_shader_dir(void)
 {
    static bool old_pressed_next = false;
-   static bool old_pressed_prev = true;
+   static bool old_pressed_prev = false;
 
    if (!g_extern.shader_dir.elems || !driver.video->xml_shader)
       return;
@@ -1235,6 +1235,31 @@ static void check_shader_dir(void)
    old_pressed_prev = pressed_prev;
 
 }
+
+static void check_cheats(void)
+{
+   if (!g_extern.cheat)
+      return;
+
+   static bool old_pressed_prev = false;
+   static bool old_pressed_next = false;
+   static bool old_pressed_toggle = false;
+
+   bool pressed_next = driver.input->key_pressed(driver.input_data, SSNES_CHEAT_INDEX_PLUS);
+   bool pressed_prev = driver.input->key_pressed(driver.input_data, SSNES_CHEAT_INDEX_MINUS);
+   bool pressed_toggle = driver.input->key_pressed(driver.input_data, SSNES_CHEAT_TOGGLE);
+
+   if (pressed_next && !old_pressed_next)
+      cheat_manager_index_next(g_extern.cheat);
+   else if (pressed_prev && !old_pressed_prev)
+      cheat_manager_index_prev(g_extern.cheat);
+   else if (pressed_toggle && !old_pressed_toggle)
+      cheat_manager_toggle(g_extern.cheat);
+
+   old_pressed_prev = pressed_prev;
+   old_pressed_next = pressed_next;
+   old_pressed_toggle = pressed_toggle;
+}
 #endif
 
 static void do_state_checks(void)
@@ -1242,6 +1267,9 @@ static void do_state_checks(void)
    if (!g_extern.netplay)
    {
       check_reset();
+#ifdef HAVE_XML
+      check_cheats();
+#endif
       check_pause();
       if (g_extern.is_paused)
          return;

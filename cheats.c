@@ -219,9 +219,43 @@ void cheat_manager_free(cheat_manager_t *handle)
    free(handle);
 }
 
+static void cheat_manager_update(cheat_manager_t *handle)
+{
+   msg_queue_clear(g_extern.msg_queue);
+   char msg[256];
+   snprintf(msg, sizeof(msg), "Cheat: #%u [%s]: %s", handle->ptr, handle->cheats[handle->ptr].state ? "ON" : "OFF", handle->cheats[handle->ptr].desc);
+   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   SSNES_LOG("%s\n", msg);
+}
+
 void cheat_manager_toggle(cheat_manager_t *handle)
 {
    handle->cheats[handle->ptr].state ^= true;
-   psnes_cheat_set(handle->ptr, handle->cheats[handle->ptr].state, handle->cheats[handle->ptr].code);
+
+   unsigned index = 0;
+   psnes_cheat_reset();
+   for (unsigned i = 0; i < handle->size; i++)
+   {
+      if (handle->cheats[handle->ptr].state)
+         psnes_cheat_set(index++, true, handle->cheats[handle->ptr].code);
+   }
+
+   cheat_manager_update(handle);
+}
+
+void cheat_manager_index_next(cheat_manager_t *handle)
+{
+   handle->ptr = (handle->ptr + 1) % handle->size;
+   cheat_manager_update(handle);
+}
+
+void cheat_manager_index_prev(cheat_manager_t *handle)
+{
+   if (handle->ptr == 0)
+      handle->ptr = handle->size - 1;
+   else
+      handle->ptr--;
+
+   cheat_manager_update(handle);
 }
 
