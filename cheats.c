@@ -19,10 +19,12 @@
 #include "sha256.h"
 #include "dynamic.h"
 #include "general.h"
+#include "strl.h"
 
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <assert.h>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -39,7 +41,51 @@ struct cheat_manager
    struct cheat *cheats;
    unsigned ptr;
    unsigned size;
+   unsigned buf_size;
 };
+
+static char* strcat_alloc(char *dest, const char *input)
+{
+   size_t dest_len = dest ? strlen(dest) : 0;
+   size_t input_len = strlen(input);
+   size_t required_len = dest_len + input_len + 1;
+
+   char *output = realloc(dest, required_len);
+   assert(output);
+
+   if (dest)
+      strlcat(output, input, required_len);
+   else
+      strlcpy(output, input, required_len);
+
+   return output;
+}
+
+static void xml_grab_cheat(struct cheat *cht, xmlNodePtr ptr)
+{
+   memset(cht, 0, sizeof(struct cheat));
+   bool first = true;
+   for (xmlNodePtr node = ptr; node; node = node->next)
+   {
+      if (strcmp((const char*)node->name, "description") == 0)
+      {
+         cht->desc = (char*)xmlNodeGetContent(node);
+      }
+      else if (strcmp((const char*)node->name, "code") == 0)
+      {
+         if (!first)
+            cht->code = strcat_alloc(cht->code, "+");
+
+         xmlChar *code = xmlNodeGetContent(node);
+         assert(code);
+
+         cht->code = strcat_alloc(cht->code, (const char*)code);
+         xmlFree(code);
+
+         first = false;
+      }
+   }
+}
 
 static void xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
 {
@@ -55,6 +101,17 @@ static void xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
             xmlFree(name);
          }
       }
+      else if (strcmp((const char*)node->name, "cheat") == 0)
+      {
+         if (handle->size == handle->buf_size)
+         {
+            handle->buf_size *= 2;
+            handle->cheats = realloc(handle->cheats, handle->buf_size * sizeof(struct cheat));
+            assert(handle->cheats);
+         }
+
+         xml_grab_cheat(&handle->cheats[handle->size++], node->children);
+      }
    }
 }
 
@@ -62,12 +119,19 @@ cheat_manager_t* cheat_manager_new(const char *path)
 {
    psnes_cheat_reset();
 
+   xmlParserCtxtPtr ctx = NULL;
+   xmlDocPtr doc = NULL;
    cheat_manager_t *handle = calloc(1, sizeof(handle));
    if (!handle)
       return NULL;
 
-   xmlParserCtxtPtr ctx = NULL;
-   xmlDocPtr doc = NULL;
+   handle->buf_size = 32;
+   handle->cheats = malloc(handle->buf_size * sizeof(struct cheat));
+   if (!handle->cheats)
+   {
+      handle->buf_size = 0;
+      goto error;
+   }
 
    ctx = xmlNewParserCtxt();
    if (!ctx)
@@ -146,7 +210,7 @@ void cheat_manager_free(cheat_manager_t *handle)
       for (unsigned i = 0; i < handle->size; i++)
       {
          xmlFree(handle->cheats[i].desc);
-         xmlFree(handle->cheats[i].code);
+         free(handle->cheats[i].code);
       }
 
       free(handle->cheats);
