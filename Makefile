@@ -92,7 +92,7 @@ ifeq ($(HAVE_CG), 1)
 endif
 
 ifeq ($(HAVE_XML), 1)
-   OBJ += gfx/shader_glsl.o
+   OBJ += gfx/shader_glsl.o sha256.o
    LIBS += $(XML_LIBS)
    DEFINES += $(XML_CFLAGS)
 endif

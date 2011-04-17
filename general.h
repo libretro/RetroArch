@@ -243,6 +243,8 @@ struct global
       size_t size;
       size_t ptr;
    } shader_dir;
+
+   char sha256[65];
 };
 
 void parse_config(void);

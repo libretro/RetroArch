@@ -26,6 +26,10 @@
 #include "ups.h"
 #include "strl.h"
 
+#ifdef HAVE_XML
+#include "sha256.h"
+#endif
+
 #ifdef _WIN32
 #include <io.h>
 #include <fcntl.h>
@@ -175,6 +179,10 @@ static ssize_t read_rom_file(FILE* file, void** buf)
    }
 
    g_extern.cart_crc = crc32_calculate(ret_buf, ret);
+#ifdef HAVE_XML
+   sha256_hash(g_extern.sha256, ret_buf, ret);
+   SSNES_LOG("SHA256 sum: %s\n", g_extern.sha256);
+#endif
    *buf = ret_buf;
    return ret;
 }
