@@ -22,6 +22,7 @@
 #include <string.h>
 #include "general.h"
 #include "input/ssnes_sdl_input.h"
+#include "gfx_common.h"
 
 typedef struct sdl_video sdl_video_t;
 struct sdl_video
@@ -58,7 +59,7 @@ static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    unsigned full_y = video_info->current_h;
    SSNES_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
-   vid->screen = SDL_SetVideoMode(video->width, video->height, 15, SDL_HWSURFACE | (video->fullscreen ? SDL_FULLSCREEN : 0));
+   vid->screen = SDL_SetVideoMode(video->width, video->height, 15, SDL_HWSURFACE | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
    if (!vid->screen)
    {
       SSNES_ERR("Failed to init SDL surface.\n");
@@ -99,6 +100,7 @@ static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigne
    if (SDL_MUSTLOCK(vid->buffer))
       SDL_LockSurface(vid->buffer);
 
+   // :(
    for (unsigned y = 0; y < height; y++)
    {
       uint16_t *dest = (uint16_t*)vid->buffer->pixels + ((y * vid->buffer->pitch) >> 1);
@@ -125,6 +127,12 @@ static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigne
 
    SDL_SoftStretch(vid->buffer, &src, vid->screen, &dest);
    SDL_UpdateRect(vid->screen, dest.x, dest.y, dest.w, dest.h);
+
+   char buf[128];
+   if (gfx_window_title(buf, sizeof(buf)))
+      SDL_WM_SetCaption(buf, NULL);
+
+   SDL_Flip(vid->screen);
 
    return true;
 }
