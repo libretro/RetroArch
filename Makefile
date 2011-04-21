@@ -67,7 +67,7 @@ ifeq ($(HAVE_PULSE), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/gl.o input/sdl.o audio/sdl.o audio/buffer.o
+   OBJ += gfx/sdl.o gfx/gl.o input/sdl.o audio/sdl.o audio/buffer.o
    DEFINES += $(SDL_CFLAGS)
    LIBS += $(SDL_LIBS)
 ifeq ($(OSX),1)

@@ -47,6 +47,9 @@ static void set_defaults(void)
       case VIDEO_XVIDEO:
          def_video = "xvideo";
          break;
+      case VIDEO_SDL:
+         def_video = "sdl";
+         break;
       default:
          break;
    }

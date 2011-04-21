@@ -44,6 +44,7 @@
 ///////////////// Drivers
 #define VIDEO_GL 0
 #define VIDEO_XVIDEO 11
+#define VIDEO_SDL 13
 ////////////////////////
 #define AUDIO_RSOUND 1
 #define AUDIO_OSS 2

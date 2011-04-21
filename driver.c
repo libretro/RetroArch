@@ -61,6 +61,7 @@ static const audio_driver_t *audio_drivers[] = {
 static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_SDL
    &video_gl,
+   &video_sdl,
 #endif
 #ifdef HAVE_XVIDEO
    &video_xvideo,

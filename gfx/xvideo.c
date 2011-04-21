@@ -298,7 +298,7 @@ static void render32_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned
 }
 
 
-static void* xv_init(video_info_t *video, const input_driver_t **input, void **input_data)
+static void* xv_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    xv_t *xv = calloc(1, sizeof(*xv));
    if (!xv)

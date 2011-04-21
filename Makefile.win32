@@ -33,7 +33,7 @@ else
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/gl.o input/sdl.o audio/sdl.o audio/buffer.o
+   OBJ += gfx/sdl.o gfx/gl.o input/sdl.o audio/sdl.o audio/buffer.o
    LIBS += $(SDL_LIBS) -lopengl32
    DEFINES += $(SDL_CFLAGS) -DHAVE_SDL
 endif

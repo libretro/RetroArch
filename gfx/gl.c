@@ -893,7 +893,7 @@ static void gl_set_nonblock_state(void *data, bool state)
    }
 }
 
-static void* gl_init(video_info_t *video, const input_driver_t **input, void **input_data)
+static void* gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    if (SDL_Init(SDL_INIT_VIDEO) < 0)
       return NULL;
