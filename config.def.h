@@ -108,6 +108,9 @@ static const bool fullscreen = false;  // To start in Fullscreen or not
 static const unsigned fullscreen_x = 0; // Fullscreen resolution. A value of 0 uses the desktop resolution.
 static const unsigned fullscreen_y = 0;
 
+// Force 16-bit colors.
+static const bool force_16bit = false;
+
 // Video VSYNC (recommended)
 static const bool vsync = true;
 

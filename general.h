@@ -86,6 +86,7 @@ struct settings
       float msg_pos_x;
       float msg_pos_y;
 
+      bool force_16bit;
    } video;
 
    struct

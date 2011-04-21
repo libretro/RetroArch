@@ -907,7 +907,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, video->vsync ? 1 : 0);
 
-   if (!SDL_SetVideoMode(video->width, video->height, 0, SDL_OPENGL | SDL_RESIZABLE | (video->fullscreen ? SDL_FULLSCREEN : 0)))
+   if (!SDL_SetVideoMode(video->width, video->height, g_settings.video.force_16bit ? 16 : 0, SDL_OPENGL | SDL_RESIZABLE | (video->fullscreen ? SDL_FULLSCREEN : 0)))
       return NULL;
 
    // Remove that ugly mouse :D
