@@ -129,6 +129,8 @@ static void sdl_render_msg_15(sdl_video_t *vid, SDL_Surface *buffer, const char 
    (void)vid;
    (void)buffer;
    (void)msg;
+   (void)width;
+   (void)height;
 #endif
 }
 
@@ -181,6 +183,8 @@ static void sdl_render_msg_32(sdl_video_t *vid, SDL_Surface *buffer, const char 
    (void)vid;
    (void)buffer;
    (void)msg;
+   (void)width;
+   (void)height;
 #endif
 }
 
