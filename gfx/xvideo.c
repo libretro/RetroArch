@@ -177,7 +177,7 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
    {
       xv->font = font_renderer_new(font_path, font_size);
       if (!xv->font)
-         SSNES_WARN("Failed to init font\n");
+         SSNES_WARN("Failed to init font.\n");
    }
 #endif
 }

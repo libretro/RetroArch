@@ -24,12 +24,24 @@
 #include "input/ssnes_sdl_input.h"
 #include "gfx_common.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_FREETYPE
+#include "fonts.h"
+#endif
+
 typedef struct sdl_video sdl_video_t;
 struct sdl_video
 {
    SDL_Surface *screen, *buffer;
    bool quitting;
    bool rgb32;
+
+#ifdef HAVE_FREETYPE
+   font_renderer_t *font;
+#endif
 };
 
 static void sdl_gfx_free(void *data)
@@ -43,7 +55,133 @@ static void sdl_gfx_free(void *data)
 
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
+#ifdef HAVE_FREETYPE
+   if (vid->font)
+      font_renderer_free(vid->font);
+#endif
+
    free(vid);
+}
+
+static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font_size)
+{
+#ifdef HAVE_FREETYPE
+   if (*font_path)
+   {
+      vid->font = font_renderer_new(font_path, font_size);
+      if (!vid->font)
+         SSNES_WARN("Failed to init font.\n");
+   }
+#else
+   (void)vid;
+   (void)font_path;
+   (void)font_size;
+#endif
+}
+
+// Not very optimized, but hey :D
+static void sdl_render_msg_15(sdl_video_t *vid, SDL_Surface *buffer, const char *msg, unsigned width, unsigned height)
+{
+#ifdef HAVE_FREETYPE
+   struct font_output_list out;
+   font_renderer_msg(vid->font, msg, &out);
+   struct font_output *head = out.head;
+
+   int base_x = g_settings.video.msg_pos_x * width;
+   int base_y = (1.0 - g_settings.video.msg_pos_y) * height;
+
+   while (head)
+   {
+      int rbase_x = base_x + head->off_x;
+      int rbase_y = base_y - head->off_y;
+      if (rbase_y >= 0)
+      {
+         for (int y = 0; y < head->height && (y + rbase_y) < height; y++)
+         {
+            if (rbase_x < 0)
+               continue;
+
+            const uint8_t *a = head->output + head->pitch * y;
+            uint16_t *out = (uint16_t*)buffer->pixels + (rbase_y - head->height + y) * (buffer->pitch >> 1) + rbase_x;
+
+            for (int x = 0; x < head->width && (x + rbase_x) < width; x++)
+            {
+               unsigned blend = a[x];
+               unsigned out_pix = out[x];
+               unsigned r = (out_pix >> 10) & 0x1f;
+               unsigned g = (out_pix >>  5) & 0x1f;
+               unsigned b = (out_pix >>  0) & 0x1f;
+
+               unsigned out_r = (r * (256 - blend) + 0x1f * blend) >> 8;
+               unsigned out_g = (g * (256 - blend) + 0x1f * blend) >> 8;
+               unsigned out_b = (b * (256 - blend) + 0x1f * blend) >> 8;
+               out[x] = (out_r << 10) | (out_g << 5) | out_b;
+            }
+         }
+      }
+
+      head = head->next;
+   }
+
+   font_renderer_free_output(&out);
+
+#else
+   (void)vid;
+   (void)buffer;
+   (void)msg;
+#endif
+}
+
+static void sdl_render_msg_32(sdl_video_t *vid, SDL_Surface *buffer, const char *msg, unsigned width, unsigned height)
+{
+#ifdef HAVE_FREETYPE
+   struct font_output_list out;
+   font_renderer_msg(vid->font, msg, &out);
+   struct font_output *head = out.head;
+
+   int base_x = g_settings.video.msg_pos_x * width;
+   int base_y = (1.0 - g_settings.video.msg_pos_y) * height;
+
+   while (head)
+   {
+      int rbase_x = base_x + head->off_x;
+      int rbase_y = base_y - head->off_y;
+      if (rbase_y >= 0)
+      {
+         for (int y = 0; y < head->height && (y + rbase_y) < height; y++)
+         {
+            if (rbase_x < 0)
+               continue;
+
+            const uint8_t *a = head->output + head->pitch * y;
+            uint32_t *out = (uint32_t*)buffer->pixels + (rbase_y - head->height + y) * (buffer->pitch >> 2) + rbase_x;
+
+            for (int x = 0; x < head->width && (x + rbase_x) < width; x++)
+            {
+               unsigned blend = a[x];
+               unsigned out_pix = out[x];
+               unsigned r = (out_pix >> 16) & 0xff;
+               unsigned g = (out_pix >>  8) & 0xff;
+               unsigned b = (out_pix >>  0) & 0xff;
+
+               unsigned out_r = (r * (256 - blend) + 0xff * blend) >> 8;
+               unsigned out_g = (g * (256 - blend) + 0xff * blend) >> 8;
+               unsigned out_b = (b * (256 - blend) + 0xff * blend) >> 8;
+               out[x] = (out_r << 16) | (out_g << 8) | out_b;
+            }
+         }
+      }
+
+      head = head->next;
+   }
+
+   font_renderer_free_output(&out);
+
+#else
+   (void)vid;
+   (void)buffer;
+   (void)msg;
+#endif
 }
 
 static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
@@ -94,6 +232,8 @@ static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 
    vid->rgb32 = video->rgb32;
 
+   sdl_init_font(vid, g_settings.video.font_path, g_settings.video.font_size);
+
    return vid;
 
 error:
@@ -124,7 +264,6 @@ static void convert_32bit_15bit(uint16_t *out, unsigned outpitch, const uint32_t
 
 static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   (void)msg;
    sdl_video_t *vid = data;
 
    if (SDL_MUSTLOCK(vid->buffer))
@@ -158,6 +297,14 @@ static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigne
       }
    }
 
+   if (msg)
+   {
+      if (!vid->rgb32 || g_settings.video.force_16bit)
+         sdl_render_msg_15(vid, vid->buffer, msg, width, height);
+      else
+         sdl_render_msg_32(vid, vid->buffer, msg, width, height);
+   }
+
    if (SDL_MUSTLOCK(vid->buffer))
       SDL_UnlockSurface(vid->buffer);
 
@@ -176,6 +323,7 @@ static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigne
    };
 
    SDL_SoftStretch(vid->buffer, &src, vid->screen, &dest);
+
 
    char buf[128];
    if (gfx_window_title(buf, sizeof(buf)))
