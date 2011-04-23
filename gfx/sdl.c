@@ -32,6 +32,11 @@
 #include "fonts.h"
 #endif
 
+static void convert_15bit_15bit_direct(uint16_t *out, unsigned outpitch, const uint16_t *input, unsigned width, unsigned height, unsigned pitch, const SDL_PixelFormat *fmt);
+static void convert_32bit_32bit_direct(uint32_t *out, unsigned outpitch, const uint32_t *input, unsigned width, unsigned height, unsigned pitch, const SDL_PixelFormat *fmt);
+static void convert_15bit_15bit_shift(uint16_t *out, unsigned outpitch, const uint16_t *input, unsigned width, unsigned height, unsigned pitch, const SDL_PixelFormat *fmt);
+static void convert_32bit_32bit_shift(uint32_t *out, unsigned outpitch, const uint32_t *input, unsigned width, unsigned height, unsigned pitch, const SDL_PixelFormat *fmt);
+
 typedef struct sdl_video sdl_video_t;
 struct sdl_video
 {
@@ -39,6 +44,9 @@ struct sdl_video
    bool quitting;
    bool rgb32;
    bool upsample;
+
+   void (*convert_15_func)(uint16_t*, unsigned, const uint16_t*, unsigned, unsigned, unsigned, const SDL_PixelFormat*);
+   void (*convert_32_func)(uint32_t*, unsigned, const uint32_t*, unsigned, unsigned, unsigned, const SDL_PixelFormat*);
 
 #ifdef HAVE_FREETYPE
    font_renderer_t *font;
@@ -81,7 +89,7 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
 }
 
 // Not very optimized, but hey :D
-static void sdl_render_msg_15(sdl_video_t *vid, SDL_Surface *buffer, const char *msg, unsigned width, unsigned height)
+static void sdl_render_msg_15(sdl_video_t *vid, SDL_Surface *buffer, const char *msg, unsigned width, unsigned height, const SDL_PixelFormat *fmt)
 {
 #ifdef HAVE_FREETYPE
    struct font_output_list out;
@@ -90,6 +98,10 @@ static void sdl_render_msg_15(sdl_video_t *vid, SDL_Surface *buffer, const char 
 
    int base_x = g_settings.video.msg_pos_x * width;
    int base_y = (1.0 - g_settings.video.msg_pos_y) * height;
+
+   unsigned rshift = fmt->Rshift;
+   unsigned gshift = fmt->Gshift;
+   unsigned bshift = fmt->Bshift;
 
    while (head)
    {
@@ -109,14 +121,14 @@ static void sdl_render_msg_15(sdl_video_t *vid, SDL_Surface *buffer, const char 
             {
                unsigned blend = a[x];
                unsigned out_pix = out[x];
-               unsigned r = (out_pix >> 10) & 0x1f;
-               unsigned g = (out_pix >>  5) & 0x1f;
-               unsigned b = (out_pix >>  0) & 0x1f;
+               unsigned r = (out_pix >> rshift) & 0x1f;
+               unsigned g = (out_pix >> gshift) & 0x1f;
+               unsigned b = (out_pix >> bshift) & 0x1f;
 
                unsigned out_r = (r * (256 - blend) + 0x1f * blend) >> 8;
                unsigned out_g = (g * (256 - blend) + 0x1f * blend) >> 8;
                unsigned out_b = (b * (256 - blend) + 0x1f * blend) >> 8;
-               out[x] = (out_r << 10) | (out_g << 5) | out_b;
+               out[x] = (out_r << rshift) | (out_g << gshift) | (out_b << bshift);
             }
          }
       }
@@ -135,7 +147,7 @@ static void sdl_render_msg_15(sdl_video_t *vid, SDL_Surface *buffer, const char 
 #endif
 }
 
-static void sdl_render_msg_32(sdl_video_t *vid, SDL_Surface *buffer, const char *msg, unsigned width, unsigned height)
+static void sdl_render_msg_32(sdl_video_t *vid, SDL_Surface *buffer, const char *msg, unsigned width, unsigned height, const SDL_PixelFormat *fmt)
 {
 #ifdef HAVE_FREETYPE
    struct font_output_list out;
@@ -144,6 +156,10 @@ static void sdl_render_msg_32(sdl_video_t *vid, SDL_Surface *buffer, const char 
 
    int base_x = g_settings.video.msg_pos_x * width;
    int base_y = (1.0 - g_settings.video.msg_pos_y) * height;
+
+   unsigned rshift = fmt->Rshift;
+   unsigned gshift = fmt->Gshift;
+   unsigned bshift = fmt->Bshift;
 
    while (head)
    {
@@ -163,14 +179,14 @@ static void sdl_render_msg_32(sdl_video_t *vid, SDL_Surface *buffer, const char 
             {
                unsigned blend = a[x];
                unsigned out_pix = out[x];
-               unsigned r = (out_pix >> 16) & 0xff;
-               unsigned g = (out_pix >>  8) & 0xff;
-               unsigned b = (out_pix >>  0) & 0xff;
+               unsigned r = (out_pix >> rshift) & 0xff;
+               unsigned g = (out_pix >> gshift) & 0xff;
+               unsigned b = (out_pix >> bshift) & 0xff;
 
                unsigned out_r = (r * (256 - blend) + 0xff * blend) >> 8;
                unsigned out_g = (g * (256 - blend) + 0xff * blend) >> 8;
                unsigned out_b = (b * (256 - blend) + 0xff * blend) >> 8;
-               out[x] = (out_r << 16) | (out_g << 8) | out_b;
+               out[x] = (out_r << rshift) | (out_g << gshift) | (out_b << bshift);
             }
          }
       }
@@ -205,7 +221,7 @@ static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 
    vid->screen = SDL_SetVideoMode(video->width, video->height, (g_settings.video.force_16bit || !video->rgb32) ? 15 : 32, SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
 
-   if (!g_settings.video.force_16bit && !vid->screen && !video->rgb32)
+   if (!vid->screen && !g_settings.video.force_16bit && !video->rgb32)
    {
       vid->upsample = true;
       vid->screen = SDL_SetVideoMode(video->width, video->height, 32, SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
@@ -221,17 +237,19 @@ static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    SDL_ShowCursor(SDL_DISABLE);
 
    const SDL_PixelFormat *fmt = vid->screen->format;
-   if (!g_settings.video.force_16bit && (vid->rgb32 || vid->upsample))
+   if (!g_settings.video.force_16bit && (video->rgb32 || vid->upsample))
    {
+      SSNES_LOG("SDL: Creating 32-bit buffer.\n");
       vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, 256 * video->input_scale, 256 * video->input_scale, 32,
             fmt->Rmask, fmt->Bmask, fmt->Gmask, fmt->Amask);
    }
    else
    {
+      SSNES_LOG("SDL: Creating 15-bit buffer.\n");
       vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, 256 * video->input_scale, 256 * video->input_scale, 15,
             fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
    }
-   SSNES_LOG("[Debug]: SDL Pixel format: Rshift = %u, Gmask = %u, Bmask = %u\n", 
+   SSNES_LOG("[Debug]: SDL Pixel format: Rshift = %u, Gshift = %u, Bshift = %u\n", 
          (unsigned)fmt->Rshift, (unsigned)fmt->Gshift, (unsigned)fmt->Bshift);
 
    if (!vid->buffer)
@@ -253,6 +271,29 @@ static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    vid->rgb32 = video->rgb32;
 
    sdl_init_font(vid, g_settings.video.font_path, g_settings.video.font_size);
+
+
+   if (fmt->Rshift == 10 && fmt->Gshift ==  5 && fmt->Bshift == 0) 
+   {
+      SSNES_LOG("SDL: 15-bit format matches. Fast blit.\n");
+      vid->convert_15_func = convert_15bit_15bit_direct;
+   }
+   else
+   {
+      SSNES_LOG("SDL: 15-bit format does not match. Needs conversion.\n");
+      vid->convert_15_func = convert_15bit_15bit_shift;
+   }
+
+   if (fmt->Rshift == 24 && fmt->Gshift == 16 && fmt->Bshift == 8) 
+   {
+      SSNES_LOG("SDL: 32-bit format matches. Fast blit.\n");
+      vid->convert_32_func = convert_32bit_32bit_direct;
+   }
+   else
+   {
+      SSNES_LOG("SDL: 32-bit format does not match. Needs conversion.\n");
+      vid->convert_32_func = convert_32bit_32bit_shift;
+   }
 
    return vid;
 
@@ -301,6 +342,62 @@ static void convert_15bit_32bit(uint32_t *out, unsigned outpitch, const uint16_t
    }
 }
 
+static void convert_15bit_15bit_direct(uint16_t *out, unsigned outpitch, const uint16_t *input, unsigned width, unsigned height, unsigned pitch, const SDL_PixelFormat *fmt)
+{
+   for (unsigned y = 0; y < height; y++)
+   {
+      uint16_t *dest = out + ((y * outpitch) >> 1);
+      const uint16_t *src = input + ((y * pitch) >> 1);
+      memcpy(dest, src, width * sizeof(uint16_t));
+   }
+   (void)fmt;
+}
+
+static void convert_32bit_32bit_direct(uint32_t *out, unsigned outpitch, const uint32_t *input, unsigned width, unsigned height, unsigned pitch, const SDL_PixelFormat *fmt)
+{
+   for (unsigned y = 0; y < height; y++)
+   {
+      uint32_t *dest = out + ((y * outpitch) >> 2);
+      const uint32_t *src = input + ((y * pitch) >> 2);
+      memcpy(dest, src, width * sizeof(uint32_t));
+   }
+   (void)fmt;
+}
+
+static void convert_15bit_15bit_shift(uint16_t *out, unsigned outpitch, const uint16_t *input, unsigned width, unsigned height, unsigned pitch, const SDL_PixelFormat *fmt)
+{
+   for (unsigned y = 0; y < height; y++)
+   {
+      uint16_t *dest = out + ((y * outpitch) >> 1);
+      const uint16_t *src = input + ((y * pitch) >> 1);
+      for (unsigned x = 0; x < width; x++)
+      {
+         uint16_t color = src[x];
+         uint16_t r = ((color >> 10) & 0x1f) << fmt->Rshift;
+         uint16_t g = ((color >>  5) & 0x1f) << fmt->Gshift;
+         uint16_t b = ((color >>  0) & 0x1f) << fmt->Bshift;
+         dest[x] = r | g | b;
+      }
+   }
+}
+
+static void convert_32bit_32bit_shift(uint32_t *out, unsigned outpitch, const uint32_t *input, unsigned width, unsigned height, unsigned pitch, const SDL_PixelFormat *fmt)
+{
+   for (unsigned y = 0; y < height; y++)
+   {
+      uint32_t *dest = out + ((y * outpitch) >> 2);
+      const uint32_t *src = input + ((y * pitch) >> 2);
+      for (unsigned x = 0; x < width; x++)
+      {
+         uint32_t color = src[x];
+         uint32_t r = ((color >> 24) & 0xff) << fmt->Rshift;
+         uint32_t g = ((color >> 16) & 0xff) << fmt->Gshift;
+         uint32_t b = ((color >>  8) & 0xff) << fmt->Bshift;
+         dest[x] = r | g | b;
+      }
+   }
+}
+
 static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    sdl_video_t *vid = data;
@@ -317,12 +414,7 @@ static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigne
    // 15-bit -> 15-bit
    else if (!vid->rgb32)
    {
-      for (unsigned y = 0; y < height; y++)
-      {
-         uint16_t *dest = (uint16_t*)vid->buffer->pixels + ((y * vid->buffer->pitch) >> 1);
-         const uint16_t *src = (const uint16_t*)frame + ((y * pitch) >> 1);
-         memcpy(dest, src, width * sizeof(uint16_t));
-      }
+      vid->convert_15_func(vid->buffer->pixels, vid->buffer->pitch, frame, width, height, pitch, vid->screen->format);
    }
    // 32-bit -> 15-bit
    else if (vid->rgb32 && g_settings.video.force_16bit)
@@ -332,21 +424,15 @@ static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigne
    // 32-bit -> 32-bit
    else
    {
-      for (unsigned y = 0; y < height; y++)
-      {
-         uint32_t *dest = (uint32_t*)vid->buffer->pixels + ((y * vid->buffer->pitch) >> 2);
-         const uint32_t *src = (const uint32_t*)frame + ((y * pitch) >> 2);
-         for (unsigned x = 0; x < width; x++)
-            dest[x] = src[x] >> 8;
-      }
+      vid->convert_32_func(vid->buffer->pixels, vid->buffer->pitch, frame, width, height, pitch, vid->screen->format);
    }
 
    if (msg)
    {
       if ((!vid->rgb32 || g_settings.video.force_16bit) && !vid->upsample)
-         sdl_render_msg_15(vid, vid->buffer, msg, width, height);
+         sdl_render_msg_15(vid, vid->buffer, msg, width, height, vid->screen->format);
       else
-         sdl_render_msg_32(vid, vid->buffer, msg, width, height);
+         sdl_render_msg_32(vid, vid->buffer, msg, width, height, vid->screen->format);
    }
 
    if (SDL_MUSTLOCK(vid->buffer))
