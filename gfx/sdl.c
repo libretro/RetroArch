@@ -220,23 +220,19 @@ static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 
    SDL_ShowCursor(SDL_DISABLE);
 
+   const SDL_PixelFormat *fmt = vid->screen->format;
    if (!g_settings.video.force_16bit && (vid->rgb32 || vid->upsample))
    {
-      // I would prefer some other masks, but apparently SDL doesn't give a shit what the masks are :(
-      // TODO: Make this work in all cases.
       vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, 256 * video->input_scale, 256 * video->input_scale, 32,
-            0xff0000u, 0xff00u, 0xffu, 0);
-
-      const SDL_PixelFormat *fmt = vid->buffer->format;
-      SSNES_LOG("[Debug]: SDL Pixel format: Rmask = 0x%08x, Gmask = 0x%08x, Bmask = 0x%08x, Amask = 0x%08x\n", 
-            (unsigned)fmt->Rmask, (unsigned)fmt->Gmask, (unsigned)fmt->Bmask, (unsigned)fmt->Amask);
+            fmt->Rmask, fmt->Bmask, fmt->Gmask, fmt->Amask);
    }
    else
    {
-      // This seems to work though.
       vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, 256 * video->input_scale, 256 * video->input_scale, 15,
-            0x7c00, 0x03e0, 0x001f, 0);
+            fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
    }
+   SSNES_LOG("[Debug]: SDL Pixel format: Rshift = %u, Gmask = %u, Bmask = %u\n", 
+         (unsigned)fmt->Rshift, (unsigned)fmt->Gshift, (unsigned)fmt->Bshift);
 
    if (!vid->buffer)
    {
@@ -265,45 +261,41 @@ error:
    return NULL;
 }
 
-// TODO: Not sure if endianness is preserved for SDL.
-// This seems to work, but not quite sure if it'll work on any platform.
-static inline uint16_t conv_pixel_32_15(uint32_t pix)
+static inline uint16_t conv_pixel_32_15(uint32_t pix, const SDL_PixelFormat *fmt)
 {
-   uint16_t r = (pix & 0xf8000000) >> 17;
-   uint16_t g = (pix & 0x00f80000) >> 14;
-   uint16_t b = (pix & 0x0000f800) >> 11;
+   uint16_t r = ((pix & 0xf8000000) >> 27) << fmt->Rshift;
+   uint16_t g = ((pix & 0x00f80000) >> 19) << fmt->Gshift;
+   uint16_t b = ((pix & 0x0000f800) >> 11) << fmt->Bshift;
    return r | g | b;
 }
 
-static inline uint32_t conv_pixel_15_32(uint16_t pix)
+static inline uint32_t conv_pixel_15_32(uint16_t pix, const SDL_PixelFormat *fmt)
 {
-   uint32_t r = ((pix >> 10) & 0x1f) << 19;
-   uint32_t g = ((pix >>  5) & 0x1f) << 11;
-   uint32_t b = ((pix >>  0) & 0x1f) <<  3;
+   uint32_t r = ((pix >> 10) & 0x1f) << (fmt->Rshift + 3);
+   uint32_t g = ((pix >>  5) & 0x1f) << (fmt->Gshift + 3);
+   uint32_t b = ((pix >>  0) & 0x1f) << (fmt->Bshift + 3);
    return r | g | b;
 }
 
-static void convert_32bit_15bit(uint16_t *out, unsigned outpitch, const uint32_t *input, unsigned width, unsigned height, unsigned pitch)
+static void convert_32bit_15bit(uint16_t *out, unsigned outpitch, const uint32_t *input, unsigned width, unsigned height, unsigned pitch, const SDL_PixelFormat *fmt)
 {
    for (unsigned y = 0; y < height; y++)
    {
       for (unsigned x = 0; x < width; x++)
-      {
-         out[x] = conv_pixel_32_15(input[x]);
-      }
+         out[x] = conv_pixel_32_15(input[x], fmt);
+
       out += outpitch >> 1;
       input += pitch >> 2;
    }
 }
 
-static void convert_15bit_32bit(uint32_t *out, unsigned outpitch, const uint16_t *input, unsigned width, unsigned height, unsigned pitch)
+static void convert_15bit_32bit(uint32_t *out, unsigned outpitch, const uint16_t *input, unsigned width, unsigned height, unsigned pitch, const SDL_PixelFormat *fmt)
 {
    for (unsigned y = 0; y < height; y++)
    {
       for (unsigned x = 0; x < width; x++)
-      {
-         out[x] = conv_pixel_15_32(input[x]);
-      }
+         out[x] = conv_pixel_15_32(input[x], fmt);
+
       out += outpitch >> 2;
       input += pitch >> 1;
    }
@@ -320,7 +312,7 @@ static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigne
    // 15-bit -> 32-bit (Sometimes 15-bit won't work on "modern" OSes :\)
    if (vid->upsample)
    {
-      convert_15bit_32bit(vid->buffer->pixels, vid->buffer->pitch, frame, width, height, pitch);
+      convert_15bit_32bit(vid->buffer->pixels, vid->buffer->pitch, frame, width, height, pitch, vid->screen->format);
    }
    // 15-bit -> 15-bit
    else if (!vid->rgb32)
@@ -335,7 +327,7 @@ static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigne
    // 32-bit -> 15-bit
    else if (vid->rgb32 && g_settings.video.force_16bit)
    {
-      convert_32bit_15bit(vid->buffer->pixels, vid->buffer->pitch, frame, width, height, pitch);
+      convert_32bit_15bit(vid->buffer->pixels, vid->buffer->pitch, frame, width, height, pitch, vid->screen->format);
    }
    // 32-bit -> 32-bit
    else
