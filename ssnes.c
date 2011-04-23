@@ -316,7 +316,8 @@ static void print_help(void)
    puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
 #endif
    puts("\t-v/--verbose: Verbose logging");
-   puts("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM.\n");
+   puts("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM.");
+   puts("\t-D/--detach: Detach SSNES from the running console. Not relevant for all platforms.\n");
 
    print_features();
 }
@@ -368,6 +369,7 @@ static void parse_input(int argc, char *argv[])
       { "frames", 1, NULL, 'F' },
       { "port", 1, &val, 'p' },
       { "ups", 1, NULL, 'U' },
+      { "detach", 0, NULL, 'D' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -385,7 +387,7 @@ static void parse_input(int argc, char *argv[])
 #define CONFIG_FILE_ARG
 #endif
 
-   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:P:HC:F:U:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:P:HC:F:U:D" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for(;;)
    {
       val = 0;
@@ -502,6 +504,12 @@ static void parse_input(int argc, char *argv[])
 
          case 'U':
             strlcpy(g_extern.ups_name, optarg, sizeof(g_extern.ups_name));
+            break;
+
+         case 'D':
+#ifdef _WIN32
+            FreeConsole();
+#endif
             break;
 
          case 0:
