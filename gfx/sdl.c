@@ -38,6 +38,7 @@ struct sdl_video
    SDL_Surface *screen, *buffer;
    bool quitting;
    bool rgb32;
+   bool upsample;
 
 #ifdef HAVE_FREETYPE
    font_renderer_t *font;
@@ -51,7 +52,7 @@ static void sdl_gfx_free(void *data)
       return;
 
    if (vid->buffer)
-      SDL_FreeSurface(vid->screen);
+      SDL_FreeSurface(vid->buffer);
 
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
@@ -203,20 +204,39 @@ static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    SSNES_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
    vid->screen = SDL_SetVideoMode(video->width, video->height, (g_settings.video.force_16bit || !video->rgb32) ? 15 : 32, SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
+
+   if (!g_settings.video.force_16bit && !vid->screen && !video->rgb32)
+   {
+      vid->upsample = true;
+      vid->screen = SDL_SetVideoMode(video->width, video->height, 32, SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
+      SSNES_WARN("SDL: 15-bit colors failed, attempting 32-bit colors.\n");
+   }
+
    if (!vid->screen)
    {
-      SSNES_ERR("Failed to init SDL surface.\n");
+      SSNES_ERR("Failed to init SDL surface: %s\n", SDL_GetError());
       goto error;
    }
 
    SDL_ShowCursor(SDL_DISABLE);
 
-   if (g_settings.video.force_16bit || !video->rgb32)
+   if (!g_settings.video.force_16bit && (vid->rgb32 || vid->upsample))
+   {
+      // I would prefer some other masks, but apparently SDL doesn't give a shit what the masks are :(
+      // TODO: Make this work in all cases.
+      vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, 256 * video->input_scale, 256 * video->input_scale, 32,
+            0xff0000u, 0xff00u, 0xffu, 0);
+
+      const SDL_PixelFormat *fmt = vid->buffer->format;
+      SSNES_LOG("[Debug]: SDL Pixel format: Rmask = 0x%08x, Gmask = 0x%08x, Bmask = 0x%08x, Amask = 0x%08x\n", 
+            (unsigned)fmt->Rmask, (unsigned)fmt->Gmask, (unsigned)fmt->Bmask, (unsigned)fmt->Amask);
+   }
+   else
+   {
+      // This seems to work though.
       vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, 256 * video->input_scale, 256 * video->input_scale, 15,
             0x7c00, 0x03e0, 0x001f, 0);
-   else
-      vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, 256 * video->input_scale, 256 * video->input_scale, 32,
-            0, 0, 0, 0);
+   }
 
    if (!vid->buffer)
    {
@@ -245,11 +265,21 @@ error:
    return NULL;
 }
 
-static inline uint16_t conv_pixel(uint32_t pix)
+// TODO: Not sure if endianness is preserved for SDL.
+// This seems to work, but not quite sure if it'll work on any platform.
+static inline uint16_t conv_pixel_32_15(uint32_t pix)
 {
    uint16_t r = (pix & 0xf8000000) >> 17;
    uint16_t g = (pix & 0x00f80000) >> 14;
    uint16_t b = (pix & 0x0000f800) >> 11;
+   return r | g | b;
+}
+
+static inline uint32_t conv_pixel_15_32(uint16_t pix)
+{
+   uint32_t r = ((pix >> 10) & 0x1f) << 19;
+   uint32_t g = ((pix >>  5) & 0x1f) << 11;
+   uint32_t b = ((pix >>  0) & 0x1f) <<  3;
    return r | g | b;
 }
 
@@ -259,10 +289,23 @@ static void convert_32bit_15bit(uint16_t *out, unsigned outpitch, const uint32_t
    {
       for (unsigned x = 0; x < width; x++)
       {
-         out[x] = conv_pixel(input[x]);
+         out[x] = conv_pixel_32_15(input[x]);
       }
       out += outpitch >> 1;
       input += pitch >> 2;
+   }
+}
+
+static void convert_15bit_32bit(uint32_t *out, unsigned outpitch, const uint16_t *input, unsigned width, unsigned height, unsigned pitch)
+{
+   for (unsigned y = 0; y < height; y++)
+   {
+      for (unsigned x = 0; x < width; x++)
+      {
+         out[x] = conv_pixel_15_32(input[x]);
+      }
+      out += outpitch >> 2;
+      input += pitch >> 1;
    }
 }
 
@@ -274,8 +317,13 @@ static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigne
       SDL_LockSurface(vid->buffer);
 
    // :(
+   // 15-bit -> 32-bit (Sometimes 15-bit won't work on "modern" OSes :\)
+   if (vid->upsample)
+   {
+      convert_15bit_32bit(vid->buffer->pixels, vid->buffer->pitch, frame, width, height, pitch);
+   }
    // 15-bit -> 15-bit
-   if (!vid->rgb32)
+   else if (!vid->rgb32)
    {
       for (unsigned y = 0; y < height; y++)
       {
@@ -297,13 +345,13 @@ static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigne
          uint32_t *dest = (uint32_t*)vid->buffer->pixels + ((y * vid->buffer->pitch) >> 2);
          const uint32_t *src = (const uint32_t*)frame + ((y * pitch) >> 2);
          for (unsigned x = 0; x < width; x++)
-            dest[x] = (src[x] >> 8) | 0xff000000;
+            dest[x] = src[x] >> 8;
       }
    }
 
    if (msg)
    {
-      if (!vid->rgb32 || g_settings.video.force_16bit)
+      if ((!vid->rgb32 || g_settings.video.force_16bit) && !vid->upsample)
          sdl_render_msg_15(vid, vid->buffer, msg, width, height);
       else
          sdl_render_msg_32(vid, vid->buffer, msg, width, height);
@@ -327,7 +375,6 @@ static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigne
    };
 
    SDL_SoftStretch(vid->buffer, &src, vid->screen, &dest);
-
 
    char buf[128];
    if (gfx_window_title(buf, sizeof(buf)))
