@@ -219,6 +219,9 @@ static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    unsigned full_y = video_info->current_h;
    SSNES_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
+   if (!video->fullscreen)
+      SSNES_LOG("Creating window @ %ux%u\n", video->width, video->height);
+
    vid->screen = SDL_SetVideoMode(video->width, video->height, (g_settings.video.force_16bit || !video->rgb32) ? 15 : 32, SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
 
    if (!vid->screen && !g_settings.video.force_16bit && !video->rgb32)

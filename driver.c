@@ -337,7 +337,7 @@ void init_video_input(void)
       scale = g_extern.filter.scale;
 
    video_info_t video = {
-      .width = (g_settings.video.fullscreen) ? g_settings.video.fullscreen_x : (296 * g_settings.video.xscale),
+      .width = (g_settings.video.fullscreen) ? g_settings.video.fullscreen_x : (224 * g_settings.video.xscale * g_settings.video.aspect_ratio),
       .height = (g_settings.video.fullscreen) ? g_settings.video.fullscreen_y : (224 * g_settings.video.yscale),
       .fullscreen = g_settings.video.fullscreen,
       .vsync = g_settings.video.vsync,
