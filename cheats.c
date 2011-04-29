@@ -121,7 +121,7 @@ cheat_manager_t* cheat_manager_new(const char *path)
 
    xmlParserCtxtPtr ctx = NULL;
    xmlDocPtr doc = NULL;
-   cheat_manager_t *handle = calloc(1, sizeof(handle));
+   cheat_manager_t *handle = calloc(1, sizeof(struct cheat_manager));
    if (!handle)
       return NULL;
 
