@@ -5,3 +5,4 @@ TODO: 0.5
 - Create a plugin interface for video driver. (Possibly D3D support ...)
 - Screenshot support.
 - (Probably not) add multi-button support.
+- More complete keyboard mapping.
