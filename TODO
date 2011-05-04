@@ -1,8 +1,7 @@
 TODO: 0.5
 
-- Update ssnes-joyconfig.
 - Add sgb/st/bsx launch support from Phoenix.
 - Create a plugin interface for video driver. (Possibly D3D support ...)
 - Screenshot support.
 - (Probably not) add multi-button support.
-- More complete keyboard mapping.
+- More complete keyboard mapping. (Almost done)
