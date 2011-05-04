@@ -573,6 +573,8 @@ static const struct key_map sdlk_map[] = {
    { "tab", SDLK_TAB },
    { "insert", SDLK_INSERT },
    { "del", SDLK_DELETE },
+   { "end", SDLK_END },
+   { "home", SDLK_HOME },
    { "rshift", SDLK_RSHIFT },
    { "shift", SDLK_LSHIFT },
    { "ctrl", SDLK_LCTRL },
