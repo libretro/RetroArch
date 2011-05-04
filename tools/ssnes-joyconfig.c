@@ -94,6 +94,9 @@ static struct bind binds[] = {
    MISC_BIND("Reset", reset)
    MISC_BIND("Next shader", shader_next)
    MISC_BIND("Previous shader", shader_prev)
+   MISC_BIND("Toggle cheat on/off", cheat_toggle)
+   MISC_BIND("Cheat index plus", cheat_index_plus)
+   MISC_BIND("Cheat index minus", cheat_index_minus)
 };
 
 static void get_binds(config_file_t *conf, int player, int joypad)
