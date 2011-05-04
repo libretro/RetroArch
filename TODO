@@ -1,6 +1,6 @@
 TODO: 0.5
 
-- Add sgb/st/bsx launch support from Phoenix.
+- Add sgb/st/bsx launch support from Phoenix. (Done)
 - Create a plugin interface for video driver. (Possibly D3D support ...)
 - Screenshot support.
 - (Probably not) add multi-button support.
