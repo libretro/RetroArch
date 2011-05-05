@@ -336,9 +336,30 @@ void init_video_input(void)
    if (g_extern.filter.active)
       scale = g_extern.filter.scale;
 
+   unsigned width;
+   unsigned height;
+   if (g_settings.video.fullscreen)
+   {
+      width = g_settings.video.fullscreen_x;
+      height = g_settings.video.fullscreen_y;
+   }
+   else
+   {
+      if (g_settings.video.force_aspect)
+      {
+         width = 224 * g_settings.video.xscale * g_settings.video.aspect_ratio;
+         height = 224 * g_settings.video.yscale;
+      }
+      else
+      {
+         width = 256 * g_settings.video.xscale;
+         height = 224 * g_settings.video.yscale;
+      }
+   }
+
    video_info_t video = {
-      .width = (g_settings.video.fullscreen) ? g_settings.video.fullscreen_x : (224 * g_settings.video.xscale * g_settings.video.aspect_ratio),
-      .height = (g_settings.video.fullscreen) ? g_settings.video.fullscreen_y : (224 * g_settings.video.yscale),
+      .width = width,
+      .height = height,
       .fullscreen = g_settings.video.fullscreen,
       .vsync = g_settings.video.vsync,
       .force_aspect = g_settings.video.force_aspect,
