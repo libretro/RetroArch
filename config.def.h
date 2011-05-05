@@ -120,6 +120,9 @@ static const bool video_smooth = true;
 // On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 
 
+// Crop overscanned frames (7/8 or 15/15 for interlaced frames).
+static const bool crop_overscan = false;
+
 // Font size for on-screen messages.
 static const unsigned font_size = 48;
 

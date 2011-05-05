@@ -68,6 +68,7 @@ struct settings
       bool vsync;
       bool smooth;
       bool force_aspect;
+      bool crop_overscan;
       float aspect_ratio;
       char cg_shader_path[256];
       char bsnes_shader_path[256];

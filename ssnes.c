@@ -82,8 +82,22 @@ static void set_fast_forward_button(bool new_button_state)
 // Format received is 16-bit 0RRRRRGGGGGBBBBB
 static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 {
-   if ( !g_extern.video_active )
+   if (!g_extern.video_active)
       return;
+
+   if (g_settings.video.crop_overscan)
+   {
+      if (height == 239)
+      {
+         data += 7 * 1024; // Skip 7 top scanlines.
+         height = 224;
+      }
+      else if (height == 478)
+      {
+         data += 15 * 512; // Skip 15 top scanlines.
+         height = 448;
+      }
+   }
 
 #ifdef HAVE_FFMPEG
    if (g_extern.recording)
