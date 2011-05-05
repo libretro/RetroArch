@@ -58,8 +58,8 @@ struct snes_keybind
 
 typedef struct video_info
 {
-   int width;
-   int height;
+   unsigned width;
+   unsigned height;
    bool fullscreen;
    bool vsync;
    bool force_aspect;
