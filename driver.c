@@ -220,7 +220,7 @@ void uninit_audio(void)
    free(g_extern.audio_data.conv_outsamples); g_extern.audio_data.conv_outsamples = NULL;
 }
 
-#ifdef HAVE_FILTER
+#ifdef HAVE_DYLIB
 static void init_filter(void)
 {
    if (g_extern.filter.active)
@@ -319,7 +319,7 @@ static void deinit_shader_dir(void)
 
 void init_video_input(void)
 {
-#ifdef HAVE_FILTER
+#ifdef HAVE_DYLIB
    init_filter();
 #endif
 

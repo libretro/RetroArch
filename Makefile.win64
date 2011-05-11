@@ -12,7 +12,7 @@ HAVE_XML = 1
 HAVE_FREETYPE = 1
 HAVE_XAUDIO = 1
 HAVE_RSOUND = 0
-HAVE_FILTER = 1
+HAVE_DYLIB = 1
 HAVE_NETPLAY = 1
 HAVE_FBO = 1
 libsnes ?= -lsnes
@@ -55,8 +55,8 @@ ifeq ($(HAVE_XML), 1)
    LIBS += -lxml2 -lz -lws2_32
 endif
 
-ifeq ($(HAVE_FILTER), 1)
-   DEFINES += -DHAVE_FILTER
+ifeq ($(HAVE_DYLIB), 1)
+   DEFINES += -DHAVE_DYLIB
 endif
 
 ifeq ($(HAVE_NETPLAY), 1)
@@ -80,6 +80,11 @@ endif
 ifeq ($(HAVE_FBO), 1)
    DEFINES += -DHAVE_FBO
 endif
+
+ifeq ($(HAVE_DYLIB), 1)
+   OBJ += gfx/ext.c
+endif
+
 
 ifneq ($(V),1)
    Q := @

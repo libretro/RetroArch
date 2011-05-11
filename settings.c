@@ -309,8 +309,9 @@ static void parse_config_file(void)
    CONFIG_GET_DOUBLE(video.msg_pos_y, "video_message_pos_y");
 #endif
 
-#ifdef HAVE_FILTER
+#ifdef HAVE_DYLIB
    CONFIG_GET_STRING(video.filter_path, "video_filter");
+   CONFIG_GET_STRING(video.external_driver, "video_external_driver");
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_XML)

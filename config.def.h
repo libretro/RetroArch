@@ -33,7 +33,7 @@
 #ifdef HAVE_SDL
 #include "SDL.h"
 #else
-#error HAVE_SDL is not defined!
+#error "HAVE_SDL is not defined!"
 #endif
 
 #ifdef HAVE_SRC
@@ -45,6 +45,7 @@
 #define VIDEO_GL 0
 #define VIDEO_XVIDEO 11
 #define VIDEO_SDL 13
+#define VIDEO_EXT 14
 ////////////////////////
 #define AUDIO_RSOUND 1
 #define AUDIO_OSS 2
@@ -64,6 +65,12 @@
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL
 #elif defined(HAVE_XVIDEO)
 #define VIDEO_DEFAULT_DRIVER VIDEO_XVIDEO
+#elif defined(HAVE_SDL)
+#define VIDEO_DEFAULT_DRIVER VIDEO_SDL
+#elif defined(HAVE_DYLIB)
+#define VIDEO_DEFAULT_DRIVER VIDEO_EXT
+#else
+#error "Need at least one video driver!"
 #endif
 
 #if defined(HAVE_ALSA)
@@ -85,13 +92,15 @@
 #elif defined(HAVE_ROAR)
 #define AUDIO_DEFAULT_DRIVER AUDIO_ROAR
 #else
-#error Need at least one audio driver!
+#error "Need at least one audio driver!"
 #endif
 
 #if defined(HAVE_SDL)
 #define INPUT_DEFAULT_DRIVER INPUT_SDL
 #elif defined(HAVE_XVIDEO)
 #define INPUT_DEFAULT_DRIVER INPUT_X
+#else
+#error "Need at least one input driver!"
 #endif
 
 

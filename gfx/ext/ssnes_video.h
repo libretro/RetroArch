@@ -63,10 +63,13 @@ typedef struct ssnes_video_info
 
    // If non-NULL, requests the use of an XML shader. Can be disregarded.
    const char *xml_shader;
+   // If non-NULL, requests the use of a Cg shader. Can be disregarded. If both are non-NULL, Cg or XML could be used at the discretion of the plugin.
+   const char *cg_shader;
 
    // Requestes that a certain TTF font is used for rendering messages to the screen.
    // Can be disregarded.
    const char *ttf_font;
+   unsigned ttf_font_size;
 } ssnes_video_info_t;
 
 #define SSNES_AXIS_NEG(x) (((unsigned)(x) << 16) | 0xFFFFU)
@@ -107,14 +110,17 @@ struct ssnes_keybind
 
 typedef struct ssnes_input_driver
 {
-   // Inits input driver.
-   void* (*init)(const unsigned joypad_index[5]);
+   // Inits input driver. Joypad index denotes which joypads are desired for the various players.
+   // Should an entry be negative, do not open joypad for that player.
+   void* (*init)(const int joypad_index[5]);
 
    // Polls input. Called once every frame.
    void (*poll)(void* data);
 
    // Queries input state for a certain key on a certain player. Players are 1 - 5.
-   int (*input_state)(void* data, const struct snes_keybind *bind, unsigned player);
+   // For digital inputs, pressed key is 1, not pressed key is 0.
+   // Analog values have same range as a signed 16-bit integer.
+   int (*input_state)(void* data, const struct ssnes_keybind *bind, unsigned player);
 
    // Frees the input struct.
    void (*free)(void* data);
@@ -131,7 +137,7 @@ typedef struct ssnes_video_driver
    // Should the video driver request that a certain input driver is used,
    // it is possible to set the driver to *input, and driver handle to *input_data.
    // If no certain driver is desired, set both of these to NULL.
-   void* (*init)(const video_info_t *video, const input_driver_t **input, void **input_data); 
+   void* (*init)(const ssnes_video_info_t *video, const ssnes_input_driver_t **input, void **input_data); 
 
    // Updates frame on the screen. frame can be either XRGB1555 or ARGB32 format depending on rgb32 setting in ssnes_video_info_t. Pitch is the distance in bytes between two scanlines in memory. When msg is non-NULL, it's a message that should be displayed to the user.
    int (*frame)(void* data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg);
@@ -145,17 +151,14 @@ typedef struct ssnes_video_driver
    // Does the window have focus?
    int (*focus)(void *data);
 
-   // Sets an XML shader. Implementing this function is optional, and can be set to NULL.
-   int (*xml_shader)(void *data, const char *path);
-
    // Frees the video driver.
    void (*free)(void* data);
 
    // A human-readable identification of the video driver.
    const char *ident;
-} video_driver_t;
+} ssnes_video_driver_t;
 
-SSNES_API_DECL const ssnes_video_info_t* ssnes_video_init(void);
+SSNES_API_DECL const ssnes_video_driver_t* ssnes_video_init(void);
 
 #ifdef __cplusplus
 }

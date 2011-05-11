@@ -114,7 +114,7 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 
    const char *msg = msg_queue_pull(g_extern.msg_queue);
 
-#ifdef HAVE_FILTER
+#ifdef HAVE_DYLIB
    if (g_extern.filter.active)
    {
       unsigned owidth = width;
@@ -282,7 +282,7 @@ static void print_features(void)
    _PSUPP(pulse, "PulseAudio", "audio driver");
    _PSUPP(xaudio, "XAudio2", "audio driver");
    _PSUPP(al, "OpenAL", "audio driver");
-   _PSUPP(filter, "Filter", "CPU based video filters");
+   _PSUPP(dylib, "External", "External filter and driver support");
    _PSUPP(cg, "Cg", "Cg pixel shaders");
    _PSUPP(xml, "XML", "bSNES XML pixel shaders");
    _PSUPP(fbo, "FBO", "OpenGL render-to-texture (multi-pass shaders)");

@@ -15,7 +15,7 @@ if [ $HAVE_DYNAMIC != yes ]; then
    add_define_make libsnes $LIBSNES
 fi
 
-check_lib FILTER -ldl dlopen
+check_lib DYLIB -ldl dlopen
 check_lib NETPLAY -lc socket
 
 check_lib ALSA -lasound snd_pcm_open
@@ -64,7 +64,7 @@ check_lib XVIDEO -lXv XvShmCreateImage
 check_lib STRL -lc strlcpy
 
 # Creates config.mk and config.h.
-VARS="ALSA OSS AL RSOUND ROAR JACK PULSE SDL FILTER CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC CONFIGFILE FREETYPE XVIDEO NETPLAY FBO STRL"
+VARS="ALSA OSS AL RSOUND ROAR JACK PULSE SDL DYLIB CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC CONFIGFILE FREETYPE XVIDEO NETPLAY FBO STRL"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 

@@ -62,10 +62,10 @@ static const bool _xaudio_supp = true;
 static const bool _xaudio_supp = false;
 #endif
 
-#ifdef HAVE_FILTER
-static const bool _filter_supp = true;
+#ifdef HAVE_DYLIB
+static const bool _dylib_supp = true;
 #else
-static const bool _filter_supp = false;
+static const bool _dylib_supp = false;
 #endif
 
 #ifdef HAVE_CG

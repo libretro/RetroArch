@@ -97,7 +97,8 @@ ifeq ($(HAVE_XML), 1)
    DEFINES += $(XML_CFLAGS)
 endif
 
-ifeq ($(HAVE_FILTER), 1)
+ifeq ($(HAVE_DYLIB), 1)
+   OBJ += gfx/ext.o
    LIBS += -ldl
 endif
 
