@@ -11,9 +11,15 @@ extern "C" {
 #endif
 
 #ifdef _WIN32
-#define SSNES_API_DECL __declspec(dllexport) __cdecl
+#ifdef SSNES_DLL_IMPORT
+#define SSNES_API_EXPORT __declspec(dllimport) 
 #else
-#define SSNES_API_DECL
+#define SSNES_API_EXPORT __declspec(dllexport) 
+#endif
+#define SSNES_API_CALLTYPE __cdecl
+#else
+#define SSNES_API_EXPORT
+#define SSNES_API_CALLTYPE
 #endif
 
 #define SSNES_API_VERSION 1
@@ -164,7 +170,7 @@ typedef struct ssnes_video_driver
    int api_version;
 } ssnes_video_driver_t;
 
-SSNES_API_DECL const ssnes_video_driver_t* ssnes_video_init(void);
+SSNES_API_EXPORT const ssnes_video_driver_t* SSNES_API_CALLTYPE ssnes_video_init(void);
 
 #ifdef __cplusplus
 }
