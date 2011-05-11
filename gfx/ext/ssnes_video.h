@@ -138,9 +138,9 @@ typedef struct ssnes_video_driver
    // Returns NULL on error.
    //
    // Should the video driver request that a certain input driver is used,
-   // it is possible to set the driver to *input, and driver handle to *input_data.
-   // If no certain driver is desired, set both of these to NULL.
-   void* (*init)(const ssnes_video_info_t *video, const ssnes_input_driver_t **input, void **input_data); 
+   // it is possible to set the driver to *input.
+   // If no certain driver is desired, set *input to NULL.
+   void* (*init)(const ssnes_video_info_t *video, const ssnes_input_driver_t **input); 
 
    // Updates frame on the screen. frame can be either XRGB1555 or ARGB32 format depending on rgb32 setting in ssnes_video_info_t. Pitch is the distance in bytes between two scanlines in memory. When msg is non-NULL, it's a message that should be displayed to the user.
    int (*frame)(void* data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg);

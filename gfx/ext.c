@@ -218,8 +218,7 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
    };
 
    const ssnes_input_driver_t *input_driver = NULL;
-   void *input_driver_handle = NULL;
-   ext->handle = ext->driver->init(&info, &input_driver, &input_driver_handle);
+   ext->handle = ext->driver->init(&info, &input_driver);
    if (!ext->handle)
       return false;
 
