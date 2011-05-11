@@ -17,6 +17,7 @@
 
 // Loader for external API plugins.
 
+#define SSNES_DLL_IMPORT
 #include "ext/ssnes_video.h"
 #include <stdbool.h>
 #include <stdlib.h>
