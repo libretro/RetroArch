@@ -63,9 +63,11 @@ struct cg_program
    CGparameter vid_size_f;
    CGparameter tex_size_f;
    CGparameter out_size_f;
+   CGparameter frame_cnt_f;
    CGparameter vid_size_v;
    CGparameter tex_size_v;
    CGparameter out_size_v;
+   CGparameter frame_cnt_v;
    CGparameter mvp;
 };
 
@@ -82,17 +84,20 @@ void gl_cg_set_proj_matrix(void)
 
 void gl_cg_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height,
-      unsigned out_width, unsigned out_height)
+      unsigned out_width, unsigned out_height,
+      unsigned frame_count)
 {
    if (cg_active)
    {
       cgGLSetParameter2f(prg[active_index].vid_size_f, width, height);
       cgGLSetParameter2f(prg[active_index].tex_size_f, tex_width, tex_height);
       cgGLSetParameter2f(prg[active_index].out_size_f, out_width, out_height);
+      cgGLSetParameter1f(prg[active_index].frame_cnt_f, (float)frame_count);
 
       cgGLSetParameter2f(prg[active_index].vid_size_v, width, height);
       cgGLSetParameter2f(prg[active_index].tex_size_v, tex_width, tex_height);
       cgGLSetParameter2f(prg[active_index].out_size_v, out_width, out_height);
+      cgGLSetParameter1f(prg[active_index].frame_cnt_v, (float)frame_count);
    }
 }
 
@@ -165,9 +170,11 @@ bool gl_cg_init(const char *path)
       prg[i].vid_size_f = cgGetNamedParameter(prg[i].fprg, "IN.video_size");
       prg[i].tex_size_f = cgGetNamedParameter(prg[i].fprg, "IN.texture_size");
       prg[i].out_size_f = cgGetNamedParameter(prg[i].fprg, "IN.output_size");
+      prg[i].frame_cnt_f = cgGetNamedParameter(prg[i].fprg, "IN.frame_count");
       prg[i].vid_size_v = cgGetNamedParameter(prg[i].vprg, "IN.video_size");
       prg[i].tex_size_v = cgGetNamedParameter(prg[i].vprg, "IN.texture_size");
       prg[i].out_size_v = cgGetNamedParameter(prg[i].vprg, "IN.output_size");
+      prg[i].frame_cnt_v = cgGetNamedParameter(prg[i].fprg, "IN.frame_count");
       prg[i].mvp = cgGetNamedParameter(prg[i].vprg, "modelViewProj");
       cgGLSetStateMatrixParameter(prg[i].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
    }

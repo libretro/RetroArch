@@ -596,7 +596,8 @@ void gl_glsl_deinit(void)
 
 void gl_glsl_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
-      unsigned out_width, unsigned out_height)
+      unsigned out_width, unsigned out_height,
+      unsigned frame_count)
 {
    if (glsl_enable && gl_program[active_index] > 0)
    {
@@ -613,6 +614,9 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       float textureSize[2] = {tex_width, tex_height};
       location = pglGetUniformLocation(gl_program[active_index], "rubyTextureSize");
       pglUniform2fv(location, 1, textureSize);
+
+      location = pglGetUniformLocation(gl_program[active_index], "rubyFrameCount");
+      pglUniform1i(location, frame_count);
    }
 }
 
