@@ -18,10 +18,15 @@
 // Loader for external API plugins.
 
 #include "ext/ssnes_video.h"
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include "dynamic.h"
 #include "general.h"
+
+static bool g_input_dead = true;
+static bool g_video_dead = true;
+static dylib_t g_lib = NULL;
 
 /////////// Input hook
 
@@ -33,6 +38,7 @@ typedef struct
 
 static void* input_ext_init(void)
 {
+   g_input_dead = false;
    return calloc(1, sizeof(input_ext_t));
 }
 
@@ -112,6 +118,15 @@ static void input_ext_free(void *data)
    {
       if (ext->driver && ext->handle)
          ext->driver->free(ext->handle);
+
+      if (g_video_dead)
+      {
+         dylib_close(g_lib);
+         g_lib = NULL;
+      }
+
+      g_input_dead = true;
+
       free(ext);
    }
 }
@@ -129,7 +144,6 @@ static const input_driver_t input_ext = {
 //////////// Video hook
 typedef struct
 {
-   dylib_t lib;
    const ssnes_video_driver_t *driver;
    void *handle;
 } ext_t;
@@ -141,7 +155,15 @@ static void video_ext_free(void *data)
    {
       if (ext->driver && ext->handle)
          ext->driver->free(ext->handle);
-      dylib_close(ext->lib);
+
+      if (g_input_dead)
+      {
+         dylib_close(g_lib);
+         g_lib = NULL;
+      }
+
+      g_video_dead = true;
+
       free(ext);
    }
 }
@@ -243,14 +265,14 @@ static void* video_ext_init(const video_info_t *video, const input_driver_t **in
       goto error;
    }
 
-   ext->lib = dylib_load(g_settings.video.external_driver);
-   if (!ext->lib)
+   g_lib = dylib_load(g_settings.video.external_driver);
+   if (!g_lib)
    {
       SSNES_ERR("Failed to open library: \"%s\"\n", g_settings.video.external_driver);
       goto error;
    }
 
-   const ssnes_video_driver_t* (*video_init)(void) = dylib_proc(ext->lib, "ssnes_video_init");
+   const ssnes_video_driver_t* (*video_init)(void) = dylib_proc(g_lib, "ssnes_video_init");
    if (!video_init)
    {
       SSNES_ERR("Couldn't find function ssnes_video_init in library ...\n");
@@ -270,6 +292,7 @@ static void* video_ext_init(const video_info_t *video, const input_driver_t **in
       goto error;
    }
 
+   g_video_dead = false;
    return ext;
 
 error:
