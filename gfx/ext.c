@@ -110,7 +110,8 @@ static void input_ext_free(void *data)
    input_ext_t *ext = data;
    if (ext)
    {
-      ext->driver->free(ext->handle);
+      if (ext->driver && ext->handle)
+         ext->driver->free(ext->handle);
       free(ext);
    }
 }
@@ -138,7 +139,8 @@ static void video_ext_free(void *data)
    ext_t *ext = data;
    if (ext)
    {
-      ext->driver->free(ext->handle);
+      if (ext->driver && ext->handle)
+         ext->driver->free(ext->handle);
       dylib_close(ext->lib);
       free(ext);
    }
