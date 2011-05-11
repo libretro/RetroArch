@@ -1,0 +1,125 @@
+TARGET = ssnes.exe
+JTARGET = ssnes-joyconfig.exe
+OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o ups.o strl.o
+JOBJ = conf/config_file.o tools/main-stub.o tools/ssnes-joyconfig.o
+
+CC = gcc
+CXX = g++
+
+HAVE_SRC = 0
+HAVE_SDL = 1
+HAVE_XML = 1
+HAVE_FREETYPE = 1
+HAVE_XAUDIO = 1
+HAVE_RSOUND = 0
+HAVE_FILTER = 1
+HAVE_NETPLAY = 1
+HAVE_FBO = 1
+libsnes ?= -lsnes
+
+LIBS = -lm
+DEFINES = -I. -DHAVE_CONFIGFILE
+LDFLAGS = -L. -static-libgcc -s
+
+SRC_LIBS = -lsamplerate-0
+SDL_LIBS = -lmingw32 -lSDL -lSDLmain -lwinmm -mwindows -lm -luser32 -lgdi32 -lwinmm -ldxguid
+SDL_CFLAGS = -ISDL
+
+ifeq ($(HAVE_SRC), 1)
+   LIBS += $(SRC_LIBS)
+   DEFINES += $(SRC_CFLAGS) -DHAVE_SRC
+else
+   OBJ += audio/hermite.o
+endif
+
+ifeq ($(HAVE_SDL), 1)
+   OBJ += gfx/sdl.o gfx/gl.o input/sdl.o audio/sdl.o audio/buffer.o
+   LIBS += $(SDL_LIBS) -lopengl32 
+   DEFINES += $(SDL_CFLAGS) -DHAVE_SDL
+endif
+
+ifeq ($(HAVE_XAUDIO), 1)
+   OBJ += audio/xaudio.o
+   DEFINES += -DHAVE_XAUDIO
+endif
+
+ifeq ($(HAVE_RSOUND), 1)
+   OBJ += audio/rsound.o
+   DEFINES += -DHAVE_RSOUND
+   LIBS += -lrsound
+endif
+
+ifeq ($(HAVE_XML), 1)
+   OBJ += gfx/shader_glsl.o sha256.o cheats.o
+   DEFINES += $(XML_CFLAGS) -DHAVE_XML -DLIBXML_STATIC
+   LIBS += -lxml2 -lz -lws2_32
+endif
+
+ifeq ($(HAVE_FILTER), 1)
+   DEFINES += -DHAVE_FILTER
+endif
+
+ifeq ($(HAVE_NETPLAY), 1)
+   DEFINES += -DHAVE_NETPLAY
+   OBJ += netplay.o
+   LIBS += -lws2_32
+endif
+
+ifeq ($(HAVE_FREETYPE), 1)
+   OBJ += gfx/fonts.o
+   DEFINES += -DHAVE_FREETYPE -Ifreetype2
+   LIBS += -lz -lfreetype6
+endif
+
+ifeq ($(DYNAMIC), 1)
+   DEFINES += -DHAVE_DYNAMIC
+else
+   LIBS += $(libsnes)
+endif
+
+ifeq ($(HAVE_FBO), 1)
+   DEFINES += -DHAVE_FBO
+endif
+
+ifneq ($(V),1)
+   Q := @
+endif
+
+
+CFLAGS = -Wall -O3 -std=gnu99 -I.
+
+all: $(TARGET) $(JTARGET)
+
+$(TARGET): $(OBJ)
+	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
+	@$(if $(Q), $(shell echo echo LD $@),)
+
+%.o: %.c
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+
+$(JTARGET): $(JOBJ)
+	$(Q)$(CC) -o $@ $(JOBJ) $(SDL_LIBS) $(LDFLAGS)
+	@$(if $(Q), $(shell echo echo LD $@),)
+
+clean:
+	rm -f *.o 
+	rm -f audio/*.o
+	rm -f conf/*.o
+	rm -f gfx/*.o
+	rm -f record/*.o
+	rm -f hqflt/*.o
+	rm -f input/*.o
+	rm -f hqflt/snes_ntsc/*.o
+	rm -f $(TARGET)
+	rm -f ssnes-joyconfig.exe
+	rm -f tools/*.o
+
+dist: all
+	zip -r ssnes-win64-0.4.1.zip $(TARGET) ssnes.cfg snes.dll xaudio-c.dll README.win32.txt $(JTARGET)
+
+libs:
+	wget https://github.com/downloads/Themaister/SSNES/SSNES-win64-libs.zip --no-check-certificate
+	unzip SSNES-win64-libs.zip
+
+.PHONY: all install uninstall clean dist libs
