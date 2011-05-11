@@ -16,6 +16,8 @@ extern "C" {
 #define SSNES_API_DECL
 #endif
 
+#define SSNES_API_VERSION 1
+
 // Since we don't want to rely on C++ or C99 for a proper boolean type, and make sure return semantics are perfectly clear ... ;)
 #define SSNES_OK 1
 #define SSNES_ERROR 0
@@ -70,6 +72,7 @@ typedef struct ssnes_video_info
    // Can be disregarded.
    const char *ttf_font;
    unsigned ttf_font_size;
+
 } ssnes_video_info_t;
 
 #define SSNES_AXIS_NEG(x) (((unsigned)(x) << 16) | 0xFFFFU)
@@ -156,6 +159,9 @@ typedef struct ssnes_video_driver
 
    // A human-readable identification of the video driver.
    const char *ident;
+
+   // Needs to be defined to SSNES_API_VERSION. This is used to detect API mismatches.
+   int api_version;
 } ssnes_video_driver_t;
 
 SSNES_API_DECL const ssnes_video_driver_t* ssnes_video_init(void);
