@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 #ifdef _WIN32
-#define SSNES_API_DECL __decltype(dllexport) __cdecl
+#define SSNES_API_DECL __declspec(dllexport) __cdecl
 #else
 #define SSNES_API_DECL
 #endif
