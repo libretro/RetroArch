@@ -24,7 +24,8 @@ extern "C" {
 
 #define SSNES_API_VERSION 1
 
-// Since we don't want to rely on C++ or C99 for a proper boolean type, and make sure return semantics are perfectly clear ... ;)
+// Since we don't want to rely on C++ or C99 for a proper boolean type,
+// and make sure return semantics are perfectly clear ... ;)
 #define SSNES_OK 1
 #define SSNES_ERROR 0
 #define SSNES_TRUE 1
@@ -36,11 +37,13 @@ extern "C" {
 typedef struct ssnes_video_info
 { 
    // Width of window. 
-   // If fullscreen mode is requested, a width of 0 means the resolution of the desktop should be used.
+   // If fullscreen mode is requested, 
+   // a width of 0 means the resolution of the desktop should be used.
    unsigned width;
 
    // Height of window. 
-   // If fullscreen mode is requested, a height of 0 means the resolutiof the desktop should be used.
+   // If fullscreen mode is requested, 
+   // a height of 0 means the resolutiof the desktop should be used.
    unsigned height;
 
    // If true, start the window in fullscreen mode.
@@ -49,32 +52,47 @@ typedef struct ssnes_video_info
    // If true, VSync should be enabled.
    int vsync;
 
-   // If true, the output image should have the aspect ratio as set in aspect_ratio.
+   // If true, the output image should have the aspect ratio 
+   // as set in aspect_ratio.
    int force_aspect;
 
    // Aspect ratio. Only takes effect if force_aspect is enabled.
    float aspect_ratio;
 
-   // Requests that the image is smoothed, using bilinear filtering or otherwise.
+   // Requests that the image is smoothed,
+   // using bilinear filtering or otherwise.
    // If this cannot be implemented efficiently, this can be disregarded.
    // If smooth is false, nearest-neighbor scaling is requested.
    int smooth;
 
-   // input_scale defines the maximum size of the picture that will ever be used with the frame callback.
-   // This scale is relative to 256x256 size, so an input scale of 2 means you should allocate a texture or of 512x512. It is normally set to 2 due to the possibility of pseudo-hires on the SNES. CPU filters or otherwise might increase this value.
+   // input_scale defines the maximum size of the picture that will
+   // ever be used with the frame callback.
+   // This scale is relative to 256x256 size,
+   // so an input scale of 2
+   // means you should allocate a texture or of 512x512.
+   // It is normally set to 2 due to the possibility of
+   // pseudo-hires on the SNES.
+   // CPU filters or otherwise might increase this value.
    unsigned input_scale;
 
    // Defines the coloring format used of the input frame.
-   // XRGB1555 format is 16-bit and has byte ordering: 0RRRRRGGGGGBBBBB, in native endian.
-   // ARGB8888 is AAAAAAAARRRRRRRRGGGGGGGGBBBBBBBB, native endian. Alpha channel should be disregarded.
+   // XRGB1555 format is 16-bit and has byte ordering: 0RRRRRGGGGGBBBBB,
+   // in native endian.
+   // ARGB8888 is AAAAAAAARRRRRRRRGGGGGGGGBBBBBBBB, native endian.
+   // Alpha channel should be disregarded.
    int color_format;
 
-   // If non-NULL, requests the use of an XML shader. Can be disregarded.
+   // If non-NULL, requests the use of an XML shader.
+   // Can be disregarded.
    const char *xml_shader;
-   // If non-NULL, requests the use of a Cg shader. Can be disregarded. If both are non-NULL, Cg or XML could be used at the discretion of the plugin.
+   // If non-NULL, requests the use of a Cg shader.
+   // Can be disregarded.
+   // If both are non-NULL,
+   // Cg or XML could be used at the discretion of the plugin.
    const char *cg_shader;
 
-   // Requestes that a certain TTF font is used for rendering messages to the screen.
+   // Requestes that a certain
+   // TTF font is used for rendering messages to the screen.
    // Can be disregarded.
    const char *ttf_font;
    unsigned ttf_font_size;
@@ -88,7 +106,8 @@ typedef struct ssnes_video_info
 #define SSNES_AXIS_NEG_GET(x) (((unsigned)(x) >> 16) & 0xFFFFU)
 #define SSNES_AXIS_POS_GET(x) ((unsigned)(x) & 0xFFFFU)
 
-#define SSNES_NO_BTN ((unsigned short)0xFFFFU) // I hope no joypad will ever have this many buttons ... ;)
+// I hope no joypad will ever have this many buttons ... ;)
+#define SSNES_NO_BTN ((unsigned short)0xFFFFU)
 
 #define SSNES_HAT_UP_MASK (1 << 15)
 #define SSNES_HAT_DOWN_MASK (1 << 14)
@@ -96,18 +115,24 @@ typedef struct ssnes_video_info
 #define SSNES_HAT_RIGHT_MASK (1 << 12)
 #define SSNES_HAT_MAP(x, hat) ((x & ((1 << 12) - 1)) | hat)
 
-#define SSNES_HAT_MASK (HAT_UP_MASK | HAT_DOWN_MASK | HAT_LEFT_MASK | HAT_RIGHT_MASK)
+#define SSNES_HAT_MASK (HAT_UP_MASK | HAT_DOWN_MASK | \
+      HAT_LEFT_MASK | HAT_RIGHT_MASK)
 #define SSNES_GET_HAT_DIR(x) (x & HAT_MASK)
 #define SSNES_GET_HAT(x) (x & (~HAT_MASK))
 
 struct ssnes_keybind
 {
-   // If analog_x is true, we request an analog device to be polled. The returned value should be the delta of last frame and current frame in the X-axis.
+   // If analog_x is true, we request an analog device to be polled. 
+   // The returned value should be the delta of 
+   // last frame and current frame in the X-axis.
    int analog_x;
-   // If analog_y is true, we request an analog device to be polled. The returned value should be the delta of last frame and current frame in the Y-axis.
+   // If analog_y is true, we request an analog device to be polled. 
+   // The returned value should be the delta of 
+   // last frame and current frame in the Y-axis.
    int analog_y;
 
-   // Keyboard key. The key values use the SDL keysyms, which probably need to be transformed to the native format.
+   // Keyboard key. The key values use the SDL keysyms, 
+   // which probably need to be transformed to the native format.
    unsigned short key;
 
    // Joypad key.
@@ -119,17 +144,21 @@ struct ssnes_keybind
 
 typedef struct ssnes_input_driver
 {
-   // Inits input driver. Joypad index denotes which joypads are desired for the various players.
-   // Should an entry be negative, do not open joypad for that player.
+   // Inits input driver. 
+   // Joypad index denotes which joypads are desired for the various players.
+   // Should an entry be negative,
+   // do not open joypad for that player.
    void* (*init)(const int joypad_index[5]);
 
    // Polls input. Called once every frame.
    void (*poll)(void* data);
 
-   // Queries input state for a certain key on a certain player. Players are 1 - 5.
+   // Queries input state for a certain key on a certain player.
+   // Players are 1 - 5.
    // For digital inputs, pressed key is 1, not pressed key is 0.
    // Analog values have same range as a signed 16-bit integer.
-   int (*input_state)(void* data, const struct ssnes_keybind *bind, unsigned player);
+   int (*input_state)(void* data, const struct ssnes_keybind *bind,
+         unsigned player);
 
    // Frees the input struct.
    void (*free)(void* data);
@@ -146,12 +175,22 @@ typedef struct ssnes_video_driver
    // Should the video driver request that a certain input driver is used,
    // it is possible to set the driver to *input.
    // If no certain driver is desired, set *input to NULL.
-   void* (*init)(const ssnes_video_info_t *video, const ssnes_input_driver_t **input); 
+   void* (*init)(const ssnes_video_info_t *video, 
+         const ssnes_input_driver_t **input); 
 
-   // Updates frame on the screen. frame can be either XRGB1555 or ARGB32 format depending on rgb32 setting in ssnes_video_info_t. Pitch is the distance in bytes between two scanlines in memory. When msg is non-NULL, it's a message that should be displayed to the user.
-   int (*frame)(void* data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg);
+   // Updates frame on the screen. 
+   // Frame can be either XRGB1555 or ARGB32 format
+   // depending on rgb32 setting in ssnes_video_info_t. 
+   // Pitch is the distance in bytes between two scanlines in memory. 
+   // 
+   // When msg is non-NULL, 
+   // it's a message that should be displayed to the user.
+   int (*frame)(void* data, const void* frame, 
+         unsigned width, unsigned height, unsigned pitch, const char *msg);
 
-   // Requests nonblocking operation. True = VSync is turned off. False = VSync is turned on.
+   // Requests nonblocking operation. 
+   // True = VSync is turned off. 
+   // False = VSync is turned on.
    void (*set_nonblock_state)(void* data, int toggle);
 
    // This must return false when the user exits the emulator.
@@ -166,11 +205,13 @@ typedef struct ssnes_video_driver
    // A human-readable identification of the video driver.
    const char *ident;
 
-   // Needs to be defined to SSNES_API_VERSION. This is used to detect API mismatches.
+   // Needs to be defined to SSNES_API_VERSION. 
+   // This is used to detect API mismatches.
    int api_version;
 } ssnes_video_driver_t;
 
-SSNES_API_EXPORT const ssnes_video_driver_t* SSNES_API_CALLTYPE ssnes_video_init(void);
+SSNES_API_EXPORT const ssnes_video_driver_t* SSNES_API_CALLTYPE
+   ssnes_video_init(void);
 
 #ifdef __cplusplus
 }
