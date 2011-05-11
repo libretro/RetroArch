@@ -119,7 +119,7 @@ dist: all
 	zip -r ssnes-win64-0.4.1.zip $(TARGET) ssnes.cfg snes.dll xaudio-c.dll README.win32.txt $(JTARGET)
 
 libs:
-	wget https://github.com/downloads/Themaister/SSNES/SSNES-win64-libs.zip --no-check-certificate
-	unzip SSNES-win64-libs.zip
+	wget https://github.com/downloads/Themaister/SSNES/ssnes-win64-libs.zip --no-check-certificate
+	unzip ssnes-win64-libs.zip
 
 .PHONY: all install uninstall clean dist libs
