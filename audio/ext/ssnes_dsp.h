@@ -61,7 +61,8 @@ typedef struct ssnes_dsp_output
    // and requests resampling to the proper frequency to be 
    // performed outside the plugin.
    // If false, 
-   // it is assumed that the output has the same sample rate as the input.
+   // it is assumed that the output has the same sample rate as given
+   // in output_rate.
    int should_resample;
 } ssnes_dsp_output_t;
 
