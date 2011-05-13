@@ -25,11 +25,14 @@ extern "C" {
 #define SSNES_FALSE 0
 #define SSNES_TRUE 1
 
+#define SSNES_API_VERSION 1
+
 typedef struct ssnes_dsp_info
 {
    // Input sample rate that the DSP plugin receives. This is generally ~32kHz.
    // Some small variance is allowed due to syncing behavior.
    float input_rate;
+
    // SSNES requests that the DSP plugin resamples the 
    // input to a certain frequency.
    //
@@ -46,6 +49,7 @@ typedef struct ssnes_dsp_output
    // The range of the samples are [-1.0, 1.0]. 
    // This range cannot be exceeded without horrible audio glitches.
    const float *samples;
+
    // Frames which the DSP plugin outputted for the current process.
    // One frame is here defined as a combined sample of 
    // left and right channels. 
@@ -65,6 +69,7 @@ typedef struct ssnes_dsp_input
 {
    // Input data for the DSP. The samples are interleaved in order: LRLRLRLR
    const float *samples;
+
    // Number of frames for input data.
    // One frame is here defined as a combined sample of 
    // left and right channels. 
@@ -85,6 +90,10 @@ typedef struct ssnes_dsp_plugin
 
    // Frees the handle.
    void (*free)(void *data);
+
+   // API version used to compile the plugin.
+   // Used to detect mismatches in API.
+   int api_version;
 } ssnes_dsp_plugin_t;
 
 SSNES_API_EXPORT const ssnes_dsp_plugin_t* SSNES_API_CALLTYPE 
