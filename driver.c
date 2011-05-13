@@ -146,6 +146,60 @@ void uninit_drivers(void)
    uninit_audio();
 }
 
+static void init_dsp_plugin(void)
+{
+   if (!(*g_settings.audio.dsp_plugin))
+      return;
+
+   g_extern.audio_data.dsp_lib = dylib_load(g_settings.audio.dsp_plugin);
+   if (!g_extern.audio_data.dsp_lib)
+   {
+      SSNES_ERR("Failed to open DSP plugin: \"%s\" ...\n", g_settings.audio.dsp_plugin);
+      return;
+   }
+
+   const ssnes_dsp_plugin_t* (*SSNES_API_CALLTYPE plugin_init)(void) = dylib_proc(g_extern.audio_data.dsp_lib, "ssnes_dsp_plugin_init");
+   if (!plugin_init)
+   {
+      SSNES_ERR("Failed to find symbol \"ssnes_dsp_plugin_init\" in DSP plugin.\n");
+      dylib_close(g_extern.audio_data.dsp_lib);
+      g_extern.audio_data.dsp_lib = NULL;
+      return;
+   }
+
+   g_extern.audio_data.dsp_plugin = plugin_init();
+   if (!g_extern.audio_data.dsp_plugin)
+   {
+      SSNES_ERR("Failed to get a valid DSP plugin.\n");
+      dylib_close(g_extern.audio_data.dsp_lib);
+      g_extern.audio_data.dsp_lib = NULL;
+      return;
+   }
+
+   ssnes_dsp_info_t info = {
+      .input_rate = g_settings.audio.in_rate,
+      .output_rate = g_settings.audio.out_rate
+   };
+   g_extern.audio_data.dsp_handle = g_extern.audio_data.dsp_plugin->init(&info);
+   if (!g_extern.audio_data.dsp_handle)
+   {
+      SSNES_ERR("Failed to init DSP plugin.\n");
+      dylib_close(g_extern.audio_data.dsp_lib);
+      g_extern.audio_data.dsp_plugin = NULL;
+      g_extern.audio_data.dsp_lib = NULL;
+      return;
+   }
+}
+
+static void deinit_dsp_plugin(void)
+{
+   if (g_extern.audio_data.dsp_lib && g_extern.audio_data.dsp_plugin)
+   {
+      g_extern.audio_data.dsp_plugin->free(g_extern.audio_data.dsp_handle);
+      dylib_close(g_extern.audio_data.dsp_lib);
+   }
+}
+
 #define AUDIO_CHUNK_SIZE_BLOCKING 64
 #define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
 #define AUDIO_MAX_RATIO 16
@@ -196,6 +250,8 @@ void init_audio(void)
    g_extern.audio_data.data_ptr = 0;
    assert((g_extern.audio_data.outsamples = malloc(max_bufsamples * sizeof(float) * AUDIO_MAX_RATIO)));
    assert((g_extern.audio_data.conv_outsamples = malloc(max_bufsamples * sizeof(int16_t) * AUDIO_MAX_RATIO)));
+
+   init_dsp_plugin();
 }
 
 void uninit_audio(void)
@@ -221,6 +277,8 @@ void uninit_audio(void)
    free(g_extern.audio_data.data); g_extern.audio_data.data = NULL;
    free(g_extern.audio_data.outsamples); g_extern.audio_data.outsamples = NULL;
    free(g_extern.audio_data.conv_outsamples); g_extern.audio_data.conv_outsamples = NULL;
+
+   deinit_dsp_plugin();
 }
 
 #ifdef HAVE_DYLIB

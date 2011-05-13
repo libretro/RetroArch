@@ -367,6 +367,7 @@ static void parse_config_file(void)
 
    CONFIG_GET_STRING(video.driver, "video_driver");
    CONFIG_GET_STRING(audio.driver, "audio_driver");
+   CONFIG_GET_STRING(audio.dsp_plugin, "audio_dsp_plugin");
    CONFIG_GET_STRING(input.driver, "input_driver");
    CONFIG_GET_STRING(libsnes, "libsnes_path");
 

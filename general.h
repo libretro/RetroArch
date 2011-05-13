@@ -30,6 +30,7 @@
 #include "netplay.h"
 #include "dynamic.h"
 #include "cheats.h"
+#include "audio/ext/ssnes_dsp.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -103,6 +104,8 @@ struct settings
       unsigned latency;
       bool sync;
       int src_quality;
+
+      char dsp_plugin[256];
    } audio;
 
    struct
@@ -191,6 +194,10 @@ struct global
 
       float *outsamples;
       int16_t *conv_outsamples;
+
+      dylib_t dsp_lib;
+      const ssnes_dsp_plugin_t *dsp_plugin;
+      void *dsp_handle;
    } audio_data;
 
    struct
