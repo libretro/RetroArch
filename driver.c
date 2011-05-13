@@ -162,33 +162,41 @@ static void init_dsp_plugin(void)
    if (!plugin_init)
    {
       SSNES_ERR("Failed to find symbol \"ssnes_dsp_plugin_init\" in DSP plugin.\n");
-      dylib_close(g_extern.audio_data.dsp_lib);
-      g_extern.audio_data.dsp_lib = NULL;
-      return;
+      goto error;
    }
 
    g_extern.audio_data.dsp_plugin = plugin_init();
    if (!g_extern.audio_data.dsp_plugin)
    {
       SSNES_ERR("Failed to get a valid DSP plugin.\n");
-      dylib_close(g_extern.audio_data.dsp_lib);
-      g_extern.audio_data.dsp_lib = NULL;
-      return;
+      goto error;
+   }
+
+   if (g_extern.audio_data.dsp_plugin->api_version != SSNES_API_VERSION)
+   {
+      SSNES_ERR("DSP plugin API mismatch!\n");
+      goto error;
    }
 
    ssnes_dsp_info_t info = {
       .input_rate = g_settings.audio.in_rate,
       .output_rate = g_settings.audio.out_rate
    };
+
    g_extern.audio_data.dsp_handle = g_extern.audio_data.dsp_plugin->init(&info);
    if (!g_extern.audio_data.dsp_handle)
    {
       SSNES_ERR("Failed to init DSP plugin.\n");
-      dylib_close(g_extern.audio_data.dsp_lib);
-      g_extern.audio_data.dsp_plugin = NULL;
-      g_extern.audio_data.dsp_lib = NULL;
-      return;
+      goto error;
    }
+
+   return;
+
+error:
+   if (g_extern.audio_data.dsp_lib)
+      dylib_close(g_extern.audio_data.dsp_lib);
+   g_extern.audio_data.dsp_plugin = NULL;
+   g_extern.audio_data.dsp_lib = NULL;
 }
 
 static void deinit_dsp_plugin(void)
