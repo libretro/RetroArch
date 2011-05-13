@@ -183,7 +183,7 @@ static void audio_sample(uint16_t left, uint16_t right)
 #endif
       .data_in = dsp_output.samples ? dsp_output.samples : g_extern.audio_data.data,
       .data_out = g_extern.audio_data.outsamples,
-      .input_frames = dsp_output.samples ? dsp_output.frames : (g_extern.audio_data.chunk_size / 2),
+      .input_frames = dsp_output.samples ? dsp_output.frames : (g_extern.audio_data.data_ptr / 2),
       .output_frames = g_extern.audio_data.chunk_size * 8,
       .end_of_input = 0,
       .src_ratio = (double)g_settings.audio.out_rate / (double)g_settings.audio.in_rate,
@@ -209,7 +209,7 @@ static void audio_sample(uint16_t left, uint16_t right)
 
    if (g_extern.audio_data.use_float)
    {
-      if (driver.audio->write(driver.audio_data, g_extern.audio_data.outsamples, src_data.output_frames_gen * sizeof(float) * 2) < 0)
+      if (driver.audio->write(driver.audio_data, output_data, output_frames * sizeof(float) * 2) < 0)
       {
          fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
          g_extern.audio_active = false;
@@ -217,7 +217,7 @@ static void audio_sample(uint16_t left, uint16_t right)
    }
    else
    {
-      for (unsigned i = 0; i < src_data.output_frames_gen * 2; i++)
+      for (unsigned i = 0; i < output_frames * 2; i++)
       {
          int32_t val = output_data[i] * 0x8000;
          g_extern.audio_data.conv_outsamples[i] = (val > 0x7FFF) ? 0x7FFF : (val < -0x8000 ? -0x8000 : (int16_t)val);
