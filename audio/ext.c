@@ -79,6 +79,14 @@ static void* audio_ext_init(const char *device, int rate, int latency)
       goto error;
    }
 
+   SSNES_LOG("Loaded external audio driver: \"%s\"\n", ext->driver->ident ? ext->driver->ident : "Unknown");
+
+   if (ext->driver->api_version != SSNES_API_VERSION)
+   {
+      SSNES_ERR("API mismatch in external video plugin. SSNES: %d, Plugin: %d ...\n", SSNES_API_VERSION, ext->driver->api_version);
+      goto error;
+   }
+
    ssnes_audio_driver_info_t info = {
       .device = device,
       .sample_rate = rate,
