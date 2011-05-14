@@ -97,6 +97,8 @@ typedef struct ssnes_dsp_plugin
    int api_version;
 } ssnes_dsp_plugin_t;
 
+// Called by SSNES at startup to get the callback struct.
+// This is NOT dynamically allocated!
 SSNES_API_EXPORT const ssnes_dsp_plugin_t* SSNES_API_CALLTYPE 
    ssnes_dsp_plugin_init(void);
 
