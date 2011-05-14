@@ -199,7 +199,7 @@ static void* setup_input(ext_t *ext, const ssnes_input_driver_t *driver)
    for (unsigned i = 0; i < 5; i++)
       joypad_index[i] = g_settings.input.joypad_map[i] == SSNES_NO_JOYPAD ? -1 : g_settings.input.joypad_map[i];
 
-   void *handle = driver->init(joypad_index);
+   void *handle = driver->init(joypad_index, g_settings.input.axis_threshold);
    if (!handle)
       return NULL;
 

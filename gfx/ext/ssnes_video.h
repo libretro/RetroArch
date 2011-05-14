@@ -99,16 +99,18 @@ typedef struct ssnes_video_info
 
 } ssnes_video_info_t;
 
-#define SSNES_AXIS_NEG(x) (((unsigned)(x) << 16) | 0xFFFFU)
-#define SSNES_AXIS_POS(x) ((unsigned)(x) | 0xFFFF0000U)
-#define SSNES_AXIS_NONE (0xFFFFFFFFU)
-
+// Some convenience macros.
+// Extract which axes to test for in negative or positive direction.
+// May be equal to SSNES_NO_AXIS, which means testing should not occur.
 #define SSNES_AXIS_NEG_GET(x) (((unsigned)(x) >> 16) & 0xFFFFU)
 #define SSNES_AXIS_POS_GET(x) ((unsigned)(x) & 0xFFFFU)
 
-// I hope no joypad will ever have this many buttons ... ;)
+// I hope no joypad will ever have this many buttons or axes ... ;)
+// If joykey is this value, do not check that button.
+#define SSNES_NO_AXIS ((unsigned short)0xFFFFU)
 #define SSNES_NO_BTN ((unsigned short)0xFFFFU)
 
+// Masks to test on joykey which hat direction is to be tested for.
 #define SSNES_HAT_UP_MASK (1 << 15)
 #define SSNES_HAT_DOWN_MASK (1 << 14)
 #define SSNES_HAT_LEFT_MASK (1 << 13)
@@ -117,16 +119,26 @@ typedef struct ssnes_video_info
 
 #define SSNES_HAT_MASK (HAT_UP_MASK | HAT_DOWN_MASK | \
       HAT_LEFT_MASK | HAT_RIGHT_MASK)
-#define SSNES_GET_HAT_DIR(x) (x & HAT_MASK)
-#define SSNES_GET_HAT(x) (x & (~HAT_MASK))
 
+// Test this on the joykey. If true, we want to test for a joypad hat
+// rather than a button.
+#define SSNES_GET_HAT_DIR(x) (x & SSNES_HAT_MASK)
+
+// Gets the joypad hat to be tested for. 
+// Only valid when SSNES_GET_HAT_DIR() returns true.
+#define SSNES_GET_HAT(x) (x & (~SSNES_HAT_MASK))
+
+// key, joykey and joyaxis are all checked at the same time.
+// If any one of these are pressed, return 1 in state callback.
 struct ssnes_keybind
 {
-   // If analog_x is true, we request an analog device to be polled. 
+   // If analog_x is true, we request an analog device to be polled
+   // rather than normal keys.
    // The returned value should be the delta of 
    // last frame and current frame in the X-axis.
    int analog_x;
-   // If analog_y is true, we request an analog device to be polled. 
+   // If analog_y is true, we request an analog device to be polled
+   // rather than normal keys.
    // The returned value should be the delta of 
    // last frame and current frame in the Y-axis.
    int analog_y;
@@ -135,7 +147,7 @@ struct ssnes_keybind
    // which probably need to be transformed to the native format.
    unsigned short key;
 
-   // Joypad key.
+   // Joypad key. Joypad POV (hats) are embedded into this key as well.
    unsigned short joykey;
 
    // Joypad axis. Negative and positive axes are embedded into this variable.
@@ -148,7 +160,12 @@ typedef struct ssnes_input_driver
    // Joypad index denotes which joypads are desired for the various players.
    // Should an entry be negative,
    // do not open joypad for that player.
-   void* (*init)(const int joypad_index[5]);
+   // Threshold states the minimum offset that a joypad axis 
+   // has to be held for it to be registered.
+   // The range of this is [0, 1],
+   // where 0 means any displacement will register,
+   // and 1 means the axis has to be pressed all the way to register.
+   void* (*init)(const int joypad_index[5], float axis_threshold);
 
    // Polls input. Called once every frame.
    void (*poll)(void* data);
@@ -210,6 +227,8 @@ typedef struct ssnes_video_driver
    int api_version;
 } ssnes_video_driver_t;
 
+// Called by SSNES on startup to get a driver handle.
+// This is NOT dynamically allocated.
 SSNES_API_EXPORT const ssnes_video_driver_t* SSNES_API_CALLTYPE
    ssnes_video_init(void);
 
