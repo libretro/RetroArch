@@ -83,6 +83,9 @@ static void set_defaults(void)
       case AUDIO_PULSE:
          def_audio = "pulse";
          break;
+      case AUDIO_EXT:
+         def_audio = "ext";
+         break;
       default:
          break;
    }
@@ -315,6 +318,7 @@ static void parse_config_file(void)
 #ifdef HAVE_DYLIB
    CONFIG_GET_STRING(video.filter_path, "video_filter");
    CONFIG_GET_STRING(video.external_driver, "video_external_driver");
+   CONFIG_GET_STRING(audio.external_driver, "audio_external_driver");
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_XML)

@@ -56,6 +56,9 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_PULSE
    &audio_pulse,
 #endif
+#ifdef HAVE_DYLIB
+   &audio_ext,
+#endif
 };
 
 static const video_driver_t *video_drivers[] = {

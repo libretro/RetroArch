@@ -56,6 +56,7 @@
 #define AUDIO_SDL 8
 #define AUDIO_XAUDIO 9
 #define AUDIO_PULSE 10
+#define AUDIO_EXT 15
 ////////////////////////
 #define INPUT_SDL 7
 #define INPUT_X 12
@@ -91,6 +92,8 @@
 #define AUDIO_DEFAULT_DRIVER AUDIO_RSOUND
 #elif defined(HAVE_ROAR)
 #define AUDIO_DEFAULT_DRIVER AUDIO_ROAR
+#elif defined(HAVE_DYLIB)
+#define AUDIO_DEFAULT_DRIVER AUDIO_EXT
 #else
 #error "Need at least one audio driver!"
 #endif

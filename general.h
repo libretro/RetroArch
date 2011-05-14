@@ -106,6 +106,7 @@ struct settings
       int src_quality;
 
       char dsp_plugin[256];
+      char external_driver[256];
    } audio;
 
    struct

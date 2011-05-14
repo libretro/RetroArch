@@ -98,7 +98,7 @@ ifeq ($(HAVE_XML), 1)
 endif
 
 ifeq ($(HAVE_DYLIB), 1)
-   OBJ += gfx/ext.o
+   OBJ += gfx/ext.o audio/ext.o
    LIBS += -ldl
 endif
 
