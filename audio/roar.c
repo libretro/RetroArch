@@ -30,7 +30,7 @@ typedef struct
    bool nonblocking;
 } roar_t;
 
-static void* __roar_init(const char* device, int rate, int latency)
+static void* __roar_init(const char* device, unsigned rate, unsigned latency)
 {
    int err;
    roar_t *roar = calloc(1, sizeof(roar_t));

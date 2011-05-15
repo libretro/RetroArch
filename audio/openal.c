@@ -56,7 +56,7 @@ typedef struct al
 
 } al_t;
 
-static void* __al_init(const char* device, int rate, int latency)
+static void* __al_init(const char* device, unsigned rate, unsigned latency)
 {
    (void)device;
    al_t *al = calloc(1, sizeof(al_t));

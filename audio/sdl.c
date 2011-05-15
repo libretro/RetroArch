@@ -58,7 +58,7 @@ static inline int find_num_frames(int rate, int latency)
    return next_pow2(frames);
 }
 
-static void* sdl_audio_init(const char* device, int rate, int latency)
+static void* sdl_audio_init(const char* device, unsigned rate, unsigned latency)
 {
    (void)device;
    if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)

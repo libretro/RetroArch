@@ -70,7 +70,7 @@ typedef struct video_info
 
 typedef struct audio_driver
 {
-   void* (*init)(const char* device, int rate, int latency);
+   void* (*init)(const char* device, unsigned rate, unsigned latency);
    ssize_t (*write)(void* data, const void* buf, size_t size);
    bool (*stop)(void* data);
    bool (*start)(void* data);

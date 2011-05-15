@@ -54,7 +54,7 @@ static void err_cb(void *userdata)
    SDL_CondSignal(rsd->cond);
 }
 
-static void* __rsd_init(const char* device, int rate, int latency)
+static void* __rsd_init(const char* device, unsigned rate, unsigned latency)
 {
    rsd_t *rsd = calloc(1, sizeof(rsd_t));
    if ( rsd == NULL )

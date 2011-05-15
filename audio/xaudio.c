@@ -67,7 +67,7 @@ static bool init_lib(void)
    return true;
 }
 
-static void* __xa_init(const char* device, int rate, int latency)
+static void* __xa_init(const char* device, unsigned rate, unsigned latency)
 {
    if (!init_lib())
       return NULL;

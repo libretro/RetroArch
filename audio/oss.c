@@ -25,7 +25,7 @@
 #include <errno.h>
 #include <stdio.h>
 
-static void* __oss_init(const char* device, int rate, int latency)
+static void* __oss_init(const char* device, unsigned rate, unsigned latency)
 {
    int *fd = calloc(1, sizeof(int));
    if ( fd == NULL )
