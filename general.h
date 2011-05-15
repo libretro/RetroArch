@@ -44,7 +44,7 @@
 
 
 #define MAX_PLAYERS 5
-#define MAX_BINDS 31 // Needs to be increased every time there are new binds added.
+#define MAX_BINDS 32 // Needs to be increased every time there are new binds added.
 #define SSNES_NO_JOYPAD 0xFFFF
 
 enum ssnes_shader_type
@@ -120,6 +120,8 @@ struct settings
 
    char libsnes[256];
    char cheat_database[256];
+
+   char screenshot_directory[256];
 
    bool rewind_enable;
    unsigned rewind_buffer_size;
@@ -258,7 +260,9 @@ struct global
       size_t ptr;
    } shader_dir;
 
-   char sha256[65];
+   char sha256[64 + 1];
+
+   bool do_screenshot;
 
 #ifdef HAVE_XML
    cheat_manager_t *cheat;

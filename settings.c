@@ -374,6 +374,7 @@ static void parse_config_file(void)
    CONFIG_GET_STRING(audio.dsp_plugin, "audio_dsp_plugin");
    CONFIG_GET_STRING(input.driver, "input_driver");
    CONFIG_GET_STRING(libsnes, "libsnes_path");
+   CONFIG_GET_STRING(screenshot_directory, "screenshot_directory");
 
    CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
 
@@ -435,6 +436,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS)
       DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS)
       DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
+      DECLARE_BIND(screenshot,            SSNES_SCREENSHOT)
    },
    {
       DECLARE_BIND(player2_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -467,6 +469,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS)
       DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS)
       DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
+      DECLARE_BIND(screenshot,            SSNES_SCREENSHOT)
    },
    {
       DECLARE_BIND(player3_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -499,6 +502,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS)
       DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS)
       DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
+      DECLARE_BIND(screenshot,            SSNES_SCREENSHOT)
    },
    {
       DECLARE_BIND(player4_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -531,6 +535,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS)
       DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS)
       DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
+      DECLARE_BIND(screenshot,            SSNES_SCREENSHOT)
    },
    {
       DECLARE_BIND(player5_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -563,6 +568,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS)
       DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS)
       DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
+      DECLARE_BIND(screenshot,            SSNES_SCREENSHOT)
    },
 };
 

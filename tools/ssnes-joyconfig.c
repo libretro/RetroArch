@@ -97,6 +97,7 @@ static struct bind binds[] = {
    MISC_BIND("Toggle cheat on/off", cheat_toggle)
    MISC_BIND("Cheat index plus", cheat_index_plus)
    MISC_BIND("Cheat index minus", cheat_index_minus)
+   MISC_BIND("Screenshot", screenshot)
 };
 
 static void get_binds(config_file_t *conf, int player, int joypad)

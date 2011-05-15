@@ -87,7 +87,7 @@ bool screenshot_dump(const char *folder, const uint16_t *frame,
    time(&cur_time);
 
    char timefmt[64];
-   strftime(timefmt, sizeof(timefmt), "SSNES-%c", localtime(&cur_time));
+   strftime(timefmt, sizeof(timefmt), "SSNES-%c.bmp", localtime(&cur_time));
 
    char filename[256];
    strlcpy(filename, folder, sizeof(filename));

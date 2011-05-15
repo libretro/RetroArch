@@ -32,6 +32,7 @@
 #include "movie.h"
 #include "netplay.h"
 #include "strl.h"
+#include "screenshot.h"
 #include "cheats.h"
 #include <assert.h>
 #ifdef HAVE_SRC
@@ -78,6 +79,30 @@ static void set_fast_forward_button(bool new_button_state)
    old_button_state = new_button_state;
 }
 
+static void take_screenshot(const uint16_t *frame, unsigned width, unsigned height)
+{
+   if (!*(g_settings.screenshot_directory))
+      return;
+
+   bool ret = screenshot_dump(g_settings.screenshot_directory, frame, 
+         width, height, (height == 448 || height == 478) ? 1024 : 2048);
+
+   const char *msg = NULL;
+   if (ret)
+   {
+      SSNES_LOG("Taking screenshot!\n");
+      msg = "Taking screenshot!";
+   }
+   else
+   {
+      SSNES_WARN("Failed to take screenshot ...\n");
+      msg = "Failed to take screenshot!";
+   }
+
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+}
+
 // libsnes: 0.065
 // Format received is 16-bit 0RRRRRGGGGGBBBBB
 static void video_frame(const uint16_t *data, unsigned width, unsigned height)
@@ -98,6 +123,9 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
          height = 448;
       }
    }
+
+   if (g_extern.do_screenshot)
+      take_screenshot(data, width, height);
 
 #ifdef HAVE_FFMPEG
    if (g_extern.recording)
@@ -1311,6 +1339,14 @@ static void check_cheats(void)
 }
 #endif
 
+static void check_screenshot(void)
+{
+   static bool old_pressed = false;
+   bool pressed = driver.input->key_pressed(driver.input_data, SSNES_SCREENSHOT);
+   g_extern.do_screenshot = pressed && !old_pressed;
+   old_pressed = pressed;
+}
+
 static void do_state_checks(void)
 {
    if (!g_extern.netplay)
@@ -1342,6 +1378,7 @@ static void do_state_checks(void)
 
    check_fullscreen();
    check_input_rate();
+   check_screenshot();
 }
 
 static void fill_title_buf(void)
