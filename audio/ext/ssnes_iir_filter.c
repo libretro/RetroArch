@@ -3,12 +3,14 @@
 #include <string.h>
 #include <stdint.h>
 
-// Simple IIR filter implementation.
+// Simple IIR filter implementation, optimized for SSE3.
 
-//#define USE_SSE3
+#ifdef __SSE3__ // Build with -march=native or -msse3 to let this be detected! D:
+#define USE_SSE3
+#endif
 
 #ifdef USE_SSE3
-#include <immintrin.h>
+#include <pmmintrin.h>
 #endif
 
 // Make a test build with standalone main()
@@ -188,7 +190,8 @@ const ssnes_dsp_plugin_t dsp_plug = {
    .init = dsp_init,
    .process = dsp_process,
    .free = dsp_free,
-   .api_version = SSNES_API_VERSION
+   .api_version = SSNES_DSP_API_VERSION,
+   .ident = "IIR filter"
 };
 
 SSNES_API_EXPORT const ssnes_dsp_plugin_t*
