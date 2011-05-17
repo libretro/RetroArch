@@ -1,4 +1,6 @@
 *.o
+*.so
+*.dll
 ssnes
 /config.h
 /config.mk
