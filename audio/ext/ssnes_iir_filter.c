@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdio.h>
 
 // Simple IIR filter implementation, optimized for SSE3.
 
@@ -181,6 +182,14 @@ static void dsp_process(void *data, ssnes_dsp_output_t *output, const ssnes_dsp_
    }
 }
 
+static void dsp_config(void *data)
+{
+   (void)data;
+   // Normally we unhide a GUI window or something, 
+   // but we're just going to print to the log instead.
+   fprintf(stderr, "DSP_CONFIG\n");
+}
+
 static void dsp_free(void *data)
 {
    free(data);
@@ -190,6 +199,7 @@ const ssnes_dsp_plugin_t dsp_plug = {
    .init = dsp_init,
    .process = dsp_process,
    .free = dsp_free,
+   .config = dsp_config,
    .api_version = SSNES_DSP_API_VERSION,
    .ident = "IIR filter"
 };
