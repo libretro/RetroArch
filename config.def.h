@@ -246,6 +246,7 @@ static const struct snes_keybind snes_keybinds_1[] = {
    { SSNES_CHEAT_INDEX_MINUS,          SDLK_t,      NO_BTN,      AXIS_NONE },
    { SSNES_CHEAT_TOGGLE,               SDLK_u,      NO_BTN,      AXIS_NONE },
    { SSNES_SCREENSHOT,                 SDLK_PRINT,  NO_BTN,      AXIS_NONE },
+   { SSNES_DSP_CONFIG,                 SDLK_c,      NO_BTN,      AXIS_NONE },
    { -1 }
 };
 

@@ -1347,6 +1347,21 @@ static void check_screenshot(void)
    old_pressed = pressed;
 }
 
+#ifdef HAVE_DYLIB
+static void check_dsp_config(void)
+{
+   if (!g_extern.audio_data.dsp_plugin || !g_extern.audio_data.dsp_plugin->config)
+      return;
+
+   static bool old_pressed = false;
+   bool pressed = driver.input->key_pressed(driver.input_data, SSNES_DSP_CONFIG);
+   if (pressed && !old_pressed)
+      g_extern.audio_data.dsp_plugin->config(g_extern.audio_data.dsp_handle);
+
+   old_pressed = pressed;
+}
+#endif
+
 static void do_state_checks(void)
 {
    if (!g_extern.netplay)
@@ -1374,10 +1389,20 @@ static void do_state_checks(void)
 #ifdef HAVE_XML
       check_shader_dir();
 #endif
+
+#ifdef HAVE_DYLIB
+      check_dsp_config();
+#endif
    }
 
    check_fullscreen();
-   check_input_rate();
+
+#ifdef HAVE_DYLIB
+   // DSP plugin doesn't use variable input rate.
+   if (!g_extern.audio_data.dsp_plugin)
+#endif
+      check_input_rate();
+
    check_screenshot();
 }
 

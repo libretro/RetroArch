@@ -217,10 +217,10 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
 {
    SSNES_LOG("Loaded driver: \"%s\"\n", ext->driver->ident ? ext->driver->ident : "Unknown");
 
-   if (SSNES_API_VERSION != ext->driver->api_version)
+   if (SSNES_GRAPHICS_API_VERSION != ext->driver->api_version)
    {
       SSNES_ERR("API version mismatch detected!\n");
-      SSNES_ERR("Required API version: %d, Library version: %d\n", SSNES_API_VERSION, ext->driver->api_version);
+      SSNES_ERR("Required API version: %d, Library version: %d\n", SSNES_GRAPHICS_API_VERSION, ext->driver->api_version);
       return false;
    }
 

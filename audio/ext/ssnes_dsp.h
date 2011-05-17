@@ -22,10 +22,15 @@ extern "C" {
 #define SSNES_API_CALLTYPE
 #endif
 
+#ifndef SSNES_FALSE
 #define SSNES_FALSE 0
-#define SSNES_TRUE 1
+#endif
 
-#define SSNES_API_VERSION 1
+#ifndef SSNES_TRUE
+#define SSNES_TRUE 1
+#endif
+
+#define SSNES_DSP_API_VERSION 2
 
 typedef struct ssnes_dsp_info
 {
@@ -89,12 +94,22 @@ typedef struct ssnes_dsp_plugin
    void (*process)(void *data, ssnes_dsp_output_t *output, 
          const ssnes_dsp_input_t *input);
 
-   // Frees the handle.
+      // Frees the handle.
    void (*free)(void *data);
 
    // API version used to compile the plugin.
    // Used to detect mismatches in API.
+   // Must be set to SSNES_DSP_API_VERSION on compile.
    int api_version;
+
+   // Signal plugin that it may open a configuring window or
+   // something similiar. The behavior of this function
+   // is thus plugin dependent. Implementing this is optional,
+   // and can be set to NULL.
+   void (*config)(void *data);
+
+   // Human readable identification string.
+   const char *ident;
 } ssnes_dsp_plugin_t;
 
 // Called by SSNES at startup to get the callback struct.

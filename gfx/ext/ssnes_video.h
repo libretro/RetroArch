@@ -22,14 +22,26 @@ extern "C" {
 #define SSNES_API_CALLTYPE
 #endif
 
-#define SSNES_API_VERSION 1
+#define SSNES_GRAPHICS_API_VERSION 1
 
 // Since we don't want to rely on C++ or C99 for a proper boolean type,
 // and make sure return semantics are perfectly clear ... ;)
+
+#ifndef SSNES_OK
 #define SSNES_OK 1
+#endif
+
+#ifndef SSNES_ERROR
 #define SSNES_ERROR 0
+#endif
+
+#ifndef SSNES_TRUE
 #define SSNES_TRUE 1
+#endif
+
+#ifndef SSNES_FALSE
 #define SSNES_FALSE 0
+#endif
 
 #define SSNES_COLOR_FORMAT_XRGB1555 0
 #define SSNES_COLOR_FORMAT_ARGB8888 1
@@ -222,7 +234,7 @@ typedef struct ssnes_video_driver
    // A human-readable identification of the video driver.
    const char *ident;
 
-   // Needs to be defined to SSNES_API_VERSION. 
+   // Needs to be defined to SSNES_GRAPHICS_API_VERSION. 
    // This is used to detect API mismatches.
    int api_version;
 } ssnes_video_driver_t;

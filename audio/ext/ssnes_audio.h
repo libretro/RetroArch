@@ -22,12 +22,23 @@ extern "C" {
 #define SSNES_API_CALLTYPE
 #endif
 
+#ifndef SSNES_TRUE
 #define SSNES_TRUE 1
-#define SSNES_FALSE 0
-#define SSNES_OK 1
-#define SSNES_ERROR 0
+#endif
 
-#define SSNES_API_VERSION 1
+#ifndef SSNES_FALSE
+#define SSNES_FALSE 0
+#endif
+
+#ifndef SSNES_OK
+#define SSNES_OK 1
+#endif
+
+#ifndef SSNES_ERROR
+#define SSNES_ERROR 0
+#endif
+
+#define SSNES_AUDIO_API_VERSION 1
 
 typedef struct ssnes_audio_driver_info
 {
@@ -95,7 +106,7 @@ typedef struct ssnes_audio_driver
    // Human readable identification string for the driver.
    const char *ident;
 
-   // Must be set to SSNES_API_VERSION.
+   // Must be set to SSNES_AUDIO_API_VERSION.
    // Used for detecting API mismatch.
    int api_version;
 } ssnes_audio_driver_t;

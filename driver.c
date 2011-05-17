@@ -175,11 +175,13 @@ static void init_dsp_plugin(void)
       goto error;
    }
 
-   if (g_extern.audio_data.dsp_plugin->api_version != SSNES_API_VERSION)
+   if (g_extern.audio_data.dsp_plugin->api_version != SSNES_DSP_API_VERSION)
    {
-      SSNES_ERR("DSP plugin API mismatch!\n");
+      SSNES_ERR("DSP plugin API mismatch! SSNES: %d, Plugin: %d\n", SSNES_DSP_API_VERSION, g_extern.audio_data.dsp_plugin->api_version);
       goto error;
    }
+
+   SSNES_LOG("Loaded DSP plugin: \"%s\"\n", g_extern.audio_data.dsp_plugin->ident ? g_extern.audio_data.dsp_plugin->ident : "Unknown");
 
    ssnes_dsp_info_t info = {
       .input_rate = g_settings.audio.in_rate,
