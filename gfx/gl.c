@@ -1009,6 +1009,12 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
 
+   // For texture images.
+   glClientActiveTexture(GL_TEXTURE1);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords);
+   glClientActiveTexture(GL_TEXTURE0);
+
    gl->tex_w = 256 * video->input_scale;
    gl->tex_h = 256 * video->input_scale;
 
