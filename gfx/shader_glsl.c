@@ -91,7 +91,7 @@ static PFNGLGETATTACHEDSHADERSPROC pglGetAttachedShaders = NULL;
 #endif
 
 #define MAX_PROGRAMS 16
-#define MAX_TEXTURES 4
+#define MAX_TEXTURES 8
 
 enum filter_type
 {
@@ -291,6 +291,12 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
 #ifdef HAVE_IMLIB
 static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
 {
+   if (gl_teximage_cnt >= MAX_TEXTURES)
+   {
+      SSNES_WARN("Too many texture images! Ignoring ...\n");
+      return true;
+   }
+
    bool linear = true;
    xmlChar *filename = xmlGetProp(ptr, (const xmlChar*)"file");
    xmlChar *filter = xmlGetProp(ptr, (const xmlChar*)"filter");
