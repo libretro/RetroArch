@@ -26,3 +26,4 @@ add_command_line_enable JACK "Enable JACK support" auto
 add_command_line_enable PULSE "Enable PulseAudio support" auto
 add_command_line_enable FREETYPE "Enable FreeType support" auto
 add_command_line_enable XVIDEO "Enable XVideo support" auto
+add_command_line_enable IMLIB "Enable imlib2 support" auto

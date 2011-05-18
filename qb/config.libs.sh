@@ -43,6 +43,7 @@ check_critical SDL "Cannot find SDL library."
 
 check_lib CG -lCg cgCreateContext
 check_pkgconf XML libxml-2.0
+check_pkgconf IMLIB imlib2
 
 if [ $HAVE_FFMPEG != no ]; then
    check_pkgconf AVCODEC libavcodec
@@ -64,7 +65,7 @@ check_lib XVIDEO -lXv XvShmCreateImage
 check_lib STRL -lc strlcpy
 
 # Creates config.mk and config.h.
-VARS="ALSA OSS AL RSOUND ROAR JACK PULSE SDL DYLIB CG XML DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC CONFIGFILE FREETYPE XVIDEO NETPLAY FBO STRL"
+VARS="ALSA OSS AL RSOUND ROAR JACK PULSE SDL DYLIB CG XML IMLIB DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC CONFIGFILE FREETYPE XVIDEO NETPLAY FBO STRL"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 

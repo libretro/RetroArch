@@ -108,6 +108,12 @@ ifeq ($(HAVE_FREETYPE), 1)
    DEFINES += $(FREETYPE_CFLAGS)
 endif
 
+ifeq ($(HAVE_IMLIB), 1)
+   OBJ += gfx/image.o
+   LIBS += $(IMLIB_LIBS)
+   DEFINES += $(IMLIB_CFLAGS)
+endif
+
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/ffemu.o
    LIBS += $(AVCODEC_LIBS) $(AVCORE_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS)

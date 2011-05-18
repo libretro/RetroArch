@@ -19,6 +19,11 @@
 #include <string.h>
 #include "general.h"
 #include "shader_glsl.h"
+#include "strl.h"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
@@ -37,6 +42,11 @@
 #include <libxml/tree.h>
 
 #include "gl_common.h"
+
+#ifdef HAVE_IMLIB
+#include "image.h"
+#endif
+
 
 #ifdef __APPLE__
 #define pglCreateProgram glCreateProgram
@@ -81,6 +91,7 @@ static PFNGLGETATTACHEDSHADERSPROC pglGetAttachedShaders = NULL;
 #endif
 
 #define MAX_PROGRAMS 16
+#define MAX_TEXTURES 4
 
 enum filter_type
 {
@@ -95,6 +106,10 @@ static enum filter_type gl_filter_type[MAX_PROGRAMS] = {SSNES_GL_NOFORCE};
 static struct gl_fbo_scale gl_scale[MAX_PROGRAMS];
 static unsigned gl_num_programs = 0;
 static unsigned active_index = 0;
+
+static GLuint gl_teximage[MAX_TEXTURES];
+static unsigned gl_teximage_cnt = 0;
+static char gl_teximage_uniforms[MAX_TEXTURES][64];
 
 struct shader_program
 {
@@ -273,6 +288,86 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
    return true;
 }
 
+#ifdef HAVE_IMLIB
+static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
+{
+   bool linear = true;
+   xmlChar *filename = xmlGetProp(ptr, (const xmlChar*)"file");
+   xmlChar *filter = xmlGetProp(ptr, (const xmlChar*)"filter");
+   xmlChar *id = xmlGetProp(ptr, (const xmlChar*)"id");
+
+   if (!id)
+   {
+      SSNES_ERR("Could not find ID in texture.\n");
+      goto error;
+   }
+
+   if (!filename)
+   {
+      SSNES_ERR("Could not find filename in texture.\n");
+      goto error;
+   }
+
+   if (filter && strcmp((const char*)filter, "nearest") == 0)
+      linear = false;
+
+   char tex_path[256];
+   strlcpy(tex_path, shader_path, sizeof(tex_path));
+
+   char *last = strrchr(tex_path, '/');
+   if (!last) last = strrchr(tex_path, '\\');
+   if (last) last[1] = '\0';
+
+   strlcat(tex_path, (const char*)filename, sizeof(tex_path));
+
+   struct texture_image img;
+   SSNES_LOG("Loading texture image from: \"%s\" ...\n", tex_path);
+   if (!texture_image_load(tex_path, &img))
+   {
+      SSNES_ERR("Failed to load texture image from: \"%s\"\n", tex_path);
+      goto error;
+   }
+
+   strlcpy(gl_teximage_uniforms[gl_teximage_cnt], (const char*)id, sizeof(gl_teximage_uniforms[0]));
+
+   glGenTextures(1, &gl_teximage[gl_teximage_cnt]);
+   glActiveTexture(GL_TEXTURE0 + gl_teximage_cnt + 1);
+   glBindTexture(GL_TEXTURE_2D, gl_teximage[gl_teximage_cnt]);
+
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, linear ? GL_LINEAR : GL_NEAREST);
+
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, img.width);
+   glTexImage2D(GL_TEXTURE_2D,
+         0, GL_RGBA, img.width, img.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, img.pixels);
+
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   free(img.pixels);
+
+   xmlFree(filename);
+   xmlFree(id);
+   if (filter)
+      xmlFree(filter);
+
+   gl_teximage_cnt++;
+
+   return true;
+
+error:
+   if (filename)
+      xmlFree(filename);
+   if (filter)
+      xmlFree(filter);
+   if (filter)
+      xmlFree(id);
+   return false;
+}
+#endif
+
 static unsigned get_xml_shaders(const char *path, struct shader_program *prog, size_t size)
 {
    LIBXML_TEST_VERSION;
@@ -354,6 +449,16 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
          }
          num++;
       }
+#ifdef HAVE_IMLIB
+      else if (strcmp((const char*)cur->name, "texture") == 0)
+      {
+         if (!get_texture_image(path, cur))
+         {
+            SSNES_ERR("Texture image failed to load.\n");
+            goto error;
+         }
+      }
+#endif
    }
 
    if (num == 0)
@@ -587,6 +692,10 @@ void gl_glsl_deinit(void)
 
          pglDeleteProgram(gl_program[i]);
       }
+
+      glDeleteTextures(gl_teximage_cnt, gl_teximage);
+      gl_teximage_cnt = 0;
+      memset(gl_teximage_uniforms, 0, sizeof(gl_teximage_uniforms));
    }
 
    memset(gl_program, 0, sizeof(gl_program));
@@ -617,6 +726,12 @@ void gl_glsl_set_params(unsigned width, unsigned height,
 
       location = pglGetUniformLocation(gl_program[active_index], "rubyFrameCount");
       pglUniform1i(location, frame_count);
+
+      for (unsigned i = 0; i < gl_teximage_cnt; i++)
+      {
+         location = pglGetUniformLocation(gl_program[active_index], gl_teximage_uniforms[i]);
+         pglUniform1i(location, i + 1);
+      }
    }
 }
 
