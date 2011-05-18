@@ -19,6 +19,11 @@
 #define __GL_COMMON_H
 
 #include "general.h"
+#include <assert.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
@@ -28,6 +33,10 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 #endif
+
+#define NO_SDL_GLEXT
+#include "SDL.h"
+#include "SDL_opengl.h"
 
 static inline bool gl_check_error(void)
 {
@@ -92,5 +101,25 @@ struct gl_fbo_scale
    unsigned abs_y;
    bool valid;
 };
+
+// Windows ... <_<
+#ifdef HAVE_XML
+#ifdef _WIN32
+static PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture = NULL;
+static PFNGLACTIVETEXTUREPROC pglActiveTexture = NULL;
+#define LOAD_SYM(sym) if (!p##sym) p##sym = ((void*)SDL_GL_GetProcAddress(#sym))
+static void load_gl_proc(void)
+{
+   LOAD_SYM(glClientActiveTexture);
+   LOAD_SYM(glActiveTexture);
+
+   assert(pglClientActiveTexture && pglActiveTexture);
+}
+#else
+#define pglClientActiveTexture glClientActiveTexture
+#define pglActiveTexture glActiveTexture
+#define load_gl_proc()
+#endif
+#endif
 
 #endif

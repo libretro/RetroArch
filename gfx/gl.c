@@ -103,6 +103,7 @@ static bool load_fbo_proc(void) { return true; }
 #endif
 #endif
 
+
 #define MAX_SHADERS 16
 
 typedef struct gl
@@ -1009,11 +1010,15 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
 
+#ifdef HAVE_XML
    // For texture images.
-   glClientActiveTexture(GL_TEXTURE1);
+   // Win32 GL lib doesn't have this. Just remacro for other platforms.
+   load_gl_proc();
+   pglClientActiveTexture(GL_TEXTURE1);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords);
-   glClientActiveTexture(GL_TEXTURE0);
+   pglClientActiveTexture(GL_TEXTURE0);
+#endif
 
    gl->tex_w = 256 * video->input_scale;
    gl->tex_h = 256 * video->input_scale;

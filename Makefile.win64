@@ -50,7 +50,7 @@ ifeq ($(HAVE_RSOUND), 1)
 endif
 
 ifeq ($(HAVE_XML), 1)
-   OBJ += gfx/shader_glsl.o sha256.o cheats.o
+   OBJ += gfx/shader_glsl.o gfx/image.o sha256.o cheats.o
    DEFINES += $(XML_CFLAGS) -DHAVE_XML -DLIBXML_STATIC
    LIBS += -lxml2 -lz -lws2_32
 endif
