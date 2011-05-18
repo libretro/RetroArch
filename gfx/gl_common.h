@@ -34,10 +34,6 @@
 #include <GL/glext.h>
 #endif
 
-#define NO_SDL_GLEXT
-#include "SDL.h"
-#include "SDL_opengl.h"
-
 static inline bool gl_check_error(void)
 {
    int error = glGetError();
@@ -103,23 +99,12 @@ struct gl_fbo_scale
 };
 
 // Windows ... <_<
-#ifdef HAVE_XML
-#ifdef _WIN32
-static PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture = NULL;
-static PFNGLACTIVETEXTUREPROC pglActiveTexture = NULL;
-#define LOAD_SYM(sym) if (!p##sym) p##sym = ((void*)SDL_GL_GetProcAddress(#sym))
-static void load_gl_proc(void)
-{
-   LOAD_SYM(glClientActiveTexture);
-   LOAD_SYM(glActiveTexture);
-
-   assert(pglClientActiveTexture && pglActiveTexture);
-}
+#if defined(HAVE_XML) && defined(_WIN32)
+extern PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture;
+extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #else
 #define pglClientActiveTexture glClientActiveTexture
 #define pglActiveTexture glActiveTexture
-#define load_gl_proc()
-#endif
 #endif
 
 #endif

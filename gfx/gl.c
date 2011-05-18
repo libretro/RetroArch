@@ -103,6 +103,22 @@ static bool load_fbo_proc(void) { return true; }
 #endif
 #endif
 
+#if defined(HAVE_XML) && defined(_WIN32)
+PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture = NULL;
+PFNGLACTIVETEXTUREPROC pglActiveTexture = NULL;
+static inline bool load_gl_proc(void)
+{
+   LOAD_SYM(glClientActiveTexture);
+   LOAD_SYM(glActiveTexture);
+
+   return pglClientActiveTexture && pglActiveTexture;
+}
+#else
+#define pglClientActiveTexture glClientActiveTexture
+#define pglActiveTexture glActiveTexture
+static inline bool load_gl_proc(void) { return true; }
+#endif
+
 
 #define MAX_SHADERS 16
 
@@ -929,10 +945,22 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (attr <= 0)
       SSNES_WARN("GL double buffer has not been enabled!\n");
 
+#if defined(HAVE_XML) && defined(_WIN32)
+   // Win32 GL lib doesn't have some functions needed for XML shaders.
+   // Need to load dynamically :(
+   if (!load_gl_proc())
+   {
+      SDL_QuitSubSystem(SDL_INIT_VIDEO);
+      return NULL;
+   }
+#endif
 
    gl_t *gl = calloc(1, sizeof(gl_t));
    if (!gl)
+   {
+      SDL_QuitSubSystem(SDL_INIT_VIDEO);
       return NULL;
+   }
 
    gl->full_x = full_x;
    gl->full_y = full_y;
@@ -1012,8 +1040,6 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
 
 #ifdef HAVE_XML
    // For texture images.
-   // Win32 GL lib doesn't have this. Just remacro for other platforms.
-   load_gl_proc();
    pglClientActiveTexture(GL_TEXTURE1);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords);

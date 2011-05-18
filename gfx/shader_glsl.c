@@ -330,12 +330,8 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
 
    glGenTextures(1, &gl_teximage[gl_teximage_cnt]);
 
-   // Win32 GL lib doesn't have this. Just remacro for other platforms.
-   load_gl_proc();
    pglActiveTexture(GL_TEXTURE0 + gl_teximage_cnt + 1);
-
    glBindTexture(GL_TEXTURE_2D, gl_teximage[gl_teximage_cnt]);
-
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST);
