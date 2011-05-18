@@ -26,6 +26,8 @@
 #include <sys/types.h>
 #include "general.h"
 
+ssize_t read_file(const char *path, void **buf);
+
 bool load_state(const char* path);
 bool save_state(const char* path);
 

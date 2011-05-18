@@ -15,14 +15,21 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "image.h"
-#include <Imlib2.h>
+#include "file.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
+#include "general.h"
 
-// Imlib2 <3<3<3<3
+#ifdef HAVE_IMLIB
+
+#include <Imlib2.h>
 bool texture_image_load(const char *path, struct texture_image *out_img)
 {
    Imlib_Image img;
@@ -51,3 +58,83 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    imlib_free_image();
    return true;
 }
+
+#else
+
+bool texture_image_load(const char *path, struct texture_image *out_img)
+{
+   // TODO: Check more gracefully.
+   if (!strstr(path, ".tga"))
+      return false;
+
+   uint8_t *buf = NULL;
+   ssize_t len = read_file(path, (void**)&buf);
+   if (len < 0)
+      return false;
+
+   if (buf[2] != 2) // Uncompressed RGB
+   {
+      free(buf);
+      return false;
+   }
+
+   unsigned width = 0;
+   unsigned height = 0;
+
+   uint8_t info[6];
+   memcpy(info, buf + 12, 6);
+
+   width = info[0] + ((unsigned)info[1] * 256);
+   height = info[2] + ((unsigned)info[3] * 256);
+   unsigned bits = info[4];
+
+   SSNES_LOG("Loaded TGA: (%ux%u @ %u bpp)\n", width, height, bits);
+
+   unsigned size = width * height * sizeof(uint32_t);
+   out_img->pixels = malloc(size);
+   out_img->width = width;
+   out_img->height = height;
+   if (!out_img->pixels)
+   {
+      free(buf);
+      return false;
+   }
+
+   const uint8_t *tmp = buf + 18;
+   if (bits == 32)
+   {
+      for (unsigned i = 0; i < width * height; i++)
+      {
+         uint32_t r = tmp[i * 4 + 2];
+         uint32_t g = tmp[i * 4 + 1];
+         uint32_t b = tmp[i * 4 + 0];
+         uint32_t a = tmp[i * 4 + 3];
+
+         out_img->pixels[i] = (r << 24) | (g << 16) | (b << 8) | a;
+      }
+   }
+   else if (bits == 24)
+   {
+      for (unsigned i = 0; i < width * height; i++)
+      {
+         uint32_t r = tmp[i * 3 + 2];
+         uint32_t g = tmp[i * 3 + 1];
+         uint32_t b = tmp[i * 3 + 0];
+         uint32_t a = 0xff;
+
+         out_img->pixels[i] = (r << 24) | (g << 16) | (b << 8) | a;
+      }
+   }
+   else
+   {
+      free(buf);
+      free(out_img->pixels);
+      out_img->pixels = NULL;
+      return false;
+   }
+
+   free(buf);
+   return true;
+}
+
+#endif

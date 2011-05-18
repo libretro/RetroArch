@@ -21,10 +21,6 @@
 #include "shader_glsl.h"
 #include "strl.h"
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
 #else
@@ -42,10 +38,7 @@
 #include <libxml/tree.h>
 
 #include "gl_common.h"
-
-#ifdef HAVE_IMLIB
 #include "image.h"
-#endif
 
 
 #ifdef __APPLE__
@@ -288,7 +281,6 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
    return true;
 }
 
-#ifdef HAVE_IMLIB
 static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
 {
    if (gl_teximage_cnt >= MAX_TEXTURES)
@@ -372,7 +364,6 @@ error:
       xmlFree(id);
    return false;
 }
-#endif
 
 static unsigned get_xml_shaders(const char *path, struct shader_program *prog, size_t size)
 {
@@ -455,7 +446,6 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
          }
          num++;
       }
-#ifdef HAVE_IMLIB
       else if (strcmp((const char*)cur->name, "texture") == 0)
       {
          if (!get_texture_image(path, cur))
@@ -464,7 +454,6 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
             goto error;
          }
       }
-#endif
    }
 
    if (num == 0)

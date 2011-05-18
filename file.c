@@ -40,7 +40,7 @@
 #endif
 
 // Generic file loader.
-static ssize_t read_file(const char *path, void **buf)
+ssize_t read_file(const char *path, void **buf)
 {
    void *rom_buf = NULL;
    FILE *file = fopen(path, "rb");
