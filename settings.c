@@ -155,15 +155,10 @@ static void set_defaults(void)
    g_settings.autosave_interval = autosave_interval;
 
    assert(sizeof(g_settings.input.binds[0]) >= sizeof(snes_keybinds_1));
-   assert(sizeof(g_settings.input.binds[1]) >= sizeof(snes_keybinds_2));
-   assert(sizeof(g_settings.input.binds[2]) >= sizeof(snes_keybinds_3));
-   assert(sizeof(g_settings.input.binds[3]) >= sizeof(snes_keybinds_4));
-   assert(sizeof(g_settings.input.binds[4]) >= sizeof(snes_keybinds_5));
+   assert(sizeof(g_settings.input.binds[1]) >= sizeof(snes_keybinds_rest));
    memcpy(g_settings.input.binds[0], snes_keybinds_1, sizeof(snes_keybinds_1));
-   memcpy(g_settings.input.binds[1], snes_keybinds_2, sizeof(snes_keybinds_2));
-   memcpy(g_settings.input.binds[2], snes_keybinds_3, sizeof(snes_keybinds_3));
-   memcpy(g_settings.input.binds[3], snes_keybinds_4, sizeof(snes_keybinds_4));
-   memcpy(g_settings.input.binds[4], snes_keybinds_5, sizeof(snes_keybinds_5));
+   for (unsigned i = 1; i < 5; i++)
+      memcpy(g_settings.input.binds[i], snes_keybinds_rest, sizeof(snes_keybinds_rest));
 
    g_settings.input.axis_threshold = AXIS_THRESHOLD;
    g_settings.input.netplay_client_swap_input = netplay_client_swap_input;
