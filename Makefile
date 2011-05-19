@@ -159,9 +159,9 @@ tools/ssnes-joyconfig: $(JOYCONFIG_OBJ)
 	@$(if $(Q), $(shell echo echo CC $<),)
 
 install: $(TARGET)
-	mkdir -p $(DESTDIR)$(PREFIX)/bin
-	mkdir -p $(DESTDIR)/etc
-	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1
+	mkdir -p $(DESTDIR)$(PREFIX)/bin 2>/dev/null || /bin/true
+	mkdir -p $(DESTDIR)/etc 2>/dev/null || /bin/true
+	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1 2>/dev/null || /bin/true
 	install -m755 $(TARGET) $(DESTDIR)$(PREFIX)/bin 
 	install -m644 ssnes.cfg $(DESTDIR)/etc/ssnes.cfg
 	install -m644 docs/ssnes.1 $(DESTDIR)$(PREFIX)/share/man/man1
@@ -169,9 +169,12 @@ install: $(TARGET)
 	install -m755 ssnes-zip $(DESTDIR)$(PREFIX)/bin
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/{ssnes,ssnes-joyconfig,ssnes-zip}
+	rm -f $(DESTDIR)$(PREFIX)/bin/ssnes
+	rm -f $(DESTDIR)$(PREFIX)/bin/ssnes-joyconfig
+	rm -f $(DESTDIR)$(PREFIX)/bin/ssnes-zip
 	rm -f $(DESTDIR)/etc/ssnes.cfg
-	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/{ssnes,ssnes-joyconfig}.1
+	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/ssnes.1
+	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/ssnes-joyconfig.1
 
 clean:
 	rm -f *.o 
@@ -179,8 +182,6 @@ clean:
 	rm -f conf/*.o
 	rm -f gfx/*.o
 	rm -f record/*.o
-	rm -f hqflt/*.o
-	rm -f hqflt/snes_ntsc/*.o
 	rm -f input/*.o
 	rm -f tools/*.o
 	rm -f $(TARGET)
