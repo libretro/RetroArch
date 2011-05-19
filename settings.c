@@ -212,7 +212,7 @@ static config_file_t *open_default_config_file(void)
 #else
    const char *xdg = getenv("XDG_CONFIG_HOME");
    if (!xdg)
-      SSNES_WARN("XDG_CONFIG_HOME is not defined. Will look for config in $HOME/.ssnesrc ...\n");
+      SSNES_WARN("XDG_CONFIG_HOME is not defined. Will look for config in $HOME/.ssnes.cfg ...\n");
 
    const char *home = getenv("HOME");
    if (xdg)
