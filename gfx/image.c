@@ -67,10 +67,12 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    if (!strstr(path, ".tga"))
       return false;
 
-   uint8_t *buf = NULL;
-   ssize_t len = read_file(path, (void**)&buf);
+   void *raw_buf = NULL;
+   ssize_t len = read_file(path, &raw_buf);
    if (len < 0)
       return false;
+
+   uint8_t *buf = raw_buf;
 
    if (buf[2] != 2) // Uncompressed RGB
    {

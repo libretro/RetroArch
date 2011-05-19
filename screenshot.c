@@ -64,8 +64,8 @@ static void dump_content(FILE *file, const uint16_t *frame, unsigned width, unsi
    // BMP likes reverse ordering for some reason :v
    for (int j = height - 1; j >= 0; j--)
    {
-      uint8_t * restrict dst = line;
-      const uint16_t * restrict src = frame + j * pitch;
+      uint8_t *dst = line;
+      const uint16_t *src = frame + j * pitch;
       for (unsigned i = 0; i < width; i++)
       {
          uint16_t pixel = *src++;
@@ -87,7 +87,7 @@ bool screenshot_dump(const char *folder, const uint16_t *frame,
    time_t cur_time;
    time(&cur_time);
 
-   char timefmt[64];
+   char timefmt[128];
    strftime(timefmt, sizeof(timefmt), "SSNES-%m%d-%H%M%S.bmp", localtime(&cur_time));
 
    char filename[256];
