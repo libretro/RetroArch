@@ -129,8 +129,8 @@ typedef struct ssnes_video_info
 #define SSNES_HAT_RIGHT_MASK (1 << 12)
 #define SSNES_HAT_MAP(x, hat) ((x & ((1 << 12) - 1)) | hat)
 
-#define SSNES_HAT_MASK (HAT_UP_MASK | HAT_DOWN_MASK | \
-      HAT_LEFT_MASK | HAT_RIGHT_MASK)
+#define SSNES_HAT_MASK (SSNES_HAT_UP_MASK | SSNES_HAT_DOWN_MASK | \
+      SSNES_HAT_LEFT_MASK | SSNES_HAT_RIGHT_MASK)
 
 // Test this on the joykey. If true, we want to test for a joypad hat
 // rather than a button.
