@@ -4,10 +4,10 @@ OBJ = ssnes_iir_filter.o
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
-	$(CC) -o $@ -shared $(OBJ)
+	$(CC) -o $@ -shared $(OBJ) -lm
 
 %.o: %.c
-	$(CC) -c -o $@ $< -std=c99 -fPIC -O3 -march=native $(CFLAGS)
+	$(CC) -c -o $@ $< -g -std=c99 -fPIC -O3 -march=native $(CFLAGS)
 
 clean:
 	rm -f $(TARGET)

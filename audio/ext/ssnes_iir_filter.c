@@ -3,8 +3,10 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <math.h>
+#include <complex.h>
 
-// Simple IIR filter implementation, optimized for SSE3.
+// Simple IIR/EQ filter implementation, optimized for SSE3.
 
 #ifdef __SSE3__ // Build with -march=native or -msse3 to let this be detected! D:
 #define USE_SSE3
@@ -22,20 +24,22 @@
 #include <assert.h>
 #endif
 
+// Log filter coeffs for debugging
+//#define LOG
+
 #define min(x, y) ((x) < (y) ? (x) : (y))
 
+#ifndef M_PI
+#define M_PI 3.14159265
+#endif
+
 // Taps needs to be power-of-two.
-#define TAPS (128)
+#define TAPS (2048)
 
-// FIR coefficients, up to TAPS taps.
-// Basic passthrough.
-static const float fir_coeff[] = {
-   1.0
-};
-
-// IIR coefficients, up to TAPS taps.
-static const float iir_coeff[] = {
-};
+static const float lp_freq = 5000.0;
+static const float hp_freq = 500.0;
+static const float bp_freq = 300.0;
+static const unsigned bp_q = 500;
 
 #ifdef USE_SSE3
 typedef union
@@ -58,6 +62,151 @@ typedef struct
    unsigned buf_ptr;
 } dsp_state;
 
+// Convolve polynoms.
+static void conv(float * restrict a, const float * restrict b, unsigned a_size, unsigned b_size)
+{
+   float output[a_size + b_size - 1];
+
+   // Lead-in
+   for (int i = 0; i < b_size - 1; i++)
+   {
+      output[i] = 0.0;
+      for (int j = 0; j < b_size; j++)
+      {
+         if ((i - j) >= 0)
+         output[i] += a[i - j] * b[j];
+      }
+   }
+
+   // Mid-section
+   for (unsigned i = b_size - 1; i < a_size; i++)
+   {
+      output[i] = 0.0;
+      for (unsigned j = 0; j < b_size; j++)
+         output[i] += a[i - j] * b[j];
+   }
+
+   // Lead-out
+   for (unsigned i = a_size; i < a_size + b_size - 1; i++)
+   {
+      output[i] = 0.0;
+      for (unsigned j = 0; j < b_size; j++)
+      {
+         if ((i - j) < a_size)
+            output[i] += a[i - j] * b[j];
+      }
+   }
+
+   memcpy(a, output, sizeof(output));
+}
+
+#ifdef LOG
+static void print_coeff(const char *key, const float *coeff, unsigned elem)
+{
+   for (unsigned i = 0; i < elem; i++)
+      fprintf(stderr, "%4s [%3u] = %9.5f\n", key, i, coeff[i]);
+}
+
+static void print_filter_coeffs(const float *fir, const float *iir, unsigned elem)
+{
+   print_coeff("FIR", fir, elem);
+   print_coeff("IIR", iir, elem);
+}
+#endif
+
+// Simulate plain 1-pole RC circuit. 
+// dVc/dt = (Vin - Vc) / RC => 
+// y[n] = y[n - 1] * (1 - Ts/RC) + x[n] * Ts/RC  
+// RCw = 1 => RC = 1/(2*pi*fc)
+static void generate_low_pass(float fir_out[1], float iir_out[2], float freq, float input_rate)
+{
+   float ts = 1.0 / input_rate;
+   float t = 1.0 / (2 * M_PI * freq);
+   fir_out[0] = ts / t;
+   iir_out[0] = 1.0;
+   iir_out[1] = -(1.0 - ts / t);
+
+#ifdef LOG
+   print_coeff("FLOW", fir_out, 1);
+   print_coeff("ILOW", iir_out, 2);
+#endif
+}
+
+// 1-pole RC circuit (Vo taken over R).
+static void generate_high_pass(float fir_out[2], float iir_out[2], float freq, float input_rate)
+{
+   float ts = 1.0 / input_rate;
+   float t = 1.0 / (2 * M_PI * freq);
+   fir_out[0] = 1.0;
+   fir_out[1] = -1.0;
+
+   iir_out[0] = 1.0;
+   iir_out[1] = -(1.0 - ts / t);
+
+#ifdef LOG
+   print_coeff("FHI", fir_out, 2);
+   print_coeff("IHI", iir_out, 2);
+#endif
+}
+
+static void generate_band_pass(float *fir_out, unsigned num_fir, float freq, float input_rate)
+{
+   float w_norm = 2.0 * M_PI * freq / input_rate;
+   for (unsigned i = 0; i < num_fir; i++)
+      fir_out[i] = cosf(i * w_norm);
+
+   complex float amp = 0.0;
+   for (unsigned i = 0; i < num_fir; i++)
+      amp += cosf(i * w_norm) * cexp(-I * w_norm * i); 
+
+   float abs = cabs(amp);
+   for (unsigned i = 0; i < num_fir; i++)
+      fir_out[i] /= abs;
+}
+
+// Generic low-pass. Differential equation.
+static void generate_filter_coeffs(float * restrict fir_out, float * restrict iir_out, float input_rate)
+{
+   fir_out[0] = 1.0;
+   iir_out[0] = 1.0; 
+
+   unsigned fir_length = 1;
+   unsigned iir_length = 1;
+
+   /*
+   // Low pass
+   float lp_fir[1];
+   float lp_iir[2];
+   generate_low_pass(lp_fir, lp_iir, lp_freq, input_rate);
+   conv(fir_out, lp_fir, fir_length, 1);
+   conv(iir_out, lp_iir, iir_length, 2);
+   fir_length += 0;
+   iir_length += 1;
+
+   // High pass
+   float hp_fir[2];
+   float hp_iir[2];
+   generate_high_pass(hp_fir, hp_iir, hp_freq, input_rate);
+   conv(fir_out, hp_fir, fir_length, 2);
+   conv(iir_out, hp_iir, iir_length, 2);
+   fir_length += 1;
+   iir_length += 1;
+*/
+
+   // Band pass
+   float bp_fir[bp_q];
+   generate_band_pass(bp_fir, bp_q, bp_freq, input_rate);
+   conv(fir_out, bp_fir, fir_length, bp_q);
+   fir_length += bp_q - 1;
+   iir_length += 0;
+
+   // Adjust from Z rational polynomial model to discrete domain. 
+   // We don't care about first param as it's implicitly 1.
+   for (unsigned i = 0; i < TAPS; i++)
+      iir_out[i] = -1.0 * iir_out[i + 1];
+}
+
+
 static void* dsp_init(const ssnes_dsp_info_t *info)
 {
    (void)info;
@@ -65,11 +214,24 @@ static void* dsp_init(const ssnes_dsp_info_t *info)
    if (!state)
       return NULL;
 
-   memcpy(&state->fir_coeff, fir_coeff, min(sizeof(fir_coeff), TAPS * sizeof(float)));
-   memcpy(&state->iir_coeff, iir_coeff, min(sizeof(iir_coeff), TAPS * sizeof(float)));
+   fprintf(stderr, "Input rate = %.2f\n", (float)info->input_rate);
+
 #ifdef USE_SSE3
-   memcpy(state->fir_coeff.f + TAPS, fir_coeff, min(sizeof(fir_coeff), 4 * sizeof(float)));
-   memcpy(state->iir_coeff.f + TAPS, iir_coeff, min(sizeof(iir_coeff), 4 * sizeof(float)));
+   generate_filter_coeffs(state->fir_coeff.f, state->iir_coeff.f, info->input_rate);
+#ifdef LOG
+   print_filter_coeffs(state->fir_coeff.f, state->iir_coeff.f, 3);
+#endif
+#else
+   generate_filter_coeffs(state->fir_coeff, state->iir_coeff, info->input_rate);
+#ifdef LOG
+   print_filter_coeffs(state->fir_coeff, state->iir_coeff, 3);
+#endif
+#endif
+
+
+#ifdef USE_SSE3
+   memcpy(state->fir_coeff.f + TAPS, state->fir_coeff.f, 4 * sizeof(float));
+   memcpy(state->iir_coeff.f + TAPS, state->iir_coeff.f, 4 * sizeof(float));
 #endif
 
    return state;
@@ -216,7 +378,10 @@ int main(void)
    const ssnes_dsp_plugin_t *plug = ssnes_dsp_plugin_init();
    assert(plug);
 
-   ssnes_dsp_info_t info;
+   ssnes_dsp_info_t info = {
+      .input_rate = 44100,
+      .output_rate = 44100
+   };
    void *handle = plug->init(&info); // Info isn't used.
    assert(handle);
 
