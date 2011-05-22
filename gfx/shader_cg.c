@@ -140,7 +140,7 @@ static bool load_plain(const char *path)
 
    for (int i = 0; i < 3; i++)
    {
-      if (prg[i].fprg == NULL || prg[i].vprg == NULL)
+      if (!prg[i].fprg || !prg[i].vprg)
       {
          CGerror err = cgGetError();
          SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
@@ -304,11 +304,15 @@ static bool load_preset(const char *path)
       }
    }
 
+   // Basedir.
    char dir_path[256];
    strlcpy(dir_path, path, sizeof(dir_path));
    char *ptr = strrchr(dir_path, '/');
    if (!ptr) ptr = strrchr(dir_path, '\\');
-   if (ptr) ptr[1] = '\0';
+   if (ptr) 
+      ptr[1] = '\0';
+   else // No directory.
+      dir_path[0] = '\0';
 
    // Finally load shaders :)
    for (unsigned i = 0; i < shaders; i++)
@@ -321,7 +325,6 @@ static bool load_preset(const char *path)
       if (config_get_string(conf, attr_buf, &shader_path))
       {
          strlcpy(path_buf, dir_path, sizeof(path_buf));
-         strlcat(path_buf, "/", sizeof(path_buf));
          strlcat(path_buf, shader_path, sizeof(path_buf));
          free(shader_path);
       }
@@ -377,6 +380,8 @@ bool gl_cg_init(const char *path)
    }
    cgGLSetOptimalOptions(cgFProf);
    cgGLSetOptimalOptions(cgVProf);
+   cgGLEnableProfile(cgFProf);
+   cgGLEnableProfile(cgVProf);
 
    if (strstr(path, ".cgp"))
    {
@@ -389,10 +394,7 @@ bool gl_cg_init(const char *path)
          return false;
    }
 
-   cgGLEnableProfile(cgFProf);
-   cgGLEnableProfile(cgVProf);
-
-   for (unsigned i = 0; i < cg_shader_num; i++)
+   for (unsigned i = 1; i < cg_shader_num + 1; i++)
    {
       cgGLBindProgram(prg[i].fprg);
       cgGLBindProgram(prg[i].vprg);
