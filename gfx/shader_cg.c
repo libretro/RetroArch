@@ -174,7 +174,7 @@ static bool load_preset(const char *path)
    }
 
    int shaders;
-   if (config_get_int(conf, "shaders", &shaders))
+   if (!config_get_int(conf, "shaders", &shaders))
    {
       SSNES_ERR("Cannot find \"shaders\" param.\n");
       goto error;
@@ -304,6 +304,12 @@ static bool load_preset(const char *path)
       }
    }
 
+   char dir_path[256];
+   strlcpy(dir_path, path, sizeof(dir_path));
+   char *ptr = strrchr(dir_path, '/');
+   if (!ptr) ptr = strrchr(dir_path, '\\');
+   if (ptr) ptr[1] = '\0';
+
    // Finally load shaders :)
    for (unsigned i = 0; i < shaders; i++)
    {
@@ -314,7 +320,7 @@ static bool load_preset(const char *path)
       snprintf(attr_buf, sizeof(attr_buf), "shader%u", i);
       if (config_get_string(conf, attr_buf, &shader_path))
       {
-         strlcpy(path_buf, path, sizeof(path_buf));
+         strlcpy(path_buf, dir_path, sizeof(path_buf));
          strlcat(path_buf, "/", sizeof(path_buf));
          strlcat(path_buf, shader_path, sizeof(path_buf));
          free(shader_path);
