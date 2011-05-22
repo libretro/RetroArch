@@ -20,6 +20,8 @@
 #include <Cg/cgGL.h>
 #include "general.h"
 #include <string.h>
+#include "strl.h"
+#include "conf/config_file.h"
 
 // Used when we call deactivate() since just unbinding the program didn't seem to work... :(
 static const char* stock_cg_program =
@@ -41,17 +43,9 @@ static const char* stock_cg_program =
       "	otexCoord = texCoord;"
       "}"
       ""
-      ""
-      "struct output "
+      "float4 main_fragment(float2 tex : TEXCOORD0, uniform sampler2D s0 : TEXUNIT0) : COLOR"
       "{"
-      "  float4 color    : COLOR;"
-      "};"
-      ""
-      "output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEXUNIT0) "
-      "{"
-      "   output OUT;"
-      "   OUT.color = tex2D(decal, texCoord);"
-      "   return OUT;"
+      "   return tex2D(s0, tex);"
       "}";
 
 
@@ -71,10 +65,18 @@ struct cg_program
    CGparameter mvp;
 };
 
-static struct cg_program prg[3];
+#define FILTER_UNSPEC 0
+#define FILTER_LINEAR 1
+#define FILTER_NEAREST 2
+
+#define MAX_SHADERS 16
+static struct cg_program prg[MAX_SHADERS];
 static bool cg_active = false;
 static CGprofile cgVProf, cgFProf;
 static unsigned active_index = 0;
+static unsigned cg_shader_num = 0;
+static struct gl_fbo_scale cg_scale[MAX_SHADERS];
+static unsigned fbo_smooth[MAX_SHADERS];
 
 void gl_cg_set_proj_matrix(void)
 {
@@ -106,14 +108,253 @@ void gl_cg_deinit(void)
    if (cg_active)
       cgDestroyContext(cgCtx);
    cg_active = false;
+   cg_shader_num = 0;
+   memset(prg, 0, sizeof(prg));
+   memset(cg_scale, 0, sizeof(cg_scale));
+   memset(fbo_smooth, 0, sizeof(fbo_smooth));
 }
 
-bool gl_cg_init(const char *path)
+static bool load_plain(const char *path)
 {
    SSNES_LOG("Loading Cg file: %s\n", path);
    if (strlen(g_settings.video.second_pass_shader) > 0)
       SSNES_LOG("Loading 2nd pass: %s\n", g_settings.video.second_pass_shader);
 
+   prg[0].fprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", 0);
+   prg[0].vprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", 0);
+
+   prg[1].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgFProf, "main_fragment", 0);
+   prg[1].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgVProf, "main_vertex", 0);
+
+   if (strlen(g_settings.video.second_pass_shader) > 0)
+   {
+      prg[2].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgFProf, "main_fragment", 0);
+      prg[2].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgVProf, "main_vertex", 0);
+      cg_shader_num = 2;
+   }
+   else
+   {
+      prg[2] = prg[0];
+      cg_shader_num = 1;
+   }
+
+   for (int i = 0; i < 3; i++)
+   {
+      if (prg[i].fprg == NULL || prg[i].vprg == NULL)
+      {
+         CGerror err = cgGetError();
+         SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
+         return false;
+      }
+
+      cgGLLoadProgram(prg[i].fprg);
+      cgGLLoadProgram(prg[i].vprg);
+   }
+
+   return true;
+}
+
+static bool load_preset(const char *path)
+{
+   // Create passthrough shader.
+   prg[0].fprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", 0);
+   prg[0].vprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", 0);
+   if (!prg[0].fprg || !prg[0].vprg)
+   {
+      SSNES_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
+      return false;
+   }
+
+   SSNES_LOG("Loading Cg meta-shader: %s\n", path);
+   config_file_t *conf = config_file_new(path);
+   if (!conf)
+   {
+      SSNES_ERR("Failed to load preset.\n");
+      goto error;
+   }
+
+   int shaders;
+   if (config_get_int(conf, "shaders", &shaders))
+   {
+      SSNES_ERR("Cannot find \"shaders\" param.\n");
+      goto error;
+   }
+
+   if (shaders < 1)
+   {
+      SSNES_ERR("Need to define at least 1 shader!\n");
+      goto error;
+   }
+
+   cg_shader_num = shaders;
+
+   // Check filter params.
+   for (unsigned i = 0; i < shaders; i++)
+   {
+      bool smooth;
+      char filter_name_buf[64];
+      snprintf(filter_name_buf, sizeof(filter_name_buf), "filter_linear%u", i);
+      if (config_get_bool(conf, filter_name_buf, &smooth))
+         fbo_smooth[i + 1] = smooth ? FILTER_LINEAR : FILTER_NEAREST;
+   }
+
+   // Bigass for-loop ftw. Check scaling params.
+   for (unsigned i = 0; i < shaders; i++)
+   {
+      char *scale_type;
+      char scale_name_buf[64];
+      snprintf(scale_name_buf, sizeof(scale_name_buf), "scale_type%u", i);
+      if (config_get_string(conf, scale_name_buf, &scale_type))
+      {
+         char attr_name_buf[64];
+         double fattr;
+         int iattr;
+         struct gl_fbo_scale *scale = &cg_scale[i + 1]; // Shader 0 is passthrough shader. Start at 1.
+
+         scale->valid = true;
+         scale->type_x = SSNES_SCALE_INPUT;
+         scale->type_y = SSNES_SCALE_INPUT;
+         scale->scale_x = SSNES_SCALE_INPUT;
+         scale->scale_y = SSNES_SCALE_INPUT;
+
+         // Check source scale.
+         if (strcmp(scale_type, "source") == 0)
+         {
+            snprintf(attr_name_buf, sizeof(attr_name_buf), "scale%u", i);
+            if (config_get_double(conf, attr_name_buf, &fattr))
+            {
+               scale->scale_x = fattr;
+               scale->scale_y = fattr;
+            }
+            else
+            {
+               snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_x%u", i);
+               if (config_get_double(conf, attr_name_buf, &fattr))
+                  scale->scale_x = fattr;
+
+               snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_y%u", i);
+               if (config_get_double(conf, attr_name_buf, &fattr))
+                  scale->scale_y = fattr;
+            }
+         }
+         // Viewport scale.
+         else if (strcmp(scale_type, "viewport") == 0)
+         {
+            snprintf(attr_name_buf, sizeof(attr_name_buf), "scale%u", i);
+            if (config_get_double(conf, attr_name_buf, &fattr))
+            {
+               scale->scale_x = fattr;
+               scale->scale_y = fattr;
+               scale->type_x = SSNES_SCALE_VIEWPORT;
+               scale->type_y = SSNES_SCALE_VIEWPORT;
+            }
+            else
+            {
+               snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_x%u", i);
+               if (config_get_double(conf, attr_name_buf, &fattr))
+               {
+                  scale->scale_x = fattr;
+                  scale->type_x = SSNES_SCALE_VIEWPORT;
+               }
+
+               snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_y%u", i);
+               if (config_get_double(conf, attr_name_buf, &fattr))
+               {
+                  scale->scale_y = fattr;
+                  scale->type_y = SSNES_SCALE_VIEWPORT;
+               }
+            }
+         }
+         // Absolute pixel scale.
+         else if (strcmp(scale_type, "absolute") == 0)
+         {
+            snprintf(attr_name_buf, sizeof(attr_name_buf), "scale%u", i);
+            if (config_get_int(conf, attr_name_buf, &iattr))
+            {
+               scale->abs_x = iattr;
+               scale->abs_y = iattr;
+               scale->type_x = SSNES_SCALE_ABSOLUTE;
+               scale->type_y = SSNES_SCALE_ABSOLUTE;
+            }
+            else
+            {
+               snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_x%u", i);
+               if (config_get_int(conf, attr_name_buf, &iattr))
+               {
+                  scale->abs_x = iattr;
+                  scale->type_x = SSNES_SCALE_ABSOLUTE;
+               }
+
+               snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_y%u", i);
+               if (config_get_int(conf, attr_name_buf, &iattr))
+               {
+                  scale->abs_y = iattr;
+                  scale->type_y = SSNES_SCALE_ABSOLUTE;
+               }
+            }
+         }
+         else
+         {
+            SSNES_ERR("Invalid attribute: \"%s\"\n", scale_type);
+            free(scale_type);
+            goto error;
+         }
+
+         free(scale_type);
+      }
+   }
+
+   // Finally load shaders :)
+   for (unsigned i = 0; i < shaders; i++)
+   {
+      char *shader_path;
+      char attr_buf[64];
+      char path_buf[512];
+
+      snprintf(attr_buf, sizeof(attr_buf), "shader%u", i);
+      if (config_get_string(conf, attr_buf, &shader_path))
+      {
+         strlcpy(path_buf, path, sizeof(path_buf));
+         strlcat(path_buf, "/", sizeof(path_buf));
+         strlcat(path_buf, shader_path, sizeof(path_buf));
+         free(shader_path);
+      }
+      else
+      {
+         SSNES_ERR("Didn't find shader path in config ...\n");
+         goto error;
+      }
+
+      SSNES_LOG("Loading Cg shader: \"%s\".\n", path_buf);
+
+      struct cg_program *prog = &prg[i + 1];
+      prog->fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path_buf, cgFProf, "main_fragment", 0);
+      prog->vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path_buf, cgVProf, "main_vertex", 0);
+
+      if (!prog->fprg || !prog->vprg)
+      {
+         CGerror err = cgGetError();
+         SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
+         goto error;
+      }
+
+      cgGLLoadProgram(prog->fprg);
+      cgGLLoadProgram(prog->vprg);
+   }
+
+   // TODO: Load textures ...
+
+   config_file_free(conf);
+   return true;
+
+error:
+   if (conf)
+      config_file_free(conf);
+   return false;
+}
+
+bool gl_cg_init(const char *path)
+{
    cgCtx = cgCreateContext();
    if (cgCtx == NULL)
    {
@@ -131,38 +372,21 @@ bool gl_cg_init(const char *path)
    cgGLSetOptimalOptions(cgFProf);
    cgGLSetOptimalOptions(cgVProf);
 
-
-   prg[0].fprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", 0);
-   prg[0].vprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", 0);
-
-   prg[1].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgFProf, "main_fragment", 0);
-   prg[1].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgVProf, "main_vertex", 0);
-
-   if (strlen(g_settings.video.second_pass_shader) > 0)
+   if (strstr(path, ".cgp"))
    {
-      prg[2].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgFProf, "main_fragment", 0);
-      prg[2].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgVProf, "main_vertex", 0);
+      if (!load_preset(path))
+         return false;
    }
    else
-      prg[2] = prg[0];
-
-   for (int i = 0; i < 3; i++)
    {
-      if (prg[i].fprg == NULL || prg[i].vprg == NULL)
-      {
-         CGerror err = cgGetError();
-         SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
+      if (!load_plain(path))
          return false;
-      }
-
-      cgGLLoadProgram(prg[i].fprg);
-      cgGLLoadProgram(prg[i].vprg);
    }
 
    cgGLEnableProfile(cgFProf);
    cgGLEnableProfile(cgVProf);
 
-   for (int i = 0; i < 3; i++)
+   for (unsigned i = 0; i < cg_shader_num; i++)
    {
       cgGLBindProgram(prg[i].fprg);
       cgGLBindProgram(prg[i].vprg);
@@ -174,7 +398,7 @@ bool gl_cg_init(const char *path)
       prg[i].vid_size_v = cgGetNamedParameter(prg[i].vprg, "IN.video_size");
       prg[i].tex_size_v = cgGetNamedParameter(prg[i].vprg, "IN.texture_size");
       prg[i].out_size_v = cgGetNamedParameter(prg[i].vprg, "IN.output_size");
-      prg[i].frame_cnt_v = cgGetNamedParameter(prg[i].fprg, "IN.frame_count");
+      prg[i].frame_cnt_v = cgGetNamedParameter(prg[i].vprg, "IN.frame_count");
       prg[i].mvp = cgGetNamedParameter(prg[i].vprg, "modelViewProj");
       cgGLSetStateMatrixParameter(prg[i].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
    }
@@ -188,7 +412,7 @@ bool gl_cg_init(const char *path)
 
 void gl_cg_use(unsigned index)
 {
-   if (cg_active)
+   if (cg_active && prg[index].vprg && prg[index].fprg)
    {
       active_index = index;
       cgGLBindProgram(prg[index].vprg);
@@ -199,27 +423,28 @@ void gl_cg_use(unsigned index)
 unsigned gl_cg_num(void)
 {
    if (cg_active)
-   {
-      if (prg[0].fprg == prg[2].fprg)
-         return 1;
-      else
-         return 2;
-   }
+      return cg_shader_num;
    else
       return 0;
 }
 
 bool gl_cg_filter_type(unsigned index, bool *smooth)
 {
-   (void)index;
-   (void)smooth;
-   // We don't really care since .cg doesn't have those kinds of semantics by itself ...
-   return false;
+   if (cg_active)
+   {
+      if (fbo_smooth[index] == FILTER_UNSPEC)
+         return false;
+      *smooth = (fbo_smooth[index] == FILTER_LINEAR);
+      return true;
+   }
+   else
+      return false;
 }
 
 void gl_cg_shader_scale(unsigned index, struct gl_fbo_scale *scale)
 {
-   (void)index;
-   // We don't really care since .cg doesn't have those kinds of semantics by itself ...
-   scale->valid = false;
+   if (cg_active)
+      *scale = cg_scale[index];
+   else
+      scale->valid = false;
 }
