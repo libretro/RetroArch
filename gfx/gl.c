@@ -103,7 +103,7 @@ static bool load_fbo_proc(void) { return true; }
 #endif
 #endif
 
-#if defined(HAVE_XML) && defined(_WIN32)
+#if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
 PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture = NULL;
 PFNGLACTIVETEXTUREPROC pglActiveTexture = NULL;
 static inline bool load_gl_proc(void)
@@ -945,7 +945,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (attr <= 0)
       SSNES_WARN("GL double buffer has not been enabled!\n");
 
-#if defined(HAVE_XML) && defined(_WIN32)
+#if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
    // Win32 GL lib doesn't have some functions needed for XML shaders.
    // Need to load dynamically :(
    if (!load_gl_proc())

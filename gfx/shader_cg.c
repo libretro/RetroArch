@@ -22,6 +22,7 @@
 #include <string.h>
 #include "strl.h"
 #include "conf/config_file.h"
+#include "image.h"
 
 // Used when we call deactivate() since just unbinding the program didn't seem to work... :(
 static const char* stock_cg_program =
@@ -70,6 +71,7 @@ struct cg_program
 #define FILTER_NEAREST 2
 
 #define MAX_SHADERS 16
+#define MAX_TEXTURES 8
 static struct cg_program prg[MAX_SHADERS];
 static bool cg_active = false;
 static CGprofile cgVProf, cgFProf;
@@ -77,6 +79,10 @@ static unsigned active_index = 0;
 static unsigned cg_shader_num = 0;
 static struct gl_fbo_scale cg_scale[MAX_SHADERS];
 static unsigned fbo_smooth[MAX_SHADERS];
+
+static unsigned lut_textures[MAX_TEXTURES];
+static unsigned lut_textures_num = 0;
+static char lut_textures_uniform[MAX_TEXTURES][64];
 
 void gl_cg_set_proj_matrix(void)
 {
@@ -100,6 +106,13 @@ void gl_cg_set_params(unsigned width, unsigned height,
       cgGLSetParameter2f(prg[active_index].tex_size_v, tex_width, tex_height);
       cgGLSetParameter2f(prg[active_index].out_size_v, out_width, out_height);
       cgGLSetParameter1f(prg[active_index].frame_cnt_v, (float)frame_count);
+
+      for (unsigned i = 0; i < lut_textures_num; i++)
+      {
+         CGparameter param = cgGetNamedParameter(prg[active_index].fprg, lut_textures_uniform[i]);
+         cgGLSetTextureParameter(param, lut_textures[i]);
+         cgGLEnableTextureParameter(param);
+      }
    }
 }
 
@@ -112,6 +125,9 @@ void gl_cg_deinit(void)
    memset(prg, 0, sizeof(prg));
    memset(cg_scale, 0, sizeof(cg_scale));
    memset(fbo_smooth, 0, sizeof(fbo_smooth));
+
+   glDeleteTextures(lut_textures_num, lut_textures);
+   lut_textures_num = 0;
 }
 
 static bool load_plain(const char *path)
@@ -154,6 +170,78 @@ static bool load_plain(const char *path)
    return true;
 }
 
+static bool load_textures(const char *dir_path, config_file_t *conf)
+{
+   char *textures;
+   if (!config_get_string(conf, "textures", &textures)) // No textures here ...
+      return true;
+
+   const char *id = strtok(textures, ";");;
+   while (id && lut_textures_num < MAX_TEXTURES)
+   {
+      char *path;
+      if (!config_get_string(conf, id, &path))
+      {
+         SSNES_ERR("Cannot find path to texture \"%s\" ...\n", id);
+         goto error;
+      }
+
+      char id_filter[64];
+      snprintf(id_filter, sizeof(id_filter), "%s_linear", id);
+      bool smooth;
+      if (!config_get_bool(conf, id_filter, &smooth))
+         smooth = true;
+
+      char image_path[512];
+      snprintf(image_path, sizeof(image_path), "%s%s", dir_path, path);
+
+      SSNES_LOG("Loading image from: \"%s\".\n", image_path);
+      struct texture_image img;
+      if (!texture_image_load(image_path, &img))
+      {
+         SSNES_ERR("Failed to load picture ...\n");
+         free(path);
+         goto error;
+      }
+
+      strlcpy(lut_textures_uniform[lut_textures_num], id, sizeof(lut_textures_uniform[lut_textures_num]));
+
+      glGenTextures(1, &lut_textures[lut_textures_num]);
+      pglActiveTexture(GL_TEXTURE0 + lut_textures_num + 1);
+      glBindTexture(GL_TEXTURE_2D, lut_textures[lut_textures_num]);
+
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
+
+      glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, img.width);
+      glTexImage2D(GL_TEXTURE_2D,
+            0, GL_RGBA, img.width, img.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, img.pixels);
+
+      lut_textures_num++;
+
+      free(img.pixels);
+      free(path);
+
+      id = strtok(NULL, ";");;
+   }
+
+   pglActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   free(textures);
+   return true;
+
+error:
+   if (textures)
+      free(textures);
+
+   pglActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   return false;
+}
+
 static bool load_preset(const char *path)
 {
    // Create passthrough shader.
@@ -187,6 +275,11 @@ static bool load_preset(const char *path)
    }
 
    cg_shader_num = shaders;
+   if (shaders > MAX_SHADERS)
+   {
+      SSNES_WARN("Too many shaders ... Capping shader amount to %d.\n", MAX_SHADERS);
+      cg_shader_num = shaders = MAX_SHADERS;
+   }
 
    // Check filter params.
    for (unsigned i = 0; i < shaders; i++)
@@ -351,7 +444,11 @@ static bool load_preset(const char *path)
       cgGLLoadProgram(prog->vprg);
    }
 
-   // TODO: Load textures ...
+   if (!load_textures(dir_path, conf))
+   {
+      SSNES_ERR("Failed to load lookup textures ...\n");
+      goto error;
+   }
 
    config_file_free(conf);
    return true;

@@ -99,7 +99,7 @@ struct gl_fbo_scale
 };
 
 // Windows ... <_<
-#if defined(HAVE_XML) && defined(_WIN32)
+#if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
 extern PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture;
 extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #else
