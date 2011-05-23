@@ -780,7 +780,7 @@ void gl_glsl_set_params(unsigned width, unsigned height,
 
             snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTexture", i + 1);
             location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
-            pglUniform1i(location, base_tex + i);
+            pglUniform1i(location, base_tex + i - GL_TEXTURE0);
 
             snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTextureSize", i + 1);
             location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
