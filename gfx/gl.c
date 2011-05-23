@@ -110,12 +110,9 @@ static inline bool load_gl_proc(void)
 {
    LOAD_SYM(glClientActiveTexture);
    LOAD_SYM(glActiveTexture);
-
    return pglClientActiveTexture && pglActiveTexture;
 }
 #else
-#define pglClientActiveTexture glClientActiveTexture
-#define pglActiveTexture glActiveTexture
 static inline bool load_gl_proc(void) { return true; }
 #endif
 
@@ -251,14 +248,21 @@ static void gl_shader_set_proj_matrix(void)
 static void gl_shader_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
-      unsigned frame_count)
+      unsigned frame_count,
+      const struct gl_tex_info *info)
 {
 #ifdef HAVE_CG
-   gl_cg_set_params(width, height, tex_width, tex_height, out_width, out_height, frame_count);
+   gl_cg_set_params(width, height, 
+         tex_width, tex_height, 
+         out_width, out_height, 
+         frame_count, info);
 #endif
 
 #ifdef HAVE_XML
-   gl_glsl_set_params(width, height, tex_width, tex_height, out_width, out_height, frame_count);
+   gl_glsl_set_params(width, height, 
+         tex_width, tex_height, 
+         out_width, out_height, 
+         frame_count, info);
 #endif
 }
 
@@ -767,8 +771,15 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 #endif
    }
 
+   struct gl_tex_info tex_info = {
+      .tex = gl->texture,
+      .input_size = {width, height},
+      .tex_size = {gl->tex_w, gl->tex_h},
+      .coord = gl->tex_coords
+   };
+
    glClear(GL_COLOR_BUFFER_BIT);
-   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->vp_width, gl->vp_height, gl->frame_count);
+   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->vp_width, gl->vp_height, gl->frame_count, &tex_info);
 
    if (width != gl->last_width || height != gl->last_height) // Res change. need to clear out texture.
    {
@@ -834,7 +845,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 
          // Render to FBO with certain size.
          set_viewport(gl, rect->img_width, rect->img_height, true);
-         gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, prev_rect->width, prev_rect->height, gl->vp_width, gl->vp_height, gl->frame_count);
+         gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, prev_rect->width, prev_rect->height, gl->vp_width, gl->vp_height, gl->frame_count, &tex_info);
          glDrawArrays(GL_QUADS, 0, 4);
       }
 
@@ -855,7 +866,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       glClear(GL_COLOR_BUFFER_BIT);
       gl->render_to_tex = false;
       set_viewport(gl, gl->win_width, gl->win_height, false);
-      gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, prev_rect->width, prev_rect->height, gl->vp_width, gl->vp_height, gl->frame_count);
+      gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, prev_rect->width, prev_rect->height, gl->vp_width, gl->vp_height, gl->frame_count, &tex_info);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
       glDrawArrays(GL_QUADS, 0, 4);

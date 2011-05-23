@@ -93,8 +93,10 @@ void gl_cg_set_proj_matrix(void)
 void gl_cg_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height,
       unsigned out_width, unsigned out_height,
-      unsigned frame_count)
+      unsigned frame_count,
+      const struct gl_tex_info *info)
 {
+   (void)info;
    if (cg_active)
    {
       cgGLSetParameter2f(prg[active_index].vid_size_f, width, height);

@@ -61,6 +61,9 @@
 #define pglGetProgramInfoLog glGetProgramInfoLog
 #define pglDeleteProgram glDeleteProgram
 #define pglGetAttachedShaders glGetAttachedShaders
+#define pglGetAttribLocation glGetAttribLocation
+#define pglEnableVertexAttribArray glEnableVertexAttribArray
+#define pglVertexAttribPointer glVertexAttribPointer
 #else
 static PFNGLCREATEPROGRAMPROC pglCreateProgram = NULL;
 static PFNGLUSEPROGRAMPROC pglUseProgram = NULL;
@@ -81,6 +84,9 @@ static PFNGLGETPROGRAMIVPROC pglGetProgramiv = NULL;
 static PFNGLGETPROGRAMINFOLOGPROC pglGetProgramInfoLog = NULL;
 static PFNGLDELETEPROGRAMPROC pglDeleteProgram = NULL;
 static PFNGLGETATTACHEDSHADERSPROC pglGetAttachedShaders = NULL;
+static PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation = NULL;
+static PFNGLENABLEVERTEXATTRIBARRAYPROC pglEnableVertexAttribArray = NULL;
+static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer = NULL;
 #endif
 
 #define MAX_PROGRAMS 16
@@ -597,6 +603,9 @@ bool gl_glsl_init(const char *path)
    LOAD_GL_SYM(GetProgramInfoLog);
    LOAD_GL_SYM(DeleteProgram);
    LOAD_GL_SYM(GetAttachedShaders);
+   LOAD_GL_SYM(GetAttribLocation);
+   LOAD_GL_SYM(EnableVertexAttribArray);
+   LOAD_GL_SYM(VertexAttribPointer);
 #endif
 
    SSNES_LOG("Checking GLSL shader support ...\n");
@@ -608,7 +617,9 @@ bool gl_glsl_init(const char *path)
       && pglDetachShader && pglLinkProgram && pglGetUniformLocation
       && pglUniform1i && pglUniform2fv && pglUniform4fv
       && pglGetShaderiv && pglGetShaderInfoLog && pglGetProgramiv && pglGetProgramInfoLog 
-      && pglDeleteProgram && pglGetAttachedShaders;
+      && pglDeleteProgram && pglGetAttachedShaders
+      && pglGetAttribLocation && pglEnableVertexAttribArray
+      && pglVertexAttribPointer;
 #endif
 
    if (!shader_support)
@@ -701,7 +712,8 @@ void gl_glsl_deinit(void)
 void gl_glsl_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
-      unsigned frame_count)
+      unsigned frame_count,
+      const struct gl_tex_info *info)
 {
    if (glsl_enable && gl_program[active_index] > 0)
    {
@@ -726,6 +738,37 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       {
          location = pglGetUniformLocation(gl_program[active_index], gl_teximage_uniforms[i]);
          pglUniform1i(location, i + 1);
+      }
+
+      // Set original texture unless we're in first pass (pointless).
+      if (active_index > 1)
+      {
+         pglActiveTexture(GL_TEXTURE0 + gl_teximage_cnt + 1);
+         glBindTexture(GL_TEXTURE_2D, info->tex);
+
+         location = pglGetUniformLocation(gl_program[active_index], "rubyOrigTexture");
+         pglUniform1i(location, gl_teximage_cnt + 1);
+
+         location = pglGetUniformLocation(gl_program[active_index], "rubyOrigTextureSize");
+         pglUniform2fv(location, 1, info->tex_size);
+         location = pglGetUniformLocation(gl_program[active_index], "rubyOrigInputSize");
+         pglUniform2fv(location, 1, info->input_size);
+
+         // Pass texture coordinates.
+         location = pglGetAttribLocation(gl_program[active_index], "rubyOrigTexCoord");
+         if (location >= 0)
+         {
+            pglEnableVertexAttribArray(location);
+            pglVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, info->coord);
+         }
+
+         pglActiveTexture(GL_TEXTURE0);
+      }
+      else
+      {
+         pglActiveTexture(GL_TEXTURE0 + gl_teximage_cnt + 1);
+         glBindTexture(GL_TEXTURE_2D, 0);
+         pglActiveTexture(GL_TEXTURE0);
       }
    }
 }

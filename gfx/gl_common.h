@@ -98,6 +98,14 @@ struct gl_fbo_scale
    bool valid;
 };
 
+struct gl_tex_info
+{
+   GLuint tex;
+   float input_size[2];
+   float tex_size[2];
+   const float *coord;
+};
+
 // Windows ... <_<
 #if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
 extern PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture;
