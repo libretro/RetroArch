@@ -36,7 +36,7 @@ static const char* stock_cg_program =
       ""
       "	out float4 oPosition : POSITION,"
       "	out float4 oColor    : COLOR,"
-      "	out float2 otexCoord : TEXCOORD"
+      "	out float2 otexCoord : TEXCOORD0"
       ")"
       "{"
       "	oPosition = mul(modelViewProj, position);"
@@ -49,6 +49,15 @@ static const char* stock_cg_program =
       "   return tex2D(s0, tex);"
       "}";
 
+#ifdef SSNES_CG_DEBUG
+static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
+{
+   (void)ctx;
+   (void)data;
+
+   SSNES_ERR("CG error!: \"%s\".\n", cgGetErrorString(error));
+}
+#endif
 
 static CGcontext cgCtx;
 
@@ -101,9 +110,16 @@ static char lut_textures_uniform[MAX_TEXTURES][64];
 
 void gl_cg_set_proj_matrix(void)
 {
-   if (cg_active)
+   if (cg_active && prg[active_index].mvp)
+   {
       cgGLSetStateMatrixParameter(prg[active_index].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
+   }
 }
+
+#define set_param_2f(param, x, y) \
+   if (param) cgGLSetParameter2f(param, x, y)
+#define set_param_1f(param, x) \
+   if (param) cgGLSetParameter1f(param, x)
 
 void gl_cg_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height,
@@ -116,37 +132,46 @@ void gl_cg_set_params(unsigned width, unsigned height,
    if (cg_active)
    {
       // Set frame.
-      cgGLSetParameter2f(prg[active_index].vid_size_f, width, height);
-      cgGLSetParameter2f(prg[active_index].tex_size_f, tex_width, tex_height);
-      cgGLSetParameter2f(prg[active_index].out_size_f, out_width, out_height);
-      cgGLSetParameter1f(prg[active_index].frame_cnt_f, (float)frame_count);
+      set_param_2f(prg[active_index].vid_size_f, width, height);
+      set_param_2f(prg[active_index].tex_size_f, tex_width, tex_height);
+      set_param_2f(prg[active_index].out_size_f, out_width, out_height);
+      set_param_1f(prg[active_index].frame_cnt_f, (float)frame_count);
 
-      cgGLSetParameter2f(prg[active_index].vid_size_v, width, height);
-      cgGLSetParameter2f(prg[active_index].tex_size_v, tex_width, tex_height);
-      cgGLSetParameter2f(prg[active_index].out_size_v, out_width, out_height);
-      cgGLSetParameter1f(prg[active_index].frame_cnt_v, (float)frame_count);
+      set_param_2f(prg[active_index].vid_size_v, width, height);
+      set_param_2f(prg[active_index].tex_size_v, tex_width, tex_height);
+      set_param_2f(prg[active_index].out_size_v, out_width, out_height);
+      set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count);
 
       // Set lookup textures.
       for (unsigned i = 0; i < lut_textures_num; i++)
       {
          CGparameter param = cgGetNamedParameter(prg[active_index].fprg, lut_textures_uniform[i]);
-         cgGLSetTextureParameter(param, lut_textures[i]);
-         cgGLEnableTextureParameter(param);
+         if (param)
+         {
+            cgGLSetTextureParameter(param, lut_textures[i]);
+            cgGLEnableTextureParameter(param);
+         }
       }
 
       // Set orig texture.
       if (active_index > 1)
       {
-         cgGLSetTextureParameter(prg[active_index].orig.tex, info->tex);
-         cgGLEnableTextureParameter(prg[active_index].orig.tex);
+         if (prg[active_index].orig.tex)
+         {
+            cgGLSetTextureParameter(prg[active_index].orig.tex, info->tex);
+            cgGLEnableTextureParameter(prg[active_index].orig.tex);
+         }
 
-         cgGLSetParameter2f(prg[active_index].orig.vid_size_v, info->input_size[0], info->input_size[1]);
-         cgGLSetParameter2f(prg[active_index].orig.vid_size_f, info->input_size[0], info->input_size[1]);
-         cgGLSetParameter2f(prg[active_index].orig.tex_size_v, info->tex_size[0], info->tex_size[1]);
-         cgGLSetParameter2f(prg[active_index].orig.tex_size_f, info->tex_size[0], info->tex_size[1]);
+         set_param_2f(prg[active_index].orig.vid_size_v, info->input_size[0], info->input_size[1]);
+         set_param_2f(prg[active_index].orig.vid_size_f, info->input_size[0], info->input_size[1]);
+         set_param_2f(prg[active_index].orig.tex_size_v, info->tex_size[0], info->tex_size[1]);
+         set_param_2f(prg[active_index].orig.tex_size_f, info->tex_size[0], info->tex_size[1]);
 
-         cgGLSetParameterPointer(prg[active_index].orig.coord, 2, GL_FLOAT, 0, info->coord);
-         cgGLEnableClientState(prg[active_index].orig.coord);
+         if (prg[active_index].orig.coord)
+         {
+            cgGLSetParameterPointer(prg[active_index].orig.coord, 2, GL_FLOAT, 0, info->coord);
+            cgGLEnableClientState(prg[active_index].orig.coord);
+         }
       }
 
       // Set FBO textures.
@@ -154,21 +179,27 @@ void gl_cg_set_params(unsigned width, unsigned height,
       {
          for (unsigned i = 0; i < fbo_info_cnt; i++)
          {
-            cgGLSetTextureParameter(prg[active_index].fbo[i].tex, fbo_info[i].tex);
-            cgGLEnableTextureParameter(prg[active_index].fbo[i].tex);
+            if (prg[active_index].fbo[i].tex)
+            {
+               cgGLSetTextureParameter(prg[active_index].fbo[i].tex, fbo_info[i].tex);
+               cgGLEnableTextureParameter(prg[active_index].fbo[i].tex);
+            }
 
-            cgGLSetParameter2f(prg[active_index].fbo[i].vid_size_v, 
+            set_param_2f(prg[active_index].fbo[i].vid_size_v, 
                   fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
-            cgGLSetParameter2f(prg[active_index].fbo[i].vid_size_f, 
+            set_param_2f(prg[active_index].fbo[i].vid_size_f, 
                   fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
 
-            cgGLSetParameter2f(prg[active_index].fbo[i].tex_size_v, 
+            set_param_2f(prg[active_index].fbo[i].tex_size_v, 
                   fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
-            cgGLSetParameter2f(prg[active_index].fbo[i].tex_size_f, 
+            set_param_2f(prg[active_index].fbo[i].tex_size_f, 
                   fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
 
-            cgGLSetParameterPointer(prg[active_index].fbo[i].coord, 2, GL_FLOAT, 0, fbo_info[i].coord);
-            cgGLEnableClientState(prg[active_index].fbo[i].coord);
+            if (prg[active_index].fbo[i].coord)
+            {
+               cgGLSetParameterPointer(prg[active_index].fbo[i].coord, 2, GL_FLOAT, 0, fbo_info[i].coord);
+               cgGLEnableClientState(prg[active_index].fbo[i].coord);
+            }
          }
       }
    }
@@ -212,7 +243,7 @@ static bool load_plain(const char *path)
       cg_shader_num = 1;
    }
 
-   for (int i = 0; i < 3; i++)
+   for (int i = 0; i < cg_shader_num + 1; i++)
    {
       if (!prg[i].fprg || !prg[i].vprg)
       {
@@ -308,6 +339,8 @@ static bool load_preset(const char *path)
       SSNES_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
       return false;
    }
+   cgGLLoadProgram(prg[0].fprg);
+   cgGLLoadProgram(prg[0].vprg);
 
    SSNES_LOG("Loading Cg meta-shader: %s\n", path);
    config_file_t *conf = config_file_new(path);
@@ -525,6 +558,11 @@ bool gl_cg_init(const char *path)
       return false;
    }
 
+#ifdef SSNES_CG_DEBUG
+   cgGLSetDebugMode(CG_TRUE);
+   cgSetErrorHandler(cg_error_handler, NULL);
+#endif
+
    cgFProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
    cgVProf = cgGLGetLatestProfile(CG_GL_VERTEX);
    if (cgFProf == CG_PROFILE_UNKNOWN || cgVProf == CG_PROFILE_UNKNOWN)
@@ -548,6 +586,10 @@ bool gl_cg_init(const char *path)
          return false;
    }
 
+   prg[0].mvp = cgGetNamedParameter(prg[0].vprg, "modelViewProj");
+   if (prg[0].mvp)
+      cgGLSetStateMatrixParameter(prg[0].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
+
    for (unsigned i = 1; i < cg_shader_num + 1; i++)
    {
       cgGLBindProgram(prg[i].fprg);
@@ -562,7 +604,8 @@ bool gl_cg_init(const char *path)
       prg[i].out_size_v = cgGetNamedParameter(prg[i].vprg, "IN.output_size");
       prg[i].frame_cnt_v = cgGetNamedParameter(prg[i].vprg, "IN.frame_count");
       prg[i].mvp = cgGetNamedParameter(prg[i].vprg, "modelViewProj");
-      cgGLSetStateMatrixParameter(prg[i].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
+      if (prg[i].mvp)
+         cgGLSetStateMatrixParameter(prg[i].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 
       prg[i].orig.tex = cgGetNamedParameter(prg[i].fprg, "ORIG.texture");
       prg[i].orig.vid_size_v = cgGetNamedParameter(prg[i].vprg, "ORIG.video_size");
