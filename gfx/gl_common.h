@@ -103,7 +103,7 @@ struct gl_tex_info
    GLuint tex;
    float input_size[2];
    float tex_size[2];
-   const float *coord;
+   float coord[8];
 };
 
 // Windows ... <_<

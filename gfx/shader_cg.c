@@ -94,9 +94,14 @@ void gl_cg_set_params(unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height,
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
-      const struct gl_tex_info *info)
+      const struct gl_tex_info *info,
+      const struct gl_tex_info *fbo_info,
+      unsigned fbo_info_cnt)
 {
    (void)info;
+   (void)fbo_info;
+   (void)fbo_info_cnt;
+
    if (cg_active)
    {
       cgGLSetParameter2f(prg[active_index].vid_size_f, width, height);
@@ -277,11 +282,12 @@ static bool load_preset(const char *path)
    }
 
    cg_shader_num = shaders;
-   if (shaders > MAX_SHADERS)
+   if (shaders > MAX_SHADERS - 1)
    {
-      SSNES_WARN("Too many shaders ... Capping shader amount to %d.\n", MAX_SHADERS);
-      cg_shader_num = shaders = MAX_SHADERS;
+      SSNES_WARN("Too many shaders ... Capping shader amount to %d.\n", MAX_SHADERS - 1);
+      cg_shader_num = shaders = MAX_SHADERS - 1;
    }
+   prg[shaders] = prg[0];
 
    // Check filter params.
    for (unsigned i = 0; i < shaders; i++)

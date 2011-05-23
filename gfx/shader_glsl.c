@@ -713,7 +713,8 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
-      const struct gl_tex_info *info)
+      const struct gl_tex_info *info, 
+      const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
 {
    if (glsl_enable && gl_program[active_index] > 0)
    {
@@ -743,6 +744,7 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       // Set original texture unless we're in first pass (pointless).
       if (active_index > 1)
       {
+         // Bind original texture.
          pglActiveTexture(GL_TEXTURE0 + gl_teximage_cnt + 1);
          glBindTexture(GL_TEXTURE_2D, info->tex);
 
@@ -762,14 +764,59 @@ void gl_glsl_set_params(unsigned width, unsigned height,
             pglVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, info->coord);
          }
 
-         pglActiveTexture(GL_TEXTURE0);
+         GLuint base_tex = GL_TEXTURE0 + gl_teximage_cnt + 2;
+
+         // Bind new texture in the chain.
+         if (fbo_info_cnt > 0)
+         {
+            pglActiveTexture(base_tex + fbo_info_cnt - 1);
+            glBindTexture(GL_TEXTURE_2D, fbo_info[fbo_info_cnt - 1].tex);
+         }
+
+         // Bind FBO textures.
+         for (unsigned i = 0; i < fbo_info_cnt; i++)
+         {
+            char attrib_buf[64];
+
+            snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTexture", i + 1);
+            location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
+            pglUniform1i(location, base_tex + i);
+
+            snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTextureSize", i + 1);
+            location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
+            pglUniform2fv(location, 1, fbo_info[i].tex_size);
+
+            snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uInputSize", i + 1);
+            location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
+            pglUniform2fv(location, 1, fbo_info[i].input_size);
+
+            snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTexCoord", i + 1);
+            location = pglGetAttribLocation(gl_program[active_index], attrib_buf);
+            if (location >= 0)
+            {
+               pglEnableVertexAttribArray(location);
+               pglVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, fbo_info[i].coord);
+            }
+         }
       }
       else
       {
+         // First pass, so unbind everything to avoid collitions.
          pglActiveTexture(GL_TEXTURE0 + gl_teximage_cnt + 1);
          glBindTexture(GL_TEXTURE_2D, 0);
-         pglActiveTexture(GL_TEXTURE0);
+
+         GLuint base_tex = GL_TEXTURE0 + gl_teximage_cnt + 2;
+         // Unbind any lurking FBO passes.
+         // Rendering to a texture that is bound to a texture unit
+         // sounds very shaky ... ;)
+         for (int i = 0; i < gl_num_programs; i++)
+         {
+            pglActiveTexture(GL_TEXTURE0 + base_tex + i);
+            glBindTexture(GL_TEXTURE_2D, 0);
+         }
       }
+
+      pglActiveTexture(GL_TEXTURE0);
    }
 }
 

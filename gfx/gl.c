@@ -249,20 +249,21 @@ static void gl_shader_set_params(unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
-      const struct gl_tex_info *info)
+      const struct gl_tex_info *info,
+      const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
 {
 #ifdef HAVE_CG
    gl_cg_set_params(width, height, 
          tex_width, tex_height, 
          out_width, out_height, 
-         frame_count, info);
+         frame_count, info, fbo_info, fbo_info_cnt);
 #endif
 
 #ifdef HAVE_XML
    gl_glsl_set_params(width, height, 
          tex_width, tex_height, 
          out_width, out_height, 
-         frame_count, info);
+         frame_count, info, fbo_info, fbo_info_cnt);
 #endif
 }
 
@@ -774,12 +775,14 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
    struct gl_tex_info tex_info = {
       .tex = gl->texture,
       .input_size = {width, height},
-      .tex_size = {gl->tex_w, gl->tex_h},
-      .coord = gl->tex_coords
+      .tex_size = {gl->tex_w, gl->tex_h}
    };
+   struct gl_tex_info fbo_tex_info[MAX_SHADERS];
+   unsigned fbo_tex_info_cnt = 0;
 
    glClear(GL_COLOR_BUFFER_BIT);
-   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->vp_width, gl->vp_height, gl->frame_count, &tex_info);
+   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->vp_width, gl->vp_height, gl->frame_count, 
+         &tex_info, fbo_tex_info, fbo_tex_info_cnt);
 
    if (width != gl->last_width || height != gl->last_height) // Res change. need to clear out texture.
    {
@@ -802,9 +805,9 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       gl->tex_coords[4] = x;
       gl->tex_coords[6] = x;
       gl->tex_coords[7] = y;
-
-      //SSNES_LOG("Setting last rect: %ux%u\n", width, height);
    }
+
+   memcpy(tex_info.coord, gl->tex_coords, sizeof(gl->tex_coords));
 
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
    glTexSubImage2D(GL_TEXTURE_2D,
@@ -822,12 +825,14 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       // It's kinda handy ... :)
       const struct gl_fbo_rect *prev_rect;
       const struct gl_fbo_rect *rect;
+      struct gl_tex_info *fbo_info;
 
       // Calculate viewports, texture coordinates etc, and render all passes from FBOs, to another FBO.
       for (int i = 1; i < gl->fbo_pass; i++)
       {
          prev_rect = &gl->fbo_rect[i - 1];
          rect = &gl->fbo_rect[i];
+         fbo_info = &fbo_tex_info[i - 1];
 
          GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
          GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
@@ -837,6 +842,13 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
          gl->fbo_tex_coords[5] = yamt;
          gl->fbo_tex_coords[6] = xamt;
 
+         fbo_info->tex = gl->fbo_texture[i - 1];
+         fbo_info->input_size[0] = prev_rect->img_width;
+         fbo_info->input_size[1] = prev_rect->img_height;
+         fbo_info->tex_size[0] = prev_rect->width;
+         fbo_info->tex_size[1] = prev_rect->height;
+         memcpy(fbo_info->coord, gl->fbo_tex_coords, sizeof(gl->fbo_tex_coords));
+
          pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
          gl_shader_use(i + 1);
          glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
@@ -845,8 +857,14 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 
          // Render to FBO with certain size.
          set_viewport(gl, rect->img_width, rect->img_height, true);
-         gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, prev_rect->width, prev_rect->height, gl->vp_width, gl->vp_height, gl->frame_count, &tex_info);
+         gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
+               prev_rect->width, prev_rect->height, 
+               gl->vp_width, gl->vp_height, gl->frame_count, 
+               &tex_info, fbo_tex_info, fbo_tex_info_cnt);
+
          glDrawArrays(GL_QUADS, 0, 4);
+
+         fbo_tex_info_cnt++;
       }
 
       // Render our last FBO texture directly to screen.
@@ -863,11 +881,16 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       pglBindFramebuffer(GL_FRAMEBUFFER, 0);
       gl_shader_use(gl->fbo_pass + 1);
 
+      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
+
       glClear(GL_COLOR_BUFFER_BIT);
       gl->render_to_tex = false;
       set_viewport(gl, gl->win_width, gl->win_height, false);
-      gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, prev_rect->width, prev_rect->height, gl->vp_width, gl->vp_height, gl->frame_count, &tex_info);
-      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
+      gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
+            prev_rect->width, prev_rect->height, 
+            gl->vp_width, gl->vp_height, gl->frame_count, 
+            &tex_info, fbo_tex_info, fbo_tex_info_cnt);
+
 
       glDrawArrays(GL_QUADS, 0, 4);
       glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
