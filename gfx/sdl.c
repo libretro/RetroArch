@@ -92,6 +92,9 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
 static void sdl_render_msg_15(sdl_video_t *vid, SDL_Surface *buffer, const char *msg, unsigned width, unsigned height, const SDL_PixelFormat *fmt)
 {
 #ifdef HAVE_FREETYPE
+   if (!vid->font)
+      return;
+
    struct font_output_list out;
    font_renderer_msg(vid->font, msg, &out);
    struct font_output *head = out.head;
@@ -150,6 +153,9 @@ static void sdl_render_msg_15(sdl_video_t *vid, SDL_Surface *buffer, const char 
 static void sdl_render_msg_32(sdl_video_t *vid, SDL_Surface *buffer, const char *msg, unsigned width, unsigned height, const SDL_PixelFormat *fmt)
 {
 #ifdef HAVE_FREETYPE
+   if (!vid->font)
+      return;
+
    struct font_output_list out;
    font_renderer_msg(vid->font, msg, &out);
    struct font_output *head = out.head;
