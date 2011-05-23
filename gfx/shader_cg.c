@@ -51,6 +51,20 @@ static const char* stock_cg_program =
 
 
 static CGcontext cgCtx;
+
+struct cg_fbo_params
+{
+   CGparameter vid_size_f;
+   CGparameter tex_size_f;
+   CGparameter vid_size_v;
+   CGparameter tex_size_v;
+   CGparameter tex;
+   CGparameter coord;
+};
+
+#define MAX_SHADERS 16
+#define MAX_TEXTURES 8
+
 struct cg_program
 {
    CGprogram vprg;
@@ -64,14 +78,15 @@ struct cg_program
    CGparameter out_size_v;
    CGparameter frame_cnt_v;
    CGparameter mvp;
+
+   struct cg_fbo_params fbo[MAX_SHADERS];
+   struct cg_fbo_params orig;
 };
 
 #define FILTER_UNSPEC 0
 #define FILTER_LINEAR 1
 #define FILTER_NEAREST 2
 
-#define MAX_SHADERS 16
-#define MAX_TEXTURES 8
 static struct cg_program prg[MAX_SHADERS];
 static bool cg_active = false;
 static CGprofile cgVProf, cgFProf;
@@ -98,12 +113,9 @@ void gl_cg_set_params(unsigned width, unsigned height,
       const struct gl_tex_info *fbo_info,
       unsigned fbo_info_cnt)
 {
-   (void)info;
-   (void)fbo_info;
-   (void)fbo_info_cnt;
-
    if (cg_active)
    {
+      // Set frame.
       cgGLSetParameter2f(prg[active_index].vid_size_f, width, height);
       cgGLSetParameter2f(prg[active_index].tex_size_f, tex_width, tex_height);
       cgGLSetParameter2f(prg[active_index].out_size_f, out_width, out_height);
@@ -114,11 +126,50 @@ void gl_cg_set_params(unsigned width, unsigned height,
       cgGLSetParameter2f(prg[active_index].out_size_v, out_width, out_height);
       cgGLSetParameter1f(prg[active_index].frame_cnt_v, (float)frame_count);
 
+      // Set lookup textures.
       for (unsigned i = 0; i < lut_textures_num; i++)
       {
          CGparameter param = cgGetNamedParameter(prg[active_index].fprg, lut_textures_uniform[i]);
          cgGLSetTextureParameter(param, lut_textures[i]);
          cgGLEnableTextureParameter(param);
+      }
+
+      // Set orig texture.
+      if (active_index > 1)
+      {
+         cgGLSetTextureParameter(prg[active_index].orig.tex, info->tex);
+         cgGLEnableTextureParameter(prg[active_index].orig.tex);
+
+         cgGLSetParameter2f(prg[active_index].orig.vid_size_v, info->input_size[0], info->input_size[1]);
+         cgGLSetParameter2f(prg[active_index].orig.vid_size_f, info->input_size[0], info->input_size[1]);
+         cgGLSetParameter2f(prg[active_index].orig.tex_size_v, info->tex_size[0], info->tex_size[1]);
+         cgGLSetParameter2f(prg[active_index].orig.tex_size_f, info->tex_size[0], info->tex_size[1]);
+
+         cgGLSetParameterPointer(prg[active_index].orig.coord, 2, GL_FLOAT, 0, info->coord);
+         cgGLEnableClientState(prg[active_index].orig.coord);
+      }
+
+      // Set FBO textures.
+      if (active_index > 2)
+      {
+         for (unsigned i = 0; i < fbo_info_cnt; i++)
+         {
+            cgGLSetTextureParameter(prg[active_index].fbo[i].tex, fbo_info[i].tex);
+            cgGLEnableTextureParameter(prg[active_index].fbo[i].tex);
+
+            cgGLSetParameter2f(prg[active_index].fbo[i].vid_size_v, 
+                  fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
+            cgGLSetParameter2f(prg[active_index].fbo[i].vid_size_f, 
+                  fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
+
+            cgGLSetParameter2f(prg[active_index].fbo[i].tex_size_v, 
+                  fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
+            cgGLSetParameter2f(prg[active_index].fbo[i].tex_size_f, 
+                  fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
+
+            cgGLSetParameterPointer(prg[active_index].fbo[i].coord, 2, GL_FLOAT, 0, fbo_info[i].coord);
+            cgGLEnableClientState(prg[active_index].fbo[i].coord);
+         }
       }
    }
 }
@@ -214,7 +265,6 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
       strlcpy(lut_textures_uniform[lut_textures_num], id, sizeof(lut_textures_uniform[lut_textures_num]));
 
       glGenTextures(1, &lut_textures[lut_textures_num]);
-      pglActiveTexture(GL_TEXTURE0 + lut_textures_num + 1);
       glBindTexture(GL_TEXTURE_2D, lut_textures[lut_textures_num]);
 
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -235,7 +285,6 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
       id = strtok(NULL, ";");;
    }
 
-   pglActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, 0);
    free(textures);
    return true;
@@ -514,6 +563,32 @@ bool gl_cg_init(const char *path)
       prg[i].frame_cnt_v = cgGetNamedParameter(prg[i].vprg, "IN.frame_count");
       prg[i].mvp = cgGetNamedParameter(prg[i].vprg, "modelViewProj");
       cgGLSetStateMatrixParameter(prg[i].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
+
+      prg[i].orig.tex = cgGetNamedParameter(prg[i].fprg, "ORIG.texture");
+      prg[i].orig.vid_size_v = cgGetNamedParameter(prg[i].vprg, "ORIG.video_size");
+      prg[i].orig.vid_size_f = cgGetNamedParameter(prg[i].fprg, "ORIG.video_size");
+      prg[i].orig.tex_size_v = cgGetNamedParameter(prg[i].vprg, "ORIG.texture_size");
+      prg[i].orig.tex_size_f = cgGetNamedParameter(prg[i].fprg, "ORIG.texture_size");
+      prg[i].orig.coord = cgGetNamedParameter(prg[i].vprg, "ORIG.tex_coord");
+
+      for (unsigned j = 0; j < i - 1; j++)
+      {
+         char attr_buf[64];
+
+         snprintf(attr_buf, sizeof(attr_buf), "PASS%u.texture", j + 1);
+         prg[i].fbo[j].tex = cgGetNamedParameter(prg[i].fprg, attr_buf);
+
+         snprintf(attr_buf, sizeof(attr_buf), "PASS%u.video_size", j + 1);
+         prg[i].fbo[j].vid_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf);
+         prg[i].fbo[j].vid_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf);
+
+         snprintf(attr_buf, sizeof(attr_buf), "PASS%u.texture_size", j + 1);
+         prg[i].fbo[j].tex_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf);
+         prg[i].fbo[j].tex_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf);
+
+         snprintf(attr_buf, sizeof(attr_buf), "PASS%u.tex_coord", j + 1);
+         prg[i].fbo[j].coord = cgGetNamedParameter(prg[i].vprg, attr_buf);
+      }
    }
 
    cgGLBindProgram(prg[1].fprg);
