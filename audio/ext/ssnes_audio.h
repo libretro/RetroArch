@@ -38,7 +38,7 @@ extern "C" {
 #define SSNES_ERROR 0
 #endif
 
-#define SSNES_AUDIO_API_VERSION 1
+#define SSNES_AUDIO_API_VERSION 2
 
 typedef struct ssnes_audio_driver_info
 {
@@ -102,6 +102,13 @@ typedef struct ssnes_audio_driver
    // resampler unit uses floating point. The sample range is
    // [-1.0, 1.0].
    int (*use_float)(void *data);
+
+   // The driver might be forced to use a certain output frequency
+   // (i.e. Jack), and thus to avoid double resampling, the driver
+   // can request SSNES to resample to a different sample rate.
+   // This function can be set to NULL if the driver does not
+   // desire to override the sample rate.
+   unsigned (*sample_rate)(void *data);
 
    // Human readable identification string for the driver.
    const char *ident;

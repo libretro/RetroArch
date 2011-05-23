@@ -100,6 +100,9 @@ static void* audio_ext_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
+   if (ext->driver->sample_rate)
+      g_settings.audio.out_rate = ext->driver->sample_rate(ext->handle);
+
    return ext;
 
 error:
