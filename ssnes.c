@@ -59,13 +59,26 @@ struct global g_extern = {
 };
 
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
-static void set_fast_forward_button(bool new_button_state)
+static void set_fast_forward_button(bool new_button_state, bool new_hold_button_state)
 {
+   bool update_sync = false;
    static bool old_button_state = false;
+   static bool old_hold_button_state = false;
    static bool syncing_state = false;
+
    if (new_button_state && !old_button_state)
    {
       syncing_state = !syncing_state;
+      update_sync = true;
+   }
+   else if (old_hold_button_state != new_hold_button_state)
+   {
+      syncing_state = new_hold_button_state;
+      update_sync = true;
+   }
+
+   if (update_sync)
+   {
       if (g_extern.video_active)
          driver.video->set_nonblock_state(driver.video_data, syncing_state);
       if (g_extern.audio_active)
@@ -76,7 +89,9 @@ static void set_fast_forward_button(bool new_button_state)
       else
          g_extern.audio_data.chunk_size = g_extern.audio_data.block_chunk_size;
    }
+
    old_button_state = new_button_state;
+   old_hold_button_state = new_hold_button_state;
 }
 
 static void take_screenshot(const uint16_t *frame, unsigned width, unsigned height)
@@ -1375,7 +1390,9 @@ static void do_state_checks(void)
       if (g_extern.is_paused)
          return;
 
-      set_fast_forward_button(driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY));
+      set_fast_forward_button(
+            driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY),
+            driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_HOLD_KEY));
 
       if (!g_extern.bsv_movie)
       {

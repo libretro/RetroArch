@@ -228,6 +228,7 @@ static const struct snes_keybind snes_keybinds_1[] = {
    { SNES_DEVICE_ID_JOYPAD_START,      SDLK_RETURN, NO_BTN,      AXIS_NONE },
    { SNES_DEVICE_ID_JOYPAD_SELECT,     SDLK_RSHIFT, NO_BTN,      AXIS_NONE },
    { SSNES_FAST_FORWARD_KEY,           SDLK_SPACE,  NO_BTN,      AXIS_NONE },
+   { SSNES_FAST_FORWARD_HOLD_KEY,      SDLK_l,      NO_BTN,      AXIS_NONE },
    { SSNES_SAVE_STATE_KEY,             SDLK_F2,     NO_BTN,      AXIS_NONE },
    { SSNES_LOAD_STATE_KEY,             SDLK_F4,     NO_BTN,      AXIS_NONE },
    { SSNES_FULLSCREEN_TOGGLE_KEY,      SDLK_f,      NO_BTN,      AXIS_NONE },
@@ -252,19 +253,6 @@ static const struct snes_keybind snes_keybinds_1[] = {
 
 // Player 2-5
 static const struct snes_keybind snes_keybinds_rest[] = {
-   // SNES button                 |   keyboard key   | js btn | js axis |
-   { SNES_DEVICE_ID_JOYPAD_A,          SDLK_b,     NO_BTN,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_B,          SDLK_v,     NO_BTN,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_X,          SDLK_g,     NO_BTN,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_Y,          SDLK_f,     NO_BTN,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_L,          SDLK_r,     NO_BTN,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_R,          SDLK_t,     NO_BTN,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_LEFT,       SDLK_j,     NO_BTN,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_RIGHT,      SDLK_l,     NO_BTN,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_UP,         SDLK_i,     NO_BTN,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_DOWN,       SDLK_k,     NO_BTN,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_START,      SDLK_p,     NO_BTN,       AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_SELECT,     SDLK_o,     NO_BTN,       AXIS_NONE },
    { -1 }
 };
 
