@@ -24,6 +24,8 @@
 #include "conf/config_file.h"
 #include "image.h"
 
+//#define SSNES_CG_DEBUG
+
 // Used when we call deactivate() since just unbinding the program didn't seem to work... :(
 static const char* stock_cg_program =
       "void main_vertex"
@@ -296,6 +298,7 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
       strlcpy(lut_textures_uniform[lut_textures_num], id, sizeof(lut_textures_uniform[lut_textures_num]));
 
       glGenTextures(1, &lut_textures[lut_textures_num]);
+
       glBindTexture(GL_TEXTURE_2D, lut_textures[lut_textures_num]);
 
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -557,6 +560,10 @@ bool gl_cg_init(const char *path)
       SSNES_ERR("Failed to create Cg context\n");
       return false;
    }
+
+   ////
+   // cgGLSetManageTextureParameters(cgCtx, CG_TRUE);
+   ///
 
 #ifdef SSNES_CG_DEBUG
    cgGLSetDebugMode(CG_TRUE);
