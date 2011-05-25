@@ -38,7 +38,7 @@ enum snes_ram_type
 
 struct snes_tracker_uniform_info
 {
-   const char *id;
+   char id[64];
    uint32_t addr;
    enum snes_tracker_type type;
    enum snes_ram_type ram_type;
