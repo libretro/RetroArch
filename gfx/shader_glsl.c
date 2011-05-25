@@ -380,6 +380,12 @@ error:
 
 static bool get_import_value(xmlNodePtr ptr)
 {
+   if (gl_tracker_info_cnt >= MAX_VARIABLES)
+   {
+      SSNES_ERR("Too many import variables ...\n");
+      return false;
+   }
+
    xmlChar *id = xmlGetProp(ptr, (const xmlChar*)"id");
    xmlChar *semantic = xmlGetProp(ptr, (const xmlChar*)"semantic");
    xmlChar *wram = xmlGetProp(ptr, (const xmlChar*)"wram");
