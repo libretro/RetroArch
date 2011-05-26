@@ -181,6 +181,7 @@ void parse_config(void)
 #endif
 }
 
+#ifdef HAVE_CONFIGFILE
 static config_file_t *open_default_config_file(void)
 {
    config_file_t *conf = NULL;
@@ -236,6 +237,7 @@ static config_file_t *open_default_config_file(void)
 
    return conf;
 }
+#endif
 
 // Macros to ease config getting.
 #define CONFIG_GET_BOOL(var, key) if (config_get_bool(conf, key, &tmp_bool)) \

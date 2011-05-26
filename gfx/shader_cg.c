@@ -273,6 +273,7 @@ static bool load_plain(const char *path)
    return true;
 }
 
+#ifdef HAVE_CONFIGFILE
 static bool load_textures(const char *dir_path, config_file_t *conf)
 {
    char *textures;
@@ -343,9 +344,11 @@ error:
    glBindTexture(GL_TEXTURE_2D, 0);
    return false;
 }
+#endif
 
 static bool load_preset(const char *path)
 {
+#ifdef HAVE_CONFIGFILE
    // Create passthrough shader.
    prg[0].fprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", 0);
    prg[0].vprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", 0);
@@ -562,6 +565,11 @@ error:
    if (conf)
       config_file_free(conf);
    return false;
+#else
+   (void)path;
+   SSNES_ERR("No config file support compiled in.\n");
+   return false;
+#endif
 }
 
 bool gl_cg_init(const char *path)
