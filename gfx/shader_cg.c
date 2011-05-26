@@ -346,6 +346,8 @@ error:
 }
 #endif
 
+#define print_buf(buf, args...) snprintf(buf, sizeof(buf), ##args)
+
 static bool load_preset(const char *path)
 {
 #ifdef HAVE_CONFIGFILE
@@ -382,19 +384,23 @@ static bool load_preset(const char *path)
    }
 
    cg_shader_num = shaders;
-   if (shaders > MAX_SHADERS - 1)
+   if (shaders > MAX_SHADERS - 2)
    {
-      SSNES_WARN("Too many shaders ... Capping shader amount to %d.\n", MAX_SHADERS - 1);
-      cg_shader_num = shaders = MAX_SHADERS - 1;
+      SSNES_WARN("Too many shaders ... Capping shader amount to %d.\n", MAX_SHADERS - 2);
+      cg_shader_num = shaders = MAX_SHADERS - 2;
    }
-   prg[shaders] = prg[0];
+   // If we aren't using last pass non-FBO shader, 
+   // this shader will be assumed to be "fixed-function".
+   // Just use prg[0] for that pass, which will be
+   // pass-through.
+   prg[shaders + 1] = prg[0]; 
 
    // Check filter params.
    for (unsigned i = 0; i < shaders; i++)
    {
       bool smooth;
       char filter_name_buf[64];
-      snprintf(filter_name_buf, sizeof(filter_name_buf), "filter_linear%u", i);
+      print_buf(filter_name_buf, "filter_linear%u", i);
       if (config_get_bool(conf, filter_name_buf, &smooth))
          fbo_smooth[i + 1] = smooth ? FILTER_LINEAR : FILTER_NEAREST;
    }
@@ -402,107 +408,127 @@ static bool load_preset(const char *path)
    // Bigass for-loop ftw. Check scaling params.
    for (unsigned i = 0; i < shaders; i++)
    {
-      char *scale_type;
+      char *scale_type = NULL;
+      char *scale_type_x = NULL;
+      char *scale_type_y = NULL;
+      bool has_scale_type;
+      bool has_scale_type_x;
+      bool has_scale_type_y;
+
       char scale_name_buf[64];
-      snprintf(scale_name_buf, sizeof(scale_name_buf), "scale_type%u", i);
-      if (config_get_string(conf, scale_name_buf, &scale_type))
+      print_buf(scale_name_buf, "scale_type%u", i);
+      has_scale_type = config_get_string(conf, scale_name_buf, &scale_type);
+      print_buf(scale_name_buf, "scale_type_x%u", i);
+      has_scale_type_x = config_get_string(conf, scale_name_buf, &scale_type_x);
+      print_buf(scale_name_buf, "scale_type_y%u", i);
+      has_scale_type_y = config_get_string(conf, scale_name_buf, &scale_type_y);
+
+      if (!has_scale_type && !has_scale_type_x && !has_scale_type_y)
+         continue;
+
+      if (has_scale_type)
       {
-         char attr_name_buf[64];
-         double fattr;
-         int iattr;
-         struct gl_fbo_scale *scale = &cg_scale[i + 1]; // Shader 0 is passthrough shader. Start at 1.
+         if (scale_type_x)
+            free(scale_type_x);
+         if (scale_type_y)
+            free(scale_type_y);
 
-         scale->valid = true;
-         scale->type_x = SSNES_SCALE_INPUT;
-         scale->type_y = SSNES_SCALE_INPUT;
-         scale->scale_x = SSNES_SCALE_INPUT;
-         scale->scale_y = SSNES_SCALE_INPUT;
-
-         // Check source scale.
-         if (strcmp(scale_type, "source") == 0)
-         {
-            snprintf(attr_name_buf, sizeof(attr_name_buf), "scale%u", i);
-            if (config_get_double(conf, attr_name_buf, &fattr))
-            {
-               scale->scale_x = fattr;
-               scale->scale_y = fattr;
-            }
-            else
-            {
-               snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_x%u", i);
-               if (config_get_double(conf, attr_name_buf, &fattr))
-                  scale->scale_x = fattr;
-
-               snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_y%u", i);
-               if (config_get_double(conf, attr_name_buf, &fattr))
-                  scale->scale_y = fattr;
-            }
-         }
-         // Viewport scale.
-         else if (strcmp(scale_type, "viewport") == 0)
-         {
-            snprintf(attr_name_buf, sizeof(attr_name_buf), "scale%u", i);
-            if (config_get_double(conf, attr_name_buf, &fattr))
-            {
-               scale->scale_x = fattr;
-               scale->scale_y = fattr;
-               scale->type_x = SSNES_SCALE_VIEWPORT;
-               scale->type_y = SSNES_SCALE_VIEWPORT;
-            }
-            else
-            {
-               snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_x%u", i);
-               if (config_get_double(conf, attr_name_buf, &fattr))
-               {
-                  scale->scale_x = fattr;
-                  scale->type_x = SSNES_SCALE_VIEWPORT;
-               }
-
-               snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_y%u", i);
-               if (config_get_double(conf, attr_name_buf, &fattr))
-               {
-                  scale->scale_y = fattr;
-                  scale->type_y = SSNES_SCALE_VIEWPORT;
-               }
-            }
-         }
-         // Absolute pixel scale.
-         else if (strcmp(scale_type, "absolute") == 0)
-         {
-            snprintf(attr_name_buf, sizeof(attr_name_buf), "scale%u", i);
-            if (config_get_int(conf, attr_name_buf, &iattr))
-            {
-               scale->abs_x = iattr;
-               scale->abs_y = iattr;
-               scale->type_x = SSNES_SCALE_ABSOLUTE;
-               scale->type_y = SSNES_SCALE_ABSOLUTE;
-            }
-            else
-            {
-               snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_x%u", i);
-               if (config_get_int(conf, attr_name_buf, &iattr))
-               {
-                  scale->abs_x = iattr;
-                  scale->type_x = SSNES_SCALE_ABSOLUTE;
-               }
-
-               snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_y%u", i);
-               if (config_get_int(conf, attr_name_buf, &iattr))
-               {
-                  scale->abs_y = iattr;
-                  scale->type_y = SSNES_SCALE_ABSOLUTE;
-               }
-            }
-         }
-         else
-         {
-            SSNES_ERR("Invalid attribute: \"%s\"\n", scale_type);
-            free(scale_type);
-            goto error;
-         }
-
+         scale_type_x = strdup(scale_type);
+         scale_type_y = strdup(scale_type);
          free(scale_type);
       }
+
+      char attr_name_buf[64];
+      double fattr;
+      int iattr;
+      struct gl_fbo_scale *scale = &cg_scale[i + 1]; // Shader 0 is passthrough shader. Start at 1.
+
+      scale->valid = true;
+      scale->type_x = SSNES_SCALE_INPUT;
+      scale->type_y = SSNES_SCALE_INPUT;
+      scale->scale_x = 1.0;
+      scale->scale_y = 1.0;
+      scale->abs_x = 256;
+      scale->abs_y = 224;
+
+      if (strcmp(scale_type_x, "source") == 0)
+         scale->type_x = SSNES_SCALE_INPUT;
+      else if (strcmp(scale_type_x, "viewport") == 0)
+         scale->type_x = SSNES_SCALE_VIEWPORT;
+      else if (strcmp(scale_type_x, "absolute") == 0)
+         scale->type_x = SSNES_SCALE_ABSOLUTE;
+      else
+      {
+         SSNES_ERR("Invalid attribute.\n");
+         goto error;
+      }
+
+      if (strcmp(scale_type_y, "source") == 0)
+         scale->type_y = SSNES_SCALE_INPUT;
+      else if (strcmp(scale_type_y, "viewport") == 0)
+         scale->type_y = SSNES_SCALE_VIEWPORT;
+      else if (strcmp(scale_type_y, "absolute") == 0)
+         scale->type_y = SSNES_SCALE_ABSOLUTE;
+      else
+      {
+         SSNES_ERR("Invalid attribute.\n");
+         goto error;
+      }
+
+      if (scale->type_x == SSNES_SCALE_ABSOLUTE)
+      {
+         print_buf(attr_name_buf, "scale%u", i);
+         if (config_get_int(conf, attr_name_buf, &iattr))
+            scale->abs_x = iattr;
+         else
+         {
+            print_buf(attr_name_buf, "scale_x%u", i);
+            if (config_get_int(conf, attr_name_buf, &iattr))
+               scale->abs_x = iattr;
+         }
+      }
+      else
+      {
+         print_buf(attr_name_buf, "scale%u", i);
+         if (config_get_double(conf, attr_name_buf, &fattr))
+            scale->scale_x = fattr;
+         else
+         {
+            print_buf(attr_name_buf, "scale_x%u", i);
+            if (config_get_double(conf, attr_name_buf, &fattr))
+               scale->scale_x = fattr;
+         }
+      }
+
+      if (scale->type_y == SSNES_SCALE_ABSOLUTE)
+      {
+         print_buf(attr_name_buf, "scale%u", i);
+         if (config_get_int(conf, attr_name_buf, &iattr))
+            scale->abs_y = iattr;
+         else
+         {
+            print_buf(attr_name_buf, "scale_y%u", i);
+            if (config_get_int(conf, attr_name_buf, &iattr))
+               scale->abs_y = iattr;
+         }
+      }
+      else
+      {
+         print_buf(attr_name_buf, "scale%u", i);
+         if (config_get_double(conf, attr_name_buf, &fattr))
+            scale->scale_y = fattr;
+         else
+         {
+            print_buf(attr_name_buf, "scale_y%u", i);
+            if (config_get_double(conf, attr_name_buf, &fattr))
+               scale->scale_y = fattr;
+         }
+      }
+
+      if (scale_type_x)
+         free(scale_type_x);
+      if (scale_type_y)
+         free(scale_type_y);
    }
 
    // Basedir.
@@ -522,7 +548,7 @@ static bool load_preset(const char *path)
       char attr_buf[64];
       char path_buf[512];
 
-      snprintf(attr_buf, sizeof(attr_buf), "shader%u", i);
+      print_buf(attr_buf, "shader%u", i);
       if (config_get_string(conf, attr_buf, &shader_path))
       {
          strlcpy(path_buf, dir_path, sizeof(path_buf));
