@@ -896,7 +896,6 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
             gl->vp_width, gl->vp_height, gl->frame_count, 
             &tex_info, fbo_tex_info, fbo_tex_info_cnt);
 
-
       glDrawArrays(GL_QUADS, 0, 4);
       glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
    }
@@ -1034,6 +1033,8 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->keep_aspect = video->force_aspect;
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
+   gl_shader_use(0);
+   set_viewport(gl, gl->win_width, gl->win_height, false);
    gl_shader_use(1);
    set_viewport(gl, gl->win_width, gl->win_height, false);
 
@@ -1164,6 +1165,8 @@ static bool gl_xml_shader(void *data, const char *path)
    gl_init_fbo(gl, gl->tex_w, gl->tex_h);
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
+   gl_shader_use(0);
+   set_viewport(gl, gl->win_width, gl->win_height, false);
    gl_shader_use(1);
    set_viewport(gl, gl->win_width, gl->win_height, false);
 
