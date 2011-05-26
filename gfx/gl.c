@@ -771,18 +771,6 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 #endif
    }
 
-   struct gl_tex_info tex_info = {
-      .tex = gl->texture,
-      .input_size = {width, height},
-      .tex_size = {gl->tex_w, gl->tex_h}
-   };
-   struct gl_tex_info fbo_tex_info[MAX_SHADERS];
-   unsigned fbo_tex_info_cnt = 0;
-
-   glClear(GL_COLOR_BUFFER_BIT);
-   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->vp_width, gl->vp_height, gl->frame_count, 
-         &tex_info, fbo_tex_info, fbo_tex_info_cnt);
-
    if (width != gl->last_width || height != gl->last_height) // Res change. need to clear out texture.
    {
       gl->last_width = width;
@@ -806,12 +794,30 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       gl->tex_coords[7] = y;
    }
 
-   memcpy(tex_info.coord, gl->tex_coords, sizeof(gl->tex_coords));
-
+   // Work around a certain issue a Cg where not using TEXUNIT0
+   // in shader causes cgGLEnableTextureParameter() causes it
+   // to bind to TEXUNIT0, to avoid really funny bugs, rebind
+   // our texture.
+#ifdef HAVE_CG
+   glBindTexture(GL_TEXTURE_2D, gl->texture);
+#endif
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
    glTexSubImage2D(GL_TEXTURE_2D,
          0, 0, 0, width, height, gl->texture_type,
          gl->texture_fmt, frame);
+
+   struct gl_tex_info tex_info = {
+      .tex = gl->texture,
+      .input_size = {width, height},
+      .tex_size = {gl->tex_w, gl->tex_h}
+   };
+   struct gl_tex_info fbo_tex_info[MAX_SHADERS];
+   unsigned fbo_tex_info_cnt = 0;
+   memcpy(tex_info.coord, gl->tex_coords, sizeof(gl->tex_coords));
+
+   glClear(GL_COLOR_BUFFER_BIT);
+   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->vp_width, gl->vp_height, gl->frame_count, 
+         &tex_info, fbo_tex_info, fbo_tex_info_cnt);
 
    glDrawArrays(GL_QUADS, 0, 4);
 
