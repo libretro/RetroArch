@@ -573,8 +573,6 @@ bool gl_cg_init(const char *path)
       return false;
    }
 
-   //cgGLSetManageTextureParameters(cgCtx, CG_TRUE);
-
 #ifdef SSNES_CG_DEBUG
    cgGLSetDebugMode(CG_TRUE);
    cgSetErrorHandler(cg_error_handler, NULL);
