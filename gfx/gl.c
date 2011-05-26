@@ -116,7 +116,6 @@ static inline bool load_gl_proc(void)
 static inline bool load_gl_proc(void) { return true; }
 #endif
 
-
 #define MAX_SHADERS 16
 
 typedef struct gl

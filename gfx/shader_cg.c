@@ -57,6 +57,20 @@ static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
    (void)ctx;
    (void)data;
 
+   switch (error)
+   {
+      case CG_INVALID_PARAM_HANDLE_ERROR:
+         SSNES_ERR("Invalid param handle.\n");
+         break;
+
+      case CG_INVALID_PARAMETER_ERROR:
+         SSNES_ERR("Invalid parameter.\n");
+         break;
+
+      default:
+         break;
+   }
+
    SSNES_ERR("CG error!: \"%s\".\n", cgGetErrorString(error));
 }
 #endif
@@ -113,9 +127,7 @@ static char lut_textures_uniform[MAX_TEXTURES][64];
 void gl_cg_set_proj_matrix(void)
 {
    if (cg_active && prg[active_index].mvp)
-   {
       cgGLSetStateMatrixParameter(prg[active_index].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
-   }
 }
 
 #define set_param_2f(param, x, y) \
@@ -131,7 +143,7 @@ void gl_cg_set_params(unsigned width, unsigned height,
       const struct gl_tex_info *fbo_info,
       unsigned fbo_info_cnt)
 {
-   if (cg_active)
+   if (cg_active && active_index > 0)
    {
       // Set frame.
       set_param_2f(prg[active_index].vid_size_f, width, height);
@@ -144,6 +156,26 @@ void gl_cg_set_params(unsigned width, unsigned height,
       set_param_2f(prg[active_index].out_size_v, out_width, out_height);
       set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count);
 
+      // Set orig texture.
+      CGparameter param = prg[active_index].orig.tex;
+      if (param)
+      {
+         cgGLSetTextureParameter(param, info->tex);
+         //fprintf(stderr, "ORIGtex = (%d) %d\n", cgGLGetTextureParameter(param), cgGLGetTextureEnum(param) - GL_TEXTURE0);
+         cgGLEnableTextureParameter(param);
+      }
+
+      set_param_2f(prg[active_index].orig.vid_size_v, info->input_size[0], info->input_size[1]);
+      set_param_2f(prg[active_index].orig.vid_size_f, info->input_size[0], info->input_size[1]);
+      set_param_2f(prg[active_index].orig.tex_size_v, info->tex_size[0], info->tex_size[1]);
+      set_param_2f(prg[active_index].orig.tex_size_f, info->tex_size[0], info->tex_size[1]);
+
+      if (prg[active_index].orig.coord)
+      {
+         cgGLSetParameterPointer(prg[active_index].orig.coord, 2, GL_FLOAT, 0, info->coord);
+         cgGLEnableClientState(prg[active_index].orig.coord);
+      }
+
       // Set lookup textures.
       for (unsigned i = 0; i < lut_textures_num; i++)
       {
@@ -152,30 +184,10 @@ void gl_cg_set_params(unsigned width, unsigned height,
          {
             cgGLSetTextureParameter(param, lut_textures[i]);
             cgGLEnableTextureParameter(param);
+            //fprintf(stderr, "LUTtex = (%d) %d\n", cgGLGetTextureParameter(param), cgGLGetTextureEnum(param) - GL_TEXTURE0);
          }
       }
-
-      // Set orig texture.
-      if (active_index > 1)
-      {
-         if (prg[active_index].orig.tex)
-         {
-            cgGLSetTextureParameter(prg[active_index].orig.tex, info->tex);
-            cgGLEnableTextureParameter(prg[active_index].orig.tex);
-         }
-
-         set_param_2f(prg[active_index].orig.vid_size_v, info->input_size[0], info->input_size[1]);
-         set_param_2f(prg[active_index].orig.vid_size_f, info->input_size[0], info->input_size[1]);
-         set_param_2f(prg[active_index].orig.tex_size_v, info->tex_size[0], info->tex_size[1]);
-         set_param_2f(prg[active_index].orig.tex_size_f, info->tex_size[0], info->tex_size[1]);
-
-         if (prg[active_index].orig.coord)
-         {
-            cgGLSetParameterPointer(prg[active_index].orig.coord, 2, GL_FLOAT, 0, info->coord);
-            cgGLEnableClientState(prg[active_index].orig.coord);
-         }
-      }
-
+      
       // Set FBO textures.
       if (active_index > 2)
       {
@@ -561,9 +573,7 @@ bool gl_cg_init(const char *path)
       return false;
    }
 
-   ////
-   // cgGLSetManageTextureParameters(cgCtx, CG_TRUE);
-   ///
+   //cgGLSetManageTextureParameters(cgCtx, CG_TRUE);
 
 #ifdef SSNES_CG_DEBUG
    cgGLSetDebugMode(CG_TRUE);
