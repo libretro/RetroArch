@@ -104,18 +104,6 @@ static void update_element(
          uniform->value = info->ptr[info->addr];
          break;
 
-      case SSNES_STATE_TRANSITION:
-         if (info->old_value != info->ptr[info->addr])
-         {
-            info->old_value = info->ptr[info->addr];
-            info->frame_count = frame_count;
-            uniform->value = info->frame_count;
-         }
-         else
-            uniform->value = info->frame_count;
-
-         break;
-
       case SSNES_STATE_CAPTURE_PREV:
          if (info->prev[0] != info->ptr[info->addr])
          {
@@ -125,6 +113,28 @@ static void update_element(
          uniform->value = info->prev[1];
          break;
 
+      case SSNES_STATE_TRANSITION:
+         if (info->old_value != info->ptr[info->addr])
+         {
+            info->old_value = info->ptr[info->addr];
+            info->frame_count = frame_count;
+         }
+         uniform->value = info->frame_count;
+
+         break;
+
+      case SSNES_STATE_TRANSITION_PREV:
+         if (info->prev[0] != info->ptr[info->addr])
+         {
+            info->old_value = info->ptr[info->addr];
+            info->prev[1] = info->prev[0];
+            info->prev[0] = frame_count;
+            info->frame_count = frame_count;
+         }
+         uniform->value = info->prev[1];
+
+         break;
+      
       default:
          break;
    }

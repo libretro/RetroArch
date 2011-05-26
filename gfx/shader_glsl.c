@@ -448,6 +448,8 @@ static bool get_import_value(xmlNodePtr ptr)
       tracker_type = SSNES_STATE_CAPTURE_PREV;
    else if (strcmp((const char*)semantic, "transition") == 0)
       tracker_type = SSNES_STATE_TRANSITION;
+   else if (strcmp((const char*)semantic, "transition_previous") == 0)
+      tracker_type = SSNES_STATE_TRANSITION_PREV;
    else
    {
       SSNES_ERR("Invalid semantic for import value.\n");
