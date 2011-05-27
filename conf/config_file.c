@@ -223,6 +223,22 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
    return false;
 }
 
+bool config_get_hex(config_file_t *conf, const char *key, unsigned *in)
+{
+   struct entry_list *list = conf->entries;
+
+   while (list != NULL)
+   {
+      if (strcmp(key, list->key) == 0)
+      {
+         *in = strtol(list->value, NULL, 16);
+         return true;
+      }
+      list = list->next;
+   }
+   return false;
+}
+
 bool config_get_char(config_file_t *conf, const char *key, char *in)
 {
    struct entry_list *list = conf->entries;

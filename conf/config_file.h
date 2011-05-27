@@ -42,6 +42,8 @@ void config_file_free(config_file_t *conf);
 bool config_get_double(config_file_t *conf, const char *entry, double *in);
 // Extracts an int from config file.
 bool config_get_int(config_file_t *conf, const char *entry, int *in);
+// Extracts an int from config file. (Hexadecimal)
+bool config_get_hex(config_file_t *conf, const char *entry, unsigned *in);
 // Extracts a single char. If value consists of several chars, this is an error.
 bool config_get_char(config_file_t *conf, const char *entry, char *in);
 // Extracts an allocated string in *in. This must be free()-d if this function succeeds.

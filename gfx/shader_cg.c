@@ -23,6 +23,11 @@
 #include "strl.h"
 #include "conf/config_file.h"
 #include "image.h"
+#include "dynamic.h"
+
+#ifdef HAVE_CONFIGFILE
+#include "snes_state.h"
+#endif
 
 //#define SSNES_CG_DEBUG
 
@@ -89,6 +94,7 @@ struct cg_fbo_params
 
 #define MAX_SHADERS 16
 #define MAX_TEXTURES 8
+#define MAX_VARIABLES 64
 
 struct cg_program
 {
@@ -123,6 +129,8 @@ static unsigned fbo_smooth[MAX_SHADERS];
 static unsigned lut_textures[MAX_TEXTURES];
 static unsigned lut_textures_num = 0;
 static char lut_textures_uniform[MAX_TEXTURES][64];
+
+static snes_tracker_t *snes_tracker = NULL;
 
 void gl_cg_set_proj_matrix(void)
 {
@@ -216,6 +224,20 @@ void gl_cg_set_params(unsigned width, unsigned height,
             }
          }
       }
+
+      // Set state parameters
+      if (snes_tracker)
+      {
+         struct snes_tracker_uniform info[MAX_VARIABLES];
+         unsigned cnt = snes_get_uniform(snes_tracker, info, MAX_VARIABLES, frame_count);
+         for (unsigned i = 0; i < cnt; i++)
+         {
+            CGparameter param_v = cgGetNamedParameter(prg[active_index].vprg, info[i].id);
+            CGparameter param_f = cgGetNamedParameter(prg[active_index].fprg, info[i].id);
+            set_param_1f(param_v, info[i].value);
+            set_param_1f(param_f, info[i].value);
+         }
+      }
    }
 }
 
@@ -231,6 +253,12 @@ void gl_cg_deinit(void)
 
    glDeleteTextures(lut_textures_num, lut_textures);
    lut_textures_num = 0;
+
+   if (snes_tracker)
+   {
+      snes_tracker_free(snes_tracker);
+      snes_tracker = NULL;
+   }
 }
 
 static bool load_plain(const char *path)
@@ -273,6 +301,8 @@ static bool load_plain(const char *path)
    return true;
 }
 
+#define print_buf(buf, args...) snprintf(buf, sizeof(buf), ##args)
+
 #ifdef HAVE_CONFIGFILE
 static bool load_textures(const char *dir_path, config_file_t *conf)
 {
@@ -291,13 +321,13 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
       }
 
       char id_filter[64];
-      snprintf(id_filter, sizeof(id_filter), "%s_linear", id);
+      print_buf(id_filter, "%s_linear", id);
       bool smooth;
       if (!config_get_bool(conf, id_filter, &smooth))
          smooth = true;
 
       char image_path[512];
-      snprintf(image_path, sizeof(image_path), "%s%s", dir_path, path);
+      print_buf(image_path, "%s%s", dir_path, path);
 
       SSNES_LOG("Loading image from: \"%s\".\n", image_path);
       struct texture_image img;
@@ -344,9 +374,149 @@ error:
    glBindTexture(GL_TEXTURE_2D, 0);
    return false;
 }
+
+static bool load_imports(config_file_t *conf)
+{
+   char *imports = NULL;
+
+   if (!config_get_string(conf, "imports", &imports))
+      return true;
+
+   struct snes_tracker_uniform_info info[MAX_VARIABLES];
+   unsigned info_cnt = 0;
+
+   char *id = strtok(imports, ";");
+   while (id && info_cnt < MAX_VARIABLES)
+   {
+      char semantic_buf[64];
+      char wram_buf[64];
+      char apuram_buf[64];
+      char oam_buf[64];
+      char cgram_buf[64];
+      char vram_buf[64];
+
+      print_buf(semantic_buf, "%s_semantic", id);
+      print_buf(wram_buf, "%s_wram", id);
+      print_buf(apuram_buf, "%s_apuram", id);
+      print_buf(oam_buf, "%s_oam", id);
+      print_buf(cgram_buf, "%s_cgram", id);
+      print_buf(vram_buf, "%s_vram", id);
+
+      char *semantic = NULL;
+
+      config_get_string(conf, semantic_buf, &semantic);
+   
+      if (!semantic)
+      {
+         SSNES_ERR("No semantic for import variable.\n");
+         goto error;
+      }
+
+      enum snes_tracker_type tracker_type;
+      enum snes_ram_type ram_type;
+
+      if (strcmp(semantic, "capture") == 0)
+         tracker_type = SSNES_STATE_CAPTURE;
+      else if (strcmp(semantic, "transition") == 0)
+         tracker_type = SSNES_STATE_TRANSITION;
+      else if (strcmp(semantic, "capture_previous") == 0)
+         tracker_type = SSNES_STATE_CAPTURE_PREV;
+      else if (strcmp(semantic, "transition_previous") == 0)
+         tracker_type = SSNES_STATE_TRANSITION_PREV;
+      else
+      {
+         SSNES_ERR("Invalid semantic.\n");
+         goto error;
+      }
+
+      unsigned addr;
+      if (config_get_hex(conf, wram_buf, &addr))
+         ram_type = SSNES_STATE_WRAM;
+      else if (config_get_hex(conf, apuram_buf, &addr))
+         ram_type = SSNES_STATE_APURAM;
+      else if (config_get_hex(conf, oam_buf, &addr))
+         ram_type = SSNES_STATE_OAM;
+      else if (config_get_hex(conf, cgram_buf, &addr))
+         ram_type = SSNES_STATE_CGRAM;
+      else if (config_get_hex(conf, vram_buf, &addr))
+         ram_type = SSNES_STATE_VRAM;
+      else
+      {
+         SSNES_ERR("No address assigned to semantic.\n");
+         goto error;
+      }
+
+      switch (ram_type)
+      {
+         case SSNES_STATE_WRAM:
+            if (addr >= 128 * 1024)
+            {
+               SSNES_ERR("Address out of range.\n");
+               goto error;
+            }
+            break;
+         case SSNES_STATE_APURAM:
+         case SSNES_STATE_VRAM:
+            if (addr >= 64 * 1024)
+            {
+               SSNES_ERR("Address out of range.\n");
+               goto error;
+            }
+            break;
+         case SSNES_STATE_OAM:
+            if (addr >= 512 + 32)
+            {
+               SSNES_ERR("Address out of range.\n");
+               goto error;
+            }
+            break;
+         case SSNES_STATE_CGRAM:
+            if (addr >= 512)
+            {
+               SSNES_ERR("Address out of range.\n");
+               goto error;
+            }
+         default:
+            break;
+      }
+
+      strlcpy(info[info_cnt].id, id, sizeof(info[info_cnt].id));
+      info[info_cnt].addr = addr;
+      info[info_cnt].type = tracker_type;
+      info[info_cnt].ram_type = ram_type;
+
+      info_cnt++;
+
+      if (semantic)
+         free(semantic);
+
+      id = strtok(NULL, ";");
+   }
+
+   struct snes_tracker_info tracker_info = {
+      .wram = psnes_get_memory_data(SNES_MEMORY_WRAM),
+      .vram = psnes_get_memory_data(SNES_MEMORY_VRAM),
+      .cgram = psnes_get_memory_data(SNES_MEMORY_CGRAM),
+      .oam = psnes_get_memory_data(SNES_MEMORY_OAM),
+      .apuram = psnes_get_memory_data(SNES_MEMORY_APURAM),
+      .info = info,
+      .info_elem = info_cnt
+   };
+
+   snes_tracker = snes_tracker_init(&tracker_info);
+   if (!snes_tracker)
+      SSNES_WARN("Failed to init SNES tracker.\n");
+
+   free(imports);
+
+   return true;
+
+error:
+   free(imports);
+   return false;
+}
 #endif
 
-#define print_buf(buf, args...) snprintf(buf, sizeof(buf), ##args)
 
 static bool load_preset(const char *path)
 {
@@ -581,6 +751,12 @@ static bool load_preset(const char *path)
    if (!load_textures(dir_path, conf))
    {
       SSNES_ERR("Failed to load lookup textures ...\n");
+      goto error;
+   }
+
+   if (!load_imports(conf))
+   {
+      SSNES_ERR("Failed to load imports ...\n");
       goto error;
    }
 
