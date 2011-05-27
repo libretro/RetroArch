@@ -233,7 +233,7 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
       .aspect_ratio = g_settings.video.aspect_ratio,
       .smooth = video->smooth,
       .input_scale = video->input_scale,
-      .color_format = video->rgb32 ? SSNES_COLOR_FORMAT_ARGB8888 : SSNES_COLOR_FORMAT_XRGB1555,
+      .color_format = video->rgb32 ? SSNES_COLOR_FORMAT_RGBA8888 : SSNES_COLOR_FORMAT_XRGB1555,
       .xml_shader = g_settings.video.bsnes_shader_path,
       .cg_shader = g_settings.video.cg_shader_path,
       .ttf_font = *g_settings.video.font_path ? g_settings.video.font_path : NULL,
