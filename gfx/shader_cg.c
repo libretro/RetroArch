@@ -486,9 +486,7 @@ static bool load_imports(config_file_t *conf)
       info[info_cnt].ram_type = ram_type;
 
       info_cnt++;
-
-      if (semantic)
-         free(semantic);
+      free(semantic);
 
       id = strtok(NULL, ";");
    }
