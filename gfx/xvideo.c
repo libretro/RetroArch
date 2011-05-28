@@ -249,7 +249,7 @@ static void render32_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned
       for (unsigned x = 0; x < width; x++)
       {
          uint32_t p = *input++;
-         p = ((p >> 17) & 0x7c00) | ((p >> 14) & 0x03e0) | ((p >> 11) & 0x1f); // RGBA -> RGB15
+         p = ((p >> 9) & 0x7c00) | ((p >> 6) & 0x03e0) | ((p >> 3) & 0x1f); // ARGB -> RGB15
 
          uint8_t y0 = xv->ytable[p];
          uint8_t u = xv->utable[p];
@@ -278,7 +278,7 @@ static void render32_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned
       for (unsigned x = 0; x < width; x++)
       {
          uint32_t p = *input++;
-         p = ((p >> 17) & 0x7c00) | ((p >> 14) & 0x03e0) | ((p >> 11) & 0x1f); // RGBA -> RGB15
+         p = ((p >> 9) & 0x7c00) | ((p >> 6) & 0x03e0) | ((p >> 3) & 0x1f); // ARGB -> RGB15
 
          uint8_t y0 = xv->ytable[p];
          uint8_t u = xv->utable[p];
