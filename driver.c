@@ -338,7 +338,7 @@ static void init_filter(void)
    g_extern.filter.colormap = malloc(32768 * sizeof(uint32_t));
    assert(g_extern.filter.colormap);
 
-   // Set up conversion map from 16-bit XBGR1555 to 32-bit RGBA.
+   // Set up conversion map from 16-bit XRGB1555 to 32-bit ARGB.
    for (int i = 0; i < 32768; i++)
    {
       unsigned r = (i >> 10) & 31;
@@ -348,7 +348,7 @@ static void init_filter(void)
       r = (r << 3) | (r >> 2);
       g = (g << 3) | (g >> 2);
       b = (b << 3) | (b >> 2);
-      g_extern.filter.colormap[i] = (r << 24) | (g << 16) | (b << 8);
+      g_extern.filter.colormap[i] = (r << 16) | (g << 8) | (b << 0);
    }
 }
 #endif

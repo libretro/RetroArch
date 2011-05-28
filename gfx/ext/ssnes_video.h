@@ -44,7 +44,7 @@ extern "C" {
 #endif
 
 #define SSNES_COLOR_FORMAT_XRGB1555 0
-#define SSNES_COLOR_FORMAT_RGBA8888 1
+#define SSNES_COLOR_FORMAT_ARGB8888 1
 
 typedef struct ssnes_video_info
 { 
@@ -90,7 +90,7 @@ typedef struct ssnes_video_info
    // Defines the coloring format used of the input frame.
    // XRGB1555 format is 16-bit and has byte ordering: 0RRRRRGGGGGBBBBB,
    // in native endian.
-   // RGBA8888 is RRRRRRRRGGGGGGGGBBBBBBBBAAAAAAAA, native endian.
+   // ARGB8888 is AAAAAAAARRRRRRRRGGGGGGGGBBBBBBBB, native endian.
    // Alpha channel should be disregarded.
    int color_format;
 

@@ -155,7 +155,7 @@ typedef struct gl
    GLfloat fbo_tex_coords[8];
 #endif
 
-   GLenum texture_type; // XBGR1555 or RGBA
+   GLenum texture_type; // XBGR1555 or ARGB
    GLenum texture_fmt;
    unsigned base_size; // 2 or 4
 
@@ -1044,8 +1044,8 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    else
       gl->tex_filter = video->smooth ? GL_LINEAR : GL_NEAREST;
 
-   gl->texture_type = video->rgb32 ? GL_RGBA : GL_BGRA;
-   gl->texture_fmt = video->rgb32 ? GL_UNSIGNED_INT_8_8_8_8 : GL_UNSIGNED_SHORT_1_5_5_5_REV;
+   gl->texture_type = GL_BGRA;
+   gl->texture_fmt = video->rgb32 ? GL_UNSIGNED_INT_8_8_8_8_REV : GL_UNSIGNED_SHORT_1_5_5_5_REV;
    gl->base_size = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    glEnable(GL_TEXTURE_2D);
