@@ -1024,7 +1024,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
-   SSNES_LOG("GL: Loaded %u programs(s).\n", gl_shader_num());
+   SSNES_LOG("GL: Loaded %u program(s).\n", gl_shader_num());
 
    // Set up render to texture.
    gl_init_fbo(gl, 256 * video->input_scale, 256 * video->input_scale);
