@@ -293,7 +293,7 @@ static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
       vid->convert_15_func = convert_15bit_15bit_shift;
    }
 
-   if (fmt->Rshift == 24 && fmt->Gshift == 16 && fmt->Bshift == 8) 
+   if (fmt->Rshift == 16 && fmt->Gshift == 8 && fmt->Bshift == 0) 
    {
       SSNES_LOG("SDL: 32-bit format matches. Fast blit.\n");
       vid->convert_32_func = convert_32bit_32bit_direct;
@@ -313,9 +313,9 @@ error:
 
 static inline uint16_t conv_pixel_32_15(uint32_t pix, const SDL_PixelFormat *fmt)
 {
-   uint16_t r = ((pix & 0xf8000000) >> 27) << fmt->Rshift;
-   uint16_t g = ((pix & 0x00f80000) >> 19) << fmt->Gshift;
-   uint16_t b = ((pix & 0x0000f800) >> 11) << fmt->Bshift;
+   uint16_t r = ((pix & 0x00f80000) >> 19) << fmt->Rshift;
+   uint16_t g = ((pix & 0x0000f800) >> 11) << fmt->Gshift;
+   uint16_t b = ((pix & 0x000000f8) >>  3) << fmt->Bshift;
    return r | g | b;
 }
 
@@ -399,9 +399,9 @@ static void convert_32bit_32bit_shift(uint32_t *out, unsigned outpitch, const ui
       for (unsigned x = 0; x < width; x++)
       {
          uint32_t color = src[x];
-         uint32_t r = ((color >> 24) & 0xff) << fmt->Rshift;
-         uint32_t g = ((color >> 16) & 0xff) << fmt->Gshift;
-         uint32_t b = ((color >>  8) & 0xff) << fmt->Bshift;
+         uint32_t r = ((color >> 16) & 0xff) << fmt->Rshift;
+         uint32_t g = ((color >>  8) & 0xff) << fmt->Gshift;
+         uint32_t b = ((color >>  0) & 0xff) << fmt->Bshift;
          dest[x] = r | g | b;
       }
    }
