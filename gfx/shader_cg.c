@@ -385,7 +385,7 @@ static bool load_imports(config_file_t *conf)
    struct snes_tracker_uniform_info info[MAX_VARIABLES];
    unsigned info_cnt = 0;
 
-   char *id = strtok(imports, ";");
+   const char *id = strtok(imports, ";");
    while (id && info_cnt < MAX_VARIABLES)
    {
       char semantic_buf[64];
@@ -446,38 +446,32 @@ static bool load_imports(config_file_t *conf)
          goto error;
       }
 
+      int memtype = 0;
       switch (ram_type)
       {
          case SSNES_STATE_WRAM:
-            if (addr >= 128 * 1024)
-            {
-               SSNES_ERR("Address out of range.\n");
-               goto error;
-            }
+            memtype = SNES_MEMORY_WRAM;
             break;
          case SSNES_STATE_APURAM:
+            memtype = SNES_MEMORY_APURAM;
+            break;
          case SSNES_STATE_VRAM:
-            if (addr >= 64 * 1024)
-            {
-               SSNES_ERR("Address out of range.\n");
-               goto error;
-            }
+            memtype = SNES_MEMORY_VRAM;
             break;
          case SSNES_STATE_OAM:
-            if (addr >= 512 + 32)
-            {
-               SSNES_ERR("Address out of range.\n");
-               goto error;
-            }
+            memtype = SNES_MEMORY_OAM;
             break;
          case SSNES_STATE_CGRAM:
-            if (addr >= 512)
-            {
-               SSNES_ERR("Address out of range.\n");
-               goto error;
-            }
+            memtype = SNES_MEMORY_CGRAM;
+            break;
          default:
             break;
+      }
+
+      if (addr >= psnes_get_memory_size(memtype))
+      {
+         SSNES_ERR("Address out of bounds.\n");
+         goto error;
       }
 
       strlcpy(info[info_cnt].id, id, sizeof(info[info_cnt].id));

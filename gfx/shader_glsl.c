@@ -415,31 +415,32 @@ static bool get_import_value(xmlNodePtr ptr)
       goto error;
    }
 
+   int memtype = 0;
    switch (ram_type)
    {
       case SSNES_STATE_WRAM:
-         if (addr >= psnes_get_memory_size(SNES_MEMORY_WRAM))
-            goto error;
-         break;
-      case SSNES_STATE_VRAM:
-         if (addr >= psnes_get_memory_size(SNES_MEMORY_VRAM))
-            goto error;
+         memtype = SNES_MEMORY_WRAM;
          break;
       case SSNES_STATE_APURAM:
-         if (addr >= psnes_get_memory_size(SNES_MEMORY_APURAM))
-            goto error;
+         memtype = SNES_MEMORY_APURAM;
+         break;
+      case SSNES_STATE_VRAM:
+         memtype = SNES_MEMORY_VRAM;
          break;
       case SSNES_STATE_OAM:
-         if (addr >= psnes_get_memory_size(SNES_MEMORY_OAM))
-            goto error;
+         memtype = SNES_MEMORY_OAM;
          break;
       case SSNES_STATE_CGRAM:
-         if (addr >= psnes_get_memory_size(SNES_MEMORY_CGRAM))
-            goto error;
+         memtype = SNES_MEMORY_CGRAM;
          break;
-
       default:
          break;
+   }
+
+   if (addr >= psnes_get_memory_size(memtype))
+   {
+      SSNES_ERR("Address out of bounds.\n");
+      goto error;
    }
 
    if (strcmp((const char*)semantic, "capture") == 0)
