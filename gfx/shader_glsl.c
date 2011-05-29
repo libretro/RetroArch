@@ -393,6 +393,7 @@ static bool get_import_value(xmlNodePtr ptr)
    xmlChar *vram = xmlGetProp(ptr, (const xmlChar*)"vram");
    xmlChar *oam = xmlGetProp(ptr, (const xmlChar*)"oam");
    xmlChar *cgram = xmlGetProp(ptr, (const xmlChar*)"cgram");
+   xmlChar *bitmask = xmlGetProp(ptr, (const xmlChar*)"mask");
 
    if (!semantic || !id)
    {
@@ -457,10 +458,15 @@ static bool get_import_value(xmlNodePtr ptr)
       goto error;
    }
 
+   unsigned mask_value = 0;
+   if (bitmask)
+      mask_value = strtoul((const char*)bitmask, NULL, 16);
+
    strlcpy(gl_tracker_info[gl_tracker_info_cnt].id, (const char*)id, sizeof(gl_tracker_info[0].id));
    gl_tracker_info[gl_tracker_info_cnt].addr = addr;
    gl_tracker_info[gl_tracker_info_cnt].type = tracker_type;
    gl_tracker_info[gl_tracker_info_cnt].ram_type = ram_type;
+   gl_tracker_info[gl_tracker_info_cnt].mask = mask_value;
    gl_tracker_info_cnt++;
 
    if (id) xmlFree(id);
@@ -470,6 +476,7 @@ static bool get_import_value(xmlNodePtr ptr)
    if (vram) xmlFree(vram);
    if (oam) xmlFree(oam);
    if (cgram) xmlFree(cgram);
+   if (bitmask) xmlFree(bitmask);
    return true;
 
 error:
@@ -480,6 +487,7 @@ error:
    if (vram) xmlFree(vram);
    if (oam) xmlFree(oam);
    if (cgram) xmlFree(cgram);
+   if (bitmask) xmlFree(bitmask);
    return false;
 }
 

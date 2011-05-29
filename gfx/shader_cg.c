@@ -394,6 +394,7 @@ static bool load_imports(config_file_t *conf)
       char oam_buf[64];
       char cgram_buf[64];
       char vram_buf[64];
+      char mask_buf[64];
 
       print_buf(semantic_buf, "%s_semantic", id);
       print_buf(wram_buf, "%s_wram", id);
@@ -401,6 +402,7 @@ static bool load_imports(config_file_t *conf)
       print_buf(oam_buf, "%s_oam", id);
       print_buf(cgram_buf, "%s_cgram", id);
       print_buf(vram_buf, "%s_vram", id);
+      print_buf(mask_buf, "%s_mask", id);
 
       char *semantic = NULL;
 
@@ -474,10 +476,15 @@ static bool load_imports(config_file_t *conf)
          goto error;
       }
 
+      unsigned bitmask = 0;
+      if (!config_get_hex(conf, mask_buf, &bitmask))
+         bitmask = 0;
+
       strlcpy(info[info_cnt].id, id, sizeof(info[info_cnt].id));
       info[info_cnt].addr = addr;
       info[info_cnt].type = tracker_type;
       info[info_cnt].ram_type = ram_type;
+      info[info_cnt].mask = bitmask;
 
       info_cnt++;
       free(semantic);
