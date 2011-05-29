@@ -93,7 +93,7 @@ void snes_tracker_free(snes_tracker_t *tracker)
    free(tracker);
 }
 
-#define fetch(addr) (info->ptr[info->addr] & info->mask)
+#define fetch() (info->ptr[info->addr] & info->mask)
 
 static void update_element(
       struct snes_tracker_uniform *uniform,
@@ -105,22 +105,22 @@ static void update_element(
    switch (info->type)
    {
       case SSNES_STATE_CAPTURE:
-         uniform->value = fetch(addr);
+         uniform->value = fetch();
          break;
 
       case SSNES_STATE_CAPTURE_PREV:
-         if (info->prev[0] != fetch(addr))
+         if (info->prev[0] != fetch())
          {
             info->prev[1] = info->prev[0];
-            info->prev[0] = fetch(addr);
+            info->prev[0] = fetch();
          }
          uniform->value = info->prev[1];
          break;
 
       case SSNES_STATE_TRANSITION:
-         if (info->old_value != fetch(addr))
+         if (info->old_value != fetch())
          {
-            info->old_value = fetch(addr);
+            info->old_value = fetch();
             info->frame_count = frame_count;
          }
          uniform->value = info->frame_count;
@@ -128,9 +128,9 @@ static void update_element(
          break;
 
       case SSNES_STATE_TRANSITION_PREV:
-         if (info->prev[0] != fetch(addr))
+         if (info->prev[0] != fetch())
          {
-            info->old_value = fetch(addr);
+            info->old_value = fetch();
             info->prev[1] = info->prev[0];
             info->prev[0] = frame_count;
             info->frame_count = frame_count;
