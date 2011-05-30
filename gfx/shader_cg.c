@@ -86,8 +86,10 @@ struct cg_fbo_params
 {
    CGparameter vid_size_f;
    CGparameter tex_size_f;
+   CGparameter pix_size_f;
    CGparameter vid_size_v;
    CGparameter tex_size_v;
+   CGparameter pix_size_v;
    CGparameter tex;
    CGparameter coord;
 };
@@ -103,10 +105,12 @@ struct cg_program
    CGparameter vid_size_f;
    CGparameter tex_size_f;
    CGparameter out_size_f;
+   CGparameter pix_size_f;
    CGparameter frame_cnt_f;
    CGparameter vid_size_v;
    CGparameter tex_size_v;
    CGparameter out_size_v;
+   CGparameter pix_size_v;
    CGparameter frame_cnt_v;
    CGparameter mvp;
 
@@ -158,11 +162,15 @@ void gl_cg_set_params(unsigned width, unsigned height,
       set_param_2f(prg[active_index].tex_size_f, tex_width, tex_height);
       set_param_2f(prg[active_index].out_size_f, out_width, out_height);
       set_param_1f(prg[active_index].frame_cnt_f, (float)frame_count);
+      float pixel_width = 1.0f / tex_width;
+      float pixel_height = ((active_index == 1) ? -1.0f : 1.0f) / tex_height;
+      set_param_2f(prg[active_index].pix_size_f, pixel_width, pixel_height);
 
       set_param_2f(prg[active_index].vid_size_v, width, height);
       set_param_2f(prg[active_index].tex_size_v, tex_width, tex_height);
       set_param_2f(prg[active_index].out_size_v, out_width, out_height);
       set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count);
+      set_param_2f(prg[active_index].pix_size_v, pixel_width, pixel_height);
 
       // Set orig texture.
       CGparameter param = prg[active_index].orig.tex;
@@ -177,6 +185,10 @@ void gl_cg_set_params(unsigned width, unsigned height,
       set_param_2f(prg[active_index].orig.vid_size_f, info->input_size[0], info->input_size[1]);
       set_param_2f(prg[active_index].orig.tex_size_v, info->tex_size[0], info->tex_size[1]);
       set_param_2f(prg[active_index].orig.tex_size_f, info->tex_size[0], info->tex_size[1]);
+      float orig_pix_width = 1.0f / info->tex_size[0];
+      float orig_pix_height = -1.0f / info->tex_size[1];
+      set_param_2f(prg[active_index].orig.pix_size_v, orig_pix_width, orig_pix_height);
+      set_param_2f(prg[active_index].orig.pix_size_f, orig_pix_width, orig_pix_height);
 
       if (prg[active_index].orig.coord)
       {
@@ -216,6 +228,14 @@ void gl_cg_set_params(unsigned width, unsigned height,
                   fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
             set_param_2f(prg[active_index].fbo[i].tex_size_f, 
                   fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
+
+            float pix_width = 1.0f / fbo_info[i].tex_size[0];
+            float pix_height = 1.0f / fbo_info[i].tex_size[1];
+
+            set_param_2f(prg[active_index].fbo[i].pix_size_v, 
+                  pix_width, pix_height);
+            set_param_2f(prg[active_index].fbo[i].pix_size_f, 
+                  pix_width, pix_height);
 
             if (prg[active_index].fbo[i].coord)
             {
@@ -822,10 +842,12 @@ bool gl_cg_init(const char *path)
       prg[i].vid_size_f = cgGetNamedParameter(prg[i].fprg, "IN.video_size");
       prg[i].tex_size_f = cgGetNamedParameter(prg[i].fprg, "IN.texture_size");
       prg[i].out_size_f = cgGetNamedParameter(prg[i].fprg, "IN.output_size");
+      prg[i].pix_size_f = cgGetNamedParameter(prg[i].fprg, "IN.pixel_size");
       prg[i].frame_cnt_f = cgGetNamedParameter(prg[i].fprg, "IN.frame_count");
       prg[i].vid_size_v = cgGetNamedParameter(prg[i].vprg, "IN.video_size");
       prg[i].tex_size_v = cgGetNamedParameter(prg[i].vprg, "IN.texture_size");
       prg[i].out_size_v = cgGetNamedParameter(prg[i].vprg, "IN.output_size");
+      prg[i].pix_size_v = cgGetNamedParameter(prg[i].vprg, "IN.pixel_size");
       prg[i].frame_cnt_v = cgGetNamedParameter(prg[i].vprg, "IN.frame_count");
       prg[i].mvp = cgGetNamedParameter(prg[i].vprg, "modelViewProj");
       if (prg[i].mvp)
@@ -836,6 +858,8 @@ bool gl_cg_init(const char *path)
       prg[i].orig.vid_size_f = cgGetNamedParameter(prg[i].fprg, "ORIG.video_size");
       prg[i].orig.tex_size_v = cgGetNamedParameter(prg[i].vprg, "ORIG.texture_size");
       prg[i].orig.tex_size_f = cgGetNamedParameter(prg[i].fprg, "ORIG.texture_size");
+      prg[i].orig.pix_size_v = cgGetNamedParameter(prg[i].vprg, "ORIG.pixel_size");
+      prg[i].orig.pix_size_f = cgGetNamedParameter(prg[i].fprg, "ORIG.pixel_size");
       prg[i].orig.coord = cgGetNamedParameter(prg[i].vprg, "ORIG.tex_coord");
 
       for (unsigned j = 0; j < i - 1; j++)
@@ -852,6 +876,10 @@ bool gl_cg_init(const char *path)
          snprintf(attr_buf, sizeof(attr_buf), "PASS%u.texture_size", j + 1);
          prg[i].fbo[j].tex_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf);
          prg[i].fbo[j].tex_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf);
+
+         snprintf(attr_buf, sizeof(attr_buf), "PASS%u.pixel_size", j + 1);
+         prg[i].fbo[j].pix_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf);
+         prg[i].fbo[j].pix_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf);
 
          snprintf(attr_buf, sizeof(attr_buf), "PASS%u.tex_coord", j + 1);
          prg[i].fbo[j].coord = cgGetNamedParameter(prg[i].vprg, attr_buf);

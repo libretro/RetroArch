@@ -884,6 +884,11 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       location = pglGetUniformLocation(gl_program[active_index], "rubyTextureSize");
       pglUniform2fv(location, 1, textureSize);
 
+      // FBO textures are normal, regular textures are "flipped".
+      float pixelSize[2] = {1.0f / tex_width, ((active_index == 1) ? -1.0f : 1.0f) / tex_height};
+      location = pglGetUniformLocation(gl_program[active_index], "rubyPixelSize");
+      pglUniform2fv(location, 1, pixelSize);
+
       location = pglGetUniformLocation(gl_program[active_index], "rubyFrameCount");
       pglUniform1i(location, frame_count);
 
@@ -907,6 +912,10 @@ void gl_glsl_set_params(unsigned width, unsigned height,
          pglUniform2fv(location, 1, info->tex_size);
          location = pglGetUniformLocation(gl_program[active_index], "rubyOrigInputSize");
          pglUniform2fv(location, 1, info->input_size);
+
+         float pixelSize[2] = {1.0f / info->tex_size[0], -1.0f / info->tex_size[1]};
+         location = pglGetUniformLocation(gl_program[active_index], "rubyOrigPixelSize");
+         pglUniform2fv(location, 1, pixelSize);
 
          // Pass texture coordinates.
          location = pglGetAttribLocation(gl_program[active_index], "rubyOrigTexCoord");
@@ -941,6 +950,11 @@ void gl_glsl_set_params(unsigned width, unsigned height,
             snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uInputSize", i + 1);
             location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
             pglUniform2fv(location, 1, fbo_info[i].input_size);
+
+            snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uPixelSize", i + 1);
+            float pixelSize[2] = {1.0f / fbo_info[i].tex_size[0], 1.0f / fbo_info[i].tex_size[1]};
+            location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
+            pglUniform2fv(location, 1, pixelSize);
 
             snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTexCoord", i + 1);
             location = pglGetAttribLocation(gl_program[active_index], attrib_buf);
