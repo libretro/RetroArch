@@ -1007,7 +1007,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &attr);
    if (attr <= 0 && video->vsync)
    {
-      SSNES_WARN("GL VSync has not been enabled, attempting to recover using native calls!\n");
+      SSNES_WARN("SDL failed to setup VSync, attempting to recover using native calls!\n");
       gl_set_nonblock_state(gl, false);
    }
    attr = 0;
