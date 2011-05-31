@@ -274,19 +274,19 @@ void parse_config(void);
 extern struct settings g_settings;
 extern struct global g_extern;
 
-#define SSNES_LOG(msg, args...) do { \
+#define SSNES_LOG(...) do { \
    if (g_extern.verbose) \
-      fprintf(stderr, "SSNES: " msg, ##args); \
+      fprintf(stderr, "SSNES: " __VA_ARGS__); \
       fflush(stderr); \
    } while(0)
 
-#define SSNES_ERR(msg, args...) do { \
-      fprintf(stderr, "SSNES [ERROR] :: " msg, ##args); \
+#define SSNES_ERR(...) do { \
+      fprintf(stderr, "SSNES [ERROR] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while(0)
 
-#define SSNES_WARN(msg, args...) do { \
-      fprintf(stderr, "SSNES [WARN] :: " msg, ##args); \
+#define SSNES_WARN(...) do { \
+      fprintf(stderr, "SSNES [WARN] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while(0)
 

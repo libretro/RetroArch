@@ -706,7 +706,7 @@ static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size
    return true;
 }
 
-#define LOAD_GL_SYM(SYM) if (!(pgl##SYM)) pgl##SYM = SDL_GL_GetProcAddress("gl" #SYM)
+#define LOAD_GL_SYM(SYM) if (!pgl##SYM) { SDL_SYM_WRAP(pgl##SYM, "gl" #SYM) }
 
 bool gl_glsl_init(const char *path)
 {

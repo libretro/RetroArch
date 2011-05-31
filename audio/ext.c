@@ -64,7 +64,7 @@ static void* audio_ext_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
-   const ssnes_audio_driver_t* (*plugin_load)(void) = dylib_proc(ext->lib, "ssnes_audio_driver_init");
+   const ssnes_audio_driver_t* (*plugin_load)(void) = (const ssnes_audio_driver_t* (*)(void))dylib_proc(ext->lib, "ssnes_audio_driver_init");
 
    if (!plugin_load)
    {

@@ -273,7 +273,8 @@ static void* video_ext_init(const video_info_t *video, const input_driver_t **in
       goto error;
    }
 
-   const ssnes_video_driver_t* (*video_init)(void) = dylib_proc(g_lib, "ssnes_video_init");
+   const ssnes_video_driver_t* (*video_init)(void) = 
+      (const ssnes_video_driver_t *(*)(void))dylib_proc(g_lib, "ssnes_video_init");
    if (!video_init)
    {
       SSNES_ERR("Couldn't find function ssnes_video_init in library ...\n");

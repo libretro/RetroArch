@@ -161,7 +161,8 @@ static void init_dsp_plugin(void)
       return;
    }
 
-   const ssnes_dsp_plugin_t* (*SSNES_API_CALLTYPE plugin_init)(void) = dylib_proc(g_extern.audio_data.dsp_lib, "ssnes_dsp_plugin_init");
+   const ssnes_dsp_plugin_t* (*SSNES_API_CALLTYPE plugin_init)(void) = 
+      (const ssnes_dsp_plugin_t *(*)(void))dylib_proc(g_extern.audio_data.dsp_lib, "ssnes_dsp_plugin_init");
    if (!plugin_init)
    {
       SSNES_ERR("Failed to find symbol \"ssnes_dsp_plugin_init\" in DSP plugin.\n");
@@ -310,8 +311,12 @@ static void init_filter(void)
       return;
    }
 
-   g_extern.filter.psize = dylib_proc(g_extern.filter.lib, "filter_size");
-   g_extern.filter.prender = dylib_proc(g_extern.filter.lib, "filter_render");
+   g_extern.filter.psize = 
+      (void (*)(unsigned*, unsigned*))dylib_proc(g_extern.filter.lib, "filter_size");
+   g_extern.filter.prender = 
+      (void (*)(uint32_t*, uint32_t*, 
+                unsigned, const uint16_t*, 
+                unsigned, unsigned, unsigned))dylib_proc(g_extern.filter.lib, "filter_render");
    if (!g_extern.filter.psize || !g_extern.filter.prender)
    {
       SSNES_ERR("Failed to find functions in filter...\n");

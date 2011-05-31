@@ -18,6 +18,7 @@
 #include "dynamic.h"
 #include "general.h"
 #include <string.h>
+#include <assert.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -34,13 +35,13 @@
 #ifdef HAVE_DYNAMIC
 #define DLSYM(lib, x) dylib_proc(lib, #x)
 
-#define SYM(x) do { \
-   p##x = DLSYM(lib_handle, x); \
+#define SYM(type, x) do { \
+   p##x = (type)DLSYM(lib_handle, x); \
    if (p##x == NULL) { SSNES_ERR("Failed to load symbol: \"%s\"\n", #x); exit(1); } \
 } while(0)
 
-#define OPT_SYM(x) do { \
-   p##x = DLSYM(lib_handle, x); \
+#define OPT_SYM(type, x) do { \
+   p##x = (type)DLSYM(lib_handle, x); \
 } while(0)
 
 static dylib_t lib_handle = NULL;
@@ -106,33 +107,38 @@ static void load_dynamic(void)
       exit(1);
    }
 
-   SYM(snes_init);
-   SYM(snes_set_video_refresh);
-   SYM(snes_set_audio_sample);
-   SYM(snes_set_input_poll);
-   SYM(snes_set_input_state);
-   OPT_SYM(snes_library_id);
-   SYM(snes_library_revision_minor);
-   SYM(snes_library_revision_major);
-   SYM(snes_cheat_reset);
-   SYM(snes_cheat_set);
-   SYM(snes_reset);
-   SYM(snes_run);
-   SYM(snes_get_region);
-   SYM(snes_load_cartridge_normal);
-   SYM(snes_load_cartridge_super_game_boy);
-   SYM(snes_load_cartridge_bsx);
-   SYM(snes_load_cartridge_bsx_slotted);
-   SYM(snes_load_cartridge_sufami_turbo);
-   SYM(snes_set_controller_port_device);
-   SYM(snes_serialize_size);
-   SYM(snes_serialize);
-   SYM(snes_unserialize);
-   SYM(snes_set_cartridge_basename);
-   SYM(snes_get_memory_data);
-   SYM(snes_get_memory_size);
-   SYM(snes_unload_cartridge);
-   SYM(snes_term);
+   SYM(void (*)(void), snes_init);
+   SYM(void (*)(snes_video_refresh_t), snes_set_video_refresh);
+   SYM(void (*)(snes_audio_sample_t), snes_set_audio_sample);
+   SYM(void (*)(snes_input_poll_t), snes_set_input_poll);
+   SYM(void (*)(snes_input_state_t), snes_set_input_state);
+   OPT_SYM(const char *(*)(void), snes_library_id);
+   SYM(unsigned (*)(void), snes_library_revision_minor);
+   SYM(unsigned (*)(void), snes_library_revision_major);
+   SYM(void (*)(void), snes_cheat_reset);
+   SYM(void (*)(unsigned, bool, const char*), snes_cheat_set);
+   SYM(void (*)(void), snes_reset);
+   SYM(void (*)(void), snes_run);
+   SYM(bool (*)(void), snes_get_region);
+   SYM(bool (*)(const char*, const uint8_t*, unsigned), snes_load_cartridge_normal);
+   SYM(bool (*)(const char*, const uint8_t*, unsigned, 
+            const char*, const uint8_t*, unsigned), snes_load_cartridge_super_game_boy);
+   SYM(bool (*)(const char*, const uint8_t*, unsigned, 
+            const char*, const uint8_t*, unsigned), snes_load_cartridge_bsx);
+   SYM(bool (*)(const char*, const uint8_t*, unsigned, 
+            const char*, const uint8_t*, unsigned), snes_load_cartridge_bsx_slotted);
+   SYM(bool (*)(const char*, const uint8_t*, unsigned, 
+            const char*, const uint8_t*, unsigned, 
+            const char*, const uint8_t*, unsigned), snes_load_cartridge_sufami_turbo);
+   SYM(void (*)(bool, unsigned), snes_set_controller_port_device);
+   SYM(unsigned (*)(void), snes_serialize_size);
+   SYM(bool (*)(uint8_t*, unsigned), snes_serialize);
+   SYM(bool (*)(const uint8_t*, unsigned), snes_unserialize);
+   SYM(void (*)(const char*), snes_set_cartridge_basename);
+   SYM(uint8_t *(*)(unsigned), snes_get_memory_data);
+   SYM(unsigned (*)(unsigned), snes_get_memory_size);
+   SYM(void (*)(void), snes_unload_cartridge);
+   SYM(void (*)(void), snes_term);
 }
 #endif
 
@@ -174,6 +180,9 @@ static void set_statics(void)
 
 void init_dlsym(void)
 {
+   // Guarantee that we can do "dirty" casting. Every OS that this program supports should pass this ...
+   assert(sizeof(void*) == sizeof(void (*)(void)));
+
 #ifdef HAVE_DYNAMIC
    if (strlen(g_settings.libsnes) > 0)
       load_dynamic();
@@ -205,12 +214,15 @@ dylib_t dylib_load(const char *path)
 #endif
 }
 
-void* dylib_proc(dylib_t lib, const char *proc)
+function_t dylib_proc(dylib_t lib, const char *proc)
 {
 #ifdef _WIN32
-   void *sym = (void*)GetProcAddress(lib, proc);
+   function_t sym = (function_t)GetProcAddress(lib, proc);
 #else
-   void *sym = dlsym(lib, proc);
+   // Dirty hack to workaround the non-legality of void* -> fn-pointer casts.
+   void *ptr_sym = dlsym(lib, proc); 
+   function_t sym;
+   memcpy(&sym, &ptr_sym, sizeof(void*));
 #endif
 
    if (!sym)

@@ -321,7 +321,7 @@ static bool load_plain(const char *path)
    return true;
 }
 
-#define print_buf(buf, args...) snprintf(buf, sizeof(buf), ##args)
+#define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
 
 #ifdef HAVE_CONFIGFILE
 static bool load_textures(const char *dir_path, config_file_t *conf)

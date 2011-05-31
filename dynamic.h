@@ -25,10 +25,11 @@ void init_dlsym(void);
 void uninit_dlsym(void);
 
 typedef void *dylib_t;
+typedef void (*function_t)(void);
 
 dylib_t dylib_load(const char *path);
 void dylib_close(dylib_t lib);
-void* dylib_proc(dylib_t lib, const char *proc);
+function_t dylib_proc(dylib_t lib, const char *proc);
 
 extern void (*psnes_init)(void);
 

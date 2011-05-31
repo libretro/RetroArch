@@ -77,10 +77,6 @@ else
 endif
 endif
 
-ifeq ($(HAVE_FBO), 1)
-   DEFINES += -DHAVE_FBO
-endif
-
 ifeq ($(HAVE_XVIDEO), 1)
    OBJ += gfx/xvideo.o input/x11_input.o
    LIBS += -lXv -lX11
@@ -133,7 +129,7 @@ ifneq ($(V),1)
    Q := @
 endif
 
-CFLAGS += -Wall -O3 -g -I.
+CFLAGS += -Wall -O3 -g -I. -pedantic
 ifneq ($(findstring icc,$(CC)),)
    CFLAGS += -std=c99
 else

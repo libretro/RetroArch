@@ -81,7 +81,7 @@ static PFNGLFRAMEBUFFERTEXTURE2DPROC pglFramebufferTexture2D = NULL;
 static PFNGLCHECKFRAMEBUFFERSTATUSPROC pglCheckFramebufferStatus = NULL;
 static PFNGLDELETEFRAMEBUFFERSPROC pglDeleteFramebuffers = NULL;
 
-#define LOAD_SYM(sym) if (!p##sym) p##sym = ((void*)SDL_GL_GetProcAddress(#sym))
+#define LOAD_SYM(sym) if (!p##sym) { SDL_SYM_WRAP(p##sym, #sym) }
 static bool load_fbo_proc(void)
 {
    LOAD_SYM(glGenFramebuffers);
@@ -942,12 +942,21 @@ static void gl_set_nonblock_state(void *data, bool state)
       SSNES_LOG("GL VSync => %s\n", state ? "off" : "on");
 #ifdef _WIN32
       static BOOL (APIENTRY *wgl_swap_interval)(int) = NULL;
-      if (!wgl_swap_interval) wgl_swap_interval = (BOOL (APIENTRY*)(int)) SDL_GL_GetProcAddress("wglSwapIntervalEXT");
+      if (!wgl_swap_interval)
+      {
+         SDL_SYM_WRAP(wgl_swap_interval, "wglSwapIntervalEXT");
+      }
       if (wgl_swap_interval) wgl_swap_interval(state ? 0 : 1);
 #else
       static int (*glx_swap_interval)(int) = NULL;
-      if (!glx_swap_interval) glx_swap_interval = (int (*)(int))SDL_GL_GetProcAddress("glXSwapIntervalSGI");
-      if (!glx_swap_interval) glx_swap_interval = (int (*)(int))SDL_GL_GetProcAddress("glXSwapIntervalMESA");
+      if (!glx_swap_interval) 
+      {
+         SDL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalSGI");
+      }
+      if (!glx_swap_interval)
+      {
+         SDL_SYM_WRAP(glx_swap_interval, "glxSwapIntervalMESA");
+      }
       if (glx_swap_interval) glx_swap_interval(state ? 0 : 1);
 #endif
    }
