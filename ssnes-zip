@@ -31,7 +31,10 @@ extract_zip()
       die "Cannot find .smc nor .sfc file in archive"
    fi
 
-   unzip -p "$1" "$FILENAME" > "$TMPROM"
+   # The people who made the [!] naming convention obviously have never used regex ... <_<
+   FILENAME_FIXED="`echo $FILENAME | sed -e 's|\[|\\\\[|g' -e 's|!|\\\\!|g' -e 's|\]|\\\\]|g'`"
+
+   unzip -p "$1" "$FILENAME_FIXED" > "$TMPROM"
 }
 
 extract_7z()
@@ -79,13 +82,14 @@ esac
 SAVENAME="`basename \"$COMP_FILE\" $EXTENSION`"
 DIRNAME="`dirname \"$COMP_FILE\"`"
 SAVENAME="${SAVENAME}.srm"
-echo "Savename: ${DIRNAME}/${SAVENAME}"
 
 SSNES_PATH="`which ssnes`"
 if [ -z "$SSNES_PATH" ]; then
    die "Cannot find SSNES in path."
 fi
 
+echo "Temp ROM: $TMPROM"
+echo "Savename: ${DIRNAME}/${SAVENAME}"
 "$SSNES_PATH" "$TMPROM" -s "${DIRNAME}/${SAVENAME}" "$@"
 rm "$TMPROM"
 rm -r "$TMPDIR"
