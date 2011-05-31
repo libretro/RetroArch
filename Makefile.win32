@@ -134,7 +134,7 @@ clean:
 	rm -f tools/*.o
 
 dist: all
-	zip -r ssnes-win32-0.5.zip $(TARGET) ssnes.cfg snes.dll libxml2.dll iconv.dll zlib1.dll SDL.dll freetype6.dll xaudio-c.dll rsound.dll pthreadGC2.dll README.win32.txt $(JTARGET)
+	zip -r ssnes-win32-0.5.1.zip $(TARGET) ssnes.cfg snes.dll libxml2.dll iconv.dll zlib1.dll SDL.dll freetype6.dll xaudio-c.dll rsound.dll pthreadGC2.dll README.win32.txt $(JTARGET)
 
 libs:
 	wget https://github.com/downloads/Themaister/SSNES/SSNES-win32-libs.zip --no-check-certificate

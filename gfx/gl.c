@@ -124,6 +124,8 @@ typedef struct gl
    GLuint texture;
    GLuint tex_filter;
 
+   void *empty_buf;
+
    unsigned frame_count;
 
 #ifdef HAVE_FBO
@@ -771,19 +773,16 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 #endif
    }
 
-   if (width != gl->last_width || height != gl->last_height) // Res change. need to clear out texture.
+   if ((width != gl->last_width || height != gl->last_height) && gl->empty_buf) // Res change. need to clear out texture.
    {
       gl->last_width = width;
       gl->last_height = height;
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
       glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
 
-      // Can we pass NULL here, hmm?
-      void *tmp = calloc(1, gl->tex_w * gl->tex_h * gl->base_size);
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
-            gl->texture_fmt, tmp);
-      free(tmp);
+            gl->texture_fmt, gl->empty_buf);
 
       GLfloat x = (GLfloat)width / gl->tex_w;
       GLfloat y = (GLfloat)height / gl->tex_h;
@@ -931,6 +930,9 @@ static void gl_free(void *data)
 #endif
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
+   if (gl->empty_buf)
+      free(gl->empty_buf);
+
    free(gl);
 }
 
@@ -955,7 +957,7 @@ static void gl_set_nonblock_state(void *data, bool state)
       }
       if (!glx_swap_interval)
       {
-         SDL_SYM_WRAP(glx_swap_interval, "glxSwapIntervalMESA");
+         SDL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalMESA");
       }
       if (glx_swap_interval) glx_swap_interval(state ? 0 : 1);
 #endif
@@ -983,16 +985,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    SDL_ShowCursor(SDL_DISABLE);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-   int attr = 0;
-   SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &attr);
-   if (attr <= 0 && video->vsync)
-      SSNES_WARN("GL VSync has not been enabled!\n");
-   attr = 0;
-   SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &attr);
-   if (attr <= 0)
-      SSNES_WARN("GL double buffer has not been enabled!\n");
-
-#if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
+   #if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
    // Win32 GL lib doesn't have some functions needed for XML shaders.
    // Need to load dynamically :(
    if (!load_gl_proc())
@@ -1008,6 +1001,19 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
       SDL_QuitSubSystem(SDL_INIT_VIDEO);
       return NULL;
    }
+
+   gl->vsync = video->vsync;
+   int attr = 0;
+   SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &attr);
+   if (attr <= 0 && video->vsync)
+   {
+      SSNES_WARN("GL VSync has not been enabled, attempting to recover using native calls!\n");
+      gl_set_nonblock_state(gl, false);
+   }
+   attr = 0;
+   SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &attr);
+   if (attr <= 0)
+      SSNES_WARN("GL double buffer has not been enabled!\n");
 
    gl->full_x = full_x;
    gl->full_y = full_y;
@@ -1038,7 +1044,6 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    // Set up render to texture.
    gl_init_fbo(gl, 256 * video->input_scale, 256 * video->input_scale);
 
-   gl->vsync = video->vsync;
    gl->keep_aspect = video->force_aspect;
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
@@ -1101,6 +1106,9 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    glTexImage2D(GL_TEXTURE_2D,
          0, GL_RGBA, gl->tex_w, gl->tex_h, 0, gl->texture_type,
          gl->texture_fmt, NULL);
+
+   // Empty buffer that we use to clear out the texture with on res change.
+   gl->empty_buf = calloc(gl->base_size, gl->tex_w * gl->tex_h);
 
    gl->last_width = gl->tex_w;
    gl->last_height = gl->tex_h;
