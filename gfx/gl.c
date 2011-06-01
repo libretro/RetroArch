@@ -59,6 +59,13 @@ static const GLfloat vertexes[] = {
    1, 0
 };
 
+static const GLfloat vertexes_flipped[] = {
+   0, 1,
+   0, 0,
+   1, 0,
+   1, 1
+};
+
 static const GLfloat tex_coords[] = {
    0, 1,
    0, 0,
@@ -800,6 +807,14 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 #ifdef HAVE_CG
    glBindTexture(GL_TEXTURE_2D, gl->texture);
 #endif
+
+#ifdef HAVE_FBO
+   // Need to preserve the "flipped" state when in FBO too to have 
+   // consistent texture coordinates.
+   if (gl->render_to_tex)
+      glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes_flipped);
+#endif
+
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
    glTexSubImage2D(GL_TEXTURE_2D,
          0, 0, 0, width, height, gl->texture_type,
@@ -823,6 +838,10 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
    {
+      // Go back to non-flipped.
+      if (gl->render_to_tex)
+         glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes);
+
       // Render the rest of our passes.
       glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->fbo_tex_coords);
 
@@ -895,8 +914,11 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
             gl->vp_width, gl->vp_height, gl->frame_count, 
             &tex_info, fbo_tex_info, fbo_tex_info_cnt);
 
+      glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes_flipped);
+
       glDrawArrays(GL_QUADS, 0, 4);
       glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
+      glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes);
    }
 #endif
 
