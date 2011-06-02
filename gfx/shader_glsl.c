@@ -636,6 +636,18 @@ static void print_linker_log(GLuint obj)
       SSNES_LOG("Linker log: %s\n", info_log);
 }
 
+static bool compile_shader(GLuint shader, const char *program)
+{
+   pglShaderSource(shader, 1, &program, 0);
+   pglCompileShader(shader);
+
+   GLint status;
+   pglGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+   print_shader_log(shader);
+
+   return status == GL_TRUE;
+}
+
 static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size_t num)
 {
    for (unsigned i = 0; i < num; i++)
@@ -652,36 +664,28 @@ static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size
       {
          SSNES_LOG("Found GLSL vertex shader.\n");
          GLuint shader = pglCreateShader(GL_VERTEX_SHADER);
-         pglShaderSource(shader, 1, (const char**)&progs[i].vertex, 0);
-         pglCompileShader(shader);
-         print_shader_log(shader);
+         if (!compile_shader(shader, progs[i].vertex))
+         {
+            SSNES_ERR("Failed to compile vertex shader #%u\n", i);
+            return false;
+         }
 
          pglAttachShader(gl_prog[i], shader);
          free(progs[i].vertex);
-      }
-
-      if (!gl_check_error())
-      {
-         SSNES_ERR("Failed to compile vertex shader #%u\n", i);
-         return false;
       }
 
       if (progs[i].fragment)
       {
          SSNES_LOG("Found GLSL fragment shader.\n");
          GLuint shader = pglCreateShader(GL_FRAGMENT_SHADER);
-         pglShaderSource(shader, 1, (const char**)&progs[i].fragment, 0);
-         pglCompileShader(shader);
-         print_shader_log(shader);
+         if (!compile_shader(shader, progs[i].fragment))
+         {
+            SSNES_ERR("Failed to compile fragment shader #%u\n", i);
+            return false;
+         }
 
          pglAttachShader(gl_prog[i], shader);
          free(progs[i].fragment);
-      }
-
-      if (!gl_check_error())
-      {
-         SSNES_ERR("Failed to compile fragment shader #%u\n", i);
-         return false;
       }
 
       if (progs[i].vertex || progs[i].fragment)
