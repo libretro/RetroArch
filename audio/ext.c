@@ -83,7 +83,7 @@ static void* audio_ext_init(const char *device, unsigned rate, unsigned latency)
 
    if (ext->driver->api_version != SSNES_AUDIO_API_VERSION)
    {
-      SSNES_ERR("API mismatch in external video plugin. SSNES: %d, Plugin: %d ...\n", SSNES_AUDIO_API_VERSION, ext->driver->api_version);
+      SSNES_ERR("API mismatch in external audio plugin. SSNES: %d, Plugin: %d ...\n", SSNES_AUDIO_API_VERSION, ext->driver->api_version);
       goto error;
    }
 
