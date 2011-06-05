@@ -52,14 +52,17 @@
 #include "fonts.h"
 #endif
 
-static const GLfloat vertexes[] = {
+// Used for the last pass when rendering to the back buffer.
+static const GLfloat vertexes_flipped[] = {
    0, 0,
    0, 1,
    1, 1,
    1, 0
 };
 
-static const GLfloat vertexes_flipped[] = {
+// Used when rendering to an FBO.
+// Texture coords have to be aligned with vertex coordinates.
+static const GLfloat vertexes[] = {
    0, 1,
    0, 0,
    1, 0,
@@ -73,12 +76,6 @@ static const GLfloat tex_coords[] = {
    1, 1
 };
 
-static const GLfloat fbo_tex_coords[] = {
-   0, 0,
-   0, 1,
-   1, 1,
-   1, 0
-};
 
 #ifdef HAVE_FBO
 #ifdef _WIN32
@@ -655,7 +652,7 @@ static void gl_render_msg(gl_t *gl, const char *msg)
 
    // Go back to old rendering path.
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
-   glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes);
+   glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes_flipped);
    glBindTexture(GL_TEXTURE_2D, gl->texture);
    glDisable(GL_BLEND);
 #endif
@@ -672,6 +669,14 @@ static inline void set_lut_texture_coords(const GLfloat *coords)
 #else
    (void)coords;
 #endif
+}
+
+static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yamt)
+{
+   coords[1] = yamt;
+   coords[4] = xamt;
+   coords[6] = xamt;
+   coords[7] = yamt;
 }
 
 static bool gl_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
@@ -802,13 +807,10 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
             0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
             gl->texture_fmt, gl->empty_buf);
 
-      GLfloat x = (GLfloat)width / gl->tex_w;
-      GLfloat y = (GLfloat)height / gl->tex_h;
+      GLfloat xamt = (GLfloat)width / gl->tex_w;
+      GLfloat yamt = (GLfloat)height / gl->tex_h;
 
-      gl->tex_coords[1] = y;
-      gl->tex_coords[4] = x;
-      gl->tex_coords[6] = x;
-      gl->tex_coords[7] = y;
+      set_texture_coords(gl->tex_coords, xamt, yamt);
    }
 
    // Work around a certain issue a Cg where not using TEXUNIT0
@@ -823,7 +825,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
    // Need to preserve the "flipped" state when in FBO too to have 
    // consistent texture coordinates.
    if (gl->render_to_tex)
-      glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes_flipped);
+      glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes);
 #endif
 
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
@@ -849,13 +851,8 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
    {
-      // Go back to non-flipped.
-      if (gl->render_to_tex)
-         glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes);
-
       // Render the rest of our passes.
       glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->fbo_tex_coords);
-      set_lut_texture_coords(fbo_tex_coords);
 
       // It's kinda handy ... :)
       const struct gl_fbo_rect *prev_rect;
@@ -872,10 +869,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
          GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
          GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
 
-         gl->fbo_tex_coords[3] = yamt;
-         gl->fbo_tex_coords[4] = xamt;
-         gl->fbo_tex_coords[5] = yamt;
-         gl->fbo_tex_coords[6] = xamt;
+         set_texture_coords(gl->fbo_tex_coords, xamt, yamt);
 
          fbo_info->tex = gl->fbo_texture[i - 1];
          fbo_info->input_size[0] = prev_rect->img_width;
@@ -907,10 +901,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
       GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
 
-      gl->fbo_tex_coords[3] = yamt;
-      gl->fbo_tex_coords[4] = xamt;
-      gl->fbo_tex_coords[5] = yamt;
-      gl->fbo_tex_coords[6] = xamt;
+      set_texture_coords(gl->fbo_tex_coords, xamt, yamt);
 
       // Render our FBO texture to back buffer.
       pglBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -930,8 +921,6 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       glDrawArrays(GL_QUADS, 0, 4);
 
       glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
-      set_lut_texture_coords(tex_coords);
-      glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes);
    }
 #endif
 
@@ -1122,7 +1111,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes);
+   glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes_flipped);
 
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
