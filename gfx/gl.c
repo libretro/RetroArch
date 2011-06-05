@@ -661,12 +661,23 @@ static void gl_render_msg(gl_t *gl, const char *msg)
 #endif
 }
 
+static inline void set_lut_texture_coords(const GLfloat *coords)
+{
+#if defined(HAVE_XML) || defined(HAVE_CG)
+   // For texture images.
+   pglClientActiveTexture(GL_TEXTURE1);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), coords);
+   pglClientActiveTexture(GL_TEXTURE0);
+#else
+   (void)coords;
+#endif
+}
+
 static bool gl_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *gl = data;
-
    gl_shader_use(1);
-
    gl->frame_count++;
 
 #ifdef HAVE_FBO
@@ -844,6 +855,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 
       // Render the rest of our passes.
       glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->fbo_tex_coords);
+      set_lut_texture_coords(fbo_tex_coords);
 
       // It's kinda handy ... :)
       const struct gl_fbo_rect *prev_rect;
@@ -915,9 +927,10 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
             &tex_info, fbo_tex_info, fbo_tex_info_cnt);
 
       glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes_flipped);
-
       glDrawArrays(GL_QUADS, 0, 4);
+
       glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
+      set_lut_texture_coords(tex_coords);
       glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes);
    }
 #endif
@@ -1114,13 +1127,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
 
-#ifdef HAVE_XML
-   // For texture images.
-   pglClientActiveTexture(GL_TEXTURE1);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords);
-   pglClientActiveTexture(GL_TEXTURE0);
-#endif
+   set_lut_texture_coords(tex_coords);
 
    gl->tex_w = 256 * video->input_scale;
    gl->tex_h = 256 * video->input_scale;
