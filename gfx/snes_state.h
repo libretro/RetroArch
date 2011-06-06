@@ -66,6 +66,7 @@ struct snes_tracker_info
 
 #ifdef HAVE_PYTHON
    const char *script;
+   const char *script_class;
 #endif
 };
 

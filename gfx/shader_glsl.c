@@ -116,6 +116,8 @@ static char gl_teximage_uniforms[MAX_TEXTURES][64];
 static snes_tracker_t *gl_snes_tracker = NULL;
 static struct snes_tracker_uniform_info gl_tracker_info[MAX_VARIABLES];
 static unsigned gl_tracker_info_cnt = 0;
+static char gl_tracker_script[256];
+static char gl_tracker_script_class[64];
 
 struct shader_program
 {
@@ -378,13 +380,43 @@ error:
    return false;
 }
 
-static bool get_import_value(xmlNodePtr ptr)
+static bool get_import_value(const char *path, xmlNodePtr ptr)
 {
    if (gl_tracker_info_cnt >= MAX_VARIABLES)
    {
       SSNES_ERR("Too many import variables ...\n");
       return false;
    }
+
+#ifdef HAVE_PYTHON
+   xmlChar *script = xmlGetProp(ptr, (const xmlChar*)"script");
+   if (script && *gl_tracker_script)
+   {
+      SSNES_ERR("Cannot define more than one script!\n");
+      return false;
+   }
+   else if (script)
+   {
+      strlcpy(gl_tracker_script, path, sizeof(gl_tracker_script));
+      char *dir_ptr = strrchr(gl_tracker_script, '/');
+      if (!dir_ptr) dir_ptr = strrchr(gl_tracker_script, '\\');
+      if (dir_ptr) dir_ptr[1] = '\0';
+      strlcat(gl_tracker_script, (const char*)script, sizeof(gl_tracker_script));
+
+      xmlFree(script);
+
+      xmlChar *script_class = xmlGetProp(ptr, (const xmlChar*)"class");
+      if (script_class)
+      {
+         strlcpy(gl_tracker_script_class, (const char*)script_class, sizeof(gl_tracker_script_class));
+         xmlFree(script_class);
+      }
+
+      return true;
+   }
+#else
+   (void)path;
+#endif
 
    xmlChar *id = xmlGetProp(ptr, (const xmlChar*)"id");
    xmlChar *semantic = xmlGetProp(ptr, (const xmlChar*)"semantic");
@@ -400,21 +432,47 @@ static bool get_import_value(xmlNodePtr ptr)
       SSNES_ERR("No semantic or ID for import value!\n");
       goto error;
    }
-   
-   enum snes_ram_type ram_type;
-   enum snes_tracker_type tracker_type;
-   uint32_t addr = 0;
 
-   if (wram) { addr = strtoul((const char*)wram, NULL, 16); ram_type = SSNES_STATE_WRAM; }
-   else if (apuram) { addr = strtoul((const char*)apuram, NULL, 16); ram_type = SSNES_STATE_APURAM; }
-   else if (vram) { addr = strtoul((const char*)vram, NULL, 16); ram_type = SSNES_STATE_VRAM; }
-   else if (oam) { addr = strtoul((const char*)oam, NULL, 16); ram_type = SSNES_STATE_OAM; }
-   else if (cgram) { addr = strtoul((const char*)cgram, NULL, 16); ram_type = SSNES_STATE_CGRAM; }
+   enum snes_tracker_type tracker_type;
+
+   if (strcmp((const char*)semantic, "capture") == 0)
+      tracker_type = SSNES_STATE_CAPTURE;
+   else if (strcmp((const char*)semantic, "capture_previous") == 0)
+      tracker_type = SSNES_STATE_CAPTURE_PREV;
+   else if (strcmp((const char*)semantic, "transition") == 0)
+      tracker_type = SSNES_STATE_TRANSITION;
+   else if (strcmp((const char*)semantic, "transition_previous") == 0)
+      tracker_type = SSNES_STATE_TRANSITION_PREV;
+#ifdef HAVE_PYTHON
+   else if (strcmp((const char*)semantic, "python") == 0)
+      tracker_type = SSNES_STATE_PYTHON;
+#endif
    else
    {
-      SSNES_ERR("No RAM address specificed for import value.\n");
+      SSNES_ERR("Invalid semantic for import value.\n");
       goto error;
    }
+
+   enum snes_ram_type ram_type = SSNES_STATE_WRAM;
+   uint32_t addr = 0;
+
+#ifdef HAVE_PYTHON
+   if (tracker_type != SSNES_STATE_PYTHON)
+   {
+#endif
+      if (wram) { addr = strtoul((const char*)wram, NULL, 16); ram_type = SSNES_STATE_WRAM; }
+      else if (apuram) { addr = strtoul((const char*)apuram, NULL, 16); ram_type = SSNES_STATE_APURAM; }
+      else if (vram) { addr = strtoul((const char*)vram, NULL, 16); ram_type = SSNES_STATE_VRAM; }
+      else if (oam) { addr = strtoul((const char*)oam, NULL, 16); ram_type = SSNES_STATE_OAM; }
+      else if (cgram) { addr = strtoul((const char*)cgram, NULL, 16); ram_type = SSNES_STATE_CGRAM; }
+      else
+      {
+         SSNES_ERR("No RAM address specificed for import value.\n");
+         goto error;
+      }
+#ifdef HAVE_PYTHON
+   }
+#endif
 
    int memtype = 0;
    switch (ram_type)
@@ -434,6 +492,7 @@ static bool get_import_value(xmlNodePtr ptr)
       case SSNES_STATE_CGRAM:
          memtype = SNES_MEMORY_CGRAM;
          break;
+
       default:
          break;
    }
@@ -441,20 +500,6 @@ static bool get_import_value(xmlNodePtr ptr)
    if (addr >= psnes_get_memory_size(memtype))
    {
       SSNES_ERR("Address out of bounds.\n");
-      goto error;
-   }
-
-   if (strcmp((const char*)semantic, "capture") == 0)
-      tracker_type = SSNES_STATE_CAPTURE;
-   else if (strcmp((const char*)semantic, "capture_previous") == 0)
-      tracker_type = SSNES_STATE_CAPTURE_PREV;
-   else if (strcmp((const char*)semantic, "transition") == 0)
-      tracker_type = SSNES_STATE_TRANSITION;
-   else if (strcmp((const char*)semantic, "transition_previous") == 0)
-      tracker_type = SSNES_STATE_TRANSITION_PREV;
-   else
-   {
-      SSNES_ERR("Invalid semantic for import value.\n");
       goto error;
    }
 
@@ -582,7 +627,7 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       }
       else if (strcmp((const char*)cur->name, "import") == 0)
       {
-         if (!get_import_value(cur))
+         if (!get_import_value(path, cur))
          {
             SSNES_ERR("Import value is invalid.\n");
             goto error;
@@ -812,7 +857,11 @@ bool gl_glsl_init(const char *path)
          .apuram = psnes_get_memory_data(SNES_MEMORY_APURAM),
          .oam = psnes_get_memory_data(SNES_MEMORY_OAM),
          .info = gl_tracker_info,
-         .info_elem = gl_tracker_info_cnt
+         .info_elem = gl_tracker_info_cnt,
+#ifdef HAVE_PYTHON
+         .script = *gl_tracker_script ? gl_tracker_script : NULL,
+         .script_class = *gl_tracker_script_class ? gl_tracker_script_class : NULL
+#endif
       };
       gl_snes_tracker = snes_tracker_init(&info);
       if (!gl_snes_tracker)
@@ -858,6 +907,8 @@ void gl_glsl_deinit(void)
 
    gl_tracker_info_cnt = 0;
    memset(gl_tracker_info, 0, sizeof(gl_tracker_info));
+   memset(gl_tracker_script, 0, sizeof(gl_tracker_script));
+   memset(gl_tracker_script_class, 0, sizeof(gl_tracker_script_class));
    if (gl_snes_tracker)
    {
       snes_tracker_free(gl_snes_tracker);

@@ -64,7 +64,7 @@ snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
 #ifdef HAVE_PYTHON
    if (info->script)
    {
-      tracker->py = py_state_new(info->script, "GameAware");
+      tracker->py = py_state_new(info->script, info->script_class ? info->script_class : "GameAware");
       if (!tracker->py)
       {
          free(tracker);
