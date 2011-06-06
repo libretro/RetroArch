@@ -374,7 +374,7 @@ error:
    return false;
 }
 
-static bool load_imports(config_file_t *conf)
+static bool load_imports(const char *dir_path, config_file_t *conf)
 {
    char *imports = NULL;
 
@@ -414,7 +414,7 @@ static bool load_imports(config_file_t *conf)
       }
 
       enum snes_tracker_type tracker_type;
-      enum snes_ram_type ram_type;
+      enum snes_ram_type ram_type = SNES_MEMORY_WRAM;
 
       if (strcmp(semantic, "capture") == 0)
          tracker_type = SSNES_STATE_CAPTURE;
@@ -424,28 +424,39 @@ static bool load_imports(config_file_t *conf)
          tracker_type = SSNES_STATE_CAPTURE_PREV;
       else if (strcmp(semantic, "transition_previous") == 0)
          tracker_type = SSNES_STATE_TRANSITION_PREV;
+#ifdef HAVE_PYTHON
+      else if (strcmp(semantic, "python") == 0)
+         tracker_type = SSNES_STATE_PYTHON;
+#endif
       else
       {
          SSNES_ERR("Invalid semantic.\n");
          goto error;
       }
 
-      unsigned addr;
-      if (config_get_hex(conf, wram_buf, &addr))
-         ram_type = SSNES_STATE_WRAM;
-      else if (config_get_hex(conf, apuram_buf, &addr))
-         ram_type = SSNES_STATE_APURAM;
-      else if (config_get_hex(conf, oam_buf, &addr))
-         ram_type = SSNES_STATE_OAM;
-      else if (config_get_hex(conf, cgram_buf, &addr))
-         ram_type = SSNES_STATE_CGRAM;
-      else if (config_get_hex(conf, vram_buf, &addr))
-         ram_type = SSNES_STATE_VRAM;
-      else
+      unsigned addr = 0;
+#ifdef HAVE_PYTHON
+      if (tracker_type != SSNES_STATE_PYTHON)
       {
-         SSNES_ERR("No address assigned to semantic.\n");
-         goto error;
+#endif
+         if (config_get_hex(conf, wram_buf, &addr))
+            ram_type = SSNES_STATE_WRAM;
+         else if (config_get_hex(conf, apuram_buf, &addr))
+            ram_type = SSNES_STATE_APURAM;
+         else if (config_get_hex(conf, oam_buf, &addr))
+            ram_type = SSNES_STATE_OAM;
+         else if (config_get_hex(conf, cgram_buf, &addr))
+            ram_type = SSNES_STATE_CGRAM;
+         else if (config_get_hex(conf, vram_buf, &addr))
+            ram_type = SSNES_STATE_VRAM;
+         else
+         {
+            SSNES_ERR("No address assigned to semantic.\n");
+            goto error;
+         }
+#ifdef HAVE_PYTHON
       }
+#endif
 
       int memtype = 0;
       switch (ram_type)
@@ -501,9 +512,31 @@ static bool load_imports(config_file_t *conf)
       .info_elem = info_cnt
    };
 
+#ifdef HAVE_PYTHON
+   char script_path[128];
+   char *script = NULL;
+   char *script_class = NULL; 
+   if (config_get_string(conf, "import_script", &script))
+   {
+      strlcpy(script_path, dir_path, sizeof(script_path));
+      strlcat(script_path, script, sizeof(script_path));
+
+      tracker_info.script = script_path;
+   }
+   if (config_get_string(conf, "import_script_class", &script_class))
+      tracker_info.script_class = script_class;
+#endif
+
    snes_tracker = snes_tracker_init(&tracker_info);
    if (!snes_tracker)
       SSNES_WARN("Failed to init SNES tracker.\n");
+
+#ifdef HAVE_PYTHON
+   if (script)
+      free(script);
+   if (script_class)
+      free(script_class);
+#endif
 
    free(imports);
 
@@ -752,7 +785,7 @@ static bool load_preset(const char *path)
       goto error;
    }
 
-   if (!load_imports(conf))
+   if (!load_imports(dir_path, conf))
    {
       SSNES_ERR("Failed to load imports ...\n");
       goto error;

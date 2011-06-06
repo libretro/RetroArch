@@ -21,6 +21,7 @@
 #include "libsnes.hpp"
 #include <stdlib.h>
 #include "py_state.h"
+#include "general.h"
 
 #define PY_READ_FUNC_DECL(RAMTYPE) py_read_##RAMTYPE
 #define PY_READ_FUNC(RAMTYPE) \
@@ -79,6 +80,9 @@ struct py_state
    PyObject *main;
    PyObject *dict;
    PyObject *inst;
+
+   bool warned_ret;
+   bool warned_type;
 };
 
 py_state_t *py_state_new(const char *script_path, const char *pyclass)
@@ -139,11 +143,22 @@ int py_state_get(py_state_t *handle, const char *id,
 {
    PyObject *ret = PyObject_CallMethod(handle->inst, (char*)id, (char*)"I", frame_count);
    if (!ret)
+   {
+      if (!handle->warned_ret)
+         SSNES_WARN("Didn't get return value from script! Bug?\n");
+      handle->warned_ret = true;
       return 0;
+   }
 
    int retval = 0;
    if (PyLong_Check(ret))
       retval = (int)PyLong_AsLong(ret);
+   else
+   {
+      if (!handle->warned_type)
+         SSNES_WARN("Didn't get long compatible value from script! Bug?\n");
+      handle->warned_type = true;
+   }
 
    Py_DECREF(ret);
    return retval;
