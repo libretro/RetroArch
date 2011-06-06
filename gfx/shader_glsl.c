@@ -441,6 +441,8 @@ static bool get_import_value(const char *path, xmlNodePtr ptr)
       tracker_type = SSNES_STATE_CAPTURE_PREV;
    else if (strcmp((const char*)semantic, "transition") == 0)
       tracker_type = SSNES_STATE_TRANSITION;
+   else if (strcmp((const char*)semantic, "transition_count") == 0)
+      tracker_type = SSNES_STATE_TRANSITION_COUNT;
    else if (strcmp((const char*)semantic, "transition_previous") == 0)
       tracker_type = SSNES_STATE_TRANSITION_PREV;
 #ifdef HAVE_PYTHON

@@ -420,6 +420,8 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
          tracker_type = SSNES_STATE_CAPTURE;
       else if (strcmp(semantic, "transition") == 0)
          tracker_type = SSNES_STATE_TRANSITION;
+      else if (strcmp(semantic, "transition_count") == 0)
+         tracker_type = SSNES_STATE_TRANSITION_COUNT;
       else if (strcmp(semantic, "capture_previous") == 0)
          tracker_type = SSNES_STATE_CAPTURE_PREV;
       else if (strcmp(semantic, "transition_previous") == 0)

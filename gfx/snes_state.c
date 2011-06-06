@@ -42,7 +42,7 @@ struct snes_tracker_internal
    uint8_t prev[2];
    int frame_count;
    uint8_t old_value; 
-
+   int transition_count;
 };
 
 struct snes_tracker
@@ -158,6 +158,15 @@ static void update_element(
             info->frame_count = frame_count;
          }
          uniform->value = info->frame_count;
+         break;
+
+      case SSNES_STATE_TRANSITION_COUNT:
+         if (info->old_value != fetch())
+         {
+            info->old_value = fetch();
+            info->transition_count++;
+         }
+         uniform->value = info->transition_count;
          break;
 
       case SSNES_STATE_TRANSITION_PREV:
