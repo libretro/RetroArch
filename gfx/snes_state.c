@@ -19,12 +19,21 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "strl.h"
+#include "general.h"
+
+#ifdef HAVE_PYTHON
+#include "py_state/py_state.h"
+#endif
 
 struct snes_tracker_internal
 {
    char id[64];
 
    const uint8_t *ptr;
+#ifdef HAVE_PYTHON
+   py_state_t *py;
+#endif
+
    uint32_t addr;
    uint8_t mask;
 
@@ -33,12 +42,17 @@ struct snes_tracker_internal
    uint8_t prev[2];
    int frame_count;
    uint8_t old_value; 
+
 };
 
 struct snes_tracker
 {
    struct snes_tracker_internal *info;
    unsigned info_elem;
+
+#ifdef HAVE_PYTHON
+   py_state_t *py;
+#endif
 };
 
 snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
@@ -46,6 +60,19 @@ snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
    snes_tracker_t *tracker = calloc(1, sizeof(*tracker));
    if (!tracker)
       return NULL;
+
+#ifdef HAVE_PYTHON
+   if (info->script)
+   {
+      tracker->py = py_state_new(info->script, "GameAware");
+      if (!tracker->py)
+      {
+         free(tracker);
+         SSNES_ERR("Failed to init Python script.\n");
+         return NULL;
+      }
+   }
+#endif
 
    tracker->info = calloc(info->info_elem, sizeof(struct snes_tracker_internal));
    tracker->info_elem = info->info_elem;
@@ -56,6 +83,11 @@ snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
       tracker->info[i].addr = info->info[i].addr;
       tracker->info[i].type = info->info[i].type;
       tracker->info[i].mask = (info->info[i].mask == 0) ? 0xff : info->info[i].mask;
+
+#ifdef HAVE_PYTHON
+      if (info->info[i].type == SSNES_STATE_PYTHON)
+         tracker->info[i].py = tracker->py;
+#endif
 
       assert(info->wram && info->vram && info->cgram &&
             info->oam && info->apuram);
@@ -83,13 +115,15 @@ snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
       }
    }
 
-
    return tracker;
 }
 
 void snes_tracker_free(snes_tracker_t *tracker)
 {
    free(tracker->info);
+#ifdef HAVE_PYTHON
+   py_state_free(tracker->py);
+#endif
    free(tracker);
 }
 
@@ -124,7 +158,6 @@ static void update_element(
             info->frame_count = frame_count;
          }
          uniform->value = info->frame_count;
-
          break;
 
       case SSNES_STATE_TRANSITION_PREV:
@@ -136,8 +169,13 @@ static void update_element(
             info->frame_count = frame_count;
          }
          uniform->value = info->prev[1];
-
          break;
+      
+#ifdef HAVE_PYTHON
+      case SSNES_STATE_PYTHON:
+         uniform->value = py_state_get(info->py, info->id, frame_count);
+         break;
+#endif
       
       default:
          break;

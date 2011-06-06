@@ -125,6 +125,12 @@ ifeq ($(HAVE_STRL), 1)
    DEFINES += -DHAVE_STRL
 endif
 
+ifeq ($(HAVE_PYTHON), 1)
+   DEFINES += $(PYTHON_CFLAGS) -Wno-unused-parameter
+   LIBS += $(PYTHON_LIBS)
+   OBJ += gfx/py_state/py_state.o
+endif
+
 ifneq ($(V),1)
    Q := @
 endif

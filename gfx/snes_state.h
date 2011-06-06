@@ -20,12 +20,19 @@
 
 #include <stdint.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 enum snes_tracker_type
 {
    SSNES_STATE_CAPTURE,
    SSNES_STATE_TRANSITION,
    SSNES_STATE_CAPTURE_PREV,
-   SSNES_STATE_TRANSITION_PREV
+   SSNES_STATE_TRANSITION_PREV,
+#ifdef HAVE_PYTHON
+   SSNES_STATE_PYTHON
+#endif
 };
 
 enum snes_ram_type
@@ -56,6 +63,10 @@ struct snes_tracker_info
 
    const struct snes_tracker_uniform_info *info;
    unsigned info_elem;
+
+#ifdef HAVE_PYTHON
+   const char *script;
+#endif
 };
 
 struct snes_tracker_uniform
