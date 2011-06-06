@@ -103,6 +103,9 @@ static void* audio_ext_init(const char *device, unsigned rate, unsigned latency)
    if (ext->driver->sample_rate)
       g_settings.audio.out_rate = ext->driver->sample_rate(ext->handle);
 
+   if (!g_settings.audio.sync)
+      ext->driver->set_nonblock_state(ext->handle, SSNES_TRUE);
+
    return ext;
 
 error:
