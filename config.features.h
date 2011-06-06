@@ -128,4 +128,10 @@ static const bool _netplay_supp = true;
 static const bool _netplay_supp = false;
 #endif
 
+#ifdef HAVE_PYTHON
+static const bool _python_supp = true;
+#else
+static const bool _python_supp = false;
+#endif
+
 #endif

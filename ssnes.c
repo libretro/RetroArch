@@ -363,6 +363,7 @@ static void print_features(void)
    _PSUPP(configfile, "Config file", "Configuration file support");
    _PSUPP(freetype, "FreeType", "TTF font rendering with FreeType");
    _PSUPP(netplay, "Netplay", "Peer-to-peer netplay");
+   _PSUPP(python, "Python", "Script support in shaders");
 }
 #undef _PSUPP
 
