@@ -452,7 +452,7 @@ void init_video_input(void)
 
    if ( driver.video_data == NULL )
    {
-      SSNES_ERR("Cannot open video driver... Exiting ...\n");
+      SSNES_ERR("Cannot open video driver ... Exiting ...\n");
       exit(1);
    }
 
