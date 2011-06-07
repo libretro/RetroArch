@@ -19,10 +19,11 @@
 #define __SSNES_PY_STATE_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct py_state py_state_t;
 
-py_state_t *py_state_new(const char *program, const char *pyclass);
+py_state_t *py_state_new(const char *program, bool is_file, const char *pyclass);
 void py_state_free(py_state_t *handle);
 
 int py_state_get(py_state_t *handle, 

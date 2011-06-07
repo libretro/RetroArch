@@ -118,6 +118,7 @@ static struct snes_tracker_uniform_info gl_tracker_info[MAX_VARIABLES];
 static unsigned gl_tracker_info_cnt = 0;
 static char gl_tracker_script[256];
 static char gl_tracker_script_class[64];
+static xmlChar *gl_script_program = NULL;
 
 struct shader_program
 {
@@ -380,6 +381,43 @@ error:
    return false;
 }
 
+static bool get_script(xmlNodePtr ptr)
+{
+   if (*gl_tracker_script)
+   {
+      SSNES_ERR("Script already imported.\n");
+      return false;
+   }
+
+   xmlChar *script_class = xmlGetProp(ptr, (const xmlChar*)"class");
+   if (script_class)
+   {
+      strlcpy(gl_tracker_script_class, (const char*)script_class, sizeof(gl_tracker_script_class));
+      xmlFree(script_class);
+   }
+
+   xmlChar *language = xmlGetProp(ptr, (const xmlChar*)"language");
+   if (!language || strcmp((const char*)language, "python") != 0)
+   {
+      SSNES_ERR("Script language is not Python!\n");
+      if (language)
+         xmlFree(language);
+      return false;
+   }
+
+   if (language)
+      xmlFree(language);
+
+   xmlChar *script = xmlNodeGetContent(ptr);
+   if (!script)
+   {
+      SSNES_ERR("No content in script!\n");
+      return false;
+   }
+   gl_script_program = script;
+   return true;
+}
+
 static bool get_import_value(const char *path, xmlNodePtr ptr)
 {
    if (gl_tracker_info_cnt >= MAX_VARIABLES)
@@ -390,7 +428,7 @@ static bool get_import_value(const char *path, xmlNodePtr ptr)
 
 #ifdef HAVE_PYTHON
    xmlChar *script = xmlGetProp(ptr, (const xmlChar*)"script");
-   if (script && *gl_tracker_script)
+   if (script && (*gl_tracker_script || gl_script_program))
    {
       SSNES_ERR("Cannot define more than one script!\n");
       return false;
@@ -635,6 +673,14 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
             goto error;
          }
       }
+      else if (strcmp((const char*)cur->name, "script") == 0)
+      {
+         if (!get_script(cur))
+         {
+            SSNES_ERR("Script is invalid.\n");
+            goto error;
+         }
+      }
    }
 
    if (num == 0)
@@ -860,11 +906,20 @@ bool gl_glsl_init(const char *path)
          .oam = psnes_get_memory_data(SNES_MEMORY_OAM),
          .info = gl_tracker_info,
          .info_elem = gl_tracker_info_cnt,
-#ifdef HAVE_PYTHON
-         .script = *gl_tracker_script ? gl_tracker_script : NULL,
-         .script_class = *gl_tracker_script_class ? gl_tracker_script_class : NULL
-#endif
       };
+
+#ifdef HAVE_PYTHON
+      if (*gl_tracker_script)
+         info.script = gl_tracker_script;
+      else if (gl_script_program)
+         info.script = (const char*)gl_script_program;
+      else
+         info.script = NULL;
+
+      info.script_class = *gl_tracker_script_class ? gl_tracker_script_class : NULL;
+      info.script_is_file = *gl_tracker_script;
+#endif
+
       gl_snes_tracker = snes_tracker_init(&info);
       if (!gl_snes_tracker)
          SSNES_WARN("Failed to init SNES tracker!\n");
@@ -911,6 +966,11 @@ void gl_glsl_deinit(void)
    memset(gl_tracker_info, 0, sizeof(gl_tracker_info));
    memset(gl_tracker_script, 0, sizeof(gl_tracker_script));
    memset(gl_tracker_script_class, 0, sizeof(gl_tracker_script_class));
+   if (gl_script_program)
+   {
+      xmlFree(gl_script_program);
+      gl_script_program = NULL;
+   }
    if (gl_snes_tracker)
    {
       snes_tracker_free(gl_snes_tracker);

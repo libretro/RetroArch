@@ -527,6 +527,8 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
    }
    if (config_get_string(conf, "import_script_class", &script_class))
       tracker_info.script_class = script_class;
+
+   tracker_info.script_is_file = true;
 #endif
 
    snes_tracker = snes_tracker_init(&tracker_info);

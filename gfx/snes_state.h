@@ -19,6 +19,7 @@
 #define __SSNES_SNES_STATE_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -68,6 +69,7 @@ struct snes_tracker_info
 #ifdef HAVE_PYTHON
    const char *script;
    const char *script_class;
+   bool script_is_file;
 #endif
 };
 

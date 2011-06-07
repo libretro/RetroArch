@@ -17,11 +17,15 @@
 
 #include <Python.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+
 #include "dynamic.h"
 #include "libsnes.hpp"
-#include <stdlib.h>
 #include "py_state.h"
 #include "general.h"
+#include "strl.h"
 
 #define PY_READ_FUNC_DECL(RAMTYPE) py_read_##RAMTYPE
 #define PY_READ_FUNC(RAMTYPE) \
@@ -85,7 +89,62 @@ struct py_state
    bool warned_type;
 };
 
-py_state_t *py_state_new(const char *script_path, const char *pyclass)
+static char *dupe_newline(const char *str)
+{
+   if (!str)
+      return NULL;
+
+   unsigned size = strlen(str) + 2;
+   char *ret = malloc(size);
+   if (!ret)
+      return NULL;
+
+   strlcpy(ret, str, size);
+   ret[size - 2] = '\n';
+   ret[size - 1] = '\0';
+   return ret;
+}
+
+// Need to make sure that first-line indentation is 0. :(
+static char* align_program(const char *program)
+{
+   char *prog = strdup(program);
+   if (!prog)
+      return NULL;
+
+   size_t prog_size = strlen(program) + 1;
+   char *new_prog = calloc(1, prog_size);
+   if (!new_prog)
+      return NULL;
+
+   char *line = dupe_newline(strtok(prog, "\n"));
+   if (!line)
+   {
+      free(prog);
+      return NULL;
+   }
+
+   unsigned skip_chars = 0;
+   while (isblank(line[skip_chars]) && line[skip_chars])
+      skip_chars++;
+
+   while (line)
+   {
+      unsigned length = strlen(line);
+      unsigned skip_len = skip_chars > length ? length : skip_chars;
+
+      strlcat(new_prog, line + skip_len, prog_size);
+
+      free(line);
+      line = dupe_newline(strtok(NULL, "\n"));
+   }
+
+   free(prog);
+
+   return new_prog;
+}
+
+py_state_t *py_state_new(const char *script, bool is_file, const char *pyclass)
 {
    PyImport_AppendInittab("snes", &PyInit_SNES);
    Py_Initialize();
@@ -96,11 +155,23 @@ py_state_t *py_state_new(const char *script_path, const char *pyclass)
    if (!handle->main)
       goto error;
 
-   FILE *file = fopen(script_path, "r");
-   if (!file)
-      goto error;
-   PyRun_SimpleFile(file, script_path);
-   fclose(file);
+   if (is_file)
+   {
+      FILE *file = fopen(script, "r");
+      if (!file)
+         goto error;
+      PyRun_SimpleFile(file, script);
+      fclose(file);
+   }
+   else
+   {
+      char *script_ = align_program(script);
+      if (script_)
+      {
+         PyRun_SimpleString(script_);
+         free(script_);
+      }
+   }
 
    handle->dict = PyModule_GetDict(handle->main);
    if (!handle->dict)
