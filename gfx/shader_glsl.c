@@ -381,9 +381,10 @@ error:
    return false;
 }
 
-static bool get_script(xmlNodePtr ptr)
+#ifdef HAVE_PYTHON
+static bool get_script(const char *path, xmlNodePtr ptr)
 {
-   if (*gl_tracker_script)
+   if (*gl_tracker_script || gl_script_program)
    {
       SSNES_ERR("Script already imported.\n");
       return false;
@@ -408,53 +409,39 @@ static bool get_script(xmlNodePtr ptr)
    if (language)
       xmlFree(language);
 
-   xmlChar *script = xmlNodeGetContent(ptr);
-   if (!script)
+   xmlChar *src = xmlGetProp(ptr, (const xmlChar*)"src");
+   if (src)
    {
-      SSNES_ERR("No content in script!\n");
-      return false;
+      strlcpy(gl_tracker_script, path, sizeof(gl_tracker_script));
+      char *dir_ptr = strrchr(gl_tracker_script, '/');
+      if (!dir_ptr) dir_ptr = strrchr(gl_tracker_script, '\\');
+      if (dir_ptr) dir_ptr[1] = '\0';
+      strlcat(gl_tracker_script, (const char*)src, sizeof(gl_tracker_script));
+
+      xmlFree(src);
    }
-   gl_script_program = script;
+   else
+   {
+      xmlChar *script = xmlNodeGetContent(ptr);
+      if (!script)
+      {
+         SSNES_ERR("No content in script!\n");
+         return false;
+      }
+      gl_script_program = script;
+   }
+
    return true;
 }
+#endif
 
-static bool get_import_value(const char *path, xmlNodePtr ptr)
+static bool get_import_value(xmlNodePtr ptr)
 {
    if (gl_tracker_info_cnt >= MAX_VARIABLES)
    {
       SSNES_ERR("Too many import variables ...\n");
       return false;
    }
-
-#ifdef HAVE_PYTHON
-   xmlChar *script = xmlGetProp(ptr, (const xmlChar*)"script");
-   if (script && (*gl_tracker_script || gl_script_program))
-   {
-      SSNES_ERR("Cannot define more than one script!\n");
-      return false;
-   }
-   else if (script)
-   {
-      strlcpy(gl_tracker_script, path, sizeof(gl_tracker_script));
-      char *dir_ptr = strrchr(gl_tracker_script, '/');
-      if (!dir_ptr) dir_ptr = strrchr(gl_tracker_script, '\\');
-      if (dir_ptr) dir_ptr[1] = '\0';
-      strlcat(gl_tracker_script, (const char*)script, sizeof(gl_tracker_script));
-
-      xmlFree(script);
-
-      xmlChar *script_class = xmlGetProp(ptr, (const xmlChar*)"class");
-      if (script_class)
-      {
-         strlcpy(gl_tracker_script_class, (const char*)script_class, sizeof(gl_tracker_script_class));
-         xmlFree(script_class);
-      }
-
-      return true;
-   }
-#else
-   (void)path;
-#endif
 
    xmlChar *id = xmlGetProp(ptr, (const xmlChar*)"id");
    xmlChar *semantic = xmlGetProp(ptr, (const xmlChar*)"semantic");
@@ -667,20 +654,22 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       }
       else if (strcmp((const char*)cur->name, "import") == 0)
       {
-         if (!get_import_value(path, cur))
+         if (!get_import_value(cur))
          {
             SSNES_ERR("Import value is invalid.\n");
             goto error;
          }
       }
+#ifdef HAVE_PYTHON
       else if (strcmp((const char*)cur->name, "script") == 0)
       {
-         if (!get_script(cur))
+         if (!get_script(path, cur))
          {
             SSNES_ERR("Script is invalid.\n");
             goto error;
          }
       }
+#endif
    }
 
    if (num == 0)
