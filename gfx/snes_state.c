@@ -41,6 +41,7 @@ struct snes_tracker_internal
 
    uint8_t prev[2];
    int frame_count;
+   int frame_count_prev;
    uint8_t old_value; 
    int transition_count;
 };
@@ -170,14 +171,13 @@ static void update_element(
          break;
 
       case SSNES_STATE_TRANSITION_PREV:
-         if (info->prev[0] != fetch())
+         if (info->old_value != fetch())
          {
             info->old_value = fetch();
-            info->prev[1] = info->prev[0];
-            info->prev[0] = frame_count;
+            info->frame_count_prev = info->frame_count;
             info->frame_count = frame_count;
          }
-         uniform->value = info->prev[1];
+         uniform->value = info->frame_count_prev;
          break;
       
 #ifdef HAVE_PYTHON
