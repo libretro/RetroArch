@@ -1173,7 +1173,14 @@ static bool gl_focus(void *data)
 static bool gl_xml_shader(void *data, const char *path)
 {
    gl_t *gl = data;
+
+   //if (!gl_check_error())
+   //   SSNES_WARN("Error happened before deinit!\n");
+
    gl_shader_deinit();
+
+   //if (!gl_check_error())
+   //   SSNES_WARN("Error happened in deinit!\n");
 
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
@@ -1186,12 +1193,12 @@ static bool gl_xml_shader(void *data, const char *path)
       gl->render_to_tex = false;
       gl->fbo_pass = 0;
 
-      if (!gl_check_error())
-         SSNES_WARN("Failed to deinit FBO properly!\n");
-
       glBindTexture(GL_TEXTURE_2D, gl->texture);
    }
 #endif
+
+   //if (!gl_check_error())
+   //   SSNES_WARN("Failed to deinit rendering path properly!\n");
 
    if (!gl_glsl_init(path))
       return false;

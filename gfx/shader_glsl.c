@@ -741,13 +741,30 @@ static bool compile_shader(GLuint shader, const char *program)
    return status == GL_TRUE;
 }
 
+static bool link_program(GLuint prog)
+{
+   pglLinkProgram(prog);
+
+   GLint status;
+   pglGetProgramiv(prog, GL_LINK_STATUS, &status);
+   print_linker_log(prog);
+
+   if (status == GL_TRUE)
+   {
+      pglUseProgram(prog);
+      return true;
+   }
+   else
+      return false;
+}
+
 static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size_t num)
 {
    for (unsigned i = 0; i < num; i++)
    {
       gl_prog[i] = pglCreateProgram();
 
-      if (!gl_check_error() || gl_prog[i] == 0)
+      if (gl_prog[i] == 0)
       {
          SSNES_ERR("Failed to create GL program #%u.\n", i);
          return false;
@@ -784,19 +801,15 @@ static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size
       if (progs[i].vertex || progs[i].fragment)
       {
          SSNES_LOG("Linking GLSL program.\n");
-         pglLinkProgram(gl_prog[i]);
-         pglUseProgram(gl_prog[i]);
-         print_linker_log(gl_prog[i]);
+         if (!link_program(gl_prog[i]))
+         {
+            SSNES_ERR("Failed to link program #%u\n", i);
+            return false;
+         }
 
          GLint location = pglGetUniformLocation(gl_prog[i], "rubyTexture");
          pglUniform1i(location, 0);
          pglUseProgram(0);
-      }
-
-      if (!gl_check_error())
-      {
-         SSNES_ERR("Failed to link program #%u\n", i);
-         return false;
       }
    }
 
@@ -893,8 +906,8 @@ bool gl_glsl_init(const char *path)
       }
    }
 
-   if (!gl_check_error())
-      return false;
+   //if (!gl_check_error())
+   //   SSNES_WARN("Detected GL error!\n");
 
    if (gl_tracker_info_cnt > 0)
    {
