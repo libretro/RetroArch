@@ -60,14 +60,60 @@ PY_READ_FUNC(APURAM)
 PY_READ_FUNC(CGRAM)
 PY_READ_FUNC(OAM)
 
+static PyObject* py_read_input(PyObject *self, PyObject *args)
+{
+   (void)self;
+
+   if (!driver.input_data)
+      return PyBool_FromLong(0);
+
+   unsigned player;
+   unsigned key;
+   if (!PyArg_ParseTuple(args, "II", &player, &key))
+      return NULL;
+
+   if (player > MAX_PLAYERS || player < 1)
+      return NULL;
+
+   const struct snes_keybind *binds[MAX_PLAYERS];
+   for (int i = 0; i < MAX_PLAYERS; i++)
+      binds[i] = g_settings.input.binds[i];
+
+   int16_t res = 0;
+   res = driver.input->input_state(driver.input_data, 
+         binds, player > 1, 
+         player > 2 ? SNES_DEVICE_MULTITAP : SNES_DEVICE_JOYPAD,
+         player > 2 ? player - 2 : 0,
+         key);
+
+   return PyBool_FromLong((long)res);
+}
+
 static PyMethodDef SNESMethods[] = {
    { "read_wram",    PY_READ_FUNC_DECL(WRAM),   METH_VARARGS, "Read WRAM from SNES." },
    { "read_vram",    PY_READ_FUNC_DECL(VRAM),   METH_VARARGS, "Read VRAM from SNES." },
    { "read_apuram",  PY_READ_FUNC_DECL(APURAM), METH_VARARGS, "Read APURAM from SNES." },
    { "read_cgram",   PY_READ_FUNC_DECL(CGRAM),  METH_VARARGS, "Read CGRAM from SNES." },
    { "read_oam",     PY_READ_FUNC_DECL(OAM),    METH_VARARGS, "Read OAM from SNES." },
+   { "input",        py_read_input,             METH_VARARGS, "Read input state from SNES." },
    { NULL, NULL, 0, NULL }
 };
+
+static void py_set_attrs(PyObject *mod)
+{
+   PyObject_SetAttrString(mod, "B", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_B));
+   PyObject_SetAttrString(mod, "Y", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_Y));
+   PyObject_SetAttrString(mod, "SELECT", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_SELECT));
+   PyObject_SetAttrString(mod, "START", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_START));
+   PyObject_SetAttrString(mod, "UP", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_UP));
+   PyObject_SetAttrString(mod, "DOWN", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_DOWN));
+   PyObject_SetAttrString(mod, "LEFT", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_LEFT));
+   PyObject_SetAttrString(mod, "RIGHT", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_RIGHT));
+   PyObject_SetAttrString(mod, "A", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_A));
+   PyObject_SetAttrString(mod, "X", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_X));
+   PyObject_SetAttrString(mod, "L", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_L));
+   PyObject_SetAttrString(mod, "R", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_R));
+}
 
 static PyModuleDef SNESModule = {
    PyModuleDef_HEAD_INIT, "snes", NULL, -1, SNESMethods,
@@ -76,7 +122,12 @@ static PyModuleDef SNESModule = {
 
 static PyObject* PyInit_SNES(void)
 {
-   return PyModule_Create(&SNESModule);
+   PyObject *mod = PyModule_Create(&SNESModule);
+   if (!mod)
+      return NULL;
+
+   py_set_attrs(mod);
+   return mod;
 }
 
 struct py_state
@@ -188,6 +239,7 @@ py_state_t *py_state_new(const char *script, bool is_file, const char *pyclass)
    return handle;
 
 error:
+   PyErr_Print();
    py_state_free(handle);
    return NULL;
 }
