@@ -227,8 +227,12 @@ void gl_cg_set_params(unsigned width, unsigned height,
       // Set state parameters
       if (snes_tracker)
       {
-         struct snes_tracker_uniform info[MAX_VARIABLES];
-         unsigned cnt = snes_get_uniform(snes_tracker, info, MAX_VARIABLES, frame_count);
+         static struct snes_tracker_uniform info[MAX_VARIABLES];
+         static unsigned cnt = 0;
+
+         if (active_index == 1)
+            cnt = snes_get_uniform(snes_tracker, info, MAX_VARIABLES, frame_count);
+
          for (unsigned i = 0; i < cnt; i++)
          {
             CGparameter param_v = cgGetNamedParameter(prg[active_index].vprg, info[i].id);

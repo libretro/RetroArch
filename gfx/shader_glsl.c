@@ -1091,8 +1091,12 @@ void gl_glsl_set_params(unsigned width, unsigned height,
 
       if (gl_snes_tracker)
       {
-         struct snes_tracker_uniform info[MAX_VARIABLES];
-         unsigned cnt = snes_get_uniform(gl_snes_tracker, info, MAX_VARIABLES, frame_count);
+         static struct snes_tracker_uniform info[MAX_VARIABLES];
+         static unsigned cnt = 0;
+         
+         if (active_index == 1)
+            cnt = snes_get_uniform(gl_snes_tracker, info, MAX_VARIABLES, frame_count);
+
          for (unsigned i = 0; i < cnt; i++)
          {
             location = pglGetUniformLocation(gl_program[active_index], info[i].id);
