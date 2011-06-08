@@ -79,8 +79,7 @@ static PyObject* py_read_input(PyObject *self, PyObject *args)
    for (int i = 0; i < MAX_PLAYERS; i++)
       binds[i] = g_settings.input.binds[i];
 
-   int16_t res = 0;
-   res = driver.input->input_state(driver.input_data, 
+   int16_t res = driver.input->input_state(driver.input_data, 
          binds, player > 1, 
          player > 2 ? SNES_DEVICE_MULTITAP : SNES_DEVICE_JOYPAD,
          player > 2 ? player - 2 : 0,
