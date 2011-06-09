@@ -183,6 +183,7 @@ clean:
 	rm -f audio/*.o
 	rm -f conf/*.o
 	rm -f gfx/*.o
+	rm -f gfx/py_state/*.o
 	rm -f record/*.o
 	rm -f input/*.o
 	rm -f tools/*.o

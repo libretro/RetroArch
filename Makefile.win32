@@ -17,6 +17,7 @@ HAVE_NETPLAY = 1
 HAVE_FBO = 1
 HAVE_CG = 0
 HAVE_IMLIB = 0
+HAVE_PYTHON = 0
 libsnes ?= -lsnes
 
 LIBS = -lm
@@ -98,6 +99,11 @@ ifeq ($(HAVE_IMLIB), 1)
    DEFINES += -DHAVE_IMLIB
 endif
 
+ifeq ($(HAVE_PYTHON), 1)
+   LIBS += -lpython32
+   DEFINES += -DHAVE_PYTHON -Ipython
+   OBJ += gfx/py_state/py_state.o
+endif
 
 ifneq ($(V),1)
    Q := @
@@ -125,6 +131,7 @@ clean:
 	rm -f audio/*.o
 	rm -f conf/*.o
 	rm -f gfx/*.o
+	rm -f gfx/py_state/*.o
 	rm -f record/*.o
 	rm -f hqflt/*.o
 	rm -f input/*.o
