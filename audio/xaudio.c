@@ -72,6 +72,9 @@ static void* __xa_init(const char* device, unsigned rate, unsigned latency)
    if (!init_lib())
       return NULL;
 
+   if (latency < 8)
+      latency = 8; // Do not allow shenanigans.
+
    xa_t *xa = calloc(1, sizeof(xa_t));
    if (xa == NULL)
       return NULL;
