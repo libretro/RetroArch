@@ -19,26 +19,27 @@
 #define __SSNES_DINPUT_H
 
 #include <dinput.h>
-
+#include <stdbool.h>
 #include "general.h"
+
+// Piggyback joypad driver for SDL.
+
 typedef struct sdl_dinput
 {
    HWND hWnd;
-
    IDirectInput8 *ctx;
-   IDirectInputDevice8 *keyboard;
-   uint8_t di_state[256];
-
    IDirectInputDevice8 *joypad[MAX_PLAYERS];
    unsigned joypad_cnt;
    DIJOYSTATE2 joy_state[MAX_PLAYERS];
-
-   bool *quitting;
-   bool *should_resize;
-   unsigned *new_width;
-   unsigned *new_height;
-
-   int16_t mouse_x, mouse_y, mouse_l, mouse_r, mouse_m;
 } sdl_dinput_t;
+
+sdl_dinput_t *sdl_dinput_init(void);
+void sdl_dinput_free(sdl_dinput_t *di);
+
+bool sdl_dinput_pressed(sdl_dinput_t *di, unsigned port_num, 
+      const struct snes_keybind *key);
+
+void sdl_dinput_poll(sdl_dinput_t *di);
+
 
 #endif

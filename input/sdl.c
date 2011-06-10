@@ -25,12 +25,22 @@
 #include <libsnes.hpp>
 #include "ssnes_sdl_input.h"
 
+
 static void* sdl_input_init(void)
 {
    sdl_input_t *sdl = calloc(1, sizeof(*sdl));
    if (!sdl)
       return NULL;
 
+#ifdef HAVE_DINPUT
+   sdl->di = sdl_dinput_init();
+   if (!sdl->di)
+   {
+      free(sdl);
+      SSNES_ERR("Failed to init SDL/DInput.\n");
+      return NULL;
+   }
+#else
    if (SDL_Init(SDL_INIT_JOYSTICK) < 0)
       return NULL;
 
@@ -60,9 +70,9 @@ static void* sdl_input_init(void)
          sdl->num_hats[i] = SDL_JoystickNumHats(sdl->joysticks[i]);
       }
    }
+#endif
 
    sdl->use_keyboard = true;
-
    return sdl;
 }
 
@@ -78,6 +88,7 @@ static bool sdl_key_pressed(int key)
    return keymap[key];
 }
 
+#ifndef HAVE_DINPUT
 static bool sdl_joykey_pressed(sdl_input_t *sdl, int port_num, uint16_t joykey)
 {
    // Check hat.
@@ -140,17 +151,23 @@ static bool sdl_axis_pressed(sdl_input_t *sdl, int port_num, uint32_t joyaxis)
 
    return false;
 }
+#endif
 
 static bool sdl_is_pressed(sdl_input_t *sdl, int port_num, const struct snes_keybind *key)
 {
    if (sdl->use_keyboard && sdl_key_pressed(key->key))
       return true;
+
+#ifdef HAVE_DINPUT
+   return sdl_dinput_pressed(sdl->di, port_num, key);
+#else
    if (sdl->joysticks[port_num] == NULL)
       return false;
    if (sdl_joykey_pressed(sdl, port_num, key->joykey))
       return true;
    if (sdl_axis_pressed(sdl, port_num, key->joyaxis))
       return true;
+#endif
 
    return false;
 }
@@ -159,7 +176,7 @@ static bool sdl_bind_button_pressed(void *data, int key)
 {
    // Only let player 1 use special binds called from main loop.
    const struct snes_keybind *binds = g_settings.input.binds[0];
-   for (int i = 0; binds[i].id != -1; i++)
+   for (unsigned i = 0; binds[i].id != -1; i++)
    {
       if (binds[i].id == key)
          return sdl_is_pressed(data, 0, &binds[i]);
@@ -172,7 +189,7 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct snes_keybi
 {
    const struct snes_keybind *snes_keybinds = binds[port_num];
 
-   for (int i = 0; snes_keybinds[i].id != -1; i++)
+   for (unsigned i = 0; snes_keybinds[i].id != -1; i++)
    {
       if (snes_keybinds[i].id == id)
          return sdl_is_pressed(sdl, port_num, &snes_keybinds[i]) ? 1 : 0;
@@ -181,10 +198,8 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct snes_keybi
    return 0;
 }
 
-static int16_t sdl_mouse_device_state(sdl_input_t *sdl, bool port, unsigned id)
+static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
 {
-   // Might implement support for joypad mapping later.
-   (void)port;
    switch (id)
    {
       case SNES_DEVICE_ID_MOUSE_LEFT:
@@ -252,7 +267,7 @@ static int16_t sdl_input_state(void *data, const struct snes_keybind **binds, bo
       case SNES_DEVICE_MULTITAP:
          return sdl_joypad_device_state(data, binds, (port == SNES_PORT_2) ? 1 + index : 0, id);
       case SNES_DEVICE_MOUSE:
-         return sdl_mouse_device_state(data, port, id);
+         return sdl_mouse_device_state(data, id);
       case SNES_DEVICE_SUPER_SCOPE:
          return sdl_scope_device_state(data, id);
       case SNES_DEVICE_JUSTIFIER:
@@ -273,14 +288,19 @@ static void sdl_input_free(void *data)
       while (SDL_PollEvent(&event));
 
       sdl_input_t *sdl = data;
+
+#ifdef HAVE_DINPUT
+      sdl_dinput_free(sdl->di);
+#else
       for (int i = 0; i < MAX_PLAYERS; i++)
       {
          if (sdl->joysticks[i])
             SDL_JoystickClose(sdl->joysticks[i]);
       }
+      SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+#endif
 
       free(data);
-      SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
    }
 }
 

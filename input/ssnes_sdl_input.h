@@ -20,13 +20,23 @@
 
 #include "SDL.h"
 #include "general.h"
+
+#ifdef HAVE_DINPUT
+#include "ssnes_dinput.h"
+#endif
+
 typedef struct sdl_input
 {
+#ifdef HAVE_DINPUT
+   sdl_dinput_t *di;
+#else
    SDL_Joystick *joysticks[MAX_PLAYERS];
    unsigned num_axes[MAX_PLAYERS];
    unsigned num_buttons[MAX_PLAYERS];
    unsigned num_hats[MAX_PLAYERS];
    unsigned num_joysticks;
+#endif
+
    bool use_keyboard;
 
    // A video driver could pre-init with the SDL driver and have it handle resizing events...
@@ -36,6 +46,7 @@ typedef struct sdl_input
    unsigned *new_height;
    int16_t mouse_x, mouse_y;
    int16_t mouse_l, mouse_r, mouse_m;
+
 } sdl_input_t;
 
 #endif

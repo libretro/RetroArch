@@ -164,7 +164,6 @@ extern const video_driver_t video_sdl;
 extern const video_driver_t video_ext;
 extern const input_driver_t input_sdl;
 extern const input_driver_t input_x;
-extern const input_driver_t input_dinput;
 ////////////////////////////////////////////////
 
 #endif

@@ -81,9 +81,6 @@ static const input_driver_t *input_drivers[] = {
 #ifdef HAVE_XVIDEO
    &input_x,
 #endif
-#ifdef HAVE_DINPUT
-   &input_dinput,
-#endif
 };
 
 static void find_audio_driver(void)
