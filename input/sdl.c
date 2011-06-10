@@ -153,7 +153,7 @@ static bool sdl_axis_pressed(sdl_input_t *sdl, int port_num, uint32_t joyaxis)
 }
 #endif
 
-static bool sdl_is_pressed(sdl_input_t *sdl, int port_num, const struct snes_keybind *key)
+static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num, const struct snes_keybind *key)
 {
    if (sdl->use_keyboard && sdl_key_pressed(key->key))
       return true;
@@ -185,7 +185,7 @@ static bool sdl_bind_button_pressed(void *data, int key)
 }
 
 static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct snes_keybind **binds, 
-      int port_num, int id)
+      unsigned port_num, int id)
 {
    const struct snes_keybind *snes_keybinds = binds[port_num];
 
@@ -317,12 +317,18 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
 
 static void sdl_input_poll(void *data)
 {
+   sdl_input_t *sdl = data;
    SDL_PumpEvents();
    SDL_Event event;
+
+#ifdef HAVE_DINPUT
+   sdl_dinput_poll(sdl->di);
+#else
    SDL_JoystickUpdate();
+#endif
+
    sdl_poll_mouse(data);
 
-   sdl_input_t *sdl = data;
    // Search for events...
    while (SDL_PollEvent(&event))
    {
