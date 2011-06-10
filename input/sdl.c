@@ -168,17 +168,17 @@ static bool sdl_bind_button_pressed(void *data, int key)
 }
 
 static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct snes_keybind **binds, 
-      int port_num, unsigned device, unsigned index, unsigned id)
+      int port_num, int id)
 {
    const struct snes_keybind *snes_keybinds = binds[port_num];
 
    for (int i = 0; snes_keybinds[i].id != -1; i++)
    {
-      if (snes_keybinds[i].id == (int)id)
-         return sdl_is_pressed(sdl, port_num, &snes_keybinds[i]);
+      if (snes_keybinds[i].id == id)
+         return sdl_is_pressed(sdl, port_num, &snes_keybinds[i]) ? 1 : 0;
    }
 
-   return false;
+   return 0;
 }
 
 static int16_t sdl_mouse_device_state(sdl_input_t *sdl, bool port, unsigned id)
@@ -248,9 +248,9 @@ static int16_t sdl_input_state(void *data, const struct snes_keybind **binds, bo
    switch (device)
    {
       case SNES_DEVICE_JOYPAD:
-         return sdl_joypad_device_state(data, binds, (port == SNES_PORT_1) ? 0 : 1, device, index, id);
+         return sdl_joypad_device_state(data, binds, (port == SNES_PORT_1) ? 0 : 1, id);
       case SNES_DEVICE_MULTITAP:
-         return sdl_joypad_device_state(data, binds, (port == SNES_PORT_2) ? 1 + index : 0, device, index, id);
+         return sdl_joypad_device_state(data, binds, (port == SNES_PORT_2) ? 1 + index : 0, id);
       case SNES_DEVICE_MOUSE:
          return sdl_mouse_device_state(data, port, id);
       case SNES_DEVICE_SUPER_SCOPE:

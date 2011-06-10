@@ -92,6 +92,9 @@ static void set_defaults(void)
 
    switch (INPUT_DEFAULT_DRIVER)
    {
+      case INPUT_DINPUT:
+         def_input = "dinput";
+         break;
       case INPUT_SDL:
          def_input = "sdl";
          break;

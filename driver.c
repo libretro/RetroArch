@@ -81,6 +81,9 @@ static const input_driver_t *input_drivers[] = {
 #ifdef HAVE_XVIDEO
    &input_x,
 #endif
+#ifdef HAVE_DINPUT
+   &input_dinput,
+#endif
 };
 
 static void find_audio_driver(void)
@@ -132,7 +135,7 @@ static void find_input_driver(void)
    SSNES_ERR("Couldn't find any input driver named \"%s\"\n", g_settings.input.driver);
    fprintf(stderr, "Available input drivers are:\n");
    for (int i = 0; i < sizeof(input_drivers) / sizeof(input_driver_t*); i++)
-      fprintf(stderr, "\t%s\n", video_drivers[i]->ident);
+      fprintf(stderr, "\t%s\n", input_drivers[i]->ident);
 
    exit(1);
 }

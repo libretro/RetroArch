@@ -60,6 +60,7 @@
 ////////////////////////
 #define INPUT_SDL 7
 #define INPUT_X 12
+#define INPUT_DINPUT 16
 ////////////////////////
 
 #if defined(HAVE_SDL)
@@ -98,7 +99,9 @@
 #error "Need at least one audio driver!"
 #endif
 
-#if defined(HAVE_SDL)
+#if defined(HAVE_DINPUT)
+#define INPUT_DEFAULT_DRIVER INPUT_DINPUT
+#elif defined(HAVE_SDL)
 #define INPUT_DEFAULT_DRIVER INPUT_SDL
 #elif defined(HAVE_XVIDEO)
 #define INPUT_DEFAULT_DRIVER INPUT_X
