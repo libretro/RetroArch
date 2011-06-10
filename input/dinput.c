@@ -109,7 +109,7 @@ sdl_dinput_t* sdl_dinput_init(void)
    di->hWnd = info.window;
 
    if (FAILED(DirectInput8Create(
-      GetModuleHandle(NULL), 0x0800, &IID_IDirectInput8,
+      GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8,
       (void**)&di->ctx, NULL)))
    {
       SSNES_ERR("Failed to init DirectInput.\n");

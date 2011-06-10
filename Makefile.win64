@@ -6,6 +6,7 @@ JOBJ = conf/config_file.o tools/main-stub.o tools/ssnes-joyconfig.o
 CC = gcc
 CXX = g++
 
+HAVE_DINPUT = 1
 HAVE_SRC = 0
 HAVE_SDL = 1
 HAVE_XML = 1
@@ -104,6 +105,13 @@ ifeq ($(HAVE_PYTHON), 1)
    DEFINES += -DHAVE_PYTHON -Ipython
    OBJ += gfx/py_state/py_state.o
 endif
+
+ifeq ($(HAVE_DINPUT), 1)
+   LIBS += -ldinput8 -ldxguid -lole32
+   DEFINES += -DHAVE_DINPUT
+   OBJ += input/dinput.o
+endif
+
 
 ifneq ($(V),1)
    Q := @

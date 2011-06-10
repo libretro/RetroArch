@@ -18,6 +18,9 @@
 #ifndef __SSNES_DINPUT_H
 #define __SSNES_DINPUT_H
 
+#undef DIRECTINPUT_VERSION
+#define DIRECTINPUT_VERSION 0x0800
+
 #include <dinput.h>
 #include <stdbool.h>
 #include "general.h"
