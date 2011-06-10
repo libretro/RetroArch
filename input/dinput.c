@@ -116,7 +116,9 @@ sdl_dinput_t* sdl_dinput_init(void)
       goto error;
    }
 
+   SSNES_LOG("Enumerating DInput devices ...\n");
    IDirectInput8_EnumDevices(di->ctx, DI8DEVCLASS_GAMECTRL, enum_joypad_cb, di, DIEDFL_ATTACHEDONLY);
+   SSNES_LOG("Done enumerating DInput devices ...\n");
 
    return di;
 
