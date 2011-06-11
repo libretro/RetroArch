@@ -43,7 +43,9 @@ enum snes_ram_type
    SSNES_STATE_APURAM,
    SSNES_STATE_OAM,
    SSNES_STATE_CGRAM,
-   SSNES_STATE_VRAM
+   SSNES_STATE_VRAM,
+   SSNES_STATE_INPUT_SLOT1,
+   SSNES_STATE_INPUT_SLOT2
 };
 
 struct snes_tracker_uniform_info

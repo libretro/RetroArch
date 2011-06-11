@@ -393,6 +393,7 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
    {
       char semantic_buf[64];
       char wram_buf[64];
+      char input_slot_buf[64];
       char apuram_buf[64];
       char oam_buf[64];
       char cgram_buf[64];
@@ -401,6 +402,7 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
 
       print_buf(semantic_buf, "%s_semantic", id);
       print_buf(wram_buf, "%s_wram", id);
+      print_buf(input_slot_buf, "%s_input_slot", id);
       print_buf(apuram_buf, "%s_apuram", id);
       print_buf(oam_buf, "%s_oam", id);
       print_buf(cgram_buf, "%s_cgram", id);
@@ -445,7 +447,25 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
       if (tracker_type != SSNES_STATE_PYTHON)
       {
 #endif
-         if (config_get_hex(conf, wram_buf, &addr))
+         unsigned input_slot = 0;
+         if (config_get_hex(conf, input_slot_buf, &input_slot))
+         {
+            switch (input_slot)
+            {
+               case 1:
+                  ram_type = SSNES_STATE_INPUT_SLOT1;
+                  break;
+
+               case 2:
+                  ram_type = SSNES_STATE_INPUT_SLOT2;
+                  break;
+
+               default:
+                  SSNES_ERR("Invalid input slot for import.\n");
+                  goto error;
+            }
+         }
+         else if (config_get_hex(conf, wram_buf, &addr))
             ram_type = SSNES_STATE_WRAM;
          else if (config_get_hex(conf, apuram_buf, &addr))
             ram_type = SSNES_STATE_APURAM;
@@ -482,8 +502,9 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
          case SSNES_STATE_CGRAM:
             memtype = SNES_MEMORY_CGRAM;
             break;
+
          default:
-            break;
+            memtype = SNES_MEMORY_WRAM;
       }
 
       if (addr >= psnes_get_memory_size(memtype))

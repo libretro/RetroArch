@@ -446,6 +446,7 @@ static bool get_import_value(xmlNodePtr ptr)
    xmlChar *id = xmlGetProp(ptr, (const xmlChar*)"id");
    xmlChar *semantic = xmlGetProp(ptr, (const xmlChar*)"semantic");
    xmlChar *wram = xmlGetProp(ptr, (const xmlChar*)"wram");
+   xmlChar *input = xmlGetProp(ptr, (const xmlChar*)"input_slot");
    xmlChar *apuram = xmlGetProp(ptr, (const xmlChar*)"apuram");
    xmlChar *vram = xmlGetProp(ptr, (const xmlChar*)"vram");
    xmlChar *oam = xmlGetProp(ptr, (const xmlChar*)"oam");
@@ -487,7 +488,24 @@ static bool get_import_value(xmlNodePtr ptr)
    if (tracker_type != SSNES_STATE_PYTHON)
    {
 #endif
-      if (wram) { addr = strtoul((const char*)wram, NULL, 16); ram_type = SSNES_STATE_WRAM; }
+      if (input) 
+      {
+         unsigned slot = strtoul((const char*)input, NULL, 0);
+         switch (slot)
+         {
+            case 1:
+               ram_type = SSNES_STATE_INPUT_SLOT1;
+               break;
+            case 2:
+               ram_type = SSNES_STATE_INPUT_SLOT2;
+               break;
+
+            default:
+               SSNES_ERR("Invalid input slot for import!\n");
+               goto error;
+         }
+      }
+      else if (wram) { addr = strtoul((const char*)wram, NULL, 16); ram_type = SSNES_STATE_WRAM; }
       else if (apuram) { addr = strtoul((const char*)apuram, NULL, 16); ram_type = SSNES_STATE_APURAM; }
       else if (vram) { addr = strtoul((const char*)vram, NULL, 16); ram_type = SSNES_STATE_VRAM; }
       else if (oam) { addr = strtoul((const char*)oam, NULL, 16); ram_type = SSNES_STATE_OAM; }
@@ -521,7 +539,7 @@ static bool get_import_value(xmlNodePtr ptr)
          break;
 
       default:
-         break;
+         memtype = SNES_MEMORY_WRAM;
    }
 
    if (addr >= psnes_get_memory_size(memtype))
@@ -544,6 +562,7 @@ static bool get_import_value(xmlNodePtr ptr)
    if (id) xmlFree(id);
    if (semantic) xmlFree(semantic);
    if (wram) xmlFree(wram);
+   if (input) xmlFree(input);
    if (apuram) xmlFree(apuram);
    if (vram) xmlFree(vram);
    if (oam) xmlFree(oam);
@@ -555,6 +574,7 @@ error:
    if (id) xmlFree(id);
    if (semantic) xmlFree(semantic);
    if (wram) xmlFree(wram);
+   if (input) xmlFree(input);
    if (apuram) xmlFree(apuram);
    if (vram) xmlFree(vram);
    if (oam) xmlFree(oam);

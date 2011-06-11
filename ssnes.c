@@ -295,9 +295,13 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
       }
    }
 
-   const struct snes_keybind *binds[MAX_PLAYERS];
-   for (int i = 0; i < MAX_PLAYERS; i++)
-      binds[i] = g_settings.input.binds[i];
+   static const struct snes_keybind *binds[MAX_PLAYERS] = {
+      g_settings.input.binds[0],
+      g_settings.input.binds[1],
+      g_settings.input.binds[2],
+      g_settings.input.binds[3],
+      g_settings.input.binds[4]
+   };
 
    int16_t res = driver.input->input_state(driver.input_data, binds, port, device, index, id);
    if (g_extern.bsv_movie && !g_extern.bsv_movie_playback)
