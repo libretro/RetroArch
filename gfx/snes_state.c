@@ -35,7 +35,7 @@ struct snes_tracker_internal
 #endif
 
    uint32_t addr;
-   uint8_t mask;
+   unsigned mask;
 
    enum snes_tracker_type type;
 
