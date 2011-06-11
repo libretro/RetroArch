@@ -47,10 +47,53 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
       return false;
    }
 
-   const uint32_t *read = img->pixels;
-   // Convert ARGB -> RGBA.
-   for (unsigned i = 0; i < size / sizeof(uint32_t); i++)
-      out_img->pixels[i] = (read[i] >> 24) | (read[i] << 8);
+   const SDL_PixelFormat *fmt = img->format;
+   
+   SSNES_LOG("SDL_image: %dx%d @ %d bpp\n", img->w, img->h, img->format->BitsPerPixel);
+   if (img->format->BitsPerPixel == 32)
+   {
+      for (unsigned y = 0; y < img->h; y++)
+      {
+         uint32_t *dst = out_img->pixels + y * img->w;
+         const uint32_t *src = (const uint32_t*)img->pixels + y * img->pitch / sizeof(uint32_t);
+
+         for (unsigned x = 0; x < img->w; x++)
+         {
+            uint32_t r = (src[x] & fmt->Rmask) >> fmt->Rshift;
+            uint32_t g = (src[x] & fmt->Gmask) >> fmt->Gshift;
+            uint32_t b = (src[x] & fmt->Bmask) >> fmt->Bshift;
+            uint32_t a = (src[x] & fmt->Amask) >> fmt->Ashift;
+            dst[x] = (r << 24) | (g << 16) | (b << 8) | a;
+         }
+      }
+   }
+   else if (img->format->BitsPerPixel == 24)
+   {
+      for (unsigned y = 0; y < img->h; y++)
+      {
+         uint32_t *dst = out_img->pixels + y * img->w;
+         const uint8_t *src = (const uint8_t*)img->pixels + y * img->pitch;
+
+         for (unsigned x = 0; x < img->w; x++)
+         {
+            // Correct?
+            uint32_t color = 0;
+            color |= src[3 * x + 0] << 0;
+            color |= src[3 * x + 1] << 8;
+            color |= src[3 * x + 2] << 16;
+            uint32_t r = (color & fmt->Rmask) >> fmt->Rshift;
+            uint32_t g = (color & fmt->Gmask) >> fmt->Gshift;
+            uint32_t b = (color & fmt->Bmask) >> fmt->Bshift;
+            dst[x] = (r << 24) | (g << 16) | (b << 8) | 0xff;
+         }
+      }
+   }
+   else
+   {
+      SSNES_ERR("8-bit and 16-bit image support are not implemented.\n");
+      SDL_FreeSurface(img);
+      return false;
+   }
 
    SDL_FreeSurface(img);
 
