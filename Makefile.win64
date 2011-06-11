@@ -17,7 +17,6 @@ HAVE_DYLIB = 1
 HAVE_NETPLAY = 1
 HAVE_FBO = 1
 HAVE_CG = 0
-HAVE_IMLIB = 0
 HAVE_PYTHON = 0
 libsnes ?= -lsnes
 
@@ -93,11 +92,6 @@ endif
 
 ifeq ($(HAVE_DYLIB), 1)
    OBJ += gfx/ext.o audio/ext.o
-endif
-
-ifeq ($(HAVE_IMLIB), 1)
-   LIBS += -lImlib2
-   DEFINES += -DHAVE_IMLIB
 endif
 
 ifeq ($(HAVE_PYTHON), 1)

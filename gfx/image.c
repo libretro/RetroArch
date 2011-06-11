@@ -27,35 +27,33 @@
 #include <stddef.h>
 #include "general.h"
 
-#ifdef HAVE_IMLIB
+#ifdef HAVE_SDL_IMAGE
 
-#include <Imlib2.h>
+#include "SDL_image.h"
 bool texture_image_load(const char *path, struct texture_image *out_img)
 {
-   Imlib_Image img;
-   img = imlib_load_image(path);
+   SDL_Surface *img = IMG_Load(path);
    if (!img)
       return false;
 
-   imlib_context_set_image(img);
-
-   out_img->width = imlib_image_get_width();
-   out_img->height = imlib_image_get_height();
+   out_img->width = img->w;
+   out_img->height = img->h;
 
    size_t size = out_img->width * out_img->height * sizeof(uint32_t);
    out_img->pixels = malloc(size);
    if (!out_img->pixels)
    {
-      imlib_free_image();
+      SDL_FreeSurface(img);
       return false;
    }
 
-   const uint32_t *read = imlib_image_get_data_for_reading_only();
+   const uint32_t *read = img->pixels;
    // Convert ARGB -> RGBA.
    for (unsigned i = 0; i < size / sizeof(uint32_t); i++)
       out_img->pixels[i] = (read[i] >> 24) | (read[i] << 8);
 
-   imlib_free_image();
+   SDL_FreeSurface(img);
+
    return true;
 }
 

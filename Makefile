@@ -104,9 +104,9 @@ ifeq ($(HAVE_FREETYPE), 1)
    DEFINES += $(FREETYPE_CFLAGS)
 endif
 
-ifeq ($(HAVE_IMLIB), 1)
-   LIBS += $(IMLIB_LIBS)
-   DEFINES += $(IMLIB_CFLAGS)
+ifeq ($(HAVE_SDL_IMAGE), 1)
+   LIBS += $(SDL_IMAGE_LIBS)
+   DEFINES += $(SDL_IMAGE_CFLAGS)
 endif
 
 ifeq ($(HAVE_FFMPEG), 1)

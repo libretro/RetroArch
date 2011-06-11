@@ -80,10 +80,10 @@ static const bool _xml_supp = true;
 static const bool _xml_supp = false;
 #endif
 
-#ifdef HAVE_IMLIB
-static const bool _imlib_supp = true;
+#ifdef HAVE_SDL_IMAGE
+static const bool _sdl_image_supp = true;
 #else
-static const bool _imlib_supp = false;
+static const bool _sdl_image_supp = false;
 #endif
 
 #ifdef HAVE_FBO

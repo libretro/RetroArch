@@ -26,5 +26,5 @@ add_command_line_enable JACK "Enable JACK support" auto
 add_command_line_enable PULSE "Enable PulseAudio support" auto
 add_command_line_enable FREETYPE "Enable FreeType support" auto
 add_command_line_enable XVIDEO "Enable XVideo support" auto
-add_command_line_enable IMLIB "Enable imlib2 support" auto
+add_command_line_enable SDL_IMAGE "Enable SDL_image support" auto
 add_command_line_enable PYTHON "Enable Python 3 support for shaders" no
