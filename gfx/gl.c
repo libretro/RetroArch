@@ -1036,7 +1036,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    SDL_ShowCursor(SDL_DISABLE);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-   #if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
+#if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
    // Win32 GL lib doesn't have some functions needed for XML shaders.
    // Need to load dynamically :(
    if (!load_gl_proc())
@@ -1094,7 +1094,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    // Set up render to texture.
    gl_init_fbo(gl, 256 * video->input_scale, 256 * video->input_scale);
-
+   
    gl->keep_aspect = video->force_aspect;
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
@@ -1169,7 +1169,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
       *input = NULL;
 
    gl_init_font(gl, g_settings.video.font_path, g_settings.video.font_size);
-   
+      
    if (!gl_check_error())
    {
       SDL_QuitSubSystem(SDL_INIT_VIDEO);
@@ -1200,7 +1200,6 @@ static bool gl_xml_shader(void *data, const char *path)
    //if (!gl_check_error())
    //   SSNES_WARN("Error happened before deinit!\n");
 
-   gl_shader_deinit();
 
    //if (!gl_check_error())
    //   SSNES_WARN("Error happened in deinit!\n");
@@ -1219,6 +1218,8 @@ static bool gl_xml_shader(void *data, const char *path)
       glBindTexture(GL_TEXTURE_2D, gl->texture);
    }
 #endif
+
+   gl_shader_deinit();
 
    //if (!gl_check_error())
    //   SSNES_WARN("Failed to deinit rendering path properly!\n");

@@ -246,8 +246,9 @@ void gl_cg_set_params(unsigned width, unsigned height,
 
 void gl_cg_deinit(void)
 {
-   if (cg_active)
-      cgDestroyContext(cgCtx);
+   if (!cg_active)
+      return;
+
    cg_active = false;
    cg_shader_num = 0;
    memset(prg, 0, sizeof(prg));
@@ -262,6 +263,8 @@ void gl_cg_deinit(void)
       snes_tracker_free(snes_tracker);
       snes_tracker = NULL;
    }
+
+   cgDestroyContext(cgCtx);
 }
 
 static bool load_plain(const char *path)
