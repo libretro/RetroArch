@@ -91,6 +91,9 @@ static bool sdl_key_pressed(int key)
 #ifndef HAVE_DINPUT
 static bool sdl_joykey_pressed(sdl_input_t *sdl, int port_num, uint16_t joykey)
 {
+   if (joykey == NO_BTN)
+      return false;
+
    // Check hat.
    if (GET_HAT_DIR(joykey))
    {
@@ -131,22 +134,22 @@ static bool sdl_joykey_pressed(sdl_input_t *sdl, int port_num, uint16_t joykey)
 
 static bool sdl_axis_pressed(sdl_input_t *sdl, int port_num, uint32_t joyaxis)
 {
-   if (joyaxis != AXIS_NONE)
+   if (joyaxis == AXIS_NONE)
+      return false;
+
+   if (AXIS_NEG_GET(joyaxis) < sdl->num_axes[port_num])
    {
-      if (AXIS_NEG_GET(joyaxis) < sdl->num_axes[port_num])
-      {
-         Sint16 val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_NEG_GET(joyaxis));
-         float scaled = (float)val / 0x8000;
-         if (scaled < -g_settings.input.axis_threshold)
-            return true;
-      }
-      if (AXIS_POS_GET(joyaxis) < sdl->num_axes[port_num])
-      {
-         Sint16 val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_POS_GET(joyaxis));
-         float scaled = (float)val / 0x8000;
-         if (scaled > g_settings.input.axis_threshold)
-            return true;
-      }
+      Sint16 val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_NEG_GET(joyaxis));
+      float scaled = (float)val / 0x8000;
+      if (scaled < -g_settings.input.axis_threshold)
+         return true;
+   }
+   if (AXIS_POS_GET(joyaxis) < sdl->num_axes[port_num])
+   {
+      Sint16 val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_POS_GET(joyaxis));
+      float scaled = (float)val / 0x8000;
+      if (scaled > g_settings.input.axis_threshold)
+         return true;
    }
 
    return false;
