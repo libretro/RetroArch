@@ -83,7 +83,7 @@ snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
       strlcpy(tracker->info[i].id, info->info[i].id, sizeof(tracker->info[i].id));
       tracker->info[i].addr = info->info[i].addr;
       tracker->info[i].type = info->info[i].type;
-      tracker->info[i].mask = (info->info[i].mask == 0) ? 0xff : info->info[i].mask;
+      tracker->info[i].mask = (info->info[i].mask == 0) ? 0xffffffffu : info->info[i].mask;
 
 #ifdef HAVE_PYTHON
       if (info->info[i].type == SSNES_STATE_PYTHON)
