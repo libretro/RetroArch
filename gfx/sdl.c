@@ -270,7 +270,6 @@ static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    sdl_input_t *sdl_input = input_sdl.init();
    if (sdl_input)
    {
-      sdl_input->quitting = &vid->quitting;
       *input = &input_sdl;
       *input_data = sdl_input;
    }
@@ -407,9 +406,27 @@ static void convert_32bit_32bit_shift(uint32_t *out, unsigned outpitch, const ui
    }
 }
 
+static void check_window(sdl_video_t *vid)
+{
+   SDL_Event event;
+   while (SDL_PollEvent(&event))
+   {
+      switch (event.type)
+      {
+         case SDL_QUIT:
+            vid->quitting = true;
+            break;
+
+         default:
+            break;
+      }
+   }
+}
+
 static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    sdl_video_t *vid = data;
+   check_window(vid);
 
    if (SDL_MUSTLOCK(vid->buffer))
       SDL_LockSurface(vid->buffer);

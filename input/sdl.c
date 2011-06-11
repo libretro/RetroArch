@@ -317,9 +317,8 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
 
 static void sdl_input_poll(void *data)
 {
-   sdl_input_t *sdl = data;
    SDL_PumpEvents();
-   SDL_Event event;
+   sdl_input_t *sdl = data;
 
 #ifdef HAVE_DINPUT
    sdl_dinput_poll(sdl->di);
@@ -327,34 +326,7 @@ static void sdl_input_poll(void *data)
    SDL_JoystickUpdate();
 #endif
 
-   sdl_poll_mouse(data);
-
-   // Search for events...
-   while (SDL_PollEvent(&event))
-   {
-      switch (event.type)
-      {
-         case SDL_QUIT:
-            if (sdl->quitting)
-            {
-               *sdl->quitting = true;
-               return;
-            }
-            break;
-
-         case SDL_VIDEORESIZE:
-            if (sdl->should_resize)
-            {
-               *sdl->new_width = event.resize.w;
-               *sdl->new_height = event.resize.h;
-               *sdl->should_resize = true;
-            }
-            break;
-
-         default:
-            break;
-      }
-   }
+   sdl_poll_mouse(sdl);
 }
 
 const input_driver_t input_sdl = {

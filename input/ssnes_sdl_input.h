@@ -39,14 +39,8 @@ typedef struct sdl_input
 
    bool use_keyboard;
 
-   // A video driver could pre-init with the SDL driver and have it handle resizing events...
-   bool *quitting;
-   bool *should_resize;
-   unsigned *new_width;
-   unsigned *new_height;
    int16_t mouse_x, mouse_y;
    int16_t mouse_l, mouse_r, mouse_m;
-
 } sdl_input_t;
 
 #endif

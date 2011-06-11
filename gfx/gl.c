@@ -679,9 +679,36 @@ static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yam
    coords[7] = yamt;
 }
 
+static void check_window(gl_t *gl)
+{
+   SDL_Event event;
+
+   // Search for events we care about ...
+   while (SDL_PollEvent(&event))
+   {
+      switch (event.type)
+      {
+         case SDL_QUIT:
+            gl->quitting = true;
+            break;
+
+         case SDL_VIDEORESIZE:
+            gl->should_resize = true;
+            gl->win_width = event.resize.w;
+            gl->win_height = event.resize.h;
+            break;
+
+         default:
+            break;
+      }
+   }
+}
+
 static bool gl_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *gl = data;
+   check_window(gl);
+
    gl_shader_use(1);
    gl->frame_count++;
 
@@ -1135,10 +1162,6 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    sdl_input_t *sdl_input = input_sdl.init();
    if (sdl_input)
    {
-      sdl_input->quitting = &gl->quitting;
-      sdl_input->should_resize = &gl->should_resize;
-      sdl_input->new_width = &gl->win_width;
-      sdl_input->new_height = &gl->win_height;
       *input = &input_sdl;
       *input_data = sdl_input;
    }
