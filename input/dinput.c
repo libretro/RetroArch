@@ -77,10 +77,12 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 
    if (active == MAX_PLAYERS) return DIENUM_STOP;
 
-   if (FAILED(IDirectInput8_CreateDevice(di->ctx, &inst->guidInstance, &di->joypad[n], NULL)))
+   di->joypad_cnt++;
+   if (n == MAX_PLAYERS)
       return DIENUM_CONTINUE;
 
-   di->joypad_cnt++;
+   if (FAILED(IDirectInput8_CreateDevice(di->ctx, &inst->guidInstance, &di->joypad[n], NULL)))
+      return DIENUM_STOP;
 
    IDirectInputDevice8_SetDataFormat(di->joypad[n], &c_dfDIJoystick2);
    IDirectInputDevice8_SetCooperativeLevel(di->joypad[n], di->hWnd,
