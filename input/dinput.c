@@ -82,7 +82,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
       return DIENUM_CONTINUE;
 
    if (FAILED(IDirectInput8_CreateDevice(di->ctx, &inst->guidInstance, &di->joypad[n], NULL)))
-      return DIENUM_STOP;
+      return DIENUM_CONTINUE;
 
    IDirectInputDevice8_SetDataFormat(di->joypad[n], &c_dfDIJoystick2);
    IDirectInputDevice8_SetCooperativeLevel(di->joypad[n], di->hWnd,
