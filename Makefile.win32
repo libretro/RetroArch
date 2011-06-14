@@ -19,6 +19,7 @@ HAVE_NETPLAY = 1
 HAVE_FBO = 1
 HAVE_CG = 1
 HAVE_PYTHON = 1
+HAVE_FFMPEG = 0
 libsnes ?= -lsnes
 
 LIBS = -lm
@@ -108,8 +109,14 @@ endif
 
 ifeq ($(HAVE_DINPUT), 1)
    LIBS += -ldinput8 -ldxguid -lole32
-   DEFINES += -DHAVE_DINPUT
+   DEFINES += -DHAVE_DINPUT -Iffmpeg
    OBJ += input/dinput.o
+endif
+
+ifeq ($(HAVE_FFMPEG), 1)
+   LIBS += -lavformat -lavcodec -lavutil -lswscale -lws2_32 -lzlib1
+   DEFINES += -DHAVE_FFMPEG
+   OBJ += record/ffemu.o
 endif
 
 ifneq ($(V),1)
