@@ -168,16 +168,16 @@ static int SDLCALL ffemu_thread(void *data);
 
 static bool init_thread(ffemu_t *handle)
 {
-   handle->lock = SDL_CreateMutex();
-   handle->cond_lock = SDL_CreateMutex();
-   handle->cond = SDL_CreateCond();
-   handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) * handle->params.channels * MAX_FRAMES / 60);
-   handle->attr_fifo = fifo_new(sizeof(struct ffemu_video_data) * MAX_FRAMES);
-   handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height * sizeof(int16_t) * MAX_FRAMES);
+   assert(handle->lock = SDL_CreateMutex());
+   assert(handle->cond_lock = SDL_CreateMutex());
+   assert(handle->cond = SDL_CreateCond());
+   assert(handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) * handle->params.channels * MAX_FRAMES / 60));
+   assert(handle->attr_fifo = fifo_new(sizeof(struct ffemu_video_data) * MAX_FRAMES));
+   assert(handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height * sizeof(int16_t) * MAX_FRAMES));
 
    handle->alive = true;
    handle->can_sleep = true;
-   handle->thread = SDL_CreateThread(ffemu_thread, handle);
+   assert(handle->thread = SDL_CreateThread(ffemu_thread, handle));
 
    return true;
 }
