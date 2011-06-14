@@ -764,11 +764,8 @@ static void init_recording(void)
       struct ffemu_rational ntsc_fps = {60000, 1000};
       struct ffemu_rational pal_fps = {50000, 1000};
       struct ffemu_params params = {
-         .vcodec = FFEMU_VIDEO_H264,
-         .acodec = FFEMU_AUDIO_VORBIS,
-         .rescaler = FFEMU_RESCALER_POINT,
-         .out_width = 512,
-         .out_height = 448,
+         .out_width = 256,
+         .out_height = 224,
          .channels = 2,
          .samplerate = 32000,
          .filename = g_extern.record_path,
@@ -782,6 +779,8 @@ static void init_recording(void)
          SSNES_ERR("Failed to start FFmpeg recording.\n");
          g_extern.recording = false;
       }
+      else
+         g_settings.video.crop_overscan = true;
    }
 }
 

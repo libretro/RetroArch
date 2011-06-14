@@ -11,30 +11,23 @@ extern "C" {
 // Available video codecs
 typedef enum ffemu_video_codec
 {
-   FFEMU_VIDEO_NONE,
-   FFEMU_VIDEO_H264,
-   FFEMU_VIDEO_MPEG4,
+   FFEMU_VIDEO_FFV1,
 } ffemu_video_codec;
 
 // Available audio codecs
 typedef enum ffemu_audio_codec
 {
-   FFEMU_AUDIO_NONE,
    FFEMU_AUDIO_VORBIS,
-   FFEMU_AUDIO_MP3,
-   FFEMU_AUDIO_AAC,
 } ffemu_audio_codec;
 
 // Available pixel formats
 typedef enum ffemu_pixel_format
 {
    FFEMU_FMT_XBGR1555,
-   FFEMU_FMT_RGB888,
 } ffemu_pixel_format;
 
 typedef enum ffemu_rescaler
 {
-   FFEMU_RESCALER_LANCZOS,
    FFEMU_RESCALER_POINT
 } ffemu_rescaler;
 
@@ -55,12 +48,6 @@ struct ffemu_params
    unsigned out_height;
    float aspect_ratio;
 
-   // Rescaler for video.
-   ffemu_rescaler rescaler;
-
-   // Pixel format for video input.
-   ffemu_pixel_format format;
-
    // FPS of video input.
    struct ffemu_rational fps;
 
@@ -70,9 +57,6 @@ struct ffemu_params
 
    // Define some video codec dependent option. (E.g. h264 profiles)
    uint64_t video_opt;
-
-   // Audio codec. If not recording audio, select FFEMU_AUDIO_NONE.
-   ffemu_audio_codec acodec;
 
    // Audio sample rate.
    unsigned samplerate;
