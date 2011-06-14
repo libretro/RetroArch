@@ -29,7 +29,7 @@ typedef struct rsd
    bool nonblock;
    volatile bool has_error;
 
-   rsound_fifo_buffer_t *buffer;
+   fifo_buffer_t *buffer;
 
    SDL_mutex *cond_lock;
    SDL_cond *cond;
@@ -39,9 +39,9 @@ static ssize_t audio_cb(void *data, size_t bytes, void *userdata)
 {
    rsd_t *rsd = userdata;
 
-   size_t avail = rsnd_fifo_read_avail(rsd->buffer);
+   size_t avail = fifo_read_avail(rsd->buffer);
    size_t write_size = bytes > avail ? avail : bytes;
-   rsnd_fifo_read(rsd->buffer, data, write_size);
+   fifo_read(rsd->buffer, data, write_size);
    SDL_CondSignal(rsd->cond);
 
    return write_size;
@@ -71,7 +71,7 @@ static void* __rsd_init(const char* device, unsigned rate, unsigned latency)
    rsd->cond_lock = SDL_CreateMutex();
    rsd->cond = SDL_CreateCond();
 
-   rsd->buffer = rsnd_fifo_new(1024 * 4);
+   rsd->buffer = fifo_new(1024 * 4);
 
    int channels = 2;
    int format = RSD_S16_NE;
@@ -108,9 +108,9 @@ static ssize_t __rsd_write(void* data, const void* buf, size_t size)
    if (rsd->nonblock)
    {
       rsd_callback_lock(rsd->rd);
-      size_t avail = rsnd_fifo_write_avail(rsd->buffer);
+      size_t avail = fifo_write_avail(rsd->buffer);
       size_t write_amt = avail > size ? size : avail;
-      rsnd_fifo_write(rsd->buffer, buf, write_amt);
+      fifo_write(rsd->buffer, buf, write_amt);
       rsd_callback_unlock(rsd->rd);
       return write_amt;
    }
@@ -120,7 +120,7 @@ static ssize_t __rsd_write(void* data, const void* buf, size_t size)
       while (written < size && !rsd->has_error)
       {
          rsd_callback_lock(rsd->rd);
-         size_t avail = rsnd_fifo_write_avail(rsd->buffer);
+         size_t avail = fifo_write_avail(rsd->buffer);
 
          if (avail == 0)
          {
@@ -135,7 +135,7 @@ static ssize_t __rsd_write(void* data, const void* buf, size_t size)
          else
          {
             size_t write_amt = size - written > avail ? avail : size - written;
-            rsnd_fifo_write(rsd->buffer, (const char*)buf + written, write_amt);
+            fifo_write(rsd->buffer, (const char*)buf + written, write_amt);
             rsd_callback_unlock(rsd->rd);
             written += write_amt;
          }
@@ -174,7 +174,7 @@ static void __rsd_free(void *data)
    rsd_stop(rsd->rd);
    rsd_free(rsd->rd);
 
-   rsnd_fifo_free(rsd->buffer);
+   fifo_free(rsd->buffer);
    SDL_DestroyMutex(rsd->cond_lock);
    SDL_DestroyCond(rsd->cond);
 

@@ -35,16 +35,16 @@ typedef struct sdl_audio
 
    SDL_mutex *lock;
    SDL_cond *cond;
-   rsound_fifo_buffer_t *buffer;
+   fifo_buffer_t *buffer;
 } sdl_audio_t;
 
 static void sdl_audio_cb(void *data, Uint8 *stream, int len)
 {
    sdl_audio_t *sdl = data;
 
-   size_t avail = rsnd_fifo_read_avail(sdl->buffer);
+   size_t avail = fifo_read_avail(sdl->buffer);
    size_t write_size = len > avail ? avail : len;
-   rsnd_fifo_read(sdl->buffer, stream, write_size);
+   fifo_read(sdl->buffer, stream, write_size);
    SDL_CondSignal(sdl->cond);
 
    // If underrun, fill rest with silence.
@@ -98,10 +98,10 @@ static void* sdl_audio_init(const char* device, unsigned rate, unsigned latency)
    // Create a buffer twice as big as needed and prefill the buffer.
    size_t bufsize = out.samples * 4 * sizeof(int16_t);
    void *tmp = calloc(1, bufsize);
-   sdl->buffer = rsnd_fifo_new(bufsize);
+   sdl->buffer = fifo_new(bufsize);
    if (tmp)
    {
-      rsnd_fifo_write(sdl->buffer, tmp, bufsize);
+      fifo_write(sdl->buffer, tmp, bufsize);
       free(tmp);
    }
 
@@ -117,9 +117,9 @@ static ssize_t sdl_audio_write(void* data, const void* buf, size_t size)
    if (sdl->nonblock)
    {
       SDL_LockAudio();
-      size_t avail = rsnd_fifo_write_avail(sdl->buffer);
+      size_t avail = fifo_write_avail(sdl->buffer);
       size_t write_amt = avail > size ? size : avail;
-      rsnd_fifo_write(sdl->buffer, buf, write_amt);
+      fifo_write(sdl->buffer, buf, write_amt);
       SDL_UnlockAudio();
       ret = write_amt;
    }
@@ -129,7 +129,7 @@ static ssize_t sdl_audio_write(void* data, const void* buf, size_t size)
       while (written < size)
       {
          SDL_LockAudio();
-         size_t avail = rsnd_fifo_write_avail(sdl->buffer);
+         size_t avail = fifo_write_avail(sdl->buffer);
 
          if (avail == 0)
          {
@@ -141,7 +141,7 @@ static ssize_t sdl_audio_write(void* data, const void* buf, size_t size)
          else
          {
             size_t write_amt = size - written > avail ? avail : size - written;
-            rsnd_fifo_write(sdl->buffer, (const char*)buf + written, write_amt);
+            fifo_write(sdl->buffer, (const char*)buf + written, write_amt);
             SDL_UnlockAudio();
             written += write_amt;
          }
@@ -180,7 +180,7 @@ static void sdl_audio_free(void *data)
    sdl_audio_t *sdl = data;
    if (sdl)
    {
-      rsnd_fifo_free(sdl->buffer);
+      fifo_free(sdl->buffer);
       SDL_DestroyMutex(sdl->lock);
       SDL_DestroyCond(sdl->cond);
    }
