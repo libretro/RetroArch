@@ -857,6 +857,7 @@ static void init_movie(void)
       }
 
       msg_queue_push(g_extern.msg_queue, "Starting movie playback!", 2, 180);
+      g_settings.rewind_granularity = 1;
       SSNES_LOG("Starting movie playback!\n");
    }
 }
@@ -1162,8 +1163,7 @@ static void check_rewind(void)
 
          if (g_extern.bsv_movie)
          {
-            for (unsigned i = 0; i < (g_settings.rewind_granularity ? g_settings.rewind_granularity : 1); i++)
-               bsv_movie_frame_rewind(g_extern.bsv_movie);
+            bsv_movie_frame_rewind(g_extern.bsv_movie);
          }
       }
       else
@@ -1197,6 +1197,7 @@ static void check_movie_record(void)
       }
       else
       {
+         g_settings.rewind_granularity = 1;
          char path[512];
          if (g_extern.state_slot > 0)
             snprintf(path, sizeof(path), "%s%d.bsv", g_extern.bsv_movie_path, g_extern.state_slot);
