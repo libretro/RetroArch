@@ -450,7 +450,8 @@ int ffemu_finalize(ffemu_t *handle)
    deinit_thread(handle);
 
    // Push out frames still stuck in queue.
-   uint16_t video_buf[512 * 448];
+   uint16_t *video_buf = malloc(512 * 448 * sizeof(uint16_t));
+   assert(video_buf);
    int16_t audio_buf[128 * handle->params.channels];
    struct ffemu_video_data attr_buf;
 
@@ -461,6 +462,8 @@ int ffemu_finalize(ffemu_t *handle)
       attr_buf.data = video_buf;
       ffemu_push_video_thread(handle, &attr_buf);
    }
+
+   free(video_buf);
 
    while (fifo_read_avail(handle->audio_fifo) >= sizeof(audio_buf))
    {
@@ -512,7 +515,8 @@ static int SDLCALL ffemu_thread(void *data)
 {
    ffemu_t *ff = data;
 
-   uint16_t video_buf[512 * 448];
+   uint16_t *video_buf = malloc(512 * 448 * sizeof(uint16_t));
+   assert(video_buf);
    int16_t audio_buf[128 * ff->params.channels];
    struct ffemu_video_data attr_buf;
 
@@ -571,6 +575,8 @@ static int SDLCALL ffemu_thread(void *data)
          ffemu_push_audio_thread(ff, &aud);
       }
    }
+
+   free(video_buf);
 
    return 0;
 }
