@@ -178,31 +178,34 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 
 static void audio_sample(uint16_t left, uint16_t right)
 {
-   if ( !g_extern.audio_active )
+   if (!g_extern.audio_active)
+      return;
+
+   const float *output_data = NULL;
+   unsigned output_frames = 0;
+
+#ifdef HAVE_FFMPEG
+   g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr] = left;
+#endif
+   g_extern.audio_data.data[g_extern.audio_data.data_ptr++] = (float)(int16_t)left/0x8000; 
+#ifdef HAVE_FFMPEG
+   g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr] = right;
+#endif
+   g_extern.audio_data.data[g_extern.audio_data.data_ptr++] = (float)(int16_t)right/0x8000;
+
+   if (g_extern.audio_data.data_ptr < g_extern.audio_data.chunk_size)
       return;
 
 #ifdef HAVE_FFMPEG
    if (g_extern.recording)
    {
-      static int16_t static_data[2];
-      static_data[0] = left;
-      static_data[1] = right;
       struct ffemu_audio_data ffemu_data = {
-         .data = static_data,
-         .frames = 1
+         .data = g_extern.audio_data.conv_outsamples,
+         .frames = g_extern.audio_data.data_ptr / 2
       };
       ffemu_push_audio(g_extern.rec, &ffemu_data);
    }
 #endif
-
-   const float *output_data = NULL;
-   unsigned output_frames = 0;
-
-   g_extern.audio_data.data[g_extern.audio_data.data_ptr++] = (float)(int16_t)left/0x8000; 
-   g_extern.audio_data.data[g_extern.audio_data.data_ptr++] = (float)(int16_t)right/0x8000;
-
-   if (g_extern.audio_data.data_ptr < g_extern.audio_data.chunk_size)
-      return;
 
    ssnes_dsp_input_t dsp_input = {
       .samples = g_extern.audio_data.data,
