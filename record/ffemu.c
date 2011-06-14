@@ -193,15 +193,33 @@ static void deinit_thread(ffemu_t *handle)
 
       SDL_CondSignal(handle->cond);
       SDL_WaitThread(handle->thread, NULL);
-      handle->thread = NULL;
 
       SDL_DestroyMutex(handle->lock);
       SDL_DestroyMutex(handle->cond_lock);
       SDL_DestroyCond(handle->cond);
 
+      handle->thread = NULL;
+   }
+}
+
+static void deinit_thread_buf(ffemu_t *handle)
+{
+   if (handle->audio_fifo)
+   {
       fifo_free(handle->audio_fifo);
+      handle->audio_fifo = NULL;
+   }
+   
+   if (handle->attr_fifo)
+   {
       fifo_free(handle->attr_fifo);
+      handle->attr_fifo = NULL;
+   }
+
+   if (handle->video_fifo)
+   {
       fifo_free(handle->video_fifo);
+      handle->video_fifo = NULL;
    }
 }
 
@@ -240,6 +258,7 @@ void ffemu_free(ffemu_t *handle)
    if (handle)
    {
       deinit_thread(handle);
+      deinit_thread_buf(handle);
 
       if (handle->audio.codec)
       {
@@ -429,6 +448,33 @@ static int ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_dat
 int ffemu_finalize(ffemu_t *handle)
 {
    deinit_thread(handle);
+
+   // Push out frames still stuck in queue.
+   uint16_t video_buf[512 * 448];
+   int16_t audio_buf[128 * handle->params.channels];
+   struct ffemu_video_data attr_buf;
+
+   while (fifo_read_avail(handle->attr_fifo) >= sizeof(attr_buf))
+   {
+      fifo_read(handle->attr_fifo, &attr_buf, sizeof(attr_buf));
+      fifo_read(handle->video_fifo, video_buf, attr_buf.height * attr_buf.pitch);
+      attr_buf.data = video_buf;
+      ffemu_push_video_thread(handle, &attr_buf);
+   }
+
+   while (fifo_read_avail(handle->audio_fifo) >= sizeof(audio_buf))
+   {
+      fifo_read(handle->audio_fifo, audio_buf, sizeof(audio_buf));
+
+      struct ffemu_audio_data aud = {
+         .frames = 128,
+         .data = audio_buf
+      };
+
+      ffemu_push_audio_thread(handle, &aud);
+   }
+
+   deinit_thread_buf(handle);
 
    // Push out delayed frames. (MPEG codecs)
    AVPacket pkt;
