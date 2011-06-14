@@ -19,7 +19,7 @@
 #include "driver.h"
 #include <stdlib.h>
 #include <rsound.h>
-#include "buffer.h"
+#include "fifo_buffer.h"
 #include <stdbool.h>
 #include "SDL.h"
 

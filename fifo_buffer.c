@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "buffer.h"
+#include "fifo_buffer.h"
 
 struct fifo_buffer
 {

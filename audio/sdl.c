@@ -27,7 +27,7 @@
 #include "SDL_audio.h"
 #include "SDL_thread.h"
 #include "general.h"
-#include "buffer.h"
+#include "fifo_buffer.h"
 
 typedef struct sdl_audio
 {
