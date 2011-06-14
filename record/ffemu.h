@@ -46,6 +46,10 @@ struct ffemu_params
    // Desired output resolution.
    unsigned out_width;
    unsigned out_height;
+
+   // Total size of framebuffer used in input.
+   unsigned fb_width;
+   unsigned fb_height;
    float aspect_ratio;
 
    // FPS of video input.

@@ -120,10 +120,10 @@ static bool init_video(struct video_info *video, struct ffemu_params *param)
    video->outbuf = av_malloc(video->outbuf_size);
 
    // Just to make sure we can handle the biggest frames. Seemed to crash with just 256 * 224.
-   int size = avpicture_get_size(PIX_FMT_RGB32, 512, 448);
+   int size = avpicture_get_size(PIX_FMT_RGB32, param->fb_width, param->fb_height);
    video->conv_frame_buf = av_malloc(size);
    video->conv_frame = avcodec_alloc_frame();
-   avpicture_fill((AVPicture*)video->conv_frame, video->conv_frame_buf, PIX_FMT_RGB32, 512, 448);
+   avpicture_fill((AVPicture*)video->conv_frame, video->conv_frame_buf, PIX_FMT_RGB32, param->fb_width, param->fb_height);
 
    return true;
 }
@@ -173,7 +173,7 @@ static bool init_thread(ffemu_t *handle)
    handle->cond = SDL_CreateCond();
    handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) * handle->params.channels * MAX_FRAMES / 60);
    handle->attr_fifo = fifo_new(sizeof(struct ffemu_video_data) * MAX_FRAMES);
-   handle->video_fifo = fifo_new(512 * 448 * sizeof(int16_t) * MAX_FRAMES);
+   handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height * sizeof(int16_t) * MAX_FRAMES);
 
    handle->alive = true;
    handle->can_sleep = true;
@@ -450,7 +450,7 @@ int ffemu_finalize(ffemu_t *handle)
    deinit_thread(handle);
 
    // Push out frames still stuck in queue.
-   uint16_t *video_buf = malloc(512 * 448 * sizeof(uint16_t));
+   uint16_t *video_buf = malloc(handle->params.fb_width * handle->params.fb_height * sizeof(uint16_t));
    assert(video_buf);
    int16_t audio_buf[128 * handle->params.channels];
    struct ffemu_video_data attr_buf;
@@ -515,7 +515,7 @@ static int SDLCALL ffemu_thread(void *data)
 {
    ffemu_t *ff = data;
 
-   uint16_t *video_buf = malloc(512 * 448 * sizeof(uint16_t));
+   uint16_t *video_buf = malloc(ff->params.fb_width * ff->params.fb_height * sizeof(uint16_t));
    assert(video_buf);
    int16_t audio_buf[128 * ff->params.channels];
    struct ffemu_video_data attr_buf;
