@@ -24,6 +24,8 @@ struct video_info
    size_t outbuf_size;
 
    AVFormatContext *format;
+
+   struct SwsContext *sws_ctx;
 } video;
 
 struct audio_info
@@ -200,6 +202,9 @@ void ffemu_free(ffemu_t *handle)
       if (handle->video.conv_frame_buf)
          av_free(handle->video.conv_frame_buf);
 
+      if (handle->video.sws_ctx)
+         sws_freeContext(handle->video.sws_ctx);
+
       free(handle);
    }
 }
@@ -207,14 +212,13 @@ void ffemu_free(ffemu_t *handle)
 // Need to make this thread based, but hey.
 int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
 {
-   // This is deprecated, can't find a proper replacement... :(
-   struct SwsContext *conv_ctx = sws_getContext(data->width, data->height, PIX_FMT_RGB555LE,
+   handle->video.sws_ctx = sws_getCachedContext(handle->video.sws_ctx, data->width, data->height, PIX_FMT_RGB555LE,
          handle->params.out_width, handle->params.out_height, PIX_FMT_RGB32, SWS_POINT,
          NULL, NULL, NULL);
 
    int linesize = data->pitch;
 
-   sws_scale(conv_ctx, (const uint8_t* const*)&data->data, &linesize, 0, handle->params.out_width, handle->video.conv_frame->data, handle->video.conv_frame->linesize);
+   sws_scale(handle->video.sws_ctx, (const uint8_t* const*)&data->data, &linesize, 0, handle->params.out_width, handle->video.conv_frame->data, handle->video.conv_frame->linesize);
 
    handle->video.conv_frame->pts = handle->video.frame_cnt;
    handle->video.conv_frame->display_picture_number = handle->video.frame_cnt;
@@ -223,8 +227,6 @@ int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
 
    if (outsize < 0)
       return -1;
-
-   sws_freeContext(conv_ctx);
 
    AVPacket pkt;
    av_init_packet(&pkt);
