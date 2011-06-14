@@ -104,7 +104,7 @@ parse_input()
 
          --enable-*)
             enable=`echo $1 | sed 's|^--enable-||'`
-            if [ -z "`echo $COMMAND_LINE_OPTS_ENABLE | grep -i $enable`" ]; then
+            if [ -z "`echo $COMMAND_LINE_OPTS_ENABLE | grep -i -- $enable`" ]; then
                print_help
                exit 1
             fi
@@ -113,7 +113,7 @@ parse_input()
 
          --disable-*)
             disable=`echo $1 | sed 's|^--disable-||'`
-            if [ -z "`echo $COMMAND_LINE_OPTS_ENABLE | grep -i $disable`" ]; then
+            if [ -z "`echo $COMMAND_LINE_OPTS_ENABLE | grep -i -- $disable`" ]; then
                print_help
                exit 1
             fi
@@ -123,7 +123,7 @@ parse_input()
          --with-*)
             arg="`echo $1 | sed 's|^--with-\S\S*=||'`"
             with=`echo $1 | sed 's|^--with-\(\S\S*\)=.*$|\1|'`
-            if [ -z "`echo $COMMAND_LINE_OPTS_STRINGS | grep -i $with`" ]; then
+            if [ -z "`echo $COMMAND_LINE_OPTS_STRINGS | grep -i -- $with`" ]; then
                print_help
                exit 1
             fi
