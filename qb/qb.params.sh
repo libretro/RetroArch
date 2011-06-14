@@ -122,7 +122,7 @@ parse_input()
 
          --with-*)
             arg="`echo $1 | sed 's|^--with-\S\S*=||'`"
-            with=`echo $1 | sed 's|^--with-\(\S\S*\)=.*$|\1|'`
+            with="`echo $1 | sed 's|^--with-\(\S\S*\)=.*|\1|'`"
             if [ -z "`echo $COMMAND_LINE_OPTS_STRINGS | grep -i -- $with`" ]; then
                print_help
                exit 1
