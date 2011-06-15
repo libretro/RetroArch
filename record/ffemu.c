@@ -116,7 +116,7 @@ static bool init_video(struct video_info *video, struct ffemu_params *param)
       return false;
 
    // Allocate a big buffer :p ffmpeg API doesn't seem to give us some clues how big this buffer should be.
-   video->outbuf_size = 5000000;
+   video->outbuf_size = 2000000;
    video->outbuf = av_malloc(video->outbuf_size);
 
    // Just to make sure we can handle the biggest frames. Seemed to crash with just 256 * 224.

@@ -769,8 +769,8 @@ static void init_recording(void)
       struct ffemu_params params = {
          .out_width = 256,
          .out_height = 224,
-         .fb_width = 512,
-         .fb_height = 448,
+         .fb_width = 1024,
+         .fb_height = 512,
          .channels = 2,
          .samplerate = 32000,
          .filename = g_extern.record_path,
