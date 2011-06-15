@@ -450,31 +450,36 @@ int ffemu_finalize(ffemu_t *handle)
    deinit_thread(handle);
 
    // Push out frames still stuck in queue.
-   uint16_t *video_buf = malloc(handle->params.fb_width * handle->params.fb_height * sizeof(uint16_t));
-   assert(video_buf);
-   int16_t audio_buf[128 * handle->params.channels];
-   struct ffemu_video_data attr_buf;
-
-   while (fifo_read_avail(handle->attr_fifo) >= sizeof(attr_buf))
+   uint16_t *video_buf = av_malloc(handle->params.fb_width * handle->params.fb_height * sizeof(uint16_t));
+   if (video_buf)
    {
-      fifo_read(handle->attr_fifo, &attr_buf, sizeof(attr_buf));
-      fifo_read(handle->video_fifo, video_buf, attr_buf.height * attr_buf.pitch);
-      attr_buf.data = video_buf;
-      ffemu_push_video_thread(handle, &attr_buf);
+      struct ffemu_video_data attr_buf;
+      while (fifo_read_avail(handle->attr_fifo) >= sizeof(attr_buf))
+      {
+         fifo_read(handle->attr_fifo, &attr_buf, sizeof(attr_buf));
+         fifo_read(handle->video_fifo, video_buf, attr_buf.height * attr_buf.pitch);
+         attr_buf.data = video_buf;
+         ffemu_push_video_thread(handle, &attr_buf);
+      }
+      av_free(video_buf);
    }
 
-   free(video_buf);
-
-   while (fifo_read_avail(handle->audio_fifo) >= sizeof(audio_buf))
+   size_t audio_buf_size = 128 * handle->params.channels * sizeof(int16_t);
+   int16_t *audio_buf = av_malloc(audio_buf_size);
+   if (audio_buf)
    {
-      fifo_read(handle->audio_fifo, audio_buf, sizeof(audio_buf));
+      while (fifo_read_avail(handle->audio_fifo) >= audio_buf_size)
+      {
+         fifo_read(handle->audio_fifo, audio_buf, sizeof(audio_buf_size));
 
-      struct ffemu_audio_data aud = {
-         .frames = 128,
-         .data = audio_buf
-      };
+         struct ffemu_audio_data aud = {
+            .frames = 128,
+            .data = audio_buf
+         };
 
-      ffemu_push_audio_thread(handle, &aud);
+         ffemu_push_audio_thread(handle, &aud);
+      }
+      av_free(audio_buf);
    }
 
    deinit_thread_buf(handle);
@@ -515,9 +520,13 @@ static int SDLCALL ffemu_thread(void *data)
 {
    ffemu_t *ff = data;
 
-   uint16_t *video_buf = malloc(ff->params.fb_width * ff->params.fb_height * sizeof(uint16_t));
+   uint16_t *video_buf = av_malloc(ff->params.fb_width * ff->params.fb_height * sizeof(uint16_t));
    assert(video_buf);
-   int16_t audio_buf[128 * ff->params.channels];
+
+   size_t audio_buf_size = 128 * ff->params.channels * sizeof(int16_t);
+   int16_t *audio_buf = av_malloc(audio_buf_size);
+   assert(audio_buf);
+
    struct ffemu_video_data attr_buf;
 
    while (ff->alive)
@@ -529,7 +538,7 @@ static int SDLCALL ffemu_thread(void *data)
       if (fifo_read_avail(ff->attr_fifo) >= sizeof(attr_buf))
          avail_video = true;
 
-      if (fifo_read_avail(ff->audio_fifo) >= sizeof(audio_buf))
+      if (fifo_read_avail(ff->audio_fifo) >= audio_buf_size)
          avail_audio = true;
       SDL_mutexV(ff->lock);
 
@@ -563,7 +572,7 @@ static int SDLCALL ffemu_thread(void *data)
       if (avail_audio)
       {
          SDL_mutexP(ff->lock);
-         fifo_read(ff->audio_fifo, audio_buf, sizeof(audio_buf));
+         fifo_read(ff->audio_fifo, audio_buf, audio_buf_size);
          SDL_mutexV(ff->lock);
          SDL_CondSignal(ff->cond);
 
@@ -576,7 +585,8 @@ static int SDLCALL ffemu_thread(void *data)
       }
    }
 
-   free(video_buf);
+   av_free(video_buf);
+   av_free(audio_buf);
 
    return 0;
 }
