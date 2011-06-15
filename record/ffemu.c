@@ -133,7 +133,11 @@ static bool init_muxer(ffemu_t *handle)
    AVFormatContext *ctx = avformat_alloc_context();
    av_strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
    ctx->oformat = av_guess_format(NULL, ctx->filename, NULL);
-   if (avio_open(&ctx->pb, ctx->filename, URL_WRONLY) < 0)
+#ifdef AVIO_FLAG_WRITE
+   if (avio_open(&ctx->pb, ctx->filename, AVIO_FLAG_WRITE) < 0)
+#else
+   if (url_fopen(&ctx->pb, ctx->filename, URL_WRONLY) < 0)
+#endif
    {
       av_free(ctx);
       return false;
