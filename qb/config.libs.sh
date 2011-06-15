@@ -48,11 +48,10 @@ check_pkgconf SDL_IMAGE SDL_image
 if [ $HAVE_FFMPEG != no ]; then
    check_pkgconf AVCODEC libavcodec
    check_pkgconf AVFORMAT libavformat
-   check_pkgconf AVCORE libavcore
    check_pkgconf AVUTIL libavutil
    check_pkgconf SWSCALE libswscale
 
-   ( [ $HAVE_FFMPEG = auto ] && ( [ $HAVE_AVCODEC = no ] || [ $HAVE_AVFORMAT = no ] || [ $HAVE_AVCORE = no ] || [ $HAVE_AVUTIL = no ] || [ $HAVE_SWSCALE = no ] ) && HAVE_FFMPEG=no ) || HAVE_FFMPEG=yes
+   ( [ $HAVE_FFMPEG = auto ] && ( [ $HAVE_AVCODEC = no ] || [ $HAVE_AVFORMAT = no ] || [ $HAVE_AVUTIL = no ] || [ $HAVE_SWSCALE = no ] ) && HAVE_FFMPEG=no ) || HAVE_FFMPEG=yes
 fi
 
 check_pkgconf SRC samplerate
@@ -67,7 +66,7 @@ check_lib STRL -lc strlcpy
 check_pkgconf PYTHON python3
 
 # Creates config.mk and config.h.
-VARS="ALSA OSS AL RSOUND ROAR JACK PULSE SDL DYLIB CG XML SDL_IMAGE DYNAMIC FFMPEG AVCODEC AVFORMAT AVCORE AVUTIL SWSCALE SRC CONFIGFILE FREETYPE XVIDEO NETPLAY FBO STRL PYTHON"
+VARS="ALSA OSS AL RSOUND ROAR JACK PULSE SDL DYLIB CG XML SDL_IMAGE DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL SWSCALE SRC CONFIGFILE FREETYPE XVIDEO NETPLAY FBO STRL PYTHON"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 
