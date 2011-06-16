@@ -15,28 +15,43 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "driver.h"
 #include <stdlib.h>
+
+#ifdef HAVE_OSS_BSD
+#include <soundcard.h>
+#else
 #include <sys/soundcard.h>
+#endif
+
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
 
+#ifdef HAVE_OSS_BSD
+#define DEFAULT_OSS_DEV "/dev/audio"
+#else
+#define DEFAULT_OSS_DEV "/dev/dsp"
+#endif
+
 static void* __oss_init(const char* device, unsigned rate, unsigned latency)
 {
    int *fd = calloc(1, sizeof(int));
-   if ( fd == NULL )
+   if (fd == NULL)
       return NULL;
 
-   const char *oss_device = "/dev/dsp";
+   const char *oss_device = DEFAULT_OSS_DEV;
 
-   if ( device != NULL )
+   if (device != NULL)
       oss_device = device;
 
-   if ( (*fd = open(oss_device, O_WRONLY)) < 0 )
+   if ((*fd = open(oss_device, O_WRONLY)) < 0)
    {
       free(fd);
       return NULL;
@@ -45,7 +60,7 @@ static void* __oss_init(const char* device, unsigned rate, unsigned latency)
    int frags = (latency * rate * 4)/(1000 * (1 << 9));
    int frag = (frags << 16) | 9;
 
-   if ( ioctl(*fd, SNDCTL_DSP_SETFRAGMENT, &frag) < 0 )
+   if (ioctl(*fd, SNDCTL_DSP_SETFRAGMENT, &frag) < 0)
    {
       close(*fd);
       free(fd);
@@ -55,21 +70,21 @@ static void* __oss_init(const char* device, unsigned rate, unsigned latency)
    int channels = 2;
    int format = AFMT_S16_LE;
 
-   if ( ioctl(*fd, SNDCTL_DSP_CHANNELS, &channels) < 0 )
+   if (ioctl(*fd, SNDCTL_DSP_CHANNELS, &channels) < 0)
    {
       close(*fd);
       free(fd);
       return NULL;
    }
 
-   if ( ioctl(*fd, SNDCTL_DSP_SETFMT, &format) < 0 )
+   if (ioctl(*fd, SNDCTL_DSP_SETFMT, &format) < 0)
    {
       close(*fd);
       free(fd);
       return NULL;
    }
 
-   if ( ioctl(*fd, SNDCTL_DSP_SPEED, &rate) < 0 )
+   if (ioctl(*fd, SNDCTL_DSP_SPEED, &rate) < 0)
    {
       close(*fd);
       free(fd);
@@ -83,13 +98,13 @@ static ssize_t __oss_write(void* data, const void* buf, size_t size)
 {
    int *fd = data;
 
-   if ( size == 0 )
+   if (size == 0)
       return 0;
 
    ssize_t ret;
-   if ( (ret = write(*fd, buf, size)) <= 0 )
+   if ((ret = write(*fd, buf, size)) <= 0)
    {
-      if ( (fcntl(*fd, F_GETFL) & O_NONBLOCK) && errno == EAGAIN )
+      if ((fcntl(*fd, F_GETFL) & O_NONBLOCK) && errno == EAGAIN)
          return 0;
       return -1;
    }
@@ -139,9 +154,4 @@ const audio_driver_t audio_oss = {
    .free = __oss_free,
    .ident = "oss"
 };
-
-   
-
-
-   
    

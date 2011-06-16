@@ -41,9 +41,13 @@ check_lib()
    eval tmpval=\$$tmpval
    [ "$tmpval" = "no" ] && return 0
 
-   echo -n "Checking function $3 in $2 ... "
-   echo "void $3(void); int main(void) { $3(); return 0; }" > $TEMP_C
-
+   if [ -z "$3" ]; then
+      echo -n "Checking existence of $2 ..."
+      echo "int main(void) { return 0; }" > $TEMP_C
+   else
+      echo -n "Checking function $3 in $2 ... "
+      echo "void $3(void); int main(void) { $3(); return 0; }" > $TEMP_C
+   fi
 
    eval HAVE_$1=no
    answer=no
@@ -67,8 +71,13 @@ check_lib_cxx()
    eval tmpval=\$$tmpval
    [ "$tmpval" = "no" ] && return 0
 
-   echo -n "Checking function $3 in $2 ... "
-   echo "extern \"C\" { void $3(void); } int main() { $3(); }" > $TEMP_CXX
+   if [ -z "$3" ]; then
+      echo -n "Checking existence of $2 ..."
+      echo "int main(void) { return 0; }" > $TEMP_C
+   else
+      echo -n "Checking function $3 in $2 ... "
+      echo "extern \"C\" { void $3(void); } int main() { $3(); }" > $TEMP_CXX
+   fi
 
    eval HAVE_$1=no
    answer=no
