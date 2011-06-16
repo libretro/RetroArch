@@ -29,10 +29,6 @@ check_header OSS sys/soundcard.h
 check_header OSS_BSD soundcard.h
 check_lib OSS_LIB -lossaudio
 
-if [ "$HAVE_OSS_BSD" = "yes" ]; then
-   check_critical OSS_LIB "Have BSD-style OSS, but -lossaudio is not present."
-fi
-
 if [ "$OS" = "Darwin" ]; then
    check_lib AL "-framework OpenAL" alcOpenDevice
 else
@@ -78,7 +74,7 @@ check_lib STRL -lc strlcpy
 check_pkgconf PYTHON python3
 
 # Creates config.mk and config.h.
-VARS="ALSA OSS OSS_BSD AL RSOUND ROAR JACK PULSE SDL DYLIB CG XML SDL_IMAGE DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL SWSCALE SRC CONFIGFILE FREETYPE XVIDEO NETPLAY FBO STRL PYTHON"
+VARS="ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK PULSE SDL DYLIB CG XML SDL_IMAGE DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL SWSCALE SRC CONFIGFILE FREETYPE XVIDEO NETPLAY FBO STRL PYTHON"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 

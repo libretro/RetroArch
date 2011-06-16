@@ -48,8 +48,11 @@ ifeq ($(HAVE_OSS), 1)
 endif
 ifeq ($(HAVE_OSS_BSD), 1)
    OBJ += audio/oss.o
+endif
+ifeq ($(HAVE_OSS_LIB), 1)
    LIBS += -lossaudio
 endif
+
 ifeq ($(HAVE_ALSA), 1)
    OBJ += audio/alsa.o
    LIBS += -lasound
