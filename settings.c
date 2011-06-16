@@ -194,8 +194,8 @@ static config_file_t *open_default_config_file(void)
       if (appdata)
       {
          char conf_path[strlen(appdata) + strlen("/ssnes.cfg ")];
-         strcpy(conf_path, appdata);
-         strcat(conf_path, "/ssnes.cfg");
+         strlcpy(conf_path, appdata, sizeof(conf_path));
+         strlcat(conf_path, "/ssnes.cfg", sizeof(conf_path));
          conf = config_file_new(conf_path);
       }
    }
@@ -204,8 +204,8 @@ static config_file_t *open_default_config_file(void)
    if (home)
    {
       char conf_path[strlen(home) + strlen("/.ssnes.cfg ")];
-      strcpy(conf_path, home);
-      strcat(conf_path, "/.ssnes.cfg");
+      strlcpy(conf_path, home, sizeof(conf_path));
+      strlcat(conf_path, "/.ssnes.cfg", sizeof(conf_path));
       conf = config_file_new(conf_path);
    }
    if (!conf)
@@ -219,15 +219,15 @@ static config_file_t *open_default_config_file(void)
    if (xdg)
    {
       char conf_path[strlen(xdg) + strlen("/ssnes/ssnes.cfg ")];
-      strcpy(conf_path, xdg);
-      strcat(conf_path, "/ssnes/ssnes.cfg");
+      strlcpy(conf_path, xdg, sizeof(conf_path));
+      strlcat(conf_path, "/ssnes/ssnes.cfg", sizeof(conf_path));
       conf = config_file_new(conf_path);
    }
    else if (home)
    {
       char conf_path[strlen(home) + strlen("/.ssnes.cfg ")];
-      strcpy(conf_path, home);
-      strcat(conf_path, "/.ssnes.cfg");
+      strlcpy(conf_path, home, sizeof(conf_path));
+      strlcat(conf_path, "/.ssnes.cfg", sizeof(conf_path));
       conf = config_file_new(conf_path);
    }
    // Try this as a last chance...

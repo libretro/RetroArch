@@ -16,6 +16,13 @@ else
    OSX := 0
 endif
 
+BSD_LOCAL_INC =
+DYLIB_LIB = -ldl
+ifneq ($(findstring BSD,$(shell uname -a)),)
+   BSD_LOCAL_INC = -I/usr/local/include
+   DYLIB_LIB = -lc
+endif
+
 ifeq ($(HAVE_SRC), 1)
    LIBS += $(SRC_LIBS)
    DEFINES += $(SRC_CFLAGS)
@@ -68,7 +75,7 @@ endif
 
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl.o gfx/gl.o input/sdl.o audio/sdl.o fifo_buffer.o
-   DEFINES += $(SDL_CFLAGS)
+   DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
 ifeq ($(OSX),1)
    LIBS += -framework OpenGL
@@ -95,7 +102,7 @@ endif
 
 ifeq ($(HAVE_DYLIB), 1)
    OBJ += gfx/ext.o audio/ext.o
-   LIBS += -ldl
+   LIBS += $(DYLIB_LIB)
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)
@@ -116,7 +123,7 @@ ifeq ($(HAVE_FFMPEG), 1)
 endif
 
 ifeq ($(HAVE_DYNAMIC), 1)
-   LIBS += -ldl
+   LIBS += $(DYLIB_LIB)
 else
    LIBS += $(libsnes)
 endif

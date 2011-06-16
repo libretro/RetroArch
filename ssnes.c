@@ -418,7 +418,7 @@ static void print_help(void)
 static void set_basename(const char *path)
 {
    char tmp[strlen(path) + 1];
-   strcpy(tmp, path);
+   strlcpy(tmp, path, sizeof(tmp));
    char *dst = strrchr(tmp, '.');
    if (dst)
       *dst = '\0';
