@@ -3,6 +3,12 @@
 check_switch_c C99 -std=gnu99
 check_critical C99 "Cannot find C99 compatible compiler."
 
+if [ "$OS" = BSD ]; then
+   DYLIB=-lc
+else
+   DYLIB=-ldl
+fi
+
 if [ "$HAVE_DYNAMIC" = "yes" ] && [ "$HAVE_CONFIGFILE" = "no" ]; then
    echo "Cannot have dynamic loading of libsnes and no configfile support."
    echo "Dynamic loading requires config file support."
@@ -10,12 +16,12 @@ if [ "$HAVE_DYNAMIC" = "yes" ] && [ "$HAVE_CONFIGFILE" = "no" ]; then
 fi
 
 if [ $HAVE_DYNAMIC != yes ]; then
-   check_lib_cxx SNES $LIBSNES snes_init -ldl
+   check_lib_cxx SNES $LIBSNES snes_init $DYLIB
    check_critical SNES "Cannot find libsnes."
    add_define_make libsnes $LIBSNES
 fi
 
-check_lib DYLIB -ldl dlopen
+check_lib DYLIB $DYLIB dlopen
 check_lib NETPLAY -lc socket
 
 check_lib ALSA -lasound snd_pcm_open
@@ -56,7 +62,7 @@ fi
 
 check_pkgconf SRC samplerate
 
-check_lib DYNAMIC -ldl dlopen
+check_lib DYNAMIC $DYLIB dlopen
 
 check_pkgconf FREETYPE freetype2
 check_lib XVIDEO -lXv XvShmCreateImage

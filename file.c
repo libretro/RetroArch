@@ -572,15 +572,9 @@ char** dir_list_new(const char *dir, const char *ext)
       if (!dir_list[cur_ptr])
          goto error;
 
-      strcpy(dir_list[cur_ptr], dir);
-#ifdef _WIN32
-      dir_list[cur_ptr][path_len] = '\\';
-      strcpy(&dir_list[cur_ptr][path_len + 1], utf8_buf);
-#else
-      dir_list[cur_ptr][path_len] = '/';
-      strcpy(&dir_list[cur_ptr][path_len + 1], entry->d_name);
-#endif
-      dir_list[cur_ptr][final_off - 1] = '\0';
+      strlcpy(dir_list[cur_ptr], dir, final_off);
+      strlcat(dir_list[cur_ptr], "/", final_off);
+      strlcat(dir_list[cur_ptr], entry->d_name, final_off);
 
       cur_ptr++;
       if (cur_ptr + 1 == cur_size) // Need to reserve for NULL.
