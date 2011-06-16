@@ -31,7 +31,6 @@ struct snes_tracker_internal
    char id[64];
 
    bool is_input;
-   unsigned input_slot;
    const uint16_t *input_ptr;
    const uint8_t *ptr;
 #ifdef HAVE_PYTHON
@@ -118,12 +117,10 @@ snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
             break;
          case SSNES_STATE_INPUT_SLOT1:
             tracker->info[i].input_ptr = &tracker->input_state[0];
-            tracker->info[i].input_slot = 0;
             tracker->info[i].is_input = true;
             break;
          case SSNES_STATE_INPUT_SLOT2:
             tracker->info[i].input_ptr = &tracker->input_state[1];
-            tracker->info[i].input_slot = 1;
             tracker->info[i].is_input = true;
             break;
 
@@ -144,7 +141,7 @@ void snes_tracker_free(snes_tracker_t *tracker)
    free(tracker);
 }
 
-#define fetch() ((info->is_input ? info->input_ptr[info->input_slot] : info->ptr[info->addr]) & info->mask)
+#define fetch() ((info->is_input ? *info->input_ptr : info->ptr[info->addr]) & info->mask)
 
 static void update_element(
       struct snes_tracker_uniform *uniform,
