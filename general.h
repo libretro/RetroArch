@@ -153,6 +153,7 @@ struct global
    bool has_justifier;
    bool has_justifiers;
    bool has_multitap;
+   bool disconnect_device[2];
 
    FILE *rom_file;
    enum ssnes_game_type game_type;

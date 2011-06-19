@@ -392,6 +392,7 @@ static void print_help(void)
    puts("\t--sufamiA: Path to A slot of Sufami Turbo. Load Sufami base cart as regular rom.");
    puts("\t--sufamiB: Path to B slot of Sufami Turbo.");
    puts("\t-m/--mouse: Connect a virtual mouse into designated port of the SNES (1 or 2)."); 
+   puts("\t-N/--nodevice: Disconnects the controller device connected to the emulated SNES (1 or 2).");
    puts("\t\tThis argument can be specified several times to connect more mice.");
    puts("\t-p/--scope: Connect a virtual SuperScope into port 2 of the SNES.");
    puts("\t-j/--justifier: Connect a virtual Konami Justifier into port 2 of the SNES.");
@@ -447,6 +448,7 @@ static void parse_input(int argc, char *argv[])
       { "config", 0, NULL, 'c' },
 #endif
       { "mouse", 1, NULL, 'm' },
+      { "nodevice", 1, NULL, 'N' },
       { "scope", 0, NULL, 'p' },
       { "savestate", 1, NULL, 'S' },
       { "bsx", 1, NULL, 'b' },
@@ -480,7 +482,7 @@ static void parse_input(int argc, char *argv[])
 #define CONFIG_FILE_ARG
 #endif
 
-   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:P:HC:F:U:D" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:P:HC:F:U:DN:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for(;;)
    {
       val = 0;
@@ -556,6 +558,17 @@ static void parse_input(int argc, char *argv[])
                exit(1);
             }
             g_extern.has_mouse[port - 1] = true;
+            break;
+
+         case 'N':
+            port = strtol(optarg, NULL, 0);
+            if (port < 1 || port > 2)
+            {
+               SSNES_ERR("Disconnected device from port 1 or 2.\n");
+               print_help();
+               exit(1);
+            }
+            g_extern.disconnect_device[port - 1] = true;
             break;
 
          case 'p':
@@ -672,21 +685,26 @@ static void init_controllers(void)
    }
    else if (g_extern.has_multitap)
    {
-      SSNES_LOG("Connecting multitap to port 2.\n");
+      SSNES_LOG("Connecting Multitap to port 2.\n");
       psnes_set_controller_port_device(SNES_PORT_2, SNES_DEVICE_MULTITAP);
    }
    else
    {
-      for (int i = 0; i < 2; i++)
+      for (unsigned i = 0; i < 2; i++)
       {
-         if (g_extern.has_mouse[i])
+         if (g_extern.disconnect_device[i])
          {
-            SSNES_LOG("Connecting mouse to port %d\n", i + 1);
+            SSNES_LOG("Disconnecting device from port %u.\n", i + 1);
+            psnes_set_controller_port_device(i, SNES_DEVICE_NONE);
+         }
+         else if (g_extern.has_mouse[i])
+         {
+            SSNES_LOG("Connecting mouse to port %u.\n", i + 1);
             psnes_set_controller_port_device(i, SNES_DEVICE_MOUSE);
          }
          else if (g_extern.has_scope[i])
          {
-            SSNES_LOG("Connecting scope to port %d\n", i + 1);
+            SSNES_LOG("Connecting scope to port %u.\n", i + 1);
             psnes_set_controller_port_device(i, SNES_DEVICE_SUPER_SCOPE);
          }
       }
