@@ -332,15 +332,15 @@ static void fill_pathname_noext(char *out_path, const char *in_path, const char 
 }
 
 #ifdef _WIN32
-#define SSNES_DEFAULT_CONF_PATH_STR "\n\tDefaults to ssnes.cfg in same directory as ssnes.exe"
+#define SSNES_DEFAULT_CONF_PATH_STR "\n\tDefaults to ssnes.cfg in same directory as ssnes.exe."
 #elif defined(__APPLE__)
-#define SSNES_DEFAULT_CONF_PATH_STR " Defaults to $HOME/.ssnes.cfg"
+#define SSNES_DEFAULT_CONF_PATH_STR " Defaults to $HOME/.ssnes.cfg."
 #else
-#define SSNES_DEFAULT_CONF_PATH_STR " Defaults to $XDG_CONFIG_HOME/ssnes/ssnes.cfg"
+#define SSNES_DEFAULT_CONF_PATH_STR " Defaults to $XDG_CONFIG_HOME/ssnes/ssnes.cfg,\n\t\tor $HOME/.ssnes.cfg, if $XDG_CONFIG_HOME is not defined."
 #endif
 
 #ifdef _WIN32
-#define PACKAGE_VERSION "0.5.2"
+#define PACKAGE_VERSION "0.6"
 #endif
 
 #include "config.features.h"
@@ -380,8 +380,8 @@ static void print_help(void)
    puts("ssnes: Simple Super Nintendo Emulator (libsnes) -- v" PACKAGE_VERSION " --");
    puts("===================================================================");
    puts("Usage: ssnes [rom file] [options...]");
-   puts("\t-h/--help: Show this help message");
-   puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin");
+   puts("\t-h/--help: Show this help message.");
+   puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin.");
    puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
 #ifdef HAVE_CONFIGFILE
    puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
@@ -409,7 +409,7 @@ static void print_help(void)
 #ifdef HAVE_FFMPEG
    puts("\t-r/--record: Path to record video file. Settings for video/audio codecs are found in config file.");
 #endif
-   puts("\t-v/--verbose: Verbose logging");
+   puts("\t-v/--verbose: Verbose logging.");
    puts("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM.");
    puts("\t-D/--detach: Detach SSNES from the running console. Not relevant for all platforms.\n");
 
