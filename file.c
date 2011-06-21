@@ -574,7 +574,11 @@ char** dir_list_new(const char *dir, const char *ext)
 
       strlcpy(dir_list[cur_ptr], dir, final_off);
       strlcat(dir_list[cur_ptr], "/", final_off);
+#ifdef _WIN32
+      strlcat(dir_list[cur_ptr], utf8_buf, final_off);
+#else
       strlcat(dir_list[cur_ptr], entry->d_name, final_off);
+#endif
 
       cur_ptr++;
       if (cur_ptr + 1 == cur_size) // Need to reserve for NULL.
