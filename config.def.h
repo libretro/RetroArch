@@ -198,7 +198,7 @@ static const bool pause_nonactive = true;
 static const unsigned autosave_interval = 0;
 
 // When being client over netplay, use keybinds for player 1 rather than player 2.
-static const bool netplay_client_swap_input = false;
+static const bool netplay_client_swap_input = true;
 
 
 ////////////////////
