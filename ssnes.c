@@ -1036,7 +1036,7 @@ static void fill_pathnames(void)
    if (!(*g_extern.ups_name) && *g_extern.basename)
       fill_pathname_noext(g_extern.ups_name, g_extern.basename, ".ups", sizeof(g_extern.ups_name));
 
-   if (!(*g_extern.xml_name && *g_extern.basename))
+   if (!(*g_extern.xml_name) && *g_extern.basename)
       fill_pathname_noext(g_extern.xml_name, g_extern.basename, ".xml", sizeof(g_extern.xml_name));
 }
 
