@@ -411,6 +411,7 @@ static void print_help(void)
 #endif
    puts("\t-v/--verbose: Verbose logging.");
    puts("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM.");
+   puts("\t-X/--xml: Specifies path to XML memory map.");
    puts("\t-D/--detach: Detach SSNES from the running console. Not relevant for all platforms.\n");
 
    print_features();
@@ -464,6 +465,7 @@ static void parse_input(int argc, char *argv[])
       { "frames", 1, NULL, 'F' },
       { "port", 1, &val, 'p' },
       { "ups", 1, NULL, 'U' },
+      { "xml", 1, NULL, 'X' },
       { "detach", 0, NULL, 'D' },
       { NULL, 0, NULL, 0 }
    };
@@ -482,7 +484,7 @@ static void parse_input(int argc, char *argv[])
 #define CONFIG_FILE_ARG
 #endif
 
-   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:P:HC:F:U:DN:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:P:HC:F:U:DN:X:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for(;;)
    {
       val = 0;
@@ -610,6 +612,10 @@ static void parse_input(int argc, char *argv[])
 
          case 'U':
             strlcpy(g_extern.ups_name, optarg, sizeof(g_extern.ups_name));
+            break;
+
+         case 'X':
+            strlcpy(g_extern.xml_name, optarg, sizeof(g_extern.xml_name));
             break;
 
          case 'D':
@@ -1029,6 +1035,9 @@ static void fill_pathnames(void)
 
    if (!(*g_extern.ups_name) && *g_extern.basename)
       fill_pathname_noext(g_extern.ups_name, g_extern.basename, ".ups", sizeof(g_extern.ups_name));
+
+   if (!(*g_extern.xml_name && *g_extern.basename))
+      fill_pathname_noext(g_extern.xml_name, g_extern.basename, ".xml", sizeof(g_extern.xml_name));
 }
 
 // Save or load state here.

@@ -51,7 +51,7 @@ ssize_t read_file(const char *path, void **buf)
    long len = ftell(file);
    ssize_t rc = 0;
    rewind(file);
-   rom_buf = malloc(len);
+   rom_buf = malloc(len + 1);
    if (!rom_buf)
    {
       SSNES_ERR("Couldn't allocate memory!\n");
@@ -62,6 +62,7 @@ ssize_t read_file(const char *path, void **buf)
       SSNES_WARN("Didn't read whole file.\n");
 
    *buf = rom_buf;
+   ((char*)rom_buf)[len] = '\0'; // Allow for easy reading of strings.
    fclose(file);
    return rc;
 
@@ -270,6 +271,20 @@ void save_ram_file(const char* path, int type)
       dump_to_file(path, data, size);
 }
 
+static char* load_xml_map(const char *path)
+{
+   char *xml_buf = NULL;
+   if (*path)
+   {
+      if (read_file(path, (void**)&xml_buf) < 0)
+         SSNES_LOG("Did not find XML memory map in \"%s\"\n", path);
+      else
+         SSNES_LOG("Found XML memory map in \"%s\"\n", path);
+   }
+
+   return xml_buf;
+}
+
 static bool load_sgb_rom(void)
 {
    void *rom_buf = NULL;
@@ -291,13 +306,18 @@ static bool load_sgb_rom(void)
       goto error;
    }
 
+   char *xml_buf = load_xml_map(g_extern.xml_name);
+
    if (!psnes_load_cartridge_super_game_boy(
-            NULL, rom_buf, rom_len,
+            xml_buf, rom_buf, rom_len,
             NULL, extra_rom_buf, extra_rom_len))
    {
       SSNES_ERR("Cannot load SGB/GameBoy rom.\n");
       goto error;
    }
+
+   if (xml_buf)
+      free(xml_buf);
 
    if (g_extern.rom_file)
       fclose(g_extern.rom_file);
@@ -338,10 +358,12 @@ static bool load_bsx_rom(bool slotted)
       goto error;
    }
 
+   char *xml_buf = load_xml_map(g_extern.xml_name);
+
    if (slotted)
    {   
       if (!psnes_load_cartridge_bsx_slotted(
-               NULL, rom_buf, rom_len,
+               xml_buf, rom_buf, rom_len,
                NULL, extra_rom_buf, extra_rom_len))
       {
          SSNES_ERR("Cannot load BSX slotted rom.\n");
@@ -359,6 +381,9 @@ static bool load_bsx_rom(bool slotted)
          goto error;
       }
    }
+
+   if (xml_buf)
+      free(xml_buf);
 
    if (g_extern.rom_file)
       fclose(g_extern.rom_file);
@@ -407,8 +432,10 @@ static bool load_sufami_rom(void)
       }
    }
 
+   char *xml_buf = load_xml_map(g_extern.xml_name);
+
    if (!psnes_load_cartridge_sufami_turbo(
-            NULL, rom_buf, rom_len,
+            xml_buf, rom_buf, rom_len,
             NULL, extra_rom_buf[0], extra_rom_len[0],
             NULL, extra_rom_buf[1], extra_rom_len[1]))
    {
@@ -416,6 +443,8 @@ static bool load_sufami_rom(void)
       goto error;
    }
 
+   if (xml_buf)
+      free(xml_buf);
 
    if (g_extern.rom_file)
       fclose(g_extern.rom_file);
@@ -457,12 +486,17 @@ static bool load_normal_rom(void)
 
    SSNES_LOG("ROM size: %d bytes\n", (int)rom_len);
 
-   if (!psnes_load_cartridge_normal(NULL, rom_buf, rom_len))
+   char *xml_buf = load_xml_map(g_extern.xml_name);
+   
+   if (!psnes_load_cartridge_normal(xml_buf, rom_buf, rom_len))
    {
       SSNES_ERR("ROM file is not valid!\n");
       free(rom_buf);
       return false;
    }
+
+   if (xml_buf)
+      free(xml_buf);
 
    free(rom_buf);
    return true;
