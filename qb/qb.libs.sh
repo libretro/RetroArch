@@ -58,7 +58,7 @@ check_lib()
 
    echo $ECHOBUF $answer
 
-   rm -rf $TEMP_C $TEMP_EXE
+   rm -f $TEMP_C $TEMP_EXE
    if [ "$tmpval" = "yes" ] && [ "$answer" = "no" ]; then
       echo "Forced to build with library $2, but cannot locate. Exiting ..."
       exit 1
@@ -73,7 +73,7 @@ check_lib_cxx()
 
    if [ -z "$3" ]; then
       ECHOBUF="Checking existence of $2 ..."
-      echo "int main(void) { return 0; }" > $TEMP_C
+      echo "int main() { return 0; }" > $TEMP_CXX
    else
       ECHOBUF="Checking function $3 in $2 ..."
       echo "extern \"C\" { void $3(void); } int main() { $3(); }" > $TEMP_CXX
@@ -88,11 +88,41 @@ check_lib_cxx()
 
    echo $ECHOBUF $answer
 
-   rm -rf $TEMP_CXX $TEMP_EXE
+   rm -f $TEMP_CXX $TEMP_EXE
    if [ "$tmpval" = "yes" ] && [ "$answer" = "no" ]; then
       echo "Forced to build with library $2, but cannot locate. Exiting ..."
       exit 1
    fi
+}
+
+check_code_c()
+{
+   tmpval="HAVE_$1"
+   eval tmpval=\$$tmpval
+   [ "$tmpval" = "no" ] && return 0
+
+   ECHOBUF="Checking C code snippet \"$3\" ..."
+   eval HAVE_$1=no
+   answer=no
+   $CC -o $TEMP_EXE $TEMP_C $INCLUDE_DIRS $LIBRARY_DIRS $2 $CFLAGS $LDFLAGS 2>/dev/null >/dev/null && answer=yes && eval HAVE_$1=yes
+
+   echo $ECHOBUF $answer
+   rm -f $TEMP_C $TEMP_EXE
+}
+
+check_code_cxx()
+{
+   tmpval="HAVE_$1"
+   eval tmpval=\$$tmpval
+   [ "$tmpval" = "no" ] && return 0
+
+   ECHOBUF="Checking C++ code snippet \"$3\" ..."
+   eval HAVE_$1=no
+   answer=no
+   $CXX -o $TEMP_EXE $TEMP_CXX $INCLUDE_DIRS $LIBRARY_DIRS $2 $CXXFLAGS $LDFLAGS 2>/dev/null >/dev/null && answer=yes && eval HAVE_$1=yes
+
+   echo $ECHOBUF $answer
+   rm -f $TEMP_CXX $TEMP_EXE
 }
 
 locate_pkg_conf()
