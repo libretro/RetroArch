@@ -273,10 +273,10 @@ void save_ram_file(const char* path, int type)
 
 static char* load_xml_map(const char *path)
 {
-   char *xml_buf = NULL;
+   void *xml_buf = NULL;
    if (*path)
    {
-      if (read_file(path, (void**)&xml_buf) < 0)
+      if (read_file(path, &xml_buf) < 0)
          SSNES_LOG("Did not find XML memory map in \"%s\"\n", path);
       else
          SSNES_LOG("Found XML memory map in \"%s\"\n", path);
