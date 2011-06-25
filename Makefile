@@ -9,7 +9,7 @@ HEADERS = $(wildcard */*.h) $(wildcard *.h)
 LIBS = -lm
 DEFINES = -DHAVE_CONFIG_H
 
-ifneq ($(findstring Darwin,$(shell uname -a)),)
+ifneq ($(findstring Darwin,$(OS)),)
    OSX := 1
    LIBS += -framework AppKit
 else
@@ -18,7 +18,7 @@ endif
 
 BSD_LOCAL_INC =
 DYLIB_LIB = -ldl
-ifneq ($(findstring BSD,$(shell uname -a)),)
+ifneq ($(findstring BSD,$(OS)),)
    BSD_LOCAL_INC = -I/usr/local/include
    DYLIB_LIB = -lc
 endif

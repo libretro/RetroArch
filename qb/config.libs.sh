@@ -73,6 +73,8 @@ check_lib STRL -lc strlcpy
 
 check_pkgconf PYTHON python3
 
+add_define_make OS $OS
+
 # Creates config.mk and config.h.
 VARS="ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK PULSE SDL DYLIB CG XML SDL_IMAGE DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL SWSCALE SRC CONFIGFILE FREETYPE XVIDEO NETPLAY FBO STRL PYTHON"
 create_config_make config.mk $VARS
