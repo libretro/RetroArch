@@ -67,7 +67,7 @@ check_pkgconf SRC samplerate
 check_lib DYNAMIC $DYLIB dlopen
 
 check_pkgconf FREETYPE freetype2
-check_lib XVIDEO -lXv XvShmCreateImage
+check_pkgconf XVIDEO xv
 
 check_lib STRL -lc strlcpy
 
