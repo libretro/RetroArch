@@ -24,7 +24,7 @@ fi
 check_lib DYLIB $DYLIB dlopen
 check_lib NETPLAY -lc socket
 
-check_lib ALSA -lasound snd_pcm_open
+check_pkgconf ALSA alsa
 check_header OSS sys/soundcard.h
 check_header OSS_BSD soundcard.h
 check_lib OSS_LIB -lossaudio
@@ -42,7 +42,7 @@ else
 fi
 
 check_pkgconf RSOUND rsound 1.1
-check_lib ROAR -lroar roar_vs_new
+check_pkgconf ROAR libroar
 check_pkgconf JACK jack 0.120.1
 check_pkgconf PULSE libpulse
 

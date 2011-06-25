@@ -55,11 +55,13 @@ endif
 
 ifeq ($(HAVE_ALSA), 1)
    OBJ += audio/alsa.o
-   LIBS += -lasound
+   LIBS += $(ALSA_LIBS)
+   DEFINES += $(ALSA_CFLAGS)
 endif
 ifeq ($(HAVE_ROAR), 1)
    OBJ += audio/roar.o
-   LIBS += -lroar
+   LIBS += $(ROAR_LIBS)
+   DEFINES += $(ROAR_CFLAGS)
 endif
 ifeq ($(HAVE_AL), 1)
    OBJ += audio/openal.o
