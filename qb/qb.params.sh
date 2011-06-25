@@ -64,8 +64,7 @@ print_sub_opt()
    lowertext="`echo $arg1 | tr '[A-Z]' '[a-z]'`"
 
    if [ "$arg3" = "auto" ]; then
-      echo -n "--enable-$lowertext: "
-      echo $arg2
+      echo "--enable-$lowertext: $arg2"
       echo "--disable-$lowertext"
    elif [ "$arg3" = "yes" ]; then
       echo "--disable-$lowertext: $arg2"

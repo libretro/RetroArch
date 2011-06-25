@@ -21,6 +21,7 @@ if [ $HAVE_DYNAMIC != yes ]; then
    add_define_make libsnes $LIBSNES
 fi
 
+
 check_lib DYLIB $DYLIB dlopen
 check_lib NETPLAY -lc socket
 

@@ -42,10 +42,10 @@ check_lib()
    [ "$tmpval" = "no" ] && return 0
 
    if [ -z "$3" ]; then
-      echo -n "Checking existence of $2 ..."
+      ECHOBUF="Checking existence of $2 ..."
       echo "int main(void) { return 0; }" > $TEMP_C
    else
-      echo -n "Checking function $3 in $2 ... "
+      ECHOBUF="Checking function $3 in $2 ..."
       echo "void $3(void); int main(void) { $3(); return 0; }" > $TEMP_C
    fi
 
@@ -56,7 +56,7 @@ check_lib()
 
    $CC -o $TEMP_EXE $TEMP_C $INCLUDE_DIRS $LIBRARY_DIRS $extralibs $CFLAGS $LDFLAGS $2 2>/dev/null >/dev/null && answer=yes && eval HAVE_$1=yes
 
-   echo $answer
+   echo $ECHOBUF $answer
 
    rm -rf $TEMP_C $TEMP_EXE
    if [ "$tmpval" = "yes" ] && [ "$answer" = "no" ]; then
@@ -72,10 +72,10 @@ check_lib_cxx()
    [ "$tmpval" = "no" ] && return 0
 
    if [ -z "$3" ]; then
-      echo -n "Checking existence of $2 ..."
+      ECHOBUF="Checking existence of $2 ..."
       echo "int main(void) { return 0; }" > $TEMP_C
    else
-      echo -n "Checking function $3 in $2 ... "
+      ECHOBUF="Checking function $3 in $2 ..."
       echo "extern \"C\" { void $3(void); } int main() { $3(); }" > $TEMP_CXX
    fi
 
@@ -86,7 +86,7 @@ check_lib_cxx()
 
    $CXX -o $TEMP_EXE $TEMP_CXX $INCLUDE_DIRS $LIBRARY_DIRS $extralibs $CFLAGS $LDFLAGS $2 2>/dev/null >/dev/null && answer=yes && eval HAVE_$1=yes
 
-   echo $answer
+   echo $ECHOBUF $answer
 
    rm -rf $TEMP_CXX $TEMP_EXE
    if [ "$tmpval" = "yes" ] && [ "$answer" = "no" ]; then
@@ -97,14 +97,14 @@ check_lib_cxx()
 
 locate_pkg_conf()
 {
-   echo -n "Checking for pkg-config ... "
+   ECHOBUF="Checking for pkg-config ... "
    PKG_CONF_PATH="`which pkg-config | grep ^/ | head -n1`"
    if [ -z $PKG_CONF_PATH ]; then
       echo "not found"
       echo "Cannot locate pkg-config. Exiting ..."
       exit 1
    fi
-   echo "$PKG_CONF_PATH"
+   echo $ECHOBUF $PKG_CONF_PATH
 }
 
 check_pkgconf()
@@ -115,16 +115,16 @@ check_pkgconf()
    eval tmpval=\$$tmpval
    [ "$tmpval" = "no" ] && return 0
 
-   echo -n "Checking presence of package $2"
+   ECHOBUF="Checking presence of package $2"
    eval HAVE_$1=no
    eval $1_CFLAGS=""
    eval $1_LIBS=""
    answer=no
    minver=0.0
-   [ ! -z $3 ] && minver=$3 && echo -n " with minimum version $minver"
-   echo -n " ... "
+   [ ! -z $3 ] && minver=$3 && ECHOBUF="$ECHOBUF with minimum version $minver"
+   ECHOBUF="$ECHOBUF ... "
    pkg-config --atleast-version=$minver "$2" && eval HAVE_$1=yes && eval $1_CFLAGS='"`pkg-config $2 --cflags`"' && eval $1_LIBS='"`pkg-config $2 --libs`"' && answer=yes
-   echo $answer
+   echo $ECHOBUF $answer
 
    PKG_CONF_USED="$PKG_CONF_USED $1"
 
@@ -140,7 +140,7 @@ check_header()
    eval tmpval=\$$tmpval
    [ "$tmpval" = "no" ] && return 0
 
-   echo -n "Checking presence of header file $2 ... "
+   ECHOBUF="Checking presence of header file $2 ..."
    echo "#include<$2>" > $TEMP_C
    echo "int main(void) { return 0; }" >> $TEMP_C
    eval HAVE_$1=no
@@ -148,7 +148,7 @@ check_header()
 
    $CC -o $TEMP_EXE $TEMP_C $INCLUDE_DIRS 2>/dev/null >/dev/null && answer=yes && eval HAVE_$1=yes
 
-   echo $answer
+   echo $ECHOBUF $answer
 
    rm -rf $TEMP_C $TEMP_EXE
    if [ "$tmpval" = "yes" ] && [ "$answer" = "no" ]; then 
@@ -159,7 +159,7 @@ check_header()
 
 check_switch_c()
 {
-   echo -n "Checking for availability of switch $2 in $CC ... "
+   ECHOBUF="Checking for availability of switch $2 in $CC ..."
    if [ -z "$CC" ]; then
       echo "No C compiler, cannot check ..."
       exit 1
@@ -169,14 +169,14 @@ check_switch_c()
    answer=no
    $CC -o $TEMP_EXE $TEMP_C $2 2>/dev/null >/dev/null && answer=yes && eval HAVE_$1=yes
 
-   echo $answer
+   echo $ECHOBUF $answer
 
    rm -rf $TEMP_C $TEMP_EXE
 }
 
 check_switch_cxx()
 {
-   echo -n "Checking for availability of switch $2 in $CXX ... "
+   ECHOBUF="Checking for availability of switch $2 in $CXX ... "
    if [ -z "$CXX" ]; then
       echo "No C++ compiler, cannot check ..."
       exit 1
@@ -186,7 +186,7 @@ check_switch_cxx()
    answer=no
    $CXX -o $TEMP_EXE $TEMP_CXX $2 2>/dev/null >/dev/null && answer=yes && eval HAVE_$1=yes
 
-   echo $answer
+   echo $ECHOBUF $answer
 
    rm -rf $TEMP_CXX $TEMP_EXE
 }

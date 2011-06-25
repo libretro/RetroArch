@@ -4,7 +4,7 @@ TEMP_C=.tmp.c
 TEMP_CXX=.tmp.cxx
 TEMP_EXE=.tmp
 
-echo -n "Checking operating system ... "
+ECHOBUF="Checking operating system ... "
 OS="Win32" # whatever ;D
 unamestr="`uname -a`"
 if [ ! -z "`echo "$unamestr" | grep -i Linux`" ]; then
@@ -19,7 +19,7 @@ elif [ ! -z "`echo "$unamestr" | grep -i NT`" ]; then
    OS="Cygwin"
 fi
 
-echo $OS
+echo $ECHOBUF $OS
 
 # Checking for working C compiler
 if [ "$USE_LANG_C" = yes ]; then
@@ -32,12 +32,12 @@ if [ "$USE_LANG_C" = yes ]; then
       exit 1
    fi
 
-   echo -n "Checking if $CC is a suitable compiler ... "
+   ECHOBUF="Checking if $CC is a suitable compiler ..."
    answer=no
    echo "#include <stdio.h>" > $TEMP_C
    echo "int main(void) { puts(\"Hai world!\"); return 0; }" >> $TEMP_C
    $CC -o $TEMP_EXE $TEMP_C 2>/dev/null >/dev/null && answer=yes
-   echo $answer
+   echo $ECHOBUF $answer
 
    rm -rf $TEMP_C $TEMP_EXE
 
@@ -55,12 +55,12 @@ if [ "$USE_LANG_CXX" = "yes" ]; then
       exit 1
    fi
 
-   echo -n "Checking if $CXX is a suitable compiler ... "
+   ECHOBUF="Checking if $CXX is a suitable compiler ..."
    answer=no
    echo "#include <iostream>" > $TEMP_CXX
    echo "int main() { std::cout << \"Hai guise\" << std::endl; return 0; }" >> $TEMP_CXX
    $CXX -o $TEMP_EXE $TEMP_CXX 2>/dev/null >/dev/null && answer=yes
-   echo $answer
+   echo $ECHOBUF $answer
 
    rm -rf $TEMP_CXX $TEMP_EXE
 
