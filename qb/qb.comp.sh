@@ -7,18 +7,19 @@ TEMP_EXE=.tmp
 echo -n "Checking operating system ... "
 OS="Win32" # whatever ;D
 unamestr="`uname -a`"
-if [ ! -z "`echo $unamestr | grep -i Linux`" ]; then
+if [ ! -z "`echo "$unamestr" | grep -i Linux`" ]; then
    OS="Linux"
-elif [ ! -z "`echo $unamestr | grep -i Darwin`" ]; then
+elif [ ! -z "`echo "$unamestr" | grep -i Darwin`" ]; then
    OS="Darwin"
-elif [ ! -z "`echo $unamestr | grep -i BSD`" ]; then
+elif [ ! -z "`echo "$unamestr" | grep -i BSD`" ]; then
    OS="BSD"
-elif [ ! -z "`echo $unamestr | grep -i NT`" ]; then
+elif [ ! -z "`echo "$unamestr" | grep -i MINGW32`" ]; then
+   OS="MinGW"
+elif [ ! -z "`echo "$unamestr" | grep -i NT`" ]; then
    OS="Cygwin"
 fi
 
 echo $OS
-
 
 # Checking for working C compiler
 if [ "$USE_LANG_C" = yes ]; then
