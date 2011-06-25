@@ -216,7 +216,7 @@ create_config_header()
 
    echo "Creating config header: $outfile"
 
-   name="`echo __$outfile | sed 's|[\./]|_|g' | tr '[a-z]' '[A-Z]'`"
+   name="`echo QB_${outfile}__ | sed 's|[\./]|_|g' | tr '[a-z]' '[A-Z]'`"
    echo "#ifndef $name" > "$outfile"
    echo "#define $name" >> "$outfile"
    echo "" >> "$outfile"
@@ -260,7 +260,6 @@ output_define_make()
 
 create_config_make()
 {
-
    outfile="$1"
    shift
 
