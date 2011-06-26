@@ -34,7 +34,6 @@ struct snes_callbacks
 {
    snes_video_refresh_t frame_cb;
    snes_audio_sample_t sample_cb;
-   snes_input_poll_t poll_cb;
    snes_input_state_t state_cb;
 };
 

@@ -96,10 +96,7 @@ struct netplay
 void input_poll_net(void)
 {
    if (!netplay_should_skip(g_extern.netplay) && netplay_can_poll(g_extern.netplay))
-   {
-      netplay_callbacks(g_extern.netplay)->poll_cb();
       netplay_poll(g_extern.netplay);
-   }
 }
 
 void video_frame_net(const uint16_t *data, unsigned width, unsigned height)
@@ -243,7 +240,7 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
 {
 #ifdef _WIN32
    WSADATA wsaData;
-   if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0)
+   if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
    {
       WSACleanup();
       return false;
@@ -470,7 +467,7 @@ static bool get_self_input_state(netplay_t *handle)
    if (handle->frame_count > 0) // First frame we always give zero input since relying on input from first frame screws up when we use -F 0.
    {
       snes_input_state_t cb = handle->cbs.state_cb;
-      for (int i = 0; i <= 11; i++)
+      for (unsigned i = 0; i <= 11; i++)
       {
          int16_t tmp = cb(g_settings.input.netplay_client_swap_input ? 0 : !handle->port, SNES_DEVICE_JOYPAD, 0, i);
          state |= tmp ? 1 << i : 0;
@@ -659,6 +656,8 @@ void netplay_pre_frame(netplay_t *handle)
 {
    psnes_serialize(handle->buffer[handle->self_ptr].state, handle->state_size);
    handle->can_poll = true;
+
+   input_poll_net();
 }
 
 // Here we check if we have new input and replay from recorded input.
