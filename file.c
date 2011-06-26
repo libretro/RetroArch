@@ -97,7 +97,6 @@ bool read_file_string(const char *path, char **buf)
    while (ptr && !feof(file))
    {
       size_t bufsize = (size_t)(((ptrdiff_t)*buf + (ptrdiff_t)len) - (ptrdiff_t)ptr);
-      fprintf(stderr, "bufsize: %u\n", (unsigned)bufsize);
       fgets(ptr, bufsize, file);
 
       ptr = strchr(ptr, '\0');
