@@ -905,7 +905,6 @@ static void init_netplay(void)
       struct snes_callbacks cbs = {
          .frame_cb = video_frame,
          .sample_cb = audio_sample,
-         .poll_cb = input_poll,
          .state_cb = input_state
       };
 
@@ -1510,14 +1509,13 @@ int main(int argc, char *argv[])
 #ifdef HAVE_NETPLAY
    psnes_set_video_refresh(g_extern.netplay ? video_frame_net : video_frame);
    psnes_set_audio_sample(g_extern.netplay ? audio_sample_net : audio_sample);
-   psnes_set_input_poll(g_extern.netplay ? input_poll_net : input_poll);
    psnes_set_input_state(g_extern.netplay ? input_state_net : input_state);
 #else
    psnes_set_video_refresh(video_frame);
    psnes_set_audio_sample(audio_sample);
-   psnes_set_input_poll(input_poll);
    psnes_set_input_state(input_state);
 #endif
+   psnes_set_input_poll(input_poll);
    
    init_controllers();
    
