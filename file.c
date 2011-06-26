@@ -62,7 +62,9 @@ ssize_t read_file(const char *path, void **buf)
       SSNES_WARN("Didn't read whole file.\n");
 
    *buf = rom_buf;
-   ((char*)rom_buf)[len] = '\0'; // Allow for easy reading of strings.
+   // Allow for easy reading of strings to be safe.
+   // Will only work with sane character formatting (Unix).
+   ((char*)rom_buf)[len] = '\0'; 
    fclose(file);
    return rc;
 
@@ -72,6 +74,47 @@ error:
    free(rom_buf);
    *buf = NULL;
    return -1;
+}
+
+// Reads file content as one string.
+bool read_file_string(const char *path, char **buf)
+{
+   *buf = NULL;
+   FILE *file = fopen(path, "r");
+   if (!file)
+      goto error;
+
+   fseek(file, 0, SEEK_END);
+   long len = ftell(file) + 2; // Takes account of being able to read in EOF and '\0' at end.
+   rewind(file);
+
+   *buf = calloc(len, sizeof(char));
+   if (!*buf)
+      goto error;
+
+   char *ptr = *buf;
+
+   while (ptr && !feof(file))
+   {
+      size_t bufsize = (size_t)(((ptrdiff_t)*buf + (ptrdiff_t)len) - (ptrdiff_t)ptr);
+      fprintf(stderr, "bufsize: %u\n", (unsigned)bufsize);
+      fgets(ptr, bufsize, file);
+
+      ptr = strchr(ptr, '\0');
+   }
+
+   ptr = strchr(ptr, EOF);
+   if (ptr) *ptr = '\0';
+
+   fclose(file);
+   return true;
+
+error:
+   if (file)
+      fclose(file);
+   if (*buf)
+      free(*buf);
+   return false;
 }
 
 // Load SNES rom only. Applies a hack for headered ROMs.
@@ -273,10 +316,10 @@ void save_ram_file(const char* path, int type)
 
 static char* load_xml_map(const char *path)
 {
-   void *xml_buf = NULL;
+   char *xml_buf = NULL;
    if (*path)
    {
-      if (read_file(path, &xml_buf) < 0)
+      if (!read_file_string(path, &xml_buf))
          SSNES_LOG("Did not find XML memory map in \"%s\"\n", path);
       else
          SSNES_LOG("Found XML memory map in \"%s\"\n", path);
