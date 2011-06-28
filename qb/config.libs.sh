@@ -47,7 +47,12 @@ check_pkgconf JACK jack 0.120.1
 check_pkgconf PULSE libpulse
 
 check_pkgconf SDL sdl 1.2.10
-check_critical SDL "Cannot find SDL library."
+check_critical SDL "Cannot find SDL 1.2 library."
+check_pkgconf SDL_NEW sdl 1.3
+if [ $HAVE_SDL_NEW = yes ]; then
+   echo "SSNES is not compatible with SDL 1.3 API, please use a recent 1.2 release."
+   exit 1
+fi
 
 check_lib CG -lCg cgCreateContext
 check_pkgconf XML libxml-2.0
