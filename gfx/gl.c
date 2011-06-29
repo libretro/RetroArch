@@ -987,6 +987,10 @@ static void gl_free(void *data)
    free(gl);
 }
 
+#ifdef __APPLE__
+#include <OpenGL/OpenGL.h>
+#endif
+
 static void gl_set_nonblock_state(void *data, bool state)
 {
    gl_t *gl = data;
@@ -1001,13 +1005,8 @@ static void gl_set_nonblock_state(void *data, bool state)
       }
       if (wgl_swap_interval) wgl_swap_interval(state ? 0 : 1);
 #elif defined(__APPLE__)
-      // Will this work?
-      //AGLContext ctx = aglGetCurrentContext();
-      //if (!ctx)
-      //   return;
-      //GLint interval = state ? 0 : 1;
-      //aglSetInteger(ctx, AGL_SWAP_INTERVAL, &interval);
-      SSNES_WARN("This feature is currently not implemented for OSX.\n");
+      GLint val = state ? 0 : 1;
+      CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, &val);
 #else
       static int (*glx_swap_interval)(int) = NULL;
       if (!glx_swap_interval) 
