@@ -712,8 +712,8 @@ error:
 
 static void print_shader_log(GLuint obj)
 {
-   int info_len = 0;
-   int max_len;
+   GLint info_len = 0;
+   GLint max_len;
 
    pglGetShaderiv(obj, GL_INFO_LOG_LENGTH, &max_len);
 
@@ -726,8 +726,8 @@ static void print_shader_log(GLuint obj)
 
 static void print_linker_log(GLuint obj)
 {
-   int info_len = 0;
-   int max_len;
+   GLint info_len = 0;
+   GLint max_len;
 
    pglGetProgramiv(obj, GL_INFO_LOG_LENGTH, &max_len);
 
