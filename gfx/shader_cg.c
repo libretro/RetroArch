@@ -295,8 +295,11 @@ static bool load_plain(const char *path)
    {
       if (!prg[i].fprg || !prg[i].vprg)
       {
+         const char *listing = cgGetLastListing(cgCtx);
          CGerror err = cgGetError();
          SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
+         if (listing)
+            SSNES_ERR("%s\n", listing);
          return false;
       }
 
@@ -802,8 +805,11 @@ static bool load_preset(const char *path)
 
       if (!prog->fprg || !prog->vprg)
       {
+         const char *listing = cgGetLastListing(cgCtx);
          CGerror err = cgGetError();
          SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
+         if (listing)
+            SSNES_ERR("%s\n", listing);
          goto error;
       }
 
