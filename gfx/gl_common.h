@@ -101,9 +101,9 @@ struct gl_fbo_scale
 struct gl_tex_info
 {
    GLuint tex;
-   float input_size[2];
-   float tex_size[2];
-   float coord[8];
+   GLfloat input_size[2];
+   GLfloat tex_size[2];
+   GLfloat coord[8];
 };
 
 // Not legal to cast void* to fn-pointer. Need dirty hack to be compilant.
