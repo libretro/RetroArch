@@ -288,16 +288,31 @@ static bool load_plain(const char *path)
    if (strlen(g_settings.video.second_pass_shader) > 0)
       SSNES_LOG("Loading 2nd pass: %s\n", g_settings.video.second_pass_shader);
 
+   char *listing[3] = {NULL};
+   const char *list = NULL;
+
    prg[0].fprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", 0);
    prg[0].vprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", 0);
 
+   list = cgGetLastListing(cgCtx);
+   if (list)
+      listing[0] = strdup(list);
+
    prg[1].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgFProf, "main_fragment", 0);
    prg[1].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgVProf, "main_vertex", 0);
+
+   list = cgGetLastListing(cgCtx);
+   if (list)
+      listing[1] = strdup(list);
 
    if (strlen(g_settings.video.second_pass_shader) > 0)
    {
       prg[2].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgFProf, "main_fragment", 0);
       prg[2].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgVProf, "main_vertex", 0);
+
+      list = cgGetLastListing(cgCtx);
+      if (list)
+         listing[2] = strdup(list);
       cg_shader_num = 2;
    }
    else
@@ -306,16 +321,15 @@ static bool load_plain(const char *path)
       cg_shader_num = 1;
    }
 
-   for (int i = 0; i < cg_shader_num + 1; i++)
+   for (unsigned i = 0; i <= cg_shader_num; i++)
    {
       if (!prg[i].fprg || !prg[i].vprg)
       {
-         const char *listing = cgGetLastListing(cgCtx);
          CGerror err = cgGetError();
          SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
-         if (listing)
-            SSNES_ERR("%s\n", listing);
-         return false;
+         if (listing[i])
+            SSNES_ERR("%s\n", listing[i]);
+         goto error;
       }
 
       cgGLLoadProgram(prg[i].fprg);
@@ -323,6 +337,14 @@ static bool load_plain(const char *path)
    }
 
    return true;
+
+error:
+   for (unsigned i = 0; i < 3; i++)
+   {
+      if (listing[i])
+         free(listing[i]);
+   }
+   return false;
 }
 
 #define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
@@ -899,7 +921,7 @@ bool gl_cg_init(const char *path)
    if (prg[0].mvp)
       cgGLSetStateMatrixParameter(prg[0].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 
-   for (unsigned i = 1; i < cg_shader_num + 1; i++)
+   for (unsigned i = 1; i <= cg_shader_num; i++)
    {
       cgGLBindProgram(prg[i].fprg);
       cgGLBindProgram(prg[i].vprg);
