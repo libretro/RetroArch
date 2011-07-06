@@ -340,7 +340,7 @@ static void fill_pathname_noext(char *out_path, const char *in_path, const char 
 #endif
 
 #ifdef _WIN32
-#define PACKAGE_VERSION "0.6.1"
+#define PACKAGE_VERSION "0.6.2"
 #endif
 
 #include "config.features.h"
