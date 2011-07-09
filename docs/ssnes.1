@@ -41,6 +41,10 @@ When rom is loaded from \fBstdin\fR, this flag is mandatory to define as no path
 Do note that save states are bound to the libsnes implementation being used. Using a different libsnes could invalidate the save state file.
 
 .TP
+\fB--fullscreen, -f\fR
+Always starts SSNES in fullscreen. Disregards settings in configuration file.
+
+.TP
 \fB--config PATH, -c PATH\fR
 Sets the configuration file path. \fBssnes\fR will use this path to load the configuration file.
 Should this not be defined, \fBssnes\fR will look in platform specific paths to attempt finding the config file.

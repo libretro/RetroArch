@@ -111,7 +111,7 @@ static void set_defaults(void)
 
    g_settings.video.xscale = xscale;
    g_settings.video.yscale = yscale;
-   g_settings.video.fullscreen = fullscreen;
+   g_settings.video.fullscreen = g_extern.force_fullscreen ? true : fullscreen;
    g_settings.video.fullscreen_x = fullscreen_x;
    g_settings.video.fullscreen_y = fullscreen_y;
    g_settings.video.force_16bit = force_16bit;
@@ -289,7 +289,12 @@ static void parse_config_file(void)
    CONFIG_GET_DOUBLE(video.yscale, "video_yscale");
    CONFIG_GET_INT(video.fullscreen_x, "video_fullscreen_x");
    CONFIG_GET_INT(video.fullscreen_y, "video_fullscreen_y");
-   CONFIG_GET_BOOL(video.fullscreen, "video_fullscreen");
+
+   if (!g_extern.force_fullscreen)
+   {
+      CONFIG_GET_BOOL(video.fullscreen, "video_fullscreen");
+   }
+
    CONFIG_GET_BOOL(video.force_16bit, "video_force_16bit");
    CONFIG_GET_BOOL(video.vsync, "video_vsync");
    CONFIG_GET_BOOL(video.smooth, "video_smooth");

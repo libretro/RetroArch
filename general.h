@@ -147,6 +147,7 @@ struct global
    bool verbose;
    bool audio_active;
    bool video_active;
+   bool force_fullscreen;
 
    bool has_mouse[2];
    bool has_scope[2];
