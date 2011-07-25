@@ -305,6 +305,18 @@ static inline uint32_t next_pow2(uint32_t v)
    return v;
 }
 
+static inline uint8_t is_little_endian(void)
+{
+   union
+   {
+      uint16_t x;
+      uint8_t y[2];
+   } u;
+
+   u.x = 1;
+   return u.y[0];
+}
+
 #endif
 
 

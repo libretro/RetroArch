@@ -107,18 +107,6 @@ struct bsv_movie
 #define CRC_INDEX 2
 #define STATE_SIZE_INDEX 3
 
-static inline uint8_t is_little_endian(void)
-{
-   union
-   {
-      uint16_t u16;
-      uint8_t u8[2];
-   } u;
-
-   u.u16 = 1;
-   return u.u8[0];
-}
-
 // Convert to big-endian if needed
 static inline uint32_t swap_if_big32(uint32_t val)
 {
