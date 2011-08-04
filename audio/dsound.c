@@ -101,11 +101,6 @@ static DWORD CALLBACK dsound_thread(PVOID data)
       get_positions(ds, &read_ptr, NULL);
       
       DWORD avail = write_avail(read_ptr, write_ptr, buffer_mask);
-      if (avail > ds->buffer_size / 2) // We've underrun (or started to underrun) for some odd reason, skip ahead.
-      {
-         write_ptr = (read_ptr + ds->buffer_size - 2 * CHUNK_SIZE) & buffer_mask;
-         avail = 2 * CHUNK_SIZE;
-      }
 
       EnterCriticalSection(&ds->crit);
       DWORD fifo_avail = fifo_read_avail(ds->buffer);
