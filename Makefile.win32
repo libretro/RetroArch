@@ -13,6 +13,7 @@ HAVE_SDL_IMAGE = 1
 HAVE_XML = 1
 HAVE_FREETYPE = 1
 HAVE_XAUDIO = 1
+HAVE_DSOUND = 1
 HAVE_RSOUND = 1
 HAVE_DYLIB = 1
 HAVE_NETPLAY = 1
@@ -57,6 +58,12 @@ endif
 ifeq ($(HAVE_XAUDIO), 1)
    OBJ += audio/xaudio.o
    DEFINES += -DHAVE_XAUDIO
+endif
+
+ifeq ($(HAVE_DSOUND), 1)
+   OBJ += audio/dsound.o
+   DEFINES += -DHAVE_DSOUND
+   LIBS += -ldxguid -ldsound
 endif
 
 ifeq ($(HAVE_RSOUND), 1)

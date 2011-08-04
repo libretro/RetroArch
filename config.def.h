@@ -57,6 +57,7 @@
 #define AUDIO_XAUDIO 9
 #define AUDIO_PULSE 10
 #define AUDIO_EXT 15
+#define AUDIO_DSOUND 16
 ////////////////////////
 #define INPUT_SDL 7
 #define INPUT_X 12
@@ -86,6 +87,8 @@
 #define AUDIO_DEFAULT_DRIVER AUDIO_AL
 #elif defined(HAVE_SDL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_SDL
+#elif defined(HAVE_DSOUND)
+#define AUDIO_DEFAULT_DRIVER AUDIO_DSOUND
 #elif defined(HAVE_XAUDIO)
 #define AUDIO_DEFAULT_DRIVER AUDIO_XAUDIO
 #elif defined(HAVE_RSOUND)

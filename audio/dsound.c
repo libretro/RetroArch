@@ -1,0 +1,351 @@
+/*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
+ *  Copyright (C) 2010-2011 - Hans-Kristian Arntzen
+ *
+ *  Some code herein may be based on code found in BSNES.
+ * 
+ *  SSNES is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with SSNES.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "driver.h"
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
+
+#include <dsound.h>
+#include "fifo_buffer.h"
+#include "general.h"
+
+typedef struct dsound
+{
+   LPDIRECTSOUND ds;
+   LPDIRECTSOUNDBUFFER dsb;
+   HANDLE event;
+   bool nonblock;
+
+   fifo_buffer_t *buffer;
+   CRITICAL_SECTION crit;
+
+   volatile bool thread_alive;
+   HANDLE thread;
+   unsigned buffer_size;
+} dsound_t;
+
+static inline unsigned write_avail(unsigned read_ptr, unsigned write_ptr, unsigned buffer_mask)
+{
+   return (read_ptr + buffer_mask + 1 - write_ptr) & buffer_mask;
+}
+
+static inline void get_positions(dsound_t *ds, DWORD *read_ptr, DWORD *write_ptr)
+{
+   IDirectSoundBuffer_GetCurrentPosition(ds->dsb, read_ptr, write_ptr);
+}
+
+#define CHUNK_SIZE 128
+
+static inline void* grab_chunk(dsound_t *ds, DWORD write_ptr)
+{
+   void *chunk;
+   DWORD bytes;
+   HRESULT res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE, &chunk, &bytes, NULL, NULL, 0);
+   if (res == DSERR_BUFFERLOST)
+   {
+      res = IDirectSoundBuffer_Restore(ds->dsb);
+      if (res != DS_OK)
+         return NULL;
+
+      res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE, &chunk, &bytes, NULL, NULL, 0);
+      if (res != DS_OK)
+         return NULL;
+   }
+
+   if (bytes != CHUNK_SIZE)
+   {
+      SSNES_ERR("[DirectSound]: Could not lock as much data as requested, this should not happen!\n");
+      IDirectSoundBuffer_Unlock(ds->dsb, chunk, bytes, NULL, 0);
+      return NULL;
+   }
+
+   return chunk;
+}
+
+static inline void release_chunk(dsound_t *ds, void *ptr)
+{
+   IDirectSoundBuffer_Unlock(ds->dsb, ptr, CHUNK_SIZE, NULL, 0);
+}
+
+
+static DWORD CALLBACK dsound_thread(PVOID data)
+{
+   dsound_t *ds = data;
+   SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+
+   unsigned buffer_mask = ds->buffer_size - 1;
+   DWORD write_ptr;
+   get_positions(ds, NULL, &write_ptr);
+   write_ptr = (write_ptr + ds->buffer_size / 2) & buffer_mask;
+
+   while (ds->thread_alive)
+   {
+      DWORD read_ptr;
+      get_positions(ds, &read_ptr, NULL);
+      
+      DWORD avail = write_avail(read_ptr, write_ptr, buffer_mask);
+      if (avail > ds->buffer_size / 2) // We've underrun (or started to underrun) for some odd reason, skip ahead.
+      {
+         write_ptr = (read_ptr + ds->buffer_size - 2 * CHUNK_SIZE) & buffer_mask;
+         avail = 2 * CHUNK_SIZE;
+      }
+
+      EnterCriticalSection(&ds->crit);
+      DWORD fifo_avail = fifo_read_avail(ds->buffer);
+      LeaveCriticalSection(&ds->crit);
+
+      if (avail < CHUNK_SIZE) // No space to write.
+      {
+         Sleep(1);
+         // We could opt for using the notification interface,
+         // but it is not guaranteed to work, so use high priority sleeping patterns. :(
+      }
+      else if (fifo_avail < CHUNK_SIZE) // Got space to write, but nothing in FIFO (underrun), fill block with silence.
+      {
+         void *chunk;
+         if (!(chunk = grab_chunk(ds, write_ptr)))
+         {
+            ds->thread_alive = false;
+            break;
+         }
+
+         memset(chunk, 0, CHUNK_SIZE);
+         release_chunk(ds, chunk);
+         write_ptr = (write_ptr + CHUNK_SIZE) & buffer_mask;
+      }
+      else // All is good. Pull from it and notify FIFO :D
+      {
+         void *chunk;
+         if (!(chunk = grab_chunk(ds, write_ptr)))
+         {
+            ds->thread_alive = false;
+            break;
+         }
+
+         EnterCriticalSection(&ds->crit);
+         fifo_read(ds->buffer, chunk, CHUNK_SIZE);
+         LeaveCriticalSection(&ds->crit);
+
+         release_chunk(ds, chunk);
+         write_ptr = (write_ptr + CHUNK_SIZE) & buffer_mask;
+
+         SetEvent(ds->event);
+      }
+   }
+
+   ExitThread(0);
+}
+
+static void dsound_stop_thread(dsound_t *ds)
+{
+   if (ds->thread)
+   {
+      ds->thread_alive = false;
+      WaitForSingleObject(ds->thread, INFINITE);
+      CloseHandle(ds->thread);
+      ds->thread = NULL;
+   }
+}
+
+static bool dsound_start_thread(dsound_t *ds)
+{
+   if (!ds->thread)
+   {
+      ds->thread_alive = true;
+      ds->thread = CreateThread(NULL, 0, dsound_thread, ds, 0, NULL);
+      if (ds->thread == NULL)
+         return false;
+   }
+
+   return true;
+}
+
+static void dsound_clear_buffer(dsound_t *ds)
+{
+   IDirectSoundBuffer_SetCurrentPosition(ds->dsb, 0);
+   void *ptr;
+   DWORD size;
+
+   if (IDirectSoundBuffer_Lock(ds->dsb, 0, 0, &ptr, &size, NULL, NULL, DSBLOCK_ENTIREBUFFER) == DS_OK)
+   {
+      memset(ptr, 0, size);
+      IDirectSoundBuffer_Unlock(ds->dsb, ptr, size, NULL, 0);
+   }
+}
+
+static void dsound_free(void *data)
+{
+   dsound_t *ds = data;
+   if (ds)
+   {
+      DeleteCriticalSection(&ds->crit);
+
+      if (ds->thread)
+      {
+         ds->thread_alive = false;
+         WaitForSingleObject(ds->thread, INFINITE);
+         CloseHandle(ds->thread);
+      }
+
+      if (ds->dsb)
+      {
+         IDirectSoundBuffer_Stop(ds->dsb);
+         IDirectSoundBuffer_Release(ds->dsb);
+      }
+
+      if (ds)
+         IDirectSound_Release(ds->ds);
+
+      if (ds->event)
+         CloseHandle(ds->event);
+
+      if (ds->buffer)
+         fifo_free(ds->buffer);
+
+      free(ds);
+   }
+}
+
+static void* dsound_init(const char *device, unsigned rate, unsigned latency)
+{
+   dsound_t *ds = calloc(1, sizeof(*ds));
+   if (!ds)
+      goto error;
+
+   InitializeCriticalSection(&ds->crit);
+
+   if (DirectSoundCreate(NULL, &ds->ds, NULL) != DS_OK)
+      goto error;
+
+   if (IDirectSound_SetCooperativeLevel(ds->ds, GetDesktopWindow(), DSSCL_PRIORITY) != DS_OK)
+      goto error;
+
+   WAVEFORMATEX wfx = {
+      .wFormatTag = WAVE_FORMAT_PCM,
+      .nChannels = 2,
+      .nSamplesPerSec = rate,
+      .wBitsPerSample = 16,
+      .nBlockAlign = 2 * sizeof(int16_t),
+      .nAvgBytesPerSec = rate * 2 * sizeof(int16_t),
+   };
+
+   ds->buffer_size = next_pow2((latency * wfx.nAvgBytesPerSec) / 1000);
+   SSNES_LOG("[DirectSound]: Setting buffer size of %u bytes\n", ds->buffer_size);
+
+   DSBUFFERDESC bufdesc = {
+      .dwSize = sizeof(DSBUFFERDESC),
+      .dwFlags = DSBCAPS_GETCURRENTPOSITION2,
+      .dwBufferBytes = ds->buffer_size,
+      .lpwfxFormat = &wfx,
+   };
+
+   ds->event = CreateEvent(NULL, false, false, NULL);
+   if (!ds->event)
+      goto error;
+
+   ds->buffer = fifo_new(4 * 1024);
+   if (!ds->buffer)
+      goto error;
+
+   if (IDirectSound_CreateSoundBuffer(ds->ds, &bufdesc, &ds->dsb, 0) != DS_OK)
+      goto error;
+
+   dsound_clear_buffer(ds);
+
+   if (IDirectSoundBuffer_Play(ds->dsb, 0, 0, DSBPLAY_LOOPING) != DS_OK)
+      goto error;
+
+   if (!dsound_start_thread(ds))
+      goto error;
+
+   return ds;
+
+error:
+   dsound_free(ds);
+   return NULL;
+}
+
+static bool dsound_stop(void *data)
+{
+   dsound_t *ds = data;
+   dsound_stop_thread(ds);
+   return IDirectSoundBuffer_Stop(ds->dsb) == DS_OK;
+}
+
+static bool dsound_start(void *data)
+{
+   dsound_t *ds = data;
+   dsound_clear_buffer(ds);
+
+   if (!dsound_start_thread(ds))
+      return false;
+
+   return IDirectSoundBuffer_Play(ds->dsb, 0, 0, DSBPLAY_LOOPING) == DS_OK;
+}
+
+static void dsound_set_nonblock_state(void *data, bool state)
+{
+   dsound_t *ds = data;
+   ds->nonblock = state;
+}
+
+static ssize_t dsound_write(void *data, const void *buf_, size_t size)
+{
+   dsound_t *ds = data;
+   const uint8_t *buf = buf_;
+
+   if (!ds->thread_alive)
+      return -1;
+
+   size_t written = 0;
+   while (size > 0)
+   {
+      EnterCriticalSection(&ds->crit);
+      size_t avail = fifo_write_avail(ds->buffer);
+      if (avail > size)
+         avail = size;
+
+      fifo_write(ds->buffer, buf, avail);
+      buf += avail;
+      size -= avail;
+      written += avail;
+      LeaveCriticalSection(&ds->crit);
+
+      if (ds->nonblock || !ds->thread_alive)
+         break;
+
+      if (avail == 0)
+         WaitForSingleObject(ds->event, INFINITE);
+   }
+
+   return written;
+}
+
+
+const audio_driver_t audio_dsound = {
+   .init = dsound_init,
+   .write = dsound_write,
+   .stop = dsound_stop,
+   .start = dsound_start,
+   .set_nonblock_state = dsound_set_nonblock_state,
+   .free = dsound_free,
+   .ident = "dsound"
+};
+
