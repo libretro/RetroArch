@@ -91,7 +91,7 @@ static inline void* grab_chunk(dsound_t *ds, DWORD write_ptr)
    }
 
    if (err)
-      SSNES_ERR("[DirectSound Error]: %s\n", err);
+      SSNES_WARN("[DirectSound error]: %s\n", err);
 
    if (bytes != CHUNK_SIZE)
    {
