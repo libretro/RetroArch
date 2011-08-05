@@ -41,9 +41,9 @@ typedef struct dsound
    unsigned buffer_size;
 } dsound_t;
 
-static inline unsigned write_avail(unsigned read_ptr, unsigned write_ptr, unsigned buffer_mask)
+static inline unsigned write_avail(unsigned read_ptr, unsigned write_ptr, unsigned buffer_size)
 {
-   return (read_ptr + buffer_mask + 1 - write_ptr) & buffer_mask;
+   return (read_ptr + buffer_size - write_ptr) % buffer_size;
 }
 
 static inline void get_positions(dsound_t *ds, DWORD *read_ptr, DWORD *write_ptr)
@@ -115,17 +115,16 @@ static DWORD CALLBACK dsound_thread(PVOID data)
    dsound_t *ds = data;
    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
-   unsigned buffer_mask = ds->buffer_size - 1;
    DWORD write_ptr;
    get_positions(ds, NULL, &write_ptr);
-   write_ptr = (write_ptr + ds->buffer_size / 2) & buffer_mask;
+   write_ptr = (write_ptr + ds->buffer_size / 2) % ds->buffer_size;
 
    while (ds->thread_alive)
    {
       DWORD read_ptr;
       get_positions(ds, &read_ptr, NULL);
       
-      DWORD avail = write_avail(read_ptr, write_ptr, buffer_mask);
+      DWORD avail = write_avail(read_ptr, write_ptr, ds->buffer_size);
 
       EnterCriticalSection(&ds->crit);
       DWORD fifo_avail = fifo_read_avail(ds->buffer);
@@ -152,7 +151,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
          memset(region.chunk2, 0, region.size2);
 
          release_region(ds, &region);
-         write_ptr = (write_ptr + region.size1 + region.size2) & buffer_mask;
+         write_ptr = (write_ptr + region.size1 + region.size2) % ds->buffer_size;
       }
       else // All is good. Pull from it and notify FIFO :D
       {
@@ -172,7 +171,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
          LeaveCriticalSection(&ds->crit);
 
          release_region(ds, &region);
-         write_ptr = (write_ptr + region.size1 + region.size2) & buffer_mask;
+         write_ptr = (write_ptr + region.size1 + region.size2) % ds->buffer_size;
 
          SetEvent(ds->event);
       }
@@ -274,7 +273,12 @@ static void* dsound_init(const char *device, unsigned rate, unsigned latency)
       .nAvgBytesPerSec = rate * 2 * sizeof(int16_t),
    };
 
-   ds->buffer_size = next_pow2((latency * wfx.nAvgBytesPerSec) / 1000);
+   ds->buffer_size = (latency * wfx.nAvgBytesPerSec) / 1000;
+   ds->buffer_size /= CHUNK_SIZE;
+   ds->buffer_size *= CHUNK_SIZE;
+   if (ds->buffer_size < 4 * CHUNK_SIZE)
+      ds->buffer_size = 4 * CHUNK_SIZE;
+
    SSNES_LOG("[DirectSound]: Setting buffer size of %u bytes\n", ds->buffer_size);
    SSNES_LOG("[DirectSound]: Latency = %u ms\n", (unsigned)((1000 * ds->buffer_size) / wfx.nAvgBytesPerSec));
 
