@@ -54,20 +54,26 @@ static inline void get_positions(dsound_t *ds, DWORD *read_ptr, DWORD *write_ptr
 #define CHUNK_SIZE 256
 #define BUFFER_ERROR ((void*)-1)
 
-static inline void* grab_chunk(dsound_t *ds, DWORD write_ptr)
+struct audio_lock
 {
-   void *chunk = NULL;
-   DWORD bytes = 0;
-   HRESULT res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE, &chunk, &bytes, NULL, NULL, 0);
+   void *chunk1;
+   DWORD size1;
+   void *chunk2;
+   DWORD size2;
+};
+
+static inline bool grab_region(dsound_t *ds, DWORD write_ptr, struct audio_lock *region)
+{
+   HRESULT res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE, &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0);
    if (res == DSERR_BUFFERLOST)
    {
       res = IDirectSoundBuffer_Restore(ds->dsb);
       if (res != DS_OK)
-         return BUFFER_ERROR;
+         return false;
 
-      res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE, &chunk, &bytes, NULL, NULL, 0);
+      res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE, &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0);
       if (res != DS_OK)
-         return NULL;
+         return false;
    }
 
    const char *err;
@@ -91,22 +97,17 @@ static inline void* grab_chunk(dsound_t *ds, DWORD write_ptr)
    }
 
    if (err)
-      SSNES_WARN("[DirectSound error]: %s\n", err);
-
-   if (bytes != CHUNK_SIZE)
    {
-      SSNES_ERR("[DirectSound]: Could not lock as much data as requested, this should not happen!\n");
-      if (chunk)
-         IDirectSoundBuffer_Unlock(ds->dsb, chunk, bytes, NULL, 0);
-      return NULL;
+      SSNES_WARN("[DirectSound error]: %s\n", err);
+      return false;
    }
 
-   return chunk;
+   return true;
 }
 
-static inline void release_chunk(dsound_t *ds, void *ptr)
+static inline void release_region(dsound_t *ds, const struct audio_lock *region)
 {
-   IDirectSoundBuffer_Unlock(ds->dsb, ptr, CHUNK_SIZE, NULL, 0);
+   IDirectSoundBuffer_Unlock(ds->dsb, region->chunk1, region->size1, region->chunk2, region->size2);
 }
 
 static DWORD CALLBACK dsound_thread(PVOID data)
@@ -139,44 +140,39 @@ static DWORD CALLBACK dsound_thread(PVOID data)
       }
       else if (fifo_avail < CHUNK_SIZE) // Got space to write, but nothing in FIFO (underrun), fill block with silence.
       {
-         void *chunk;
-         if ((chunk = grab_chunk(ds, write_ptr)) == BUFFER_ERROR)
+         struct audio_lock region;
+         if (!grab_region(ds, write_ptr, &region))
          {
             ds->thread_alive = false;
             SetEvent(ds->event);
             break;
          }
-         else if (chunk == NULL)
-         {
-            Sleep(1);
-            continue;
-         }
 
-         memset(chunk, 0, CHUNK_SIZE);
-         release_chunk(ds, chunk);
-         write_ptr = (write_ptr + CHUNK_SIZE) & buffer_mask;
+         memset(region.chunk1, 0, region.size1);
+         memset(region.chunk2, 0, region.size2);
+
+         release_region(ds, &region);
+         write_ptr = (write_ptr + region.size1 + region.size2) & buffer_mask;
       }
       else // All is good. Pull from it and notify FIFO :D
       {
-         void *chunk;
-         if ((chunk = grab_chunk(ds, write_ptr)) == BUFFER_ERROR)
+         struct audio_lock region;
+         if (!grab_region(ds, write_ptr, &region))
          {
             ds->thread_alive = false;
             SetEvent(ds->event);
             break;
          }
-         else if (chunk == NULL)
-         {
-            Sleep(1);
-            continue;
-         }
 
          EnterCriticalSection(&ds->crit);
-         fifo_read(ds->buffer, chunk, CHUNK_SIZE);
+         if (region.chunk1)
+            fifo_read(ds->buffer, region.chunk1, region.size1);
+         if (region.chunk2)
+            fifo_read(ds->buffer, region.chunk2, region.size2);
          LeaveCriticalSection(&ds->crit);
 
-         release_chunk(ds, chunk);
-         write_ptr = (write_ptr + CHUNK_SIZE) & buffer_mask;
+         release_region(ds, &region);
+         write_ptr = (write_ptr + region.size1 + region.size2) & buffer_mask;
 
          SetEvent(ds->event);
       }
