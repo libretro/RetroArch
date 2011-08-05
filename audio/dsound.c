@@ -52,27 +52,52 @@ static inline void get_positions(dsound_t *ds, DWORD *read_ptr, DWORD *write_ptr
 }
 
 #define CHUNK_SIZE 256
+#define BUFFER_ERROR ((void*)-1)
 
 static inline void* grab_chunk(dsound_t *ds, DWORD write_ptr)
 {
-   void *chunk;
-   DWORD bytes;
+   void *chunk = NULL;
+   DWORD bytes = 0;
    HRESULT res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE, &chunk, &bytes, NULL, NULL, 0);
    if (res == DSERR_BUFFERLOST)
    {
       res = IDirectSoundBuffer_Restore(ds->dsb);
       if (res != DS_OK)
-         return NULL;
+         return BUFFER_ERROR;
 
       res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE, &chunk, &bytes, NULL, NULL, 0);
       if (res != DS_OK)
          return NULL;
    }
 
+   const char *err;
+   switch (res)
+   {
+      case DSERR_BUFFERLOST:
+         err = "DSERR_BUFFERLOST";
+         break;
+      case DSERR_INVALIDCALL:
+         err = "DSERR_INVALIDCALL";
+         break;
+      case DSERR_INVALIDPARAM:
+         err = "DSERR_INVALIDPARAM";
+         break;
+      case DSERR_PRIOLEVELNEEDED:
+         err = "DSERR_PRIOLEVELNEEDED";
+         break;
+
+      default:
+         err = NULL;
+   }
+
+   if (err)
+      SSNES_ERR("[DirectSound Error]: %s\n", err);
+
    if (bytes != CHUNK_SIZE)
    {
       SSNES_ERR("[DirectSound]: Could not lock as much data as requested, this should not happen!\n");
-      IDirectSoundBuffer_Unlock(ds->dsb, chunk, bytes, NULL, 0);
+      if (chunk)
+         IDirectSoundBuffer_Unlock(ds->dsb, chunk, bytes, NULL, 0);
       return NULL;
    }
 
@@ -115,11 +140,16 @@ static DWORD CALLBACK dsound_thread(PVOID data)
       else if (fifo_avail < CHUNK_SIZE) // Got space to write, but nothing in FIFO (underrun), fill block with silence.
       {
          void *chunk;
-         if (!(chunk = grab_chunk(ds, write_ptr)))
+         if ((chunk = grab_chunk(ds, write_ptr)) == BUFFER_ERROR)
          {
             ds->thread_alive = false;
             SetEvent(ds->event);
             break;
+         }
+         else if (chunk == NULL)
+         {
+            Sleep(1);
+            continue;
          }
 
          memset(chunk, 0, CHUNK_SIZE);
@@ -129,11 +159,16 @@ static DWORD CALLBACK dsound_thread(PVOID data)
       else // All is good. Pull from it and notify FIFO :D
       {
          void *chunk;
-         if (!(chunk = grab_chunk(ds, write_ptr)))
+         if ((chunk = grab_chunk(ds, write_ptr)) == BUFFER_ERROR)
          {
             ds->thread_alive = false;
             SetEvent(ds->event);
             break;
+         }
+         else if (chunk == NULL)
+         {
+            Sleep(1);
+            continue;
          }
 
          EnterCriticalSection(&ds->crit);
@@ -324,10 +359,11 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
          avail = size;
 
       fifo_write(ds->buffer, buf, avail);
+      LeaveCriticalSection(&ds->crit);
+
       buf += avail;
       size -= avail;
       written += avail;
-      LeaveCriticalSection(&ds->crit);
 
       if (ds->nonblock || !ds->thread_alive)
          break;
