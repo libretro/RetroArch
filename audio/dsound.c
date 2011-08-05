@@ -265,7 +265,6 @@ static void* dsound_init(const char *device, unsigned rate, unsigned latency)
    if (IDirectSound_CreateSoundBuffer(ds->ds, &bufdesc, &ds->dsb, 0) != DS_OK)
       goto error;
 
-   IDirectSoundBuffer_SetFrequency(ds->dsb, rate);
    IDirectSoundBuffer_SetCurrentPosition(ds->dsb, 0);
 
    dsound_clear_buffer(ds);
