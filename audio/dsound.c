@@ -52,7 +52,6 @@ static inline void get_positions(dsound_t *ds, DWORD *read_ptr, DWORD *write_ptr
 }
 
 #define CHUNK_SIZE 256
-#define BUFFER_ERROR ((void*)-1)
 
 struct audio_lock
 {
