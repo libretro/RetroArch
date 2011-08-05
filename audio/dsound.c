@@ -51,7 +51,7 @@ static inline void get_positions(dsound_t *ds, DWORD *read_ptr, DWORD *write_ptr
    IDirectSoundBuffer_GetCurrentPosition(ds->dsb, read_ptr, write_ptr);
 }
 
-#define CHUNK_SIZE 128
+#define CHUNK_SIZE 256
 
 static inline void* grab_chunk(dsound_t *ds, DWORD write_ptr)
 {
@@ -84,7 +84,6 @@ static inline void release_chunk(dsound_t *ds, void *ptr)
    IDirectSoundBuffer_Unlock(ds->dsb, ptr, CHUNK_SIZE, NULL, 0);
 }
 
-
 static DWORD CALLBACK dsound_thread(PVOID data)
 {
    dsound_t *ds = data;
@@ -106,7 +105,8 @@ static DWORD CALLBACK dsound_thread(PVOID data)
       DWORD fifo_avail = fifo_read_avail(ds->buffer);
       LeaveCriticalSection(&ds->crit);
 
-      if (avail < CHUNK_SIZE) // No space to write.
+      // No space to write, or we don't have data in our fifo, but we can wait some time before it underruns ...
+      if (avail < CHUNK_SIZE || ((fifo_avail < CHUNK_SIZE) && (avail < ds->buffer_size / 2)))
       {
          Sleep(1);
          // We could opt for using the notification interface,
@@ -118,6 +118,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
          if (!(chunk = grab_chunk(ds, write_ptr)))
          {
             ds->thread_alive = false;
+            SetEvent(ds->event);
             break;
          }
 
@@ -131,6 +132,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
          if (!(chunk = grab_chunk(ds, write_ptr)))
          {
             ds->thread_alive = false;
+            SetEvent(ds->event);
             break;
          }
 
@@ -243,10 +245,11 @@ static void* dsound_init(const char *device, unsigned rate, unsigned latency)
 
    ds->buffer_size = next_pow2((latency * wfx.nAvgBytesPerSec) / 1000);
    SSNES_LOG("[DirectSound]: Setting buffer size of %u bytes\n", ds->buffer_size);
+   SSNES_LOG("[DirectSound]: Latency = %u ms\n", (unsigned)((1000 * ds->buffer_size) / wfx.nAvgBytesPerSec));
 
    DSBUFFERDESC bufdesc = {
       .dwSize = sizeof(DSBUFFERDESC),
-      .dwFlags = DSBCAPS_GETCURRENTPOSITION2,
+      .dwFlags = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_GLOBALFOCUS,
       .dwBufferBytes = ds->buffer_size,
       .lpwfxFormat = &wfx,
    };
@@ -262,6 +265,9 @@ static void* dsound_init(const char *device, unsigned rate, unsigned latency)
    if (IDirectSound_CreateSoundBuffer(ds->ds, &bufdesc, &ds->dsb, 0) != DS_OK)
       goto error;
 
+   IDirectSoundBuffer_SetFrequency(ds->dsb, rate);
+   IDirectSoundBuffer_SetCurrentPosition(ds->dsb, 0);
+
    dsound_clear_buffer(ds);
 
    if (IDirectSoundBuffer_Play(ds->dsb, 0, 0, DSBPLAY_LOOPING) != DS_OK)
@@ -273,6 +279,7 @@ static void* dsound_init(const char *device, unsigned rate, unsigned latency)
    return ds;
 
 error:
+   SSNES_ERR("[DirectSound] Error occured in init!\n");
    dsound_free(ds);
    return NULL;
 }
