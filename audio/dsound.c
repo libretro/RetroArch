@@ -192,14 +192,14 @@ static void dsound_free(void *data)
    dsound_t *ds = data;
    if (ds)
    {
-      DeleteCriticalSection(&ds->crit);
-
       if (ds->thread)
       {
          ds->thread_alive = false;
          WaitForSingleObject(ds->thread, INFINITE);
          CloseHandle(ds->thread);
       }
+
+      DeleteCriticalSection(&ds->crit);
 
       if (ds->dsb)
       {
