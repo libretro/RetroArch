@@ -1051,6 +1051,11 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!SDL_SetVideoMode(video->width, video->height, g_settings.video.force_16bit ? 16 : 0, SDL_OPENGL | SDL_RESIZABLE | (video->fullscreen ? SDL_FULLSCREEN : 0)))
       return NULL;
 
+   gfx_window_title_reset();
+   char buf[128];
+   if (gfx_window_title(buf, sizeof(buf)))
+      SDL_WM_SetCaption(buf, NULL);
+
    // Remove that ugly mouse :D
    SDL_ShowCursor(SDL_DISABLE);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1137,10 +1142,6 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    glDisable(GL_DITHER);
    glColor4f(1, 1, 1, 1);
    glClearColor(0, 0, 0, 1);
-
-   char buf[128];
-   if (gfx_window_title(buf, sizeof(buf)))
-      SDL_WM_SetCaption(buf, NULL);
 
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
