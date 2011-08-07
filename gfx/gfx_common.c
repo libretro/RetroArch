@@ -63,6 +63,17 @@ bool gfx_window_title(char *buf, size_t size)
 #ifdef _WIN32
 #include <windows.h>
 #include "dynamic.h"
+// We only load this library once, so we let it be unloaded at application shutdown,
+// since unloading it early seems to cause issues on some systems.
+
+static dylib_t dwmlib = NULL;
+
+static void gfx_dwm_shutdown(void)
+{
+   if (dwmlib)
+      dylib_close(dwmlib);
+}
+
 void gfx_set_dwm(void)
 {
    static bool inited = false;
@@ -70,14 +81,15 @@ void gfx_set_dwm(void)
       return;
    inited = true;
 
-   dylib_t lib = dylib_load("dwmapi.dll");
-   if (!lib)
+   dwmlib = dylib_load("dwmapi.dll");
+   if (!dwmlib)
    {
       SSNES_LOG("Did not find dwmapi.dll");
       return;
    }
+   atexit(gfx_dwm_shutdown);
 
-   HRESULT (WINAPI *mmcss)(BOOL) = (HRESULT (WINAPI*)(BOOL))dylib_proc(lib, "DwmEnableMMCSS");
+   HRESULT (WINAPI *mmcss)(BOOL) = (HRESULT (WINAPI*)(BOOL))dylib_proc(dwmlib, "DwmEnableMMCSS");
    if (mmcss)
    {
       SSNES_LOG("Setting multimedia scheduling for DWM.\n");
@@ -85,22 +97,18 @@ void gfx_set_dwm(void)
    }
 
    if (!g_settings.video.disable_composition)
-      goto end;
+      return;
 
-   HRESULT (WINAPI *composition_enable)(UINT) = (HRESULT (WINAPI*)(UINT))dylib_proc(lib, "DwmEnableComposition");
+   HRESULT (WINAPI *composition_enable)(UINT) = (HRESULT (WINAPI*)(UINT))dylib_proc(dwmlib, "DwmEnableComposition");
    if (!composition_enable)
    {
       SSNES_ERR("Did not find DwmEnableComposition ...\n");
-      dylib_close(lib);
       return;
    }
 
    HRESULT ret = composition_enable(0);
    if (FAILED(ret))
       SSNES_ERR("Failed to set composition state ...\n");
-
-end:
-   dylib_close(lib);
 }
 
 #endif
