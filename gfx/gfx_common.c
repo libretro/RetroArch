@@ -85,7 +85,7 @@ void gfx_set_dwm(void)
    }
 
    if (!g_settings.video.disable_composition)
-      return;
+      goto end;
 
    HRESULT (WINAPI *composition_enable)(UINT) = (HRESULT (WINAPI*)(UINT))dylib_proc(lib, "DwmEnableComposition");
    if (!composition_enable)
@@ -99,6 +99,7 @@ void gfx_set_dwm(void)
    if (FAILED(ret))
       SSNES_ERR("Failed to set composition state ...\n");
 
+end:
    dylib_close(lib);
 }
 
