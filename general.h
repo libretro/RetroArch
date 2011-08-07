@@ -89,6 +89,7 @@ struct settings
       float msg_pos_y;
 
       bool force_16bit;
+      bool disable_composition;
 
       char external_driver[256];
    } video;

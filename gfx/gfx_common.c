@@ -60,4 +60,39 @@ bool gfx_window_title(char *buf, size_t size)
    return ret;
 }
 
+#ifdef _WIN32
+#include <windows.h>
+#include "dynamic.h"
+void gfx_set_composition(void)
+{
+   if (!g_settings.video.disable_composition)
+      return;
+
+   static bool inited = false;
+   if (inited)
+      return;
+   inited = true;
+
+   dylib_t lib = dylib_load("dwmapi.dll");
+   if (!lib)
+   {
+      SSNES_ERR("Did not find dwmapi.dll");
+      return;
+   }
+
+   HRESULT (WINAPI *composition_enable)(UINT) = (HRESULT (WINAPI*)(UINT))dylib_proc(lib, "DwmEnableComposition");
+   if (!composition_enable)
+   {
+      SSNES_ERR("Did not find DwmEnableComposition ...\n");
+      dylib_close(lib);
+      return;
+   }
+
+   HRESULT ret = composition_enable(0);
+   if (FAILED(ret))
+      SSNES_ERR("Failed to set composition state ...\n");
+
+   dylib_close(lib);
+}
+#endif
 
