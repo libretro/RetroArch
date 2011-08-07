@@ -63,11 +63,8 @@ bool gfx_window_title(char *buf, size_t size)
 #ifdef _WIN32
 #include <windows.h>
 #include "dynamic.h"
-void gfx_set_composition(void)
+void gfx_set_dwm(void)
 {
-   if (!g_settings.video.disable_composition)
-      return;
-
    static bool inited = false;
    if (inited)
       return;
@@ -76,9 +73,19 @@ void gfx_set_composition(void)
    dylib_t lib = dylib_load("dwmapi.dll");
    if (!lib)
    {
-      SSNES_ERR("Did not find dwmapi.dll");
+      SSNES_LOG("Did not find dwmapi.dll");
       return;
    }
+
+   HRESULT (WINAPI *mmcss)(BOOL) = (HRESULT (WINAPI*)(BOOL))dylib_proc(lib, "DwmEnableMMCSS");
+   if (mmcss)
+   {
+      SSNES_LOG("Setting multimedia scheduling for DWM.\n");
+      mmcss(TRUE);
+   }
+
+   if (!g_settings.video.disable_composition)
+      return;
 
    HRESULT (WINAPI *composition_enable)(UINT) = (HRESULT (WINAPI*)(UINT))dylib_proc(lib, "DwmEnableComposition");
    if (!composition_enable)
@@ -94,5 +101,6 @@ void gfx_set_composition(void)
 
    dylib_close(lib);
 }
+
 #endif
 

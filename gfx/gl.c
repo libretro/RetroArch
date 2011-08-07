@@ -1037,7 +1037,7 @@ static void gl_set_nonblock_state(void *data, bool state)
 static void* gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
 #ifdef _WIN32
-   gfx_set_composition();
+   gfx_set_dwm();
 #endif
 
    if (SDL_Init(SDL_INIT_VIDEO) < 0)
