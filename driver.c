@@ -485,11 +485,11 @@ void init_video_input(void)
 
 void uninit_video_input(void)
 {
-   if ( driver.video_data && driver.video )
-      driver.video->free(driver.video_data);
-
    if ( driver.input_data != driver.video_data && driver.input )
       driver.input->free(driver.input_data);
+
+   if ( driver.video_data && driver.video )
+      driver.video->free(driver.video_data);
 
    deinit_filter();
 
