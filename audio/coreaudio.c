@@ -87,7 +87,7 @@ static OSStatus audio_cb(void *userdata, AudioUnitRenderActionFlags *action_flag
    }
 
    void *outbuf = io_data->mBuffers[0].mData;
-   fifo_read(dev->buffer, output, write_avail);
+   fifo_read(dev->buffer, outbuf, write_avail);
    pthread_mutex_unlock(&dev->lock);
    pthread_cond_signal(&dev->cond);
    return noErr;
@@ -105,7 +105,7 @@ static void* coreaudio_init(const char* device, unsigned rate, unsigned latency)
    AudioObjectPropertyAddress addr = {
       kAudioHardwarePropertyRunLoop,
       kAudioObjectPropertyScopeGlobal,
-      kAudioObjectPropertyyElementMaster
+      kAudioObjectPropertyElementMaster
    };
 
    pthread_mutex_init(&dev->lock, NULL);
@@ -136,7 +136,7 @@ static void* coreaudio_init(const char* device, unsigned rate, unsigned latency)
       .mBytesPerPacket = 2 * sizeof(float),
       .mFramesPerPacket = 1,
       .mFormatID = kAudioFormatLinearPCM,
-      .mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked | (is_little_endian() ? 0 : kAudioFormatFlagisBigEndian),
+      .mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked | (is_little_endian() ? 0 : kAudioFormatFlagIsBigEndian),
    };
 
    res = AudioUnitSetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
@@ -265,7 +265,7 @@ static bool coreaudio_use_float(void *data)
    return true;
 }
 
-const audio_driver_t audio_rsound = {
+const audio_driver_t audio_coreaudio = {
    .init = coreaudio_init,
    .write = coreaudio_write,
    .stop = coreaudio_stop,
