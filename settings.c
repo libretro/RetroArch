@@ -121,6 +121,7 @@ static void set_defaults(void)
    g_settings.video.fullscreen_x = fullscreen_x;
    g_settings.video.fullscreen_y = fullscreen_y;
    g_settings.video.force_16bit = force_16bit;
+   g_settings.video.disable_composition = disable_composition;
    g_settings.video.vsync = vsync;
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
@@ -302,6 +303,7 @@ static void parse_config_file(void)
    }
 
    CONFIG_GET_BOOL(video.force_16bit, "video_force_16bit");
+   CONFIG_GET_BOOL(video.disable_composition, "video_disable_composition");
    CONFIG_GET_BOOL(video.vsync, "video_vsync");
    CONFIG_GET_BOOL(video.smooth, "video_smooth");
    CONFIG_GET_BOOL(video.force_aspect, "video_force_aspect");

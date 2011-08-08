@@ -129,6 +129,9 @@ static const unsigned fullscreen_y = 0;
 // Force 16-bit colors.
 static const bool force_16bit = false;
 
+// Forcibly disable composition. Only valid on Windows Vista/7 for now.
+static const bool disable_composition = false;
+
 // Video VSYNC (recommended)
 static const bool vsync = true;
 
