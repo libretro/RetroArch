@@ -71,6 +71,9 @@ static void set_defaults(void)
       case AUDIO_ROAR:
          def_audio = "roar";
          break;
+      case AUDIO_COREAUDIO:
+         def_audio = "coreaudio";
+         break;
       case AUDIO_AL:
          def_audio = "openal";
          break;

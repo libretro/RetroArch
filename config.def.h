@@ -58,6 +58,7 @@
 #define AUDIO_PULSE 10
 #define AUDIO_EXT 15
 #define AUDIO_DSOUND 16
+#define AUDIO_COREAUDIO 17
 ////////////////////////
 #define INPUT_SDL 7
 #define INPUT_X 12
@@ -83,6 +84,8 @@
 #define AUDIO_DEFAULT_DRIVER AUDIO_OSS
 #elif defined(HAVE_JACK)
 #define AUDIO_DEFAULT_DRIVER AUDIO_JACK
+#elif defined(HAVE_COREAUDIO)
+#define AUDIO_DEFAULT_DRIVER AUDIO_COREAUDIO
 #elif defined(HAVE_AL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_AL
 #elif defined(HAVE_DSOUND)

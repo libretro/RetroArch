@@ -23,6 +23,7 @@ add_command_line_enable RSOUND "Enable RSound support" auto
 add_command_line_enable ROAR "Enable RoarAudio support" auto
 add_command_line_enable AL "Enable OpenAL support" auto
 add_command_line_enable JACK "Enable JACK support" auto
+add_command_line_enable COREAUDIO "Enable CoreAudio support" auto
 add_command_line_enable PULSE "Enable PulseAudio support" auto
 add_command_line_enable FREETYPE "Enable FreeType support" auto
 add_command_line_enable XVIDEO "Enable XVideo support" auto
