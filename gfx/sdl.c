@@ -213,6 +213,10 @@ static void sdl_render_msg_32(sdl_video_t *vid, SDL_Surface *buffer, const char 
 
 static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+#ifdef _WIN32
+   gfx_set_dwm();
+#endif
+
    SDL_InitSubSystem(SDL_INIT_VIDEO);
 
    sdl_video_t *vid = calloc(1, sizeof(*vid));
