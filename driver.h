@@ -158,6 +158,7 @@ extern const audio_driver_t audio_sdl;
 extern const audio_driver_t audio_xa;
 extern const audio_driver_t audio_pulse;
 extern const audio_driver_t audio_ext;
+extern const audio_driver_t audio_dsound;
 extern const video_driver_t video_gl;
 extern const video_driver_t video_xvideo;
 extern const video_driver_t video_sdl;

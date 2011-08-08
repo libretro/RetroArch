@@ -36,18 +36,15 @@ static const char* stock_cg_program =
       "void main_vertex"
       "("
       "	float4 position	: POSITION,"
-      "	float4 color	: COLOR,"
       "	float2 texCoord : TEXCOORD0,"
       ""
       "  uniform float4x4 modelViewProj,"
       ""
       "	out float4 oPosition : POSITION,"
-      "	out float4 oColor    : COLOR,"
       "	out float2 otexCoord : TEXCOORD0"
       ")"
       "{"
       "	oPosition = mul(modelViewProj, position);"
-      "	oColor = color;"
       "	otexCoord = texCoord;"
       "}"
       ""
@@ -112,6 +109,7 @@ struct cg_program
 
    struct cg_fbo_params fbo[MAX_SHADERS];
    struct cg_fbo_params orig;
+   struct cg_fbo_params prev;
 };
 
 #define FILTER_UNSPEC 0
@@ -148,6 +146,7 @@ void gl_cg_set_params(unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
       const struct gl_tex_info *info,
+      const struct gl_tex_info *prev_info,
       const struct gl_tex_info *fbo_info,
       unsigned fbo_info_cnt)
 {
@@ -169,7 +168,6 @@ void gl_cg_set_params(unsigned width, unsigned height,
       if (param)
       {
          cgGLSetTextureParameter(param, info->tex);
-         //fprintf(stderr, "ORIGtex = (%d) %d\n", cgGLGetTextureParameter(param), cgGLGetTextureEnum(param) - GL_TEXTURE0);
          cgGLEnableTextureParameter(param);
       }
 
@@ -183,6 +181,24 @@ void gl_cg_set_params(unsigned width, unsigned height,
          cgGLEnableClientState(prg[active_index].orig.coord);
       }
 
+      // Set prev texture
+      param = prg[active_index].prev.tex;
+      if (param)
+      {
+         cgGLSetTextureParameter(param, prev_info->tex);
+         cgGLEnableTextureParameter(param);
+      }
+
+      set_param_2f(prg[active_index].prev.vid_size_v, prev_info->input_size[0], prev_info->input_size[1]);
+      set_param_2f(prg[active_index].prev.vid_size_f, prev_info->input_size[0], prev_info->input_size[1]);
+      set_param_2f(prg[active_index].prev.tex_size_v, prev_info->tex_size[0], prev_info->tex_size[1]);
+      set_param_2f(prg[active_index].prev.tex_size_f, prev_info->tex_size[0], prev_info->tex_size[1]);
+      if (prg[active_index].prev.coord)
+      {
+         cgGLSetParameterPointer(prg[active_index].prev.coord, 2, GL_FLOAT, 0, prev_info->coord);
+         cgGLEnableClientState(prg[active_index].prev.coord);
+      }
+
       // Set lookup textures.
       for (unsigned i = 0; i < lut_textures_num; i++)
       {
@@ -191,7 +207,6 @@ void gl_cg_set_params(unsigned width, unsigned height,
          {
             cgGLSetTextureParameter(param, lut_textures[i]);
             cgGLEnableTextureParameter(param);
-            //fprintf(stderr, "LUTtex = (%d) %d\n", cgGLGetTextureParameter(param), cgGLGetTextureEnum(param) - GL_TEXTURE0);
          }
       }
       
@@ -273,16 +288,31 @@ static bool load_plain(const char *path)
    if (strlen(g_settings.video.second_pass_shader) > 0)
       SSNES_LOG("Loading 2nd pass: %s\n", g_settings.video.second_pass_shader);
 
+   char *listing[3] = {NULL};
+   const char *list = NULL;
+
    prg[0].fprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", 0);
    prg[0].vprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", 0);
 
+   list = cgGetLastListing(cgCtx);
+   if (list)
+      listing[0] = strdup(list);
+
    prg[1].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgFProf, "main_fragment", 0);
    prg[1].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgVProf, "main_vertex", 0);
+
+   list = cgGetLastListing(cgCtx);
+   if (list)
+      listing[1] = strdup(list);
 
    if (strlen(g_settings.video.second_pass_shader) > 0)
    {
       prg[2].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgFProf, "main_fragment", 0);
       prg[2].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgVProf, "main_vertex", 0);
+
+      list = cgGetLastListing(cgCtx);
+      if (list)
+         listing[2] = strdup(list);
       cg_shader_num = 2;
    }
    else
@@ -291,13 +321,15 @@ static bool load_plain(const char *path)
       cg_shader_num = 1;
    }
 
-   for (int i = 0; i < cg_shader_num + 1; i++)
+   for (unsigned i = 0; i <= cg_shader_num; i++)
    {
       if (!prg[i].fprg || !prg[i].vprg)
       {
          CGerror err = cgGetError();
          SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
-         return false;
+         if (listing[i])
+            SSNES_ERR("%s\n", listing[i]);
+         goto error;
       }
 
       cgGLLoadProgram(prg[i].fprg);
@@ -305,6 +337,14 @@ static bool load_plain(const char *path)
    }
 
    return true;
+
+error:
+   for (unsigned i = 0; i < 3; i++)
+   {
+      if (listing[i])
+         free(listing[i]);
+   }
+   return false;
 }
 
 #define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
@@ -802,8 +842,11 @@ static bool load_preset(const char *path)
 
       if (!prog->fprg || !prog->vprg)
       {
+         const char *listing = cgGetLastListing(cgCtx);
          CGerror err = cgGetError();
          SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
+         if (listing)
+            SSNES_ERR("%s\n", listing);
          goto error;
       }
 
@@ -878,7 +921,7 @@ bool gl_cg_init(const char *path)
    if (prg[0].mvp)
       cgGLSetStateMatrixParameter(prg[0].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 
-   for (unsigned i = 1; i < cg_shader_num + 1; i++)
+   for (unsigned i = 1; i <= cg_shader_num; i++)
    {
       cgGLBindProgram(prg[i].fprg);
       cgGLBindProgram(prg[i].vprg);
@@ -901,6 +944,13 @@ bool gl_cg_init(const char *path)
       prg[i].orig.tex_size_v = cgGetNamedParameter(prg[i].vprg, "ORIG.texture_size");
       prg[i].orig.tex_size_f = cgGetNamedParameter(prg[i].fprg, "ORIG.texture_size");
       prg[i].orig.coord = cgGetNamedParameter(prg[i].vprg, "ORIG.tex_coord");
+
+      prg[i].prev.tex = cgGetNamedParameter(prg[i].fprg, "PREV.texture");
+      prg[i].prev.vid_size_v = cgGetNamedParameter(prg[i].vprg, "PREV.video_size");
+      prg[i].prev.vid_size_f = cgGetNamedParameter(prg[i].fprg, "PREV.video_size");
+      prg[i].prev.tex_size_v = cgGetNamedParameter(prg[i].vprg, "PREV.texture_size");
+      prg[i].prev.tex_size_f = cgGetNamedParameter(prg[i].fprg, "PREV.texture_size");
+      prg[i].prev.coord = cgGetNamedParameter(prg[i].vprg, "PREV.tex_coord");
 
       for (unsigned j = 0; j < i - 1; j++)
       {

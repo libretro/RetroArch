@@ -33,6 +33,7 @@ void gl_cg_set_params(unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
       const struct gl_tex_info *info,
+      const struct gl_tex_info *prev_info,
       const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt);
 
 void gl_cg_use(unsigned index);

@@ -13,6 +13,7 @@ HAVE_SDL_IMAGE = 1
 HAVE_XML = 1
 HAVE_FREETYPE = 1
 HAVE_XAUDIO = 1
+HAVE_DSOUND = 1
 HAVE_RSOUND = 1
 HAVE_DYLIB = 1
 HAVE_NETPLAY = 1
@@ -57,6 +58,12 @@ endif
 ifeq ($(HAVE_XAUDIO), 1)
    OBJ += audio/xaudio.o
    DEFINES += -DHAVE_XAUDIO
+endif
+
+ifeq ($(HAVE_DSOUND), 1)
+   OBJ += audio/dsound.o
+   DEFINES += -DHAVE_DSOUND
+   LIBS += -ldxguid -ldsound
 endif
 
 ifeq ($(HAVE_RSOUND), 1)
@@ -155,7 +162,7 @@ clean:
 	rm -f tools/*.o
 
 dist: all
-	zip -r ssnes-win32-0.6.1.zip $(TARGET) ssnes.cfg snes.dll libxml2.dll iconv.dll zlib1.dll SDL.dll freetype6.dll xaudio-c.dll rsound.dll pthreadGC2.dll cg.dll cgGL.dll libjpeg-8.dll libpng15-15.dll python32.dll SDL_image.dll $(JTARGET)
+	zip -r ssnes-win32-0.6.2.zip $(TARGET) ssnes.cfg snes.dll libxml2.dll iconv.dll zlib1.dll SDL.dll freetype6.dll xaudio-c.dll rsound.dll pthreadGC2.dll cg.dll cgGL.dll libjpeg-8.dll libpng15-15.dll python32.dll SDL_image.dll $(JTARGET)
 
 libs:
 	wget https://github.com/downloads/Themaister/SSNES/SSNES-win32-libs.zip --no-check-certificate

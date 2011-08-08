@@ -77,6 +77,9 @@ static void set_defaults(void)
       case AUDIO_SDL:
          def_audio = "sdl";
          break;
+      case AUDIO_DSOUND:
+         def_audio = "dsound";
+         break;
       case AUDIO_XAUDIO:
          def_audio = "xaudio";
          break;
@@ -111,10 +114,11 @@ static void set_defaults(void)
 
    g_settings.video.xscale = xscale;
    g_settings.video.yscale = yscale;
-   g_settings.video.fullscreen = fullscreen;
+   g_settings.video.fullscreen = g_extern.force_fullscreen ? true : fullscreen;
    g_settings.video.fullscreen_x = fullscreen_x;
    g_settings.video.fullscreen_y = fullscreen_y;
    g_settings.video.force_16bit = force_16bit;
+   g_settings.video.disable_composition = disable_composition;
    g_settings.video.vsync = vsync;
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
@@ -289,8 +293,14 @@ static void parse_config_file(void)
    CONFIG_GET_DOUBLE(video.yscale, "video_yscale");
    CONFIG_GET_INT(video.fullscreen_x, "video_fullscreen_x");
    CONFIG_GET_INT(video.fullscreen_y, "video_fullscreen_y");
-   CONFIG_GET_BOOL(video.fullscreen, "video_fullscreen");
+
+   if (!g_extern.force_fullscreen)
+   {
+      CONFIG_GET_BOOL(video.fullscreen, "video_fullscreen");
+   }
+
    CONFIG_GET_BOOL(video.force_16bit, "video_force_16bit");
+   CONFIG_GET_BOOL(video.disable_composition, "video_disable_composition");
    CONFIG_GET_BOOL(video.vsync, "video_vsync");
    CONFIG_GET_BOOL(video.smooth, "video_smooth");
    CONFIG_GET_BOOL(video.force_aspect, "video_force_aspect");

@@ -40,7 +40,8 @@ endif
 
 ifeq ($(HAVE_RSOUND), 1)
    OBJ += audio/rsound.o
-   LIBS += -lrsound
+   LIBS += $(RSOUND_LIBS)
+   DEFINES += $(RSOUND_CFLAGS)
 endif
 
 ifeq ($(HAVE_OSS), 1)

@@ -12,6 +12,7 @@ HAVE_SDL = 1
 HAVE_XML = 1
 HAVE_FREETYPE = 1
 HAVE_XAUDIO = 1
+HAVE_DSOUND = 1
 HAVE_RSOUND = 0
 HAVE_DYLIB = 1
 HAVE_NETPLAY = 1
@@ -50,6 +51,12 @@ endif
 ifeq ($(HAVE_XAUDIO), 1)
    OBJ += audio/xaudio.o
    DEFINES += -DHAVE_XAUDIO
+endif
+
+ifeq ($(HAVE_DSOUND), 1)
+   OBJ += audio/dsound.o
+   DEFINES += -DHAVE_DSOUND
+   LIBS += -ldxguid -ldsound
 endif
 
 ifeq ($(HAVE_RSOUND), 1)
@@ -142,7 +149,7 @@ clean:
 	rm -f tools/*.o
 
 dist: all
-	zip -r ssnes-win64-0.6.1.zip $(TARGET) ssnes.cfg snes.dll xaudio-c.dll README.win32.txt $(JTARGET)
+	zip -r ssnes-win64-0.6.2.zip $(TARGET) ssnes.cfg snes.dll xaudio-c.dll README.win32.txt $(JTARGET)
 
 libs:
 	wget https://github.com/downloads/Themaister/SSNES/ssnes-win64-libs.zip --no-check-certificate

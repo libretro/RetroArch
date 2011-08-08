@@ -20,6 +20,7 @@
 #endif
 
 #include "driver.h"
+#include "general.h"
 #include <stdlib.h>
 
 #ifdef HAVE_OSS_BSD
@@ -68,7 +69,8 @@ static void* __oss_init(const char* device, unsigned rate, unsigned latency)
    }
 
    int channels = 2;
-   int format = AFMT_S16_LE;
+   int format = is_little_endian() ?
+      AFMT_S16_LE : AFMT_S16_BE;
 
    if (ioctl(*fd, SNDCTL_DSP_CHANNELS, &channels) < 0)
    {

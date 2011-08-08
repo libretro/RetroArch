@@ -224,6 +224,15 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
       return false;
    }
 
+   const char *cg_shader = NULL;
+   const char *xml_shader = NULL;
+   enum ssnes_shader_type type = g_settings.video.shader_type;
+   if ((type == SSNES_SHADER_CG || type == SSNES_SHADER_AUTO) && *g_settings.video.cg_shader_path)
+      cg_shader = g_settings.video.cg_shader_path;
+   else if ((type == SSNES_SHADER_BSNES || type == SSNES_SHADER_AUTO) && *g_settings.video.bsnes_shader_path)
+      xml_shader = g_settings.video.bsnes_shader_path;
+
+
    ssnes_video_info_t info = {
       .width = video->width,
       .height = video->height,
@@ -234,8 +243,8 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
       .smooth = video->smooth,
       .input_scale = video->input_scale,
       .color_format = video->rgb32 ? SSNES_COLOR_FORMAT_ARGB8888 : SSNES_COLOR_FORMAT_XRGB1555,
-      .xml_shader = g_settings.video.bsnes_shader_path,
-      .cg_shader = g_settings.video.cg_shader_path,
+      .xml_shader = xml_shader,
+      .cg_shader = cg_shader,
       .ttf_font = *g_settings.video.font_path ? g_settings.video.font_path : NULL,
       .ttf_font_size = g_settings.video.font_size
    };

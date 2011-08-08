@@ -125,7 +125,9 @@ static inline bool load_gl_proc(void) { return true; }
 typedef struct gl
 {
    bool vsync;
-   GLuint texture;
+   GLuint texture[2];
+   unsigned tex_index; // For use with PREV.
+   struct gl_tex_info prev_info;
    GLuint tex_filter;
 
    void *empty_buf;
@@ -153,8 +155,8 @@ typedef struct gl
    unsigned win_height;
    unsigned vp_width, vp_out_width;
    unsigned vp_height, vp_out_height;
-   unsigned last_width;
-   unsigned last_height;
+   unsigned last_width[2];
+   unsigned last_height[2];
    unsigned tex_w, tex_h;
    GLfloat tex_coords[8];
 #ifdef HAVE_FBO
@@ -255,20 +257,21 @@ static void gl_shader_set_params(unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
       const struct gl_tex_info *info,
+      const struct gl_tex_info *prev_info,
       const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
 {
 #ifdef HAVE_CG
    gl_cg_set_params(width, height, 
          tex_width, tex_height, 
          out_width, out_height, 
-         frame_count, info, fbo_info, fbo_info_cnt);
+         frame_count, info, prev_info, fbo_info, fbo_info_cnt);
 #endif
 
 #ifdef HAVE_XML
    gl_glsl_set_params(width, height, 
          tex_width, tex_height, 
          out_width, out_height, 
-         frame_count, info, fbo_info, fbo_info_cnt);
+         frame_count, info, prev_info, fbo_info, fbo_info_cnt);
 #endif
 }
 
@@ -338,7 +341,7 @@ static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_s
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-         glBindTexture(GL_TEXTURE_2D, gl->texture);
+         glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
       }
       else
          SSNES_WARN("Couldn't init font renderer with font \"%s\"...\n", font_path);
@@ -653,7 +656,7 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    // Go back to old rendering path.
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
    glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes_flipped);
-   glBindTexture(GL_TEXTURE_2D, gl->texture);
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    glDisable(GL_BLEND);
 #endif
 }
@@ -712,6 +715,10 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
    gl_shader_use(1);
    gl->frame_count++;
 
+#if defined(HAVE_XML) || defined(HAVE_CG)
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+#endif
+
 #ifdef HAVE_FBO
    // Render to texture in first pass.
    if (gl->fbo_inited)
@@ -767,7 +774,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
          last_max_height = gl->fbo_rect[i].max_img_height;
       }
 
-      glBindTexture(GL_TEXTURE_2D, gl->texture);
+      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
       pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
       gl->render_to_tex = true;
       set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
@@ -814,7 +821,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
          }
 
          // Go back to what we're supposed to do, render to FBO #0 :D
-         glBindTexture(GL_TEXTURE_2D, gl->texture);
+         glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
          pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
          set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
       }
@@ -823,10 +830,10 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 #endif
    }
 
-   if ((width != gl->last_width || height != gl->last_height) && gl->empty_buf) // Res change. need to clear out texture.
+   if ((width != gl->last_width[gl->tex_index] || height != gl->last_height[gl->tex_index]) && gl->empty_buf) // Res change. need to clear out texture.
    {
-      gl->last_width = width;
-      gl->last_height = height;
+      gl->last_width[gl->tex_index] = width;
+      gl->last_height[gl->tex_index] = height;
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
       glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
 
@@ -839,13 +846,13 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 
       set_texture_coords(gl->tex_coords, xamt, yamt);
    }
-
-   // Work around a certain issue a Cg where not using TEXUNIT0
-   // in shader causes cgGLEnableTextureParameter() causes it
-   // to bind to TEXUNIT0, to avoid really funny bugs, rebind
-   // our texture.
-#ifdef HAVE_CG
-   glBindTexture(GL_TEXTURE_2D, gl->texture);
+#if defined(HAVE_XML) || defined(HAVE_CG)
+   else if (width != gl->last_width[1 - gl->tex_index] || height != gl->last_height[1 - gl->tex_index])
+   {
+      GLfloat xamt = (GLfloat)width / gl->tex_w;
+      GLfloat yamt = (GLfloat)height / gl->tex_h;
+      set_texture_coords(gl->tex_coords, xamt, yamt);
+   }
 #endif
 
 #ifdef HAVE_FBO
@@ -861,7 +868,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
          gl->texture_fmt, frame);
 
    struct gl_tex_info tex_info = {
-      .tex = gl->texture,
+      .tex = gl->texture[gl->tex_index],
       .input_size = {width, height},
       .tex_size = {gl->tex_w, gl->tex_h}
    };
@@ -871,7 +878,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 
    glClear(GL_COLOR_BUFFER_BIT);
    gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->vp_width, gl->vp_height, gl->frame_count, 
-         &tex_info, fbo_tex_info, fbo_tex_info_cnt);
+         &tex_info, &gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
    glDrawArrays(GL_QUADS, 0, 4);
 
@@ -916,7 +923,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
          gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
                prev_rect->width, prev_rect->height, 
                gl->vp_width, gl->vp_height, gl->frame_count, 
-               &tex_info, fbo_tex_info, fbo_tex_info_cnt);
+               &tex_info, &gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
          glDrawArrays(GL_QUADS, 0, 4);
 
@@ -942,13 +949,18 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
       gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
             gl->vp_width, gl->vp_height, gl->frame_count, 
-            &tex_info, fbo_tex_info, fbo_tex_info_cnt);
+            &tex_info, &gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
       glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes_flipped);
       glDrawArrays(GL_QUADS, 0, 4);
 
       glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
    }
+#endif
+
+#if defined(HAVE_XML) || defined(HAVE_CG)
+   memcpy(&gl->prev_info, &tex_info, sizeof(tex_info));
+   gl->tex_index = 1 - gl->tex_index;
 #endif
 
    if (msg)
@@ -970,7 +982,7 @@ static void gl_free(void *data)
    gl_shader_deinit();
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-   glDeleteTextures(1, &gl->texture);
+   glDeleteTextures(2, gl->texture);
 
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
@@ -1024,6 +1036,10 @@ static void gl_set_nonblock_state(void *data, bool state)
 
 static void* gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+#ifdef _WIN32
+   gfx_set_dwm();
+#endif
+
    if (SDL_Init(SDL_INIT_VIDEO) < 0)
       return NULL;
 
@@ -1038,6 +1054,11 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    if (!SDL_SetVideoMode(video->width, video->height, g_settings.video.force_16bit ? 16 : 0, SDL_OPENGL | SDL_RESIZABLE | (video->fullscreen ? SDL_FULLSCREEN : 0)))
       return NULL;
+
+   gfx_window_title_reset();
+   char buf[128];
+   if (gfx_window_title(buf, sizeof(buf)))
+      SDL_WM_SetCaption(buf, NULL);
 
    // Remove that ugly mouse :D
    SDL_ShowCursor(SDL_DISABLE);
@@ -1126,22 +1147,21 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    glColor4f(1, 1, 1, 1);
    glClearColor(0, 0, 0, 1);
 
-   char buf[128];
-   if (gfx_window_title(buf, sizeof(buf)))
-      SDL_WM_SetCaption(buf, NULL);
-
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 
-   glGenTextures(1, &gl->texture);
+   glGenTextures(2, gl->texture);
 
-   glBindTexture(GL_TEXTURE_2D, gl->texture);
+   for (unsigned i = 0; i < 2; i++)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
+   }
 
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -1155,15 +1175,30 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->tex_w = 256 * video->input_scale;
    gl->tex_h = 256 * video->input_scale;
 
-   glTexImage2D(GL_TEXTURE_2D,
-         0, GL_RGBA, gl->tex_w, gl->tex_h, 0, gl->texture_type,
-         gl->texture_fmt, NULL);
-
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(gl->base_size, gl->tex_w * gl->tex_h);
 
-   gl->last_width = gl->tex_w;
-   gl->last_height = gl->tex_h;
+   for (unsigned i = 0; i < 2; i++)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+      glTexImage2D(GL_TEXTURE_2D,
+            0, GL_RGBA, gl->tex_w, gl->tex_h, 0, gl->texture_type,
+            gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
+   }
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+
+   for (unsigned i = 0; i < 2; i++)
+   {
+      gl->last_width[i] = gl->tex_w;
+      gl->last_height[i] = gl->tex_h;
+   }
+
+   gl->prev_info.tex = gl->texture[1 - gl->tex_index];
+   gl->prev_info.input_size[0] = gl->tex_w;
+   gl->prev_info.tex_size[0] = gl->tex_w;
+   gl->prev_info.input_size[1] = gl->tex_h;
+   gl->prev_info.tex_size[1] = gl->tex_h;
+   memcpy(gl->prev_info.coord, tex_coords, sizeof(tex_coords)); 
 
    // Hook up SDL input driver to get SDL_QUIT events and RESIZE.
    sdl_input_t *sdl_input = input_sdl.init();
@@ -1222,7 +1257,7 @@ static bool gl_xml_shader(void *data, const char *path)
       gl->render_to_tex = false;
       gl->fbo_pass = 0;
 
-      glBindTexture(GL_TEXTURE_2D, gl->texture);
+      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    }
 #endif
 

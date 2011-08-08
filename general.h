@@ -89,6 +89,7 @@ struct settings
       float msg_pos_y;
 
       bool force_16bit;
+      bool disable_composition;
 
       char external_driver[256];
    } video;
@@ -147,6 +148,7 @@ struct global
    bool verbose;
    bool audio_active;
    bool video_active;
+   bool force_fullscreen;
 
    bool has_mouse[2];
    bool has_scope[2];
@@ -302,6 +304,18 @@ static inline uint32_t next_pow2(uint32_t v)
    v |= v >> 16;
    v++;
    return v;
+}
+
+static inline uint8_t is_little_endian(void)
+{
+   union
+   {
+      uint16_t x;
+      uint8_t y[2];
+   } u;
+
+   u.x = 1;
+   return u.y[0];
 }
 
 #endif

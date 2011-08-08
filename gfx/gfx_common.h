@@ -22,5 +22,10 @@
 #include <stdbool.h>
 
 bool gfx_window_title(char *buf, size_t size);
+void gfx_window_title_reset(void);
+
+#ifdef _WIN32
+void gfx_set_dwm(void);
+#endif
 
 #endif

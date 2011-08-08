@@ -196,9 +196,4 @@ const audio_driver_t audio_sdl = {
    .free = sdl_audio_free,
    .ident = "sdl"
 };
-
-   
-
-
-   
    

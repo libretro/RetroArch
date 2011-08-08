@@ -25,21 +25,26 @@ static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, i
    return frames/time;
 }
 
+static unsigned gl_frames = 0;
+
+void gfx_window_title_reset(void)
+{
+   gl_frames = 0;
+}
+
 bool gfx_window_title(char *buf, size_t size)
 {
-   static int frames = 0;
    static struct timeval tv;
    struct timeval new_tv;
    bool ret = false;
 
-   if (frames == 0)
+   if (gl_frames == 0)
    {
       gettimeofday(&tv, NULL);
       snprintf(buf, size, "%s", g_extern.title_buf);
       ret = true;
    }
-
-   if ((frames % 180) == 0 && frames > 0)
+   else if ((gl_frames % 180) == 0)
    {
       gettimeofday(&new_tv, NULL);
       struct timeval tmp_tv = tv;
@@ -47,12 +52,64 @@ bool gfx_window_title(char *buf, size_t size)
 
       float fps = tv_to_fps(&tmp_tv, &new_tv, 180);
 
-      snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, fps, frames);
+      snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, fps, gl_frames);
       ret = true;
    }
 
-   frames++;
+   gl_frames++;
    return ret;
 }
 
+#ifdef _WIN32
+#include <windows.h>
+#include "dynamic.h"
+// We only load this library once, so we let it be unloaded at application shutdown,
+// since unloading it early seems to cause issues on some systems.
+
+static dylib_t dwmlib = NULL;
+
+static void gfx_dwm_shutdown(void)
+{
+   if (dwmlib)
+      dylib_close(dwmlib);
+}
+
+void gfx_set_dwm(void)
+{
+   static bool inited = false;
+   if (inited)
+      return;
+   inited = true;
+
+   dwmlib = dylib_load("dwmapi.dll");
+   if (!dwmlib)
+   {
+      SSNES_LOG("Did not find dwmapi.dll");
+      return;
+   }
+   atexit(gfx_dwm_shutdown);
+
+   HRESULT (WINAPI *mmcss)(BOOL) = (HRESULT (WINAPI*)(BOOL))dylib_proc(dwmlib, "DwmEnableMMCSS");
+   if (mmcss)
+   {
+      SSNES_LOG("Setting multimedia scheduling for DWM.\n");
+      mmcss(TRUE);
+   }
+
+   if (!g_settings.video.disable_composition)
+      return;
+
+   HRESULT (WINAPI *composition_enable)(UINT) = (HRESULT (WINAPI*)(UINT))dylib_proc(dwmlib, "DwmEnableComposition");
+   if (!composition_enable)
+   {
+      SSNES_ERR("Did not find DwmEnableComposition ...\n");
+      return;
+   }
+
+   HRESULT ret = composition_enable(0);
+   if (FAILED(ret))
+      SSNES_ERR("Failed to set composition state ...\n");
+}
+
+#endif
 

@@ -59,18 +59,6 @@ static void __pulse_free(void *data)
    }
 }
 
-static inline uint8_t is_little_endian(void)
-{
-   union
-   {
-      uint16_t x;
-      uint8_t y[2];
-   } u;
-
-   u.x = 1;
-   return u.y[0];
-}
-
 static void context_state_cb(pa_context *c, void *data)
 {
    pa_t *pa = data;

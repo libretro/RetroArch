@@ -340,7 +340,7 @@ static void fill_pathname_noext(char *out_path, const char *in_path, const char 
 #endif
 
 #ifdef _WIN32
-#define PACKAGE_VERSION "0.6.1"
+#define PACKAGE_VERSION "0.6.2"
 #endif
 
 #include "config.features.h"
@@ -383,6 +383,7 @@ static void print_help(void)
    puts("Usage: ssnes [rom file] [options...]");
    puts("\t-h/--help: Show this help message.");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin.");
+   puts("\t-f/--fullscreen: Start SSNES in fullscreen regardless of config settings.");
    puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
 #ifdef HAVE_CONFIGFILE
    puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
@@ -441,6 +442,7 @@ static void parse_input(int argc, char *argv[])
    struct option opts[] = {
       { "help", 0, NULL, 'h' },
       { "save", 1, NULL, 's' },
+      { "fullscreen", 0, NULL, 'f' },
 #ifdef HAVE_FFMPEG
       { "record", 1, NULL, 'r' },
 #endif
@@ -485,7 +487,7 @@ static void parse_input(int argc, char *argv[])
 #define CONFIG_FILE_ARG
 #endif
 
-   char optstring[] = "hs:vS:m:p4jJg:b:B:Y:Z:P:HC:F:U:DN:X:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+   char optstring[] = "hs:fvS:m:p4jJg:b:B:Y:Z:P:HC:F:U:DN:X:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for(;;)
    {
       val = 0;
@@ -516,6 +518,10 @@ static void parse_input(int argc, char *argv[])
          case 's':
             strlcpy(g_extern.savefile_name_srm, optarg, sizeof(g_extern.savefile_name_srm));
             g_extern.has_set_save_path = true;
+            break;
+
+         case 'f':
+            g_extern.force_fullscreen = true;
             break;
 
          case 'g':
