@@ -188,13 +188,13 @@ static void* coreaudio_init(const char* device, unsigned rate, unsigned latency)
       goto error;
 
    size_t fifo_size = (latency * g_settings.audio.out_rate) / 1000;
-   fifo_size *= 2 * sizeof(int16_t);
+   fifo_size *= 2 * sizeof(float);
 
    dev->buffer = fifo_new(fifo_size);
    if (!dev->buffer)
       goto error;
 
-   SSNES_LOG("[CoreAudio]: Using buffer size of %u bytes\n", (unsigned)fifo_size);
+   SSNES_LOG("[CoreAudio]: Using buffer size of %u bytes: (latency = %u ms)\n", (unsigned)fifo_size, latency);
 
    res = AudioOutputUnitStart(dev->dev);
    if (res != noErr)
@@ -260,6 +260,12 @@ static bool coreaudio_start(void *data)
    return AudioOutputUnitStart(dev->dev) == noErr;
 }
 
+static bool coreaudio_use_float(void *data)
+{
+   (void)data;
+   return true;
+}
+
 const audio_driver_t audio_coreaudio = {
    .init = coreaudio_init,
    .write = coreaudio_write,
@@ -267,6 +273,7 @@ const audio_driver_t audio_coreaudio = {
    .start = coreaudio_start,
    .set_nonblock_state = coreaudio_set_nonblock_state,
    .free = coreaudio_free,
+   .use_float = coreaudio_use_float,
    .ident = "coreaudio"
 };
    
