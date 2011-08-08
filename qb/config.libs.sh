@@ -46,6 +46,8 @@ check_pkgconf ROAR libroar
 check_pkgconf JACK jack 0.120.1
 check_pkgconf PULSE libpulse
 
+check_lib COREAUDIO "-framework AudioUnit" AudioUnitInitialize
+
 check_pkgconf SDL sdl 1.2.10
 check_critical SDL "Cannot find SDL 1.2 library."
 check_pkgconf SDL_NEW sdl 1.3
@@ -81,7 +83,7 @@ check_pkgconf PYTHON python3
 add_define_make OS $OS
 
 # Creates config.mk and config.h.
-VARS="ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK PULSE SDL DYLIB CG XML SDL_IMAGE DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL SWSCALE SRC CONFIGFILE FREETYPE XVIDEO NETPLAY FBO STRL PYTHON"
+VARS="ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK COREAUDIO PULSE SDL DYLIB CG XML SDL_IMAGE DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL SWSCALE SRC CONFIGFILE FREETYPE XVIDEO NETPLAY FBO STRL PYTHON"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 

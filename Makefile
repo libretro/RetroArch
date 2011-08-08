@@ -83,6 +83,11 @@ ifeq ($(HAVE_PULSE), 1)
    DEFINES += $(PULSE_CFLAGS)
 endif
 
+ifeq ($(HAVE_COREAUDIO), 1)
+   OBJ += audio/coreaudio.o
+   LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
+endif
+
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl.o gfx/gl.o input/sdl.o audio/sdl.o fifo_buffer.o
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
