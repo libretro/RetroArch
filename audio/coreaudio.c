@@ -134,6 +134,7 @@ static void* coreaudio_init(const char* device, unsigned rate, unsigned latency)
       .mBitsPerChannel = sizeof(float) * CHAR_BIT,
       .mChannelsPerFrame = 2,
       .mBytesPerPacket = 2 * sizeof(float),
+      .mBytesPerFrame = 2 * sizeof(float),
       .mFramesPerPacket = 1,
       .mFormatID = kAudioFormatLinearPCM,
       .mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked | (is_little_endian() ? 0 : kAudioFormatFlagIsBigEndian),
@@ -150,7 +151,7 @@ static void* coreaudio_init(const char* device, unsigned rate, unsigned latency)
    if (res != noErr)
       goto error;
 
-   SSNES_LOG("[CoreAudio]: Using output sample rate of %.1f\n", (float)real_desc.mSampleRate);
+   SSNES_LOG("[CoreAudio]: Using output sample rate of %.1f Hz\n", (float)real_desc.mSampleRate);
    g_settings.audio.out_rate = real_desc.mSampleRate;
 
    if (real_desc.mChannelsPerFrame != stream_desc.mChannelsPerFrame)
@@ -187,7 +188,7 @@ static void* coreaudio_init(const char* device, unsigned rate, unsigned latency)
       goto error;
 
    size_t fifo_size = (latency * g_settings.audio.out_rate) / 1000;
-   fifo_size *= 2 * sizeof(float);
+   fifo_size *= 2 * sizeof(int16_t);
 
    dev->buffer = fifo_new(fifo_size);
    if (!dev->buffer)
@@ -259,12 +260,6 @@ static bool coreaudio_start(void *data)
    return AudioOutputUnitStart(dev->dev) == noErr;
 }
 
-static bool coreaudio_use_float(void *data)
-{
-   (void)data;
-   return true;
-}
-
 const audio_driver_t audio_coreaudio = {
    .init = coreaudio_init,
    .write = coreaudio_write,
@@ -272,7 +267,6 @@ const audio_driver_t audio_coreaudio = {
    .start = coreaudio_start,
    .set_nonblock_state = coreaudio_set_nonblock_state,
    .free = coreaudio_free,
-   .use_float = coreaudio_use_float,
    .ident = "coreaudio"
 };
    
