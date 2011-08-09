@@ -77,17 +77,18 @@ static OSStatus audio_cb(void *userdata, AudioUnitRenderActionFlags *action_flag
       return noErr;
 
    unsigned write_avail = io_data->mBuffers[0].mDataByteSize;
+   void *outbuf = io_data->mBuffers[0].mData;
 
    pthread_mutex_lock(&dev->lock);
    if (fifo_read_avail(dev->buffer) < write_avail)
    {
       *action_flags = kAudioUnitRenderAction_OutputIsSilence;
+      memset(outbuf, 0, write_avail); // Seems to be needed.
       pthread_mutex_unlock(&dev->lock);
       pthread_cond_signal(&dev->cond); // Technically possible to deadlock without.
       return noErr;
    }
 
-   void *outbuf = io_data->mBuffers[0].mData;
    fifo_read(dev->buffer, outbuf, write_avail);
    pthread_mutex_unlock(&dev->lock);
    pthread_cond_signal(&dev->cond);
