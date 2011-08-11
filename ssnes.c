@@ -142,14 +142,16 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if (g_extern.do_screenshot)
       take_screenshot(data, width, height);
 
+   // Slightly messy code,
+   // but we really need to do processing before blocking on VSync for best possible scheduling.
 #ifdef HAVE_FFMPEG
-   if (g_extern.recording)
+   if (g_extern.recording && (!g_extern.filter.active || !g_settings.video.post_filter_record))
    {
       struct ffemu_video_data ffemu_data = {
          .data = data,
          .pitch = height == 448 || height == 478 ? 1024 : 2048,
          .width = width,
-         .height = height
+         .height = height,
       };
       ffemu_push_video(g_extern.rec, &ffemu_data);
    }
@@ -165,6 +167,20 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
       g_extern.filter.psize(&owidth, &oheight);
       g_extern.filter.prender(g_extern.filter.colormap, g_extern.filter.buffer, 
             g_extern.filter.pitch, data, (height == 448 || height == 478) ? 1024 : 2048, width, height);
+
+#ifdef HAVE_FFMPEG
+      if (g_extern.recording && g_settings.video.post_filter_record)
+      {
+         struct ffemu_video_data ffemu_data = {
+            .data = g_extern.filter.buffer,
+            .pitch = g_extern.filter.pitch,
+            .width = owidth,
+            .height = oheight,
+         };
+         ffemu_push_video(g_extern.rec, &ffemu_data);
+      }
+#endif
+
       if (!driver.video->frame(driver.video_data, g_extern.filter.buffer, owidth, oheight, g_extern.filter.pitch, msg))
          g_extern.video_active = false;
    }
@@ -792,9 +808,11 @@ static inline void save_files(void)
 #ifdef HAVE_FFMPEG
 static void init_recording(void)
 {
-   // Hardcode these options at the moment. Should be specificed in the config file later on.
    if (g_extern.recording)
    {
+      // Not perfectly SNES accurate, but this can be adjusted later during processing
+      // and playback losslessly, and we please the containers more by
+      // using "sane" values.
       struct ffemu_rational ntsc_fps = {60000, 1000};
       struct ffemu_rational pal_fps = {50000, 1000};
       struct ffemu_params params = {
@@ -806,9 +824,29 @@ static void init_recording(void)
          .samplerate = 32000,
          .filename = g_extern.record_path,
          .fps = psnes_get_region() == SNES_REGION_NTSC ? ntsc_fps : pal_fps,
-         .aspect_ratio = 4.0/3
+         .aspect_ratio = 4.0 / 3,
+         .rgb32 = false,
       };
-      SSNES_LOG("Recording with FFmpeg to %s.\n", g_extern.record_path);
+
+      if (g_settings.video.hires_record)
+      {
+         params.out_width = 512;
+         params.out_height = 448;
+      }
+
+      if (g_settings.video.post_filter_record && g_extern.filter.active)
+      {
+         g_extern.filter.psize(&params.out_width, &params.out_height);
+         params.rgb32 = true;
+
+         unsigned max_width = 512;
+         unsigned max_height = 512;
+         g_extern.filter.psize(&max_width, &max_height);
+         params.fb_width = g_extern.filter.pitch >> 2;
+         params.fb_height = next_pow2(max_height);
+      }
+
+      SSNES_LOG("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u 32-bit: %s)\n", g_extern.record_path, params.out_width, params.out_height, params.fb_width, params.fb_height, params.rgb32 ? "yes" : "no");
       g_extern.rec = ffemu_new(&params);
       if (!g_extern.rec)
       {

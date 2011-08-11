@@ -91,6 +91,9 @@ struct settings
       bool force_16bit;
       bool disable_composition;
 
+      bool hires_record;
+      bool post_filter_record;
+
       char external_driver[256];
    } video;
 

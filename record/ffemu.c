@@ -5,6 +5,7 @@
 #include <libavutil/opt.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
+#include <libavutil/avconfig.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
@@ -25,6 +26,9 @@ struct video_info
    uint8_t *outbuf;
    size_t outbuf_size;
 
+   int fmt;
+   int pix_size;
+
    AVFormatContext *format;
 
    struct SwsContext *sws_ctx;
@@ -41,8 +45,6 @@ struct audio_info
 
    void *outbuf;
    size_t outbuf_size;
-
-   int pix_fmt;
 } audio;
 
 struct muxer_info
@@ -91,7 +93,7 @@ static bool init_audio(struct audio_info *audio, struct ffemu_params *param)
    if (!audio->buffer)
       return false;
 
-   audio->outbuf_size = 200000;
+   audio->outbuf_size = 2000000;
    audio->outbuf = av_malloc(audio->outbuf_size);
    if (!audio->outbuf)
       return false;
@@ -105,6 +107,18 @@ static bool init_video(struct video_info *video, struct ffemu_params *param)
    if (!codec)
       return false;
 
+#if AV_HAVE_BIGENDIAN
+   video->fmt = PIX_FMT_RGB555BE;
+#else
+   video->fmt = PIX_FMT_RGB555LE;
+#endif
+   video->pix_size = sizeof(uint16_t);
+   if (param->rgb32)
+   {
+      video->fmt = PIX_FMT_RGB32;
+      video->pix_size = sizeof(uint32_t);
+   }
+
    video->codec = avcodec_alloc_context();
    video->codec->width = param->out_width;
    video->codec->height = param->out_height;
@@ -116,7 +130,7 @@ static bool init_video(struct video_info *video, struct ffemu_params *param)
       return false;
 
    // Allocate a big buffer :p ffmpeg API doesn't seem to give us some clues how big this buffer should be.
-   video->outbuf_size = 2000000;
+   video->outbuf_size = 1 << 23;
    video->outbuf = av_malloc(video->outbuf_size);
 
    // Just to make sure we can handle the biggest frames. Seemed to crash with just 256 * 224.
@@ -177,7 +191,8 @@ static bool init_thread(ffemu_t *handle)
    assert(handle->cond = SDL_CreateCond());
    assert(handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) * handle->params.channels * MAX_FRAMES / 60));
    assert(handle->attr_fifo = fifo_new(sizeof(struct ffemu_video_data) * MAX_FRAMES));
-   assert(handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height * sizeof(int16_t) * MAX_FRAMES));
+   assert(handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height *
+            handle->video.pix_size * MAX_FRAMES));
 
    handle->alive = true;
    handle->can_sleep = true;
@@ -365,18 +380,20 @@ int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
 
 static int ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_data *data)
 {
-   handle->video.sws_ctx = sws_getCachedContext(handle->video.sws_ctx, data->width, data->height, PIX_FMT_RGB555LE,
+   handle->video.sws_ctx = sws_getCachedContext(handle->video.sws_ctx, data->width, data->height, handle->video.fmt,
          handle->params.out_width, handle->params.out_height, PIX_FMT_RGB32, SWS_POINT,
          NULL, NULL, NULL);
 
    int linesize = data->pitch;
 
-   sws_scale(handle->video.sws_ctx, (const uint8_t* const*)&data->data, &linesize, 0, handle->params.out_width, handle->video.conv_frame->data, handle->video.conv_frame->linesize);
+   sws_scale(handle->video.sws_ctx, (const uint8_t* const*)&data->data, &linesize, 0,
+         handle->video.codec->height, handle->video.conv_frame->data, handle->video.conv_frame->linesize);
 
    handle->video.conv_frame->pts = handle->video.frame_cnt;
    handle->video.conv_frame->display_picture_number = handle->video.frame_cnt;
 
-   int outsize = avcodec_encode_video(handle->video.codec, handle->video.outbuf, handle->video.outbuf_size, handle->video.conv_frame);
+   int outsize = avcodec_encode_video(handle->video.codec, handle->video.outbuf,
+         handle->video.outbuf_size, handle->video.conv_frame);
 
    if (outsize < 0)
       return -1;
@@ -387,7 +404,8 @@ static int ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_dat
    pkt.data = handle->video.outbuf;
    pkt.size = outsize;
 
-   pkt.pts = av_rescale_q(handle->video.codec->coded_frame->pts, handle->video.codec->time_base, handle->muxer.vstream->time_base);
+   pkt.pts = av_rescale_q(handle->video.codec->coded_frame->pts, handle->video.codec->time_base,
+         handle->muxer.vstream->time_base);
 
    if (handle->video.codec->coded_frame->key_frame)
       pkt.flags |= AV_PKT_FLAG_KEY;
@@ -454,7 +472,7 @@ int ffemu_finalize(ffemu_t *handle)
    deinit_thread(handle);
 
    // Push out frames still stuck in queue.
-   uint16_t *video_buf = av_malloc(handle->params.fb_width * handle->params.fb_height * sizeof(uint16_t));
+   void *video_buf = av_malloc(2 * handle->params.fb_width * handle->params.fb_height * handle->video.pix_size);
    if (video_buf)
    {
       struct ffemu_video_data attr_buf;
@@ -524,7 +542,8 @@ static int SDLCALL ffemu_thread(void *data)
 {
    ffemu_t *ff = data;
 
-   uint16_t *video_buf = av_malloc(ff->params.fb_width * ff->params.fb_height * sizeof(uint16_t));
+   // For some reason, FFmpeg has a tendency to crash if we don't overallocate a bit. :s
+   void *video_buf = av_malloc(2 * ff->params.fb_width * ff->params.fb_height * ff->video.pix_size);
    assert(video_buf);
 
    size_t audio_buf_size = 128 * ff->params.channels * sizeof(int16_t);

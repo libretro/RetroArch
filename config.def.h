@@ -157,6 +157,12 @@ static const float fbo_scale_x = 2.0;
 static const float fbo_scale_y = 2.0;
 static const bool second_pass_smooth = true;
 
+// Record video assuming game runs hi-res.
+static const bool hires_record = false;
+
+// Record post-filtered (CPU filter) video rather than raw SNES output.
+static const bool post_filter_record = false;
+
 #define SNES_ASPECT_RATIO (4.0/3)
 
 ////////////////

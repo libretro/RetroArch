@@ -142,6 +142,9 @@ static void set_defaults(void)
    g_settings.video.second_pass_smooth = second_pass_smooth;
 #endif
 
+   g_settings.video.hires_record = hires_record;
+   g_settings.video.post_filter_record = post_filter_record;
+
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
    g_settings.audio.in_rate = in_rate;
@@ -324,6 +327,9 @@ static void parse_config_file(void)
    CONFIG_GET_DOUBLE(video.msg_pos_x, "video_message_pos_x");
    CONFIG_GET_DOUBLE(video.msg_pos_y, "video_message_pos_y");
 #endif
+
+   CONFIG_GET_BOOL(video.hires_record, "video_hires_record");
+   CONFIG_GET_BOOL(video.post_filter_record, "video_post_filter_record");
 
 #ifdef HAVE_DYLIB
    CONFIG_GET_STRING(video.filter_path, "video_filter");

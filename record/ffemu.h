@@ -8,29 +8,6 @@
 extern "C" {
 #endif
 
-// Available video codecs
-typedef enum ffemu_video_codec
-{
-   FFEMU_VIDEO_FFV1,
-} ffemu_video_codec;
-
-// Available audio codecs
-typedef enum ffemu_audio_codec
-{
-   FFEMU_AUDIO_VORBIS,
-} ffemu_audio_codec;
-
-// Available pixel formats
-typedef enum ffemu_pixel_format
-{
-   FFEMU_FMT_XBGR1555,
-} ffemu_pixel_format;
-
-typedef enum ffemu_rescaler
-{
-   FFEMU_RESCALER_POINT
-} ffemu_rescaler;
-
 struct ffemu_rational
 {
    unsigned num;
@@ -40,9 +17,6 @@ struct ffemu_rational
 // Parameters passed to ffemu_new()
 struct ffemu_params
 {
-   // Video codec to use. If not recording video, select FFEMU_VIDEO_NONE.
-   ffemu_video_codec vcodec;
-
    // Desired output resolution.
    unsigned out_width;
    unsigned out_height;
@@ -67,6 +41,9 @@ struct ffemu_params
 
    // Audio channels.
    unsigned channels;
+
+   // If input is ARGB or XRGB1555.
+   bool rgb32;
 
    // Audio bits. Sample format is always signed PCM in native byte order.
    //unsigned bits;
@@ -105,7 +82,6 @@ void ffemu_free(ffemu_t* handle);
 int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data);
 int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data);
 int ffemu_finalize(ffemu_t *handle);
-
 
 
 #ifdef __cplusplus
