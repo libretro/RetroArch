@@ -114,6 +114,7 @@ void gfx_set_dwm(void)
 
 
 #include "SDL_syswm.h"
+#include "SDL.h"
 
 void gfx_get_window_size(unsigned *width, unsigned *height)
 {
