@@ -110,6 +110,33 @@ void gfx_set_dwm(void)
    if (FAILED(ret))
       SSNES_ERR("Failed to set composition state ...\n");
 }
-
 #endif
+
+
+#include "SDL_syswm.h"
+
+void gfx_get_window_size(unsigned *width, unsigned *height)
+{
+#if defined(__APPLE__) || defined(_WIN32)
+   SDL_Event evnt;
+   while (SDL_PollEvent(&evnt));
+   const SDL_VideoInfo *info = SDL_GetVideoInfo();
+   *width = info->current_w;
+   *height = info->current_h;
+#else
+   // It seems that we need to go hardcore to get the actual
+   // window sizes properly right after startup ... :D
+   SDL_SysWMinfo info;
+   SDL_VERSION(&info.version);
+   SDL_GetWMInfo(&info);
+   XWindowAttributes target;
+   info.info.x11.lock_func();
+   XGetWindowAttributes(info.info.x11.display, info.info.x11.window,
+         &target);
+   info.info.x11.unlock_func();
+
+   *width = target.width;
+   *height = target.height;
+#endif
+}
 

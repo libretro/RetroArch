@@ -28,4 +28,6 @@ void gfx_window_title_reset(void);
 void gfx_set_dwm(void);
 #endif
 
+void gfx_get_window_size(unsigned *width, unsigned *height);
+
 #endif

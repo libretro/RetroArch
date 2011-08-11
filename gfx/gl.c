@@ -1109,13 +1109,8 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    SSNES_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
-   video_info = SDL_GetVideoInfo();
-   if (gl->win_width != video_info->current_w || gl->win_height != video_info->current_h)
-   {
-      gl->win_width = video_info->current_w;
-      gl->win_height = video_info->current_h;
-      SSNES_WARN("GL: Did not get requested resolution, got %ux%u ...\n", gl->win_width, gl->win_height);
-   }
+   gfx_get_window_size(&gl->win_width, &gl->win_height);
+   SSNES_LOG("GL: Got resolution %ux%u\n", gl->win_width, gl->win_height);
 
    if (!gl_shader_init())
    {
