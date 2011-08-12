@@ -701,25 +701,22 @@ static void check_window(gl_t *gl)
             gl->win_height = event.resize.h;
             break;
 
-         case SDL_VIDEOEXPOSE:
-            gl->should_resize = true;
-            gfx_get_window_size(&gl->win_width, &gl->win_height);
-            SSNES_LOG("GL: Got resolution %ux%u\n", gl->win_width, gl->win_height);
-            break;
-
          default:
             break;
       }
    }
 
-   // Dirty workaround to possibly fix cases where a tiling WM might asyncronously
-   // alter the window size right after the start.
-   // We do not get any events for this it seems ...
-   if (gl->frame_count == 10)
+   if (!gl->should_resize)
    {
-      gl->should_resize = true;
-      gfx_get_window_size(&gl->win_width, &gl->win_height);
-      SSNES_LOG("GL: Got resolution %ux%u\n", gl->win_width, gl->win_height);
+      unsigned new_width, new_height;
+      gfx_get_window_size(&new_width, &new_height);
+      if (new_width != gl->win_width || new_height != gl->win_height)
+      {
+         gl->should_resize = true;
+         gl->win_width = new_width;
+         gl->win_height = new_height;
+         SSNES_LOG("GL: Resize: %u x %u\n", gl->win_width, gl->win_height);
+      }
    }
 }
 
