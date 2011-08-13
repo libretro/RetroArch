@@ -30,7 +30,7 @@ extern "C" {
 #define SSNES_TRUE 1
 #endif
 
-#define SSNES_DSP_API_VERSION 2
+#define SSNES_DSP_API_VERSION 3
 
 typedef struct ssnes_dsp_info
 {
@@ -94,7 +94,7 @@ typedef struct ssnes_dsp_plugin
    void (*process)(void *data, ssnes_dsp_output_t *output, 
          const ssnes_dsp_input_t *input);
 
-      // Frees the handle.
+   // Frees the handle.
    void (*free)(void *data);
 
    // API version used to compile the plugin.
@@ -110,6 +110,11 @@ typedef struct ssnes_dsp_plugin
 
    // Human readable identification string.
    const char *ident;
+
+   // Called every frame, allows creating a GUI main loop in the main thread.
+   // GUI events can be processed here in a non-blocking fashion.
+   // Can be set to NULL to ignore it.
+   void (*events)(void *data);
 } ssnes_dsp_plugin_t;
 
 // Called by SSNES at startup to get the callback struct.

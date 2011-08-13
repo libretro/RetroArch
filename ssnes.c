@@ -1573,6 +1573,10 @@ int main(int argc, char *argv[])
    // Main loop
    for(;;)
    {
+      // DSP plugin GUI events.
+      if (g_extern.audio_data.dsp_handle && g_extern.audio_data.dsp_plugin->events)
+         g_extern.audio_data.dsp_plugin->events(g_extern.audio_data.dsp_handle);
+
       // Time to drop?
       if (driver.input->key_pressed(driver.input_data, SSNES_QUIT_KEY) ||
             !driver.video->alive(driver.video_data) || g_extern.bsv_movie_end)
