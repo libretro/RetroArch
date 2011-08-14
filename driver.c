@@ -168,7 +168,7 @@ static void init_dsp_plugin(void)
    }
 
    const ssnes_dsp_plugin_t* (*SSNES_API_CALLTYPE plugin_init)(void) = 
-      (const ssnes_dsp_plugin_t *(*)(void))dylib_proc(g_extern.audio_data.dsp_lib, "ssnes_dsp_plugin_init");
+      (const ssnes_dsp_plugin_t *(SSNES_API_CALLTYPE*)(void))dylib_proc(g_extern.audio_data.dsp_lib, "ssnes_dsp_plugin_init");
    if (!plugin_init)
    {
       SSNES_ERR("Failed to find symbol \"ssnes_dsp_plugin_init\" in DSP plugin.\n");
@@ -190,7 +190,7 @@ static void init_dsp_plugin(void)
 
    SSNES_LOG("Loaded DSP plugin: \"%s\"\n", g_extern.audio_data.dsp_plugin->ident ? g_extern.audio_data.dsp_plugin->ident : "Unknown");
 
-   ssnes_dsp_info_t info = {
+   const ssnes_dsp_info_t info = {
       .input_rate = g_settings.audio.in_rate,
       .output_rate = g_settings.audio.out_rate
    };
