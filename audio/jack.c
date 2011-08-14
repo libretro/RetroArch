@@ -130,6 +130,9 @@ static void* __jack_init(const char* device, unsigned rate, unsigned latency)
    if ( jd == NULL )
       return NULL;
 
+   pthread_cond_init(&jd->cond, NULL);
+   pthread_mutex_init(&jd->cond_lock, NULL);
+
    const char **jports = NULL;
 
    jd->client = jack_client_open("SSNES", JackNullOption, NULL);
@@ -148,7 +151,6 @@ static void* __jack_init(const char* device, unsigned rate, unsigned latency)
       SSNES_ERR("Failed to register ports.\n");
       goto error;
    }
-
    
    char *dest_ports[2];
    jports = jack_get_ports(jd->client, NULL, NULL, JackPortIsPhysical | JackPortIsInput);
@@ -190,9 +192,6 @@ static void* __jack_init(const char* device, unsigned rate, unsigned latency)
          goto error;
       }
    }
-
-   pthread_cond_init(&jd->cond, NULL);
-   pthread_mutex_init(&jd->cond_lock, NULL);
 
    jack_free(jports);
    return jd;
