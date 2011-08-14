@@ -710,12 +710,12 @@ static void check_window(gl_t *gl)
    {
       unsigned new_width, new_height;
       gfx_get_window_size(&new_width, &new_height);
-      if (new_width != gl->win_width || new_height != gl->win_height)
+      if ((new_width != gl->win_width || new_height != gl->win_height) || (gl->frame_count == 10)) // Ugly hack :D
       {
          gl->should_resize = true;
          gl->win_width = new_width;
          gl->win_height = new_height;
-         SSNES_LOG("GL: Resize: %u x %u\n", gl->win_width, gl->win_height);
+         SSNES_LOG("GL: Verified window size: %u x %u\n", gl->win_width, gl->win_height);
       }
    }
 }
