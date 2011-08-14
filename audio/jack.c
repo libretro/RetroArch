@@ -127,12 +127,12 @@ static size_t find_buffersize(jack_t *jd, int latency)
 static void* __jack_init(const char* device, unsigned rate, unsigned latency)
 {
    jack_t *jd = calloc(1, sizeof(jack_t));
-   if ( jd == NULL )
+   if (!jd)
       return NULL;
 
    pthread_cond_init(&jd->cond, NULL);
    pthread_mutex_init(&jd->cond_lock, NULL);
-
+   
    const char **jports = NULL;
 
    jd->client = jack_client_open("SSNES", JackNullOption, NULL);
@@ -160,6 +160,18 @@ static void* __jack_init(const char* device, unsigned rate, unsigned latency)
       goto error;
    }
 
+   size_t bufsize = find_buffersize(jd, latency);
+   SSNES_LOG("JACK: Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));
+   for (int i = 0; i < 2; i++)
+   {
+      jd->buffer[i] = jack_ringbuffer_create(bufsize);
+      if (jd->buffer[i] == NULL)
+      {
+         SSNES_ERR("Failed to create buffers.\n");
+         goto error;
+      }
+   }
+
    int parsed = parse_ports(dest_ports, jports);
 
    if (jack_activate(jd->client) < 0)
@@ -180,19 +192,7 @@ static void* __jack_init(const char* device, unsigned rate, unsigned latency)
    for (int i = 0; i < parsed; i++)
       free(dest_ports[i]);
 
-   size_t bufsize = find_buffersize(jd, latency);
-
-   SSNES_LOG("JACK: Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));
-   for (int i = 0; i < 2; i++)
-   {
-      jd->buffer[i] = jack_ringbuffer_create(bufsize);
-      if (jd->buffer[i] == NULL)
-      {
-         SSNES_ERR("Failed to create buffers.\n");
-         goto error;
-      }
-   }
-
+  
    jack_free(jports);
    return jd;
 
