@@ -1,7 +1,7 @@
 . qb/qb.params.sh
 
 PACKAGE_NAME=ssnes
-PACKAGE_VERSION=0.7beta1
+PACKAGE_VERSION=0.7
 
 # Adds a command line opt to ./configure --help
 # $1: Variable (HAVE_ALSA, HAVE_OSS, etc)   

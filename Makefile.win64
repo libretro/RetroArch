@@ -149,7 +149,7 @@ clean:
 	rm -f tools/*.o
 
 dist: all
-	zip -r ssnes-win64-0.7beta1.zip $(TARGET) ssnes.cfg snes.dll xaudio-c.dll README.win32.txt $(JTARGET)
+	zip -r ssnes-win64-0.7.zip $(TARGET) ssnes.cfg snes.dll xaudio-c.dll README.win32.txt $(JTARGET)
 
 libs:
 	wget https://github.com/downloads/Themaister/SSNES/ssnes-win64-libs.zip --no-check-certificate
