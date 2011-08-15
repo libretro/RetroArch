@@ -706,6 +706,7 @@ static void check_window(gl_t *gl)
       }
    }
 
+#ifndef __APPLE__ // This check breaks on OSX for some reason. Oh well :)
    if (!gl->should_resize)
    {
       unsigned new_width, new_height;
@@ -718,6 +719,7 @@ static void check_window(gl_t *gl)
          SSNES_LOG("GL: Verified window size: %u x %u\n", gl->win_width, gl->win_height);
       }
    }
+#endif
 }
 
 static bool gl_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)

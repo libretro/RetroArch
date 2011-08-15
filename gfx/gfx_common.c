@@ -116,9 +116,10 @@ void gfx_set_dwm(void)
 #include "SDL_syswm.h"
 #include "SDL.h"
 
+#ifndef __APPLE__
 void gfx_get_window_size(unsigned *width, unsigned *height)
 {
-#if defined(__APPLE__) || defined(_WIN32)
+#ifdef _WIN32
    SDL_Event evnt;
    while (SDL_PollEvent(&evnt));
    const SDL_VideoInfo *info = SDL_GetVideoInfo();
@@ -140,4 +141,4 @@ void gfx_get_window_size(unsigned *width, unsigned *height)
    *height = target.height;
 #endif
 }
-
+#endif
