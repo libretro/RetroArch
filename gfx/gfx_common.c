@@ -116,18 +116,9 @@ void gfx_set_dwm(void)
 #include "SDL_syswm.h"
 #include "SDL.h"
 
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(_WIN32)
 void gfx_get_window_size(unsigned *width, unsigned *height)
 {
-#ifdef _WIN32
-   SDL_Event evnt;
-   while (SDL_PollEvent(&evnt));
-   const SDL_VideoInfo *info = SDL_GetVideoInfo();
-   *width = info->current_w;
-   *height = info->current_h;
-#else
-   // It seems that we need to go hardcore to get the actual
-   // window sizes properly right after startup ... :D
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
    SDL_GetWMInfo(&info);
@@ -139,6 +130,5 @@ void gfx_get_window_size(unsigned *width, unsigned *height)
 
    *width = target.width;
    *height = target.height;
-#endif
 }
 #endif

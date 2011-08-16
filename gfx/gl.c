@@ -147,6 +147,7 @@ typedef struct gl
 
    bool should_resize;
    bool quitting;
+   bool fullscreen;
    bool keep_aspect;
 
    unsigned full_x, full_y;
@@ -706,8 +707,9 @@ static void check_window(gl_t *gl)
       }
    }
 
-#ifndef __APPLE__ // This check breaks on OSX for some reason. Oh well :)
-   if (!gl->should_resize)
+#if !defined(__APPLE__) && !defined(_WIN32)
+   // Hack to workaround limitations in tiling WMs ...
+   if (!gl->should_resize && !gl->fullscreen)
    {
       unsigned new_width, new_height;
       gfx_get_window_size(&new_width, &new_height);
@@ -1097,6 +1099,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    gl->vsync = video->vsync;
+   gl->fullscreen = video->fullscreen;
    int attr = 0;
    SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &attr);
    if (attr <= 0 && video->vsync)

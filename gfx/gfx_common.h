@@ -28,7 +28,7 @@ void gfx_window_title_reset(void);
 void gfx_set_dwm(void);
 #endif
 
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(_WIN32)
 void gfx_get_window_size(unsigned *width, unsigned *height);
 #endif
 
