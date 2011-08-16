@@ -96,7 +96,7 @@ static void set_fast_forward_button(bool new_button_state, bool new_hold_button_
 
 static void take_screenshot(const uint16_t *frame, unsigned width, unsigned height)
 {
-   if (!*(g_settings.screenshot_directory))
+   if (!(*g_settings.screenshot_directory))
       return;
 
    bool ret = screenshot_dump(g_settings.screenshot_directory, frame, 
