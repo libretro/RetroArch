@@ -24,6 +24,7 @@
 #include "dynamic.h"
 #include "movie.h"
 #include "ups.h"
+#include "bps.h"
 #include "strl.h"
 
 #ifdef HAVE_XML
@@ -116,6 +117,102 @@ error:
    return false;
 }
 
+enum patch_type
+{
+   PATCH_NONE,
+   PATCH_UPS,
+   PATCH_BPS
+};
+
+static void patch_rom(uint8_t **buf, ssize_t *size)
+{
+   uint8_t *ret_buf = *buf;
+   ssize_t ret_size = *size;
+
+   ssize_t patch_size = 0;
+   void *patch_data = NULL;
+   enum patch_type type = PATCH_NONE;
+
+   if (*g_extern.ups_name && (patch_size = read_file(g_extern.ups_name, &patch_data)) >= 0)
+      type = PATCH_UPS;
+   else if (*g_extern.bps_name && (patch_size = read_file(g_extern.bps_name, &patch_data)) >= 0)
+      type = PATCH_BPS;
+
+   if (type == PATCH_NONE)
+   {
+      SSNES_LOG("Could not find any ROM patch.\n");
+      return;
+   }
+
+   switch (type)
+   {
+      case PATCH_UPS:
+         SSNES_LOG("Found UPS file in \"%s\", attempting to patch ...\n", g_extern.ups_name);
+         break;
+      case PATCH_BPS:
+         SSNES_LOG("Found BPS file in \"%s\", attempting to patch ...\n", g_extern.bps_name);
+         break;
+
+      default:
+         return; // Should not happen, but.
+   }
+
+   size_t target_size = ret_size * 4; // Just to be sure ...
+   uint8_t *patched_rom = malloc(target_size);
+   if (!patched_rom)
+   {
+      SSNES_ERR("Failed to allocate memory for patched ROM ...\n");
+      goto error;
+   }
+
+   bool success = false;
+   switch (type)
+   {
+      case PATCH_UPS:
+      {
+         ups_error_t err = ups_apply_patch(patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
+         if (err == UPS_SUCCESS)
+         {
+            SSNES_LOG("ROM patched successfully (UPS)!\n");
+            success = true;
+         }
+         break;
+      }
+
+      case PATCH_BPS:
+      {
+         bps_error_t err = bps_apply_patch(patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
+         if (err == BPS_SUCCESS)
+         {
+            SSNES_LOG("ROM patched successfully (BPS)!\n");
+            success = true;
+         }
+         break;
+      }
+
+      default:
+         return;
+   }
+
+   if (success)
+   {
+      free(ret_buf);
+      *buf = patched_rom;
+      *size = target_size;
+   }
+
+   if (patch_data)
+      free(patch_data);
+
+   return;
+
+error:
+   *buf = ret_buf;
+   *size = ret_size;
+   if (patch_data)
+      free(patch_data);
+}
+
 // Load SNES rom only. Applies a hack for headered ROMs.
 static ssize_t read_rom_file(FILE* file, void** buf)
 {
@@ -183,37 +280,6 @@ static ssize_t read_rom_file(FILE* file, void** buf)
       ret_buf = rom_buf;
    }
 
-   // Patch with UPS.
-   ssize_t ups_patch_size;
-   void *ups_patch = NULL;
-   if (*g_extern.ups_name && (ups_patch_size = read_file(g_extern.ups_name, &ups_patch)) >= 0)
-   {
-      SSNES_LOG("Found UPS file in \"%s\", attempting to patch ...\n", g_extern.ups_name);
-
-      size_t target_size = ret * 4; // Just to be sure ...
-      uint8_t *patched_rom = malloc(target_size);
-      if (patched_rom)
-      {
-         ups_error_t err = ups_apply_patch(ups_patch, ups_patch_size, ret_buf, ret, patched_rom, &target_size);
-         if (err == UPS_SUCCESS)
-         {
-            free(ret_buf);
-            ret_buf = patched_rom;
-            ret = target_size;
-            SSNES_LOG("ROM patched successfully (UPS)!\n");
-         }
-         else
-         {
-            free(patched_rom);
-            SSNES_LOG("ROM failed to patch (UPS).\n");
-         }
-
-         free(ups_patch);
-      }
-   }
-   else if (*g_extern.ups_name)
-      SSNES_LOG("Could not find UPS patch in: \"%s\".\n", g_extern.ups_name);
-
    // Remove copier header if present (512 first bytes).
    if ((ret & 0x7fff) == 512)
    {
@@ -221,6 +287,9 @@ static ssize_t read_rom_file(FILE* file, void** buf)
       ret -= 512;
    }
 
+   // Attempt to apply a patch :)
+   patch_rom(&ret_buf, &ret);
+   
    g_extern.cart_crc = crc32_calculate(ret_buf, ret);
 #ifdef HAVE_XML
    sha256_hash(g_extern.sha256, ret_buf, ret);

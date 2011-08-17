@@ -1077,11 +1077,17 @@ static void fill_pathnames(void)
    if (!g_extern.bsv_movie_playback)
       fill_pathname(g_extern.bsv_movie_path, g_extern.savefile_name_srm, "", sizeof(g_extern.bsv_movie_path));
 
-   if (!(*g_extern.ups_name) && *g_extern.basename)
-      fill_pathname_noext(g_extern.ups_name, g_extern.basename, ".ups", sizeof(g_extern.ups_name));
+   if (*g_extern.basename)
+   {
+      if (!(*g_extern.ups_name))
+         fill_pathname_noext(g_extern.ups_name, g_extern.basename, ".ups", sizeof(g_extern.ups_name));
 
-   if (!(*g_extern.xml_name) && *g_extern.basename)
-      fill_pathname_noext(g_extern.xml_name, g_extern.basename, ".xml", sizeof(g_extern.xml_name));
+      if (!(*g_extern.bps_name))
+         fill_pathname_noext(g_extern.bps_name, g_extern.basename, ".bps", sizeof(g_extern.bps_name));
+
+      if (!(*g_extern.xml_name))
+         fill_pathname_noext(g_extern.xml_name, g_extern.basename, ".xml", sizeof(g_extern.xml_name));
+   }
 }
 
 // Save or load state here.
