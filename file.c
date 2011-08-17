@@ -133,14 +133,20 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
    void *patch_data = NULL;
    enum patch_type type = PATCH_NONE;
 
-   if (*g_extern.ups_name && (patch_size = read_file(g_extern.ups_name, &patch_data)) >= 0)
+   if (g_extern.ups_pref && g_extern.bps_pref)
+   {
+      SSNES_WARN("Both UPS and BPS patch explicitly defined, ignoring both ...\n");
+      return;
+   }
+
+   if (!g_extern.bps_pref && *g_extern.ups_name && (patch_size = read_file(g_extern.ups_name, &patch_data)) >= 0)
       type = PATCH_UPS;
-   else if (*g_extern.bps_name && (patch_size = read_file(g_extern.bps_name, &patch_data)) >= 0)
+   else if (!g_extern.ups_pref && *g_extern.bps_name && (patch_size = read_file(g_extern.bps_name, &patch_data)) >= 0)
       type = PATCH_BPS;
 
    if (type == PATCH_NONE)
    {
-      SSNES_LOG("Could not find any ROM patch.\n");
+      SSNES_LOG("Did not find a valid ROM patch.\n");
       return;
    }
 

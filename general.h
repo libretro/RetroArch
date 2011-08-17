@@ -181,9 +181,12 @@ struct global
    char savefile_name_asrm[512];
    char savefile_name_bsrm[512];
    char savestate_name[256];
+   char xml_name[512];
+
+   bool ups_pref;
+   bool bps_pref;
    char ups_name[512];
    char bps_name[512];
-   char xml_name[512];
 
    unsigned state_slot;
 
