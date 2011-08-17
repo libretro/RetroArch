@@ -182,6 +182,9 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
             SSNES_LOG("ROM patched successfully (UPS)!\n");
             success = true;
          }
+         else
+            SSNES_ERR("Failed to patch UPS: Error #%u\n", (unsigned)err);
+
          break;
       }
 
@@ -193,6 +196,9 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
             SSNES_LOG("ROM patched successfully (BPS)!\n");
             success = true;
          }
+         else
+            SSNES_ERR("Failed to patch BPS: Error #%u\n", (unsigned)err);
+
          break;
       }
 

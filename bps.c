@@ -79,8 +79,9 @@ bps_error_t bps_apply_patch(
 
    struct bps_data bps = {
       .modify_data = modify_data,
-      .target_data = target_data,
       .modify_length = modify_length,
+      .target_data = target_data,
+      .target_length = *target_length,
       .source_data = source_data,
       .source_length = source_length,
 
