@@ -75,7 +75,7 @@ endif
 ifeq ($(HAVE_FREETYPE), 1)
    OBJ += gfx/fonts.o
    DEFINES += -DHAVE_FREETYPE -Ifreetype2
-   LIBS += -lfreetype-6
+   LIBS += -lfreetype
 endif
 
 ifeq ($(DYNAMIC), 1)
