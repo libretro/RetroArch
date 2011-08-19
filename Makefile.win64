@@ -145,7 +145,7 @@ clean:
 	rm -f tools/*.o
 
 dist: all
-	zip -r ssnes-win64-0.7.zip $(TARGET) ssnes.cfg snes.dll xaudio-c.dll README.win32.txt $(JTARGET)
+	zip -r ssnes-win64-0.7.zip $(TARGET) $(JTARGET) ssnes.cfg snes.dll avcodec-53.dll avdevice-53.dll avfilter-2.dll avformat-53.dll avutil-51.dll cg.dll cgGL.dll libfreetype-6.dll libxml2-2.dll postproc-51.dll rsound.dll SDL.dll swscale-2.dll
 
 libs:
 	wget https://github.com/downloads/Themaister/SSNES/ssnes-win64-libs.zip --no-check-certificate
