@@ -9,7 +9,7 @@ CXX = g++
 HAVE_DINPUT = 1
 HAVE_SDL = 1
 HAVE_XML = 0
-HAVE_FREETYPE = 0
+HAVE_FREETYPE = 1
 HAVE_XAUDIO = 0
 HAVE_DSOUND = 1
 HAVE_RSOUND = 0
@@ -26,6 +26,12 @@ LDFLAGS = -L. -static-libgcc -s
 
 SDL_LIBS = -lSDL
 SDL_CFLAGS = -ISDL
+
+ifeq ($(HAVE_XML), 1)
+   OBJ += gfx/shader_glsl.o gfx/image.o gfx/snes_state.o sha256.o cheats.o
+   DEFINES += -Ilibxml2 -DHAVE_XML -DLIBXML_STATIC
+   LIBS += -lxml2 -lz
+endif
 
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl.o gfx/gl.o input/sdl.o audio/sdl.o fifo_buffer.o
@@ -56,12 +62,6 @@ ifeq ($(HAVE_RSOUND), 1)
    LIBS += -lrsound
 endif
 
-ifeq ($(HAVE_XML), 1)
-   OBJ += gfx/shader_glsl.o gfx/image.o gfx/snes_state.o sha256.o cheats.o
-   DEFINES += $(XML_CFLAGS) -DHAVE_XML -DLIBXML_STATIC
-   LIBS += -lxml2 -lz -lws2_32
-endif
-
 ifeq ($(HAVE_DYLIB), 1)
    DEFINES += -DHAVE_DYLIB
 endif
@@ -75,7 +75,7 @@ endif
 ifeq ($(HAVE_FREETYPE), 1)
    OBJ += gfx/fonts.o
    DEFINES += -DHAVE_FREETYPE -Ifreetype2
-   LIBS += -lz -lfreetype6
+   LIBS += -lfreetype-6
 endif
 
 ifeq ($(DYNAMIC), 1)
@@ -115,7 +115,7 @@ CFLAGS = -Wall -O3 -std=gnu99 -I.
 all: $(TARGET) $(JTARGET)
 
 $(TARGET): $(OBJ)
-	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
+	$(Q)$(CXX) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
 	@$(if $(Q), $(shell echo echo LD $@),)
 
 %.o: %.c
