@@ -15,10 +15,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "ssnes_dinput.h"
 #include "SDL.h"
 #include "SDL_syswm.h"
 #include <stdbool.h>
-#include "ssnes_dinput.h"
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
@@ -45,7 +45,7 @@ void sdl_dinput_free(sdl_dinput_t *di)
 
 static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
 {
-   IDirectInputDevice8 *joypad = p;
+   LPDIRECTINPUTDEVICE8 joypad = p;
 
    DIPROPRANGE range;
    memset(&range, 0, sizeof(range));

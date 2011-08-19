@@ -1,13 +1,12 @@
 TARGET = ssnes.exe
 JTARGET = ssnes-joyconfig.exe
-OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o bps.o ups.o strl.o screenshot.o
+OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o bps.o ups.o strl.o screenshot.o audio/hermite.o
 JOBJ = conf/config_file.o tools/main-stub.o tools/ssnes-joyconfig.o
 
 CC = gcc
 CXX = g++
 
 HAVE_DINPUT = 1
-HAVE_SRC = 0
 HAVE_SDL = 1
 HAVE_XML = 0
 HAVE_FREETYPE = 0
@@ -25,16 +24,8 @@ LIBS = -lm
 DEFINES = -I. -DHAVE_CONFIGFILE
 LDFLAGS = -L. -static-libgcc -s
 
-SRC_LIBS = -lsamplerate-0
-SDL_LIBS = -lmingw32 -lSDL -lSDLmain -lwinmm -mwindows -lm -luser32 -lgdi32 -lwinmm -ldxguid
+SDL_LIBS = -lSDL
 SDL_CFLAGS = -ISDL
-
-ifeq ($(HAVE_SRC), 1)
-   LIBS += $(SRC_LIBS)
-   DEFINES += $(SRC_CFLAGS) -DHAVE_SRC
-else
-   OBJ += audio/hermite.o
-endif
 
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl.o gfx/gl.o input/sdl.o audio/sdl.o fifo_buffer.o

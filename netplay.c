@@ -25,10 +25,12 @@
 #include <assert.h>
 
 #ifdef _WIN32
+#ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
+#endif
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #include <winsock2.h>
+#include <windows.h>
 #include <ws2tcpip.h>
 // Woohoo, Winsock has headers from the STONE AGE! :D
 #define close(x) closesocket(x)

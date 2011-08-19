@@ -30,8 +30,8 @@
 typedef struct sdl_dinput
 {
    HWND hWnd;
-   IDirectInput8 *ctx;
-   IDirectInputDevice8 *joypad[MAX_PLAYERS];
+   LPDIRECTINPUT8 ctx;
+   LPDIRECTINPUTDEVICE8 joypad[MAX_PLAYERS];
    unsigned joypad_cnt;
    DIJOYSTATE2 joy_state[MAX_PLAYERS];
 } sdl_dinput_t;
