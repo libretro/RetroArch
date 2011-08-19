@@ -107,13 +107,13 @@ endif
 
 ifeq ($(HAVE_DINPUT), 1)
    LIBS += -ldinput8 -ldxguid -lole32
-   DEFINES += -DHAVE_DINPUT -Iffmpeg
+   DEFINES += -DHAVE_DINPUT
    OBJ += input/dinput.o
 endif
 
 ifeq ($(HAVE_FFMPEG), 1)
    LIBS += -lavformat -lavcodec -lavutil -lswscale -lws2_32 -lzlib1
-   DEFINES += -DHAVE_FFMPEG
+   DEFINES += -DHAVE_FFMPEG -Iffmpeg
    OBJ += record/ffemu.o
 endif
 
