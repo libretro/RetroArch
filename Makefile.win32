@@ -154,9 +154,7 @@ clean:
 	rm -f gfx/*.o
 	rm -f gfx/py_state/*.o
 	rm -f record/*.o
-	rm -f hqflt/*.o
 	rm -f input/*.o
-	rm -f hqflt/snes_ntsc/*.o
 	rm -f $(TARGET)
 	rm -f ssnes-joyconfig.exe
 	rm -f tools/*.o

@@ -9,9 +9,9 @@ CXX = g++
 HAVE_DINPUT = 1
 HAVE_SRC = 0
 HAVE_SDL = 1
-HAVE_XML = 1
-HAVE_FREETYPE = 1
-HAVE_XAUDIO = 1
+HAVE_XML = 0
+HAVE_FREETYPE = 0
+HAVE_XAUDIO = 0
 HAVE_DSOUND = 1
 HAVE_RSOUND = 0
 HAVE_DYLIB = 1
@@ -141,9 +141,7 @@ clean:
 	rm -f conf/*.o
 	rm -f gfx/*.o
 	rm -f record/*.o
-	rm -f hqflt/*.o
 	rm -f input/*.o
-	rm -f hqflt/snes_ntsc/*.o
 	rm -f $(TARGET)
 	rm -f ssnes-joyconfig.exe
 	rm -f tools/*.o
