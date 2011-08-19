@@ -8,9 +8,9 @@ CXX = g++
 
 HAVE_DINPUT = 1
 HAVE_SDL = 1
-HAVE_XML = 0
+HAVE_XML = 1
 HAVE_FREETYPE = 1
-HAVE_XAUDIO = 0
+HAVE_XAUDIO = 1
 HAVE_DSOUND = 1
 HAVE_RSOUND = 0
 HAVE_DYLIB = 1
@@ -29,8 +29,8 @@ SDL_CFLAGS = -ISDL
 
 ifeq ($(HAVE_XML), 1)
    OBJ += gfx/shader_glsl.o gfx/image.o gfx/snes_state.o sha256.o cheats.o
-   DEFINES += -Ilibxml2 -DHAVE_XML -DLIBXML_STATIC
-   LIBS += -lxml2 -lz
+   DEFINES += -Ilibxml2 -DHAVE_XML
+   LIBS += -lxml2
 endif
 
 ifeq ($(HAVE_SDL), 1)
