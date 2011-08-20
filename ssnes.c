@@ -348,7 +348,7 @@ static void fill_pathname_noext(char *out_path, const char *in_path, const char 
 }
 
 #ifdef _WIN32
-#define SSNES_DEFAULT_CONF_PATH_STR "\n\tDefaults to ssnes.cfg in same directory as ssnes.exe."
+#define SSNES_DEFAULT_CONF_PATH_STR "\n\t\tDefaults to ssnes.cfg in same directory as ssnes.exe."
 #elif defined(__APPLE__)
 #define SSNES_DEFAULT_CONF_PATH_STR " Defaults to $HOME/.ssnes.cfg."
 #else
