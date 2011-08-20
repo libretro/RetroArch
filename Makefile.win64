@@ -23,7 +23,7 @@ libsnes ?= -lsnes
 
 LIBS = -lm
 DEFINES = -I. -DHAVE_CONFIGFILE
-LDFLAGS = -L. -static-libgcc -s
+LDFLAGS = -L. -static-libgcc -static-libstdc++ -s
 
 SDL_LIBS = -lSDL
 SDL_CFLAGS = -ISDL
@@ -47,8 +47,9 @@ ifeq ($(HAVE_CG), 1)
 endif
 
 ifeq ($(HAVE_XAUDIO), 1)
-   OBJ += audio/xaudio.o
+   OBJ += audio/xaudio.o audio/xaudio-c/xaudio-c.o
    DEFINES += -DHAVE_XAUDIO
+   LIBS += -lole32
 endif
 
 ifeq ($(HAVE_DSOUND), 1)
@@ -116,8 +117,8 @@ ifneq ($(V),1)
    Q := @
 endif
 
-
-CFLAGS = -Wall -O3 -std=gnu99 -I.
+CFLAGS += -Wall -O3 -std=gnu99 -I.
+CXXFLAGS += -Wall -O3 -I.
 
 all: $(TARGET) $(JTARGET)
 
@@ -129,6 +130,10 @@ $(TARGET): $(OBJ)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 	@$(if $(Q), $(shell echo echo CC $<),)
 
+%.o: %.cpp
+	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -c -o $@ $<
+	@$(if $(Q), $(shell echo echo CXX $<),)
+
 $(JTARGET): $(JOBJ)
 	$(Q)$(CC) -o $@ $(JOBJ) $(SDL_LIBS) $(LDFLAGS)
 	@$(if $(Q), $(shell echo echo LD $@),)
@@ -136,6 +141,7 @@ $(JTARGET): $(JOBJ)
 clean:
 	rm -f *.o 
 	rm -f audio/*.o
+	rm -f audio/xaudio-c/*.o
 	rm -f conf/*.o
 	rm -f gfx/*.o
 	rm -f record/*.o

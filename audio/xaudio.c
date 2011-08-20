@@ -15,14 +15,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "driver.h"
 #include <stdlib.h>
-#include "xaudio-c.h"
+#include "xaudio-c/xaudio-c.h"
 #include "general.h"
-
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 
 typedef struct
 {
@@ -30,48 +26,8 @@ typedef struct
    bool nonblock;
 } xa_t;
 
-static xaudio2_new_t pxanew = NULL;
-static xaudio2_write_t pxawrite = NULL;
-static xaudio2_write_avail_t pxawrite_avail = NULL;
-static xaudio2_free_t pxafree = NULL;
-static HMODULE lib = NULL;
-
-#define LIB_NAME "xaudio-c.dll"
-#define SYM(X) ((void*)GetProcAddress(lib, "xaudio2_" #X))
-
-static void deinit_lib(void)
-{
-   FreeModule(lib);
-   lib = NULL;
-}
-
-static bool init_lib(void)
-{
-   if (lib)
-      return true;
-
-   lib = LoadLibrary(LIB_NAME);
-   if (!lib)
-      return false;
-
-   pxanew = SYM(new);
-   pxawrite = SYM(write);
-   pxawrite_avail = SYM(write_avail);
-   pxafree = SYM(free);
-
-   if (!pxanew || !pxawrite || !pxawrite_avail || !pxafree)
-   {
-      deinit_lib();
-      return false;
-   }
-   return true;
-}
-
 static void* __xa_init(const char* device, unsigned rate, unsigned latency)
 {
-   if (!init_lib())
-      return NULL;
-
    if (latency < 8)
       latency = 8; // Do not allow shenanigans.
 
@@ -84,7 +40,7 @@ static void* __xa_init(const char* device, unsigned rate, unsigned latency)
 
    SSNES_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize * 1000 / rate);
 
-   xa->xa = pxanew(rate, 2, 16, bufsize << 2);
+   xa->xa = xaudio2_new(rate, 2, 16, bufsize << 2);
    if (!xa->xa)
    {
       SSNES_ERR("Failed to init XAudio2.\n");
@@ -99,11 +55,11 @@ static ssize_t __xa_write(void* data, const void* buf, size_t size)
    xa_t *xa = data;
    if (xa->nonblock)
    {
-      size_t avail = pxawrite_avail(xa->xa);
+      size_t avail = xaudio2_write_avail(xa->xa);
       if (avail < size)
          size = avail;
    }
-   return pxawrite(xa->xa, buf, size);
+   return xaudio2_write(xa->xa, buf, size);
 }
 
 static bool __xa_stop(void *data)
@@ -127,13 +83,12 @@ static bool __xa_start(void *data)
 static void __xa_free(void *data)
 {
    xa_t *xa = data;
-   if (xa && xa->xa)
+   if (xa)
    {
-      if (pxafree)
-         pxafree(xa->xa);
+      if (xa->xa)
+         xaudio2_free(xa->xa);
       free(xa);
    }
-   deinit_lib();
 }
 
 const audio_driver_t audio_xa = {
@@ -145,9 +100,4 @@ const audio_driver_t audio_xa = {
    .free = __xa_free,
    .ident = "xaudio"
 };
-
-   
-
-
-   
    
