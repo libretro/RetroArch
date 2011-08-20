@@ -24,7 +24,8 @@ libsnes ?= -lsnes
 
 LIBS = -lm
 DEFINES = -I. -DHAVE_CONFIGFILE
-LDFLAGS = -L. -static-libgcc -static-libstdc++ -s
+LDFLAGS = -L. -static-libgcc -s
+LDCXXFLAGS = -static-libstdc++
 
 SDL_LIBS = -lSDL
 SDL_CFLAGS = -ISDL
@@ -128,7 +129,7 @@ CXXFLAGS += -Wall -O3 -pedantic -I.
 all: $(TARGET) $(JTARGET)
 
 $(TARGET): $(OBJ)
-	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
+	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS) $(LDCXXFLAGS)
 	@$(if $(Q), $(shell echo echo LD $@),)
 
 %.o: %.c
