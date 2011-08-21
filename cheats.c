@@ -24,7 +24,6 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
-#include <assert.h>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -51,7 +50,8 @@ static char* strcat_alloc(char *dest, const char *input)
    size_t required_len = dest_len + input_len + 1;
 
    char *output = realloc(dest, required_len);
-   assert(output);
+   if (!output)
+      return NULL;
 
    if (dest)
       strlcat(output, input, required_len);
@@ -61,58 +61,74 @@ static char* strcat_alloc(char *dest, const char *input)
    return output;
 }
 
-static void xml_grab_cheat(struct cheat *cht, xmlNodePtr ptr)
+static bool xml_grab_cheat(struct cheat *cht, xmlNodePtr ptr)
 {
+   if (!ptr)
+      return false;
+
    memset(cht, 0, sizeof(struct cheat));
    bool first = true;
-   for (xmlNodePtr node = ptr; node; node = node->next)
+
+   for (; ptr; ptr = ptr->next)
    {
-      if (strcmp((const char*)node->name, "description") == 0)
+      if (strcmp((const char*)ptr->name, "description") == 0)
       {
-         cht->desc = (char*)xmlNodeGetContent(node);
+         cht->desc = (char*)xmlNodeGetContent(ptr);
       }
-      else if (strcmp((const char*)node->name, "code") == 0)
+      else if (strcmp((const char*)ptr->name, "code") == 0)
       {
          if (!first)
+         {
             cht->code = strcat_alloc(cht->code, "+");
+            if (!cht->code)
+               return false;
+         }
 
-         xmlChar *code = xmlNodeGetContent(node);
-         assert(code);
+         xmlChar *code = xmlNodeGetContent(ptr);
+         if (!code)
+            return false;
 
          cht->code = strcat_alloc(cht->code, (const char*)code);
          xmlFree(code);
+         if (!cht->code)
+            return false;
 
          first = false;
       }
    }
+
+   return true;
 }
 
-static void xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
+static bool xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
 {
-   xmlNodePtr node = NULL;
-   for (node = ptr; node; node = node->next)
+   for (; ptr; ptr = ptr->next)
    {
-      if (strcmp((const char*)node->name, "name") == 0)
+      if (strcmp((const char*)ptr->name, "name") == 0)
       {
-         xmlChar *name = xmlNodeGetContent(node);
+         xmlChar *name = xmlNodeGetContent(ptr);
          if (name)
          {
             SSNES_LOG("Found cheat for game: \"%s\"\n", name);
             xmlFree(name);
          }
       }
-      else if (strcmp((const char*)node->name, "cheat") == 0)
+      else if (strcmp((const char*)ptr->name, "cheat") == 0)
       {
          if (handle->size == handle->buf_size)
          {
             handle->buf_size *= 2;
             handle->cheats = realloc(handle->cheats, handle->buf_size * sizeof(struct cheat));
-            assert(handle->cheats);
+            if (!handle->cheats)
+               return false;
          }
 
-         xml_grab_cheat(&handle->cheats[handle->size++], node->children);
+         if (xml_grab_cheat(&handle->cheats[handle->size], ptr->children))
+            handle->size++;
       }
    }
+
+   return true;
 }
 
 cheat_manager_t* cheat_manager_new(const char *path)
@@ -125,8 +141,8 @@ cheat_manager_t* cheat_manager_new(const char *path)
    if (!handle)
       return NULL;
 
-   handle->buf_size = 32;
-   handle->cheats = malloc(handle->buf_size * sizeof(struct cheat));
+   handle->buf_size = 1;
+   handle->cheats = calloc(handle->buf_size, sizeof(struct cheat));
    if (!handle->cheats)
    {
       handle->buf_size = 0;
@@ -185,7 +201,17 @@ cheat_manager_t* cheat_manager_new(const char *path)
    if (!cur)
       goto error;
 
-   xml_grab_cheats(handle, cur->children);
+   if (!xml_grab_cheats(handle, cur->children))
+   {
+      SSNES_ERR("Failed to grab cheats. This should not happen.\n");
+      goto error;
+   }
+
+   if (handle->size == 0)
+   {
+      SSNES_ERR("Did not find any cheats in XML file: %s\n", path);
+      goto error;
+   }
 
    xmlFreeDoc(doc);
    xmlFreeParserCtxt(ctx);
