@@ -1,7 +1,7 @@
 /*
-	Simple C interface for XAudio2
-	Author: Hans-Kristian Arntzen
-	License: Public Domain
+   Simple C interface for XAudio2
+   Author: Hans-Kristian Arntzen
+   License: Public Domain
 */
 
 #ifndef XAUDIO_C_H
@@ -15,7 +15,7 @@ extern "C" {
 
 typedef struct xaudio2 xaudio2_t;
 
-xaudio2_t* xaudio2_new(unsigned samplerate, unsigned channels, unsigned bits, size_t bufsize);
+xaudio2_t* xaudio2_new(unsigned samplerate, unsigned channels, size_t bufsize);
 size_t xaudio2_write_avail(xaudio2_t *handle);
 size_t xaudio2_write(xaudio2_t *handle, const void *data, size_t bytes);
 void xaudio2_free(xaudio2_t *handle);

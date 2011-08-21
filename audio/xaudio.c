@@ -36,11 +36,10 @@ static void* __xa_init(const char* device, unsigned rate, unsigned latency)
       return NULL;
 
    size_t bufsize = latency * rate / 1000;
-   bufsize = next_pow2(bufsize);
 
    SSNES_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize * 1000 / rate);
 
-   xa->xa = xaudio2_new(rate, 2, 16, bufsize << 2);
+   xa->xa = xaudio2_new(rate, 2, bufsize * 2 * sizeof(float));
    if (!xa->xa)
    {
       SSNES_ERR("Failed to init XAudio2.\n");
@@ -56,10 +55,15 @@ static ssize_t __xa_write(void* data, const void* buf, size_t size)
    if (xa->nonblock)
    {
       size_t avail = xaudio2_write_avail(xa->xa);
+      if (avail == 0)
+         return 0;
       if (avail < size)
          size = avail;
    }
-   return xaudio2_write(xa->xa, buf, size);
+   size_t ret = xaudio2_write(xa->xa, buf, size);
+   if (ret == 0)
+      return -1;
+   return ret;
 }
 
 static bool __xa_stop(void *data)
@@ -75,6 +79,12 @@ static void __xa_set_nonblock_state(void *data, bool state)
 }
 
 static bool __xa_start(void *data)
+{
+   (void)data;
+   return true;
+}
+
+static bool __xa_use_float(void *data)
 {
    (void)data;
    return true;
@@ -97,6 +107,7 @@ const audio_driver_t audio_xa = {
    .stop = __xa_stop,
    .start = __xa_start,
    .set_nonblock_state = __xa_set_nonblock_state,
+   .use_float = __xa_use_float,
    .free = __xa_free,
    .ident = "xaudio"
 };
