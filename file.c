@@ -36,6 +36,7 @@
 #include <io.h>
 #include <fcntl.h>
 #include <windows.h>
+#include <shlwapi.h>
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -703,8 +704,6 @@ bool init_rom_file(enum ssnes_game_type type)
 // Yep, this is C alright ;)
 char** dir_list_new(const char *dir, const char *ext)
 {
-   size_t path_len = strlen(dir);
-
    size_t cur_ptr = 0;
    size_t cur_size = 32;
    char **dir_list = NULL;
@@ -713,18 +712,18 @@ char** dir_list_new(const char *dir, const char *ext)
    WIN32_FIND_DATAW ffd;
    HANDLE hFind = INVALID_HANDLE_VALUE;
 
+   wchar_t wchar_buf[MAXPATHLEN];
+   char utf8_buf[MAXPATHLEN];
 
-   size_t final_off = MAX_PATH + path_len + 2;
+   if (strlcpy(utf8_buf, dir, sizeof(utf8_buf)) >= sizeof(utf8_buf))
+      goto error;
+   if (strlcat(utf8_buf, "/*", sizeof(utf8_buf)) >= sizeof(utf8_buf))
+      goto error;
+   if (strlcat(utf8_buf, ext, sizeof(utf8_buf)) >= sizeof(utf8_buf))
+      goto error;
 
-   wchar_t wchar_buf[MAX_PATH + 1];
-   char utf8_buf[MAX_PATH + 3];
-
-   strlcpy(utf8_buf, dir, sizeof(utf8_buf));
-   strlcat(utf8_buf, "/*", sizeof(utf8_buf));
-   utf8_buf[MAX_PATH + 2] = '\0';
-
-   int ret = MultiByteToWideChar(CP_UTF8, 0, utf8_buf, strlen(utf8_buf), wchar_buf, MAX_PATH);
-   wchar_buf[ret] = 0;
+   if (MultiByteToWideChar(CP_UTF8, 0, utf8_buf, -1, wchar_buf, MAXPATHLEN) == 0)
+      goto error;
 
    hFind = FindFirstFileW(wchar_buf, &ffd);
    if (hFind == INVALID_HANDLE_VALUE)
@@ -732,7 +731,6 @@ char** dir_list_new(const char *dir, const char *ext)
 #else
    DIR *directory = NULL;
    const struct dirent *entry = NULL;
-   size_t final_off = sizeof(entry->d_name) + path_len + 2;
 
    directory = opendir(dir);
    if (!directory)
@@ -753,8 +751,8 @@ char** dir_list_new(const char *dir, const char *ext)
 #ifdef _WIN32
       if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
          continue;
-      int ret = WideCharToMultiByte(CP_UTF8, 0, ffd.cFileName, wcslen(ffd.cFileName), utf8_buf, MAX_PATH, NULL, NULL);
-      utf8_buf[ret] = '\0';
+      if (WideCharToMultiByte(CP_UTF8, 0, ffd.cFileName, -1, utf8_buf, MAX_PATH, NULL, NULL) == 0)
+         continue;
       if (ext && !strstr(utf8_buf, ext))
          continue;
 #else
@@ -762,16 +760,16 @@ char** dir_list_new(const char *dir, const char *ext)
          continue;
 #endif
 
-      dir_list[cur_ptr] = malloc(final_off);
+      dir_list[cur_ptr] = malloc(MAXPATHLEN);
       if (!dir_list[cur_ptr])
          goto error;
 
-      strlcpy(dir_list[cur_ptr], dir, final_off);
-      strlcat(dir_list[cur_ptr], "/", final_off);
+      strlcpy(dir_list[cur_ptr], dir, MAXPATHLEN);
+      strlcat(dir_list[cur_ptr], "/", MAXPATHLEN);
 #ifdef _WIN32
-      strlcat(dir_list[cur_ptr], utf8_buf, final_off);
+      strlcat(dir_list[cur_ptr], utf8_buf, MAXPATHLEN);
 #else
-      strlcat(dir_list[cur_ptr], entry->d_name, final_off);
+      strlcat(dir_list[cur_ptr], entry->d_name, MAXPATHLEN);
 #endif
 
       cur_ptr++;
@@ -788,7 +786,6 @@ char** dir_list_new(const char *dir, const char *ext)
    }
 #ifdef _WIN32
    while (FindNextFileW(hFind, &ffd) != 0);
-
 #endif
 
 #ifdef _WIN32
@@ -825,7 +822,10 @@ void dir_list_free(char **dir_list)
 bool path_is_directory(const char *path)
 {
 #ifdef _WIN32
-   return false;
+   wchar_t buf[MAXPATHLEN];
+   if (MultiByteToWideChar(CP_UTF8, 0, path, -1, buf, MAXPATHLEN) == 0)
+      return false;
+   return PathIsDirectoryW(buf) == FILE_ATTRIBUTE_DIRECTORY;
 #else
    struct stat buf;
    if (stat(path, &buf) < 0)

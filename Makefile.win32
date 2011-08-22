@@ -22,7 +22,7 @@ HAVE_PYTHON = 1
 HAVE_FFMPEG = 0
 libsnes ?= -lsnes
 
-LIBS = -lm
+LIBS = -lm -lshlwapi
 DEFINES = -I. -DHAVE_CONFIGFILE
 LDFLAGS = -L. -static-libgcc -s
 LDCXXFLAGS = -static-libstdc++
