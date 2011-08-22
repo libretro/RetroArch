@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <libsnes.hpp>
 #include <string.h>
+#include <assert.h>
 #include "dynamic.h"
 #include "movie.h"
 #include "ups.h"
@@ -37,6 +38,7 @@
 #include <windows.h>
 #else
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #endif
 
@@ -783,4 +785,51 @@ void dir_list_free(char **dir_list)
    while (*dir_list)
       free(*dir_list++);
    free(orig);
+}
+
+bool path_is_directory(const char *path)
+{
+#ifdef _WIN32
+   return false;
+#else
+   struct stat buf;
+   if (stat(path, &buf) < 0)
+      return false;
+
+   return S_ISDIR(buf.st_mode);
+#endif
+}
+
+void fill_pathname(char *out_path, const char *in_path, const char *replace, size_t size)
+{
+   char tmp_path[strlen(in_path) + 1];
+   strlcpy(tmp_path, in_path, sizeof(tmp_path));
+   char *tok = strrchr(tmp_path, '.');
+   if (tok != NULL)
+      *tok = '\0';
+   assert(strlcpy(out_path, tmp_path, size) < size);
+   assert(strlcat(out_path, replace, size) < size);
+}
+
+void fill_pathname_noext(char *out_path, const char *in_path, const char *replace, size_t size)
+{
+   assert(strlcpy(out_path, in_path, size) < size);
+   assert(strlcat(out_path, replace, size) < size);
+}
+
+void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replace, size_t size)
+{
+   assert(strlcat(in_dir, "/", size) < size); 
+   
+   const char *base = strrchr(in_basename, '/');
+   if (!base)
+      base = strrchr(in_basename, '\\');
+
+   if (base)
+      base++;
+   else
+      base = in_basename;
+
+   assert(strlcat(in_dir, base, size) < size);
+   assert(strlcat(in_dir, replace, size) < size);
 }

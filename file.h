@@ -40,4 +40,15 @@ bool init_rom_file(enum ssnes_game_type type);
 char** dir_list_new(const char *dir, const char *ext);
 void dir_list_free(char **dir_list);
 
+bool path_is_directory(const char *path);
+
+// Path-name operations.
+// Replaces filename extension with replace.
+void fill_pathname(char *out_path, const char *in_path, const char *replace, size_t size);
+// Sets filename extension. Assumes in_path has no extension.
+void fill_pathname_noext(char *out_path, const char *in_path, const char *replace, size_t size);
+// Concatenates in_basename and replace to in_dir.
+void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replace, size_t size);
+
+
 #endif

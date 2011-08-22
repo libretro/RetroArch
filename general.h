@@ -42,6 +42,17 @@
 #include "audio/hermite.h"
 #endif
 
+#ifndef _WIN32
+#include <sys/param.h> // MAXPATHLEN
+#endif
+
+#ifndef MAXPATHLEN
+#ifdef PATH_MAX
+#define MAXPATHLEN PATH_MAX
+#else
+#define MAXPATHLEN 512
+#endif
+#endif
 
 #define MAX_PLAYERS 5
 #define MAX_BINDS 34 // Needs to be increased every time there are new binds added.
@@ -71,19 +82,19 @@ struct settings
       bool force_aspect;
       bool crop_overscan;
       float aspect_ratio;
-      char cg_shader_path[256];
-      char bsnes_shader_path[256];
-      char filter_path[256];
+      char cg_shader_path[MAXPATHLEN];
+      char bsnes_shader_path[MAXPATHLEN];
+      char filter_path[MAXPATHLEN];
       enum ssnes_shader_type shader_type;
 
       bool render_to_texture;
       double fbo_scale_x;
       double fbo_scale_y;
-      char second_pass_shader[256];
+      char second_pass_shader[MAXPATHLEN];
       bool second_pass_smooth;
-      char shader_dir[256];
+      char shader_dir[MAXPATHLEN];
 
-      char font_path[256];
+      char font_path[MAXPATHLEN];
       unsigned font_size;
       float msg_pos_x;
       float msg_pos_y;
@@ -94,7 +105,7 @@ struct settings
       bool hires_record;
       bool post_filter_record;
 
-      char external_driver[256];
+      char external_driver[MAXPATHLEN];
    } video;
 
    struct
@@ -104,13 +115,13 @@ struct settings
       unsigned out_rate;
       float in_rate;
       float rate_step;
-      char device[256];
+      char device[MAXPATHLEN];
       unsigned latency;
       bool sync;
       int src_quality;
 
-      char dsp_plugin[256];
-      char external_driver[256];
+      char dsp_plugin[MAXPATHLEN];
+      char external_driver[MAXPATHLEN];
    } audio;
 
    struct
@@ -122,10 +133,10 @@ struct settings
       bool netplay_client_swap_input;
    } input;
 
-   char libsnes[256];
-   char cheat_database[256];
+   char libsnes[MAXPATHLEN];
+   char cheat_database[MAXPATHLEN];
 
-   char screenshot_directory[256];
+   char screenshot_directory[MAXPATHLEN];
 
    bool rewind_enable;
    unsigned rewind_buffer_size;
@@ -164,29 +175,29 @@ struct global
    enum ssnes_game_type game_type;
    uint32_t cart_crc;
 
-   char gb_rom_path[256];
-   char bsx_rom_path[256];
-   char sufami_rom_path[2][256];
+   char gb_rom_path[MAXPATHLEN];
+   char bsx_rom_path[MAXPATHLEN];
+   char sufami_rom_path[2][MAXPATHLEN];
    bool has_set_save_path;
    bool has_set_state_path;
 
 #ifdef HAVE_CONFIGFILE
-   char config_path[256];
+   char config_path[MAXPATHLEN];
 #endif
    
-   char basename[256];
-   char savefile_name_srm[256];
-   char savefile_name_rtc[512]; // Make sure that fill_pathname has space.
-   char savefile_name_psrm[512];
-   char savefile_name_asrm[512];
-   char savefile_name_bsrm[512];
-   char savestate_name[256];
-   char xml_name[512];
+   char basename[MAXPATHLEN];
+   char savefile_name_srm[MAXPATHLEN];
+   char savefile_name_rtc[MAXPATHLEN]; // Make sure that fill_pathname has space.
+   char savefile_name_psrm[MAXPATHLEN];
+   char savefile_name_asrm[MAXPATHLEN];
+   char savefile_name_bsrm[MAXPATHLEN];
+   char savestate_name[MAXPATHLEN];
+   char xml_name[MAXPATHLEN];
 
    bool ups_pref;
    bool bps_pref;
-   char ups_name[512];
-   char bps_name[512];
+   char ups_name[MAXPATHLEN];
+   char bps_name[MAXPATHLEN];
 
    unsigned state_slot;
 
@@ -237,7 +248,7 @@ struct global
 
    // Movie record support
    bsv_movie_t *bsv_movie;
-   char bsv_movie_path[256];
+   char bsv_movie_path[MAXPATHLEN];
    bool bsv_movie_end;
    bool bsv_movie_playback;
 
@@ -249,7 +260,7 @@ struct global
 
    // Netplay.
    netplay_t *netplay;
-   char netplay_server[256];
+   char netplay_server[MAXPATHLEN];
    bool netplay_enable;
    bool netplay_is_client;
    unsigned netplay_sync_frames;
@@ -258,7 +269,7 @@ struct global
    // FFmpeg record.
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;
-   char record_path[256];
+   char record_path[MAXPATHLEN];
    bool recording;
 #endif
 

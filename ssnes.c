@@ -329,24 +329,6 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
    return res;
 }
 
-static void fill_pathname(char *out_path, const char *in_path, const char *replace, size_t size)
-{
-   char tmp_path[strlen(in_path) + 1];
-   strlcpy(tmp_path, in_path, sizeof(tmp_path));
-   char *tok = NULL;
-   tok = strrchr(tmp_path, '.');
-   if (tok != NULL)
-      *tok = '\0';
-   assert(strlcpy(out_path, tmp_path, size) < size);
-   assert(strlcat(out_path, replace, size) < size);
-}
-
-static void fill_pathname_noext(char *out_path, const char *in_path, const char *replace, size_t size)
-{
-   assert(strlcpy(out_path, in_path, size) < size);
-   assert(strlcat(out_path, replace, size) < size);
-}
-
 #ifdef _WIN32
 #define SSNES_DEFAULT_CONF_PATH_STR "\n\t\tDefaults to ssnes.cfg in same directory as ssnes.exe."
 #elif defined(__APPLE__)
@@ -438,12 +420,10 @@ static void print_help(void)
 
 static void set_basename(const char *path)
 {
-   char tmp[strlen(path) + 1];
-   strlcpy(tmp, path, sizeof(tmp));
-   char *dst = strrchr(tmp, '.');
+   strlcpy(g_extern.basename, path, sizeof(g_extern.basename));
+   char *dst = strrchr(g_extern.basename, '.');
    if (dst)
       *dst = '\0';
-   strlcpy(g_extern.basename, tmp, sizeof(g_extern.basename));
 }
 
 static void parse_input(int argc, char *argv[])
@@ -686,23 +666,50 @@ static void parse_input(int argc, char *argv[])
          SSNES_ERR("Could not open file: \"%s\"\n", argv[optind]);
          exit(1);
       }
-      // strl* would be nice :D
+
       if (!g_extern.has_set_save_path)
          fill_pathname_noext(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
       if (!g_extern.has_set_state_path)
          fill_pathname_noext(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
+
+      if (path_is_directory(g_extern.savefile_name_srm))
+      {
+         fill_pathname_dir(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
+         SSNES_LOG("Redirecting save file to \"%s\".\n", g_extern.savefile_name_srm);
+      }
+      if (path_is_directory(g_extern.savestate_name))
+      {
+         fill_pathname_dir(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
+         SSNES_LOG("Redirecting save state to \"%s\".\n", g_extern.savestate_name);
+      }
    }
-   else if (strlen(g_extern.savefile_name_srm) == 0)
+   else // Read ROM from stdin.
    {
-      SSNES_ERR("Need savefile path argument (--save) when reading rom from stdin.\n");
-      print_help();
-      exit(1);
-   }
-   else if (strlen(g_extern.savestate_name) == 0)
-   {
-      SSNES_ERR("Need savestate path argument (--savefile) when reading rom from stdin.\n");
-      print_help();
-      exit(1);
+      if (strlen(g_extern.savefile_name_srm) == 0)
+      {
+         SSNES_ERR("Need savefile path argument (--save) when reading rom from stdin.\n");
+         print_help();
+         exit(1);
+      }
+      else if (strlen(g_extern.savestate_name) == 0)
+      {
+         SSNES_ERR("Need savestate path argument (--savestate) when reading rom from stdin.\n");
+         print_help();
+         exit(1);
+      }
+
+      if (path_is_directory(g_extern.savefile_name_srm))
+      {
+         SSNES_ERR("Cannot specify directory for path argument (--save) when reading from from stdin.\n");
+         print_help();
+         exit(1);
+      }
+      else if (path_is_directory(g_extern.savestate_name))
+      {
+         SSNES_ERR("Cannot specify directory for path argument (--savestate) when reading from from stdin.\n");
+         print_help();
+         exit(1);
+      }
    }
 }
 
