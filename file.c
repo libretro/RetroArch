@@ -22,6 +22,7 @@
 #include <libsnes.hpp>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 #include "dynamic.h"
 #include "movie.h"
 #include "ups.h"
@@ -329,8 +330,34 @@ static bool dump_to_file(const char *path, const void *data, size_t size)
    }
 }
 
+static const char *ramtype2str(int type)
+{
+   switch (type)
+   {
+      case SNES_MEMORY_CARTRIDGE_RAM:
+      case SNES_MEMORY_GAME_BOY_RAM:
+      case SNES_MEMORY_BSX_RAM:
+         return ".srm";
+
+      case SNES_MEMORY_CARTRIDGE_RTC:
+      case SNES_MEMORY_GAME_BOY_RTC:
+         return ".rtc";
+
+      case SNES_MEMORY_BSX_PRAM:
+         return ".pram";
+
+      case SNES_MEMORY_SUFAMI_TURBO_A_RAM:
+         return ".aram";
+      case SNES_MEMORY_SUFAMI_TURBO_B_RAM:
+         return ".bram";
+
+      default:
+         return "";
+   }
+}
+
 // Attempt to save valuable RAM data somewhere ...
-static void dump_to_file_desperate(const void *data, size_t size)
+static void dump_to_file_desperate(const void *data, size_t size, int type)
 {
 #ifdef _WIN32
    const char *base = getenv("APPDATA");
@@ -341,13 +368,18 @@ static void dump_to_file_desperate(const void *data, size_t size)
    if (!base)
       goto error;
 
-   static unsigned count = 0;
-
    char path[MAXPATHLEN];
-   snprintf(path, sizeof(path), "%s/SSNES-recovery-%u", base, count++);
+   snprintf(path, sizeof(path), "%s/SSNES-recovery-", base);
+   char timebuf[MAXPATHLEN];
+
+   time_t time_;
+   time(&time_);
+   strftime(timebuf, sizeof(timebuf), "%Y-%m-%d-%H-%M-%S", localtime(&time_));
+   strlcat(path, timebuf, sizeof(path));
+   strlcat(path, ramtype2str(type), sizeof(path));
 
    if (dump_to_file(path, data, size))
-      SSNES_WARN("Succeeded in recovering data to \"%s\". Phew! :D\n", path);
+      SSNES_WARN("Succeeded in saving RAM data to \"%s\". Phew! :D\n", path);
    else
       goto error;
 
@@ -427,7 +459,7 @@ void save_ram_file(const char *path, int type)
       {
          SSNES_ERR("Failed to save SNES RAM!\n");
          SSNES_WARN("Attempting to recover ...\n");
-         dump_to_file_desperate(data, size);
+         dump_to_file_desperate(data, size, type);
       }
    }
 }
