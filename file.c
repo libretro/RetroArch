@@ -343,7 +343,7 @@ static void dump_to_file_desperate(const void *data, size_t size)
    static unsigned count = 0;
 
    char path[MAXPATHLEN];
-   snprintf(path, sizeof(path), "%s/SSNES-recovery-%u\n", base, count++);
+   snprintf(path, sizeof(path), "%s/SSNES-recovery-%u", base, count++);
 
    if (dump_to_file(path, data, size))
       SSNES_WARN("Succeeded in recovering data to \"%s\". Phew! :D\n", path);
