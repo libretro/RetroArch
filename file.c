@@ -322,13 +322,41 @@ static bool dump_to_file(const char *path, const void *data, size_t size)
       return false;
    else
    {
-      fwrite(data, 1, size, file);
+      bool ret = fwrite(data, 1, size, file) == size;
       fclose(file);
-      return true;
+      return ret;
    }
 }
 
-bool save_state(const char* path)
+// Attempt to save valuable RAM data somewhere ...
+static void dump_to_file_desperate(const void *data, size_t size)
+{
+#ifdef _WIN32
+   const char *base = getenv("APPDATA");
+#else
+   const char *base = getenv("HOME");
+#endif
+
+   if (!base)
+      goto error;
+
+   static unsigned count = 0;
+
+   char path[MAXPATHLEN];
+   snprintf(path, sizeof(path), "%s/SSNES-recovery-%u\n", base, count++);
+
+   if (dump_to_file(path, data, size))
+      SSNES_WARN("Succeeded in recovering data to \"%s\". Phew! :D\n", path);
+   else
+      goto error;
+
+   return;
+
+error:
+   SSNES_WARN("Failed ... Tough luck ... :(\n");
+}
+
+bool save_state(const char *path)
 {
    SSNES_LOG("Saving state: \"%s\".\n", path);
    size_t size = psnes_serialize_size();
@@ -351,7 +379,7 @@ bool save_state(const char* path)
    return ret;
 }
 
-bool load_state(const char* path)
+bool load_state(const char *path)
 {
    SSNES_LOG("Loading state: \"%s\".\n", path);
    void *buf = NULL;
@@ -371,7 +399,7 @@ bool load_state(const char* path)
    return true;
 }
 
-void load_ram_file(const char* path, int type)
+void load_ram_file(const char *path, int type)
 {
    size_t size = psnes_get_memory_size(type);
    uint8_t *data = psnes_get_memory_data(type);
@@ -387,13 +415,20 @@ void load_ram_file(const char* path, int type)
    free(buf);
 }
 
-void save_ram_file(const char* path, int type)
+void save_ram_file(const char *path, int type)
 {
    size_t size = psnes_get_memory_size(type);
    uint8_t *data = psnes_get_memory_data(type);
 
    if (data && size > 0)
-      dump_to_file(path, data, size);
+   {
+      if (!dump_to_file(path, data, size))
+      {
+         SSNES_ERR("Failed to save SNES RAM!\n");
+         SSNES_WARN("Attempting to recover ...\n");
+         dump_to_file_desperate(data, size);
+      }
+   }
 }
 
 static char* load_xml_map(const char *path)

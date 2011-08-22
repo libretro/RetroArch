@@ -28,11 +28,11 @@
 
 ssize_t read_file(const char *path, void **buf);
 
-bool load_state(const char* path);
-bool save_state(const char* path);
+bool load_state(const char *path);
+bool save_state(const char *path);
 
-void load_ram_file(const char* path, int type);
-void save_ram_file(const char* path, int type);
+void load_ram_file(const char *path, int type);
+void save_ram_file(const char *path, int type);
 
 bool init_rom_file(enum ssnes_game_type type);
 
