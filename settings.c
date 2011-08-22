@@ -669,6 +669,7 @@ static const struct key_map sdlk_map[] = {
    { "print_screen", SDLK_PRINT },
    { "scroll_lock", SDLK_SCROLLOCK },
    { "tilde", SDLK_BACKQUOTE },
+   { "backquote", SDLK_BACKQUOTE },
    { "nul", SDLK_UNKNOWN },
 };
 
