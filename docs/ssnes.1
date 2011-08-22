@@ -32,12 +32,16 @@ Prints help text.
 Overrides the path used for save ram (*.srm).
 Without this flag, the save ram path will be inferred from the rom path name, and put in the same directory as the rom file with the extention replaced with '.srm'. 
 When rom is loaded from \fBstdin\fR, this flag is mandatory to define as no path can be inferred.
+If PATH is a directory, SSNES will treat this as the save file directory, where the save file name will be inferred from the rom name.
+When loading a rom from stdin, the path must be a full path, however.
 
 .TP
-\fB--savestate PATH, -S path\fR
+\fB--savestate PATH, -S PATH\fR
 Overrides the path used for save states.
 Without this flag, the save state path will be inferred from the rom path name, and put in the same directory as the rom file with the extention replace with '.state'.
 When rom is loaded from \fBstdin\fR, this flag is mandatory to define as no path can be inferred.
+If PATH is a directory, SSNES will treat this as the save state directory, where the state file name will be inferred from the rom name.
+When loading a rom from stdin, the path must be a full path, however.
 Do note that save states are bound to the libsnes implementation being used. Using a different libsnes could invalidate the save state file.
 
 .TP
