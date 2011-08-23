@@ -184,6 +184,26 @@ void init_dlsym(void)
    assert(sizeof(void*) == sizeof(void (*)(void)));
 
 #ifdef HAVE_DYNAMIC
+
+#ifndef _WIN32 // Try to verify that -lsnes was not linked in from other modules
+               // since loading it dynamically and with -l will fail hard.
+   void *lib = dlopen(NULL, RTLD_LAZY);
+   if (lib)
+   {
+      void *sym = dlsym(lib, "snes_init");
+      if (sym)
+      {
+         SSNES_ERR("Serious problem! SSNES wants to load libsnes dyamically, but it is already linked!\n"); 
+         SSNES_ERR("This could happen if other modules SSNES depends on link against libsnes directly.\n");
+         SSNES_ERR("Proceeding could cause a crash! Aborting ...\n");
+         dlclose(lib);
+         exit(1);
+      }
+
+      dlclose(lib);
+   }
+#endif
+
    if (strlen(g_settings.libsnes) > 0)
       load_dynamic();
    else
