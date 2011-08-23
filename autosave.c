@@ -42,6 +42,9 @@ struct autosave
 static int autosave_thread(void *data)
 {
    autosave_t *save = data;
+
+   bool first_log = true;
+
    while (!save->quit)
    {
       autosave_lock(save);
@@ -52,7 +55,13 @@ static int autosave_thread(void *data)
       FILE *file = fopen(save->path, "wb");
       if (file)
       {
-         SSNES_LOG("Autosaving SRAM to \"%s\"\n", save->path);
+         // Avoid spamming down stderr ... :)
+         if (first_log)
+         {
+            SSNES_LOG("Autosaving SRAM to \"%s\", will continue to autosave every %u seconds ...\n", save->path, save->interval);
+            first_log = false;
+         }
+
          bool failed = false;
          failed |= fwrite(save->buffer, 1, save->bufsize, file) != save->bufsize;
          failed |= fflush(file) != 0;
