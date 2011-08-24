@@ -426,6 +426,80 @@ static void set_basename(const char *path)
       *dst = '\0';
 }
 
+static void set_paths(const char *path)
+{
+   set_basename(path);
+
+   SSNES_LOG("Opening file: \"%s\"\n", path);
+   g_extern.rom_file = fopen(path, "rb");
+   if (g_extern.rom_file == NULL)
+   {
+      SSNES_ERR("Could not open file: \"%s\"\n", path);
+      exit(1);
+   }
+
+   if (!g_extern.has_set_save_path)
+      fill_pathname_noext(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
+   if (!g_extern.has_set_state_path)
+      fill_pathname_noext(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
+
+   if (path_is_directory(g_extern.savefile_name_srm))
+   {
+      fill_pathname_dir(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
+      SSNES_LOG("Redirecting save file to \"%s\".\n", g_extern.savefile_name_srm);
+   }
+   if (path_is_directory(g_extern.savestate_name))
+   {
+      fill_pathname_dir(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
+      SSNES_LOG("Redirecting save state to \"%s\".\n", g_extern.savestate_name);
+   }
+   if (*g_extern.config_path && path_is_directory(g_extern.config_path))
+   {
+      fill_pathname_dir(g_extern.config_path, g_extern.basename, ".cfg", sizeof(g_extern.config_path));
+      SSNES_LOG("Redirecting config file to \"%s\".\n", g_extern.config_path);
+      if (!path_file_exists(g_extern.config_path))
+      {
+         *g_extern.config_path = '\0';
+         SSNES_LOG("Did not find config file. Using system default.\n");
+      }
+   }
+}
+
+static void verify_stdin_paths(void)
+{
+   if (strlen(g_extern.savefile_name_srm) == 0)
+   {
+      SSNES_ERR("Need savefile path argument (--save) when reading rom from stdin.\n");
+      print_help();
+      exit(1);
+   }
+   else if (strlen(g_extern.savestate_name) == 0)
+   {
+      SSNES_ERR("Need savestate path argument (--savestate) when reading rom from stdin.\n");
+      print_help();
+      exit(1);
+   }
+
+   if (path_is_directory(g_extern.savefile_name_srm))
+   {
+      SSNES_ERR("Cannot specify directory for path argument (--save) when reading from stdin.\n");
+      print_help();
+      exit(1);
+   }
+   else if (path_is_directory(g_extern.savestate_name))
+   {
+      SSNES_ERR("Cannot specify directory for path argument (--savestate) when reading from stdin.\n");
+      print_help();
+      exit(1);
+   }
+   else if (path_is_directory(g_extern.config_path))
+   {
+      SSNES_ERR("Cannot specify directory for config file (--config) when reading from stdin.\n");
+      print_help();
+      exit(1);
+   }
+}
+
 static void parse_input(int argc, char *argv[])
 {
    if (argc < 2)
@@ -634,7 +708,7 @@ static void parse_input(int argc, char *argv[])
             switch (val)
             {
                case 'p':
-                  g_extern.netplay_port = strtol(optarg, NULL, 0);
+                  g_extern.netplay_port = strtoul(optarg, NULL, 0);
                   break;
                case 'B':
                   strlcpy(g_extern.bps_name, optarg, sizeof(g_extern.bps_name));
@@ -656,77 +730,9 @@ static void parse_input(int argc, char *argv[])
    }
 
    if (optind < argc)
-   {
-      set_basename(argv[optind]);
-     
-      SSNES_LOG("Opening file: \"%s\"\n", argv[optind]);
-      g_extern.rom_file = fopen(argv[optind], "rb");
-      if (g_extern.rom_file == NULL)
-      {
-         SSNES_ERR("Could not open file: \"%s\"\n", argv[optind]);
-         exit(1);
-      }
-
-      if (!g_extern.has_set_save_path)
-         fill_pathname_noext(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
-      if (!g_extern.has_set_state_path)
-         fill_pathname_noext(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
-
-      if (path_is_directory(g_extern.savefile_name_srm))
-      {
-         fill_pathname_dir(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
-         SSNES_LOG("Redirecting save file to \"%s\".\n", g_extern.savefile_name_srm);
-      }
-      if (path_is_directory(g_extern.savestate_name))
-      {
-         fill_pathname_dir(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
-         SSNES_LOG("Redirecting save state to \"%s\".\n", g_extern.savestate_name);
-      }
-      if (*g_extern.config_path && path_is_directory(g_extern.config_path))
-      {
-         fill_pathname_dir(g_extern.config_path, g_extern.basename, ".cfg", sizeof(g_extern.config_path));
-         SSNES_LOG("Redirecting config file to \"%s\".\n", g_extern.config_path);
-         if (!path_file_exists(g_extern.config_path))
-         {
-            *g_extern.config_path = '\0';
-            SSNES_LOG("Did not find config file. Using system default.\n");
-         }
-      }
-   }
-   else // Read ROM from stdin.
-   {
-      if (strlen(g_extern.savefile_name_srm) == 0)
-      {
-         SSNES_ERR("Need savefile path argument (--save) when reading rom from stdin.\n");
-         print_help();
-         exit(1);
-      }
-      else if (strlen(g_extern.savestate_name) == 0)
-      {
-         SSNES_ERR("Need savestate path argument (--savestate) when reading rom from stdin.\n");
-         print_help();
-         exit(1);
-      }
-
-      if (path_is_directory(g_extern.savefile_name_srm))
-      {
-         SSNES_ERR("Cannot specify directory for path argument (--save) when reading from stdin.\n");
-         print_help();
-         exit(1);
-      }
-      else if (path_is_directory(g_extern.savestate_name))
-      {
-         SSNES_ERR("Cannot specify directory for path argument (--savestate) when reading from stdin.\n");
-         print_help();
-         exit(1);
-      }
-      else if (path_is_directory(g_extern.config_path))
-      {
-         SSNES_ERR("Cannot specify directory for config file (--config) when reading from stdin.\n");
-         print_help();
-         exit(1);
-      }
-   }
+      set_paths(argv[optind]);
+   else
+      verify_stdin_paths();
 }
 
 // TODO: Add rest of the controllers.
@@ -1127,7 +1133,7 @@ static void check_savestates(void)
    bool should_savestate = driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY);
    if (should_savestate && !old_should_savestate)
    {
-      char save_path[strlen(g_extern.savestate_name) * 2];
+      char save_path[MAXPATHLEN];
 
       if (g_extern.state_slot > 0)
          snprintf(save_path, sizeof(save_path), "%s%u", g_extern.savestate_name, g_extern.state_slot);
@@ -1153,7 +1159,7 @@ static void check_savestates(void)
    bool should_loadstate = driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY);
    if (!should_savestate && should_loadstate && !old_should_loadstate)
    {
-      char load_path[strlen(g_extern.savestate_name) * 2];
+      char load_path[MAXPATHLEN];
 
       if (g_extern.state_slot > 0)
          snprintf(load_path, sizeof(load_path), "%s%u", g_extern.savestate_name, g_extern.state_slot);
