@@ -682,6 +682,11 @@ static void parse_input(int argc, char *argv[])
          fill_pathname_dir(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
          SSNES_LOG("Redirecting save state to \"%s\".\n", g_extern.savestate_name);
       }
+      if (*g_extern.config_path && path_is_directory(g_extern.config_path))
+      {
+         fill_pathname_dir(g_extern.config_path, g_extern.basename, ".cfg", sizeof(g_extern.config_path));
+         SSNES_LOG("Redirecting config file to \"%s\".\n", g_extern.config_path);
+      }
    }
    else // Read ROM from stdin.
    {
@@ -700,13 +705,19 @@ static void parse_input(int argc, char *argv[])
 
       if (path_is_directory(g_extern.savefile_name_srm))
       {
-         SSNES_ERR("Cannot specify directory for path argument (--save) when reading from from stdin.\n");
+         SSNES_ERR("Cannot specify directory for path argument (--save) when reading from stdin.\n");
          print_help();
          exit(1);
       }
       else if (path_is_directory(g_extern.savestate_name))
       {
-         SSNES_ERR("Cannot specify directory for path argument (--savestate) when reading from from stdin.\n");
+         SSNES_ERR("Cannot specify directory for path argument (--savestate) when reading from stdin.\n");
+         print_help();
+         exit(1);
+      }
+      else if (path_is_directory(g_extern.config_path))
+      {
+         SSNES_ERR("Cannot specify directory for config file (--config) when reading from stdin.\n");
          print_help();
          exit(1);
       }
