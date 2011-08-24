@@ -41,6 +41,7 @@ char** dir_list_new(const char *dir, const char *ext);
 void dir_list_free(char **dir_list);
 
 bool path_is_directory(const char *path);
+bool path_file_exists(const char *path);
 
 // Path-name operations.
 // Replaces filename extension with replace.

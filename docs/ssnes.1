@@ -55,6 +55,7 @@ Should this not be defined, \fBssnes\fR will look in platform specific paths to 
 /etc/ssnes.cfg (when installed), or ssnes.cfg in the source tarball serves as a skeleton configuration file.
 If PATH is a directory, SSNES will treat this as the config file directory, where the state file name will be inferred from the rom name (*.cfg).
 When loading a rom from stdin, the path must be a full path, however.
+If a config cannot be found when using directory path, the default config path will be used instead.
 
 .IP
 Unix-like systems will look in $XDG_CONFIG_HOME/ssnes/ssnes.cfg first. Then it will try $HOME/.ssnes.cfg. Last, it will try /etc/ssnes.cfg. If no configuration is found, default settings will be assumed. A configuration file does not need to define every possible option, only those that should be overridden.

@@ -867,6 +867,17 @@ bool path_is_directory(const char *path)
 #endif
 }
 
+bool path_file_exists(const char *path)
+{
+   FILE *dummy = fopen(path, "rb");
+   if (dummy)
+   {
+      fclose(dummy);
+      return true;
+   }
+   return false;
+}
+
 void fill_pathname(char *out_path, const char *in_path, const char *replace, size_t size)
 {
    char tmp_path[strlen(in_path) + 1];

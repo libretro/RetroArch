@@ -686,6 +686,11 @@ static void parse_input(int argc, char *argv[])
       {
          fill_pathname_dir(g_extern.config_path, g_extern.basename, ".cfg", sizeof(g_extern.config_path));
          SSNES_LOG("Redirecting config file to \"%s\".\n", g_extern.config_path);
+         if (!path_file_exists(g_extern.config_path))
+         {
+            *g_extern.config_path = '\0';
+            SSNES_LOG("Did not find config file. Using system default.\n");
+         }
       }
    }
    else // Read ROM from stdin.
