@@ -3,6 +3,11 @@
 check_switch_c C99 -std=gnu99
 check_critical C99 "Cannot find C99 compatible compiler."
 
+# There are still broken 64-bit Linux distros out there. :)
+if [ -d /usr/lib64 ]; then
+   add_library_dirs /usr/lib64
+fi
+
 if [ "$OS" = BSD ]; then
    DYLIB=-lc
 else
@@ -57,6 +62,7 @@ if [ $HAVE_SDL_NEW = yes ]; then
 fi
 
 check_lib CG -lCg cgCreateContext
+
 check_pkgconf XML libxml-2.0
 check_pkgconf SDL_IMAGE SDL_image
 
