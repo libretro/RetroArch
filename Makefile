@@ -172,11 +172,11 @@ config.mk: configure qb/*
 	@exit 1
 
 ssnes: $(OBJ)
-	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS)
+	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 	@$(if $(Q), $(shell echo echo LD $@),)
 
 tools/ssnes-joyconfig: $(JOYCONFIG_OBJ)
-	$(Q)$(CC) -o $@ $(JOYCONFIG_OBJ) $(SDL_LIBS) $(LDFLAGS)
+	$(Q)$(CC) -o $@ $(JOYCONFIG_OBJ) $(SDL_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 	@$(if $(Q), $(shell echo echo LD $@),)
 
 %.o: %.c config.h config.mk $(HEADERS)
