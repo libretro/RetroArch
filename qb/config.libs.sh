@@ -61,7 +61,8 @@ if [ $HAVE_SDL_NEW = yes ]; then
    exit 1
 fi
 
-check_lib CG -lCg cgCreateContext
+# On some distros, -lCg doesn't link against -lstdc++ it seems ...
+check_lib_cxx CG -lCg cgCreateContext
 
 check_pkgconf XML libxml-2.0
 check_pkgconf SDL_IMAGE SDL_image
