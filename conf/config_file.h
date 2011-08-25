@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stddef.h>
 
 typedef struct config_file config_file_t;
 
@@ -48,6 +49,8 @@ bool config_get_hex(config_file_t *conf, const char *entry, unsigned *in);
 bool config_get_char(config_file_t *conf, const char *entry, char *in);
 // Extracts an allocated string in *in. This must be free()-d if this function succeeds.
 bool config_get_string(config_file_t *conf, const char *entry, char **in);
+// Extracts a string to a preallocated buffer. Avoid memory allocation.
+bool config_get_array(config_file_t *conf, const char *entry, char *in, size_t size);
 // Extracts a boolean from config. Valid boolean true are "true" and "1". Valid false are "false" and "0". Other values will be treated as an error.
 bool config_get_bool(config_file_t *conf, const char *entry, bool *in);
 

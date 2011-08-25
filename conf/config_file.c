@@ -21,6 +21,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include "strl.h"
 
 struct entry_list
 {
@@ -247,7 +248,7 @@ bool config_get_char(config_file_t *conf, const char *key, char *in)
    {
       if (strcmp(key, list->key) == 0)
       {
-         if (strlen(list->value) > 1)
+         if (list->value[0] && list->value[1])
             return false;
          *in = *list->value;
          return true;
@@ -266,6 +267,22 @@ bool config_get_string(config_file_t *conf, const char *key, char **str)
       if (strcmp(key, list->key) == 0)
       {
          *str = strdup(list->value);
+         return true;
+      }
+      list = list->next;
+   }
+   return false;
+}
+
+bool config_get_array(config_file_t *conf, const char *key, char *buf, size_t size)
+{
+   struct entry_list *list = conf->entries;
+
+   while (list != NULL)
+   {
+      if (strcmp(key, list->key) == 0)
+      {
+         strlcpy(buf, list->value, size);
          return true;
       }
       list = list->next;

@@ -261,10 +261,9 @@ static config_file_t *open_default_config_file(void)
    g_settings.var = tmp_double
 
 #define CONFIG_GET_STRING(var, key) do { \
-   if (config_get_string(conf, key, &tmp_str)) \
+   if (config_get_array(conf, key, tmp_str, sizeof(tmp_str))) \
    { \
       strlcpy(g_settings.var, tmp_str, sizeof(g_settings.var)); \
-      free(tmp_str); \
    } \
 } while(0)
 
@@ -294,7 +293,7 @@ static void parse_config_file(void)
    int tmp_int;
    double tmp_double;
    bool tmp_bool;
-   char *tmp_str;
+   char tmp_str[MAXPATHLEN];
 
    CONFIG_GET_DOUBLE(video.xscale, "video_xscale");
    CONFIG_GET_DOUBLE(video.yscale, "video_yscale");
@@ -339,7 +338,7 @@ static void parse_config_file(void)
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_XML)
-   if (config_get_string(conf, "video_shader_type", &tmp_str))
+   if (config_get_array(conf, "video_shader_type", tmp_str, sizeof(tmp_str)))
    {
       if (strcmp("cg", tmp_str) == 0)
          g_settings.video.shader_type = SSNES_SHADER_CG;
@@ -349,8 +348,6 @@ static void parse_config_file(void)
          g_settings.video.shader_type = SSNES_SHADER_AUTO;
       else if (strcmp("none", tmp_str) == 0)
          g_settings.video.shader_type = SSNES_SHADER_NONE;
-
-      free(tmp_str);
    }
 #endif
 
