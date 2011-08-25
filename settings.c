@@ -260,12 +260,8 @@ static config_file_t *open_default_config_file(void)
 #define CONFIG_GET_DOUBLE(var, key) if (config_get_double(conf, key, &tmp_double)) \
    g_settings.var = tmp_double
 
-#define CONFIG_GET_STRING(var, key) do { \
-   if (config_get_array(conf, key, tmp_str, sizeof(tmp_str))) \
-   { \
-      strlcpy(g_settings.var, tmp_str, sizeof(g_settings.var)); \
-   } \
-} while(0)
+#define CONFIG_GET_STRING(var, key) \
+   config_get_array(conf, key, g_settings.var, sizeof(g_settings.var))
 
 #ifdef HAVE_CONFIGFILE
 static void parse_config_file(void)
