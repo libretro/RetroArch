@@ -29,6 +29,7 @@
 #include <ctype.h>
 
 struct settings g_settings;
+struct global g_extern;
 
 #ifdef HAVE_CONFIGFILE
 static void read_keybinds(config_file_t *conf);
@@ -184,7 +185,6 @@ static void parse_config_file(void);
 
 void parse_config(void)
 {
-   memset(&g_settings, 0, sizeof(struct settings));
    set_defaults();
 
 #ifdef HAVE_CONFIGFILE
@@ -204,7 +204,7 @@ static config_file_t *open_default_config_file(void)
       const char *appdata = getenv("APPDATA");
       if (appdata)
       {
-         char conf_path[strlen(appdata) + strlen("/ssnes.cfg ")];
+         char conf_path[MAXPATHLEN];
          strlcpy(conf_path, appdata, sizeof(conf_path));
          strlcat(conf_path, "/ssnes.cfg", sizeof(conf_path));
          conf = config_file_new(conf_path);
@@ -214,7 +214,7 @@ static config_file_t *open_default_config_file(void)
    const char *home = getenv("HOME");
    if (home)
    {
-      char conf_path[strlen(home) + strlen("/.ssnes.cfg ")];
+      char conf_path[MAXPATHLEN];
       strlcpy(conf_path, home, sizeof(conf_path));
       strlcat(conf_path, "/.ssnes.cfg", sizeof(conf_path));
       conf = config_file_new(conf_path);
@@ -229,14 +229,14 @@ static config_file_t *open_default_config_file(void)
    const char *home = getenv("HOME");
    if (xdg)
    {
-      char conf_path[strlen(xdg) + strlen("/ssnes/ssnes.cfg ")];
+      char conf_path[MAXPATHLEN];
       strlcpy(conf_path, xdg, sizeof(conf_path));
       strlcat(conf_path, "/ssnes/ssnes.cfg", sizeof(conf_path));
       conf = config_file_new(conf_path);
    }
    else if (home)
    {
-      char conf_path[strlen(home) + strlen("/.ssnes.cfg ")];
+      char conf_path[MAXPATHLEN];
       strlcpy(conf_path, home, sizeof(conf_path));
       strlcat(conf_path, "/.ssnes.cfg", sizeof(conf_path));
       conf = config_file_new(conf_path);

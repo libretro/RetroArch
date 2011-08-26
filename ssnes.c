@@ -49,14 +49,8 @@
 #include "SDL.h" 
 // OSX seems to really need -lSDLmain, 
 // so we include SDL.h here so it can hack our main.
-// I had issues including this in Win32 for some reason. :)
+// We want to use -mconsole in Win32, so we need main().
 #endif
-
-struct global g_extern = {
-   .video_active = true,
-   .audio_active = true,
-   .game_type = SSNES_CART_NORMAL,
-};
 
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
 static void set_fast_forward_button(bool new_button_state, bool new_hold_button_state)
@@ -1555,9 +1549,20 @@ static void fill_title_buf(void)
       snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "SSNES");
 }
 
+static void init_state(void)
+{
+   // Make absolutely sure our big global structs are in-fact zeroed out.
+   memset(&g_extern, 0, sizeof(g_extern));
+   memset(&g_settings, 0, sizeof(g_settings));
+   g_extern.video_active = true;
+   g_extern.audio_active = true;
+   g_extern.game_type = SSNES_CART_NORMAL;
+}
 
 int main(int argc, char *argv[])
 {
+   init_state();
+
    parse_input(argc, argv);
    parse_config();
    init_dlsym();
@@ -1704,4 +1709,5 @@ error:
 
    return 1;
 }
+
 
