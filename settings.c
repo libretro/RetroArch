@@ -404,30 +404,25 @@ static void parse_config_file(void)
 
    CONFIG_GET_STRING(cheat_database, "cheat_database_path");
 
-   char *dir_path;
-   if (!g_extern.has_set_save_path && config_get_string(conf, "savefile_directory", &dir_path))
+   if (!g_extern.has_set_save_path && config_get_array(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
-      if (path_is_directory(dir_path))
+      if (path_is_directory(tmp_str))
       {
-         strlcpy(g_extern.savefile_name_srm, dir_path, sizeof(g_extern.savefile_name_srm));
+         strlcpy(g_extern.savefile_name_srm, tmp_str, sizeof(g_extern.savefile_name_srm));
          fill_pathname_dir(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
       }
       else
          SSNES_WARN("savefile_directory is not a directory, ignoring ...!\n");
-
-      free(dir_path);
    }
-   if (!g_extern.has_set_state_path && config_get_string(conf, "savestate_directory", &dir_path))
+   if (!g_extern.has_set_state_path && config_get_array(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
-      if (path_is_directory(dir_path))
+      if (path_is_directory(tmp_str))
       {
-         strlcpy(g_extern.savestate_name, dir_path, sizeof(g_extern.savestate_name));
+         strlcpy(g_extern.savestate_name, tmp_str, sizeof(g_extern.savestate_name));
          fill_pathname_dir(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
       }
       else
          SSNES_WARN("savestate_directory is not a directory, ignoring ...\n");
-
-      free(dir_path);
    }
 
    read_keybinds(conf);
