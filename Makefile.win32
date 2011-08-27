@@ -159,7 +159,7 @@ clean:
 	rm -f tools/*.o
 
 dist: all
-	zip -r ssnes-win32-0.7.zip $(TARGET) ssnes.cfg snes.dll libxml2.dll iconv.dll zlib1.dll SDL.dll freetype6.dll rsound.dll pthreadGC2.dll cg.dll cgGL.dll libjpeg-8.dll libpng15-15.dll python32.dll SDL_image.dll $(JTARGET)
+	zip -r ssnes-win32-0.8.zip $(TARGET) ssnes.cfg snes.dll libxml2.dll iconv.dll zlib1.dll SDL.dll freetype6.dll rsound.dll pthreadGC2.dll cg.dll cgGL.dll libjpeg-8.dll libpng15-15.dll python32.dll SDL_image.dll $(JTARGET)
 
 libs:
 	wget https://github.com/downloads/Themaister/SSNES/SSNES-win32-libs.zip --no-check-certificate
