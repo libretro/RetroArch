@@ -8,6 +8,7 @@ CXX = g++
 
 HAVE_DINPUT = 1
 HAVE_SDL = 1
+HAVE_SDL_IMAGE = 1
 HAVE_XML = 1
 HAVE_FREETYPE = 1
 HAVE_XAUDIO = 1
@@ -17,7 +18,7 @@ HAVE_DYLIB = 1
 HAVE_NETPLAY = 1
 HAVE_FBO = 1
 HAVE_CG = 1
-HAVE_PYTHON = 0
+HAVE_PYTHON = 1
 HAVE_FFMPEG = 1
 libsnes ?= -lsnes
 
@@ -39,6 +40,11 @@ ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl.o gfx/gl.o input/sdl.o audio/sdl.o fifo_buffer.o
    LIBS += $(SDL_LIBS) -lopengl32 
    DEFINES += $(SDL_CFLAGS) -DHAVE_SDL
+endif
+
+ifeq ($(HAVE_SDL_IMAGE), 1)
+   LIBS += -lSDL_image
+   DEFINES += -DHAVE_SDL_IMAGE
 endif
 
 ifeq ($(HAVE_CG), 1)
