@@ -33,7 +33,7 @@ SDL_CFLAGS = -ISDL
 ifeq ($(HAVE_XML), 1)
    OBJ += gfx/shader_glsl.o gfx/image.o gfx/snes_state.o sha256.o cheats.o
    DEFINES += -Ilibxml2 -DHAVE_XML
-   LIBS += -lxml2
+   LIBS += -lxml2 -liconv -lz
 endif
 
 ifeq ($(HAVE_SDL), 1)
@@ -84,7 +84,7 @@ endif
 ifeq ($(HAVE_FREETYPE), 1)
    OBJ += gfx/fonts.o
    DEFINES += -DHAVE_FREETYPE -Ifreetype2
-   LIBS += -lfreetype
+   LIBS += -lfreetype -liconv -lz
 endif
 
 ifeq ($(DYNAMIC), 1)
@@ -158,7 +158,7 @@ clean:
 	rm -f tools/*.o
 
 dist: all
-	zip -r ssnes-win64-0.8.zip $(TARGET) $(JTARGET) ssnes.cfg snes.dll avcodec-53.dll avdevice-53.dll avfilter-2.dll avformat-53.dll avutil-51.dll cg.dll cgGL.dll libfreetype-6.dll libxml2-2.dll postproc-51.dll rsound.dll SDL.dll swscale-2.dll libiconv-2.dll SDL_image.dll python32.dll
+	zip -r ssnes-win64-0.8.zip $(TARGET) $(JTARGET) ssnes.cfg snes.dll avcodec-53.dll avdevice-53.dll avfilter-2.dll avformat-53.dll avutil-51.dll cg.dll cgGL.dll postproc-51.dll rsound.dll SDL.dll swscale-2.dll libiconv-2.dll SDL_image.dll python32.dll libjpeg-8.dll zlib1.dll
 
 libs:
 	wget https://github.com/downloads/Themaister/SSNES/SSNES-win64-libs.zip --no-check-certificate
