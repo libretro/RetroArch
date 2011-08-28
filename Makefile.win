@@ -85,7 +85,7 @@ endif
 ifeq ($(HAVE_FREETYPE), 1)
    OBJ += gfx/fonts.o
    DEFINES += -DHAVE_FREETYPE -Ifreetype2
-   LIBS += -lz -lfreetype6
+   LIBS += -lfreetype -lz
 endif
 
 ifeq ($(DYNAMIC), 1)
@@ -115,7 +115,7 @@ ifeq ($(HAVE_DINPUT), 1)
 endif
 
 ifeq ($(HAVE_FFMPEG), 1)
-   LIBS += -lavformat -lavcodec -lavutil -lswscale -lws2_32 -lzlib1
+   LIBS += -lavformat -lavcodec -lavutil -lswscale -lws2_32 -lz
    DEFINES += -DHAVE_FFMPEG -Iffmpeg
    OBJ += record/ffemu.o
 endif
@@ -143,7 +143,7 @@ $(TARGET): $(OBJ)
 
 
 $(JTARGET): $(JOBJ)
-	$(Q)$(CC) -o $@ $(JOBJ) $(SDL_LIBS) $(LDFLAGS)
+	$(Q)$(CC) -o $@ $(JOBJ) -lSDL $(LDFLAGS)
 	@$(if $(Q), $(shell echo echo LD $@),)
 
 clean:
