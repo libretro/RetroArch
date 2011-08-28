@@ -69,7 +69,7 @@ endif
 ifeq ($(HAVE_XML), 1)
    OBJ += gfx/shader_glsl.o gfx/image.o gfx/snes_state.o sha256.o cheats.o
    DEFINES += -Ilibxml2 -DHAVE_XML
-   LIBS += -lxml2
+   LIBS += -lxml2 -liconv
 endif
 
 ifeq ($(HAVE_DYLIB), 1)
