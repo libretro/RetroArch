@@ -21,7 +21,7 @@ ifeq ($(SLIM),)
    HAVE_FBO = 1
    HAVE_CG = 1
    HAVE_PYTHON = 1
-   HAVE_FFMPEG = 0
+   HAVE_FFMPEG = 1
 endif
 
 libsnes ?= -lsnes
@@ -31,13 +31,10 @@ DEFINES = -I. -DHAVE_CONFIGFILE
 LDFLAGS = -L. -static-libgcc -s
 LDCXXFLAGS = -static-libstdc++
 
-SDL_LIBS = -lSDL
-SDL_CFLAGS = -ISDL
-
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl.o gfx/gl.o input/sdl.o audio/sdl.o fifo_buffer.o
-   LIBS += $(SDL_LIBS) -lopengl32
-   DEFINES += $(SDL_CFLAGS) -DHAVE_SDL
+   LIBS += -lSDL -lopengl32
+   DEFINES += -ISDL -DHAVE_SDL
 endif
 
 ifeq ($(HAVE_SDL_IMAGE), 1)
@@ -71,7 +68,7 @@ endif
 
 ifeq ($(HAVE_XML), 1)
    OBJ += gfx/shader_glsl.o gfx/image.o gfx/snes_state.o sha256.o cheats.o
-   DEFINES += $(XML_CFLAGS) -DHAVE_XML
+   DEFINES += -Ilibxml2 -DHAVE_XML
    LIBS += -lxml2
 endif
 
@@ -162,11 +159,18 @@ clean:
 	rm -f ssnes-joyconfig.exe
 	rm -f tools/*.o
 
-dist: all
-	zip -r ssnes-win32-0.8.zip $(TARGET) ssnes.cfg snes.dll libxml2.dll iconv.dll zlib1.dll SDL.dll freetype6.dll rsound.dll pthreadGC2.dll cg.dll cgGL.dll libjpeg-8.dll libpng15-15.dll python32.dll SDL_image.dll $(JTARGET)
+dist_x86: all
+	zip -r ssnes-win32-0.8.zip $(TARGET) $(JTARGET) ssnes.cfg snes.dll
 
-libs:
+dist_x86_64: all
+	zip -r ssnes-win64-0.8.zip $(TARGET) $(JTARGET) ssnes.cfg snes.dll
+
+libs_x86:
 	wget https://github.com/downloads/Themaister/SSNES/SSNES-win32-libs.zip --no-check-certificate
 	unzip SSNES-win32-libs.zip
 
-.PHONY: all install uninstall clean dist libs
+libs_x86_64:
+	wget https://github.com/downloads/Themaister/SSNES/SSNES-win64-libs.zip --no-check-certificate
+	unzip SSNES-win64-libs.zip
+
+.PHONY: all install uninstall clean dist_x86 dist_x86_64 libs_x86 libs_x86_64
