@@ -356,7 +356,7 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, img.width);
    glTexImage2D(GL_TEXTURE_2D,
-         0, GL_RGBA, img.width, img.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, img.pixels);
+         0, GL_RGBA, img.width, img.height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8, img.pixels);
 
    pglActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, 0);

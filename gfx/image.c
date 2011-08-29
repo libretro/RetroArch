@@ -63,7 +63,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
             uint32_t g = (src[x] & fmt->Gmask) >> fmt->Gshift;
             uint32_t b = (src[x] & fmt->Bmask) >> fmt->Bshift;
             uint32_t a = (src[x] & fmt->Amask) >> fmt->Ashift;
-            dst[x] = (r << 24) | (g << 16) | (b << 8) | a;
+            dst[x] = (b << 24) | (g << 16) | (r << 8) | a;
          }
       }
    }
@@ -84,7 +84,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
             uint32_t r = (color & fmt->Rmask) >> fmt->Rshift;
             uint32_t g = (color & fmt->Gmask) >> fmt->Gshift;
             uint32_t b = (color & fmt->Bmask) >> fmt->Bshift;
-            dst[x] = (r << 24) | (g << 16) | (b << 8) | 0xff;
+            dst[x] = (b << 24) | (g << 16) | (r << 8) | 0xff;
          }
       }
    }
