@@ -499,7 +499,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_type);
 
       glTexImage2D(GL_TEXTURE_2D,
-            0, GL_RGBA, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_RGBA,
+            0, GL_RGBA, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_BGRA,
             GL_UNSIGNED_INT_8_8_8_8, NULL);
    }
 
@@ -824,7 +824,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
                pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
                glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
                glTexImage2D(GL_TEXTURE_2D,
-                     0, GL_RGBA, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_RGBA,
+                     0, GL_RGBA, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_BGRA,
                      GL_UNSIGNED_INT_8_8_8_8, NULL);
 
                pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
@@ -1194,11 +1194,12 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->tex_h = 256 * video->input_scale;
 
    // Empty buffer that we use to clear out the texture with on res change.
-   gl->empty_buf = calloc(gl->base_size, gl->tex_w * gl->tex_h);
+   gl->empty_buf = calloc(gl->tex_w * gl->tex_h, gl->base_size);
 
    for (unsigned i = 0; i < 2; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
       glTexImage2D(GL_TEXTURE_2D,
             0, GL_RGBA, gl->tex_w, gl->tex_h, 0, gl->texture_type,
             gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
