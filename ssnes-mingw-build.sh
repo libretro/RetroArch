@@ -5,7 +5,8 @@
 ##########
 
 #### 
-## Tweak these to suit your environment. No not define to avoid building.
+## Tweak these to suit your environment.
+## Not defining the variable will avoid building that target.
 if [ -z "$MINGW32_BASE" ]; then
    MINGW32_BASE=i486-mingw32
 fi
