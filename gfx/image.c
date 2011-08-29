@@ -148,24 +148,24 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    {
       for (unsigned i = 0; i < width * height; i++)
       {
-         uint32_t r = tmp[i * 4 + 2];
-         uint32_t g = tmp[i * 4 + 1];
          uint32_t b = tmp[i * 4 + 0];
+         uint32_t g = tmp[i * 4 + 1];
+         uint32_t r = tmp[i * 4 + 2];
          uint32_t a = tmp[i * 4 + 3];
 
-         out_img->pixels[i] = (r << 24) | (g << 16) | (b << 8) | a;
+         out_img->pixels[i] = (b << 24) | (g << 16) | (r << 8) | a;
       }
    }
    else if (bits == 24)
    {
       for (unsigned i = 0; i < width * height; i++)
       {
-         uint32_t r = tmp[i * 3 + 2];
-         uint32_t g = tmp[i * 3 + 1];
          uint32_t b = tmp[i * 3 + 0];
+         uint32_t g = tmp[i * 3 + 1];
+         uint32_t r = tmp[i * 3 + 2];
          uint32_t a = 0xff;
 
-         out_img->pixels[i] = (r << 24) | (g << 16) | (b << 8) | a;
+         out_img->pixels[i] = (b << 24) | (g << 16) | (r << 8) | a;
       }
    }
    else
