@@ -7,14 +7,23 @@
 #### 
 ## Tweak these to suit your environment.
 ## Not defining the variable will avoid building that target.
-if [ -z "$MINGW32_BASE" ]; then
-   MINGW32_BASE=i486-mingw32
+## Set MINGW32_BASE and/or MINGW64_BASE to set toolchain prefix:
+## E.g.: i486-mingw32-gcc would get prefix "i486-mingw32".
+
+BUILD_32BIT=yes
+BUILD_64BIT=yes
+BUILD_PHOENIX_GUI=yes
+
+if [ ! -z "$NOBUILD_32BIT" ]; then
+   BUILD_32BIT=no
 fi
-if [ -z "$MINGW64_BASE" ]; then
-   MINGW64_BASE=x86_64-w64-mingw32
+if [ ! -z "$NOBUILD_64BIT" ]; then
+   BUILD_64BIT=no
+fi
+if [ ! -z "$NOBUILD_PHOENIX_GUI" ]; then
+   BUILD_PHOENIX_GUI=no
 fi
 
-BUILD_PHOENIX_GUI=yes
 ########
 
 die()
@@ -117,7 +126,7 @@ do_build()
    cd ..
 }
 
-if [ ! -z "$MINGW32_BASE" ]; then
+if [ "$BUILD_32BIT" = yes ]; then
    message "Building for 32-bit!"
    C_COMPILER=${MINGW32_BASE}-gcc
    CXX_COMPILER=${MINGW32_BASE}-g++
@@ -125,7 +134,7 @@ if [ ! -z "$MINGW32_BASE" ]; then
    do_build "SSNES-w32" "SSNES-win32-libs.zip" "x86"
 fi
 
-if [ ! -z "$MINGW64_BASE" ]; then
+if [ "$BUILD_64BIT" = yes ]; then
    message "Building for 64-bit!"
    C_COMPILER=${MINGW64_BASE}-gcc
    CXX_COMPILER=${MINGW64_BASE}-g++
