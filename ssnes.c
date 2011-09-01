@@ -401,7 +401,7 @@ static void print_help(void)
 #endif
 
 #ifdef HAVE_FFMPEG
-   puts("\t-r/--record: Path to record video file.\n\t\tSettings for video/audio codecs are found in config file.");
+   puts("\t-r/--record: Path to record video file.\n\t\tUsing .mkv extension is recommended, and codecs used are FFV1/FLAC.");
 #endif
    puts("\t-v/--verbose: Verbose logging.");
    puts("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM.");
