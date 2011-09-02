@@ -8,8 +8,8 @@ if [ -d /usr/lib64 ]; then
    add_library_dirs /usr/lib64
 fi
 
-if [ -d /opt/local ]; then
-   add_library_dirs /opt/local
+if [ -d /opt/local/lib ]; then
+   add_library_dirs /opt/local/lib
 fi
 
 if [ "$OS" = BSD ]; then
