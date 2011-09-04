@@ -383,7 +383,7 @@ static void* xv_init(const video_info_t *video, const input_driver_t **input, vo
 
    // Set colorkey to auto paint, so that Xv video output is always visible
    Atom atom = XInternAtom(xv->display, "XV_AUTOPAINT_COLORKEY", true);
-   if(atom != None) XvSetPortAttribute(xv->display, xv->port, atom, 1);
+   if (atom != None) XvSetPortAttribute(xv->display, xv->port, atom, 1);
 
    int format_count;
    XvImageFormatValues *format = XvListImageFormats(xv->display, xv->port, &format_count);
@@ -693,9 +693,9 @@ static void xv_free(void *data)
    shmctl(xv->shminfo.shmid, IPC_RMID, NULL);
    XFree(xv->image);
 
-   if(xv->window) 
+   if (xv->window) 
       XUnmapWindow(xv->display, xv->window);
-   if(xv->colormap) 
+   if (xv->colormap) 
       XFreeColormap(xv->display, xv->colormap);
 
    XCloseDisplay(xv->display);
