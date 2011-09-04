@@ -1046,7 +1046,10 @@ static void gl_set_nonblock_state(void *data, bool state)
       {
          SDL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalMESA");
       }
-      if (glx_swap_interval) glx_swap_interval(state ? 0 : 1);
+      if (glx_swap_interval) 
+         glx_swap_interval(state ? 0 : 1);
+      else 
+         SSNES_WARN("Could not find GLX VSync call. :(\n");
 #endif
    }
 }
