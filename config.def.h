@@ -150,6 +150,8 @@ static const unsigned font_size = 48;
 // Offset for where messages will be placed on-screen. Values are in range [0.0, 1.0].
 static const float message_pos_offset_x = 0.05;
 static const float message_pos_offset_y = 0.05;
+// Color of the message.
+static const uint32_t message_color = 0xffffff; // RGB hex value.
 
 // Render-to-texture before rendering to screen (multi-pass shaders)
 static const bool render_to_texture = false;

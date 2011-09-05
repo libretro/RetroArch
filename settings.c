@@ -135,6 +135,10 @@ static void set_defaults(void)
    g_settings.video.font_size = font_size;
    g_settings.video.msg_pos_x = message_pos_offset_x;
    g_settings.video.msg_pos_y = message_pos_offset_y;
+   
+   g_settings.video.msg_color_r = ((message_color >> 16) & 0xff) / 255.0f;
+   g_settings.video.msg_color_g = ((message_color >>  8) & 0xff) / 255.0f;
+   g_settings.video.msg_color_b = ((message_color >>  0) & 0xff) / 255.0f;
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_XML)
@@ -322,6 +326,14 @@ static void parse_config_file(void)
    CONFIG_GET_INT(video.font_size, "video_font_size");
    CONFIG_GET_DOUBLE(video.msg_pos_x, "video_message_pos_x");
    CONFIG_GET_DOUBLE(video.msg_pos_y, "video_message_pos_y");
+
+   unsigned msg_color;
+   if (config_get_hex(conf, "video_message_color", &msg_color))
+   {
+      g_settings.video.msg_color_r = ((msg_color >> 16) & 0xff) / 255.0f;
+      g_settings.video.msg_color_g = ((msg_color >>  8) & 0xff) / 255.0f;
+      g_settings.video.msg_color_b = ((msg_color >>  0) & 0xff) / 255.0f;
+   }
 #endif
 
    CONFIG_GET_BOOL(video.hires_record, "video_hires_record");

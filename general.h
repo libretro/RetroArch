@@ -98,6 +98,9 @@ struct settings
       unsigned font_size;
       float msg_pos_x;
       float msg_pos_y;
+      float msg_color_r;
+      float msg_color_g;
+      float msg_color_b;
 
       bool force_16bit;
       bool disable_composition;

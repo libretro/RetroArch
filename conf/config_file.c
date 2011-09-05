@@ -21,6 +21,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <errno.h>
 #include "strl.h"
 
 struct entry_list
@@ -216,8 +217,15 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
    {
       if (strcmp(key, list->key) == 0)
       {
-         *in = strtol(list->value, NULL, 0);
-         return true;
+         errno = 0;
+         int val = strtol(list->value, NULL, 0);
+         if (errno == 0)
+         {
+            *in = val;
+            return true;
+         }
+         return
+            false;
       }
       list = list->next;
    }
@@ -232,8 +240,15 @@ bool config_get_hex(config_file_t *conf, const char *key, unsigned *in)
    {
       if (strcmp(key, list->key) == 0)
       {
-         *in = strtol(list->value, NULL, 16);
-         return true;
+         errno = 0;
+         unsigned val = strtoul(list->value, NULL, 16);
+         if (errno == 0)
+         {
+            *in = val;
+            return true;
+         }
+         else
+            return false;
       }
       list = list->next;
    }

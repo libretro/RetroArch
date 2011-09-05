@@ -622,6 +622,7 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    // Need blending. 
    // Using fixed function pipeline here since we cannot guarantee presence of shaders (would be kinda overkill anyways).
    glEnable(GL_BLEND);
+   glColor4f(g_settings.video.msg_color_r, g_settings.video.msg_color_g, g_settings.video.msg_color_b, 1);
 
    struct font_output_list out;
    font_renderer_msg(gl->font, msg, &out);
@@ -654,10 +655,13 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    }
    font_renderer_free_output(&out);
 
+   glColor4f(1, 1, 1, 1);
+
    // Go back to old rendering path.
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
    glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes_flipped);
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+
    glDisable(GL_BLEND);
 #endif
 }
