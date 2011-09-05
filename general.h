@@ -138,6 +138,7 @@ struct settings
 
    char libsnes[MAXPATHLEN];
    char cheat_database[MAXPATHLEN];
+   char cheat_settings_path[MAXPATHLEN];
 
    char screenshot_directory[MAXPATHLEN];
 

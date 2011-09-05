@@ -415,6 +415,7 @@ static void parse_config_file(void)
    CONFIG_GET_INT(autosave_interval, "autosave_interval");
 
    CONFIG_GET_STRING(cheat_database, "cheat_database_path");
+   CONFIG_GET_STRING(cheat_settings_path, "cheat_settings_path");
 
    if (!g_extern.has_set_save_path && config_get_array(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {

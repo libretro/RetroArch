@@ -21,6 +21,14 @@
 #include "general.h"
 #include "strl.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_CONFIGFILE
+#include "conf/config_file.h"
+#endif
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
@@ -131,6 +139,104 @@ static bool xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
    return true;
 }
 
+static void cheat_manager_set_cheats(cheat_manager_t *handle)
+{
+   unsigned index = 0;
+   psnes_cheat_reset();
+   for (unsigned i = 0; i < handle->size; i++)
+   {
+      if (handle->cheats[handle->ptr].state)
+         psnes_cheat_set(index++, true, handle->cheats[handle->ptr].code);
+   }
+}
+
+static void cheat_manager_load_config(cheat_manager_t *handle, const char *path, const char *sha256)
+{
+#ifdef HAVE_CONFIGFILE
+   if (!(*path))
+      return;
+
+   config_file_t *conf = config_file_new(path);
+   if (!conf)
+      conf = config_file_new(NULL);
+
+   if (!conf)
+   {
+      SSNES_WARN("Failed to open XML cheat config ...\n");
+      return;
+   }
+
+   char *str;
+   if (!config_get_string(conf, sha256, &str))
+   {
+      config_file_free(conf);
+      return;
+   }
+
+   const char *num = strtok(str, ";");
+   while (num)
+   {
+      unsigned index = strtoul(num, NULL, 0);
+      if (index < handle->size)
+         handle->cheats[index].state = true;
+
+      num = strtok(NULL, ";");
+   }
+
+   free(str);
+   config_file_free(conf);
+
+   cheat_manager_set_cheats(handle);
+
+#else
+   (void)handle;
+   (void)path;
+   (void)sha256;
+#endif
+}
+
+static void cheat_manager_save_config(cheat_manager_t *handle, const char *path, const char *sha256)
+{
+#ifdef HAVE_CONFIGFILE
+   if (!(*path))
+      return;
+
+   config_file_t *conf = config_file_new(path);
+   if (!conf)
+   {
+      SSNES_ERR("Cannot save XML cheat settings!\n");
+      return;
+   }
+
+   char conf_str[512] = {0};
+   char tmp[32] = {0};
+
+   for (unsigned i = 0; i < handle->size; i++)
+   {
+      if (handle->cheats[i].state)
+      {
+         snprintf(tmp, sizeof(tmp), "%u;", i);
+         strlcat(conf_str, tmp, sizeof(conf_str));
+      }
+   }
+
+   if (*conf_str)
+      conf_str[strlen(conf_str) - 1] = '\0'; // Remove the trailing ';'
+
+   config_set_string(conf, sha256, conf_str);
+
+   if (!config_file_write(conf, path))
+      SSNES_ERR("Failed to write XML cheat settings to \"%s\"! Check permissions!\n", path);
+
+   config_file_free(conf);
+
+#else
+   (void)handle;
+   (void)path;
+   (void)sha256;
+#endif
+}
+
 cheat_manager_t* cheat_manager_new(const char *path)
 {
    psnes_cheat_reset();
@@ -188,7 +294,7 @@ cheat_manager_t* cheat_manager_new(const char *path)
          if (!sha256)
             continue;
 
-         if (memcmp(sha256, g_extern.sha256, 64) == 0)
+         if (strcmp((const char*)sha256, g_extern.sha256) == 0)
          {
             xmlFree(sha256);
             break;
@@ -213,6 +319,8 @@ cheat_manager_t* cheat_manager_new(const char *path)
       goto error;
    }
 
+   cheat_manager_load_config(handle, g_settings.cheat_settings_path, g_extern.sha256);
+
    xmlFreeDoc(doc);
    xmlFreeParserCtxt(ctx);
    return handle;
@@ -233,6 +341,7 @@ void cheat_manager_free(cheat_manager_t *handle)
 
    if (handle->cheats)
    {
+      cheat_manager_save_config(handle, g_settings.cheat_settings_path, g_extern.sha256);
       for (unsigned i = 0; i < handle->size; i++)
       {
          xmlFree(handle->cheats[i].desc);
@@ -254,18 +363,11 @@ static void cheat_manager_update(cheat_manager_t *handle)
    SSNES_LOG("%s\n", msg);
 }
 
+
 void cheat_manager_toggle(cheat_manager_t *handle)
 {
    handle->cheats[handle->ptr].state ^= true;
-
-   unsigned index = 0;
-   psnes_cheat_reset();
-   for (unsigned i = 0; i < handle->size; i++)
-   {
-      if (handle->cheats[handle->ptr].state)
-         psnes_cheat_set(index++, true, handle->cheats[handle->ptr].code);
-   }
-
+   cheat_manager_set_cheats(handle);
    cheat_manager_update(handle);
 }
 
