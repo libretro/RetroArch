@@ -176,7 +176,7 @@ static void set_defaults(void)
    for (unsigned i = 1; i < 5; i++)
       memcpy(g_settings.input.binds[i], snes_keybinds_rest, sizeof(snes_keybinds_rest));
 
-   g_settings.input.axis_threshold = AXIS_THRESHOLD;
+   g_settings.input.axis_threshold = axis_threshold;
    g_settings.input.netplay_client_swap_input = netplay_client_swap_input;
    for (int i = 0; i < MAX_PLAYERS; i++)
       g_settings.input.joypad_map[i] = i;

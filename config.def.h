@@ -224,7 +224,7 @@ static const bool netplay_client_swap_input = true;
 
 // Axis threshold (between 0.0 and 1.0)
 // How far an axis must be tilted to result in a button press
-#define AXIS_THRESHOLD 0.5
+static const float axis_threshold = 0.5;
 
 // To figure out which joypad buttons to use, check jstest or similar.
 // SDL sometimes reverses the axes for some odd reason, but hey. :D
