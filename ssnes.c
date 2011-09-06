@@ -1569,7 +1569,7 @@ int main(int argc, char *argv[])
    fill_title_buf();
 
    psnes_init();
-   if (strlen(g_extern.basename) > 0)
+   if (*g_extern.basename)
       psnes_set_cartridge_basename(g_extern.basename);
 
    SSNES_LOG("Version of libsnes API: %u.%u\n", psnes_library_revision_major(), psnes_library_revision_minor());
@@ -1578,10 +1578,6 @@ int main(int argc, char *argv[])
 
    if (!init_rom_file(g_extern.game_type))
       goto error;
-
-#ifdef HAVE_XML
-   init_cheats();
-#endif
 
    init_msg_queue();
    init_movie();
@@ -1596,7 +1592,7 @@ int main(int argc, char *argv[])
 
    if (!g_extern.netplay)
       init_rewind();
-
+      
 #ifdef HAVE_NETPLAY
    psnes_set_video_refresh(g_extern.netplay ? video_frame_net : video_frame);
    psnes_set_audio_sample(g_extern.netplay ? audio_sample_net : audio_sample);
@@ -1616,6 +1612,11 @@ int main(int argc, char *argv[])
 
    if (!g_extern.bsv_movie_playback && !g_extern.netplay_is_client)
       init_autosave();
+      
+#ifdef HAVE_XML
+   if (!g_extern.netplay && !g_extern.bsv_movie)
+      init_cheats();
+#endif
 
    // Main loop
    for(;;)
