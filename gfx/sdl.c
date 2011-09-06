@@ -45,11 +45,16 @@ struct sdl_video
    bool rgb32;
    bool upsample;
 
+   bool render32;
+
    void (*convert_15_func)(uint16_t*, unsigned, const uint16_t*, unsigned, unsigned, unsigned, const SDL_PixelFormat*);
    void (*convert_32_func)(uint32_t*, unsigned, const uint32_t*, unsigned, unsigned, unsigned, const SDL_PixelFormat*);
 
 #ifdef HAVE_FREETYPE
    font_renderer_t *font;
+   uint8_t font_r;
+   uint8_t font_g;
+   uint8_t font_b;
 #endif
 };
 
@@ -78,7 +83,29 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
    if (*font_path)
    {
       vid->font = font_renderer_new(font_path, font_size);
-      if (!vid->font)
+      if (vid->font)
+      {
+         int r = g_settings.video.msg_color_r * 255;
+         int g = g_settings.video.msg_color_g * 255;
+         int b = g_settings.video.msg_color_b * 255;
+
+         r = r < 0 ? 0 : (r > 255 ? 255 : r);
+         g = g < 0 ? 0 : (g > 255 ? 255 : g);
+         b = b < 0 ? 0 : (b > 255 ? 255 : b);
+
+         // RGB888 -> RGB555
+         if (!vid->render32)
+         {
+            r >>= 3;
+            g >>= 3;
+            b >>= 3;
+         }
+
+         vid->font_r = r;
+         vid->font_g = g;
+         vid->font_b = b;
+      }
+      else
          SSNES_WARN("Failed to init font.\n");
    }
 #else
@@ -128,9 +155,9 @@ static void sdl_render_msg_15(sdl_video_t *vid, SDL_Surface *buffer, const char 
                unsigned g = (out_pix >> gshift) & 0x1f;
                unsigned b = (out_pix >> bshift) & 0x1f;
 
-               unsigned out_r = (r * (256 - blend) + 0x1f * blend) >> 8;
-               unsigned out_g = (g * (256 - blend) + 0x1f * blend) >> 8;
-               unsigned out_b = (b * (256 - blend) + 0x1f * blend) >> 8;
+               unsigned out_r = (r * (256 - blend) + vid->font_r * blend) >> 8;
+               unsigned out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
+               unsigned out_b = (b * (256 - blend) + vid->font_b * blend) >> 8;
                out[x] = (out_r << rshift) | (out_g << gshift) | (out_b << bshift);
             }
          }
@@ -189,9 +216,9 @@ static void sdl_render_msg_32(sdl_video_t *vid, SDL_Surface *buffer, const char 
                unsigned g = (out_pix >> gshift) & 0xff;
                unsigned b = (out_pix >> bshift) & 0xff;
 
-               unsigned out_r = (r * (256 - blend) + 0xff * blend) >> 8;
-               unsigned out_g = (g * (256 - blend) + 0xff * blend) >> 8;
-               unsigned out_b = (b * (256 - blend) + 0xff * blend) >> 8;
+               unsigned out_r = (r * (256 - blend) + vid->font_r * blend) >> 8;
+               unsigned out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
+               unsigned out_b = (b * (256 - blend) + vid->font_b * blend) >> 8;
                out[x] = (out_r << rshift) | (out_g << gshift) | (out_b << bshift);
             }
          }
@@ -232,13 +259,15 @@ static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    if (!video->fullscreen)
       SSNES_LOG("Creating window @ %ux%u\n", video->width, video->height);
 
-   vid->screen = SDL_SetVideoMode(video->width, video->height, (g_settings.video.force_16bit || !video->rgb32) ? 15 : 32, SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
+   vid->render32 = video->rgb32 && !g_settings.video.force_16bit;
+   vid->screen = SDL_SetVideoMode(video->width, video->height, vid->render32 ? 32 : 15, SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
 
    if (!vid->screen && !g_settings.video.force_16bit && !video->rgb32)
    {
       vid->upsample = true;
       vid->screen = SDL_SetVideoMode(video->width, video->height, 32, SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
       SSNES_WARN("SDL: 15-bit colors failed, attempting 32-bit colors.\n");
+      vid->render32 = true;
    }
 
    if (!vid->screen)
@@ -250,7 +279,7 @@ static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    SDL_ShowCursor(SDL_DISABLE);
 
    const SDL_PixelFormat *fmt = vid->screen->format;
-   if (!g_settings.video.force_16bit && (video->rgb32 || vid->upsample))
+   if (vid->render32)
    {
       SSNES_LOG("SDL: Creating 32-bit buffer.\n");
       vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, 256 * video->input_scale, 256 * video->input_scale, 32,
@@ -285,7 +314,7 @@ static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    sdl_init_font(vid, g_settings.video.font_path, g_settings.video.font_size);
 
 
-   if (fmt->Rshift == 10 && fmt->Gshift ==  5 && fmt->Bshift == 0) 
+   if (fmt->Rshift == 10 && fmt->Gshift ==  5 && fmt->Bshift == 0) // XRGB1555
    {
       SSNES_LOG("SDL: 15-bit format matches. Fast blit.\n");
       vid->convert_15_func = convert_15bit_15bit_direct;
@@ -296,7 +325,7 @@ static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
       vid->convert_15_func = convert_15bit_15bit_shift;
    }
 
-   if (fmt->Rshift == 16 && fmt->Gshift == 8 && fmt->Bshift == 0) 
+   if (fmt->Rshift == 16 && fmt->Gshift == 8 && fmt->Bshift == 0) // ARGB8888
    {
       SSNES_LOG("SDL: 32-bit format matches. Fast blit.\n");
       vid->convert_32_func = convert_32bit_32bit_direct;
@@ -456,15 +485,7 @@ static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigne
    {
       vid->convert_32_func(vid->buffer->pixels, vid->buffer->pitch, frame, width, height, pitch, vid->screen->format);
    }
-
-   if (msg)
-   {
-      if ((!vid->rgb32 || g_settings.video.force_16bit) && !vid->upsample)
-         sdl_render_msg_15(vid, vid->buffer, msg, width, height, vid->screen->format);
-      else
-         sdl_render_msg_32(vid, vid->buffer, msg, width, height, vid->screen->format);
-   }
-
+   
    if (SDL_MUSTLOCK(vid->buffer))
       SDL_UnlockSurface(vid->buffer);
 
@@ -483,6 +504,14 @@ static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigne
    };
 
    SDL_SoftStretch(vid->buffer, &src, vid->screen, &dest);
+
+   if (msg)
+   {
+      if ((!vid->rgb32 || g_settings.video.force_16bit) && !vid->upsample)
+         sdl_render_msg_15(vid, vid->screen, msg, vid->screen->w, vid->screen->h, vid->screen->format);
+      else
+         sdl_render_msg_32(vid, vid->screen, msg, vid->screen->w, vid->screen->h, vid->screen->format);
+   }
 
    char buf[128];
    if (gfx_window_title(buf, sizeof(buf)))
