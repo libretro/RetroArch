@@ -63,11 +63,17 @@ struct xv
    uint8_t *ytable;
    uint8_t *utable;
    uint8_t *vtable;
-   unsigned luma_i;
-   unsigned chroma_i;
 
 #ifdef HAVE_FREETYPE
    font_renderer_t *font;
+
+   unsigned luma_index[2];
+   unsigned chroma_u_index;
+   unsigned chroma_v_index;
+
+   uint8_t font_y;
+   uint8_t font_u;
+   uint8_t font_v;
 #endif
 
    void (*render_func)(xv_t*, const void *frame, unsigned width, unsigned height, unsigned pitch);
@@ -89,6 +95,17 @@ static void sighandler(int sig)
    g_quit = 1;
 }
 
+static inline void calculate_yuv(uint8_t *y, uint8_t *u, uint8_t *v, unsigned r, unsigned g, unsigned b)
+{
+   int y_ = (int)(+((double)r * 0.257) + ((double)g * 0.504) + ((double)b * 0.098) +  16.0);
+   int u_ = (int)(-((double)r * 0.148) - ((double)g * 0.291) + ((double)b * 0.439) + 128.0);
+   int v_ = (int)(+((double)r * 0.439) - ((double)g * 0.368) - ((double)b * 0.071) + 128.0);
+
+   *y = y_ < 0 ? 0 : (y_ > 255 ? 255 : y_);
+   *u = y_ < 0 ? 0 : (u_ > 255 ? 255 : u_);
+   *v = v_ < 0 ? 0 : (v_ > 255 ? 255 : v_);
+}
+
 static void init_yuv_tables(xv_t *xv)
 {
    xv->ytable = malloc(0x8000);
@@ -98,18 +115,12 @@ static void init_yuv_tables(xv_t *xv)
    for (unsigned i = 0; i < 0x8000; i++) 
    {
       // Extract RGB555 color data from i
-      uint8_t r = (i >> 10) & 0x1F, g = (i >> 5) & 0x1F, b = (i) & 0x1F;
-      r = (r << 3) | (r >> 2);  //R5->R8
-      g = (g << 3) | (g >> 2);  //G5->G8
-      b = (b << 3) | (b >> 2);  //B5->B8
+      unsigned r = (i >> 10) & 0x1F, g = (i >> 5) & 0x1F, b = (i) & 0x1F;
+      r = (r << 3) | (r >> 2);  // R5->R8
+      g = (g << 3) | (g >> 2);  // G5->G8
+      b = (b << 3) | (b >> 2);  // B5->B8
 
-      int y = (int)(+((double)r * 0.257) + ((double)g * 0.504) + ((double)b * 0.098) +  16.0);
-      int u = (int)(-((double)r * 0.148) - ((double)g * 0.291) + ((double)b * 0.439) + 128.0);
-      int v = (int)(+((double)r * 0.439) - ((double)g * 0.368) - ((double)b * 0.071) + 128.0);
-
-      xv->ytable[i] = y < 0 ? 0 : y > 255 ? 255 : y;
-      xv->utable[i] = u < 0 ? 0 : u > 255 ? 255 : u;
-      xv->vtable[i] = v < 0 ? 0 : v > 255 ? 255 : v;
+      calculate_yuv(&xv->ytable[i], &xv->utable[i], &xv->vtable[i], r, g, b);
    }
 }
 
@@ -176,7 +187,19 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
    if (*font_path)
    {
       xv->font = font_renderer_new(font_path, font_size);
-      if (!xv->font)
+      if (xv->font)
+      {
+         int r = g_settings.video.msg_color_r * 255;
+         r = (r < 0 ? 0 : (r > 255 ? 255 : r));
+         int g = g_settings.video.msg_color_g * 255;
+         g = (g < 0 ? 0 : (g > 255 ? 255 : g));
+         int b = g_settings.video.msg_color_b * 255;
+         b = (b < 0 ? 0 : (b > 255 ? 255 : b));
+
+         calculate_yuv(&xv->font_y, &xv->font_u, &xv->font_v,
+               r, g, b);
+      }
+      else
          SSNES_WARN("Failed to init font.\n");
    }
 #endif
@@ -297,7 +320,6 @@ static void render32_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned
    }
 }
 
-
 static void* xv_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    xv_t *xv = calloc(1, sizeof(*xv));
@@ -399,28 +421,42 @@ static void* xv_init(const video_info_t *video, const input_driver_t **input, vo
             has_format = true;
             xv->fourcc = format[i].id;
             xv->render_func = video->rgb32 ? render32_yuy2 : render16_yuy2;
-            xv->luma_i = 0; xv->chroma_i = 1;
+
+#ifdef HAVE_FREETYPE
+            xv->luma_index[0] = 0;
+            xv->luma_index[1] = 2;
+            xv->chroma_u_index = 1;
+            xv->chroma_v_index = 3;
+#endif
             break;
          }
       }
    }
 
-   if (!has_format) for (int i = 0; i < format_count; i++) 
+   if (!has_format) 
    {
-      if (format[i].type == XvYUV && format[i].bits_per_pixel == 16 && format[i].format == XvPacked) 
+      for (int i = 0; i < format_count; i++) 
       {
-         if (format[i].component_order[0] == 'U' && format[i].component_order[1] == 'Y'
-               && format[i].component_order[2] == 'V' && format[i].component_order[3] == 'Y') 
+         if (format[i].type == XvYUV && format[i].bits_per_pixel == 16 && format[i].format == XvPacked) 
          {
-            has_format = true;
-            xv->fourcc = format[i].id;
-            xv->render_func = video->rgb32 ? render32_uyvy : render16_uyvy;
-            xv->chroma_i = 0; xv->luma_i = 1;
-            break;
+            if (format[i].component_order[0] == 'U' && format[i].component_order[1] == 'Y'
+                  && format[i].component_order[2] == 'V' && format[i].component_order[3] == 'Y') 
+            {
+               has_format = true;
+               xv->fourcc = format[i].id;
+               xv->render_func = video->rgb32 ? render32_uyvy : render16_uyvy;
+
+#ifdef HAVE_FREETYPE
+               xv->luma_index[0] = 1;
+               xv->luma_index[1] = 3;
+               xv->chroma_u_index = 0;
+               xv->chroma_v_index = 2;
+#endif
+               break;
+            }
          }
       }
    }
-
 
    free(format);
    if (!has_format) 
@@ -466,8 +502,6 @@ static void* xv_init(const video_info_t *video, const input_driver_t **input, vo
    xv_set_nonblock_state(xv, !video->vsync);
    xv->focus = true;
 
-   xv_init_font(xv, g_settings.video.font_path, g_settings.video.font_size);
-
    void *xinput = input_x.init();
    if (xinput)
    {
@@ -478,6 +512,8 @@ static void* xv_init(const video_info_t *video, const input_driver_t **input, vo
       *input = NULL;
 
    init_yuv_tables(xv);
+   xv_init_font(xv, g_settings.video.font_path, g_settings.video.font_size);
+
    return xv;
 
 error:
@@ -561,6 +597,7 @@ static void calc_out_rect(bool keep_aspect, unsigned *x, unsigned *y, unsigned *
 }
 
 // TODO: Is there some way to render directly like GL? :(
+// Hacky C code is hacky :D Yay.
 static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned height)
 {
 #ifdef HAVE_FREETYPE
@@ -574,12 +611,17 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
    int _base_x = g_settings.video.msg_pos_x * width;
    int _base_y = height - g_settings.video.msg_pos_y * height;
 
-   unsigned luma_i = xv->luma_i;
-   unsigned chroma_i = xv->chroma_i;
+   unsigned luma_index[2] = { xv->luma_index[0], xv->luma_index[1] };
+   unsigned chroma_u_index = xv->chroma_u_index;
+   unsigned chroma_v_index = xv->chroma_v_index;
+
+   unsigned pitch = width << 1; // YUV formats used are 16 bpp.
 
    while (head)
    {
-      int base_x = _base_x + head->off_x;
+      int base_x = (_base_x + head->off_x) << 1;
+      base_x &= ~3; // Make sure we always start on the correct boundary so the indices are correct.
+
       int base_y = _base_y - head->off_y;
       if (base_y >= 0)
       {
@@ -588,21 +630,33 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
             if (base_x < 0)
                continue;
 
-            const uint8_t *a = head->output + head->pitch * y;
-            uint8_t *out = (uint8_t*)xv->image->data + (base_y - head->height + y) * (width << 1) + (base_x << 1);
+            const uint8_t * restrict a = head->output + head->pitch * y;
+            uint8_t * restrict out = (uint8_t*)xv->image->data + (base_y - head->height + y) * pitch + base_x;
 
-            for (int x = 0; x < (head->width << 1) && (base_x + x) < width; x += 2)
+            for (int x = 0; x < (head->width << 1) && (base_x + x) < pitch; x += 4)
             {
-               // Blend luma
-               uint8_t blend = a[x >> 1];
-               unsigned blended = blend + (((256 - blend) * (unsigned)out[x + luma_i]) >> 8);
-               blended = blended > 255 ? 255 : blended;
-               out[x + luma_i] = blended;
+               unsigned alpha[2];
+               alpha[0] = a[(x >> 1) + 0];
 
-               // Blend chroma
-               blended = (128 * blend + ((256 - blend) * (unsigned)out[x + chroma_i])) >> 8;
-               blended = blended > 255 ? 255 : blended;
-               out[x + chroma_i] = blended;
+               if (((x >> 1) + 1) == head->width) // We reached the end, uhoh! Branching like a BOSS! :D
+                  alpha[1] = 0;
+               else
+                  alpha[1] = a[(x >> 1) + 1];
+
+               unsigned alpha_sub = (alpha[0] + alpha[1]) >> 1; // Blended alpha for the sub-samples U/V channels.
+
+               for (unsigned i = 0; i < 2; i++)
+               {
+                  unsigned blended = (xv->font_y * alpha[i] + ((256 - alpha[i]) * out[x + luma_index[i]])) >> 8;
+                  out[x + luma_index[i]] = blended;
+               }
+
+               // Blend chroma channels
+               unsigned blended = (xv->font_u * alpha_sub + ((256 - alpha_sub) * out[x + chroma_u_index])) >> 8;
+               out[x + chroma_u_index] = blended;
+
+               blended = (xv->font_v * alpha_sub + ((256 - alpha_sub) * out[x + chroma_v_index])) >> 8;
+               out[x + chroma_v_index] = blended;
             }
          }
       }
@@ -630,11 +684,12 @@ static bool xv_frame(void *data, const void* frame, unsigned width, unsigned hei
    XGetWindowAttributes(xv->display, xv->window, &target);
    xv->render_func(xv, frame, width, height, pitch);
 
-   if (msg)
-      xv_render_msg(xv, msg, xv->width, xv->height);
-
    unsigned x, y, owidth, oheight;
    calc_out_rect(xv->keep_aspect, &x, &y, &owidth, &oheight, target.width, target.height);
+
+   if (msg)
+      xv_render_msg(xv, msg, width << 1, height << 1);
+
    XvShmPutImage(xv->display, xv->port, xv->window, xv->gc, xv->image,
          0, 0, width << 1, height << 1,
          x, y, owidth, oheight,
