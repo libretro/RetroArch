@@ -158,13 +158,7 @@ static void cheat_manager_load_config(cheat_manager_t *handle, const char *path,
 
    config_file_t *conf = config_file_new(path);
    if (!conf)
-      conf = config_file_new(NULL);
-
-   if (!conf)
-   {
-      SSNES_WARN("Failed to open XML cheat config ...\n");
       return;
-   }
 
    char *str;
    if (!config_get_string(conf, sha256, &str))
@@ -202,6 +196,9 @@ static void cheat_manager_save_config(cheat_manager_t *handle, const char *path,
       return;
 
    config_file_t *conf = config_file_new(path);
+   if (!conf)
+      conf = config_file_new(NULL);
+
    if (!conf)
    {
       SSNES_ERR("Cannot save XML cheat settings!\n");
