@@ -139,7 +139,7 @@ static bool xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
    return true;
 }
 
-void cheat_manager_apply_cheats(cheat_manager_t *handle)
+static void cheat_manager_apply_cheats(cheat_manager_t *handle)
 {
    unsigned index = 0;
    psnes_cheat_reset();
