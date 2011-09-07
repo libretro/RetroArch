@@ -139,14 +139,14 @@ static bool xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
    return true;
 }
 
-static void cheat_manager_set_cheats(cheat_manager_t *handle)
+void cheat_manager_apply_cheats(cheat_manager_t *handle)
 {
    unsigned index = 0;
    psnes_cheat_reset();
    for (unsigned i = 0; i < handle->size; i++)
    {
-      if (handle->cheats[handle->ptr].state)
-         psnes_cheat_set(index++, true, handle->cheats[handle->ptr].code);
+      if (handle->cheats[i].state)
+         psnes_cheat_set(index++, true, handle->cheats[i].code);
    }
 }
 
@@ -180,7 +180,7 @@ static void cheat_manager_load_config(cheat_manager_t *handle, const char *path,
    free(str);
    config_file_free(conf);
 
-   cheat_manager_set_cheats(handle);
+   cheat_manager_apply_cheats(handle);
 
 #else
    (void)handle;
@@ -364,7 +364,7 @@ static void cheat_manager_update(cheat_manager_t *handle)
 void cheat_manager_toggle(cheat_manager_t *handle)
 {
    handle->cheats[handle->ptr].state ^= true;
-   cheat_manager_set_cheats(handle);
+   cheat_manager_apply_cheats(handle);
    cheat_manager_update(handle);
 }
 

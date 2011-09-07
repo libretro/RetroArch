@@ -27,4 +27,6 @@ void cheat_manager_index_next(cheat_manager_t *handle);
 void cheat_manager_index_prev(cheat_manager_t *handle);
 void cheat_manager_toggle(cheat_manager_t *handle);
 
+void cheat_manager_apply_cheats(cheat_manager_t *handle);
+
 #endif
