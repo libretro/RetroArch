@@ -232,6 +232,12 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
    else if ((type == SSNES_SHADER_BSNES || type == SSNES_SHADER_AUTO) && *g_settings.video.bsnes_shader_path)
       xml_shader = g_settings.video.bsnes_shader_path;
 
+   int font_color_r = g_settings.video.msg_color_r * 255;
+   int font_color_g = g_settings.video.msg_color_g * 255;
+   int font_color_b = g_settings.video.msg_color_b * 255;
+   font_color_r = font_color_r > 255 ? 255 : (font_color_r < 0 ? 0 : font_color_r);
+   font_color_g = font_color_g > 255 ? 255 : (font_color_g < 0 ? 0 : font_color_g);
+   font_color_b = font_color_b > 255 ? 255 : (font_color_b < 0 ? 0 : font_color_b);
 
    ssnes_video_info_t info = {
       .width = video->width,
@@ -246,7 +252,8 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
       .xml_shader = xml_shader,
       .cg_shader = cg_shader,
       .ttf_font = *g_settings.video.font_path ? g_settings.video.font_path : NULL,
-      .ttf_font_size = g_settings.video.font_size
+      .ttf_font_size = g_settings.video.font_size,
+      .ttf_font_color = (font_color_r << 16) | (font_color_g << 8) | (font_color_b << 0),
    };
 
    const ssnes_input_driver_t *input_driver = NULL;

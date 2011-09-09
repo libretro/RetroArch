@@ -108,7 +108,7 @@ typedef struct ssnes_video_info
    // Can be disregarded.
    const char *ttf_font;
    unsigned ttf_font_size;
-
+   unsigned ttf_font_color; // Font color, in format RGB888.
 } ssnes_video_info_t;
 
 // Some convenience macros.
