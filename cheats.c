@@ -236,6 +236,8 @@ static void cheat_manager_save_config(cheat_manager_t *handle, const char *path,
 
 cheat_manager_t* cheat_manager_new(const char *path)
 {
+   LIBXML_TEST_VERSION;
+
    psnes_cheat_reset();
 
    xmlParserCtxtPtr ctx = NULL;
