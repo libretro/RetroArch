@@ -1083,7 +1083,13 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, video->vsync ? 1 : 0);
 
-   if (!SDL_SetVideoMode(video->width, video->height, g_settings.video.force_16bit ? 16 : 0, SDL_OPENGL | SDL_RESIZABLE | (video->fullscreen ? SDL_FULLSCREEN : 0)))
+   // Resizing is broken on OSX, yay. :)
+#ifndef __APPLE__
+   const int resizable_ = SDL_RESIZABLE;
+#else
+   const int resizable_ = 0;
+#endif
+   if (!SDL_SetVideoMode(video->width, video->height, g_settings.video.force_16bit ? 16 : 0, SDL_OPENGL | (video->fullscreen ? SDL_FULLSCREEN : resizable_)))
       return NULL;
 
    gfx_window_title_reset();
