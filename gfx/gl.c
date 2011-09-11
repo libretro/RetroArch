@@ -805,7 +805,14 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
    if (gl->should_resize)
    {
       gl->should_resize = false;
-      SDL_SetVideoMode(gl->win_width, gl->win_height, 0, SDL_OPENGL | (g_settings.video.fullscreen ? SDL_FULLSCREEN : SDL_RESIZABLE));
+
+      // Resizing is broken on OSX, yay. :)
+#ifndef __APPLE__
+      const int resizable_ = SDL_RESIZABLE;
+#else
+      const int resizable_ = 0;
+#endif
+      SDL_SetVideoMode(gl->win_width, gl->win_height, 0, SDL_OPENGL | (g_settings.video.fullscreen ? SDL_FULLSCREEN : resizable_));
 
 #ifdef HAVE_FBO
       if (!gl->render_to_tex)
