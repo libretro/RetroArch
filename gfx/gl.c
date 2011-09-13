@@ -992,6 +992,7 @@ static void gl_free(void *data)
       pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
    }
 #endif
+   sdlwrap_destroy();
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
    if (gl->empty_buf)
@@ -1027,8 +1028,16 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    sdlwrap_set_swap_interval(video->vsync ? 1 : 0, false);
 
-   if (!sdlwrap_set_video_mode(video->width, video->height,
-            g_settings.video.force_16bit ? 16 : 0, video->fullscreen))
+   unsigned win_width = video->width;
+   unsigned win_height = video->height;
+   if (video->fullscreen && (win_width == 0) && (win_height == 0))
+   {
+      win_width = full_x;
+      win_height = full_y;
+   }
+
+   if (!sdlwrap_set_video_mode(win_width, win_height,
+            g_settings.video.force_16bit ? 15 : 0, video->fullscreen))
       return NULL;
 
    gfx_window_title_reset();
@@ -1045,6 +1054,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    // Need to load dynamically :(
    if (!load_gl_proc())
    {
+      sdlwrap_destroy();
       SDL_QuitSubSystem(SDL_INIT_VIDEO);
       return NULL;
    }
@@ -1053,6 +1063,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_t *gl = calloc(1, sizeof(gl_t));
    if (!gl)
    {
+      sdlwrap_destroy();
       SDL_QuitSubSystem(SDL_INIT_VIDEO);
       return NULL;
    }
@@ -1062,23 +1073,15 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    
    gl->full_x = full_x;
    gl->full_y = full_y;
-
-   if (video->fullscreen)
-   {
-      gl->win_width = video->width ? video->width : gl->full_x;
-      gl->win_height = video->height ? video->height : gl->full_y;
-   }
-   else
-   {
-      gl->win_width = video->width;
-      gl->win_height = video->height;
-   }
+   gl->win_width = win_width;
+   gl->win_height = win_height;
 
    SSNES_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
 
    if (!gl_shader_init())
    {
       SSNES_ERR("Shader init failed.\n");
+      sdlwrap_destroy();
       SDL_QuitSubSystem(SDL_INIT_VIDEO);
       free(gl);
       return NULL;
@@ -1181,6 +1184,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
       
    if (!gl_check_error())
    {
+      sdlwrap_destroy();
       SDL_QuitSubSystem(SDL_INIT_VIDEO);
       free(gl);
       return NULL;
@@ -1198,7 +1202,7 @@ static bool gl_alive(void *data)
 static bool gl_focus(void *data)
 {
    (void)data;
-   return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
+   return sdlwrap_window_has_focus();
 }
 
 #ifdef HAVE_XML

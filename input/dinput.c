@@ -105,7 +105,8 @@ sdl_dinput_t* sdl_dinput_init(void)
 
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
-   if (!SDL_GetWMInfo(&info))
+
+   if (!sdlwrap_get_wm_info(&info))
    {
       SSNES_ERR("Failed to get SysWM info.\n");
       goto error;

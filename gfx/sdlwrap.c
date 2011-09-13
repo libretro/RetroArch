@@ -69,13 +69,35 @@ void sdlwrap_set_swap_interval(unsigned interval, bool inited)
 #endif
 }
 
+#if SDL_MODERN
+static SDL_Window* g_window;
+static SDL_GLContext g_ctx;
+
+void sdlwrap_destroy(void)
+{
+   if (g_ctx)
+      SDL_GL_DeleteContext(g_ctx);
+   if (g_window)
+      SDL_DestroyWindow(g_window);
+
+   g_ctx = NULL;
+   g_window = 0;
+}
+#else
+void sdlwrap_destroy(void) {}
+#endif
+
 bool sdlwrap_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen)
 {
    // Resizing in windowed mode appears to be broken on OSX. Yay!
 #ifndef __APPLE__
+#if SDL_MODERN
+   static const int resizable = SDL_WINDOW_RESIZABLE;
+#else
    static const int resizable = SDL_RESIZABLE;
+#endif
 #else
    static const int resizable = 0;
 #endif
@@ -86,9 +108,23 @@ bool sdlwrap_set_video_mode(
    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, g_interval);
 #endif
 
+#if SDL_MODERN
+   if (bits == 15)
+   {
+      SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+      SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+      SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+   }
+   g_window = SDL_CreateWindow("SSNES", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+         width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : 0) | resizable);
+   if (!g_window)
+      return false;
+   g_ctx = SDL_GL_CreateContext(g_window);
+#else
    if (!SDL_SetVideoMode(width, height, bits,
          SDL_OPENGL | (fullscreen ? SDL_FULLSCREEN : resizable)))
       return false;
+#endif
 
    int attr = 0;
 #if SDL_MODERN
@@ -114,12 +150,20 @@ bool sdlwrap_set_video_mode(
 
 void sdlwrap_wm_set_caption(const char *str)
 {
+#if SDL_MODERN
+   SDL_SetWindowTitle(g_window, str);
+#else
    SDL_WM_SetCaption(str, NULL);
+#endif
 }
 
 void sdlwrap_swap_buffers(void)
 {
+#if SDL_MODERN
+   SDL_GL_SwapWindow(g_window);
+#else
    SDL_GL_SwapBuffers();
+#endif
 }
 
 bool sdlwrap_key_pressed(int key)
@@ -169,8 +213,22 @@ void sdlwrap_check_window(bool *quit,
 {
    *quit = false;
    *resize = false;
-
    SDL_Event event;
+#if SDL_MODERN
+   while (SDL_PollEvent(&event))
+   {
+      switch (event.type)
+      {
+         case SDL_QUIT:
+            *quit = true;
+            break;
+      }
+   }
+
+
+
+#else
+
 
    while (SDL_PollEvent(&event))
    {
@@ -202,6 +260,26 @@ void sdlwrap_check_window(bool *quit,
          SSNES_LOG("GL: Verified window size: %u x %u\n", *width, *height);
       }
    }
+#endif
+#endif
+}
+
+bool sdlwrap_get_wm_info(SDL_SysWMinfo *info)
+{
+#if SDL_MODERN
+   return SDL_GetWindowWMInfo(g_window, info);
+#else
+   return SDL_GetWMInfo(info) == 1;
+#endif
+}
+
+bool sdlwrap_window_has_focus(void)
+{
+#if SDL_MODERN
+   //return true; // TODO: Figure out how ...
+   return true;
+#else
+   return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
 #endif
 }
 

@@ -25,6 +25,7 @@
 
 #include "SDL.h"
 #include "SDL_version.h"
+#include "SDL_syswm.h"
 
 #if SDL_VERSION_ATLEAST(1, 3, 0)
 #define SDL_MODERN 1
@@ -49,6 +50,8 @@ bool sdlwrap_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen);
 
+void sdlwrap_destroy(void);
+
 void sdlwrap_wm_set_caption(const char *str);
 
 void sdlwrap_swap_buffers(void);
@@ -57,6 +60,10 @@ bool sdlwrap_key_pressed(int key);
 
 void sdlwrap_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count);
+
+bool sdlwrap_get_wm_info(SDL_SysWMinfo *info);
+
+bool sdlwrap_window_has_focus(void);
 
 #endif
 
