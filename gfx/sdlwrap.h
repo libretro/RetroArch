@@ -33,10 +33,6 @@
 #define SDL_MODERN 0
 #endif
 
-//#if SDL_MODERN
-//#error "SDL 1.3 support not yet implemented!"
-//#endif
-
 // Not legal to cast void* to fn-pointer. Need workaround to be compliant.
 #define SDL_SYM_WRAP(sym, symbol) { \
    assert(sizeof(void*) == sizeof(void (*)(void))); \
