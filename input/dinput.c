@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include "../gfx/sdlwrap.h"
 
 void sdl_dinput_free(sdl_dinput_t *di)
 {
@@ -103,12 +104,18 @@ sdl_dinput_t* sdl_dinput_init(void)
    CoInitialize(NULL);
 
    SDL_SysWMinfo info;
+   SDL_VERSION(&info.version);
    if (!SDL_GetWMInfo(&info))
    {
       SSNES_ERR("Failed to get SysWM info.\n");
       goto error;
    }
+
+#if SDL_MODERN
+   di->hWnd = info.info.win.window;
+#else
    di->hWnd = info.window;
+#endif
 
    if (FAILED(DirectInput8Create(
       GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8,
