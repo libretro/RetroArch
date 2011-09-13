@@ -993,7 +993,6 @@ static void gl_free(void *data)
    }
 #endif
    sdlwrap_destroy();
-   SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
    if (gl->empty_buf)
       free(gl->empty_buf);
@@ -1017,7 +1016,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    gfx_set_dwm();
 #endif
 
-   if (SDL_Init(SDL_INIT_VIDEO) < 0)
+   if (!sdlwrap_init())
       return NULL;
 
    const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
@@ -1055,7 +1054,6 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!load_gl_proc())
    {
       sdlwrap_destroy();
-      SDL_QuitSubSystem(SDL_INIT_VIDEO);
       return NULL;
    }
 #endif
@@ -1064,7 +1062,6 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!gl)
    {
       sdlwrap_destroy();
-      SDL_QuitSubSystem(SDL_INIT_VIDEO);
       return NULL;
    }
 
@@ -1082,7 +1079,6 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    {
       SSNES_ERR("Shader init failed.\n");
       sdlwrap_destroy();
-      SDL_QuitSubSystem(SDL_INIT_VIDEO);
       free(gl);
       return NULL;
    }
@@ -1185,7 +1181,6 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!gl_check_error())
    {
       sdlwrap_destroy();
-      SDL_QuitSubSystem(SDL_INIT_VIDEO);
       free(gl);
       return NULL;
    }

@@ -26,6 +26,7 @@
 
 // SDL 1.2 is portable, sure, but you still need some platform specific workarounds ;)
 // Hopefully SDL 1.3 will solve this more cleanly :D
+// Welcome to #ifdef HELL! :D
 
 static bool g_fullscreen;
 
@@ -69,6 +70,15 @@ void sdlwrap_set_swap_interval(unsigned interval, bool inited)
 #endif
 }
 
+bool sdlwrap_init(void)
+{
+#if SDL_MODERN
+   return SDL_VideoInit(NULL) == 0;
+#else
+   return SDL_Init(SDL_INIT_VIDEO) == 0;
+#endif
+}
+
 #if SDL_MODERN
 static SDL_Window* g_window;
 static SDL_GLContext g_ctx;
@@ -81,25 +91,33 @@ void sdlwrap_destroy(void)
       SDL_DestroyWindow(g_window);
 
    g_ctx = NULL;
-   g_window = 0;
+   g_window = NULL;
+   SDL_VideoQuit();
 }
 #else
-void sdlwrap_destroy(void) {}
+void sdlwrap_destroy(void) 
+{
+   SDL_QuitSubSystem(SDL_INIT_VIDEO);
+}
 #endif
 
 bool sdlwrap_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen)
 {
-   // Resizing in windowed mode appears to be broken on OSX. Yay!
-#ifndef __APPLE__
+#if SDL_MODERN
+   if (g_window)
+      return true;
+#endif
+
 #if SDL_MODERN
    static const int resizable = SDL_WINDOW_RESIZABLE;
 #else
+#ifndef __APPLE__ // Resizing on OSX is broken in 1.2 it seems :)
    static const int resizable = SDL_RESIZABLE;
-#endif
 #else
    static const int resizable = 0;
+#endif
 #endif
 
    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -109,17 +127,17 @@ bool sdlwrap_set_video_mode(
 #endif
 
 #if SDL_MODERN
-   if (bits == 15)
-   {
-      SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
-      SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
-      SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
-   }
-   g_window = SDL_CreateWindow("SSNES", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-         width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : 0) | resizable);
-   if (!g_window)
-      return false;
-   g_ctx = SDL_GL_CreateContext(g_window);
+      if (bits == 15)
+      {
+         SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+         SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+         SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+      }
+      g_window = SDL_CreateWindow("SSNES", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+            width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : resizable));
+      if (!g_window)
+         return false;
+      g_ctx = SDL_GL_CreateContext(g_window);
 #else
    if (!SDL_SetVideoMode(width, height, bits,
          SDL_OPENGL | (fullscreen ? SDL_FULLSCREEN : resizable)))
@@ -185,7 +203,9 @@ bool sdlwrap_key_pressed(int key)
 #endif
 }
 
-#if !defined(__APPLE__) && !defined(_WIN32)
+// 1.2 specific workaround for tiling WMs. In 1.3 we call GetSize directly, so we don't need to rely on
+// proper event handling (I hope).
+#if !defined(__APPLE__) && !defined(_WIN32) && !SDL_MODERN
 static void sdlwrap_get_window_size(unsigned *width, unsigned *height)
 {
    SDL_SysWMinfo info;
@@ -193,15 +213,10 @@ static void sdlwrap_get_window_size(unsigned *width, unsigned *height)
    SDL_GetWMInfo(&info);
    XWindowAttributes target;
 
-#if SDL_MODERN
-   XGetWindowAttributes(info.info.x11.display, info.info.x11.window,
-         &target);
-#else
    info.info.x11.lock_func();
    XGetWindowAttributes(info.info.x11.display, info.info.x11.window,
          &target);
    info.info.x11.unlock_func();
-#endif
 
    *width = target.width;
    *height = target.height;
@@ -215,6 +230,7 @@ void sdlwrap_check_window(bool *quit,
    *resize = false;
    SDL_Event event;
 #if SDL_MODERN
+   // TODO: Find a way to get resize events ...
    while (SDL_PollEvent(&event))
    {
       switch (event.type)
@@ -225,11 +241,15 @@ void sdlwrap_check_window(bool *quit,
       }
    }
 
-
-
+   int w, h;
+   SDL_GetWindowSize(g_window, &w, &h);
+   if (*width != (unsigned)w || *height != (unsigned)h)
+   {
+      *resize = true;
+      *width = w;
+      *height = h;
+   }
 #else
-
-
    while (SDL_PollEvent(&event))
    {
       switch (event.type)
@@ -276,8 +296,9 @@ bool sdlwrap_get_wm_info(SDL_SysWMinfo *info)
 bool sdlwrap_window_has_focus(void)
 {
 #if SDL_MODERN
-   //return true; // TODO: Figure out how ...
-   return true;
+   Uint32 flags = SDL_GetWindowFlags(g_window);
+   flags &= SDL_WINDOW_INPUT_FOCUS;
+   return flags == SDL_WINDOW_INPUT_FOCUS;
 #else
    return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
 #endif

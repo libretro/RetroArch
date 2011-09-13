@@ -50,6 +50,7 @@ bool sdlwrap_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen);
 
+bool sdlwrap_init(void);
 void sdlwrap_destroy(void);
 
 void sdlwrap_wm_set_caption(const char *str);
