@@ -27,16 +27,23 @@
 // SDL 1.2 is portable, sure, but you still need some platform specific workarounds ;)
 // Hopefully SDL 1.3 will solve this more cleanly :D
 // Welcome to #ifdef HELL! :D
+//
+
+#if SDL_MODERN
+static SDL_Window* g_window;
+static SDL_GLContext g_ctx;
+#endif
 
 static bool g_fullscreen;
-
 static unsigned g_interval;
+
 void sdlwrap_set_swap_interval(unsigned interval, bool inited)
 {
    g_interval = interval;
 
 #if SDL_MODERN
-   SDL_GL_SetSwapInterval(g_interval);
+   if (g_window)
+      SDL_GL_SetSwapInterval(g_interval);
 #else
    if (inited)
    {
@@ -80,9 +87,6 @@ bool sdlwrap_init(void)
 }
 
 #if SDL_MODERN
-static SDL_Window* g_window;
-static SDL_GLContext g_ctx;
-
 void sdlwrap_destroy(void)
 {
    if (g_ctx)
