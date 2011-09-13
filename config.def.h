@@ -30,16 +30,11 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_SDL
-#include "SDL.h"
-#else
-#error "HAVE_SDL is not defined!"
-#endif
+#include "input/keysym.h"
 
 #ifdef HAVE_SRC
 #include <samplerate.h>
 #endif
-
 
 ///////////////// Drivers
 #define VIDEO_GL 0
@@ -231,57 +226,57 @@ static const float axis_threshold = 0.5;
 
 // Player 1
 static const struct snes_keybind snes_keybinds_1[] = {
-   // SNES button                 |   keyboard key   | js btn | js axis |
-   { SNES_DEVICE_ID_JOYPAD_A,          SDLK_x,      NO_BTN,      AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_B,          SDLK_z,      NO_BTN,      AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_X,          SDLK_s,      NO_BTN,      AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_Y,          SDLK_a,      NO_BTN,      AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_L,          SDLK_q,      NO_BTN,      AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_R,          SDLK_w,      NO_BTN,      AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_LEFT,       SDLK_LEFT,   NO_BTN,      AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_RIGHT,      SDLK_RIGHT,  NO_BTN,      AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_UP,         SDLK_UP,     NO_BTN,      AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_DOWN,       SDLK_DOWN,   NO_BTN,      AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_START,      SDLK_RETURN, NO_BTN,      AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_SELECT,     SDLK_RSHIFT, NO_BTN,      AXIS_NONE },
-   { SSNES_FAST_FORWARD_KEY,           SDLK_SPACE,  NO_BTN,      AXIS_NONE },
-   { SSNES_FAST_FORWARD_HOLD_KEY,      SDLK_l,      NO_BTN,      AXIS_NONE },
-   { SSNES_SAVE_STATE_KEY,             SDLK_F2,     NO_BTN,      AXIS_NONE },
-   { SSNES_LOAD_STATE_KEY,             SDLK_F4,     NO_BTN,      AXIS_NONE },
-   { SSNES_FULLSCREEN_TOGGLE_KEY,      SDLK_f,      NO_BTN,      AXIS_NONE },
-   { SSNES_QUIT_KEY,                   SDLK_ESCAPE, NO_BTN,      AXIS_NONE },
-   { SSNES_STATE_SLOT_MINUS,           SDLK_F6,     NO_BTN,      AXIS_NONE },
-   { SSNES_STATE_SLOT_PLUS,            SDLK_F7,     NO_BTN,      AXIS_NONE },
-   { SSNES_AUDIO_INPUT_RATE_PLUS,      SDLK_KP_PLUS, NO_BTN,     AXIS_NONE },
-   { SSNES_AUDIO_INPUT_RATE_MINUS,     SDLK_KP_MINUS, NO_BTN,    AXIS_NONE },
-   { SSNES_REWIND,                     SDLK_r,      NO_BTN,      AXIS_NONE },
-   { SSNES_MOVIE_RECORD_TOGGLE,        SDLK_o,      NO_BTN,      AXIS_NONE },
-   { SSNES_PAUSE_TOGGLE,               SDLK_p,      NO_BTN,      AXIS_NONE },
-   { SSNES_RESET,                      SDLK_h,      NO_BTN,      AXIS_NONE },
-   { SSNES_SHADER_NEXT,                SDLK_m,      NO_BTN,      AXIS_NONE },
-   { SSNES_SHADER_PREV,                SDLK_n,      NO_BTN,      AXIS_NONE },
-   { SSNES_CHEAT_INDEX_PLUS,           SDLK_y,      NO_BTN,      AXIS_NONE },
-   { SSNES_CHEAT_INDEX_MINUS,          SDLK_t,      NO_BTN,      AXIS_NONE },
-   { SSNES_CHEAT_TOGGLE,               SDLK_u,      NO_BTN,      AXIS_NONE },
-   { SSNES_SCREENSHOT,                 SDLK_PRINT,  NO_BTN,      AXIS_NONE },
-   { SSNES_DSP_CONFIG,                 SDLK_c,      NO_BTN,      AXIS_NONE },
+   // SNES button               | keyboard key | js btn | js axis |
+   { SNES_DEVICE_ID_JOYPAD_A,          SK_x,      NO_BTN,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_B,          SK_z,      NO_BTN,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_X,          SK_s,      NO_BTN,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_Y,          SK_a,      NO_BTN,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_L,          SK_q,      NO_BTN,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_R,          SK_w,      NO_BTN,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_LEFT,       SK_LEFT,   NO_BTN,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_RIGHT,      SK_RIGHT,  NO_BTN,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_UP,         SK_UP,     NO_BTN,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_DOWN,       SK_DOWN,   NO_BTN,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_START,      SK_RETURN, NO_BTN,      AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_SELECT,     SK_RSHIFT, NO_BTN,      AXIS_NONE },
+   { SSNES_FAST_FORWARD_KEY,           SK_SPACE,  NO_BTN,      AXIS_NONE },
+   { SSNES_FAST_FORWARD_HOLD_KEY,      SK_l,      NO_BTN,      AXIS_NONE },
+   { SSNES_SAVE_STATE_KEY,             SK_F2,     NO_BTN,      AXIS_NONE },
+   { SSNES_LOAD_STATE_KEY,             SK_F4,     NO_BTN,      AXIS_NONE },
+   { SSNES_FULLSCREEN_TOGGLE_KEY,      SK_f,      NO_BTN,      AXIS_NONE },
+   { SSNES_QUIT_KEY,                   SK_ESCAPE, NO_BTN,      AXIS_NONE },
+   { SSNES_STATE_SLOT_MINUS,           SK_F6,     NO_BTN,      AXIS_NONE },
+   { SSNES_STATE_SLOT_PLUS,            SK_F7,     NO_BTN,      AXIS_NONE },
+   { SSNES_AUDIO_INPUT_RATE_PLUS,      SK_KP_PLUS, NO_BTN,     AXIS_NONE },
+   { SSNES_AUDIO_INPUT_RATE_MINUS,     SK_KP_MINUS, NO_BTN,    AXIS_NONE },
+   { SSNES_REWIND,                     SK_r,      NO_BTN,      AXIS_NONE },
+   { SSNES_MOVIE_RECORD_TOGGLE,        SK_o,      NO_BTN,      AXIS_NONE },
+   { SSNES_PAUSE_TOGGLE,               SK_p,      NO_BTN,      AXIS_NONE },
+   { SSNES_RESET,                      SK_h,      NO_BTN,      AXIS_NONE },
+   { SSNES_SHADER_NEXT,                SK_m,      NO_BTN,      AXIS_NONE },
+   { SSNES_SHADER_PREV,                SK_n,      NO_BTN,      AXIS_NONE },
+   { SSNES_CHEAT_INDEX_PLUS,           SK_y,      NO_BTN,      AXIS_NONE },
+   { SSNES_CHEAT_INDEX_MINUS,          SK_t,      NO_BTN,      AXIS_NONE },
+   { SSNES_CHEAT_TOGGLE,               SK_u,      NO_BTN,      AXIS_NONE },
+   { SSNES_SCREENSHOT,                 SK_PRINT,  NO_BTN,      AXIS_NONE },
+   { SSNES_DSP_CONFIG,                 SK_c,      NO_BTN,      AXIS_NONE },
    { -1 }
 };
 
 // Player 2-5
 static const struct snes_keybind snes_keybinds_rest[] = {
-   { SNES_DEVICE_ID_JOYPAD_A,          SDLK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_B,          SDLK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_X,          SDLK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_Y,          SDLK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_L,          SDLK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_R,          SDLK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_LEFT,       SDLK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_RIGHT,      SDLK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_UP,         SDLK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_DOWN,       SDLK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_START,      SDLK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { SNES_DEVICE_ID_JOYPAD_SELECT,     SDLK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_A,          SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_B,          SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_X,          SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_Y,          SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_L,          SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_R,          SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_LEFT,       SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_RIGHT,      SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_UP,         SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_DOWN,       SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_START,      SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { SNES_DEVICE_ID_JOYPAD_SELECT,     SK_UNKNOWN, NO_BTN, AXIS_NONE },
    { -1 }
 };
 

@@ -155,8 +155,9 @@ struct ssnes_keybind
    // last frame and current frame in the Y-axis.
    int analog_y;
 
-   // Keyboard key. The key values use the SDL keysyms, 
+   // Keyboard key. The key values use the SDL 1.2 keysyms, 
    // which probably need to be transformed to the native format.
+   // The actual keysyms SSNES uses are found in input/keysym.h.
    unsigned short key;
 
    // Joypad key. Joypad POV (hats) are embedded into this key as well.

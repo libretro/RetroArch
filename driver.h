@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
+#include "input/keysym.h"
 
 enum
 {
@@ -56,7 +57,7 @@ enum
 struct snes_keybind
 {
    int id;
-   uint32_t key;
+   enum ssnes_key key;
    uint16_t joykey;
    uint32_t joyaxis;
 };

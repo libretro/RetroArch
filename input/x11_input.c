@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "ssnes_sdl_input.h"
+#include "keysym.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -37,104 +38,98 @@ typedef struct x11_input
 
 struct key_bind
 {
-   int x;
-   int sdl;
+   unsigned x;
+   enum ssnes_key sk;
 };
 
-#define LUT_SIZE 1024
-#define LUT_MASK (LUT_SIZE - 1)
-
-static int keysym_lut[LUT_SIZE];
-
+static unsigned keysym_lut[SK_LAST];
 static const struct key_bind lut_binds[] = {
-   { XK_Left, SDLK_LEFT },
-   { XK_Right, SDLK_RIGHT },
-   { XK_Up, SDLK_UP },
-   { XK_Down, SDLK_DOWN },
-   { XK_Return, SDLK_RETURN },
-   { XK_Tab, SDLK_TAB },
-   { XK_Insert, SDLK_INSERT },
-   { XK_Delete, SDLK_DELETE },
-   { XK_Shift_R, SDLK_RSHIFT },
-   { XK_Shift_L, SDLK_LSHIFT },
-   { XK_Control_L, SDLK_LCTRL },
-   { XK_Alt_L, SDLK_LALT },
-   { XK_space, SDLK_SPACE },
-   { XK_Escape, SDLK_ESCAPE },
-   { XK_KP_Add, SDLK_KP_PLUS },
-   { XK_KP_Subtract, SDLK_KP_MINUS },
-   { XK_BackSpace, SDLK_BACKSPACE },
-   { XK_KP_Enter, SDLK_KP_ENTER },
-   { XK_KP_Add, SDLK_KP_PLUS },
-   { XK_KP_Subtract, SDLK_KP_MINUS },
-   { XK_KP_Multiply, SDLK_KP_MULTIPLY },
-   { XK_KP_Divide, SDLK_KP_DIVIDE },
-   { XK_grave, SDLK_BACKQUOTE },
-   { XK_KP_0, SDLK_KP0 },
-   { XK_KP_1, SDLK_KP1 },
-   { XK_KP_2, SDLK_KP2 },
-   { XK_KP_3, SDLK_KP3 },
-   { XK_KP_4, SDLK_KP4 },
-   { XK_KP_5, SDLK_KP5 },
-   { XK_KP_6, SDLK_KP6 },
-   { XK_KP_7, SDLK_KP7 },
-   { XK_KP_8, SDLK_KP8 },
-   { XK_KP_9, SDLK_KP9 },
-   { XK_0, SDLK_0 },
-   { XK_1, SDLK_1 },
-   { XK_2, SDLK_2 },
-   { XK_3, SDLK_3 },
-   { XK_4, SDLK_4 },
-   { XK_5, SDLK_5 },
-   { XK_6, SDLK_6 },
-   { XK_7, SDLK_7 },
-   { XK_8, SDLK_8 },
-   { XK_9, SDLK_9 },
-   { XK_F1, SDLK_F1 },
-   { XK_F2, SDLK_F2 },
-   { XK_F3, SDLK_F3 },
-   { XK_F4, SDLK_F4 },
-   { XK_F5, SDLK_F5 },
-   { XK_F6, SDLK_F6 },
-   { XK_F7, SDLK_F7 },
-   { XK_F8, SDLK_F8 },
-   { XK_F9, SDLK_F9 },
-   { XK_F10, SDLK_F10 },
-   { XK_F11, SDLK_F11 },
-   { XK_F12, SDLK_F12 },
-   { XK_a, SDLK_a },
-   { XK_b, SDLK_b },
-   { XK_c, SDLK_c },
-   { XK_d, SDLK_d },
-   { XK_e, SDLK_e },
-   { XK_f, SDLK_f },
-   { XK_g, SDLK_g },
-   { XK_h, SDLK_h },
-   { XK_i, SDLK_i },
-   { XK_j, SDLK_j },
-   { XK_k, SDLK_k },
-   { XK_l, SDLK_l },
-   { XK_m, SDLK_m },
-   { XK_n, SDLK_n },
-   { XK_o, SDLK_o },
-   { XK_p, SDLK_p },
-   { XK_q, SDLK_q },
-   { XK_r, SDLK_r },
-   { XK_s, SDLK_s },
-   { XK_t, SDLK_t },
-   { XK_u, SDLK_u },
-   { XK_v, SDLK_v },
-   { XK_w, SDLK_w },
-   { XK_x, SDLK_x },
-   { XK_y, SDLK_y },
-   { XK_z, SDLK_z },
+   { XK_Left, SK_LEFT },
+   { XK_Right, SK_RIGHT },
+   { XK_Up, SK_UP },
+   { XK_Down, SK_DOWN },
+   { XK_Return, SK_RETURN },
+   { XK_Tab, SK_TAB },
+   { XK_Insert, SK_INSERT },
+   { XK_Delete, SK_DELETE },
+   { XK_Shift_R, SK_RSHIFT },
+   { XK_Shift_L, SK_LSHIFT },
+   { XK_Control_L, SK_LCTRL },
+   { XK_Alt_L, SK_LALT },
+   { XK_space, SK_SPACE },
+   { XK_Escape, SK_ESCAPE },
+   { XK_BackSpace, SK_BACKSPACE },
+   { XK_KP_Enter, SK_KP_ENTER },
+   { XK_KP_Add, SK_KP_PLUS },
+   { XK_KP_Subtract, SK_KP_MINUS },
+   { XK_KP_Multiply, SK_KP_MULTIPLY },
+   { XK_KP_Divide, SK_KP_DIVIDE },
+   { XK_grave, SK_BACKQUOTE },
+   { XK_KP_0, SK_KP0 },
+   { XK_KP_1, SK_KP1 },
+   { XK_KP_2, SK_KP2 },
+   { XK_KP_3, SK_KP3 },
+   { XK_KP_4, SK_KP4 },
+   { XK_KP_5, SK_KP5 },
+   { XK_KP_6, SK_KP6 },
+   { XK_KP_7, SK_KP7 },
+   { XK_KP_8, SK_KP8 },
+   { XK_KP_9, SK_KP9 },
+   { XK_0, SK_0 },
+   { XK_1, SK_1 },
+   { XK_2, SK_2 },
+   { XK_3, SK_3 },
+   { XK_4, SK_4 },
+   { XK_5, SK_5 },
+   { XK_6, SK_6 },
+   { XK_7, SK_7 },
+   { XK_8, SK_8 },
+   { XK_9, SK_9 },
+   { XK_F1, SK_F1 },
+   { XK_F2, SK_F2 },
+   { XK_F3, SK_F3 },
+   { XK_F4, SK_F4 },
+   { XK_F5, SK_F5 },
+   { XK_F6, SK_F6 },
+   { XK_F7, SK_F7 },
+   { XK_F8, SK_F8 },
+   { XK_F9, SK_F9 },
+   { XK_F10, SK_F10 },
+   { XK_F11, SK_F11 },
+   { XK_F12, SK_F12 },
+   { XK_a, SK_a },
+   { XK_b, SK_b },
+   { XK_c, SK_c },
+   { XK_d, SK_d },
+   { XK_e, SK_e },
+   { XK_f, SK_f },
+   { XK_g, SK_g },
+   { XK_h, SK_h },
+   { XK_i, SK_i },
+   { XK_j, SK_j },
+   { XK_k, SK_k },
+   { XK_l, SK_l },
+   { XK_m, SK_m },
+   { XK_n, SK_n },
+   { XK_o, SK_o },
+   { XK_p, SK_p },
+   { XK_q, SK_q },
+   { XK_r, SK_r },
+   { XK_s, SK_s },
+   { XK_t, SK_t },
+   { XK_u, SK_u },
+   { XK_v, SK_v },
+   { XK_w, SK_w },
+   { XK_x, SK_x },
+   { XK_y, SK_y },
+   { XK_z, SK_z },
 };
 
 static void init_lut(void)
 {
    memset(keysym_lut, 0, sizeof(keysym_lut));
    for (unsigned i = 0; i < sizeof(lut_binds) / sizeof(lut_binds[0]); i++)
-      keysym_lut[lut_binds[i].sdl & LUT_MASK] = lut_binds[i].x;
+      keysym_lut[lut_binds[i].sk] = lut_binds[i].x;
 }
 
 static void* x_input_init(void)
@@ -165,7 +160,7 @@ static void* x_input_init(void)
 
 static bool x_key_pressed(x11_input_t *x11, int key)
 {
-   key = keysym_lut[key & LUT_MASK];
+   key = keysym_lut[key];
    int keycode = XKeysymToKeycode(x11->display, key);
    bool ret = x11->state[keycode >> 3] & (1 << (keycode & 7));
    return ret;

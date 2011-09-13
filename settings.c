@@ -17,6 +17,7 @@
 
 #include "general.h"
 #include "conf/config_file.h"
+#include "input/keysym.h"
 #include <assert.h>
 #include "strl.h"
 #include "config.def.h"
@@ -640,71 +641,71 @@ struct key_map
 
 // Edit: Not portable to different input systems atm. Might move this map into the driver itself or something.
 // However, this should map nicely over to other systems aswell since the definition are mostly the same anyways.
-static const struct key_map sdlk_map[] = {
-   { "left", SDLK_LEFT },
-   { "right", SDLK_RIGHT },
-   { "up", SDLK_UP },
-   { "down", SDLK_DOWN },
-   { "enter", SDLK_RETURN },
-   { "kp_enter", SDLK_KP_ENTER },
-   { "tab", SDLK_TAB },
-   { "insert", SDLK_INSERT },
-   { "del", SDLK_DELETE },
-   { "end", SDLK_END },
-   { "home", SDLK_HOME },
-   { "rshift", SDLK_RSHIFT },
-   { "shift", SDLK_LSHIFT },
-   { "ctrl", SDLK_LCTRL },
-   { "alt", SDLK_LALT },
-   { "space", SDLK_SPACE },
-   { "escape", SDLK_ESCAPE },
-   { "add", SDLK_KP_PLUS },
-   { "subtract", SDLK_KP_MINUS },
-   { "f1", SDLK_F1 },
-   { "f2", SDLK_F2 },
-   { "f3", SDLK_F3 },
-   { "f4", SDLK_F4 },
-   { "f5", SDLK_F5 },
-   { "f6", SDLK_F6 },
-   { "f7", SDLK_F7 },
-   { "f8", SDLK_F8 },
-   { "f9", SDLK_F9 },
-   { "f10", SDLK_F10 },
-   { "f11", SDLK_F11 },
-   { "f12", SDLK_F12 },
-   { "num0", SDLK_0 },
-   { "num1", SDLK_1 },
-   { "num2", SDLK_2 },
-   { "num3", SDLK_3 },
-   { "num4", SDLK_4 },
-   { "num5", SDLK_5 },
-   { "num6", SDLK_6 },
-   { "num7", SDLK_7 },
-   { "num8", SDLK_8 },
-   { "num9", SDLK_9 },
-   { "pageup", SDLK_PAGEUP },
-   { "pagedown", SDLK_PAGEDOWN },
-   { "keypad0", SDLK_KP0 },
-   { "keypad1", SDLK_KP1 },
-   { "keypad2", SDLK_KP2 },
-   { "keypad3", SDLK_KP3 },
-   { "keypad4", SDLK_KP4 },
-   { "keypad5", SDLK_KP5 },
-   { "keypad6", SDLK_KP6 },
-   { "keypad7", SDLK_KP7 },
-   { "keypad8", SDLK_KP8 },
-   { "keypad9", SDLK_KP9 },
-   { "period", SDLK_PERIOD },
-   { "capslock", SDLK_CAPSLOCK },
-   { "numlock", SDLK_NUMLOCK },
-   { "backspace", SDLK_BACKSPACE },
-   { "multiply", SDLK_KP_MULTIPLY },
-   { "divide", SDLK_KP_DIVIDE },
-   { "print_screen", SDLK_PRINT },
-   { "scroll_lock", SDLK_SCROLLOCK },
-   { "tilde", SDLK_BACKQUOTE },
-   { "backquote", SDLK_BACKQUOTE },
-   { "nul", SDLK_UNKNOWN },
+static const struct key_map sk_map[] = {
+   { "left", SK_LEFT },
+   { "right", SK_RIGHT },
+   { "up", SK_UP },
+   { "down", SK_DOWN },
+   { "enter", SK_RETURN },
+   { "kp_enter", SK_KP_ENTER },
+   { "tab", SK_TAB },
+   { "insert", SK_INSERT },
+   { "del", SK_DELETE },
+   { "end", SK_END },
+   { "home", SK_HOME },
+   { "rshift", SK_RSHIFT },
+   { "shift", SK_LSHIFT },
+   { "ctrl", SK_LCTRL },
+   { "alt", SK_LALT },
+   { "space", SK_SPACE },
+   { "escape", SK_ESCAPE },
+   { "add", SK_KP_PLUS },
+   { "subtract", SK_KP_MINUS },
+   { "f1", SK_F1 },
+   { "f2", SK_F2 },
+   { "f3", SK_F3 },
+   { "f4", SK_F4 },
+   { "f5", SK_F5 },
+   { "f6", SK_F6 },
+   { "f7", SK_F7 },
+   { "f8", SK_F8 },
+   { "f9", SK_F9 },
+   { "f10", SK_F10 },
+   { "f11", SK_F11 },
+   { "f12", SK_F12 },
+   { "num0", SK_0 },
+   { "num1", SK_1 },
+   { "num2", SK_2 },
+   { "num3", SK_3 },
+   { "num4", SK_4 },
+   { "num5", SK_5 },
+   { "num6", SK_6 },
+   { "num7", SK_7 },
+   { "num8", SK_8 },
+   { "num9", SK_9 },
+   { "pageup", SK_PAGEUP },
+   { "pagedown", SK_PAGEDOWN },
+   { "keypad0", SK_KP0 },
+   { "keypad1", SK_KP1 },
+   { "keypad2", SK_KP2 },
+   { "keypad3", SK_KP3 },
+   { "keypad4", SK_KP4 },
+   { "keypad5", SK_KP5 },
+   { "keypad6", SK_KP6 },
+   { "keypad7", SK_KP7 },
+   { "keypad8", SK_KP8 },
+   { "keypad9", SK_KP9 },
+   { "period", SK_PERIOD },
+   { "capslock", SK_CAPSLOCK },
+   { "numlock", SK_NUMLOCK },
+   { "backspace", SK_BACKSPACE },
+   { "multiply", SK_KP_MULTIPLY },
+   { "divide", SK_KP_DIVIDE },
+   { "print_screen", SK_PRINT },
+   { "scroll_lock", SK_SCROLLOCK },
+   { "tilde", SK_BACKQUOTE },
+   { "backquote", SK_BACKQUOTE },
+   { "nul", SK_UNKNOWN },
 };
 
 static struct snes_keybind *find_snes_bind(unsigned port, int id)
@@ -719,23 +720,23 @@ static struct snes_keybind *find_snes_bind(unsigned port, int id)
    return NULL;
 }
 
-static int find_sdlk_bind(const char *str)
+static int find_sk_bind(const char *str)
 {
-   for (int i = 0; i < sizeof(sdlk_map)/sizeof(struct key_map); i++)
+   for (int i = 0; i < sizeof(sk_map)/sizeof(struct key_map); i++)
    {
-      if (strcasecmp(sdlk_map[i].str, str) == 0)
-         return sdlk_map[i].key;
+      if (strcasecmp(sk_map[i].str, str) == 0)
+         return sk_map[i].key;
    }
    return -1;
 }
 
-static int find_sdlk_key(const char *str)
+static int find_sk_key(const char *str)
 {
    // If the bind is a normal key-press ...
    if (strlen(str) == 1 && isalpha(*str))
-      return (int)SDLK_a + (tolower(*str) - (int)'a');
+      return (int)SK_a + (tolower(*str) - (int)'a');
    else // Check if we have a special mapping for it.
-      return find_sdlk_bind(str);
+      return find_sk_bind(str);
 }
 
 // Yes, this function needs a good refactor :)
@@ -756,7 +757,7 @@ static void read_keybinds(config_file_t *conf)
          // Check keybind
          if (bind_maps[j][i].key && config_get_string(conf, bind_maps[j][i].key, &tmp_key))
          {
-            int key = find_sdlk_key(tmp_key);
+            int key = find_sk_key(tmp_key);
 
             if (key >= 0)
                bind->key = key;
