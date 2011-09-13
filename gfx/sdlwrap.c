@@ -240,17 +240,35 @@ void sdlwrap_check_window(bool *quit,
       {
          case SDL_QUIT:
             *quit = true;
+            return;
+
+         case SDL_WINDOWEVENT:
+            switch (event.window.event)
+            {
+               case SDL_WINDOWEVENT_CLOSE:
+                  *quit = true;
+                  return;
+
+               case SDL_WINDOWEVENT_RESIZED:
+                  *resize = true;
+                  *width = event.window.data1;
+                  *height = event.window.data2;
+                  break;
+            }
             break;
       }
    }
 
-   int w, h;
-   SDL_GetWindowSize(g_window, &w, &h);
-   if (*width != (unsigned)w || *height != (unsigned)h)
+   if (!*resize)
    {
-      *resize = true;
-      *width = w;
-      *height = h;
+      int w, h;
+      SDL_GetWindowSize(g_window, &w, &h);
+      if (*width != (unsigned)w || *height != (unsigned)h)
+      {
+         *resize = true;
+         *width = w;
+         *height = h;
+      }
    }
 #else
    while (SDL_PollEvent(&event))
