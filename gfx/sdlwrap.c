@@ -230,7 +230,6 @@ void sdlwrap_check_window(bool *quit,
    *resize = false;
    SDL_Event event;
 #if SDL_MODERN
-   // TODO: Find a way to get resize events ...
    while (SDL_PollEvent(&event))
    {
       switch (event.type)
