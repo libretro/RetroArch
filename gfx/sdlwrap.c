@@ -286,7 +286,10 @@ void sdlwrap_check_window(bool *quit,
 bool sdlwrap_get_wm_info(SDL_SysWMinfo *info)
 {
 #if SDL_MODERN
-   return SDL_GetWindowWMInfo(g_window, info);
+   if (g_window)
+      return SDL_GetWindowWMInfo(g_window, info);
+   else
+      return SDL_GetWMInfo(info) == 1;
 #else
    return SDL_GetWMInfo(info) == 1;
 #endif
