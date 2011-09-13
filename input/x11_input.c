@@ -41,7 +41,11 @@ struct key_bind
    int sdl;
 };
 
-static int keysym_lut[SDLK_LAST];
+#define LUT_SIZE 1024
+#define LUT_MASK (LUT_SIZE - 1)
+
+static int keysym_lut[LUT_SIZE];
+
 static const struct key_bind lut_binds[] = {
    { XK_Left, SDLK_LEFT },
    { XK_Right, SDLK_RIGHT },
@@ -130,7 +134,7 @@ static void init_lut(void)
 {
    memset(keysym_lut, 0, sizeof(keysym_lut));
    for (unsigned i = 0; i < sizeof(lut_binds) / sizeof(lut_binds[0]); i++)
-      keysym_lut[lut_binds[i].sdl] = lut_binds[i].x;
+      keysym_lut[lut_binds[i].sdl & LUT_MASK] = lut_binds[i].x;
 }
 
 static void* x_input_init(void)
@@ -161,7 +165,7 @@ static void* x_input_init(void)
 
 static bool x_key_pressed(x11_input_t *x11, int key)
 {
-   key = keysym_lut[key];
+   key = keysym_lut[key & LUT_MASK];
    int keycode = XKeysymToKeycode(x11->display, key);
    bool ret = x11->state[keycode >> 3] & (1 << (keycode & 7));
    return ret;

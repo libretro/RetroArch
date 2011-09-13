@@ -56,7 +56,7 @@ enum
 struct snes_keybind
 {
    int id;
-   uint16_t key;
+   uint32_t key;
    uint16_t joykey;
    uint32_t joyaxis;
 };

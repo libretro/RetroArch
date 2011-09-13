@@ -17,7 +17,7 @@
 
 #include "driver.h"
 
-#include "SDL.h"
+#include "../gfx/sdlwrap.h"
 #include <stdbool.h>
 #include "general.h"
 #include <stdint.h>
@@ -76,16 +76,9 @@ static void* sdl_input_init(void)
    return sdl;
 }
 
-
 static bool sdl_key_pressed(int key)
 {
-   int num_keys;
-   Uint8 *keymap = SDL_GetKeyState(&num_keys);
-
-   if (key >= num_keys)
-      return false;
-
-   return keymap[key];
+   return sdlwrap_key_pressed(key);
 }
 
 #ifndef HAVE_DINPUT

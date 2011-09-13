@@ -33,7 +33,7 @@
 
 
 #define NO_SDL_GLEXT
-#include "SDL.h"
+#include "sdlwrap.h"
 #include "SDL_opengl.h"
 #include <stdlib.h>
 #include <libxml/parser.h>

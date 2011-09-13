@@ -32,7 +32,7 @@ LDFLAGS = -L. -static-libgcc -s
 LDCXXFLAGS = -static-libstdc++
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl.o gfx/gl.o input/sdl.o audio/sdl.o fifo_buffer.o
+   OBJ += gfx/sdl.o gfx/gl.o gfx/sdlwrap.o input/sdl.o audio/sdl.o fifo_buffer.o
    LIBS += -lSDL -lopengl32
    DEFINES += -ISDL -DHAVE_SDL
 endif

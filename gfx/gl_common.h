@@ -106,13 +106,6 @@ struct gl_tex_info
    GLfloat coord[8];
 };
 
-// Not legal to cast void* to fn-pointer. Need dirty hack to be compilant.
-// sizeof(void*) == sizeof(void (*)(void)) is asserted earlier.
-#define SDL_SYM_WRAP(sym, symbol) { \
-   void *sym__ = SDL_GL_GetProcAddress(symbol); \
-   memcpy(&(sym), &sym__, sizeof(void*)); \
-}
-
 // Windows ... <_<
 #if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
 extern PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture;

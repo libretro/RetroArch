@@ -58,12 +58,7 @@ check_pkgconf PULSE libpulse
 check_lib COREAUDIO "-framework AudioUnit" AudioUnitInitialize
 
 check_pkgconf SDL sdl 1.2.10
-check_critical SDL "Cannot find SDL 1.2 library."
-check_pkgconf SDL_NEW sdl 1.3
-if [ $HAVE_SDL_NEW = yes ]; then
-   echo "SSNES is not compatible with SDL 1.3 API, please use a recent 1.2 release."
-   exit 1
-fi
+check_critical SDL "Cannot find SDL library."
 
 # On some distros, -lCg doesn't link against -lstdc++ it seems ...
 check_lib_cxx CG -lCg cgCreateContext

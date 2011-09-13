@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include "dynamic.h"
 #include "general.h"
+#include "sdlwrap.h"
 
 static bool g_input_dead = true;
 static bool g_video_dead = true;
@@ -272,6 +273,11 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
 
 static void* video_ext_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+#if SDL_MODERN
+   SSNES_ERR("External driver API not compatible with SDL 1.3 input API!\n");
+   return NULL;
+#endif
+
    ext_t *ext = calloc(1, sizeof(*ext));
    if (!ext)
       return NULL;

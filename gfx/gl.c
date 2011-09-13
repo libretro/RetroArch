@@ -33,6 +33,7 @@
 
 #include "gl_common.h"
 #include "gfx_common.h"
+#include "sdlwrap.h"
 
 #define NO_SDL_GLEXT
 #include "SDL.h"
@@ -689,43 +690,20 @@ static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yam
 
 static void check_window(gl_t *gl)
 {
-   SDL_Event event;
+   bool quit, resize;
 
-   // Search for events we care about ...
-   while (SDL_PollEvent(&event))
+   sdlwrap_check_window(&quit,
+         &resize, &gl->win_width, &gl->win_height,
+         gl->frame_count);
+
+   if (quit)
    {
-      switch (event.type)
-      {
-         case SDL_QUIT:
-            gl->quitting = true;
-            break;
-
-         case SDL_VIDEORESIZE:
-            gl->should_resize = true;
-            gl->win_width = event.resize.w;
-            gl->win_height = event.resize.h;
-            break;
-
-         default:
-            break;
-      }
+      gl->quitting = true;
    }
-
-#if !defined(__APPLE__) && !defined(_WIN32)
-   // Hack to workaround limitations in tiling WMs ...
-   if (!gl->should_resize && !gl->fullscreen)
+   else if (resize)
    {
-      unsigned new_width, new_height;
-      gfx_get_window_size(&new_width, &new_height);
-      if ((new_width != gl->win_width || new_height != gl->win_height) || (gl->frame_count == 10)) // Ugly hack :D
-      {
-         gl->should_resize = true;
-         gl->win_width = new_width;
-         gl->win_height = new_height;
-         SSNES_LOG("GL: Verified window size: %u x %u\n", gl->win_width, gl->win_height);
-      }
+      gl->should_resize = true;
    }
-#endif
 }
 
 static bool gl_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
@@ -806,13 +784,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
    {
       gl->should_resize = false;
 
-      // Resizing is broken on OSX, yay. :)
-#ifndef __APPLE__
-      const int resizable_ = SDL_RESIZABLE;
-#else
-      const int resizable_ = 0;
-#endif
-      SDL_SetVideoMode(gl->win_width, gl->win_height, 0, SDL_OPENGL | (g_settings.video.fullscreen ? SDL_FULLSCREEN : resizable_));
+      sdlwrap_set_video_mode(gl->win_width, gl->win_height, 0, g_settings.video.fullscreen);
 
 #ifdef HAVE_FBO
       if (!gl->render_to_tex)
@@ -884,7 +856,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 #endif
 
 #ifdef HAVE_FBO
-   // Need to preserve the "flipped" state when in FBO too to have 
+   // Need to preserve the "flipped" state when in FBO as well to have 
    // consistent texture coordinates.
    if (gl->render_to_tex)
       glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes);
@@ -996,8 +968,9 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
 
    char buf[128];
    if (gfx_window_title(buf, sizeof(buf)))
-      SDL_WM_SetCaption(buf, NULL);
-   SDL_GL_SwapBuffers();
+      sdlwrap_wm_set_caption(buf);
+
+   sdlwrap_swap_buffers();
 
    return true;
 }
@@ -1027,41 +1000,13 @@ static void gl_free(void *data)
    free(gl);
 }
 
-#ifdef __APPLE__
-#include <OpenGL/OpenGL.h>
-#endif
-
 static void gl_set_nonblock_state(void *data, bool state)
 {
    gl_t *gl = data;
    if (gl->vsync)
    {
       SSNES_LOG("GL VSync => %s\n", state ? "off" : "on");
-#if defined(_WIN32)
-      static BOOL (APIENTRY *wgl_swap_interval)(int) = NULL;
-      if (!wgl_swap_interval)
-      {
-         SDL_SYM_WRAP(wgl_swap_interval, "wglSwapIntervalEXT");
-      }
-      if (wgl_swap_interval) wgl_swap_interval(state ? 0 : 1);
-#elif defined(__APPLE__)
-      GLint val = state ? 0 : 1;
-      CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, &val);
-#else
-      static int (*glx_swap_interval)(int) = NULL;
-      if (!glx_swap_interval) 
-      {
-         SDL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalSGI");
-      }
-      if (!glx_swap_interval)
-      {
-         SDL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalMESA");
-      }
-      if (glx_swap_interval) 
-         glx_swap_interval(state ? 0 : 1);
-      else 
-         SSNES_WARN("Could not find GLX VSync call. :(\n");
-#endif
+      sdlwrap_set_swap_interval(state ? 0 : 1, true);
    }
 }
 
@@ -1080,22 +1025,16 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    unsigned full_y = video_info->current_h;
    SSNES_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
-   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-   SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, video->vsync ? 1 : 0);
+   sdlwrap_set_swap_interval(video->vsync ? 1 : 0, false);
 
-   // Resizing is broken on OSX, yay. :)
-#ifndef __APPLE__
-   const int resizable_ = SDL_RESIZABLE;
-#else
-   const int resizable_ = 0;
-#endif
-   if (!SDL_SetVideoMode(video->width, video->height, g_settings.video.force_16bit ? 16 : 0, SDL_OPENGL | (video->fullscreen ? SDL_FULLSCREEN : resizable_)))
+   if (!sdlwrap_set_video_mode(video->width, video->height,
+            g_settings.video.force_16bit ? 16 : 0, video->fullscreen))
       return NULL;
 
    gfx_window_title_reset();
    char buf[128];
    if (gfx_window_title(buf, sizeof(buf)))
-      SDL_WM_SetCaption(buf, NULL);
+      sdlwrap_wm_set_caption(buf);
 
    // Remove that ugly mouse :D
    SDL_ShowCursor(SDL_DISABLE);
@@ -1120,18 +1059,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    gl->vsync = video->vsync;
    gl->fullscreen = video->fullscreen;
-   int attr = 0;
-   SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &attr);
-   if (attr <= 0 && video->vsync)
-   {
-      SSNES_WARN("SDL failed to setup VSync, attempting to recover using native calls!\n");
-      gl_set_nonblock_state(gl, false);
-   }
-   attr = 0;
-   SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &attr);
-   if (attr <= 0)
-      SSNES_WARN("GL double buffer has not been enabled!\n");
-
+   
    gl->full_x = full_x;
    gl->full_y = full_y;
 
