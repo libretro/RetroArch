@@ -34,6 +34,9 @@ void sdlwrap_set_swap_interval(unsigned interval, bool inited)
 {
    g_interval = interval;
 
+#if SDL_MODERN
+   SDL_GL_SetSwapInterval(g_interval);
+#else
    if (inited)
    {
 #if defined(_WIN32)
@@ -63,6 +66,7 @@ void sdlwrap_set_swap_interval(unsigned interval, bool inited)
          SSNES_WARN("Could not find GLX VSync call. :(\n");
 #endif
    }
+#endif
 }
 
 bool sdlwrap_set_video_mode(
