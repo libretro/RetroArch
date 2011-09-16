@@ -148,6 +148,8 @@ struct settings
 
    bool pause_nonactive;
    unsigned autosave_interval;
+
+   bool block_sram_overwrite;
 };
 
 enum ssnes_game_type

@@ -212,6 +212,10 @@ static const unsigned autosave_interval = 0;
 // When being client over netplay, use keybinds for player 1 rather than player 2.
 static const bool netplay_client_swap_input = true;
 
+// On save state load, block SRAM from being overwritten.
+// This could potentially lead to buggy games.
+static const bool block_sram_overwrite = false;
+
 
 ////////////////////
 // Keybinds, Joypad

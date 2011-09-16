@@ -425,7 +425,74 @@ bool load_state(const char *path)
    else
    {
       SSNES_LOG("State size: %d bytes.\n", (int)size);
+
+      uint8_t *block_buf[2] = {NULL, NULL};
+      int block_type[2] = {-1, -1};
+      unsigned block_size[2] = {0};
+
+      if (g_settings.block_sram_overwrite)
+      {
+         SSNES_LOG("Blocking SRAM overwrite!\n");
+         switch (g_extern.game_type)
+         {
+            case SSNES_CART_NORMAL:
+               block_type[0] = SNES_MEMORY_CARTRIDGE_RAM;
+               block_type[1] = SNES_MEMORY_CARTRIDGE_RTC;
+               break;
+
+            case SSNES_CART_BSX:
+            case SSNES_CART_BSX_SLOTTED:
+               block_type[0] = SNES_MEMORY_BSX_RAM;
+               block_type[1] = SNES_MEMORY_BSX_PRAM;
+               break;
+
+            case SSNES_CART_SUFAMI:
+               block_type[0] = SNES_MEMORY_SUFAMI_TURBO_A_RAM;
+               block_type[1] = SNES_MEMORY_SUFAMI_TURBO_B_RAM;
+               break;
+
+            case SSNES_CART_SGB:
+               block_type[0] = SNES_MEMORY_GAME_BOY_RAM;
+               block_type[1] = SNES_MEMORY_GAME_BOY_RTC;
+               break;
+         }
+      }
+
+      for (unsigned i = 0; i < 2; i++)
+         if (block_type[i] != -1)
+            block_size[i] = psnes_get_memory_size(block_type[i]);
+
+      for (unsigned i = 0; i < 2; i++)
+         if (block_size[i])
+            block_buf[i] = malloc(block_size[i]);
+
+      // Backup current SRAM which is overwritten by unserialize.
+      for (unsigned i = 0; i < 2; i++)
+      {
+         if (block_buf[i])
+         {
+            const uint8_t *ptr = psnes_get_memory_data(block_type[i]);
+            if (ptr)
+               memcpy(block_buf[i], ptr, block_size[i]);
+         }
+      }
+
       psnes_unserialize(buf, size);
+
+      // Flush back :D
+      for (unsigned i = 0; i < 2; i++)
+      {
+         if (block_buf[i])
+         {
+            uint8_t *ptr = psnes_get_memory_data(block_type[i]);
+            if (ptr)
+               memcpy(ptr, block_buf[i], block_size[i]);
+         }
+      }
+
+      for (unsigned i = 0; i < 2; i++)
+         if (block_buf[i])
+            free(block_buf[i]);
    }
 
    free(buf);
