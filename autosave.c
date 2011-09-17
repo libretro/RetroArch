@@ -48,26 +48,33 @@ static int autosave_thread(void *data)
    while (!save->quit)
    {
       autosave_lock(save);
-      memcpy(save->buffer, save->snes_buffer, save->bufsize);
+      bool differ = memcmp(save->buffer, save->snes_buffer, save->bufsize) != 0;
+      if (differ)
+         memcpy(save->buffer, save->snes_buffer, save->bufsize);
       autosave_unlock(save);
 
-      // Should probably deal with this more elegantly.
-      FILE *file = fopen(save->path, "wb");
-      if (file)
+      if (differ)
       {
-         // Avoid spamming down stderr ... :)
-         if (first_log)
+         // Should probably deal with this more elegantly.
+         FILE *file = fopen(save->path, "wb");
+         if (file)
          {
-            SSNES_LOG("Autosaving SRAM to \"%s\", will continue to autosave every %u seconds ...\n", save->path, save->interval);
-            first_log = false;
-         }
+            // Avoid spamming down stderr ... :)
+            if (first_log)
+            {
+               SSNES_LOG("Autosaving SRAM to \"%s\", will continue to check every %u seconds ...\n", save->path, save->interval);
+               first_log = false;
+            }
+            else
+               SSNES_LOG("SRAM changed ... autosaving ...\n");
 
-         bool failed = false;
-         failed |= fwrite(save->buffer, 1, save->bufsize, file) != save->bufsize;
-         failed |= fflush(file) != 0;
-         failed |= fclose(file) != 0;
-         if (failed)
-            SSNES_WARN("Failed to autosave SRAM! Disk might be full.\n");
+            bool failed = false;
+            failed |= fwrite(save->buffer, 1, save->bufsize, file) != save->bufsize;
+            failed |= fflush(file) != 0;
+            failed |= fclose(file) != 0;
+            if (failed)
+               SSNES_WARN("Failed to autosave SRAM! Disk might be full.\n");
+         }
       }
 
       SDL_mutexP(save->cond_lock);
@@ -96,6 +103,7 @@ autosave_t *autosave_new(const char *path, const void *data, size_t size, unsign
       free(handle);
       return NULL;
    }
+   memcpy(handle->buffer, handle->snes_buffer, handle->bufsize);
 
    handle->lock = SDL_CreateMutex();
    handle->cond_lock = SDL_CreateMutex();

@@ -1619,7 +1619,7 @@ int main(int argc, char *argv[])
 #endif
 
    // Main loop
-   for(;;)
+   for (;;)
    {
       // DSP plugin GUI events.
       if (g_extern.audio_data.dsp_handle && g_extern.audio_data.dsp_plugin->events)
