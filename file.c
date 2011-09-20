@@ -850,7 +850,7 @@ char** dir_list_new(const char *dir, const char *ext)
 #ifdef _WIN32
       if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
          continue;
-      if (WideCharToMultiByte(CP_UTF8, 0, ffd.cFileName, -1, utf8_buf, MAX_PATH, NULL, NULL) == 0)
+      if (WideCharToMultiByte(CP_UTF8, 0, ffd.cFileName, -1, utf8_buf, MAXPATHLEN, NULL, NULL) == 0)
          continue;
       if (ext && !strstr(utf8_buf, ext))
          continue;
