@@ -947,8 +947,8 @@ bool path_file_exists(const char *path)
 
 void fill_pathname(char *out_path, const char *in_path, const char *replace, size_t size)
 {
-   char tmp_path[strlen(in_path) + 1];
-   strlcpy(tmp_path, in_path, sizeof(tmp_path));
+   char tmp_path[MAXPATHLEN];
+   assert(strlcpy(tmp_path, in_path, sizeof(tmp_path)) < sizeof(tmp_path));
    char *tok = strrchr(tmp_path, '.');
    if (tok != NULL)
       *tok = '\0';
