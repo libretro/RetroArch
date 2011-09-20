@@ -399,6 +399,9 @@ static void deinit_shader_dir(void)
 {
    // It handles NULL, no worries :D
    dir_list_free(g_extern.shader_dir.elems);
+   g_extern.shader_dir.elems = NULL;
+   g_extern.shader_dir.size = 0;
+   g_extern.shader_dir.ptr = 0;
 }
 #endif
 
@@ -456,7 +459,7 @@ void init_video_input(void)
    const input_driver_t *tmp = driver.input;
    driver.video_data = driver.video->init(&video, &driver.input, &driver.input_data);
 
-   if ( driver.video_data == NULL )
+   if (driver.video_data == NULL)
    {
       SSNES_ERR("Cannot open video driver ... Exiting ...\n");
       exit(1);
@@ -469,7 +472,7 @@ void init_video_input(void)
       if (driver.input != NULL)
       {
          driver.input_data = driver.input->init();
-         if ( driver.input_data == NULL )
+         if (driver.input_data == NULL)
          {
             SSNES_ERR("Cannot init input driver. Exiting ...\n");
             exit(1);
@@ -485,10 +488,10 @@ void init_video_input(void)
 
 void uninit_video_input(void)
 {
-   if ( driver.input_data != driver.video_data && driver.input )
+   if (driver.input_data != driver.video_data && driver.input)
       driver.input->free(driver.input_data);
 
-   if ( driver.video_data && driver.video )
+   if (driver.video_data && driver.video)
       driver.video->free(driver.video_data);
 
    deinit_filter();
