@@ -1443,7 +1443,6 @@ static void check_shader_dir(void)
 
    old_pressed_next = pressed_next;
    old_pressed_prev = pressed_prev;
-
 }
 
 static void check_cheats(void)
