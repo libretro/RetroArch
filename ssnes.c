@@ -332,7 +332,7 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
 #endif
 
 #ifdef _WIN32
-#define PACKAGE_VERSION "0.8.1"
+#define PACKAGE_VERSION "0.8.2"
 #endif
 
 #include "config.features.h"
