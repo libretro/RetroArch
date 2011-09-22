@@ -84,7 +84,7 @@ void gfx_set_dwm(void)
    dwmlib = dylib_load("dwmapi.dll");
    if (!dwmlib)
    {
-      SSNES_LOG("Did not find dwmapi.dll");
+      SSNES_LOG("Did not find dwmapi.dll.\n");
       return;
    }
    atexit(gfx_dwm_shutdown);
