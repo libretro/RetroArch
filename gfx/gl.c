@@ -784,7 +784,7 @@ static bool gl_frame(void *data, const void* frame, unsigned width, unsigned hei
    {
       gl->should_resize = false;
 
-      sdlwrap_set_video_mode(gl->win_width, gl->win_height, 0, g_settings.video.fullscreen);
+      sdlwrap_set_resize(gl->win_width, gl->win_height);
 
 #ifdef HAVE_FBO
       if (!gl->render_to_tex)

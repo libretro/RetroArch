@@ -170,6 +170,25 @@ bool sdlwrap_set_video_mode(
    return true;
 }
 
+// SDL 1.2 has an awkward model where you need to "confirm" window resizing.
+// SDL 1.3 luckily removes this quirk.
+void sdlwrap_set_resize(unsigned width, unsigned height)
+{
+#if SDL_MODERN
+   (void)width;
+   (void)height;
+   (void)bits;
+   (void)fullscreen;
+#else
+#ifndef __APPLE__ // Resizing on OSX is broken in 1.2 it seems :)
+   static const int resizable = SDL_RESIZABLE;
+#else
+   static const int resizable = 0;
+#endif
+   SDL_SetVideoMode(width, height, 0, SDL_OPENGL | (g_fullscreen ? SDL_FULLSCREEN : resizable));
+#endif
+}
+
 void sdlwrap_wm_set_caption(const char *str)
 {
 #if SDL_MODERN

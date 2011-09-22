@@ -58,6 +58,8 @@ bool sdlwrap_key_pressed(int key);
 void sdlwrap_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count);
 
+void sdlwrap_set_resize(unsigned width, unsigned height);
+
 bool sdlwrap_get_wm_info(SDL_SysWMinfo *info);
 
 bool sdlwrap_window_has_focus(void);
