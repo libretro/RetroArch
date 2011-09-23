@@ -15,6 +15,10 @@
 #include "fifo_buffer.h"
 #include "SDL_thread.h"
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 struct video_info
 {
    AVCodecContext *codec;
@@ -79,14 +83,27 @@ static bool init_audio(struct audio_info *audio, struct ffemu_params *param)
    if (!codec)
       return false;
 
+   // FFmpeg just loves to deprecate stuff :)
+#ifdef HAVE_FFMPEG_ALLOC_CONTEXT3
    audio->codec = avcodec_alloc_context3(codec);
+#else
+   audio->codec = avcodec_alloc_context();
+   avcodec_get_context_defaults(audio->codec);
+#endif
 
    audio->codec->sample_rate = param->samplerate;
    audio->codec->time_base = (AVRational) { 1, param->samplerate };
    audio->codec->channels = param->channels;
    audio->codec->sample_fmt = AV_SAMPLE_FMT_S16;
+
+#ifdef HAVE_FFMPEG_AVCODEC_OPEN2
    if (avcodec_open2(audio->codec, codec, NULL) != 0)
+#else
+   if (avcodec_open(audio->codec, codec) != 0)
+#endif
+   {
       return false;
+   }
 
    audio->buffer = av_malloc(audio->codec->frame_size * param->channels * sizeof(int16_t));
    if (!audio->buffer)
@@ -118,7 +135,13 @@ static bool init_video(struct video_info *video, struct ffemu_params *param)
       video->pix_size = sizeof(uint32_t);
    }
 
+#ifdef HAVE_FFMPEG_ALLOC_CONTEXT3
    video->codec = avcodec_alloc_context3(codec);
+#else
+   video->codec = avcodec_alloc_context();
+   avcodec_get_context_defaults(video->codec);
+#endif
+
    video->codec->width = param->out_width;
    video->codec->height = param->out_height;
    video->codec->time_base = (AVRational) {param->fps.den, param->fps.num};
@@ -126,8 +149,14 @@ static bool init_video(struct video_info *video, struct ffemu_params *param)
    video->codec->sample_aspect_ratio = av_d2q(param->aspect_ratio * param->out_height / param->out_width, 255);
    video->codec->thread_count = 2;
 
+#ifdef HAVE_FFMPEG_AVCODEC_OPEN2
    if (avcodec_open2(video->codec, codec, NULL) != 0)
+#else
+   if (avcodec_open(video->codec, codec) != 0)
+#endif
+   {
       return false;
+   }
 
    // Allocate a big buffer :p ffmpeg API doesn't seem to give us some clues how big this buffer should be.
    video->outbuf_size = 1 << 23;
@@ -147,7 +176,23 @@ static bool init_muxer(ffemu_t *handle)
    AVFormatContext *ctx = avformat_alloc_context();
    av_strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
    ctx->oformat = av_guess_format(NULL, ctx->filename, NULL);
-   if (avio_open(&ctx->pb, ctx->filename, AVIO_FLAG_WRITE) < 0)
+
+   // FFmpeg sure likes to make things difficult.
+#if defined(AVIO_FLAG_WRITE)
+#define FFMPEG_FLAG_RW AVIO_FLAG_WRITE
+#elif defined(AVIO_WRONLY)
+#define FFMPEG_FLAG_RW AVIO_WRONLY
+#elif defined(URL_WRONLY)
+#define FFMPEG_FLAG_RW URL_WRONLY
+#else
+#define FFMPEG_FLAG_RW 2 // Seems to be consistent, but you never know.
+#endif
+
+#ifdef HAVE_FFMPEG_AVIO_OPEN
+   if (avio_open(&ctx->pb, ctx->filename, FFMPEG_FLAG_RW) < 0)
+#else
+   if (url_fopen(&ctx->pb, ctx->filename, FFMPEG_FLAG_RW) < 0)
+#endif
    {
       av_free(ctx);
       return false;
@@ -169,8 +214,14 @@ static bool init_muxer(ffemu_t *handle)
       handle->audio.codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
    handle->muxer.astream = stream;
 
+#ifdef HAVE_FFMPEG_AVFORMAT_WRITE_HEADER
    if (avformat_write_header(ctx, NULL) < 0)
+#else
+   if (av_write_header(ctx) != 0)
+#endif
+   {
       return false;
+   }
 
    handle->muxer.ctx = ctx;
    return true;
