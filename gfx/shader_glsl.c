@@ -900,7 +900,7 @@ bool gl_glsl_init(const char *path)
       return false;
 
    // SSNES custom two-pass with two different files.
-   if (num_progs == 1 && *g_settings.video.second_pass_shader)
+   if (num_progs == 1 && *g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
    {
       unsigned secondary_progs = get_xml_shaders(g_settings.video.second_pass_shader, progs, 1);
       if (secondary_progs == 1)

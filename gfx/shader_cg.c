@@ -288,8 +288,6 @@ void gl_cg_deinit(void)
 static bool load_plain(const char *path)
 {
    SSNES_LOG("Loading Cg file: %s\n", path);
-   if (strlen(g_settings.video.second_pass_shader) > 0)
-      SSNES_LOG("Loading 2nd pass: %s\n", g_settings.video.second_pass_shader);
 
    char *listing[3] = {NULL};
    const char *list = NULL;
@@ -308,8 +306,9 @@ static bool load_plain(const char *path)
    if (list)
       listing[1] = strdup(list);
 
-   if (strlen(g_settings.video.second_pass_shader) > 0)
+   if (*g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
    {
+      SSNES_LOG("Loading 2nd pass: %s\n", g_settings.video.second_pass_shader);
       prg[2].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgFProf, "main_fragment", 0);
       prg[2].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgVProf, "main_vertex", 0);
 
