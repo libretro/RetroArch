@@ -37,6 +37,8 @@ void save_ram_file(const char *path, int type);
 bool init_rom_file(enum ssnes_game_type type);
 
 // Returns a NULL-terminated list of files in a directory with full paths.
+// If ext is NULL, any file will be picked.
+// If non-NULL, only files with extension ext are added.
 char** dir_list_new(const char *dir, const char *ext);
 void dir_list_free(char **dir_list);
 

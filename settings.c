@@ -172,6 +172,7 @@ static void set_defaults(void)
    g_settings.autosave_interval = autosave_interval;
 
    g_settings.block_sram_overwrite = block_sram_overwrite;
+   g_settings.savestate_auto_index = savestate_auto_index;
 
    assert(sizeof(g_settings.input.binds[0]) >= sizeof(snes_keybinds_1));
    assert(sizeof(g_settings.input.binds[1]) >= sizeof(snes_keybinds_rest));
@@ -421,6 +422,7 @@ static void parse_config_file(void)
    CONFIG_GET_STRING(cheat_settings_path, "cheat_settings_path");
 
    CONFIG_GET_BOOL(block_sram_overwrite, "block_sram_overwrite");
+   CONFIG_GET_BOOL(savestate_auto_index, "savestate_auto_index");
 
    if (!g_extern.has_set_save_path && config_get_array(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {

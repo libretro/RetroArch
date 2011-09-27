@@ -150,6 +150,7 @@ struct settings
    unsigned autosave_interval;
 
    bool block_sram_overwrite;
+   bool savestate_auto_index;
 };
 
 enum ssnes_game_type

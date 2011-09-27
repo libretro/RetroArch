@@ -216,6 +216,10 @@ static const bool netplay_client_swap_input = true;
 // This could potentially lead to buggy games.
 static const bool block_sram_overwrite = false;
 
+// When saving savestates, state index is automatically incremented before saving.
+// When the ROM is loaded, state index will be set to the highest existing value.
+static const bool savestate_auto_index = false;
+
 
 ////////////////////
 // Keybinds, Joypad

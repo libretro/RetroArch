@@ -818,8 +818,12 @@ char** dir_list_new(const char *dir, const char *ext)
       goto error;
    if (strlcat(utf8_buf, "/*", sizeof(utf8_buf)) >= sizeof(utf8_buf))
       goto error;
-   if (strlcat(utf8_buf, ext, sizeof(utf8_buf)) >= sizeof(utf8_buf))
-      goto error;
+
+   if (ext)
+   {
+      if (strlcat(utf8_buf, ext, sizeof(utf8_buf)) >= sizeof(utf8_buf))
+         goto error;
+   }
 
    if (MultiByteToWideChar(CP_UTF8, 0, utf8_buf, -1, wchar_buf, MAXPATHLEN) == 0)
       goto error;

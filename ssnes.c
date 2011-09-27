@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <getopt.h>
 #include <time.h>
 #include "driver.h"
@@ -1070,6 +1071,53 @@ static void deinit_autosave(void)
    }
 }
 
+static void set_savestate_auto_index(void)
+{
+   if (!g_settings.savestate_auto_index)
+      return;
+
+   char state_path[MAXPATHLEN];
+   strlcpy(state_path, g_extern.savestate_name, sizeof(state_path));
+
+   char *split = strrchr(state_path, '/');
+   if (!split)
+      split = strrchr(state_path, '\\');
+
+   const char *base = state_path;
+   const char *dir = state_path;
+   if (split)
+   {
+      *split = '\0';
+      base = split + 1;
+   }
+
+   unsigned max_index = 0;
+
+   char **dir_list = dir_list_new(dir, NULL);
+   if (!dir_list)
+      return;
+
+   unsigned index = 0;
+   const char *dir_elem;
+   while ((dir_elem = dir_list[index++]))
+   {
+      if (!strstr(dir_elem, base))
+         continue;
+
+      const char *end = dir_elem + strlen(dir_elem);
+      while ((end != dir_elem) && isdigit(end[-1])) end--;
+
+      unsigned index = strtoul(end, NULL, 0);
+      if (index > max_index)
+         max_index = index;
+   }
+
+   dir_list_free(dir_list);
+
+   g_extern.state_slot = max_index;
+   SSNES_LOG("Found last state slot: #%u\n", g_extern.state_slot);
+}
+
 static void fill_pathnames(void)
 {
    switch (g_extern.game_type)
@@ -1127,6 +1175,9 @@ static void check_savestates(void)
    bool should_savestate = driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY);
    if (should_savestate && !old_should_savestate)
    {
+      if (g_settings.savestate_auto_index)
+         g_extern.state_slot++;
+
       char save_path[MAXPATHLEN];
 
       if (g_extern.state_slot > 0)
@@ -1134,7 +1185,7 @@ static void check_savestates(void)
       else
          snprintf(save_path, sizeof(save_path), "%s", g_extern.savestate_name);
 
-      if(!save_state(save_path))
+      if (!save_state(save_path))
       {
          msg_queue_clear(g_extern.msg_queue);
          char msg[512];
@@ -1160,7 +1211,7 @@ static void check_savestates(void)
       else
          snprintf(load_path, sizeof(load_path), "%s", g_extern.savestate_name);
 
-      if(!load_state(load_path))
+      if (!load_state(load_path))
       {
          msg_queue_clear(g_extern.msg_queue);
          char msg[512];
@@ -1574,6 +1625,7 @@ int main(int argc, char *argv[])
    SSNES_LOG("Version of libsnes API: %u.%u\n", psnes_library_revision_major(), psnes_library_revision_minor());
 
    fill_pathnames();
+   set_savestate_auto_index();
 
    if (!init_rom_file(g_extern.game_type))
       goto error;
