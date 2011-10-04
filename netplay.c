@@ -554,16 +554,18 @@ bool netplay_poll(netplay_t *handle)
       return true;
    }
 
-   //fprintf(stderr, "Other ptr: %lu, Read ptr: %lu, Self ptr: %lu\n", handle->other_ptr, handle->read_ptr, handle->self_ptr);
+   /*
+   fprintf(stderr, "Other ptr: %lu, Read ptr: %lu, Self ptr: %lu\n", handle->other_ptr, handle->read_ptr, handle->self_ptr);
    if (handle->buffer_size > 1)
    {
       assert(handle->other_ptr != handle->self_ptr);
       assert(handle->read_ptr != handle->self_ptr);
    }
    assert(handle->other_ptr == handle->read_ptr);
+   */
 
    // We might have reached the end of the buffer, where we simply have to block.
-   int res = poll_input(handle, handle->other_ptr == NEXT_PTR(handle->self_ptr));
+   int res = poll_input(handle, handle->other_ptr == handle->self_ptr);
    if (res == -1)
    {
       handle->has_connection = false;
@@ -586,7 +588,7 @@ bool netplay_poll(netplay_t *handle)
          parse_packet(handle, buffer, UDP_FRAME_PACKETS);
 
       } while ((handle->read_frame_count <= handle->frame_count) && 
-            poll_input(handle, (handle->other_ptr == NEXT_PTR(handle->self_ptr)) && 
+            poll_input(handle, (handle->other_ptr == handle->self_ptr) && 
                (first_read == handle->read_frame_count)) == 1);
    }
    else
@@ -697,7 +699,5 @@ void netplay_post_frame(netplay_t *handle)
       handle->other_ptr = handle->read_ptr;
       handle->is_replay = false;
    }
-
 }
-
 
