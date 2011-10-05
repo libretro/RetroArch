@@ -90,6 +90,7 @@ struct netplay
    uint32_t packet_buffer[UDP_FRAME_PACKETS * 2]; // To compat UDP packet loss we also send old data along with the packets.
    uint32_t frame_count;
    uint32_t read_frame_count;
+   uint32_t other_frame_count;
    struct addrinfo *addr;
    struct sockaddr_storage their_addr;
    bool has_client_addr;
@@ -543,7 +544,7 @@ bool netplay_poll(netplay_t *handle)
    if (!get_self_input_state(handle))
       return false;
 
-   // We skip reading the first frame so the host has a change to grab our host info so we don't block forever :')
+   // We skip reading the first frame so the host has a chance to grab our host info so we don't block forever :')
    if (handle->frame_count == 0)
    {
       handle->buffer[0].used_real = true;
@@ -554,8 +555,8 @@ bool netplay_poll(netplay_t *handle)
       return true;
    }
 
+   //fprintf(stderr, "Before poll: Other ptr: %lu, Read ptr: %lu, Self ptr: %lu\n", handle->other_ptr, handle->read_ptr, handle->self_ptr);
    /*
-   fprintf(stderr, "Other ptr: %lu, Read ptr: %lu, Self ptr: %lu\n", handle->other_ptr, handle->read_ptr, handle->self_ptr);
    if (handle->buffer_size > 1)
    {
       assert(handle->other_ptr != handle->self_ptr);
@@ -594,12 +595,14 @@ bool netplay_poll(netplay_t *handle)
    else
    {
       // Cannot allow this. Should not happen though.
-      if (NEXT_PTR(handle->self_ptr) == handle->other_ptr)
+      if (handle->self_ptr == handle->other_ptr)
       {
          SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
          return false;
       }
    }
+
+   //fprintf(stderr, "After poll: Other ptr: %lu, Read ptr: %lu, Self ptr: %lu\n", handle->other_ptr, handle->read_ptr, handle->self_ptr);
 
    if (handle->read_ptr != handle->self_ptr)
       simulate_input(handle);
@@ -670,33 +673,37 @@ void netplay_post_frame(netplay_t *handle)
    handle->frame_count++;
 
    // Nothing to do...
-   if (handle->other_ptr == handle->read_ptr)
+   if (handle->other_frame_count == handle->read_frame_count)
       return;
 
    // Skip ahead if we predicted correctly. Skip until our simulation failed.
-   while (handle->other_ptr != handle->read_ptr)
+   while (handle->other_frame_count < handle->read_frame_count)
    {
       struct delta_frame *ptr = &handle->buffer[handle->other_ptr];
       if ((ptr->simulated_input_state != ptr->real_input_state) && !ptr->used_real)
          break;
       handle->other_ptr = NEXT_PTR(handle->other_ptr);
+      handle->other_frame_count++;
    }
 
-   if (handle->other_ptr != handle->read_ptr)
+   if (handle->other_frame_count < handle->read_frame_count)
    {
       // Replay frames
       handle->is_replay = true;
       handle->tmp_ptr = handle->other_ptr;
       psnes_unserialize(handle->buffer[handle->other_ptr].state, handle->state_size);
-      while (handle->tmp_ptr != handle->self_ptr)
+      bool first = true;
+      while (first || (handle->tmp_ptr != handle->self_ptr))
       {
          psnes_serialize(handle->buffer[handle->tmp_ptr].state, handle->state_size);
          lock_autosave();
          psnes_run();
          unlock_autosave();
          handle->tmp_ptr = NEXT_PTR(handle->tmp_ptr);
+         first = false;
       }
       handle->other_ptr = handle->read_ptr;
+      handle->other_frame_count = handle->read_frame_count;
       handle->is_replay = false;
    }
 }
