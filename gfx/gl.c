@@ -332,7 +332,7 @@ static void gl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
 static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size)
 {
 #ifdef HAVE_FREETYPE
-   if (strlen(font_path) > 0)
+   if (*font_path)
    {
       gl->font = font_renderer_new(font_path, font_size);
       if (gl->font)
@@ -348,6 +348,10 @@ static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_s
       else
          SSNES_WARN("Couldn't init font renderer with font \"%s\"...\n", font_path);
    }
+#else
+   (void)gl;
+   (void)font_path;
+   (void)font_size;
 #endif
 }
 
@@ -539,6 +543,8 @@ static inline void gl_deinit_font(gl_t *gl)
       font_renderer_free(gl->font);
       glDeleteTextures(1, &gl->font_tex);
    }
+#else
+   (void)gl;
 #endif
 }
 ////////////
