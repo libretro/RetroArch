@@ -19,6 +19,7 @@
 #include "general.h"
 #include "autosave.h"
 #include "dynamic.h"
+#include "message.h"
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
@@ -95,6 +96,13 @@ struct netplay
    struct sockaddr_storage their_addr;
    bool has_client_addr;
 };
+
+static void warn_hangup(void)
+{
+   SSNES_WARN("Netplay has disconnected. Will continue without connection ...\n");
+   if (g_extern.msg_queue)
+      msg_queue_push(g_extern.msg_queue, "Netplay has disconnected. Will continue without connection.", 0, 480);
+}
 
 void input_poll_net(void)
 {
@@ -401,7 +409,7 @@ static bool send_chunk(netplay_t *handle)
    {
       if (sendto(handle->udp_fd, CONST_CAST handle->packet_buffer, sizeof(handle->packet_buffer), 0, addr, sizeof(struct sockaddr)) != sizeof(handle->packet_buffer))
       {
-         SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
+         warn_hangup();
          handle->has_connection = false;
          return false;
       }
@@ -441,7 +449,7 @@ static int poll_input(netplay_t *handle, bool block)
 
       if (block && !send_chunk(handle))
       {
-         SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
+         warn_hangup();
          handle->has_connection = false;
          return -1;
       }
@@ -483,7 +491,7 @@ static bool get_self_input_state(netplay_t *handle)
 
    if (!send_chunk(handle))
    {
-      SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
+      warn_hangup();
       handle->has_connection = false;
       return false;
    }
@@ -570,7 +578,7 @@ bool netplay_poll(netplay_t *handle)
    if (res == -1)
    {
       handle->has_connection = false;
-      SSNES_WARN("Netplay connection timed out. Will continue without netplay.\n");
+      warn_hangup();
       return false;
    }
 
@@ -582,7 +590,7 @@ bool netplay_poll(netplay_t *handle)
          uint32_t buffer[UDP_FRAME_PACKETS * 2];
          if (!receive_data(handle, buffer, sizeof(buffer)))
          {
-            SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
+            warn_hangup();
             handle->has_connection = false;
             return false;
          }
@@ -597,7 +605,7 @@ bool netplay_poll(netplay_t *handle)
       // Cannot allow this. Should not happen though.
       if (handle->self_ptr == handle->other_ptr)
       {
-         SSNES_WARN("Netplay connection hung up. Will continue without netplay.\n");
+         warn_hangup();
          return false;
       }
    }

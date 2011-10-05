@@ -17,6 +17,7 @@
 
 #include "dynamic.h"
 #include "general.h"
+#include "strl.h"
 #include <string.h>
 #include <assert.h>
 
@@ -46,7 +47,6 @@
 
 static dylib_t lib_handle = NULL;
 #endif
-
 
 void (*psnes_init)(void);
 
@@ -112,7 +112,7 @@ static void load_dynamic(void)
    SYM(void (*)(snes_audio_sample_t), snes_set_audio_sample);
    SYM(void (*)(snes_input_poll_t), snes_set_input_poll);
    SYM(void (*)(snes_input_state_t), snes_set_input_state);
-   OPT_SYM(const char *(*)(void), snes_library_id);
+   SYM(const char *(*)(void), snes_library_id);
    SYM(unsigned (*)(void), snes_library_revision_minor);
    SYM(unsigned (*)(void), snes_library_revision_major);
    SYM(void (*)(void), snes_cheat_reset);
@@ -156,6 +156,7 @@ static void set_statics(void)
    SSYM(snes_set_input_state);
    SSYM(snes_library_revision_minor);
    SSYM(snes_library_revision_major);
+   SSYM(snes_library_id);
    SSYM(snes_cheat_reset);
    SSYM(snes_cheat_set);
    SSYM(snes_reset);
@@ -204,15 +205,20 @@ void init_dlsym(void)
    }
 #endif
 
-   if (strlen(g_settings.libsnes) > 0)
-      load_dynamic();
-   else
+   if (!*g_settings.libsnes)
    {
-      SSNES_ERR("This binary is built to use runtime dynamic binding of libsnes. Set libsnes_path in config to load a libsnes library dynamically.\n");
-      exit(1);
-   }
+#if defined(_WIN32)
+      strlcpy(g_settings.libsnes, "snes.dll", sizeof(g_settings.libsnes));
+#elif defined(__APPLE__)
+      strlcpy(g_settings.libsnes, "libsnes.dylib", sizeof(g_settings.libsnes));
 #else
-      set_statics();
+      strlcpy(g_settings.libsnes, "libsnes.so", sizeof(g_settings.libsnes));
+#endif
+   }
+
+   load_dynamic();
+#else
+   set_statics();
 #endif
 }
 
