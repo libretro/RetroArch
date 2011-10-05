@@ -177,8 +177,6 @@ void sdlwrap_set_resize(unsigned width, unsigned height)
 #if SDL_MODERN
    (void)width;
    (void)height;
-   (void)bits;
-   (void)fullscreen;
 #else
 #ifndef __APPLE__ // Resizing on OSX is broken in 1.2 it seems :)
    static const int resizable = SDL_RESIZABLE;
