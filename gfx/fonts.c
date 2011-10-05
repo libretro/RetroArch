@@ -19,7 +19,6 @@
 #include <string.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include <assert.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -79,12 +78,16 @@ void font_renderer_msg(font_renderer_t *handle, const char *msg, struct font_out
       if (!err)
       {
          struct font_output *tmp = calloc(1, sizeof(*tmp));
-         assert(tmp);
-
-         //fprintf(stderr, "Char: %c, off_x: %d, off_y: %d, bmp_left: %d, bmp_top: %d\n", msg[i], off_x, off_y, slot->bitmap_left, slot->bitmap_top);
+         if (!tmp)
+            break;
 
          tmp->output = malloc(slot->bitmap.pitch * slot->bitmap.rows);
-         assert(tmp->output);
+         if (!tmp->output)
+         {
+            free(tmp);
+            break;
+         }
+
          memcpy(tmp->output, slot->bitmap.buffer, slot->bitmap.pitch * slot->bitmap.rows);
 
          tmp->width = slot->bitmap.width;
