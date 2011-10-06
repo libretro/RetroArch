@@ -13,7 +13,7 @@
 #include <stdbool.h>
 #include "ffemu.h"
 #include "fifo_buffer.h"
-#include "SDL_thread.h"
+#include "thread.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -66,13 +66,14 @@ struct ffemu
    
    struct ffemu_params params;
 
-   SDL_cond *cond;
-   SDL_mutex *cond_lock;
-   SDL_mutex *lock;
+   scond_t *cond;
+   slock_t *cond_lock;
+   slock_t *lock;
    fifo_buffer_t *audio_fifo;
    fifo_buffer_t *video_fifo;
    fifo_buffer_t *attr_fifo;
-   SDL_Thread *thread;
+   sthread_t *thread;
+
    volatile bool alive;
    volatile bool can_sleep;
 };
@@ -229,13 +230,13 @@ static bool init_muxer(ffemu_t *handle)
 
 #define MAX_FRAMES 64
 
-static int SDLCALL ffemu_thread(void *data);
+static void ffemu_thread(void *data);
 
 static bool init_thread(ffemu_t *handle)
 {
-   assert(handle->lock = SDL_CreateMutex());
-   assert(handle->cond_lock = SDL_CreateMutex());
-   assert(handle->cond = SDL_CreateCond());
+   assert(handle->lock = slock_new());
+   assert(handle->cond_lock = slock_new());
+   assert(handle->cond = scond_new());
    assert(handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) * handle->params.channels * MAX_FRAMES / 60));
    assert(handle->attr_fifo = fifo_new(sizeof(struct ffemu_video_data) * MAX_FRAMES));
    assert(handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height *
@@ -243,7 +244,7 @@ static bool init_thread(ffemu_t *handle)
 
    handle->alive = true;
    handle->can_sleep = true;
-   assert(handle->thread = SDL_CreateThread(ffemu_thread, handle));
+   assert(handle->thread = sthread_create(ffemu_thread, handle));
 
    return true;
 }
@@ -252,17 +253,17 @@ static void deinit_thread(ffemu_t *handle)
 {
    if (handle->thread)
    {
-      SDL_mutexP(handle->cond_lock);
+      slock_lock(handle->cond_lock);
       handle->alive = false;
       handle->can_sleep = false;
-      SDL_mutexV(handle->cond_lock);
+      slock_unlock(handle->cond_lock);
 
-      SDL_CondSignal(handle->cond);
-      SDL_WaitThread(handle->thread, NULL);
+      scond_signal(handle->cond);
+      sthread_join(handle->thread);
 
-      SDL_DestroyMutex(handle->lock);
-      SDL_DestroyMutex(handle->cond_lock);
-      SDL_DestroyCond(handle->cond);
+      slock_free(handle->lock);
+      slock_free(handle->cond_lock);
+      scond_free(handle->cond);
 
       handle->thread = NULL;
    }
@@ -357,9 +358,9 @@ int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
 {
    for (;;)
    {
-      SDL_mutexP(handle->lock);
+      slock_lock(handle->lock);
       unsigned avail = fifo_write_avail(handle->attr_fifo);
-      SDL_mutexV(handle->lock);
+      slock_unlock(handle->lock);
 
       if (!handle->alive)
          return -1;
@@ -367,24 +368,24 @@ int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
       if (avail >= sizeof(*data))
          break;
 
-      SDL_mutexP(handle->cond_lock);
+      slock_lock(handle->cond_lock);
       if (handle->can_sleep)
       {
          handle->can_sleep = false;
-         SDL_CondWait(handle->cond, handle->cond_lock);
+         scond_wait(handle->cond, handle->cond_lock);
          handle->can_sleep = true;
       }
       else
-         SDL_CondSignal(handle->cond);
+         scond_signal(handle->cond);
 
-      SDL_mutexV(handle->cond_lock);
+      slock_unlock(handle->cond_lock);
    }
 
-   SDL_mutexP(handle->lock);
+   slock_lock(handle->lock);
    fifo_write(handle->attr_fifo, data, sizeof(*data));
    fifo_write(handle->video_fifo, data->data, data->pitch * data->height);
-   SDL_mutexV(handle->lock);
-   SDL_CondSignal(handle->cond);
+   slock_unlock(handle->lock);
+   scond_signal(handle->cond);
 
    return 0;
 }
@@ -393,9 +394,9 @@ int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
 {
    for (;;)
    {
-      SDL_mutexP(handle->lock);
+      slock_lock(handle->lock);
       unsigned avail = fifo_write_avail(handle->audio_fifo);
-      SDL_mutexV(handle->lock);
+      slock_unlock(handle->lock);
 
       if (!handle->alive)
          return -1;
@@ -403,23 +404,23 @@ int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
       if (avail >= data->frames * handle->params.channels * sizeof(int16_t))
          break;
 
-      SDL_mutexP(handle->cond_lock);
+      slock_lock(handle->cond_lock);
       if (handle->can_sleep)
       {
          handle->can_sleep = false;
-         SDL_CondWait(handle->cond, handle->cond_lock);
+         scond_wait(handle->cond, handle->cond_lock);
          handle->can_sleep = true;
       }
       else
-         SDL_CondSignal(handle->cond);
+         scond_signal(handle->cond);
 
-      SDL_mutexV(handle->cond_lock);
+      slock_unlock(handle->cond_lock);
    }
 
-   SDL_mutexP(handle->lock);
+   slock_lock(handle->lock);
    fifo_write(handle->audio_fifo, data->data, data->frames * handle->params.channels * sizeof(int16_t));
-   SDL_mutexV(handle->lock);
-   SDL_CondSignal(handle->cond);
+   slock_unlock(handle->lock);
+   scond_signal(handle->cond);
 
    return 0;
 }
@@ -584,7 +585,7 @@ int ffemu_finalize(ffemu_t *handle)
    return 0;
 }
 
-static int SDLCALL ffemu_thread(void *data)
+static void ffemu_thread(void *data)
 {
    ffemu_t *ff = data;
 
@@ -603,36 +604,36 @@ static int SDLCALL ffemu_thread(void *data)
       bool avail_video = false;
       bool avail_audio = false;
 
-      SDL_mutexP(ff->lock);
+      slock_lock(ff->lock);
       if (fifo_read_avail(ff->attr_fifo) >= sizeof(attr_buf))
          avail_video = true;
 
       if (fifo_read_avail(ff->audio_fifo) >= audio_buf_size)
          avail_audio = true;
-      SDL_mutexV(ff->lock);
+      slock_unlock(ff->lock);
 
       if (!avail_video && !avail_audio)
       {
-         SDL_mutexP(ff->cond_lock);
+         slock_lock(ff->cond_lock);
          if (ff->can_sleep)
          {
             ff->can_sleep = false;
-            SDL_CondWait(ff->cond, ff->cond_lock);
+            scond_wait(ff->cond, ff->cond_lock);
             ff->can_sleep = true;
          }
          else
-            SDL_CondSignal(ff->cond);
+            scond_signal(ff->cond);
 
-         SDL_mutexV(ff->cond_lock);
+         slock_unlock(ff->cond_lock);
       }
 
       if (avail_video)
       {
-         SDL_mutexP(ff->lock);
+         slock_lock(ff->lock);
          fifo_read(ff->attr_fifo, &attr_buf, sizeof(attr_buf));
          fifo_read(ff->video_fifo, video_buf, attr_buf.height * attr_buf.pitch);
-         SDL_mutexV(ff->lock);
-         SDL_CondSignal(ff->cond);
+         slock_unlock(ff->lock);
+         scond_signal(ff->cond);
 
          attr_buf.data = video_buf;
          ffemu_push_video_thread(ff, &attr_buf);
@@ -640,10 +641,10 @@ static int SDLCALL ffemu_thread(void *data)
 
       if (avail_audio)
       {
-         SDL_mutexP(ff->lock);
+         slock_lock(ff->lock);
          fifo_read(ff->audio_fifo, audio_buf, audio_buf_size);
-         SDL_mutexV(ff->lock);
-         SDL_CondSignal(ff->cond);
+         slock_unlock(ff->lock);
+         scond_signal(ff->cond);
 
          struct ffemu_audio_data aud = {
             .frames = 128,
@@ -656,6 +657,5 @@ static int SDLCALL ffemu_thread(void *data)
 
    av_free(video_buf);
    av_free(audio_buf);
-
-   return 0;
 }
+

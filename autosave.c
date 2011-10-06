@@ -16,7 +16,7 @@
  */
 
 #include "autosave.h"
-#include "SDL.h"
+#include "thread.h"
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -26,11 +26,11 @@
 struct autosave
 {
    volatile bool quit;
-   SDL_mutex *lock;
+   slock_t *lock;
 
-   SDL_mutex *cond_lock;
-   SDL_cond *cond;
-   SDL_Thread *thread;
+   slock_t *cond_lock;
+   scond_t *cond;
+   sthread_t *thread;
 
    void *buffer;
    const void *snes_buffer;
@@ -39,7 +39,7 @@ struct autosave
    unsigned interval;
 };
 
-static int autosave_thread(void *data)
+static void autosave_thread(void *data)
 {
    autosave_t *save = data;
 
@@ -77,13 +77,11 @@ static int autosave_thread(void *data)
          }
       }
 
-      SDL_mutexP(save->cond_lock);
+      slock_lock(save->cond_lock);
       if (!save->quit)
-         SDL_CondWaitTimeout(save->cond, save->cond_lock, save->interval * 1000);
-      SDL_mutexV(save->cond_lock);
+         scond_wait_timeout(save->cond, save->cond_lock, save->interval * 1000);
+      slock_unlock(save->cond_lock);
    }
-
-   return 0;
 }
 
 autosave_t *autosave_new(const char *path, const void *data, size_t size, unsigned interval)
@@ -105,36 +103,36 @@ autosave_t *autosave_new(const char *path, const void *data, size_t size, unsign
    }
    memcpy(handle->buffer, handle->snes_buffer, handle->bufsize);
 
-   handle->lock = SDL_CreateMutex();
-   handle->cond_lock = SDL_CreateMutex();
-   handle->cond = SDL_CreateCond();
+   handle->lock = slock_new();
+   handle->cond_lock = slock_new();
+   handle->cond = scond_new();
 
-   handle->thread = SDL_CreateThread(autosave_thread, handle);
+   handle->thread = sthread_create(autosave_thread, handle);
 
    return handle;
 }
 
 void autosave_lock(autosave_t *handle)
 {
-   SDL_mutexP(handle->lock);
+   slock_lock(handle->lock);
 }
 
 void autosave_unlock(autosave_t *handle)
 {
-   SDL_mutexV(handle->lock);
+   slock_unlock(handle->lock);
 }
 
 void autosave_free(autosave_t *handle)
 {
-   SDL_mutexP(handle->cond_lock);
+   slock_lock(handle->cond_lock);
    handle->quit = true;
-   SDL_mutexV(handle->cond_lock);
-   SDL_CondSignal(handle->cond);
-   SDL_WaitThread(handle->thread, NULL);
+   slock_unlock(handle->cond_lock);
+   scond_signal(handle->cond);
+   sthread_join(handle->thread);
 
-   SDL_DestroyMutex(handle->lock);
-   SDL_DestroyMutex(handle->cond_lock);
-   SDL_DestroyCond(handle->cond);
+   slock_free(handle->lock);
+   slock_free(handle->cond_lock);
+   scond_free(handle->cond);
 
    free(handle->buffer);
    free(handle);
