@@ -23,6 +23,10 @@ ifneq ($(findstring BSD,$(OS)),)
    DYLIB_LIB = -lc
 endif
 
+ifneq ($(findstring Linux,$(OS)),)
+   LIBS += -lrt
+endif
+
 ifeq ($(HAVE_SRC), 1)
    LIBS += $(SRC_LIBS)
    DEFINES += $(SRC_CFLAGS)
