@@ -227,7 +227,7 @@ static bool init_muxer(ffemu_t *handle)
    return true;
 }
 
-#define MAX_FRAMES 64
+#define MAX_FRAMES 16
 
 static void ffemu_thread(void *data);
 
@@ -444,7 +444,6 @@ static int ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_dat
          data->height, handle->video.conv_frame->data, handle->video.conv_frame->linesize);
 
    handle->video.conv_frame->pts = handle->video.frame_cnt;
-   handle->video.conv_frame->display_picture_number = handle->video.frame_cnt;
 
    int outsize = avcodec_encode_video(handle->video.codec, handle->video.outbuf,
          handle->video.outbuf_size, handle->video.conv_frame);
@@ -481,7 +480,7 @@ static int ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_dat
    while (written_frames < data->frames)
    {
       size_t can_write = handle->audio.codec->frame_size - handle->audio.frames_in_buffer;
-      size_t write_frames = data->frames > can_write ? can_write : data->frames;
+      size_t write_frames = data->frames - written_frames > can_write ? can_write : data->frames - written_frames;
 
       memcpy(handle->audio.buffer + handle->audio.frames_in_buffer * handle->params.channels,
             data->data + written_frames * handle->params.channels, 
@@ -502,10 +501,14 @@ static int ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_dat
             return -1;
 
          pkt.size = out_size;
+
+#if 0
          if (handle->audio.codec->coded_frame && handle->audio.codec->coded_frame->pts != AV_NOPTS_VALUE)
             pkt.pts = av_rescale_q(handle->audio.codec->coded_frame->pts, handle->audio.codec->time_base, handle->muxer.astream->time_base);
          else
             pkt.pts = av_rescale_q(handle->audio.frame_cnt, handle->audio.codec->time_base, handle->muxer.astream->time_base);
+#endif
+         pkt.pts = av_rescale_q(handle->audio.frame_cnt, handle->audio.codec->time_base, handle->muxer.astream->time_base);
 
          pkt.flags |= AV_PKT_FLAG_KEY;
          handle->audio.frames_in_buffer = 0;
@@ -525,6 +528,35 @@ int ffemu_finalize(ffemu_t *handle)
 {
    deinit_thread(handle);
 
+   // Push out audio still in queue.
+   size_t audio_buf_size = 512 * handle->params.channels * sizeof(int16_t);
+   int16_t *audio_buf = av_malloc(audio_buf_size);
+   if (audio_buf)
+   {
+      while (fifo_read_avail(handle->audio_fifo) >= audio_buf_size)
+      {
+         fifo_read(handle->audio_fifo, audio_buf, sizeof(audio_buf_size));
+
+         struct ffemu_audio_data aud = {
+            .frames = 512,
+            .data = audio_buf
+         };
+
+         ffemu_push_audio_thread(handle, &aud);
+      }
+
+      size_t avail = fifo_read_avail(handle->audio_fifo);
+      fifo_read(handle->audio_fifo, audio_buf, avail);
+      struct ffemu_audio_data aud = {
+         .frames = avail / (sizeof(int16_t) * handle->params.channels),
+         .data = audio_buf
+      };
+
+      ffemu_push_audio_thread(handle, &aud);
+
+      av_free(audio_buf);
+   }
+
    // Push out frames still stuck in queue.
    void *video_buf = av_malloc(2 * handle->params.fb_width * handle->params.fb_height * handle->video.pix_size);
    if (video_buf)
@@ -538,24 +570,6 @@ int ffemu_finalize(ffemu_t *handle)
          ffemu_push_video_thread(handle, &attr_buf);
       }
       av_free(video_buf);
-   }
-
-   size_t audio_buf_size = 128 * handle->params.channels * sizeof(int16_t);
-   int16_t *audio_buf = av_malloc(audio_buf_size);
-   if (audio_buf)
-   {
-      while (fifo_read_avail(handle->audio_fifo) >= audio_buf_size)
-      {
-         fifo_read(handle->audio_fifo, audio_buf, sizeof(audio_buf_size));
-
-         struct ffemu_audio_data aud = {
-            .frames = 128,
-            .data = audio_buf
-         };
-
-         ffemu_push_audio_thread(handle, &aud);
-      }
-      av_free(audio_buf);
    }
 
    deinit_thread_buf(handle);
@@ -600,14 +614,14 @@ static void ffemu_thread(void *data)
    void *video_buf = av_malloc(2 * ff->params.fb_width * ff->params.fb_height * ff->video.pix_size);
    assert(video_buf);
 
-   size_t audio_buf_size = 128 * ff->params.channels * sizeof(int16_t);
+   size_t audio_buf_size = 512 * ff->params.channels * sizeof(int16_t);
    int16_t *audio_buf = av_malloc(audio_buf_size);
    assert(audio_buf);
 
-   struct ffemu_video_data attr_buf;
-
    while (ff->alive)
    {
+      struct ffemu_video_data attr_buf;
+
       bool avail_video = false;
       bool avail_audio = false;
 
@@ -654,7 +668,7 @@ static void ffemu_thread(void *data)
          scond_signal(ff->cond);
 
          struct ffemu_audio_data aud = {
-            .frames = 128,
+            .frames = 512,
             .data = audio_buf
          };
 
