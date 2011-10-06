@@ -80,9 +80,13 @@ static void sdl_gfx_free(void *data)
 static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font_size)
 {
 #ifdef HAVE_FREETYPE
-   if (*font_path)
+   const char *path = font_path;
+   if (!*path)
+      path = font_renderer_get_default_font();
+
+   if (path)
    {
-      vid->font = font_renderer_new(font_path, font_size);
+      vid->font = font_renderer_new(path, font_size);
       if (vid->font)
       {
          int r = g_settings.video.msg_color_r * 255;

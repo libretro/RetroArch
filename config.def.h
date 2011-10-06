@@ -146,7 +146,7 @@ static const unsigned font_size = 48;
 static const float message_pos_offset_x = 0.05;
 static const float message_pos_offset_y = 0.05;
 // Color of the message.
-static const uint32_t message_color = 0xffffff; // RGB hex value.
+static const uint32_t message_color = 0xffff00; // RGB hex value.
 
 // Render-to-texture before rendering to screen (multi-pass shaders)
 static const bool render_to_texture = false;

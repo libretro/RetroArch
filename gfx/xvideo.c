@@ -184,9 +184,13 @@ static void set_fullscreen(xv_t *xv)
 static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
 {
 #ifdef HAVE_FREETYPE
-   if (*font_path)
+   const char *path = font_path;
+   if (!*path)
+      path = font_renderer_get_default_font();
+
+   if (path)
    {
-      xv->font = font_renderer_new(font_path, font_size);
+      xv->font = font_renderer_new(path, font_size);
       if (xv->font)
       {
          int r = g_settings.video.msg_color_r * 255;
