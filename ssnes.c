@@ -24,6 +24,7 @@
 #include <ctype.h>
 #include <getopt.h>
 #include <time.h>
+#include <errno.h>
 #include "driver.h"
 #include "file.h"
 #include "general.h"
@@ -403,6 +404,7 @@ static void print_help(void)
 
 #ifdef HAVE_FFMPEG
    puts("\t-r/--record: Path to record video file.\n\t\tUsing .mkv extension is recommended, and codecs used are FFV1/FLAC.");
+   puts("\t--size: Overrides output video size when recording with FFmpeg (format: width:height).");
 #endif
    puts("\t-v/--verbose: Verbose logging.");
    puts("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM.");
@@ -511,6 +513,7 @@ static void parse_input(int argc, char *argv[])
       { "fullscreen", 0, NULL, 'f' },
 #ifdef HAVE_FFMPEG
       { "record", 1, NULL, 'r' },
+      { "size", 1, &val, 's' },
 #endif
       { "verbose", 0, NULL, 'v' },
       { "gameboy", 1, NULL, 'g' },
@@ -705,10 +708,37 @@ static void parse_input(int argc, char *argv[])
                case 'p':
                   g_extern.netplay_port = strtoul(optarg, NULL, 0);
                   break;
+
                case 'B':
                   strlcpy(g_extern.bps_name, optarg, sizeof(g_extern.bps_name));
                   g_extern.bps_pref = true;
                   break;
+
+#ifdef HAVE_FFMPEG
+               case 's':
+               {
+                  errno = 0;
+                  char *ptr;
+                  g_extern.record_width = strtoul(optarg, &ptr, 0);
+                  if ((*ptr != ':') || errno)
+                  {
+                     SSNES_ERR("Wrong format for --size.\n");
+                     print_help();
+                     exit(1);
+                  }
+
+                  ptr++;
+                  g_extern.record_height = strtoul(ptr, &ptr, 0);
+                  if ((*ptr != '\0') || errno)
+                  {
+                     SSNES_ERR("Wrong format for --size.\n");
+                     print_help();
+                     exit(1);
+                  }
+                  break;
+               }
+#endif
+
                default:
                   break;
             }
@@ -859,7 +889,12 @@ static void init_recording(void)
          .rgb32 = false,
       };
 
-      if (g_settings.video.hires_record)
+      if (g_extern.record_width || g_extern.record_height)
+      {
+         params.out_width = g_extern.record_width;
+         params.out_height = g_extern.record_height;
+      }
+      else if (g_settings.video.hires_record)
       {
          params.out_width = 512;
          params.out_height = 448;

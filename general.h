@@ -278,6 +278,8 @@ struct global
    ffemu_t *rec;
    char record_path[MAXPATHLEN];
    bool recording;
+   unsigned record_width;
+   unsigned record_height;
 #endif
 
    char title_buf[64];

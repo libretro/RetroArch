@@ -163,7 +163,7 @@ static bool init_video(struct video_info *video, struct ffemu_params *param)
    video->outbuf_size = 1 << 23;
    video->outbuf = av_malloc(video->outbuf_size);
 
-   // Just to make sure we can handle the biggest frames. Seemed to crash with just 256 * 224.
+   // Just to make sure we can handle the biggest frames.
    int size = avpicture_get_size(PIX_FMT_RGB32, param->fb_width, param->fb_height);
    video->conv_frame_buf = av_malloc(size);
    video->conv_frame = avcodec_alloc_frame();
