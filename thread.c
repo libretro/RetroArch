@@ -31,11 +31,64 @@
 #include <mach/mach.h>
 #endif
 
+struct thread_data
+{
+   void (*func)(void*);
+   void *userdata;
+};
+
 #ifdef _WIN32
+
+struct sthread
+{
+   HANDLE thread;
+};
+
+static DWORD CALLBACK thread_wrap(void *data_)
+{
+   struct thread_data *data = data_;
+   data->func(data->userdata);
+   free(data);
+   return 0;
+}
+
+sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
+{
+   sthread_t *thread = calloc(1, sizeof(*thread));
+   if (!thread)
+      return NULL;
+
+   struct thread_data *data = calloc(1, sizeof(*data));
+   if (!data)
+   {
+      free(thread);
+      return NULL;
+   }
+
+   data->func = thread_func;
+   data->userdata = userdata;
+
+   thread->thread = CreateThread(NULL, 0, thread_wrap, data, 0, NULL);
+   if (!thread->thread)
+   {
+      free(data);
+      free(thread);
+      return NULL;
+   }
+
+   return thread;
+}
+
+void sthread_join(sthread_t *thread)
+{
+   WaitForSingleObject(thread->thread, INFINITE);
+   CloseHandle(thread->thread);
+   free(thread);
+}
 
 struct slock
 {
-   CRITICAL_SECTION crit;
+   CRITICAL_SECTION lock;
 };
 
 slock_t *slock_new(void)
@@ -44,17 +97,80 @@ slock_t *slock_new(void)
    if (!lock)
       return NULL;
 
-   Initiali
+   InitializeCriticalSection(&lock->lock);
+   return lock;
 }
 
+void slock_free(slock_t *lock)
+{
+   DeleteCriticalSection(&lock->lock);
+   free(lock);
+}
+
+void slock_lock(slock_t *lock)
+{
+   EnterCriticalSection(&lock->lock);
+}
+
+void slock_unlock(slock_t *lock)
+{
+   LeaveCriticalSection(&lock->lock);
+}
+
+struct scond
+{
+   HANDLE event;
+};
+
+scond_t *scond_new(void)
+{
+   scond_t *cond = calloc(1, sizeof(*cond));
+   if (!cond)
+      return NULL;
+
+   cond->event = CreateEvent(NULL, FALSE, FALSE, NULL);
+   if (!cond->event)
+   {
+      free(cond);
+      return NULL;
+   }
+
+   return cond;
+}
+
+void scond_wait(scond_t *cond, slock_t *lock)
+{
+   WaitForSingleObject(cond->event, 0);
+   slock_unlock(lock);
+
+   WaitForSingleObject(cond->event, INFINITE);
+
+   slock_lock(lock);
+}
+
+bool scond_wait_timeout(scond_t *cond, slock_t *lock, unsigned timeout_ms)
+{
+   WaitForSingleObject(cond->event, 0);
+   slock_unlock(lock);
+
+   DWORD res = WaitForSingleObject(cond->event, timeout_ms);
+
+   slock_lock(lock);
+   return res == WAIT_OBJECT_0;
+}
+
+void scond_signal(scond_t *cond)
+{
+   SetEvent(cond->event);
+}
+
+void scond_free(scond_t *cond)
+{
+   CloseHandle(cond->event);
+   free(cond);
+}
 
 #else
-
-struct thread_data
-{
-   void (*func)(void*);
-   void *userdata;
-};
 
 struct sthread
 {
