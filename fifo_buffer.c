@@ -42,18 +42,12 @@ fifo_buffer_t* fifo_new(size_t size)
 
 void fifo_free(fifo_buffer_t* buffer)
 {
-   assert(buffer);
-   assert(buffer->buffer);
-
    free(buffer->buffer);
    free(buffer);
 }
 
 size_t fifo_read_avail(fifo_buffer_t* buffer)
 {
-   assert(buffer);
-   assert(buffer->buffer);
-
    size_t first = buffer->first;
    size_t end = buffer->end;
    if (end < first)
@@ -63,9 +57,6 @@ size_t fifo_read_avail(fifo_buffer_t* buffer)
 
 size_t fifo_write_avail(fifo_buffer_t* buffer)
 {
-   assert(buffer);
-   assert(buffer->buffer);
-
    size_t first = buffer->first;
    size_t end = buffer->end;
    if (end < first)
@@ -76,11 +67,6 @@ size_t fifo_write_avail(fifo_buffer_t* buffer)
 
 void fifo_write(fifo_buffer_t* buffer, const void* in_buf, size_t size)
 {
-   assert(buffer);
-   assert(buffer->buffer);
-   assert(in_buf);
-   assert(fifo_write_avail(buffer) >= size);
-
    size_t first_write = size;
    size_t rest_write = 0;
    if (buffer->end + size > buffer->bufsize)
@@ -99,11 +85,6 @@ void fifo_write(fifo_buffer_t* buffer, const void* in_buf, size_t size)
 
 void fifo_read(fifo_buffer_t* buffer, void* in_buf, size_t size)
 {
-   assert(buffer);
-   assert(buffer->buffer);
-   assert(in_buf);
-   assert(fifo_read_avail(buffer) >= size);
-
    size_t first_read = size;
    size_t rest_read = 0;
    if (buffer->first + size > buffer->bufsize)
