@@ -25,10 +25,10 @@ typedef struct font_renderer font_renderer_t;
 
 struct font_output
 {
-   uint8_t *output;
+   uint8_t *output; // 8-bit intensity.
    unsigned width, height, pitch;
    int off_x, off_y;
-   struct font_output *next;
+   struct font_output *next; // linked list.
 };
 
 struct font_output_list
@@ -37,8 +37,12 @@ struct font_output_list
 };
 
 font_renderer_t *font_renderer_new(const char *font_path, unsigned font_size);
-void font_renderer_msg(font_renderer_t *handle, const char *msg, struct font_output_list *output);
+void font_renderer_msg(font_renderer_t *handle, const char *msg,
+      struct font_output_list *output);
+
 void font_renderer_free_output(struct font_output_list *list);
 void font_renderer_free(font_renderer_t *handle);
+
+const char *font_renderer_get_default_font(void);
 
 #endif

@@ -332,9 +332,13 @@ static void gl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
 static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size)
 {
 #ifdef HAVE_FREETYPE
-   if (*font_path)
+   const char *path = font_path;
+   if (!*path)
+      path = font_renderer_get_default_font();
+
+   if (path)
    {
-      gl->font = font_renderer_new(font_path, font_size);
+      gl->font = font_renderer_new(path, font_size);
       if (gl->font)
       {
          glGenTextures(1, &gl->font_tex);

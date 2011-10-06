@@ -16,6 +16,7 @@
  */
 
 #include "fonts.h"
+#include "file.h"
 #include <string.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -131,3 +132,33 @@ void font_renderer_free(font_renderer_t *handle)
    if (handle->lib)
       FT_Done_FreeType(handle->lib);
 }
+
+// Not the cleanest way to do things for sure, but should hopefully work ... :)
+
+#if defined(_WIN32)
+static const char *font_paths[] = {
+   "C:\\Windows\\Fonts\\consola.ttf",
+   "C:\\Windows\\Fonts\\verdana.ttf",
+#elif defined(__APPLE__)
+static const char *font_paths[] = {
+   "/Library/Fonts/Microsoft/Lucidia Console.ttf",
+#else
+static const char *font_paths[] = {
+   "/usr/share/fonts/TTF/DejaVuSansMono.ttf",
+   "/usr/share/fonts/TTF/DejaVuSans.ttf",
+#endif
+   "osd-font.ttf", // Magic font to search for, useful for distribution.
+};
+
+// Highly OS/platform dependent.
+const char *font_renderer_get_default_font(void)
+{
+   for (unsigned i = 0; i < sizeof(font_paths) / sizeof(font_paths[0]); i++)
+   {
+      if (path_file_exists(font_paths[i]))
+         return font_paths[i];
+   }
+
+   return NULL;
+}
+
