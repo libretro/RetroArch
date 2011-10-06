@@ -116,6 +116,11 @@ Activates video recording of gameplay into PATH. Using .mkv extension is recomme
 Codecs used are FFV1/FLAC, suitable for processing the material further.
 
 .TP
+\fB--size WIDTHxHEIGHT\fR
+Allows specifying the exact output width and height of FFmpeg recording. This option will override any configuration settings.
+The video input is scaled with point filtering before being encoded at the correct size.
+
+.TP
 \fB--bsvplay PATH, -P PATH\fR
 Play back a movie recorded in the .bsv format (bSNES). Cart ROM and movie file need to correspond.
 It also requires to play back with the same libsnes backend that was used for recording.
