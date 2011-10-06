@@ -352,6 +352,8 @@ static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_s
       else
          SSNES_WARN("Couldn't init font renderer with font \"%s\"...\n", font_path);
    }
+   else
+      SSNES_LOG("Did not find default font.\n");
 #else
    (void)gl;
    (void)font_path;

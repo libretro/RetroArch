@@ -141,7 +141,7 @@ static const char *font_paths[] = {
    "C:\\Windows\\Fonts\\verdana.ttf",
 #elif defined(__APPLE__)
 static const char *font_paths[] = {
-   "/Library/Fonts/Microsoft/Lucidia Console.ttf",
+   "/Library/Fonts/Microsoft/Candara.ttf",
 #else
 static const char *font_paths[] = {
    "/usr/share/fonts/TTF/DejaVuSansMono.ttf",

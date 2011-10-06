@@ -112,6 +112,8 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
       else
          SSNES_WARN("Failed to init font.\n");
    }
+   else
+      SSNES_LOG("Did not find default font.\n");
 #else
    (void)vid;
    (void)font_path;

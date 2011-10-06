@@ -206,6 +206,8 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
       else
          SSNES_WARN("Failed to init font.\n");
    }
+   else
+      SSNES_LOG("Did not find default font.\n");
 #endif
 }
 
