@@ -163,11 +163,10 @@ static bool init_video(struct video_info *video, struct ffemu_params *param)
    video->outbuf_size = 1 << 23;
    video->outbuf = av_malloc(video->outbuf_size);
 
-   // Just to make sure we can handle the biggest frames.
-   int size = avpicture_get_size(PIX_FMT_RGB32, param->fb_width, param->fb_height);
+   size_t size = avpicture_get_size(PIX_FMT_RGB32, param->out_width, param->out_height);
    video->conv_frame_buf = av_malloc(size);
    video->conv_frame = avcodec_alloc_frame();
-   avpicture_fill((AVPicture*)video->conv_frame, video->conv_frame_buf, PIX_FMT_RGB32, param->fb_width, param->fb_height);
+   avpicture_fill((AVPicture*)video->conv_frame, video->conv_frame_buf, PIX_FMT_RGB32, param->out_width, param->out_height);
 
    return true;
 }
@@ -382,8 +381,16 @@ int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
    }
 
    slock_lock(handle->lock);
-   fifo_write(handle->attr_fifo, data, sizeof(*data));
-   fifo_write(handle->video_fifo, data->data, data->pitch * data->height);
+
+   // Tightly pack our frame to conserve memory. libsnes tends to use a very large pitch.
+   struct ffemu_video_data attr_data = *data;
+   attr_data.pitch = attr_data.width * handle->video.pix_size;
+   fifo_write(handle->attr_fifo, &attr_data, sizeof(attr_data));
+
+   unsigned offset = 0;
+   for (unsigned y = 0; y < data->height; y++, offset += data->pitch)
+      fifo_write(handle->video_fifo, (const uint8_t*)data->data + offset, attr_data.pitch);
+
    slock_unlock(handle->lock);
    scond_signal(handle->cond);
 
@@ -434,7 +441,7 @@ static int ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_dat
    int linesize = data->pitch;
 
    sws_scale(handle->video.sws_ctx, (const uint8_t* const*)&data->data, &linesize, 0,
-         handle->video.codec->height, handle->video.conv_frame->data, handle->video.conv_frame->linesize);
+         data->height, handle->video.conv_frame->data, handle->video.conv_frame->linesize);
 
    handle->video.conv_frame->pts = handle->video.frame_cnt;
    handle->video.conv_frame->display_picture_number = handle->video.frame_cnt;

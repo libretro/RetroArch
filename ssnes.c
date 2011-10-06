@@ -404,7 +404,7 @@ static void print_help(void)
 
 #ifdef HAVE_FFMPEG
    puts("\t-r/--record: Path to record video file.\n\t\tUsing .mkv extension is recommended, and codecs used are FFV1/FLAC.");
-   puts("\t--size: Overrides output video size when recording with FFmpeg (format: width:height).");
+   puts("\t--size: Overrides output video size when recording with FFmpeg (format: widthxheight).");
 #endif
    puts("\t-v/--verbose: Verbose logging.");
    puts("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM.");
@@ -720,7 +720,7 @@ static void parse_input(int argc, char *argv[])
                   errno = 0;
                   char *ptr;
                   g_extern.record_width = strtoul(optarg, &ptr, 0);
-                  if ((*ptr != ':') || errno)
+                  if ((*ptr != 'x') || errno)
                   {
                      SSNES_ERR("Wrong format for --size.\n");
                      print_help();
@@ -879,7 +879,7 @@ static void init_recording(void)
       struct ffemu_params params = {
          .out_width = 256,
          .out_height = 224,
-         .fb_width = 1024,
+         .fb_width = 512,
          .fb_height = 512,
          .channels = 2,
          .samplerate = 32000,
@@ -908,7 +908,7 @@ static void init_recording(void)
          unsigned max_width = 512;
          unsigned max_height = 512;
          g_extern.filter.psize(&max_width, &max_height);
-         params.fb_width = g_extern.filter.pitch >> 2;
+         params.fb_width = next_pow2(max_width);
          params.fb_height = next_pow2(max_height);
       }
 
