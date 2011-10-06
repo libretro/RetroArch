@@ -26,6 +26,11 @@
 #include <time.h>
 #endif
 
+#ifdef __MACH__
+#include <mach/clock.h>
+#include <mach/mach.h>
+#endif
+
 #ifdef _WIN32
 
 struct slock
@@ -166,7 +171,18 @@ void scond_wait(scond_t *cond, slock_t *lock)
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, unsigned timeout_ms)
 {
    struct timespec now;
+
+#ifdef __MACH__ // OSX doesn't have clock_gettime ... :(
+   clock_serv_t cclock;
+   mach_timespec_t mts;
+   host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+   clock_get_time(cclock, &mts);
+   mach_port_deallocate(mach_task_self(), cclock);
+   now.tv_sec = mts.tv_sec;
+   now.tv_nsec = mts.tv_nsec;
+#else
    clock_gettime(CLOCK_REALTIME, &now);
+#endif
 
    now.tv_sec += timeout_ms / 1000;
    now.tv_nsec += timeout_ms * 1000000L;

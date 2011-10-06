@@ -22,6 +22,7 @@
 
 #ifdef __APPLE__
 #include <OpenGL/OpenGL.h>
+#include <OpenGL/gl.h>
 #endif
 
 // SDL 1.2 is portable, sure, but you still need some platform specific workarounds ;)

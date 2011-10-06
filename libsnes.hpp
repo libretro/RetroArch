@@ -74,6 +74,8 @@ typedef int16_t (*snes_input_state_t)(bool port, unsigned device, unsigned index
 unsigned snes_library_revision_major(void);
 unsigned snes_library_revision_minor(void);
 
+const char *snes_library_id(void);
+
 void snes_set_video_refresh(snes_video_refresh_t);
 void snes_set_audio_sample(snes_audio_sample_t);
 void snes_set_input_poll(snes_input_poll_t);
