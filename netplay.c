@@ -272,9 +272,27 @@ bool netplay_can_poll(netplay_t *handle)
    return handle->can_poll;
 }
 
+// Not really a hash, but should be enough to differentiate implementations from each other.
+// Subtle differences in the implementation will not be possible to spot.
+// The alternative would have been checking serialization sizes, but it was troublesome for cross platform compat.
+static uint32_t implementation_magic_value(void)
+{
+   uint32_t res = 0;
+   res |= (psnes_library_revision_major() & 0xf) << 0;
+   res |= (psnes_library_revision_minor() & 0xf) << 4;
+
+   // Shouldn't really use this, but oh well :) It'll do the job.
+   const char *lib = psnes_library_id();
+   size_t len = strlen(lib);
+   for (size_t i = 0; i < len; i++)
+      res ^= lib[i] << (i & 0xf);
+
+   return res;
+}
+
 static bool send_info(netplay_t *handle)
 {
-   uint32_t header[3] = { htonl(g_extern.cart_crc), htonl(psnes_serialize_size()), htonl(psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM)) };
+   uint32_t header[3] = { htonl(g_extern.cart_crc), htonl(implementation_magic_value()), htonl(psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM)) };
    if (send(handle->fd, CONST_CAST header, sizeof(header), 0) != sizeof(header))
       return false;
 
