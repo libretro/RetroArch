@@ -172,6 +172,8 @@ typedef struct gl
 #ifdef HAVE_FREETYPE
    font_renderer_t *font;
    GLuint font_tex;
+   int font_tex_w, font_tex_h;
+   void *font_tex_empty_buf;
 #endif
 
 } gl_t;
@@ -533,7 +535,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 error:
    glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
    pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
-   SSNES_WARN("Failed to set up FBO. Two-pass shading will not work.\n");
+   SSNES_ERR("Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
 #else
    (void)gl;
    (void)width;
@@ -548,6 +550,9 @@ static inline void gl_deinit_font(gl_t *gl)
    {
       font_renderer_free(gl->font);
       glDeleteTextures(1, &gl->font_tex);
+
+      if (gl->font_tex_empty_buf)
+         free(gl->font_tex_empty_buf);
    }
 #else
    (void)gl;
@@ -617,56 +622,166 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
    //SSNES_LOG("Setting viewport @ %ux%u\n", width, height);
 }
 
+#ifdef HAVE_FREETYPE
+
+// Somewhat overwhelming code just to render some damn fonts.
+// We aim to use NPOT textures for compatibility with old and shitty cards.
+// Also, we want to avoid reallocating a texture for each glyph (performance dips), so we
+// contruct the whole texture using one call, and copy straight to it with
+// glTexSubImage.
+
+struct font_rect
+{
+   int x, y;
+   int width, height;
+   int pot_width, pot_height;
+};
+
+static void calculate_msg_geometry(const struct font_output *head, struct font_rect *rect)
+{
+   int x_min = head->off_x;
+   int x_max = head->off_x + head->width;
+   int y_min = head->off_y;
+   int y_max = head->off_y + head->height;
+
+   while ((head = head->next))
+   {
+      int left = head->off_x;
+      int right = head->off_x + head->width;
+      int bottom = head->off_y;
+      int top = head->off_y + head->height;
+
+      if (left < x_min)
+         x_min = left;
+      if (right > x_max)
+         x_max = right;
+
+      if (bottom < y_min)
+         y_min = bottom;
+      if (top > y_max)
+         y_max = top;
+   }
+
+   rect->x = x_min;
+   rect->y = y_min;
+   rect->width = x_max - x_min;
+   rect->height = y_max - y_min;
+}
+
+static void adjust_power_of_two(gl_t *gl, struct font_rect *geom)
+{
+   // Some systems really hate NPOT textures.
+   geom->pot_width = next_pow2(geom->width);
+   geom->pot_height = next_pow2(geom->height);
+
+   if ((geom->pot_width > gl->font_tex_w) || (geom->pot_height > gl->font_tex_h))
+   {
+      gl->font_tex_empty_buf = realloc(gl->font_tex_empty_buf, geom->pot_width * geom->pot_height);
+      memset(gl->font_tex_empty_buf, 0, geom->pot_width * geom->pot_height);
+
+      glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, geom->pot_width);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_INTENSITY8, geom->pot_width, geom->pot_height,
+            0, GL_LUMINANCE, GL_UNSIGNED_BYTE, gl->font_tex_empty_buf);
+
+      gl->font_tex_w = geom->pot_width;
+      gl->font_tex_h = geom->pot_height;
+   }
+}
+
+// Old style "blitting", so we can render all the fonts in one go.
+// TODO: Is it possible that fonts could overlap if we blit without alpha blending?
+static void blit_fonts(gl_t *gl, const struct font_output *head, const struct font_rect *geom)
+{
+   // Clear out earlier fonts.
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->font_tex_w);
+   glTexSubImage2D(GL_TEXTURE_2D,
+         0, 0, 0, gl->font_tex_w, gl->font_tex_h,
+         GL_LUMINANCE, GL_UNSIGNED_BYTE, gl->font_tex_empty_buf);
+
+   while (head)
+   {
+      // head has top-left oriented coords.
+      int x = head->off_x - geom->x;
+      int y = head->off_y - geom->y;
+      y = gl->font_tex_h - head->height - y - 1;
+
+      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(head->pitch));
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, head->pitch);
+      glTexSubImage2D(GL_TEXTURE_2D,
+            0, x, y, head->width, head->height,
+            GL_LUMINANCE, GL_UNSIGNED_BYTE, head->output);
+
+      head = head->next;
+   }
+}
+
+static void calculate_font_coords(gl_t *gl, const struct font_rect *geom, GLfloat font_vertex[8], GLfloat font_tex_coords[8])
+{
+   GLfloat lx = g_settings.video.msg_pos_x;
+   GLfloat hx = (GLfloat)geom->width / gl->vp_width + lx;
+   GLfloat ly = g_settings.video.msg_pos_y;
+   GLfloat hy = (GLfloat)geom->height / gl->vp_height + ly;
+
+   font_vertex[0] = lx;
+   font_vertex[1] = ly;
+   font_vertex[2] = lx;
+   font_vertex[3] = hy;
+   font_vertex[4] = hx;
+   font_vertex[5] = hy;
+   font_vertex[6] = hx;
+   font_vertex[7] = ly;
+
+   lx = 0.0f;
+   hx = (GLfloat)geom->width / gl->font_tex_w;
+   ly = 1.0f - (GLfloat)geom->height / gl->font_tex_h; 
+   hy = 1.0f;
+
+   font_tex_coords[0] = lx;
+   font_tex_coords[1] = hy;
+   font_tex_coords[2] = lx;
+   font_tex_coords[3] = ly;
+   font_tex_coords[4] = hx;
+   font_tex_coords[5] = ly;
+   font_tex_coords[6] = hx;
+   font_tex_coords[7] = hy;
+}
+
 static void gl_render_msg(gl_t *gl, const char *msg)
 {
-#ifdef HAVE_FREETYPE
    if (!gl->font)
       return;
 
    GLfloat font_vertex[8]; 
+   GLfloat font_tex_coords[8];
 
    // Deactivate custom shaders. Enable the font texture.
    gl_shader_use(0);
    set_viewport(gl, gl->win_width, gl->win_height, false);
    glBindTexture(GL_TEXTURE_2D, gl->font_tex);
    glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), font_vertex);
-   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), tex_coords); // Use the static one (uses whole texture).
+   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), font_tex_coords);
 
    // Need blending. 
    // Using fixed function pipeline here since we cannot guarantee presence of shaders (would be kinda overkill anyways).
    glEnable(GL_BLEND);
-   glColor4f(g_settings.video.msg_color_r, g_settings.video.msg_color_g, g_settings.video.msg_color_b, 1);
+   glColor4f(g_settings.video.msg_color_r, g_settings.video.msg_color_g,
+         g_settings.video.msg_color_b, 1);
 
    struct font_output_list out;
    font_renderer_msg(gl->font, msg, &out);
    struct font_output *head = out.head;
 
-   while (head != NULL)
-   {
-      GLfloat lx = (GLfloat)head->off_x / gl->vp_width + g_settings.video.msg_pos_x;
-      GLfloat hx = (GLfloat)(head->off_x + head->width) / gl->vp_width + g_settings.video.msg_pos_x;
-      GLfloat ly = (GLfloat)head->off_y / gl->vp_height + g_settings.video.msg_pos_y;
-      GLfloat hy = (GLfloat)(head->off_y + head->height) / gl->vp_height + g_settings.video.msg_pos_y;
+   struct font_rect geom;
+   calculate_msg_geometry(head, &geom);
+   adjust_power_of_two(gl, &geom);
+   blit_fonts(gl, head, &geom);
+   calculate_font_coords(gl, &geom, font_vertex, font_tex_coords);
 
-      font_vertex[0] = lx;
-      font_vertex[1] = ly;
-      font_vertex[2] = lx;
-      font_vertex[3] = hy;
-      font_vertex[4] = hx;
-      font_vertex[5] = hy;
-      font_vertex[6] = hx;
-      font_vertex[7] = ly;
-
-      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(head->pitch));
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, head->pitch);
-      glTexImage2D(GL_TEXTURE_2D,
-            0, GL_INTENSITY8, head->width, head->height, 0, GL_LUMINANCE,
-            GL_UNSIGNED_BYTE, head->output);
-
-      head = head->next;
-      glDrawArrays(GL_QUADS, 0, 4);
-   }
    font_renderer_free_output(&out);
+   
+   glDrawArrays(GL_QUADS, 0, 4);
 
    glColor4f(1, 1, 1, 1);
 
@@ -676,8 +791,14 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    glDisable(GL_BLEND);
-#endif
 }
+#else
+static void gl_render_msg(gl_t *gl, const char *msg)
+{
+   (void)gl;
+   (void)msg;
+}
+#endif
 
 static inline void set_lut_texture_coords(const GLfloat *coords)
 {

@@ -162,9 +162,14 @@ ifneq ($(V),1)
    Q := @
 endif
 
-CFLAGS += -Wall -O3 -g -I. -pedantic
+OPTIMIZE_FLAG = -O3
+ifeq ($(DEBUG), 1)
+   OPTIMIZE_FLAG = -O0
+endif
+
+CFLAGS += -Wall $(OPTIMIZE_FLAG) -g -I. -pedantic
 ifneq ($(findstring icc,$(CC)),)
-   CFLAGS += -std=c99
+   CFLAGS += -std=c99 -D_GNU_SOURCE
 else
    CFLAGS += -std=gnu99
 endif
