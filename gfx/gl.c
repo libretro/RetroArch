@@ -34,6 +34,7 @@
 #include "gl_common.h"
 #include "gfx_common.h"
 #include "sdlwrap.h"
+#include "strl.h"
 
 #define NO_SDL_GLEXT
 #include "SDL.h"
@@ -174,6 +175,8 @@ typedef struct gl
    GLuint font_tex;
    int font_tex_w, font_tex_h;
    void *font_tex_empty_buf;
+   char font_last_msg[256];
+   int font_last_width, font_last_height;
 #endif
 
 } gl_t;
@@ -717,12 +720,13 @@ static void blit_fonts(gl_t *gl, const struct font_output *head, const struct fo
    }
 }
 
-static void calculate_font_coords(gl_t *gl, const struct font_rect *geom, GLfloat font_vertex[8], GLfloat font_tex_coords[8])
+static void calculate_font_coords(gl_t *gl,
+      GLfloat font_vertex[8], GLfloat font_tex_coords[8])
 {
    GLfloat lx = g_settings.video.msg_pos_x;
-   GLfloat hx = (GLfloat)geom->width / gl->vp_width + lx;
+   GLfloat hx = (GLfloat)gl->font_last_width / gl->vp_width + lx;
    GLfloat ly = g_settings.video.msg_pos_y;
-   GLfloat hy = (GLfloat)geom->height / gl->vp_height + ly;
+   GLfloat hy = (GLfloat)gl->font_last_height / gl->vp_height + ly;
 
    font_vertex[0] = lx;
    font_vertex[1] = ly;
@@ -734,8 +738,8 @@ static void calculate_font_coords(gl_t *gl, const struct font_rect *geom, GLfloa
    font_vertex[7] = ly;
 
    lx = 0.0f;
-   hx = (GLfloat)geom->width / gl->font_tex_w;
-   ly = 1.0f - (GLfloat)geom->height / gl->font_tex_h; 
+   hx = (GLfloat)gl->font_last_width / gl->font_tex_w;
+   ly = 1.0f - (GLfloat)gl->font_last_height / gl->font_tex_h; 
    hy = 1.0f;
 
    font_tex_coords[0] = lx;
@@ -770,22 +774,30 @@ static void gl_render_msg(gl_t *gl, const char *msg)
          g_settings.video.msg_color_b, 1);
 
    struct font_output_list out;
-   font_renderer_msg(gl->font, msg, &out);
-   struct font_output *head = out.head;
 
-   struct font_rect geom;
-   calculate_msg_geometry(head, &geom);
-   adjust_power_of_two(gl, &geom);
-   blit_fonts(gl, head, &geom);
-   calculate_font_coords(gl, &geom, font_vertex, font_tex_coords);
+   // If we get the same message, there's obviously no need to render fonts again ...
+   if (strcmp(gl->font_last_msg, msg) != 0)
+   {
+      font_renderer_msg(gl->font, msg, &out);
+      struct font_output *head = out.head;
 
-   font_renderer_free_output(&out);
+      struct font_rect geom;
+      calculate_msg_geometry(head, &geom);
+      adjust_power_of_two(gl, &geom);
+      blit_fonts(gl, head, &geom);
+
+      font_renderer_free_output(&out);
+      strlcpy(gl->font_last_msg, msg, sizeof(gl->font_last_msg));
+
+      gl->font_last_width = geom.width;
+      gl->font_last_height = geom.height;
+   }
+   calculate_font_coords(gl, font_vertex, font_tex_coords);
    
    glDrawArrays(GL_QUADS, 0, 4);
 
-   glColor4f(1, 1, 1, 1);
-
    // Go back to old rendering path.
+   glColor4f(1, 1, 1, 1);
    glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
    glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes_flipped);
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
