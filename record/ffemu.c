@@ -31,6 +31,7 @@ struct video_info
    size_t outbuf_size;
 
    int fmt;
+   int pix_fmt;
    int pix_size;
 
    AVFormatContext *format;
@@ -120,7 +121,11 @@ static bool init_audio(struct audio_info *audio, struct ffemu_params *param)
 
 static bool init_video(struct video_info *video, struct ffemu_params *param)
 {
+#ifdef HAVE_X264RGB
+   AVCodec *codec = avcodec_find_encoder(CODEC_ID_H264);
+#else
    AVCodec *codec = avcodec_find_encoder(CODEC_ID_FFV1);
+#endif
    if (!codec)
       return false;
 
@@ -136,6 +141,12 @@ static bool init_video(struct video_info *video, struct ffemu_params *param)
       video->pix_size = sizeof(uint32_t);
    }
 
+#ifdef HAVE_X264RGB
+   video->pix_fmt = PIX_FMT_BGR24;
+#else
+   video->pix_fmt = PIX_FMT_RGB32;
+#endif
+
 #ifdef HAVE_FFMPEG_ALLOC_CONTEXT3
    video->codec = avcodec_alloc_context3(codec);
 #else
@@ -146,12 +157,20 @@ static bool init_video(struct video_info *video, struct ffemu_params *param)
    video->codec->width = param->out_width;
    video->codec->height = param->out_height;
    video->codec->time_base = (AVRational) {param->fps.den, param->fps.num};
-   video->codec->pix_fmt = PIX_FMT_RGB32;
    video->codec->sample_aspect_ratio = av_d2q(param->aspect_ratio * param->out_height / param->out_width, 255);
+   video->codec->pix_fmt = video->pix_fmt;
+
+   AVDictionary *opts = NULL;
+
+#ifdef HAVE_X264RGB
+   video->codec->thread_count = 3;
+   av_dict_set(&opts, "crf", "0", 0);
+#else
    video->codec->thread_count = 2;
+#endif
 
 #ifdef HAVE_FFMPEG_AVCODEC_OPEN2
-   if (avcodec_open2(video->codec, codec, NULL) != 0)
+   if (avcodec_open2(video->codec, codec, &opts) != 0)
 #else
    if (avcodec_open(video->codec, codec) != 0)
 #endif
@@ -159,14 +178,19 @@ static bool init_video(struct video_info *video, struct ffemu_params *param)
       return false;
    }
 
+#ifdef HAVE_FFMPEG_AVCODEC_OPEN2
+   if (opts)
+      av_dict_free(&opts);
+#endif
+
    // Allocate a big buffer :p ffmpeg API doesn't seem to give us some clues how big this buffer should be.
    video->outbuf_size = 1 << 23;
    video->outbuf = av_malloc(video->outbuf_size);
 
-   size_t size = avpicture_get_size(PIX_FMT_RGB32, param->out_width, param->out_height);
+   size_t size = avpicture_get_size(video->pix_fmt, param->out_width, param->out_height);
    video->conv_frame_buf = av_malloc(size);
    video->conv_frame = avcodec_alloc_frame();
-   avpicture_fill((AVPicture*)video->conv_frame, video->conv_frame_buf, PIX_FMT_RGB32, param->out_width, param->out_height);
+   avpicture_fill((AVPicture*)video->conv_frame, video->conv_frame_buf, video->pix_fmt, param->out_width, param->out_height);
 
    return true;
 }
@@ -213,6 +237,10 @@ static bool init_muxer(ffemu_t *handle)
    if (ctx->oformat->flags & AVFMT_GLOBALHEADER)
       handle->audio.codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
    handle->muxer.astream = stream;
+
+#ifdef HAVE_X264RGB // Avoids a warning at end about non-monotonically increasing DTS values. It seems to be harmless to disable this.
+   ctx->oformat->flags |= AVFMT_TS_NONSTRICT;
+#endif
 
 #ifdef HAVE_FFMPEG_AVFORMAT_WRITE_HEADER
    if (avformat_write_header(ctx, NULL) < 0)
@@ -435,7 +463,7 @@ int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
 static int ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_data *data)
 {
    handle->video.sws_ctx = sws_getCachedContext(handle->video.sws_ctx, data->width, data->height, handle->video.fmt,
-         handle->params.out_width, handle->params.out_height, PIX_FMT_RGB32, SWS_POINT,
+         handle->params.out_width, handle->params.out_height, handle->video.pix_fmt, SWS_POINT,
          NULL, NULL, NULL);
 
    int linesize = data->pitch;
@@ -502,10 +530,7 @@ static int ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_dat
 
          pkt.size = out_size;
 
-         if (handle->audio.codec->coded_frame && handle->audio.codec->coded_frame->pts != AV_NOPTS_VALUE)
-            pkt.pts = av_rescale_q(handle->audio.codec->coded_frame->pts, handle->audio.codec->time_base, handle->muxer.astream->time_base);
-         else
-            pkt.pts = av_rescale_q(handle->audio.frame_cnt, handle->audio.codec->time_base, handle->muxer.astream->time_base);
+         pkt.pts = av_rescale_q(handle->audio.codec->coded_frame->pts, handle->audio.codec->time_base, handle->muxer.astream->time_base);
 
          pkt.flags |= AV_PKT_FLAG_KEY;
          handle->audio.frames_in_buffer = 0;
@@ -578,24 +603,22 @@ int ffemu_finalize(ffemu_t *handle)
    pkt.data = handle->video.outbuf;
 
    int out_size = 0;
-   do
+   for (;;)
    {
       out_size = avcodec_encode_video(handle->video.codec, handle->video.outbuf, handle->video.outbuf_size, NULL);
+      if (out_size <= 0)
+         break;
+
       pkt.pts = av_rescale_q(handle->video.codec->coded_frame->pts, handle->video.codec->time_base, handle->muxer.vstream->time_base);
 
       if (handle->video.codec->coded_frame->key_frame)
          pkt.flags |= AV_PKT_FLAG_KEY;
 
       pkt.size = out_size;
-
-      if (pkt.size > 0)
-      {
-         int err = av_interleaved_write_frame(handle->muxer.ctx, &pkt);
-         if (err < 0)
-            break;
-      }
-
-   } while (out_size > 0);
+      int err = av_interleaved_write_frame(handle->muxer.ctx, &pkt);
+      if (err < 0)
+         break;
+   }
 
    // Write final data.
    av_write_trailer(handle->muxer.ctx);

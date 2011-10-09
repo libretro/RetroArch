@@ -7,9 +7,10 @@ PACKAGE_VERSION=0.8.2
 # $1: Variable (HAVE_ALSA, HAVE_OSS, etc)   
 # $2: Comment                 
 # $3: Default arg. auto implies that HAVE_ALSA will be set according to library checks later on.
-add_command_line_enable DYNAMIC "Enable dynamic loading of libsnes library." no
+add_command_line_enable DYNAMIC "Enable dynamic loading of libsnes library" no
 add_command_line_string LIBSNES "libsnes library used" "-lsnes"
 add_command_line_enable FFMPEG "Enable FFmpeg recording support" no
+add_command_line_enable X264RGB "Enable lossless X264 RGB recording" no
 add_command_line_enable DYLIB "Enable dynamic loading support" auto
 add_command_line_enable NETPLAY "Enable netplay support" auto
 add_command_line_enable SRC "Enable libsamplerate support" no
