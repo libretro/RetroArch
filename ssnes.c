@@ -334,7 +334,7 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
 #endif
 
 #ifdef _WIN32
-#define PACKAGE_VERSION "0.8.2"
+#define PACKAGE_VERSION "0.9-rc1"
 #endif
 
 #include "config.features.h"
@@ -361,6 +361,7 @@ static void print_features(void)
    _PSUPP(fbo, "FBO", "OpenGL render-to-texture (multi-pass shaders)");
    _PSUPP(dynamic, "Dynamic", "Dynamic run-time loading of libsnes library");
    _PSUPP(ffmpeg, "FFmpeg", "On-the-fly recording of gameplay with libavcodec");
+   _PSUPP(x264rgb, "x264 RGB", "x264 lossless RGB recording for FFmpeg");
    _PSUPP(src, "SRC", "libsamplerate audio resampling");
    _PSUPP(configfile, "Config file", "Configuration file support");
    _PSUPP(freetype, "FreeType", "TTF font rendering with FreeType");
@@ -376,6 +377,7 @@ static void print_help(void)
    puts("===================================================================");
    puts("Usage: ssnes [rom file] [options...]");
    puts("\t-h/--help: Show this help message.");
+   puts("\t--features: Prints available features compiled into SSNES.");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin.");
    puts("\t-f/--fullscreen: Start SSNES in fullscreen regardless of config settings.");
    puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
@@ -411,8 +413,6 @@ static void print_help(void)
    puts("\t--bps: Specifies path for BPS patch that will be applied to ROM.");
    puts("\t-X/--xml: Specifies path to XML memory map.");
    puts("\t-D/--detach: Detach SSNES from the running console. Not relevant for all platforms.\n");
-
-   print_features();
 }
 
 static void set_basename(const char *path)
@@ -540,6 +540,7 @@ static void parse_input(int argc, char *argv[])
       { "bps", 1, &val, 'B' },
       { "xml", 1, NULL, 'X' },
       { "detach", 0, NULL, 'D' },
+      { "features", 0, &val, 'f' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -738,6 +739,9 @@ static void parse_input(int argc, char *argv[])
                   break;
                }
 #endif
+               case 'f':
+                  print_features();
+                  exit(0);
 
                default:
                   break;
