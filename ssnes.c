@@ -889,7 +889,6 @@ static void init_recording(void)
          .samplerate = 32000,
          .filename = g_extern.record_path,
          .fps = psnes_get_region() == SNES_REGION_NTSC ? ntsc_fps : pal_fps,
-         .aspect_ratio = 4.0 / 3,
          .rgb32 = false,
       };
 
@@ -903,6 +902,11 @@ static void init_recording(void)
          params.out_width = 512;
          params.out_height = 448;
       }
+
+      if (g_settings.video.force_aspect)
+         params.aspect_ratio = g_settings.video.aspect_ratio;
+      else
+         params.aspect_ratio = (float)params.out_width / params.out_height;
 
       if (g_settings.video.post_filter_record && g_extern.filter.active)
       {
