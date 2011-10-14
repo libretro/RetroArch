@@ -68,8 +68,8 @@ do_phoenix_build()
       git pull origin master
    fi
 
-   make -f Makefile.win32 clean || die "Failed to clean ..."
-   make -f Makefile.win32 CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" -j4 all || die "Failed to build ..."
+   make -f Makefile.win clean || die "Failed to clean ..."
+   make -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" -j4 all || die "Failed to build ..."
    touch ssnes-phoenix.cfg
    cp ssnes-phoenix.cfg ssnes-phoenix.exe ../ || die "Failed to copy ..."
 
