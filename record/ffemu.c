@@ -119,7 +119,7 @@ static bool init_audio(struct audio_info *audio, struct ffemu_params *param)
    return true;
 }
 
-static bool init_video(struct video_info *video, struct ffemu_params *param)
+static bool init_video(struct video_info *video, const struct ffemu_params *param)
 {
 #ifdef HAVE_X264RGB
    AVCodec *codec = avcodec_find_encoder(CODEC_ID_H264);
@@ -255,7 +255,7 @@ static bool init_muxer(ffemu_t *handle)
    return true;
 }
 
-#define MAX_FRAMES 16
+#define MAX_FRAMES 32
 
 static void ffemu_thread(void *data);
 
@@ -413,6 +413,7 @@ int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
    // Tightly pack our frame to conserve memory. libsnes tends to use a very large pitch.
    struct ffemu_video_data attr_data = *data;
    attr_data.pitch = attr_data.width * handle->video.pix_size;
+
    fifo_write(handle->attr_fifo, &attr_data, sizeof(attr_data));
 
    unsigned offset = 0;
