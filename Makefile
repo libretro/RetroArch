@@ -2,7 +2,7 @@ include config.mk
 
 TARGET = ssnes tools/ssnes-joyconfig
 
-OBJ = ssnes.o file.o driver.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o ups.o bps.o strl.o screenshot.o thread.o
+OBJ = ssnes.o file.o driver.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o ups.o bps.o strl.o screenshot.o thread.o audio/hermite.o
 JOYCONFIG_OBJ = tools/ssnes-joyconfig.o conf/config_file.o strl.o
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
@@ -25,13 +25,6 @@ endif
 
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
-endif
-
-ifeq ($(HAVE_SRC), 1)
-   LIBS += $(SRC_LIBS)
-   DEFINES += $(SRC_CFLAGS)
-else
-   OBJ += audio/hermite.o
 endif
 
 ifeq ($(HAVE_CONFIGFILE), 1)

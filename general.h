@@ -36,11 +36,7 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_SRC
-#include <samplerate.h>
-#else
 #include "audio/hermite.h"
-#endif
 
 #ifndef _WIN32
 #include <sys/param.h> // MAXPATHLEN
@@ -121,7 +117,6 @@ struct settings
       char device[MAXPATHLEN];
       unsigned latency;
       bool sync;
-      int src_quality;
 
       char dsp_plugin[MAXPATHLEN];
       char external_driver[MAXPATHLEN];
@@ -210,11 +205,7 @@ struct global
 
    struct
    {
-#ifdef HAVE_SRC
-      SRC_STATE *source;
-#else
       hermite_resampler_t *source;
-#endif
 
       float *data;
       size_t data_ptr;

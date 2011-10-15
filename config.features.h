@@ -116,12 +116,6 @@ static const bool _x264rgb_supp = true;
 static const bool _x264rgb_supp = false;
 #endif
 
-#ifdef HAVE_SRC
-static const bool _src_supp = true;
-#else
-static const bool _src_supp = false;
-#endif
-
 #ifdef HAVE_CONFIGFILE
 static const bool _configfile_supp = true;
 #else

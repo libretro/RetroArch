@@ -37,9 +37,6 @@
 #include "screenshot.h"
 #include "cheats.h"
 #include <assert.h>
-#ifdef HAVE_SRC
-#include <samplerate.h>
-#endif
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -234,11 +231,7 @@ static void audio_sample(uint16_t left, uint16_t right)
    if (g_extern.frame_is_reverse) // Disable fucked up audio when rewinding...
       memset(g_extern.audio_data.data, 0, g_extern.audio_data.chunk_size * sizeof(float));
 
-#ifdef HAVE_SRC
-   SRC_DATA src_data = {
-#else
    struct hermite_data src_data = {
-#endif
       .data_in = dsp_output.samples ? dsp_output.samples : g_extern.audio_data.data,
       .data_out = g_extern.audio_data.outsamples,
       .input_frames = dsp_output.samples ? dsp_output.frames : (g_extern.audio_data.data_ptr / 2),
@@ -249,11 +242,7 @@ static void audio_sample(uint16_t left, uint16_t right)
 
    if (dsp_output.should_resample)
    {
-#ifdef HAVE_SRC
-      src_process(g_extern.audio_data.source, &src_data);
-#else
       hermite_process(g_extern.audio_data.source, &src_data);
-#endif
 
       output_data = g_extern.audio_data.outsamples;
       output_frames = src_data.output_frames_gen;
@@ -362,7 +351,6 @@ static void print_features(void)
    _PSUPP(dynamic, "Dynamic", "Dynamic run-time loading of libsnes library");
    _PSUPP(ffmpeg, "FFmpeg", "On-the-fly recording of gameplay with libavcodec");
    _PSUPP(x264rgb, "x264 RGB", "x264 lossless RGB recording for FFmpeg");
-   _PSUPP(src, "SRC", "libsamplerate audio resampling");
    _PSUPP(configfile, "Config file", "Configuration file support");
    _PSUPP(freetype, "FreeType", "TTF font rendering with FreeType");
    _PSUPP(netplay, "Netplay", "Peer-to-peer netplay");

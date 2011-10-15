@@ -237,7 +237,7 @@ void init_audio(void)
    g_extern.audio_data.nonblock_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
 
    driver.audio_data = driver.audio->init(strlen(g_settings.audio.device) ? g_settings.audio.device : NULL, g_settings.audio.out_rate, g_settings.audio.latency);
-   if ( driver.audio_data == NULL )
+   if (!driver.audio_data)
       g_extern.audio_active = false;
 
    if (g_extern.audio_active && driver.audio->use_float && driver.audio->use_float(driver.audio_data))
@@ -251,16 +251,9 @@ void init_audio(void)
    else
       g_extern.audio_data.chunk_size = g_extern.audio_data.block_chunk_size;
 
-#ifdef HAVE_SRC
-   int err;
-   g_extern.audio_data.source = src_new(g_settings.audio.src_quality, 2, &err);
-   if (!g_extern.audio_data.source)
-      g_extern.audio_active = false;
-#else
    g_extern.audio_data.source = hermite_new(2);
    if (!g_extern.audio_data.source)
       g_extern.audio_active = false;
-#endif
 
    size_t max_bufsamples = g_extern.audio_data.block_chunk_size > g_extern.audio_data.nonblock_chunk_size ?
       g_extern.audio_data.block_chunk_size : g_extern.audio_data.nonblock_chunk_size;
@@ -282,17 +275,11 @@ void uninit_audio(void)
       return;
    }
 
-   if ( driver.audio_data && driver.audio )
+   if (driver.audio_data && driver.audio)
       driver.audio->free(driver.audio_data);
 
-   if ( g_extern.audio_data.source )
-   {
-#ifdef HAVE_SRC
-      src_delete(g_extern.audio_data.source);
-#else
+   if (g_extern.audio_data.source)
       hermite_free(g_extern.audio_data.source);
-#endif
-   }
 
    free(g_extern.audio_data.data); g_extern.audio_data.data = NULL;
    free(g_extern.audio_data.outsamples); g_extern.audio_data.outsamples = NULL;

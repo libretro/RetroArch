@@ -13,7 +13,6 @@ add_command_line_enable FFMPEG "Enable FFmpeg recording support" no
 add_command_line_enable X264RGB "Enable lossless X264 RGB recording" no
 add_command_line_enable DYLIB "Enable dynamic loading support" auto
 add_command_line_enable NETPLAY "Enable netplay support" auto
-add_command_line_enable SRC "Enable libsamplerate support" no
 add_command_line_enable CONFIGFILE "Disable support for config file" yes
 add_command_line_enable CG "Enable Cg shader support" auto
 add_command_line_enable XML "Enable bSNES-style XML shader support" auto

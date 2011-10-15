@@ -161,10 +161,6 @@ static void set_defaults(void)
    g_settings.audio.latency = out_latency;
    g_settings.audio.sync = audio_sync;
 
-#ifdef HAVE_SRC
-   g_settings.audio.src_quality = SAMPLERATE_QUALITY;
-#endif
-
    g_settings.rewind_enable = rewind_enable;
    g_settings.rewind_buffer_size = rewind_buffer_size;
    g_settings.rewind_granularity = rewind_granularity;
@@ -383,17 +379,6 @@ static void parse_config_file(void)
    CONFIG_GET_STRING(audio.device, "audio_device");
    CONFIG_GET_INT(audio.latency, "audio_latency");
    CONFIG_GET_BOOL(audio.sync, "audio_sync");
-
-#ifdef HAVE_SRC
-   if (config_get_int(conf, "audio_src_quality", &tmp_int))
-   {
-      int quals[] = { SRC_ZERO_ORDER_HOLD, SRC_LINEAR, SRC_SINC_FASTEST, 
-         SRC_SINC_MEDIUM_QUALITY, SRC_SINC_BEST_QUALITY };
-
-      if (tmp_int > 0 && tmp_int < 6)
-         g_settings.audio.src_quality = quals[tmp_int];
-   }
-#endif
 
    CONFIG_GET_STRING(video.driver, "video_driver");
    CONFIG_GET_STRING(audio.driver, "audio_driver");
