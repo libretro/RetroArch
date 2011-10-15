@@ -300,17 +300,17 @@ extern struct global g_extern;
    if (g_extern.verbose) \
       fprintf(stderr, "SSNES: " __VA_ARGS__); \
       fflush(stderr); \
-   } while(0)
+   } while (0)
 
 #define SSNES_ERR(...) do { \
       fprintf(stderr, "SSNES [ERROR] :: " __VA_ARGS__); \
       fflush(stderr); \
-   } while(0)
+   } while (0)
 
 #define SSNES_WARN(...) do { \
       fprintf(stderr, "SSNES [WARN] :: " __VA_ARGS__); \
       fflush(stderr); \
-   } while(0)
+   } while (0)
 
 static inline uint32_t next_pow2(uint32_t v)
 {

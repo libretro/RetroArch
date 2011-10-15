@@ -39,11 +39,11 @@
 #define SYM(type, x) do { \
    p##x = (type)DLSYM(lib_handle, x); \
    if (p##x == NULL) { SSNES_ERR("Failed to load symbol: \"%s\"\n", #x); exit(1); } \
-} while(0)
+} while (0)
 
 #define OPT_SYM(type, x) do { \
    p##x = (type)DLSYM(lib_handle, x); \
-} while(0)
+} while (0)
 
 static dylib_t lib_handle = NULL;
 #endif
@@ -144,7 +144,7 @@ static void load_dynamic(void)
 
 #define SSYM(x) do { \
    p##x = x; \
-} while(0)
+} while (0)
 
 #ifndef HAVE_DYNAMIC
 static void set_statics(void)

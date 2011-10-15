@@ -133,7 +133,7 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
       };
 #endif
 
-      for(;;)
+      for (;;)
       {
          if (al_unqueue_buffers(al))
             break;

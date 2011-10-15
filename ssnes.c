@@ -546,7 +546,7 @@ static void parse_input(int argc, char *argv[])
 #endif
 
    char optstring[] = "hs:fvS:m:p4jJg:b:B:Y:Z:P:HC:F:U:DN:X:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
-   for(;;)
+   for (;;)
    {
       val = 0;
       int c = getopt_long(argc, argv, optstring, opts, &option_index);

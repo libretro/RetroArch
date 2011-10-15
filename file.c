@@ -251,7 +251,7 @@ static ssize_t read_rom_file(FILE* file, void** buf)
          return -1;
       }
 
-      for(;;)
+      for (;;)
       {
          size_t ret = fread(rom_buf + buf_ptr, 1, buf_size - buf_ptr, stdin);
          buf_ptr += ret;

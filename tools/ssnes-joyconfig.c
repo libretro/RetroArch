@@ -235,7 +235,7 @@ static void parse_input(int argc, char *argv[])
    };
 
    int option_index = 0;
-   for(;;)
+   for (;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, &option_index);
       if (c == -1)
