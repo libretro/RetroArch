@@ -36,6 +36,7 @@
 #include "strl.h"
 #include "screenshot.h"
 #include "cheats.h"
+#include "audio/utils.h"
 #include <assert.h>
 
 #ifdef _WIN32
@@ -187,8 +188,7 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 
 static bool audio_flush(const int16_t *data, unsigned samples)
 {
-   for (unsigned i = 0; i < samples; i++)
-      g_extern.audio_data.data[i] = (float)data[i] / 0x8000; 
+   audio_convert_s16_to_float(g_extern.audio_data.data, data, samples);
 
    const float *output_data = NULL;
    unsigned output_frames = 0;
@@ -247,11 +247,8 @@ static bool audio_flush(const int16_t *data, unsigned samples)
    }
    else
    {
-      for (unsigned i = 0; i < output_frames * 2; i++)
-      {
-         int32_t val = output_data[i] * 0x8000;
-         g_extern.audio_data.conv_outsamples[i] = (val > 0x7FFF) ? 0x7FFF : (val < -0x8000 ? -0x8000 : (int16_t)val);
-      }
+      audio_convert_float_to_s16(g_extern.audio_data.conv_outsamples,
+            output_data, output_frames * 2);
 
       if (driver.audio->write(driver.audio_data, g_extern.audio_data.conv_outsamples, output_frames * sizeof(int16_t) * 2) < 0)
       {
