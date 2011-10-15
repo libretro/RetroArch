@@ -196,17 +196,17 @@ static void audio_sample(uint16_t left, uint16_t right)
    const float *output_data = NULL;
    unsigned output_frames = 0;
 
-#ifdef HAVE_FFMPEG
-   g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr] = left;
-#endif
-   g_extern.audio_data.data[g_extern.audio_data.data_ptr++] = (float)(int16_t)left/0x8000; 
-#ifdef HAVE_FFMPEG
-   g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr] = right;
-#endif
-   g_extern.audio_data.data[g_extern.audio_data.data_ptr++] = (float)(int16_t)right/0x8000;
+   g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr++] = left;
+   g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr++] = right;
 
    if (g_extern.audio_data.data_ptr < g_extern.audio_data.chunk_size)
       return;
+
+   for (unsigned i = 0; i < g_extern.audio_data.chunk_size; i += 2)
+   {
+      g_extern.audio_data.data[i + 0] = (float)g_extern.audio_data.conv_outsamples[i + 0] / 0x8000; 
+      g_extern.audio_data.data[i + 1] = (float)g_extern.audio_data.conv_outsamples[i + 1] / 0x8000;
+   }
 
 #ifdef HAVE_FFMPEG
    if (g_extern.recording)
