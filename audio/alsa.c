@@ -21,7 +21,7 @@
 #include <asoundlib.h>
 #include "general.h"
 
-#define TRY_ALSA(x) if ( x < 0 ) { \
+#define TRY_ALSA(x) if (x < 0) { \
                   goto error; \
                }
 
@@ -52,14 +52,14 @@ static bool find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
 static void* __alsa_init(const char* device, unsigned rate, unsigned latency)
 {
    alsa_t *alsa = calloc(1, sizeof(alsa_t));
-   if ( alsa == NULL )
+   if (!alsa)
       return NULL;
 
    snd_pcm_hw_params_t *params = NULL;
    snd_pcm_sw_params_t *sw_params = NULL;
 
    const char *alsa_dev = "default";
-   if ( device != NULL )
+   if (device)
       alsa_dev = device;
 
    TRY_ALSA(snd_pcm_open(&alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK));
@@ -117,7 +117,7 @@ error:
    return NULL;
 }
 
-static ssize_t __alsa_write(void* data, const void* buf, size_t size)
+static ssize_t __alsa_write(void *data, const void *buf, size_t size)
 {
    alsa_t *alsa = data;
 
@@ -141,16 +141,16 @@ static ssize_t __alsa_write(void* data, const void* buf, size_t size)
 
       frames = snd_pcm_writei(alsa->pcm, (const char*)buf + written * 2 * (alsa->has_float ? sizeof(float) : sizeof(int16_t)), size - written);
 
-      if ( frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE )
+      if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
       {
-         if ( snd_pcm_recover(alsa->pcm, frames, 1) < 0 )
+         if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
             return -1;
 
          return 0;
       }
-      else if ( frames == -EAGAIN && alsa->nonblock )
+      else if (frames == -EAGAIN && alsa->nonblock)
          return 0;
-      else if ( frames < 0 )
+      else if (frames < 0)
          return -1;
 
       written += frames;
@@ -178,9 +178,9 @@ static bool __alsa_start(void *data)
 static void __alsa_free(void *data)
 {
    alsa_t *alsa = data;
-   if ( alsa )
+   if (alsa)
    {
-      if ( alsa->pcm )
+      if (alsa->pcm)
       {
          snd_pcm_drop(alsa->pcm);
          snd_pcm_close(alsa->pcm);
@@ -200,8 +200,3 @@ const audio_driver_t audio_alsa = {
    .ident = "alsa"
 };
 
-   
-
-
-   
-   

@@ -60,7 +60,7 @@ static void* __al_init(const char* device, unsigned rate, unsigned latency)
 {
    (void)device;
    al_t *al = calloc(1, sizeof(al_t));
-   if ( al == NULL )
+   if (!al)
       return NULL;
 
    al->handle = alcOpenDevice(NULL);
@@ -221,7 +221,7 @@ static void __al_free(void *data)
    {
       alSourceStop(al->source);
       alDeleteSources(1, &al->source);
-      if ( al->buffers )
+      if (al->buffers)
       {
          alDeleteBuffers(al->num_buffers, al->buffers);
          free(al->buffers);
@@ -244,4 +244,3 @@ const audio_driver_t audio_openal = {
    .ident = "openal"
 };
 
-   

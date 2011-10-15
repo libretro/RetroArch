@@ -57,12 +57,12 @@ static void err_cb(void *userdata)
 static void* __rsd_init(const char* device, unsigned rate, unsigned latency)
 {
    rsd_t *rsd = calloc(1, sizeof(rsd_t));
-   if ( rsd == NULL )
+   if (!rsd)
       return NULL;
 
    rsound_t *rd;
 
-   if ( rsd_init(&rd) < 0 )
+   if (rsd_init(&rd) < 0)
    {
       free(rsd);
       return NULL;
@@ -80,14 +80,14 @@ static void* __rsd_init(const char* device, unsigned rate, unsigned latency)
    rsd_set_param(rd, RSD_SAMPLERATE, &rate);
    rsd_set_param(rd, RSD_LATENCY, &latency);
 
-   if ( device != NULL )
+   if (device)
       rsd_set_param(rd, RSD_HOST, (void*)device);
 
    rsd_set_param(rd, RSD_FORMAT, &format);
 
    rsd_set_callback(rd, audio_cb, err_cb, 256, rsd);
 
-   if ( rsd_start(rd) < 0 )
+   if (rsd_start(rd) < 0)
    {
       free(rsd);
       rsd_free(rd);
@@ -161,7 +161,7 @@ static void __rsd_set_nonblock_state(void *data, bool state)
 static bool __rsd_start(void *data)
 {
    rsd_t *rsd = data;
-   if ( rsd_start(rsd->rd) < 0)
+   if (rsd_start(rsd->rd) < 0)
       return false;
 
    return true;
