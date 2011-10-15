@@ -220,12 +220,9 @@ static bool audio_flush(const int16_t *data, unsigned samples)
       .data_in = dsp_output.samples ? dsp_output.samples : g_extern.audio_data.data,
       .data_out = g_extern.audio_data.outsamples,
       .input_frames = dsp_output.samples ? dsp_output.frames : (samples / 2),
-      .output_frames = g_extern.audio_data.chunk_size * 8,
-      .ratio = (double)g_settings.audio.out_rate / (double)g_settings.audio.in_rate,
+      .ratio = g_extern.audio_data.src_ratio,
+      .output_frames = samples * g_extern.audio_data.src_ratio,
    };
-
-   if (g_extern.frame_is_reverse)
-      src_data.output_frames = (samples) * src_data.ratio;
 
    if (dsp_output.should_resample)
    {
@@ -1338,6 +1335,9 @@ static void check_input_rate(void)
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, msg, 0, 180);
       SSNES_LOG("%s\n", msg);
+
+      g_extern.audio_data.src_ratio =
+         (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
    }
 }
 

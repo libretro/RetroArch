@@ -213,6 +213,8 @@ struct global
       size_t nonblock_chunk_size;
       size_t block_chunk_size;
 
+      double src_ratio;
+
       bool use_float;
 
       float *outsamples;

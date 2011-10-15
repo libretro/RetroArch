@@ -270,6 +270,9 @@ void init_audio(void)
    assert((g_extern.audio_data.rewind_buf = malloc(max_bufsamples * sizeof(int16_t))));
    g_extern.audio_data.rewind_size = max_bufsamples;
 
+   g_extern.audio_data.src_ratio =
+      (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
+
    init_dsp_plugin();
 }
 
