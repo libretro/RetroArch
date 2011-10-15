@@ -15,7 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include <stdbool.h>
 #include <libsnes.hpp>
 #include <stdio.h>
@@ -43,7 +42,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
-
 
 #ifdef __APPLE__
 #include "SDL.h" 
@@ -329,7 +327,7 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
 #endif
 
 #ifdef _WIN32
-#define PACKAGE_VERSION "0.9-rc2"
+#define PACKAGE_VERSION "0.9-rc3"
 #endif
 
 #include "config.features.h"
