@@ -108,7 +108,10 @@ typedef struct ssnes_video_info
    // Can be disregarded.
    const char *ttf_font;
    unsigned ttf_font_size;
-   unsigned ttf_font_color; // Font color, in format RGB888.
+   unsigned ttf_font_color; // Font color, in format ARGB8888. Alpha should be disregarded.
+
+   // A title that should be displayed in the title bar of the window.
+   const char *title_hint;
 } ssnes_video_info_t;
 
 // Some convenience macros.
@@ -236,7 +239,7 @@ typedef struct ssnes_video_driver
    const char *ident;
 
    // Needs to be defined to SSNES_GRAPHICS_API_VERSION. 
-   // This is used to detect API mismatches.
+   // This is used to detect API/ABI mismatches.
    int api_version;
 } ssnes_video_driver_t;
 

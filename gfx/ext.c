@@ -25,6 +25,11 @@
 #include "dynamic.h"
 #include "general.h"
 #include "sdlwrap.h"
+#include "gfx_common.h"
+
+#ifdef HAVE_FREETYPE
+#include "fonts.h"
+#endif
 
 static bool g_input_dead = true;
 static bool g_video_dead = true;
@@ -240,6 +245,21 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
    font_color_g = font_color_g > 255 ? 255 : (font_color_g < 0 ? 0 : font_color_g);
    font_color_b = font_color_b > 255 ? 255 : (font_color_b < 0 ? 0 : font_color_b);
 
+   const char *font = NULL;
+#ifdef HAVE_FREETYPE
+   if (*g_settings.video.font_path)
+      font = g_settings.video.font_path;
+   else
+      font = font_renderer_get_default_font();
+#else
+   font = *g_settings.video.font_path ?
+      g_settings.video.font_path : NULL;
+#endif
+
+   char title_buf[128];
+   gfx_window_title_reset();
+   gfx_window_title(title_buf, sizeof(title_buf));
+
    ssnes_video_info_t info = {
       .width = video->width,
       .height = video->height,
@@ -252,9 +272,10 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
       .color_format = video->rgb32 ? SSNES_COLOR_FORMAT_ARGB8888 : SSNES_COLOR_FORMAT_XRGB1555,
       .xml_shader = xml_shader,
       .cg_shader = cg_shader,
-      .ttf_font = *g_settings.video.font_path ? g_settings.video.font_path : NULL,
+      .ttf_font = font,
       .ttf_font_size = g_settings.video.font_size,
       .ttf_font_color = (font_color_r << 16) | (font_color_g << 8) | (font_color_b << 0),
+      .title_hint = title_buf,
    };
 
    const ssnes_input_driver_t *input_driver = NULL;
