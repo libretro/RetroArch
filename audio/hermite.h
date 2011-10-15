@@ -39,8 +39,7 @@ struct hermite_data
    size_t input_frames_used;
    size_t output_frames_gen;
 
-   bool end_of_input; // Just used to clone the SRC API.
-   double src_ratio;
+   double ratio;
 };
 
 void hermite_process(hermite_resampler_t *re, struct hermite_data *data);

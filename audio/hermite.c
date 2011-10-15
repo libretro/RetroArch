@@ -61,7 +61,7 @@ hermite_resampler_t *hermite_new(unsigned channels)
 
 void hermite_process(hermite_resampler_t *re, struct hermite_data *data)
 {
-   double r_step = 1.0 / data->src_ratio;
+   double r_step = 1.0 / data->ratio;
    size_t processed_out = 0;
    size_t processed_in = 0;
 

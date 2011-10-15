@@ -187,11 +187,8 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 
 static bool audio_flush(const int16_t *data, unsigned samples)
 {
-   for (unsigned i = 0; i < samples; i += 2)
-   {
-      g_extern.audio_data.data[i + 0] = (float)data[i + 0] / 0x8000; 
-      g_extern.audio_data.data[i + 1] = (float)data[i + 1] / 0x8000;
-   }
+   for (unsigned i = 0; i < samples; i++)
+      g_extern.audio_data.data[i] = (float)data[i] / 0x8000; 
 
    const float *output_data = NULL;
    unsigned output_frames = 0;
@@ -224,9 +221,11 @@ static bool audio_flush(const int16_t *data, unsigned samples)
       .data_out = g_extern.audio_data.outsamples,
       .input_frames = dsp_output.samples ? dsp_output.frames : (samples / 2),
       .output_frames = g_extern.audio_data.chunk_size * 8,
-      .end_of_input = 0,
-      .src_ratio = (double)g_settings.audio.out_rate / (double)g_settings.audio.in_rate,
+      .ratio = (double)g_settings.audio.out_rate / (double)g_settings.audio.in_rate,
    };
+
+   if (g_extern.frame_is_reverse)
+      src_data.output_frames = (samples) * src_data.ratio;
 
    if (dsp_output.should_resample)
    {
@@ -267,6 +266,15 @@ static bool audio_flush(const int16_t *data, unsigned samples)
    return true;
 }
 
+static void audio_sample_rewind(uint16_t left, uint16_t right)
+{
+   if (!g_extern.audio_active)
+      return;
+
+   g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = right;
+   g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = left;
+}
+
 static void audio_sample(uint16_t left, uint16_t right)
 {
    if (!g_extern.audio_active)
@@ -278,7 +286,9 @@ static void audio_sample(uint16_t left, uint16_t right)
    if (g_extern.audio_data.data_ptr < g_extern.audio_data.chunk_size)
       return;
 
-   g_extern.audio_active = audio_flush(g_extern.audio_data.conv_outsamples, g_extern.audio_data.data_ptr);
+   g_extern.audio_active = audio_flush(g_extern.audio_data.conv_outsamples,
+         g_extern.audio_data.data_ptr);
+
    g_extern.audio_data.data_ptr = 0;
 }
 
@@ -1331,9 +1341,36 @@ static void check_input_rate(void)
    }
 }
 
+static inline void flush_rewind_audio(void)
+{
+   if (g_extern.frame_is_reverse) // We just rewound. Flush rewind audio buffer.
+   {
+      g_extern.audio_active = audio_flush(g_extern.audio_data.rewind_buf + g_extern.audio_data.rewind_ptr,
+            g_extern.audio_data.rewind_size - g_extern.audio_data.rewind_ptr);
+   }
+}
+
+static inline void setup_rewind_audio(void)
+{
+   // Push audio ready to be played.
+   g_extern.audio_data.rewind_ptr = g_extern.audio_data.rewind_size;
+   for (unsigned i = 0; i < g_extern.audio_data.data_ptr; i += 2)
+   {
+      g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] =
+         g_extern.audio_data.conv_outsamples[i + 1];
+
+      g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] =
+         g_extern.audio_data.conv_outsamples[i + 0];
+   }
+
+   g_extern.audio_data.data_ptr = 0;
+}
+
 static void check_rewind(void)
 {
+   flush_rewind_audio();
    g_extern.frame_is_reverse = false;
+
    static bool first = true;
    if (first)
    {
@@ -1351,13 +1388,13 @@ static void check_rewind(void)
       if (state_manager_pop(g_extern.state_manager, &buf))
       {
          g_extern.frame_is_reverse = true;
+         setup_rewind_audio();
+
          msg_queue_push(g_extern.msg_queue, "Rewinding!", 0, 30);
          psnes_unserialize(buf, psnes_serialize_size());
 
          if (g_extern.bsv_movie)
-         {
             bsv_movie_frame_rewind(g_extern.bsv_movie);
-         }
       }
       else
          msg_queue_push(g_extern.msg_queue, "Reached end of rewind buffer!", 0, 30);
@@ -1372,6 +1409,8 @@ static void check_rewind(void)
          state_manager_push(g_extern.state_manager, g_extern.state_buf);
       }
    }
+
+   psnes_set_audio_sample(g_extern.frame_is_reverse ? audio_sample_rewind : audio_sample);
 }
 
 static void check_movie_record(void)

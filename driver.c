@@ -258,11 +258,17 @@ void init_audio(void)
    size_t max_bufsamples = g_extern.audio_data.block_chunk_size > g_extern.audio_data.nonblock_chunk_size ?
       g_extern.audio_data.block_chunk_size : g_extern.audio_data.nonblock_chunk_size;
 
-   assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
+   max_bufsamples *= 2; // Accomodate rewind since at some point we might have two full buffers.
+
    assert((g_extern.audio_data.data = malloc(max_bufsamples * sizeof(float))));
    g_extern.audio_data.data_ptr = 0;
+   assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
    assert((g_extern.audio_data.outsamples = malloc(max_bufsamples * sizeof(float) * AUDIO_MAX_RATIO)));
    assert((g_extern.audio_data.conv_outsamples = malloc(max_bufsamples * sizeof(int16_t) * AUDIO_MAX_RATIO)));
+
+   // Needs to be able to hold full content of a full max_bufsamples in addition to its own.
+   assert((g_extern.audio_data.rewind_buf = malloc(max_bufsamples * sizeof(int16_t))));
+   g_extern.audio_data.rewind_size = max_bufsamples;
 
    init_dsp_plugin();
 }
@@ -284,6 +290,7 @@ void uninit_audio(void)
    free(g_extern.audio_data.data); g_extern.audio_data.data = NULL;
    free(g_extern.audio_data.outsamples); g_extern.audio_data.outsamples = NULL;
    free(g_extern.audio_data.conv_outsamples); g_extern.audio_data.conv_outsamples = NULL;
+   free(g_extern.audio_data.rewind_buf); g_extern.audio_data.rewind_buf = NULL;
 
    deinit_dsp_plugin();
 }

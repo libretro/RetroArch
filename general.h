@@ -218,6 +218,10 @@ struct global
       float *outsamples;
       int16_t *conv_outsamples;
 
+      int16_t *rewind_buf;
+      size_t rewind_ptr;
+      size_t rewind_size;
+
       dylib_t dsp_lib;
       const ssnes_dsp_plugin_t *dsp_plugin;
       void *dsp_handle;
