@@ -253,7 +253,6 @@ static void audio_sample(uint16_t left, uint16_t right)
       output_frames = dsp_output.frames;
    }
 
-
    if (g_extern.audio_data.use_float)
    {
       if (driver.audio->write(driver.audio_data, output_data, output_frames * sizeof(float) * 2) < 0)
