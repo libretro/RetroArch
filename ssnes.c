@@ -185,32 +185,23 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 #endif
 }
 
-static void audio_sample(uint16_t left, uint16_t right)
+static bool audio_flush(const int16_t *data, unsigned samples)
 {
-   if (!g_extern.audio_active)
-      return;
+   for (unsigned i = 0; i < samples; i += 2)
+   {
+      g_extern.audio_data.data[i + 0] = (float)data[i + 0] / 0x8000; 
+      g_extern.audio_data.data[i + 1] = (float)data[i + 1] / 0x8000;
+   }
 
    const float *output_data = NULL;
    unsigned output_frames = 0;
-
-   g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr++] = left;
-   g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr++] = right;
-
-   if (g_extern.audio_data.data_ptr < g_extern.audio_data.chunk_size)
-      return;
-
-   for (unsigned i = 0; i < g_extern.audio_data.chunk_size; i += 2)
-   {
-      g_extern.audio_data.data[i + 0] = (float)g_extern.audio_data.conv_outsamples[i + 0] / 0x8000; 
-      g_extern.audio_data.data[i + 1] = (float)g_extern.audio_data.conv_outsamples[i + 1] / 0x8000;
-   }
 
 #ifdef HAVE_FFMPEG
    if (g_extern.recording)
    {
       struct ffemu_audio_data ffemu_data = {
-         .data = g_extern.audio_data.conv_outsamples,
-         .frames = g_extern.audio_data.data_ptr / 2
+         .data = data,
+         .frames = samples / 2
       };
       ffemu_push_audio(g_extern.rec, &ffemu_data);
    }
@@ -218,7 +209,7 @@ static void audio_sample(uint16_t left, uint16_t right)
 
    ssnes_dsp_input_t dsp_input = {
       .samples = g_extern.audio_data.data,
-      .frames = g_extern.audio_data.data_ptr / 2
+      .frames = samples / 2
    };
 
    ssnes_dsp_output_t dsp_output = {
@@ -228,13 +219,10 @@ static void audio_sample(uint16_t left, uint16_t right)
    if (g_extern.audio_data.dsp_plugin)
       g_extern.audio_data.dsp_plugin->process(g_extern.audio_data.dsp_handle, &dsp_output, &dsp_input);
 
-   if (g_extern.frame_is_reverse) // Disable fucked up audio when rewinding...
-      memset(g_extern.audio_data.data, 0, g_extern.audio_data.chunk_size * sizeof(float));
-
    struct hermite_data src_data = {
       .data_in = dsp_output.samples ? dsp_output.samples : g_extern.audio_data.data,
       .data_out = g_extern.audio_data.outsamples,
-      .input_frames = dsp_output.samples ? dsp_output.frames : (g_extern.audio_data.data_ptr / 2),
+      .input_frames = dsp_output.samples ? dsp_output.frames : (samples / 2),
       .output_frames = g_extern.audio_data.chunk_size * 8,
       .end_of_input = 0,
       .src_ratio = (double)g_settings.audio.out_rate / (double)g_settings.audio.in_rate,
@@ -258,7 +246,7 @@ static void audio_sample(uint16_t left, uint16_t right)
       if (driver.audio->write(driver.audio_data, output_data, output_frames * sizeof(float) * 2) < 0)
       {
          fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
-         g_extern.audio_active = false;
+         return false;
       }
    }
    else
@@ -272,10 +260,25 @@ static void audio_sample(uint16_t left, uint16_t right)
       if (driver.audio->write(driver.audio_data, g_extern.audio_data.conv_outsamples, output_frames * sizeof(int16_t) * 2) < 0)
       {
          fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
-         g_extern.audio_active = false;
+         return false;
       }
    }
 
+   return true;
+}
+
+static void audio_sample(uint16_t left, uint16_t right)
+{
+   if (!g_extern.audio_active)
+      return;
+
+   g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr++] = left;
+   g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr++] = right;
+
+   if (g_extern.audio_data.data_ptr < g_extern.audio_data.chunk_size)
+      return;
+
+   g_extern.audio_active = audio_flush(g_extern.audio_data.conv_outsamples, g_extern.audio_data.data_ptr);
    g_extern.audio_data.data_ptr = 0;
 }
 
