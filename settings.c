@@ -120,6 +120,7 @@ static void set_defaults(void)
 
    g_settings.video.xscale = xscale;
    g_settings.video.yscale = yscale;
+   g_settings.video.base_size = base_size;
    g_settings.video.fullscreen = g_extern.force_fullscreen ? true : fullscreen;
    g_settings.video.fullscreen_x = fullscreen_x;
    g_settings.video.fullscreen_y = fullscreen_y;
@@ -297,6 +298,7 @@ static void parse_config_file(void)
 
    CONFIG_GET_DOUBLE(video.xscale, "video_xscale");
    CONFIG_GET_DOUBLE(video.yscale, "video_yscale");
+   CONFIG_GET_INT(video.base_size, "video_base_size");
    CONFIG_GET_INT(video.fullscreen_x, "video_fullscreen_x");
    CONFIG_GET_INT(video.fullscreen_y, "video_fullscreen_y");
 

@@ -432,13 +432,13 @@ void init_video_input(void)
    {
       if (g_settings.video.force_aspect)
       {
-         width = 224 * g_settings.video.xscale * g_settings.video.aspect_ratio;
-         height = 224 * g_settings.video.yscale;
+         width = roundf(g_settings.video.base_size * g_settings.video.xscale * g_settings.video.aspect_ratio);
+         height = roundf(g_settings.video.base_size * g_settings.video.yscale);
       }
       else
       {
-         width = 256 * g_settings.video.xscale;
-         height = 224 * g_settings.video.yscale;
+         width = roundf(8.0f / 7.0f * g_settings.video.base_size * g_settings.video.xscale); // Assume 8:7 aspect.
+         height = roundf(g_settings.video.base_size * g_settings.video.yscale);
       }
    }
 

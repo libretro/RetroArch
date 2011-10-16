@@ -70,6 +70,7 @@ struct settings
       char driver[32];
       float xscale;
       float yscale;
+      unsigned base_size;
       bool fullscreen;
       unsigned fullscreen_x;
       unsigned fullscreen_y;
