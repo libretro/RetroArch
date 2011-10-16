@@ -1338,7 +1338,7 @@ static void check_input_rate(void)
 
 static inline void flush_rewind_audio(void)
 {
-   if (g_extern.frame_is_reverse) // We just rewound. Flush rewind audio buffer.
+   if (g_extern.frame_is_reverse && g_extern.audio_active) // We just rewound. Flush rewind audio buffer.
    {
       g_extern.audio_active = audio_flush(g_extern.audio_data.rewind_buf + g_extern.audio_data.rewind_ptr,
             g_extern.audio_data.rewind_size - g_extern.audio_data.rewind_ptr);
