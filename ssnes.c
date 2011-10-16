@@ -311,7 +311,10 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
       g_settings.input.binds[4]
    };
 
-   int16_t res = driver.input->input_state(driver.input_data, binds, port, device, index, id);
+   int16_t res = 0;
+   if (id < 12)
+      res = driver.input->input_state(driver.input_data, binds, port, device, index, id);
+
    if (g_extern.bsv_movie && !g_extern.bsv_movie_playback)
       bsv_movie_set_input(g_extern.bsv_movie, res);
 
