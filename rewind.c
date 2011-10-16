@@ -29,7 +29,6 @@ struct state_manager
    uint64_t *buffer;
    size_t buf_size;
    uint32_t *tmp_state;
-   uint32_t *scratch_buf;
    size_t top_ptr;
    size_t bottom_ptr;
    size_t state_size;
