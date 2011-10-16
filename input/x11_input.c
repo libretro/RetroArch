@@ -65,6 +65,7 @@ static const struct key_bind lut_binds[] = {
    { XK_KP_Multiply, SK_KP_MULTIPLY },
    { XK_KP_Divide, SK_KP_DIVIDE },
    { XK_grave, SK_BACKQUOTE },
+   { XK_Pause, SK_PAUSE },
    { XK_KP_0, SK_KP0 },
    { XK_KP_1, SK_KP1 },
    { XK_KP_2, SK_KP2 },

@@ -696,6 +696,7 @@ static const struct key_map sk_map[] = {
    { "scroll_lock", SK_SCROLLOCK },
    { "tilde", SK_BACKQUOTE },
    { "backquote", SK_BACKQUOTE },
+   { "pause", SK_PAUSE },
    { "nul", SK_UNKNOWN },
 };
 
