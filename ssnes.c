@@ -185,11 +185,6 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 
 static bool audio_flush(const int16_t *data, unsigned samples)
 {
-   audio_convert_s16_to_float(g_extern.audio_data.data, data, samples);
-
-   const float *output_data = NULL;
-   unsigned output_frames = 0;
-
 #ifdef HAVE_FFMPEG
    if (g_extern.recording)
    {
@@ -200,6 +195,14 @@ static bool audio_flush(const int16_t *data, unsigned samples)
       ffemu_push_audio(g_extern.rec, &ffemu_data);
    }
 #endif
+
+   if (g_extern.is_paused)
+      return true;
+
+   const float *output_data = NULL;
+   unsigned output_frames = 0;
+
+   audio_convert_s16_to_float(g_extern.audio_data.data, data, samples);
 
    ssnes_dsp_input_t dsp_input = {
       .samples = g_extern.audio_data.data,
@@ -1506,6 +1509,15 @@ static void check_pause(void)
    old_state = new_state;
 }
 
+static void check_oneshot(void)
+{
+   static bool old_state = false;
+   bool new_state = driver.input->key_pressed(driver.input_data, SSNES_FRAMEADVANCE);
+
+   g_extern.is_oneshot = new_state && !old_state;
+   old_state = new_state;
+}
+
 static void check_reset(void)
 {
    if (driver.input->key_pressed(driver.input_data, SSNES_RESET))
@@ -1623,7 +1635,8 @@ static void do_state_checks(void)
       check_cheats();
 #endif
       check_pause();
-      if (g_extern.is_paused)
+      check_oneshot();
+      if (g_extern.is_paused && !g_extern.is_oneshot)
          return;
 
       set_fast_forward_button(
@@ -1751,7 +1764,7 @@ int main(int argc, char *argv[])
       do_state_checks();
       
       // Run libsnes for one frame.
-      if (!g_extern.is_paused)
+      if (!g_extern.is_paused || g_extern.is_oneshot)
       {
          lock_autosave();
 

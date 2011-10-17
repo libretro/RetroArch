@@ -92,6 +92,7 @@ static struct bind binds[] = {
    MISC_BIND("Rewind", rewind)
    MISC_BIND("Movie recording toggle", movie_record_toggle)
    MISC_BIND("Pause", pause_toggle)
+   MISC_BIND("Frame advance", frame_advance)
    MISC_BIND("Reset", reset)
    MISC_BIND("Next shader", shader_next)
    MISC_BIND("Previous shader", shader_prev)

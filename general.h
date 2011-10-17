@@ -260,6 +260,7 @@ struct global
 
    // Pausing support
    bool is_paused;
+   bool is_oneshot;
 
    // Autosave support.
    autosave_t *autosave[2];
