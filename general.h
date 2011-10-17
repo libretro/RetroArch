@@ -20,8 +20,9 @@
 #define __SSNES_GENERAL_H
 
 #include <stdbool.h>
-#include "driver.h"
 #include <stdio.h>
+#include <time.h>
+#include "driver.h"
 #include "record/ffemu.h"
 #include "message.h"
 #include "rewind.h"
@@ -341,6 +342,19 @@ static inline uint8_t is_little_endian(void)
 
    u.x = 1;
    return u.y[0];
+}
+
+static inline void ssnes_sleep(unsigned usec)
+{
+#ifdef _WIN32
+   Sleep(10);
+#else
+   struct timespec tv = {
+      .tv_sec = 0,
+      .tv_nsec = 10000000
+   };
+   nanosleep(&tv, NULL);
+#endif
 }
 
 #endif

@@ -22,7 +22,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <getopt.h>
-#include <time.h>
 #include <errno.h>
 #include "driver.h"
 #include "file.h"
@@ -1777,15 +1776,7 @@ int main(int argc, char *argv[])
       else
       {
          input_poll();
-#ifdef _WIN32
-         Sleep(10);
-#else
-         struct timespec tv = {
-            .tv_sec = 0,
-            .tv_nsec = 10000000
-         };
-         nanosleep(&tv, NULL);
-#endif
+         ssnes_sleep(10);
       }
    }
 
