@@ -289,7 +289,11 @@ static void parse_config_file(void)
       return;
 
    if (g_extern.verbose)
-      config_file_dump(conf, stderr);
+   {
+      fprintf(stderr, "=== Config ===\n");
+      config_file_dump_all(conf, stderr);
+      fprintf(stderr, "=== Config end ===\n");
+   }
 
    int tmp_int;
    double tmp_double;

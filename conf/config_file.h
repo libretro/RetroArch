@@ -31,13 +31,21 @@ typedef struct config_file config_file_t;
 // - # are treated as comments. Rest of the line is ignored.
 // - Format is: key = value. There can be as many spaces as you like in-between.
 // - Value can be wrapped inside "" for multiword strings. (foo = "hai u")
+//
+// - #include includes a config file in-place.
+// Path is relative to where config file was loaded unless an absolute path is chosen.
+// Key/value pairs from an #include are read-only, and cannot be modified.
 
-// Loads a config file. Returns NULL if file doesn't exist. NULL path will create an empty config file.
+// Loads a config file. Returns NULL if file doesn't exist.
+// NULL path will create an empty config file.
 config_file_t *config_file_new(const char *path);
 // Frees config file.
 void config_file_free(config_file_t *conf);
 
-// All extract functions return true when value is valid and exists. Returns false otherwise.
+// All extract functions return true when value is valid and exists.
+// Returns false otherwise.
+
+bool config_entry_exists(config_file_t *conf, const char *entry);
 
 // Extracts a double from config file.
 bool config_get_double(config_file_t *conf, const char *entry, double *in);
@@ -54,7 +62,8 @@ bool config_get_array(config_file_t *conf, const char *entry, char *in, size_t s
 // Extracts a boolean from config. Valid boolean true are "true" and "1". Valid false are "false" and "0". Other values will be treated as an error.
 bool config_get_bool(config_file_t *conf, const char *entry, bool *in);
 
-// Setters. Similiar to the getters.
+// Setters. Similar to the getters. Will not write to entry if the entry
+// was obtained from an #include.
 void config_set_double(config_file_t *conf, const char *entry, double value);
 void config_set_int(config_file_t *conf, const char *entry, int val);
 void config_set_char(config_file_t *conf, const char *entry, char val);
@@ -66,7 +75,8 @@ bool config_file_write(config_file_t *conf, const char *path);
 
 // Dump the current config to an already opened file. Does not close the file.
 void config_file_dump(config_file_t *conf, FILE *file);
-
-
+// Also dumps inherited values, useful for logging.
+void config_file_dump_all(config_file_t *conf, FILE *file);
 
 #endif
+

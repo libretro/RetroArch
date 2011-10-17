@@ -24,17 +24,44 @@
 #include <errno.h>
 #include "strl.h"
 
+#ifndef _WIN32
+#include <sys/param.h> // MAXPATHLEN
+#endif
+
+#ifndef MAXPATHLEN
+#ifdef PATH_MAX
+#define MAXPATHLEN PATH_MAX
+#else
+#define MAXPATHLEN 512
+#endif
+#endif
+
+
 struct entry_list
 {
+   bool readonly; // If we got this from an #include, do not allow write.
    char *key;
    char *value;
    struct entry_list *next;
 };
 
+struct include_list
+{
+   char *path;
+   struct include_list *next;
+};
+
 struct config_file
 {
+   char *path;
    struct entry_list *entries;
+   struct entry_list *tail;
+   bool recursive;
+
+   struct include_list *includes;
 };
+
+static config_file_t *config_file_new_internal(const char *path, bool recursive);
 
 static char *getaline(FILE *file)
 {
@@ -58,12 +85,169 @@ static char *getaline(FILE *file)
    return newline; 
 }
 
-static bool parse_line(struct entry_list *list, char *line)
+static char* extract_value(char *line, bool is_value)
+{
+   if (is_value)
+   {
+      while (isspace(*line))
+         line++;
+
+      // If we don't have an equal sign here, we've got an invalid string...
+      if (*line != '=')
+         return false;
+
+      line++;
+   }
+
+   while (isspace(*line))
+      line++;
+
+   // We have a full string. Read until next ".
+   if (*line == '"')
+   {
+      line++;
+      char *tok = strtok(line, "\"");
+      if (!tok)
+         return false;
+      return strdup(tok);
+   }
+   else if (*line == '\0') // Nothing :(
+      return NULL;
+   else // We don't have that... Read till next space.
+   {
+      char *tok = strtok(line, " \n\t\f\r\v");
+      if (tok)
+         return strdup(tok);
+      else
+         return NULL;
+   }
+}
+
+static void set_list_readonly(struct entry_list *list)
+{
+   while (list)
+   {
+      list->readonly = true;
+      list = list->next;
+   }
+}
+
+// Move semantics? :)
+static void add_child_list(config_file_t *parent, config_file_t *child)
+{
+   if (parent->entries)
+   {
+      struct entry_list *head = parent->entries;
+      while (head->next)
+         head = head->next;
+
+      set_list_readonly(child->entries);
+      head->next = child->entries;
+   }
+   else
+   {
+      set_list_readonly(child->entries);
+      parent->entries = child->entries;
+   }
+
+   child->entries = NULL;
+
+   // Rebase tail.
+   if (parent->entries)
+   {
+      struct entry_list *head = parent->entries;
+      while (head->next)
+         head = head->next;
+      parent->tail = head;
+   }
+   else
+      parent->tail = NULL;
+}
+
+static void add_include_list(config_file_t *conf, const char *path)
+{
+   struct include_list *head = conf->includes;
+   struct include_list *node = calloc(1, sizeof(*node));
+   node->path = strdup(path);
+
+   if (head)
+   {
+      while (head->next)
+         head = head->next;
+
+      head->next = node;
+   }
+   else
+      conf->includes = node;
+}
+
+static void add_sub_conf(config_file_t *conf, char *line)
+{
+   char *path = extract_value(line, false);
+   if (!path)
+      return;
+
+   add_include_list(conf, path);
+
+   char real_path[MAXPATHLEN];
+
+#ifndef _WIN32
+   if (*path == '/')
+   {
+      strlcpy(real_path, path, sizeof(real_path));
+   }
+   else if (*path == '~')
+   {
+      const char *home = getenv("HOME");
+      strlcpy(real_path, home ? home : "/", sizeof(real_path));
+      strlcat(real_path, path + 1, sizeof(real_path));
+   }
+   else
+   {
+      strlcpy(real_path, conf->path, sizeof(real_path));
+      char *split = strrchr(real_path, '/');
+      if (split)
+      {
+         split[1] = '\0';
+         strlcat(real_path, path, sizeof(real_path));
+      }
+      else
+         strlcpy(real_path, path, sizeof(real_path));
+   }
+#else
+   GetFullPathNameA(path, sizeof(real_path), real_path, NULL);
+#endif
+
+   config_file_t *sub_conf = config_file_new_internal(real_path, true);
+   if (!conf)
+   {
+      free(path);
+      return;
+   }
+
+   // Pilfer internal list! :D
+   add_child_list(conf, sub_conf);
+   config_file_free(sub_conf);
+   free(path);
+}
+
+static bool parse_line(config_file_t *conf, struct entry_list *list, char *line)
 {
    // Remove everything after comment.
    char *comment = strchr(line, '#');
    if (comment)
       *comment = '\0';
+
+   // Starting line with # and include includes config files. :)
+   if ((comment == line) && !conf->recursive)
+   {
+      comment++;
+      if (strstr(comment, "include ") == comment)
+      {
+         add_sub_conf(conf, comment + strlen("include "));
+         return false;
+      }
+   }
 
    // Skips to first character.
    while (isspace(*line))
@@ -86,66 +270,42 @@ static bool parse_line(struct entry_list *list, char *line)
    key[index] = '\0';
    list->key = key;
 
-   while (isspace(*line))
-      line++;
-
-   // If we don't have an equal sign here, we've got an invalid string...
-   if (*line != '=')
+   list->value = extract_value(line, true);
+   if (!list->value)
    {
       list->key = NULL;
       free(key);
       return false;
    }
-   line++;
-
-   while (isspace(*line))
-      line++;
-
-   // We have a full string. Read until next ".
-   if (*line == '"')
-   {
-      char *tok = strtok(line + 1, "\"");
-      if (tok == NULL)
-      {
-         list->key = NULL;
-         free(key);
-         return false;
-      }
-      list->value = strdup(tok);
-   }
-   else // We don't have that... Read till next space.
-   {
-      char *tok = strtok(line, " \t\f");
-      if (tok == NULL)
-      {
-         list->key = NULL;
-         free(key);
-         return false;
-      }
-      list->value = strdup(tok);
-   }
 
    return true;
 }
 
-config_file_t *config_file_new(const char *path)
+static config_file_t *config_file_new_internal(const char *path, bool recursive)
 {
-
    struct config_file *conf = calloc(1, sizeof(*conf));
-   if (conf == NULL)
+   if (!conf)
       return NULL;
 
-   if (path == NULL)
+   if (!path)
       return conf;
 
-   FILE *file = fopen(path, "r");
-   if (!file)
+   conf->path = strdup(path);
+   if (!conf->path)
    {
       free(conf);
       return NULL;
    }
 
-   struct entry_list *tail = conf->entries;
+   conf->recursive = recursive;
+
+   FILE *file = fopen(path, "r");
+   if (!file)
+   {
+      free(conf->path);
+      free(conf);
+      return NULL;
+   }
 
    while (!feof(file))
    {
@@ -154,50 +314,69 @@ config_file_t *config_file_new(const char *path)
 
       if (line)
       {
-         if (parse_line(list, line))
+         if (parse_line(conf, list, line))
          {
-            if (conf->entries == NULL)
+            if (conf->entries)
             {
-               conf->entries = list;
-               tail = list;
+               conf->tail->next = list;
+               conf->tail = list;
             }
             else
             {
-               tail->next = list;
-               tail = list;
+               conf->entries = list;
+               conf->tail = list;
             }
          }
+
          free(line);
       }
+
+      if (list != conf->tail)
+         free(list);
    }
    fclose(file);
 
    return conf;
 }
 
+config_file_t *config_file_new(const char *path)
+{
+   return config_file_new_internal(path, false);
+}
+
 void config_file_free(config_file_t *conf)
 {
-   if (conf != NULL)
+   if (!conf)
+      return;
+
+   struct entry_list *tmp = conf->entries;
+   while (tmp)
    {
-      struct entry_list *tmp = conf->entries;
-      struct entry_list *old = tmp;
-      while (tmp != NULL)
-      {
-         free(tmp->key);
-         free(tmp->value);
-         old = tmp;
-         tmp = tmp->next;
-         free(old);
-      }
-      free(conf);
+      free(tmp->key);
+      free(tmp->value);
+      struct entry_list *hold = tmp;
+      tmp = tmp->next;
+      free(hold);
    }
+
+   struct include_list *inc_tmp = conf->includes;
+   while (inc_tmp)
+   {
+      free(inc_tmp->path);
+      struct include_list *hold = inc_tmp;
+      inc_tmp = inc_tmp->next;
+      free(hold);
+   }
+
+   free(conf->path);
+   free(conf);
 }
 
 bool config_get_double(config_file_t *conf, const char *key, double *in)
 {
    struct entry_list *list = conf->entries;
 
-   while (list != NULL)
+   while (list)
    {
       if (strcmp(key, list->key) == 0)
       {
@@ -213,7 +392,7 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
 {
    struct entry_list *list = conf->entries;
 
-   while (list != NULL)
+   while (list)
    {
       if (strcmp(key, list->key) == 0)
       {
@@ -236,7 +415,7 @@ bool config_get_hex(config_file_t *conf, const char *key, unsigned *in)
 {
    struct entry_list *list = conf->entries;
 
-   while (list != NULL)
+   while (list)
    {
       if (strcmp(key, list->key) == 0)
       {
@@ -259,7 +438,7 @@ bool config_get_char(config_file_t *conf, const char *key, char *in)
 {
    struct entry_list *list = conf->entries;
 
-   while (list != NULL)
+   while (list)
    {
       if (strcmp(key, list->key) == 0)
       {
@@ -277,7 +456,7 @@ bool config_get_string(config_file_t *conf, const char *key, char **str)
 {
    struct entry_list *list = conf->entries;
 
-   while (list != NULL)
+   while (list)
    {
       if (strcmp(key, list->key) == 0)
       {
@@ -293,7 +472,7 @@ bool config_get_array(config_file_t *conf, const char *key, char *buf, size_t si
 {
    struct entry_list *list = conf->entries;
 
-   while (list != NULL)
+   while (list)
    {
       if (strcmp(key, list->key) == 0)
       {
@@ -309,7 +488,7 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 {
    struct entry_list *list = conf->entries;
 
-   while (list != NULL)
+   while (list)
    {
       if (strcmp(key, list->key) == 0)
       {
@@ -335,14 +514,15 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
 {
    struct entry_list *list = conf->entries;
    struct entry_list *last = list;
-   while (list != NULL)
+   while (list)
    {
-      if (strcmp(key, list->key) == 0)
+      if (!list->readonly && (strcmp(key, list->key) == 0))
       {
          free(list->value);
          list->value = strdup(val);
          return;
       }
+
       last = list;
       list = list->next;
    }
@@ -406,11 +586,50 @@ bool config_file_write(config_file_t *conf, const char *path)
 
 void config_file_dump(config_file_t *conf, FILE *file)
 {
-   struct entry_list *list = conf->entries;
-
-   while (list != NULL)
+   struct include_list *includes = conf->includes;
+   while (includes)
    {
-      fprintf(file, "%s = \"%s\"\n", list->key, list->value);
+      fprintf(file, "#include \"%s\"\n", includes->path);
+      includes = includes->next;
+   }
+
+   struct entry_list *list = conf->entries;
+   while (list)
+   {
+      if (!list->readonly)
+         fprintf(file, "%s = \"%s\"\n", list->key, list->value);
       list = list->next;
    }
 }
+
+void config_file_dump_all(config_file_t *conf, FILE *file)
+{
+   struct include_list *includes = conf->includes;
+   while (includes)
+   {
+      fprintf(file, "#include \"%s\"\n", includes->path);
+      includes = includes->next;
+   }
+
+   struct entry_list *list = conf->entries;
+   while (list)
+   {
+      fprintf(file, "%s = \"%s\" %s\n", list->key, list->value, list->readonly ? "(included)" : "");
+      list = list->next;
+   }
+}
+
+bool config_entry_exists(config_file_t *conf, const char *entry)
+{
+   struct entry_list *list = conf->entries;
+
+   while (list)
+   {
+      if (strcmp(entry, list->key) == 0)
+         return true;
+      list = list->next;
+   }
+
+   return false;
+}
+
