@@ -26,6 +26,9 @@
 
 #ifndef _WIN32
 #include <sys/param.h> // MAXPATHLEN
+#else
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #endif
 
 #ifndef MAXPATHLEN
@@ -215,11 +218,30 @@ static void add_sub_conf(config_file_t *conf, char *line)
          strlcpy(real_path, path, sizeof(real_path));
    }
 #else
-   GetFullPathNameA(path, sizeof(real_path), real_path, NULL);
+   // Accomodate POSIX systems on Win32.
+   bool is_full_path = *path == '/';
+
+   if (is_full_path)
+      strlcpy(real_path, path, sizeof(real_path));
+   else
+      GetFullPathNameA(path, sizeof(real_path), real_path, NULL);
+
+   if (strcmp(path, real_path) != 0)
+   {
+      strlcpy(real_path, conf->path, sizeof(real_path));
+      char *split = strrchr(real_path, '/');
+      if (!split)
+         split = strrchr(real_path, '\\');
+
+      split[1] = '\0';
+      strlcat(real_path, path, sizeof(real_path));
+   }
 #endif
 
+   printf("Path = %s\n", real_path);
+
    config_file_t *sub_conf = config_file_new_internal(real_path, true);
-   if (!conf)
+   if (!sub_conf)
    {
       free(path);
       return;
