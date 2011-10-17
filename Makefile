@@ -115,9 +115,15 @@ ifeq ($(HAVE_CG), 1)
 endif
 
 ifeq ($(HAVE_XML), 1)
-   OBJ += gfx/shader_glsl.o gfx/image.o gfx/snes_state.o sha256.o cheats.o 
+   OBJ += gfx/shader_glsl.o sha256.o cheats.o 
    LIBS += $(XML_LIBS)
    DEFINES += $(XML_CFLAGS)
+endif
+
+ifeq ($(HAVE_XML), 1)
+   OBJ += gfx/snes_state.o gfx/image.o 
+else ifeq ($(HAVE_CG), 1)
+   OBJ += gfx/snes_state.o gfx/image.o 
 endif
 
 ifeq ($(HAVE_DYLIB), 1)
