@@ -39,6 +39,7 @@
 #endif
 #endif
 
+#define MAX_INCLUDE_DEPTH 16
 
 struct entry_list
 {
@@ -59,12 +60,12 @@ struct config_file
    char *path;
    struct entry_list *entries;
    struct entry_list *tail;
-   bool recursive;
+   unsigned include_depth;
 
    struct include_list *includes;
 };
 
-static config_file_t *config_file_new_internal(const char *path, bool recursive);
+static config_file_t *config_file_new_internal(const char *path, unsigned depth);
 
 static char *getaline(FILE *file)
 {
@@ -238,9 +239,7 @@ static void add_sub_conf(config_file_t *conf, char *line)
    }
 #endif
 
-   printf("Path = %s\n", real_path);
-
-   config_file_t *sub_conf = config_file_new_internal(real_path, true);
+   config_file_t *sub_conf = config_file_new_internal(real_path, conf->include_depth + 1);
    if (!sub_conf)
    {
       free(path);
@@ -261,7 +260,7 @@ static bool parse_line(config_file_t *conf, struct entry_list *list, char *line)
       *comment = '\0';
 
    // Starting line with # and include includes config files. :)
-   if ((comment == line) && !conf->recursive)
+   if ((comment == line) && (conf->include_depth < MAX_INCLUDE_DEPTH))
    {
       comment++;
       if (strstr(comment, "include ") == comment)
@@ -270,6 +269,8 @@ static bool parse_line(config_file_t *conf, struct entry_list *list, char *line)
          return false;
       }
    }
+   else if (conf->include_depth >= MAX_INCLUDE_DEPTH)
+      fprintf(stderr, "!!! #include depth exceeded for config! Might be a cycle.\n");
 
    // Skips to first character.
    while (isspace(*line))
@@ -303,7 +304,7 @@ static bool parse_line(config_file_t *conf, struct entry_list *list, char *line)
    return true;
 }
 
-static config_file_t *config_file_new_internal(const char *path, bool recursive)
+static config_file_t *config_file_new_internal(const char *path, unsigned depth)
 {
    struct config_file *conf = calloc(1, sizeof(*conf));
    if (!conf)
@@ -319,7 +320,7 @@ static config_file_t *config_file_new_internal(const char *path, bool recursive)
       return NULL;
    }
 
-   conf->recursive = recursive;
+   conf->include_depth = depth;
 
    FILE *file = fopen(path, "r");
    if (!file)
@@ -363,7 +364,7 @@ static config_file_t *config_file_new_internal(const char *path, bool recursive)
 
 config_file_t *config_file_new(const char *path)
 {
-   return config_file_new_internal(path, false);
+   return config_file_new_internal(path, 0);
 }
 
 void config_file_free(config_file_t *conf)
