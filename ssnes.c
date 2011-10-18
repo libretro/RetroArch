@@ -1488,6 +1488,9 @@ static void check_pause(void)
    static bool old_state = false;
    bool new_state = driver.input->key_pressed(driver.input_data, SSNES_PAUSE_TOGGLE);
 
+   // FRAMEADVANCE will set us into pause mode.
+   new_state |= !g_extern.is_paused && driver.input->key_pressed(driver.input_data, SSNES_FRAMEADVANCE);
+
    static bool old_focus = true;
    bool focus = true;
 
@@ -1546,9 +1549,14 @@ static void check_oneshot(void)
 {
    static bool old_state = false;
    bool new_state = driver.input->key_pressed(driver.input_data, SSNES_FRAMEADVANCE);
-
-   g_extern.is_oneshot = new_state && !old_state;
+   g_extern.is_oneshot = (new_state && !old_state);
    old_state = new_state;
+
+   // Rewind buttons works like FRAMEREWIND when paused. We will one-shot in that case.
+   static bool old_rewind_state = false;
+   bool new_rewind_state = driver.input->key_pressed(driver.input_data, SSNES_REWIND);
+   g_extern.is_oneshot |= new_rewind_state && !old_rewind_state;
+   old_rewind_state = new_rewind_state;
 }
 
 static void check_reset(void)
@@ -1685,11 +1693,11 @@ static void do_state_checks(void)
          check_stateslots();
          check_savestates();
       }
-      check_rewind();
 
+      check_rewind();
       if (!g_extern.bsv_movie_playback)
          check_movie_record();
-
+     
 #ifdef HAVE_XML
       check_shader_dir();
 #endif
