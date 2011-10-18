@@ -1671,10 +1671,6 @@ static void do_state_checks(void)
 {
    if (!g_extern.netplay)
    {
-      check_reset();
-#ifdef HAVE_XML
-      check_cheats();
-#endif
       check_pause();
       check_oneshot();
 
@@ -1700,11 +1696,13 @@ static void do_state_checks(void)
      
 #ifdef HAVE_XML
       check_shader_dir();
+      check_cheats();
 #endif
 
 #ifdef HAVE_DYLIB
       check_dsp_config();
 #endif
+      check_reset();
    }
    else
       check_fullscreen();
