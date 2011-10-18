@@ -1637,7 +1637,10 @@ static void do_state_checks(void)
       check_pause();
       check_oneshot();
       if (g_extern.is_paused && !g_extern.is_oneshot)
+      {
+         check_fullscreen();
          return;
+      }
 
       set_fast_forward_button(
             driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY),
