@@ -465,7 +465,6 @@ static void check_window(sdl_video_t *vid)
 static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    sdl_video_t *vid = data;
-   check_window(vid);
 
    if (SDL_MUSTLOCK(vid->buffer))
       SDL_LockSurface(vid->buffer);
@@ -537,6 +536,7 @@ static void sdl_gfx_set_nonblock_state(void *data, bool state)
 static bool sdl_gfx_alive(void *data)
 {
    sdl_video_t *vid = data;
+   check_window(vid);
    return !vid->quitting;
 }
 
