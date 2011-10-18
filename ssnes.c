@@ -189,9 +189,11 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 
 static void video_cached_frame(void)
 {
-   // Cannot allow FFmpeg recording when pusing dup'ed frames.
+#ifdef HAVE_FFMPEG
+   // Cannot allow FFmpeg recording when pushing duped frames.
    bool recording = g_extern.recording;
    g_extern.recording = false;
+#endif
 
    // Not 100% safe, since the library might have
    // freed the memory, but no known implementations do this :D
@@ -203,7 +205,9 @@ static void video_cached_frame(void)
             g_extern.frame_cache.height);
    }
 
+#ifdef HAVE_FFMPEG
    g_extern.recording = recording;
+#endif
 }
 
 static bool audio_flush(const int16_t *data, unsigned samples)
