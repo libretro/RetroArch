@@ -285,6 +285,13 @@ struct global
    unsigned record_height;
 #endif
 
+   struct
+   {
+      const uint16_t *data;
+      unsigned width;
+      unsigned height;
+   } frame_cache;
+
    char title_buf[64];
 
    struct

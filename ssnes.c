@@ -181,6 +181,29 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if (!driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048, msg))
       g_extern.video_active = false;
 #endif
+
+   g_extern.frame_cache.data = data;
+   g_extern.frame_cache.width = width;
+   g_extern.frame_cache.height = height;
+}
+
+static void video_cached_frame(void)
+{
+   // Cannot allow FFmpeg recording when pusing dup'ed frames.
+   bool recording = g_extern.recording;
+   g_extern.recording = false;
+
+   // Not 100% safe, since the library might have
+   // freed the memory, but no known implementations do this :D
+   // It would be really stupid at any rate ...
+   if (g_extern.frame_cache.data)
+   {
+      video_frame(g_extern.frame_cache.data,
+            g_extern.frame_cache.width,
+            g_extern.frame_cache.height);
+   }
+
+   g_extern.recording = recording;
 }
 
 static bool audio_flush(const int16_t *data, unsigned samples)
@@ -1278,6 +1301,10 @@ static bool check_fullscreen(void)
       g_settings.video.fullscreen = !g_settings.video.fullscreen;
       uninit_drivers();
       init_drivers();
+
+      // Poll input to avoid possibly stale data to corrupt things.
+      if (driver.input)
+         driver.input->poll(driver.input_data);
    }
 
    was_pressed = pressed;
@@ -1639,16 +1666,8 @@ static void do_state_checks(void)
       check_pause();
       check_oneshot();
 
-      if (check_fullscreen())
-      {
-         // To avoid awkward behavior where things aren't showing up,
-         // we need to advance one frame for the window to show up.
-         // Poll input to avoid possibly stale data to corrupt things.
-         if (driver.input)
-            driver.input->poll(driver.input_data);
-
-         g_extern.is_oneshot = true;
-      }
+      if (check_fullscreen() && g_extern.is_paused)
+         video_cached_frame();
 
       if (g_extern.is_paused && !g_extern.is_oneshot)
          return;
