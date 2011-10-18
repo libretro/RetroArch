@@ -41,6 +41,9 @@
 
 #ifndef _WIN32
 #include <sys/param.h> // MAXPATHLEN
+#else
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #endif
 
 #ifndef MAXPATHLEN
