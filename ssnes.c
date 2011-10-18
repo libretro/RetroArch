@@ -1267,12 +1267,13 @@ static void check_savestates(void)
    old_should_loadstate = should_loadstate;
 }
 
-static void check_fullscreen(void)
+static bool check_fullscreen(void)
 {
-   static bool was_pressed = false;
-   bool pressed;
    // If we go fullscreen we drop all drivers and reinit to be safe.
-   if ((pressed = driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY)) && !was_pressed)
+   static bool was_pressed = false;
+   bool pressed = driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY);
+   bool toggle = pressed && !was_pressed;
+   if (toggle)
    {
       g_settings.video.fullscreen = !g_settings.video.fullscreen;
       uninit_drivers();
@@ -1280,6 +1281,7 @@ static void check_fullscreen(void)
    }
 
    was_pressed = pressed;
+   return toggle;
 }
 
 static void check_stateslots(void)
@@ -1636,11 +1638,20 @@ static void do_state_checks(void)
 #endif
       check_pause();
       check_oneshot();
-      if (g_extern.is_paused && !g_extern.is_oneshot)
+
+      if (check_fullscreen())
       {
-         check_fullscreen();
-         return;
+         // To avoid awkward behavior where things aren't showing up,
+         // we need to advance one frame for the window to show up.
+         // Poll input to avoid possibly stale data to corrupt things.
+         if (driver.input)
+            driver.input->poll(driver.input_data);
+
+         g_extern.is_oneshot = true;
       }
+
+      if (g_extern.is_paused && !g_extern.is_oneshot)
+         return;
 
       set_fast_forward_button(
             driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY),
@@ -1664,8 +1675,8 @@ static void do_state_checks(void)
       check_dsp_config();
 #endif
    }
-
-   check_fullscreen();
+   else
+      check_fullscreen();
 
 #ifdef HAVE_DYLIB
    // DSP plugin doesn't use variable input rate.
