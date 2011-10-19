@@ -41,6 +41,9 @@
 
 #ifndef _WIN32
 #include <sys/param.h> // MAXPATHLEN
+#else
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #endif
 
 #ifndef MAXPATHLEN
@@ -281,6 +284,13 @@ struct global
    unsigned record_width;
    unsigned record_height;
 #endif
+
+   struct
+   {
+      const uint16_t *data;
+      unsigned width;
+      unsigned height;
+   } frame_cache;
 
    char title_buf[64];
 

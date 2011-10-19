@@ -842,19 +842,14 @@ static void check_window(gl_t *gl)
          gl->frame_count);
 
    if (quit)
-   {
       gl->quitting = true;
-   }
    else if (resize)
-   {
       gl->should_resize = true;
-   }
 }
 
 static bool gl_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *gl = data;
-   check_window(gl);
 
    gl_shader_use(1);
    gl->frame_count++;
@@ -1336,6 +1331,7 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
 static bool gl_alive(void *data)
 {
    gl_t *gl = data;
+   check_window(gl);
    return !gl->quitting;
 }
 

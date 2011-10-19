@@ -15,6 +15,25 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _WIN32
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0501
+#endif
+#define WIN32_LEAN_AND_MEAN
+#include <winsock2.h>
+#include <windows.h>
+#include <ws2tcpip.h>
+#else
+#include <sys/select.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <signal.h>
+#endif
+
 #include "netplay.h"
 #include "general.h"
 #include "autosave.h"
@@ -25,31 +44,16 @@
 #include <sys/time.h>
 #include <assert.h>
 
+
 #ifdef _WIN32
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0501
-#endif
-#define WIN32_LEAN_AND_MEAN
-#include <winsock2.h>
-#include <windows.h>
-#include <ws2tcpip.h>
 // Woohoo, Winsock has headers from the STONE AGE! :D
 #define close(x) closesocket(x)
 #define CONST_CAST (const char*)
 #define NONCONST_CAST (char*)
 #else
-#include <sys/select.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <signal.h>
 #define CONST_CAST
 #define NONCONST_CAST
 #endif
-
 
 #define PREV_PTR(x) ((x) == 0 ? handle->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % handle->buffer_size)

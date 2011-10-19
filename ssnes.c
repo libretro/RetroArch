@@ -181,6 +181,33 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if (!driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048, msg))
       g_extern.video_active = false;
 #endif
+
+   g_extern.frame_cache.data = data;
+   g_extern.frame_cache.width = width;
+   g_extern.frame_cache.height = height;
+}
+
+static void video_cached_frame(void)
+{
+#ifdef HAVE_FFMPEG
+   // Cannot allow FFmpeg recording when pushing duped frames.
+   bool recording = g_extern.recording;
+   g_extern.recording = false;
+#endif
+
+   // Not 100% safe, since the library might have
+   // freed the memory, but no known implementations do this :D
+   // It would be really stupid at any rate ...
+   if (g_extern.frame_cache.data)
+   {
+      video_frame(g_extern.frame_cache.data,
+            g_extern.frame_cache.width,
+            g_extern.frame_cache.height);
+   }
+
+#ifdef HAVE_FFMPEG
+   g_extern.recording = recording;
+#endif
 }
 
 static bool audio_flush(const int16_t *data, unsigned samples)
@@ -332,7 +359,7 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
 #endif
 
 #ifdef _WIN32
-#define PACKAGE_VERSION "0.9-rc3"
+#define PACKAGE_VERSION "0.9-rc4"
 #endif
 
 #include "config.features.h"
@@ -1267,19 +1294,25 @@ static void check_savestates(void)
    old_should_loadstate = should_loadstate;
 }
 
-static void check_fullscreen(void)
+static bool check_fullscreen(void)
 {
-   static bool was_pressed = false;
-   bool pressed;
    // If we go fullscreen we drop all drivers and reinit to be safe.
-   if ((pressed = driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY)) && !was_pressed)
+   static bool was_pressed = false;
+   bool pressed = driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY);
+   bool toggle = pressed && !was_pressed;
+   if (toggle)
    {
       g_settings.video.fullscreen = !g_settings.video.fullscreen;
       uninit_drivers();
       init_drivers();
+
+      // Poll input to avoid possibly stale data to corrupt things.
+      if (driver.input)
+         driver.input->poll(driver.input_data);
    }
 
    was_pressed = pressed;
+   return toggle;
 }
 
 static void check_stateslots(void)
@@ -1390,7 +1423,7 @@ static void check_rewind(void)
          g_extern.frame_is_reverse = true;
          setup_rewind_audio();
 
-         msg_queue_push(g_extern.msg_queue, "Rewinding!", 0, 30);
+         msg_queue_push(g_extern.msg_queue, "Rewinding!", 0, g_extern.is_paused ? 1 : 30);
          psnes_unserialize(buf, psnes_serialize_size());
 
          if (g_extern.bsv_movie)
@@ -1455,6 +1488,9 @@ static void check_pause(void)
    static bool old_state = false;
    bool new_state = driver.input->key_pressed(driver.input_data, SSNES_PAUSE_TOGGLE);
 
+   // FRAMEADVANCE will set us into pause mode.
+   new_state |= !g_extern.is_paused && driver.input->key_pressed(driver.input_data, SSNES_FRAMEADVANCE);
+
    static bool old_focus = true;
    bool focus = true;
 
@@ -1513,9 +1549,14 @@ static void check_oneshot(void)
 {
    static bool old_state = false;
    bool new_state = driver.input->key_pressed(driver.input_data, SSNES_FRAMEADVANCE);
-
-   g_extern.is_oneshot = new_state && !old_state;
+   g_extern.is_oneshot = (new_state && !old_state);
    old_state = new_state;
+
+   // Rewind buttons works like FRAMEREWIND when paused. We will one-shot in that case.
+   static bool old_rewind_state = false;
+   bool new_rewind_state = driver.input->key_pressed(driver.input_data, SSNES_REWIND);
+   g_extern.is_oneshot |= new_rewind_state && !old_rewind_state;
+   old_rewind_state = new_rewind_state;
 }
 
 static void check_reset(void)
@@ -1630,17 +1671,14 @@ static void do_state_checks(void)
 {
    if (!g_extern.netplay)
    {
-      check_reset();
-#ifdef HAVE_XML
-      check_cheats();
-#endif
       check_pause();
       check_oneshot();
+
+      if (check_fullscreen() && g_extern.is_paused)
+         video_cached_frame();
+
       if (g_extern.is_paused && !g_extern.is_oneshot)
-      {
-         check_fullscreen();
          return;
-      }
 
       set_fast_forward_button(
             driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY),
@@ -1651,21 +1689,23 @@ static void do_state_checks(void)
          check_stateslots();
          check_savestates();
       }
-      check_rewind();
 
+      check_rewind();
       if (!g_extern.bsv_movie_playback)
          check_movie_record();
-
+     
 #ifdef HAVE_XML
       check_shader_dir();
+      check_cheats();
 #endif
 
 #ifdef HAVE_DYLIB
       check_dsp_config();
 #endif
+      check_reset();
    }
-
-   check_fullscreen();
+   else
+      check_fullscreen();
 
 #ifdef HAVE_DYLIB
    // DSP plugin doesn't use variable input rate.
