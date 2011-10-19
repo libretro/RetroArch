@@ -28,7 +28,7 @@ endif
 libsnes ?= -lsnes
 
 LIBS = -lm -lshlwapi
-DEFINES = -I. -DHAVE_CONFIGFILE -D__USE_MINGW_ANSI_STDIO=1
+DEFINES = -I. -DHAVE_CONFIGFILE
 LDFLAGS = -L. -static-libgcc -s
 LDCXXFLAGS = -static-libstdc++
 
