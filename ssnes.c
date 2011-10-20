@@ -201,12 +201,10 @@ static void video_cached_frame(void)
    if (g_extern.frame_cache.data)
    {
       // Push the pipeline through. A hack sort of.
-      for (unsigned i = 0; i < 3; i++)
-      {
-         video_frame(g_extern.frame_cache.data,
-               g_extern.frame_cache.width,
-               g_extern.frame_cache.height);
-      }
+      SSNES_LOG("Pushing cached frame.\n");
+      video_frame(g_extern.frame_cache.data,
+            g_extern.frame_cache.width,
+            g_extern.frame_cache.height);
    }
 
 #ifdef HAVE_FFMPEG
