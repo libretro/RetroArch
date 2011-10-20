@@ -251,7 +251,7 @@ void init_audio(void)
    else
       g_extern.audio_data.chunk_size = g_extern.audio_data.block_chunk_size;
 
-   g_extern.audio_data.source = hermite_new(2);
+   g_extern.audio_data.source = hermite_new();
    if (!g_extern.audio_data.source)
       g_extern.audio_active = false;
 

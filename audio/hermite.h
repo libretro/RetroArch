@@ -26,7 +26,7 @@
 
 typedef struct hermite_resampler hermite_resampler_t;
 
-hermite_resampler_t *hermite_new(unsigned channels);
+hermite_resampler_t *hermite_new(void);
 
 struct hermite_data
 {

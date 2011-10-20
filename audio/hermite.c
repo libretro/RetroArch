@@ -20,13 +20,12 @@
 #include "hermite.h"
 #include <stdlib.h>
 
-#define MAX_CHANS 8
+#define CHANNELS 2
 
 struct hermite_resampler
 {
-   float chan_data[MAX_CHANS][4];
+   float chan_data[CHANNELS][4];
    double r_frac;
-   unsigned chans;
 };
 
 static inline float hermite_kernel(float mu1, float a, float b, float c, float d)
@@ -47,15 +46,11 @@ static inline float hermite_kernel(float mu1, float a, float b, float c, float d
    return (a0 * b) + (a1 * m0) + (a2 * m1) + (a3 * c);
 }
 
-hermite_resampler_t *hermite_new(unsigned channels)
+hermite_resampler_t *hermite_new(void)
 {
-   if (channels > MAX_CHANS)
-      return NULL;
-
    hermite_resampler_t *re = calloc(1, sizeof(*re));
    if (!re)
       return NULL;
-   re->chans = channels;
    return re;
 }
 
@@ -75,7 +70,7 @@ void hermite_process(hermite_resampler_t *re, struct hermite_data *data)
       while (re->r_frac <= 1.0 && processed_out < out_frames)
       {
          re->r_frac += r_step;
-         for (unsigned i = 0; i < re->chans; i++)
+         for (unsigned i = 0; i < CHANNELS; i++)
          {
             float res = hermite_kernel(re->r_frac, 
                   re->chan_data[i][0], re->chan_data[i][1], re->chan_data[i][2], re->chan_data[i][3]);
@@ -88,7 +83,7 @@ void hermite_process(hermite_resampler_t *re, struct hermite_data *data)
       {
          re->r_frac -= 1.0;
 
-         for (unsigned i = 0; i < re->chans; i++)
+         for (unsigned i = 0; i < CHANNELS; i++)
          {
             re->chan_data[i][0] = re->chan_data[i][1];
             re->chan_data[i][1] = re->chan_data[i][2];
