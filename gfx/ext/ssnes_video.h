@@ -122,7 +122,7 @@ typedef struct ssnes_video_info
 
 // I hope no joypad will ever have this many buttons or axes ... ;)
 // If joykey is this value, do not check that button.
-#define SSNES_NO_AXIS ((unsigned short)0xFFFFU)
+#define SSNES_NO_AXIS (0xFFFFFFFFU)
 #define SSNES_NO_BTN ((unsigned short)0xFFFFU)
 
 // Masks to test on joykey which hat direction is to be tested for.
