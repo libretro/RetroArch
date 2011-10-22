@@ -22,6 +22,7 @@
 struct video_info
 {
    AVCodecContext *codec;
+   AVCodec *encoder;
 
    AVFrame *conv_frame;
    uint8_t *conv_frame_buf;
@@ -42,6 +43,7 @@ struct video_info
 struct audio_info
 {
    AVCodecContext *codec;
+   AVCodec *encoder;
 
    int16_t *buffer;
    size_t frames_in_buffer;
@@ -84,6 +86,8 @@ static bool init_audio(struct audio_info *audio, struct ffemu_params *param)
    AVCodec *codec = avcodec_find_encoder(CODEC_ID_FLAC);
    if (!codec)
       return false;
+
+   audio->encoder = codec;
 
    // FFmpeg just loves to deprecate stuff :)
 #ifdef HAVE_FFMPEG_ALLOC_CONTEXT3
@@ -128,6 +132,8 @@ static bool init_video(struct video_info *video, const struct ffemu_params *para
 #endif
    if (!codec)
       return false;
+
+   video->encoder = codec;
 
 #if AV_HAVE_BIGENDIAN
    video->fmt = PIX_FMT_RGB555BE;
@@ -222,8 +228,12 @@ static bool init_muxer(ffemu_t *handle)
       return false;
    }
 
+#ifdef HAVE_FFMPEG_AVFORMAT_NEW_STREAM
+   AVStream *stream = avformat_new_stream(ctx, handle->video.encoder);
+#else
    int stream_cnt = 0;
    AVStream *stream = av_new_stream(ctx, stream_cnt++);
+#endif
    stream->codec = handle->video.codec;
 
    if (ctx->oformat->flags & AVFMT_GLOBALHEADER)
@@ -231,7 +241,11 @@ static bool init_muxer(ffemu_t *handle)
    handle->muxer.vstream = stream;
    handle->muxer.vstream->sample_aspect_ratio = handle->video.codec->sample_aspect_ratio;
 
+#ifdef HAVE_FFMPEG_AVFORMAT_NEW_STREAM
+   stream = avformat_new_stream(ctx, handle->audio.encoder);
+#else
    stream = av_new_stream(ctx, stream_cnt++);
+#endif
    stream->codec = handle->audio.codec;
 
    if (ctx->oformat->flags & AVFMT_GLOBALHEADER)
