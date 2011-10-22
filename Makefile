@@ -98,7 +98,7 @@ endif
 
 ifeq ($(HAVE_XVIDEO), 1)
    OBJ += gfx/xvideo.o input/x11_input.o
-   LIBS += $(XVIDEO_LIBS)
+   LIBS += $(XVIDEO_LIBS) -lX11 -lXext
    DEFINES += $(XVIDEO_CFLAGS)
 endif
 
