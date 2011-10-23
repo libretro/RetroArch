@@ -85,13 +85,23 @@ static void set_fast_forward_button(bool new_button_state, bool new_hold_button_
    old_hold_button_state = new_hold_button_state;
 }
 
-static void take_screenshot(const uint16_t *frame, unsigned width, unsigned height)
+static void video_cached_frame(void);
+static void take_screenshot(void)
 {
    if (!(*g_settings.screenshot_directory))
       return;
 
-   bool ret = screenshot_dump(g_settings.screenshot_directory, frame, 
-         width, height, (height == 448 || height == 478) ? 1024 : 2048);
+   bool ret = false;
+   if (g_extern.frame_cache.data)
+   {
+      const uint16_t *data = g_extern.frame_cache.data;
+      unsigned width = g_extern.frame_cache.width;
+      unsigned height = g_extern.frame_cache.height;
+      ret = screenshot_dump(g_settings.screenshot_directory,
+            data, 
+            width, height,
+            (height == 448 || height == 478) ? 1024 : 2048);
+   }
 
    const char *msg = NULL;
    if (ret)
@@ -106,7 +116,14 @@ static void take_screenshot(const uint16_t *frame, unsigned width, unsigned heig
    }
 
    msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+
+   if (g_extern.is_paused)
+   {
+      msg_queue_push(g_extern.msg_queue, msg, 1, 1);
+      video_cached_frame();
+   }
+   else
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 }
 
 // libsnes: 0.065
@@ -129,9 +146,6 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
          height = 448;
       }
    }
-
-   if (g_extern.do_screenshot)
-      take_screenshot(data, width, height);
 
    // Slightly messy code,
    // but we really need to do processing before blocking on VSync for best possible scheduling.
@@ -1650,7 +1664,9 @@ static void check_screenshot(void)
 {
    static bool old_pressed = false;
    bool pressed = driver.input->key_pressed(driver.input_data, SSNES_SCREENSHOT);
-   g_extern.do_screenshot = pressed && !old_pressed;
+   if (pressed && !old_pressed)
+      take_screenshot();
+
    old_pressed = pressed;
 }
 
@@ -1671,6 +1687,7 @@ static void check_dsp_config(void)
 
 static void do_state_checks(void)
 {
+   check_screenshot();
    if (!g_extern.netplay)
    {
       check_pause();
@@ -1714,8 +1731,6 @@ static void do_state_checks(void)
    if (!g_extern.audio_data.dsp_plugin)
 #endif
       check_input_rate();
-
-   check_screenshot();
 }
 
 static void fill_title_buf(void)

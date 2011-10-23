@@ -303,8 +303,6 @@ struct global
 
    char sha256[64 + 1];
 
-   bool do_screenshot;
-
 #ifdef HAVE_XML
    cheat_manager_t *cheat;
 #endif
