@@ -69,12 +69,12 @@ static void dump_content(FILE *file, const uint16_t *frame, unsigned width, unsi
       for (unsigned i = 0; i < width; i++)
       {
          uint16_t pixel = *src++;
-         uint8_t b = (pixel & 0x1f) << 3;
-         uint8_t g = (pixel & 0x03e0) >> 2;
-         uint8_t r = (pixel & 0x7c00) >> 7;
-         *dst++ = b;
-         *dst++ = g;
-         *dst++ = r;
+         uint8_t b = (pixel >>  0) & 0x1f;
+         uint8_t g = (pixel >>  5) & 0x1f;
+         uint8_t r = (pixel >> 10) & 0x1f;
+         *dst++ = (b << 3) | (b >> 2);
+         *dst++ = (g << 3) | (g >> 2);
+         *dst++ = (r << 3) | (r >> 2);
       }
 
       fwrite(line, 1, sizeof(line), file);
