@@ -1248,6 +1248,16 @@ static void fill_pathnames(void)
 
       if (!(*g_extern.xml_name))
          fill_pathname_noext(g_extern.xml_name, g_extern.basename, ".xml", sizeof(g_extern.xml_name));
+
+      if (!(*g_settings.screenshot_directory))
+      {
+         strlcpy(g_settings.screenshot_directory, g_extern.basename, sizeof(g_settings.screenshot_directory));
+         char *dir = strrchr(g_settings.screenshot_directory, '/');
+         if (!dir)
+            dir = strrchr(g_settings.screenshot_directory, '\\');
+         if (dir)
+            *dir = '\0';
+      }
    }
 }
 
