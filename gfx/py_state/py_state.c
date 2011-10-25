@@ -60,7 +60,7 @@ PY_READ_FUNC(APURAM)
 PY_READ_FUNC(CGRAM)
 PY_READ_FUNC(OAM)
 
-static PyObject* py_read_input(PyObject *self, PyObject *args)
+static PyObject *py_read_input(PyObject *self, PyObject *args)
 {
    (void)self;
 
@@ -72,7 +72,7 @@ static PyObject* py_read_input(PyObject *self, PyObject *args)
    if (!PyArg_ParseTuple(args, "II", &player, &key))
       return NULL;
 
-   if (player > MAX_PLAYERS || player < 1)
+   if (player > MAX_PLAYERS || player < 1 || key >= SSNES_FIRST_META_KEY)
       return NULL;
 
    const struct snes_keybind *binds[MAX_PLAYERS];
@@ -88,6 +88,24 @@ static PyObject* py_read_input(PyObject *self, PyObject *args)
    return PyBool_FromLong((long)res);
 }
 
+static PyObject *py_read_input_meta(PyObject *self, PyObject *args)
+{
+   (void)self;
+
+   if (!driver.input_data)
+      return PyBool_FromLong(0);
+
+   unsigned key;
+   if (!PyArg_ParseTuple(args, "I", &key))
+      return NULL;
+
+   if (key < SSNES_FIRST_META_KEY)
+      return NULL;
+
+   bool ret = driver.input->key_pressed(driver.input_data, key);
+   return PyBool_FromLong((long)ret);
+}
+
 static PyMethodDef SNESMethods[] = {
    { "read_wram",    PY_READ_FUNC_DECL(WRAM),   METH_VARARGS, "Read WRAM from SNES." },
    { "read_vram",    PY_READ_FUNC_DECL(VRAM),   METH_VARARGS, "Read VRAM from SNES." },
@@ -95,23 +113,49 @@ static PyMethodDef SNESMethods[] = {
    { "read_cgram",   PY_READ_FUNC_DECL(CGRAM),  METH_VARARGS, "Read CGRAM from SNES." },
    { "read_oam",     PY_READ_FUNC_DECL(OAM),    METH_VARARGS, "Read OAM from SNES." },
    { "input",        py_read_input,             METH_VARARGS, "Read input state from SNES." },
+   { "input_meta",   py_read_input_meta,        METH_VARARGS, "Read SSNES specific input." },
    { NULL, NULL, 0, NULL }
 };
 
+#define DECL_ATTR_SNES(attr) PyObject_SetAttrString(mod, #attr, PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_##attr))
+#define DECL_ATTR_SSNES(attr) PyObject_SetAttrString(mod, #attr, PyLong_FromLong(SSNES_##attr))
 static void py_set_attrs(PyObject *mod)
 {
-   PyObject_SetAttrString(mod, "B", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_B));
-   PyObject_SetAttrString(mod, "Y", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_Y));
-   PyObject_SetAttrString(mod, "SELECT", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_SELECT));
-   PyObject_SetAttrString(mod, "START", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_START));
-   PyObject_SetAttrString(mod, "UP", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_UP));
-   PyObject_SetAttrString(mod, "DOWN", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_DOWN));
-   PyObject_SetAttrString(mod, "LEFT", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_LEFT));
-   PyObject_SetAttrString(mod, "RIGHT", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_RIGHT));
-   PyObject_SetAttrString(mod, "A", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_A));
-   PyObject_SetAttrString(mod, "X", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_X));
-   PyObject_SetAttrString(mod, "L", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_L));
-   PyObject_SetAttrString(mod, "R", PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_R));
+   DECL_ATTR_SNES(B);
+   DECL_ATTR_SNES(Y);
+   DECL_ATTR_SNES(SELECT);
+   DECL_ATTR_SNES(START);
+   DECL_ATTR_SNES(UP);
+   DECL_ATTR_SNES(DOWN);
+   DECL_ATTR_SNES(LEFT);
+   DECL_ATTR_SNES(RIGHT);
+   DECL_ATTR_SNES(A);
+   DECL_ATTR_SNES(X);
+   DECL_ATTR_SNES(L);
+   DECL_ATTR_SNES(R);
+
+   DECL_ATTR_SSNES(FAST_FORWARD_KEY);
+   DECL_ATTR_SSNES(FAST_FORWARD_HOLD_KEY);
+   DECL_ATTR_SSNES(LOAD_STATE_KEY);
+   DECL_ATTR_SSNES(SAVE_STATE_KEY);
+   DECL_ATTR_SSNES(FULLSCREEN_TOGGLE_KEY);
+   DECL_ATTR_SSNES(QUIT_KEY);
+   DECL_ATTR_SSNES(STATE_SLOT_PLUS);
+   DECL_ATTR_SSNES(STATE_SLOT_MINUS);
+   DECL_ATTR_SSNES(AUDIO_INPUT_RATE_PLUS);
+   DECL_ATTR_SSNES(AUDIO_INPUT_RATE_MINUS);
+   DECL_ATTR_SSNES(REWIND);
+   DECL_ATTR_SSNES(MOVIE_RECORD_TOGGLE);
+   DECL_ATTR_SSNES(PAUSE_TOGGLE);
+   DECL_ATTR_SSNES(FRAMEADVANCE);
+   DECL_ATTR_SSNES(RESET);
+   DECL_ATTR_SSNES(SHADER_NEXT);
+   DECL_ATTR_SSNES(SHADER_PREV);
+   DECL_ATTR_SSNES(CHEAT_INDEX_PLUS);
+   DECL_ATTR_SSNES(CHEAT_INDEX_MINUS);
+   DECL_ATTR_SSNES(CHEAT_TOGGLE);
+   DECL_ATTR_SSNES(SCREENSHOT);
+   DECL_ATTR_SSNES(DSP_CONFIG);
 }
 
 static PyModuleDef SNESModule = {
@@ -272,16 +316,7 @@ int py_state_get(py_state_t *handle, const char *id,
       return 0;
    }
 
-   int retval = 0;
-   if (PyLong_Check(ret))
-      retval = (int)PyLong_AsLong(ret);
-   else
-   {
-      if (!handle->warned_type)
-         SSNES_WARN("Didn't get long compatible value from script! Bug?\n");
-      handle->warned_type = true;
-   }
-
+   int retval = PyLong_AsLong(ret);
    Py_DECREF(ret);
    return retval;
 }

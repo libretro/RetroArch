@@ -357,7 +357,7 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
    };
 
    int16_t res = 0;
-   if (id < 12)
+   if (id < SSNES_FIRST_META_KEY)
       res = driver.input->input_state(driver.input_data, binds, port, device, index, id);
 
    if (g_extern.bsv_movie && !g_extern.bsv_movie_playback)

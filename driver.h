@@ -26,9 +26,11 @@
 #include <unistd.h>
 #include "input/keysym.h"
 
+// SNES has 12 buttons from 0-11 (libsnes.hpp)
+#define SSNES_FIRST_META_KEY 12
 enum
 {
-   SSNES_FAST_FORWARD_KEY = 12, // SNES has 12 buttons from 0-11 (libsnes.hpp)
+   SSNES_FAST_FORWARD_KEY = SSNES_FIRST_META_KEY,
    SSNES_FAST_FORWARD_HOLD_KEY,
    SSNES_LOAD_STATE_KEY,
    SSNES_SAVE_STATE_KEY,
