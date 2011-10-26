@@ -39,6 +39,7 @@ enum snes_tracker_type
 
 enum snes_ram_type
 {
+   SSNES_STATE_NONE,
    SSNES_STATE_WRAM,
    SSNES_STATE_APURAM,
    SSNES_STATE_OAM,

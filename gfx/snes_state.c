@@ -88,32 +88,32 @@ snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
       strlcpy(tracker->info[i].id, info->info[i].id, sizeof(tracker->info[i].id));
       tracker->info[i].addr = info->info[i].addr;
       tracker->info[i].type = info->info[i].type;
-      tracker->info[i].mask = (info->info[i].mask == 0) ? 0xffffffffu : info->info[i].mask;
+      tracker->info[i].mask = (info->info[i].mask == 0) ? -1u : info->info[i].mask;
 
 #ifdef HAVE_PYTHON
       if (info->info[i].type == SSNES_STATE_PYTHON)
          tracker->info[i].py = tracker->py;
 #endif
 
-      assert(info->wram && info->vram && info->cgram &&
-            info->oam && info->apuram);
+      // If we don't have a valid pointer.
+      static const uint8_t empty = 0;
 
       switch (info->info[i].ram_type)
       {
          case SSNES_STATE_WRAM:
-            tracker->info[i].ptr = info->wram;
+            tracker->info[i].ptr = info->wram ? info->wram : &empty;
             break;
          case SSNES_STATE_APURAM:
-            tracker->info[i].ptr = info->apuram;
+            tracker->info[i].ptr = info->apuram ? info->apuram : &empty;
             break;
          case SSNES_STATE_OAM:
-            tracker->info[i].ptr = info->oam;
+            tracker->info[i].ptr = info->oam ? info->oam : &empty;
             break;
          case SSNES_STATE_CGRAM:
-            tracker->info[i].ptr = info->cgram;
+            tracker->info[i].ptr = info->cgram ? info->cgram : &empty;
             break;
          case SSNES_STATE_VRAM:
-            tracker->info[i].ptr = info->vram;
+            tracker->info[i].ptr = info->vram ? info->vram : &empty;
             break;
          case SSNES_STATE_INPUT_SLOT1:
             tracker->info[i].input_ptr = &tracker->input_state[0];
@@ -125,7 +125,7 @@ snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
             break;
 
          default:
-            tracker->info[i].ptr = NULL;
+            tracker->info[i].ptr = &empty;
       }
    }
 

@@ -483,13 +483,13 @@ static bool get_import_value(xmlNodePtr ptr)
       goto error;
    }
 
-   enum snes_ram_type ram_type = SSNES_STATE_WRAM;
+   enum snes_ram_type ram_type = SSNES_STATE_NONE;
    uint32_t addr = 0;
 
 #ifdef HAVE_PYTHON
    if (tracker_type != SSNES_STATE_PYTHON)
-   {
 #endif
+   {
       if (input) 
       {
          unsigned slot = strtoul((const char*)input, NULL, 0);
@@ -517,11 +517,9 @@ static bool get_import_value(xmlNodePtr ptr)
          SSNES_ERR("No RAM address specificed for import value.\n");
          goto error;
       }
-#ifdef HAVE_PYTHON
    }
-#endif
 
-   int memtype = 0;
+   unsigned memtype;
    switch (ram_type)
    {
       case SSNES_STATE_WRAM:
@@ -541,10 +539,10 @@ static bool get_import_value(xmlNodePtr ptr)
          break;
 
       default:
-         memtype = SNES_MEMORY_WRAM;
+         memtype = -1u;
    }
 
-   if (addr >= psnes_get_memory_size(memtype))
+   if ((memtype != -1u) && (addr >= psnes_get_memory_size(memtype)))
    {
       SSNES_ERR("Address out of bounds.\n");
       goto error;

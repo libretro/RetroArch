@@ -490,8 +490,8 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
       unsigned addr = 0;
 #ifdef HAVE_PYTHON
       if (tracker_type != SSNES_STATE_PYTHON)
-      {
 #endif
+      {
          unsigned input_slot = 0;
          if (config_get_hex(conf, input_slot_buf, &input_slot))
          {
@@ -525,11 +525,9 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
             SSNES_ERR("No address assigned to semantic.\n");
             goto error;
          }
-#ifdef HAVE_PYTHON
       }
-#endif
 
-      int memtype = 0;
+      unsigned memtype;
       switch (ram_type)
       {
          case SSNES_STATE_WRAM:
@@ -549,10 +547,10 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
             break;
 
          default:
-            memtype = SNES_MEMORY_WRAM;
+            memtype = -1u;
       }
 
-      if (addr >= psnes_get_memory_size(memtype))
+      if ((memtype != -1u) && (addr >= psnes_get_memory_size(memtype)))
       {
          SSNES_ERR("Address out of bounds.\n");
          goto error;
@@ -581,7 +579,7 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
       .oam = psnes_get_memory_data(SNES_MEMORY_OAM),
       .apuram = psnes_get_memory_data(SNES_MEMORY_APURAM),
       .info = info,
-      .info_elem = info_cnt
+      .info_elem = info_cnt,
    };
 
 #ifdef HAVE_PYTHON
@@ -613,7 +611,6 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
 #endif
 
    free(imports);
-
    return true;
 
 error:
