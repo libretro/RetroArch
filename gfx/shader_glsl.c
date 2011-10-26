@@ -55,6 +55,7 @@
 #define pglLinkProgram glLinkProgram
 #define pglGetUniformLocation glGetUniformLocation
 #define pglUniform1i glUniform1i
+#define pglUniform1f glUniform1f
 #define pglUniform2fv glUniform2fv
 #define pglUniform4fv glUniform4fv
 #define pglGetShaderiv glGetShaderiv
@@ -78,6 +79,7 @@ static PFNGLDETACHSHADERPROC pglDetachShader = NULL;
 static PFNGLLINKPROGRAMPROC pglLinkProgram = NULL;
 static PFNGLGETUNIFORMLOCATIONPROC pglGetUniformLocation = NULL;
 static PFNGLUNIFORM1IPROC pglUniform1i = NULL;
+static PFNGLUNIFORM1FPROC pglUniform1f = NULL;
 static PFNGLUNIFORM2FVPROC pglUniform2fv = NULL;
 static PFNGLUNIFORM4FVPROC pglUniform4fv = NULL;
 static PFNGLGETSHADERIVPROC pglGetShaderiv = NULL;
@@ -842,6 +844,7 @@ bool gl_glsl_init(const char *path)
    LOAD_GL_SYM(LinkProgram);
    LOAD_GL_SYM(GetUniformLocation);
    LOAD_GL_SYM(Uniform1i);
+   LOAD_GL_SYM(Uniform1f);
    LOAD_GL_SYM(Uniform2fv);
    LOAD_GL_SYM(Uniform4fv);
    LOAD_GL_SYM(GetShaderiv);
@@ -862,7 +865,7 @@ bool gl_glsl_init(const char *path)
    bool shader_support = pglCreateProgram && pglUseProgram && pglCreateShader
       && pglDeleteShader && pglShaderSource && pglCompileShader && pglAttachShader
       && pglDetachShader && pglLinkProgram && pglGetUniformLocation
-      && pglUniform1i && pglUniform2fv && pglUniform4fv
+      && pglUniform1i && pglUniform1f && pglUniform2fv && pglUniform4fv
       && pglGetShaderiv && pglGetShaderInfoLog && pglGetProgramiv && pglGetProgramInfoLog 
       && pglDeleteProgram && pglGetAttachedShaders
       && pglGetAttribLocation && pglEnableVertexAttribArray
@@ -1148,7 +1151,7 @@ void gl_glsl_set_params(unsigned width, unsigned height,
          for (unsigned i = 0; i < cnt; i++)
          {
             location = pglGetUniformLocation(gl_program[active_index], info[i].id);
-            pglUniform1i(location, info[i].value);
+            pglUniform1f(location, info[i].value);
          }
       }
    }

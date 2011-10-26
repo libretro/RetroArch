@@ -304,7 +304,7 @@ void py_state_free(py_state_t *handle)
    Py_Finalize();
 }
 
-int py_state_get(py_state_t *handle, const char *id,
+float py_state_get(py_state_t *handle, const char *id,
       unsigned frame_count)
 {
    PyObject *ret = PyObject_CallMethod(handle->inst, (char*)id, (char*)"I", frame_count);
@@ -313,10 +313,10 @@ int py_state_get(py_state_t *handle, const char *id,
       if (!handle->warned_ret)
          SSNES_WARN("Didn't get return value from script! Bug?\n");
       handle->warned_ret = true;
-      return 0;
+      return 0.0f;
    }
 
-   int retval = PyLong_AsLong(ret);
+   float retval = (float)PyFloat_AsDouble(ret);
    Py_DECREF(ret);
    return retval;
 }

@@ -78,7 +78,7 @@ struct snes_tracker_info
 struct snes_tracker_uniform
 {
    const char *id;
-   int value;
+   float value;
 };
 
 typedef struct snes_tracker snes_tracker_t;

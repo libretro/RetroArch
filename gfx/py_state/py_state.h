@@ -26,7 +26,7 @@ typedef struct py_state py_state_t;
 py_state_t *py_state_new(const char *program, bool is_file, const char *pyclass);
 void py_state_free(py_state_t *handle);
 
-int py_state_get(py_state_t *handle, 
+float py_state_get(py_state_t *handle, 
       const char *id, unsigned frame_count);
 
 #endif
