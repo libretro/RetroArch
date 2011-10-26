@@ -1423,7 +1423,7 @@ static void check_rewind(void)
          g_extern.frame_is_reverse = true;
          setup_rewind_audio();
 
-         msg_queue_push(g_extern.msg_queue, "Rewinding!", 0, 30);
+         msg_queue_push(g_extern.msg_queue, "Rewinding!", 0, g_extern.is_paused ? 1 : 30);
          psnes_unserialize(buf, psnes_serialize_size());
 
          if (g_extern.bsv_movie)
