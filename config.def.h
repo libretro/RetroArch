@@ -111,7 +111,6 @@
 // Windowed
 static const float xscale = 3.0; // Real x res = aspect * base_size * xscale
 static const float yscale = 3.0; // Real y res = base_size * yscale
-static const unsigned base_size = 224; // Base size for windowed mode.
 
 // Fullscreen
 static const bool fullscreen = false;  // To start in Fullscreen or not

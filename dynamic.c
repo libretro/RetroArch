@@ -96,6 +96,8 @@ unsigned (*psnes_get_memory_size)(unsigned);
 void (*psnes_unload_cartridge)(void);
 void (*psnes_term)(void);
 
+static void set_environment(void);
+
 #ifdef HAVE_DYNAMIC
 static void load_dynamic(void)
 {
@@ -181,29 +183,22 @@ static void set_statics(void)
 
 void init_dlsym(void)
 {
-   // Guarantee that we can do "dirty" casting. Every OS that this program supports should pass this ...
+   // Guarantee that we can do "dirty" casting.
+   // Every OS that this program supports should pass this ...
    assert(sizeof(void*) == sizeof(void (*)(void)));
 
 #ifdef HAVE_DYNAMIC
 
-#ifndef _WIN32 // Try to verify that -lsnes was not linked in from other modules
-               // since loading it dynamically and with -l will fail hard.
-   void *lib = dlopen(NULL, RTLD_LAZY);
-   if (lib)
+   // Try to verify that -lsnes was not linked in from other modules
+   // since loading it dynamically and with -l will fail hard.
+   function_t sym = dylib_proc(NULL, "snes_init");
+   if (sym)
    {
-      void *sym = dlsym(lib, "snes_init");
-      if (sym)
-      {
-         SSNES_ERR("Serious problem! SSNES wants to load libsnes dyamically, but it is already linked!\n"); 
-         SSNES_ERR("This could happen if other modules SSNES depends on link against libsnes directly.\n");
-         SSNES_ERR("Proceeding could cause a crash! Aborting ...\n");
-         dlclose(lib);
-         exit(1);
-      }
-
-      dlclose(lib);
+      SSNES_ERR("Serious problem! SSNES wants to load libsnes dyamically, but it is already linked!\n"); 
+      SSNES_ERR("This could happen if other modules SSNES depends on link against libsnes directly.\n");
+      SSNES_ERR("Proceeding could cause a crash! Aborting ...\n");
+      exit(1);
    }
-#endif
 
    if (!*g_settings.libsnes)
    {
@@ -220,6 +215,8 @@ void init_dlsym(void)
 #else
    set_statics();
 #endif
+
+   set_environment();
 }
 
 void uninit_dlsym(void)
@@ -243,16 +240,26 @@ dylib_t dylib_load(const char *path)
 function_t dylib_proc(dylib_t lib, const char *proc)
 {
 #ifdef _WIN32
-   function_t sym = (function_t)GetProcAddress(lib, proc);
+   function_t sym = (function_t)GetProcAddress(lib ? lib : GetModuleHandle(NULL), proc);
 #else
+   void *ptr_sym = NULL;
+   if (lib)
+      ptr_sym = dlsym(lib, proc); 
+   else
+   {
+      void *handle = dlopen(NULL, RTLD_LAZY);
+      if (handle)
+      {
+         ptr_sym = dlsym(handle, proc);
+         dlclose(handle);
+      }
+   }
+
    // Dirty hack to workaround the non-legality of void* -> fn-pointer casts.
-   void *ptr_sym = dlsym(lib, proc); 
    function_t sym;
    memcpy(&sym, &ptr_sym, sizeof(void*));
 #endif
 
-   if (!sym)
-      SSNES_WARN("Failed to load symbol \"%s\"\n", proc);
    return sym;
 }
 
@@ -263,5 +270,54 @@ void dylib_close(dylib_t lib)
 #else
    dlclose(lib);
 #endif
+}
+
+static bool environment_cb(unsigned cmd, void *data)
+{
+   switch (cmd)
+   {
+      case SNES_ENVIRONMENT_GET_FULLPATH:
+         *(const char**)data = g_extern.system.fullpath;
+         break;
+
+      case SNES_ENVIRONMENT_SET_GEOMETRY:
+         g_extern.system.geom = *(const struct snes_geometry*)data;
+         g_extern.system.geom.max_width = next_pow2(g_extern.system.geom.max_width);
+         g_extern.system.geom.max_height = next_pow2(g_extern.system.geom.max_height);
+         break;
+
+      case SNES_ENVIRONMENT_SET_PITCH:
+         g_extern.system.pitch = *(const unsigned*)data;
+         break;
+
+      default:
+         return false;
+   }
+
+   return true;
+}
+
+// Assume SNES as defaults.
+static void set_environment_defaults(void)
+{
+   g_extern.system.pitch = 0; // 0 is classic libsnes semantics.
+   g_extern.system.geom = (struct snes_geometry) {
+      .base_width = 256,
+      .base_height = 224,
+      .max_width = 512,
+      .max_height = 512,
+   };
+}
+
+// SSNES extension hooks. Totally optional 'n shizz :)
+static void set_environment(void)
+{
+   void (*psnes_set_environment)(snes_environment_t) = 
+      (void (*)(snes_environment_t))dylib_proc(lib_handle, "snes_set_environment");
+
+   if (psnes_set_environment)
+      psnes_set_environment(environment_cb);
+
+   set_environment_defaults();
 }
 

@@ -66,10 +66,28 @@ extern "C" {
 #define SNES_MEMORY_OAM     103
 #define SNES_MEMORY_CGRAM   104
 
+// SSNES extension. Not required to be implemented for a working implementation.
+#define SNES_ENVIRONMENT_GET_FULLPATH 0   // const char **
+#define SNES_ENVIRONMENT_SET_GEOMETRY 1   // const struct snes_geometry *
+#define SNES_ENVIRONMENT_SET_PITCH 2      // const unsigned *
+
+struct snes_geometry
+{
+   unsigned base_width;    // Nominal video width of system.
+   unsigned base_height;   // Nominal video height of system.
+   unsigned max_width;     // Maximum possible width of system.
+   unsigned max_height;    // Maximum possible height of system.
+};
+
+typedef bool (*snes_environment_t)(unsigned cmd, void *data);
+void snes_set_environment(snes_environment_t);
+////
+
 typedef void (*snes_video_refresh_t)(const uint16_t *data, unsigned width, unsigned height);
 typedef void (*snes_audio_sample_t)(uint16_t left, uint16_t right);
 typedef void (*snes_input_poll_t)(void);
 typedef int16_t (*snes_input_state_t)(bool port, unsigned device, unsigned index, unsigned id);
+
 
 unsigned snes_library_revision_major(void);
 unsigned snes_library_revision_minor(void);

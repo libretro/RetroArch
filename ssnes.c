@@ -85,6 +85,14 @@ static void set_fast_forward_button(bool new_button_state, bool new_hold_button_
    old_hold_button_state = new_hold_button_state;
 }
 
+static inline unsigned lines_to_pitch(unsigned height)
+{
+   if (g_extern.system.pitch == 0) // SNES semantics
+      return ((height == 448) || (height == 478)) ? 1024 : 2048;
+   else
+      return g_extern.system.pitch;
+}
+
 static void video_cached_frame(void);
 static void take_screenshot(void)
 {
@@ -100,7 +108,7 @@ static void take_screenshot(void)
       ret = screenshot_dump(g_settings.screenshot_directory,
             data, 
             width, height,
-            (height == 448 || height == 478) ? 1024 : 2048);
+            lines_to_pitch(height));
    }
 
    const char *msg = NULL;
@@ -126,6 +134,25 @@ static void take_screenshot(void)
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 }
 
+
+static inline void adjust_crop(const uint16_t **data, unsigned *height)
+{
+   // Rather SNES specific.
+   if (g_settings.video.crop_overscan)
+   {
+      if (*height == 239)
+      {
+         *data += 7 * 1024; // Skip 7 top scanlines.
+         *height = 224;
+      }
+      else if (*height == 478)
+      {
+         *data += 15 * 512; // Skip 15 top scanlines.
+         *height = 448;
+      }
+   }
+}
+
 // libsnes: 0.065
 // Format received is 16-bit 0RRRRRGGGGGBBBBB
 static void video_frame(const uint16_t *data, unsigned width, unsigned height)
@@ -133,19 +160,7 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if (!g_extern.video_active)
       return;
 
-   if (g_settings.video.crop_overscan)
-   {
-      if (height == 239)
-      {
-         data += 7 * 1024; // Skip 7 top scanlines.
-         height = 224;
-      }
-      else if (height == 478)
-      {
-         data += 15 * 512; // Skip 15 top scanlines.
-         height = 448;
-      }
-   }
+   adjust_crop(&data, &height);
 
    // Slightly messy code,
    // but we really need to do processing before blocking on VSync for best possible scheduling.
@@ -154,7 +169,7 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    {
       struct ffemu_video_data ffemu_data = {
          .data = data,
-         .pitch = height == 448 || height == 478 ? 1024 : 2048,
+         .pitch = lines_to_pitch(height),
          .width = width,
          .height = height,
       };
@@ -171,7 +186,7 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
       unsigned oheight = height;
       g_extern.filter.psize(&owidth, &oheight);
       g_extern.filter.prender(g_extern.filter.colormap, g_extern.filter.buffer, 
-            g_extern.filter.pitch, data, (height == 448 || height == 478) ? 1024 : 2048, width, height);
+            g_extern.filter.pitch, data, lines_to_pitch(height), width, height);
 
 #ifdef HAVE_FFMPEG
       if (g_extern.recording && g_settings.video.post_filter_record)
@@ -189,10 +204,10 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
       if (!driver.video->frame(driver.video_data, g_extern.filter.buffer, owidth, oheight, g_extern.filter.pitch, msg))
          g_extern.video_active = false;
    }
-   else if (!driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048, msg))
+   else if (!driver.video->frame(driver.video_data, data, width, height, lines_to_pitch(height), msg))
       g_extern.video_active = false;
 #else
-   if (!driver.video->frame(driver.video_data, data, width, height, (height == 448 || height == 478) ? 1024 : 2048, msg))
+   if (!driver.video->frame(driver.video_data, data, width, height, lines_to_pitch(height), msg))
       g_extern.video_active = false;
 #endif
 
@@ -457,6 +472,8 @@ static void print_help(void)
 
 static void set_basename(const char *path)
 {
+   strlcpy(g_extern.system.fullpath, path, sizeof(g_extern.system.fullpath));
+
    strlcpy(g_extern.basename, path, sizeof(g_extern.basename));
    char *dst = strrchr(g_extern.basename, '.');
    if (dst)
@@ -921,10 +938,10 @@ static void init_recording(void)
       struct ffemu_rational ntsc_fps = {60000, 1000};
       struct ffemu_rational pal_fps = {50000, 1000};
       struct ffemu_params params = {
-         .out_width = 256,
-         .out_height = 224,
-         .fb_width = 512,
-         .fb_height = 512,
+         .out_width = g_extern.system.geom.base_width,
+         .out_height = g_extern.system.geom.base_height,
+         .fb_width = g_extern.system.geom.max_width,
+         .fb_height = g_extern.system.geom.max_height,
          .channels = 2,
          .samplerate = 32000,
          .filename = g_extern.record_path,
@@ -939,8 +956,8 @@ static void init_recording(void)
       }
       else if (g_settings.video.hires_record)
       {
-         params.out_width = 512;
-         params.out_height = 448;
+         params.out_width *= 2;
+         params.out_height *= 2;
       }
 
       if (g_settings.video.force_aspect)
@@ -953,8 +970,8 @@ static void init_recording(void)
          g_extern.filter.psize(&params.out_width, &params.out_height);
          params.rgb32 = true;
 
-         unsigned max_width = 512;
-         unsigned max_height = 512;
+         unsigned max_width = params.fb_width;
+         unsigned max_height = params.fb_height;
          g_extern.filter.psize(&max_width, &max_height);
          params.fb_width = next_pow2(max_width);
          params.fb_height = next_pow2(max_height);

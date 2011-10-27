@@ -330,17 +330,17 @@ static void init_filter(void)
 
    g_extern.filter.active = true;
 
-   unsigned width = 512;
-   unsigned height = 512;
+   unsigned width = g_extern.system.geom.max_width;
+   unsigned height = g_extern.system.geom.max_height;
    g_extern.filter.psize(&width, &height);
 
    unsigned pow2_x = next_pow2(ceil(width));
    unsigned pow2_y = next_pow2(ceil(height));
    unsigned maxsize = pow2_x > pow2_y ? pow2_x : pow2_y; 
-   g_extern.filter.scale = maxsize / 256;
+   g_extern.filter.scale = maxsize / SSNES_SCALE_BASE;
 
-   g_extern.filter.buffer = malloc(256 * 256 * g_extern.filter.scale * g_extern.filter.scale * sizeof(uint32_t));
-   g_extern.filter.pitch = 256 * g_extern.filter.scale * sizeof(uint32_t);
+   g_extern.filter.buffer = malloc(SSNES_SCALE_BASE * SSNES_SCALE_BASE * g_extern.filter.scale * g_extern.filter.scale * sizeof(uint32_t));
+   g_extern.filter.pitch = SSNES_SCALE_BASE * g_extern.filter.scale * sizeof(uint32_t);
    assert(g_extern.filter.buffer);
 
    g_extern.filter.colormap = malloc(32768 * sizeof(uint32_t));
@@ -412,8 +412,9 @@ void init_video_input(void)
    init_shader_dir();
 #endif
 
-   // We use at least 512x512 textures to accomodate for hi-res games.
-   unsigned scale = 2;
+   unsigned max_dim = max(g_extern.system.geom.max_width, g_extern.system.geom.max_height);
+   unsigned scale = max_dim / SSNES_SCALE_BASE;
+   scale = max(scale, 1);
 
    find_video_driver();
    find_input_driver();
@@ -432,15 +433,17 @@ void init_video_input(void)
    {
       if (g_settings.video.force_aspect)
       {
-         width = roundf(g_settings.video.base_size * g_settings.video.xscale * g_settings.video.aspect_ratio);
-         height = roundf(g_settings.video.base_size * g_settings.video.yscale);
+         width = roundf(g_extern.system.geom.base_height * g_settings.video.xscale * g_settings.video.aspect_ratio);
+         height = roundf(g_extern.system.geom.base_height * g_settings.video.yscale);
       }
       else
       {
-         width = roundf(8.0f / 7.0f * g_settings.video.base_size * g_settings.video.xscale); // Assume 8:7 aspect.
-         height = roundf(g_settings.video.base_size * g_settings.video.yscale);
+         width = roundf(g_extern.system.geom.base_width * g_settings.video.xscale);
+         height = roundf(g_extern.system.geom.base_height * g_settings.video.yscale);
       }
    }
+
+   SSNES_LOG("Video @ %ux%u\n", width, height);
 
    video_info_t video = {
       .width = width,

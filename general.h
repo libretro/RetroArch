@@ -74,7 +74,6 @@ struct settings
       char driver[32];
       float xscale;
       float yscale;
-      unsigned base_size;
       bool fullscreen;
       unsigned fullscreen_x;
       unsigned fullscreen_y;
@@ -210,6 +209,13 @@ struct global
 
    struct
    {
+      struct snes_geometry geom;
+      unsigned pitch; // If 0, has classic libsnes semantics.
+      char fullpath[MAXPATHLEN];
+   } system;
+
+   struct
+   {
       hermite_resampler_t *source;
 
       float *data;
@@ -328,6 +334,16 @@ extern struct global g_extern;
       fprintf(stderr, "SSNES [WARN] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
+
+#ifndef max
+#define max(a, b) ((a) > (b) ? (a) : (b))
+#endif
+
+#ifndef min
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+#define SSNES_SCALE_BASE 256
 
 static inline uint32_t next_pow2(uint32_t v)
 {
