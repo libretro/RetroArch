@@ -96,7 +96,9 @@ unsigned (*psnes_get_memory_size)(unsigned);
 void (*psnes_unload_cartridge)(void);
 void (*psnes_term)(void);
 
+#ifdef HAVE_DYLIB
 static void set_environment(void);
+#endif
 
 #ifdef HAVE_DYNAMIC
 static void load_dynamic(void)
@@ -216,7 +218,9 @@ void init_dlsym(void)
    set_statics();
 #endif
 
+#ifdef HAVE_DYLIB
    set_environment();
+#endif
 }
 
 void uninit_dlsym(void)
@@ -304,6 +308,7 @@ static bool environment_cb(unsigned cmd, void *data)
    return true;
 }
 
+#ifdef HAVE_DYLIB
 // Assume SNES as defaults.
 static void set_environment_defaults(void)
 {
@@ -319,12 +324,20 @@ static void set_environment_defaults(void)
 // SSNES extension hooks. Totally optional 'n shizz :)
 static void set_environment(void)
 {
+#ifdef HAVE_DYNAMIC
+   dylib_t lib = lib_handle;
+#else
+   dylib_t lib = NULL;
+#endif
+
    void (*psnes_set_environment)(snes_environment_t) = 
-      (void (*)(snes_environment_t))dylib_proc(lib_handle, "snes_set_environment");
+      (void (*)(snes_environment_t))dylib_proc(lib, "snes_set_environment");
 
    if (psnes_set_environment)
       psnes_set_environment(environment_cb);
 
    set_environment_defaults();
 }
+#endif
+
 
