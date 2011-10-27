@@ -278,16 +278,23 @@ static bool environment_cb(unsigned cmd, void *data)
    {
       case SNES_ENVIRONMENT_GET_FULLPATH:
          *(const char**)data = g_extern.system.fullpath;
+         SSNES_LOG("FULLPATH: \"%s\"\n", g_extern.system.fullpath);
          break;
 
       case SNES_ENVIRONMENT_SET_GEOMETRY:
          g_extern.system.geom = *(const struct snes_geometry*)data;
          g_extern.system.geom.max_width = next_pow2(g_extern.system.geom.max_width);
          g_extern.system.geom.max_height = next_pow2(g_extern.system.geom.max_height);
+         SSNES_LOG("SET_GEOMETRY: (%ux%u) / (%ux%u)\n",
+               g_extern.system.geom.base_width,
+               g_extern.system.geom.base_height,
+               g_extern.system.geom.max_width,
+               g_extern.system.geom.max_height);
          break;
 
       case SNES_ENVIRONMENT_SET_PITCH:
          g_extern.system.pitch = *(const unsigned*)data;
+         SSNES_LOG("SET_PITCH: %u\n", g_extern.system.pitch);
          break;
 
       default:

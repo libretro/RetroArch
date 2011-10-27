@@ -80,6 +80,8 @@ struct snes_geometry
 };
 
 typedef bool (*snes_environment_t)(unsigned cmd, void *data);
+
+// Must be called before calling snes_init().
 void snes_set_environment(snes_environment_t);
 ////
 
@@ -87,7 +89,6 @@ typedef void (*snes_video_refresh_t)(const uint16_t *data, unsigned width, unsig
 typedef void (*snes_audio_sample_t)(uint16_t left, uint16_t right);
 typedef void (*snes_input_poll_t)(void);
 typedef int16_t (*snes_input_state_t)(bool port, unsigned device, unsigned index, unsigned id);
-
 
 unsigned snes_library_revision_major(void);
 unsigned snes_library_revision_minor(void);
