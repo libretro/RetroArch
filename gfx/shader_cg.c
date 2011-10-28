@@ -131,7 +131,9 @@ static unsigned lut_textures[MAX_TEXTURES];
 static unsigned lut_textures_num = 0;
 static char lut_textures_uniform[MAX_TEXTURES][64];
 
+#ifdef HAVE_CONFIGFILE
 static snes_tracker_t *snes_tracker = NULL;
+#endif
 
 void gl_cg_set_proj_matrix(void)
 {
@@ -242,6 +244,7 @@ void gl_cg_set_params(unsigned width, unsigned height,
          }
       }
 
+#ifdef HAVE_CONFIGFILE
       // Set state parameters
       if (snes_tracker)
       {
@@ -259,6 +262,7 @@ void gl_cg_set_params(unsigned width, unsigned height,
             set_param_1f(param_f, info[i].value);
          }
       }
+#endif
    }
 }
 
@@ -276,11 +280,13 @@ void gl_cg_deinit(void)
    glDeleteTextures(lut_textures_num, lut_textures);
    lut_textures_num = 0;
 
+#ifdef HAVE_CONFIGFILE
    if (snes_tracker)
    {
       snes_tracker_free(snes_tracker);
       snes_tracker = NULL;
    }
+#endif
 
    cgDestroyContext(cgCtx);
 }

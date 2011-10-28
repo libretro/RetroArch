@@ -507,6 +507,8 @@ static void set_paths(const char *path)
       fill_pathname_dir(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
       SSNES_LOG("Redirecting save state to \"%s\".\n", g_extern.savestate_name);
    }
+
+#ifdef HAVE_CONFIGFILE
    if (*g_extern.config_path && path_is_directory(g_extern.config_path))
    {
       fill_pathname_dir(g_extern.config_path, g_extern.basename, ".cfg", sizeof(g_extern.config_path));
@@ -517,6 +519,7 @@ static void set_paths(const char *path)
          SSNES_LOG("Did not find config file. Using system default.\n");
       }
    }
+#endif
 }
 
 static void verify_stdin_paths(void)
@@ -546,12 +549,15 @@ static void verify_stdin_paths(void)
       print_help();
       exit(1);
    }
+
+#ifdef HAVE_CONFIGFILE
    else if (path_is_directory(g_extern.config_path))
    {
       SSNES_ERR("Cannot specify directory for config file (--config) when reading from stdin.\n");
       print_help();
       exit(1);
    }
+#endif
 }
 
 static void parse_input(int argc, char *argv[])
