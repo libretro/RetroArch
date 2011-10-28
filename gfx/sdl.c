@@ -288,13 +288,15 @@ static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    if (vid->render32)
    {
       SSNES_LOG("SDL: Creating 32-bit buffer.\n");
-      vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, 256 * video->input_scale, 256 * video->input_scale, 32,
+      vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, SSNES_SCALE_BASE * video->input_scale,
+            SSNES_SCALE_BASE * video->input_scale, 32,
             fmt->Rmask, fmt->Bmask, fmt->Gmask, fmt->Amask);
    }
    else
    {
       SSNES_LOG("SDL: Creating 15-bit buffer.\n");
-      vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, 256 * video->input_scale, 256 * video->input_scale, 15,
+      vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, SSNES_SCALE_BASE * video->input_scale,
+            SSNES_SCALE_BASE * video->input_scale, 15,
             fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
    }
    SSNES_LOG("[Debug]: SDL Pixel format: Rshift = %u, Gshift = %u, Bshift = %u\n", 

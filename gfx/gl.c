@@ -1226,7 +1226,8 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
    SSNES_LOG("GL: Loaded %u program(s).\n", gl_shader_num());
 
    // Set up render to texture.
-   gl_init_fbo(gl, 256 * video->input_scale, 256 * video->input_scale);
+   gl_init_fbo(gl, SSNES_SCALE_BASE * video->input_scale,
+         SSNES_SCALE_BASE * video->input_scale);
    
    gl->keep_aspect = video->force_aspect;
 
@@ -1277,8 +1278,8 @@ static void* gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    set_lut_texture_coords(tex_coords);
 
-   gl->tex_w = 256 * video->input_scale;
-   gl->tex_h = 256 * video->input_scale;
+   gl->tex_w = SSNES_SCALE_BASE * video->input_scale;
+   gl->tex_h = SSNES_SCALE_BASE * video->input_scale;
 
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(gl->tex_w * gl->tex_h, gl->base_size);
