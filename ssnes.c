@@ -1610,7 +1610,9 @@ static void check_oneshot(void)
 
 static void check_reset(void)
 {
-   if (driver.input->key_pressed(driver.input_data, SSNES_RESET))
+   static bool old_state = false;
+   bool new_state = driver.input->key_pressed(driver.input_data, SSNES_RESET);
+   if (new_state && !old_state)
    {
       SSNES_LOG("Resetting game!\n");
       msg_queue_clear(g_extern.msg_queue);
@@ -1618,6 +1620,8 @@ static void check_reset(void)
       psnes_reset();
       init_controllers(); // bSNES since v073r01 resets controllers to JOYPAD after a reset, so just enforce it here.
    }
+
+   old_state = new_state;
 }
 
 #ifdef HAVE_XML
