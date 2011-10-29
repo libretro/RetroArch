@@ -156,8 +156,6 @@ static const bool hires_record = false;
 // Record post-filtered (CPU filter) video rather than raw SNES output.
 static const bool post_filter_record = false;
 
-#define SNES_ASPECT_RATIO (4.0/3)
-
 ////////////////
 // Audio
 ////////////////

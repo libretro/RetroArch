@@ -129,7 +129,7 @@ static void set_defaults(void)
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
    g_settings.video.crop_overscan = crop_overscan;
-   g_settings.video.aspect_ratio = SNES_ASPECT_RATIO;
+   g_settings.video.aspect_ratio = -1.0f; // Automatic
    g_settings.video.shader_type = SSNES_SHADER_AUTO;
 
 #ifdef HAVE_FREETYPE
