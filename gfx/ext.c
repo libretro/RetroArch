@@ -43,7 +43,7 @@ typedef struct
    void *handle;
 } input_ext_t;
 
-static void* input_ext_init(void)
+static void *input_ext_init(void)
 {
    g_input_dead = false;
    return calloc(1, sizeof(input_ext_t));
@@ -199,7 +199,7 @@ static bool video_ext_frame(void *data, const void *frame, unsigned width, unsig
    return ext->driver->frame(ext->handle, frame, width, height, pitch, msg);
 }
 
-static void* setup_input(ext_t *ext, const ssnes_input_driver_t *driver)
+static void *setup_input(ext_t *ext, const ssnes_input_driver_t *driver)
 {
    int joypad_index[5];
    for (unsigned i = 0; i < 5; i++)
@@ -292,7 +292,7 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
    return true;
 }
 
-static void* video_ext_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+static void *video_ext_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    ext_t *ext = calloc(1, sizeof(*ext));
    if (!ext)
