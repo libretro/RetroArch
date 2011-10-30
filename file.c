@@ -510,7 +510,7 @@ void load_ram_file(const char *path, int type)
    void *buf = NULL;
    ssize_t rc = read_file(path, &buf);
    if (rc <= size)
-      memcpy(data, buf, size);
+      memcpy(data, buf, rc);
 
    free(buf);
 }
