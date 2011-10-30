@@ -91,7 +91,7 @@ static const input_driver_t *input_drivers[] = {
 
 static void find_audio_driver(void)
 {
-   for (int i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
+   for (unsigned i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
    {
       if (strcasecmp(g_settings.audio.driver, audio_drivers[i]->ident) == 0)
       {
@@ -101,7 +101,7 @@ static void find_audio_driver(void)
    }
    SSNES_ERR("Couldn't find any audio driver named \"%s\"\n", g_settings.audio.driver);
    fprintf(stderr, "Available audio drivers are:\n");
-   for (int i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
+   for (unsigned i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
       fprintf(stderr, "\t%s\n", audio_drivers[i]->ident);
 
    exit(1);
@@ -109,7 +109,7 @@ static void find_audio_driver(void)
 
 static void find_video_driver(void)
 {
-   for (int i = 0; i < sizeof(video_drivers) / sizeof(video_driver_t*); i++)
+   for (unsigned i = 0; i < sizeof(video_drivers) / sizeof(video_driver_t*); i++)
    {
       if (strcasecmp(g_settings.video.driver, video_drivers[i]->ident) == 0)
       {
@@ -127,7 +127,7 @@ static void find_video_driver(void)
 
 static void find_input_driver(void)
 {
-   for (int i = 0; i < sizeof(input_drivers) / sizeof(input_driver_t*); i++)
+   for (unsigned i = 0; i < sizeof(input_drivers) / sizeof(input_driver_t*); i++)
    {
       if (strcasecmp(g_settings.input.driver, input_drivers[i]->ident) == 0)
       {
