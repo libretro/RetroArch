@@ -390,7 +390,7 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
 #endif
 
 #ifdef _WIN32
-#define PACKAGE_VERSION "0.9"
+#define PACKAGE_VERSION "0.9.1"
 #endif
 
 #include "config.features.h"
@@ -460,8 +460,8 @@ static void print_help(void)
 #endif
 
 #ifdef HAVE_FFMPEG
-   puts("\t-r/--record: Path to record video file.\n\t\tUsing .mkv extension is recommended, and codecs used are FFV1/FLAC.");
-   puts("\t--size: Overrides output video size when recording with FFmpeg (format: widthxheight).");
+   puts("\t-r/--record: Path to record video file.\n\t\tUsing .mkv extension is recommended.");
+   puts("\t--size: Overrides output video size when recording with FFmpeg (format: WIDTHxHEIGHT).");
 #endif
    puts("\t-v/--verbose: Verbose logging.");
    puts("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM.");
