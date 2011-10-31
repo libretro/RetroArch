@@ -331,9 +331,9 @@ static bool get_info(netplay_t *handle)
       SSNES_ERR("Cart CRC32s differ! Cannot use different games!\n");
       return false;
    }
-   if (psnes_serialize_size() != ntohl(header[1]))
+   if (implementation_magic_value() != ntohl(header[1]))
    {
-      SSNES_ERR("Serialization sizes differ, make sure you're using exact same libsnes implementations!\n");
+      SSNES_ERR("Implementations differ, make sure you're using exact same libsnes implementations!\n");
       return false;
    }
    if (psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM) != ntohl(header[2]))
