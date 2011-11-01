@@ -401,6 +401,7 @@ static void print_features(void)
    puts("");
    puts("Features:");
    _PSUPP(sdl, "SDL", "SDL drivers");
+   _PSUPP(opengl, "OpenGL", "OpenGL driver");
    _PSUPP(xvideo, "XVideo", "XVideo output");
    _PSUPP(alsa, "ALSA", "audio driver");
    _PSUPP(oss, "OSS", "audio driver");

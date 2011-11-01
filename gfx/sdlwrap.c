@@ -56,7 +56,7 @@ void sdlwrap_set_swap_interval(unsigned interval, bool inited)
       }
       if (wgl_swap_interval) wgl_swap_interval(g_interval);
 
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) && defined(HAVE_OPENGL)
       GLint val = g_interval;
       CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, &val);
 #else
