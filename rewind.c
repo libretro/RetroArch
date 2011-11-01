@@ -21,11 +21,14 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
+#include <limits.h>
+#include "general.h"
 
 struct state_manager
 {
    uint64_t *buffer;
    size_t buf_size;
+   size_t buf_size_mask;
    uint32_t *tmp_state;
    size_t top_ptr;
    size_t bottom_ptr;
@@ -33,19 +36,48 @@ struct state_manager
    bool first_pop;
 };
 
+static inline size_t nearest_pow2_size(size_t v)
+{
+   size_t orig = v;
+   v--;
+   v |= v >> 1;
+   v |= v >> 2;
+   v |= v >> 4;
+   if (sizeof(v) * CHAR_BIT >= 16)
+      v |= v >> 8;
+   if (sizeof(v) * CHAR_BIT >= 32)
+      v |= v >> 16;
+   if (sizeof(v) * CHAR_BIT >= 64)
+      v |= v >> 32;
+   v++;
+
+   size_t next = v;
+   size_t prev = v >> 1;
+
+   if ((next - orig) < (orig - prev))
+      return next;
+   else
+      return prev;
+}
+
 state_manager_t *state_manager_new(size_t state_size, size_t buffer_size, void *init_buffer)
 {
-   if (buffer_size <= state_size * 2 + 1) // Need a sufficient buffer size.
+   if (buffer_size <= state_size * 4) // Need a sufficient buffer size.
       return NULL;
 
    state_manager_t *state = calloc(1, sizeof(*state));
    if (!state)
       return NULL;
 
-   assert(state_size % 4 == 0); // We need 4-byte aligned state_size to avoid having to enforce this with unneeded memcpy's!
+   // We need 4-byte aligned state_size to avoid having to enforce this with unneeded memcpy's!
+   assert(state_size % 4 == 0);
    state->top_ptr = 1;
-   state->state_size = (state_size + 3) >> 2; // Multiple of 4.
-   state->buf_size = (buffer_size + 7) >> 3; // Multiple of 8.
+
+   state->state_size = state_size / sizeof(uint32_t); // Works in multiple of 4.
+   state->buf_size = nearest_pow2_size(buffer_size) / sizeof(uint64_t); // Works in multiple of 8.
+   state->buf_size_mask = state->buf_size - 1;
+   SSNES_LOG("Readjusted rewind buffer size to %u MiB\n", (unsigned)(sizeof(uint64_t) * (state->buf_size >> 20)));
+
    if (!(state->buffer = calloc(1, state->buf_size * sizeof(uint64_t))))
       goto error;
    if (!(state->tmp_state = calloc(1, state->state_size * sizeof(uint32_t))))
@@ -81,14 +113,11 @@ bool state_manager_pop(state_manager_t *state, void **data)
       return true;
    }
 
-   if (state->top_ptr == 0)
-      state->top_ptr = state->buf_size - 1;
-   else
-      state->top_ptr--;
+   state->top_ptr = (state->top_ptr - 1) & state->buf_size_mask;
 
    if (state->top_ptr == state->bottom_ptr) // Our stack is completely empty... :v
    {
-      state->top_ptr = (state->top_ptr + 1) % state->buf_size;
+      state->top_ptr = (state->top_ptr + 1) & state->buf_size_mask;
       return false;
    }
 
@@ -99,15 +128,12 @@ bool state_manager_pop(state_manager_t *state, void **data)
       uint32_t xor = state->buffer[state->top_ptr] & 0xFFFFFFFFU;
       state->tmp_state[addr] ^= xor;
 
-      if (state->top_ptr == 0)
-         state->top_ptr = state->buf_size - 1;
-      else
-         state->top_ptr--;
+      state->top_ptr = (state->top_ptr - 1) & state->buf_size_mask;
    }
 
    if (state->top_ptr == state->bottom_ptr) // Our stack is completely empty... :v
    {
-      state->top_ptr = (state->top_ptr + 1) % state->buf_size;
+      state->top_ptr = (state->top_ptr + 1) & state->buf_size_mask;
       return true;
    }
 
@@ -116,9 +142,9 @@ bool state_manager_pop(state_manager_t *state, void **data)
 
 static void reassign_bottom(state_manager_t *state)
 {
-   state->bottom_ptr = (state->top_ptr + 1) % state->buf_size;
+   state->bottom_ptr = (state->top_ptr + 1) & state->buf_size_mask;
    while (state->buffer[state->bottom_ptr]) // Skip ahead until we find the first 0 (boundary for state delta).
-      state->bottom_ptr = (state->bottom_ptr + 1) % state->buf_size;
+      state->bottom_ptr = (state->bottom_ptr + 1) & state->buf_size_mask;
 }
 
 static void generate_delta(state_manager_t *state, const void *data)
@@ -128,7 +154,9 @@ static void generate_delta(state_manager_t *state, const void *data)
    const uint32_t *new_state = data;
 
    state->buffer[state->top_ptr++] = 0; // For each separate delta, we have a 0 value sentinel in between.
-   if (state->top_ptr == state->bottom_ptr) // Check if top_ptr and bottom_ptr crossed each other, which means we need to delete old cruft.
+
+   // Check if top_ptr and bottom_ptr crossed each other, which means we need to delete old cruft.
+   if (state->top_ptr == state->bottom_ptr)
       crossed = true;
 
    for (uint64_t i = 0; i < state->state_size; i++)
@@ -142,7 +170,7 @@ static void generate_delta(state_manager_t *state, const void *data)
       if (xor)
       {
          state->buffer[state->top_ptr] = (i << 32) | xor;
-         state->top_ptr = (state->top_ptr + 1) % state->buf_size;
+         state->top_ptr = (state->top_ptr + 1) & state->buf_size_mask;
 
          if (state->top_ptr == state->bottom_ptr)
             crossed = true;

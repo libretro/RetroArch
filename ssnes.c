@@ -1039,7 +1039,7 @@ static void init_rewind(void)
       size_t serial_size = psnes_serialize_size();
       g_extern.state_buf = calloc(1, (serial_size + 3) & ~3); // Make sure we allocate at least 4-byte multiple.
       psnes_serialize(g_extern.state_buf, serial_size);
-      SSNES_LOG("Initing rewind buffer with size: %u MB\n", (unsigned)g_settings.rewind_buffer_size / 1000000);
+      SSNES_LOG("Initing rewind buffer with size: %u MB\n", (unsigned)(g_settings.rewind_buffer_size / 1000000));
       g_extern.state_manager = state_manager_new((serial_size + 3) & ~3, g_settings.rewind_buffer_size, g_extern.state_buf);
       if (!g_extern.state_manager)
          SSNES_WARN("Failed to init rewind buffer. Rewinding will be disabled!\n");

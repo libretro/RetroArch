@@ -142,7 +142,7 @@ struct settings
    char screenshot_directory[MAXPATHLEN];
 
    bool rewind_enable;
-   unsigned rewind_buffer_size;
+   size_t rewind_buffer_size;
    unsigned rewind_granularity;
 
    bool pause_nonactive;
