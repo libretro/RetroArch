@@ -14,6 +14,7 @@ add_command_line_enable X264RGB "Enable lossless X264 RGB recording" no
 add_command_line_enable DYLIB "Enable dynamic loading support" auto
 add_command_line_enable NETPLAY "Enable netplay support" auto
 add_command_line_enable CONFIGFILE "Disable support for config file" yes
+add_command_line_enable OPENGL "Disable OpenGL support" yes
 add_command_line_enable CG "Enable Cg shader support" auto
 add_command_line_enable XML "Enable bSNES-style XML shader support" auto
 add_command_line_enable FBO "Enable render-to-texture (FBO) support" auto

@@ -55,7 +55,7 @@
 #define INPUT_X 12
 ////////////////////////
 
-#if defined(HAVE_SDL)
+#if defined(HAVE_OPENGL)
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL
 #elif defined(HAVE_XVIDEO)
 #define VIDEO_DEFAULT_DRIVER VIDEO_XVIDEO
