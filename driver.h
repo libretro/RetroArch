@@ -79,12 +79,12 @@ typedef struct video_info
 
 typedef struct audio_driver
 {
-   void* (*init)(const char* device, unsigned rate, unsigned latency);
-   ssize_t (*write)(void* data, const void* buf, size_t size);
-   bool (*stop)(void* data);
-   bool (*start)(void* data);
-   void (*set_nonblock_state)(void* data, bool toggle); // Should we care about blocking in audio thread? Fast forwarding.
-   void (*free)(void* data);
+   void *(*init)(const char *device, unsigned rate, unsigned latency);
+   ssize_t (*write)(void *data, const void *buf, size_t size);
+   bool (*stop)(void *data);
+   bool (*start)(void *data);
+   void (*set_nonblock_state)(void *data, bool toggle); // Should we care about blocking in audio thread? Fast forwarding.
+   void (*free)(void *data);
    bool (*use_float)(void *data); // Defines if driver will take standard floating point samples, or int16_t samples.
    const char *ident;
 } audio_driver_t;
@@ -110,25 +110,25 @@ typedef struct audio_driver
 
 typedef struct input_driver
 {
-   void* (*init)(void);
-   void (*poll)(void* data);
-   int16_t (*input_state)(void* data, const struct snes_keybind **snes_keybinds, bool port, unsigned device, unsigned index, unsigned id);
-   bool (*key_pressed)(void* data, int key);
-   void (*free)(void* data);
+   void *(*init)(void);
+   void (*poll)(void *data);
+   int16_t (*input_state)(void *data, const struct snes_keybind **snes_keybinds, bool port, unsigned device, unsigned index, unsigned id);
+   bool (*key_pressed)(void *data, int key);
+   void (*free)(void *data);
    const char *ident;
 } input_driver_t;
 
 typedef struct video_driver
 {
-   void* (*init)(const video_info_t *video, const input_driver_t **input, void **input_data); 
+   void *(*init)(const video_info_t *video, const input_driver_t **input, void **input_data); 
    // Should the video driver act as an input driver as well? :) The video init might preinitialize an input driver to override the settings in case the video driver relies on input driver for event handling, e.g.
-   bool (*frame)(void* data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg); // msg is for showing a message on the screen along with the video frame.
-   void (*set_nonblock_state)(void* data, bool toggle); // Should we care about syncing to vblank? Fast forwarding.
+   bool (*frame)(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg); // msg is for showing a message on the screen along with the video frame.
+   void (*set_nonblock_state)(void *data, bool toggle); // Should we care about syncing to vblank? Fast forwarding.
    // Is the window still active?
    bool (*alive)(void *data);
    bool (*focus)(void *data); // Does the window have focus?
    bool (*xml_shader)(void *data, const char *path); // Sets XML-shader. Might not be implemented.
-   void (*free)(void* data);
+   void (*free)(void *data);
    const char *ident;
 } video_driver_t;
 

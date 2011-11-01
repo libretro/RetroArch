@@ -14,16 +14,17 @@
  */
 
 #include "fifo_buffer.h"
+#include <stdint.h>
 
 struct fifo_buffer
 {
-   char *buffer;
+   uint8_t *buffer;
    size_t bufsize;
    size_t first;
    size_t end;
 };
 
-fifo_buffer_t* fifo_new(size_t size)
+fifo_buffer_t *fifo_new(size_t size)
 {
    fifo_buffer_t *buf = calloc(1, sizeof(*buf));
    if (buf == NULL)
@@ -40,13 +41,13 @@ fifo_buffer_t* fifo_new(size_t size)
    return buf;
 }
 
-void fifo_free(fifo_buffer_t* buffer)
+void fifo_free(fifo_buffer_t *buffer)
 {
    free(buffer->buffer);
    free(buffer);
 }
 
-size_t fifo_read_avail(fifo_buffer_t* buffer)
+size_t fifo_read_avail(fifo_buffer_t *buffer)
 {
    size_t first = buffer->first;
    size_t end = buffer->end;
@@ -55,7 +56,7 @@ size_t fifo_read_avail(fifo_buffer_t* buffer)
    return end - first;
 }
 
-size_t fifo_write_avail(fifo_buffer_t* buffer)
+size_t fifo_write_avail(fifo_buffer_t *buffer)
 {
    size_t first = buffer->first;
    size_t end = buffer->end;
@@ -65,7 +66,7 @@ size_t fifo_write_avail(fifo_buffer_t* buffer)
    return (buffer->bufsize - 1) - (end - first);
 }
 
-void fifo_write(fifo_buffer_t* buffer, const void* in_buf, size_t size)
+void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t size)
 {
    size_t first_write = size;
    size_t rest_write = 0;
@@ -77,13 +78,13 @@ void fifo_write(fifo_buffer_t* buffer, const void* in_buf, size_t size)
 
    memcpy(buffer->buffer + buffer->end, in_buf, first_write);
    if (rest_write > 0)
-      memcpy(buffer->buffer, (const char*)in_buf + first_write, rest_write);
+      memcpy(buffer->buffer, (const uint8_t*)in_buf + first_write, rest_write);
 
    buffer->end = (buffer->end + size) % buffer->bufsize;
 }
 
 
-void fifo_read(fifo_buffer_t* buffer, void* in_buf, size_t size)
+void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t size)
 {
    size_t first_read = size;
    size_t rest_read = 0;
@@ -93,9 +94,9 @@ void fifo_read(fifo_buffer_t* buffer, void* in_buf, size_t size)
       rest_read = size - first_read;
    }
 
-   memcpy(in_buf, (const char*)buffer->buffer + buffer->first, first_read);
+   memcpy(in_buf, (const uint8_t*)buffer->buffer + buffer->first, first_read);
    if (rest_read > 0)
-      memcpy((char*)in_buf + first_read, buffer->buffer, rest_read);
+      memcpy((uint8_t*)in_buf + first_read, buffer->buffer, rest_read);
 
    buffer->first = (buffer->first + size) % buffer->bufsize;
 }
