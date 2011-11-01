@@ -43,12 +43,15 @@ static inline size_t nearest_pow2_size(size_t v)
    v |= v >> 1;
    v |= v >> 2;
    v |= v >> 4;
-   if (sizeof(v) * CHAR_BIT >= 16)
+#if SIZE_MAX >= 0xffffu
       v |= v >> 8;
-   if (sizeof(v) * CHAR_BIT >= 32)
+#endif
+#if SIZE_MAX >= 0xfffffffflu
       v |= v >> 16;
-   if (sizeof(v) * CHAR_BIT >= 64)
+#endif
+#if SIZE_MAX >= 0xffffffffffffffffllu
       v |= v >> 32;
+#endif
    v++;
 
    size_t next = v;
@@ -154,6 +157,7 @@ static void generate_delta(state_manager_t *state, const void *data)
    const uint32_t *new_state = data;
 
    state->buffer[state->top_ptr++] = 0; // For each separate delta, we have a 0 value sentinel in between.
+   state->top_ptr &= state->buf_size_mask;
 
    // Check if top_ptr and bottom_ptr crossed each other, which means we need to delete old cruft.
    if (state->top_ptr == state->bottom_ptr)
