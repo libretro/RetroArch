@@ -49,7 +49,7 @@ static bool find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
    return false;
 }
 
-static void* __alsa_init(const char* device, unsigned rate, unsigned latency)
+static void *__alsa_init(const char *device, unsigned rate, unsigned latency)
 {
    alsa_t *alsa = calloc(1, sizeof(alsa_t));
    if (!alsa)

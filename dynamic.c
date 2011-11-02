@@ -259,7 +259,7 @@ function_t dylib_proc(dylib_t lib, const char *proc)
       }
    }
 
-   // Dirty hack to workaround the non-legality of void* -> fn-pointer casts.
+   // Dirty hack to workaround the non-legality of void *-> fn-pointer casts.
    function_t sym;
    memcpy(&sym, &ptr_sym, sizeof(void*));
 #endif

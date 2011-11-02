@@ -41,7 +41,7 @@
 #define DEFAULT_OSS_DEV "/dev/dsp"
 #endif
 
-static void* __oss_init(const char* device, unsigned rate, unsigned latency)
+static void *__oss_init(const char *device, unsigned rate, unsigned latency)
 {
    int *fd = calloc(1, sizeof(int));
    if (fd == NULL)
@@ -96,7 +96,7 @@ static void* __oss_init(const char* device, unsigned rate, unsigned latency)
    return fd;
 }
 
-static ssize_t __oss_write(void* data, const void* buf, size_t size)
+static ssize_t __oss_write(void *data, const void *buf, size_t size)
 {
    int *fd = data;
 

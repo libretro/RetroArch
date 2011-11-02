@@ -123,7 +123,7 @@ static void init_lut(void)
       keysym_lut[lut_binds[i].sk] = lut_binds[i].sdl;
 }
 
-static void* sdl_input_init(void)
+static void *sdl_input_init(void)
 {
    init_lut();
    sdl_input_t *sdl = calloc(1, sizeof(*sdl));

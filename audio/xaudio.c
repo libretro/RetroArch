@@ -26,7 +26,7 @@ typedef struct
    bool nonblock;
 } xa_t;
 
-static void* __xa_init(const char* device, unsigned rate, unsigned latency)
+static void *__xa_init(const char *device, unsigned rate, unsigned latency)
 {
    if (latency < 8)
       latency = 8; // Do not allow shenanigans.
@@ -49,7 +49,7 @@ static void* __xa_init(const char* device, unsigned rate, unsigned latency)
    return xa;
 }
 
-static ssize_t __xa_write(void* data, const void* buf, size_t size)
+static ssize_t __xa_write(void *data, const void *buf, size_t size)
 {
    xa_t *xa = data;
    if (xa->nonblock)

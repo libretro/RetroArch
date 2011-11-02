@@ -32,7 +32,7 @@
 //#define SSNES_CG_DEBUG
 
 // Used when we call deactivate() since just unbinding the program didn't seem to work... :(
-static const char* stock_cg_program =
+static const char *stock_cg_program =
       "void main_vertex"
       "("
       "	float4 position	: POSITION,"

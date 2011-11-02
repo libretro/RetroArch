@@ -41,7 +41,7 @@ extern void (*psnes_set_input_state)(snes_input_state_t);
 extern void (*psnes_cheat_reset)(void);
 extern void (*psnes_cheat_set)(unsigned, bool, const char*);
 
-extern const char* (*psnes_library_id)(void);
+extern const char *(*psnes_library_id)(void);
 extern unsigned (*psnes_library_revision_minor)(void);
 extern unsigned (*psnes_library_revision_major)(void);
 

@@ -244,7 +244,7 @@ static void sdl_render_msg_32(sdl_video_t *vid, SDL_Surface *buffer, const char 
 #endif
 }
 
-static void* sdl_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
 #ifdef _WIN32
    gfx_set_dwm();
@@ -464,7 +464,7 @@ static void check_window(sdl_video_t *vid)
    }
 }
 
-static bool sdl_gfx_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
+static bool sdl_gfx_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    sdl_video_t *vid = data;
 

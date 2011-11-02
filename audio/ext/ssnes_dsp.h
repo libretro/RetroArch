@@ -87,7 +87,7 @@ typedef struct ssnes_dsp_input
 typedef struct ssnes_dsp_plugin
 {
    // Creates a handle of the plugin. Returns NULL if failed.
-   void* (*init)(const ssnes_dsp_info_t *info);
+   void *(*init)(const ssnes_dsp_info_t *info);
 
    // Processes input data. 
    // The plugin is allowed to return variable sizes for output data.

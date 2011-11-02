@@ -124,7 +124,7 @@ static size_t find_buffersize(jack_t *jd, int latency)
    return buffer_frames * sizeof(jack_default_audio_sample_t);
 }
 
-static void* __jack_init(const char* device, unsigned rate, unsigned latency)
+static void *__jack_init(const char *device, unsigned rate, unsigned latency)
 {
    jack_t *jd = calloc(1, sizeof(jack_t));
    if (!jd)
@@ -246,7 +246,7 @@ static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
    return written * sizeof(float) * 2;
 }
 
-static ssize_t __jack_write(void* data, const void* buf, size_t size)
+static ssize_t __jack_write(void *data, const void *buf, size_t size)
 {
    jack_t *jd = data;
 

@@ -103,7 +103,7 @@ static void stream_latency_update_cb(pa_stream *s, void *data)
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
-static void* __pulse_init(const char* device, unsigned rate, unsigned latency)
+static void *__pulse_init(const char *device, unsigned rate, unsigned latency)
 {
    pa_t *pa = calloc(1, sizeof(*pa));
    if (!pa)
@@ -172,7 +172,7 @@ error:
    return NULL;
 }
 
-static ssize_t __pulse_write(void* data, const void* buf, size_t size)
+static ssize_t __pulse_write(void *data, const void *buf, size_t size)
 {
    pa_t *pa = data;
 

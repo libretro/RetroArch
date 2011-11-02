@@ -181,20 +181,20 @@ typedef struct ssnes_input_driver
    // The range of this is [0, 1],
    // where 0 means any displacement will register,
    // and 1 means the axis has to be pressed all the way to register.
-   void* (*init)(const int joypad_index[5], float axis_threshold);
+   void *(*init)(const int joypad_index[5], float axis_threshold);
 
    // Polls input. Called once every frame.
-   void (*poll)(void* data);
+   void (*poll)(void *data);
 
    // Queries input state for a certain key on a certain player.
    // Players are 1 - 5.
    // For digital inputs, pressed key is 1, not pressed key is 0.
    // Analog values have same range as a signed 16-bit integer.
-   int (*input_state)(void* data, const struct ssnes_keybind *bind,
+   int (*input_state)(void *data, const struct ssnes_keybind *bind,
          unsigned player);
 
    // Frees the input struct.
-   void (*free)(void* data);
+   void (*free)(void *data);
 
    // Human readable indentification string.
    const char *ident;
@@ -208,7 +208,7 @@ typedef struct ssnes_video_driver
    // Should the video driver request that a certain input driver is used,
    // it is possible to set the driver to *input.
    // If no certain driver is desired, set *input to NULL.
-   void* (*init)(const ssnes_video_info_t *video, 
+   void *(*init)(const ssnes_video_info_t *video, 
          const ssnes_input_driver_t **input); 
 
    // Updates frame on the screen. 
@@ -218,13 +218,13 @@ typedef struct ssnes_video_driver
    // 
    // When msg is non-NULL, 
    // it's a message that should be displayed to the user.
-   int (*frame)(void* data, const void* frame, 
+   int (*frame)(void *data, const void *frame, 
          unsigned width, unsigned height, unsigned pitch, const char *msg);
 
    // Requests nonblocking operation. 
    // True = VSync is turned off. 
    // False = VSync is turned on.
-   void (*set_nonblock_state)(void* data, int toggle);
+   void (*set_nonblock_state)(void *data, int toggle);
 
    // This must return false when the user exits the emulator.
    int (*alive)(void *data);
@@ -233,7 +233,7 @@ typedef struct ssnes_video_driver
    int (*focus)(void *data);
 
    // Frees the video driver.
-   void (*free)(void* data);
+   void (*free)(void *data);
 
    // A human-readable identification of the video driver.
    const char *ident;

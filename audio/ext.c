@@ -45,7 +45,7 @@ static void audio_ext_free(void *data)
    }
 }
 
-static void* audio_ext_init(const char *device, unsigned rate, unsigned latency)
+static void *audio_ext_init(const char *device, unsigned rate, unsigned latency)
 {
    if (!(*g_settings.audio.external_driver))
    {

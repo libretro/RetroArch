@@ -54,7 +54,7 @@ static void err_cb(void *userdata)
    SDL_CondSignal(rsd->cond);
 }
 
-static void* __rsd_init(const char* device, unsigned rate, unsigned latency)
+static void *__rsd_init(const char *device, unsigned rate, unsigned latency)
 {
    rsd_t *rsd = calloc(1, sizeof(rsd_t));
    if (!rsd)
@@ -98,7 +98,7 @@ static void* __rsd_init(const char* device, unsigned rate, unsigned latency)
    return rsd;
 }
 
-static ssize_t __rsd_write(void* data, const void* buf, size_t size)
+static ssize_t __rsd_write(void *data, const void *buf, size_t size)
 {
    rsd_t *rsd = data;
 

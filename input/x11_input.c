@@ -133,7 +133,7 @@ static void init_lut(void)
       keysym_lut[lut_binds[i].sk] = lut_binds[i].x;
 }
 
-static void* x_input_init(void)
+static void *x_input_init(void)
 {
    x11_input_t *x11 = calloc(1, sizeof(*x11));
    if (!x11)

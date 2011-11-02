@@ -200,7 +200,7 @@ static char *dupe_newline(const char *str)
 }
 
 // Need to make sure that first-line indentation is 0. :(
-static char* align_program(const char *program)
+static char *align_program(const char *program)
 {
    char *prog = strdup(program);
    if (!prog)

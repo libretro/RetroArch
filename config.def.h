@@ -174,7 +174,7 @@ static const float in_rate = 31980.0;
 static const float audio_rate_step = 0.25;
 
 // Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults.
-static const char* audio_device = NULL;
+static const char *audio_device = NULL;
 
 // Desired audio latency in milliseconds. Might not be honored if driver can't provide given latency.
 static const int out_latency = 64;

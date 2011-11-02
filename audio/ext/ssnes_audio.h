@@ -61,7 +61,7 @@ typedef struct ssnes_audio_driver_info
 typedef struct ssnes_audio_driver
 {
    // Initializes the device.
-   void* (*init)(const ssnes_audio_driver_info_t *info);
+   void *(*init)(const ssnes_audio_driver_info_t *info);
 
    // Write data in buffer to audio driver.
    // A frame here is defined as one combined sample of left and right

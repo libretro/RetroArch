@@ -249,7 +249,7 @@ static void dsound_free(void *data)
    }
 }
 
-static void* dsound_init(const char *device, unsigned rate, unsigned latency)
+static void *dsound_init(const char *device, unsigned rate, unsigned latency)
 {
    dsound_t *ds = calloc(1, sizeof(*ds));
    if (!ds)

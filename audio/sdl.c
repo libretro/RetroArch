@@ -58,7 +58,7 @@ static inline int find_num_frames(int rate, int latency)
    return next_pow2(frames);
 }
 
-static void* sdl_audio_init(const char* device, unsigned rate, unsigned latency)
+static void *sdl_audio_init(const char *device, unsigned rate, unsigned latency)
 {
    (void)device;
    if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
@@ -109,7 +109,7 @@ static void* sdl_audio_init(const char* device, unsigned rate, unsigned latency)
    return sdl;
 }
 
-static ssize_t sdl_audio_write(void* data, const void* buf, size_t size)
+static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
 {
    sdl_audio_t *sdl = data;
 

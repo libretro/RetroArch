@@ -531,7 +531,7 @@ void save_ram_file(const char *path, int type)
    }
 }
 
-static char* load_xml_map(const char *path)
+static char *load_xml_map(const char *path)
 {
    char *xml_buf = NULL;
    if (*path)

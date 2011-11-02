@@ -207,7 +207,7 @@ static void generate_filter_coeffs(float * restrict fir_out, float * restrict ii
 }
 
 
-static void* dsp_init(const ssnes_dsp_info_t *info)
+static void *dsp_init(const ssnes_dsp_info_t *info)
 {
    (void)info;
    dsp_state *state = calloc(1, sizeof(*state));

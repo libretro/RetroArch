@@ -693,7 +693,7 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
 #endif
 }
 
-static bool xv_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
+static bool xv_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    xv_t *xv = data;
 

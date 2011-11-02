@@ -89,7 +89,7 @@ static char *getaline(FILE *file)
    return newline; 
 }
 
-static char* extract_value(char *line, bool is_value)
+static char *extract_value(char *line, bool is_value)
 {
    if (is_value)
    {

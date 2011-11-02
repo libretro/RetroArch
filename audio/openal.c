@@ -56,7 +56,7 @@ typedef struct al
 
 } al_t;
 
-static void* __al_init(const char* device, unsigned rate, unsigned latency)
+static void *__al_init(const char *device, unsigned rate, unsigned latency)
 {
    (void)device;
    al_t *al = calloc(1, sizeof(al_t));
@@ -153,7 +153,7 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
    return true;
 }
 
-static size_t al_fill_internal_buf(al_t *al, const void* buf, size_t size)
+static size_t al_fill_internal_buf(al_t *al, const void *buf, size_t size)
 {
    size_t read_size = (BUFSIZE - al->tmpbuf_ptr > size) ? size : (BUFSIZE - al->tmpbuf_ptr);
    memcpy(al->tmpbuf + al->tmpbuf_ptr, buf, read_size);
@@ -161,7 +161,7 @@ static size_t al_fill_internal_buf(al_t *al, const void* buf, size_t size)
    return read_size;
 }
 
-static ssize_t __al_write(void* data, const void* buf, size_t size)
+static ssize_t __al_write(void *data, const void *buf, size_t size)
 {
    al_t *al = data;
 

@@ -847,7 +847,7 @@ static void check_window(gl_t *gl)
       gl->should_resize = true;
 }
 
-static bool gl_frame(void *data, const void* frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
+static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *gl = data;
 
@@ -1150,7 +1150,7 @@ static void gl_set_nonblock_state(void *data, bool state)
    }
 }
 
-static void* gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
 #ifdef _WIN32
    gfx_set_dwm();

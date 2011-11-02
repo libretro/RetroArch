@@ -51,7 +51,7 @@ struct cheat_manager
    unsigned buf_size;
 };
 
-static char* strcat_alloc(char *dest, const char *input)
+static char *strcat_alloc(char *dest, const char *input)
 {
    size_t dest_len = dest ? strlen(dest) : 0;
    size_t input_len = strlen(input);

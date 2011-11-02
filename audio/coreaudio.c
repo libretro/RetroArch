@@ -95,7 +95,7 @@ static OSStatus audio_cb(void *userdata, AudioUnitRenderActionFlags *action_flag
    return noErr;
 }
 
-static void* coreaudio_init(const char* device, unsigned rate, unsigned latency)
+static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
 {
    (void)device;
 
@@ -210,7 +210,7 @@ error:
    return NULL;
 }
 
-static ssize_t coreaudio_write(void* data, const void* buf_, size_t size)
+static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
 {
    coreaudio_t *dev = data;
 
