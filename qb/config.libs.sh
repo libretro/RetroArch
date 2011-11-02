@@ -100,6 +100,10 @@ if [ $HAVE_FFMPEG = yes ]; then
    check_lib FFMPEG_AVFORMAT_NEW_STREAM "$AVFORMAT_LIBS" avformat_new_stream
 fi
 
+if [ $HAVE_FFMPEG = no ] && [ $HAVE_X264RGB = yes ]; then
+   echo "x264 RGB recording is enabled, but FFmpeg is not. --enable-x264rgb will not have any effect."
+fi
+
 check_lib DYNAMIC $DYLIB dlopen
 
 check_pkgconf FREETYPE freetype2

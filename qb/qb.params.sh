@@ -81,7 +81,7 @@ print_sub_str_opt()
 
    lowertext="`echo $arg1 | tr '[A-Z]' '[a-z]'`"
 
-   echo "--with-$lowertext: $arg2 (Defaults: $arg3)"
+   echo "--with-$lowertext: $arg2"
 }
 
 parse_input()
