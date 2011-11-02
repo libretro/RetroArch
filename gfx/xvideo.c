@@ -326,7 +326,76 @@ static void render32_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned
    }
 }
 
-static void* xv_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+struct format_desc
+{
+   void (*render_16)(xv_t *xv, const void *input,
+         unsigned width, unsigned height, unsigned pitch);
+   void (*render_32)(xv_t *xv, const void *input,
+         unsigned width, unsigned height, unsigned pitch);
+   char components[4];
+   unsigned luma_index[2];
+   unsigned u_index;
+   unsigned v_index;
+};
+
+static const struct format_desc formats[] = {
+   {
+      .render_16 = render16_yuy2,
+      .render_32 = render32_yuy2,
+      .components = { 'Y', 'U', 'Y', 'V' },
+      .luma_index = { 0, 2 },
+      .u_index = 1,
+      .v_index = 3,
+   },
+   {
+      .render_16 = render16_uyvy,
+      .render_32 = render32_uyvy,
+      .components = { 'U', 'Y', 'V', 'Y' },
+      .luma_index = { 1, 3 },
+      .u_index = 0,
+      .v_index = 2,
+   },
+};
+
+static bool adaptor_set_format(xv_t *xv, Display *dpy, XvPortID port, const video_info_t *video)
+{
+   int format_count;
+   XvImageFormatValues *format = XvListImageFormats(xv->display, port, &format_count);
+   if (!format)
+      return false;
+
+   for (int i = 0; i < format_count; i++) 
+   {
+      for (unsigned j = 0; j < sizeof(formats) / sizeof(formats[0]); j++)
+      {
+         if (format[i].type == XvYUV && format[i].bits_per_pixel == 16 && format[i].format == XvPacked) 
+         {
+            if (format[i].component_order[0] == formats[j].components[0] &&
+                  format[i].component_order[1] == formats[j].components[1] &&
+                  format[i].component_order[2] == formats[j].components[2] &&
+                  format[i].component_order[3] == formats[j].components[3]) 
+            {
+               xv->fourcc = format[i].id;
+               xv->render_func = video->rgb32 ? formats[j].render_32 : formats[j].render_16;
+
+#ifdef HAVE_FREETYPE
+               xv->luma_index[0] = formats[j].luma_index[0];
+               xv->luma_index[1] = formats[j].luma_index[1];
+               xv->chroma_u_index = formats[j].u_index;
+               xv->chroma_v_index = formats[j].v_index;
+#endif
+               XFree(format);
+               return true;
+            }
+         }
+      }
+   }
+
+   XFree(format);
+   return false;
+}
+
+static void *xv_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    xv_t *xv = calloc(1, sizeof(*xv));
    if (!xv)
@@ -353,17 +422,20 @@ static void* xv_init(const video_info_t *video, const input_driver_t **input, vo
       if (adaptor_info[i].num_formats < 1) continue;
       if (!(adaptor_info[i].type & XvInputMask)) continue;
       if (!(adaptor_info[i].type & XvImageMask)) continue;
+      if (!adaptor_set_format(xv, xv->display, adaptor_info[i].base_id, video)) continue;
 
       xv->port     = adaptor_info[i].base_id;
       xv->depth    = adaptor_info[i].formats->depth;
       xv->visualid = adaptor_info[i].formats->visual_id;
+
+      SSNES_LOG("XVideo: Found suitable XvPort #%u\n", (unsigned)xv->port);
       break;
    }
    XvFreeAdaptorInfo(adaptor_info);
 
    if (xv->port == 0) 
    {
-      SSNES_ERR("XVideo: Failed to find valid XvPort.\n");
+      SSNES_ERR("XVideo: Failed to find valid XvPort or format.\n");
       goto error;
    }
 
@@ -412,64 +484,6 @@ static void* xv_init(const video_info_t *video, const input_driver_t **input, vo
    // Set colorkey to auto paint, so that Xv video output is always visible
    Atom atom = XInternAtom(xv->display, "XV_AUTOPAINT_COLORKEY", true);
    if (atom != None) XvSetPortAttribute(xv->display, xv->port, atom, 1);
-
-   int format_count;
-   XvImageFormatValues *format = XvListImageFormats(xv->display, xv->port, &format_count);
-
-   bool has_format = false;
-   for (int i = 0; i < format_count; i++) 
-   {
-      if (format[i].type == XvYUV && format[i].bits_per_pixel == 16 && format[i].format == XvPacked) 
-      {
-         if (format[i].component_order[0] == 'Y' && format[i].component_order[1] == 'U'
-               && format[i].component_order[2] == 'Y' && format[i].component_order[3] == 'V') 
-         {
-            has_format = true;
-            xv->fourcc = format[i].id;
-            xv->render_func = video->rgb32 ? render32_yuy2 : render16_yuy2;
-
-#ifdef HAVE_FREETYPE
-            xv->luma_index[0] = 0;
-            xv->luma_index[1] = 2;
-            xv->chroma_u_index = 1;
-            xv->chroma_v_index = 3;
-#endif
-            break;
-         }
-      }
-   }
-
-   if (!has_format) 
-   {
-      for (int i = 0; i < format_count; i++) 
-      {
-         if (format[i].type == XvYUV && format[i].bits_per_pixel == 16 && format[i].format == XvPacked) 
-         {
-            if (format[i].component_order[0] == 'U' && format[i].component_order[1] == 'Y'
-                  && format[i].component_order[2] == 'V' && format[i].component_order[3] == 'Y') 
-            {
-               has_format = true;
-               xv->fourcc = format[i].id;
-               xv->render_func = video->rgb32 ? render32_uyvy : render16_uyvy;
-
-#ifdef HAVE_FREETYPE
-               xv->luma_index[0] = 1;
-               xv->luma_index[1] = 3;
-               xv->chroma_u_index = 0;
-               xv->chroma_v_index = 2;
-#endif
-               break;
-            }
-         }
-      }
-   }
-
-   free(format);
-   if (!has_format) 
-   {
-      SSNES_ERR("XVideo: unable to find a supported image format.\n");
-      goto error;
-   }
 
    xv->width = g_extern.system.geom.max_width;
    xv->height = g_extern.system.geom.max_height;
