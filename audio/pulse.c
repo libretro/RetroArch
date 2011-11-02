@@ -32,7 +32,7 @@ typedef struct
    bool nonblock;
 } pa_t;
 
-static void __pulse_free(void *data)
+static void pulse_free(void *data)
 {
    pa_t *pa = data;
    if (pa)
@@ -103,7 +103,7 @@ static void stream_latency_update_cb(pa_stream *s, void *data)
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
-static void *__pulse_init(const char *device, unsigned rate, unsigned latency)
+static void *pulse_init(const char *device, unsigned rate, unsigned latency)
 {
    pa_t *pa = calloc(1, sizeof(*pa));
    if (!pa)
@@ -168,11 +168,11 @@ static void *__pulse_init(const char *device, unsigned rate, unsigned latency)
 unlock_error:
    pa_threaded_mainloop_unlock(pa->mainloop);
 error:
-   __pulse_free(pa); 
+   pulse_free(pa); 
    return NULL;
 }
 
-static ssize_t __pulse_write(void *data, const void *buf, size_t size)
+static ssize_t pulse_write(void *data, const void *buf, size_t size)
 {
    pa_t *pa = data;
 
@@ -198,38 +198,38 @@ static ssize_t __pulse_write(void *data, const void *buf, size_t size)
    return write_size;
 }
 
-static bool __pulse_stop(void *data)
+static bool pulse_stop(void *data)
 {
    (void)data;
    return true;
 }
 
-static bool __pulse_start(void *data)
+static bool pulse_start(void *data)
 {
    (void)data;
    return true;
 }
 
-static void __pulse_set_nonblock_state(void *data, bool state)
+static void pulse_set_nonblock_state(void *data, bool state)
 {
    pa_t *pa = data;
    pa->nonblock = state;
 }
 
-static bool __pulse_use_float(void *data)
+static bool pulse_use_float(void *data)
 {
    (void)data;
    return true;
 }
 
 const audio_driver_t audio_pulse = {
-   .init = __pulse_init,
-   .write = __pulse_write,
-   .stop = __pulse_stop,
-   .start = __pulse_start,
-   .set_nonblock_state = __pulse_set_nonblock_state,
-   .use_float = __pulse_use_float,
-   .free = __pulse_free,
+   .init = pulse_init,
+   .write = pulse_write,
+   .stop = pulse_stop,
+   .start = pulse_start,
+   .set_nonblock_state = pulse_set_nonblock_state,
+   .use_float = pulse_use_float,
+   .free = pulse_free,
    .ident = "pulse"
 };
 

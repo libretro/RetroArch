@@ -30,8 +30,9 @@ typedef struct
    bool nonblocking;
 } roar_t;
 
-static void *__roar_init(const char *device, unsigned rate, unsigned latency)
+static void *ra_init(const char *device, unsigned rate, unsigned latency)
 {
+   (void)latency;
    int err;
    roar_t *roar = calloc(1, sizeof(roar_t));
    if (roar == NULL)
@@ -51,7 +52,7 @@ static void *__roar_init(const char *device, unsigned rate, unsigned latency)
    return roar;
 }
 
-static ssize_t __roar_write(void *data, const void *buf, size_t size)
+static ssize_t ra_write(void *data, const void *buf, size_t size)
 {
    roar_t *roar = data;
    ssize_t rc;
@@ -77,13 +78,13 @@ static ssize_t __roar_write(void *data, const void *buf, size_t size)
    return size;
 }
 
-static bool __roar_stop(void *data)
+static bool ra_stop(void *data)
 {
    (void)data;
    return true;
 }
 
-static void __roar_set_nonblock_state(void *data, bool state)
+static void ra_set_nonblock_state(void *data, bool state)
 {
    roar_t *roar = data;
    if (roar_vs_blocking(roar->vss, (state) ? ROAR_VS_FALSE : ROAR_VS_TRUE, NULL) < 0)
@@ -91,13 +92,13 @@ static void __roar_set_nonblock_state(void *data, bool state)
    roar->nonblocking = state;
 }
 
-static bool __roar_start(void *data)
+static bool ra_start(void *data)
 {
    (void)data;
    return true;
 }
 
-static void __roar_free(void *data)
+static void ra_free(void *data)
 {
    roar_t *roar = data;
    roar_vs_close(roar->vss, ROAR_VS_TRUE, NULL);
@@ -105,12 +106,12 @@ static void __roar_free(void *data)
 }
 
 const audio_driver_t audio_roar = {
-   .init = __roar_init,
-   .write = __roar_write,
-   .stop = __roar_stop,
-   .start = __roar_start,
-   .set_nonblock_state = __roar_set_nonblock_state,
-   .free = __roar_free,
+   .init = ra_init,
+   .write = ra_write,
+   .stop = ra_stop,
+   .start = ra_start,
+   .set_nonblock_state = ra_set_nonblock_state,
+   .free = ra_free,
    .ident = "roar"
 };
 

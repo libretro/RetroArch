@@ -26,7 +26,7 @@ typedef struct
    bool nonblock;
 } xa_t;
 
-static void *__xa_init(const char *device, unsigned rate, unsigned latency)
+static void *xa_init(const char *device, unsigned rate, unsigned latency)
 {
    if (latency < 8)
       latency = 8; // Do not allow shenanigans.
@@ -49,7 +49,7 @@ static void *__xa_init(const char *device, unsigned rate, unsigned latency)
    return xa;
 }
 
-static ssize_t __xa_write(void *data, const void *buf, size_t size)
+static ssize_t xa_write(void *data, const void *buf, size_t size)
 {
    xa_t *xa = data;
    if (xa->nonblock)
@@ -66,31 +66,31 @@ static ssize_t __xa_write(void *data, const void *buf, size_t size)
    return ret;
 }
 
-static bool __xa_stop(void *data)
+static bool xa_stop(void *data)
 {
    (void)data;
    return true;
 }
 
-static void __xa_set_nonblock_state(void *data, bool state)
+static void xa_set_nonblock_state(void *data, bool state)
 {
    xa_t *xa = data;
    xa->nonblock = state;
 }
 
-static bool __xa_start(void *data)
+static bool xa_start(void *data)
 {
    (void)data;
    return true;
 }
 
-static bool __xa_use_float(void *data)
+static bool xa_use_float(void *data)
 {
    (void)data;
    return true;
 }
 
-static void __xa_free(void *data)
+static void xa_free(void *data)
 {
    xa_t *xa = data;
    if (xa)
@@ -102,13 +102,13 @@ static void __xa_free(void *data)
 }
 
 const audio_driver_t audio_xa = {
-   .init = __xa_init,
-   .write = __xa_write,
-   .stop = __xa_stop,
-   .start = __xa_start,
-   .set_nonblock_state = __xa_set_nonblock_state,
-   .use_float = __xa_use_float,
-   .free = __xa_free,
+   .init = xa_init,
+   .write = xa_write,
+   .stop = xa_stop,
+   .start = xa_start,
+   .set_nonblock_state = xa_set_nonblock_state,
+   .use_float = xa_use_float,
+   .free = xa_free,
    .ident = "xaudio"
 };
    

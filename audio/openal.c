@@ -56,7 +56,7 @@ typedef struct al
 
 } al_t;
 
-static void *__al_init(const char *device, unsigned rate, unsigned latency)
+static void *al_init(const char *device, unsigned rate, unsigned latency)
 {
    (void)device;
    al_t *al = calloc(1, sizeof(al_t));
@@ -161,7 +161,7 @@ static size_t al_fill_internal_buf(al_t *al, const void *buf, size_t size)
    return read_size;
 }
 
-static ssize_t __al_write(void *data, const void *buf, size_t size)
+static ssize_t al_write(void *data, const void *buf, size_t size)
 {
    al_t *al = data;
 
@@ -196,25 +196,25 @@ static ssize_t __al_write(void *data, const void *buf, size_t size)
    return size;
 }
 
-static bool __al_stop(void *data)
+static bool al_stop(void *data)
 {
    (void)data;
    return true;
 }
 
-static void __al_set_nonblock_state(void *data, bool state)
+static void al_set_nonblock_state(void *data, bool state)
 {
    al_t *al = data;
    al->nonblock = state;
 }
 
-static bool __al_start(void *data)
+static bool al_start(void *data)
 {
    (void)data;
    return true;
 }
 
-static void __al_free(void *data)
+static void al_free(void *data)
 {
    al_t *al= data;
    if (al)
@@ -235,12 +235,12 @@ static void __al_free(void *data)
 }
 
 const audio_driver_t audio_openal = {
-   .init = __al_init,
-   .write = __al_write,
-   .stop = __al_stop,
-   .start = __al_start,
-   .set_nonblock_state = __al_set_nonblock_state,
-   .free = __al_free,
+   .init = al_init,
+   .write = al_write,
+   .stop = al_stop,
+   .start = al_start,
+   .set_nonblock_state = al_set_nonblock_state,
+   .free = al_free,
    .ident = "openal"
 };
 

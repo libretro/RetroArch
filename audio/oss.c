@@ -41,7 +41,7 @@
 #define DEFAULT_OSS_DEV "/dev/dsp"
 #endif
 
-static void *__oss_init(const char *device, unsigned rate, unsigned latency)
+static void *oss_init(const char *device, unsigned rate, unsigned latency)
 {
    int *fd = calloc(1, sizeof(int));
    if (fd == NULL)
@@ -96,7 +96,7 @@ static void *__oss_init(const char *device, unsigned rate, unsigned latency)
    return fd;
 }
 
-static ssize_t __oss_write(void *data, const void *buf, size_t size)
+static ssize_t oss_write(void *data, const void *buf, size_t size)
 {
    int *fd = data;
 
@@ -114,19 +114,19 @@ static ssize_t __oss_write(void *data, const void *buf, size_t size)
    return ret;
 }
 
-static bool __oss_stop(void *data)
+static bool oss_stop(void *data)
 {
    int *fd = data;
    ioctl(*fd, SNDCTL_DSP_RESET, 0);
    return true;
 }
 
-static bool __oss_start(void *data)
+static bool oss_start(void *data)
 {
    return true;
 }
 
-static void __oss_set_nonblock_state(void *data, bool state)
+static void oss_set_nonblock_state(void *data, bool state)
 {
    int *fd = data;
    int rc;
@@ -138,7 +138,7 @@ static void __oss_set_nonblock_state(void *data, bool state)
       fprintf(stderr, "SSNES [ERROR]: Could not set nonblocking on OSS file descriptor. Will not be able to fast-forward.\n");
 }
 
-static void __oss_free(void *data)
+static void oss_free(void *data)
 {
    int *fd = data;
 
@@ -148,12 +148,12 @@ static void __oss_free(void *data)
 }
 
 const audio_driver_t audio_oss = {
-   .init = __oss_init,
-   .write = __oss_write,
-   .stop = __oss_stop,
-   .start = __oss_start,
-   .set_nonblock_state = __oss_set_nonblock_state,
-   .free = __oss_free,
+   .init = oss_init,
+   .write = oss_write,
+   .stop = oss_stop,
+   .start = oss_start,
+   .set_nonblock_state = oss_set_nonblock_state,
+   .free = oss_free,
    .ident = "oss"
 };
    

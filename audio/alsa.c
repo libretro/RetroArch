@@ -32,7 +32,7 @@ typedef struct alsa
    bool has_float;
 } alsa_t;
 
-static bool __alsa_use_float(void *data)
+static bool alsa_use_float(void *data)
 {
    alsa_t *alsa = data;
    return alsa->has_float;
@@ -49,7 +49,7 @@ static bool find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
    return false;
 }
 
-static void *__alsa_init(const char *device, unsigned rate, unsigned latency)
+static void *alsa_init(const char *device, unsigned rate, unsigned latency)
 {
    alsa_t *alsa = calloc(1, sizeof(alsa_t));
    if (!alsa)
@@ -117,7 +117,7 @@ error:
    return NULL;
 }
 
-static ssize_t __alsa_write(void *data, const void *buf, size_t size)
+static ssize_t alsa_write(void *data, const void *buf, size_t size)
 {
    alsa_t *alsa = data;
 
@@ -159,23 +159,23 @@ static ssize_t __alsa_write(void *data, const void *buf, size_t size)
    return snd_pcm_frames_to_bytes(alsa->pcm, size);
 }
 
-static bool __alsa_stop(void *data)
+static bool alsa_stop(void *data)
 {
    return true;
 }
 
-static void __alsa_set_nonblock_state(void *data, bool state)
+static void alsa_set_nonblock_state(void *data, bool state)
 {
    alsa_t *alsa = data;
    alsa->nonblock = state;
 }
 
-static bool __alsa_start(void *data)
+static bool alsa_start(void *data)
 {
    return true;
 }
 
-static void __alsa_free(void *data)
+static void alsa_free(void *data)
 {
    alsa_t *alsa = data;
    if (alsa)
@@ -190,13 +190,13 @@ static void __alsa_free(void *data)
 }
 
 const audio_driver_t audio_alsa = {
-   .init = __alsa_init,
-   .write = __alsa_write,
-   .stop = __alsa_stop,
-   .start = __alsa_start,
-   .use_float = __alsa_use_float,
-   .set_nonblock_state = __alsa_set_nonblock_state,
-   .free = __alsa_free,
+   .init = alsa_init,
+   .write = alsa_write,
+   .stop = alsa_stop,
+   .start = alsa_start,
+   .use_float = alsa_use_float,
+   .set_nonblock_state = alsa_set_nonblock_state,
+   .free = alsa_free,
    .ident = "alsa"
 };
 

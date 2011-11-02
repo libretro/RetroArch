@@ -54,7 +54,7 @@ static void err_cb(void *userdata)
    SDL_CondSignal(rsd->cond);
 }
 
-static void *__rsd_init(const char *device, unsigned rate, unsigned latency)
+static void *rs_init(const char *device, unsigned rate, unsigned latency)
 {
    rsd_t *rsd = calloc(1, sizeof(rsd_t));
    if (!rsd)
@@ -98,7 +98,7 @@ static void *__rsd_init(const char *device, unsigned rate, unsigned latency)
    return rsd;
 }
 
-static ssize_t __rsd_write(void *data, const void *buf, size_t size)
+static ssize_t rs_write(void *data, const void *buf, size_t size)
 {
    rsd_t *rsd = data;
 
@@ -144,7 +144,7 @@ static ssize_t __rsd_write(void *data, const void *buf, size_t size)
    }
 }
 
-static bool __rsd_stop(void *data)
+static bool rs_stop(void *data)
 {
    rsd_t *rsd = data;
    rsd_stop(rsd->rd);
@@ -152,13 +152,13 @@ static bool __rsd_stop(void *data)
    return true;
 }
 
-static void __rsd_set_nonblock_state(void *data, bool state)
+static void rs_set_nonblock_state(void *data, bool state)
 {
    rsd_t *rsd = data;
    rsd->nonblock = state;
 }
 
-static bool __rsd_start(void *data)
+static bool rs_start(void *data)
 {
    rsd_t *rsd = data;
    if (rsd_start(rsd->rd) < 0)
@@ -167,7 +167,7 @@ static bool __rsd_start(void *data)
    return true;
 }
 
-static void __rsd_free(void *data)
+static void rs_free(void *data)
 {
    rsd_t *rsd = data;
 
@@ -182,12 +182,12 @@ static void __rsd_free(void *data)
 }
 
 const audio_driver_t audio_rsound = {
-   .init = __rsd_init,
-   .write = __rsd_write,
-   .stop = __rsd_stop,
-   .start = __rsd_start,
-   .set_nonblock_state = __rsd_set_nonblock_state,
-   .free = __rsd_free,
+   .init = rs_init,
+   .write = rs_write,
+   .stop = rs_stop,
+   .start = rs_start,
+   .set_nonblock_state = rs_set_nonblock_state,
+   .free = rs_free,
    .ident = "rsound"
 };
    

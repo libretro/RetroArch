@@ -124,7 +124,7 @@ static size_t find_buffersize(jack_t *jd, int latency)
    return buffer_frames * sizeof(jack_default_audio_sample_t);
 }
 
-static void *__jack_init(const char *device, unsigned rate, unsigned latency)
+static void *ja_init(const char *device, unsigned rate, unsigned latency)
 {
    jack_t *jd = calloc(1, sizeof(jack_t));
    if (!jd)
@@ -246,32 +246,32 @@ static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
    return written * sizeof(float) * 2;
 }
 
-static ssize_t __jack_write(void *data, const void *buf, size_t size)
+static ssize_t ja_write(void *data, const void *buf, size_t size)
 {
    jack_t *jd = data;
 
    return write_buffer(jd, buf, size);
 }
 
-static bool __jack_stop(void *data)
+static bool ja_stop(void *data)
 {
    (void)data;
    return true;
 }
 
-static void __jack_set_nonblock_state(void *data, bool state)
+static void ja_set_nonblock_state(void *data, bool state)
 {
    jack_t *jd = data;
    jd->nonblock = state;
 }
 
-static bool __jack_start(void *data)
+static bool ja_start(void *data)
 {
    (void)data;
    return true;
 }
 
-static void __jack_free(void *data)
+static void ja_free(void *data)
 {
    jack_t *jd = data;
 
@@ -292,20 +292,20 @@ static void __jack_free(void *data)
    free(jd);
 }
 
-static bool __jack_use_float(void *data)
+static bool ja_use_float(void *data)
 {
    (void)data;
    return true;
 }
 
 const audio_driver_t audio_jack = {
-   .init = __jack_init,
-   .write = __jack_write,
-   .stop = __jack_stop,
-   .start = __jack_start,
-   .set_nonblock_state = __jack_set_nonblock_state,
-   .free = __jack_free,
-   .use_float = __jack_use_float,
+   .init = ja_init,
+   .write = ja_write,
+   .stop = ja_stop,
+   .start = ja_start,
+   .set_nonblock_state = ja_set_nonblock_state,
+   .free = ja_free,
+   .use_float = ja_use_float,
    .ident = "jack"
 };
 
