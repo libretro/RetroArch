@@ -12,16 +12,23 @@ if [ -d /opt/local/lib ]; then
    add_library_dirs /opt/local/lib
 fi
 
-if [ "$OS" = BSD ]; then
+if [ $OS = BSD ]; then
    DYLIB=-lc
 else
    DYLIB=-ldl
 fi
 
-if [ "$HAVE_DYNAMIC" = "yes" ] && [ "$HAVE_CONFIGFILE" = "no" ]; then
+if [ $HAVE_DYNAMIC = yes ] && [ $HAVE_CONFIGFILE = no ]; then
    echo "Cannot have dynamic loading of libsnes and no configfile support."
    echo "Dynamic loading requires config file support."
    exit 1
+fi
+
+if [ -z "$LIBSNES" ]; then
+   LIBSNES="-lsnes"
+else
+   echo "Explicit libsnes used, disabling dynamic libsnes loading ..."
+   HAVE_DYNAMIC=no
 fi
 
 if [ $HAVE_DYNAMIC != yes ]; then
@@ -33,18 +40,23 @@ fi
 check_lib DYLIB $DYLIB dlopen
 check_lib NETPLAY -lc socket
 
+if [ $HAVE_DYLIB = no ] && [ $HAVE_DYNAMIC = yes ]; then
+   echo "Dynamic loading of libsnes is enabled, but your platform does not appear to have dlopen(), use --disable-dynamic or --with-libsnes=\"-lsnes\"".
+   exit 1
+fi
+
 check_pkgconf ALSA alsa
 check_header OSS sys/soundcard.h
 check_header OSS_BSD soundcard.h
 check_lib OSS_LIB -lossaudio
 
-if [ "$OS" = "Darwin" ]; then
+if [ $OS = Darwin ]; then
    check_lib AL "-framework OpenAL" alcOpenDevice
 else
    check_lib AL -lopenal alcOpenDevice
 fi
 
-if [ "$OS" = "Darwin" ]; then
+if [ $OS = Darwin ]; then
    check_lib FBO "-framework OpenGL" glFramebufferTexture2D
 else
    check_lib FBO -lGL glFramebufferTexture2D
@@ -64,7 +76,7 @@ check_critical SDL "Cannot find SDL library."
 if [ $HAVE_OPENGL != no ]; then
    check_lib_cxx CG -lCg cgCreateContext
 else
-   echo "Ignoring Cg, as OpenGL is not compiled in ..."
+   echo "Ignoring Cg. OpenGL is not enabled."
    HAVE_CG=no
 fi
 
@@ -93,7 +105,7 @@ check_lib DYNAMIC $DYLIB dlopen
 check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
 check_pkgconf XEXT xext
-if [ "$HAVE_X11" = "yes" ] && [ "$HAVE_XEXT" = "yes" ]; then
+if [ $HAVE_X11 = yes ] && [ $HAVE_XEXT = yes ]; then
    check_pkgconf XVIDEO xv
 else
    echo "X11 or Xext not present. Skipping XVideo."

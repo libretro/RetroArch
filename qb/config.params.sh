@@ -7,9 +7,9 @@ PACKAGE_VERSION=0.9.1
 # $1: Variable (HAVE_ALSA, HAVE_OSS, etc)   
 # $2: Comment                 
 # $3: Default arg. auto implies that HAVE_ALSA will be set according to library checks later on.
-add_command_line_enable DYNAMIC "Enable dynamic loading of libsnes library" no
-add_command_line_string LIBSNES "libsnes library used" "-lsnes"
-add_command_line_enable FFMPEG "Enable FFmpeg recording support" no
+add_command_line_enable DYNAMIC "Disable dynamic loading of libsnes library" yes
+add_command_line_string LIBSNES "libsnes library used" ""
+add_command_line_enable FFMPEG "Enable FFmpeg recording support" auto
 add_command_line_enable X264RGB "Enable lossless X264 RGB recording" no
 add_command_line_enable DYLIB "Enable dynamic loading support" auto
 add_command_line_enable NETPLAY "Enable netplay support" auto
@@ -29,4 +29,4 @@ add_command_line_enable PULSE "Enable PulseAudio support" auto
 add_command_line_enable FREETYPE "Enable FreeType support" auto
 add_command_line_enable XVIDEO "Enable XVideo support" auto
 add_command_line_enable SDL_IMAGE "Enable SDL_image support" auto
-add_command_line_enable PYTHON "Enable Python 3 support for shaders" no
+add_command_line_enable PYTHON "Enable Python 3 support for shaders" auto
