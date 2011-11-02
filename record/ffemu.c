@@ -166,7 +166,9 @@ static bool init_video(struct video_info *video, const struct ffemu_params *para
    video->codec->sample_aspect_ratio = av_d2q(param->aspect_ratio * param->out_height / param->out_width, 255);
    video->codec->pix_fmt = video->pix_fmt;
 
+#ifdef HAVE_FFMPEG_AVCODEC_OPEN2
    AVDictionary *opts = NULL;
+#endif
 
 #ifdef HAVE_X264RGB
    video->codec->thread_count = 3;
