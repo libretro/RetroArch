@@ -274,20 +274,19 @@ static bool audio_flush(const int16_t *data, unsigned samples)
    if (g_extern.audio_data.dsp_plugin)
       g_extern.audio_data.dsp_plugin->process(g_extern.audio_data.dsp_handle, &dsp_output, &dsp_input);
 
-   struct hermite_data src_data = {
-      .data_in = dsp_output.samples ? dsp_output.samples : g_extern.audio_data.data,
-      .data_out = g_extern.audio_data.outsamples,
-      .input_frames = dsp_output.samples ? dsp_output.frames : (samples / 2),
-      .ratio = g_extern.audio_data.src_ratio,
-      .output_frames = samples * g_extern.audio_data.src_ratio,
-   };
-
    if (dsp_output.should_resample)
    {
+      struct hermite_data src_data = {
+         .data_in = dsp_output.samples ? dsp_output.samples : g_extern.audio_data.data,
+         .data_out = g_extern.audio_data.outsamples,
+         .input_frames = dsp_output.samples ? dsp_output.frames : (samples / 2),
+         .ratio = g_extern.audio_data.src_ratio,
+      };
+
       hermite_process(g_extern.audio_data.source, &src_data);
 
       output_data = g_extern.audio_data.outsamples;
-      output_frames = src_data.output_frames_gen;
+      output_frames = src_data.output_frames;
    }
    else
    {

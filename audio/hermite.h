@@ -36,9 +36,6 @@ struct hermite_data
    size_t input_frames;
    size_t output_frames;
 
-   size_t input_frames_used;
-   size_t output_frames_gen;
-
    double ratio;
 };
 

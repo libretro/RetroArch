@@ -54,20 +54,19 @@ hermite_resampler_t *hermite_new(void)
    return re;
 }
 
+// We make sure to allocate enough output data beforehand ... ;)
 void hermite_process(hermite_resampler_t *re, struct hermite_data *data)
 {
    double r_step = 1.0 / data->ratio;
    size_t processed_out = 0;
-   size_t processed_in = 0;
 
    size_t in_frames = data->input_frames;
-   size_t out_frames = data->output_frames;
    const float *in_data = data->data_in;
    float *out_data = data->data_out;
 
-   while (processed_in < in_frames && processed_out < out_frames)
+   for (size_t i = 0; i < in_frames; i++)
    {
-      while (re->r_frac <= 1.0 && processed_out < out_frames)
+      while (re->r_frac <= 1.0)
       {
          re->r_frac += r_step;
          for (unsigned i = 0; i < CHANNELS; i++)
@@ -79,23 +78,17 @@ void hermite_process(hermite_resampler_t *re, struct hermite_data *data)
          processed_out++;
       }
 
-      if (re->r_frac >= 1.0)
+      re->r_frac -= 1.0;
+      for (unsigned i = 0; i < CHANNELS; i++)
       {
-         re->r_frac -= 1.0;
-
-         for (unsigned i = 0; i < CHANNELS; i++)
-         {
-            re->chan_data[i][0] = re->chan_data[i][1];
-            re->chan_data[i][1] = re->chan_data[i][2];
-            re->chan_data[i][2] = re->chan_data[i][3];
-            re->chan_data[i][3] = *in_data++;
-         }
-         processed_in++;
+         re->chan_data[i][0] = re->chan_data[i][1];
+         re->chan_data[i][1] = re->chan_data[i][2];
+         re->chan_data[i][2] = re->chan_data[i][3];
+         re->chan_data[i][3] = *in_data++;
       }
    }
 
-   data->input_frames_used = processed_in;
-   data->output_frames_gen = processed_out;
+   data->output_frames = processed_out;
 }
 
 void hermite_free(hermite_resampler_t *re)
