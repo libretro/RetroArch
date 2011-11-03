@@ -1082,27 +1082,37 @@ static void deinit_movie(void)
 #ifdef HAVE_NETPLAY
 static void init_netplay(void)
 {
-   if (g_extern.netplay_enable)
+   if (!g_extern.netplay_enable)
+      return;
+
+   struct snes_callbacks cbs = {
+      .frame_cb = video_frame,
+      .sample_cb = audio_sample,
+      .state_cb = input_state
+   };
+
+   if (*g_extern.netplay_server)
    {
-      struct snes_callbacks cbs = {
-         .frame_cb = video_frame,
-         .sample_cb = audio_sample,
-         .state_cb = input_state
-      };
+      SSNES_LOG("Connecting to netplay host...\n");
+      g_extern.netplay_is_client = true;
+   }
+   else
+      SSNES_LOG("Waiting for client...\n");
 
-      if (strlen(g_extern.netplay_server) > 0)
-      {
-         SSNES_LOG("Connecting to netplay host...\n");
-         g_extern.netplay_is_client = true;
-      }
-      else
-         SSNES_LOG("Waiting for client...\n");
+   g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL,
+         g_extern.netplay_port ? g_extern.netplay_port : SSNES_DEFAULT_PORT,
+         g_extern.netplay_sync_frames, &cbs);
 
-      g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL, g_extern.netplay_port ? g_extern.netplay_port : SSNES_DEFAULT_PORT, g_extern.netplay_sync_frames, &cbs);
-      if (!g_extern.netplay)
+   if (!g_extern.netplay)
+   {
+      g_extern.netplay_is_client = false;
+      SSNES_WARN("Failed to init netplay ...\n");
+
+      if (g_extern.msg_queue)
       {
-         g_extern.netplay_is_client = false;
-         SSNES_WARN("Failed to init netplay...\n");
+         msg_queue_push(g_extern.msg_queue,
+               "Failed to init netplay ...",
+               0, 180);
       }
    }
 }
