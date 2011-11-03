@@ -450,15 +450,18 @@ static int poll_input(netplay_t *handle, bool block)
    FD_SET(handle->fd, &fds);
    int max_fd = (handle->fd > handle->udp_fd ? handle->fd : handle->udp_fd) + 1;
 
-   struct timeval tv = {
+   const struct timeval tv = {
       .tv_sec = 0,
       .tv_usec = block ? (RETRY_MS * 1000) : 0
    };
 
-   int i = 0;
+   unsigned i = 0;
    do
-   {
-      if (select(max_fd, &fds, NULL, NULL, &tv) < 0)
+   { 
+      // select() does not take pointer to const struct timeval.
+      // Technically possible for select() to modify tmp_tv, so we go paranoia mode.
+      struct timeval tmp_tv = tv;
+      if (select(max_fd, &fds, NULL, NULL, &tmp_tv) < 0)
          return -1;
 
       // Somewhat hacky, but we aren't using the TCP connection for anything useful atm.
@@ -477,7 +480,7 @@ static int poll_input(netplay_t *handle, bool block)
       }
 
       if (block)
-         SSNES_LOG("Network lag of %d ms, resending packet... Attempt %d of %d ...\n", RETRY_MS, i, MAX_RETRIES);
+         SSNES_LOG("Network lag of %d ms, resending packet... Attempt %u of %d ...\n", RETRY_MS, i, MAX_RETRIES);
 
       // Seems to be necessary on Win32.
       FD_ZERO(&fds);
