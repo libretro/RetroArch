@@ -801,7 +801,7 @@ bool init_rom_file(enum ssnes_game_type type)
 }
 
 // Yep, this is C alright ;)
-char** dir_list_new(const char *dir, const char *ext)
+char **dir_list_new(const char *dir, const char *ext)
 {
    size_t cur_ptr = 0;
    size_t cur_size = 32;
