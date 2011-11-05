@@ -33,7 +33,7 @@ struct video_info
 
    int fmt;
    int pix_fmt;
-   int pix_size;
+   size_t pix_size;
 
    AVFormatContext *format;
 
@@ -257,6 +257,8 @@ static bool init_muxer(ffemu_t *handle)
 #ifdef HAVE_X264RGB // Avoids a warning at end about non-monotonically increasing DTS values. It seems to be harmless to disable this.
    ctx->oformat->flags |= AVFMT_TS_NONSTRICT;
 #endif
+
+   av_dict_set(&ctx->metadata, "title", "SSNES video dump", 0); 
 
 #ifdef HAVE_FFMPEG_AVFORMAT_WRITE_HEADER
    if (avformat_write_header(ctx, NULL) < 0)
