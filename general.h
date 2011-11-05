@@ -302,7 +302,7 @@ struct global
 
    struct
    {
-      char** elems;
+      char **elems;
       size_t size;
       size_t ptr;
    } shader_dir;
