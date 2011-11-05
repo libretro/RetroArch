@@ -936,63 +936,63 @@ static inline void save_files(void)
 #ifdef HAVE_FFMPEG
 static void init_recording(void)
 {
-   if (g_extern.recording)
+   if (!g_extern.recording)
+      return;
+
+   // Not perfectly accurate, but this can be adjusted later during processing
+   // and playback losslessly, and we please the containers more by
+   // using "sane" values.
+   struct ffemu_rational ntsc_fps = {60000, 1000};
+   struct ffemu_rational pal_fps = {50000, 1000};
+   struct ffemu_params params = {
+      .out_width = g_extern.system.geom.base_width,
+      .out_height = g_extern.system.geom.base_height,
+      .fb_width = g_extern.system.geom.max_width,
+      .fb_height = g_extern.system.geom.max_height,
+      .channels = 2,
+      .samplerate = 32000,
+      .filename = g_extern.record_path,
+      .fps = psnes_get_region() == SNES_REGION_NTSC ? ntsc_fps : pal_fps,
+      .rgb32 = false,
+   };
+
+   if (g_extern.record_width || g_extern.record_height)
    {
-      // Not perfectly SNES accurate, but this can be adjusted later during processing
-      // and playback losslessly, and we please the containers more by
-      // using "sane" values.
-      struct ffemu_rational ntsc_fps = {60000, 1000};
-      struct ffemu_rational pal_fps = {50000, 1000};
-      struct ffemu_params params = {
-         .out_width = g_extern.system.geom.base_width,
-         .out_height = g_extern.system.geom.base_height,
-         .fb_width = g_extern.system.geom.max_width,
-         .fb_height = g_extern.system.geom.max_height,
-         .channels = 2,
-         .samplerate = 32000,
-         .filename = g_extern.record_path,
-         .fps = psnes_get_region() == SNES_REGION_NTSC ? ntsc_fps : pal_fps,
-         .rgb32 = false,
-      };
-
-      if (g_extern.record_width || g_extern.record_height)
-      {
-         params.out_width = g_extern.record_width;
-         params.out_height = g_extern.record_height;
-      }
-      else if (g_settings.video.hires_record)
-      {
-         params.out_width *= 2;
-         params.out_height *= 2;
-      }
-
-      if (g_settings.video.force_aspect && (g_settings.video.aspect_ratio > 0.0f))
-         params.aspect_ratio = g_settings.video.aspect_ratio;
-      else
-         params.aspect_ratio = (float)params.out_width / params.out_height;
-
-      if (g_settings.video.post_filter_record && g_extern.filter.active)
-      {
-         g_extern.filter.psize(&params.out_width, &params.out_height);
-         params.rgb32 = true;
-
-         unsigned max_width = params.fb_width;
-         unsigned max_height = params.fb_height;
-         g_extern.filter.psize(&max_width, &max_height);
-         params.fb_width = next_pow2(max_width);
-         params.fb_height = next_pow2(max_height);
-      }
-
-      SSNES_LOG("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u 32-bit: %s)\n", g_extern.record_path, params.out_width, params.out_height, params.fb_width, params.fb_height, params.rgb32 ? "yes" : "no");
-      g_extern.rec = ffemu_new(&params);
-      if (!g_extern.rec)
-      {
-         SSNES_ERR("Failed to start FFmpeg recording.\n");
-         g_extern.recording = false;
-      }
-      else
-         g_settings.video.crop_overscan = true;
+      params.out_width = g_extern.record_width;
+      params.out_height = g_extern.record_height;
    }
+   else if (g_settings.video.hires_record)
+   {
+      params.out_width *= 2;
+      params.out_height *= 2;
+   }
+
+   if (g_settings.video.force_aspect && (g_settings.video.aspect_ratio > 0.0f))
+      params.aspect_ratio = g_settings.video.aspect_ratio;
+   else
+      params.aspect_ratio = (float)params.out_width / params.out_height;
+
+   if (g_settings.video.post_filter_record && g_extern.filter.active)
+   {
+      g_extern.filter.psize(&params.out_width, &params.out_height);
+      params.rgb32 = true;
+
+      unsigned max_width = params.fb_width;
+      unsigned max_height = params.fb_height;
+      g_extern.filter.psize(&max_width, &max_height);
+      params.fb_width = next_pow2(max_width);
+      params.fb_height = next_pow2(max_height);
+   }
+
+   SSNES_LOG("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u 32-bit: %s)\n", g_extern.record_path, params.out_width, params.out_height, params.fb_width, params.fb_height, params.rgb32 ? "yes" : "no");
+   g_extern.rec = ffemu_new(&params);
+   if (!g_extern.rec)
+   {
+      SSNES_ERR("Failed to start FFmpeg recording.\n");
+      g_extern.recording = false;
+   }
+   else
+      g_settings.video.crop_overscan = true;
 }
 
 static void deinit_recording(void)
