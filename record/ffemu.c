@@ -233,7 +233,7 @@ static bool init_muxer(ffemu_t *handle)
 #ifdef HAVE_FFMPEG_AVFORMAT_NEW_STREAM
    AVStream *stream = avformat_new_stream(ctx, handle->video.encoder);
 #else
-   int stream_cnt = 0;
+   unsigned stream_cnt = 0;
    AVStream *stream = av_new_stream(ctx, stream_cnt++);
 #endif
    stream->codec = handle->video.codec;
