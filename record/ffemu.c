@@ -162,7 +162,7 @@ static bool init_video(struct video_info *video, const struct ffemu_params *para
 
    video->codec->width = param->out_width;
    video->codec->height = param->out_height;
-   video->codec->time_base = (AVRational) {param->fps.den, param->fps.num};
+   video->codec->time_base = (AVRational) { param->fps.den, param->fps.num };
    video->codec->sample_aspect_ratio = av_d2q(param->aspect_ratio * param->out_height / param->out_width, 255);
    video->codec->pix_fmt = video->pix_fmt;
 
