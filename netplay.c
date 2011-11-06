@@ -375,6 +375,9 @@ static void init_buffers(netplay_t *handle)
 
 netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames, const struct snes_callbacks *cb)
 {
+   if (frames > UDP_FRAME_PACKETS)
+      frames = UDP_FRAME_PACKETS;
+
    netplay_t *handle = calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
