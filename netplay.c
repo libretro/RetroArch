@@ -69,7 +69,7 @@ struct delta_frame
    bool used_real;
 };
 
-#define UDP_FRAME_PACKETS 8
+#define UDP_FRAME_PACKETS 16
 
 struct netplay
 {
@@ -99,6 +99,8 @@ struct netplay
    struct addrinfo *addr;
    struct sockaddr_storage their_addr;
    bool has_client_addr;
+
+   unsigned timeout_cnt;
 };
 
 static void warn_hangup(void)
@@ -439,15 +441,11 @@ static bool send_chunk(netplay_t *handle)
    return true;
 }
 
-#define MAX_RETRIES 64
+#define MAX_RETRIES 16
 #define RETRY_MS 500
 
 static int poll_input(netplay_t *handle, bool block)
 {
-   fd_set fds;
-   FD_ZERO(&fds);
-   FD_SET(handle->udp_fd, &fds);
-   FD_SET(handle->fd, &fds);
    int max_fd = (handle->fd > handle->udp_fd ? handle->fd : handle->udp_fd) + 1;
 
    const struct timeval tv = {
@@ -455,12 +453,19 @@ static int poll_input(netplay_t *handle, bool block)
       .tv_usec = block ? (RETRY_MS * 1000) : 0
    };
 
-   unsigned i = 0;
    do
    { 
+      handle->timeout_cnt++;
+
       // select() does not take pointer to const struct timeval.
       // Technically possible for select() to modify tmp_tv, so we go paranoia mode.
       struct timeval tmp_tv = tv;
+
+      fd_set fds;
+      FD_ZERO(&fds);
+      FD_SET(handle->udp_fd, &fds);
+      FD_SET(handle->fd, &fds);
+
       if (select(max_fd, &fds, NULL, NULL, &tmp_tv) < 0)
          return -1;
 
@@ -480,14 +485,11 @@ static int poll_input(netplay_t *handle, bool block)
       }
 
       if (block)
-         SSNES_LOG("Network lag of %d ms, resending packet... Attempt %u of %d ...\n", RETRY_MS, i, MAX_RETRIES);
-
-      // Seems to be necessary on Win32.
-      FD_ZERO(&fds);
-      FD_SET(handle->udp_fd, &fds);
-      FD_SET(handle->fd, &fds);
-
-   } while ((i++ < MAX_RETRIES) && block);
+      {
+         SSNES_LOG("Network lag of %d ms, resending packet... Count %u of %d ...\n",
+               RETRY_MS, handle->timeout_cnt, MAX_RETRIES);
+      }
+   } while ((handle->timeout_cnt < MAX_RETRIES) && block);
 
    if (block)
       return -1;
@@ -544,7 +546,7 @@ static void parse_packet(netplay_t *handle, uint32_t *buffer, unsigned size)
 
    for (unsigned i = 0; i < size && handle->read_frame_count <= handle->frame_count; i++)
    {
-      uint32_t frame = buffer[2 * i];
+      uint32_t frame = buffer[2 * i + 0];
       uint32_t state = buffer[2 * i + 1];
 
       if (frame == handle->read_frame_count)
@@ -553,6 +555,7 @@ static void parse_packet(netplay_t *handle, uint32_t *buffer, unsigned size)
          handle->buffer[handle->read_ptr].real_input_state = state;
          handle->read_ptr = NEXT_PTR(handle->read_ptr);
          handle->read_frame_count++;
+         handle->timeout_cnt = 0;
       }
    }
 }
