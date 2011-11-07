@@ -172,7 +172,7 @@ static bool init_video(struct video_info *video, const struct ffemu_params *para
 
 #ifdef HAVE_X264RGB
    video->codec->thread_count = 3;
-   av_dict_set(&opts, "crf", "0", 0);
+   av_dict_set(&opts, "qp", "0", 0);
 #else
    video->codec->thread_count = 2;
 #endif
