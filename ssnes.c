@@ -138,16 +138,17 @@ static void take_screenshot(void)
 static inline void adjust_crop(const uint16_t **data, unsigned *height)
 {
    // Rather SNES specific.
+   unsigned pixel_pitch = lines_to_pitch(*height) >> 1;
    if (g_settings.video.crop_overscan)
    {
       if (*height == 239)
       {
-         *data += 7 * 1024; // Skip 7 top scanlines.
+         *data += 7 * pixel_pitch; // Skip 7 top scanlines.
          *height = 224;
       }
       else if (*height == 478)
       {
-         *data += 15 * 512; // Skip 15 top scanlines.
+         *data += 15 * pixel_pitch; // Skip 15 top scanlines.
          *height = 448;
       }
    }
