@@ -992,8 +992,6 @@ static void init_recording(void)
       SSNES_ERR("Failed to start FFmpeg recording.\n");
       g_extern.recording = false;
    }
-   else
-      g_settings.video.crop_overscan = true;
 }
 
 static void deinit_recording(void)
