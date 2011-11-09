@@ -133,7 +133,7 @@ static const bool video_smooth = true;
 static const bool force_aspect = true; 
 
 // Crop overscanned frames (7/8 or 15/15 for interlaced frames).
-static const bool crop_overscan = false;
+static const bool crop_overscan = true;
 
 // Font size for on-screen messages.
 static const unsigned font_size = 48;

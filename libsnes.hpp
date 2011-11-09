@@ -67,9 +67,10 @@ extern "C" {
 #define SNES_MEMORY_CGRAM   104
 
 // SSNES extension. Not required to be implemented for a working implementation.
-#define SNES_ENVIRONMENT_GET_FULLPATH 0   // const char **
-#define SNES_ENVIRONMENT_SET_GEOMETRY 1   // const struct snes_geometry *
-#define SNES_ENVIRONMENT_SET_PITCH 2      // const unsigned *
+#define SNES_ENVIRONMENT_GET_FULLPATH 0   // const char ** -- Full path of game loaded.
+#define SNES_ENVIRONMENT_SET_GEOMETRY 1   // const struct snes_geometry * -- Window geometry information for the system/game.
+#define SNES_ENVIRONMENT_SET_PITCH 2      // const unsigned * -- Pitch of game image.
+#define SNES_ENVIRONMENT_GET_OVERSCAN 3   // bool * -- Boolean value whether or not the implementation should use overscan.
 
 struct snes_geometry
 {

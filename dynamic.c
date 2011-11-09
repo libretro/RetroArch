@@ -301,6 +301,11 @@ static bool environment_cb(unsigned cmd, void *data)
          SSNES_LOG("SET_PITCH: %u\n", g_extern.system.pitch);
          break;
 
+      case SNES_ENVIRONMENT_GET_OVERSCAN:
+         *(bool*)data = !g_settings.video.crop_overscan;
+         SSNES_LOG("GET_OVERSCAN: %u\n", (unsigned)!g_settings.video.crop_overscan);
+         break;
+
       default:
          return false;
    }
