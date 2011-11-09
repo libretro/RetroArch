@@ -350,7 +350,7 @@ static bool load_plain(const char *path)
          SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
          if (listing_v[i])
             SSNES_ERR("Vertex:\n%s\n", listing_v[i]);
-         if (listing_f[i])
+         else if (listing_f[i])
             SSNES_ERR("Fragment:\n%s\n", listing_f[i]);
          goto error;
       }
@@ -878,7 +878,7 @@ static bool load_preset(const char *path)
          SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
          if (listing_v)
             SSNES_ERR("Vertex:\n%s\n", listing_v);
-         if (listing_f)
+         else if (listing_f)
             SSNES_ERR("Fragment:\n%s\n", listing_f);
 
          free(listing_f);
