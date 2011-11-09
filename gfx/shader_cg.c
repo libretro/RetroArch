@@ -295,36 +295,45 @@ void gl_cg_deinit(void)
    cgDestroyContext(cgCtx);
 }
 
+#define SET_LISTING_INDEX(type, index) \
+{ \
+   const char *list = cgGetLastListing(cgCtx); \
+   if (list) \
+      listing_##type[index] = strdup(list); \
+}
+
+#define SET_LISTING(type) \
+{ \
+   const char *list = cgGetLastListing(cgCtx); \
+   if (list) \
+      listing_##type = strdup(list); \
+}
+
 static bool load_plain(const char *path)
 {
    SSNES_LOG("Loading Cg file: %s\n", path);
 
-   char *listing[3] = {NULL};
-   const char *list = NULL;
+   char *listing_v[3] = {NULL};
+   char *listing_f[3] = {NULL};
 
    prg[0].fprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", 0);
+   SET_LISTING_INDEX(f, 0);
    prg[0].vprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", 0);
-
-   list = cgGetLastListing(cgCtx);
-   if (list)
-      listing[0] = strdup(list);
+   SET_LISTING_INDEX(v, 0);
 
    prg[1].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgFProf, "main_fragment", 0);
+   SET_LISTING_INDEX(f, 1);
    prg[1].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgVProf, "main_vertex", 0);
-
-   list = cgGetLastListing(cgCtx);
-   if (list)
-      listing[1] = strdup(list);
+   SET_LISTING_INDEX(v, 1);
 
    if (*g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
    {
       SSNES_LOG("Loading 2nd pass: %s\n", g_settings.video.second_pass_shader);
       prg[2].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgFProf, "main_fragment", 0);
+      SET_LISTING_INDEX(f, 2);
       prg[2].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgVProf, "main_vertex", 0);
+      SET_LISTING_INDEX(v, 2);
 
-      list = cgGetLastListing(cgCtx);
-      if (list)
-         listing[2] = strdup(list);
       cg_shader_num = 2;
    }
    else
@@ -339,8 +348,10 @@ static bool load_plain(const char *path)
       {
          CGerror err = cgGetError();
          SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
-         if (listing[i])
-            SSNES_ERR("%s\n", listing[i]);
+         if (listing_v[i])
+            SSNES_ERR("Vertex:\n%s\n", listing_v[i]);
+         if (listing_f[i])
+            SSNES_ERR("Fragment:\n%s\n", listing_f[i]);
          goto error;
       }
 
@@ -348,13 +359,19 @@ static bool load_plain(const char *path)
       cgGLLoadProgram(prg[i].vprg);
    }
 
+   for (unsigned i = 0; i < 3; i++)
+   {
+      free(listing_v[i]);
+      free(listing_f[i]);
+   }
+
    return true;
 
 error:
    for (unsigned i = 0; i < 3; i++)
    {
-      if (listing[i])
-         free(listing[i]);
+      free(listing_v[i]);
+      free(listing_f[i]);
    }
    return false;
 }
@@ -846,19 +863,31 @@ static bool load_preset(const char *path)
       SSNES_LOG("Loading Cg shader: \"%s\".\n", path_buf);
 
       struct cg_program *prog = &prg[i + 1];
+
+      char *listing_f = NULL;
       prog->fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path_buf, cgFProf, "main_fragment", 0);
+      SET_LISTING(f);
+      
+      char *listing_v = NULL;
       prog->vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path_buf, cgVProf, "main_vertex", 0);
+      SET_LISTING(v);
 
       if (!prog->fprg || !prog->vprg)
       {
-         const char *listing = cgGetLastListing(cgCtx);
          CGerror err = cgGetError();
          SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
-         if (listing)
-            SSNES_ERR("%s\n", listing);
+         if (listing_v)
+            SSNES_ERR("Vertex:\n%s\n", listing_v);
+         if (listing_f)
+            SSNES_ERR("Fragment:\n%s\n", listing_f);
+
+         free(listing_f);
+         free(listing_v);
          goto error;
       }
 
+      free(listing_f);
+      free(listing_v);
       cgGLLoadProgram(prog->fprg);
       cgGLLoadProgram(prog->vprg);
    }
