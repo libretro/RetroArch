@@ -337,6 +337,9 @@ static void gl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
 static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size)
 {
 #ifdef HAVE_FREETYPE
+   if (!g_settings.video.font_enable)
+      return;
+
    const char *path = font_path;
    if (!*path)
       path = font_renderer_get_default_font();

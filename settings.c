@@ -131,6 +131,7 @@ static void set_defaults(void)
    g_settings.video.crop_overscan = crop_overscan;
    g_settings.video.aspect_ratio = -1.0f; // Automatic
    g_settings.video.shader_type = SSNES_SHADER_AUTO;
+   g_settings.video.font_enable = font_enable;
 
 #ifdef HAVE_FREETYPE
    g_settings.video.font_size = font_size;
@@ -328,6 +329,7 @@ static void parse_config_file(void)
 #ifdef HAVE_FREETYPE
    CONFIG_GET_STRING(video.font_path, "video_font_path");
    CONFIG_GET_INT(video.font_size, "video_font_size");
+   CONFIG_GET_BOOL(video.font_enable, "video_font_enable");
    CONFIG_GET_DOUBLE(video.msg_pos_x, "video_message_pos_x");
    CONFIG_GET_DOUBLE(video.msg_pos_y, "video_message_pos_y");
 

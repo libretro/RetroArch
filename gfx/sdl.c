@@ -80,6 +80,9 @@ static void sdl_gfx_free(void *data)
 static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font_size)
 {
 #ifdef HAVE_FREETYPE
+   if (!g_settings.video.font_enable)
+      return;
+
    const char *path = font_path;
    if (!*path)
       path = font_renderer_get_default_font();

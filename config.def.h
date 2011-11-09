@@ -156,6 +156,9 @@ static const bool hires_record = false;
 // Record post-filtered (CPU filter) video rather than raw SNES output.
 static const bool post_filter_record = false;
 
+// OSD-messages
+static const bool font_enable = true;
+
 ////////////////
 // Audio
 ////////////////

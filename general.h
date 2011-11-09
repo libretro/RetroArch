@@ -96,6 +96,7 @@ struct settings
 
       char font_path[MAXPATHLEN];
       unsigned font_size;
+      bool font_enable;
       float msg_pos_x;
       float msg_pos_y;
       float msg_color_r;
