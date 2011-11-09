@@ -75,9 +75,13 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    if (player > MAX_PLAYERS || player < 1 || key >= SSNES_FIRST_META_KEY)
       return NULL;
 
-   const struct snes_keybind *binds[MAX_PLAYERS];
-   for (int i = 0; i < MAX_PLAYERS; i++)
-      binds[i] = g_settings.input.binds[i];
+   static const struct snes_keybind *binds[MAX_PLAYERS] = {
+      g_settings.input.binds[0],
+      g_settings.input.binds[1],
+      g_settings.input.binds[2],
+      g_settings.input.binds[3],
+      g_settings.input.binds[4],
+   };
 
    int16_t res = driver.input->input_state(driver.input_data, 
          binds, player > 1, 
