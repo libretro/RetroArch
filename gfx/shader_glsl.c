@@ -1035,6 +1035,9 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       location = pglGetUniformLocation(gl_program[active_index], "rubyFrameCount");
       pglUniform1i(location, frame_count);
 
+      location = pglGetUniformLocation(gl_program[active_index], "rubyFrameDirection");
+      pglUniform1i(location, g_extern.frame_is_reverse ? -1 : 1);
+
       for (unsigned i = 0; i < gl_teximage_cnt; i++)
       {
          location = pglGetUniformLocation(gl_program[active_index], gl_teximage_uniforms[i]);
