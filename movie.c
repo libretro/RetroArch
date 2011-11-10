@@ -88,13 +88,12 @@ struct bsv_movie
    FILE *file;
    uint8_t *state;
 
-   long *frame_pos; // A ring buffer keeping track of many key presses were requested per frame.
+   size_t *frame_pos; // A ring buffer keeping track of positions in the file for each frame.
    size_t frame_mask;
-   uint16_t current_frame_count;
    size_t frame_ptr;
 
    bool playback;
-   unsigned min_file_pos;
+   size_t min_file_pos;
 
    bool first_rewind;
    bool did_rewind;
@@ -103,7 +102,7 @@ struct bsv_movie
 #define BSV_MAGIC 0x42535631
 
 #define MAGIC_INDEX 0
-#define SERIALIZER_INDEX 1
+#define SERIALIZER_INDEX 1 // Not current used.
 #define CRC_INDEX 2
 #define STATE_SIZE_INDEX 3
 
@@ -154,25 +153,32 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
    }
 
    uint32_t state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
-   handle->state = malloc(state_size);
-   if (!handle->state)
-      return false;
+
+   // If we're playing back from the start, state_size is 0.
+   if (state_size)
+   {
+      handle->state = malloc(state_size);
+      if (!handle->state)
+         return false;
+
+      if (fread(handle->state, 1, state_size, handle->file) != state_size)
+      {
+         SSNES_ERR("Couldn't read state from movie.\n");
+         return false;
+      }
+
+      if (psnes_serialize_size() != state_size)
+      {
+         SSNES_ERR("Movie format seems to have a different serializer version. Cannot continue.\n");
+         exit(1);
+      }
+
+      // Unserialize to start playback.
+      psnes_unserialize(handle->state, state_size);
+   }
 
    handle->min_file_pos = sizeof(header) + state_size;
 
-   if (fread(handle->state, 1, state_size, handle->file) != state_size)
-   {
-      SSNES_ERR("Couldn't read state from movie.\n");
-      return false;
-   }
-
-   if (psnes_serialize_size() != state_size)
-   {
-      SSNES_ERR("Movie format seems to have a different serializer version. Cannot continue.\n");
-      exit(1);
-   }
-   // Unserialize to start playback.
-   psnes_unserialize(handle->state, state_size);
    return true;
 }
 
@@ -187,7 +193,6 @@ static bool init_record(bsv_movie_t *handle, const char *path)
 
    uint32_t header[4] = {0};
    header[MAGIC_INDEX] = swap_if_big32(BSV_MAGIC);
-   //header[SERIALIZER_INDEX] = 0; // TODO: Fix this.
    header[CRC_INDEX] = swap_if_big32(g_extern.cart_crc);
 
    uint32_t state_size = psnes_serialize_size();
@@ -245,8 +250,11 @@ bsv_movie_t *bsv_movie_init(const char *path, enum ssnes_movie_type type)
    else if (!init_record(handle, path))
       goto error;
 
-   if (!(handle->frame_pos = calloc((1 << 20), sizeof(long)))) // Just pick something really large :D
+   // Just pick something really large :D ~1 million frames rewind should do the trick.
+   if (!(handle->frame_pos = calloc((1 << 20), sizeof(size_t))))
       goto error; 
+
+   handle->frame_pos[0] = handle->min_file_pos;
    handle->frame_mask = (1 << 20) - 1;
 
    return handle;
@@ -258,14 +266,11 @@ error:
 
 void bsv_movie_set_frame_start(bsv_movie_t *handle)
 {
-   //fprintf(stderr, "Starting frame: %u, Pos: %ld\n", (unsigned)handle->frame_ptr, ftell(handle->file));
    handle->frame_pos[handle->frame_ptr] = ftell(handle->file);
-
 }
 
 void bsv_movie_set_frame_end(bsv_movie_t *handle)
 {
-   //fprintf(stderr, "Frame++\n");
    handle->frame_ptr = (handle->frame_ptr + 1) & handle->frame_mask;
 
    handle->first_rewind = !handle->did_rewind;
@@ -274,22 +279,27 @@ void bsv_movie_set_frame_end(bsv_movie_t *handle)
 
 void bsv_movie_frame_rewind(bsv_movie_t *handle)
 {
-   //fprintf(stderr, "Frame--\n");
-
    handle->did_rewind = true;
-   if (handle->frame_ptr <= 1)
+
+   // If we're at the beginning ... :)
+   if ((handle->frame_ptr <= 1) && (handle->frame_pos[0] == handle->min_file_pos))
    {
       handle->frame_ptr = 0;
       fseek(handle->file, handle->min_file_pos, SEEK_SET);
    }
    else
    {
+      // First time rewind is performed, the old frame is simply replayed.
+      // However, playing back that frame caused us to read data, and push data to the ring buffer.
+      // Sucessively rewinding frames, we need to rewind past the read data, plus another.
       handle->frame_ptr = (handle->frame_ptr - (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
       fseek(handle->file, handle->frame_pos[handle->frame_ptr], SEEK_SET);
    }
 
+   // We rewound past the beginning. :O
    if (ftell(handle->file) <= (long)handle->min_file_pos)
    {
+      // If recording, we simply reset the starting point. Nice and easy.
       if (!handle->playback)
       {
          fseek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
