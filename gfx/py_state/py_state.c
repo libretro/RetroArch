@@ -89,7 +89,7 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
          player > 2 ? player - 2 : 0,
          key);
 
-   return PyBool_FromLong((long)res);
+   return PyBool_FromLong(res);
 }
 
 static PyObject *py_read_input_meta(PyObject *self, PyObject *args)
@@ -107,7 +107,7 @@ static PyObject *py_read_input_meta(PyObject *self, PyObject *args)
       return NULL;
 
    bool ret = driver.input->key_pressed(driver.input_data, key);
-   return PyBool_FromLong((long)ret);
+   return PyBool_FromLong(ret);
 }
 
 static PyMethodDef SNESMethods[] = {
@@ -238,28 +238,58 @@ static char *align_program(const char *program)
    }
 
    free(prog);
-
    return new_prog;
 }
 
 py_state_t *py_state_new(const char *script, bool is_file, const char *pyclass)
 {
+   SSNES_LOG("Initializing Python runtime ...\n");
    PyImport_AppendInittab("snes", &PyInit_SNES);
    Py_Initialize();
+   SSNES_LOG("Initialized Python runtime!\n");
 
    py_state_t *handle = calloc(1, sizeof(*handle));
 
    handle->main = PyImport_AddModule("__main__");
    if (!handle->main)
       goto error;
+   Py_INCREF(handle->main);
 
    if (is_file)
    {
-      FILE *file = fopen(script, "r");
+      // Have to hack around the fact that the
+      // FILE struct isn't standardized across environments.
+      // PyRun_SimpleFile() breaks on Windows.
+
+      // Needs "rb" to allow fread().
+      // Assumes Python doesn't give two shits about \r\n vs. \n.
+      FILE *file = fopen(script, "rb");
       if (!file)
          goto error;
-      PyRun_SimpleFile(file, script);
+
+      fseek(file, 0, SEEK_END);
+      size_t length = ftell(file);
+      rewind(file);
+      char *script_ = malloc(length + 1);
+      if (!script_)
+      {
+         fclose(file);
+         goto error;
+      }
+
+      if (fread(script_, 1, length, file) != length)
+      {
+         SSNES_ERR("Python: Failed to read all data from file.\n");
+         free(script_);
+         fclose(file);
+         goto error;
+      }
+
+      script_[length] = '\0';
+
+      PyRun_SimpleString(script_);
       fclose(file);
+      free(script_);
    }
    else
    {
@@ -271,22 +301,35 @@ py_state_t *py_state_new(const char *script, bool is_file, const char *pyclass)
       }
    }
 
+   SSNES_LOG("Python: Script loaded.\n");
    handle->dict = PyModule_GetDict(handle->main);
    if (!handle->dict)
+   {
+      SSNES_ERR("Python: PyModule_GetDict() failed.\n");
       goto error;
+   }
+   Py_INCREF(handle->dict);
 
    PyObject *hook = PyDict_GetItemString(handle->dict, pyclass);
    if (!hook)
+   {
+      SSNES_ERR("Python: PyDict_GetItemString() failed.\n");
       goto error;
+   }
 
    handle->inst = PyObject_CallFunction(hook, NULL);
    if (!handle->inst)
+   {
+      SSNES_ERR("Python: PyObject_CallFunction() failed.\n");
       goto error;
+   }
+   Py_INCREF(handle->inst);
 
    return handle;
 
 error:
    PyErr_Print();
+   PyErr_Clear();
    py_state_free(handle);
    return NULL;
 }
@@ -295,17 +338,16 @@ void py_state_free(py_state_t *handle)
 {
    if (handle)
    {
-      if (handle->main)
-         Py_DECREF(handle->main);
-      if (handle->dict)
-         Py_DECREF(handle->dict);
-      if (handle->inst)
-         Py_DECREF(handle->inst);
+      PyErr_Print();
+      PyErr_Clear();
+
+      Py_CLEAR(handle->inst);
+      Py_CLEAR(handle->dict);
+      Py_CLEAR(handle->main);
 
       free(handle);
+      Py_Finalize();
    }
-
-   Py_Finalize();
 }
 
 float py_state_get(py_state_t *handle, const char *id,
