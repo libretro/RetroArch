@@ -134,9 +134,19 @@ static unsigned lut_textures[MAX_TEXTURES];
 static unsigned lut_textures_num = 0;
 static char lut_textures_uniform[MAX_TEXTURES][64];
 
+static CGparameter cg_attribs[PREV_TEXTURES + 1 + MAX_SHADERS];
+static unsigned cg_attrib_index;
+
 #ifdef HAVE_CONFIGFILE
 static snes_tracker_t *snes_tracker = NULL;
 #endif
+
+static void gl_cg_reset_attrib(void)
+{
+   for (unsigned i = 0; i < cg_attrib_index; i++)
+      cgGLDisableClientState(cg_attribs[i]);
+   cg_attrib_index = 0;
+}
 
 void gl_cg_set_proj_matrix(void)
 {
@@ -158,127 +168,132 @@ void gl_cg_set_params(unsigned width, unsigned height,
       const struct gl_tex_info *fbo_info,
       unsigned fbo_info_cnt)
 {
-   if (cg_active && active_index > 0)
+   if (!cg_active || (active_index == 0))
+      return;
+
+   // Set frame.
+   set_param_2f(prg[active_index].vid_size_f, width, height);
+   set_param_2f(prg[active_index].tex_size_f, tex_width, tex_height);
+   set_param_2f(prg[active_index].out_size_f, out_width, out_height);
+   set_param_1f(prg[active_index].frame_cnt_f, (float)frame_count);
+   set_param_1f(prg[active_index].frame_dir_f, g_extern.frame_is_reverse ? -1.0 : 1.0);
+
+   set_param_2f(prg[active_index].vid_size_v, width, height);
+   set_param_2f(prg[active_index].tex_size_v, tex_width, tex_height);
+   set_param_2f(prg[active_index].out_size_v, out_width, out_height);
+   set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count);
+   set_param_1f(prg[active_index].frame_dir_v, g_extern.frame_is_reverse ? -1.0 : 1.0);
+
+   // Set orig texture.
+   CGparameter param = prg[active_index].orig.tex;
+   if (param)
    {
-      // Set frame.
-      set_param_2f(prg[active_index].vid_size_f, width, height);
-      set_param_2f(prg[active_index].tex_size_f, tex_width, tex_height);
-      set_param_2f(prg[active_index].out_size_f, out_width, out_height);
-      set_param_1f(prg[active_index].frame_cnt_f, (float)frame_count);
-      set_param_1f(prg[active_index].frame_dir_f, g_extern.frame_is_reverse ? -1.0 : 1.0);
+      cgGLSetTextureParameter(param, info->tex);
+      cgGLEnableTextureParameter(param);
+   }
 
-      set_param_2f(prg[active_index].vid_size_v, width, height);
-      set_param_2f(prg[active_index].tex_size_v, tex_width, tex_height);
-      set_param_2f(prg[active_index].out_size_v, out_width, out_height);
-      set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count);
-      set_param_1f(prg[active_index].frame_dir_v, g_extern.frame_is_reverse ? -1.0 : 1.0);
+   set_param_2f(prg[active_index].orig.vid_size_v, info->input_size[0], info->input_size[1]);
+   set_param_2f(prg[active_index].orig.vid_size_f, info->input_size[0], info->input_size[1]);
+   set_param_2f(prg[active_index].orig.tex_size_v, info->tex_size[0], info->tex_size[1]);
+   set_param_2f(prg[active_index].orig.tex_size_f, info->tex_size[0], info->tex_size[1]);
+   if (prg[active_index].orig.coord)
+   {
+      cgGLSetParameterPointer(prg[active_index].orig.coord, 2, GL_FLOAT, 0, info->coord);
+      cgGLEnableClientState(prg[active_index].orig.coord);
+      cg_attribs[cg_attrib_index++] = prg[active_index].orig.coord;
+   }
 
-      // Set orig texture.
-      CGparameter param = prg[active_index].orig.tex;
+   // Set prev textures.
+   for (unsigned i = 0; i < PREV_TEXTURES; i++)
+   {
+      param = prg[active_index].prev[i].tex;
       if (param)
       {
-         cgGLSetTextureParameter(param, info->tex);
+         cgGLSetTextureParameter(param, prev_info[i].tex);
          cgGLEnableTextureParameter(param);
       }
 
-      set_param_2f(prg[active_index].orig.vid_size_v, info->input_size[0], info->input_size[1]);
-      set_param_2f(prg[active_index].orig.vid_size_f, info->input_size[0], info->input_size[1]);
-      set_param_2f(prg[active_index].orig.tex_size_v, info->tex_size[0], info->tex_size[1]);
-      set_param_2f(prg[active_index].orig.tex_size_f, info->tex_size[0], info->tex_size[1]);
-      if (prg[active_index].orig.coord)
-      {
-         cgGLSetParameterPointer(prg[active_index].orig.coord, 2, GL_FLOAT, 0, info->coord);
-         cgGLEnableClientState(prg[active_index].orig.coord);
-      }
+      set_param_2f(prg[active_index].prev[i].vid_size_v, prev_info[i].input_size[0], prev_info[i].input_size[1]);
+      set_param_2f(prg[active_index].prev[i].vid_size_f, prev_info[i].input_size[0], prev_info[i].input_size[1]);
+      set_param_2f(prg[active_index].prev[i].tex_size_v, prev_info[i].tex_size[0],   prev_info[i].tex_size[1]);
+      set_param_2f(prg[active_index].prev[i].tex_size_f, prev_info[i].tex_size[0],   prev_info[i].tex_size[1]);
 
-      // Set prev textures.
-      for (unsigned i = 0; i < PREV_TEXTURES; i++)
+      if (prg[active_index].prev[i].coord)
       {
-         param = prg[active_index].prev[i].tex;
-         if (param)
+         cgGLSetParameterPointer(prg[active_index].prev[i].coord, 2, GL_FLOAT, 0, prev_info[i].coord);
+         cgGLEnableClientState(prg[active_index].prev[i].coord);
+         cg_attribs[cg_attrib_index++] = prg[active_index].prev[i].coord;
+      }
+   }
+
+   // Set lookup textures.
+   for (unsigned i = 0; i < lut_textures_num; i++)
+   {
+      CGparameter param = cgGetNamedParameter(prg[active_index].fprg, lut_textures_uniform[i]);
+      if (param)
+      {
+         cgGLSetTextureParameter(param, lut_textures[i]);
+         cgGLEnableTextureParameter(param);
+      }
+   }
+
+   // Set FBO textures.
+   if (active_index > 2)
+   {
+      for (unsigned i = 0; i < fbo_info_cnt; i++)
+      {
+         if (prg[active_index].fbo[i].tex)
          {
-            cgGLSetTextureParameter(param, prev_info[i].tex);
-            cgGLEnableTextureParameter(param);
+            cgGLSetTextureParameter(prg[active_index].fbo[i].tex, fbo_info[i].tex);
+            cgGLEnableTextureParameter(prg[active_index].fbo[i].tex);
          }
 
-         set_param_2f(prg[active_index].prev[i].vid_size_v, prev_info[i].input_size[0], prev_info[i].input_size[1]);
-         set_param_2f(prg[active_index].prev[i].vid_size_f, prev_info[i].input_size[0], prev_info[i].input_size[1]);
-         set_param_2f(prg[active_index].prev[i].tex_size_v, prev_info[i].tex_size[0],   prev_info[i].tex_size[1]);
-         set_param_2f(prg[active_index].prev[i].tex_size_f, prev_info[i].tex_size[0],   prev_info[i].tex_size[1]);
+         set_param_2f(prg[active_index].fbo[i].vid_size_v, 
+               fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
+         set_param_2f(prg[active_index].fbo[i].vid_size_f, 
+               fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
 
-         if (prg[active_index].prev[i].coord)
+         set_param_2f(prg[active_index].fbo[i].tex_size_v, 
+               fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
+         set_param_2f(prg[active_index].fbo[i].tex_size_f, 
+               fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
+
+         if (prg[active_index].fbo[i].coord)
          {
-            cgGLSetParameterPointer(prg[active_index].prev[i].coord, 2, GL_FLOAT, 0, prev_info[i].coord);
-            cgGLEnableClientState(prg[active_index].prev[i].coord);
+            cgGLSetParameterPointer(prg[active_index].fbo[i].coord, 2, GL_FLOAT, 0, fbo_info[i].coord);
+            cgGLEnableClientState(prg[active_index].fbo[i].coord);
+            cg_attribs[cg_attrib_index++] = prg[active_index].fbo[i].coord;
          }
       }
-
-      // Set lookup textures.
-      for (unsigned i = 0; i < lut_textures_num; i++)
-      {
-         CGparameter param = cgGetNamedParameter(prg[active_index].fprg, lut_textures_uniform[i]);
-         if (param)
-         {
-            cgGLSetTextureParameter(param, lut_textures[i]);
-            cgGLEnableTextureParameter(param);
-         }
-      }
-      
-      // Set FBO textures.
-      if (active_index > 2)
-      {
-         for (unsigned i = 0; i < fbo_info_cnt; i++)
-         {
-            if (prg[active_index].fbo[i].tex)
-            {
-               cgGLSetTextureParameter(prg[active_index].fbo[i].tex, fbo_info[i].tex);
-               cgGLEnableTextureParameter(prg[active_index].fbo[i].tex);
-            }
-
-            set_param_2f(prg[active_index].fbo[i].vid_size_v, 
-                  fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
-            set_param_2f(prg[active_index].fbo[i].vid_size_f, 
-                  fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
-
-            set_param_2f(prg[active_index].fbo[i].tex_size_v, 
-                  fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
-            set_param_2f(prg[active_index].fbo[i].tex_size_f, 
-                  fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
-
-            if (prg[active_index].fbo[i].coord)
-            {
-               cgGLSetParameterPointer(prg[active_index].fbo[i].coord, 2, GL_FLOAT, 0, fbo_info[i].coord);
-               cgGLEnableClientState(prg[active_index].fbo[i].coord);
-            }
-         }
-      }
+   }
 
 #ifdef HAVE_CONFIGFILE
-      // Set state parameters
-      if (snes_tracker)
+   // Set state parameters
+   if (snes_tracker)
+   {
+      static struct snes_tracker_uniform info[MAX_VARIABLES];
+      static unsigned cnt = 0;
+
+      if (active_index == 1)
+         cnt = snes_get_uniform(snes_tracker, info, MAX_VARIABLES, frame_count);
+
+      for (unsigned i = 0; i < cnt; i++)
       {
-         static struct snes_tracker_uniform info[MAX_VARIABLES];
-         static unsigned cnt = 0;
-
-         if (active_index == 1)
-            cnt = snes_get_uniform(snes_tracker, info, MAX_VARIABLES, frame_count);
-
-         for (unsigned i = 0; i < cnt; i++)
-         {
-            CGparameter param_v = cgGetNamedParameter(prg[active_index].vprg, info[i].id);
-            CGparameter param_f = cgGetNamedParameter(prg[active_index].fprg, info[i].id);
-            set_param_1f(param_v, info[i].value);
-            set_param_1f(param_f, info[i].value);
-         }
+         CGparameter param_v = cgGetNamedParameter(prg[active_index].vprg, info[i].id);
+         CGparameter param_f = cgGetNamedParameter(prg[active_index].fprg, info[i].id);
+         set_param_1f(param_v, info[i].value);
+         set_param_1f(param_f, info[i].value);
       }
-#endif
    }
+#endif
 }
 
 void gl_cg_deinit(void)
 {
    if (!cg_active)
       return;
+
+   gl_cg_reset_attrib();
 
    cg_active = false;
    cg_shader_num = 0;
@@ -1053,6 +1068,8 @@ void gl_cg_use(unsigned index)
 {
    if (cg_active && prg[index].vprg && prg[index].fprg)
    {
+      gl_cg_reset_attrib();
+
       active_index = index;
       cgGLBindProgram(prg[index].vprg);
       cgGLBindProgram(prg[index].fprg);
