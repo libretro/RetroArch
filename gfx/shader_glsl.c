@@ -139,6 +139,21 @@ struct shader_program
    bool valid_scale;
 };
 
+static const char *stock_vertex =
+   "varying vec4 color;\n"
+   "void main() {\n"
+   "   gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
+   "   gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+   "   color = gl_Color;\n"
+   "}";
+
+static const char *stock_fragment =
+   "uniform sampler2D rubyTexture;\n"
+   "varying vec4 color;\n"
+   "void main() {\n"
+   "   gl_FragColor = color * texture2D(rubyTexture, gl_TexCoord[0].xy);\n"
+   "}";
+
 static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
 {
    prog->scale_x = 1.0;
@@ -873,9 +888,16 @@ bool gl_glsl_init(const char *path)
 
    if (!shader_support)
    {
-      SSNES_ERR("GLSL shaders aren't supported by your GL driver.\n");
+      SSNES_ERR("GLSL shaders aren't supported by your OpenGL driver.\n");
       return false;
    }
+
+   struct shader_program stock_prog = {
+      .vertex = strdup(stock_vertex),
+      .fragment = strdup(stock_fragment),
+   };
+   if (!compile_programs(&gl_program[0], &stock_prog, 1))
+      return false;
 
    struct shader_program progs[MAX_PROGRAMS];
    unsigned num_progs = get_xml_shaders(path, progs, MAX_PROGRAMS - 1);
@@ -951,6 +973,7 @@ bool gl_glsl_init(const char *path)
    
    glsl_enable = true;
    gl_num_programs = num_progs;
+   gl_program[gl_num_programs + 1] = gl_program[0];
    return true;
 }
 
@@ -959,10 +982,10 @@ void gl_glsl_deinit(void)
    if (glsl_enable)
    {
       pglUseProgram(0);
-      for (int i = 1; i < MAX_PROGRAMS; i++)
+      for (int i = 0; i <= gl_num_programs; i++)
       {
          if (gl_program[i] == 0)
-            break;
+            continue;
 
          GLsizei count;
          GLuint shaders[2];
