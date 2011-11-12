@@ -26,6 +26,7 @@
 #include "py_state.h"
 #include "general.h"
 #include "strl.h"
+#include "file.h"
 
 #define PY_READ_FUNC_DECL(RAMTYPE) py_read_##RAMTYPE
 #define PY_READ_FUNC(RAMTYPE) \
@@ -261,34 +262,14 @@ py_state_t *py_state_new(const char *script, bool is_file, const char *pyclass)
       // FILE struct isn't standardized across environments.
       // PyRun_SimpleFile() breaks on Windows.
 
-      // Needs "rb" to allow fread().
-      // Assumes Python doesn't give two shits about \r\n vs. \n.
-      FILE *file = fopen(script, "rb");
-      if (!file)
-         goto error;
-
-      fseek(file, 0, SEEK_END);
-      size_t length = ftell(file);
-      rewind(file);
-      char *script_ = malloc(length + 1);
-      if (!script_)
+      char *script_ = NULL;
+      if (read_file(script, (void**)&script_) < 0)
       {
-         fclose(file);
+         SSNES_ERR("Python: Failed to read script\n");
          goto error;
       }
-
-      if (fread(script_, 1, length, file) != length)
-      {
-         SSNES_ERR("Python: Failed to read all data from file.\n");
-         free(script_);
-         fclose(file);
-         goto error;
-      }
-
-      script_[length] = '\0';
 
       PyRun_SimpleString(script_);
-      fclose(file);
       free(script_);
    }
    else
