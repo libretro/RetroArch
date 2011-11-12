@@ -123,13 +123,15 @@ static inline bool load_gl_proc(void) { return true; }
 #endif
 
 #define MAX_SHADERS 16
+#define TEXTURES 8
+#define TEXTURES_MASK (TEXTURES - 1)
 
 typedef struct gl
 {
    bool vsync;
-   GLuint texture[2];
+   GLuint texture[TEXTURES];
    unsigned tex_index; // For use with PREV.
-   struct gl_tex_info prev_info;
+   struct gl_tex_info prev_info[TEXTURES];
    GLuint tex_filter;
 
    void *empty_buf;
@@ -158,8 +160,8 @@ typedef struct gl
    unsigned win_height;
    unsigned vp_width, vp_out_width;
    unsigned vp_height, vp_out_height;
-   unsigned last_width[2];
-   unsigned last_height[2];
+   unsigned last_width[TEXTURES];
+   unsigned last_height[TEXTURES];
    unsigned tex_w, tex_h;
    GLfloat tex_coords[8];
 #ifdef HAVE_FBO
@@ -990,7 +992,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       set_texture_coords(gl->tex_coords, xamt, yamt);
    }
 #if defined(HAVE_XML) || defined(HAVE_CG)
-   else if (width != gl->last_width[1 - gl->tex_index] || height != gl->last_height[1 - gl->tex_index])
+   // We might have used different texture coordinates last frame. Edge case if resolution changes very rapidly.
+   else if (width != gl->last_width[(gl->tex_index - 1) & TEXTURES_MASK] || height != gl->last_height[(gl->tex_index - 1) & TEXTURES_MASK])
    {
       GLfloat xamt = (GLfloat)width / gl->tex_w;
       GLfloat yamt = (GLfloat)height / gl->tex_h;
@@ -1021,7 +1024,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    glClear(GL_COLOR_BUFFER_BIT);
    gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->vp_width, gl->vp_height, gl->frame_count, 
-         &tex_info, &gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
+         &tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
    glDrawArrays(GL_QUADS, 0, 4);
 
@@ -1066,7 +1069,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
                prev_rect->width, prev_rect->height, 
                gl->vp_width, gl->vp_height, gl->frame_count, 
-               &tex_info, &gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
+               &tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
          glDrawArrays(GL_QUADS, 0, 4);
 
@@ -1092,7 +1095,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
             gl->vp_width, gl->vp_height, gl->frame_count, 
-            &tex_info, &gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
+            &tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
       glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes_flipped);
       glDrawArrays(GL_QUADS, 0, 4);
@@ -1102,8 +1105,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
 
 #if defined(HAVE_XML) || defined(HAVE_CG)
-   memcpy(&gl->prev_info, &tex_info, sizeof(tex_info));
-   gl->tex_index = 1 - gl->tex_index;
+   memmove(gl->prev_info + 1, gl->prev_info, sizeof(tex_info) * (TEXTURES - 1));
+   memcpy(gl->prev_info, &tex_info, sizeof(tex_info));
+   gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
 #endif
 
    if (msg)
@@ -1126,7 +1130,7 @@ static void gl_free(void *data)
    gl_shader_deinit();
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-   glDeleteTextures(2, gl->texture);
+   glDeleteTextures(TEXTURES, gl->texture);
 
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
@@ -1259,9 +1263,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 
-   glGenTextures(2, gl->texture);
+   glGenTextures(TEXTURES, gl->texture);
 
-   for (unsigned i = 0; i < 2; i++)
+   for (unsigned i = 0; i < TEXTURES; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
 
@@ -1287,7 +1291,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(gl->tex_w * gl->tex_h, gl->base_size);
 
-   for (unsigned i = 0; i < 2; i++)
+   for (unsigned i = 0; i < TEXTURES; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
       glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
@@ -1297,18 +1301,21 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
-   for (unsigned i = 0; i < 2; i++)
+   for (unsigned i = 0; i < TEXTURES; i++)
    {
       gl->last_width[i] = gl->tex_w;
       gl->last_height[i] = gl->tex_h;
    }
 
-   gl->prev_info.tex = gl->texture[1 - gl->tex_index];
-   gl->prev_info.input_size[0] = gl->tex_w;
-   gl->prev_info.tex_size[0] = gl->tex_w;
-   gl->prev_info.input_size[1] = gl->tex_h;
-   gl->prev_info.tex_size[1] = gl->tex_h;
-   memcpy(gl->prev_info.coord, tex_coords, sizeof(tex_coords)); 
+   for (unsigned i = 0; i < TEXTURES; i++)
+   {
+      gl->prev_info[i].tex = gl->texture[(gl->tex_index - (i + 1)) & TEXTURES_MASK];
+      gl->prev_info[i].input_size[0] = gl->tex_w;
+      gl->prev_info[i].tex_size[0] = gl->tex_w;
+      gl->prev_info[i].input_size[1] = gl->tex_h;
+      gl->prev_info[i].tex_size[1] = gl->tex_h;
+      memcpy(gl->prev_info[i].coord, tex_coords, sizeof(tex_coords)); 
+   }
 
    // Hook up SDL input driver to get SDL_QUIT events and RESIZE.
    sdl_input_t *sdl_input = input_sdl.init();
