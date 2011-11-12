@@ -203,8 +203,8 @@ void gl_cg_set_params(unsigned width, unsigned height,
 
          set_param_2f(prg[active_index].prev[i].vid_size_v, prev_info[i].input_size[0], prev_info[i].input_size[1]);
          set_param_2f(prg[active_index].prev[i].vid_size_f, prev_info[i].input_size[0], prev_info[i].input_size[1]);
-         set_param_2f(prg[active_index].prev[i].tex_size_v, prev_info[i].tex_size[0], prev_info[i].tex_size[1]);
-         set_param_2f(prg[active_index].prev[i].tex_size_f, prev_info[i].tex_size[0], prev_info[i].tex_size[1]);
+         set_param_2f(prg[active_index].prev[i].tex_size_v, prev_info[i].tex_size[0],   prev_info[i].tex_size[1]);
+         set_param_2f(prg[active_index].prev[i].tex_size_f, prev_info[i].tex_size[0],   prev_info[i].tex_size[1]);
 
          if (prg[active_index].prev[i].coord)
          {
