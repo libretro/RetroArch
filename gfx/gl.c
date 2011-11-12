@@ -1127,7 +1127,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 #if defined(HAVE_XML) || defined(HAVE_CG)
    memmove(gl->prev_info + 1, gl->prev_info, sizeof(tex_info) * (TEXTURES - 1));
-   memcpy(gl->prev_info, &tex_info, sizeof(tex_info));
+   memcpy(&gl->prev_info[0], &tex_info, sizeof(tex_info));
    gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
 #endif
 

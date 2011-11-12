@@ -1108,8 +1108,7 @@ void gl_glsl_set_params(unsigned width, unsigned height,
 
          snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTexture", i + 1);
          location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
-         pglUniform1i(location, texunit);
-         texunit++;
+         pglUniform1i(location, texunit++);
 
          snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTextureSize", i + 1);
          location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
@@ -1163,10 +1162,10 @@ void gl_glsl_set_params(unsigned width, unsigned height,
          "Prev6",
       };
 
-      snprintf(attr_buf_tex,        sizeof(attr_buf_tex), "ruby%sTexture",     prev_names[i]);
-      snprintf(attr_buf_tex_size,   sizeof(attr_buf_tex), "ruby%sTextureSize", prev_names[i]);
-      snprintf(attr_buf_input_size, sizeof(attr_buf_tex), "ruby%sInputSize",   prev_names[i]);
-      snprintf(attr_buf_coord,      sizeof(attr_buf_tex), "ruby%sTexCoord",    prev_names[i]);
+      snprintf(attr_buf_tex,        sizeof(attr_buf_tex),        "ruby%sTexture",     prev_names[i]);
+      snprintf(attr_buf_tex_size,   sizeof(attr_buf_tex_size),   "ruby%sTextureSize", prev_names[i]);
+      snprintf(attr_buf_input_size, sizeof(attr_buf_input_size), "ruby%sInputSize",   prev_names[i]);
+      snprintf(attr_buf_coord,      sizeof(attr_buf_coord),      "ruby%sTexCoord",    prev_names[i]);
 
       location = pglGetUniformLocation(gl_program[active_index], attr_buf_tex);
       if (location >= 0)
