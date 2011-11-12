@@ -123,7 +123,12 @@ static inline bool load_gl_proc(void) { return true; }
 #endif
 
 #define MAX_SHADERS 16
+
+#if defined(HAVE_XML) || defined(HAVE_CG)
 #define TEXTURES 8
+#else
+#define TEXTURES 1
+#endif
 #define TEXTURES_MASK (TEXTURES - 1)
 
 typedef struct gl

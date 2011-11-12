@@ -95,7 +95,7 @@ struct cg_fbo_params
 #define MAX_SHADERS 16
 #define MAX_TEXTURES 8
 #define MAX_VARIABLES 64
-#define PREV_TEXTURES 8
+#define PREV_TEXTURES 7
 
 struct cg_program
 {
@@ -192,7 +192,7 @@ void gl_cg_set_params(unsigned width, unsigned height,
       }
 
       // Set prev textures.
-      for (unsigned i = 0; i < PREV_TEXTURES - 1; i++)
+      for (unsigned i = 0; i < PREV_TEXTURES; i++)
       {
          param = prg[active_index].prev[i].tex;
          if (param)
@@ -990,35 +990,36 @@ bool gl_cg_init(const char *path)
       prg[i].orig.tex_size_f = cgGetNamedParameter(prg[i].fprg, "ORIG.texture_size");
       prg[i].orig.coord = cgGetNamedParameter(prg[i].vprg, "ORIG.tex_coord");
 
-      for (unsigned j = 0; j < PREV_TEXTURES - 1; j++)
+      for (unsigned j = 0; j < PREV_TEXTURES; j++)
       {
-         if (j == 0)
-         {
-            prg[i].prev[0].tex = cgGetNamedParameter(prg[i].fprg, "PREV.texture");
-            prg[i].prev[0].vid_size_v = cgGetNamedParameter(prg[i].vprg, "PREV.video_size");
-            prg[i].prev[0].vid_size_f = cgGetNamedParameter(prg[i].fprg, "PREV.video_size");
-            prg[i].prev[0].tex_size_v = cgGetNamedParameter(prg[i].vprg, "PREV.texture_size");
-            prg[i].prev[0].tex_size_f = cgGetNamedParameter(prg[i].fprg, "PREV.texture_size");
-            prg[i].prev[0].coord = cgGetNamedParameter(prg[i].vprg, "PREV.tex_coord");
-         }
-         else
-         {
-            char attr_buf[64];
+         char attr_buf_tex[64];
+         char attr_buf_vid_size[64];
+         char attr_buf_tex_size[64];
+         char attr_buf_coord[64];
+         static const char *prev_names[PREV_TEXTURES] = {
+            "PREV",
+            "PREV1",
+            "PREV2",
+            "PREV3",
+            "PREV4",
+            "PREV5",
+            "PREV6",
+         };
 
-            snprintf(attr_buf, sizeof(attr_buf), "PREV%u.texture", j);
-            prg[i].prev[j].tex = cgGetNamedParameter(prg[i].fprg, attr_buf);
+         snprintf(attr_buf_tex,      sizeof(attr_buf_tex),      "%s.texture", prev_names[j]);
+         snprintf(attr_buf_vid_size, sizeof(attr_buf_vid_size), "%s.video_size", prev_names[j]);
+         snprintf(attr_buf_tex_size, sizeof(attr_buf_tex_size), "%s.texture_size", prev_names[j]);
+         snprintf(attr_buf_coord,    sizeof(attr_buf_coord),    "%s.tex_coord", prev_names[j]);
 
-            snprintf(attr_buf, sizeof(attr_buf), "PREV%u.video_size", j);
-            prg[i].prev[j].vid_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf);
-            prg[i].prev[j].vid_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf);
+         prg[i].prev[j].tex = cgGetNamedParameter(prg[i].fprg, attr_buf_tex);
 
-            snprintf(attr_buf, sizeof(attr_buf), "PREV%u.texture_size", j);
-            prg[i].prev[j].tex_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf);
-            prg[i].prev[j].tex_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf);
+         prg[i].prev[j].vid_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf_vid_size);
+         prg[i].prev[j].vid_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf_vid_size);
 
-            snprintf(attr_buf, sizeof(attr_buf), "PREV%u.tex_coord", j);
-            prg[i].prev[j].coord = cgGetNamedParameter(prg[i].vprg, attr_buf);
-         }
+         prg[i].prev[j].tex_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf_tex_size);
+         prg[i].prev[j].tex_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf_tex_size);
+
+         prg[i].prev[j].coord = cgGetNamedParameter(prg[i].vprg, attr_buf_coord);
       }
 
       for (unsigned j = 0; j < i - 1; j++)

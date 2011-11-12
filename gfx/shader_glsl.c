@@ -96,6 +96,7 @@ static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer = NULL;
 #define MAX_PROGRAMS 16
 #define MAX_TEXTURES 8
 #define MAX_VARIABLES 256
+#define PREV_TEXTURES 7
 
 enum filter_type
 {
@@ -1010,150 +1011,176 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
 {
    // We enforce a certain layout for our various texture types in the texunits.
-   // Unit 0: Regular SNES frame (rubyTexture).
-   // Unit 1-A: LUT textures.
-   // Unit A+1: Previous texture.
-   // Unit A+2: Original texture.
-   // Unit A+3-B: FBO textures.
+   // - Regular SNES frame (rubyTexture) (always bound).
+   // - LUT textures (always bound).
+   // - Original texture (always bound if meaningful).
+   // - FBO textures (always bound if available).
+   // - Previous textures.
 
-   if (glsl_enable && gl_program[active_index] > 0)
+   if (!glsl_enable || (gl_program[active_index] == 0))
+      return;
+
+   GLint location;
+
+   float inputSize[2] = {width, height};
+   location = pglGetUniformLocation(gl_program[active_index], "rubyInputSize");
+   pglUniform2fv(location, 1, inputSize);
+
+   float outputSize[2] = {out_width, out_height};
+   location = pglGetUniformLocation(gl_program[active_index], "rubyOutputSize");
+   pglUniform2fv(location, 1, outputSize);
+
+   float textureSize[2] = {tex_width, tex_height};
+   location = pglGetUniformLocation(gl_program[active_index], "rubyTextureSize");
+   pglUniform2fv(location, 1, textureSize);
+
+   location = pglGetUniformLocation(gl_program[active_index], "rubyFrameCount");
+   pglUniform1i(location, frame_count);
+
+   location = pglGetUniformLocation(gl_program[active_index], "rubyFrameDirection");
+   pglUniform1i(location, g_extern.frame_is_reverse ? -1 : 1);
+
+   for (unsigned i = 0; i < gl_teximage_cnt; i++)
    {
-      GLint location;
+      location = pglGetUniformLocation(gl_program[active_index], gl_teximage_uniforms[i]);
+      pglUniform1i(location, i + 1);
+   }
 
-      float inputSize[2] = {width, height};
-      location = pglGetUniformLocation(gl_program[active_index], "rubyInputSize");
-      pglUniform2fv(location, 1, inputSize);
+   unsigned texunit = gl_teximage_cnt + 1;
 
-      float outputSize[2] = {out_width, out_height};
-      location = pglGetUniformLocation(gl_program[active_index], "rubyOutputSize");
-      pglUniform2fv(location, 1, outputSize);
+   // Set original texture unless we're in first pass (pointless).
+   if (active_index > 1)
+   {
+      // Bind original texture.
+      pglActiveTexture(GL_TEXTURE0 + texunit);
 
-      float textureSize[2] = {tex_width, tex_height};
-      location = pglGetUniformLocation(gl_program[active_index], "rubyTextureSize");
-      pglUniform2fv(location, 1, textureSize);
+      location = pglGetUniformLocation(gl_program[active_index], "rubyOrigTexture");
+      pglUniform1i(location, texunit++);
+      glBindTexture(GL_TEXTURE_2D, info->tex);
 
-      location = pglGetUniformLocation(gl_program[active_index], "rubyFrameCount");
-      pglUniform1i(location, frame_count);
-
-      location = pglGetUniformLocation(gl_program[active_index], "rubyFrameDirection");
-      pglUniform1i(location, g_extern.frame_is_reverse ? -1 : 1);
-
-      for (unsigned i = 0; i < gl_teximage_cnt; i++)
-      {
-         location = pglGetUniformLocation(gl_program[active_index], gl_teximage_uniforms[i]);
-         pglUniform1i(location, i + 1);
-      }
-
-      // Set previous texture.
-      pglActiveTexture(GL_TEXTURE0 + gl_teximage_cnt + 1);
-      glBindTexture(GL_TEXTURE_2D, prev_info->tex);
-      location = pglGetUniformLocation(gl_program[active_index], "rubyPrevTexture");
-      pglUniform1i(location, gl_teximage_cnt + 1);
-
-      location = pglGetUniformLocation(gl_program[active_index], "rubyPrevTextureSize");
-      pglUniform2fv(location, 1, prev_info->tex_size);
-      location = pglGetUniformLocation(gl_program[active_index], "rubyPrevInputSize");
-      pglUniform2fv(location, 1, prev_info->input_size);
+      location = pglGetUniformLocation(gl_program[active_index], "rubyOrigTextureSize");
+      pglUniform2fv(location, 1, info->tex_size);
+      location = pglGetUniformLocation(gl_program[active_index], "rubyOrigInputSize");
+      pglUniform2fv(location, 1, info->input_size);
 
       // Pass texture coordinates.
-      location = pglGetAttribLocation(gl_program[active_index], "rubyPrevTexCoord");
+      location = pglGetAttribLocation(gl_program[active_index], "rubyOrigTexCoord");
       if (location >= 0)
       {
          pglEnableVertexAttribArray(location);
-         pglVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, prev_info->coord);
+         pglVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, info->coord);
       }
 
-      // Set original texture unless we're in first pass (pointless).
-      if (active_index > 1)
+      // Bind new texture in the chain.
+      if (fbo_info_cnt > 0)
       {
-         // Bind original texture.
-         pglActiveTexture(GL_TEXTURE0 + gl_teximage_cnt + 2);
-         glBindTexture(GL_TEXTURE_2D, info->tex);
+         pglActiveTexture(GL_TEXTURE0 + texunit + fbo_info_cnt - 1);
+         glBindTexture(GL_TEXTURE_2D, fbo_info[fbo_info_cnt - 1].tex);
+      }
 
-         location = pglGetUniformLocation(gl_program[active_index], "rubyOrigTexture");
-         pglUniform1i(location, gl_teximage_cnt + 2);
+      // Bind FBO textures.
+      for (unsigned i = 0; i < fbo_info_cnt; i++)
+      {
+         char attrib_buf[64];
 
-         location = pglGetUniformLocation(gl_program[active_index], "rubyOrigTextureSize");
-         pglUniform2fv(location, 1, info->tex_size);
-         location = pglGetUniformLocation(gl_program[active_index], "rubyOrigInputSize");
-         pglUniform2fv(location, 1, info->input_size);
+         snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTexture", i + 1);
+         location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
+         pglUniform1i(location, texunit);
+         texunit++;
 
-         // Pass texture coordinates.
-         location = pglGetAttribLocation(gl_program[active_index], "rubyOrigTexCoord");
+         snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTextureSize", i + 1);
+         location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
+         pglUniform2fv(location, 1, fbo_info[i].tex_size);
+
+         snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uInputSize", i + 1);
+         location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
+         pglUniform2fv(location, 1, fbo_info[i].input_size);
+
+         snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTexCoord", i + 1);
+         location = pglGetAttribLocation(gl_program[active_index], attrib_buf);
          if (location >= 0)
          {
             pglEnableVertexAttribArray(location);
-            pglVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, info->coord);
-         }
-
-         GLuint base_tex = GL_TEXTURE0 + gl_teximage_cnt + 3;
-
-         // Bind new texture in the chain.
-         if (fbo_info_cnt > 0)
-         {
-            pglActiveTexture(base_tex + fbo_info_cnt - 1);
-            glBindTexture(GL_TEXTURE_2D, fbo_info[fbo_info_cnt - 1].tex);
-         }
-
-         // Bind FBO textures.
-         for (unsigned i = 0; i < fbo_info_cnt; i++)
-         {
-            char attrib_buf[64];
-
-            snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTexture", i + 1);
-            location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
-            pglUniform1i(location, base_tex + i - GL_TEXTURE0);
-
-            snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTextureSize", i + 1);
-            location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
-            pglUniform2fv(location, 1, fbo_info[i].tex_size);
-
-            snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uInputSize", i + 1);
-            location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
-            pglUniform2fv(location, 1, fbo_info[i].input_size);
-
-            snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTexCoord", i + 1);
-            location = pglGetAttribLocation(gl_program[active_index], attrib_buf);
-            if (location >= 0)
-            {
-               pglEnableVertexAttribArray(location);
-               pglVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, fbo_info[i].coord);
-            }
+            pglVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, fbo_info[i].coord);
          }
       }
-      else
+   }
+   else
+   {
+      // First pass, so unbind everything to avoid collitions.
+      // Unbind ORIG.
+      pglActiveTexture(GL_TEXTURE0 + texunit);
+      glBindTexture(GL_TEXTURE_2D, 0);
+
+      GLuint base_tex = texunit + 1;
+      // Unbind any lurking FBO passes.
+      // Rendering to a texture that is bound to a texture unit
+      // sounds very shaky ... ;)
+      for (unsigned i = 0; i < gl_num_programs; i++)
       {
-         // First pass, so unbind everything to avoid collitions.
-         // Unbind ORIG.
-         pglActiveTexture(GL_TEXTURE0 + gl_teximage_cnt + 2);
+         pglActiveTexture(GL_TEXTURE0 + base_tex + i);
          glBindTexture(GL_TEXTURE_2D, 0);
+      }
+   }
 
-         GLuint base_tex = GL_TEXTURE0 + gl_teximage_cnt + 3;
-         // Unbind any lurking FBO passes.
-         // Rendering to a texture that is bound to a texture unit
-         // sounds very shaky ... ;)
-         for (unsigned i = 0; i < gl_num_programs; i++)
-         {
-            pglActiveTexture(GL_TEXTURE0 + base_tex + i);
-            glBindTexture(GL_TEXTURE_2D, 0);
-         }
+   for (unsigned i = 0; i < PREV_TEXTURES; i++)
+   {
+      char attr_buf_tex[64];
+      char attr_buf_tex_size[64];
+      char attr_buf_input_size[64];
+      char attr_buf_coord[64];
+      static const char *prev_names[PREV_TEXTURES] = {
+         "Prev",
+         "Prev1",
+         "Prev2",
+         "Prev3",
+         "Prev4",
+         "Prev5",
+         "Prev6",
+      };
+
+      snprintf(attr_buf_tex,        sizeof(attr_buf_tex), "ruby%sTexture",     prev_names[i]);
+      snprintf(attr_buf_tex_size,   sizeof(attr_buf_tex), "ruby%sTextureSize", prev_names[i]);
+      snprintf(attr_buf_input_size, sizeof(attr_buf_tex), "ruby%sInputSize",   prev_names[i]);
+      snprintf(attr_buf_coord,      sizeof(attr_buf_tex), "ruby%sTexCoord",    prev_names[i]);
+
+      // Set previous textures.
+      location = pglGetUniformLocation(gl_program[active_index], attr_buf_tex);
+      if (location >= 0)
+      {
+         pglActiveTexture(GL_TEXTURE0 + texunit);
+         glBindTexture(GL_TEXTURE_2D, prev_info[i].tex);
+         pglUniform1i(location, texunit++);
       }
 
-      pglActiveTexture(GL_TEXTURE0);
+      location = pglGetUniformLocation(gl_program[active_index], attr_buf_tex_size);
+      pglUniform2fv(location, 1, prev_info[i].tex_size);
+      location = pglGetUniformLocation(gl_program[active_index], attr_buf_input_size);
+      pglUniform2fv(location, 1, prev_info[i].input_size);
 
-      if (gl_snes_tracker)
+      // Pass texture coordinates.
+      location = pglGetAttribLocation(gl_program[active_index], attr_buf_coord);
+      if (location >= 0)
       {
-         static struct snes_tracker_uniform info[MAX_VARIABLES];
-         static unsigned cnt = 0;
-         
-         if (active_index == 1)
-            cnt = snes_get_uniform(gl_snes_tracker, info, MAX_VARIABLES, frame_count);
+         pglEnableVertexAttribArray(location);
+         pglVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, prev_info[i].coord);
+      }
+   }
 
-         for (unsigned i = 0; i < cnt; i++)
-         {
-            location = pglGetUniformLocation(gl_program[active_index], info[i].id);
-            pglUniform1f(location, info[i].value);
-         }
+   pglActiveTexture(GL_TEXTURE0);
+
+   if (gl_snes_tracker)
+   {
+      static struct snes_tracker_uniform info[MAX_VARIABLES];
+      static unsigned cnt = 0;
+
+      if (active_index == 1)
+         cnt = snes_get_uniform(gl_snes_tracker, info, MAX_VARIABLES, frame_count);
+
+      for (unsigned i = 0; i < cnt; i++)
+      {
+         location = pglGetUniformLocation(gl_program[active_index], info[i].id);
+         pglUniform1f(location, info[i].value);
       }
    }
 }
