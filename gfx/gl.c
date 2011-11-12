@@ -78,6 +78,13 @@ static const GLfloat tex_coords[] = {
    1, 1
 };
 
+static const GLfloat white_color[] = {
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+};
+
 
 #ifdef HAVE_FBO
 #ifdef _WIN32
@@ -184,6 +191,7 @@ typedef struct gl
    void *font_tex_empty_buf;
    char font_last_msg[256];
    int font_last_width, font_last_height;
+   GLfloat font_color[16];
 #endif
 
 } gl_t;
@@ -369,6 +377,15 @@ static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_s
    }
    else
       SSNES_LOG("Did not find default font.\n");
+
+   for (unsigned i = 0; i < 4; i++)
+   {
+      gl->font_color[4 * i + 0] = g_settings.video.msg_color_r;
+      gl->font_color[4 * i + 1] = g_settings.video.msg_color_g;
+      gl->font_color[4 * i + 2] = g_settings.video.msg_color_b;
+      gl->font_color[4 * i + 3] = 1.0;
+   }
+
 #else
    (void)gl;
    (void)font_path;
@@ -774,14 +791,13 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    gl_shader_use(0);
    set_viewport(gl, gl->win_width, gl->win_height, false);
    glBindTexture(GL_TEXTURE_2D, gl->font_tex);
-   glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), font_vertex);
-   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), font_tex_coords);
+   glVertexPointer(2, GL_FLOAT, 0, font_vertex);
+   glTexCoordPointer(2, GL_FLOAT, 0, font_tex_coords);
+   glColorPointer(4, GL_FLOAT, 0, gl->font_color);
 
    // Need blending. 
    // Using fixed function pipeline here since we cannot guarantee presence of shaders (would be kinda overkill anyways).
    glEnable(GL_BLEND);
-   glColor4f(g_settings.video.msg_color_r, g_settings.video.msg_color_g,
-         g_settings.video.msg_color_b, 1);
 
    struct font_output_list out;
 
@@ -807,9 +823,9 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    glDrawArrays(GL_QUADS, 0, 4);
 
    // Go back to old rendering path.
-   glColor4f(1, 1, 1, 1);
-   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
-   glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes_flipped);
+   glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
+   glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);
+   glColorPointer(4, GL_FLOAT, 0, white_color);
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    glDisable(GL_BLEND);
@@ -828,7 +844,7 @@ static inline void set_lut_texture_coords(const GLfloat *coords)
    // For texture images.
    pglClientActiveTexture(GL_TEXTURE1);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), coords);
+   glTexCoordPointer(2, GL_FLOAT, 0, coords);
    pglClientActiveTexture(GL_TEXTURE0);
 #else
    (void)coords;
@@ -1010,7 +1026,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    // Need to preserve the "flipped" state when in FBO as well to have 
    // consistent texture coordinates.
    if (gl->render_to_tex)
-      glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes);
+      glVertexPointer(2, GL_FLOAT, 0, vertexes);
 #endif
 
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
@@ -1037,7 +1053,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (gl->fbo_inited)
    {
       // Render the rest of our passes.
-      glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->fbo_tex_coords);
+      glTexCoordPointer(2, GL_FLOAT, 0, gl->fbo_tex_coords);
 
       // It's kinda handy ... :)
       const struct gl_fbo_rect *prev_rect;
@@ -1102,10 +1118,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
             gl->vp_width, gl->vp_height, gl->frame_count, 
             &tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
-      glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes_flipped);
+      glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);
       glDrawArrays(GL_QUADS, 0, 4);
 
-      glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
+      glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
    }
 #endif
 
@@ -1135,6 +1151,7 @@ static void gl_free(void *data)
    gl_shader_deinit();
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+   glDisableClientState(GL_COLOR_ARRAY);
    glDeleteTextures(TEXTURES, gl->texture);
 
 #ifdef HAVE_FBO
@@ -1262,7 +1279,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glEnable(GL_TEXTURE_2D);
    glDisable(GL_DEPTH_TEST);
    glDisable(GL_DITHER);
-   glColor4f(1, 1, 1, 1);
    glClearColor(0, 0, 0, 1);
 
    glMatrixMode(GL_MODELVIEW);
@@ -1283,10 +1299,13 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glVertexPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), vertexes_flipped);
+   glEnableClientState(GL_COLOR_ARRAY);
+   glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);
 
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
-   glTexCoordPointer(2, GL_FLOAT, 2 * sizeof(GLfloat), gl->tex_coords);
+   glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
+
+   glColorPointer(4, GL_FLOAT, 0, white_color);
 
    set_lut_texture_coords(tex_coords);
 

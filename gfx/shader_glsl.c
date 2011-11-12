@@ -1146,6 +1146,7 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       }
    }
 
+   // Set previous textures. Only bind if they're actually used.
    for (unsigned i = 0; i < PREV_TEXTURES; i++)
    {
       char attr_buf_tex[64];
@@ -1167,7 +1168,6 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       snprintf(attr_buf_input_size, sizeof(attr_buf_tex), "ruby%sInputSize",   prev_names[i]);
       snprintf(attr_buf_coord,      sizeof(attr_buf_tex), "ruby%sTexCoord",    prev_names[i]);
 
-      // Set previous textures.
       location = pglGetUniformLocation(gl_program[active_index], attr_buf_tex);
       if (location >= 0)
       {
