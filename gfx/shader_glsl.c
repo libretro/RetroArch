@@ -66,6 +66,7 @@
 #define pglGetAttachedShaders glGetAttachedShaders
 #define pglGetAttribLocation glGetAttribLocation
 #define pglEnableVertexAttribArray glEnableVertexAttribArray
+#define pglDisableVertexAttribArray glDisableVertexAttribArray
 #define pglVertexAttribPointer glVertexAttribPointer
 #else
 static PFNGLCREATEPROGRAMPROC pglCreateProgram = NULL;
@@ -90,6 +91,7 @@ static PFNGLDELETEPROGRAMPROC pglDeleteProgram = NULL;
 static PFNGLGETATTACHEDSHADERSPROC pglGetAttachedShaders = NULL;
 static PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation = NULL;
 static PFNGLENABLEVERTEXATTRIBARRAYPROC pglEnableVertexAttribArray = NULL;
+static PFNGLDISABLEVERTEXATTRIBARRAYPROC pglDisableVertexAttribArray = NULL;
 static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer = NULL;
 #endif
 
@@ -122,6 +124,10 @@ static unsigned gl_tracker_info_cnt = 0;
 static char gl_tracker_script[256];
 static char gl_tracker_script_class[64];
 static xmlChar *gl_script_program = NULL;
+
+static GLint gl_attribs[PREV_TEXTURES + 1 + MAX_PROGRAMS];
+static unsigned gl_attrib_index = 0;
+
 
 struct shader_program
 {
@@ -841,6 +847,13 @@ static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size
    return true;
 }
 
+static void gl_glsl_reset_attrib(void)
+{
+   for (unsigned i = 0; i < gl_attrib_index; i++)
+      pglDisableVertexAttribArray(gl_attribs[i]);
+   gl_attrib_index = 0;
+}
+
 #define LOAD_GL_SYM(SYM) if (!pgl##SYM) { SDL_SYM_WRAP(pgl##SYM, "gl" #SYM) }
 
 bool gl_glsl_init(const char *path)
@@ -869,6 +882,7 @@ bool gl_glsl_init(const char *path)
    LOAD_GL_SYM(GetAttachedShaders);
    LOAD_GL_SYM(GetAttribLocation);
    LOAD_GL_SYM(EnableVertexAttribArray);
+   LOAD_GL_SYM(DisableVertexAttribArray);
    LOAD_GL_SYM(VertexAttribPointer);
 #endif
 
@@ -882,7 +896,7 @@ bool gl_glsl_init(const char *path)
       && pglUniform1i && pglUniform1f && pglUniform2fv && pglUniform4fv
       && pglGetShaderiv && pglGetShaderInfoLog && pglGetProgramiv && pglGetProgramInfoLog 
       && pglDeleteProgram && pglGetAttachedShaders
-      && pglGetAttribLocation && pglEnableVertexAttribArray
+      && pglGetAttribLocation && pglEnableVertexAttribArray && pglDisableVertexAttribArray
       && pglVertexAttribPointer;
 #endif
 
@@ -974,6 +988,9 @@ bool gl_glsl_init(const char *path)
    glsl_enable = true;
    gl_num_programs = num_progs;
    gl_program[gl_num_programs + 1] = gl_program[0];
+
+   gl_glsl_reset_attrib();
+
    return true;
 }
 
@@ -1023,6 +1040,8 @@ void gl_glsl_deinit(void)
       snes_tracker_free(gl_snes_tracker);
       gl_snes_tracker = NULL;
    }
+
+   gl_glsl_reset_attrib();
 }
 
 void gl_glsl_set_params(unsigned width, unsigned height, 
@@ -1092,6 +1111,7 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       {
          pglEnableVertexAttribArray(location);
          pglVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, info->coord);
+         gl_attribs[gl_attrib_index++] = location;
       }
 
       // Bind new texture in the chain.
@@ -1124,6 +1144,7 @@ void gl_glsl_set_params(unsigned width, unsigned height,
          {
             pglEnableVertexAttribArray(location);
             pglVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, fbo_info[i].coord);
+            gl_attribs[gl_attrib_index++] = location;
          }
       }
    }
@@ -1186,6 +1207,7 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       {
          pglEnableVertexAttribArray(location);
          pglVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, prev_info[i].coord);
+         gl_attribs[gl_attrib_index++] = location;
       }
    }
 
@@ -1214,6 +1236,8 @@ void gl_glsl_use(unsigned index)
 {
    if (glsl_enable)
    {
+      gl_glsl_reset_attrib();
+
       active_index = index;
       pglUseProgram(gl_program[index]);
    }
