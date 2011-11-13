@@ -81,7 +81,7 @@ typedef struct ssnes_video_info
 
    // input_scale defines the maximum size of the picture that will
    // ever be used with the frame callback.
-   // The maximum resolution is a multiple of 256x256 size (SSNES_SCALE_BASE),
+   // The maximum resolution is a multiple of 256x256 size (SSNES_INPUT_SCALE_BASE),
    // so an input scale of 2
    // means you should allocate a texture or of 512x512.
    unsigned input_scale;
