@@ -46,6 +46,8 @@ extern "C" {
 #define SSNES_COLOR_FORMAT_XRGB1555 0
 #define SSNES_COLOR_FORMAT_ARGB8888 1
 
+#define SSNES_INPUT_SCALE_BASE 256
+
 typedef struct ssnes_video_info
 { 
    // Width of window. 
@@ -79,12 +81,9 @@ typedef struct ssnes_video_info
 
    // input_scale defines the maximum size of the picture that will
    // ever be used with the frame callback.
-   // The maximum resolution is a multiple of 256x256 size,
+   // The maximum resolution is a multiple of 256x256 size (SSNES_SCALE_BASE),
    // so an input scale of 2
    // means you should allocate a texture or of 512x512.
-   // It is normally set to 2 due to the possibility of
-   // pseudo-hires on the SNES.
-   // CPU filters or otherwise might increase this value.
    unsigned input_scale;
 
    // Defines the coloring format used of the input frame.
