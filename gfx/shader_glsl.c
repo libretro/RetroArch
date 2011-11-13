@@ -121,7 +121,7 @@ static char gl_teximage_uniforms[MAX_TEXTURES][64];
 static snes_tracker_t *gl_snes_tracker = NULL;
 static struct snes_tracker_uniform_info gl_tracker_info[MAX_VARIABLES];
 static unsigned gl_tracker_info_cnt = 0;
-static char gl_tracker_script[256];
+static char gl_tracker_script[MAXPATHLEN];
 static char gl_tracker_script_class[64];
 static xmlChar *gl_script_program = NULL;
 
@@ -349,7 +349,7 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
    if (filter && strcmp((const char*)filter, "nearest") == 0)
       linear = false;
 
-   char tex_path[256];
+   char tex_path[MAXPATHLEN];
    strlcpy(tex_path, shader_path, sizeof(tex_path));
 
    char *last = strrchr(tex_path, '/');

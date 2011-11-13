@@ -767,8 +767,8 @@ static bool load_preset(const char *path)
       scale->type_y = SSNES_SCALE_INPUT;
       scale->scale_x = 1.0;
       scale->scale_y = 1.0;
-      scale->abs_x = 256;
-      scale->abs_y = 224;
+      scale->abs_x = g_extern.system.geom.base_width;
+      scale->abs_y = g_extern.system.geom.base_height;
 
       if (strcmp(scale_type_x, "source") == 0)
          scale->type_x = SSNES_SCALE_INPUT;
@@ -851,7 +851,7 @@ static bool load_preset(const char *path)
    }
 
    // Basedir.
-   char dir_path[256];
+   char dir_path[MAXPATHLEN];
    strlcpy(dir_path, path, sizeof(dir_path));
    char *ptr = strrchr(dir_path, '/');
    if (!ptr) ptr = strrchr(dir_path, '\\');
@@ -865,7 +865,7 @@ static bool load_preset(const char *path)
    {
       char *shader_path;
       char attr_buf[64];
-      char path_buf[512];
+      char path_buf[MAXPATHLEN];
 
       print_buf(attr_buf, "shader%u", i);
       if (config_get_string(conf, attr_buf, &shader_path))
