@@ -446,8 +446,8 @@ static void print_help(void)
    puts("\t--sufamiA: Path to A slot of Sufami Turbo. Load Sufami base cart as regular rom.");
    puts("\t--sufamiB: Path to B slot of Sufami Turbo.");
    puts("\t-m/--mouse: Connect a virtual mouse into designated port of the SNES (1 or 2)."); 
-   puts("\t-N/--nodevice: Disconnects the controller device connected to the emulated SNES (1 or 2).");
    puts("\t\tThis argument can be specified several times to connect more mice.");
+   puts("\t-N/--nodevice: Disconnects the controller device connected to the emulated SNES (1 or 2).");
    puts("\t-p/--scope: Connect a virtual SuperScope into port 2 of the SNES.");
    puts("\t-j/--justifier: Connect a virtual Konami Justifier into port 2 of the SNES.");
    puts("\t-J/--justifiers: Daisy chain two virtual Konami Justifiers into port 2 of the SNES.");
