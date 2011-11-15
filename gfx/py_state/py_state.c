@@ -242,7 +242,7 @@ static char *align_program(const char *program)
    return new_prog;
 }
 
-py_state_t *py_state_new(const char *script, bool is_file, const char *pyclass)
+py_state_t *py_state_new(const char *script, unsigned is_file, const char *pyclass)
 {
    SSNES_LOG("Initializing Python runtime ...\n");
    PyImport_AppendInittab("snes", &PyInit_SNES);

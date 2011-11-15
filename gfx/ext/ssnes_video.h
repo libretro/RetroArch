@@ -6,6 +6,8 @@
 #ifndef __SSNES_VIDEO_DRIVER_H
 #define __SSNES_VIDEO_DRIVER_H
 
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -22,10 +24,10 @@ extern "C" {
 #define SSNES_API_CALLTYPE
 #endif
 
-#define SSNES_GRAPHICS_API_VERSION 1
+#define SSNES_GRAPHICS_API_VERSION 2
 
 // Since we don't want to rely on C++ or C99 for a proper boolean type,
-// and make sure return semantics are perfectly clear ... ;)
+// make sure return semantics are perfectly clear ... ;)
 
 #ifndef SSNES_OK
 #define SSNES_OK 1
@@ -47,6 +49,21 @@ extern "C" {
 #define SSNES_COLOR_FORMAT_ARGB8888 1
 
 #define SSNES_INPUT_SCALE_BASE 256
+
+typedef struct py_state py_state_t;
+
+// Create a new runtime for Python.
+// py_script: The python script to be loaded. If is_file is true, this will be the full path to a file.
+// If false, it will be an UTF-8 encoded string of the script.
+// is_file: Tells if py_script is the path to a script, or a script itself.
+// py_class: name of the class being instantiated. 
+typedef py_state_t *(*python_state_new_cb)(const char *py_script, unsigned is_file, const char *py_class);
+// Grabs a value from the Python runtime.
+// id: The uniform (class method) to be called.
+// frame_count: Passes frame_count as an argument to the script.
+typedef float (*python_state_get_cb)(py_state_t *handle, const char *id, unsigned frame_count);
+// Frees the runtime.
+typedef void (*python_state_free_cb)(py_state_t *handle);
 
 typedef struct ssnes_video_info
 { 
@@ -111,6 +128,13 @@ typedef struct ssnes_video_info
 
    // A title that should be displayed in the title bar of the window.
    const char *title_hint;
+
+   // Functions to peek into the python runtime for shaders.
+   // Check typedefs above for explanation.
+   // These may be NULL if SSNES is not built with Python support.
+   python_state_new_cb python_state_new;
+   python_state_get_cb python_state_get;
+   python_state_free_cb python_state_free;
 } ssnes_video_info_t;
 
 // Some convenience macros.

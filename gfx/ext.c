@@ -31,6 +31,11 @@
 #include "fonts.h"
 #endif
 
+#ifdef HAVE_PYTHON
+#define PY_STATE_OMIT_DECLARATION
+#include "py_state/py_state.h"
+#endif
+
 static bool g_input_dead = true;
 static bool g_video_dead = true;
 static dylib_t g_lib = NULL;
@@ -279,6 +284,12 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
       .ttf_font_size = g_settings.video.font_size,
       .ttf_font_color = (font_color_r << 16) | (font_color_g << 8) | (font_color_b << 0),
       .title_hint = title_buf,
+
+#ifdef HAVE_PYTHON
+      .python_state_new = py_state_new,
+      .python_state_get = py_state_get,
+      .python_state_free = py_state_free,
+#endif
    };
 
    const ssnes_input_driver_t *input_driver = NULL;
