@@ -31,7 +31,7 @@ libsnes ?= -lsnes
 LIBS = -lm -lshlwapi
 DEFINES = -I. -DHAVE_CONFIGFILE
 LDFLAGS = -L. -static-libgcc
-LDCXXFLAGS = -static-libstdc++
+LDCXXFLAGS = -static-libstdc++ -s
 
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl.o gfx/gl.o gfx/sdlwrap.o input/sdl.o audio/sdl.o fifo_buffer.o
