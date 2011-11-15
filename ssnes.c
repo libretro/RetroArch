@@ -440,6 +440,9 @@ static void print_help(void)
 #ifdef HAVE_CONFIGFILE
    puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
 #endif
+#ifdef HAVE_DYNAMIC
+   puts("\t-L/--libsnes: Path to libsnes implementation. Overrides any config setting.");
+#endif
    puts("\t-g/--gameboy: Path to Gameboy ROM. Load SuperGameBoy as the regular rom.");
    puts("\t-b/--bsx: Path to BSX rom. Load BSX BIOS as the regular rom.");
    puts("\t-B/--bsxslot: Path to BSX slotted rom. Load BSX BIOS as the regular rom.");
@@ -572,6 +575,9 @@ static void parse_input(int argc, char *argv[])
    int val = 0;
 
    struct option opts[] = {
+#ifdef HAVE_DYNAMIC
+      { "libsnes", 1, NULL, 'L' },
+#endif
       { "help", 0, NULL, 'h' },
       { "save", 1, NULL, 's' },
       { "fullscreen", 0, NULL, 'f' },
@@ -622,7 +628,13 @@ static void parse_input(int argc, char *argv[])
 #define CONFIG_FILE_ARG
 #endif
 
-   char optstring[] = "hs:fvS:m:p4jJg:b:B:Y:Z:P:HC:F:U:DN:X:" FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+#ifdef HAVE_DYNAMIC
+#define DYNAMIC_ARG "L:"
+#else
+#define DYNAMIC_ARG
+#endif
+
+   char optstring[] = "hs:fvS:m:p4jJg:b:B:Y:Z:P:HC:F:U:DN:X:" DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for (;;)
    {
       val = 0;
@@ -729,6 +741,12 @@ static void parse_input(int argc, char *argv[])
          case 'r':
             strlcpy(g_extern.record_path, optarg, sizeof(g_extern.record_path));
             g_extern.recording = true;
+            break;
+#endif
+
+#ifdef HAVE_DYNAMIC
+         case 'L':
+            strlcpy(g_settings.libsnes, optarg, sizeof(g_settings.libsnes));
             break;
 #endif
 

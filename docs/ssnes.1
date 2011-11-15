@@ -27,8 +27,15 @@ If no rom file path is defined on the command line, \fBssnes\fR will try to load
 \fB--help, -h\fR
 Prints help text.
 
+.TP
 \fB--features\fR
 Prints available features compiled into SSNES, then exits.
+
+.TP
+\fB-L PATH, --libsnes PATH\fR
+Path to a libsnes implementation which is to be used.
+This option will override any setting in a config file.
+This option is only available if SSNES is compiled with dynamic libsnes loading.
 
 .TP
 \fB--save PATH, -s PATH\fR

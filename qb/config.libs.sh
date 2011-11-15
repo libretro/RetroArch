@@ -18,12 +18,6 @@ else
    DYLIB=-ldl
 fi
 
-if [ $HAVE_DYNAMIC = yes ] && [ $HAVE_CONFIGFILE = no ]; then
-   echo "Cannot have dynamic loading of libsnes and no configfile support."
-   echo "Dynamic loading requires config file support."
-   exit 1
-fi
-
 if [ -z "$LIBSNES" ]; then
    LIBSNES="-lsnes"
 else
