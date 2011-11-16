@@ -306,6 +306,11 @@ static bool environment_cb(unsigned cmd, void *data)
          SSNES_LOG("GET_OVERSCAN: %u\n", (unsigned)!g_settings.video.crop_overscan);
          break;
 
+      case SNES_ENVIRONMENT_SET_TIMING:
+         g_extern.system.timing = *(const struct snes_system_timing*)data;
+         g_extern.system.timing_set = true;
+         break;
+
       default:
          return false;
    }

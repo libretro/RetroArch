@@ -213,6 +213,8 @@ struct global
       struct snes_geometry geom;
       unsigned pitch; // If 0, has classic libsnes semantics.
       char fullpath[MAXPATHLEN];
+      struct snes_system_timing timing;
+      bool timing_set;
    } system;
 
    struct

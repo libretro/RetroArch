@@ -98,7 +98,7 @@ static bool init_audio(struct audio_info *audio, struct ffemu_params *param)
 #endif
 
    audio->codec->sample_rate = param->samplerate;
-   audio->codec->time_base = (AVRational) { 1, param->samplerate };
+   audio->codec->time_base = av_d2q(1.0 / param->samplerate, 1000000);
    audio->codec->channels = param->channels;
    audio->codec->sample_fmt = AV_SAMPLE_FMT_S16;
 
@@ -162,7 +162,7 @@ static bool init_video(struct video_info *video, const struct ffemu_params *para
 
    video->codec->width = param->out_width;
    video->codec->height = param->out_height;
-   video->codec->time_base = (AVRational) { param->fps.den, param->fps.num };
+   video->codec->time_base = av_d2q(1.0 / param->fps, 1000000); // Arbitrary big number.
    video->codec->sample_aspect_ratio = av_d2q(param->aspect_ratio * param->out_height / param->out_width, 255);
    video->codec->pix_fmt = video->pix_fmt;
 
@@ -399,7 +399,7 @@ void ffemu_free(ffemu_t *handle)
    }
 }
 
-int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
+bool ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
 {
    for (;;)
    {
@@ -408,7 +408,7 @@ int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
       slock_unlock(handle->lock);
 
       if (!handle->alive)
-         return -1;
+         return false;
 
       if (avail >= sizeof(*data))
          break;
@@ -441,10 +441,10 @@ int ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
    slock_unlock(handle->lock);
    scond_signal(handle->cond);
 
-   return 0;
+   return true;
 }
 
-int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
+bool ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
 {
    for (;;)
    {
@@ -453,7 +453,7 @@ int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
       slock_unlock(handle->lock);
 
       if (!handle->alive)
-         return -1;
+         return false;
 
       if (avail >= data->frames * handle->params.channels * sizeof(int16_t))
          break;
@@ -476,10 +476,10 @@ int ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
    slock_unlock(handle->lock);
    scond_signal(handle->cond);
 
-   return 0;
+   return true;
 }
 
-static int ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_data *data)
+static bool ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_data *data)
 {
    handle->video.sws_ctx = sws_getCachedContext(handle->video.sws_ctx, data->width, data->height, handle->video.fmt,
          handle->params.out_width, handle->params.out_height, handle->video.pix_fmt, SWS_POINT,
@@ -496,7 +496,7 @@ static int ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_dat
          handle->video.outbuf_size, handle->video.conv_frame);
 
    if (outsize < 0)
-      return -1;
+      return false;
 
    AVPacket pkt;
    av_init_packet(&pkt);
@@ -513,15 +513,15 @@ static int ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_dat
    if (pkt.size > 0)
    {
       if (av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
-         return -1;
+         return false;
    }
 
    handle->video.frame_cnt++;
 
-   return 0;
+   return true;
 }
 
-static int ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_data *data)
+static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_data *data)
 {
    size_t written_frames = 0;
    while (written_frames < data->frames)
@@ -545,7 +545,7 @@ static int ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_dat
 
          int out_size = avcodec_encode_audio(handle->audio.codec, handle->audio.outbuf, handle->audio.outbuf_size, handle->audio.buffer);
          if (out_size < 0)
-            return -1;
+            return false;
 
          pkt.size = out_size;
 
@@ -558,14 +558,14 @@ static int ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_dat
          if (pkt.size > 0)
          {
             if (av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
-               return -1;
+               return false;
          }
       }
    }
-   return 0;
+   return true;
 }
 
-int ffemu_finalize(ffemu_t *handle)
+bool ffemu_finalize(ffemu_t *handle)
 {
    deinit_thread(handle);
 
@@ -642,7 +642,7 @@ int ffemu_finalize(ffemu_t *handle)
    // Write final data.
    av_write_trailer(handle->muxer.ctx);
 
-   return 0;
+   return true;
 }
 
 static void ffemu_thread(void *data)

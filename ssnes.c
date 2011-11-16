@@ -958,20 +958,27 @@ static void init_recording(void)
    if (!g_extern.recording)
       return;
 
-   // Not perfectly accurate, but this can be adjusted later during processing
-   // and playback losslessly, and we please the containers more by
-   // using "sane" values.
-   struct ffemu_rational ntsc_fps = {60000, 1000};
-   struct ffemu_rational pal_fps = {50000, 1000};
+   // Canonical values.
+   double fps = psnes_get_region() == SNES_REGION_NTSC ? 60.00 : 50.00;
+   double samplerate = 32000.0;
+   if (g_extern.system.timing_set)
+   {
+      fps = g_extern.system.timing.fps;
+      samplerate = g_extern.system.timing.sample_rate;
+      SSNES_LOG("Custom timing given: FPS: %.4lf, Sample rate: %.4lf\n", fps, samplerate);
+   }
+
    struct ffemu_params params = {
       .out_width = g_extern.system.geom.base_width,
       .out_height = g_extern.system.geom.base_height,
       .fb_width = g_extern.system.geom.max_width,
       .fb_height = g_extern.system.geom.max_height,
       .channels = 2,
-      .samplerate = 32000,
       .filename = g_extern.record_path,
-      .fps = psnes_get_region() == SNES_REGION_NTSC ? ntsc_fps : pal_fps,
+
+      .fps = fps,
+      .samplerate = samplerate,
+
       .rgb32 = false,
    };
 
