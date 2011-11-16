@@ -489,8 +489,8 @@ static int poll_input(netplay_t *handle, bool block)
 
       if (block)
       {
-         SSNES_LOG("Network lag of %d ms, resending packet... Count %u of %d ...\n",
-               RETRY_MS, handle->timeout_cnt, MAX_RETRIES);
+         SSNES_LOG("Network is stalling, resending packet... Count %u of %d ...\n",
+               handle->timeout_cnt, MAX_RETRIES);
       }
    } while ((handle->timeout_cnt < MAX_RETRIES) && block);
 
