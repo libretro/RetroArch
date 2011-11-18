@@ -456,6 +456,9 @@ static void print_help(void)
    puts("\t-J/--justifiers: Daisy chain two virtual Konami Justifiers into port 2 of the SNES.");
    puts("\t-4/--multitap: Connect a multitap to port 2 of the SNES.");
    puts("\t-P/--bsvplay: Playback a BSV movie file.");
+   puts("\t-R/--bsvrecord: Start recording a BSV movie file from the beginning.");
+   puts("\t\tThis option takes arguments telling how to handle SRAM in the recording session.");
+   puts("\t\t{no,}load-{no,}save describes if SRAM should be loaded, and if SRAM should be saved.");
 #ifdef HAVE_NETPLAY
    puts("\t-H/--host: Host netplay as player 1.");
    puts("\t-C/--connect: Connect to netplay as player 2.");
@@ -602,6 +605,7 @@ static void parse_input(int argc, char *argv[])
       { "sufamiA", 1, NULL, 'Y' },
       { "sufamiB", 1, NULL, 'Z' },
       { "bsvplay", 1, NULL, 'P' },
+      { "bsvrecord", 1, NULL, 'R' },
       { "host", 0, NULL, 'H' },
       { "connect", 1, NULL, 'C' },
       { "frames", 1, NULL, 'F' },
@@ -634,7 +638,7 @@ static void parse_input(int argc, char *argv[])
 #define DYNAMIC_ARG
 #endif
 
-   char optstring[] = "hs:fvS:m:p4jJg:b:B:Y:Z:P:HC:F:U:DN:X:" DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+   char optstring[] = "hs:fvS:m:p4jJg:b:B:Y:Z:P:R:HC:F:U:DN:X:" DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for (;;)
    {
       val = 0;
@@ -753,6 +757,38 @@ static void parse_input(int argc, char *argv[])
          case 'P':
             strlcpy(g_extern.bsv_movie_path, optarg, sizeof(g_extern.bsv_movie_path));
             g_extern.bsv_movie_playback = true;
+            g_extern.bsv_movie_record_start = false;
+            break;
+
+         case 'R':
+            g_extern.bsv_movie_playback = false;
+            g_extern.bsv_movie_record_start = true;
+            if (strcmp(optarg, "noload-nosave") == 0)
+            {
+               g_extern.bsv_movie_record_sram_start = false;
+               g_extern.bsv_movie_record_sram_end = false;
+            }
+            else if (strcmp(optarg, "noload-save") == 0)
+            {
+               g_extern.bsv_movie_record_sram_start = false;
+               g_extern.bsv_movie_record_sram_end = true;
+            }
+            else if (strcmp(optarg, "load-nosave") == 0)
+            {
+               g_extern.bsv_movie_record_sram_start = true;
+               g_extern.bsv_movie_record_sram_end = false;
+            }
+            else if (strcmp(optarg, "load-save") == 0)
+            {
+               g_extern.bsv_movie_record_sram_start = true;
+               g_extern.bsv_movie_record_sram_end = true;
+            }
+            else
+            {
+               SSNES_ERR("Invalid argument in --bsvrecord!\n");
+               print_help();
+               exit(1);
+            }
             break;
 
          case 'H':
@@ -1091,6 +1127,25 @@ static void init_movie(void)
       msg_queue_push(g_extern.msg_queue, "Starting movie playback!", 2, 180);
       g_settings.rewind_granularity = 1;
       SSNES_LOG("Starting movie playback!\n");
+   }
+   else if (g_extern.bsv_movie_record_start)
+   {
+      g_settings.rewind_granularity = 1;
+
+      char path[MAXPATHLEN];
+      if (g_extern.state_slot > 0)
+         snprintf(path, sizeof(path), "%s%u.bsv", g_extern.bsv_movie_path, g_extern.state_slot);
+      else
+         snprintf(path, sizeof(path), "%s.bsv", g_extern.bsv_movie_path);
+
+      g_extern.bsv_movie = bsv_movie_init(path, SSNES_MOVIE_RECORD);
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, g_extern.bsv_movie ? "Starting movie record!" : "Failed to start movie record!", 1, 180);
+
+      if (g_extern.bsv_movie)
+         SSNES_LOG("Starting movie record!\n");
+      else
+         SSNES_ERR("Failed to start movie record!\n");
    }
 }
 
@@ -1546,9 +1601,9 @@ static void check_movie_record(void)
       else
       {
          g_settings.rewind_granularity = 1;
-         char path[512];
+         char path[MAXPATHLEN];
          if (g_extern.state_slot > 0)
-            snprintf(path, sizeof(path), "%s%d.bsv", g_extern.bsv_movie_path, g_extern.state_slot);
+            snprintf(path, sizeof(path), "%s%u.bsv", g_extern.bsv_movie_path, g_extern.state_slot);
          else
             snprintf(path, sizeof(path), "%s.bsv", g_extern.bsv_movie_path);
 
@@ -1841,10 +1896,19 @@ int main(int argc, char *argv[])
       goto error;
 
    init_msg_queue();
-   init_movie();
 
-   if (!g_extern.bsv_movie)
-      load_save_files();
+   if (g_extern.bsv_movie_record_start)
+   {
+      if (g_extern.bsv_movie_record_sram_start)
+         load_save_files();
+      init_movie();
+   }
+   else
+   {
+      init_movie();
+      if (!g_extern.bsv_movie)
+         load_save_files();
+   }
 
 #ifdef HAVE_NETPLAY
    init_netplay();
@@ -1855,9 +1919,12 @@ int main(int argc, char *argv[])
       init_rewind();
       
 #ifdef HAVE_NETPLAY
-   psnes_set_video_refresh(g_extern.netplay ? video_frame_net : video_frame);
-   psnes_set_audio_sample(g_extern.netplay ? audio_sample_net : audio_sample);
-   psnes_set_input_state(g_extern.netplay ? input_state_net : input_state);
+   psnes_set_video_refresh(g_extern.netplay ?
+         video_frame_net : video_frame);
+   psnes_set_audio_sample(g_extern.netplay ?
+         audio_sample_net : audio_sample);
+   psnes_set_input_state(g_extern.netplay ?
+         input_state_net : input_state);
 #else
    psnes_set_video_refresh(video_frame);
    psnes_set_audio_sample(audio_sample);
@@ -1871,7 +1938,13 @@ int main(int argc, char *argv[])
    init_recording();
 #endif
 
-   if (!g_extern.bsv_movie_playback && !g_extern.netplay_is_client)
+   bool use_sram_auto = !g_extern.bsv_movie_playback &&
+         !g_extern.netplay_is_client &&
+      !g_extern.bsv_movie_record_start;
+
+   bool use_sram_end = use_sram_auto || g_extern.bsv_movie_record_sram_end;
+
+   if (use_sram_auto)
       init_autosave();
       
 #ifdef HAVE_XML
@@ -1928,14 +2001,14 @@ int main(int argc, char *argv[])
    deinit_netplay();
 #endif
 
-   if (!g_extern.bsv_movie_playback && !g_extern.netplay_is_client)
+   if (use_sram_auto)
       deinit_autosave();
 
 #ifdef HAVE_FFMPEG
    deinit_recording();
 #endif
 
-   if (!g_extern.bsv_movie_playback && !g_extern.netplay_is_client)
+   if (use_sram_end)
       save_files();
 
    if (!g_extern.netplay)

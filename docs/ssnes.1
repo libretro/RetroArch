@@ -1,6 +1,6 @@
 .\" ssnes.1:
 
-.TH  "SSNES" "1" "October 2011" "SSNES" "System Manager's Manual: ssnes"
+.TH  "SSNES" "1" "November 2011" "SSNES" "System Manager's Manual: ssnes"
 
 .SH NAME
 
@@ -101,6 +101,7 @@ When using Sufami, save ram paths will be inferred from the Sufami BIOS path, no
 \fB--mouse PORT, -m PORT\fR
 Connects a Super Nintendo Mouse into port number PORT of the emulated SNES. Possible values for PORT are 1 and 2.
 
+.TP
 \fB--nodevice PORT, -N PORT\fR
 Disconnects an input device from port number PORT of the emulated SNES. Possible values for PORT are 1 and 2. This may be needed for some odd games to run properly.
 
@@ -134,6 +135,14 @@ The video input is scaled with point filtering before being encoded at the corre
 \fB--bsvplay PATH, -P PATH\fR
 Play back a movie recorded in the .bsv format (bSNES). Cart ROM and movie file need to correspond.
 It also requires to play back with the same libsnes backend that was used for recording.
+
+.TP
+\fB--bsvrecord MODE, -R MODE\fR
+Start recording a .bsv video immediately after startup.
+MODE designates how to handle SRAM.
+The format of the second parameter is {no,}load-{no,}save.
+These two boolean values tell if SRAM loading and SRAM saving should take place.
+Not loading SRAM when recording allows SSNES to avoid including a save state in the .bsv to conserve space.
 
 .TP
 \fB--verbose, -v\fR

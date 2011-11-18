@@ -271,6 +271,11 @@ struct global
    bool bsv_movie_end;
    bool bsv_movie_playback;
 
+   // Immediate recording.
+   bool bsv_movie_record_start;
+   bool bsv_movie_record_sram_start;
+   bool bsv_movie_record_sram_end;
+
    // Pausing support
    bool is_paused;
    bool is_oneshot;
