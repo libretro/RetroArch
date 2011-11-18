@@ -86,6 +86,7 @@ struct settings
       char bsnes_shader_path[MAXPATHLEN];
       char filter_path[MAXPATHLEN];
       enum ssnes_shader_type shader_type;
+      float refresh_rate;
 
       bool render_to_texture;
       double fbo_scale_x;

@@ -150,12 +150,12 @@ static void set_defaults(void)
    g_settings.video.second_pass_smooth = second_pass_smooth;
 #endif
 
+   g_settings.video.refresh_rate = refresh_rate;
    g_settings.video.hires_record = hires_record;
    g_settings.video.post_filter_record = post_filter_record;
 
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
-   g_settings.audio.in_rate = in_rate;
    g_settings.audio.rate_step = audio_rate_step;
    if (audio_device)
       strlcpy(g_settings.audio.device, audio_device, sizeof(g_settings.audio.device));
@@ -317,6 +317,7 @@ static void parse_config_file(void)
    CONFIG_GET_BOOL(video.force_aspect, "video_force_aspect");
    CONFIG_GET_BOOL(video.crop_overscan, "video_crop_overscan");
    CONFIG_GET_DOUBLE(video.aspect_ratio, "video_aspect_ratio");
+   CONFIG_GET_DOUBLE(video.refresh_rate, "video_refresh_rate");
 
    CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
    CONFIG_GET_STRING(video.bsnes_shader_path, "video_bsnes_shader");
@@ -380,7 +381,6 @@ static void parse_config_file(void)
    // Audio settings.
    CONFIG_GET_BOOL(audio.enable, "audio_enable");
    CONFIG_GET_INT(audio.out_rate, "audio_out_rate");
-   CONFIG_GET_DOUBLE(audio.in_rate, "audio_in_rate");
    CONFIG_GET_DOUBLE(audio.rate_step, "audio_rate_step");
    CONFIG_GET_STRING(audio.device, "audio_device");
    CONFIG_GET_INT(audio.latency, "audio_latency");

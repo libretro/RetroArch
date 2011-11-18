@@ -159,6 +159,16 @@ static const bool post_filter_record = false;
 // OSD-messages
 static const bool font_enable = true;
 
+// The accurate refresh rate of your monitor (Hz).
+// This is used to calculate audio input rate with the formula:
+// audio_input_rate = game_input_rate * display_refresh_rate / game_refresh_rate.
+// If the implementation does not report any values,
+// SNES NTSC defaults will be assumed for compatibility.
+// This value should stay close to 60Hz to avoid large pitch changes.
+// If your monitor does not run at 60Hz, or something close to it, disable VSync,
+// and leave this at its default.
+static const float refresh_rate = 59.95; 
+
 ////////////////
 // Audio
 ////////////////
@@ -168,10 +178,6 @@ static const bool audio_enable = true;
 
 // Output samplerate
 static const unsigned out_rate = 48000; 
-
-// Input samplerate from libSNES. 
-// Lower this (slightly) if you are experiencing frequent audio dropouts while vsync is enabled.
-static const float in_rate = 31980.0; 
 
 // When changing input rate on-the-fly
 static const float audio_rate_step = 0.25;

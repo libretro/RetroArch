@@ -222,6 +222,27 @@ static void deinit_dsp_plugin(void)
    }
 }
 
+static void adjust_audio_input_rate(void)
+{
+   static bool first = true;
+   if (!first)
+      return;
+
+   if (g_extern.system.timing_set)
+   {
+      g_settings.audio.in_rate = g_extern.system.timing.sample_rate *
+         (g_settings.video.refresh_rate / g_extern.system.timing.fps);
+   }
+   else
+   {
+      g_settings.audio.in_rate = 32040.5 *
+         (g_settings.video.refresh_rate / (21477272.0 / 357366.0)); // SNES metrics.
+   }
+
+   SSNES_LOG("Adjusted audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
+   first = false;
+}
+
 #define AUDIO_CHUNK_SIZE_BLOCKING 64
 #define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
 #define AUDIO_MAX_RATIO 16
@@ -233,6 +254,7 @@ void init_audio(void)
       return;
    }
 
+   adjust_audio_input_rate();
    find_audio_driver();
 
    g_extern.audio_data.block_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
