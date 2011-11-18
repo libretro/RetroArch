@@ -1938,13 +1938,12 @@ int main(int argc, char *argv[])
    init_recording();
 #endif
 
-   bool use_sram_auto = !g_extern.bsv_movie_playback &&
+   bool use_sram = (!g_extern.bsv_movie_playback &&
          !g_extern.netplay_is_client &&
-      !g_extern.bsv_movie_record_start;
+      !g_extern.bsv_movie_record_start) ||
+      g_extern.bsv_movie_record_sram_end;
 
-   bool use_sram_end = use_sram_auto || g_extern.bsv_movie_record_sram_end;
-
-   if (use_sram_auto)
+   if (use_sram)
       init_autosave();
       
 #ifdef HAVE_XML
@@ -2001,14 +2000,14 @@ int main(int argc, char *argv[])
    deinit_netplay();
 #endif
 
-   if (use_sram_auto)
+   if (use_sram)
       deinit_autosave();
 
 #ifdef HAVE_FFMPEG
    deinit_recording();
 #endif
 
-   if (use_sram_end)
+   if (use_sram)
       save_files();
 
    if (!g_extern.netplay)
