@@ -230,6 +230,19 @@ static void adjust_audio_input_rate(void)
 
    if (g_extern.system.timing_set)
    {
+      float timing_skew = fabs(1.0f - g_extern.system.timing.fps / g_settings.video.refresh_rate);
+      if (timing_skew > 0.05f) // We don't want to adjust pitch too much. If we have extreme cases, just don't readjust at all.
+      {
+         SSNES_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2lf Hz)\n",
+               g_settings.video.refresh_rate,
+               g_extern.system.timing.fps);
+
+         g_settings.video.refresh_rate = g_extern.system.timing.fps;
+      }
+   }
+
+   if (g_extern.system.timing_set)
+   {
       g_settings.audio.in_rate = g_extern.system.timing.sample_rate *
          (g_settings.video.refresh_rate / g_extern.system.timing.fps);
    }
@@ -239,7 +252,7 @@ static void adjust_audio_input_rate(void)
          (g_settings.video.refresh_rate / (21477272.0 / 357366.0)); // SNES metrics.
    }
 
-   SSNES_LOG("Adjusted audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
+   SSNES_LOG("Set audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
    first = false;
 }
 
