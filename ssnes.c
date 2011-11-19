@@ -1138,12 +1138,15 @@ static void init_movie(void)
       else
          snprintf(path, sizeof(path), "%s.bsv", g_extern.bsv_movie_path);
 
+      char msg[MAXPATHLEN];
+      snprintf(msg, sizeof(msg), "Starting movie record to \"%s\"!", path);
+
       g_extern.bsv_movie = bsv_movie_init(path, SSNES_MOVIE_RECORD);
       msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, g_extern.bsv_movie ? "Starting movie record!" : "Failed to start movie record!", 1, 180);
+      msg_queue_push(g_extern.msg_queue, g_extern.bsv_movie ? msg : "Failed to start movie record!", 1, 180);
 
       if (g_extern.bsv_movie)
-         SSNES_LOG("Starting movie record!\n");
+         SSNES_LOG("Starting movie record to \"%s\"!\n", path);
       else
          SSNES_ERR("Failed to start movie record!\n");
    }
@@ -1607,12 +1610,15 @@ static void check_movie_record(void)
          else
             snprintf(path, sizeof(path), "%s.bsv", g_extern.bsv_movie_path);
 
+         char msg[MAXPATHLEN];
+         snprintf(msg, sizeof(msg), "Starting movie record to \"%s\"!", path);
+
          g_extern.bsv_movie = bsv_movie_init(path, SSNES_MOVIE_RECORD);
          msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, g_extern.bsv_movie ? "Starting movie record!" : "Failed to start movie record!", 1, 180);
+         msg_queue_push(g_extern.msg_queue, g_extern.bsv_movie ? msg : "Failed to start movie record!", 1, 180);
 
          if (g_extern.bsv_movie)
-            SSNES_LOG("Starting movie record!\n");
+            SSNES_LOG("Starting movie record to \"%s\"!\n", path);
          else
             SSNES_ERR("Failed to start movie record!\n");
       }
