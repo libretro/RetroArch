@@ -543,13 +543,15 @@ static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_da
          pkt.data = handle->audio.outbuf;
          pkt.stream_index = handle->muxer.astream->index;
 
-         int out_size = avcodec_encode_audio(handle->audio.codec, handle->audio.outbuf, handle->audio.outbuf_size, handle->audio.buffer);
+         int out_size = avcodec_encode_audio(handle->audio.codec,
+               handle->audio.outbuf, handle->audio.outbuf_size, handle->audio.buffer);
          if (out_size < 0)
             return false;
 
          pkt.size = out_size;
 
-         pkt.pts = av_rescale_q(handle->audio.codec->coded_frame->pts, handle->audio.codec->time_base, handle->muxer.astream->time_base);
+         pkt.pts = av_rescale_q(handle->audio.codec->coded_frame->pts,
+               handle->audio.codec->time_base, handle->muxer.astream->time_base);
 
          pkt.flags |= AV_PKT_FLAG_KEY;
          handle->audio.frames_in_buffer = 0;
@@ -592,14 +594,6 @@ bool ffemu_finalize(ffemu_t *handle)
          did_work = true;
       }
 
-      size_t avail = fifo_read_avail(handle->audio_fifo);
-      fifo_read(handle->audio_fifo, audio_buf, avail);
-      struct ffemu_audio_data aud = {
-         .frames = avail / (sizeof(int16_t) * handle->params.channels),
-         .data = audio_buf
-      };
-
-      ffemu_push_audio_thread(handle, &aud);
       struct ffemu_video_data attr_buf;
       if (fifo_read_avail(handle->attr_fifo) >= sizeof(attr_buf))
       {
@@ -612,11 +606,20 @@ bool ffemu_finalize(ffemu_t *handle)
       }
    } while (did_work);
 
+   // Flush out last audio.
+   size_t avail = fifo_read_avail(handle->audio_fifo);
+   fifo_read(handle->audio_fifo, audio_buf, avail);
+   struct ffemu_audio_data aud = {
+      .frames = avail / (sizeof(int16_t) * handle->params.channels),
+      .data = audio_buf
+   };
+   ffemu_push_audio_thread(handle, &aud);
+
    deinit_thread_buf(handle);
    av_free(audio_buf);
    av_free(video_buf);
 
-   // Push out delayed frames. (MPEG codecs)
+   // Flush out last video.
    AVPacket pkt;
    av_init_packet(&pkt);
    pkt.stream_index = handle->muxer.vstream->index;
