@@ -569,14 +569,19 @@ bool ffemu_finalize(ffemu_t *handle)
 {
    deinit_thread(handle);
 
-   // Push out audio still in queue.
    size_t audio_buf_size = 512 * handle->params.channels * sizeof(int16_t);
    int16_t *audio_buf = av_malloc(audio_buf_size);
-   if (audio_buf)
+   void *video_buf = av_malloc(2 * handle->params.fb_width * handle->params.fb_height * handle->video.pix_size);
+
+   // Try pushing data in an interleaving pattern to ease the work of the muxer a bit.
+   bool did_work;
+   do
    {
-      while (fifo_read_avail(handle->audio_fifo) >= audio_buf_size)
+      did_work = false;
+
+      if (fifo_read_avail(handle->audio_fifo) >= audio_buf_size)
       {
-         fifo_read(handle->audio_fifo, audio_buf, sizeof(audio_buf_size));
+         fifo_read(handle->audio_fifo, audio_buf, audio_buf_size);
 
          struct ffemu_audio_data aud = {
             .frames = 512,
@@ -584,6 +589,7 @@ bool ffemu_finalize(ffemu_t *handle)
          };
 
          ffemu_push_audio_thread(handle, &aud);
+         did_work = true;
       }
 
       size_t avail = fifo_read_avail(handle->audio_fifo);
@@ -594,26 +600,21 @@ bool ffemu_finalize(ffemu_t *handle)
       };
 
       ffemu_push_audio_thread(handle, &aud);
-
-      av_free(audio_buf);
-   }
-
-   // Push out frames still stuck in queue.
-   void *video_buf = av_malloc(2 * handle->params.fb_width * handle->params.fb_height * handle->video.pix_size);
-   if (video_buf)
-   {
       struct ffemu_video_data attr_buf;
-      while (fifo_read_avail(handle->attr_fifo) >= sizeof(attr_buf))
+      if (fifo_read_avail(handle->attr_fifo) >= sizeof(attr_buf))
       {
          fifo_read(handle->attr_fifo, &attr_buf, sizeof(attr_buf));
          fifo_read(handle->video_fifo, video_buf, attr_buf.height * attr_buf.pitch);
          attr_buf.data = video_buf;
+
          ffemu_push_video_thread(handle, &attr_buf);
+         did_work = true;
       }
-      av_free(video_buf);
-   }
+   } while (did_work);
 
    deinit_thread_buf(handle);
+   av_free(audio_buf);
+   av_free(video_buf);
 
    // Push out delayed frames. (MPEG codecs)
    AVPacket pkt;
