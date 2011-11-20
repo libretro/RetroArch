@@ -257,6 +257,8 @@ static bool audio_flush(const int16_t *data, unsigned samples)
 
    if (g_extern.is_paused)
       return true;
+   if (!g_extern.audio_active)
+      return false;
 
    const float *output_data = NULL;
    unsigned output_frames = 0;
@@ -308,7 +310,8 @@ static bool audio_flush(const int16_t *data, unsigned samples)
       audio_convert_float_to_s16(g_extern.audio_data.conv_outsamples,
             output_data, output_frames * 2);
 
-      if (driver.audio->write(driver.audio_data, g_extern.audio_data.conv_outsamples, output_frames * sizeof(int16_t) * 2) < 0)
+      if (driver.audio->write(driver.audio_data, g_extern.audio_data.conv_outsamples,
+               output_frames * sizeof(int16_t) * 2) < 0)
       {
          fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
          return false;
@@ -320,18 +323,12 @@ static bool audio_flush(const int16_t *data, unsigned samples)
 
 static void audio_sample_rewind(uint16_t left, uint16_t right)
 {
-   if (!g_extern.audio_active)
-      return;
-
    g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = right;
    g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = left;
 }
 
 static void audio_sample(uint16_t left, uint16_t right)
 {
-   if (!g_extern.audio_active)
-      return;
-
    g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr++] = left;
    g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr++] = right;
 
@@ -339,7 +336,7 @@ static void audio_sample(uint16_t left, uint16_t right)
       return;
 
    g_extern.audio_active = audio_flush(g_extern.audio_data.conv_outsamples,
-         g_extern.audio_data.data_ptr);
+         g_extern.audio_data.data_ptr) && g_extern.audio_active;
 
    g_extern.audio_data.data_ptr = 0;
 }
@@ -1517,10 +1514,10 @@ static void check_input_rate(void)
 
 static inline void flush_rewind_audio(void)
 {
-   if (g_extern.frame_is_reverse && g_extern.audio_active) // We just rewound. Flush rewind audio buffer.
+   if (g_extern.frame_is_reverse) // We just rewound. Flush rewind audio buffer.
    {
       g_extern.audio_active = audio_flush(g_extern.audio_data.rewind_buf + g_extern.audio_data.rewind_ptr,
-            g_extern.audio_data.rewind_size - g_extern.audio_data.rewind_ptr);
+            g_extern.audio_data.rewind_size - g_extern.audio_data.rewind_ptr) && g_extern.audio_active;
    }
 }
 

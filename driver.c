@@ -261,6 +261,17 @@ static void adjust_audio_input_rate(void)
 #define AUDIO_MAX_RATIO 16
 void init_audio(void)
 {
+   // Accomodate rewind since at some point we might have two full buffers.
+   size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
+
+   // Used for recording even if audio isn't enabled.
+   assert((g_extern.audio_data.conv_outsamples = malloc(max_bufsamples * sizeof(int16_t) * AUDIO_MAX_RATIO)));
+   g_extern.audio_data.chunk_size = g_extern.audio_data.block_chunk_size;
+
+   // Needs to be able to hold full content of a full max_bufsamples in addition to its own.
+   assert((g_extern.audio_data.rewind_buf = malloc(max_bufsamples * sizeof(int16_t))));
+   g_extern.audio_data.rewind_size = max_bufsamples;
+
    if (!g_settings.audio.enable)
    {
       g_extern.audio_active = false;
@@ -273,7 +284,9 @@ void init_audio(void)
    g_extern.audio_data.block_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
    g_extern.audio_data.nonblock_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
 
-   driver.audio_data = driver.audio->init(strlen(g_settings.audio.device) ? g_settings.audio.device : NULL, g_settings.audio.out_rate, g_settings.audio.latency);
+   driver.audio_data = driver.audio->init(*g_settings.audio.device ? g_settings.audio.device : NULL,
+         g_settings.audio.out_rate, g_settings.audio.latency);
+
    if (!driver.audio_data)
       g_extern.audio_active = false;
 
@@ -285,27 +298,15 @@ void init_audio(void)
       driver.audio->set_nonblock_state(driver.audio_data, true);
       g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
    }
-   else
-      g_extern.audio_data.chunk_size = g_extern.audio_data.block_chunk_size;
 
    g_extern.audio_data.source = hermite_new();
    if (!g_extern.audio_data.source)
       g_extern.audio_active = false;
 
-   size_t max_bufsamples = g_extern.audio_data.block_chunk_size > g_extern.audio_data.nonblock_chunk_size ?
-      g_extern.audio_data.block_chunk_size : g_extern.audio_data.nonblock_chunk_size;
-
-   max_bufsamples *= 2; // Accomodate rewind since at some point we might have two full buffers.
-
    assert((g_extern.audio_data.data = malloc(max_bufsamples * sizeof(float))));
    g_extern.audio_data.data_ptr = 0;
    assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
    assert((g_extern.audio_data.outsamples = malloc(max_bufsamples * sizeof(float) * AUDIO_MAX_RATIO)));
-   assert((g_extern.audio_data.conv_outsamples = malloc(max_bufsamples * sizeof(int16_t) * AUDIO_MAX_RATIO)));
-
-   // Needs to be able to hold full content of a full max_bufsamples in addition to its own.
-   assert((g_extern.audio_data.rewind_buf = malloc(max_bufsamples * sizeof(int16_t))));
-   g_extern.audio_data.rewind_size = max_bufsamples;
 
    g_extern.audio_data.src_ratio =
       (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
@@ -315,6 +316,11 @@ void init_audio(void)
 
 void uninit_audio(void)
 {
+   free(g_extern.audio_data.conv_outsamples); g_extern.audio_data.conv_outsamples = NULL;
+   g_extern.audio_data.data_ptr = 0;
+   free(g_extern.audio_data.rewind_buf);
+   g_extern.audio_data.rewind_buf = NULL;
+
    if (!g_settings.audio.enable)
    {
       g_extern.audio_active = false;
@@ -327,10 +333,10 @@ void uninit_audio(void)
    if (g_extern.audio_data.source)
       hermite_free(g_extern.audio_data.source);
 
-   free(g_extern.audio_data.data); g_extern.audio_data.data = NULL;
-   free(g_extern.audio_data.outsamples); g_extern.audio_data.outsamples = NULL;
-   free(g_extern.audio_data.conv_outsamples); g_extern.audio_data.conv_outsamples = NULL;
-   free(g_extern.audio_data.rewind_buf); g_extern.audio_data.rewind_buf = NULL;
+   free(g_extern.audio_data.data);
+   g_extern.audio_data.data = NULL;
+   free(g_extern.audio_data.outsamples);
+   g_extern.audio_data.outsamples = NULL;
 
    deinit_dsp_plugin();
 }
