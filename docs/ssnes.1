@@ -137,12 +137,15 @@ Play back a movie recorded in the .bsv format (bSNES). Cart ROM and movie file n
 It also requires to play back with the same libsnes backend that was used for recording.
 
 .TP
-\fB--bsvrecord MODE, -R MODE\fR
-Start recording a .bsv video immediately after startup.
+\fB--bsvrecord PATH, -R PATH\fR
+Start recording a .bsv video to PATH immediately after startup.
+
+.TP
+\fB--sram-mode MODE, -M MODE\fR
 MODE designates how to handle SRAM.
 The format of the second parameter is {no,}load-{no,}save.
 These two boolean values tell if SRAM loading and SRAM saving should take place.
-Not loading SRAM when recording allows SSNES to avoid including a save state in the .bsv to conserve space.
+Note that noload-save implies that the SRAM will be overwritten with new data.
 
 .TP
 \fB--verbose, -v\fR

@@ -196,8 +196,6 @@ static bool init_record(bsv_movie_t *handle, const char *path)
    header[CRC_INDEX] = swap_if_big32(g_extern.cart_crc);
 
    uint32_t state_size = psnes_serialize_size();
-   if (!g_extern.bsv_movie_record_sram_start)
-      state_size = 0;
 
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
    fwrite(header, 4, sizeof(uint32_t), handle->file);

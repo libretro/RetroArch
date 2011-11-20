@@ -265,16 +265,22 @@ struct global
    void *state_buf;
    bool frame_is_reverse;
 
-   // Movie record support
-   bsv_movie_t *bsv_movie;
-   char bsv_movie_path[MAXPATHLEN];
-   bool bsv_movie_end;
-   bool bsv_movie_playback;
+   // Movie playback/recording support.
+   struct
+   {
+      bsv_movie_t *movie;
+      char movie_path[MAXPATHLEN];
+      bool movie_playback;
 
-   // Immediate recording.
-   bool bsv_movie_record_start;
-   bool bsv_movie_record_sram_start;
-   bool bsv_movie_record_sram_end;
+      // Immediate playback/recording.
+      char movie_start_path[MAXPATHLEN];
+      bool movie_start_recording;
+      bool movie_start_playback;
+      bool movie_end;
+   } bsv;
+
+   bool sram_load_disable;
+   bool sram_save_disable;
 
    // Pausing support
    bool is_paused;

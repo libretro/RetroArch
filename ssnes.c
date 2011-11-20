@@ -348,13 +348,13 @@ static void input_poll(void)
 
 static int16_t input_state(bool port, unsigned device, unsigned index, unsigned id)
 {
-   if (g_extern.bsv_movie && g_extern.bsv_movie_playback)
+   if (g_extern.bsv.movie && g_extern.bsv.movie_playback)
    {
       int16_t ret;
-      if (bsv_movie_get_input(g_extern.bsv_movie, &ret))
+      if (bsv_movie_get_input(g_extern.bsv.movie, &ret))
          return ret;
       else
-         g_extern.bsv_movie_end = true;
+         g_extern.bsv.movie_end = true;
    }
 
    static const struct snes_keybind *binds[MAX_PLAYERS] = {
@@ -369,8 +369,8 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
    if (id < SSNES_FIRST_META_KEY)
       res = driver.input->input_state(driver.input_data, binds, port, device, index, id);
 
-   if (g_extern.bsv_movie && !g_extern.bsv_movie_playback)
-      bsv_movie_set_input(g_extern.bsv_movie, res);
+   if (g_extern.bsv.movie && !g_extern.bsv.movie_playback)
+      bsv_movie_set_input(g_extern.bsv.movie, res);
 
    return res;
 }
@@ -451,8 +451,10 @@ static void print_help(void)
    puts("\t-4/--multitap: Connect a multitap to port 2 of the SNES.");
    puts("\t-P/--bsvplay: Playback a BSV movie file.");
    puts("\t-R/--bsvrecord: Start recording a BSV movie file from the beginning.");
-   puts("\t\tThis option takes arguments telling how to handle SRAM in the recording session.");
+   puts("\t-M/--sram-mode: Takes an argument telling how SRAM should be handled in the session.");
    puts("\t\t{no,}load-{no,}save describes if SRAM should be loaded, and if SRAM should be saved.");
+   puts("\t\tDo note that noload-save implies that save files will be deleted and overwritten.");
+
 #ifdef HAVE_NETPLAY
    puts("\t-H/--host: Host netplay as player 1.");
    puts("\t-C/--connect: Connect to netplay as player 2.");
@@ -600,6 +602,7 @@ static void parse_input(int argc, char *argv[])
       { "sufamiB", 1, NULL, 'Z' },
       { "bsvplay", 1, NULL, 'P' },
       { "bsvrecord", 1, NULL, 'R' },
+      { "sram-mode", 1, NULL, 'M' },
       { "host", 0, NULL, 'H' },
       { "connect", 1, NULL, 'C' },
       { "frames", 1, NULL, 'F' },
@@ -632,7 +635,7 @@ static void parse_input(int argc, char *argv[])
 #define DYNAMIC_ARG
 #endif
 
-   char optstring[] = "hs:fvS:m:p4jJg:b:B:Y:Z:P:R:HC:F:U:DN:X:" DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+   char optstring[] = "hs:fvS:m:p4jJg:b:B:Y:Z:P:R:M:HC:F:U:DN:X:" DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for (;;)
    {
       val = 0;
@@ -749,37 +752,26 @@ static void parse_input(int argc, char *argv[])
 #endif
 
          case 'P':
-            strlcpy(g_extern.bsv_movie_path, optarg, sizeof(g_extern.bsv_movie_path));
-            g_extern.bsv_movie_playback = true;
-            g_extern.bsv_movie_record_start = false;
+         case 'R':
+            strlcpy(g_extern.bsv.movie_start_path, optarg,
+                  sizeof(g_extern.bsv.movie_start_path));
+            g_extern.bsv.movie_start_playback = c == 'P';
+            g_extern.bsv.movie_start_recording = c == 'R';
             break;
 
-         case 'R':
-            g_extern.bsv_movie_playback = false;
-            g_extern.bsv_movie_record_start = true;
+         case 'M':
             if (strcmp(optarg, "noload-nosave") == 0)
             {
-               g_extern.bsv_movie_record_sram_start = false;
-               g_extern.bsv_movie_record_sram_end = false;
+               g_extern.sram_load_disable = true;
+               g_extern.sram_save_disable = true;
             }
             else if (strcmp(optarg, "noload-save") == 0)
-            {
-               g_extern.bsv_movie_record_sram_start = false;
-               g_extern.bsv_movie_record_sram_end = true;
-            }
+               g_extern.sram_load_disable = true;
             else if (strcmp(optarg, "load-nosave") == 0)
+               g_extern.sram_save_disable = true;
+            else if (strcmp(optarg, "load-save") != 0)
             {
-               g_extern.bsv_movie_record_sram_start = true;
-               g_extern.bsv_movie_record_sram_end = false;
-            }
-            else if (strcmp(optarg, "load-save") == 0)
-            {
-               g_extern.bsv_movie_record_sram_start = true;
-               g_extern.bsv_movie_record_sram_end = true;
-            }
-            else
-            {
-               SSNES_ERR("Invalid argument in --bsvrecord!\n");
+               SSNES_ERR("Invalid argument in --sram-mode!\n");
                print_help();
                exit(1);
             }
@@ -796,8 +788,8 @@ static void parse_input(int argc, char *argv[])
 
          case 'F':
             g_extern.netplay_sync_frames = strtol(optarg, NULL, 0);
-            if (g_extern.netplay_sync_frames > 32)
-               g_extern.netplay_sync_frames = 32;
+            if (g_extern.netplay_sync_frames > 16)
+               g_extern.netplay_sync_frames = 16;
             break;
 
          case 'U':
@@ -1109,38 +1101,34 @@ static void deinit_rewind(void)
 
 static void init_movie(void)
 {
-   if (g_extern.bsv_movie_playback)
+   g_settings.rewind_granularity = 1;
+
+   if (g_extern.bsv.movie_start_playback)
    {
-      g_extern.bsv_movie = bsv_movie_init(g_extern.bsv_movie_path, SSNES_MOVIE_PLAYBACK);
-      if (!g_extern.bsv_movie)
+      g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, SSNES_MOVIE_PLAYBACK);
+      if (!g_extern.bsv.movie)
       {
-         SSNES_ERR("Failed to load movie file: \"%s\"!\n", g_extern.bsv_movie_path);
+         SSNES_ERR("Failed to load movie file: \"%s\"!\n", g_extern.bsv.movie_start_path);
          exit(1);
       }
 
+      g_extern.bsv.movie_playback = true;
       msg_queue_push(g_extern.msg_queue, "Starting movie playback!", 2, 180);
-      g_settings.rewind_granularity = 1;
       SSNES_LOG("Starting movie playback!\n");
    }
-   else if (g_extern.bsv_movie_record_start)
+   else if (g_extern.bsv.movie_start_recording)
    {
-      g_settings.rewind_granularity = 1;
-
-      char path[MAXPATHLEN];
-      if (g_extern.state_slot > 0)
-         snprintf(path, sizeof(path), "%s%u.bsv", g_extern.bsv_movie_path, g_extern.state_slot);
-      else
-         snprintf(path, sizeof(path), "%s.bsv", g_extern.bsv_movie_path);
-
       char msg[MAXPATHLEN];
-      snprintf(msg, sizeof(msg), "Starting movie record to \"%s\"!", path);
+      snprintf(msg, sizeof(msg), "Starting movie record to \"%s\"!",
+            g_extern.bsv.movie_start_path);
 
-      g_extern.bsv_movie = bsv_movie_init(path, SSNES_MOVIE_RECORD);
+      g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, SSNES_MOVIE_RECORD);
       msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, g_extern.bsv_movie ? msg : "Failed to start movie record!", 1, 180);
+      msg_queue_push(g_extern.msg_queue,
+            g_extern.bsv.movie ? msg : "Failed to start movie record!", 1, 180);
 
-      if (g_extern.bsv_movie)
-         SSNES_LOG("Starting movie record to \"%s\"!\n", path);
+      if (g_extern.bsv.movie)
+         SSNES_LOG("Starting movie record to \"%s\"!\n", g_extern.bsv.movie_start_path);
       else
          SSNES_ERR("Failed to start movie record!\n");
    }
@@ -1148,8 +1136,8 @@ static void init_movie(void)
 
 static void deinit_movie(void)
 {
-   if (g_extern.bsv_movie)
-      bsv_movie_free(g_extern.bsv_movie);
+   if (g_extern.bsv.movie)
+      bsv_movie_free(g_extern.bsv.movie);
 }
 
 #define SSNES_DEFAULT_PORT 55435
@@ -1344,8 +1332,7 @@ static void fill_pathnames(void)
          fill_pathname(g_extern.savefile_name_rtc, g_extern.savefile_name_srm, ".rtc", sizeof(g_extern.savefile_name_rtc));
    }
 
-   if (!g_extern.bsv_movie_playback)
-      fill_pathname(g_extern.bsv_movie_path, g_extern.savefile_name_srm, "", sizeof(g_extern.bsv_movie_path));
+   fill_pathname(g_extern.bsv.movie_path, g_extern.savefile_name_srm, "", sizeof(g_extern.bsv.movie_path));
 
    if (*g_extern.basename)
    {
@@ -1561,8 +1548,8 @@ static void check_rewind(void)
          msg_queue_push(g_extern.msg_queue, "Rewinding!", 0, g_extern.is_paused ? 1 : 30);
          psnes_unserialize(buf, psnes_serialize_size());
 
-         if (g_extern.bsv_movie)
-            bsv_movie_frame_rewind(g_extern.bsv_movie);
+         if (g_extern.bsv.movie)
+            bsv_movie_frame_rewind(g_extern.bsv.movie);
       }
       else
          msg_queue_push(g_extern.msg_queue, "Reached end of rewind buffer!", 0, 30);
@@ -1571,7 +1558,7 @@ static void check_rewind(void)
    {
       static unsigned cnt = 0;
       cnt = (cnt + 1) % (g_settings.rewind_granularity ? g_settings.rewind_granularity : 1); // Avoid possible SIGFPE.
-      if (cnt == 0 || g_extern.bsv_movie)
+      if (cnt == 0 || g_extern.bsv.movie)
       {
          psnes_serialize(g_extern.state_buf, psnes_serialize_size());
          state_manager_push(g_extern.state_manager, g_extern.state_buf);
@@ -1587,31 +1574,38 @@ static void check_movie_record(void)
    bool new_button;
    if ((new_button = driver.input->key_pressed(driver.input_data, SSNES_MOVIE_RECORD_TOGGLE)) && !old_button)
    {
-      if (g_extern.bsv_movie)
+      if (g_extern.bsv.movie)
       {
          msg_queue_clear(g_extern.msg_queue);
          msg_queue_push(g_extern.msg_queue, "Stopping movie record!", 2, 180);
          SSNES_LOG("Stopping movie record!\n");
-         bsv_movie_free(g_extern.bsv_movie);
-         g_extern.bsv_movie = NULL;
+         bsv_movie_free(g_extern.bsv.movie);
+         g_extern.bsv.movie = NULL;
       }
       else
       {
          g_settings.rewind_granularity = 1;
+
          char path[MAXPATHLEN];
          if (g_extern.state_slot > 0)
-            snprintf(path, sizeof(path), "%s%u.bsv", g_extern.bsv_movie_path, g_extern.state_slot);
+         {
+            snprintf(path, sizeof(path), "%s%u.bsv",
+                  g_extern.bsv.movie_path, g_extern.state_slot);
+         }
          else
-            snprintf(path, sizeof(path), "%s.bsv", g_extern.bsv_movie_path);
+         {
+            snprintf(path, sizeof(path), "%s.bsv",
+                  g_extern.bsv.movie_path);
+         }
 
          char msg[MAXPATHLEN];
          snprintf(msg, sizeof(msg), "Starting movie record to \"%s\"!", path);
 
-         g_extern.bsv_movie = bsv_movie_init(path, SSNES_MOVIE_RECORD);
+         g_extern.bsv.movie = bsv_movie_init(path, SSNES_MOVIE_RECORD);
          msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, g_extern.bsv_movie ? msg : "Failed to start movie record!", 1, 180);
+         msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ? msg : "Failed to start movie record!", 1, 180);
 
-         if (g_extern.bsv_movie)
+         if (g_extern.bsv.movie)
             SSNES_LOG("Starting movie record to \"%s\"!\n", path);
          else
             SSNES_ERR("Failed to start movie record!\n");
@@ -1623,13 +1617,15 @@ static void check_movie_record(void)
 
 static void check_movie_playback(void)
 {
-   if (g_extern.bsv_movie_end)
+   if (g_extern.bsv.movie_end)
    {
       msg_queue_push(g_extern.msg_queue, "Movie playback ended!", 1, 180);
-      bsv_movie_free(g_extern.bsv_movie);
-      g_extern.bsv_movie = NULL;
-      g_extern.bsv_movie_end = false;
-      g_extern.bsv_movie_playback = false;
+      SSNES_LOG("Movie playback ended!\n");
+
+      bsv_movie_free(g_extern.bsv.movie);
+      g_extern.bsv.movie = NULL;
+      g_extern.bsv.movie_end = false;
+      g_extern.bsv.movie_playback = false;
    }
 }
 
@@ -1841,14 +1837,15 @@ static void do_state_checks(void)
             driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY),
             driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_HOLD_KEY));
 
-      if (!g_extern.bsv_movie)
+      if (!g_extern.bsv.movie)
       {
          check_stateslots();
          check_savestates();
       }
 
       check_rewind();
-      if (g_extern.bsv_movie_playback)
+
+      if (g_extern.bsv.movie_playback)
          check_movie_playback();
       else
          check_movie_record();
@@ -1911,18 +1908,12 @@ int main(int argc, char *argv[])
 
    init_msg_queue();
 
-   if (g_extern.bsv_movie_record_start)
-   {
-      if (g_extern.bsv_movie_record_sram_start)
-         load_save_files();
-      init_movie();
-   }
+   if (!g_extern.sram_load_disable)
+      load_save_files();
    else
-   {
-      init_movie();
-      if (!g_extern.bsv_movie)
-         load_save_files();
-   }
+      SSNES_LOG("Skipping SRAM load!\n");
+
+   init_movie();
 
 #ifdef HAVE_NETPLAY
    init_netplay();
@@ -1952,16 +1943,17 @@ int main(int argc, char *argv[])
    init_recording();
 #endif
 
-   bool use_sram = (!g_extern.bsv_movie_playback &&
-         !g_extern.netplay_is_client &&
-      !g_extern.bsv_movie_record_start) ||
-      g_extern.bsv_movie_record_sram_end;
+   bool use_sram = !g_extern.netplay_is_client &&
+      !g_extern.sram_save_disable;
+
+   if (!use_sram)
+      SSNES_LOG("SRAM will not be saved!\n");
 
    if (use_sram)
       init_autosave();
       
 #ifdef HAVE_XML
-   if (!g_extern.netplay && !g_extern.bsv_movie)
+   if (!g_extern.netplay && !g_extern.bsv.movie)
       init_cheats();
 #endif
 
@@ -1989,13 +1981,13 @@ int main(int argc, char *argv[])
          if (g_extern.netplay)
             netplay_pre_frame(g_extern.netplay);
 #endif
-         if (g_extern.bsv_movie)
-            bsv_movie_set_frame_start(g_extern.bsv_movie);
+         if (g_extern.bsv.movie)
+            bsv_movie_set_frame_start(g_extern.bsv.movie);
 
          psnes_run();
 
-         if (g_extern.bsv_movie)
-            bsv_movie_set_frame_end(g_extern.bsv_movie);
+         if (g_extern.bsv.movie)
+            bsv_movie_set_frame_end(g_extern.bsv.movie);
 #ifdef HAVE_NETPLAY
          if (g_extern.netplay)
             netplay_post_frame(g_extern.netplay);
