@@ -354,10 +354,7 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
       if (bsv_movie_get_input(g_extern.bsv_movie, &ret))
          return ret;
       else
-      {
          g_extern.bsv_movie_end = true;
-         return 0;
-      }
    }
 
    static const struct snes_keybind *binds[MAX_PLAYERS] = {
@@ -1624,6 +1621,18 @@ static void check_movie_record(void)
    old_button = new_button;
 }
 
+static void check_movie_playback(void)
+{
+   if (g_extern.bsv_movie_end)
+   {
+      msg_queue_push(g_extern.msg_queue, "Movie playback ended!", 1, 180);
+      bsv_movie_free(g_extern.bsv_movie);
+      g_extern.bsv_movie = NULL;
+      g_extern.bsv_movie_end = false;
+      g_extern.bsv_movie_playback = false;
+   }
+}
+
 static void check_pause(void)
 {
    static bool old_state = false;
@@ -1839,7 +1848,9 @@ static void do_state_checks(void)
       }
 
       check_rewind();
-      if (!g_extern.bsv_movie_playback)
+      if (g_extern.bsv_movie_playback)
+         check_movie_playback();
+      else
          check_movie_record();
      
 #ifdef HAVE_XML
@@ -1963,7 +1974,7 @@ int main(int argc, char *argv[])
 
       // Time to drop?
       if (driver.input->key_pressed(driver.input_data, SSNES_QUIT_KEY) ||
-            !driver.video->alive(driver.video_data) || g_extern.bsv_movie_end)
+            !driver.video->alive(driver.video_data))
          break;
 
       // Checks for stuff like fullscreen, save states, etc.
