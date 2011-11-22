@@ -180,7 +180,7 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    }
 #endif
 
-   if (!data)
+   if (is_dupe)
       return;
 
    const char *msg = msg_queue_pull(g_extern.msg_queue);
