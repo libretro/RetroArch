@@ -142,6 +142,8 @@ static const char *font_paths[] = {
 #elif defined(__APPLE__)
 static const char *font_paths[] = {
    "/Library/Fonts/Microsoft/Candara.ttf",
+   "/Library/Fonts/Verdana.ttf",
+   "/Library/Fonts/Tahoma.ttf",
 #else
 static const char *font_paths[] = {
    "/usr/share/fonts/TTF/DejaVuSansMono.ttf",
