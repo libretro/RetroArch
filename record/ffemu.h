@@ -44,6 +44,7 @@ struct ffemu_video_data
    unsigned width;
    unsigned height;
    unsigned pitch;
+   bool is_dupe;
 };
 
 struct ffemu_audio_data

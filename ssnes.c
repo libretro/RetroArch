@@ -161,22 +161,27 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if (!g_extern.video_active)
       return;
 
+   bool is_dupe = !data;
    adjust_crop(&data, &height);
 
    // Slightly messy code,
    // but we really need to do processing before blocking on VSync for best possible scheduling.
 #ifdef HAVE_FFMPEG
-   if (g_extern.recording && (!g_extern.filter.active || !g_settings.video.post_filter_record))
+   if (g_extern.recording && (!g_extern.filter.active || !g_settings.video.post_filter_record || is_dupe))
    {
       struct ffemu_video_data ffemu_data = {
          .data = data,
          .pitch = lines_to_pitch(height),
          .width = width,
          .height = height,
+         .is_dupe = is_dupe
       };
       ffemu_push_video(g_extern.rec, &ffemu_data);
    }
 #endif
+
+   if (!data)
+      return;
 
    const char *msg = msg_queue_pull(g_extern.msg_queue);
 

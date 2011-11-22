@@ -430,12 +430,16 @@ bool ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
 
    // Tightly pack our frame to conserve memory. libsnes tends to use a very large pitch.
    struct ffemu_video_data attr_data = *data;
-   attr_data.pitch = attr_data.width * handle->video.pix_size;
+
+   if (attr_data.is_dupe)
+      attr_data.width = attr_data.height = attr_data.pitch = 0;
+   else
+      attr_data.pitch = attr_data.width * handle->video.pix_size;
 
    fifo_write(handle->attr_fifo, &attr_data, sizeof(attr_data));
 
    unsigned offset = 0;
-   for (unsigned y = 0; y < data->height; y++, offset += data->pitch)
+   for (unsigned y = 0; y < attr_data.height; y++, offset += data->pitch)
       fifo_write(handle->video_fifo, (const uint8_t*)data->data + offset, attr_data.pitch);
 
    slock_unlock(handle->lock);
@@ -481,14 +485,17 @@ bool ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
 
 static bool ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_data *data)
 {
-   handle->video.sws_ctx = sws_getCachedContext(handle->video.sws_ctx, data->width, data->height, handle->video.fmt,
-         handle->params.out_width, handle->params.out_height, handle->video.pix_fmt, SWS_POINT,
-         NULL, NULL, NULL);
+   if (!data->is_dupe)
+   {
+      handle->video.sws_ctx = sws_getCachedContext(handle->video.sws_ctx, data->width, data->height, handle->video.fmt,
+            handle->params.out_width, handle->params.out_height, handle->video.pix_fmt, SWS_POINT,
+            NULL, NULL, NULL);
 
-   int linesize = data->pitch;
+      int linesize = data->pitch;
 
-   sws_scale(handle->video.sws_ctx, (const uint8_t* const*)&data->data, &linesize, 0,
-         data->height, handle->video.conv_frame->data, handle->video.conv_frame->linesize);
+      sws_scale(handle->video.sws_ctx, (const uint8_t* const*)&data->data, &linesize, 0,
+            data->height, handle->video.conv_frame->data, handle->video.conv_frame->linesize);
+   }
 
    handle->video.conv_frame->pts = handle->video.frame_cnt;
 
@@ -600,8 +607,8 @@ bool ffemu_finalize(ffemu_t *handle)
          fifo_read(handle->attr_fifo, &attr_buf, sizeof(attr_buf));
          fifo_read(handle->video_fifo, video_buf, attr_buf.height * attr_buf.pitch);
          attr_buf.data = video_buf;
-
          ffemu_push_video_thread(handle, &attr_buf);
+
          did_work = true;
       }
    } while (did_work);

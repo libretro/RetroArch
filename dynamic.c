@@ -311,6 +311,10 @@ static bool environment_cb(unsigned cmd, void *data)
          g_extern.system.timing_set = true;
          break;
 
+      case SNES_ENVIRONMENT_GET_CAN_DUPE:
+         *(bool*)data = true;
+         break;
+
       default:
          return false;
    }
