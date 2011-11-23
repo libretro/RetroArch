@@ -83,6 +83,9 @@ bool sdlwrap_init(void)
 #if SDL_MODERN
    return SDL_VideoInit(NULL) == 0;
 #else
+   if (SDL_WasInit(SDL_INIT_VIDEO))
+      return true;
+
    return SDL_Init(SDL_INIT_VIDEO) == 0;
 #endif
 }
