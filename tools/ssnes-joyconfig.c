@@ -101,6 +101,7 @@ static struct bind binds[] = {
    MISC_BIND("Cheat index minus", cheat_index_minus)
    MISC_BIND("Screenshot", screenshot)
    MISC_BIND("DSP config", dsp_config)
+   MISC_BIND("Audio mute/unmute", audio_mute)
 };
 
 static void get_binds(config_file_t *conf, int player, int joypad)
