@@ -161,6 +161,7 @@ static void py_set_attrs(PyObject *mod)
    DECL_ATTR_SSNES(CHEAT_TOGGLE);
    DECL_ATTR_SSNES(SCREENSHOT);
    DECL_ATTR_SSNES(DSP_CONFIG);
+   DECL_ATTR_SSNES(MUTE);
 }
 
 static PyModuleDef SNESModule = {

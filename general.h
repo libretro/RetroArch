@@ -231,6 +231,7 @@ struct global
       double src_ratio;
 
       bool use_float;
+      bool mute;
 
       float *outsamples;
       int16_t *conv_outsamples;

@@ -492,6 +492,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
       DECLARE_BIND(screenshot,            SSNES_SCREENSHOT)
       DECLARE_BIND(dsp_config,            SSNES_DSP_CONFIG)
+      DECLARE_BIND(audio_mute,            SSNES_MUTE)
    },
    {
       DECLARE_BIND(player2_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -528,6 +529,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
       DECLARE_BIND(screenshot,            SSNES_SCREENSHOT)
       DECLARE_BIND(dsp_config,            SSNES_DSP_CONFIG)
+      DECLARE_BIND(audio_mute,            SSNES_MUTE)
    },
    {
       DECLARE_BIND(player3_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -564,6 +566,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
       DECLARE_BIND(screenshot,            SSNES_SCREENSHOT)
       DECLARE_BIND(dsp_config,            SSNES_DSP_CONFIG)
+      DECLARE_BIND(audio_mute,            SSNES_MUTE)
    },
    {
       DECLARE_BIND(player4_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -600,6 +603,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
       DECLARE_BIND(screenshot,            SSNES_SCREENSHOT)
       DECLARE_BIND(dsp_config,            SSNES_DSP_CONFIG)
+      DECLARE_BIND(audio_mute,            SSNES_MUTE)
    },
    {
       DECLARE_BIND(player5_a,             SNES_DEVICE_ID_JOYPAD_A)
@@ -636,6 +640,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
       DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
       DECLARE_BIND(screenshot,            SSNES_SCREENSHOT)
       DECLARE_BIND(dsp_config,            SSNES_DSP_CONFIG)
+      DECLARE_BIND(audio_mute,            SSNES_MUTE)
    },
 };
 

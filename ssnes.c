@@ -247,7 +247,7 @@ static void video_cached_frame(void)
 #endif
 }
 
-static bool audio_flush(const int16_t *data, unsigned samples)
+static bool audio_flush(const int16_t *data, size_t samples)
 {
 #ifdef HAVE_FFMPEG
    if (g_extern.recording)
@@ -302,9 +302,16 @@ static bool audio_flush(const int16_t *data, unsigned samples)
       output_frames = dsp_output.frames;
    }
 
+   union
+   {
+      float f[0x10000];
+      int16_t i[0x10000 * sizeof(float) / sizeof(int16_t)];
+   } static const empty_buf;
+
    if (g_extern.audio_data.use_float)
    {
-      if (driver.audio->write(driver.audio_data, output_data, output_frames * sizeof(float) * 2) < 0)
+      if (driver.audio->write(driver.audio_data,
+               g_extern.audio_data.mute ? empty_buf.f : output_data, output_frames * sizeof(float) * 2) < 0)
       {
          fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
          return false;
@@ -312,10 +319,14 @@ static bool audio_flush(const int16_t *data, unsigned samples)
    }
    else
    {
-      audio_convert_float_to_s16(g_extern.audio_data.conv_outsamples,
-            output_data, output_frames * 2);
+      if (!g_extern.audio_data.mute)
+      {
+         audio_convert_float_to_s16(g_extern.audio_data.conv_outsamples,
+               output_data, output_frames * 2);
+      }
 
-      if (driver.audio->write(driver.audio_data, g_extern.audio_data.conv_outsamples,
+      if (driver.audio->write(driver.audio_data,
+               g_extern.audio_data.mute ? empty_buf.i : g_extern.audio_data.conv_outsamples,
                output_frames * sizeof(int16_t) * 2) < 0)
       {
          fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
@@ -1824,9 +1835,32 @@ static void check_dsp_config(void)
 }
 #endif
 
+static void check_mute(void)
+{
+   if (!g_extern.audio_active)
+      return;
+
+   static bool old_pressed = false;
+   bool pressed = driver.input->key_pressed(driver.input_data, SSNES_MUTE);
+   if (pressed && !old_pressed)
+   {
+      g_extern.audio_data.mute = !g_extern.audio_data.mute;
+
+      const char *msg = g_extern.audio_data.mute ? "Audio muted!" : "Audio unmuted!";
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+
+      SSNES_LOG("%s\n", msg);
+   }
+
+   old_pressed = pressed;
+}
+
 static void do_state_checks(void)
 {
    check_screenshot();
+   check_mute();
+
    if (!g_extern.netplay)
    {
       check_pause();
