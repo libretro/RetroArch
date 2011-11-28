@@ -115,6 +115,14 @@ static inline uint32_t swap_if_big32(uint32_t val)
       return (val >> 24) | ((val >> 8) & 0xFF00) | ((val << 8) & 0xFF0000) | (val << 24);
 }
 
+static inline uint32_t swap_if_little32(uint32_t val)
+{
+   if (!is_little_endian()) // Big-endian
+      return val;
+   else
+      return (val >> 24) | ((val >> 8) & 0xFF00) | ((val << 8) & 0xFF0000) | (val << 24);
+}
+
 static inline uint16_t swap_if_big16(uint16_t val)
 {
    if (is_little_endian())
@@ -140,7 +148,8 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
       return false;
    }
 
-   if (swap_if_big32(header[MAGIC_INDEX]) != BSV_MAGIC)
+   // Compatibility with old implementation that used incorrect documentation.
+   if (swap_if_little32(header[MAGIC_INDEX]) != BSV_MAGIC && swap_if_big32(header[MAGIC_INDEX]) != BSV_MAGIC)
    {
       SSNES_ERR("Movie file is not a valid BSV1 file!\n");
       return false;
@@ -192,7 +201,10 @@ static bool init_record(bsv_movie_t *handle, const char *path)
    }
 
    uint32_t header[4] = {0};
-   header[MAGIC_INDEX] = swap_if_big32(BSV_MAGIC);
+
+   // This value is supposed to show up as BSV1 in a HEX editor.
+   header[MAGIC_INDEX] = swap_if_little32(BSV_MAGIC);
+
    header[CRC_INDEX] = swap_if_big32(g_extern.cart_crc);
 
    uint32_t state_size = psnes_serialize_size();
