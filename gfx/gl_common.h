@@ -63,9 +63,6 @@ static inline bool gl_check_error(void)
       case GL_OUT_OF_MEMORY:
          SSNES_ERR("GL: Out of memory. Harhar.\n");
          break;
-      case GL_TABLE_TOO_LARGE:
-         SSNES_ERR("GL: Table too large. Big tables scare you! :(\n");
-         break;
       case GL_NO_ERROR:
          return true;
          break;
