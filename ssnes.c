@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <getopt.h>
 #include <errno.h>
 #include "driver.h"
 #include "file.h"
@@ -35,6 +34,7 @@
 #include "screenshot.h"
 #include "cheats.h"
 #include "audio/utils.h"
+#include "getopt_ssnes.h"
 #include <assert.h>
 
 #ifdef _WIN32
@@ -631,8 +631,6 @@ static void parse_input(int argc, char *argv[])
       { NULL, 0, NULL, 0 }
    };
 
-   int option_index = 0;
-
 #ifdef HAVE_FFMPEG
 #define FFMPEG_RECORD_ARG "r:"
 #else
@@ -655,7 +653,7 @@ static void parse_input(int argc, char *argv[])
    for (;;)
    {
       val = 0;
-      int c = getopt_long(argc, argv, optstring, opts, &option_index);
+      int c = getopt_long(argc, argv, optstring, opts, NULL);
       int port;
 
       if (c == -1)

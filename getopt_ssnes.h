@@ -15,23 +15,37 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_STRL_H
-#define __SSNES_STRL_H
-
-#include <string.h>
-#include <stddef.h>
+#ifndef __SSNES_GETOPT_H
+#define __SSNES_GETOPT_H
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#ifndef HAVE_STRL
-// Avoid possible naming collitions during link since we prefer to use the actual name.
-#define strlcpy(dst, src, size) __strlcpy_ssnes(dst, src, size)
-#define strlcat(dst, src, size) __strlcat_ssnes(dst, src, size)
+// Custom implementation of the GNU getopt_long for portability.
+// Not designed to be fully compatible,
+// but compatible with the features SSNES uses.
 
-size_t strlcpy(char *dest, const char *source, size_t size);
-size_t strlcat(char *dest, const char *source, size_t size);
+#ifdef HAVE_GETOPT_LONG
+#include <getopt.h>
+#else
+// Avoid possible naming collitions during link since we prefer to use the actual name.
+#define getopt_long(argc, argv, optstring, longopts, longindex) __getopt_long_ssnes(argc, argv, optstring, longopts, longindex)
+
+struct option
+{
+   const char *name;
+   int has_arg;
+   int *flag;
+   int val;
+};
+
+// argv[] is declared with char * const argv[] in GNU,
+// but this makes no sense, as non-POSIX getopt_long mutates argv (non-opts are moved to the end).
+int getopt_long(int argc, char *argv[],
+      const char *optstring, const struct option *longopts, int *longindex);
+extern char *optarg;
+extern int optind, opterr, optopt;
 #endif
 
 #endif
