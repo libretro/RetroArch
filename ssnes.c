@@ -29,7 +29,6 @@
 #include "record/ffemu.h"
 #include "rewind.h"
 #include "movie.h"
-#include "netplay.h"
 #include "strl.h"
 #include "screenshot.h"
 #include "cheats.h"
@@ -791,6 +790,7 @@ static void parse_input(int argc, char *argv[])
             }
             break;
 
+#ifdef HAVE_NETPLAY
          case 'H':
             g_extern.netplay_enable = true;
             break;
@@ -805,6 +805,7 @@ static void parse_input(int argc, char *argv[])
             if (g_extern.netplay_sync_frames > 16)
                g_extern.netplay_sync_frames = 16;
             break;
+#endif
 
          case 'U':
             strlcpy(g_extern.ups_name, optarg, sizeof(g_extern.ups_name));
@@ -824,9 +825,11 @@ static void parse_input(int argc, char *argv[])
          case 0:
             switch (val)
             {
+#ifdef HAVE_NETPLAY
                case 'p':
                   g_extern.netplay_port = strtoul(optarg, NULL, 0);
                   break;
+#endif
 
                case 'B':
                   strlcpy(g_extern.bps_name, optarg, sizeof(g_extern.bps_name));
@@ -1859,8 +1862,10 @@ static void do_state_checks(void)
    check_screenshot();
    check_mute();
 
+#ifdef HAVE_NETPLAY
    if (!g_extern.netplay)
    {
+#endif
       check_pause();
       check_oneshot();
 
@@ -1896,9 +1901,11 @@ static void do_state_checks(void)
       check_dsp_config();
 #endif
       check_reset();
+#ifdef HAVE_NETPLAY
    }
    else
       check_fullscreen();
+#endif
 
 #ifdef HAVE_DYLIB
    // DSP plugin doesn't use variable input rate.
@@ -1957,7 +1964,9 @@ int main(int argc, char *argv[])
 #endif
    init_drivers();
 
+#ifdef HAVE_NETPLAY
    if (!g_extern.netplay)
+#endif
       init_rewind();
       
 #ifdef HAVE_NETPLAY
@@ -1980,8 +1989,11 @@ int main(int argc, char *argv[])
    init_recording();
 #endif
 
-   bool use_sram = !g_extern.netplay_is_client &&
-      !g_extern.sram_save_disable;
+#ifdef HAVE_NETPLAY
+   bool use_sram = !g_extern.sram_save_disable && !g_extern.netplay_is_client;
+#else
+   bool use_sram = !g_extern.sram_save_disable;
+#endif
 
    if (!use_sram)
       SSNES_LOG("SRAM will not be saved!\n");
@@ -1990,7 +2002,11 @@ int main(int argc, char *argv[])
       init_autosave();
       
 #ifdef HAVE_XML
-   if (!g_extern.netplay && !g_extern.bsv.movie)
+#ifdef HAVE_NETPLAY
+   if (!g_extern.bsv.movie && !g_extern.netplay)
+#else
+   if (!g_extern.bsv.movie)
+#endif
       init_cheats();
 #endif
 
@@ -2053,7 +2069,9 @@ int main(int argc, char *argv[])
    if (use_sram)
       save_files();
 
+#ifdef HAVE_NETPLAY
    if (!g_extern.netplay)
+#endif
       deinit_rewind();
 
 #ifdef HAVE_XML
