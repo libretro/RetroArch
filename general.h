@@ -28,13 +28,16 @@
 #include "rewind.h"
 #include "movie.h"
 #include "autosave.h"
-#include "netplay.h"
 #include "dynamic.h"
 #include "cheats.h"
 #include "audio/ext/ssnes_dsp.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
+#ifdef HAVE_NETPLAY
+#include "netplay.h"
 #endif
 
 #include "audio/hermite.h"
