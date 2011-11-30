@@ -463,195 +463,70 @@ struct bind_map
    int snes_key;
 };
 
+#define DECLARE_BIND(x, bind) { "input_" #x, "input_" #x "_btn", "input_" #x "_axis", bind }
+#define DECLARE_BIND_END() { NULL, NULL, NULL, SSNES_BIND_LIST_END }
+#define DECL_PLAYER(P) \
+   { \
+      DECLARE_BIND(player##P##_a,             SNES_DEVICE_ID_JOYPAD_A), \
+      DECLARE_BIND(player##P##_b,             SNES_DEVICE_ID_JOYPAD_B), \
+      DECLARE_BIND(player##P##_y,             SNES_DEVICE_ID_JOYPAD_Y), \
+      DECLARE_BIND(player##P##_x,             SNES_DEVICE_ID_JOYPAD_X), \
+      DECLARE_BIND(player##P##_start,         SNES_DEVICE_ID_JOYPAD_START), \
+      DECLARE_BIND(player##P##_select,        SNES_DEVICE_ID_JOYPAD_SELECT), \
+      DECLARE_BIND(player##P##_l,             SNES_DEVICE_ID_JOYPAD_L), \
+      DECLARE_BIND(player##P##_r,             SNES_DEVICE_ID_JOYPAD_R), \
+      DECLARE_BIND(player##P##_left,          SNES_DEVICE_ID_JOYPAD_LEFT), \
+      DECLARE_BIND(player##P##_right,         SNES_DEVICE_ID_JOYPAD_RIGHT), \
+      DECLARE_BIND(player##P##_up,            SNES_DEVICE_ID_JOYPAD_UP), \
+      DECLARE_BIND(player##P##_down,          SNES_DEVICE_ID_JOYPAD_DOWN), \
+      DECLARE_BIND_END(), \
+   }
 
-#define DECLARE_BIND(x, bind) { "input_" #x, "input_" #x "_btn", "input_" #x "_axis", bind },
 // Big and nasty bind map... :)
-static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS - 1] = {
+static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS] = {
    {
-      DECLARE_BIND(player1_a,             SNES_DEVICE_ID_JOYPAD_A)
-      DECLARE_BIND(player1_b,             SNES_DEVICE_ID_JOYPAD_B)
-      DECLARE_BIND(player1_y,             SNES_DEVICE_ID_JOYPAD_Y)
-      DECLARE_BIND(player1_x,             SNES_DEVICE_ID_JOYPAD_X)
-      DECLARE_BIND(player1_start,         SNES_DEVICE_ID_JOYPAD_START)
-      DECLARE_BIND(player1_select,        SNES_DEVICE_ID_JOYPAD_SELECT)
-      DECLARE_BIND(player1_l,             SNES_DEVICE_ID_JOYPAD_L)
-      DECLARE_BIND(player1_r,             SNES_DEVICE_ID_JOYPAD_R)
-      DECLARE_BIND(player1_left,          SNES_DEVICE_ID_JOYPAD_LEFT)
-      DECLARE_BIND(player1_right,         SNES_DEVICE_ID_JOYPAD_RIGHT)
-      DECLARE_BIND(player1_up,            SNES_DEVICE_ID_JOYPAD_UP)
-      DECLARE_BIND(player1_down,          SNES_DEVICE_ID_JOYPAD_DOWN)
-      DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
-      DECLARE_BIND(hold_fast_forward,     SSNES_FAST_FORWARD_HOLD_KEY)
-      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
-      DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
-      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS)
-      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
-      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
-      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
-      DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS)
-      DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
-      DECLARE_BIND(rewind,                SSNES_REWIND)
-      DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE)
-      DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE)
-      DECLARE_BIND(frame_advance,         SSNES_FRAMEADVANCE)
-      DECLARE_BIND(reset,                 SSNES_RESET)
-      DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT)
-      DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV)
-      DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS)
-      DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS)
-      DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
-      DECLARE_BIND(screenshot,            SSNES_SCREENSHOT)
-      DECLARE_BIND(dsp_config,            SSNES_DSP_CONFIG)
-      DECLARE_BIND(audio_mute,            SSNES_MUTE)
+      DECLARE_BIND(player1_a,             SNES_DEVICE_ID_JOYPAD_A),
+      DECLARE_BIND(player1_b,             SNES_DEVICE_ID_JOYPAD_B),
+      DECLARE_BIND(player1_y,             SNES_DEVICE_ID_JOYPAD_Y),
+      DECLARE_BIND(player1_x,             SNES_DEVICE_ID_JOYPAD_X),
+      DECLARE_BIND(player1_start,         SNES_DEVICE_ID_JOYPAD_START),
+      DECLARE_BIND(player1_select,        SNES_DEVICE_ID_JOYPAD_SELECT),
+      DECLARE_BIND(player1_l,             SNES_DEVICE_ID_JOYPAD_L),
+      DECLARE_BIND(player1_r,             SNES_DEVICE_ID_JOYPAD_R),
+      DECLARE_BIND(player1_left,          SNES_DEVICE_ID_JOYPAD_LEFT),
+      DECLARE_BIND(player1_right,         SNES_DEVICE_ID_JOYPAD_RIGHT),
+      DECLARE_BIND(player1_up,            SNES_DEVICE_ID_JOYPAD_UP),
+      DECLARE_BIND(player1_down,          SNES_DEVICE_ID_JOYPAD_DOWN),
+      DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY),
+      DECLARE_BIND(hold_fast_forward,     SSNES_FAST_FORWARD_HOLD_KEY),
+      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY),
+      DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY),
+      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS),
+      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS),
+      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY),
+      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY),
+      DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS),
+      DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS),
+      DECLARE_BIND(rewind,                SSNES_REWIND),
+      DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE),
+      DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE),
+      DECLARE_BIND(frame_advance,         SSNES_FRAMEADVANCE),
+      DECLARE_BIND(reset,                 SSNES_RESET),
+      DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT),
+      DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV),
+      DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS),
+      DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS),
+      DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE),
+      DECLARE_BIND(screenshot,            SSNES_SCREENSHOT),
+      DECLARE_BIND(dsp_config,            SSNES_DSP_CONFIG),
+      DECLARE_BIND(audio_mute,            SSNES_MUTE),
+      DECLARE_BIND_END(),
    },
-   {
-      DECLARE_BIND(player2_a,             SNES_DEVICE_ID_JOYPAD_A)
-      DECLARE_BIND(player2_b,             SNES_DEVICE_ID_JOYPAD_B)
-      DECLARE_BIND(player2_y,             SNES_DEVICE_ID_JOYPAD_Y)
-      DECLARE_BIND(player2_x,             SNES_DEVICE_ID_JOYPAD_X)
-      DECLARE_BIND(player2_start,         SNES_DEVICE_ID_JOYPAD_START)
-      DECLARE_BIND(player2_select,        SNES_DEVICE_ID_JOYPAD_SELECT)
-      DECLARE_BIND(player2_l,             SNES_DEVICE_ID_JOYPAD_L)
-      DECLARE_BIND(player2_r,             SNES_DEVICE_ID_JOYPAD_R)
-      DECLARE_BIND(player2_left,          SNES_DEVICE_ID_JOYPAD_LEFT)
-      DECLARE_BIND(player2_right,         SNES_DEVICE_ID_JOYPAD_RIGHT)
-      DECLARE_BIND(player2_up,            SNES_DEVICE_ID_JOYPAD_UP)
-      DECLARE_BIND(player2_down,          SNES_DEVICE_ID_JOYPAD_DOWN)
-      DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
-      DECLARE_BIND(hold_fast_forward,     SSNES_FAST_FORWARD_HOLD_KEY)
-      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
-      DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
-      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS)
-      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
-      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
-      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
-      DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS)
-      DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
-      DECLARE_BIND(rewind,                SSNES_REWIND)
-      DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE)
-      DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE)
-      DECLARE_BIND(frame_advance,         SSNES_FRAMEADVANCE)
-      DECLARE_BIND(reset,                 SSNES_RESET)
-      DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT)
-      DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV)
-      DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS)
-      DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS)
-      DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
-      DECLARE_BIND(screenshot,            SSNES_SCREENSHOT)
-      DECLARE_BIND(dsp_config,            SSNES_DSP_CONFIG)
-      DECLARE_BIND(audio_mute,            SSNES_MUTE)
-   },
-   {
-      DECLARE_BIND(player3_a,             SNES_DEVICE_ID_JOYPAD_A)
-      DECLARE_BIND(player3_b,             SNES_DEVICE_ID_JOYPAD_B)
-      DECLARE_BIND(player3_y,             SNES_DEVICE_ID_JOYPAD_Y)
-      DECLARE_BIND(player3_x,             SNES_DEVICE_ID_JOYPAD_X)
-      DECLARE_BIND(player3_start,         SNES_DEVICE_ID_JOYPAD_START)
-      DECLARE_BIND(player3_select,        SNES_DEVICE_ID_JOYPAD_SELECT)
-      DECLARE_BIND(player3_l,             SNES_DEVICE_ID_JOYPAD_L)
-      DECLARE_BIND(player3_r,             SNES_DEVICE_ID_JOYPAD_R)
-      DECLARE_BIND(player3_left,          SNES_DEVICE_ID_JOYPAD_LEFT)
-      DECLARE_BIND(player3_right,         SNES_DEVICE_ID_JOYPAD_RIGHT)
-      DECLARE_BIND(player3_up,            SNES_DEVICE_ID_JOYPAD_UP)
-      DECLARE_BIND(player3_down,          SNES_DEVICE_ID_JOYPAD_DOWN)
-      DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
-      DECLARE_BIND(hold_fast_forward,     SSNES_FAST_FORWARD_HOLD_KEY)
-      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
-      DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
-      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS)
-      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
-      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
-      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
-      DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS)
-      DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
-      DECLARE_BIND(rewind,                SSNES_REWIND)
-      DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE)
-      DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE)
-      DECLARE_BIND(frame_advance,         SSNES_FRAMEADVANCE)
-      DECLARE_BIND(reset,                 SSNES_RESET)
-      DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT)
-      DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV)
-      DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS)
-      DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS)
-      DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
-      DECLARE_BIND(screenshot,            SSNES_SCREENSHOT)
-      DECLARE_BIND(dsp_config,            SSNES_DSP_CONFIG)
-      DECLARE_BIND(audio_mute,            SSNES_MUTE)
-   },
-   {
-      DECLARE_BIND(player4_a,             SNES_DEVICE_ID_JOYPAD_A)
-      DECLARE_BIND(player4_b,             SNES_DEVICE_ID_JOYPAD_B)
-      DECLARE_BIND(player4_y,             SNES_DEVICE_ID_JOYPAD_Y)
-      DECLARE_BIND(player4_x,             SNES_DEVICE_ID_JOYPAD_X)
-      DECLARE_BIND(player4_start,         SNES_DEVICE_ID_JOYPAD_START)
-      DECLARE_BIND(player4_select,        SNES_DEVICE_ID_JOYPAD_SELECT)
-      DECLARE_BIND(player4_l,             SNES_DEVICE_ID_JOYPAD_L)
-      DECLARE_BIND(player4_r,             SNES_DEVICE_ID_JOYPAD_R)
-      DECLARE_BIND(player4_left,          SNES_DEVICE_ID_JOYPAD_LEFT)
-      DECLARE_BIND(player4_right,         SNES_DEVICE_ID_JOYPAD_RIGHT)
-      DECLARE_BIND(player4_up,            SNES_DEVICE_ID_JOYPAD_UP)
-      DECLARE_BIND(player4_down,          SNES_DEVICE_ID_JOYPAD_DOWN)
-      DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
-      DECLARE_BIND(hold_fast_forward,     SSNES_FAST_FORWARD_HOLD_KEY)
-      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
-      DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
-      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS)
-      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
-      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
-      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
-      DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS)
-      DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
-      DECLARE_BIND(rewind,                SSNES_REWIND)
-      DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE)
-      DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE)
-      DECLARE_BIND(frame_advance,         SSNES_FRAMEADVANCE)
-      DECLARE_BIND(reset,                 SSNES_RESET)
-      DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT)
-      DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV)
-      DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS)
-      DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS)
-      DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
-      DECLARE_BIND(screenshot,            SSNES_SCREENSHOT)
-      DECLARE_BIND(dsp_config,            SSNES_DSP_CONFIG)
-      DECLARE_BIND(audio_mute,            SSNES_MUTE)
-   },
-   {
-      DECLARE_BIND(player5_a,             SNES_DEVICE_ID_JOYPAD_A)
-      DECLARE_BIND(player5_b,             SNES_DEVICE_ID_JOYPAD_B)
-      DECLARE_BIND(player5_y,             SNES_DEVICE_ID_JOYPAD_Y)
-      DECLARE_BIND(player5_x,             SNES_DEVICE_ID_JOYPAD_X)
-      DECLARE_BIND(player5_start,         SNES_DEVICE_ID_JOYPAD_START)
-      DECLARE_BIND(player5_select,        SNES_DEVICE_ID_JOYPAD_SELECT)
-      DECLARE_BIND(player5_l,             SNES_DEVICE_ID_JOYPAD_L)
-      DECLARE_BIND(player5_r,             SNES_DEVICE_ID_JOYPAD_R)
-      DECLARE_BIND(player5_left,          SNES_DEVICE_ID_JOYPAD_LEFT)
-      DECLARE_BIND(player5_right,         SNES_DEVICE_ID_JOYPAD_RIGHT)
-      DECLARE_BIND(player5_up,            SNES_DEVICE_ID_JOYPAD_UP)
-      DECLARE_BIND(player5_down,          SNES_DEVICE_ID_JOYPAD_DOWN)
-      DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY)
-      DECLARE_BIND(hold_fast_forward,     SSNES_FAST_FORWARD_HOLD_KEY)
-      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY)
-      DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY)
-      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS)
-      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS)
-      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY)
-      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY)
-      DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS)
-      DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS)
-      DECLARE_BIND(rewind,                SSNES_REWIND)
-      DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE)
-      DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE)
-      DECLARE_BIND(frame_advance,         SSNES_FRAMEADVANCE)
-      DECLARE_BIND(reset,                 SSNES_RESET)
-      DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT)
-      DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV)
-      DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS)
-      DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS)
-      DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE)
-      DECLARE_BIND(screenshot,            SSNES_SCREENSHOT)
-      DECLARE_BIND(dsp_config,            SSNES_DSP_CONFIG)
-      DECLARE_BIND(audio_mute,            SSNES_MUTE)
-   },
+
+   DECL_PLAYER(2),
+   DECL_PLAYER(3),
+   DECL_PLAYER(4),
+   DECL_PLAYER(5),
 };
 
 struct key_map
@@ -744,7 +619,7 @@ static struct snes_keybind *find_snes_bind(unsigned port, int id)
 
 static int find_sk_bind(const char *str)
 {
-   for (int i = 0; i < sizeof(sk_map)/sizeof(struct key_map); i++)
+   for (int i = 0; i < sizeof(sk_map) / sizeof(struct key_map); i++)
    {
       if (strcasecmp(sk_map[i].str, str) == 0)
          return sk_map[i].key;
@@ -770,7 +645,7 @@ static void read_keybinds(config_file_t *conf)
 
    for (int j = 0; j < MAX_PLAYERS; j++)
    {
-      for (int i = 0; i < sizeof(bind_maps[0])/sizeof(struct bind_map); i++)
+      for (int i = 0; bind_maps[j][i].snes_key != SSNES_BIND_LIST_END; i++)
       {
          struct snes_keybind *bind = find_snes_bind(j, bind_maps[j][i].snes_key);
          if (!bind)

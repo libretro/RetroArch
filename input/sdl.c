@@ -22,7 +22,7 @@
 #include "general.h"
 #include <stdint.h>
 #include <stdlib.h>
-#include <libsnes.hpp>
+#include "../libsnes.hpp"
 #include "ssnes_sdl_input.h"
 #include "keysym.h"
 

@@ -20,7 +20,7 @@
 #include <assert.h>
 #include "strl.h"
 #include "general.h"
-#include <libsnes.hpp>
+#include "../libsnes.hpp"
 
 #ifdef HAVE_PYTHON
 #include "py_state/py_state.h"
