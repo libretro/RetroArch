@@ -398,10 +398,6 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
 #define SSNES_DEFAULT_CONF_PATH_STR " Defaults to $XDG_CONFIG_HOME/ssnes/ssnes.cfg,\n\t\tor $HOME/.ssnes.cfg, if $XDG_CONFIG_HOME is not defined."
 #endif
 
-#ifdef _WIN32
-#define PACKAGE_VERSION "0.9.2"
-#endif
-
 #include "config.features.h"
 
 #define _PSUPP(var, name, desc) printf("\t%s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
