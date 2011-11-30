@@ -19,7 +19,7 @@
 #define __DYNAMIC_H
 
 #include <stdbool.h>
-#include <libsnes.hpp>
+#include "libsnes.hpp"
 
 void init_dlsym(void);
 void uninit_dlsym(void);

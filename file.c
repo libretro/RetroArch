@@ -19,7 +19,7 @@
 #include "general.h"
 #include <stdlib.h>
 #include <stdbool.h>
-#include <libsnes.hpp>
+#include "libsnes.hpp"
 #include <string.h>
 #include <assert.h>
 #include <time.h>

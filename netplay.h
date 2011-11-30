@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <libsnes.hpp>
+#include "libsnes.hpp"
 
 void input_poll_net(void);
 int16_t input_state_net(bool port, unsigned device, unsigned index, unsigned id);
