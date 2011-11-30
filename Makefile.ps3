@@ -4,6 +4,7 @@
 ##
 ###
 ##
+DEBUG=0
 
 ## Platform detection from nall/Makefile. Only two applicable hosts for PS3 SDK.
 ifeq ($(platform),)
@@ -38,18 +39,23 @@ INCDIRS = -I. -Icommon
 MKFSELF_NPDRM = $(CELL_SDK)/$(HOST_DIR)/bin/make_fself_npdrm
 MKPKG_NPDRM = $(CELL_SDK)/$(HOST_DIR)/bin/make_package_npdrm
 
-OBJ = ssnes.o driver.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o ups.o bps.o strl.o screenshot.o thread.o audio/hermite.o
+OBJ = ssnes.o driver.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o gfx/gl.c gfx/shader_cg.c gfx/snes_state.c ups.o bps.o strl.o screenshot.o thread.o audio/hermite.o
 
 LIBS = -ldbgfont -lPSGL -lgcm_cmd -lgcm_sys_stub -lresc_stub libsnes.a -lm -lio_stub -lfs_stub -lsysutil_stub -lsysmodule_stub -laudio_stub -lnet_stub -lpthread
 
-DEFINES = -DHAVE_DYNAMIC=1 -DHAVE_DYLIB=1 
+DEFINES = -DHAVE_DYNAMIC=1 -DHAVE_DYLIB=1 -DHAVE_OPENGL=1 -DHAVE_CG=1 -DHAVE_FBO=1
 
 # Wrap it up, son!
 #LIBS += -Wl,-wrap,fopen -Wl,-wrap,fclose -Wl,-wrap,fwrite -Wl,-wrap,fread -Wl,-wrap,fseek -Wl,-wrap,ftell -Wl,-wrap,fflush -Wl,-wrap,rewind -Wl,-wrap,fgetpos -Wl,-wrap,fsetpos -Wl,-wrap,setbuf -Wl,-wrap,setvbuf -Wl,-wrap,ungetc -Wl,-wrap,feof
+ifeq ($(DEBUG),1)
+   PPU_OPTIMIZE_LV	:= -O0 -g
+else
+   PPU_OPTIMIZE_LV	:= -O3
+endif
 
 ## Use this for new SDK!
-CFLAGS = -O3 -DPS3_SDK_3_41
-CXXFLAGS = -O3 -DPS3_SDK_3_41
+CFLAGS = $(PPU_OPTIMIZE_LV) $(DEFINES)
+CXXFLAGS = $(PPU_OPTIMIZE_LV) $(DEFINES)
 #CFLAGS = -Wall -O3 -std=gnu99 -DPS3_SDK_3_41 -DSSNES_DEBUG
 
 #CFLAGS += -fprofile-generate --coverage -g
