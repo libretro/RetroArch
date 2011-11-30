@@ -28,13 +28,16 @@
 #include "rewind.h"
 #include "movie.h"
 #include "autosave.h"
-#include "netplay.h"
 #include "dynamic.h"
 #include "cheats.h"
 #include "audio/ext/ssnes_dsp.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
+#ifdef HAVE_NETPLAY
+#include "netplay.h"
 #endif
 
 #include "audio/hermite.h"
@@ -387,14 +390,14 @@ static inline uint8_t is_little_endian(void)
    return u.y[0];
 }
 
-static inline void ssnes_sleep(unsigned usec)
+static inline void ssnes_sleep(unsigned msec)
 {
 #ifdef _WIN32
-   Sleep(10);
+   Sleep(msec);
 #else
    struct timespec tv = {
-      .tv_sec = 0,
-      .tv_nsec = 10000000
+      .tv_sec = msec / 1000,
+      .tv_nsec = (msec % 1000) * 1000000,
    };
    nanosleep(&tv, NULL);
 #endif
