@@ -2,7 +2,7 @@ include config.mk
 
 TARGET = ssnes tools/ssnes-joyconfig
 
-OBJ = ssnes.o file.o driver.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o ups.o bps.o strl.o screenshot.o thread.o audio/hermite.o
+OBJ = ssnes.o file.o driver.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o ups.o bps.o strl.o getopt.o screenshot.o thread.o audio/hermite.o
 JOYCONFIG_OBJ = tools/ssnes-joyconfig.o conf/config_file.o strl.o
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
@@ -153,10 +153,6 @@ ifeq ($(HAVE_DYNAMIC), 1)
    LIBS += $(DYLIB_LIB)
 else
    LIBS += $(libsnes)
-endif
-
-ifeq ($(HAVE_STRL), 1)
-   DEFINES += -DHAVE_STRL
 endif
 
 ifeq ($(HAVE_PYTHON), 1)
