@@ -18,12 +18,12 @@
 #include "shader_cg.h"
 #include <Cg/cg.h>
 #include <Cg/cgGL.h>
-#include "general.h"
+#include "../general.h"
 #include <string.h>
-#include "strl.h"
-#include "conf/config_file.h"
+#include "../strl.h"
+#include "../conf/config_file.h"
 #include "image.h"
-#include "dynamic.h"
+#include "../dynamic.h"
 
 #ifdef HAVE_CONFIGFILE
 #include "snes_state.h"

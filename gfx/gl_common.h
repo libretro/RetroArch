@@ -18,11 +18,11 @@
 #ifndef __GL_COMMON_H
 #define __GL_COMMON_H
 
-#include "general.h"
+#include "../general.h"
 #include <assert.h>
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../config.h"
 #endif
 
 #ifdef __APPLE__
