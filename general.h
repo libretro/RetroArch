@@ -296,12 +296,14 @@ struct global
    autosave_t *autosave[2];
 
    // Netplay.
+#ifdef HAVE_NETPLAY
    netplay_t *netplay;
    char netplay_server[MAXPATHLEN];
    bool netplay_enable;
    bool netplay_is_client;
    unsigned netplay_sync_frames;
    uint16_t netplay_port;
+#endif
 
    // FFmpeg record.
 #ifdef HAVE_FFMPEG
