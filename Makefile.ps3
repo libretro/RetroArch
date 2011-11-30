@@ -5,6 +5,7 @@
 ###
 ##
 DEBUG=0
+CELL_BUILD_TOOLS     = GCC
 
 ## Platform detection from nall/Makefile. Only two applicable hosts for PS3 SDK.
 ifeq ($(platform),)
@@ -23,21 +24,24 @@ else
    HOST_DIR := host-linux
 endif
 
+ifeq ($(CELL_BUILD_TOOLS),SNC)
+CC = $(CELL_SDK)/sn/ps3ppusnc
+CXX = $(CC)
+LD = $(CELL_SDK)/sn/ps3ppuld
+else
 CC = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-gcc
 CXX = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-g++
-STRIP = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-strip
 LD = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-g++
-#CC = $(CELL_SDK)/sn/ps3ppusnc
-#CXX = $(CC)
-#LD = $(CELL_SDK)/sn/ps3ppuld
+endif
+STRIP = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-strip
 
 PPU_TARGET := ssnes.elf
 
 LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
 INCDIRS = -I. -Icommon
 
-MKFSELF_NPDRM = $(CELL_SDK)/$(HOST_DIR)/bin/make_fself_npdrm
-MKPKG_NPDRM = $(CELL_SDK)/$(HOST_DIR)/bin/make_package_npdrm
+MAKE_FSELF_NPDRM = $(CELL_SDK)/$(HOST_DIR)/bin/make_fself_npdrm
+MAKE_PACKAGE_NPDRM = $(CELL_SDK)/$(HOST_DIR)/bin/make_package_npdrm
 
 OBJ = ps3/buffer.o ps3/ps3_audio.o ps3/resampler.o ps3/ps3_input.o getopt.o ssnes.o driver.o settings.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o gfx/gl.c gfx/shader_cg.c gfx/snes_state.c ups.o bps.o strl.o screenshot.o audio/hermite.o
 
@@ -56,7 +60,7 @@ endif
 ## Use this for new SDK!
 CFLAGS = $(PPU_OPTIMIZE_LV) $(DEFINES)
 CXXFLAGS = $(PPU_OPTIMIZE_LV) $(DEFINES)
-#CFLAGS = -Wall -O3 -std=gnu99 -DPS3_SDK_3_41 -DSSNES_DEBUG
+#CFLAGS = -Wall $(PPU_OPTIMIZE_LV) -std=gnu99 -DPS3_SDK_3_41 -DSSNES_DEBUG
 
 #CFLAGS += -fprofile-generate --coverage -g
 #CXXFLAGS += -fprofile-generate --coverage -g
@@ -68,7 +72,7 @@ CXXFLAGS = $(PPU_OPTIMIZE_LV) $(DEFINES)
 #CXXFLAGS += -fprofile-use
 #LDFLAGS += -fprofile-use
 
-#CFLAGS = -Wall -O3 -std=gnu99
+#CFLAGS = -Wall $(PPU_OPTIMIZE_LV) -std=gnu99
 
 all: pkg
 
@@ -85,8 +89,8 @@ $(PPU_TARGET): $(OBJ)
 pkg: $(PPU_TARGET)
 	@mkdir -p pkg/SAVEDATA
 	@mkdir -p pkg/USRDIR
-	$(MKFSELF_NPDRM) $(PPU_TARGET) pkg/USRDIR/EBOOT.BIN
-	$(MKPKG_NPDRM) pkg/package.conf pkg
+	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) pkg/USRDIR/EBOOT.BIN
+	$(MAKE_PACKAGE_NPDRM) pkg/package.conf pkg
 
 clean:
 	rm -f *.o
