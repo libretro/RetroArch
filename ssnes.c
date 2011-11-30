@@ -618,10 +618,12 @@ static void parse_input(int argc, char *argv[])
       { "bsvplay", 1, NULL, 'P' },
       { "bsvrecord", 1, NULL, 'R' },
       { "sram-mode", 1, NULL, 'M' },
+#ifdef HAVE_NETPLAY
       { "host", 0, NULL, 'H' },
       { "connect", 1, NULL, 'C' },
       { "frames", 1, NULL, 'F' },
       { "port", 1, &val, 'p' },
+#endif
       { "ups", 1, NULL, 'U' },
       { "bps", 1, &val, 'B' },
       { "xml", 1, NULL, 'X' },
@@ -648,7 +650,13 @@ static void parse_input(int argc, char *argv[])
 #define DYNAMIC_ARG
 #endif
 
-   char optstring[] = "hs:fvS:m:p4jJg:b:B:Y:Z:P:R:M:HC:F:U:DN:X:" DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+#ifdef HAVE_NETPLAY
+#define NETPLAY_ARG "HC:F:"
+#else
+#define NETPLAY_ARG
+#endif
+
+   char optstring[] = "hs:fvS:m:p4jJg:b:B:Y:Z:P:R:M:U:DN:X:" NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for (;;)
    {
       val = 0;
