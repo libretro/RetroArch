@@ -16,7 +16,7 @@
  */
 
 #include "gfx_common.h"
-#include "general.h"
+#include "../general.h"
 #include <sys/time.h>
 
 static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)
