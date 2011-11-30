@@ -50,6 +50,7 @@
 #define AUDIO_EXT 15
 #define AUDIO_DSOUND 16
 #define AUDIO_COREAUDIO 17
+#define AUDIO_PS3 18
 ////////////////////////
 #define INPUT_SDL 7
 #define INPUT_X 12

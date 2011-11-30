@@ -167,6 +167,9 @@ extern const audio_driver_t audio_pulse;
 extern const audio_driver_t audio_ext;
 extern const audio_driver_t audio_dsound;
 extern const audio_driver_t audio_coreaudio;
+#ifdef __CELLOS_LV2__
+extern const audio_driver_t audio_ps3;
+#endif
 extern const video_driver_t video_gl;
 extern const video_driver_t video_xvideo;
 extern const video_driver_t video_sdl;

@@ -62,6 +62,11 @@ static void set_defaults(void)
 
    switch (AUDIO_DEFAULT_DRIVER)
    {
+      #ifdef __CELLOS_LV2__
+      case AUDIO_PS3:
+         def_audio = "ps3";
+	 break;
+      #endif
       case AUDIO_RSOUND:
          def_audio = "rsound";
          break;

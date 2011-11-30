@@ -29,6 +29,9 @@
 #endif
 
 static const audio_driver_t *audio_drivers[] = {
+#ifdef __CELLOS_LV2__
+   &audio_ps3,
+#endif
 #ifdef HAVE_ALSA
    &audio_alsa,
 #endif

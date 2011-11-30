@@ -39,7 +39,7 @@ INCDIRS = -I. -Icommon
 MKFSELF_NPDRM = $(CELL_SDK)/$(HOST_DIR)/bin/make_fself_npdrm
 MKPKG_NPDRM = $(CELL_SDK)/$(HOST_DIR)/bin/make_package_npdrm
 
-OBJ = getopt.o ssnes.o driver.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o gfx/gl.c gfx/shader_cg.c gfx/snes_state.c ups.o bps.o strl.o screenshot.o thread.o audio/hermite.o
+OBJ = ps3/buffer.o ps3/ps3_audio.o ps3/resampler.o getopt.o ssnes.o driver.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o gfx/gl.c gfx/shader_cg.c gfx/snes_state.c ups.o bps.o strl.o screenshot.o thread.o audio/hermite.o
 
 LIBS = -ldbgfont -lPSGL -lgcm_cmd -lgcm_sys_stub -lresc_stub libsnes.a -lm -lio_stub -lfs_stub -lsysutil_stub -lsysmodule_stub -laudio_stub -lnet_stub -lpthread
 
