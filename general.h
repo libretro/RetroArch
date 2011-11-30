@@ -32,6 +32,10 @@
 #include "cheats.h"
 #include "audio/ext/ssnes_dsp.h"
 
+#ifdef __CELLOS_LV2__
+#include <sys/timer.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -394,7 +398,9 @@ static inline uint8_t is_little_endian(void)
 
 static inline void ssnes_sleep(unsigned msec)
 {
-#ifdef _WIN32
+#ifdef __CELLOS_LV2__
+   sys_timer_usleep(1000 * msec);
+#elif defined(_WIN32)
    Sleep(msec);
 #else
    struct timespec tv = {
