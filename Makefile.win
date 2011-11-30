@@ -1,6 +1,6 @@
 TARGET = ssnes.exe
 JTARGET = ssnes-joyconfig.exe
-OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o bps.o ups.o strl.o screenshot.o audio/hermite.o thread.o getopt.o
+OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o message.o rewind.o movie.o gfx/gfx_common.o bps.o ups.o strl.o screenshot.o audio/hermite.o thread.o getopt.o
 JOBJ = conf/config_file.o tools/main-stub.o tools/ssnes-joyconfig.o strl.o
 
 CC = gcc
@@ -13,6 +13,7 @@ HAVE_SDL = 1
 HAVE_OPENGL = 1
 HAVE_DYLIB = 1
 HAVE_NETPLAY = 1
+HAVE_THREADS = 1
 DYNAMIC = 1
 
 ifeq ($(SLIM),)
@@ -37,6 +38,11 @@ ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl.o gfx/gl.o gfx/sdlwrap.o input/sdl.o audio/sdl.o fifo_buffer.o
    LIBS += -lSDL
    DEFINES += -ISDL -DHAVE_SDL
+endif
+
+ifeq ($(HAVE_THREADS), 1)
+   OBJ += autosave.o
+   DEFINES += -DHAVE_THREADS
 endif
 
 ifeq ($(HAVE_OPENGL), 1)

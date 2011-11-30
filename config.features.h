@@ -14,6 +14,12 @@ static const bool _sdl_supp = true;
 static const bool _sdl_supp = false;
 #endif
 
+#ifdef HAVE_THREADS
+static const bool _thread_supp = true;
+#else
+static const bool _thread_supp = false;
+#endif
+
 #ifdef HAVE_OPENGL
 static const bool _opengl_supp = true;
 #else

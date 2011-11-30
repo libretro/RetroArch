@@ -406,6 +406,7 @@ static void print_features(void)
    puts("");
    puts("Features:");
    _PSUPP(sdl, "SDL", "SDL drivers");
+   _PSUPP(thread, "Threads", "Threading support");
    _PSUPP(opengl, "OpenGL", "OpenGL driver");
    _PSUPP(xvideo, "XVideo", "XVideo output");
    _PSUPP(alsa, "ALSA", "audio driver");
@@ -1212,6 +1213,7 @@ static void deinit_netplay(void)
 
 static void init_autosave(void)
 {
+#ifdef HAVE_THREADS
    int ram_types[2] = {-1, -1};
    const char *ram_paths[2] = {NULL, NULL};
 
@@ -1261,15 +1263,18 @@ static void init_autosave(void)
          }
       }
    }
+#endif
 }
 
 static void deinit_autosave(void)
 {
+#ifdef HAVE_THREADS
    for (unsigned i = 0; i < sizeof(g_extern.autosave)/sizeof(g_extern.autosave[0]); i++)
    {
       if (g_extern.autosave[i])
          autosave_free(g_extern.autosave[i]);
    }
+#endif
 }
 
 static void set_savestate_auto_index(void)
@@ -2032,7 +2037,9 @@ int main(int argc, char *argv[])
       // Run libsnes for one frame.
       if (!g_extern.is_paused || g_extern.is_oneshot)
       {
+#ifdef HAVE_THREADS
          lock_autosave();
+#endif
 
 #ifdef HAVE_NETPLAY
          if (g_extern.netplay)
@@ -2050,7 +2057,9 @@ int main(int argc, char *argv[])
             netplay_post_frame(g_extern.netplay);
 #endif
 
+#ifdef HAVE_THREADS
          unlock_autosave();
+#endif
       }
       else
       {

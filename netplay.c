@@ -735,9 +735,13 @@ void netplay_post_frame(netplay_t *handle)
       while (first || (handle->tmp_ptr != handle->self_ptr))
       {
          psnes_serialize(handle->buffer[handle->tmp_ptr].state, handle->state_size);
+#ifdef HAVE_THREADS
          lock_autosave();
+#endif
          psnes_run();
+#ifdef HAVE_THREADS
          unlock_autosave();
+#endif
          handle->tmp_ptr = NEXT_PTR(handle->tmp_ptr);
          first = false;
       }

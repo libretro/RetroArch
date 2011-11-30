@@ -31,6 +31,7 @@ if [ $HAVE_DYNAMIC != yes ]; then
    add_define_make libsnes $LIBSNES
 fi
 
+check_lib THREADS -lpthread pthread_create
 check_lib DYLIB $DYLIB dlopen
 check_lib NETPLAY -lc socket
 check_lib GETOPT_LONG -lc getopt_long
@@ -78,25 +79,30 @@ fi
 check_pkgconf XML libxml-2.0
 check_pkgconf SDL_IMAGE SDL_image
 
-if [ $HAVE_FFMPEG != no ]; then
-   check_pkgconf AVCODEC libavcodec
-   check_pkgconf AVFORMAT libavformat
-   check_pkgconf AVUTIL libavutil
-   check_pkgconf SWSCALE libswscale
+if [ $HAVE_THREADS != no ]; then
+   if [ $HAVE_FFMPEG != no ]; then
+      check_pkgconf AVCODEC libavcodec
+      check_pkgconf AVFORMAT libavformat
+      check_pkgconf AVUTIL libavutil
+      check_pkgconf SWSCALE libswscale
 
-   ( [ $HAVE_FFMPEG = auto ] && ( [ $HAVE_AVCODEC = no ] || [ $HAVE_AVFORMAT = no ] || [ $HAVE_AVUTIL = no ] || [ $HAVE_SWSCALE = no ] ) && HAVE_FFMPEG=no ) || HAVE_FFMPEG=yes
-fi
+      ( [ $HAVE_FFMPEG = auto ] && ( [ $HAVE_AVCODEC = no ] || [ $HAVE_AVFORMAT = no ] || [ $HAVE_AVUTIL = no ] || [ $HAVE_SWSCALE = no ] ) && HAVE_FFMPEG=no ) || HAVE_FFMPEG=yes
+   fi
 
-if [ $HAVE_FFMPEG = yes ]; then
-   check_lib FFMPEG_ALLOC_CONTEXT3 "$AVCODEC_LIBS" avcodec_alloc_context3
-   check_lib FFMPEG_AVCODEC_OPEN2 "$AVCODEC_LIBS" avcodec_open2
-   check_lib FFMPEG_AVIO_OPEN "$AVFORMAT_LIBS" avio_open
-   check_lib FFMPEG_AVFORMAT_WRITE_HEADER "$AVFORMAT_LIBS" avformat_write_header
-   check_lib FFMPEG_AVFORMAT_NEW_STREAM "$AVFORMAT_LIBS" avformat_new_stream
-fi
+   if [ $HAVE_FFMPEG = yes ]; then
+      check_lib FFMPEG_ALLOC_CONTEXT3 "$AVCODEC_LIBS" avcodec_alloc_context3
+      check_lib FFMPEG_AVCODEC_OPEN2 "$AVCODEC_LIBS" avcodec_open2
+      check_lib FFMPEG_AVIO_OPEN "$AVFORMAT_LIBS" avio_open
+      check_lib FFMPEG_AVFORMAT_WRITE_HEADER "$AVFORMAT_LIBS" avformat_write_header
+      check_lib FFMPEG_AVFORMAT_NEW_STREAM "$AVFORMAT_LIBS" avformat_new_stream
+   fi
 
-if [ $HAVE_FFMPEG = no ] && [ $HAVE_X264RGB = yes ]; then
-   echo "x264 RGB recording is enabled, but FFmpeg is not. --enable-x264rgb will not have any effect."
+   if [ $HAVE_FFMPEG = no ] && [ $HAVE_X264RGB = yes ]; then
+      echo "x264 RGB recording is enabled, but FFmpeg is not. --enable-x264rgb will not have any effect."
+   fi
+else
+   echo "Not building with threading support. Will skip FFmpeg."
+   HAVE_FFMPEG=no
 fi
 
 check_lib DYNAMIC $DYLIB dlopen
@@ -118,7 +124,7 @@ check_pkgconf PYTHON python3
 add_define_make OS $OS
 
 # Creates config.mk and config.h.
-VARS="ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK COREAUDIO PULSE SDL OPENGL DYLIB GETOPT_LONG CG XML SDL_IMAGE DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL SWSCALE CONFIGFILE FREETYPE XVIDEO X11 XEXT NETPLAY FBO STRL PYTHON FFMPEG_ALLOC_CONTEXT3 FFMPEG_AVCODEC_OPEN2 FFMPEG_AVIO_OPEN FFMPEG_AVFORMAT_WRITE_HEADER FFMPEG_AVFORMAT_NEW_STREAM X264RGB"
+VARS="ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK COREAUDIO PULSE SDL OPENGL DYLIB GETOPT_LONG THREADS CG XML SDL_IMAGE DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL SWSCALE CONFIGFILE FREETYPE XVIDEO X11 XEXT NETPLAY FBO STRL PYTHON FFMPEG_ALLOC_CONTEXT3 FFMPEG_AVCODEC_OPEN2 FFMPEG_AVIO_OPEN FFMPEG_AVFORMAT_WRITE_HEADER FFMPEG_AVFORMAT_NEW_STREAM X264RGB"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
 

@@ -2,11 +2,11 @@ include config.mk
 
 TARGET = ssnes tools/ssnes-joyconfig
 
-OBJ = ssnes.o file.o driver.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o ups.o bps.o strl.o getopt.o screenshot.o thread.o audio/hermite.o
+OBJ = ssnes.o file.o driver.o settings.o dynamic.o message.o rewind.o movie.o gfx/gfx_common.o ups.o bps.o strl.o getopt.o screenshot.o thread.o audio/hermite.o
 JOYCONFIG_OBJ = tools/ssnes-joyconfig.o conf/config_file.o strl.o
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
-LIBS = -lm -lpthread
+LIBS = -lm
 DEFINES = -DHAVE_CONFIG_H
 
 ifneq ($(findstring Darwin,$(OS)),)
@@ -25,6 +25,11 @@ endif
 
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
+endif
+
+ifeq ($(HAVE_THREADS), 1)
+   OBJ += autosave.o
+   LIBS += -lpthread
 endif
 
 ifeq ($(HAVE_CONFIGFILE), 1)
