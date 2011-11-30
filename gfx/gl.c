@@ -16,14 +16,14 @@
  */
 
 
-#include "driver.h"
+#include "../driver.h"
 
 #include <stdint.h>
-#include "libsnes.hpp"
+#include "../libsnes.hpp"
 #include <stdio.h>
 #include <sys/time.h>
 #include <string.h>
-#include "general.h"
+#include "../general.h"
 #include <assert.h>
 #include <math.h>
 
@@ -34,7 +34,7 @@
 #include "gl_common.h"
 #include "gfx_common.h"
 #include "sdlwrap.h"
-#include "strl.h"
+#include "../strl.h"
 
 #define NO_SDL_GLEXT
 #include "SDL.h"

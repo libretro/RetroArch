@@ -17,11 +17,11 @@
 
 #include <stdbool.h>
 #include <string.h>
-#include "general.h"
+#include "../general.h"
 #include "shader_glsl.h"
-#include "strl.h"
+#include "../strl.h"
 #include "snes_state.h"
-#include "dynamic.h"
+#include "../dynamic.h"
 
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
