@@ -86,10 +86,6 @@ static const GLfloat white_color[] = {
 
 #ifdef HAVE_FBO
 #define pglGenFramebuffers glGenFramebuffers
-#define pglBindFramebuffer glBindFramebuffer
-#define pglFramebufferTexture2D glFramebufferTexture2D
-#define pglCheckFramebufferStatus glCheckFramebufferStatus
-#define pglDeleteFramebuffers glDeleteFramebuffers
 static bool load_fbo_proc(void) { return true; }
 #endif
 
@@ -525,13 +521,13 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
    glBindTexture(GL_TEXTURE_2D, 0);
 
-   pglGenFramebuffers(gl->fbo_pass, gl->fbo);
+   glGenFramebuffersOES(gl->fbo_pass, gl->fbo);
    for (int i = 0; i < gl->fbo_pass; i++)
    {
-      pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
-      pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
+      glBindFramebufferOES(GL_FRAMEBUFFER, gl->fbo[i]);
+      glFramebufferTexture2DOES(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
-      GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
+      GLenum status = glCheckFramebufferStatusOES(GL_FRAMEBUFFER);
       if (status != GL_FRAMEBUFFER_COMPLETE)
          goto error;
    }
@@ -541,7 +537,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
 error:
    glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
-   pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
+   glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
    SSNES_ERR("Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
 #else
    (void)gl;
@@ -610,7 +606,7 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
    else
       glViewport(0, 0, width, height);
 
-   glOrtho(0, 1, 0, 1, -1, 1);
+   glOrthof(0.0, 1.0, 0.0, 1.0, -1.0, 1.0);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 
@@ -903,7 +899,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       }
 
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-      pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
+      glBindFramebufferOES(GL_FRAMEBUFFER, gl->fbo[0]);
       gl->render_to_tex = true;
       set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
    }
@@ -933,15 +929,15 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
                unsigned pow2_size = next_pow2(max);
                gl->fbo_rect[i].width = gl->fbo_rect[i].height = pow2_size;
 
-               pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
+               glBindFramebufferOES(GL_FRAMEBUFFER, gl->fbo[i]);
                glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
                glTexImage2D(GL_TEXTURE_2D,
                      0, GL_RGBA, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_BGRA,
                      GL_UNSIGNED_INT_8_8_8_8, NULL);
 
-               pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
+               glFramebufferTexture2DOES(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
-               GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
+               GLenum status = glCheckFramebufferStatusOES(GL_FRAMEBUFFER);
                if (status != GL_FRAMEBUFFER_COMPLETE)
                   SSNES_WARN("Failed to reinit FBO texture!\n");
 
@@ -951,7 +947,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
          // Go back to what we're supposed to do, render to FBO #0 :D
          glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-         pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
+         glBindFramebufferOES(GL_FRAMEBUFFER, gl->fbo[0]);
          set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
       }
 #else
@@ -964,7 +960,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl->last_width[gl->tex_index] = width;
       gl->last_height[gl->tex_index] = height;
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
+      glPixelStorei(GL_UNPACK_ALIGNMENT, gl->tex_w);
 
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
@@ -992,7 +988,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       glVertexPointer(2, GL_FLOAT, 0, vertexes);
 #endif
 
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
+   glPixelStorei(GL_UNPACK_ALIGNMENT, pitch / gl->base_size);
    glTexSubImage2D(GL_TEXTURE_2D,
          0, 0, 0, width, height, gl->texture_type,
          gl->texture_fmt, frame);
@@ -1042,7 +1038,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          fbo_info->tex_size[1] = prev_rect->height;
          memcpy(fbo_info->coord, gl->fbo_tex_coords, sizeof(gl->fbo_tex_coords));
 
-         pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
+         glBindFramebufferOES(GL_FRAMEBUFFER, gl->fbo[i]);
          gl_shader_use(i + 1);
          glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
@@ -1068,7 +1064,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       set_texture_coords(gl->fbo_tex_coords, xamt, yamt);
 
       // Render our FBO texture to back buffer.
-      pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+      glBindFramebufferOES(GL_FRAMEBUFFER, 0);
       gl_shader_use(gl->fbo_pass + 1);
 
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
@@ -1117,7 +1113,7 @@ static void gl_free(void *data)
    if (gl->fbo_inited)
    {
       glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
-      pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
+      glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
    }
 #endif
    sdlwrap_destroy();
@@ -1138,24 +1134,38 @@ static void gl_set_nonblock_state(void *data, bool state)
    }
 }
 
+static void psgl_set_smooth(uint32_t smooth, unsigned index)
+{
+	if (index == 0)
+	{
+		m_smooth = smooth;
+		glBindTexture(GL_TEXTURE_2D, gl->texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->smooth ? GL_LINEAR : GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, g->smooth ? GL_LINEAR : GL_NEAREST);
+	}
+	else if (gl->fbo_texture)
+	{
+		glBindTexture(GL_TEXTURE_2D, gl->fbo_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->smooth ? GL_LINEAR : GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->smooth ? GL_LINEAR : GL_NEAREST);
+		glBindTexture(GL_TEXTURE_2D, gl->texture);
+	}
+}
+
 static void psgl_init()
 {
 	glDisable(GL_DEPTH_TEST);
-	ps3graphics_set_vsync(m_vsync);
 
    	video->vsync ? glEnable(GL_VSYNC_SCE) : glDisable(GL_VSYNC_SCE);
-
-	ps3graphics_init_cg();
-
-	CalculateViewports();
-	SetViewports();
+	
+	set_viewport(gl, gl->win_width, gl->win_height, false);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
 	glGenBuffers(2, vbo);
-	glGenTextures(1, &tex);
-	glBindTexture(GL_TEXTURE_2D, tex);
+	glGenTextures(1, &gl->texture);
+	glBindTexture(GL_TEXTURE_2D, gl->texture);
 
 	glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, vbo[0]);
 	glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE, SCREEN_RENDER_TEXTURE_HEIGHT << 10, NULL, GL_STREAM_DRAW);
@@ -1406,7 +1416,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    for (unsigned i = 0; i < TEXTURES; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
+      glPixelStorei(GL_UNPACK_ALIGNMENT, gl->tex_w);
       glTexImage2D(GL_TEXTURE_2D,
             0, GL_RGBA, gl->tex_w, gl->tex_h, 0, gl->texture_type,
             gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
@@ -1444,7 +1454,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 static bool gl_alive(void *data)
 {
    gl_t *gl = data;
-   cellSysutil
+   cellSysutilCheckCallback();
    return !gl->quitting;
 }
 
@@ -1469,7 +1479,7 @@ static bool gl_xml_shader(void *data, const char *path)
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
    {
-      pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
+      glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
       glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
       memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
       memset(gl->fbo, 0, sizeof(gl->fbo));

@@ -18,8 +18,8 @@
 #include "snes_state.h"
 #include <stdlib.h>
 #include <assert.h>
-#include "strl.h"
-#include "general.h"
+#include "../strl.h"
+#include "../general.h"
 #include "../libsnes.hpp"
 
 #ifdef HAVE_PYTHON
