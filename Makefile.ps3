@@ -1,0 +1,95 @@
+###
+##
+# Makefile for SSNES. Somewhat generic and avoids using the odd SDK examples.
+##
+###
+##
+
+## Platform detection from nall/Makefile. Only two applicable hosts for PS3 SDK.
+ifeq ($(platform),)
+  uname := $(shell uname -a)
+ifeq ($(uname),)
+    platform := win
+else
+    platform := linux
+endif
+endif
+
+CELL_SDK := /usr/local/cell
+ifeq ($(platform),win)
+   HOST_DIR := host-win32
+else
+   HOST_DIR := host-linux
+endif
+
+CC = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-gcc
+CXX = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-g++
+STRIP = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-strip
+LD = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-g++
+#CC = $(CELL_SDK)/sn/ps3ppusnc
+#CXX = $(CC)
+#LD = $(CELL_SDK)/sn/ps3ppuld
+
+PPU_TARGET := ssnes.elf
+
+LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
+INCDIRS = -I. -Icommon
+
+MKFSELF_NPDRM = $(CELL_SDK)/$(HOST_DIR)/bin/make_fself_npdrm
+MKPKG_NPDRM = $(CELL_SDK)/$(HOST_DIR)/bin/make_package_npdrm
+
+OBJ = ssnes.o driver.o settings.o dynamic.o message.o rewind.o movie.o autosave.o gfx/gfx_common.o ups.o bps.o strl.o screenshot.o thread.o audio/hermite.o
+
+LIBS = -ldbgfont -lPSGL -lgcm_cmd -lgcm_sys_stub -lresc_stub libsnes.a -lm -lio_stub -lfs_stub -lsysutil_stub -lsysmodule_stub -laudio_stub -lnet_stub -lpthread
+
+DEFINES = -DHAVE_DYNAMIC=1 -DHAVE_DYLIB=1 
+
+# Wrap it up, son!
+#LIBS += -Wl,-wrap,fopen -Wl,-wrap,fclose -Wl,-wrap,fwrite -Wl,-wrap,fread -Wl,-wrap,fseek -Wl,-wrap,ftell -Wl,-wrap,fflush -Wl,-wrap,rewind -Wl,-wrap,fgetpos -Wl,-wrap,fsetpos -Wl,-wrap,setbuf -Wl,-wrap,setvbuf -Wl,-wrap,ungetc -Wl,-wrap,feof
+
+## Use this for new SDK!
+CFLAGS = -O3 -DPS3_SDK_3_41
+CXXFLAGS = -O3 -DPS3_SDK_3_41
+#CFLAGS = -Wall -O3 -std=gnu99 -DPS3_SDK_3_41 -DSSNES_DEBUG
+
+#CFLAGS += -fprofile-generate --coverage -g
+#CXXFLAGS += -fprofile-generate --coverage -g
+#LDFLAGS += -fprofile-generate --coverage -g
+#CFLAGS += -pg -g
+#CXXFLAGS += -pg -g
+#LDFLAGS += -pg -g -lprof_stub
+#CFLAGS += -fprofile-use
+#CXXFLAGS += -fprofile-use
+#LDFLAGS += -fprofile-use
+
+#CFLAGS = -Wall -O3 -std=gnu99
+
+all: pkg
+
+$(PPU_TARGET): $(OBJ)
+	$(LD) -o $@ $(OBJ) $(LDFLAGS) $(LDDIRS) $(LIBS)
+	$(STRIP) $(PPU_TARGET)
+
+	%.o: %.c config.h
+	$(CC) $(INCDIRS) $(CFLAGS) -c -o $@ $<
+
+%.o: %.cpp config.h
+	$(CXX) $(INCDIRS) $(CXXFLAGS) -c -o $@ $<
+
+pkg: $(PPU_TARGET)
+	@mkdir -p pkg/SAVEDATA
+	@mkdir -p pkg/USRDIR
+	$(MKFSELF_NPDRM) $(PPU_TARGET) pkg/USRDIR/EBOOT.BIN
+	$(MKPKG_NPDRM) pkg/package.conf pkg
+
+clean:
+	rm -f *.o
+	rm -f hqflt/*.o
+	rm -f hqflt/snes_ntsc/*.o
+	rm -f $(PPU_TARGET)
+	rm -f *.pkg
+	rm -f ps3/*.o
+
+.PHONY: all clean pkg
+
+

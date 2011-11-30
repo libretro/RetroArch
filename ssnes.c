@@ -16,7 +16,7 @@
  */
 
 #include <stdbool.h>
-#include <libsnes.hpp>
+#include "libsnes.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
