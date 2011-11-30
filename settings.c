@@ -106,6 +106,11 @@ static void set_defaults(void)
 
    switch (INPUT_DEFAULT_DRIVER)
    {
+      #ifdef __CELLOS_LV2__
+      case INPUT_PS3:
+         def_input = "ps3";
+	 break;
+      #endif
       case INPUT_SDL:
          def_input = "sdl";
          break;

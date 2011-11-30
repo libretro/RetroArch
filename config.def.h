@@ -54,9 +54,10 @@
 ////////////////////////
 #define INPUT_SDL 7
 #define INPUT_X 12
+#define INPUT_PS3 19
 ////////////////////////
 
-#if defined(HAVE_OPENGL)
+#if defined(HAVE_OPENGL) || defined(__CELLOS_LV2__)
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL
 #elif defined(HAVE_XVIDEO)
 #define VIDEO_DEFAULT_DRIVER VIDEO_XVIDEO
@@ -68,7 +69,9 @@
 #error "Need at least one video driver!"
 #endif
 
-#if defined(HAVE_ALSA)
+#if defined(__CELLOS_LV2__)
+#define AUDIO_DEFAULT_DRIVER AUDIO_PS3
+#elif defined(HAVE_ALSA)
 #define AUDIO_DEFAULT_DRIVER AUDIO_ALSA
 #elif defined(HAVE_PULSE)
 #define AUDIO_DEFAULT_DRIVER AUDIO_PULSE
@@ -98,6 +101,8 @@
 
 #if defined(HAVE_SDL)
 #define INPUT_DEFAULT_DRIVER INPUT_SDL
+#elif defined(__CELLOS_LV2__)
+#define INPUT_DEFAULT_DRIVER INPUT_PS3
 #elif defined(HAVE_XVIDEO)
 #define INPUT_DEFAULT_DRIVER INPUT_X
 #else

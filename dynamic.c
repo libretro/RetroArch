@@ -25,7 +25,7 @@
 #include "config.h"
 #endif
 
-#include <libsnes.hpp>
+#include "libsnes.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
