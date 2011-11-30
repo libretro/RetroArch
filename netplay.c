@@ -14,7 +14,7 @@
  *  You should have received a copy of the GNU General Public License along with SSNES.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-
+#ifdef HAVE_NETPLAY
 #ifdef _WIN32
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
@@ -747,3 +747,4 @@ void netplay_post_frame(netplay_t *handle)
    }
 }
 
+#endif
