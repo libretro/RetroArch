@@ -27,13 +27,19 @@
 
 #include "libsnes.hpp"
 
+#if defined(HAVE_DYLIB) || defined(HAVE_DYNAMIC)
+#define HAVE_DYNAMIC_LOAD
+#endif
+
+#ifdef HAVE_DYNAMIC_LOAD
 #ifdef _WIN32
 #include <windows.h>
 #else
 #include <dlfcn.h>
 #endif
+#endif
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYNAMIC_LOAD
 #define DLSYM(lib, x) dylib_proc(lib, #x)
 
 #define SYM(type, x) do { \
@@ -96,11 +102,11 @@ unsigned (*psnes_get_memory_size)(unsigned);
 void (*psnes_unload_cartridge)(void);
 void (*psnes_term)(void);
 
-#ifdef HAVE_DYLIB
+#ifdef HAVE_DYNAMIC_LOAD
 static void set_environment(void);
 #endif
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYNAMIC_LOAD
 static void load_dynamic(void)
 {
    SSNES_LOG("Loading dynamic libsnes from: \"%s\"\n", g_settings.libsnes);
@@ -150,7 +156,7 @@ static void load_dynamic(void)
    p##x = x; \
 } while (0)
 
-#ifndef HAVE_DYNAMIC
+#ifndef HAVE_DYNAMIC_LOAD
 static void set_statics(void)
 {
    SSYM(snes_init);
@@ -185,11 +191,10 @@ static void set_statics(void)
 
 void init_dlsym(void)
 {
+#ifdef HAVE_DYNAMIC_LOAD
    // Guarantee that we can do "dirty" casting.
    // Every OS that this program supports should pass this ...
    assert(sizeof(void*) == sizeof(void (*)(void)));
-
-#ifdef HAVE_DYNAMIC
 
    // Try to verify that -lsnes was not linked in from other modules
    // since loading it dynamically and with -l will fail hard.
@@ -218,19 +223,20 @@ void init_dlsym(void)
    set_statics();
 #endif
 
-#ifdef HAVE_DYLIB
+#ifdef HAVE_DYNAMIC_LOAD
    set_environment();
 #endif
 }
 
 void uninit_dlsym(void)
 {
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYNAMIC_LOAD
    if (lib_handle)
       dylib_close(lib_handle);
 #endif
 }
 
+#ifdef HAVE_DYNAMIC_LOAD
 // Platform independent dylib loading.
 dylib_t dylib_load(const char *path)
 {
@@ -240,7 +246,9 @@ dylib_t dylib_load(const char *path)
    return dlopen(path, RTLD_LAZY);
 #endif
 }
+#endif
 
+#ifdef HAVE_DYNAMIC_LOAD
 function_t dylib_proc(dylib_t lib, const char *proc)
 {
 #ifdef _WIN32
@@ -266,7 +274,9 @@ function_t dylib_proc(dylib_t lib, const char *proc)
 
    return sym;
 }
+#endif
 
+#ifdef HAVE_DYNAMIC_LOAD
 void dylib_close(dylib_t lib)
 {
 #ifdef _WIN32
@@ -275,7 +285,9 @@ void dylib_close(dylib_t lib)
    dlclose(lib);
 #endif
 }
+#endif
 
+#ifdef HAVE_DYNAMIC_LOAD
 static bool environment_cb(unsigned cmd, void *data)
 {
    switch (cmd)
@@ -322,7 +334,6 @@ static bool environment_cb(unsigned cmd, void *data)
    return true;
 }
 
-#ifdef HAVE_DYLIB
 // Assume SNES as defaults.
 static void set_environment_defaults(void)
 {
@@ -353,5 +364,4 @@ static void set_environment(void)
    set_environment_defaults();
 }
 #endif
-
 

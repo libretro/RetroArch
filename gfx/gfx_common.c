@@ -32,6 +32,17 @@ void gfx_window_title_reset(void)
    gl_frames = 0;
 }
 
+#ifdef __CELLOS_LV2__
+#include <sys/sys_time.h>
+static void gettimeofday(struct timeval *val, void *dummy)
+{
+   (void)dummy;
+   uint64_t usec = sys_time_get_system_time();
+   val->tv_sec = usec / 1000000;
+   val->tv_usec = usec % 1000000;
+}
+#endif
+
 bool gfx_window_title(char *buf, size_t size)
 {
    static struct timeval tv;

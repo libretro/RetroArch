@@ -93,7 +93,7 @@ static void *event_loop(void *data)
    return NULL;
 }
 
-static void* __ps3_init(const char* device, int rate, int latency)
+static void* __ps3_init(const char* device, unsigned rate, unsigned latency)
 {
    (void)latency;
    (void)device;

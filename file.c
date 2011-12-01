@@ -361,6 +361,8 @@ static void dump_to_file_desperate(const void *data, size_t size, int type)
 {
 #ifdef _WIN32
    const char *base = getenv("APPDATA");
+#elif defined(__CELLOS_LV2__)
+   const char *base = NULL;
 #else
    const char *base = getenv("HOME");
 #endif
@@ -929,6 +931,8 @@ bool path_is_directory(const char *path)
    if (MultiByteToWideChar(CP_UTF8, 0, path, -1, buf, MAXPATHLEN) == 0)
       return false;
    return PathIsDirectoryW(buf) == FILE_ATTRIBUTE_DIRECTORY;
+#elif defined(__CELLOS_LV2__)
+   return false; // STUB
 #else
    struct stat buf;
    if (stat(path, &buf) < 0)

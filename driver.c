@@ -162,6 +162,7 @@ void uninit_drivers(void)
 
 static void init_dsp_plugin(void)
 {
+#ifdef HAVE_DYLIB
    if (!(*g_settings.audio.dsp_plugin))
       return;
 
@@ -214,15 +215,18 @@ error:
       dylib_close(g_extern.audio_data.dsp_lib);
    g_extern.audio_data.dsp_plugin = NULL;
    g_extern.audio_data.dsp_lib = NULL;
+#endif
 }
 
 static void deinit_dsp_plugin(void)
 {
+#ifdef HAVE_DYLIB
    if (g_extern.audio_data.dsp_lib && g_extern.audio_data.dsp_plugin)
    {
       g_extern.audio_data.dsp_plugin->free(g_extern.audio_data.dsp_handle);
       dylib_close(g_extern.audio_data.dsp_lib);
    }
+#endif
 }
 
 static void adjust_audio_input_rate(void)
@@ -405,7 +409,6 @@ static void init_filter(void)
       g_extern.filter.colormap[i] = (r << 16) | (g << 8) | (b << 0);
    }
 }
-#endif
 
 static void deinit_filter(void)
 {
@@ -418,6 +421,7 @@ static void deinit_filter(void)
       free(g_extern.filter.colormap);
    }
 }
+#endif
 
 #ifdef HAVE_XML
 static void init_shader_dir(void)
@@ -546,7 +550,9 @@ void uninit_video_input(void)
    if (driver.video_data && driver.video)
       driver.video->free(driver.video_data);
 
+#ifdef HAVE_DYLIB
    deinit_filter();
+#endif
 
 #ifdef HAVE_XML
    deinit_shader_dir();
