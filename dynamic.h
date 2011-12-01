@@ -21,15 +21,27 @@
 #include <stdbool.h>
 #include "libsnes.hpp"
 
-void init_dlsym(void);
-void uninit_dlsym(void);
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+#define NEED_DYNAMIC
+#else
+#undef NEED_DYNAMIC
+#endif
+
+void init_libsnes_sym(void);
+void uninit_libsnes_sym(void);
 
 typedef void *dylib_t;
+#ifdef NEED_DYNAMIC
 typedef void (*function_t)(void);
 
 dylib_t dylib_load(const char *path);
 void dylib_close(dylib_t lib);
 function_t dylib_proc(dylib_t lib, const char *proc);
+#endif
 
 extern void (*psnes_init)(void);
 
