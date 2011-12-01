@@ -957,12 +957,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    {
       gl->last_width[gl->tex_index] = width;
       gl->last_height[gl->tex_index] = height;
-      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
-      glPixelStorei(GL_UNPACK_ALIGNMENT, gl->tex_w);
 
-      glTexSubImage2D(GL_TEXTURE_2D,
-            0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
-            gl->texture_fmt, gl->empty_buf);
+      glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
+            gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
+            gl->tex_w * gl->tex_h * gl->base_size,
+            gl->empty_buf);
 
       GLfloat xamt = (GLfloat)width / gl->tex_w;
       GLfloat yamt = (GLfloat)height / gl->tex_h;
@@ -986,10 +985,22 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       glVertexPointer(2, GL_FLOAT, 0, vertexes);
 #endif
 
-   glPixelStorei(GL_UNPACK_ALIGNMENT, pitch / gl->base_size);
-   glTexSubImage2D(GL_TEXTURE_2D,
-         0, 0, 0, width, height, gl->texture_type,
-         gl->texture_fmt, frame);
+   {
+      size_t buffer_addr = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
+      size_t buffer_stride = gl->tex_w * gl->base_size;
+      const uint8_t *frame_copy = frame;
+      size_t frame_copy_size = width * gl->base_size;
+      for (unsigned h = 0; h < height; h++)
+      {
+         glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE, 
+               buffer_addr,
+               frame_copy_size,
+               frame_copy);
+
+         frame_copy += pitch;
+         buffer_addr += buffer_stride;
+      }
+   }
 
    struct gl_tex_info tex_info = {
       .tex = gl->texture[gl->tex_index],
@@ -1096,20 +1107,18 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    return true;
 }
 
-static void psgl_deinit(gl_t * gl)
+static void psgl_deinit(gl_t *gl)
 {
-   glDeleteTextures(1, &gl->texture);
-
    glFinish();
-   cellDbgFontExit();
 
    psglDestroyContext(gl->gl_context);
    psglDestroyDevice(gl->gl_device);
+
 #if(CELL_SDK_VERSION > 0x340000)
-   //FIXME: It will crash here for 1.92 - termination of the PSGL library - works fine for 3.41
+   // FIXME: It will crash here for 1.92 - termination of the PSGL library - works fine for 3.41
    psglExit();
 #else
-   //for 1.92
+   // For 1.92
    gl->min_width = 0;
    gl->min_height = 0;
    gl->gl_context = NULL;
@@ -1127,6 +1136,8 @@ static void gl_free(void *data)
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDisableClientState(GL_COLOR_ARRAY);
    glDeleteTextures(TEXTURES, gl->texture);
+   glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
+   glDeleteBuffers(1, &gl->pbo);
 
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
@@ -1135,6 +1146,7 @@ static void gl_free(void *data)
       glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
    }
 #endif
+
    psgl_deinit(gl);
 
    if (gl->empty_buf)
@@ -1184,48 +1196,12 @@ static bool psgl_init_device(gl_t * gl, const video_info_t *video, uint32_t reso
    params.enable |= PSGL_DEVICE_PARAMETERS_BUFFERING_MODE;
    params.bufferingMode = PSGL_BUFFERING_MODE_TRIPLE;
    
-#if 0
-   if (pal60Hz)
-   {
-	params.enable |= PSGL_DEVICE_PARAMETERS_RESC_PAL_TEMPORAL_MODE;
-	params.rescPalTemporalMode = RESC_PAL_TEMPORAL_MODE_60_INTERPOLATE;
-	params.enable |= PSGL_DEVICE_PARAMETERS_RESC_RATIO_MODE;
-	params.rescRatioMode = RESC_RATIO_MODE_FULLSCREEN;
-   }
-#endif
-
-#if 0
-   if (resolution_id)
-   {
-      //Resolution setting
-      CellVideoOutResolution resolution;
-      cellVideoOutGetResolution(resolution_id, &resolution);
-      
-      params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
-      params.width = resolution.width;
-      params.height = resolution.height;
-      gl->resolution_id = resolutionId;
-   }
-#endif
-
    gl->gl_device = psglCreateDeviceExtended(&params);
-
-   // Get the dimensions of the screen in question, and do stuff with it :)
    psglGetDeviceDimensions(gl->gl_device, &gl->win_width, &gl->win_height); 
-
-   // Create a context and bind it to the current display.
    gl->gl_context = psglCreateContext();
-
-#if 0
-   if(m_viewport_width == 0)
-      m_viewport_width = gl_width;
-   if(m_viewport_height == 0)
-      m_viewport_height = gl_height;
-#endif
-
    psglMakeCurrent(gl->gl_context, gl->gl_device);
-
    psglResetCurrentContext();
+
    return true;
 }
 
@@ -1234,9 +1210,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 {
    gl_t *gl = calloc(1, sizeof(gl_t));
    if (!gl)
-   {
       return NULL;
-   }
 
    if (!psgl_init_device(gl, video, 0))
       return NULL;
@@ -1288,7 +1262,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->tex_filter = video->smooth ? GL_LINEAR : GL_NEAREST;
 
    gl->texture_type = GL_BGRA;
-   gl->texture_fmt = video->rgb32 ? GL_UNSIGNED_INT_8_8_8_8_REV : GL_UNSIGNED_SHORT_1_5_5_5_REV;
+   gl->texture_fmt = video->rgb32 ? GL_ARGB_SCE : GL_RGB5_A1;
    gl->base_size = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    glEnable(GL_TEXTURE_2D);
@@ -1298,6 +1272,12 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
+
+   gl->tex_w = SSNES_SCALE_BASE * video->input_scale;
+   gl->tex_h = SSNES_SCALE_BASE * video->input_scale;
+   glGenBuffers(1, &gl->pbo);
+   glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
+   glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
 
    glGenTextures(TEXTURES, gl->texture);
 
@@ -1324,19 +1304,17 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    set_lut_texture_coords(tex_coords);
 
-   gl->tex_w = SSNES_SCALE_BASE * video->input_scale;
-   gl->tex_h = SSNES_SCALE_BASE * video->input_scale;
-
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(gl->tex_w * gl->tex_h, gl->base_size);
 
    for (unsigned i = 0; i < TEXTURES; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-      glPixelStorei(GL_UNPACK_ALIGNMENT, gl->tex_w);
-      glTexImage2D(GL_TEXTURE_2D,
-            0, GL_RGBA, gl->tex_w, gl->tex_h, 0, gl->texture_type,
-            gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
+      glTextureReferenceSCE(GL_TEXTURE_2D, 1,
+            gl->tex_w, gl->tex_h, 0, 
+            gl->texture_fmt,
+            gl->tex_w * gl->base_size,
+            gl->tex_w * gl->tex_h * i * gl->base_size);
    }
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
