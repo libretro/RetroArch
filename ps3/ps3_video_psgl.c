@@ -85,7 +85,6 @@ static const GLfloat white_color[] = {
 
 
 #ifdef HAVE_FBO
-#define pglGenFramebuffers glGenFramebuffers
 static bool load_fbo_proc(void) { return true; }
 #endif
 
@@ -113,12 +112,13 @@ static inline bool load_gl_proc(void) { return true; }
 
 typedef struct gl
 {
+   PSGLdevice* gl_device;
+   PSGLcontext* gl_context;
    bool vsync;
    GLuint texture[TEXTURES];
    unsigned tex_index; // For use with PREV.
    struct gl_tex_info prev_info[TEXTURES];
    GLuint tex_filter;
-
    void *empty_buf;
 
    unsigned frame_count;
@@ -136,10 +136,7 @@ typedef struct gl
 
    bool should_resize;
    bool quitting;
-   bool fullscreen;
    bool keep_aspect;
-
-   unsigned full_x, full_y;
 
    unsigned win_width;
    unsigned win_height;
@@ -593,14 +590,14 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
       else if (device_aspect > desired_aspect)
       {
          float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-         glViewport(width * (0.5 - delta), 0, 2.0 * width * delta, height);
-         width = 2.0 * width * delta;
+         glViewport((GLint)(width * (0.5 - delta)), 0,(GLint)(2.0 * width * delta), height);
+         width = (unsigned)(2.0 * width * delta);
       }
       else
       {
          float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         glViewport(0, height * (0.5 - delta), width, 2.0 * height * delta);
-         height = 2.0 * height * delta;
+         glViewport(0, (GLint)(height * (0.5 - delta)), width,(GLint)(2.0 * height * delta));
+         height = (unsigned)(2.0 * height * delta);
       }
    }
    else
@@ -909,7 +906,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    {
       gl->should_resize = false;
 
-      sdlwrap_set_resize(gl->win_width, gl->win_height);
+      //sdlwrap_set_resize(gl->win_width, gl->win_height);
 
 #ifdef HAVE_FBO
       if (!gl->render_to_tex)
@@ -1116,7 +1113,7 @@ static void gl_free(void *data)
       glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
    }
 #endif
-   sdlwrap_destroy();
+   psgl_deinit();
 
    if (gl->empty_buf)
       free(gl->empty_buf);
@@ -1212,115 +1209,119 @@ static void psgl_init()
 	return CELL_OK;
 }
 
-static bool psglinit_init_context()
+static bool psgl_init_device(uint32_t resolution_id)
 {
-	PSGLdeviceParameters params;
-	PSGLinitOptions options;
-	options.enable = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS;
+   PSGLdeviceParameters params;
+   PSGLinitOptions options;
+   options.enable = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS;
 #if(CELL_SDK_VERSION > 0x340000)
-	options.enable |= PSGL_INIT_TRANSIENT_MEMORY_SIZE;
+   options.enable |= PSGL_INIT_TRANSIENT_MEMORY_SIZE;
 #else
-	options.enable |=	PSGL_INIT_HOST_MEMORY_SIZE;
+   options.enable |=	PSGL_INIT_HOST_MEMORY_SIZE;
 #endif
-	options.maxSPUs = 1;
-	options.initializeSPUs = GL_FALSE;
-	options.persistentMemorySize = 0;
-	options.transientMemorySize = 0;
-	options.errorConsole = 0;
-	options.fifoSize = 0;
-	options.hostMemorySize = 0;
+   options.maxSPUs = 1;
+   options.initializeSPUs = GL_FALSE;
+   options.persistentMemorySize = 0;
+   options.transientMemorySize = 0;
+   options.errorConsole = 0;
+   options.fifoSize = 0;
+   options.hostMemorySize = 0;
+   
+   psglInit(&options);
+   
+   params.enable = PSGL_DEVICE_PARAMETERS_COLOR_FORMAT | \
+   PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT | \
+   PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE;
+   
+   params.colorFormat = GL_ARGB_SCE;
+   params.depthFormat = GL_NONE;
+   params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
+   
+   params.enable |= PSGL_DEVICE_PARAMETERS_BUFFERING_MODE;
+   params.bufferingMode = PSGL_BUFFERING_MODE_TRIPLE;
+   
+#if 0
+   if (pal60Hz)
+   {
+	params.enable |= PSGL_DEVICE_PARAMETERS_RESC_PAL_TEMPORAL_MODE;
+	params.rescPalTemporalMode = RESC_PAL_TEMPORAL_MODE_60_INTERPOLATE;
+	params.enable |= PSGL_DEVICE_PARAMETERS_RESC_RATIO_MODE;
+	params.rescRatioMode = RESC_RATIO_MODE_FULLSCREEN;
+   }
+#endif
 
-	psglInit(&options);
+#if 0
+   if (resolution_id)
+   {
+      //Resolution setting
+      CellVideoOutResolution resolution;
+      cellVideoOutGetResolution(resolution_id, &resolution);
+      
+      params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
+      params.width = resolution.width;
+      params.height = resolution.height;
+      gl->resolution_id = resolutionId;
+   }
+#endif
 
-	params.enable = PSGL_DEVICE_PARAMETERS_COLOR_FORMAT | \
-			PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT | \
-			PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE;
-	params.colorFormat = GL_ARGB_SCE;
-	params.depthFormat = GL_NONE;
-	params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
+   gl->psgl_device = psglCreateDeviceExtended(&params);
 
-	params.enable |= PSGL_DEVICE_PARAMETERS_BUFFERING_MODE;
-	params.bufferingMode = PSGL_BUFFERING_MODE_TRIPLE;
+   // Get the dimensions of the screen in question, and do stuff with it :)
+   psglGetDeviceDimensions(gl->psgl_device, &gl->win_width, &gl->win_height); 
 
-	#if 0
-	if (pal60Hz)
-	{
-		params.enable |= PSGL_DEVICE_PARAMETERS_RESC_PAL_TEMPORAL_MODE;
-		params.rescPalTemporalMode = RESC_PAL_TEMPORAL_MODE_60_INTERPOLATE;
-		params.enable |= PSGL_DEVICE_PARAMETERS_RESC_RATIO_MODE;
-		params.rescRatioMode = RESC_RATIO_MODE_FULLSCREEN;
-	}
-	#endif
+   // Create a context and bind it to the current display.
+   gl->psgl_context = psglCreateContext();
 
-	#if 0
-	if (resolutionId)
-	{
-		//Resolution setting
-		CellVideoOutResolution resolution;
-		cellVideoOutGetResolution(resolutionId, &resolution);
+#if 0
+   if(m_viewport_width == 0)
+      m_viewport_width = gl_width;
+   if(m_viewport_height == 0)
+      m_viewport_height = gl_height;
+#endif
 
-		params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
-		params.width = resolution.width;
-		params.height = resolution.height;
-		m_currentResolutionId = resolutionId;
-	}
-	#endif
+   psglMakeCurrent(gl->psgl_context, gl->psgl_device);
 
-	psgl_device = psglCreateDeviceExtended(&params);
+   psglResetCurrentContext();
+   return true;
+}
 
-	// Get the dimensions of the screen in question, and do stuff with it :)
-	psglGetDeviceDimensions(psgl_device, &gl_width, &gl_height); 
+static void psgl_deinit()
+{
+   glDeleteTextures(1, &tex);
 
-	// Create a context and bind it to the current display.
-	psgl_context = psglCreateContext();
+   glFinish();
+   cellDbgFontExit();
 
-	#if 0
-	if(m_viewport_width == 0)
-		m_viewport_width = gl_width;
-	if(m_viewport_height == 0)
-		m_viewport_height = gl_height;
-	#endif
-
-	psglMakeCurrent(psgl_context, psgl_device);
-
-	psglResetCurrentContext();
-	return true;
+   psglDestroyContext(psgl_context);
+   psglDestroyDevice(psgl_device);
+#if(CELL_SDK_VERSION > 0x340000)
+   //FIXME: It will crash here for 1.92 - termination of the PSGL library - works fine for 3.41
+   psglExit();
+#else
+   //for 1.92
+   gl_width = 0;
+   gl_height = 0;
+   psgl_context = NULL;
+   psgl_device = NULL;
+#endif
 }
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
 
-   if (!psgl_init())
+   if (!psgl_init_device(0))
       return NULL;
 
-   const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
-   assert(video_info);
-   unsigned full_x = video_info->current_w;
-   unsigned full_y = video_info->current_h;
-   SSNES_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
+   SSNES_LOG("Detecting resolution %ux%u.\n", gl->win_width, gl->win_height);
 
    video->vsync ? glEnable(GL_VSYNC_SCE) : glDisable(GL_VSYNC_SCE);
-
-   unsigned win_width = video->width;
-   unsigned win_height = video->height;
-   if (video->fullscreen && (win_width == 0) && (win_height == 0))
-   {
-      win_width = full_x;
-      win_height = full_y;
-   }
-
-   if (!sdlwrap_set_video_mode(win_width, win_height,
-            g_settings.video.force_16bit ? 15 : 0, video->fullscreen))
-      return NULL;
-
-   gfx_window_title_reset();
 
 #if defined(HAVE_XML)
    // Win32 GL lib doesn't have some functions needed for XML shaders.
    // Need to load dynamically :(
    if (!load_gl_proc())
    {
-      sdlwrap_destroy();
+      psgl_deinit();
       return NULL;
    }
 #endif
@@ -1328,24 +1329,18 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_t *gl = calloc(1, sizeof(gl_t));
    if (!gl)
    {
-      sdlwrap_destroy();
+      psgl_deinit();
       return NULL;
    }
 
    gl->vsync = video->vsync;
-   gl->fullscreen = video->fullscreen;
    
-   gl->full_x = full_x;
-   gl->full_y = full_y;
-   gl->win_width = win_width;
-   gl->win_height = win_height;
-
    SSNES_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
 
    if (!gl_shader_init())
    {
       SSNES_ERR("Shader init failed.\n");
-      sdlwrap_destroy();
+      psgl_deinit();
       free(gl);
       return NULL;
    }
@@ -1443,7 +1438,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       
    if (!gl_check_error())
    {
-      sdlwrap_destroy();
+      psgl_deinit();
       free(gl);
       return NULL;
    }
@@ -1524,6 +1519,3 @@ const video_driver_t video_gl = {
 #endif
    .ident = "gl"
 };
-
-
-
