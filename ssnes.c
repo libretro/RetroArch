@@ -1944,7 +1944,7 @@ int main(int argc, char *argv[])
 
    parse_input(argc, argv);
    parse_config();
-   init_dlsym();
+   init_libsnes_sym();
    fill_title_buf();
 
    psnes_init();
@@ -2097,7 +2097,7 @@ int main(int argc, char *argv[])
    psnes_unload_cartridge();
    psnes_term();
    uninit_drivers();
-   uninit_dlsym();
+   uninit_libsnes_sym();
 
    return 0;
 
@@ -2105,7 +2105,7 @@ error:
    psnes_unload_cartridge();
    psnes_term();
    uninit_drivers();
-   uninit_dlsym();
+   uninit_libsnes_sym();
 
    return 1;
 }

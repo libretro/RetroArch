@@ -25,13 +25,10 @@
 #include "config.h"
 #endif
 
+#include <stdbool.h>
 #include "libsnes.hpp"
 
-#if defined(HAVE_DYLIB) || defined(HAVE_DYNAMIC)
-#define HAVE_DYNAMIC_LOAD
-#endif
-
-#ifdef HAVE_DYNAMIC_LOAD
+#ifdef NEED_DYNAMIC
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -39,7 +36,7 @@
 #endif
 #endif
 
-#ifdef HAVE_DYNAMIC_LOAD
+#ifdef NEED_DYNAMIC
 #define DLSYM(lib, x) dylib_proc(lib, #x)
 
 #define SYM(type, x) do { \
@@ -102,7 +99,7 @@ unsigned (*psnes_get_memory_size)(unsigned);
 void (*psnes_unload_cartridge)(void);
 void (*psnes_term)(void);
 
-#ifdef HAVE_DYNAMIC_LOAD
+#ifdef NEED_DYNAMIC
 static void set_environment(void);
 #endif
 
@@ -150,13 +147,11 @@ static void load_dynamic(void)
    SYM(void (*)(void), snes_unload_cartridge);
    SYM(void (*)(void), snes_term);
 }
-#endif
-
+#else
 #define SSYM(x) do { \
    p##x = x; \
 } while (0)
 
-#ifndef HAVE_DYNAMIC_LOAD
 static void set_statics(void)
 {
    SSYM(snes_init);
@@ -189,13 +184,13 @@ static void set_statics(void)
 }
 #endif
 
-void init_dlsym(void)
+void init_libsnes_sym(void)
 {
-#ifdef HAVE_DYNAMIC_LOAD
    // Guarantee that we can do "dirty" casting.
    // Every OS that this program supports should pass this ...
    assert(sizeof(void*) == sizeof(void (*)(void)));
 
+#ifdef HAVE_DYNAMIC
    // Try to verify that -lsnes was not linked in from other modules
    // since loading it dynamically and with -l will fail hard.
    function_t sym = dylib_proc(NULL, "snes_init");
@@ -223,12 +218,12 @@ void init_dlsym(void)
    set_statics();
 #endif
 
-#ifdef HAVE_DYNAMIC_LOAD
+#ifdef NEED_DYNAMIC
    set_environment();
 #endif
 }
 
-void uninit_dlsym(void)
+void uninit_libsnes_sym(void)
 {
 #ifdef HAVE_DYNAMIC_LOAD
    if (lib_handle)
@@ -236,7 +231,7 @@ void uninit_dlsym(void)
 #endif
 }
 
-#ifdef HAVE_DYNAMIC_LOAD
+#ifdef NEED_DYNAMIC
 // Platform independent dylib loading.
 dylib_t dylib_load(const char *path)
 {

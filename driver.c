@@ -160,6 +160,7 @@ void uninit_drivers(void)
    uninit_audio();
 }
 
+#ifdef HAVE_DYLIB
 static void init_dsp_plugin(void)
 {
 #ifdef HAVE_DYLIB
@@ -228,6 +229,7 @@ static void deinit_dsp_plugin(void)
    }
 #endif
 }
+#endif
 
 static void adjust_audio_input_rate(void)
 {
@@ -318,7 +320,9 @@ void init_audio(void)
    g_extern.audio_data.src_ratio =
       (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
 
+#ifdef HAVE_DYLIB
    init_dsp_plugin();
+#endif
 }
 
 void uninit_audio(void)
@@ -345,7 +349,9 @@ void uninit_audio(void)
    free(g_extern.audio_data.outsamples);
    g_extern.audio_data.outsamples = NULL;
 
+#ifdef HAVE_DYLIB
    deinit_dsp_plugin();
+#endif
 }
 
 #ifdef HAVE_DYLIB
