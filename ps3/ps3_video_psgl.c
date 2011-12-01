@@ -40,7 +40,7 @@
 #include "../strl.h"
 
 #ifdef HAVE_CG
-#include "shader_cg.h"
+#include "../gfx/shader_cg.h"
 #endif
 
 #ifdef HAVE_XML
@@ -112,6 +112,7 @@ static inline bool load_gl_proc(void) { return true; }
 
 typedef struct gl
 {
+   GLuint pbo;
    PSGLdevice* gl_device;
    PSGLcontext* gl_context;
    bool vsync;
@@ -521,11 +522,11 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    glGenFramebuffersOES(gl->fbo_pass, gl->fbo);
    for (int i = 0; i < gl->fbo_pass; i++)
    {
-      glBindFramebufferOES(GL_FRAMEBUFFER, gl->fbo[i]);
-      glFramebufferTexture2DOES(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
+      glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[i]);
+      glFramebufferTexture2DOES(GL_FRAMEBUFFER_OES, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
-      GLenum status = glCheckFramebufferStatusOES(GL_FRAMEBUFFER);
-      if (status != GL_FRAMEBUFFER_COMPLETE)
+      GLenum status = glCheckFramebufferStatusOES(GL_FRAMEBUFFER_OES);
+      if (status != GL_FRAMEBUFFER_COMPLETE_OES)
          goto error;
    }
 
@@ -896,7 +897,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       }
 
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-      glBindFramebufferOES(GL_FRAMEBUFFER, gl->fbo[0]);
+      glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[0]);
       gl->render_to_tex = true;
       set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
    }
@@ -926,16 +927,16 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
                unsigned pow2_size = next_pow2(max);
                gl->fbo_rect[i].width = gl->fbo_rect[i].height = pow2_size;
 
-               glBindFramebufferOES(GL_FRAMEBUFFER, gl->fbo[i]);
+               glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[i]);
                glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
                glTexImage2D(GL_TEXTURE_2D,
                      0, GL_RGBA, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_BGRA,
                      GL_UNSIGNED_INT_8_8_8_8, NULL);
 
-               glFramebufferTexture2DOES(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
+               glFramebufferTexture2DOES(GL_FRAMEBUFFER_OES, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
-               GLenum status = glCheckFramebufferStatusOES(GL_FRAMEBUFFER);
-               if (status != GL_FRAMEBUFFER_COMPLETE)
+               GLenum status = glCheckFramebufferStatusOES(GL_FRAMEBUFFER_OES);
+               if (status != GL_FRAMEBUFFER_COMPLETE_OES)
                   SSNES_WARN("Failed to reinit FBO texture!\n");
 
                SSNES_LOG("Recreating FBO texture #%d: %ux%u\n", i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
@@ -944,7 +945,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
          // Go back to what we're supposed to do, render to FBO #0 :D
          glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-         glBindFramebufferOES(GL_FRAMEBUFFER, gl->fbo[0]);
+         glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[0]);
          set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
       }
 #else
@@ -1035,7 +1036,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          fbo_info->tex_size[1] = prev_rect->height;
          memcpy(fbo_info->coord, gl->fbo_tex_coords, sizeof(gl->fbo_tex_coords));
 
-         glBindFramebufferOES(GL_FRAMEBUFFER, gl->fbo[i]);
+         glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[i]);
          gl_shader_use(i + 1);
          glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
@@ -1061,7 +1062,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       set_texture_coords(gl->fbo_tex_coords, xamt, yamt);
 
       // Render our FBO texture to back buffer.
-      glBindFramebufferOES(GL_FRAMEBUFFER, 0);
+      glBindFramebufferOES(GL_FRAMEBUFFER_OES, 0);
       gl_shader_use(gl->fbo_pass + 1);
 
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
@@ -1095,6 +1096,27 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    return true;
 }
 
+static void psgl_deinit(gl_t * gl)
+{
+   glDeleteTextures(1, &gl->texture);
+
+   glFinish();
+   cellDbgFontExit();
+
+   psglDestroyContext(gl->gl_context);
+   psglDestroyDevice(gl->gl_device);
+#if(CELL_SDK_VERSION > 0x340000)
+   //FIXME: It will crash here for 1.92 - termination of the PSGL library - works fine for 3.41
+   psglExit();
+#else
+   //for 1.92
+   gl->min_width = 0;
+   gl->min_height = 0;
+   gl->gl_context = NULL;
+   gl->gl_device = NULL;
+#endif
+}
+
 static void gl_free(void *data)
 {
    gl_t *gl = data;
@@ -1113,7 +1135,7 @@ static void gl_free(void *data)
       glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
    }
 #endif
-   psgl_deinit();
+   psgl_deinit(gl);
 
    if (gl->empty_buf)
       free(gl->empty_buf);
@@ -1131,85 +1153,7 @@ static void gl_set_nonblock_state(void *data, bool state)
    }
 }
 
-static void psgl_set_smooth(uint32_t smooth, unsigned index)
-{
-	if (index == 0)
-	{
-		m_smooth = smooth;
-		glBindTexture(GL_TEXTURE_2D, gl->texture);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->smooth ? GL_LINEAR : GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, g->smooth ? GL_LINEAR : GL_NEAREST);
-	}
-	else if (gl->fbo_texture)
-	{
-		glBindTexture(GL_TEXTURE_2D, gl->fbo_texture);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->smooth ? GL_LINEAR : GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->smooth ? GL_LINEAR : GL_NEAREST);
-		glBindTexture(GL_TEXTURE_2D, gl->texture);
-	}
-}
-
-static void psgl_init()
-{
-	glDisable(GL_DEPTH_TEST);
-
-   	video->vsync ? glEnable(GL_VSYNC_SCE) : glDisable(GL_VSYNC_SCE);
-	
-	set_viewport(gl, gl->win_width, gl->win_height, false);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	glGenBuffers(2, vbo);
-	glGenTextures(1, &gl->texture);
-	glBindTexture(GL_TEXTURE_2D, gl->texture);
-
-	glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, vbo[0]);
-	glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE, SCREEN_RENDER_TEXTURE_HEIGHT << 10, NULL, GL_STREAM_DRAW);
-
-	glTextureReferenceSCE(GL_TEXTURE_2D, 1, SCREEN_RENDER_TEXTURE_WIDTH, SCREEN_RENDER_TEXTURE_HEIGHT, 0, GL_RGB5_A1, SCREEN_RENDER_TEXTURE_PITCH, 0);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-	ps3graphics_set_smooth(m_smooth, 0);
-	ps3graphics_set_smooth(m_smooth2, 1);
-
-	// PSGL doesn't clear the screen on startup, so let's do that here.
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glColor4f(1.0, 1.0, 1.0, 1.0);
-	glClear(GL_COLOR_BUFFER_BIT);
-	psglSwap();
-
-	// Use some initial values for the screen quad.
-	GLfloat vertexes[] = {
-		0, 0, 0,
-		0, 1, 0,
-		1, 1, 0,
-		1, 0, 0,
-		0, 1,
-		0, 0,
-		1, 0,
-		1, 1
-	};
-
-	GLfloat vertex_buf[128];
-	__builtin_memcpy(vertex_buf, vertexes, 12 * sizeof(GLfloat));
-	__builtin_memcpy(vertex_buf + 32, vertexes + 12, 8 * sizeof(GLfloat));
-	__builtin_memcpy(vertex_buf + 32 * 3, vertexes + 12, 8 * sizeof(GLfloat));
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, 512, vertex_buf, GL_STREAM_DRAW);
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	glVertexPointer(3, GL_FLOAT, 0, 0);
-	glTexCoordPointer(2, GL_FLOAT, 0, (void*)128);
-
-	return CELL_OK;
-}
-
-static bool psgl_init_device(uint32_t resolution_id)
+static bool psgl_init_device(gl_t * gl, const video_info_t *video, uint32_t resolution_id)
 {
    PSGLdeviceParameters params;
    PSGLinitOptions options;
@@ -1264,13 +1208,13 @@ static bool psgl_init_device(uint32_t resolution_id)
    }
 #endif
 
-   gl->psgl_device = psglCreateDeviceExtended(&params);
+   gl->gl_device = psglCreateDeviceExtended(&params);
 
    // Get the dimensions of the screen in question, and do stuff with it :)
-   psglGetDeviceDimensions(gl->psgl_device, &gl->win_width, &gl->win_height); 
+   psglGetDeviceDimensions(gl->gl_device, &gl->win_width, &gl->win_height); 
 
    // Create a context and bind it to the current display.
-   gl->psgl_context = psglCreateContext();
+   gl->gl_context = psglCreateContext();
 
 #if 0
    if(m_viewport_width == 0)
@@ -1279,37 +1223,22 @@ static bool psgl_init_device(uint32_t resolution_id)
       m_viewport_height = gl_height;
 #endif
 
-   psglMakeCurrent(gl->psgl_context, gl->psgl_device);
+   psglMakeCurrent(gl->gl_context, gl->gl_device);
 
    psglResetCurrentContext();
    return true;
 }
 
-static void psgl_deinit()
-{
-   glDeleteTextures(1, &tex);
-
-   glFinish();
-   cellDbgFontExit();
-
-   psglDestroyContext(psgl_context);
-   psglDestroyDevice(psgl_device);
-#if(CELL_SDK_VERSION > 0x340000)
-   //FIXME: It will crash here for 1.92 - termination of the PSGL library - works fine for 3.41
-   psglExit();
-#else
-   //for 1.92
-   gl_width = 0;
-   gl_height = 0;
-   psgl_context = NULL;
-   psgl_device = NULL;
-#endif
-}
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+   gl_t *gl = calloc(1, sizeof(gl_t));
+   if (!gl)
+   {
+      return NULL;
+   }
 
-   if (!psgl_init_device(0))
+   if (!psgl_init_device(gl, video, 0))
       return NULL;
 
    SSNES_LOG("Detecting resolution %ux%u.\n", gl->win_width, gl->win_height);
@@ -1321,17 +1250,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    // Need to load dynamically :(
    if (!load_gl_proc())
    {
-      psgl_deinit();
+      psgl_deinit(gl);
       return NULL;
    }
 #endif
-
-   gl_t *gl = calloc(1, sizeof(gl_t));
-   if (!gl)
-   {
-      psgl_deinit();
-      return NULL;
-   }
 
    gl->vsync = video->vsync;
    
@@ -1340,7 +1262,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!gl_shader_init())
    {
       SSNES_ERR("Shader init failed.\n");
-      psgl_deinit();
+      psgl_deinit(gl);
       free(gl);
       return NULL;
    }
@@ -1438,7 +1360,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       
    if (!gl_check_error())
    {
-      psgl_deinit();
+      psgl_deinit(gl);
       free(gl);
       return NULL;
    }

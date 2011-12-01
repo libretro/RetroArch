@@ -88,10 +88,10 @@
 
 #define CTRL_MASK(state, mask) (state & mask)
 
-#define CTRL_AXIS_LSTICK_X(state) ((u8)(((0xFF0000LLU & state) >> 16) & 0xFF))
-#define CTRL_AXIS_LSTICK_Y(state) ((u8)(((0xFF000000LLU & state) >> 24) & 0xFF))
-#define CTRL_AXIS_RSTICK_X(state) ((u8)(((0xFF00000000LLU & state) >> 32) & 0xFF))
-#define CTRL_AXIS_RSTICK_Y(state) ((u8)(((0xFF0000000000LLU & state) >> 40) & 0xFF))
+#define CTRL_AXIS_LSTICK_X(state) ((uint8_t)(((0xFF0000LLU & state) >> 16) & 0xFF))
+#define CTRL_AXIS_LSTICK_Y(state) ((uint8_t)(((0xFF000000LLU & state) >> 24) & 0xFF))
+#define CTRL_AXIS_RSTICK_X(state) ((uint8_t)(((0xFF00000000LLU & state) >> 32) & 0xFF))
+#define CTRL_AXIS_RSTICK_Y(state) ((uint8_t)(((0xFF0000000000LLU & state) >> 40) & 0xFF))
 
 typedef uint64_t cell_input_state_t;
 
