@@ -195,30 +195,7 @@ static void add_sub_conf(config_file_t *conf, char *line)
 
    char real_path[MAXPATHLEN];
 
-#ifndef _WIN32
-   if (*path == '/')
-   {
-      strlcpy(real_path, path, sizeof(real_path));
-   }
-   else if (*path == '~')
-   {
-      const char *home = getenv("HOME");
-      strlcpy(real_path, home ? home : "/", sizeof(real_path));
-      strlcat(real_path, path + 1, sizeof(real_path));
-   }
-   else
-   {
-      strlcpy(real_path, conf->path, sizeof(real_path));
-      char *split = strrchr(real_path, '/');
-      if (split)
-      {
-         split[1] = '\0';
-         strlcat(real_path, path, sizeof(real_path));
-      }
-      else
-         strlcpy(real_path, path, sizeof(real_path));
-   }
-#else
+#ifdef _WIN32
    // Accomodate POSIX systems on Win32.
    bool is_full_path = *path == '/';
 
@@ -236,6 +213,31 @@ static void add_sub_conf(config_file_t *conf, char *line)
 
       split[1] = '\0';
       strlcat(real_path, path, sizeof(real_path));
+   }
+#else
+   if (*path == '/')
+   {
+      strlcpy(real_path, path, sizeof(real_path));
+   }
+#ifndef __CELLOS_LV2__
+   else if (*path == '~')
+   {
+      const char *home = getenv("HOME");
+      strlcpy(real_path, home ? home : "/", sizeof(real_path));
+      strlcat(real_path, path + 1, sizeof(real_path));
+   }
+#endif
+   else
+   {
+      strlcpy(real_path, conf->path, sizeof(real_path));
+      char *split = strrchr(real_path, '/');
+      if (split)
+      {
+         split[1] = '\0';
+         strlcat(real_path, path, sizeof(real_path));
+      }
+      else
+         strlcpy(real_path, path, sizeof(real_path));
    }
 #endif
 
