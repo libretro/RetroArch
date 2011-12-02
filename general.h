@@ -225,6 +225,7 @@ struct global
       char fullpath[MAXPATHLEN];
       struct snes_system_timing timing;
       bool timing_set;
+      bool need_fullpath;
    } system;
 
    struct
