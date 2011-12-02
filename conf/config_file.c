@@ -195,7 +195,26 @@ static void add_sub_conf(config_file_t *conf, char *line)
 
    char real_path[MAXPATHLEN];
 
-#ifndef _WIN32
+#ifdef _WIN32
+   // Accomodate POSIX systems on Win32.
+   bool is_full_path = *path == '/';
+
+   if (is_full_path)
+      strlcpy(real_path, path, sizeof(real_path));
+   else
+      GetFullPathNameA(path, sizeof(real_path), real_path, NULL);
+
+   if (strcmp(path, real_path) != 0)
+   {
+      strlcpy(real_path, conf->path, sizeof(real_path));
+      char *split = strrchr(real_path, '/');
+      if (!split)
+         split = strrchr(real_path, '\\');
+
+      split[1] = '\0';
+      strlcat(real_path, path, sizeof(real_path));
+   }
+#else
    if (*path == '/')
    {
       strlcpy(real_path, path, sizeof(real_path));
@@ -217,25 +236,6 @@ static void add_sub_conf(config_file_t *conf, char *line)
       }
       else
          strlcpy(real_path, path, sizeof(real_path));
-   }
-#else
-   // Accomodate POSIX systems on Win32.
-   bool is_full_path = *path == '/';
-
-   if (is_full_path)
-      strlcpy(real_path, path, sizeof(real_path));
-   else
-      GetFullPathNameA(path, sizeof(real_path), real_path, NULL);
-
-   if (strcmp(path, real_path) != 0)
-   {
-      strlcpy(real_path, conf->path, sizeof(real_path));
-      char *split = strrchr(real_path, '/');
-      if (!split)
-         split = strrchr(real_path, '\\');
-
-      split[1] = '\0';
-      strlcat(real_path, path, sizeof(real_path));
    }
 #endif
 
