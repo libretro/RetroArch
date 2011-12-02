@@ -281,7 +281,7 @@ static void parse_config_file(void)
 {
    config_file_t *conf = NULL;
 
-   if (strlen(g_extern.config_path) > 0)
+   if (*g_extern.config_path)
    {
       conf = config_file_new(g_extern.config_path);
       if (!conf)

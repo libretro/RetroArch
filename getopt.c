@@ -148,16 +148,18 @@ int getopt_long(int argc, char *argv[],
    // Non-POSIXy, but that's what getopt does by default.
    if ((short_index > 0) && ((short_index < long_index) || (long_index == -1)))
    {
-      char *tmp = argv[optind];
-      argv[optind] = argv[optind + short_index];
-      argv[optind + short_index] = tmp;
+      char *tmp[short_index];
+      memcpy(tmp, &argv[optind], sizeof(tmp));
+      memmove(&argv[optind], &argv[optind + short_index], (argc - short_index) * sizeof(char*));
+      memcpy(&argv[argc - short_index], tmp, sizeof(tmp));
       short_index = 0;
    }
    else if ((long_index > 0) && ((long_index < short_index) || (short_index == -1)))
    {
-      char *tmp = argv[optind];
-      argv[optind] = argv[optind + long_index];
-      argv[optind + long_index] = tmp;
+      char *tmp[long_index];
+      memcpy(tmp, &argv[optind], sizeof(tmp));
+      memmove(&argv[optind], &argv[optind + long_index], (argc - long_index) * sizeof(char*));
+      memcpy(&argv[argc - long_index], tmp, sizeof(tmp));
       long_index = 0;
    }
 
