@@ -444,8 +444,10 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
 
+#ifndef __CELLOS_LV2__
       glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
       glPixelStorei(GL_UNPACK_ROW_LENGTH, img.width);
+#endif
       glTexImage2D(GL_TEXTURE_2D,
             0, GL_RGBA, img.width, img.height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8, img.pixels);
 
