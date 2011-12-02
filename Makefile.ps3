@@ -4,7 +4,7 @@
 ##
 ###
 ##
-DEBUG=1
+DEBUG=0
 CELL_BUILD_TOOLS     = GCC
 
 ## Platform detection from nall/Makefile. Only two applicable hosts for PS3 SDK.

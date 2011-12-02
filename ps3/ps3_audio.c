@@ -201,5 +201,6 @@ const audio_driver_t audio_ps3 = {
    .stop = __ps3_stop,
    .start = __ps3_start,
    .set_nonblock_state = __ps3_set_nonblock_state,
-   .free = __ps3_free
+   .free = __ps3_free,
+   .ident = "ps3"
 };
