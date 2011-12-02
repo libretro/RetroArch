@@ -232,6 +232,8 @@ static config_file_t *open_default_config_file(void)
    }
    if (!conf)
       conf = config_file_new("/etc/ssnes.cfg");
+#elif defined(__CELLOS_LV2__)
+   return NULL;
 #else
    const char *xdg = getenv("XDG_CONFIG_HOME");
    if (!xdg)
