@@ -167,7 +167,6 @@ void uninit_drivers(void)
 #ifdef HAVE_DYLIB
 static void init_dsp_plugin(void)
 {
-#ifdef HAVE_DYLIB
    if (!(*g_settings.audio.dsp_plugin))
       return;
 
@@ -220,18 +219,15 @@ error:
       dylib_close(g_extern.audio_data.dsp_lib);
    g_extern.audio_data.dsp_plugin = NULL;
    g_extern.audio_data.dsp_lib = NULL;
-#endif
 }
 
 static void deinit_dsp_plugin(void)
 {
-#ifdef HAVE_DYLIB
    if (g_extern.audio_data.dsp_lib && g_extern.audio_data.dsp_plugin)
    {
       g_extern.audio_data.dsp_plugin->free(g_extern.audio_data.dsp_handle);
       dylib_close(g_extern.audio_data.dsp_lib);
    }
-#endif
 }
 #endif
 

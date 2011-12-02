@@ -1362,6 +1362,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
+   *input = NULL;
+   *input_data = NULL;
+
    return gl;
 }
 
