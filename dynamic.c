@@ -102,6 +102,7 @@ void (*psnes_term)(void);
 #ifdef NEED_DYNAMIC
 static void set_environment(void);
 #endif
+static void set_environment_defaults(void);
 
 #ifdef HAVE_DYNAMIC_LOAD
 static void load_dynamic(void)
@@ -218,6 +219,7 @@ void init_libsnes_sym(void)
    set_statics();
 #endif
 
+   set_environment_defaults();
 #ifdef NEED_DYNAMIC
    set_environment();
 #endif
@@ -329,18 +331,6 @@ static bool environment_cb(unsigned cmd, void *data)
    return true;
 }
 
-// Assume SNES as defaults.
-static void set_environment_defaults(void)
-{
-   g_extern.system.pitch = 0; // 0 is classic libsnes semantics.
-   g_extern.system.geom = (struct snes_geometry) {
-      .base_width = 256,
-      .base_height = 224,
-      .max_width = 512,
-      .max_height = 512,
-   };
-}
-
 // SSNES extension hooks. Totally optional 'n shizz :)
 static void set_environment(void)
 {
@@ -355,8 +345,18 @@ static void set_environment(void)
 
    if (psnes_set_environment)
       psnes_set_environment(environment_cb);
-
-   set_environment_defaults();
 }
 #endif
+
+// Assume SNES as defaults.
+static void set_environment_defaults(void)
+{
+   g_extern.system.pitch = 0; // 0 is classic libsnes semantics.
+   g_extern.system.geom = (struct snes_geometry) {
+      .base_width = 256,
+      .base_height = 224,
+      .max_width = 512,
+      .max_height = 512,
+   };
+}
 
