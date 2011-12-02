@@ -86,7 +86,7 @@ static const video_driver_t *video_drivers[] = {
 };
 
 static const input_driver_t *input_drivers[] = {
-#ifdef HAVE_PS3
+#ifdef __CELLOS_LV2__
    &input_ps3,
 #endif
 #ifdef HAVE_SDL
