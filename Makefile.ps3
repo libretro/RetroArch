@@ -43,7 +43,7 @@ INCDIRS = -I. -Icommon
 MAKE_FSELF_NPDRM = $(CELL_SDK)/$(HOST_DIR)/bin/make_fself_npdrm
 MAKE_PACKAGE_NPDRM = $(CELL_SDK)/$(HOST_DIR)/bin/make_package_npdrm
 
-OBJ = ps3/buffer.o ps3/ps3_audio.o ps3/resampler.o ps3/ps3_input.o ps3/pad_input.o getopt.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o gfx/gfx_common.o ps3/ps3_video_psgl.o gfx/shader_cg.o gfx/snes_state.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o ps3/main.o audio/utils.o
+OBJ = fifo_buffer.o ps3/ps3_audio.o ps3/ps3_input.o ps3/pad_input.o getopt.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o gfx/gfx_common.o ps3/ps3_video_psgl.o gfx/shader_cg.o gfx/snes_state.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o ps3/main.o audio/utils.o
 
 LIBS = -ldbgfont -lPSGL -lgcm_cmd -lgcm_sys_stub -lsnes -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysmodule_stub -laudio_stub -lnet_stub -lpthread
 
