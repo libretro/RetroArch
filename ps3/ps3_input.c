@@ -107,5 +107,6 @@ const input_driver_t input_ps3 = {
    .init = ps3_input_init,
    .poll = ps3_input_poll,
    .input_state = ps3_input_state,
-   .free = ps3_free_input
+   .free = ps3_free_input,
+   .ident = "ps3",
 };
