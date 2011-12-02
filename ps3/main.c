@@ -1,5 +1,7 @@
+#include <sys/process.h>
 int ssnes_main(int argc, char *argv[]);
 #include <stddef.h>
+SYS_PROCESS_PARAM(1001, 0x100000)
 
 #undef main
 // Temporary, a more sane implementation should go here.

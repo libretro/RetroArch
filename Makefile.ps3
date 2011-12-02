@@ -88,7 +88,7 @@ $(PPU_TARGET): $(OBJ)
 
 pkg: $(PPU_TARGET)
 	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) ps3/pkg/USRDIR/EBOOT.BIN
-	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf pkg
+	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
 
 clean:
 	rm -f *.o
