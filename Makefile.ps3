@@ -80,7 +80,7 @@ $(PPU_TARGET): $(OBJ)
 	$(LD) -o $@ $(OBJ) $(LDFLAGS) $(LDDIRS) $(LIBS)
 	$(STRIP) $(PPU_TARGET)
 
-	%.o: %.c config.h
+%.o: %.c config.h
 	$(CC) $(INCDIRS) $(CFLAGS) -c -o $@ $<
 
 %.o: %.cpp config.h
