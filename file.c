@@ -754,7 +754,7 @@ static bool load_normal_rom(void)
       if (!g_extern.rom_file)
       {
          SSNES_ERR("Implementation requires a full path to be set, cannot load ROM from stdin. Aborting ...\n");
-         exit(1);
+         return false;
       }
 
       fclose(g_extern.rom_file);
@@ -767,12 +767,11 @@ static bool load_normal_rom(void)
    {
       SSNES_ERR("ROM file is not valid!\n");
       free(rom_buf);
+      free(xml_buf);
       return false;
    }
 
-   if (xml_buf)
-      free(xml_buf);
-
+   free(xml_buf);
    free(rom_buf);
    return true;
 }
