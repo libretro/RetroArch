@@ -112,8 +112,12 @@ static void* ps3_input_init(void)
 static bool ps3_key_pressed(void *data, int key)
 {
    (void)data;
-   (void)key;
-   return false; // Dummy for now.
+   if (key == SSNES_FAST_FORWARD_HOLD_KEY)
+   	return CTRL_RSTICK_UP(state[0]);
+   else if (key == SSNES_REWIND)
+   	return CTRL_RSTICK_DOWN(state[0]);
+   else
+	return false;
 }
 
 const input_driver_t input_ps3 = {
