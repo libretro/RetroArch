@@ -144,7 +144,7 @@ static bool ps3_audio_start(void *data)
 {
    ps3_audio_t *aud = data;
    cellAudioPortStart(aud->audio_port);
-   return false;
+   return true;
 }
 
 static void ps3_audio_set_nonblock_state(void *data, bool state)
