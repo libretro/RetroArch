@@ -285,14 +285,14 @@ static bool environment_cb(unsigned cmd, void *data)
    {
       case SNES_ENVIRONMENT_GET_FULLPATH:
          *(const char**)data = g_extern.system.fullpath;
-         SSNES_LOG("FULLPATH: \"%s\"\n", g_extern.system.fullpath);
+         SSNES_LOG("Environ FULLPATH: \"%s\"\n", g_extern.system.fullpath);
          break;
 
       case SNES_ENVIRONMENT_SET_GEOMETRY:
          g_extern.system.geom = *(const struct snes_geometry*)data;
          g_extern.system.geom.max_width = next_pow2(g_extern.system.geom.max_width);
          g_extern.system.geom.max_height = next_pow2(g_extern.system.geom.max_height);
-         SSNES_LOG("SET_GEOMETRY: (%ux%u) / (%ux%u)\n",
+         SSNES_LOG("Environ SET_GEOMETRY: (%ux%u) / (%ux%u)\n",
                g_extern.system.geom.base_width,
                g_extern.system.geom.base_height,
                g_extern.system.geom.max_width,
@@ -301,24 +301,32 @@ static bool environment_cb(unsigned cmd, void *data)
 
       case SNES_ENVIRONMENT_SET_PITCH:
          g_extern.system.pitch = *(const unsigned*)data;
-         SSNES_LOG("SET_PITCH: %u\n", g_extern.system.pitch);
+         SSNES_LOG("Environ SET_PITCH: %u\n", g_extern.system.pitch);
          break;
 
       case SNES_ENVIRONMENT_GET_OVERSCAN:
          *(bool*)data = !g_settings.video.crop_overscan;
-         SSNES_LOG("GET_OVERSCAN: %u\n", (unsigned)!g_settings.video.crop_overscan);
+         SSNES_LOG("Environ GET_OVERSCAN: %u\n", (unsigned)!g_settings.video.crop_overscan);
          break;
 
       case SNES_ENVIRONMENT_SET_TIMING:
          g_extern.system.timing = *(const struct snes_system_timing*)data;
          g_extern.system.timing_set = true;
+         SSNES_LOG("Environ SET_TIMING: %.3lf Hz/ %.3lf Hz\n", g_extern.system.timing.fps, g_extern.system.timing.sample_rate);
          break;
 
       case SNES_ENVIRONMENT_GET_CAN_DUPE:
          *(bool*)data = true;
+         SSNES_LOG("Environ GET_CAN_DUPE: true\n");
+         break;
+
+      case SNES_ENVIRONMENT_SET_NEED_FULLPATH:
+         g_extern.system.need_fullpath = *(const bool*)data;
+         SSNES_LOG("Environ SET_NEED_FULLPATH: %s\n", g_extern.system.need_fullpath ? "true" : "false");
          break;
 
       default:
+         SSNES_LOG("Environ UNSUPPORTED (#%u)!\n", cmd);
          return false;
    }
 
@@ -345,6 +353,7 @@ static void set_environment(void)
 // Assume SNES as defaults.
 static void set_environment_defaults(void)
 {
+   SSNES_LOG("Setting environment defaults (SNES)\n");
    g_extern.system.pitch = 0; // 0 is classic libsnes semantics.
    g_extern.system.geom = (struct snes_geometry) {
       .base_width = 256,

@@ -67,14 +67,33 @@ extern "C" {
 #define SNES_MEMORY_CGRAM   104
 
 // SSNES extension. Not required to be implemented for a working implementation.
-#define SNES_ENVIRONMENT_GET_FULLPATH 0   // const char ** -- Full path of game loaded.
-#define SNES_ENVIRONMENT_SET_GEOMETRY 1   // const struct snes_geometry * -- Window geometry information for the system/game.
-#define SNES_ENVIRONMENT_SET_PITCH 2      // const unsigned * -- Pitch of game image.
-#define SNES_ENVIRONMENT_GET_OVERSCAN 3   // bool * -- Boolean value whether or not the implementation should use overscan.
-#define SNES_ENVIRONMENT_SET_TIMING 4     // const struct snes_system_timing * -- Set exact timings of the system.
-                                          // Used primarily for video recording.
-#define SNES_ENVIRONMENT_GET_CAN_DUPE 5   // bool * -- Boolean value whether or not SSNES supports frame duping,
-                                          // passing NULL to video frame callback.
+#define SNES_ENVIRONMENT_GET_FULLPATH 0         // const char ** --
+                                                // Full path of game loaded.
+                                                //
+#define SNES_ENVIRONMENT_SET_GEOMETRY 1         // const struct snes_geometry * --
+                                                // Window geometry information for the system/game.
+                                                //
+#define SNES_ENVIRONMENT_SET_PITCH 2            // const unsigned * --
+                                                // Pitch of game image.
+                                                //
+#define SNES_ENVIRONMENT_GET_OVERSCAN 3         // bool * --
+                                                // Boolean value whether or not the implementation should use overscan.
+                                                //
+#define SNES_ENVIRONMENT_SET_TIMING 4           // const struct snes_system_timing * --
+                                                // Set exact timings of the system. Used primarily for video recording.
+                                                //
+#define SNES_ENVIRONMENT_GET_CAN_DUPE 5         // bool * --
+                                                // Boolean value whether or not SSNES supports frame duping,
+                                                // passing NULL to video frame callback.
+                                                //
+                                                //
+#define SNES_ENVIRONMENT_SET_NEED_FULLPATH 6    // const bool * --
+                                                // Boolean value telling if implementation needs a valid fullpath to be able to run.
+                                                // If this is the case, SSNES will not open the rom directly,
+                                                // and pass NULL to rom data.
+                                                // Implementation must then use SNES_ENVIRONMENT_GET_FULLPATH.
+                                                // This is useful for implementations with very large roms,
+                                                // which are impractical to load fully into RAM.
 
 struct snes_geometry
 {

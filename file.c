@@ -735,19 +735,34 @@ static bool load_normal_rom(void)
    void *rom_buf = NULL;
    ssize_t rom_len = 0;
 
-   if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
+   if (!g_extern.system.need_fullpath)
    {
-      SSNES_ERR("Could not read ROM file.\n");
-      return false;
+      if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
+      {
+         SSNES_ERR("Could not read ROM file.\n");
+         return false;
+      }
+
+      if (g_extern.rom_file)
+         fclose(g_extern.rom_file);
+
+      SSNES_LOG("ROM size: %d bytes\n", (int)rom_len);
+
    }
+   else
+   {
+      if (!g_extern.rom_file)
+      {
+         SSNES_ERR("Implementation requires a full path to be set, cannot load ROM from stdin. Aborting ...\n");
+         exit(1);
+      }
 
-   if (g_extern.rom_file != NULL)
       fclose(g_extern.rom_file);
-
-   SSNES_LOG("ROM size: %d bytes\n", (int)rom_len);
-
-   char *xml_buf = load_xml_map(g_extern.xml_name);
+      SSNES_LOG("ROM loading skipped. Implementation will load it on its own.\n");
+   }
    
+   char *xml_buf = load_xml_map(g_extern.xml_name);
+
    if (!psnes_load_cartridge_normal(xml_buf, rom_buf, rom_len))
    {
       SSNES_ERR("ROM file is not valid!\n");
