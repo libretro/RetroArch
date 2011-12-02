@@ -1205,6 +1205,20 @@ static bool psgl_init_device(gl_t * gl, const video_info_t *video, uint32_t reso
    return true;
 }
 
+void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
+{
+	(void) param;
+	(void) userdata;
+
+	switch (status)
+	{
+		case CELL_SYSUTIL_REQUEST_EXITGAME:
+			gl->quitting = true;
+			break;
+		default:
+			break;
+	}
+}
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
@@ -1232,6 +1246,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->vsync = video->vsync;
    
    SSNES_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
+
+   SSNES_LOG("Registering Callback\n";
+   cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
 
    if (!gl_shader_init())
    {
