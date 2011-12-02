@@ -25,27 +25,33 @@
 
 #include <stdlib.h>
 
-static uint64_t state = 0;
-
+static uint64_t state[5];
 static void ps3_input_poll(void *data)
 {
    (void)data;
-   state = cell_pad_input_poll_device(0);
+   for (unsigned i = 0; i < 5; i++)
+      state[i] = cell_pad_input_poll_device(i);
 }
 
-static int16_t ps3_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
+static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
+      bool port, unsigned device,
+      unsigned index, unsigned id)
 {
    (void)data;
-   (void)binds; // Hardcoded binds
+   (void)binds;
    (void)index;
 
    if (device != SNES_DEVICE_JOYPAD)
       return 0;
-   if (port == SNES_PORT_2)
-      return 0;
 
-   uint64_t button = 0;
-   
+   unsigned player = 0;
+   if (port == SNES_PORT_2 && device == SNES_DEVICE_MULTITAP)
+      player = index + 1;
+   else if (port == SNES_PORT_2)
+      player = 1;
+
+   // Hardcoded binds.
+   uint64_t button;
    switch (id)
    {
       case SNES_DEVICE_ID_JOYPAD_A:
@@ -88,25 +94,33 @@ static int16_t ps3_input_state(void *data, const struct snes_keybind **binds, bo
          button = 0;
    }
 
-   return CTRL_MASK(state, button) ? 1 : 0;
+   return CTRL_MASK(state[player], button) ? 1 : 0;
 }
 
 static void ps3_free_input(void *data)
 {
-   free(data);
+   (void)data;
    cell_pad_input_deinit();
 }
 
 static void* ps3_input_init(void)
 {
    cell_pad_input_init();
-   return malloc(sizeof(void*));
+   return (void*)-1;
+}
+
+static bool ps3_key_pressed(void *data, int key)
+{
+   (void)data;
+   (void)key;
+   return false; // Dummy for now.
 }
 
 const input_driver_t input_ps3 = {
    .init = ps3_input_init,
    .poll = ps3_input_poll,
    .input_state = ps3_input_state,
+   .key_pressed = ps3_key_pressed,
    .free = ps3_free_input,
    .ident = "ps3",
 };
