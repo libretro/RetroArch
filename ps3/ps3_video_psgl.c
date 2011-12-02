@@ -110,6 +110,8 @@ static inline bool load_gl_proc(void) { return true; }
 #endif
 #define TEXTURES_MASK (TEXTURES - 1)
 
+static bool g_quitting;
+
 typedef struct gl
 {
    GLuint pbo;
@@ -136,7 +138,6 @@ typedef struct gl
 #endif
 
    bool should_resize;
-   bool quitting;
    bool keep_aspect;
 
    unsigned win_width;
@@ -1213,7 +1214,7 @@ void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
 	switch (status)
 	{
 		case CELL_SYSUTIL_REQUEST_EXITGAME:
-			gl->quitting = true;
+			g_quitting = true;
 			break;
 		default:
 			break;
@@ -1247,8 +1248,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    
    SSNES_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
 
-   SSNES_LOG("Registering Callback\n";
-   cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
 
    if (!gl_shader_init())
    {
@@ -1263,6 +1262,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    // Set up render to texture.
    gl_init_fbo(gl, SSNES_SCALE_BASE * video->input_scale,
          SSNES_SCALE_BASE * video->input_scale);
+
+   SSNES_LOG("Registering Callback\n");
+   cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
    
    gl->keep_aspect = video->force_aspect;
 
@@ -1367,7 +1369,7 @@ static bool gl_alive(void *data)
 {
    gl_t *gl = data;
    cellSysutilCheckCallback();
-   return !gl->quitting;
+   return !g_quitting;
 }
 
 static bool gl_focus(void *data)

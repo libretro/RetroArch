@@ -7,20 +7,6 @@ int ssnes_main(int argc, char *argv[]);
 
 SYS_PROCESS_PARAM(1001, 0x100000)
 
-void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
-{
-	(void) param;
-	(void) userdata;
-
-	switch (status)
-	{
-		case CELL_SYSUTIL_REQUEST_EXITGAME:
-			break;
-		default:
-			break;
-	}
-}
-
 #undef main
 // Temporary, a more sane implementation should go here.
 int main(int argc, char *argv[])
