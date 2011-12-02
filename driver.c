@@ -97,15 +97,21 @@ static const input_driver_t *input_drivers[] = {
 #endif
 };
 
+static int test_counter = 0;
+
 static void find_audio_driver(void)
 {
+   SSNES_LOG("Entered find_audio_driver\n");
    for (unsigned i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
    {
+      SSNES_LOG("looking for audio driver\n");
       if (strcasecmp(g_settings.audio.driver, audio_drivers[i]->ident) == 0)
       {
+         SSNES_LOG("looked for audio driver: %d\n", test_counter++);
          driver.audio = audio_drivers[i];
          return;
       }
+      SSNES_LOG("looked for audio driver, and failed: %d\n", test_counter++);
    }
    SSNES_ERR("Couldn't find any audio driver named \"%s\"\n", g_settings.audio.driver);
    fprintf(stderr, "Available audio drivers are:\n");
@@ -292,6 +298,7 @@ void init_audio(void)
 
    adjust_audio_input_rate();
    find_audio_driver();
+   SSNES_LOG("SSNES 2.1\n");
 
    g_extern.audio_data.block_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
    g_extern.audio_data.nonblock_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
@@ -310,6 +317,7 @@ void init_audio(void)
       driver.audio->set_nonblock_state(driver.audio_data, true);
       g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
    }
+   SSNES_LOG("SSNES 2.2\n");
 
    g_extern.audio_data.source = hermite_new();
    if (!g_extern.audio_data.source)
@@ -322,6 +330,7 @@ void init_audio(void)
 
    g_extern.audio_data.src_ratio =
       (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
+   SSNES_LOG("SSNES 2.3\n");
 
 #ifdef HAVE_DYLIB
    init_dsp_plugin();

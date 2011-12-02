@@ -4,7 +4,7 @@
 ##
 ###
 ##
-DEBUG=0
+DEBUG=1
 CELL_BUILD_TOOLS     = GCC
 
 ## Platform detection from nall/Makefile. Only two applicable hosts for PS3 SDK.
@@ -47,7 +47,7 @@ OBJ = ps3/buffer.o ps3/ps3_audio.o ps3/resampler.o ps3/ps3_input.o ps3/pad_input
 
 LIBS = -ldbgfont -lPSGL -lgcm_cmd -lgcm_sys_stub -lsnes -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysmodule_stub -laudio_stub -lnet_stub -lpthread
 
-DEFINES = -DHAVE_OPENGL=1 -DHAVE_CG=1 -DHAVE_FBO=1 -D__CELLOS_LV2__ -DPACKAGE_VERSION=\"0.9.2\" -Dmain=ssnes_main -mno-sn-ld
+DEFINES = -DHAVE_OPENGL=1 -DHAVE_CG=1 -DHAVE_FBO=1 -D__CELLOS_LV2__ -DPACKAGE_VERSION=\"0.9.2\" -Dmain=ssnes_main
 
 # Wrap it up, son!
 #LIBS += -Wl,-wrap,fopen -Wl,-wrap,fclose -Wl,-wrap,fwrite -Wl,-wrap,fread -Wl,-wrap,fseek -Wl,-wrap,ftell -Wl,-wrap,fflush -Wl,-wrap,rewind -Wl,-wrap,fgetpos -Wl,-wrap,fsetpos -Wl,-wrap,setbuf -Wl,-wrap,setvbuf -Wl,-wrap,ungetc -Wl,-wrap,feof
