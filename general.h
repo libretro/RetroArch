@@ -46,11 +46,9 @@
 
 #include "audio/hermite.h"
 
-#if !defined(_WIN32)
-#if !defined(__CELLOS_LV2__)
+#if !defined(_WIN32) && !defined(__CELLOS_LV2__)
 #include <sys/param.h> // MAXPATHLEN
-#endif
-#else
+#elif defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif

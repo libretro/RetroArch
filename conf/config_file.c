@@ -22,11 +22,11 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
-#include "strl.h"
+#include "../strl.h"
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__CELLOS_LV2__)
 #include <sys/param.h> // MAXPATHLEN
-#else
+#elif defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
