@@ -22,6 +22,7 @@
 #include <sys/timer.h>
 #include <string.h>
 #include <pthread.h>
+#include <sys/synchronization.h>
 #include "../fifo_buffer.h"
 #include <sys/event.h>
 
@@ -36,9 +37,9 @@ typedef struct
    fifo_buffer_t *buffer;
 
    pthread_t thread;
-   pthread_mutex_t lock;
-   pthread_mutex_t cond_lock;
-   pthread_cond_t cond;
+   sys_lwmutex_t lock;
+   sys_lwmutex_t cond_lock;
+   sys_lwcond_t cond;
 } ps3_audio_t;
 
 static void *event_loop(void *data)
@@ -57,15 +58,15 @@ static void *event_loop(void *data)
    {
       sys_event_queue_receive(id, &event, SYS_NO_TIMEOUT);
 
-      pthread_mutex_lock(&aud->lock);
+      sys_lwmutex_lock(&aud->lock, SYS_NO_TIMEOUT);
       if (fifo_read_avail(aud->buffer) >= sizeof(out_tmp))
          fifo_read(aud->buffer, out_tmp, sizeof(out_tmp));
       else
          memset(out_tmp, 0, sizeof(out_tmp));
-      pthread_mutex_unlock(&aud->lock);
+      sys_lwmutex_unlock(&aud->lock);
+      sys_lwcond_signal(&aud->cond);
 
       cellAudioAddData(aud->audio_port, out_tmp, CELL_AUDIO_BLOCK_SAMPLES, 1.0);
-      pthread_cond_signal(&aud->cond);
    }
 
    cellAudioRemoveNotifyEventQueue(key);
@@ -99,9 +100,16 @@ static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
 
    data->buffer = fifo_new(CELL_AUDIO_BLOCK_SAMPLES * AUDIO_CHANNELS * AUDIO_BLOCKS * sizeof(float));
 
-   pthread_mutex_init(&data->lock, NULL);
-   pthread_mutex_init(&data->cond_lock, NULL);
-   pthread_cond_init(&data->cond, NULL);
+   sys_lwmutex_attribute_t lock_attr, cond_lock_attr;
+   sys_lwcond_attribute_t cond_attr;
+
+   sys_lwmutex_attribute_initialize(lock_attr);
+   sys_lwmutex_attribute_initialize(cond_lock_attr);
+   sys_lwcond_attribute_initialize(cond_attr);
+
+   sys_lwmutex_create(&data->lock, &lock_attr);
+   sys_lwmutex_create(&data->cond_lock, &cond_lock_attr);
+   sys_lwcond_create(&data->cond, &data->cond_lock, &cond_attr);
 
    cellAudioPortStart(data->audio_port);
    pthread_create(&data->thread, NULL, event_loop, data);
@@ -120,16 +128,12 @@ static ssize_t ps3_audio_write(void *data, const void *buf, size_t size)
    else
    {
       while (fifo_write_avail(aud->buffer) < size)
-      {
-         pthread_mutex_lock(&aud->cond_lock);
-         pthread_cond_wait(&aud->cond, &aud->lock);
-         pthread_mutex_unlock(&aud->cond_lock);
-      }
+         sys_lwcond_wait(&aud->cond, 0);
    }
 
-   pthread_mutex_lock(&aud->lock);
+   sys_lwmutex_lock(&aud->lock, SYS_NO_TIMEOUT);
    fifo_write(aud->buffer, buf, size);
-   pthread_mutex_unlock(&aud->lock);
+   sys_lwmutex_unlock(&aud->lock);
    return size;
 }
 
@@ -166,9 +170,9 @@ static void ps3_audio_free(void *data)
    cellAudioQuit();
    fifo_free(aud->buffer);
 
-   pthread_mutex_destroy(&aud->lock);
-   pthread_mutex_destroy(&aud->cond_lock);
-   pthread_cond_destroy(&aud->cond);
+   sys_lwmutex_destroy(&aud->lock);
+   sys_lwmutex_destroy(&aud->cond_lock);
+   sys_lwcond_destroy(&aud->cond);
 
    free(data);
 }
