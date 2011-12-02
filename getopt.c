@@ -21,6 +21,7 @@
 
 #include <string.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <assert.h>
 
 char *optarg;
@@ -36,7 +37,7 @@ static bool is_long_option(const char *str)
    return str[0] == '-' && str[1] == '-';
 }
 
-static int find_short_index(const char * const argv[])
+static int find_short_index(char * const *argv)
 {
    for (int index = 0; argv[index]; index++)
    {
@@ -47,7 +48,7 @@ static int find_short_index(const char * const argv[])
    return -1;
 }
 
-static int find_long_index(const char * const argv[])
+static int find_long_index(char * const *argv)
 {
    for (int index = 0; argv[index]; index++)
    {
@@ -58,7 +59,7 @@ static int find_long_index(const char * const argv[])
    return -1;
 }
 
-static int parse_short(const char *optstring, char * const argv[])
+static int parse_short(const char *optstring, char * const *argv)
 {
    char arg = argv[0][1];
    if (arg == ':')
@@ -91,7 +92,7 @@ static int parse_short(const char *optstring, char * const argv[])
    }
 }
 
-static int parse_long(const struct option *longopts, char * const argv[])
+static int parse_long(const struct option *longopts, char * const *argv)
 {
    const struct option *opt = NULL;
    for (size_t indice = 0; longopts[indice].name; indice++)
@@ -127,6 +128,15 @@ static int parse_long(const struct option *longopts, char * const argv[])
       return opt->val;
 }
 
+static void shuffle_block(char **begin, char **last, char **end)
+{
+   ptrdiff_t len = last - begin;
+   const char *tmp[len];
+   memcpy(tmp, begin, sizeof(tmp));
+   memmove(begin, last, (end - last) * sizeof(char*));
+   memcpy(end - len, tmp, sizeof(tmp));
+}
+
 int getopt_long(int argc, char *argv[],
       const char *optstring, const struct option *longopts, int *longindex)
 {
@@ -137,8 +147,8 @@ int getopt_long(int argc, char *argv[],
    if (optind == 0)
       optind = 1;
 
-   int short_index = find_short_index((const char * const *)&argv[optind]);
-   int long_index  = find_long_index((const char * const *)&argv[optind]);
+   int short_index = find_short_index(&argv[optind]);
+   int long_index  = find_long_index(&argv[optind]);
 
    // We're done here.
    if (short_index == -1 && long_index == -1)
@@ -148,18 +158,12 @@ int getopt_long(int argc, char *argv[],
    // Non-POSIXy, but that's what getopt does by default.
    if ((short_index > 0) && ((short_index < long_index) || (long_index == -1)))
    {
-      char *tmp[short_index];
-      memcpy(tmp, &argv[optind], sizeof(tmp));
-      memmove(&argv[optind], &argv[optind + short_index], (argc - short_index) * sizeof(char*));
-      memcpy(&argv[argc - short_index], tmp, sizeof(tmp));
+      shuffle_block(&argv[optind], &argv[optind + short_index], &argv[argc]);
       short_index = 0;
    }
    else if ((long_index > 0) && ((long_index < short_index) || (short_index == -1)))
    {
-      char *tmp[long_index];
-      memcpy(tmp, &argv[optind], sizeof(tmp));
-      memmove(&argv[optind], &argv[optind + long_index], (argc - long_index) * sizeof(char*));
-      memcpy(&argv[argc - long_index], tmp, sizeof(tmp));
+      shuffle_block(&argv[optind], &argv[optind + long_index], &argv[argc]);
       long_index = 0;
    }
 
