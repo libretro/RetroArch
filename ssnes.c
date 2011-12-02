@@ -26,13 +26,13 @@
 #include "file.h"
 #include "general.h"
 #include "dynamic.h"
+#include "audio/utils.h"
 #include "record/ffemu.h"
 #include "rewind.h"
 #include "movie.h"
 #include "strl.h"
 #include "screenshot.h"
 #include "cheats.h"
-#include "audio/utils.h"
 #include "getopt_ssnes.h"
 #include <assert.h>
 
