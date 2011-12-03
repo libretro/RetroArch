@@ -312,7 +312,9 @@ void gl_cg_deinit(void)
    }
 #endif
 
+#ifndef __CELLOS_LV2__
    cgDestroyContext(cgCtx);
+#endif
 }
 
 #define SET_LISTING_INDEX(type, index) \
