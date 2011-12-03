@@ -30,6 +30,7 @@
 #include <PSGL/psgl.h>
 #include <PSGL/psglu.h>
 #include <GLES/glext.h>
+#include <cell/dbgfont.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -46,6 +47,9 @@
 #ifdef HAVE_XML
 #include "shader_glsl.h"
 #endif
+
+#define BLUE		0xffff0000u
+#define WHITE		0xffffffffu
 
 // Used for the last pass when rendering to the back buffer.
 static const GLfloat vertexes_flipped[] = {
@@ -836,6 +840,12 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
 #endif
 
+   if(msg)
+   {
+      cellDbgFontPrintf (0.09f, 0.90f, 1.51f, BLUE,	msg);
+      cellDbgFontPrintf (0.09f, 0.90f, 1.50f, WHITE,	msg);
+      cellDbgFontDraw();
+   }
    psglSwap();
 
    return true;
@@ -844,6 +854,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 static void psgl_deinit(gl_t *gl)
 {
    glFinish();
+   cellDbgFontExit();
 
    psglDestroyContext(gl->gl_context);
    psglDestroyDevice(gl->gl_device);
@@ -953,6 +964,16 @@ void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
 	}
 }
 
+static void psgl_init_dbgfont(gl_t * gl)
+{
+	CellDbgFontConfig cfg;
+	memset(&cfg, 0, sizeof(cfg));
+	cfg.bufSize = 512;
+	cfg.screenWidth = gl->win_width;
+	cfg.screenHeight = gl->win_height;
+	cellDbgFontInit(&cfg);
+}
+
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    gl_t *gl = calloc(1, sizeof(gl_t));
@@ -980,6 +1001,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    
    SSNES_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
 
+   SSNES_LOG("GL: Initing debug fonts \n");
+   psgl_init_dbgfont(gl);
 
    if (!gl_shader_init())
    {
