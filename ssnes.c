@@ -2098,6 +2098,9 @@ int main(int argc, char *argv[])
    psnes_term();
    uninit_drivers();
    uninit_libsnes_sym();
+#ifdef __CELLOS_LV2__
+   sys_process_exit(0);
+#endif
 
    return 0;
 
