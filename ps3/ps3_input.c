@@ -112,12 +112,25 @@ static void* ps3_input_init(void)
 static bool ps3_key_pressed(void *data, int key)
 {
    (void)data;
-   if (key == SSNES_FAST_FORWARD_HOLD_KEY)
-   	return CTRL_RSTICK_UP(state[0]);
-   else if (key == SSNES_REWIND)
-   	return CTRL_RSTICK_DOWN(state[0]);
-   else
-	return false;
+   switch(key)
+   {
+   	case SSNES_FAST_FORWARD_HOLD_KEY:
+		return CTRL_RSTICK_UP(state[0]);
+   	case SSNES_LOAD_STATE_KEY:
+		return (CTRL_L2(state[0]) && CTRL_R3(state[0]));
+	case SSNES_SAVE_STATE_KEY:
+		return (CTRL_R2(state[0]) && CTRL_R3(state[0]));
+   	case SSNES_STATE_SLOT_PLUS:
+		return (CTRL_RSTICK_RIGHT(state[0]) && CTRL_R2(state[0]));
+   	case SSNES_STATE_SLOT_MINUS:
+		return (CTRL_RSTICK_LEFT(state[0]) && CTRL_R2(state[0]));
+	case SSNES_REWIND:
+		return CTRL_RSTICK_DOWN(state[0]);
+	default:
+		break;
+   }
+
+   return false;
 }
 
 const input_driver_t input_ps3 = {
