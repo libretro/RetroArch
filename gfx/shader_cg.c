@@ -942,6 +942,9 @@ error:
 
 bool gl_cg_init(const char *path)
 {
+#ifdef __CELLOS_LV2__
+   cgRTCgcInit();
+#endif
    cgCtx = cgCreateContext();
    if (cgCtx == NULL)
    {
