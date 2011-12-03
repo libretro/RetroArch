@@ -48,6 +48,9 @@
    p##x = (type)DLSYM(lib_handle, x); \
 } while (0)
 
+#endif
+
+#ifdef HAVE_DYNAMIC
 static dylib_t lib_handle = NULL;
 #endif
 
