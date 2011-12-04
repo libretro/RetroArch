@@ -105,7 +105,7 @@ size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
 {
    unsigned bytes = bytes_;
    const uint8_t *buffer = buf;
-   while (bytes > 0)
+   while (bytes)
    {
       unsigned need = min(bytes, handle->bufsize - handle->bufptr);
       memcpy(handle->buf + handle->write_buffer * handle->bufsize + handle->bufptr,
@@ -120,10 +120,10 @@ size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
          while (handle->buffers == MAX_BUFFERS - 1)
             WaitForSingleObject(handle->hEvent, INFINITE);
 
-         XAUDIO2_BUFFER xa2buffer = {0};
-         xa2buffer.AudioBytes = handle->bufsize;
-         xa2buffer.pAudioData = handle->buf + handle->write_buffer * handle->bufsize;
-         xa2buffer.pContext = 0;
+         XAUDIO2_BUFFER xa2buffer = {
+            .AudioBytes = handle->bufsize,
+            .pAudioData = handle->buf + handle->write_buffer * handle->bufsize,
+         };
          if (FAILED(IXAudio2SourceVoice_SubmitSourceBuffer(handle->pSourceVoice, &xa2buffer, NULL)))
             return 0;
 
