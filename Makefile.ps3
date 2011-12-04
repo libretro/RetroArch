@@ -1,11 +1,11 @@
 ###
 ##
-# Makefile for SSNES. Somewhat generic and avoids using the odd SDK examples.
+# Makefile for SSNES PS3. Somewhat generic and avoids using the odd SDK examples.
 ##
 ###
 ##
-DEBUG=0
-CELL_BUILD_TOOLS     = GCC
+DEBUG = 0
+CELL_BUILD_TOOLS = GCC
 
 ## Platform detection from nall/Makefile. Only two applicable hosts for PS3 SDK.
 ifeq ($(platform),)
@@ -49,9 +49,7 @@ LIBS = -ldbgfont -lPSGL -lPSGLcgc -lcgc -lgcm_cmd -lgcm_sys_stub -lsnes -lresc_s
 
 DEFINES = -DHAVE_OPENGL=1 -DHAVE_CG=1 -DHAVE_FBO=1 -D__CELLOS_LV2__ -DHAVE_CONFIGFILE=1 -DPACKAGE_VERSION=\"0.9.2\" -Dmain=ssnes_main
 
-# Wrap it up, son!
-#LIBS += -Wl,-wrap,fopen -Wl,-wrap,fclose -Wl,-wrap,fwrite -Wl,-wrap,fread -Wl,-wrap,fseek -Wl,-wrap,ftell -Wl,-wrap,fflush -Wl,-wrap,rewind -Wl,-wrap,fgetpos -Wl,-wrap,fsetpos -Wl,-wrap,setbuf -Wl,-wrap,setvbuf -Wl,-wrap,ungetc -Wl,-wrap,feof
-ifeq ($(DEBUG),1)
+ifeq ($(DEBUG), 1)
    PPU_OPTIMIZE_LV	:= -O0 -g
 else
    PPU_OPTIMIZE_LV	:= -O3
@@ -60,19 +58,6 @@ endif
 ## Use this for new SDK!
 CFLAGS = $(PPU_OPTIMIZE_LV) $(DEFINES)
 CXXFLAGS = $(PPU_OPTIMIZE_LV) $(DEFINES)
-#CFLAGS = -Wall $(PPU_OPTIMIZE_LV) -std=gnu99 -DPS3_SDK_3_41 -DSSNES_DEBUG
-
-#CFLAGS += -fprofile-generate --coverage -g
-#CXXFLAGS += -fprofile-generate --coverage -g
-#LDFLAGS += -fprofile-generate --coverage -g
-#CFLAGS += -pg -g
-#CXXFLAGS += -pg -g
-#LDFLAGS += -pg -g -lprof_stub
-#CFLAGS += -fprofile-use
-#CXXFLAGS += -fprofile-use
-#LDFLAGS += -fprofile-use
-
-#CFLAGS = -Wall $(PPU_OPTIMIZE_LV) -std=gnu99
 
 all: pkg
 
@@ -96,5 +81,4 @@ clean:
 	rm -f *.pkg
 
 .PHONY: all clean pkg
-
 
