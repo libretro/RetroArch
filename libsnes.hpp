@@ -94,11 +94,11 @@ extern "C" {
                                                 // Implementation must then use SNES_ENVIRONMENT_GET_FULLPATH.
                                                 // This is useful for implementations with very large roms,
                                                 // which are impractical to load fully into RAM.
-						//
+						                              //
 #define SNES_ENVIRONMENT_GET_CAN_REWIND 7       // bool * --
-						// Boolean value telling if SSNES is able to rewind.
-						// Some implementations might need to take extra precautions
-						// to allow this as smoothly as possible.
+                                                // Boolean value telling if SSNES is able to rewind.
+                                                // Some implementations might need to take extra precautions
+                                                // to allow this as smoothly as possible.
 
 struct snes_geometry
 {
