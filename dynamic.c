@@ -107,7 +107,7 @@ static void set_environment(void);
 #endif
 static void set_environment_defaults(void);
 
-#ifdef HAVE_DYNAMIC_LOAD
+#ifdef HAVE_DYNAMIC
 static void load_dynamic(void)
 {
    SSNES_LOG("Loading dynamic libsnes from: \"%s\"\n", g_settings.libsnes);
@@ -230,7 +230,7 @@ void init_libsnes_sym(void)
 
 void uninit_libsnes_sym(void)
 {
-#ifdef HAVE_DYNAMIC_LOAD
+#ifdef HAVE_DYNAMIC
    if (lib_handle)
       dylib_close(lib_handle);
 #endif
@@ -246,9 +246,7 @@ dylib_t dylib_load(const char *path)
    return dlopen(path, RTLD_LAZY);
 #endif
 }
-#endif
 
-#ifdef HAVE_DYNAMIC_LOAD
 function_t dylib_proc(dylib_t lib, const char *proc)
 {
 #ifdef _WIN32
@@ -274,9 +272,7 @@ function_t dylib_proc(dylib_t lib, const char *proc)
 
    return sym;
 }
-#endif
 
-#ifdef HAVE_DYNAMIC_LOAD
 void dylib_close(dylib_t lib)
 {
 #ifdef _WIN32
@@ -285,9 +281,7 @@ void dylib_close(dylib_t lib)
    dlclose(lib);
 #endif
 }
-#endif
 
-#ifdef HAVE_DYNAMIC_LOAD
 static bool environment_cb(unsigned cmd, void *data)
 {
    switch (cmd)
