@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
    char arg3[] = "-v";
    char arg4[] = "-c";
    char arg5[] = "/dev_hdd0/game/SSNE10000/USRDIR/ssnes.cfg";
-   char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL};
-   return ssnes_main(5, argv_);
+   char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
+   return ssnes_main(sizeof(argv_) / sizeof(argv_[0]) - 1, argv_);
 }
 
