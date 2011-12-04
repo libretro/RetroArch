@@ -21,8 +21,6 @@
 #include <stdint.h>
 #include "../libsnes.hpp"
 
-#include "gl_debug.h"
-
 #include <stdlib.h>
 
 static uint64_t state[5];
