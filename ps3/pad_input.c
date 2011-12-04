@@ -62,50 +62,50 @@ void cell_pad_input_deinit(void)
 uint32_t cell_pad_input_pads_connected(void)
 {
 #if(CELL_SDK_VERSION > 0x340000)
-	CellPadInfo2 pad_info;
-	cellPadGetInfo2(&pad_info);
+   CellPadInfo2 pad_info;
+   cellPadGetInfo2(&pad_info);
 #else
-	CellPadInfo pad_info;
-	cellPadGetInfo(&pad_info);
+   CellPadInfo pad_info;
+   cellPadGetInfo(&pad_info);
 #endif
-	return pad_info.now_connect;
+   return pad_info.now_connect;
 }
 
 #define M(x) (x & 0xFF)
 
 uint64_t cell_pad_input_poll_device(uint32_t id)
 {
-	CellPadData pad_data;
-	static uint64_t ret[MAX_PADS];
+   CellPadData pad_data;
+   static uint64_t ret[MAX_PADS];
 
-	// Get new pad data
-	cellPadGetData(id, &pad_data);
+   // Get new pad data
+   cellPadGetData(id, &pad_data);
 
-	if (pad_data.len == 0)
-		return ret[id];
-	else
-	{
-		ret[id] = 0;
+   if (pad_data.len == 0)
+      return ret[id];
+   else
+   {
+      ret[id] = 0;
 
-		// Build the return value.
-		ret[id] |= (uint64_t)M(pad_data.button[LOWER_BUTTONS]);
-		ret[id] |= (uint64_t)M(pad_data.button[HIGHER_BUTTONS]) << 8;
-		ret[id] |= (uint64_t)M(pad_data.button[RSTICK_X]) << 32;
-		ret[id] |= (uint64_t)M(pad_data.button[RSTICK_Y]) << 40;
-		ret[id] |= (uint64_t)M(pad_data.button[LSTICK_X]) << 16;
-		ret[id] |= (uint64_t)M(pad_data.button[LSTICK_Y]) << 24;
+      // Build the return value.
+      ret[id] |= (uint64_t)M(pad_data.button[LOWER_BUTTONS]);
+      ret[id] |= (uint64_t)M(pad_data.button[HIGHER_BUTTONS]) << 8;
+      ret[id] |= (uint64_t)M(pad_data.button[RSTICK_X]) << 32;
+      ret[id] |= (uint64_t)M(pad_data.button[RSTICK_Y]) << 40;
+      ret[id] |= (uint64_t)M(pad_data.button[LSTICK_X]) << 16;
+      ret[id] |= (uint64_t)M(pad_data.button[LSTICK_Y]) << 24;
 
-		ret[id] |= (uint64_t)(PRESSED_LEFT_LSTICK(ret[id]) ? 1 : 0) << LSTICK_LEFT_SHIFT;
-		ret[id] |= (uint64_t)(PRESSED_RIGHT_LSTICK(ret[id]) ? 1 : 0) << LSTICK_RIGHT_SHIFT;
-		ret[id] |= (uint64_t)(PRESSED_UP_LSTICK(ret[id]) ? 1 : 0) << LSTICK_UP_SHIFT;
-		ret[id] |= (uint64_t)(PRESSED_DOWN_LSTICK(ret[id]) ? 1 : 0) << LSTICK_DOWN_SHIFT;
+      ret[id] |= (uint64_t)(PRESSED_LEFT_LSTICK(ret[id]) ? 1 : 0) << LSTICK_LEFT_SHIFT;
+      ret[id] |= (uint64_t)(PRESSED_RIGHT_LSTICK(ret[id]) ? 1 : 0) << LSTICK_RIGHT_SHIFT;
+      ret[id] |= (uint64_t)(PRESSED_UP_LSTICK(ret[id]) ? 1 : 0) << LSTICK_UP_SHIFT;
+      ret[id] |= (uint64_t)(PRESSED_DOWN_LSTICK(ret[id]) ? 1 : 0) << LSTICK_DOWN_SHIFT;
 
-		ret[id] |= (uint64_t)(PRESSED_LEFT_RSTICK(ret[id]) ? 1 : 0) << RSTICK_LEFT_SHIFT;
-		ret[id] |= (uint64_t)(PRESSED_RIGHT_RSTICK(ret[id]) ? 1 : 0) << RSTICK_RIGHT_SHIFT;
-		ret[id] |= (uint64_t)(PRESSED_UP_RSTICK(ret[id]) ? 1 : 0) << RSTICK_UP_SHIFT;
-		ret[id] |= (uint64_t)(PRESSED_DOWN_RSTICK(ret[id]) ? 1 : 0) << RSTICK_DOWN_SHIFT;
-		return ret[id];
-	}
+      ret[id] |= (uint64_t)(PRESSED_LEFT_RSTICK(ret[id]) ? 1 : 0) << RSTICK_LEFT_SHIFT;
+      ret[id] |= (uint64_t)(PRESSED_RIGHT_RSTICK(ret[id]) ? 1 : 0) << RSTICK_RIGHT_SHIFT;
+      ret[id] |= (uint64_t)(PRESSED_UP_RSTICK(ret[id]) ? 1 : 0) << RSTICK_UP_SHIFT;
+      ret[id] |= (uint64_t)(PRESSED_DOWN_RSTICK(ret[id]) ? 1 : 0) << RSTICK_DOWN_SHIFT;
+      return ret[id];
+   }
 }
 #undef M
 
