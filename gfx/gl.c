@@ -192,6 +192,7 @@ typedef struct gl
    char font_last_msg[256];
    int font_last_width, font_last_height;
    GLfloat font_color[16];
+   GLfloat font_color_dark[16];
 #endif
 
 } gl_t;
@@ -384,6 +385,13 @@ static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_s
       gl->font_color[4 * i + 1] = g_settings.video.msg_color_g;
       gl->font_color[4 * i + 2] = g_settings.video.msg_color_b;
       gl->font_color[4 * i + 3] = 1.0;
+   }
+
+   for (unsigned i = 0; i < 4; i++)
+   {
+      for (unsigned j = 0; j < 3; j++)
+         gl->font_color_dark[4 * i + j] = 0.3 * gl->font_color[4 * i + j];
+      gl->font_color_dark[4 * i + 3] = 1.0;
    }
 
 #else
@@ -748,7 +756,7 @@ static void blit_fonts(gl_t *gl, const struct font_output *head, const struct fo
 }
 
 static void calculate_font_coords(gl_t *gl,
-      GLfloat font_vertex[8], GLfloat font_tex_coords[8])
+      GLfloat font_vertex[8], GLfloat font_vertex_dark[8], GLfloat font_tex_coords[8])
 {
    GLfloat lx = g_settings.video.msg_pos_x;
    GLfloat hx = (GLfloat)gl->font_last_width / gl->vp_width + lx;
@@ -763,6 +771,14 @@ static void calculate_font_coords(gl_t *gl,
    font_vertex[5] = hy;
    font_vertex[6] = hx;
    font_vertex[7] = ly;
+
+   GLfloat shift_x = 2.0f / gl->vp_width;
+   GLfloat shift_y = 2.0f / gl->vp_height;
+   for (unsigned i = 0; i < 4; i++)
+   {
+      font_vertex_dark[2 * i + 0] = font_vertex[2 * i + 0] - shift_x;
+      font_vertex_dark[2 * i + 1] = font_vertex[2 * i + 1] - shift_y;
+   }
 
    lx = 0.0f;
    hx = (GLfloat)gl->font_last_width / gl->font_tex_w;
@@ -785,15 +801,14 @@ static void gl_render_msg(gl_t *gl, const char *msg)
       return;
 
    GLfloat font_vertex[8]; 
+   GLfloat font_vertex_dark[8]; 
    GLfloat font_tex_coords[8];
 
    // Deactivate custom shaders. Enable the font texture.
    gl_shader_use(0);
    set_viewport(gl, gl->win_width, gl->win_height, false);
    glBindTexture(GL_TEXTURE_2D, gl->font_tex);
-   glVertexPointer(2, GL_FLOAT, 0, font_vertex);
    glTexCoordPointer(2, GL_FLOAT, 0, font_tex_coords);
-   glColorPointer(4, GL_FLOAT, 0, gl->font_color);
 
    // Need blending. 
    // Using fixed function pipeline here since we cannot guarantee presence of shaders (would be kinda overkill anyways).
@@ -818,8 +833,13 @@ static void gl_render_msg(gl_t *gl, const char *msg)
       gl->font_last_width = geom.width;
       gl->font_last_height = geom.height;
    }
-   calculate_font_coords(gl, font_vertex, font_tex_coords);
+   calculate_font_coords(gl, font_vertex, font_vertex_dark, font_tex_coords);
    
+   glVertexPointer(2, GL_FLOAT, 0, font_vertex_dark);
+   glColorPointer(4, GL_FLOAT, 0, gl->font_color_dark);
+   glDrawArrays(GL_QUADS, 0, 4);
+   glVertexPointer(2, GL_FLOAT, 0, font_vertex);
+   glColorPointer(4, GL_FLOAT, 0, gl->font_color);
    glDrawArrays(GL_QUADS, 0, 4);
 
    // Go back to old rendering path.
