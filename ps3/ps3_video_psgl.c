@@ -45,10 +45,6 @@
 #include "../gfx/shader_cg.h"
 #endif
 
-#ifdef HAVE_XML
-#include "shader_glsl.h"
-#endif
-
 #define BLUE		0xffff0000u
 #define WHITE		0xffffffffu
 
@@ -88,22 +84,9 @@ static const GLfloat white_color[] = {
 static bool load_fbo_proc(void) { return true; }
 #endif
 
-#if defined(HAVE_XML)
-PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture = NULL;
-PFNGLACTIVETEXTUREPROC pglActiveTexture = NULL;
-static inline bool load_gl_proc(void)
-{
-   LOAD_SYM(glClientActiveTexture);
-   LOAD_SYM(glActiveTexture);
-   return pglClientActiveTexture && pglActiveTexture;
-}
-#else
-static inline bool load_gl_proc(void) { return true; }
-#endif
-
 #define MAX_SHADERS 16
 
-#if defined(HAVE_XML) || defined(HAVE_CG)
+#if defined(HAVE_CG)
 #define TEXTURES 8
 #else
 #define TEXTURES 1
@@ -171,11 +154,6 @@ static bool gl_shader_init(void)
          if (strlen(g_settings.video.cg_shader_path) > 0)
             return gl_cg_init(g_settings.video.cg_shader_path);
 #endif
-
-#ifdef HAVE_XML
-         if (strlen(g_settings.video.bsnes_shader_path) > 0)
-            return gl_glsl_init(g_settings.video.bsnes_shader_path);
-#endif
          break;
       }
 
@@ -183,14 +161,6 @@ static bool gl_shader_init(void)
       case SSNES_SHADER_CG:
       {
          return gl_cg_init(g_settings.video.cg_shader_path);
-         break;
-      }
-#endif
-
-#ifdef HAVE_XML
-      case SSNES_SHADER_BSNES:
-      {
-         return gl_glsl_init(g_settings.video.bsnes_shader_path);
          break;
       }
 #endif
@@ -207,10 +177,6 @@ static void gl_shader_use(unsigned index)
 #ifdef HAVE_CG
    gl_cg_use(index);
 #endif
-
-#ifdef HAVE_XML
-   gl_glsl_use(index);
-#endif
 }
 
 static void gl_shader_deinit(void)
@@ -218,20 +184,12 @@ static void gl_shader_deinit(void)
 #ifdef HAVE_CG
    gl_cg_deinit();
 #endif
-
-#ifdef HAVE_XML
-   gl_glsl_deinit();
-#endif
 }
 
 static void gl_shader_set_proj_matrix(void)
 {
 #ifdef HAVE_CG
    gl_cg_set_proj_matrix();
-#endif
-
-#ifdef HAVE_XML
-   gl_glsl_set_proj_matrix();
 #endif
 }
 
@@ -249,13 +207,6 @@ static void gl_shader_set_params(unsigned width, unsigned height,
          out_width, out_height, 
          frame_count, info, prev_info, fbo_info, fbo_info_cnt);
 #endif
-
-#ifdef HAVE_XML
-   gl_glsl_set_params(width, height, 
-         tex_width, tex_height, 
-         out_width, out_height, 
-         frame_count, info, prev_info, fbo_info, fbo_info_cnt);
-#endif
 }
 
 static unsigned gl_shader_num(void)
@@ -265,12 +216,6 @@ static unsigned gl_shader_num(void)
    unsigned cg_num = gl_cg_num();
    if (cg_num > num)
       num = cg_num;
-#endif
-
-#ifdef HAVE_XML
-   unsigned glsl_num = gl_glsl_num();
-   if (glsl_num > num)
-      num = glsl_num;
 #endif
 
    return num;
@@ -284,11 +229,6 @@ static bool gl_shader_filter_type(unsigned index, bool *smooth)
       valid = gl_cg_filter_type(index, smooth);
 #endif
 
-#ifdef HAVE_XML
-   if (!valid)
-      valid = gl_glsl_filter_type(index, smooth);
-#endif
-
    return valid;
 }
 
@@ -299,11 +239,6 @@ static void gl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
 #ifdef HAVE_CG
    if (!scale->valid)
       gl_cg_shader_scale(index, scale);
-#endif
-
-#ifdef HAVE_XML
-   if (!scale->valid)
-      gl_glsl_shader_scale(index, scale);
 #endif
 }
 #endif
@@ -553,7 +488,7 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
 
 static inline void set_lut_texture_coords(const GLfloat *coords)
 {
-#if defined(HAVE_XML) || defined(HAVE_CG)
+#if defined(HAVE_CG)
    // For texture images.
    pglClientActiveTexture(GL_TEXTURE1);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -579,7 +514,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_shader_use(1);
    gl->frame_count++;
 
-#if defined(HAVE_XML) || defined(HAVE_CG)
+#if defined(HAVE_CG)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 #endif
 
@@ -710,7 +645,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
       set_texture_coords(gl->tex_coords, xamt, yamt);
    }
-#if defined(HAVE_XML) || defined(HAVE_CG)
+#if defined(HAVE_CG)
    // We might have used different texture coordinates last frame. Edge case if resolution changes very rapidly.
    else if (width != gl->last_width[(gl->tex_index - 1) & TEXTURES_MASK] || height != gl->last_height[(gl->tex_index - 1) & TEXTURES_MASK])
    {
@@ -835,7 +770,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    }
 #endif
 
-#if defined(HAVE_XML) || defined(HAVE_CG)
+#if defined(HAVE_CG)
    memmove(gl->prev_info + 1, gl->prev_info, sizeof(tex_info) * (TEXTURES - 1));
    memcpy(&gl->prev_info[0], &tex_info, sizeof(tex_info));
    gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
@@ -988,16 +923,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    video->vsync ? glEnable(GL_VSYNC_SCE) : glDisable(GL_VSYNC_SCE);
 
-#if defined(HAVE_XML)
-   // Win32 GL lib doesn't have some functions needed for XML shaders.
-   // Need to load dynamically :(
-   if (!load_gl_proc())
-   {
-      psgl_deinit(gl);
-      return NULL;
-   }
-#endif
-
    gl->vsync = video->vsync;
    
    SSNES_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
@@ -1135,54 +1060,6 @@ static bool gl_focus(void *data)
    return true;
 }
 
-#ifdef HAVE_XML
-static bool gl_xml_shader(void *data, const char *path)
-{
-   gl_t *gl = data;
-
-   //if (!gl_check_error())
-   //   SSNES_WARN("Error happened before deinit!\n");
-
-
-   //if (!gl_check_error())
-   //   SSNES_WARN("Error happened in deinit!\n");
-
-#ifdef HAVE_FBO
-   if (gl->fbo_inited)
-   {
-      glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
-      glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
-      memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
-      memset(gl->fbo, 0, sizeof(gl->fbo));
-      gl->fbo_inited = false;
-      gl->render_to_tex = false;
-      gl->fbo_pass = 0;
-
-      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   }
-#endif
-
-   gl_shader_deinit();
-
-   //if (!gl_check_error())
-   //   SSNES_WARN("Failed to deinit rendering path properly!\n");
-
-   if (!gl_glsl_init(path))
-      return false;
-
-   // Set up render to texture.
-   gl_init_fbo(gl, gl->tex_w, gl->tex_h);
-
-   // Apparently need to set viewport for passes when we aren't using FBOs.
-   gl_shader_use(0);
-   set_viewport(gl, gl->win_width, gl->win_height, false);
-   gl_shader_use(1);
-   set_viewport(gl, gl->win_width, gl->win_height, false);
-
-   return true;
-}
-#endif
-
 const video_driver_t video_gl = {
    .init = gl_init,
    .frame = gl_frame,
@@ -1190,8 +1067,6 @@ const video_driver_t video_gl = {
    .set_nonblock_state = gl_set_nonblock_state,
    .focus = gl_focus,
    .free = gl_free,
-#ifdef HAVE_XML
-   .xml_shader = gl_xml_shader,
-#endif
    .ident = "gl"
 };
+
