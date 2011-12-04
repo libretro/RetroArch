@@ -328,6 +328,11 @@ static bool environment_cb(unsigned cmd, void *data)
          SSNES_LOG("Environ SET_NEED_FULLPATH: %s\n", g_extern.system.need_fullpath ? "true" : "false");
          break;
 
+      case SNES_ENVIRONMENT_GET_CAN_REWIND:
+         *(bool*)data = g_settings.rewind_enable;
+         SSNES_LOG("Environ GET_CAN_REWIND: %s\n", g_settings.rewind_enable ? "true" : "false");
+         break;
+
       default:
          SSNES_LOG("Environ UNSUPPORTED (#%u)!\n", cmd);
          return false;
