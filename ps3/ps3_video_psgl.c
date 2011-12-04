@@ -840,14 +840,14 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
 #endif
 
-   if(msg)
+   if (msg)
    {
-      cellDbgFontPrintf (0.09f, 0.90f, 1.51f, BLUE,	msg);
-      cellDbgFontPrintf (0.09f, 0.90f, 1.50f, WHITE,	msg);
+      cellDbgFontPrintf(0.09f, 0.90f, 1.51f, BLUE,	msg);
+      cellDbgFontPrintf(0.09f, 0.90f, 1.50f, WHITE, msg);
       cellDbgFontDraw();
    }
-   psglSwap();
 
+   psglSwap();
    return true;
 }
 
@@ -964,14 +964,14 @@ void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
 	}
 }
 
-static void psgl_init_dbgfont(gl_t * gl)
+static void psgl_init_dbgfont(gl_t *gl)
 {
-	CellDbgFontConfig cfg;
-	memset(&cfg, 0, sizeof(cfg));
-	cfg.bufSize = 512;
-	cfg.screenWidth = gl->win_width;
-	cfg.screenHeight = gl->win_height;
-	cellDbgFontInit(&cfg);
+   CellDbgFontConfig cfg;
+   memset(&cfg, 0, sizeof(cfg));
+   cfg.bufSize = 512;
+   cfg.screenWidth = gl->win_width;
+   cfg.screenHeight = gl->win_height;
+   cellDbgFontInit(&cfg);
 }
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)

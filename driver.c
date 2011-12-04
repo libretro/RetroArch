@@ -97,8 +97,6 @@ static const input_driver_t *input_drivers[] = {
 #endif
 };
 
-static int test_counter = 0;
-
 static void find_audio_driver(void)
 {
    for (unsigned i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
@@ -109,6 +107,7 @@ static void find_audio_driver(void)
          return;
       }
    }
+   SSNES_ERR("Couldn't find any audio driver named \"%s\"\n", g_settings.audio.driver);
    fprintf(stderr, "Available audio drivers are:\n");
    for (unsigned i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
       fprintf(stderr, "\t%s\n", audio_drivers[i]->ident);
