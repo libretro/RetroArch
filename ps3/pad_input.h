@@ -91,14 +91,14 @@ typedef uint64_t cell_input_state_t;
 extern "C" {
 #endif
 
-// Init and destruction of device.
-int cell_pad_input_init(void);
-void cell_pad_input_deinit(void);
+   // Init and destruction of device.
+   int cell_pad_input_init(void);
+   void cell_pad_input_deinit(void);
 
-// Get number of pads connected
-uint32_t cell_pad_input_pads_connected(void);
+   // Get number of pads connected
+   uint32_t cell_pad_input_pads_connected(void);
 
-cell_input_state_t cell_pad_input_poll_device(uint32_t id);
+   cell_input_state_t cell_pad_input_poll_device(uint32_t id);
 
 #ifdef __cplusplus
 }
