@@ -25,11 +25,10 @@
 #include "../config.h"
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__)
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
-#else
-#ifdef __CELLOS_LV2__
+#elif defined(__CELLOS_LV2__)
 #include <PSGL/psgl.h>
 #include <PSGL/psglu.h>
 #include <GLES/glext.h>
@@ -37,7 +36,6 @@
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <GL/glext.h>
-#endif
 #endif
 
 static inline bool gl_check_error(void)
