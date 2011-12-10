@@ -8,7 +8,6 @@
 DEBUG = 0
 
 CC = $(DEVKITXENON)/bin/xenon-gcc
-LD = $(DEVKITXENON)/bin/xenon-ld
 STRIP = $(DEVITKXENON)/bin/xenon-strip
 
 PPU_TARGET := ssnes-libxenon.elf
@@ -34,7 +33,7 @@ CFLAGS := $(OPTIMIZE_LV) $(DEFINES)
 LDFLAGS := -g -Wl,--gc-sections
 
 $(PPU_TARGET): $(OBJ)
-	$(LD) -o $@ $(OBJ) $(CFLAGS) $(LDFLAGS) $(LDDIRS) $(LIBS)
+	$(CC) -o $@ $(OBJ) $(LDFLAGS) $(LDDIRS) $(LIBS)
 	$(STRIP) $(PPU_TARGET)
 
 %.o: %.c config.h
