@@ -947,6 +947,10 @@ bool path_is_directory(const char *path)
    return PathIsDirectoryW(buf) == FILE_ATTRIBUTE_DIRECTORY;
 #elif defined(__CELLOS_LV2__)
    return false; // STUB
+#elif defined(XENON)
+   // Dummy
+   (void)path;
+   return false;
 #else
    struct stat buf;
    if (stat(path, &buf) < 0)

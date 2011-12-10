@@ -230,7 +230,7 @@ bool sdlwrap_key_pressed(int key)
 
 // 1.2 specific workaround for tiling WMs. In 1.3 we call GetSize directly, so we don't need to rely on
 // proper event handling (I hope).
-#if !defined(__APPLE__) && !defined(_WIN32) && !SDL_MODERN
+#if !defined(__APPLE__) && !defined(_WIN32) && !SDL_MODERN && !defined(XENON)
 static void sdlwrap_get_window_size(unsigned *width, unsigned *height)
 {
    SDL_SysWMinfo info;
@@ -308,7 +308,7 @@ void sdlwrap_check_window(bool *quit,
       }
    }
 
-#if !defined(__APPLE__) && !defined(_WIN32)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(XENON)
    // Hack to workaround limitations in tiling WMs ...
    if (!*resize && !g_fullscreen)
    {
@@ -326,6 +326,7 @@ void sdlwrap_check_window(bool *quit,
 #endif
 }
 
+#ifndef XENON
 bool sdlwrap_get_wm_info(SDL_SysWMinfo *info)
 {
 #if SDL_MODERN
@@ -337,6 +338,7 @@ bool sdlwrap_get_wm_info(SDL_SysWMinfo *info)
    return SDL_GetWMInfo(info) == 1;
 #endif
 }
+#endif
 
 bool sdlwrap_window_has_focus(void)
 {

@@ -401,6 +401,9 @@ static inline void ssnes_sleep(unsigned msec)
    sys_timer_usleep(1000 * msec);
 #elif defined(_WIN32)
    Sleep(msec);
+#elif defined(XENON)
+   // Dummy
+   (void)msec;
 #else
    struct timespec tv = {
       .tv_sec = msec / 1000,

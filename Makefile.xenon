@@ -7,20 +7,20 @@
 
 DEBUG = 0
 
-CC = $(DEVKITXENON)/bin/xenon-gcc
-STRIP = $(DEVITKXENON)/bin/xenon-strip
+CC = xenon-gcc
+CXX = xenon-g++
+STRIP = xenon-strip
 
 PPU_TARGET := ssnes-libxenon.elf
 
-LDDIRS = -L. -L$(DEVKITXENON)/usr/lib
+LDDIRS = -L. -L$(DEVKITXENON)/usr/lib -L$(DEVKITXENON)/xenon/lib/32
 INCDIRS = -I. -I$(DEVKITXENON)/usr/include -I$(DEVKITXENON)/usr/include/SDL
 
-OBJ = fifo_buffer.o getopt.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o audio/sdl.o gfx/gfx_common.o gfx/snes_state.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o gfx/image.o
+OBJ = fifo_buffer.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o input/sdl.o audio/sdl.o gfx/sdl.o gfx/sdlwrap.o gfx/gfx_common.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o
 
 LIBS = -lsnes -lSDL -lxenon -lm
-DEFINES = -std=c99 -DHAVE_SDL_IMAGE=1 -DHAVE_CONFIGFILE=1 -DHAVE_SDL=1 -DPACKAGE_VERSION=\"0.9.2\" -Dmain=ssnes_main
-
-DEFINES += -ffunction-sections -fdata-sections -mno-altivec -mhard-float -mcpu=cell -mtune=cell -m32 -fno-pic -mpowerpc64 -g -Wall -DSDL -DXENON $(INCDIRS)
+DEFINES = -std=gnu99 -DHAVE_CONFIGFILE=1 -DHAVE_SDL=1 -DPACKAGE_VERSION=\"0.9.2\" -DHAVE_GETOPT_LONG=1
+DEFINES += -maltivec -mhard-float -m32 -mpowerpc64 -mcpu=cell -mtune=cell -fno-pic -g -Wall -DSDL -DXENON $(INCDIRS)
 
 ifeq ($(DEBUG), 1)
    OPTIMIZE_LV	:= -O0 -g
@@ -29,11 +29,10 @@ else
 endif
 
 CFLAGS := $(OPTIMIZE_LV) $(DEFINES)
-
-LDFLAGS := -g -Wl,--gc-sections
+LDFLAGS := -m32 -mpowerpc64 -u read -u _start -u exc_base -fno-pic -mhard-float
 
 $(PPU_TARGET): $(OBJ)
-	$(CC) -o $@ $(OBJ) $(LDFLAGS) $(LDDIRS) $(LIBS)
+	$(CXX) -o $@ $(OBJ) $(LDFLAGS) $(LDDIRS) $(LIBS)
 	$(STRIP) $(PPU_TARGET)
 
 %.o: %.c config.h
