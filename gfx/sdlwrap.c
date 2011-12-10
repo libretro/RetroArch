@@ -326,10 +326,12 @@ void sdlwrap_check_window(bool *quit,
 #endif
 }
 
-#ifndef XENON
 bool sdlwrap_get_wm_info(SDL_SysWMinfo *info)
 {
-#if SDL_MODERN
+#ifdef XENON
+   (void)info;
+   return false;
+#elif SDL_MODERN
    if (g_window)
       return SDL_GetWindowWMInfo(g_window, info);
    else
@@ -338,7 +340,6 @@ bool sdlwrap_get_wm_info(SDL_SysWMinfo *info)
    return SDL_GetWMInfo(info) == 1;
 #endif
 }
-#endif
 
 bool sdlwrap_window_has_focus(void)
 {
