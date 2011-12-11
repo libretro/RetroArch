@@ -111,7 +111,7 @@ static void* ps3_input_init(void)
 static bool ps3_key_pressed(void *data, int key)
 {
    (void)data;
-   switch(key)
+   switch (key)
    {
       case SSNES_FAST_FORWARD_HOLD_KEY:
          return CTRL_RSTICK_UP(state[0]) && CTRL_R2(~state[0]);
@@ -140,3 +140,4 @@ const input_driver_t input_ps3 = {
    .free = ps3_free_input,
    .ident = "ps3",
 };
+
