@@ -30,7 +30,7 @@ endif
 libsnes ?= -lsnes
 
 LIBS = -lm -lshlwapi
-DEFINES = -I. -DHAVE_CONFIGFILE -DPACKAGE_VERSION=\"0.9.2\"
+DEFINES = -I. -DHAVE_CONFIGFILE -DPACKAGE_VERSION=\"0.9.3\"
 LDFLAGS = -L. -static-libgcc
 LDCXXFLAGS = -static-libstdc++ -s
 
