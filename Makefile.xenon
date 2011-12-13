@@ -21,7 +21,7 @@ INCDIRS = -I. -I$(DEVKITXENON)/usr/include -I$(DEVKITXENON)/usr/include/SDL
 OBJ = fifo_buffer.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o input/sdl.o audio/sdl.o gfx/sdl.o gfx/sdlwrap.o gfx/gfx_common.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o xenon/cond.o xenon/main.o
 
 LIBS = -lsnes -lSDL -lxenon -lm -lc
-DEFINES = -std=gnu99 -DHAVE_CONFIGFILE=1 -DHAVE_SDL=1 -DPACKAGE_VERSION=\"0.9.3\" -DHAVE_GETOPT_LONG=1
+DEFINES = -std=gnu99 -DHAVE_CONFIGFILE=1 -DHAVE_SDL=1 -DPACKAGE_VERSION=\"0.9.3\" -DHAVE_GETOPT_LONG=1 -Dmain=ssnes_main
 DEFINES += -maltivec -mhard-float -m32 -mpowerpc64 -mcpu=cell -mtune=cell -fno-pic -g -Wall -DSDL -DXENON $(INCDIRS)
 DEFINES += -u read -u _start -u exc_base
 
