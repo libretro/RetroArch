@@ -32,11 +32,12 @@ typedef struct
 static void *xenon360_init(const char *device, unsigned rate, unsigned latency)
 {
    xenon_sound_init();
+   return;
 }
 
 static ssize_t xenon360_write(void *data, const void *buf, size_t size)
 {
-   xenon360_audio_t *xa = data;
+   xenon360_audio_t *xenon360_audio = data;
    #if 0
    if (xa->nonblock)
    {
@@ -60,8 +61,8 @@ static bool xenon360_stop(void *data)
 
 static void xenon360_set_nonblock_state(void *data, bool state)
 {
-   xenon360_audio_t *xa = data;
-   xa->nonblock = state;
+   xenon360_audio_t *xenon360_audio = data;
+   xenon360_audio->nonblock = state;
 }
 
 static bool xenon360_start(void *data)
@@ -78,12 +79,12 @@ static bool xenon360_use_float(void *data)
 
 static void xenon360_free(void *data)
 {
-   xenon360_audio_t *xa = data;
-   if (xa)
-      free(xa);
+   xenon360_audio_t *xenon360_audio = data;
+   if (xenon360_audio)
+      free(xenon360_audio);
 }
 
-const audio_driver_t audio_xa = {
+const audio_driver_t audio_xenon360 = {
    .init = xenon360_init,
    .write = xenon360_write,
    .stop = xenon360_stop,
@@ -93,4 +94,3 @@ const audio_driver_t audio_xa = {
    .free = xenon360_free,
    .ident = "xenon360"
 };
-   

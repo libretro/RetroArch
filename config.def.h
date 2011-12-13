@@ -51,6 +51,7 @@
 #define AUDIO_DSOUND 16
 #define AUDIO_COREAUDIO 17
 #define AUDIO_PS3 18
+#define AUDIO_XENON360 20
 ////////////////////////
 #define INPUT_SDL 7
 #define INPUT_X 12
@@ -71,6 +72,8 @@
 
 #if defined(__CELLOS_LV2__)
 #define AUDIO_DEFAULT_DRIVER AUDIO_PS3
+#elif defined(XENON)
+#define AUDIO_DEFAULT_DRIVER AUDIO_XENON360
 #elif defined(HAVE_ALSA)
 #define AUDIO_DEFAULT_DRIVER AUDIO_ALSA
 #elif defined(HAVE_PULSE)
@@ -184,7 +187,7 @@ static const float refresh_rate = 59.95;
 ////////////////
 
 // Will enable audio or not.
-static const bool audio_enable = false;
+static const bool audio_enable = true;
 
 // Output samplerate
 static const unsigned out_rate = 48000; 

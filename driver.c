@@ -68,6 +68,9 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_DYLIB
    &audio_ext,
 #endif
+#ifdef XENON
+   &audio_xenon360,
+#endif
 };
 
 static const video_driver_t *video_drivers[] = {
