@@ -184,7 +184,7 @@ static const float refresh_rate = 59.95;
 ////////////////
 
 // Will enable audio or not.
-static const bool audio_enable = true;
+static const bool audio_enable = false;
 
 // Output samplerate
 static const unsigned out_rate = 48000; 
