@@ -22,7 +22,7 @@ OBJ = fifo_buffer.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.
 
 LIBS = -lsnes -lSDL -lxenon -lm -lc
 DEFINES = -std=gnu99 -DHAVE_CONFIGFILE=1 -DHAVE_SDL=1 -DPACKAGE_VERSION=\"0.9.3\" -DHAVE_GETOPT_LONG=1 -Dmain=ssnes_main
-DEFINES += -mno-altivec -mhard-float -m32 -mpowerpc64 -mcpu=cell -mtune=cell -fno-pic -g -Wall -DSDL -DXENON $(INCDIRS)
+DEFINES += -maltivec -mhard-float -m32 -mpowerpc64 -mcpu=cell -mtune=cell -fno-pic -g -Wall -DSDL -DXENON $(INCDIRS)
 DEFINES += -u read -u _start -u exc_base
 
 ifeq ($(DEBUG), 1)
