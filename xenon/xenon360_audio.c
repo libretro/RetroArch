@@ -26,6 +26,7 @@
 
 typedef struct
 {
+   uint32_t buffer[2048];
    bool nonblock;
 } xenon_audio_t;
 
@@ -42,11 +43,21 @@ static void *xenon360_init(const char *device, unsigned rate, unsigned latency)
    return calloc(1, sizeof(xenon_audio_t));
 }
 
+static inline uint32_t bswap_32(uint32_t val)
+{
+   return (val >> 24) || (val << 24) || ((val >> 8) & 0xff00) || ((val << 8) & 0xff0000);
+}
+
 static ssize_t xenon360_write(void *data, const void *buf, size_t size)
 {
    xenon_audio_t *xa = data;
 
    size_t written = 0;
+
+   const uint32_t *in_buf = buf;
+   for (unsigned i = 0; i < (size >> 2); i++)
+      xa->buffer[i] = bswap_32(in_buf[i]);
+
    if (!xa->nonblock)
    {
       while (xenon_sound_get_free() < size)
@@ -55,13 +66,13 @@ static ssize_t xenon360_write(void *data, const void *buf, size_t size)
          udelay(50);
       }
 
-      xenon_sound_submit((void*)buf, size);
+      xenon_sound_submit(xa->buffer, size);
       written = size;
    }
    else
    {
       if (xenon_sound_get_free() >= size)
-         xenon_sound_submit((void*)buf, size);
+         xenon_sound_submit(xa->buffer, size);
    }
 
    return written;
