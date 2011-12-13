@@ -46,7 +46,7 @@ static void *xenon360_init(const char *device, unsigned rate, unsigned latency)
 
 static inline uint32_t bswap_32(uint32_t val)
 {
-   return (val >> 24) || (val << 24) || ((val >> 8) & 0xff00) || ((val << 8) & 0xff0000);
+   return (val >> 24) | (val << 24) | ((val >> 8) & 0xff00) | ((val << 8) & 0xff0000);
 }
 
 static ssize_t xenon360_write(void *data, const void *buf, size_t size)
