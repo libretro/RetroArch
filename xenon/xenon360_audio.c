@@ -100,12 +100,6 @@ static bool xenon360_start(void *data)
    return true;
 }
 
-static bool xenon360_use_float(void *data)
-{
-   (void)data;
-   return true;
-}
-
 static void xenon360_free(void *data)
 {
    if (data)
@@ -118,7 +112,6 @@ const audio_driver_t audio_xenon360 = {
    .stop = xenon360_stop,
    .start = xenon360_start,
    .set_nonblock_state = xenon360_set_nonblock_state,
-   .use_float = xenon360_use_float,
    .free = xenon360_free,
    .ident = "xenon360"
 };
