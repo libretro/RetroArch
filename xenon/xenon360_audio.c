@@ -23,6 +23,7 @@
 #include <xenon_sound/sound.h>
 
 #define SOUND_FREQUENCY 48000
+#define MAX_BUFFER 2048
 
 typedef struct
 {
@@ -55,12 +56,12 @@ static ssize_t xenon360_write(void *data, const void *buf, size_t size)
    size_t written = 0;
 
    const uint32_t *in_buf = buf;
-   for (unsigned i = 0; i < (size >> 2); i++)
+   for (size_t i = 0; i < (size >> 2); i++)
       xa->buffer[i] = bswap_32(in_buf[i]);
 
    if (!xa->nonblock)
    {
-      while (xenon_sound_get_free() < size)
+      while (xenon_sound_get_unplayed() >= MAX_BUFFER)
       {
          // libxenon doesn't have proper synchronization primitives for this :(
          udelay(50);
@@ -71,8 +72,11 @@ static ssize_t xenon360_write(void *data, const void *buf, size_t size)
    }
    else
    {
-      if (xenon_sound_get_free() >= size)
+      if (xenon_sound_get_unplayed() < MAX_BUFFER)
+      {
          xenon_sound_submit(xa->buffer, size);
+         written = size;
+      }
    }
 
    return written;
