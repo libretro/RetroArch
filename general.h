@@ -36,6 +36,10 @@
 #include <sys/timer.h>
 #endif
 
+#ifdef XENON
+#include <time/time.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -402,8 +406,7 @@ static inline void ssnes_sleep(unsigned msec)
 #elif defined(_WIN32)
    Sleep(msec);
 #elif defined(XENON)
-   // Dummy
-   (void)msec;
+   udelay(1000 * msec);
 #else
    struct timespec tv = {
       .tv_sec = msec / 1000,

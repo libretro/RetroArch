@@ -17,40 +17,54 @@
 
 #include "../driver.h"
 #include <stdlib.h>
+#include <stdbool.h>
 #include "../general.h"
 
 #include <xenon_sound/sound.h>
 
 #define SOUND_FREQUENCY 48000
-#define SOUND_SAMPLES_SIZE 2048
 
 typedef struct
 {
    bool nonblock;
-} xenon360_audio_t;
+} xenon_audio_t;
 
 static void *xenon360_init(const char *device, unsigned rate, unsigned latency)
 {
-   xenon_sound_init();
-   return;
+   static bool inited = false;
+   if (!inited)
+   {
+      xenon_sound_init();
+      inited = true;
+   }
+
+   g_settings.audio.out_rate = SOUND_FREQUENCY;
+   return calloc(1, sizeof(xenon_audio_t));
 }
 
 static ssize_t xenon360_write(void *data, const void *buf, size_t size)
 {
-   xenon360_audio_t *xenon360_audio = data;
-   #if 0
-   if (xa->nonblock)
-   {
-      size_t avail = xaudio2_write_avail(xa->xa);
-      if (avail == 0)
-         return 0;
-      if (avail < size)
-         size = avail;
-   }
-   #endif
+   xenon_audio_t *xa = data;
 
-   xenon_sound_submit(buf, size);
-   return 0;
+   size_t written = 0;
+   if (!xa->nonblock)
+   {
+      while (xenon_sound_get_free() < size)
+      {
+         // libxenon doesn't have proper synchronization primitives for this :(
+         udelay(50);
+      }
+
+      xenon_sound_submit((void*)buf, size);
+      written = size;
+   }
+   else
+   {
+      if (xenon_sound_get_free() >= size)
+         xenon_sound_submit((void*)buf, size);
+   }
+
+   return written;
 }
 
 static bool xenon360_stop(void *data)
@@ -61,8 +75,8 @@ static bool xenon360_stop(void *data)
 
 static void xenon360_set_nonblock_state(void *data, bool state)
 {
-   xenon360_audio_t *xenon360_audio = data;
-   xenon360_audio->nonblock = state;
+   xenon_audio_t *xa = data;
+   xa->nonblock = state;
 }
 
 static bool xenon360_start(void *data)
@@ -79,9 +93,8 @@ static bool xenon360_use_float(void *data)
 
 static void xenon360_free(void *data)
 {
-   xenon360_audio_t *xenon360_audio = data;
-   if (xenon360_audio)
-      free(xenon360_audio);
+   if (data)
+      free(data);
 }
 
 const audio_driver_t audio_xenon360 = {
@@ -94,3 +107,4 @@ const audio_driver_t audio_xenon360 = {
    .free = xenon360_free,
    .ident = "xenon360"
 };
+
