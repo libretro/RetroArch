@@ -58,6 +58,7 @@
 #define INPUT_X 12
 #define INPUT_PS3 19
 #define INPUT_XENON360 21
+#define INPUT_WII 23
 ////////////////////////
 
 #if defined(HAVE_OPENGL) || defined(__CELLOS_LV2__)
@@ -112,6 +113,8 @@
 #define INPUT_DEFAULT_DRIVER INPUT_PS3
 #elif defined(XENON)
 #define INPUT_DEFAULT_DRIVER INPUT_XENON360
+#elif defined(GEKKO)
+#define INPUT_DEFAULT_DRIVER INPUT_WII
 #elif defined(HAVE_XVIDEO)
 #define INPUT_DEFAULT_DRIVER INPUT_X
 #else

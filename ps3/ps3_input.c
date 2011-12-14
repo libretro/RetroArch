@@ -1,5 +1,5 @@
 /*  SSNES - A Super Ninteno Entertainment System (SNES) Emulator frontend for libsnes.
- *  Copyright (C) 2010 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2011 - Hans-Kristian Arntzen
  *  Copyright (C) 2011 - Daniel De Matteis
  *
  *  Some code herein may be based on code found in BSNES.
@@ -126,10 +126,8 @@ static bool ps3_key_pressed(void *data, int key)
       case SSNES_REWIND:
          return CTRL_RSTICK_DOWN(state[0]) && CTRL_R2(~state[0]);
       default:
-         break;
+         return false;
    }
-
-   return false;
 }
 
 const input_driver_t input_ps3 = {

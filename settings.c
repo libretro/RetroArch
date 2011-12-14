@@ -122,6 +122,9 @@ static void set_defaults(void)
       case INPUT_XENON360:
          def_input = "xenon360";
          break;
+      case INPUT_WII:
+         def_input = "wii";
+         break;
       default:
          break;
    }
