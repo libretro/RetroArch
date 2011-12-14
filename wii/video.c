@@ -35,11 +35,13 @@ struct
 } static g_tex ATTRIBUTE_ALIGN(32);
 
 static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
-static uint8_t display_list[128] ATTRIBUTE_ALIGN(32);
+static uint8_t display_list[1024] ATTRIBUTE_ALIGN(32);
 static size_t display_list_size;
 
 static void setup_video_mode(GXRModeObj *mode, void *framebuf[2])
 {
+   VIDEO_Configure(mode);
+
    for (unsigned i = 0; i < 2; i++)
       VIDEO_ClearFrameBuffer(mode, framebuf[i], COLOR_BLACK);
 
@@ -54,15 +56,15 @@ static void setup_video_mode(GXRModeObj *mode, void *framebuf[2])
 static float verts[16] ATTRIBUTE_ALIGN(32)  = {
    -1, -1, -0.5,
    -1,  1, -0.5,
-    1, -1, -0.5,
     1,  1, -0.5,
+    1, -1, -0.5,
 };
 
 static float tex_coords[8] ATTRIBUTE_ALIGN(32) = {
    0, 0,
    0, 1,
-   1, 0,
    1, 1,
+   1, 0,
 };
 
 static void init_vtx(GXRModeObj *mode)
@@ -82,7 +84,7 @@ static void init_vtx(GXRModeObj *mode)
    GX_SetAlphaUpdate(GX_FALSE);
 
    Mtx44 m;
-   guOrtho(m, 1, -1, -1, 1, 0.4, 0.6);
+   guOrtho(m, 1, -1, 1, -1, 0.4, 0.6);
    GX_LoadProjectionMtx(m, GX_ORTHOGRAPHIC);
 
    Mtx pos_m;
@@ -110,14 +112,8 @@ static void init_vtx(GXRModeObj *mode)
 static void init_texture(void)
 {
    GX_InitTexObj(&g_tex.obj, g_tex.data, 512, 512, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-   GX_InitTexObjLOD(&g_tex.obj, GX_LINEAR, GX_LINEAR, 0, 0, 0, GX_ENABLE, GX_FALSE, GX_ANISO_1);
+   GX_InitTexObjLOD(&g_tex.obj, GX_LINEAR, GX_LINEAR, 0, 0, 0, GX_FALSE, GX_FALSE, GX_ANISO_1);
    GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
-
-   Mtx m;
-   guMtxIdentity(m);
-   GX_LoadTexMtxImm(m, GX_TEXMTX0, GX_MTX3x4);
-   GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX3x4, GX_TG_TEX0, GX_TEXMTX0);
-
    GX_InvalidateTexAll();
 }
 
@@ -125,7 +121,7 @@ static void build_disp_list(void)
 {
    DCInvalidateRange(display_list, sizeof(display_list));
    GX_BeginDispList(display_list, sizeof(display_list));
-   GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
+   GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
    for (unsigned i = 0; i < 4; i++)
    {
       GX_Position1x8(i);
@@ -163,17 +159,20 @@ static void update_texture(const uint16_t *src,
 {
    width <<= 1;
    pitch >>= 1;
-   float tex_w = (float)width / 512;
-   float tex_h = (float)height / 512;
+   float tex_w = (float)width / 256;
+   float tex_h = (float)height / 256;
 
    tex_coords[4] = tex_coords[6] = tex_w;
-   tex_coords[3] = tex_coords[7] = tex_h;
+   tex_coords[3] = tex_coords[5] = tex_h;
 
    uint16_t *dst = g_tex.data;
-   for (unsigned i = 0; i < height; i++, dst += 512, src += pitch)
+   for (unsigned i = 0; i < height; i++, dst += 256, src += pitch)
       memcpy(dst, src, width);
    
    DCFlushRange(tex_coords, sizeof(tex_coords));
+   GX_InvVtxCache();
+
+   init_texture();
    DCFlushRange(g_tex.data, sizeof(g_tex.data));
    GX_InvalidateTexAll();
 }
@@ -190,6 +189,7 @@ static bool wii_frame(void *data, const void *frame,
    update_texture(frame, width, height, pitch);
    GX_CallDispList(display_list, display_list_size);
    GX_DrawDone();
+   GX_Flush();
 
    g_framebuf_index ^= 1;
    GX_CopyDisp(g_framebuf[g_framebuf_index], GX_TRUE);
