@@ -311,6 +311,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
       goto error;
    }
 
+#ifndef XENON
    sdl_input_t *sdl_input = input_sdl.init();
    if (sdl_input)
    {
@@ -318,7 +319,12 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
       *input_data = sdl_input;
    }
    else
+#else
+   {
       *input = NULL;
+      *input_data = NULL;
+   }
+#endif
 
    vid->rgb32 = video->rgb32;
 
