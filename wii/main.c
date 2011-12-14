@@ -17,6 +17,7 @@
 
 #undef main
 
+#include <stdlib.h>
 #include <stddef.h>
 #include <sdcard/wiisd_io.h>
 #include <sdcard/gcsd.h>
@@ -24,17 +25,15 @@
 
 int ssnes_main(int argc, char **argv);
 
-static const DISC_INTERFACE *sd = &__io_wiisd;
-
 int main(void)
 {
-   fatMountSimple("sd", sd);
-
    char arg0[] = "ssnes";
    char arg1[] = "sd:/FFIII.smc";
-   char *argv[] = { arg0, arg1, NULL };
-   int ret = ssnes_main(sizeof(argv) / sizeof(argv[0]) - 1, argv);
+   char arg2[] = "-v";
+   char *argv[] = { arg0, arg1, arg2, NULL };
 
+   fatMountSimple("sd", &__io_wiisd);
+   int ret = ssnes_main(sizeof(argv) / sizeof(argv[0]) - 1, argv);
    fatUnmount("sd:");
    return ret;
 }
