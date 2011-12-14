@@ -19,6 +19,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "../general.h"
+#include <malloc.h>
+#include <string.h>
 
 #include <gccore.h>
 #include <ogcsys.h>

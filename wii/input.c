@@ -69,7 +69,7 @@ static void *wii_input_init(void)
    return (void*)-1;
 }
 
-#define _B(btn) pad_state[i][SNES_DEVICE_ID_JOYPAD_##btn] = down & PAD_BUTTON##btn
+#define _B(btn) pad_state[i][SNES_DEVICE_ID_JOYPAD_##btn] = down & PAD_BUTTON_##btn
 
 static void wii_input_poll(void *data)
 {
@@ -81,7 +81,7 @@ static void wii_input_poll(void *data)
       uint16_t down = PAD_ButtonsDown(i);
       _B(B);
       _B(Y);
-      pad_state[i][SNES_DEVICE_ID_JOYPAD_SELECT] = down & PAD_BUTTON_Z;
+      pad_state[i][SNES_DEVICE_ID_JOYPAD_SELECT] = down & PAD_TRIGGER_Z;
       _B(START);
       _B(UP);
       _B(DOWN);
@@ -89,8 +89,8 @@ static void wii_input_poll(void *data)
       _B(RIGHT);
       _B(A);
       _B(X);
-      _B(L);
-      _B(R);
+      pad_state[i][SNES_DEVICE_ID_JOYPAD_L] = down & PAD_TRIGGER_L;
+      pad_state[i][SNES_DEVICE_ID_JOYPAD_R] = down & PAD_TRIGGER_R;
    }
 }
 

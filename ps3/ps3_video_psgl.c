@@ -845,36 +845,32 @@ static void gl_set_nonblock_state(void *data, bool state)
    }
 }
 
-static bool psgl_init_device(gl_t * gl, const video_info_t *video, uint32_t resolution_id)
+static bool psgl_init_device(gl_t *gl, const video_info_t *video, uint32_t resolution_id)
 {
-   PSGLdeviceParameters params;
-   PSGLinitOptions options;
-   options.enable = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS;
-#if(CELL_SDK_VERSION > 0x340000)
+   PSGLinitOptions options = {
+      .enable = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS,
+      .maxSPUs = 1,
+      .initializeSPUs = GL_FALSE,
+   };
+#if CELL_SDK_VERSION > 0x340000
    options.enable |= PSGL_INIT_TRANSIENT_MEMORY_SIZE;
 #else
    options.enable |=	PSGL_INIT_HOST_MEMORY_SIZE;
 #endif
-   options.maxSPUs = 1;
-   options.initializeSPUs = GL_FALSE;
-   options.persistentMemorySize = 0;
-   options.transientMemorySize = 0;
-   options.errorConsole = 0;
-   options.fifoSize = 0;
-   options.hostMemorySize = 0;
    
    psglInit(&options);
    
-   params.enable = PSGL_DEVICE_PARAMETERS_COLOR_FORMAT | \
-   PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT | \
-   PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE;
-   
-   params.colorFormat = GL_ARGB_SCE;
-   params.depthFormat = GL_NONE;
-   params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
-   
-   params.enable |= PSGL_DEVICE_PARAMETERS_BUFFERING_MODE;
-   params.bufferingMode = PSGL_BUFFERING_MODE_TRIPLE;
+   PSGLdeviceParameters params = {
+      .enable = PSGL_DEVICE_PARAMETERS_COLOR_FORMAT |
+         PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT |
+         PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE |
+         PSGL_DEVICE_PARAMETERS_BUFFERING_MODE,
+
+      .colorFormat = GL_ARGB_SCE,
+      .depthFormat = GL_NONE,
+      .multisamplingMode = GL_MULTISAMPLING_NONE_SCE,
+      .bufferingMode = PSGL_BUFFERING_MODE_TRIPLE,
+   };
    
    gl->gl_device = psglCreateDeviceExtended(&params);
    psglGetDeviceDimensions(gl->gl_device, &gl->win_width, &gl->win_height); 

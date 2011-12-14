@@ -37,6 +37,7 @@
 #define VIDEO_XVIDEO 11
 #define VIDEO_SDL 13
 #define VIDEO_EXT 14
+#define VIDEO_WII 24
 ////////////////////////
 #define AUDIO_RSOUND 1
 #define AUDIO_OSS 2
@@ -63,6 +64,8 @@
 
 #if defined(HAVE_OPENGL) || defined(__CELLOS_LV2__)
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL
+#elif defined(GEKKO)
+#define VIDEO_DEFAULT_DRIVER VIDEO_WII
 #elif defined(HAVE_XVIDEO)
 #define VIDEO_DEFAULT_DRIVER VIDEO_XVIDEO
 #elif defined(HAVE_SDL)

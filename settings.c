@@ -47,6 +47,9 @@ static void set_defaults(void)
       case VIDEO_GL:
          def_video = "gl";
          break;
+      case VIDEO_WII:
+         def_video = "wii";
+         break;
       case VIDEO_XVIDEO:
          def_video = "xvideo";
          break;
