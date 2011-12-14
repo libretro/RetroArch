@@ -56,6 +56,7 @@
 #define INPUT_SDL 7
 #define INPUT_X 12
 #define INPUT_PS3 19
+#define INPUT_XENON360 21
 ////////////////////////
 
 #if defined(HAVE_OPENGL) || defined(__CELLOS_LV2__)
@@ -106,6 +107,8 @@
 #define INPUT_DEFAULT_DRIVER INPUT_SDL
 #elif defined(__CELLOS_LV2__)
 #define INPUT_DEFAULT_DRIVER INPUT_PS3
+#elif defined(XENON)
+#define INPUT_DEFAULT_DRIVER INPUT_XENON360
 #elif defined(HAVE_XVIDEO)
 #define INPUT_DEFAULT_DRIVER INPUT_X
 #else

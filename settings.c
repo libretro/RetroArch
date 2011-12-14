@@ -115,6 +115,9 @@ static void set_defaults(void)
       case INPUT_X:
          def_input = "x";
          break;
+      case INPUT_XENON360:
+         def_input = "xenon360";
+	 break;
       default:
          break;
    }

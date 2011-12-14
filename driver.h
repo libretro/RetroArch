@@ -176,6 +176,7 @@ extern const video_driver_t video_ext;
 extern const input_driver_t input_sdl;
 extern const input_driver_t input_x;
 extern const input_driver_t input_ps3;
+extern const input_driver_t input_xenon360;
 ////////////////////////////////////////////////
 
 #endif
