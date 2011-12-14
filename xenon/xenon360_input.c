@@ -17,23 +17,25 @@
  */
 
 
-#include "../driver.h"
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "../driver.h"
 #include "../libsnes.hpp"
 
 #include <input/input.h>
 #include <usb/usbmain.h>
 
-#include <stdlib.h>
 
-struct controller_data_s pad[5];
+static struct controller_data_s pad[4];
 
 static void xenon360_input_poll(void *data)
 {
    (void)data;
-   for (unsigned i = 0; i < 5; i++)
+   for (unsigned i = 0; i < 4; i++)
    {
-      usb_poll();
+      usb_do_poll();
       get_controller_data(&pad[i], i);
    }
 }

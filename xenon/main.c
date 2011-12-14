@@ -139,9 +139,9 @@ int main(void)
       usb_do_poll();		
       get_controller_data(&pad, 0);
 
-      if (pad.s1_y > STICK_THRESHOLD)
+      if (pad.s1_y > STICK_THRESHOLD || pad.up)
          pos--;
-      if (pad.s1_y < -STICK_THRESHOLD)
+      if (pad.s1_y < -STICK_THRESHOLD || pad.down)
          pos++;
 
       if (entrycount && (pos < 0 || pos >= entrycount))
