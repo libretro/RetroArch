@@ -1,5 +1,5 @@
 /*  SSNES - A Super Ninteno Entertainment System (SNES) Emulator frontend for libsnes.
- *  Copyright (C) 2010 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2011 - Hans-Kristian Arntzen
  *  Copyright (C) 2011 - Daniel De Matteis
  *
  *  Some code herein may be based on code found in BSNES.
@@ -16,7 +16,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,9 +26,7 @@
 #include <input/input.h>
 #include <usb/usbmain.h>
 
-
 static struct controller_data_s pad[4];
-
 static void xenon360_input_poll(void *data)
 {
    (void)data;
@@ -57,49 +54,50 @@ static int16_t xenon360_input_state(void *data, const struct snes_keybind **bind
    else if (port == SNES_PORT_2)
       player = 1;
 
-   uint64_t button = 0;
+   bool button;
 
    // Hardcoded binds.
    switch (id)
    {
       case SNES_DEVICE_ID_JOYPAD_A:
-         button = pad[player].b ? 1 : 0;
+         button = pad[player].b;
          break;
       case SNES_DEVICE_ID_JOYPAD_B:
-         button = pad[player].a ? 1 : 0;
+         button = pad[player].a;
          break;
       case SNES_DEVICE_ID_JOYPAD_X:
-         button = pad[player].y ? 1 : 0;
+         button = pad[player].y;
          break;
       case SNES_DEVICE_ID_JOYPAD_Y:
-         button = pad[player].x ? 1 : 0;
+         button = pad[player].x;
          break;
       case SNES_DEVICE_ID_JOYPAD_LEFT:
-         button = pad[player].left ? 1 : 0;
+         button = pad[player].left;
          break;
       case SNES_DEVICE_ID_JOYPAD_RIGHT:
-         button = pad[player].right ? 1 : 0;
+         button = pad[player].right;
          break;
       case SNES_DEVICE_ID_JOYPAD_UP:
-         button = pad[player].up ? 1 : 0;
+         button = pad[player].up;
          break;
       case SNES_DEVICE_ID_JOYPAD_DOWN:
-         button = pad[player].down ? 1 : 0;
+         button = pad[player].down;
          break;
       case SNES_DEVICE_ID_JOYPAD_START:
-         button = pad[player].start ? 1 : 0;
+         button = pad[player].start;
          break;
       case SNES_DEVICE_ID_JOYPAD_SELECT:
-         button = pad[player].select ? 1 : 0;
+         button = pad[player].select;
          break;
       case SNES_DEVICE_ID_JOYPAD_L:
-         button = pad[player].lt ? 1 : 0;
+         button = pad[player].lt;
          break;
       case SNES_DEVICE_ID_JOYPAD_R:
-         button = pad[player].rt ? 1 : 0;
+         button = pad[player].rt;
          break;
       default:
-         button = 0;
+         button = false;
+         break;
    }
 
    return button;
@@ -118,26 +116,6 @@ static void* xenon360_input_init(void)
 static bool xenon360_key_pressed(void *data, int key)
 {
    (void)data;
-   #if 0
-   switch (key)
-   {
-      case SSNES_FAST_FORWARD_HOLD_KEY:
-         return CTRL_RSTICK_UP(state[0]) && CTRL_R2(~state[0]);
-      case SSNES_LOAD_STATE_KEY:
-         return (CTRL_RSTICK_UP(state[0]) && CTRL_R2(state[0]));
-      case SSNES_SAVE_STATE_KEY:
-         return (CTRL_RSTICK_DOWN(state[0]) && CTRL_R2(state[0]));
-      case SSNES_STATE_SLOT_PLUS:
-         return (CTRL_RSTICK_RIGHT(state[0]) && CTRL_R2(state[0]));
-      case SSNES_STATE_SLOT_MINUS:
-         return (CTRL_RSTICK_LEFT(state[0]) && CTRL_R2(state[0]));
-      case SSNES_REWIND:
-         return CTRL_RSTICK_DOWN(state[0]) && CTRL_R2(~state[0]);
-      default:
-         break;
-   }
-   #endif
-
    return false;
 }
 
