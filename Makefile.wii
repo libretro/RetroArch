@@ -20,9 +20,9 @@ MACHDEP := -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 CXXFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
-LIBS := -logc -lsnes -lfat
+LIBS := -lfat -logc -lsnes
 
-OBJ = fifo_buffer.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o wii/audio.o wii/main.o wii/input.o wii/video.o
+OBJ = wii/main.o fifo_buffer.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o wii/audio.o wii/input.o wii/video.o
 
 CFLAGS += -std=gnu99 -DHAVE_CONFIGFILE=1 -DHAVE_GETOPT_LONG -DPACKAGE_VERSION=\"0.9.3\" -Dmain=ssnes_main -Wno-char-subscripts
 CXXFLAGS += -std=gnu99 -DHAVE_CONFIGFILE=1 -DHAVE_GETOPT_LONG -DPACKAGE_VERSION=\"0.9.3\" -Dmain=ssnes_main -Wno-char-subscripts
@@ -41,7 +41,7 @@ all: $(DOL_TARGET)
 	elf2dol $< $@
 
 $(ELF_TARGET): $(OBJ)
-	$(CXX) -o $@ $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS)
+	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(LIBS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<

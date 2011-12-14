@@ -32,9 +32,8 @@ int main(void)
    char arg2[] = "-v";
    char *argv[] = { arg0, arg1, arg2, NULL };
 
-   fatMountSimple("sd", &__io_wiisd);
+   fatInitDefault();
    int ret = ssnes_main(sizeof(argv) / sizeof(argv[0]) - 1, argv);
-   fatUnmount("sd:");
    return ret;
 }
 

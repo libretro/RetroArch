@@ -133,12 +133,9 @@ static void *wii_init(const video_info_t *video,
       inited = true;
    }
 
+   GXRModeObj *mode = VIDEO_GetPreferredMode(NULL);
    for (unsigned i = 0; i < 2; i++)
-   {
-      g_framebuf[i] = memalign(32, 640 * 528 * 6);
-      DCInvalidateRange(g_framebuf[i], 640 * 528 * 6);
-      g_framebuf[i] = MEM_K0_TO_K1(g_framebuf[i]);
-   }
+      g_framebuf[i] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(mode));
 
    setup_video_mode(VIDEO_GetPreferredMode(NULL), g_framebuf);
 
