@@ -51,31 +51,35 @@ static void setup_video_mode(GXRModeObj *mode, void *framebuf[2])
       VIDEO_WaitVSync();
 }
 
-static float verts[] ATTRIBUTE_ALIGN(32)  = {
+static float verts[16] ATTRIBUTE_ALIGN(32)  = {
    -1, -1, -0.5,
    -1,  1, -0.5,
     1, -1, -0.5,
     1,  1, -0.5,
 };
 
-static float tex_coords[] ATTRIBUTE_ALIGN(32) = {
+static float tex_coords[8] ATTRIBUTE_ALIGN(32) = {
    0, 0,
    0, 1,
    1, 0,
    1, 1,
 };
 
-static void init_vtx(const GXRModeObj *mode)
+static void init_vtx(GXRModeObj *mode)
 {
    GX_SetViewport(0, 0, mode->fbWidth, mode->efbHeight, 0, 1);
    GX_SetDispCopyYScale(GX_GetYScaleFactor(mode->efbHeight, mode->xfbHeight));
    GX_SetScissor(0, 0, mode->fbWidth, mode->efbHeight);
    GX_SetDispCopySrc(0, 0, mode->fbWidth, mode->efbHeight);
    GX_SetDispCopyDst(mode->fbWidth, mode->xfbHeight);
+   GX_SetCopyFilter(mode->aa, mode->sample_pattern, (mode->xfbMode == VI_XFBMODE_SF) ? GX_FALSE : GX_TRUE,
+         mode->vfilter);
+   GX_SetFieldMode(mode->field_rendering, (mode->viHeight == 2 * mode->xfbHeight) ? GX_ENABLE : GX_DISABLE);
 
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
    GX_SetZMode(GX_ENABLE, GX_ALWAYS, GX_ENABLE);
    GX_SetColorUpdate(GX_TRUE);
+   GX_SetAlphaUpdate(GX_FALSE);
 
    Mtx44 m;
    guOrtho(m, 1, -1, -1, 1, 0.4, 0.6);
@@ -86,7 +90,6 @@ static void init_vtx(const GXRModeObj *mode)
    GX_LoadPosMtxImm(pos_m, GX_PNMTX0);
 
    GX_ClearVtxDesc();
-
    GX_SetVtxDesc(GX_VA_POS, GX_INDEX8);
    GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 
@@ -98,9 +101,10 @@ static void init_vtx(const GXRModeObj *mode)
    GX_SetNumTexGens(1);
    GX_SetNumChans(0);
    GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
-   GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-
+   GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
    GX_InvVtxCache();
+
+   GX_Flush();
 }
 
 static void init_texture(void)
