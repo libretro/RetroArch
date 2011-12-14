@@ -99,7 +99,8 @@ static void set_defaults(void)
          def_audio = "ext";
          break;
       case AUDIO_XENON360:
-	 def_audio = "xenon360";
+         def_audio = "xenon360";
+         break;
       default:
          break;
    }

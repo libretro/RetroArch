@@ -179,7 +179,7 @@ static const bool font_enable = true;
 // This value should stay close to 60Hz to avoid large pitch changes.
 // If your monitor does not run at 60Hz, or something close to it, disable VSync,
 // and leave this at its default.
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__) || defined(XENON)
 static const float refresh_rate = 59.92; 
 #else
 static const float refresh_rate = 59.95; 
