@@ -62,9 +62,6 @@ static void set_defaults(void)
 
    switch (AUDIO_DEFAULT_DRIVER)
    {
-      case AUDIO_PS3:
-         def_audio = "ps3";
-         break;
       case AUDIO_RSOUND:
          def_audio = "rsound";
          break;
@@ -101,6 +98,12 @@ static void set_defaults(void)
       case AUDIO_XENON360:
          def_audio = "xenon360";
          break;
+      case AUDIO_PS3:
+         def_audio = "ps3";
+         break;
+      case AUDIO_WII:
+         def_audio = "wii";
+         break;
       default:
          break;
    }
@@ -118,7 +121,7 @@ static void set_defaults(void)
          break;
       case INPUT_XENON360:
          def_input = "xenon360";
-	 break;
+         break;
       default:
          break;
    }

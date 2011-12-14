@@ -169,6 +169,7 @@ extern const audio_driver_t audio_dsound;
 extern const audio_driver_t audio_coreaudio;
 extern const audio_driver_t audio_xenon360;
 extern const audio_driver_t audio_ps3;
+extern const audio_driver_t audio_wii;
 extern const video_driver_t video_gl;
 extern const video_driver_t video_xvideo;
 extern const video_driver_t video_sdl;

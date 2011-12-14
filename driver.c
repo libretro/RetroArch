@@ -29,9 +29,6 @@
 #endif
 
 static const audio_driver_t *audio_drivers[] = {
-#ifdef __CELLOS_LV2__
-   &audio_ps3,
-#endif
 #ifdef HAVE_ALSA
    &audio_alsa,
 #endif
@@ -68,8 +65,14 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_DYLIB
    &audio_ext,
 #endif
+#ifdef __CELLOS_LV2__
+   &audio_ps3,
+#endif
 #ifdef XENON
    &audio_xenon360,
+#endif
+#ifdef GEKKO
+   &audio_wii,
 #endif
 };
 

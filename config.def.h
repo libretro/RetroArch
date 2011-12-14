@@ -52,6 +52,7 @@
 #define AUDIO_COREAUDIO 17
 #define AUDIO_PS3 18
 #define AUDIO_XENON360 20
+#define AUDIO_WII 22
 ////////////////////////
 #define INPUT_SDL 7
 #define INPUT_X 12
@@ -75,6 +76,8 @@
 #define AUDIO_DEFAULT_DRIVER AUDIO_PS3
 #elif defined(XENON)
 #define AUDIO_DEFAULT_DRIVER AUDIO_XENON360
+#elif defined(GEKKO)
+#define AUDIO_DEFAULT_DRIVER AUDIO_WII
 #elif defined(HAVE_ALSA)
 #define AUDIO_DEFAULT_DRIVER AUDIO_ALSA
 #elif defined(HAVE_PULSE)
