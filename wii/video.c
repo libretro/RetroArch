@@ -38,14 +38,16 @@ static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
 static uint8_t display_list[1024] ATTRIBUTE_ALIGN(32);
 static size_t display_list_size;
 
-static void setup_video_mode(GXRModeObj *mode, void *framebuf[2])
+static void setup_video_mode(GXRModeObj *mode)
 {
    VIDEO_Configure(mode);
-
    for (unsigned i = 0; i < 2; i++)
-      VIDEO_ClearFrameBuffer(mode, framebuf[i], COLOR_BLACK);
+   {
+      g_framebuf[i] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(mode));
+      VIDEO_ClearFrameBuffer(mode, g_framebuf[i], COLOR_BLACK);
+   }
 
-   VIDEO_SetNextFramebuffer(framebuf[0]);
+   VIDEO_SetNextFramebuffer(g_framebuf[0]);
    VIDEO_SetBlack(false);
    VIDEO_Flush();
    VIDEO_WaitVSync();
@@ -54,10 +56,10 @@ static void setup_video_mode(GXRModeObj *mode, void *framebuf[2])
 }
 
 static float verts[16] ATTRIBUTE_ALIGN(32)  = {
-   -1, -1, -0.5,
    -1,  1, -0.5,
-    1,  1, -0.5,
+   -1, -1, -0.5,
     1, -1, -0.5,
+    1,  1, -0.5,
 };
 
 static float tex_coords[8] ATTRIBUTE_ALIGN(32) = {
@@ -84,12 +86,8 @@ static void init_vtx(GXRModeObj *mode)
    GX_SetAlphaUpdate(GX_FALSE);
 
    Mtx44 m;
-   guOrtho(m, 1, -1, 1, -1, 0.4, 0.6);
+   guOrtho(m, 1, -1, -1, 1, 0.4, 0.6);
    GX_LoadProjectionMtx(m, GX_ORTHOGRAPHIC);
-
-   Mtx pos_m;
-   guMtxIdentity(pos_m);
-   GX_LoadPosMtxImm(pos_m, GX_PNMTX0);
 
    GX_ClearVtxDesc();
    GX_SetVtxDesc(GX_VA_POS, GX_INDEX8);
@@ -111,8 +109,8 @@ static void init_vtx(GXRModeObj *mode)
 
 static void init_texture(void)
 {
-   GX_InitTexObj(&g_tex.obj, g_tex.data, 512, 512, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-   GX_InitTexObjLOD(&g_tex.obj, GX_LINEAR, GX_LINEAR, 0, 0, 0, GX_FALSE, GX_FALSE, GX_ANISO_1);
+   GX_InitTexObj(&g_tex.obj, g_tex.data, 512, 512, GX_TF_RGB565, GX_MIRROR, GX_MIRROR, GX_FALSE);
+   GX_InitTexObjLOD(&g_tex.obj, GX_LINEAR, GX_LINEAR, 0, 10, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
    GX_InvalidateTexAll();
 }
@@ -136,14 +134,12 @@ static void *wii_init(const video_info_t *video,
 {
    VIDEO_Init();
    GXRModeObj *mode = VIDEO_GetPreferredMode(NULL);
-   for (unsigned i = 0; i < 2; i++)
-      g_framebuf[i] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(mode));
-
-   setup_video_mode(mode, g_framebuf);
+   setup_video_mode(mode);
 
    GX_Init(gx_fifo, sizeof(gx_fifo));
    GX_SetDispCopyGamma(GX_GM_1_0);
    GX_SetCullMode(GX_CULL_NONE);
+   GX_SetClipMode(GX_CLIP_DISABLE);
 
    init_vtx(mode);
    init_texture();
@@ -159,20 +155,21 @@ static void update_texture(const uint16_t *src,
 {
    width <<= 1;
    pitch >>= 1;
-   float tex_w = (float)width / 256;
-   float tex_h = (float)height / 256;
+   float tex_w = (float)width / 512;
+   float tex_h = (float)height / 512;
 
-   tex_coords[4] = tex_coords[6] = tex_w;
-   tex_coords[3] = tex_coords[5] = tex_h;
+   tex_coords[4] = tex_w;
+   tex_coords[6] = tex_w;
+   tex_coords[3] = tex_h;
+   tex_coords[5] = tex_h;
 
    uint16_t *dst = g_tex.data;
-   for (unsigned i = 0; i < height; i++, dst += 256, src += pitch)
+   for (unsigned i = 0; i < height; i++, dst += 512, src += pitch)
       memcpy(dst, src, width);
    
    DCFlushRange(tex_coords, sizeof(tex_coords));
    GX_InvVtxCache();
 
-   init_texture();
    DCFlushRange(g_tex.data, sizeof(g_tex.data));
    GX_InvalidateTexAll();
 }
