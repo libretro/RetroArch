@@ -89,6 +89,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_DYLIB
    &video_ext,
 #endif
+#ifdef GEKKO
+   &video_wii,
+#endif
 };
 
 static const input_driver_t *input_drivers[] = {
@@ -103,6 +106,9 @@ static const input_driver_t *input_drivers[] = {
 #endif
 #ifdef XENON
    &input_xenon360,
+#endif
+#ifdef GEKKO
+   &input_wii,
 #endif
 };
 

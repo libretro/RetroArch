@@ -22,6 +22,8 @@
 #include <sdcard/wiisd_io.h>
 #include <sdcard/gcsd.h>
 #include <fat.h>
+#include <stdio.h>
+#include "../driver.h"
 
 int ssnes_main(int argc, char **argv);
 
@@ -29,11 +31,9 @@ int main(void)
 {
    char arg0[] = "ssnes";
    char arg1[] = "sd:/FFIII.smc";
-   char arg2[] = "-v";
-   char *argv[] = { arg0, arg1, arg2, NULL };
+   char *argv[] = { arg0, arg1, NULL };
 
    fatInitDefault();
-   int ret = ssnes_main(sizeof(argv) / sizeof(argv[0]) - 1, argv);
-   return ret;
+   return ssnes_main(sizeof(argv) / sizeof(argv[0]) - 1, argv);
 }
 

@@ -59,13 +59,9 @@ static void reset_callback(void)
 
 static void *wii_input_init(void)
 {
-   static bool inited = false;
-   if (!inited)
-   {
-      SYS_SetResetCallback(reset_callback);
-      SYS_SetPowerCallback(reset_callback);
-      PAD_Init();
-   }
+   PAD_Init();
+   SYS_SetResetCallback(reset_callback);
+   SYS_SetPowerCallback(reset_callback);
    return (void*)-1;
 }
 
@@ -78,7 +74,7 @@ static void wii_input_poll(void *data)
    unsigned pads = PAD_ScanPads();
    for (unsigned i = 0; i < pads; i++)
    {
-      uint16_t down = PAD_ButtonsDown(i);
+      uint16_t down = PAD_ButtonsHeld(i);
       _B(B);
       _B(Y);
       pad_state[i][SNES_DEVICE_ID_JOYPAD_SELECT] = down & PAD_TRIGGER_Z;
@@ -108,7 +104,7 @@ static bool wii_key_pressed(void *data, int key)
    }
 }
 
-const input_driver_t input_ps3 = {
+const input_driver_t input_wii = {
    .init = wii_input_init,
    .poll = wii_input_poll,
    .input_state = wii_input_state,

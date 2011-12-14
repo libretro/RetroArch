@@ -91,7 +91,7 @@ static ssize_t wii_audio_write(void *data, const void *buf_, size_t size)
       if (frames < to_write)
          to_write = frames;
 
-      while ((wa->write_ptr == wa->dma_next || wa->write_ptr == wa->dma_busy) && wa->nonblock)
+      while ((wa->dma_write == wa->dma_next || wa->dma_write == wa->dma_busy) && !wa->nonblock)
          LWP_ThreadSleep(wa->cond);
 
       memcpy(wa->data[wa->dma_write] + wa->write_ptr, buf, to_write * sizeof(uint32_t));

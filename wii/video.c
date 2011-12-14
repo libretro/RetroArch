@@ -35,50 +35,58 @@ struct
 } static g_tex ATTRIBUTE_ALIGN(32);
 
 static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
-static uint8_t display_list[256] ATTRIBUTE_ALIGN(32);
+static uint8_t display_list[128] ATTRIBUTE_ALIGN(32);
 static size_t display_list_size;
 
 static void setup_video_mode(GXRModeObj *mode, void *framebuf[2])
 {
-   VIDEO_Configure(mode);
-   VIDEO_Flush();
    for (unsigned i = 0; i < 2; i++)
       VIDEO_ClearFrameBuffer(mode, framebuf[i], COLOR_BLACK);
+
    VIDEO_SetNextFramebuffer(framebuf[0]);
    VIDEO_SetBlack(false);
    VIDEO_Flush();
    VIDEO_WaitVSync();
+   if (mode->viTVMode & VI_NON_INTERLACE)
+      VIDEO_WaitVSync();
 }
 
-static float verts[] = {
-   -1, -1, 0.5,
-   -1,  1, 0.5,
-    1, -1, 0.5,
-    1,  1, 0.5,
+static float verts[] ATTRIBUTE_ALIGN(32)  = {
+   -1, -1, -0.5,
+   -1,  1, -0.5,
+    1, -1, -0.5,
+    1,  1, -0.5,
 };
 
-static float tex_coords[] = {
+static float tex_coords[] ATTRIBUTE_ALIGN(32) = {
    0, 0,
    0, 1,
    1, 0,
    1, 1,
 };
 
-static void init_vtx(void)
+static void init_vtx(const GXRModeObj *mode)
 {
-   GX_SetViewport(0, 0, 640, 480, 0, 1);
-   GX_SetDispCopyYScale(1.0f);
-   GX_SetScissor(0, 0, 640, 480);
+   GX_SetViewport(0, 0, mode->fbWidth, mode->efbHeight, 0, 1);
+   GX_SetDispCopyYScale(GX_GetYScaleFactor(mode->efbHeight, mode->xfbHeight));
+   GX_SetScissor(0, 0, mode->fbWidth, mode->efbHeight);
+   GX_SetDispCopySrc(0, 0, mode->fbWidth, mode->efbHeight);
+   GX_SetDispCopyDst(mode->fbWidth, mode->xfbHeight);
+
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
-   GX_SetZMode(GX_DISABLE, GX_NEVER, GX_DISABLE);
+   GX_SetZMode(GX_ENABLE, GX_ALWAYS, GX_ENABLE);
    GX_SetColorUpdate(GX_TRUE);
 
-   Mtx m;
-   guMtxIdentity(m);
+   Mtx44 m;
+   guOrtho(m, 1, -1, -1, 1, 0.4, 0.6);
    GX_LoadProjectionMtx(m, GX_ORTHOGRAPHIC);
-   GX_LoadPosMtxImm(m, GX_PNMTX0);
+
+   Mtx pos_m;
+   guMtxIdentity(pos_m);
+   GX_LoadPosMtxImm(pos_m, GX_PNMTX0);
 
    GX_ClearVtxDesc();
+
    GX_SetVtxDesc(GX_VA_POS, GX_INDEX8);
    GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 
@@ -97,14 +105,14 @@ static void init_vtx(void)
 
 static void init_texture(void)
 {
-   GX_InitTexObj(&g_tex.obj, g_tex.data, 512, 512, GX_TF_RGB5A3, GX_MIRROR, GX_MIRROR, GX_FALSE);
-   GX_InitTexObjLOD(&g_tex.obj, GX_LINEAR, GX_LINEAR, 0, 10, 0, GX_ENABLE, GX_FALSE, GX_ANISO_1);
+   GX_InitTexObj(&g_tex.obj, g_tex.data, 512, 512, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   GX_InitTexObjLOD(&g_tex.obj, GX_LINEAR, GX_LINEAR, 0, 0, 0, GX_ENABLE, GX_FALSE, GX_ANISO_1);
    GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
 
    Mtx m;
    guMtxIdentity(m);
-   GX_LoadTexMtxImm(m, GX_TEXMTX0, GX_MTX2x4);
-   GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0);
+   GX_LoadTexMtxImm(m, GX_TEXMTX0, GX_MTX3x4);
+   GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX3x4, GX_TG_TEX0, GX_TEXMTX0);
 
    GX_InvalidateTexAll();
 }
@@ -126,24 +134,18 @@ static void build_disp_list(void)
 static void *wii_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   static bool inited = false;
-   if (!inited)
-   {
-      VIDEO_Init();
-      inited = true;
-   }
-
+   VIDEO_Init();
    GXRModeObj *mode = VIDEO_GetPreferredMode(NULL);
    for (unsigned i = 0; i < 2; i++)
       g_framebuf[i] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(mode));
 
-   setup_video_mode(VIDEO_GetPreferredMode(NULL), g_framebuf);
+   setup_video_mode(mode, g_framebuf);
 
    GX_Init(gx_fifo, sizeof(gx_fifo));
    GX_SetDispCopyGamma(GX_GM_1_0);
    GX_SetCullMode(GX_CULL_NONE);
 
-   init_vtx();
+   init_vtx(mode);
    init_texture();
    build_disp_list();
 
@@ -155,6 +157,8 @@ static void *wii_init(const video_info_t *video,
 static void update_texture(const uint16_t *src,
       unsigned width, unsigned height, unsigned pitch)
 {
+   width <<= 1;
+   pitch >>= 1;
    float tex_w = (float)width / 512;
    float tex_h = (float)height / 512;
 
@@ -162,12 +166,11 @@ static void update_texture(const uint16_t *src,
    tex_coords[3] = tex_coords[7] = tex_h;
 
    uint16_t *dst = g_tex.data;
-   for (unsigned i = 0; i < height; i++,
-         dst += 512, src += pitch >> 1)
-   {
-      memcpy(dst, src, width * sizeof(uint16_t));
-   }
+   for (unsigned i = 0; i < height; i++, dst += 512, src += pitch)
+      memcpy(dst, src, width);
    
+   DCFlushRange(tex_coords, sizeof(tex_coords));
+   DCFlushRange(g_tex.data, sizeof(g_tex.data));
    GX_InvalidateTexAll();
 }
 
@@ -188,7 +191,7 @@ static bool wii_frame(void *data, const void *frame,
    GX_CopyDisp(g_framebuf[g_framebuf_index], GX_TRUE);
    VIDEO_SetNextFramebuffer(g_framebuf[g_framebuf_index]);
    VIDEO_Flush();
-   VIDEO_WaitVSync();
+   //VIDEO_WaitVSync();
 
    return true;
 }
