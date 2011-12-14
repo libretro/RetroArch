@@ -22,10 +22,10 @@ CXXFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
 LIBS := -logc -lsnes -lfat
 
-OBJ = fifo_buffer.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o wii/audio.o wii/main.o wii/input.o wii/video.o getopt.o
+OBJ = fifo_buffer.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o wii/audio.o wii/main.o wii/input.o wii/video.o
 
-CFLAGS += -std=gnu99 -DHAVE_CONFIGFILE=1 -DPACKAGE_VERSION=\"0.9.3\" -Dmain=ssnes_main -Wno-char-subscripts
-CXXFLAGS += -std=gnu99 -DHAVE_CONFIGFILE=1 -DPACKAGE_VERSION=\"0.9.3\" -Dmain=ssnes_main -Wno-char-subscripts
+CFLAGS += -std=gnu99 -DHAVE_CONFIGFILE=1 -DHAVE_GETOPT_LONG -DPACKAGE_VERSION=\"0.9.3\" -Dmain=ssnes_main -Wno-char-subscripts
+CXXFLAGS += -std=gnu99 -DHAVE_CONFIGFILE=1 -DHAVE_GETOPT_LONG -DPACKAGE_VERSION=\"0.9.3\" -Dmain=ssnes_main -Wno-char-subscripts
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
