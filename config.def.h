@@ -110,12 +110,12 @@
 #error "Need at least one audio driver!"
 #endif
 
-#if defined(HAVE_SDL)
+#if defined(XENON)
+#define INPUT_DEFAULT_DRIVER INPUT_XENON360
+#elif defined(HAVE_SDL)
 #define INPUT_DEFAULT_DRIVER INPUT_SDL
 #elif defined(__CELLOS_LV2__)
 #define INPUT_DEFAULT_DRIVER INPUT_PS3
-#elif defined(XENON)
-#define INPUT_DEFAULT_DRIVER INPUT_XENON360
 #elif defined(GEKKO)
 #define INPUT_DEFAULT_DRIVER INPUT_WII
 #elif defined(HAVE_XVIDEO)
