@@ -35,15 +35,19 @@ struct
 } static g_tex ATTRIBUTE_ALIGN(32);
 
 static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
-static uint8_t display_list[128] ATTRIBUTE_ALIGN(32);
+static uint8_t display_list[1024] ATTRIBUTE_ALIGN(32);
 static size_t display_list_size;
 
-static void setup_video_mode(GXRModeObj *mode, void *framebuf[2])
+static void setup_video_mode(GXRModeObj *mode)
 {
+   VIDEO_Configure(mode);
    for (unsigned i = 0; i < 2; i++)
-      VIDEO_ClearFrameBuffer(mode, framebuf[i], COLOR_BLACK);
+   {
+      g_framebuf[i] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(mode));
+      VIDEO_ClearFrameBuffer(mode, g_framebuf[i], COLOR_BLACK);
+   }
 
-   VIDEO_SetNextFramebuffer(framebuf[0]);
+   VIDEO_SetNextFramebuffer(g_framebuf[0]);
    VIDEO_SetBlack(false);
    VIDEO_Flush();
    VIDEO_WaitVSync();
@@ -51,42 +55,41 @@ static void setup_video_mode(GXRModeObj *mode, void *framebuf[2])
       VIDEO_WaitVSync();
 }
 
-static float verts[] ATTRIBUTE_ALIGN(32)  = {
-   -1, -1, -0.5,
+static float verts[16] ATTRIBUTE_ALIGN(32)  = {
    -1,  1, -0.5,
+   -1, -1, -0.5,
     1, -1, -0.5,
     1,  1, -0.5,
 };
 
-static float tex_coords[] ATTRIBUTE_ALIGN(32) = {
+static float tex_coords[8] ATTRIBUTE_ALIGN(32) = {
    0, 0,
    0, 1,
-   1, 0,
    1, 1,
+   1, 0,
 };
 
-static void init_vtx(const GXRModeObj *mode)
+static void init_vtx(GXRModeObj *mode)
 {
    GX_SetViewport(0, 0, mode->fbWidth, mode->efbHeight, 0, 1);
    GX_SetDispCopyYScale(GX_GetYScaleFactor(mode->efbHeight, mode->xfbHeight));
    GX_SetScissor(0, 0, mode->fbWidth, mode->efbHeight);
    GX_SetDispCopySrc(0, 0, mode->fbWidth, mode->efbHeight);
    GX_SetDispCopyDst(mode->fbWidth, mode->xfbHeight);
+   GX_SetCopyFilter(mode->aa, mode->sample_pattern, (mode->xfbMode == VI_XFBMODE_SF) ? GX_FALSE : GX_TRUE,
+         mode->vfilter);
+   GX_SetFieldMode(mode->field_rendering, (mode->viHeight == 2 * mode->xfbHeight) ? GX_ENABLE : GX_DISABLE);
 
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
    GX_SetZMode(GX_ENABLE, GX_ALWAYS, GX_ENABLE);
    GX_SetColorUpdate(GX_TRUE);
+   GX_SetAlphaUpdate(GX_FALSE);
 
    Mtx44 m;
    guOrtho(m, 1, -1, -1, 1, 0.4, 0.6);
    GX_LoadProjectionMtx(m, GX_ORTHOGRAPHIC);
 
-   Mtx pos_m;
-   guMtxIdentity(pos_m);
-   GX_LoadPosMtxImm(pos_m, GX_PNMTX0);
-
    GX_ClearVtxDesc();
-
    GX_SetVtxDesc(GX_VA_POS, GX_INDEX8);
    GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 
@@ -98,22 +101,17 @@ static void init_vtx(const GXRModeObj *mode)
    GX_SetNumTexGens(1);
    GX_SetNumChans(0);
    GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
-   GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-
+   GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
    GX_InvVtxCache();
+
+   GX_Flush();
 }
 
 static void init_texture(void)
 {
-   GX_InitTexObj(&g_tex.obj, g_tex.data, 512, 512, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-   GX_InitTexObjLOD(&g_tex.obj, GX_LINEAR, GX_LINEAR, 0, 0, 0, GX_ENABLE, GX_FALSE, GX_ANISO_1);
+   GX_InitTexObj(&g_tex.obj, g_tex.data, 512, 512, GX_TF_RGB565, GX_MIRROR, GX_MIRROR, GX_FALSE);
+   GX_InitTexObjLOD(&g_tex.obj, GX_LINEAR, GX_LINEAR, 0, 10, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
-
-   Mtx m;
-   guMtxIdentity(m);
-   GX_LoadTexMtxImm(m, GX_TEXMTX0, GX_MTX3x4);
-   GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX3x4, GX_TG_TEX0, GX_TEXMTX0);
-
    GX_InvalidateTexAll();
 }
 
@@ -121,7 +119,7 @@ static void build_disp_list(void)
 {
    DCInvalidateRange(display_list, sizeof(display_list));
    GX_BeginDispList(display_list, sizeof(display_list));
-   GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
+   GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
    for (unsigned i = 0; i < 4; i++)
    {
       GX_Position1x8(i);
@@ -136,14 +134,12 @@ static void *wii_init(const video_info_t *video,
 {
    VIDEO_Init();
    GXRModeObj *mode = VIDEO_GetPreferredMode(NULL);
-   for (unsigned i = 0; i < 2; i++)
-      g_framebuf[i] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(mode));
-
-   setup_video_mode(mode, g_framebuf);
+   setup_video_mode(mode);
 
    GX_Init(gx_fifo, sizeof(gx_fifo));
    GX_SetDispCopyGamma(GX_GM_1_0);
    GX_SetCullMode(GX_CULL_NONE);
+   GX_SetClipMode(GX_CLIP_DISABLE);
 
    init_vtx(mode);
    init_texture();
@@ -162,14 +158,18 @@ static void update_texture(const uint16_t *src,
    float tex_w = (float)width / 512;
    float tex_h = (float)height / 512;
 
-   tex_coords[4] = tex_coords[6] = tex_w;
-   tex_coords[3] = tex_coords[7] = tex_h;
+   tex_coords[4] = tex_w;
+   tex_coords[6] = tex_w;
+   tex_coords[3] = tex_h;
+   tex_coords[5] = tex_h;
 
    uint16_t *dst = g_tex.data;
    for (unsigned i = 0; i < height; i++, dst += 512, src += pitch)
       memcpy(dst, src, width);
    
    DCFlushRange(tex_coords, sizeof(tex_coords));
+   GX_InvVtxCache();
+
    DCFlushRange(g_tex.data, sizeof(g_tex.data));
    GX_InvalidateTexAll();
 }
@@ -186,6 +186,7 @@ static bool wii_frame(void *data, const void *frame,
    update_texture(frame, width, height, pitch);
    GX_CallDispList(display_list, display_list_size);
    GX_DrawDone();
+   GX_Flush();
 
    g_framebuf_index ^= 1;
    GX_CopyDisp(g_framebuf[g_framebuf_index], GX_TRUE);
