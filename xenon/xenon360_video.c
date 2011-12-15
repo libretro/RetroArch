@@ -87,6 +87,7 @@ typedef struct gl
    unsigned char *screen;
    struct XenosVertexBuffer *vb;
    struct XenosDevice * gl_device;
+   struct XenosDevice real_device;
    struct XenosShader * g_pVertexShader;
    struct XenosShader * g_pPixelTexturedShader;
    struct XenosSurface * g_pTexture;
@@ -109,6 +110,8 @@ static void *xenon360_gfx_init(const video_info_t *video, const input_driver_t *
    gl_t * gl = calloc(1, sizeof(gl_t));
    if (!gl)
       return NULL;
+
+   gl->gl_device = &gl->real_device;
 
    Xe_Init(gl->gl_device);
 
