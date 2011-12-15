@@ -18,7 +18,7 @@ PPU_TARGET_ADJUSTED := ssnes-libxenon.elf32
 LDDIRS = -L. -L$(DEVKITXENON)/usr/lib -L$(DEVKITXENON)/xenon/lib/32
 INCDIRS = -I. -I$(DEVKITXENON)/usr/include -I$(DEVKITXENON)/usr/include/SDL
 
-OBJ = fifo_buffer.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o input/sdl.o audio/sdl.o gfx/sdl.o gfx/sdlwrap.o gfx/gfx_common.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o xenon/cond.o xenon/main.o xenon/xenon360_audio.o xenon/xenon360_input.o
+OBJ = fifo_buffer.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o input/sdl.o audio/sdl.o gfx/sdl.o gfx/sdlwrap.o gfx/gfx_common.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o xenon/cond.o xenon/main.o xenon/xenon360_audio.o xenon/xenon360_input.o xenon/xenon360_video.o
 
 LIBS = -lsnes -lSDL -lxenon -lm -lc
 DEFINES = -std=gnu99 -DHAVE_CONFIGFILE=1 -DHAVE_SDL=1 -DPACKAGE_VERSION=\"0.9.3\" -DHAVE_GETOPT_LONG=1 -Dmain=ssnes_main
