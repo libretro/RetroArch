@@ -26,7 +26,6 @@
 
 #include "driver.h"
 #include "general.h"
-#include "input/ssnes_sdl_input.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

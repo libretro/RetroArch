@@ -80,6 +80,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OPENGL
    &video_gl,
 #endif
+#ifdef XENON
+   &video_xenon360,
+#endif
 #ifdef HAVE_SDL
    &video_sdl,
 #endif

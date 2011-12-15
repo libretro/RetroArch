@@ -50,6 +50,9 @@ static void set_defaults(void)
       case VIDEO_WII:
          def_video = "wii";
          break;
+      case VIDEO_XENON360:
+         def_video = "xenon360";
+         break;
       case VIDEO_XVIDEO:
          def_video = "xvideo";
          break;

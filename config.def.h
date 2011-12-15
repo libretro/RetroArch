@@ -38,6 +38,7 @@
 #define VIDEO_SDL 13
 #define VIDEO_EXT 14
 #define VIDEO_WII 24
+#define VIDEO_XENON360 25
 ////////////////////////
 #define AUDIO_RSOUND 1
 #define AUDIO_OSS 2
@@ -66,6 +67,8 @@
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL
 #elif defined(GEKKO)
 #define VIDEO_DEFAULT_DRIVER VIDEO_WII
+#elif defined(XENON)
+#define VIDEO_DEFAULT_DRIVER VIDEO_XENON360
 #elif defined(HAVE_XVIDEO)
 #define VIDEO_DEFAULT_DRIVER VIDEO_XVIDEO
 #elif defined(HAVE_SDL)
