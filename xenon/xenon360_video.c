@@ -40,7 +40,7 @@
 #define UV_RIGHT 3
 
 // pixel shader
-static const unsigned int g_xps_PS[] =
+const unsigned int g_xps_PS[] =
 {
     0x102a1100, 0x000000b4, 0x0000003c, 0x00000000, 0x00000024, 0x00000000,
     0x0000008c, 0x00000000, 0x00000000, 0x00000064, 0x0000001c, 0x00000057,
@@ -55,7 +55,7 @@ static const unsigned int g_xps_PS[] =
 };
 
 // vertex shader
-static const unsigned int g_xvs_VS[] =
+const unsigned int g_xvs_VS[] =
 {
     0x102a1101, 0x0000009c, 0x00000078, 0x00000000, 0x00000024, 0x00000000,
     0x00000058, 0x00000000, 0x00000000, 0x00000030, 0x0000001c, 0x00000023,
@@ -139,6 +139,7 @@ static void *xenon360_gfx_init(const video_info_t *video, const input_driver_t *
    gl->g_pTexture = Xe_CreateTexture(gl->gl_device, XE_W, XE_H, 1, XE_FMT_8888 | XE_FMT_ARGB, 0);
    gl->screen = (unsigned char*) Xe_Surface_LockRect(gl->gl_device, gl->g_pTexture, 0, 0, 0, 0, XE_LOCK_WRITE);
    //pitch = gl->g_pTexture->wpitch;
+   Xe_Surface_Unlock(gl->gl_device, gl->g_pTexture);
 
    // enable filtering for now
    gl->g_pTexture->use_filtering = 1;
