@@ -183,6 +183,8 @@ static bool xenon360_gfx_frame(void *data, const void *frame,
    // FIXME: Proper UV handling goes here later.
    //Xe_VB_Unlock(&xe->dev, xe->vb);
 
+   Xe_InvalidateState(&xe->dev);
+
    uint16_t *dst = Xe_Surface_LockRect(&xe->dev, xe->tex, 0, 0, 0, 0, XE_LOCK_WRITE);
    const uint16_t *src = frame;
    unsigned stride_in = pitch >> 1;
@@ -193,10 +195,10 @@ static bool xenon360_gfx_frame(void *data, const void *frame,
       memcpy(dst, src, copy_size);
 
    Xe_Surface_Unlock(&xe->dev, xe->tex);
-   Xe_InvalidateState(&xe->dev);
    
    Xe_DrawPrimitive(&xe->dev, XE_PRIMTYPE_TRIANGLESTRIP, 0, 2);
 
+   Xe_SetClearColor(&xe->dev, 0);
    Xe_Resolve(&xe->dev);
    Xe_Sync(&xe->dev);
 
