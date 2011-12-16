@@ -107,15 +107,15 @@ static void init_vertex(xe_t *xe)
    rect[1].v = 1.0;
    rect[1].color = 0;
 
-   rect[2].x = 1.0;
+   rect[2].x = -1.0;
    rect[2].y = 1.0;
-   rect[2].u = 1.0;
+   rect[2].u = 0.0;
    rect[2].v = 1.0;
    rect[2].color = 0;
 
-   rect[3].x = -1.0;
+   rect[3].x = 1.0;
    rect[3].y = 1.0;
-   rect[3].u = 0.0;
+   rect[3].u = 1.0;
    rect[3].v = 1.0;
    rect[3].color = 0;
 
