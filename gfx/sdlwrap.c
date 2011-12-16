@@ -62,13 +62,10 @@ void sdlwrap_set_swap_interval(unsigned interval, bool inited)
 #else
       static int (*glx_swap_interval)(int) = NULL;
       if (!glx_swap_interval) 
-      {
          SDL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalSGI");
-      }
       if (!glx_swap_interval)
-      {
          SDL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalMESA");
-      }
+
       if (glx_swap_interval) 
          glx_swap_interval(g_interval);
       else 
