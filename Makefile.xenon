@@ -5,7 +5,7 @@
 ###
 ##
 
-DEBUG = 1
+DEBUG = 0
 
 CC = xenon-gcc
 CXX = xenon-g++

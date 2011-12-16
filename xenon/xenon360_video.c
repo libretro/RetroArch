@@ -136,10 +136,7 @@ static void *xenon360_gfx_init(const video_info_t *video, const input_driver_t *
 
    edram_init(gl->gl_device);
 
-   gl->g_pTexture = Xe_CreateTexture(gl->gl_device, XE_W, XE_H, 1, XE_FMT_8888 | XE_FMT_ARGB, 0);
-   gl->screen = (unsigned char*) Xe_Surface_LockRect(gl->gl_device, gl->g_pTexture, 0, 0, 0, 0, XE_LOCK_WRITE);
-   //pitch = gl->g_pTexture->wpitch;
-   Xe_Surface_Unlock(gl->gl_device, gl->g_pTexture);
+   gl->g_pTexture = Xe_CreateTexture(gl->gl_device, XE_W, XE_H, 1, XE_FMT_5551, 0);
 
    // enable filtering for now
    gl->g_pTexture->use_filtering = 1;
@@ -202,6 +199,7 @@ static bool xenon360_gfx_frame(void *data, const void *frame, unsigned width, un
 
    vid->frame_count++;
 
+
    // update texture viewport
    static unsigned old_width = 0;
    static unsigned old_height = 0;
@@ -221,7 +219,8 @@ static bool xenon360_gfx_frame(void *data, const void *frame, unsigned width, un
    old_height = height;
 
    // Refresh texture cache
-   Xe_Surface_LockRect(vid->gl_device, vid->g_pTexture, 0, 0, 0, 0, XE_LOCK_WRITE);
+   frame = (unsigned char*) Xe_Surface_LockRect(vid->gl_device, vid->g_pTexture, 0, 0, 0, 0, XE_LOCK_WRITE);
+   pitch = vid->g_pTexture->wpitch;
    Xe_Surface_Unlock(vid->gl_device, vid->g_pTexture);
 
    // Reset states
