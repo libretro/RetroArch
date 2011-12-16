@@ -31,8 +31,8 @@
 #include "config.h"
 #endif
 
-#define XE_W 1024
-#define XE_H 1024
+#define XE_W 512
+#define XE_H 512
 
 #define UV_BOTTOM   0
 #define UV_TOP 1
