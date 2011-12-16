@@ -136,10 +136,8 @@ static void *xenon360_gfx_init(const video_info_t *video, const input_driver_t *
 
    edram_init(gl->gl_device);
 
-   gl->g_pTexture = Xe_CreateTexture(gl->gl_device, XE_W, XE_H, 1, XE_FMT_5551, 0);
 
    // enable filtering for now
-   gl->g_pTexture->use_filtering = 1;
 
    float x = -1.0f;
    float y = 1.0f;
@@ -219,8 +217,15 @@ static bool xenon360_gfx_frame(void *data, const void *frame, unsigned width, un
    old_height = height;
 
    // Refresh texture cache
-   frame = (unsigned char*) Xe_Surface_LockRect(vid->gl_device, vid->g_pTexture, 0, 0, 0, 0, XE_LOCK_WRITE);
-   pitch = vid->g_pTexture->wpitch;
+   vid->g_pTexture = Xe_CreateTexture(vid->gl_device, XE_W, XE_H, 1, XE_FMT_5551, 0);
+   vid->g_pTexture->use_filtering = 1;
+   uint16_t *dst = Xe_Surface_LockRect(vid->gl_device, vid->g_pTexture, 0, 0, 0, 0, XE_LOCK_WRITE);
+   const uint16_t *src = frame;
+   unsigned stride_in = pitch >>1;
+   unsigned stride_out = vid->g_pTexture->wpitch >> 1;
+   unsigned copy_size =width << 1;
+   for (unsigned y = 0; y < height; y++, dst += stride_out, src += stride_in)
+   	memcpy(dst, src, copy_size);
    Xe_Surface_Unlock(vid->gl_device, vid->g_pTexture);
 
    // Reset states
