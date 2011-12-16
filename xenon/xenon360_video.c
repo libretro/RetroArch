@@ -134,7 +134,7 @@ static void *xenon360_gfx_init(const video_info_t *video, const input_driver_t *
    Xe_InstantiateShader(gl->gl_device, gl->g_pVertexShader, 0);
    Xe_ShaderApplyVFetchPatches(gl->gl_device, gl->g_pVertexShader, 0, &vbf);
 
-   gl->g_pTexture = Xe_CreateTexture(gl->gl_device, XE_W, XE_H, 1, XE_FMT_5551, 0);
+   gl->g_pTexture = Xe_CreateTexture(gl->gl_device, XE_W, XE_H, 1, XE_FMT_5551 | XE_FMT_16BE, 0);
    gl->g_pTexture->use_filtering = 1;
 
    edram_init(gl->gl_device);
