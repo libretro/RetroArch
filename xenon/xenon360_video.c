@@ -119,7 +119,7 @@ static void init_vertex(xe_t *xe)
    rect[3].v = 1.0;
    rect[3].color = 0;
 
-   for (unsigned i = 0; i < 3; i++)
+   for (unsigned i = 0; i < 4; i++)
    {
       rect[i].z = 0.0;
       rect[i].w = 1.0;
