@@ -1123,8 +1123,6 @@ static void deinit_rewind(void)
 
 static void init_movie(void)
 {
-   g_settings.rewind_granularity = 1;
-
    if (g_extern.bsv.movie_start_playback)
    {
       g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, SSNES_MOVIE_PLAYBACK);
@@ -1137,6 +1135,7 @@ static void init_movie(void)
       g_extern.bsv.movie_playback = true;
       msg_queue_push(g_extern.msg_queue, "Starting movie playback!", 2, 180);
       SSNES_LOG("Starting movie playback!\n");
+      g_settings.rewind_granularity = 1;
    }
    else if (g_extern.bsv.movie_start_recording)
    {
@@ -1150,7 +1149,10 @@ static void init_movie(void)
             g_extern.bsv.movie ? msg : "Failed to start movie record!", 1, 180);
 
       if (g_extern.bsv.movie)
+      {
          SSNES_LOG("Starting movie record to \"%s\"!\n", g_extern.bsv.movie_start_path);
+         g_settings.rewind_granularity = 1;
+      }
       else
          SSNES_ERR("Failed to start movie record!\n");
    }
