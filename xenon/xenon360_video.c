@@ -27,180 +27,227 @@
 #include "driver.h"
 #include "general.h"
 
-#define TEX_W 512
-#define TEX_H 512
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
-static const uint32_t g_PS[] =
+#define XE_W 1024
+#define XE_H 1024
+
+#define UV_BOTTOM   0
+#define UV_TOP 1
+#define UV_LEFT 2
+#define UV_RIGHT 3
+
+// pixel shader
+const unsigned int g_xps_PS[] =
 {
-   0x102a1100, 0x000000b4, 0x0000003c, 0x00000000, 0x00000024, 0x00000000,
-   0x0000008c, 0x00000000, 0x00000000, 0x00000064, 0x0000001c, 0x00000057,
-   0xffff0300, 0x00000001, 0x0000001c, 0x00000000, 0x00000050, 0x00000030,
-   0x00030000, 0x00010000, 0x00000040, 0x00000000, 0x54657874, 0x75726553,
-   0x616d706c, 0x657200ab, 0x0004000c, 0x00010001, 0x00010000, 0x00000000,
-   0x70735f33, 0x5f300032, 0x2e302e32, 0x30333533, 0x2e3000ab, 0x00000000,
-   0x0000003c, 0x10000100, 0x00000008, 0x00000000, 0x00001842, 0x00010003,
-   0x00000001, 0x00003050, 0x0000f1a0, 0x00011002, 0x00001200, 0xc4000000,
-   0x00001003, 0x00002200, 0x00000000, 0x10081001, 0x1f1ff688, 0x00004000,
-   0xc80f8000, 0x00000000, 0xe2010100, 0x00000000, 0x00000000, 0x00000000
+    0x102a1100, 0x000000b4, 0x0000003c, 0x00000000, 0x00000024, 0x00000000,
+    0x0000008c, 0x00000000, 0x00000000, 0x00000064, 0x0000001c, 0x00000057,
+    0xffff0300, 0x00000001, 0x0000001c, 0x00000000, 0x00000050, 0x00000030,
+    0x00030000, 0x00010000, 0x00000040, 0x00000000, 0x54657874, 0x75726553,
+    0x616d706c, 0x657200ab, 0x0004000c, 0x00010001, 0x00010000, 0x00000000,
+    0x70735f33, 0x5f300032, 0x2e302e32, 0x30333533, 0x2e3000ab, 0x00000000,
+    0x0000003c, 0x10000100, 0x00000008, 0x00000000, 0x00001842, 0x00010003,
+    0x00000001, 0x00003050, 0x0000f1a0, 0x00011002, 0x00001200, 0xc4000000,
+    0x00001003, 0x00002200, 0x00000000, 0x10081001, 0x1f1ff688, 0x00004000,
+    0xc80f8000, 0x00000000, 0xe2010100, 0x00000000, 0x00000000, 0x00000000
 };
 
-static const uint32_t g_VS[] =
+// vertex shader
+const unsigned int g_xvs_VS[] =
 {
-   0x102a1101, 0x0000009c, 0x00000078, 0x00000000, 0x00000024, 0x00000000,
-   0x00000058, 0x00000000, 0x00000000, 0x00000030, 0x0000001c, 0x00000023,
-   0xfffe0300, 0x00000000, 0x00000000, 0x00000000, 0x0000001c, 0x76735f33,
-   0x5f300032, 0x2e302e32, 0x30333533, 0x2e3000ab, 0x00000000, 0x00000078,
-   0x00110002, 0x00000000, 0x00000000, 0x00001842, 0x00000001, 0x00000003,
-   0x00000002, 0x00000290, 0x00100003, 0x0000a004, 0x00305005, 0x00003050,
-   0x0001f1a0, 0x00001007, 0x00001008, 0x70153003, 0x00001200, 0xc2000000,
-   0x00001006, 0x00001200, 0xc4000000, 0x00002007, 0x00002200, 0x00000000,
-   0x05f82000, 0x00000688, 0x00000000, 0x05f81000, 0x00000688, 0x00000000,
-   0x05f80000, 0x00000fc8, 0x00000000, 0xc80f803e, 0x00000000, 0xe2020200,
-   0xc8038000, 0x00b0b000, 0xe2000000, 0xc80f8001, 0x00000000, 0xe2010100,
-   0x00000000, 0x00000000, 0x00000000
+    0x102a1101, 0x0000009c, 0x00000078, 0x00000000, 0x00000024, 0x00000000,
+    0x00000058, 0x00000000, 0x00000000, 0x00000030, 0x0000001c, 0x00000023,
+    0xfffe0300, 0x00000000, 0x00000000, 0x00000000, 0x0000001c, 0x76735f33,
+    0x5f300032, 0x2e302e32, 0x30333533, 0x2e3000ab, 0x00000000, 0x00000078,
+    0x00110002, 0x00000000, 0x00000000, 0x00001842, 0x00000001, 0x00000003,
+    0x00000002, 0x00000290, 0x00100003, 0x0000a004, 0x00305005, 0x00003050,
+    0x0001f1a0, 0x00001007, 0x00001008, 0x70153003, 0x00001200, 0xc2000000,
+    0x00001006, 0x00001200, 0xc4000000, 0x00002007, 0x00002200, 0x00000000,
+    0x05f82000, 0x00000688, 0x00000000, 0x05f81000, 0x00000688, 0x00000000,
+    0x05f80000, 0x00000fc8, 0x00000000, 0xc80f803e, 0x00000000, 0xe2020200,
+    0xc8038000, 0x00b0b000, 0xe2000000, 0xc80f8001, 0x00000000, 0xe2010100,
+    0x00000000, 0x00000000, 0x00000000
 };
 
-struct Vertex
+typedef struct DrawVerticeFormats
 {
-   float x, y, z, w;
-   uint32_t color;
-   float u, v;
-};
+	float x, y, z, w;
+	unsigned int color;
+	float u, v;
+} DrawVerticeFormats;
+
+typedef struct xenon360_video xenon360_video_t;
 
 static bool g_quitting;
 
-typedef struct xe
+typedef struct gl
 {
-   struct XenosDevice dev;
+   unsigned char *screen;
    struct XenosVertexBuffer *vb;
-   struct XenosShader *vertex_shader;
-   struct XenosShader *pixel_shader;
-   struct XenosSurface *tex;
+   struct XenosDevice * gl_device;
+   struct XenosDevice real_device;
+   struct XenosShader * g_pVertexShader;
+   struct XenosShader * g_pPixelTexturedShader;
+   struct XenosSurface * g_pTexture;
    unsigned frame_count;
-} xe_t;
+} gl_t;
+
+static float ScreenUv[4] = {0.f, 1.0f, 1.0f, 0.f};
 
 static void xenon360_gfx_free(void *data)
 {
-   xe_t *vid = data;
+   gl_t *vid = data;
    if (!vid)
       return;
-
-   // FIXME: Proper deinitialization of device resources.
 
    free(vid);
 }
 
-static void init_vertex(xe_t *xe)
-{
-   xe->vb = Xe_CreateVertexBuffer(&xe->dev, 4 * sizeof(struct Vertex));
-   struct Vertex *rect = Xe_VB_Lock(&xe->dev, xe->vb, 0, 4 * sizeof(struct Vertex), XE_LOCK_WRITE);
-
-   rect[0].x = -1.0;
-   rect[0].y = -1.0;
-   rect[0].u = 0.0;
-   rect[0].v = 0.0;
-   rect[0].color = 0;
-
-   rect[1].x = 1.0;
-   rect[1].y = -1.0;
-   rect[1].u = 1.0;
-   rect[1].v = 1.0;
-   rect[1].color = 0;
-
-   rect[2].x = -1.0;
-   rect[2].y = 1.0;
-   rect[2].u = 0.0;
-   rect[2].v = 1.0;
-   rect[2].color = 0;
-
-   rect[3].x = 1.0;
-   rect[3].y = 1.0;
-   rect[3].u = 1.0;
-   rect[3].v = 1.0;
-   rect[3].color = 0;
-
-   for (unsigned i = 0; i < 4; i++)
-   {
-      rect[i].z = 0.0;
-      rect[i].w = 1.0;
-   }
-
-   Xe_VB_Unlock(&xe->dev, xe->vb);
-}
-
 static void *xenon360_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-   xe_t *xe = calloc(1, sizeof(*xe));
-   if (!xe)
+   gl_t * gl = calloc(1, sizeof(gl_t));
+   if (!gl)
       return NULL;
 
-   Xe_Init(&xe->dev);
-   Xe_SetRenderTarget(&xe->dev, Xe_GetFramebufferSurface(&xe->dev));
+   gl->gl_device = &gl->real_device;
 
-   init_vertex(xe);
+   Xe_Init(gl->gl_device);
 
-   static const struct XenosVBFFormat vbf = {
-      3,
-      {
-         { XE_USAGE_POSITION, 0, XE_TYPE_FLOAT4 },
-         { XE_USAGE_COLOR,    0, XE_TYPE_UBYTE4 },
-         { XE_USAGE_TEXCOORD, 0, XE_TYPE_FLOAT2 },
-      },
+   Xe_SetRenderTarget(gl->gl_device, Xe_GetFramebufferSurface(gl->gl_device));
+
+   static const struct XenosVBFFormat vbf =
+   {
+   	3,
+	{
+		{XE_USAGE_POSITION, 0, XE_TYPE_FLOAT4},
+		{XE_USAGE_COLOR, 0, XE_TYPE_UBYTE4},
+		{XE_USAGE_TEXCOORD, 0, XE_TYPE_FLOAT2},
+	}
    };
 
-   xe->pixel_shader = Xe_LoadShaderFromMemory(&xe->dev, (void*)g_PS);
-   Xe_InstantiateShader(&xe->dev, xe->pixel_shader, 0);
+   gl->g_pPixelTexturedShader = Xe_LoadShaderFromMemory(gl->gl_device, (void*)g_xps_PS);
+   Xe_InstantiateShader(gl->gl_device, gl->g_pPixelTexturedShader, 0);
 
-   xe->vertex_shader = Xe_LoadShaderFromMemory(&xe->dev, (void*)g_VS);
-   Xe_InstantiateShader(&xe->dev, xe->vertex_shader, 0);
-   Xe_ShaderApplyVFetchPatches(&xe->dev, xe->vertex_shader, 0, &vbf);
+   gl->g_pVertexShader = Xe_LoadShaderFromMemory(gl->gl_device, (void*)g_xvs_VS);
+   Xe_InstantiateShader(gl->gl_device, gl->g_pVertexShader, 0);
+   Xe_ShaderApplyVFetchPatches(gl->gl_device, gl->g_pVertexShader, 0, &vbf);
 
-   Xe_SetShader(&xe->dev, SHADER_TYPE_PIXEL, xe->pixel_shader, 0);
-   Xe_SetShader(&xe->dev, SHADER_TYPE_VERTEX, xe->vertex_shader, 0);
-   edram_init(&xe->dev);
+   gl->g_pTexture = Xe_CreateTexture(gl->gl_device, XE_W, XE_H, 1, XE_FMT_5551, 0);
+   gl->g_pTexture->use_filtering = 1;
 
-   Xe_SetClearColor(&xe->dev, 0);
+   edram_init(gl->gl_device);
 
-   xe->tex = Xe_CreateTexture(&xe->dev, TEX_W, TEX_H, 1, XE_FMT_5551, 0);
-   xe->tex->use_filtering = true;
-   Xe_SetTexture(&xe->dev, 0, xe->tex);
 
-   Xe_SetClearColor(&xe->dev, 0);
-   Xe_SetCullMode(&xe->dev, XE_CULL_NONE);
-   Xe_SetStreamSource(&xe->dev, 0, xe->vb, 0, sizeof(struct Vertex));
+   // enable filtering for now
 
-   return xe;
+   float x = -1.0f;
+   float y = 1.0f;
+   float w = 4.0f;
+   float h = 4.0f;
+
+   gl->vb = Xe_CreateVertexBuffer(gl->gl_device, 3 * sizeof(DrawVerticeFormats));
+   DrawVerticeFormats *Rect = Xe_VB_Lock(gl->gl_device, gl->vb, 0, 3 * sizeof (DrawVerticeFormats), XE_LOCK_WRITE);
+
+   ScreenUv[UV_TOP] = ScreenUv[UV_TOP] * 2;
+   ScreenUv[UV_LEFT] = ScreenUv[UV_LEFT] * 2;
+
+   // top left
+   Rect[0].x = x;
+   Rect[0].y = y;
+   Rect[0].u = ScreenUv[UV_BOTTOM];
+   Rect[0].v = ScreenUv[UV_RIGHT];
+   Rect[0].color = 0;
+
+   // bottom left
+   Rect[1].x = x;
+   Rect[1].y = y - h;
+   Rect[1].u = ScreenUv[UV_BOTTOM];
+   Rect[1].v = ScreenUv[UV_LEFT];
+   Rect[1].color = 0;
+
+   // top right
+   Rect[2].x = x + w;
+   Rect[2].y = y;
+   Rect[2].u = ScreenUv[UV_TOP];
+   Rect[2].v = ScreenUv[UV_RIGHT];
+   Rect[2].color = 0;
+
+   Rect[3].x = x + w;
+   Rect[3].y = y;
+   Rect[3].u = ScreenUv[UV_TOP];
+   Rect[3].v = ScreenUv[UV_RIGHT];
+   Rect[3].color = 0;
+
+   int i = 0;
+   for (i = 0; i < 3; i++)
+   {
+   	Rect[i].z = 0.0;
+	Rect[i].w = 1.0;
+   }
+
+   Xe_VB_Unlock(gl->gl_device, gl->vb);
+
+   Xe_SetClearColor(gl->gl_device, 0);
+
+   return gl;
 }
 
-static bool xenon360_gfx_frame(void *data, const void *frame,
-      unsigned width, unsigned height, unsigned pitch,
-      const char *msg)
+static bool xenon360_gfx_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   xe_t *xe = data;
-   xe->frame_count++;
+   gl_t *vid = data;
 
-   //struct Vertex *rect = Xe_VB_Lock(vid->xe_device, vid->vb, 0, 4 * sizeof(struct Vertex), XE_LOCK_WRITE);
-   // FIXME: Proper UV handling goes here later.
-   //Xe_VB_Unlock(&xe->dev, xe->vb);
+   vid->frame_count++;
 
-   Xe_InvalidateState(&xe->dev);
 
-   uint16_t *dst = Xe_Surface_LockRect(&xe->dev, xe->tex, 0, 0, 0, 0, XE_LOCK_WRITE);
+   // update texture viewport
+   static unsigned old_width = 0;
+   static unsigned old_height = 0;
+
+   ScreenUv[UV_TOP]	= ((float) (width) / (float) XE_W)*2;
+   ScreenUv[UV_LEFT]	= ((float) (height) / (float) XE_H)*2;
+
+   DrawVerticeFormats * Rect = Xe_VB_Lock(vid->gl_device, vid->vb, 0, 3 * sizeof(DrawVerticeFormats), XE_LOCK_WRITE);
+
+   // bottom left
+   Rect[1].v = ScreenUv[UV_LEFT];
+   Rect[2].u = ScreenUv[UV_TOP];
+
+   Xe_VB_Unlock(vid->gl_device, vid->vb);
+
+   old_width = width;
+   old_height = height;
+
+   // Refresh texture cache
+   uint16_t *dst = Xe_Surface_LockRect(vid->gl_device, vid->g_pTexture, 0, 0, 0, 0, XE_LOCK_WRITE);
    const uint16_t *src = frame;
-   unsigned stride_in = pitch >> 1;
-   unsigned stride_out = xe->tex->wpitch >> 1;
-   unsigned copy_size = width << 1;
-
+   unsigned stride_in = pitch >>1;
+   unsigned stride_out = vid->g_pTexture->wpitch >> 1;
+   unsigned copy_size =width << 1;
    for (unsigned y = 0; y < height; y++, dst += stride_out, src += stride_in)
-      memcpy(dst, src, copy_size);
+   	memcpy(dst, src, copy_size);
+   Xe_Surface_Unlock(vid->gl_device, vid->g_pTexture);
 
-   Xe_Surface_Unlock(&xe->dev, xe->tex);
-   
-   Xe_DrawPrimitive(&xe->dev, XE_PRIMTYPE_TRIANGLESTRIP, 0, 2);
+   // Reset states
+   Xe_InvalidateState(vid->gl_device);
+   Xe_SetClearColor(vid->gl_device, 0);
 
-   Xe_SetClearColor(&xe->dev, 0);
-   Xe_Resolve(&xe->dev);
-   Xe_Sync(&xe->dev);
+   // Select stream
+   Xe_SetTexture(vid->gl_device, 0, vid->g_pTexture);
+   Xe_SetCullMode(vid->gl_device, XE_CULL_NONE);
+   Xe_SetStreamSource(vid->gl_device, 0, vid->vb, 0, sizeof(DrawVerticeFormats));
+
+   // Select shaders
+   Xe_SetShader(vid->gl_device, SHADER_TYPE_PIXEL, vid->g_pPixelTexturedShader, 0);
+   Xe_SetShader(vid->gl_device, SHADER_TYPE_VERTEX, vid->g_pVertexShader, 0);
+
+   // Draw
+   Xe_DrawPrimitive(vid->gl_device, XE_PRIMTYPE_TRIANGLELIST, 0, 1);
+
+   // Resolve
+   Xe_Resolve(vid->gl_device);
+   Xe_Sync(vid->gl_device);
 
    return true;
 }
@@ -222,6 +269,7 @@ static bool xenon360_gfx_focus(void *data)
    (void)data;
    return true;
 }
+
 
 const video_driver_t video_xenon360 = {
    .init = xenon360_gfx_init,
