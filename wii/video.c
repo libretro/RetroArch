@@ -78,6 +78,7 @@ static void init_vtx(GXRModeObj *mode)
    GX_SetDispCopyDst(mode->fbWidth, mode->xfbHeight);
    GX_SetCopyFilter(mode->aa, mode->sample_pattern, (mode->xfbMode == VI_XFBMODE_SF) ? GX_FALSE : GX_TRUE,
          mode->vfilter);
+   GX_SetCopyClear((GXColor) { 0, 0, 0, 0xff }, GX_MAX_Z24);
    GX_SetFieldMode(mode->field_rendering, (mode->viHeight == 2 * mode->xfbHeight) ? GX_ENABLE : GX_DISABLE);
 
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
@@ -107,10 +108,10 @@ static void init_vtx(GXRModeObj *mode)
    GX_Flush();
 }
 
-static void init_texture(void)
+static void init_texture(unsigned width, unsigned height)
 {
-   GX_InitTexObj(&g_tex.obj, g_tex.data, 512, 512, GX_TF_RGB565, GX_MIRROR, GX_MIRROR, GX_FALSE);
-   GX_InitTexObjLOD(&g_tex.obj, GX_LINEAR, GX_LINEAR, 0, 10, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
+   GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   GX_InitTexObjLOD(&g_tex.obj, GX_NEAR, GX_NEAR, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
    GX_InvalidateTexAll();
 }
@@ -142,7 +143,6 @@ static void *wii_init(const video_info_t *video,
    GX_SetClipMode(GX_CLIP_DISABLE);
 
    init_vtx(mode);
-   init_texture();
    build_disp_list();
 
    *input = NULL;
@@ -153,23 +153,14 @@ static void *wii_init(const video_info_t *video,
 static void update_texture(const uint16_t *src,
       unsigned width, unsigned height, unsigned pitch)
 {
-   width <<= 1;
    pitch >>= 1;
-   float tex_w = (float)width / 512;
-   float tex_h = (float)height / 512;
 
-   tex_coords[4] = tex_w;
-   tex_coords[6] = tex_w;
-   tex_coords[3] = tex_h;
-   tex_coords[5] = tex_h;
-
+   // Pitch is totally broken. No idea why.
    uint16_t *dst = g_tex.data;
-   for (unsigned i = 0; i < height; i++, dst += 512, src += pitch)
-      memcpy(dst, src, width);
+   for (unsigned i = 0; i < height; i++, dst += width, src += pitch)
+      memcpy(dst, src, width << 1);
    
-   DCFlushRange(tex_coords, sizeof(tex_coords));
-   GX_InvVtxCache();
-
+   init_texture(width, height);
    DCFlushRange(g_tex.data, sizeof(g_tex.data));
    GX_InvalidateTexAll();
 }
@@ -181,15 +172,14 @@ static bool wii_frame(void *data, const void *frame,
    (void)data;
    (void)msg;
 
-   GX_SetCopyClear((GXColor) { 0, 0, 0, 0xff }, GX_MAX_Z24);
-
    update_texture(frame, width, height, pitch);
    GX_CallDispList(display_list, display_list_size);
    GX_DrawDone();
-   GX_Flush();
 
    g_framebuf_index ^= 1;
    GX_CopyDisp(g_framebuf[g_framebuf_index], GX_TRUE);
+   GX_Flush();
+
    VIDEO_SetNextFramebuffer(g_framebuf[g_framebuf_index]);
    VIDEO_Flush();
    //VIDEO_WaitVSync();
