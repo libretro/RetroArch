@@ -18,11 +18,10 @@
 // SHA256 implementation from bSNES. Written by valditx.
 //
 
+#include "general.h"
 #include "sha256.h"
 #include <string.h>
 #include <stdio.h>
-
-#define PTR(t, a) ((t*)(a))
 
 #define SWAP32(x) ((uint32_t)(           \
          (((uint32_t)(x) & 0x000000ff) << 24) | \
@@ -31,11 +30,25 @@
          (((uint32_t)(x) & 0xff000000) >> 24)   \
          ))
 
-#define ST32(a, d) *PTR(uint32_t, a) = (d)
-#define ST32BE(a, d) ST32(a, SWAP32(d))
+static inline void store32le(uint32_t *addr, uint32_t data)
+{
+   *addr = is_little_endian() ? data : SWAP32(data);
+}
 
-#define LD32(a) *PTR(uint32_t, a)
-#define LD32BE(a) SWAP32(LD32(a))
+static inline void store32be(uint32_t *addr, uint32_t data)
+{
+   *addr = is_little_endian() ? SWAP32(data) : data;
+}
+
+static inline uint32_t load32le(const uint32_t *addr)
+{
+   return is_little_endian() ? *addr : SWAP32(*addr);
+}
+
+static inline uint32_t load32be(const uint32_t *addr)
+{
+   return is_little_endian() ? SWAP32(*addr) : *addr;
+}
 
 #define LSL32(x, n) ((uint32_t)(x) << (n))
 #define LSR32(x, n) ((uint32_t)(x) >> (n))
@@ -60,7 +73,11 @@ static const uint32_t T_K[64] = {
 
 struct sha256_ctx 
 {
-   uint8_t in[64];
+   union
+   {
+      uint8_t u8[64];
+      uint32_t u32[16];
+   } in;
    unsigned inlen;
 
    uint32_t w[64];
@@ -82,7 +99,7 @@ static void sha256_block(struct sha256_ctx *p)
    uint32_t t1, t2, maj, ch;
 
    for (i = 0; i < 16; i++) 
-      p->w[i] = LD32BE(p->in + i * 4);
+      p->w[i] = load32be(p->in.u32 + i);
 
    for (i = 16; i < 64; i++) 
    {
@@ -124,7 +141,7 @@ static void sha256_chunk(struct sha256_ctx *p, const uint8_t *s, unsigned len)
       l = 64 - p->inlen;
       l = (len < l) ? len : l;
 
-      memcpy(p->in + p->inlen, s, l);
+      memcpy(p->in.u8 + p->inlen, s, l);
       s += l;
       p->inlen += l;
       len -= l;
@@ -137,26 +154,26 @@ static void sha256_chunk(struct sha256_ctx *p, const uint8_t *s, unsigned len)
 static void sha256_final(struct sha256_ctx *p) 
 {
    uint64_t len;
-   p->in[p->inlen++] = 0x80;
+   p->in.u8[p->inlen++] = 0x80;
 
    if (p->inlen > 56) 
    {
-      memset(p->in + p->inlen, 0, 64 - p->inlen);
+      memset(p->in.u8 + p->inlen, 0, 64 - p->inlen);
       sha256_block(p);
    }
 
-   memset(p->in + p->inlen, 0, 56 - p->inlen);
+   memset(p->in.u8 + p->inlen, 0, 56 - p->inlen);
 
    len = p->len << 3;
-   ST32BE(p->in + 56, len >> 32);
-   ST32BE(p->in + 60, len);
+   store32be(p->in.u32 + 14, len >> 32);
+   store32be(p->in.u32 + 15, len);
    sha256_block(p);
 }
 
 static void sha256_subhash(struct sha256_ctx *p, uint32_t *t) 
 {
    for (unsigned i = 0; i < 8; i++) 
-      ST32BE(t++, p->h[i]);
+      store32be(t++, p->h[i]);
 }
 
 void sha256_hash(char *out, const uint8_t *in, size_t size)
