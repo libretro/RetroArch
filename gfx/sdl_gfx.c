@@ -16,12 +16,12 @@
  */
 
 #include "SDL.h"
-#include "driver.h"
+#include "../driver.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include "general.h"
-#include "input/ssnes_sdl_input.h"
+#include "../general.h"
+#include "../input/ssnes_sdl_input.h"
 #include "gfx_common.h"
 
 #ifdef HAVE_CONFIG_H

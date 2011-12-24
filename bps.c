@@ -19,6 +19,7 @@
 #include "movie.h"
 #include <stdint.h>
 #include "boolean.h"
+#include "msvc/msvc_compat.h"
 
 enum bps_mode
 {

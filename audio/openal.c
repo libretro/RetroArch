@@ -15,8 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-#include "driver.h"
+#include "../driver.h"
 
 #ifdef __APPLE__
 #include <OpenAL/al.h>

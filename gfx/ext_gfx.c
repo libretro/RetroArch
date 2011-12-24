@@ -22,8 +22,8 @@
 #include "../boolean.h"
 #include <stdlib.h>
 #include <stdint.h>
-#include "dynamic.h"
-#include "general.h"
+#include "../dynamic.h"
+#include "../general.h"
 #include "sdlwrap.h"
 #include "gfx_common.h"
 

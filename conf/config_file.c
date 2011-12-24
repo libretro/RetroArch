@@ -24,6 +24,7 @@
 #include <errno.h>
 #include "../strl.h"
 #include "../posix_string.h"
+#include "../msvc/msvc_compat.h"
 
 #if !defined(_WIN32) && !defined(__CELLOS_LV2__)
 #include <sys/param.h> // MAXPATHLEN

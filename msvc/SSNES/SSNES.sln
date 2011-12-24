@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C++ Express 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SSNES", "SSNES\SSNES.vcxproj", "{032D1FA7-7AA5-47BB-B51B-68B75ADE729D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{032D1FA7-7AA5-47BB-B51B-68B75ADE729D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{032D1FA7-7AA5-47BB-B51B-68B75ADE729D}.Debug|Win32.Build.0 = Debug|Win32
+		{032D1FA7-7AA5-47BB-B51B-68B75ADE729D}.Release|Win32.ActiveCfg = Release|Win32
+		{032D1FA7-7AA5-47BB-B51B-68B75ADE729D}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -23,7 +23,7 @@
 
 #include <dinput.h>
 #include "../boolean.h"
-#include "general.h"
+#include "../general.h"
 
 // Piggyback joypad driver for SDL.
 

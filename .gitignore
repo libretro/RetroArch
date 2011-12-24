@@ -1,7 +1,15 @@
 *.o
 *.so
 *.dll
-ssnes
+/ssnes
 /config.h
 /config.mk
 /tools/ssnes-joyconfig
+*.sdf
+*.opensdf
+*.suo
+Debug
+Release
+ipch
+*.user
+*.filters

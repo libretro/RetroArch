@@ -91,7 +91,7 @@ ifeq ($(HAVE_COREAUDIO), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl.o gfx/sdlwrap.o input/sdl.o audio/sdl.o fifo_buffer.o
+   OBJ += gfx/sdl_gfx.o gfx/sdlwrap.o input/sdl_input.o audio/sdl_audio.o fifo_buffer.o
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
 
@@ -133,7 +133,7 @@ else ifeq ($(HAVE_CG), 1)
 endif
 
 ifeq ($(HAVE_DYLIB), 1)
-   OBJ += gfx/ext.o audio/ext.o
+   OBJ += gfx/ext_gfx.o audio/ext_audio.o
    LIBS += $(DYLIB_LIB)
 endif
 

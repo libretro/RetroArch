@@ -41,9 +41,8 @@
 #include "message.h"
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
-#include <assert.h>
 
+#include <assert.h>
 
 #ifdef _WIN32
 // Woohoo, Winsock has headers from the STONE AGE! :D
@@ -53,6 +52,7 @@
 #else
 #define CONST_CAST
 #define NONCONST_CAST
+#include <sys/time.h>
 #endif
 
 #define PREV_PTR(x) ((x) == 0 ? handle->buffer_size - 1 : (x) - 1)

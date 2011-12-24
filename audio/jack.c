@@ -16,9 +16,9 @@
  */
 
 
-#include "driver.h"
+#include "../driver.h"
 #include <stdlib.h>
-#include "general.h"
+#include "../general.h"
 
 #include <jack/jack.h>
 #include <jack/types.h>

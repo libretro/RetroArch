@@ -17,7 +17,21 @@
 
 #include "gfx_common.h"
 #include "../general.h"
+
+#ifndef _MSC_VER
 #include <sys/time.h>
+#else
+#include <winsock2.h>
+#include <mmsystem.h>
+static void gettimeofday(struct timeval *val, void *dummy)
+{
+   (void)dummy;
+   DWORD msec = timeGetTime();
+   uint64_t usec = msec * 1000;
+   val->tv_sec = usec / 1000000;
+   val->tv_usec = usec % 1000000;
+}
+#endif
 
 static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)
 {
@@ -73,7 +87,7 @@ bool gfx_window_title(char *buf, size_t size)
 
 #ifdef _WIN32
 #include <windows.h>
-#include "dynamic.h"
+#include "../dynamic.h"
 // We only load this library once, so we let it be unloaded at application shutdown,
 // since unloading it early seems to cause issues on some systems.
 

@@ -17,6 +17,7 @@
 
 #include "ups.h"
 #include "movie.h"
+#include "msvc/msvc_compat.h"
 
 struct ups_data
 {

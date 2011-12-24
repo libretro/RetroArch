@@ -43,13 +43,13 @@ static inline size_t nearest_pow2_size(size_t v)
    v |= v >> 1;
    v |= v >> 2;
    v |= v >> 4;
-#if SIZE_MAX >= 0xffffu
+#if SIZE_MAX >= UINT16_C(0xffff)
       v |= v >> 8;
 #endif
-#if SIZE_MAX >= 0xfffffffflu
+#if SIZE_MAX >= UINT32_C(0xffffffff)
       v |= v >> 16;
 #endif
-#if SIZE_MAX >= 0xffffffffffffffffllu
+#if SIZE_MAX >= UINT64_C(0xffffffffffffffff)
       v |= v >> 32;
 #endif
    v++;

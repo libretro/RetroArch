@@ -15,10 +15,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "driver.h"
+#include "../driver.h"
 #include <stdlib.h>
 #include "xaudio-c/xaudio-c.h"
-#include "general.h"
+#include "../general.h"
 
 typedef struct
 {

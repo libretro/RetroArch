@@ -16,7 +16,7 @@
  */
 
 
-#include "driver.h"
+#include "../driver.h"
 #include <stdlib.h>
 #include "../boolean.h"
 #include <stddef.h>
@@ -26,8 +26,8 @@
 #include "SDL.h"
 #include "SDL_audio.h"
 #include "SDL_thread.h"
-#include "general.h"
-#include "fifo_buffer.h"
+#include "../general.h"
+#include "../fifo_buffer.h"
 
 typedef struct sdl_audio
 {

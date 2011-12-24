@@ -433,7 +433,7 @@ static void parse_config_file(void)
    CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
 
    if (config_get_int(conf, "rewind_buffer_size", &tmp_int))
-      g_settings.rewind_buffer_size = tmp_int * 1000000LLU;
+      g_settings.rewind_buffer_size = tmp_int * UINT64_C(1000000);
 
    CONFIG_GET_INT(rewind_granularity, "rewind_granularity");
 

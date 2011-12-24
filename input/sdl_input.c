@@ -15,11 +15,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "driver.h"
+#include "../driver.h"
 
 #include "../gfx/sdlwrap.h"
 #include "../boolean.h"
-#include "general.h"
+#include "../general.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include "../libsnes.hpp"

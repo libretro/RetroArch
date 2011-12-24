@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include "../libsnes.hpp"
 #include <stdio.h>
-#include <sys/time.h>
 #include <string.h>
 #include "../general.h"
 #include <assert.h>
@@ -39,7 +38,7 @@
 #define NO_SDL_GLEXT
 #include "SDL.h"
 #include "SDL_opengl.h"
-#include "input/ssnes_sdl_input.h"
+#include "../input/ssnes_sdl_input.h"
 
 #ifdef HAVE_CG
 #include "shader_cg.h"
@@ -85,6 +84,7 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
 };
 
+#define LOAD_SYM(sym) if (!p##sym) { SDL_SYM_WRAP(p##sym, #sym) }
 
 #ifdef HAVE_FBO
 #ifdef _WIN32
@@ -94,7 +94,6 @@ static PFNGLFRAMEBUFFERTEXTURE2DPROC pglFramebufferTexture2D = NULL;
 static PFNGLCHECKFRAMEBUFFERSTATUSPROC pglCheckFramebufferStatus = NULL;
 static PFNGLDELETEFRAMEBUFFERSPROC pglDeleteFramebuffers = NULL;
 
-#define LOAD_SYM(sym) if (!p##sym) { SDL_SYM_WRAP(p##sym, #sym) }
 static bool load_fbo_proc(void)
 {
    LOAD_SYM(glGenFramebuffers);

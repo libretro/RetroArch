@@ -18,7 +18,7 @@ void audio_convert_float_to_s16_C(int16_t *out,
 {
    for (size_t i = 0; i < samples; i++)
    {
-      int32_t val = in[i] * 0x8000;
+      int32_t val = (int32_t)(in[i] * 0x8000);
       out[i] = (val > 0x7FFF) ? 0x7FFF : (val < -0x8000 ? -0x8000 : (int16_t)val);
    }
 }

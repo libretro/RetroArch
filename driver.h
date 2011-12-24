@@ -23,7 +23,8 @@
 #include "boolean.h"
 #include <stdlib.h>
 #include <stdint.h>
-#include <unistd.h>
+//#include <unistd.h>
+#include "msvc/msvc_compat.h"
 #include "input/keysym.h"
 
 #define AUDIO_CHUNK_SIZE_BLOCKING 64

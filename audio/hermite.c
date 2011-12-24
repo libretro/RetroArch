@@ -35,8 +35,8 @@ static inline float hermite_kernel(float mu1, float a, float b, float c, float d
    mu2 = mu1 * mu1;
    mu3 = mu2 * mu1;
 
-   m0  = (c - a) * 0.5;
-   m1  = (d - b) * 0.5;
+   m0  = (c - a) * 0.5f;
+   m1  = (d - b) * 0.5f;
 
    a0 = +2 * mu3 - 3 * mu2 + 1;
    a1 =      mu3 - 2 * mu2 + mu1;
@@ -71,7 +71,7 @@ void hermite_process(hermite_resampler_t *re, struct hermite_data *data)
          re->r_frac += r_step;
          for (unsigned i = 0; i < CHANNELS; i++)
          {
-            float res = hermite_kernel(re->r_frac, 
+            float res = hermite_kernel((float)re->r_frac, 
                   re->chan_data[i][0], re->chan_data[i][1], re->chan_data[i][2], re->chan_data[i][3]);
             *out_data++ = res;
          }

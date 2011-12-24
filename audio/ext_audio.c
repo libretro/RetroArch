@@ -19,9 +19,9 @@
 #include "../boolean.h"
 #include <stdlib.h>
 #include <stdint.h>
-#include "driver.h"
-#include "dynamic.h"
-#include "general.h"
+#include "../driver.h"
+#include "../dynamic.h"
+#include "../general.h"
 #include <sys/types.h>
 
 typedef struct audio_ext

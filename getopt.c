@@ -23,6 +23,8 @@
 #include "boolean.h"
 #include <stddef.h>
 #include <assert.h>
+#include <stdlib.h>
+#include "msvc/msvc_compat.h"
 
 char *optarg;
 int optind, opterr, optopt;
@@ -131,10 +133,14 @@ static int parse_long(const struct option *longopts, char * const *argv)
 static void shuffle_block(char **begin, char **last, char **end)
 {
    ptrdiff_t len = last - begin;
-   const char *tmp[len];
+   const char **tmp = (const char**)calloc(len, sizeof(const char*));
+   assert(tmp);
+
    memcpy(tmp, begin, sizeof(tmp));
    memmove(begin, last, (end - last) * sizeof(char*));
    memcpy(end - len, tmp, sizeof(tmp));
+
+   free(tmp);
 }
 
 int getopt_long(int argc, char *argv[],

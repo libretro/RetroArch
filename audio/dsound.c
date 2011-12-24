@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "driver.h"
+#include "../driver.h"
 #include <stdlib.h>
 #include "../boolean.h"
 #include <stddef.h>
@@ -23,8 +23,8 @@
 #include <string.h>
 
 #include <dsound.h>
-#include "fifo_buffer.h"
-#include "general.h"
+#include "../fifo_buffer.h"
+#include "../general.h"
 
 typedef struct dsound
 {

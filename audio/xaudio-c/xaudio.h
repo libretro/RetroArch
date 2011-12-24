@@ -210,7 +210,11 @@ static inline HRESULT XAudio2Create(IXAudio2 **ppXAudio2)
 {
    IXAudio2 *pXAudio2;
 
+#ifdef __cplusplus
+   HRESULT hr = CoCreateInstance(CLSID_XAudio2, NULL, CLSCTX_INPROC_SERVER, IID_IXAudio2, (void**)&pXAudio2);
+#else
    HRESULT hr = CoCreateInstance(&CLSID_XAudio2, NULL, CLSCTX_INPROC_SERVER, &IID_IXAudio2, (void**)&pXAudio2);
+#endif
 
    if (SUCCEEDED(hr))
    {

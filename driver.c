@@ -196,7 +196,7 @@ static void init_dsp_plugin(void)
       return;
    }
 
-   const ssnes_dsp_plugin_t* (*SSNES_API_CALLTYPE plugin_init)(void) = 
+   const ssnes_dsp_plugin_t* (SSNES_API_CALLTYPE *plugin_init)(void) = 
       (const ssnes_dsp_plugin_t *(SSNES_API_CALLTYPE*)(void))dylib_proc(g_extern.audio_data.dsp_lib, "ssnes_dsp_plugin_init");
    if (!plugin_init)
    {
@@ -404,8 +404,8 @@ static void init_filter(void)
    unsigned height = g_extern.system.geom.max_height;
    g_extern.filter.psize(&width, &height);
 
-   unsigned pow2_x = next_pow2(ceil(width));
-   unsigned pow2_y = next_pow2(ceil(height));
+   unsigned pow2_x = next_pow2(width);
+   unsigned pow2_y = next_pow2(height);
    unsigned maxsize = pow2_x > pow2_y ? pow2_x : pow2_y; 
    g_extern.filter.scale = maxsize / SSNES_SCALE_BASE;
 

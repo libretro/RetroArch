@@ -38,6 +38,9 @@
 #include <fcntl.h>
 #include <windows.h>
 #include <shlwapi.h>
+#ifdef _MSC_VER
+#define setmode _setmode
+#endif
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
