@@ -16,13 +16,18 @@
  */
 
 #include "posix_string.h"
+
+#undef strcasecmp
+#undef strdup
+#undef isblank
 #include <ctype.h>
 #include <stdlib.h>
-#include <string.h>
 #include <stddef.h>
 #include "strl.h"
 
-int strcasecmp(const char *a, const char *b)
+#include <string.h>
+
+int strcasecmp_ssnes__(const char *a, const char *b)
 {
    while (*a && *b)
    {
@@ -38,7 +43,7 @@ int strcasecmp(const char *a, const char *b)
    return tolower(*a) - tolower(*b);
 }
 
-char *strdup(const char *orig)
+char *strdup_ssnes__(const char *orig)
 {
    size_t len = strlen(orig) + 1;
    char *ret = (char*)malloc(len);
@@ -49,7 +54,7 @@ char *strdup(const char *orig)
    return ret;
 }
 
-int isblank(int c)
+int isblank_ssnes__(int c)
 {
    return (c == ' ') || (c == '\t');
 }

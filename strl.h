@@ -26,13 +26,19 @@
 #endif
 
 #ifndef HAVE_STRL
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 // Avoid possible naming collitions during link since we prefer to use the actual name.
 #define strlcpy(dst, src, size) strlcpy_ssnes__(dst, src, size)
 #define strlcat(dst, src, size) strlcat_ssnes__(dst, src, size)
 
 size_t strlcpy(char *dest, const char *source, size_t size);
 size_t strlcat(char *dest, const char *source, size_t size);
+#ifdef __cplusplus
+}
 #endif
-
+#endif
 #endif
 

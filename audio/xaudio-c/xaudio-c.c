@@ -4,12 +4,17 @@
 	License: Public Domain
 */
 
-#include "xaudio-c.h"
 #include "xaudio.h"
+#include "xaudio-c.h"
 #include <stdint.h>
 
 #define MAX_BUFFERS 16
 #define MAX_BUFFERS_MASK (MAX_BUFFERS - 1)
+
+#undef min
+#undef max
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#define max(a, b) ((a) > (b) ? (a) : (b))
 
 struct xaudio2
 {

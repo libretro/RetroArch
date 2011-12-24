@@ -19,14 +19,18 @@
 #define __SSNES_POSIX_STRING_H
 
 #ifdef _WIN32
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 #define strcasecmp(a, b) strcasecmp_ssnes__(a, b)
 #define strdup(orig) strdup_ssnes__(orig)
 #define isblank(c) isblank_ssnes__(c)
 int strcasecmp(const char *a, const char *b);
 char *strdup(const char *orig);
 int isblank(int c);
+#ifdef __cplusplus
+}
 #endif
-
+#endif
 #endif
 
