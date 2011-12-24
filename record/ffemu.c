@@ -78,7 +78,7 @@ struct audio_info
 
    int64_t frame_cnt;
 
-   void *outbuf;
+   uint8_t *outbuf;
    size_t outbuf_size;
 } audio;
 
@@ -144,7 +144,7 @@ static bool init_audio(struct audio_info *audio, struct ffemu_params *param)
       return false;
 
    audio->outbuf_size = 2000000;
-   audio->outbuf = (int16_t*)av_malloc(audio->outbuf_size);
+   audio->outbuf = (uint8_t*)av_malloc(audio->outbuf_size);
    if (!audio->outbuf)
       return false;
 
@@ -579,7 +579,7 @@ static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_da
          pkt.stream_index = handle->muxer.astream->index;
 
          int out_size = avcodec_encode_audio(handle->audio.codec,
-               (uint8_t*)handle->audio.outbuf, handle->audio.outbuf_size, (const int16_t*)handle->audio.buffer);
+               handle->audio.outbuf, handle->audio.outbuf_size, (const int16_t*)handle->audio.buffer);
          if (out_size < 0)
             return false;
 
