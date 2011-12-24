@@ -33,11 +33,12 @@ struct font_renderer
 font_renderer_t *font_renderer_new(const char *font_path, unsigned font_size)
 {
    (void)font_size;
-   font_renderer_t *handle = calloc(1, sizeof(*handle));
+   FT_Error err;
+   font_renderer_t *handle = (font_renderer_t*)calloc(1, sizeof(*handle));
    if (!handle)
       goto error;
 
-   FT_Error err = FT_Init_FreeType(&handle->lib);
+   err = FT_Init_FreeType(&handle->lib);
    if (err)
       goto error;
 
@@ -78,11 +79,11 @@ void font_renderer_msg(font_renderer_t *handle, const char *msg, struct font_out
 
       if (!err)
       {
-         struct font_output *tmp = calloc(1, sizeof(*tmp));
+         struct font_output *tmp = (struct font_output*)calloc(1, sizeof(*tmp));
          if (!tmp)
             break;
 
-         tmp->output = malloc(slot->bitmap.pitch * slot->bitmap.rows);
+         tmp->output = (uint8_t*)malloc(slot->bitmap.pitch * slot->bitmap.rows);
          if (!tmp->output)
          {
             free(tmp);

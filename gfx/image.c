@@ -40,7 +40,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    out_img->height = img->h;
 
    size_t size = out_img->width * out_img->height * sizeof(uint32_t);
-   out_img->pixels = malloc(size);
+   out_img->pixels = (uint32_t*)malloc(size);
    if (!out_img->pixels)
    {
       SDL_FreeSurface(img);
@@ -52,12 +52,12 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    SSNES_LOG("SDL_image: %dx%d @ %d bpp\n", img->w, img->h, img->format->BitsPerPixel);
    if (img->format->BitsPerPixel == 32)
    {
-      for (unsigned y = 0; y < img->h; y++)
+      for (int y = 0; y < img->h; y++)
       {
          uint32_t *dst = out_img->pixels + y * img->w;
          const uint32_t *src = (const uint32_t*)img->pixels + y * img->pitch / sizeof(uint32_t);
 
-         for (unsigned x = 0; x < img->w; x++)
+         for (int x = 0; x < img->w; x++)
          {
             uint32_t r = (src[x] & fmt->Rmask) >> fmt->Rshift;
             uint32_t g = (src[x] & fmt->Gmask) >> fmt->Gshift;
@@ -69,12 +69,12 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    }
    else if (img->format->BitsPerPixel == 24)
    {
-      for (unsigned y = 0; y < img->h; y++)
+      for (int y = 0; y < img->h; y++)
       {
          uint32_t *dst = out_img->pixels + y * img->w;
          const uint8_t *src = (const uint8_t*)img->pixels + y * img->pitch;
 
-         for (unsigned x = 0; x < img->w; x++)
+         for (int x = 0; x < img->w; x++)
          {
             // Correct?
             uint32_t color = 0;
@@ -113,7 +113,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    if (len < 0)
       return false;
 
-   uint8_t *buf = raw_buf;
+   uint8_t *buf = (uint8_t*)raw_buf;
 
    if (buf[2] != 2) // Uncompressed RGB
    {
@@ -134,7 +134,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    SSNES_LOG("Loaded TGA: (%ux%u @ %u bpp)\n", width, height, bits);
 
    unsigned size = width * height * sizeof(uint32_t);
-   out_img->pixels = malloc(size);
+   out_img->pixels = (uint32_t*)malloc(size);
    out_img->width = width;
    out_img->height = height;
    if (!out_img->pixels)

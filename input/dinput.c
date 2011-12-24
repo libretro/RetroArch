@@ -18,7 +18,7 @@
 #include "ssnes_dinput.h"
 #include "SDL.h"
 #include "SDL_syswm.h"
-#include <stdbool.h>
+#include "../boolean.h"
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
@@ -46,7 +46,7 @@ void sdl_dinput_free(sdl_dinput_t *di)
 
 static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
 {
-   LPDIRECTINPUTDEVICE8 joypad = p;
+   LPDIRECTINPUTDEVICE8 joypad = (LPDIRECTINPUTDEVICE8)p;
 
    DIPROPRANGE range;
    memset(&range, 0, sizeof(range));
@@ -63,7 +63,7 @@ static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
 
 static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
-   sdl_dinput_t *di = p;
+   sdl_dinput_t *di = (sdl_dinput_t*)p;
 
    unsigned active = 0;
    unsigned n;
@@ -82,7 +82,11 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    if (n == MAX_PLAYERS)
       return DIENUM_CONTINUE;
 
+#ifdef __cplusplus
+   if (FAILED(IDirectInput8_CreateDevice(di->ctx, inst->guidInstance, &di->joypad[n], NULL)))
+#else
    if (FAILED(IDirectInput8_CreateDevice(di->ctx, &inst->guidInstance, &di->joypad[n], NULL)))
+#endif
       return DIENUM_CONTINUE;
 
    IDirectInputDevice8_SetDataFormat(di->joypad[n], &c_dfDIJoystick2);
@@ -97,7 +101,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 
 sdl_dinput_t* sdl_dinput_init(void)
 {
-   sdl_dinput_t *di = calloc(1, sizeof(*di));
+   sdl_dinput_t *di = (sdl_dinput_t*)calloc(1, sizeof(*di));
    if (!di)
       return NULL;
 
@@ -118,9 +122,15 @@ sdl_dinput_t* sdl_dinput_init(void)
    di->hWnd = info.window;
 #endif
 
+#ifdef __cplusplus
+   if (FAILED(DirectInput8Create(
+      GetModuleHandle(NULL), DIRECTINPUT_VERSION, IID_IDirectInput8,
+      (void**)&di->ctx, NULL)))
+#else
    if (FAILED(DirectInput8Create(
       GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8,
       (void**)&di->ctx, NULL)))
+#endif
    {
       SSNES_ERR("Failed to init DirectInput.\n");
       goto error;

@@ -20,7 +20,7 @@
 #ifndef HAVE_GETOPT_LONG
 
 #include <string.h>
-#include <stdbool.h>
+#include "boolean.h"
 #include <stddef.h>
 #include <assert.h>
 

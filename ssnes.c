@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdbool.h>
+#include "boolean.h"
 #include "libsnes.hpp"
 #include <stdio.h>
 #include <stdlib.h>
@@ -168,13 +168,12 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 #ifdef HAVE_FFMPEG
    if (g_extern.recording && (!g_extern.filter.active || !g_settings.video.post_filter_record || is_dupe))
    {
-      struct ffemu_video_data ffemu_data = {
-         .data = data,
-         .pitch = lines_to_pitch(height),
-         .width = width,
-         .height = height,
-         .is_dupe = is_dupe
-      };
+      struct ffemu_video_data ffemu_data = {0};
+      ffemu_data.data = data;
+      ffemu_data.pitch = lines_to_pitch(height);
+      ffemu_data.width = width;
+      ffemu_data.height = height;
+      ffemu_data.is_dupe = is_dupe;
       ffemu_push_video(g_extern.rec, &ffemu_data);
    }
 #endif
@@ -196,12 +195,11 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 #ifdef HAVE_FFMPEG
       if (g_extern.recording && g_settings.video.post_filter_record)
       {
-         struct ffemu_video_data ffemu_data = {
-            .data = g_extern.filter.buffer,
-            .pitch = g_extern.filter.pitch,
-            .width = owidth,
-            .height = oheight,
-         };
+         struct ffemu_video_data ffemu_data = {0};
+         ffemu_data.data = g_extern.filter.buffer;
+         ffemu_data.pitch = g_extern.filter.pitch;
+         ffemu_data.width = owidth;
+         ffemu_data.height = oheight;
          ffemu_push_video(g_extern.rec, &ffemu_data);
       }
 #endif
@@ -251,10 +249,9 @@ static bool audio_flush(const int16_t *data, size_t samples)
 #ifdef HAVE_FFMPEG
    if (g_extern.recording)
    {
-      struct ffemu_audio_data ffemu_data = {
-         .data = data,
-         .frames = samples / 2
-      };
+      struct ffemu_audio_data ffemu_data = {0};
+      ffemu_data.data = data;
+      ffemu_data.frames = samples / 2;
       ffemu_push_audio(g_extern.rec, &ffemu_data);
    }
 #endif
@@ -269,26 +266,23 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
    audio_convert_s16_to_float(g_extern.audio_data.data, data, samples);
 
-   ssnes_dsp_input_t dsp_input = {
-      .samples = g_extern.audio_data.data,
-      .frames = samples / 2
-   };
+   ssnes_dsp_input_t dsp_input = {0};
+   dsp_input.samples = g_extern.audio_data.data;
+   dsp_input.frames = samples / 2;
 
-   ssnes_dsp_output_t dsp_output = {
-      .should_resample = SSNES_TRUE
-   };
+   ssnes_dsp_output_t dsp_output = {0};
+   dsp_output.should_resample = SSNES_TRUE;
 
    if (g_extern.audio_data.dsp_plugin)
       g_extern.audio_data.dsp_plugin->process(g_extern.audio_data.dsp_handle, &dsp_output, &dsp_input);
 
    if (dsp_output.should_resample)
    {
-      struct hermite_data src_data = {
-         .data_in = dsp_output.samples ? dsp_output.samples : g_extern.audio_data.data,
-         .data_out = g_extern.audio_data.outsamples,
-         .input_frames = dsp_output.samples ? dsp_output.frames : (samples / 2),
-         .ratio = g_extern.audio_data.src_ratio,
-      };
+      struct hermite_data src_data = {0};
+      src_data.data_in = dsp_output.samples ? dsp_output.samples : g_extern.audio_data.data;
+      src_data.data_out = g_extern.audio_data.outsamples;
+      src_data.input_frames = dsp_output.samples ? dsp_output.frames : (samples / 2);
+      src_data.ratio = g_extern.audio_data.src_ratio;
 
       hermite_process(g_extern.audio_data.source, &src_data);
 
@@ -305,7 +299,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
    {
       float f[0x10000];
       int16_t i[0x10000 * sizeof(float) / sizeof(int16_t)];
-   } static const empty_buf;
+   } static const empty_buf = {{0}};
 
    if (g_extern.audio_data.use_float)
    {
@@ -1009,22 +1003,19 @@ static void init_recording(void)
    {
       fps = g_extern.system.timing.fps;
       samplerate = g_extern.system.timing.sample_rate;
-      SSNES_LOG("Custom timing given: FPS: %.4lf, Sample rate: %.4lf\n", fps, samplerate);
+      SSNES_LOG("Custom timing given: FPS: %.4f, Sample rate: %.4f\n", (float)fps, (float)samplerate);
    }
 
-   struct ffemu_params params = {
-      .out_width = g_extern.system.geom.base_width,
-      .out_height = g_extern.system.geom.base_height,
-      .fb_width = g_extern.system.geom.max_width,
-      .fb_height = g_extern.system.geom.max_height,
-      .channels = 2,
-      .filename = g_extern.record_path,
-
-      .fps = fps,
-      .samplerate = samplerate,
-
-      .rgb32 = false,
-   };
+   struct ffemu_params params = {0};
+   params.out_width = g_extern.system.geom.base_width;
+   params.out_height = g_extern.system.geom.base_height;
+   params.fb_width = g_extern.system.geom.max_width;
+   params.fb_height = g_extern.system.geom.max_height;
+   params.channels = 2;
+   params.filename = g_extern.record_path;
+   params.fps = fps;
+   params.samplerate = samplerate;
+   params.rgb32 = false;
 
    if (g_extern.record_width || g_extern.record_height)
    {
@@ -1105,7 +1096,7 @@ static void init_rewind(void)
    {
       size_t serial_size = psnes_serialize_size();
       g_extern.state_buf = calloc(1, (serial_size + 3) & ~3); // Make sure we allocate at least 4-byte multiple.
-      psnes_serialize(g_extern.state_buf, serial_size);
+      psnes_serialize((uint8_t*)g_extern.state_buf, serial_size);
       SSNES_LOG("Initing rewind buffer with size: %u MB\n", (unsigned)(g_settings.rewind_buffer_size / 1000000));
       g_extern.state_manager = state_manager_new((serial_size + 3) & ~3, g_settings.rewind_buffer_size, g_extern.state_buf);
       if (!g_extern.state_manager)
@@ -1172,11 +1163,10 @@ static void init_netplay(void)
    if (!g_extern.netplay_enable)
       return;
 
-   struct snes_callbacks cbs = {
-      .frame_cb = video_frame,
-      .sample_cb = audio_sample,
-      .state_cb = input_state
-   };
+   struct snes_callbacks cbs = {0};
+   cbs.frame_cb = video_frame;
+   cbs.sample_cb = audio_sample;
+   cbs.state_cb = input_state;
 
    if (*g_extern.netplay_server)
    {
@@ -1574,7 +1564,7 @@ static void check_rewind(void)
          setup_rewind_audio();
 
          msg_queue_push(g_extern.msg_queue, "Rewinding!", 0, g_extern.is_paused ? 1 : 30);
-         psnes_unserialize(buf, psnes_serialize_size());
+         psnes_unserialize((uint8_t*)buf, psnes_serialize_size());
 
          if (g_extern.bsv.movie)
             bsv_movie_frame_rewind(g_extern.bsv.movie);
@@ -1588,7 +1578,7 @@ static void check_rewind(void)
       cnt = (cnt + 1) % (g_settings.rewind_granularity ? g_settings.rewind_granularity : 1); // Avoid possible SIGFPE.
       if (cnt == 0 || g_extern.bsv.movie)
       {
-         psnes_serialize(g_extern.state_buf, psnes_serialize_size());
+         psnes_serialize((uint8_t*)g_extern.state_buf, psnes_serialize_size());
          state_manager_push(g_extern.state_manager, g_extern.state_buf);
       }
    }
@@ -1958,6 +1948,8 @@ int main(int argc, char *argv[])
    fill_pathnames();
    set_savestate_auto_index();
 
+   bool use_sram = true;
+
    if (!init_rom_file(g_extern.game_type))
       goto error;
 
@@ -2001,9 +1993,9 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef HAVE_NETPLAY
-   bool use_sram = !g_extern.sram_save_disable && !g_extern.netplay_is_client;
+   use_sram = !g_extern.sram_save_disable && !g_extern.netplay_is_client;
 #else
-   bool use_sram = !g_extern.sram_save_disable;
+   use_sram = !g_extern.sram_save_disable;
 #endif
 
    if (!use_sram)

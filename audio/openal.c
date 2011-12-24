@@ -59,7 +59,7 @@ typedef struct al
 static void *al_init(const char *device, unsigned rate, unsigned latency)
 {
    (void)device;
-   al_t *al = calloc(1, sizeof(al_t));
+   al_t *al = (al_t*)calloc(1, sizeof(al_t));
    if (!al)
       return NULL;
 
@@ -76,8 +76,8 @@ static void *al_init(const char *device, unsigned rate, unsigned latency)
    al->rate = rate;
 
    al->num_buffers = (latency * rate * 2 * 2) / (1000 * BUFSIZE);
-   al->buffers = calloc(al->num_buffers, sizeof(ALuint));
-   al->res_buf = calloc(al->num_buffers, sizeof(ALuint));
+   al->buffers = (ALuint*)calloc(al->num_buffers, sizeof(ALuint));
+   al->res_buf = (ALuint*)calloc(al->num_buffers, sizeof(ALuint));
    if (al->buffers == NULL || al->res_buf == NULL)
       goto error;
 
@@ -127,10 +127,9 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
    if (al->res_ptr == 0)
    {
 #ifndef _WIN32
-      struct timespec tv = {
-         .tv_sec = 0,
-         .tv_nsec = 1000000
-      };
+      struct timespec tv = {0};
+      tv.tv_sec = 0;
+      tv.tv_nsec = 1000000;
 #endif
 
       for (;;)
@@ -155,7 +154,7 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
 
 static size_t al_fill_internal_buf(al_t *al, const void *buf, size_t size)
 {
-   size_t read_size = (BUFSIZE - al->tmpbuf_ptr > size) ? size : (BUFSIZE - al->tmpbuf_ptr);
+   size_t read_size = (BUFSIZE - al->tmpbuf_ptr > (ssize_t)size) ? size : (BUFSIZE - al->tmpbuf_ptr);
    memcpy(al->tmpbuf + al->tmpbuf_ptr, buf, read_size);
    al->tmpbuf_ptr += read_size;
    return read_size;
@@ -163,7 +162,7 @@ static size_t al_fill_internal_buf(al_t *al, const void *buf, size_t size)
 
 static ssize_t al_write(void *data, const void *buf, size_t size)
 {
-   al_t *al = data;
+   al_t *al = (al_t*)data;
 
    size_t written = 0;
    while (written < size)
@@ -204,7 +203,7 @@ static bool al_stop(void *data)
 
 static void al_set_nonblock_state(void *data, bool state)
 {
-   al_t *al = data;
+   al_t *al = (al_t*)data;
    al->nonblock = state;
 }
 
@@ -216,7 +215,7 @@ static bool al_start(void *data)
 
 static void al_free(void *data)
 {
-   al_t *al= data;
+   al_t *al = (al_t*)data;
    if (al)
    {
       alSourceStop(al->source);
@@ -235,12 +234,13 @@ static void al_free(void *data)
 }
 
 const audio_driver_t audio_openal = {
-   .init = al_init,
-   .write = al_write,
-   .stop = al_stop,
-   .start = al_start,
-   .set_nonblock_state = al_set_nonblock_state,
-   .free = al_free,
-   .ident = "openal"
+   al_init,
+   al_write,
+   al_stop,
+   al_start,
+   al_set_nonblock_state,
+   al_free,
+   NULL,
+   "openal"
 };
 

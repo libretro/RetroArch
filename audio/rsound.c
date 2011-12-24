@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <rsound.h>
 #include "fifo_buffer.h"
-#include <stdbool.h>
+#include "../boolean.h"
 #include "SDL.h"
 
 typedef struct rsd
@@ -37,7 +37,7 @@ typedef struct rsd
 
 static ssize_t audio_cb(void *data, size_t bytes, void *userdata)
 {
-   rsd_t *rsd = userdata;
+   rsd_t *rsd = (rsd_t*)userdata;
 
    size_t avail = fifo_read_avail(rsd->buffer);
    size_t write_size = bytes > avail ? avail : bytes;
@@ -49,14 +49,14 @@ static ssize_t audio_cb(void *data, size_t bytes, void *userdata)
 
 static void err_cb(void *userdata)
 {
-   rsd_t *rsd = userdata;
+   rsd_t *rsd = (rsd_t*)userdata;
    rsd->has_error = true;
    SDL_CondSignal(rsd->cond);
 }
 
 static void *rs_init(const char *device, unsigned rate, unsigned latency)
 {
-   rsd_t *rsd = calloc(1, sizeof(rsd_t));
+   rsd_t *rsd = (rsd_t*)calloc(1, sizeof(rsd_t));
    if (!rsd)
       return NULL;
 
@@ -100,7 +100,7 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency)
 
 static ssize_t rs_write(void *data, const void *buf, size_t size)
 {
-   rsd_t *rsd = data;
+   rsd_t *rsd = (rsd_t*)data;
 
    if (rsd->has_error)
       return -1;
@@ -146,7 +146,7 @@ static ssize_t rs_write(void *data, const void *buf, size_t size)
 
 static bool rs_stop(void *data)
 {
-   rsd_t *rsd = data;
+   rsd_t *rsd = (rsd_t*)data;
    rsd_stop(rsd->rd);
 
    return true;
@@ -154,13 +154,13 @@ static bool rs_stop(void *data)
 
 static void rs_set_nonblock_state(void *data, bool state)
 {
-   rsd_t *rsd = data;
+   rsd_t *rsd = (rsd_t*)data;
    rsd->nonblock = state;
 }
 
 static bool rs_start(void *data)
 {
-   rsd_t *rsd = data;
+   rsd_t *rsd = (rsd_t*)data;
    if (rsd_start(rsd->rd) < 0)
       return false;
 
@@ -169,7 +169,7 @@ static bool rs_start(void *data)
 
 static void rs_free(void *data)
 {
-   rsd_t *rsd = data;
+   rsd_t *rsd = (rsd_t*)data;
 
    rsd_stop(rsd->rd);
    rsd_free(rsd->rd);
@@ -182,12 +182,13 @@ static void rs_free(void *data)
 }
 
 const audio_driver_t audio_rsound = {
-   .init = rs_init,
-   .write = rs_write,
-   .stop = rs_stop,
-   .start = rs_start,
-   .set_nonblock_state = rs_set_nonblock_state,
-   .free = rs_free,
-   .ident = "rsound"
+   rs_init,
+   rs_write,
+   rs_stop,
+   rs_start,
+   rs_set_nonblock_state,
+   rs_free,
+   NULL,
+   "rsound"
 };
    

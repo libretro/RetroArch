@@ -19,7 +19,7 @@
 #include "strl.h"
 #include <stdio.h>
 #include <time.h>
-#include <stdbool.h>
+#include "boolean.h"
 #include <stdint.h>
 #include <string.h>
 #include "general.h"
@@ -35,16 +35,16 @@ static void write_header(FILE *file, unsigned width, unsigned height)
    // Generic BMP stuff.
    const uint8_t header[] = {
       'B', 'M',
-      (size >> 0) & 0xff, (size >> 8) & 0xff, (size >> 16) & 0xff, (size >> 24) & 0xff,
+      (uint8_t)(size >> 0), (uint8_t)(size >> 8), (uint8_t)(size >> 16), (uint8_t)(size >> 24),
       0, 0, 0, 0,
       54, 0, 0, 0,
       40, 0, 0, 0,
-      (width >> 0) & 0xff, (width >> 8) & 0xff, (width >> 16) & 0xff, (width >> 24) & 0xff,
-      (height >> 0) & 0xff, (height >> 8) & 0xff, (height >> 16) & 0xff, (height >> 24) & 0xff,
+      (uint8_t)(width >> 0), (uint8_t)(width >> 8), (uint8_t)(width >> 16), (uint8_t)(width >> 24),
+      (uint8_t)(height >> 0), (uint8_t)(height >> 8), (uint8_t)(height >> 16), (uint8_t)(height >> 24),
       1, 0,
       24, 0,
       0, 0, 0, 0,
-      (size_array >> 0) & 0xff, (size_array >> 8) & 0xff, (size_array >> 16) & 0xff, (size_array >> 24) & 0xff,
+      (uint8_t)(size_array >> 0), (uint8_t)(size_array >> 8), (uint8_t)(size_array >> 16), (uint8_t)(size_array >> 24),
       19, 11, 0, 0,
       19, 11, 0, 0,
       0, 0, 0, 0,
@@ -58,8 +58,9 @@ static void dump_content(FILE *file, const uint16_t *frame, unsigned width, unsi
 {
    pitch >>= 1;
    unsigned line_size = (width * 3 + 3) & ~3;
-   uint8_t line[line_size];
-   memset(line, 0, sizeof(line));
+   uint8_t *line = (uint8_t*)calloc(1, line_size);
+   if (!line)
+      return;
 
    // BMP likes reverse ordering for some reason :v
    for (int j = height - 1; j >= 0; j--)
@@ -79,6 +80,8 @@ static void dump_content(FILE *file, const uint16_t *frame, unsigned width, unsi
 
       fwrite(line, 1, sizeof(line), file);
    }
+
+   free(line);
 }
 
 bool screenshot_dump(const char *folder, const uint16_t *frame,

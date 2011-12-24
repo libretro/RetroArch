@@ -19,7 +19,7 @@
 #define __SSNES_REWIND_H
 
 #include <stddef.h>
-#include <stdbool.h>
+#include "boolean.h"
 
 typedef struct state_manager state_manager_t;
 

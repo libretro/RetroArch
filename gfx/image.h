@@ -19,7 +19,7 @@
 #define __SSNES_IMAGE_H
 
 #include <stdint.h>
-#include <stdbool.h>
+#include "../boolean.h"
 
 struct texture_image
 {

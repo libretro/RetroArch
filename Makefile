@@ -176,10 +176,14 @@ ifeq ($(DEBUG), 1)
 endif
 
 CFLAGS += -Wall $(OPTIMIZE_FLAG) -g -I. -pedantic
+ifeq ($(CXX_BUILD), 1)
+   CFLAGS += -std=c++0x -xc++
+else
 ifneq ($(findstring icc,$(CC)),)
    CFLAGS += -std=c99 -D_GNU_SOURCE
 else
    CFLAGS += -std=gnu99
+endif
 endif
 
 all: $(TARGET) config.mk
@@ -193,7 +197,11 @@ ssnes: $(OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 
 tools/ssnes-joyconfig: $(JOYCONFIG_OBJ)
+ifeq ($(CXX_BUILD), 1)
+	$(Q)$(CXX) -o $@ $(JOYCONFIG_OBJ) $(SDL_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
+else
 	$(Q)$(CC) -o $@ $(JOYCONFIG_OBJ) $(SDL_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
+endif
 	@$(if $(Q), $(shell echo echo LD $@),)
 
 %.o: %.c config.h config.mk $(HEADERS)

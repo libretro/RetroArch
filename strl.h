@@ -27,8 +27,8 @@
 
 #ifndef HAVE_STRL
 // Avoid possible naming collitions during link since we prefer to use the actual name.
-#define strlcpy(dst, src, size) __strlcpy_ssnes(dst, src, size)
-#define strlcat(dst, src, size) __strlcat_ssnes(dst, src, size)
+#define strlcpy(dst, src, size) strlcpy_ssnes__(dst, src, size)
+#define strlcat(dst, src, size) strlcat_ssnes__(dst, src, size)
 
 size_t strlcpy(char *dest, const char *source, size_t size);
 size_t strlcat(char *dest, const char *source, size_t size);

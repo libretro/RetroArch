@@ -22,7 +22,7 @@
 #ifndef __CONFIG_DEF_H
 #define __CONFIG_DEF_H
 
-#include <stdbool.h>
+#include "boolean.h"
 #include "libsnes.hpp"
 #include "driver.h"
 

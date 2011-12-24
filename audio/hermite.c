@@ -48,7 +48,7 @@ static inline float hermite_kernel(float mu1, float a, float b, float c, float d
 
 hermite_resampler_t *hermite_new(void)
 {
-   hermite_resampler_t *re = calloc(1, sizeof(*re));
+   hermite_resampler_t *re = (hermite_resampler_t*)calloc(1, sizeof(*re));
    if (!re)
       return NULL;
    return re;

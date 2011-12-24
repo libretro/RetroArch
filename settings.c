@@ -22,6 +22,7 @@
 #include "strl.h"
 #include "config.def.h"
 #include "file.h"
+#include "posix_string.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -635,7 +636,7 @@ static struct snes_keybind *find_snes_bind(unsigned port, int id)
 
 static int find_sk_bind(const char *str)
 {
-   for (int i = 0; i < sizeof(sk_map) / sizeof(struct key_map); i++)
+   for (size_t i = 0; i < sizeof(sk_map) / sizeof(struct key_map); i++)
    {
       if (strcasecmp(sk_map[i].str, str) == 0)
          return sk_map[i].key;
@@ -673,7 +674,7 @@ static void read_keybinds(config_file_t *conf)
             int key = find_sk_key(tmp_key);
 
             if (key >= 0)
-               bind->key = key;
+               bind->key = (enum ssnes_key)key;
 
             free(tmp_key);
             tmp_key = NULL;

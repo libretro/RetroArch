@@ -27,9 +27,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
-#include <stdbool.h>
+#include "../boolean.h"
 #include "general.h"
-
+#include <assert.h>
+#include "../posix_string.h"
 
 static int g_player = 1;
 static int g_joypad = 0;
@@ -55,9 +56,9 @@ static void print_help(void)
 
 struct bind
 {
-   char *keystr;
-   char *confbtn[MAX_PLAYERS];
-   char *confaxis[MAX_PLAYERS];
+   const char *keystr;
+   const char *confbtn[MAX_PLAYERS];
+   const char *confaxis[MAX_PLAYERS];
    bool is_misc;
 };
 
@@ -129,7 +130,8 @@ static void get_binds(config_file_t *conf, int player, int joypad)
    int last_axis = 0xFF;
    int last_pos = 0;
    int num_axes = SDL_JoystickNumAxes(joystick);
-   int initial_axes[num_axes];
+   int *initial_axes = (int*)calloc(num_axes, sizeof(int));
+   assert(initial_axes);
 
    SDL_PumpEvents();
    SDL_JoystickUpdate();
@@ -217,6 +219,8 @@ static void get_binds(config_file_t *conf, int player, int joypad)
          }
       }
    }
+
+   free(initial_axes);
 
 end:
    SDL_JoystickClose(joystick);

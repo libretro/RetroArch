@@ -19,7 +19,7 @@
 #ifndef __SSNES_FILE_H
 #define __SSNES_FILE_H
 
-#include <stdbool.h>
+#include "boolean.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>

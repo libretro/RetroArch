@@ -19,7 +19,7 @@
 #define __SSNES_SCREENSHOT_H
 
 #include <stdint.h>
-#include <stdbool.h>
+#include "boolean.h"
 
 bool screenshot_dump(const char *folder, const uint16_t *frame, 
       unsigned width, unsigned height, unsigned pitch);

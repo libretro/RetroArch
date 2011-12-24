@@ -25,7 +25,7 @@
 #include "config.h"
 #endif
 
-#include <stdbool.h>
+#include "boolean.h"
 #include "libsnes.hpp"
 
 #ifdef NEED_DYNAMIC
@@ -250,7 +250,7 @@ dylib_t dylib_load(const char *path)
 function_t dylib_proc(dylib_t lib, const char *proc)
 {
 #ifdef _WIN32
-   function_t sym = (function_t)GetProcAddress(lib ? lib : GetModuleHandle(NULL), proc);
+   function_t sym = (function_t)GetProcAddress(lib ? (HMODULE)lib : GetModuleHandle(NULL), proc);
 #else
    void *ptr_sym = NULL;
    if (lib)
@@ -276,7 +276,7 @@ function_t dylib_proc(dylib_t lib, const char *proc)
 void dylib_close(dylib_t lib)
 {
 #ifdef _WIN32
-   FreeLibrary(lib);
+   FreeLibrary((HMODULE)lib);
 #else
    dlclose(lib);
 #endif
@@ -315,7 +315,8 @@ static bool environment_cb(unsigned cmd, void *data)
       case SNES_ENVIRONMENT_SET_TIMING:
          g_extern.system.timing = *(const struct snes_system_timing*)data;
          g_extern.system.timing_set = true;
-         SSNES_LOG("Environ SET_TIMING: %.3lf Hz/ %.3lf Hz\n", g_extern.system.timing.fps, g_extern.system.timing.sample_rate);
+         SSNES_LOG("Environ SET_TIMING: %.3f Hz/ %.3f Hz\n",
+               (float)g_extern.system.timing.fps, (float)g_extern.system.timing.sample_rate);
          break;
 
       case SNES_ENVIRONMENT_GET_CAN_DUPE:
@@ -363,11 +364,9 @@ static void set_environment_defaults(void)
 {
    SSNES_LOG("Setting environment defaults (SNES)\n");
    g_extern.system.pitch = 0; // 0 is classic libsnes semantics.
-   g_extern.system.geom = (struct snes_geometry) {
-      .base_width = 256,
-      .base_height = 224,
-      .max_width = 512,
-      .max_height = 512,
-   };
+   g_extern.system.geom.base_width = 256;
+   g_extern.system.geom.base_height = 224;
+   g_extern.system.geom.max_width = 512;
+   g_extern.system.geom.max_height = 512;
 }
 

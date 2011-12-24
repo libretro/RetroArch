@@ -16,7 +16,7 @@
  */
 
 #include "ext/ssnes_audio.h"
-#include <stdbool.h>
+#include "../boolean.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include "driver.h"
@@ -34,7 +34,7 @@ typedef struct audio_ext
 
 static void audio_ext_free(void *data)
 {
-   audio_ext_t *ext = data;
+   audio_ext_t *ext = (audio_ext_t*)data;
    if (ext)
    {
       if (ext->driver && ext->handle)
@@ -53,9 +53,12 @@ static void *audio_ext_init(const char *device, unsigned rate, unsigned latency)
       return NULL;
    }
 
-   audio_ext_t *ext = calloc(1, sizeof(*ext));
+   audio_ext_t *ext = (audio_ext_t*)calloc(1, sizeof(*ext));
    if (!ext)
       return NULL;
+
+   ssnes_audio_driver_info_t info = {0};
+   const ssnes_audio_driver_t *(*plugin_load)(void) = NULL;
 
    ext->lib = dylib_load(g_settings.audio.external_driver);
    if (!ext->lib)
@@ -64,7 +67,7 @@ static void *audio_ext_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
-   const ssnes_audio_driver_t* (*plugin_load)(void) = (const ssnes_audio_driver_t* (*)(void))dylib_proc(ext->lib, "ssnes_audio_driver_init");
+   plugin_load = (const ssnes_audio_driver_t *(*)(void))dylib_proc(ext->lib, "ssnes_audio_driver_init");
 
    if (!plugin_load)
    {
@@ -87,11 +90,9 @@ static void *audio_ext_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
-   ssnes_audio_driver_info_t info = {
-      .device = device,
-      .sample_rate = rate,
-      .latency = latency
-   };
+   info.device = device;
+   info.sample_rate = rate;
+   info.latency = latency;
 
    ext->handle = ext->driver->init(&info);
    if (!ext->handle)
@@ -115,7 +116,7 @@ error:
 
 static ssize_t audio_ext_write(void *data, const void *buf, size_t size)
 {
-   audio_ext_t *ext = data;
+   audio_ext_t *ext = (audio_ext_t*)data;
    unsigned frame_size = ext->is_float ? (2 * sizeof(float)) : (2 * sizeof(int16_t));
    size /= frame_size;
 
@@ -127,37 +128,37 @@ static ssize_t audio_ext_write(void *data, const void *buf, size_t size)
 
 static bool audio_ext_start(void *data)
 {
-   audio_ext_t *ext = data;
+   audio_ext_t *ext = (audio_ext_t*)data;
    return ext->driver->start(ext->handle);
 }
 
 static bool audio_ext_stop(void *data)
 {
-   audio_ext_t *ext = data;
+   audio_ext_t *ext = (audio_ext_t*)data;
    return ext->driver->stop(ext->handle);
 }
 
 static void audio_ext_set_nonblock_state(void *data, bool toggle)
 {
-   audio_ext_t *ext = data;
+   audio_ext_t *ext = (audio_ext_t*)data;
    ext->driver->set_nonblock_state(ext->handle, toggle);
 }
 
 static bool audio_ext_use_float(void *data)
 {
-   audio_ext_t *ext = data;
+   audio_ext_t *ext = (audio_ext_t*)data;
    ext->is_float = ext->driver->use_float(ext->handle);
    return ext->is_float;
 }
 
-
 const audio_driver_t audio_ext = {
-   .init = audio_ext_init,
-   .write = audio_ext_write,
-   .stop = audio_ext_stop,
-   .start = audio_ext_start,
-   .set_nonblock_state = audio_ext_set_nonblock_state,
-   .use_float = audio_ext_use_float,
-   .free = audio_ext_free,
-   .ident = "ext"
+   audio_ext_init,
+   audio_ext_write,
+   audio_ext_stop,
+   audio_ext_start,
+   audio_ext_set_nonblock_state,
+   audio_ext_free,
+   audio_ext_use_float,
+   "ext"
 };
+

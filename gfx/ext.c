@@ -19,7 +19,7 @@
 
 #define SSNES_DLL_IMPORT
 #include "ext/ssnes_video.h"
-#include <stdbool.h>
+#include "../boolean.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include "dynamic.h"
@@ -56,13 +56,13 @@ static void *input_ext_init(void)
 
 static void input_ext_poll(void *data)
 {
-   input_ext_t *ext = data;
+   input_ext_t *ext = (input_ext_t*)data;
    ext->driver->poll(ext->handle);
 }
 
 static int16_t input_ext_input_state(void *data, const struct snes_keybind **snes_keybinds, bool port, unsigned device, unsigned index, unsigned id)
 {
-   input_ext_t *ext = data;
+   input_ext_t *ext = (input_ext_t*)data;
 
    unsigned player = 0;
    if (device == SNES_DEVICE_MULTITAP)
@@ -74,7 +74,7 @@ static int16_t input_ext_input_state(void *data, const struct snes_keybind **sne
 
    for (unsigned i = 0; g_settings.input.binds[player - 1][i].id != -1; i++)
    {
-      if (g_settings.input.binds[player - 1][i].id == id)
+      if (g_settings.input.binds[player - 1][i].id == (int)id)
       {
          ssnes_bind = &g_settings.input.binds[player - 1][i];
          break;
@@ -83,11 +83,10 @@ static int16_t input_ext_input_state(void *data, const struct snes_keybind **sne
 
    if (ssnes_bind)
    {
-      struct ssnes_keybind bind = {
-         .key = ssnes_bind->key,
-         .joykey = ssnes_bind->joykey,
-         .joyaxis = ssnes_bind->joyaxis
-      };
+      struct ssnes_keybind bind = {0};
+      bind.key = ssnes_bind->key;
+      bind.joykey = ssnes_bind->joykey;
+      bind.joyaxis = ssnes_bind->joyaxis;
 
       return ext->driver->input_state(ext->handle, &bind, player);
    }
@@ -97,7 +96,7 @@ static int16_t input_ext_input_state(void *data, const struct snes_keybind **sne
 
 static bool input_ext_key_pressed(void *data, int key)
 {
-   input_ext_t *ext = data;
+   input_ext_t *ext = (input_ext_t*)data;
 
    const struct snes_keybind *ssnes_bind = NULL;
    for (unsigned i = 0; g_settings.input.binds[0][i].id != -1; i++)
@@ -111,11 +110,10 @@ static bool input_ext_key_pressed(void *data, int key)
 
    if (ssnes_bind)
    {
-      struct ssnes_keybind bind = {
-         .key = ssnes_bind->key,
-         .joykey = ssnes_bind->joykey,
-         .joyaxis = ssnes_bind->joyaxis
-      };
+      struct ssnes_keybind bind = {0};
+      bind.key = ssnes_bind->key;
+      bind.joykey = ssnes_bind->joykey;
+      bind.joyaxis = ssnes_bind->joyaxis;
 
       return ext->driver->input_state(ext->handle, &bind, 1);
    }
@@ -125,7 +123,7 @@ static bool input_ext_key_pressed(void *data, int key)
 
 static void input_ext_free(void *data)
 {
-   input_ext_t *ext = data;
+   input_ext_t *ext = (input_ext_t*)data;
    if (ext)
    {
       if (ext->driver && ext->handle)
@@ -144,14 +142,13 @@ static void input_ext_free(void *data)
 }
 
 static const input_driver_t input_ext = {
-   .init = input_ext_init,
-   .poll = input_ext_poll,
-   .input_state = input_ext_input_state,
-   .key_pressed = input_ext_key_pressed,
-   .free = input_ext_free,
-   .ident = "ext"
+   input_ext_init,
+   input_ext_poll,
+   input_ext_input_state,
+   input_ext_key_pressed,
+   input_ext_free,
+   "ext"
 };
-
 
 //////////// Video hook
 typedef struct
@@ -162,7 +159,7 @@ typedef struct
 
 static void video_ext_free(void *data)
 {
-   ext_t *ext = data;
+   ext_t *ext = (ext_t*)data;
    if (ext)
    {
       if (ext->driver && ext->handle)
@@ -182,25 +179,25 @@ static void video_ext_free(void *data)
 
 static bool video_ext_focus(void *data)
 {
-   ext_t *ext = data;
+   ext_t *ext = (ext_t*)data;
    return ext->driver->focus(ext->handle);
 }
 
 static bool video_ext_alive(void *data)
 {
-   ext_t *ext = data;
+   ext_t *ext = (ext_t*)data;
    return ext->driver->alive(ext->handle);
 }
 
 static void video_ext_set_nonblock_state(void *data, bool state)
 {
-   ext_t *ext = data;
+   ext_t *ext = (ext_t*)data;
    ext->driver->set_nonblock_state(ext->handle, state);
 }
 
 static bool video_ext_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   ext_t *ext = data;
+   ext_t *ext = (ext_t*)data;
    return ext->driver->frame(ext->handle, frame, width, height, pitch, msg);
 }
 
@@ -214,7 +211,7 @@ static void *setup_input(ext_t *ext, const ssnes_input_driver_t *driver)
    if (!handle)
       return NULL;
 
-   input_ext_t *wrap_handle = input_ext.init();
+   input_ext_t *wrap_handle = (input_ext_t*)input_ext.init();
    if (!wrap_handle)
       return NULL;
 
@@ -268,29 +265,28 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
    gfx_window_title_reset();
    gfx_window_title(title_buf, sizeof(title_buf));
 
-   ssnes_video_info_t info = {
-      .width = video->width,
-      .height = video->height,
-      .fullscreen = video->fullscreen,
-      .vsync = video->vsync,
-      .force_aspect = video->force_aspect,
-      .aspect_ratio = g_settings.video.aspect_ratio,
-      .smooth = video->smooth,
-      .input_scale = video->input_scale,
-      .color_format = video->rgb32 ? SSNES_COLOR_FORMAT_ARGB8888 : SSNES_COLOR_FORMAT_XRGB1555,
-      .xml_shader = xml_shader,
-      .cg_shader = cg_shader,
-      .ttf_font = font,
-      .ttf_font_size = g_settings.video.font_size,
-      .ttf_font_color = (font_color_r << 16) | (font_color_g << 8) | (font_color_b << 0),
-      .title_hint = title_buf,
+   ssnes_video_info_t info = {0};
+   info.width = video->width;
+   info.height = video->height;
+   info.fullscreen = video->fullscreen;
+   info.vsync = video->vsync;
+   info.force_aspect = video->force_aspect;
+   info.aspect_ratio = g_settings.video.aspect_ratio;
+   info.smooth = video->smooth;
+   info.input_scale = video->input_scale;
+   info.color_format = video->rgb32 ? SSNES_COLOR_FORMAT_ARGB8888 : SSNES_COLOR_FORMAT_XRGB1555;
+   info.xml_shader = xml_shader;
+   info.cg_shader = cg_shader;
+   info.ttf_font = font;
+   info.ttf_font_size = g_settings.video.font_size;
+   info.ttf_font_color = (font_color_r << 16) | (font_color_g << 8) | (font_color_b << 0);
+   info.title_hint = title_buf;
 
 #ifdef HAVE_PYTHON
-      .python_state_new = py_state_new,
-      .python_state_get = py_state_get,
-      .python_state_free = py_state_free,
+   info.python_state_new = py_state_new;
+   info.python_state_get = py_state_get;
+   info.python_state_free = py_state_free;
 #endif
-   };
 
    const ssnes_input_driver_t *input_driver = NULL;
    ext->handle = ext->driver->init(&info, &input_driver);
@@ -308,9 +304,11 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
 
 static void *video_ext_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-   ext_t *ext = calloc(1, sizeof(*ext));
+   ext_t *ext = (ext_t*)calloc(1, sizeof(*ext));
    if (!ext)
       return NULL;
+
+   const ssnes_video_driver_t *(*video_init)(void) = NULL;
 
    if (!(*g_settings.video.external_driver))
    {
@@ -325,8 +323,7 @@ static void *video_ext_init(const video_info_t *video, const input_driver_t **in
       goto error;
    }
 
-   const ssnes_video_driver_t* (*video_init)(void) = 
-      (const ssnes_video_driver_t *(*)(void))dylib_proc(g_lib, "ssnes_video_init");
+   video_init = (const ssnes_video_driver_t *(*)(void))dylib_proc(g_lib, "ssnes_video_init");
    if (!video_init)
    {
       SSNES_ERR("Couldn't find function ssnes_video_init in library ...\n");
@@ -355,12 +352,13 @@ error:
 }
 
 const video_driver_t video_ext = {
-   .init = video_ext_init,
-   .frame = video_ext_frame,
-   .alive = video_ext_alive,
-   .set_nonblock_state = video_ext_set_nonblock_state,
-   .focus = video_ext_focus,
-   .free = video_ext_free,
-   .ident = "ext"
+   video_ext_init,
+   video_ext_frame,
+   video_ext_set_nonblock_state,
+   video_ext_alive,
+   video_ext_focus,
+   NULL,
+   video_ext_free,
+   "ext"
 };
 

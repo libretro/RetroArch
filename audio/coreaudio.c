@@ -21,7 +21,7 @@
 #include "general.h"
 #include "fifo_buffer.h"
 #include <stdlib.h>
-#include <stdbool.h>
+#include "../boolean.h"
 #include <pthread.h>
 
 #include <CoreAudio/CoreAudio.h>
@@ -43,7 +43,7 @@ typedef struct coreaudio
 
 static void coreaudio_free(void *data)
 {
-   coreaudio_t *dev = data;
+   coreaudio_t *dev = (coreaudio_t*)data;
    if (!dev)
       return;
 
@@ -66,7 +66,7 @@ static OSStatus audio_cb(void *userdata, AudioUnitRenderActionFlags *action_flag
       const AudioTimeStamp *time_stamp, UInt32 bus_number,
       UInt32 number_frames, AudioBufferList *io_data)
 {
-   coreaudio_t *dev = userdata;
+   coreaudio_t *dev = (coreaudio_t*)userdata;
    (void)time_stamp;
    (void)bus_number;
    (void)number_frames;
@@ -99,7 +99,7 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
 {
    (void)device;
 
-   coreaudio_t *dev = calloc(1, sizeof(*dev));
+   coreaudio_t *dev = (coreaudio_t*)calloc(1, sizeof(*dev));
    if (!dev)
       return NULL;
 
@@ -115,40 +115,46 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
    AudioObjectSetPropertyData(kAudioObjectSystemObject, &addr, 0, NULL,
          sizeof(CFRunLoopRef), &run_loop);
 
-   ComponentDescription desc = {
-      .componentType = kAudioUnitType_Output,
-      .componentSubType = kAudioUnitSubType_HALOutput,
-      .componentManufacturer = kAudioUnitManufacturer_Apple,
-   };
+   ComponentDescription desc = {0};
+   desc.componentType = kAudioUnitType_Output;
+   desc.componentSubType = kAudioUnitSubType_HALOutput;
+   desc.componentManufacturer = kAudioUnitManufacturer_Apple;
 
-   Component comp = FindNextComponent(NULL, &desc);
+   AudioStreamBasicDescription stream_desc = {0};
+   AudioStreamBasicDescription real_desc;
+   AudioChannelLayout layout = {0};
+   AURenderCallbackStruct cb = {0};
+
+   Component comp = NULL;
+   OSStatus res = noErr;
+   UInt32 i_size = 0;
+   size_t fifo_size;
+
+   comp = FindNextComponent(NULL, &desc);
    if (comp == NULL)
       goto error;
 
-   OSStatus res = OpenAComponent(comp, &dev->dev);
+   res = OpenAComponent(comp, &dev->dev);
    if (res != noErr)
       goto error;
 
    dev->dev_alive = true;
 
-   AudioStreamBasicDescription stream_desc = {
-      .mSampleRate = rate,
-      .mBitsPerChannel = sizeof(float) * CHAR_BIT,
-      .mChannelsPerFrame = 2,
-      .mBytesPerPacket = 2 * sizeof(float),
-      .mBytesPerFrame = 2 * sizeof(float),
-      .mFramesPerPacket = 1,
-      .mFormatID = kAudioFormatLinearPCM,
-      .mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked | (is_little_endian() ? 0 : kAudioFormatFlagIsBigEndian),
-   };
+   stream_desc.mSampleRate = rate;
+   stream_desc.mBitsPerChannel = sizeof(float) * CHAR_BIT;
+   stream_desc.mChannelsPerFrame = 2;
+   stream_desc.mBytesPerPacket = 2 * sizeof(float);
+   stream_desc.mBytesPerFrame = 2 * sizeof(float);
+   stream_desc.mFramesPerPacket = 1;
+   stream_desc.mFormatID = kAudioFormatLinearPCM;
+   stream_desc.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked | (is_little_endian() ? 0 : kAudioFormatFlagIsBigEndian);
 
    res = AudioUnitSetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
          kAudioUnitScope_Input, 0, &stream_desc, sizeof(stream_desc));
    if (res != noErr)
       goto error;
 
-   AudioStreamBasicDescription real_desc;
-   UInt32 i_size = sizeof(real_desc);
+   i_size = sizeof(real_desc);
    res = AudioUnitGetProperty(dev->dev, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &real_desc, &i_size);
    if (res != noErr)
       goto error;
@@ -165,20 +171,16 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
    if (real_desc.mFormatID != stream_desc.mFormatID)
       goto error;
 
-   AudioChannelLayout layout = {
-      .mChannelLayoutTag = kAudioChannelLayoutTag_UseChannelBitmap,
-      .mChannelBitmap = (1 << 2) - 1,
-   };
+   layout.mChannelLayoutTag = kAudioChannelLayoutTag_UseChannelBitmap;
+   layout.mChannelBitmap = 0x03;
 
    res = AudioUnitSetProperty(dev->dev, kAudioUnitProperty_AudioChannelLayout,
          kAudioUnitScope_Input, 0, &layout, sizeof(layout));
    if (res != noErr)
       goto error;
 
-   AURenderCallbackStruct cb = {
-      .inputProc = audio_cb,
-      .inputProcRefCon = dev,
-   };
+   cb.inputProc = audio_cb;
+   cb.inputProcRefCon = dev;
 
    res = AudioUnitSetProperty(dev->dev, kAudioUnitProperty_SetRenderCallback,
          kAudioUnitScope_Input, 0, &cb, sizeof(cb));
@@ -189,7 +191,7 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
    if (res != noErr)
       goto error;
 
-   size_t fifo_size = (latency * g_settings.audio.out_rate) / 1000;
+   fifo_size = (latency * g_settings.audio.out_rate) / 1000;
    fifo_size *= 2 * sizeof(float);
 
    dev->buffer = fifo_new(fifo_size);
@@ -212,9 +214,9 @@ error:
 
 static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
 {
-   coreaudio_t *dev = data;
+   coreaudio_t *dev = (coreaudio_t*)data;
 
-   const uint8_t *buf = buf_;
+   const uint8_t *buf = (const uint8_t*)buf_;
    size_t written = 0;
 
    while (size > 0)
@@ -246,19 +248,19 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
 
 static bool coreaudio_stop(void *data)
 {
-   coreaudio_t *dev = data;
+   coreaudio_t *dev = (coreaudio_t*)data;
    return AudioOutputUnitStop(dev->dev) == noErr;
 }
 
 static void coreaudio_set_nonblock_state(void *data, bool state)
 {
-   coreaudio_t *dev = data;
+   coreaudio_t *dev = (coreaudio_t*)data;
    dev->nonblock = state;
 }
 
 static bool coreaudio_start(void *data)
 {
-   coreaudio_t *dev = data;
+   coreaudio_t *dev = (coreaudio_t*)data;
    return AudioOutputUnitStart(dev->dev) == noErr;
 }
 
@@ -269,13 +271,13 @@ static bool coreaudio_use_float(void *data)
 }
 
 const audio_driver_t audio_coreaudio = {
-   .init = coreaudio_init,
-   .write = coreaudio_write,
-   .stop = coreaudio_stop,
-   .start = coreaudio_start,
-   .set_nonblock_state = coreaudio_set_nonblock_state,
-   .free = coreaudio_free,
-   .use_float = coreaudio_use_float,
-   .ident = "coreaudio"
+   coreaudio_init,
+   coreaudio_write,
+   coreaudio_stop,
+   coreaudio_start,
+   coreaudio_set_nonblock_state,
+   coreaudio_free,
+   coreaudio_use_float,
+   "coreaudio"
 };
-   
+

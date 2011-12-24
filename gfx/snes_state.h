@@ -19,7 +19,7 @@
 #define __SSNES_SNES_STATE_H
 
 #include <stdint.h>
-#include <stdbool.h>
+#include "../boolean.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

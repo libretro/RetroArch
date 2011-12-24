@@ -364,11 +364,11 @@ static bool get_info(netplay_t *handle)
 
 static void init_buffers(netplay_t *handle)
 {
-   handle->buffer = calloc(handle->buffer_size, sizeof(*handle->buffer));
+   handle->buffer = (struct delta_frame*)calloc(handle->buffer_size, sizeof(*handle->buffer));
    handle->state_size = psnes_serialize_size();
    for (unsigned i = 0; i < handle->buffer_size; i++)
    {
-      handle->buffer[i].state = malloc(handle->state_size);
+      handle->buffer[i].state = (uint8_t*)malloc(handle->state_size);
       handle->buffer[i].is_simulated = true;
    }
 }
@@ -378,7 +378,7 @@ netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames, const
    if (frames > UDP_FRAME_PACKETS)
       frames = UDP_FRAME_PACKETS;
 
-   netplay_t *handle = calloc(1, sizeof(*handle));
+   netplay_t *handle = (netplay_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
 
@@ -451,10 +451,9 @@ static int poll_input(netplay_t *handle, bool block)
 {
    int max_fd = (handle->fd > handle->udp_fd ? handle->fd : handle->udp_fd) + 1;
 
-   const struct timeval tv = {
-      .tv_sec = 0,
-      .tv_usec = block ? (RETRY_MS * 1000) : 0
-   };
+   struct timeval tv = {0};
+   tv.tv_sec = 0;
+   tv.tv_usec = block ? (RETRY_MS * 1000) : 0;
 
    do
    { 
@@ -566,7 +565,7 @@ static void parse_packet(netplay_t *handle, uint32_t *buffer, unsigned size)
 static bool receive_data(netplay_t *handle, uint32_t *buffer, size_t size)
 {
    socklen_t addrlen = sizeof(handle->their_addr);
-   if (recvfrom(handle->udp_fd, NONCONST_CAST buffer, size, 0, (struct sockaddr*)&handle->their_addr, &addrlen) != size)
+   if (recvfrom(handle->udp_fd, NONCONST_CAST buffer, size, 0, (struct sockaddr*)&handle->their_addr, &addrlen) != (ssize_t)size)
       return false;
    handle->has_client_addr = true;
    return true;

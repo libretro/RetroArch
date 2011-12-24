@@ -18,7 +18,7 @@
 #include "file.h"
 #include "general.h"
 #include <stdlib.h>
-#include <stdbool.h>
+#include "boolean.h"
 #include "libsnes.hpp"
 #include <string.h>
 #include <assert.h>
@@ -49,12 +49,13 @@ ssize_t read_file(const char *path, void **buf)
 {
    void *rom_buf = NULL;
    FILE *file = fopen(path, "rb");
+   ssize_t rc = 0;
+   size_t len = 0;
    if (!file)
       goto error;
 
    fseek(file, 0, SEEK_END);
-   long len = ftell(file);
-   ssize_t rc = 0;
+   len = ftell(file);
    rewind(file);
    rom_buf = malloc(len + 1);
    if (!rom_buf)
@@ -63,7 +64,7 @@ ssize_t read_file(const char *path, void **buf)
       goto error;
    }
 
-   if ((rc = fread(rom_buf, 1, len, file)) < len)
+   if ((rc = fread(rom_buf, 1, len, file)) < (ssize_t)len)
       SSNES_WARN("Didn't read whole file.\n");
 
    *buf = rom_buf;
@@ -86,18 +87,21 @@ bool read_file_string(const char *path, char **buf)
 {
    *buf = NULL;
    FILE *file = fopen(path, "r");
+   size_t len = 0;
+   char *ptr = NULL;
+
    if (!file)
       goto error;
 
    fseek(file, 0, SEEK_END);
-   long len = ftell(file) + 2; // Takes account of being able to read in EOF and '\0' at end.
+   len = ftell(file) + 2; // Takes account of being able to read in EOF and '\0' at end.
    rewind(file);
 
-   *buf = calloc(len, sizeof(char));
+   *buf = (char*)calloc(len, sizeof(char));
    if (!*buf)
       goto error;
 
-   char *ptr = *buf;
+   ptr = *buf;
 
    while (ptr && !feof(file))
    {
@@ -136,6 +140,7 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
    ssize_t patch_size = 0;
    void *patch_data = NULL;
    enum patch_type type = PATCH_NONE;
+   bool success = false;
 
    if (g_extern.ups_pref && g_extern.bps_pref)
    {
@@ -168,19 +173,18 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
    }
 
    size_t target_size = ret_size * 4; // Just to be sure ...
-   uint8_t *patched_rom = malloc(target_size);
+   uint8_t *patched_rom = (uint8_t*)malloc(target_size);
    if (!patched_rom)
    {
       SSNES_ERR("Failed to allocate memory for patched ROM ...\n");
       goto error;
    }
 
-   bool success = false;
    switch (type)
    {
       case PATCH_UPS:
       {
-         ups_error_t err = ups_apply_patch(patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
+         ups_error_t err = ups_apply_patch((const uint8_t*)patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
          if (err == UPS_SUCCESS)
          {
             SSNES_LOG("ROM patched successfully (UPS)!\n");
@@ -194,7 +198,7 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
 
       case PATCH_BPS:
       {
-         bps_error_t err = bps_apply_patch(patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
+         bps_error_t err = bps_apply_patch((const uint8_t*)patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
          if (err == BPS_SUCCESS)
          {
             SSNES_LOG("ROM patched successfully (BPS)!\n");
@@ -244,7 +248,7 @@ static ssize_t read_rom_file(FILE* file, void** buf)
       SSNES_LOG("Reading ROM from stdin ...\n");
       size_t buf_size = 0xFFFFF; // Some initial guesstimate.
       size_t buf_ptr = 0;
-      uint8_t *rom_buf = malloc(buf_size);
+      uint8_t *rom_buf = (uint8_t*)malloc(buf_size);
       if (rom_buf == NULL)
       {
          SSNES_ERR("Couldn't allocate memory!\n");
@@ -260,7 +264,7 @@ static ssize_t read_rom_file(FILE* file, void** buf)
          if (buf_ptr < buf_size)
             break;
 
-         rom_buf = realloc(rom_buf, buf_size * 2);
+         rom_buf = (uint8_t*)realloc(rom_buf, buf_size * 2);
          if (rom_buf == NULL)
          {
             SSNES_ERR("Couldn't allocate memory!\n");
@@ -286,14 +290,14 @@ static ssize_t read_rom_file(FILE* file, void** buf)
          return -1;
       }
 
-      if (fread(rom_buf, 1, ret, file) < ret)
+      if (fread(rom_buf, 1, ret, file) < (size_t)ret)
       {
          SSNES_ERR("Didn't read whole file.\n");
          free(rom_buf);
          return -1;
       }
 
-      ret_buf = rom_buf;
+      ret_buf = (uint8_t*)rom_buf;
    }
 
    // Remove copier header if present (512 first bytes).
@@ -406,7 +410,7 @@ bool save_state(const char *path)
    }
 
    SSNES_LOG("State size: %d bytes.\n", (int)size);
-   psnes_serialize(data, size);
+   psnes_serialize((uint8_t*)data, size);
    bool ret = dump_to_file(path, data, size);
    free(data);
    if (!ret)
@@ -466,7 +470,7 @@ bool load_state(const char *path)
 
       for (unsigned i = 0; i < 2; i++)
          if (block_size[i])
-            block_buf[i] = malloc(block_size[i]);
+            block_buf[i] = (uint8_t*)malloc(block_size[i]);
 
       // Backup current SRAM which is overwritten by unserialize.
       for (unsigned i = 0; i < 2; i++)
@@ -479,7 +483,7 @@ bool load_state(const char *path)
          }
       }
 
-      psnes_unserialize(buf, size);
+      psnes_unserialize((uint8_t*)buf, size);
 
       // Flush back :D
       for (unsigned i = 0; i < 2; i++)
@@ -511,7 +515,7 @@ void load_ram_file(const char *path, int type)
 
    void *buf = NULL;
    ssize_t rc = read_file(path, &buf);
-   if (rc <= size)
+   if (rc <= (ssize_t)size)
       memcpy(data, buf, rc);
 
    free(buf);
@@ -555,6 +559,7 @@ static bool load_sgb_rom(void)
    FILE *extra_rom = NULL;
    void *extra_rom_buf = NULL;
    ssize_t extra_rom_len = 0;
+   char *xml_buf = 0;
 
    if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
    {
@@ -568,11 +573,11 @@ static bool load_sgb_rom(void)
       goto error;
    }
 
-   char *xml_buf = load_xml_map(g_extern.xml_name);
+   xml_buf = load_xml_map(g_extern.xml_name);
 
    if (!psnes_load_cartridge_super_game_boy(
-            xml_buf, rom_buf, rom_len,
-            NULL, extra_rom_buf, extra_rom_len))
+            xml_buf, (const uint8_t*)rom_buf, rom_len,
+            NULL, (const uint8_t*)extra_rom_buf, extra_rom_len))
    {
       SSNES_ERR("Cannot load SGB/GameBoy rom.\n");
       goto error;
@@ -607,6 +612,7 @@ static bool load_bsx_rom(bool slotted)
    FILE *extra_rom = NULL;
    void *extra_rom_buf = NULL;
    ssize_t extra_rom_len = 0;
+   char *xml_buf = 0;
 
    if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
    {
@@ -620,13 +626,13 @@ static bool load_bsx_rom(bool slotted)
       goto error;
    }
 
-   char *xml_buf = load_xml_map(g_extern.xml_name);
+   xml_buf = load_xml_map(g_extern.xml_name);
 
    if (slotted)
    {   
       if (!psnes_load_cartridge_bsx_slotted(
-               xml_buf, rom_buf, rom_len,
-               NULL, extra_rom_buf, extra_rom_len))
+               xml_buf, (const uint8_t*)rom_buf, rom_len,
+               NULL, (const uint8_t*)extra_rom_buf, extra_rom_len))
       {
          SSNES_ERR("Cannot load BSX slotted rom.\n");
          goto error;
@@ -636,8 +642,8 @@ static bool load_bsx_rom(bool slotted)
    else
    {
       if (!psnes_load_cartridge_bsx(
-               NULL, rom_buf, rom_len,
-               NULL, extra_rom_buf, extra_rom_len))
+               NULL, (const uint8_t*)rom_buf, rom_len,
+               NULL, (const uint8_t*)extra_rom_buf, extra_rom_len))
       {
          SSNES_ERR("Cannot load BSX rom.\n");
          goto error;
@@ -673,6 +679,8 @@ static bool load_sufami_rom(void)
    FILE *extra_rom[2] = {NULL};
    void *extra_rom_buf[2] = {NULL};
    ssize_t extra_rom_len[2] = {0};
+   char *xml_buf = 0;
+   const char *roms[2] = {0};
 
    if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
    {
@@ -680,7 +688,8 @@ static bool load_sufami_rom(void)
       goto error;
    }
    
-   const char *roms[2] = { g_extern.sufami_rom_path[0], g_extern.sufami_rom_path[1] };
+   roms[0] = g_extern.sufami_rom_path[0];
+   roms[1] = g_extern.sufami_rom_path[1];
 
    for (int i = 0; i < 2; i++)
    {
@@ -694,12 +703,12 @@ static bool load_sufami_rom(void)
       }
    }
 
-   char *xml_buf = load_xml_map(g_extern.xml_name);
+   xml_buf = load_xml_map(g_extern.xml_name);
 
    if (!psnes_load_cartridge_sufami_turbo(
-            xml_buf, rom_buf, rom_len,
-            NULL, extra_rom_buf[0], extra_rom_len[0],
-            NULL, extra_rom_buf[1], extra_rom_len[1]))
+            xml_buf, (const uint8_t*)rom_buf, rom_len,
+            NULL, (const uint8_t*)extra_rom_buf[0], extra_rom_len[0],
+            NULL, (const uint8_t*)extra_rom_buf[1], extra_rom_len[1]))
    {
       SSNES_ERR("Cannot load Sufami Turbo rom.\n");
       goto error;
@@ -765,7 +774,7 @@ static bool load_normal_rom(void)
    
    char *xml_buf = load_xml_map(g_extern.xml_name);
 
-   if (!psnes_load_cartridge_normal(xml_buf, rom_buf, rom_len))
+   if (!psnes_load_cartridge_normal(xml_buf, (const uint8_t*)rom_buf, rom_len))
    {
       SSNES_ERR("ROM file is not valid!\n");
       free(rom_buf);
@@ -856,7 +865,7 @@ char **dir_list_new(const char *dir, const char *ext)
       goto error;
 #endif
 
-   dir_list = calloc(cur_size, sizeof(char*));
+   dir_list = (char**)calloc(cur_size, sizeof(char*));
    if (!dir_list)
       goto error;
 
@@ -879,7 +888,7 @@ char **dir_list_new(const char *dir, const char *ext)
          continue;
 #endif
 
-      dir_list[cur_ptr] = malloc(MAXPATHLEN);
+      dir_list[cur_ptr] = (char*)malloc(MAXPATHLEN);
       if (!dir_list[cur_ptr])
          goto error;
 
@@ -895,7 +904,7 @@ char **dir_list_new(const char *dir, const char *ext)
       if (cur_ptr + 1 == cur_size) // Need to reserve for NULL.
       {
          cur_size *= 2;
-         dir_list = realloc(dir_list, cur_size * sizeof(char*));
+         dir_list = (char**)realloc(dir_list, cur_size * sizeof(char*));
          if (!dir_list)
             goto error;
 

@@ -63,7 +63,7 @@ struct snes_tracker
 
 snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
 {
-   snes_tracker_t *tracker = calloc(1, sizeof(*tracker));
+   snes_tracker_t *tracker = (snes_tracker_t*)calloc(1, sizeof(*tracker));
    if (!tracker)
       return NULL;
 
@@ -80,7 +80,7 @@ snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
    }
 #endif
 
-   tracker->info = calloc(info->info_elem, sizeof(struct snes_tracker_internal));
+   tracker->info = (struct snes_tracker_internal*)calloc(info->info_elem, sizeof(struct snes_tracker_internal));
    tracker->info_elem = info->info_elem;
 
    for (unsigned i = 0; i < info->info_elem; i++)

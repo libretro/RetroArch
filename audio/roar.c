@@ -21,7 +21,7 @@
 #include <roaraudio.h>
 #include <errno.h>
 #include <stdio.h>
-#include <stdbool.h>
+#include "../boolean.h"
 #include "general.h"
 
 typedef struct
@@ -34,7 +34,7 @@ static void *ra_init(const char *device, unsigned rate, unsigned latency)
 {
    (void)latency;
    int err;
-   roar_t *roar = calloc(1, sizeof(roar_t));
+   roar_t *roar = (roar_t*)calloc(1, sizeof(roar_t));
    if (roar == NULL)
       return NULL;
 
@@ -54,7 +54,7 @@ static void *ra_init(const char *device, unsigned rate, unsigned latency)
 
 static ssize_t ra_write(void *data, const void *buf, size_t size)
 {
-   roar_t *roar = data;
+   roar_t *roar = (roar_t*)data;
    ssize_t rc;
 
    if (size == 0)
@@ -86,7 +86,7 @@ static bool ra_stop(void *data)
 
 static void ra_set_nonblock_state(void *data, bool state)
 {
-   roar_t *roar = data;
+   roar_t *roar = (roar_t*)data;
    if (roar_vs_blocking(roar->vss, (state) ? ROAR_VS_FALSE : ROAR_VS_TRUE, NULL) < 0)
       fprintf(stderr, "SSNES [ERROR]: Can't set nonblocking. Will not be able to fast-forward.\n");
    roar->nonblocking = state;
@@ -100,23 +100,19 @@ static bool ra_start(void *data)
 
 static void ra_free(void *data)
 {
-   roar_t *roar = data;
+   roar_t *roar = (roar_t*)data;
    roar_vs_close(roar->vss, ROAR_VS_TRUE, NULL);
    free(data);
 }
 
 const audio_driver_t audio_roar = {
-   .init = ra_init,
-   .write = ra_write,
-   .stop = ra_stop,
-   .start = ra_start,
-   .set_nonblock_state = ra_set_nonblock_state,
-   .free = ra_free,
-   .ident = "roar"
+   ra_init,
+   ra_write,
+   ra_stop,
+   ra_start,
+   ra_set_nonblock_state,
+   ra_free,
+   NULL,
+   "roar"
 };
 
-   
-
-
-   
-   

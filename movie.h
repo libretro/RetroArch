@@ -19,14 +19,14 @@
 #define __SSNES_MOVIE_H
 
 #include <stdint.h>
-#include <stdbool.h>
+#include "boolean.h"
 
 typedef struct bsv_movie bsv_movie_t;
 
 enum ssnes_movie_type
 {
    SSNES_MOVIE_PLAYBACK,
-   SSNES_MOVIE_RECORD,
+   SSNES_MOVIE_RECORD
 };
 
 bsv_movie_t *bsv_movie_init(const char *path, enum ssnes_movie_type type);

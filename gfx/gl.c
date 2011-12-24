@@ -895,7 +895,7 @@ static void check_window(gl_t *gl)
 
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   gl_t *gl = data;
+   gl_t *gl = (gl_t*)data;
 
    gl_shader_use(1);
    gl->frame_count++;
@@ -1054,11 +1054,13 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          0, 0, 0, width, height, gl->texture_type,
          gl->texture_fmt, frame);
 
-   struct gl_tex_info tex_info = {
-      .tex = gl->texture[gl->tex_index],
-      .input_size = {width, height},
-      .tex_size = {gl->tex_w, gl->tex_h}
-   };
+   struct gl_tex_info tex_info = {0};
+   tex_info.tex = gl->texture[gl->tex_index];
+   tex_info.input_size[0] = width;
+   tex_info.input_size[1] = height;
+   tex_info.tex_size[0] = gl->tex_w;
+   tex_info.tex_size[1] = gl->tex_h;
+
    struct gl_tex_info fbo_tex_info[MAX_SHADERS];
    unsigned fbo_tex_info_cnt = 0;
    memcpy(tex_info.coord, gl->tex_coords, sizeof(gl->tex_coords));
@@ -1165,7 +1167,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 static void gl_free(void *data)
 {
-   gl_t *gl = data;
+   gl_t *gl = (gl_t*)data;
 
    gl_deinit_font(gl);
    gl_shader_deinit();
@@ -1191,7 +1193,7 @@ static void gl_free(void *data)
 
 static void gl_set_nonblock_state(void *data, bool state)
 {
-   gl_t *gl = data;
+   gl_t *gl = (gl_t*)data;
    if (gl->vsync)
    {
       SSNES_LOG("GL VSync => %s\n", state ? "off" : "on");
@@ -1247,7 +1249,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 #endif
 
-   gl_t *gl = calloc(1, sizeof(gl_t));
+   gl_t *gl = (gl_t*)calloc(1, sizeof(gl_t));
    if (!gl)
    {
       sdlwrap_destroy();
@@ -1362,7 +1364,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    // Hook up SDL input driver to get SDL_QUIT events and RESIZE.
-   sdl_input_t *sdl_input = input_sdl.init();
+   sdl_input_t *sdl_input = (sdl_input_t*)input_sdl.init();
    if (sdl_input)
    {
       *input = &input_sdl;
@@ -1385,7 +1387,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
 static bool gl_alive(void *data)
 {
-   gl_t *gl = data;
+   gl_t *gl = (gl_t*)data;
    check_window(gl);
    return !gl->quitting;
 }
@@ -1399,7 +1401,7 @@ static bool gl_focus(void *data)
 #ifdef HAVE_XML
 static bool gl_xml_shader(void *data, const char *path)
 {
-   gl_t *gl = data;
+   gl_t *gl = (gl_t*)data;
 
    //if (!gl_check_error())
    //   SSNES_WARN("Error happened before deinit!\n");
@@ -1445,17 +1447,17 @@ static bool gl_xml_shader(void *data, const char *path)
 #endif
 
 const video_driver_t video_gl = {
-   .init = gl_init,
-   .frame = gl_frame,
-   .alive = gl_alive,
-   .set_nonblock_state = gl_set_nonblock_state,
-   .focus = gl_focus,
-   .free = gl_free,
+   gl_init,
+   gl_frame,
+   gl_set_nonblock_state,
+   gl_alive,
+   gl_focus,
 #ifdef HAVE_XML
-   .xml_shader = gl_xml_shader,
+   gl_xml_shader,
+#else
+   NULL,
 #endif
-   .ident = "gl"
+   gl_free,
+   "gl"
 };
-
-
 

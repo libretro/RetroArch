@@ -43,7 +43,7 @@
 
 static void *oss_init(const char *device, unsigned rate, unsigned latency)
 {
-   int *fd = calloc(1, sizeof(int));
+   int *fd = (int*)calloc(1, sizeof(int));
    if (fd == NULL)
       return NULL;
 
@@ -98,7 +98,7 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
 
 static ssize_t oss_write(void *data, const void *buf, size_t size)
 {
-   int *fd = data;
+   int *fd = (int*)data;
 
    if (size == 0)
       return 0;
@@ -116,7 +116,7 @@ static ssize_t oss_write(void *data, const void *buf, size_t size)
 
 static bool oss_stop(void *data)
 {
-   int *fd = data;
+   int *fd = (int*)data;
    ioctl(*fd, SNDCTL_DSP_RESET, 0);
    return true;
 }
@@ -128,7 +128,7 @@ static bool oss_start(void *data)
 
 static void oss_set_nonblock_state(void *data, bool state)
 {
-   int *fd = data;
+   int *fd = (int*)data;
    int rc;
    if (state)
       rc = fcntl(*fd, F_SETFL, fcntl(*fd, F_GETFL) | O_NONBLOCK);
@@ -140,7 +140,7 @@ static void oss_set_nonblock_state(void *data, bool state)
 
 static void oss_free(void *data)
 {
-   int *fd = data;
+   int *fd = (int*)data;
 
    ioctl(*fd, SNDCTL_DSP_RESET, 0);
    close(*fd);
@@ -148,12 +148,13 @@ static void oss_free(void *data)
 }
 
 const audio_driver_t audio_oss = {
-   .init = oss_init,
-   .write = oss_write,
-   .stop = oss_stop,
-   .start = oss_start,
-   .set_nonblock_state = oss_set_nonblock_state,
-   .free = oss_free,
-   .ident = "oss"
+   oss_init,
+   oss_write,
+   oss_stop,
+   oss_start,
+   oss_set_nonblock_state,
+   oss_free,
+   NULL,
+   "oss"
 };
-   
+

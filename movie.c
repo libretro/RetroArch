@@ -166,7 +166,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
    // If we're playing back from the start, state_size is 0.
    if (state_size)
    {
-      handle->state = malloc(state_size);
+      handle->state = (uint8_t*)malloc(state_size);
       if (!handle->state)
          return false;
 
@@ -212,7 +212,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
    fwrite(header, 4, sizeof(uint32_t), handle->file);
 
-   handle->state = malloc(state_size);
+   handle->state = (uint8_t*)malloc(state_size);
    if (!handle->state)
       return false;
 
@@ -255,7 +255,7 @@ void bsv_movie_set_input(bsv_movie_t *handle, int16_t input)
 
 bsv_movie_t *bsv_movie_init(const char *path, enum ssnes_movie_type type)
 {
-   bsv_movie_t *handle = calloc(1, sizeof(*handle));
+   bsv_movie_t *handle = (bsv_movie_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
 
@@ -268,7 +268,7 @@ bsv_movie_t *bsv_movie_init(const char *path, enum ssnes_movie_type type)
       goto error;
 
    // Just pick something really large :D ~1 million frames rewind should do the trick.
-   if (!(handle->frame_pos = calloc((1 << 20), sizeof(size_t))))
+   if (!(handle->frame_pos = (size_t*)calloc((1 << 20), sizeof(size_t))))
       goto error; 
 
    handle->frame_pos[0] = handle->min_file_pos;

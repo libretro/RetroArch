@@ -22,7 +22,7 @@
 #define __SSNES_HERMITE_H
 
 #include <stddef.h>
-#include <stdbool.h>
+#include "../boolean.h"
 
 typedef struct hermite_resampler hermite_resampler_t;
 

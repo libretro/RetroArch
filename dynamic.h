@@ -18,7 +18,7 @@
 #ifndef __DYNAMIC_H
 #define __DYNAMIC_H
 
-#include <stdbool.h>
+#include "boolean.h"
 #include "libsnes.hpp"
 
 #ifdef HAVE_CONFIG_H

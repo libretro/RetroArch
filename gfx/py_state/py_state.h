@@ -19,7 +19,7 @@
 #define __SSNES_PY_STATE_H
 
 #include <stdint.h>
-#include <stdbool.h>
+#include "../../boolean.h"
 
 #ifndef PY_STATE_OMIT_DECLARATION
 typedef struct py_state py_state_t;

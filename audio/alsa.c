@@ -34,7 +34,7 @@ typedef struct alsa
 
 static bool alsa_use_float(void *data)
 {
-   alsa_t *alsa = data;
+   alsa_t *alsa = (alsa_t*)data;
    return alsa->has_float;
 }
 
@@ -51,7 +51,7 @@ static bool find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
 
 static void *alsa_init(const char *device, unsigned rate, unsigned latency)
 {
-   alsa_t *alsa = calloc(1, sizeof(alsa_t));
+   alsa_t *alsa = (alsa_t*)calloc(1, sizeof(alsa_t));
    if (!alsa)
       return NULL;
 
@@ -62,14 +62,17 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency)
    if (device)
       alsa_dev = device;
 
-   TRY_ALSA(snd_pcm_open(&alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK));
-
    unsigned int latency_usec = latency * 1000;
+   unsigned int channels = 2;
+   unsigned periods = 4;
+   snd_pcm_uframes_t buffer_size;
+   snd_pcm_format_t format;
+
+   TRY_ALSA(snd_pcm_open(&alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK));
 
    TRY_ALSA(snd_pcm_hw_params_malloc(&params));
    alsa->has_float = find_float_format(alsa->pcm, params);
-   snd_pcm_format_t format = alsa->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
-   unsigned int channels = 2;
+   format = alsa->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
 
    TRY_ALSA(snd_pcm_hw_params_any(alsa->pcm, params));
    TRY_ALSA(snd_pcm_hw_params_set_access(alsa->pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED));
@@ -78,12 +81,10 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency)
    TRY_ALSA(snd_pcm_hw_params_set_rate(alsa->pcm, params, rate, 0));
 
    TRY_ALSA(snd_pcm_hw_params_set_buffer_time_near(alsa->pcm, params, &latency_usec, NULL));
-   unsigned periods = 4;
    TRY_ALSA(snd_pcm_hw_params_set_periods_near(alsa->pcm, params, &periods, NULL));
 
    TRY_ALSA(snd_pcm_hw_params(alsa->pcm, params));
 
-   snd_pcm_uframes_t buffer_size;
    snd_pcm_hw_params_get_period_size(params, &buffer_size, NULL);
    SSNES_LOG("ALSA: Period size: %d frames\n", (int)buffer_size);
    snd_pcm_hw_params_get_buffer_size(params, &buffer_size);
@@ -119,14 +120,14 @@ error:
 
 static ssize_t alsa_write(void *data, const void *buf, size_t size)
 {
-   alsa_t *alsa = data;
+   alsa_t *alsa = (alsa_t*)data;
 
    snd_pcm_sframes_t frames;
    snd_pcm_sframes_t written = 0;
    int rc;
    size = snd_pcm_bytes_to_frames(alsa->pcm, size); // Frames to write
 
-   while (written < size)
+   while (written < (snd_pcm_sframes_t)size)
    {
       if (!alsa->nonblock)
       {
@@ -166,7 +167,7 @@ static bool alsa_stop(void *data)
 
 static void alsa_set_nonblock_state(void *data, bool state)
 {
-   alsa_t *alsa = data;
+   alsa_t *alsa = (alsa_t*)data;
    alsa->nonblock = state;
 }
 
@@ -177,7 +178,7 @@ static bool alsa_start(void *data)
 
 static void alsa_free(void *data)
 {
-   alsa_t *alsa = data;
+   alsa_t *alsa = (alsa_t*)data;
    if (alsa)
    {
       if (alsa->pcm)
@@ -190,13 +191,13 @@ static void alsa_free(void *data)
 }
 
 const audio_driver_t audio_alsa = {
-   .init = alsa_init,
-   .write = alsa_write,
-   .stop = alsa_stop,
-   .start = alsa_start,
-   .use_float = alsa_use_float,
-   .set_nonblock_state = alsa_set_nonblock_state,
-   .free = alsa_free,
-   .ident = "alsa"
+   alsa_init,
+   alsa_write,
+   alsa_stop,
+   alsa_start,
+   alsa_set_nonblock_state,
+   alsa_free,
+   alsa_use_float,
+   "alsa"
 };
 

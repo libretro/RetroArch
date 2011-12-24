@@ -19,7 +19,7 @@
 #ifndef __SSNES_GENERAL_H
 #define __SSNES_GENERAL_H
 
-#include <stdbool.h>
+#include "boolean.h"
 #include <stdio.h>
 #include <time.h>
 #include "driver.h"
@@ -171,7 +171,7 @@ enum ssnes_game_type
    SSNES_CART_SGB,
    SSNES_CART_BSX,
    SSNES_CART_BSX_SLOTTED,
-   SSNES_CART_SUFAMI,
+   SSNES_CART_SUFAMI
 };
 
 
@@ -410,10 +410,9 @@ static inline void ssnes_sleep(unsigned msec)
 #elif defined(GEKKO)
    usleep(1000 * msec);
 #else
-   struct timespec tv = {
-      .tv_sec = msec / 1000,
-      .tv_nsec = (msec % 1000) * 1000000,
-   };
+   struct timespec tv = {0};
+   tv.tv_sec = msec / 1000;
+   tv.tv_nsec = (msec % 1000) * 1000000;
    nanosleep(&tv, NULL);
 #endif
 }

@@ -20,7 +20,7 @@
 #define __SSNES_NETPLAY_H
 
 #include <stdint.h>
-#include <stdbool.h>
+#include "boolean.h"
 #include "libsnes.hpp"
 
 void input_poll_net(void);

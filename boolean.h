@@ -15,32 +15,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef __SSNES_BOOLEAN_H
+#define __SSNES_BOOLEAN_H
 
-#ifndef __SSNES_GLSL_H
-#define __SSNES_GLSL_H
-
-#include "../boolean.h"
-#include "gl_common.h"
-
-bool gl_glsl_init(const char *path);
-
-void gl_glsl_deinit(void);
-
-void gl_glsl_set_proj_matrix(void);
-
-void gl_glsl_set_params(unsigned width, unsigned height, 
-      unsigned tex_width, unsigned tex_height, 
-      unsigned out_width, unsigned out_height,
-      unsigned frame_counter,
-      const struct gl_tex_info *info, 
-      const struct gl_tex_info *prev_info,
-      const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt);
-
-void gl_glsl_use(unsigned index);
-
-unsigned gl_glsl_num(void);
-
-bool gl_glsl_filter_type(unsigned index, bool *smooth);
-void gl_glsl_shader_scale(unsigned index, struct gl_fbo_scale *scale);
+#ifndef __cplusplus
+#include <stdbool.h>
+#endif
 
 #endif
+

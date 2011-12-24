@@ -8,6 +8,10 @@
 #ifndef XAUDIO2_MINGW_H
 #define XAUDIO2_MINGW_H
 
+#ifdef __cplusplus
+#define CINTERFACE
+#endif
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <basetyps.h>
@@ -205,6 +209,7 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
 static inline HRESULT XAudio2Create(IXAudio2 **ppXAudio2)
 {
    IXAudio2 *pXAudio2;
+
    HRESULT hr = CoCreateInstance(&CLSID_XAudio2, NULL, CLSCTX_INPROC_SERVER, &IID_IXAudio2, (void**)&pXAudio2);
 
    if (SUCCEEDED(hr))

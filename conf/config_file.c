@@ -23,6 +23,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include "../strl.h"
+#include "../posix_string.h"
 
 #if !defined(_WIN32) && !defined(__CELLOS_LV2__)
 #include <sys/param.h> // MAXPATHLEN
@@ -69,7 +70,7 @@ static config_file_t *config_file_new_internal(const char *path, unsigned depth)
 
 static char *getaline(FILE *file)
 {
-   char *newline = malloc(9);
+   char *newline = (char*)malloc(9);
    size_t cur_size = 8;
    size_t index = 0;
 
@@ -79,7 +80,7 @@ static char *getaline(FILE *file)
       if (index == cur_size)
       {
          cur_size *= 2;
-         newline = realloc(newline, cur_size + 1);
+         newline = (char*)realloc(newline, cur_size + 1);
       }
 
       newline[index++] = in;
@@ -98,7 +99,7 @@ static char *extract_value(char *line, bool is_value)
 
       // If we don't have an equal sign here, we've got an invalid string...
       if (*line != '=')
-         return false;
+         return NULL;
 
       line++;
    }
@@ -112,7 +113,7 @@ static char *extract_value(char *line, bool is_value)
       line++;
       char *tok = strtok(line, "\"");
       if (!tok)
-         return false;
+         return NULL;
       return strdup(tok);
    }
    else if (*line == '\0') // Nothing :(
@@ -171,7 +172,7 @@ static void add_child_list(config_file_t *parent, config_file_t *child)
 static void add_include_list(config_file_t *conf, const char *path)
 {
    struct include_list *head = conf->includes;
-   struct include_list *node = calloc(1, sizeof(*node));
+   struct include_list *node = (struct include_list*)calloc(1, sizeof(*node));
    node->path = strdup(path);
 
    if (head)
@@ -278,7 +279,7 @@ static bool parse_line(config_file_t *conf, struct entry_list *list, char *line)
    while (isspace(*line))
       line++;
 
-   char *key = malloc(9);
+   char *key = (char*)malloc(9);
    size_t cur_size = 8;
    size_t index = 0;
 
@@ -287,7 +288,7 @@ static bool parse_line(config_file_t *conf, struct entry_list *list, char *line)
       if (index == cur_size)
       {
          cur_size *= 2;
-         key = realloc(key, cur_size + 1);
+         key = (char*)realloc(key, cur_size + 1);
       }
 
       key[index++] = *line++;
@@ -308,7 +309,7 @@ static bool parse_line(config_file_t *conf, struct entry_list *list, char *line)
 
 static config_file_t *config_file_new_internal(const char *path, unsigned depth)
 {
-   struct config_file *conf = calloc(1, sizeof(*conf));
+   struct config_file *conf = (struct config_file*)calloc(1, sizeof(*conf));
    if (!conf)
       return NULL;
 
@@ -334,7 +335,7 @@ static config_file_t *config_file_new_internal(const char *path, unsigned depth)
 
    while (!feof(file))
    {
-      struct entry_list *list = calloc(1, sizeof(*list));
+      struct entry_list *list = (struct entry_list*)calloc(1, sizeof(*list));
       char *line = getaline(file);
 
       if (line)
@@ -552,7 +553,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
       list = list->next;
    }
 
-   struct entry_list *elem = calloc(1, sizeof(*elem));
+   struct entry_list *elem = (struct entry_list*)calloc(1, sizeof(*elem));
    elem->key = strdup(key);
    elem->value = strdup(val);
 
@@ -565,7 +566,11 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
 void config_set_double(config_file_t *conf, const char *key, double val)
 {
    char buf[128];
+#ifdef __cplusplus
+   snprintf(buf, sizeof(buf), "%f", (float)val);
+#else
    snprintf(buf, sizeof(buf), "%lf", val);
+#endif
    config_set_string(conf, key, buf);
 }
 

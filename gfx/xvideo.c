@@ -37,8 +37,7 @@
 
 // Adapted from bSNES and MPlayer source.
 
-typedef struct xv xv_t;
-struct xv
+typedef struct xv
 {
    Display *display;
    GC gc;
@@ -76,12 +75,12 @@ struct xv
    uint8_t font_v;
 #endif
 
-   void (*render_func)(xv_t*, const void *frame, unsigned width, unsigned height, unsigned pitch);
-};
+   void (*render_func)(struct xv*, const void *frame, unsigned width, unsigned height, unsigned pitch);
+} xv_t;
 
 static void xv_set_nonblock_state(void *data, bool state)
 {
-   xv_t *xv = data;
+   xv_t *xv = (xv_t*)data;
    Atom atom = XInternAtom(xv->display, "XV_SYNC_TO_VBLANK", true);
    if (atom != None && xv->port)
       XvSetPortAttribute(xv->display, xv->port, atom, !state);
@@ -108,9 +107,9 @@ static inline void calculate_yuv(uint8_t *y, uint8_t *u, uint8_t *v, unsigned r,
 
 static void init_yuv_tables(xv_t *xv)
 {
-   xv->ytable = malloc(0x8000);
-   xv->utable = malloc(0x8000);
-   xv->vtable = malloc(0x8000);
+   xv->ytable = (uint8_t*)malloc(0x8000);
+   xv->utable = (uint8_t*)malloc(0x8000);
+   xv->vtable = (uint8_t*)malloc(0x8000);
 
    for (unsigned i = 0; i < 0x8000; i++) 
    {
@@ -217,7 +216,7 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
 // We render @ 2x scale to combat chroma downsampling. Also makes fonts more bearable :)
 static void render16_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
 {
-   const uint16_t *input = input_;
+   const uint16_t *input = (const uint16_t*)input_;
    uint8_t *output = (uint8_t*)xv->image->data;
 
    for (unsigned y = 0; y < height; y++) 
@@ -245,7 +244,7 @@ static void render16_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned
 
 static void render16_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
 {
-   const uint16_t *input = input_;
+   const uint16_t *input = (const uint16_t*)input_;
    uint8_t *output = (uint8_t*)xv->image->data;
 
    for (unsigned y = 0; y < height; y++) 
@@ -273,7 +272,7 @@ static void render16_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned
 
 static void render32_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
 {
-   const uint32_t *input = input_;
+   const uint32_t *input = (const uint32_t*)input_;
    uint8_t *output = (uint8_t*)xv->image->data;
 
    for (unsigned y = 0; y < height; y++)
@@ -302,7 +301,7 @@ static void render32_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned
 
 static void render32_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
 {
-   const uint32_t *input = input_;
+   const uint32_t *input = (const uint32_t*)input_;
    uint16_t *output = (uint16_t*)xv->image->data;
 
    for (unsigned y = 0; y < height; y++) 
@@ -343,20 +342,20 @@ struct format_desc
 
 static const struct format_desc formats[] = {
    {
-      .render_16 = render16_yuy2,
-      .render_32 = render32_yuy2,
-      .components = { 'Y', 'U', 'Y', 'V' },
-      .luma_index = { 0, 2 },
-      .u_index = 1,
-      .v_index = 3,
+      render16_yuy2,
+      render32_yuy2,
+      { 'Y', 'U', 'Y', 'V' },
+      { 0, 2 },
+      1,
+      3,
    },
    {
-      .render_16 = render16_uyvy,
-      .render_32 = render32_uyvy,
-      .components = { 'U', 'Y', 'V', 'Y' },
-      .luma_index = { 1, 3 },
-      .u_index = 0,
-      .v_index = 2,
+      render16_uyvy,
+      render32_uyvy,
+      { 'U', 'Y', 'V', 'Y' },
+      { 1, 3 },
+      0,
+      2,
    },
 };
 
@@ -400,11 +399,21 @@ static bool adaptor_set_format(xv_t *xv, Display *dpy, XvPortID port, const vide
 
 static void *xv_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-   xv_t *xv = calloc(1, sizeof(*xv));
+   xv_t *xv = (xv_t*)calloc(1, sizeof(*xv));
    if (!xv)
       return NULL;
 
    xv->display = XOpenDisplay(NULL);
+   struct sigaction sa;
+   unsigned adaptor_count = 0;
+   int visualmatches = 0;
+   XSetWindowAttributes attributes = {0};
+   unsigned width = 0, height = 0;
+   char buf[128];
+   Atom atom = 0;
+   void *xinput = NULL;
+   XVisualInfo *visualinfo = NULL;
+   XVisualInfo visualtemplate = {0};
 
    if (!XShmQueryExtension(xv->display))
    {
@@ -417,7 +426,6 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    // Find an appropriate Xv port.
    xv->port = 0;
    XvAdaptorInfo *adaptor_info;
-   unsigned adaptor_count = 0;
    XvQueryAdaptors(xv->display, DefaultRootWindow(xv->display), &adaptor_count, &adaptor_info);
    for (unsigned i = 0; i < adaptor_count; i++) 
    {
@@ -442,13 +450,11 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
       goto error;
    }
 
-   XVisualInfo visualtemplate;
    visualtemplate.visualid = xv->visualid;
    visualtemplate.screen   = DefaultScreen(xv->display);
    visualtemplate.depth    = xv->depth;
    visualtemplate.visual   = 0;
-   int visualmatches       = 0;
-   XVisualInfo *visualinfo = XGetVisualInfo(xv->display, VisualIDMask | VisualScreenMask | VisualDepthMask, &visualtemplate, &visualmatches);
+   visualinfo = XGetVisualInfo(xv->display, VisualIDMask | VisualScreenMask | VisualDepthMask, &visualtemplate, &visualmatches);
    if (visualmatches < 1 || !visualinfo->visual) 
    {
       if (visualinfo) XFree(visualinfo);
@@ -457,13 +463,12 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    xv->colormap = XCreateColormap(xv->display, DefaultRootWindow(xv->display), visualinfo->visual, AllocNone);
-   XSetWindowAttributes attributes;
    attributes.colormap = xv->colormap;
    attributes.border_pixel = 0;
    attributes.event_mask = StructureNotifyMask | DestroyNotify | ClientMessage;
 
-   unsigned width = video->fullscreen ? ((video->width == 0) ? g_extern.system.geom.base_width : video->width) : video->width;
-   unsigned height = video->fullscreen ? ((video->height == 0) ? g_extern.system.geom.base_height : video->height) : video->height;
+   width = video->fullscreen ? ((video->width == 0) ? g_extern.system.geom.base_width : video->width) : video->width;
+   height = video->fullscreen ? ((video->height == 0) ? g_extern.system.geom.base_height : video->height) : video->height;
    xv->window = XCreateWindow(xv->display, DefaultRootWindow(xv->display),
          0, 0, width, height,
          0, xv->depth, InputOutput, visualinfo->visual,
@@ -474,7 +479,6 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
 
    XMapWindow(xv->display, xv->window);
 
-   char buf[128];
    if (gfx_window_title(buf, sizeof(buf)))
       XStoreName(xv->display, xv->window, buf);
 
@@ -485,7 +489,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    xv->gc = XCreateGC(xv->display, xv->window, 0, 0);
 
    // Set colorkey to auto paint, so that Xv video output is always visible
-   Atom atom = XInternAtom(xv->display, "XV_AUTOPAINT_COLORKEY", true);
+   atom = XInternAtom(xv->display, "XV_AUTOPAINT_COLORKEY", true);
    if (atom != None) XvSetPortAttribute(xv->display, xv->port, atom, 1);
 
    xv->width = g_extern.system.geom.max_width;
@@ -501,7 +505,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    xv->height = xv->image->height;
 
    xv->shminfo.shmid = shmget(IPC_PRIVATE, xv->image->data_size, IPC_CREAT | 0777);
-   xv->shminfo.shmaddr = xv->image->data = shmat(xv->shminfo.shmid, NULL, 0);
+   xv->shminfo.shmaddr = xv->image->data = (char*)shmat(xv->shminfo.shmid, NULL, 0);
    xv->shminfo.readOnly = false;
    if (!XShmAttach(xv->display, &xv->shminfo)) 
    {
@@ -515,7 +519,6 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    if (xv->quit_atom)
       XSetWMProtocols(xv->display, xv->window, &xv->quit_atom, 1);
 
-   struct sigaction sa;
    sa.sa_handler = sighandler;
    sa.sa_flags = SA_RESTART;
    sigemptyset(&sa.sa_mask);
@@ -525,7 +528,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    xv_set_nonblock_state(xv, !video->vsync);
    xv->focus = true;
 
-   void *xinput = input_x.init();
+   xinput = input_x.init();
    if (xinput)
    {
       *input = &input_x;
@@ -575,7 +578,7 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
          return false;
       }
 
-      xv->shminfo.shmaddr = xv->image->data = shmat(xv->shminfo.shmid, NULL, 0);
+      xv->shminfo.shmaddr = xv->image->data = (char*)shmat(xv->shminfo.shmid, NULL, 0);
       xv->shminfo.readOnly = false;
       
       if (!XShmAttach(xv->display, &xv->shminfo))
@@ -648,13 +651,13 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
       int base_y = _base_y - head->off_y;
       if (base_y >= 0)
       {
-         for (int y = 0; y < head->height && (base_y + y) < height; y++)
+         for (int y = 0; y < (int)head->height && (base_y + y) < height; y++)
          {
             if (base_x < 0)
                continue;
 
-            const uint8_t * restrict a = head->output + head->pitch * y;
-            uint8_t * restrict out = (uint8_t*)xv->image->data + (base_y - head->height + y) * pitch + base_x;
+            const uint8_t *a = head->output + head->pitch * y;
+            uint8_t *out = (uint8_t*)xv->image->data + (base_y - head->height + y) * pitch + base_x;
 
             for (int x = 0; x < (head->width << 1) && (base_x + x) < pitch; x += 4)
             {
@@ -698,7 +701,7 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
 
 static bool xv_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   xv_t *xv = data;
+   xv_t *xv = (xv_t*)data;
 
    if (!check_resize(xv, width, height))
       return false;
@@ -728,7 +731,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 static bool xv_alive(void *data)
 {
-   xv_t *xv = data;
+   xv_t *xv = (xv_t*)data;
 
    XEvent event;
    while (XPending(xv->display))
@@ -737,7 +740,7 @@ static bool xv_alive(void *data)
       switch (event.type)
       {
          case ClientMessage: 
-            if (event.xclient.data.l[0] == xv->quit_atom)
+            if ((Atom)event.xclient.data.l[0] == xv->quit_atom)
                return false;
             break;
          case DestroyNotify:
@@ -758,14 +761,14 @@ static bool xv_alive(void *data)
 
 static bool xv_focus(void *data)
 {
-   xv_t *xv = data;
+   xv_t *xv = (xv_t*)data;
    return xv->focus;
 }
 
 
 static void xv_free(void *data)
 {
-   xv_t *xv = data;
+   xv_t *xv = (xv_t*)data;
    XShmDetach(xv->display, &xv->shminfo);
    shmdt(xv->shminfo.shmaddr);
    shmctl(xv->shminfo.shmid, IPC_RMID, NULL);
@@ -791,12 +794,13 @@ static void xv_free(void *data)
 }
 
 const video_driver_t video_xvideo = {
-   .init = xv_init,
-   .frame = xv_frame,
-   .alive = xv_alive,
-   .set_nonblock_state = xv_set_nonblock_state,
-   .focus = xv_focus,
-   .free = xv_free,
-   .ident = "xvideo"
+   xv_init,
+   xv_frame,
+   xv_set_nonblock_state,
+   xv_alive,
+   xv_focus,
+   NULL,
+   xv_free,
+   "xvideo"
 };
 

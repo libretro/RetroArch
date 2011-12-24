@@ -20,7 +20,7 @@
 #define __CONFIG_FILE_H
 
 #include <stdint.h>
-#include <stdbool.h>
+#include "../boolean.h"
 #include <stdio.h>
 #include <stddef.h>
 

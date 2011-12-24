@@ -18,7 +18,7 @@
 #ifndef THREAD_H__
 #define THREAD_H__
 
-#include <stdbool.h>
+#include "boolean.h"
 
 // Implements the bare minimum needed for SSNES. :)
 

@@ -1,7 +1,7 @@
 TARGET = ssnes.exe
 JTARGET = ssnes-joyconfig.exe
-OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o message.o rewind.o movie.o gfx/gfx_common.o bps.o ups.o strl.o screenshot.o audio/hermite.o getopt.o audio/utils.o
-JOBJ = conf/config_file.o tools/main-stub.o tools/ssnes-joyconfig.o strl.o
+OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o message.o rewind.o movie.o gfx/gfx_common.o bps.o ups.o strl.o screenshot.o audio/hermite.o getopt.o audio/utils.o posix_string.o
+JOBJ = conf/config_file.o tools/main-stub.o tools/ssnes-joyconfig.o strl.o posix_string.o
 
 CC = gcc
 CXX = g++
@@ -139,12 +139,16 @@ ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/ffemu.o
 endif
 
-ifneq ($(V),1)
+ifneq ($(V), 1)
    Q := @
 endif
 
-CFLAGS += -Wall -O3 -std=gnu99 -I.
-CXXFLAGS += -Wall -O3 -pedantic -I.
+CFLAGS += -Wall -O3 -I.
+ifeq ($(CXX_BUILD), 1)
+   CFLAGS += -std=c++0x -xc++
+else
+   CFLAGS += -std=gnu99
+endif
 
 all: $(TARGET) $(JTARGET)
 
@@ -156,13 +160,12 @@ $(TARGET): $(OBJ)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 	@$(if $(Q), $(shell echo echo CC $<),)
 
-%.o: %.cpp
-	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -c -o $@ $<
-	@$(if $(Q), $(shell echo echo CXX $<),)
-
-
 $(JTARGET): $(JOBJ)
+ifeq ($(CXX_BUILD), 1)
+	$(Q)$(CXX) -o $@ $(JOBJ) -lSDL $(LDFLAGS)
+else
 	$(Q)$(CC) -o $@ $(JOBJ) -lSDL $(LDFLAGS)
+endif
 	@$(if $(Q), $(shell echo echo LD $@),)
 
 clean:

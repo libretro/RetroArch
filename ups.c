@@ -80,17 +80,16 @@ ups_error_t ups_apply_patch(
       const uint8_t *sourcedata, size_t sourcelength,
       uint8_t *targetdata, size_t *targetlength)
 {
-   struct ups_data data = {
-      .patch_data = patchdata,
-      .source_data = sourcedata,
-      .target_data = targetdata,
-      .patch_length = patchlength,
-      .source_length = sourcelength,
-      .target_length = *targetlength,
-      .patch_checksum = ~0,
-      .source_checksum = ~0,
-      .target_checksum = ~0
-   };
+   struct ups_data data = {0};
+   data.patch_data = patchdata;
+   data.source_data = sourcedata;
+   data.target_data = targetdata;
+   data.patch_length = patchlength;
+   data.source_length = sourcelength;
+   data.target_length = *targetlength;
+   data.patch_checksum = ~0;
+   data.source_checksum = ~0;
+   data.target_checksum = ~0;
 
    if (data.patch_length < 18) 
       return UPS_PATCH_INVALID;

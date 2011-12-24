@@ -24,6 +24,7 @@
 #include "../conf/config_file.h"
 #include "image.h"
 #include "../dynamic.h"
+#include "../posix_string.h"
 
 #ifdef HAVE_CONFIGFILE
 #include "snes_state.h"
@@ -483,6 +484,13 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
 
    struct snes_tracker_uniform_info info[MAX_VARIABLES];
    unsigned info_cnt = 0;
+   struct snes_tracker_info tracker_info = {0};
+
+#ifdef HAVE_PYTHON
+   char script_path[128];
+   char *script = NULL;
+   char *script_class = NULL; 
+#endif
 
    const char *id = strtok(imports, ";");
    while (id && info_cnt < MAX_VARIABLES)
@@ -516,7 +524,7 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
       }
 
       enum snes_tracker_type tracker_type;
-      enum snes_ram_type ram_type = SNES_MEMORY_WRAM;
+      enum snes_ram_type ram_type = SSNES_STATE_NONE;
 
       if (strcmp(semantic, "capture") == 0)
          tracker_type = SSNES_STATE_CAPTURE;
@@ -623,20 +631,15 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
       id = strtok(NULL, ";");
    }
 
-   struct snes_tracker_info tracker_info = {
-      .wram = psnes_get_memory_data(SNES_MEMORY_WRAM),
-      .vram = psnes_get_memory_data(SNES_MEMORY_VRAM),
-      .cgram = psnes_get_memory_data(SNES_MEMORY_CGRAM),
-      .oam = psnes_get_memory_data(SNES_MEMORY_OAM),
-      .apuram = psnes_get_memory_data(SNES_MEMORY_APURAM),
-      .info = info,
-      .info_elem = info_cnt,
-   };
+   tracker_info.wram = psnes_get_memory_data(SNES_MEMORY_WRAM);
+   tracker_info.vram = psnes_get_memory_data(SNES_MEMORY_VRAM);
+   tracker_info.cgram = psnes_get_memory_data(SNES_MEMORY_CGRAM);
+   tracker_info.oam = psnes_get_memory_data(SNES_MEMORY_OAM);
+   tracker_info.apuram = psnes_get_memory_data(SNES_MEMORY_APURAM);
+   tracker_info.info = info;
+   tracker_info.info_elem = info_cnt;
 
 #ifdef HAVE_PYTHON
-   char script_path[128];
-   char *script = NULL;
-   char *script_class = NULL; 
    if (config_get_string(conf, "import_script", &script))
    {
       strlcpy(script_path, dir_path, sizeof(script_path));
@@ -685,6 +688,11 @@ static bool load_preset(const char *path)
    cgGLLoadProgram(prg[0].fprg);
    cgGLLoadProgram(prg[0].vprg);
 
+   int shaders;
+   // Basedir.
+   char dir_path[MAXPATHLEN];
+   char *ptr = NULL;
+
    SSNES_LOG("Loading Cg meta-shader: %s\n", path);
    config_file_t *conf = config_file_new(path);
    if (!conf)
@@ -693,7 +701,6 @@ static bool load_preset(const char *path)
       goto error;
    }
 
-   int shaders;
    if (!config_get_int(conf, "shaders", &shaders))
    {
       SSNES_ERR("Cannot find \"shaders\" param.\n");
@@ -719,7 +726,7 @@ static bool load_preset(const char *path)
    prg[shaders + 1] = prg[0]; 
 
    // Check filter params.
-   for (unsigned i = 0; i < shaders; i++)
+   for (int i = 0; i < shaders; i++)
    {
       bool smooth;
       char filter_name_buf[64];
@@ -729,7 +736,7 @@ static bool load_preset(const char *path)
    }
 
    // Bigass for-loop ftw. Check scaling params.
-   for (unsigned i = 0; i < shaders; i++)
+   for (int i = 0; i < shaders; i++)
    {
       char *scale_type = NULL;
       char *scale_type_x = NULL;
@@ -854,10 +861,8 @@ static bool load_preset(const char *path)
          free(scale_type_y);
    }
 
-   // Basedir.
-   char dir_path[MAXPATHLEN];
    strlcpy(dir_path, path, sizeof(dir_path));
-   char *ptr = strrchr(dir_path, '/');
+   ptr = strrchr(dir_path, '/');
    if (!ptr) ptr = strrchr(dir_path, '\\');
    if (ptr) 
       ptr[1] = '\0';
@@ -865,7 +870,7 @@ static bool load_preset(const char *path)
       dir_path[0] = '\0';
 
    // Finally load shaders :)
-   for (unsigned i = 0; i < shaders; i++)
+   for (int i = 0; i < shaders; i++)
    {
       char *shader_path;
       char attr_buf[64];

@@ -25,7 +25,7 @@
 #include <jack/ringbuffer.h>
 #include <pthread.h>
 #include <stdint.h>
-#include <stdbool.h>
+#include "../boolean.h"
 #include <string.h>
 #include <assert.h>
 
@@ -45,7 +45,7 @@ typedef struct jack
 
 static int process_cb(jack_nframes_t nframes, void *data)
 {
-   jack_t *jd = data;
+   jack_t *jd = (jack_t*)data;
    if (nframes <= 0)
    {
       pthread_cond_signal(&jd->cond);
@@ -62,7 +62,7 @@ static int process_cb(jack_nframes_t nframes, void *data)
 
    for (int i = 0; i < 2; i++)
    {
-      jack_default_audio_sample_t *out = jack_port_get_buffer(jd->ports[i], nframes);
+      jack_default_audio_sample_t *out = (jack_default_audio_sample_t*)jack_port_get_buffer(jd->ports[i], nframes);
       assert(out);
       jack_ringbuffer_read(jd->buffer[i], (char*)out, min_avail * sizeof(jack_default_audio_sample_t));
 
@@ -77,7 +77,7 @@ static int process_cb(jack_nframes_t nframes, void *data)
 
 static void shutdown_cb(void *data)
 {
-   jack_t *jd = data;
+   jack_t *jd = (jack_t*)data;
    jd->shutdown = true;
    pthread_cond_signal(&jd->cond);
 }
@@ -108,7 +108,7 @@ static size_t find_buffersize(jack_t *jd, int latency)
    for (int i = 0; i < 2; i++)
    {
       jack_port_get_latency_range(jd->ports[i], JackPlaybackLatency, &range);
-      if (range.max > jack_latency)
+      if ((int)range.max > jack_latency)
          jack_latency = range.max;
    }
 
@@ -126,7 +126,7 @@ static size_t find_buffersize(jack_t *jd, int latency)
 
 static void *ja_init(const char *device, unsigned rate, unsigned latency)
 {
-   jack_t *jd = calloc(1, sizeof(jack_t));
+   jack_t *jd = (jack_t*)calloc(1, sizeof(jack_t));
    if (!jd)
       return NULL;
 
@@ -134,6 +134,9 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
    pthread_mutex_init(&jd->cond_lock, NULL);
    
    const char **jports = NULL;
+   char *dest_ports[2];
+   size_t bufsize = 0;
+   int parsed = 0;
 
    jd->client = jack_client_open("SSNES", JackNullOption, NULL);
    if (jd->client == NULL)
@@ -152,7 +155,6 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
    
-   char *dest_ports[2];
    jports = jack_get_ports(jd->client, NULL, NULL, JackPortIsPhysical | JackPortIsInput);
    if (jports == NULL)
    {
@@ -160,7 +162,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
-   size_t bufsize = find_buffersize(jd, latency);
+   bufsize = find_buffersize(jd, latency);
    SSNES_LOG("JACK: Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));
    for (int i = 0; i < 2; i++)
    {
@@ -172,7 +174,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
       }
    }
 
-   int parsed = parse_ports(dest_ports, jports);
+   parsed = parse_ports(dest_ports, jports);
 
    if (jack_activate(jd->client) < 0)
    {
@@ -191,7 +193,6 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
 
    for (int i = 0; i < parsed; i++)
       free(dest_ports[i]);
-
   
    jack_free(jports);
    return jd;
@@ -204,7 +205,7 @@ error:
 
 static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
 {
-   jack_default_audio_sample_t out_deinterleaved_buffer[2][FRAMES(size)];
+   jack_default_audio_sample_t out_deinterleaved_buffer[2][AUDIO_CHUNK_SIZE_NONBLOCKING];
 
    for (int i = 0; i < 2; i++)
       for (size_t j = 0; j < FRAMES(size); j++)
@@ -218,9 +219,11 @@ static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
       if (jd->shutdown)
          return 0;
 
-      size_t avail[2];
-      avail[0] = jack_ringbuffer_write_space(jd->buffer[0]);
-      avail[1] = jack_ringbuffer_write_space(jd->buffer[1]);
+      size_t avail[2] = {
+         jack_ringbuffer_write_space(jd->buffer[0]),
+         jack_ringbuffer_write_space(jd->buffer[1]),
+      };
+
       size_t min_avail = avail[0] < avail[1] ? avail[0] : avail[1];
       min_avail /= sizeof(float);
 
@@ -229,7 +232,10 @@ static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
       if (write_frames > 0)
       {
          for (int i = 0; i < 2; i++)
-            jack_ringbuffer_write(jd->buffer[i], (const char*)&out_deinterleaved_buffer[i][written], write_frames * sizeof(jack_default_audio_sample_t));
+         {
+            jack_ringbuffer_write(jd->buffer[i], (const char*)&out_deinterleaved_buffer[i][written],
+                  write_frames * sizeof(jack_default_audio_sample_t));
+         }
          written += write_frames;
       }
       else
@@ -248,9 +254,9 @@ static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
 
 static ssize_t ja_write(void *data, const void *buf, size_t size)
 {
-   jack_t *jd = data;
+   jack_t *jd = (jack_t*)data;
 
-   return write_buffer(jd, buf, size);
+   return write_buffer(jd, (const float*)buf, size);
 }
 
 static bool ja_stop(void *data)
@@ -261,7 +267,7 @@ static bool ja_stop(void *data)
 
 static void ja_set_nonblock_state(void *data, bool state)
 {
-   jack_t *jd = data;
+   jack_t *jd = (jack_t*)data;
    jd->nonblock = state;
 }
 
@@ -273,7 +279,7 @@ static bool ja_start(void *data)
 
 static void ja_free(void *data)
 {
-   jack_t *jd = data;
+   jack_t *jd = (jack_t*)data;
 
    jd->shutdown = true;
 
@@ -299,18 +305,13 @@ static bool ja_use_float(void *data)
 }
 
 const audio_driver_t audio_jack = {
-   .init = ja_init,
-   .write = ja_write,
-   .stop = ja_stop,
-   .start = ja_start,
-   .set_nonblock_state = ja_set_nonblock_state,
-   .free = ja_free,
-   .use_float = ja_use_float,
-   .ident = "jack"
+   ja_init,
+   ja_write,
+   ja_stop,
+   ja_start,
+   ja_set_nonblock_state,
+   ja_free,
+   ja_use_float,
+   "jack"
 };
 
-   
-
-
-   
-   

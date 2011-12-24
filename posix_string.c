@@ -15,32 +15,42 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "posix_string.h"
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stddef.h>
+#include "strl.h"
 
-#ifndef __SSNES_GLSL_H
-#define __SSNES_GLSL_H
+int strcasecmp(const char *a, const char *b)
+{
+   while (*a && *b)
+   {
+      int a_ = tolower(*a);
+      int b_ = tolower(*b);
+      if (a_ != b_)
+         return a_ - b_;
 
-#include "../boolean.h"
-#include "gl_common.h"
+      a++;
+      b++;
+   }
 
-bool gl_glsl_init(const char *path);
+   return tolower(*a) - tolower(*b);
+}
 
-void gl_glsl_deinit(void);
+char *strdup(const char *orig)
+{
+   size_t len = strlen(orig) + 1;
+   char *ret = (char*)malloc(len);
+   if (!ret)
+      return NULL;
 
-void gl_glsl_set_proj_matrix(void);
+   strlcpy(ret, orig, len);
+   return ret;
+}
 
-void gl_glsl_set_params(unsigned width, unsigned height, 
-      unsigned tex_width, unsigned tex_height, 
-      unsigned out_width, unsigned out_height,
-      unsigned frame_counter,
-      const struct gl_tex_info *info, 
-      const struct gl_tex_info *prev_info,
-      const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt);
+int isblank(int c)
+{
+   return (c == ' ') || (c == '\t');
+}
 
-void gl_glsl_use(unsigned index);
-
-unsigned gl_glsl_num(void);
-
-bool gl_glsl_filter_type(unsigned index, bool *smooth);
-void gl_glsl_shader_scale(unsigned index, struct gl_fbo_scale *scale);
-
-#endif

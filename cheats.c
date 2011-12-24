@@ -57,7 +57,7 @@ static char *strcat_alloc(char *dest, const char *input)
    size_t input_len = strlen(input);
    size_t required_len = dest_len + input_len + 1;
 
-   char *output = realloc(dest, required_len);
+   char *output = (char*)realloc(dest, required_len);
    if (!output)
       return NULL;
 
@@ -126,7 +126,7 @@ static bool xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
          if (handle->size == handle->buf_size)
          {
             handle->buf_size *= 2;
-            handle->cheats = realloc(handle->cheats, handle->buf_size * sizeof(struct cheat));
+            handle->cheats = (struct cheat*)realloc(handle->cheats, handle->buf_size * sizeof(struct cheat));
             if (!handle->cheats)
                return false;
          }
@@ -242,12 +242,15 @@ cheat_manager_t* cheat_manager_new(const char *path)
 
    xmlParserCtxtPtr ctx = NULL;
    xmlDocPtr doc = NULL;
-   cheat_manager_t *handle = calloc(1, sizeof(struct cheat_manager));
+   cheat_manager_t *handle = (cheat_manager_t*)calloc(1, sizeof(struct cheat_manager));
    if (!handle)
       return NULL;
 
+   xmlNodePtr head = NULL;
+   xmlNodePtr cur = NULL;
+
    handle->buf_size = 1;
-   handle->cheats = calloc(handle->buf_size, sizeof(struct cheat));
+   handle->cheats = (struct cheat*)calloc(handle->buf_size, sizeof(struct cheat));
    if (!handle->cheats)
    {
       handle->buf_size = 0;
@@ -271,8 +274,7 @@ cheat_manager_t* cheat_manager_new(const char *path)
       goto error;
    }
 
-   xmlNodePtr head = xmlDocGetRootElement(doc);
-   xmlNodePtr cur = NULL;
+   head = xmlDocGetRootElement(doc);
    for (cur = head; cur; cur = cur->next)
    {
       if (cur->type == XML_ELEMENT_NODE && strcmp((const char*)cur->name, "database") == 0)

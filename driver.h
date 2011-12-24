@@ -20,11 +20,15 @@
 #define __DRIVER__H
 
 #include <sys/types.h>
-#include <stdbool.h>
+#include "boolean.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
 #include "input/keysym.h"
+
+#define AUDIO_CHUNK_SIZE_BLOCKING 64
+#define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
+#define AUDIO_MAX_RATIO 16
 
 // SNES has 12 buttons from 0-11 (libsnes.hpp)
 #define SSNES_FIRST_META_KEY 12
@@ -56,7 +60,6 @@ enum
 
    SSNES_BIND_LIST_END
 };
-
 
 struct snes_keybind
 {
@@ -132,7 +135,6 @@ typedef struct video_driver
    void (*free)(void *data);
    const char *ident;
 } video_driver_t;
-
 
 typedef struct driver
 {

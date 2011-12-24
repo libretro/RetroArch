@@ -19,7 +19,7 @@
 #define __GFX_COMMON_H
 
 #include <stddef.h>
-#include <stdbool.h>
+#include "../boolean.h"
 
 bool gfx_window_title(char *buf, size_t size);
 void gfx_window_title_reset(void);

@@ -18,7 +18,7 @@
 #include "driver.h"
 
 #include "SDL.h"
-#include <stdbool.h>
+#include "../boolean.h"
 #include "general.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -135,7 +135,7 @@ static void init_lut(void)
 
 static void *x_input_init(void)
 {
-   x11_input_t *x11 = calloc(1, sizeof(*x11));
+   x11_input_t *x11 = (x11_input_t*)calloc(1, sizeof(*x11));
    if (!x11)
       return NULL;
 
@@ -146,7 +146,7 @@ static void *x_input_init(void)
       return NULL;
    }
 
-   x11->sdl = input_sdl.init();
+   x11->sdl = (sdl_input_t*)input_sdl.init();
    if (!x11->sdl)
    {
       free(x11);
@@ -171,7 +171,7 @@ static bool x_is_pressed(x11_input_t *x11, const struct snes_keybind *binds, uns
 {
    for (int i = 0; binds[i].id != -1; i++)
    {
-      if (binds[i].id == id)
+      if (binds[i].id == (int)id)
          return x_key_pressed(x11, binds[i].key);
    }
 
@@ -180,7 +180,7 @@ static bool x_is_pressed(x11_input_t *x11, const struct snes_keybind *binds, uns
 
 static bool x_bind_button_pressed(void *data, int key)
 {
-   x11_input_t *x11 = data;
+   x11_input_t *x11 = (x11_input_t*)data;
    bool pressed = x_is_pressed(x11, g_settings.input.binds[0], key);
    if (!pressed)
       return input_sdl.key_pressed(x11->sdl, key);
@@ -189,7 +189,7 @@ static bool x_bind_button_pressed(void *data, int key)
 
 static int16_t x_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
 {
-   x11_input_t *x11 = data;
+   x11_input_t *x11 = (x11_input_t*)data;
    bool pressed = false;
 
    switch (device)
@@ -213,7 +213,7 @@ static int16_t x_input_state(void *data, const struct snes_keybind **binds, bool
 
 static void x_input_free(void *data)
 {
-   x11_input_t *x11 = data;
+   x11_input_t *x11 = (x11_input_t*)data;
    input_sdl.free(x11->sdl);
    XCloseDisplay(x11->display);
    free(data);
@@ -221,17 +221,17 @@ static void x_input_free(void *data)
 
 static void x_input_poll(void *data)
 {
-   x11_input_t *x11 = data;
+   x11_input_t *x11 = (x11_input_t*)data;
    XQueryKeymap(x11->display, x11->state);
    input_sdl.poll(x11->sdl);
 }
 
 const input_driver_t input_x = {
-   .init = x_input_init,
-   .poll = x_input_poll,
-   .input_state = x_input_state,
-   .key_pressed = x_bind_button_pressed,
-   .free = x_input_free,
-   .ident = "x"
+   x_input_init,
+   x_input_poll,
+   x_input_state,
+   x_bind_button_pressed,
+   x_input_free,
+   "x"
 };
 

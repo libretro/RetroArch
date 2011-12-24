@@ -18,7 +18,7 @@
 #include "rewind.h"
 #include <stdlib.h>
 #include <stdint.h>
-#include <stdbool.h>
+#include "boolean.h"
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
@@ -68,7 +68,7 @@ state_manager_t *state_manager_new(size_t state_size, size_t buffer_size, void *
    if (buffer_size <= state_size * 4) // Need a sufficient buffer size.
       return NULL;
 
-   state_manager_t *state = calloc(1, sizeof(*state));
+   state_manager_t *state = (state_manager_t*)calloc(1, sizeof(*state));
    if (!state)
       return NULL;
 
@@ -81,9 +81,9 @@ state_manager_t *state_manager_new(size_t state_size, size_t buffer_size, void *
    state->buf_size_mask = state->buf_size - 1;
    SSNES_LOG("Readjusted rewind buffer size to %u MiB\n", (unsigned)(sizeof(uint64_t) * (state->buf_size >> 20)));
 
-   if (!(state->buffer = calloc(1, state->buf_size * sizeof(uint64_t))))
+   if (!(state->buffer = (uint64_t*)calloc(1, state->buf_size * sizeof(uint64_t))))
       goto error;
-   if (!(state->tmp_state = calloc(1, state->state_size * sizeof(uint32_t))))
+   if (!(state->tmp_state = (uint32_t*)calloc(1, state->state_size * sizeof(uint32_t))))
       goto error;
 
    memcpy(state->tmp_state, init_buffer, state_size);
@@ -128,8 +128,8 @@ bool state_manager_pop(state_manager_t *state, void **data)
    {
       // Apply the xor patch.
       uint32_t addr = state->buffer[state->top_ptr] >> 32;
-      uint32_t xor = state->buffer[state->top_ptr] & 0xFFFFFFFFU;
-      state->tmp_state[addr] ^= xor;
+      uint32_t xor_ = state->buffer[state->top_ptr] & 0xFFFFFFFFU;
+      state->tmp_state[addr] ^= xor_;
 
       state->top_ptr = (state->top_ptr - 1) & state->buf_size_mask;
    }
@@ -154,7 +154,7 @@ static void generate_delta(state_manager_t *state, const void *data)
 {
    bool crossed = false;
    const uint32_t *old_state = state->tmp_state;
-   const uint32_t *new_state = data;
+   const uint32_t *new_state = (const uint32_t*)data;
 
    state->buffer[state->top_ptr++] = 0; // For each separate delta, we have a 0 value sentinel in between.
    state->top_ptr &= state->buf_size_mask;
@@ -165,15 +165,15 @@ static void generate_delta(state_manager_t *state, const void *data)
 
    for (uint64_t i = 0; i < state->state_size; i++)
    {
-      uint64_t xor = old_state[i] ^ new_state[i];
+      uint64_t xor_ = old_state[i] ^ new_state[i];
 
       // If the data differs (xor != 0), we push that xor on the stack with index and xor.
       // This can be reversed by reapplying the xor.
       // This, if states don't really differ much, we'll save lots of space :)
       // Hopefully this will work really well with save states.
-      if (xor)
+      if (xor_)
       {
-         state->buffer[state->top_ptr] = (i << 32) | xor;
+         state->buffer[state->top_ptr] = (i << 32) | xor_;
          state->top_ptr = (state->top_ptr + 1) & state->buf_size_mask;
 
          if (state->top_ptr == state->bottom_ptr)

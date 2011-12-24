@@ -16,17 +16,18 @@
  */
 
 #include <Python.h>
-#include <stdbool.h>
+#include "../../boolean.h"
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 
-#include "dynamic.h"
-#include "libsnes.hpp"
+#include "../../dynamic.h"
+#include "../../libsnes.hpp"
 #include "py_state.h"
-#include "general.h"
-#include "strl.h"
-#include "file.h"
+#include "../../general.h"
+#include "../../strl.h"
+#include "../../posix_string.h"
+#include "../../file.h"
 
 #define PY_READ_FUNC_DECL(RAMTYPE) py_read_##RAMTYPE
 #define PY_READ_FUNC(RAMTYPE) \
@@ -195,7 +196,7 @@ static char *dupe_newline(const char *str)
       return NULL;
 
    unsigned size = strlen(str) + 2;
-   char *ret = malloc(size);
+   char *ret = (char*)malloc(size);
    if (!ret)
       return NULL;
 
@@ -213,7 +214,7 @@ static char *align_program(const char *program)
       return NULL;
 
    size_t prog_size = strlen(program) + 1;
-   char *new_prog = calloc(1, prog_size);
+   char *new_prog = (char*)calloc(1, prog_size);
    if (!new_prog)
       return NULL;
 
@@ -250,7 +251,8 @@ py_state_t *py_state_new(const char *script, unsigned is_file, const char *pycla
    Py_Initialize();
    SSNES_LOG("Initialized Python runtime!\n");
 
-   py_state_t *handle = calloc(1, sizeof(*handle));
+   py_state_t *handle = (py_state_t*)calloc(1, sizeof(*handle));
+   PyObject *hook = NULL;
 
    handle->main = PyImport_AddModule("__main__");
    if (!handle->main)
@@ -292,7 +294,7 @@ py_state_t *py_state_new(const char *script, unsigned is_file, const char *pycla
    }
    Py_INCREF(handle->dict);
 
-   PyObject *hook = PyDict_GetItemString(handle->dict, pyclass);
+   hook = PyDict_GetItemString(handle->dict, pyclass);
    if (!hook)
    {
       SSNES_ERR("Python: PyDict_GetItemString() failed.\n");

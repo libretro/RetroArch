@@ -18,7 +18,7 @@
 #include "driver.h"
 
 #include "../gfx/sdlwrap.h"
-#include <stdbool.h>
+#include "../boolean.h"
 #include "general.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -126,7 +126,7 @@ static void init_lut(void)
 static void *sdl_input_init(void)
 {
    init_lut();
-   sdl_input_t *sdl = calloc(1, sizeof(*sdl));
+   sdl_input_t *sdl = (sdl_input_t*)calloc(1, sizeof(*sdl));
    if (!sdl)
       return NULL;
 
@@ -189,7 +189,7 @@ static bool sdl_joykey_pressed(sdl_input_t *sdl, int port_num, uint16_t joykey)
    if (GET_HAT_DIR(joykey))
    {
       int hat = GET_HAT(joykey);
-      if (hat < sdl->num_hats[port_num])
+      if (hat < (int)sdl->num_hats[port_num])
       {
          Uint8 dir = SDL_JoystickGetHat(sdl->joysticks[port_num], hat);
          switch (GET_HAT_DIR(joykey))
@@ -273,7 +273,7 @@ static bool sdl_bind_button_pressed(void *data, int key)
    for (unsigned i = 0; binds[i].id != -1; i++)
    {
       if (binds[i].id == key)
-         return sdl_is_pressed(data, 0, &binds[i]);
+         return sdl_is_pressed((sdl_input_t*)data, 0, &binds[i]);
    }
    return false;
 }
@@ -352,8 +352,9 @@ static int16_t sdl_justifier_device_state(sdl_input_t *sdl, unsigned index, unsi
       return 0;
 }
 
-static int16_t sdl_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
+static int16_t sdl_input_state(void *data_, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
 {
+   sdl_input_t *data = (sdl_input_t*)data_;
    switch (device)
    {
       case SNES_DEVICE_JOYPAD:
@@ -381,7 +382,7 @@ static void sdl_input_free(void *data)
       SDL_Event event;
       while (SDL_PollEvent(&event));
 
-      sdl_input_t *sdl = data;
+      sdl_input_t *sdl = (sdl_input_t*)data;
 
 #ifdef HAVE_DINPUT
       sdl_dinput_free(sdl->di);
@@ -412,7 +413,7 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
 static void sdl_input_poll(void *data)
 {
    SDL_PumpEvents();
-   sdl_input_t *sdl = data;
+   sdl_input_t *sdl = (sdl_input_t*)data;
 
 #ifdef HAVE_DINPUT
    sdl_dinput_poll(sdl->di);
@@ -424,11 +425,11 @@ static void sdl_input_poll(void *data)
 }
 
 const input_driver_t input_sdl = {
-   .init = sdl_input_init,
-   .poll = sdl_input_poll,
-   .input_state = sdl_input_state,
-   .key_pressed = sdl_bind_button_pressed,
-   .free = sdl_input_free,
-   .ident = "sdl"
+   sdl_input_init,
+   sdl_input_poll,
+   sdl_input_state,
+   sdl_bind_button_pressed,
+   sdl_input_free,
+   "sdl"
 };
 

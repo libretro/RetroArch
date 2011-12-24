@@ -21,7 +21,7 @@
 #ifndef __SDLWRAP_H
 #define __SDLWRAP_H
 
-#include <stdbool.h>
+#include "../boolean.h"
 
 #include "SDL.h"
 #include "SDL_version.h"

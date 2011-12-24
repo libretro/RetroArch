@@ -18,7 +18,7 @@
 #include "bps.h"
 #include "movie.h"
 #include <stdint.h>
-#include <stdbool.h>
+#include "boolean.h"
 
 enum bps_mode
 {
@@ -77,17 +77,15 @@ bps_error_t bps_apply_patch(
    if (modify_length < 19)
       return BPS_PATCH_TOO_SMALL;
 
-   struct bps_data bps = {
-      .modify_data = modify_data,
-      .modify_length = modify_length,
-      .target_data = target_data,
-      .target_length = *target_length,
-      .source_data = source_data,
-      .source_length = source_length,
-
-      .modify_checksum = ~0,
-      .target_checksum = ~0,
-   };
+   struct bps_data bps = {0};
+   bps.modify_data = modify_data;
+   bps.modify_length = modify_length;
+   bps.target_data = target_data;
+   bps.target_length = *target_length;
+   bps.source_data = source_data;
+   bps.source_length = source_length;
+   bps.modify_checksum = ~0;
+   bps.target_checksum = ~0;
 
    if ((bps_read(&bps) != 'B') || (bps_read(&bps) != 'P') || (bps_read(&bps) != 'S') || (bps_read(&bps) != '1'))
       return BPS_PATCH_INVALID_HEADER;

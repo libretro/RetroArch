@@ -46,7 +46,7 @@ struct sthread
 
 static DWORD CALLBACK thread_wrap(void *data_)
 {
-   struct thread_data *data = data_;
+   struct thread_data *data = (struct thread_data*)data_;
    data->func(data->userdata);
    free(data);
    return 0;
@@ -54,11 +54,11 @@ static DWORD CALLBACK thread_wrap(void *data_)
 
 sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 {
-   sthread_t *thread = calloc(1, sizeof(*thread));
+   sthread_t *thread = (sthread_t*)calloc(1, sizeof(*thread));
    if (!thread)
       return NULL;
 
-   struct thread_data *data = calloc(1, sizeof(*data));
+   struct thread_data *data = (struct thread_data*)calloc(1, sizeof(*data));
    if (!data)
    {
       free(thread);
@@ -93,7 +93,7 @@ struct slock
 
 slock_t *slock_new(void)
 {
-   slock_t *lock = calloc(1, sizeof(*lock));
+   slock_t *lock = (slock_t*)calloc(1, sizeof(*lock));
    if (!lock)
       return NULL;
 
@@ -124,7 +124,7 @@ struct scond
 
 scond_t *scond_new(void)
 {
-   scond_t *cond = calloc(1, sizeof(*cond));
+   scond_t *cond = (scond_t*)calloc(1, sizeof(*cond));
    if (!cond)
       return NULL;
 
@@ -179,7 +179,7 @@ struct sthread
 
 static void *thread_wrap(void *data_)
 {
-   struct thread_data *data = data_;
+   struct thread_data *data = (struct thread_data*)data_;
    data->func(data->userdata);
    free(data);
    pthread_exit(NULL);
@@ -187,11 +187,11 @@ static void *thread_wrap(void *data_)
 
 sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 {
-   sthread_t *thr = calloc(1, sizeof(*thr));
+   sthread_t *thr = (sthread_t*)calloc(1, sizeof(*thr));
    if (!thr)
       return NULL;
 
-   struct thread_data *data = calloc(1, sizeof(*data));
+   struct thread_data *data = (struct thread_data*)calloc(1, sizeof(*data));
    if (!data)
    {
       free(thr);
@@ -224,7 +224,7 @@ struct slock
 
 slock_t *slock_new(void)
 {
-   slock_t *lock = calloc(1, sizeof(*lock));
+   slock_t *lock = (slock_t*)calloc(1, sizeof(*lock));
    if (!lock)
       return NULL;
 
@@ -260,7 +260,7 @@ struct scond
 
 scond_t *scond_new(void)
 {
-   scond_t *cond = calloc(1, sizeof(*cond));
+   scond_t *cond = (scond_t*)calloc(1, sizeof(*cond));
    if (!cond)
       return NULL;
 

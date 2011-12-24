@@ -31,7 +31,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
    if (latency < 8)
       latency = 8; // Do not allow shenanigans.
 
-   xa_t *xa = calloc(1, sizeof(xa_t));
+   xa_t *xa = (xa_t*)calloc(1, sizeof(xa_t));
    if (xa == NULL)
       return NULL;
 
@@ -51,7 +51,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
 
 static ssize_t xa_write(void *data, const void *buf, size_t size)
 {
-   xa_t *xa = data;
+   xa_t *xa = (xa_t*)data;
    if (xa->nonblock)
    {
       size_t avail = xaudio2_write_avail(xa->xa);
@@ -74,7 +74,7 @@ static bool xa_stop(void *data)
 
 static void xa_set_nonblock_state(void *data, bool state)
 {
-   xa_t *xa = data;
+   xa_t *xa = (xa_t*)data;
    xa->nonblock = state;
 }
 
@@ -92,7 +92,7 @@ static bool xa_use_float(void *data)
 
 static void xa_free(void *data)
 {
-   xa_t *xa = data;
+   xa_t *xa = (xa_t*)data;
    if (xa)
    {
       if (xa->xa)
@@ -102,13 +102,13 @@ static void xa_free(void *data)
 }
 
 const audio_driver_t audio_xa = {
-   .init = xa_init,
-   .write = xa_write,
-   .stop = xa_stop,
-   .start = xa_start,
-   .set_nonblock_state = xa_set_nonblock_state,
-   .use_float = xa_use_float,
-   .free = xa_free,
-   .ident = "xaudio"
+   xa_init,
+   xa_write,
+   xa_stop,
+   xa_start,
+   xa_set_nonblock_state,
+   xa_free,
+   xa_use_float,
+   "xaudio"
 };
-   
+

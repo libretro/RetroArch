@@ -1,3 +1,27 @@
+/*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
+ *  Copyright (C) 2010-2011 - Hans-Kristian Arntzen
+ *
+ *  Some code herein may be based on code found in BSNES.
+ * 
+ *  SSNES is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with SSNES.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef __STDC_CONSTANT_MACROS
+#define __STDC_CONSTANT_MACROS
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <libavcodec/avcodec.h>
 #include <libavutil/mathematics.h>
 #include <libavutil/avutil.h>
@@ -6,11 +30,15 @@
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 #include <libavutil/avconfig.h>
+#ifdef __cplusplus
+}
+#endif
+
 #include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <stdbool.h>
+#include "../boolean.h"
 #include "ffemu.h"
 #include "fifo_buffer.h"
 #include "thread.h"
@@ -31,8 +59,8 @@ struct video_info
    uint8_t *outbuf;
    size_t outbuf_size;
 
-   int fmt;
-   int pix_fmt;
+   enum PixelFormat fmt;
+   enum PixelFormat pix_fmt;
    size_t pix_size;
 
    AVFormatContext *format;
@@ -111,12 +139,12 @@ static bool init_audio(struct audio_info *audio, struct ffemu_params *param)
       return false;
    }
 
-   audio->buffer = av_malloc(audio->codec->frame_size * param->channels * sizeof(int16_t));
+   audio->buffer = (int16_t*)av_malloc(audio->codec->frame_size * param->channels * sizeof(int16_t));
    if (!audio->buffer)
       return false;
 
    audio->outbuf_size = 2000000;
-   audio->outbuf = av_malloc(audio->outbuf_size);
+   audio->outbuf = (int16_t*)av_malloc(audio->outbuf_size);
    if (!audio->outbuf)
       return false;
 
@@ -193,10 +221,10 @@ static bool init_video(struct video_info *video, const struct ffemu_params *para
 
    // Allocate a big buffer :p ffmpeg API doesn't seem to give us some clues how big this buffer should be.
    video->outbuf_size = 1 << 23;
-   video->outbuf = av_malloc(video->outbuf_size);
+   video->outbuf = (uint8_t*)av_malloc(video->outbuf_size);
 
    size_t size = avpicture_get_size(video->pix_fmt, param->out_width, param->out_height);
-   video->conv_frame_buf = av_malloc(size);
+   video->conv_frame_buf = (uint8_t*)av_malloc(size);
    video->conv_frame = avcodec_alloc_frame();
    avpicture_fill((AVPicture*)video->conv_frame, video->conv_frame_buf, video->pix_fmt, param->out_width, param->out_height);
 
@@ -339,7 +367,7 @@ ffemu_t *ffemu_new(const struct ffemu_params *params)
 {
    av_register_all();
 
-   ffemu_t *handle = calloc(1, sizeof(*handle));
+   ffemu_t *handle = (ffemu_t*)calloc(1, sizeof(*handle));
    if (!handle)
       goto error;
 
@@ -547,11 +575,11 @@ static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_da
       {
          AVPacket pkt;
          av_init_packet(&pkt);
-         pkt.data = handle->audio.outbuf;
+         pkt.data = (uint8_t*)handle->audio.outbuf;
          pkt.stream_index = handle->muxer.astream->index;
 
          int out_size = avcodec_encode_audio(handle->audio.codec,
-               handle->audio.outbuf, handle->audio.outbuf_size, handle->audio.buffer);
+               (uint8_t*)handle->audio.outbuf, handle->audio.outbuf_size, (const int16_t*)handle->audio.buffer);
          if (out_size < 0)
             return false;
 
@@ -579,7 +607,7 @@ bool ffemu_finalize(ffemu_t *handle)
    deinit_thread(handle);
 
    size_t audio_buf_size = 512 * handle->params.channels * sizeof(int16_t);
-   int16_t *audio_buf = av_malloc(audio_buf_size);
+   int16_t *audio_buf = (int16_t*)av_malloc(audio_buf_size);
    void *video_buf = av_malloc(2 * handle->params.fb_width * handle->params.fb_height * handle->video.pix_size);
 
    // Try pushing data in an interleaving pattern to ease the work of the muxer a bit.
@@ -592,10 +620,9 @@ bool ffemu_finalize(ffemu_t *handle)
       {
          fifo_read(handle->audio_fifo, audio_buf, audio_buf_size);
 
-         struct ffemu_audio_data aud = {
-            .frames = 512,
-            .data = audio_buf
-         };
+         struct ffemu_audio_data aud = {0};
+         aud.frames = 512;
+         aud.data = audio_buf;
 
          ffemu_push_audio_thread(handle, &aud);
          did_work = true;
@@ -616,10 +643,9 @@ bool ffemu_finalize(ffemu_t *handle)
    // Flush out last audio.
    size_t avail = fifo_read_avail(handle->audio_fifo);
    fifo_read(handle->audio_fifo, audio_buf, avail);
-   struct ffemu_audio_data aud = {
-      .frames = avail / (sizeof(int16_t) * handle->params.channels),
-      .data = audio_buf
-   };
+   struct ffemu_audio_data aud = {0};
+   aud.frames = avail / (sizeof(int16_t) * handle->params.channels);
+   aud.data = audio_buf;
    ffemu_push_audio_thread(handle, &aud);
 
    deinit_thread_buf(handle);
@@ -658,14 +684,14 @@ bool ffemu_finalize(ffemu_t *handle)
 
 static void ffemu_thread(void *data)
 {
-   ffemu_t *ff = data;
+   ffemu_t *ff = (ffemu_t*)data;
 
    // For some reason, FFmpeg has a tendency to crash if we don't overallocate a bit. :s
    void *video_buf = av_malloc(2 * ff->params.fb_width * ff->params.fb_height * ff->video.pix_size);
    assert(video_buf);
 
    size_t audio_buf_size = 512 * ff->params.channels * sizeof(int16_t);
-   int16_t *audio_buf = av_malloc(audio_buf_size);
+   int16_t *audio_buf = (int16_t*)av_malloc(audio_buf_size);
    assert(audio_buf);
 
    while (ff->alive)
@@ -717,10 +743,9 @@ static void ffemu_thread(void *data)
          slock_unlock(ff->lock);
          scond_signal(ff->cond);
 
-         struct ffemu_audio_data aud = {
-            .frames = 512,
-            .data = audio_buf
-         };
+         struct ffemu_audio_data aud = {0};
+         aud.frames = 512;
+         aud.data = audio_buf;
 
          ffemu_push_audio_thread(ff, &aud);
       }

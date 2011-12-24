@@ -15,11 +15,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdbool.h>
+#include "../boolean.h"
 #include <string.h>
 #include "../general.h"
 #include "shader_glsl.h"
 #include "../strl.h"
+#include "../posix_string.h"
 #include "snes_state.h"
 #include "../dynamic.h"
 
@@ -333,6 +334,8 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
    xmlChar *filename = xmlGetProp(ptr, (const xmlChar*)"file");
    xmlChar *filter = xmlGetProp(ptr, (const xmlChar*)"filter");
    xmlChar *id = xmlGetProp(ptr, (const xmlChar*)"id");
+   char *last = NULL;
+   struct texture_image img;
 
    if (!id)
    {
@@ -352,13 +355,12 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
    char tex_path[MAXPATHLEN];
    strlcpy(tex_path, shader_path, sizeof(tex_path));
 
-   char *last = strrchr(tex_path, '/');
+   last = strrchr(tex_path, '/');
    if (!last) last = strrchr(tex_path, '\\');
    if (last) last[1] = '\0';
 
    strlcat(tex_path, (const char*)filename, sizeof(tex_path));
 
-   struct texture_image img;
    SSNES_LOG("Loading texture image from: \"%s\" ...\n", tex_path);
    if (!texture_image_load(tex_path, &img))
    {
@@ -477,13 +479,18 @@ static bool get_import_value(xmlNodePtr ptr)
    xmlChar *cgram = xmlGetProp(ptr, (const xmlChar*)"cgram");
    xmlChar *bitmask = xmlGetProp(ptr, (const xmlChar*)"mask");
 
+   unsigned memtype;
+   enum snes_tracker_type tracker_type;
+   enum snes_ram_type ram_type = SSNES_STATE_NONE;
+   uint32_t addr = 0;
+   unsigned mask_value = 0;
+
    if (!semantic || !id)
    {
       SSNES_ERR("No semantic or ID for import value!\n");
       goto error;
    }
 
-   enum snes_tracker_type tracker_type;
 
    if (strcmp((const char*)semantic, "capture") == 0)
       tracker_type = SSNES_STATE_CAPTURE;
@@ -504,9 +511,6 @@ static bool get_import_value(xmlNodePtr ptr)
       SSNES_ERR("Invalid semantic for import value.\n");
       goto error;
    }
-
-   enum snes_ram_type ram_type = SSNES_STATE_NONE;
-   uint32_t addr = 0;
 
 #ifdef HAVE_PYTHON
    if (tracker_type != SSNES_STATE_PYTHON)
@@ -541,7 +545,6 @@ static bool get_import_value(xmlNodePtr ptr)
       }
    }
 
-   unsigned memtype;
    switch (ram_type)
    {
       case SSNES_STATE_WRAM:
@@ -570,7 +573,6 @@ static bool get_import_value(xmlNodePtr ptr)
       goto error;
    }
 
-   unsigned mask_value = 0;
    if (bitmask)
       mask_value = strtoul((const char*)bitmask, NULL, 16);
 
@@ -618,6 +620,10 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
 
    SSNES_LOG("Loading XML shader: %s\n", path);
    xmlDocPtr doc = xmlCtxtReadFile(ctx, path, NULL, 0);
+   xmlNodePtr head = NULL;
+   xmlNodePtr cur = NULL;
+   unsigned num = 0;
+
    if (!doc)
    {
       SSNES_ERR("Failed to parse XML file: %s\n", path);
@@ -630,8 +636,8 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       goto error;
    }
 
-   xmlNodePtr head = xmlDocGetRootElement(doc);
-   xmlNodePtr cur = NULL;
+   head = xmlDocGetRootElement(doc);
+
    for (cur = head; cur; cur = cur->next)
    {
       if (cur->type == XML_ELEMENT_NODE && strcmp((const char*)cur->name, "shader") == 0)
@@ -652,7 +658,6 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
    if (!cur) // We couldn't find any GLSL shader :(
       goto error;
 
-   unsigned num = 0;
    memset(prog, 0, sizeof(struct shader_program) * size);
 
    // Iterate to check if we find fragment and/or vertex shaders.
@@ -739,11 +744,19 @@ static void print_shader_log(GLuint obj)
 
    pglGetShaderiv(obj, GL_INFO_LOG_LENGTH, &max_len);
 
-   char info_log[max_len];
+   if (max_len == 0)
+      return;
+
+   char *info_log = (char*)malloc(max_len);
+   if (!info_log)
+      return;
+
    pglGetShaderInfoLog(obj, max_len, &info_len, info_log);
 
    if (info_len > 0)
       SSNES_LOG("Shader log: %s\n", info_log);
+
+   free(info_log);
 }
 
 static void print_linker_log(GLuint obj)
@@ -753,11 +766,19 @@ static void print_linker_log(GLuint obj)
 
    pglGetProgramiv(obj, GL_INFO_LOG_LENGTH, &max_len);
 
-   char info_log[max_len];
+   if (max_len == 0)
+      return;
+
+   char *info_log = (char*)malloc(max_len);
+   if (!info_log)
+      return;
+
    pglGetProgramInfoLog(obj, max_len, &info_len, info_log);
 
    if (info_len > 0)
       SSNES_LOG("Linker log: %s\n", info_log);
+
+   free(info_log);
 }
 
 static bool compile_shader(GLuint shader, const char *program)
@@ -906,10 +927,10 @@ bool gl_glsl_init(const char *path)
       return false;
    }
 
-   struct shader_program stock_prog = {
-      .vertex = strdup(stock_vertex),
-      .fragment = strdup(stock_fragment),
-   };
+   struct shader_program stock_prog = {0};
+   stock_prog.vertex = strdup(stock_vertex);
+   stock_prog.fragment = strdup(stock_fragment);
+
    if (!compile_programs(&gl_program[0], &stock_prog, 1))
       return false;
 
@@ -958,15 +979,14 @@ bool gl_glsl_init(const char *path)
 
    if (gl_tracker_info_cnt > 0)
    {
-      struct snes_tracker_info info = {
-         .wram = psnes_get_memory_data(SNES_MEMORY_WRAM),
-         .vram = psnes_get_memory_data(SNES_MEMORY_VRAM),
-         .cgram = psnes_get_memory_data(SNES_MEMORY_CGRAM),
-         .apuram = psnes_get_memory_data(SNES_MEMORY_APURAM),
-         .oam = psnes_get_memory_data(SNES_MEMORY_OAM),
-         .info = gl_tracker_info,
-         .info_elem = gl_tracker_info_cnt,
-      };
+      struct snes_tracker_info info = {0};
+      info.wram = psnes_get_memory_data(SNES_MEMORY_WRAM);
+      info.vram = psnes_get_memory_data(SNES_MEMORY_VRAM);
+      info.cgram = psnes_get_memory_data(SNES_MEMORY_CGRAM);
+      info.apuram = psnes_get_memory_data(SNES_MEMORY_APURAM);
+      info.oam = psnes_get_memory_data(SNES_MEMORY_OAM);
+      info.info = gl_tracker_info;
+      info.info_elem = gl_tracker_info_cnt;
 
 #ifdef HAVE_PYTHON
       if (*gl_tracker_script)
@@ -999,7 +1019,7 @@ void gl_glsl_deinit(void)
    if (glsl_enable)
    {
       pglUseProgram(0);
-      for (int i = 0; i <= gl_num_programs; i++)
+      for (unsigned i = 0; i <= gl_num_programs; i++)
       {
          if (gl_program[i] == 0)
             continue;
@@ -1064,15 +1084,15 @@ void gl_glsl_set_params(unsigned width, unsigned height,
 
    GLint location;
 
-   float inputSize[2] = {width, height};
+   float inputSize[2] = {(float)width, (float)height};
    location = pglGetUniformLocation(gl_program[active_index], "rubyInputSize");
    pglUniform2fv(location, 1, inputSize);
 
-   float outputSize[2] = {out_width, out_height};
+   float outputSize[2] = {(float)out_width, (float)out_height};
    location = pglGetUniformLocation(gl_program[active_index], "rubyOutputSize");
    pglUniform2fv(location, 1, outputSize);
 
-   float textureSize[2] = {tex_width, tex_height};
+   float textureSize[2] = {(float)tex_width, (float)tex_height};
    location = pglGetUniformLocation(gl_program[active_index], "rubyTextureSize");
    pglUniform2fv(location, 1, textureSize);
 

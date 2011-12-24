@@ -17,7 +17,7 @@
 
 #include "driver.h"
 #include <stdlib.h>
-#include <stdbool.h>
+#include "../boolean.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -111,7 +111,7 @@ static inline void release_region(dsound_t *ds, const struct audio_lock *region)
 
 static DWORD CALLBACK dsound_thread(PVOID data)
 {
-   dsound_t *ds = data;
+   dsound_t *ds = (dsound_t*)data;
    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
    DWORD write_ptr;
@@ -218,7 +218,7 @@ static void dsound_clear_buffer(dsound_t *ds)
 
 static void dsound_free(void *data)
 {
-   dsound_t *ds = data;
+   dsound_t *ds = (dsound_t*)data;
    if (ds)
    {
       if (ds->thread)
@@ -251,7 +251,10 @@ static void dsound_free(void *data)
 
 static void *dsound_init(const char *device, unsigned rate, unsigned latency)
 {
-   dsound_t *ds = calloc(1, sizeof(*ds));
+   WAVEFORMATEX wfx = {0};
+   DSBUFFERDESC bufdesc = {0};
+
+   dsound_t *ds = (dsound_t*)calloc(1, sizeof(*ds));
    if (!ds)
       goto error;
 
@@ -263,14 +266,12 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
    if (IDirectSound_SetCooperativeLevel(ds->ds, GetDesktopWindow(), DSSCL_PRIORITY) != DS_OK)
       goto error;
 
-   WAVEFORMATEX wfx = {
-      .wFormatTag = WAVE_FORMAT_PCM,
-      .nChannels = 2,
-      .nSamplesPerSec = rate,
-      .wBitsPerSample = 16,
-      .nBlockAlign = 2 * sizeof(int16_t),
-      .nAvgBytesPerSec = rate * 2 * sizeof(int16_t),
-   };
+   wfx.wFormatTag = WAVE_FORMAT_PCM;
+   wfx.nChannels = 2;
+   wfx.nSamplesPerSec = rate;
+   wfx.wBitsPerSample = 16;
+   wfx.nBlockAlign = 2 * sizeof(int16_t);
+   wfx.nAvgBytesPerSec = rate * 2 * sizeof(int16_t);
 
    ds->buffer_size = (latency * wfx.nAvgBytesPerSec) / 1000;
    ds->buffer_size /= CHUNK_SIZE;
@@ -281,12 +282,10 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
    SSNES_LOG("[DirectSound]: Setting buffer size of %u bytes\n", ds->buffer_size);
    SSNES_LOG("[DirectSound]: Latency = %u ms\n", (unsigned)((1000 * ds->buffer_size) / wfx.nAvgBytesPerSec));
 
-   DSBUFFERDESC bufdesc = {
-      .dwSize = sizeof(DSBUFFERDESC),
-      .dwFlags = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_GLOBALFOCUS,
-      .dwBufferBytes = ds->buffer_size,
-      .lpwfxFormat = &wfx,
-   };
+   bufdesc.dwSize = sizeof(DSBUFFERDESC);
+   bufdesc.dwFlags = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_GLOBALFOCUS;
+   bufdesc.dwBufferBytes = ds->buffer_size;
+   bufdesc.lpwfxFormat = &wfx;
 
    ds->event = CreateEvent(NULL, false, false, NULL);
    if (!ds->event)
@@ -319,14 +318,14 @@ error:
 
 static bool dsound_stop(void *data)
 {
-   dsound_t *ds = data;
+   dsound_t *ds = (dsound_t*)data;
    dsound_stop_thread(ds);
    return IDirectSoundBuffer_Stop(ds->dsb) == DS_OK;
 }
 
 static bool dsound_start(void *data)
 {
-   dsound_t *ds = data;
+   dsound_t *ds = (dsound_t*)data;
    dsound_clear_buffer(ds);
 
    if (!dsound_start_thread(ds))
@@ -337,14 +336,14 @@ static bool dsound_start(void *data)
 
 static void dsound_set_nonblock_state(void *data, bool state)
 {
-   dsound_t *ds = data;
+   dsound_t *ds = (dsound_t*)data;
    ds->nonblock = state;
 }
 
 static ssize_t dsound_write(void *data, const void *buf_, size_t size)
 {
-   dsound_t *ds = data;
-   const uint8_t *buf = buf_;
+   dsound_t *ds = (dsound_t*)data;
+   const uint8_t *buf = (const uint8_t*)buf_;
 
    if (!ds->thread_alive)
       return -1;
@@ -374,14 +373,14 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
    return written;
 }
 
-
 const audio_driver_t audio_dsound = {
-   .init = dsound_init,
-   .write = dsound_write,
-   .stop = dsound_stop,
-   .start = dsound_start,
-   .set_nonblock_state = dsound_set_nonblock_state,
-   .free = dsound_free,
-   .ident = "dsound"
+   dsound_init,
+   dsound_write,
+   dsound_stop,
+   dsound_start,
+   dsound_set_nonblock_state,
+   dsound_free,
+   NULL,
+   "dsound"
 };
 

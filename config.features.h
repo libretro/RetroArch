@@ -2,7 +2,7 @@
 #define __SSNES_FEATURES_H
 
 #include <stddef.h>
-#include <stdbool.h>
+#include "boolean.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

@@ -19,7 +19,7 @@
 #ifndef __SSNES_CG_H
 #define __SSNES_CG_H
 
-#include <stdbool.h>
+#include "../boolean.h"
 #include "gl_common.h"
 
 bool gl_cg_init(const char *path);

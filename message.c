@@ -18,7 +18,8 @@
 #include "message.h"
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+#include "boolean.h"
+#include "posix_string.h"
 
 struct queue_elem
 {
@@ -37,12 +38,12 @@ struct msg_queue
 
 msg_queue_t *msg_queue_new(size_t size)
 {
-   msg_queue_t *queue = calloc(1, sizeof(*queue));
+   msg_queue_t *queue = (msg_queue_t*)calloc(1, sizeof(*queue));
    if (!queue)
       return NULL;
 
    queue->size = size + 1;
-   queue->elems = calloc(queue->size, sizeof(struct queue_elem*)); 
+   queue->elems = (struct queue_elem**)calloc(queue->size, sizeof(struct queue_elem*)); 
 
    if (!queue->elems)
    {
@@ -65,7 +66,7 @@ void msg_queue_push(msg_queue_t *queue, const char *msg, unsigned prio, unsigned
    if (queue->ptr >= queue->size)
       return;
 
-   struct queue_elem *new_elem = calloc(1, sizeof(struct queue_elem));
+   struct queue_elem *new_elem = (struct queue_elem*)calloc(1, sizeof(struct queue_elem));
    new_elem->prio = prio;
    new_elem->duration = duration;
    new_elem->msg = msg ? strdup(msg) : NULL;

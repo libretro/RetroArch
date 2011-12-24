@@ -18,7 +18,7 @@
 #include "autosave.h"
 #include "thread.h"
 #include <stdlib.h>
-#include <stdbool.h>
+#include "boolean.h"
 #include <string.h>
 #include <stdio.h>
 #include "general.h"
@@ -41,7 +41,7 @@ struct autosave
 
 static void autosave_thread(void *data)
 {
-   autosave_t *save = data;
+   autosave_t *save = (autosave_t*)data;
 
    bool first_log = true;
 
@@ -86,7 +86,7 @@ static void autosave_thread(void *data)
 
 autosave_t *autosave_new(const char *path, const void *data, size_t size, unsigned interval)
 {
-   autosave_t *handle = calloc(1, sizeof(*handle));
+   autosave_t *handle = (autosave_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
 

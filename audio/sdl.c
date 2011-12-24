@@ -18,7 +18,7 @@
 
 #include "driver.h"
 #include <stdlib.h>
-#include <stdbool.h>
+#include "../boolean.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -40,10 +40,10 @@ typedef struct sdl_audio
 
 static void sdl_audio_cb(void *data, Uint8 *stream, int len)
 {
-   sdl_audio_t *sdl = data;
+   sdl_audio_t *sdl = (sdl_audio_t*)data;
 
    size_t avail = fifo_read_avail(sdl->buffer);
-   size_t write_size = len > avail ? avail : len;
+   size_t write_size = len > (int)avail ? avail : len;
    fifo_read(sdl->buffer, stream, write_size);
    SDL_CondSignal(sdl->cond);
 
@@ -64,21 +64,20 @@ static void *sdl_audio_init(const char *device, unsigned rate, unsigned latency)
    if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
       return NULL;
 
-   sdl_audio_t *sdl = calloc(1, sizeof(*sdl));
+   sdl_audio_t *sdl = (sdl_audio_t*)calloc(1, sizeof(*sdl));
    if (!sdl)
       return NULL;
 
    // We have to buffer up some data ourselves, so we let SDL carry approx half of the latency. SDL double buffers audio and we do as well.
    int frames = find_num_frames(rate, latency / 4);
 
-   SDL_AudioSpec spec = {
-      .freq = rate,
-      .format = AUDIO_S16SYS,
-      .channels = 2,
-      .samples = frames, // This is in audio frames, not samples ... :(
-      .callback = sdl_audio_cb,
-      .userdata = sdl
-   };
+   SDL_AudioSpec spec = {0};
+   spec.freq = rate;
+   spec.format = AUDIO_S16SYS;
+   spec.channels = 2;
+   spec.samples = frames; // This is in audio frames, not samples ... :(
+   spec.callback = sdl_audio_cb;
+   spec.userdata = sdl;
 
    SDL_AudioSpec out;
 
@@ -111,7 +110,7 @@ static void *sdl_audio_init(const char *device, unsigned rate, unsigned latency)
 
 static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
 {
-   sdl_audio_t *sdl = data;
+   sdl_audio_t *sdl = (sdl_audio_t*)data;
 
    ssize_t ret = 0;
    if (sdl->nonblock)
@@ -168,7 +167,7 @@ static bool sdl_audio_start(void *data)
 
 static void sdl_audio_set_nonblock_state(void *data, bool state)
 {
-   sdl_audio_t *sdl = data;
+   sdl_audio_t *sdl = (sdl_audio_t*)data;
    sdl->nonblock = state;
 }
 
@@ -177,7 +176,7 @@ static void sdl_audio_free(void *data)
    SDL_CloseAudio();
    SDL_QuitSubSystem(SDL_INIT_AUDIO);
 
-   sdl_audio_t *sdl = data;
+   sdl_audio_t *sdl = (sdl_audio_t*)data;
    if (sdl)
    {
       fifo_free(sdl->buffer);
@@ -188,12 +187,13 @@ static void sdl_audio_free(void *data)
 }
 
 const audio_driver_t audio_sdl = {
-   .init = sdl_audio_init,
-   .write = sdl_audio_write,
-   .stop = sdl_audio_stop,
-   .start = sdl_audio_start,
-   .set_nonblock_state = sdl_audio_set_nonblock_state,
-   .free = sdl_audio_free,
-   .ident = "sdl"
+   sdl_audio_init,
+   sdl_audio_write,
+   sdl_audio_stop,
+   sdl_audio_start,
+   sdl_audio_set_nonblock_state,
+   sdl_audio_free,
+   NULL,
+   "sdl"
 };
    

@@ -22,7 +22,7 @@
 #define DIRECTINPUT_VERSION 0x0800
 
 #include <dinput.h>
-#include <stdbool.h>
+#include "../boolean.h"
 #include "general.h"
 
 // Piggyback joypad driver for SDL.

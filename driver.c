@@ -23,6 +23,7 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+#include "posix_string.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -127,7 +128,7 @@ static void find_audio_driver(void)
    }
    SSNES_ERR("Couldn't find any audio driver named \"%s\"\n", g_settings.audio.driver);
    fprintf(stderr, "Available audio drivers are:\n");
-   for (unsigned i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
+   for (size_t i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
       fprintf(stderr, "\t%s\n", audio_drivers[i]->ident);
 
    exit(1);
@@ -145,7 +146,7 @@ static void find_video_driver(void)
    }
    SSNES_ERR("Couldn't find any video driver named \"%s\"\n", g_settings.video.driver);
    fprintf(stderr, "Available video drivers are:\n");
-   for (int i = 0; i < sizeof(video_drivers) / sizeof(video_driver_t*); i++)
+   for (size_t i = 0; i < sizeof(video_drivers) / sizeof(video_driver_t*); i++)
       fprintf(stderr, "\t%s\n", video_drivers[i]->ident);
 
    exit(1);
@@ -163,7 +164,7 @@ static void find_input_driver(void)
    }
    SSNES_ERR("Couldn't find any input driver named \"%s\"\n", g_settings.input.driver);
    fprintf(stderr, "Available input drivers are:\n");
-   for (int i = 0; i < sizeof(input_drivers) / sizeof(input_driver_t*); i++)
+   for (size_t i = 0; i < sizeof(input_drivers) / sizeof(input_driver_t*); i++)
       fprintf(stderr, "\t%s\n", input_drivers[i]->ident);
 
    exit(1);
@@ -186,6 +187,7 @@ static void init_dsp_plugin(void)
 {
    if (!(*g_settings.audio.dsp_plugin))
       return;
+   ssnes_dsp_info_t info = {0};
 
    g_extern.audio_data.dsp_lib = dylib_load(g_settings.audio.dsp_plugin);
    if (!g_extern.audio_data.dsp_lib)
@@ -217,10 +219,8 @@ static void init_dsp_plugin(void)
 
    SSNES_LOG("Loaded DSP plugin: \"%s\"\n", g_extern.audio_data.dsp_plugin->ident ? g_extern.audio_data.dsp_plugin->ident : "Unknown");
 
-   const ssnes_dsp_info_t info = {
-      .input_rate = g_settings.audio.in_rate,
-      .output_rate = g_settings.audio.out_rate
-   };
+   info.input_rate = g_settings.audio.in_rate;
+   info.output_rate = g_settings.audio.out_rate;
 
    g_extern.audio_data.dsp_handle = g_extern.audio_data.dsp_plugin->init(&info);
    if (!g_extern.audio_data.dsp_handle)
@@ -259,9 +259,9 @@ static void adjust_audio_input_rate(void)
       float timing_skew = fabs(1.0f - g_extern.system.timing.fps / g_settings.video.refresh_rate);
       if (timing_skew > 0.05f) // We don't want to adjust pitch too much. If we have extreme cases, just don't readjust at all.
       {
-         SSNES_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2lf Hz)\n",
+         SSNES_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
                g_settings.video.refresh_rate,
-               g_extern.system.timing.fps);
+               (float)g_extern.system.timing.fps);
 
          g_settings.video.refresh_rate = g_extern.system.timing.fps;
       }
@@ -282,20 +282,17 @@ static void adjust_audio_input_rate(void)
    first = false;
 }
 
-#define AUDIO_CHUNK_SIZE_BLOCKING 64
-#define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
-#define AUDIO_MAX_RATIO 16
 void init_audio(void)
 {
    // Accomodate rewind since at some point we might have two full buffers.
    size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
 
    // Used for recording even if audio isn't enabled.
-   assert((g_extern.audio_data.conv_outsamples = malloc(max_bufsamples * sizeof(int16_t) * AUDIO_MAX_RATIO)));
+   assert((g_extern.audio_data.conv_outsamples = (int16_t*)malloc(max_bufsamples * sizeof(int16_t) * AUDIO_MAX_RATIO)));
    g_extern.audio_data.chunk_size = g_extern.audio_data.block_chunk_size;
 
    // Needs to be able to hold full content of a full max_bufsamples in addition to its own.
-   assert((g_extern.audio_data.rewind_buf = malloc(max_bufsamples * sizeof(int16_t))));
+   assert((g_extern.audio_data.rewind_buf = (int16_t*)malloc(max_bufsamples * sizeof(int16_t))));
    g_extern.audio_data.rewind_size = max_bufsamples;
 
    if (!g_settings.audio.enable)
@@ -329,10 +326,10 @@ void init_audio(void)
    if (!g_extern.audio_data.source)
       g_extern.audio_active = false;
 
-   assert((g_extern.audio_data.data = malloc(max_bufsamples * sizeof(float))));
+   assert((g_extern.audio_data.data = (float*)malloc(max_bufsamples * sizeof(float))));
    g_extern.audio_data.data_ptr = 0;
    assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
-   assert((g_extern.audio_data.outsamples = malloc(max_bufsamples * sizeof(float) * AUDIO_MAX_RATIO)));
+   assert((g_extern.audio_data.outsamples = (float*)malloc(max_bufsamples * sizeof(float) * AUDIO_MAX_RATIO)));
 
    g_extern.audio_data.src_ratio =
       (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
@@ -412,11 +409,11 @@ static void init_filter(void)
    unsigned maxsize = pow2_x > pow2_y ? pow2_x : pow2_y; 
    g_extern.filter.scale = maxsize / SSNES_SCALE_BASE;
 
-   g_extern.filter.buffer = malloc(SSNES_SCALE_BASE * SSNES_SCALE_BASE * g_extern.filter.scale * g_extern.filter.scale * sizeof(uint32_t));
+   g_extern.filter.buffer = (uint32_t*)malloc(SSNES_SCALE_BASE * SSNES_SCALE_BASE * g_extern.filter.scale * g_extern.filter.scale * sizeof(uint32_t));
    g_extern.filter.pitch = SSNES_SCALE_BASE * g_extern.filter.scale * sizeof(uint32_t);
    assert(g_extern.filter.buffer);
 
-   g_extern.filter.colormap = malloc(32768 * sizeof(uint32_t));
+   g_extern.filter.colormap = (uint32_t*)malloc(32768 * sizeof(uint32_t));
    assert(g_extern.filter.colormap);
 
    // Set up conversion map from 16-bit XRGB1555 to 32-bit ARGB.
@@ -524,16 +521,15 @@ void init_video_input(void)
 
    SSNES_LOG("Video @ %ux%u\n", width, height);
 
-   video_info_t video = {
-      .width = width,
-      .height = height,
-      .fullscreen = g_settings.video.fullscreen,
-      .vsync = g_settings.video.vsync,
-      .force_aspect = g_settings.video.force_aspect,
-      .smooth = g_settings.video.smooth,
-      .input_scale = scale,
-      .rgb32 = g_extern.filter.active
-   };
+   video_info_t video = {0};
+   video.width = width;
+   video.height = height;
+   video.fullscreen = g_settings.video.fullscreen;
+   video.vsync = g_settings.video.vsync;
+   video.force_aspect = g_settings.video.force_aspect;
+   video.smooth = g_settings.video.smooth;
+   video.input_scale = scale;
+   video.rgb32 = g_extern.filter.active;
 
    const input_driver_t *tmp = driver.input;
    driver.video_data = driver.video->init(&video, &driver.input, &driver.input_data);
