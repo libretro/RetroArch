@@ -39,7 +39,7 @@ extern "C" {
 #include "ffemu.h"
 #include "../fifo_buffer.h"
 #include "../thread.h"
-#include "../general.h"
+#include <assert.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -305,17 +305,21 @@ static void ffemu_thread(void *data);
 
 static bool init_thread(ffemu_t *handle)
 {
-   ssnes_assert(handle->lock = slock_new());
-   ssnes_assert(handle->cond_lock = slock_new());
-   ssnes_assert(handle->cond = scond_new());
-   ssnes_assert(handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) * handle->params.channels * MAX_FRAMES / 60));
-   ssnes_assert(handle->attr_fifo = fifo_new(sizeof(struct ffemu_video_data) * MAX_FRAMES));
-   ssnes_assert(handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height *
-            handle->video.pix_size * MAX_FRAMES));
+   handle->lock = slock_new();
+   handle->cond_lock = slock_new();
+   handle->cond = scond_new();
+   handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) * handle->params.channels * MAX_FRAMES / 60);
+   handle->attr_fifo = fifo_new(sizeof(struct ffemu_video_data) * MAX_FRAMES);
+   handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height *
+            handle->video.pix_size * MAX_FRAMES);
 
    handle->alive = true;
    handle->can_sleep = true;
-   ssnes_assert(handle->thread = sthread_create(ffemu_thread, handle));
+   handle->thread = sthread_create(ffemu_thread, handle);
+
+   assert(handle->lock && handle->cond_lock &&
+      handle->cond && handle->audio_fifo &&
+      handle->attr_fifo && handle->video_fifo && handle->thread);
 
    return true;
 }
@@ -686,11 +690,11 @@ static void ffemu_thread(void *data)
 
    // For some reason, FFmpeg has a tendency to crash if we don't overallocate a bit. :s
    void *video_buf = av_malloc(2 * ff->params.fb_width * ff->params.fb_height * ff->video.pix_size);
-   ssnes_assert(video_buf);
+   assert(video_buf);
 
    size_t audio_buf_size = 512 * ff->params.channels * sizeof(int16_t);
    int16_t *audio_buf = (int16_t*)av_malloc(audio_buf_size);
-   ssnes_assert(audio_buf);
+   assert(audio_buf);
 
    while (ff->alive)
    {
