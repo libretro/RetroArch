@@ -7,6 +7,7 @@
 #include "xaudio.h"
 #include "xaudio-c.h"
 #include <stdint.h>
+#include "../../msvc/msvc_compat.h"
 
 #define MAX_BUFFERS 16
 #define MAX_BUFFERS_MASK (MAX_BUFFERS - 1)
