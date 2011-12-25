@@ -430,23 +430,23 @@ static void print_features(void)
 
 static void print_compiler(void)
 {
-   printf("Compiler: ");
+   printf("\nCompiler: ");
 #if defined(_MSC_VER)
-   printf("MSVC (%d) %u-bit", _MSC_VER, (unsigned)(CHAR_BIT * sizeof(size_t)));
+   printf("MSVC (%d) %u-bit\n", _MSC_VER, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(_WIN32) && defined(__GNUC__)
-   printf("MinGW (%d.%d.%d) %u-bit",
+   printf("MinGW (%d.%d.%d) %u-bit\n",
       __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(__clang__)
-   printf("Clang (%s) %u-bit",
+   printf("Clang/LLVM (%s) %u-bit\n",
       __VERSION__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(__GNUC__)
-   printf("GCC (%d.%d.%d) %u-bit",
+   printf("GCC (%d.%d.%d) %u-bit\n",
       __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #else
-   printf("Unknown compiler %u-bit",
+   printf("Unknown compiler %u-bit\n",
       (unsigned)(CHAR_BIT * sizeof(size_t)));
 #endif
-   printf(" || Built: %s\n", __DATE__);
+   printf("Built: %s\n", __DATE__);
 }
 
 static void print_help(void)
