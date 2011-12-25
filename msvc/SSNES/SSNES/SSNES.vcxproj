@@ -55,7 +55,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <FloatingPointModel>Precise</FloatingPointModel>
       <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE /D HAVE_DSOUND %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -72,13 +72,13 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE  /D HAVE_DSOUND %(AdditionalOptions)</AdditionalOptions>
       <CompileAs>CompileAsCpp</CompileAs>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>SDL.lib;opengl32.lib;ws2_32.lib;dxguid.lib;dinput8.lib;cg.lib;cgGL.lib;winmm.lib;shlwapi.lib;dsound.lib;%(AdditionalDependencies)</AdditionalDependencies>

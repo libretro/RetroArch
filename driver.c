@@ -288,11 +288,13 @@ void init_audio(void)
    size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
 
    // Used for recording even if audio isn't enabled.
-   assert((g_extern.audio_data.conv_outsamples = (int16_t*)malloc(max_bufsamples * sizeof(int16_t) * AUDIO_MAX_RATIO)));
+   g_extern.audio_data.conv_outsamples = (int16_t*)malloc(max_bufsamples * sizeof(int16_t) * AUDIO_MAX_RATIO);
+   assert(g_extern.audio_data.conv_outsamples);
    g_extern.audio_data.chunk_size = g_extern.audio_data.block_chunk_size;
 
    // Needs to be able to hold full content of a full max_bufsamples in addition to its own.
-   assert((g_extern.audio_data.rewind_buf = (int16_t*)malloc(max_bufsamples * sizeof(int16_t))));
+   g_extern.audio_data.rewind_buf = (int16_t*)malloc(max_bufsamples * sizeof(int16_t));
+   assert(g_extern.audio_data.rewind_buf);
    g_extern.audio_data.rewind_size = max_bufsamples;
 
    if (!g_settings.audio.enable)
@@ -326,10 +328,13 @@ void init_audio(void)
    if (!g_extern.audio_data.source)
       g_extern.audio_active = false;
 
-   assert((g_extern.audio_data.data = (float*)malloc(max_bufsamples * sizeof(float))));
+   g_extern.audio_data.data = (float*)malloc(max_bufsamples * sizeof(float));
+   assert(g_extern.audio_data.data);
    g_extern.audio_data.data_ptr = 0;
+
    assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
-   assert((g_extern.audio_data.outsamples = (float*)malloc(max_bufsamples * sizeof(float) * AUDIO_MAX_RATIO)));
+   g_extern.audio_data.outsamples = (float*)malloc(max_bufsamples * sizeof(float) * AUDIO_MAX_RATIO);
+   assert(g_extern.audio_data.outsamples);
 
    g_extern.audio_data.src_ratio =
       (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
