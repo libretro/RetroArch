@@ -428,32 +428,32 @@ static void print_features(void)
 }
 #undef _PSUPP
 
-static void print_compiler(void)
+static void print_compiler(FILE *file)
 {
-   printf("\nCompiler: ");
+   fprintf(file, "\nCompiler: ");
 #if defined(_MSC_VER)
-   printf("MSVC (%d) %u-bit\n", _MSC_VER, (unsigned)(CHAR_BIT * sizeof(size_t)));
+   fprintf(file, "MSVC (%d) %u-bit\n", _MSC_VER, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(_WIN32) && defined(__GNUC__)
-   printf("MinGW (%d.%d.%d) %u-bit\n",
+   fprintf(file, "MinGW (%d.%d.%d) %u-bit\n",
       __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(__clang__)
-   printf("Clang/LLVM (%s) %u-bit\n",
+   fprintf(file, "Clang/LLVM (%s) %u-bit\n",
       __VERSION__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(__GNUC__)
-   printf("GCC (%d.%d.%d) %u-bit\n",
+   fprintf(file, "GCC (%d.%d.%d) %u-bit\n",
       __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #else
-   printf("Unknown compiler %u-bit\n",
+   fprintf(file, "Unknown compiler %u-bit\n",
       (unsigned)(CHAR_BIT * sizeof(size_t)));
 #endif
-   printf("Built: %s\n", __DATE__);
+   fprintf(file, "Built: %s\n", __DATE__);
 }
 
 static void print_help(void)
 {
    puts("===================================================================");
    puts("ssnes: Simple Super Nintendo Emulator (libsnes) -- v" PACKAGE_VERSION " --");
-   print_compiler();
+   print_compiler(stdout);
    puts("===================================================================");
    puts("Usage: ssnes [rom file] [options...]");
    puts("\t-h/--help: Show this help message.");
@@ -1958,6 +1958,14 @@ int main(int argc, char *argv[])
    init_state();
 
    parse_input(argc, argv);
+
+   if (g_extern.verbose)
+   {
+      fprintf(stderr, "=================================================");
+      print_compiler(stderr);
+      fprintf(stderr, "=================================================");
+   }
+
    parse_config();
    init_libsnes_sym();
    fill_title_buf();
