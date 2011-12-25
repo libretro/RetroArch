@@ -53,6 +53,7 @@
 #define CONST_CAST
 #define NONCONST_CAST
 #include <sys/time.h>
+#include <unistd.h>
 #endif
 
 #define PREV_PTR(x) ((x) == 0 ? handle->buffer_size - 1 : (x) - 1)
