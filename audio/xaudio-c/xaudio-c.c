@@ -91,11 +91,12 @@ xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels, size_t size)
    if (!handle->hEvent)
       goto error;
 
-   IXAudio2SourceVoice_Start(handle->pSourceVoice, 0, XAUDIO2_COMMIT_NOW);
-
    handle->bufsize = size / MAX_BUFFERS;
    handle->buf = (uint8_t*)calloc(1, handle->bufsize * MAX_BUFFERS);
    if (!handle->buf)
+      goto error;
+
+   if (FAILED(IXAudio2SourceVoice_Start(handle->pSourceVoice, 0, XAUDIO2_COMMIT_NOW)))
       goto error;
 
    return handle;

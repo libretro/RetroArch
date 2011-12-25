@@ -177,8 +177,8 @@ void init_drivers(void)
 
 void uninit_drivers(void)
 {
-   uninit_video_input();
    uninit_audio();
+   uninit_video_input();
 }
 
 #ifdef HAVE_DYLIB
@@ -341,8 +341,10 @@ void init_audio(void)
 
 void uninit_audio(void)
 {
-   free(g_extern.audio_data.conv_outsamples); g_extern.audio_data.conv_outsamples = NULL;
+   free(g_extern.audio_data.conv_outsamples);
+   g_extern.audio_data.conv_outsamples = NULL;
    g_extern.audio_data.data_ptr = 0;
+
    free(g_extern.audio_data.rewind_buf);
    g_extern.audio_data.rewind_buf = NULL;
 
@@ -360,6 +362,7 @@ void uninit_audio(void)
 
    free(g_extern.audio_data.data);
    g_extern.audio_data.data = NULL;
+
    free(g_extern.audio_data.outsamples);
    g_extern.audio_data.outsamples = NULL;
 

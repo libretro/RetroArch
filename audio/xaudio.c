@@ -31,8 +31,8 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
    if (latency < 8)
       latency = 8; // Do not allow shenanigans.
 
-   xa_t *xa = (xa_t*)calloc(1, sizeof(xa_t));
-   if (xa == NULL)
+   xa_t *xa = (xa_t*)calloc(1, sizeof(*xa));
+   if (!xa)
       return NULL;
 
    size_t bufsize = latency * rate / 1000;
@@ -46,6 +46,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
       free(xa);
       return NULL;
    }
+
    return xa;
 }
 
@@ -60,6 +61,7 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
       if (avail < size)
          size = avail;
    }
+
    size_t ret = xaudio2_write(xa->xa, buf, size);
    if (ret == 0)
       return -1;
@@ -111,4 +113,3 @@ const audio_driver_t audio_xa = {
    xa_use_float,
    "xaudio"
 };
-

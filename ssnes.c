@@ -299,7 +299,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
    {
       float f[0x10000];
       int16_t i[0x10000 * sizeof(float) / sizeof(int16_t)];
-   } static const empty_buf = {{0}};
+   } static empty_buf; // Const here would require us to statically initialize it, bloating the binary.
 
    if (g_extern.audio_data.use_float)
    {
