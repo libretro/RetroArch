@@ -16,7 +16,7 @@
  */
 
 #include "fonts.h"
-#include "file.h"
+#include "../file.h"
 #include <string.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -156,7 +156,7 @@ static const char *font_paths[] = {
 // Highly OS/platform dependent.
 const char *font_renderer_get_default_font(void)
 {
-   for (unsigned i = 0; i < sizeof(font_paths) / sizeof(font_paths[0]); i++)
+   for (size_t i = 0; i < sizeof(font_paths) / sizeof(font_paths[0]); i++)
    {
       if (path_file_exists(font_paths[i]))
          return font_paths[i];
