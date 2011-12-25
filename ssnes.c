@@ -1961,9 +1961,9 @@ int main(int argc, char *argv[])
 
    if (g_extern.verbose)
    {
-      fprintf(stderr, "=================================================");
+      fprintf(stderr, "=== Build =======================================");
       print_compiler(stderr);
-      fprintf(stderr, "=================================================");
+      fprintf(stderr, "=================================================\n");
    }
 
    parse_config();
