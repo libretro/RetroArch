@@ -74,6 +74,12 @@ static const bool _pulse_supp = true;
 static const bool _pulse_supp = false;
 #endif
 
+#ifdef HAVE_DSOUND
+static const bool _dsound_supp = true;
+#else
+static const bool _dsound_supp = false;
+#endif
+
 #ifdef HAVE_XAUDIO
 static const bool _xaudio_supp = true;
 #else

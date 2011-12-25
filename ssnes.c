@@ -410,6 +410,7 @@ static void print_features(void)
    _PSUPP(rsound, "RSound", "audio driver");
    _PSUPP(roar, "RoarAudio", "audio driver");
    _PSUPP(pulse, "PulseAudio", "audio driver");
+   _PSUPP(dsound, "DirectSound", "audio driver");
    _PSUPP(xaudio, "XAudio2", "audio driver");
    _PSUPP(al, "OpenAL", "audio driver");
    _PSUPP(dylib, "External", "External filter and driver support");
