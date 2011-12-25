@@ -418,6 +418,9 @@ static inline void ssnes_sleep(unsigned msec)
 #endif
 }
 
+#define ssnes_assert(cond) \
+   if (!(cond)) { SSNES_ERR("Assertion failed at %s:%d!\n", __FILE__, __LINE__); exit(2); }
+
 #endif
 
 

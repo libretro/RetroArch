@@ -21,7 +21,6 @@
 #include "file.h"
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 #include <math.h>
 #include "posix_string.h"
 
@@ -288,13 +287,11 @@ void init_audio(void)
    size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
 
    // Used for recording even if audio isn't enabled.
-   g_extern.audio_data.conv_outsamples = (int16_t*)malloc(max_bufsamples * sizeof(int16_t) * AUDIO_MAX_RATIO);
-   assert(g_extern.audio_data.conv_outsamples);
+   ssnes_assert((g_extern.audio_data.conv_outsamples = (int16_t*)malloc(max_bufsamples * sizeof(int16_t) * AUDIO_MAX_RATIO)));
    g_extern.audio_data.chunk_size = g_extern.audio_data.block_chunk_size;
 
    // Needs to be able to hold full content of a full max_bufsamples in addition to its own.
-   g_extern.audio_data.rewind_buf = (int16_t*)malloc(max_bufsamples * sizeof(int16_t));
-   assert(g_extern.audio_data.rewind_buf);
+   ssnes_assert((g_extern.audio_data.rewind_buf = (int16_t*)malloc(max_bufsamples * sizeof(int16_t))));
    g_extern.audio_data.rewind_size = max_bufsamples;
 
    if (!g_settings.audio.enable)
@@ -328,13 +325,11 @@ void init_audio(void)
    if (!g_extern.audio_data.source)
       g_extern.audio_active = false;
 
-   g_extern.audio_data.data = (float*)malloc(max_bufsamples * sizeof(float));
-   assert(g_extern.audio_data.data);
+   ssnes_assert((g_extern.audio_data.data = (float*)malloc(max_bufsamples * sizeof(float))));
    g_extern.audio_data.data_ptr = 0;
 
-   assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
-   g_extern.audio_data.outsamples = (float*)malloc(max_bufsamples * sizeof(float) * AUDIO_MAX_RATIO);
-   assert(g_extern.audio_data.outsamples);
+   ssnes_assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
+   ssnes_assert((g_extern.audio_data.outsamples = (float*)malloc(max_bufsamples * sizeof(float) * AUDIO_MAX_RATIO)));
 
    g_extern.audio_data.src_ratio =
       (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
@@ -416,10 +411,10 @@ static void init_filter(void)
 
    g_extern.filter.buffer = (uint32_t*)malloc(SSNES_SCALE_BASE * SSNES_SCALE_BASE * g_extern.filter.scale * g_extern.filter.scale * sizeof(uint32_t));
    g_extern.filter.pitch = SSNES_SCALE_BASE * g_extern.filter.scale * sizeof(uint32_t);
-   assert(g_extern.filter.buffer);
+   ssnes_assert(g_extern.filter.buffer);
 
    g_extern.filter.colormap = (uint32_t*)malloc(32768 * sizeof(uint32_t));
-   assert(g_extern.filter.colormap);
+   ssnes_assert(g_extern.filter.colormap);
 
    // Set up conversion map from 16-bit XRGB1555 to 32-bit ARGB.
    for (int i = 0; i < 32768; i++)
