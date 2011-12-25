@@ -23,7 +23,6 @@
 #include "boolean.h"
 #include <stdlib.h>
 #include <stdint.h>
-//#include <unistd.h>
 #include "msvc/msvc_compat.h"
 #include "input/keysym.h"
 

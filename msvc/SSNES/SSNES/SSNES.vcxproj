@@ -90,7 +90,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <FloatingPointModel>Precise</FloatingPointModel>
       <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE /D HAVE_DSOUND /D HAVE_FFMPEG /D HAVE_FFMPEG_ALLOC_CONTEXT3 /D HAVE_FFMPEG_AVCODEC_OPEN2 /D HAVE_FFMPEG_AVIO_OPEN /D HAVE_FFMPEG_AVFORMAT_WRITE_HEADER /D HAVE_FFMPEG_AVFORMAT_NEW_STREAM /D HAVE_X264RGB %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE /D HAVE_DSOUND /D HAVE_FFMPEG /D HAVE_FFMPEG_ALLOC_CONTEXT3 /D HAVE_FFMPEG_AVCODEC_OPEN2 /D HAVE_FFMPEG_AVIO_OPEN /D HAVE_FFMPEG_AVFORMAT_WRITE_HEADER /D HAVE_FFMPEG_AVFORMAT_NEW_STREAM /D HAVE_X264RGB /D HAVE_PYTHON %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -108,7 +108,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <FloatingPointModel>Precise</FloatingPointModel>
       <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE /D HAVE_DSOUND /D HAVE_FFMPEG /D HAVE_FFMPEG_ALLOC_CONTEXT3 /D HAVE_FFMPEG_AVCODEC_OPEN2 /D HAVE_FFMPEG_AVIO_OPEN /D HAVE_FFMPEG_AVFORMAT_WRITE_HEADER /D HAVE_FFMPEG_AVFORMAT_NEW_STREAM /D HAVE_X264RGB %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE /D HAVE_DSOUND /D HAVE_FFMPEG /D HAVE_FFMPEG_ALLOC_CONTEXT3 /D HAVE_FFMPEG_AVCODEC_OPEN2 /D HAVE_FFMPEG_AVIO_OPEN /D HAVE_FFMPEG_AVFORMAT_WRITE_HEADER /D HAVE_FFMPEG_AVFORMAT_NEW_STREAM /D HAVE_X264RGB /D HAVE_PYTHON %(AdditionalOptions)</AdditionalOptions>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
@@ -126,7 +126,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE  /D HAVE_DSOUND /D HAVE_FFMPEG /D HAVE_FFMPEG_ALLOC_CONTEXT3 /D HAVE_FFMPEG_AVCODEC_OPEN2 /D HAVE_FFMPEG_AVIO_OPEN /D HAVE_FFMPEG_AVFORMAT_WRITE_HEADER /D HAVE_FFMPEG_AVFORMAT_NEW_STREAM /D HAVE_X264RGB %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE  /D HAVE_DSOUND /D HAVE_FFMPEG /D HAVE_FFMPEG_ALLOC_CONTEXT3 /D HAVE_FFMPEG_AVCODEC_OPEN2 /D HAVE_FFMPEG_AVIO_OPEN /D HAVE_FFMPEG_AVFORMAT_WRITE_HEADER /D HAVE_FFMPEG_AVFORMAT_NEW_STREAM /D HAVE_X264RGB /D HAVE_PYTHON %(AdditionalOptions)</AdditionalOptions>
       <CompileAs>CompileAsCpp</CompileAs>
       <FloatingPointModel>Fast</FloatingPointModel>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -148,7 +148,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE  /D HAVE_DSOUND /D HAVE_FFMPEG /D HAVE_FFMPEG_ALLOC_CONTEXT3 /D HAVE_FFMPEG_AVCODEC_OPEN2 /D HAVE_FFMPEG_AVIO_OPEN /D HAVE_FFMPEG_AVFORMAT_WRITE_HEADER /D HAVE_FFMPEG_AVFORMAT_NEW_STREAM /D HAVE_X264RGB %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE  /D HAVE_DSOUND /D HAVE_FFMPEG /D HAVE_FFMPEG_ALLOC_CONTEXT3 /D HAVE_FFMPEG_AVCODEC_OPEN2 /D HAVE_FFMPEG_AVIO_OPEN /D HAVE_FFMPEG_AVFORMAT_WRITE_HEADER /D HAVE_FFMPEG_AVFORMAT_NEW_STREAM /D HAVE_X264RGB /D HAVE_PYTHON %(AdditionalOptions)</AdditionalOptions>
       <CompileAs>CompileAsCpp</CompileAs>
       <FloatingPointModel>Fast</FloatingPointModel>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -182,6 +182,7 @@
     <ClCompile Include="..\..\..\gfx\gfx_common.c" />
     <ClCompile Include="..\..\..\gfx\gl.c" />
     <ClCompile Include="..\..\..\gfx\image.c" />
+    <ClCompile Include="..\..\..\gfx\py_state\py_state.c" />
     <ClCompile Include="..\..\..\gfx\sdl_gfx.c" />
     <ClCompile Include="..\..\..\gfx\sdlwrap.c" />
     <ClCompile Include="..\..\..\gfx\shader_cg.c" />
@@ -226,6 +227,7 @@
     <ClInclude Include="..\..\..\gfx\gfx_common.h" />
     <ClInclude Include="..\..\..\gfx\gl_common.h" />
     <ClInclude Include="..\..\..\gfx\image.h" />
+    <ClInclude Include="..\..\..\gfx\py_state\py_state.h" />
     <ClInclude Include="..\..\..\gfx\sdlwrap.h" />
     <ClInclude Include="..\..\..\gfx\shader_cg.h" />
     <ClInclude Include="..\..\..\gfx\snes_state.h" />

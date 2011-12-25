@@ -19,16 +19,23 @@
 #define __SSNES_MSVC_COMPAT_H
 
 #ifdef _MSC_VER
-#undef UNICODE
+
+#undef UNICODE // Do not bother with UNICODE at this time.
 #include <stddef.h>
 #include <math.h>
-#if defined(_WIN32)
-typedef signed long ssize_t;
-#elif defined(_WIN64)
-typedef signed long long ssize_t;
+
+// Python headers defines ssize_t and sets HAVE_SSIZE_T. Cannot duplicate these efforts.
+#ifndef HAVE_SSIZE_T
+#if defined(_WIN64)
+typedef __int64 ssize_t;
+#elif defined(_WIN32)
+typedef int ssize_t;
+#endif
 #endif
 
 #define snprintf _snprintf
+
+// Disable some of the annoying warnings.
 #pragma warning(disable : 4800)
 #pragma warning(disable : 4244)
 #pragma warning(disable : 4305)

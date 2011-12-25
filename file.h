@@ -55,5 +55,4 @@ void fill_pathname_noext(char *out_path, const char *in_path, const char *replac
 // Concatenates in_basename and replace to in_dir.
 void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replace, size_t size);
 
-
 #endif
