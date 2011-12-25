@@ -20,7 +20,6 @@
 #include <stdlib.h>
 #include "general.h"
 #include "dynamic.h"
-#include <assert.h>
 
 // CRC32 implementation taken from BSNES source :)
 

@@ -20,7 +20,6 @@
 #include <stdint.h>
 #include "boolean.h"
 #include <string.h>
-#include <assert.h>
 #include <limits.h>
 #include "general.h"
 
@@ -73,7 +72,7 @@ state_manager_t *state_manager_new(size_t state_size, size_t buffer_size, void *
       return NULL;
 
    // We need 4-byte aligned state_size to avoid having to enforce this with unneeded memcpy's!
-   assert(state_size % 4 == 0);
+   ssnes_assert(state_size % 4 == 0);
    state->top_ptr = 1;
 
    state->state_size = state_size / sizeof(uint32_t); // Works in multiple of 4.

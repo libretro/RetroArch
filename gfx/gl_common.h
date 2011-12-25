@@ -19,7 +19,6 @@
 #define __GL_COMMON_H
 
 #include "../general.h"
-#include <assert.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

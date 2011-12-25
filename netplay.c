@@ -42,8 +42,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <assert.h>
-
 #ifdef _WIN32
 // Woohoo, Winsock has headers from the STONE AGE! :D
 #define close(x) closesocket(x)
@@ -593,16 +591,6 @@ bool netplay_poll(netplay_t *handle)
       handle->read_frame_count++;
       return true;
    }
-
-   //fprintf(stderr, "Before poll: Other ptr: %lu, Read ptr: %lu, Self ptr: %lu\n", handle->other_ptr, handle->read_ptr, handle->self_ptr);
-   /*
-   if (handle->buffer_size > 1)
-   {
-      assert(handle->other_ptr != handle->self_ptr);
-      assert(handle->read_ptr != handle->self_ptr);
-   }
-   assert(handle->other_ptr == handle->read_ptr);
-   */
 
    // We might have reached the end of the buffer, where we simply have to block.
    int res = poll_input(handle, handle->other_ptr == handle->self_ptr);

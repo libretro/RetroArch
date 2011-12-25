@@ -15,6 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../msvc/msvc_compat.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,18 +34,18 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdio.h>
-#include <assert.h>
 #include <stdlib.h>
 #include "../boolean.h"
 #include "ffemu.h"
-#include "fifo_buffer.h"
-#include "thread.h"
+#include "../fifo_buffer.h"
+#include "../thread.h"
+#include "../general.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
 
-struct video_info
+struct ff_video_info
 {
    AVCodecContext *codec;
    AVCodec *encoder;
@@ -64,7 +66,7 @@ struct video_info
    struct SwsContext *sws_ctx;
 } video;
 
-struct audio_info
+struct ff_audio_info
 {
    AVCodecContext *codec;
    AVCodec *encoder;
@@ -78,7 +80,7 @@ struct audio_info
    size_t outbuf_size;
 } audio;
 
-struct muxer_info
+struct ff_muxer_info
 {
    AVFormatContext *ctx;
    AVStream *astream;
@@ -87,9 +89,9 @@ struct muxer_info
 
 struct ffemu
 {
-   struct video_info video;
-   struct audio_info audio;
-   struct muxer_info muxer;
+   struct ff_video_info video;
+   struct ff_audio_info audio;
+   struct ff_muxer_info muxer;
    
    struct ffemu_params params;
 
@@ -105,7 +107,7 @@ struct ffemu
    volatile bool can_sleep;
 };
 
-static bool init_audio(struct audio_info *audio, struct ffemu_params *param)
+static bool init_audio(struct ff_audio_info *audio, struct ffemu_params *param)
 {
    AVCodec *codec = avcodec_find_encoder(CODEC_ID_FLAC);
    if (!codec)
@@ -121,7 +123,7 @@ static bool init_audio(struct audio_info *audio, struct ffemu_params *param)
    avcodec_get_context_defaults(audio->codec);
 #endif
 
-   audio->codec->sample_rate = param->samplerate;
+   audio->codec->sample_rate = (int)roundf(param->samplerate);
    audio->codec->time_base = av_d2q(1.0 / param->samplerate, 1000000);
    audio->codec->channels = param->channels;
    audio->codec->sample_fmt = AV_SAMPLE_FMT_S16;
@@ -147,7 +149,7 @@ static bool init_audio(struct audio_info *audio, struct ffemu_params *param)
    return true;
 }
 
-static bool init_video(struct video_info *video, const struct ffemu_params *param)
+static bool init_video(struct ff_video_info *video, const struct ffemu_params *param)
 {
 #ifdef HAVE_X264RGB
    AVCodec *codec = avcodec_find_encoder(CODEC_ID_H264);
@@ -303,17 +305,17 @@ static void ffemu_thread(void *data);
 
 static bool init_thread(ffemu_t *handle)
 {
-   assert(handle->lock = slock_new());
-   assert(handle->cond_lock = slock_new());
-   assert(handle->cond = scond_new());
-   assert(handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) * handle->params.channels * MAX_FRAMES / 60));
-   assert(handle->attr_fifo = fifo_new(sizeof(struct ffemu_video_data) * MAX_FRAMES));
-   assert(handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height *
+   ssnes_assert(handle->lock = slock_new());
+   ssnes_assert(handle->cond_lock = slock_new());
+   ssnes_assert(handle->cond = scond_new());
+   ssnes_assert(handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) * handle->params.channels * MAX_FRAMES / 60));
+   ssnes_assert(handle->attr_fifo = fifo_new(sizeof(struct ffemu_video_data) * MAX_FRAMES));
+   ssnes_assert(handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height *
             handle->video.pix_size * MAX_FRAMES));
 
    handle->alive = true;
    handle->can_sleep = true;
-   assert(handle->thread = sthread_create(ffemu_thread, handle));
+   ssnes_assert(handle->thread = sthread_create(ffemu_thread, handle));
 
    return true;
 }
@@ -684,11 +686,11 @@ static void ffemu_thread(void *data)
 
    // For some reason, FFmpeg has a tendency to crash if we don't overallocate a bit. :s
    void *video_buf = av_malloc(2 * ff->params.fb_width * ff->params.fb_height * ff->video.pix_size);
-   assert(video_buf);
+   ssnes_assert(video_buf);
 
    size_t audio_buf_size = 512 * ff->params.channels * sizeof(int16_t);
    int16_t *audio_buf = (int16_t*)av_malloc(audio_buf_size);
-   assert(audio_buf);
+   ssnes_assert(audio_buf);
 
    while (ff->alive)
    {

@@ -34,7 +34,6 @@
 #include "screenshot.h"
 #include "cheats.h"
 #include "getopt_ssnes.h"
-#include <assert.h>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -1068,8 +1067,7 @@ static void deinit_recording(void)
 
 static void init_msg_queue(void)
 {
-   g_extern.msg_queue = msg_queue_new(8);
-   assert(g_extern.msg_queue);
+   ssnes_assert(g_extern.msg_queue = msg_queue_new(8));
 }
 
 static void deinit_msg_queue(void)

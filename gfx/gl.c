@@ -23,7 +23,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "../general.h"
-#include <assert.h>
 #include <math.h>
 
 #ifdef HAVE_CONFIG_H
@@ -1210,7 +1209,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
 
    const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
-   assert(video_info);
+   ssnes_assert(video_info);
    unsigned full_x = video_info->current_w;
    unsigned full_y = video_info->current_h;
    SSNES_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);

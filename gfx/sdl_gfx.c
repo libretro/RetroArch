@@ -17,7 +17,6 @@
 
 #include "SDL.h"
 #include "../driver.h"
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include "../general.h"
@@ -259,7 +258,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
       return NULL;
 
    const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
-   assert(video_info);
+   ssnes_assert(video_info);
    unsigned full_x = video_info->current_w;
    unsigned full_y = video_info->current_h;
    SSNES_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);

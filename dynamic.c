@@ -19,7 +19,6 @@
 #include "general.h"
 #include "strl.h"
 #include <string.h>
-#include <assert.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -192,7 +191,7 @@ void init_libsnes_sym(void)
 {
    // Guarantee that we can do "dirty" casting.
    // Every OS that this program supports should pass this ...
-   assert(sizeof(void*) == sizeof(void (*)(void)));
+   ssnes_assert(sizeof(void*) == sizeof(void (*)(void)));
 
 #ifdef HAVE_DYNAMIC
    // Try to verify that -lsnes was not linked in from other modules

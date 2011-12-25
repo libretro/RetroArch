@@ -18,7 +18,6 @@
 #include "general.h"
 #include "conf/config_file.h"
 #include "input/keysym.h"
-#include <assert.h>
 #include "strl.h"
 #include "config.def.h"
 #include "file.h"
@@ -196,8 +195,8 @@ static void set_defaults(void)
    g_settings.block_sram_overwrite = block_sram_overwrite;
    g_settings.savestate_auto_index = savestate_auto_index;
 
-   assert(sizeof(g_settings.input.binds[0]) >= sizeof(snes_keybinds_1));
-   assert(sizeof(g_settings.input.binds[1]) >= sizeof(snes_keybinds_rest));
+   ssnes_assert(sizeof(g_settings.input.binds[0]) >= sizeof(snes_keybinds_1));
+   ssnes_assert(sizeof(g_settings.input.binds[1]) >= sizeof(snes_keybinds_rest));
    memcpy(g_settings.input.binds[0], snes_keybinds_1, sizeof(snes_keybinds_1));
    for (unsigned i = 1; i < 5; i++)
       memcpy(g_settings.input.binds[i], snes_keybinds_rest, sizeof(snes_keybinds_rest));

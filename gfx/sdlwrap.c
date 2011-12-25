@@ -18,7 +18,6 @@
 #include "sdlwrap.h"
 #include "SDL_syswm.h"
 #include "../general.h"
-#include <assert.h>
 
 #ifdef __APPLE__
 #include <OpenGL/OpenGL.h>

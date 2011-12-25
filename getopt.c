@@ -22,9 +22,9 @@
 #include <string.h>
 #include "boolean.h"
 #include <stddef.h>
-#include <assert.h>
 #include <stdlib.h>
 #include "msvc/msvc_compat.h"
+#include "general.h"
 
 char *optarg;
 int optind, opterr, optopt;
@@ -134,7 +134,7 @@ static void shuffle_block(char **begin, char **last, char **end)
 {
    ptrdiff_t len = last - begin;
    const char **tmp = (const char**)calloc(len, sizeof(const char*));
-   assert(tmp);
+   ssnes_assert(tmp);
 
    memcpy(tmp, begin, sizeof(tmp));
    memmove(begin, last, (end - last) * sizeof(char*));
@@ -173,7 +173,7 @@ int getopt_long(int argc, char *argv[],
       long_index = 0;
    }
 
-   assert(short_index == 0 || long_index == 0);
+   ssnes_assert(short_index == 0 || long_index == 0);
 
    if (short_index == 0)
       return parse_short(optstring, &argv[optind]);

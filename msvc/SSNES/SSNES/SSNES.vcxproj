@@ -55,12 +55,12 @@
       <ExceptionHandling>false</ExceptionHandling>
       <FloatingPointModel>Precise</FloatingPointModel>
       <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE /D HAVE_DSOUND %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE /D HAVE_DSOUND /D HAVE_FFMPEG %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL.lib;opengl32.lib;ws2_32.lib;dxguid.lib;dinput8.lib;cg.lib;cgGL.lib;winmm.lib;shlwapi.lib;dsound.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL.lib;opengl32.lib;ws2_32.lib;dxguid.lib;dinput8.lib;cg.lib;cgGL.lib;winmm.lib;shlwapi.lib;dsound.lib;avcodec.lib;avformat.lib;swscale.lib;avutil.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -72,16 +72,17 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE  /D HAVE_DSOUND %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/D HAVE_SDL /D PACKAGE_VERSION=\"0.9.3\" /D _CRT_SECURE_NO_WARNINGS /D HAVE_NETPLAY /D HAVE_THREADS /D HAVE_OPENGL /D HAVE_DYLIB /D HAVE_DYNAMIC /D HAVE_CG /D HAVE_XAUDIO /D HAVE_FBO /D HAVE_CONFIGFILE  /D HAVE_DSOUND /D HAVE_FFMPEG %(AdditionalOptions)</AdditionalOptions>
       <CompileAs>CompileAsCpp</CompileAs>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>SDL.lib;opengl32.lib;ws2_32.lib;dxguid.lib;dinput8.lib;cg.lib;cgGL.lib;winmm.lib;shlwapi.lib;dsound.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL.lib;opengl32.lib;ws2_32.lib;dxguid.lib;dinput8.lib;cg.lib;cgGL.lib;winmm.lib;shlwapi.lib;dsound.lib;avcodec.lib;avformat.lib;swscale.lib;avutil.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -114,6 +115,7 @@
     <ClCompile Include="..\..\..\movie.c" />
     <ClCompile Include="..\..\..\netplay.c" />
     <ClCompile Include="..\..\..\posix_string.c" />
+    <ClCompile Include="..\..\..\record\ffemu.c" />
     <ClCompile Include="..\..\..\rewind.c" />
     <ClCompile Include="..\..\..\screenshot.c" />
     <ClCompile Include="..\..\..\settings.c" />
@@ -158,12 +160,14 @@
     <ClInclude Include="..\..\..\movie.h" />
     <ClInclude Include="..\..\..\netplay.h" />
     <ClInclude Include="..\..\..\posix_string.h" />
+    <ClInclude Include="..\..\..\record\ffemu.h" />
     <ClInclude Include="..\..\..\rewind.h" />
     <ClInclude Include="..\..\..\screenshot.h" />
     <ClInclude Include="..\..\..\sha256.h" />
     <ClInclude Include="..\..\..\strl.h" />
     <ClInclude Include="..\..\..\thread.h" />
     <ClInclude Include="..\..\..\ups.h" />
+    <ClInclude Include="..\..\msvc_compat.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
