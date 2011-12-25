@@ -145,7 +145,7 @@ endif
 
 CFLAGS += -Wall -O3 -I.
 ifeq ($(CXX_BUILD), 1)
-   CFLAGS += -std=c++0x -xc++
+   CFLAGS += -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS
 else
    CFLAGS += -std=gnu99
 endif

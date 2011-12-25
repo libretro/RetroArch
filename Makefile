@@ -177,7 +177,7 @@ endif
 
 CFLAGS += -Wall $(OPTIMIZE_FLAG) -g -I. -pedantic
 ifeq ($(CXX_BUILD), 1)
-   CFLAGS += -std=c++0x -xc++
+   CFLAGS += -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS
 else
 ifneq ($(findstring icc,$(CC)),)
    CFLAGS += -std=c99 -D_GNU_SOURCE

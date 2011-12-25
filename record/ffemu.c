@@ -15,10 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __STDC_CONSTANT_MACROS
-#define __STDC_CONSTANT_MACROS
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
