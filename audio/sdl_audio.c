@@ -25,7 +25,8 @@
 
 #include "SDL.h"
 #include "SDL_audio.h"
-#include "SDL_thread.h"
+#include "../thread.h"
+
 #include "../general.h"
 #include "../fifo_buffer.h"
 
@@ -33,8 +34,8 @@ typedef struct sdl_audio
 {
    bool nonblock;
 
-   SDL_mutex *lock;
-   SDL_cond *cond;
+   slock_t *lock;
+   scond_t *cond;
    fifo_buffer_t *buffer;
 } sdl_audio_t;
 
@@ -45,7 +46,7 @@ static void sdl_audio_cb(void *data, Uint8 *stream, int len)
    size_t avail = fifo_read_avail(sdl->buffer);
    size_t write_size = len > (int)avail ? avail : len;
    fifo_read(sdl->buffer, stream, write_size);
-   SDL_CondSignal(sdl->cond);
+   scond_signal(sdl->cond);
 
    // If underrun, fill rest with silence.
    memset(stream + write_size, 0, len - write_size);
@@ -89,8 +90,8 @@ static void *sdl_audio_init(const char *device, unsigned rate, unsigned latency)
    }
    g_settings.audio.out_rate = out.freq;
 
-   sdl->lock = SDL_CreateMutex();
-   sdl->cond = SDL_CreateCond();
+   sdl->lock = slock_new();
+   sdl->cond = scond_new();
 
    SSNES_LOG("SDL audio: Requested %d ms latency, got %d ms\n", latency, (int)(out.samples * 4 * 1000 / g_settings.audio.out_rate));
 
@@ -133,9 +134,9 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
          if (avail == 0)
          {
             SDL_UnlockAudio();
-            SDL_mutexP(sdl->lock);
-            SDL_CondWait(sdl->cond, sdl->lock);
-            SDL_mutexV(sdl->lock);
+            slock_lock(sdl->lock);
+            scond_wait(sdl->cond, sdl->lock);
+            slock_unlock(sdl->lock);
          }
          else
          {
@@ -180,8 +181,8 @@ static void sdl_audio_free(void *data)
    if (sdl)
    {
       fifo_free(sdl->buffer);
-      SDL_DestroyMutex(sdl->lock);
-      SDL_DestroyCond(sdl->cond);
+      slock_free(sdl->lock);
+      scond_free(sdl->cond);
    }
    free(sdl);
 }
