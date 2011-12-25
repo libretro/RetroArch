@@ -22,6 +22,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 #include "driver.h"
 #include "file.h"
 #include "general.h"
@@ -427,10 +428,32 @@ static void print_features(void)
 }
 #undef _PSUPP
 
+static void print_compiler(void)
+{
+   printf("Compiler: ");
+#if defined(_MSC_VER)
+   printf("MSVC (%d) %u-bit", _MSC_VER, (unsigned)(CHAR_BIT * sizeof(size_t)));
+#elif defined(_WIN32) && defined(__GNUC__)
+   printf("MinGW (%d.%d.%d) %u-bit",
+      __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)(CHAR_BIT * sizeof(size_t)));
+#elif defined(__clang__)
+   printf("Clang (%s) %u-bit",
+      __VERSION__, (unsigned)(CHAR_BIT * sizeof(size_t)));
+#elif defined(__GNUC__)
+   printf("GCC (%d.%d.%d) %u-bit",
+      __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)(CHAR_BIT * sizeof(size_t)));
+#else
+   printf("Unknown compiler %u-bit",
+      (unsigned)(CHAR_BIT * sizeof(size_t)));
+#endif
+   printf(" || Built: %s\n", __DATE__);
+}
+
 static void print_help(void)
 {
    puts("===================================================================");
    puts("ssnes: Simple Super Nintendo Emulator (libsnes) -- v" PACKAGE_VERSION " --");
+   print_compiler();
    puts("===================================================================");
    puts("Usage: ssnes [rom file] [options...]");
    puts("\t-h/--help: Show this help message.");
