@@ -985,11 +985,12 @@ bool path_file_exists(const char *path)
 void fill_pathname(char *out_path, const char *in_path, const char *replace, size_t size)
 {
    char tmp_path[MAXPATHLEN];
-   
+
    ssnes_assert(strlcpy(tmp_path, in_path, sizeof(tmp_path)) < sizeof(tmp_path));
    char *tok = strrchr(tmp_path, '.');
    if (tok != NULL)
       *tok = '\0';
+
    ssnes_assert(strlcpy(out_path, tmp_path, size) < size);
    ssnes_assert(strlcat(out_path, replace, size) < size);
 }
@@ -1002,8 +1003,8 @@ void fill_pathname_noext(char *out_path, const char *in_path, const char *replac
 
 void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replace, size_t size)
 {
-   ssnes_assert(strlcat(in_dir, "/", size) < size); 
-   
+   ssnes_assert(strlcat(in_dir, "/", size) < size);
+
    const char *base = strrchr(in_basename, '/');
    if (!base)
       base = strrchr(in_basename, '\\');
