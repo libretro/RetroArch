@@ -64,7 +64,7 @@ struct ff_video_info
    AVFormatContext *format;
 
    struct SwsContext *sws_ctx;
-} video;
+};
 
 struct ff_audio_info
 {
@@ -78,7 +78,7 @@ struct ff_audio_info
 
    uint8_t *outbuf;
    size_t outbuf_size;
-} audio;
+};
 
 struct ff_muxer_info
 {
