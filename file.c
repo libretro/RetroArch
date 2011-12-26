@@ -760,7 +760,6 @@ static bool load_normal_rom(void)
          fclose(g_extern.rom_file);
 
       SSNES_LOG("ROM size: %d bytes\n", (int)rom_len);
-
    }
    else
    {
@@ -788,7 +787,6 @@ static bool load_normal_rom(void)
    free(rom_buf);
    return true;
 }
-
 
 bool init_rom_file(enum ssnes_game_type type)
 {
