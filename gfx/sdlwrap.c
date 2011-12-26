@@ -131,21 +131,29 @@ bool sdlwrap_set_video_mode(
 #endif
 
 #if SDL_MODERN
-      if (bits == 15)
-      {
-         SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
-         SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
-         SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
-      }
-      g_window = SDL_CreateWindow("SSNES", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-            width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : resizable));
-      if (!g_window)
-         return false;
-      g_ctx = SDL_GL_CreateContext(g_window);
+   if (bits == 15)
+   {
+      SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+      SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+      SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+   }
+
+   g_window = SDL_CreateWindow("SSNES", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+      width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : resizable));
+   if (!g_window)
+   {
+      SSNES_ERR("Failed to create SDL window!\n");
+      return false;
+   }
+
+   g_ctx = SDL_GL_CreateContext(g_window);
 #else
    if (!SDL_SetVideoMode(width, height, bits,
          SDL_OPENGL | (fullscreen ? SDL_FULLSCREEN : resizable)))
+   {
+      SSNES_ERR("Failed to create SDL window!\n");
       return false;
+   }
 #endif
 
    int attr = 0;
