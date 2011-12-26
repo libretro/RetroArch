@@ -986,7 +986,7 @@ void fill_pathname(char *out_path, const char *in_path, const char *replace, siz
 
    ssnes_assert(strlcpy(tmp_path, in_path, sizeof(tmp_path)) < sizeof(tmp_path));
    char *tok = strrchr(tmp_path, '.');
-   if (tok != NULL)
+   if (tok)
       *tok = '\0';
 
    ssnes_assert(strlcpy(out_path, tmp_path, size) < size);
