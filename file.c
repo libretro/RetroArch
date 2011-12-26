@@ -110,11 +110,12 @@ bool read_file_string(const char *path, char **buf)
       size_t bufsize = (size_t)(((ptrdiff_t)*buf + (ptrdiff_t)len) - (ptrdiff_t)ptr);
       fgets(ptr, bufsize, file);
 
-      ptr = strchr(ptr, '\0');
+      ptr += strlen(ptr);
    }
 
    ptr = strchr(ptr, EOF);
-   if (ptr) *ptr = '\0';
+   if (ptr)
+      *ptr = '\0';
 
    fclose(file);
    return true;
@@ -562,17 +563,20 @@ static bool load_sgb_rom(void)
    void *extra_rom_buf = NULL;
    ssize_t extra_rom_len = 0;
    char *xml_buf = 0;
+   bool ret = true;
 
    if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
    {
       SSNES_ERR("Could not read ROM file.\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
    if ((extra_rom_len = read_file(g_extern.gb_rom_path, &extra_rom_buf)) == -1)
    {
       SSNES_ERR("Cannot read GameBoy rom.\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
    xml_buf = load_xml_map(g_extern.xml_name);
@@ -582,28 +586,21 @@ static bool load_sgb_rom(void)
             NULL, (const uint8_t*)extra_rom_buf, extra_rom_len))
    {
       SSNES_ERR("Cannot load SGB/GameBoy rom.\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
    if (xml_buf)
       free(xml_buf);
 
+end:
    if (g_extern.rom_file)
       fclose(g_extern.rom_file);
    if (extra_rom)
       fclose(extra_rom);
    free(rom_buf);
    free(extra_rom_buf);
-   return true;
-
-error:
-   if (g_extern.rom_file)
-      fclose(g_extern.rom_file);
-   if (extra_rom)
-      fclose(extra_rom);
-   free(rom_buf);
-   free(extra_rom_buf);
-   return false;
+   return ret;
 }
 
 static bool load_bsx_rom(bool slotted)
@@ -615,17 +612,20 @@ static bool load_bsx_rom(bool slotted)
    void *extra_rom_buf = NULL;
    ssize_t extra_rom_len = 0;
    char *xml_buf = 0;
+   bool ret = true;
 
    if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
    {
       SSNES_ERR("Could not read ROM file.\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
    if ((extra_rom_len = read_file(g_extern.bsx_rom_path, &extra_rom_buf)) == -1)
    {
       SSNES_ERR("Cannot read BSX game rom.\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
    xml_buf = load_xml_map(g_extern.xml_name);
@@ -637,7 +637,8 @@ static bool load_bsx_rom(bool slotted)
                NULL, (const uint8_t*)extra_rom_buf, extra_rom_len))
       {
          SSNES_ERR("Cannot load BSX slotted rom.\n");
-         goto error;
+         ret = false;
+         goto end;
       }
 
    }
@@ -648,29 +649,22 @@ static bool load_bsx_rom(bool slotted)
                NULL, (const uint8_t*)extra_rom_buf, extra_rom_len))
       {
          SSNES_ERR("Cannot load BSX rom.\n");
-         goto error;
+         ret = false;
+         goto end;
       }
    }
 
    if (xml_buf)
       free(xml_buf);
 
+end:
    if (g_extern.rom_file)
       fclose(g_extern.rom_file);
    if (extra_rom)
       fclose(extra_rom);
    free(rom_buf);
    free(extra_rom_buf);
-   return true;
-
-error:
-   if (g_extern.rom_file)
-      fclose(g_extern.rom_file);
-   if (extra_rom)
-      fclose(extra_rom);
-   free(rom_buf);
-   free(extra_rom_buf);
-   return false;
+   return ret;
 }
 
 static bool load_sufami_rom(void)
@@ -683,24 +677,27 @@ static bool load_sufami_rom(void)
    ssize_t extra_rom_len[2] = {0};
    char *xml_buf = 0;
    const char *roms[2] = {0};
+   bool ret = true;
 
    if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
    {
       SSNES_ERR("Could not read ROM file.\n");
-      goto error;
+      ret = false;
+      goto end;
    }
    
    roms[0] = g_extern.sufami_rom_path[0];
    roms[1] = g_extern.sufami_rom_path[1];
 
-   for (int i = 0; i < 2; i++)
+   for (unsigned i = 0; i < 2; i++)
    {
-      if (strlen(roms[i]) > 0)
+      if (*(roms[i]))
       {
          if ((extra_rom_len[i] = read_file(roms[i], &extra_rom_buf[i])) == -1)
          {
             SSNES_ERR("Cannot read Sufami game rom.\n");
-            goto error;
+            ret = false;
+            goto end;
          }
       }
    }
@@ -713,34 +710,24 @@ static bool load_sufami_rom(void)
             NULL, (const uint8_t*)extra_rom_buf[1], extra_rom_len[1]))
    {
       SSNES_ERR("Cannot load Sufami Turbo rom.\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
    if (xml_buf)
       free(xml_buf);
 
+end:
    if (g_extern.rom_file)
       fclose(g_extern.rom_file);
-   for (int i = 0; i < 2; i++)
+   for (unsigned i = 0; i < 2; i++)
    {
       if (extra_rom[i])
          fclose(extra_rom[i]);
       free(extra_rom_buf[i]);
    }
    free(rom_buf);
-   return true;
-
-error:
-   if (g_extern.rom_file)
-      fclose(g_extern.rom_file);
-   for (int i = 0; i < 2; i++)
-   {
-      if (extra_rom[i])
-         fclose(extra_rom[i]);
-      free(extra_rom_buf[i]);
-   }
-   free(rom_buf);
-   return false;
+   return ret;
 }
 
 static bool load_normal_rom(void)
