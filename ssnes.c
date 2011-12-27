@@ -1115,16 +1115,34 @@ static void deinit_cheats(void)
 
 static void init_rewind(void)
 {
-   if (g_settings.rewind_enable)
+   if (!g_settings.rewind_enable)
+      return;
+
+   g_extern.state_size = psnes_serialize_size();
+
+   // Make sure we allocate at least 4-byte multiple.
+   size_t aligned_state_size = (g_extern.state_size + 3) & ~3;
+   g_extern.state_buf = calloc(1, aligned_state_size);
+
+   if (!g_extern.state_buf)
    {
-      size_t serial_size = psnes_serialize_size();
-      g_extern.state_buf = calloc(1, (serial_size + 3) & ~3); // Make sure we allocate at least 4-byte multiple.
-      psnes_serialize((uint8_t*)g_extern.state_buf, serial_size);
-      SSNES_LOG("Initing rewind buffer with size: %u MB\n", (unsigned)(g_settings.rewind_buffer_size / 1000000));
-      g_extern.state_manager = state_manager_new((serial_size + 3) & ~3, g_settings.rewind_buffer_size, g_extern.state_buf);
-      if (!g_extern.state_manager)
-         SSNES_WARN("Failed to init rewind buffer. Rewinding will be disabled!\n");
+      SSNES_ERR("Failed to allocate memory for rewind buffer!\n");
+      return;
    }
+
+   if (!psnes_serialize((uint8_t*)g_extern.state_buf, g_extern.state_size))
+   {
+      SSNES_ERR("Failed to perform initial serialization for rewind!\n");
+      free(g_extern.state_buf);
+      g_extern.state_buf = NULL;
+      return;
+   }
+
+   SSNES_LOG("Initing rewind buffer with size: %u MB\n", (unsigned)(g_settings.rewind_buffer_size / 1000000));
+   g_extern.state_manager = state_manager_new(aligned_state_size, g_settings.rewind_buffer_size, g_extern.state_buf);
+
+   if (!g_extern.state_manager)
+      SSNES_WARN("Failed to init rewind buffer. Rewinding will be disabled!\n");
 }
 
 static void deinit_rewind(void)
@@ -1415,17 +1433,18 @@ static void check_savestates(void)
       else
          snprintf(save_path, sizeof(save_path), "%s", g_extern.savestate_name);
 
-      if (!save_state(save_path))
+      char msg[512];
+      if (save_state(save_path))
       {
          msg_queue_clear(g_extern.msg_queue);
-         char msg[512];
-         snprintf(msg, sizeof(msg), "Failed to save state to \"%s\"", save_path);
-         msg_queue_push(g_extern.msg_queue, msg, 2, 180);
+         snprintf(msg, sizeof(msg), "Saved state to slot #%u!", g_extern.state_slot);
+         msg_queue_push(g_extern.msg_queue, msg, 1, 180);
       }
       else
       {
          msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, "Saved state!", 1, 180);
+         snprintf(msg, sizeof(msg), "Failed to save state to \"%s\"", save_path);
+         msg_queue_push(g_extern.msg_queue, msg, 2, 180);
       }
    }
    old_should_savestate = should_savestate;
@@ -1441,17 +1460,18 @@ static void check_savestates(void)
       else
          snprintf(load_path, sizeof(load_path), "%s", g_extern.savestate_name);
 
-      if (!load_state(load_path))
+      char msg[512];
+      if (load_state(load_path))
       {
          msg_queue_clear(g_extern.msg_queue);
-         char msg[512];
-         snprintf(msg, sizeof(msg), "Failed to load state from \"%s\"", load_path);
-         msg_queue_push(g_extern.msg_queue, msg, 2, 180);
+         snprintf(msg, sizeof(msg), "Loaded state from slot #%u!", g_extern.state_slot);
+         msg_queue_push(g_extern.msg_queue, msg, 1, 180);
       }
       else
       {
          msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, "Loaded state!", 1, 180);
+         snprintf(msg, sizeof(msg), "Failed to load state from \"%s\"", load_path);
+         msg_queue_push(g_extern.msg_queue, msg, 2, 180);
       }
    }
    old_should_loadstate = should_loadstate;
@@ -1587,7 +1607,7 @@ static void check_rewind(void)
          setup_rewind_audio();
 
          msg_queue_push(g_extern.msg_queue, "Rewinding!", 0, g_extern.is_paused ? 1 : 30);
-         psnes_unserialize((uint8_t*)buf, psnes_serialize_size());
+         psnes_unserialize((uint8_t*)buf, g_extern.state_size);
 
          if (g_extern.bsv.movie)
             bsv_movie_frame_rewind(g_extern.bsv.movie);
@@ -1601,7 +1621,7 @@ static void check_rewind(void)
       cnt = (cnt + 1) % (g_settings.rewind_granularity ? g_settings.rewind_granularity : 1); // Avoid possible SIGFPE.
       if (cnt == 0 || g_extern.bsv.movie)
       {
-         psnes_serialize((uint8_t*)g_extern.state_buf, psnes_serialize_size());
+         psnes_serialize((uint8_t*)g_extern.state_buf, g_extern.state_size);
          state_manager_push(g_extern.state_manager, g_extern.state_buf);
       }
    }

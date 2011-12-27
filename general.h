@@ -277,6 +277,7 @@ struct global
    // Rewind support.
    state_manager_t *state_manager;
    void *state_buf;
+   size_t state_size;
    bool frame_is_reverse;
 
    // Movie playback/recording support.
