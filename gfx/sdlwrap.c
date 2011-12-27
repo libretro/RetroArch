@@ -77,13 +77,16 @@ void sdlwrap_set_swap_interval(unsigned interval, bool inited)
 bool sdlwrap_init(void)
 {
 #if SDL_MODERN
-   return SDL_VideoInit(NULL) == 0;
+   bool ret = SDL_VideoInit(NULL) == 0;
 #else
    if (SDL_WasInit(SDL_INIT_VIDEO))
       return true;
 
-   return SDL_Init(SDL_INIT_VIDEO) == 0;
+   bool ret = SDL_Init(SDL_INIT_VIDEO) == 0;
 #endif
+   if (!ret)
+      SSNES_ERR("Failed to init SDL video!\n");
+   return ret;
 }
 
 #if SDL_MODERN
