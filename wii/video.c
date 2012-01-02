@@ -31,7 +31,7 @@ static unsigned g_filter;
 
 struct
 {
-   uint16_t data[512 * 512];
+   uint32_t data[512 * 256];
    GXTexObj obj;
 } static g_tex ATTRIBUTE_ALIGN(32);
 
@@ -152,43 +152,44 @@ static void *wii_init(const video_info_t *video,
    return (void*)-1;
 }
 
-static void update_texture(const uint16_t *src,
+static void update_texture(const uint32_t *src,
       unsigned width, unsigned height, unsigned pitch)
 {
-   pitch >>= 1;
-   width &= ~3;
+   pitch >>= 2;
+   width &= ~15;
    height &= ~3;
 
-   // Texture data is 4x4 tiled @ 16bpp.
-   uint16_t *dst = g_tex.data;
-   for (unsigned i = 0; i < height; i += 4, src += 4 * pitch)
+#define BLIT_CHUNK(off) { \
+         tmp_dst[ 0 + off] = tmp_src[0]; \
+         tmp_dst[ 1 + off] = tmp_src[1]; \
+         tmp_dst[ 8 + off] = tmp_src[2]; \
+         tmp_dst[ 9 + off] = tmp_src[3]; \
+         tmp_dst[16 + off] = tmp_src[4]; \
+         tmp_dst[17 + off] = tmp_src[5]; \
+         tmp_dst[24 + off] = tmp_src[6]; \
+         tmp_dst[25 + off] = tmp_src[7]; }
+
+#define BLIT_LINE(off) { \
+   const uint32_t *tmp_src = src; \
+   uint32_t *tmp_dst = dst; \
+   for (unsigned x = 0; x < width; x += 8, tmp_src += 8, tmp_dst += 32) \
+      BLIT_CHUNK(off) \
+   src += pitch; }
+
+   width >>= 1;
+
+   // Texture data is 4x4 tiled @ 15bpp (docs say it's RGB565, but apparently it's RGB555).
+   // Use 32-bit to transfer more data per cycle.
+   uint32_t *dst = g_tex.data;
+   for (unsigned i = 0; i < height; i += 4, dst += 4 * width)
    {
-      for (unsigned x = 0; x < width; x += 4, dst += 16)
-      {
-         const uint16_t *tmp_src = src + x;
-         dst[ 0] = tmp_src[0];
-         dst[ 1] = tmp_src[1];
-         dst[ 2] = tmp_src[2];
-         dst[ 3] = tmp_src[3];
-         tmp_src += pitch;
-         dst[ 4] = tmp_src[0];
-         dst[ 5] = tmp_src[1];
-         dst[ 6] = tmp_src[2];
-         dst[ 7] = tmp_src[3];
-         tmp_src += pitch;
-         dst[ 8] = tmp_src[0];
-         dst[ 9] = tmp_src[1];
-         dst[10] = tmp_src[2];
-         dst[11] = tmp_src[3];
-         tmp_src += pitch;
-         dst[12] = tmp_src[0];
-         dst[13] = tmp_src[1];
-         dst[14] = tmp_src[2];
-         dst[15] = tmp_src[3];
-      }
+      BLIT_LINE(0)
+      BLIT_LINE(2)
+      BLIT_LINE(4)
+      BLIT_LINE(6)
    }
    
-   init_texture(width, height);
+   init_texture(width << 1, height);
    DCFlushRange(g_tex.data, sizeof(g_tex.data));
    GX_InvalidateTexAll();
 }
