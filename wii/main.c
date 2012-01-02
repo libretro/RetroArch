@@ -30,7 +30,7 @@ int ssnes_main(int argc, char **argv);
 int main(void)
 {
    char arg0[] = "ssnes";
-   char arg1[] = "sd:/FFIII.smc";
+   char arg1[] = "sd:/MM2.nes";
    char *argv[] = { arg0, arg1, NULL };
 
    fatInitDefault();

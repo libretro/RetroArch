@@ -159,15 +159,17 @@ static void update_texture(const uint32_t *src,
    width &= ~15;
    height &= ~3;
 
+#define RGB15to16(col) ({ uint32_t hi = (col << 1) & 0xffe0ffe0u; uint32_t lo = col & 0x001f001f; hi | lo; })
+
 #define BLIT_CHUNK(off) { \
-         tmp_dst[ 0 + off] = tmp_src[0]; \
-         tmp_dst[ 1 + off] = tmp_src[1]; \
-         tmp_dst[ 8 + off] = tmp_src[2]; \
-         tmp_dst[ 9 + off] = tmp_src[3]; \
-         tmp_dst[16 + off] = tmp_src[4]; \
-         tmp_dst[17 + off] = tmp_src[5]; \
-         tmp_dst[24 + off] = tmp_src[6]; \
-         tmp_dst[25 + off] = tmp_src[7]; }
+         tmp_dst[ 0 + off] = RGB15to16(tmp_src[0]); \
+         tmp_dst[ 1 + off] = RGB15to16(tmp_src[1]); \
+         tmp_dst[ 8 + off] = RGB15to16(tmp_src[2]); \
+         tmp_dst[ 9 + off] = RGB15to16(tmp_src[3]); \
+         tmp_dst[16 + off] = RGB15to16(tmp_src[4]); \
+         tmp_dst[17 + off] = RGB15to16(tmp_src[5]); \
+         tmp_dst[24 + off] = RGB15to16(tmp_src[6]); \
+         tmp_dst[25 + off] = RGB15to16(tmp_src[7]); }
 
 #define BLIT_LINE(off) { \
    const uint32_t *tmp_src = src; \
@@ -178,7 +180,7 @@ static void update_texture(const uint32_t *src,
 
    width >>= 1;
 
-   // Texture data is 4x4 tiled @ 15bpp (docs say it's RGB565, but apparently it's RGB555).
+   // Texture data is 4x4 tiled @ 15bpp.
    // Use 32-bit to transfer more data per cycle.
    uint32_t *dst = g_tex.data;
    for (unsigned i = 0; i < height; i += 4, dst += 4 * width)
