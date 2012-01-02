@@ -22,7 +22,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
-#include <limits.h>
 #include "driver.h"
 #include "file.h"
 #include "general.h"
@@ -1153,7 +1152,7 @@ static void init_movie(void)
    }
    else if (g_extern.bsv.movie_start_recording)
    {
-      char msg[MAXPATHLEN];
+      char msg[PATH_MAX];
       snprintf(msg, sizeof(msg), "Starting movie record to \"%s\"!",
             g_extern.bsv.movie_start_path);
 
@@ -1297,7 +1296,7 @@ static void set_savestate_auto_index(void)
    if (!g_settings.savestate_auto_index)
       return;
 
-   char state_path[MAXPATHLEN];
+   char state_path[PATH_MAX];
    strlcpy(state_path, g_extern.savestate_name, sizeof(state_path));
 
    char *split = strrchr(state_path, '/');
@@ -1408,7 +1407,7 @@ static void check_savestates(void)
       if (g_settings.savestate_auto_index)
          g_extern.state_slot++;
 
-      char save_path[MAXPATHLEN];
+      char save_path[PATH_MAX];
 
       if (g_extern.state_slot > 0)
          snprintf(save_path, sizeof(save_path), "%s%u", g_extern.savestate_name, g_extern.state_slot);
@@ -1434,7 +1433,7 @@ static void check_savestates(void)
    bool should_loadstate = driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY);
    if (!should_savestate && should_loadstate && !old_should_loadstate)
    {
-      char load_path[MAXPATHLEN];
+      char load_path[PATH_MAX];
 
       if (g_extern.state_slot > 0)
          snprintf(load_path, sizeof(load_path), "%s%u", g_extern.savestate_name, g_extern.state_slot);
@@ -1627,7 +1626,7 @@ static void check_movie_record(void)
       {
          g_settings.rewind_granularity = 1;
 
-         char path[MAXPATHLEN];
+         char path[PATH_MAX];
          if (g_extern.state_slot > 0)
          {
             snprintf(path, sizeof(path), "%s%u.bsv",
@@ -1639,7 +1638,7 @@ static void check_movie_record(void)
                   g_extern.bsv.movie_path);
          }
 
-         char msg[MAXPATHLEN];
+         char msg[PATH_MAX];
          snprintf(msg, sizeof(msg), "Starting movie record to \"%s\"!", path);
 
          g_extern.bsv.movie = bsv_movie_init(path, SSNES_MOVIE_RECORD);

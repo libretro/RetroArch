@@ -233,7 +233,7 @@ static config_file_t *open_default_config_file(void)
       const char *appdata = getenv("APPDATA");
       if (appdata)
       {
-         char conf_path[MAXPATHLEN];
+         char conf_path[PATH_MAX];
          strlcpy(conf_path, appdata, sizeof(conf_path));
          strlcat(conf_path, "/ssnes.cfg", sizeof(conf_path));
          conf = config_file_new(conf_path);
@@ -243,7 +243,7 @@ static config_file_t *open_default_config_file(void)
    const char *home = getenv("HOME");
    if (home)
    {
-      char conf_path[MAXPATHLEN];
+      char conf_path[PATH_MAX];
       strlcpy(conf_path, home, sizeof(conf_path));
       strlcat(conf_path, "/.ssnes.cfg", sizeof(conf_path));
       conf = config_file_new(conf_path);
@@ -260,14 +260,14 @@ static config_file_t *open_default_config_file(void)
    const char *home = getenv("HOME");
    if (xdg)
    {
-      char conf_path[MAXPATHLEN];
+      char conf_path[PATH_MAX];
       strlcpy(conf_path, xdg, sizeof(conf_path));
       strlcat(conf_path, "/ssnes/ssnes.cfg", sizeof(conf_path));
       conf = config_file_new(conf_path);
    }
    else if (home)
    {
-      char conf_path[MAXPATHLEN];
+      char conf_path[PATH_MAX];
       strlcpy(conf_path, home, sizeof(conf_path));
       strlcat(conf_path, "/.ssnes.cfg", sizeof(conf_path));
       conf = config_file_new(conf_path);
@@ -324,7 +324,7 @@ static void parse_config_file(void)
    int tmp_int;
    double tmp_double;
    bool tmp_bool;
-   char tmp_str[MAXPATHLEN];
+   char tmp_str[PATH_MAX];
 
    CONFIG_GET_DOUBLE(video.xscale, "video_xscale");
    CONFIG_GET_DOUBLE(video.yscale, "video_yscale");
