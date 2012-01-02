@@ -47,6 +47,10 @@ static inline float roundf(float in)
    return in >= 0.0f ? floorf(in + 0.5f) : ceilf(in - 0.5f);
 }
 
+#ifndef PATH_MAX
+#define PATH_MAX MAX_PATH
+#endif
+
 #endif
 #endif
 
