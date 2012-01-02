@@ -27,6 +27,7 @@
 
 static void *g_framebuf[2];
 static unsigned g_framebuf_index;
+static unsigned g_filter;
 
 struct
 {
@@ -111,7 +112,7 @@ static void init_vtx(GXRModeObj *mode)
 static void init_texture(unsigned width, unsigned height)
 {
    GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-   GX_InitTexObjLOD(&g_tex.obj, GX_NEAR, GX_NEAR, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
+   GX_InitTexObjLOD(&g_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
    GX_InvalidateTexAll();
 }
@@ -144,6 +145,7 @@ static void *wii_init(const video_info_t *video,
 
    init_vtx(mode);
    build_disp_list();
+   g_filter = video->smooth ? GX_LINEAR : GX_NEAR;
 
    *input = NULL;
    *input_data = NULL;
