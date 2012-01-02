@@ -41,23 +41,22 @@ void sdlwrap_set_swap_interval(unsigned interval, bool inited)
 {
    g_interval = interval;
 
+   bool success = true;
 #if SDL_MODERN
    if (g_window)
-      SDL_GL_SetSwapInterval(g_interval);
+      success = SDL_GL_SetSwapInterval(g_interval) == 0;
 #else
    if (inited)
    {
 #if defined(_WIN32)
       static BOOL (APIENTRY *wgl_swap_interval)(int) = NULL;
       if (!wgl_swap_interval)
-      {
          SDL_SYM_WRAP(wgl_swap_interval, "wglSwapIntervalEXT");
-      }
-      if (wgl_swap_interval) wgl_swap_interval(g_interval);
-
+      if (wgl_swap_interval)
+         success = wgl_swap_interval(g_interval);
 #elif defined(__APPLE__) && defined(HAVE_OPENGL)
       GLint val = g_interval;
-      CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, &val);
+      success = CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, &val) == 0;
 #else
       static int (*glx_swap_interval)(int) = NULL;
       if (!glx_swap_interval) 
@@ -65,13 +64,16 @@ void sdlwrap_set_swap_interval(unsigned interval, bool inited)
       if (!glx_swap_interval)
          SDL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalMESA");
 
-      if (glx_swap_interval) 
-         glx_swap_interval(g_interval);
+      if (glx_swap_interval)
+         success = glx_swap_interval(g_interval) == 0;
       else 
-         SSNES_WARN("Could not find GLX VSync call. :(\n");
+         SSNES_WARN("Could not find GLX VSync call.\n");
 #endif
+      
    }
 #endif
+   if (!success)
+      SSNES_WARN("Failed to set swap interval!\n");
 }
 
 bool sdlwrap_init(void)
