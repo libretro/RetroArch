@@ -22,6 +22,7 @@
 #include "boolean.h"
 #include <stdio.h>
 #include <time.h>
+#include <limits.h>
 #include "driver.h"
 #include "record/ffemu.h"
 #include "message.h"
@@ -50,20 +51,10 @@
 
 #include "audio/hermite.h"
 
-#if !defined(_WIN32) && !defined(__CELLOS_LV2__)
-#include <sys/param.h> // MAXPATHLEN
-#elif defined(_WIN32)
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "msvc/msvc_compat.h"
-#endif
-
-#ifndef MAXPATHLEN
-#ifdef PATH_MAX
-#define MAXPATHLEN PATH_MAX
-#else
-#define MAXPATHLEN 512
-#endif
 #endif
 
 #define MAX_PLAYERS 5
@@ -94,20 +85,20 @@ struct settings
       bool force_aspect;
       bool crop_overscan;
       float aspect_ratio;
-      char cg_shader_path[MAXPATHLEN];
-      char bsnes_shader_path[MAXPATHLEN];
-      char filter_path[MAXPATHLEN];
+      char cg_shader_path[PATH_MAX];
+      char bsnes_shader_path[PATH_MAX];
+      char filter_path[PATH_MAX];
       enum ssnes_shader_type shader_type;
       float refresh_rate;
 
       bool render_to_texture;
       double fbo_scale_x;
       double fbo_scale_y;
-      char second_pass_shader[MAXPATHLEN];
+      char second_pass_shader[PATH_MAX];
       bool second_pass_smooth;
-      char shader_dir[MAXPATHLEN];
+      char shader_dir[PATH_MAX];
 
-      char font_path[MAXPATHLEN];
+      char font_path[PATH_MAX];
       unsigned font_size;
       bool font_enable;
       float msg_pos_x;
@@ -122,7 +113,7 @@ struct settings
       bool hires_record;
       bool post_filter_record;
 
-      char external_driver[MAXPATHLEN];
+      char external_driver[PATH_MAX];
    } video;
 
    struct
@@ -132,12 +123,12 @@ struct settings
       unsigned out_rate;
       float in_rate;
       float rate_step;
-      char device[MAXPATHLEN];
+      char device[PATH_MAX];
       unsigned latency;
       bool sync;
 
-      char dsp_plugin[MAXPATHLEN];
-      char external_driver[MAXPATHLEN];
+      char dsp_plugin[PATH_MAX];
+      char external_driver[PATH_MAX];
    } audio;
 
    struct
@@ -149,11 +140,11 @@ struct settings
       bool netplay_client_swap_input;
    } input;
 
-   char libsnes[MAXPATHLEN];
-   char cheat_database[MAXPATHLEN];
-   char cheat_settings_path[MAXPATHLEN];
+   char libsnes[PATH_MAX];
+   char cheat_database[PATH_MAX];
+   char cheat_settings_path[PATH_MAX];
 
-   char screenshot_directory[MAXPATHLEN];
+   char screenshot_directory[PATH_MAX];
 
    bool rewind_enable;
    size_t rewind_buffer_size;
@@ -195,29 +186,29 @@ struct global
    enum ssnes_game_type game_type;
    uint32_t cart_crc;
 
-   char gb_rom_path[MAXPATHLEN];
-   char bsx_rom_path[MAXPATHLEN];
-   char sufami_rom_path[2][MAXPATHLEN];
+   char gb_rom_path[PATH_MAX];
+   char bsx_rom_path[PATH_MAX];
+   char sufami_rom_path[2][PATH_MAX];
    bool has_set_save_path;
    bool has_set_state_path;
 
 #ifdef HAVE_CONFIGFILE
-   char config_path[MAXPATHLEN];
+   char config_path[PATH_MAX];
 #endif
    
-   char basename[MAXPATHLEN];
-   char savefile_name_srm[MAXPATHLEN];
-   char savefile_name_rtc[MAXPATHLEN]; // Make sure that fill_pathname has space.
-   char savefile_name_psrm[MAXPATHLEN];
-   char savefile_name_asrm[MAXPATHLEN];
-   char savefile_name_bsrm[MAXPATHLEN];
-   char savestate_name[MAXPATHLEN];
-   char xml_name[MAXPATHLEN];
+   char basename[PATH_MAX];
+   char savefile_name_srm[PATH_MAX];
+   char savefile_name_rtc[PATH_MAX]; // Make sure that fill_pathname has space.
+   char savefile_name_psrm[PATH_MAX];
+   char savefile_name_asrm[PATH_MAX];
+   char savefile_name_bsrm[PATH_MAX];
+   char savestate_name[PATH_MAX];
+   char xml_name[PATH_MAX];
 
    bool ups_pref;
    bool bps_pref;
-   char ups_name[MAXPATHLEN];
-   char bps_name[MAXPATHLEN];
+   char ups_name[PATH_MAX];
+   char bps_name[PATH_MAX];
 
    unsigned state_slot;
 
@@ -225,7 +216,7 @@ struct global
    {
       struct snes_geometry geom;
       unsigned pitch; // If 0, has classic libsnes semantics.
-      char fullpath[MAXPATHLEN];
+      char fullpath[PATH_MAX];
       struct snes_system_timing timing;
       bool timing_set;
       bool need_fullpath;
@@ -284,11 +275,11 @@ struct global
    struct
    {
       bsv_movie_t *movie;
-      char movie_path[MAXPATHLEN];
+      char movie_path[PATH_MAX];
       bool movie_playback;
 
       // Immediate playback/recording.
-      char movie_start_path[MAXPATHLEN];
+      char movie_start_path[PATH_MAX];
       bool movie_start_recording;
       bool movie_start_playback;
       bool movie_end;
@@ -307,7 +298,7 @@ struct global
    // Netplay.
 #ifdef HAVE_NETPLAY
    netplay_t *netplay;
-   char netplay_server[MAXPATHLEN];
+   char netplay_server[PATH_MAX];
    bool netplay_enable;
    bool netplay_is_client;
    unsigned netplay_sync_frames;
@@ -317,7 +308,7 @@ struct global
    // FFmpeg record.
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;
-   char record_path[MAXPATHLEN];
+   char record_path[PATH_MAX];
    bool recording;
    unsigned record_width;
    unsigned record_height;

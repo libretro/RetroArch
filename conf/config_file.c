@@ -27,17 +27,17 @@
 #include "../msvc/msvc_compat.h"
 
 #if !defined(_WIN32) && !defined(__CELLOS_LV2__)
-#include <sys/param.h> // MAXPATHLEN
+#include <sys/param.h> // PATH_MAX
 #elif defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 
-#ifndef MAXPATHLEN
+#ifndef PATH_MAX
 #ifdef PATH_MAX
-#define MAXPATHLEN PATH_MAX
+#define PATH_MAX PATH_MAX
 #else
-#define MAXPATHLEN 512
+#define PATH_MAX 512
 #endif
 #endif
 
@@ -195,7 +195,7 @@ static void add_sub_conf(config_file_t *conf, char *line)
 
    add_include_list(conf, path);
 
-   char real_path[MAXPATHLEN];
+   char real_path[PATH_MAX];
 
 #ifdef _WIN32
    // Accomodate POSIX systems on Win32.

@@ -690,7 +690,7 @@ static bool load_preset(const char *path)
 
    int shaders;
    // Basedir.
-   char dir_path[MAXPATHLEN];
+   char dir_path[PATH_MAX];
    char *ptr = NULL;
 
    SSNES_LOG("Loading Cg meta-shader: %s\n", path);
@@ -874,7 +874,7 @@ static bool load_preset(const char *path)
    {
       char *shader_path;
       char attr_buf[64];
-      char path_buf[MAXPATHLEN];
+      char path_buf[PATH_MAX];
 
       print_buf(attr_buf, "shader%u", i);
       if (config_get_string(conf, attr_buf, &shader_path))

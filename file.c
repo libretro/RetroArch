@@ -377,9 +377,9 @@ static void dump_to_file_desperate(const void *data, size_t size, int type)
    if (!base)
       goto error;
 
-   char path[MAXPATHLEN];
+   char path[PATH_MAX];
    snprintf(path, sizeof(path), "%s/SSNES-recovery-", base);
-   char timebuf[MAXPATHLEN];
+   char timebuf[PATH_MAX];
 
    time_t time_;
    time(&time_);
@@ -826,8 +826,8 @@ char **dir_list_new(const char *dir, const char *ext)
    WIN32_FIND_DATAW ffd;
    HANDLE hFind = INVALID_HANDLE_VALUE;
 
-   wchar_t wchar_buf[MAXPATHLEN];
-   char utf8_buf[MAXPATHLEN];
+   wchar_t wchar_buf[PATH_MAX];
+   char utf8_buf[PATH_MAX];
 
    if (strlcpy(utf8_buf, dir, sizeof(utf8_buf)) >= sizeof(utf8_buf))
       goto error;
@@ -840,7 +840,7 @@ char **dir_list_new(const char *dir, const char *ext)
          goto error;
    }
 
-   if (MultiByteToWideChar(CP_UTF8, 0, utf8_buf, -1, wchar_buf, MAXPATHLEN) == 0)
+   if (MultiByteToWideChar(CP_UTF8, 0, utf8_buf, -1, wchar_buf, PATH_MAX) == 0)
       goto error;
 
    hFind = FindFirstFileW(wchar_buf, &ffd);
@@ -869,7 +869,7 @@ char **dir_list_new(const char *dir, const char *ext)
 #ifdef _WIN32
       if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
          continue;
-      if (WideCharToMultiByte(CP_UTF8, 0, ffd.cFileName, -1, utf8_buf, MAXPATHLEN, NULL, NULL) == 0)
+      if (WideCharToMultiByte(CP_UTF8, 0, ffd.cFileName, -1, utf8_buf, PATH_MAX, NULL, NULL) == 0)
          continue;
       if (ext && !strstr(utf8_buf, ext))
          continue;
@@ -878,16 +878,16 @@ char **dir_list_new(const char *dir, const char *ext)
          continue;
 #endif
 
-      dir_list[cur_ptr] = (char*)malloc(MAXPATHLEN);
+      dir_list[cur_ptr] = (char*)malloc(PATH_MAX);
       if (!dir_list[cur_ptr])
          goto error;
 
-      strlcpy(dir_list[cur_ptr], dir, MAXPATHLEN);
-      strlcat(dir_list[cur_ptr], "/", MAXPATHLEN);
+      strlcpy(dir_list[cur_ptr], dir, PATH_MAX);
+      strlcat(dir_list[cur_ptr], "/", PATH_MAX);
 #ifdef _WIN32
-      strlcat(dir_list[cur_ptr], utf8_buf, MAXPATHLEN);
+      strlcat(dir_list[cur_ptr], utf8_buf, PATH_MAX);
 #else
-      strlcat(dir_list[cur_ptr], entry->d_name, MAXPATHLEN);
+      strlcat(dir_list[cur_ptr], entry->d_name, PATH_MAX);
 #endif
 
       cur_ptr++;
@@ -940,8 +940,8 @@ void dir_list_free(char **dir_list)
 bool path_is_directory(const char *path)
 {
 #ifdef _WIN32
-   wchar_t buf[MAXPATHLEN];
-   if (MultiByteToWideChar(CP_UTF8, 0, path, -1, buf, MAXPATHLEN) == 0)
+   wchar_t buf[PATH_MAX];
+   if (MultiByteToWideChar(CP_UTF8, 0, path, -1, buf, PATH_MAX) == 0)
       return false;
    return PathIsDirectoryW(buf) == FILE_ATTRIBUTE_DIRECTORY;
 #elif defined(__CELLOS_LV2__)
@@ -972,7 +972,7 @@ bool path_file_exists(const char *path)
 
 void fill_pathname(char *out_path, const char *in_path, const char *replace, size_t size)
 {
-   char tmp_path[MAXPATHLEN];
+   char tmp_path[PATH_MAX];
 
    ssnes_assert(strlcpy(tmp_path, in_path, sizeof(tmp_path)) < sizeof(tmp_path));
    char *tok = strrchr(tmp_path, '.');
