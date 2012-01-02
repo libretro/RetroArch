@@ -154,11 +154,37 @@ static void update_texture(const uint16_t *src,
       unsigned width, unsigned height, unsigned pitch)
 {
    pitch >>= 1;
+   width &= ~3;
+   height &= ~3;
 
-   // Pitch is totally broken. No idea why.
+   // Texture data is 4x4 tiled @ 16bpp.
    uint16_t *dst = g_tex.data;
-   for (unsigned i = 0; i < height; i++, dst += width, src += pitch)
-      memcpy(dst, src, width << 1);
+   for (unsigned i = 0; i < height; i += 4, src += 4 * pitch)
+   {
+      for (unsigned x = 0; x < width; x += 4, dst += 16)
+      {
+         const uint16_t *tmp_src = src + x;
+         dst[ 0] = tmp_src[0];
+         dst[ 1] = tmp_src[1];
+         dst[ 2] = tmp_src[2];
+         dst[ 3] = tmp_src[3];
+         tmp_src += pitch;
+         dst[ 4] = tmp_src[0];
+         dst[ 5] = tmp_src[1];
+         dst[ 6] = tmp_src[2];
+         dst[ 7] = tmp_src[3];
+         tmp_src += pitch;
+         dst[ 8] = tmp_src[0];
+         dst[ 9] = tmp_src[1];
+         dst[10] = tmp_src[2];
+         dst[11] = tmp_src[3];
+         tmp_src += pitch;
+         dst[12] = tmp_src[0];
+         dst[13] = tmp_src[1];
+         dst[14] = tmp_src[2];
+         dst[15] = tmp_src[3];
+      }
+   }
    
    init_texture(width, height);
    DCFlushRange(g_tex.data, sizeof(g_tex.data));
