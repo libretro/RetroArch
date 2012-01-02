@@ -401,6 +401,10 @@ static inline uint8_t is_little_endian(void)
    return u.y[0];
 }
 
+#ifdef GEKKO
+#include <unistd.h>
+#endif
+
 static inline void ssnes_sleep(unsigned msec)
 {
 #ifdef __CELLOS_LV2__
