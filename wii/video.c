@@ -111,7 +111,7 @@ static void init_vtx(GXRModeObj *mode)
 
 static void init_texture(unsigned width, unsigned height)
 {
-   GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjLOD(&g_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
    GX_InvalidateTexAll();
@@ -159,17 +159,18 @@ static void update_texture(const uint32_t *src,
    width &= ~15;
    height &= ~3;
 
-#define RGB15to16(col) ({ uint32_t hi = (col << 1) & 0xffe0ffe0u; uint32_t lo = col & 0x001f001f; hi | lo; })
+// Set MSB to get full RGB555.
+#define RGB15toRGB5A3(col) ((col) | 0x80008000u)
 
 #define BLIT_CHUNK(off) { \
-         tmp_dst[ 0 + off] = RGB15to16(tmp_src[0]); \
-         tmp_dst[ 1 + off] = RGB15to16(tmp_src[1]); \
-         tmp_dst[ 8 + off] = RGB15to16(tmp_src[2]); \
-         tmp_dst[ 9 + off] = RGB15to16(tmp_src[3]); \
-         tmp_dst[16 + off] = RGB15to16(tmp_src[4]); \
-         tmp_dst[17 + off] = RGB15to16(tmp_src[5]); \
-         tmp_dst[24 + off] = RGB15to16(tmp_src[6]); \
-         tmp_dst[25 + off] = RGB15to16(tmp_src[7]); }
+         tmp_dst[ 0 + off] = RGB15toRGB5A3(tmp_src[0]); \
+         tmp_dst[ 1 + off] = RGB15toRGB5A3(tmp_src[1]); \
+         tmp_dst[ 8 + off] = RGB15toRGB5A3(tmp_src[2]); \
+         tmp_dst[ 9 + off] = RGB15toRGB5A3(tmp_src[3]); \
+         tmp_dst[16 + off] = RGB15toRGB5A3(tmp_src[4]); \
+         tmp_dst[17 + off] = RGB15toRGB5A3(tmp_src[5]); \
+         tmp_dst[24 + off] = RGB15toRGB5A3(tmp_src[6]); \
+         tmp_dst[25 + off] = RGB15toRGB5A3(tmp_src[7]); }
 
 #define BLIT_LINE(off) { \
    const uint32_t *tmp_src = src; \
