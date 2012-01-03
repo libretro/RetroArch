@@ -25,9 +25,12 @@
 
 // All very hardcoded for now.
 
-static void *g_framebuf[2];
-static unsigned g_framebuf_index;
+static void *g_framebuf[3];
+static unsigned g_vi_framebuf;
+static unsigned g_render_framebuf;
+
 static unsigned g_filter;
+static bool g_vsync;
 
 struct
 {
@@ -39,16 +42,28 @@ static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
 static uint8_t display_list[1024] ATTRIBUTE_ALIGN(32);
 static size_t display_list_size;
 
+static void retrace_callback(u32 retrace_count)
+{
+   (void)retrace_count;
+   VIDEO_SetNextFramebuffer(g_framebuf[g_vi_framebuf % 3]);
+   VIDEO_Flush();
+   if (g_vi_framebuf < g_render_framebuf)
+      g_vi_framebuf++;
+}
+
 static void setup_video_mode(GXRModeObj *mode)
 {
    VIDEO_Configure(mode);
-   for (unsigned i = 0; i < 2; i++)
+   for (unsigned i = 0; i < 3; i++)
    {
       g_framebuf[i] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(mode));
       VIDEO_ClearFrameBuffer(mode, g_framebuf[i], COLOR_BLACK);
    }
 
+   g_vi_framebuf = 0;
+   g_render_framebuf = 1;
    VIDEO_SetNextFramebuffer(g_framebuf[0]);
+   VIDEO_SetPreRetraceCallback(retrace_callback);
    VIDEO_SetBlack(false);
    VIDEO_Flush();
    VIDEO_WaitVSync();
@@ -146,6 +161,7 @@ static void *wii_init(const video_info_t *video,
    init_vtx(mode);
    build_disp_list();
    g_filter = video->smooth ? GX_LINEAR : GX_NEAR;
+   g_vsync = video->vsync;
 
    *input = NULL;
    *input_data = NULL;
@@ -208,13 +224,12 @@ static bool wii_frame(void *data, const void *frame,
    GX_CallDispList(display_list, display_list_size);
    GX_DrawDone();
 
-   g_framebuf_index ^= 1;
-   GX_CopyDisp(g_framebuf[g_framebuf_index], GX_TRUE);
+   GX_CopyDisp(g_framebuf[g_render_framebuf % 3], GX_TRUE);
    GX_Flush();
 
-   VIDEO_SetNextFramebuffer(g_framebuf[g_framebuf_index]);
-   VIDEO_Flush();
-   //VIDEO_WaitVSync();
+   g_render_framebuf++;
+   if (g_vsync && g_render_framebuf > g_vi_framebuf + 2)
+      VIDEO_WaitVSync();
 
    return true;
 }
@@ -245,7 +260,7 @@ static void wii_free(void *data)
    VIDEO_SetBlack(true);
    VIDEO_Flush();
 
-   for (unsigned i = 0; i < 2; i++)
+   for (unsigned i = 0; i < 3; i++)
       free(MEM_K1_TO_K0(g_framebuf[i]));
 }
 

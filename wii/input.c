@@ -98,7 +98,11 @@ static bool wii_key_pressed(void *data, int key)
    switch (key)
    {
       case SSNES_QUIT_KEY:
-         return g_quit || pad_state[0][SNES_DEVICE_ID_JOYPAD_SELECT];
+         return g_quit ||
+            (pad_state[0][SNES_DEVICE_ID_JOYPAD_SELECT] &&
+             pad_state[0][SNES_DEVICE_ID_JOYPAD_START] &&
+             pad_state[0][SNES_DEVICE_ID_JOYPAD_L] &&
+             pad_state[0][SNES_DEVICE_ID_JOYPAD_R]);
       default:
          return false;
    }
