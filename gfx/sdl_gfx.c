@@ -263,9 +263,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    unsigned full_y = video_info->current_h;
    SSNES_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
-#ifndef XENON
    sdl_input_t *sdl_input = NULL;
-#endif
    const SDL_PixelFormat *fmt = NULL;
 
    if (!video->fullscreen)
@@ -314,7 +312,6 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
       goto error;
    }
 
-#ifndef XENON
    sdl_input = (sdl_input_t*)input_sdl.init();
    if (sdl_input)
    {
@@ -322,12 +319,10 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
       *input_data = sdl_input;
    }
    else
-#else
    {
       *input = NULL;
       *input_data = NULL;
    }
-#endif
 
    vid->rgb32 = video->rgb32;
 

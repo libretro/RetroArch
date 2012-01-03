@@ -1401,13 +1401,6 @@ static bool gl_xml_shader(void *data, const char *path)
 {
    gl_t *gl = (gl_t*)data;
 
-   //if (!gl_check_error())
-   //   SSNES_WARN("Error happened before deinit!\n");
-
-
-   //if (!gl_check_error())
-   //   SSNES_WARN("Error happened in deinit!\n");
-
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
    {
@@ -1424,9 +1417,6 @@ static bool gl_xml_shader(void *data, const char *path)
 #endif
 
    gl_shader_deinit();
-
-   //if (!gl_check_error())
-   //   SSNES_WARN("Failed to deinit rendering path properly!\n");
 
    if (!gl_glsl_init(path))
       return false;
