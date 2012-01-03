@@ -20,7 +20,7 @@ MACHDEP := -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 CXXFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
-LIBS := -lfat -logc -lsnes
+LIBS := -lfat -lsnes -lwiiuse -logc -lbte
 
 OBJ = wii/main.o fifo_buffer.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o wii/audio.o wii/input.o wii/video.o
 
