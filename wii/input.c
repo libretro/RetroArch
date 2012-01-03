@@ -62,10 +62,16 @@ static void reset_callback(void)
 
 static void *wii_input_init(void)
 {
-   PAD_Init();
-   WPAD_Init();
-   SYS_SetResetCallback(reset_callback);
-   SYS_SetPowerCallback(reset_callback);
+   static bool inited = false;
+   if (!inited)
+   {
+      PAD_Init();
+      WPAD_Init();
+      SYS_SetResetCallback(reset_callback);
+      SYS_SetPowerCallback(reset_callback);
+      inited = true;
+   }
+
    return (void*)-1;
 }
 
