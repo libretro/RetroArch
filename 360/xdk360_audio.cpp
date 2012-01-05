@@ -69,12 +69,12 @@ struct XAudio : public IXAudio2VoiceCallback
       wfx.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
       wfx.nChannels = 2;
       wfx.nSamplesPerSec = rate;
-      wfx.nBlockAlign = channels * sizeof(float);
+      wfx.nBlockAlign = 2 * sizeof(float);
       wfx.wBitsPerSample = sizeof(float) * 8;
       wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
       wfx.cbSize = 0;
 
-      if (FAILED(pXAudio2->CreateSourceVoice(&xa->pSourceVoice, &wfx,
+      if (FAILED(pXAudio2->CreateSourceVoice(&pSourceVoice, &wfx,
                   XAUDIO2_VOICE_NOSRC, XAUDIO2_DEFAULT_FREQ_RATIO, this, 0, 0)))
          return false;
 
@@ -90,9 +90,9 @@ struct XAudio : public IXAudio2VoiceCallback
 
    size_t write(const uint8_t *buffer, size_t size)
    {
-      if (xa->nonblock)
+      if (nonblock)
       {
-         size_t avail = xa->bufsize * (MAX_BUFFERS - xa->buffers - 1);
+         size_t avail = bufsize * (MAX_BUFFERS - buffers - 1);
          if (avail == 0)
             return 0;
          if (avail < size)
@@ -128,7 +128,7 @@ struct XAudio : public IXAudio2VoiceCallback
          }
       }
 
-      return bytes_;
+      return size;
    }
 
    STDMETHOD_(void, OnBufferStart) (void *) {}
