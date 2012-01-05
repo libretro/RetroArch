@@ -18,8 +18,8 @@
 #include <xtl.h>
 #include <xboxmath.h>
 
-#include "driver.h"
-#include "general.h"
+#include "../driver.h"
+#include "../general.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -80,13 +80,14 @@ typedef struct gl
    IDirect3DDevice9* xdk360_render_device;
    IDirect3DVertexShader9 *pVertexShader;
    IDirect3DPixelShader9* pPixelShader;
+   IDirect3DVertexDeclaration9* pVertexDecl;
    XMMATRIX matWVP;
    unsigned frame_count;
 } gl_t;
 
 static void xdk360_gfx_free(void *data)
 {
-   gl_t *vid = data;
+   gl_t *vid = (gl_t*)data;
    if (!vid)
       return;
 
@@ -95,7 +96,7 @@ static void xdk360_gfx_free(void *data)
 
 static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-  gl_t * gl = calloc(1, sizeof(gl_t));
+  gl_t * gl = (gl_t*)calloc(1, sizeof(gl_t));
   if (!gl)
       return NULL;
 
@@ -181,9 +182,8 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
   };
 
   /* Create a vertex declaration from the element descriptions.*/
-  IDirect3DVertexDeclaration9* pVertexDecl;
-  g_pd3dDevice->CreateVertexDeclaration( VertexElements, &pVertexDecl );
-
+  gl->xdk360_render_device->CreateVertexDeclaration( VertexElements, &gl->pVertexDecl );
+  
   /* World matrix (identity in this sample)*/
   XMMATRIX matWorld = XMMatrixIdentity();
 
@@ -211,7 +211,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
 
 static bool xdk360_gfx_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   gl_t *vid = data;
+   gl_t *vid = (gl_t*)data;
 
    vid->frame_count++;
 
@@ -220,14 +220,14 @@ static bool xdk360_gfx_frame(void *data, const void *frame, unsigned width, unsi
    0xff000000, 1.0f, 0L );
 
    /* Set shaders. */
-   vid->xdk360_render_device->SetVertexShader( gl->pVertexShader );
-   vid->xdk360_render_device->SetPixelShader( gl->pPixelShader );
+   vid->xdk360_render_device->SetVertexShader( vid->pVertexShader );
+   vid->xdk360_render_device->SetPixelShader( vid->pPixelShader );
 
    // Set shader constants.
    vid->xdk360_render_device->SetVertexShaderConstantF( 0, ( FLOAT* )&vid->matWVP, 4 );
 
    // Set the vertex declaration.
-   vid->xdk360_render_device->SetVertexDeclaration( pVertexDecl );
+   vid->xdk360_render_device->SetVertexDeclaration( vid->pVertexDecl );
 
    // Draw
    vid->xdk360_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2 );
@@ -258,12 +258,13 @@ static bool xdk360_gfx_focus(void *data)
 
 
 const video_driver_t video_xdk360 = {
-   .init = xdk360_gfx_init,
-   .frame = xdk360_gfx_frame,
-   .alive = xdk360_gfx_alive,
-   .set_nonblock_state = xdk360_gfx_set_nonblock_state,
-   .focus = xdk360_gfx_focus,
-   .free = xdk360_gfx_free,
-   .ident = "xdk360"
+   xdk360_gfx_init,
+   xdk360_gfx_frame,
+   xdk360_gfx_set_nonblock_state,
+   xdk360_gfx_alive,
+   xdk360_gfx_focus,
+   NULL,
+   xdk360_gfx_free,
+   "xdk360"
 };
 

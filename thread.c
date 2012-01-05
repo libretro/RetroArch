@@ -18,9 +18,11 @@
 #include "thread.h"
 #include <stdlib.h>
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#elif defined(_XBOX)
+#include <xtl.h>
 #else
 #include <pthread.h>
 #include <time.h>

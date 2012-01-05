@@ -32,11 +32,18 @@
 #include "sha256.h"
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
 #include <io.h>
 #include <fcntl.h>
 #include <windows.h>
 #include <shlwapi.h>
+#ifdef _MSC_VER
+#define setmode _setmode
+#endif
+#elif defined(_XBOX)
+#include <xtl.h>
+#define FindFirstFileW FindFirstFile
+#define FindNextFileW FindNextFile
 #ifdef _MSC_VER
 #define setmode _setmode
 #endif
@@ -244,7 +251,7 @@ static ssize_t read_rom_file(FILE* file, void** buf)
 
    if (file == NULL) // stdin
    {
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
       setmode(0, O_BINARY);
 #endif
 

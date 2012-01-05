@@ -71,6 +71,9 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef XENON
    &audio_xenon360,
 #endif
+#ifdef _XBOX
+   &audio_xdk360,
+#endif
 #ifdef GEKKO
    &audio_wii,
 #endif
@@ -82,6 +85,9 @@ static const video_driver_t *video_drivers[] = {
 #endif
 #ifdef XENON
    &video_xenon360,
+#endif
+#ifdef _XBOX
+   &video_xdk360,
 #endif
 #ifdef HAVE_SDL
    &video_sdl,
@@ -109,6 +115,9 @@ static const input_driver_t *input_drivers[] = {
 #endif
 #ifdef XENON
    &input_xenon360,
+#endif
+#ifdef _XBOX
+   &input_xdk360,
 #endif
 #ifdef GEKKO
    &input_wii,

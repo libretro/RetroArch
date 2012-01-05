@@ -39,6 +39,7 @@
 #define VIDEO_EXT 14
 #define VIDEO_WII 24
 #define VIDEO_XENON360 25
+#define VIDEO_XDK360 28
 ////////////////////////
 #define AUDIO_RSOUND 1
 #define AUDIO_OSS 2
@@ -55,12 +56,14 @@
 #define AUDIO_PS3 18
 #define AUDIO_XENON360 20
 #define AUDIO_WII 22
+#define AUDIO_XDK360 27
 ////////////////////////
 #define INPUT_SDL 7
 #define INPUT_X 12
 #define INPUT_PS3 19
 #define INPUT_XENON360 21
 #define INPUT_WII 23
+#define INPUT_XDK360 26
 ////////////////////////
 
 #if defined(HAVE_OPENGL) || defined(__CELLOS_LV2__)
@@ -69,6 +72,8 @@
 #define VIDEO_DEFAULT_DRIVER VIDEO_WII
 #elif defined(XENON)
 #define VIDEO_DEFAULT_DRIVER VIDEO_XENON360
+#elif defined(_XBOX)
+#define VIDEO_DEFAULT_DRIVER VIDEO_XDK360
 #elif defined(HAVE_XVIDEO)
 #define VIDEO_DEFAULT_DRIVER VIDEO_XVIDEO
 #elif defined(HAVE_SDL)
@@ -83,6 +88,8 @@
 #define AUDIO_DEFAULT_DRIVER AUDIO_PS3
 #elif defined(XENON)
 #define AUDIO_DEFAULT_DRIVER AUDIO_XENON360
+#elif defined(_XBOX)
+#define AUDIO_DEFAULT_DRIVER AUDIO_XDK360
 #elif defined(GEKKO)
 #define AUDIO_DEFAULT_DRIVER AUDIO_WII
 #elif defined(HAVE_ALSA)
@@ -115,6 +122,8 @@
 
 #if defined(XENON)
 #define INPUT_DEFAULT_DRIVER INPUT_XENON360
+#elif defined(_XBOX)
+#define INPUT_DEFAULT_DRIVER INPUT_XDK360
 #elif defined(HAVE_SDL)
 #define INPUT_DEFAULT_DRIVER INPUT_SDL
 #elif defined(__CELLOS_LV2__)

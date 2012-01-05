@@ -8,7 +8,7 @@
 #include <xtl.h>
 #include <xaudio2.h>
 #include "xdk360_audio.h"
-#include "../msvc-360/msvc_compat.h"
+#include "msvc_compat.h"
 
 #define MAX_BUFFERS 16
 #define MAX_BUFFERS_MASK (MAX_BUFFERS - 1)
@@ -46,16 +46,6 @@ static void WINAPI dummy_voidp(void *handle, void *data) { (void)handle; (void)d
 static void WINAPI dummy_nil(void *handle) { (void)handle; }
 static void WINAPI dummy_uint32(void *handle, UINT32 dummy) { (void)handle; (void)dummy; }
 static void WINAPI dummy_voidp_hresult(void *handle, void *data, HRESULT dummy) { (void)handle; (void)data; (void)dummy; }
-
-const struct IXAudio2VoiceCallbackVtbl voice_vtable = {
-   dummy_uint32,
-   dummy_nil,
-   dummy_nil,
-   dummy_voidp,
-   voice_on_buffer_end,
-   dummy_voidp,
-   dummy_voidp_hresult,
-};
    
 xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels, size_t size)
 {
@@ -64,7 +54,6 @@ xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels, size_t size)
       return NULL;
 
    handle->lpVtbl = &voice_vtable;
-   CoInitializeEx(0, COINIT_MULTITHREADED);
    WAVEFORMATEX wfx = {0};
 
    if (FAILED(XAudio2Create(&handle->pXAudio2)))
