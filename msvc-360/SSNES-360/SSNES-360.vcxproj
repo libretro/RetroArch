@@ -234,13 +234,17 @@
     <ClCompile Include="..\..\360\xdk360_audio.c" />
     <ClCompile Include="..\..\360\xdk360_input.cpp" />
     <ClCompile Include="..\..\360\xdk360_video.cpp" />
+    <ClCompile Include="..\..\audio\hermite.c" />
+    <ClCompile Include="..\..\audio\utils.c" />
     <ClCompile Include="..\..\autosave.c" />
     <ClCompile Include="..\..\bps.c" />
     <ClCompile Include="..\..\cheats.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\driver.c" />
-    <ClCompile Include="..\..\dynamic.c" />
+    <ClCompile Include="..\..\dynamic.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\fifo_buffer.c" />
     <ClCompile Include="..\..\file.c" />
     <ClCompile Include="..\..\getopt.c" />
@@ -262,6 +266,8 @@
   <ItemGroup>
     <ClInclude Include="..\..\360\msvc_compat.h" />
     <ClInclude Include="..\..\360\xdk360_audio.h" />
+    <ClInclude Include="..\..\audio\hermite.h" />
+    <ClInclude Include="..\..\audio\utils.h" />
     <ClInclude Include="..\..\autosave.h" />
     <ClInclude Include="..\..\boolean.h" />
     <ClInclude Include="..\..\bps.h" />

@@ -15,6 +15,12 @@
     <Filter Include="Header Files\360">
       <UniqueIdentifier>{740056e8-6476-4e8c-b9cb-767bebdb5c60}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\audio">
+      <UniqueIdentifier>{c8038d65-499b-493b-80e9-90bd7c57383f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\audio">
+      <UniqueIdentifier>{747ac5fa-bd8a-4e60-9246-7a8fb0d38b85}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\360\xdk360_video.cpp">
@@ -85,6 +91,12 @@
     </ClCompile>
     <ClCompile Include="..\..\thread.c">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\audio\hermite.c">
+      <Filter>Source Files\audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\audio\utils.c">
+      <Filter>Source Files\audio</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -162,6 +174,12 @@
     </ClInclude>
     <ClInclude Include="..\..\360\msvc_compat.h">
       <Filter>Header Files\360</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\audio\hermite.h">
+      <Filter>Header Files\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\audio\utils.h">
+      <Filter>Header Files\audio</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

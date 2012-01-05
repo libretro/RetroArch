@@ -208,7 +208,7 @@ static void xa_free(void *data)
    }
 }
 
-const audio_driver_t audio_xa = {
+const audio_driver_t audio_xdk360 = {
    xa_init,
    xa_write,
    xa_stop,

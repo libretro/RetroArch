@@ -94,7 +94,7 @@ static int16_t xdk360_input_state(void *data, const struct snes_keybind **binds,
          button = 0;
    }
 
-   return (state[player] & button) ? 1 : 0;
+   return (state[player].Gamepad.wButtons & button) ? 1 : 0;
 }
 
 static void xdk360_free_input(void *data)
