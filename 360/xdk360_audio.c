@@ -24,10 +24,127 @@
 #define MAX_BUFFERS 16
 #define MAX_BUFFERS_MASK 15
 
-typedef struct
+struct XAudio : public IXAudio2VoiceCallback
 {
+   XAudio() :
+      buf(0), pXAudio2(0), pMasteringVoice(0),
+      pSourceVoice(0), nonblock(false), bufsize(0),
+      bufptr(0), write_buffer(0), buffers(0), hEvent(0)
+   {}
+
+   ~XAudio()
+   {
+      if (pSourceVoice)
+      {
+         pSourceVoice->Stop(0, XAUDIO2_COMMIT_NOW);
+         pSourceVoice->DestroyVoice();
+      }
+
+      if (pMasteringVoice)
+         pMasteringVoice->DestroyVoice();
+
+      if (pXAudio2)
+         pXAudio2->Release();
+
+      if (hEvent)
+         CloseHandle(hEvent);
+
+      delete [] buf;
+   }
+
+   bool init(unsigned rate, unsigned latency)
+   {
+      size_t bufsize_ = latency * rate / 1000;
+      size_t size = bufsize_ * 2 * sizeof(float);
+
+      SSNES_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize_ * 1000 / rate);
+
+      if (FAILED(XAudio2Create(&pXAudio2, 0)))
+         return false;
+
+      if (FAILED(pXAudio2->CreateMasteringVoice(&pMasteringVoice, 2, rate, 0, 0, NULL)))
+         return false;
+
+      WAVEFORMATEX wfx = {0};
+      wfx.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
+      wfx.nChannels = 2;
+      wfx.nSamplesPerSec = rate;
+      wfx.nBlockAlign = channels * sizeof(float);
+      wfx.wBitsPerSample = sizeof(float) * 8;
+      wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
+      wfx.cbSize = 0;
+
+      if (FAILED(pXAudio2->CreateSourceVoice(&xa->pSourceVoice, &wfx,
+                  XAUDIO2_VOICE_NOSRC, XAUDIO2_DEFAULT_FREQ_RATIO, this, 0, 0)))
+         return false;
+
+      bufsize = size / MAX_BUFFERS;
+      buf = new uint8_t[bufsize * MAX_BUFFERS];
+      memset(buf, 0, bufsize * MAX_BUFFERS);
+
+      if (FAILED(pSourceVoice->Start(0)))
+         return false;
+
+      return true;
+   }
+
+   size_t write(const uint8_t *buffer, size_t size)
+   {
+      if (xa->nonblock)
+      {
+         size_t avail = xa->bufsize * (MAX_BUFFERS - xa->buffers - 1);
+         if (avail == 0)
+            return 0;
+         if (avail < size)
+            size = avail;
+      }
+
+      unsigned bytes = size;
+      while (bytes)
+      {
+         unsigned need = min(bytes, bufsize - bufptr);
+         memcpy(buf + write_buffer * bufsize + bufptr,
+               buffer, need);
+
+         bufptr += need;
+         buffer += need;
+         bytes -= need;
+
+         if (bufptr == bufsize)
+         {
+            while (buffers == MAX_BUFFERS - 1)
+               WaitForSingleObject(hEvent, INFINITE);
+
+            XAUDIO2_BUFFER xa2buffer = {0};
+            xa2buffer.AudioBytes = bufsize;
+            xa2buffer.pAudioData = buf + write_buffer * bufsize;
+
+            if (FAILED(pSourceVoice->SubmitSourceBuffer(&xa2buffer)))
+               return 0;
+
+            InterlockedIncrement(&buffers);
+            bufptr = 0;
+            write_buffer = (write_buffer + 1) & MAX_BUFFERS_MASK;
+         }
+      }
+
+      return bytes_;
+   }
+
+   STDMETHOD_(void, OnBufferStart) (void *) {}
+   STDMETHOD_(void, OnBufferEnd) (void *) 
+   {
+      InterlockedDecrement(&buffers);
+      SetEvent(hEvent);
+   }
+   STDMETHOD_(void, OnLoopEnd) (void *) {}
+   STDMETHOD_(void, OnStreamEnd) () {}
+   STDMETHOD_(void, OnVoiceError) (void *, HRESULT) {}
+   STDMETHOD_(void, OnVoiceProcessingPassEnd) () {}
+   STDMETHOD_(void, OnVoiceProcessingPassStart) (UINT32) {}
+
    uint8_t *buf;
-   IXAudio2 * pXAudio2;
+   IXAudio2 *pXAudio2;
    IXAudio2MasteringVoice *pMasteringVoice;
    IXAudio2SourceVoice *pSourceVoice;
    bool nonblock;
@@ -36,114 +153,32 @@ typedef struct
    unsigned write_buffer;
    volatile long buffers;
    HANDLE hEvent;
-} xa_t;
+};
+
+typedef struct xa XAudio;
 
 static void *xa_init(const char *device, unsigned rate, unsigned latency)
 {
-   HRESULT hr;
-   unsigned flags;
-   WAVEFORMATEXTENSIBLE wfx;
-
-   flags = 0;
-
    if (latency < 8)
       latency = 8; // Do not allow shenanigans.
 
-   xa_t *xa = (xa_t*)calloc(1, sizeof(*xa));
-   if (!xa)
+   XAudio *xa = new XAudio;
+   if (!xa->init(rate, latency))
    	goto error;
-
-   size_t bufsize = latency * rate / 1000;
-   size_t size = bufsize * 2 * sizeof(float);
-
-   SSNES_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize * 1000 / rate);
-
-   if( FAILED( hr = XAudio2Create(&xa->pXAudio2, flags)))
-   	goto error;
-
-   if (FAILED(xa->pXAudio2->CreateMasteringVoice(&xa->pMasteringVoice, 2, rate, 0, 0, NULL)))
-      goto error;
-
-   //wfx.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
-   //wfx.nChannels = 2;
-   //wfx.nSamplesPerSec = rate;
-   //wfx.nBlockAlign = channels * sizeof(float);
-   //wfx.wBitsPerSample = sizeof(float) * 8;
-   //wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
-   //wfx.cbSize = 0;
-
-   if( FAILED( hr = xa->pXAudio2->CreateSourceVoice( &xa->pSourceVoice, ( WAVEFORMATEX*)&wfx ) ) )
-   	goto error;
-
-   xa->bufsize = size / MAX_BUFFERS;
-   xa->buf = (uint8_t*)calloc(1, xa->bufsize * MAX_BUFFERS);
-
-   if (!xa->buf)
-   	goto error;
-
-   if( FAILED(xa->pSourceVoice->Start(0)))
-        goto error;
-
-   if (!xa->pXAudio2)
-	   goto error;
 
    return xa;
 
 error:
    SSNES_ERR("Failed to init XAudio2.\n");
-   free(xa);
+   delete xa;
    return NULL;
-}
-
-static size_t xaudio2_write(xa_t *handle, const void *buf, size_t bytes_)
-{
-   unsigned bytes = bytes_;
-   const uint8_t *buffer = (const uint8_t*)buf;
-   while (bytes)
-   {
-      unsigned need = min(bytes, handle->bufsize - handle->bufptr);
-      memcpy(handle->buf + handle->write_buffer * handle->bufsize + handle->bufptr,
-            buffer, need);
-
-      handle->bufptr += need;
-      buffer += need;
-      bytes -= need;
-
-      if (handle->bufptr == handle->bufsize)
-      {
-         while (handle->buffers == MAX_BUFFERS - 1)
-            WaitForSingleObject(handle->hEvent, INFINITE);
-
-         XAUDIO2_BUFFER xa2buffer = {0};
-         xa2buffer.AudioBytes = handle->bufsize;
-         xa2buffer.pAudioData = handle->buf + handle->write_buffer * handle->bufsize;
-
-         if (FAILED(handle->pSourceVoice->SubmitSourceBuffer(&xa2buffer)))
-            return 0;
-
-         InterlockedIncrement(&handle->buffers);
-         handle->bufptr = 0;
-         handle->write_buffer = (handle->write_buffer + 1) & MAX_BUFFERS_MASK;
-      }
-   }
-
-   return bytes_;
 }
 
 static ssize_t xa_write(void *data, const void *buf, size_t size)
 {
-   size_t avail;
-   xa_t *xa = (xa_t*)data;
-   if (xa->nonblock)
-   {
-      avail = (xa->bufsize * (MAX_BUFFERS - xa->buffers - 1));
-      if (avail == 0)
-         return 0;
-      if (avail < size)
-         size = avail;
-   }
+   XAudio *xa = (XAudio*)data;
+   size_t ret = xa->write((const uint8_t*)buf, size);
 
-   size_t ret = xaudio2_write(xa, buf, size);
    if (ret == 0)
       return -1;
    return ret;
@@ -157,7 +192,7 @@ static bool xa_stop(void *data)
 
 static void xa_set_nonblock_state(void *data, bool state)
 {
-   xa_t *xa = (xa_t*)data;
+   XAudio *xa = (XAudio*)data;
    xa->nonblock = state;
 }
 
@@ -173,39 +208,11 @@ static bool xa_use_float(void *data)
    return true;
 }
 
-static void xaudio2_free(xa_t *handle)
-{
-   if (handle)
-   {
-      if (handle->pSourceVoice)
-      {
-         handle->pSourceVoice->Stop(0, XAUDIO2_COMMIT_NOW);
-         handle->pSourceVoice->DestroyVoice();
-      }
-
-      if (handle->pMasteringVoice)
-         handle->pMasteringVoice->DestroyVoice();
-
-      if (handle->pXAudio2)
-         handle->pXAudio2->Release();
-
-      if (handle->hEvent)
-         CloseHandle(handle->hEvent);
-
-      free(handle->buf);
-      free(handle);
-   }
-}
-
 static void xa_free(void *data)
 {
-   xa_t *xa = (xa_t*)data;
+   XAudio *xa = (XAudio*)data;
    if (xa)
-   {
-      if (xa->pXAudio2)
-         xaudio2_free(xa);
-      free(xa->pXAudio2);
-   }
+      delete xa;
 }
 
 const audio_driver_t audio_xdk360 = {
