@@ -106,14 +106,17 @@
       <MinimalRebuild>true</MinimalRebuild>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PreprocessorDefinitions>_DEBUG;_XBOX;PACKAGE_VERSION="0.9.3";%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.3";_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_XBOX;PACKAGE_VERSION="0.9.3";%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.3";_CRT_SECURE_NO_WARNINGS;main=ssnes_main;HAVE_CONFIGFILE</PreprocessorDefinitions>
       <CallAttributedProfiling>Callcap</CallAttributedProfiling>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(OutDir)$(ProjectName).pdb</ProgramDatabaseFile>
-      <AdditionalDependencies>xapilibd.lib;d3d9d.lib;d3dx9d.lib;xgraphicsd.lib;xboxkrnl.lib;xnetd.lib;xaudiod2.lib;xactd3.lib;x3daudiod.lib;xmcored.lib;xbdm.lib;vcompd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xapilibd.lib;d3d9d.lib;d3dx9d.lib;xgraphicsd.lib;xboxkrnl.lib;xnetd.lib;xaudiod2.lib;xactd3.lib;x3daudiod.lib;xmcored.lib;xbdm.lib;vcompd.lib;$(SolutionDir)\Debug\snes9x-next-360-msvc2010.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Deploy>
+      <DeploymentType>CopyToHardDrive</DeploymentType>
+    </Deploy>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">
     <ClCompile>
@@ -126,7 +129,7 @@
       <PREfast>AnalyzeOnly</PREfast>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PreprocessorDefinitions>_DEBUG;_XBOX;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.3";_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_XBOX;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.3";_CRT_SECURE_NO_WARNINGS;main=ssnes_main;HAVE_CONFIGFILE</PreprocessorDefinitions>
       <CallAttributedProfiling>Callcap</CallAttributedProfiling>
     </ClCompile>
     <Link>
@@ -147,7 +150,7 @@
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.3";_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.3";_CRT_SECURE_NO_WARNINGS;main=ssnes_main;HAVE_CONFIGFILE</PreprocessorDefinitions>
       <CallAttributedProfiling>Callcap</CallAttributedProfiling>
     </ClCompile>
     <Link>
@@ -173,7 +176,7 @@
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;FASTCAP;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.3";_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;FASTCAP;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.3";_CRT_SECURE_NO_WARNINGS;main=ssnes_main;HAVE_CONFIGFILE</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -196,7 +199,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.3";_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.3";_CRT_SECURE_NO_WARNINGS;main=ssnes_main;HAVE_CONFIGFILE</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -204,8 +207,11 @@
       <OptimizeReferences>true</OptimizeReferences>
       <ProgramDatabaseFile>$(OutDir)$(ProjectName).pdb</ProgramDatabaseFile>
       <SetChecksum>true</SetChecksum>
-      <AdditionalDependencies>xapilib.lib;d3d9.lib;d3dx9.lib;xgraphics.lib;xboxkrnl.lib;xnet.lib;xaudio2.lib;xact3.lib;x3daudio.lib;xmcore.lib;vcomp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xapilib.lib;d3d9.lib;d3dx9.lib;xgraphics.lib;xboxkrnl.lib;xnet.lib;xaudio2.lib;xact3.lib;x3daudio.lib;xmcore.lib;vcomp.lib;$(SolutionDir)\Release\snes9x-next-360-msvc2010.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Deploy>
+      <DeploymentType>CopyToHardDrive</DeploymentType>
+    </Deploy>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">
     <ClCompile>
@@ -219,7 +225,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;LTCG;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.3";_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;LTCG;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.3";_CRT_SECURE_NO_WARNINGS;main=ssnes_main;HAVE_CONFIGFILE</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -231,6 +237,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\360\main.c" />
     <ClCompile Include="..\..\360\xdk360_audio.cpp" />
     <ClCompile Include="..\..\360\xdk360_input.cpp" />
     <ClCompile Include="..\..\360\xdk360_video.cpp" />
@@ -242,6 +249,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\conf\config_file.c" />
     <ClCompile Include="..\..\driver.c" />
     <ClCompile Include="..\..\dynamic.c" />
     <ClCompile Include="..\..\fifo_buffer.c" />
@@ -274,6 +282,7 @@
     <ClInclude Include="..\..\cheats.h" />
     <ClInclude Include="..\..\config.def.h" />
     <ClInclude Include="..\..\config.features.h" />
+    <ClInclude Include="..\..\conf\config_file.h" />
     <ClInclude Include="..\..\driver.h" />
     <ClInclude Include="..\..\dynamic.h" />
     <ClInclude Include="..\..\fifo_buffer.h" />

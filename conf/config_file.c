@@ -26,11 +26,13 @@
 #include "../posix_string.h"
 #include "../msvc/msvc_compat.h"
 
-#if !defined(_WIN32) && !defined(__CELLOS_LV2__)
+#if !defined(_WIN32) && !defined(__CELLOS_LV2__) && !defined(_XBOX)
 #include <sys/param.h> // PATH_MAX
-#elif defined(_WIN32)
+#elif defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#elif defined(_XBOX)
+#include <xtl.h>
 #endif
 
 #ifndef PATH_MAX
