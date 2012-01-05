@@ -26,7 +26,7 @@ int ssnes_main(int argc, char *argv[]);
 int main(int argc, char *argv[])
 {
    char arg1[] = "ssnes";
-   char arg2[] = "\\Device\\Harddisk0\\Partition\\roms\\mario.sfc";
+   char arg2[] = "\\Device\\Harddisk0\\Partition2\\roms\\mario.sfc";
    char arg3[] = "-v";
    char arg4[] = "-c";
    char arg5[] = "D:/roms/ssnes.cfg";
