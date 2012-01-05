@@ -301,12 +301,12 @@ static void parse_input(int argc, char *argv[])
 
 }
 
-// Windows is being bitchy. Cannot include SDL.h with a file that has main() it seems ... It simply won't run at all even with -lSDLmain.
-#ifdef _WIN32
-int real_main(int argc, char *argv[])
-#else
-int main(int argc, char *argv[])
+// Need SDL_main on OSX.
+#ifndef __APPLE__
+#undef main
 #endif
+
+int main(int argc, char *argv[])
 {
    parse_input(argc, argv);
 
