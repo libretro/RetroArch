@@ -204,23 +204,25 @@ static void add_sub_conf(config_file_t *conf, char *line)
    if (is_full_path)
       strlcpy(real_path, path, sizeof(real_path));
    else
-      GetFullPathName(path, sizeof(real_path), real_path, NULL);
-
-   if (strcmp(path, real_path) != 0)
    {
-      strlcpy(real_path, conf->path, sizeof(real_path));
-      char *split = strrchr(real_path, '/');
-      if (!split)
-         split = strrchr(real_path, '\\');
+      // Workaround GetFullPathName not existing on XDK.
+      // : is not a valid element in a path name. (NTFS streams?)
+      if (strchr(path, ':') == NULL)
+      {
+         strlcpy(real_path, conf->path, sizeof(real_path));
+         char *split = strrchr(real_path, '/');
+         if (!split)
+            split = strrchr(real_path, '\\');
 
-      split[1] = '\0';
-      strlcat(real_path, path, sizeof(real_path));
+         split[1] = '\0';
+         strlcat(real_path, path, sizeof(real_path));
+      }
+      else
+         strlcpy(real_path, path, sizeof(real_path));
    }
 #else
    if (*path == '/')
-   {
       strlcpy(real_path, path, sizeof(real_path));
-   }
 #ifndef __CELLOS_LV2__
    else if (*path == '~')
    {
