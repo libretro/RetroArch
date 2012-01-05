@@ -42,11 +42,7 @@
 #endif
 #elif defined(_XBOX)
 #include <xtl.h>
-#define FindFirstFileW FindFirstFile
-#define FindNextFileW FindNextFile
-#ifdef _MSC_VER
 #define setmode _setmode
-#endif
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -830,16 +826,10 @@ char **dir_list_new(const char *dir, const char *ext)
    char **dir_list = NULL;
 
 #ifdef _WIN32
-#if defined(_WIN32) && !defined(_XBOX)
-   WIN32_FIND_DATAW ffd;
-   wchar_t wchar_buf[PATH_MAX];
-#else
-   LPWIN32_FIND_DATA ffd;
-   LPWSTR wchar_buf;
-#endif
+   WIN32_FIND_DATA ffd;
    HANDLE hFind = INVALID_HANDLE_VALUE;
 
-   char utf8_buf[PATH_MAX];
+   char path_buf[PATH_MAX];
 
    if (strlcpy(utf8_buf, dir, sizeof(utf8_buf)) >= sizeof(utf8_buf))
       goto error;
@@ -852,14 +842,7 @@ char **dir_list_new(const char *dir, const char *ext)
          goto error;
    }
 
-   if (MultiByteToWideChar(CP_UTF8, 0, utf8_buf, -1, wchar_buf, PATH_MAX) == 0)
-      goto error;
-
-#ifdef _XBOX
-   hFind = FindFirstFile((LPCSTR)wchar_buf, ffd);
-#else
-   hFind = FindFirstFileW(wchar_buf, &ffd);
-#endif
+   hFind = FindFirstFile(path_buf, &ffd);
    if (hFind == INVALID_HANDLE_VALUE)
       goto error;
 #else
@@ -883,19 +866,9 @@ char **dir_list_new(const char *dir, const char *ext)
    {
       // Not a perfect search of course, but hopefully good enough in practice.
 #ifdef _WIN32
-#ifdef _XBOX
-      if (ffd->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-#else
-	  if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-#endif
+      if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
          continue;
-#ifdef _XBOX
-	  if (WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR)ffd->cFileName, -1, utf8_buf, PATH_MAX, NULL, NULL) == 0)
-#else
-      if (WideCharToMultiByte(CP_UTF8, 0, ffd.cFileName, -1, utf8_buf, PATH_MAX, NULL, NULL) == 0)
-#endif
-         continue;
-      if (ext && !strstr(utf8_buf, ext))
+      if (ext && !strstr(ffd.cFileName, ext))
          continue;
 #else
       if (ext && !strstr(entry->d_name, ext))
@@ -909,7 +882,7 @@ char **dir_list_new(const char *dir, const char *ext)
       strlcpy(dir_list[cur_ptr], dir, PATH_MAX);
       strlcat(dir_list[cur_ptr], "/", PATH_MAX);
 #ifdef _WIN32
-      strlcat(dir_list[cur_ptr], utf8_buf, PATH_MAX);
+      strlcat(dir_list[cur_ptr], ffd.cFileName, PATH_MAX);
 #else
       strlcat(dir_list[cur_ptr], entry->d_name, PATH_MAX);
 #endif
@@ -926,10 +899,8 @@ char **dir_list_new(const char *dir, const char *ext)
          memset(dir_list + cur_ptr, 0, (cur_size - cur_ptr) * sizeof(char*));
       }
    }
-#if defined(_WIN32) && !defined(_XBOX)
-   while (FindNextFileW(hFind, &ffd) != 0);
-#else
-   while (FindNextFile(hFind, ffd) != 0);
+#if defined(_WIN32)
+   while (FindNextFile(hFind, &ffd) != 0);
 #endif
 
 #ifdef _WIN32
