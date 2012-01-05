@@ -26,9 +26,6 @@
     <ClCompile Include="..\..\360\xdk360_video.cpp">
       <Filter>Source Files\360</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\360\xdk360_audio.c">
-      <Filter>Source Files\360</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\360\xdk360_input.cpp">
       <Filter>Source Files\360</Filter>
     </ClCompile>
@@ -97,6 +94,9 @@
     </ClCompile>
     <ClCompile Include="..\..\audio\utils.c">
       <Filter>Source Files\audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\360\xdk360_audio.cpp">
+      <Filter>Source Files\360</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
