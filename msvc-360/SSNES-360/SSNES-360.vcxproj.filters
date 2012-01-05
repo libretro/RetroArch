@@ -1,25 +1,31 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Source Files\360">
-      <UniqueIdentifier>{b9371e8d-2e72-4ced-8bf6-6ee6a77a1f78}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\360">
       <UniqueIdentifier>{740056e8-6476-4e8c-b9cb-767bebdb5c60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\audio">
+      <UniqueIdentifier>{747ac5fa-bd8a-4e60-9246-7a8fb0d38b85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\360">
+      <UniqueIdentifier>{b9371e8d-2e72-4ced-8bf6-6ee6a77a1f78}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\audio">
       <UniqueIdentifier>{c8038d65-499b-493b-80e9-90bd7c57383f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\audio">
-      <UniqueIdentifier>{747ac5fa-bd8a-4e60-9246-7a8fb0d38b85}</UniqueIdentifier>
+    <Filter Include="Header Files\conf">
+      <UniqueIdentifier>{755ce6db-d242-40fb-9c8b-c14154fc94e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\conf">
+      <UniqueIdentifier>{82e8787f-e939-4783-82e1-fcab34285121}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -97,6 +103,12 @@
     </ClCompile>
     <ClCompile Include="..\..\360\xdk360_audio.cpp">
       <Filter>Source Files\360</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\360\main.c">
+      <Filter>Source Files\360</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\conf\config_file.c">
+      <Filter>Source Files\conf</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -180,6 +192,9 @@
     </ClInclude>
     <ClInclude Include="..\..\audio\utils.h">
       <Filter>Header Files\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\conf\config_file.h">
+      <Filter>Header Files\conf</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
