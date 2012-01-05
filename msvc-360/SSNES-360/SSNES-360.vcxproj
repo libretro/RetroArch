@@ -241,9 +241,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\driver.c" />
-    <ClCompile Include="..\..\dynamic.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\..\dynamic.c" />
     <ClCompile Include="..\..\fifo_buffer.c" />
     <ClCompile Include="..\..\file.c" />
     <ClCompile Include="..\..\getopt.c" />
