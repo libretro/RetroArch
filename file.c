@@ -937,10 +937,7 @@ void dir_list_free(char **dir_list)
 bool path_is_directory(const char *path)
 {
 #ifdef _WIN32
-   wchar_t buf[PATH_MAX];
-   if (MultiByteToWideChar(CP_UTF8, 0, path, -1, buf, PATH_MAX) == 0)
-      return false;
-   return PathIsDirectoryW(buf) == FILE_ATTRIBUTE_DIRECTORY;
+   return PathIsDirectory(buf) == FILE_ATTRIBUTE_DIRECTORY;
 #elif defined(__CELLOS_LV2__)
    return false; // STUB
 #elif defined(XENON)
