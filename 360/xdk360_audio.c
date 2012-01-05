@@ -21,20 +21,30 @@
 #include <xaudio2.h>
 #include "../general.h"
 
+#define MAX_BUFFERS 16
+#define MAX_BUFFERS_MASK 15
+
 typedef struct
 {
+   uint8_t *buf;
    IXAudio2 * pXAudio2;
    IXAudio2MasteringVoice *pMasteringVoice;
    IXAudio2SourceVoice *pSourceVoice;
    bool nonblock;
    unsigned bufsize;
+   unsigned bufptr;
+   unsigned write_buffer;
    volatile long buffers;
+   HANDLE hEvent;
 } xa_t;
 
 static void *xa_init(const char *device, unsigned rate, unsigned latency)
 {
    HRESULT hr;
    unsigned flags;
+   WAVEFORMATEXTENSIBLE wfx;
+
+   flags = 0;
 
    if (latency < 8)
       latency = 8; // Do not allow shenanigans.
@@ -44,26 +54,23 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
    	goto error;
 
    size_t bufsize = latency * rate / 1000;
-   size_t size = busize * 2 * sizeof(float);
+   size_t size = bufsize * 2 * sizeof(float);
 
    SSNES_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize * 1000 / rate);
 
    if( FAILED( hr = XAudio2Create(&xa->pXAudio2, flags)))
    	goto error;
 
-   if (FAILED(IXAudio2_CreateMasteringVoice(xa->pXAudio2,
-   &xa->pMasterVoice, 2, rate, 0, 0, 0)))
+   if (FAILED(xa->pXAudio2->CreateMasteringVoice(&xa->pMasteringVoice, 2, rate, 0, 0, NULL)))
       goto error;
 
-   WAVEFORMATEXTENSIBLE wfx = {0};
-
-   wfx.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
-   wfx.nChannels = 2;
-   wfx.nSamplesPerSec = rate;
-   wfx.nBlockAlign = channels * sizeof(float);
-   wfx.wBitsPerSample = sizeof(float) * 8;
-   wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
-   wfx.cbSize = 0;
+   //wfx.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
+   //wfx.nChannels = 2;
+   //wfx.nSamplesPerSec = rate;
+   //wfx.nBlockAlign = channels * sizeof(float);
+   //wfx.wBitsPerSample = sizeof(float) * 8;
+   //wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
+   //wfx.cbSize = 0;
 
    if( FAILED( hr = xa->pXAudio2->CreateSourceVoice( &xa->pSourceVoice, ( WAVEFORMATEX*)&wfx ) ) )
    	goto error;
@@ -74,10 +81,10 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
    if (!xa->buf)
    	goto error;
 
-   if( FAILED(IXAUdio2SourceVoice_Start(xa->pSourceVoice, 0, XAUDIO2_COMMIT_NOW)))
+   if( FAILED(xa->pSourceVoice->Start(0)))
         goto error;
 
-   if (!xa->xa)
+   if (!xa->pXAudio2)
 	   goto error;
 
    return xa;
@@ -111,7 +118,7 @@ static size_t xaudio2_write(xa_t *handle, const void *buf, size_t bytes_)
          xa2buffer.AudioBytes = handle->bufsize;
          xa2buffer.pAudioData = handle->buf + handle->write_buffer * handle->bufsize;
 
-         if (FAILED(IXAudio2SourceVoice_SubmitSourceBuffer(handle->pSourceVoice, &xa2buffer, NULL)))
+         if (FAILED(handle->pSourceVoice->SubmitSourceBuffer(&xa2buffer)))
             return 0;
 
          InterlockedIncrement(&handle->buffers);
@@ -125,17 +132,18 @@ static size_t xaudio2_write(xa_t *handle, const void *buf, size_t bytes_)
 
 static ssize_t xa_write(void *data, const void *buf, size_t size)
 {
+   size_t avail;
    xa_t *xa = (xa_t*)data;
    if (xa->nonblock)
    {
-      size_t avail = (xa->bufsize * (MAX_BUFFERS - xa->buffers - 1);
+      avail = (xa->bufsize * (MAX_BUFFERS - xa->buffers - 1));
       if (avail == 0)
          return 0;
       if (avail < size)
          size = avail;
    }
 
-   size_t ret = xaudio2_write(xa->pXAudio2, buf, size);
+   size_t ret = xaudio2_write(xa, buf, size);
    if (ret == 0)
       return -1;
    return ret;
@@ -171,15 +179,15 @@ static void xaudio2_free(xa_t *handle)
    {
       if (handle->pSourceVoice)
       {
-         IXAudio2SourceVoice_Stop(handle->pSourceVoice, 0, XAUDIO2_COMMIT_NOW);
-         IXAudio2SourceVoice_DestroyVoice(handle->pSourceVoice);
+         handle->pSourceVoice->Stop(0, XAUDIO2_COMMIT_NOW);
+         handle->pSourceVoice->DestroyVoice();
       }
 
-      if (handle->pMasterVoice)
-         IXAudio2MasteringVoice_DestroyVoice(handle->pMasterVoice);
+      if (handle->pMasteringVoice)
+         handle->pMasteringVoice->DestroyVoice();
 
       if (handle->pXAudio2)
-         IXAudio2_Release(handle->pXAudio2);
+         handle->pXAudio2->Release();
 
       if (handle->hEvent)
          CloseHandle(handle->hEvent);
@@ -194,9 +202,9 @@ static void xa_free(void *data)
    xa_t *xa = (xa_t*)data;
    if (xa)
    {
-      if (xa->xa)
-         xaudio2_free(xa->xa);
-      free(xa);
+      if (xa->pXAudio2)
+         xaudio2_free(xa);
+      free(xa->pXAudio2);
    }
 }
 
