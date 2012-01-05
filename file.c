@@ -831,14 +831,14 @@ char **dir_list_new(const char *dir, const char *ext)
 
    char path_buf[PATH_MAX];
 
-   if (strlcpy(utf8_buf, dir, sizeof(utf8_buf)) >= sizeof(utf8_buf))
+   if (strlcpy(path_buf, dir, sizeof(path_buf)) >= sizeof(path_buf))
       goto error;
-   if (strlcat(utf8_buf, "/*", sizeof(utf8_buf)) >= sizeof(utf8_buf))
+   if (strlcat(path_buf, "/*", sizeof(path_buf)) >= sizeof(path_buf))
       goto error;
 
    if (ext)
    {
-      if (strlcat(utf8_buf, ext, sizeof(utf8_buf)) >= sizeof(utf8_buf))
+      if (strlcat(path_buf, ext, sizeof(path_buf)) >= sizeof(path_buf))
          goto error;
    }
 
