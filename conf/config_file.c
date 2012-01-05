@@ -204,7 +204,7 @@ static void add_sub_conf(config_file_t *conf, char *line)
    if (is_full_path)
       strlcpy(real_path, path, sizeof(real_path));
    else
-      GetFullPathNameA(path, sizeof(real_path), real_path, NULL);
+      GetFullPathName(path, sizeof(real_path), real_path, NULL);
 
    if (strcmp(path, real_path) != 0)
    {
