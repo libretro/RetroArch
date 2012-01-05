@@ -36,7 +36,6 @@
 #include <io.h>
 #include <fcntl.h>
 #include <windows.h>
-#include <shlwapi.h>
 #ifdef _MSC_VER
 #define setmode _setmode
 #endif
@@ -937,7 +936,7 @@ void dir_list_free(char **dir_list)
 bool path_is_directory(const char *path)
 {
 #ifdef _WIN32
-   return PathIsDirectory(path) == FILE_ATTRIBUTE_DIRECTORY;
+   return GetFileAttributes(path) == FILE_ATTRIBUTE_DIRECTORY;
 #elif defined(__CELLOS_LV2__)
    return false; // STUB
 #elif defined(XENON)
