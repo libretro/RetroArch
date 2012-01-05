@@ -155,8 +155,6 @@ struct XAudio : public IXAudio2VoiceCallback
    HANDLE hEvent;
 };
 
-typedef struct xa XAudio;
-
 static void *xa_init(const char *device, unsigned rate, unsigned latency)
 {
    if (latency < 8)
