@@ -369,9 +369,9 @@ static const char *ramtype2str(int type)
 // Attempt to save valuable RAM data somewhere ...
 static void dump_to_file_desperate(const void *data, size_t size, int type)
 {
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
    const char *base = getenv("APPDATA");
-#elif defined(__CELLOS_LV2__)
+#elif defined(__CELLOS_LV2__) || defined(_XBOX)
    const char *base = NULL;
 #else
    const char *base = getenv("HOME");

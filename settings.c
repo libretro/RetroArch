@@ -225,7 +225,7 @@ void parse_config(void)
 static config_file_t *open_default_config_file(void)
 {
    config_file_t *conf = NULL;
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
    // Just do something for now.
    conf = config_file_new("ssnes.cfg");
    if (!conf)
@@ -250,7 +250,7 @@ static config_file_t *open_default_config_file(void)
    }
    if (!conf)
       conf = config_file_new("/etc/ssnes.cfg");
-#elif defined(__CELLOS_LV2__)
+#elif defined(__CELLOS_LV2__) || defined(_XBOX)
    return NULL;
 #else
    const char *xdg = getenv("XDG_CONFIG_HOME");
