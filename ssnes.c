@@ -605,7 +605,7 @@ static void parse_input(int argc, char *argv[])
 
    int val = 0;
 
-   struct option opts[] = {
+   const struct option opts[] = {
 #ifdef HAVE_DYNAMIC
       { "libsnes", 1, NULL, 'L' },
 #endif
@@ -673,7 +673,7 @@ static void parse_input(int argc, char *argv[])
 #define NETPLAY_ARG
 #endif
 
-   char optstring[] = "hs:fvS:m:p4jJg:b:B:Y:Z:P:R:M:U:DN:X:" NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+   const char *optstring = "hs:fvS:m:p4jJg:b:B:Y:Z:P:R:M:U:DN:X:" NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for (;;)
    {
       val = 0;
