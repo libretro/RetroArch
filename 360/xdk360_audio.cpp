@@ -116,7 +116,7 @@ struct XAudio : public IXAudio2VoiceCallback
          unsigned need = min(bytes, bufsize - bufptr);
          uint32_t *base_write = buf + ((write_buffer * bufsize + bufptr) >> 2);
          for (unsigned i = 0; i < need >> 2; i++)
-            base_write[i] = bswap_32(buffer[i]);
+            base_write[i] = (buffer[i]);
 
          bufptr += need;
          buffer += need;
@@ -129,7 +129,7 @@ struct XAudio : public IXAudio2VoiceCallback
 
             XAUDIO2_BUFFER xa2buffer = {0};
             xa2buffer.AudioBytes = bufsize;
-            xa2buffer.pAudioData = buf + write_buffer * bufsize;
+            xa2buffer.pAudioData = (uint8_t*)buf + write_buffer * bufsize;
 
             if (FAILED(pSourceVoice->SubmitSourceBuffer(&xa2buffer)))
                return 0;
