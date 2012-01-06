@@ -78,6 +78,8 @@ struct XAudio : public IXAudio2VoiceCallback
                   XAUDIO2_VOICE_NOSRC, XAUDIO2_DEFAULT_FREQ_RATIO, this, 0, 0)))
          return false;
 
+      hEvent = CreateEvent(0, FALSE, FALSE, 0);
+
       bufsize = size / MAX_BUFFERS;
       buf = new uint8_t[bufsize * MAX_BUFFERS];
       memset(buf, 0, bufsize * MAX_BUFFERS);
