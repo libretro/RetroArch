@@ -1367,30 +1367,63 @@ static void fill_pathnames(void)
       case SSNES_CART_BSX_SLOTTED:
          // BSX PSRM
          if (!g_extern.has_set_save_path)
-            fill_pathname(g_extern.savefile_name_srm, g_extern.bsx_rom_path, ".srm", sizeof(g_extern.savefile_name_srm));
+         {
+            fill_pathname(g_extern.savefile_name_srm,
+                  g_extern.bsx_rom_path, ".srm", sizeof(g_extern.savefile_name_srm));
+         }
+
+         fill_pathname(g_extern.savefile_name_psrm,
+               g_extern.savefile_name_srm, ".psrm", sizeof(g_extern.savefile_name_psrm));
+
          if (!g_extern.has_set_state_path)
-            fill_pathname(g_extern.savestate_name, g_extern.bsx_rom_path, ".state", sizeof(g_extern.savestate_name));
-         fill_pathname(g_extern.savefile_name_psrm, g_extern.savefile_name_srm, ".psrm", sizeof(g_extern.savefile_name_psrm));
+         {
+            fill_pathname(g_extern.savestate_name,
+                  g_extern.bsx_rom_path, ".state", sizeof(g_extern.savestate_name));
+         }
          break;
 
       case SSNES_CART_SUFAMI:
+         if (g_extern.has_set_save_path && *g_extern.sufami_rom_path[0] && *g_extern.sufami_rom_path[1])
+            SSNES_WARN("Sufami Turbo SRAM paths will be inferred from their respective paths to avoid conflicts.\n");
+
          // SUFAMI ARAM
-         fill_pathname(g_extern.savefile_name_asrm, g_extern.savefile_name_srm, ".asrm", sizeof(g_extern.savefile_name_asrm));
+         fill_pathname(g_extern.savefile_name_asrm,
+               g_extern.sufami_rom_path[0], ".srm", sizeof(g_extern.savefile_name_asrm));
+
          // SUFAMI BRAM
-         fill_pathname(g_extern.savefile_name_bsrm, g_extern.savefile_name_srm, ".bsrm", sizeof(g_extern.savefile_name_bsrm));
+         fill_pathname(g_extern.savefile_name_bsrm,
+               g_extern.sufami_rom_path[1], ".srm", sizeof(g_extern.savefile_name_bsrm));
+
+         if (!g_extern.has_set_state_path)
+         {
+            fill_pathname(g_extern.savestate_name,
+                  *g_extern.sufami_rom_path[0] ?
+                     g_extern.sufami_rom_path[0] : g_extern.sufami_rom_path[1],
+                     ".state", sizeof(g_extern.savestate_name));
+         }
          break;
 
       case SSNES_CART_SGB:
          if (!g_extern.has_set_save_path)
-            fill_pathname(g_extern.savefile_name_srm, g_extern.gb_rom_path, ".srm", sizeof(g_extern.savefile_name_srm));
+         {
+            fill_pathname(g_extern.savefile_name_srm,
+                  g_extern.gb_rom_path, ".srm", sizeof(g_extern.savefile_name_srm));
+         }
+
          if (!g_extern.has_set_state_path)
-            fill_pathname(g_extern.savestate_name, g_extern.gb_rom_path, ".state", sizeof(g_extern.savestate_name));
-         fill_pathname(g_extern.savefile_name_rtc, g_extern.savefile_name_srm, ".rtc", sizeof(g_extern.savefile_name_rtc));
+         {
+            fill_pathname(g_extern.savestate_name,
+                  g_extern.gb_rom_path, ".state", sizeof(g_extern.savestate_name));
+         }
+
+         fill_pathname(g_extern.savefile_name_rtc,
+               g_extern.savefile_name_srm, ".rtc", sizeof(g_extern.savefile_name_rtc));
          break;
 
       default:
          // Infer .rtc save path from save ram path.
-         fill_pathname(g_extern.savefile_name_rtc, g_extern.savefile_name_srm, ".rtc", sizeof(g_extern.savefile_name_rtc));
+         fill_pathname(g_extern.savefile_name_rtc,
+               g_extern.savefile_name_srm, ".rtc", sizeof(g_extern.savefile_name_rtc));
    }
 
    fill_pathname(g_extern.bsv.movie_path, g_extern.savefile_name_srm, "", sizeof(g_extern.bsv.movie_path));
