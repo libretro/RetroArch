@@ -146,7 +146,7 @@ struct XAudio : public IXAudio2VoiceCallback
    STDMETHOD_(void, OnVoiceProcessingPassEnd) () {}
    STDMETHOD_(void, OnVoiceProcessingPassStart) (UINT32) {}
 
-   uint32_t *buf;
+   uint8_t *buf;
    IXAudio2 *pXAudio2;
    IXAudio2MasteringVoice *pMasteringVoice;
    IXAudio2SourceVoice *pSourceVoice;
@@ -178,7 +178,7 @@ error:
 static ssize_t xa_write(void *data, const void *buf, size_t size)
 {
    XAudio *xa = (XAudio*)data;
-   size_t ret = xa->write((const uint32_t*)buf, size);
+   size_t ret = xa->write((const uint8_t*)buf, size);
 
    if (ret == 0)
       return -1;
