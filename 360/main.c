@@ -18,18 +18,24 @@
 
 #include <xtl.h>
 #include <stddef.h>
+#include <xbdm.h>
 
 int ssnes_main(int argc, char *argv[]);
 
 #undef main
 // Temporary, a more sane implementation should go here.
+
 int main(int argc, char *argv[])
 {
+	//for devits only, we will need to mount all partitions for retail
+	//in a different way
+	DmMapDevkitDrive();
+
    char arg1[] = "ssnes";
-   char arg2[] = "\\Device\\Harddisk0\\Partition2\\roms\\mario.sfc";
+   char arg2[] = "e:\\roms\\mario.sfc";
    char arg3[] = "-v";
    char arg4[] = "-c";
-   char arg5[] = "D:/roms/ssnes.cfg";
+   char arg5[] = "e:\\roms\\ssnes.cfg";
    char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
    return ssnes_main(sizeof(argv_) / sizeof(argv_[0]) - 1, argv_);
 }

@@ -221,5 +221,5 @@ const audio_driver_t audio_xdk360 = {
    xa_set_nonblock_state,
    xa_free,
    xa_use_float,
-   "xdk360_xaudio"
+   "xdk360"
 };
