@@ -53,9 +53,9 @@ static void set_defaults(void)
       case VIDEO_XENON360:
          def_video = "xenon360";
          break;
-	  case VIDEO_XDK360:
-		  def_video = "xdk360";
-		  break;
+      case VIDEO_XDK360:
+         def_video = "xdk360";
+         break;
       case VIDEO_XVIDEO:
          def_video = "xvideo";
          break;
@@ -107,9 +107,9 @@ static void set_defaults(void)
       case AUDIO_XENON360:
          def_audio = "xenon360";
          break;
-	  case AUDIO_XDK360:
-		  def_audio = "xdk360";
-		  break;
+      case AUDIO_XDK360:
+         def_audio = "xdk360";
+         break;
       case AUDIO_PS3:
          def_audio = "ps3";
          break;
@@ -134,9 +134,9 @@ static void set_defaults(void)
       case INPUT_XENON360:
          def_input = "xenon360";
          break;
-	  case INPUT_XDK360:
-		  def_input = "xdk360";
-		  break;
+      case INPUT_XDK360:
+         def_input = "xdk360";
+         break;
       case INPUT_WII:
          def_input = "wii";
          break;
