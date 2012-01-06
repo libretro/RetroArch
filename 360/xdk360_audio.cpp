@@ -49,15 +49,7 @@ struct XAudio : public IXAudio2VoiceCallback
       if (hEvent)
          CloseHandle(hEvent);
 
-      delete [] buf;
-   }
-
-   static inline uint32_t bswap_32(uint32_t val)
-   {
-      return (val >> 24) |
-         (val << 24) |
-         ((val >> 8) & 0xff00) |
-         ((val << 8) & 0xff0000);
+      delete[] buf;
    }
 
    bool init(unsigned rate, unsigned latency)
@@ -89,7 +81,7 @@ struct XAudio : public IXAudio2VoiceCallback
       hEvent = CreateEvent(0, FALSE, FALSE, 0);
 
       bufsize = size / MAX_BUFFERS;
-      buf = new uint32_t[(bufsize * MAX_BUFFERS) >> 2];
+      buf = new uint8_t[bufsize * MAX_BUFFERS];
       memset(buf, 0, bufsize * MAX_BUFFERS);
 
       if (FAILED(pSourceVoice->Start(0)))
@@ -99,7 +91,7 @@ struct XAudio : public IXAudio2VoiceCallback
    }
 
    // It's really 16-bit, but we have to byteswap.
-   size_t write(const uint32_t *buffer, size_t size)
+   size_t write(const uint8_t *buffer, size_t size)
    {
       if (nonblock)
       {
@@ -114,9 +106,8 @@ struct XAudio : public IXAudio2VoiceCallback
       while (bytes)
       {
          unsigned need = min(bytes, bufsize - bufptr);
-         uint32_t *base_write = buf + ((write_buffer * bufsize + bufptr) >> 2);
-         for (unsigned i = 0; i < need >> 2; i++)
-            base_write[i] = (buffer[i]);
+         uint8_t *base_write = buf + write_buffer * bufsize + bufptr;
+         memcpy(base_write, buffer, need);
 
          bufptr += need;
          buffer += need;
@@ -129,7 +120,7 @@ struct XAudio : public IXAudio2VoiceCallback
 
             XAUDIO2_BUFFER xa2buffer = {0};
             xa2buffer.AudioBytes = bufsize;
-            xa2buffer.pAudioData = (uint8_t*)buf + write_buffer * bufsize;
+            xa2buffer.pAudioData = buf + write_buffer * bufsize;
 
             if (FAILED(pSourceVoice->SubmitSourceBuffer(&xa2buffer)))
                return 0;
