@@ -52,10 +52,18 @@ struct XAudio : public IXAudio2VoiceCallback
       delete [] buf;
    }
 
+   static inline uint32_t bswap_32(uint32_t val)
+   {
+      return (val >> 24) |
+         (val << 24) |
+         ((val >> 8) & 0xff00) |
+         ((val << 8) & 0xff0000);
+   }
+
    bool init(unsigned rate, unsigned latency)
    {
       size_t bufsize_ = latency * rate / 1000;
-      size_t size = bufsize_ * 2 * sizeof(float);
+      size_t size = bufsize_ * 2 * sizeof(int16_t);
 
       SSNES_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize_ * 1000 / rate);
 
@@ -66,11 +74,11 @@ struct XAudio : public IXAudio2VoiceCallback
          return false;
 
       WAVEFORMATEX wfx = {0};
-      wfx.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
+      wfx.wFormatTag = WAVE_FORMAT_PCM;
       wfx.nChannels = 2;
       wfx.nSamplesPerSec = rate;
-      wfx.nBlockAlign = 2 * sizeof(float);
-      wfx.wBitsPerSample = sizeof(float) * 8;
+      wfx.nBlockAlign = 2 * sizeof(int16_t);
+      wfx.wBitsPerSample = sizeof(int16_t) * 8;
       wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
       wfx.cbSize = 0;
 
@@ -81,7 +89,7 @@ struct XAudio : public IXAudio2VoiceCallback
       hEvent = CreateEvent(0, FALSE, FALSE, 0);
 
       bufsize = size / MAX_BUFFERS;
-      buf = new uint8_t[bufsize * MAX_BUFFERS];
+      buf = new uint32_t[(bufsize * MAX_BUFFERS) >> 2];
       memset(buf, 0, bufsize * MAX_BUFFERS);
 
       if (FAILED(pSourceVoice->Start(0)))
@@ -90,7 +98,8 @@ struct XAudio : public IXAudio2VoiceCallback
       return true;
    }
 
-   size_t write(const uint8_t *buffer, size_t size)
+   // It's really 16-bit, but we have to byteswap.
+   size_t write(const uint32_t *buffer, size_t size)
    {
       if (nonblock)
       {
@@ -105,8 +114,9 @@ struct XAudio : public IXAudio2VoiceCallback
       while (bytes)
       {
          unsigned need = min(bytes, bufsize - bufptr);
-         memcpy(buf + write_buffer * bufsize + bufptr,
-               buffer, need);
+         uint32_t *base_write = buf + ((write_buffer * bufsize + bufptr) >> 2);
+         for (unsigned i = 0; i < need >> 2; i++)
+            base_write[i] = bswap_32(buffer[i]);
 
          bufptr += need;
          buffer += need;
@@ -145,7 +155,7 @@ struct XAudio : public IXAudio2VoiceCallback
    STDMETHOD_(void, OnVoiceProcessingPassEnd) () {}
    STDMETHOD_(void, OnVoiceProcessingPassStart) (UINT32) {}
 
-   uint8_t *buf;
+   uint32_t *buf;
    IXAudio2 *pXAudio2;
    IXAudio2MasteringVoice *pMasteringVoice;
    IXAudio2SourceVoice *pSourceVoice;
@@ -177,7 +187,7 @@ error:
 static ssize_t xa_write(void *data, const void *buf, size_t size)
 {
    XAudio *xa = (XAudio*)data;
-   size_t ret = xa->write((const uint8_t*)buf, size);
+   size_t ret = xa->write((const uint32_t*)buf, size);
 
    if (ret == 0)
       return -1;
@@ -202,12 +212,6 @@ static bool xa_start(void *data)
    return true;
 }
 
-static bool xa_use_float(void *data)
-{
-   (void)data;
-   return true;
-}
-
 static void xa_free(void *data)
 {
    XAudio *xa = (XAudio*)data;
@@ -222,6 +226,6 @@ const audio_driver_t audio_xdk360 = {
    xa_start,
    xa_set_nonblock_state,
    xa_free,
-   xa_use_float,
+   NULL,
    "xdk360"
 };
