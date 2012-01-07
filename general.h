@@ -39,6 +39,8 @@
 
 #ifdef XENON
 #include <time/time.h>
+#undef PATH_MAX
+#define PATH_MAX 4096
 #endif
 
 #ifdef HAVE_CONFIG_H

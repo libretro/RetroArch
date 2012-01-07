@@ -200,11 +200,6 @@ static bool xenon360_gfx_frame(void *data, const void *frame, unsigned width, un
 
    vid->frame_count++;
 
-
-   // update texture viewport
-   static unsigned old_width = 0;
-   static unsigned old_height = 0;
-
    ScreenUv[UV_TOP]	= ((float) (width) / (float) XE_W)*2;
    ScreenUv[UV_LEFT]	= ((float) (height) / (float) XE_H)*2;
 
@@ -215,9 +210,6 @@ static bool xenon360_gfx_frame(void *data, const void *frame, unsigned width, un
    Rect[2].u = ScreenUv[UV_TOP];
 
    Xe_VB_Unlock(vid->gl_device, vid->vb);
-
-   old_width = width;
-   old_height = height;
 
    // Refresh texture cache
    uint16_t *dst = Xe_Surface_LockRect(vid->gl_device, vid->g_pTexture, 0, 0, 0, 0, XE_LOCK_WRITE);
