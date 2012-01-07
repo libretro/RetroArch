@@ -16,7 +16,6 @@
  */
 
 #include <xtl.h>
-#include <xboxmath.h>
 
 #include "../driver.h"
 #include "../general.h"
@@ -161,14 +160,14 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
                0, 0, &gl->vertex_buf, NULL);
 
    static const DrawVerticeFormats init_verts[] = {
-      { 0.0f, 0.0f, 0.0f, 0.0f },
-      { 1.0f, 0.0f, 1.0f, 0.0f },
-      { 0.0f, 1.0f, 0.0f, 1.0f },
-      { 1.0f, 1.0f, 1.0f, 1.0f },
+      { -1.0f, -1.0f, 0.0f, 0.0f },
+      {  1.0f, -1.0f, 1.0f, 0.0f },
+      { -1.0f,  1.0f, 0.0f, 1.0f },
+      {  1.0f,  1.0f, 1.0f, 1.0f },
    };
 
    void *verts_ptr;
-   gl->vertex_buf->Lock(0, sizeof(DrawVerticeFormats), &verts_ptr, 0);
+   gl->vertex_buf->Lock(0, 0, &verts_ptr, 0);
    memcpy(verts_ptr, init_verts, sizeof(init_verts));
    gl->vertex_buf->Unlock();
 
@@ -181,8 +180,18 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
 
    gl->xdk360_render_device->CreateVertexDeclaration(VertexElements, &gl->pVertexDecl);
 
-   gl->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER,
+   gl->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
          0xff000000, 1.0f, 0);
+
+   gl->xdk360_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+   gl->xdk360_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
+
+   D3DVIEWPORT9 vp = {0};
+   vp.Width  = 1280;
+   vp.Height = 720;
+   vp.MinZ   = 0.0f;
+   vp.MaxZ   = 1.0f;
+   gl->xdk360_render_device->SetViewport(&vp);
 
    return gl;
 }
@@ -193,7 +202,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    xdk360_video_t *vid = (xdk360_video_t*)data;
    vid->frame_count++;
 
-   vid->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER,
+   vid->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
          0xff000000, 1.0f, 0);
 
    D3DLOCKED_RECT d3dlr;
@@ -219,7 +228,6 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 
    vid->xdk360_render_device->SetVertexDeclaration(vid->pVertexDecl);
    vid->xdk360_render_device->SetStreamSource(0, vid->vertex_buf, 0, sizeof(DrawVerticeFormats));
-   //vid->xdk360_render_device->SetSampler(0, vid->lpTexture);
 
    vid->xdk360_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
    vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);
