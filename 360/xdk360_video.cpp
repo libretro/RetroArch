@@ -26,38 +26,38 @@
 #endif
 
 static const char* g_strPixelShaderProgram =
-    " sampler2D tex : register(s0);    "
-    " struct PS_IN                     "
-    " {                                "
-    "     float2 coord : TEXCOORD0;    "
-    " };                               "
-    "                                  "
-    " float4 main(PS_IN in) : COLOR    "
-    " {                                "
-    "     return tex2D(tex, in.coord); "
-    " }                                ";
+    " sampler2D tex : register(s0);       "
+    " struct PS_IN                        "
+    " {                                   "
+    "     float2 coord : TEXCOORD0;       "
+    " };                                  "
+    "                                     "
+    " float4 main(PS_IN input) : COLOR    "
+    " {                                   "
+    "     return tex2D(tex, input.coord); "
+    " }                                   ";
 
 static const char* g_strVertexShaderProgram =
-    " struct VS_IN                            "
-    "                                         "
-    " {                                       "
-    "     float2 pos : POSITION;              "
-    "     float2 coord : TEXCOORD0;           "
-    " };                                      "
-    "                                         "
-    " struct VS_OUT                           "
-    " {                                       "
-    "     float4 pos : POSITION;              "
-    "     float2 coord : TEXCOORD0;           "
-    " };                                      "
-    "                                         "
-    " VS_OUT main(VS_IN in)                   "
-    " {                                       "
-    "     VS_OUT out;                         "
-    "     out.pos = float4(in.pos, 0.0, 1.0); "
-    "     out.coord = in.coord;               "
-    "     return out;                         "
-    " }                                       ";
+    " struct VS_IN                               "
+    "                                            "
+    " {                                          "
+    "     float2 pos : POSITION;                 "
+    "     float2 coord : TEXCOORD0;              "
+    " };                                         "
+    "                                            "
+    " struct VS_OUT                              "
+    " {                                          "
+    "     float4 pos : POSITION;                 "
+    "     float2 coord : TEXCOORD0;              "
+    " };                                         "
+    "                                            "
+    " VS_OUT main(VS_IN input)                   "
+    " {                                          "
+    "     VS_OUT out;                            "
+    "     out.pos = float4(input.pos, 0.0, 1.0); "
+    "     out.coord = input.coord;               "
+    "     return out;                            "
+    " }                                          ";
 
 typedef struct DrawVerticeFormats
 {
