@@ -25,56 +25,49 @@
 #include "config.h"
 #endif
 
-// pixel shader
-const CHAR*         g_strPixelShaderProgram =
-    " struct PS_IN                                 "
-    " {                                            "
-    "     float4 Color : COLOR;                    "  // Interpolated color from                      
-    " };                                           "  // the vertex shader
-    "                                              "
-    " float4 main( PS_IN In ) : COLOR              "
-    " {                                            "
-    "     return In.Color;                         "  // Output color
-    " }                                            ";
+static const char* g_strPixelShaderProgram =
+    " sampler2D tex : register(s0);    "
+    " struct PS_IN                     "
+    " {                                "
+    "     float2 coord : TEXCOORD0;    "
+    " };                               "
+    "                                  "
+    " float4 main(PS_IN in) : COLOR    "
+    " {                                "
+    "     return tex2D(tex, in.coord); "
+    " }                                ";
 
-// vertex shader
-const CHAR*         g_strVertexShaderProgram =
-    " float4x4 matWVP : register(c0);              "
-    "                                              "
-    " struct VS_IN                                 "
-    "                                              "
-    " {                                            "
-    "     float4 ObjPos   : POSITION;              "  // Object space position 
-    "     float4 Color    : COLOR;                 "  // Vertex color                 
-    " };                                           "
-    "                                              "
-    " struct VS_OUT                                "
-    " {                                            "
-    "     float4 ProjPos  : POSITION;              "  // Projected space position 
-    "     float4 Color    : COLOR;                 "
-    " };                                           "
-    "                                              "
-    " VS_OUT main( VS_IN In )                      "
-    " {                                            "
-    "     VS_OUT Out;                              "
-    "     Out.ProjPos = mul( matWVP, In.ObjPos );  "  // Transform vertex into
-    "     Out.Color = In.Color;                    "  // Projected space and 
-    "     return Out;                              "  // Transfer color
-    " }                                            ";
-
+static const char* g_strVertexShaderProgram =
+    " struct VS_IN                            "
+    "                                         "
+    " {                                       "
+    "     float2 pos : POSITION;              "
+    "     float2 coord : TEXCOORD0;           "
+    " };                                      "
+    "                                         "
+    " struct VS_OUT                           "
+    " {                                       "
+    "     float4 pos : POSITION;              "
+    "     float2 coord : TEXCOORD0;           "
+    " };                                      "
+    "                                         "
+    " VS_OUT main(VS_IN in)                   "
+    " {                                       "
+    "     VS_OUT out;                         "
+    "     out.pos = float4(in.pos, 0.0, 1.0); "
+    "     out.coord = in.coord;               "
+    "     return out;                         "
+    " }                                       ";
 
 typedef struct DrawVerticeFormats
 {
-	float x, y, z, w;
-	unsigned int color;
-	float u, v;
+   float x, y;
+   float u, v;
 } DrawVerticeFormats;
-
-typedef struct xdk360_video xdk360_video_t;
 
 static bool g_quitting;
 
-typedef struct gl
+typedef struct xdk360_video
 {
    IDirect3D9* xdk360_device;
    IDirect3DDevice9* xdk360_render_device;
@@ -82,176 +75,153 @@ typedef struct gl
    IDirect3DPixelShader9* pPixelShader;
    IDirect3DVertexDeclaration9* pVertexDecl;
    IDirect3DVertexBuffer9* vertex_buf;
-   LPDIRECT3DTEXTURE9 lpTexture;
-   XMMATRIX matWVP;
+   IDirect3DTexture9* lpTexture;
    unsigned frame_count;
-} gl_t;
+} xdk360_video_t;
 
 static void xdk360_gfx_free(void *data)
 {
-   gl_t *vid = (gl_t*)data;
+   xdk360_video_t *vid = (xdk360_video_t*)data;
    if (!vid)
       return;
+
+   vid->lpTexture->Release();
+   vid->vertex_buf->Release();
+   vid->pVertexDecl->Release();
+   vid->pPixelShader->Release();
+   vid->pVertexShader->Release();
+   vid->xdk360_render_device->Release();
+   vid->xdk360_device->Release();
 
    free(vid);
 }
 
 static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-  gl_t * gl = (gl_t*)calloc(1, sizeof(gl_t));
-  if (!gl)
+   xdk360_video_t *gl = (xdk360_video_t*)calloc(1, sizeof(xdk360_video_t));
+   if (!gl)
       return NULL;
 
-  gl->xdk360_device = Direct3DCreate9( D3D_SDK_VERSION );
+   gl->xdk360_device = Direct3DCreate9(D3D_SDK_VERSION);
+   if (!gl->xdk360_device)
+   {
+      free(gl);
+      return NULL;
+   }
 
-  /* Set up the structure used to create the Direct3D device */
-  D3DPRESENT_PARAMETERS d3dpp;
-  ZeroMemory( &d3dpp, sizeof( d3dpp ) );
-  d3dpp.BackBufferWidth = 1280;
-  d3dpp.BackBufferHeight = 720;
-  d3dpp.BackBufferFormat =  ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 );
-  d3dpp.FrontBufferFormat = ( D3DFORMAT )MAKESRGBFMT( D3DFMT_LE_X8R8G8B8 );
-  d3dpp.MultiSampleType = D3DMULTISAMPLE_NONE;
-  d3dpp.MultiSampleQuality = 0;
-  d3dpp.BackBufferCount = 1;
-  d3dpp.EnableAutoDepthStencil = TRUE;
-  d3dpp.AutoDepthStencilFormat = D3DFMT_D24S8;
-  d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-  d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
+   D3DPRESENT_PARAMETERS d3dpp;
+   ZeroMemory(&d3dpp, sizeof(d3dpp));
 
-   /* Create the Direct3D device */
+   d3dpp.BackBufferWidth         = 1280;
+   d3dpp.BackBufferHeight        = 720;
+   d3dpp.BackBufferFormat        = (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8);
+   d3dpp.FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
+   d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
+   d3dpp.MultiSampleQuality      = 0;
+   d3dpp.BackBufferCount         = 2;
+   d3dpp.EnableAutoDepthStencil  = TRUE;
+   d3dpp.AutoDepthStencilFormat  = D3DFMT_D24S8;
+   d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
+   d3dpp.PresentationInterval    = D3DPRESENT_INTERVAL_ONE;
+
    gl->xdk360_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &d3dpp, 
-   &gl->xdk360_render_device);
+         &gl->xdk360_render_device);
 
-   /* Buffers to hold compiled shaders and possible error messages */
-   ID3DXBuffer* pShaderCode = NULL;
+   ID3DXBuffer* pShaderCodeV = NULL;
+   ID3DXBuffer* pShaderCodeP = NULL;
    ID3DXBuffer* pErrorMsg = NULL;
 
-   /* Create texture to render into */
-   if( FAILED( gl->xdk360_render_device->CreateTexture( 512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
-	   0, &gl->lpTexture, NULL ) ) )
-   {
-	   exit(1);
-   }
+   HRESULT hr = D3DXCompileShader(g_strVertexShaderProgram, (UINT)strlen(g_strVertexShaderProgram),
+         NULL, NULL, "main", "vs_2_0", 0, &pShaderCodeV, &pErrorMsg, NULL);
 
-   /* Create vertex buffer */
-   if( FAILED( gl->xdk360_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 0, 
-	   0, 0, &gl->vertex_buf, NULL)))
+   if (SUCCEEDED(hr))
    {
-	   exit(1);
+      hr = D3DXCompileShader(g_strPixelShaderProgram, (UINT)strlen(g_strPixelShaderProgram),
+            NULL, NULL, "main", "ps_2_0", 0, &pShaderCodeP, &pErrorMsg, NULL);
    }
-
-   /* Compile vertex shader */
-   HRESULT hr = D3DXCompileShader(g_strVertexShaderProgram, ( UINT )strlen(g_strVertexShaderProgram),
-   NULL, NULL, "main", "vs_2_0", 0, &pShaderCode, &pErrorMsg, NULL);
 
    if (FAILED(hr))
    {
-   	OutputDebugStringA( pErrorMsg ? (CHAR *)pErrorMsg->GetBufferPointer() : "");
-	exit(1);
+      OutputDebugString(pErrorMsg ? (char*)pErrorMsg->GetBufferPointer() : "");
+      gl->xdk360_render_device->Release();
+      gl->xdk360_device->Release();
+      free(gl);
+      return NULL;
    }
 
-   /* Create vertex shader */
-   gl->xdk360_render_device->CreateVertexShader((DWORD*)pShaderCode->GetBufferPointer(), &gl->pVertexShader);
+   gl->xdk360_render_device->CreateVertexShader(pShaderCodeV->GetBufferPointer(), &gl->pVertexShader);
+   gl->xdk360_render_device->CreatePixelShader(pShaderCodeP->GetBufferPointer(), &gl->pPixelShader);
+   pShaderCodeV->Release();
+   pShaderCodeP->Release();
 
-   /* Shader code is no longer required */
-   pShaderCode->Release();
-   pShaderCode = NULL;
+   gl->xdk360_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
+               0, &gl->lpTexture, NULL);
 
-   /* Compile pixel shader */
-   hr = D3DXCompileShader(g_strPixelShaderProgram, (UINT)strlen(g_strPixelShaderProgram),
-   NULL, NULL, "main", "ps_2_0", 0, &pShaderCode, &pErrorMsg, NULL);
+   gl->xdk360_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 0, 
+               0, 0, &gl->vertex_buf, NULL);
 
-   if (FAILED(hr))
+   static const DrawVerticeFormats init_verts[] = {
+      { 0.0f, 0.0f, 0.0f, 0.0f },
+      { 1.0f, 0.0f, 1.0f, 0.0f },
+      { 0.0f, 1.0f, 0.0f, 1.0f },
+      { 1.0f, 1.0f, 1.0f, 1.0f },
+   };
+
+   void *verts_ptr;
+   gl->vertex_buf->Lock(0, sizeof(DrawVerticeFormats), &verts_ptr, 0);
+   memcpy(verts_ptr, init_verts, sizeof(init_verts));
+   gl->vertex_buf->Unlock();
+
+   static const D3DVERTEXELEMENT9 VertexElements[] =
    {
-   	OutputDebugStringA( pErrorMsg ? (CHAR *)pErrorMsg->GetBufferPointer() : "");
-	exit(1);
-   }
-
-  /* Create pixel shader */
-  gl->xdk360_render_device->CreatePixelShader((DWORD*)pShaderCode->GetBufferPointer(), &gl->pPixelShader);
-
-  /* Shader code no longer required */
-  pShaderCode->Release();
-  pShaderCode = NULL;
-
-  /* Define the vertex elements.*/
-  static const D3DVERTEXELEMENT9 VertexElements[3] =
-  {
-      { 0,  0, D3DDECLTYPE_FLOAT3,   D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-      { 0, 12, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR,    0 },
+      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
       D3DDECL_END()
-  };
+   };
 
-  /* Create a vertex declaration from the element descriptions.*/
-  gl->xdk360_render_device->CreateVertexDeclaration( VertexElements, &gl->pVertexDecl );
-  
-  /* World matrix (identity in this sample)*/
-  XMMATRIX matWorld = XMMatrixIdentity();
+   gl->xdk360_render_device->CreateVertexDeclaration(VertexElements, &gl->pVertexDecl);
 
-  /* View matrix*/
-  XMVECTOR vEyePt = XMVectorSet( 0.0f, 0.0f, -4.0f, 0.0f );
-  XMVECTOR vLookatPt = XMVectorSet( 0.0f, 0.0f, 0.0f, 0.0f );
-  XMVECTOR vUp = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
-  XMMATRIX matView = XMMatrixLookAtLH( vEyePt, vLookatPt, vUp );
-
-  /* Determine the aspect ratio*/
-  FLOAT fAspectRatio = ( FLOAT )d3dpp.BackBufferWidth / ( FLOAT )d3dpp.BackBufferHeight;
-
-  /* Projection matrix*/
-  XMMATRIX matProj = XMMatrixPerspectiveFovLH( XM_PI / 4, fAspectRatio, 1.0f, 200.0f );
-
-  /* World*view*projection*/
-  gl->matWVP = matWorld * matView * matProj;
-
-   /* Clear the backbuffer.*/
-   gl->xdk360_render_device->Clear( 0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL,
-   0xff000000, 1.0f, 0L );
+   gl->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER,
+         0xff000000, 1.0f, 0);
 
    return gl;
 }
 
-static bool xdk360_gfx_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
+static bool xdk360_gfx_frame(void *data, const void *frame,
+      unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   gl_t *vid = (gl_t*)data;
-
+   xdk360_video_t *vid = (xdk360_video_t*)data;
    vid->frame_count++;
 
-   /* Clear the backbuffer.*/
-   vid->xdk360_render_device->Clear( 0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL,
-   0xff000000, 1.0f, 0L );
+   vid->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER,
+         0xff000000, 1.0f, 0);
 
+   D3DLOCKED_RECT d3dlr;
+   if (SUCCEEDED(vid->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
+   {
+      for (unsigned y = 0; y < height; y++)
+      {
+         const uint8_t *in = (const uint8_t*)frame + y * pitch;
+         uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
+         memcpy(out, in, width * sizeof(uint16_t));
+      }
+      vid->lpTexture->UnlockRect(0);
+   }
+
+   vid->xdk360_render_device->SetTexture(0, vid->lpTexture);
+   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU,  D3DADDRESS_BORDER);
+   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV,  D3DADDRESS_BORDER);
+
+   vid->xdk360_render_device->SetVertexShader(vid->pVertexShader);
+   vid->xdk360_render_device->SetPixelShader(vid->pPixelShader);
+
+   vid->xdk360_render_device->SetVertexDeclaration(vid->pVertexDecl);
    vid->xdk360_render_device->SetStreamSource(0, vid->vertex_buf, 0, sizeof(DrawVerticeFormats));
+   vid->xdk360_render_device->SetSampler(0, vid->lpTexture);
 
-     D3DLOCKED_RECT d3dlr;
-	 
-	if (SUCCEEDED(vid->lpTexture->LockRect(0, &d3dlr, nullptr, D3DLOCK_NOSYSLOCK)))
-	{
-		for (unsigned y = 0; y < height; y++)
-		{
-			const uint8_t *in = (const uint8_t*)(frame) + y * pitch;
-			uint8_t *out = (uint8_t*)(d3dlr.pBits) + y * d3dlr.Pitch;
-			memcpy(out, in, width * sizeof(uint16_t));
-		}
-		vid->lpTexture->UnlockRect(0);
-	}
-
-   /* Set shaders. */
-   vid->xdk360_render_device->SetVertexShader( vid->pVertexShader );
-   vid->xdk360_render_device->SetPixelShader( vid->pPixelShader );
-
-   // Set shader constants.
-   vid->xdk360_render_device->SetVertexShaderConstantF( 0, ( FLOAT* )&vid->matWVP, 4 );
-
-   // Set the vertex declaration.
-   vid->xdk360_render_device->SetVertexDeclaration( vid->pVertexDecl );
-
-   vid->xdk360_render_device->SetStreamSource(0, vid->vertex_buf, 0, sizeof(DrawVerticeFormats));
-
-   // Draw
-   vid->xdk360_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2 );
-
-   // Resolve
+   vid->xdk360_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
    vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);
 
    return true;
@@ -274,7 +244,6 @@ static bool xdk360_gfx_focus(void *data)
    (void)data;
    return true;
 }
-
 
 const video_driver_t video_xdk360 = {
    xdk360_gfx_init,
