@@ -98,14 +98,14 @@ static void xdk360_gfx_free(void *data)
 
 static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-   xdk360_video_t *gl = (xdk360_video_t*)calloc(1, sizeof(xdk360_video_t));
-   if (!gl)
+   xdk360_video_t *vid = (xdk360_video_t*)calloc(1, sizeof(xdk360_video_t));
+   if (!vid)
       return NULL;
 
-   gl->xdk360_device = Direct3DCreate9(D3D_SDK_VERSION);
-   if (!gl->xdk360_device)
+   vid->xdk360_device = Direct3DCreate9(D3D_SDK_VERSION);
+   if (!vid->xdk360_device)
    {
-      free(gl);
+      free(vid);
       return NULL;
    }
 
@@ -124,8 +124,8 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
    d3dpp.PresentationInterval    = D3DPRESENT_INTERVAL_ONE;
 
-   gl->xdk360_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &d3dpp, 
-         &gl->xdk360_render_device);
+   vid->xdk360_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &d3dpp, 
+         &vid->xdk360_render_device);
 
    ID3DXBuffer* pShaderCodeV = NULL;
    ID3DXBuffer* pShaderCodeP = NULL;
@@ -143,32 +143,32 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    if (FAILED(hr))
    {
       OutputDebugString(pErrorMsg ? (char*)pErrorMsg->GetBufferPointer() : "");
-      gl->xdk360_render_device->Release();
-      gl->xdk360_device->Release();
-      free(gl);
+      vid->xdk360_render_device->Release();
+      vid->xdk360_device->Release();
+      free(vid);
       return NULL;
    }
 
-   gl->xdk360_render_device->CreateVertexShader((const DWORD*)pShaderCodeV->GetBufferPointer(), &gl->pVertexShader);
-   gl->xdk360_render_device->CreatePixelShader((const DWORD*)pShaderCodeP->GetBufferPointer(), &gl->pPixelShader);
+   vid->xdk360_render_device->CreateVertexShader((const DWORD*)pShaderCodeV->GetBufferPointer(), &vid->pVertexShader);
+   vid->xdk360_render_device->CreatePixelShader((const DWORD*)pShaderCodeP->GetBufferPointer(), &vid->pPixelShader);
    pShaderCodeV->Release();
    pShaderCodeP->Release();
 
-   gl->xdk360_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
-               0, &gl->lpTexture, NULL);
+   vid->xdk360_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
+               0, &vid->lpTexture, NULL);
 
    D3DLOCKED_RECT d3dlr;
-   if (SUCCEEDED(gl->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
+   if (SUCCEEDED(vid->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
-      gl->lpTexture->UnlockRect(0);
+      vid->lpTexture->UnlockRect(0);
    }
 
-   gl->last_width = 512;
-   gl->last_height = 512;
+   vid->last_width = 512;
+   vid->last_height = 512;
 
-   gl->xdk360_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 0, 
-               0, 0, &gl->vertex_buf, NULL);
+   vid->xdk360_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 0, 
+               0, 0, &vid->vertex_buf, NULL);
 
    static const DrawVerticeFormats init_verts[] = {
       { -1.0f, -1.0f, 0.0f, 1.0f },
@@ -178,9 +178,9 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    };
 
    void *verts_ptr;
-   gl->vertex_buf->Lock(0, 0, &verts_ptr, 0);
+   vid->vertex_buf->Lock(0, 0, &verts_ptr, 0);
    memcpy(verts_ptr, init_verts, sizeof(init_verts));
-   gl->vertex_buf->Unlock();
+   vid->vertex_buf->Unlock();
 
    static const D3DVERTEXELEMENT9 VertexElements[] =
    {
@@ -189,22 +189,22 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
       D3DDECL_END()
    };
 
-   gl->xdk360_render_device->CreateVertexDeclaration(VertexElements, &gl->pVertexDecl);
+   vid->xdk360_render_device->CreateVertexDeclaration(VertexElements, &vid->pVertexDecl);
 
-   gl->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+   vid->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
          0xff000000, 1.0f, 0);
 
-   gl->xdk360_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-   gl->xdk360_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
+   vid->xdk360_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+   vid->xdk360_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
 
    D3DVIEWPORT9 vp = {0};
    vp.Width  = 1280;
    vp.Height = 720;
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
-   gl->xdk360_render_device->SetViewport(&vp);
+   vid->xdk360_render_device->SetViewport(&vp);
 
-   return gl;
+   return vid;
 }
 
 static bool xdk360_gfx_frame(void *data, const void *frame,
