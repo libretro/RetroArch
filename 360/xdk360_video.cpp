@@ -76,6 +76,7 @@ typedef struct xdk360_video
    IDirect3DVertexBuffer9* vertex_buf;
    IDirect3DTexture9* lpTexture;
    unsigned frame_count;
+   unsigned last_width, last_height;
 } xdk360_video_t;
 
 static void xdk360_gfx_free(void *data)
@@ -156,14 +157,24 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    gl->xdk360_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
                0, &gl->lpTexture, NULL);
 
+   D3DLOCKED_RECT d3dlr;
+   if (SUCCEEDED(gl->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
+   {
+      memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
+      gl->lpTexture->UnlockRect(0);
+   }
+
+   gl->last_width = 512;
+   gl->last_height = 512;
+
    gl->xdk360_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 0, 
                0, 0, &gl->vertex_buf, NULL);
 
    static const DrawVerticeFormats init_verts[] = {
-      { -1.0f, -1.0f, 0.0f, 0.0f },
-      {  1.0f, -1.0f, 1.0f, 0.0f },
-      { -1.0f,  1.0f, 0.0f, 1.0f },
-      {  1.0f,  1.0f, 1.0f, 1.0f },
+      { -1.0f, -1.0f, 0.0f, 1.0f },
+      {  1.0f, -1.0f, 1.0f, 1.0f },
+      { -1.0f,  1.0f, 0.0f, 0.0f },
+      {  1.0f,  1.0f, 1.0f, 0.0f },
    };
 
    void *verts_ptr;
@@ -204,6 +215,33 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 
    vid->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
          0xff000000, 1.0f, 0);
+
+   if (vid->last_width != width || vid->last_height != height)
+   {
+      D3DLOCKED_RECT d3dlr;
+      if (SUCCEEDED(gl->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
+      {
+         memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
+         gl->lpTexture->UnlockRect(0);
+      }
+
+      float tex_w = width / 512.0f;
+      float tex_h = height / 512.0f;
+      const DrawVerticeFormats verts[] = {
+         { -1.0f, -1.0f, 0.0f,  tex_h },
+         {  1.0f, -1.0f, tex_w, tex_h },
+         { -1.0f,  1.0f, 0.0f,  0.0f },
+         {  1.0f,  1.0f, tex_w, 0.0f },
+      };
+
+      void *verts_ptr;
+      vid->vertex_buf->Lock(0, 0, &verts_ptr, 0);
+      memcpy(verts_ptr, verts, sizeof(verts));
+      vid->vertex_buf->Unlock();
+
+      vid->last_width = width;
+      vid->last_height = height;
+   }
 
    D3DLOCKED_RECT d3dlr;
    if (SUCCEEDED(vid->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
