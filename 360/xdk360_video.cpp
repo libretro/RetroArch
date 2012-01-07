@@ -38,26 +38,26 @@ static const char* g_strPixelShaderProgram =
     " }                                   ";
 
 static const char* g_strVertexShaderProgram =
-    " struct VS_IN                               "
-    "                                            "
-    " {                                          "
-    "     float2 pos : POSITION;                 "
-    "     float2 coord : TEXCOORD0;              "
-    " };                                         "
-    "                                            "
-    " struct VS_OUT                              "
-    " {                                          "
-    "     float4 pos : POSITION;                 "
-    "     float2 coord : TEXCOORD0;              "
-    " };                                         "
-    "                                            "
-    " VS_OUT main(VS_IN input)                   "
-    " {                                          "
-    "     VS_OUT out;                            "
-    "     out.pos = float4(input.pos, 0.0, 1.0); "
-    "     out.coord = input.coord;               "
-    "     return out;                            "
-    " }                                          ";
+    " struct VS_IN                                  "
+    "                                               "
+    " {                                             "
+    "     float2 pos : POSITION;                    "
+    "     float2 coord : TEXCOORD0;                 "
+    " };                                            "
+    "                                               "
+    " struct VS_OUT                                 "
+    " {                                             "
+    "     float4 pos : POSITION;                    "
+    "     float2 coord : TEXCOORD0;                 "
+    " };                                            "
+    "                                               "
+    " VS_OUT main(VS_IN input)                      "
+    " {                                             "
+    "     VS_OUT output;                            "
+    "     output.pos = float4(input.pos, 0.0, 1.0); "
+    "     output.coord = input.coord;               "
+    "     return output;                            "
+    " }                                             ";
 
 typedef struct DrawVerticeFormats
 {
