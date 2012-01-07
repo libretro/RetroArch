@@ -60,21 +60,21 @@ static void reset_callback(void)
    g_quit = true;
 }
 
-static void *wii_input_init(void)
+void wii_input_init(void)
 {
-   static bool inited = false;
-   if (!inited)
-   {
-      PAD_Init();
-      WPAD_Init();
-      SYS_SetResetCallback(reset_callback);
-      SYS_SetPowerCallback(reset_callback);
-      inited = true;
-   }
-
-   return (void*)-1;
+   PAD_Init();
+   WPAD_Init();
+   SYS_SetResetCallback(reset_callback);
+   SYS_SetPowerCallback(reset_callback);
 }
 
+void wii_input_deinit(void)
+{}
+
+static void *wii_input_initialize(void)
+{
+   return (void*)-1;
+}
 
 static void wii_input_poll(void *data)
 {
@@ -147,7 +147,7 @@ static bool wii_key_pressed(void *data, int key)
 }
 
 const input_driver_t input_wii = {
-   .init = wii_input_init,
+   .init = wii_input_initialize,
    .poll = wii_input_poll,
    .input_state = wii_input_state,
    .key_pressed = wii_key_pressed,

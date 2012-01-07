@@ -17,6 +17,7 @@
 
 #include "../driver.h"
 #include "../general.h"
+#include "driver.h"
 #include <gccore.h>
 #include <ogcsys.h>
 #include <malloc.h>
@@ -146,8 +147,7 @@ static void build_disp_list(void)
    display_list_size = GX_EndDispList();
 }
 
-static void *wii_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+void wii_video_init(void)
 {
    VIDEO_Init();
    GXRModeObj *mode = VIDEO_GetPreferredMode(NULL);
@@ -160,6 +160,25 @@ static void *wii_init(const video_info_t *video,
 
    init_vtx(mode);
    build_disp_list();
+
+   g_filter = true;
+   g_vsync = true;
+}
+
+void wii_video_deinit(void)
+{
+   GX_AbortFrame();
+   GX_Flush();
+   VIDEO_SetBlack(true);
+   VIDEO_Flush();
+
+   for (unsigned i = 0; i < 3; i++)
+      free(MEM_K1_TO_K0(g_framebuf[i]));
+}
+
+static void *wii_init(const video_info_t *video,
+      const input_driver_t **input, void **input_data)
+{
    g_filter = video->smooth ? GX_LINEAR : GX_NEAR;
    g_vsync = video->vsync;
 
@@ -255,13 +274,6 @@ static bool wii_focus(void *data)
 static void wii_free(void *data)
 {
    (void)data;
-   GX_AbortFrame();
-   GX_Flush();
-   VIDEO_SetBlack(true);
-   VIDEO_Flush();
-
-   for (unsigned i = 0; i < 3; i++)
-      free(MEM_K1_TO_K0(g_framebuf[i]));
 }
 
 const video_driver_t video_wii = {

@@ -9,6 +9,7 @@ DEBUG = 0
 
 CC = powerpc-eabi-gcc
 CXX = powerpc-eabi-g++
+LD = powerpc-eabi-ld
 
 DOL_TARGET := ssnes.dol
 ELF_TARGET := ssnes.elf
@@ -22,7 +23,7 @@ CXXFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
 LIBS := -lfat -lsnes -lwiiuse -logc -lbte -lfreetype
 
-OBJ = wii/main.o fifo_buffer.o ssnes.o driver.o gfx/fonts.o file.o settings.o message.o rewind.o movie.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o wii/audio.o wii/input.o wii/video.o
+OBJ = wii/main.o fifo_buffer.o ssnes.o driver.o gfx/fonts.o file.o settings.o message.o rewind.o movie.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o wii/audio.o wii/input.o wii/video.o console/sgui.o console/list.o console/font.bmpobj
 
 CFLAGS += -std=gnu99 -DHAVE_CONFIGFILE=1 -DHAVE_GETOPT_LONG -DHAVE_FREETYPE -DPACKAGE_VERSION=\"0.9.3\" -Dmain=ssnes_main -Wno-char-subscripts
 
@@ -44,6 +45,9 @@ $(ELF_TARGET): $(OBJ)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+%.bmpobj: %.bmp
+	$(LD) -r -b binary -o $@ $<
 
 clean:
 	rm -f $(DOL_TARGET)
