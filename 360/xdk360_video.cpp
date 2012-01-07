@@ -81,6 +81,8 @@ typedef struct gl
    IDirect3DVertexShader9 *pVertexShader;
    IDirect3DPixelShader9* pPixelShader;
    IDirect3DVertexDeclaration9* pVertexDecl;
+   IDirect3DVertexBuffer9* vertex_buf;
+   LPDIRECT3DTEXTURE9 lpTexture;
    XMMATRIX matWVP;
    unsigned frame_count;
 } gl_t;
@@ -125,6 +127,20 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    ID3DXBuffer* pShaderCode = NULL;
    ID3DXBuffer* pErrorMsg = NULL;
 
+   /* Create texture to render into */
+   if( FAILED( gl->xdk360_render_device->CreateTexture( 512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
+	   0, &gl->lpTexture, NULL ) ) )
+   {
+	   exit(1);
+   }
+
+   /* Create vertex buffer */
+   if( FAILED( gl->xdk360_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 0, 
+	   0, 0, &gl->vertex_buf, NULL)))
+   {
+	   exit(1);
+   }
+
    /* Compile vertex shader */
    HRESULT hr = D3DXCompileShader(g_strVertexShaderProgram, ( UINT )strlen(g_strVertexShaderProgram),
    NULL, NULL, "main", "vs_2_0", 0, &pShaderCode, &pErrorMsg, NULL);
@@ -158,20 +174,6 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
   /* Shader code no longer required */
   pShaderCode->Release();
   pShaderCode = NULL;
-
-  /* Structure to hold vertex data.*/
-  struct COLORVERTEX
-  {
-      FLOAT Position[3];
-      DWORD Color;
-  };
-
-  COLORVERTEX Vertices[3] =
-  {
-      { -1.0f, -1.0f, 0.0f, 0x00FF0000 },
-      {  0.0f,  1.0f, 0.0f, 0x0000FF00 },
-      {  1.0f, -1.0f, 0.0f, 0x000000FF }
-  };
 
   /* Define the vertex elements.*/
   static const D3DVERTEXELEMENT9 VertexElements[3] =
@@ -219,6 +221,21 @@ static bool xdk360_gfx_frame(void *data, const void *frame, unsigned width, unsi
    vid->xdk360_render_device->Clear( 0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL,
    0xff000000, 1.0f, 0L );
 
+   vid->xdk360_render_device->SetStreamSource(0, vid->vertex_buf, 0, sizeof(DrawVerticeFormats));
+
+     D3DLOCKED_RECT d3dlr;
+	 
+	if (SUCCEEDED(vid->lpTexture->LockRect(0, &d3dlr, nullptr, D3DLOCK_NOSYSLOCK)))
+	{
+		for (unsigned y = 0; y < height; y++)
+		{
+			const uint8_t *in = (const uint8_t*)(frame) + y * pitch;
+			uint8_t *out = (uint8_t*)(d3dlr.pBits) + y * d3dlr.Pitch;
+			memcpy(out, in, width * sizeof(uint16_t));
+		}
+		vid->lpTexture->UnlockRect(0);
+	}
+
    /* Set shaders. */
    vid->xdk360_render_device->SetVertexShader( vid->pVertexShader );
    vid->xdk360_render_device->SetPixelShader( vid->pPixelShader );
@@ -228,6 +245,8 @@ static bool xdk360_gfx_frame(void *data, const void *frame, unsigned width, unsi
 
    // Set the vertex declaration.
    vid->xdk360_render_device->SetVertexDeclaration( vid->pVertexDecl );
+
+   vid->xdk360_render_device->SetStreamSource(0, vid->vertex_buf, 0, sizeof(DrawVerticeFormats));
 
    // Draw
    vid->xdk360_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2 );
