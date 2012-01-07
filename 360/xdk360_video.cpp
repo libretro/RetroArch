@@ -219,10 +219,10 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    if (vid->last_width != width || vid->last_height != height)
    {
       D3DLOCKED_RECT d3dlr;
-      if (SUCCEEDED(gl->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
+      if (SUCCEEDED(vid->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
       {
          memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
-         gl->lpTexture->UnlockRect(0);
+         vid->lpTexture->UnlockRect(0);
       }
 
       float tex_w = width / 512.0f;
