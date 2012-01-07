@@ -149,8 +149,8 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
       return NULL;
    }
 
-   gl->xdk360_render_device->CreateVertexShader(pShaderCodeV->GetBufferPointer(), &gl->pVertexShader);
-   gl->xdk360_render_device->CreatePixelShader(pShaderCodeP->GetBufferPointer(), &gl->pPixelShader);
+   gl->xdk360_render_device->CreateVertexShader((const DWORD*)pShaderCodeV->GetBufferPointer(), &gl->pVertexShader);
+   gl->xdk360_render_device->CreatePixelShader((const DWORD*)pShaderCodeP->GetBufferPointer(), &gl->pPixelShader);
    pShaderCodeV->Release();
    pShaderCodeP->Release();
 
@@ -211,15 +211,15 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    vid->xdk360_render_device->SetTexture(0, vid->lpTexture);
    vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
    vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU,  D3DADDRESS_BORDER);
-   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV,  D3DADDRESS_BORDER);
+   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU,  D3DTADDRESS_BORDER);
+   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV,  D3DTADDRESS_BORDER);
 
    vid->xdk360_render_device->SetVertexShader(vid->pVertexShader);
    vid->xdk360_render_device->SetPixelShader(vid->pPixelShader);
 
    vid->xdk360_render_device->SetVertexDeclaration(vid->pVertexDecl);
    vid->xdk360_render_device->SetStreamSource(0, vid->vertex_buf, 0, sizeof(DrawVerticeFormats));
-   vid->xdk360_render_device->SetSampler(0, vid->lpTexture);
+   //vid->xdk360_render_device->SetSampler(0, vid->lpTexture);
 
    vid->xdk360_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
    vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);
