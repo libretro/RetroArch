@@ -937,9 +937,7 @@ bool path_is_directory(const char *path)
 {
 #ifdef _WIN32
    return GetFileAttributes(path) == FILE_ATTRIBUTE_DIRECTORY;
-#elif defined(__CELLOS_LV2__)
-   return false; // STUB
-#elif defined(XENON)
+#elif defined(__CELLOS_LV2__) || defined(XENON)
    // Dummy
    (void)path;
    return false;
