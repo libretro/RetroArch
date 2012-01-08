@@ -247,7 +247,7 @@ static bool wii_frame(void *data, const void *frame,
    GX_Flush();
 
    g_render_framebuf++;
-   if (g_vsync && g_render_framebuf > g_vi_framebuf + 2)
+   if (g_vsync && g_render_framebuf >= g_vi_framebuf + 2)
       VIDEO_WaitVSync();
 
    return true;
