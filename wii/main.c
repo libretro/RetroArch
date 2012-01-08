@@ -44,11 +44,11 @@ static bool folder_cb(const char *directory, sgui_file_enum_cb_t file_cb,
 {
    (void)userdata;
 
-   if (!*directory)
-   {
-      file_cb(ctx, "sd:", SGUI_FILE_DIRECTORY);
-      return true;
-   }
+   //if (!*directory)
+   //{
+   //   file_cb(ctx, "sd:/", SGUI_FILE_DIRECTORY);
+   //   return true;
+   //}
 
    DIR *dir = opendir(directory);
    if (!dir)
@@ -78,10 +78,12 @@ static bool folder_cb(const char *directory, sgui_file_enum_cb_t file_cb,
 static const char *get_rom_path(sgui_handle_t *sgui)
 {
    uint16_t old_input_state = 0;
-   uint16_t input_state = 0;
+
+   sgui_iterate(sgui, SGUI_ACTION_REFRESH);
 
    for (;;)
    {
+      uint16_t input_state = 0;
       input_wii.poll(NULL);
 
       if (input_wii.key_pressed(NULL, SSNES_QUIT_KEY))
@@ -129,7 +131,7 @@ int main(void)
    wii_video_init();
    wii_input_init();
 
-   sgui_handle_t *sgui = sgui_init("",
+   sgui_handle_t *sgui = sgui_init("sd:/",
          menu_framebuf, SGUI_WIDTH * sizeof(uint16_t),
          _binary_console_font_bmp_start, folder_cb, NULL);
 
