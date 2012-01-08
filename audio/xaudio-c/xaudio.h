@@ -1,5 +1,5 @@
 /*
-   xaudio.h (2010-08-14) / (2011-12-04)
+   xaudio.h (2010-08-14) / (2012-12-04)
    authors: OV2, Themaister
 */
 
