@@ -44,12 +44,6 @@ static bool folder_cb(const char *directory, sgui_file_enum_cb_t file_cb,
 {
    (void)userdata;
 
-   //if (!*directory)
-   //{
-   //   file_cb(ctx, "sd:/", SGUI_FILE_DIRECTORY);
-   //   return true;
-   //}
-
    DIR *dir = opendir(directory);
    if (!dir)
       return false;
@@ -78,6 +72,7 @@ static bool folder_cb(const char *directory, sgui_file_enum_cb_t file_cb,
 static const char *get_rom_path(sgui_handle_t *sgui)
 {
    uint16_t old_input_state = 0;
+   bool can_quit = false;
 
    sgui_iterate(sgui, SGUI_ACTION_REFRESH);
 
@@ -87,7 +82,12 @@ static const char *get_rom_path(sgui_handle_t *sgui)
       input_wii.poll(NULL);
 
       if (input_wii.key_pressed(NULL, SSNES_QUIT_KEY))
-         return NULL;
+      {
+         if (can_quit)
+            return NULL;
+      }
+      else
+         can_quit = true;
 
       for (unsigned i = 0; i < SSNES_FIRST_META_KEY; i++)
       {
@@ -135,10 +135,9 @@ int main(void)
          menu_framebuf, SGUI_WIDTH * sizeof(uint16_t),
          _binary_console_font_bmp_start, folder_cb, NULL);
 
-   const char *rom_path = get_rom_path(sgui);
-
+   const char *rom_path;
    int ret = 0;
-   if (rom_path)
+   while ((rom_path = get_rom_path(sgui)) && ret == 0)
    {
       char *argv[] = { strdup("ssnes"), strdup(rom_path), NULL };
       ret = ssnes_main(sizeof(argv) / sizeof(argv[0]) - 1, argv);
@@ -150,7 +149,6 @@ int main(void)
    wii_video_deinit();
 
    sgui_free(sgui);
-
    return ret;
 }
 

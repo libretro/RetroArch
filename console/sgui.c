@@ -116,13 +116,19 @@ void sgui_free(sgui_handle_t *sgui)
 
 static uint16_t gray_filler(unsigned x, unsigned y)
 {
-   uint16_t col = ((x + y) & 1) + 2;
+   x >>= 1;
+   y >>= 1;
+   uint16_t col = ((x + y) & 1) + 1;
+   col <<= 1;
    return (col << 0) | (col << 5) | (col << 10);
 }
 
 static uint16_t green_filler(unsigned x, unsigned y)
 {
-   uint16_t col = ((x + y) & 1) + 2;
+   x >>= 1;
+   y >>= 1;
+   uint16_t col = ((x + y) & 1) + 1;
+   col <<= 1;
    return (col << 0) | (col << 6) | (col << 10);
 }
 
