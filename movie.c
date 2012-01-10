@@ -249,6 +249,7 @@ bool bsv_movie_get_input(bsv_movie_t *handle, int16_t *input)
 
 void bsv_movie_set_input(bsv_movie_t *handle, int16_t input)
 {
+   input = swap_if_big16(input);
    fwrite(&input, sizeof(int16_t), 1, handle->file);
 }
 
