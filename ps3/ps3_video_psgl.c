@@ -94,6 +94,7 @@ static bool load_fbo_proc(void) { return true; }
 #define TEXTURES_MASK (TEXTURES - 1)
 
 static bool g_quitting;
+unsigned g_frame_count;
 
 typedef struct gl
 {
@@ -106,8 +107,6 @@ typedef struct gl
    struct gl_tex_info prev_info[TEXTURES];
    GLuint tex_filter;
    void *empty_buf;
-
-   unsigned frame_count;
 
 #ifdef HAVE_FBO
    // Render-to-texture, multipass shaders
@@ -512,7 +511,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_t *gl = data;
 
    gl_shader_use(1);
-   gl->frame_count++;
+   g_frame_count++;
 
 #if defined(HAVE_CG)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -689,7 +688,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    memcpy(tex_info.coord, gl->tex_coords, sizeof(gl->tex_coords));
 
    glClear(GL_COLOR_BUFFER_BIT);
-   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->vp_width, gl->vp_height, gl->frame_count, 
+   gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->vp_width, gl->vp_height, g_frame_count, 
          &tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
    glDrawArrays(GL_QUADS, 0, 4);
@@ -734,7 +733,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          set_viewport(gl, rect->img_width, rect->img_height, true);
          gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
                prev_rect->width, prev_rect->height, 
-               gl->vp_width, gl->vp_height, gl->frame_count, 
+               gl->vp_width, gl->vp_height, g_frame_count, 
                &tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
          glDrawArrays(GL_QUADS, 0, 4);
@@ -760,7 +759,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       set_viewport(gl, gl->win_width, gl->win_height, false);
       gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
-            gl->vp_width, gl->vp_height, gl->frame_count, 
+            gl->vp_width, gl->vp_height, g_frame_count, 
             &tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
       glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);

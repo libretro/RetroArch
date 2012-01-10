@@ -16,10 +16,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+
 #include <sys/process.h>
 #include <sysutil/sysutil_common.h>
 #include <sys/spu_initialize.h>
-#include <stddef.h>
+
+bool g_rom_loaded;
 
 int ssnes_main(int argc, char *argv[]);
 
@@ -29,6 +34,7 @@ SYS_PROCESS_PARAM(1001, 0x100000)
 // Temporary, a more sane implementation should go here.
 int main(int argc, char *argv[])
 {
+   g_rom_loaded = false;
    sys_spu_initialize(4, 3);
    char arg1[] = "ssnes";
    char arg2[] = "/dev_hdd0/game/SNES90000/USRDIR/main.sfc";
