@@ -39,6 +39,9 @@
 
 #ifdef XENON
 #include <time/time.h>
+#endif
+
+#if defined(XENON) || defined(__CELLOS_LV2__)
 #undef PATH_MAX
 #define PATH_MAX 4096
 #endif
