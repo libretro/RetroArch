@@ -756,10 +756,14 @@ static void blit_fonts(gl_t *gl, const struct font_output *head, const struct fo
 static void calculate_font_coords(gl_t *gl,
       GLfloat font_vertex[8], GLfloat font_vertex_dark[8], GLfloat font_tex_coords[8])
 {
+   GLfloat scale_factor = g_settings.video.font_scale ?
+      gl->full_x / gl->vp_width :
+      1.0f;
+
    GLfloat lx = g_settings.video.msg_pos_x;
-   GLfloat hx = (GLfloat)gl->font_last_width / gl->vp_width + lx;
+   GLfloat hx = (GLfloat)gl->font_last_width / (gl->vp_width * scale_factor) + lx;
    GLfloat ly = g_settings.video.msg_pos_y;
-   GLfloat hy = (GLfloat)gl->font_last_height / gl->vp_height + ly;
+   GLfloat hy = (GLfloat)gl->font_last_height / (gl->vp_height * scale_factor) + ly;
 
    font_vertex[0] = lx;
    font_vertex[1] = ly;
