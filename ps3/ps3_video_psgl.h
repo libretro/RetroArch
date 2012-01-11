@@ -24,4 +24,7 @@
 #include <GLES/glext.h>
 #include <cell/dbgfont.h>
 
+void ps3_video_init(void);
+void ps3_video_deinit(void);
+
 #endif

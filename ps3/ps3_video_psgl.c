@@ -91,6 +91,7 @@ static bool load_fbo_proc(void) { return true; }
 
 static bool g_quitting;
 unsigned g_frame_count;
+void *g_gl;
 
 typedef struct gl
 {
@@ -804,6 +805,9 @@ static void psgl_deinit(gl_t *gl)
 
 static void gl_free(void *data)
 {
+   if (g_gl)
+      return;
+
    gl_t *gl = data;
 
    gl_shader_deinit();
@@ -903,6 +907,9 @@ static void psgl_init_dbgfont(gl_t *gl)
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+   if (g_gl)
+      return g_gl;
+
    gl_t *gl = calloc(1, sizeof(gl_t));
    if (!gl)
       return NULL;
@@ -1032,8 +1039,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
-   *input = NULL;
-   *input_data = NULL;
+   if (input)
+      *input = NULL;
+   if (input_data)
+      *input_data = NULL;
 
    return gl;
 }
@@ -1060,4 +1069,27 @@ const video_driver_t video_gl = {
    .free = gl_free,
    .ident = "gl"
 };
+
+// PS3 needs a working graphics stack before SSNES even starts.
+// To deal with this main.c,
+// the top level module owns the instance, and is created beforehand.
+// When SSNES gets around to init it, it is already allocated.
+// When SSNES wants to free it, it is ignored.
+void ps3_video_init(void)
+{
+   video_info_t video_info = {0};
+   // Might have to supply correct values here.
+   video_info.vsync = true;
+   video_info.force_aspect = true;
+   video_info.smooth = true;
+   video_info.input_scale = 2;
+   g_gl = gl_init(&video, NULL, NULL);
+}
+
+void ps3_video_deinit(void)
+{
+   void *data = g_gl;
+   g_gl = NULL;
+   gl_free(data);
+}
 

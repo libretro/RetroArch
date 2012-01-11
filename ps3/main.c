@@ -223,6 +223,7 @@ int main(int argc, char *argv[])
 
    get_path_settings(return_to_MM);
 
+   ps3_graphics_init();
    ps3_input_init();
 
    menu_init();
@@ -244,4 +245,5 @@ int main(int argc, char *argv[])
    return ssnes_main(sizeof(argv_) / sizeof(argv_[0]) - 1, argv_);
 
    ps3_input_deinit();
+   ps3_graphics_deinit();
 }
