@@ -19,28 +19,213 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
 
 #include <sys/process.h>
+#include <cell/sysmodule.h>
 #include <sysutil/sysutil_common.h>
 #include <sys/spu_initialize.h>
+#include <sysutil/sysutil_gamecontent.h>
+
+#include "../conf/config_file.h"
+#include "../general.h"
+
+#define MAX_PATH_LENGTH 1024
+
+#define EMULATOR_CONTENT_DIR	"SSNE10000"
+
+#define init_setting_uint(charstring, setting, defaultvalue) \
+	if(!(config_get_uint(currentconfig, charstring, &setting))) \
+		setting = defaultvalue; 
+
+#define init_setting_int(charstring, setting, defaultvalue) \
+	if(!(config_get_int(currentconfig, charstring, &setting))) \
+		setting = defaultvalue; 
+
+#define init_setting_bool(charstring, setting, defaultvalue) \
+	if(!(config_get_bool(currentconfig, charstring, &setting))) \
+		setting = defaultvalue; 
+
+#define init_setting_bool(charstring, setting, defaultvalue) \
+	if(!(config_get_bool(currentconfig, charstring, &setting))) \
+		setting =	defaultvalue;
+
+#define init_setting_char(charstring, setting, defaultvalue) \
+	if(!(config_get_array(currentconfig, charstring, setting, sizeof(setting)))) \
+		strncpy(setting,defaultvalue, sizeof(setting));
 
 bool g_rom_loaded;
+bool return_to_MM;			/* launch multiMAN on exit if ROM is passed*/
+uint32_t g_screenshots_enabled;
+
+char contentInfoPath[MAX_PATH_LENGTH];
+char usrDirPath[MAX_PATH_LENGTH];
+char DEFAULT_PRESET_FILE[MAX_PATH_LENGTH];
+char DEFAULT_BORDER_FILE[MAX_PATH_LENGTH];
+char DEFAULT_MENU_BORDER_FILE[MAX_PATH_LENGTH];
+char GAME_AWARE_SHADER_DIR_PATH[MAX_PATH_LENGTH];
+char PRESETS_DIR_PATH[MAX_PATH_LENGTH];
+char INPUT_PRESETS_DIR_PATH[MAX_PATH_LENGTH];
+char BORDERS_DIR_PATH[MAX_PATH_LENGTH];
+char SHADERS_DIR_PATH[MAX_PATH_LENGTH];
+char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
+char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
+char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
+char MULTIMAN_GAME_TO_BOOT[MAX_PATH_LENGTH];
 
 int ssnes_main(int argc, char *argv[]);
 
 SYS_PROCESS_PARAM(1001, 0x100000)
 
 #undef main
+
+static bool file_exists(const char * filename)
+{
+	CellFsStat sb;
+	if(cellFsStat(filename,&sb) == CELL_FS_SUCCEEDED)
+		return true;
+	else
+		return false;
+}
+
+static void emulator_init_settings(void)
+{
+	bool config_file_newly_created = false;
+
+	if(!file_exists(SYS_CONFIG_FILE))
+	{
+		FILE * f;
+		f = fopen(SYS_CONFIG_FILE, "w");
+		fclose(f);
+		config_file_newly_created = true;
+	}
+
+	config_file_t * currentconfig = config_file_new(SYS_CONFIG_FILE);
+
+	//init_setting_uint("PS3General::ApplyShaderPresetOnStartup", Settings.ApplyShaderPresetOnStartup, 0);
+	//init_setting_uint("video_aspect_ratio", g_settings.video.aspect_ratio, ASPECT_RATIO_4_3);
+	init_setting_int("video_smooth", g_settings.video.smooth, 1);
+	init_setting_int("video_second_pass_smooth", g_settings.video.second_pass_smooth, 1);
+	//init_setting_char("video_cg_shader", g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE);
+	//init_setting_char("video_second_pass_shader", g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE);
+	//init_setting_char("PS3General::Border", Settings.PS3CurrentBorder, DEFAULT_BORDER_FILE);
+	//init_setting_uint("PS3General::PS3TripleBuffering",Settings.TripleBuffering, 1);
+	//init_setting_char("PS3General::ShaderPresetPath", Settings.ShaderPresetPath, "");
+	//init_setting_char("PS3General::ShaderPresetTitle", Settings.ShaderPresetTitle, "None");
+	//init_setting_uint("PS3General::ScaleFactor", Settings.ScaleFactor, 2);
+	init_setting_uint("video_fbo_scale_x", g_settings.video.fbo_scale_x, 2);
+	init_setting_uint("video_fbo_scale_y", g_settings.video.fbo_scale_y, 2);
+	//init_setting_uint("PS3General::ViewportX", Settings.ViewportX, 0);
+	//init_setting_uint("PS3General::ViewportY", Settings.ViewportY, 0);
+	//init_setting_uint("PS3General::ViewportWidth", Settings.ViewportWidth, 0);
+	//init_setting_uint("PS3General::ViewportHeight", Settings.ViewportHeight, 0);
+	init_setting_uint("video_render_to_texture", g_settings.video.render_to_texture, 1);
+	//init_setting_uint("PS3General::Orientation", Settings.Orientation, 0);
+	//init_setting_uint("PS3General::PS3CurrentResolution", Settings.PS3CurrentResolution, NULL);
+	//init_setting_uint("PS3General::OverscanEnabled", Settings.PS3OverscanEnabled, 0);
+	//init_setting_int("PS3General::OverscanAmount", Settings.PS3OverscanAmount, 0);
+	//init_setting_uint("PS3General::PS3PALTemporalMode60Hz", Settings.PS3PALTemporalMode60Hz, 0);
+	//init_setting_uint("Sound::SoundMode", Settings.SoundMode, SOUND_MODE_NORMAL);
+	//init_setting_char("RSound::RSoundServerIPAddress",  Settings.RSoundServerIPAddress, "0.0.0.0");
+	init_setting_uint("video_vsync", g_settings.video.vsync, 1);
+	//init_setting_uint("PS3General::PS3FontSize", Settings.PS3FontSize, 100);
+	//init_setting_char("savestate_directory", Settings.PS3PathSaveStates, usrDirPath);
+	//init_setting_char("savefile_directory", g_settings., usrDirPath);
+	//init_setting_char("PS3Paths::PathROMDirectory", Settings.PS3PathROMDirectory, "/");
+	init_setting_uint("state_slot",  g_extern.state_slot, 0);
+	init_setting_uint("screenshots_enabled", g_screenshots_enabled, 0);
+	init_setting_char("cheat_database_path", g_settings.cheat_database, usrDirPath);
+}
+
+static void get_path_settings(bool multiman_support)
+{
+	unsigned int get_type;
+	unsigned int get_attributes;
+	CellGameContentSize size;
+	char dirName[CELL_GAME_DIRNAME_SIZE];
+
+	memset(&size, 0x00, sizeof(CellGameContentSize));
+
+	int ret = cellGameBootCheck(&get_type, &get_attributes, &size, dirName); 
+	if(ret < 0)
+	{
+		printf("cellGameBootCheck() Error: 0x%x\n", ret);
+	}
+	else
+	{
+		printf("cellGameBootCheck() OK\n");
+		printf("  get_type = [%d] get_attributes = [0x%08x] dirName = [%s]\n", get_type, get_attributes, dirName);
+		printf("  hddFreeSizeKB = [%d] sizeKB = [%d] sysSizeKB = [%d]\n", size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
+
+		ret = cellGameContentPermit(contentInfoPath, usrDirPath);
+
+		if(multiman_support)
+		{
+			snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
+			snprintf(usrDirPath, sizeof(usrDirPath), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
+		}
+
+		if(ret < 0)
+		{
+			printf("cellGameContentPermit() Error: 0x%x\n", ret);
+		}
+		else
+		{
+			printf("cellGameContentPermit() OK\n");
+			printf("contentInfoPath:[%s]\n", contentInfoPath);
+			printf("usrDirPath:[%s]\n",  usrDirPath);
+		}
+
+		/* now we fill in all the variables */
+		snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/presets/stock.conf", usrDirPath);
+		snprintf(DEFAULT_BORDER_FILE, sizeof(DEFAULT_BORDER_FILE), "%s/borders/Centered-1080p/mega-man-2.png", usrDirPath);
+		snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/borders/Menu/main-menu.png", usrDirPath);
+		snprintf(GAME_AWARE_SHADER_DIR_PATH, sizeof(GAME_AWARE_SHADER_DIR_PATH), "%s/gameaware", usrDirPath);
+		snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/presets", usrDirPath); 
+		snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/input-presets", usrDirPath); 
+		snprintf(BORDERS_DIR_PATH, sizeof(BORDERS_DIR_PATH), "%s/borders", usrDirPath); 
+		snprintf(SHADERS_DIR_PATH, sizeof(SHADERS_DIR_PATH), "%s/shaders", usrDirPath);
+		snprintf(DEFAULT_SHADER_FILE, sizeof(DEFAULT_SHADER_FILE), "%s/shaders/stock.cg", usrDirPath);
+		snprintf(DEFAULT_MENU_SHADER_FILE, sizeof(DEFAULT_MENU_SHADER_FILE), "%s/shaders/Borders/Menu/border-only.cg", usrDirPath);
+		snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/ssnes.conf", usrDirPath);
+	}
+}
+
 // Temporary, a more sane implementation should go here.
 int main(int argc, char *argv[])
 {
+   // Initialize 6 SPUs but reserve 1 SPU as a raw SPU for PSGL
+   sys_spu_initialize(6, 1);
+
+   cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_GAME);
+
    g_rom_loaded = false;
-   sys_spu_initialize(4, 3);
+#ifdef MULTIMAN_SUPPORT
+   return_to_MM = true;
+
+   if(argc > 1)
+   {
+	   strncpy(MULTIMAN_GAME_TO_BOOT, argv[1], sizeof(MULTIMAN_GAME_TO_BOOT));
+   }
+#else
+   return_to_MM = false;
+#endif
+
+   get_path_settings(return_to_MM);
+
+   /* FIXME - As long as we don't use a menu */
+   snprintf(g_extern.system.fullpath, sizeof(g_extern.system.fullpath), "/dev_hdd0/game/SNES90000/USRDIR/main.sfc");
+
    char arg1[] = "ssnes";
-   char arg2[] = "/dev_hdd0/game/SNES90000/USRDIR/main.sfc";
+   char arg2[PATH_MAX];
+   
+   snprintf(arg2, sizeof(arg2), g_extern.system.fullpath);
    char arg3[] = "-v";
    char arg4[] = "-c";
-   char arg5[] = "/dev_hdd0/game/SSNE10000/USRDIR/ssnes.cfg";
+   char arg5[MAX_PATH_LENGTH];
+
+   snprintf(arg5, sizeof(arg5), SYS_CONFIG_FILE);
    char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
    return ssnes_main(sizeof(argv_) / sizeof(argv_[0]) - 1, argv_);
 }

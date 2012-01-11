@@ -51,6 +51,8 @@ bool config_entry_exists(config_file_t *conf, const char *entry);
 bool config_get_double(config_file_t *conf, const char *entry, double *in);
 // Extracts an int from config file.
 bool config_get_int(config_file_t *conf, const char *entry, int *in);
+// Extracts an uint from config file.
+bool config_get_uint(config_file_t *conf, const char *entry, unsigned *in);
 // Extracts an int from config file. (Hexadecimal)
 bool config_get_hex(config_file_t *conf, const char *entry, unsigned *in);
 // Extracts a single char. If value consists of several chars, this is an error.
