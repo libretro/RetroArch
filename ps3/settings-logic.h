@@ -241,32 +241,9 @@ static void producesettingentry(uint64_t switchvalue)
 		case SETTING_ENABLE_SCREENSHOTS:
 		if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 		{
-#if(CELL_SDK_VERSION > 0x340000)
-			Settings.ScreenshotsEnabled = !Settings.ScreenshotsEnabled;
-			if(Settings.ScreenshotsEnabled)
-			{
-				cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
-				CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
-
-				screenshot_param.photo_title = EMULATOR_NAME;
-				screenshot_param.game_title = EMULATOR_NAME;
-				cellScreenShotSetParameter (&screenshot_param);
-				cellScreenShotEnable();
-			}
-			else
-			{
-				cellScreenShotDisable();
-				cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
-			}
-
-			set_text_message("", 7);
-#endif
 		}
 		if(CTRL_START(state))
 		{
-#if(CELL_SDK_VERSION > 0x340000)
-			Settings.ScreenshotsEnabled = false;
-#endif
 		}
 		break;
 		case SETTING_SAVE_SHADER_PRESET:

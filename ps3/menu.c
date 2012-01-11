@@ -19,8 +19,10 @@
 #include <sysutil/sysutil_screenshot.h>
 #include <cell/dbgfont.h>
 
-//#include "cellframework2/input/pad_input.h"
+#include "cellframework2/input/pad_input.h"
 #include "cellframework2/fileio/file_browser.h"
+
+#include "ps3_video_psgl.h"
 
 #include "shared.h"
 #include "../general.h"
@@ -988,7 +990,8 @@ void menu_loop(void)
 	do
 	{
 		glClear(GL_COLOR_BUFFER_BIT);
-		ps3graphics_draw_menu();
+		//ps3graphics_draw_menu();
+		g_frame_count++;
 
 		switch(menuStack[menuStackindex].enum_id)
 		{
