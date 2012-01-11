@@ -757,7 +757,7 @@ static void calculate_font_coords(gl_t *gl,
       GLfloat font_vertex[8], GLfloat font_vertex_dark[8], GLfloat font_tex_coords[8])
 {
    GLfloat scale_factor = g_settings.video.font_scale ?
-      gl->full_x / gl->vp_width :
+      (GLfloat)gl->full_x / (GLfloat)gl->vp_width :
       1.0f;
 
    GLfloat lx = g_settings.video.msg_pos_x;
