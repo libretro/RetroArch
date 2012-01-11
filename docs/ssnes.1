@@ -169,6 +169,15 @@ Set FRAMES to 0 to have perfect sync. 0 frames is only suitable for LAN. Default
 Network port used for netplay. This defaults to 55435. This option affects both TCP and UDP.
 
 .TP
+\fB--spectate\fR
+If netplay is used, it will go into a spectator mode.
+Spectator mode allows one host to live stream game playback to multiple clients.
+Essentially, clients receive a live streamed BSV movie file.
+Clients can connect and disconnect at any time.
+Clients thus cannot interact as player 2.
+For spectating mode to work, both host and clients will need to use this flag.
+
+.TP
 \fB--ups PATCH, -U PATCH\fR
 Attempts to apply an UPS patch to the current ROM image. No files are altered. 
 If this flag is not specified, SSNES will look for a .ups file with same basename as ROM specified.

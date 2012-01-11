@@ -28,6 +28,9 @@ int16_t input_state_net(bool port, unsigned device, unsigned index, unsigned id)
 void video_frame_net(const uint16_t *data, unsigned width, unsigned height);
 void audio_sample_net(uint16_t left, uint16_t right);
 
+int16_t input_state_spectate(bool port, unsigned device, unsigned index, unsigned id);
+int16_t input_state_spectate_client(bool port, unsigned device, unsigned index, unsigned id);
+
 typedef struct netplay netplay_t;
 
 struct snes_callbacks
@@ -38,23 +41,12 @@ struct snes_callbacks
 };
 
 // Creates a new netplay handle. A NULL host means we're hosting (player 1). :)
-netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames, const struct snes_callbacks *cb);
+netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames, const struct snes_callbacks *cb, bool spectate);
 void netplay_free(netplay_t *handle);
 
 // Call this before running snes_run()
 void netplay_pre_frame(netplay_t *handle);
 // Call this after running snes_run()
 void netplay_post_frame(netplay_t *handle);
-
-// Checks if input port/index is controlled by netplay or not.
-bool netplay_is_alive(netplay_t *handle);
-
-bool netplay_poll(netplay_t *handle);
-int16_t netplay_input_state(netplay_t *handle, bool port, unsigned device, unsigned index, unsigned id);
-
-// If we're fast-forward replaying to resync, check if we should actually show frame.
-bool netplay_should_skip(netplay_t *handle);
-bool netplay_can_poll(netplay_t *handle);
-const struct snes_callbacks* netplay_callbacks(netplay_t *handle);
 
 #endif

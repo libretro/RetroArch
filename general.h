@@ -309,6 +309,7 @@ struct global
    char netplay_server[PATH_MAX];
    bool netplay_enable;
    bool netplay_is_client;
+   bool netplay_is_spectate;
    unsigned netplay_sync_frames;
    uint16_t netplay_port;
 #endif

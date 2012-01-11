@@ -492,6 +492,9 @@ static void print_help(void)
    puts("\t-C/--connect: Connect to netplay as player 2.");
    puts("\t--port: Port used to netplay. Default is 55435.");
    puts("\t-F/--frames: Sync frames when using netplay.");
+   puts("\t--spectate: Netplay will become spectacting mode.");
+   puts("\t\tHost can live stream the game content to players that connect.");
+   puts("\t\tHowever, the client will not be able to play. Multiple clients can connect to the host.");
 #endif
 
 #ifdef HAVE_FFMPEG
@@ -640,6 +643,7 @@ static void parse_input(int argc, char *argv[])
       { "connect", 1, NULL, 'C' },
       { "frames", 1, NULL, 'F' },
       { "port", 1, &val, 'p' },
+      { "spectate", 0, &val, 'S' },
 #endif
       { "ups", 1, NULL, 'U' },
       { "bps", 1, &val, 'B' },
@@ -853,6 +857,10 @@ static void parse_input(int argc, char *argv[])
 #ifdef HAVE_NETPLAY
                case 'p':
                   g_extern.netplay_port = strtoul(optarg, NULL, 0);
+                  break;
+
+               case 'S':
+                  g_extern.netplay_is_spectate = true;
                   break;
 #endif
 
@@ -1221,7 +1229,7 @@ static void init_netplay(void)
 
    g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL,
          g_extern.netplay_port ? g_extern.netplay_port : SSNES_DEFAULT_PORT,
-         g_extern.netplay_sync_frames, &cbs);
+         g_extern.netplay_sync_frames, &cbs, g_extern.netplay_is_spectate);
 
    if (!g_extern.netplay)
    {
@@ -1236,15 +1244,41 @@ static void init_netplay(void)
       }
    }
 }
-#endif
 
-#ifdef HAVE_NETPLAY
 static void deinit_netplay(void)
 {
    if (g_extern.netplay)
       netplay_free(g_extern.netplay);
 }
 #endif
+
+static void init_libsnes_cbs(void)
+{
+#ifdef HAVE_NETPLAY
+   if (g_extern.netplay)
+   {
+      psnes_set_video_refresh(g_extern.netplay_is_spectate ?
+            video_frame : video_frame_net);
+      psnes_set_audio_sample(g_extern.netplay_is_spectate ?
+            audio_sample : audio_sample_net);
+
+      psnes_set_input_state(g_extern.netplay_is_spectate ?
+            (g_extern.netplay_is_client ? input_state_spectate_client : input_state_spectate)
+            : input_state_net);
+   }
+   else
+   {
+      psnes_set_video_refresh(video_frame);
+      psnes_set_audio_sample(audio_sample);
+      psnes_set_input_state(input_state);
+   }
+#else
+   psnes_set_video_refresh(video_frame);
+   psnes_set_audio_sample(audio_sample);
+   psnes_set_input_state(input_state);
+#endif
+   psnes_set_input_poll(input_poll);
+}
 
 static void init_autosave(void)
 {
@@ -2058,20 +2092,7 @@ int main(int argc, char *argv[])
 #endif
       init_rewind();
       
-#ifdef HAVE_NETPLAY
-   psnes_set_video_refresh(g_extern.netplay ?
-         video_frame_net : video_frame);
-   psnes_set_audio_sample(g_extern.netplay ?
-         audio_sample_net : audio_sample);
-   psnes_set_input_state(g_extern.netplay ?
-         input_state_net : input_state);
-#else
-   psnes_set_video_refresh(video_frame);
-   psnes_set_audio_sample(audio_sample);
-   psnes_set_input_state(input_state);
-#endif
-   psnes_set_input_poll(input_poll);
-   
+   init_libsnes_cbs();
    init_controllers();
    
 #ifdef HAVE_FFMPEG

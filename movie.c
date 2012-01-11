@@ -18,6 +18,7 @@
 #include "movie.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "general.h"
 #include "dynamic.h"
 
@@ -327,3 +328,57 @@ void bsv_movie_frame_rewind(bsv_movie_t *handle)
          fseek(handle->file, handle->min_file_pos, SEEK_SET);
    }
 }
+
+uint8_t *bsv_header_generate(size_t *size)
+{
+   uint32_t bsv_header[4] = {0};
+   unsigned serialize_size = psnes_serialize_size();
+   size_t header_size = sizeof(bsv_header) + serialize_size;
+   *size = header_size;
+
+   uint8_t *header = (uint8_t*)malloc(header_size);
+   if (!header)
+      return NULL;
+
+   bsv_header[MAGIC_INDEX] = swap_if_little32(BSV_MAGIC);
+   bsv_header[CRC_INDEX] = swap_if_big32(g_extern.cart_crc);
+   bsv_header[STATE_SIZE_INDEX] = swap_if_big32(serialize_size);
+
+   if (serialize_size && !psnes_serialize(header + sizeof(bsv_header), serialize_size))
+   {
+      free(header);
+      return NULL;
+   }
+
+   memcpy(header, bsv_header, sizeof(bsv_header));
+   return header;
+}
+
+bool bsv_parse_header(const uint32_t *header)
+{
+   uint32_t in_bsv = swap_if_little32(header[MAGIC_INDEX]);
+   if (in_bsv != BSV_MAGIC)
+   {
+      SSNES_ERR("BSV magic mismatch, got 0x%x, expected 0x%x!\n",
+            in_bsv, BSV_MAGIC);
+      return false;
+   }
+
+   uint32_t in_crc = swap_if_big32(header[CRC_INDEX]);
+   if (in_crc != g_extern.cart_crc)
+   {
+      SSNES_ERR("CRC32 mismatch, got 0x%x, expected 0x%x!\n", in_crc, g_extern.cart_crc);
+      return false;
+   }
+
+   uint32_t in_state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
+   if (in_state_size != psnes_serialize_size())
+   {
+      SSNES_ERR("Serialization size mismatch, got 0x%x, expected 0x%x!\n",
+            in_state_size, psnes_serialize_size());
+      return false;
+   }
+
+   return true;
+}
+
