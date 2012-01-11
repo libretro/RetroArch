@@ -910,6 +910,9 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
       return;
    }
 
+   int bufsize = header_size;
+   setsockopt(new_fd, SOL_SOCKET, SO_SNDBUF, CONST_CAST &bufsize, sizeof(int));
+
    const uint8_t *tmp_header = header;
    while (header_size)
    {
