@@ -27,6 +27,8 @@
 #include <sys/spu_initialize.h>
 #include <sysutil/sysutil_gamecontent.h>
 
+#include "ps3_input.h"
+
 #include "../conf/config_file.h"
 #include "../general.h"
 #include "menu.h"
@@ -100,14 +102,11 @@ static bool file_exists(const char * filename)
 
 static void emulator_init_settings(void)
 {
-	bool config_file_newly_created = false;
-
 	if(!file_exists(SYS_CONFIG_FILE))
 	{
 		FILE * f;
 		f = fopen(SYS_CONFIG_FILE, "w");
 		fclose(f);
-		config_file_newly_created = true;
 	}
 
 	config_file_t * currentconfig = config_file_new(SYS_CONFIG_FILE);
