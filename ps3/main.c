@@ -28,6 +28,7 @@
 #include <sysutil/sysutil_gamecontent.h>
 
 #include "ps3_input.h"
+#include "ps3_video_psgl.h"
 
 #include "../conf/config_file.h"
 #include "../general.h"

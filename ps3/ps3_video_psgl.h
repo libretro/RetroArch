@@ -26,5 +26,6 @@
 
 void ps3_video_init(void);
 void ps3_video_deinit(void);
+extern void *g_gl;
 
 #endif
