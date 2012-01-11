@@ -435,6 +435,8 @@ static void print_compiler(FILE *file)
    fprintf(file, "\nCompiler: ");
 #if defined(_MSC_VER)
    fprintf(file, "MSVC (%d) %u-bit\n", _MSC_VER, (unsigned)(CHAR_BIT * sizeof(size_t)));
+#elif defined(__SNC__)
+   fprintf(file, "SNC %u-bit\n", (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(_WIN32) && defined(__GNUC__)
    fprintf(file, "MinGW (%d.%d.%d) %u-bit\n",
       __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)(CHAR_BIT * sizeof(size_t)));

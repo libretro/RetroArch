@@ -25,9 +25,9 @@ else
 endif
 
 ifeq ($(CELL_BUILD_TOOLS),SNC)
-CC = $(CELL_SDK)/sn/ps3ppusnc
+CC = $(CELL_SDK)/$(HOST_DIR)/sn/bin/ps3ppusnc
 CXX = $(CC)
-LD = $(CELL_SDK)/sn/ps3ppuld
+LD = $(CELL_SDK)/$(HOST_DIR)/sn/bin/ps3ppuld
 else
 CC = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-gcc
 CXX = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-g++
