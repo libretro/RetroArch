@@ -22,6 +22,7 @@
 //#include "cellframework2/input/pad_input.h"
 #include "cellframework2/fileio/file_browser.h"
 
+#include "shared.h"
 #include "../general.h"
 
 #include "menu.h"
@@ -144,11 +145,7 @@ static void display_menubar(uint32_t menu_enum)
 	cellDbgFontDraw();
 }
 
-#define FILEBROWSER_DELAY              100000
-#define FILEBROWSER_DELAY_DIVIDED_BY_3 33333
-#define SETTINGS_DELAY                 150000	
-.
-#define ROM_EXTENSIONS "fds|FDS|zip|ZIP|nes|NES|unif|UNIF"
+#define ROM_EXTENSIONS "fds|FDS|zip|ZIP|nes|NES|unif|UNIF|smc|fig|sfc|gd3|gd7|dx2|bsx|swc|SMC|FIG|SFC|BSX|GD3|GD7|DX2|SWC"
 
 static void UpdateBrowser(filebrowser_t * b)
 {
@@ -259,7 +256,6 @@ static void UpdateBrowser(filebrowser_t * b)
 			if (g_rom_loaded)
 			{
 				menu_is_running = 0;
-				Emulator_StartROMRunning(1);
 				set_text_message("", 15);
 			}
 		}
@@ -373,25 +369,18 @@ static void do_select_file(uint32_t menu_id)
 			switch(menu_id)
 			{
 				case GAME_AWARE_SHADER_CHOICE:
-					/*emulator_implementation_set_gameaware(path);*/
-					strncpy(Settings.GameAwareShaderPath, path, sizeof(Settings.GameAwareShaderPath));
 					break;
 				case SHADER_CHOICE:
 					if(set_shader)
 						strncpy(g_settings.video.second_pass_shader, path, sizeof(g_settings.video.second_pass_shader));
 					else
 						strncpy(g_settings.video.cg_shader_path, path, sizeof(g_settings.video.cg_shader_path));
-					ps3graphics_load_fragment_shader(path, set_shader);
 					break;
 				case PRESET_CHOICE:
-					emulator_implementation_set_shader_preset(path);
 					break;
 				case INPUT_PRESET_CHOICE:
-					emulator_set_controls(path, READ_CONTROLS, "");
 					break;
 				case BORDER_CHOICE:
-					strncpy(Settings.PS3CurrentBorder, path, sizeof(Settings.PS3CurrentBorder));
-					emulator_implementation_set_texture(path);
 					break;
 			}
 
@@ -441,19 +430,13 @@ static void do_pathChoice(uint32_t menu_id)
 			switch(menu_id)
 			{
 				case PATH_SAVESTATES_DIR_CHOICE:
-					strcpy(Settings.PS3PathSaveStates, path);
 					break;
 				case PATH_SRAM_DIR_CHOICE:
-					strcpy(Settings.PS3PathSRAM, path);
 					break;
 				case PATH_CHEATS_DIR_CHOICE:
-					strcpy(Settings.PS3PathCheats, path);
-					break;
-				case PATH_BASE_DIR_CHOICE:
-					strcpy(Settings.PS3PathBaseDirectory, path);
+					strcpy(g_settings.cheat_database, path);
 					break;
 				case PATH_DEFAULT_ROM_DIR_CHOICE:
-					strcpy(Settings.PS3PathROMDirectory, path);
 					break;
 			}
 			menuStackindex--;
@@ -466,19 +449,13 @@ static void do_pathChoice(uint32_t menu_id)
 		switch(menu_id)
 		{
 			case PATH_SAVESTATES_DIR_CHOICE:
-				strcpy(Settings.PS3PathSaveStates, path);
 				break;
 			case PATH_SRAM_DIR_CHOICE:
-				strcpy(Settings.PS3PathSRAM, path);
 				break;
 			case PATH_CHEATS_DIR_CHOICE:
-				strcpy(Settings.PS3PathCheats, path);
-				break;
-			case PATH_BASE_DIR_CHOICE:
-				strcpy(Settings.PS3PathBaseDirectory, path);
+				strcpy(g_settings.cheat_database, path);
 				break;
 			case PATH_DEFAULT_ROM_DIR_CHOICE:
-				strcpy(Settings.PS3PathROMDirectory, path);
 				break;
 		}
 		menuStackindex--;
@@ -534,14 +511,12 @@ static void display_help_text(int currentsetting)
 			print_help_message_yesno(menu_generalvideosettings, currentsetting);
 			break;
 		case SETTING_SCALE_FACTOR:
-			snprintf(menu_generalvideosettings.items[currentsetting].comment, sizeof(menu_generalvideosettings.items[currentsetting].comment), "INFO - [Custom Scaling Factor] is set to: '%dx'.", Settings.ScaleFactor);
+			snprintf(menu_generalvideosettings.items[currentsetting].comment, sizeof(menu_generalvideosettings.items[currentsetting].comment), "INFO - [Custom Scaling Factor] is set to: %dx (X), %dx (Y).", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 			print_help_message(menu_generalvideosettings, currentsetting);
 			break;
 		case SETTING_KEEP_ASPECT_RATIO:
-			cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - [Aspect ratio] is set to '%d:%d'.", ps3graphics_get_aspect_ratio_int(0), ps3graphics_get_aspect_ratio_int(1));
 			break;
 		case SETTING_SOUND_MODE:
-			snprintf(menu_generalaudiosettings.items[currentsetting].comment, sizeof(menu_generalaudiosettings.items[currentsetting].comment), Settings.SoundMode == SOUND_MODE_RSOUND ? "INFO - [Sound Output] is set to 'RSound' - the sound will be streamed over the\n network to the RSound audio server." : Settings.SoundMode == SOUND_MODE_HEADSET ? "INFO - [Sound Output] is set to 'USB/Bluetooth Headset' - sound will\n be output through the headset" : "INFO - [Sound Output] is set to 'Normal' - normal audio output will be\nused.");
 			print_help_message(menu_generalaudiosettings, currentsetting);
 			break;
 		case SETTING_BORDER:
@@ -560,8 +535,6 @@ static void display_help_text(int currentsetting)
 			print_help_message(menu_generalaudiosettings, currentsetting);
 			break;
 		case SETTING_CONTROLS_SCHEME:
-			cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE,
-					Settings.ControlScheme == CONTROL_SCHEME_DEFAULT ? "INFO - Control scheme [Default] is selected.\nNOTE: You can't customize the controls with this scheme." : "INFO - Control scheme [Custom] is selected.\nNOTE: You can customize the controls with this scheme.");
 			break;
 		case SETTING_CONTROLS_DPAD_UP:
 		case SETTING_CONTROLS_DPAD_DOWN:
@@ -624,50 +597,6 @@ static void display_help_text(int currentsetting)
 			   cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE, "%s", Settings.PS3PALTemporalMode60Hz ? "INFO - PAL 60Hz mode is enabled - 60Hz NTSC games will run correctly at 576p PAL\nresolution. NOTE: This is configured on-the-fly." : "INFO - PAL 60Hz mode disabled - 50Hz PAL games will run correctly at 576p PAL\nresolution. NOTE: This is configured on-the-fly.");
 			   break;
 			 */
-		case SETTING_CONTROLS_SCHEME:
-			cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE, "INFO - Input Control scheme preset [%s] is selected.\n", Settings.PS3CurrentInputPresetTitle);
-			break;
-		case SETTING_CONTROLS_DPAD_UP:
-		case SETTING_CONTROLS_DPAD_DOWN:
-		case SETTING_CONTROLS_DPAD_LEFT:
-		case SETTING_CONTROLS_DPAD_RIGHT:
-		case SETTING_CONTROLS_BUTTON_CIRCLE:
-		case SETTING_CONTROLS_BUTTON_CROSS:
-		case SETTING_CONTROLS_BUTTON_TRIANGLE:
-		case SETTING_CONTROLS_BUTTON_SQUARE:
-		case SETTING_CONTROLS_BUTTON_SELECT:
-		case SETTING_CONTROLS_BUTTON_START:
-		case SETTING_CONTROLS_BUTTON_L1:
-		case SETTING_CONTROLS_BUTTON_R1:
-		case SETTING_CONTROLS_BUTTON_L2:
-		case SETTING_CONTROLS_BUTTON_R2:
-		case SETTING_CONTROLS_BUTTON_L3:
-		case SETTING_CONTROLS_BUTTON_R3:
-		case SETTING_CONTROLS_BUTTON_L2_BUTTON_L3:
-		case SETTING_CONTROLS_BUTTON_L2_BUTTON_R3:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_RIGHT:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_LEFT:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_UP:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_DOWN:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_RIGHT:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_LEFT:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_UP:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_DOWN:
-		case SETTING_CONTROLS_BUTTON_R2_BUTTON_R3:
-		case SETTING_CONTROLS_BUTTON_R3_BUTTON_L3:
-		case SETTING_CONTROLS_ANALOG_R_UP:
-		case SETTING_CONTROLS_ANALOG_R_DOWN:
-		case SETTING_CONTROLS_ANALOG_R_LEFT:
-		case SETTING_CONTROLS_ANALOG_R_RIGHT:
-			cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE, "INFO - [%s] on the PS3 controller is mapped to action:\n[%s].", menu_controlssettings.items[currentsetting].text, Input_PrintMappedButton(control_binds[currently_selected_controller_menu][currentsetting-FIRST_CONTROL_BIND]));
-			break;
-		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-			cellDbgFontPuts(0.09f, 0.83f, 0.86f, LIGHTBLUE, "INFO - Save the custom control settings.\nNOTE: This option will not do anything with Control Scheme [New] or [Default].");
-			break;
-		case SETTING_CONTROLS_DEFAULT_ALL:
-			cellDbgFontPuts(0.09f, 0.83f, 0.86f, LIGHTBLUE, "INFO - Set all 'Controls' settings back to their default values.");
-			break;
-
 	}
 }
 
@@ -677,7 +606,7 @@ static void display_label_value(uint64_t switchvalue)
 	{
 		case SETTING_CHANGE_RESOLUTION:
 			{
-				cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, FONT_SIZE, ps3graphics_get_initial_resolution() == ps3graphics_get_current_resolution() ? GREEN : ORANGE, ps3graphics_get_resolution_label(ps3graphics_get_current_resolution()));
+				cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, FONT_SIZE, GREEN, "Unimplemented");
 				cellDbgFontDraw();
 				break;
 			}
@@ -693,77 +622,66 @@ static void display_label_value(uint64_t switchvalue)
 			break;
 #endif
 		case SETTING_SHADER_PRESETS:
-			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos, FONT_SIZE, 
-					(menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].enabled == 0) ? SILVER : strcmp(Settings.ShaderPresetPath, DEFAULT_PRESET_FILE) == 0 ? GREEN : ORANGE, 
-					"%s", Settings.ShaderPresetTitle);
 			break;
 		case SETTING_BORDER:
 			{
-				extract_filename_only(Settings.PS3CurrentBorder);
-				cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos, FONT_SIZE, GREEN, "%s", fname_without_path_extension);
 			}
 			break;
 		case SETTING_SHADER:
 			{
+				#if 0
 				extract_filename_only(g_settings.video.cg_shader_path);
 				cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos, FONT_SIZE, GREEN, "%s", fname_without_path_extension);
+				#endif
 			}
 			break;
 		case SETTING_SHADER_2:
 			{
-				extract_filename_only(g_settings.second_pass_shader);
-				cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, FONT_SIZE, !(Settings.ScaleEnabled) ? SILVER : GREEN, "%s", fname_without_path_extension);
+				#if 0
+				extract_filename_only(g_settings.video.second_pass_shader);
+				cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, FONT_SIZE, !(g_settings.video.render_to_texture) ? SILVER : GREEN, "%s", fname_without_path_extension);
+				#endif
 			}
 			break;
 		case SETTING_FONT_SIZE:
-			cellDbgFontPrintf(0.5f,	menu_generalvideosettings.items[switchvalue].text_ypos,	FONT_SIZE,	Settings.PS3FontSize == 100 ? GREEN : ORANGE, "%f", FONT_SIZE);
+			cellDbgFontPrintf(0.5f,	menu_generalvideosettings.items[switchvalue].text_ypos,	FONT_SIZE, GREEN, "%f", FONT_SIZE);
 			break;
 		case SETTING_KEEP_ASPECT_RATIO:
-			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, 0.91f, ps3graphics_get_aspect_ratio_float(Settings.PS3KeepAspect) == SCREEN_4_3_ASPECT_RATIO ? GREEN : ORANGE, "%s%d:%d", ps3graphics_calculate_aspect_ratio_before_game_load() ? "(Auto)" : "", (int)ps3graphics_get_aspect_ratio_int(0), (int)ps3graphics_get_aspect_ratio_int(1));
 			cellDbgFontDraw();
 			break;
 		case SETTING_HW_TEXTURE_FILTER:
-			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, FONT_SIZE, Settings.PS3Smooth ? GREEN : ORANGE, Settings.PS3Smooth ? "Linear interpolation" : "Point filtering");
+			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, FONT_SIZE, g_settings.video.smooth ? GREEN : ORANGE, g_settings.video.smooth ? "Linear interpolation" : "Point filtering");
 			break;
 		case SETTING_HW_TEXTURE_FILTER_2:
-			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, FONT_SIZE, !(menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].enabled) ? SILVER : Settings.PS3Smooth2 ? GREEN : ORANGE, Settings.PS3Smooth2 ? "Linear interpolation" : "Point filtering");
+			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, FONT_SIZE, !(menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].enabled) ? SILVER : g_settings.video.second_pass_smooth ? GREEN : ORANGE, g_settings.video.second_pass_smooth ? "Linear interpolation" : "Point filtering");
 			break;
 		case SETTING_SCALE_FACTOR:
-			cellDbgFontPrintf	(0.5f,	menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos,	FONT_SIZE,	(menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].enabled == 0) ? SILVER : Settings.ScaleFactor == 2 ? GREEN : ORANGE, "%dx", Settings.ScaleFactor);
+			cellDbgFontPrintf(0.5f,	menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos,	FONT_SIZE,	(menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].enabled == 0) ? SILVER : g_settings.video.fbo_scale_x == 2 && g_settings.video.fbo_scale_y ? GREEN : ORANGE, "%dx (X), %dx (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 			break;
 		case SETTING_HW_OVERSCAN_AMOUNT:
-			cellDbgFontPrintf	(0.5f,	menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos,	FONT_SIZE,	Settings.PS3OverscanAmount == 0 ? GREEN : ORANGE, "%f", (float)Settings.PS3OverscanAmount/100);
+			//cellDbgFontPrintf	(0.5f,	menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos,	FONT_SIZE,	Settings.PS3OverscanAmount == 0 ? GREEN : ORANGE, "%f", (float)Settings.PS3OverscanAmount/100);
 			break;
 		case SETTING_SOUND_MODE:
-			cellDbgFontPuts(0.5f, menu_generalaudiosettings.items[menu_generalaudiosettings.items[switchvalue].enum_id].text_ypos, FONT_SIZE, Settings.SoundMode == SOUND_MODE_NORMAL ? GREEN : ORANGE, Settings.SoundMode == SOUND_MODE_RSOUND ? "RSound" : Settings.SoundMode == SOUND_MODE_HEADSET ? "USB/Bluetooth Headset" : "Normal");
 			break;
 		case SETTING_RSOUND_SERVER_IP_ADDRESS:
-			cellDbgFontPuts(0.5f, menu_generalaudiosettings.items[menu_generalaudiosettings.items[switchvalue].enum_id].text_ypos, FONT_SIZE, strcmp(Settings.RSoundServerIPAddress,"0.0.0.0") ? ORANGE : GREEN, Settings.RSoundServerIPAddress);
 			break;
 		case SETTING_THROTTLE_MODE:
 		case SETTING_ENABLE_SCREENSHOTS:
 		case SETTING_TRIPLE_BUFFERING:
 		case SETTING_SCALE_ENABLED:
 		case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
-			cellDbgFontPuts(0.5f, menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos, FONT_SIZE, *(menu_generalvideosettings.items[switchvalue].setting_ptr) ? GREEN : ORANGE, *(menu_generalvideosettings.items[switchvalue].setting_ptr) ? "ON" : "OFF");
 			break;
 		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-			cellDbgFontPrintf(0.5f, menu_emu_settings.items[menu_emu_settings.items[switchvalue].enum_id].text_ypos, FONT_SIZE, Settings.CurrentSaveStateSlot == MIN_SAVE_STATE_SLOT ? GREEN : ORANGE, "%d", Settings.CurrentSaveStateSlot);
+			cellDbgFontPrintf(0.5f, menu_emu_settings.items[menu_emu_settings.items[switchvalue].enum_id].text_ypos, FONT_SIZE, g_extern.state_slot == 0 ? GREEN : ORANGE, "%d", g_extern.state_slot);
 			break;
 		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-			cellDbgFontPuts		(0.5f,	menu_pathsettings.items[switchvalue].text_ypos,	FONT_SIZE,	!(strcmp(Settings.PS3PathROMDirectory,"/")) ? GREEN : ORANGE, Settings.PS3PathROMDirectory);
 			break;
 		case SETTING_PATH_SAVESTATES_DIRECTORY:
-			cellDbgFontPuts		(0.5f,	menu_pathsettings.items[switchvalue].text_ypos,	FONT_SIZE,	!(strcmp(Settings.PS3PathSaveStates,usrDirPath)) ? GREEN : ORANGE, Settings.PS3PathSaveStates);
 			break;
 		case SETTING_PATH_SRAM_DIRECTORY:
-			cellDbgFontPuts		(0.5f,	menu_pathsettings.items[switchvalue].text_ypos,	FONT_SIZE,	!(strcmp(Settings.PS3PathSRAM,usrDirPath)) ? GREEN : ORANGE, Settings.PS3PathSRAM);
-			break;
-		case SETTING_PATH_BASE_DIRECTORY:
-			cellDbgFontPuts		(0.5f,	menu_pathsettings.items[switchvalue].text_ypos,	FONT_SIZE,	!(strcmp(Settings.PS3PathBaseDirectory,usrDirPath)) ? GREEN : ORANGE, Settings.PS3PathBaseDirectory);
 			break;
 		case SETTING_PATH_CHEATS:
-			cellDbgFontPuts		(0.5f,	menu_pathsettings.items[switchvalue].text_ypos,	FONT_SIZE,	!(strcmp(Settings.PS3PathCheats,usrDirPath)) ? GREEN : ORANGE, Settings.PS3PathCheats);
+			cellDbgFontPuts		(0.5f,	menu_pathsettings.items[switchvalue].text_ypos,	FONT_SIZE,	!(strcmp(g_settings.cheat_database,usrDirPath)) ? GREEN : ORANGE, g_settings.cheat_database);
 			break;
 		case SETTING_DEFAULT_VIDEO_ALL:
 		case SETTING_SAVE_SHADER_PRESET:
@@ -772,10 +690,8 @@ static void display_label_value(uint64_t switchvalue)
 			cellDbgFontDraw();
 			break;
 		case SETTING_CONTROLS_SCHEME:
-			cellDbgFontPrintf(0.5f,   menu_controlssettings.items[switchvalue].text_ypos,   FONT_SIZE, Settings.ControlScheme == CONTROL_SCHEME_DEFAULT ? GREEN : ORANGE, Settings.PS3CurrentInputPresetTitle);
 			break;
 		case SETTING_CONTROLS_NUMBER:
-			cellDbgFontPrintf(0.5f,	menu_controlssettings.items[switchvalue].text_ypos,	FONT_SIZE,	currently_selected_controller_menu == 0 ? GREEN : ORANGE, "%d", currently_selected_controller_menu+1);
 			break;
 		case SETTING_CONTROLS_DPAD_UP:
 		case SETTING_CONTROLS_DPAD_DOWN:
@@ -818,7 +734,7 @@ static void apply_scaling(void)
 {
 }
 
-#include "menu/settings-logic.h"
+#include "settings-logic.h"
 
 static void do_settings(menu * menu_obj)
 {
@@ -919,7 +835,6 @@ static void do_settings(menu * menu_obj)
 			if (g_rom_loaded)
 			{
 				menu_is_running = 0;
-				Emulator_StartROMRunning(1);
 				set_text_message("", 15);
 			}
 			old_state = state;
@@ -1052,7 +967,7 @@ static void menu_init_settings_pages(menu * menu_obj)
 
 void menu_init(void)
 {
-	filebrowser_new(&browser, Settings.PS3PathROMDirectory, ROM_EXTENSIONS);
+	filebrowser_new(&browser, "/", ROM_EXTENSIONS);
 
 	menu_init_settings_pages(&menu_generalvideosettings);
 	menu_init_settings_pages(&menu_generalaudiosettings);
@@ -1107,6 +1022,5 @@ void menu_loop(void)
 
 		psglSwap();
 		cellSysutilCheckCallback();
-		cell_console_poll();
 	}while (menu_is_running);
 }

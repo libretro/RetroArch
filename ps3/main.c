@@ -58,6 +58,9 @@ bool g_rom_loaded;
 bool return_to_MM;			/* launch multiMAN on exit if ROM is passed*/
 uint32_t g_screenshots_enabled;
 
+char special_action_msg[256];		/* message which should be overlaid on top of the screen*/
+uint32_t special_action_msg_expired;	/* time at which the message no longer needs to be overlaid onscreen*/
+
 char contentInfoPath[MAX_PATH_LENGTH];
 char usrDirPath[MAX_PATH_LENGTH];
 char DEFAULT_PRESET_FILE[MAX_PATH_LENGTH];
@@ -78,6 +81,12 @@ int ssnes_main(int argc, char *argv[]);
 SYS_PROCESS_PARAM(1001, 0x100000)
 
 #undef main
+
+void set_text_message(const char * message, uint32_t speed)
+{
+	snprintf(special_action_msg, sizeof(special_action_msg), message);
+	//special_action_msg_expired = ps3graphics_set_text_message_speed(speed);
+}
 
 static bool file_exists(const char * filename)
 {

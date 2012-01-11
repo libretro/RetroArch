@@ -595,7 +595,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_UP
+		SNES_DEVICE_ID_JOYPAD_UP
 	},
 	{
 		SETTING_CONTROLS_DPAD_DOWN,
@@ -612,7 +612,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_DOWN
+		SNES_DEVICE_ID_JOYPAD_DOWN
 	},
 	{
 		SETTING_CONTROLS_DPAD_LEFT,
@@ -629,7 +629,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_LEFT
+		SNES_DEVICE_ID_JOYPAD_LEFT
 	},
 	{
 		SETTING_CONTROLS_DPAD_RIGHT,
@@ -646,7 +646,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_RIGHT
+		SNES_DEVICE_ID_JOYPAD_RIGHT
 	},
 	{
 		SETTING_CONTROLS_BUTTON_CIRCLE,
@@ -663,7 +663,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},	
 		{0},
-		BTN_A
+		SNES_DEVICE_ID_JOYPAD_A
 	},
 	{
 		SETTING_CONTROLS_BUTTON_CROSS,
@@ -680,7 +680,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_B
+		SNES_DEVICE_ID_JOYPAD_B
 	},
 	{
 		SETTING_CONTROLS_BUTTON_TRIANGLE,
@@ -697,7 +697,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_X
+		SNES_DEVICE_ID_JOYPAD_X
 	},
 	{
 		SETTING_CONTROLS_BUTTON_SQUARE,
@@ -714,7 +714,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_Y
+		SNES_DEVICE_ID_JOYPAD_Y
 	},
 	{
 		SETTING_CONTROLS_BUTTON_SELECT,
@@ -731,7 +731,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_SELECT
+		SNES_DEVICE_ID_JOYPAD_SELECT
 	},
 	{
 		SETTING_CONTROLS_BUTTON_START,
@@ -748,7 +748,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_START
+		SNES_DEVICE_ID_JOYPAD_START
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L1,
@@ -765,7 +765,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_L
+		SNES_DEVICE_ID_JOYPAD_L
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R1,
@@ -782,7 +782,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_R
+		SNES_DEVICE_ID_JOYPAD_R
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L2,
@@ -799,7 +799,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_NONE
+		0
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R2,
@@ -816,7 +816,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_NONE
+		0
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L3,
@@ -833,7 +833,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_NONE
+		0
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R3,
@@ -850,7 +850,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_INGAME_MENU
+		SSNES_INGAME_MENU
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L2_BUTTON_L3,
@@ -867,7 +867,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_NONE
+		0
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L2_BUTTON_R3,
@@ -884,7 +884,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_NONE
+		0
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L2_ANALOG_R_RIGHT,
@@ -902,9 +902,9 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		{0},	
 		{0},
 #ifdef HAVE_CHEATS
-		BTN_INCREMENTCHEAT
+		SSNES_CHEAT_INDEX_PLUS
 #else
-		BTN_NONE
+		0
 #endif
 	},
 	{
@@ -923,9 +923,9 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		{0},
 		{0},
 #ifdef HAVE_CHEATS
-		BTN_DECREMENTCHEAT
+		SSNES_CHEAT_INDEX_MINUS
 #else
-		BTN_NONE
+		0
 #endif
 	},
 	{
@@ -944,9 +944,9 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		{0},
 		{0},
 #ifdef HAVE_CHEATS
-		BTN_CHEATTOGGLE
+		SSNES_CHEAT_TOGGLE
 #else
-		BTN_NONE
+		0
 #endif
 	},
 	{
@@ -965,9 +965,9 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		{0},
 		{0},
 #ifdef HAVE_CHEATS
-		BTN_CHEATINPUT
+		SSNES_CHEAT_INPUT
 #else
-		BTN_NONE
+		0
 #endif
 	},
 	{
@@ -985,7 +985,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_INCREMENTSAVE
+		SSNES_STATE_SLOT_PLUS
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R2_ANALOG_R_LEFT,
@@ -1002,7 +1002,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_DECREMENTSAVE
+		SSNES_STATE_SLOT_MINUS
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R2_ANALOG_R_UP,
@@ -1019,7 +1019,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_QUICKLOAD
+		SSNES_LOAD_STATE_KEY
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R2_ANALOG_R_DOWN,
@@ -1036,7 +1036,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_QUICKSAVE
+		SSNES_SAVE_STATE_KEY
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R2_BUTTON_R3,
@@ -1053,7 +1053,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_SRAM_WRITEPROTECT
+		SSNES_SRAM_WRITE_PROTECT
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R3_BUTTON_L3,
@@ -1070,7 +1070,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_EXITTOMENU
+		SSNES_EXIT_TO_MENU
 	},
 	{
 		SETTING_CONTROLS_ANALOG_R_UP,
@@ -1087,7 +1087,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_NONE
+		0
 	},
 	{
 		SETTING_CONTROLS_ANALOG_R_DOWN,
@@ -1104,7 +1104,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_FASTFORWARD
+		SSNES_FAST_FORWARD_KEY
 	},
 	{
 		SETTING_CONTROLS_ANALOG_R_LEFT,
@@ -1121,7 +1121,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_NONE,
+		0,
 		1
 	},
 	{
@@ -1139,7 +1139,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_NONE,
+		0,
 		1
 	},
 	{
