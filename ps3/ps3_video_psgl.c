@@ -156,7 +156,8 @@ static bool gl_shader_init(void)
 #ifdef HAVE_CG
       case SSNES_SHADER_CG:
       {
-         return gl_cg_init(g_settings.video.cg_shader_path);
+         if (strlen(g_settings.video.cg_shader_path) > 0)
+		 return gl_cg_init(g_settings.video.cg_shader_path);
          break;
       }
 #endif
@@ -1083,7 +1084,7 @@ void ps3_video_init(void)
    video_info.force_aspect = true;
    video_info.smooth = true;
    video_info.input_scale = 2;
-   g_gl = gl_init(&video, NULL, NULL);
+   g_gl = gl_init(&video_info, NULL, NULL);
 }
 
 void ps3_video_deinit(void)
