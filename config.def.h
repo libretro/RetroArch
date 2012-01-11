@@ -170,6 +170,9 @@ static const bool crop_overscan = true;
 
 // Font size for on-screen messages.
 static const unsigned font_size = 48;
+// Attempt to scale the font size.
+// The scale factor will be window_size / desktop_size.
+static const bool font_scale = true;
 
 // Offset for where messages will be placed on-screen. Values are in range [0.0, 1.0].
 static const float message_pos_offset_x = 0.05;
