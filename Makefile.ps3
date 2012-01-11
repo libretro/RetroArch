@@ -72,6 +72,7 @@ $(PPU_TARGET): $(OBJ)
 	$(CXX) $(INCDIRS) $(CXXFLAGS) -c -o $@ $<
 
 pkg: $(PPU_TARGET)
+	cp ssnes.cfg ps3/pkg/USRDIR/
 	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) ps3/pkg/USRDIR/EBOOT.BIN
 	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
 
