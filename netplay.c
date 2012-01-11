@@ -156,7 +156,7 @@ int16_t input_state_net(bool port, unsigned device, unsigned index, unsigned id)
       return netplay_callbacks(g_extern.netplay)->state_cb(port, device, index, id);
 }
 
-static void log_connection(const struct sockaddr_storage *their_addr)
+static void log_connection(const struct sockaddr_storage *their_addr, unsigned slot)
 {
    union
    {
@@ -195,7 +195,7 @@ static void log_connection(const struct sockaddr_storage *their_addr)
    if (str)
    {
       char msg[512];
-      snprintf(msg, sizeof(msg), "Got connection from: \"%s\"", str);
+      snprintf(msg, sizeof(msg), "Got connection from: \"%s\" (#%u)", str, slot);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
    }
 }
@@ -282,7 +282,7 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
       close(handle->fd);
       handle->fd = new_fd;
 
-      log_connection(&their_addr);
+      log_connection(&their_addr, 0);
    }
 
    freeaddrinfo(res);
@@ -586,7 +586,9 @@ static bool send_chunk(netplay_t *handle)
 
    if (addr)
    {
-      if (sendto(handle->udp_fd, CONST_CAST handle->packet_buffer, sizeof(handle->packet_buffer), 0, addr, sizeof(struct sockaddr)) != sizeof(handle->packet_buffer))
+      if (sendto(handle->udp_fd, CONST_CAST handle->packet_buffer,
+               sizeof(handle->packet_buffer), 0, addr,
+               sizeof(struct sockaddr)) != sizeof(handle->packet_buffer))
       {
          warn_hangup();
          handle->has_connection = false;
@@ -781,8 +783,6 @@ static bool netplay_poll(netplay_t *handle)
          return false;
       }
    }
-
-   //fprintf(stderr, "After poll: Other ptr: %lu, Read ptr: %lu, Self ptr: %lu\n", handle->other_ptr, handle->read_ptr, handle->self_ptr);
 
    if (handle->read_ptr != handle->self_ptr)
       simulate_input(handle);
@@ -983,7 +983,7 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
    free(header);
    handle->spectate_fds[index] = new_fd;
 
-   log_connection(&their_addr);
+   log_connection(&their_addr, index);
 }
 
 void netplay_pre_frame(netplay_t *handle)
@@ -1055,7 +1055,12 @@ static void netplay_post_frame_spectate(netplay_t *handle)
          ssize_t ret = send(handle->spectate_fds[i], CONST_CAST tmp_buf, send_size, 0);
          if (ret <= 0)
          {
-            SSNES_LOG("Client disconnected ...\n");
+            SSNES_LOG("Client (#%u) disconnected ...\n", i);
+
+            char msg[512];
+            snprintf(msg, sizeof(msg), "Client (#%u) disconnected!", i);
+            msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+
             close(handle->spectate_fds[i]);
             handle->spectate_fds[i] = -1;
             break;
