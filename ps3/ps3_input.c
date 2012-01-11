@@ -16,9 +16,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../driver.h"
-#include "pad_input.h"
+#include "ps3_input.h"
 #include <stdint.h>
 #include "../libsnes.hpp"
 
@@ -102,10 +101,19 @@ static void ps3_free_input(void *data)
    cell_pad_input_deinit();
 }
 
-static void* ps3_input_init(void)
+static void* ps3_input_initialize(void)
+{
+   return (void*)-1;
+}
+
+void ps3_input_init(void)
 {
    cell_pad_input_init();
-   return (void*)-1;
+}
+
+void ps3_input_deinit(void)
+{
+   cell_pad_input_deinit();
 }
 
 static bool ps3_key_pressed(void *data, int key)
@@ -131,7 +139,7 @@ static bool ps3_key_pressed(void *data, int key)
 }
 
 const input_driver_t input_ps3 = {
-   .init = ps3_input_init,
+   .init = ps3_input_initialize,
    .poll = ps3_input_poll,
    .input_state = ps3_input_state,
    .key_pressed = ps3_key_pressed,

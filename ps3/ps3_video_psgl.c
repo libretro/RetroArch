@@ -19,19 +19,15 @@
 
 #include "../driver.h"
 
+#include "ps3_video_psgl.h"
+
 #include <stdint.h>
 #include "../libsnes.hpp"
 #include <stdio.h>
 #include <sys/time.h>
 #include <string.h>
 #include "../general.h"
-#include <assert.h>
 #include <math.h>
-
-#include <PSGL/psgl.h>
-#include <PSGL/psglu.h>
-#include <GLES/glext.h>
-#include <cell/dbgfont.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

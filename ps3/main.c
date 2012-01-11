@@ -29,6 +29,7 @@
 
 #include "../conf/config_file.h"
 #include "../general.h"
+#include "menu.h"
 
 #define MAX_PATH_LENGTH 1024
 
@@ -223,6 +224,11 @@ int main(int argc, char *argv[])
 
    get_path_settings(return_to_MM);
 
+   ps3_input_init();
+
+   menu_init();
+   //menu_loop();
+
    /* FIXME - As long as we don't use a menu */
    snprintf(g_extern.system.fullpath, sizeof(g_extern.system.fullpath), "/dev_hdd0/game/SNES90000/USRDIR/main.sfc");
 
@@ -237,4 +243,6 @@ int main(int argc, char *argv[])
    snprintf(arg5, sizeof(arg5), SYS_CONFIG_FILE);
    char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
    return ssnes_main(sizeof(argv_) / sizeof(argv_[0]) - 1, argv_);
+
+   ps3_input_deinit();
 }
