@@ -156,6 +156,50 @@ int16_t input_state_net(bool port, unsigned device, unsigned index, unsigned id)
       return netplay_callbacks(g_extern.netplay)->state_cb(port, device, index, id);
 }
 
+static void log_connection(const struct sockaddr_storage *their_addr)
+{
+   union
+   {
+      const struct sockaddr_storage *storage;
+      const struct sockaddr_in *v4;
+      const struct sockaddr_in6 *v6;
+   } u;
+   u.storage = their_addr;
+
+   const char *str = NULL;
+   if (their_addr->ss_family == AF_INET)
+   {
+      char buf[INET_ADDRSTRLEN] = {0};
+      str = buf;
+      struct sockaddr_in in;
+      memset(&in, 0, sizeof(in));
+      in.sin_family = AF_INET;
+      memcpy(&in.sin_addr, &u.v4->sin_addr, sizeof(struct in_addr));
+
+      getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in), buf, sizeof(buf),
+            NULL, 0, NI_NUMERICHOST);
+   }
+   else if (their_addr->ss_family == AF_INET6)
+   {
+      char buf[INET6_ADDRSTRLEN] = {0};
+      str = buf;
+      struct sockaddr_in6 in;
+      memset(&in, 0, sizeof(in));
+      in.sin6_family = AF_INET6;
+      memcpy(&in.sin6_addr, &u.v6->sin6_addr, sizeof(struct in6_addr));
+
+      getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in6),
+            buf, sizeof(buf), NULL, 0, NI_NUMERICHOST);
+   }
+
+   if (str)
+   {
+      char msg[512];
+      snprintf(msg, sizeof(msg), "Got connection from: \"%s\"", str);
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   }
+}
+
 static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port, bool spectate)
 {
    struct addrinfo hints, *res = NULL;
@@ -224,7 +268,10 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
          freeaddrinfo(res);
          return false;
       }
-      int new_fd = accept(handle->fd, NULL, NULL);
+
+      struct sockaddr_storage their_addr;
+      socklen_t addr_size = sizeof(their_addr);
+      int new_fd = accept(handle->fd, (struct sockaddr*)&their_addr, &addr_size);
       if (new_fd < 0)
       {
          SSNES_ERR("Failed to accept socket.\n");
@@ -234,6 +281,8 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
       }
       close(handle->fd);
       handle->fd = new_fd;
+
+      log_connection(&their_addr);
    }
 
    freeaddrinfo(res);
@@ -877,7 +926,9 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
    if (!FD_ISSET(handle->fd, &fds))
       return;
 
-   int new_fd = accept(handle->fd, NULL, NULL);
+   struct sockaddr_storage their_addr;
+   socklen_t addr_size = sizeof(their_addr);
+   int new_fd = accept(handle->fd, (struct sockaddr*)&their_addr, &addr_size);
    if (new_fd < 0)
    {
       SSNES_ERR("Failed to accept incoming spectator!\n");
@@ -931,6 +982,8 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
 
    free(header);
    handle->spectate_fds[index] = new_fd;
+
+   log_connection(&their_addr);
 }
 
 void netplay_pre_frame(netplay_t *handle)
