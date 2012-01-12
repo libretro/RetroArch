@@ -419,6 +419,22 @@ bool config_get_double(config_file_t *conf, const char *key, double *in)
    return false;
 }
 
+bool config_get_float(config_file_t *conf, const char *key, float *in)
+{
+   struct entry_list *list = conf->entries;
+
+   while (list)
+   {
+      if (strcmp(key, list->key) == 0)
+      {
+         *in = (float)strtod(list->value, NULL);
+         return true;
+      }
+      list = list->next;
+   }
+   return false;
+}
+
 bool config_get_int(config_file_t *conf, const char *key, int *in)
 {
    struct entry_list *list = conf->entries;

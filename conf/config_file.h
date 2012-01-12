@@ -49,6 +49,8 @@ bool config_entry_exists(config_file_t *conf, const char *entry);
 
 // Extracts a double from config file.
 bool config_get_double(config_file_t *conf, const char *entry, double *in);
+// Extracts a float from config file.
+bool config_get_float(config_file_t *conf, const char *entry, float *in);
 // Extracts an int from config file.
 bool config_get_int(config_file_t *conf, const char *entry, int *in);
 // Extracts an uint from config file.
