@@ -1081,7 +1081,7 @@ void ps3_video_init(void)
    video_info_t video_info = {0};
    // Might have to supply correct values here.
    video_info.vsync = true;
-   video_info.force_aspect = true;
+   video_info.force_aspect = false;
    video_info.smooth = true;
    video_info.input_scale = 2;
    g_gl = gl_init(&video_info, NULL, NULL);
