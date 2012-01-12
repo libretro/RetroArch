@@ -237,6 +237,7 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
       {
          SSNES_ERR("Failed to connect to server.\n");
          close(handle->fd);
+         handle->fd = -1;
          freeaddrinfo(res);
          return false;
       }
@@ -251,6 +252,7 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
       {
          SSNES_ERR("Failed to bind socket.\n");
          close(handle->fd);
+         handle->fd = -1;
          freeaddrinfo(res);
          return false;
       }
@@ -265,6 +267,7 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
       {
          SSNES_ERR("Failed to bind socket.\n");
          close(handle->fd);
+         handle->fd = -1;
          freeaddrinfo(res);
          return false;
       }
@@ -276,6 +279,7 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
       {
          SSNES_ERR("Failed to accept socket.\n");
          close(handle->fd);
+         handle->fd = -1;
          freeaddrinfo(res);
          return false;
       }
@@ -328,6 +332,7 @@ static bool init_udp_socket(netplay_t *handle, const char *server, uint16_t port
       {
          SSNES_ERR("Failed to bind socket.\n");
          close(handle->udp_fd);
+         handle->udp_fd = -1;
       }
 
       freeaddrinfo(handle->addr);
