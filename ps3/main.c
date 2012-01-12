@@ -32,6 +32,9 @@
 
 #include "../conf/config_file.h"
 #include "../general.h"
+
+#include "shared.h"
+
 #include "menu.h"
 
 #define MAX_PATH_LENGTH 1024
@@ -86,10 +89,15 @@ SYS_PROCESS_PARAM(1001, 0x100000)
 
 #undef main
 
+uint32_t set_text_message_speed(uint32_t value)
+{
+	return g_frame_count + value;
+}
+
 void set_text_message(const char * message, uint32_t speed)
 {
 	snprintf(special_action_msg, sizeof(special_action_msg), message);
-	//special_action_msg_expired = ps3graphics_set_text_message_speed(speed);
+	special_action_msg_expired = set_text_message_speed(speed);
 }
 
 static bool file_exists(const char * filename)
@@ -114,8 +122,8 @@ static void init_settings(void)
 
 	//init_setting_uint("PS3General::ApplyShaderPresetOnStartup", Settings.ApplyShaderPresetOnStartup, 0);
 	//init_setting_uint("video_aspect_ratio", g_settings.video.aspect_ratio, ASPECT_RATIO_4_3);
-	init_setting_int("video_smooth", g_settings.video.smooth, 1);
-	init_setting_int("video_second_pass_smooth", g_settings.video.second_pass_smooth, 1);
+	init_setting_bool("video_smooth", g_settings.video.smooth, 1);
+	init_setting_bool("video_second_pass_smooth", g_settings.video.second_pass_smooth, 1);
 	init_setting_char("video_cg_shader", g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE);
 	//init_setting_char("video_second_pass_shader", g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE);
 	//init_setting_char("PS3General::Border", Settings.PS3CurrentBorder, DEFAULT_BORDER_FILE);
@@ -129,7 +137,7 @@ static void init_settings(void)
 	//init_setting_uint("PS3General::ViewportY", Settings.ViewportY, 0);
 	//init_setting_uint("PS3General::ViewportWidth", Settings.ViewportWidth, 0);
 	//init_setting_uint("PS3General::ViewportHeight", Settings.ViewportHeight, 0);
-	init_setting_uint("video_render_to_texture", g_settings.video.render_to_texture, 1);
+	init_setting_bool("video_render_to_texture", g_settings.video.render_to_texture, 1);
 	//init_setting_uint("PS3General::Orientation", Settings.Orientation, 0);
 	//init_setting_uint("PS3General::PS3CurrentResolution", Settings.PS3CurrentResolution, NULL);
 	//init_setting_uint("PS3General::OverscanEnabled", Settings.PS3OverscanEnabled, 0);
@@ -137,7 +145,7 @@ static void init_settings(void)
 	//init_setting_uint("PS3General::PS3PALTemporalMode60Hz", Settings.PS3PALTemporalMode60Hz, 0);
 	//init_setting_uint("Sound::SoundMode", Settings.SoundMode, SOUND_MODE_NORMAL);
 	//init_setting_char("RSound::RSoundServerIPAddress",  Settings.RSoundServerIPAddress, "0.0.0.0");
-	init_setting_uint("video_vsync", g_settings.video.vsync, 1);
+	init_setting_bool("video_vsync", g_settings.video.vsync, 1);
 	//init_setting_uint("PS3General::PS3FontSize", Settings.PS3FontSize, 100);
 	//init_setting_char("savestate_directory", Settings.PS3PathSaveStates, usrDirPath);
 	//init_setting_char("savefile_directory", g_settings., usrDirPath);
