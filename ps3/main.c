@@ -49,6 +49,10 @@
 	if(!(config_get_int(currentconfig, charstring, &setting))) \
 		setting = defaultvalue; 
 
+#define init_setting_float(charstring, setting, defaultvalue) \
+	if(!(config_get_float(currentconfig, charstring, &setting))) \
+		setting = defaultvalue; 
+
 #define init_setting_bool(charstring, setting, defaultvalue) \
 	if(!(config_get_bool(currentconfig, charstring, &setting))) \
 		setting = defaultvalue; 
@@ -131,8 +135,8 @@ static void init_settings(void)
 	//init_setting_char("PS3General::ShaderPresetPath", Settings.ShaderPresetPath, "");
 	//init_setting_char("PS3General::ShaderPresetTitle", Settings.ShaderPresetTitle, "None");
 	//init_setting_uint("PS3General::ScaleFactor", Settings.ScaleFactor, 2);
-	init_setting_uint("video_fbo_scale_x", g_settings.video.fbo_scale_x, 2);
-	init_setting_uint("video_fbo_scale_y", g_settings.video.fbo_scale_y, 2);
+	init_setting_float("video_fbo_scale_x", g_settings.video.fbo_scale_x, 2.0f);
+	init_setting_float("video_fbo_scale_y", g_settings.video.fbo_scale_y, 2.0f);
 	//init_setting_uint("PS3General::ViewportX", Settings.ViewportX, 0);
 	//init_setting_uint("PS3General::ViewportY", Settings.ViewportY, 0);
 	//init_setting_uint("PS3General::ViewportWidth", Settings.ViewportWidth, 0);
