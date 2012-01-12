@@ -2036,9 +2036,6 @@ static void fill_title_buf(void)
 
 static void init_state(void)
 {
-   // Make absolutely sure our big global structs are in-fact zeroed out.
-   memset(&g_extern, 0, sizeof(g_extern));
-   memset(&g_settings, 0, sizeof(g_settings));
    g_extern.video_active = true;
    g_extern.audio_active = true;
    g_extern.game_type = SSNES_CART_NORMAL;
