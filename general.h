@@ -166,6 +166,14 @@ struct settings
    bool savestate_auto_index;
 };
 
+// Settings and/or global state that is specific to a console-style implementation.
+#if defined(__CELLOS_LV2__) || defined(_XBOX) || defined(XENON) || defined(GEKKO)
+struct console_settings
+{
+   bool block_config_read;
+};
+#endif
+
 enum ssnes_game_type
 {
    SSNES_CART_NORMAL = 0,
@@ -348,9 +356,13 @@ struct global
 };
 
 void parse_config(void);
+void config_set_defaults(void);
 
 extern struct settings g_settings;
 extern struct global g_extern;
+#if defined(__CELLOS_LV2__) || defined(_XBOX) || defined(XENON) || defined(GEKKO)
+extern struct console_settings g_console;
+#endif
 
 #define SSNES_LOG(...) do { \
    if (g_extern.verbose) \
