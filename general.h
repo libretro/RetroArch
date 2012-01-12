@@ -100,8 +100,8 @@ struct settings
       float refresh_rate;
 
       bool render_to_texture;
-      double fbo_scale_x;
-      double fbo_scale_y;
+      float fbo_scale_x;
+      float fbo_scale_y;
       char second_pass_shader[PATH_MAX];
       bool second_pass_smooth;
       char shader_dir[PATH_MAX];
