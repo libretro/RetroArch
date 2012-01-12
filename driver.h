@@ -100,14 +100,14 @@ typedef struct audio_driver
    const char *ident;
 } audio_driver_t;
 
-#define AXIS_NEG(x) (((uint32_t)(x) << 16) | 0xFFFFU)
-#define AXIS_POS(x) ((uint32_t)(x) | 0xFFFF0000U)
-#define AXIS_NONE (0xFFFFFFFFU)
+#define AXIS_NEG(x) (((uint32_t)(x) << 16) | UINT16_C(0xFFFF))
+#define AXIS_POS(x) ((uint32_t)(x) | UINT32_C(0xFFFF0000))
+#define AXIS_NONE UINT32_C(0xFFFFFFFF)
 
-#define AXIS_NEG_GET(x) (((uint32_t)(x) >> 16) & 0xFFFFU)
-#define AXIS_POS_GET(x) ((uint32_t)(x) & 0xFFFFU)
+#define AXIS_NEG_GET(x) (((uint32_t)(x) >> 16) & UINT16_C(0xFFFF))
+#define AXIS_POS_GET(x) ((uint32_t)(x) & UINT16_C(0xFFFF))
 
-#define NO_BTN ((uint16_t)0xFFFFU) // I hope no joypad will ever have this many buttons ... ;)
+#define NO_BTN UINT16_C(0xFFFF) // I hope no joypad will ever have this many buttons ... ;)
 
 #define HAT_UP_MASK (1 << 15)
 #define HAT_DOWN_MASK (1 << 14)
