@@ -31,12 +31,15 @@
 
 struct settings g_settings;
 struct global g_extern;
+#if defined(__CELLOS_LV2__) || defined(_XBOX) || defined(XENON) || defined(GEKKO)
+struct console_settings g_console;
+#endif
 
 #ifdef HAVE_CONFIGFILE
 static void read_keybinds(config_file_t *conf);
 #endif
 
-static void set_defaults(void)
+void config_set_defaults(void)
 {
    const char *def_video = NULL;
    const char *def_audio = NULL;
@@ -224,11 +227,16 @@ static void parse_config_file(void);
 
 void parse_config(void)
 {
-   set_defaults();
+#if defined(__CELLOS_LV2__) || defined(_XBOX) || defined(XENON) || defined(GEKKO)
+   if (!g_console.block_config_read)
+#endif
+   {
+      config_set_defaults();
 
 #ifdef HAVE_CONFIGFILE
-   parse_config_file();
+      parse_config_file();
 #endif
+   }
 }
 
 #ifdef HAVE_CONFIGFILE
