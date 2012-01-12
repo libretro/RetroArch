@@ -30,9 +30,6 @@
 #include "menu.h"
 #include "menu-entries.h"
 
-extern unsigned g_frame_count;
-extern bool g_rom_loaded;
-
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 
