@@ -104,7 +104,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0,
 		1
 	},
-#ifdef HAVE_GAMEAWARE
 	{
 		SETTING_GAME_AWARE_SHADER,
 		"Game Aware Shader Script",
@@ -123,7 +122,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0,
 		1
 	},
-#endif
 	{
 		SETTING_FONT_SIZE,
 		"Font Size",
@@ -413,6 +411,24 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		1
 	},
 	{
+		SETTING_EMU_CURRENT_SAVE_STATE_SLOT, 
+		"Current save state slot", 
+		0.0f,
+		0.0f,
+		YELLOW,
+		WHITE,
+		"INFO - Set the current savestate slot (can also be configured ingame).",
+		LIGHTBLUE,
+		0.91f,
+		0.09f,
+		0.83f,
+		NULL,
+		{0},
+		{0},
+		0,
+		1
+	},
+	{
 		SETTING_EMU_DEFAULT_ALL,
 		"DEFAULT",
 		0.0f,
@@ -514,7 +530,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		{0},
 		{0}
 	},
-#ifdef HAVE_CHEATS
 	{
 		SETTING_PATH_CHEATS,
 		"Cheatfile Directory",
@@ -531,7 +546,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		{0},
 		{0}
 	},
-#endif
 	{
 		SETTING_PATH_DEFAULT_ALL,
 		"DEFAULT",
@@ -901,11 +915,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},	
 		{0},
-#ifdef HAVE_CHEATS
 		SSNES_CHEAT_INDEX_PLUS
-#else
-		0
-#endif
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L2_ANALOG_R_LEFT,
@@ -922,11 +932,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-#ifdef HAVE_CHEATS
 		SSNES_CHEAT_INDEX_MINUS
-#else
-		0
-#endif
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L2_ANALOG_R_UP,
@@ -943,11 +949,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-#ifdef HAVE_CHEATS
 		SSNES_CHEAT_TOGGLE
-#else
-		0
-#endif
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L2_ANALOG_R_DOWN,
@@ -964,11 +966,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-#ifdef HAVE_CHEATS
 		SSNES_CHEAT_INPUT
-#else
-		0
-#endif
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R2_ANALOG_R_RIGHT,

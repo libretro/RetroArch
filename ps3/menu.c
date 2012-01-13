@@ -628,18 +628,10 @@ static void display_label_value(uint64_t switchvalue)
 			break;
 		case SETTING_SHADER:
 			{
-				#if 0
-				extract_filename_only(g_settings.video.cg_shader_path);
-				cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos, FONT_SIZE, GREEN, "%s", fname_without_path_extension);
-				#endif
 			}
 			break;
 		case SETTING_SHADER_2:
 			{
-				#if 0
-				extract_filename_only(g_settings.video.second_pass_shader);
-				cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, FONT_SIZE, !(g_settings.video.render_to_texture) ? SILVER : GREEN, "%s", fname_without_path_extension);
-				#endif
 			}
 			break;
 		case SETTING_FONT_SIZE:
@@ -658,7 +650,6 @@ static void display_label_value(uint64_t switchvalue)
 			cellDbgFontPrintf(0.5f,	menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos,	FONT_SIZE,	(menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].enabled == 0) ? SILVER : g_settings.video.fbo_scale_x == 2 && g_settings.video.fbo_scale_y ? GREEN : ORANGE, "%dx (X), %dx (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 			break;
 		case SETTING_HW_OVERSCAN_AMOUNT:
-			//cellDbgFontPrintf	(0.5f,	menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos,	FONT_SIZE,	Settings.PS3OverscanAmount == 0 ? GREEN : ORANGE, "%f", (float)Settings.PS3OverscanAmount/100);
 			break;
 		case SETTING_SOUND_MODE:
 			break;
@@ -724,7 +715,6 @@ static void display_label_value(uint64_t switchvalue)
 		case SETTING_CONTROLS_ANALOG_R_DOWN:
 		case SETTING_CONTROLS_ANALOG_R_LEFT:
 		case SETTING_CONTROLS_ANALOG_R_RIGHT:
-			//cellDbgFontPuts(0.5f,	menu_controlssettings.items[switchvalue].text_ypos,	FONT_SIZE,	control_binds[currently_selected_controller_menu][switchvalue-(FIRST_CONTROL_BIND)] == default_control_binds[switchvalue-FIRST_CONTROL_BIND] ? GREEN : ORANGE, Input_PrintMappedButton(control_binds[currently_selected_controller_menu][switchvalue-FIRST_CONTROL_BIND]));
 			break;
 	}
 }

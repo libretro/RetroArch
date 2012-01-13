@@ -243,9 +243,6 @@ int main(int argc, char *argv[])
    menu_init();
    menu_loop();
 
-   /* FIXME - As long as we don't use a menu */
-   //snprintf(g_extern.system.fullpath, sizeof(g_extern.system.fullpath), "/dev_hdd0/game/SNES90000/USRDIR/main.sfc");
-
    char arg1[] = "ssnes";
    char arg2[PATH_MAX];
    

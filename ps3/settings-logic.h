@@ -143,13 +143,13 @@ static void producesettingentry(uint64_t switchvalue)
 		case SETTING_HW_TEXTURE_FILTER:
 		if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 		{
-			g_settings.video.smooth = !g_settings.video.smooth;
+			//g_settings.video.smooth = !g_settings.video.smooth;
 			//ps3graphics_set_smooth(Settings.PS3Smooth, 0);
-			set_text_message("", 7);
+			//set_text_message("", 7);
 		}
 		if(CTRL_START(state))
 		{
-			g_settings.video.smooth = 1;
+			//g_settings.video.smooth = 1;
 			//ps3graphics_set_smooth(Settings.PS3Smooth, 0);
 		}
 		break;
@@ -310,7 +310,6 @@ static void producesettingentry(uint64_t switchvalue)
 		}
 
 		break;
-#ifdef HAVE_CHEATS
 		case SETTING_PATH_CHEATS:
 		if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 		{
@@ -320,7 +319,6 @@ static void producesettingentry(uint64_t switchvalue)
 			set_initial_dir_tmpbrowser = true;
 		}
 		break;
-#endif
 		case SETTING_PATH_DEFAULT_ALL:
 		if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
 		{
