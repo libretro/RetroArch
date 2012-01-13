@@ -213,6 +213,21 @@ static void get_path_settings(bool multiman_support)
 	}
 }
 
+static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
+{
+	(void) param;
+	(void) userdata;
+
+	switch (status)
+	{
+		case CELL_SYSUTIL_REQUEST_EXITGAME:
+			menu_is_running = 0;
+			g_quitting = true;
+			sys_process_exit(0);
+			break;
+	}
+}
+
 // Temporary, a more sane implementation should go here.
 int main(int argc, char *argv[])
 {
@@ -221,6 +236,9 @@ int main(int argc, char *argv[])
 
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
    cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_GAME);
+
+   SSNES_LOG("Registering Callback\n");
+   cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
 
    g_rom_loaded = false;
 #ifdef MULTIMAN_SUPPORT

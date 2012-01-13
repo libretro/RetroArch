@@ -22,6 +22,7 @@ extern char special_action_msg[256];
 extern uint32_t special_action_msg_expired;
 extern unsigned g_frame_count;
 extern bool g_rom_loaded;
+extern bool g_quitting;
 
 extern char contentInfoPath[MAX_PATH_LENGTH];
 extern char usrDirPath[MAX_PATH_LENGTH];
