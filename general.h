@@ -167,7 +167,7 @@ struct settings
 };
 
 // Settings and/or global state that is specific to a console-style implementation.
-#if defined(__CELLOS_LV2__) || defined(_XBOX) || defined(XENON) || defined(GEKKO)
+#ifdef SSNES_CONSOLE
 struct console_settings
 {
    bool block_config_read;
@@ -360,7 +360,7 @@ void config_set_defaults(void);
 
 extern struct settings g_settings;
 extern struct global g_extern;
-#if defined(__CELLOS_LV2__) || defined(_XBOX) || defined(XENON) || defined(GEKKO)
+#ifdef SSNES_CONSOLE
 extern struct console_settings g_console;
 #endif
 

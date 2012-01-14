@@ -31,7 +31,7 @@
 
 struct settings g_settings;
 struct global g_extern;
-#if defined(__CELLOS_LV2__) || defined(_XBOX) || defined(XENON) || defined(GEKKO)
+#ifdef SSNES_CONSOLE
 struct console_settings g_console;
 #endif
 
@@ -227,7 +227,7 @@ static void parse_config_file(void);
 
 void parse_config(void)
 {
-#if defined(__CELLOS_LV2__) || defined(_XBOX) || defined(XENON) || defined(GEKKO)
+#ifdef SSNES_CONSOLE
    if (!g_console.block_config_read)
 #endif
    {

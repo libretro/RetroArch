@@ -47,7 +47,7 @@ OBJ = fifo_buffer.o ps3/cellframework2/fileio/file_browser.o ps3/ps3_audio.o ps3
 
 LIBS = -ldbgfont -lPSGL -lPSGLcgc -lcgc -lgcm_cmd -lgcm_sys_stub -lsnes -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysmodule_stub -laudio_stub -lnet_stub -lpthread
 
-DEFINES = -DHAVE_OPENGL=1 -DHAVE_CG=1 -DHAVE_FBO=1 -D__CELLOS_LV2__ -DHAVE_CONFIGFILE=1 -DPACKAGE_VERSION=\"0.9.3\" -Dmain=ssnes_main
+DEFINES = -DSSNES_CONSOLE -DHAVE_OPENGL=1 -DHAVE_CG=1 -DHAVE_FBO=1 -D__CELLOS_LV2__ -DHAVE_CONFIGFILE=1 -DPACKAGE_VERSION=\"0.9.3\" -Dmain=ssnes_main
 
 ifeq ($(DEBUG), 1)
    PPU_OPTIMIZE_LV	:= -O0 -g

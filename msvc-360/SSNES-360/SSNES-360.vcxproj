@@ -129,7 +129,7 @@
       <PREfast>AnalyzeOnly</PREfast>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PreprocessorDefinitions>_DEBUG;_XBOX;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.3";_CRT_SECURE_NO_WARNINGS;main=ssnes_main;HAVE_CONFIGFILE</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_XBOX;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.3";_CRT_SECURE_NO_WARNINGS;main=ssnes_main;HAVE_CONFIGFILE;SSNES_CONSOLE</PreprocessorDefinitions>
       <CallAttributedProfiling>Callcap</CallAttributedProfiling>
     </ClCompile>
     <Link>
