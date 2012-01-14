@@ -304,6 +304,7 @@ struct global
 
    bool sram_load_disable;
    bool sram_save_disable;
+   bool use_sram;
 
    // Pausing support
    bool is_paused;
@@ -357,6 +358,10 @@ struct global
 
 void parse_config(void);
 void config_set_defaults(void);
+
+int ssnes_main_init(int argc, char *argv[]);
+bool ssnes_main_iterate(void);
+void ssnes_main_deinit(void);
 
 extern struct settings g_settings;
 extern struct global g_extern;

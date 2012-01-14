@@ -2041,7 +2041,7 @@ static void init_state(void)
    g_extern.game_type = SSNES_CART_NORMAL;
 }
 
-int main(int argc, char *argv[])
+int ssnes_main_init(int argc, char *argv[])
 {
    init_state();
 
@@ -2062,12 +2062,13 @@ int main(int argc, char *argv[])
    if (*g_extern.basename)
       psnes_set_cartridge_basename(g_extern.basename);
 
-   SSNES_LOG("Version of libsnes API: %u.%u\n", psnes_library_revision_major(), psnes_library_revision_minor());
+   SSNES_LOG("Version of libsnes API: %u.%u\n",
+         psnes_library_revision_major(), psnes_library_revision_minor());
 
    fill_pathnames();
    set_savestate_auto_index();
 
-   bool use_sram = true;
+   g_extern.use_sram = true;
 
    if (!init_rom_file(g_extern.game_type))
       goto error;
@@ -2099,15 +2100,15 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef HAVE_NETPLAY
-   use_sram = !g_extern.sram_save_disable && !g_extern.netplay_is_client;
+   g_extern.use_sram = !g_extern.sram_save_disable && !g_extern.netplay_is_client;
 #else
-   use_sram = !g_extern.sram_save_disable;
+   g_extern.use_sram = !g_extern.sram_save_disable;
 #endif
 
-   if (!use_sram)
+   if (!g_extern.use_sram)
       SSNES_LOG("SRAM will not be saved!\n");
 
-   if (use_sram)
+   if (g_extern.use_sram)
       init_autosave();
       
 #ifdef HAVE_XML
@@ -2119,67 +2120,81 @@ int main(int argc, char *argv[])
       init_cheats();
 #endif
 
-   // Main loop
-   for (;;)
+   return 0;
+
+error:
+   psnes_unload_cartridge();
+   psnes_term();
+   uninit_drivers();
+   uninit_libsnes_sym();
+
+   return 1;
+}
+
+bool ssnes_main_iterate(void)
+{
+   // DSP plugin GUI events.
+   if (g_extern.audio_data.dsp_handle && g_extern.audio_data.dsp_plugin->events)
+      g_extern.audio_data.dsp_plugin->events(g_extern.audio_data.dsp_handle);
+
+   // Time to drop?
+   if (driver.input->key_pressed(driver.input_data, SSNES_QUIT_KEY) ||
+         !driver.video->alive(driver.video_data))
+      return false;
+
+   // Checks for stuff like fullscreen, save states, etc.
+   do_state_checks();
+
+   // Run libsnes for one frame.
+   if (!g_extern.is_paused || g_extern.is_oneshot)
    {
-      // DSP plugin GUI events.
-      if (g_extern.audio_data.dsp_handle && g_extern.audio_data.dsp_plugin->events)
-         g_extern.audio_data.dsp_plugin->events(g_extern.audio_data.dsp_handle);
-
-      // Time to drop?
-      if (driver.input->key_pressed(driver.input_data, SSNES_QUIT_KEY) ||
-            !driver.video->alive(driver.video_data))
-         break;
-
-      // Checks for stuff like fullscreen, save states, etc.
-      do_state_checks();
-      
-      // Run libsnes for one frame.
-      if (!g_extern.is_paused || g_extern.is_oneshot)
-      {
 #ifdef HAVE_THREADS
-         lock_autosave();
+      lock_autosave();
 #endif
 
 #ifdef HAVE_NETPLAY
-         if (g_extern.netplay)
-            netplay_pre_frame(g_extern.netplay);
+      if (g_extern.netplay)
+         netplay_pre_frame(g_extern.netplay);
 #endif
-         if (g_extern.bsv.movie)
-            bsv_movie_set_frame_start(g_extern.bsv.movie);
+      if (g_extern.bsv.movie)
+         bsv_movie_set_frame_start(g_extern.bsv.movie);
 
-         psnes_run();
+      psnes_run();
 
-         if (g_extern.bsv.movie)
-            bsv_movie_set_frame_end(g_extern.bsv.movie);
+      if (g_extern.bsv.movie)
+         bsv_movie_set_frame_end(g_extern.bsv.movie);
 #ifdef HAVE_NETPLAY
-         if (g_extern.netplay)
-            netplay_post_frame(g_extern.netplay);
+      if (g_extern.netplay)
+         netplay_post_frame(g_extern.netplay);
 #endif
 
 #ifdef HAVE_THREADS
-         unlock_autosave();
+      unlock_autosave();
 #endif
-      }
-      else
-      {
-         input_poll();
-         ssnes_sleep(10);
-      }
+   }
+   else
+   {
+      input_poll();
+      ssnes_sleep(10);
    }
 
+   return true;
+}
+
+void ssnes_main_deinit(void)
+{
 #ifdef HAVE_NETPLAY
    deinit_netplay();
 #endif
 
-   if (use_sram)
+   if (g_extern.use_sram)
       deinit_autosave();
 
 #ifdef HAVE_FFMPEG
    deinit_recording();
 #endif
 
-   if (use_sram)
+   if (g_extern.use_sram)
       save_files();
 
 #ifdef HAVE_NETPLAY
@@ -2198,15 +2213,13 @@ int main(int argc, char *argv[])
    psnes_term();
    uninit_drivers();
    uninit_libsnes_sym();
+}
 
-   return 0;
-
-error:
-   psnes_unload_cartridge();
-   psnes_term();
-   uninit_drivers();
-   uninit_libsnes_sym();
-
-   return 1;
+int main(int argc, char *argv[])
+{
+   int init_ret;
+   if ((init_ret = ssnes_main_init(argc, argv))) return init_ret;
+   while (ssnes_main_iterate());
+   ssnes_main_deinit();
 }
 
