@@ -936,7 +936,7 @@ void dir_list_free(char **dir_list)
 bool path_is_directory(const char *path)
 {
 #ifdef _WIN32
-   return GetFileAttributes(path) == FILE_ATTRIBUTE_DIRECTORY;
+   return GetFileAttributes(path) & FILE_ATTRIBUTE_DIRECTORY;
 #elif defined(__CELLOS_LV2__) || defined(XENON)
    // Dummy
    (void)path;
