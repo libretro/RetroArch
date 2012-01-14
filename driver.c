@@ -139,7 +139,7 @@ static void find_audio_driver(void)
    for (size_t i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
       fprintf(stderr, "\t%s\n", audio_drivers[i]->ident);
 
-   exit(1);
+   ssnes_fail(1, "find_audio_driver()");
 }
 
 static void find_video_driver(void)
@@ -157,7 +157,7 @@ static void find_video_driver(void)
    for (size_t i = 0; i < sizeof(video_drivers) / sizeof(video_driver_t*); i++)
       fprintf(stderr, "\t%s\n", video_drivers[i]->ident);
 
-   exit(1);
+   ssnes_fail(1, "find_video_driver()");
 }
 
 static void find_input_driver(void)
@@ -175,7 +175,7 @@ static void find_input_driver(void)
    for (size_t i = 0; i < sizeof(input_drivers) / sizeof(input_driver_t*); i++)
       fprintf(stderr, "\t%s\n", input_drivers[i]->ident);
 
-   exit(1);
+   ssnes_fail(1, "find_input_driver()");
 }
 
 void init_drivers(void)
@@ -549,7 +549,7 @@ void init_video_input(void)
    if (driver.video_data == NULL)
    {
       SSNES_ERR("Cannot open video driver ... Exiting ...\n");
-      exit(1);
+      ssnes_fail(1, "init_video_input()");
    }
 
    // Video driver didn't provide an input driver so we use configured one.
@@ -562,13 +562,13 @@ void init_video_input(void)
          if (driver.input_data == NULL)
          {
             SSNES_ERR("Cannot init input driver. Exiting ...\n");
-            exit(1);
+            ssnes_fail(1, "init_video_input()");
          }
       }
       else
       {
          SSNES_ERR("Cannot find input driver. Exiting ...\n");
-         exit(1);
+         ssnes_fail(1, "init_video_input()");
       }
    }
 }

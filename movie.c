@@ -179,7 +179,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
       if (psnes_serialize_size() != state_size)
       {
          SSNES_ERR("Movie format seems to have a different serializer version. Cannot continue.\n");
-         exit(1);
+         ssnes_fail(1, "init_playback()");
       }
 
       // Unserialize to start playback.

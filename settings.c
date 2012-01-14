@@ -323,7 +323,7 @@ static void parse_config_file(void)
       if (!conf)
       {
          SSNES_ERR("Couldn't find config at path: \"%s\"\n", g_extern.config_path);
-         exit(1);
+         ssnes_fail(1, "parse_config_file()");
       }
    }
    else

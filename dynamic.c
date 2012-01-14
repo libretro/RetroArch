@@ -40,7 +40,7 @@
 
 #define SYM(type, x) do { \
    p##x = (type)DLSYM(lib_handle, x); \
-   if (p##x == NULL) { SSNES_ERR("Failed to load symbol: \"%s\"\n", #x); exit(1); } \
+   if (p##x == NULL) { SSNES_ERR("Failed to load symbol: \"%s\"\n", #x); ssnes_fail(1, "init_libsnes_sym()"); } \
 } while (0)
 
 #define OPT_SYM(type, x) do { \
@@ -114,7 +114,7 @@ static void load_dynamic(void)
    if (!lib_handle)
    {
       SSNES_ERR("Failed to open dynamic library: \"%s\"\n", g_settings.libsnes);
-      exit(1);
+      ssnes_fail(1, "load_dynamic()");
    }
 
    SYM(void (*)(void), snes_init);
@@ -202,7 +202,7 @@ void init_libsnes_sym(void)
       SSNES_ERR("Serious problem! SSNES wants to load libsnes dyamically, but it is already linked!\n"); 
       SSNES_ERR("This could happen if other modules SSNES depends on link against libsnes directly.\n");
       SSNES_ERR("Proceeding could cause a crash! Aborting ...\n");
-      exit(1);
+      ssnes_fail(1, "init_libsnes_sym()");
    }
 
    if (!*g_settings.libsnes)

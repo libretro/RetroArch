@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <limits.h>
+#include <setjmp.h>
 #include "driver.h"
 #include "record/ffemu.h"
 #include "message.h"
@@ -32,6 +33,7 @@
 #include "dynamic.h"
 #include "cheats.h"
 #include "audio/ext/ssnes_dsp.h"
+#include "strl.h"
 
 #ifdef __CELLOS_LV2__
 #include <sys/timer.h>
@@ -354,11 +356,16 @@ struct global
 #ifdef HAVE_XML
    cheat_manager_t *cheat;
 #endif
+
+   bool error_in_init;
+   char error_string[1024];
+   jmp_buf error_sjlj_context;
 };
 
 void parse_config(void);
 void config_set_defaults(void);
 
+void ssnes_main_clear_state(void);
 int ssnes_main_init(int argc, char *argv[]);
 bool ssnes_main_iterate(void);
 void ssnes_main_deinit(void);
@@ -443,6 +450,16 @@ static inline void ssnes_sleep(unsigned msec)
 
 #define ssnes_assert(cond) \
    if (!(cond)) { SSNES_ERR("Assertion failed at %s:%d!\n", __FILE__, __LINE__); exit(2); }
+
+static inline void ssnes_fail(int error_code, const char *error)
+{
+   // We cannot longjmp unless we're in ssnes_main_init().
+   // If not, something went very wrong, and we should just exit right away.
+   ssnes_assert(g_extern.error_in_init);
+
+   strlcpy(g_extern.error_string, error, sizeof(g_extern.error_string));
+   longjmp(g_extern.error_sjlj_context, error_code);
+}
 
 #endif
 

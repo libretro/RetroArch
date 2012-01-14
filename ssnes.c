@@ -529,7 +529,7 @@ static void set_paths(const char *path)
    if (g_extern.rom_file == NULL)
    {
       SSNES_ERR("Could not open file: \"%s\"\n", path);
-      exit(1);
+      ssnes_fail(1, "set_paths()");
    }
 
    if (!g_extern.has_set_save_path)
@@ -568,26 +568,26 @@ static void verify_stdin_paths(void)
    {
       SSNES_ERR("Need savefile path argument (--save) when reading rom from stdin.\n");
       print_help();
-      exit(1);
+      ssnes_fail(1, "verify_stdin_paths()");
    }
    else if (strlen(g_extern.savestate_name) == 0)
    {
       SSNES_ERR("Need savestate path argument (--savestate) when reading rom from stdin.\n");
       print_help();
-      exit(1);
+      ssnes_fail(1, "verify_stdin_paths()");
    }
 
    if (path_is_directory(g_extern.savefile_name_srm))
    {
       SSNES_ERR("Cannot specify directory for path argument (--save) when reading from stdin.\n");
       print_help();
-      exit(1);
+      ssnes_fail(1, "verify_stdin_paths()");
    }
    else if (path_is_directory(g_extern.savestate_name))
    {
       SSNES_ERR("Cannot specify directory for path argument (--savestate) when reading from stdin.\n");
       print_help();
-      exit(1);
+      ssnes_fail(1, "verify_stdin_paths()");
    }
 
 #ifdef HAVE_CONFIGFILE
@@ -595,7 +595,7 @@ static void verify_stdin_paths(void)
    {
       SSNES_ERR("Cannot specify directory for config file (--config) when reading from stdin.\n");
       print_help();
-      exit(1);
+      ssnes_fail(1, "verify_stdin_paths()");
    }
 #endif
 }
@@ -605,7 +605,7 @@ static void parse_input(int argc, char *argv[])
    if (argc < 2)
    {
       print_help();
-      exit(1);
+      ssnes_fail(1, "parse_input()");
    }
 
    int val = 0;
@@ -756,7 +756,7 @@ static void parse_input(int argc, char *argv[])
             {
                SSNES_ERR("Connect mouse to port 1 or 2.\n");
                print_help();
-               exit(1);
+               ssnes_fail(1, "parse_input()");
             }
             g_extern.has_mouse[port - 1] = true;
             break;
@@ -767,7 +767,7 @@ static void parse_input(int argc, char *argv[])
             {
                SSNES_ERR("Disconnected device from port 1 or 2.\n");
                print_help();
-               exit(1);
+               ssnes_fail(1, "parse_input()");
             }
             g_extern.disconnect_device[port - 1] = true;
             break;
@@ -817,7 +817,7 @@ static void parse_input(int argc, char *argv[])
             {
                SSNES_ERR("Invalid argument in --sram-mode!\n");
                print_help();
-               exit(1);
+               ssnes_fail(1, "parse_input()");
             }
             break;
 
@@ -881,7 +881,7 @@ static void parse_input(int argc, char *argv[])
                   {
                      SSNES_ERR("Wrong format for --size.\n");
                      print_help();
-                     exit(1);
+                     ssnes_fail(1, "parse_input()");
                   }
 
                   ptr++;
@@ -890,7 +890,7 @@ static void parse_input(int argc, char *argv[])
                   {
                      SSNES_ERR("Wrong format for --size.\n");
                      print_help();
-                     exit(1);
+                     ssnes_fail(1, "parse_input()");
                   }
                   break;
                }
@@ -906,11 +906,11 @@ static void parse_input(int argc, char *argv[])
 
          case '?':
             print_help();
-            exit(1);
+            ssnes_fail(1, "parse_input()");
 
          default:
             SSNES_ERR("Error parsing arguments.\n");
-            exit(1);
+            ssnes_fail(1, "parse_input()");
       }
    }
 
@@ -1173,7 +1173,7 @@ static void init_movie(void)
       if (!g_extern.bsv.movie)
       {
          SSNES_ERR("Failed to load movie file: \"%s\"!\n", g_extern.bsv.movie_start_path);
-         exit(1);
+         ssnes_fail(1, "init_movie()");
       }
 
       g_extern.bsv.movie_playback = true;
@@ -2041,11 +2041,25 @@ static void init_state(void)
    g_extern.game_type = SSNES_CART_NORMAL;
 }
 
+void ssnes_main_clear_state(void)
+{
+   memset(&g_settings, 0, sizeof(g_settings));
+   memset(&g_extern, 0, sizeof(g_extern));
+   init_state();
+}
+
 int ssnes_main_init(int argc, char *argv[])
 {
    init_state();
-
    parse_input(argc, argv);
+
+   int sjlj_ret;
+   if ((sjlj_ret = setjmp(g_extern.error_sjlj_context)) > 0)
+   {
+      SSNES_ERR("Fatal error received in: \"%s\"\n", g_extern.error_string); 
+      return sjlj_ret;
+   }
+   g_extern.error_in_init = true;
 
    if (g_extern.verbose)
    {
@@ -2120,6 +2134,7 @@ int ssnes_main_init(int argc, char *argv[])
       init_cheats();
 #endif
 
+   g_extern.error_in_init = false;
    return 0;
 
 error:
