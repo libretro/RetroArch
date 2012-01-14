@@ -2236,5 +2236,6 @@ int main(int argc, char *argv[])
    if ((init_ret = ssnes_main_init(argc, argv))) return init_ret;
    while (ssnes_main_iterate());
    ssnes_main_deinit();
+   return 0;
 }
 
