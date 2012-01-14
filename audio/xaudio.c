@@ -63,7 +63,7 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
    }
 
    size_t ret = xaudio2_write(xa->xa, buf, size);
-   if (ret == 0)
+   if (ret == 0 && size > 0)
       return -1;
    return ret;
 }
