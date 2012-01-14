@@ -297,6 +297,9 @@ void init_audio(void)
 
    // Used for recording even if audio isn't enabled.
    ssnes_assert(g_extern.audio_data.conv_outsamples = (int16_t*)malloc(max_bufsamples * sizeof(int16_t) * AUDIO_MAX_RATIO));
+
+   g_extern.audio_data.block_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
+   g_extern.audio_data.nonblock_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
    g_extern.audio_data.chunk_size = g_extern.audio_data.block_chunk_size;
 
    // Needs to be able to hold full content of a full max_bufsamples in addition to its own.
@@ -311,9 +314,6 @@ void init_audio(void)
 
    adjust_audio_input_rate();
    find_audio_driver();
-
-   g_extern.audio_data.block_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
-   g_extern.audio_data.nonblock_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
 
    driver.audio_data = driver.audio->init(*g_settings.audio.device ? g_settings.audio.device : NULL,
          g_settings.audio.out_rate, g_settings.audio.latency);
