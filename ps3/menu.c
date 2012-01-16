@@ -593,6 +593,16 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 		case SETTING_TRIPLE_BUFFERING:
 			break;
 		case SETTING_ENABLE_SCREENSHOTS:
+			if(g_console.screenshots_enable)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				menu_obj->items[currentsetting].text_color = GREEN;
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			}
 			break;
 		case SETTING_SAVE_SHADER_PRESET:
 			break;
@@ -866,6 +876,35 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_TRIPLE_BUFFERING:
 			break;
 		case SETTING_ENABLE_SCREENSHOTS:
+			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			{
+#if(CELL_SDK_VERSION > 0x340000)
+				g_console.screenshots_enable = !g_console.screenshots_enable;
+				if(g_console.screenshots_enable)
+				{
+					cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+					CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
+
+					screenshot_param.photo_title = EMULATOR_NAME;
+					screenshot_param.game_title = EMULATOR_NAME;
+					cellScreenShotSetParameter (&screenshot_param);
+					cellScreenShotEnable();
+				}
+				else
+				{
+					cellScreenShotDisable();
+					cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+				}
+
+				set_text_message("", 7);
+#endif
+			}
+			if(CTRL_START(state))
+			{
+#if(CELL_SDK_VERSION > 0x340000)
+				g_console.screenshots_enable = false;
+#endif
+			}
 			break;
 		case SETTING_SAVE_SHADER_PRESET:
 			break;

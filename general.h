@@ -173,6 +173,7 @@ struct settings
 struct console_settings
 {
    bool block_config_read;
+   bool screenshots_enable;
 };
 #endif
 

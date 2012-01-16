@@ -23,6 +23,7 @@
 
 #include <sys/process.h>
 #include <cell/sysmodule.h>
+#include <sysutil/sysutil_screenshot.h>
 #include <sysutil/sysutil_common.h>
 #include <sys/spu_initialize.h>
 #include <sysutil/sysutil_gamecontent.h>
@@ -67,7 +68,6 @@
 
 bool g_rom_loaded;
 bool return_to_MM;			/* launch multiMAN on exit if ROM is passed*/
-uint32_t g_screenshots_enabled;
 uint32_t g_emulator_initialized = 0;
 
 char special_action_msg[256];		/* message which should be overlaid on top of the screen*/
@@ -133,7 +133,7 @@ static void init_settings(void)
 	init_setting_bool("video_render_to_texture", g_settings.video.render_to_texture, 1);
 	init_setting_bool("video_vsync", g_settings.video.vsync, 1);
 	init_setting_uint("state_slot",  g_extern.state_slot, 0);
-	init_setting_uint("screenshots_enabled", g_screenshots_enabled, 0);
+	init_setting_uint("screenshots_enabled", g_console.screenshots_enable, 0);
 	init_setting_char("cheat_database_path", g_settings.cheat_database, usrDirPath);
 }
 
@@ -217,6 +217,7 @@ int main(int argc, char *argv[])
 
    memset(&g_extern, 0, sizeof(g_extern));
    memset(&g_settings, 0, sizeof(g_settings));
+   memset(&g_console, 0, sizeof(g_console));
 
    SSNES_LOG("Registering Callback\n");
    cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
@@ -235,6 +236,19 @@ int main(int argc, char *argv[])
 
    get_path_settings(return_to_MM);
    init_settings();
+
+#if(CELL_SDK_VERSION > 0x340000)
+	if (g_console.screenshots_enable)
+	{
+		cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+		CellScreenShotSetParam  screenshot_param = {0, 0, 0, 0};
+
+		screenshot_param.photo_title = "SSNES PS3";
+		screenshot_param.game_title = "SSNES PS3";
+		cellScreenShotSetParameter (&screenshot_param);
+		cellScreenShotEnable();
+	}
+#endif
 
    ps3_video_init();
    ps3_input_init();
