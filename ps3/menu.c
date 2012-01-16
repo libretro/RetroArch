@@ -542,12 +542,49 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 		case SETTING_KEEP_ASPECT_RATIO:
 			break;
 		case SETTING_HW_TEXTURE_FILTER:
+			if(g_settings.video.smooth)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Linear interpolation");
+				menu_obj->items[currentsetting].text_color = GREEN;
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Point filtering");
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER_2:
+			if(g_settings.video.second_pass_smooth)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Linear interpolation");
+				menu_obj->items[currentsetting].text_color = GREEN;
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Point filtering");
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			}
 			break;
 		case SETTING_SCALE_ENABLED:
+			if(g_settings.video.render_to_texture)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				menu_obj->items[currentsetting].text_color = GREEN;
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			}
 			break;
 		case SETTING_SCALE_FACTOR:
+			if(g_settings.video.fbo_scale_x == 2.0f)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
+			snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Custom Scaling Factor] is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 			break;
 		case SETTING_HW_OVERSCAN_AMOUNT:
 			break;
@@ -570,6 +607,12 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 		case SETTING_DEFAULT_AUDIO_ALL:
 			break;
 		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
+			if(g_extern.state_slot == 0)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%d", g_extern.state_slot);
 			break;
 		/* emu-specific */
 		case SETTING_EMU_DEFAULT_ALL:
@@ -728,10 +771,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			   }
 			   break;
 			 */
-#ifdef HAVE_GAMEAWARE
 		case SETTING_GAME_AWARE_SHADER:
 			break;
-#endif
 		case SETTING_SHADER_PRESETS:
 			break;
 		case SETTING_BORDER:
@@ -745,12 +786,78 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_KEEP_ASPECT_RATIO:
 			break;
 		case SETTING_HW_TEXTURE_FILTER:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				g_settings.video.smooth = !g_settings.video.smooth;
+				//ps3graphics_set_smooth(g_settings.video.smooth, 0);
+				set_text_message("", 7);
+			}
+			if(CTRL_START(state))
+			{
+				g_settings.video.smooth = 1;
+				//ps3graphics_set_smooth(g_settings.video.smooth, 0);
+			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER_2:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
+				//ps3graphics_set_smooth(g_settings.video.second_pass_smooth, 1);
+				set_text_message("", 7);
+			}
+			if(CTRL_START(state))
+			{
+				g_settings.video.second_pass_smooth = 1;
+				//ps3graphics_set_smooth(g_settings.video.second_pass_smooth, 1);
+			}
 			break;
 		case SETTING_SCALE_ENABLED:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
+
+				#if 0
+				if(g_settings.video.render_to_texture)
+					ps3graphics_set_fbo_scale(1, Settings.ScaleFactor);
+				else
+					ps3graphics_set_fbo_scale(0, 0);
+				#endif
+
+				set_text_message("", 7);
+			}
+			if(CTRL_START(state))
+			{
+				g_settings.video.render_to_texture = 2;
+				//ps3graphics_set_fbo_scale(1, Settings.ScaleFactor);
+			}
 			break;
 		case SETTING_SCALE_FACTOR:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
+			{
+				if((g_settings.video.fbo_scale_x > 1.0f))
+				{
+					g_settings.video.fbo_scale_x -= 1.0f;
+					g_settings.video.fbo_scale_y -= 1.0f;
+					apply_scaling();
+				}
+				set_text_message("", 7);
+			}
+			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				if((g_settings.video.fbo_scale_x < 5.0f))
+				{
+					g_settings.video.fbo_scale_x += 1.0f;
+					g_settings.video.fbo_scale_y += 1.0f;
+					apply_scaling();
+				}
+				set_text_message("", 7);
+			}
+			if(CTRL_START(state))
+			{
+				g_settings.video.fbo_scale_x = 2.0f;
+				g_settings.video.fbo_scale_y = 2.0f;
+				apply_scaling();
+			}
 			break;
 		case SETTING_HW_OVERSCAN_AMOUNT:
 			break;
@@ -773,6 +880,21 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_DEFAULT_AUDIO_ALL:
 			break;
 		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
+			{
+				if(g_extern.state_slot != 0)
+					g_extern.state_slot--;
+
+				set_text_message("", 7);
+			}
+			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				g_extern.state_slot++;
+				set_text_message("", 7);
+			}
+
+			if(CTRL_START(state))
+				g_extern.state_slot = 0;
 			break;
 		case SETTING_EMU_VIDEO_DEFAULT_ALL:
 			break;
