@@ -37,9 +37,7 @@
 #include "../gfx/gfx_common.h"
 #include "../strl.h"
 
-#ifdef HAVE_CG
 #include "../gfx/shader_cg.h"
-#endif
 
 #define BLUE		0xffff0000u
 #define WHITE		0xffffffffu
@@ -76,17 +74,11 @@ static const GLfloat white_color[] = {
 };
 
 
-#ifdef HAVE_FBO
 static bool load_fbo_proc(void) { return true; }
-#endif
 
 #define MAX_SHADERS 16
 
-#if defined(HAVE_CG)
 #define TEXTURES 8
-#else
-#define TEXTURES 1
-#endif
 #define TEXTURES_MASK (TEXTURES - 1)
 
 bool g_quitting;
@@ -105,7 +97,6 @@ typedef struct gl
    GLuint tex_filter;
    void *empty_buf;
 
-#ifdef HAVE_FBO
    // Render-to-texture, multipass shaders
    GLuint fbo[MAX_SHADERS];
    GLuint fbo_texture[MAX_SHADERS];
@@ -114,7 +105,6 @@ typedef struct gl
    bool render_to_tex;
    int fbo_pass;
    bool fbo_inited;
-#endif
 
    bool should_resize;
    bool keep_aspect;
@@ -127,9 +117,7 @@ typedef struct gl
    unsigned last_height[TEXTURES];
    unsigned tex_w, tex_h;
    GLfloat tex_coords[8];
-#ifdef HAVE_FBO
    GLfloat fbo_tex_coords[8];
-#endif
 
    GLenum texture_type; // XBGR1555 or ARGB
    GLenum texture_fmt;
@@ -146,21 +134,17 @@ static bool gl_shader_init(void)
          if (strlen(g_settings.video.cg_shader_path) > 0 && strlen(g_settings.video.bsnes_shader_path) > 0)
             SSNES_WARN("Both Cg and bSNES XML shader are defined in config file. Cg shader will be selected by default.\n");
 
-#ifdef HAVE_CG
          if (strlen(g_settings.video.cg_shader_path) > 0)
             return gl_cg_init(g_settings.video.cg_shader_path);
-#endif
          break;
       }
 
-#ifdef HAVE_CG
       case SSNES_SHADER_CG:
       {
          if (strlen(g_settings.video.cg_shader_path) > 0)
 		 return gl_cg_init(g_settings.video.cg_shader_path);
          break;
       }
-#endif
 
       default:
          break;
@@ -171,23 +155,17 @@ static bool gl_shader_init(void)
 
 static void gl_shader_use(unsigned index)
 {
-#ifdef HAVE_CG
    gl_cg_use(index);
-#endif
 }
 
 static void gl_shader_deinit(void)
 {
-#ifdef HAVE_CG
    gl_cg_deinit();
-#endif
 }
 
 static void gl_shader_set_proj_matrix(void)
 {
-#ifdef HAVE_CG
    gl_cg_set_proj_matrix();
-#endif
 }
 
 static void gl_shader_set_params(unsigned width, unsigned height, 
@@ -198,22 +176,18 @@ static void gl_shader_set_params(unsigned width, unsigned height,
       const struct gl_tex_info *prev_info,
       const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
 {
-#ifdef HAVE_CG
    gl_cg_set_params(width, height, 
          tex_width, tex_height, 
          out_width, out_height, 
          frame_count, info, prev_info, fbo_info, fbo_info_cnt);
-#endif
 }
 
 static unsigned gl_shader_num(void)
 {
    unsigned num = 0;
-#ifdef HAVE_CG
    unsigned cg_num = gl_cg_num();
    if (cg_num > num)
       num = cg_num;
-#endif
 
    return num;
 }
@@ -221,30 +195,22 @@ static unsigned gl_shader_num(void)
 static bool gl_shader_filter_type(unsigned index, bool *smooth)
 {
    bool valid = false;
-#ifdef HAVE_CG
    if (!valid)
       valid = gl_cg_filter_type(index, smooth);
-#endif
 
    return valid;
 }
 
-#ifdef HAVE_FBO
 static void gl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
 {
    scale->valid = false;
-#ifdef HAVE_CG
    if (!scale->valid)
       gl_cg_shader_scale(index, scale);
-#endif
 }
-#endif
-///////////////////
 
 // Horribly long and complex FBO init :D
 static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
-#ifdef HAVE_FBO
    if (!g_settings.video.render_to_texture && gl_shader_num() == 0)
       return;
 
@@ -414,11 +380,6 @@ error:
    glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
    glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
    SSNES_ERR("Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
-#else
-   (void)gl;
-   (void)width;
-   (void)height;
-#endif
 }
 
 static inline unsigned get_alignment(unsigned pitch)
@@ -485,15 +446,11 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
 
 static inline void set_lut_texture_coords(const GLfloat *coords)
 {
-#if defined(HAVE_CG)
    // For texture images.
    pglClientActiveTexture(GL_TEXTURE1);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
    glTexCoordPointer(2, GL_FLOAT, 0, coords);
    pglClientActiveTexture(GL_TEXTURE0);
-#else
-   (void)coords;
-#endif
 }
 
 static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yamt)
@@ -511,11 +468,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_shader_use(1);
    g_frame_count++;
 
-#if defined(HAVE_CG)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-#endif
 
-#ifdef HAVE_FBO
    // Render to texture in first pass.
    if (gl->fbo_inited)
    {
@@ -575,7 +529,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl->render_to_tex = true;
       set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
    }
-#endif
 
    if (gl->should_resize)
    {
@@ -583,7 +536,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
       //sdlwrap_set_resize(gl->win_width, gl->win_height);
 
-#ifdef HAVE_FBO
       if (!gl->render_to_tex)
          set_viewport(gl, gl->win_width, gl->win_height, false);
       else
@@ -622,9 +574,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[0]);
          set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
       }
-#else
-      set_viewport(gl, gl->win_width, gl->win_height, false);
-#endif
    }
 
    if ((width != gl->last_width[gl->tex_index] || height != gl->last_height[gl->tex_index]) && gl->empty_buf) // Res change. need to clear out texture.
@@ -642,7 +591,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
       set_texture_coords(gl->tex_coords, xamt, yamt);
    }
-#if defined(HAVE_CG)
    // We might have used different texture coordinates last frame. Edge case if resolution changes very rapidly.
    else if (width != gl->last_width[(gl->tex_index - 1) & TEXTURES_MASK] || height != gl->last_height[(gl->tex_index - 1) & TEXTURES_MASK])
    {
@@ -650,14 +598,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       GLfloat yamt = (GLfloat)height / gl->tex_h;
       set_texture_coords(gl->tex_coords, xamt, yamt);
    }
-#endif
 
-#ifdef HAVE_FBO
    // Need to preserve the "flipped" state when in FBO as well to have 
    // consistent texture coordinates.
    if (gl->render_to_tex)
       glVertexPointer(2, GL_FLOAT, 0, vertexes);
-#endif
 
    {
       size_t buffer_addr = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
@@ -691,7 +636,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    glDrawArrays(GL_QUADS, 0, 4);
 
-#ifdef HAVE_FBO
    if (gl->fbo_inited)
    {
       // Render the rest of our passes.
@@ -765,13 +709,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
       glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
    }
-#endif
 
-#if defined(HAVE_CG)
    memmove(gl->prev_info + 1, gl->prev_info, sizeof(tex_info) * (TEXTURES - 1));
    memcpy(&gl->prev_info[0], &tex_info, sizeof(tex_info));
    gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
-#endif
 
    if (msg)
    {
@@ -819,13 +760,11 @@ static void gl_free(void *data)
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
    glDeleteBuffers(1, &gl->pbo);
 
-#ifdef HAVE_FBO
    if (gl->fbo_inited)
    {
       glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
       glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
    }
-#endif
 
    psgl_deinit(gl);
 
