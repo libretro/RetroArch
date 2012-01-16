@@ -66,8 +66,6 @@
 	if(!(config_get_array(currentconfig, charstring, setting, sizeof(setting)))) \
 		strncpy(setting,defaultvalue, sizeof(setting));
 
-bool g_rom_loaded;
-bool return_to_MM;			/* launch multiMAN on exit if ROM is passed*/
 uint32_t g_emulator_initialized = 0;
 
 char special_action_msg[256];		/* message which should be overlaid on top of the screen*/
@@ -222,19 +220,18 @@ int main(int argc, char *argv[])
    SSNES_LOG("Registering Callback\n");
    cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
 
-   g_rom_loaded = false;
 #ifdef MULTIMAN_SUPPORT
-   return_to_MM = true;
+   g_console.return_to_multiman_enable = true;
 
    if(argc > 1)
    {
 	   strncpy(MULTIMAN_GAME_TO_BOOT, argv[1], sizeof(MULTIMAN_GAME_TO_BOOT));
    }
 #else
-   return_to_MM = false;
+   g_console.return_to_multiman_enable = false;
 #endif
 
-   get_path_settings(return_to_MM);
+   get_path_settings(g_console.return_to_multiman_enable);
    init_settings();
 
 #if(CELL_SDK_VERSION > 0x340000)

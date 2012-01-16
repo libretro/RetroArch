@@ -173,6 +173,9 @@ struct settings
 struct console_settings
 {
    bool block_config_read;
+#ifdef __CELLOS_LV2__
+   bool return_to_multiman_enable;
+#endif
    bool screenshots_enable;
 };
 #endif
