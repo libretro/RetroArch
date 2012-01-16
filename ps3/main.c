@@ -126,6 +126,7 @@ static void init_settings(void)
 	init_setting_bool("video_smooth", g_settings.video.smooth, 1);
 	init_setting_bool("video_second_pass_smooth", g_settings.video.second_pass_smooth, 1);
 	init_setting_char("video_cg_shader", g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE);
+	init_setting_char("video_second_pass_shader", g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE);
 	init_setting_float("video_fbo_scale_x", g_settings.video.fbo_scale_x, 2.0f);
 	init_setting_float("video_fbo_scale_y", g_settings.video.fbo_scale_y, 2.0f);
 	init_setting_bool("video_render_to_texture", g_settings.video.render_to_texture, 1);

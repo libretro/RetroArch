@@ -532,8 +532,50 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 		case SETTING_BORDER:
 			break;
 		case SETTING_SHADER:
+			{
+				int i, no, offset, fname_without_extension_length;
+				char fname_without_path_extension[MAX_PATH_LENGTH];
+				const char * fname_without_filepath = strrchr(g_settings.video.cg_shader_path, '/');
+
+				offset = strlen(g_settings.video.cg_shader_path - strlen(fname_without_filepath));
+				fname_without_extension_length = strlen(g_settings.video.cg_shader_path);
+
+				for(i = offset + 1, no = 0; i < fname_without_extension_length; i++, no++)
+				{
+					fname_without_path_extension[no] = g_settings.video.cg_shader_path[i];
+					fname_without_path_extension[no+1] = '\0';
+				}
+
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname_without_path_extension);
+
+				if(strcmp(g_settings.video.cg_shader_path,DEFAULT_SHADER_FILE) == 0)
+					menu_obj->items[currentsetting].text_color = GREEN;
+				else
+					menu_obj->items[currentsetting].text_color = ORANGE;
+			}
 			break;
 		case SETTING_SHADER_2:
+			{
+				int i, no, offset, fname_without_extension_length;
+				char fname_without_path_extension[MAX_PATH_LENGTH];
+				const char * fname_without_filepath = strrchr(g_settings.video.second_pass_shader, '/');
+
+				offset = strlen(g_settings.video.second_pass_shader - strlen(fname_without_filepath));
+				fname_without_extension_length = strlen(g_settings.video.second_pass_shader);
+
+				for(i = offset + 1, no = 0; i < fname_without_extension_length; i++, no++)
+				{
+					fname_without_path_extension[no] = g_settings.video.second_pass_shader[i];
+					fname_without_path_extension[no+1] = '\0';
+				}
+
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname_without_path_extension);
+
+				if(strcmp(g_settings.video.second_pass_shader,DEFAULT_SHADER_FILE) == 0)
+					menu_obj->items[currentsetting].text_color = GREEN;
+				else
+					menu_obj->items[currentsetting].text_color = ORANGE;
+			}
 			break;
 		case SETTING_GAME_AWARE_SHADER:
 			break;
@@ -788,8 +830,32 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_BORDER:
 			break;
 		case SETTING_SHADER:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				menuStackindex++;
+				menuStack[menuStackindex] = menu_filebrowser;
+				menuStack[menuStackindex].enum_id = SHADER_CHOICE;
+				set_shader = 0;
+				set_initial_dir_tmpbrowser = true;
+			}
+			if(CTRL_START(state))
+			{
+				//ps3graphics_load_fragment_shader(DEFAULT_SHADER_FILE, 0);
+			}
 			break;
 		case SETTING_SHADER_2:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				menuStackindex++;
+				menuStack[menuStackindex] = menu_filebrowser;
+				menuStack[menuStackindex].enum_id = SHADER_CHOICE;
+				set_shader = 1;
+				set_initial_dir_tmpbrowser = true;
+			}
+			if(CTRL_START(state))
+			{
+				//ps3graphics_load_fragment_shader(DEFAULT_SHADER_FILE, 1);
+			}
 			break;
 		case SETTING_FONT_SIZE:
 			break;
