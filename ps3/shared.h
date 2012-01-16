@@ -19,6 +19,7 @@
 #define MAX_PATH_LENGTH 1024
 
 extern char special_action_msg[256];
+extern uint32_t g_emulator_initialized;
 extern uint32_t special_action_msg_expired;
 extern unsigned g_frame_count;
 extern bool g_rom_loaded;

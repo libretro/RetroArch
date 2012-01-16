@@ -16,6 +16,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cell/sysmodule.h>
 #include <sysutil/sysutil_screenshot.h>
 #include <cell/dbgfont.h>
 
@@ -27,6 +28,7 @@
 #include "shared.h"
 #include "../general.h"
 
+#include "menu-port-defines.h"
 #include "menu.h"
 #include "menu-entries.h"
 
@@ -35,22 +37,21 @@
 
 #define NUM_ENTRY_PER_PAGE 19
 
-static int menuStackindex = 0;
-static menu menuStack[25];
-uint32_t menu_is_running = 0;			/* is the menu running?*/
+menu menuStack[25];
+int menuStackindex = 0;
+uint32_t menu_is_running = false;		/* is the menu running?*/
 static bool set_initial_dir_tmpbrowser;
 filebrowser_t browser;				/* main file browser->for rom browser*/
 filebrowser_t tmpBrowser;			/* tmp file browser->for everything else*/
-
 uint32_t set_shader = 0;
 static uint32_t currently_selected_controller_menu = 0;
-
 
 static menu menu_filebrowser = {
 	"FILE BROWSER |",		/* title*/
 	FILE_BROWSER_MENU,		/* enum*/
 	0,				/* selected item*/
 	0,				/* page*/
+	1,				/* maxpages */
 	1,				/* refreshpage*/
 	NULL				/* items*/
 };
@@ -60,6 +61,7 @@ static menu menu_generalvideosettings = {
 	GENERAL_VIDEO_MENU,		/* enum*/
 	FIRST_VIDEO_SETTING,		/* selected item*/
 	0,				/* page*/
+	MAX_NO_OF_VIDEO_SETTINGS/NUM_ENTRY_PER_PAGE,	/* max pages */
 	1,				/* refreshpage*/
 	FIRST_VIDEO_SETTING,		/* first setting*/
 	MAX_NO_OF_VIDEO_SETTINGS,	/* max no of path settings*/
@@ -71,6 +73,7 @@ static menu menu_generalaudiosettings = {
 	GENERAL_AUDIO_MENU,		/* enum*/
 	FIRST_AUDIO_SETTING,		/* selected item*/
 	0,				/* page*/
+	MAX_NO_OF_AUDIO_SETTINGS/NUM_ENTRY_PER_PAGE,	/* max pages */
 	1,				/* refreshpage*/
 	FIRST_AUDIO_SETTING,		/* first setting*/
 	MAX_NO_OF_AUDIO_SETTINGS,	/* max no of path settings*/
@@ -78,80 +81,85 @@ static menu menu_generalaudiosettings = {
 };
 
 static menu menu_emu_settings = {
-	"SSNES |",			/* title*/
-	EMU_GENERAL_MENU,		/* enum*/
-	FIRST_EMU_SETTING,		/* selected item*/
-	0,				/* page*/
-	1,                      	/* refreshpage*/
-	FIRST_EMU_SETTING,		/* first setting*/
-	MAX_NO_OF_EMU_SETTINGS,		/* max no of path settings*/
-	items_generalsettings		/* items*/
+	EMU_MENU_TITLE,						/* title*/
+	EMU_GENERAL_MENU,					/* enum*/
+	FIRST_EMU_SETTING,					/* selected item*/
+	0,							/* page*/
+	MAX_NO_OF_EMU_SETTINGS/NUM_ENTRY_PER_PAGE,		/* max pages*/
+	1,                      				/* refreshpage*/
+	FIRST_EMU_SETTING,					/* first setting*/
+	MAX_NO_OF_EMU_SETTINGS,					/* max no of path settings*/
+	items_generalsettings					/* items*/
 };
 
 static menu menu_emu_videosettings = {
-	"SSNES VIDEO |",		/* title*/
-	EMU_VIDEO_MENU,			/* enum*/
-	FIRST_EMU_VIDEO_SETTING,	/* selected item*/
-	0,				/* page*/
-	1,				/* refreshpage*/
-	FIRST_EMU_VIDEO_SETTING,	/* first setting*/
-	MAX_NO_OF_EMU_VIDEO_SETTINGS,	/* max no of path settings*/
-	items_generalsettings		/* items*/
+	VIDEO_MENU_TITLE,					/* title*/
+	EMU_VIDEO_MENU,						/* enum */
+	FIRST_EMU_VIDEO_SETTING,				/* selected item*/
+	0,							/* page*/
+	MAX_NO_OF_EMU_VIDEO_SETTINGS/NUM_ENTRY_PER_PAGE,	/* max pages */
+	1,							/* refreshpage*/
+	FIRST_EMU_VIDEO_SETTING,				/* first setting*/
+	MAX_NO_OF_EMU_VIDEO_SETTINGS,				/* max no of settings*/
+	items_generalsettings					/* items*/
 };
 
 static menu menu_emu_audiosettings = {
-	"SSNES AUDIO |",		/* title*/
-	EMU_AUDIO_MENU,			/* enum*/
-	FIRST_EMU_AUDIO_SETTING,	/* selected item*/
-	0,				/* page*/
-	1,				/* refreshpage*/
-	FIRST_EMU_AUDIO_SETTING,	/* first setting*/
-	MAX_NO_OF_EMU_AUDIO_SETTINGS,	/* max no of path settings*/
-	items_generalsettings		/* items*/
+	AUDIO_MENU_TITLE,					/* title*/
+	EMU_AUDIO_MENU,						/* enum*/
+	FIRST_EMU_AUDIO_SETTING,				/* selected item*/
+	0,							/* page*/
+	MAX_NO_OF_EMU_AUDIO_SETTINGS/NUM_ENTRY_PER_PAGE,	/* max pages*/
+	1,							/* refreshpage*/
+	FIRST_EMU_AUDIO_SETTING,				/* first setting*/
+	MAX_NO_OF_EMU_AUDIO_SETTINGS,				/* max no of path settings*/
+	items_generalsettings					/* items*/
 };
 
 static menu menu_pathsettings = {
-	"PATH |",			/* title*/
-	PATH_MENU,			/* enum*/
-	FIRST_PATH_SETTING,		/* selected item*/
-	0,				/* page*/
-	1,				/* refreshpage*/
-	FIRST_PATH_SETTING,		/* first setting*/
-	MAX_NO_OF_PATH_SETTINGS,	/* max no of path settings*/
-	items_generalsettings		/* items*/
+	"PATH |",						/* title*/
+	PATH_MENU,						/* enum*/
+	FIRST_PATH_SETTING,					/* selected item*/
+	0,							/* page*/
+	MAX_NO_OF_PATH_SETTINGS/NUM_ENTRY_PER_PAGE,		/* max pages*/
+	1,							/* refreshpage*/
+	FIRST_PATH_SETTING,					/* first setting*/
+	MAX_NO_OF_PATH_SETTINGS,				/* max no of path settings*/
+	items_generalsettings					/* items*/
 };
 
 static menu menu_controlssettings = {
-	"CONTROLS |",			/* title*/
-	CONTROLS_MENU,			/* enum*/
-	FIRST_CONTROLS_SETTING_PAGE_1,	/* selected item*/
-	0,				/* page*/
-	1,				/* refreshpage*/
-	FIRST_CONTROLS_SETTING_PAGE_1,	/* first setting*/
-	MAX_NO_OF_CONTROLS_SETTINGS,	/* max no of path settings*/
-	items_generalsettings		/* items*/
+	"CONTROLS |",						/* title */
+	CONTROLS_MENU,						/* enum */
+	FIRST_CONTROLS_SETTING_PAGE_1,				/* selected item */
+	0,							/* page */
+	MAX_NO_OF_CONTROLS_SETTINGS/NUM_ENTRY_PER_PAGE,		/* max pages */
+	1,							/* refreshpage */
+	FIRST_CONTROLS_SETTING_PAGE_1,				/* first setting */
+	MAX_NO_OF_CONTROLS_SETTINGS,				/* max no of path settings*/
+	items_generalsettings					/* items */
 };
 
 static void display_menubar(uint32_t menu_enum)
 {
-	cellDbgFontPuts    (0.09f,  0.05f,  FONT_SIZE,  menu_enum == GENERAL_VIDEO_MENU ? RED : GREEN,   menu_generalvideosettings.title);
-	cellDbgFontPuts    (0.19f,  0.05f,  FONT_SIZE,  menu_enum == GENERAL_AUDIO_MENU ? RED : GREEN,  menu_generalaudiosettings.title);
-	cellDbgFontPuts    (0.29f,  0.05f,  FONT_SIZE,  menu_enum == EMU_GENERAL_MENU ? RED : GREEN,  menu_emu_settings.title);
-	cellDbgFontPuts    (0.38f,  0.05f,  FONT_SIZE,  menu_enum == EMU_VIDEO_MENU ? RED : GREEN,   menu_emu_videosettings.title);
-	cellDbgFontPuts    (0.54f,  0.05f,  FONT_SIZE,  menu_enum == EMU_AUDIO_MENU ? RED : GREEN,   menu_emu_audiosettings.title);
-	cellDbgFontPuts    (0.70f,  0.05f,  FONT_SIZE,  menu_enum == PATH_MENU ? RED : GREEN,  menu_pathsettings.title);
-	cellDbgFontPuts    (0.80f,  0.05f,  FONT_SIZE, menu_enum == CONTROLS_MENU ? RED : GREEN,  menu_controlssettings.title); 
+	cellDbgFontPuts    (0.09f,  0.05f,  Emulator_GetFontSize(),  menu_enum == GENERAL_VIDEO_MENU ? RED : GREEN,   menu_generalvideosettings.title);
+	cellDbgFontPuts    (0.19f,  0.05f,  Emulator_GetFontSize(),  menu_enum == GENERAL_AUDIO_MENU ? RED : GREEN,  menu_generalaudiosettings.title);
+	cellDbgFontPuts    (0.29f,  0.05f,  Emulator_GetFontSize(),  menu_enum == EMU_GENERAL_MENU ? RED : GREEN,  menu_emu_settings.title);
+	cellDbgFontPuts    (0.39f,  0.05f,  Emulator_GetFontSize(),  menu_enum == EMU_VIDEO_MENU ? RED : GREEN,   menu_emu_videosettings.title);
+	cellDbgFontPuts    (0.57f,  0.05f,  Emulator_GetFontSize(),  menu_enum == EMU_AUDIO_MENU ? RED : GREEN,   menu_emu_audiosettings.title);
+	cellDbgFontPuts    (0.75f,  0.05f,  Emulator_GetFontSize(),  menu_enum == PATH_MENU ? RED : GREEN,  menu_pathsettings.title);
+	cellDbgFontPuts    (0.84f,  0.05f,  Emulator_GetFontSize(), menu_enum == CONTROLS_MENU ? RED : GREEN,  menu_controlssettings.title); 
 	cellDbgFontDraw();
 }
 
-#define ROM_EXTENSIONS "fds|FDS|zip|ZIP|nes|NES|unif|UNIF|smc|fig|sfc|gd3|gd7|dx2|bsx|swc|SMC|FIG|SFC|BSX|GD3|GD7|DX2|SWC"
-
-static void UpdateBrowser(filebrowser_t * b)
+static void browser_update(filebrowser_t * b)
 {
 	static uint64_t old_state = 0;
-	uint64_t state = cell_pad_input_poll_device(0);
-	uint64_t diff_state = old_state ^ state;
-	uint64_t button_was_pressed = old_state & diff_state;
+	uint64_t state, diff_state, button_was_pressed;
+
+	state = cell_pad_input_poll_device(0);
+	diff_state = old_state ^ state;
+	button_was_pressed = old_state & diff_state;
 
 	if(g_frame_count < special_action_msg_expired)
 	{
@@ -232,6 +240,22 @@ static void UpdateBrowser(filebrowser_t * b)
 			set_text_message("", 7);
 		}
 
+		if (CTRL_R2(state))
+		{
+			b->currently_selected = (MIN(b->currently_selected + 50, b->file_count-1));
+			set_text_message("", 7);
+		}
+
+		if (CTRL_L2(state))
+		{
+			if (b->currently_selected <= NUM_ENTRY_PER_PAGE)
+				b->currently_selected= 0;
+			else
+				b->currently_selected -= 50;
+
+			set_text_message("", 7);
+		}
+
 		if (CTRL_L1(state))
 		{
 			if (b->currently_selected <= NUM_ENTRY_PER_PAGE)
@@ -251,8 +275,8 @@ static void UpdateBrowser(filebrowser_t * b)
 
 		if (CTRL_L3(state) && CTRL_R3(state))
 		{
-			/* if a rom is loaded then resume it*/
-			if (g_rom_loaded)
+			/* if a rom is loaded then resume it */
+			if (g_emulator_initialized)
 			{
 				menu_is_running = 0;
 				set_text_message("", 15);
@@ -263,29 +287,40 @@ static void UpdateBrowser(filebrowser_t * b)
 	}
 }
 
-static void RenderBrowser(filebrowser_t * b)
+static void browser_render(filebrowser_t * b)
 {
 	uint32_t file_count = b->file_count;
-	int current_index = b->currently_selected;
+	int current_index, page_number, page_base, i;
+	float currentX, currentY, ySpacing;
 
-	int page_number = current_index / NUM_ENTRY_PER_PAGE;
-	int page_base = page_number * NUM_ENTRY_PER_PAGE;
-	float currentX = 0.09f;
-	float currentY = 0.09f;
-	float ySpacing = 0.035f;
+	current_index = b->currently_selected;
+	page_number = current_index / NUM_ENTRY_PER_PAGE;
+	page_base = page_number * NUM_ENTRY_PER_PAGE;
 
-	for (int i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
+	currentX = 0.09f;
+	currentY = 0.09f;
+	ySpacing = 0.035f;
+
+	for ( i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
 	{
 		currentY = currentY + ySpacing;
-		cellDbgFontPuts(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->cur[i].d_type == CELL_FS_TYPE_DIRECTORY ? GREEN : WHITE, b->cur[i].d_name);
+		cellDbgFontPuts(currentX, currentY, Emulator_GetFontSize(), i == current_index ? RED : b->cur[i].d_type == CELL_FS_TYPE_DIRECTORY ? GREEN : WHITE, b->cur[i].d_name);
 		cellDbgFontDraw();
 	}
 	cellDbgFontDraw();
 }
 
-static void do_select_file(uint32_t menu_id)
+static void select_file(uint32_t menu_id)
 {
-	char extensions[256], title[256], object[256], comment[256], dir_path[MAX_PATH_LENGTH];
+	char extensions[256], title[256], object[256], comment[256], dir_path[MAX_PATH_LENGTH],
+	path[MAX_PATH_LENGTH], *separatorslash;
+	uint64_t state, diff_state, button_was_pressed;
+	static uint64_t old_state = 0;
+
+	state = cell_pad_input_poll_device(0);
+	diff_state = old_state ^ state;
+	button_was_pressed = old_state & diff_state;
+
 	switch(menu_id)
 	{
 		case GAME_AWARE_SHADER_CHOICE:
@@ -306,6 +341,7 @@ static void do_select_file(uint32_t menu_id)
 			strncpy(dir_path, PRESETS_DIR_PATH, sizeof(dir_path));
 			strncpy(extensions, "conf|CONF", sizeof(extensions));
 			strncpy(title, "SHADER PRESETS SELECTION", sizeof(title));
+			strncpy(object, "Shader", sizeof(object));
 			strncpy(object, "Shader preset", sizeof(object));
                         strncpy(comment, "INFO - Select a shader preset from the menu by pressing the X button. ", sizeof(comment));
 			break;
@@ -321,9 +357,11 @@ static void do_select_file(uint32_t menu_id)
 			strncpy(dir_path, BORDERS_DIR_PATH, sizeof(dir_path));
 			strncpy(extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(extensions));
 			strncpy(title, "BORDER SELECTION", sizeof(title));
+			strncpy(object, "Border", sizeof(object));
 			strncpy(object, "Border image file", sizeof(object));
 			strncpy(comment, "INFO - Select a border image file from the menu by pressing the X button. ", sizeof(comment));
 			break;
+		EXTRA_SELECT_FILE_PART1();
 	}
 
 	if(set_initial_dir_tmpbrowser)
@@ -332,14 +370,7 @@ static void do_select_file(uint32_t menu_id)
 		set_initial_dir_tmpbrowser = false;
 	}
 
-	char path[MAX_PATH_LENGTH];
-
-	uint64_t state = cell_pad_input_poll_device(0);
-	static uint64_t old_state = 0;
-	uint64_t diff_state = old_state ^ state;
-	uint64_t button_was_pressed = old_state & diff_state;
-
-	UpdateBrowser(&tmpBrowser);
+	browser_update(&tmpBrowser);
 
 	if (CTRL_START(button_was_pressed))
 		filebrowser_reset_start_directory(&tmpBrowser, "/", extensions);
@@ -348,7 +379,8 @@ static void do_select_file(uint32_t menu_id)
 	{
 		if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
 		{
-			/*if 'filename' is in fact '..' - then pop back directory instead of adding '..' to filename path*/
+			/*if 'filename' is in fact '..' - then pop back directory instead of 
+			adding '..' to filename path */
 			if(tmpBrowser.currently_selected == 0)
 			{
 				old_state = state;
@@ -356,7 +388,7 @@ static void do_select_file(uint32_t menu_id)
 			}
 			else
 			{
-                                const char * separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
+                                separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
 				snprintf(path, sizeof(path), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
 				filebrowser_push_directory(&tmpBrowser, path, true);
 			}
@@ -364,16 +396,13 @@ static void do_select_file(uint32_t menu_id)
 		else if (FILEBROWSER_IS_CURRENT_A_FILE(tmpBrowser))
 		{
 			snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+			printf("path: %s\n", path);
 
 			switch(menu_id)
 			{
 				case GAME_AWARE_SHADER_CHOICE:
 					break;
 				case SHADER_CHOICE:
-					if(set_shader)
-						strncpy(g_settings.video.second_pass_shader, path, sizeof(g_settings.video.second_pass_shader));
-					else
-						strncpy(g_settings.video.cg_shader_path, path, sizeof(g_settings.video.cg_shader_path));
 					break;
 				case PRESET_CHOICE:
 					break;
@@ -381,6 +410,7 @@ static void do_select_file(uint32_t menu_id)
 					break;
 				case BORDER_CHOICE:
 					break;
+				EXTRA_SELECT_FILE_PART2();
 			}
 
 			menuStackindex--;
@@ -390,127 +420,421 @@ static void do_select_file(uint32_t menu_id)
 	if (CTRL_TRIANGLE(button_was_pressed))
 		menuStackindex--;
 
-        cellDbgFontPrintf (0.09f,  0.09f, FONT_SIZE, YELLOW,  "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
-	cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	title);
+        cellDbgFontPrintf(0.09f, 0.09f, Emulator_GetFontSize(), YELLOW, "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
+	cellDbgFontPuts	(0.09f,	0.05f,	Emulator_GetFontSize(),	RED,	title);
 	cellDbgFontPrintf(0.09f, 0.92f, 0.92, YELLOW, "X - Select %s  /\\ - return to settings  START - Reset Startdir", object);
 	cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s", comment);
 	cellDbgFontDraw();
 
-	RenderBrowser(&tmpBrowser);
+	browser_render(&tmpBrowser);
 	old_state = state;
 }
 
-static void do_pathChoice(uint32_t menu_id)
+static void select_directory(uint32_t menu_id)
 {
+        char path[1024], newpath[1024], *separatorslash;
+	uint64_t state, diff_state, button_was_pressed;
+        static uint64_t old_state = 0;
+
+        state = cell_pad_input_poll_device(0);
+        diff_state = old_state ^ state;
+        button_was_pressed = old_state & diff_state;
+
 	if(set_initial_dir_tmpbrowser)
 	{
 		filebrowser_new(&tmpBrowser, "/\0", "empty");
 		set_initial_dir_tmpbrowser = false;
 	}
 
-	char path[1024];
-	char newpath[1024];
+        browser_update(&tmpBrowser);
 
-	uint64_t state = cell_pad_input_poll_device(0);
-	static uint64_t old_state = 0;
-	uint64_t diff_state = old_state ^ state;
-	uint64_t button_was_pressed = old_state & diff_state;
-
-        UpdateBrowser(&tmpBrowser);
-
-	if (CTRL_START(button_was_pressed))
+        if (CTRL_START(button_was_pressed))
 		filebrowser_reset_start_directory(&tmpBrowser, "/","empty");
 
-	if (CTRL_SQUARE(button_was_pressed))
-	{
+        if (CTRL_SQUARE(button_was_pressed))
+        {
                 if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
-		{
+                {
                         snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-			switch(menu_id)
-			{
-				case PATH_SAVESTATES_DIR_CHOICE:
-					break;
-				case PATH_SRAM_DIR_CHOICE:
-					break;
+                        switch(menu_id)
+                        {
+                                case PATH_SAVESTATES_DIR_CHOICE:
+                                        break;
+                                case PATH_SRAM_DIR_CHOICE:
+                                        break;
+                                case PATH_DEFAULT_ROM_DIR_CHOICE:
+                                        break;
 				case PATH_CHEATS_DIR_CHOICE:
-					strcpy(g_settings.cheat_database, path);
 					break;
-				case PATH_DEFAULT_ROM_DIR_CHOICE:
-					break;
-			}
-			menuStackindex--;
-		}
-	}
-
-	if (CTRL_TRIANGLE(button_was_pressed))
-	{
-		strcpy(path, usrDirPath);
-		switch(menu_id)
-		{
-			case PATH_SAVESTATES_DIR_CHOICE:
-				break;
-			case PATH_SRAM_DIR_CHOICE:
-				break;
+                        }
+                        menuStackindex--;
+                }
+        }
+        if (CTRL_TRIANGLE(button_was_pressed))
+        {
+                strcpy(path, usrDirPath);
+                switch(menu_id)
+                {
+                        case PATH_SAVESTATES_DIR_CHOICE:
+                                break;
+                        case PATH_SRAM_DIR_CHOICE:
+                                break;
+                        case PATH_DEFAULT_ROM_DIR_CHOICE:
+                                break;
 			case PATH_CHEATS_DIR_CHOICE:
-				strcpy(g_settings.cheat_database, path);
 				break;
-			case PATH_DEFAULT_ROM_DIR_CHOICE:
-				break;
-		}
-		menuStackindex--;
-	}
-
-	if (CTRL_CROSS(button_was_pressed))
-	{
+                }
+                menuStackindex--;
+        }
+        if (CTRL_CROSS(button_was_pressed))
+        {
                 if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
-		{
-			/*if 'filename' is in fact '..' - then pop back directory instead of adding '..' to filename path*/
+                {
+                        /* if 'filename' is in fact '..' - then pop back 
+			directory instead of adding '..' to filename path */
+
                         if(tmpBrowser.currently_selected == 0)
-			{
-				old_state = state;
+                        {
+                                old_state = state;
 				filebrowser_pop_directory(&tmpBrowser);
-			}
-			else
-			{
-                                const char * separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
+                        }
+                        else
+                        {
+                                separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
                                 snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
                                 filebrowser_push_directory(&tmpBrowser, newpath, false);
-			}
-		}
+                        }
+                }
+        }
+
+        cellDbgFontPrintf (0.09f,  0.09f, Emulator_GetFontSize(), YELLOW, 
+	"PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
+        cellDbgFontPuts (0.09f, 0.05f,  Emulator_GetFontSize(), RED,    "DIRECTORY SELECTION");
+        cellDbgFontPuts(0.09f, 0.93f, 0.92f, YELLOW,
+	"X - Enter dir  /\\ - return to settings  START - Reset Startdir");
+        cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s",
+	"INFO - Browse to a directory and assign it as the path by\npressing SQUARE button.");
+        cellDbgFontDraw();
+
+        browser_render(&tmpBrowser);
+        old_state = state;
+}
+
+static void set_setting_label(menu * menu_obj, int currentsetting)
+{
+	switch(currentsetting)
+	{
+		case SETTING_CHANGE_RESOLUTION:
+			break;
+		case SETTING_SHADER_PRESETS:
+			/* add a comment */
+			break;
+		case SETTING_BORDER:
+			break;
+		case SETTING_SHADER:
+			break;
+		case SETTING_SHADER_2:
+			break;
+		case SETTING_GAME_AWARE_SHADER:
+			break;
+		case SETTING_FONT_SIZE:
+			break;
+		case SETTING_KEEP_ASPECT_RATIO:
+			break;
+		case SETTING_HW_TEXTURE_FILTER:
+			break;
+		case SETTING_HW_TEXTURE_FILTER_2:
+			break;
+		case SETTING_SCALE_ENABLED:
+			break;
+		case SETTING_SCALE_FACTOR:
+			break;
+		case SETTING_HW_OVERSCAN_AMOUNT:
+			break;
+		case SETTING_THROTTLE_MODE:
+			break;
+		case SETTING_TRIPLE_BUFFERING:
+			break;
+		case SETTING_ENABLE_SCREENSHOTS:
+			break;
+		case SETTING_SAVE_SHADER_PRESET:
+			break;
+		case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
+			break;
+		case SETTING_DEFAULT_VIDEO_ALL:
+			break;
+		case SETTING_SOUND_MODE:
+			break;
+		case SETTING_RSOUND_SERVER_IP_ADDRESS:
+			break;
+		case SETTING_DEFAULT_AUDIO_ALL:
+			break;
+		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
+			break;
+		/* emu-specific */
+		case SETTING_EMU_DEFAULT_ALL:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			break;
+		case SETTING_EMU_VIDEO_DEFAULT_ALL:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			break;
+		case SETTING_EMU_AUDIO_DEFAULT_ALL:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			break;
+		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
+			break;
+		case SETTING_PATH_SAVESTATES_DIRECTORY:
+			break;
+		case SETTING_PATH_SRAM_DIRECTORY:
+			break;
+		case SETTING_PATH_CHEATS:
+			break;
+		case SETTING_PATH_DEFAULT_ALL:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			break;
+		case SETTING_CONTROLS_SCHEME:
+			break;
+		case SETTING_CONTROLS_NUMBER:
+			break;
+		case SETTING_CONTROLS_DPAD_UP:
+		case SETTING_CONTROLS_DPAD_DOWN:
+		case SETTING_CONTROLS_DPAD_LEFT:
+		case SETTING_CONTROLS_DPAD_RIGHT:
+		case SETTING_CONTROLS_BUTTON_CIRCLE:
+		case SETTING_CONTROLS_BUTTON_CROSS:
+		case SETTING_CONTROLS_BUTTON_TRIANGLE:
+		case SETTING_CONTROLS_BUTTON_SQUARE:
+		case SETTING_CONTROLS_BUTTON_SELECT:
+		case SETTING_CONTROLS_BUTTON_START:
+		case SETTING_CONTROLS_BUTTON_L1:
+		case SETTING_CONTROLS_BUTTON_R1:
+		case SETTING_CONTROLS_BUTTON_L2:
+		case SETTING_CONTROLS_BUTTON_R2:
+		case SETTING_CONTROLS_BUTTON_L3:
+		case SETTING_CONTROLS_BUTTON_R3:
+		case SETTING_CONTROLS_BUTTON_L2_BUTTON_L3:
+		case SETTING_CONTROLS_BUTTON_L2_BUTTON_R3:
+		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_RIGHT:
+		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_LEFT:
+		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_UP:
+		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_DOWN:
+		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_RIGHT:
+		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_LEFT:
+		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_UP:
+		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_DOWN:
+		case SETTING_CONTROLS_BUTTON_R2_BUTTON_R3:
+		case SETTING_CONTROLS_BUTTON_R3_BUTTON_L3:
+		case SETTING_CONTROLS_ANALOG_R_UP:
+		case SETTING_CONTROLS_ANALOG_R_DOWN:
+		case SETTING_CONTROLS_ANALOG_R_LEFT:
+		case SETTING_CONTROLS_ANALOG_R_RIGHT:
+			break;
+		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			break;
+		case SETTING_CONTROLS_DEFAULT_ALL:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			break;
+		default:
+			break;
 	}
-
-        cellDbgFontPrintf (0.09f,  0.09f, FONT_SIZE, YELLOW,  "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
-	cellDbgFontPuts	(0.09f,	0.05f, FONT_SIZE,	RED, "DIRECTORY SELECTION");
-	cellDbgFontPuts   (0.09f,  0.93f,   0.92f, YELLOW,  "X - Enter dir  /\\ - return to settings  START - Reset Startdir");
-	cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Browse to a directory and assign it as the path by pressing SQUARE.");
-	cellDbgFontDraw();
-
-        RenderBrowser(&tmpBrowser);
-	old_state = state;
 }
 
-#define print_help_message_yesno(menu, currentsetting) \
-			snprintf(menu.items[currentsetting].comment, sizeof(menu.items[currentsetting].comment), *(menu.items[currentsetting].setting_ptr) ? menu.items[currentsetting].comment_yes : menu.items[currentsetting].comment_no); \
-			print_help_message(menu, currentsetting);
-
-#define print_help_message(menu, currentsetting) \
-			cellDbgFontPrintf(menu.items[currentsetting].comment_xpos, menu.items[currentsetting].comment_ypos, menu.items[currentsetting].comment_scalefont, menu.items[currentsetting].comment_color, menu.items[currentsetting].comment);
-
-static void display_help_text(int currentsetting)
+static void menu_init_settings_pages(menu * menu_obj)
 {
+	int page, i, j;
+	float increment;
+
+	page = 0;
+	j = 0;
+	increment = 0.13f;
+
+	for(i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
+	{
+		if(!(j < (NUM_ENTRY_PER_PAGE)))
+		{
+			j = 0;
+			increment = 0.13f;
+			page++;
+		}
+
+		menu_obj->items[i].text_xpos = 0.09f;
+		menu_obj->items[i].text_ypos = increment; 
+		menu_obj->items[i].page = page;
+		set_setting_label(menu_obj, i);
+		increment += 0.03f;
+		j++;
+	}
+	menu_obj->refreshpage = 0;
 }
 
-static void display_label_value(uint64_t switchvalue)
+static void menu_reinit_settings (void)
 {
+	menu_init_settings_pages(&menu_generalvideosettings);
+	menu_init_settings_pages(&menu_generalaudiosettings);
+	menu_init_settings_pages(&menu_emu_settings);
+	menu_init_settings_pages(&menu_emu_videosettings);
+	menu_init_settings_pages(&menu_emu_audiosettings);
+	menu_init_settings_pages(&menu_pathsettings);
+	menu_init_settings_pages(&menu_controlssettings);
 }
 
 static void apply_scaling(void)
 {
 }
 
-#include "settings-logic.h"
+static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
+{
+	uint64_t state;
 
-static void do_settings(menu * menu_obj)
+	state = cell_pad_input_poll_device(0);
+
+	switch(switchvalue)
+	{
+		case SETTING_CHANGE_RESOLUTION:
+			break;
+			/*
+			   case SETTING_PAL60_MODE:
+			   if(CTRL_RIGHT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) || CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
+			   {
+			   if (Graphics->GetCurrentResolution() == CELL_VIDEO_OUT_RESOLUTION_576)
+			   {
+			   if(Graphics->CheckResolution(CELL_VIDEO_OUT_RESOLUTION_576))
+			   {
+			   Settings.PS3PALTemporalMode60Hz = !Settings.PS3PALTemporalMode60Hz;
+			   Graphics->SetPAL60Hz(Settings.PS3PALTemporalMode60Hz);
+			   Graphics->SwitchResolution(Graphics->GetCurrentResolution(), Settings.PS3PALTemporalMode60Hz, Settings.TripleBuffering);
+			   }
+			   }
+
+			   }
+			   break;
+			 */
+#ifdef HAVE_GAMEAWARE
+		case SETTING_GAME_AWARE_SHADER:
+			break;
+#endif
+		case SETTING_SHADER_PRESETS:
+			break;
+		case SETTING_BORDER:
+			break;
+		case SETTING_SHADER:
+			break;
+		case SETTING_SHADER_2:
+			break;
+		case SETTING_FONT_SIZE:
+			break;
+		case SETTING_KEEP_ASPECT_RATIO:
+			break;
+		case SETTING_HW_TEXTURE_FILTER:
+			break;
+		case SETTING_HW_TEXTURE_FILTER_2:
+			break;
+		case SETTING_SCALE_ENABLED:
+			break;
+		case SETTING_SCALE_FACTOR:
+			break;
+		case SETTING_HW_OVERSCAN_AMOUNT:
+			break;
+		case SETTING_THROTTLE_MODE:
+			break;
+		case SETTING_TRIPLE_BUFFERING:
+			break;
+		case SETTING_ENABLE_SCREENSHOTS:
+			break;
+		case SETTING_SAVE_SHADER_PRESET:
+			break;
+		case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
+			break;
+		case SETTING_DEFAULT_VIDEO_ALL:
+			break;
+		case SETTING_SOUND_MODE:
+			break;
+		case SETTING_RSOUND_SERVER_IP_ADDRESS:
+			break;
+		case SETTING_DEFAULT_AUDIO_ALL:
+			break;
+		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
+			break;
+		case SETTING_EMU_VIDEO_DEFAULT_ALL:
+			break;
+		case SETTING_EMU_AUDIO_DEFAULT_ALL:
+			break;
+		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
+			break;
+		case SETTING_PATH_SAVESTATES_DIRECTORY:
+			break;
+		case SETTING_PATH_SRAM_DIRECTORY:
+			break;
+		case SETTING_PATH_CHEATS:
+			break;
+		case SETTING_PATH_DEFAULT_ALL:
+			break;
+		case SETTING_CONTROLS_SCHEME:
+			break;
+		case SETTING_CONTROLS_NUMBER:
+			break; 
+		case SETTING_CONTROLS_DPAD_UP:
+		case SETTING_CONTROLS_DPAD_DOWN:
+		case SETTING_CONTROLS_DPAD_LEFT:
+		case SETTING_CONTROLS_DPAD_RIGHT:
+		case SETTING_CONTROLS_BUTTON_CIRCLE:
+		case SETTING_CONTROLS_BUTTON_CROSS:
+		case SETTING_CONTROLS_BUTTON_TRIANGLE:
+		case SETTING_CONTROLS_BUTTON_SQUARE:
+		case SETTING_CONTROLS_BUTTON_SELECT:
+		case SETTING_CONTROLS_BUTTON_START:
+		case SETTING_CONTROLS_BUTTON_L1:
+		case SETTING_CONTROLS_BUTTON_R1:
+		case SETTING_CONTROLS_BUTTON_L2:
+		case SETTING_CONTROLS_BUTTON_R2:
+		case SETTING_CONTROLS_BUTTON_L3:
+		case SETTING_CONTROLS_BUTTON_R3:
+		case SETTING_CONTROLS_BUTTON_L2_BUTTON_L3:
+		case SETTING_CONTROLS_BUTTON_L2_BUTTON_R3:
+		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_RIGHT:
+		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_LEFT:
+		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_UP:
+		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_DOWN:
+		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_RIGHT:
+		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_LEFT:
+		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_UP:
+		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_DOWN:
+		case SETTING_CONTROLS_BUTTON_R2_BUTTON_R3:
+		case SETTING_CONTROLS_BUTTON_R3_BUTTON_L3:
+		case SETTING_CONTROLS_ANALOG_R_UP:
+		case SETTING_CONTROLS_ANALOG_R_DOWN:
+		case SETTING_CONTROLS_ANALOG_R_LEFT:
+		case SETTING_CONTROLS_ANALOG_R_RIGHT:
+			break;
+		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
+			break;
+		case SETTING_CONTROLS_DEFAULT_ALL:
+			break;
+	}
+
+	set_setting_label(menu_obj, switchvalue);
+}
+
+static void select_setting(menu * menu_obj)
 {
 	uint64_t state, diff_state, button_was_pressed, i;
 	static uint64_t old_state = 0;
@@ -606,7 +930,7 @@ static void do_settings(menu * menu_obj)
 
 		if (CTRL_L3(state) && CTRL_R3(state))
 		{
-			if (g_rom_loaded)
+			if (g_emulator_initialized)
 			{
 				menu_is_running = 0;
 				set_text_message("", 15);
@@ -616,7 +940,7 @@ static void do_settings(menu * menu_obj)
 		}
 
 
-		producesettingentry(menu_obj->selected);
+		producesettingentry(menu_obj, menu_obj->selected);
 	}
 
 	display_menubar(menu_obj->enum_id);
@@ -626,30 +950,31 @@ static void do_settings(menu * menu_obj)
 	{
 		if(menu_obj->items[i].page == menu_obj->page)
 		{
-			cellDbgFontPuts(menu_obj->items[i].text_xpos, menu_obj->items[i].text_ypos, FONT_SIZE, menu_obj->selected == menu_obj->items[i].enum_id ? menu_obj->items[i].text_selected_color : menu_obj->items[i].text_unselected_color, menu_obj->items[i].text);
-			display_label_value(i);
+			cellDbgFontPuts(menu_obj->items[i].text_xpos, menu_obj->items[i].text_ypos, Emulator_GetFontSize(), menu_obj->selected == menu_obj->items[i].enum_id ? YELLOW : menu_obj->items[i].item_color, menu_obj->items[i].text);
+			cellDbgFontPuts(0.5f, menu_obj->items[i].text_ypos, Emulator_GetFontSize(), menu_obj->items[i].text_color, menu_obj->items[i].setting_text);
 			cellDbgFontDraw();
 		}
 	}
 
-	display_help_text(menu_obj->selected);
+	cellDbgFontPuts(0.09f, menu_obj->items[menu_obj->selected].comment_ypos, 0.86f, LIGHTBLUE, menu_obj->items[menu_obj->selected].comment);
 
-	cellDbgFontPuts(0.09f, 0.91f, FONT_SIZE, YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
-	cellDbgFontPuts(0.09f, 0.95f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
+	cellDbgFontPuts(0.09f, 0.91f, Emulator_GetFontSize(), YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
+	cellDbgFontPuts(0.09f, 0.95f, Emulator_GetFontSize(), YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
 	cellDbgFontDraw();
 	old_state = state;
 }
 
-static void do_ROMMenu(void)
+static void select_rom(void)
 {
-	char newpath[1024];
-
-	uint64_t state = cell_pad_input_poll_device(0);
+	char newpath[1024], *separatorslash;
+	uint64_t state, diff_state, button_was_pressed;
 	static uint64_t old_state = 0;
-	uint64_t diff_state = old_state ^ state;
-	uint64_t button_was_pressed = old_state & diff_state;
 
-	UpdateBrowser(&browser);
+	state = cell_pad_input_poll_device(0);
+	diff_state = old_state ^ state;
+	button_was_pressed = old_state & diff_state;
+
+	browser_update(&browser);
 
 	if (CTRL_SELECT(button_was_pressed))
 	{
@@ -664,7 +989,9 @@ static void do_ROMMenu(void)
 	{
 		if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(browser))
 		{
-			/*if 'filename' is in fact '..' - then pop back directory instead of adding '..' to filename path*/
+			/*if 'filename' is in fact '..' - then pop back directory 
+			instead of adding '..' to filename path */
+
 			if(browser.currently_selected == 0)
 			{
 				old_state = state;
@@ -672,16 +999,21 @@ static void do_ROMMenu(void)
 			}
 			else
 			{
-				const char * separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser),"/") == 0) ? "" : "/";
+				separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser),"/") == 0) ? "" : "/";
 				snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(browser));
 				filebrowser_push_directory(&browser, newpath, true);
 			}
 		}
 		else if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
 		{
-			snprintf(g_extern.system.fullpath, sizeof(g_extern.system.fullpath), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+			char rom_path_temp[MAX_PATH_LENGTH];
+			bool retval;
+
+			snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 
 			menu_is_running = 0;
+			snprintf(g_extern.system.fullpath, sizeof(g_extern.system.fullpath), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+
 			old_state = state;
 			return;
 		}
@@ -701,55 +1033,21 @@ static void do_ROMMenu(void)
 	if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
 		cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
 
-	cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"FILE BROWSER");
-	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", "SSNES", PACKAGE_VERSION);
-	cellDbgFontPrintf (0.09f, 0.09f, FONT_SIZE, YELLOW, "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser));
-	cellDbgFontPuts   (0.09f, 0.93f, FONT_SIZE, YELLOW,
+	cellDbgFontPuts	(0.09f,	0.05f,	Emulator_GetFontSize(),	RED,	"FILE BROWSER");
+	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
+	cellDbgFontPrintf (0.09f, 0.09f, Emulator_GetFontSize(), YELLOW,
+	"PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser));
+	cellDbgFontPuts   (0.09f, 0.93f, Emulator_GetFontSize(), YELLOW,
 	"L3 + R3 - resume game           SELECT - Settings screen");
 	cellDbgFontDraw();
 
-	RenderBrowser(&browser);
+	browser_render(&browser);
 	old_state = state;
 }
 
-static void menu_init_settings_pages(menu * menu_obj)
-{
-	int page, i, j;
-	float increment;
-
-	page = 0;
-	j = 0;
-	increment = 0.13f;
-
-	for(i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
-	{
-		if(!(j < (NUM_ENTRY_PER_PAGE)))
-		{
-			j = 0;
-			increment = 0.13f;
-			page++;
-		}
-
-		menu_obj->items[i].text_xpos = 0.09f;
-		menu_obj->items[i].text_ypos = increment; 
-		menu_obj->items[i].page = page;
-		increment += 0.03f;
-		j++;
-	}
-	menu_obj->refreshpage = 0;
-}
-
-void menu_init(void)
+void menu_init (void)
 {
 	filebrowser_new(&browser, "/", ROM_EXTENSIONS);
-
-	menu_init_settings_pages(&menu_generalvideosettings);
-	menu_init_settings_pages(&menu_generalaudiosettings);
-	menu_init_settings_pages(&menu_emu_settings);
-	menu_init_settings_pages(&menu_emu_videosettings);
-	menu_init_settings_pages(&menu_emu_audiosettings);
-	menu_init_settings_pages(&menu_pathsettings);
-	menu_init_settings_pages(&menu_controlssettings);
 }
 
 void menu_loop(void)
@@ -759,16 +1057,18 @@ void menu_loop(void)
 
 	menu_is_running = true;
 
+	menu_reinit_settings();
+
 	do
 	{
 		glClear(GL_COLOR_BUFFER_BIT);
-		//ps3graphics_draw_menu();
+		ps3graphics_draw_menu();
 		g_frame_count++;
 
 		switch(menuStack[menuStackindex].enum_id)
 		{
 			case FILE_BROWSER_MENU:
-				do_ROMMenu();
+				select_rom();
 				break;
 			case GENERAL_VIDEO_MENU:
 			case GENERAL_AUDIO_MENU:
@@ -777,25 +1077,25 @@ void menu_loop(void)
 			case EMU_AUDIO_MENU:
 			case PATH_MENU:
 			case CONTROLS_MENU:
-				do_settings(&menuStack[menuStackindex]);
+				select_setting(&menuStack[menuStackindex]);
 				break;
 			case GAME_AWARE_SHADER_CHOICE:
 			case SHADER_CHOICE:
 			case PRESET_CHOICE:
 			case BORDER_CHOICE:
 			case INPUT_PRESET_CHOICE:
-				do_select_file(menuStack[menuStackindex].enum_id);
+				select_file(menuStack[menuStackindex].enum_id);
 				break;
 			case PATH_SAVESTATES_DIR_CHOICE:
 			case PATH_DEFAULT_ROM_DIR_CHOICE:
 			case PATH_CHEATS_DIR_CHOICE:
 			case PATH_SRAM_DIR_CHOICE:
-			case PATH_BASE_DIR_CHOICE:
-				do_pathChoice(menuStack[menuStackindex].enum_id);
+				select_directory(menuStack[menuStackindex].enum_id);
 				break;
 		}
 
 		psglSwap();
+		cell_console_poll();
 		cellSysutilCheckCallback();
 	}while (menu_is_running);
 }

@@ -68,6 +68,7 @@
 bool g_rom_loaded;
 bool return_to_MM;			/* launch multiMAN on exit if ROM is passed*/
 uint32_t g_screenshots_enabled;
+uint32_t g_emulator_initialized = 0;
 
 char special_action_msg[256];		/* message which should be overlaid on top of the screen*/
 uint32_t special_action_msg_expired;	/* time at which the message no longer needs to be overlaid onscreen*/
@@ -124,36 +125,13 @@ static void init_settings(void)
 
 	config_file_t * currentconfig = config_file_new(SYS_CONFIG_FILE);
 
-	//init_setting_uint("PS3General::ApplyShaderPresetOnStartup", Settings.ApplyShaderPresetOnStartup, 0);
-	//init_setting_uint("video_aspect_ratio", g_settings.video.aspect_ratio, ASPECT_RATIO_4_3);
 	init_setting_bool("video_smooth", g_settings.video.smooth, 1);
 	init_setting_bool("video_second_pass_smooth", g_settings.video.second_pass_smooth, 1);
 	init_setting_char("video_cg_shader", g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE);
-	//init_setting_char("video_second_pass_shader", g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE);
-	//init_setting_char("PS3General::Border", Settings.PS3CurrentBorder, DEFAULT_BORDER_FILE);
-	//init_setting_uint("PS3General::PS3TripleBuffering",Settings.TripleBuffering, 1);
-	//init_setting_char("PS3General::ShaderPresetPath", Settings.ShaderPresetPath, "");
-	//init_setting_char("PS3General::ShaderPresetTitle", Settings.ShaderPresetTitle, "None");
-	//init_setting_uint("PS3General::ScaleFactor", Settings.ScaleFactor, 2);
 	init_setting_float("video_fbo_scale_x", g_settings.video.fbo_scale_x, 2.0f);
 	init_setting_float("video_fbo_scale_y", g_settings.video.fbo_scale_y, 2.0f);
-	//init_setting_uint("PS3General::ViewportX", Settings.ViewportX, 0);
-	//init_setting_uint("PS3General::ViewportY", Settings.ViewportY, 0);
-	//init_setting_uint("PS3General::ViewportWidth", Settings.ViewportWidth, 0);
-	//init_setting_uint("PS3General::ViewportHeight", Settings.ViewportHeight, 0);
 	init_setting_bool("video_render_to_texture", g_settings.video.render_to_texture, 1);
-	//init_setting_uint("PS3General::Orientation", Settings.Orientation, 0);
-	//init_setting_uint("PS3General::PS3CurrentResolution", Settings.PS3CurrentResolution, NULL);
-	//init_setting_uint("PS3General::OverscanEnabled", Settings.PS3OverscanEnabled, 0);
-	//init_setting_int("PS3General::OverscanAmount", Settings.PS3OverscanAmount, 0);
-	//init_setting_uint("PS3General::PS3PALTemporalMode60Hz", Settings.PS3PALTemporalMode60Hz, 0);
-	//init_setting_uint("Sound::SoundMode", Settings.SoundMode, SOUND_MODE_NORMAL);
-	//init_setting_char("RSound::RSoundServerIPAddress",  Settings.RSoundServerIPAddress, "0.0.0.0");
 	init_setting_bool("video_vsync", g_settings.video.vsync, 1);
-	//init_setting_uint("PS3General::PS3FontSize", Settings.PS3FontSize, 100);
-	//init_setting_char("savestate_directory", Settings.PS3PathSaveStates, usrDirPath);
-	//init_setting_char("savefile_directory", g_settings., usrDirPath);
-	//init_setting_char("PS3Paths::PathROMDirectory", Settings.PS3PathROMDirectory, "/");
 	init_setting_uint("state_slot",  g_extern.state_slot, 0);
 	init_setting_uint("screenshots_enabled", g_screenshots_enabled, 0);
 	init_setting_char("cheat_database_path", g_settings.cheat_database, usrDirPath);
@@ -237,6 +215,9 @@ int main(int argc, char *argv[])
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
    cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_GAME);
 
+   memset(&g_extern, 0, sizeof(g_extern));
+   memset(&g_settings, 0, sizeof(g_settings));
+
    SSNES_LOG("Registering Callback\n");
    cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
 
@@ -271,6 +252,9 @@ int main(int argc, char *argv[])
 
    snprintf(arg5, sizeof(arg5), SYS_CONFIG_FILE);
    char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
+
+   g_emulator_initialized = 1;
+
    return ssnes_main(sizeof(argv_) / sizeof(argv_[0]) - 1, argv_);
 
    ps3_input_deinit();

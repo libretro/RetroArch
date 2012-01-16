@@ -19,51 +19,36 @@
 #ifndef MENU_H_
 #define MENU_H_
 
-#define WHITE		0xffffffffu
-#define RED		0xff0000ffu
-#define GREEN		0xff00ff00u
-#define BLUE		0xffff0000u
-#define YELLOW		0xff00ffffu
-#define PURPLE		0xffff00ffu
-#define CYAN		0xffffff00u
-#define ORANGE		0xff0063ffu
-#define SILVER		0xff8c848cu
-#define LIGHTBLUE	0xFFFFE0E0U
-#define LIGHTORANGE	0xFFE0EEFFu
-
-#define FONT_SIZE 1.0f
+#include "colors.h"
 
 typedef struct
 {
 	uint32_t enum_id;			/* enum ID of item				*/
 	char text[256];				/* item label					*/
+	char setting_text[256];			/* setting label				*/
 	float text_xpos;			/* text X position (upper left corner)		*/
 	float text_ypos;			/* text Y position (upper left corner)		*/
-	uint32_t text_selected_color;		/* text color if selected			*/
-	uint32_t text_unselected_color;		/* text color if not selected			*/
+	uint32_t text_color;			/* text color					*/
 	char comment[256];			/* item comment					*/
-	uint32_t comment_color;			/* color of item comment			*/
+	uint32_t item_color;			/* color of item 				*/
 	float comment_scalefont;		/* font scale of item comment			*/ 
 	float comment_xpos;			/* comment X position (upper left corner)	*/
 	float comment_ypos;			/* comment Y position (upper left corner)	*/
-	unsigned int * setting_ptr;		/* associated pointer to setting member		*/
-	char comment_yes[256];			/* item comment (yes - if setting_ptr true)	*/
-	char comment_no[256];			/* item comment (no - if setting_ptr false)	*/
 	uint32_t default_value;			/* default value of item			*/
-	uint32_t enabled;			/* is the item enabled?				*/
 	uint32_t page;				/* page						*/
 } item;
 
 typedef struct
 {
-	char title[64];			/* menu title					*/
-	uint32_t enum_id;		/* enum ID of menu				*/
-	uint32_t selected;		/* index of selected item			*/
-	uint32_t page;			/* page						*/
-	uint32_t refreshpage;		/* bit whether or not to refresh page		*/
-	uint32_t first_setting;		/* first setting				*/
-	uint32_t max_settings;		/* max no of settings in menu			*/
-	item *items;			/* menu items					*/
+	char title[64];				/* menu title					*/
+	uint32_t enum_id;			/* enum ID of menu				*/
+	uint32_t selected;			/* index of selected item			*/
+	uint32_t page;				/* page						*/
+	uint32_t max_pages;			/* max pages					*/
+	uint32_t refreshpage;			/* bit whether or not to refresh page		*/
+	uint32_t first_setting;			/* first setting				*/
+	uint32_t max_settings;			/* max no of settings in menu			*/
+	item *items;				/* menu items					*/
 } menu;
 
 
@@ -75,17 +60,15 @@ typedef struct
 #define EMU_AUDIO_MENU			5
 #define PATH_MENU			6
 #define CONTROLS_MENU			7
-#define SHADER_CHOICE			8
-#define PRESET_CHOICE			9
-#define BORDER_CHOICE			10
-#define PATH_CHOICE			11
-#define GAME_AWARE_SHADER_CHOICE	12
-#define PATH_SAVESTATES_DIR_CHOICE	13
-#define PATH_DEFAULT_ROM_DIR_CHOICE	14
-#define PATH_CHEATS_DIR_CHOICE		15
-#define PATH_SRAM_DIR_CHOICE		16
-#define PATH_BASE_DIR_CHOICE		17
-#define INPUT_PRESET_CHOICE		18
+#define GAME_AWARE_SHADER_CHOICE	8
+#define SHADER_CHOICE			9
+#define PRESET_CHOICE			10
+#define BORDER_CHOICE			11
+#define PATH_SAVESTATES_DIR_CHOICE	12
+#define PATH_DEFAULT_ROM_DIR_CHOICE	13
+#define PATH_CHEATS_DIR_CHOICE		14
+#define PATH_SRAM_DIR_CHOICE		15
+#define INPUT_PRESET_CHOICE		16
 
 enum
 {
@@ -111,10 +94,12 @@ enum
 	SETTING_SOUND_MODE,
 	SETTING_RSOUND_SERVER_IP_ADDRESS,
 	SETTING_DEFAULT_AUDIO_ALL,
-	SETTING_EMU_CURRENT_SAVE_STATE_SLOT,         
-	SETTING_EMU_DEFAULT_ALL,              
+	/* port-specific */
+	SETTING_EMU_CURRENT_SAVE_STATE_SLOT,
+	SETTING_EMU_DEFAULT_ALL,
 	SETTING_EMU_VIDEO_DEFAULT_ALL,
 	SETTING_EMU_AUDIO_DEFAULT_ALL,
+	/* end of port-specific */
 	SETTING_PATH_DEFAULT_ROM_DIRECTORY,
 	SETTING_PATH_SAVESTATES_DIRECTORY,
 	SETTING_PATH_SRAM_DIRECTORY,
@@ -175,9 +160,8 @@ enum
 #define MAX_NO_OF_PATH_SETTINGS				SETTING_PATH_DEFAULT_ALL+1
 #define MAX_NO_OF_CONTROLS_SETTINGS			SETTING_CONTROLS_DEFAULT_ALL+1
 
-void menu_init(void);
-void menu_loop(void);
+void menu_init (void);
+void menu_loop (void);
 
-extern uint32_t menu_is_running;
-
+extern uint32_t menu_is_running; 
 #endif /* MENU_H_ */

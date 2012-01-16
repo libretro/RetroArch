@@ -56,20 +56,18 @@ static void producesettingentry(uint64_t switchvalue)
 		   }
 		   break;
 		 */
-#ifdef HAVE_GAMEAWARE
 		case SETTING_GAME_AWARE_SHADER:
-		if((CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state)) && Settings.ScaleEnabled)
+		if((CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state)))
 		{
 			menuStackindex++;
 			menuStack[menuStackindex] = menu_filebrowser;
 			menuStack[menuStackindex].enum_id = GAME_AWARE_SHADER_CHOICE;
 			set_initial_dir_tmpbrowser = true;
 		}
-		if(CTRL_START(state) && Settings.ScaleEnabled)
+		if(CTRL_START(state))
 		{
 		}
 		break;
-#endif
 		case SETTING_SHADER_PRESETS:
 		if(g_settings.video.render_to_texture)
 		{
@@ -408,6 +406,8 @@ static void producesettingentry(uint64_t switchvalue)
 		{
 			//emulator_set_controls("", SET_ALL_CONTROLS_TO_DEFAULT, "Default");
 		}
+		break;
+		default:
 		break;
 	}
 }
