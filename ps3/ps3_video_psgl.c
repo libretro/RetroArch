@@ -1045,6 +1045,55 @@ void ps3_set_resolution (void)
    cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &g_video_state);
 }
 
+void ps3_next_resolution (void)
+{
+   if(g_console.current_resolution_index+1 < g_console.supported_resolutions_count)
+   {
+   	g_console.current_resolution_index++;
+	g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
+   }
+}
+
+void ps3_previous_resolution (void)
+{
+  if(g_console.current_resolution_index > 0)
+  {
+  	g_console.current_resolution_index--;
+	g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
+  }
+}
+
+int ps3_check_resolution(uint32_t resolution_id)
+{
+	return cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, resolution_id, \
+	CELL_VIDEO_OUT_ASPECT_AUTO,0);
+}
+
+const char * ps3_get_resolution_label(uint32_t resolution)
+{
+	switch(resolution)
+	{
+		case CELL_VIDEO_OUT_RESOLUTION_480:
+			return  "720x480 (480p)";
+		case CELL_VIDEO_OUT_RESOLUTION_576:
+			return "720x576 (576p)"; 
+		case CELL_VIDEO_OUT_RESOLUTION_720:
+			return "1280x720 (720p)";
+		case CELL_VIDEO_OUT_RESOLUTION_960x1080:
+			return "960x1080";
+		case CELL_VIDEO_OUT_RESOLUTION_1280x1080:
+			return "1280x1080";
+		case CELL_VIDEO_OUT_RESOLUTION_1440x1080:
+			return "1440x1080";
+		case CELL_VIDEO_OUT_RESOLUTION_1600x1080:
+			return "1600x1080";
+		case CELL_VIDEO_OUT_RESOLUTION_1080:
+			return "1920x1080 (1080p)";
+		default:
+			return "Unknown";
+	}
+}
+
 // PS3 needs a working graphics stack before SSNES even starts.
 // To deal with this main.c,
 // the top level module owns the instance, and is created beforehand.
