@@ -84,7 +84,7 @@ typedef struct video_info
    bool vsync;
    bool force_aspect;
    bool smooth;
-   int input_scale; // HQ2X => 2, HQ4X => 4, None => 1
+   unsigned input_scale; // Maximum input size: SSNES_SCALE_BASE * input_scale
    bool rgb32; // Use 32-bit RGBA rather than native XBGR1555.
 } video_info_t;
 
