@@ -173,9 +173,12 @@ struct settings
 struct console_settings
 {
    bool block_config_read;
-#ifdef __CELLOS_LV2__
    bool return_to_multiman_enable;
-#endif
+   uint32_t * supported_resolutions;
+   uint32_t supported_resolutions_count;
+   uint32_t current_resolution_index;
+   uint32_t current_resolution_id;
+   uint32_t initial_resolution_id;
    bool screenshots_enable;
 };
 #endif

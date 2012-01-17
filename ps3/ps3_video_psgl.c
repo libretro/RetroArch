@@ -85,6 +85,8 @@ bool g_quitting;
 unsigned g_frame_count;
 void *g_gl;
 
+static CellVideoOutState g_video_state;
+
 typedef struct gl
 {
    GLuint pbo;
@@ -993,6 +995,56 @@ const video_driver_t video_gl = {
    .ident = "gl"
 };
 
+static void get_all_available_resolutions (void)
+{
+	bool defaultresolution;
+	uint32_t i, resolution_count;
+	uint16_t num_videomodes;
+
+	defaultresolution = true;
+
+	uint32_t videomode[] = {
+		CELL_VIDEO_OUT_RESOLUTION_480, CELL_VIDEO_OUT_RESOLUTION_576,
+		CELL_VIDEO_OUT_RESOLUTION_960x1080, CELL_VIDEO_OUT_RESOLUTION_720,
+		CELL_VIDEO_OUT_RESOLUTION_1280x1080, CELL_VIDEO_OUT_RESOLUTION_1440x1080,
+		CELL_VIDEO_OUT_RESOLUTION_1600x1080, CELL_VIDEO_OUT_RESOLUTION_1080};
+
+	num_videomodes = sizeof(videomode)/sizeof(uint32_t);
+
+	resolution_count = 0;
+	for (i = 0; i < num_videomodes; i++)
+		if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i], CELL_VIDEO_OUT_ASPECT_AUTO,0))
+			resolution_count++;
+	
+	g_console.supported_resolutions = (uint32_t*)malloc(resolution_count * sizeof(uint32_t));
+
+	g_console.supported_resolutions_count = 0;
+	for (i = 0; i < num_videomodes; i++)
+	{
+		if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i], CELL_VIDEO_OUT_ASPECT_AUTO,0))
+		{
+			g_console.supported_resolutions[g_console.supported_resolutions_count++] = videomode[i];
+			g_console.initial_resolution_id = videomode[i];
+
+			if (g_console.current_resolution_id == videomode[i])
+			{
+				defaultresolution = false;
+				g_console.current_resolution_index = g_console.supported_resolutions_count-1;
+			}
+		}
+	}
+
+	/* In case we didn't specify a resolution - make the last resolution*/
+	/* that was added to the list (the highest resolution) the default resolution*/
+	if (g_console.current_resolution_id > num_videomodes || defaultresolution)
+		g_console.current_resolution_index = g_console.supported_resolutions_count-1;
+}
+
+void ps3_set_resolution (void)
+{
+   cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &g_video_state);
+}
+
 // PS3 needs a working graphics stack before SSNES even starts.
 // To deal with this main.c,
 // the top level module owns the instance, and is created beforehand.
@@ -1007,6 +1059,8 @@ void ps3_video_init(void)
    video_info.smooth = true;
    video_info.input_scale = 2;
    g_gl = gl_init(&video_info, NULL, NULL);
+   get_all_available_resolutions();
+   ps3_set_resolution();
 }
 
 void ps3_video_deinit(void)
