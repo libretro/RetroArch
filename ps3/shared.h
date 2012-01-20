@@ -18,10 +18,22 @@
 
 #define MAX_PATH_LENGTH 1024
 
+enum
+{
+	MODE_EMULATION,
+	MODE_MENU,
+#ifdef MULTIMAN_SUPPORT
+	MODE_MULTIMAN_STARTUP,
+#endif
+	MODE_EXIT
+};
+
 extern char special_action_msg[256];
 extern uint32_t g_emulator_initialized;
 extern uint32_t special_action_msg_expired;
+extern uint32_t mode_switch;
 extern unsigned g_frame_count;
+extern bool init_ssnes;
 extern bool g_quitting;
 
 extern char contentInfoPath[MAX_PATH_LENGTH];

@@ -279,6 +279,7 @@ static void browser_update(filebrowser_t * b)
 			if (g_emulator_initialized)
 			{
 				menu_is_running = 0;
+				mode_switch = MODE_EMULATION;
 				set_text_message("", 15);
 			}
 		}
@@ -1197,6 +1198,7 @@ static void select_setting(menu * menu_obj)
 			if (g_emulator_initialized)
 			{
 				menu_is_running = 0;
+				mode_switch = MODE_EMULATION;
 				set_text_message("", 15);
 			}
 			old_state = state;
@@ -1277,6 +1279,8 @@ static void select_rom(void)
 
 			menu_is_running = 0;
 			snprintf(g_extern.system.fullpath, sizeof(g_extern.system.fullpath), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+			init_ssnes = 1;
+			mode_switch = MODE_EMULATION;
 
 			old_state = state;
 			return;
