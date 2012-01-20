@@ -28,6 +28,26 @@ enum
 	MODE_EXIT
 };
 
+enum {
+   MENU_ITEM_LOAD_STATE = 0,
+   MENU_ITEM_SAVE_STATE,
+   MENU_ITEM_KEEP_ASPECT_RATIO,
+   MENU_ITEM_OVERSCAN_AMOUNT,
+   MENU_ITEM_ORIENTATION,
+   MENU_ITEM_RESIZE_MODE,
+   MENU_ITEM_FRAME_ADVANCE,
+   MENU_ITEM_SCREENSHOT_MODE,
+   MENU_ITEM_RESET,
+   MENU_ITEM_RETURN_TO_GAME,
+   MENU_ITEM_RETURN_TO_MENU,
+#ifdef MULTIMAN_SUPPORT
+   MENU_ITEM_RETURN_TO_MULTIMAN,
+#endif
+   MENU_ITEM_RETURN_TO_XMB
+};
+
+#define MENU_ITEM_LAST           MENU_ITEM_RETURN_TO_XMB+1
+
 extern char special_action_msg[256];
 extern uint32_t g_emulator_initialized;
 extern uint32_t special_action_msg_expired;

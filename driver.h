@@ -58,10 +58,8 @@ enum
    SSNES_DSP_CONFIG,
    SSNES_MUTE,
 
-#if defined(__CELLOS_LV2__) || defined(XENON) || defined(_XBOX)
+#ifdef SSNES_CONSOLE
    SSNES_CHEAT_INPUT,
-   SSNES_INGAME_MENU,
-   SSNES_EXIT_TO_MENU,
    SSNES_SRAM_WRITE_PROTECT,
 #endif
 

@@ -20,6 +20,7 @@
 #include "ps3_input.h"
 #include <stdint.h>
 #include "../libsnes.hpp"
+#include "../general.h"
 
 #include <stdlib.h>
 

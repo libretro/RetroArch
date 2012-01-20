@@ -73,6 +73,7 @@ char special_action_msg[256];		/* message which should be overlaid on top of the
 uint32_t special_action_msg_expired;	/* time at which the message no longer needs to be overlaid onscreen*/
 uint32_t mode_switch = MODE_MENU;
 bool init_ssnes = false;
+uint64_t ingame_menu_item = 0;
 
 char contentInfoPath[MAX_PATH_LENGTH];
 char usrDirPath[MAX_PATH_LENGTH];
@@ -203,8 +204,280 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 		case CELL_SYSUTIL_REQUEST_EXITGAME:
 			menu_is_running = 0;
 			g_quitting = true;
+			g_console.in_game_menu = false;
+			mode_switch = MODE_EXIT;
+			if(g_emulator_initialized)
+				ssnes_main_deinit();
 			break;
 	}
+}
+
+#define ingame_menu_reset_entry_colors(ingame_menu_item) \
+{ \
+   for(int i = 0; i < MENU_ITEM_LAST; i++) \
+      menuitem_colors[i] = GREEN; \
+   menuitem_colors[ingame_menu_item] = RED; \
+}
+
+static void ingame_menu(void)
+{
+	uint32_t menuitem_colors[MENU_ITEM_LAST];
+	char comment[256], msg_temp[256];
+
+	do
+	{
+		uint64_t state = cell_pad_input_poll_device(0);
+		static uint64_t old_state = 0;
+		uint64_t stuck_in_loop = 1;
+		const uint64_t button_was_pressed = old_state & (old_state ^ state);
+		const uint64_t button_was_held = old_state & state;
+		static uint64_t blocking = 0;
+
+		if(g_frame_count < special_action_msg_expired && blocking)
+		{
+		}
+		else
+		{
+			if(CTRL_CIRCLE(state))
+			{
+				ingame_menu_item = 0;
+				g_console.in_game_menu = false;
+				mode_switch = MODE_EMULATION;
+			}
+
+			switch(ingame_menu_item)
+			{
+				case MENU_ITEM_LOAD_STATE:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+					}
+					if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed))
+					{
+					}
+					if(CTRL_RIGHT(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_pressed))
+					{
+					}
+
+					ingame_menu_reset_entry_colors(ingame_menu_item);
+					strcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the state from the currently selected save state slot.");
+					break;
+				case MENU_ITEM_SAVE_STATE:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+					}
+					if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed))
+					{
+					}
+					if(CTRL_RIGHT(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_pressed))
+					{
+					}
+
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.");
+					break;
+				case MENU_ITEM_KEEP_ASPECT_RATIO:
+					if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed))
+					{
+					}
+					if(CTRL_RIGHT(button_was_pressed)  || CTRL_LSTICK_RIGHT(button_was_pressed))
+					{
+					}
+					if(CTRL_START(button_was_pressed))
+					{
+					}
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.");
+					break;
+				case MENU_ITEM_OVERSCAN_AMOUNT:
+					if(CTRL_LEFT(button_was_pressed)  ||  CTRL_LSTICK_LEFT(button_was_pressed) || CTRL_CROSS(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_held))
+					{
+					}
+					if(CTRL_RIGHT(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_pressed) || CTRL_CROSS(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_held))
+					{
+					}
+					if(CTRL_START(button_was_pressed))
+					{
+					}
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.");
+					break;
+				case MENU_ITEM_ORIENTATION:
+					if(CTRL_LEFT(button_was_pressed)  ||  CTRL_LSTICK_LEFT(button_was_pressed) || CTRL_CROSS(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_held))
+					{
+					}
+
+					if(CTRL_RIGHT(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_pressed) || CTRL_CROSS(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_held))
+					{
+					}
+
+					if(CTRL_START(button_was_pressed))
+					{
+					}
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.");
+					break;
+				case MENU_ITEM_FRAME_ADVANCE:
+					if(CTRL_CROSS(state) || CTRL_R2(state) || CTRL_L2(state))
+					{
+					}
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame.\nNOTE: Pressing the button rapidly will advance the frame more slowly\nand prevent buttons from being input.");
+					break;
+				case MENU_ITEM_RESIZE_MODE:
+					if(CTRL_CROSS(state))
+					{
+					}
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the\nin-game menu.");
+					break;
+				case MENU_ITEM_SCREENSHOT_MODE:
+					if(CTRL_CROSS(state))
+					{
+					}
+
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.");
+					break;
+				case MENU_ITEM_RETURN_TO_GAME:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+						ingame_menu_item = 0;
+						g_console.in_game_menu = false;
+						mode_switch = MODE_EMULATION;
+					}
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press 'CROSS' to return back to the game.");
+					break;
+				case MENU_ITEM_RESET:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+						ingame_menu_item = 0;
+						g_console.in_game_menu = false;
+						mode_switch = MODE_EMULATION;
+					}
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press 'CROSS' to reset the game.");
+					break;
+				case MENU_ITEM_RETURN_TO_MENU:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+						ingame_menu_item = 0;
+						g_console.in_game_menu = false;
+						menu_is_running = 0;
+						mode_switch = MODE_MENU;
+					}
+
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.");
+					break;
+#ifdef MULTIMAN_SUPPORT
+				case MENU_ITEM_RETURN_TO_MULTIMAN:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+						g_console.in_game_menu = false;
+						mode_switch = MODE_EXIT; 
+					}
+
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press 'CROSS' to quit the emulator and return to multiMAN.");
+					break;
+#endif
+				case MENU_ITEM_RETURN_TO_XMB:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+						g_console.in_game_menu = false;
+#ifdef MULTIMAN_SUPPORT
+						return_to_MM = false;
+#endif
+						mode_switch = MODE_EXIT; 
+					}
+
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press 'CROSS' to quit the emulator and return to the XMB.");
+					break;
+			}
+
+			if(CTRL_UP(button_was_pressed) || CTRL_LSTICK_UP(button_was_pressed))
+			{
+				if(ingame_menu_item > 0)
+					ingame_menu_item--;
+			}
+
+			if(CTRL_DOWN(button_was_pressed) || CTRL_LSTICK_DOWN(button_was_pressed))
+			{
+				if(ingame_menu_item < MENU_ITEM_LAST)
+					ingame_menu_item++;
+			}
+		}
+
+		float x_position = 0.3f;
+		float font_size = 1.1f;
+		float ypos = 0.19f;
+		float ypos_increment = 0.04f;
+
+		cellDbgFontPrintf	(x_position,	0.10f,	1.4f+0.01f,	BLUE,               "Quick Menu");
+		cellDbgFontPrintf(x_position,	0.10f,	1.4f,	WHITE,               "Quick Menu");
+
+		cellDbgFontPrintf	(x_position,	ypos,	font_size+0.01f,	BLUE,	"Load State #%d", g_extern.state_slot);
+		cellDbgFontPrintf(x_position,	ypos,	font_size,	menuitem_colors[MENU_ITEM_LOAD_STATE],	"Load State #%d", g_extern.state_slot);
+
+		cellDbgFontPrintf	(x_position,	ypos+(ypos_increment*MENU_ITEM_SAVE_STATE),	font_size+0.01f,	BLUE,	"Save State #%d", g_extern.state_slot);
+		cellDbgFontPrintf(x_position,	ypos+(ypos_increment*MENU_ITEM_SAVE_STATE),	font_size,	menuitem_colors[MENU_ITEM_SAVE_STATE],	"Save State #%d", g_extern.state_slot);
+		cellDbgFontDraw();
+
+		cellDbgFontPrintf	(x_position,	(ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)),	font_size+0.01f,	BLUE,	"Aspect Ratio: ");
+		cellDbgFontPrintf(x_position,	(ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)),	font_size,	menuitem_colors[MENU_ITEM_KEEP_ASPECT_RATIO],	"Aspect Ratio:");
+
+		cellDbgFontPrintf(x_position,	(ypos+(ypos_increment*MENU_ITEM_OVERSCAN_AMOUNT)),	font_size,	menuitem_colors[MENU_ITEM_OVERSCAN_AMOUNT],	"Overscan: ");
+
+		cellDbgFontPrintf	(x_position,	(ypos+(ypos_increment*MENU_ITEM_ORIENTATION)),	font_size+0.01f,	BLUE,	"Orientation: ");
+		cellDbgFontPrintf	(x_position,	(ypos+(ypos_increment*MENU_ITEM_ORIENTATION)),	font_size,	menuitem_colors[MENU_ITEM_ORIENTATION],	"Orientation:");
+
+		cellDbgFontPrintf	(x_position,	(ypos+(ypos_increment*MENU_ITEM_RESIZE_MODE)),	font_size+0.01f,	BLUE,	"Resize Mode");
+		cellDbgFontPrintf(x_position,	(ypos+(ypos_increment*MENU_ITEM_RESIZE_MODE)),	font_size,	menuitem_colors[MENU_ITEM_RESIZE_MODE],	"Resize Mode");
+
+		cellDbgFontPuts	(x_position,	(ypos+(ypos_increment*MENU_ITEM_FRAME_ADVANCE)),	font_size+0.01f,	BLUE,	"Frame Advance");
+		cellDbgFontPuts(x_position,	(ypos+(ypos_increment*MENU_ITEM_FRAME_ADVANCE)),	font_size,	menuitem_colors[MENU_ITEM_FRAME_ADVANCE],	"Frame Advance");
+
+		cellDbgFontPuts	(x_position,	(ypos+(ypos_increment*MENU_ITEM_SCREENSHOT_MODE)),	font_size+0.01f,	BLUE,	"Screenshot Mode");
+		cellDbgFontPuts(x_position,	(ypos+(ypos_increment*MENU_ITEM_SCREENSHOT_MODE)),	font_size,	menuitem_colors[MENU_ITEM_SCREENSHOT_MODE],	"Screenshot Mode");
+
+		cellDbgFontDraw();
+
+		cellDbgFontPuts	(x_position, (ypos+(ypos_increment*MENU_ITEM_RESET)), font_size+0.01f, BLUE, "Reset");
+		cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RESET)), font_size, menuitem_colors[MENU_ITEM_RESET],	"Reset");
+
+		cellDbgFontPuts   (x_position,   (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_GAME)),   font_size+0.01f,  BLUE,  "Return to Game");
+		cellDbgFontPuts(x_position,   (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_GAME)),   font_size,  menuitem_colors[MENU_ITEM_RETURN_TO_GAME],  "Return to Game");
+
+		cellDbgFontPuts	(x_position,	(ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MENU)),	font_size+0.01f,	BLUE,	"Return to Menu");
+		cellDbgFontPuts(x_position,	(ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MENU)),	font_size,	menuitem_colors[MENU_ITEM_RETURN_TO_MENU],	"Return to Menu");
+#ifdef MULTIMAN_SUPPORT
+		cellDbgFontPuts	(x_position,	(ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MULTIMAN)),	font_size+0.01f,	BLUE,	"Return to multiMAN");
+		cellDbgFontPuts(x_position,	(ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MULTIMAN)),	font_size,	menuitem_colors[MENU_ITEM_RETURN_TO_MULTIMAN],	"Return to multiMAN");
+#endif
+		cellDbgFontDraw();
+
+		cellDbgFontPuts	(x_position,	(ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)),	font_size+0.01f,	BLUE,	"Return to XMB");
+		cellDbgFontPuts(x_position,	(ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)),	font_size,	menuitem_colors[MENU_ITEM_RETURN_TO_XMB],	"Return to XMB");
+
+		if(g_frame_count < special_action_msg_expired)
+		{
+			cellDbgFontPrintf (0.09f, 0.90f, 1.51f, BLUE,	special_action_msg);
+			cellDbgFontPrintf (0.09f, 0.90f, 1.50f, WHITE,	special_action_msg);
+			cellDbgFontDraw();
+		}
+		else
+		{
+			special_action_msg_expired = 0;
+			cellDbgFontPrintf (0.09f,   0.90f,   0.98f+0.01f,      BLUE,           comment);
+			cellDbgFontPrintf (0.09f,   0.90f,   0.98f,      LIGHTBLUE,           comment);
+		}
+		cellDbgFontDraw();
+		psglSwap();
+		old_state = state;
+		cellSysutilCheckCallback();
+	}while(g_console.in_game_menu);
 }
 
 // Temporary, a more sane implementation should go here.
@@ -259,14 +532,17 @@ begin_loop:
    if(mode_switch == MODE_EMULATION)
    {
    	while(ssnes_main_iterate());
-      // TODO: Check here if g_console.in_game_menu is set and act accordingly.
-      ssnes_main_deinit();
+	if(g_console.in_game_menu)
+		ingame_menu();
    }
    else if(mode_switch == MODE_MENU)
    {
 	   menu_loop();
 	   if(init_ssnes)
 	   {
+		   if(g_emulator_initialized)
+			   ssnes_main_deinit();
+
 		   char arg1[] = "ssnes";
 		   char arg2[PATH_MAX];
 
@@ -278,7 +554,6 @@ begin_loop:
 		   snprintf(arg5, sizeof(arg5), SYS_CONFIG_FILE);
 		   char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
 
-		   g_emulator_initialized = 1;
 		   int argc = sizeof(argv_) / sizeof(argv_[0]) - 1;
 		   int init_ret = ssnes_main_init(argc, argv_);
 		   printf("init_ret: %d\n", init_ret);
@@ -287,6 +562,7 @@ begin_loop:
 			   mode_switch = MODE_MENU;
 			   ssnes_main_deinit();
 		   }
+		   g_emulator_initialized = 1;
 		   init_ssnes = 0;
 	   }
    }

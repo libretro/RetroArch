@@ -719,7 +719,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0.91f,
 		0.09f,
 		0.83f,
-		SSNES_INGAME_MENU
+		0
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L2_BUTTON_L3,
@@ -887,7 +887,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0.91f,
 		0.09f,
 		0.83f,
-		SSNES_EXIT_TO_MENU
+		0	
 	},
 	{
 		SETTING_CONTROLS_ANALOG_R_UP,
