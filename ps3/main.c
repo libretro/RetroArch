@@ -259,7 +259,8 @@ begin_loop:
    if(mode_switch == MODE_EMULATION)
    {
    	while(ssnes_main_iterate());
-	ssnes_main_deinit();
+      // TODO: Check here if g_console.in_game_menu is set and act accordingly.
+      ssnes_main_deinit();
    }
    else if(mode_switch == MODE_MENU)
    {

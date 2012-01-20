@@ -143,6 +143,9 @@ static bool ps3_key_pressed(void *data, int key)
          return (CTRL_RSTICK_LEFT(state[0]) && CTRL_R2(state[0]));
       case SSNES_REWIND:
          return CTRL_RSTICK_DOWN(state[0]) && CTRL_R2(~state[0]);
+      case SSNES_QUIT_KEY:
+         g_console.in_game_menu = CTRL_R3(state[0]) && !CTRL_L3(state[0]);
+         return CTRL_R3(state[0]);
       default:
          return false;
    }
