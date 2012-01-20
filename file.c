@@ -936,9 +936,8 @@ void dir_list_free(char **dir_list)
 bool path_is_directory(const char *path)
 {
 #ifdef _WIN32
-   if (!*path) // In Win32, an empty string is apparently a directory ...
-      return false;
-   return GetFileAttributes(path) & FILE_ATTRIBUTE_DIRECTORY;
+   DWORD ret = GetFileAttributes(path);
+   return (ret & FILE_ATTRIBUTE_DIRECTORY) && (ret != INVALID_FILE_ATTRIBUTES);
 #elif defined(__CELLOS_LV2__) || defined(XENON)
    // Dummy
    (void)path;
