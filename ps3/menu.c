@@ -279,6 +279,7 @@ static void browser_update(filebrowser_t * b)
 			if (g_emulator_initialized)
 			{
 				menu_is_running = 0;
+				mode_switch = MODE_EMULATION;
 				set_text_message("", 15);
 			}
 		}
@@ -525,6 +526,12 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 	switch(currentsetting)
 	{
 		case SETTING_CHANGE_RESOLUTION:
+			if(g_console.initial_resolution_id == g_console.supported_resolutions[g_console.current_resolution_index])
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), ps3_get_resolution_label(g_console.supported_resolutions[g_console.current_resolution_index]));
 			break;
 		case SETTING_SHADER_PRESETS:
 			/* add a comment */
@@ -805,6 +812,37 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 	switch(switchvalue)
 	{
 		case SETTING_CHANGE_RESOLUTION:
+			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) )
+			{
+				ps3_next_resolution();
+				set_text_message("", 7);
+			}
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) )
+			{
+				ps3_previous_resolution();
+				set_text_message("", 7);
+			}
+			if(CTRL_CROSS(state))
+			{
+				if (g_console.supported_resolutions[g_console.current_resolution_index] == CELL_VIDEO_OUT_RESOLUTION_576)
+				{
+					if(ps3_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
+					{
+						//ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
+						//ps3graphics_switch_resolution(ps3graphics_get_current_resolution(), Settings.PS3PALTemporalMode60Hz, Settings.TripleBuffering, Settings.ScaleEnabled, Settings.ScaleFactor);
+						//ps3graphics_set_vsync(Settings.Throttled);
+						//apply_scaling();
+					}
+				}
+				else
+				{
+					//ps3graphics_set_pal60hz(0);
+					//ps3graphics_switch_resolution(ps3graphics_get_current_resolution(), 0, Settings.TripleBuffering, Settings.ScaleEnabled, Settings.ScaleFactor);
+					//ps3graphics_set_vsync(Settings.Throttled);
+					//apply_scaling();
+					//emulator_implementation_set_texture(Settings.PS3CurrentBorder);
+				}
+			}
 			break;
 			/*
 			   case SETTING_PAL60_MODE:
@@ -1160,6 +1198,7 @@ static void select_setting(menu * menu_obj)
 			if (g_emulator_initialized)
 			{
 				menu_is_running = 0;
+				mode_switch = MODE_EMULATION;
 				set_text_message("", 15);
 			}
 			old_state = state;
@@ -1240,6 +1279,8 @@ static void select_rom(void)
 
 			menu_is_running = 0;
 			snprintf(g_extern.system.fullpath, sizeof(g_extern.system.fullpath), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+			init_ssnes = 1;
+			mode_switch = MODE_EMULATION;
 
 			old_state = state;
 			return;

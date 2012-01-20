@@ -66,10 +66,13 @@
 	if(!(config_get_array(currentconfig, charstring, setting, sizeof(setting)))) \
 		strncpy(setting,defaultvalue, sizeof(setting));
 
+
 uint32_t g_emulator_initialized = 0;
 
 char special_action_msg[256];		/* message which should be overlaid on top of the screen*/
 uint32_t special_action_msg_expired;	/* time at which the message no longer needs to be overlaid onscreen*/
+uint32_t mode_switch = MODE_MENU;
+bool init_ssnes = false;
 
 char contentInfoPath[MAX_PATH_LENGTH];
 char usrDirPath[MAX_PATH_LENGTH];
@@ -200,7 +203,6 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 		case CELL_SYSUTIL_REQUEST_EXITGAME:
 			menu_is_running = 0;
 			g_quitting = true;
-			sys_process_exit(0);
 			break;
 	}
 }
@@ -252,23 +254,53 @@ int main(int argc, char *argv[])
    ps3_input_init();
 
    menu_init();
-   menu_loop();
 
-   char arg1[] = "ssnes";
-   char arg2[PATH_MAX];
-   
-   snprintf(arg2, sizeof(arg2), g_extern.system.fullpath);
-   char arg3[] = "-v";
-   char arg4[] = "-c";
-   char arg5[MAX_PATH_LENGTH];
+begin_loop:
+   if(mode_switch == MODE_EMULATION)
+   {
+   	while(ssnes_main_iterate());
+	ssnes_main_deinit();
+   }
+   else if(mode_switch == MODE_MENU)
+   {
+	   menu_loop();
+	   if(init_ssnes)
+	   {
+		   char arg1[] = "ssnes";
+		   char arg2[PATH_MAX];
 
-   snprintf(arg5, sizeof(arg5), SYS_CONFIG_FILE);
-   char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
+		   snprintf(arg2, sizeof(arg2), g_extern.system.fullpath);
+		   char arg3[] = "-v";
+		   char arg4[] = "-c";
+		   char arg5[MAX_PATH_LENGTH];
 
-   g_emulator_initialized = 1;
+		   snprintf(arg5, sizeof(arg5), SYS_CONFIG_FILE);
+		   char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
 
-   return ssnes_main(sizeof(argv_) / sizeof(argv_[0]) - 1, argv_);
+		   g_emulator_initialized = 1;
+		   int argc = sizeof(argv_) / sizeof(argv_[0]) - 1;
+		   int init_ret = ssnes_main_init(argc, argv_);
+		   printf("init_ret: %d\n", init_ret);
+		   if(init_ret)
+		   {
+			   mode_switch = MODE_MENU;
+			   ssnes_main_deinit();
+		   }
+		   init_ssnes = 0;
+	   }
+   }
+#ifdef MULTIMAN_SUPPORT
+   else if(mode_switch == MODE_MULTIMAN_STARTUP)
+   {
+   }
+#endif
+   else
+	   goto begin_shutdown;
 
+   goto begin_loop;
+
+begin_shutdown:
    ps3_input_deinit();
    ps3_video_deinit();
+   sys_process_exit(0);
 }

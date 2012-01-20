@@ -26,6 +26,12 @@
 
 void ps3_video_init(void);
 void ps3_video_deinit(void);
+
+void ps3_next_resolution (void);
+void ps3_previous_resolution (void);
+const char * ps3_get_resolution_label(uint32_t resolution);
+int ps3_check_resolution(uint32_t resolution_id);
+
 extern void *g_gl;
 
 #endif

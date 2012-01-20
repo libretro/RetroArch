@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<app version="1">
+  <name>SSNES</name>
+  <coder>Themaister</coder>
+  <version>0.9.4</version>
+  <release_date>2012</release_date>
+  <short_description>Multi-system emulator</short_description> 
+  <long_description>A port of SSNES to the Wii.</long_description> 
+  <no_ios_reload/>
+</app>
