@@ -259,7 +259,6 @@
     <ClCompile Include="..\..\movie.c" />
     <ClCompile Include="..\..\netplay.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\posix_string.c" />
     <ClCompile Include="..\..\rewind.c" />

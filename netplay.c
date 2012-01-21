@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
 #endif
@@ -23,6 +23,8 @@
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
+#elif defined(_XBOX)
+#include <Xtl.h>
 #else
 #include <sys/select.h>
 #include <sys/types.h>
