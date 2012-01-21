@@ -916,7 +916,7 @@ static bool netplay_get_cmd(netplay_t *handle)
 
 void netplay_flip_players(netplay_t *handle)
 {
-   uint32_t flip_frame = handle->self_ptr + 2 * UDP_FRAME_PACKETS;
+   uint32_t flip_frame = handle->frame_count + 2 * UDP_FRAME_PACKETS;
    uint32_t flip_frame_net = htonl(flip_frame);
    const char *msg = NULL;
 
@@ -933,7 +933,7 @@ void netplay_flip_players(netplay_t *handle)
    }
 
    // Make sure both clients are definitely synced up.
-   if (handle->self_ptr < handle->flip_frame + 2 * UDP_FRAME_PACKETS)
+   if (handle->frame_count < (handle->flip_frame + 2 * UDP_FRAME_PACKETS))
    {
       msg = "Cannot flip players yet! Wait a second or two before attempting flip.";
       goto error;
@@ -962,12 +962,22 @@ error:
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 }
 
-static bool netplay_flip_port(netplay_t *handle, bool port, size_t ptr)
+static bool netplay_flip_port(netplay_t *handle, bool port)
 {
    if (handle->flip_frame == 0)
       return port;
 
-   return port ^ handle->flip ^ (ptr < handle->flip_frame);
+   size_t frame = handle->frame_count;
+   if (handle->is_replay)
+   {
+      size_t self = PREV_PTR(handle->self_ptr);
+      if (self >= handle->tmp_ptr)
+         frame = frame + handle->tmp_ptr - self;
+      else
+         frame = frame + handle->tmp_ptr - (self + handle->buffer_size);
+   }
+
+   return port ^ handle->flip ^ (frame < handle->flip_frame);
 }
 
 int16_t netplay_input_state(netplay_t *handle, bool port, unsigned device, unsigned index, unsigned id)
@@ -975,7 +985,7 @@ int16_t netplay_input_state(netplay_t *handle, bool port, unsigned device, unsig
    uint16_t input_state = 0;
    size_t ptr = handle->is_replay ? handle->tmp_ptr : PREV_PTR(handle->self_ptr);
 
-   port = netplay_flip_port(handle, port, ptr);
+   port = netplay_flip_port(handle, port);
 
    if ((port ? 1 : 0) == handle->port)
    {
