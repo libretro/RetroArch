@@ -376,6 +376,21 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		1
 	},
 	{
+		SETTING_EMU_REWIND_ENABLED,
+		"Rewind",
+		"",
+		0.0f,
+		0.0f,
+		YELLOW,
+		"INFO - [Rewind] feature is set to 'OFF'.",
+		WHITE,
+		0.91f,
+		0.09f,
+		0.83f,
+		0,
+		1
+	},
+	{
 		SETTING_EMU_VIDEO_DEFAULT_ALL,
 		"DEFAULT",
 		"",

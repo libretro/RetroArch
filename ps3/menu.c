@@ -680,6 +680,20 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 			else
 				menu_obj->items[currentsetting].text_color = ORANGE;
 			break;
+		case SETTING_EMU_REWIND_ENABLED:
+			if(g_settings.rewind_enable)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				menu_obj->items[currentsetting].text_color = GREEN;
+				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Rewind] feature is set to 'ON'. You can rewind the game in real-time.");
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				menu_obj->items[currentsetting].text_color = ORANGE;
+				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Rewind] feature is set to 'OFF'.");
+			}
+			break;
 		case SETTING_EMU_VIDEO_DEFAULT_ALL:
 			if(menu_obj->selected == currentsetting)
 				menu_obj->items[currentsetting].text_color = GREEN;
@@ -1039,6 +1053,18 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_START(state))
 				g_extern.state_slot = 0;
 			break;
+		case SETTING_EMU_REWIND_ENABLED:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				g_settings.rewind_enable = !g_settings.rewind_enable;
+
+				set_text_message("", 7);
+			}
+			if(CTRL_START(state))
+			{
+				g_settings.rewind_enable = false;
+			}
+			break;
 		case SETTING_EMU_VIDEO_DEFAULT_ALL:
 			break;
 		case SETTING_EMU_AUDIO_DEFAULT_ALL:
@@ -1278,7 +1304,6 @@ static void select_rom(void)
 			snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 
 			menu_is_running = 0;
-			memset(&g_extern, 0, sizeof(g_extern));
 			snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 			init_ssnes = 1;
 			mode_switch = MODE_EMULATION;

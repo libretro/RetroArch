@@ -138,6 +138,7 @@ static void init_settings(void)
 	init_setting_uint("state_slot",  g_extern.state_slot, 0);
 	init_setting_uint("screenshots_enabled", g_console.screenshots_enable, 0);
 	init_setting_char("cheat_database_path", g_settings.cheat_database, usrDirPath);
+	init_setting_bool("rewind_enable", g_settings.rewind_enable, false);
 }
 
 static void get_path_settings(bool multiman_support)
@@ -542,6 +543,7 @@ begin_loop:
    }
    else if(mode_switch == MODE_MENU)
    {
+	   printf("rewind enable: %d\n", g_settings.rewind_enable);
 	   menu_loop();
 	   if(init_ssnes)
 	   {
@@ -558,6 +560,8 @@ begin_loop:
 
 		   snprintf(arg5, sizeof(arg5), SYS_CONFIG_FILE);
 		   char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
+
+		   printf("rewind enable: %d\n", g_settings.rewind_enable);
 
 		   int argc = sizeof(argv_) / sizeof(argv_[0]) - 1;
 		   int init_ret = ssnes_main_init(argc, argv_);
