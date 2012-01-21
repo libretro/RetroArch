@@ -203,6 +203,7 @@ int16_t input_state_net(bool port, unsigned device, unsigned index, unsigned id)
       return netplay_callbacks(g_extern.netplay)->state_cb(port, device, index, id);
 }
 
+// Custom inet_ntop. Win32 doesn't seem to support this ...
 static void log_connection(const struct sockaddr_storage *their_addr, unsigned slot)
 {
    union
@@ -214,29 +215,30 @@ static void log_connection(const struct sockaddr_storage *their_addr, unsigned s
    u.storage = their_addr;
 
    const char *str = NULL;
+   char buf_v4[INET_ADDRSTRLEN] = {0};
+   char buf_v6[INET6_ADDRSTRLEN] = {0};
+
    if (their_addr->ss_family == AF_INET)
    {
-      char buf[INET_ADDRSTRLEN] = {0};
-      str = buf;
+      str = buf_v4;
       struct sockaddr_in in;
       memset(&in, 0, sizeof(in));
       in.sin_family = AF_INET;
       memcpy(&in.sin_addr, &u.v4->sin_addr, sizeof(struct in_addr));
 
-      getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in), buf, sizeof(buf),
+      getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in), buf_v4, sizeof(buf_v4),
             NULL, 0, NI_NUMERICHOST);
    }
    else if (their_addr->ss_family == AF_INET6)
    {
-      char buf[INET6_ADDRSTRLEN] = {0};
-      str = buf;
+      str = buf_v6;
       struct sockaddr_in6 in;
       memset(&in, 0, sizeof(in));
       in.sin6_family = AF_INET6;
       memcpy(&in.sin6_addr, &u.v6->sin6_addr, sizeof(struct in6_addr));
 
       getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in6),
-            buf, sizeof(buf), NULL, 0, NI_NUMERICHOST);
+            buf_v6, sizeof(buf_v6), NULL, 0, NI_NUMERICHOST);
    }
 
    if (str)
@@ -244,6 +246,7 @@ static void log_connection(const struct sockaddr_storage *their_addr, unsigned s
       char msg[512];
       snprintf(msg, sizeof(msg), "Got connection from: \"%s\" (#%u)", str, slot);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      SSNES_LOG("Got connection from: \"%s\" (#%u)\n", str, slot);
    }
 }
 
