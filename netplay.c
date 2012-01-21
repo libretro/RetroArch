@@ -115,6 +115,7 @@ struct netplay
    uint32_t frame_count;
    uint32_t read_frame_count;
    uint32_t other_frame_count;
+   uint32_t tmp_frame_count;
    struct addrinfo *addr;
    struct sockaddr_storage their_addr;
    bool has_client_addr;
@@ -970,15 +971,7 @@ static bool netplay_flip_port(netplay_t *handle, bool port)
    if (handle->flip_frame == 0)
       return port;
 
-   size_t frame = handle->frame_count;
-   if (handle->is_replay)
-   {
-      size_t self = PREV_PTR(handle->self_ptr);
-      if (self >= handle->tmp_ptr)
-         frame = frame + handle->tmp_ptr - self;
-      else
-         frame = frame + handle->tmp_ptr - (self + handle->buffer_size);
-   }
+   size_t frame = handle->is_replay ? handle->tmp_frame_count : handle->frame_count;
 
    return port ^ handle->flip ^ (frame < handle->flip_frame);
 }
@@ -1198,6 +1191,8 @@ static void netplay_post_frame_net(netplay_t *handle)
       // Replay frames
       handle->is_replay = true;
       handle->tmp_ptr = handle->other_ptr;
+      handle->tmp_frame_count = handle->other_frame_count;
+
       psnes_unserialize(handle->buffer[handle->other_ptr].state, handle->state_size);
       bool first = true;
       while (first || (handle->tmp_ptr != handle->self_ptr))
@@ -1211,8 +1206,10 @@ static void netplay_post_frame_net(netplay_t *handle)
          unlock_autosave();
 #endif
          handle->tmp_ptr = NEXT_PTR(handle->tmp_ptr);
+         handle->tmp_frame_count++;
          first = false;
       }
+
       handle->other_ptr = handle->read_ptr;
       handle->other_frame_count = handle->read_frame_count;
       handle->is_replay = false;
