@@ -242,6 +242,8 @@ static void ingame_menu(void)
 			{
 				ingame_menu_item = 0;
 				g_console.in_game_menu = false;
+				g_extern.video_active = true;
+				g_extern.audio_active = true;
 				mode_switch = MODE_EMULATION;
 			}
 
@@ -531,6 +533,7 @@ int main(int argc, char *argv[])
 begin_loop:
    if(mode_switch == MODE_EMULATION)
    {
+	input_ps3.poll(NULL);
    	while(ssnes_main_iterate());
 	if(g_console.in_game_menu)
 		ingame_menu();
@@ -556,7 +559,6 @@ begin_loop:
 
 		   int argc = sizeof(argv_) / sizeof(argv_[0]) - 1;
 		   int init_ret = ssnes_main_init(argc, argv_);
-		   printf("init_ret: %d\n", init_ret);
 		   if(init_ret)
 		   {
 			   mode_switch = MODE_MENU;
