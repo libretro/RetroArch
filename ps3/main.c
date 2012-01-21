@@ -496,6 +496,9 @@ int main(int argc, char *argv[])
    memset(&g_settings, 0, sizeof(g_settings));
    memset(&g_console, 0, sizeof(g_console));
 
+   g_console.block_config_read = true;
+   config_set_defaults();
+
    SSNES_LOG("Registering Callback\n");
    cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
 
