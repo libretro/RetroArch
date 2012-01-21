@@ -378,6 +378,7 @@ void ssnes_main_clear_state(void);
 int ssnes_main_init(int argc, char *argv[]);
 bool ssnes_main_iterate(void);
 void ssnes_main_deinit(void);
+void ssnes_render_cached_frame(void);
 
 extern struct settings g_settings;
 extern struct global g_extern;

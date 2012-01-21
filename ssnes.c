@@ -1973,6 +1973,11 @@ static void check_mute(void)
    old_pressed = pressed;
 }
 
+void ssnes_render_cached_frame(void)
+{
+   video_cached_frame();
+}
+
 static void do_state_checks(void)
 {
    check_screenshot();
@@ -2157,6 +2162,7 @@ bool ssnes_main_iterate(void)
    if (driver.input->key_pressed(driver.input_data, SSNES_QUIT_KEY) ||
          !driver.video->alive(driver.video_data))
       return false;
+   printf("Iterate reaches here\n");
 
    // Checks for stuff like fullscreen, save states, etc.
    do_state_checks();

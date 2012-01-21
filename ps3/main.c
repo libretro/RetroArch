@@ -232,6 +232,8 @@ static void ingame_menu(void)
 		const uint64_t button_was_pressed = old_state & (old_state ^ state);
 		const uint64_t button_was_held = old_state & state;
 		static uint64_t blocking = 0;
+		
+		ssnes_render_cached_frame();
 
 		if(g_frame_count < special_action_msg_expired && blocking)
 		{
@@ -531,8 +533,10 @@ int main(int argc, char *argv[])
 begin_loop:
    if(mode_switch == MODE_EMULATION)
    {
+	g_extern.is_paused = false;
 	input_ps3.poll(NULL);
    	while(ssnes_main_iterate());
+	g_extern.is_paused = true;
 	if(g_console.in_game_menu)
 		ingame_menu();
    }
