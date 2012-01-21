@@ -71,18 +71,29 @@ static int parse_short(const char *optstring, char * const *argv)
    if (!opt)
       return '?';
 
-   bool multiple_opt = argv[0][2];
+   bool extra_opt = argv[0][2];
    bool takes_arg = opt[1] == ':';
-   if (multiple_opt && takes_arg) // Makes little sense to allow.
-      return '?';
+
+   // If we take an argument, and we see additional characters,
+   // this is in fact the argument (i.e. -cfoo is same as -c foo).
+   bool embedded_arg = extra_opt && takes_arg;
 
    if (takes_arg)
    {
-      optarg = argv[1];
-      optind += 2;
+      if (embedded_arg)
+      {
+         optarg = argv[0] + 2;
+         optind++;
+      }
+      else
+      {
+         optarg = argv[1];
+         optind += 2;
+      }
+
       return optarg ? opt[0] : '?';
    }
-   else if (multiple_opt)
+   else if (embedded_arg) // If we see additional characters, and they don't take arguments, this means we have multiple flags in one.
    {
       memmove(&argv[0][1], &argv[0][2], strlen(&argv[0][2]) + 1);
       return opt[0];
