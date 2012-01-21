@@ -225,6 +225,8 @@ static void ingame_menu(void)
 	uint32_t menuitem_colors[MENU_ITEM_LAST];
 	char comment[256], msg_temp[256];
 
+	ps3_block_swap();
+
 	do
 	{
 		uint64_t state = cell_pad_input_poll_device(0);
@@ -481,6 +483,8 @@ static void ingame_menu(void)
 		old_state = state;
 		cellSysutilCheckCallback();
 	}while(g_console.in_game_menu);
+
+	ps3_unblock_swap();
 }
 
 // Temporary, a more sane implementation should go here.

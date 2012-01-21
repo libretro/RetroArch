@@ -93,6 +93,7 @@ typedef struct gl
    PSGLdevice* gl_device;
    PSGLcontext* gl_context;
    bool vsync;
+   bool block_swap;
    GLuint texture[TEXTURES];
    unsigned tex_index; // For use with PREV.
    struct gl_tex_info prev_info[TEXTURES];
@@ -723,7 +724,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       cellDbgFontDraw();
    }
 
-   psglSwap();
+   if(!gl->block_swap)
+      psglSwap();
    return true;
 }
 
@@ -1092,6 +1094,20 @@ const char * ps3_get_resolution_label(uint32_t resolution)
 		default:
 			return "Unknown";
 	}
+}
+
+void ps3_block_swap (void)
+{
+   gl_t *gl = g_gl;
+   gl->block_swap = true;
+   SSNES_LOG("Swap is set to blocked\n");
+}
+
+void ps3_unblock_swap (void)
+{
+   gl_t *gl = g_gl;
+   gl->block_swap = false;
+   SSNES_LOG("Swap is set to non-blocked\n");
 }
 
 // PS3 needs a working graphics stack before SSNES even starts.
