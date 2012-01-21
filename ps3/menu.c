@@ -1352,7 +1352,7 @@ void menu_loop(void)
 	menu_is_running = true;
 
 	menu_reinit_settings();
-
+	ssnes_render_cached_frame();
 
 	do
 	{
