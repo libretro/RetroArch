@@ -450,17 +450,17 @@ static uint32_t implementation_magic_value(void)
    return res;
 }
 
-static bool send_nickname(netplay_t *handle)
+static bool send_nickname(netplay_t *handle, int fd)
 {
    uint8_t nick_size = strlen(handle->nick);
 
-   if (!send_all(handle->fd, &nick_size, sizeof(nick_size)))
+   if (!send_all(fd, &nick_size, sizeof(nick_size)))
    {
       SSNES_ERR("Failed to send nick size.\n");
       return false;
    }
 
-   if (!send_all(handle->fd, handle->nick, nick_size))
+   if (!send_all(fd, handle->nick, nick_size))
    {
       SSNES_ERR("Failed to send nick.\n");
       return false;
@@ -469,11 +469,11 @@ static bool send_nickname(netplay_t *handle)
    return true;
 }
 
-static bool get_nickname(netplay_t *handle)
+static bool get_nickname(netplay_t *handle, int fd)
 {
    uint8_t nick_size;
 
-   if (!recv_all(handle->fd, &nick_size, sizeof(nick_size)))
+   if (!recv_all(fd, &nick_size, sizeof(nick_size)))
    {
       SSNES_ERR("Failed to receive nick size from host.\n");
       return false;
@@ -485,7 +485,7 @@ static bool get_nickname(netplay_t *handle)
       return false;
    }
 
-   if (!recv_all(handle->fd, handle->other_nick, nick_size))
+   if (!recv_all(fd, handle->other_nick, nick_size))
    {
       SSNES_ERR("Failed to receive nick.\n");
       return false;
@@ -505,7 +505,7 @@ static bool send_info(netplay_t *handle)
    if (!send_all(handle->fd, header, sizeof(header)))
       return false;
 
-   if (!send_nickname(handle))
+   if (!send_nickname(handle, handle->fd))
    {
       SSNES_ERR("Failed to send nick to host.\n");
       return false;
@@ -521,7 +521,7 @@ static bool send_info(netplay_t *handle)
       return false;
    }
 
-   if (!get_nickname(handle))
+   if (!get_nickname(handle, handle->fd))
    {
       SSNES_ERR("Failed to receive nick from host.\n");
       return false;
@@ -563,7 +563,7 @@ static bool get_info(netplay_t *handle)
       return false;
    }
 
-   if (!get_nickname(handle))
+   if (!get_nickname(handle, handle->fd))
    {
       SSNES_ERR("Failed to get nickname from client.\n");
       return false;
@@ -578,7 +578,7 @@ static bool get_info(netplay_t *handle)
       return false;
    }
 
-   if (!send_nickname(handle))
+   if (!send_nickname(handle, handle->fd))
    {
       SSNES_ERR("Failed to send nickname to client.\n");
       return false;
@@ -591,6 +591,23 @@ static bool get_info(netplay_t *handle)
 
 static bool get_info_spectate(netplay_t *handle)
 {
+   if (!send_nickname(handle, handle->fd))
+   {
+      SSNES_ERR("Failed to send nickname to host!\n");
+      return false;
+   }
+
+   if (!get_nickname(handle, handle->fd))
+   {
+      SSNES_ERR("Failed to receive nickname from host!\n");
+      return false;
+   }
+
+   char msg[512];
+   snprintf(msg, sizeof(msg), "Connected to \"%s\"", handle->other_nick);
+   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   SSNES_LOG("%s\n", msg);
+
    uint32_t header[4];
 
    if (!recv_all(handle->fd, header, sizeof(header)))
@@ -1229,6 +1246,20 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
    // No vacant client streams :(
    if (index == -1)
    {
+      close(new_fd);
+      return;
+   }
+
+   if (!get_nickname(handle, new_fd))
+   {
+      SSNES_ERR("Failed to get nickname from client!\n");
+      close(new_fd);
+      return;
+   }
+
+   if (!send_nickname(handle, new_fd))
+   {
+      SSNES_ERR("Failed to send nickname to client!\n");
       close(new_fd);
       return;
    }
