@@ -487,7 +487,6 @@ static void ingame_menu(void)
 	ps3_unblock_swap();
 }
 
-// Temporary, a more sane implementation should go here.
 int main(int argc, char *argv[])
 {
    // Initialize 6 SPUs but reserve 1 SPU as a raw SPU for PSGL
@@ -496,9 +495,7 @@ int main(int argc, char *argv[])
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
    cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_GAME);
 
-   memset(&g_extern, 0, sizeof(g_extern));
-   memset(&g_settings, 0, sizeof(g_settings));
-   memset(&g_console, 0, sizeof(g_console));
+   ssnes_main_clear_state();
 
    g_console.block_config_read = true;
    config_set_defaults();

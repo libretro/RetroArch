@@ -2058,6 +2058,9 @@ void ssnes_main_clear_state(void)
 {
    memset(&g_settings, 0, sizeof(g_settings));
    memset(&g_extern, 0, sizeof(g_extern));
+#ifdef SSNES_CONSOLE
+   memset(&g_console, 0, sizeof(g_console));
+#endif
    init_state();
 }
 
