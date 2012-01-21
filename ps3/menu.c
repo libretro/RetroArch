@@ -1278,7 +1278,8 @@ static void select_rom(void)
 			snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 
 			menu_is_running = 0;
-			snprintf(g_extern.system.fullpath, sizeof(g_extern.system.fullpath), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+			memset(&g_extern, 0, sizeof(g_extern));
+			snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 			init_ssnes = 1;
 			mode_switch = MODE_EMULATION;
 

@@ -180,8 +180,8 @@ struct console_settings
    uint32_t current_resolution_id;
    uint32_t initial_resolution_id;
    bool screenshots_enable;
-
    bool in_game_menu;
+   char rom_path[PATH_MAX];
 };
 #endif
 

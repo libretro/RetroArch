@@ -42,6 +42,7 @@
 #elif defined(_XBOX)
 #include <xtl.h>
 #define setmode _setmode
+#define INVALID_FILE_ATTRIBUTES -1
 #else
 #include <sys/types.h>
 #include <sys/stat.h>

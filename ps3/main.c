@@ -242,8 +242,6 @@ static void ingame_menu(void)
 			{
 				ingame_menu_item = 0;
 				g_console.in_game_menu = false;
-				g_extern.video_active = true;
-				g_extern.audio_active = true;
 				mode_switch = MODE_EMULATION;
 			}
 
@@ -549,7 +547,7 @@ begin_loop:
 		   char arg1[] = "ssnes";
 		   char arg2[PATH_MAX];
 
-		   snprintf(arg2, sizeof(arg2), g_extern.system.fullpath);
+		   snprintf(arg2, sizeof(arg2), g_console.rom_path);
 		   char arg3[] = "-v";
 		   char arg4[] = "-c";
 		   char arg5[MAX_PATH_LENGTH];
@@ -559,11 +557,6 @@ begin_loop:
 
 		   int argc = sizeof(argv_) / sizeof(argv_[0]) - 1;
 		   int init_ret = ssnes_main_init(argc, argv_);
-		   if(init_ret)
-		   {
-			   mode_switch = MODE_MENU;
-			   ssnes_main_deinit();
-		   }
 		   g_emulator_initialized = 1;
 		   init_ssnes = 0;
 	   }
