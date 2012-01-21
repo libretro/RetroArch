@@ -1970,6 +1970,18 @@ static void check_mute(void)
    old_pressed = pressed;
 }
 
+#ifdef HAVE_NETPLAY
+static void check_netplay_flip(void)
+{
+   static bool old_pressed = false;
+   bool pressed = driver.input->key_pressed(driver.input_data, SSNES_NETPLAY_FLIP);
+   if (pressed && !old_pressed)
+      netplay_flip_players(g_extern.netplay);
+
+   old_pressed = pressed;
+}
+#endif
+
 static void do_state_checks(void)
 {
    check_screenshot();
@@ -2017,7 +2029,10 @@ static void do_state_checks(void)
 #ifdef HAVE_NETPLAY
    }
    else
+   {
+      check_netplay_flip();
       check_fullscreen();
+   }
 #endif
 
 #ifdef HAVE_DYLIB

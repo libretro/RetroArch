@@ -902,6 +902,9 @@ static bool netplay_get_cmd(netplay_t *handle)
          handle->flip ^= true;
          handle->flip_frame = flip_frame;
 
+         SSNES_LOG("Netplay players are flipped!\n");
+         msg_queue_push(g_extern.msg_queue, "Netplay players are flipped!", 1, 180);
+
          return netplay_cmd_ack(handle);
       }
 
@@ -939,6 +942,9 @@ void netplay_flip_players(netplay_t *handle)
    if (netplay_send_cmd(handle, NETPLAY_CMD_FLIP_PLAYERS, &flip_frame_net, sizeof(flip_frame_net))
          && netplay_get_response(handle))
    {
+      SSNES_LOG("Netplay players are flipped!\n");
+      msg_queue_push(g_extern.msg_queue, "Netplay players are flipped!", 1, 180);
+
       // Queue up a flip well enough in the future.
       handle->flip ^= true;
       handle->flip_frame = flip_frame;
