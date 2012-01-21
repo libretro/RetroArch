@@ -18,6 +18,8 @@
 #include <xtl.h>
 
 #include "../driver.h"
+
+#include "xdk360_video.h"
 #include "../general.h"
 
 #ifdef HAVE_CONFIG_H
@@ -65,6 +67,8 @@ typedef struct DrawVerticeFormats
 } DrawVerticeFormats;
 
 static bool g_quitting;
+unsigned g_frame_count;
+void *g_d3d;
 
 typedef struct xdk360_video
 {
@@ -75,12 +79,14 @@ typedef struct xdk360_video
    IDirect3DVertexDeclaration9* pVertexDecl;
    IDirect3DVertexBuffer9* vertex_buf;
    IDirect3DTexture9* lpTexture;
-   unsigned frame_count;
    unsigned last_width, last_height;
 } xdk360_video_t;
 
-static void xdk360_gfx_free(void *data)
+static void xdk360_gfx_free(void * data)
 {
+   if (g_d3d)
+	   return;
+
    xdk360_video_t *vid = (xdk360_video_t*)data;
    if (!vid)
       return;
@@ -98,6 +104,9 @@ static void xdk360_gfx_free(void *data)
 
 static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+	if (g_d3d)
+		return g_d3d;
+
    xdk360_video_t *vid = (xdk360_video_t*)calloc(1, sizeof(xdk360_video_t));
    if (!vid)
       return NULL;
@@ -211,7 +220,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    xdk360_video_t *vid = (xdk360_video_t*)data;
-   vid->frame_count++;
+   g_frame_count++;
 
    vid->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
          0xff000000, 1.0f, 0);
@@ -289,6 +298,29 @@ static bool xdk360_gfx_focus(void *data)
 {
    (void)data;
    return true;
+}
+
+// 360 needs a working graphics stack before SSNESeven starts.
+// To deal with this main.c,
+// the top level module owns the instance, and is created beforehand.
+// When SSNES gets around to init it, it is already allocated.
+// When SSNES wants to free it, it is ignored.
+void xdk360_video_init(void)
+{
+	video_info_t video_info = {0};
+	// Might have to supply correct values here.
+	video_info.vsync = true;
+	video_info.force_aspect = false;
+	video_info.smooth = true;
+	video_info.input_scale = 2;
+	g_d3d = xdk360_gfx_init(&video_info, NULL, NULL);
+}
+
+void xdk360_video_deinit(void)
+{
+	void *data = g_d3d;
+	g_d3d = NULL;
+	xdk360_gfx_free(data);
 }
 
 const video_driver_t video_xdk360 = {

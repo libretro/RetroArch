@@ -16,34 +16,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <xtl.h>
-#include <xui.h>
-#include <xuiapp.h>
-#include <stddef.h>
-#include <xbdm.h>
-#include "xdk360_video.h"
+#ifndef _XDK360_VIDEO_H
+#define _XDK360_VIDEO_H
 
-int ssnes_main(int argc, char *argv[]);
+void xdk360_video_init(void);
+void xdk360_video_deinit(void);
 
-#undef main
-// Temporary, a more sane implementation should go here.
+extern void *g_d3d;
 
-int main(int argc, char *argv[])
-{
-	//for devits only, we will need to mount all partitions for retail
-	//in a different way
-	DmMapDevkitDrive();
-
-	xdk360_video_init();
-
-   char arg1[] = "ssnes";
-   char arg2[] = "e:\\roms\\mario.sfc";
-   char arg3[] = "-v";
-   char arg4[] = "-c";
-   char arg5[] = "e:\\roms\\ssnes.cfg";
-   char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
-   return ssnes_main(sizeof(argv_) / sizeof(argv_[0]) - 1, argv_);
-
-   	xdk360_video_deinit();
-}
-
+#endif
