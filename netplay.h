@@ -43,7 +43,8 @@ struct snes_callbacks
 // Creates a new netplay handle. A NULL host means we're hosting (player 1). :)
 netplay_t *netplay_new(const char *server,
       uint16_t port, unsigned frames,
-      const struct snes_callbacks *cb, bool spectate);
+      const struct snes_callbacks *cb, bool spectate,
+      const char *nick);
 void netplay_free(netplay_t *handle);
 
 // On regular netplay, flip who controls player 1 and 2.
