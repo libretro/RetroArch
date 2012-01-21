@@ -225,6 +225,8 @@ static void ingame_menu(void)
 	uint32_t menuitem_colors[MENU_ITEM_LAST];
 	char comment[256], msg_temp[256];
 
+	ps3_block_swap();
+
 	do
 	{
 		uint64_t state = cell_pad_input_poll_device(0);
@@ -481,9 +483,10 @@ static void ingame_menu(void)
 		old_state = state;
 		cellSysutilCheckCallback();
 	}while(g_console.in_game_menu);
+
+	ps3_unblock_swap();
 }
 
-// Temporary, a more sane implementation should go here.
 int main(int argc, char *argv[])
 {
    // Initialize 6 SPUs but reserve 1 SPU as a raw SPU for PSGL
@@ -492,9 +495,10 @@ int main(int argc, char *argv[])
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
    cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_GAME);
 
-   memset(&g_extern, 0, sizeof(g_extern));
-   memset(&g_settings, 0, sizeof(g_settings));
-   memset(&g_console, 0, sizeof(g_console));
+   ssnes_main_clear_state();
+
+   g_console.block_config_read = true;
+   config_set_defaults();
 
    SSNES_LOG("Registering Callback\n");
    cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
