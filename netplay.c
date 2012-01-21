@@ -54,6 +54,9 @@ static bool netplay_can_poll(netplay_t *handle);
 static const struct snes_callbacks* netplay_callbacks(netplay_t *handle);
 static void netplay_set_spectate_input(netplay_t *handle, int16_t input);
 
+static bool netplay_send_cmd(netplay_t *handle, uint32_t cmd, const void *data, size_t size);
+static bool netplay_get_cmd(netplay_t *handle);
+
 #ifdef _WIN32
 // Woohoo, Winsock has headers from the STONE AGE! :D
 #define close(x) closesocket(x)
@@ -83,12 +86,16 @@ struct delta_frame
 #define UDP_FRAME_PACKETS 16
 #define MAX_SPECTATORS 16
 
+#define NETPLAY_CMD_ACK 0
+#define NETPLAY_CMD_NAK 1
+#define NETPLAY_CMD_FLIP_PLAYERS 2
+
 struct netplay
 {
    struct snes_callbacks cbs;
-   int fd; // TCP connection for state sending, etc. Could perhaps be used for messaging later on. :)
+   int fd; // TCP connection for state sending, etc. Also used for commands.
    int udp_fd; // UDP connection for game state updates.
-   unsigned port; // Which port is governed by netplay?
+   unsigned port; // Which port is governed by netplay (other player)?
    bool has_connection;
 
    struct delta_frame *buffer;
@@ -101,13 +108,14 @@ struct netplay
 
    size_t state_size;
 
-   size_t is_replay; // Are we replaying old frames?
+   bool is_replay; // Are we replaying old frames?
    bool can_poll; // We don't want to poll several times on a frame.
 
    uint32_t packet_buffer[UDP_FRAME_PACKETS * 2]; // To compat UDP packet loss we also send old data along with the packets.
    uint32_t frame_count;
    uint32_t read_frame_count;
    uint32_t other_frame_count;
+   uint32_t tmp_frame_count;
    struct addrinfo *addr;
    struct sockaddr_storage their_addr;
    bool has_client_addr;
@@ -121,7 +129,47 @@ struct netplay
    uint16_t *spectate_input;
    size_t spectate_input_ptr;
    size_t spectate_input_size;
+
+   // Player flipping
+   // Flipping state. If ptr >= flip_frame, we apply the flip.
+   // If not, we apply the opposite, effectively creating a trigger point.
+   // To avoid collition we need to make sure our client/host is synced up well after flip_frame
+   // before allowing another flip.
+   bool flip;
+   uint32_t flip_frame;
 };
+
+static bool send_all(int fd, const void *data_, size_t size)
+{
+   const uint8_t *data = (const uint8_t*)data_;
+   while (size)
+   {
+      ssize_t ret = send(fd, CONST_CAST data, size, 0);
+      if (ret <= 0)
+         return false;
+
+      data += ret;
+      size -= ret;
+   }
+
+   return true;
+}
+
+static bool recv_all(int fd, void *data_, size_t size)
+{
+   uint8_t *data = (uint8_t*)data_;
+   while (size)
+   {
+      ssize_t ret = recv(fd, NONCONST_CAST data, size, 0);
+      if (ret <= 0)
+         return false;
+
+      data += ret;
+      size -= ret;
+   }
+
+   return true;
+}
 
 static void warn_hangup(void)
 {
@@ -156,6 +204,7 @@ int16_t input_state_net(bool port, unsigned device, unsigned index, unsigned id)
       return netplay_callbacks(g_extern.netplay)->state_cb(port, device, index, id);
 }
 
+// Custom inet_ntop. Win32 doesn't seem to support this ...
 static void log_connection(const struct sockaddr_storage *their_addr, unsigned slot)
 {
    union
@@ -167,29 +216,30 @@ static void log_connection(const struct sockaddr_storage *their_addr, unsigned s
    u.storage = their_addr;
 
    const char *str = NULL;
+   char buf_v4[INET_ADDRSTRLEN] = {0};
+   char buf_v6[INET6_ADDRSTRLEN] = {0};
+
    if (their_addr->ss_family == AF_INET)
    {
-      char buf[INET_ADDRSTRLEN] = {0};
-      str = buf;
+      str = buf_v4;
       struct sockaddr_in in;
       memset(&in, 0, sizeof(in));
       in.sin_family = AF_INET;
       memcpy(&in.sin_addr, &u.v4->sin_addr, sizeof(struct in_addr));
 
-      getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in), buf, sizeof(buf),
+      getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in), buf_v4, sizeof(buf_v4),
             NULL, 0, NI_NUMERICHOST);
    }
    else if (their_addr->ss_family == AF_INET6)
    {
-      char buf[INET6_ADDRSTRLEN] = {0};
-      str = buf;
+      str = buf_v6;
       struct sockaddr_in6 in;
       memset(&in, 0, sizeof(in));
       in.sin6_family = AF_INET6;
       memcpy(&in.sin6_addr, &u.v6->sin6_addr, sizeof(struct in6_addr));
 
       getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in6),
-            buf, sizeof(buf), NULL, 0, NI_NUMERICHOST);
+            buf_v6, sizeof(buf_v6), NULL, 0, NI_NUMERICHOST);
    }
 
    if (str)
@@ -197,6 +247,7 @@ static void log_connection(const struct sockaddr_storage *their_addr, unsigned s
       char msg[512];
       snprintf(msg, sizeof(msg), "Got connection from: \"%s\" (#%u)", str, slot);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      SSNES_LOG("Got connection from: \"%s\" (#%u)\n", str, slot);
    }
 }
 
@@ -391,22 +442,17 @@ static uint32_t implementation_magic_value(void)
 static bool send_info(netplay_t *handle)
 {
    uint32_t header[3] = { htonl(g_extern.cart_crc), htonl(implementation_magic_value()), htonl(psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM)) };
-   if (send(handle->fd, CONST_CAST header, sizeof(header), 0) != sizeof(header))
+   if (!send_all(handle->fd, header, sizeof(header)))
       return false;
 
    // Get SRAM data from Player 1 :)
    uint8_t *sram = psnes_get_memory_data(SNES_MEMORY_CARTRIDGE_RAM);
    unsigned sram_size = psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM);
-   while (sram_size > 0)
+
+   if (!recv_all(handle->fd, sram, sram_size))
    {
-      ssize_t ret = recv(handle->fd, NONCONST_CAST sram, sram_size, 0);
-      if (ret <= 0)
-      {
-         SSNES_ERR("Failed to receive SRAM data from host.\n");
-         return false;
-      }
-      sram += ret;
-      sram_size -= ret;
+      SSNES_ERR("Failed to receive SRAM data from host.\n");
+      return false;
    }
 
    return true;
@@ -415,7 +461,7 @@ static bool send_info(netplay_t *handle)
 static bool get_info(netplay_t *handle)
 {
    uint32_t header[3];
-   if (recv(handle->fd, NONCONST_CAST header, sizeof(header), 0) != sizeof(header))
+   if (!recv_all(handle->fd, header, sizeof(header)))
    {
       SSNES_ERR("Failed to receive header from client.\n");
       return false;
@@ -439,16 +485,10 @@ static bool get_info(netplay_t *handle)
    // Send SRAM data to our Player 2 :)
    const uint8_t *sram = psnes_get_memory_data(SNES_MEMORY_CARTRIDGE_RAM);
    unsigned sram_size = psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM);
-   while (sram_size)
+   if (!send_all(handle->fd, sram, sram_size))
    {
-      ssize_t ret = send(handle->fd, CONST_CAST sram, sram_size, 0);
-      if (ret <= 0)
-      {
-         SSNES_ERR("Failed to send SRAM data to client.\n");
-         return false;
-      }
-      sram += ret;
-      sram_size -= ret;
+      SSNES_ERR("Failed to send SRAM data to client.\n");
+      return false;
    }
 
    return true;
@@ -457,7 +497,7 @@ static bool get_info(netplay_t *handle)
 static bool get_info_spectate(netplay_t *handle)
 {
    uint32_t header[4];
-   if (recv(handle->fd, NONCONST_CAST header, sizeof(header), 0) != (ssize_t)sizeof(header))
+   if (recv_all(handle->fd, header, sizeof(header)))
    {
       SSNES_ERR("Cannot get header from host!\n");
       return false;
@@ -476,18 +516,12 @@ static bool get_info_spectate(netplay_t *handle)
 
    size_t size = save_state_size;
    uint8_t *tmp_buf = buf;
-   while (size)
-   {
-      ssize_t ret = recv(handle->fd, NONCONST_CAST tmp_buf, size, 0);
-      if (ret <= 0)
-      {
-         SSNES_ERR("Failed to receive save state from host!\n");
-         free(tmp_buf);
-         return false;
-      }
 
-      size -= ret;
-      tmp_buf += ret;
+   if (!recv_all(handle->fd, tmp_buf, size))
+   {
+      SSNES_ERR("Failed to receive save state from host!\n");
+      free(tmp_buf);
+      return false;
    }
 
    bool ret = true;
@@ -630,9 +664,9 @@ static int poll_input(netplay_t *handle, bool block)
       if (select(max_fd, &fds, NULL, NULL, &tmp_tv) < 0)
          return -1;
 
-      // Somewhat hacky, but we aren't using the TCP connection for anything useful atm.
-      // Will probably add some proper messaging system here later.
-      if (FD_ISSET(handle->fd, &fds))
+      // Somewhat hacky,
+      // but we aren't using the TCP connection for anything useful atm.
+      if (FD_ISSET(handle->fd, &fds) && !netplay_get_cmd(handle))
          return -1; 
 
       if (FD_ISSET(handle->udp_fd, &fds))
@@ -666,14 +700,16 @@ static bool get_self_input_state(netplay_t *handle)
    if (handle->frame_count > 0) // First frame we always give zero input since relying on input from first frame screws up when we use -F 0.
    {
       snes_input_state_t cb = handle->cbs.state_cb;
-      for (unsigned i = 0; i <= 11; i++)
+      for (unsigned i = 0; i < SSNES_FIRST_META_KEY; i++)
       {
-         int16_t tmp = cb(g_settings.input.netplay_client_swap_input ? 0 : !handle->port, SNES_DEVICE_JOYPAD, 0, i);
+         int16_t tmp = cb(g_settings.input.netplay_client_swap_input ? 0 : !handle->port,
+               SNES_DEVICE_JOYPAD, 0, i);
          state |= tmp ? 1 << i : 0;
       }
    }
 
-   memmove(handle->packet_buffer, handle->packet_buffer + 2, sizeof (handle->packet_buffer) - 2 * sizeof(uint32_t));
+   memmove(handle->packet_buffer, handle->packet_buffer + 2,
+         sizeof (handle->packet_buffer) - 2 * sizeof(uint32_t));
    handle->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2] = htonl(handle->frame_count); 
    handle->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2 + 1] = htonl(state);
 
@@ -797,15 +833,155 @@ static bool netplay_poll(netplay_t *handle)
    return true;
 }
 
+static bool netplay_send_cmd(netplay_t *handle, uint32_t cmd, const void *data, size_t size)
+{
+   cmd = (cmd << 16) | (size & 0xffff);
+   cmd = htonl(cmd);
+
+   if (!send_all(handle->fd, &cmd, sizeof(cmd)))
+      return false;
+
+   if (!send_all(handle->fd, data, size))
+      return false;
+
+   return true;
+}
+
+static bool netplay_cmd_ack(netplay_t *handle)
+{
+   uint32_t cmd = htonl(NETPLAY_CMD_ACK);
+   return send_all(handle->fd, &cmd, sizeof(cmd));
+}
+
+static bool netplay_cmd_nak(netplay_t *handle)
+{
+   uint32_t cmd = htonl(NETPLAY_CMD_NAK);
+   return send_all(handle->fd, &cmd, sizeof(cmd));
+}
+
+static bool netplay_get_response(netplay_t *handle)
+{
+   uint32_t response;
+   if (!recv_all(handle->fd, &response, sizeof(response)))
+      return false;
+
+   return ntohl(response) == NETPLAY_CMD_ACK;
+}
+
+static bool netplay_get_cmd(netplay_t *handle)
+{
+   uint32_t cmd;
+   if (!recv_all(handle->fd, &cmd, sizeof(cmd)))
+      return false;
+
+   cmd = ntohl(cmd);
+
+   size_t cmd_size = cmd & 0xffff;
+   cmd = cmd >> 16;
+
+   switch (cmd)
+   {
+      case NETPLAY_CMD_FLIP_PLAYERS:
+      {
+         if (cmd_size != sizeof(uint32_t))
+         {
+            SSNES_ERR("CMD_FLIP_PLAYERS has unexpected command size!\n");
+            return netplay_cmd_nak(handle);
+         }
+
+         uint32_t flip_frame;
+         if (!recv_all(handle->fd, &flip_frame, sizeof(flip_frame)))
+         {
+            SSNES_ERR("Failed to receive CMD_FLIP_PLAYERS argument!\n");
+            return netplay_cmd_nak(handle);
+         }
+
+         flip_frame = ntohl(flip_frame);
+         if (flip_frame < handle->flip_frame)
+         {
+            SSNES_ERR("Host asked us to flip players in the past. Not possible ...\n");
+            return netplay_cmd_nak(handle);
+         }
+
+         handle->flip ^= true;
+         handle->flip_frame = flip_frame;
+
+         SSNES_LOG("Netplay players are flipped!\n");
+         msg_queue_push(g_extern.msg_queue, "Netplay players are flipped!", 1, 180);
+
+         return netplay_cmd_ack(handle);
+      }
+
+      default:
+         SSNES_ERR("Unknown netplay command received!\n");
+         return netplay_cmd_nak(handle);
+   }
+}
+
+void netplay_flip_players(netplay_t *handle)
+{
+   uint32_t flip_frame = handle->frame_count + 2 * UDP_FRAME_PACKETS;
+   uint32_t flip_frame_net = htonl(flip_frame);
+   const char *msg = NULL;
+
+   if (handle->spectate)
+   {
+      msg = "Cannot flip players in spectate mode!";
+      goto error;
+   }
+
+   if (handle->port == 0)
+   {
+      msg = "Cannot flip players if you're not the host!";
+      goto error;
+   }
+
+   // Make sure both clients are definitely synced up.
+   if (handle->frame_count < (handle->flip_frame + 2 * UDP_FRAME_PACKETS))
+   {
+      msg = "Cannot flip players yet! Wait a second or two before attempting flip.";
+      goto error;
+   }
+
+   if (netplay_send_cmd(handle, NETPLAY_CMD_FLIP_PLAYERS, &flip_frame_net, sizeof(flip_frame_net))
+         && netplay_get_response(handle))
+   {
+      SSNES_LOG("Netplay players are flipped!\n");
+      msg_queue_push(g_extern.msg_queue, "Netplay players are flipped!", 1, 180);
+
+      // Queue up a flip well enough in the future.
+      handle->flip ^= true;
+      handle->flip_frame = flip_frame;
+   }
+   else
+   {
+      msg = "Failed to flip players!";
+      goto error;
+   }
+
+   return;
+
+error:
+   SSNES_WARN("%s\n", msg);
+   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+}
+
+static bool netplay_flip_port(netplay_t *handle, bool port)
+{
+   if (handle->flip_frame == 0)
+      return port;
+
+   size_t frame = handle->is_replay ? handle->tmp_frame_count : handle->frame_count;
+
+   return port ^ handle->flip ^ (frame < handle->flip_frame);
+}
+
 int16_t netplay_input_state(netplay_t *handle, bool port, unsigned device, unsigned index, unsigned id)
 {
    uint16_t input_state = 0;
-   size_t ptr = 0;
+   size_t ptr = handle->is_replay ? handle->tmp_ptr : PREV_PTR(handle->self_ptr);
 
-   if (handle->is_replay)
-      ptr = handle->tmp_ptr;
-   else
-      ptr = PREV_PTR(handle->self_ptr);
+   port = netplay_flip_port(handle, port);
 
    if ((port ? 1 : 0) == handle->port)
    {
@@ -897,7 +1073,7 @@ int16_t input_state_spectate(bool port, unsigned device, unsigned index, unsigne
 static int16_t netplay_get_spectate_input(netplay_t *handle, bool port, unsigned device, unsigned index, unsigned id)
 {
    int16_t inp;
-   if (recv(handle->fd, NONCONST_CAST &inp, sizeof(inp), 0) == (ssize_t)sizeof(inp))
+   if (recv_all(handle->fd, NONCONST_CAST &inp, sizeof(inp)))
       return swap_if_big16(inp);
    else
    {
@@ -970,19 +1146,12 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
    setsockopt(new_fd, SOL_SOCKET, SO_SNDBUF, CONST_CAST &bufsize, sizeof(int));
 
    const uint8_t *tmp_header = header;
-   while (header_size)
+   if (!send_all(new_fd, tmp_header, header_size))
    {
-      ssize_t ret = send(new_fd, CONST_CAST tmp_header, header_size, 0);
-      if (ret <= 0)
-      {
-         SSNES_ERR("Failed to send header to client!\n");
-         close(new_fd);
-         free(header);
-         return;
-      }
-
-      header_size -= ret;
-      tmp_header += ret; 
+      SSNES_ERR("Failed to send header to client!\n");
+      close(new_fd);
+      free(header);
+      return;
    }
 
    free(header);
@@ -1022,6 +1191,8 @@ static void netplay_post_frame_net(netplay_t *handle)
       // Replay frames
       handle->is_replay = true;
       handle->tmp_ptr = handle->other_ptr;
+      handle->tmp_frame_count = handle->other_frame_count;
+
       psnes_unserialize(handle->buffer[handle->other_ptr].state, handle->state_size);
       bool first = true;
       while (first || (handle->tmp_ptr != handle->self_ptr))
@@ -1035,8 +1206,10 @@ static void netplay_post_frame_net(netplay_t *handle)
          unlock_autosave();
 #endif
          handle->tmp_ptr = NEXT_PTR(handle->tmp_ptr);
+         handle->tmp_frame_count++;
          first = false;
       }
+
       handle->other_ptr = handle->read_ptr;
       handle->other_frame_count = handle->read_frame_count;
       handle->is_replay = false;
@@ -1053,26 +1226,18 @@ static void netplay_post_frame_spectate(netplay_t *handle)
       if (handle->spectate_fds[i] == -1)
          continue;
 
-      size_t send_size = handle->spectate_input_ptr * sizeof(int16_t);
-      const uint8_t *tmp_buf = (const uint8_t*)handle->spectate_input;
-      while (send_size)
+      if (!send_all(handle->spectate_fds[i],
+               handle->spectate_input, handle->spectate_input_ptr * sizeof(int16_t)))
       {
-         ssize_t ret = send(handle->spectate_fds[i], CONST_CAST tmp_buf, send_size, 0);
-         if (ret <= 0)
-         {
-            SSNES_LOG("Client (#%u) disconnected ...\n", i);
+         SSNES_LOG("Client (#%u) disconnected ...\n", i);
 
-            char msg[512];
-            snprintf(msg, sizeof(msg), "Client (#%u) disconnected!", i);
-            msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+         char msg[512];
+         snprintf(msg, sizeof(msg), "Client (#%u) disconnected!", i);
+         msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
-            close(handle->spectate_fds[i]);
-            handle->spectate_fds[i] = -1;
-            break;
-         }
-
-         tmp_buf += ret;
-         send_size -= ret;
+         close(handle->spectate_fds[i]);
+         handle->spectate_fds[i] = -1;
+         break;
       }
    }
 

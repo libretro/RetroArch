@@ -103,6 +103,7 @@ static struct bind binds[] = {
    MISC_BIND("Screenshot", screenshot)
    MISC_BIND("DSP config", dsp_config)
    MISC_BIND("Audio mute/unmute", audio_mute)
+   MISC_BIND("Netplay player flip", netplay_flip_players)
 };
 
 static void get_binds(config_file_t *conf, int player, int joypad)

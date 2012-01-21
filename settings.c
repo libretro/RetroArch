@@ -555,6 +555,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS] = {
       DECLARE_BIND(screenshot,            SSNES_SCREENSHOT),
       DECLARE_BIND(dsp_config,            SSNES_DSP_CONFIG),
       DECLARE_BIND(audio_mute,            SSNES_MUTE),
+      DECLARE_BIND(netplay_flip_players,  SSNES_NETPLAY_FLIP),
       DECLARE_BIND_END(),
    },
 

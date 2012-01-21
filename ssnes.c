@@ -95,7 +95,6 @@ static inline unsigned lines_to_pitch(unsigned height)
       return g_extern.system.pitch;
 }
 
-static void video_cached_frame(void);
 static void take_screenshot(void)
 {
    if (!(*g_settings.screenshot_directory))
@@ -130,7 +129,7 @@ static void take_screenshot(void)
    if (g_extern.is_paused)
    {
       msg_queue_push(g_extern.msg_queue, msg, 1, 1);
-      video_cached_frame();
+      ssnes_render_cached_frame();
    }
    else
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
@@ -222,7 +221,7 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    g_extern.frame_cache.height = height;
 }
 
-static void video_cached_frame(void)
+void ssnes_render_cached_frame(void)
 {
 #ifdef HAVE_FFMPEG
    // Cannot allow FFmpeg recording when pushing duped frames.
@@ -235,8 +234,6 @@ static void video_cached_frame(void)
    // It would be really stupid at any rate ...
    if (g_extern.frame_cache.data)
    {
-      // Push the pipeline through. A hack sort of.
-      SSNES_LOG("Pushing cached frame.\n");
       video_frame(g_extern.frame_cache.data,
             g_extern.frame_cache.width,
             g_extern.frame_cache.height);
@@ -1973,10 +1970,17 @@ static void check_mute(void)
    old_pressed = pressed;
 }
 
-void ssnes_render_cached_frame(void)
+#ifdef HAVE_NETPLAY
+static void check_netplay_flip(void)
 {
-   video_cached_frame();
+   static bool old_pressed = false;
+   bool pressed = driver.input->key_pressed(driver.input_data, SSNES_NETPLAY_FLIP);
+   if (pressed && !old_pressed)
+      netplay_flip_players(g_extern.netplay);
+
+   old_pressed = pressed;
 }
+#endif
 
 static void do_state_checks(void)
 {
@@ -1991,7 +1995,7 @@ static void do_state_checks(void)
       check_oneshot();
 
       if (check_fullscreen() && g_extern.is_paused)
-         video_cached_frame();
+         ssnes_render_cached_frame();
 
       if (g_extern.is_paused && !g_extern.is_oneshot)
          return;
@@ -2025,7 +2029,10 @@ static void do_state_checks(void)
 #ifdef HAVE_NETPLAY
    }
    else
+   {
+      check_netplay_flip();
       check_fullscreen();
+   }
 #endif
 
 #ifdef HAVE_DYLIB
