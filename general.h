@@ -333,6 +333,7 @@ struct global
    bool netplay_is_spectate;
    unsigned netplay_sync_frames;
    uint16_t netplay_port;
+   char netplay_nick[32];
 #endif
 
    // FFmpeg record.

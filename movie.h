@@ -30,8 +30,8 @@ enum ssnes_movie_type
    SSNES_MOVIE_RECORD
 };
 
-uint8_t *bsv_header_generate(size_t *size);
-bool bsv_parse_header(const uint32_t *header);
+uint32_t *bsv_header_generate(size_t *size, uint32_t magic);
+bool bsv_parse_header(const uint32_t *header, uint32_t magic);
 
 bsv_movie_t *bsv_movie_init(const char *path, enum ssnes_movie_type type);
 

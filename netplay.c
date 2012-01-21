@@ -92,6 +92,10 @@ struct delta_frame
 
 struct netplay
 {
+   char nick[32];
+   char other_nick[32];
+   struct sockaddr_storage other_addr;
+
    struct snes_callbacks cbs;
    int fd; // TCP connection for state sending, etc. Also used for commands.
    int udp_fd; // UDP connection for game state updates.
@@ -205,7 +209,8 @@ int16_t input_state_net(bool port, unsigned device, unsigned index, unsigned id)
 }
 
 // Custom inet_ntop. Win32 doesn't seem to support this ...
-static void log_connection(const struct sockaddr_storage *their_addr, unsigned slot)
+static void log_connection(const struct sockaddr_storage *their_addr,
+      unsigned slot, const char *nick)
 {
    union
    {
@@ -245,9 +250,9 @@ static void log_connection(const struct sockaddr_storage *their_addr, unsigned s
    if (str)
    {
       char msg[512];
-      snprintf(msg, sizeof(msg), "Got connection from: \"%s\" (#%u)", str, slot);
+      snprintf(msg, sizeof(msg), "Got connection from: \"%s (%s)\" (#%u)", nick, str, slot);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-      SSNES_LOG("Got connection from: \"%s\" (#%u)\n", str, slot);
+      SSNES_LOG("%s\n", msg);
    }
 }
 
@@ -323,9 +328,9 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
          return false;
       }
 
-      struct sockaddr_storage their_addr;
-      socklen_t addr_size = sizeof(their_addr);
-      int new_fd = accept(handle->fd, (struct sockaddr*)&their_addr, &addr_size);
+      socklen_t addr_size = sizeof(handle->other_addr);
+      int new_fd = accept(handle->fd,
+            (struct sockaddr*)&handle->other_addr, &addr_size);
       if (new_fd < 0)
       {
          SSNES_ERR("Failed to accept socket.\n");
@@ -336,8 +341,6 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
       }
       close(handle->fd);
       handle->fd = new_fd;
-
-      log_connection(&their_addr, 0);
    }
 
    freeaddrinfo(res);
@@ -427,8 +430,11 @@ bool netplay_can_poll(netplay_t *handle)
 static uint32_t implementation_magic_value(void)
 {
    uint32_t res = 0;
-   res |= (psnes_library_revision_major() & 0xf) << 0;
-   res |= (psnes_library_revision_minor() & 0xf) << 4;
+   unsigned major = psnes_library_revision_major();
+   unsigned minor = psnes_library_revision_minor();
+
+   res |= (major & 0xf) << 0;
+   res |= (minor & 0xf) << 4;
 
    // Shouldn't really use this, but oh well :) It'll do the job.
    const char *lib = psnes_library_id();
@@ -436,14 +442,74 @@ static uint32_t implementation_magic_value(void)
    for (size_t i = 0; i < len; i++)
       res ^= lib[i] << (i & 0xf);
 
+   const char *ver = PACKAGE_VERSION;
+   len = strlen(ver);
+   for (size_t i = 0; i < len; i++)
+      res ^= ver[i] << ((i & 0xf) + 16);
+
    return res;
+}
+
+static bool send_nickname(netplay_t *handle)
+{
+   uint8_t nick_size = strlen(handle->nick);
+
+   if (!send_all(handle->fd, &nick_size, sizeof(nick_size)))
+   {
+      SSNES_ERR("Failed to send nick size.\n");
+      return false;
+   }
+
+   if (!send_all(handle->fd, handle->nick, nick_size))
+   {
+      SSNES_ERR("Failed to send nick.\n");
+      return false;
+   }
+
+   return true;
+}
+
+static bool get_nickname(netplay_t *handle)
+{
+   uint8_t nick_size;
+
+   if (!recv_all(handle->fd, &nick_size, sizeof(nick_size)))
+   {
+      SSNES_ERR("Failed to receive nick size from host.\n");
+      return false;
+   }
+
+   if (nick_size >= sizeof(handle->other_nick))
+   {
+      SSNES_ERR("Invalid nick size.\n");
+      return false;
+   }
+
+   if (!recv_all(handle->fd, handle->other_nick, nick_size))
+   {
+      SSNES_ERR("Failed to receive nick.\n");
+      return false;
+   }
+
+   return true;
 }
 
 static bool send_info(netplay_t *handle)
 {
-   uint32_t header[3] = { htonl(g_extern.cart_crc), htonl(implementation_magic_value()), htonl(psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM)) };
+   uint32_t header[3] = {
+      htonl(g_extern.cart_crc),
+      htonl(implementation_magic_value()),
+      htonl(psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM))
+   };
+
    if (!send_all(handle->fd, header, sizeof(header)))
       return false;
+
+   if (!send_nickname(handle))
+   {
+      SSNES_ERR("Failed to send nick to host.\n");
+      return false;
+   }
 
    // Get SRAM data from Player 1 :)
    uint8_t *sram = psnes_get_memory_data(SNES_MEMORY_CARTRIDGE_RAM);
@@ -455,30 +521,51 @@ static bool send_info(netplay_t *handle)
       return false;
    }
 
+   if (!get_nickname(handle))
+   {
+      SSNES_ERR("Failed to receive nick from host.\n");
+      return false;
+   }
+
+   char msg[512];
+   snprintf(msg, sizeof(msg), "Connected to: \"%s\"", handle->other_nick);
+   SSNES_LOG("%s\n", msg);
+   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+
    return true;
 }
 
 static bool get_info(netplay_t *handle)
 {
    uint32_t header[3];
+
    if (!recv_all(handle->fd, header, sizeof(header)))
    {
       SSNES_ERR("Failed to receive header from client.\n");
       return false;
    }
+
    if (g_extern.cart_crc != ntohl(header[0]))
    {
       SSNES_ERR("Cart CRC32s differ! Cannot use different games!\n");
       return false;
    }
+
    if (implementation_magic_value() != ntohl(header[1]))
    {
-      SSNES_ERR("Implementations differ, make sure you're using exact same libsnes implementations!\n");
+      SSNES_ERR("Implementations differ, make sure you're using exact same libsnes implementations and SSNES version!\n");
       return false;
    }
+
    if (psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM) != ntohl(header[2]))
    {
       SSNES_ERR("Cartridge SRAM sizes do not correspond!\n");
+      return false;
+   }
+
+   if (!get_nickname(handle))
+   {
+      SSNES_ERR("Failed to get nickname from client.\n");
       return false;
    }
 
@@ -491,20 +578,29 @@ static bool get_info(netplay_t *handle)
       return false;
    }
 
+   if (!send_nickname(handle))
+   {
+      SSNES_ERR("Failed to send nickname to client.\n");
+      return false;
+   }
+
+   log_connection(&handle->other_addr, 0, handle->other_nick);
+
    return true;
 }
 
 static bool get_info_spectate(netplay_t *handle)
 {
    uint32_t header[4];
-   if (recv_all(handle->fd, header, sizeof(header)))
+
+   if (!recv_all(handle->fd, header, sizeof(header)))
    {
       SSNES_ERR("Cannot get header from host!\n");
       return false;
    }
 
    unsigned save_state_size = psnes_serialize_size();
-   if (!bsv_parse_header(header))
+   if (!bsv_parse_header(header, implementation_magic_value()))
    {
       SSNES_ERR("Received invalid BSV header from host!\n");
       return false;
@@ -543,7 +639,10 @@ static void init_buffers(netplay_t *handle)
    }
 }
 
-netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames, const struct snes_callbacks *cb, bool spectate)
+netplay_t *netplay_new(const char *server, uint16_t port,
+      unsigned frames, const struct snes_callbacks *cb,
+      bool spectate,
+      const char *nick)
 {
    (void)spectate;
 
@@ -560,6 +659,7 @@ netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames, const
    handle->port = server ? 0 : 1;
    handle->spectate = spectate;
    handle->spectate_client = server != NULL;
+   strlcpy(handle->nick, nick, sizeof(handle->nick));
 
    if (!init_socket(handle, server, port))
    {
@@ -1134,7 +1234,7 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
    }
 
    size_t header_size;
-   uint8_t *header = bsv_header_generate(&header_size);
+   uint32_t *header = bsv_header_generate(&header_size, implementation_magic_value());
    if (!header)
    {
       SSNES_ERR("Failed to generate BSV header!\n");
@@ -1145,8 +1245,7 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
    int bufsize = header_size;
    setsockopt(new_fd, SOL_SOCKET, SO_SNDBUF, CONST_CAST &bufsize, sizeof(int));
 
-   const uint8_t *tmp_header = header;
-   if (!send_all(new_fd, tmp_header, header_size))
+   if (!send_all(new_fd, header, header_size))
    {
       SSNES_ERR("Failed to send header to client!\n");
       close(new_fd);
@@ -1157,7 +1256,7 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
    free(header);
    handle->spectate_fds[index] = new_fd;
 
-   log_connection(&their_addr, index);
+   log_connection(&their_addr, index, handle->other_nick);
 }
 
 void netplay_pre_frame(netplay_t *handle)

@@ -495,6 +495,7 @@ static void print_help(void)
    puts("\t--spectate: Netplay will become spectacting mode.");
    puts("\t\tHost can live stream the game content to players that connect.");
    puts("\t\tHowever, the client will not be able to play. Multiple clients can connect to the host.");
+   puts("\t--nick: Picks a nickname for use with netplay. Not mandatory.");
 #endif
 
 #ifdef HAVE_FFMPEG
@@ -644,6 +645,7 @@ static void parse_input(int argc, char *argv[])
       { "frames", 1, NULL, 'F' },
       { "port", 1, &val, 'p' },
       { "spectate", 0, &val, 'S' },
+      { "nick", 1, &val, 'N' },
 #endif
       { "ups", 1, NULL, 'U' },
       { "bps", 1, &val, 'B' },
@@ -861,6 +863,10 @@ static void parse_input(int argc, char *argv[])
 
                case 'S':
                   g_extern.netplay_is_spectate = true;
+                  break;
+
+               case 'N':
+                  strlcpy(g_extern.netplay_nick, optarg, sizeof(g_extern.netplay_nick));
                   break;
 #endif
 
@@ -1229,7 +1235,8 @@ static void init_netplay(void)
 
    g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL,
          g_extern.netplay_port ? g_extern.netplay_port : SSNES_DEFAULT_PORT,
-         g_extern.netplay_sync_frames, &cbs, g_extern.netplay_is_spectate);
+         g_extern.netplay_sync_frames, &cbs, g_extern.netplay_is_spectate,
+         g_extern.netplay_nick);
 
    if (!g_extern.netplay)
    {
