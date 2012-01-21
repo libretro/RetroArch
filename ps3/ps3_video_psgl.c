@@ -358,7 +358,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_type);
 
       glTexImage2D(GL_TEXTURE_2D,
-            0, GL_RGBA, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_BGRA,
+            0, GL_ARGB_SCE, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_ARGB_SCE,
             GL_UNSIGNED_INT_8_8_8_8, NULL);
    }
 
@@ -558,7 +558,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
                glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[i]);
                glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
                glTexImage2D(GL_TEXTURE_2D,
-                     0, GL_RGBA, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_BGRA,
+                     0, GL_ARGB_SCE, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_ARGB_SCE,
                      GL_UNSIGNED_INT_8_8_8_8, NULL);
 
                glFramebufferTexture2DOES(GL_FRAMEBUFFER_OES, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, gl->fbo_texture[i], 0);

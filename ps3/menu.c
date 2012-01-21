@@ -1328,10 +1328,11 @@ void menu_loop(void)
 
 	menu_reinit_settings();
 
+
 	do
 	{
+		//ps3graphics_draw_menu();
 		glClear(GL_COLOR_BUFFER_BIT);
-		ps3graphics_draw_menu();
 		g_frame_count++;
 
 		switch(menuStack[menuStackindex].enum_id)
