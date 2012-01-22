@@ -55,17 +55,17 @@ int xui_init (void)
 
 int main(int argc, char *argv[])
 {
-	//for devits only, we will need to mount all partitions for retail
+	//for devkits only, we will need to mount all partitions for retail
 	//in a different way
-	DmMapDevkitDrive();
+	//DmMapDevkitDrive();
 
 	xdk360_video_init();
 
    char arg1[] = "ssnes";
-   char arg2[] = "e:\\roms\\mario.sfc";
+   char arg2[] = "d:\\roms\\mario.sfc";
    char arg3[] = "-v";
    char arg4[] = "-c";
-   char arg5[] = "e:\\roms\\ssnes.cfg";
+   char arg5[] = "d:\\ssnes.cfg";
    char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
    return ssnes_main(sizeof(argv_) / sizeof(argv_[0]) - 1, argv_);
 

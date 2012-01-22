@@ -17,7 +17,7 @@
  */
 
 #include <xtl.h>
-#include "xdkxui.h"
+#include "menu.h"
 
 /* Register custom classes */
 HRESULT CSSNES::RegisterXuiClasses (void)
