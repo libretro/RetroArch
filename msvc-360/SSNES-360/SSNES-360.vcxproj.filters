@@ -110,6 +110,9 @@
     <ClCompile Include="..\..\conf\config_file.c">
       <Filter>Source Files\conf</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\360\xdkxui.cpp">
+      <Filter>Source Files\360</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\ups.h">

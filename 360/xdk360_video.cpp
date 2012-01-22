@@ -1,5 +1,6 @@
 /*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
- *  Copyright (C) 2010-2011 - Hans-Kristian Arntzen
+ *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2012 - Daniel De Matteis
  *
  *  Some code herein may be based on code found in BSNES.
  * 
@@ -70,18 +71,6 @@ static bool g_quitting;
 unsigned g_frame_count;
 void *g_d3d;
 
-typedef struct xdk360_video
-{
-   IDirect3D9* xdk360_device;
-   IDirect3DDevice9* xdk360_render_device;
-   IDirect3DVertexShader9 *pVertexShader;
-   IDirect3DPixelShader9* pPixelShader;
-   IDirect3DVertexDeclaration9* pVertexDecl;
-   IDirect3DVertexBuffer9* vertex_buf;
-   IDirect3DTexture9* lpTexture;
-   unsigned last_width, last_height;
-} xdk360_video_t;
-
 static void xdk360_gfx_free(void * data)
 {
    if (g_d3d)
@@ -118,22 +107,21 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
       return NULL;
    }
 
-   D3DPRESENT_PARAMETERS d3dpp;
-   ZeroMemory(&d3dpp, sizeof(d3dpp));
+   ZeroMemory(&vid->d3dpp, sizeof(vid->d3dpp));
 
-   d3dpp.BackBufferWidth         = 1280;
-   d3dpp.BackBufferHeight        = 720;
-   d3dpp.BackBufferFormat        = (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8);
-   d3dpp.FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
-   d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
-   d3dpp.MultiSampleQuality      = 0;
-   d3dpp.BackBufferCount         = 2;
-   d3dpp.EnableAutoDepthStencil  = TRUE;
-   d3dpp.AutoDepthStencilFormat  = D3DFMT_D24S8;
-   d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
-   d3dpp.PresentationInterval    = D3DPRESENT_INTERVAL_ONE;
+   vid->d3dpp.BackBufferWidth         = 1280;
+   vid->d3dpp.BackBufferHeight        = 720;
+   vid->d3dpp.BackBufferFormat        = (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8);
+   vid->d3dpp.FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
+   vid->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
+   vid->d3dpp.MultiSampleQuality      = 0;
+   vid->d3dpp.BackBufferCount         = 2;
+   vid->d3dpp.EnableAutoDepthStencil  = TRUE;
+   vid->d3dpp.AutoDepthStencilFormat  = D3DFMT_D24S8;
+   vid->d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
+   vid->d3dpp.PresentationInterval    = D3DPRESENT_INTERVAL_ONE;
 
-   vid->xdk360_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &d3dpp, 
+   vid->xdk360_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &vid->d3dpp, 
          &vid->xdk360_render_device);
 
    ID3DXBuffer* pShaderCodeV = NULL;

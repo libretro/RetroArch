@@ -17,16 +17,41 @@
  */
 
 #include <xtl.h>
-#include <xui.h>
-#include <xuiapp.h>
 #include <stddef.h>
 #include <xbdm.h>
+#include "menu.h"
 #include "xdk360_video.h"
+
+CSSNES app;
 
 int ssnes_main(int argc, char *argv[]);
 
 #undef main
-// Temporary, a more sane implementation should go here.
+
+int xui_init (void)
+{
+	HRESULT hr;
+
+	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+	
+	hr = app.InitShared(vid->xdk360_render_device, &vid->d3dpp, XuiTextureLoader);
+
+	if (FAILED(hr))
+	{
+		OutputDebugString("Failed initializing XUI application.\n");
+		return 1;
+	}
+
+	/* Register font */
+	hr = app.RegisterDefaultTypeface(L"Arial Unicode MS", L"file://game:/media/ssnes.ttf" );
+	if (FAILED(hr))
+	{
+		OutputDebugString("Failed to register default typeface.\n");
+		return 1;
+	}
+
+	return 0;
+}
 
 int main(int argc, char *argv[])
 {
@@ -44,6 +69,6 @@ int main(int argc, char *argv[])
    char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
    return ssnes_main(sizeof(argv_) / sizeof(argv_[0]) - 1, argv_);
 
-   	xdk360_video_deinit();
+   xdk360_video_deinit();
 }
 

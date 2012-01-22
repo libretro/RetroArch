@@ -19,6 +19,19 @@
 #ifndef _XDK360_VIDEO_H
 #define _XDK360_VIDEO_H
 
+typedef struct xdk360_video
+{
+   IDirect3D9* xdk360_device;
+   IDirect3DDevice9* xdk360_render_device;
+   IDirect3DVertexShader9 *pVertexShader;
+   IDirect3DPixelShader9* pPixelShader;
+   IDirect3DVertexDeclaration9* pVertexDecl;
+   IDirect3DVertexBuffer9* vertex_buf;
+   IDirect3DTexture9* lpTexture;
+   unsigned last_width, last_height;
+   D3DPRESENT_PARAMETERS d3dpp;
+} xdk360_video_t;
+
 void xdk360_video_init(void);
 void xdk360_video_deinit(void);
 
