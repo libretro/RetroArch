@@ -16,10 +16,11 @@ protected:
 class CSSNESMain: public CXuiSceneImpl
 {
 public:
-	XUI_IMPLEMENT_CLASS(CSSNESMain, L"CSSNESMain", XUI_CLASS_SCENE)
+	XUI_IMPLEMENT_CLASS(CSSNESMain, L"SSNESMain", XUI_CLASS_SCENE)
 };
 
-int menu_init();
+int menu_init (void);
+void menu_loop (void);
 
 extern CSSNES app;
 

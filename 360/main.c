@@ -41,6 +41,9 @@ int main(int argc, char *argv[])
 
 	xdk360_video_init();
 
+	menu_init();
+	//menu_loop();
+
    char arg1[] = "ssnes";
    char arg2[] = "d:\\roms\\mario.sfc";
    char arg3[] = "-v";

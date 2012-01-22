@@ -22,14 +22,14 @@
 #include "../driver.h"
 #include "../libsnes.hpp"
 
-static XINPUT_STATE state[5];
+static XINPUT_STATE state[4];
 
 static void xdk360_input_poll(void *data)
 {
    (void)data;
    ZeroMemory(&state, sizeof(XINPUT_STATE));
 
-   for (unsigned i = 0; i < 5; i++)
+   for (unsigned i = 0; i < 4; i++)
       XInputGetState(i, &state[i]);
 }
 

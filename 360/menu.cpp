@@ -20,7 +20,8 @@
 #include "xdk360_video.h"
 #include "menu.h"
 
-CSSNES app;
+CSSNES		app;
+HXUIOBJ		hMainScene;
 
 /* Register custom classes */
 HRESULT CSSNES::RegisterXuiClasses (void)
@@ -35,72 +36,13 @@ HRESULT CSSNES::UnregisterXuiClasses (void)
 	return S_OK;
 }
 
-HRESULT APIENTRY XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName, XUIImageInfo *pImageInfo, IDirect3DTexture9 **ppTex)
-{
-    CONST BYTE  *pbTextureData = 0;
-    UINT         cbTextureData = 0;
-    HXUIRESOURCE hResource = 0;
-    BOOL         bIsMemoryResource = FALSE;
-    HRESULT      hr;
-    
-
-    hr = XuiResourceOpen(szFileName, &hResource, &bIsMemoryResource);
-    if (FAILED(hr))
-        return hr;
-
-    if (bIsMemoryResource)
-    {
-        hr = XuiResourceGetBuffer(hResource, &pbTextureData);
-        if (FAILED(hr))
-            goto cleanup;
-        cbTextureData = XuiResourceGetTotalSize(hResource);
-    }
-    else
-    {
-        hr = XuiResourceRead(hResource, NULL, 0, &cbTextureData);
-        if (FAILED(hr))
-            goto cleanup;
-
-        pbTextureData = (BYTE *)XuiAlloc(cbTextureData);
-        if (pbTextureData == 0)
-        {
-            hr = E_OUTOFMEMORY;
-            goto cleanup;
-        }
-
-        hr = XuiResourceRead(hResource, (BYTE*)pbTextureData, cbTextureData, &cbTextureData);
-        if (FAILED(hr))
-            goto cleanup;
-        
-        XuiResourceClose(hResource);
-        hResource = 0;
-
-    }
-
-    //Format specific code should be added here to initialize pImageInfo 
-    // and to create an IDirect3DTexture9 interface.
-
-
-cleanup:
-
-    if (bIsMemoryResource && hResource != 0)
-        XuiResourceReleaseBuffer(hResource, pbTextureData);
-    else
-        XuiFree((LPVOID)pbTextureData);
-
-    if (hResource != 0)
-        XuiResourceClose(hResource);
-
-    return hr;
-}
-
 int menu_init (void)
 {
 	HRESULT hr;
 
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 	
-	hr = app.InitShared(vid->xdk360_render_device, &vid->d3dpp, XuiTextureLoader);
+	hr = app.InitShared(vid->xdk360_render_device, &vid->d3dpp, XuiPNGTextureLoader);
 
 	if (FAILED(hr))
 	{
@@ -116,5 +58,30 @@ int menu_init (void)
 		return 1;
 	}
 
+	app.LoadSkin( L"file://game:/media/ssnes.xzp#media\\ssnes_main_skin.xur");
+	XuiSceneCreate( L"file://game:/media/ssnes.xzpmedia\\", L"ssnes_main.xur", NULL, &hMainScene);
+	XuiSceneNavigateFirst( app.GetRootObj(), hMainScene, XUSER_INDEX_FOCUS);
+
 	return 0;
+}
+
+void menu_loop(void)
+{
+	HRESULT hr;
+	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+
+	do
+	{
+		vid->xdk360_render_device->Clear(0, NULL,
+			D3DCLEAR_TARGET | D3DCLEAR_STENCIL | D3DCLEAR_ZBUFFER,
+			D3DCOLOR_ARGB(255, 32, 32, 64), 1.0, 0);
+
+		app.RunFrame();			/* Update XUI */
+		hr = app.Render();		/* Render XUI */
+		hr = XuiTimersRun();	/* Update XUI timers */
+
+		/* Present the frame */
+		vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);
+		
+	}while(1);
 }
