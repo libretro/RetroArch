@@ -27,6 +27,9 @@
     <Filter Include="Source Files\conf">
       <UniqueIdentifier>{82e8787f-e939-4783-82e1-fcab34285121}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\skin">
+      <UniqueIdentifier>{b7d54b1f-ffda-45f9-8175-7bf67010253d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\360\xdk360_video.cpp">
@@ -199,5 +202,16 @@
     <ClInclude Include="..\..\conf\config_file.h">
       <Filter>Header Files\conf</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\360\media\ssnes.ttf">
+      <Filter>Source Files\skin</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\360\media\ssnes_main_skin.xui">
+      <Filter>Source Files\skin</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\ssnes.cfg">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

@@ -17,7 +17,10 @@
  */
 
 #include <xtl.h>
+#include "xdk360_video.h"
 #include "menu.h"
+
+CSSNES app;
 
 /* Register custom classes */
 HRESULT CSSNES::RegisterXuiClasses (void)
@@ -89,4 +92,29 @@ cleanup:
         XuiResourceClose(hResource);
 
     return hr;
+}
+
+int menu_init (void)
+{
+	HRESULT hr;
+
+	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+	
+	hr = app.InitShared(vid->xdk360_render_device, &vid->d3dpp, XuiTextureLoader);
+
+	if (FAILED(hr))
+	{
+		OutputDebugString("Failed initializing XUI application.\n");
+		return 1;
+	}
+
+	/* Register font */
+	hr = app.RegisterDefaultTypeface(L"Arial Unicode MS", L"file://game:/media/ssnes.ttf" );
+	if (FAILED(hr))
+	{
+		OutputDebugString("Failed to register default typeface.\n");
+		return 1;
+	}
+
+	return 0;
 }

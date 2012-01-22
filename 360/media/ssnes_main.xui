@@ -1,0 +1,56 @@
+<XuiCanvas version="000c">
+<Properties>
+<Width>1920.000000</Width>
+<Height>1080.000000</Height>
+</Properties>
+<XuiScene>
+<Properties>
+<Id>XuiScene1</Id>
+<Width>410.000000</Width>
+<Height>251.000000</Height>
+<Position>759.300476,475.907898,0.000000</Position>
+<ClassOverride>SSNESMain</ClassOverride>
+</Properties>
+<XuiButton>
+<Properties>
+<Id>XuiBtnRomBrowser</Id>
+<Width>366.486145</Width>
+<Height>38.000000</Height>
+<Position>21.158449,37.046692,0.000000</Position>
+<Text>ROM Browser</Text>
+</Properties>
+</XuiButton>
+<XuiButton>
+<Properties>
+<Id>XuiBtnSettings</Id>
+<Width>366.200134</Width>
+<Height>38.000000</Height>
+<Position>21.799990,94.799988,0.000000</Position>
+<Text>Settings</Text>
+</Properties>
+</XuiButton>
+<XuiButton>
+<Properties>
+<Id>XuiBtnQuit</Id>
+<Width>362.600098</Width>
+<Height>38.000000</Height>
+<Position>22.799988,154.800049,0.000000</Position>
+<Text>Quit</Text>
+</Properties>
+</XuiButton>
+</XuiScene>
+<XuiText>
+<Properties>
+<Id>XuiText1</Id>
+<Width>240.000000</Width>
+<Height>40.000000</Height>
+<Position>770.766418,417.813141,0.000000</Position>
+<Text>SSNES 360</Text>
+<TextColor>0xff1054ce</TextColor>
+<DropShadowColor>0x800f0f0f</DropShadowColor>
+<PointSize>24.000000</PointSize>
+<Font>Arial Unicode MS</Font>
+<TextStyle>21</TextStyle>
+</Properties>
+</XuiText>
+</XuiCanvas>

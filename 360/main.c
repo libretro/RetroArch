@@ -22,43 +22,22 @@
 #include "menu.h"
 #include "xdk360_video.h"
 #include "../general.h"
+#include "shared.h"
 
-CSSNES app;
+uint32_t mode_switch = MODE_MENU;
 
 int ssnes_main(int argc, char *argv[]);
 
 #undef main
-
-int xui_init (void)
-{
-	HRESULT hr;
-
-	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-	
-	hr = app.InitShared(vid->xdk360_render_device, &vid->d3dpp, XuiTextureLoader);
-
-	if (FAILED(hr))
-	{
-		OutputDebugString("Failed initializing XUI application.\n");
-		return 1;
-	}
-
-	/* Register font */
-	hr = app.RegisterDefaultTypeface(L"Arial Unicode MS", L"file://game:/media/ssnes.ttf" );
-	if (FAILED(hr))
-	{
-		OutputDebugString("Failed to register default typeface.\n");
-		return 1;
-	}
-
-	return 0;
-}
 
 int main(int argc, char *argv[])
 {
 	//for devkits only, we will need to mount all partitions for retail
 	//in a different way
 	//DmMapDevkitDrive();
+	ssnes_main_clear_state();
+
+	config_set_defaults();
 
 	xdk360_video_init();
 

@@ -19,6 +19,8 @@ public:
 	XUI_IMPLEMENT_CLASS(CSSNESMain, L"CSSNESMain", XUI_CLASS_SCENE)
 };
 
-HRESULT APIENTRY XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName, XUIImageInfo *pImageInfo, IDirect3DTexture9 **ppTex);
+int menu_init();
+
+extern CSSNES app;
 
 #endif
