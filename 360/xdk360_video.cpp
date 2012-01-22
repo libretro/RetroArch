@@ -107,7 +107,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
       return NULL;
    }
 
-   ZeroMemory(&vid->d3dpp, sizeof(vid->d3dpp));
+   memset(&vid->d3dpp, 0, sizeof(vid->d3dpp));
 
    vid->d3dpp.BackBufferWidth         = 1280;
    vid->d3dpp.BackBufferHeight        = 720;
