@@ -21,6 +21,7 @@
 #include <xbdm.h>
 #include "menu.h"
 #include "xdk360_video.h"
+#include "../general.h"
 
 CSSNES app;
 
@@ -67,8 +68,10 @@ int main(int argc, char *argv[])
    char arg4[] = "-c";
    char arg5[] = "d:\\ssnes.cfg";
    char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
-   return ssnes_main(sizeof(argv_) / sizeof(argv_[0]) - 1, argv_);
-
+   int argc_ = sizeof(argv_) / sizeof(argv_[0]) - 1;
+   int init_ret = ssnes_main_init(argc_, argv_);
+   while(ssnes_main_iterate());
+   ssnes_main_deinit();
    xdk360_video_deinit();
 }
 
