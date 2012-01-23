@@ -65,7 +65,7 @@ int menu_init (void)
 		OutputDebugString("Failed to load skin.\n");
 	}
 
-	hr = app.LoadFirstScene( L"file://game:/media/ssnes_main.xur", NULL);
+	hr = app.LoadFirstScene( L"file://game:/media/", L"ssnes_main.xur", NULL);
 	if (FAILED(hr))
 	{
 		OutputDebugString("Failed to load first scene.\n");
