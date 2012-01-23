@@ -29,6 +29,8 @@
 <Text>SSNES 360</Text>
 <TextColor>0xff0f0f0f</TextColor>
 <DropShadowColor>0x800f0f0f</DropShadowColor>
+<Font>Arial Unicode MS</Font>
+<TextStyle>21</TextStyle>
 </Properties>
 </XuiText>
 </XuiScene>
