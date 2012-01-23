@@ -116,7 +116,7 @@
     </Link>
     <Deploy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)\ssnes.cfg=$(OutDir)ssnes.cfg</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
     </Deploy>
   </ItemDefinitionGroup>
@@ -139,6 +139,11 @@
       <ProgramDatabaseFile>$(OutDir)$(ProjectName).pdb</ProgramDatabaseFile>
       <AdditionalDependencies>xapilibd.lib;d3d9d.lib;d3dx9d.lib;xgraphicsd.lib;xboxkrnl.lib;xnetd.lib;xaudiod2.lib;xactd3.lib;x3daudiod.lib;xmcored.lib;xbdm.lib;vcompd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Deploy>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg</DeploymentFiles>
+      <ForceCopy>true</ForceCopy>
+      <DeploymentType>CopyToHardDrive</DeploymentType>
+    </Deploy>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">
     <ClCompile>
@@ -164,6 +169,11 @@
       <SetChecksum>true</SetChecksum>
       <AdditionalDependencies>xapilibi.lib;d3d9i.lib;d3dx9.lib;xgraphics.lib;xboxkrnl.lib;xnet.lib;xaudio2.lib;xact3i.lib;x3daudioi.lib;xmcorei.lib;xbdm.lib;vcomp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Deploy>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg</DeploymentFiles>
+      <ForceCopy>true</ForceCopy>
+      <DeploymentType>CopyToHardDrive</DeploymentType>
+    </Deploy>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">
     <ClCompile>
@@ -188,6 +198,11 @@
       <SetChecksum>true</SetChecksum>
       <AdditionalDependencies>xapilib.lib;d3d9.lib;d3dx9.lib;xgraphics.lib;xboxkrnl.lib;xnet.lib;xaudio2.lib;xact3.lib;x3daudio.lib;xmcore.lib;vcomp.lib;xbdm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Deploy>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg</DeploymentFiles>
+      <ForceCopy>true</ForceCopy>
+      <DeploymentType>CopyToHardDrive</DeploymentType>
+    </Deploy>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">
     <ClCompile>
@@ -213,7 +228,7 @@
     </Link>
     <Deploy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)\ssnes.cfg=$(OutDir)ssnes.cfg</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
     </Deploy>
   </ItemDefinitionGroup>
@@ -243,7 +258,8 @@
       <ForceCopy>true</ForceCopy>
     </Deploy>
     <Deploy>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)\ssnes.cfg=$(OutDir)ssnes.cfg</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg</DeploymentFiles>
+      <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -322,25 +338,54 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\ssnes_main_skin.xui">
+    <CustomBuild Include="..\..\ssnes.cfg">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xuipkg /nologo /o /d "$(OutDir)media\ssnes.xzp" %(RelativeDir)\*</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\ssnes.xzp;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\ssnes.xzp;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xuipkg /nologo /d /o "$(OutDir)media\ssnes.xzp" %(RelativeDir)\*</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xuipkg /nologo /d /o "$(OutDir)media\ssnes.xzp" %(RelativeDir)\*</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\ssnes.xzp;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)cfg\ssnes.cfg;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">copy %(FullPath) $(OutDir)cfg\ssnes.cfg</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">copy %(FullPath) $(OutDir)cfg\ssnes.cfg</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">copy %(FullPath) $(OutDir)cfg\ssnes.cfg</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)cfg\ssnes.cfg;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)cfg\ssnes.cfg;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)cfg\ssnes.cfg;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)cfg\ssnes.cfg;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)cfg\ssnes.cfg;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">copy %(FullPath) $(OutDir)cfg\ssnes.cfg</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">copy %(FullPath) $(OutDir)cfg\ssnes.cfg</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">copy %(FullPath) $(OutDir)cfg\ssnes.cfg</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\ssnes.cfg">
+    <CustomBuild Include="..\..\360\media\ssnes_scene_skin.xui">
       <FileType>Document</FileType>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)ssnes.cfg;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">copy %(FullPath) $(OutDir)ssnes.cfg</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">copy %(FullPath) $(OutDir)ssnes.cfg</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">copy %(FullPath) $(OutDir)ssnes.cfg</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)ssnes.cfg;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)ssnes.cfg;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_scene_skin.xui" "$(OutDir)media\ssnes_scene_skin.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_scene_skin.xui" "$(OutDir)media\ssnes_scene_skin.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_scene_skin.xui" "$(OutDir)media\ssnes_scene_skin.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_scene_skin.xui" "$(OutDir)media\ssnes_scene_skin.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_scene_skin.xui" "$(OutDir)media\ssnes_scene_skin.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_scene_skin.xui" "$(OutDir)media\ssnes_scene_skin.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\ssnes_scene_skin.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\ssnes_scene_skin.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\ssnes_scene_skin.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\ssnes_scene_skin.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\ssnes_scene_skin.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\ssnes_scene_skin.xur;</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\360\media\ssnes_main.xui">
+      <FileType>Document</FileType>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\ssnes_main.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\ssnes_main.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\ssnes_main.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\ssnes_main.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\ssnes_main.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\ssnes_main.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\ssnes_main.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\ssnes_main.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\ssnes_main.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\ssnes_main.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\ssnes_main.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\ssnes_main.xur"</Command>
     </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

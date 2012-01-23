@@ -26,14 +26,14 @@ HXUIOBJ		hMainScene;
 /* Register custom classes */
 HRESULT CSSNES::RegisterXuiClasses (void)
 {
-	CSSNESMain::Register();
+	CMyMainScene::Register();
 	return S_OK;
 }
 
 /* Unregister custom classes */
 HRESULT CSSNES::UnregisterXuiClasses (void)
 {
-	CSSNESMain::Unregister();
+	CMyMainScene::Unregister();
 	return S_OK;
 }
 
@@ -59,13 +59,13 @@ int menu_init (void)
 		return 1;
 	}
 
-	hr = app.LoadSkin( L"file://game:/media/ssnes.xzp#..\\..\\360\\media\\ssnes_main_skin.xur");
+	hr = app.LoadSkin( L"file://game:/media/ssnes_scene_skin.xur");
 	if (FAILED(hr))
 	{
 		OutputDebugString("Failed to load skin.\n");
 	}
 
-	hr = app.LoadFirstScene( L"file://game:/media/ssnes.xzp#..\\..\\360\\media\\ssnes_main.xur", NULL);
+	hr = app.LoadFirstScene( L"file://game:/media/ssnes_main.xur", NULL);
 	if (FAILED(hr))
 	{
 		OutputDebugString("Failed to load first scene.\n");

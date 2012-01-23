@@ -13,10 +13,10 @@ protected:
 	virtual HRESULT UnregisterXuiClasses();
 };
 
-class CSSNESMain: public CXuiSceneImpl
+class CMyMainScene: public CXuiSceneImpl
 {
 public:
-	XUI_IMPLEMENT_CLASS(CSSNESMain, L"SSNESMain", XUI_CLASS_SCENE)
+	XUI_IMPLEMENT_CLASS(CMyMainScene, L"MyMainScene", XUI_CLASS_SCENE)
 };
 
 int menu_init (void);
