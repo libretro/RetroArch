@@ -16,12 +16,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
 #include <xtl.h>
 #include "xdk360_video.h"
 #include "menu.h"
 
 CSSNES		app;
 HXUIOBJ		hMainScene;
+uint32_t	menu_is_running;
 
 /* Register custom classes */
 HRESULT CSSNES::RegisterXuiClasses (void)
@@ -76,6 +78,8 @@ int menu_init (void)
 
 void menu_loop(void)
 {
+	menu_is_running = true;
+
 	HRESULT hr;
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 
@@ -90,7 +94,6 @@ void menu_loop(void)
 		hr = XuiTimersRun();	/* Update XUI timers */
 
 		/* Present the frame */
-		vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);
-		
-	}while(1);
+		vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);	
+	}while(menu_is_running);
 }
