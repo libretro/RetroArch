@@ -39,6 +39,28 @@ HRESULT CSSNES::UnregisterXuiClasses (void)
 	return S_OK;
 }
 
+HRESULT CMyMainScene::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+{
+	GetChildById(L"XuiBtnRomBrowser", &m_filebrowser);
+	GetChildByid(L"XuiBtnSettings", &m_settings);
+	GetChildById(L"XuiBtnQuit", &m_quit);
+	GetChildById(L"XuiTxtTitle", &m_title);
+
+	return S_OK;
+}
+
+HRESULT CMyMainScene::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
+{
+
+	if ( hObjPressed == m_filebrowser )
+	{
+		menu_is_running = false;
+	}
+
+	bHandled = TRUE;
+	return S_OK;
+}
+
 int menu_init (void)
 {
 	HRESULT hr;

@@ -15,7 +15,19 @@ protected:
 
 class CMyMainScene: public CXuiSceneImpl
 {
+protected:
+	CXuiControl m_filebrowser;
+	CxuiControl m_settings;
+	CXuiControl m_quit;
+	CxuiTextElemet m_title;
 public:
+	HRESULT OnInit( XUIMessageInit* pInitData, BOOL& bHandled );
+
+	XUI_BEGIN_MSG_MAP()
+		XUI_ON_XM_INIT( OnInit)
+		XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+	XUI_END_MSG_MAP();
+
 	XUI_IMPLEMENT_CLASS(CMyMainScene, L"MyMainScene", XUI_CLASS_SCENE)
 };
 
