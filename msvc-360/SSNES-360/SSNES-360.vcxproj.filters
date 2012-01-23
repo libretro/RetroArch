@@ -27,7 +27,7 @@
     <Filter Include="Source Files\conf">
       <UniqueIdentifier>{82e8787f-e939-4783-82e1-fcab34285121}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\skin">
+    <Filter Include="Source Files\media">
       <UniqueIdentifier>{b7d54b1f-ffda-45f9-8175-7bf67010253d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -205,10 +205,10 @@
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\360\media\ssnes.ttf">
-      <Filter>Source Files\skin</Filter>
+      <Filter>Source Files\media</Filter>
     </CustomBuild>
     <CustomBuild Include="..\..\360\media\ssnes_main_skin.xui">
-      <Filter>Source Files\skin</Filter>
+      <Filter>Source Files\media</Filter>
     </CustomBuild>
     <CustomBuild Include="..\..\ssnes.cfg">
       <Filter>Source Files</Filter>

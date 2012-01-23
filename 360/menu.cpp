@@ -26,13 +26,14 @@ HXUIOBJ		hMainScene;
 /* Register custom classes */
 HRESULT CSSNES::RegisterXuiClasses (void)
 {
-	return CSSNESMain::Register();
+	CSSNESMain::Register();
+	return S_OK;
 }
 
 /* Unregister custom classes */
 HRESULT CSSNES::UnregisterXuiClasses (void)
 {
-	return CSSNESMain::Unregister();
+	CSSNESMain::Unregister();
 	return S_OK;
 }
 
@@ -51,16 +52,24 @@ int menu_init (void)
 	}
 
 	/* Register font */
-	hr = app.RegisterDefaultTypeface(L"Arial Unicode MS", L"file://game:/media/ssnes.ttf" );
+	hr = app.RegisterDefaultTypeface(L"Arial Unicode MS", L"file://game/media/ssnes.ttf" );
 	if (FAILED(hr))
 	{
 		OutputDebugString("Failed to register default typeface.\n");
 		return 1;
 	}
 
-	app.LoadSkin( L"file://game:/media/ssnes.xzp#media\\ssnes_main_skin.xur");
-	XuiSceneCreate( L"file://game:/media/ssnes.xzpmedia\\", L"ssnes_main.xur", NULL, &hMainScene);
-	XuiSceneNavigateFirst( app.GetRootObj(), hMainScene, XUSER_INDEX_FOCUS);
+	hr = app.LoadSkin( L"file://game:/media/ssnes.xzp#..\\..\\360\\media\\ssnes_main_skin.xur");
+	if (FAILED(hr))
+	{
+		OutputDebugString("Failed to load skin.\n");
+	}
+
+	hr = app.LoadFirstScene( L"file://game:/media/ssnes.xzp#..\\..\\360\\media\\ssnes_main.xur", NULL);
+	if (FAILED(hr))
+	{
+		OutputDebugString("Failed to load first scene.\n");
+	}
 
 	return 0;
 }

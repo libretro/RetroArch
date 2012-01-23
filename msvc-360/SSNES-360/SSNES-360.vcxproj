@@ -324,8 +324,8 @@
   <ItemGroup>
     <CustomBuild Include="..\..\360\media\ssnes_main_skin.xui">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xuipkg /nologo /d /o "$(OutDir)media\ssnes.xzp" %(RelativeDir)\*</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\ssnes.xzp;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xuipkg /nologo /o /d "$(OutDir)media\ssnes.xzp" %(RelativeDir)\*</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\ssnes.xzp;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\ssnes.xzp;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xuipkg /nologo /d /o "$(OutDir)media\ssnes.xzp" %(RelativeDir)\*</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xuipkg /nologo /d /o "$(OutDir)media\ssnes.xzp" %(RelativeDir)\*</Command>
