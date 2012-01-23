@@ -58,6 +58,12 @@ HRESULT CMyMainScene::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
 		mode_switch = MODE_EMULATION;
 		init_ssnes = 1;
 	}
+	else if ( hObjPressed == m_quit )
+	{
+		menu_is_running = false;
+		mode_switch = MODE_EXIT;
+		init_ssnes = 0;
+	}
 
 	bHandled = TRUE;
 	return S_OK;
