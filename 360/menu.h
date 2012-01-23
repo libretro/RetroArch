@@ -17,11 +17,12 @@ class CMyMainScene: public CXuiSceneImpl
 {
 protected:
 	CXuiControl m_filebrowser;
-	CxuiControl m_settings;
+	CXuiControl m_settings;
 	CXuiControl m_quit;
-	CxuiTextElemet m_title;
+	CXuiTextElement m_title;
 public:
 	HRESULT OnInit( XUIMessageInit* pInitData, BOOL& bHandled );
+	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled );
 
 	XUI_BEGIN_MSG_MAP()
 		XUI_ON_XM_INIT( OnInit)

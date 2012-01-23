@@ -20,6 +20,7 @@
 #include <xtl.h>
 #include "xdk360_video.h"
 #include "menu.h"
+#include "shared.h"
 
 CSSNES		app;
 HXUIOBJ		hMainScene;
@@ -42,7 +43,7 @@ HRESULT CSSNES::UnregisterXuiClasses (void)
 HRESULT CMyMainScene::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
 	GetChildById(L"XuiBtnRomBrowser", &m_filebrowser);
-	GetChildByid(L"XuiBtnSettings", &m_settings);
+	GetChildById(L"XuiBtnSettings", &m_settings);
 	GetChildById(L"XuiBtnQuit", &m_quit);
 	GetChildById(L"XuiTxtTitle", &m_title);
 
@@ -51,10 +52,11 @@ HRESULT CMyMainScene::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
 HRESULT CMyMainScene::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
 {
-
 	if ( hObjPressed == m_filebrowser )
 	{
 		menu_is_running = false;
+		mode_switch = MODE_EMULATION;
+		init_ssnes = 1;
 	}
 
 	bHandled = TRUE;

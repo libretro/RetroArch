@@ -18,6 +18,7 @@
 
 #include <xtl.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string>
 #include <xbdm.h>
 #include "menu.h"
@@ -46,7 +47,9 @@ typedef struct _STRING {
 extern "C" int __stdcall ObCreateSymbolicLink( STRING*, STRING*);
 
 uint32_t mode_switch = MODE_MENU;
+bool init_ssnes = false;
 int Mounted[20];
+uint32_t g_emulator_initialized = 0;
 
 int ssnes_main(int argc, char *argv[]);
 
@@ -148,18 +151,39 @@ int main(int argc, char *argv[])
 	xdk360_video_init();
 
 	menu_init();
-	//menu_loop();
 
-   char arg1[] = "ssnes";
-   char arg2[] = "d:\\roms\\mario.sfc";
-   char arg3[] = "-v";
-   char arg4[] = "-c";
-   char arg5[] = "d:\\ssnes.cfg";
-   char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
-   int argc_ = sizeof(argv_) / sizeof(argv_[0]) - 1;
-   int init_ret = ssnes_main_init(argc_, argv_);
-   while(ssnes_main_iterate());
-   ssnes_main_deinit();
-   xdk360_video_deinit();
+begin_loop:
+	if(mode_switch == MODE_EMULATION)
+	{
+		while(ssnes_main_iterate());
+	}
+	else if(mode_switch == MODE_MENU)
+	{
+		menu_loop();
+
+		if(init_ssnes)
+		{
+			if(g_emulator_initialized)
+				ssnes_main_deinit();
+			
+			char arg1[] = "ssnes";
+			char arg2[] = "d:\\roms\\mario.sfc";
+			char arg3[] = "-v";
+			char arg4[] = "-c";
+			char arg5[] = "d:\\ssnes.cfg";
+			char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
+			int argc_ = sizeof(argv_) / sizeof(argv_[0]) - 1;
+			int init_ret = ssnes_main_init(argc_, argv_);
+			g_emulator_initialized = 1;
+			init_ssnes = 0;
+		}
+	}
+	else
+			goto begin_shutdown;
+
+	goto begin_loop;
+
+begin_shutdown:
+	xdk360_video_deinit();
 }
 
