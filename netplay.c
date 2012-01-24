@@ -207,6 +207,7 @@ int16_t input_state_net(bool port, unsigned device, unsigned index, unsigned id)
       return netplay_callbacks(g_extern.netplay)->state_cb(port, device, index, id);
 }
 
+#ifndef HAVE_SOCKET_LEGACY
 // Custom inet_ntop. Win32 doesn't seem to support this ...
 static void log_connection(const struct sockaddr_storage *their_addr,
       unsigned slot, const char *nick)
@@ -215,17 +216,13 @@ static void log_connection(const struct sockaddr_storage *their_addr,
    {
       const struct sockaddr_storage *storage;
       const struct sockaddr_in *v4;
-#ifndef HAVE_SOCKET_LEGACY
       const struct sockaddr_in6 *v6;
-#endif
    } u;
    u.storage = their_addr;
 
    const char *str = NULL;
    char buf_v4[INET_ADDRSTRLEN] = {0};
-#ifndef HAVE_SOCKET_LEGACY
    char buf_v6[INET6_ADDRSTRLEN] = {0};
-#endif
 
    if (their_addr->ss_family == AF_INET)
    {
@@ -238,7 +235,6 @@ static void log_connection(const struct sockaddr_storage *their_addr,
       getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in), buf_v4, sizeof(buf_v4),
             NULL, 0, NI_NUMERICHOST);
    }
-#ifndef HAVE_SOCKET_LEGACY
    else if (their_addr->ss_family == AF_INET6)
    {
       str = buf_v6;
@@ -250,7 +246,6 @@ static void log_connection(const struct sockaddr_storage *their_addr,
       getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in6),
             buf_v6, sizeof(buf_v6), NULL, 0, NI_NUMERICHOST);
    }
-#endif
 
    if (str)
    {
@@ -260,6 +255,7 @@ static void log_connection(const struct sockaddr_storage *their_addr,
       SSNES_LOG("%s\n", msg);
    }
 }
+#endif
 
 static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port, bool spectate)
 {
@@ -604,7 +600,9 @@ static bool get_info(netplay_t *handle)
       return false;
    }
 
+#ifndef HAVE_SOCKET_LEGACY
    log_connection(&handle->other_addr, 0, handle->other_nick);
+#endif
 
    return true;
 }
@@ -1307,7 +1305,9 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
    free(header);
    handle->spectate_fds[index] = new_fd;
 
+#ifndef HAVE_SOCKET_LEGACY
    log_connection(&their_addr, index, handle->other_nick);
+#endif
 }
 
 void netplay_pre_frame(netplay_t *handle)

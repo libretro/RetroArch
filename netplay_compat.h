@@ -37,6 +37,7 @@
 
 #if defined(__CELLOS_LV2__)
 #define close(x) socketclose(x)
+#define select(nfds, readfds, writefds, errorfds, timeout) socketselect(nfds, readfds, writefds, errorfds, timeout)
 #endif
 
 #endif
