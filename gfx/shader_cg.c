@@ -450,9 +450,14 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
 #ifndef __CELLOS_LV2__
       glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
       glPixelStorei(GL_UNPACK_ROW_LENGTH, img.width);
-#endif
       glTexImage2D(GL_TEXTURE_2D,
-            0, GL_RGBA, img.width, img.height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8, img.pixels);
+            0, GL_RGBA, img.width, img.height,
+            0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8, img.pixels);
+#else
+      glTexImage2D(GL_TEXTURE_2D,
+            0, GL_ARGB_SCE, img.width, img.height,
+            0, GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8, img.pixels);
+#endif
 
       lut_textures_num++;
 
