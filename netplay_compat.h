@@ -22,6 +22,10 @@
 #include "config.h"
 #endif
 
+#ifdef _XBOX
+#define socklen_t int
+#endif
+
 #if defined(_WIN32)
 // Woohoo, Winsock has headers from the STONE AGE! :D
 #define close(x) closesocket(x)
