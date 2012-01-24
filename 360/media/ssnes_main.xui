@@ -16,7 +16,7 @@
 <Id>XuiBtnRomBrowser</Id>
 <Width>215.000000</Width>
 <Height>38.000000</Height>
-<Position>76.000000,91.000000,0.000000</Position>
+<Position>79.599976,55.000000,0.000000</Position>
 <NavUp>XuiBtnQuit</NavUp>
 <NavDown>XuiBtnSettings</NavDown>
 <Text>ROM Browser</Text>
@@ -27,7 +27,7 @@
 <Id>XuiTxtTitle</Id>
 <Width>240.000000</Width>
 <Height>40.000000</Height>
-<Position>81.453644,55.000000,0.000000</Position>
+<Position>85.053619,15.399994,0.000000</Position>
 <Text>SSNES 360</Text>
 <TextColor>0xff0f0f0f</TextColor>
 <DropShadowColor>0x800f0f0f</DropShadowColor>
@@ -40,7 +40,7 @@
 <Id>XuiBtnSettings</Id>
 <Width>215.000000</Width>
 <Height>38.000000</Height>
-<Position>76.000000,142.399994,0.000000</Position>
+<Position>79.599976,106.399994,0.000000</Position>
 <NavUp>XuiBtnRomBrowser</NavUp>
 <NavDown>XuiBtnQuit</NavDown>
 <Text>Settings</Text>
@@ -51,11 +51,31 @@
 <Id>XuiBtnQuit</Id>
 <Width>215.000000</Width>
 <Height>38.000000</Height>
-<Position>76.200012,191.399994,0.000000</Position>
+<Position>79.799988,155.399994,0.000000</Position>
 <NavUp>XuiBtnSettings</NavUp>
 <NavDown>XuiBtnRomBrowser</NavDown>
 <Text>Quit</Text>
 </Properties>
 </XuiButton>
+<XuiLabel>
+<Properties>
+<Id>XuiLblCore</Id>
+<Width>124.000000</Width>
+<Height>28.000000</Height>
+<Position>16.000000,209.200012,0.000000</Position>
+<Text>Libsnes core:</Text>
+</Properties>
+</XuiLabel>
+<XuiText>
+<Properties>
+<Id>XuiTxtCoreText</Id>
+<Width>224.399963</Width>
+<Height>34.000000</Height>
+<Position>138.400024,208.799988,0.000000</Position>
+<TextColor>0xff0f0f0f</TextColor>
+<DropShadowColor>0x800f0f0f</DropShadowColor>
+<Font>Arial Unicode MS</Font>
+</Properties>
+</XuiText>
 </XuiScene>
 </XuiCanvas>

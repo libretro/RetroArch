@@ -50,7 +50,20 @@ HRESULT CMyMainScene::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	GetChildById(L"XuiBtnSettings", &m_settings);
 	GetChildById(L"XuiBtnQuit", &m_quit);
 	GetChildById(L"XuiTxtTitle", &m_title);
-	m_title.SetText(L"SSNES 0.9.4.1");
+	GetChildById(L"XuiTxtCoreText", &m_core);
+	const char * core_text = snes_library_id();
+	char package_version[32];
+	sprintf(package_version, "SSNES %s", PACKAGE_VERSION);
+	DWORD dwNum = MultiByteToWideChar(CP_ACP, 0, core_text, -1, NULL, 0);
+	DWORD dwNum_package = MultiByteToWideChar(CP_ACP, 0, package_version, -1, NULL, 0);
+	wchar_t * core_text_utf = new wchar_t[dwNum];
+	wchar_t * package_version_utf = new wchar_t[dwNum_package];
+	MultiByteToWideChar(CP_ACP, 0, core_text, -1, core_text_utf, dwNum);
+	MultiByteToWideChar(CP_ACP, 0, package_version, -1, package_version_utf, dwNum_package);
+	m_core.SetText(core_text_utf);
+	m_title.SetText(package_version_utf);
+	delete []core_text_utf;
+	delete []package_version_utf;
 
 	return S_OK;
 }

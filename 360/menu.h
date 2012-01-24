@@ -20,6 +20,7 @@ protected:
 	CXuiControl m_settings;
 	CXuiControl m_quit;
 	CXuiTextElement m_title;
+	CXuiTextElement m_core;
 public:
 	HRESULT OnInit( XUIMessageInit* pInitData, BOOL& bHandled );
 	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled );
