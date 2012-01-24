@@ -33,9 +33,14 @@
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#ifndef SSNES_CONSOLE
+
+#ifdef __CELLOS_LV2__
+#include <cell/sysmodule.h>
+#include <netex/net.h>
+#else
 #include <signal.h>
 #endif
+
 #endif
 
 #include "netplay.h"
@@ -403,13 +408,16 @@ static bool init_network(void)
    if (inited)
       return true;
 
-#ifdef _WIN32
+#if defined(_WIN32)
    WSADATA wsaData;
    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
    {
       WSACleanup();
       return false;
    }
+#elif defined(__CELLOS_LV2__)
+   cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
+   sys_net_initialize_network();
 #else
    signal(SIGPIPE, SIG_IGN); // Do not like SIGPIPE killing our app :(
 #endif
