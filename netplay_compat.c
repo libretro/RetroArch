@@ -57,7 +57,7 @@ int getaddrinfo_ssnes__(const char *node, const char *service,
    info->ai_family = PF_INET;
    info->ai_socktype = hints->ai_socktype;
 
-   struct sockaddr_in *in_addr = calloc(1, sizeof(*in_addr));
+   struct sockaddr_in *in_addr = (struct sockaddr_in*)calloc(1, sizeof(*in_addr));
    if (!in_addr)
    {
       free(info);
