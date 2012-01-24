@@ -33,7 +33,9 @@
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#ifndef SSNES_CONSOLE
 #include <signal.h>
+#endif
 #endif
 
 #include "netplay.h"
@@ -43,6 +45,8 @@
 #include "message.h"
 #include <stdlib.h>
 #include <string.h>
+
+#include "netplay_compat.h"
 
 // Checks if input port/index is controlled by netplay or not.
 static bool netplay_is_alive(netplay_t *handle);
@@ -58,18 +62,6 @@ static void netplay_set_spectate_input(netplay_t *handle, int16_t input);
 
 static bool netplay_send_cmd(netplay_t *handle, uint32_t cmd, const void *data, size_t size);
 static bool netplay_get_cmd(netplay_t *handle);
-
-#ifdef _WIN32
-// Woohoo, Winsock has headers from the STONE AGE! :D
-#define close(x) closesocket(x)
-#define CONST_CAST (const char*)
-#define NONCONST_CAST (char*)
-#else
-#define CONST_CAST
-#define NONCONST_CAST
-#include <sys/time.h>
-#include <unistd.h>
-#endif
 
 #define PREV_PTR(x) ((x) == 0 ? handle->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % handle->buffer_size)
@@ -218,13 +210,17 @@ static void log_connection(const struct sockaddr_storage *their_addr,
    {
       const struct sockaddr_storage *storage;
       const struct sockaddr_in *v4;
+#ifndef HAVE_SOCKET_LEGACY
       const struct sockaddr_in6 *v6;
+#endif
    } u;
    u.storage = their_addr;
 
    const char *str = NULL;
    char buf_v4[INET_ADDRSTRLEN] = {0};
+#ifndef HAVE_SOCKET_LEGACY
    char buf_v6[INET6_ADDRSTRLEN] = {0};
+#endif
 
    if (their_addr->ss_family == AF_INET)
    {
@@ -237,6 +233,7 @@ static void log_connection(const struct sockaddr_storage *their_addr,
       getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in), buf_v4, sizeof(buf_v4),
             NULL, 0, NI_NUMERICHOST);
    }
+#ifndef HAVE_SOCKET_LEGACY
    else if (their_addr->ss_family == AF_INET6)
    {
       str = buf_v6;
@@ -248,6 +245,7 @@ static void log_connection(const struct sockaddr_storage *their_addr,
       getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in6),
             buf_v6, sizeof(buf_v6), NULL, 0, NI_NUMERICHOST);
    }
+#endif
 
    if (str)
    {
@@ -262,7 +260,7 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
 {
    struct addrinfo hints, *res = NULL;
    memset(&hints, 0, sizeof(hints));
-#ifdef _WIN32 // Lolol, no AF_UNSPEC, wtf.
+#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    hints.ai_family = AF_INET;
 #else
    hints.ai_family = AF_UNSPEC;
@@ -354,7 +352,7 @@ static bool init_udp_socket(netplay_t *handle, const char *server, uint16_t port
 {
    struct addrinfo hints;
    memset(&hints, 0, sizeof(hints));
-#ifdef _WIN32 // Lolol, no AF_UNSPEC, wtf.
+#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    hints.ai_family = AF_INET;
 #else
    hints.ai_family = AF_UNSPEC;
@@ -398,8 +396,13 @@ static bool init_udp_socket(netplay_t *handle, const char *server, uint16_t port
    return true;
 }
 
-static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
+// Platform specific socket library init.
+static bool init_network(void)
 {
+   static bool inited = false;
+   if (inited)
+      return true;
+
 #ifdef _WIN32
    WSADATA wsaData;
    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
@@ -411,13 +414,20 @@ static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
    signal(SIGPIPE, SIG_IGN); // Do not like SIGPIPE killing our app :(
 #endif
 
+   inited = true;
+   return true;
+}
+
+static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
+{
+   if (!init_network())
+      return false;
+
    if (!init_tcp_socket(handle, server, port, handle->spectate))
       return false;
-   if (!handle->spectate)
-   {
-      if (!init_udp_socket(handle, server, port))
-         return false;
-   }
+   if (!handle->spectate && !init_udp_socket(handle, server, port))
+      return false;
+
    return true;
 }
 
