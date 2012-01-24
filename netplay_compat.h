@@ -79,8 +79,6 @@ void freeaddrinfo(struct addrinfo *res);
 #define AI_PASSIVE 1
 #endif
 
-#define ss_family sin_family
-
 // gai_strerror() not used, so we skip that.
 
 #endif
