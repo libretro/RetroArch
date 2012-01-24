@@ -17,10 +17,14 @@
  */
 
 #include <stdint.h>
+#include <crtdefs.h>
+#include <tchar.h>
 #include <xtl.h>
 #include "xdk360_video.h"
 #include "menu.h"
 #include "shared.h"
+
+#include "../general.h"
 
 CSSNES		app;
 HXUIOBJ		hMainScene;
@@ -46,6 +50,7 @@ HRESULT CMyMainScene::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	GetChildById(L"XuiBtnSettings", &m_settings);
 	GetChildById(L"XuiBtnQuit", &m_quit);
 	GetChildById(L"XuiTxtTitle", &m_title);
+	m_title.SetText(L"SSNES 0.9.4.1");
 
 	return S_OK;
 }
@@ -79,7 +84,7 @@ int menu_init (void)
 
 	if (FAILED(hr))
 	{
-		OutputDebugString("Failed initializing XUI application.\n");
+		SSNES_ERR("Failed initializing XUI application.\n");
 		return 1;
 	}
 
@@ -87,20 +92,20 @@ int menu_init (void)
 	hr = app.RegisterDefaultTypeface(L"Arial Unicode MS", L"file://game:/media/ssnes.ttf" );
 	if (FAILED(hr))
 	{
-		OutputDebugString("Failed to register default typeface.\n");
+		SSNES_ERR("Failed to register default typeface.\n");
 		return 1;
 	}
 
 	hr = app.LoadSkin( L"file://game:/media/ssnes_scene_skin.xur");
 	if (FAILED(hr))
 	{
-		OutputDebugString("Failed to load skin.\n");
+		SSNES_ERR("Failed to load skin.\n");
 	}
 
 	hr = app.LoadFirstScene( L"file://game:/media/", L"ssnes_main.xur", NULL);
 	if (FAILED(hr))
 	{
-		OutputDebugString("Failed to load first scene.\n");
+		SSNES_ERR("Failed to load first scene.\n");
 	}
 
 	return 0;
