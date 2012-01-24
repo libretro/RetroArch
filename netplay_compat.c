@@ -46,6 +46,49 @@
 
 #define addrinfo addrinfo_ssnes__
 
+// Yes, we love shitty implementations, don't we? :(
+#ifdef _XBOX
+struct hostent
+{
+   char **h_addr_list; // Just do the minimal needed ...
+};
+
+static struct hostent *gethostbyname(const char *name)
+{
+   static struct hostent he;
+   static struct in_addr addr;
+   static char *addr_ptr;
+
+   he.h_addr_list = &addr_ptr;
+   addr_ptr = (char*)&addr;
+
+   if (!name)
+      return NULL;
+
+   XNDNS *dns = NULL;
+   WSAEVENT event = WSACreateEvent();
+   XNetDnsLookup(name, event, &dns);
+   if (!dns)
+      goto error;
+
+   WaitForSingleObject((HANDLE)event, INFINITE);
+   if (dns->iStatus)
+      goto error;
+
+   memcpy(&addr, dns->aina, sizeof(addr));
+
+   WSACloseEvent(event);
+   XNetDnsRelease(dns);
+
+   return &he;
+
+error:
+   if (event)
+      WSACloseEvent(event);
+   return NULL;
+}
+#endif
+
 int getaddrinfo_ssnes__(const char *node, const char *service,
       const struct addrinfo *hints,
       struct addrinfo **res)
