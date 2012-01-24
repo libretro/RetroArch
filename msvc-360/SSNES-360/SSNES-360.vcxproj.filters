@@ -202,6 +202,9 @@
     <ClInclude Include="..\..\conf\config_file.h">
       <Filter>Header Files\conf</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\360\menu.h">
+      <Filter>Header Files\360</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\360\media\ssnes.ttf">
@@ -214,6 +217,9 @@
       <Filter>Source Files\media</Filter>
     </CustomBuild>
     <CustomBuild Include="..\..\360\media\ssnes_main.xui">
+      <Filter>Source Files\media</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\360\media\ssnes_settings.xui">
       <Filter>Source Files\media</Filter>
     </CustomBuild>
   </ItemGroup>

@@ -13,7 +13,7 @@ protected:
 	virtual HRESULT UnregisterXuiClasses();
 };
 
-class CMyMainScene: public CXuiSceneImpl
+class CSSNESMain: public CXuiSceneImpl
 {
 protected:
 	CXuiControl m_filebrowser;
@@ -30,7 +30,24 @@ public:
 		XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
 	XUI_END_MSG_MAP();
 
-	XUI_IMPLEMENT_CLASS(CMyMainScene, L"MyMainScene", XUI_CLASS_SCENE)
+	XUI_IMPLEMENT_CLASS(CSSNESMain, L"SSNESMain", XUI_CLASS_SCENE)
+};
+
+class CSSNESSettings: public CXuiSceneImpl
+{
+protected:
+	CXuiControl m_rewind;
+	CXuiControl m_back;
+public:
+	HRESULT OnInit( XUIMessageInit* pInitData, BOOL& bHandled );
+	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled );
+
+	XUI_BEGIN_MSG_MAP()
+		XUI_ON_XM_INIT( OnInit)
+		XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+	XUI_END_MSG_MAP();
+
+	XUI_IMPLEMENT_CLASS(CSSNESSettings, L"SSNESSettings", XUI_CLASS_SCENE)
 };
 
 int menu_init (void);

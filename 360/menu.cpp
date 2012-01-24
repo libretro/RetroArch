@@ -33,18 +33,28 @@ uint32_t	menu_is_running;
 /* Register custom classes */
 HRESULT CSSNES::RegisterXuiClasses (void)
 {
-	CMyMainScene::Register();
+	CSSNESMain::Register();
+	CSSNESSettings::Register();
 	return S_OK;
 }
 
 /* Unregister custom classes */
 HRESULT CSSNES::UnregisterXuiClasses (void)
 {
-	CMyMainScene::Unregister();
+	CSSNESMain::Unregister();
+	CSSNESSettings::Unregister();
 	return S_OK;
 }
 
-HRESULT CMyMainScene::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+HRESULT CSSNESSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+{
+	GetChildById(L"XuiBtnRewind", &m_rewind);
+	GetChildById(L"XuiBackButton1", &m_back);
+
+	return S_OK;
+}
+
+HRESULT CSSNESMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
 	GetChildById(L"XuiBtnRomBrowser", &m_filebrowser);
 	GetChildById(L"XuiBtnSettings", &m_settings);
@@ -68,13 +78,40 @@ HRESULT CMyMainScene::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	return S_OK;
 }
 
-HRESULT CMyMainScene::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
+HRESULT CSSNESSettings::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
 {
+	if ( hObjPressed == m_rewind )
+	{
+	}
+	else if (hObjPressed == m_back )
+	{
+	}
+
+	bHandled = TRUE;
+	return S_OK;
+}
+
+HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
+{
+	HRESULT hr;
+
 	if ( hObjPressed == m_filebrowser )
 	{
 		menu_is_running = false;
 		mode_switch = MODE_EMULATION;
 		init_ssnes = 1;
+	}
+	else if ( hObjPressed == m_settings )
+	{
+		HXUIOBJ		hSSNESSettings;
+		hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_settings.xur", NULL, &hSSNESSettings );
+		
+		if (FAILED(hr))
+		{
+			SSNES_ERR("Failed to load scene.\n");
+		}
+
+		NavigateForward(hSSNESSettings);
 	}
 	else if ( hObjPressed == m_quit )
 	{

@@ -299,6 +299,7 @@
     <ClCompile Include="..\..\ups.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\360\menu.h" />
     <ClInclude Include="..\..\360\msvc_compat.h" />
     <ClInclude Include="..\..\360\xdk360_audio.h" />
     <ClInclude Include="..\..\audio\hermite.h" />
@@ -386,6 +387,23 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\ssnes_main.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\ssnes_main.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\ssnes_main.xur"</Command>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\360\media\ssnes_settings.xui">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\ssnes_settings.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\ssnes_settings.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\ssnes_settings.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\ssnes_settings.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\ssnes_settings.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\ssnes_settings.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\ssnes_settings.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\ssnes_settings.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\ssnes_settings.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\ssnes_settings.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\ssnes_settings.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\ssnes_settings.xur;</Outputs>
     </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

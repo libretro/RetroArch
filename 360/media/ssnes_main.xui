@@ -9,7 +9,7 @@
 <Width>410.000000</Width>
 <Height>251.000000</Height>
 <Position>439.013489,260.875977,0.000000</Position>
-<ClassOverride>MyMainScene</ClassOverride>
+<ClassOverride>SSNESMain</ClassOverride>
 </Properties>
 <XuiButton>
 <Properties>
