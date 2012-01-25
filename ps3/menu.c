@@ -1361,6 +1361,7 @@ void menu_loop(void)
 	{
 		//ps3graphics_draw_menu();
 		glClear(GL_COLOR_BUFFER_BIT);
+		//gl_frame_menu();
 		g_frame_count++;
 
 		switch(menuStack[menuStackindex].enum_id)
