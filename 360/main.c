@@ -144,6 +144,10 @@ int main(int argc, char *argv[])
 	//in a different way
 	//DmMapDevkitDrive();
 	MountAll();
+
+	XSetFileCacheSize(0x100000);
+	XMountUtilityDriveEx(XMOUNTUTILITYDRIVE_FORMAT0,8192, 0);
+		
 	ssnes_main_clear_state();
 
 	config_set_defaults();

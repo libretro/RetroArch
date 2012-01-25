@@ -49,8 +49,6 @@ HRESULT CSSNES::UnregisterXuiClasses (void)
 HRESULT CSSNESSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
 	GetChildById(L"XuiBtnRewind", &m_rewind);
-	GetChildById(L"XuiBackButton1", &m_back);
-
 	return S_OK;
 }
 
@@ -80,13 +78,6 @@ HRESULT CSSNESMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
 HRESULT CSSNESSettings::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
 {
-	if ( hObjPressed == m_rewind )
-	{
-	}
-	else if (hObjPressed == m_back )
-	{
-	}
-
 	bHandled = TRUE;
 	return S_OK;
 }
@@ -104,7 +95,7 @@ HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
 	else if ( hObjPressed == m_settings )
 	{
 		HXUIOBJ		hSSNESSettings;
-		hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_settings.xur", NULL, &hSSNESSettings );
+		hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_settings.xur", NULL, &hSSNESSettings);
 		
 		if (FAILED(hr))
 		{
@@ -153,12 +144,14 @@ int menu_init (void)
 		return 1;
 	}
 
-	hr = app.LoadFirstScene( L"file://game:/media/", L"ssnes_main.xur", NULL);
+	hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_main.xur", NULL, &hMainScene);
 	if (FAILED(hr))
 	{
-		SSNES_ERR("Failed to load first scene.\n");
+		SSNES_ERR("Failed to create scene 'ssnes_main.xur'.\n");
 		return 1;
 	}
+
+	XuiSceneNavigateFirst(app.GetRootObj(), hMainScene, XUSER_INDEX_FOCUS);
 
 	return 0;
 }

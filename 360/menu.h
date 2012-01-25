@@ -37,7 +37,6 @@ class CSSNESSettings: public CXuiSceneImpl
 {
 protected:
 	CXuiControl m_rewind;
-	CXuiControl m_back;
 public:
 	HRESULT OnInit( XUIMessageInit* pInitData, BOOL& bHandled );
 	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled );
@@ -47,7 +46,7 @@ public:
 		XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
 	XUI_END_MSG_MAP();
 
-	XUI_IMPLEMENT_CLASS(CSSNESSettings, L"SSNESSettings", XUI_CLASS_SCENE)
+	XUI_IMPLEMENT_CLASS(CSSNESSettings, L"SSNESSettings", XUI_CLASS_TABSCENE)
 };
 
 int menu_init (void);

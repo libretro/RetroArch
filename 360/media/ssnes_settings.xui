@@ -10,7 +10,7 @@
 <Height>289.015991</Height>
 <Position>392.000000,226.112015,0.000000</Position>
 <ClassOverride>SSNESSettings</ClassOverride>
-<TabCount>2</TabCount>
+<DefaultFocus>XuiBtnRewind</DefaultFocus>
 </Properties>
 <XuiText>
 <Properties>
