@@ -593,6 +593,8 @@ static const struct key_map sk_map[] = {
    { "escape", SK_ESCAPE },
    { "add", SK_KP_PLUS },
    { "subtract", SK_KP_MINUS },
+   { "kp_plus", SK_KP_PLUS },
+   { "kp_minus", SK_KP_MINUS },
    { "f1", SK_F1 },
    { "f2", SK_F2 },
    { "f3", SK_F3 },

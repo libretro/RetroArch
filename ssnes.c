@@ -1625,7 +1625,7 @@ static void check_input_rate(void)
       snprintf(msg, sizeof(msg), "Audio input rate: %.2f Hz", g_settings.audio.in_rate);
 
       msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, msg, 0, 180);
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
       SSNES_LOG("%s\n", msg);
 
       g_extern.audio_data.src_ratio =
