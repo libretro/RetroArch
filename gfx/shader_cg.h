@@ -49,7 +49,7 @@ void gl_cg_shader_scale(unsigned index, struct gl_fbo_scale *scale);
 
 #define SSNES_CG_MAX_SHADERS 16
 #define SSNES_CG_MENU_SHADER_INDEX (SSNES_CG_MAX_SHADERS - 1)
-void gl_cg_set_menu_shader(const char *shader);
+void gl_cg_set_menu_shader(const char *path);
 void gl_cg_set_compiler_args(const char **argv);
 
 #endif

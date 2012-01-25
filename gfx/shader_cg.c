@@ -338,31 +338,73 @@ void gl_cg_deinit(void)
       listing_##type = strdup(list); \
 }
 
-static bool load_plain(const char *path)
+static bool load_program(unsigned index, const char *prog, bool path_is_file)
 {
    bool ret = true;
+   char *listing_f = NULL;
+   char *listing_v = NULL;
+
+   if (path_is_file)
+   {
+      prg[index].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, prog, cgFProf, "main_fragment", cg_arguments);
+      SET_LISTING(f);
+      prg[index].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, prog, cgVProf, "main_vertex", cg_arguments);
+      SET_LISTING(v);
+   }
+   else
+   {
+      prg[index].fprg = cgCreateProgram(cgCtx, CG_SOURCE, prog, cgFProf, "main_fragment", cg_arguments);
+      SET_LISTING(f);
+      prg[index].vprg = cgCreateProgram(cgCtx, CG_SOURCE, prog, cgVProf, "main_vertex", cg_arguments);
+      SET_LISTING(v);
+   }
+
+   if (!prg[index].fprg || !prg[index].vprg)
+   {
+      SSNES_ERR("CG error: %s\n", cgGetErrorString(cgGetError()));
+      if (listing_f)
+         SSNES_ERR("Fragment:\n%s\n", listing_f);
+      else if (listing_v)
+         SSNES_ERR("Vertex:\n%s\n", listing_v);
+
+      ret = false;
+      goto end;
+   }
+
+   cgGLLoadProgram(prg[index].fprg);
+   cgGLLoadProgram(prg[index].vprg);
+
+end:
+   free(listing_f);
+   free(listing_v);
+   return ret;
+}
+
+static bool load_stock(void)
+{
+   if (!load_program(0, stock_cg_program, false))
+   {
+      SSNES_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
+      return false;
+   }
+
+   return true;
+}
+
+static bool load_plain(const char *path)
+{
+   if (!load_stock())
+      return false;
+
    SSNES_LOG("Loading Cg file: %s\n", path);
 
-   char *listing_v[3] = {NULL};
-   char *listing_f[3] = {NULL};
-
-   prg[0].fprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", cg_arguments);
-   SET_LISTING_INDEX(f, 0);
-   prg[0].vprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", cg_arguments);
-   SET_LISTING_INDEX(v, 0);
-
-   prg[1].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgFProf, "main_fragment", cg_arguments);
-   SET_LISTING_INDEX(f, 1);
-   prg[1].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgVProf, "main_vertex", cg_arguments);
-   SET_LISTING_INDEX(v, 1);
+   if (!load_program(1, path, true))
+      return false;
 
    if (*g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
    {
-      SSNES_LOG("Loading 2nd pass: %s\n", g_settings.video.second_pass_shader);
-      prg[2].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgFProf, "main_fragment", cg_arguments);
-      SET_LISTING_INDEX(f, 2);
-      prg[2].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgVProf, "main_vertex", cg_arguments);
-      SET_LISTING_INDEX(v, 2);
+      if (!load_program(2, g_settings.video.second_pass_shader, true))
+         return false;
 
       cg_shader_num = 2;
    }
@@ -372,71 +414,42 @@ static bool load_plain(const char *path)
       cg_shader_num = 1;
    }
 
-   for (unsigned i = 0; i <= cg_shader_num; i++)
-   {
-      if (!prg[i].fprg || !prg[i].vprg)
-      {
-         CGerror err = cgGetError();
-         SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
-         if (listing_v[i])
-            SSNES_ERR("Vertex:\n%s\n", listing_v[i]);
-         else if (listing_f[i])
-            SSNES_ERR("Fragment:\n%s\n", listing_f[i]);
-
-         ret = false;
-         goto end;
-      }
-
-      cgGLLoadProgram(prg[i].fprg);
-      cgGLLoadProgram(prg[i].vprg);
-   }
-
-end:
-   for (unsigned i = 0; i < 3; i++)
-   {
-      free(listing_v[i]);
-      free(listing_f[i]);
-   }
-
-   return ret;
+   return true;
 }
 
 static bool load_menu_shader(void)
 {
-   bool ret = true;
-   char *listing_v = NULL;
-   char *listing_f = NULL;
-
-   prg[SSNES_CG_MENU_SHADER_INDEX].fprg = cgCreateProgram(cgCtx, CG_SOURCE, menu_cg_program, cgFProf, "main_fragment", cg_arguments);
-   SET_LISTING(f);
-   prg[SSNES_CG_MENU_SHADER_INDEX].vprg = cgCreateProgram(cgCtx, CG_SOURCE, menu_cg_program, cgVProf, "main_vertex", cg_arguments);
-   SET_LISTING(v);
-
-   if (!prg[SSNES_CG_MENU_SHADER_INDEX].fprg || !prg[SSNES_CG_MENU_SHADER_INDEX].vprg)
-   {
-      CGerror err = cgGetError();
-      SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
-      if (listing_v)
-         SSNES_ERR("Vertex:\n%s\n", listing_v);
-      if (listing_f)
-         SSNES_ERR("Fragment:\n%s\n", listing_f);
-
-      ret = false;
-      goto end;
-   }
-
-   cgGLLoadProgram(prg[SSNES_CG_MENU_SHADER_INDEX].fprg);
-   cgGLLoadProgram(prg[SSNES_CG_MENU_SHADER_INDEX].vprg);
-
-end:
-   free(listing_v);
-   free(listing_f);
-   return ret;
+   return load_program(SSNES_CG_MENU_SHADER_INDEX, menu_cg_program, true);
 }
 
 #define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
 
 #ifdef HAVE_CONFIGFILE
+static void load_texture_data(GLuint *obj, const struct texture_image *img, bool smooth)
+{
+   glGenTextures(1, obj);
+   glBindTexture(GL_TEXTURE_2D, *obj);
+
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
+
+#ifdef __CELLOS_LV2__
+   glTexImage2D(GL_TEXTURE_2D,
+         0, GL_ARGB_SCE, img->width, img->height,
+         0, GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8, img->pixels);
+#else
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, img->width);
+   glTexImage2D(GL_TEXTURE_2D,
+         0, GL_RGBA, img->width, img->height,
+         0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8, img->pixels);
+#endif
+
+   free(img->pixels);
+}
+
 static bool load_textures(const char *dir_path, config_file_t *conf)
 {
    bool ret = true;
@@ -476,30 +489,9 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
 
       strlcpy(lut_textures_uniform[lut_textures_num], id, sizeof(lut_textures_uniform[lut_textures_num]));
 
-      glGenTextures(1, &lut_textures[lut_textures_num]);
-
-      glBindTexture(GL_TEXTURE_2D, lut_textures[lut_textures_num]);
-
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
-
-#ifndef __CELLOS_LV2__
-      glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, img.width);
-      glTexImage2D(GL_TEXTURE_2D,
-            0, GL_RGBA, img.width, img.height,
-            0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8, img.pixels);
-#else
-      glTexImage2D(GL_TEXTURE_2D,
-            0, GL_ARGB_SCE, img.width, img.height,
-            0, GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8, img.pixels);
-#endif
-
+      load_texture_data(&lut_textures[lut_textures_num], &img, smooth);
       lut_textures_num++;
 
-      free(img.pixels);
       free(path);
 
       id = strtok(NULL, ";");
@@ -712,22 +704,169 @@ end:
 }
 #endif
 
+static bool load_shader(const char *dir_path, unsigned i, config_file_t *conf)
+{
+   char *shader_path;
+   char attr_buf[64];
+   char path_buf[PATH_MAX];
+
+   print_buf(attr_buf, "shader%u", i);
+   if (config_get_string(conf, attr_buf, &shader_path))
+   {
+      strlcpy(path_buf, dir_path, sizeof(path_buf));
+      strlcat(path_buf, shader_path, sizeof(path_buf));
+      free(shader_path);
+   }
+   else
+   {
+      SSNES_ERR("Didn't find shader path in config ...\n");
+      return false;
+   }
+
+   SSNES_LOG("Loading Cg shader: \"%s\".\n", path_buf);
+
+   if (!load_program(i + 1, path_buf, true))
+      return false;
+
+   return true;
+}
+
+static bool load_shader_params(unsigned i, config_file_t *conf)
+{
+   bool ret = true;
+   char *scale_type = NULL;
+   char *scale_type_x = NULL;
+   char *scale_type_y = NULL;
+   bool has_scale_type;
+   bool has_scale_type_x;
+   bool has_scale_type_y;
+
+   char scale_name_buf[64];
+   print_buf(scale_name_buf, "scale_type%u", i);
+   has_scale_type = config_get_string(conf, scale_name_buf, &scale_type);
+   print_buf(scale_name_buf, "scale_type_x%u", i);
+   has_scale_type_x = config_get_string(conf, scale_name_buf, &scale_type_x);
+   print_buf(scale_name_buf, "scale_type_y%u", i);
+   has_scale_type_y = config_get_string(conf, scale_name_buf, &scale_type_y);
+
+   if (!has_scale_type && !has_scale_type_x && !has_scale_type_y)
+      return true;
+
+   if (has_scale_type)
+   {
+      free(scale_type_x);
+      free(scale_type_y);
+
+      scale_type_x = strdup(scale_type);
+      scale_type_y = strdup(scale_type);
+
+      free(scale_type);
+      scale_type = NULL;
+   }
+
+   char attr_name_buf[64];
+   double fattr;
+   int iattr;
+   struct gl_fbo_scale *scale = &cg_scale[i + 1]; // Shader 0 is passthrough shader. Start at 1.
+
+   scale->valid = true;
+   scale->type_x = SSNES_SCALE_INPUT;
+   scale->type_y = SSNES_SCALE_INPUT;
+   scale->scale_x = 1.0;
+   scale->scale_y = 1.0;
+   scale->abs_x = g_extern.system.geom.base_width;
+   scale->abs_y = g_extern.system.geom.base_height;
+
+   if (strcmp(scale_type_x, "source") == 0)
+      scale->type_x = SSNES_SCALE_INPUT;
+   else if (strcmp(scale_type_x, "viewport") == 0)
+      scale->type_x = SSNES_SCALE_VIEWPORT;
+   else if (strcmp(scale_type_x, "absolute") == 0)
+      scale->type_x = SSNES_SCALE_ABSOLUTE;
+   else
+   {
+      SSNES_ERR("Invalid attribute.\n");
+      ret = false;
+      goto end;
+   }
+
+   if (strcmp(scale_type_y, "source") == 0)
+      scale->type_y = SSNES_SCALE_INPUT;
+   else if (strcmp(scale_type_y, "viewport") == 0)
+      scale->type_y = SSNES_SCALE_VIEWPORT;
+   else if (strcmp(scale_type_y, "absolute") == 0)
+      scale->type_y = SSNES_SCALE_ABSOLUTE;
+   else
+   {
+      SSNES_ERR("Invalid attribute.\n");
+      ret = false;
+      goto end;
+   }
+
+   if (scale->type_x == SSNES_SCALE_ABSOLUTE)
+   {
+      print_buf(attr_name_buf, "scale%u", i);
+      if (config_get_int(conf, attr_name_buf, &iattr))
+         scale->abs_x = iattr;
+      else
+      {
+         print_buf(attr_name_buf, "scale_x%u", i);
+         if (config_get_int(conf, attr_name_buf, &iattr))
+            scale->abs_x = iattr;
+      }
+   }
+   else
+   {
+      print_buf(attr_name_buf, "scale%u", i);
+      if (config_get_double(conf, attr_name_buf, &fattr))
+         scale->scale_x = fattr;
+      else
+      {
+         print_buf(attr_name_buf, "scale_x%u", i);
+         if (config_get_double(conf, attr_name_buf, &fattr))
+            scale->scale_x = fattr;
+      }
+   }
+
+   if (scale->type_y == SSNES_SCALE_ABSOLUTE)
+   {
+      print_buf(attr_name_buf, "scale%u", i);
+      if (config_get_int(conf, attr_name_buf, &iattr))
+         scale->abs_y = iattr;
+      else
+      {
+         print_buf(attr_name_buf, "scale_y%u", i);
+         if (config_get_int(conf, attr_name_buf, &iattr))
+            scale->abs_y = iattr;
+      }
+   }
+   else
+   {
+      print_buf(attr_name_buf, "scale%u", i);
+      if (config_get_double(conf, attr_name_buf, &fattr))
+         scale->scale_y = fattr;
+      else
+      {
+         print_buf(attr_name_buf, "scale_y%u", i);
+         if (config_get_double(conf, attr_name_buf, &fattr))
+            scale->scale_y = fattr;
+      }
+   }
+
+end:
+   free(scale_type);
+   free(scale_type_x);
+   free(scale_type_y);
+   return ret;
+}
 
 static bool load_preset(const char *path)
 {
 #ifdef HAVE_CONFIGFILE
    bool ret = true;
 
-   // Create passthrough shader.
-   prg[0].fprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", cg_arguments);
-   prg[0].vprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", cg_arguments);
-   if (!prg[0].fprg || !prg[0].vprg)
-   {
-      SSNES_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
+   if (!load_stock())
       return false;
-   }
-   cgGLLoadProgram(prg[0].fprg);
-   cgGLLoadProgram(prg[0].vprg);
 
    int shaders;
    // Basedir.
@@ -779,134 +918,6 @@ static bool load_preset(const char *path)
          fbo_smooth[i + 1] = smooth ? FILTER_LINEAR : FILTER_NEAREST;
    }
 
-   // Bigass for-loop ftw. Check scaling params.
-   for (int i = 0; i < shaders; i++)
-   {
-      char *scale_type = NULL;
-      char *scale_type_x = NULL;
-      char *scale_type_y = NULL;
-      bool has_scale_type;
-      bool has_scale_type_x;
-      bool has_scale_type_y;
-
-      char scale_name_buf[64];
-      print_buf(scale_name_buf, "scale_type%u", i);
-      has_scale_type = config_get_string(conf, scale_name_buf, &scale_type);
-      print_buf(scale_name_buf, "scale_type_x%u", i);
-      has_scale_type_x = config_get_string(conf, scale_name_buf, &scale_type_x);
-      print_buf(scale_name_buf, "scale_type_y%u", i);
-      has_scale_type_y = config_get_string(conf, scale_name_buf, &scale_type_y);
-
-      if (!has_scale_type && !has_scale_type_x && !has_scale_type_y)
-         continue;
-
-      if (has_scale_type)
-      {
-         if (scale_type_x)
-            free(scale_type_x);
-         if (scale_type_y)
-            free(scale_type_y);
-
-         scale_type_x = strdup(scale_type);
-         scale_type_y = strdup(scale_type);
-         free(scale_type);
-      }
-
-      char attr_name_buf[64];
-      double fattr;
-      int iattr;
-      struct gl_fbo_scale *scale = &cg_scale[i + 1]; // Shader 0 is passthrough shader. Start at 1.
-
-      scale->valid = true;
-      scale->type_x = SSNES_SCALE_INPUT;
-      scale->type_y = SSNES_SCALE_INPUT;
-      scale->scale_x = 1.0;
-      scale->scale_y = 1.0;
-      scale->abs_x = g_extern.system.geom.base_width;
-      scale->abs_y = g_extern.system.geom.base_height;
-
-      if (strcmp(scale_type_x, "source") == 0)
-         scale->type_x = SSNES_SCALE_INPUT;
-      else if (strcmp(scale_type_x, "viewport") == 0)
-         scale->type_x = SSNES_SCALE_VIEWPORT;
-      else if (strcmp(scale_type_x, "absolute") == 0)
-         scale->type_x = SSNES_SCALE_ABSOLUTE;
-      else
-      {
-         SSNES_ERR("Invalid attribute.\n");
-         ret = false;
-         goto end;
-      }
-
-      if (strcmp(scale_type_y, "source") == 0)
-         scale->type_y = SSNES_SCALE_INPUT;
-      else if (strcmp(scale_type_y, "viewport") == 0)
-         scale->type_y = SSNES_SCALE_VIEWPORT;
-      else if (strcmp(scale_type_y, "absolute") == 0)
-         scale->type_y = SSNES_SCALE_ABSOLUTE;
-      else
-      {
-         SSNES_ERR("Invalid attribute.\n");
-         ret = false;
-         goto end;
-      }
-
-      if (scale->type_x == SSNES_SCALE_ABSOLUTE)
-      {
-         print_buf(attr_name_buf, "scale%u", i);
-         if (config_get_int(conf, attr_name_buf, &iattr))
-            scale->abs_x = iattr;
-         else
-         {
-            print_buf(attr_name_buf, "scale_x%u", i);
-            if (config_get_int(conf, attr_name_buf, &iattr))
-               scale->abs_x = iattr;
-         }
-      }
-      else
-      {
-         print_buf(attr_name_buf, "scale%u", i);
-         if (config_get_double(conf, attr_name_buf, &fattr))
-            scale->scale_x = fattr;
-         else
-         {
-            print_buf(attr_name_buf, "scale_x%u", i);
-            if (config_get_double(conf, attr_name_buf, &fattr))
-               scale->scale_x = fattr;
-         }
-      }
-
-      if (scale->type_y == SSNES_SCALE_ABSOLUTE)
-      {
-         print_buf(attr_name_buf, "scale%u", i);
-         if (config_get_int(conf, attr_name_buf, &iattr))
-            scale->abs_y = iattr;
-         else
-         {
-            print_buf(attr_name_buf, "scale_y%u", i);
-            if (config_get_int(conf, attr_name_buf, &iattr))
-               scale->abs_y = iattr;
-         }
-      }
-      else
-      {
-         print_buf(attr_name_buf, "scale%u", i);
-         if (config_get_double(conf, attr_name_buf, &fattr))
-            scale->scale_y = fattr;
-         else
-         {
-            print_buf(attr_name_buf, "scale_y%u", i);
-            if (config_get_double(conf, attr_name_buf, &fattr))
-               scale->scale_y = fattr;
-         }
-      }
-
-      if (scale_type_x)
-         free(scale_type_x);
-      if (scale_type_y)
-         free(scale_type_y);
-   }
-
    strlcpy(dir_path, path, sizeof(dir_path));
    ptr = strrchr(dir_path, '/');
    if (!ptr) ptr = strrchr(dir_path, '\\');
@@ -915,58 +926,21 @@ static bool load_preset(const char *path)
    else // No directory.
       dir_path[0] = '\0';
 
-   // Finally load shaders :)
    for (int i = 0; i < shaders; i++)
    {
-      char *shader_path;
-      char attr_buf[64];
-      char path_buf[PATH_MAX];
-
-      print_buf(attr_buf, "shader%u", i);
-      if (config_get_string(conf, attr_buf, &shader_path))
+      if (!load_shader_params(i, conf))
       {
-         strlcpy(path_buf, dir_path, sizeof(path_buf));
-         strlcat(path_buf, shader_path, sizeof(path_buf));
-         free(shader_path);
-      }
-      else
-      {
-         SSNES_ERR("Didn't find shader path in config ...\n");
+         SSNES_ERR("Failed to load shader params ...\n");
          ret = false;
          goto end;
       }
 
-      SSNES_LOG("Loading Cg shader: \"%s\".\n", path_buf);
-
-      struct cg_program *prog = &prg[i + 1];
-
-      char *listing_f = NULL;
-      prog->fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path_buf, cgFProf, "main_fragment", cg_arguments);
-      SET_LISTING(f);
-      
-      char *listing_v = NULL;
-      prog->vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path_buf, cgVProf, "main_vertex", cg_arguments);
-      SET_LISTING(v);
-
-      if (!prog->fprg || !prog->vprg)
+      if (!load_shader(dir_path, i, conf))
       {
-         CGerror err = cgGetError();
-         SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
-         if (listing_v)
-            SSNES_ERR("Vertex:\n%s\n", listing_v);
-         else if (listing_f)
-            SSNES_ERR("Fragment:\n%s\n", listing_f);
-
-         free(listing_f);
-         free(listing_v);
+         SSNES_ERR("Failed to load shaders ...\n");
          ret = false;
          goto end;
       }
-
-      free(listing_f);
-      free(listing_v);
-      cgGLLoadProgram(prog->fprg);
-      cgGLLoadProgram(prog->vprg);
    }
 
    if (!load_textures(dir_path, conf))
@@ -1178,12 +1152,12 @@ void gl_cg_shader_scale(unsigned index, struct gl_fbo_scale *scale)
       scale->valid = false;
 }
 
-void gl_cg_set_menu_shader(const char *shader)
+void gl_cg_set_menu_shader(const char *path)
 {
    if (menu_cg_program)
       free(menu_cg_program);
 
-   menu_cg_program = strdup(shader);
+   menu_cg_program = strdup(path);
 }
 
 void gl_cg_set_compiler_args(const char **argv)
