@@ -23,8 +23,25 @@
 const char *ssnes_console_get_rom_ext(void)
 {
    const char *id = snes_library_id();
+
+   /* SNES9x / bSNES */
    if (strstr(id, "SNES"))
-      return "sfc|smc";
+   	return "smc|fig|sfc|gd3|gd7|dx2|bsx|swc|zip|SMC|FIG|SFC|BSX|GD3|GD7|DX2|SWC|ZIP";
+   /* FCEU Next */
+   else if (strstr(id, "FCEU"))
+   	return "fds|FDS|zip|ZIP|nes|NES|unif|UNIF";
+   /* VBA Next / Meteor */
+   else if (strstr(id, "VBA") || strstr(id, "Meteor"))
+        return "gb|gbc|gba|GBA|GB|GBC|zip|ZIP";
+   /* Gambatte */
+   else if (strstr(id, "gambatte"))
+        return "gb|gbc|GB|GBC|zip|ZIP";
+   /* FBA Next */
+   else if (strstr(id, "FBA"))
+        return "zip|ZIP";
+   /* Genesis Plus GX/Next */
+   else if (strstr(id, "Genesis Plus GX"))
+        return "md|smd|bin|gen|zip|MD|SMD|bin|GEN|ZIP|sms|SMS|gg|GG|sg|SG";
 
    return NULL;
 }
