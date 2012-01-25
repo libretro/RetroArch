@@ -19,9 +19,7 @@
 #ifndef _PS3_VIDEO_PSGL_H
 #define _PS3_VIDEO_PSGL_H
 
-#include <PSGL/psgl.h>
-#include <PSGL/psglu.h>
-#include <GLES/glext.h>
+#include "../gfx/gl_common.h"
 #include <cell/dbgfont.h>
 
 void ps3_video_init(void);

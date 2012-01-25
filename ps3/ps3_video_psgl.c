@@ -26,8 +26,10 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <string.h>
-#include "../general.h"
 #include <math.h>
+
+#include "../general.h"
+#include "shared.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -127,7 +129,21 @@ typedef struct gl
    unsigned base_size; // 2 or 4
 } gl_t;
 
-////////////////// Shaders
+/* menu */
+
+static CGprogram _vertexProgram;
+static CGprogram _fragmentProgram;
+
+static CGparameter _cgpModelViewProj;
+static CGparameter _cgpVideoSize;
+static CGparameter _cgpTextureSize;
+static CGparameter _cgpOutputSize;
+static CGparameter _cgp_vertex_VideoSize;
+static CGparameter _cgp_vertex_TextureSize;
+static CGparameter _cgp_vertex_OutputSize;
+static CGparameter _cgp_timer;
+static CGparameter _cgp_vertex_timer;
+
 static bool gl_shader_init(void)
 {
    switch (g_settings.video.shader_type)
@@ -824,6 +840,38 @@ static bool psgl_init_device(gl_t *gl, const video_info_t *video, uint32_t resol
    return true;
 }
 
+void psgl_init_menu_shader (void)
+{
+	gl_t *gl = g_gl;
+	const char* args[] = { "-fastmath", "-unroll=all", "-ifcvt=all", 0 };
+
+	_vertexProgram = cgCreateProgramFromFile(gl->gl_context, CG_SOURCE, DEFAULT_MENU_SHADER_FILE, CG_PROFILE_SCE_VP_RSX, 
+	"main_vertex", args);
+	cgGLLoadProgram(_vertexProgram);
+	_fragmentProgram = cgCreateProgramFromFile(gl->gl_context, CG_SOURCE, DEFAULT_MENU_SHADER_FILE, CG_PROFILE_SCE_FP_RSX, 
+	"main_fragment", args);
+	cgGLLoadProgram(_fragmentProgram);
+
+	/* bind and enable the vertex and fragment programs*/
+	cgGLEnableProfile(CG_PROFILE_SCE_VP_RSX);
+	cgGLEnableProfile(CG_PROFILE_SCE_FP_RSX);
+	cgGLBindProgram(_vertexProgram);
+	cgGLBindProgram(_fragmentProgram);
+
+	/* acquire mvp param from v shader*/
+	_cgpModelViewProj = cgGetNamedParameter(_vertexProgram, "modelViewProj");
+
+	_cgpVideoSize = cgGetNamedParameter(_fragmentProgram, "IN.video_size");
+	_cgpTextureSize = cgGetNamedParameter(_fragmentProgram, "IN.texture_size");
+	_cgpOutputSize = cgGetNamedParameter(_fragmentProgram, "IN.output_size");
+	_cgp_vertex_VideoSize = cgGetNamedParameter(_vertexProgram, "IN.video_size");
+	_cgp_vertex_TextureSize = cgGetNamedParameter(_vertexProgram, "IN.texture_size");
+	_cgp_vertex_OutputSize = cgGetNamedParameter(_vertexProgram, "IN.output_size");
+
+	_cgp_timer = cgGetNamedParameter(_fragmentProgram, "IN.frame_count");
+	_cgp_vertex_timer = cgGetNamedParameter(_vertexProgram, "IN.frame_count");
+}
+
 static void psgl_init_dbgfont(gl_t *gl)
 {
    CellDbgFontConfig cfg;
@@ -1124,6 +1172,10 @@ void ps3_video_init(void)
    video_info.smooth = true;
    video_info.input_scale = 2;
    g_gl = gl_init(&video_info, NULL, NULL);
+
+   //SSNES_LOG("Initializing menu shader\n");
+   //psgl_init_menu_shader();
+
    get_all_available_resolutions();
    ps3_set_resolution();
 }
