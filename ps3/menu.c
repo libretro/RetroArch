@@ -23,6 +23,8 @@
 #include "cellframework2/input/pad_input.h"
 #include "cellframework2/fileio/file_browser.h"
 
+#include "../console/rom_ext.h"
+
 #include "ps3_video_psgl.h"
 
 #include "shared.h"
@@ -1275,7 +1277,7 @@ static void select_rom(void)
 	}
 
 	if (CTRL_START(button_was_pressed))
-		filebrowser_reset_start_directory(&browser, "/", ROM_EXTENSIONS);
+		filebrowser_reset_start_directory(&browser, "/", ssnes_console_get_rom_ext());
 
 	if (CTRL_CROSS(button_was_pressed))
 	{
@@ -1342,7 +1344,7 @@ static void select_rom(void)
 
 void menu_init (void)
 {
-	filebrowser_new(&browser, "/", ROM_EXTENSIONS);
+	filebrowser_new(&browser, "/", ssnes_console_get_rom_ext());
 }
 
 void menu_loop(void)

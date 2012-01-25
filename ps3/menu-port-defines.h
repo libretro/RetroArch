@@ -16,9 +16,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* allowed ROM extensions - ROMs are separated by a '|' character */
-#define ROM_EXTENSIONS "smc|fig|sfc|gd3|gd7|dx2|bsx|swc|zip|SMC|FIG|SFC|BSX|GD3|GD7|DX2|SWC|ZIP"
-
 #define FONT_SIZE 1.0f
 #define EMU_MENU_TITLE "SSNES |"
 #define VIDEO_MENU_TITLE "SSNES VIDEO |"
