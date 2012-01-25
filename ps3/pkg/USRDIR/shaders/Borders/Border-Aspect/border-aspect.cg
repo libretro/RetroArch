@@ -1,0 +1,77 @@
+/*
+   Author: Themaister
+   License: Public domain
+*/
+
+// Border shader. 1920x1080 border. :)
+// Puts game in middle.
+
+struct input
+{
+   float2 video_size;
+   float2 texture_size;
+   float2 output_size;
+   float frame_count;
+};
+
+const float in_aspect = 16.0 / 9.0;
+const float out_aspect = 4.0 / 3.0;
+
+void main_vertex
+(
+   float4 position : POSITION,
+   out float4 oPosition : POSITION,
+   uniform float4x4 modelViewProj,
+
+   float4 color : COLOR,
+   out float4 oColor : COLOR,
+
+   float2 tex : TEXCOORD0,
+   float2 oTex : TEXCOORD0,
+   float2 tex_border : TEXCOORD1,
+   out float2 otex_border : TEXCOORD1,
+
+   out float2 border,
+
+   uniform input IN
+)
+{
+   oPosition = mul(modelViewProj, position);
+   oColor = color;
+
+   float2 middle = 0.5 * IN.video_size / IN.texture_size;
+
+   float dist = tex.x - middle.x;
+   float x = middle.x + dist.x * in_aspect / out_aspect;
+   oTex = float2(x, tex.y);
+
+   border = float2(0.5 - out_aspect / in_aspect, 0.5 + out_aspect / in_aspect);
+
+   otex_border = tex_border;
+}
+
+float4 main_fragment (
+   float2 tex : TEXCOORD0,
+   float2 tex_border : TEXCOORD1,
+   uniform sampler2D s0 : TEXUNIT0,
+   uniform sampler2D bg,
+   uniform input IN,
+   in float2 border) : COLOR
+{
+   float4 background = tex2D(bg, tex_border);
+   float4 source_image = tex2D(s0, tex);
+
+   float sel;
+   if (tex.x < border.x || tex.x > border.y)
+   {
+      sel = 0.0;
+   }
+   else
+   {
+      sel = 1.0;
+   }
+
+   return lerp(background, source_image, sel);
+}
+
+

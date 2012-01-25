@@ -1,0 +1,48 @@
+/*
+   Author: Themaister
+   License: Public domain
+*/
+
+// Border shader. 1920x1080 border. :)
+
+struct input
+{
+   float2 video_size;
+   float2 texture_size;
+   float2 output_size;
+   float frame_count;
+};
+
+const float2 out_res = float2(1920.0, 1080.0); // Output target size.
+
+void main_vertex
+(
+   float4 position : POSITION,
+   out float4 oPosition : POSITION,
+   uniform float4x4 modelViewProj,
+
+   float4 color : COLOR,
+   out float4 oColor : COLOR,
+
+   float2 tex_border : TEXCOORD1,
+   out float2 otex_border : TEXCOORD1,
+
+   uniform input IN
+)
+{
+   oPosition = mul(modelViewProj, position);
+   oColor = color;
+   
+   otex_border = tex_border;
+}
+
+float4 main_fragment (
+   float2 tex_border : TEXCOORD1,
+   uniform sampler2D bg,
+   uniform input IN) : COLOR
+{
+   float4 background = tex2D(bg, tex_border);
+   return background;
+}
+
+
