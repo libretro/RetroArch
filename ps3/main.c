@@ -547,7 +547,6 @@ begin_loop:
    }
    else if(mode_switch == MODE_MENU)
    {
-	   printf("rewind enable: %d\n", g_settings.rewind_enable);
 	   menu_loop();
 	   if(init_ssnes)
 	   {
@@ -564,8 +563,6 @@ begin_loop:
 
 		   snprintf(arg5, sizeof(arg5), SYS_CONFIG_FILE);
 		   char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
-
-		   printf("rewind enable: %d\n", g_settings.rewind_enable);
 
 		   int argc = sizeof(argv_) / sizeof(argv_[0]) - 1;
 		   int init_ret = ssnes_main_init(argc, argv_);
