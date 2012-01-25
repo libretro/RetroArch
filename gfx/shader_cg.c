@@ -324,13 +324,6 @@ void gl_cg_deinit(void)
    cgCtx = NULL;
 }
 
-#define SET_LISTING_INDEX(type, index) \
-{ \
-   const char *list = cgGetLastListing(cgCtx); \
-   if (list) \
-      listing_##type[index] = strdup(list); \
-}
-
 #define SET_LISTING(type) \
 { \
    const char *list = cgGetLastListing(cgCtx); \
