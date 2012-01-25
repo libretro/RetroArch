@@ -36,7 +36,7 @@
 static const char *stock_cg_program =
       "void main_vertex"
       "("
-      "	float4 position	: POSITION,"
+      "	float4 position : POSITION,"
       "	float2 texCoord : TEXCOORD0,"
       "  float4 color : COLOR,"
       ""
@@ -56,6 +56,8 @@ static const char *stock_cg_program =
       "{"
       "   return color * tex2D(s0, tex);"
       "}";
+
+static char *menu_cg_program;
 
 #ifdef SSNES_CG_DEBUG
 static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
@@ -93,7 +95,6 @@ struct cg_fbo_params
    CGparameter coord;
 };
 
-#define MAX_SHADERS 16
 #define MAX_TEXTURES 8
 #define MAX_VARIABLES 64
 #define PREV_TEXTURES 7
@@ -114,7 +115,7 @@ struct cg_program
    CGparameter frame_dir_v;
    CGparameter mvp;
 
-   struct cg_fbo_params fbo[MAX_SHADERS];
+   struct cg_fbo_params fbo[SSNES_CG_MAX_SHADERS];
    struct cg_fbo_params orig;
    struct cg_fbo_params prev[PREV_TEXTURES];
 };
@@ -123,19 +124,20 @@ struct cg_program
 #define FILTER_LINEAR 1
 #define FILTER_NEAREST 2
 
-static struct cg_program prg[MAX_SHADERS];
+static struct cg_program prg[SSNES_CG_MAX_SHADERS];
+static const char **cg_arguments;
 static bool cg_active = false;
 static CGprofile cgVProf, cgFProf;
 static unsigned active_index = 0;
 static unsigned cg_shader_num = 0;
-static struct gl_fbo_scale cg_scale[MAX_SHADERS];
-static unsigned fbo_smooth[MAX_SHADERS];
+static struct gl_fbo_scale cg_scale[SSNES_CG_MAX_SHADERS];
+static unsigned fbo_smooth[SSNES_CG_MAX_SHADERS];
 
 static unsigned lut_textures[MAX_TEXTURES];
 static unsigned lut_textures_num = 0;
 static char lut_textures_uniform[MAX_TEXTURES][64];
 
-static CGparameter cg_attribs[PREV_TEXTURES + 1 + MAX_SHADERS];
+static CGparameter cg_attribs[PREV_TEXTURES + 1 + SSNES_CG_MAX_SHADERS];
 static unsigned cg_attrib_index;
 
 #ifdef HAVE_CONFIGFILE
@@ -185,6 +187,9 @@ void gl_cg_set_params(unsigned width, unsigned height,
    set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count);
    set_param_1f(prg[active_index].frame_dir_v, g_extern.frame_is_reverse ? -1.0 : 1.0);
 
+   if (active_index == SSNES_CG_MENU_SHADER_INDEX)
+      return;
+
    // Set orig texture.
    CGparameter param = prg[active_index].orig.tex;
    if (param)
@@ -195,8 +200,8 @@ void gl_cg_set_params(unsigned width, unsigned height,
 
    set_param_2f(prg[active_index].orig.vid_size_v, info->input_size[0], info->input_size[1]);
    set_param_2f(prg[active_index].orig.vid_size_f, info->input_size[0], info->input_size[1]);
-   set_param_2f(prg[active_index].orig.tex_size_v, info->tex_size[0], info->tex_size[1]);
-   set_param_2f(prg[active_index].orig.tex_size_f, info->tex_size[0], info->tex_size[1]);
+   set_param_2f(prg[active_index].orig.tex_size_v, info->tex_size[0],   info->tex_size[1]);
+   set_param_2f(prg[active_index].orig.tex_size_f, info->tex_size[0],   info->tex_size[1]);
    if (prg[active_index].orig.coord)
    {
       cgGLSetParameterPointer(prg[active_index].orig.coord, 2, GL_FLOAT, 0, info->coord);
@@ -249,15 +254,11 @@ void gl_cg_set_params(unsigned width, unsigned height,
             cgGLEnableTextureParameter(prg[active_index].fbo[i].tex);
          }
 
-         set_param_2f(prg[active_index].fbo[i].vid_size_v, 
-               fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
-         set_param_2f(prg[active_index].fbo[i].vid_size_f, 
-               fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
+         set_param_2f(prg[active_index].fbo[i].vid_size_v, fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
+         set_param_2f(prg[active_index].fbo[i].vid_size_f, fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
 
-         set_param_2f(prg[active_index].fbo[i].tex_size_v, 
-               fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
-         set_param_2f(prg[active_index].fbo[i].tex_size_f, 
-               fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
+         set_param_2f(prg[active_index].fbo[i].tex_size_v, fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
+         set_param_2f(prg[active_index].fbo[i].tex_size_f, fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
 
          if (prg[active_index].fbo[i].coord)
          {
@@ -313,9 +314,14 @@ void gl_cg_deinit(void)
    }
 #endif
 
-#ifndef __CELLOS_LV2__
+   if (menu_cg_program)
+   {
+      free(menu_cg_program);
+      menu_cg_program = NULL;
+   }
+
    cgDestroyContext(cgCtx);
-#endif
+   cgCtx = NULL;
 }
 
 #define SET_LISTING_INDEX(type, index) \
@@ -334,27 +340,28 @@ void gl_cg_deinit(void)
 
 static bool load_plain(const char *path)
 {
+   bool ret = true;
    SSNES_LOG("Loading Cg file: %s\n", path);
 
    char *listing_v[3] = {NULL};
    char *listing_f[3] = {NULL};
 
-   prg[0].fprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", 0);
+   prg[0].fprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", cg_arguments);
    SET_LISTING_INDEX(f, 0);
-   prg[0].vprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", 0);
+   prg[0].vprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", cg_arguments);
    SET_LISTING_INDEX(v, 0);
 
-   prg[1].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgFProf, "main_fragment", 0);
+   prg[1].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgFProf, "main_fragment", cg_arguments);
    SET_LISTING_INDEX(f, 1);
-   prg[1].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgVProf, "main_vertex", 0);
+   prg[1].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path, cgVProf, "main_vertex", cg_arguments);
    SET_LISTING_INDEX(v, 1);
 
    if (*g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
    {
       SSNES_LOG("Loading 2nd pass: %s\n", g_settings.video.second_pass_shader);
-      prg[2].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgFProf, "main_fragment", 0);
+      prg[2].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgFProf, "main_fragment", cg_arguments);
       SET_LISTING_INDEX(f, 2);
-      prg[2].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgVProf, "main_vertex", 0);
+      prg[2].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, g_settings.video.second_pass_shader, cgVProf, "main_vertex", cg_arguments);
       SET_LISTING_INDEX(v, 2);
 
       cg_shader_num = 2;
@@ -375,28 +382,56 @@ static bool load_plain(const char *path)
             SSNES_ERR("Vertex:\n%s\n", listing_v[i]);
          else if (listing_f[i])
             SSNES_ERR("Fragment:\n%s\n", listing_f[i]);
-         goto error;
+
+         ret = false;
+         goto end;
       }
 
       cgGLLoadProgram(prg[i].fprg);
       cgGLLoadProgram(prg[i].vprg);
    }
 
+end:
    for (unsigned i = 0; i < 3; i++)
    {
       free(listing_v[i]);
       free(listing_f[i]);
    }
 
-   return true;
+   return ret;
+}
 
-error:
-   for (unsigned i = 0; i < 3; i++)
+static bool load_menu_shader(void)
+{
+   bool ret = true;
+   char *listing_v = NULL;
+   char *listing_f = NULL;
+
+   prg[SSNES_CG_MENU_SHADER_INDEX].fprg = cgCreateProgram(cgCtx, CG_SOURCE, menu_cg_program, cgFProf, "main_fragment", cg_arguments);
+   SET_LISTING(f);
+   prg[SSNES_CG_MENU_SHADER_INDEX].vprg = cgCreateProgram(cgCtx, CG_SOURCE, menu_cg_program, cgVProf, "main_vertex", cg_arguments);
+   SET_LISTING(v);
+
+   if (!prg[SSNES_CG_MENU_SHADER_INDEX].fprg || !prg[SSNES_CG_MENU_SHADER_INDEX].vprg)
    {
-      free(listing_v[i]);
-      free(listing_f[i]);
+      CGerror err = cgGetError();
+      SSNES_ERR("CG error: %s\n", cgGetErrorString(err));
+      if (listing_v)
+         SSNES_ERR("Vertex:\n%s\n", listing_v);
+      if (listing_f)
+         SSNES_ERR("Fragment:\n%s\n", listing_f);
+
+      ret = false;
+      goto end;
    }
-   return false;
+
+   cgGLLoadProgram(prg[SSNES_CG_MENU_SHADER_INDEX].fprg);
+   cgGLLoadProgram(prg[SSNES_CG_MENU_SHADER_INDEX].vprg);
+
+end:
+   free(listing_v);
+   free(listing_f);
+   return ret;
 }
 
 #define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
@@ -404,7 +439,8 @@ error:
 #ifdef HAVE_CONFIGFILE
 static bool load_textures(const char *dir_path, config_file_t *conf)
 {
-   char *textures;
+   bool ret = true;
+   char *textures = NULL;
    if (!config_get_string(conf, "textures", &textures)) // No textures here ...
       return true;
 
@@ -415,7 +451,8 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
       if (!config_get_string(conf, id, &path))
       {
          SSNES_ERR("Cannot find path to texture \"%s\" ...\n", id);
-         goto error;
+         ret = false;
+         goto end;
       }
 
       char id_filter[64];
@@ -433,7 +470,8 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
       {
          SSNES_ERR("Failed to load picture ...\n");
          free(path);
-         goto error;
+         ret = false;
+         goto end;
       }
 
       strlcpy(lut_textures_uniform[lut_textures_num], id, sizeof(lut_textures_uniform[lut_textures_num]));
@@ -464,24 +502,18 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
       free(img.pixels);
       free(path);
 
-      id = strtok(NULL, ";");;
+      id = strtok(NULL, ";");
    }
 
-   glBindTexture(GL_TEXTURE_2D, 0);
+end:
    free(textures);
-   return true;
-
-error:
-   if (textures)
-      free(textures);
-
-   pglActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, 0);
-   return false;
+   return ret;
 }
 
 static bool load_imports(const char *dir_path, config_file_t *conf)
 {
+   bool ret = true;
    char *imports = NULL;
 
    if (!config_get_string(conf, "imports", &imports))
@@ -525,7 +557,8 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
       if (!semantic)
       {
          SSNES_ERR("No semantic for import variable.\n");
-         goto error;
+         ret = false;
+         goto end;
       }
 
       enum snes_tracker_type tracker_type;
@@ -548,7 +581,8 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
       else
       {
          SSNES_ERR("Invalid semantic.\n");
-         goto error;
+         ret = false;
+         goto end;
       }
 
       unsigned addr = 0;
@@ -571,7 +605,8 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
 
                default:
                   SSNES_ERR("Invalid input slot for import.\n");
-                  goto error;
+                  ret = false;
+                  goto end;
             }
          }
          else if (config_get_hex(conf, wram_buf, &addr))
@@ -587,7 +622,8 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
          else
          {
             SSNES_ERR("No address assigned to semantic.\n");
-            goto error;
+            ret = false;
+            goto end;
          }
       }
 
@@ -617,7 +653,8 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
       if ((memtype != -1u) && (addr >= psnes_get_memory_size(memtype)))
       {
          SSNES_ERR("Address out of bounds.\n");
-         goto error;
+         ret = false;
+         goto end;
       }
 
       unsigned bitmask = 0;
@@ -669,12 +706,9 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
       free(script_class);
 #endif
 
+end:
    free(imports);
-   return true;
-
-error:
-   free(imports);
-   return false;
+   return ret;
 }
 #endif
 
@@ -682,9 +716,11 @@ error:
 static bool load_preset(const char *path)
 {
 #ifdef HAVE_CONFIGFILE
+   bool ret = true;
+
    // Create passthrough shader.
-   prg[0].fprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", 0);
-   prg[0].vprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", 0);
+   prg[0].fprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgFProf, "main_fragment", cg_arguments);
+   prg[0].vprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_program, cgVProf, "main_vertex", cg_arguments);
    if (!prg[0].fprg || !prg[0].vprg)
    {
       SSNES_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
@@ -703,26 +739,29 @@ static bool load_preset(const char *path)
    if (!conf)
    {
       SSNES_ERR("Failed to load preset.\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
    if (!config_get_int(conf, "shaders", &shaders))
    {
       SSNES_ERR("Cannot find \"shaders\" param.\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
    if (shaders < 1)
    {
       SSNES_ERR("Need to define at least 1 shader!\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
    cg_shader_num = shaders;
-   if (shaders > MAX_SHADERS - 2)
+   if (shaders > SSNES_CG_MAX_SHADERS - 3)
    {
-      SSNES_WARN("Too many shaders ... Capping shader amount to %d.\n", MAX_SHADERS - 2);
-      cg_shader_num = shaders = MAX_SHADERS - 2;
+      SSNES_WARN("Too many shaders ... Capping shader amount to %d.\n", SSNES_CG_MAX_SHADERS - 3);
+      cg_shader_num = shaders = SSNES_CG_MAX_SHADERS - 3;
    }
    // If we aren't using last pass non-FBO shader, 
    // this shader will be assumed to be "fixed-function".
@@ -795,7 +834,8 @@ static bool load_preset(const char *path)
       else
       {
          SSNES_ERR("Invalid attribute.\n");
-         goto error;
+         ret = false;
+         goto end;
       }
 
       if (strcmp(scale_type_y, "source") == 0)
@@ -807,7 +847,8 @@ static bool load_preset(const char *path)
       else
       {
          SSNES_ERR("Invalid attribute.\n");
-         goto error;
+         ret = false;
+         goto end;
       }
 
       if (scale->type_x == SSNES_SCALE_ABSOLUTE)
@@ -891,7 +932,8 @@ static bool load_preset(const char *path)
       else
       {
          SSNES_ERR("Didn't find shader path in config ...\n");
-         goto error;
+         ret = false;
+         goto end;
       }
 
       SSNES_LOG("Loading Cg shader: \"%s\".\n", path_buf);
@@ -899,11 +941,11 @@ static bool load_preset(const char *path)
       struct cg_program *prog = &prg[i + 1];
 
       char *listing_f = NULL;
-      prog->fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path_buf, cgFProf, "main_fragment", 0);
+      prog->fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path_buf, cgFProf, "main_fragment", cg_arguments);
       SET_LISTING(f);
       
       char *listing_v = NULL;
-      prog->vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path_buf, cgVProf, "main_vertex", 0);
+      prog->vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, path_buf, cgVProf, "main_vertex", cg_arguments);
       SET_LISTING(v);
 
       if (!prog->fprg || !prog->vprg)
@@ -917,7 +959,8 @@ static bool load_preset(const char *path)
 
          free(listing_f);
          free(listing_v);
-         goto error;
+         ret = false;
+         goto end;
       }
 
       free(listing_f);
@@ -929,22 +972,22 @@ static bool load_preset(const char *path)
    if (!load_textures(dir_path, conf))
    {
       SSNES_ERR("Failed to load lookup textures ...\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
    if (!load_imports(dir_path, conf))
    {
       SSNES_ERR("Failed to load imports ...\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
-   config_file_free(conf);
-   return true;
-
-error:
+end:
    if (conf)
       config_file_free(conf);
-   return false;
+   return ret;
+
 #else
    (void)path;
    SSNES_ERR("No config file support compiled in.\n");
@@ -952,11 +995,93 @@ error:
 #endif
 }
 
+static void set_program_attributes(unsigned i)
+{
+   cgGLBindProgram(prg[i].fprg);
+   cgGLBindProgram(prg[i].vprg);
+
+   prg[i].vid_size_f = cgGetNamedParameter(prg[i].fprg, "IN.video_size");
+   prg[i].tex_size_f = cgGetNamedParameter(prg[i].fprg, "IN.texture_size");
+   prg[i].out_size_f = cgGetNamedParameter(prg[i].fprg, "IN.output_size");
+   prg[i].frame_cnt_f = cgGetNamedParameter(prg[i].fprg, "IN.frame_count");
+   prg[i].frame_dir_f = cgGetNamedParameter(prg[i].fprg, "IN.frame_direction");
+   prg[i].vid_size_v = cgGetNamedParameter(prg[i].vprg, "IN.video_size");
+   prg[i].tex_size_v = cgGetNamedParameter(prg[i].vprg, "IN.texture_size");
+   prg[i].out_size_v = cgGetNamedParameter(prg[i].vprg, "IN.output_size");
+   prg[i].frame_cnt_v = cgGetNamedParameter(prg[i].vprg, "IN.frame_count");
+   prg[i].frame_dir_v = cgGetNamedParameter(prg[i].vprg, "IN.frame_direction");
+   prg[i].mvp = cgGetNamedParameter(prg[i].vprg, "modelViewProj");
+   if (prg[i].mvp)
+      cgGLSetStateMatrixParameter(prg[i].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
+
+   if (i == SSNES_CG_MENU_SHADER_INDEX)
+      return;
+
+   prg[i].orig.tex = cgGetNamedParameter(prg[i].fprg, "ORIG.texture");
+   prg[i].orig.vid_size_v = cgGetNamedParameter(prg[i].vprg, "ORIG.video_size");
+   prg[i].orig.vid_size_f = cgGetNamedParameter(prg[i].fprg, "ORIG.video_size");
+   prg[i].orig.tex_size_v = cgGetNamedParameter(prg[i].vprg, "ORIG.texture_size");
+   prg[i].orig.tex_size_f = cgGetNamedParameter(prg[i].fprg, "ORIG.texture_size");
+   prg[i].orig.coord = cgGetNamedParameter(prg[i].vprg, "ORIG.tex_coord");
+
+   for (unsigned j = 0; j < PREV_TEXTURES; j++)
+   {
+      char attr_buf_tex[64];
+      char attr_buf_vid_size[64];
+      char attr_buf_tex_size[64];
+      char attr_buf_coord[64];
+      static const char *prev_names[PREV_TEXTURES] = {
+         "PREV",
+         "PREV1",
+         "PREV2",
+         "PREV3",
+         "PREV4",
+         "PREV5",
+         "PREV6",
+      };
+
+      snprintf(attr_buf_tex,      sizeof(attr_buf_tex),      "%s.texture", prev_names[j]);
+      snprintf(attr_buf_vid_size, sizeof(attr_buf_vid_size), "%s.video_size", prev_names[j]);
+      snprintf(attr_buf_tex_size, sizeof(attr_buf_tex_size), "%s.texture_size", prev_names[j]);
+      snprintf(attr_buf_coord,    sizeof(attr_buf_coord),    "%s.tex_coord", prev_names[j]);
+
+      prg[i].prev[j].tex = cgGetNamedParameter(prg[i].fprg, attr_buf_tex);
+
+      prg[i].prev[j].vid_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf_vid_size);
+      prg[i].prev[j].vid_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf_vid_size);
+
+      prg[i].prev[j].tex_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf_tex_size);
+      prg[i].prev[j].tex_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf_tex_size);
+
+      prg[i].prev[j].coord = cgGetNamedParameter(prg[i].vprg, attr_buf_coord);
+   }
+
+   for (unsigned j = 0; j < i - 1; j++)
+   {
+      char attr_buf[64];
+
+      snprintf(attr_buf, sizeof(attr_buf), "PASS%u.texture", j + 1);
+      prg[i].fbo[j].tex = cgGetNamedParameter(prg[i].fprg, attr_buf);
+
+      snprintf(attr_buf, sizeof(attr_buf), "PASS%u.video_size", j + 1);
+      prg[i].fbo[j].vid_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf);
+      prg[i].fbo[j].vid_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf);
+
+      snprintf(attr_buf, sizeof(attr_buf), "PASS%u.texture_size", j + 1);
+      prg[i].fbo[j].tex_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf);
+      prg[i].fbo[j].tex_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf);
+
+      snprintf(attr_buf, sizeof(attr_buf), "PASS%u.tex_coord", j + 1);
+      prg[i].fbo[j].coord = cgGetNamedParameter(prg[i].vprg, attr_buf);
+   }
+}
+
 bool gl_cg_init(const char *path)
 {
 #ifdef __CELLOS_LV2__
    cgRTCgcInit();
 #endif
+
    cgCtx = cgCreateContext();
    if (cgCtx == NULL)
    {
@@ -992,87 +1117,18 @@ bool gl_cg_init(const char *path)
          return false;
    }
 
+   if (menu_cg_program && !load_menu_shader())
+      return false;
+
    prg[0].mvp = cgGetNamedParameter(prg[0].vprg, "modelViewProj");
    if (prg[0].mvp)
       cgGLSetStateMatrixParameter(prg[0].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 
    for (unsigned i = 1; i <= cg_shader_num; i++)
-   {
-      cgGLBindProgram(prg[i].fprg);
-      cgGLBindProgram(prg[i].vprg);
+      set_program_attributes(i);
 
-      prg[i].vid_size_f = cgGetNamedParameter(prg[i].fprg, "IN.video_size");
-      prg[i].tex_size_f = cgGetNamedParameter(prg[i].fprg, "IN.texture_size");
-      prg[i].out_size_f = cgGetNamedParameter(prg[i].fprg, "IN.output_size");
-      prg[i].frame_cnt_f = cgGetNamedParameter(prg[i].fprg, "IN.frame_count");
-      prg[i].frame_dir_f = cgGetNamedParameter(prg[i].fprg, "IN.frame_direction");
-      prg[i].vid_size_v = cgGetNamedParameter(prg[i].vprg, "IN.video_size");
-      prg[i].tex_size_v = cgGetNamedParameter(prg[i].vprg, "IN.texture_size");
-      prg[i].out_size_v = cgGetNamedParameter(prg[i].vprg, "IN.output_size");
-      prg[i].frame_cnt_v = cgGetNamedParameter(prg[i].vprg, "IN.frame_count");
-      prg[i].frame_dir_v = cgGetNamedParameter(prg[i].vprg, "IN.frame_direction");
-      prg[i].mvp = cgGetNamedParameter(prg[i].vprg, "modelViewProj");
-      if (prg[i].mvp)
-         cgGLSetStateMatrixParameter(prg[i].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
-
-      prg[i].orig.tex = cgGetNamedParameter(prg[i].fprg, "ORIG.texture");
-      prg[i].orig.vid_size_v = cgGetNamedParameter(prg[i].vprg, "ORIG.video_size");
-      prg[i].orig.vid_size_f = cgGetNamedParameter(prg[i].fprg, "ORIG.video_size");
-      prg[i].orig.tex_size_v = cgGetNamedParameter(prg[i].vprg, "ORIG.texture_size");
-      prg[i].orig.tex_size_f = cgGetNamedParameter(prg[i].fprg, "ORIG.texture_size");
-      prg[i].orig.coord = cgGetNamedParameter(prg[i].vprg, "ORIG.tex_coord");
-
-      for (unsigned j = 0; j < PREV_TEXTURES; j++)
-      {
-         char attr_buf_tex[64];
-         char attr_buf_vid_size[64];
-         char attr_buf_tex_size[64];
-         char attr_buf_coord[64];
-         static const char *prev_names[PREV_TEXTURES] = {
-            "PREV",
-            "PREV1",
-            "PREV2",
-            "PREV3",
-            "PREV4",
-            "PREV5",
-            "PREV6",
-         };
-
-         snprintf(attr_buf_tex,      sizeof(attr_buf_tex),      "%s.texture", prev_names[j]);
-         snprintf(attr_buf_vid_size, sizeof(attr_buf_vid_size), "%s.video_size", prev_names[j]);
-         snprintf(attr_buf_tex_size, sizeof(attr_buf_tex_size), "%s.texture_size", prev_names[j]);
-         snprintf(attr_buf_coord,    sizeof(attr_buf_coord),    "%s.tex_coord", prev_names[j]);
-
-         prg[i].prev[j].tex = cgGetNamedParameter(prg[i].fprg, attr_buf_tex);
-
-         prg[i].prev[j].vid_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf_vid_size);
-         prg[i].prev[j].vid_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf_vid_size);
-
-         prg[i].prev[j].tex_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf_tex_size);
-         prg[i].prev[j].tex_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf_tex_size);
-
-         prg[i].prev[j].coord = cgGetNamedParameter(prg[i].vprg, attr_buf_coord);
-      }
-
-      for (unsigned j = 0; j < i - 1; j++)
-      {
-         char attr_buf[64];
-
-         snprintf(attr_buf, sizeof(attr_buf), "PASS%u.texture", j + 1);
-         prg[i].fbo[j].tex = cgGetNamedParameter(prg[i].fprg, attr_buf);
-
-         snprintf(attr_buf, sizeof(attr_buf), "PASS%u.video_size", j + 1);
-         prg[i].fbo[j].vid_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf);
-         prg[i].fbo[j].vid_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf);
-
-         snprintf(attr_buf, sizeof(attr_buf), "PASS%u.texture_size", j + 1);
-         prg[i].fbo[j].tex_size_v = cgGetNamedParameter(prg[i].vprg, attr_buf);
-         prg[i].fbo[j].tex_size_f = cgGetNamedParameter(prg[i].fprg, attr_buf);
-
-         snprintf(attr_buf, sizeof(attr_buf), "PASS%u.tex_coord", j + 1);
-         prg[i].fbo[j].coord = cgGetNamedParameter(prg[i].vprg, attr_buf);
-      }
-   }
+   if (menu_cg_program)
+      set_program_attributes(SSNES_CG_MENU_SHADER_INDEX);
 
    cgGLBindProgram(prg[1].fprg);
    cgGLBindProgram(prg[1].vprg);
@@ -1121,3 +1177,17 @@ void gl_cg_shader_scale(unsigned index, struct gl_fbo_scale *scale)
    else
       scale->valid = false;
 }
+
+void gl_cg_set_menu_shader(const char *shader)
+{
+   if (menu_cg_program)
+      free(menu_cg_program);
+
+   menu_cg_program = strdup(shader);
+}
+
+void gl_cg_set_compiler_args(const char **argv)
+{
+   cg_arguments = argv;
+}
+

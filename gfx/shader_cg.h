@@ -21,6 +21,7 @@
 
 #include "../boolean.h"
 #include "gl_common.h"
+#include <stdint.h>
 
 bool gl_cg_init(const char *path);
 
@@ -34,7 +35,8 @@ void gl_cg_set_params(unsigned width, unsigned height,
       unsigned frame_count,
       const struct gl_tex_info *info,
       const struct gl_tex_info *prev_info,
-      const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt);
+      const struct gl_tex_info *fbo_info,
+      unsigned fbo_info_cnt);
 
 void gl_cg_use(unsigned index);
 
@@ -42,5 +44,12 @@ unsigned gl_cg_num(void);
 
 bool gl_cg_filter_type(unsigned index, bool *smooth);
 void gl_cg_shader_scale(unsigned index, struct gl_fbo_scale *scale);
+
+// Used on PS3, but not really platform specific.
+
+#define SSNES_CG_MAX_SHADERS 16
+#define SSNES_CG_MENU_SHADER_INDEX (SSNES_CG_MAX_SHADERS - 1)
+void gl_cg_set_menu_shader(const char *shader);
+void gl_cg_set_compiler_args(const char **argv);
 
 #endif
