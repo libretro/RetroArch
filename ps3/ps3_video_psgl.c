@@ -880,7 +880,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    if (!gl_shader_init())
    {
-      SSNES_ERR("Shader init failed.\n");
+      SSNES_ERR("Menu shader init failed.\n");
       psgl_deinit(gl);
       free(gl);
       return NULL;
