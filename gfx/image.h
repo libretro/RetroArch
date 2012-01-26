@@ -25,7 +25,11 @@ struct texture_image
 {
    unsigned width;
    unsigned height;
+#ifdef __CELLOS_LV2__
+   uint8_t *pixels;
+#else
    uint32_t *pixels;
+#endif
 };
 
 bool texture_image_load(const char *path, struct texture_image* img);

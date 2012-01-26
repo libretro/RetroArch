@@ -492,6 +492,7 @@ int main(int argc, char *argv[])
    // Initialize 6 SPUs but reserve 1 SPU as a raw SPU for PSGL
    sys_spu_initialize(6, 1);
 
+   cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
    cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_GAME);
    cellSysmoduleLoadModule(CELL_SYSMODULE_AVCONF_EXT);
