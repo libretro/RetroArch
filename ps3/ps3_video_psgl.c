@@ -476,12 +476,14 @@ void gl_frame_menu (void)
 	if(!gl)
 		return;
 
+
 	gl_shader_use(SSNES_CG_MENU_SHADER_INDEX);
 
 	gl_cg_set_params(gl->win_width, gl->win_height, gl->win_width, 
 			gl->win_height, gl->win_width, gl->win_height, g_frame_count,
 			NULL, NULL, NULL, 0);
 
+	set_viewport(gl, gl->win_width, gl->win_height, false);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, menu_texture_id);
