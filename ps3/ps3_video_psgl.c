@@ -475,12 +475,20 @@ void gl_frame_menu (void)
 
 	if(!gl)
 		return;
-	
+
 	gl_shader_use(SSNES_CG_MENU_SHADER_INDEX);
 
 	gl_cg_set_params(gl->win_width, gl->win_height, gl->win_width, 
-	gl->win_height, gl->win_width, gl->win_height, g_frame_count,
-	NULL, NULL, NULL, 0);
+			gl->win_height, gl->win_width, gl->win_height, g_frame_count,
+			NULL, NULL, NULL, 0);
+
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, menu_texture_id);
+
+	glDrawArrays(GL_QUADS, 0, 4); 
+
+	glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
@@ -1187,7 +1195,7 @@ void ps3_video_init(void)
 
    get_all_available_resolutions();
    ps3_set_resolution();
-   //ps3_setup_texture();
+   ps3_setup_texture();
 }
 
 void ps3_video_deinit(void)
