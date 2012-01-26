@@ -128,7 +128,7 @@ static bool ps3graphics_load_jpeg(const char * path, struct texture_image *out_i
 		goto error;
 
 	dCtrlParam.outputBytesPerLine = outParam.outputWidth * 4;
-	ret = cellJpgDecDecodeData(mHandle, sHandle, out_img->pixels, &dCtrlParam, &dOutInfo);
+	ret = cellJpgDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &dCtrlParam, &dOutInfo);
 
 	if (ret != CELL_OK || dOutInfo.status != CELL_JPGDEC_DEC_STATUS_FINISH)
 		goto error;
@@ -219,7 +219,7 @@ static bool ps3graphics_load_png(const char * path, struct texture_image *out_im
 		goto error;
 
 	dCtrlParam.outputBytesPerLine = outParam.outputWidth * 4;
-	ret = cellPngDecDecodeData(mHandle, sHandle, out_img->pixels, &dCtrlParam, &dOutInfo);
+	ret = cellPngDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &dCtrlParam, &dOutInfo);
 
 
 	if (ret != CELL_OK || dOutInfo.status != CELL_PNGDEC_DEC_STATUS_FINISH)
