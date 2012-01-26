@@ -94,10 +94,7 @@ static bool ps3graphics_load_jpeg(const char * path, struct texture_image *out_i
 	ret_jpeg = cellJpgDecCreate(&mHandle, &InParam, &OutParam);
 
 	if (ret_jpeg != CELL_OK)
-	{
-		SSNES_ERR("cellJpgDecCreate\n");
 		goto error;
-	}
 
 	memset(&src, 0, sizeof(CellJpgDecSrc));
 	src.srcSelect        = CELL_JPGDEC_FILE;
@@ -112,18 +109,12 @@ static bool ps3graphics_load_jpeg(const char * path, struct texture_image *out_i
 	ret = cellJpgDecOpen(mHandle, &sHandle, &src, &opnInfo);
 
 	if (ret != CELL_OK)
-	{
-		SSNES_ERR("cellJpgDecOpen\n");
 		goto error;
-	}
 
 	ret = cellJpgDecReadHeader(mHandle, sHandle, &info);
 
 	if (ret != CELL_OK)
-	{
-		SSNES_ERR("cellJpgDecReadHeader\n");
 		goto error;
-	}
 
 	inParam.commandPtr         = NULL;
 	inParam.method             = CELL_JPGDEC_FAST;
@@ -134,19 +125,13 @@ static bool ps3graphics_load_jpeg(const char * path, struct texture_image *out_i
 	ret = cellJpgDecSetParameter(mHandle, sHandle, &inParam, &outParam);
 
 	if (ret != CELL_OK)
-	{
-		SSNES_ERR("cellJpgDecSetParameter\n");
 		goto error;
-	}
 
 	dCtrlParam.outputBytesPerLine = outParam.outputWidth * 4;
-	ret = cellJpgDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &dCtrlParam, &dOutInfo);
+	ret = cellJpgDecDecodeData(mHandle, sHandle, out_img->pixels, &dCtrlParam, &dOutInfo);
 
 	if (ret != CELL_OK || dOutInfo.status != CELL_JPGDEC_DEC_STATUS_FINISH)
-	{
-		SSNES_ERR("cellJpgDecDecodeData\n");
 		goto error;
-	}
 
 	out_img->width = outParam.outputWidth;
 	out_img->height = outParam.outputHeight;
@@ -198,10 +183,7 @@ static bool ps3graphics_load_png(const char * path, struct texture_image *out_im
 	ret_png = cellPngDecCreate(&mHandle, &InParam, &OutParam);
 
 	if (ret_png != CELL_OK)
-	{
-		SSNES_ERR("cellPngDecCreate\n");
 		goto error;
-	}
 
 	memset(&src, 0, sizeof(CellPngDecSrc));
 	src.srcSelect        = CELL_PNGDEC_FILE;
@@ -217,19 +199,13 @@ static bool ps3graphics_load_png(const char * path, struct texture_image *out_im
 
 
 	if (ret != CELL_OK)
-	{
-		SSNES_ERR("cellPngDecOpen\n");
 		goto error;
-	}
 
 	ret = cellPngDecReadHeader(mHandle, sHandle, &info);
 
 
 	if (ret != CELL_OK)
-	{
-		SSNES_ERR("cellPngDecReadheader\n");
 		goto error;
-	}
 
 	inParam.commandPtr         = NULL;
 	inParam.outputMode         = CELL_PNGDEC_TOP_TO_BOTTOM;
@@ -240,20 +216,14 @@ static bool ps3graphics_load_png(const char * path, struct texture_image *out_im
 	ret = cellPngDecSetParameter(mHandle, sHandle, &inParam, &outParam);
 
 	if (ret != CELL_OK)
-	{
-		SSNES_ERR("cellPngDecSetParameter\n");
 		goto error;
-	}
 
 	dCtrlParam.outputBytesPerLine = outParam.outputWidth * 4;
-	ret = cellPngDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &dCtrlParam, &dOutInfo);
+	ret = cellPngDecDecodeData(mHandle, sHandle, out_img->pixels, &dCtrlParam, &dOutInfo);
 
 
 	if (ret != CELL_OK || dOutInfo.status != CELL_PNGDEC_DEC_STATUS_FINISH)
-	{
-		SSNES_ERR("cellPngDecDecodeData\n");
 		goto error;
-	}
 
 	out_img->width = outParam.outputWidth;
 	out_img->height = outParam.outputHeight;
