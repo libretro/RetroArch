@@ -95,6 +95,7 @@ static inline unsigned lines_to_pitch(unsigned height)
       return g_extern.system.pitch;
 }
 
+#ifndef HAVE_SCREENSHOTS_BUILTIN
 static void take_screenshot(void)
 {
    if (!(*g_settings.screenshot_directory))
@@ -134,6 +135,7 @@ static void take_screenshot(void)
    else
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 }
+#endif
 
 
 static inline void adjust_crop(const uint16_t **data, unsigned *height)
@@ -1931,6 +1933,7 @@ static void check_cheats(void)
 }
 #endif
 
+#ifndef HAVE_SCREENSHOTS_BUILTIN
 static void check_screenshot(void)
 {
    static bool old_pressed = false;
@@ -1940,6 +1943,7 @@ static void check_screenshot(void)
 
    old_pressed = pressed;
 }
+#endif
 
 #ifdef HAVE_DYLIB
 static void check_dsp_config(void)
@@ -1991,7 +1995,9 @@ static void check_netplay_flip(void)
 
 static void do_state_checks(void)
 {
+#ifndef HAVE_SCREENSHOTS_BUILTIN
    check_screenshot();
+#endif
    check_mute();
 
 #ifdef HAVE_NETPLAY

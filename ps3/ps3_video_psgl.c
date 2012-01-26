@@ -1187,7 +1187,7 @@ void ps3_video_init(void)
 
    get_all_available_resolutions();
    ps3_set_resolution();
-   ps3_setup_texture();
+   //ps3_setup_texture();
 }
 
 void ps3_video_deinit(void)
