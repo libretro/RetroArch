@@ -132,7 +132,6 @@ static bool ps3graphics_load_jpeg(const char * path, struct texture_image *out_i
 
 	if (ret != CELL_OK)
 	{
-		sys_process_exit(0);
 		goto error;
 	}
 
@@ -141,7 +140,6 @@ static bool ps3graphics_load_jpeg(const char * path, struct texture_image *out_i
 
 	if (ret != CELL_OK || dOutInfo.status != CELL_JPGDEC_DEC_STATUS_FINISH)
 	{
-		sys_process_exit(0);
 		goto error;
 	}
 
