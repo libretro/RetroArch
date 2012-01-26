@@ -1360,7 +1360,8 @@ void menu_loop(void)
 	do
 	{
 		glClear(GL_COLOR_BUFFER_BIT);
-		gl_frame_menu();
+		//gl_frame_menu();
+		g_frame_count++;
 
 		switch(menuStack[menuStackindex].enum_id)
 		{
