@@ -1165,15 +1165,12 @@ bool ps3_setup_texture(void)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_ARGB_SCE, gl->win_width, gl->win_height, 0,
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_ARGB_SCE, menu_texture.width, menu_texture.height, 0,
 			GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8, menu_texture.pixels);
 
-	glClientActiveTexture(GL_TEXTURE1);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	glTexCoordPointer(2, GL_FLOAT, 0, (void*)(128 * 3));
-	glClientActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
-	glBindTexture(GL_TEXTURE_2D, menu_texture_id);
+	free(menu_texture.pixels);
 	
 	return true;
 }
