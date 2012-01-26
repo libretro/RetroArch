@@ -20,6 +20,7 @@
 #define _PS3_VIDEO_PSGL_H
 
 #include "../gfx/gl_common.h"
+#include "../gfx/gfx_common.h"
 #include <cell/dbgfont.h>
 
 void ps3_video_init(void);
@@ -32,6 +33,7 @@ int ps3_check_resolution(uint32_t resolution_id);
 void ps3_block_swap (void);
 void ps3_unblock_swap (void);
 void gl_frame_menu(void);
+bool ps3_setup_texture(void);
 
 extern void *g_gl;
 

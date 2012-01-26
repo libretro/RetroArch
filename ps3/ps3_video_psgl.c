@@ -35,10 +35,9 @@
 #include "config.h"
 #endif
 
-#include "../gfx/gl_common.h"
-#include "../gfx/gfx_common.h"
 #include "../strl.h"
 
+#include "../gfx/image.h"
 #include "../gfx/shader_cg.h"
 
 #define BLUE		0xffff0000u
@@ -128,6 +127,9 @@ typedef struct gl
    GLenum texture_fmt;
    unsigned base_size; // 2 or 4
 } gl_t;
+
+static struct texture_image menu_texture;
+static GLuint menu_texture_id;
 
 static bool gl_shader_init(void)
 {
@@ -1131,6 +1133,41 @@ void ps3_unblock_swap (void)
    SSNES_LOG("Swap is set to non-blocked\n");
 }
 
+bool ps3_setup_texture(void)
+{
+	gl_t *gl = g_gl;
+
+	if (!gl)
+		return false;
+
+	glGenTextures(1, &menu_texture_id);
+
+	SSNES_LOG("Loading texture image for menu...\n");
+	if(!texture_image_load(DEFAULT_MENU_BORDER_FILE, &menu_texture))
+	{
+		SSNES_ERR("Failed to load texture image for menu\n");
+		return false;
+	}
+
+	glBindTexture(GL_TEXTURE_2D, menu_texture_id);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_ARGB_SCE, gl->win_width, gl->win_height, 0,
+			GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8, menu_texture.pixels);
+
+	glClientActiveTexture(GL_TEXTURE1);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glTexCoordPointer(2, GL_FLOAT, 0, (void*)(128 * 3));
+	glClientActiveTexture(GL_TEXTURE0);
+
+	glBindTexture(GL_TEXTURE_2D, menu_texture_id);
+	
+	return true;
+}
+
 // PS3 needs a working graphics stack before SSNES even starts.
 // To deal with this main.c,
 // the top level module owns the instance, and is created beforehand.
@@ -1146,9 +1183,9 @@ void ps3_video_init(void)
    video_info.input_scale = 2;
    g_gl = gl_init(&video_info, NULL, NULL);
 
-
    get_all_available_resolutions();
    ps3_set_resolution();
+   ps3_setup_texture();
 }
 
 void ps3_video_deinit(void)
