@@ -21,7 +21,7 @@
 #include <rsound.h>
 #include "fifo_buffer.h"
 #include "../boolean.h"
-#include "SDL.h"
+#include "../thread.h"
 
 typedef struct rsd
 {
@@ -31,8 +31,8 @@ typedef struct rsd
 
    fifo_buffer_t *buffer;
 
-   SDL_mutex *cond_lock;
-   SDL_cond *cond;
+   slock_t *cond_lock;
+   scond_t *cond;
 } rsd_t;
 
 static ssize_t audio_cb(void *data, size_t bytes, void *userdata)
@@ -42,7 +42,7 @@ static ssize_t audio_cb(void *data, size_t bytes, void *userdata)
    size_t avail = fifo_read_avail(rsd->buffer);
    size_t write_size = bytes > avail ? avail : bytes;
    fifo_read(rsd->buffer, data, write_size);
-   SDL_CondSignal(rsd->cond);
+   scond_signal(rsd->cond);
 
    return write_size;
 }
@@ -51,7 +51,7 @@ static void err_cb(void *userdata)
 {
    rsd_t *rsd = (rsd_t*)userdata;
    rsd->has_error = true;
-   SDL_CondSignal(rsd->cond);
+   scond_signal(rsd->cond);
 }
 
 static void *rs_init(const char *device, unsigned rate, unsigned latency)
@@ -68,8 +68,8 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency)
       return NULL;
    }
 
-   rsd->cond_lock = SDL_CreateMutex();
-   rsd->cond = SDL_CreateCond();
+   rsd->cond_lock = slock_new();
+   rsd->cond = scond_new();
 
    rsd->buffer = fifo_new(1024 * 4);
 
@@ -127,9 +127,9 @@ static ssize_t rs_write(void *data, const void *buf, size_t size)
             rsd_callback_unlock(rsd->rd);
             if (!rsd->has_error)
             {
-               SDL_mutexP(rsd->cond_lock);
-               SDL_CondWait(rsd->cond, rsd->cond_lock);
-               SDL_mutexV(rsd->cond_lock);
+               slock_lock(rsd->cond_lock);
+               scond_wait(rsd->cond, rsd->cond_lock);
+               slock_unlock(rsd->cond_lock);
             }
          }
          else
@@ -175,8 +175,8 @@ static void rs_free(void *data)
    rsd_free(rsd->rd);
 
    fifo_free(rsd->buffer);
-   SDL_DestroyMutex(rsd->cond_lock);
-   SDL_DestroyCond(rsd->cond);
+   slock_free(rsd->cond_lock);
+   scond_free(rsd->cond);
 
    free(rsd);
 }
