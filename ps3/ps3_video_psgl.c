@@ -380,6 +380,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    }
 
    gl->fbo_inited = true;
+   glBindFramebufferOES(GL_FRAMEBUFFER_OES, 0);
    return;
 
 error:
