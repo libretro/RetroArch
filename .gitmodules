@@ -1,0 +1,3 @@
+[submodule "ps3/pkg/USRDIR/shaders"]
+	path = ps3/pkg/USRDIR/shaders
+	url = git@github.com:twinaphex/common-shaders.git
