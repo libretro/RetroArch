@@ -640,8 +640,28 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 		case SETTING_HW_OVERSCAN_AMOUNT:
 			break;
 		case SETTING_THROTTLE_MODE:
+			if(g_console.throttle)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				menu_obj->items[currentsetting].text_color = GREEN;
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			}
 			break;
 		case SETTING_TRIPLE_BUFFERING:
+			if(g_console.triple_buffering_enabled)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				menu_obj->items[currentsetting].text_color = GREEN;
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			}
 			break;
 		case SETTING_ENABLE_SCREENSHOTS:
 			if(g_console.screenshots_enable)
@@ -992,6 +1012,12 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_HW_OVERSCAN_AMOUNT:
 			break;
 		case SETTING_THROTTLE_MODE:
+			if(g_console.throttle)
+				ps3_unblock_swap();
+			else
+				ps3_block_swap();
+			g_console.throttle = !g_console.throttle;
+			set_text_message("", 7);
 			break;
 		case SETTING_TRIPLE_BUFFERING:
 			break;

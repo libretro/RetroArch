@@ -173,14 +173,16 @@ struct settings
 struct console_settings
 {
    bool block_config_read;
+   bool in_game_menu;
    bool return_to_multiman_enable;
-   uint32_t *supported_resolutions;
-   uint32_t supported_resolutions_count;
+   bool screenshots_enable;
+   bool throttle;
+   bool triple_buffering_enabled;
    uint32_t current_resolution_index;
    uint32_t current_resolution_id;
    uint32_t initial_resolution_id;
-   bool screenshots_enable;
-   bool in_game_menu;
+   uint32_t *supported_resolutions;
+   uint32_t supported_resolutions_count;
    char rom_path[PATH_MAX];
 };
 #endif
