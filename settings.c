@@ -315,14 +315,22 @@ static config_file_t *open_default_config_file(void)
 #ifdef HAVE_CONFIGFILE
 static void parse_config_file(void)
 {
+   if (*g_extern.config_path)
+      config_load_file(g_extern.config_path);
+   else
+      config_load_file(NULL);
+}
+
+void config_load_file(const char *path)
+{
    config_file_t *conf = NULL;
 
-   if (*g_extern.config_path)
+   if (path)
    {
-      conf = config_file_new(g_extern.config_path);
+      conf = config_file_new(path);
       if (!conf)
       {
-         SSNES_ERR("Couldn't find config at path: \"%s\"\n", g_extern.config_path);
+         SSNES_ERR("Couldn't find config at path: \"%s\"\n", path);
          ssnes_fail(1, "parse_config_file()");
       }
    }

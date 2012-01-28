@@ -374,6 +374,9 @@ struct global
 
 void parse_config(void);
 void config_set_defaults(void);
+#ifdef HAVE_CONFIGFILE
+void config_load_file(const char *path);
+#endif
 
 void ssnes_main_clear_state(void);
 int ssnes_main_init(int argc, char *argv[]);
