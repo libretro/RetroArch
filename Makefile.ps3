@@ -73,6 +73,8 @@ $(PPU_TARGET): $(OBJ)
 
 pkg: $(PPU_TARGET)
 	cp ssnes.cfg ps3/pkg/USRDIR/
+	git submodule init
+	git submodule update
 	cp ps3/override/border-only.cg ps3/pkg/USRDIR/shaders/Borders/Menu/
 	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) ps3/pkg/USRDIR/EBOOT.BIN
 	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
