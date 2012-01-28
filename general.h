@@ -374,10 +374,10 @@ struct global
    jmp_buf error_sjlj_context;
 };
 
-void parse_config(void);
+void config_load(void);
 void config_set_defaults(void);
 #ifdef HAVE_CONFIGFILE
-void config_load_file(const char *path);
+bool config_load_file(const char *path);
 #endif
 
 void ssnes_main_clear_state(void);

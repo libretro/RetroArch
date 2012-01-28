@@ -225,7 +225,7 @@ void config_set_defaults(void)
 static void parse_config_file(void);
 #endif
 
-void parse_config(void)
+void config_load(void)
 {
 #ifdef SSNES_CONSOLE
    if (!g_console.block_config_read)
@@ -315,13 +315,20 @@ static config_file_t *open_default_config_file(void)
 #ifdef HAVE_CONFIGFILE
 static void parse_config_file(void)
 {
+   bool ret;
    if (*g_extern.config_path)
-      config_load_file(g_extern.config_path);
+      ret = config_load_file(g_extern.config_path);
    else
-      config_load_file(NULL);
+      ret = config_load_file(NULL);
+
+   if (!ret)
+   {
+      SSNES_ERR("Couldn't find config at path: \"%s\"\n", g_extern.config_path);
+      ssnes_fail(1, "parse_config_file()");
+   }
 }
 
-void config_load_file(const char *path)
+bool config_load_file(const char *path)
 {
    config_file_t *conf = NULL;
 
@@ -338,7 +345,7 @@ void config_load_file(const char *path)
       conf = open_default_config_file();
 
    if (conf == NULL)
-      return;
+      return true;
 
    if (g_extern.verbose)
    {
@@ -496,6 +503,7 @@ void config_load_file(const char *path)
    read_keybinds(conf);
 
    config_file_free(conf);
+   return true;
 }
 
 struct bind_map

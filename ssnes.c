@@ -2097,7 +2097,7 @@ int ssnes_main_init(int argc, char *argv[])
       fprintf(stderr, "=================================================\n");
    }
 
-   parse_config();
+   config_load();
    init_libsnes_sym();
    fill_title_buf();
 
