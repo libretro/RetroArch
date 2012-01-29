@@ -137,7 +137,11 @@ static bool init_audio(struct ff_audio_info *audio, struct ffemu_params *param)
       return false;
    }
 
-   audio->buffer = (int16_t*)av_malloc(audio->codec->frame_size * param->channels * sizeof(int16_t));
+   audio->buffer = (int16_t*)av_malloc(av_samples_get_buffer_size(NULL,
+            audio->codec->channels,
+            audio->codec->frame_size,
+            audio->codec->sample_fmt, 1));
+
    if (!audio->buffer)
       return false;
 
