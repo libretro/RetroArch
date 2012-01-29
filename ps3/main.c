@@ -95,15 +95,15 @@ static void default_settings(void)
 {
 	g_settings.video.smooth = 1;
 	g_settings.video.second_pass_smooth = 1;
-	snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), DEFAULT_SHADER_FILE);
-	snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.second_pass_shader), DEFAULT_SHADER_FILE);
+	strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
+	strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
 	g_settings.video.fbo_scale_x = 2.0f;
 	g_settings.video.fbo_scale_y = 2.0f;
 	g_settings.video.render_to_texture = 1;
 	g_settings.video.vsync = 1;
 	g_extern.state_slot = 0;
 	g_console.screenshots_enable = 0;
-	snprintf(g_settings.cheat_database , sizeof(g_settings.cheat_database), usrDirPath);
+	strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
 	g_settings.rewind_enable = false;
 }
 
@@ -132,6 +132,8 @@ static bool init_settings(void)
 	CONFIG_GET_INT_CONSOLE(screenshots_enable, "screenshots_enabled");
 	CONFIG_GET_STRING(cheat_database, "cheat_database_path");
 	CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
+
+	config_file_free(conf);
 
 	return 0;
 }
