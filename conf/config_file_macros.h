@@ -16,49 +16,48 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _CONFIG_FILE_MACROS_H
-#define _CONFIG_FILE_MACROS_H
+#ifndef CONFIG_FILE_MACROS_H__
+#define CONFIG_FILE_MACROS_H__
 
 /* Macros to ease config getting. */
 
-#define CONFIG_GET_BOOL(var, key) if (config_get_bool(conf, key, &tmp_bool)) \
-   g_settings.var = tmp_bool
+#define CONFIG_GET_BOOL_BASE(conf, base, var, key) do { \
+   bool tmp; \
+   if (config_get_bool(conf, key, &tmp)) \
+      base.var = tmp; \
+} while(0)
 
-#define CONFIG_GET_INT(var, key) if (config_get_int(conf, key, &tmp_int)) \
-   g_settings.var = tmp_int
+#define CONFIG_GET_INT_BASE(conf, base, var, key) do { \
+   int tmp; \
+   if (config_get_int(conf, key, &tmp)) \
+      base.var = tmp; \
+} while(0)
 
-#define CONFIG_GET_DOUBLE(var, key) if (config_get_double(conf, key, &tmp_double)) \
-   g_settings.var = tmp_double
+#define CONFIG_GET_DOUBLE_BASE(conf, base, var, key) do { \
+   double tmp; \
+   if (config_get_double(conf, key, &tmp)) \
+      base.var = tmp; \
+} while(0)
 
-#define CONFIG_GET_STRING(var, key) \
-   config_get_array(conf, key, g_settings.var, sizeof(g_settings.var))
+#define CONFIG_GET_STRING_BASE(conf, base, var, key) \
+   config_get_array(conf, key, base.var, sizeof(base.var))
+
+#define CONFIG_GET_BOOL(var, key) CONFIG_GET_BOOL_BASE(conf, g_settings, var, key)
+#define CONFIG_GET_INT(var, key) CONFIG_GET_INT_BASE(conf, g_settings, var, key)
+#define CONFIG_GET_DOUBLE(var, key) CONFIG_GET_DOUBLE_BASE(conf, g_settings, var, key)
+#define CONFIG_GET_STRING(var, key) CONFIG_GET_STRING_BASE(conf, g_settings, var, key)
+
+#define CONFIG_GET_BOOL_EXTERN(var, key) CONFIG_GET_BOOL_BASE(conf, g_extern, var, key)
+#define CONFIG_GET_INT_EXTERN(var, key) CONFIG_GET_INT_BASE(conf, g_extern, var, key)
+#define CONFIG_GET_DOUBLE_EXTERN(var, key) CONFIG_GET_DOUBLE_BASE(conf, g_extern, var, key)
+#define CONFIG_GET_STRING_EXTERN(var, key) CONFIG_GET_STRING_BASE(conf, g_extern, var, key)
 
 #ifdef SSNES_CONSOLE
-
-#define CONFIG_GET_BOOL_CONSOLE(var, key) if (config_get_bool(conf, key, &tmp_bool)) \
-   g_console.var = tmp_bool
-
-#define CONFIG_GET_INT_CONSOLE(var, key) if (config_get_int(conf, key, &tmp_int)) \
-   g_console.var = tmp_int
-
-#define CONFIG_GET_DOUBLE_CONSOLE(var, key) if (config_get_double(conf, key, &tmp_double)) \
-   g_console.var = tmp_double
-
-#define CONFIG_GET_STRING_CONSOLE(var, key) \
-   config_get_array(conf, key, g_console.var, sizeof(g_console.var))
+#define CONFIG_GET_BOOL_EXTERN(var, key) CONFIG_GET_BOOL_BASE(conf, g_console, var, key)
+#define CONFIG_GET_INT_EXTERN(var, key) CONFIG_GET_INT_BASE(conf, g_console, var, key)
+#define CONFIG_GET_DOUBLE_EXTERN(var, key) CONFIG_GET_DOUBLE_BASE(conf, g_console, var, key)
+#define CONFIG_GET_STRING_EXTERN(var, key) CONFIG_GET_STRING_BASE(conf, g_console, var, key)
+#endif
 
 #endif
 
-#define CONFIG_GET_BOOL_EXTERN(var, key) if (config_get_bool(conf, key, &tmp_bool)) \
-   g_extern.var = tmp_bool
-
-#define CONFIG_GET_INT_EXTERN(var, key) if (config_get_int(conf, key, &tmp_int)) \
-   g_extern.var = tmp_int
-
-#define CONFIG_GET_DOUBLE_EXTERN(var, key) if (config_get_double(conf, key, &tmp_double)) \
-   g_extern.var = tmp_double
-
-#define CONFIG_GET_STRING_EXTERN(var, key) \
-   config_get_array(conf, key, g_extern.var, sizeof(g_extern.var))
-
-#endif

@@ -351,9 +351,6 @@ bool config_load_file(const char *path)
       fprintf(stderr, "=== Config end ===\n");
    }
 
-   int tmp_int;
-   double tmp_double;
-   bool tmp_bool;
    char tmp_str[PATH_MAX];
 
    CONFIG_GET_DOUBLE(video.xscale, "video_xscale");
@@ -362,9 +359,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT(video.fullscreen_y, "video_fullscreen_y");
 
    if (!g_extern.force_fullscreen)
-   {
       CONFIG_GET_BOOL(video.fullscreen, "video_fullscreen");
-   }
 
    CONFIG_GET_BOOL(video.force_16bit, "video_force_16bit");
    CONFIG_GET_BOOL(video.disable_composition, "video_disable_composition");
@@ -449,9 +444,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_STRING(input.driver, "input_driver");
 
    if (!*g_settings.libsnes)
-   {
       CONFIG_GET_STRING(libsnes, "libsnes_path");
-   }
 
    CONFIG_GET_STRING(screenshot_directory, "screenshot_directory");
    if (*g_settings.screenshot_directory && !path_is_directory(g_settings.screenshot_directory))
@@ -462,8 +455,9 @@ bool config_load_file(const char *path)
 
    CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
 
-   if (config_get_int(conf, "rewind_buffer_size", &tmp_int))
-      g_settings.rewind_buffer_size = tmp_int * UINT64_C(1000000);
+   int buffer_size;
+   if (config_get_int(conf, "rewind_buffer_size", &buffer_size))
+      g_settings.rewind_buffer_size = buffer_size * UINT64_C(1000000);
 
    CONFIG_GET_INT(rewind_granularity, "rewind_granularity");
 
@@ -776,3 +770,4 @@ static void read_keybinds(config_file_t *conf)
    }
 }
 #endif
+

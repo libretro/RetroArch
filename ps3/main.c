@@ -120,11 +120,6 @@ static bool init_settings(void)
 	if (!conf)
 		return 1;
 
-	int tmp_int;
-	double tmp_double;
-	bool tmp_bool;
-	char tmp_str[PATH_MAX];
-
 	CONFIG_GET_BOOL(video.smooth, "video_smooth");
 	CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
 	CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
