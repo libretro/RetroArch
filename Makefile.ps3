@@ -4,8 +4,9 @@
 ##
 ###
 ##
-DEBUG = 0
-CELL_BUILD_TOOLS = GCC
+DEBUG			= 0
+CELL_BUILD_TOOLS	= GCC
+DOWNLOAD_SHADERS	= 1
 
 ## Platform detection from nall/Makefile. Only two applicable hosts for PS3 SDK.
 ifeq ($(platform),)
@@ -73,8 +74,10 @@ $(PPU_TARGET): $(OBJ)
 
 pkg: $(PPU_TARGET)
 	cp ssnes.cfg ps3/pkg/USRDIR/
-	git submodule init
-	git submodule update
+ifeq ($(DOWNLOAD_SHADERS),1)
+	rm -rf ps3/pkg/USRDIR/shaders
+	git clone git://github.com/twinaphex/common-shaders.git ps3/pkg/USRDIR/shaders
+endif
 	cp ps3/override/border-only.cg ps3/pkg/USRDIR/shaders/Borders/Menu/
 	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) ps3/pkg/USRDIR/EBOOT.BIN
 	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
