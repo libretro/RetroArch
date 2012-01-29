@@ -547,7 +547,7 @@ static bool ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_da
    if (handle->video.codec->coded_frame->key_frame)
       pkt.flags |= AV_PKT_FLAG_KEY;
 
-   if (pkt.size > 0)
+   if (pkt.size)
    {
       if (av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
          return false;
@@ -573,34 +573,72 @@ static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_da
       written_frames += write_frames;
       handle->audio.frames_in_buffer += write_frames;
 
-      if (handle->audio.frames_in_buffer == (size_t)handle->audio.codec->frame_size)
-      {
-         AVPacket pkt;
-         av_init_packet(&pkt);
-         pkt.data = (uint8_t*)handle->audio.outbuf;
-         pkt.stream_index = handle->muxer.astream->index;
+      if (handle->audio.frames_in_buffer < (size_t)handle->audio.codec->frame_size)
+         continue;
 
-         int out_size = avcodec_encode_audio(handle->audio.codec,
-               handle->audio.outbuf, handle->audio.outbuf_size, (const int16_t*)handle->audio.buffer);
-         if (out_size < 0)
-            return false;
+      AVPacket pkt;
+      av_init_packet(&pkt);
+      pkt.data = handle->audio.outbuf;
+      pkt.stream_index = handle->muxer.astream->index;
 
-         pkt.size = out_size;
+      bool has_packet = true;
 
-         pkt.pts = av_rescale_q(handle->audio.codec->coded_frame->pts,
-               handle->audio.codec->time_base, handle->muxer.astream->time_base);
+#if defined(HAVE_FFMPEG_AVCODEC_ENCODE_AUDIO2) && 0 // <-- Currently broken.
+      pkt.size = handle->audio.outbuf_size;
 
+      AVFrame frame;
+      avcodec_get_frame_defaults(&frame);
+
+      frame.nb_samples = handle->audio.codec->frame_size;
+
+      AVRational rat = { 1, handle->audio.codec->sample_rate };
+      frame.pts = av_rescale_q(handle->audio.frame_cnt,
+            rat, handle->audio.codec->time_base);
+
+      int samples_size = av_samples_get_buffer_size(NULL,
+            handle->audio.codec->channels,
+            frame.nb_samples,
+            handle->audio.codec->sample_fmt, 1);
+
+      avcodec_fill_audio_frame(&frame, handle->audio.codec->channels,
+            handle->audio.codec->sample_fmt, (const uint8_t*)handle->audio.buffer,
+            samples_size, 1);
+
+      int got_packet = 0;
+      int ret = avcodec_encode_audio2(handle->audio.codec,
+            &pkt, &frame, &got_packet);
+
+      if (ret < 0)
+         return false;
+
+      has_packet = got_packet;
+#else
+      int out_size = avcodec_encode_audio(handle->audio.codec,
+            handle->audio.outbuf, handle->audio.outbuf_size, handle->audio.buffer);
+      if (out_size < 0)
+         return false;
+
+      pkt.size = out_size;
+      has_packet = pkt.size;
+#endif
+
+      pkt.pts = av_rescale_q(handle->audio.codec->coded_frame->pts,
+            handle->audio.codec->time_base,
+            handle->muxer.astream->time_base);
+
+      if (handle->audio.codec->coded_frame->key_frame)
          pkt.flags |= AV_PKT_FLAG_KEY;
-         handle->audio.frames_in_buffer = 0;
-         handle->audio.frame_cnt += handle->audio.codec->frame_size;
 
-         if (pkt.size > 0)
-         {
-            if (av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
-               return false;
-         }
+      handle->audio.frames_in_buffer = 0;
+      handle->audio.frame_cnt += handle->audio.codec->frame_size;
+
+      if (has_packet)
+      {
+         if (av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
+            return false;
       }
    }
+
    return true;
 }
 
