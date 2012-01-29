@@ -545,8 +545,13 @@ static bool ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_da
    pkt.data = handle->video.outbuf;
    pkt.size = outsize;
 
-   pkt.pts = av_rescale_q(handle->video.codec->coded_frame->pts, handle->video.codec->time_base,
-         handle->muxer.vstream->time_base);
+   if (handle->video.codec->coded_frame->pts != AV_NOPTS_VALUE)
+   {
+      pkt.pts = av_rescale_q(handle->video.codec->coded_frame->pts, handle->video.codec->time_base,
+            handle->muxer.vstream->time_base);
+   }
+   else
+      pkt.pts = AV_NOPTS_VALUE;
 
    if (handle->video.codec->coded_frame->key_frame)
       pkt.flags |= AV_PKT_FLAG_KEY;
