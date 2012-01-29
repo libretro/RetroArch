@@ -48,11 +48,27 @@ bool path_is_directory(const char *path);
 bool path_file_exists(const char *path);
 
 // Path-name operations.
-// Replaces filename extension with replace.
+// If any of these operation are detected to overflow, the application will be terminated.
+
+// Replaces filename extension with 'replace' and outputs result to out_path.
+// The extension here is considered to be the string from the last '.' to the end.
+// If no '.' is present, in_path and replace will simply be concatenated.
+// 'size' is buffer size of 'out_path'.
+// I.e.: in_path = "/foo/bar/baz/boo.c", replace = ".asm" => out_path = "/foo/bar/baz/boo.asm" 
+// I.e.: in_path = "/foo/bar/baz/boo.c", replace = ""     => out_path = "/foo/bar/baz/boo" 
 void fill_pathname(char *out_path, const char *in_path, const char *replace, size_t size);
-// Sets filename extension. Assumes in_path has no extension.
+
+// Appends a filename extension 'replace' to 'in_path', and outputs result in 'out_path'.
+// Assumes in_path has no extension. If an extension is still present in 'in_path', it will be ignored.
+// 'size' is buffer size of 'out_path'.
 void fill_pathname_noext(char *out_path, const char *in_path, const char *replace, size_t size);
-// Concatenates in_basename and replace to in_dir.
+
+// Appends basename of 'in_basename', to 'in_dir', along with 'replace'.
+// Basename of in_basename is the string after the last '/' or '\\', i.e the filename without directories.
+// If in_basename has no '/' or '\\', the whole 'in_basename' will be used.
+// 'size' is buffer size of 'in_dir'.
+// I.e.: in_dir = "/tmp/some_dir", in_basename = "/some_roms/foo.c", replace = ".asm" =>
+//    in_dir = "/tmp/some_dir/foo.c.asm"
 void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replace, size_t size);
 
 #endif
