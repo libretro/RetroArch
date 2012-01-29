@@ -4,7 +4,7 @@
 ##
 ###
 ##
-DEBUG			= 0
+DEBUG			= 1
 CELL_BUILD_TOOLS	= GCC
 DOWNLOAD_SHADERS	= 1
 

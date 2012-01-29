@@ -107,7 +107,7 @@ static void default_settings(void)
 	g_settings.rewind_enable = false;
 }
 
-static bool init_settings(void)
+static void init_settings(void)
 {
 	if(!file_exists(SYS_CONFIG_FILE))
 	{
@@ -117,8 +117,6 @@ static bool init_settings(void)
 	}
 
 	config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
-	if (!conf)
-		return 1;
 
 	CONFIG_GET_BOOL(video.smooth, "video_smooth");
 	CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
@@ -134,8 +132,6 @@ static bool init_settings(void)
 	CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
 
 	config_file_free(conf);
-
-	return 0;
 }
 
 static void get_path_settings(bool multiman_support)
@@ -518,10 +514,7 @@ int main(int argc, char *argv[])
 #endif
 
    get_path_settings(g_console.return_to_multiman_enable);
-   if(!init_settings())
-   {
-	   SSNES_ERR("Couldn't find config at path: \"%s\"\n", SYS_CONFIG_FILE);
-   }
+   init_settings();
 
 #if(CELL_SDK_VERSION > 0x340000)
 	if (g_console.screenshots_enable)
