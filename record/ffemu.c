@@ -145,7 +145,7 @@ static bool init_audio(struct ff_audio_info *audio, struct ffemu_params *param)
    if (!audio->buffer)
       return false;
 
-   audio->outbuf_size = 2000000;
+   audio->outbuf_size = FF_MIN_BUFFER_SIZE;
    audio->outbuf = (uint8_t*)av_malloc(audio->outbuf_size);
    if (!audio->outbuf)
       return false;
@@ -562,7 +562,7 @@ static bool ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_da
    return true;
 }
 
-static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_data *data)
+static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_data *data, bool require_block)
 {
    size_t written_frames = 0;
    while (written_frames < data->frames)
@@ -577,7 +577,7 @@ static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_da
       written_frames += write_frames;
       handle->audio.frames_in_buffer += write_frames;
 
-      if (handle->audio.frames_in_buffer < (size_t)handle->audio.codec->frame_size)
+      if ((handle->audio.frames_in_buffer < (size_t)handle->audio.codec->frame_size) && require_block)
          continue;
 
       AVPacket pkt;
@@ -587,13 +587,13 @@ static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_da
 
       bool has_packet = true;
 
-#if defined(HAVE_FFMPEG_AVCODEC_ENCODE_AUDIO2) && 0 // <-- Currently broken.
+#ifdef HAVE_FFMPEG_AVCODEC_ENCODE_AUDIO2
       pkt.size = handle->audio.outbuf_size;
 
       AVFrame frame;
       avcodec_get_frame_defaults(&frame);
 
-      frame.nb_samples = handle->audio.codec->frame_size;
+      frame.nb_samples = handle->audio.frames_in_buffer;
 
       AVRational rat = { 1, handle->audio.codec->sample_rate };
       frame.pts = av_rescale_q(handle->audio.frame_cnt,
@@ -617,8 +617,16 @@ static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_da
 
       has_packet = got_packet;
 #else
+      if (!require_block)
+      {
+         memset(handle->audio.buffer + handle->audio.frames_in_buffer * handle->audio.codec->channels, 0,
+               (handle->audio.codec->frame_size - handle->audio.frames_in_buffer) *
+               handle->audio.codec->channels * sizeof(int16_t));
+      }
+
       int out_size = avcodec_encode_audio(handle->audio.codec,
             handle->audio.outbuf, handle->audio.outbuf_size, handle->audio.buffer);
+
       if (out_size < 0)
          return false;
 
@@ -626,9 +634,14 @@ static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_da
       has_packet = pkt.size;
 #endif
 
-      pkt.pts = av_rescale_q(handle->audio.codec->coded_frame->pts,
-            handle->audio.codec->time_base,
-            handle->muxer.astream->time_base);
+      if (handle->audio.codec->coded_frame->pts != AV_NOPTS_VALUE)
+      {
+         pkt.pts = av_rescale_q(handle->audio.codec->coded_frame->pts,
+               handle->audio.codec->time_base,
+               handle->muxer.astream->time_base);
+      }
+      else
+         pkt.pts = AV_NOPTS_VALUE;
 
       if (handle->audio.codec->coded_frame->key_frame)
          pkt.flags |= AV_PKT_FLAG_KEY;
@@ -646,13 +659,90 @@ static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_da
    return true;
 }
 
-bool ffemu_finalize(ffemu_t *handle)
+static void ffemu_flush_audio(ffemu_t *handle, int16_t *audio_buf, size_t audio_buf_size)
 {
-   deinit_thread(handle);
+   size_t avail = fifo_read_avail(handle->audio_fifo);
+   fifo_read(handle->audio_fifo, audio_buf, avail);
+   struct ffemu_audio_data aud = {0};
+   aud.frames = avail / (sizeof(int16_t) * handle->params.channels);
+   aud.data = audio_buf;
+   ffemu_push_audio_thread(handle, &aud, false);
 
+#ifdef HAVE_FFMPEG_AVCODEC_ENCODE_AUDIO2
+   AVPacket pkt;
+   av_init_packet(&pkt);
+   pkt.data = handle->audio.outbuf;
+   pkt.stream_index = handle->muxer.astream->index;
+
+   for (;;)
+   {
+      pkt.size = handle->audio.outbuf_size;
+
+      int got_packet = 0;
+      int ret = avcodec_encode_audio2(handle->audio.codec,
+            &pkt, NULL, &got_packet);
+
+      if (ret < 0)
+         return;
+
+      if (!got_packet)
+         return;
+
+      if (handle->audio.codec->coded_frame->pts != AV_NOPTS_VALUE)
+      {
+         pkt.pts = av_rescale_q(handle->audio.codec->coded_frame->pts,
+               handle->audio.codec->time_base,
+               handle->muxer.astream->time_base);
+      }
+      else
+         pkt.pts = AV_NOPTS_VALUE;
+
+      if (handle->audio.codec->coded_frame->key_frame)
+         pkt.flags |= AV_PKT_FLAG_KEY;
+
+      if (av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
+         return;
+   }
+#endif
+}
+
+static void ffemu_flush_video(ffemu_t *handle)
+{
+   AVPacket pkt;
+   av_init_packet(&pkt);
+   pkt.stream_index = handle->muxer.vstream->index;
+   pkt.data = handle->video.outbuf;
+   int out_size = 0;
+
+   for (;;)
+   {
+      out_size = avcodec_encode_video(handle->video.codec,
+            handle->video.outbuf,
+            handle->video.outbuf_size,
+            NULL);
+
+      if (out_size <= 0)
+         return;
+
+      pkt.pts = av_rescale_q(handle->video.codec->coded_frame->pts,
+            handle->video.codec->time_base,
+            handle->muxer.vstream->time_base);
+
+      if (handle->video.codec->coded_frame->key_frame)
+         pkt.flags |= AV_PKT_FLAG_KEY;
+
+      pkt.size = out_size;
+      int err = av_interleaved_write_frame(handle->muxer.ctx, &pkt);
+      if (err < 0)
+         return;
+   }
+}
+
+static void ffemu_flush_buffers(ffemu_t *handle)
+{
+   void *video_buf = av_malloc(2 * handle->params.fb_width * handle->params.fb_height * handle->video.pix_size);
    size_t audio_buf_size = 512 * handle->params.channels * sizeof(int16_t);
    int16_t *audio_buf = (int16_t*)av_malloc(audio_buf_size);
-   void *video_buf = av_malloc(2 * handle->params.fb_width * handle->params.fb_height * handle->video.pix_size);
 
    // Try pushing data in an interleaving pattern to ease the work of the muxer a bit.
    bool did_work;
@@ -668,7 +758,7 @@ bool ffemu_finalize(ffemu_t *handle)
          aud.frames = 512;
          aud.data = audio_buf;
 
-         ffemu_push_audio_thread(handle, &aud);
+         ffemu_push_audio_thread(handle, &aud, true);
          did_work = true;
       }
 
@@ -685,40 +775,23 @@ bool ffemu_finalize(ffemu_t *handle)
    } while (did_work);
 
    // Flush out last audio.
-   size_t avail = fifo_read_avail(handle->audio_fifo);
-   fifo_read(handle->audio_fifo, audio_buf, avail);
-   struct ffemu_audio_data aud = {0};
-   aud.frames = avail / (sizeof(int16_t) * handle->params.channels);
-   aud.data = audio_buf;
-   ffemu_push_audio_thread(handle, &aud);
-
-   deinit_thread_buf(handle);
-   av_free(audio_buf);
-   av_free(video_buf);
+   ffemu_flush_audio(handle, audio_buf, audio_buf_size);
 
    // Flush out last video.
-   AVPacket pkt;
-   av_init_packet(&pkt);
-   pkt.stream_index = handle->muxer.vstream->index;
-   pkt.data = handle->video.outbuf;
+   ffemu_flush_video(handle);
 
-   int out_size = 0;
-   for (;;)
-   {
-      out_size = avcodec_encode_video(handle->video.codec, handle->video.outbuf, handle->video.outbuf_size, NULL);
-      if (out_size <= 0)
-         break;
+   av_free(video_buf);
+   av_free(audio_buf);
+}
 
-      pkt.pts = av_rescale_q(handle->video.codec->coded_frame->pts, handle->video.codec->time_base, handle->muxer.vstream->time_base);
+bool ffemu_finalize(ffemu_t *handle)
+{
+   deinit_thread(handle);
 
-      if (handle->video.codec->coded_frame->key_frame)
-         pkt.flags |= AV_PKT_FLAG_KEY;
+   // Flush out data still in buffers (internal, and FFmpeg internal).
+   ffemu_flush_buffers(handle);
 
-      pkt.size = out_size;
-      int err = av_interleaved_write_frame(handle->muxer.ctx, &pkt);
-      if (err < 0)
-         break;
-   }
+   deinit_thread_buf(handle);
 
    // Write final data.
    av_write_trailer(handle->muxer.ctx);
@@ -791,7 +864,7 @@ static void ffemu_thread(void *data)
          aud.frames = 512;
          aud.data = audio_buf;
 
-         ffemu_push_audio_thread(ff, &aud);
+         ffemu_push_audio_thread(ff, &aud, true);
       }
    }
 
