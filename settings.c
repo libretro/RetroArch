@@ -333,10 +333,7 @@ bool config_load_file(const char *path)
    {
       conf = config_file_new(path);
       if (!conf)
-      {
-         SSNES_ERR("Couldn't find config at path: \"%s\"\n", path);
-         ssnes_fail(1, "parse_config_file()");
-      }
+         return false;
    }
    else
       conf = open_default_config_file();
