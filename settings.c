@@ -36,12 +36,6 @@ struct global g_extern;
 struct console_settings g_console;
 #endif
 
-static config_default_cb_t g_default_cb;
-void config_set_defaults_cb(config_default_cb_t cb)
-{
-   g_default_cb = cb;
-}
-
 #ifdef HAVE_CONFIGFILE
 static void read_keybinds(config_file_t *conf);
 #endif
@@ -225,9 +219,6 @@ void config_set_defaults(void)
    g_settings.input.netplay_client_swap_input = netplay_client_swap_input;
    for (int i = 0; i < MAX_PLAYERS; i++)
       g_settings.input.joypad_map[i] = i;
-
-   if (g_default_cb)
-      g_default_cb();
 }
 
 #ifdef HAVE_CONFIGFILE

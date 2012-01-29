@@ -377,11 +377,6 @@ struct global
 void config_load(void);
 void config_set_defaults(void);
 
-// Callback to be called after config_set_defaults is run
-// for platform specific stuff.
-typedef void (*config_default_cb_t)(void);
-void config_set_defaults_cb(config_default_cb_t cb);
-
 #ifdef HAVE_CONFIGFILE
 bool config_load_file(const char *path);
 #endif
