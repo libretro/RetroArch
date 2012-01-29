@@ -583,7 +583,6 @@ static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_da
       AVPacket pkt;
       av_init_packet(&pkt);
       pkt.data = handle->audio.outbuf;
-      pkt.stream_index = handle->muxer.astream->index;
 
       bool has_packet = true;
 
@@ -594,10 +593,7 @@ static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_da
       avcodec_get_frame_defaults(&frame);
 
       frame.nb_samples = handle->audio.frames_in_buffer;
-
-      AVRational rat = { 1, handle->audio.codec->sample_rate };
-      frame.pts = av_rescale_q(handle->audio.frame_cnt,
-            rat, handle->audio.codec->time_base);
+      frame.pts = handle->audio.frame_cnt;
 
       int samples_size = av_samples_get_buffer_size(NULL,
             handle->audio.codec->channels,
@@ -634,6 +630,7 @@ static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_da
       has_packet = pkt.size;
 #endif
 
+      pkt.stream_index = handle->muxer.astream->index;
       if (handle->audio.codec->coded_frame->pts != AV_NOPTS_VALUE)
       {
          pkt.pts = av_rescale_q(handle->audio.codec->coded_frame->pts,
