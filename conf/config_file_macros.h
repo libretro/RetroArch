@@ -53,10 +53,10 @@
 #define CONFIG_GET_STRING_EXTERN(var, key) CONFIG_GET_STRING_BASE(conf, g_extern, var, key)
 
 #ifdef SSNES_CONSOLE
-#define CONFIG_GET_BOOL_EXTERN(var, key) CONFIG_GET_BOOL_BASE(conf, g_console, var, key)
-#define CONFIG_GET_INT_EXTERN(var, key) CONFIG_GET_INT_BASE(conf, g_console, var, key)
-#define CONFIG_GET_DOUBLE_EXTERN(var, key) CONFIG_GET_DOUBLE_BASE(conf, g_console, var, key)
-#define CONFIG_GET_STRING_EXTERN(var, key) CONFIG_GET_STRING_BASE(conf, g_console, var, key)
+#define CONFIG_GET_BOOL_CONSOLE(var, key) CONFIG_GET_BOOL_BASE(conf, g_console, var, key)
+#define CONFIG_GET_INT_CONSOLE(var, key) CONFIG_GET_INT_BASE(conf, g_console, var, key)
+#define CONFIG_GET_DOUBLE_CONSOLE(var, key) CONFIG_GET_DOUBLE_BASE(conf, g_console, var, key)
+#define CONFIG_GET_STRING_CONSOLE(var, key) CONFIG_GET_STRING_BASE(conf, g_console, var, key)
 #endif
 
 #endif
