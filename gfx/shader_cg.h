@@ -52,4 +52,6 @@ void gl_cg_shader_scale(unsigned index, struct gl_fbo_scale *scale);
 void gl_cg_set_menu_shader(const char *path);
 void gl_cg_set_compiler_args(const char **argv);
 
+bool gl_cg_load_shader(unsigned index, const char *path);
+
 #endif

@@ -1160,3 +1160,42 @@ void gl_cg_set_compiler_args(const char **argv)
    cg_arguments = argv;
 }
 
+bool gl_cg_load_shader(unsigned index, const char *path)
+{
+   if (!cg_active)
+      return false;
+
+   if (index == 0)
+      return false;
+
+   if (prg[index].fprg)
+   {
+      cgGLUnbindProgram(cgFProf);
+
+      if (prg[0].fprg != prg[index].fprg)
+         cgDestroyProgram(prg[index].fprg);
+   }
+
+   if (prg[index].vprg)
+   {
+      cgGLUnbindProgram(cgVProf);
+
+      if (prg[0].vprg != prg[index].vprg)
+         cgDestroyProgram(prg[index].vprg);
+   }
+
+   memset(&prg[index], 0, sizeof(prg[index]));
+
+   if (load_program(index, path, true))
+   {
+      set_program_attributes(index);
+      return true;
+   }
+   else
+   {
+      // Always make sure we have a valid shader.
+      memcpy(&prg[index], &prg[0], sizeof(prg[0]));
+      return false;
+   }
+}
+
