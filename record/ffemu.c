@@ -545,7 +545,7 @@ static bool ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_da
    pkt.data = handle->video.outbuf;
    pkt.size = outsize;
 
-   if (handle->video.codec->coded_frame->pts != AV_NOPTS_VALUE)
+   if (handle->video.codec->coded_frame->pts != (int64_t)AV_NOPTS_VALUE)
    {
       pkt.pts = av_rescale_q(handle->video.codec->coded_frame->pts, handle->video.codec->time_base,
             handle->muxer.vstream->time_base);
@@ -636,7 +636,7 @@ static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_da
 #endif
 
       pkt.stream_index = handle->muxer.astream->index;
-      if (handle->audio.codec->coded_frame->pts != AV_NOPTS_VALUE)
+      if (handle->audio.codec->coded_frame->pts != (int64_t)AV_NOPTS_VALUE)
       {
          pkt.pts = av_rescale_q(handle->audio.codec->coded_frame->pts,
                handle->audio.codec->time_base,
@@ -690,7 +690,7 @@ static void ffemu_flush_audio(ffemu_t *handle, int16_t *audio_buf, size_t audio_
       if (!got_packet)
          return;
 
-      if (handle->audio.codec->coded_frame->pts != AV_NOPTS_VALUE)
+      if (handle->audio.codec->coded_frame->pts != (int64_t)AV_NOPTS_VALUE)
       {
          pkt.pts = av_rescale_q(handle->audio.codec->coded_frame->pts,
                handle->audio.codec->time_base,
