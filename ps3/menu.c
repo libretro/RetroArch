@@ -29,6 +29,7 @@
 
 #include "shared.h"
 #include "../general.h"
+#include "../gfx/shader_cg.h"
 
 #include "menu-port-defines.h"
 #include "menu.h"
@@ -406,6 +407,10 @@ static void select_file(uint32_t menu_id)
 				case GAME_AWARE_SHADER_CHOICE:
 					break;
 				case SHADER_CHOICE:
+					{
+						bool retval = gl_cg_load_shader(set_shader+1, path);
+						printf("retval: %d\n", retval);
+					}
 					break;
 				case PRESET_CHOICE:
 					break;
