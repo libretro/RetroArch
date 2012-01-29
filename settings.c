@@ -17,6 +17,7 @@
 
 #include "general.h"
 #include "conf/config_file.h"
+#include "conf/config_file_macros.h"
 #include "input/keysym.h"
 #include "strl.h"
 #include "config.def.h"
@@ -307,18 +308,6 @@ static config_file_t *open_default_config_file(void)
 }
 #endif
 
-// Macros to ease config getting.
-#define CONFIG_GET_BOOL(var, key) if (config_get_bool(conf, key, &tmp_bool)) \
-   g_settings.var = tmp_bool
-
-#define CONFIG_GET_INT(var, key) if (config_get_int(conf, key, &tmp_int)) \
-   g_settings.var = tmp_int
-
-#define CONFIG_GET_DOUBLE(var, key) if (config_get_double(conf, key, &tmp_double)) \
-   g_settings.var = tmp_double
-
-#define CONFIG_GET_STRING(var, key) \
-   config_get_array(conf, key, g_settings.var, sizeof(g_settings.var))
 
 #ifdef HAVE_CONFIGFILE
 static void parse_config_file(void)

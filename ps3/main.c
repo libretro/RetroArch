@@ -32,6 +32,7 @@
 #include "ps3_video_psgl.h"
 
 #include "../conf/config_file.h"
+#include "../conf/config_file_macros.h"
 #include "../general.h"
 
 #include "shared.h"
@@ -39,33 +40,7 @@
 #include "menu.h"
 
 #define MAX_PATH_LENGTH 1024
-
 #define EMULATOR_CONTENT_DIR	"SSNE10000"
-
-#define init_setting_uint(charstring, setting, defaultvalue) \
-	if(!(config_get_uint(currentconfig, charstring, &setting))) \
-		setting = defaultvalue; 
-
-#define init_setting_int(charstring, setting, defaultvalue) \
-	if(!(config_get_int(currentconfig, charstring, &setting))) \
-		setting = defaultvalue; 
-
-#define init_setting_float(charstring, setting, defaultvalue) \
-	if(!(config_get_float(currentconfig, charstring, &setting))) \
-		setting = defaultvalue; 
-
-#define init_setting_bool(charstring, setting, defaultvalue) \
-	if(!(config_get_bool(currentconfig, charstring, &setting))) \
-		setting = defaultvalue; 
-
-#define init_setting_bool(charstring, setting, defaultvalue) \
-	if(!(config_get_bool(currentconfig, charstring, &setting))) \
-		setting =	defaultvalue;
-
-#define init_setting_char(charstring, setting, defaultvalue) \
-	if(!(config_get_array(currentconfig, charstring, setting, sizeof(setting)))) \
-		strncpy(setting,defaultvalue, sizeof(setting));
-
 
 uint32_t g_emulator_initialized = 0;
 
@@ -116,7 +91,23 @@ static bool file_exists(const char * filename)
 		return false;
 }
 
-static void init_settings(void)
+static void default_settings(void)
+{
+	g_settings.video.smooth = 1;
+	g_settings.video.second_pass_smooth = 1;
+	snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), DEFAULT_SHADER_FILE);
+	snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.second_pass_shader), DEFAULT_SHADER_FILE);
+	g_settings.video.fbo_scale_x = 2.0f;
+	g_settings.video.fbo_scale_y = 2.0f;
+	g_settings.video.render_to_texture = 1;
+	g_settings.video.vsync = 1;
+	g_extern.state_slot = 0;
+	g_console.screenshots_enable = 0;
+	snprintf(g_settings.cheat_database , sizeof(g_settings.cheat_database), usrDirPath);
+	g_settings.rewind_enable = false;
+}
+
+static bool init_settings(void)
 {
 	if(!file_exists(SYS_CONFIG_FILE))
 	{
@@ -125,20 +116,29 @@ static void init_settings(void)
 		fclose(f);
 	}
 
-	config_file_t * currentconfig = config_file_new(SYS_CONFIG_FILE);
+	config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
+	if (!conf)
+		return 1;
 
-	init_setting_bool("video_smooth", g_settings.video.smooth, 1);
-	init_setting_bool("video_second_pass_smooth", g_settings.video.second_pass_smooth, 1);
-	init_setting_char("video_cg_shader", g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE);
-	init_setting_char("video_second_pass_shader", g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE);
-	init_setting_float("video_fbo_scale_x", g_settings.video.fbo_scale_x, 2.0f);
-	init_setting_float("video_fbo_scale_y", g_settings.video.fbo_scale_y, 2.0f);
-	init_setting_bool("video_render_to_texture", g_settings.video.render_to_texture, 1);
-	init_setting_bool("video_vsync", g_settings.video.vsync, 1);
-	init_setting_uint("state_slot",  g_extern.state_slot, 0);
-	init_setting_uint("screenshots_enabled", g_console.screenshots_enable, 0);
-	init_setting_char("cheat_database_path", g_settings.cheat_database, usrDirPath);
-	init_setting_bool("rewind_enable", g_settings.rewind_enable, false);
+	int tmp_int;
+	double tmp_double;
+	bool tmp_bool;
+	char tmp_str[PATH_MAX];
+
+	CONFIG_GET_BOOL(video.smooth, "video_smooth");
+	CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
+	CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
+	CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
+	CONFIG_GET_DOUBLE(video.fbo_scale_x, "video_fbo_scale_x");
+	CONFIG_GET_DOUBLE(video.fbo_scale_y, "video_fbo_scale_y");
+	CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
+	CONFIG_GET_BOOL(video.vsync, "video_vsync");
+	CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
+	CONFIG_GET_INT_CONSOLE(screenshots_enable, "screenshots_enabled");
+	CONFIG_GET_STRING(cheat_database, "cheat_database_path");
+	CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
+
+	return 0;
 }
 
 static void get_path_settings(bool multiman_support)
@@ -503,6 +503,7 @@ int main(int argc, char *argv[])
 
    g_console.block_config_read = true;
    g_extern.verbose = true;
+   config_set_defaults_cb(default_settings);
    config_set_defaults();
 
    SSNES_LOG("Registering Callback\n");
@@ -520,7 +521,10 @@ int main(int argc, char *argv[])
 #endif
 
    get_path_settings(g_console.return_to_multiman_enable);
-   init_settings();
+   if(!init_settings())
+   {
+	   SSNES_ERR("Couldn't find config at path: \"%s\"\n", SYS_CONFIG_FILE);
+   }
 
 #if(CELL_SDK_VERSION > 0x340000)
 	if (g_console.screenshots_enable)
