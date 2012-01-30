@@ -1008,3 +1008,18 @@ void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replac
    ssnes_assert(strlcat(in_dir, base, size) < size);
    ssnes_assert(strlcat(in_dir, replace, size) < size);
 }
+
+void fill_pathname_base(char *out_dir, const char *in_path, size_t size)
+{
+   const char *ptr = strrchr(in_path, '/');
+   if (!ptr)
+      ptr = strrchr(in_path, '\\');
+
+   if (ptr)
+      ptr++;
+   else
+      ptr = in_path;
+
+   ssnes_assert(strlcpy(out_dir, ptr, size) < size);
+}
+
