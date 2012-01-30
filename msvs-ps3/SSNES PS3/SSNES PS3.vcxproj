@@ -46,9 +46,6 @@
     <Link>
       <AdditionalDependencies>"$(SCE_PS3_ROOT)\target\ppu\lib\PSGL\RSX\debug\libPSGL.a";"$(SCE_PS3_ROOT)\target\ppu\lib\PSGL\RSX\debug\libPSGLcgc.a";libcgc.a;libdbgfont.a;libgcm_cmd.a;libgcm_sys_stub.a;libresc_stub.a;libio_stub.a;libfs_stub.a;libsysutil_stub.a;libsysutil_game_stub.a;libsysutil_screenshot_stub.a;libjpgdec_stub.a;libpngdec_stub.a;libpthread.a;libsysmodule_stub.a;libaudio_stub.a;$(TargetDir)libsnes.a;libnet_stub.a;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <PostBuildEvent>
-      <Command>copy ssnes.cfg $(TargetDir)</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|PS3'">
     <ClCompile>
