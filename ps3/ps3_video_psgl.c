@@ -1185,24 +1185,29 @@ bool ps3_setup_texture(void)
 
 void ps3_set_filtering(unsigned index, bool set_smooth)
 {
-	gl_t * gl = g_gl;
+   gl_t *gl = g_gl;
 
-	if(!gl)
-		return;
+   if (!gl)
+      return;
 
-	if(gl->fbo_inited)
-		glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index]);
-	else
-		glBindTexture(GL_TEXTURE_2D, gl->texture[index]);
+   if (index == 1)
+   {
+      // Apply to all PREV textures.
+      for (unsigned i = 0; i < TEXTURES; i++)
+      {
+         glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+      }
+   }
+   else if (index >= 2 && gl->fbo_inited)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index - 2]);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+   }
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-
-	if(gl->fbo_inited)
-		glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
 /* PS3 needs a working graphics stack before SSNES even starts.
