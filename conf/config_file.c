@@ -427,7 +427,12 @@ bool config_get_float(config_file_t *conf, const char *key, float *in)
    {
       if (strcmp(key, list->key) == 0)
       {
+#ifdef __cplusplus
+         // strtof() is C99/POSIX.
          *in = (float)strtod(list->value, NULL);
+#else
+         *in = strtof(list->value, NULL);
+#endif
          return true;
       }
       list = list->next;
@@ -609,6 +614,13 @@ void config_set_double(config_file_t *conf, const char *key, double val)
 #else
    snprintf(buf, sizeof(buf), "%lf", val);
 #endif
+   config_set_string(conf, key, buf);
+}
+
+void config_set_float(config_file_t *conf, const char *key, float val)
+{
+   char buf[128];
+   snprintf(buf, sizeof(buf), "%f", val);
    config_set_string(conf, key, buf);
 }
 

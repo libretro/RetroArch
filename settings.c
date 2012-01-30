@@ -341,8 +341,8 @@ bool config_load_file(const char *path)
 
    char tmp_str[PATH_MAX];
 
-   CONFIG_GET_DOUBLE(video.xscale, "video_xscale");
-   CONFIG_GET_DOUBLE(video.yscale, "video_yscale");
+   CONFIG_GET_FLOAT(video.xscale, "video_xscale");
+   CONFIG_GET_FLOAT(video.yscale, "video_yscale");
    CONFIG_GET_INT(video.fullscreen_x, "video_fullscreen_x");
    CONFIG_GET_INT(video.fullscreen_y, "video_fullscreen_y");
 
@@ -355,15 +355,15 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.smooth, "video_smooth");
    CONFIG_GET_BOOL(video.force_aspect, "video_force_aspect");
    CONFIG_GET_BOOL(video.crop_overscan, "video_crop_overscan");
-   CONFIG_GET_DOUBLE(video.aspect_ratio, "video_aspect_ratio");
-   CONFIG_GET_DOUBLE(video.refresh_rate, "video_refresh_rate");
+   CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
+   CONFIG_GET_FLOAT(video.refresh_rate, "video_refresh_rate");
 
    CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
    CONFIG_GET_STRING(video.bsnes_shader_path, "video_bsnes_shader");
    CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
    CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
-   CONFIG_GET_DOUBLE(video.fbo_scale_x, "video_fbo_scale_x");
-   CONFIG_GET_DOUBLE(video.fbo_scale_y, "video_fbo_scale_y");
+   CONFIG_GET_FLOAT(video.fbo_scale_x, "video_fbo_scale_x");
+   CONFIG_GET_FLOAT(video.fbo_scale_y, "video_fbo_scale_y");
    CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
 
 #ifdef HAVE_FREETYPE
@@ -371,8 +371,8 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT(video.font_size, "video_font_size");
    CONFIG_GET_BOOL(video.font_enable, "video_font_enable");
    CONFIG_GET_BOOL(video.font_scale, "video_font_scale");
-   CONFIG_GET_DOUBLE(video.msg_pos_x, "video_message_pos_x");
-   CONFIG_GET_DOUBLE(video.msg_pos_y, "video_message_pos_y");
+   CONFIG_GET_FLOAT(video.msg_pos_x, "video_message_pos_x");
+   CONFIG_GET_FLOAT(video.msg_pos_y, "video_message_pos_y");
 
    unsigned msg_color;
    if (config_get_hex(conf, "video_message_color", &msg_color))
@@ -410,7 +410,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_STRING(video.shader_dir, "video_shader_dir");
 #endif
 
-   CONFIG_GET_DOUBLE(input.axis_threshold, "input_axis_threshold");
+   CONFIG_GET_FLOAT(input.axis_threshold, "input_axis_threshold");
    CONFIG_GET_BOOL(input.netplay_client_swap_input, "netplay_client_swap_input");
    CONFIG_GET_INT(input.joypad_map[0], "input_player1_joypad_index");
    CONFIG_GET_INT(input.joypad_map[1], "input_player2_joypad_index");
@@ -421,7 +421,7 @@ bool config_load_file(const char *path)
    // Audio settings.
    CONFIG_GET_BOOL(audio.enable, "audio_enable");
    CONFIG_GET_INT(audio.out_rate, "audio_out_rate");
-   CONFIG_GET_DOUBLE(audio.rate_step, "audio_rate_step");
+   CONFIG_GET_FLOAT(audio.rate_step, "audio_rate_step");
    CONFIG_GET_STRING(audio.device, "audio_device");
    CONFIG_GET_INT(audio.latency, "audio_latency");
    CONFIG_GET_BOOL(audio.sync, "audio_sync");
