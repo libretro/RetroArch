@@ -117,6 +117,7 @@ static void set_default_settings(void)
 	g_console.triple_buffering_enable = true;
 	g_console.default_savestate_dir_enable = false;
 	g_console.default_sram_dir_enable = false;
+	g_console.screen_orientation = ORIENTATION_NORMAL;
 	g_console.current_resolution_id = CELL_VIDEO_OUT_RESOLUTION_UNDEFINED;
 	strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
 	strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
@@ -159,6 +160,7 @@ static void init_settings(void)
 	CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
 	CONFIG_GET_BOOL_CONSOLE(triple_buffering_enable, "triple_buffering_enable");
 	CONFIG_GET_INT_CONSOLE(current_resolution_id, "current_resolution_id");
+	CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
 	CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
 	
 	// g_extern
@@ -197,6 +199,7 @@ static void save_settings(void)
 	config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
 	config_set_bool(conf, "triple_buffering_enable", g_console.triple_buffering_enable);
 	config_set_int(conf, "current_resolution_id", g_console.current_resolution_id);
+	config_set_int(conf, "screen_orientation", g_console.screen_orientation);
 	config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
 
 	// g_extern
@@ -377,14 +380,26 @@ static void ingame_menu(void)
 				case MENU_ITEM_ORIENTATION:
 					if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed) || CTRL_CROSS(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_held))
 					{
+						if(g_console.screen_orientation > ORIENTATION_NORMAL)
+						{
+							g_console.screen_orientation--;
+							ps3graphics_set_orientation(g_console.screen_orientation);
+						}
 					}
 
 					if(CTRL_RIGHT(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_pressed) || CTRL_CROSS(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_held))
 					{
+						if((g_console.screen_orientation+1) < ORIENTATION_END)
+						{
+							g_console.screen_orientation++;
+							ps3graphics_set_orientation(g_console.screen_orientation);
+						}
 					}
 
 					if(CTRL_START(button_was_pressed))
 					{
+						g_console.screen_orientation = ORIENTATION_NORMAL;
+						ps3graphics_set_orientation(g_console.screen_orientation);
 					}
 					ingame_menu_reset_entry_colors (ingame_menu_item);
 					strcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.");
@@ -488,6 +503,22 @@ static void ingame_menu(void)
 		float ypos = 0.19f;
 		float ypos_increment = 0.04f;
 
+		switch(g_console.screen_orientation)
+		{
+			case ORIENTATION_NORMAL:
+				snprintf(msg_temp, sizeof(msg_temp), "Normal");
+				break;
+			case ORIENTATION_VERTICAL:
+				snprintf(msg_temp, sizeof(msg_temp), "Vertical");
+				break;
+			case ORIENTATION_FLIPPED:
+				snprintf(msg_temp, sizeof(msg_temp), "Flipped");
+				break;
+			case ORIENTATION_FLIPPED_ROTATED:
+				snprintf(msg_temp, sizeof(msg_temp), "Flipped Rotated");
+				break;
+		}
+
 		cellDbgFontPrintf (x_position, 0.10f, 1.4f+0.01f, BLUE, "Quick Menu");
 		cellDbgFontPrintf(x_position, 0.10f, 1.4f, WHITE, "Quick Menu");
 
@@ -498,13 +529,13 @@ static void ingame_menu(void)
 		cellDbgFontPrintf(x_position, ypos+(ypos_increment*MENU_ITEM_SAVE_STATE), font_size, menuitem_colors[MENU_ITEM_SAVE_STATE], "Save State #%d", g_extern.state_slot);
 		cellDbgFontDraw();
 
-		cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size+0.01f, BLUE, "Aspect Ratio: ");
+		cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size+0.01f, BLUE, "Aspect Ratio:");
 		cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, menuitem_colors[MENU_ITEM_KEEP_ASPECT_RATIO], "Aspect Ratio:");
 
 		cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size, menuitem_colors[MENU_ITEM_OVERSCAN_AMOUNT], "Overscan: ");
 
 		cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size+0.01f, BLUE, "Orientation: ");
-		cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size, menuitem_colors[MENU_ITEM_ORIENTATION], "Orientation:");
+		cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size, menuitem_colors[MENU_ITEM_ORIENTATION], "Orientation: %s", msg_temp);
 
 		cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_RESIZE_MODE)), font_size+0.01f, BLUE, "Resize Mode");
 		cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_RESIZE_MODE)), font_size, menuitem_colors[MENU_ITEM_RESIZE_MODE], "Resize Mode");

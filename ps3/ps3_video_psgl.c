@@ -55,22 +55,22 @@ static const GLfloat vertexes_flipped[] = {
 static const GLfloat vertexes_90[] = {
    0, 1,
    1, 1,
-   1, 0
-   0, 0,
+   1, 0,
+   0, 0
 };
 
 static const GLfloat vertexes_180[] = {
    1, 1,
-   1, 0
+   1, 0,
    0, 0,
-   0, 1,
+   0, 1
 };
 
 static const GLfloat vertexes_270[] = {
-   1, 0
+   1, 0,
    0, 0,
    0, 1,
-   1, 1,
+   1, 1
 };
 
 static const GLfloat *vertex_ptr = vertexes_flipped;
@@ -499,22 +499,21 @@ void gl_frame_menu (void)
 
 void ps3graphics_set_orientation(uint32_t orientation)
 {
-   // TODO: Use more sensible defines.
    switch (orientation)
    {
-      case 0:
+      case ORIENTATION_NORMAL:
          vertex_ptr = vertexes_flipped;
          break;
 
-      case 1:
+      case ORIENTATION_VERTICAL:
          vertex_ptr = vertexes_90;
          break;
 
-      case 2:
+      case ORIENTATION_FLIPPED:
          vertex_ptr = vertexes_180;
          break;
 
-      case 3:
+      case ORIENTATION_FLIPPED_ROTATED:
          vertex_ptr = vertexes_270;
          break;
    }
