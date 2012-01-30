@@ -35,6 +35,7 @@
 #include "../conf/config_file.h"
 #include "../conf/config_file_macros.h"
 #include "../general.h"
+#include "../file.h"
 
 #include "shared.h"
 
@@ -326,12 +327,37 @@ static void ingame_menu(void)
 				case MENU_ITEM_LOAD_STATE:
 					if(CTRL_CROSS(button_was_pressed))
 					{
+						char msg[512];
+
+						bool ret = load_state(g_extern.savestate_name);
+						if(ret)
+							snprintf(msg, sizeof(msg), "Loaded save state slot #%d", g_extern.state_slot);
+						else
+							snprintf(msg, sizeof(msg), "Can't load from save state slot #%d", g_extern.state_slot);
+
+						set_text_message(msg, 60);
+						ingame_menu_item = 0;
+						g_console.ingame_menu_enable = false;
+						mode_switch = MODE_EMULATION;
 					}
 					if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed))
 					{
+						if(g_extern.state_slot > 0)
+						{
+							char msg[512];
+							g_extern.state_slot--;
+							snprintf(msg, sizeof(msg), "Save state slot changed to: #%d", g_extern.state_slot);
+							set_text_message(msg, 60);
+						}
+						blocking = 0;
 					}
 					if(CTRL_RIGHT(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_pressed))
 					{
+						char msg[512];
+						g_extern.state_slot++;
+						snprintf(msg, sizeof(msg), "Save state slot changed to: #%d", g_extern.state_slot);
+						set_text_message(msg, 60);
+						blocking = 0;
 					}
 
 					ingame_menu_reset_entry_colors(ingame_menu_item);
@@ -340,12 +366,34 @@ static void ingame_menu(void)
 				case MENU_ITEM_SAVE_STATE:
 					if(CTRL_CROSS(button_was_pressed))
 					{
+						char msg[512];
+
+						bool ret = save_state(g_extern.savestate_name);
+						snprintf(msg, sizeof(msg), "Saved to save state slot #%d", g_extern.state_slot);
+
+						set_text_message(msg, 60);
+						ingame_menu_item = 0;
+						g_console.ingame_menu_enable = false;
+						mode_switch = MODE_EMULATION;
 					}
 					if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed))
 					{
+						if(g_extern.state_slot > 0)
+						{
+							char msg[512];
+							g_extern.state_slot--;
+							snprintf(msg, sizeof(msg), "Save state slot changed to: #%d", g_extern.state_slot);
+							set_text_message(msg, 60);
+						}
+						blocking = 0;
 					}
 					if(CTRL_RIGHT(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_pressed))
 					{
+						char msg[512];
+						g_extern.state_slot++;
+						snprintf(msg, sizeof(msg), "Save state slot changed to: #%d", g_extern.state_slot);
+						set_text_message(msg, 60);
+						blocking = 0;
 					}
 
 					ingame_menu_reset_entry_colors (ingame_menu_item);
