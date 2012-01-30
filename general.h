@@ -182,6 +182,9 @@ struct console_settings
    uint32_t *supported_resolutions;
    uint32_t supported_resolutions_count;
    char rom_path[PATH_MAX];
+   char default_rom_startup_dir[PATH_MAX];
+   char default_savestate_dir[PATH_MAX];
+   char default_sram_dir[PATH_MAX];
 };
 #endif
 

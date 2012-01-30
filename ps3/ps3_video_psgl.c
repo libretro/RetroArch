@@ -816,17 +816,20 @@ static bool psgl_init_device(gl_t *gl, const video_info_t *video, uint32_t resol
 
 	psglInit(&options);
 
-	PSGLdeviceParameters params = {
-		.enable = PSGL_DEVICE_PARAMETERS_COLOR_FORMAT |
-			PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT |
-			PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE |
-			PSGL_DEVICE_PARAMETERS_BUFFERING_MODE,
+	PSGLdeviceParameters params;
 
-		.colorFormat = GL_ARGB_SCE,
-		.depthFormat = GL_NONE,
-		.multisamplingMode = GL_MULTISAMPLING_NONE_SCE,
-		.bufferingMode = PSGL_BUFFERING_MODE_TRIPLE,
-	};
+	params.enable = PSGL_DEVICE_PARAMETERS_COLOR_FORMAT | \
+			PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT | \
+			PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE;
+	params.colorFormat = GL_ARGB_SCE;
+	params.depthFormat = GL_NONE;
+	params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
+
+	if(g_console.triple_buffering_enable)
+	{
+		params.enable |= PSGL_DEVICE_PARAMETERS_BUFFERING_MODE;
+		params.bufferingMode = PSGL_BUFFERING_MODE_TRIPLE;
+	}
 
 	if(resolution_id)
 	{

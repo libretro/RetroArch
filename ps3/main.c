@@ -105,12 +105,14 @@ static void set_default_settings(void)
 	g_settings.video.second_pass_smooth = true;
 	g_settings.video.smooth = true;
 	g_settings.video.vsync = true;
+	strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
 
 	// g_console
 	g_console.screenshots_enable = false;
 	g_console.throttle_enable = true;
 	g_console.triple_buffering_enable = true;
 	g_console.current_resolution_id = CELL_VIDEO_OUT_RESOLUTION_UNDEFINED;
+	strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
 	
 	// g_extern
 	g_extern.state_slot = 0;

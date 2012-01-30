@@ -468,8 +468,10 @@ static void select_directory(uint32_t menu_id)
                                 case PATH_SRAM_DIR_CHOICE:
                                         break;
                                 case PATH_DEFAULT_ROM_DIR_CHOICE:
+                                        strcpy(g_console.default_rom_startup_dir, path);
                                         break;
 				case PATH_CHEATS_DIR_CHOICE:
+					strcpy(g_settings.cheat_database, path);
 					break;
                         }
                         menuStackindex--;
@@ -485,8 +487,10 @@ static void select_directory(uint32_t menu_id)
                         case PATH_SRAM_DIR_CHOICE:
                                 break;
                         case PATH_DEFAULT_ROM_DIR_CHOICE:
+				strcpy(g_console.default_rom_startup_dir, path);
                                 break;
 			case PATH_CHEATS_DIR_CHOICE:
+				strcpy(g_settings.cheat_database, path);
 				break;
                 }
                 menuStackindex--;
@@ -718,6 +722,20 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Rewind] feature is set to 'OFF'.");
 			}
 			break;
+		case SETTING_EMU_AUDIO_MUTE:
+			if(g_extern.audio_data.mute)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				menu_obj->items[currentsetting].text_color = ORANGE;
+				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Audio Mute] feature is set to 'ON'. The game audio will be muted.");
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				menu_obj->items[currentsetting].text_color = GREEN;
+				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Audio Mute] feature is set to 'OFF'.");
+			}
+			break;
 		case SETTING_EMU_VIDEO_DEFAULT_ALL:
 			if(menu_obj->selected == currentsetting)
 				menu_obj->items[currentsetting].text_color = GREEN;
@@ -731,12 +749,24 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 				menu_obj->items[currentsetting].text_color = ORANGE;
 			break;
 		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
+			if(!(strcmp(g_console.default_rom_startup_dir, "/")))
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.default_rom_startup_dir);
 			break;
 		case SETTING_PATH_SAVESTATES_DIRECTORY:
 			break;
 		case SETTING_PATH_SRAM_DIRECTORY:
 			break;
 		case SETTING_PATH_CHEATS:
+			if(!(strcmp(g_settings.cheat_database, usrDirPath)))
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_settings.cheat_database);
 			break;
 		case SETTING_PATH_DEFAULT_ALL:
 			if(menu_obj->selected == currentsetting)
@@ -1023,6 +1053,20 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			break;
 		case SETTING_TRIPLE_BUFFERING:
+			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			{
+				g_console.triple_buffering_enable = !g_console.triple_buffering_enable;
+				ps3graphics_video_reinit();
+				set_text_message("", 7);
+			}
+			if(CTRL_START(state))
+			{
+				if(!g_console.triple_buffering_enable)
+				{
+					g_console.triple_buffering_enable = true;
+					ps3graphics_video_reinit();
+				}
+			}
 			break;
 		case SETTING_ENABLE_SCREENSHOTS:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
@@ -1096,17 +1140,49 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				g_settings.rewind_enable = false;
 			}
 			break;
+		case SETTING_EMU_AUDIO_MUTE:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				g_extern.audio_data.mute = !g_extern.audio_data.mute;
+
+				set_text_message("", 7);
+			}
+			if(CTRL_START(state))
+			{
+				g_extern.audio_data.mute = false;
+			}
+			break;
 		case SETTING_EMU_VIDEO_DEFAULT_ALL:
 			break;
 		case SETTING_EMU_AUDIO_DEFAULT_ALL:
 			break;
 		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				menuStackindex++;
+				menuStack[menuStackindex] = menu_filebrowser;
+				menuStack[menuStackindex].enum_id = PATH_DEFAULT_ROM_DIR_CHOICE;
+				set_initial_dir_tmpbrowser = true;
+			}
+
+			if(CTRL_START(state))
+				strcpy(g_console.default_rom_startup_dir, "/");
 			break;
 		case SETTING_PATH_SAVESTATES_DIRECTORY:
 			break;
 		case SETTING_PATH_SRAM_DIRECTORY:
 			break;
 		case SETTING_PATH_CHEATS:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				menuStackindex++;
+				menuStack[menuStackindex] = menu_filebrowser;
+				menuStack[menuStackindex].enum_id = PATH_CHEATS_DIR_CHOICE;
+				set_initial_dir_tmpbrowser = true;
+			}
+
+			if(CTRL_START(state))
+				strcpy(g_settings.cheat_database, usrDirPath);
 			break;
 		case SETTING_PATH_DEFAULT_ALL:
 			break;
@@ -1373,7 +1449,7 @@ static void select_rom(void)
 
 void menu_init (void)
 {
-	filebrowser_new(&browser, "/", ssnes_console_get_rom_ext());
+	filebrowser_new(&browser, g_console.default_rom_startup_dir, ssnes_console_get_rom_ext());
 }
 
 void menu_loop(void)

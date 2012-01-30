@@ -406,6 +406,21 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		1
 	},
 	{
+		SETTING_EMU_AUDIO_MUTE,
+		"Mute Audio",
+		"",
+		0.0f,
+		0.0f,
+		YELLOW,
+		"INFO - [Mute Audio] is set to 'OFF'.",
+		WHITE,
+		0.91f,
+		0.09f,
+		0.83f,
+		0,
+		1
+	},
+	{
 		SETTING_EMU_AUDIO_DEFAULT_ALL,
 		"DEFAULT",
 		"",
