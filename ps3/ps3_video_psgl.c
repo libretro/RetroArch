@@ -728,8 +728,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 	if (msg)
 	{
-		cellDbgFontPrintf(0.09f, 0.90f, 1.51f, BLUE,	msg);
-		cellDbgFontPrintf(0.09f, 0.90f, 1.50f, WHITE, msg);
+		cellDbgFontPrintf(g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 1.51f, BLUE,	msg);
+		cellDbgFontPrintf(g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 1.50f, WHITE, msg);
 		cellDbgFontDraw();
 	}
 

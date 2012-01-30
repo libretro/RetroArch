@@ -176,6 +176,7 @@ struct console_settings
    bool screenshots_enable;
    bool throttle_enable;
    bool triple_buffering_enable;
+   uint32_t screen_orientation;
    uint32_t current_resolution_index;
    uint32_t current_resolution_id;
    uint32_t initial_resolution_id;

@@ -106,6 +106,8 @@ static void set_default_settings(void)
 	g_settings.video.smooth = true;
 	g_settings.video.vsync = true;
 	strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
+	g_settings.video.msg_pos_x = 0.09f;
+	g_settings.video.msg_pos_y = 0.90f;
 
 	// g_console
 	g_console.screenshots_enable = false;
@@ -116,12 +118,14 @@ static void set_default_settings(void)
 	
 	// g_extern
 	g_extern.state_slot = 0;
+	g_extern.audio_data.mute = 0;
 }
 
 static void init_settings(void)
 {
 	if(!file_exists(SYS_CONFIG_FILE))
 	{
+		SSNES_ERR("Config file \"%s\" doesn't exist! Creating...\n", SYS_CONFIG_FILE);
 		FILE * f;
 		f = fopen(SYS_CONFIG_FILE, "w");
 		fclose(f);
@@ -131,7 +135,7 @@ static void init_settings(void)
 
 	// g_settings
 
-	CONFIG_GET_STRING(cheat_database, "cheat_database_path");
+	CONFIG_GET_STRING(cheat_database, "cheat_database");
 	CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
 	CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
 	CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
@@ -148,9 +152,50 @@ static void init_settings(void)
 	CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
 	CONFIG_GET_BOOL_CONSOLE(triple_buffering_enable, "triple_buffering_enable");
 	CONFIG_GET_INT_CONSOLE(current_resolution_id, "current_resolution_id");
+	CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
 	
 	// g_extern
 	CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
+	CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
+}
+
+static void save_settings(void)
+{
+	fprintf(stderr, "Attempting to save config file...\n");
+	if(!file_exists(SYS_CONFIG_FILE))
+	{
+		FILE * f;
+		f = fopen(SYS_CONFIG_FILE, "w");
+		fclose(f);
+	}
+
+	config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
+
+	// g_settings
+	config_set_string(conf, "cheat_database_path", g_settings.cheat_database);
+	config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
+	config_set_string(conf, "video_cg_shader", g_settings.video.cg_shader_path);
+	config_set_string(conf, "video_second_pass_shader", g_settings.video.second_pass_shader);
+	config_set_float(conf, "video_fbo_scale_x", g_settings.video.fbo_scale_x);
+	config_set_float(conf, "video_fbo_scale_y", g_settings.video.fbo_scale_y);
+	config_set_bool(conf, "video_render_to_texture", g_settings.video.render_to_texture);
+	config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
+	config_set_bool(conf, "video_smooth", g_settings.video.smooth);
+	config_set_bool(conf, "video_vsync", g_settings.video.vsync);
+
+	// g_console
+	config_set_bool(conf, "screenshots_enable", g_console.screenshots_enable);
+	config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
+	config_set_bool(conf, "triple_buffering_enable", g_console.triple_buffering_enable);
+	config_set_int(conf, "current_resolution_id", g_console.current_resolution_id);
+	config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
+
+	// g_extern
+	config_set_int(conf, "state_slot", g_extern.state_slot);
+	config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
+
+	if (!config_file_write(conf, SYS_CONFIG_FILE))
+		SSNES_ERR("Failed to write config file to \"%s\"! Check permissions!\n", SYS_CONFIG_FILE);
 }
 
 static void get_path_settings(bool multiman_support)
@@ -599,6 +644,8 @@ begin_loop:
 	goto begin_loop;
 
 begin_shutdown:
+	if(file_exists(SYS_CONFIG_FILE))
+		save_settings();
 	ps3_input_deinit();
 	ps3_video_deinit();
 	sys_process_exit(0);

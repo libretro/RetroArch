@@ -73,7 +73,6 @@ $(PPU_TARGET): $(OBJ)
 	$(CXX) $(INCDIRS) $(CXXFLAGS) -c -o $@ $<
 
 pkg: $(PPU_TARGET)
-	cp ssnes.cfg ps3/pkg/USRDIR/
 ifeq ($(DOWNLOAD_SHADERS),1)
 	rm -rf ps3/pkg/USRDIR/shaders
 	git clone git://github.com/twinaphex/common-shaders.git ps3/pkg/USRDIR/shaders
