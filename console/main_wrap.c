@@ -16,15 +16,13 @@
  */
 
 #include "main_wrap.h"
+#include "../general.h"
 #include "../strl.h"
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 
 #define MAX_ARGS 32
-#define MAX_ARG_LENGTH PATH_MAX
-
-int ssnes_main(int argc, char **argv);
 
 int ssnes_main_init_wrap(const struct ssnes_main_wrap *args)
 {
@@ -57,7 +55,7 @@ int ssnes_main_init_wrap(const struct ssnes_main_wrap *args)
    if (args->verbose)
       argv[argc++] = strdup("-v");
 
-   int ret = ssnes_main(argc, argv);
+   int ret = ssnes_main_init(argc, argv);
 
    char **tmp = argv;
    while (*tmp)
