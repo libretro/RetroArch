@@ -33,9 +33,9 @@
       base.var = tmp; \
 } while(0)
 
-#define CONFIG_GET_DOUBLE_BASE(conf, base, var, key) do { \
-   double tmp; \
-   if (config_get_double(conf, key, &tmp)) \
+#define CONFIG_GET_FLOAT_BASE(conf, base, var, key) do { \
+   float tmp; \
+   if (config_get_float(conf, key, &tmp)) \
       base.var = tmp; \
 } while(0)
 
@@ -44,18 +44,18 @@
 
 #define CONFIG_GET_BOOL(var, key) CONFIG_GET_BOOL_BASE(conf, g_settings, var, key)
 #define CONFIG_GET_INT(var, key) CONFIG_GET_INT_BASE(conf, g_settings, var, key)
-#define CONFIG_GET_DOUBLE(var, key) CONFIG_GET_DOUBLE_BASE(conf, g_settings, var, key)
+#define CONFIG_GET_FLOAT(var, key) CONFIG_GET_FLOAT_BASE(conf, g_settings, var, key)
 #define CONFIG_GET_STRING(var, key) CONFIG_GET_STRING_BASE(conf, g_settings, var, key)
 
 #define CONFIG_GET_BOOL_EXTERN(var, key) CONFIG_GET_BOOL_BASE(conf, g_extern, var, key)
 #define CONFIG_GET_INT_EXTERN(var, key) CONFIG_GET_INT_BASE(conf, g_extern, var, key)
-#define CONFIG_GET_DOUBLE_EXTERN(var, key) CONFIG_GET_DOUBLE_BASE(conf, g_extern, var, key)
+#define CONFIG_GET_FLOAT_EXTERN(var, key) CONFIG_GET_FLOAT_BASE(conf, g_extern, var, key)
 #define CONFIG_GET_STRING_EXTERN(var, key) CONFIG_GET_STRING_BASE(conf, g_extern, var, key)
 
 #ifdef SSNES_CONSOLE
 #define CONFIG_GET_BOOL_CONSOLE(var, key) CONFIG_GET_BOOL_BASE(conf, g_console, var, key)
 #define CONFIG_GET_INT_CONSOLE(var, key) CONFIG_GET_INT_BASE(conf, g_console, var, key)
-#define CONFIG_GET_DOUBLE_CONSOLE(var, key) CONFIG_GET_DOUBLE_BASE(conf, g_console, var, key)
+#define CONFIG_GET_FLOAT_CONSOLE(var, key) CONFIG_GET_FLOAT_BASE(conf, g_console, var, key)
 #define CONFIG_GET_STRING_CONSOLE(var, key) CONFIG_GET_STRING_BASE(conf, g_console, var, key)
 #endif
 
