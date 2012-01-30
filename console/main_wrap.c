@@ -60,7 +60,7 @@ int ssnes_main_init_wrap(const struct ssnes_main_wrap *args)
    char **tmp = argv;
    while (*tmp)
    {
-      free(tmp);
+      free(*tmp);
       tmp++;
    }
 
