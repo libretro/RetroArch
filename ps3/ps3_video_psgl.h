@@ -34,6 +34,7 @@ int ps3_check_resolution(uint32_t resolution_id);
 void ps3graphics_block_swap (void);
 void ps3graphics_unblock_swap (void);
 void ps3graphics_set_vsync(uint32_t vsync);
+void ps3graphics_set_orientation(uint32_t orientation);
 void gl_frame_menu(void);
 bool ps3_setup_texture(void);
 void ps3_set_filtering(unsigned index, bool set_smooth);

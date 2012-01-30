@@ -51,6 +51,30 @@ static const GLfloat vertexes_flipped[] = {
    1, 0
 };
 
+// Other vertex orientations
+static const GLfloat vertexes_90[] = {
+   0, 1,
+   1, 1,
+   1, 0
+   0, 0,
+};
+
+static const GLfloat vertexes_180[] = {
+   1, 1,
+   1, 0
+   0, 0,
+   0, 1,
+};
+
+static const GLfloat vertexes_270[] = {
+   1, 0
+   0, 0,
+   0, 1,
+   1, 1,
+};
+
+static const GLfloat *vertex_ptr = vertexes_flipped;
+
 // Used when rendering to an FBO.
 // Texture coords have to be aligned with vertex coordinates.
 static const GLfloat vertexes[] = {
@@ -473,6 +497,31 @@ void gl_frame_menu (void)
 	glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
+void ps3graphics_set_orientation(uint32_t orientation)
+{
+   // TODO: Use more sensible defines.
+   switch (orientation)
+   {
+      case 0:
+         vertex_ptr = vertexes_flipped;
+         break;
+
+      case 1:
+         vertex_ptr = vertexes_90;
+         break;
+
+      case 2:
+         vertex_ptr = vertexes_180;
+         break;
+
+      case 3:
+         vertex_ptr = vertexes_270;
+         break;
+   }
+
+   glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
+}
+
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
 	gl_t *gl = data;
@@ -716,7 +765,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 				gl->vp_width, gl->vp_height, g_frame_count, 
 				&tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
-		glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);
+		glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
 		glDrawArrays(GL_QUADS, 0, 4);
 
 		glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
@@ -950,7 +999,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	glEnableClientState(GL_COLOR_ARRAY);
-	glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);
+	glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
 
 	memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
 	glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
