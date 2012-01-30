@@ -110,15 +110,21 @@ static void set_default_settings(void)
 	g_settings.video.msg_pos_y = 0.90f;
 
 	// g_console
+	g_console.block_config_read = true;
 	g_console.screenshots_enable = false;
 	g_console.throttle_enable = true;
 	g_console.triple_buffering_enable = true;
+	g_console.default_savestate_dir_enable = false;
+	g_console.default_sram_dir_enable = false;
 	g_console.current_resolution_id = CELL_VIDEO_OUT_RESOLUTION_UNDEFINED;
 	strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
+	strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
+	strlcpy(g_console.default_sram_dir, usrDirPath, sizeof(g_console.default_sram_dir));
 	
 	// g_extern
 	g_extern.state_slot = 0;
 	g_extern.audio_data.mute = 0;
+	g_extern.verbose = true;
 }
 
 static void init_settings(void)
@@ -562,8 +568,6 @@ int main(int argc, char *argv[])
 
 	ssnes_main_clear_state();
 
-	g_console.block_config_read = true;
-	g_extern.verbose = true;
 	config_set_defaults();
 
 	SSNES_LOG("Registering Callback\n");
@@ -581,6 +585,7 @@ int main(int argc, char *argv[])
 #endif
 
 	get_path_settings(g_console.return_to_multiman_enable);
+
 	set_default_settings();
 	init_settings();
 
@@ -629,12 +634,26 @@ begin_loop:
 			char arg5[MAX_PATH_LENGTH];
 
 			snprintf(arg5, sizeof(arg5), SYS_CONFIG_FILE);
-			char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
 
-			int argc = sizeof(argv_) / sizeof(argv_[0]) - 1;
-			int init_ret = ssnes_main_init(argc, argv_);
-			g_emulator_initialized = 1;
-			init_ssnes = 0;
+			if(g_console.default_sram_dir_enable)
+			{
+				char arg6[] = "-s";
+				char arg7[MAX_PATH_LENGTH];
+				snprintf(arg7, sizeof(arg7), g_console.default_sram_dir);
+				char *argv_[] = { arg1, arg2, arg3, arg4, arg5, arg6, arg7, NULL };
+				int argc = sizeof(argv_) / sizeof(argv_[0]) - 1;
+				int init_ret = ssnes_main_init(argc, argv_);
+				g_emulator_initialized = 1;
+				init_ssnes = 0;
+			}
+			else
+			{
+				char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
+				int argc = sizeof(argv_) / sizeof(argv_[0]) - 1;
+				int init_ret = ssnes_main_init(argc, argv_);
+				g_emulator_initialized = 1;
+				init_ssnes = 0;
+			}
 		}
 	}
 #ifdef MULTIMAN_SUPPORT

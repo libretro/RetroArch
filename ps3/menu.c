@@ -464,8 +464,10 @@ static void select_directory(uint32_t menu_id)
                         switch(menu_id)
                         {
                                 case PATH_SAVESTATES_DIR_CHOICE:
+                                        strcpy(g_console.default_savestate_dir, path);
                                         break;
                                 case PATH_SRAM_DIR_CHOICE:
+					strcpy(g_console.default_sram_dir, path);
                                         break;
                                 case PATH_DEFAULT_ROM_DIR_CHOICE:
                                         strcpy(g_console.default_rom_startup_dir, path);
@@ -483,8 +485,10 @@ static void select_directory(uint32_t menu_id)
                 switch(menu_id)
                 {
                         case PATH_SAVESTATES_DIR_CHOICE:
+				strcpy(g_console.default_savestate_dir, path);
                                 break;
                         case PATH_SRAM_DIR_CHOICE:
+				strcpy(g_console.default_sram_dir, path);
                                 break;
                         case PATH_DEFAULT_ROM_DIR_CHOICE:
 				strcpy(g_console.default_rom_startup_dir, path);
@@ -712,13 +716,13 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 			if(g_settings.rewind_enable)
 			{
 				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
-				menu_obj->items[currentsetting].text_color = GREEN;
+				menu_obj->items[currentsetting].text_color = ORANGE;
 				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Rewind] feature is set to 'ON'. You can rewind the game in real-time.");
 			}
 			else
 			{
 				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
-				menu_obj->items[currentsetting].text_color = ORANGE;
+				menu_obj->items[currentsetting].text_color = GREEN;
 				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Rewind] feature is set to 'OFF'.");
 			}
 			break;
@@ -757,8 +761,20 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.default_rom_startup_dir);
 			break;
 		case SETTING_PATH_SAVESTATES_DIRECTORY:
+			if(!(strcmp(g_console.default_savestate_dir, usrDirPath)))
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.default_savestate_dir);
 			break;
 		case SETTING_PATH_SRAM_DIRECTORY:
+			if(!(strcmp(g_console.default_sram_dir, usrDirPath)))
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.default_sram_dir);
 			break;
 		case SETTING_PATH_CHEATS:
 			if(!(strcmp(g_settings.cheat_database, usrDirPath)))
@@ -1169,8 +1185,29 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				strcpy(g_console.default_rom_startup_dir, "/");
 			break;
 		case SETTING_PATH_SAVESTATES_DIRECTORY:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				menuStackindex++;
+				menuStack[menuStackindex] = menu_filebrowser;
+				menuStack[menuStackindex].enum_id = PATH_SAVESTATES_DIR_CHOICE;
+				set_initial_dir_tmpbrowser = true;
+			}
+
+			if(CTRL_START(state))
+				strcpy(g_console.default_savestate_dir, usrDirPath);
+
 			break;
 		case SETTING_PATH_SRAM_DIRECTORY:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				menuStackindex++;
+				menuStack[menuStackindex] = menu_filebrowser;
+				menuStack[menuStackindex].enum_id = PATH_SRAM_DIR_CHOICE;
+				set_initial_dir_tmpbrowser = true;
+			}
+
+			if(CTRL_START(state))
+				strcpy(g_console.default_sram_dir, "");
 			break;
 		case SETTING_PATH_CHEATS:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
@@ -1185,6 +1222,15 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				strcpy(g_settings.cheat_database, usrDirPath);
 			break;
 		case SETTING_PATH_DEFAULT_ALL:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
+			{
+				strcpy(g_console.default_rom_startup_dir, "/");
+				strcpy(g_console.default_savestate_dir, usrDirPath);
+				strcpy(g_settings.cheat_database, usrDirPath);
+				strcpy(g_console.default_sram_dir, "");
+
+				menu_reinit_settings();
+			}
 			break;
 		case SETTING_CONTROLS_SCHEME:
 			break;

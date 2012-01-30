@@ -171,6 +171,8 @@ struct settings
 struct console_settings
 {
    bool block_config_read;
+   bool default_sram_dir_enable;
+   bool default_savestate_dir_enable;
    bool ingame_menu_enable;
    bool return_to_multiman_enable;
    bool screenshots_enable;

@@ -32,6 +32,10 @@
 #include "sha256.h"
 #endif
 
+#ifdef __CELLOS_LV2__
+#include <cell/cell_fs.h>
+#endif
+
 #if defined(_WIN32) && !defined(_XBOX)
 #include <io.h>
 #include <fcntl.h>
@@ -939,7 +943,13 @@ bool path_is_directory(const char *path)
 #ifdef _WIN32
    DWORD ret = GetFileAttributes(path);
    return (ret & FILE_ATTRIBUTE_DIRECTORY) && (ret != INVALID_FILE_ATTRIBUTES);
-#elif defined(__CELLOS_LV2__) || defined(XENON)
+#elif defined(__CELLOS_LV2__)
+   CellFsStat buf;
+   if (cellFsStat(path, &buf) < 0)
+      return false;
+
+   return buf.st_mode & CELL_FS_S_IFDIR;
+#elif defined(XENON)
    // Dummy
    (void)path;
    return false;
