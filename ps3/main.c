@@ -32,6 +32,7 @@
 #include "ps3_video_psgl.h"
 
 #include "../conf/config_file.h"
+#include "../conf/config_file_macros.h"
 #include "../general.h"
 
 #include "shared.h"
@@ -41,31 +42,6 @@
 #define MAX_PATH_LENGTH 1024
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
-
-#define init_setting_uint(charstring, setting, defaultvalue) \
-	if(!(config_get_uint(currentconfig, charstring, &setting))) \
-setting = defaultvalue;
-
-#define init_setting_int(charstring, setting, defaultvalue) \
-	if(!(config_get_int(currentconfig, charstring, &setting))) \
-setting = defaultvalue;
-
-#define init_setting_float(charstring, setting, defaultvalue) \
-	if(!(config_get_float(currentconfig, charstring, &setting))) \
-setting = defaultvalue;
-
-#define init_setting_bool(charstring, setting, defaultvalue) \
-	if(!(config_get_bool(currentconfig, charstring, &setting))) \
-setting = defaultvalue;
-
-#define init_setting_bool(charstring, setting, defaultvalue) \
-	if(!(config_get_bool(currentconfig, charstring, &setting))) \
-setting = defaultvalue;
-
-#define init_setting_char(charstring, setting, defaultvalue) \
-	if(!(config_get_array(currentconfig, charstring, setting, sizeof(setting)))) \
-strncpy(setting,defaultvalue, sizeof(setting));
-
 
 uint32_t g_emulator_initialized = 0;
 
@@ -116,6 +92,30 @@ static bool file_exists(const char * filename)
 		return false;
 }
 
+static void set_default_settings(void)
+{
+	// g_settings
+	strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
+	g_settings.rewind_enable = false;
+	strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
+	g_settings.video.fbo_scale_x = 2.0f;
+	g_settings.video.fbo_scale_y = 2.0f;
+	g_settings.video.render_to_texture = true;
+	strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
+	g_settings.video.second_pass_smooth = true;
+	g_settings.video.smooth = true;
+	g_settings.video.vsync = true;
+
+	// g_console
+	g_console.screenshots_enable = false;
+	g_console.throttle_enable = true;
+	g_console.triple_buffering_enable = true;
+	g_console.current_resolution_id = CELL_VIDEO_OUT_RESOLUTION_UNDEFINED;
+	
+	// g_extern
+	g_extern.state_slot = 0;
+}
+
 static void init_settings(void)
 {
 	if(!file_exists(SYS_CONFIG_FILE))
@@ -125,30 +125,30 @@ static void init_settings(void)
 		fclose(f);
 	}
 
-	config_file_t * currentconfig = config_file_new(SYS_CONFIG_FILE);
+	config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
 
 	// g_settings
 
-	init_setting_char("cheat_database_path", g_settings.cheat_database, usrDirPath);
-	init_setting_bool("rewind_enable", g_settings.rewind_enable, false);
-	init_setting_char("video_cg_shader", g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE);
-	init_setting_float("video_fbo_scale_x", g_settings.video.fbo_scale_x, 2.0f);
-	init_setting_bool("video_render_to_texture", g_settings.video.render_to_texture, true);
-	init_setting_char("video_second_pass_shader", g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE);
-	init_setting_bool("video_second_pass_smooth", g_settings.video.second_pass_smooth, true);
-	init_setting_bool("video_smooth", g_settings.video.smooth, true);
-	init_setting_bool("video_vsync", g_settings.video.vsync, true);
+	CONFIG_GET_STRING(cheat_database, "cheat_database_path");
+	CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
+	CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
+	CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
+	CONFIG_GET_DOUBLE(video.fbo_scale_x, "video_fbo_scale_x");
+	CONFIG_GET_DOUBLE(video.fbo_scale_y, "video_fbo_scale_y");
+	CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
+	CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
+	CONFIG_GET_BOOL(video.smooth, "video_smooth");
+	CONFIG_GET_BOOL(video.vsync, "video_vsync");
 
 	// g_console
 
-	init_setting_bool("screenshots_enabled", g_console.screenshots_enable, false);
-	init_setting_bool("throttle_enable", g_console.throttle_enable, true);
-	init_setting_bool("triple_buffering_enable", g_console.triple_buffering_enable, true);
-	init_setting_uint("current_resolution_id", g_console.current_resolution_id, CELL_VIDEO_OUT_RESOLUTION_UNDEFINED);
+	CONFIG_GET_BOOL_CONSOLE(screenshots_enable, "screenshots_enable");
+	CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
+	CONFIG_GET_BOOL_CONSOLE(triple_buffering_enable, "triple_buffering_enable");
+	CONFIG_GET_INT_CONSOLE(current_resolution_id, "current_resolution_id");
 	
 	// g_extern
-	init_setting_uint("state_slot", g_extern.state_slot, 0);
-
+	CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
 }
 
 static void get_path_settings(bool multiman_support)
@@ -530,6 +530,7 @@ int main(int argc, char *argv[])
 #endif
 
 	get_path_settings(g_console.return_to_multiman_enable);
+	set_default_settings();
 	init_settings();
 
 #if(CELL_SDK_VERSION > 0x340000)
