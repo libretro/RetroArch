@@ -1054,7 +1054,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
 static bool gl_alive(void *data)
 {
-   gl_t *gl = data;
+   (void)data;
    cellSysutilCheckCallback();
    return !g_quitting;
 }

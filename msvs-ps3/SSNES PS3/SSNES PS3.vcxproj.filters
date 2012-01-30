@@ -128,5 +128,8 @@
     <ClCompile Include="..\..\console\rom_ext.c">
       <Filter>Source Files\console</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\console\main_wrap.c">
+      <Filter>Source Files\console</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

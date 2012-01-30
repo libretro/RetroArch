@@ -1452,7 +1452,6 @@ static void select_rom(void)
 		else if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
 		{
 			char rom_path_temp[MAX_PATH_LENGTH];
-			bool retval;
 
 			snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 
