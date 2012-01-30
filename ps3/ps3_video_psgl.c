@@ -542,6 +542,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 		set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
 	}
 
+	#if 0
 	if (gl->should_resize)
 	{
 		gl->should_resize = false;
@@ -585,6 +586,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 			set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
 		}
 	}
+	#endif
 
 	if ((width != gl->last_width[gl->tex_index] || height != gl->last_height[gl->tex_index]) && gl->empty_buf) // Res change. need to clear out texture.
 	{
@@ -1158,6 +1160,28 @@ bool ps3_setup_texture(void)
 	free(gl->menu_texture.pixels);
 	
 	return true;
+}
+
+void ps3_set_filtering(unsigned index, bool set_smooth)
+{
+	gl_t * gl = g_gl;
+
+	if(!gl)
+		return;
+
+	if(gl->fbo_inited)
+		glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index]);
+	else
+		glBindTexture(GL_TEXTURE_2D, gl->texture[index]);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+
+	if(gl->fbo_inited)
+		glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
 /* PS3 needs a working graphics stack before SSNES even starts.

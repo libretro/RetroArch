@@ -941,26 +941,26 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
 				g_settings.video.smooth = !g_settings.video.smooth;
-				//ps3graphics_set_smooth(g_settings.video.smooth, 0);
+				ps3_set_filtering(1, g_settings.video.smooth);
 				set_text_message("", 7);
 			}
 			if(CTRL_START(state))
 			{
 				g_settings.video.smooth = 1;
-				//ps3graphics_set_smooth(g_settings.video.smooth, 0);
+				ps3_set_filtering(1, g_settings.video.smooth);
 			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER_2:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
 				g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
-				//ps3graphics_set_smooth(g_settings.video.second_pass_smooth, 1);
+				ps3_set_filtering(2, g_settings.video.second_pass_smooth);
 				set_text_message("", 7);
 			}
 			if(CTRL_START(state))
 			{
 				g_settings.video.second_pass_smooth = 1;
-				//ps3graphics_set_smooth(g_settings.video.second_pass_smooth, 1);
+				ps3_set_filtering(2, g_settings.video.second_pass_smooth);
 			}
 			break;
 		case SETTING_SCALE_ENABLED:

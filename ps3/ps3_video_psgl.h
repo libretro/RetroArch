@@ -34,6 +34,7 @@ void ps3_block_swap (void);
 void ps3_unblock_swap (void);
 void gl_frame_menu(void);
 bool ps3_setup_texture(void);
+void ps3_set_filtering(unsigned index, bool set_smooth);
 
 extern void *g_gl;
 
