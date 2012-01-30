@@ -170,6 +170,9 @@ static void save_settings(void)
 
 	config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
 
+	if(conf == NULL)
+		conf = config_file_new(NULL);
+
 	// g_settings
 	config_set_string(conf, "cheat_database_path", g_settings.cheat_database);
 	config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
@@ -195,6 +198,8 @@ static void save_settings(void)
 
 	if (!config_file_write(conf, SYS_CONFIG_FILE))
 		SSNES_ERR("Failed to write config file to \"%s\"! Check permissions!\n", SYS_CONFIG_FILE);
+
+	free(conf);
 }
 
 static void get_path_settings(bool multiman_support)
