@@ -171,11 +171,11 @@ struct settings
 struct console_settings
 {
    bool block_config_read;
-   bool in_game_menu;
+   bool ingame_menu_enable;
    bool return_to_multiman_enable;
    bool screenshots_enable;
-   bool throttle;
-   bool triple_buffering_enabled;
+   bool throttle_enable;
+   bool triple_buffering_enable;
    uint32_t current_resolution_index;
    uint32_t current_resolution_id;
    uint32_t initial_resolution_id;

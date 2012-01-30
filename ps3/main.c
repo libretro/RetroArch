@@ -127,18 +127,27 @@ static void init_settings(void)
 
 	config_file_t * currentconfig = config_file_new(SYS_CONFIG_FILE);
 
-	init_setting_bool("video_smooth", g_settings.video.smooth, 1);
-	init_setting_bool("video_second_pass_smooth", g_settings.video.second_pass_smooth, 1);
-	init_setting_char("video_cg_shader", g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE);
-	init_setting_char("video_second_pass_shader", g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE);
-	init_setting_float("video_fbo_scale_x", g_settings.video.fbo_scale_x, 2.0f);
-	init_setting_float("video_fbo_scale_y", g_settings.video.fbo_scale_y, 2.0f);
-	init_setting_bool("video_render_to_texture", g_settings.video.render_to_texture, 1);
-	init_setting_bool("video_vsync", g_settings.video.vsync, 1);
-	init_setting_uint("state_slot", g_extern.state_slot, 0);
-	init_setting_uint("screenshots_enabled", g_console.screenshots_enable, 0);
+	// g_settings
+
 	init_setting_char("cheat_database_path", g_settings.cheat_database, usrDirPath);
 	init_setting_bool("rewind_enable", g_settings.rewind_enable, false);
+	init_setting_char("video_cg_shader", g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE);
+	init_setting_float("video_fbo_scale_x", g_settings.video.fbo_scale_x, 2.0f);
+	init_setting_bool("video_render_to_texture", g_settings.video.render_to_texture, true);
+	init_setting_char("video_second_pass_shader", g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE);
+	init_setting_bool("video_second_pass_smooth", g_settings.video.second_pass_smooth, true);
+	init_setting_bool("video_smooth", g_settings.video.smooth, true);
+	init_setting_bool("video_vsync", g_settings.video.vsync, true);
+
+	// g_console
+
+	init_setting_bool("screenshots_enabled", g_console.screenshots_enable, false);
+	init_setting_bool("throttle_enable", g_console.throttle_enable, true);
+	init_setting_bool("triple_buffering_enable", g_console.triple_buffering_enable, true);
+	
+	// g_extern
+	init_setting_uint("state_slot", g_extern.state_slot, 0);
+
 }
 
 static void get_path_settings(bool multiman_support)
@@ -205,7 +214,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 		case CELL_SYSUTIL_REQUEST_EXITGAME:
 			menu_is_running = 0;
 			g_quitting = true;
-			g_console.in_game_menu = false;
+			g_console.ingame_menu_enable = false;
 			mode_switch = MODE_EXIT;
 			if(g_emulator_initialized)
 				ssnes_main_deinit();
@@ -225,7 +234,7 @@ static void ingame_menu(void)
 	uint32_t menuitem_colors[MENU_ITEM_LAST];
 	char comment[256], msg_temp[256];
 
-	ps3_block_swap();
+	ps3graphics_block_swap();
 
 	do
 	{
@@ -246,7 +255,7 @@ static void ingame_menu(void)
 			if(CTRL_CIRCLE(state))
 			{
 				ingame_menu_item = 0;
-				g_console.in_game_menu = false;
+				g_console.ingame_menu_enable = false;
 				mode_switch = MODE_EMULATION;
 			}
 
@@ -347,7 +356,7 @@ static void ingame_menu(void)
 					if(CTRL_CROSS(button_was_pressed))
 					{
 						ingame_menu_item = 0;
-						g_console.in_game_menu = false;
+						g_console.ingame_menu_enable = false;
 						mode_switch = MODE_EMULATION;
 					}
 					ingame_menu_reset_entry_colors (ingame_menu_item);
@@ -357,7 +366,7 @@ static void ingame_menu(void)
 					if(CTRL_CROSS(button_was_pressed))
 					{
 						ingame_menu_item = 0;
-						g_console.in_game_menu = false;
+						g_console.ingame_menu_enable = false;
 						mode_switch = MODE_EMULATION;
 					}
 					ingame_menu_reset_entry_colors (ingame_menu_item);
@@ -367,7 +376,7 @@ static void ingame_menu(void)
 					if(CTRL_CROSS(button_was_pressed))
 					{
 						ingame_menu_item = 0;
-						g_console.in_game_menu = false;
+						g_console.ingame_menu_enable = false;
 						menu_is_running = 0;
 						mode_switch = MODE_MENU;
 					}
@@ -379,7 +388,7 @@ static void ingame_menu(void)
 				case MENU_ITEM_RETURN_TO_MULTIMAN:
 					if(CTRL_CROSS(button_was_pressed))
 					{
-						g_console.in_game_menu = false;
+						g_console.ingame_menu_enable = false;
 						mode_switch = MODE_EXIT;
 					}
 
@@ -390,7 +399,7 @@ static void ingame_menu(void)
 				case MENU_ITEM_RETURN_TO_XMB:
 					if(CTRL_CROSS(button_was_pressed))
 					{
-						g_console.in_game_menu = false;
+						g_console.ingame_menu_enable = false;
 #ifdef MULTIMAN_SUPPORT
 						return_to_MM = false;
 #endif
@@ -482,9 +491,9 @@ static void ingame_menu(void)
 		psglSwap();
 		old_state = state;
 		cellSysutilCheckCallback();
-	}while(g_console.in_game_menu);
+	}while(g_console.ingame_menu_enable);
 
-	ps3_unblock_swap();
+	ps3graphics_unblock_swap();
 }
 
 int main(int argc, char *argv[])
@@ -547,7 +556,7 @@ begin_loop:
 		input_ps3.poll(NULL);
 		while(ssnes_main_iterate());
 		g_extern.is_paused = true;
-		if(g_console.in_game_menu)
+		if(g_console.ingame_menu_enable)
 			ingame_menu();
 	}
 	else if(mode_switch == MODE_MENU)
