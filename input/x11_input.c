@@ -169,42 +169,35 @@ static bool x_key_pressed(x11_input_t *x11, int key)
 
 static bool x_is_pressed(x11_input_t *x11, const struct snes_keybind *binds, unsigned id)
 {
-   for (int i = 0; binds[i].id != -1; i++)
+   if (id < SSNES_BIND_LIST_END)
    {
-      if (binds[i].id == (int)id)
-         return x_key_pressed(x11, binds[i].key);
+      const struct snes_keybind *bind = &binds[id];
+      return bind->valid && x_key_pressed(x11, binds[id].key);
    }
-
-   return false;
+   else
+      return false;
 }
 
 static bool x_bind_button_pressed(void *data, int key)
 {
    x11_input_t *x11 = (x11_input_t*)data;
-   bool pressed = x_is_pressed(x11, g_settings.input.binds[0], key);
-   if (!pressed)
-      return input_sdl.key_pressed(x11->sdl, key);
-   return pressed;
+   return x_is_pressed(x11, g_settings.input.binds[0], key) ||
+      input_sdl.key_pressed(x11->sdl, key);
 }
 
 static int16_t x_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
 {
    x11_input_t *x11 = (x11_input_t*)data;
-   bool pressed = false;
 
    switch (device)
    {
       case SNES_DEVICE_JOYPAD:
-         pressed = x_is_pressed(x11, binds[(port == SNES_PORT_1) ? 0 : 1], id);
-         if (!pressed)
-            pressed = input_sdl.input_state(x11->sdl, binds, port, device, index, id);
-         return pressed;
+         return x_is_pressed(x11, binds[(port == SNES_PORT_1) ? 0 : 1], id) ||
+            input_sdl.input_state(x11->sdl, binds, port, device, index, id);
 
       case SNES_DEVICE_MULTITAP:
-         pressed = x_is_pressed(x11, binds[(port == SNES_PORT_2) ? 1 + index : 0], id);
-         if (!pressed)
-            pressed = input_sdl.input_state(x11->sdl, binds, port, device, index, id);
-         return pressed;
+         return x_is_pressed(x11, binds[(port == SNES_PORT_2) ? 1 + index : 0], id) ||
+            input_sdl.input_state(x11->sdl, binds, port, device, index, id);
 
       default:
          return 0;

@@ -268,28 +268,27 @@ static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num, const struct sne
 
 static bool sdl_bind_button_pressed(void *data, int key)
 {
-   // Only let player 1 use special binds called from main loop.
    const struct snes_keybind *binds = g_settings.input.binds[0];
-   for (unsigned i = 0; binds[i].id != -1; i++)
+   if (key >= 0 && key < SSNES_BIND_LIST_END)
    {
-      if (binds[i].id == key)
-         return sdl_is_pressed((sdl_input_t*)data, 0, &binds[i]);
+      const struct snes_keybind *bind = &binds[key];
+      return sdl_is_pressed((sdl_input_t*)data, 0, bind);
    }
-   return false;
+   else
+      return false;
 }
 
-static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct snes_keybind **binds, 
-      unsigned port_num, int id)
+static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct snes_keybind **binds_, 
+      unsigned port_num, unsigned id)
 {
-   const struct snes_keybind *snes_keybinds = binds[port_num];
-
-   for (unsigned i = 0; snes_keybinds[i].id != -1; i++)
+   const struct snes_keybind *binds = binds_[port_num];
+   if (id < SSNES_BIND_LIST_END)
    {
-      if (snes_keybinds[i].id == id)
-         return sdl_is_pressed(sdl, port_num, &snes_keybinds[i]) ? 1 : 0;
+      const struct snes_keybind *bind = &binds[id];
+      return bind->valid ? (sdl_is_pressed(sdl, port_num, bind) ? 1 : 0) : 0;
    }
-
-   return 0;
+   else
+      return 0;
 }
 
 static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)

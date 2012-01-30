@@ -70,19 +70,12 @@ static int16_t input_ext_input_state(void *data, const struct snes_keybind **sne
    else
       player = (port == SNES_PORT_1) ? 1 : 2;
 
-   const struct snes_keybind *ssnes_bind = NULL;
-
-   for (unsigned i = 0; g_settings.input.binds[player - 1][i].id != -1; i++)
+   if (id < SSNES_BIND_LIST_END)
    {
-      if (g_settings.input.binds[player - 1][i].id == (int)id)
-      {
-         ssnes_bind = &g_settings.input.binds[player - 1][i];
-         break;
-      }
-   }
+      const struct snes_keybind *ssnes_bind = &snes_keybinds[player - 1][id];
+      if (!ssnes_bind->valid)
+         return 0;
 
-   if (ssnes_bind)
-   {
       struct ssnes_keybind bind = {0};
       bind.key = ssnes_bind->key;
       bind.joykey = ssnes_bind->joykey;
@@ -98,18 +91,12 @@ static bool input_ext_key_pressed(void *data, int key)
 {
    input_ext_t *ext = (input_ext_t*)data;
 
-   const struct snes_keybind *ssnes_bind = NULL;
-   for (unsigned i = 0; g_settings.input.binds[0][i].id != -1; i++)
+   if (key >= 0 && key < SSNES_BIND_LIST_END)
    {
-      if (g_settings.input.binds[0][i].id == key)
-      {
-         ssnes_bind = &g_settings.input.binds[0][i];
-         break;
-      }
-   }
+      const struct snes_keybind *ssnes_bind = &g_settings.input.binds[0][key];
+      if (!ssnes_bind->valid)
+         return false;
 
-   if (ssnes_bind)
-   {
       struct ssnes_keybind bind = {0};
       bind.key = ssnes_bind->key;
       bind.joykey = ssnes_bind->joykey;
