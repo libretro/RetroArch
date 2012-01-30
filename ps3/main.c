@@ -144,6 +144,7 @@ static void init_settings(void)
 	init_setting_bool("screenshots_enabled", g_console.screenshots_enable, false);
 	init_setting_bool("throttle_enable", g_console.throttle_enable, true);
 	init_setting_bool("triple_buffering_enable", g_console.triple_buffering_enable, true);
+	init_setting_uint("current_resolution_id", g_console.current_resolution_id, CELL_VIDEO_OUT_RESOLUTION_UNDEFINED);
 	
 	// g_extern
 	init_setting_uint("state_slot", g_extern.state_slot, 0);
@@ -544,7 +545,7 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	ps3_video_init();
+	ps3graphics_video_init();
 	ps3_input_init();
 
 	menu_init();

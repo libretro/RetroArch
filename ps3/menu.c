@@ -867,18 +867,13 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 					if(ps3_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
 					{
 						//ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
-						//ps3graphics_switch_resolution(ps3graphics_get_current_resolution(), Settings.PS3PALTemporalMode60Hz, Settings.TripleBuffering, Settings.ScaleEnabled, Settings.ScaleFactor);
-						//ps3graphics_set_vsync(Settings.Throttled);
-						//apply_scaling();
+						ps3graphics_video_reinit();
 					}
 				}
 				else
 				{
 					//ps3graphics_set_pal60hz(0);
-					//ps3graphics_switch_resolution(ps3graphics_get_current_resolution(), 0, Settings.TripleBuffering, Settings.ScaleEnabled, Settings.ScaleFactor);
-					//ps3graphics_set_vsync(Settings.Throttled);
-					//apply_scaling();
-					//emulator_implementation_set_texture(Settings.PS3CurrentBorder);
+					ps3graphics_video_reinit();
 				}
 			}
 			break;

@@ -828,6 +828,16 @@ static bool psgl_init_device(gl_t *gl, const video_info_t *video, uint32_t resol
 		.bufferingMode = PSGL_BUFFERING_MODE_TRIPLE,
 	};
 
+	if(resolution_id)
+	{
+		CellVideoOutResolution resolution;
+		cellVideoOutGetResolution(resolution_id, &resolution);
+
+		params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
+		params.width = resolution.width;
+		params.height = resolution.height;
+	}
+
 	gl->gl_device = psglCreateDeviceExtended(&params);
 	psglGetDeviceDimensions(gl->gl_device, &gl->win_width, &gl->win_height); 
 	gl->gl_context = psglCreateContext();
@@ -856,7 +866,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 	if (!gl)
 		return NULL;
 
-	if (!psgl_init_device(gl, video, 0))
+	if (!psgl_init_device(gl, video, g_console.current_resolution_id))
 		return NULL;
 
 
@@ -1200,19 +1210,30 @@ void ps3_set_filtering(unsigned index, bool set_smooth)
    
    When SSNES wants to free it, it is ignored. */
 
-void ps3_video_init(void)
+void ps3graphics_video_init(void)
 {
 	video_info_t video_info = {0};
 	// Might have to supply correct values here.
-	video_info.vsync = true;
+	video_info.vsync = g_settings.video.vsync;
 	video_info.force_aspect = false;
-	video_info.smooth = true;
+	video_info.smooth = g_settings.video.smooth;
 	video_info.input_scale = 2;
 	g_gl = gl_init(&video_info, NULL, NULL);
 
 	get_all_available_resolutions();
 	ps3_set_resolution();
 	ps3_setup_texture();
+}
+
+void ps3graphics_video_reinit(void)
+{
+	gl_t * gl = g_gl;
+
+	if(!gl)
+		return;
+
+	ps3_video_deinit();
+	ps3graphics_video_init();
 }
 
 void ps3_video_deinit(void)
