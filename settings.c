@@ -487,54 +487,54 @@ bool config_load_file(const char *path)
 
 struct bind_map
 {
+   bool valid;
    const char *key;
    const char *btn;
    const char *axis;
    int snes_key;
 };
 
-#define DECLARE_BIND(x, bind) { "input_" #x, "input_" #x "_btn", "input_" #x "_axis", bind }
-#define DECLARE_BIND_END() { NULL, NULL, NULL, SSNES_BIND_LIST_END }
+#define DECLARE_BIND(x, bind) { true, "input_" #x, "input_" #x "_btn", "input_" #x "_axis", bind }
 #define DECL_PLAYER(P) \
    { \
-      DECLARE_BIND(player##P##_a,             SNES_DEVICE_ID_JOYPAD_A), \
       DECLARE_BIND(player##P##_b,             SNES_DEVICE_ID_JOYPAD_B), \
       DECLARE_BIND(player##P##_y,             SNES_DEVICE_ID_JOYPAD_Y), \
-      DECLARE_BIND(player##P##_x,             SNES_DEVICE_ID_JOYPAD_X), \
-      DECLARE_BIND(player##P##_start,         SNES_DEVICE_ID_JOYPAD_START), \
       DECLARE_BIND(player##P##_select,        SNES_DEVICE_ID_JOYPAD_SELECT), \
-      DECLARE_BIND(player##P##_l,             SNES_DEVICE_ID_JOYPAD_L), \
-      DECLARE_BIND(player##P##_r,             SNES_DEVICE_ID_JOYPAD_R), \
-      DECLARE_BIND(player##P##_left,          SNES_DEVICE_ID_JOYPAD_LEFT), \
-      DECLARE_BIND(player##P##_right,         SNES_DEVICE_ID_JOYPAD_RIGHT), \
+      DECLARE_BIND(player##P##_start,         SNES_DEVICE_ID_JOYPAD_START), \
       DECLARE_BIND(player##P##_up,            SNES_DEVICE_ID_JOYPAD_UP), \
       DECLARE_BIND(player##P##_down,          SNES_DEVICE_ID_JOYPAD_DOWN), \
-      DECLARE_BIND_END(), \
+      DECLARE_BIND(player##P##_left,          SNES_DEVICE_ID_JOYPAD_LEFT), \
+      DECLARE_BIND(player##P##_right,         SNES_DEVICE_ID_JOYPAD_RIGHT), \
+      DECLARE_BIND(player##P##_a,             SNES_DEVICE_ID_JOYPAD_A), \
+      DECLARE_BIND(player##P##_x,             SNES_DEVICE_ID_JOYPAD_X), \
+      DECLARE_BIND(player##P##_l,             SNES_DEVICE_ID_JOYPAD_L), \
+      DECLARE_BIND(player##P##_r,             SNES_DEVICE_ID_JOYPAD_R), \
    }
 
 // Big and nasty bind map... :)
-static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS] = {
+static const struct bind_map bind_maps[MAX_PLAYERS][SSNES_BIND_LIST_END] = {
    {
-      DECLARE_BIND(player1_a,             SNES_DEVICE_ID_JOYPAD_A),
       DECLARE_BIND(player1_b,             SNES_DEVICE_ID_JOYPAD_B),
       DECLARE_BIND(player1_y,             SNES_DEVICE_ID_JOYPAD_Y),
-      DECLARE_BIND(player1_x,             SNES_DEVICE_ID_JOYPAD_X),
-      DECLARE_BIND(player1_start,         SNES_DEVICE_ID_JOYPAD_START),
       DECLARE_BIND(player1_select,        SNES_DEVICE_ID_JOYPAD_SELECT),
-      DECLARE_BIND(player1_l,             SNES_DEVICE_ID_JOYPAD_L),
-      DECLARE_BIND(player1_r,             SNES_DEVICE_ID_JOYPAD_R),
-      DECLARE_BIND(player1_left,          SNES_DEVICE_ID_JOYPAD_LEFT),
-      DECLARE_BIND(player1_right,         SNES_DEVICE_ID_JOYPAD_RIGHT),
+      DECLARE_BIND(player1_start,         SNES_DEVICE_ID_JOYPAD_START),
       DECLARE_BIND(player1_up,            SNES_DEVICE_ID_JOYPAD_UP),
       DECLARE_BIND(player1_down,          SNES_DEVICE_ID_JOYPAD_DOWN),
+      DECLARE_BIND(player1_left,          SNES_DEVICE_ID_JOYPAD_LEFT),
+      DECLARE_BIND(player1_right,         SNES_DEVICE_ID_JOYPAD_RIGHT),
+      DECLARE_BIND(player1_a,             SNES_DEVICE_ID_JOYPAD_A),
+      DECLARE_BIND(player1_x,             SNES_DEVICE_ID_JOYPAD_X),
+      DECLARE_BIND(player1_l,             SNES_DEVICE_ID_JOYPAD_L),
+      DECLARE_BIND(player1_r,             SNES_DEVICE_ID_JOYPAD_R),
+
       DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY),
       DECLARE_BIND(hold_fast_forward,     SSNES_FAST_FORWARD_HOLD_KEY),
-      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY),
       DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY),
+      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY),
+      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY),
+      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY),
       DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS),
       DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS),
-      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY),
-      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY),
       DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS),
       DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS),
       DECLARE_BIND(rewind,                SSNES_REWIND),
@@ -551,7 +551,6 @@ static const struct bind_map bind_maps[MAX_PLAYERS][MAX_BINDS] = {
       DECLARE_BIND(dsp_config,            SSNES_DSP_CONFIG),
       DECLARE_BIND(audio_mute,            SSNES_MUTE),
       DECLARE_BIND(netplay_flip_players,  SSNES_NETPLAY_FLIP),
-      DECLARE_BIND_END(),
    },
 
    DECL_PLAYER(2),
@@ -641,13 +640,7 @@ static const struct key_map sk_map[] = {
 static struct snes_keybind *find_snes_bind(unsigned port, int id)
 {
    struct snes_keybind *binds = g_settings.input.binds[port];
-
-   for (int i = 0; binds[i].id != -1; i++)
-   {
-      if (id == binds[i].id)
-         return &binds[i];
-   }
-   return NULL;
+   return binds[id].valid ? &binds[id] : NULL;
 }
 
 static int find_sk_bind(const char *str)
@@ -657,105 +650,114 @@ static int find_sk_bind(const char *str)
       if (strcasecmp(sk_map[i].str, str) == 0)
          return sk_map[i].key;
    }
+
    return -1;
 }
 
 static int find_sk_key(const char *str)
 {
-   // If the bind is a normal key-press ...
    if (strlen(str) == 1 && isalpha(*str))
       return (int)SK_a + (tolower(*str) - (int)'a');
-   else // Check if we have a special mapping for it.
+   else
       return find_sk_bind(str);
 }
 
-// Yes, this function needs a good refactor :)
-static void read_keybinds(config_file_t *conf)
+static void read_keybinds_keyboard(config_file_t *conf, unsigned player, unsigned index, struct snes_keybind *bind)
 {
-   char *tmp_key = NULL;
-   char *tmp_btn = NULL;
-   char *tmp_axis = NULL;
+   char tmp[64];
 
-   for (int j = 0; j < MAX_PLAYERS; j++)
+   if (bind_maps[player][index].key &&
+         config_get_array(conf, bind_maps[player][index].key, tmp, sizeof(tmp)))
    {
-      for (int i = 0; bind_maps[j][i].snes_key != SSNES_BIND_LIST_END; i++)
+      int key = find_sk_key(tmp);
+
+      if (key >= 0)
+         bind->key = (enum ssnes_key)key;
+   }
+}
+
+static void parse_hat(struct snes_keybind *bind, const char *str)
+{
+   if (isdigit(*str))
+   {
+      char *dir = NULL;
+      int hat = strtol(str, &dir, 0);
+      int hat_dir = 0;
+
+      if (dir)
       {
-         struct snes_keybind *bind = find_snes_bind(j, bind_maps[j][i].snes_key);
-         if (!bind)
-            continue;
+         if (strcasecmp(str, "up") == 0)
+            hat_dir = HAT_UP_MASK;
+         else if (strcasecmp(str, "down") == 0)
+            hat_dir = HAT_DOWN_MASK;
+         else if (strcasecmp(str, "left") == 0)
+            hat_dir = HAT_LEFT_MASK;
+         else if (strcasecmp(str, "right") == 0)
+            hat_dir = HAT_RIGHT_MASK;
 
-         // Check keybind
-         if (bind_maps[j][i].key && config_get_string(conf, bind_maps[j][i].key, &tmp_key))
-         {
-            int key = find_sk_key(tmp_key);
-
-            if (key >= 0)
-               bind->key = (enum ssnes_key)key;
-
-            free(tmp_key);
-            tmp_key = NULL;
-         }
-
-         // Check joybutton bind (hats too)
-         if (bind_maps[j][i].btn && config_get_string(conf, bind_maps[j][i].btn, &tmp_btn))
-         {
-            const char *btn = tmp_btn;
-            if (strcmp(tmp_btn, "nul") == 0)
-            {
-               bind->joykey = NO_BTN;
-            }
-            else
-            {
-               if (*btn++ == 'h')
-               {
-                  if (isdigit(*btn))
-                  {
-                     char *dir = NULL;
-                     int hat = strtol(btn, &dir, 0);
-                     int hat_dir = 0;
-                     if (dir)
-                     {
-                        if (strcasecmp(dir, "up") == 0)
-                           hat_dir = HAT_UP_MASK;
-                        else if (strcasecmp(dir, "down") == 0)
-                           hat_dir = HAT_DOWN_MASK;
-                        else if (strcasecmp(dir, "left") == 0)
-                           hat_dir = HAT_LEFT_MASK;
-                        else if (strcasecmp(dir, "right") == 0)
-                           hat_dir = HAT_RIGHT_MASK;
-
-                        if (hat_dir)
-                           bind->joykey = HAT_MAP(hat, hat_dir);
-                     }
-                  }
-               }
-               else
-                  bind->joykey = strtol(tmp_btn, NULL, 0);
-            }
-            free(tmp_btn);
-         }
-
-         // Check joyaxis binds.
-         if (bind_maps[j][i].axis && config_get_string(conf, bind_maps[j][i].axis, &tmp_axis))
-         {
-            if (strcmp(tmp_axis, "nul") == 0)
-            {
-               bind->joyaxis = AXIS_NONE;
-            }
-            else if (strlen(tmp_axis) >= 2 && (*tmp_axis == '+' || *tmp_axis == '-'))
-            {
-               int axis = strtol(tmp_axis + 1, NULL, 0);
-               if (*tmp_axis == '+')
-                  bind->joyaxis = AXIS_POS(axis);
-               else
-                  bind->joyaxis = AXIS_NEG(axis);
-
-            }
-            free(tmp_axis);
-            tmp_axis = NULL;
-         }
+         if (hat_dir)
+            bind->joykey = HAT_MAP(hat, hat_dir);
       }
    }
 }
+
+static void read_keybinds_button(config_file_t *conf, unsigned player, unsigned index, struct snes_keybind *bind)
+{
+   char tmp[64];
+   if (bind_maps[player][index].btn &&
+         config_get_array(conf, bind_maps[player][index].btn, tmp, sizeof(tmp)))
+   {
+      const char *btn = tmp;
+      if (strcmp(btn, "nul") == 0)
+         bind->joykey = NO_BTN;
+      else
+      {
+         if (*btn == 'h')
+            parse_hat(bind, btn + 1);
+         else
+            bind->joykey = strtol(tmp, NULL, 0);
+      }
+   }
+}
+
+static void read_keybinds_axis(config_file_t *conf, unsigned player, unsigned index, struct snes_keybind *bind)
+{
+   char tmp[64];
+   if (bind_maps[player][index].axis &&
+         config_get_array(conf, bind_maps[player][index].axis, tmp, sizeof(tmp)))
+   {
+      if (strcmp(tmp, "nul") == 0)
+         bind->joyaxis = AXIS_NONE;
+      else if (strlen(tmp) >= 2 && (*tmp == '+' || *tmp == '-'))
+      {
+         int axis = strtol(tmp + 1, NULL, 0);
+         if (*tmp == '+')
+            bind->joyaxis = AXIS_POS(axis);
+         else
+            bind->joyaxis = AXIS_NEG(axis);
+
+      }
+   }
+}
+
+static void read_keybinds_player(config_file_t *conf, unsigned player)
+{
+   for (unsigned i = 0; bind_maps[player][i].valid; i++)
+   {
+      struct snes_keybind *bind = find_snes_bind(player, bind_maps[player][i].snes_key);
+      ssnes_assert(bind);
+
+      read_keybinds_keyboard(conf, player, i, bind);
+      read_keybinds_button(conf, player, i, bind);
+      read_keybinds_axis(conf, player, i, bind);
+   }
+}
+
+static void read_keybinds(config_file_t *conf)
+{
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+      read_keybinds_player(conf, i);
+}
+
 #endif
 

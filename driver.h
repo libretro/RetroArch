@@ -69,6 +69,7 @@ enum
 
 struct snes_keybind
 {
+   bool valid;
    int id;
    enum ssnes_key key;
    uint16_t joykey;

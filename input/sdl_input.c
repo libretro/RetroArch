@@ -147,7 +147,7 @@ static void *sdl_input_init(void)
 
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {
-      if (g_settings.input.joypad_map[i] == SSNES_NO_JOYPAD)
+      if (g_settings.input.joypad_map[i] < 0)
          continue;
 
       if (sdl->num_joysticks > g_settings.input.joypad_map[i])

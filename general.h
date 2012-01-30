@@ -68,8 +68,6 @@
 #endif
 
 #define MAX_PLAYERS 5
-#define MAX_BINDS (SSNES_BIND_LIST_END + 1)
-#define SSNES_NO_JOYPAD 0xFFFF
 
 enum ssnes_shader_type
 {
@@ -145,9 +143,9 @@ struct settings
    struct
    {
       char driver[32];
-      struct snes_keybind binds[MAX_PLAYERS][MAX_BINDS];
+      struct snes_keybind binds[MAX_PLAYERS][SSNES_BIND_LIST_END];
       float axis_threshold;
-      unsigned joypad_map[MAX_PLAYERS];
+      int joypad_map[MAX_PLAYERS];
       bool netplay_client_swap_input;
    } input;
 
