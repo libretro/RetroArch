@@ -18,6 +18,12 @@
 #ifndef MAIN_WRAP_H__
 #define MAIN_WRAP_H__
 
+#ifdef _MSC_VER
+unsigned char bool;
+#else
+#include <stdbool.h>
+#endif
+
 // Builds argc/argv and calls ssnes_main_init().
 
 struct ssnes_main_wrap

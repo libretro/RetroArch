@@ -31,6 +31,7 @@
 #include "ps3_input.h"
 #include "ps3_video_psgl.h"
 
+#include "../console/main_wrap.h"
 #include "../conf/config_file.h"
 #include "../conf/config_file_macros.h"
 #include "../general.h"
@@ -625,35 +626,17 @@ begin_loop:
 			if(g_emulator_initialized)
 				ssnes_main_deinit();
 
-			char arg1[] = "ssnes";
-			char arg2[PATH_MAX];
+			struct ssnes_main_wrap args = {
+			.verbose = g_extern.verbose,
+			.config_path = SYS_CONFIG_FILE,
+			.sram_path = g_console.default_sram_dir_enable ? g_console.default_sram_dir : NULL,
+			.state_path = g_console.default_savestate_dir_enable ? g_console.default_savestate_dir : NULL,
+			.rom_path = g_console.rom_path
+			};
 
-			snprintf(arg2, sizeof(arg2), g_console.rom_path);
-			char arg3[] = "-v";
-			char arg4[] = "-c";
-			char arg5[MAX_PATH_LENGTH];
-
-			snprintf(arg5, sizeof(arg5), SYS_CONFIG_FILE);
-
-			if(g_console.default_sram_dir_enable)
-			{
-				char arg6[] = "-s";
-				char arg7[MAX_PATH_LENGTH];
-				snprintf(arg7, sizeof(arg7), g_console.default_sram_dir);
-				char *argv_[] = { arg1, arg2, arg3, arg4, arg5, arg6, arg7, NULL };
-				int argc = sizeof(argv_) / sizeof(argv_[0]) - 1;
-				int init_ret = ssnes_main_init(argc, argv_);
-				g_emulator_initialized = 1;
-				init_ssnes = 0;
-			}
-			else
-			{
-				char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
-				int argc = sizeof(argv_) / sizeof(argv_[0]) - 1;
-				int init_ret = ssnes_main_init(argc, argv_);
-				g_emulator_initialized = 1;
-				init_ssnes = 0;
-			}
+			int init_ret = ssnes_main_init_wrap(&args);
+			g_emulator_initialized = 1;
+			init_ssnes = 0;
 		}
 	}
 #ifdef MULTIMAN_SUPPORT
