@@ -957,7 +957,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			if(CTRL_START(state))
 			{
-				//ps3graphics_load_fragment_shader(DEFAULT_SHADER_FILE, 0);
+				gl_cg_load_shader(1, DEFAULT_SHADER_FILE);
 			}
 			break;
 		case SETTING_SHADER_2:
@@ -971,7 +971,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			if(CTRL_START(state))
 			{
-				//ps3graphics_load_fragment_shader(DEFAULT_SHADER_FILE, 1);
+				gl_cg_load_shader(2, DEFAULT_SHADER_FILE);
 			}
 			break;
 		case SETTING_FONT_SIZE:

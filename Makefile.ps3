@@ -80,7 +80,6 @@ ifeq ($(DOWNLOAD_SHADERS),1)
 	rm -rf ps3/pkg/USRDIR/shaders
 	git clone git://github.com/twinaphex/common-shaders.git ps3/pkg/USRDIR/shaders
 endif
-	cp ps3/override/border-only.cg ps3/pkg/USRDIR/shaders/Borders/Menu/
 	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) ps3/pkg/USRDIR/EBOOT.BIN
 	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
 
