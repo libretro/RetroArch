@@ -399,10 +399,10 @@ static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_s
 #endif
 }
 
+#ifdef HAVE_FBO
 // Horribly long and complex FBO init :D
 static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
-#ifdef HAVE_FBO
    if (!g_settings.video.render_to_texture && gl_shader_num() == 0)
       return;
 
@@ -572,12 +572,8 @@ error:
    glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
    pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
    SSNES_ERR("Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
-#else
-   (void)gl;
-   (void)width;
-   (void)height;
-#endif
 }
+#endif
 
 static inline void gl_deinit_font(gl_t *gl)
 {
@@ -1278,9 +1274,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    SSNES_LOG("GL: Loaded %u program(s).\n", gl_shader_num());
 
+#ifdef HAVE_FBO
    // Set up render to texture.
    gl_init_fbo(gl, SSNES_SCALE_BASE * video->input_scale,
          SSNES_SCALE_BASE * video->input_scale);
+#endif
    
    gl->keep_aspect = video->force_aspect;
 
@@ -1425,8 +1423,10 @@ static bool gl_xml_shader(void *data, const char *path)
    if (!gl_glsl_init(path))
       return false;
 
-   // Set up render to texture.
+#ifdef HAVE_FBO
+   // Set up render to texture again.
    gl_init_fbo(gl, gl->tex_w, gl->tex_h);
+#endif
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
    gl_shader_use(0);
