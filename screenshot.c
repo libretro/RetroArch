@@ -78,7 +78,7 @@ static void dump_content(FILE *file, const uint16_t *frame, unsigned width, unsi
          *dst++ = (r << 3) | (r >> 2);
       }
 
-      fwrite(line, 1, sizeof(line), file);
+      fwrite(line, 1, line_size, file);
    }
 
    free(line);
