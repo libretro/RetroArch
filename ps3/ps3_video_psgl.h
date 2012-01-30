@@ -23,7 +23,7 @@
 #include "../gfx/gfx_common.h"
 #include <cell/dbgfont.h>
 
-void ps3graphics_video_init(void);
+void ps3graphics_video_init(bool get_all_resolutions);
 void ps3graphics_video_reinit(void);
 void ps3_video_deinit(void);
 

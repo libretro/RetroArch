@@ -161,7 +161,6 @@ static void init_settings(void)
 
 static void save_settings(void)
 {
-	fprintf(stderr, "Attempting to save config file...\n");
 	if(!file_exists(SYS_CONFIG_FILE))
 	{
 		FILE * f;
@@ -593,7 +592,7 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	ps3graphics_video_init();
+	ps3graphics_video_init(true);
 	ps3_input_init();
 
 	menu_init();

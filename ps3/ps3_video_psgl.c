@@ -1213,7 +1213,7 @@ void ps3_set_filtering(unsigned index, bool set_smooth)
    
    When SSNES wants to free it, it is ignored. */
 
-void ps3graphics_video_init(void)
+void ps3graphics_video_init(bool get_all_resolutions)
 {
 	video_info_t video_info = {0};
 	// Might have to supply correct values here.
@@ -1223,7 +1223,8 @@ void ps3graphics_video_init(void)
 	video_info.input_scale = 2;
 	g_gl = gl_init(&video_info, NULL, NULL);
 
-	get_all_available_resolutions();
+	if(get_all_resolutions)
+		get_all_available_resolutions();
 	ps3_set_resolution();
 	ps3_setup_texture();
 }
@@ -1236,7 +1237,7 @@ void ps3graphics_video_reinit(void)
 		return;
 
 	ps3_video_deinit();
-	ps3graphics_video_init();
+	ps3graphics_video_init(false);
 }
 
 void ps3_video_deinit(void)
