@@ -784,6 +784,31 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 
 			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_settings.cheat_database);
 			break;
+		case SETTING_ENABLE_SRAM_PATH:
+			if(g_console.default_sram_dir_enable)
+			{
+				menu_obj->items[currentsetting].text_color = ORANGE;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+			}
+			else
+			{
+				menu_obj->items[currentsetting].text_color = GREEN;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+			}
+
+			break;
+		case SETTING_ENABLE_STATE_PATH:
+			if(g_console.default_savestate_dir_enable)
+			{
+				menu_obj->items[currentsetting].text_color = ORANGE;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+			}
+			else
+			{
+				menu_obj->items[currentsetting].text_color = GREEN;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+			}
+			break;
 		case SETTING_PATH_DEFAULT_ALL:
 			if(menu_obj->selected == currentsetting)
 				menu_obj->items[currentsetting].text_color = GREEN;
@@ -1220,6 +1245,34 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 
 			if(CTRL_START(state))
 				strcpy(g_settings.cheat_database, usrDirPath);
+			break;
+		case SETTING_ENABLE_SRAM_PATH:
+			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			{
+				g_console.default_sram_dir_enable = !g_console.default_sram_dir_enable;
+				menu_reinit_settings();
+				set_text_message("", 7);
+			}
+			if(CTRL_START(state))
+			{
+				g_console.default_sram_dir_enable = true;
+				menu_reinit_settings();
+				set_text_message("", 7);
+			}
+			break;
+		case SETTING_ENABLE_STATE_PATH:
+			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			{
+				g_console.default_savestate_dir_enable = !g_console.default_savestate_dir_enable;
+				menu_reinit_settings();
+				set_text_message("", 7);
+			}
+			if(CTRL_START(state))
+			{
+				g_console.default_savestate_dir_enable = true;
+				menu_reinit_settings();
+				set_text_message("", 7);
+			}
 			break;
 		case SETTING_PATH_DEFAULT_ALL:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
