@@ -23,21 +23,39 @@
 #include "../gfx/gfx_common.h"
 #include <cell/dbgfont.h>
 
-void ps3graphics_video_init(bool get_all_resolutions);
-void ps3graphics_video_reinit(void);
-void ps3_video_deinit(void);
+enum
+{
+	ASPECT_RATIO_4_3,
+	ASPECT_RATIO_5_4,
+	ASPECT_RATIO_8_7,
+	ASPECT_RATIO_16_9,
+	ASPECT_RATIO_16_10,
+	ASPECT_RATIO_16_15,
+	ASPECT_RATIO_19_14,
+	ASPECT_RATIO_2_1,
+	ASPECT_RATIO_3_2,
+	ASPECT_RATIO_3_4,
+	ASPECT_RATIO_1_1,
+	ASPECT_RATIO_AUTO,
+	ASPECT_RATIO_CUSTOM,
+	LAST_ASPECT_RATIO
+};
 
-void ps3_next_resolution (void);
-void ps3_previous_resolution (void);
+bool ps3_setup_texture(void);
 const char * ps3_get_resolution_label(uint32_t resolution);
 int ps3_check_resolution(uint32_t resolution_id);
-void ps3graphics_block_swap (void);
-void ps3graphics_unblock_swap (void);
-void ps3graphics_set_vsync(uint32_t vsync);
-void ps3graphics_set_orientation(uint32_t orientation);
 void gl_frame_menu(void);
-bool ps3_setup_texture(void);
+void ps3_previous_resolution (void);
+void ps3_next_resolution (void);
 void ps3_set_filtering(unsigned index, bool set_smooth);
+void ps3_video_deinit(void);
+void ps3graphics_block_swap (void);
+void ps3graphics_set_aspect_ratio(uint32_t aspectratio_index);
+void ps3graphics_set_orientation(uint32_t orientation);
+void ps3graphics_set_vsync(uint32_t vsync);
+void ps3graphics_unblock_swap (void);
+void ps3graphics_video_init(bool get_all_resolutions);
+void ps3graphics_video_reinit(void);
 
 extern void *g_gl;
 

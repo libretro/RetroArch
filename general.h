@@ -178,6 +178,7 @@ struct console_settings
    bool screenshots_enable;
    bool throttle_enable;
    bool triple_buffering_enable;
+   uint32_t aspect_ratio_index;
    uint32_t screen_orientation;
    uint32_t current_resolution_index;
    uint32_t current_resolution_id;
@@ -185,6 +186,7 @@ struct console_settings
    uint32_t *supported_resolutions;
    uint32_t supported_resolutions_count;
    char rom_path[PATH_MAX];
+   char aspect_ratio_name[PATH_MAX];
    char default_rom_startup_dir[PATH_MAX];
    char default_savestate_dir[PATH_MAX];
    char default_sram_dir[PATH_MAX];
