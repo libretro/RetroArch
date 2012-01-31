@@ -50,6 +50,7 @@ void ps3_next_resolution (void);
 void ps3_set_filtering(unsigned index, bool set_smooth);
 void ps3_video_deinit(void);
 void ps3graphics_block_swap (void);
+void ps3graphics_reinit_fbos (void);
 void ps3graphics_set_aspect_ratio(uint32_t aspectratio_index);
 void ps3graphics_set_orientation(uint32_t orientation);
 void ps3graphics_set_vsync(uint32_t vsync);
