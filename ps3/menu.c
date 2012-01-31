@@ -359,6 +359,11 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 		case SETTING_GAME_AWARE_SHADER:
 			break;
 		case SETTING_FONT_SIZE:
+			if(g_console.menu_font_size == 1.0f)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%f", g_console.menu_font_size);
 			break;
 		case SETTING_KEEP_ASPECT_RATIO:
 			if(g_console.aspect_ratio_index == ASPECT_RATIO_4_3)
@@ -1001,6 +1006,24 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			break;
 		case SETTING_FONT_SIZE:
+			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
+			{
+				if(g_console.menu_font_size > 0) 
+				{
+					g_console.menu_font_size -= 0.01f;
+					set_text_message("", 7);
+				}
+			}
+			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				if((g_console.menu_font_size < 2.0f))
+				{
+					g_console.menu_font_size += 0.01f;
+					set_text_message("", 7);
+				}
+			}
+			if(CTRL_START(state))
+				g_console.menu_font_size = 1.0f;
 			break;
 		case SETTING_KEEP_ASPECT_RATIO:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))

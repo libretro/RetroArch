@@ -126,6 +126,7 @@ static void set_default_settings(void)
 	strlcpy(g_console.default_sram_dir, usrDirPath, sizeof(g_console.default_sram_dir));
 	g_console.aspect_ratio_index = 0;
 	strlcpy(g_console.aspect_ratio_name, "4:3", sizeof(g_console.aspect_ratio_name));
+	g_console.menu_font_size = 1.0f;
 	
 	// g_extern
 	g_extern.state_slot = 0;
@@ -169,6 +170,7 @@ static void init_settings(void)
 	CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
 	CONFIG_GET_STRING_CONSOLE(aspect_ratio_name, "aspect_ratio_name");
 	CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
+	CONFIG_GET_FLOAT_CONSOLE(menu_font_size, "menu_font_size");
 	
 	// g_extern
 	CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
@@ -211,6 +213,7 @@ static void save_settings(void)
 	config_set_int(conf, "screen_orientation", g_console.screen_orientation);
 	config_set_string(conf, "aspect_ratio_name", g_console.aspect_ratio_name);
 	config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
+	config_set_float(conf, "menu_font_size", g_console.menu_font_size);
 
 	// g_extern
 	config_set_int(conf, "state_slot", g_extern.state_slot);

@@ -16,7 +16,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define FONT_SIZE 1.0f
+#define FONT_SIZE (g_console.menu_font_size)
 #define EMU_MENU_TITLE "SSNES |"
 #define VIDEO_MENU_TITLE "SSNES VIDEO |"
 #define AUDIO_MENU_TITLE "SSNES AUDIO |"
