@@ -361,6 +361,11 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 		case SETTING_FONT_SIZE:
 			break;
 		case SETTING_KEEP_ASPECT_RATIO:
+			if(g_console.aspect_ratio_index == ASPECT_RATIO_4_3)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.aspect_ratio_name);
 			break;
 		case SETTING_HW_TEXTURE_FILTER:
 			if(g_settings.video.smooth)
@@ -975,6 +980,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_START(state))
 			{
 				gl_cg_load_shader(1, DEFAULT_SHADER_FILE);
+				strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
+				menu_reinit_settings();
 			}
 			break;
 		case SETTING_SHADER_2:
@@ -989,11 +996,37 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_START(state))
 			{
 				gl_cg_load_shader(2, DEFAULT_SHADER_FILE);
+				strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
+				menu_reinit_settings();
 			}
 			break;
 		case SETTING_FONT_SIZE:
 			break;
 		case SETTING_KEEP_ASPECT_RATIO:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
+			{
+				if(g_console.aspect_ratio_index > 0)
+				{
+					g_console.aspect_ratio_index--;
+					ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
+					set_text_message("", 7);
+				}
+			}
+			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			{
+				if(g_console.aspect_ratio_index < LAST_ASPECT_RATIO)
+				{
+					g_console.aspect_ratio_index++;
+					ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
+					set_text_message("", 7);
+				}
+			}
+			if(CTRL_START(state))
+			{
+				g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
+				ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
+				set_text_message("", 7);
+			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))

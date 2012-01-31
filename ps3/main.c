@@ -125,7 +125,7 @@ static void set_default_settings(void)
 	strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
 	strlcpy(g_console.default_sram_dir, usrDirPath, sizeof(g_console.default_sram_dir));
 	g_console.aspect_ratio_index = 0;
-	strlcpy(g_console.aspect_ratio_name, "4/3", sizeof(g_console.aspect_ratio_name));
+	strlcpy(g_console.aspect_ratio_name, "4:3", sizeof(g_console.aspect_ratio_name));
 	
 	// g_extern
 	g_extern.state_slot = 0;
@@ -167,6 +167,7 @@ static void init_settings(void)
 	CONFIG_GET_INT_CONSOLE(aspect_ratio_index, "aspect_ratio_index");
 	CONFIG_GET_INT_CONSOLE(current_resolution_id, "current_resolution_id");
 	CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
+	CONFIG_GET_STRING_CONSOLE(aspect_ratio_name, "aspect_ratio_name");
 	CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
 	
 	// g_extern
@@ -208,6 +209,7 @@ static void save_settings(void)
 	config_set_int(conf, "aspect_ratio_index", g_console.aspect_ratio_index);
 	config_set_int(conf, "current_resolution_id", g_console.current_resolution_id);
 	config_set_int(conf, "screen_orientation", g_console.screen_orientation);
+	config_set_string(conf, "aspect_ratio_name", g_console.aspect_ratio_name);
 	config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
 
 	// g_extern
