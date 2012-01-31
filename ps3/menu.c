@@ -28,6 +28,7 @@
 #include "ps3_video_psgl.h"
 
 #include "shared.h"
+#include "../file.h"
 #include "../general.h"
 #include "../gfx/shader_cg.h"
 
@@ -314,225 +315,6 @@ static void browser_render(filebrowser_t * b)
 	cellDbgFontDraw();
 }
 
-static void select_file(uint32_t menu_id)
-{
-	char extensions[256], title[256], object[256], comment[256], dir_path[MAX_PATH_LENGTH],
-	path[MAX_PATH_LENGTH], *separatorslash;
-	uint64_t state, diff_state, button_was_pressed;
-	static uint64_t old_state = 0;
-
-	state = cell_pad_input_poll_device(0);
-	diff_state = old_state ^ state;
-	button_was_pressed = old_state & diff_state;
-
-	switch(menu_id)
-	{
-		case GAME_AWARE_SHADER_CHOICE:
-			strncpy(dir_path, GAME_AWARE_SHADER_DIR_PATH, sizeof(dir_path));
-			strncpy(extensions, "cfg|CFG", sizeof(extensions));
-			strncpy(title, "GAME AWARE SHADER SELECTION", sizeof(title));
-			strncpy(object, "Game Aware Shader", sizeof(object));
-			strncpy(comment, "INFO - Select a 'Game Aware Shader' script from the menu by pressing X.", sizeof(comment));
-			break;
-		case SHADER_CHOICE:
-			strncpy(dir_path, SHADERS_DIR_PATH, sizeof(dir_path));
-			strncpy(extensions, "cg|CG", sizeof(extensions));
-			strncpy(title, "SHADER SELECTION", sizeof(title));
-			strncpy(object, "Shader", sizeof(object));
-			strncpy(comment, "INFO - Select a shader from the menu by pressing the X button.", sizeof(comment));
-			break;
-		case PRESET_CHOICE:
-			strncpy(dir_path, PRESETS_DIR_PATH, sizeof(dir_path));
-			strncpy(extensions, "conf|CONF", sizeof(extensions));
-			strncpy(title, "SHADER PRESETS SELECTION", sizeof(title));
-			strncpy(object, "Shader", sizeof(object));
-			strncpy(object, "Shader preset", sizeof(object));
-                        strncpy(comment, "INFO - Select a shader preset from the menu by pressing the X button. ", sizeof(comment));
-			break;
-		case INPUT_PRESET_CHOICE:
-			strncpy(dir_path, INPUT_PRESETS_DIR_PATH, sizeof(dir_path));
-			strncpy(extensions, "conf|CONF", sizeof(extensions));
-			strncpy(title, "INPUT PRESETS SELECTION", sizeof(title));
-			strncpy(object, "Input", sizeof(object));
-			strncpy(object, "Input preset", sizeof(object));
-                        strncpy(comment, "INFO - Select an input preset from the menu by pressing the X button. ", sizeof(comment));
-			break;
-		case BORDER_CHOICE:
-			strncpy(dir_path, BORDERS_DIR_PATH, sizeof(dir_path));
-			strncpy(extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(extensions));
-			strncpy(title, "BORDER SELECTION", sizeof(title));
-			strncpy(object, "Border", sizeof(object));
-			strncpy(object, "Border image file", sizeof(object));
-			strncpy(comment, "INFO - Select a border image file from the menu by pressing the X button. ", sizeof(comment));
-			break;
-		EXTRA_SELECT_FILE_PART1();
-	}
-
-	if(set_initial_dir_tmpbrowser)
-	{
-		filebrowser_new(&tmpBrowser, dir_path, extensions);
-		set_initial_dir_tmpbrowser = false;
-	}
-
-	browser_update(&tmpBrowser);
-
-	if (CTRL_START(button_was_pressed))
-		filebrowser_reset_start_directory(&tmpBrowser, "/", extensions);
-
-	if (CTRL_CROSS(button_was_pressed))
-	{
-		if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
-		{
-			/*if 'filename' is in fact '..' - then pop back directory instead of 
-			adding '..' to filename path */
-			if(tmpBrowser.currently_selected == 0)
-			{
-				old_state = state;
-				filebrowser_pop_directory(&tmpBrowser);
-			}
-			else
-			{
-                                separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
-				snprintf(path, sizeof(path), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-				filebrowser_push_directory(&tmpBrowser, path, true);
-			}
-		}
-		else if (FILEBROWSER_IS_CURRENT_A_FILE(tmpBrowser))
-		{
-			snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-			printf("path: %s\n", path);
-
-			switch(menu_id)
-			{
-				case GAME_AWARE_SHADER_CHOICE:
-					break;
-				case SHADER_CHOICE:
-					gl_cg_load_shader(set_shader+1, path);
-					break;
-				case PRESET_CHOICE:
-					break;
-				case INPUT_PRESET_CHOICE:
-					break;
-				case BORDER_CHOICE:
-					break;
-				EXTRA_SELECT_FILE_PART2();
-			}
-
-			menuStackindex--;
-		}
-	}
-
-	if (CTRL_TRIANGLE(button_was_pressed))
-		menuStackindex--;
-
-        cellDbgFontPrintf(0.09f, 0.09f, Emulator_GetFontSize(), YELLOW, "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
-	cellDbgFontPuts	(0.09f,	0.05f,	Emulator_GetFontSize(),	RED,	title);
-	cellDbgFontPrintf(0.09f, 0.92f, 0.92, YELLOW, "X - Select %s  /\\ - return to settings  START - Reset Startdir", object);
-	cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s", comment);
-	cellDbgFontDraw();
-
-	browser_render(&tmpBrowser);
-	old_state = state;
-}
-
-static void select_directory(uint32_t menu_id)
-{
-        char path[1024], newpath[1024], *separatorslash;
-	uint64_t state, diff_state, button_was_pressed;
-        static uint64_t old_state = 0;
-
-        state = cell_pad_input_poll_device(0);
-        diff_state = old_state ^ state;
-        button_was_pressed = old_state & diff_state;
-
-	if(set_initial_dir_tmpbrowser)
-	{
-		filebrowser_new(&tmpBrowser, "/\0", "empty");
-		set_initial_dir_tmpbrowser = false;
-	}
-
-        browser_update(&tmpBrowser);
-
-        if (CTRL_START(button_was_pressed))
-		filebrowser_reset_start_directory(&tmpBrowser, "/","empty");
-
-        if (CTRL_SQUARE(button_was_pressed))
-        {
-                if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
-                {
-                        snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-                        switch(menu_id)
-                        {
-                                case PATH_SAVESTATES_DIR_CHOICE:
-                                        strcpy(g_console.default_savestate_dir, path);
-                                        break;
-                                case PATH_SRAM_DIR_CHOICE:
-					strcpy(g_console.default_sram_dir, path);
-                                        break;
-                                case PATH_DEFAULT_ROM_DIR_CHOICE:
-                                        strcpy(g_console.default_rom_startup_dir, path);
-                                        break;
-				case PATH_CHEATS_DIR_CHOICE:
-					strcpy(g_settings.cheat_database, path);
-					break;
-                        }
-                        menuStackindex--;
-                }
-        }
-        if (CTRL_TRIANGLE(button_was_pressed))
-        {
-                strcpy(path, usrDirPath);
-                switch(menu_id)
-                {
-                        case PATH_SAVESTATES_DIR_CHOICE:
-				strcpy(g_console.default_savestate_dir, path);
-                                break;
-                        case PATH_SRAM_DIR_CHOICE:
-				strcpy(g_console.default_sram_dir, path);
-                                break;
-                        case PATH_DEFAULT_ROM_DIR_CHOICE:
-				strcpy(g_console.default_rom_startup_dir, path);
-                                break;
-			case PATH_CHEATS_DIR_CHOICE:
-				strcpy(g_settings.cheat_database, path);
-				break;
-                }
-                menuStackindex--;
-        }
-        if (CTRL_CROSS(button_was_pressed))
-        {
-                if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
-                {
-                        /* if 'filename' is in fact '..' - then pop back 
-			directory instead of adding '..' to filename path */
-
-                        if(tmpBrowser.currently_selected == 0)
-                        {
-                                old_state = state;
-				filebrowser_pop_directory(&tmpBrowser);
-                        }
-                        else
-                        {
-                                separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
-                                snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-                                filebrowser_push_directory(&tmpBrowser, newpath, false);
-                        }
-                }
-        }
-
-        cellDbgFontPrintf (0.09f,  0.09f, Emulator_GetFontSize(), YELLOW, 
-	"PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
-        cellDbgFontPuts (0.09f, 0.05f,  Emulator_GetFontSize(), RED,    "DIRECTORY SELECTION");
-        cellDbgFontPuts(0.09f, 0.93f, 0.92f, YELLOW,
-	"X - Enter dir  /\\ - return to settings  START - Reset Startdir");
-        cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s",
-	"INFO - Browse to a directory and assign it as the path by\npressing SQUARE button.");
-        cellDbgFontDraw();
-
-        browser_render(&tmpBrowser);
-        old_state = state;
-}
-
 static void set_setting_label(menu * menu_obj, int currentsetting)
 {
 	switch(currentsetting)
@@ -552,20 +334,9 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 			break;
 		case SETTING_SHADER:
 			{
-				int i, no, offset, fname_without_extension_length;
-				char fname_without_path_extension[MAX_PATH_LENGTH];
-				const char * fname_without_filepath = strrchr(g_settings.video.cg_shader_path, '/');
-
-				offset = strlen(g_settings.video.cg_shader_path - strlen(fname_without_filepath));
-				fname_without_extension_length = strlen(g_settings.video.cg_shader_path);
-
-				for(i = offset + 1, no = 0; i < fname_without_extension_length; i++, no++)
-				{
-					fname_without_path_extension[no] = g_settings.video.cg_shader_path[i];
-					fname_without_path_extension[no+1] = '\0';
-				}
-
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname_without_path_extension);
+				char fname[MAX_PATH_LENGTH];
+				fill_pathname_base(&fname, g_settings.video.cg_shader_path, sizeof(fname));
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
 				if(strcmp(g_settings.video.cg_shader_path,DEFAULT_SHADER_FILE) == 0)
 					menu_obj->items[currentsetting].text_color = GREEN;
@@ -575,20 +346,9 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 			break;
 		case SETTING_SHADER_2:
 			{
-				int i, no, offset, fname_without_extension_length;
-				char fname_without_path_extension[MAX_PATH_LENGTH];
-				const char * fname_without_filepath = strrchr(g_settings.video.second_pass_shader, '/');
-
-				offset = strlen(g_settings.video.second_pass_shader - strlen(fname_without_filepath));
-				fname_without_extension_length = strlen(g_settings.video.second_pass_shader);
-
-				for(i = offset + 1, no = 0; i < fname_without_extension_length; i++, no++)
-				{
-					fname_without_path_extension[no] = g_settings.video.second_pass_shader[i];
-					fname_without_path_extension[no+1] = '\0';
-				}
-
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname_without_path_extension);
+				char fname[MAX_PATH_LENGTH];
+				fill_pathname_base(&fname, g_settings.video.second_pass_shader, sizeof(fname));
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
 				if(strcmp(g_settings.video.second_pass_shader,DEFAULT_SHADER_FILE) == 0)
 					menu_obj->items[currentsetting].text_color = GREEN;
@@ -907,6 +667,238 @@ static void menu_reinit_settings (void)
 	menu_init_settings_pages(&menu_pathsettings);
 	menu_init_settings_pages(&menu_controlssettings);
 }
+
+static void select_file(uint32_t menu_id)
+{
+	char extensions[256], title[256], object[256], comment[256], dir_path[MAX_PATH_LENGTH],
+	path[MAX_PATH_LENGTH], *separatorslash;
+	uint64_t state, diff_state, button_was_pressed;
+	static uint64_t old_state = 0;
+
+	state = cell_pad_input_poll_device(0);
+	diff_state = old_state ^ state;
+	button_was_pressed = old_state & diff_state;
+
+	switch(menu_id)
+	{
+		case GAME_AWARE_SHADER_CHOICE:
+			strncpy(dir_path, GAME_AWARE_SHADER_DIR_PATH, sizeof(dir_path));
+			strncpy(extensions, "cfg|CFG", sizeof(extensions));
+			strncpy(title, "GAME AWARE SHADER SELECTION", sizeof(title));
+			strncpy(object, "Game Aware Shader", sizeof(object));
+			strncpy(comment, "INFO - Select a 'Game Aware Shader' script from the menu by pressing X.", sizeof(comment));
+			break;
+		case SHADER_CHOICE:
+			strncpy(dir_path, SHADERS_DIR_PATH, sizeof(dir_path));
+			strncpy(extensions, "cg|CG", sizeof(extensions));
+			strncpy(title, "SHADER SELECTION", sizeof(title));
+			strncpy(object, "Shader", sizeof(object));
+			strncpy(comment, "INFO - Select a shader from the menu by pressing the X button.", sizeof(comment));
+			break;
+		case PRESET_CHOICE:
+			strncpy(dir_path, PRESETS_DIR_PATH, sizeof(dir_path));
+			strncpy(extensions, "conf|CONF", sizeof(extensions));
+			strncpy(title, "SHADER PRESETS SELECTION", sizeof(title));
+			strncpy(object, "Shader", sizeof(object));
+			strncpy(object, "Shader preset", sizeof(object));
+                        strncpy(comment, "INFO - Select a shader preset from the menu by pressing the X button. ", sizeof(comment));
+			break;
+		case INPUT_PRESET_CHOICE:
+			strncpy(dir_path, INPUT_PRESETS_DIR_PATH, sizeof(dir_path));
+			strncpy(extensions, "conf|CONF", sizeof(extensions));
+			strncpy(title, "INPUT PRESETS SELECTION", sizeof(title));
+			strncpy(object, "Input", sizeof(object));
+			strncpy(object, "Input preset", sizeof(object));
+                        strncpy(comment, "INFO - Select an input preset from the menu by pressing the X button. ", sizeof(comment));
+			break;
+		case BORDER_CHOICE:
+			strncpy(dir_path, BORDERS_DIR_PATH, sizeof(dir_path));
+			strncpy(extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(extensions));
+			strncpy(title, "BORDER SELECTION", sizeof(title));
+			strncpy(object, "Border", sizeof(object));
+			strncpy(object, "Border image file", sizeof(object));
+			strncpy(comment, "INFO - Select a border image file from the menu by pressing the X button. ", sizeof(comment));
+			break;
+		EXTRA_SELECT_FILE_PART1();
+	}
+
+	if(set_initial_dir_tmpbrowser)
+	{
+		filebrowser_new(&tmpBrowser, dir_path, extensions);
+		set_initial_dir_tmpbrowser = false;
+	}
+
+	browser_update(&tmpBrowser);
+
+	if (CTRL_START(button_was_pressed))
+		filebrowser_reset_start_directory(&tmpBrowser, "/", extensions);
+
+	if (CTRL_CROSS(button_was_pressed))
+	{
+		if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
+		{
+			/*if 'filename' is in fact '..' - then pop back directory instead of 
+			adding '..' to filename path */
+			if(tmpBrowser.currently_selected == 0)
+			{
+				old_state = state;
+				filebrowser_pop_directory(&tmpBrowser);
+			}
+			else
+			{
+                                separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
+				snprintf(path, sizeof(path), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+				filebrowser_push_directory(&tmpBrowser, path, true);
+			}
+		}
+		else if (FILEBROWSER_IS_CURRENT_A_FILE(tmpBrowser))
+		{
+			snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+			printf("path: %s\n", path);
+
+			switch(menu_id)
+			{
+				case GAME_AWARE_SHADER_CHOICE:
+					break;
+				case SHADER_CHOICE:
+					gl_cg_load_shader(set_shader+1, path);
+					switch(set_shader+1)
+					{
+						case 1:
+							strlcpy(g_settings.video.cg_shader_path, path, sizeof(g_settings.video.cg_shader_path));
+							break;
+						case 2:
+							strlcpy(g_settings.video.second_pass_shader, path, sizeof(g_settings.video.second_pass_shader));
+							break;
+					}
+					menu_reinit_settings();
+					break;
+				case PRESET_CHOICE:
+					break;
+				case INPUT_PRESET_CHOICE:
+					break;
+				case BORDER_CHOICE:
+					break;
+				EXTRA_SELECT_FILE_PART2();
+			}
+
+			menuStackindex--;
+		}
+	}
+
+	if (CTRL_TRIANGLE(button_was_pressed))
+		menuStackindex--;
+
+        cellDbgFontPrintf(0.09f, 0.09f, Emulator_GetFontSize(), YELLOW, "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
+	cellDbgFontPuts	(0.09f,	0.05f,	Emulator_GetFontSize(),	RED,	title);
+	cellDbgFontPrintf(0.09f, 0.92f, 0.92, YELLOW, "X - Select %s  /\\ - return to settings  START - Reset Startdir", object);
+	cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s", comment);
+	cellDbgFontDraw();
+
+	browser_render(&tmpBrowser);
+	old_state = state;
+}
+
+static void select_directory(uint32_t menu_id)
+{
+        char path[1024], newpath[1024], *separatorslash;
+	uint64_t state, diff_state, button_was_pressed;
+        static uint64_t old_state = 0;
+
+        state = cell_pad_input_poll_device(0);
+        diff_state = old_state ^ state;
+        button_was_pressed = old_state & diff_state;
+
+	if(set_initial_dir_tmpbrowser)
+	{
+		filebrowser_new(&tmpBrowser, "/\0", "empty");
+		set_initial_dir_tmpbrowser = false;
+	}
+
+        browser_update(&tmpBrowser);
+
+        if (CTRL_START(button_was_pressed))
+		filebrowser_reset_start_directory(&tmpBrowser, "/","empty");
+
+        if (CTRL_SQUARE(button_was_pressed))
+        {
+                if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
+                {
+                        snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+                        switch(menu_id)
+                        {
+                                case PATH_SAVESTATES_DIR_CHOICE:
+                                        strcpy(g_console.default_savestate_dir, path);
+                                        break;
+                                case PATH_SRAM_DIR_CHOICE:
+					strcpy(g_console.default_sram_dir, path);
+                                        break;
+                                case PATH_DEFAULT_ROM_DIR_CHOICE:
+                                        strcpy(g_console.default_rom_startup_dir, path);
+                                        break;
+				case PATH_CHEATS_DIR_CHOICE:
+					strcpy(g_settings.cheat_database, path);
+					break;
+                        }
+                        menuStackindex--;
+                }
+        }
+        if (CTRL_TRIANGLE(button_was_pressed))
+        {
+                strcpy(path, usrDirPath);
+                switch(menu_id)
+                {
+                        case PATH_SAVESTATES_DIR_CHOICE:
+				strcpy(g_console.default_savestate_dir, path);
+                                break;
+                        case PATH_SRAM_DIR_CHOICE:
+				strcpy(g_console.default_sram_dir, path);
+                                break;
+                        case PATH_DEFAULT_ROM_DIR_CHOICE:
+				strcpy(g_console.default_rom_startup_dir, path);
+                                break;
+			case PATH_CHEATS_DIR_CHOICE:
+				strcpy(g_settings.cheat_database, path);
+				break;
+                }
+                menuStackindex--;
+        }
+        if (CTRL_CROSS(button_was_pressed))
+        {
+                if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
+                {
+                        /* if 'filename' is in fact '..' - then pop back 
+			directory instead of adding '..' to filename path */
+
+                        if(tmpBrowser.currently_selected == 0)
+                        {
+                                old_state = state;
+				filebrowser_pop_directory(&tmpBrowser);
+                        }
+                        else
+                        {
+                                separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
+                                snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+                                filebrowser_push_directory(&tmpBrowser, newpath, false);
+                        }
+                }
+        }
+
+        cellDbgFontPrintf (0.09f,  0.09f, Emulator_GetFontSize(), YELLOW, 
+	"PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
+        cellDbgFontPuts (0.09f, 0.05f,  Emulator_GetFontSize(), RED,    "DIRECTORY SELECTION");
+        cellDbgFontPuts(0.09f, 0.93f, 0.92f, YELLOW,
+	"X - Enter dir  /\\ - return to settings  START - Reset Startdir");
+        cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s",
+	"INFO - Browse to a directory and assign it as the path by\npressing SQUARE button.");
+        cellDbgFontDraw();
+
+        browser_render(&tmpBrowser);
+        old_state = state;
+}
+
+
+
 
 static void apply_scaling(void)
 {
