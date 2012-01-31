@@ -190,6 +190,7 @@ struct console_settings
    char default_rom_startup_dir[PATH_MAX];
    char default_savestate_dir[PATH_MAX];
    char default_sram_dir[PATH_MAX];
+   float menu_font_size;
 };
 #endif
 

@@ -487,7 +487,7 @@ void gl_frame_menu (void)
 			gl->win_height, gl->win_width, gl->win_height, g_frame_count,
 			NULL, NULL, NULL, 0);
 
-	set_viewport(gl, gl->win_width, gl->win_height, false);
+	set_viewport(gl, gl->win_width, gl->win_height, true);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, gl->menu_texture_id);
@@ -1316,6 +1316,7 @@ void ps3graphics_set_aspect_ratio(uint32_t aspectratio_index)
 			break;
 	}
 	g_settings.video.force_aspect = false;
+	gl->keep_aspect = true;
 	set_viewport(gl, gl->win_width, gl->win_height, false);
 }
 
