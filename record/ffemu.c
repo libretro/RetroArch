@@ -137,10 +137,10 @@ static bool init_audio(struct ff_audio_info *audio, struct ffemu_params *param)
       return false;
    }
 
-   audio->buffer = (int16_t*)av_malloc(av_samples_get_buffer_size(NULL,
-            audio->codec->channels,
-            audio->codec->frame_size,
-            audio->codec->sample_fmt, 1));
+   audio->buffer = (int16_t*)av_malloc(
+         audio->codec->frame_size *
+         audio->codec->channels *
+         sizeof(int16_t));
 
    if (!audio->buffer)
       return false;
@@ -600,10 +600,9 @@ static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_da
       frame.nb_samples = handle->audio.frames_in_buffer;
       frame.pts = handle->audio.frame_cnt;
 
-      int samples_size = av_samples_get_buffer_size(NULL,
-            handle->audio.codec->channels,
-            frame.nb_samples,
-            handle->audio.codec->sample_fmt, 1);
+      int samples_size = frame.nb_samples *
+         handle->audio.codec->channels *
+         sizeof(int16_t);
 
       avcodec_fill_audio_frame(&frame, handle->audio.codec->channels,
             handle->audio.codec->sample_fmt, (const uint8_t*)handle->audio.buffer,
