@@ -67,6 +67,7 @@ char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
 char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
 char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 char MULTIMAN_GAME_TO_BOOT[MAX_PATH_LENGTH];
+static bool frame_advance_disabled = true;
 
 int ssnes_main(int argc, char *argv[]);
 
@@ -329,6 +330,7 @@ static void ingame_menu(void)
 		{
 			if(CTRL_CIRCLE(state))
 			{
+				frame_advance_disabled = true;
 				ingame_menu_item = 0;
 				g_console.ingame_menu_enable = false;
 				mode_switch = MODE_EMULATION;
@@ -479,6 +481,10 @@ static void ingame_menu(void)
 				case MENU_ITEM_FRAME_ADVANCE:
 					if(CTRL_CROSS(state) || CTRL_R2(state) || CTRL_L2(state))
 					{
+						frame_advance_disabled = false;
+						ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
+						g_console.ingame_menu_enable = false;
+						mode_switch = MODE_EMULATION;
 					}
 					ingame_menu_reset_entry_colors (ingame_menu_item);
 					strcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame.\nNOTE: Pressing the button rapidly will advance the frame more slowly\nand prevent buttons from being input.");
@@ -501,6 +507,7 @@ static void ingame_menu(void)
 				case MENU_ITEM_RETURN_TO_GAME:
 					if(CTRL_CROSS(button_was_pressed))
 					{
+						frame_advance_disabled = true;
 						ingame_menu_item = 0;
 						g_console.ingame_menu_enable = false;
 						mode_switch = MODE_EMULATION;
@@ -660,6 +667,7 @@ static void ingame_menu(void)
 
 int main(int argc, char *argv[])
 {
+
 	// Initialize 6 SPUs but reserve 1 SPU as a raw SPU for PSGL
 	sys_spu_initialize(6, 1);
 
@@ -714,9 +722,17 @@ int main(int argc, char *argv[])
 begin_loop:
 	if(mode_switch == MODE_EMULATION)
 	{
+		bool repeat = false;
+		if(ingame_menu_item != 0)
+			g_console.ingame_menu_enable = true;
+
 		g_extern.is_paused = false;
 		input_ps3.poll(NULL);
-		while(ssnes_main_iterate());
+
+		do{
+			repeat = ssnes_main_iterate();
+		}while(repeat && frame_advance_disabled);
+
 		g_extern.is_paused = true;
 		if(g_console.ingame_menu_enable)
 			ingame_menu();

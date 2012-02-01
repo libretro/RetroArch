@@ -219,6 +219,47 @@ static void gl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
 		gl_cg_shader_scale(index, scale);
 }
 
+static void gl_create_fbo_textures(gl_t *gl)
+{
+	glGenTextures(gl->fbo_pass, gl->fbo_texture);
+
+	GLuint base_filt = g_settings.video.second_pass_smooth ? GL_LINEAR : GL_NEAREST;
+	for (int i = 0; i < gl->fbo_pass; i++)
+	{
+		glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+		GLuint filter_type = base_filt;
+		bool smooth;
+		if (gl_shader_filter_type(i + 2, &smooth))
+			filter_type = smooth ? GL_LINEAR : GL_NEAREST;
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_type);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_type);
+
+		glTexImage2D(GL_TEXTURE_2D,
+				0, GL_ARGB_SCE, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_ARGB_SCE,
+				GL_UNSIGNED_INT_8_8_8_8, NULL);
+	}
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+static void gl_deinit_fbo(gl_t *gl)
+{
+	if (gl->fbo_inited)
+	{
+		glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
+		glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
+		memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
+		memset(gl->fbo, 0, sizeof(gl->fbo));
+		gl->fbo_inited = false;
+		gl->render_to_tex = false;
+		gl->fbo_pass = 0;
+	}
+}
+
 // Horribly long and complex FBO init :D
 static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
@@ -349,29 +390,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 		SSNES_LOG("Creating FBO %d @ %ux%u\n", i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
 	}
 
-	glGenTextures(gl->fbo_pass, gl->fbo_texture);
-
-	GLuint base_filt = g_settings.video.second_pass_smooth ? GL_LINEAR : GL_NEAREST;
-	for (int i = 0; i < gl->fbo_pass; i++)
-	{
-		glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-		GLuint filter_type = base_filt;
-		bool smooth;
-		if (gl_shader_filter_type(i + 2, &smooth))
-			filter_type = smooth ? GL_LINEAR : GL_NEAREST;
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_type);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_type);
-
-		glTexImage2D(GL_TEXTURE_2D,
-				0, GL_ARGB_SCE, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_ARGB_SCE,
-				GL_UNSIGNED_INT_8_8_8_8, NULL);
-	}
-
-	glBindTexture(GL_TEXTURE_2D, 0);
+	gl_create_fbo_textures(gl);
 
 	glGenFramebuffersOES(gl->fbo_pass, gl->fbo);
 	for (int i = 0; i < gl->fbo_pass; i++)
@@ -393,6 +412,67 @@ error:
 	glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
 	SSNES_ERR("Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
 }
+
+static inline void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
+      unsigned vp_width, unsigned vp_height)
+{
+	unsigned last_width = width;
+	unsigned last_height = height;
+	unsigned last_max_width = gl->tex_w;
+	unsigned last_max_height = gl->tex_h;
+	// Calculate viewports for FBOs.
+	for (int i = 0; i < gl->fbo_pass; i++)
+	{
+		switch (gl->fbo_scale[i].type_x)
+		{
+			case SSNES_SCALE_INPUT:
+				gl->fbo_rect[i].img_width = last_width * gl->fbo_scale[i].scale_x;
+				gl->fbo_rect[i].max_img_width = last_max_width * gl->fbo_scale[i].scale_x;
+				break;
+
+			case SSNES_SCALE_ABSOLUTE:
+				gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].abs_x;
+				break;
+
+			case SSNES_SCALE_VIEWPORT:
+				gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].scale_x * gl->vp_out_width;
+				break;
+
+			default:
+				break;
+		}
+
+		switch (gl->fbo_scale[i].type_y)
+		{
+			case SSNES_SCALE_INPUT:
+				gl->fbo_rect[i].img_height = last_height * gl->fbo_scale[i].scale_y;
+				gl->fbo_rect[i].max_img_height = last_max_height * gl->fbo_scale[i].scale_y;
+				break;
+
+			case SSNES_SCALE_ABSOLUTE:
+				gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].abs_y;
+				break;
+
+			case SSNES_SCALE_VIEWPORT:
+				gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].scale_y * gl->vp_out_height;
+				break;
+
+			default:
+				break;
+		}
+
+		last_width = gl->fbo_rect[i].img_width;
+		last_height = gl->fbo_rect[i].img_height;
+		last_max_width = gl->fbo_rect[i].max_img_width;
+		last_max_height = gl->fbo_rect[i].max_img_height;
+	}
+}
+
+#define gl_start_frame_fbo(gl) \
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]); \
+   glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[0]); \
+   gl->render_to_tex = true; \
+   set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
 
 static inline unsigned get_alignment(unsigned pitch)
 {
@@ -533,61 +613,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 	// Render to texture in first pass.
 	if (gl->fbo_inited)
 	{
-		unsigned last_width = width;
-		unsigned last_height = height;
-		unsigned last_max_width = gl->tex_w;
-		unsigned last_max_height = gl->tex_h;
-		// Calculate viewports for FBOs.
-		for (int i = 0; i < gl->fbo_pass; i++)
-		{
-			switch (gl->fbo_scale[i].type_x)
-			{
-				case SSNES_SCALE_INPUT:
-					gl->fbo_rect[i].img_width = last_width * gl->fbo_scale[i].scale_x;
-					gl->fbo_rect[i].max_img_width = last_max_width * gl->fbo_scale[i].scale_x;
-					break;
-
-				case SSNES_SCALE_ABSOLUTE:
-					gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].abs_x;
-					break;
-
-				case SSNES_SCALE_VIEWPORT:
-					gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].scale_x * gl->vp_out_width;
-					break;
-
-				default:
-					break;
-			}
-
-			switch (gl->fbo_scale[i].type_y)
-			{
-				case SSNES_SCALE_INPUT:
-					gl->fbo_rect[i].img_height = last_height * gl->fbo_scale[i].scale_y;
-					gl->fbo_rect[i].max_img_height = last_max_height * gl->fbo_scale[i].scale_y;
-					break;
-
-				case SSNES_SCALE_ABSOLUTE:
-					gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].abs_y;
-					break;
-
-				case SSNES_SCALE_VIEWPORT:
-					gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].scale_y * gl->vp_out_height;
-					break;
-
-				default:
-					break;
-			}
-
-			last_width = gl->fbo_rect[i].img_width;
-			last_height = gl->fbo_rect[i].img_height;
-			last_max_width = gl->fbo_rect[i].max_img_width;
-			last_max_height = gl->fbo_rect[i].max_img_height;
-		}
-
-		glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-		glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[0]);
-		gl->render_to_tex = true;
-		set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
+		gl_compute_fbo_geometry(gl, width, height, gl->vp_out_width, gl->vp_out_height);
+		gl_start_frame_fbo(gl);
 	}
 
 
@@ -653,76 +680,79 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 	if (gl->fbo_inited)
 	{
-		// Render the rest of our passes.
-		glTexCoordPointer(2, GL_FLOAT, 0, gl->fbo_tex_coords);
-
-		// It's kinda handy ... :)
-		const struct gl_fbo_rect *prev_rect;
-		const struct gl_fbo_rect *rect;
-		struct gl_tex_info *fbo_info;
-
-		// Calculate viewports, texture coordinates etc, and render all passes from FBOs, to another FBO.
-		for (int i = 1; i < gl->fbo_pass; i++)
+		if (gl->fbo_inited)
 		{
-			prev_rect = &gl->fbo_rect[i - 1];
-			rect = &gl->fbo_rect[i];
-			fbo_info = &fbo_tex_info[i - 1];
+			// Render the rest of our passes.
+			glTexCoordPointer(2, GL_FLOAT, 0, gl->fbo_tex_coords);
 
+			// It's kinda handy ... :)
+			const struct gl_fbo_rect *prev_rect;
+			const struct gl_fbo_rect *rect;
+			struct gl_tex_info *fbo_info;
+
+			// Calculate viewports, texture coordinates etc, and render all passes from FBOs, to another FBO.
+			for (int i = 1; i < gl->fbo_pass; i++)
+			{
+				prev_rect = &gl->fbo_rect[i - 1];
+				rect = &gl->fbo_rect[i];
+				fbo_info = &fbo_tex_info[i - 1];
+
+				GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
+				GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
+
+				set_texture_coords(gl->fbo_tex_coords, xamt, yamt);
+
+				fbo_info->tex = gl->fbo_texture[i - 1];
+				fbo_info->input_size[0] = prev_rect->img_width;
+				fbo_info->input_size[1] = prev_rect->img_height;
+				fbo_info->tex_size[0] = prev_rect->width;
+				fbo_info->tex_size[1] = prev_rect->height;
+				memcpy(fbo_info->coord, gl->fbo_tex_coords, sizeof(gl->fbo_tex_coords));
+
+				glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[i]);
+				gl_cg_use(i + 1);
+				glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
+
+				glClear(GL_COLOR_BUFFER_BIT);
+
+				// Render to FBO with certain size.
+				set_viewport(gl, rect->img_width, rect->img_height, true);
+				gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
+						prev_rect->width, prev_rect->height, 
+						gl->vp_width, gl->vp_height, g_frame_count, 
+						&tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
+
+				glDrawArrays(GL_QUADS, 0, 4);
+
+				fbo_tex_info_cnt++;
+			}
+
+			// Render our last FBO texture directly to screen.
+			prev_rect = &gl->fbo_rect[gl->fbo_pass - 1];
 			GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
 			GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
 
 			set_texture_coords(gl->fbo_tex_coords, xamt, yamt);
 
-			fbo_info->tex = gl->fbo_texture[i - 1];
-			fbo_info->input_size[0] = prev_rect->img_width;
-			fbo_info->input_size[1] = prev_rect->img_height;
-			fbo_info->tex_size[0] = prev_rect->width;
-			fbo_info->tex_size[1] = prev_rect->height;
-			memcpy(fbo_info->coord, gl->fbo_tex_coords, sizeof(gl->fbo_tex_coords));
+			// Render our FBO texture to back buffer.
+			glBindFramebufferOES(GL_FRAMEBUFFER_OES, 0);
+			gl_cg_use(gl->fbo_pass + 1);
 
-			glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[i]);
-			gl_cg_use(i + 1);
-			glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
+			glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
 			glClear(GL_COLOR_BUFFER_BIT);
-
-			// Render to FBO with certain size.
-			set_viewport(gl, rect->img_width, rect->img_height, true);
+			gl->render_to_tex = false;
+			set_viewport(gl, gl->win_width, gl->win_height, false);
 			gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
 					prev_rect->width, prev_rect->height, 
 					gl->vp_width, gl->vp_height, g_frame_count, 
 					&tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
+			glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
 			glDrawArrays(GL_QUADS, 0, 4);
 
-			fbo_tex_info_cnt++;
+			glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
 		}
-
-		// Render our last FBO texture directly to screen.
-		prev_rect = &gl->fbo_rect[gl->fbo_pass - 1];
-		GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
-		GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
-
-		set_texture_coords(gl->fbo_tex_coords, xamt, yamt);
-
-		// Render our FBO texture to back buffer.
-		glBindFramebufferOES(GL_FRAMEBUFFER_OES, 0);
-		gl_cg_use(gl->fbo_pass + 1);
-
-		glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
-
-		glClear(GL_COLOR_BUFFER_BIT);
-		gl->render_to_tex = false;
-		set_viewport(gl, gl->win_width, gl->win_height, false);
-		gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
-				prev_rect->width, prev_rect->height, 
-				gl->vp_width, gl->vp_height, g_frame_count, 
-				&tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
-
-		glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
-		glDrawArrays(GL_QUADS, 0, 4);
-
-		glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
 	}
 
 	memmove(gl->prev_info + 1, gl->prev_info, sizeof(tex_info) * (TEXTURES - 1));
@@ -741,7 +771,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 	return true;
 }
 
-void ps3graphics_reinit_fbos(void)
+static void gl_update_resize(void)
 {
 	gl_t * gl = g_gl;
 
