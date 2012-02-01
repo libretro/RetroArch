@@ -9,6 +9,11 @@ HEADERS = $(wildcard */*.h) $(wildcard *.h)
 LIBS = -lm
 DEFINES = -DHAVE_CONFIG_H
 
+ifeq ($(REENTRANT_TEST), 1)
+   DEFINES += -Dmain=ssnes_main
+   OBJ += console/test.o
+endif
+
 ifneq ($(findstring Darwin,$(OS)),)
    OSX := 1
    LIBS += -framework AppKit

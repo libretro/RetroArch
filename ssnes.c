@@ -609,6 +609,9 @@ static void parse_input(int argc, char *argv[])
       ssnes_fail(1, "parse_input()");
    }
 
+   // Make sure we can call parse_input several times ...
+   optind = 1;
+
    int val = 0;
 
    const struct option opts[] = {

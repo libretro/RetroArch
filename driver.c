@@ -258,10 +258,6 @@ static void deinit_dsp_plugin(void)
 
 static void adjust_audio_input_rate(void)
 {
-   static bool first = true;
-   if (!first)
-      return;
-
    if (g_extern.system.timing_set)
    {
       float timing_skew = fabs(1.0f - g_extern.system.timing.fps / g_settings.video.refresh_rate);
@@ -287,7 +283,6 @@ static void adjust_audio_input_rate(void)
    }
 
    SSNES_LOG("Set audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
-   first = false;
 }
 
 void init_audio(void)
