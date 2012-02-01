@@ -215,6 +215,12 @@ void config_set_defaults(void)
    for (unsigned i = 1; i < 5; i++)
       memcpy(g_settings.input.binds[i], snes_keybinds_rest, sizeof(snes_keybinds_rest));
 
+   // Verify that binds are in proper order.
+   for (unsigned i = 0; i < 5; i++)
+      for (unsigned j = 0; j < SSNES_BIND_LIST_END; j++)
+         if (g_settings.input.binds[i][j].valid)
+            ssnes_assert(j == g_settings.input.binds[i][j].id);
+
    g_settings.input.axis_threshold = axis_threshold;
    g_settings.input.netplay_client_swap_input = netplay_client_swap_input;
    for (int i = 0; i < MAX_PLAYERS; i++)
