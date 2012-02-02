@@ -37,7 +37,6 @@ static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
       unsigned index, unsigned id)
 {
    (void)data;
-   (void)binds;
    (void)index;
 
    unsigned pads_connected, player;
@@ -54,13 +53,15 @@ static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
 	   if(pads_connected < 2)
 		   return 0;
 
-	   if(device != SNES_DEVICE_MULTITAP)
-		   player = 1;
-	   else
-		   player = index + 1;
+	   player = 1;
+
+	   if(device == SNES_DEVICE_MULTITAP)
+	      player += index;
    }
 
    // Hardcoded binds.
+   button = binds[player][id].joykey;
+   #if 0
    switch (id)
    {
       case SNES_DEVICE_ID_JOYPAD_A:
@@ -103,6 +104,7 @@ static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
          button = 0;
          break;
    }
+   #endif
 
    return CTRL_MASK(state[player], button) ? 1 : 0;
 }

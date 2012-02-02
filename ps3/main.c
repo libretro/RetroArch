@@ -113,6 +113,45 @@ static void set_default_settings(void)
 	g_settings.video.msg_pos_y = 0.90f;
 	g_settings.video.aspect_ratio = -1.0f;
 
+	for(uint32_t x = 0; x < MAX_PLAYERS; x++)
+	{
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_B].id = SNES_DEVICE_ID_JOYPAD_B;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_B].joykey = CTRL_CROSS_MASK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_Y].id = SNES_DEVICE_ID_JOYPAD_Y;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_Y].joykey = CTRL_SQUARE_MASK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_SELECT].id = SNES_DEVICE_ID_JOYPAD_SELECT;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_SELECT].joykey = CTRL_SELECT_MASK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_START].id = SNES_DEVICE_ID_JOYPAD_START;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_START].joykey = CTRL_START_MASK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].id = SNES_DEVICE_ID_JOYPAD_UP;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].joykey = CTRL_UP_MASK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].id = SNES_DEVICE_ID_JOYPAD_DOWN;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = CTRL_DOWN_MASK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].id = SNES_DEVICE_ID_JOYPAD_LEFT;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = CTRL_LEFT_MASK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].id = SNES_DEVICE_ID_JOYPAD_RIGHT;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = CTRL_RIGHT_MASK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_A].id = SNES_DEVICE_ID_JOYPAD_A;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_A].joykey = CTRL_CIRCLE_MASK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_X].id = SNES_DEVICE_ID_JOYPAD_X;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_X].joykey = CTRL_TRIANGLE_MASK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_L].id = SNES_DEVICE_ID_JOYPAD_L;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_L].joykey = CTRL_L1_MASK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_R].id = SNES_DEVICE_ID_JOYPAD_R;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_R].joykey = CTRL_R1_MASK;
+	}
+
 	// g_console
 	g_console.block_config_read = true;
 	g_console.screenshots_enable = false;
