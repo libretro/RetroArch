@@ -320,8 +320,10 @@ void gl_cg_deinit(void)
       menu_cg_program = NULL;
    }
 
-   cgCtx = NULL;
+#ifndef __CELLOS_LV2__
    cgDestroyContext(cgCtx);
+   cgCtx = NULL;
+#endif
 }
 
 #define SET_LISTING(type) \
