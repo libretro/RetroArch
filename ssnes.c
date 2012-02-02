@@ -1847,7 +1847,7 @@ static void check_oneshot(void)
    old_rewind_state = new_rewind_state;
 }
 
-void perform_reset(void)
+void ssnes_game_reset(void)
 {
    SSNES_LOG("Resetting game!\n");
    msg_queue_clear(g_extern.msg_queue);
@@ -1861,7 +1861,7 @@ static void check_reset(void)
    static bool old_state = false;
    bool new_state = driver.input->key_pressed(driver.input_data, SSNES_RESET);
    if (new_state && !old_state)
-      perform_reset();
+      ssnes_game_reset();
 
    old_state = new_state;
 }

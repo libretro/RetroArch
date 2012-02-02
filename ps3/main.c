@@ -588,7 +588,7 @@ static void ingame_menu(void)
 						ingame_menu_item = 0;
 						g_console.ingame_menu_enable = false;
 						g_console.mode_switch = MODE_EMULATION;
-						perform_reset();
+						ssnes_game_reset();
 					}
 					ingame_menu_reset_entry_colors (ingame_menu_item);
 					strcpy(comment, "Press 'CROSS' to reset the game.");
