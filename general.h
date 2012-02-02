@@ -67,7 +67,7 @@
 #include "360/msvc_compat.h"
 #endif
 
-#define MAX_PLAYERS 5
+#define MAX_PLAYERS 7
 
 enum ssnes_shader_type
 {
