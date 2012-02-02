@@ -37,7 +37,6 @@ static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
       unsigned index, unsigned id)
 {
    (void)data;
-   (void)index;
 
    unsigned pads_connected, player;
    uint64_t button;
@@ -59,52 +58,7 @@ static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
 	      player += index;
    }
 
-   // Hardcoded binds.
    button = binds[player][id].joykey;
-   #if 0
-   switch (id)
-   {
-      case SNES_DEVICE_ID_JOYPAD_A:
-         button = CTRL_CIRCLE_MASK;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_B:
-         button = CTRL_CROSS_MASK;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_X:
-         button = CTRL_TRIANGLE_MASK;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_Y:
-         button = CTRL_SQUARE_MASK;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_LEFT:
-         button = CTRL_LEFT_MASK;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_RIGHT:
-         button = CTRL_RIGHT_MASK;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_UP:
-         button = CTRL_UP_MASK;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_DOWN:
-         button = CTRL_DOWN_MASK;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_START:
-         button = CTRL_START_MASK;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_SELECT:
-         button = CTRL_SELECT_MASK;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_L:
-         button = CTRL_L1_MASK;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_R:
-         button = CTRL_R1_MASK;
-         break;
-      default:
-         button = 0;
-         break;
-   }
-   #endif
 
    return CTRL_MASK(state[player], button) ? 1 : 0;
 }
