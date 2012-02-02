@@ -170,6 +170,8 @@ static void set_default_settings(void)
 	g_console.aspect_ratio_index = 0;
 	strlcpy(g_console.aspect_ratio_name, "4:3", sizeof(g_console.aspect_ratio_name));
 	g_console.menu_font_size = 1.0f;
+	g_console.overscan_enable = false;
+	g_console.overscan_amount = 0.0f;
 	
 	// g_extern
 	g_extern.state_slot = 0;
@@ -205,6 +207,7 @@ static void init_settings(void)
 
 	// g_console
 
+	CONFIG_GET_BOOL_CONSOLE(overscan_enable, "overscan_enable");
 	CONFIG_GET_BOOL_CONSOLE(screenshots_enable, "screenshots_enable");
 	CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
 	CONFIG_GET_BOOL_CONSOLE(triple_buffering_enable, "triple_buffering_enable");
@@ -214,6 +217,7 @@ static void init_settings(void)
 	CONFIG_GET_STRING_CONSOLE(aspect_ratio_name, "aspect_ratio_name");
 	CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
 	CONFIG_GET_FLOAT_CONSOLE(menu_font_size, "menu_font_size");
+	CONFIG_GET_FLOAT_CONSOLE(overscan_amount, "overscan_amount");
 	
 	// g_extern
 	CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
@@ -248,6 +252,7 @@ static void save_settings(void)
 	config_set_bool(conf, "video_vsync", g_settings.video.vsync);
 
 	// g_console
+	config_set_bool(conf, "overscan_enable", g_console.overscan_enable);
 	config_set_bool(conf, "screenshots_enable", g_console.screenshots_enable);
 	config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
 	config_set_bool(conf, "triple_buffering_enable", g_console.triple_buffering_enable);
@@ -257,6 +262,7 @@ static void save_settings(void)
 	config_set_string(conf, "aspect_ratio_name", g_console.aspect_ratio_name);
 	config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
 	config_set_float(conf, "menu_font_size", g_console.menu_font_size);
+	config_set_float(conf, "overscan_amount", g_console.overscan_amount);
 
 	// g_extern
 	config_set_int(conf, "state_slot", g_extern.state_slot);
@@ -486,12 +492,28 @@ static void ingame_menu(void)
 				case MENU_ITEM_OVERSCAN_AMOUNT:
 					if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed) || CTRL_CROSS(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_held))
 					{
+						g_console.overscan_amount -= 0.01f;
+						g_console.overscan_enable = true;
+
+						if(g_console.overscan_amount == 0.00f)
+							g_console.overscan_enable = false;
+
+						ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
 					}
 					if(CTRL_RIGHT(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_pressed) || CTRL_CROSS(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_held))
 					{
+						g_console.overscan_amount += 0.01f;
+						g_console.overscan_enable = true;
+						if(g_console.overscan_amount == 0.0f)
+							g_console.overscan_amount = false;
+
+						ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
 					}
 					if(CTRL_START(button_was_pressed))
 					{
+						g_console.overscan_amount = 0.0f;
+						g_console.overscan_enable = false;
+						ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
 					}
 					ingame_menu_reset_entry_colors (ingame_menu_item);
 					strcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.");
@@ -657,7 +679,8 @@ static void ingame_menu(void)
 		cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size+0.01f, BLUE, "Aspect Ratio: %s", g_console.aspect_ratio_name);
 		cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, menuitem_colors[MENU_ITEM_KEEP_ASPECT_RATIO], "Aspect Ratio: %s", g_console.aspect_ratio_name);
 
-		cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size, menuitem_colors[MENU_ITEM_OVERSCAN_AMOUNT], "Overscan: ");
+		cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size+0.01f, BLUE, "Overscan: %f", g_console.overscan_amount);
+		cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size, menuitem_colors[MENU_ITEM_OVERSCAN_AMOUNT], "Overscan: %f", g_console.overscan_amount);
 
 		cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size+0.01f, BLUE, "Orientation: ");
 		cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size, menuitem_colors[MENU_ITEM_ORIENTATION], "Orientation: %s", msg_temp);

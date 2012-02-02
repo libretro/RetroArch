@@ -417,6 +417,12 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 			snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Custom Scaling Factor] is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 			break;
 		case SETTING_HW_OVERSCAN_AMOUNT:
+			if(g_console.overscan_amount == 0.0f)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%f", g_console.overscan_amount);
 			break;
 		case SETTING_THROTTLE_MODE:
 			if(g_console.throttle_enable)
@@ -1125,6 +1131,32 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			break;
 		case SETTING_HW_OVERSCAN_AMOUNT:
+			if(CTRL_LEFT(state)  ||  CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
+			{
+				g_console.overscan_amount -= 0.01f;
+				g_console.overscan_enable = true;
+
+				if(g_console.overscan_amount == 0.0f)
+					g_console.overscan_enable = false;
+
+				ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+			}
+			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				g_console.overscan_amount += 0.01f;
+				g_console.overscan_enable = true;
+
+				if(g_console.overscan_amount == 0.0f)
+					g_console.overscan_enable = 0;
+
+				ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+			}
+			if(CTRL_START(state))
+			{
+				g_console.overscan_amount = 0.0f;
+				g_console.overscan_enable = false;
+				ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+			}
 			break;
 		case SETTING_THROTTLE_MODE:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))

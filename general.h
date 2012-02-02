@@ -175,10 +175,12 @@ struct console_settings
    bool default_savestate_dir_enable;
    bool ingame_menu_enable;
    bool menu_enable;
+   bool overscan_enable;
    bool return_to_multiman_enable;
    bool screenshots_enable;
    bool throttle_enable;
    bool triple_buffering_enable;
+   float overscan_amount;
    uint32_t aspect_ratio_index;
    uint32_t screen_orientation;
    uint32_t current_resolution_index;

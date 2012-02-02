@@ -119,6 +119,7 @@ typedef struct gl
    bool render_to_tex;
    bool should_resize;
    bool vsync;
+   bool overscan_enable;
    int fbo_pass;
    unsigned base_size; /* 2 or 4*/
    unsigned last_width[TEXTURES];
@@ -129,6 +130,7 @@ typedef struct gl
    unsigned vp_height, vp_out_height;
    unsigned win_width;
    unsigned win_height;
+   GLfloat overscan_amount;
    GLfloat tex_coords[8];
    GLfloat fbo_tex_coords[8];
    GLenum texture_type; /* XBGR1555 or ARGB*/
@@ -487,37 +489,55 @@ static inline unsigned get_alignment(unsigned pitch)
 
 static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full)
 {
+	uint32_t m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
+	GLfloat m_left, m_right, m_bottom, m_top, m_zNear, m_zFar;
+
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
+
+	m_viewport_x_temp = 0;
+	m_viewport_y_temp = 0;
+	m_viewport_width_temp = width;
+	m_viewport_height_temp = height;
+
+	m_left = 0.0f;
+	m_right = 1.0f;
+	m_bottom = 0.0f;
+	m_top = 1.0f;
+	m_zNear = -1.0f;
+	m_zFar = 1.0f;
 
 	if (gl->keep_aspect && !force_full)
 	{
 		float desired_aspect = g_settings.video.aspect_ratio;
 		float device_aspect = (float)width / height;
+		float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
 
 		// If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
-		// assume they are actually equal.
-		if (fabs(device_aspect - desired_aspect) < 0.0001)
+		if (device_aspect > desired_aspect)
 		{
-			glViewport(0, 0, width, height);
-		}
-		else if (device_aspect > desired_aspect)
-		{
-			float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-			glViewport((GLint)(width * (0.5 - delta)), 0,(GLint)(2.0 * width * delta), height);
+			m_viewport_x_temp = (GLint)(width * (0.5 - delta));
+			m_viewport_width_temp = (GLint)(2.0 * width * delta);
 			width = (unsigned)(2.0 * width * delta);
 		}
 		else
 		{
-			float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-			glViewport(0, (GLint)(height * (0.5 - delta)), width,(GLint)(2.0 * height * delta));
+			m_viewport_y_temp = (GLint)(height * (0.5 - delta));
+			m_viewport_height_temp = (GLint)(2.0 * height * delta);
 			height = (unsigned)(2.0 * height * delta);
 		}
 	}
-	else
-		glViewport(0, 0, width, height);
 
-	glOrthof(0.0, 1.0, 0.0, 1.0, -1.0, 1.0);
+	glViewport(m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp);
+
+	if(gl->overscan_enable && !force_full)
+	{
+		m_left = -gl->overscan_amount/2;
+		m_right = 1 + gl->overscan_amount/2;
+		m_bottom = -gl->overscan_amount/2;
+	}
+
+	glOrthof(m_left, m_right, m_bottom, m_top, m_zNear, m_zFar);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
@@ -1290,6 +1310,19 @@ void ps3_set_filtering(unsigned index, bool set_smooth)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
+void ps3graphics_set_overscan(bool overscan_enable, float amount, bool recalculate_viewport)
+{
+	gl_t * gl = g_gl;
+	if(!gl)
+		return;
+
+	gl->overscan_enable = overscan_enable;
+	gl->overscan_amount = amount;
+
+	if(recalculate_viewport)
+		set_viewport(gl, gl->win_width, gl->win_height, false);
+}
+
 void ps3graphics_set_aspect_ratio(uint32_t aspectratio_index)
 {
 	gl_t * gl = g_gl;
@@ -1370,10 +1403,16 @@ void ps3graphics_video_init(bool get_all_resolutions)
 	video_info.input_scale = 2;
 	g_gl = gl_init(&video_info, NULL, NULL);
 
+	gl_t * gl = g_gl;
+
+	gl->overscan_enable = g_console.overscan_enable;
+	gl->overscan_amount = g_console.overscan_amount;
+
 	if(get_all_resolutions)
 		get_all_available_resolutions();
 	ps3_set_resolution();
 	ps3_setup_texture();
+	ps3graphics_set_overscan(gl->overscan_enable, gl->overscan_amount, 0);
 }
 
 void ps3graphics_video_reinit(void)
