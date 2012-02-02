@@ -25,5 +25,4 @@ enum
 	MODE_EXIT
 };
 
-extern uint32_t mode_switch;
 extern bool init_ssnes;

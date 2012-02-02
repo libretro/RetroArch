@@ -46,7 +46,6 @@ typedef struct _STRING {
 
 extern "C" int __stdcall ObCreateSymbolicLink( STRING*, STRING*);
 
-uint32_t mode_switch = MODE_MENU;
 bool init_ssnes = false;
 int Mounted[20];
 uint32_t g_emulator_initialized = 0;
@@ -152,16 +151,18 @@ int main(int argc, char *argv[])
 
 	config_set_defaults();
 
+	g_console->mode_switch = MODE_MENU;
+
 	xdk360_video_init();
 
 	menu_init();
 
 begin_loop:
-	if(mode_switch == MODE_EMULATION)
+	if(g_console->mode_switch == MODE_EMULATION)
 	{
 		while(ssnes_main_iterate());
 	}
-	else if(mode_switch == MODE_MENU)
+	else if(g_console->mode_switch == MODE_MENU)
 	{
 		menu_loop();
 

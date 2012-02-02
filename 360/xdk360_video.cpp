@@ -77,6 +77,7 @@ static void xdk360_gfx_free(void * data)
 	   return;
 
    xdk360_video_t *vid = (xdk360_video_t*)data;
+
    if (!vid)
       return;
 
@@ -93,8 +94,8 @@ static void xdk360_gfx_free(void * data)
 
 static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-	if (g_d3d)
-		return g_d3d;
+   if (g_d3d)
+      return g_d3d;
 
    xdk360_video_t *vid = (xdk360_video_t*)calloc(1, sizeof(xdk360_video_t));
    if (!vid)
