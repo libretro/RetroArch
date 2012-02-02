@@ -86,7 +86,40 @@ In MSYS:
 <tt>mingw32-make -f Makefile.win32 libs</tt>. # You will need to have wget in your patch for this command! MSYS should provide this.</br>
 <tt>mingw32-make -f Makefile.win32</tt>
 
+<b>Win32 (MSVC)</b><br />
+In addition to Mingw, it is also possible to compile a Win32 version of SSNES with Microsoft Visual Studio 2010.
 
+You will need Microsoft Visual Studio 2010 intalled (or higher) in order to compile SSNES with the MSVC compiler.
+
+The solution file can be found at the following location:
+
+<tt>msvc/SSNES/SSNES.sln</tt>
+
+<b>PlayStation3</b><br/>
+
+<tt>make -f Makefile.ps3</tt>
+
+A PKG file will be built which you will be able to install on a jailbroken PS3.
+
+NOTE: A pre-existing libsnes library needs to be present in the root directory in order to link SSNES PS3. This file needs to be called 'libsnes.a'.
+
+<b> Xbox 360 (XeXDK)</b><br />
+
+You will need Microsoft Visual Studio 2010 installed (or higher) in order to compile SSNES 360.
+
+The solution file can be found at the following location:
+
+<tt>msvc-360/SSNES-360/SSNES-360.sln</tt>
+
+NOTE: A pre-existing libsnes library needs to be present in the root directory in order to link SSNES 360.
+
+<b> Xbox 360 (Libxenon)</b><br />
+
+You will need to have the libxenon libraries installed and a working Devkit Xenon toolchain in order to compile SSNES 360 Libxenon.
+
+<tt>make -f Makefile.xenon</tt>
+
+NOTE: A pre-existing libsnes library needs to be present in the root directory in order to link SSNES 360 Libxenon. This file needs to be called 'libsnes.a'.
 
 # Filters, bSNES XML shaders and Cg shader support
 
