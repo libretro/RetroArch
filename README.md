@@ -16,6 +16,14 @@ Latest Windows binaries are currently hosted on my [homepage](http://themaister.
 SSNES attempts to be very small and lean, while still having all the useful core features expected from an emulator. 
 It is used through command-line.
 
+# Platforms
+
+SSNES has been ported to the following platforms :
+
+   - PlayStation3
+   - Xbox 360 (Libxenon/XeXDK)
+   - Wii (Libogc)
+
 # Dependencies
 
 SSNES requires these libraries to build:
@@ -115,11 +123,19 @@ NOTE: A pre-existing libsnes library needs to be present in the root directory i
 
 <b> Xbox 360 (Libxenon)</b><br />
 
-You will need to have the libxenon libraries installed and a working Devkit Xenon toolchain in order to compile SSNES 360 Libxenon.
+You will need to have the libxenon libraries and a working Devkit Xenon toolchain installed in order to compile SSNES 360 Libxenon.
 
 <tt>make -f Makefile.xenon</tt>
 
 NOTE: A pre-existing libsnes library needs to be present in the root directory in order to link SSNES 360 Libxenon. This file needs to be called 'libsnes.a'.
+
+<b> Wii</b><br >
+
+You will need to have the libogc libraries and a working Devkit PPC toolchain installed in order to compile SSNES Wii.
+
+<tt>make -f Makefile.wii</tt>
+
+NOTE: A pre-existing libsnes library needs to be present in the root directory in order to link SSNES Wii. This file needs to be called 'libsnes.a'.
 
 # Filters, bSNES XML shaders and Cg shader support
 
