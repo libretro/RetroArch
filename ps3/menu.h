@@ -167,5 +167,4 @@ enum
 void menu_init (void);
 void menu_loop (void);
 
-extern uint32_t menu_is_running; 
 #endif /* MENU_H_ */

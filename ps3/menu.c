@@ -43,7 +43,6 @@
 
 menu menuStack[25];
 int menuStackindex = 0;
-uint32_t menu_is_running = false;		/* is the menu running?*/
 static bool set_initial_dir_tmpbrowser;
 filebrowser_t browser;				/* main file browser->for rom browser*/
 filebrowser_t tmpBrowser;			/* tmp file browser->for everything else*/
@@ -282,8 +281,8 @@ static void browser_update(filebrowser_t * b)
 			/* if a rom is loaded then resume it */
 			if (g_emulator_initialized)
 			{
-				menu_is_running = 0;
-				mode_switch = MODE_EMULATION;
+				g_console.menu_enable = false;
+				g_console.mode_switch = MODE_EMULATION;
 				set_text_message("", 15);
 			}
 		}
@@ -1477,8 +1476,8 @@ static void select_setting(menu * menu_obj)
 		{
 			if (g_emulator_initialized)
 			{
-				menu_is_running = 0;
-				mode_switch = MODE_EMULATION;
+				g_console.menu_enable = false;
+				g_console.mode_switch = MODE_EMULATION;
 				set_text_message("", 15);
 			}
 			old_state = state;
@@ -1556,10 +1555,10 @@ static void select_rom(void)
 
 			snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 
-			menu_is_running = 0;
+			g_console.menu_enable = false;
 			snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 			init_ssnes = 1;
-			mode_switch = MODE_EMULATION;
+			g_console.mode_switch = MODE_EMULATION;
 
 			old_state = state;
 			return;
@@ -1603,7 +1602,7 @@ void menu_loop(void)
 	menuStack[0] = menu_filebrowser;
 	menuStack[0].enum_id = FILE_BROWSER_MENU;
 
-	menu_is_running = true;
+	g_console.menu_enable = true;
 
 	menu_reinit_settings();
 	ssnes_render_cached_frame();
@@ -1645,5 +1644,5 @@ void menu_loop(void)
 		psglSwap();
 		cell_console_poll();
 		cellSysutilCheckCallback();
-	}while (menu_is_running);
+	}while (g_console.menu_enable);
 }

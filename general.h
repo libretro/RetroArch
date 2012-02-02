@@ -174,6 +174,7 @@ struct console_settings
    bool default_sram_dir_enable;
    bool default_savestate_dir_enable;
    bool ingame_menu_enable;
+   bool menu_enable;
    bool return_to_multiman_enable;
    bool screenshots_enable;
    bool throttle_enable;
@@ -183,6 +184,7 @@ struct console_settings
    uint32_t current_resolution_index;
    uint32_t current_resolution_id;
    uint32_t initial_resolution_id;
+   uint32_t mode_switch;
    uint32_t *supported_resolutions;
    uint32_t supported_resolutions_count;
    char rom_path[PATH_MAX];

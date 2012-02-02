@@ -59,7 +59,6 @@ enum {
 extern char special_action_msg[256];
 extern uint32_t g_emulator_initialized;
 extern uint32_t special_action_msg_expired;
-extern uint32_t mode_switch;
 extern unsigned g_frame_count;
 extern bool init_ssnes;
 extern bool g_quitting;

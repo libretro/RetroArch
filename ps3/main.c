@@ -49,7 +49,6 @@ uint32_t g_emulator_initialized = 0;
 
 char special_action_msg[256]; /* message which should be overlaid on top of the screen*/
 uint32_t special_action_msg_expired; /* time at which the message no longer needs to be overlaid onscreen*/
-uint32_t mode_switch = MODE_MENU;
 bool init_ssnes = false;
 uint64_t ingame_menu_item = 0;
 
@@ -331,10 +330,10 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 	switch (status)
 	{
 		case CELL_SYSUTIL_REQUEST_EXITGAME:
-			menu_is_running = 0;
+			g_console.menu_enable = false;
 			g_quitting = true;
 			g_console.ingame_menu_enable = false;
-			mode_switch = MODE_EXIT;
+			g_console.mode_switch = MODE_EXIT;
 			if(g_emulator_initialized)
 				ssnes_main_deinit();
 			break;
@@ -376,7 +375,7 @@ static void ingame_menu(void)
 				frame_advance_disabled = true;
 				ingame_menu_item = 0;
 				g_console.ingame_menu_enable = false;
-				mode_switch = MODE_EMULATION;
+				g_console.mode_switch = MODE_EMULATION;
 			}
 
 			switch(ingame_menu_item)
@@ -397,7 +396,7 @@ static void ingame_menu(void)
 
 						ingame_menu_item = 0;
 						g_console.ingame_menu_enable = false;
-						mode_switch = MODE_EMULATION;
+						g_console.mode_switch = MODE_EMULATION;
 					}
 					if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed))
 					{
@@ -434,7 +433,7 @@ static void ingame_menu(void)
 						msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 						ingame_menu_item = 0;
 						g_console.ingame_menu_enable = false;
-						mode_switch = MODE_EMULATION;
+						g_console.mode_switch = MODE_EMULATION;
 					}
 					if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed))
 					{
@@ -530,7 +529,7 @@ static void ingame_menu(void)
 						frame_advance_disabled = false;
 						ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
 						g_console.ingame_menu_enable = false;
-						mode_switch = MODE_EMULATION;
+						g_console.mode_switch = MODE_EMULATION;
 					}
 					ingame_menu_reset_entry_colors (ingame_menu_item);
 					strcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame.\nNOTE: Pressing the button rapidly will advance the frame more slowly\nand prevent buttons from being input.");
@@ -556,7 +555,7 @@ static void ingame_menu(void)
 						frame_advance_disabled = true;
 						ingame_menu_item = 0;
 						g_console.ingame_menu_enable = false;
-						mode_switch = MODE_EMULATION;
+						g_console.mode_switch = MODE_EMULATION;
 					}
 					ingame_menu_reset_entry_colors (ingame_menu_item);
 					strcpy(comment, "Press 'CROSS' to return back to the game.");
@@ -566,7 +565,7 @@ static void ingame_menu(void)
 					{
 						ingame_menu_item = 0;
 						g_console.ingame_menu_enable = false;
-						mode_switch = MODE_EMULATION;
+						g_console.mode_switch = MODE_EMULATION;
 						perform_reset();
 					}
 					ingame_menu_reset_entry_colors (ingame_menu_item);
@@ -577,8 +576,8 @@ static void ingame_menu(void)
 					{
 						ingame_menu_item = 0;
 						g_console.ingame_menu_enable = false;
-						menu_is_running = 0;
-						mode_switch = MODE_MENU;
+						g_console.menu_enable = false;
+						g_console.mode_switch = MODE_MENU;
 					}
 
 					ingame_menu_reset_entry_colors (ingame_menu_item);
@@ -589,7 +588,7 @@ static void ingame_menu(void)
 					if(CTRL_CROSS(button_was_pressed))
 					{
 						g_console.ingame_menu_enable = false;
-						mode_switch = MODE_EXIT;
+						g_console.mode_switch = MODE_EXIT;
 					}
 
 					ingame_menu_reset_entry_colors (ingame_menu_item);
@@ -603,7 +602,7 @@ static void ingame_menu(void)
 #ifdef MULTIMAN_SUPPORT
 						return_to_MM = false;
 #endif
-						mode_switch = MODE_EXIT;
+						g_console.mode_switch = MODE_EXIT;
 					}
 
 					ingame_menu_reset_entry_colors (ingame_menu_item);
@@ -765,9 +764,10 @@ int main(int argc, char *argv[])
 	ps3_input_init();
 
 	menu_init();
+	g_console.mode_switch = MODE_MENU;
 
 begin_loop:
-	if(mode_switch == MODE_EMULATION)
+	if(g_console.mode_switch == MODE_EMULATION)
 	{
 		bool repeat = false;
 		if(ingame_menu_item != 0)
@@ -784,7 +784,7 @@ begin_loop:
 		if(g_console.ingame_menu_enable)
 			ingame_menu();
 	}
-	else if(mode_switch == MODE_MENU)
+	else if(g_console.mode_switch == MODE_MENU)
 	{
 		menu_loop();
 		if(init_ssnes)
@@ -806,7 +806,7 @@ begin_loop:
 		}
 	}
 #ifdef MULTIMAN_SUPPORT
-	else if(mode_switch == MODE_MULTIMAN_STARTUP)
+	else if(g_console.mode_switch == MODE_MULTIMAN_STARTUP)
 	{
 	}
 #endif
