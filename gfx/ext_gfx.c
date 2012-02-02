@@ -190,6 +190,7 @@ static bool video_ext_frame(void *data, const void *frame, unsigned width, unsig
 
 static void *setup_input(ext_t *ext, const ssnes_input_driver_t *driver)
 {
+   // TODO: Change external API to allow more players. Do be done in next major ABI break.
    int joypad_index[5];
    for (unsigned i = 0; i < 5; i++)
       joypad_index[i] = g_settings.input.joypad_map[i] < 0 ? -1 : g_settings.input.joypad_map[i];

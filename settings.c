@@ -212,11 +212,11 @@ void config_set_defaults(void)
    ssnes_assert(sizeof(g_settings.input.binds[0]) >= sizeof(snes_keybinds_1));
    ssnes_assert(sizeof(g_settings.input.binds[1]) >= sizeof(snes_keybinds_rest));
    memcpy(g_settings.input.binds[0], snes_keybinds_1, sizeof(snes_keybinds_1));
-   for (unsigned i = 1; i < 5; i++)
+   for (unsigned i = 1; i < MAX_PLAYERS; i++)
       memcpy(g_settings.input.binds[i], snes_keybinds_rest, sizeof(snes_keybinds_rest));
 
    // Verify that binds are in proper order.
-   for (unsigned i = 0; i < 5; i++)
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
       for (unsigned j = 0; j < SSNES_BIND_LIST_END; j++)
          if (g_settings.input.binds[i][j].valid)
             ssnes_assert(j == g_settings.input.binds[i][j].id);
@@ -418,11 +418,13 @@ bool config_load_file(const char *path)
 
    CONFIG_GET_FLOAT(input.axis_threshold, "input_axis_threshold");
    CONFIG_GET_BOOL(input.netplay_client_swap_input, "netplay_client_swap_input");
-   CONFIG_GET_INT(input.joypad_map[0], "input_player1_joypad_index");
-   CONFIG_GET_INT(input.joypad_map[1], "input_player2_joypad_index");
-   CONFIG_GET_INT(input.joypad_map[2], "input_player3_joypad_index");
-   CONFIG_GET_INT(input.joypad_map[3], "input_player4_joypad_index");
-   CONFIG_GET_INT(input.joypad_map[4], "input_player5_joypad_index");
+
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   {
+      char buf[64];
+      snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i);
+      CONFIG_GET_INT(input.joypad_map[i], buf);
+   }
 
    // Audio settings.
    CONFIG_GET_BOOL(audio.enable, "audio_enable");
@@ -563,6 +565,9 @@ static const struct bind_map bind_maps[MAX_PLAYERS][SSNES_BIND_LIST_END] = {
    DECL_PLAYER(3),
    DECL_PLAYER(4),
    DECL_PLAYER(5),
+   DECL_PLAYER(6),
+   DECL_PLAYER(7),
+   DECL_PLAYER(8),
 };
 
 struct key_map
