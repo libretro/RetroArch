@@ -1847,18 +1847,21 @@ static void check_oneshot(void)
    old_rewind_state = new_rewind_state;
 }
 
+void perform_reset(void)
+{
+   SSNES_LOG("Resetting game!\n");
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue, "Reset!", 1, 120);
+   psnes_reset();
+   init_controllers(); // bSNES since v073r01 resets controllers to JOYPAD after a reset, so just enforce it here.
+}
+
 static void check_reset(void)
 {
    static bool old_state = false;
    bool new_state = driver.input->key_pressed(driver.input_data, SSNES_RESET);
    if (new_state && !old_state)
-   {
-      SSNES_LOG("Resetting game!\n");
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, "Reset!", 1, 120);
-      psnes_reset();
-      init_controllers(); // bSNES since v073r01 resets controllers to JOYPAD after a reset, so just enforce it here.
-   }
+      perform_reset();
 
    old_state = new_state;
 }

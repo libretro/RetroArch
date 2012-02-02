@@ -388,6 +388,7 @@ void config_set_defaults(void);
 bool config_load_file(const char *path);
 #endif
 
+void perform_reset(void);
 void ssnes_main_clear_state(void);
 int ssnes_main_init(int argc, char *argv[]);
 bool ssnes_main_iterate(void);
