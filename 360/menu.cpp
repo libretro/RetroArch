@@ -87,8 +87,8 @@ HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
 
 	if ( hObjPressed == m_filebrowser )
 	{
-		g_console->menu_enable = false;
-		g_console->mode_switch = MODE_EMULATION;
+		g_console.menu_enable = false;
+		g_console.mode_switch = MODE_EMULATION;
 		init_ssnes = 1;
 	}
 	else if ( hObjPressed == m_settings )
@@ -105,8 +105,8 @@ HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
 	}
 	else if ( hObjPressed == m_quit )
 	{
-		g_console->menu_enable = false;
-		g_console->mode_switch = MODE_EXIT;
+		g_console.menu_enable = false;
+		g_console.mode_switch = MODE_EXIT;
 		init_ssnes = 0;
 	}
 
@@ -157,7 +157,7 @@ int menu_init (void)
 
 void menu_loop(void)
 {
-	g_console->menu_enable = true;
+	g_console.menu_enable = true;
 
 	HRESULT hr;
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
@@ -174,5 +174,5 @@ void menu_loop(void)
 
 		/* Present the frame */
 		vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);	
-	}while(g_console->menu_enable);
+	}while(g_console.menu_enable);
 }

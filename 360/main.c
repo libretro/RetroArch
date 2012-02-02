@@ -151,18 +151,18 @@ int main(int argc, char *argv[])
 
 	config_set_defaults();
 
-	g_console->mode_switch = MODE_MENU;
+	g_console.mode_switch = MODE_MENU;
 
 	xdk360_video_init();
 
 	menu_init();
 
 begin_loop:
-	if(g_console->mode_switch == MODE_EMULATION)
+	if(g_console.mode_switch == MODE_EMULATION)
 	{
 		while(ssnes_main_iterate());
 	}
-	else if(g_console->mode_switch == MODE_MENU)
+	else if(g_console.mode_switch == MODE_MENU)
 	{
 		menu_loop();
 

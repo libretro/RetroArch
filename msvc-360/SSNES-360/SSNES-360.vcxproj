@@ -106,7 +106,7 @@
       <MinimalRebuild>true</MinimalRebuild>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PreprocessorDefinitions>_DEBUG;_XBOX;PACKAGE_VERSION="0.9.4.1";%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;main=ssnes_main;HAVE_CONFIGFILE;HAVE_NETPLAY;HAVE_SOCKET_LEGACY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_XBOX;PACKAGE_VERSION="0.9.4.1";%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;main=ssnes_main;SSNES_CONSOLE;HAVE_CONFIGFILE;HAVE_NETPLAY;HAVE_SOCKET_LEGACY</PreprocessorDefinitions>
       <CallAttributedProfiling>Callcap</CallAttributedProfiling>
     </ClCompile>
     <Link>
@@ -157,7 +157,7 @@
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.4.1";_CRT_SECURE_NO_WARNINGS;main=ssnes_main;HAVE_CONFIGFILE</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.4.1";_CRT_SECURE_NO_WARNINGS;SSNES_CONSOLE;main=ssnes_main;HAVE_CONFIGFILE</PreprocessorDefinitions>
       <CallAttributedProfiling>Callcap</CallAttributedProfiling>
     </ClCompile>
     <Link>
@@ -216,7 +216,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.4.1";_CRT_SECURE_NO_WARNINGS;main=ssnes_main;HAVE_CONFIGFILE;HAVE_NETPLAY;HAVE_SOCKET_LEGACY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.4.1";_CRT_SECURE_NO_WARNINGS;main=ssnes_main;SSNES_CONSOLE=1;HAVE_CONFIGFILE;HAVE_NETPLAY;HAVE_SOCKET_LEGACY</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -244,7 +244,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;LTCG;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.4.1";_CRT_SECURE_NO_WARNINGS;main=ssnes_main;HAVE_CONFIGFILE</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;LTCG;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.4.1";_CRT_SECURE_NO_WARNINGS;SSNES_CONSOLE;main=ssnes_main;HAVE_CONFIGFILE</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
