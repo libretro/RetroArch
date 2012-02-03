@@ -31,7 +31,10 @@
 <Height>36.000000</Height>
 <Position>297.919983,239.880005,0.000000</Position>
 <Visual>XuiBackButton</Visual>
-<NavLeft>XuiButton1</NavLeft>
+<NavLeft>XuiBtnRewind</NavLeft>
+<NavRight>XuiBackButton1</NavRight>
+<NavUp>XuiBackButton1</NavUp>
+<NavDown>XuiBackButton1</NavDown>
 <Text>Go back to menu</Text>
 <PressKey>22593</PressKey>
 </Properties>
