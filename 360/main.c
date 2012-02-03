@@ -137,6 +137,16 @@ static void MountAll()
 	Mounted[DEVICE_CDROM0] = Mount(DEVICE_CDROM0,"Dvd:"); 
 }
 
+static void set_default_settings(void)
+{
+	//g_settings
+	g_settings.rewind_enable = false;
+
+	//g_console
+	g_console.block_config_read = true;
+	g_console.mode_switch = MODE_MENU;
+}
+
 int main(int argc, char *argv[])
 {
 	//for devkits only, we will need to mount all partitions for retail
@@ -151,7 +161,7 @@ int main(int argc, char *argv[])
 
 	config_set_defaults();
 
-	g_console.mode_switch = MODE_MENU;
+	set_default_settings();
 
 	xdk360_video_init();
 

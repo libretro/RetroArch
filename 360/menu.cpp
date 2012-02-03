@@ -28,6 +28,7 @@
 
 CSSNES		app;
 HXUIOBJ		hMainScene;
+HXUIOBJ		hSSNESSettings;
 
 /* Register custom classes */
 HRESULT CSSNES::RegisterXuiClasses (void)
@@ -48,6 +49,8 @@ HRESULT CSSNES::UnregisterXuiClasses (void)
 HRESULT CSSNESSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
 	GetChildById(L"XuiBtnRewind", &m_rewind);
+	GetChildById(L"XuiCheckbox1", &m_rewind_cb);
+	GetChildById(L"XuiBackButton1", &m_back);
 	return S_OK;
 }
 
@@ -77,6 +80,22 @@ HRESULT CSSNESMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
 HRESULT CSSNESSettings::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
 {
+	if ( hObjPressed == m_rewind)
+	{
+		g_settings.rewind_enable = !g_settings.rewind_enable;
+		m_rewind_cb.SetCheck(g_settings.rewind_enable);
+	}
+	else if ( hObjPressed == m_back )
+	{
+		HRESULT hr = XuiSceneNavigateBack(hSSNESSettings, hMainScene, XUSER_INDEX_FOCUS);
+		
+		if (FAILED(hr))
+		{
+			SSNES_ERR("Failed to load scene.\n");
+		}
+		
+		NavigateBack(hMainScene);
+	}
 	bHandled = TRUE;
 	return S_OK;
 }
@@ -93,7 +112,6 @@ HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
 	}
 	else if ( hObjPressed == m_settings )
 	{
-		HXUIOBJ		hSSNESSettings;
 		hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_settings.xur", NULL, &hSSNESSettings);
 		
 		if (FAILED(hr))

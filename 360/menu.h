@@ -37,6 +37,8 @@ class CSSNESSettings: public CXuiSceneImpl
 {
 protected:
 	CXuiControl m_rewind;
+	CXuiCheckbox m_rewind_cb;
+	CXuiControl m_back;
 public:
 	HRESULT OnInit( XUIMessageInit* pInitData, BOOL& bHandled );
 	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled );
