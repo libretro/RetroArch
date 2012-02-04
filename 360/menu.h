@@ -33,6 +33,22 @@ public:
 	XUI_IMPLEMENT_CLASS(CSSNESMain, L"SSNESMain", XUI_CLASS_SCENE)
 };
 
+class CSSNESFileBrowser: public CXuiSceneImpl
+{
+protected:
+	CXuiList m_romlist;
+public:
+	HRESULT OnInit( XUIMessageInit* pInitData, BOOL& bHandled );
+	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled );
+
+	XUI_BEGIN_MSG_MAP()
+		XUI_ON_XM_INIT( OnInit)
+		XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+	XUI_END_MSG_MAP();
+
+	XUI_IMPLEMENT_CLASS(CSSNESFileBrowser, L"SSNESFileBrowser", XUI_CLASS_SCENE)
+};
+
 class CSSNESSettings: public CXuiSceneImpl
 {
 protected:

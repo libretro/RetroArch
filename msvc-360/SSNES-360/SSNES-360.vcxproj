@@ -263,6 +263,7 @@
     </Deploy>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\360\fileio.c" />
     <ClCompile Include="..\..\360\main.c" />
     <ClCompile Include="..\..\360\xdk360_audio.cpp" />
     <ClCompile Include="..\..\360\xdk360_input.cpp" />

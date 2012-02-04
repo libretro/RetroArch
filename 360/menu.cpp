@@ -20,6 +20,8 @@
 #include <crtdefs.h>
 #include <tchar.h>
 #include <xtl.h>
+#include "fileio.h"
+#include "../console/rom_ext.h"
 #include "xdk360_video.h"
 #include "menu.h"
 #include "shared.h"
@@ -28,13 +30,17 @@
 
 CSSNES		app;
 HXUIOBJ		hMainScene;
+HXUIOBJ		hFileBrowser;
 HXUIOBJ		hSSNESSettings;
+filebrowser_t browser;
 
 /* Register custom classes */
 HRESULT CSSNES::RegisterXuiClasses (void)
 {
 	CSSNESMain::Register();
+	CSSNESFileBrowser::Register();
 	CSSNESSettings::Register();
+	filebrowser_parse_directory(&browser, "game:\\roms\\", ssnes_console_get_rom_ext());
 	return S_OK;
 }
 
@@ -42,7 +48,14 @@ HRESULT CSSNES::RegisterXuiClasses (void)
 HRESULT CSSNES::UnregisterXuiClasses (void)
 {
 	CSSNESMain::Unregister();
+	CSSNESFileBrowser::Unregister();
 	CSSNESSettings::Unregister();
+	return S_OK;
+}
+
+HRESULT CSSNESFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+{
+	GetChildById(L"XuiRomList", &m_romlist);
 	return S_OK;
 }
 
@@ -75,6 +88,12 @@ HRESULT CSSNESMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	delete []core_text_utf;
 	delete []package_version_utf;
 
+	return S_OK;
+}
+
+HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
+{
+	bHandled = TRUE;
 	return S_OK;
 }
 
