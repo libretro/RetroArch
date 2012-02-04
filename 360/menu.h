@@ -37,6 +37,7 @@ class CSSNESFileBrowser: public CXuiSceneImpl
 {
 protected:
 	CXuiList m_romlist;
+	CXuiTextElement m_rompathtitle;
 public:
 	HRESULT OnInit( XUIMessageInit* pInitData, BOOL& bHandled );
 	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled );

@@ -33,6 +33,7 @@ HXUIOBJ		hMainScene;
 HXUIOBJ		hFileBrowser;
 HXUIOBJ		hSSNESSettings;
 filebrowser_t browser;
+char		strbuffer[1024];
 
 /* Register custom classes */
 HRESULT CSSNES::RegisterXuiClasses (void)
@@ -40,7 +41,6 @@ HRESULT CSSNES::RegisterXuiClasses (void)
 	CSSNESMain::Register();
 	CSSNESFileBrowser::Register();
 	CSSNESSettings::Register();
-	filebrowser_parse_directory(&browser, "game:\\roms\\", ssnes_console_get_rom_ext());
 	return S_OK;
 }
 
@@ -56,6 +56,24 @@ HRESULT CSSNES::UnregisterXuiClasses (void)
 HRESULT CSSNESFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
 	GetChildById(L"XuiRomList", &m_romlist);
+	GetChildById(L"XuiTxtRomPath", &m_rompathtitle);
+
+	filebrowser_parse_directory(&browser, "game:\\roms\\", ssnes_console_get_rom_ext());
+
+	DWORD dwNum_rompath = MultiByteToWideChar(CP_ACP, 0, "game:\\roms\\", -1, NULL, 0);
+	wchar_t * rompath_name = new wchar_t[dwNum_rompath];
+	MultiByteToWideChar(CP_ACP, 0, "game:\\roms\\", -1, rompath_name, dwNum_rompath);
+	m_rompathtitle.SetText(rompath_name);
+
+	m_romlist.InsertItems(0, browser.file_count);
+	for(unsigned i = 0; i < browser.file_count; i++)
+	{
+		DWORD dwNum = MultiByteToWideChar(CP_ACP, 0, browser.cur[i].d_name, -1, NULL, 0);
+		wchar_t * entry_name = new wchar_t[dwNum];
+		MultiByteToWideChar(CP_ACP, 0, browser.cur[i].d_name, -1, entry_name, dwNum);
+		m_romlist.SetText(i, entry_name);
+		delete []entry_name;
+	}
 	return S_OK;
 }
 
@@ -93,6 +111,17 @@ HRESULT CSSNESMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
 HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 {
+	int index = m_romlist.GetCurSel();
+	if(browser.cur[index].d_type != FILE_ATTRIBUTE_DIRECTORY)
+	{
+		memset(strbuffer, 0, sizeof(strbuffer));
+		wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
+		sprintf(g_console.rom_path, "game:\\roms\\%s", strbuffer);
+		g_console.menu_enable = false;
+		g_console.mode_switch = MODE_EMULATION;
+		init_ssnes = 1;
+	}
+
 	bHandled = TRUE;
 	return S_OK;
 }
@@ -125,9 +154,14 @@ HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
 
 	if ( hObjPressed == m_filebrowser )
 	{
-		g_console.menu_enable = false;
-		g_console.mode_switch = MODE_EMULATION;
-		init_ssnes = 1;
+		hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_filebrowser.xur", NULL, &hFileBrowser);
+		
+		if (FAILED(hr))
+		{
+			SSNES_ERR("Failed to load scene.\n");
+		}
+
+		NavigateForward(hFileBrowser);
 	}
 	else if ( hObjPressed == m_settings )
 	{

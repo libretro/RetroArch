@@ -20,7 +20,7 @@
 
 typedef struct {
 	unsigned d_type;
-	char d_nam[XCONTENT_MAX_FILENAME_LENGTH];
+	CHAR d_name[MAX_PATH];
 } DirectoryEntry;
 
 typedef struct {

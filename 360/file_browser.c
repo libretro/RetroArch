@@ -17,7 +17,7 @@
  */
 
 #include <Xtl.h>
-#include "fileio.h"
+#include "file_browser.h"
 #include "../general.h"
 #include "../file.h"
 
@@ -89,7 +89,7 @@ void filebrowser_parse_directory(filebrowser_t * filebrowser, const char * path,
 			found_dir = true;
 
 	  filebrowser->cur[filebrowser->file_count].d_type = found_dir ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
-      strlcat(filebrowser->cur[filebrowser->file_count].d_nam, ffd.cFileName, PATH_MAX);
+      sprintf(filebrowser->cur[filebrowser->file_count].d_name, ffd.cFileName);
 
 	  filebrowser->file_count++;
    }while (FindNextFile(hFind, &ffd) != 0 && (filebrowser->file_count + 1) < FATX_MAX_FILE_LIMIT);

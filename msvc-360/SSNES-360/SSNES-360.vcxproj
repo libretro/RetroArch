@@ -278,6 +278,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\conf\config_file.c" />
+    <ClCompile Include="..\..\console\main_wrap.c" />
     <ClCompile Include="..\..\console\rom_ext.c" />
     <ClCompile Include="..\..\driver.c" />
     <ClCompile Include="..\..\dynamic.c" />
@@ -406,6 +407,23 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\ssnes_settings.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\ssnes_settings.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\ssnes_settings.xur;</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\360\media\ssnes_filebrowser.xui">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\ssnes_filebrowser.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\ssnes_filebrowser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\ssnes_filebrowser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\ssnes_filebrowser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\ssnes_filebrowser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\ssnes_filebrowser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\ssnes_filebrowser.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\ssnes_filebrowser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\ssnes_filebrowser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\ssnes_filebrowser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\ssnes_filebrowser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\ssnes_filebrowser.xur"</Command>
     </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

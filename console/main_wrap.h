@@ -19,7 +19,6 @@
 #define MAIN_WRAP_H__
 
 #ifdef _MSC_VER
-unsigned char bool;
 #else
 #include <stdbool.h>
 #endif

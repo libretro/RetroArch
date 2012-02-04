@@ -23,6 +23,7 @@
 #include <xbdm.h>
 #include "menu.h"
 #include "xdk360_video.h"
+#include "../console/main_wrap.h"
 #include "../general.h"
 #include "shared.h"
 
@@ -121,22 +122,6 @@ static int Mount( int Device, char* MountPoint )
 	return DriveMounted(MountPoint);
 }
 
-
-static void MountAll()
-{
-	memset(&Mounted,0,20);
-
- 	Mounted[DEVICE_USB0] = Mount(DEVICE_USB0,"Usb0:");
- 	Mounted[DEVICE_USB1] = Mount(DEVICE_USB1,"Usb1:");
- 	Mounted[DEVICE_USB2] = Mount(DEVICE_USB2,"Usb2:");
- 	Mounted[DEVICE_HARDISK0_PART1] = Mount(DEVICE_HARDISK0_PART1,"Hdd1:");
- 	Mounted[DEVICE_HARDISK0_SYSPART] = Mount(DEVICE_HARDISK0_SYSPART,"HddX:");
- 	Mounted[DEVICE_MEMORY_UNIT0] = Mount(DEVICE_MEMORY_UNIT0,"Memunit0:");
- 	Mounted[DEVICE_MEMORY_UNIT1] = Mount(DEVICE_MEMORY_UNIT1,"Memunit1:");
-	Mounted[DEVICE_MEMORY_ONBOARD] = Mount(DEVICE_MEMORY_ONBOARD,"OnBoardMU:"); 
-	Mounted[DEVICE_CDROM0] = Mount(DEVICE_CDROM0,"Dvd:"); 
-}
-
 static void set_default_settings(void)
 {
 	//g_settings
@@ -153,13 +138,23 @@ static void get_environment_settings (void)
 	//in a different way
 	//DmMapDevkitDrive();
 	
-	MountAll();
+	memset(&Mounted, 0, 20);
+
+ 	Mounted[DEVICE_USB0] = Mount(DEVICE_USB0,"Usb0:");
+ 	Mounted[DEVICE_USB1] = Mount(DEVICE_USB1,"Usb1:");
+ 	Mounted[DEVICE_USB2] = Mount(DEVICE_USB2,"Usb2:");
+ 	Mounted[DEVICE_HARDISK0_PART1] = Mount(DEVICE_HARDISK0_PART1,"Hdd1:");
+ 	Mounted[DEVICE_HARDISK0_SYSPART] = Mount(DEVICE_HARDISK0_SYSPART,"HddX:");
+ 	Mounted[DEVICE_MEMORY_UNIT0] = Mount(DEVICE_MEMORY_UNIT0,"Memunit0:");
+ 	Mounted[DEVICE_MEMORY_UNIT1] = Mount(DEVICE_MEMORY_UNIT1,"Memunit1:");
+	Mounted[DEVICE_MEMORY_ONBOARD] = Mount(DEVICE_MEMORY_ONBOARD,"OnBoardMU:"); 
+	Mounted[DEVICE_CDROM0] = Mount(DEVICE_CDROM0,"Dvd:"); 
 
 	BOOL result_filecache = XSetFileCacheSize(0x100000);
 
 	if(result_filecache != TRUE)
 	{
-		SSNES_ERR("Couldn't hange number of bytes reserved for file system cache.\n");
+		SSNES_ERR("Couldn't change number of bytes reserved for file system cache.\n");
 	}
 	DWORD result = XMountUtilityDriveEx(XMOUNTUTILITYDRIVE_FORMAT0,8192, 0);
 
@@ -223,15 +218,15 @@ begin_loop:
 		{
 			if(g_emulator_initialized)
 				ssnes_main_deinit();
+
+			struct ssnes_main_wrap args;
+			args.verbose = g_extern.verbose;
+			args.sram_path = NULL;
+			args.state_path = NULL;
+			args.config_path = NULL;
+			args.rom_path = g_console.rom_path;
 			
-			char arg1[] = "ssnes";
-			char arg2[] = "d:\\roms\\mario.sfc";
-			char arg3[] = "-v";
-			char arg4[] = "-c";
-			char arg5[] = "d:\\ssnes.cfg";
-			char *argv_[] = { arg1, arg2, arg3, arg4, arg5, NULL };
-			int argc_ = sizeof(argv_) / sizeof(argv_[0]) - 1;
-			int init_ret = ssnes_main_init(argc_, argv_);
+			int init_ret = ssnes_main_init_wrap(&args);
 			g_emulator_initialized = 1;
 			init_ssnes = 0;
 		}

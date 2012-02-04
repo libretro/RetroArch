@@ -128,6 +128,9 @@
     <ClCompile Include="..\..\360\file_browser.c">
       <Filter>Source Files\360</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\console\main_wrap.c">
+      <Filter>Source Files\console</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\ups.h">
@@ -232,6 +235,9 @@
       <Filter>Source Files\media</Filter>
     </CustomBuild>
     <CustomBuild Include="..\..\360\media\ssnes_settings.xui">
+      <Filter>Source Files\media</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\360\media\ssnes_filebrowser.xui">
       <Filter>Source Files\media</Filter>
     </CustomBuild>
   </ItemGroup>
