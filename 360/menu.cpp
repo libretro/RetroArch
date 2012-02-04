@@ -20,7 +20,7 @@
 #include <crtdefs.h>
 #include <tchar.h>
 #include <xtl.h>
-#include "fileio.h"
+#include "file_browser.h"
 #include "../console/rom_ext.h"
 #include "xdk360_video.h"
 #include "menu.h"

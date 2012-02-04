@@ -125,7 +125,7 @@
     <ClCompile Include="..\..\console\rom_ext.c">
       <Filter>Source Files\console</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\360\fileio.c">
+    <ClCompile Include="..\..\360\file_browser.c">
       <Filter>Source Files\360</Filter>
     </ClCompile>
   </ItemGroup>

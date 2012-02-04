@@ -1,5 +1,4 @@
-/*************************************************************************************
- *  -- Cellframework Mk.II -  Open framework to abstract the common tasks related to
+/*  -- Cellframework Mk.II -  Open framework to abstract the common tasks related to
  *                            PS3 application development.
  *
  *  Copyright (C) 2010-2012
@@ -17,7 +16,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- ********************************************************************************/
+ */
 
 /*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
