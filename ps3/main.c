@@ -274,60 +274,6 @@ static void save_settings(void)
 	free(conf);
 }
 
-static void get_path_settings(bool multiman_support)
-{
-	unsigned int get_type;
-	unsigned int get_attributes;
-	CellGameContentSize size;
-	char dirName[CELL_GAME_DIRNAME_SIZE];
-
-	memset(&size, 0x00, sizeof(CellGameContentSize));
-
-	int ret = cellGameBootCheck(&get_type, &get_attributes, &size, dirName);
-	if(ret < 0)
-	{
-		printf("cellGameBootCheck() Error: 0x%x\n", ret);
-	}
-	else
-	{
-		printf("cellGameBootCheck() OK\n");
-		printf(" get_type = [%d] get_attributes = [0x%08x] dirName = [%s]\n", get_type, get_attributes, dirName);
-		printf(" hddFreeSizeKB = [%d] sizeKB = [%d] sysSizeKB = [%d]\n", size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
-
-		ret = cellGameContentPermit(contentInfoPath, usrDirPath);
-
-		if(multiman_support)
-		{
-			snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
-			snprintf(usrDirPath, sizeof(usrDirPath), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
-		}
-
-		if(ret < 0)
-		{
-			printf("cellGameContentPermit() Error: 0x%x\n", ret);
-		}
-		else
-		{
-			printf("cellGameContentPermit() OK\n");
-			printf("contentInfoPath:[%s]\n", contentInfoPath);
-			printf("usrDirPath:[%s]\n", usrDirPath);
-		}
-
-		/* now we fill in all the variables */
-		snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/presets/stock.conf", usrDirPath);
-		snprintf(DEFAULT_BORDER_FILE, sizeof(DEFAULT_BORDER_FILE), "%s/borders/Centered-1080p/mega-man-2.png", usrDirPath);
-		snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/borders/Menu/main-menu.jpg", usrDirPath);
-		snprintf(GAME_AWARE_SHADER_DIR_PATH, sizeof(GAME_AWARE_SHADER_DIR_PATH), "%s/gameaware", usrDirPath);
-		snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/presets", usrDirPath);
-		snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/input-presets", usrDirPath);
-		snprintf(BORDERS_DIR_PATH, sizeof(BORDERS_DIR_PATH), "%s/borders", usrDirPath);
-		snprintf(SHADERS_DIR_PATH, sizeof(SHADERS_DIR_PATH), "%s/shaders", usrDirPath);
-		snprintf(DEFAULT_SHADER_FILE, sizeof(DEFAULT_SHADER_FILE), "%s/shaders/stock.cg", usrDirPath);
-		snprintf(DEFAULT_MENU_SHADER_FILE, sizeof(DEFAULT_MENU_SHADER_FILE), "%s/shaders/Borders/Menu/border-only-ssnes.cg", usrDirPath);
-		snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/ssnes.cfg", usrDirPath);
-	}
-}
-
 static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
 {
 	(void) param;
@@ -345,6 +291,75 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 			break;
 	}
 }
+
+static void get_environment_settings(void)
+{
+	unsigned int get_type;
+	unsigned int get_attributes;
+	CellGameContentSize size;
+	char dirName[CELL_GAME_DIRNAME_SIZE];
+
+	SSNES_LOG("Registering Callback\n");
+	cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
+
+#ifdef MULTIMAN_SUPPORT
+	g_console.return_to_multiman_enable = true;
+
+	if(argc > 1)
+	{
+		strncpy(MULTIMAN_GAME_TO_BOOT, argv[1], sizeof(MULTIMAN_GAME_TO_BOOT));
+	}
+#else
+	g_console.return_to_multiman_enable = false;
+#endif
+
+	memset(&size, 0x00, sizeof(CellGameContentSize));
+
+	int ret = cellGameBootCheck(&get_type, &get_attributes, &size, dirName);
+	if(ret < 0)
+	{
+		SSNES_ERR("cellGameBootCheck() Error: 0x%x\n", ret);
+	}
+	else
+	{
+		SSNES_LOG("cellGameBootCheck() OK\n");
+		SSNES_LOG(" get_type = [%d] get_attributes = [0x%08x] dirName = [%s]\n", get_type, get_attributes, dirName);
+		SSNES_LOG(" hddFreeSizeKB = [%d] sizeKB = [%d] sysSizeKB = [%d]\n", size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
+
+		ret = cellGameContentPermit(contentInfoPath, usrDirPath);
+
+		if(g_console.return_to_multiman_enable)
+		{
+			snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
+			snprintf(usrDirPath, sizeof(usrDirPath), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
+		}
+
+		if(ret < 0)
+		{
+			SSNES_ERR("cellGameContentPermit() Error: 0x%x\n", ret);
+		}
+		else
+		{
+			SSNES_LOG("cellGameContentPermit() OK\n");
+			SSNES_LOG("contentInfoPath:[%s]\n", contentInfoPath);
+			SSNES_LOG("usrDirPath:[%s]\n", usrDirPath);
+		}
+
+		/* now we fill in all the variables */
+		snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/presets/stock.conf", usrDirPath);
+		snprintf(DEFAULT_BORDER_FILE, sizeof(DEFAULT_BORDER_FILE), "%s/borders/Centered-1080p/mega-man-2.png", usrDirPath);
+		snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/borders/Menu/main-menu.jpg", usrDirPath);
+		snprintf(GAME_AWARE_SHADER_DIR_PATH, sizeof(GAME_AWARE_SHADER_DIR_PATH), "%s/gameaware", usrDirPath);
+		snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/presets", usrDirPath);
+		snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/input-presets", usrDirPath);
+		snprintf(BORDERS_DIR_PATH, sizeof(BORDERS_DIR_PATH), "%s/borders", usrDirPath);
+		snprintf(SHADERS_DIR_PATH, sizeof(SHADERS_DIR_PATH), "%s/shaders", usrDirPath);
+		snprintf(DEFAULT_SHADER_FILE, sizeof(DEFAULT_SHADER_FILE), "%s/shaders/stock.cg", usrDirPath);
+		snprintf(DEFAULT_MENU_SHADER_FILE, sizeof(DEFAULT_MENU_SHADER_FILE), "%s/shaders/Borders/Menu/border-only-ssnes.cg", usrDirPath);
+		snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/ssnes.cfg", usrDirPath);
+	}
+}
+
 
 #define ingame_menu_reset_entry_colors(ingame_menu_item) \
 { \
@@ -736,7 +751,6 @@ static void ingame_menu(void)
 
 int main(int argc, char *argv[])
 {
-
 	// Initialize 6 SPUs but reserve 1 SPU as a raw SPU for PSGL
 	sys_spu_initialize(6, 1);
 
@@ -747,25 +761,11 @@ int main(int argc, char *argv[])
 	cellSysmoduleLoadModule(CELL_SYSMODULE_PNGDEC);
 	cellSysmoduleLoadModule(CELL_SYSMODULE_JPGDEC);
 
+	get_environment_settings();
+
 	ssnes_main_clear_state();
 
 	config_set_defaults();
-
-	SSNES_LOG("Registering Callback\n");
-	cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
-
-#ifdef MULTIMAN_SUPPORT
-	g_console.return_to_multiman_enable = true;
-
-	if(argc > 1)
-	{
-		strncpy(MULTIMAN_GAME_TO_BOOT, argv[1], sizeof(MULTIMAN_GAME_TO_BOOT));
-	}
-#else
-	g_console.return_to_multiman_enable = false;
-#endif
-
-	get_path_settings(g_console.return_to_multiman_enable);
 
 	set_default_settings();
 	init_settings();
