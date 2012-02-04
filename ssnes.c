@@ -373,7 +373,10 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
       g_settings.input.binds[1],
       g_settings.input.binds[2],
       g_settings.input.binds[3],
-      g_settings.input.binds[4]
+      g_settings.input.binds[4],
+      g_settings.input.binds[5],
+      g_settings.input.binds[6],
+      g_settings.input.binds[7],
    };
 
    int16_t res = 0;
