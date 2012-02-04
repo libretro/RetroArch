@@ -155,8 +155,18 @@ static void get_environment_settings (void)
 	
 	MountAll();
 
-	XSetFileCacheSize(0x100000);
-	XMountUtilityDriveEx(XMOUNTUTILITYDRIVE_FORMAT0,8192, 0);
+	BOOL result_filecache = XSetFileCacheSize(0x100000);
+
+	if(result_filecache != TRUE)
+	{
+		SSNES_ERR("Couldn't hange number of bytes reserved for file system cache.\n");
+	}
+	DWORD result = XMountUtilityDriveEx(XMOUNTUTILITYDRIVE_FORMAT0,8192, 0);
+
+	if(result != ERROR_SUCCESS)
+	{
+		SSNES_ERR("Couldn't mount/format utility drive.\n");
+	}
 
 	// detect install environment
 	DWORD license_mask;

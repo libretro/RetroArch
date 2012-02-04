@@ -39,7 +39,6 @@ static int16_t xdk360_input_state(void *data, const struct snes_keybind **binds,
 {
    (void)data;
    (void)binds;
-   (void)index;
 
    if (device != SNES_DEVICE_JOYPAD)
       return 0;
