@@ -223,7 +223,7 @@ begin_loop:
 			args.verbose = g_extern.verbose;
 			args.sram_path = NULL;
 			args.state_path = NULL;
-			args.config_path = NULL;
+
 			args.rom_path = g_console.rom_path;
 			
 			int init_ret = ssnes_main_init_wrap(&args);

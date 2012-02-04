@@ -6,9 +6,9 @@
 <XuiTabScene>
 <Properties>
 <Id>XuiTabScene1</Id>
-<Width>499.856018</Width>
-<Height>289.015991</Height>
-<Position>392.000000,226.112015,0.000000</Position>
+<Width>586.256042</Width>
+<Height>363.320007</Height>
+<Position>345.343994,188.096008,0.000000</Position>
 <ClassOverride>SSNESSettings</ClassOverride>
 <DefaultFocus>XuiBtnRewind</DefaultFocus>
 </Properties>
@@ -29,7 +29,7 @@
 <Id>XuiBackButton1</Id>
 <Width>208.632019</Width>
 <Height>36.000000</Height>
-<Position>297.919983,239.880005,0.000000</Position>
+<Position>356.671997,309.000031,0.000000</Position>
 <Visual>XuiBackButton</Visual>
 <NavLeft>XuiBtnRewind</NavLeft>
 <NavRight>XuiBackButton1</NavRight>
