@@ -147,24 +147,57 @@ static void set_default_settings(void)
 	g_console.mode_switch = MODE_MENU;
 }
 
-int main(int argc, char *argv[])
+static void get_environment_settings (void)
 {
 	//for devkits only, we will need to mount all partitions for retail
 	//in a different way
 	//DmMapDevkitDrive();
+	
 	MountAll();
 
 	XSetFileCacheSize(0x100000);
 	XMountUtilityDriveEx(XMOUNTUTILITYDRIVE_FORMAT0,8192, 0);
-		
-	ssnes_main_clear_state();
 
+	// detect install environment
+	DWORD license_mask;
+
+	if (XContentGetLicenseMask(&license_mask, NULL) != ERROR_SUCCESS)
+	{
+		printf("SSNES was launched as a standalone DVD, or using DVD emulation, or from the development area of the HDD.\n");
+	}
+	else
+	{
+		XContentQueryVolumeDeviceType("GAME",&g_console.volume_device_type, NULL);
+
+		switch(g_console.volume_device_type)
+		{
+			case XCONTENTDEVICETYPE_HDD:
+				printf("SSNES was launched from a content package on HDD.\n");
+				break;
+			case XCONTENTDEVICETYPE_MU:
+				printf("SSNES was launched from a content package on USB or Memory Unit.\n");
+				break;
+			case XCONTENTDEVICETYPE_ODD:
+				printf("SSNES was launched from a content package on Optical Disc Drive.\n");
+				break;
+			default:
+				printf("SSNES was launched from a content package on an unknown device type.\n");
+				break;
+
+		}
+	}
+}
+
+int main(int argc, char *argv[])
+{
+	get_environment_settings();
+
+	ssnes_main_clear_state();
 	config_set_defaults();
 
 	set_default_settings();
 
 	xdk360_video_init();
-
 	menu_init();
 
 begin_loop:
