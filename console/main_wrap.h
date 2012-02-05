@@ -18,8 +18,7 @@
 #ifndef MAIN_WRAP_H__
 #define MAIN_WRAP_H__
 
-#ifdef _MSC_VER
-#else
+#ifndef __cplusplus
 #include <stdbool.h>
 #endif
 
