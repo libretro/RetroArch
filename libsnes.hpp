@@ -100,6 +100,21 @@ extern "C" {
                                                 // Some implementations might need to take extra precautions
                                                 // to allow this as smoothly as possible.
 
+#define SNES_ENVIRONMENT_GET_VARIABLE 8         // struct snes_variable * --
+                                                // Interface to aquire user-defined information from environment
+                                                // that cannot feasibly be supported in a multi-system way.
+                                                // Mostly used for obscure,
+                                                // specific features that the user can tap into when neseccary.
+
+struct snes_variable
+{
+   const char *key;        // Variable to query in SNES_ENVIRONMENT_GET_VARIABLE.
+                           // If NULL, obtains the complete environment string if more complex parsing is necessary.
+                           // The environment string is formatted as key-value pairs delimited by semicolons as so:
+                           // "key1=value1;key2=value2;..."
+   const char *value;      // Value to be obtained. If key does not exist, it is set to NULL.
+};
+
 struct snes_geometry
 {
    unsigned base_width;    // Nominal video width of system.

@@ -2079,10 +2079,15 @@ static void init_state(void)
 void ssnes_main_clear_state(void)
 {
    memset(&g_settings, 0, sizeof(g_settings));
+
+   free(g_extern.system.environment);
+   free(g_extern.system.environment_split);
    memset(&g_extern, 0, sizeof(g_extern));
+
 #ifdef SSNES_CONSOLE
    memset(&g_console, 0, sizeof(g_console));
 #endif
+
    init_state();
 }
 
@@ -2274,6 +2279,7 @@ int main(int argc, char *argv[])
    if ((init_ret = ssnes_main_init(argc, argv))) return init_ret;
    while (ssnes_main_iterate());
    ssnes_main_deinit();
+   ssnes_main_clear_state();
    return 0;
 }
 
