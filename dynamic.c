@@ -337,7 +337,7 @@ static bool environment_cb(unsigned cmd, void *data)
 
       case SNES_ENVIRONMENT_GET_VARIABLE:
       {
-         struct snes_variable *var = data;
+         struct snes_variable *var = (struct snes_variable*)data;
          if (var->key)
          {
             // Split string has '\0' delimiters so we have to find the position in original string,
@@ -359,6 +359,23 @@ static bool environment_cb(unsigned cmd, void *data)
                var->key ? var->key : "null",
                var->value ? var->value : "null");
 
+         break;
+      }
+
+      case SNES_ENVIRONMENT_SET_VARIABLES:
+      {
+         SSNES_LOG("Environ SET_VARIABLES:\n");
+         SSNES_LOG("=======================\n");
+         const struct snes_variable *vars = (const struct snes_variable*)data;
+         while (vars->key)
+         {
+            SSNES_LOG("\t%s :: %s\n",
+                  vars->key,
+                  vars->value ? vars->value : "N/A");
+
+            vars++;
+         }
+         SSNES_LOG("=======================\n");
          break;
       }
 

@@ -216,8 +216,8 @@ void config_set_defaults(void)
       memcpy(g_settings.input.binds[i], snes_keybinds_rest, sizeof(snes_keybinds_rest));
 
    // Verify that binds are in proper order.
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
-      for (unsigned j = 0; j < SSNES_BIND_LIST_END; j++)
+   for (int i = 0; i < MAX_PLAYERS; i++)
+      for (int j = 0; j < SSNES_BIND_LIST_END; j++)
          if (g_settings.input.binds[i][j].valid)
             ssnes_assert(j == g_settings.input.binds[i][j].id);
 
