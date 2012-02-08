@@ -6,6 +6,10 @@
 
 class CSSNES : public CXuiModule
 {
+public:
+	HXUIOBJ		hMainScene;
+	HXUIOBJ		hFileBrowser;
+	HXUIOBJ		hSSNESSettings;
 protected:
 	/* Override so that Cssnes can register classes */
 	virtual HRESULT RegisterXuiClasses();

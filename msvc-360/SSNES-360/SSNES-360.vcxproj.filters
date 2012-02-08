@@ -240,5 +240,11 @@
     <CustomBuild Include="..\..\360\media\ssnes_filebrowser.xui">
       <Filter>Source Files\media</Filter>
     </CustomBuild>
+    <CustomBuild Include="..\..\360\media\a.png">
+      <Filter>Source Files\media</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\360\media\b.png">
+      <Filter>Source Files\media</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

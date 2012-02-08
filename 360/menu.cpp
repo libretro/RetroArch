@@ -29,9 +29,6 @@
 #include "../general.h"
 
 CSSNES		app;
-HXUIOBJ		hMainScene;
-HXUIOBJ		hFileBrowser;
-HXUIOBJ		hSSNESSettings;
 filebrowser_t browser;
 char		strbuffer[1024];
 
@@ -143,7 +140,7 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 	}
 	else if(hObjPressed == m_back)
 	{	
-		NavigateBack(hMainScene);
+		NavigateBack(app.hMainScene);
 	}
 
 	bHandled = TRUE;
@@ -159,14 +156,14 @@ HRESULT CSSNESSettings::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
 	}
 	else if ( hObjPressed == m_back )
 	{
-		HRESULT hr = XuiSceneNavigateBack(hSSNESSettings, hMainScene, XUSER_INDEX_FOCUS);
+		HRESULT hr = XuiSceneNavigateBack(app.hSSNESSettings, app.hMainScene, XUSER_INDEX_FOCUS);
 		
 		if (FAILED(hr))
 		{
 			SSNES_ERR("Failed to load scene.\n");
 		}
 		
-		NavigateBack(hMainScene);
+		NavigateBack(app.hMainScene);
 	}
 	bHandled = TRUE;
 	return S_OK;
@@ -178,25 +175,25 @@ HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
 
 	if ( hObjPressed == m_filebrowser )
 	{
-		hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_filebrowser.xur", NULL, &hFileBrowser);
+		hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_filebrowser.xur", NULL, &app.hFileBrowser);
 		
 		if (FAILED(hr))
 		{
 			SSNES_ERR("Failed to load scene.\n");
 		}
 
-		NavigateForward(hFileBrowser);
+		NavigateForward(app.hFileBrowser);
 	}
 	else if ( hObjPressed == m_settings )
 	{
-		hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_settings.xur", NULL, &hSSNESSettings);
+		hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_settings.xur", NULL, &app.hSSNESSettings);
 		
 		if (FAILED(hr))
 		{
 			SSNES_ERR("Failed to load scene.\n");
 		}
 
-		NavigateForward(hSSNESSettings);
+		NavigateForward(app.hSSNESSettings);
 	}
 	else if ( hObjPressed == m_quit )
 	{
@@ -238,14 +235,14 @@ int menu_init (void)
 		return 1;
 	}
 
-	hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_main.xur", NULL, &hMainScene);
+	hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_main.xur", NULL, &app.hMainScene);
 	if (FAILED(hr))
 	{
 		SSNES_ERR("Failed to create scene 'ssnes_main.xur'.\n");
 		return 1;
 	}
 
-	XuiSceneNavigateFirst(app.GetRootObj(), hMainScene, XUSER_INDEX_FOCUS);
+	XuiSceneNavigateFirst(app.GetRootObj(), app.hMainScene, XUSER_INDEX_FOCUS);
 
 	return 0;
 }
