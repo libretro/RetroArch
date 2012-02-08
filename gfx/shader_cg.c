@@ -1199,3 +1199,32 @@ bool gl_cg_load_shader(unsigned index, const char *path)
    }
 }
 
+bool gl_cg_save_cgp(const char *path, const struct gl_cg_cgp_info *info)
+{
+   if (!info->shader[0] || !*info->shader[0])
+      return false;
+
+   FILE *file = fopen(path, "w");
+   if (!file)
+      return false;
+
+   unsigned shaders = info->shader[1] && *info->shader[1] ? 2 : 1;
+   fprintf(file, "shaders = %u\n", shaders);
+
+   fprintf(file, "shader0 = %s\n", info->shader[0]);
+   if (shaders == 2)
+      fprintf(file, "shader1 = %s\n", info->shader[1]);
+
+   fprintf(file, "filter_linear0 = %s\n", info->filter_linear[0] ? "true" : "false");
+
+   if (info->render_to_texture)
+   {
+      fprintf(file, "filter_linear1 = %s\n", info->filter_linear[1] ? "true" : "false");
+      fprintf(file, "scale_type0 = source\n");
+      fprintf(file, "scale0 = %.1f\n", info->fbo_scale);
+   }
+
+   fclose(file);
+   return true;
+}
+

@@ -54,4 +54,14 @@ void gl_cg_set_compiler_args(const char **argv);
 
 bool gl_cg_load_shader(unsigned index, const char *path);
 
+struct gl_cg_cgp_info
+{
+   const char *shader[2];
+   bool filter_linear[2];
+   bool render_to_texture;
+   float fbo_scale;
+};
+
+bool gl_cg_save_cgp(const char *path, const struct gl_cg_cgp_info *info);
+
 #endif
