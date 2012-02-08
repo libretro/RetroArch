@@ -53,28 +53,36 @@ HRESULT CSSNES::UnregisterXuiClasses (void)
 	return S_OK;
 }
 
+static void filebrowser_fetch_directory_entries(const char *path, CXuiList * romlist, 
+	CXuiTextElement * rompath_title)
+{
+	filebrowser_parse_directory(&browser, path, ssnes_console_get_rom_ext());
+
+	DWORD dwNum_rompath = MultiByteToWideChar(CP_ACP, 0, path, -1, NULL, 0);
+	wchar_t * rompath_name = new wchar_t[dwNum_rompath];
+	MultiByteToWideChar(CP_ACP, 0, path, -1, rompath_name, dwNum_rompath);
+	rompath_title->SetText(rompath_name);
+
+	romlist->DeleteItems(0, romlist->GetItemCount());
+	romlist->InsertItems(0, browser.file_count);
+	for(unsigned i = 0; i < browser.file_count; i++)
+	{
+		DWORD dwNum = MultiByteToWideChar(CP_ACP, 0, browser.cur[i].d_name, -1, NULL, 0);
+		wchar_t * entry_name = new wchar_t[dwNum];
+		MultiByteToWideChar(CP_ACP, 0, browser.cur[i].d_name, -1, entry_name, dwNum);
+		romlist->SetText(i, entry_name);
+		delete []entry_name;
+	}
+}
+
 HRESULT CSSNESFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
 	GetChildById(L"XuiRomList", &m_romlist);
 	GetChildById(L"XuiBackButton1", &m_back);
 	GetChildById(L"XuiTxtRomPath", &m_rompathtitle);
 
-	filebrowser_parse_directory(&browser, "game:\\roms\\", ssnes_console_get_rom_ext());
+	filebrowser_fetch_directory_entries(g_console.default_rom_startup_dir, &m_romlist, &m_rompathtitle);
 
-	DWORD dwNum_rompath = MultiByteToWideChar(CP_ACP, 0, "game:\\roms\\", -1, NULL, 0);
-	wchar_t * rompath_name = new wchar_t[dwNum_rompath];
-	MultiByteToWideChar(CP_ACP, 0, "game:\\roms\\", -1, rompath_name, dwNum_rompath);
-	m_rompathtitle.SetText(rompath_name);
-
-	m_romlist.InsertItems(0, browser.file_count);
-	for(unsigned i = 0; i < browser.file_count; i++)
-	{
-		DWORD dwNum = MultiByteToWideChar(CP_ACP, 0, browser.cur[i].d_name, -1, NULL, 0);
-		wchar_t * entry_name = new wchar_t[dwNum];
-		MultiByteToWideChar(CP_ACP, 0, browser.cur[i].d_name, -1, entry_name, dwNum);
-		m_romlist.SetText(i, entry_name);
-		delete []entry_name;
-	}
 	return S_OK;
 }
 
@@ -119,21 +127,22 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 		{
 			memset(strbuffer, 0, sizeof(strbuffer));
 			wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
-			sprintf(g_console.rom_path, "game:\\roms\\%s", strbuffer);
+			sprintf(g_console.rom_path, "%s%s", g_console.default_rom_startup_dir, strbuffer);
 			g_console.menu_enable = false;
 			g_console.mode_switch = MODE_EMULATION;
 			init_ssnes = 1;
 		}
+		else if(browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
+		{
+			memset(strbuffer, 0, sizeof(strbuffer));
+			wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
+			char strbuf[512];
+			snprintf(strbuf, sizeof(strbuf), "%s%s", g_console.default_rom_startup_dir, strbuffer);
+			filebrowser_fetch_directory_entries(strbuf, &m_romlist, &m_rompathtitle);
+		}
 	}
 	else if(hObjPressed == m_back)
-	{
-		HRESULT hr = XuiSceneNavigateBack(hSSNESSettings, hMainScene, XUSER_INDEX_FOCUS);
-		
-		if (FAILED(hr))
-		{
-			SSNES_ERR("Failed to load scene.\n");
-		}
-		
+	{	
 		NavigateBack(hMainScene);
 	}
 
