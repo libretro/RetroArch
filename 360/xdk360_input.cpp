@@ -29,7 +29,6 @@ static XINPUT_STATE state[4];
 static void xdk360_input_poll(void *data)
 {
    (void)data;
-   memset(&state, 0, sizeof(XINPUT_STATE));
 
    for (unsigned i = 0; i < 4; i++)
       XInputGetState(i, &state[i]);

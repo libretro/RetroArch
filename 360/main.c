@@ -131,6 +131,9 @@ static void set_default_settings(void)
 	g_console.block_config_read = true;
 	g_console.mode_switch = MODE_MENU;
 	strlcpy(g_console.default_rom_startup_dir, "game:\\roms\\", sizeof(g_console.default_rom_startup_dir));
+
+	//g_extern
+	g_extern.verbose = true;
 }
 
 static void get_environment_settings (void)
