@@ -124,6 +124,7 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 		{
 			memset(strbuffer, 0, sizeof(strbuffer));
 			wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
+			memset(g_console.rom_path, 0, sizeof(g_console.rom_path));
 			sprintf(g_console.rom_path, "%s%s", g_console.default_rom_startup_dir, strbuffer);
 			g_console.menu_enable = false;
 			g_console.mode_switch = MODE_EMULATION;

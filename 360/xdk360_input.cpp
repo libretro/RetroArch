@@ -20,7 +20,9 @@
 #include <stdlib.h>
 #include <xtl.h>
 #include "../driver.h"
+#include "../general.h"
 #include "../libsnes.hpp"
+#include "shared.h"
 
 static XINPUT_STATE state[4];
 
@@ -109,7 +111,17 @@ static void* xdk360_input_init(void)
 static bool xdk360_key_pressed(void *data, int key)
 {
    (void)data;
-   (void)key;
+
+   switch(key)
+   {
+	case SSNES_QUIT_KEY:
+		g_console.menu_enable = ((state[0].Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
+		   && (state[0].Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB));
+		g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
+		return g_console.menu_enable;
+	default:
+	   return false;
+   }
 
    return false;
 }

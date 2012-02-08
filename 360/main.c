@@ -209,6 +209,7 @@ int main(int argc, char *argv[])
 begin_loop:
 	if(g_console.mode_switch == MODE_EMULATION)
 	{
+		input_xdk360.poll(NULL);
 		while(ssnes_main_iterate());
 	}
 	else if(g_console.mode_switch == MODE_MENU)
@@ -220,12 +221,9 @@ begin_loop:
 			if(g_emulator_initialized)
 				ssnes_main_deinit();
 
-			struct ssnes_main_wrap args;
-			args.verbose = g_extern.verbose;
-			args.sram_path = NULL;
-			args.state_path = NULL;
-			args.config_path = NULL;
+			struct ssnes_main_wrap args = {0};
 
+			args.verbose = g_extern.verbose;
 			args.rom_path = g_console.rom_path;
 			
 			int init_ret = ssnes_main_init_wrap(&args);
