@@ -150,7 +150,7 @@ static void *sdl_input_init(void)
       if (g_settings.input.joypad_map[i] < 0)
          continue;
 
-      if (sdl->num_joysticks > g_settings.input.joypad_map[i])
+      if (sdl->num_joysticks > (unsigned)g_settings.input.joypad_map[i])
       {
          sdl->joysticks[i] = SDL_JoystickOpen(g_settings.input.joypad_map[i]);
          if (!sdl->joysticks[i])

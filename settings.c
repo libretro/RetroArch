@@ -216,8 +216,8 @@ void config_set_defaults(void)
       memcpy(g_settings.input.binds[i], snes_keybinds_rest, sizeof(snes_keybinds_rest));
 
    // Verify that binds are in proper order.
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
-      for (unsigned j = 0; j < SSNES_BIND_LIST_END; j++)
+   for (int i = 0; i < MAX_PLAYERS; i++)
+      for (int j = 0; j < SSNES_BIND_LIST_END; j++)
          if (g_settings.input.binds[i][j].valid)
             ssnes_assert(j == g_settings.input.binds[i][j].id);
 
@@ -465,6 +465,18 @@ bool config_load_file(const char *path)
 
    CONFIG_GET_BOOL(block_sram_overwrite, "block_sram_overwrite");
    CONFIG_GET_BOOL(savestate_auto_index, "savestate_auto_index");
+
+   if (config_get_string(conf, "environment_variables",
+            &g_extern.system.environment))
+   {
+      g_extern.system.environment_split = strdup(g_extern.system.environment);
+      if (!g_extern.system.environment_split)
+      {
+         SSNES_ERR("Failed to allocate environment variables. Will ignore them.\n");
+         free(g_extern.system.environment);
+         g_extern.system.environment = NULL;
+      }
+   }
 
    if (!g_extern.has_set_save_path && config_get_array(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {

@@ -335,6 +335,50 @@ static bool environment_cb(unsigned cmd, void *data)
          SSNES_LOG("Environ GET_CAN_REWIND: %s\n", g_settings.rewind_enable ? "true" : "false");
          break;
 
+      case SNES_ENVIRONMENT_GET_VARIABLE:
+      {
+         struct snes_variable *var = (struct snes_variable*)data;
+         if (var->key)
+         {
+            // Split string has '\0' delimiters so we have to find the position in original string,
+            // then pass the corresponding offset into the split string.
+            const char *key = strstr(g_extern.system.environment, var->key);
+            size_t key_len = strlen(var->key);
+            if (key && key[key_len] == '=')
+            {
+               ptrdiff_t offset = key - g_extern.system.environment;
+               var->value = &g_extern.system.environment_split[offset + key_len + 1];
+            }
+            else
+               var->value = NULL;
+         }
+         else
+            var->value = g_extern.system.environment;
+
+         SSNES_LOG("Environ GET_VARIABLE: %s=%s\n",
+               var->key ? var->key : "null",
+               var->value ? var->value : "null");
+
+         break;
+      }
+
+      case SNES_ENVIRONMENT_SET_VARIABLES:
+      {
+         SSNES_LOG("Environ SET_VARIABLES:\n");
+         SSNES_LOG("=======================\n");
+         const struct snes_variable *vars = (const struct snes_variable*)data;
+         while (vars->key)
+         {
+            SSNES_LOG("\t%s :: %s\n",
+                  vars->key,
+                  vars->value ? vars->value : "N/A");
+
+            vars++;
+         }
+         SSNES_LOG("=======================\n");
+         break;
+      }
+
       default:
          SSNES_LOG("Environ UNSUPPORTED (#%u)!\n", cmd);
          return false;
@@ -377,5 +421,9 @@ static void set_environment_defaults(void)
    g_extern.system.geom.base_height = 224;
    g_extern.system.geom.max_width = 512;
    g_extern.system.geom.max_height = 512;
+
+   // Split up environment variables beforehand.
+   if (g_extern.system.environment_split && strtok(g_extern.system.environment_split, ";"))
+      while (strtok(NULL, ";"));
 }
 
