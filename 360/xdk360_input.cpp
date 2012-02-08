@@ -26,6 +26,8 @@
 
 static XINPUT_STATE state[4];
 
+const int DEADZONE = 16000;
+
 static void xdk360_input_poll(void *data)
 {
    (void)data;
@@ -110,9 +112,22 @@ static void* xdk360_input_init(void)
 static bool xdk360_key_pressed(void *data, int key)
 {
    (void)data;
+   XInputGetState(0, &state[0]);
 
    switch(key)
    {
+   case SSNES_FAST_FORWARD_HOLD_KEY:
+	   return ((state[0].Gamepad.sThumbRY < -DEADZONE) && !(state[0].Gamepad.bRightTrigger > 128));
+   case SSNES_LOAD_STATE_KEY:
+	   return ((state[0].Gamepad.sThumbRY > DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
+   case SSNES_SAVE_STATE_KEY:
+	   return ((state[0].Gamepad.sThumbRY < -DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
+   case SSNES_STATE_SLOT_PLUS:
+	   return ((state[0].Gamepad.sThumbRX > DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
+   case SSNES_STATE_SLOT_MINUS:
+	   return ((state[0].Gamepad.sThumbRX < -DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
+   case SSNES_REWIND:
+	   return ((state[0].Gamepad.sThumbRY > DEADZONE) && !(state[0].Gamepad.bRightTrigger > 128));
 	case SSNES_QUIT_KEY:
 		g_console.menu_enable = ((state[0].Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
 		   && (state[0].Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB));
