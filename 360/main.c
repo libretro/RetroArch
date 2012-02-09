@@ -198,9 +198,11 @@ static void save_settings (void)
 
 	// g_settings
 	config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
+	config_set_bool(conf, "video_vsync", g_settings.video.vsync);
 
 	// g_console
 	config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
+	config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
 
 	// g_extern
 	config_set_int(conf, "state_slot", g_extern.state_slot);
