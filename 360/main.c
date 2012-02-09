@@ -300,7 +300,7 @@ begin_loop:
 			struct ssnes_main_wrap args = {0};
 
 			args.verbose = g_extern.verbose;
-			args.config_path = 
+			args.config_path = SYS_CONFIG_FILE;
 			args.rom_path = g_console.rom_path;
 			
 			int init_ret = ssnes_main_init_wrap(&args);
