@@ -24,5 +24,3 @@ enum
 	MODE_MENU,
 	MODE_EXIT
 };
-
-extern bool init_ssnes;

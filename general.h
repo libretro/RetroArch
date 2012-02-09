@@ -173,6 +173,7 @@ struct console_settings
    bool block_config_read;
    bool default_sram_dir_enable;
    bool default_savestate_dir_enable;
+   bool initialize_ssnes_enable;
    bool ingame_menu_enable;
    bool menu_enable;
    bool overscan_enable;
@@ -182,6 +183,7 @@ struct console_settings
    bool triple_buffering_enable;
    float overscan_amount;
    uint32_t aspect_ratio_index;
+   uint32_t emulator_initialized; 
    uint32_t screen_orientation;
    uint32_t current_resolution_index;
    uint32_t current_resolution_id;

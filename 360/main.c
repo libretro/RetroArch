@@ -52,9 +52,7 @@ char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 
 extern "C" int __stdcall ObCreateSymbolicLink( STRING*, STRING*);
 
-bool init_ssnes = false;
 int Mounted[20];
-uint32_t g_emulator_initialized = 0;
 
 int ssnes_main(int argc, char *argv[]);
 
@@ -131,13 +129,19 @@ static void set_default_settings (void)
 {
 	//g_settings
 	g_settings.rewind_enable = false;
+	g_settings.video.vsync = true;
 
 	//g_console
 	g_console.block_config_read = true;
+	g_console.throttle_enable = true;
+	g_console.initialize_ssnes_enable = false;
+	g_console.emulator_initialized = 0;
 	g_console.mode_switch = MODE_MENU;
 	strlcpy(g_console.default_rom_startup_dir, "game:\\roms\\", sizeof(g_console.default_rom_startup_dir));
 
 	//g_extern
+	g_extern.state_slot = 0;
+	g_extern.audio_data.mute = 0;
 	g_extern.verbose = true;
 }
 
@@ -167,8 +171,10 @@ static void init_settings (void)
 
 	// g_settings
 	CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
+	CONFIG_GET_BOOL(video.vsync, "video_vsync");
 
 	// g_console
+	CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
 	CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
 
 	// g_extern
@@ -292,9 +298,9 @@ begin_loop:
 	{
 		menu_loop();
 
-		if(init_ssnes)
+		if(g_console.initialize_ssnes_enable)
 		{
-			if(g_emulator_initialized)
+			if(g_console.emulator_initialized)
 				ssnes_main_deinit();
 
 			struct ssnes_main_wrap args = {0};
@@ -304,8 +310,8 @@ begin_loop:
 			args.rom_path = g_console.rom_path;
 			
 			int init_ret = ssnes_main_init_wrap(&args);
-			g_emulator_initialized = 1;
-			init_ssnes = 0;
+			g_console.emulator_initialized = 1;
+			g_console.initialize_ssnes_enable = 0;
 		}
 	}
 	else

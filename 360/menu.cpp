@@ -130,7 +130,7 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 			sprintf(g_console.rom_path, "%s%s", g_console.default_rom_startup_dir, strbuffer);
 			g_console.menu_enable = false;
 			g_console.mode_switch = MODE_EMULATION;
-			init_ssnes = 1;
+			g_console.initialize_ssnes_enable = 1;
 		}
 		else if(browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
 		{
@@ -202,7 +202,7 @@ HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
 	{
 		g_console.menu_enable = false;
 		g_console.mode_switch = MODE_EXIT;
-		init_ssnes = 0;
+		g_console.initialize_ssnes_enable = false;
 	}
 
 	bHandled = TRUE;
