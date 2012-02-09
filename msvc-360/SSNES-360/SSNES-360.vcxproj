@@ -50,6 +50,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -244,7 +245,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;LTCG;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.4.1";_CRT_SECURE_NO_WARNINGS;SSNES_CONSOLE;main=ssnes_main;HAVE_CONFIGFILE</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;LTCG;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.4.1";_CRT_SECURE_NO_WARNINGS;SSNES_CONSOLE;main=ssnes_main;HAVE_CONFIGFILE;HAVE_NETPLAY;HAVE_SOCKET_LEGACY</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -252,7 +253,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <ProgramDatabaseFile>$(OutDir)$(ProjectName).pdb</ProgramDatabaseFile>
       <SetChecksum>true</SetChecksum>
-      <AdditionalDependencies>xapilib.lib;d3d9ltcg.lib;d3dx9.lib;xgraphics.lib;xboxkrnl.lib;xnet.lib;xaudio2.lib;xact3ltcg.lib;x3daudioltcg.lib;xmcoreltcg.lib;vcomp.lib;$(TargetDir)libsnes.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xapilib.lib;d3d9ltcg.lib;d3dx9.lib;xgraphics.lib;xboxkrnl.lib;xnet.lib;xaudio2.lib;xact3ltcg.lib;x3daudioltcg.lib;xmcoreltcg.lib;vcomp.lib;xuirun.lib;xuirender.lib;$(TargetDir)libsnes.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Deploy>
       <ForceCopy>true</ForceCopy>
@@ -276,6 +277,7 @@
     <ClCompile Include="..\..\cheats.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\conf\config_file.c" />
     <ClCompile Include="..\..\console\main_wrap.c" />
