@@ -88,6 +88,8 @@ HRESULT CSSNESSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	GetChildById(L"XuiBtnRewind", &m_rewind);
 	GetChildById(L"XuiCheckbox1", &m_rewind_cb);
 	GetChildById(L"XuiBackButton1", &m_back);
+
+	m_rewind_cb.SetCheck(g_settings.rewind_enable);
 	return S_OK;
 }
 

@@ -23,7 +23,10 @@
 #include <xbdm.h>
 #include "menu.h"
 #include "xdk360_video.h"
+
 #include "../console/main_wrap.h"
+#include "../conf/config_file.h"
+#include "../conf/config_file_macros.h"
 #include "../general.h"
 #include "shared.h"
 
@@ -44,6 +47,8 @@ typedef struct _STRING {
 	USHORT MaximumLength;
 	PCHAR Buffer;
 } STRING;
+
+char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 
 extern "C" int __stdcall ObCreateSymbolicLink( STRING*, STRING*);
 
@@ -122,7 +127,7 @@ static int Mount( int Device, char* MountPoint )
 	return DriveMounted(MountPoint);
 }
 
-static void set_default_settings(void)
+static void set_default_settings (void)
 {
 	//g_settings
 	g_settings.rewind_enable = false;
@@ -134,6 +139,71 @@ static void set_default_settings(void)
 
 	//g_extern
 	g_extern.verbose = true;
+}
+
+static bool file_exists(const char * filename)
+{
+	DWORD file_attr;
+
+	file_attr = GetFileAttributes(filename);
+	
+	if (0xFFFFFFFF == file_attr)
+		return false;
+	
+	return true;
+}
+
+static void init_settings (void)
+{
+	if(!file_exists(SYS_CONFIG_FILE))
+	{
+		SSNES_ERR("Config file \"%s\" desn't exist! Creating...\n", "game:\\ssnes.cfg");
+		FILE * f;
+		f = fopen(SYS_CONFIG_FILE, "w");
+		fclose(f);
+	}
+
+	config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
+
+	// g_settings
+	CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
+
+	// g_console
+	CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
+
+	// g_extern
+	CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
+	CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
+}
+
+static void save_settings (void)
+{
+	if(!file_exists(SYS_CONFIG_FILE))
+	{
+		FILE * f;
+		f = fopen(SYS_CONFIG_FILE, "w");
+		fclose(f);
+	}
+
+	config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
+
+	if(conf == NULL)
+			conf = config_file_new(NULL);
+
+	// g_settings
+	config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
+
+	// g_console
+	config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
+
+	// g_extern
+	config_set_int(conf, "state_slot", g_extern.state_slot);
+	config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
+
+	if (!config_file_write(conf, SYS_CONFIG_FILE))
+			SSNES_ERR("Failed to write config file to \"%s\"! Check permissions!\n", SYS_CONFIG_FILE);
+
+	free(conf);
 }
 
 static void get_environment_settings (void)
@@ -195,6 +265,8 @@ static void get_environment_settings (void)
 
 		}
 	}
+
+	strlcpy(SYS_CONFIG_FILE, "game:\\ssnes.cfg", sizeof(SYS_CONFIG_FILE));
 }
 
 int main(int argc, char *argv[])
@@ -205,6 +277,7 @@ int main(int argc, char *argv[])
 	config_set_defaults();
 
 	set_default_settings();
+	init_settings();
 
 	xdk360_video_init();
 	menu_init();
@@ -227,6 +300,7 @@ begin_loop:
 			struct ssnes_main_wrap args = {0};
 
 			args.verbose = g_extern.verbose;
+			args.config_path = 
 			args.rom_path = g_console.rom_path;
 			
 			int init_ret = ssnes_main_init_wrap(&args);
@@ -240,6 +314,8 @@ begin_loop:
 	goto begin_loop;
 
 begin_shutdown:
+	if(file_exists(SYS_CONFIG_FILE))
+		save_settings();
 	xdk360_video_deinit();
 }
 
