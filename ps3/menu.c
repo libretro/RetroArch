@@ -279,7 +279,7 @@ static void browser_update(filebrowser_t * b)
 		if (CTRL_L3(state) && CTRL_R3(state))
 		{
 			/* if a rom is loaded then resume it */
-			if (g_emulator_initialized)
+			if (g_console.emulator_initialized)
 			{
 				g_console.menu_enable = false;
 				g_console.mode_switch = MODE_EMULATION;
@@ -1506,7 +1506,7 @@ static void select_setting(menu * menu_obj)
 
 		if (CTRL_L3(state) && CTRL_R3(state))
 		{
-			if (g_emulator_initialized)
+			if (g_console.emulator_initialized)
 			{
 				g_console.menu_enable = false;
 				g_console.mode_switch = MODE_EMULATION;
@@ -1589,7 +1589,7 @@ static void select_rom(void)
 
 			g_console.menu_enable = false;
 			snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
-			init_ssnes = 1;
+			g_console.initialize_ssnes_enable = 1;
 			g_console.mode_switch = MODE_EMULATION;
 
 			old_state = state;

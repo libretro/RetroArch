@@ -45,11 +45,8 @@
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 
-uint32_t g_emulator_initialized = 0;
-
 char special_action_msg[256]; /* message which should be overlaid on top of the screen*/
 uint32_t special_action_msg_expired; /* time at which the message no longer needs to be overlaid onscreen*/
-bool init_ssnes = false;
 uint64_t ingame_menu_item = 0;
 
 char contentInfoPath[MAX_PATH_LENGTH];
@@ -157,11 +154,14 @@ static void set_default_settings(void)
 
 	// g_console
 	g_console.block_config_read = true;
+	g_console.emulator_initialized = 0;
 	g_console.screenshots_enable = false;
 	g_console.throttle_enable = true;
+	g_console.initialize_ssnes_enable = false;
 	g_console.triple_buffering_enable = true;
 	g_console.default_savestate_dir_enable = false;
 	g_console.default_sram_dir_enable = false;
+	g_console.mode_switch = MODE_MENU;
 	g_console.screen_orientation = ORIENTATION_NORMAL;
 	g_console.current_resolution_id = CELL_VIDEO_OUT_RESOLUTION_UNDEFINED;
 	strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
@@ -286,7 +286,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 			g_quitting = true;
 			g_console.ingame_menu_enable = false;
 			g_console.mode_switch = MODE_EXIT;
-			if(g_emulator_initialized)
+			if(g_console.emulator_initialized)
 				ssnes_main_deinit();
 			break;
 	}
@@ -810,9 +810,9 @@ begin_loop:
 	else if(g_console.mode_switch == MODE_MENU)
 	{
 		menu_loop();
-		if(init_ssnes)
+		if(g_console.initialize_ssnes_enable)
 		{
-			if(g_emulator_initialized)
+			if(g_console.emulator_initialized)
 				ssnes_main_deinit();
 
 			struct ssnes_main_wrap args = {
@@ -824,8 +824,8 @@ begin_loop:
 			};
 
 			int init_ret = ssnes_main_init_wrap(&args);
-			g_emulator_initialized = 1;
-			init_ssnes = 0;
+			g_console.emulator_initialized = 1;
+			g_console.initialize_ssnes_enable = 0;
 		}
 	}
 #ifdef MULTIMAN_SUPPORT
