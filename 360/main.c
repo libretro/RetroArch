@@ -138,6 +138,7 @@ static void set_default_settings (void)
 	g_console.emulator_initialized = 0;
 	g_console.mode_switch = MODE_MENU;
 	strlcpy(g_console.default_rom_startup_dir, "game:\\roms\\", sizeof(g_console.default_rom_startup_dir));
+	g_console.filter_type = D3DTEXF_LINEAR;
 
 	//g_extern
 	g_extern.state_slot = 0;
@@ -176,6 +177,7 @@ static void init_settings (void)
 	// g_console
 	CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
 	CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
+	CONFIG_GET_INT_CONSOLE(filter_type, "filter_type");
 
 	// g_extern
 	CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
@@ -203,6 +205,7 @@ static void save_settings (void)
 	// g_console
 	config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
 	config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
+	config_set_int(conf, "filter_type", g_console.filter_type);
 
 	// g_extern
 	config_set_int(conf, "state_slot", g_extern.state_slot);

@@ -254,8 +254,8 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    }
 
    vid->xdk360_render_device->SetTexture(0, vid->lpTexture);
-   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_console.filter_type);
+   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_console.filter_type);
    vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU,  D3DTADDRESS_BORDER);
    vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV,  D3DTADDRESS_BORDER);
 
@@ -302,6 +302,7 @@ void xdk360_video_init(void)
 	video_info.force_aspect = false;
 	video_info.smooth = true;
 	video_info.input_scale = 2;
+
 	g_d3d = xdk360_gfx_init(&video_info, NULL, NULL);
 }
 
