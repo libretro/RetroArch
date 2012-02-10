@@ -108,10 +108,17 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
       return NULL;
    }
 
-   memset(&vid->d3dpp, 0, sizeof(vid->d3dpp));
+   // Get video settings
+   XVIDEO_MODE video_mode;
 
-   vid->d3dpp.BackBufferWidth         = 1280;
-   vid->d3dpp.BackBufferHeight        = 720;
+   memset(&video_mode, 0, sizeof(video_mode));
+
+   XGetVideoMode(&video_mode);
+
+   memset(&vid->d3dpp, 0, sizeof(vid->d3dpp));
+   
+   vid->d3dpp.BackBufferWidth		= video_mode.fIsHiDef ? 1280 : 640;
+   vid->d3dpp.BackBufferHeight      = video_mode.fIsHiDef ? 720 : 480;
    vid->d3dpp.BackBufferFormat        = (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8);
    vid->d3dpp.FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
    vid->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
@@ -196,8 +203,8 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    vid->xdk360_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
 
    D3DVIEWPORT9 vp = {0};
-   vp.Width  = 1280;
-   vp.Height = 720;
+   vp.Width  = video_mode.fIsHiDef ? 1280 : 640;
+   vp.Height = video_mode.fIsHiDef ? 720 : 640;
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
    vid->xdk360_render_device->SetViewport(&vp);
