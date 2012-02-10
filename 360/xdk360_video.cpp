@@ -204,7 +204,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
 
    D3DVIEWPORT9 vp = {0};
    vp.Width  = video_mode.fIsHiDef ? 1280 : 640;
-   vp.Height = video_mode.fIsHiDef ? 720 : 640;
+   vp.Height = video_mode.fIsHiDef ? 720 : 480;
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
    vid->xdk360_render_device->SetViewport(&vp);
