@@ -69,7 +69,7 @@ ssize_t read_file(const char *path, void **buf)
    rom_buf = malloc(len + 1);
    if (!rom_buf)
    {
-      SSNES_ERR("Couldn't allocate memory!\n");
+      SSNES_ERR("Couldn't allocate memory.\n");
       goto error;
    }
 
@@ -197,7 +197,7 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
          ups_error_t err = ups_apply_patch((const uint8_t*)patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
          if (err == UPS_SUCCESS)
          {
-            SSNES_LOG("ROM patched successfully (UPS)!\n");
+            SSNES_LOG("ROM patched successfully (UPS).\n");
             success = true;
          }
          else
@@ -211,7 +211,7 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
          bps_error_t err = bps_apply_patch((const uint8_t*)patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
          if (err == BPS_SUCCESS)
          {
-            SSNES_LOG("ROM patched successfully (BPS)!\n");
+            SSNES_LOG("ROM patched successfully (BPS).\n");
             success = true;
          }
          else
@@ -261,7 +261,7 @@ static ssize_t read_rom_file(FILE* file, void** buf)
       uint8_t *rom_buf = (uint8_t*)malloc(buf_size);
       if (rom_buf == NULL)
       {
-         SSNES_ERR("Couldn't allocate memory!\n");
+         SSNES_ERR("Couldn't allocate memory.\n");
          return -1;
       }
 
@@ -277,7 +277,7 @@ static ssize_t read_rom_file(FILE* file, void** buf)
          rom_buf = (uint8_t*)realloc(rom_buf, buf_size * 2);
          if (rom_buf == NULL)
          {
-            SSNES_ERR("Couldn't allocate memory!\n");
+            SSNES_ERR("Couldn't allocate memory.\n");
             return -1;
          }
 
@@ -296,7 +296,7 @@ static ssize_t read_rom_file(FILE* file, void** buf)
       void *rom_buf = malloc(ret);
       if (rom_buf == NULL)
       {
-         SSNES_ERR("Couldn't allocate memory!\n");
+         SSNES_ERR("Couldn't allocate memory.\n");
          return -1;
       }
 
@@ -395,7 +395,7 @@ static void dump_to_file_desperate(const void *data, size_t size, int type)
    strlcat(path, ramtype2str(type), sizeof(path));
 
    if (dump_to_file(path, data, size))
-      SSNES_WARN("Succeeded in saving RAM data to \"%s\". Phew! :D\n", path);
+      SSNES_WARN("Succeeded in saving RAM data to \"%s\". Phew ... :D\n", path);
    else
       goto error;
 
@@ -452,7 +452,7 @@ bool load_state(const char *path)
 
    if (g_settings.block_sram_overwrite)
    {
-      SSNES_LOG("Blocking SRAM overwrite!\n");
+      SSNES_LOG("Blocking SRAM overwrite.\n");
       switch (g_extern.game_type)
       {
          case SSNES_CART_NORMAL:
@@ -543,7 +543,7 @@ void save_ram_file(const char *path, int type)
    {
       if (!dump_to_file(path, data, size))
       {
-         SSNES_ERR("Failed to save SNES RAM!\n");
+         SSNES_ERR("Failed to save SNES RAM.\n");
          SSNES_WARN("Attempting to recover ...\n");
          dump_to_file_desperate(data, size, type);
       }
@@ -774,7 +774,7 @@ static bool load_normal_rom(void)
 
    if (!psnes_load_cartridge_normal(xml_buf, (const uint8_t*)rom_buf, rom_len))
    {
-      SSNES_ERR("ROM file is not valid!\n");
+      SSNES_ERR("ROM file is not valid.\n");
       free(rom_buf);
       free(xml_buf);
       return false;
@@ -815,7 +815,7 @@ bool init_rom_file(enum ssnes_game_type type)
          break;
          
       default:
-         SSNES_ERR("Invalid ROM type!\n");
+         SSNES_ERR("Invalid ROM type.\n");
          return false;
    }
 

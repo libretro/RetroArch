@@ -201,7 +201,7 @@ static void cheat_manager_save_config(cheat_manager_t *handle, const char *path,
 
    if (!conf)
    {
-      SSNES_ERR("Cannot save XML cheat settings!\n");
+      SSNES_ERR("Cannot save XML cheat settings.\n");
       return;
    }
 
@@ -223,7 +223,7 @@ static void cheat_manager_save_config(cheat_manager_t *handle, const char *path,
    config_set_string(conf, sha256, conf_str);
 
    if (!config_file_write(conf, path))
-      SSNES_ERR("Failed to write XML cheat settings to \"%s\"! Check permissions!\n", path);
+      SSNES_ERR("Failed to write XML cheat settings to \"%s\". Check permissions.\n", path);
 
    config_file_free(conf);
 

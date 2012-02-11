@@ -199,9 +199,9 @@ void init_libsnes_sym(void)
    function_t sym = dylib_proc(NULL, "snes_init");
    if (sym)
    {
-      SSNES_ERR("Serious problem! SSNES wants to load libsnes dyamically, but it is already linked!\n"); 
+      SSNES_ERR("Serious problem. SSNES wants to load libsnes dyamically, but it is already linked.\n"); 
       SSNES_ERR("This could happen if other modules SSNES depends on link against libsnes directly.\n");
-      SSNES_ERR("Proceeding could cause a crash! Aborting ...\n");
+      SSNES_ERR("Proceeding could cause a crash. Aborting ...\n");
       ssnes_fail(1, "init_libsnes_sym()");
    }
 
@@ -380,7 +380,7 @@ static bool environment_cb(unsigned cmd, void *data)
       }
 
       default:
-         SSNES_LOG("Environ UNSUPPORTED (#%u)!\n", cmd);
+         SSNES_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;
    }
 

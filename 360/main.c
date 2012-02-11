@@ -162,7 +162,7 @@ static void init_settings (void)
 {
 	if(!file_exists(SYS_CONFIG_FILE))
 	{
-		SSNES_ERR("Config file \"%s\" desn't exist! Creating...\n", "game:\\ssnes.cfg");
+		SSNES_ERR("Config file \"%s\" desn't exist. Creating...\n", "game:\\ssnes.cfg");
 		FILE * f;
 		f = fopen(SYS_CONFIG_FILE, "w");
 		fclose(f);
@@ -212,7 +212,7 @@ static void save_settings (void)
 	config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
 
 	if (!config_file_write(conf, SYS_CONFIG_FILE))
-			SSNES_ERR("Failed to write config file to \"%s\"! Check permissions!\n", SYS_CONFIG_FILE);
+			SSNES_ERR("Failed to write config file to \"%s\". Check permissions.\n", SYS_CONFIG_FILE);
 
 	free(conf);
 }

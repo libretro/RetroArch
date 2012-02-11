@@ -254,7 +254,7 @@ static void add_sub_conf(config_file_t *conf, char *line)
       return;
    }
 
-   // Pilfer internal list! :D
+   // Pilfer internal list. :D
    add_child_list(conf, sub_conf);
    config_file_free(sub_conf);
    free(path);
@@ -278,7 +278,7 @@ static bool parse_line(config_file_t *conf, struct entry_list *list, char *line)
       }
    }
    else if (conf->include_depth >= MAX_INCLUDE_DEPTH)
-      fprintf(stderr, "!!! #include depth exceeded for config! Might be a cycle.\n");
+      fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
 
    // Skips to first character.
    while (isspace(*line))

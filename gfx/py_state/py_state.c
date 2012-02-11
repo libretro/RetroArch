@@ -249,7 +249,7 @@ py_state_t *py_state_new(const char *script, unsigned is_file, const char *pycla
    SSNES_LOG("Initializing Python runtime ...\n");
    PyImport_AppendInittab("snes", &PyInit_SNES);
    Py_Initialize();
-   SSNES_LOG("Initialized Python runtime!\n");
+   SSNES_LOG("Initialized Python runtime.\n");
 
    py_state_t *handle = (py_state_t*)calloc(1, sizeof(*handle));
    PyObject *hook = NULL;
@@ -341,7 +341,7 @@ float py_state_get(py_state_t *handle, const char *id,
    if (!ret)
    {
       if (!handle->warned_ret)
-         SSNES_WARN("Didn't get return value from script! Bug?\n");
+         SSNES_WARN("Didn't get return value from script. Bug?\n");
       handle->warned_ret = true;
       return 0.0f;
    }

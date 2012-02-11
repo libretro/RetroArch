@@ -221,7 +221,7 @@ static void init_dsp_plugin(void)
 
    if (g_extern.audio_data.dsp_plugin->api_version != SSNES_DSP_API_VERSION)
    {
-      SSNES_ERR("DSP plugin API mismatch! SSNES: %d, Plugin: %d\n", SSNES_DSP_API_VERSION, g_extern.audio_data.dsp_plugin->api_version);
+      SSNES_ERR("DSP plugin API mismatch. SSNES: %d, Plugin: %d\n", SSNES_DSP_API_VERSION, g_extern.audio_data.dsp_plugin->api_version);
       goto error;
    }
 

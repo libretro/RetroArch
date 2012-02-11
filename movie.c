@@ -144,20 +144,20 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
    uint32_t header[4] = {0};
    if (fread(header, sizeof(uint32_t), 4, handle->file) != 4)
    {
-      SSNES_ERR("Couldn't read movie header!\n");
+      SSNES_ERR("Couldn't read movie header.\n");
       return false;
    }
 
    // Compatibility with old implementation that used incorrect documentation.
    if (swap_if_little32(header[MAGIC_INDEX]) != BSV_MAGIC && swap_if_big32(header[MAGIC_INDEX]) != BSV_MAGIC)
    {
-      SSNES_ERR("Movie file is not a valid BSV1 file!\n");
+      SSNES_ERR("Movie file is not a valid BSV1 file.\n");
       return false;
    }
 
    if (swap_if_big32(header[CRC_INDEX]) != g_extern.cart_crc)
    {
-      SSNES_ERR("Cart CRC32s differ! Cannot play back!\n");
+      SSNES_ERR("Cart CRC32s differ. Cannot play back.\n");
       return false;
    }
 
@@ -360,7 +360,7 @@ bool bsv_parse_header(const uint32_t *header, uint32_t magic)
    uint32_t in_bsv = swap_if_little32(header[MAGIC_INDEX]);
    if (in_bsv != BSV_MAGIC)
    {
-      SSNES_ERR("BSV magic mismatch, got 0x%x, expected 0x%x!\n",
+      SSNES_ERR("BSV magic mismatch, got 0x%x, expected 0x%x.\n",
             in_bsv, BSV_MAGIC);
       return false;
    }
@@ -368,21 +368,21 @@ bool bsv_parse_header(const uint32_t *header, uint32_t magic)
    uint32_t in_magic = swap_if_big32(header[SERIALIZER_INDEX]);
    if (in_magic != magic)
    {
-      SSNES_ERR("Magic mismatch, got 0x%x, expected 0x%x!\n", in_magic, magic);
+      SSNES_ERR("Magic mismatch, got 0x%x, expected 0x%x.\n", in_magic, magic);
       return false;
    }
 
    uint32_t in_crc = swap_if_big32(header[CRC_INDEX]);
    if (in_crc != g_extern.cart_crc)
    {
-      SSNES_ERR("CRC32 mismatch, got 0x%x, expected 0x%x!\n", in_crc, g_extern.cart_crc);
+      SSNES_ERR("CRC32 mismatch, got 0x%x, expected 0x%x.\n", in_crc, g_extern.cart_crc);
       return false;
    }
 
    uint32_t in_state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
    if (in_state_size != psnes_serialize_size())
    {
-      SSNES_ERR("Serialization size mismatch, got 0x%x, expected 0x%x!\n",
+      SSNES_ERR("Serialization size mismatch, got 0x%x, expected 0x%x.\n",
             in_state_size, psnes_serialize_size());
       return false;
    }

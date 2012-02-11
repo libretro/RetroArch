@@ -26,7 +26,7 @@
 
 // SDL 1.2 is portable, sure, but you still need some platform specific workarounds ;)
 // Hopefully SDL 1.3 will solve this more cleanly :D
-// Welcome to #ifdef HELL! :D
+// Welcome to #ifdef HELL. :D
 //
 
 #if SDL_MODERN
@@ -73,7 +73,7 @@ void sdlwrap_set_swap_interval(unsigned interval, bool inited)
    }
 #endif
    if (!success)
-      SSNES_WARN("Failed to set swap interval!\n");
+      SSNES_WARN("Failed to set swap interval.\n");
 }
 
 bool sdlwrap_init(void)
@@ -87,7 +87,7 @@ bool sdlwrap_init(void)
    bool ret = SDL_Init(SDL_INIT_VIDEO) == 0;
 #endif
    if (!ret)
-      SSNES_ERR("Failed to init SDL video!\n");
+      SSNES_ERR("Failed to init SDL video.\n");
    return ret;
 }
 
@@ -147,7 +147,7 @@ bool sdlwrap_set_video_mode(
       width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : resizable));
    if (!g_window)
    {
-      SSNES_ERR("Failed to create SDL window!\n");
+      SSNES_ERR("Failed to create SDL window.\n");
       return false;
    }
 
@@ -156,7 +156,7 @@ bool sdlwrap_set_video_mode(
    if (!SDL_SetVideoMode(width, height, bits,
          SDL_OPENGL | (fullscreen ? SDL_FULLSCREEN : resizable)))
    {
-      SSNES_ERR("Failed to create SDL window!\n");
+      SSNES_ERR("Failed to create SDL window.\n");
       return false;
    }
 #endif
@@ -168,7 +168,7 @@ bool sdlwrap_set_video_mode(
    SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &attr);
    if (attr <= 0 && g_interval)
    {
-      SSNES_WARN("SDL failed to setup VSync, attempting to recover using native calls!\n");
+      SSNES_WARN("SDL failed to setup VSync, attempting to recover using native calls.\n");
       sdlwrap_set_swap_interval(g_interval, true);
    }
 #endif
@@ -178,7 +178,7 @@ bool sdlwrap_set_video_mode(
    attr = 0;
    SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &attr);
    if (attr <= 0)
-      SSNES_WARN("GL double buffer has not been enabled!\n");
+      SSNES_WARN("GL double buffer has not been enabled.\n");
 
    return true;
 }
