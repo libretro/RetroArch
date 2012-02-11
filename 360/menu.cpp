@@ -299,9 +299,21 @@ void menu_loop(void)
 
 	do
 	{
+		g_frame_count++;
 		vid->xdk360_render_device->Clear(0, NULL,
 			D3DCLEAR_TARGET | D3DCLEAR_STENCIL | D3DCLEAR_ZBUFFER,
 			D3DCOLOR_ARGB(255, 32, 32, 64), 1.0, 0);
+
+		XINPUT_STATE state;
+		XInputGetState(0, &state);
+
+		g_console.menu_enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
+		&& (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_console.emulator_initialized)
+		&& IS_TIMER_EXPIRED());
+		g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
+
+		if(g_console.mode_switch == MODE_EMULATION)
+			SET_TIMER_EXPIRATION(60);
 
 		app.RunFrame();			/* Update XUI */
 		hr = app.Render();		/* Render XUI */

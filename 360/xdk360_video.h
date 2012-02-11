@@ -32,9 +32,13 @@ typedef struct xdk360_video
    D3DPRESENT_PARAMETERS d3dpp;
 } xdk360_video_t;
 
+#define IS_TIMER_EXPIRED() 	(!(g_frame_count < g_console.timer_expiration_frame_count))
+#define SET_TIMER_EXPIRATION(value) g_console.timer_expiration_frame_count = g_frame_count + value;
+
 void xdk360_video_init(void);
 void xdk360_video_deinit(void);
 
+extern unsigned g_frame_count;
 extern void *g_d3d;
 
 #endif

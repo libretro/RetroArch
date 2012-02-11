@@ -22,6 +22,7 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../libsnes.hpp"
+#include "xdk360_video.h"
 #include "shared.h"
 
 static XINPUT_STATE state[4];
@@ -130,8 +131,14 @@ static bool xdk360_key_pressed(void *data, int key)
 	   return ((state[0].Gamepad.sThumbRY > DEADZONE) && !(state[0].Gamepad.bRightTrigger > 128));
 	case SSNES_QUIT_KEY:
 		g_console.menu_enable = ((state[0].Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
-		   && (state[0].Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB));
-		g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
+		   && (state[0].Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && IS_TIMER_EXPIRED());
+		if(g_console.menu_enable)
+		{
+			g_console.mode_switch = MODE_MENU;
+			SET_TIMER_EXPIRATION(60);
+		}
+		else
+			g_console.mode_switch = MODE_EMULATION;
 		return g_console.menu_enable;
 	default:
 	   return false;

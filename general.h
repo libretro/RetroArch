@@ -192,6 +192,7 @@ struct console_settings
    uint32_t mode_switch;
    uint32_t *supported_resolutions;
    uint32_t supported_resolutions_count;
+   uint32_t timer_expiration_frame_count;
 #ifdef _XBOX
    DWORD volume_device_type;
 #endif
