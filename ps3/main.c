@@ -46,7 +46,6 @@
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 
 char special_action_msg[256]; /* message which should be overlaid on top of the screen*/
-uint32_t special_action_msg_expired; /* time at which the message no longer needs to be overlaid onscreen*/
 uint64_t ingame_menu_item = 0;
 
 char contentInfoPath[MAX_PATH_LENGTH];
@@ -71,15 +70,10 @@ SYS_PROCESS_PARAM(1001, 0x100000)
 
 #undef main
 
-uint32_t set_text_message_speed(uint32_t value)
-{
-	return g_frame_count + value;
-}
-
 void set_text_message(const char * message, uint32_t speed)
 {
 	snprintf(special_action_msg, sizeof(special_action_msg), message);
-	special_action_msg_expired = set_text_message_speed(speed);
+	SET_TIMER_EXPIRATION(speed);
 }
 
 static bool file_exists(const char * filename)
@@ -386,10 +380,7 @@ static void ingame_menu(void)
 
 		ssnes_render_cached_frame();
 
-		if(g_frame_count < special_action_msg_expired && blocking)
-		{
-		}
-		else
+		if(IS_TIMER_EXPIRED() && blocking == false)
 		{
 			if(CTRL_CIRCLE(state))
 			{
@@ -728,7 +719,7 @@ static void ingame_menu(void)
 		cellDbgFontPuts (x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)), font_size+0.01f, BLUE, "Return to XMB");
 		cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)), font_size, menuitem_colors[MENU_ITEM_RETURN_TO_XMB], "Return to XMB");
 
-		if(g_frame_count < special_action_msg_expired)
+		if(IS_TIMER_NOT_EXPIRED())
 		{
 			cellDbgFontPrintf (0.09f, 0.90f, 1.51f, BLUE, special_action_msg);
 			cellDbgFontPrintf (0.09f, 0.90f, 1.50f, WHITE, special_action_msg);
@@ -736,7 +727,6 @@ static void ingame_menu(void)
 		}
 		else
 		{
-			special_action_msg_expired = 0;
 			cellDbgFontPrintf (0.09f, 0.90f, 0.98f+0.01f, BLUE, comment);
 			cellDbgFontPrintf (0.09f, 0.90f, 0.98f, LIGHTBLUE, comment);
 		}

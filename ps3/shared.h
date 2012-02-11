@@ -57,7 +57,6 @@ enum {
 #define MENU_ITEM_LAST           MENU_ITEM_RETURN_TO_XMB+1
 
 extern char special_action_msg[256];
-extern uint32_t special_action_msg_expired;
 extern unsigned g_frame_count;
 extern bool g_quitting;
 

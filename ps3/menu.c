@@ -164,10 +164,7 @@ static void browser_update(filebrowser_t * b)
 	diff_state = old_state ^ state;
 	button_was_pressed = old_state & diff_state;
 
-	if(g_frame_count < special_action_msg_expired)
-	{
-	}
-	else
+	if(IS_TIMER_EXPIRED())
 	{
 		if (CTRL_LSTICK_DOWN(state))
 		{
@@ -276,16 +273,11 @@ static void browser_update(filebrowser_t * b)
 		}
 
 
-		if (CTRL_L3(state) && CTRL_R3(state))
-		{
-			/* if a rom is loaded then resume it */
-			if (g_console.emulator_initialized)
-			{
-				g_console.menu_enable = false;
-				g_console.mode_switch = MODE_EMULATION;
-				set_text_message("", 15);
-			}
-		}
+		g_console.menu_enable = !((CTRL_L3(state) && CTRL_R3(state) && g_console.emulator_initialized));
+		g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
+
+		if(g_console.mode_switch == MODE_EMULATION)
+			SET_TIMER_EXPIRATION(60);
 
 		old_state = state;
 	}
@@ -1420,10 +1412,7 @@ static void select_setting(menu * menu_obj)
 	button_was_pressed = old_state & diff_state;
 
 
-	if(g_frame_count < special_action_msg_expired)
-	{
-	}
-	else
+	if(IS_TIMER_EXPIRED())
 	{
 		/* back to ROM menu if CIRCLE is pressed */
 		if (CTRL_L1(button_was_pressed) || CTRL_CIRCLE(button_was_pressed))
