@@ -100,6 +100,14 @@ static bool ps3_key_pressed(void *data, int key)
          return (CTRL_RSTICK_RIGHT(state[0]) && CTRL_R2(state[0]));
       case SSNES_STATE_SLOT_MINUS:
          return (CTRL_RSTICK_LEFT(state[0]) && CTRL_R2(state[0]));
+      case SSNES_FRAMEADVANCE:
+      	if(g_console.frame_advance_enable)
+	{
+		g_console.menu_enable = false;
+		g_console.ingame_menu_enable = true;
+		g_console.mode_switch = MODE_EMULATION;
+	}
+	 return g_console.frame_advance_enable;
       case SSNES_REWIND:
          return CTRL_RSTICK_UP(state[0]) && CTRL_R2(~state[0]);
       case SSNES_QUIT_KEY:

@@ -62,7 +62,6 @@ char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
 char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
 char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 char MULTIMAN_GAME_TO_BOOT[MAX_PATH_LENGTH];
-static bool frame_advance_disabled = true;
 
 int ssnes_main(int argc, char *argv[]);
 
@@ -148,6 +147,7 @@ static void set_default_settings(void)
 
 	// g_console
 	g_console.block_config_read = true;
+	g_console.frame_advance_enable = false;
 	g_console.emulator_initialized = 0;
 	g_console.screenshots_enable = false;
 	g_console.throttle_enable = true;
@@ -384,7 +384,7 @@ static void ingame_menu(void)
 		{
 			if(CTRL_CIRCLE(state))
 			{
-				frame_advance_disabled = true;
+				g_console.frame_advance_enable = false;
 				ingame_menu_item = 0;
 				g_console.ingame_menu_enable = false;
 				g_console.mode_switch = MODE_EMULATION;
@@ -554,7 +554,7 @@ static void ingame_menu(void)
 				case MENU_ITEM_FRAME_ADVANCE:
 					if(CTRL_CROSS(state) || CTRL_R2(state) || CTRL_L2(state))
 					{
-						frame_advance_disabled = false;
+						g_console.frame_advance_enable = true;
 						ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
 						g_console.ingame_menu_enable = false;
 						g_console.mode_switch = MODE_EMULATION;
@@ -580,7 +580,7 @@ static void ingame_menu(void)
 				case MENU_ITEM_RETURN_TO_GAME:
 					if(CTRL_CROSS(button_was_pressed))
 					{
-						frame_advance_disabled = true;
+						g_console.frame_advance_enable = false;
 						ingame_menu_item = 0;
 						g_console.ingame_menu_enable = false;
 						g_console.mode_switch = MODE_EMULATION;
@@ -791,7 +791,7 @@ begin_loop:
 
 		do{
 			repeat = ssnes_main_iterate();
-		}while(repeat && frame_advance_disabled);
+		}while(repeat && !g_console.frame_advance_enable);
 
 		g_extern.is_paused = true;
 		if(g_console.ingame_menu_enable)
