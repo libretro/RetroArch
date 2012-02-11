@@ -400,7 +400,7 @@ static void ingame_menu(void)
 						bool ret = load_state(g_extern.savestate_name);
 						msg_queue_clear(g_extern.msg_queue);
 						if(ret)
-							snprintf(msg, sizeof(msg), "Loaded state from slot #%d!", g_extern.state_slot);
+							snprintf(msg, sizeof(msg), "Loaded state from slot #%d.", g_extern.state_slot);
 						else
 							snprintf(msg, sizeof(msg), "Can't load from save state slot #%d", g_extern.state_slot);
 						msg_queue_clear(g_extern.msg_queue);
@@ -439,7 +439,7 @@ static void ingame_menu(void)
 						char msg[512];
 
 						bool ret = save_state(g_extern.savestate_name);
-						snprintf(msg, sizeof(msg), "Saved state to slot #%d!", g_extern.state_slot);
+						snprintf(msg, sizeof(msg), "Saved state to slot #%d.", g_extern.state_slot);
 
 						msg_queue_clear(g_extern.msg_queue);
 						msg_queue_push(g_extern.msg_queue, msg, 1, 180);

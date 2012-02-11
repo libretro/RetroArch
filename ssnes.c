@@ -117,12 +117,12 @@ static void take_screenshot(void)
    if (ret)
    {
       SSNES_LOG("Taking screenshot!\n");
-      msg = "Taking screenshot!";
+      msg = "Taking screenshot.";
    }
    else
    {
       SSNES_WARN("Failed to take screenshot ...\n");
-      msg = "Failed to take screenshot!";
+      msg = "Failed to take screenshot.";
    }
 
    msg_queue_clear(g_extern.msg_queue);
@@ -1189,20 +1189,20 @@ static void init_movie(void)
       }
 
       g_extern.bsv.movie_playback = true;
-      msg_queue_push(g_extern.msg_queue, "Starting movie playback!", 2, 180);
+      msg_queue_push(g_extern.msg_queue, "Starting movie playback.", 2, 180);
       SSNES_LOG("Starting movie playback!\n");
       g_settings.rewind_granularity = 1;
    }
    else if (g_extern.bsv.movie_start_recording)
    {
       char msg[PATH_MAX];
-      snprintf(msg, sizeof(msg), "Starting movie record to \"%s\"!",
+      snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".",
             g_extern.bsv.movie_start_path);
 
       g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, SSNES_MOVIE_RECORD);
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue,
-            g_extern.bsv.movie ? msg : "Failed to start movie record!", 1, 180);
+            g_extern.bsv.movie ? msg : "Failed to start movie record.", 1, 180);
 
       if (g_extern.bsv.movie)
       {
@@ -1521,7 +1521,7 @@ static void check_savestates(void)
       if (save_state(save_path))
       {
          msg_queue_clear(g_extern.msg_queue);
-         snprintf(msg, sizeof(msg), "Saved state to slot #%u!", g_extern.state_slot);
+         snprintf(msg, sizeof(msg), "Saved state to slot #%u.", g_extern.state_slot);
          msg_queue_push(g_extern.msg_queue, msg, 1, 180);
       }
       else
@@ -1548,7 +1548,7 @@ static void check_savestates(void)
       if (load_state(load_path))
       {
          msg_queue_clear(g_extern.msg_queue);
-         snprintf(msg, sizeof(msg), "Loaded state from slot #%u!", g_extern.state_slot);
+         snprintf(msg, sizeof(msg), "Loaded state from slot #%u.", g_extern.state_slot);
          msg_queue_push(g_extern.msg_queue, msg, 1, 180);
       }
       else
@@ -1690,14 +1690,14 @@ static void check_rewind(void)
          g_extern.frame_is_reverse = true;
          setup_rewind_audio();
 
-         msg_queue_push(g_extern.msg_queue, "Rewinding!", 0, g_extern.is_paused ? 1 : 30);
+         msg_queue_push(g_extern.msg_queue, "Rewinding.", 0, g_extern.is_paused ? 1 : 30);
          psnes_unserialize((uint8_t*)buf, g_extern.state_size);
 
          if (g_extern.bsv.movie)
             bsv_movie_frame_rewind(g_extern.bsv.movie);
       }
       else
-         msg_queue_push(g_extern.msg_queue, "Reached end of rewind buffer!", 0, 30);
+         msg_queue_push(g_extern.msg_queue, "Reached end of rewind buffer.", 0, 30);
    }
    else
    {
@@ -1722,7 +1722,7 @@ static void check_movie_record(void)
       if (g_extern.bsv.movie)
       {
          msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, "Stopping movie record!", 2, 180);
+         msg_queue_push(g_extern.msg_queue, "Stopping movie record.", 2, 180);
          SSNES_LOG("Stopping movie record!\n");
          bsv_movie_free(g_extern.bsv.movie);
          g_extern.bsv.movie = NULL;
@@ -1744,11 +1744,11 @@ static void check_movie_record(void)
          }
 
          char msg[PATH_MAX];
-         snprintf(msg, sizeof(msg), "Starting movie record to \"%s\"!", path);
+         snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
 
          g_extern.bsv.movie = bsv_movie_init(path, SSNES_MOVIE_RECORD);
          msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ? msg : "Failed to start movie record!", 1, 180);
+         msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ? msg : "Failed to start movie record.", 1, 180);
 
          if (g_extern.bsv.movie)
             SSNES_LOG("Starting movie record to \"%s\"!\n", path);
@@ -1764,7 +1764,7 @@ static void check_movie_playback(void)
 {
    if (g_extern.bsv.movie_end)
    {
-      msg_queue_push(g_extern.msg_queue, "Movie playback ended!", 1, 180);
+      msg_queue_push(g_extern.msg_queue, "Movie playback ended.", 1, 180);
       SSNES_LOG("Movie playback ended!\n");
 
       bsv_movie_free(g_extern.bsv.movie);
@@ -1854,7 +1854,7 @@ void ssnes_game_reset(void)
 {
    SSNES_LOG("Resetting game!\n");
    msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, "Reset!", 1, 120);
+   msg_queue_push(g_extern.msg_queue, "Reset.", 1, 120);
    psnes_reset();
    init_controllers(); // bSNES since v073r01 resets controllers to JOYPAD after a reset, so just enforce it here.
 }
@@ -1980,7 +1980,7 @@ static void check_mute(void)
    {
       g_extern.audio_data.mute = !g_extern.audio_data.mute;
 
-      const char *msg = g_extern.audio_data.mute ? "Audio muted!" : "Audio unmuted!";
+      const char *msg = g_extern.audio_data.mute ? "Audio muted." : "Audio unmuted.";
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 

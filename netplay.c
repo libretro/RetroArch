@@ -1042,7 +1042,7 @@ static bool netplay_get_cmd(netplay_t *handle)
          handle->flip_frame = flip_frame;
 
          SSNES_LOG("Netplay players are flipped!\n");
-         msg_queue_push(g_extern.msg_queue, "Netplay players are flipped!", 1, 180);
+         msg_queue_push(g_extern.msg_queue, "Netplay players are flipped.", 1, 180);
 
          return netplay_cmd_ack(handle);
       }
@@ -1061,13 +1061,13 @@ void netplay_flip_players(netplay_t *handle)
 
    if (handle->spectate)
    {
-      msg = "Cannot flip players in spectate mode!";
+      msg = "Cannot flip players in spectate mode.";
       goto error;
    }
 
    if (handle->port == 0)
    {
-      msg = "Cannot flip players if you're not the host!";
+      msg = "Cannot flip players if you're not the host.";
       goto error;
    }
 
@@ -1082,7 +1082,7 @@ void netplay_flip_players(netplay_t *handle)
          && netplay_get_response(handle))
    {
       SSNES_LOG("Netplay players are flipped!\n");
-      msg_queue_push(g_extern.msg_queue, "Netplay players are flipped!", 1, 180);
+      msg_queue_push(g_extern.msg_queue, "Netplay players are flipped.", 1, 180);
 
       // Queue up a flip well enough in the future.
       handle->flip ^= true;
@@ -1090,7 +1090,7 @@ void netplay_flip_players(netplay_t *handle)
    }
    else
    {
-      msg = "Failed to flip players!";
+      msg = "Failed to flip players.";
       goto error;
    }
 
@@ -1214,7 +1214,7 @@ static int16_t netplay_get_spectate_input(netplay_t *handle, bool port, unsigned
    {
       SSNES_ERR("Connection with host was cut!\n");
       msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, "Connection with host was cut!", 1, 180);
+      msg_queue_push(g_extern.msg_queue, "Connection with host was cut.", 1, 180);
 
       psnes_set_input_state(netplay_callbacks(g_extern.netplay)->state_cb);
       return netplay_callbacks(g_extern.netplay)->state_cb(port, device, index, id);
@@ -1382,7 +1382,7 @@ static void netplay_post_frame_spectate(netplay_t *handle)
          SSNES_LOG("Client (#%u) disconnected ...\n", i);
 
          char msg[512];
-         snprintf(msg, sizeof(msg), "Client (#%u) disconnected!", i);
+         snprintf(msg, sizeof(msg), "Client (#%u) disconnected.", i);
          msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
          close(handle->spectate_fds[i]);

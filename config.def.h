@@ -81,7 +81,7 @@
 #elif defined(HAVE_DYLIB)
 #define VIDEO_DEFAULT_DRIVER VIDEO_EXT
 #else
-#error "Need at least one video driver!"
+#error "Need at least one video driver."
 #endif
 
 #if defined(__CELLOS_LV2__)
@@ -117,7 +117,7 @@
 #elif defined(HAVE_DYLIB)
 #define AUDIO_DEFAULT_DRIVER AUDIO_EXT
 #else
-#error "Need at least one audio driver!"
+#error "Need at least one audio driver."
 #endif
 
 #if defined(XENON)
@@ -133,7 +133,7 @@
 #elif defined(HAVE_XVIDEO)
 #define INPUT_DEFAULT_DRIVER INPUT_X
 #else
-#error "Need at least one input driver!"
+#error "Need at least one input driver."
 #endif
 
 
