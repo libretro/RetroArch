@@ -30,11 +30,11 @@ typedef struct GLYPH_ATTR
     unsigned short wMask;                 // Channel mask
 } GLYPH_ATTR;
 
-#define ATGFONT_LEFT       0x00000000
-#define ATGFONT_RIGHT      0x00000001
-#define ATGFONT_CENTER_X   0x00000002
-#define ATGFONT_CENTER_Y   0x00000004
-#define ATGFONT_TRUNCATED  0x00000008
+#define FONT_LEFT       0x00000000
+#define FONT_RIGHT      0x00000001
+#define FONT_CENTER_X   0x00000002
+#define FONT_CENTER_Y   0x00000004
+#define FONT_TRUNCATED  0x00000008
 
 enum SavedStates
 {

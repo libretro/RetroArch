@@ -121,10 +121,6 @@ static const char g_strFontShader[] =
         "}\n"
     "}\n";
 
-//
-// These are shared assets common among all instances of AtgFont
-//
-
 typedef struct AtgFont_Locals_t {
     D3DVertexDeclaration* m_pFontVertexDecl;    // Shared vertex buffer
     D3DVertexShader* m_pFontVertexShader;       // Created vertex shader
@@ -148,7 +144,8 @@ HRESULT XdkFont::CreateFontShaders()
     // started up and a vertex array created.
     ///
     
-    HRESULT Result;         // Returned error code
+    HRESULT hr;
+
     if (!s_AtgFontLocals.m_pFontVertexDecl)
     {
         // Use the do {} while(0); trick for a fake goto
@@ -173,36 +170,36 @@ HRESULT XdkFont::CreateFontShaders()
 			xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
             D3DDevice *pd3dDevice = vid->xdk360_render_device;
 
-            Result = pd3dDevice->CreateVertexDeclaration( decl, &s_AtgFontLocals.m_pFontVertexDecl );
-            if ( SUCCEEDED( Result ) )
+            hr = pd3dDevice->CreateVertexDeclaration( decl, &s_AtgFontLocals.m_pFontVertexDecl );
+            if (SUCCEEDED(hr))
             {
 
                 // Step #2, create my vertex shader
                 ID3DXBuffer* pShaderCode;
-                Result = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
+                hr = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
                     NULL, NULL, "FontVertexShader", "vs.2.0", 0,&pShaderCode, NULL, NULL );
-                if ( SUCCEEDED( Result ) )
+                if (SUCCEEDED(hr))
                 {
-                    Result = pd3dDevice->CreateVertexShader( ( DWORD* )pShaderCode->GetBufferPointer(),
+                    hr = pd3dDevice->CreateVertexShader( ( unsigned long * )pShaderCode->GetBufferPointer(),
                         &s_AtgFontLocals.m_pFontVertexShader );
                     // Release the compiled shader
                     pShaderCode->Release();
                     
-                    if( SUCCEEDED( Result ) )
+                    if(SUCCEEDED(hr))
                     {
                         // Step #3, create my pixel shader
-                        Result = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
+                        hr = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
                             NULL, NULL, "FontPixelShader", "ps.2.0", 0,&pShaderCode, NULL, NULL );
-                        if ( SUCCEEDED( Result ) )
+                        if ( SUCCEEDED(hr))
                         {
-                            Result = pd3dDevice->CreatePixelShader( ( DWORD* )pShaderCode->GetBufferPointer(),
+                            hr = pd3dDevice->CreatePixelShader( ( DWORD* )pShaderCode->GetBufferPointer(),
                                 &s_AtgFontLocals.m_pFontPixelShader );
                             // Release the compiled shader
                             pShaderCode->Release();
 
-                            if ( SUCCEEDED( Result ) ) 
+                            if (SUCCEEDED(hr)) 
                             {
-                                Result = S_OK;
+                                hr = S_OK;
                                 break;              // Skip the teardown code
                             }
                         }
@@ -219,7 +216,7 @@ HRESULT XdkFont::CreateFontShaders()
             // Ensure this pointer is NULL    
             s_AtgFontLocals.m_pFontVertexDecl = NULL;
         }while(0);            // Exit point for the break command.
-        return Result;
+        return hr;
     }
     else
     {
@@ -230,9 +227,9 @@ HRESULT XdkFont::CreateFontShaders()
         s_AtgFontLocals.m_pFontVertexDecl->AddRef();
         s_AtgFontLocals.m_pFontVertexShader->AddRef();
         s_AtgFontLocals.m_pFontPixelShader->AddRef();
-        Result = S_OK;
+        hr = S_OK;
     }
-    return Result;          // Return the error code if any
+    return hr;          // Return the error code if any
 }
 
 //--------------------------------------------------------------------------------------
@@ -453,7 +450,7 @@ void XdkFont::GetTextExtent( const wchar_t * strText, float * pWidth,
             fHeight = fy;
 
         // Loop through each character and update text extent
-        DWORD letter;
+        unsigned long letter;
         while( (letter = *strText) != 0 )
         {
             ++strText;
@@ -608,8 +605,8 @@ VOID XdkFont::Begin()
 // Name: DrawText()
 // Desc: Draws text as textured polygons
 //--------------------------------------------------------------------------------------
-VOID XdkFont::DrawText( DWORD dwColor, const wchar_t * strText, unsigned long dwFlags,
-                     float fMaxPixelWidth )
+VOID XdkFont::DrawText( unsigned long dwColor, const wchar_t * strText, 
+	unsigned long dwFlags, float fMaxPixelWidth )
 {
     DrawText( m_fCursorX, m_fCursorY, dwColor, strText, dwFlags, fMaxPixelWidth );
 }
@@ -622,7 +619,7 @@ VOID XdkFont::DrawText( DWORD dwColor, const wchar_t * strText, unsigned long dw
 //       becomes available.
 //--------------------------------------------------------------------------------------
 VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
-                     const wchar_t * strText, unsigned long dwFlags, float fMaxPixelWidth )
+	const wchar_t * strText, unsigned long dwFlags, float fMaxPixelWidth )
 {
     if( strText == NULL )
 		return;
@@ -653,7 +650,7 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
     pd3dDevice->SetVertexShaderConstantF( 1, vColor, 1 );
 
     // Set the starting screen position
-    if( ( fOriginX < 0.0f ) || ( ( dwFlags & ATGFONT_RIGHT ) && ( fOriginX <= 0.0f ) ) )
+    if( ( fOriginX < 0.0f ) || ( ( dwFlags & FONT_RIGHT ) && ( fOriginX <= 0.0f ) ) )
         fOriginX += ( m_rcWindow.x2 - m_rcWindow.x1 );
     if( fOriginY < 0.0f )
         fOriginY += ( m_rcWindow.y2 - m_rcWindow.y1 );
@@ -667,11 +664,11 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
     float fEllipsesPixelWidth = m_fXScaleFactor * 3.0f * ( m_Glyphs[m_TranslatorTable[L'.']].wOffset +
                                                            m_Glyphs[m_TranslatorTable[L'.']].wAdvance );
 
-    if( dwFlags & ATGFONT_TRUNCATED )
+    if( dwFlags & FONT_TRUNCATED )
     {
         // Check if we will really need to truncate the string
         if( fMaxPixelWidth <= 0.0f )
-            dwFlags &= ( ~ATGFONT_TRUNCATED );
+            dwFlags &= ( ~FONT_TRUNCATED );
         else
         {
             float w, h;
@@ -679,12 +676,12 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
 
             // If not, then clear the flag
             if( w <= fMaxPixelWidth )
-                dwFlags &= ( ~ATGFONT_TRUNCATED );
+                dwFlags &= ( ~FONT_TRUNCATED );
         }
     }
 
     // If vertically centered, offset the starting m_fCursorY value
-    if( dwFlags & ATGFONT_CENTER_Y )
+    if( dwFlags & FONT_CENTER_Y )
     {
         float w, h;
         GetTextExtent( strText, &w, &h );
@@ -712,7 +709,7 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
 
     volatile float * pVertex;
 
-    unsigned long dwNumChars = wcslen( strText ) + ( dwFlags & ATGFONT_TRUNCATED ? 3 : 0 );
+    unsigned long dwNumChars = wcslen( strText ) + ( dwFlags & FONT_TRUNCATED ? 3 : 0 );
     HRESULT hr = pd3dDevice->BeginVertices( D3DPT_QUADLIST, 4 * dwNumChars, sizeof( XMFLOAT4 ) ,
                                               ( VOID** )&pVertex );
     // The ring buffer may run out of space when tiling, doing z-prepasses,
@@ -734,16 +731,16 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
             // If starting text on a new line, determine justification effects
             if( bStartingNewLine )
             {
-                if( dwFlags & ( ATGFONT_RIGHT | ATGFONT_CENTER_X ) )
+                if( dwFlags & ( FONT_RIGHT | FONT_CENTER_X ) )
                 {
                     // Get the extent of this line
                     float w, h;
                     GetTextExtent( strText, &w, &h, TRUE );
 
                     // Offset this line's starting m_fCursorX value
-                    if( dwFlags & ATGFONT_RIGHT )
+                    if( dwFlags & FONT_RIGHT )
                         m_fCursorX = floorf( fOriginX - w );
-                    if( dwFlags & ATGFONT_CENTER_X )
+                    if( dwFlags & FONT_CENTER_X )
                         m_fCursorX = floorf( fOriginX - w * 0.5f );
                 }
                 bStartingNewLine = FALSE;
@@ -777,7 +774,7 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
 
         if( 0 == dwNumEllipsesToDraw )
         {
-            if( dwFlags & ATGFONT_TRUNCATED )
+            if( dwFlags & FONT_TRUNCATED )
             {
                 // Check if we will be exceeded the max allowed width
                 if( m_fCursorX + fOffset + fWidth + fEllipsesPixelWidth + m_fSlantFactor > fOriginX + fMaxPixelWidth )

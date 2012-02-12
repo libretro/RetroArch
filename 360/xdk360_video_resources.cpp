@@ -32,9 +32,8 @@ struct XPR_HEADER
     unsigned long dwDataSize;
 };
 
-const unsigned long XPR2_MAGIC_VALUE = 0x58505232;
-const unsigned long eXALLOCAllocatorId_AtgResource = eXALLOCAllocatorId_GameMax;
-
+#define XPR2_MAGIC_VALUE (0x58505232)
+#define eXALLOCAllocatorId_AtgResource eXALLOCAllocatorId_GameMax
 
 //--------------------------------------------------------------------------------------
 // Name: PackedResource
@@ -104,7 +103,7 @@ HRESULT PackedResource::Create( const char * strFilename )
 
     if( xprh.dwMagic != XPR2_MAGIC_VALUE )
     {
-        SSNES_ERR( "Invalid Xbox Packed Resource (.xpr) file: Magic = 0x%08lx\n", xprh.dwMagic );
+        SSNES_ERR( "Invalid Xbox Packed Resource (.xpr) file: Magic = 0x%08lx.\n", xprh.dwMagic );
         CloseHandle( hFile );
         return E_FAIL;
     }
@@ -138,7 +137,7 @@ HRESULT PackedResource::Create( const char * strFilename )
     if( !ReadFile( hFile, m_pSysMemData, m_dwSysMemDataSize, &dwNumBytesRead, NULL ) ||
         !ReadFile( hFile, m_pVidMemData, m_dwVidMemDataSize, &dwNumBytesRead, NULL ) )
     {
-        SSNES_ERR( "Unable to read Xbox Packed Resource (.xpr) file\n" );
+        SSNES_ERR( "Unable to read Xbox Packed Resource (.xpr) file.\n" );
         CloseHandle( hFile );
         return E_FAIL;
     }
@@ -151,9 +150,9 @@ HRESULT PackedResource::Create( const char * strFilename )
     m_pResourceTags = ( RESOURCE* )( m_pSysMemData + 4 );
 
     // Patch up the resources
-    for( DWORD i = 0; i < m_dwNumResourceTags; i++ )
+    for( unsigned long i = 0; i < m_dwNumResourceTags; i++ )
     {
-        m_pResourceTags[i].strName = ( CHAR* )( m_pSysMemData + ( DWORD )m_pResourceTags[i].strName );
+        m_pResourceTags[i].strName = ( char * )( m_pSysMemData + ( unsigned long )m_pResourceTags[i].strName );
 
         // Fixup the texture memory
         if( ( m_pResourceTags[i].dwType & 0xffff0000 ) == ( RESOURCETYPE_TEXTURE & 0xffff0000 ) )
