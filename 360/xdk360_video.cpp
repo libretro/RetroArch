@@ -129,7 +129,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    vid->d3dpp.EnableAutoDepthStencil  = TRUE;
    vid->d3dpp.AutoDepthStencilFormat  = D3DFMT_D24S8;
    vid->d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
-   vid->d3dpp.PresentationInterval    = D3DPRESENT_INTERVAL_ONE;
+   vid->d3dpp.PresentationInterval    = video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 
    vid->xdk360_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &vid->d3dpp, 
          &vid->xdk360_render_device);
@@ -294,8 +294,14 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 
 static void xdk360_gfx_set_nonblock_state(void *data, bool state)
 {
-   (void)data;
-   (void)state;
+   xdk360_video_t *vid = (xdk360_video_t*)data;
+   SSNES_LOG("D3D Vsync => %s\n", state ? "off" : "on");
+   if(state)
+	   vid->xdk360_render_device->SetRenderState(D3DRS_PRESENTINTERVAL,
+	   D3DPRESENT_INTERVAL_IMMEDIATE);
+   else
+	   vid->xdk360_render_device->SetRenderState(D3DRS_PRESENTINTERVAL,
+	   D3DPRESENT_INTERVAL_ONE);
 }
 
 static bool xdk360_gfx_alive(void *data)
@@ -310,6 +316,11 @@ static bool xdk360_gfx_focus(void *data)
    return true;
 }
 
+void xdk360_video_set_vsync(bool vsync)
+{
+	xdk360_gfx_set_nonblock_state(g_d3d, vsync);
+}
+
 // 360 needs a working graphics stack before SSNESeven starts.
 // To deal with this main.c,
 // the top level module owns the instance, and is created beforehand.
@@ -319,7 +330,7 @@ void xdk360_video_init(void)
 {
 	video_info_t video_info = {0};
 	// Might have to supply correct values here.
-	video_info.vsync = true;
+	video_info.vsync = g_settings.video.vsync;
 	video_info.force_aspect = false;
 	video_info.smooth = true;
 	video_info.input_scale = 2;
