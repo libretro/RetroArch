@@ -23,9 +23,6 @@
 #include "xdk360_video_debugfonts.h"
 #include "../general.h"
 
-// Ignore warning about "unused" pD3D variable
-#pragma warning( disable: 4189 )
-
 Console::Console()
 {
 	first_message = true;
@@ -85,36 +82,9 @@ HRESULT Console::Create( LPCSTR strFontFileName, D3DCOLOR colBackColor,
     for( unsigned int i = 0; i < m_cScreenHeightVirtual; i++ )
         m_Lines[ i ] = m_Buffer + ( m_cScreenWidth + 1 ) * i;
 
-    // Clear the screen
-    Clear();
+    CLEAR_SCREEN();
 
     return hr;
-}
-
-
-//--------------------------------------------------------------------------------------
-// Name: Clear()
-// Desc: Clear the screen
-//--------------------------------------------------------------------------------------
-VOID Console::Clear()
-{
-    m_nCurLine = 0;
-    m_cCurLineLength = 0;
-    memset( m_Buffer, 0, m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-
-    Render();
-}
-
-
-//--------------------------------------------------------------------------------------
-// Name: IncrementLine()
-// Desc: Skip to the next line
-//--------------------------------------------------------------------------------------
-VOID Console::IncrementLine()
-{
-    m_nCurLine = ( m_nCurLine + 1 ) % m_cScreenHeightVirtual;
-    m_cCurLineLength = 0;
-    memset( m_Lines[m_nCurLine], 0, ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
 }
 
 //--------------------------------------------------------------------------------------
@@ -198,7 +168,7 @@ void Console::Add( wchar_t wch )
     // If this is a newline, just increment lines and move on
     if( wch == L'\n' )
     {
-        IncrementLine();
+        INCREMENT_LINE();
         return;
     }
 
@@ -222,7 +192,7 @@ void Console::Add( wchar_t wch )
     // If we need to skip to the next line, do so
     if( bIncrementLine )
     {
-        IncrementLine();
+        INCREMENT_LINE();
         m_Lines[ m_nCurLine ][0] = wch;
     }
 
@@ -235,8 +205,13 @@ void Console::Add( wchar_t wch )
 // Name: Format()
 // Desc: Output a variable argument list using a format string
 //--------------------------------------------------------------------------------------
-void Console::Format( _In_z_ _Printf_format_string_ LPCSTR strFormat, ... )
+void Console::Format(int clear_screen, _In_z_ _Printf_format_string_ LPCSTR strFormat, ... )
 {
+	if(clear_screen)
+	{
+		CLEAR_SCREEN();
+	}
+
 	va_list pArgList;
 	va_start( pArgList, strFormat );
 	FormatV( strFormat, pArgList );
@@ -246,8 +221,13 @@ void Console::Format( _In_z_ _Printf_format_string_ LPCSTR strFormat, ... )
 	Render();
 }
 
-void Console::Format( _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... )
+void Console::Format(int clear_screen, _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... )
 {
+	if(clear_screen)
+	{
+		CLEAR_SCREEN();
+	}
+
 	va_list pArgList;
 	va_start( pArgList, wstrFormat );
 	FormatV( wstrFormat, pArgList );

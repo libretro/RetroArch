@@ -210,12 +210,3 @@ void PackedResource::Destroy()
 
     m_bInitialized = FALSE;
 }
-
-//--------------------------------------------------------------------------------------
-// Name: Initialized
-// Desc: Indicates whether the packed resource has been successfully initialized
-//--------------------------------------------------------------------------------------
-BOOL PackedResource::Initialized() const
-{
-    return m_bInitialized;
-}

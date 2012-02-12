@@ -279,8 +279,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    {
 	   if(IS_TIMER_EXPIRED() || g_first_msg)
 	   {
-		   g_screen_console.Clear();
-		   g_screen_console.Format(msg);
+		   g_screen_console.Format(true, msg);
 		   g_first_msg = 0;
 		   SET_TIMER_EXPIRATION(60);
 	   }

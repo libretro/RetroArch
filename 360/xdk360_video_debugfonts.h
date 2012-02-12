@@ -16,8 +16,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _XDK360_DEBUG_FONTS_H
-#define _XDK360_DEBUG_FONTS_H
+#ifndef _SSNES360_DEBUG_FONTS_H
+#define _SSNES360_DEBUG_FONTS_H
 
 #include "xdk360_video_resources.h"
 

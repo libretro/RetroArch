@@ -18,8 +18,8 @@
 
 #pragma once
 
-#ifndef ATGRESOURCE_H
-#define ATGRESOURCE_H
+#ifndef SSNES360_RESOURCES_H
+#define SSNES360_RESOURCES_H
 
 //--------------------------------------------------------------------------------------
 // Name tag for resources. An app may initialize this structure, and pass
@@ -62,15 +62,12 @@ protected:
 
     RESOURCE* m_pResourceTags;      // Tags to associate names with the resources
     unsigned long m_dwNumResourceTags;  // Number of resource tags
-    int m_bInitialized;       // Resource is fully initialized
-
 public:
+	int m_bInitialized;       // Resource is fully initialized
     // Loads the resources out of the specified bundle
     HRESULT Create( const char * strFilename );
 
     void    Destroy();
-
-    BOOL    Initialized() const;
 
     // Retrieves the resource tags
     void   GetResourceTags( unsigned long * pdwNumResourceTags, 
@@ -155,4 +152,4 @@ public:
             ~PackedResource();
 };
 
-#endif // ATGRESOURCE_H
+#endif

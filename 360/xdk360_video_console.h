@@ -17,8 +17,8 @@
  */
 
 #pragma once
-#ifndef ATGCONSOLE_H
-#define ATGCONSOLE_H
+#ifndef SSNES360_CONSOLE_H
+#define SSNES360_CONSOLE_H
 
 #include <xtl.h>
 #include "xdk360_video_debugfonts.h"
@@ -32,6 +32,17 @@
 #define SAFE_AREA_PCT_4x3 85
 #define SAFE_AREA_PCT_HDTV 90
 
+#define INCREMENT_LINE() \
+	m_nCurLine = ( m_nCurLine + 1 ) % m_cScreenHeightVirtual; \
+    m_cCurLineLength = 0; \
+    memset( m_Lines[m_nCurLine], 0, ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
+
+#define CLEAR_SCREEN() \
+	m_nCurLine = 0; \
+    m_cCurLineLength = 0; \
+    memset( m_Buffer, 0, m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) ); \
+    Render();
+
 //--------------------------------------------------------------------------------------
 // Name: class Console
 // Desc: Class to implement the console.
@@ -39,8 +50,8 @@
 class Console
 {
 public:
-                    Console();
-                    ~Console();
+	Console();
+	~Console();
 
     // Initialization
     HRESULT         Create( LPCSTR strFontFileName,
@@ -50,12 +61,9 @@ public:
 
     void            Destroy();
 
-    // Clear the screen
-    void            Clear();
-
     // Console output
-    void    Format( _In_z_ _Printf_format_string_ LPCSTR strFormat, ... );
-    void    Format( _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... );
+    void    Format(int clear_screen, _In_z_ _Printf_format_string_ LPCSTR strFormat, ... );
+    void    Format(int clear_screen, _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... );
     void    FormatV( _In_z_ _Printf_format_string_ LPCSTR strFormat, va_list pArgList );
     void    FormatV( _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, va_list pArgList );
 
@@ -92,9 +100,6 @@ private:
     // Add a character to the current line
     void            Add( char ch );
     void            Add( wchar_t wch );
-
-    // Increment to the next line
-    void            IncrementLine();
 };
 
 #endif

@@ -22,10 +22,8 @@
 #include "xdk360_video_debugfonts.h"
 #include "../general.h"
 
-// Font description
-
-#define ATGCALCFONTFILEHEADERSIZE(x) ( sizeof(DWORD) + (sizeof(FLOAT)*4) + sizeof(WORD) + (sizeof(WCHAR)*(x)) )
-#define ATGFONTFILEVERSION 5
+#define CALCFONTFILEHEADERSIZE(x) ( sizeof(unsigned long) + (sizeof(float)* 4) + sizeof(unsigned short) + (sizeof(wchar_t)*(x)) )
+#define FONTFILEVERSION 5
 
 typedef struct FontFileHeaderImage_t {
     unsigned long m_dwFileVersion;          // Version of the font file (Must match FONTFILEVERSION)
@@ -155,8 +153,8 @@ HRESULT XdkFont::CreateFontShaders()
     {
         // Use the do {} while(0); trick for a fake goto
         // It simplies tear down on error conditions.
-
-        do {
+        do
+		{
         
             // Step #1, create my vertex array with 16 bytes per entry
             // Floats for the position,
@@ -192,9 +190,7 @@ HRESULT XdkFont::CreateFontShaders()
                     
                     if( SUCCEEDED( Result ) )
                     {
-                        
                         // Step #3, create my pixel shader
-
                         Result = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
                             NULL, NULL, "FontPixelShader", "ps.2.0", 0,&pShaderCode, NULL, NULL );
                         if ( SUCCEEDED( Result ) )
@@ -206,7 +202,7 @@ HRESULT XdkFont::CreateFontShaders()
 
                             if ( SUCCEEDED( Result ) ) 
                             {
-                                Result = S_OK;      // I'm good. 
+                                Result = S_OK;
                                 break;              // Skip the teardown code
                             }
                         }
@@ -222,7 +218,7 @@ HRESULT XdkFont::CreateFontShaders()
             }
             // Ensure this pointer is NULL    
             s_AtgFontLocals.m_pFontVertexDecl = NULL;
-        } while (0);            // Exit point for the break command.
+        }while(0);            // Exit point for the break command.
         return Result;
     }
     else
@@ -234,7 +230,7 @@ HRESULT XdkFont::CreateFontShaders()
         s_AtgFontLocals.m_pFontVertexDecl->AddRef();
         s_AtgFontLocals.m_pFontVertexShader->AddRef();
         s_AtgFontLocals.m_pFontPixelShader->AddRef();
-        Result = S_OK;      // Everything is fine
+        Result = S_OK;
     }
     return Result;          // Return the error code if any
 }
@@ -317,7 +313,7 @@ HRESULT XdkFont::Create( const char * strFontFileName )
     const unsigned char * pData = static_cast<const unsigned char *>(pFontData);
     unsigned long dwFileVersion = reinterpret_cast<const FontFileHeaderImage_t *>(pData)->m_dwFileVersion;
 
-    if( dwFileVersion == ATGFONTFILEVERSION )
+    if( dwFileVersion == FONTFILEVERSION )
     {
         m_fFontHeight = reinterpret_cast<const FontFileHeaderImage_t *>(pData)->m_fFontHeight;
         m_fFontTopPadding = reinterpret_cast<const FontFileHeaderImage_t *>(pData)->m_fFontTopPadding;
@@ -329,7 +325,7 @@ HRESULT XdkFont::Create( const char * strFontFileName )
   
         m_TranslatorTable = const_cast<FontFileHeaderImage_t*>(reinterpret_cast<const FontFileHeaderImage_t *>(pData))->m_TranslatorTable;
 
-        pData += ATGCALCFONTFILEHEADERSIZE( m_cMaxGlyph + 1 );
+        pData += CALCFONTFILEHEADERSIZE( m_cMaxGlyph + 1 );
 
         // Read the glyph attributes from the file
         m_dwNumGlyphs = reinterpret_cast<const FontFileStrikesImage_t *>(pData)->m_dwNumGlyphs;
@@ -381,7 +377,7 @@ void XdkFont::Destroy()
     // Safely release shaders
     ReleaseFontShaders();
 
-    if( m_xprResource.Initialized() )
+    if( m_xprResource.m_bInitialized)
         m_xprResource.Destroy();
 }
 
@@ -772,11 +768,11 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
         }
 
         // Translate unprintable characters
-        const GLYPH_ATTR* pGlyph = &m_Glyphs[ ( letter <= m_cMaxGlyph ) ? m_TranslatorTable[letter] : 0 ];
+        const GLYPH_ATTR * pGlyph = &m_Glyphs[ ( letter <= m_cMaxGlyph ) ? m_TranslatorTable[letter] : 0 ];
 
-        float fOffset = m_fXScaleFactor * ( FLOAT )pGlyph->wOffset;
-        float fAdvance = m_fXScaleFactor * ( FLOAT )pGlyph->wAdvance;
-        float fWidth = m_fXScaleFactor * ( FLOAT )pGlyph->wWidth;
+        float fOffset = m_fXScaleFactor * (float)pGlyph->wOffset;
+        float fAdvance = m_fXScaleFactor * (float)pGlyph->wAdvance;
+        float fWidth = m_fXScaleFactor * (float)pGlyph->wWidth;
         float fHeight = m_fYScaleFactor * m_fFontHeight;
 
         if( 0 == dwNumEllipsesToDraw )
@@ -846,20 +842,20 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
 
         pVertex[0] = X1;
         pVertex[1] = Y1;
-        reinterpret_cast<volatile DWORD *>(pVertex)[2] = (tu1<<16)|tv1;         // Merged using big endian rules
-        reinterpret_cast<volatile DWORD *>(pVertex)[3] = dwChannelSelector;
+        reinterpret_cast<volatile unsigned long *>(pVertex)[2] = (tu1<<16)|tv1;         // Merged using big endian rules
+        reinterpret_cast<volatile unsigned long *>(pVertex)[3] = dwChannelSelector;
         pVertex[4] = X2;
         pVertex[5] = Y2;
-        reinterpret_cast<volatile DWORD *>(pVertex)[6] = (tu2<<16)|tv1;         // Merged using big endian rules
-        reinterpret_cast<volatile DWORD *>(pVertex)[7] = dwChannelSelector;
+        reinterpret_cast<volatile unsigned long *>(pVertex)[6] = (tu2<<16)|tv1;         // Merged using big endian rules
+        reinterpret_cast<volatile unsigned long *>(pVertex)[7] = dwChannelSelector;
         pVertex[8] = X3;
         pVertex[9] = Y3;
-        reinterpret_cast<volatile DWORD *>(pVertex)[10] = (tu2<<16)|tv2;        // Merged using big endian rules
-        reinterpret_cast<volatile DWORD *>(pVertex)[11] = dwChannelSelector;
+        reinterpret_cast<volatile unsigned long *>(pVertex)[10] = (tu2<<16)|tv2;        // Merged using big endian rules
+        reinterpret_cast<volatile unsigned long *>(pVertex)[11] = dwChannelSelector;
         pVertex[12] = X4;
         pVertex[13] = Y4;
-        reinterpret_cast<volatile DWORD *>(pVertex)[14] = (tu1<<16)|tv2;        // Merged using big endian rules
-        reinterpret_cast<volatile DWORD *>(pVertex)[15] = dwChannelSelector;
+        reinterpret_cast<volatile unsigned long *>(pVertex)[14] = (tu1<<16)|tv2;        // Merged using big endian rules
+        reinterpret_cast<volatile unsigned long *>(pVertex)[15] = dwChannelSelector;
         pVertex+=16;
 
         // If drawing ellipses, exit when they're all drawn
