@@ -27,7 +27,7 @@
 
 static XINPUT_STATE state[4];
 
-const int DEADZONE = 16000;
+#define DEADZONE (16000)
 
 static void xdk360_input_poll(void *data)
 {

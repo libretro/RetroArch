@@ -32,7 +32,7 @@ static const char * filebrowser_get_extension(const char * filename)
 
 void filebrowser_parse_directory(filebrowser_t * filebrowser, const char * path, const char *extensions)
 {
-	BOOL error = FALSE;
+	int error = FALSE;
    filebrowser->file_count = 0;
 
    WIN32_FIND_DATA ffd;

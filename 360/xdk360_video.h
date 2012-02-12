@@ -19,6 +19,8 @@
 #ifndef _XDK360_VIDEO_H
 #define _XDK360_VIDEO_H
 
+#include "xdk360_video_console.h"
+
 typedef struct {
 	float x;
 	float y;
@@ -33,9 +35,7 @@ typedef struct {
 
 typedef struct xdk360_video
 {
-	WORD font_index[DFONT_MAX * 6];
-	primitive_t font_buffer[DFONT_MAX * 4];
-	unsigned last_width, last_height, font_num;
+	unsigned last_width, last_height;
    IDirect3D9* xdk360_device;
    IDirect3DDevice9* xdk360_render_device;
    IDirect3DVertexShader9 *pVertexShader;
@@ -54,8 +54,7 @@ typedef struct xdk360_video
 void xdk360_video_init(void);
 void xdk360_video_deinit(void);
 
-void xdk360_debugfonts_printf(int x, int y, const char *arg, ... );
-
+extern Console g_screen_console;
 extern unsigned g_frame_count;
 extern void *g_d3d;
 

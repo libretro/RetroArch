@@ -55,7 +55,7 @@ static void filebrowser_fetch_directory_entries(const char *path, CXuiList * rom
 {
 	filebrowser_parse_directory(&browser, path, ssnes_console_get_rom_ext());
 
-	DWORD dwNum_rompath = MultiByteToWideChar(CP_ACP, 0, path, -1, NULL, 0);
+	unsigned long dwNum_rompath = MultiByteToWideChar(CP_ACP, 0, path, -1, NULL, 0);
 	wchar_t * rompath_name = new wchar_t[dwNum_rompath];
 	MultiByteToWideChar(CP_ACP, 0, path, -1, rompath_name, dwNum_rompath);
 	rompath_title->SetText(rompath_name);
@@ -64,7 +64,7 @@ static void filebrowser_fetch_directory_entries(const char *path, CXuiList * rom
 	romlist->InsertItems(0, browser.file_count);
 	for(unsigned i = 0; i < browser.file_count; i++)
 	{
-		DWORD dwNum = MultiByteToWideChar(CP_ACP, 0, browser.cur[i].d_name, -1, NULL, 0);
+		unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, browser.cur[i].d_name, -1, NULL, 0);
 		wchar_t * entry_name = new wchar_t[dwNum];
 		MultiByteToWideChar(CP_ACP, 0, browser.cur[i].d_name, -1, entry_name, dwNum);
 		romlist->SetText(i, entry_name);
@@ -124,8 +124,8 @@ HRESULT CSSNESMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	const char * core_text = snes_library_id();
 	char package_version[32];
 	sprintf(package_version, "SSNES %s", PACKAGE_VERSION);
-	DWORD dwNum = MultiByteToWideChar(CP_ACP, 0, core_text, -1, NULL, 0);
-	DWORD dwNum_package = MultiByteToWideChar(CP_ACP, 0, package_version, -1, NULL, 0);
+	unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, core_text, -1, NULL, 0);
+	unsigned long dwNum_package = MultiByteToWideChar(CP_ACP, 0, package_version, -1, NULL, 0);
 	wchar_t * core_text_utf = new wchar_t[dwNum];
 	wchar_t * package_version_utf = new wchar_t[dwNum_package];
 	MultiByteToWideChar(CP_ACP, 0, core_text, -1, core_text_utf, dwNum);
@@ -232,9 +232,7 @@ HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
 		hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_settings.xur", NULL, &app.hSSNESSettings);
 		
 		if (FAILED(hr))
-		{
 			SSNES_ERR("Failed to load scene.\n");
-		}
 
 		NavigateForward(app.hSSNESSettings);
 	}

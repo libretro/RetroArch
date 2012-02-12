@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+
+<RDF Version="XPR2">
+
+<Texture 
+	Name   = "FontTexture"
+	Source = "Arial_12.tga"
+	Format = "D3DFMT_LIN_A4R4G4B4"
+	Levels = "1"
+/>
+
+<UserData
+	Name     = "FontData"
+	DataFile = "Arial_12.abc"
+/>
+
+</RDF>
+
