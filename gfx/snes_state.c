@@ -37,7 +37,9 @@ struct snes_tracker_internal
 #endif
 
    uint32_t addr;
-   unsigned mask;
+   uint16_t mask;
+
+   uint16_t equal;
 
    enum snes_tracker_type type;
 
@@ -85,9 +87,10 @@ snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
    for (unsigned i = 0; i < info->info_elem; i++)
    {
       strlcpy(tracker->info[i].id, info->info[i].id, sizeof(tracker->info[i].id));
-      tracker->info[i].addr = info->info[i].addr;
-      tracker->info[i].type = info->info[i].type;
-      tracker->info[i].mask = (info->info[i].mask == 0) ? -1u : info->info[i].mask;
+      tracker->info[i].addr  = info->info[i].addr;
+      tracker->info[i].type  = info->info[i].type;
+      tracker->info[i].mask  = (info->info[i].mask == 0) ? 0xffff : info->info[i].mask;
+      tracker->info[i].equal = info->info[i].equal;
 
 #ifdef HAVE_PYTHON
       if (info->info[i].type == SSNES_STATE_PYTHON)
@@ -140,7 +143,21 @@ void snes_tracker_free(snes_tracker_t *tracker)
    free(tracker);
 }
 
-#define fetch() ((info->is_input ? *info->input_ptr : info->ptr[info->addr]) & info->mask)
+static inline uint16_t fetch(const struct snes_tracker_internal *info)
+{
+   uint16_t val = 0;
+   if (info->is_input)
+      val = *info->input_ptr;
+   else
+      val = info->ptr[info->addr];
+
+   val &= info->mask;
+
+   if (info->equal && val != info->equal)
+      val = 0;
+
+   return val;
+}
 
 static void update_element(
       struct snes_tracker_uniform *uniform,
@@ -152,40 +169,40 @@ static void update_element(
    switch (info->type)
    {
       case SSNES_STATE_CAPTURE:
-         uniform->value = fetch();
+         uniform->value = fetch(info);
          break;
 
       case SSNES_STATE_CAPTURE_PREV:
-         if (info->prev[0] != fetch())
+         if (info->prev[0] != fetch(info))
          {
             info->prev[1] = info->prev[0];
-            info->prev[0] = fetch();
+            info->prev[0] = fetch(info);
          }
          uniform->value = info->prev[1];
          break;
 
       case SSNES_STATE_TRANSITION:
-         if (info->old_value != fetch())
+         if (info->old_value != fetch(info))
          {
-            info->old_value = fetch();
+            info->old_value = fetch(info);
             info->frame_count = frame_count;
          }
          uniform->value = info->frame_count;
          break;
 
       case SSNES_STATE_TRANSITION_COUNT:
-         if (info->old_value != fetch())
+         if (info->old_value != fetch(info))
          {
-            info->old_value = fetch();
+            info->old_value = fetch(info);
             info->transition_count++;
          }
          uniform->value = info->transition_count;
          break;
 
       case SSNES_STATE_TRANSITION_PREV:
-         if (info->old_value != fetch())
+         if (info->old_value != fetch(info))
          {
-            info->old_value = fetch();
+            info->old_value = fetch(info);
             info->frame_count_prev = info->frame_count;
             info->frame_count = frame_count;
          }
@@ -202,8 +219,6 @@ static void update_element(
          break;
    }
 }
-
-#undef fetch
 
 // Updates 16-bit input in same format as SNES itself.
 static void update_input(snes_tracker_t *tracker)
@@ -223,18 +238,13 @@ static void update_input(snes_tracker_t *tracker)
       SNES_DEVICE_ID_JOYPAD_START,
       SNES_DEVICE_ID_JOYPAD_SELECT,
       SNES_DEVICE_ID_JOYPAD_Y,
-      SNES_DEVICE_ID_JOYPAD_B
+      SNES_DEVICE_ID_JOYPAD_B,
    };
 
-   static const struct snes_keybind *binds[MAX_PLAYERS] = {
+   // Only bind for up to two players for now.
+   static const struct snes_keybind *binds[2] = {
       g_settings.input.binds[0],
       g_settings.input.binds[1],
-      g_settings.input.binds[2],
-      g_settings.input.binds[3],
-      g_settings.input.binds[4],
-      g_settings.input.binds[5],
-      g_settings.input.binds[6],
-      g_settings.input.binds[7],
    };
 
    uint16_t state[2] = {0};

@@ -55,7 +55,8 @@ struct snes_tracker_uniform_info
    uint32_t addr;
    enum snes_tracker_type type;
    enum snes_ram_type ram_type;
-   unsigned mask;
+   uint16_t mask;
+   uint16_t equal;
 };
 
 struct snes_tracker_info

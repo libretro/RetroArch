@@ -464,6 +464,7 @@ static bool get_script(const char *path, xmlNodePtr ptr)
 
 static bool get_import_value(xmlNodePtr ptr)
 {
+   bool ret = true;
    if (gl_tracker_info_cnt >= MAX_VARIABLES)
    {
       SSNES_ERR("Too many import variables ...\n");
@@ -479,17 +480,20 @@ static bool get_import_value(xmlNodePtr ptr)
    xmlChar *oam = xmlGetProp(ptr, (const xmlChar*)"oam");
    xmlChar *cgram = xmlGetProp(ptr, (const xmlChar*)"cgram");
    xmlChar *bitmask = xmlGetProp(ptr, (const xmlChar*)"mask");
+   xmlChar *bitequal = xmlGetProp(ptr, (const xmlChar*)"equal");
 
    unsigned memtype;
    enum snes_tracker_type tracker_type;
    enum snes_ram_type ram_type = SSNES_STATE_NONE;
    uint32_t addr = 0;
    unsigned mask_value = 0;
+   unsigned mask_equal = 0;
 
    if (!semantic || !id)
    {
       SSNES_ERR("No semantic or ID for import value.\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
 
@@ -510,7 +514,8 @@ static bool get_import_value(xmlNodePtr ptr)
    else
    {
       SSNES_ERR("Invalid semantic for import value.\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
 #ifdef HAVE_PYTHON
@@ -531,18 +536,20 @@ static bool get_import_value(xmlNodePtr ptr)
 
             default:
                SSNES_ERR("Invalid input slot for import.\n");
-               goto error;
+               ret = false;
+               goto end;
          }
       }
-      else if (wram) { addr = strtoul((const char*)wram, NULL, 16); ram_type = SSNES_STATE_WRAM; }
+      else if (wram)   { addr = strtoul((const char*)wram, NULL, 16);   ram_type = SSNES_STATE_WRAM; }
       else if (apuram) { addr = strtoul((const char*)apuram, NULL, 16); ram_type = SSNES_STATE_APURAM; }
-      else if (vram) { addr = strtoul((const char*)vram, NULL, 16); ram_type = SSNES_STATE_VRAM; }
-      else if (oam) { addr = strtoul((const char*)oam, NULL, 16); ram_type = SSNES_STATE_OAM; }
-      else if (cgram) { addr = strtoul((const char*)cgram, NULL, 16); ram_type = SSNES_STATE_CGRAM; }
+      else if (vram)   { addr = strtoul((const char*)vram, NULL, 16);   ram_type = SSNES_STATE_VRAM; }
+      else if (oam)    { addr = strtoul((const char*)oam, NULL, 16);    ram_type = SSNES_STATE_OAM; }
+      else if (cgram)  { addr = strtoul((const char*)cgram, NULL, 16);  ram_type = SSNES_STATE_CGRAM; }
       else
       {
          SSNES_ERR("No RAM address specificed for import value.\n");
-         goto error;
+         ret = false;
+         goto end;
       }
    }
 
@@ -571,19 +578,24 @@ static bool get_import_value(xmlNodePtr ptr)
    if ((memtype != -1u) && (addr >= psnes_get_memory_size(memtype)))
    {
       SSNES_ERR("Address out of bounds.\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
    if (bitmask)
       mask_value = strtoul((const char*)bitmask, NULL, 16);
+   if (bitequal)
+      mask_equal = strtoul((const char*)bitequal, NULL, 16);
 
    strlcpy(gl_tracker_info[gl_tracker_info_cnt].id, (const char*)id, sizeof(gl_tracker_info[0].id));
    gl_tracker_info[gl_tracker_info_cnt].addr = addr;
    gl_tracker_info[gl_tracker_info_cnt].type = tracker_type;
    gl_tracker_info[gl_tracker_info_cnt].ram_type = ram_type;
    gl_tracker_info[gl_tracker_info_cnt].mask = mask_value;
+   gl_tracker_info[gl_tracker_info_cnt].equal = mask_equal;
    gl_tracker_info_cnt++;
 
+end:
    if (id) xmlFree(id);
    if (semantic) xmlFree(semantic);
    if (wram) xmlFree(wram);
@@ -593,19 +605,8 @@ static bool get_import_value(xmlNodePtr ptr)
    if (oam) xmlFree(oam);
    if (cgram) xmlFree(cgram);
    if (bitmask) xmlFree(bitmask);
-   return true;
-
-error:
-   if (id) xmlFree(id);
-   if (semantic) xmlFree(semantic);
-   if (wram) xmlFree(wram);
-   if (input) xmlFree(input);
-   if (apuram) xmlFree(apuram);
-   if (vram) xmlFree(vram);
-   if (oam) xmlFree(oam);
-   if (cgram) xmlFree(cgram);
-   if (bitmask) xmlFree(bitmask);
-   return false;
+   if (bitequal) xmlFree(bitequal);
+   return ret;
 }
 
 static unsigned get_xml_shaders(const char *path, struct shader_program *prog, size_t size)
