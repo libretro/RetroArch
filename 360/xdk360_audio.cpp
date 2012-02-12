@@ -180,7 +180,7 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
    XAudio *xa = (XAudio*)data;
    size_t ret = xa->write((const uint8_t*)buf, size);
 
-   if (ret == 0)
+   if (ret == 0 && !xa->nonblock)
       return -1;
    return ret;
 }
