@@ -235,7 +235,7 @@ static void get_environment_settings (void)
 	Mounted[DEVICE_MEMORY_ONBOARD] = Mount(DEVICE_MEMORY_ONBOARD,"OnBoardMU:"); 
 	Mounted[DEVICE_CDROM0] = Mount(DEVICE_CDROM0,"Dvd:"); 
 
-	BOOL result_filecache = XSetFileCacheSize(0x100000);
+	int result_filecache = XSetFileCacheSize(0x100000);
 
 	if(result_filecache != TRUE)
 	{

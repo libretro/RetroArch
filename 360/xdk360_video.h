@@ -19,25 +19,42 @@
 #ifndef _XDK360_VIDEO_H
 #define _XDK360_VIDEO_H
 
+#include "xdk360_video_console.h"
+
+typedef struct {
+	float x;
+	float y;
+	float z;
+	float rhw;
+	float u;
+	float v;
+} primitive_t;
+
+#define DFONT_MAX	4096
+#define PRIM_FVF		(D3DFVF_XYZRHW | D3DFVF_TEX1)
+
 typedef struct xdk360_video
 {
+	unsigned last_width, last_height;
    IDirect3D9* xdk360_device;
    IDirect3DDevice9* xdk360_render_device;
    IDirect3DVertexShader9 *pVertexShader;
    IDirect3DPixelShader9* pPixelShader;
    IDirect3DVertexDeclaration9* pVertexDecl;
    IDirect3DVertexBuffer9* vertex_buf;
+   IDirect3DTexture9* font_texture;
    IDirect3DTexture9* lpTexture;
-   unsigned last_width, last_height;
    D3DPRESENT_PARAMETERS d3dpp;
 } xdk360_video_t;
 
-#define IS_TIMER_EXPIRED() 	(!(g_frame_count < g_console.timer_expiration_frame_count))
+#define IS_TIMER_NOT_EXPIRED() (g_frame_count < g_console.timer_expiration_frame_count)
+#define IS_TIMER_EXPIRED() 	(!(IS_TIMER_NOT_EXPIRED()))
 #define SET_TIMER_EXPIRATION(value) g_console.timer_expiration_frame_count = g_frame_count + value;
 
 void xdk360_video_init(void);
 void xdk360_video_deinit(void);
 
+extern Console g_screen_console;
 extern unsigned g_frame_count;
 extern void *g_d3d;
 

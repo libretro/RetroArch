@@ -68,8 +68,10 @@ typedef struct DrawVerticeFormats
 } DrawVerticeFormats;
 
 static bool g_quitting;
+static bool g_first_msg;
 unsigned g_frame_count;
 void *g_d3d;
+Console g_screen_console;
 
 static void xdk360_gfx_free(void * data)
 {
@@ -273,6 +275,18 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    vid->xdk360_render_device->SetStreamSource(0, vid->vertex_buf, 0, sizeof(DrawVerticeFormats));
 
    vid->xdk360_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+   if (msg)
+   {
+	   if(IS_TIMER_EXPIRED() || g_first_msg)
+	   {
+		   g_screen_console.Format(true, msg);
+		   g_first_msg = 0;
+		   SET_TIMER_EXPIRATION(60);
+	   }
+	   
+	   g_screen_console.Render();
+   }
+
    vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);
 
    return true;
@@ -311,6 +325,15 @@ void xdk360_video_init(void)
 	video_info.input_scale = 2;
 
 	g_d3d = xdk360_gfx_init(&video_info, NULL, NULL);
+
+	g_first_msg = true;
+
+	HRESULT hr = g_screen_console.Create("game:\\media\\Arial_12.xpr",
+		0xff000000, 0xffffffff );
+	if(FAILED(hr))
+	{
+		SSNES_ERR("Couldn't create debug console.\n");
+	}
 }
 
 void xdk360_video_deinit(void)

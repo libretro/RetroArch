@@ -270,6 +270,9 @@
     <ClCompile Include="..\..\360\xdk360_input.cpp" />
     <ClCompile Include="..\..\360\xdk360_video.cpp" />
     <ClCompile Include="..\..\360\menu.cpp" />
+    <ClCompile Include="..\..\360\xdk360_video_console.cpp" />
+    <ClCompile Include="..\..\360\xdk360_video_debugfonts.cpp" />
+    <ClCompile Include="..\..\360\xdk360_video_resources.cpp" />
     <ClCompile Include="..\..\audio\hermite.c" />
     <ClCompile Include="..\..\audio\utils.c" />
     <ClCompile Include="..\..\autosave.c" />
@@ -458,6 +461,23 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\b.png;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\b.png;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\b.png;%(Outputs)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\360\media\Arial_12.rdf">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">Bundler %(FullPath) /o $(OutDir)media\Arial_12.xpr</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">Bundler %(FullPath) /o $(OutDir)media\Arial_12.xpr</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">Bundler %(FullPath) /o $(OutDir)media\Arial_12.xpr</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">Bundler %(FullPath) /o $(OutDir)media\Arial_12.xpr</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">Bundler %(FullPath) /o $(OutDir)media\Arial_12.xpr</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">Bundler %(FullPath) /o $(OutDir)media\Arial_12.xpr</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\Arial_12.xpr;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\Arial_12.xpr;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\Arial_12.xpr;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\Arial_12.xpr;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\Arial_12.xpr;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\Arial_12.xpr;%(Outputs)</Outputs>
     </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
