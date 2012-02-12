@@ -36,8 +36,8 @@ Console::~Console()
     Destroy();
 }
 
-HRESULT Console::Create( LPCSTR strFontFileName, D3DCOLOR colBackColor,
-                         D3DCOLOR colTextColor, unsigned int nLines )
+HRESULT Console::Create( LPCSTR strFontFileName, unsigned long colBackColor,
+	unsigned long colTextColor, unsigned int nLines )
 {
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 	D3DDevice *m_pd3dDevice = vid->xdk360_render_device;

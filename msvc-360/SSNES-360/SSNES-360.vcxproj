@@ -120,6 +120,9 @@
       <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
     </Deploy>
+    <ImageXex>
+      <AdditionalOptions>/privilege=6 %(AdditionalOptions)</AdditionalOptions>
+    </ImageXex>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">
     <ClCompile>
@@ -145,6 +148,9 @@
       <ForceCopy>true</ForceCopy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
+    <ImageXex>
+      <AdditionalOptions>/privilege=6 %(AdditionalOptions)</AdditionalOptions>
+    </ImageXex>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">
     <ClCompile>
@@ -175,6 +181,9 @@
       <ForceCopy>true</ForceCopy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
+    <ImageXex>
+      <AdditionalOptions>/privilege=6 %(AdditionalOptions)</AdditionalOptions>
+    </ImageXex>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">
     <ClCompile>
@@ -204,6 +213,9 @@
       <ForceCopy>true</ForceCopy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
+    <ImageXex>
+      <AdditionalOptions>/privilege=6 %(AdditionalOptions)</AdditionalOptions>
+    </ImageXex>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">
     <ClCompile>
@@ -232,6 +244,9 @@
       <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
     </Deploy>
+    <ImageXex>
+      <AdditionalOptions>/privilege=6 %(AdditionalOptions)</AdditionalOptions>
+    </ImageXex>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">
     <ClCompile>
@@ -262,6 +277,9 @@
       <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg</DeploymentFiles>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
+    <ImageXex>
+      <AdditionalOptions>/privilege=6 %(AdditionalOptions)</AdditionalOptions>
+    </ImageXex>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\360\file_browser.c" />

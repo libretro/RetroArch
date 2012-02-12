@@ -43,9 +43,9 @@
 #define DEVICE_CACHE 11
 
 typedef struct _STRING {
-	USHORT Length;
-	USHORT MaximumLength;
-	PCHAR Buffer;
+	unsigned short Length;
+	unsigned short MaximumLength;
+	char * Buffer;
 } STRING;
 
 char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
@@ -148,7 +148,7 @@ static void set_default_settings (void)
 
 static bool file_exists(const char * filename)
 {
-	DWORD file_attr;
+	unsigned long file_attr;
 
 	file_attr = GetFileAttributes(filename);
 	
@@ -241,7 +241,7 @@ static void get_environment_settings (void)
 	{
 		SSNES_ERR("Couldn't change number of bytes reserved for file system cache.\n");
 	}
-	DWORD result = XMountUtilityDriveEx(XMOUNTUTILITYDRIVE_FORMAT0,8192, 0);
+	unsigned long result = XMountUtilityDriveEx(XMOUNTUTILITYDRIVE_FORMAT0,8192, 0);
 
 	if(result != ERROR_SUCCESS)
 	{
@@ -249,7 +249,7 @@ static void get_environment_settings (void)
 	}
 
 	// detect install environment
-	DWORD license_mask;
+	unsigned long license_mask;
 
 	if (XContentGetLicenseMask(&license_mask, NULL) != ERROR_SUCCESS)
 	{

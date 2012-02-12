@@ -82,8 +82,8 @@ private:
     XdkFont m_Font;
 
     // Colors
-    D3DCOLOR m_colBackColor;
-    D3DCOLOR m_colTextColor;
+    unsigned long m_colBackColor;
+    unsigned long m_colTextColor;
 
     // Text Buffers
     unsigned int m_cScreenHeight;        // height in lines of screen area

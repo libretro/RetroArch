@@ -44,8 +44,8 @@ protected:
 	CXuiTextElement m_title;
 	CXuiTextElement m_core;
 public:
-	HRESULT OnInit( XUIMessageInit* pInitData, BOOL& bHandled );
-	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled );
+	HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
 
 	XUI_BEGIN_MSG_MAP()
 		XUI_ON_XM_INIT( OnInit)
@@ -62,8 +62,8 @@ protected:
 	CXuiControl m_back;
 	CXuiTextElement m_rompathtitle;
 public:
-	HRESULT OnInit( XUIMessageInit* pInitData, BOOL& bHandled );
-	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled );
+	HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
 
 	XUI_BEGIN_MSG_MAP()
 		XUI_ON_XM_INIT( OnInit)
@@ -81,8 +81,8 @@ protected:
 	CXuiControl m_hw_filter;
 	CXuiControl m_back;
 public:
-	HRESULT OnInit( XUIMessageInit* pInitData, BOOL& bHandled );
-	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled );
+	HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
 
 	XUI_BEGIN_MSG_MAP()
 		XUI_ON_XM_INIT( OnInit)

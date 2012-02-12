@@ -171,7 +171,7 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 	return S_OK;
 }
 
-HRESULT CSSNESSettings::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
+HRESULT CSSNESSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
 	if ( hObjPressed == m_rewind)
 	{
@@ -212,7 +212,7 @@ HRESULT CSSNESSettings::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
 	return S_OK;
 }
 
-HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  BOOL& bHandled )
+HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
 	HRESULT hr;
 
