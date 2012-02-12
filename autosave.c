@@ -73,7 +73,7 @@ static void autosave_thread(void *data)
             failed |= fflush(file) != 0;
             failed |= fclose(file) != 0;
             if (failed)
-               SSNES_WARN("Failed to autosave SRAM! Disk might be full.\n");
+               SSNES_WARN("Failed to autosave SRAM. Disk might be full.\n");
          }
       }
 

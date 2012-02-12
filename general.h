@@ -173,6 +173,7 @@ struct console_settings
    bool block_config_read;
    bool default_sram_dir_enable;
    bool default_savestate_dir_enable;
+   bool frame_advance_enable;
    bool initialize_ssnes_enable;
    bool ingame_menu_enable;
    bool menu_enable;
@@ -488,7 +489,7 @@ static inline void ssnes_sleep(unsigned msec)
 }
 
 #define ssnes_assert(cond) \
-   if (!(cond)) { SSNES_ERR("Assertion failed at %s:%d!\n", __FILE__, __LINE__); exit(2); }
+   if (!(cond)) { SSNES_ERR("Assertion failed at %s:%d.\n", __FILE__, __LINE__); exit(2); }
 
 static inline void ssnes_fail(int error_code, const char *error)
 {

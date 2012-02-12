@@ -116,13 +116,13 @@ static void take_screenshot(void)
    const char *msg = NULL;
    if (ret)
    {
-      SSNES_LOG("Taking screenshot!\n");
-      msg = "Taking screenshot!";
+      SSNES_LOG("Taking screenshot.\n");
+      msg = "Taking screenshot.";
    }
    else
    {
       SSNES_WARN("Failed to take screenshot ...\n");
-      msg = "Failed to take screenshot!";
+      msg = "Failed to take screenshot.";
    }
 
    msg_queue_clear(g_extern.msg_queue);
@@ -823,7 +823,7 @@ static void parse_input(int argc, char *argv[])
                g_extern.sram_save_disable = true;
             else if (strcmp(optarg, "load-save") != 0)
             {
-               SSNES_ERR("Invalid argument in --sram-mode!\n");
+               SSNES_ERR("Invalid argument in --sram-mode.\n");
                print_help();
                ssnes_fail(1, "parse_input()");
             }
@@ -1150,13 +1150,13 @@ static void init_rewind(void)
 
    if (!g_extern.state_buf)
    {
-      SSNES_ERR("Failed to allocate memory for rewind buffer!\n");
+      SSNES_ERR("Failed to allocate memory for rewind buffer.\n");
       return;
    }
 
    if (!psnes_serialize((uint8_t*)g_extern.state_buf, g_extern.state_size))
    {
-      SSNES_ERR("Failed to perform initial serialization for rewind!\n");
+      SSNES_ERR("Failed to perform initial serialization for rewind.\n");
       free(g_extern.state_buf);
       g_extern.state_buf = NULL;
       return;
@@ -1166,7 +1166,7 @@ static void init_rewind(void)
    g_extern.state_manager = state_manager_new(aligned_state_size, g_settings.rewind_buffer_size, g_extern.state_buf);
 
    if (!g_extern.state_manager)
-      SSNES_WARN("Failed to init rewind buffer. Rewinding will be disabled!\n");
+      SSNES_WARN("Failed to init rewind buffer. Rewinding will be disabled.\n");
 }
 
 static void deinit_rewind(void)
@@ -1184,33 +1184,33 @@ static void init_movie(void)
       g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, SSNES_MOVIE_PLAYBACK);
       if (!g_extern.bsv.movie)
       {
-         SSNES_ERR("Failed to load movie file: \"%s\"!\n", g_extern.bsv.movie_start_path);
+         SSNES_ERR("Failed to load movie file: \"%s\".\n", g_extern.bsv.movie_start_path);
          ssnes_fail(1, "init_movie()");
       }
 
       g_extern.bsv.movie_playback = true;
-      msg_queue_push(g_extern.msg_queue, "Starting movie playback!", 2, 180);
-      SSNES_LOG("Starting movie playback!\n");
+      msg_queue_push(g_extern.msg_queue, "Starting movie playback.", 2, 180);
+      SSNES_LOG("Starting movie playback.\n");
       g_settings.rewind_granularity = 1;
    }
    else if (g_extern.bsv.movie_start_recording)
    {
       char msg[PATH_MAX];
-      snprintf(msg, sizeof(msg), "Starting movie record to \"%s\"!",
+      snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".",
             g_extern.bsv.movie_start_path);
 
       g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, SSNES_MOVIE_RECORD);
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue,
-            g_extern.bsv.movie ? msg : "Failed to start movie record!", 1, 180);
+            g_extern.bsv.movie ? msg : "Failed to start movie record.", 1, 180);
 
       if (g_extern.bsv.movie)
       {
-         SSNES_LOG("Starting movie record to \"%s\"!\n", g_extern.bsv.movie_start_path);
+         SSNES_LOG("Starting movie record to \"%s\".\n", g_extern.bsv.movie_start_path);
          g_settings.rewind_granularity = 1;
       }
       else
-         SSNES_ERR("Failed to start movie record!\n");
+         SSNES_ERR("Failed to start movie record.\n");
    }
 }
 
@@ -1521,7 +1521,7 @@ static void check_savestates(void)
       if (save_state(save_path))
       {
          msg_queue_clear(g_extern.msg_queue);
-         snprintf(msg, sizeof(msg), "Saved state to slot #%u!", g_extern.state_slot);
+         snprintf(msg, sizeof(msg), "Saved state to slot #%u.", g_extern.state_slot);
          msg_queue_push(g_extern.msg_queue, msg, 1, 180);
       }
       else
@@ -1548,7 +1548,7 @@ static void check_savestates(void)
       if (load_state(load_path))
       {
          msg_queue_clear(g_extern.msg_queue);
-         snprintf(msg, sizeof(msg), "Loaded state from slot #%u!", g_extern.state_slot);
+         snprintf(msg, sizeof(msg), "Loaded state from slot #%u.", g_extern.state_slot);
          msg_queue_push(g_extern.msg_queue, msg, 1, 180);
       }
       else
@@ -1690,14 +1690,14 @@ static void check_rewind(void)
          g_extern.frame_is_reverse = true;
          setup_rewind_audio();
 
-         msg_queue_push(g_extern.msg_queue, "Rewinding!", 0, g_extern.is_paused ? 1 : 30);
+         msg_queue_push(g_extern.msg_queue, "Rewinding.", 0, g_extern.is_paused ? 1 : 30);
          psnes_unserialize((uint8_t*)buf, g_extern.state_size);
 
          if (g_extern.bsv.movie)
             bsv_movie_frame_rewind(g_extern.bsv.movie);
       }
       else
-         msg_queue_push(g_extern.msg_queue, "Reached end of rewind buffer!", 0, 30);
+         msg_queue_push(g_extern.msg_queue, "Reached end of rewind buffer.", 0, 30);
    }
    else
    {
@@ -1722,8 +1722,8 @@ static void check_movie_record(void)
       if (g_extern.bsv.movie)
       {
          msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, "Stopping movie record!", 2, 180);
-         SSNES_LOG("Stopping movie record!\n");
+         msg_queue_push(g_extern.msg_queue, "Stopping movie record.", 2, 180);
+         SSNES_LOG("Stopping movie record.\n");
          bsv_movie_free(g_extern.bsv.movie);
          g_extern.bsv.movie = NULL;
       }
@@ -1744,16 +1744,16 @@ static void check_movie_record(void)
          }
 
          char msg[PATH_MAX];
-         snprintf(msg, sizeof(msg), "Starting movie record to \"%s\"!", path);
+         snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
 
          g_extern.bsv.movie = bsv_movie_init(path, SSNES_MOVIE_RECORD);
          msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ? msg : "Failed to start movie record!", 1, 180);
+         msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ? msg : "Failed to start movie record.", 1, 180);
 
          if (g_extern.bsv.movie)
-            SSNES_LOG("Starting movie record to \"%s\"!\n", path);
+            SSNES_LOG("Starting movie record to \"%s\".\n", path);
          else
-            SSNES_ERR("Failed to start movie record!\n");
+            SSNES_ERR("Failed to start movie record.\n");
       }
    }
 
@@ -1764,8 +1764,8 @@ static void check_movie_playback(void)
 {
    if (g_extern.bsv.movie_end)
    {
-      msg_queue_push(g_extern.msg_queue, "Movie playback ended!", 1, 180);
-      SSNES_LOG("Movie playback ended!\n");
+      msg_queue_push(g_extern.msg_queue, "Movie playback ended.", 1, 180);
+      SSNES_LOG("Movie playback ended.\n");
 
       bsv_movie_free(g_extern.bsv.movie);
       g_extern.bsv.movie = NULL;
@@ -1794,18 +1794,18 @@ static void check_pause(void)
 
       if (g_extern.is_paused)
       {
-         SSNES_LOG("Paused!\n");
+         SSNES_LOG("Paused.\n");
          if (driver.audio_data)
             driver.audio->stop(driver.audio_data);
       }
       else 
       {
-         SSNES_LOG("Unpaused!\n");
+         SSNES_LOG("Unpaused.\n");
          if (driver.audio_data)
          {
             if (!driver.audio->start(driver.audio_data))
             {
-               SSNES_ERR("Failed to resume audio driver! Will continue without audio!\n");
+               SSNES_ERR("Failed to resume audio driver. Will continue without audio.\n");
                g_extern.audio_active = false;
             }
          }
@@ -1813,20 +1813,20 @@ static void check_pause(void)
    }
    else if (focus && !old_focus)
    {
-      SSNES_LOG("Unpaused!\n");
+      SSNES_LOG("Unpaused.\n");
       g_extern.is_paused = false;
       if (driver.audio_data)
       {
          if (!driver.audio->start(driver.audio_data))
          {
-               SSNES_ERR("Failed to resume audio driver! Will continue without audio!\n");
+               SSNES_ERR("Failed to resume audio driver. Will continue without audio.\n");
                g_extern.audio_active = false;
          }
       }
    }
    else if (!focus && old_focus)
    {
-      SSNES_LOG("Paused!\n");
+      SSNES_LOG("Paused.\n");
       g_extern.is_paused = true;
       if (driver.audio_data)
          driver.audio->stop(driver.audio_data);
@@ -1852,9 +1852,9 @@ static void check_oneshot(void)
 
 void ssnes_game_reset(void)
 {
-   SSNES_LOG("Resetting game!\n");
+   SSNES_LOG("Resetting game.\n");
    msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, "Reset!", 1, 120);
+   msg_queue_push(g_extern.msg_queue, "Reset.", 1, 120);
    psnes_reset();
    init_controllers(); // bSNES since v073r01 resets controllers to JOYPAD after a reset, so just enforce it here.
 }
@@ -1909,7 +1909,7 @@ static void check_shader_dir(void)
       SSNES_LOG("Applying shader \"%s\"\n", shader);
 
       if (!driver.video->xml_shader(driver.video_data, shader))
-         SSNES_WARN("Failed to apply shader!\n");
+         SSNES_WARN("Failed to apply shader.\n");
    }
 
    old_pressed_next = pressed_next;
@@ -1980,7 +1980,7 @@ static void check_mute(void)
    {
       g_extern.audio_data.mute = !g_extern.audio_data.mute;
 
-      const char *msg = g_extern.audio_data.mute ? "Audio muted!" : "Audio unmuted!";
+      const char *msg = g_extern.audio_data.mute ? "Audio muted." : "Audio unmuted.";
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
@@ -2135,7 +2135,7 @@ int ssnes_main_init(int argc, char *argv[])
    if (!g_extern.sram_load_disable)
       load_save_files();
    else
-      SSNES_LOG("Skipping SRAM load!\n");
+      SSNES_LOG("Skipping SRAM load.\n");
 
    init_movie();
 
@@ -2163,7 +2163,7 @@ int ssnes_main_init(int argc, char *argv[])
 #endif
 
    if (!g_extern.use_sram)
-      SSNES_LOG("SRAM will not be saved!\n");
+      SSNES_LOG("SRAM will not be saved.\n");
 
    if (g_extern.use_sram)
       init_autosave();

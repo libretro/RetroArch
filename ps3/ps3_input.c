@@ -18,9 +18,11 @@
 
 #include "../driver.h"
 #include "ps3_input.h"
+#include "ps3_video_psgl.h"
 #include <stdint.h>
 #include "../libsnes.hpp"
 #include "../general.h"
+#include "shared.h"
 
 #include <stdlib.h>
 
@@ -89,7 +91,7 @@ static bool ps3_key_pressed(void *data, int key)
    switch (key)
    {
       case SSNES_FAST_FORWARD_HOLD_KEY:
-         return CTRL_RSTICK_UP(state[0]) && CTRL_R2(~state[0]);
+         return CTRL_RSTICK_DOWN(state[0]) && CTRL_R2(~state[0]);
       case SSNES_LOAD_STATE_KEY:
          return (CTRL_RSTICK_UP(state[0]) && CTRL_R2(state[0]));
       case SSNES_SAVE_STATE_KEY:
@@ -98,11 +100,36 @@ static bool ps3_key_pressed(void *data, int key)
          return (CTRL_RSTICK_RIGHT(state[0]) && CTRL_R2(state[0]));
       case SSNES_STATE_SLOT_MINUS:
          return (CTRL_RSTICK_LEFT(state[0]) && CTRL_R2(state[0]));
+      case SSNES_FRAMEADVANCE:
+      	if(g_console.frame_advance_enable)
+	{
+		g_console.menu_enable = false;
+		g_console.ingame_menu_enable = true;
+		g_console.mode_switch = MODE_EMULATION;
+	}
+	 return g_console.frame_advance_enable;
       case SSNES_REWIND:
-         return CTRL_RSTICK_DOWN(state[0]) && CTRL_R2(~state[0]);
+         return CTRL_RSTICK_UP(state[0]) && CTRL_R2(~state[0]);
       case SSNES_QUIT_KEY:
-         g_console.ingame_menu_enable = CTRL_R3(state[0]) && !CTRL_L3(state[0]);
-         return CTRL_R3(state[0]);
+	 {
+		 uint32_t r3_pressed = CTRL_R3(state[0]);
+		 uint32_t l3_pressed = CTRL_L3(state[0]);
+		 bool retval = false;
+		 g_console.menu_enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED());
+		 g_console.ingame_menu_enable = r3_pressed && !l3_pressed;
+		 if(g_console.menu_enable && !g_console.ingame_menu_enable)
+		 {
+			 g_console.mode_switch = MODE_MENU;
+			 SET_TIMER_EXPIRATION(60);
+			 retval = g_console.menu_enable;
+		 }
+		 else
+		 {
+			 g_console.mode_switch = MODE_EMULATION;
+			 retval = g_console.ingame_menu_enable;
+		 }
+		return retval;
+	 }
       default:
          return false;
    }

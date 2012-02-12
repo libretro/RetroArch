@@ -215,7 +215,7 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
 
    if (SSNES_GRAPHICS_API_VERSION != ext->driver->api_version)
    {
-      SSNES_ERR("API version mismatch detected!\n");
+      SSNES_ERR("API version mismatch detected.\n");
       SSNES_ERR("Required API version: %d, Library version: %d\n", SSNES_GRAPHICS_API_VERSION, ext->driver->api_version);
       return false;
    }
@@ -300,7 +300,7 @@ static void *video_ext_init(const video_info_t *video, const input_driver_t **in
 
    if (!(*g_settings.video.external_driver))
    {
-      SSNES_ERR("External driver needs video_external_driver path to be set!\n");
+      SSNES_ERR("External driver needs video_external_driver path to be set.\n");
       goto error;
    }
 

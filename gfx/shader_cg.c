@@ -886,7 +886,7 @@ static bool load_preset(const char *path)
 
    if (shaders < 1)
    {
-      SSNES_ERR("Need to define at least 1 shader!\n");
+      SSNES_ERR("Need to define at least 1 shader.\n");
       ret = false;
       goto end;
    }

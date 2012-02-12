@@ -41,6 +41,10 @@ enum
 	LAST_ASPECT_RATIO
 };
 
+#define IS_TIMER_NOT_EXPIRED() (g_frame_count < g_console.timer_expiration_frame_count)
+#define IS_TIMER_EXPIRED() 	(!(IS_TIMER_NOT_EXPIRED()))
+#define SET_TIMER_EXPIRATION(value) g_console.timer_expiration_frame_count = g_frame_count + value;
+
 bool ps3_setup_texture(void);
 const char * ps3_get_resolution_label(uint32_t resolution);
 int ps3_check_resolution(uint32_t resolution_id);
@@ -60,5 +64,6 @@ void ps3graphics_video_init(bool get_all_resolutions);
 void ps3graphics_video_reinit(void);
 
 extern void *g_gl;
+extern unsigned g_frame_count;
 
 #endif

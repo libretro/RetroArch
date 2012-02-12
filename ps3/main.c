@@ -46,7 +46,6 @@
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 
 char special_action_msg[256]; /* message which should be overlaid on top of the screen*/
-uint32_t special_action_msg_expired; /* time at which the message no longer needs to be overlaid onscreen*/
 uint64_t ingame_menu_item = 0;
 
 char contentInfoPath[MAX_PATH_LENGTH];
@@ -63,7 +62,6 @@ char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
 char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
 char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 char MULTIMAN_GAME_TO_BOOT[MAX_PATH_LENGTH];
-static bool frame_advance_disabled = true;
 
 int ssnes_main(int argc, char *argv[]);
 
@@ -71,15 +69,10 @@ SYS_PROCESS_PARAM(1001, 0x100000)
 
 #undef main
 
-uint32_t set_text_message_speed(uint32_t value)
-{
-	return g_frame_count + value;
-}
-
 void set_text_message(const char * message, uint32_t speed)
 {
 	snprintf(special_action_msg, sizeof(special_action_msg), message);
-	special_action_msg_expired = set_text_message_speed(speed);
+	SET_TIMER_EXPIRATION(speed);
 }
 
 static bool file_exists(const char * filename)
@@ -154,6 +147,7 @@ static void set_default_settings(void)
 
 	// g_console
 	g_console.block_config_read = true;
+	g_console.frame_advance_enable = false;
 	g_console.emulator_initialized = 0;
 	g_console.screenshots_enable = false;
 	g_console.throttle_enable = true;
@@ -183,7 +177,7 @@ static void init_settings(void)
 {
 	if(!file_exists(SYS_CONFIG_FILE))
 	{
-		SSNES_ERR("Config file \"%s\" doesn't exist! Creating...\n", SYS_CONFIG_FILE);
+		SSNES_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
 		FILE * f;
 		f = fopen(SYS_CONFIG_FILE, "w");
 		fclose(f);
@@ -269,7 +263,7 @@ static void save_settings(void)
 	config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
 
 	if (!config_file_write(conf, SYS_CONFIG_FILE))
-		SSNES_ERR("Failed to write config file to \"%s\"! Check permissions!\n", SYS_CONFIG_FILE);
+		SSNES_ERR("Failed to write config file to \"%s\". Check permissions.\n", SYS_CONFIG_FILE);
 
 	free(conf);
 }
@@ -386,14 +380,11 @@ static void ingame_menu(void)
 
 		ssnes_render_cached_frame();
 
-		if(g_frame_count < special_action_msg_expired && blocking)
-		{
-		}
-		else
+		if(IS_TIMER_EXPIRED() && blocking == false)
 		{
 			if(CTRL_CIRCLE(state))
 			{
-				frame_advance_disabled = true;
+				g_console.frame_advance_enable = false;
 				ingame_menu_item = 0;
 				g_console.ingame_menu_enable = false;
 				g_console.mode_switch = MODE_EMULATION;
@@ -409,7 +400,7 @@ static void ingame_menu(void)
 						bool ret = load_state(g_extern.savestate_name);
 						msg_queue_clear(g_extern.msg_queue);
 						if(ret)
-							snprintf(msg, sizeof(msg), "Loaded state from slot #%d!", g_extern.state_slot);
+							snprintf(msg, sizeof(msg), "Loaded state from slot #%d.", g_extern.state_slot);
 						else
 							snprintf(msg, sizeof(msg), "Can't load from save state slot #%d", g_extern.state_slot);
 						msg_queue_clear(g_extern.msg_queue);
@@ -448,7 +439,7 @@ static void ingame_menu(void)
 						char msg[512];
 
 						bool ret = save_state(g_extern.savestate_name);
-						snprintf(msg, sizeof(msg), "Saved state to slot #%d!", g_extern.state_slot);
+						snprintf(msg, sizeof(msg), "Saved state to slot #%d.", g_extern.state_slot);
 
 						msg_queue_clear(g_extern.msg_queue);
 						msg_queue_push(g_extern.msg_queue, msg, 1, 180);
@@ -563,7 +554,7 @@ static void ingame_menu(void)
 				case MENU_ITEM_FRAME_ADVANCE:
 					if(CTRL_CROSS(state) || CTRL_R2(state) || CTRL_L2(state))
 					{
-						frame_advance_disabled = false;
+						g_console.frame_advance_enable = true;
 						ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
 						g_console.ingame_menu_enable = false;
 						g_console.mode_switch = MODE_EMULATION;
@@ -589,7 +580,7 @@ static void ingame_menu(void)
 				case MENU_ITEM_RETURN_TO_GAME:
 					if(CTRL_CROSS(button_was_pressed))
 					{
-						frame_advance_disabled = true;
+						g_console.frame_advance_enable = false;
 						ingame_menu_item = 0;
 						g_console.ingame_menu_enable = false;
 						g_console.mode_switch = MODE_EMULATION;
@@ -728,7 +719,7 @@ static void ingame_menu(void)
 		cellDbgFontPuts (x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)), font_size+0.01f, BLUE, "Return to XMB");
 		cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)), font_size, menuitem_colors[MENU_ITEM_RETURN_TO_XMB], "Return to XMB");
 
-		if(g_frame_count < special_action_msg_expired)
+		if(IS_TIMER_NOT_EXPIRED())
 		{
 			cellDbgFontPrintf (0.09f, 0.90f, 1.51f, BLUE, special_action_msg);
 			cellDbgFontPrintf (0.09f, 0.90f, 1.50f, WHITE, special_action_msg);
@@ -736,7 +727,6 @@ static void ingame_menu(void)
 		}
 		else
 		{
-			special_action_msg_expired = 0;
 			cellDbgFontPrintf (0.09f, 0.90f, 0.98f+0.01f, BLUE, comment);
 			cellDbgFontPrintf (0.09f, 0.90f, 0.98f, LIGHTBLUE, comment);
 		}
@@ -801,7 +791,7 @@ begin_loop:
 
 		do{
 			repeat = ssnes_main_iterate();
-		}while(repeat && frame_advance_disabled);
+		}while(repeat && !g_console.frame_advance_enable);
 
 		g_extern.is_paused = true;
 		if(g_console.ingame_menu_enable)

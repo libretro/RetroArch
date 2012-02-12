@@ -8,7 +8,7 @@
 
 // Simple IIR/EQ filter implementation, optimized for SSE3.
 
-#ifdef __SSE3__ // Build with -march=native or -msse3 to let this be detected! D:
+#ifdef __SSE3__ // Build with -march=native or -msse3 to let this be detected. D:
 #define USE_SSE3
 #endif
 

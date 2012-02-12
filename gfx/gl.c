@@ -943,7 +943,7 @@ static void gl_check_fbo_dimensions(gl_t *gl)
 
          GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
          if (status != GL_FRAMEBUFFER_COMPLETE)
-            SSNES_WARN("Failed to reinit FBO texture!\n");
+            SSNES_WARN("Failed to reinit FBO texture.\n");
 
          SSNES_LOG("Recreating FBO texture #%d: %ux%u\n", i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
       }

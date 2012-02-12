@@ -327,7 +327,7 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
 {
    if (gl_teximage_cnt >= MAX_TEXTURES)
    {
-      SSNES_WARN("Too many texture images! Ignoring ...\n");
+      SSNES_WARN("Too many texture images. Ignoring ...\n");
       return true;
    }
 
@@ -427,7 +427,7 @@ static bool get_script(const char *path, xmlNodePtr ptr)
    xmlChar *language = xmlGetProp(ptr, (const xmlChar*)"language");
    if (!language || strcmp((const char*)language, "python") != 0)
    {
-      SSNES_ERR("Script language is not Python!\n");
+      SSNES_ERR("Script language is not Python.\n");
       if (language)
          xmlFree(language);
       return false;
@@ -452,7 +452,7 @@ static bool get_script(const char *path, xmlNodePtr ptr)
       xmlChar *script = xmlNodeGetContent(ptr);
       if (!script)
       {
-         SSNES_ERR("No content in script!\n");
+         SSNES_ERR("No content in script.\n");
          return false;
       }
       gl_script_program = script;
@@ -488,7 +488,7 @@ static bool get_import_value(xmlNodePtr ptr)
 
    if (!semantic || !id)
    {
-      SSNES_ERR("No semantic or ID for import value!\n");
+      SSNES_ERR("No semantic or ID for import value.\n");
       goto error;
    }
 
@@ -530,7 +530,7 @@ static bool get_import_value(xmlNodePtr ptr)
                break;
 
             default:
-               SSNES_ERR("Invalid input slot for import!\n");
+               SSNES_ERR("Invalid input slot for import.\n");
                goto error;
          }
       }
@@ -976,7 +976,7 @@ bool gl_glsl_init(const char *path)
    }
 
    //if (!gl_check_error())
-   //   SSNES_WARN("Detected GL error!\n");
+   //   SSNES_WARN("Detected GL error.\n");
 
    if (gl_tracker_info_cnt > 0)
    {
@@ -1003,7 +1003,7 @@ bool gl_glsl_init(const char *path)
 
       gl_snes_tracker = snes_tracker_init(&info);
       if (!gl_snes_tracker)
-         SSNES_WARN("Failed to init SNES tracker!\n");
+         SSNES_WARN("Failed to init SNES tracker.\n");
    }
    
    glsl_enable = true;

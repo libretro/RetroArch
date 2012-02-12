@@ -563,19 +563,19 @@ static bool get_info(netplay_t *handle)
 
    if (g_extern.cart_crc != ntohl(header[0]))
    {
-      SSNES_ERR("Cart CRC32s differ! Cannot use different games!\n");
+      SSNES_ERR("Cart CRC32s differ. Cannot use different games.\n");
       return false;
    }
 
    if (implementation_magic_value() != ntohl(header[1]))
    {
-      SSNES_ERR("Implementations differ, make sure you're using exact same libsnes implementations and SSNES version!\n");
+      SSNES_ERR("Implementations differ, make sure you're using exact same libsnes implementations and SSNES version.\n");
       return false;
    }
 
    if (psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM) != ntohl(header[2]))
    {
-      SSNES_ERR("Cartridge SRAM sizes do not correspond!\n");
+      SSNES_ERR("Cartridge SRAM sizes do not correspond.\n");
       return false;
    }
 
@@ -611,13 +611,13 @@ static bool get_info_spectate(netplay_t *handle)
 {
    if (!send_nickname(handle, handle->fd))
    {
-      SSNES_ERR("Failed to send nickname to host!\n");
+      SSNES_ERR("Failed to send nickname to host.\n");
       return false;
    }
 
    if (!get_nickname(handle, handle->fd))
    {
-      SSNES_ERR("Failed to receive nickname from host!\n");
+      SSNES_ERR("Failed to receive nickname from host.\n");
       return false;
    }
 
@@ -630,14 +630,14 @@ static bool get_info_spectate(netplay_t *handle)
 
    if (!recv_all(handle->fd, header, sizeof(header)))
    {
-      SSNES_ERR("Cannot get header from host!\n");
+      SSNES_ERR("Cannot get header from host.\n");
       return false;
    }
 
    unsigned save_state_size = psnes_serialize_size();
    if (!bsv_parse_header(header, implementation_magic_value()))
    {
-      SSNES_ERR("Received invalid BSV header from host!\n");
+      SSNES_ERR("Received invalid BSV header from host.\n");
       return false;
    }
 
@@ -650,7 +650,7 @@ static bool get_info_spectate(netplay_t *handle)
 
    if (!recv_all(handle->fd, tmp_buf, size))
    {
-      SSNES_ERR("Failed to receive save state from host!\n");
+      SSNES_ERR("Failed to receive save state from host.\n");
       free(tmp_buf);
       return false;
    }
@@ -1020,14 +1020,14 @@ static bool netplay_get_cmd(netplay_t *handle)
       {
          if (cmd_size != sizeof(uint32_t))
          {
-            SSNES_ERR("CMD_FLIP_PLAYERS has unexpected command size!\n");
+            SSNES_ERR("CMD_FLIP_PLAYERS has unexpected command size.\n");
             return netplay_cmd_nak(handle);
          }
 
          uint32_t flip_frame;
          if (!recv_all(handle->fd, &flip_frame, sizeof(flip_frame)))
          {
-            SSNES_ERR("Failed to receive CMD_FLIP_PLAYERS argument!\n");
+            SSNES_ERR("Failed to receive CMD_FLIP_PLAYERS argument.\n");
             return netplay_cmd_nak(handle);
          }
 
@@ -1041,14 +1041,14 @@ static bool netplay_get_cmd(netplay_t *handle)
          handle->flip ^= true;
          handle->flip_frame = flip_frame;
 
-         SSNES_LOG("Netplay players are flipped!\n");
-         msg_queue_push(g_extern.msg_queue, "Netplay players are flipped!", 1, 180);
+         SSNES_LOG("Netplay players are flipped.\n");
+         msg_queue_push(g_extern.msg_queue, "Netplay players are flipped.", 1, 180);
 
          return netplay_cmd_ack(handle);
       }
 
       default:
-         SSNES_ERR("Unknown netplay command received!\n");
+         SSNES_ERR("Unknown netplay command received.\n");
          return netplay_cmd_nak(handle);
    }
 }
@@ -1061,28 +1061,28 @@ void netplay_flip_players(netplay_t *handle)
 
    if (handle->spectate)
    {
-      msg = "Cannot flip players in spectate mode!";
+      msg = "Cannot flip players in spectate mode.";
       goto error;
    }
 
    if (handle->port == 0)
    {
-      msg = "Cannot flip players if you're not the host!";
+      msg = "Cannot flip players if you're not the host.";
       goto error;
    }
 
    // Make sure both clients are definitely synced up.
    if (handle->frame_count < (handle->flip_frame + 2 * UDP_FRAME_PACKETS))
    {
-      msg = "Cannot flip players yet! Wait a second or two before attempting flip.";
+      msg = "Cannot flip players yet. Wait a second or two before attempting flip.";
       goto error;
    }
 
    if (netplay_send_cmd(handle, NETPLAY_CMD_FLIP_PLAYERS, &flip_frame_net, sizeof(flip_frame_net))
          && netplay_get_response(handle))
    {
-      SSNES_LOG("Netplay players are flipped!\n");
-      msg_queue_push(g_extern.msg_queue, "Netplay players are flipped!", 1, 180);
+      SSNES_LOG("Netplay players are flipped.\n");
+      msg_queue_push(g_extern.msg_queue, "Netplay players are flipped.", 1, 180);
 
       // Queue up a flip well enough in the future.
       handle->flip ^= true;
@@ -1090,7 +1090,7 @@ void netplay_flip_players(netplay_t *handle)
    }
    else
    {
-      msg = "Failed to flip players!";
+      msg = "Failed to flip players.";
       goto error;
    }
 
@@ -1212,9 +1212,9 @@ static int16_t netplay_get_spectate_input(netplay_t *handle, bool port, unsigned
       return swap_if_big16(inp);
    else
    {
-      SSNES_ERR("Connection with host was cut!\n");
+      SSNES_ERR("Connection with host was cut.\n");
       msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, "Connection with host was cut!", 1, 180);
+      msg_queue_push(g_extern.msg_queue, "Connection with host was cut.", 1, 180);
 
       psnes_set_input_state(netplay_callbacks(g_extern.netplay)->state_cb);
       return netplay_callbacks(g_extern.netplay)->state_cb(port, device, index, id);
@@ -1247,7 +1247,7 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
    int new_fd = accept(handle->fd, (struct sockaddr*)&their_addr, &addr_size);
    if (new_fd < 0)
    {
-      SSNES_ERR("Failed to accept incoming spectator!\n");
+      SSNES_ERR("Failed to accept incoming spectator.\n");
       return;
    }
 
@@ -1270,14 +1270,14 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
 
    if (!get_nickname(handle, new_fd))
    {
-      SSNES_ERR("Failed to get nickname from client!\n");
+      SSNES_ERR("Failed to get nickname from client.\n");
       close(new_fd);
       return;
    }
 
    if (!send_nickname(handle, new_fd))
    {
-      SSNES_ERR("Failed to send nickname to client!\n");
+      SSNES_ERR("Failed to send nickname to client.\n");
       close(new_fd);
       return;
    }
@@ -1286,7 +1286,7 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
    uint32_t *header = bsv_header_generate(&header_size, implementation_magic_value());
    if (!header)
    {
-      SSNES_ERR("Failed to generate BSV header!\n");
+      SSNES_ERR("Failed to generate BSV header.\n");
       close(new_fd);
       return;
    }
@@ -1296,7 +1296,7 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
 
    if (!send_all(new_fd, header, header_size))
    {
-      SSNES_ERR("Failed to send header to client!\n");
+      SSNES_ERR("Failed to send header to client.\n");
       close(new_fd);
       free(header);
       return;
@@ -1382,7 +1382,7 @@ static void netplay_post_frame_spectate(netplay_t *handle)
          SSNES_LOG("Client (#%u) disconnected ...\n", i);
 
          char msg[512];
-         snprintf(msg, sizeof(msg), "Client (#%u) disconnected!", i);
+         snprintf(msg, sizeof(msg), "Client (#%u) disconnected.", i);
          msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
          close(handle->spectate_fds[i]);

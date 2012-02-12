@@ -664,7 +664,7 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
                unsigned alpha[2];
                alpha[0] = a[(x >> 1) + 0];
 
-               if (((x >> 1) + 1) == head->width) // We reached the end, uhoh! Branching like a BOSS! :D
+               if (((x >> 1) + 1) == head->width) // We reached the end, uhoh. Branching like a BOSS. :D
                   alpha[1] = 0;
                else
                   alpha[1] = a[(x >> 1) + 1];

@@ -311,7 +311,7 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
    return ds;
 
 error:
-   SSNES_ERR("[DirectSound] Error occured in init!\n");
+   SSNES_ERR("[DirectSound] Error occured in init.\n");
    dsound_free(ds);
    return NULL;
 }

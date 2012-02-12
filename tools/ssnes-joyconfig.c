@@ -164,7 +164,7 @@ static void get_binds(config_file_t *conf, int player, int joypad)
                break;
 
             case SDL_JOYAXISMOTION:
-               if ( // This is starting to look like Lisp! :D
+               if ( // This is starting to look like Lisp. :D
                      (abs((int)event.jaxis.value - initial_axes[event.jaxis.axis]) > 20000) &&
                      (
                         (event.jaxis.axis != last_axis) || 
@@ -270,7 +270,7 @@ static void parse_input(int argc, char *argv[])
             g_joypad = strtol(optarg, NULL, 0);
             if (g_joypad < 0)
             {
-               fprintf(stderr, "Joypad number can't be negative!\n");
+               fprintf(stderr, "Joypad number can't be negative.\n");
                exit(1);
             }
             break;
@@ -279,7 +279,7 @@ static void parse_input(int argc, char *argv[])
             g_player = strtol(optarg, NULL, 0);
             if (g_player < 1)
             {
-               fprintf(stderr, "Player number must be at least 1!\n");
+               fprintf(stderr, "Player number must be at least 1.\n");
                exit(1);
             }
             else if (g_player > MAX_PLAYERS)
