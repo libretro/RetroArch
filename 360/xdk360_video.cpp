@@ -27,6 +27,8 @@
 #include "config.h"
 #endif
 
+#include "xdk360_video_debugfonts_.h"
+
 static const char* g_strPixelShaderProgram =
     " sampler2D tex : register(s0);       "
     " struct PS_IN                        "
@@ -70,6 +72,145 @@ typedef struct DrawVerticeFormats
 static bool g_quitting;
 unsigned g_frame_count;
 void *g_d3d;
+
+static void xdk360_debugfonts_dprint( int x, int y, unsigned char str )
+{
+	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+
+	int posw = (str - ' ')%16;
+	int posh = (str - ' ')/16;
+	primitive_t * pBuf = &vid->font_buffer[vid->font_num * 4];
+	int addx = 6;
+
+	if ( vid->font_num >= DFONT_MAX )
+		return;
+
+	if ( str == 0x9E )
+		addx = 3;
+
+	pBuf[0].x = pBuf[2].x = x;
+	pBuf[1].x = pBuf[3].x = x+addx;
+	pBuf[0].y = pBuf[1].y = y;
+	pBuf[2].y = pBuf[3].y = y+7;
+	pBuf[0].u = pBuf[2].u = ((float)(posw*16 +  1)/256.0f);
+	pBuf[1].u = pBuf[3].u = ((float)(posw*16 + 13)/256.0f);
+	pBuf[0].v = pBuf[1].v = ((float)(posh*16 +  1)/256.0f);
+	pBuf[2].v = pBuf[3].v = ((float)(posh*16 + 15)/256.0f);
+	vid->font_num++;
+}
+
+void xdk360_debugfonts_printf(int x, int y, const char *arg, ... )
+{
+	char tmp[1024];
+	char *p = tmp;
+	int  tmpx = x;
+
+	va_list ap;
+	va_start( ap, arg );
+	vsprintf( tmp, arg, ap );
+	while ( *p != '\0' )
+	{
+		unsigned char str = (unsigned char)*p;
+		xdk360_debugfonts_dprint( x, y, str );
+		if ( str == 0x9E )
+			x += 3;
+		else if ( str == '\n' )
+		{
+			xdk360_debugfonts_dprint( x, y, 0x9F );
+			x = tmpx;
+			y += 7;
+		}
+		else
+			x += 6;
+
+		p++;
+	}
+	xdk360_debugfonts_dprint( x, y, 0x9F );
+	va_end( ap );
+}
+
+static void xdk360_debugfonts_init (void)
+{
+	HRESULT hr;
+	D3DLOCKED_RECT lock_rect;
+	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+	vid->font_num = 0;
+
+	IDirect3DDevice9 * d3d = vid->xdk360_render_device;
+
+	hr = d3d->CreateTexture(128, 128, 1, 0, D3DFMT_A8R8G8B8,
+	D3DPOOL_MANAGED, &vid->font_texture, NULL);
+
+	if (FAILED(hr))
+	{
+		SSNES_ERR("Could't create debug font texture.\n");
+		return;
+	}
+
+	vid->font_texture->LockRect(0, &lock_rect, NULL, D3DLOCK_NOSYSLOCK );
+
+	DWORD * src = FontData_5x5;
+	DWORD * dst = (DWORD *)lock_rect.pBits;
+
+	for (int y = 0; y < 64; y++)
+	{
+		memcpy(dst, src, sizeof(DWORD)*128 );
+		src += 128;
+		dst += lock_rect.Pitch/sizeof(DWORD);
+	}
+
+	vid->font_texture->UnlockRect(0);
+
+	for (int i = 0; i < DFONT_MAX; i++)
+	{
+		vid->font_buffer[i * 4].z		= 0;
+		vid->font_buffer[i * 4].rhw		= 1.0f;
+
+		vid->font_buffer[i * 4 + 1].z	= 0;
+		vid->font_buffer[i * 4 + 1].rhw	= 1.0f;
+
+		vid->font_buffer[i * 4 + 2].z	= 0;
+		vid->font_buffer[i * 4 + 2].rhw	= 1.0f;
+
+		vid->font_buffer[i * 4 + 3].z	= 0;
+		vid->font_buffer[i * 4 + 3].rhw	= 1.0f;
+
+		vid->font_index[i * 6]			= i * 4;
+		vid->font_index[i * 6 + 1]		= i * 4 + 1;
+		vid->font_index[i * 6 + 2]		= i * 4 + 2;
+		vid->font_index[i * 6 + 3]		= i * 4 + 3;
+		vid->font_index[i * 6 + 4]		= i * 4 + 2;
+		vid->font_index[i * 6 + 5]		= i * 4 + 1;
+	}
+}
+
+static void xdk360_debugfonts_deinit (void)
+{
+	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+
+	IDirect3DDevice9 * d3d = vid->xdk360_render_device;
+
+	if (vid->font_texture != NULL)
+		vid->font_texture->Release();
+}
+
+static void xdk360_debugfonts_draw (void)
+{
+	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+	IDirect3DDevice9 * d3d = vid->xdk360_render_device;
+
+	d3d->SetTexture(0, vid->font_texture);
+	d3d->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+	d3d->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	d3d->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	//d3d->SetFVF( PRIM_FVF);
+	d3d->SetVertexDeclaration(vid->pVertexDecl);
+	d3d->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST, 0, vid->font_num * 4,
+	vid->font_num * 2, vid->font_index, D3DFMT_INDEX16, 
+	vid->font_buffer, sizeof(primitive_t));
+
+	vid->font_num = 0;
+}
 
 static void xdk360_gfx_free(void * data)
 {
@@ -260,6 +401,12 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
       vid->lpTexture->UnlockRect(0);
    }
 
+   if (msg)
+   {
+	   xdk360_debugfonts_printf(0, 0, msg);
+	   xdk360_debugfonts_draw();
+   }
+
    vid->xdk360_render_device->SetTexture(0, vid->lpTexture);
    vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_console.filter_type);
    vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_console.filter_type);
@@ -311,6 +458,7 @@ void xdk360_video_init(void)
 	video_info.input_scale = 2;
 
 	g_d3d = xdk360_gfx_init(&video_info, NULL, NULL);
+	xdk360_debugfonts_init();
 }
 
 void xdk360_video_deinit(void)
