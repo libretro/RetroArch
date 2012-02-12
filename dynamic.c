@@ -101,7 +101,7 @@ unsigned (*psnes_get_memory_size)(unsigned);
 void (*psnes_unload_cartridge)(void);
 void (*psnes_term)(void);
 
-#if defined(NEED_DYNAMIC) || defined(GEKKO) || defined(__CELLOS_LV2__) || defined(XENON)
+#if defined(NEED_DYNAMIC) || defined(SSNES_CONSOLE)
 static void set_environment(void);
 #endif
 static void set_environment_defaults(void);
@@ -222,7 +222,7 @@ void init_libsnes_sym(void)
 #endif
 
    set_environment_defaults();
-#if defined(NEED_DYNAMIC) || defined(GEKKO) || defined(__CELLOS_LV2__) || defined(XENON)
+#if defined(NEED_DYNAMIC) || defined(SSNES_CONSOLE)
    set_environment();
 #endif
 }
@@ -282,7 +282,7 @@ void dylib_close(dylib_t lib)
 }
 #endif
 
-#if defined(NEED_DYNAMIC) || defined(GEKKO) || defined(__CELLOS_LV2__) || defined(XENON)
+#if defined(NEED_DYNAMIC) || defined(SSNES_CONSOLE)
 static bool environment_cb(unsigned cmd, void *data)
 {
    switch (cmd)
@@ -404,7 +404,7 @@ static void set_environment(void)
    if (psnes_set_environment)
       psnes_set_environment(environment_cb);
 }
-#elif defined(GEKKO) || defined(__CELLOS_LV2__) || defined(XENON)
+#elif defined(SSNES_CONSOLE)
 // Not very optional when we're running on a console without dynamic loading support.
 static void set_environment(void)
 {
