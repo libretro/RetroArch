@@ -766,7 +766,7 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
    }
 
    char attr_name_buf[64];
-   double fattr;
+   float fattr;
    int iattr;
    struct gl_fbo_scale *scale = &cg_scale[i + 1]; // Shader 0 is passthrough shader. Start at 1.
 
@@ -819,12 +819,12 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
    else
    {
       print_buf(attr_name_buf, "scale%u", i);
-      if (config_get_double(conf, attr_name_buf, &fattr))
+      if (config_get_float(conf, attr_name_buf, &fattr))
          scale->scale_x = fattr;
       else
       {
          print_buf(attr_name_buf, "scale_x%u", i);
-         if (config_get_double(conf, attr_name_buf, &fattr))
+         if (config_get_float(conf, attr_name_buf, &fattr))
             scale->scale_x = fattr;
       }
    }
@@ -844,12 +844,12 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
    else
    {
       print_buf(attr_name_buf, "scale%u", i);
-      if (config_get_double(conf, attr_name_buf, &fattr))
+      if (config_get_float(conf, attr_name_buf, &fattr))
          scale->scale_y = fattr;
       else
       {
          print_buf(attr_name_buf, "scale_y%u", i);
-         if (config_get_double(conf, attr_name_buf, &fattr))
+         if (config_get_float(conf, attr_name_buf, &fattr))
             scale->scale_y = fattr;
       }
    }
