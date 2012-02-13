@@ -8,11 +8,12 @@ STRIPPING_ENABLE	= 0
 ## Platform detection from nall/Makefile. Only two applicable hosts for PS3 SDK.
 ifeq ($(platform),)
   uname := $(shell uname -a)
+endif
+
 ifeq ($(uname),)
     platform := win
 else
     platform := linux
-endif
 endif
 
 ifeq ($(platform),win)
