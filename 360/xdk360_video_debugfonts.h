@@ -71,9 +71,6 @@ public:
 
     float m_fXScaleFactor;      // Scaling constants
     float m_fYScaleFactor;
-    float m_fSlantFactor;       // For italics
-    double m_dRotCos;           // Precalculated sine and cosine for italic like rotation
-    double m_dRotSin;
 
     D3DRECT m_rcWindow;         // Bounds rect if the text window, modify via accessors only!
     float m_fCursorX;           // Current text cursor
@@ -94,8 +91,6 @@ public:
     unsigned long m_dwSavedState[ SAVEDSTATE_COUNT ];
     unsigned long m_dwNestedBeginCount;
     int m_bSaveState;
-
-    int m_bRotate;
 public:
     XdkFont();
     ~XdkFont();
@@ -108,10 +103,6 @@ public:
     void    GetTextExtent( const wchar_t * strText, float * pWidth,
                            float * pHeight, int bFirstLineOnly=FALSE ) const;
     float   GetTextWidth( const wchar_t * strText ) const;
-
-    void    SetWindow(const D3DRECT &rcWindow );
-    void    SetWindow( long x1, long y1, long x2, long y2 );
-    void    GetWindow(D3DRECT &rcWindow) const;
     void    SetCursorPosition( float fCursorX, float fCursorY );
 	void	SetFontSize(float x, float y);
 
@@ -128,8 +119,6 @@ public:
 private:
     // Internal helper functions
     HRESULT CreateFontShaders();
-    void ReleaseFontShaders();
-    void RotatePoint( float * X, float * Y, double OriginX, double OriginY ) const;
 };
 
 #endif

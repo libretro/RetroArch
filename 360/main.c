@@ -340,13 +340,9 @@ static void ingame_menu (void)
 			float ypos = 0.19f;
 			float ypos_increment = 0.04f;
 
-			g_screen_console.m_Font.SetFontSize(3.0f, 3.0f);
-
 			vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);	
 		}
 	}while(g_console.ingame_menu_enable);
-
-	g_screen_console.m_Font.SetFontSize(2.0f, 2.0f);
 
 	xdk360_unblock_swap();
 }

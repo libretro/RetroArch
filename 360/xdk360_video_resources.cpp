@@ -171,22 +171,6 @@ HRESULT PackedResource::Create( const char * strFilename )
     return S_OK;
 }
 
-
-//--------------------------------------------------------------------------------------
-// Name: GetResourceTags
-// Desc: Retrieves the resource tags
-//--------------------------------------------------------------------------------------
-void PackedResource::GetResourceTags( unsigned long * pdwNumResourceTags,
-                                  RESOURCE** ppResourceTags ) const
-{
-    if( pdwNumResourceTags )
-        ( *pdwNumResourceTags ) = m_dwNumResourceTags;
-
-    if( ppResourceTags )
-        ( *ppResourceTags ) = m_pResourceTags;
-}
-
-
 //--------------------------------------------------------------------------------------
 // Name: Destroy
 // Desc: Cleans up the packed resource data

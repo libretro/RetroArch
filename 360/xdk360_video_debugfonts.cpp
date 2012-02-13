@@ -233,25 +233,6 @@ HRESULT XdkFont::CreateFontShaders()
 }
 
 //--------------------------------------------------------------------------------------
-// Name: ReleaseFontShaders()
-// Desc: Releases the font shaders by reference
-//--------------------------------------------------------------------------------------
-
-void XdkFont::ReleaseFontShaders()
-{
-    // Safely release shaders
-    // NOTE: They are released in reverse order of creation
-    // to make sure any interdependencies are dealt with
-
-    if( ( s_AtgFontLocals.m_pFontPixelShader != NULL ) && ( s_AtgFontLocals.m_pFontPixelShader->Release() == 0 ) )
-        s_AtgFontLocals.m_pFontPixelShader = NULL;
-    if( ( s_AtgFontLocals.m_pFontVertexShader != NULL ) && ( s_AtgFontLocals.m_pFontVertexShader->Release() == 0 ) )
-        s_AtgFontLocals.m_pFontVertexShader = NULL;
-    if( ( s_AtgFontLocals.m_pFontVertexDecl != NULL ) && ( s_AtgFontLocals.m_pFontVertexDecl->Release() == 0 ) )
-        s_AtgFontLocals.m_pFontVertexDecl = NULL;
-}
-
-//--------------------------------------------------------------------------------------
 // Name: Font()
 // Desc: Constructor
 //--------------------------------------------------------------------------------------
@@ -267,10 +248,6 @@ XdkFont::XdkFont()
 
     m_fXScaleFactor = 2.0f;
     m_fYScaleFactor = 2.0f;
-    m_fSlantFactor = 0.0f;
-    m_bRotate = FALSE;
-    m_dRotCos = cos( 0.0 );
-    m_dRotSin = sin( 0.0 );
 
     m_cMaxGlyph = 0;
     m_TranslatorTable = NULL;
@@ -377,51 +354,18 @@ void XdkFont::Destroy()
     m_dwNestedBeginCount = 0L;
 
     // Safely release shaders
-    ReleaseFontShaders();
+    // NOTE: They are released in reverse order of creation
+    // to make sure any interdependencies are dealt with
+
+    if( ( s_AtgFontLocals.m_pFontPixelShader != NULL ) && ( s_AtgFontLocals.m_pFontPixelShader->Release() == 0 ) )
+        s_AtgFontLocals.m_pFontPixelShader = NULL;
+    if( ( s_AtgFontLocals.m_pFontVertexShader != NULL ) && ( s_AtgFontLocals.m_pFontVertexShader->Release() == 0 ) )
+        s_AtgFontLocals.m_pFontVertexShader = NULL;
+    if( ( s_AtgFontLocals.m_pFontVertexDecl != NULL ) && ( s_AtgFontLocals.m_pFontVertexDecl->Release() == 0 ) )
+        s_AtgFontLocals.m_pFontVertexDecl = NULL;
 
     if( m_xprResource.m_bInitialized)
         m_xprResource.Destroy();
-}
-
-
-//--------------------------------------------------------------------------------------
-// Name: SetWindow()
-// Desc: Sets the  and the bounds rect for drawing text and resets the cursor position
-//--------------------------------------------------------------------------------------
-void XdkFont::SetWindow(const D3DRECT &rcWindow )
-{
-    m_rcWindow.x1 = rcWindow.x1;
-    m_rcWindow.y1 = rcWindow.y1;
-    m_rcWindow.x2 = rcWindow.x2;
-    m_rcWindow.y2 = rcWindow.y2;
-
-    m_fCursorX = 0.0f;
-    m_fCursorY = 0.0f;
-}
-
-
-//--------------------------------------------------------------------------------------
-// Name: SetWindow()
-// Desc: Sets the  and the bounds rect for drawing text and resets the cursor position
-//--------------------------------------------------------------------------------------
-void XdkFont::SetWindow( long x1, long y1, long x2, long y2 )
-{
-    m_rcWindow.x1 = x1;
-    m_rcWindow.y1 = y1;
-    m_rcWindow.x2 = x2;
-    m_rcWindow.y2 = y2;
-
-    m_fCursorX = 0.0f;
-    m_fCursorY = 0.0f;
-}
-
-//--------------------------------------------------------------------------------------
-// Name: GetWindow()
-// Desc: Gets the current bounds rect for drawing
-//--------------------------------------------------------------------------------------
-void XdkFont::GetWindow( D3DRECT &rcWindow ) const
-{
-    rcWindow = m_rcWindow;      // NOTE: This is a structure copy
 }
 
 //--------------------------------------------------------------------------------------
@@ -782,7 +726,7 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
             if( dwFlags & FONT_TRUNCATED )
             {
                 // Check if we will be exceeded the max allowed width
-                if( m_fCursorX + fOffset + fWidth + fEllipsesPixelWidth + m_fSlantFactor > fOriginX + fMaxPixelWidth )
+                if( m_fCursorX + fOffset + fWidth + fEllipsesPixelWidth > fOriginX + fMaxPixelWidth )
                 {
                     // Yup, draw the three ellipses dots instead
                     dwNumEllipsesToDraw = 3;
@@ -794,22 +738,13 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
         // Setup the screen coordinates
         m_fCursorX += fOffset;
         float X4 = m_fCursorX;
-        float X1 = X4 + m_fSlantFactor;
+        float X1 = X4;
         float X3 = X4 + fWidth;
         float X2 = X1 + fWidth;
         float Y1 = m_fCursorY;
         float Y3 = Y1 + fHeight;
         float Y2 = Y1;
         float Y4 = Y3;
-
-        // Rotate the points by the rotation factor
-        if( m_bRotate )
-        {
-            RotatePoint( &X1, &Y1, fOriginX, fOriginY );
-            RotatePoint( &X2, &Y2, fOriginX, fOriginY );
-            RotatePoint( &X3, &Y3, fOriginX, fOriginY );
-            RotatePoint( &X4, &Y4, fOriginX, fOriginY );
-        }
 
         m_fCursorX += fAdvance;
 
@@ -951,19 +886,4 @@ VOID XdkFont::End()
     }
 
     PIXEndNamedEvent();
-}
-
-//--------------------------------------------------------------------------------------
-// Name: RotatePoint()
-// Desc: Rotate a 2D point around the origin
-//-------------------------------------------------------------------------------------
-void XdkFont::RotatePoint( float * X, float * Y, double OriginX, double OriginY ) const
-{
-    double dTempX = *X - OriginX;
-    double dTempY = *Y - OriginY;
-    double dXprime = OriginX + ( m_dRotCos * dTempX - m_dRotSin * dTempY );
-    double dYprime = OriginY + ( m_dRotSin * dTempX + m_dRotCos * dTempY );
-
-    *X = static_cast<float>( dXprime );
-    *Y = static_cast<float>( dYprime );
 }

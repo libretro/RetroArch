@@ -69,10 +69,6 @@ public:
 
     void    Destroy();
 
-    // Retrieves the resource tags
-    void   GetResourceTags( unsigned long * pdwNumResourceTags, 
-		RESOURCE** ppResourceTags ) const;
-
     // Helper function to make sure a resource is registered
     D3DResource* RegisterResource( D3DResource* pResource ) const
     {
