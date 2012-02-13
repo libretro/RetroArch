@@ -103,32 +103,31 @@ static bool ps3_key_pressed(void *data, int key)
       case SSNES_FRAMEADVANCE:
       	if(g_console.frame_advance_enable)
 	{
-		g_console.menu_enable = false;
+		g_console.menu_enable = true;
 		g_console.ingame_menu_enable = true;
-		g_console.mode_switch = MODE_EMULATION;
+		g_console.mode_switch = MODE_MENU;
 	}
-	 return g_console.frame_advance_enable;
+	 return false;
       case SSNES_REWIND:
          return CTRL_RSTICK_UP(state[0]) && CTRL_R2(~state[0]);
       case SSNES_QUIT_KEY:
+	 if(IS_TIMER_EXPIRED())
 	 {
 		 uint32_t r3_pressed = CTRL_R3(state[0]);
 		 uint32_t l3_pressed = CTRL_L3(state[0]);
 		 bool retval = false;
 		 g_console.menu_enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED());
 		 g_console.ingame_menu_enable = r3_pressed && !l3_pressed;
-		 if(g_console.menu_enable && !g_console.ingame_menu_enable)
+
+		 if(g_console.menu_enable || (g_console.ingame_menu_enable && !g_console.menu_enable))
 		 {
 			 g_console.mode_switch = MODE_MENU;
-			 SET_TIMER_EXPIRATION(60);
+			 SET_TIMER_EXPIRATION(30);
 			 retval = g_console.menu_enable;
 		 }
-		 else
-		 {
-			 g_console.mode_switch = MODE_EMULATION;
-			 retval = g_console.ingame_menu_enable;
-		 }
-		return retval;
+
+		 retval = g_console.ingame_menu_enable ? g_console.ingame_menu_enable : g_console.menu_enable;
+		 return retval;
 	 }
       default:
          return false;

@@ -69,6 +69,7 @@ typedef struct
 #define PATH_CHEATS_DIR_CHOICE		14
 #define PATH_SRAM_DIR_CHOICE		15
 #define INPUT_PRESET_CHOICE		16
+#define INGAME_MENU			17
 
 enum
 {
