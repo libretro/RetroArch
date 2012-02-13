@@ -189,6 +189,7 @@ struct console_settings
    uint32_t screen_orientation;
    uint32_t current_resolution_index;
    uint32_t current_resolution_id;
+   uint32_t ingame_menu_item;
    uint32_t initial_resolution_id;
    uint32_t mode_switch;
    uint32_t *supported_resolutions;

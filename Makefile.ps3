@@ -1,9 +1,5 @@
-###
-##
 # Makefile for SSNES PS3. Somewhat generic and avoids using the odd SDK examples.
-##
-###
-##
+
 DEBUG			= 0
 CELL_BUILD_TOOLS	= GCC
 DOWNLOAD_SHADERS	= 1

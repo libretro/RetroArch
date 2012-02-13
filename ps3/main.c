@@ -46,7 +46,6 @@
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 
 char special_action_msg[256]; /* message which should be overlaid on top of the screen*/
-uint64_t ingame_menu_item = 0;
 
 char contentInfoPath[MAX_PATH_LENGTH];
 char usrDirPath[MAX_PATH_LENGTH];
@@ -385,12 +384,12 @@ static void ingame_menu(void)
 			if(CTRL_CIRCLE(state))
 			{
 				g_console.frame_advance_enable = false;
-				ingame_menu_item = 0;
+				g_console.ingame_menu_item = 0;
 				g_console.ingame_menu_enable = false;
 				g_console.mode_switch = MODE_EMULATION;
 			}
 
-			switch(ingame_menu_item)
+			switch(g_console.ingame_menu_item)
 			{
 				case MENU_ITEM_LOAD_STATE:
 					if(CTRL_CROSS(button_was_pressed))
@@ -406,7 +405,7 @@ static void ingame_menu(void)
 						msg_queue_clear(g_extern.msg_queue);
 						msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
-						ingame_menu_item = 0;
+						g_console.ingame_menu_item = 0;
 						g_console.ingame_menu_enable = false;
 						g_console.mode_switch = MODE_EMULATION;
 					}
@@ -430,7 +429,7 @@ static void ingame_menu(void)
 						blocking = 0;
 					}
 
-					ingame_menu_reset_entry_colors(ingame_menu_item);
+					ingame_menu_reset_entry_colors(g_console.ingame_menu_item);
 					strcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the state from the currently selected save state slot.");
 					break;
 				case MENU_ITEM_SAVE_STATE:
@@ -443,7 +442,7 @@ static void ingame_menu(void)
 
 						msg_queue_clear(g_extern.msg_queue);
 						msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-						ingame_menu_item = 0;
+						g_console.ingame_menu_item = 0;
 						g_console.ingame_menu_enable = false;
 						g_console.mode_switch = MODE_EMULATION;
 					}
@@ -467,7 +466,7 @@ static void ingame_menu(void)
 						blocking = 0;
 					}
 
-					ingame_menu_reset_entry_colors (ingame_menu_item);
+					ingame_menu_reset_entry_colors (g_console.ingame_menu_item);
 					strcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.");
 					break;
 				case MENU_ITEM_KEEP_ASPECT_RATIO:
@@ -492,7 +491,7 @@ static void ingame_menu(void)
 						g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
 						ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
 					}
-					ingame_menu_reset_entry_colors (ingame_menu_item);
+					ingame_menu_reset_entry_colors (g_console.ingame_menu_item);
 					strcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.");
 					break;
 				case MENU_ITEM_OVERSCAN_AMOUNT:
@@ -521,7 +520,7 @@ static void ingame_menu(void)
 						g_console.overscan_enable = false;
 						ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
 					}
-					ingame_menu_reset_entry_colors (ingame_menu_item);
+					ingame_menu_reset_entry_colors (g_console.ingame_menu_item);
 					strcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.");
 					break;
 				case MENU_ITEM_ORIENTATION:
@@ -548,25 +547,25 @@ static void ingame_menu(void)
 						g_console.screen_orientation = ORIENTATION_NORMAL;
 						ps3graphics_set_orientation(g_console.screen_orientation);
 					}
-					ingame_menu_reset_entry_colors (ingame_menu_item);
+					ingame_menu_reset_entry_colors (g_console.ingame_menu_item);
 					strcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.");
 					break;
 				case MENU_ITEM_FRAME_ADVANCE:
 					if(CTRL_CROSS(state) || CTRL_R2(state) || CTRL_L2(state))
 					{
 						g_console.frame_advance_enable = true;
-						ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
+						g_console.ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
 						g_console.ingame_menu_enable = false;
 						g_console.mode_switch = MODE_EMULATION;
 					}
-					ingame_menu_reset_entry_colors (ingame_menu_item);
+					ingame_menu_reset_entry_colors (g_console.ingame_menu_item);
 					strcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame.\nNOTE: Pressing the button rapidly will advance the frame more slowly\nand prevent buttons from being input.");
 					break;
 				case MENU_ITEM_RESIZE_MODE:
 					if(CTRL_CROSS(state))
 					{
 					}
-					ingame_menu_reset_entry_colors (ingame_menu_item);
+					ingame_menu_reset_entry_colors (g_console.ingame_menu_item);
 					strcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the\nin-game menu.");
 					break;
 				case MENU_ITEM_SCREENSHOT_MODE:
@@ -574,41 +573,41 @@ static void ingame_menu(void)
 					{
 					}
 
-					ingame_menu_reset_entry_colors (ingame_menu_item);
+					ingame_menu_reset_entry_colors (g_console.ingame_menu_item);
 					strcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.");
 					break;
 				case MENU_ITEM_RETURN_TO_GAME:
 					if(CTRL_CROSS(button_was_pressed))
 					{
 						g_console.frame_advance_enable = false;
-						ingame_menu_item = 0;
+						g_console.ingame_menu_item = 0;
 						g_console.ingame_menu_enable = false;
 						g_console.mode_switch = MODE_EMULATION;
 					}
-					ingame_menu_reset_entry_colors (ingame_menu_item);
+					ingame_menu_reset_entry_colors (g_console.ingame_menu_item);
 					strcpy(comment, "Press 'CROSS' to return back to the game.");
 					break;
 				case MENU_ITEM_RESET:
 					if(CTRL_CROSS(button_was_pressed))
 					{
-						ingame_menu_item = 0;
+						g_console.ingame_menu_item = 0;
 						g_console.ingame_menu_enable = false;
 						g_console.mode_switch = MODE_EMULATION;
 						ssnes_game_reset();
 					}
-					ingame_menu_reset_entry_colors (ingame_menu_item);
+					ingame_menu_reset_entry_colors (g_console.ingame_menu_item);
 					strcpy(comment, "Press 'CROSS' to reset the game.");
 					break;
 				case MENU_ITEM_RETURN_TO_MENU:
 					if(CTRL_CROSS(button_was_pressed))
 					{
-						ingame_menu_item = 0;
+						g_console.ingame_menu_item = 0;
 						g_console.ingame_menu_enable = false;
 						g_console.menu_enable = false;
 						g_console.mode_switch = MODE_MENU;
 					}
 
-					ingame_menu_reset_entry_colors (ingame_menu_item);
+					ingame_menu_reset_entry_colors (g_console.ingame_menu_item);
 					strcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.");
 					break;
 #ifdef MULTIMAN_SUPPORT
@@ -619,7 +618,7 @@ static void ingame_menu(void)
 						g_console.mode_switch = MODE_EXIT;
 					}
 
-					ingame_menu_reset_entry_colors (ingame_menu_item);
+					ingame_menu_reset_entry_colors (g_console.ingame_menu_item);
 					strcpy(comment, "Press 'CROSS' to quit the emulator and return to multiMAN.");
 					break;
 #endif
@@ -633,21 +632,21 @@ static void ingame_menu(void)
 						g_console.mode_switch = MODE_EXIT;
 					}
 
-					ingame_menu_reset_entry_colors (ingame_menu_item);
+					ingame_menu_reset_entry_colors (g_console.ingame_menu_item);
 					strcpy(comment, "Press 'CROSS' to quit the emulator and return to the XMB.");
 					break;
 			}
 
 			if(CTRL_UP(button_was_pressed) || CTRL_LSTICK_UP(button_was_pressed))
 			{
-				if(ingame_menu_item > 0)
-					ingame_menu_item--;
+				if(g_console.ingame_menu_item > 0)
+					g_console.ingame_menu_item--;
 			}
 
 			if(CTRL_DOWN(button_was_pressed) || CTRL_LSTICK_DOWN(button_was_pressed))
 			{
-				if(ingame_menu_item < MENU_ITEM_LAST)
-					ingame_menu_item++;
+				if(g_console.ingame_menu_item < MENU_ITEM_LAST)
+					g_console.ingame_menu_item++;
 			}
 		}
 
@@ -783,7 +782,7 @@ begin_loop:
 	if(g_console.mode_switch == MODE_EMULATION)
 	{
 		bool repeat = false;
-		if(ingame_menu_item != 0)
+		if(g_console.ingame_menu_item != 0)
 			g_console.ingame_menu_enable = true;
 
 		g_extern.is_paused = false;
