@@ -87,17 +87,11 @@ static void set_filter_element(int index, CXuiControl * obj)
 {
 	switch(index)
 	{
-		case D3DTEXF_NONE:
-			obj->SetText(L"None");
-			break;
-		case D3DTEXF_POINT:
+		case FALSE:
 			obj->SetText(L"Point filtering");
 			break;
-		case D3DTEXF_LINEAR:
+		case TRUE:
 			obj->SetText(L"Linear interpolation");
-			break;
-		case D3DTEXF_ANISOTROPIC:
-			obj->SetText(L"Anisotropic filtering");
 			break;
 	}
 }
@@ -109,7 +103,7 @@ HRESULT CSSNESSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	GetChildById(L"XuiBackButton1", &m_back);
 	GetChildById(L"XuiBtnHWFilter", &m_hw_filter);
 
-	set_filter_element(g_console.filter_type, &m_hw_filter);
+	set_filter_element(g_settings.video.smooth, &m_hw_filter);
 	m_rewind_cb.SetCheck(g_settings.rewind_enable);
 	return S_OK;
 }
@@ -180,21 +174,7 @@ HRESULT CSSNESSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 	}
 	else if ( hObjPressed == m_hw_filter)
 	{
-		switch(g_console.filter_type)
-		{
-			case D3DTEXF_NONE:
-				g_console.filter_type = D3DTEXF_LINEAR;
-				break;
-			case D3DTEXF_POINT:
-				g_console.filter_type = D3DTEXF_NONE;
-				break;
-			case D3DTEXF_LINEAR:
-				g_console.filter_type = D3DTEXF_ANISOTROPIC;
-				break;
-			case D3DTEXF_ANISOTROPIC:
-				g_console.filter_type = D3DTEXF_POINT;
-				break;
-		}
+		g_settings.video.smooth = !g_settings.video.smooth;
 	}
 	else if ( hObjPressed == m_back )
 	{
@@ -207,7 +187,7 @@ HRESULT CSSNESSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 		
 		NavigateBack(app.hMainScene);
 	}
-	set_filter_element(g_console.filter_type, &m_hw_filter);
+	set_filter_element(g_settings.video.smooth, &m_hw_filter);
 	bHandled = TRUE;
 	return S_OK;
 }

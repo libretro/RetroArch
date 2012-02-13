@@ -185,7 +185,6 @@ struct console_settings
    float overscan_amount;
    uint32_t aspect_ratio_index;
    uint32_t emulator_initialized;
-   uint32_t filter_type;
    uint32_t screen_orientation;
    uint32_t current_resolution_index;
    uint32_t current_resolution_id;

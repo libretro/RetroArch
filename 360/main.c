@@ -53,7 +53,6 @@ char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 extern "C" int __stdcall ObCreateSymbolicLink( STRING*, STRING*);
 
 int Mounted[20];
-uint64_t ingame_menu_item = 0;
 
 int ssnes_main(int argc, char *argv[]);
 
@@ -131,6 +130,7 @@ static void set_default_settings (void)
 	//g_settings
 	g_settings.rewind_enable = false;
 	g_settings.video.vsync = true;
+	g_settings.video.smooth = true;
 
 	//g_console
 	g_console.block_config_read = true;
@@ -139,7 +139,6 @@ static void set_default_settings (void)
 	g_console.emulator_initialized = 0;
 	g_console.mode_switch = MODE_MENU;
 	strlcpy(g_console.default_rom_startup_dir, "game:\\roms\\", sizeof(g_console.default_rom_startup_dir));
-	g_console.filter_type = D3DTEXF_LINEAR;
 
 	//g_extern
 	g_extern.state_slot = 0;
@@ -173,12 +172,12 @@ static void init_settings (void)
 
 	// g_settings
 	CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
+	CONFIG_GET_BOOL(video.smooth, "video_smooth");
 	CONFIG_GET_BOOL(video.vsync, "video_vsync");
 
 	// g_console
 	CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
 	CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
-	CONFIG_GET_INT_CONSOLE(filter_type, "filter_type");
 
 	// g_extern
 	CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
@@ -201,12 +200,12 @@ static void save_settings (void)
 
 	// g_settings
 	config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
+	config_set_bool(conf, "video_smooth", g_settings.video.smooth);
 	config_set_bool(conf, "video_vsync", g_settings.video.vsync);
 
 	// g_console
 	config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
 	config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
-	config_set_int(conf, "filter_type", g_console.filter_type);
 
 	// g_extern
 	config_set_int(conf, "state_slot", g_extern.state_slot);
@@ -302,12 +301,12 @@ static void ingame_menu (void)
 			if(state.Gamepad.wButtons & XINPUT_GAMEPAD_B)
 			{
 				g_console.frame_advance_enable = false;
-				ingame_menu_item = 0;
+				g_console.ingame_menu_item = 0;
 				g_console.ingame_menu_enable = false;
 				g_console.mode_switch = MODE_EMULATION;
 			}
 
-			switch(ingame_menu_item)
+			switch(g_console.ingame_menu_item)
 			{
 				case MENU_ITEM_LOAD_STATE:
 					break;
@@ -364,7 +363,7 @@ begin_loop:
 	if(g_console.mode_switch == MODE_EMULATION)
 	{
 		bool repeat = false;
-		if(ingame_menu_item != 0)
+		if(g_console.ingame_menu_item != 0)
 				g_console.ingame_menu_enable = true;
 
 		input_xdk360.poll(NULL);

@@ -117,6 +117,11 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    XGetVideoMode(&vid->video_mode);
 
    memset(&vid->d3dpp, 0, sizeof(vid->d3dpp));
+
+   // no letterboxing in 4:3 mode (if widescreen is
+   // unsupported
+   if(!vid->video_mode.fIsWideScreen)
+	   vid->d3dpp.Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
    
    vid->d3dpp.BackBufferWidth		= vid->video_mode.fIsHiDef ? 1280 : 640;
    vid->d3dpp.BackBufferHeight      = vid->video_mode.fIsHiDef ? 720 : 480;
@@ -262,8 +267,8 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    }
 
    vid->xdk360_render_device->SetTexture(0, vid->lpTexture);
-   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_console.filter_type);
-   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_console.filter_type);
+   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU,  D3DTADDRESS_BORDER);
    vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV,  D3DTADDRESS_BORDER);
 
@@ -346,7 +351,7 @@ void xdk360_video_init(void)
 	// Might have to supply correct values here.
 	video_info.vsync = g_settings.video.vsync;
 	video_info.force_aspect = false;
-	video_info.smooth = true;
+	video_info.smooth = g_settings.video.smooth;
 	video_info.input_scale = 2;
 
 	g_d3d = xdk360_gfx_init(&video_info, NULL, NULL);
