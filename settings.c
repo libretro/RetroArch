@@ -36,10 +36,6 @@ struct global g_extern;
 struct console_settings g_console;
 #endif
 
-#ifdef HAVE_CONFIGFILE
-static void read_keybinds(config_file_t *conf);
-#endif
-
 void config_set_defaults(void)
 {
    const char *def_video = NULL;
@@ -499,7 +495,7 @@ bool config_load_file(const char *path)
          SSNES_WARN("savestate_directory is not a directory, ignoring ...\n");
    }
 
-   read_keybinds(conf);
+   config_read_keybinds(conf);
 
    config_file_free(conf);
    return true;
@@ -776,7 +772,7 @@ static void read_keybinds_player(config_file_t *conf, unsigned player)
    }
 }
 
-static void read_keybinds(config_file_t *conf)
+void config_read_keybinds(config_file_t *conf)
 {
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
       read_keybinds_player(conf, i);
