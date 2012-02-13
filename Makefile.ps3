@@ -19,11 +19,12 @@ else
 endif
 endif
 
-CELL_SDK := /usr/local/cell
 ifeq ($(platform),win)
    HOST_DIR := host-win32
+   CELL_SDK := /c/usr/local/cell/
 else
    HOST_DIR := host-linux
+   CELL_SDK := /usr/local/cell
 endif
 
 ifeq ($(CELL_BUILD_TOOLS),SNC)
