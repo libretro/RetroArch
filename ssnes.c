@@ -1500,64 +1500,60 @@ static void fill_pathnames(void)
    }
 }
 
+void ssnes_load_state(void)
+{
+   char load_path[PATH_MAX];
+
+   if (g_extern.state_slot > 0)
+      snprintf(load_path, sizeof(load_path), "%s%u", g_extern.savestate_name, g_extern.state_slot);
+   else
+      snprintf(load_path, sizeof(load_path), "%s", g_extern.savestate_name);
+
+   char msg[512];
+   if (load_state(load_path))
+      snprintf(msg, sizeof(msg), "Loaded state from slot #%u.", g_extern.state_slot);
+   else
+      snprintf(msg, sizeof(msg), "Failed to load state from \"%s\".", load_path);
+
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue, msg, 2, 180);
+}
+
+void ssnes_save_state(void)
+{
+   if (g_settings.savestate_auto_index)
+      g_extern.state_slot++;
+
+   char save_path[PATH_MAX];
+
+   if (g_extern.state_slot > 0)
+      snprintf(save_path, sizeof(save_path), "%s%u", g_extern.savestate_name, g_extern.state_slot);
+   else
+      snprintf(save_path, sizeof(save_path), "%s", g_extern.savestate_name);
+
+   char msg[512];
+   if (save_state(save_path))
+      snprintf(msg, sizeof(msg), "Saved state to slot #%u.", g_extern.state_slot);
+   else
+      snprintf(msg, sizeof(msg), "Failed to save state to \"%s\".", save_path);
+
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue, msg, 2, 180);
+}
+
 // Save or load state here.
 static void check_savestates(void)
 {
    static bool old_should_savestate = false;
    bool should_savestate = driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY);
    if (should_savestate && !old_should_savestate)
-   {
-      if (g_settings.savestate_auto_index)
-         g_extern.state_slot++;
-
-      char save_path[PATH_MAX];
-
-      if (g_extern.state_slot > 0)
-         snprintf(save_path, sizeof(save_path), "%s%u", g_extern.savestate_name, g_extern.state_slot);
-      else
-         snprintf(save_path, sizeof(save_path), "%s", g_extern.savestate_name);
-
-      char msg[512];
-      if (save_state(save_path))
-      {
-         msg_queue_clear(g_extern.msg_queue);
-         snprintf(msg, sizeof(msg), "Saved state to slot #%u.", g_extern.state_slot);
-         msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-      }
-      else
-      {
-         msg_queue_clear(g_extern.msg_queue);
-         snprintf(msg, sizeof(msg), "Failed to save state to \"%s\"", save_path);
-         msg_queue_push(g_extern.msg_queue, msg, 2, 180);
-      }
-   }
+      ssnes_save_state();
    old_should_savestate = should_savestate;
 
    static bool old_should_loadstate = false;
    bool should_loadstate = driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY);
    if (!should_savestate && should_loadstate && !old_should_loadstate)
-   {
-      char load_path[PATH_MAX];
-
-      if (g_extern.state_slot > 0)
-         snprintf(load_path, sizeof(load_path), "%s%u", g_extern.savestate_name, g_extern.state_slot);
-      else
-         snprintf(load_path, sizeof(load_path), "%s", g_extern.savestate_name);
-
-      char msg[512];
-      if (load_state(load_path))
-      {
-         msg_queue_clear(g_extern.msg_queue);
-         snprintf(msg, sizeof(msg), "Loaded state from slot #%u.", g_extern.state_slot);
-         msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-      }
-      else
-      {
-         msg_queue_clear(g_extern.msg_queue);
-         snprintf(msg, sizeof(msg), "Failed to load state from \"%s\"", load_path);
-         msg_queue_push(g_extern.msg_queue, msg, 2, 180);
-      }
-   }
+      ssnes_load_state();
    old_should_loadstate = should_loadstate;
 }
 

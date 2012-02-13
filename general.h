@@ -396,6 +396,7 @@ struct global
    jmp_buf error_sjlj_context;
 };
 
+// Public functions
 void config_load(void);
 void config_set_defaults(void);
 
@@ -412,11 +413,17 @@ bool ssnes_main_iterate(void);
 void ssnes_main_deinit(void);
 void ssnes_render_cached_frame(void);
 
+void ssnes_load_state(void);
+void ssnes_save_state(void);
+/////////
+
+// Public data structures
 extern struct settings g_settings;
 extern struct global g_extern;
 #ifdef SSNES_CONSOLE
 extern struct console_settings g_console;
 #endif
+/////////
 
 #define SSNES_LOG(...) do { \
    if (g_extern.verbose) \
