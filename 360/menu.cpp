@@ -275,10 +275,16 @@ void menu_loop(void)
 	HRESULT hr;
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 
+	if(g_console.ingame_menu_enable)
+		xdk360_block_swap();
+
 	do
 	{
 		g_frame_count++;
-		vid->xdk360_render_device->Clear(0, NULL,
+		if(g_console.ingame_menu_enable)
+			ssnes_render_cached_frame();
+		else
+			vid->xdk360_render_device->Clear(0, NULL,
 			D3DCLEAR_TARGET | D3DCLEAR_STENCIL | D3DCLEAR_ZBUFFER,
 			D3DCOLOR_ARGB(255, 32, 32, 64), 1.0, 0);
 
@@ -291,7 +297,9 @@ void menu_loop(void)
 		g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
 
 		if(g_console.mode_switch == MODE_EMULATION)
-			SET_TIMER_EXPIRATION(60);
+		{
+			SET_TIMER_EXPIRATION(30);
+		}
 
 		app.RunFrame();			/* Update XUI */
 		hr = app.Render();		/* Render XUI */
@@ -300,4 +308,8 @@ void menu_loop(void)
 		/* Present the frame */
 		vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);	
 	}while(g_console.menu_enable);
+	
+	if(g_console.ingame_menu_enable)
+		xdk360_unblock_swap();
+	g_console.ingame_menu_enable = false;
 }

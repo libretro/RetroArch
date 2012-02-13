@@ -324,72 +324,6 @@ static void get_environment_settings (void)
 	strlcpy(SYS_CONFIG_FILE, "game:\\ssnes.cfg", sizeof(SYS_CONFIG_FILE));
 }
 
-static void ingame_menu (void)
-{
-	uint32_t menuitem_colors[MENU_ITEM_LAST];
-	char comment[256];
-	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-
-	xdk360_block_swap();
-
-	do
-	{
-		XINPUT_STATE state;
-		XInputGetState(0, &state);
-		static uint64_t blocking = 0;
-
-		ssnes_render_cached_frame();
-
-		if(IS_TIMER_EXPIRED() && blocking == false)
-		{
-			if(state.Gamepad.wButtons & XINPUT_GAMEPAD_B)
-			{
-				g_console.frame_advance_enable = false;
-				g_console.ingame_menu_item = 0;
-				g_console.ingame_menu_enable = false;
-				g_console.mode_switch = MODE_EMULATION;
-			}
-
-			switch(g_console.ingame_menu_item)
-			{
-				case MENU_ITEM_LOAD_STATE:
-					break;
-				case MENU_ITEM_SAVE_STATE:
-					break;
-				case MENU_ITEM_KEEP_ASPECT_RATIO:
-					break;
-				case MENU_ITEM_OVERSCAN_AMOUNT:
-					break;
-				case MENU_ITEM_ORIENTATION:
-					break;
-				case MENU_ITEM_FRAME_ADVANCE:
-					break;
-				case MENU_ITEM_RESIZE_MODE:
-					break;
-				case MENU_ITEM_SCREENSHOT_MODE:
-					break;
-				case MENU_ITEM_RETURN_TO_GAME:
-					break;
-				case MENU_ITEM_RESET:
-					break;
-				case MENU_ITEM_RETURN_TO_MENU:
-					break;
-				case MENU_ITEM_RETURN_TO_DASHBOARD:
-					break;
-			}
-
-			float x_position = 0.3f;
-			float font_size = 1.1f;
-			float ypos = 0.19f;
-			float ypos_increment = 0.04f;
-
-			vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);	
-		}
-	}while(g_console.ingame_menu_enable);
-
-	xdk360_unblock_swap();
-}
-
 int main(int argc, char *argv[])
 {
 	get_environment_settings();
@@ -415,9 +349,6 @@ begin_loop:
 		do{
 			repeat = ssnes_main_iterate();
 		}while(repeat && !g_console.frame_advance_enable);
-
-		if(g_console.ingame_menu_enable)
-			ingame_menu();
 	}
 	else if(g_console.mode_switch == MODE_MENU)
 	{
