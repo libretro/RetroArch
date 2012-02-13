@@ -1806,8 +1806,7 @@ static void ingame_menu(uint32_t menu_id)
 
 						ssnes_render_cached_frame();
 
-						psglSwap();
-						cellSysutilCheckCallback();
+						video_gl.swap(NULL);
 						old_state = state;
 					}
 				}
@@ -2034,9 +2033,7 @@ void menu_loop(void)
 			SET_TIMER_EXPIRATION(30);
 		}
 
-		psglSwap();
-		cell_console_poll();
-		cellSysutilCheckCallback();
+		video_gl.swap(NULL);
 	}while (g_console.menu_enable);
 
 	if(g_console.ingame_menu_enable)

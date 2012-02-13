@@ -1071,6 +1071,14 @@ static void ps3graphics_set_swap_block_swap(void * data, bool toggle)
 		SSNES_LOG("Swap is set to non-blocked\n");
 }
 
+static void ps3graphics_swap(void * data)
+{
+	(void)data;
+	psglSwap();
+	cell_console_poll();
+	cellSysutilCheckCallback();
+}
+
 const video_driver_t video_gl = {
    .init = gl_init,
    .frame = gl_frame,
@@ -1079,7 +1087,8 @@ const video_driver_t video_gl = {
    .focus = gl_focus,
    .free = gl_free,
    .ident = "gl",
-   .set_swap_block_state = ps3graphics_set_swap_block_swap
+   .set_swap_block_state = ps3graphics_set_swap_block_swap,
+   .swap = ps3graphics_swap
 };
 
 static void get_all_available_resolutions (void)
