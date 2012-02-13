@@ -132,6 +132,50 @@ static void set_default_settings (void)
 	g_settings.video.vsync = true;
 	g_settings.video.smooth = true;
 
+	for(uint32_t x = 0; x < MAX_PLAYERS; x++)
+	{
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_B].id = SNES_DEVICE_ID_JOYPAD_B;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_B].joykey = XINPUT_GAMEPAD_A;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_Y].id = SNES_DEVICE_ID_JOYPAD_Y;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_Y].joykey = XINPUT_GAMEPAD_X;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_SELECT].id = SNES_DEVICE_ID_JOYPAD_SELECT;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_SELECT].joykey = XINPUT_GAMEPAD_BACK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_START].id = SNES_DEVICE_ID_JOYPAD_START;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_START].joykey = XINPUT_GAMEPAD_START;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].id = SNES_DEVICE_ID_JOYPAD_UP;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].joykey = XINPUT_GAMEPAD_DPAD_UP;
+		//g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].joyaxis = CTRL_LSTICK_UP_MASK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].id = SNES_DEVICE_ID_JOYPAD_DOWN;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = XINPUT_GAMEPAD_DPAD_DOWN;
+		//g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].joyaxis = CTRL_LSTICK_DOWN_MASK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].id = SNES_DEVICE_ID_JOYPAD_LEFT;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = XINPUT_GAMEPAD_DPAD_LEFT;
+		//g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].joyaxis = CTRL_LSTICK_LEFT_MASK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].id = SNES_DEVICE_ID_JOYPAD_RIGHT;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = XINPUT_GAMEPAD_DPAD_RIGHT;
+		//g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].joyaxis = CTRL_LSTICK_RIGHT_MASK;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_A].id = SNES_DEVICE_ID_JOYPAD_A;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_A].joykey = XINPUT_GAMEPAD_B;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_X].id = SNES_DEVICE_ID_JOYPAD_X;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_X].joykey = XINPUT_GAMEPAD_Y;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_L].id = SNES_DEVICE_ID_JOYPAD_L;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_L].joykey = XINPUT_GAMEPAD_LEFT_SHOULDER;
+
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_R].id = SNES_DEVICE_ID_JOYPAD_R;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_R].joykey = XINPUT_GAMEPAD_RIGHT_SHOULDER;
+	}
+
+
 	//g_console
 	g_console.block_config_read = true;
 	g_console.throttle_enable = true;

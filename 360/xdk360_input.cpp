@@ -26,6 +26,7 @@
 #include "shared.h"
 
 static XINPUT_STATE state[4];
+static unsigned pads_connected;
 
 #define DEADZONE (16000)
 
@@ -33,8 +34,13 @@ static void xdk360_input_poll(void *data)
 {
    (void)data;
 
+   pads_connected = 0;
+
    for (unsigned i = 0; i < 4; i++)
-      XInputGetState(i, &state[i]);
+   {
+      unsigned long retval = XInputGetState(i, &state[i]);
+	  pads_connected += (retval == ERROR_DEVICE_NOT_CONNECTED) ? 0 : 1;
+   }
 }
 
 static int16_t xdk360_input_state(void *data, const struct snes_keybind **binds,
@@ -42,60 +48,26 @@ static int16_t xdk360_input_state(void *data, const struct snes_keybind **binds,
       unsigned index, unsigned id)
 {
    (void)data;
-   (void)binds;
+   unsigned player;
+   uint64_t button;
+
+   player = 0;
 
    if (device != SNES_DEVICE_JOYPAD)
       return 0;
 
-   unsigned player = 0;
-   if (port == SNES_PORT_2 && device == SNES_DEVICE_MULTITAP)
-      player = index + 1;
-   else if (port == SNES_PORT_2)
-      player = 1;
-
-   // Hardcoded binds.
-   uint64_t button;
-   switch (id)
+   if (port == SNES_PORT_2)
    {
-      case SNES_DEVICE_ID_JOYPAD_A:
-         button = XINPUT_GAMEPAD_B;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_B:
-         button = XINPUT_GAMEPAD_A;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_X:
-         button = XINPUT_GAMEPAD_Y;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_Y:
-         button = XINPUT_GAMEPAD_X; 
-         break;
-      case SNES_DEVICE_ID_JOYPAD_LEFT:
-         button = XINPUT_GAMEPAD_DPAD_LEFT;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_RIGHT:
-         button = XINPUT_GAMEPAD_DPAD_RIGHT;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_UP:
-         button = XINPUT_GAMEPAD_DPAD_UP;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_DOWN:
-         button = XINPUT_GAMEPAD_DPAD_DOWN;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_START:
-         button = XINPUT_GAMEPAD_START;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_SELECT:
-         button = XINPUT_GAMEPAD_BACK;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_L:
-         button = XINPUT_GAMEPAD_LEFT_SHOULDER;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_R:
-         button = XINPUT_GAMEPAD_RIGHT_SHOULDER;
-         break;
-      default:
-         button = 0;
+	   if(pads_connected < 2)
+		   return 0;
+
+	   player = 1;
+
+	   if (device == SNES_DEVICE_MULTITAP)
+			player += index;
    }
+
+   button = binds[player][id].joykey;
 
    return (state[player].Gamepad.wButtons & button) ? 1 : 0;
 }
