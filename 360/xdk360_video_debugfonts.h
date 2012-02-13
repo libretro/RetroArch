@@ -113,6 +113,7 @@ public:
     void    SetWindow( long x1, long y1, long x2, long y2 );
     void    GetWindow(D3DRECT &rcWindow) const;
     void    SetCursorPosition( float fCursorX, float fCursorY );
+	void	SetFontSize(float x, float y);
 
     // Public calls to render text. Callers can simply call DrawText(), but for
     // performance, they should batch multiple calls together, bracketed by calls to

@@ -287,9 +287,24 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 	   g_screen_console.Render();
    }
 
-   vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);
+   if(!vid->block_swap)
+	   vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);
 
    return true;
+}
+
+void xdk360_block_swap (void)
+{
+	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+	vid->block_swap = true;
+	SSNES_LOG("Swap is set to blocked.\n");
+}
+
+void xdk360_unblock_swap (void)
+{
+	xdk360_video_t * vid = (xdk360_video_t*)g_d3d;
+	vid->block_swap = false;
+	SSNES_LOG("Swap is set to non-blocked.\n");
 }
 
 static void xdk360_gfx_set_nonblock_state(void *data, bool state)

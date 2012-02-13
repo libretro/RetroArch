@@ -114,37 +114,55 @@ static bool xdk360_key_pressed(void *data, int key)
 {
    (void)data;
    XInputGetState(0, &state[0]);
+   bool retval;
+
+   retval = false;
 
    switch(key)
    {
-   case SSNES_FAST_FORWARD_HOLD_KEY:
-	   return ((state[0].Gamepad.sThumbRY < -DEADZONE) && !(state[0].Gamepad.bRightTrigger > 128));
-   case SSNES_LOAD_STATE_KEY:
-	   return ((state[0].Gamepad.sThumbRY > DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
-   case SSNES_SAVE_STATE_KEY:
-	   return ((state[0].Gamepad.sThumbRY < -DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
-   case SSNES_STATE_SLOT_PLUS:
-	   return ((state[0].Gamepad.sThumbRX > DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
-   case SSNES_STATE_SLOT_MINUS:
-	   return ((state[0].Gamepad.sThumbRX < -DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
-   case SSNES_REWIND:
-	   return ((state[0].Gamepad.sThumbRY > DEADZONE) && !(state[0].Gamepad.bRightTrigger > 128));
-	case SSNES_QUIT_KEY:
-		g_console.menu_enable = ((state[0].Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
-		   && (state[0].Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && IS_TIMER_EXPIRED());
-		if(g_console.menu_enable)
-		{
-			g_console.mode_switch = MODE_MENU;
-			SET_TIMER_EXPIRATION(60);
-		}
-		else
-			g_console.mode_switch = MODE_EMULATION;
-		return g_console.menu_enable;
-	default:
-	   return false;
+	   case SSNES_FAST_FORWARD_HOLD_KEY:
+		   return ((state[0].Gamepad.sThumbRY < -DEADZONE) && !(state[0].Gamepad.bRightTrigger > 128));
+	   case SSNES_LOAD_STATE_KEY:
+		   return ((state[0].Gamepad.sThumbRY > DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
+	   case SSNES_SAVE_STATE_KEY:
+		   return ((state[0].Gamepad.sThumbRY < -DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
+	   case SSNES_STATE_SLOT_PLUS:
+		   return ((state[0].Gamepad.sThumbRX > DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
+	   case SSNES_STATE_SLOT_MINUS:
+		   return ((state[0].Gamepad.sThumbRX < -DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
+	   case SSNES_FRAMEADVANCE:
+		   if(g_console.frame_advance_enable)
+		   {
+			   g_console.menu_enable = false;
+			   g_console.ingame_menu_enable = true;
+			   g_console.mode_switch = MODE_EMULATION;
+		   }
+		   return g_console.frame_advance_enable;
+	   case SSNES_REWIND:
+		   return ((state[0].Gamepad.sThumbRY > DEADZONE) && !(state[0].Gamepad.bRightTrigger > 128));
+		case SSNES_QUIT_KEY:
+			{
+				uint32_t left_thumb_pressed = (state[0].Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB);
+				uint32_t right_thumb_pressed = (state[0].Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
+
+				g_console.menu_enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED();
+				g_console.ingame_menu_enable = right_thumb_pressed && !left_thumb_pressed;
+			
+				if(g_console.menu_enable && !g_console.ingame_menu_enable)
+				{
+					g_console.mode_switch = MODE_MENU;
+					SET_TIMER_EXPIRATION(60);
+					retval = g_console.menu_enable;
+				}
+				else
+				{
+					g_console.mode_switch = MODE_EMULATION;
+					retval = g_console.ingame_menu_enable;
+				}
+			}
    }
 
-   return false;
+   return retval;
 }
 
 const input_driver_t input_xdk360 = {

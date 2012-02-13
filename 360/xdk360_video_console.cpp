@@ -82,7 +82,10 @@ HRESULT Console::Create( LPCSTR strFontFileName, unsigned long colBackColor,
     for( unsigned int i = 0; i < m_cScreenHeightVirtual; i++ )
         m_Lines[ i ] = m_Buffer + ( m_cScreenWidth + 1 ) * i;
 
-    CLEAR_SCREEN();
+	m_nCurLine = 0;
+    m_cCurLineLength = 0;
+    memset( m_Buffer, 0, m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
+    Render();
 
     return hr;
 }
@@ -168,7 +171,9 @@ void Console::Add( wchar_t wch )
     // If this is a newline, just increment lines and move on
     if( wch == L'\n' )
     {
-        INCREMENT_LINE();
+		m_nCurLine = ( m_nCurLine + 1 ) % m_cScreenHeightVirtual;
+		m_cCurLineLength = 0;
+		memset( m_Lines[m_nCurLine], 0, ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
         return;
     }
 
@@ -192,7 +197,9 @@ void Console::Add( wchar_t wch )
     // If we need to skip to the next line, do so
     if( bIncrementLine )
     {
-        INCREMENT_LINE();
+		m_nCurLine = ( m_nCurLine + 1 ) % m_cScreenHeightVirtual;
+		m_cCurLineLength = 0;
+		memset( m_Lines[m_nCurLine], 0, ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
         m_Lines[ m_nCurLine ][0] = wch;
     }
 
@@ -209,7 +216,9 @@ void Console::Format(int clear_screen, _In_z_ _Printf_format_string_ LPCSTR strF
 {
 	if(clear_screen)
 	{
-		CLEAR_SCREEN();
+		m_nCurLine = 0;
+		m_cCurLineLength = 0;
+		memset( m_Buffer, 0, m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
 	}
 
 	va_list pArgList;
@@ -225,7 +234,9 @@ void Console::Format(int clear_screen, _In_z_ _Printf_format_string_ LPCWSTR wst
 {
 	if(clear_screen)
 	{
-		CLEAR_SCREEN();
+		m_nCurLine = 0;
+		m_cCurLineLength = 0;
+		memset( m_Buffer, 0, m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
 	}
 
 	va_list pArgList;

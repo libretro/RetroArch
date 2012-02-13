@@ -288,6 +288,11 @@ XdkFont::~XdkFont()
     Destroy();
 }
 
+void XdkFont::SetFontSize(float x, float y)
+{
+	m_fXScaleFactor = x;
+	m_fYScaleFactor = y;
+}
 
 //--------------------------------------------------------------------------------------
 // Name: Create()

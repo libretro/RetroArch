@@ -32,17 +32,6 @@
 #define SAFE_AREA_PCT_4x3 85
 #define SAFE_AREA_PCT_HDTV 90
 
-#define INCREMENT_LINE() \
-	m_nCurLine = ( m_nCurLine + 1 ) % m_cScreenHeightVirtual; \
-    m_cCurLineLength = 0; \
-    memset( m_Lines[m_nCurLine], 0, ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-
-#define CLEAR_SCREEN() \
-	m_nCurLine = 0; \
-    m_cCurLineLength = 0; \
-    memset( m_Buffer, 0, m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) ); \
-    Render();
-
 //--------------------------------------------------------------------------------------
 // Name: class Console
 // Desc: Class to implement the console.
@@ -69,6 +58,8 @@ public:
 
     // method for rendering the console
     void            Render();
+	// Font for rendering text
+    XdkFont m_Font;
 private:
 	int			first_message;
     // Safe area dimensions
@@ -77,9 +68,6 @@ private:
 
     unsigned int m_cxSafeAreaOffset;
     unsigned int m_cySafeAreaOffset;
-
-    // Font for rendering text
-    XdkFont m_Font;
 
     // Colors
     unsigned long m_colBackColor;
