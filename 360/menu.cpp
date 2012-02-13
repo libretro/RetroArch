@@ -276,7 +276,7 @@ void menu_loop(void)
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 
 	if(g_console.ingame_menu_enable)
-		xdk360_block_swap();
+		video_xdk360.set_swap_block_state(NULL, true);
 
 	do
 	{
@@ -310,6 +310,7 @@ void menu_loop(void)
 	}while(g_console.menu_enable);
 	
 	if(g_console.ingame_menu_enable)
-		xdk360_unblock_swap();
+		video_xdk360.set_swap_block_state(NULL, false);
+
 	g_console.ingame_menu_enable = false;
 }

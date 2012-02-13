@@ -57,8 +57,6 @@ typedef struct xdk360_video
 void xdk360_video_init(void);
 void xdk360_video_deinit(void);
 void xdk360_video_set_vsync(bool vsync);
-void xdk360_block_swap (void);
-void xdk360_unblock_swap (void);
 
 extern Console g_screen_console;
 extern unsigned g_frame_count;

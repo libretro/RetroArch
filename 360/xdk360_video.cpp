@@ -297,18 +297,16 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-void xdk360_block_swap (void)
+static void xdk360_set_swap_block_swap (void * data, bool toggle)
 {
+	(void)data;
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-	vid->block_swap = true;
-	SSNES_LOG("Swap is set to blocked.\n");
-}
+	vid->block_swap = toggle;
 
-void xdk360_unblock_swap (void)
-{
-	xdk360_video_t * vid = (xdk360_video_t*)g_d3d;
-	vid->block_swap = false;
-	SSNES_LOG("Swap is set to non-blocked.\n");
+	if(toggle)
+		SSNES_LOG("Swap is set to blocked.\n");
+	else
+		SSNES_LOG("Swap is set to non-blocked.\n");
 }
 
 static void xdk360_gfx_set_nonblock_state(void *data, bool state)
@@ -381,6 +379,7 @@ const video_driver_t video_xdk360 = {
    xdk360_gfx_focus,
    NULL,
    xdk360_gfx_free,
-   "xdk360"
+   "xdk360",
+   xdk360_set_swap_block_swap
 };
 
