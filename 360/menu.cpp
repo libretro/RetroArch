@@ -305,8 +305,7 @@ void menu_loop(void)
 		hr = app.Render();		/* Render XUI */
 		hr = XuiTimersRun();	/* Update XUI timers */
 
-		/* Present the frame */
-		vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);	
+		video_xdk360.swap(NULL);
 	}while(g_console.menu_enable);
 	
 	if(g_console.ingame_menu_enable)
