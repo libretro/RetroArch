@@ -1639,21 +1639,8 @@ static void ingame_menu(uint32_t menu_id)
 			case MENU_ITEM_LOAD_STATE:
 				if(CTRL_CROSS(state))
 				{
-					char msg[512];
-
-					bool ret = load_state(g_extern.savestate_name);
-					msg_queue_clear(g_extern.msg_queue);
-					if(ret)
-					{
-						return_to_game();
-						snprintf(msg, sizeof(msg), "Loaded state from slot #%d.", g_extern.state_slot);
-					}
-					else
-						snprintf(msg, sizeof(msg), "Can't load from save state slot #%d", g_extern.state_slot);
-					msg_queue_clear(g_extern.msg_queue);
-					msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-
-					g_console.ingame_menu_item = 0;
+					ssnes_load_state();
+					return_to_game();
 				}
 				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 				{
@@ -1680,13 +1667,7 @@ static void ingame_menu(uint32_t menu_id)
 			case MENU_ITEM_SAVE_STATE:
 				if(CTRL_CROSS(state))
 				{
-					char msg[512];
-
-					bool ret = save_state(g_extern.savestate_name);
-					snprintf(msg, sizeof(msg), "Saved state to slot #%d.", g_extern.state_slot);
-
-					msg_queue_clear(g_extern.msg_queue);
-					msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+					ssnes_save_state();
 					return_to_game();
 				}
 				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
