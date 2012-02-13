@@ -43,7 +43,8 @@ HRESULT Console::Create( LPCSTR strFontFileName, unsigned long colBackColor,
 	D3DDevice *m_pd3dDevice = vid->xdk360_render_device;
 
     // Calculate the safe area
-    unsigned int uiSafeAreaPct = SAFE_AREA_PCT_HDTV;
+    unsigned int uiSafeAreaPct = vid->video_mode.fIsHiDef ? SAFE_AREA_PCT_HDTV
+	: SAFE_AREA_PCT_4x3;
 
     m_cxSafeArea = ( vid->d3dpp.BackBufferWidth * uiSafeAreaPct ) / 100;
     m_cySafeArea = ( vid->d3dpp.BackBufferHeight * uiSafeAreaPct ) / 100;

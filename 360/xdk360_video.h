@@ -47,6 +47,7 @@ typedef struct xdk360_video
    IDirect3DTexture9* font_texture;
    IDirect3DTexture9* lpTexture;
    D3DPRESENT_PARAMETERS d3dpp;
+   XVIDEO_MODE video_mode;
 } xdk360_video_t;
 
 #define IS_TIMER_NOT_EXPIRED() (g_frame_count < g_console.timer_expiration_frame_count)
