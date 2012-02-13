@@ -37,7 +37,6 @@
 
 #include "../strl.h"
 
-#include "../gfx/image.h"
 #include "../gfx/shader_cg.h"
 
 #define BLUE		0xffff0000u
@@ -98,60 +97,9 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
 };
 
-
-static bool load_fbo_proc(void) { return true; }
-
-#define MAX_SHADERS 16
-
-#define TEXTURES 8
-#define TEXTURES_MASK (TEXTURES - 1)
-
 bool g_quitting;
 unsigned g_frame_count;
 void *g_gl;
-
-
-typedef struct gl
-{
-   bool block_swap;
-   bool fbo_inited;
-   bool keep_aspect;
-   bool render_to_tex;
-   bool should_resize;
-   bool vsync;
-   bool overscan_enable;
-   int fbo_pass;
-   unsigned base_size; /* 2 or 4*/
-   unsigned last_width[TEXTURES];
-   unsigned last_height[TEXTURES];
-   unsigned tex_index; /* For use with PREV. */
-   unsigned tex_w, tex_h;
-   unsigned vp_width, vp_out_width;
-   unsigned vp_height, vp_out_height;
-   unsigned win_width;
-   unsigned win_height;
-   GLfloat overscan_amount;
-   GLfloat tex_coords[8];
-   GLfloat fbo_tex_coords[8];
-   GLenum texture_type; /* XBGR1555 or ARGB*/
-   GLenum texture_fmt;
-   /* Render-to-texture, multipass shaders */
-   GLuint fbo[MAX_SHADERS];
-   GLuint fbo_texture[MAX_SHADERS];
-   GLuint menu_texture_id;
-   GLuint pbo;
-   GLuint texture[TEXTURES];
-   GLuint tex_filter;
-   CellVideoOutState g_video_state;
-   PSGLdevice* gl_device;
-   PSGLcontext* gl_context;
-   struct gl_fbo_rect fbo_rect[MAX_SHADERS];
-   struct gl_fbo_scale fbo_scale[MAX_SHADERS];
-   struct gl_tex_info prev_info[TEXTURES];
-   struct texture_image menu_texture;
-   void *empty_buf;
-} gl_t;
-
 
 static bool gl_shader_init(void)
 {
@@ -275,12 +223,6 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 	// No need to use FBOs.
 	if (gl_shader_num() == 1 && !scale.valid && !g_settings.video.render_to_texture)
 		return;
-
-	if (!load_fbo_proc())
-	{
-		SSNES_ERR("Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
-		return;
-	}
 
 	gl->fbo_pass = gl_shader_num() - 1;
 	if (scale_last.valid)
@@ -1117,6 +1059,18 @@ static bool gl_focus(void *data)
    return true;
 }
 
+static void ps3graphics_set_swap_block_swap(void * data, bool toggle)
+{
+	(void)data;
+	gl_t *gl = g_gl;
+	gl->block_swap = toggle;
+
+	if(toggle)
+		SSNES_LOG("Swap is set to blocked\n");
+	else
+		SSNES_LOG("Swap is set to non-blocked\n");
+}
+
 const video_driver_t video_gl = {
    .init = gl_init,
    .frame = gl_frame,
@@ -1124,7 +1078,8 @@ const video_driver_t video_gl = {
    .set_nonblock_state = gl_set_nonblock_state,
    .focus = gl_focus,
    .free = gl_free,
-   .ident = "gl"
+   .ident = "gl",
+   .set_swap_block_state = ps3graphics_set_swap_block_swap
 };
 
 static void get_all_available_resolutions (void)
@@ -1227,19 +1182,6 @@ const char * ps3_get_resolution_label(uint32_t resolution)
 	}
 }
 
-void ps3graphics_block_swap (void)
-{
-	gl_t *gl = g_gl;
-	gl->block_swap = true;
-	SSNES_LOG("Swap is set to blocked\n");
-}
-
-void ps3graphics_unblock_swap (void)
-{
-	gl_t *gl = g_gl;
-	gl->block_swap = false;
-	SSNES_LOG("Swap is set to non-blocked\n");
-}
 
 void ps3graphics_set_vsync(uint32_t vsync)
 {

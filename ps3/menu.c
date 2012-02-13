@@ -1994,6 +1994,8 @@ void menu_loop(void)
 
 	g_console.menu_enable = true;
 
+	gl_t * gl = g_gl;
+
 	menu_reinit_settings();
 
 	if(g_console.ingame_menu_enable)
@@ -2001,7 +2003,7 @@ void menu_loop(void)
 		menuStackindex++;
 		menuStack[menuStackindex] = menu_filebrowser;
 		menuStack[menuStackindex].enum_id = INGAME_MENU;
-		ps3graphics_block_swap();
+		video_gl.set_swap_block_state(NULL, true);
 	}
 
 	do
@@ -2059,7 +2061,7 @@ void menu_loop(void)
 	if(g_console.ingame_menu_enable)
 	{
 		menuStackindex--;		// pop ingame menu from stack
-		ps3graphics_unblock_swap();
+		video_gl.set_swap_block_state(NULL, false);
 	}
 	
 	g_console.ingame_menu_enable = false;

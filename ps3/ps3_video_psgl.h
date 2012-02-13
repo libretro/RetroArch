@@ -21,7 +21,13 @@
 
 #include "../gfx/gl_common.h"
 #include "../gfx/gfx_common.h"
+#include "../gfx/image.h"
 #include <cell/dbgfont.h>
+
+#define MAX_SHADERS 16
+
+#define TEXTURES 8
+#define TEXTURES_MASK (TEXTURES - 1)
 
 enum
 {
@@ -41,6 +47,47 @@ enum
 	LAST_ASPECT_RATIO
 };
 
+typedef struct gl
+{
+   bool block_swap;
+   bool fbo_inited;
+   bool keep_aspect;
+   bool render_to_tex;
+   bool should_resize;
+   bool vsync;
+   bool overscan_enable;
+   int fbo_pass;
+   unsigned base_size; /* 2 or 4*/
+   unsigned last_width[TEXTURES];
+   unsigned last_height[TEXTURES];
+   unsigned tex_index; /* For use with PREV. */
+   unsigned tex_w, tex_h;
+   unsigned vp_width, vp_out_width;
+   unsigned vp_height, vp_out_height;
+   unsigned win_width;
+   unsigned win_height;
+   GLfloat overscan_amount;
+   GLfloat tex_coords[8];
+   GLfloat fbo_tex_coords[8];
+   GLenum texture_type; /* XBGR1555 or ARGB*/
+   GLenum texture_fmt;
+   /* Render-to-texture, multipass shaders */
+   GLuint fbo[MAX_SHADERS];
+   GLuint fbo_texture[MAX_SHADERS];
+   GLuint menu_texture_id;
+   GLuint pbo;
+   GLuint texture[TEXTURES];
+   GLuint tex_filter;
+   CellVideoOutState g_video_state;
+   PSGLdevice* gl_device;
+   PSGLcontext* gl_context;
+   struct gl_fbo_rect fbo_rect[MAX_SHADERS];
+   struct gl_fbo_scale fbo_scale[MAX_SHADERS];
+   struct gl_tex_info prev_info[TEXTURES];
+   struct texture_image menu_texture;
+   void *empty_buf;
+} gl_t;
+
 #define IS_TIMER_NOT_EXPIRED() (g_frame_count < g_console.timer_expiration_frame_count)
 #define IS_TIMER_EXPIRED() 	(!(IS_TIMER_NOT_EXPIRED()))
 #define SET_TIMER_EXPIRATION(value) g_console.timer_expiration_frame_count = g_frame_count + value;
@@ -53,13 +100,11 @@ void ps3_previous_resolution (void);
 void ps3_next_resolution (void);
 void ps3_set_filtering(unsigned index, bool set_smooth);
 void ps3_video_deinit(void);
-void ps3graphics_block_swap (void);
 void ps3graphics_reinit_fbos (void);
 void ps3graphics_set_aspect_ratio(uint32_t aspectratio_index);
 void ps3graphics_set_overscan(bool overscan_enable, float amount, bool recalculate_viewport);
 void ps3graphics_set_orientation(uint32_t orientation);
 void ps3graphics_set_vsync(uint32_t vsync);
-void ps3graphics_unblock_swap (void);
 void ps3graphics_video_init(bool get_all_resolutions);
 void ps3graphics_video_reinit(void);
 
