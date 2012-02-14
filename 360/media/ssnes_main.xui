@@ -14,20 +14,21 @@
 <XuiButton>
 <Properties>
 <Id>XuiBtnRomBrowser</Id>
-<Width>481.112000</Width>
+<Width>488.312012</Width>
 <Height>38.000000</Height>
-<Position>43.887970,58.455994,0.000000</Position>
+<Position>38.127724,64.215515,0.000000</Position>
+<Pivot>245.362122,102.247192,0.000000</Pivot>
 <NavUp>XuiBtnQuit</NavUp>
-<NavDown>XuiBtnSettings</NavDown>
+<NavDown>XuiBtnQuickMenu</NavDown>
 <Text>ROM Browser</Text>
 </Properties>
 </XuiButton>
 <XuiText>
 <Properties>
 <Id>XuiTxtTitle</Id>
-<Width>240.000000</Width>
+<Width>247.200012</Width>
 <Height>40.000000</Height>
-<Position>49.341614,15.399994,0.000000</Position>
+<Position>43.581604,21.159988,0.000000</Position>
 <Text>SSNES 360</Text>
 <TextColor>0xff0f0f0f</TextColor>
 <DropShadowColor>0x800f0f0f</DropShadowColor>
@@ -38,10 +39,10 @@
 <XuiButton>
 <Properties>
 <Id>XuiBtnSettings</Id>
-<Width>481.112000</Width>
+<Width>488.312012</Width>
 <Height>38.000000</Height>
-<Position>43.887970,109.855988,0.000000</Position>
-<NavUp>XuiBtnRomBrowser</NavUp>
+<Position>38.127960,201.615982,0.000000</Position>
+<NavUp>XuiBtnControls</NavUp>
 <NavDown>XuiBtnQuit</NavDown>
 <Text>Settings</Text>
 </Properties>
@@ -49,9 +50,10 @@
 <XuiButton>
 <Properties>
 <Id>XuiBtnQuit</Id>
-<Width>481.112000</Width>
+<Width>488.312012</Width>
 <Height>38.000000</Height>
-<Position>44.087982,158.855988,0.000000</Position>
+<Position>38.327736,246.007980,0.000000</Position>
+<Pivot>245.162109,-84.153275,0.000000</Pivot>
 <NavUp>XuiBtnSettings</NavUp>
 <NavDown>XuiBtnRomBrowser</NavDown>
 <Text>Quit</Text>
@@ -77,5 +79,27 @@
 <Font>Arial Unicode MS</Font>
 </Properties>
 </XuiText>
+<XuiButton>
+<Properties>
+<Id>XuiBtnQuickMenu</Id>
+<Width>488.312012</Width>
+<Height>38.000000</Height>
+<Position>38.130001,111.655991,0.000000</Position>
+<NavUp>XuiBtnRomBrowser</NavUp>
+<NavDown>XuiBtnControls</NavDown>
+<Text>Quick Menu</Text>
+</Properties>
+</XuiButton>
+<XuiButton>
+<Properties>
+<Id>XuiBtnControls</Id>
+<Width>488.312012</Width>
+<Height>38.000000</Height>
+<Position>38.130001,156.655991,0.000000</Position>
+<NavUp>XuiBtnQuickMenu</NavUp>
+<NavDown>XuiBtnSettings</NavDown>
+<Text>Controls</Text>
+</Properties>
+</XuiButton>
 </XuiScene>
 </XuiCanvas>

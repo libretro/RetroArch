@@ -107,9 +107,9 @@ static bool xdk360_key_pressed(void *data, int key)
 		   {
 			   g_console.menu_enable = true;
 			   g_console.ingame_menu_enable = true;
-			   g_console.mode_switch = MODE_EMULATION;
+			   g_console.mode_switch = MODE_MENU;
 		   }
-		   return g_console.frame_advance_enable;
+		   return false;
 	   case SSNES_REWIND:
 		   return ((state[0].Gamepad.sThumbRY > DEADZONE) && !(state[0].Gamepad.bRightTrigger > 128));
 		case SSNES_QUIT_KEY:

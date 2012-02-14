@@ -341,8 +341,6 @@ begin_loop:
 	if(g_console.mode_switch == MODE_EMULATION)
 	{
 		bool repeat = false;
-		if(g_console.ingame_menu_item != 0)
-				g_console.ingame_menu_enable = true;
 
 		input_xdk360.poll(NULL);
 
