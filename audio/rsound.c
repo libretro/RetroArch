@@ -183,7 +183,7 @@ static void rs_free(void *data)
 
 static size_t rs_write_avail(void *data)
 {
-   rsd_t *rsd = data;
+   rsd_t *rsd = (rsd_t*)data;
 
    if (rsd->has_error)
       return 0;
