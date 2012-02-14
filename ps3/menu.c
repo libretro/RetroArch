@@ -291,7 +291,7 @@ static void browser_render(filebrowser_t * b)
 	page_base = page_number * NUM_ENTRY_PER_PAGE;
 
 	currentX = 0.09f;
-	currentY = 0.09f;
+	currentY = 0.10f;
 	ySpacing = 0.035f;
 
 	for ( i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
@@ -1598,7 +1598,7 @@ static void select_rom(void)
 		cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
 
 	cellDbgFontPuts	(0.09f,	0.05f,	Emulator_GetFontSize(),	RED,	"FILE BROWSER");
-	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libsnes library: %s", snes_library_id());
+	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libsnes core: %s", snes_library_id());
 	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
 	cellDbgFontPrintf (0.09f, 0.09f, Emulator_GetFontSize(), YELLOW,
 	"PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser));
@@ -1784,13 +1784,13 @@ static void ingame_menu(uint32_t menu_id)
 					g_console.menu_enable = false;
 					g_console.mode_switch = MODE_EMULATION;
 				}
-				strcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame.\nNOTE: Pressing the button rapidly will advance the frame more slowly\nand prevent buttons from being input.");
+				strcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame. Pressing the button\nrapidly will advance the frame more slowly.");
 				break;
 			case MENU_ITEM_RESIZE_MODE:
 				if(CTRL_CROSS(state))
 				{
 				}
-				strcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the\nin-game menu.");
+				strcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back.");
 				break;
 			case MENU_ITEM_SCREENSHOT_MODE:
 				if(CTRL_CROSS(state))
@@ -1867,16 +1867,16 @@ static void ingame_menu(uint32_t menu_id)
 			if(g_console.ingame_menu_item > 0)
 			{
 				g_console.ingame_menu_item--;
-				set_text_message("", 7);
+				set_text_message("", 14);
 			}
 		}
 
 		if(CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))
 		{
-			if(g_console.ingame_menu_item < MENU_ITEM_LAST)
+			if(g_console.ingame_menu_item < (MENU_ITEM_LAST-1))
 			{
 				g_console.ingame_menu_item++;
-				set_text_message("", 7);
+				set_text_message("", 14);
 			}
 		}
 	}
@@ -1902,8 +1902,7 @@ static void ingame_menu(uint32_t menu_id)
 			break;
 	}
 
-	cellDbgFontPrintf (x_position, 0.10f, 1.4f+0.01f, BLUE, "Quick Menu");
-	cellDbgFontPrintf(x_position, 0.10f, 1.4f, WHITE, "Quick Menu");
+	cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Quick Menu");
 
 	cellDbgFontPrintf (x_position, ypos, font_size+0.01f, BLUE, "Load State #%d", g_extern.state_slot);
 	cellDbgFontPrintf(x_position, ypos, font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), "Load State #%d", g_extern.state_slot);
@@ -1949,17 +1948,16 @@ static void ingame_menu(uint32_t menu_id)
 	cellDbgFontPuts (x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)), font_size+0.01f, BLUE, "Return to XMB");
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_XMB), "Return to XMB");
 
+	cellDbgFontPuts	(0.09f,	0.05f,	Emulator_GetFontSize(),	RED,	"QUICK MENU");
+	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libsnes core: %s", snes_library_id());
+	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
 	if(IS_TIMER_NOT_EXPIRED())
 	{
 		cellDbgFontPrintf (0.09f, 0.90f, 1.51f, BLUE, special_action_msg);
 		cellDbgFontPrintf (0.09f, 0.90f, 1.50f, WHITE, special_action_msg);
 		cellDbgFontDraw();
 	}
-	else
-	{
-		cellDbgFontPrintf (0.09f, 0.90f, 0.98f+0.01f, BLUE, comment);
-		cellDbgFontPrintf (0.09f, 0.90f, 0.98f, LIGHTBLUE, comment);
-	}
+	cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, comment);
 }
 
 void menu_init (void)
@@ -1993,10 +1991,10 @@ void menu_loop(void)
 		glClear(GL_COLOR_BUFFER_BIT);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_BLEND);
-		gl_frame_menu();
-
 		if(g_console.emulator_initialized)
 			ssnes_render_cached_frame();
+
+		gl_frame_menu();
 
 		switch(menuStack[menuStackindex].enum_id)
 		{
