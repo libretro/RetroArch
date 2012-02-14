@@ -1978,22 +1978,25 @@ void menu_loop(void)
 
 	menu_reinit_settings();
 
+	if(g_console.emulator_initialized)
+		video_gl.set_swap_block_state(NULL, true);
+
 	if(g_console.ingame_menu_enable)
 	{
 		menuStackindex++;
 		menuStack[menuStackindex] = menu_filebrowser;
 		menuStack[menuStackindex].enum_id = INGAME_MENU;
-		video_gl.set_swap_block_state(NULL, true);
 	}
 
 	do
 	{
 		glClear(GL_COLOR_BUFFER_BIT);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_BLEND);
+		gl_frame_menu();
 
-		if(g_console.ingame_menu_enable)
+		if(g_console.emulator_initialized)
 			ssnes_render_cached_frame();
-		else
-			gl_frame_menu();
 
 		switch(menuStack[menuStackindex].enum_id)
 		{
@@ -2034,13 +2037,14 @@ void menu_loop(void)
 		}
 
 		video_gl.swap(NULL);
+		glDisable(GL_BLEND);
 	}while (g_console.menu_enable);
 
 	if(g_console.ingame_menu_enable)
-	{
 		menuStackindex--;		// pop ingame menu from stack
+
+	if(g_console.emulator_initialized)
 		video_gl.set_swap_block_state(NULL, false);
-	}
 	
 	g_console.ingame_menu_enable = false;
 }
