@@ -27,6 +27,7 @@ class CSSNES : public CXuiModule
 public:
 	HXUIOBJ		hMainScene;
 	HXUIOBJ		hFileBrowser;
+	HXUIOBJ		hQuickMenu;
 	HXUIOBJ		hSSNESSettings;
 protected:
 	/* Override so that Cssnes can register classes */
@@ -39,6 +40,8 @@ class CSSNESMain: public CXuiSceneImpl
 {
 protected:
 	CXuiControl m_filebrowser;
+	CXuiControl m_quick_menu;
+	CXuiControl m_controls;
 	CXuiControl m_settings;
 	CXuiControl m_quit;
 	CXuiTextElement m_title;
@@ -71,6 +74,27 @@ public:
 	XUI_END_MSG_MAP();
 
 	XUI_IMPLEMENT_CLASS(CSSNESFileBrowser, L"SSNESFileBrowser", XUI_CLASS_SCENE)
+};
+
+class CSSNESQuickMenu: public CXuiSceneImpl
+{
+protected:
+	CXuiControl m_loadstate;
+	CXuiControl m_savestate;
+	CXuiControl m_hw_filter;
+	CXuiControl m_frame_advance;
+	CXuiControl m_return_to_game;
+	CXuiControl m_back;
+public:
+	HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+
+	XUI_BEGIN_MSG_MAP()
+		XUI_ON_XM_INIT( OnInit)
+		XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+	XUI_END_MSG_MAP();
+
+	XUI_IMPLEMENT_CLASS(CSSNESQuickMenu, L"SSNESQuickMenu", XUI_CLASS_SCENE)
 };
 
 class CSSNESSettings: public CXuiSceneImpl

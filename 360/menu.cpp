@@ -32,11 +32,19 @@ CSSNES		app;
 filebrowser_t browser;
 char		strbuffer[1024];
 
+static void return_to_game (void)
+{
+	g_console.frame_advance_enable = false;
+	g_console.menu_enable = false;
+	g_console.mode_switch = MODE_EMULATION;
+}
+
 /* Register custom classes */
 HRESULT CSSNES::RegisterXuiClasses (void)
 {
 	CSSNESMain::Register();
 	CSSNESFileBrowser::Register();
+	CSSNESQuickMenu::Register();
 	CSSNESSettings::Register();
 	return S_OK;
 }
@@ -46,6 +54,7 @@ HRESULT CSSNES::UnregisterXuiClasses (void)
 {
 	CSSNESMain::Unregister();
 	CSSNESFileBrowser::Unregister();
+	CSSNESQuickMenu::Register();
 	CSSNESSettings::Unregister();
 	return S_OK;
 }
@@ -88,10 +97,10 @@ static void set_filter_element(int index, CXuiControl * obj)
 	switch(index)
 	{
 		case FALSE:
-			obj->SetText(L"Point filtering");
+			obj->SetText(L"Hardware filtering: Point filtering");
 			break;
 		case TRUE:
-			obj->SetText(L"Linear interpolation");
+			obj->SetText(L"Hardware filtering: Linear interpolation");
 			break;
 	}
 }
@@ -108,13 +117,54 @@ HRESULT CSSNESSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	return S_OK;
 }
 
+HRESULT CSSNESQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+{
+	GetChildById(L"XuiBtnLoadState", &m_loadstate);
+	GetChildById(L"XuiBtnSaveState", &m_savestate);
+	GetChildById(L"XuiBtnFilteringShader", &m_hw_filter);
+	GetChildById(L"XuiBtnFrameAdvance", &m_frame_advance);
+	GetChildById(L"XuiBtnReturnToGame", &m_return_to_game);
+	GetChildById(L"XuiBackButton", &m_back);
+
+	set_filter_element(g_settings.video.smooth, &m_hw_filter);
+	return S_OK;
+}
+
+HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
+{
+	if ( hObjPressed == m_hw_filter)
+		g_settings.video.smooth = !g_settings.video.smooth;
+	else if ( hObjPressed == m_loadstate && g_console.emulator_initialized)
+	{
+		ssnes_load_state();
+		return_to_game();
+	}
+	else if ( hObjPressed == m_frame_advance && g_console.emulator_initialized)
+	{
+		g_console.frame_advance_enable = true;
+		g_console.menu_enable = false;
+		g_console.mode_switch = MODE_EMULATION;
+	}
+	else if ( hObjPressed == m_return_to_game && g_console.emulator_initialized)
+		return_to_game();
+	else if ( hObjPressed == m_back )
+		NavigateBack(app.hMainScene);
+
+	set_filter_element(g_settings.video.smooth, &m_hw_filter);
+	bHandled = TRUE;
+	return S_OK;
+}
+
 HRESULT CSSNESMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
 	GetChildById(L"XuiBtnRomBrowser", &m_filebrowser);
 	GetChildById(L"XuiBtnSettings", &m_settings);
+	GetChildById(L"XuiBtnQuickMenu", &m_quick_menu);
+	GetChildById(L"XuiBtnControls", &m_controls);
 	GetChildById(L"XuiBtnQuit", &m_quit);
 	GetChildById(L"XuiTxtTitle", &m_title);
 	GetChildById(L"XuiTxtCoreText", &m_core);
+
 	const char * core_text = snes_library_id();
 	char package_version[32];
 	sprintf(package_version, "SSNES %s", PACKAGE_VERSION);
@@ -143,8 +193,8 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 			wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
 			memset(g_console.rom_path, 0, sizeof(g_console.rom_path));
 			sprintf(g_console.rom_path, "%s%s", g_console.default_rom_startup_dir, strbuffer);
-			g_console.menu_enable = false;
-			g_console.mode_switch = MODE_EMULATION;
+			
+			return_to_game();
 			g_console.initialize_ssnes_enable = 1;
 		}
 		else if(browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
@@ -157,9 +207,7 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 		}
 	}
 	else if(hObjPressed == m_back)
-	{	
 		NavigateBack(app.hMainScene);
-	}
 
 	bHandled = TRUE;
 	return S_OK;
@@ -177,16 +225,8 @@ HRESULT CSSNESSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 		g_settings.video.smooth = !g_settings.video.smooth;
 	}
 	else if ( hObjPressed == m_back )
-	{
-		HRESULT hr = XuiSceneNavigateBack(app.hSSNESSettings, app.hMainScene, XUSER_INDEX_FOCUS);
-		
-		if (FAILED(hr))
-		{
-			SSNES_ERR("Failed to load scene.\n");
-		}
-		
 		NavigateBack(app.hMainScene);
-	}
+
 	set_filter_element(g_settings.video.smooth, &m_hw_filter);
 	bHandled = TRUE;
 	return S_OK;
@@ -206,6 +246,15 @@ HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 		}
 
 		NavigateForward(app.hFileBrowser);
+	}
+	else if ( hObjPressed == m_quick_menu)
+	{
+		hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_quickmenu.xur", NULL, &app.hQuickMenu);
+		
+		if (FAILED(hr))
+			SSNES_ERR("Failed to load scene.\n");
+
+		NavigateForward(app.hQuickMenu);
 	}
 	else if ( hObjPressed == m_settings )
 	{
@@ -275,13 +324,13 @@ void menu_loop(void)
 	HRESULT hr;
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 
-	if(g_console.ingame_menu_enable)
+	if(g_console.emulator_initialized)
 		video_xdk360.set_swap_block_state(NULL, true);
 
 	do
 	{
 		g_frame_count++;
-		if(g_console.ingame_menu_enable)
+		if(g_console.emulator_initialized)
 			ssnes_render_cached_frame();
 		else
 			vid->xdk360_render_device->Clear(0, NULL,
@@ -296,19 +345,19 @@ void menu_loop(void)
 		&& IS_TIMER_EXPIRED());
 		g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
 
-		if(g_console.mode_switch == MODE_EMULATION)
-		{
-			SET_TIMER_EXPIRATION(30);
-		}
-
 		app.RunFrame();			/* Update XUI */
 		hr = app.Render();		/* Render XUI */
 		hr = XuiTimersRun();	/* Update XUI timers */
 
+		if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
+		{
+			SET_TIMER_EXPIRATION(30);
+		}
+
 		video_xdk360.swap(NULL);
 	}while(g_console.menu_enable);
 	
-	if(g_console.ingame_menu_enable)
+	if(g_console.emulator_initialized)
 		video_xdk360.set_swap_block_state(NULL, false);
 
 	g_console.ingame_menu_enable = false;
