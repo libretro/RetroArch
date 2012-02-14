@@ -79,11 +79,7 @@ public:
 class CSSNESQuickMenu: public CXuiSceneImpl
 {
 protected:
-	CXuiControl m_loadstate;
-	CXuiControl m_savestate;
-	CXuiControl m_hw_filter;
-	CXuiControl m_frame_advance;
-	CXuiControl m_return_to_game;
+	CXuiList m_quickmenulist;
 	CXuiControl m_back;
 public:
 	HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );

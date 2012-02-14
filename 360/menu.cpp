@@ -39,6 +39,13 @@ static void return_to_game (void)
 	g_console.mode_switch = MODE_EMULATION;
 }
 
+static void return_to_dashboard (void)
+{
+	g_console.menu_enable = false;
+	g_console.mode_switch = MODE_EXIT;
+	g_console.initialize_ssnes_enable = false;
+}
+
 /* Register custom classes */
 HRESULT CSSNES::RegisterXuiClasses (void)
 {
@@ -92,17 +99,17 @@ HRESULT CSSNESFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	return S_OK;
 }
 
-static void set_filter_element(int index, CXuiControl * obj)
+static const wchar_t * set_filter_element(int index)
 {
 	switch(index)
 	{
 		case FALSE:
-			obj->SetText(L"Hardware filtering: Point filtering");
-			break;
+			return L"Hardware filtering: Point filtering";
 		case TRUE:
-			obj->SetText(L"Hardware filtering: Linear interpolation");
-			break;
+			return L"Hardware filtering: Linear interpolation";
 	}
+
+	return L"";
 }
 
 HRESULT CSSNESSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
@@ -112,45 +119,86 @@ HRESULT CSSNESSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	GetChildById(L"XuiBackButton1", &m_back);
 	GetChildById(L"XuiBtnHWFilter", &m_hw_filter);
 
-	set_filter_element(g_settings.video.smooth, &m_hw_filter);
+	m_hw_filter.SetText(set_filter_element(g_settings.video.smooth));
 	m_rewind_cb.SetCheck(g_settings.rewind_enable);
 	return S_OK;
 }
 
 HRESULT CSSNESQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
-	GetChildById(L"XuiBtnLoadState", &m_loadstate);
-	GetChildById(L"XuiBtnSaveState", &m_savestate);
-	GetChildById(L"XuiBtnFilteringShader", &m_hw_filter);
-	GetChildById(L"XuiBtnFrameAdvance", &m_frame_advance);
-	GetChildById(L"XuiBtnReturnToGame", &m_return_to_game);
+	GetChildById(L"XuiQuickMenuList", &m_quickmenulist);
 	GetChildById(L"XuiBackButton", &m_back);
 
-	set_filter_element(g_settings.video.smooth, &m_hw_filter);
+	m_quickmenulist.SetText(MENU_ITEM_HARDWARE_FILTERING, set_filter_element(g_settings.video.smooth));
 	return S_OK;
 }
 
 HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
-	if ( hObjPressed == m_hw_filter)
-		g_settings.video.smooth = !g_settings.video.smooth;
-	else if ( hObjPressed == m_loadstate && g_console.emulator_initialized)
+	int current_index;
+
+	if ( hObjPressed == m_quickmenulist)
 	{
-		ssnes_load_state();
-		return_to_game();
+		current_index = m_quickmenulist.GetCurSel();
+
+		switch(current_index)
+		{
+			case MENU_ITEM_LOAD_STATE:
+				if (g_console.emulator_initialized)
+				{
+					ssnes_load_state();
+					return_to_game();
+				}
+				break;
+			case MENU_ITEM_SAVE_STATE:
+				if (g_console.emulator_initialized)
+				{
+					ssnes_save_state();
+					return_to_game();
+				}
+				break;
+			case MENU_ITEM_HARDWARE_FILTERING:
+				g_settings.video.smooth = !g_settings.video.smooth;
+				m_quickmenulist.SetText(MENU_ITEM_HARDWARE_FILTERING, set_filter_element(g_settings.video.smooth));
+				break;
+			case MENU_ITEM_KEEP_ASPECT_RATIO:
+				break;
+			case MENU_ITEM_OVERSCAN_AMOUNT:
+				break;
+			case MENU_ITEM_ORIENTATION:
+				break;
+			case MENU_ITEM_RESIZE_MODE:
+				break;
+			case MENU_ITEM_FRAME_ADVANCE:
+				if (g_console.emulator_initialized)
+				{
+					g_console.frame_advance_enable = true;
+					g_console.menu_enable = false;
+					g_console.mode_switch = MODE_EMULATION;
+				}
+				break;
+			case MENU_ITEM_SCREENSHOT_MODE:
+				break;
+			case MENU_ITEM_RESET:
+				if (g_console.emulator_initialized)
+				{
+					return_to_game();
+					ssnes_game_reset();
+				}
+				break;
+			case MENU_ITEM_RETURN_TO_GAME:
+				if (g_console.emulator_initialized)
+					return_to_game();
+				break;
+			case MENU_ITEM_RETURN_TO_DASHBOARD:
+				return_to_dashboard();
+				break;
+		}
 	}
-	else if ( hObjPressed == m_frame_advance && g_console.emulator_initialized)
-	{
-		g_console.frame_advance_enable = true;
-		g_console.menu_enable = false;
-		g_console.mode_switch = MODE_EMULATION;
-	}
-	else if ( hObjPressed == m_return_to_game && g_console.emulator_initialized)
-		return_to_game();
-	else if ( hObjPressed == m_back )
+	
+	if ( hObjPressed == m_back )
 		NavigateBack(app.hMainScene);
 
-	set_filter_element(g_settings.video.smooth, &m_hw_filter);
 	bHandled = TRUE;
 	return S_OK;
 }
@@ -223,11 +271,11 @@ HRESULT CSSNESSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 	else if ( hObjPressed == m_hw_filter)
 	{
 		g_settings.video.smooth = !g_settings.video.smooth;
+		m_hw_filter.SetText(set_filter_element(g_settings.video.smooth));
 	}
 	else if ( hObjPressed == m_back )
 		NavigateBack(app.hMainScene);
 
-	set_filter_element(g_settings.video.smooth, &m_hw_filter);
 	bHandled = TRUE;
 	return S_OK;
 }
@@ -266,11 +314,7 @@ HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 		NavigateForward(app.hSSNESSettings);
 	}
 	else if ( hObjPressed == m_quit )
-	{
-		g_console.menu_enable = false;
-		g_console.mode_switch = MODE_EXIT;
-		g_console.initialize_ssnes_enable = false;
-	}
+		return_to_dashboard();
 
 	bHandled = TRUE;
 	return S_OK;
