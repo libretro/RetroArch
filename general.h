@@ -138,6 +138,9 @@ struct settings
 
       char dsp_plugin[PATH_MAX];
       char external_driver[PATH_MAX];
+
+      bool rate_control;
+      float rate_control_delta;
    } audio;
 
    struct
@@ -299,6 +302,10 @@ struct global
       dylib_t dsp_lib;
       const ssnes_dsp_plugin_t *dsp_plugin;
       void *dsp_handle;
+
+      bool rate_control; 
+      double orig_src_ratio;
+      size_t driver_buffer_size;
    } audio_data;
 
    struct

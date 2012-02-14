@@ -98,6 +98,9 @@ typedef struct audio_driver
    void (*free)(void *data);
    bool (*use_float)(void *data); // Defines if driver will take standard floating point samples, or int16_t samples.
    const char *ident;
+
+   size_t (*write_avail)(void *data); // Optional
+   size_t (*buffer_size)(void *data); // Optional
 } audio_driver_t;
 
 #define AXIS_NEG(x) (((uint32_t)(x) << 16) | UINT16_C(0xFFFF))

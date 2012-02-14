@@ -195,6 +195,8 @@ void config_set_defaults(void)
       strlcpy(g_settings.audio.device, audio_device, sizeof(g_settings.audio.device));
    g_settings.audio.latency = out_latency;
    g_settings.audio.sync = audio_sync;
+   g_settings.audio.rate_control = rate_control;
+   g_settings.audio.rate_control_delta = rate_control_delta;
 
    g_settings.rewind_enable = rewind_enable;
    g_settings.rewind_buffer_size = rewind_buffer_size;
@@ -429,6 +431,8 @@ bool config_load_file(const char *path)
    CONFIG_GET_STRING(audio.device, "audio_device");
    CONFIG_GET_INT(audio.latency, "audio_latency");
    CONFIG_GET_BOOL(audio.sync, "audio_sync");
+   CONFIG_GET_BOOL(audio.rate_control, "audio_rate_control");
+   CONFIG_GET_FLOAT(audio.rate_control_delta, "audio_rate_control_delta");
 
    CONFIG_GET_STRING(video.driver, "video_driver");
    CONFIG_GET_STRING(audio.driver, "audio_driver");
