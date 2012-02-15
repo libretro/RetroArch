@@ -74,15 +74,6 @@ void set_text_message(const char * message, uint32_t speed)
 	SET_TIMER_EXPIRATION(speed);
 }
 
-static bool file_exists(const char * filename)
-{
-	CellFsStat sb;
-	if(cellFsStat(filename,&sb) == CELL_FS_SUCCEEDED)
-		return true;
-	else
-		return false;
-}
-
 static void set_default_settings(void)
 {
 	// g_settings
@@ -97,7 +88,7 @@ static void set_default_settings(void)
 	g_settings.video.smooth = true;
 	g_settings.video.vsync = true;
 	strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
-	g_settings.video.msg_pos_x = 0.09f;
+	g_settings.video.msg_pos_x = 0.05f;
 	g_settings.video.msg_pos_y = 0.90f;
 	g_settings.video.aspect_ratio = -1.0f;
 
@@ -174,7 +165,7 @@ static void set_default_settings(void)
 
 static void init_settings(void)
 {
-	if(!file_exists(SYS_CONFIG_FILE))
+	if(!path_file_exists(SYS_CONFIG_FILE))
 	{
 		SSNES_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
 		FILE * f;
@@ -219,7 +210,7 @@ static void init_settings(void)
 
 static void save_settings(void)
 {
-	if(!file_exists(SYS_CONFIG_FILE))
+	if(!path_file_exists(SYS_CONFIG_FILE))
 	{
 		FILE * f;
 		f = fopen(SYS_CONFIG_FILE, "w");
@@ -341,7 +332,7 @@ static void get_environment_settings(void)
 		/* now we fill in all the variables */
 		snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/presets/stock.conf", usrDirPath);
 		snprintf(DEFAULT_BORDER_FILE, sizeof(DEFAULT_BORDER_FILE), "%s/borders/Centered-1080p/mega-man-2.png", usrDirPath);
-		snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/borders/Menu/main-menu.jpg", usrDirPath);
+		snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/borders/Menu/main-menu.png", usrDirPath);
 		snprintf(GAME_AWARE_SHADER_DIR_PATH, sizeof(GAME_AWARE_SHADER_DIR_PATH), "%s/gameaware", usrDirPath);
 		snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/presets", usrDirPath);
 		snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/input-presets", usrDirPath);
@@ -436,7 +427,7 @@ begin_loop:
 	goto begin_loop;
 
 begin_shutdown:
-	if(file_exists(SYS_CONFIG_FILE))
+	if(path_file_exists(SYS_CONFIG_FILE))
 		save_settings();
 	ps3_input_deinit();
 	ps3_video_deinit();

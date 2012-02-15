@@ -218,7 +218,6 @@ enum ssnes_game_type
    SSNES_CART_SUFAMI
 };
 
-
 // All run-time- / command line flag-related globals go here.
 struct global
 {
@@ -422,6 +421,8 @@ void ssnes_render_cached_frame(void);
 
 void ssnes_load_state(void);
 void ssnes_save_state(void);
+void ssnes_state_slot_increase(void);
+void ssnes_state_slot_decrease(void);
 /////////
 
 // Public data structures
