@@ -640,14 +640,14 @@ static void menu_init_settings_pages(menu * menu_obj)
 
 	page = 0;
 	j = 0;
-	increment = 0.13f;
+	increment = 0.16f;
 
 	for(i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
 	{
 		if(!(j < (NUM_ENTRY_PER_PAGE)))
 		{
 			j = 0;
-			increment = 0.13f;
+			increment = 0.16f;
 			page++;
 		}
 
