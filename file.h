@@ -47,6 +47,10 @@ void dir_list_free(char **dir_list);
 bool path_is_directory(const char *path);
 bool path_file_exists(const char *path);
 
+#ifdef SSNES_CONSOLE
+bool filepath_exists(const char *path);
+#endif
+
 // Path-name operations.
 // If any of these operation are detected to overflow, the application will be terminated.
 

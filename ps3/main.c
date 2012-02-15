@@ -74,15 +74,6 @@ void set_text_message(const char * message, uint32_t speed)
 	SET_TIMER_EXPIRATION(speed);
 }
 
-static bool file_exists(const char * filename)
-{
-	CellFsStat sb;
-	if(cellFsStat(filename,&sb) == CELL_FS_SUCCEEDED)
-		return true;
-	else
-		return false;
-}
-
 static void set_default_settings(void)
 {
 	// g_settings
@@ -174,7 +165,7 @@ static void set_default_settings(void)
 
 static void init_settings(void)
 {
-	if(!file_exists(SYS_CONFIG_FILE))
+	if(!filepath_exists(SYS_CONFIG_FILE))
 	{
 		SSNES_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
 		FILE * f;
@@ -219,7 +210,7 @@ static void init_settings(void)
 
 static void save_settings(void)
 {
-	if(!file_exists(SYS_CONFIG_FILE))
+	if(!filepath_exists(SYS_CONFIG_FILE))
 	{
 		FILE * f;
 		f = fopen(SYS_CONFIG_FILE, "w");
@@ -436,7 +427,7 @@ begin_loop:
 	goto begin_loop;
 
 begin_shutdown:
-	if(file_exists(SYS_CONFIG_FILE))
+	if(filepath_exists(SYS_CONFIG_FILE))
 		save_settings();
 	ps3_input_deinit();
 	ps3_video_deinit();

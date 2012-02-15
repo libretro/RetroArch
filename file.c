@@ -938,6 +938,27 @@ void dir_list_free(char **dir_list)
    free(orig);
 }
 
+#ifdef SSNES_CONSOLE
+bool filepath_exists(const char *path)
+{
+#ifdef _WIN32
+  DWORD file_attr;
+
+  file_attr = GetFileAttributes(path);
+
+  if (0xFFFFFFFF == file_attr)
+	  return false;
+  return true;
+#elif defined(__CELLOS_LV2__)
+  CellFsStat file_attr;
+  if(cellFsStat(path,&file_attr) == CELL_FS_SUCCEEDED)
+  	return true;
+  else
+  	return false;
+#endif
+}
+#endif
+
 bool path_is_directory(const char *path)
 {
 #ifdef _WIN32
