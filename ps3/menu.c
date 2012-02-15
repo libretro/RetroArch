@@ -1610,7 +1610,7 @@ static void select_rom(void)
 	old_state = state;
 }
 
-#define MENU_ITEM_SELECTED(index) ((g_console.ingame_menu_item == index) ? RED : GREEN)
+#define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
 static void return_to_game (void)
 {
@@ -1623,6 +1623,12 @@ static void return_to_game (void)
 static void ingame_menu(uint32_t menu_id)
 {
 	char comment[256], msg_temp[256];
+	static uint32_t menuitem_colors[MENU_ITEM_LAST];
+
+	for(int i = 0; i < MENU_ITEM_LAST; i++)
+		menuitem_colors[i] = GREEN;
+	
+	menuitem_colors[g_console.ingame_menu_item] = RED;
 
 	uint64_t state = cell_pad_input_poll_device(0);
 	static uint64_t old_state = 0;
@@ -1904,60 +1910,50 @@ static void ingame_menu(uint32_t menu_id)
 
 	cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Quick Menu");
 
-	cellDbgFontPrintf (x_position, ypos, font_size+0.01f, BLUE, "Load State #%d", g_extern.state_slot);
 	cellDbgFontPrintf(x_position, ypos, font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), "Load State #%d", g_extern.state_slot);
 
-	cellDbgFontPrintf (x_position, ypos+(ypos_increment*MENU_ITEM_SAVE_STATE), font_size+0.01f, BLUE, "Save State #%d", g_extern.state_slot);
 	cellDbgFontPrintf(x_position, ypos+(ypos_increment*MENU_ITEM_SAVE_STATE), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), "Save State #%d", g_extern.state_slot);
 	cellDbgFontDraw();
 
-	cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size+0.01f, BLUE, "Aspect Ratio: %s", g_console.aspect_ratio_name);
 	cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), "Aspect Ratio: %s", g_console.aspect_ratio_name);
 
-	cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size+0.01f, BLUE, "Overscan: %f", g_console.overscan_amount);
 	cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), "Overscan: %f", g_console.overscan_amount);
 
-	cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size+0.01f, BLUE, "Orientation: %s", msg_temp);
 	cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), "Orientation: %s", msg_temp);
+	cellDbgFontDraw();
 
-	cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_RESIZE_MODE)), font_size+0.01f, BLUE, "Resize Mode");
 	cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_RESIZE_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE), "Resize Mode");
 
-	cellDbgFontPuts (x_position, (ypos+(ypos_increment*MENU_ITEM_FRAME_ADVANCE)), font_size+0.01f, BLUE, "Frame Advance");
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_FRAME_ADVANCE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_FRAME_ADVANCE), "Frame Advance");
 
-	cellDbgFontPuts (x_position, (ypos+(ypos_increment*MENU_ITEM_SCREENSHOT_MODE)), font_size+0.01f, BLUE, "Screenshot Mode");
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_SCREENSHOT_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCREENSHOT_MODE), "Screenshot Mode");
 
 	cellDbgFontDraw();
 
-	cellDbgFontPuts (x_position, (ypos+(ypos_increment*MENU_ITEM_RESET)), font_size+0.01f, BLUE, "Reset");
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RESET)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESET), "Reset");
 
-	cellDbgFontPuts (x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_GAME)), font_size+0.01f, BLUE, "Return to Game");
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_GAME)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME), "Return to Game");
 
-	cellDbgFontPuts (x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MENU)), font_size+0.01f, BLUE, "Return to Menu");
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MENU)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU), "Return to Menu");
+	cellDbgFontDraw();
 #ifdef MULTIMAN_SUPPORT
-	cellDbgFontPuts (x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size+0.01f, BLUE, "Return to multiMAN");
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");
 #endif
-	cellDbgFontDraw();
 
-	cellDbgFontPuts (x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)), font_size+0.01f, BLUE, "Return to XMB");
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_XMB), "Return to XMB");
+	cellDbgFontDraw();
 
 	cellDbgFontPuts	(0.09f,	0.05f,	Emulator_GetFontSize(),	RED,	"QUICK MENU");
 	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libsnes core: %s", snes_library_id());
 	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
+	cellDbgFontDraw();
 	if(IS_TIMER_NOT_EXPIRED())
 	{
-		cellDbgFontPrintf (0.09f, 0.90f, 1.51f, BLUE, special_action_msg);
-		cellDbgFontPrintf (0.09f, 0.90f, 1.50f, WHITE, special_action_msg);
+		cellDbgFontPrintf (0.05f, 0.90f, 1.10f, WHITE, special_action_msg);
 		cellDbgFontDraw();
 	}
 	cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, comment);
+	cellDbgFontDraw();
 }
 
 void menu_init (void)

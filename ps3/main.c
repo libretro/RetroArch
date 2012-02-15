@@ -97,7 +97,7 @@ static void set_default_settings(void)
 	g_settings.video.smooth = true;
 	g_settings.video.vsync = true;
 	strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
-	g_settings.video.msg_pos_x = 0.09f;
+	g_settings.video.msg_pos_x = 0.05f;
 	g_settings.video.msg_pos_y = 0.90f;
 	g_settings.video.aspect_ratio = -1.0f;
 
