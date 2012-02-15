@@ -1578,34 +1578,53 @@ static bool check_fullscreen(void)
    return toggle;
 }
 
+void ssnes_state_slot_increase(void)
+{
+   g_extern.state_slot++;
+
+   if (g_extern.msg_queue)
+      msg_queue_clear(g_extern.msg_queue);
+   char msg[256];
+
+   snprintf(msg, sizeof(msg), "Save state/movie slot: %u", g_extern.state_slot);
+
+   if (g_extern.msg_queue)
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+
+   SSNES_LOG("%s\n", msg);
+}
+
+void ssnes_state_slot_decrease(void)
+{
+   if (g_extern.state_slot > 0)
+      g_extern.state_slot--;
+
+   if (g_extern.msg_queue)
+      msg_queue_clear(g_extern.msg_queue);
+
+   char msg[256];
+
+   snprintf(msg, sizeof(msg), "Save state/movie slot: %u", g_extern.state_slot);
+
+   if (g_extern.msg_queue)
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+
+   SSNES_LOG("%s\n", msg);
+}
+
 static void check_stateslots(void)
 {
    // Save state slots
    static bool old_should_slot_increase = false;
    bool should_slot_increase = driver.input->key_pressed(driver.input_data, SSNES_STATE_SLOT_PLUS);
    if (should_slot_increase && !old_should_slot_increase)
-   {
-      g_extern.state_slot++;
-      msg_queue_clear(g_extern.msg_queue);
-      char msg[256];
-      snprintf(msg, sizeof(msg), "Save state/movie slot: %u", g_extern.state_slot);
-      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-      SSNES_LOG("%s\n", msg);
-   }
+      ssnes_state_slot_increase();
    old_should_slot_increase = should_slot_increase;
 
    static bool old_should_slot_decrease = false;
    bool should_slot_decrease = driver.input->key_pressed(driver.input_data, SSNES_STATE_SLOT_MINUS);
    if (should_slot_decrease && !old_should_slot_decrease)
-   {
-      if (g_extern.state_slot > 0)
-         g_extern.state_slot--;
-      msg_queue_clear(g_extern.msg_queue);
-      char msg[256];
-      snprintf(msg, sizeof(msg), "Save state/movie slot: %u", g_extern.state_slot);
-      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-      SSNES_LOG("%s\n", msg);
-   }
+      ssnes_state_slot_decrease();
    old_should_slot_decrease = should_slot_decrease;
 }
 
