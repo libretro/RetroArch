@@ -384,7 +384,6 @@ static size_t dsound_write_avail(void *data)
 
 static size_t dsound_buffer_size(void *data)
 {
-   dsound_t *ds = (dsound_t*)data;
    return 4 * 1024;
 }
 
