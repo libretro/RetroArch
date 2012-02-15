@@ -193,7 +193,7 @@ static void set_default_settings (void)
 
 static void init_settings (void)
 {
-	if(!filepath_exists(SYS_CONFIG_FILE))
+	if(!path_file_exists(SYS_CONFIG_FILE))
 	{
 		SSNES_ERR("Config file \"%s\" desn't exist. Creating...\n", "game:\\ssnes.cfg");
 		FILE * f;
@@ -219,7 +219,7 @@ static void init_settings (void)
 
 static void save_settings (void)
 {
-	if(!filepath_exists(SYS_CONFIG_FILE))
+	if(!path_file_exists(SYS_CONFIG_FILE))
 	{
 		FILE * f;
 		f = fopen(SYS_CONFIG_FILE, "w");
@@ -363,7 +363,7 @@ begin_loop:
 	goto begin_loop;
 
 begin_shutdown:
-	if(filepath_exists(SYS_CONFIG_FILE))
+	if(path_file_exists(SYS_CONFIG_FILE))
 		save_settings();
 	xdk360_video_deinit();
 }
