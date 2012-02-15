@@ -1650,21 +1650,14 @@ static void ingame_menu(uint32_t menu_id)
 				}
 				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 				{
-					if(g_extern.state_slot > 0)
-					{
-						char msg[512];
-						g_extern.state_slot--;
-						snprintf(msg, sizeof(msg), "Save state slot changed to: #%d", g_extern.state_slot);
-						set_text_message(msg, 30);
-					}
+					ssnes_state_slot_decrease();
+					set_text_message("", 30);
 					blocking = 0;
 				}
 				if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 				{
-					char msg[512];
-					g_extern.state_slot++;
-					snprintf(msg, sizeof(msg), "Save state slot changed to: #%d", g_extern.state_slot);
-					set_text_message(msg, 30);
+					ssnes_state_slot_increase();
+					set_text_message("", 30);
 					blocking = 0;
 				}
 
@@ -1678,21 +1671,14 @@ static void ingame_menu(uint32_t menu_id)
 				}
 				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 				{
-					if(g_extern.state_slot > 0)
-					{
-						char msg[512];
-						g_extern.state_slot--;
-						snprintf(msg, sizeof(msg), "Save state slot changed to: #%d", g_extern.state_slot);
-						set_text_message(msg, 30);
-					}
+					ssnes_state_slot_decrease();
+					set_text_message("", 30);
 					blocking = 0;
 				}
 				if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 				{
-					char msg[512];
-					g_extern.state_slot++;
-					snprintf(msg, sizeof(msg), "Save state slot changed to: #%d", g_extern.state_slot);
-					set_text_message(msg, 30);
+					ssnes_state_slot_increase();
+					set_text_message("", 30);
 					blocking = 0;
 				}
 
