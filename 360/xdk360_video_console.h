@@ -47,8 +47,8 @@ public:
     void            Destroy();
 
     // Console output
-    void    Format(int clear_screen, _In_z_ _Printf_format_string_ LPCSTR strFormat, ... );
-    void    Format(int clear_screen, _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... );
+    void    Format(_In_z_ _Printf_format_string_ LPCSTR strFormat, ... );
+    void    Format(_In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... );
     void    FormatV( _In_z_ _Printf_format_string_ LPCSTR strFormat, va_list pArgList );
     void    FormatV( _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, va_list pArgList );
 

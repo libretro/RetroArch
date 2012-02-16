@@ -204,8 +204,7 @@ void Console::Add( wchar_t wch )
         m_Lines[ m_nCurLine ][0] = wch;
     }
 
-	if(IS_TIMER_EXPIRED())
-		m_cCurLineLength++;
+	m_cCurLineLength++;
 }
 
 
@@ -213,40 +212,28 @@ void Console::Add( wchar_t wch )
 // Name: Format()
 // Desc: Output a variable argument list using a format string
 //--------------------------------------------------------------------------------------
-void Console::Format(int clear_screen, _In_z_ _Printf_format_string_ LPCSTR strFormat, ... )
+void Console::Format(_In_z_ _Printf_format_string_ LPCSTR strFormat, ... )
 {
-	if(clear_screen)
-	{
-		m_nCurLine = 0;
-		m_cCurLineLength = 0;
-		memset( m_Buffer, 0, m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-	}
+	m_nCurLine = 0;
+	m_cCurLineLength = 0;
+	memset( m_Buffer, 0, m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
 
 	va_list pArgList;
 	va_start( pArgList, strFormat );
 	FormatV( strFormat, pArgList );
 	va_end( pArgList );
-
-	// Render the output
-	Render();
 }
 
-void Console::Format(int clear_screen, _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... )
+void Console::Format(_In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... )
 {
-	if(clear_screen)
-	{
-		m_nCurLine = 0;
-		m_cCurLineLength = 0;
-		memset( m_Buffer, 0, m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-	}
+	m_nCurLine = 0;
+	m_cCurLineLength = 0;
+	memset( m_Buffer, 0, m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
 
 	va_list pArgList;
 	va_start( pArgList, wstrFormat );
 	FormatV( wstrFormat, pArgList );
 	va_end( pArgList );
-
-	// Render the output
-	Render();
 }
 
 

@@ -22,6 +22,7 @@
 
 #include "xdk360_video.h"
 #include "../general.h"
+#include "../message.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -283,9 +284,9 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    {
 	   if(IS_TIMER_EXPIRED() || g_first_msg)
 	   {
-		   g_screen_console.Format(true, msg);
+		   g_screen_console.Format(msg);
 		   g_first_msg = 0;
-		   SET_TIMER_EXPIRATION(60);
+		   SET_TIMER_EXPIRATION(30);
 	   }
 	   
 	   g_screen_console.Render();
