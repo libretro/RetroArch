@@ -550,6 +550,7 @@ void save_ram_file(const char *path, int type)
    }
 }
 
+#ifdef HAVE_XML
 static char *load_xml_map(const char *path)
 {
    char *xml_buf = NULL;
@@ -563,6 +564,9 @@ static char *load_xml_map(const char *path)
 
    return xml_buf;
 }
+#else
+#define load_xml_map(xml_name) (NULL)
+#endif
 
 static bool load_sgb_rom(void)
 {
