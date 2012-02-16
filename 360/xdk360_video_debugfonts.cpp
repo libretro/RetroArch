@@ -555,9 +555,9 @@ VOID XdkFont::Begin()
 // Desc: Draws text as textured polygons
 //--------------------------------------------------------------------------------------
 VOID XdkFont::DrawText( unsigned long dwColor, const wchar_t * strText, 
-	unsigned long dwFlags, float fMaxPixelWidth )
+	float fMaxPixelWidth )
 {
-    DrawText( m_fCursorX, m_fCursorY, dwColor, strText, dwFlags, fMaxPixelWidth );
+    DrawText( m_fCursorX, m_fCursorY, dwColor, strText, fMaxPixelWidth );
 }
 
 
@@ -568,11 +568,9 @@ VOID XdkFont::DrawText( unsigned long dwColor, const wchar_t * strText,
 //       becomes available.
 //--------------------------------------------------------------------------------------
 VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
-	const wchar_t * strText, unsigned long dwFlags, float fMaxPixelWidth )
+	const wchar_t * strText, float fMaxPixelWidth )
 {
-    if( strText == NULL )
-		return;
-    if( L'\0' == strText[0] )
+    if( strText == NULL || strText[0] == L'\0')
 		return;
 
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
@@ -599,7 +597,7 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
     pd3dDevice->SetVertexShaderConstantF( 1, vColor, 1 );
 
     // Set the starting screen position
-    if( ( fOriginX < 0.0f ) || ( ( dwFlags & FONT_RIGHT ) && ( fOriginX <= 0.0f ) ) )
+    if((fOriginX < 0.0f))
         fOriginX += m_rcWindow.x2;
     if( fOriginY < 0.0f )
         fOriginY += m_rcWindow.y2;
@@ -610,14 +608,6 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
     // Adjust for padding
     fOriginY -= m_fFontTopPadding;
 
-    // If vertically centered, offset the starting m_fCursorY value
-    if( dwFlags & FONT_CENTER_Y )
-    {
-        float w, h;
-        GetTextExtent( strText, &w, &h );
-        m_fCursorY = floorf( m_fCursorY - (h * 0.5f) );
-    }
-
     // Add window offsets
     float Winx = 0.0f;
     float Winy = 0.0f;
@@ -625,9 +615,6 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
     fOriginY += Winy;
     m_fCursorX += Winx;
     m_fCursorY += Winy;
-
-    // Set a flag so we can determine initial justification effects
-    BOOL bStartingNewLine = TRUE;
 
     // Begin drawing the vertices
 
@@ -637,7 +624,7 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
 
     volatile float * pVertex;
 
-    unsigned long dwNumChars = wcslen( strText ) + ( dwFlags & FONT_TRUNCATED ? 3 : 0 );
+    unsigned long dwNumChars = wcslen(strText);
     HRESULT hr = pd3dDevice->BeginVertices( D3DPT_QUADLIST, 4 * dwNumChars, sizeof( XMFLOAT4 ) ,
                                               ( VOID** )&pVertex );
     // The ring buffer may run out of space when tiling, doing z-prepasses,
@@ -645,30 +632,10 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
     if( FAILED( hr ) )
         SSNES_ERR( "Ring buffer out of memory.\n" );
 
-    bStartingNewLine = TRUE;
-
     // Draw four vertices for each glyph
     while( *strText )
     {
         wchar_t letter;
-
-        // If starting text on a new line, determine justification effects
-        if( bStartingNewLine )
-        {
-            if( dwFlags & ( FONT_RIGHT | FONT_CENTER_X ) )
-            {
-                // Get the extent of this line
-                float w, h;
-                GetTextExtent( strText, &w, &h, TRUE );
-
-                // Offset this line's starting m_fCursorX value
-                if( dwFlags & FONT_RIGHT )
-                    m_fCursorX = floorf( fOriginX - w );
-                if( dwFlags & FONT_CENTER_X )
-                    m_fCursorX = floorf( fOriginX - w * 0.5f );
-            }
-            bStartingNewLine = FALSE;
-        }
 
         // Get the current letter in the string
         letter = *strText++;
@@ -678,7 +645,6 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
         {
             m_fCursorX = fOriginX;
             m_fCursorY += m_fFontYAdvance * m_fYScaleFactor;
-            bStartingNewLine = TRUE;
             continue;
         }
 

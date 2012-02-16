@@ -30,12 +30,6 @@ typedef struct GLYPH_ATTR
     unsigned short wMask;                 // Channel mask
 } GLYPH_ATTR;
 
-#define FONT_LEFT       0x00000000
-#define FONT_RIGHT      0x00000001
-#define FONT_CENTER_X   0x00000002
-#define FONT_CENTER_Y   0x00000004
-#define FONT_TRUNCATED  0x00000008
-
 enum SavedStates
 {
     SAVEDSTATE_D3DRS_ALPHABLENDENABLE,
@@ -110,10 +104,10 @@ public:
     // performance, they should batch multiple calls together, bracketed by calls to
     // Begin() and End().
     void    Begin();
-    void    DrawText( unsigned long dwColor, const wchar_t * strText, unsigned long dwFlags=0L,
+    void    DrawText( unsigned long dwColor, const wchar_t * strText,
                       float fMaxPixelWidth = 0.0f );
-    void    DrawText( float sx, float sy, unsigned long dwColor, const wchar_t * strText,
-                      unsigned long dwFlags=0L, float fMaxPixelWidth = 0.0f );
+    void    DrawText( float sx, float sy, unsigned long dwColor,
+					const wchar_t * strText, float fMaxPixelWidth = 0.0f );
     void    End();
 
 private:
