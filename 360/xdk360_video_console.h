@@ -48,9 +48,7 @@ public:
 
     // Console output
     void    Format(_In_z_ _Printf_format_string_ LPCSTR strFormat, ... );
-    void    Format(_In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... );
-    void    FormatV( _In_z_ _Printf_format_string_ LPCSTR strFormat, va_list pArgList );
-    void    FormatV( _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, va_list pArgList );
+    void    FormatW(_In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... );
 
     // method for rendering the console
     void            Render();
@@ -82,7 +80,6 @@ private:
     int m_nScrollOffset;        // offset to display text (in lines)
 
     // Add a character to the current line
-    void            Add( char ch );
     void            Add( wchar_t wch );
 };
 

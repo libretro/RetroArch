@@ -142,27 +142,6 @@ void Console::Render (void)
     m_Font.End();
 }
 
-
-//--------------------------------------------------------------------------------------
-// Name: Add( CHAR )
-// Desc: Convert ANSI to WCHAR and add to the current line
-//--------------------------------------------------------------------------------------
-void Console::Add( char ch )
-{
-    wchar_t wch;
-
-    int ret = MultiByteToWideChar( CP_ACP,        // ANSI code page
-                                   0,             // No flags
-                                   &ch,           // Character to convert
-                                   1,             // Convert one byte
-                                   &wch,          // Target wide character buffer
-                                   1 );           // One wide character
-
-    Add( wch );
-}
-
-
-
 //--------------------------------------------------------------------------------------
 // Name: Add( WCHAR )
 // Desc: Add a wide character to the current line
@@ -220,30 +199,8 @@ void Console::Format(_In_z_ _Printf_format_string_ LPCSTR strFormat, ... )
 
 	va_list pArgList;
 	va_start( pArgList, strFormat );
-	FormatV( strFormat, pArgList );
-	va_end( pArgList );
-}
 
-void Console::Format(_In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... )
-{
-	m_nCurLine = 0;
-	m_cCurLineLength = 0;
-	memset( m_Buffer, 0, m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-
-	va_list pArgList;
-	va_start( pArgList, wstrFormat );
-	FormatV( wstrFormat, pArgList );
-	va_end( pArgList );
-}
-
-
-//--------------------------------------------------------------------------------------
-// Name: FormatV()
-// Desc: Output a va_list using a format string
-//--------------------------------------------------------------------------------------
-void Console::FormatV( _In_z_ _Printf_format_string_ LPCSTR strFormat, va_list pArgList )
-{
-    // Count the required length of the string
+	    // Count the required length of the string
     unsigned long dwStrLen = _vscprintf( strFormat, pArgList ) + 1;    // +1 = null terminator
     char * strMessage = ( char * )_malloca( dwStrLen );
     vsprintf_s( strMessage, dwStrLen, strFormat, pArgList );
@@ -251,14 +208,32 @@ void Console::FormatV( _In_z_ _Printf_format_string_ LPCSTR strFormat, va_list p
     // Output the string to the console
 	unsigned long uStringLength = strlen( strMessage );
     for( unsigned long i = 0; i < uStringLength; i++ )
-        Add( strMessage[i] );
+	{
+		wchar_t wch;
+		int ret = MultiByteToWideChar( CP_ACP,        // ANSI code page
+                                   0,             // No flags
+                                   &strMessage[i],           // Character to convert
+                                   1,             // Convert one byte
+                                   &wch,          // Target wide character buffer
+                                   1 );           // One wide character
+		Add( wch );
+	}
 
     _freea( strMessage );
+
+	va_end( pArgList );
 }
 
-void Console::FormatV( _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, va_list pArgList )
+void Console::FormatW(_In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... )
 {
-    // Count the required length of the string
+	m_nCurLine = 0;
+	m_cCurLineLength = 0;
+	memset( m_Buffer, 0, m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
+
+	va_list pArgList;
+	va_start( pArgList, wstrFormat );
+
+	    // Count the required length of the string
     unsigned long dwStrLen = _vscwprintf( wstrFormat, pArgList ) + 1;    // +1 = null terminator
     wchar_t * strMessage = ( wchar_t * )_malloca( dwStrLen * sizeof( wchar_t ) );
     vswprintf_s( strMessage, dwStrLen, wstrFormat, pArgList );
@@ -269,4 +244,6 @@ void Console::FormatV( _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, va_list
         Add( strMessage[i] );
 
     _freea( strMessage );
+
+	va_end( pArgList );
 }
