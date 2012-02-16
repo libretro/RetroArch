@@ -46,11 +46,6 @@ typedef struct FontFileStrikesImage_t {
 
 static PackedResource m_xprResource;
 
-//--------------------------------------------------------------------------------------
-// Vertex and pixel shaders for font rendering
-// Please note the removal of comment or dead lines...
-// They are commented out because the shader compiler has no use for them.
-//--------------------------------------------------------------------------------------
 static const char g_strFontShader[] =
     "struct VS_IN\n"
     "{\n"
@@ -487,10 +482,6 @@ void xdk360_video_font_begin (xdk360_video_font_t * font)
     font->m_dwNestedBeginCount++;
 }
 
-//--------------------------------------------------------------------------------------
-// Name: End()
-// Desc: Paired call that restores state set in the Begin() call.
-//--------------------------------------------------------------------------------------
 void xdk360_video_font_end(xdk360_video_font_t * font)
 {
     if( --font->m_dwNestedBeginCount > 0 )
@@ -526,12 +517,6 @@ void xdk360_video_font_end(xdk360_video_font_t * font)
     }
 }
 
-//--------------------------------------------------------------------------------------
-// Name: DrawText()
-// Desc: Draws text as textured polygons
-//       TODO: This function should use the Begin/SetVertexData/End() API when it
-//       becomes available.
-//--------------------------------------------------------------------------------------
 void xdk360_video_font_draw_text(xdk360_video_font_t * font, float fOriginX, float fOriginY, unsigned long dwColor,
 	const wchar_t * strText, float fMaxPixelWidth )
 {
