@@ -419,7 +419,9 @@ static void print_features(void)
    _PSUPP(al, "OpenAL", "audio driver");
    _PSUPP(dylib, "External", "External filter and driver support");
    _PSUPP(cg, "Cg", "Cg pixel shaders");
+#ifdef HAVE_XML
    _PSUPP(xml, "XML", "bSNES XML pixel shaders");
+#endif
    _PSUPP(sdl_image, "SDL_image", "SDL_image image loading");
    _PSUPP(fbo, "FBO", "OpenGL render-to-texture (multi-pass shaders)");
    _PSUPP(dynamic, "Dynamic", "Dynamic run-time loading of libsnes library");
@@ -510,7 +512,9 @@ static void print_help(void)
    puts("\t-v/--verbose: Verbose logging.");
    puts("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM.");
    puts("\t--bps: Specifies path for BPS patch that will be applied to ROM.");
+#ifdef HAVE_XML
    puts("\t-X/--xml: Specifies path to XML memory map.");
+#endif
    puts("\t-D/--detach: Detach SSNES from the running console. Not relevant for all platforms.\n");
 }
 
@@ -657,7 +661,9 @@ static void parse_input(int argc, char *argv[])
 #endif
       { "ups", 1, NULL, 'U' },
       { "bps", 1, &val, 'B' },
+#ifdef HAVE_XML
       { "xml", 1, NULL, 'X' },
+#endif
       { "detach", 0, NULL, 'D' },
       { "features", 0, &val, 'f' },
       { NULL, 0, NULL, 0 }
@@ -850,10 +856,11 @@ static void parse_input(int argc, char *argv[])
             strlcpy(g_extern.ups_name, optarg, sizeof(g_extern.ups_name));
             g_extern.ups_pref = true;
             break;
-
+#ifdef HAVE_XML
          case 'X':
             strlcpy(g_extern.xml_name, optarg, sizeof(g_extern.xml_name));
             break;
+#endif
 
          case 'D':
 #if defined(_WIN32) && !defined(_XBOX)
@@ -1485,8 +1492,10 @@ static void fill_pathnames(void)
       if (!(*g_extern.bps_name))
          fill_pathname_noext(g_extern.bps_name, g_extern.basename, ".bps", sizeof(g_extern.bps_name));
 
+#ifdef HAVE_XML
       if (!(*g_extern.xml_name))
          fill_pathname_noext(g_extern.xml_name, g_extern.basename, ".xml", sizeof(g_extern.xml_name));
+#endif
 
       if (!(*g_settings.screenshot_directory))
       {
