@@ -37,7 +37,7 @@ Console::~Console()
 }
 
 HRESULT Console::Create( LPCSTR strFontFileName, unsigned long colBackColor,
-	unsigned long colTextColor, unsigned int nLines )
+	unsigned long colTextColor)
 {
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 	D3DDevice *m_pd3dDevice = vid->xdk360_render_device;
@@ -71,7 +71,7 @@ HRESULT Console::Create( LPCSTR strFontFileName, unsigned long colBackColor,
     m_cScreenHeight = (unsigned int)( m_cySafeArea / fCharHeight );
     m_cScreenWidth = (unsigned int)( m_cxSafeArea / fCharWidth );
 
-    m_cScreenHeightVirtual = max( m_cScreenHeight, nLines );
+    m_cScreenHeightVirtual = m_cScreenHeight;
 
     m_fLineHeight = fCharHeight;
 
@@ -119,7 +119,7 @@ void Console::Destroy()
 // Name: Render()
 // Desc: Render the console to the screen
 //--------------------------------------------------------------------------------------
-void Console::Render()
+void Console::Render (void)
 {
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 	D3DDevice *m_pd3dDevice = vid->xdk360_render_device;

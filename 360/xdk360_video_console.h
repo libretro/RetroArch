@@ -43,11 +43,7 @@ public:
 	~Console();
 
     // Initialization
-    HRESULT         Create( LPCSTR strFontFileName,
-                            D3DCOLOR colBackColor,
-                            D3DCOLOR colTextColor,
-                            unsigned int nLines = 0 );
-
+    HRESULT         Create( LPCSTR strFontFileName, D3DCOLOR colBackColor, D3DCOLOR colTextColor);
     void            Destroy();
 
     // Console output
@@ -77,7 +73,7 @@ private:
     unsigned int m_cScreenHeight;        // height in lines of screen area
     unsigned int m_cScreenHeightVirtual; // height in lines of text storage buffer
     unsigned int m_cScreenWidth;         // width in characters
-    float m_fLineHeight;          // height of a single line in pixels
+    float m_fLineHeight;				// height of a single line in pixels
 
     wchar_t * m_Buffer;               // buffer big enough to hold a full screen
     wchar_t ** m_Lines;                // pointers to individual lines

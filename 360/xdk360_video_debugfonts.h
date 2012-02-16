@@ -72,17 +72,17 @@ public:
     float m_fXScaleFactor;      // Scaling constants
     float m_fYScaleFactor;
 
-    D3DRECT m_rcWindow;         // Bounds rect if the text window, modify via accessors only!
+    D3DRECT m_rcWindow;         // Bounds rect of the text window, modify via accessors only!
     float m_fCursorX;           // Current text cursor
     float m_fCursorY;
 
     // Translator table for supporting unicode ranges
     unsigned long m_cMaxGlyph;          // Number of entries in the translator table
-    wchar_t * m_TranslatorTable;   // ASCII to glyph lookup table
+    wchar_t * m_TranslatorTable;		// ASCII to glyph lookup table
 
     // Glyph data for the font
     unsigned long m_dwNumGlyphs;        // Number of valid glyphs
-    const GLYPH_ATTR* m_Glyphs; // Array of glyphs
+    const GLYPH_ATTR* m_Glyphs;			// Array of glyphs
 
     // D3D rendering objects
     D3DTexture* m_pFontTexture;

@@ -600,34 +600,15 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
 
     // Set the starting screen position
     if( ( fOriginX < 0.0f ) || ( ( dwFlags & FONT_RIGHT ) && ( fOriginX <= 0.0f ) ) )
-        fOriginX += ( m_rcWindow.x2 - m_rcWindow.x1 );
+        fOriginX += m_rcWindow.x2;
     if( fOriginY < 0.0f )
-        fOriginY += ( m_rcWindow.y2 - m_rcWindow.y1 );
+        fOriginY += m_rcWindow.y2;
 
     m_fCursorX = floorf( fOriginX );
     m_fCursorY = floorf( fOriginY );
 
     // Adjust for padding
     fOriginY -= m_fFontTopPadding;
-
-    float fEllipsesPixelWidth = m_fXScaleFactor * 3.0f * ( m_Glyphs[m_TranslatorTable[L'.']].wOffset +
-                                                           m_Glyphs[m_TranslatorTable[L'.']].wAdvance );
-
-    if( dwFlags & FONT_TRUNCATED )
-    {
-        // Check if we will really need to truncate the string
-        if( fMaxPixelWidth <= 0.0f )
-            dwFlags &= ( ~FONT_TRUNCATED );
-        else
-        {
-            float w, h;
-            GetTextExtent( strText, &w, &h, TRUE );
-
-            // If not, then clear the flag
-            if( w <= fMaxPixelWidth )
-                dwFlags &= ( ~FONT_TRUNCATED );
-        }
-    }
 
     // If vertically centered, offset the starting m_fCursorY value
     if( dwFlags & FONT_CENTER_Y )
@@ -638,8 +619,8 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
     }
 
     // Add window offsets
-    float Winx = static_cast<float>(m_rcWindow.x1);
-    float Winy = static_cast<float>(m_rcWindow.y1);
+    float Winx = 0.0f;
+    float Winy = 0.0f;
     fOriginX += Winx;
     fOriginY += Winy;
     m_fCursorX += Winx;
@@ -647,8 +628,6 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
 
     // Set a flag so we can determine initial justification effects
     BOOL bStartingNewLine = TRUE;
-
-    unsigned long dwNumEllipsesToDraw = 0;
 
     // Begin drawing the vertices
 
@@ -673,44 +652,34 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
     {
         wchar_t letter;
 
-        if( dwNumEllipsesToDraw )
-            letter = L'.';
-        else
+        // If starting text on a new line, determine justification effects
+        if( bStartingNewLine )
         {
-            // If starting text on a new line, determine justification effects
-            if( bStartingNewLine )
+            if( dwFlags & ( FONT_RIGHT | FONT_CENTER_X ) )
             {
-                if( dwFlags & ( FONT_RIGHT | FONT_CENTER_X ) )
-                {
-                    // Get the extent of this line
-                    float w, h;
-                    GetTextExtent( strText, &w, &h, TRUE );
+                // Get the extent of this line
+                float w, h;
+                GetTextExtent( strText, &w, &h, TRUE );
 
-                    // Offset this line's starting m_fCursorX value
-                    if( dwFlags & FONT_RIGHT )
-                        m_fCursorX = floorf( fOriginX - w );
-                    if( dwFlags & FONT_CENTER_X )
-                        m_fCursorX = floorf( fOriginX - w * 0.5f );
-                }
-                bStartingNewLine = FALSE;
+                // Offset this line's starting m_fCursorX value
+                if( dwFlags & FONT_RIGHT )
+                    m_fCursorX = floorf( fOriginX - w );
+                if( dwFlags & FONT_CENTER_X )
+                    m_fCursorX = floorf( fOriginX - w * 0.5f );
             }
+            bStartingNewLine = FALSE;
+        }
 
-            // Get the current letter in the string
-            letter = *strText++;
+        // Get the current letter in the string
+        letter = *strText++;
 
-            // Handle the newline character
-            if( letter == L'\n' )
-            {
-                m_fCursorX = fOriginX;
-                m_fCursorY += m_fFontYAdvance * m_fYScaleFactor;
-                bStartingNewLine = TRUE;
-                continue;
-            }
-
-            // Handle carriage return characters by ignoring them. This helps when
-            // displaying text from a file.
-            if( letter == L'\r' )
-                continue;
+        // Handle the newline character
+        if( letter == L'\n' )
+        {
+            m_fCursorX = fOriginX;
+            m_fCursorY += m_fFontYAdvance * m_fYScaleFactor;
+            bStartingNewLine = TRUE;
+            continue;
         }
 
         // Translate unprintable characters
@@ -720,20 +689,6 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
         float fAdvance = m_fXScaleFactor * (float)pGlyph->wAdvance;
         float fWidth = m_fXScaleFactor * (float)pGlyph->wWidth;
         float fHeight = m_fYScaleFactor * m_fFontHeight;
-
-        if( 0 == dwNumEllipsesToDraw )
-        {
-            if( dwFlags & FONT_TRUNCATED )
-            {
-                // Check if we will be exceeded the max allowed width
-                if( m_fCursorX + fOffset + fWidth + fEllipsesPixelWidth > fOriginX + fMaxPixelWidth )
-                {
-                    // Yup, draw the three ellipses dots instead
-                    dwNumEllipsesToDraw = 3;
-                    continue;
-                }
-            }
-        }
 
         // Setup the screen coordinates
         m_fCursorX += fOffset;
@@ -794,13 +749,6 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
         reinterpret_cast<volatile unsigned long *>(pVertex)[14] = (tu1<<16)|tv2;        // Merged using big endian rules
         reinterpret_cast<volatile unsigned long *>(pVertex)[15] = dwChannelSelector;
         pVertex+=16;
-
-        // If drawing ellipses, exit when they're all drawn
-        if( dwNumEllipsesToDraw )
-        {
-            if( --dwNumEllipsesToDraw == 0 )
-                break;
-        }
 
         dwNumChars--;
     }
