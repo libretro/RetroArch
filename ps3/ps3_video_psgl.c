@@ -418,17 +418,6 @@ static inline void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned he
    gl->render_to_tex = true; \
    set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
 
-static inline unsigned get_alignment(unsigned pitch)
-{
-	if (pitch & 1)
-		return 1;
-	if (pitch & 2)
-		return 2;
-	if (pitch & 4)
-		return 4;
-	return 8;
-}
-
 static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full)
 {
 	uint32_t m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
@@ -496,7 +485,7 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
 	}
 }
 
-static inline void set_lut_texture_coords(const GLfloat *coords)
+static void set_lut_texture_coords(const GLfloat *coords)
 {
    // For texture images.
    pglClientActiveTexture(GL_TEXTURE1);
@@ -505,13 +494,11 @@ static inline void set_lut_texture_coords(const GLfloat *coords)
    pglClientActiveTexture(GL_TEXTURE0);
 }
 
-static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yamt)
-{
-   coords[1] = yamt;
-   coords[4] = xamt;
-   coords[6] = xamt;
+#define set_texture_coords(coords, xamt, yamt) \
+   coords[1] = yamt; \
+   coords[4] = xamt; \
+   coords[6] = xamt; \
    coords[7] = yamt;
-}
 
 void gl_frame_menu (void)
 {
@@ -1293,7 +1280,7 @@ void ps3graphics_set_aspect_ratio(uint32_t aspectratio_index)
 			strlcpy(g_console.aspect_ratio_name, "8:7", sizeof(g_console.aspect_ratio_name));
 			break;
 		case ASPECT_RATIO_16_9:
-			g_settings.video.aspect_ratio = 1.77777777777;
+			g_settings.video.aspect_ratio = 1.777778;
 			strlcpy(g_console.aspect_ratio_name, "16:9", sizeof(g_console.aspect_ratio_name));
 			break;
 		case ASPECT_RATIO_16_10:
