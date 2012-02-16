@@ -30,12 +30,6 @@ typedef struct GLYPH_ATTR
     unsigned short wMask;                 // Channel mask
 } GLYPH_ATTR;
 
-#define FONT_LEFT       0x00000000
-#define FONT_RIGHT      0x00000001
-#define FONT_CENTER_X   0x00000002
-#define FONT_CENTER_Y   0x00000004
-#define FONT_TRUNCATED  0x00000008
-
 enum SavedStates
 {
     SAVEDSTATE_D3DRS_ALPHABLENDENABLE,
@@ -72,17 +66,17 @@ public:
     float m_fXScaleFactor;      // Scaling constants
     float m_fYScaleFactor;
 
-    D3DRECT m_rcWindow;         // Bounds rect if the text window, modify via accessors only!
+    D3DRECT m_rcWindow;         // Bounds rect of the text window, modify via accessors only!
     float m_fCursorX;           // Current text cursor
     float m_fCursorY;
 
     // Translator table for supporting unicode ranges
     unsigned long m_cMaxGlyph;          // Number of entries in the translator table
-    wchar_t * m_TranslatorTable;   // ASCII to glyph lookup table
+    wchar_t * m_TranslatorTable;		// ASCII to glyph lookup table
 
     // Glyph data for the font
     unsigned long m_dwNumGlyphs;        // Number of valid glyphs
-    const GLYPH_ATTR* m_Glyphs; // Array of glyphs
+    const GLYPH_ATTR* m_Glyphs;			// Array of glyphs
 
     // D3D rendering objects
     D3DTexture* m_pFontTexture;
@@ -110,10 +104,10 @@ public:
     // performance, they should batch multiple calls together, bracketed by calls to
     // Begin() and End().
     void    Begin();
-    void    DrawText( unsigned long dwColor, const wchar_t * strText, unsigned long dwFlags=0L,
+    void    DrawText( unsigned long dwColor, const wchar_t * strText,
                       float fMaxPixelWidth = 0.0f );
-    void    DrawText( float sx, float sy, unsigned long dwColor, const wchar_t * strText,
-                      unsigned long dwFlags=0L, float fMaxPixelWidth = 0.0f );
+    void    DrawText( float sx, float sy, unsigned long dwColor,
+					const wchar_t * strText, float fMaxPixelWidth = 0.0f );
     void    End();
 
 private:

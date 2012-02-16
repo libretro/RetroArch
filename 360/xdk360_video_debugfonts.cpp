@@ -471,8 +471,6 @@ float XdkFont::GetTextWidth( const wchar_t * strText ) const
 //--------------------------------------------------------------------------------------
 VOID XdkFont::Begin()
 {
-    PIXBeginNamedEvent( 0, "Text Rendering" );
-
     // Set state on the first call
     if( m_dwNestedBeginCount == 0 )
     {
@@ -555,9 +553,9 @@ VOID XdkFont::Begin()
 // Desc: Draws text as textured polygons
 //--------------------------------------------------------------------------------------
 VOID XdkFont::DrawText( unsigned long dwColor, const wchar_t * strText, 
-	unsigned long dwFlags, float fMaxPixelWidth )
+	float fMaxPixelWidth )
 {
-    DrawText( m_fCursorX, m_fCursorY, dwColor, strText, dwFlags, fMaxPixelWidth );
+    DrawText( m_fCursorX, m_fCursorY, dwColor, strText, fMaxPixelWidth );
 }
 
 
@@ -568,20 +566,13 @@ VOID XdkFont::DrawText( unsigned long dwColor, const wchar_t * strText,
 //       becomes available.
 //--------------------------------------------------------------------------------------
 VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
-	const wchar_t * strText, unsigned long dwFlags, float fMaxPixelWidth )
+	const wchar_t * strText, float fMaxPixelWidth )
 {
-    if( strText == NULL )
-		return;
-    if( L'\0' == strText[0] )
+    if( strText == NULL || strText[0] == L'\0')
 		return;
 
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 	D3DDevice *pd3dDevice = vid->xdk360_render_device;
- 
-    // Create a PIX user-defined event that encapsulates all of the text draw calls.
-    // This makes DrawText calls easier to recognize in PIX captures, and it makes
-    // them take up fewer entries in the event list.
-    PIXBeginNamedEvent( dwColor, "DrawText: %S", strText );
 
     // Set the color as a vertex shader constant
     float vColor[4];
@@ -599,10 +590,10 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
     pd3dDevice->SetVertexShaderConstantF( 1, vColor, 1 );
 
     // Set the starting screen position
-    if( ( fOriginX < 0.0f ) || ( ( dwFlags & FONT_RIGHT ) && ( fOriginX <= 0.0f ) ) )
-        fOriginX += ( m_rcWindow.x2 - m_rcWindow.x1 );
+    if((fOriginX < 0.0f))
+        fOriginX += m_rcWindow.x2;
     if( fOriginY < 0.0f )
-        fOriginY += ( m_rcWindow.y2 - m_rcWindow.y1 );
+        fOriginY += m_rcWindow.y2;
 
     m_fCursorX = floorf( fOriginX );
     m_fCursorY = floorf( fOriginY );
@@ -610,45 +601,13 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
     // Adjust for padding
     fOriginY -= m_fFontTopPadding;
 
-    float fEllipsesPixelWidth = m_fXScaleFactor * 3.0f * ( m_Glyphs[m_TranslatorTable[L'.']].wOffset +
-                                                           m_Glyphs[m_TranslatorTable[L'.']].wAdvance );
-
-    if( dwFlags & FONT_TRUNCATED )
-    {
-        // Check if we will really need to truncate the string
-        if( fMaxPixelWidth <= 0.0f )
-            dwFlags &= ( ~FONT_TRUNCATED );
-        else
-        {
-            float w, h;
-            GetTextExtent( strText, &w, &h, TRUE );
-
-            // If not, then clear the flag
-            if( w <= fMaxPixelWidth )
-                dwFlags &= ( ~FONT_TRUNCATED );
-        }
-    }
-
-    // If vertically centered, offset the starting m_fCursorY value
-    if( dwFlags & FONT_CENTER_Y )
-    {
-        float w, h;
-        GetTextExtent( strText, &w, &h );
-        m_fCursorY = floorf( m_fCursorY - (h * 0.5f) );
-    }
-
     // Add window offsets
-    float Winx = static_cast<float>(m_rcWindow.x1);
-    float Winy = static_cast<float>(m_rcWindow.y1);
+    float Winx = 0.0f;
+    float Winy = 0.0f;
     fOriginX += Winx;
     fOriginY += Winy;
     m_fCursorX += Winx;
     m_fCursorY += Winy;
-
-    // Set a flag so we can determine initial justification effects
-    BOOL bStartingNewLine = TRUE;
-
-    unsigned long dwNumEllipsesToDraw = 0;
 
     // Begin drawing the vertices
 
@@ -658,7 +617,7 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
 
     volatile float * pVertex;
 
-    unsigned long dwNumChars = wcslen( strText ) + ( dwFlags & FONT_TRUNCATED ? 3 : 0 );
+    unsigned long dwNumChars = wcslen(strText);
     HRESULT hr = pd3dDevice->BeginVertices( D3DPT_QUADLIST, 4 * dwNumChars, sizeof( XMFLOAT4 ) ,
                                               ( VOID** )&pVertex );
     // The ring buffer may run out of space when tiling, doing z-prepasses,
@@ -666,51 +625,20 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
     if( FAILED( hr ) )
         SSNES_ERR( "Ring buffer out of memory.\n" );
 
-    bStartingNewLine = TRUE;
-
     // Draw four vertices for each glyph
     while( *strText )
     {
         wchar_t letter;
 
-        if( dwNumEllipsesToDraw )
-            letter = L'.';
-        else
+        // Get the current letter in the string
+        letter = *strText++;
+
+        // Handle the newline character
+        if( letter == L'\n' )
         {
-            // If starting text on a new line, determine justification effects
-            if( bStartingNewLine )
-            {
-                if( dwFlags & ( FONT_RIGHT | FONT_CENTER_X ) )
-                {
-                    // Get the extent of this line
-                    float w, h;
-                    GetTextExtent( strText, &w, &h, TRUE );
-
-                    // Offset this line's starting m_fCursorX value
-                    if( dwFlags & FONT_RIGHT )
-                        m_fCursorX = floorf( fOriginX - w );
-                    if( dwFlags & FONT_CENTER_X )
-                        m_fCursorX = floorf( fOriginX - w * 0.5f );
-                }
-                bStartingNewLine = FALSE;
-            }
-
-            // Get the current letter in the string
-            letter = *strText++;
-
-            // Handle the newline character
-            if( letter == L'\n' )
-            {
-                m_fCursorX = fOriginX;
-                m_fCursorY += m_fFontYAdvance * m_fYScaleFactor;
-                bStartingNewLine = TRUE;
-                continue;
-            }
-
-            // Handle carriage return characters by ignoring them. This helps when
-            // displaying text from a file.
-            if( letter == L'\r' )
-                continue;
+            m_fCursorX = fOriginX;
+            m_fCursorY += m_fFontYAdvance * m_fYScaleFactor;
+            continue;
         }
 
         // Translate unprintable characters
@@ -720,20 +648,6 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
         float fAdvance = m_fXScaleFactor * (float)pGlyph->wAdvance;
         float fWidth = m_fXScaleFactor * (float)pGlyph->wWidth;
         float fHeight = m_fYScaleFactor * m_fFontHeight;
-
-        if( 0 == dwNumEllipsesToDraw )
-        {
-            if( dwFlags & FONT_TRUNCATED )
-            {
-                // Check if we will be exceeded the max allowed width
-                if( m_fCursorX + fOffset + fWidth + fEllipsesPixelWidth > fOriginX + fMaxPixelWidth )
-                {
-                    // Yup, draw the three ellipses dots instead
-                    dwNumEllipsesToDraw = 3;
-                    continue;
-                }
-            }
-        }
 
         // Setup the screen coordinates
         m_fCursorX += fOffset;
@@ -795,13 +709,6 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
         reinterpret_cast<volatile unsigned long *>(pVertex)[15] = dwChannelSelector;
         pVertex+=16;
 
-        // If drawing ellipses, exit when they're all drawn
-        if( dwNumEllipsesToDraw )
-        {
-            if( --dwNumEllipsesToDraw == 0 )
-                break;
-        }
-
         dwNumChars--;
     }
 
@@ -838,9 +745,6 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
 
     // Call End() to complete the begin/end pair for drawing text
     End();
-
-    // Close off the user-defined event opened with PIXBeginNamedEvent.
-    PIXEndNamedEvent();
 }
 
 
@@ -851,10 +755,7 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
 VOID XdkFont::End()
 {
     if( --m_dwNestedBeginCount > 0 )
-    {
-        PIXEndNamedEvent();
         return;
-    }
 
     // Restore state
     if( m_bSaveState )
@@ -884,6 +785,4 @@ VOID XdkFont::End()
         pD3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU, m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSU ] );
         pD3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV, m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSV ] );
     }
-
-    PIXEndNamedEvent();
 }

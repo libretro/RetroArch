@@ -23,34 +23,56 @@
 #include "xdk360_video_debugfonts.h"
 #include "../general.h"
 
-Console::Console()
-{
-	first_message = true;
-    m_Buffer = NULL;
-    m_Lines = NULL;
-    m_nScrollOffset = 0;
-}
+static video_console_t video_console;
+static XdkFont m_Font;
 
-Console::~Console()
-{
-    Destroy();
-}
-
-HRESULT Console::Create( LPCSTR strFontFileName, unsigned long colBackColor,
-	unsigned long colTextColor, unsigned int nLines )
+void xdk360_console_draw(void)
 {
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 	D3DDevice *m_pd3dDevice = vid->xdk360_render_device;
+
+    // The top line
+    unsigned int nTextLine = ( video_console.m_nCurLine - 
+		video_console.m_cScreenHeight + video_console.m_cScreenHeightVirtual - 
+		video_console.m_nScrollOffset + 1 )
+        % video_console.m_cScreenHeightVirtual;
+
+    m_Font.Begin();
+
+    for( unsigned int nScreenLine = 0; nScreenLine < video_console.m_cScreenHeight; nScreenLine++ )
+    {
+        m_Font.DrawText( (float)( video_console.m_cxSafeAreaOffset ),
+                         (float)( video_console.m_cySafeAreaOffset + 
+						 video_console.m_fLineHeight * nScreenLine ),
+                         video_console.m_colTextColor, 
+						 video_console.m_Lines[nTextLine] );
+
+        nTextLine = ( nTextLine + 1 ) % video_console.m_cScreenHeightVirtual;
+    }
+
+    m_Font.End();
+}
+
+HRESULT xdk360_console_init( LPCSTR strFontFileName, unsigned long colBackColor,
+	unsigned long colTextColor)
+{
+	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+	D3DDevice *m_pd3dDevice = vid->xdk360_render_device;
+
+	video_console.first_message = true;
+	video_console.m_Buffer = NULL;
+    video_console.m_Lines = NULL;
+    video_console.m_nScrollOffset = 0;
 
     // Calculate the safe area
     unsigned int uiSafeAreaPct = vid->video_mode.fIsHiDef ? SAFE_AREA_PCT_HDTV
 	: SAFE_AREA_PCT_4x3;
 
-    m_cxSafeArea = ( vid->d3dpp.BackBufferWidth * uiSafeAreaPct ) / 100;
-    m_cySafeArea = ( vid->d3dpp.BackBufferHeight * uiSafeAreaPct ) / 100;
+    video_console.m_cxSafeArea = ( vid->d3dpp.BackBufferWidth * uiSafeAreaPct ) / 100;
+    video_console.m_cySafeArea = ( vid->d3dpp.BackBufferHeight * uiSafeAreaPct ) / 100;
 
-    m_cxSafeAreaOffset = ( vid->d3dpp.BackBufferWidth - m_cxSafeArea ) / 2;
-    m_cySafeAreaOffset = ( vid->d3dpp.BackBufferHeight - m_cySafeArea ) / 2;
+    video_console.m_cxSafeAreaOffset = ( vid->d3dpp.BackBufferWidth - video_console.m_cxSafeArea ) / 2;
+    video_console.m_cySafeAreaOffset = ( vid->d3dpp.BackBufferHeight - video_console.m_cySafeArea ) / 2;
 
     // Create the font
     HRESULT hr = m_Font.Create( strFontFileName );
@@ -61,136 +83,84 @@ HRESULT Console::Create( LPCSTR strFontFileName, unsigned long colBackColor,
     }
 
     // Save the colors
-    m_colBackColor = colBackColor;
-    m_colTextColor = colTextColor;
+    video_console.m_colBackColor = colBackColor;
+    video_console.m_colTextColor = colTextColor;
 
     // Calculate the number of lines on the screen
     float fCharWidth, fCharHeight;
     m_Font.GetTextExtent( L"i", &fCharWidth, &fCharHeight, FALSE );
 
-    m_cScreenHeight = (unsigned int)( m_cySafeArea / fCharHeight );
-    m_cScreenWidth = (unsigned int)( m_cxSafeArea / fCharWidth );
+    video_console.m_cScreenHeight = (unsigned int)( video_console.m_cySafeArea / fCharHeight );
+    video_console.m_cScreenWidth = (unsigned int)( video_console.m_cxSafeArea / fCharWidth );
 
-    m_cScreenHeightVirtual = max( m_cScreenHeight, nLines );
+    video_console.m_cScreenHeightVirtual = video_console.m_cScreenHeight;
 
-    m_fLineHeight = fCharHeight;
+    video_console.m_fLineHeight = fCharHeight;
 
     // Allocate memory to hold the lines
-    m_Buffer = new wchar_t[ m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) ];
-    m_Lines = new wchar_t *[ m_cScreenHeightVirtual ];
+    video_console.m_Buffer = new wchar_t[ video_console.m_cScreenHeightVirtual * ( video_console.m_cScreenWidth + 1 ) ];
+    video_console.m_Lines = new wchar_t *[ video_console.m_cScreenHeightVirtual ];
 
     // Set the line pointers as indexes into the buffer
-    for( unsigned int i = 0; i < m_cScreenHeightVirtual; i++ )
-        m_Lines[ i ] = m_Buffer + ( m_cScreenWidth + 1 ) * i;
+    for( unsigned int i = 0; i < video_console.m_cScreenHeightVirtual; i++ )
+        video_console.m_Lines[ i ] = video_console.m_Buffer + ( video_console.m_cScreenWidth + 1 ) * i;
 
-	m_nCurLine = 0;
-    m_cCurLineLength = 0;
-    memset( m_Buffer, 0, m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-    Render();
+	video_console.m_nCurLine = 0;
+    video_console.m_cCurLineLength = 0;
+    memset( video_console.m_Buffer, 0, video_console.m_cScreenHeightVirtual * ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
+    xdk360_console_draw();
 
     return hr;
 }
 
-//--------------------------------------------------------------------------------------
-// Name: Destroy()
-// Desc: Tear everything down
-//--------------------------------------------------------------------------------------
-void Console::Destroy()
+void xdk360_console_deinit()
 {
     // Delete the memory we've allocated
-    if( m_Lines )
+    if(video_console.m_Lines)
     {
-        delete[] m_Lines;
-        m_Lines = NULL;
+        delete[] video_console.m_Lines;
+        video_console.m_Lines = NULL;
     }
 
-    if( m_Buffer )
+    if(video_console.m_Buffer)
     {
-        delete[] m_Buffer;
-        m_Buffer = NULL;
+        delete[] video_console.m_Buffer;
+        video_console.m_Buffer = NULL;
     }
 
     // Destroy the font
     m_Font.Destroy();
 }
 
-
-//--------------------------------------------------------------------------------------
-// Name: Render()
-// Desc: Render the console to the screen
-//--------------------------------------------------------------------------------------
-void Console::Render()
-{
-	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-	D3DDevice *m_pd3dDevice = vid->xdk360_render_device;
-
-    // The top line
-    unsigned int nTextLine = ( m_nCurLine - m_cScreenHeight + m_cScreenHeightVirtual - m_nScrollOffset + 1 )
-        % m_cScreenHeightVirtual;
-
-    m_Font.Begin();
-
-    for( unsigned int nScreenLine = 0; nScreenLine < m_cScreenHeight; nScreenLine++ )
-    {
-        m_Font.DrawText( (float)( m_cxSafeAreaOffset ),
-                         (float)( m_cySafeAreaOffset + m_fLineHeight * nScreenLine ),
-                         m_colTextColor, m_Lines[nTextLine] );
-
-        nTextLine = ( nTextLine + 1 ) % m_cScreenHeightVirtual;
-    }
-
-    m_Font.End();
-}
-
-
-//--------------------------------------------------------------------------------------
-// Name: Add( CHAR )
-// Desc: Convert ANSI to WCHAR and add to the current line
-//--------------------------------------------------------------------------------------
-void Console::Add( char ch )
-{
-    wchar_t wch;
-
-    int ret = MultiByteToWideChar( CP_ACP,        // ANSI code page
-                                   0,             // No flags
-                                   &ch,           // Character to convert
-                                   1,             // Convert one byte
-                                   &wch,          // Target wide character buffer
-                                   1 );           // One wide character
-
-    Add( wch );
-}
-
-
-
-//--------------------------------------------------------------------------------------
-// Name: Add( WCHAR )
-// Desc: Add a wide character to the current line
-//--------------------------------------------------------------------------------------
-void Console::Add( wchar_t wch )
+void xdk360_console_add( wchar_t wch )
 {
     // If this is a newline, just increment lines and move on
     if( wch == L'\n' )
     {
-		m_nCurLine = ( m_nCurLine + 1 ) % m_cScreenHeightVirtual;
-		m_cCurLineLength = 0;
-		memset( m_Lines[m_nCurLine], 0, ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
+		video_console.m_nCurLine = ( video_console.m_nCurLine + 1 ) 
+			% video_console.m_cScreenHeightVirtual;
+		video_console.m_cCurLineLength = 0;
+		memset(video_console.m_Lines[video_console.m_nCurLine], 0, 
+			( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
         return;
     }
 
     int bIncrementLine = FALSE;  // Whether to wrap to the next line
 
-    if( m_cCurLineLength == m_cScreenWidth )
+    if( video_console.m_cCurLineLength == video_console.m_cScreenWidth )
         bIncrementLine = TRUE;
     else
     {
         // Try to append the character to the line
-        m_Lines[ m_nCurLine ][ m_cCurLineLength ] = wch;
+        video_console.m_Lines[ video_console.m_nCurLine ]
+		[ video_console.m_cCurLineLength ] = wch;
 
-        if( m_Font.GetTextWidth( m_Lines[ m_nCurLine ] ) > m_cxSafeArea )
+        if( m_Font.GetTextWidth( video_console.m_Lines
+			[ video_console.m_nCurLine ] ) > video_console.m_cxSafeArea )
         {
             // The line is too long, we need to wrap the character to the next line
-            m_Lines[ m_nCurLine][ m_cCurLineLength ] = L'\0';
+            video_console.m_Lines[video_console.m_nCurLine]
+			[ video_console.m_cCurLineLength ] = L'\0';
             bIncrementLine = TRUE;
         }
     }
@@ -198,80 +168,64 @@ void Console::Add( wchar_t wch )
     // If we need to skip to the next line, do so
     if( bIncrementLine )
     {
-		m_nCurLine = ( m_nCurLine + 1 ) % m_cScreenHeightVirtual;
-		m_cCurLineLength = 0;
-		memset( m_Lines[m_nCurLine], 0, ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-        m_Lines[ m_nCurLine ][0] = wch;
+		video_console.m_nCurLine = ( video_console.m_nCurLine + 1 ) 
+			% video_console.m_cScreenHeightVirtual;
+		video_console.m_cCurLineLength = 0;
+		memset( video_console.m_Lines[video_console.m_nCurLine], 
+			0, ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
+        video_console.m_Lines[video_console.m_nCurLine ][0] = wch;
     }
 
-	if(IS_TIMER_EXPIRED())
-		m_cCurLineLength++;
+	video_console.m_cCurLineLength++;
 }
 
-
-//--------------------------------------------------------------------------------------
-// Name: Format()
-// Desc: Output a variable argument list using a format string
-//--------------------------------------------------------------------------------------
-void Console::Format(int clear_screen, _In_z_ _Printf_format_string_ LPCSTR strFormat, ... )
+void xdk360_console_format(_In_z_ _Printf_format_string_ LPCSTR strFormat, ... )
 {
-	if(clear_screen)
-	{
-		m_nCurLine = 0;
-		m_cCurLineLength = 0;
-		memset( m_Buffer, 0, m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-	}
+	video_console.m_nCurLine = 0;
+	video_console.m_cCurLineLength = 0;
+	memset( video_console.m_Buffer, 0, 
+		video_console.m_cScreenHeightVirtual * 
+		( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
 
 	va_list pArgList;
 	va_start( pArgList, strFormat );
-	FormatV( strFormat, pArgList );
-	va_end( pArgList );
-
-	// Render the output
-	Render();
-}
-
-void Console::Format(int clear_screen, _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... )
-{
-	if(clear_screen)
-	{
-		m_nCurLine = 0;
-		m_cCurLineLength = 0;
-		memset( m_Buffer, 0, m_cScreenHeightVirtual * ( m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-	}
-
-	va_list pArgList;
-	va_start( pArgList, wstrFormat );
-	FormatV( wstrFormat, pArgList );
-	va_end( pArgList );
-
-	// Render the output
-	Render();
-}
-
-
-//--------------------------------------------------------------------------------------
-// Name: FormatV()
-// Desc: Output a va_list using a format string
-//--------------------------------------------------------------------------------------
-void Console::FormatV( _In_z_ _Printf_format_string_ LPCSTR strFormat, va_list pArgList )
-{
-    // Count the required length of the string
-    unsigned long dwStrLen = _vscprintf( strFormat, pArgList ) + 1;    // +1 = null terminator
+	
+	// Count the required length of the string
+    unsigned long dwStrLen = _vscprintf( strFormat, pArgList ) + 1;    
+	// +1 = null terminator
     char * strMessage = ( char * )_malloca( dwStrLen );
     vsprintf_s( strMessage, dwStrLen, strFormat, pArgList );
 
     // Output the string to the console
 	unsigned long uStringLength = strlen( strMessage );
     for( unsigned long i = 0; i < uStringLength; i++ )
-        Add( strMessage[i] );
+	{
+		wchar_t wch;
+		int ret = MultiByteToWideChar( CP_ACP,        // ANSI code page
+                                   0,             // No flags
+                                   &strMessage[i],           // Character to convert
+                                   1,             // Convert one byte
+                                   &wch,          // Target wide character buffer
+                                   1 );           // One wide character
+		xdk360_console_add( wch );
+	}
 
     _freea( strMessage );
+
+	va_end( pArgList );
 }
 
-void Console::FormatV( _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, va_list pArgList )
+void xdk360_console_format_w(_In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... )
 {
-    // Count the required length of the string
+	video_console.m_nCurLine = 0;
+	video_console.m_cCurLineLength = 0;
+	memset( video_console.m_Buffer, 0, video_console.m_cScreenHeightVirtual 
+		* ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
+
+	va_list pArgList;
+	va_start( pArgList, wstrFormat );
+
+	    // Count the required length of the string
     unsigned long dwStrLen = _vscwprintf( wstrFormat, pArgList ) + 1;    // +1 = null terminator
     wchar_t * strMessage = ( wchar_t * )_malloca( dwStrLen * sizeof( wchar_t ) );
     vswprintf_s( strMessage, dwStrLen, wstrFormat, pArgList );
@@ -279,7 +233,9 @@ void Console::FormatV( _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, va_list
     // Output the string to the console
 	unsigned long uStringLength = wcslen( strMessage );
     for( unsigned long i = 0; i < uStringLength; i++ )
-        Add( strMessage[i] );
+        xdk360_console_add( strMessage[i] );
 
     _freea( strMessage );
+
+	va_end( pArgList );
 }

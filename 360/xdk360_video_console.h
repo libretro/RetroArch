@@ -32,62 +32,30 @@
 #define SAFE_AREA_PCT_4x3 85
 #define SAFE_AREA_PCT_HDTV 90
 
-//--------------------------------------------------------------------------------------
-// Name: class Console
-// Desc: Class to implement the console.
-//--------------------------------------------------------------------------------------
-class Console
+typedef struct
 {
-public:
-	Console();
-	~Console();
-
-    // Initialization
-    HRESULT         Create( LPCSTR strFontFileName,
-                            D3DCOLOR colBackColor,
-                            D3DCOLOR colTextColor,
-                            unsigned int nLines = 0 );
-
-    void            Destroy();
-
-    // Console output
-    void    Format(int clear_screen, _In_z_ _Printf_format_string_ LPCSTR strFormat, ... );
-    void    Format(int clear_screen, _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... );
-    void    FormatV( _In_z_ _Printf_format_string_ LPCSTR strFormat, va_list pArgList );
-    void    FormatV( _In_z_ _Printf_format_string_ LPCWSTR wstrFormat, va_list pArgList );
-
-    // method for rendering the console
-    void            Render();
-	// Font for rendering text
-    XdkFont m_Font;
-private:
-	int			first_message;
-    // Safe area dimensions
-    unsigned int m_cxSafeArea;
+	float m_fLineHeight;				// height of a single line in pixels
+	unsigned int m_nScrollOffset;		// offset to display text (in lines)
+	unsigned int first_message;
+	unsigned int m_cxSafeArea;
     unsigned int m_cySafeArea;
-
     unsigned int m_cxSafeAreaOffset;
     unsigned int m_cySafeAreaOffset;
-
-    // Colors
-    unsigned long m_colBackColor;
+	unsigned int m_nCurLine;			// index of current line being written to
+    unsigned int m_cCurLineLength;		// length of the current line
+	unsigned long m_colBackColor;
     unsigned long m_colTextColor;
-
-    // Text Buffers
-    unsigned int m_cScreenHeight;        // height in lines of screen area
+	unsigned int m_cScreenHeight;        // height in lines of screen area
     unsigned int m_cScreenHeightVirtual; // height in lines of text storage buffer
     unsigned int m_cScreenWidth;         // width in characters
-    float m_fLineHeight;          // height of a single line in pixels
+	wchar_t * m_Buffer;					// buffer big enough to hold a full screen
+    wchar_t ** m_Lines;					// pointers to individual lines
+} video_console_t;
 
-    wchar_t * m_Buffer;               // buffer big enough to hold a full screen
-    wchar_t ** m_Lines;                // pointers to individual lines
-    unsigned int m_nCurLine;             // index of current line being written to
-    unsigned int m_cCurLineLength;       // length of the current line
-    int m_nScrollOffset;        // offset to display text (in lines)
-
-    // Add a character to the current line
-    void            Add( char ch );
-    void            Add( wchar_t wch );
-};
+HRESULT xdk360_console_init ( LPCSTR strFontFileName, D3DCOLOR colBackColor, D3DCOLOR colTextColor);
+void xdk360_console_deinit (void);
+void xdk360_console_format (_In_z_ _Printf_format_string_ LPCSTR strFormat, ... );
+void xdk360_console_format_w (_In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... );
+void xdk360_console_draw (void);
 
 #endif

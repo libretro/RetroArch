@@ -160,9 +160,6 @@ HRESULT PackedResource::Create( const char * strFilename )
             D3DTexture* pTexture = ( D3DTexture* )&m_pSysMemData[m_pResourceTags[i].dwOffset];
             // Adjust Base address according to where memory was allocated
             XGOffsetBaseTextureAddress( pTexture, m_pVidMemData, m_pVidMemData );
-
-            // Let PIX know the name of the texture
-            PIXSetTextureName(pTexture, m_pResourceTags[i].strName);
         }
     }
 
