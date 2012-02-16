@@ -52,67 +52,35 @@ enum SavedStates
     SAVEDSTATE_COUNT
 };
 
-class XdkFont
+typedef struct
 {
-public:
-    PackedResource m_xprResource;
-
-    // Font vertical dimensions taken from the font file
+	unsigned int m_bSaveState;
+	unsigned long m_dwSavedState[ SAVEDSTATE_COUNT ];
+    unsigned long m_dwNestedBeginCount;
+	unsigned long m_cMaxGlyph;          // Number of entries in the translator table
+	unsigned long m_dwNumGlyphs;        // Number of valid glyphs
     float m_fFontHeight;        // Height of the font strike in pixels
     float m_fFontTopPadding;    // Padding above the strike zone
     float m_fFontBottomPadding; // Padding below the strike zone
     float m_fFontYAdvance;      // Number of pixels to move the cursor for a line feed
-
     float m_fXScaleFactor;      // Scaling constants
     float m_fYScaleFactor;
-
-    D3DRECT m_rcWindow;         // Bounds rect of the text window, modify via accessors only!
-    float m_fCursorX;           // Current text cursor
+	float m_fCursorX;           // Current text cursor
     float m_fCursorY;
+    D3DRECT m_rcWindow;         // Bounds rect of the text window, modify via accessors only!
+	wchar_t * m_TranslatorTable;		// ASCII to glyph lookup table
+	D3DTexture* m_pFontTexture;
+	const GLYPH_ATTR* m_Glyphs;			// Array of glyphs
+} xdk360_video_font_t;
 
-    // Translator table for supporting unicode ranges
-    unsigned long m_cMaxGlyph;          // Number of entries in the translator table
-    wchar_t * m_TranslatorTable;		// ASCII to glyph lookup table
-
-    // Glyph data for the font
-    unsigned long m_dwNumGlyphs;        // Number of valid glyphs
-    const GLYPH_ATTR* m_Glyphs;			// Array of glyphs
-
-    // D3D rendering objects
-    D3DTexture* m_pFontTexture;
-
-    // Saved state for rendering (if not using a pure device)
-    unsigned long m_dwSavedState[ SAVEDSTATE_COUNT ];
-    unsigned long m_dwNestedBeginCount;
-    int m_bSaveState;
-public:
-    XdkFont();
-    ~XdkFont();
-
-    // Functions to create and destroy the internal objects
-    HRESULT Create( const char * strFontFileName );
-    void    Destroy();
-
-    // Returns the dimensions of a text string
-    void    GetTextExtent( const wchar_t * strText, float * pWidth,
-                           float * pHeight, int bFirstLineOnly=FALSE ) const;
-    float   GetTextWidth( const wchar_t * strText ) const;
-    void    SetCursorPosition( float fCursorX, float fCursorY );
-	void	SetFontSize(float x, float y);
-
-    // Public calls to render text. Callers can simply call DrawText(), but for
-    // performance, they should batch multiple calls together, bracketed by calls to
-    // Begin() and End().
-    void    Begin();
-    void    DrawText( unsigned long dwColor, const wchar_t * strText,
-                      float fMaxPixelWidth = 0.0f );
-    void    DrawText( float sx, float sy, unsigned long dwColor,
-					const wchar_t * strText, float fMaxPixelWidth = 0.0f );
-    void    End();
-
-private:
-    // Internal helper functions
-    HRESULT CreateFontShaders();
-};
+HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * strFontFileName);
+void xdk360_video_font_get_text_width(xdk360_video_font_t * font, const wchar_t * strText, float * pWidth, float * pHeight, int bFirstLineOnly);
+void xdk360_video_font_deinit(xdk360_video_font_t * font);
+void xdk360_video_font_set_cursor_position(xdk360_video_font_t *font, float fCursorX, float fCursorY );
+void xdk360_video_font_begin (xdk360_video_font_t * font);
+void xdk360_video_font_end (xdk360_video_font_t * font);
+void xdk360_video_font_set_size(float x, float y);
+void xdk360_video_font_draw_text(xdk360_video_font_t * font, float fOriginX, float fOriginY, unsigned long dwColor,
+	const wchar_t * strText, float fMaxPixelWidth );
 
 #endif

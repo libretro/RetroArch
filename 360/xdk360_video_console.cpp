@@ -24,7 +24,7 @@
 #include "../general.h"
 
 static video_console_t video_console;
-static XdkFont m_Font;
+static xdk360_video_font_t m_Font;
 
 void xdk360_console_draw(void)
 {
@@ -37,20 +37,20 @@ void xdk360_console_draw(void)
 		video_console.m_nScrollOffset + 1 )
         % video_console.m_cScreenHeightVirtual;
 
-    m_Font.Begin();
+    xdk360_video_font_begin(&m_Font);
 
     for( unsigned int nScreenLine = 0; nScreenLine < video_console.m_cScreenHeight; nScreenLine++ )
     {
-        m_Font.DrawText( (float)( video_console.m_cxSafeAreaOffset ),
+		xdk360_video_font_draw_text(&m_Font, (float)( video_console.m_cxSafeAreaOffset ),
                          (float)( video_console.m_cySafeAreaOffset + 
 						 video_console.m_fLineHeight * nScreenLine ),
                          video_console.m_colTextColor, 
-						 video_console.m_Lines[nTextLine] );
+						 video_console.m_Lines[nTextLine], 0.0f );
 
         nTextLine = ( nTextLine + 1 ) % video_console.m_cScreenHeightVirtual;
     }
 
-    m_Font.End();
+    xdk360_video_font_end(&m_Font);
 }
 
 HRESULT xdk360_console_init( LPCSTR strFontFileName, unsigned long colBackColor,
@@ -75,7 +75,7 @@ HRESULT xdk360_console_init( LPCSTR strFontFileName, unsigned long colBackColor,
     video_console.m_cySafeAreaOffset = ( vid->d3dpp.BackBufferHeight - video_console.m_cySafeArea ) / 2;
 
     // Create the font
-    HRESULT hr = m_Font.Create( strFontFileName );
+    HRESULT hr = xdk360_video_font_init(&m_Font, strFontFileName );
     if( FAILED( hr ) )
     {
         SSNES_ERR( "Could not create font.\n" );
@@ -88,7 +88,7 @@ HRESULT xdk360_console_init( LPCSTR strFontFileName, unsigned long colBackColor,
 
     // Calculate the number of lines on the screen
     float fCharWidth, fCharHeight;
-    m_Font.GetTextExtent( L"i", &fCharWidth, &fCharHeight, FALSE );
+	xdk360_video_font_get_text_width(&m_Font, L"i", &fCharWidth, &fCharHeight, FALSE);
 
     video_console.m_cScreenHeight = (unsigned int)( video_console.m_cySafeArea / fCharHeight );
     video_console.m_cScreenWidth = (unsigned int)( video_console.m_cxSafeArea / fCharWidth );
@@ -129,7 +129,7 @@ void xdk360_console_deinit()
     }
 
     // Destroy the font
-    m_Font.Destroy();
+	xdk360_video_font_deinit(&m_Font);
 }
 
 void xdk360_console_add( wchar_t wch )
@@ -155,8 +155,9 @@ void xdk360_console_add( wchar_t wch )
         video_console.m_Lines[ video_console.m_nCurLine ]
 		[ video_console.m_cCurLineLength ] = wch;
 
-        if( m_Font.GetTextWidth( video_console.m_Lines
-			[ video_console.m_nCurLine ] ) > video_console.m_cxSafeArea )
+		float fTextWidth, fTextHeight;
+		xdk360_video_font_get_text_width(&m_Font, video_console.m_Lines[ video_console.m_nCurLine ], &fTextWidth, &fTextHeight, 0);
+        if( fTextHeight > video_console.m_cxSafeArea )
         {
             // The line is too long, we need to wrap the character to the next line
             video_console.m_Lines[video_console.m_nCurLine]
