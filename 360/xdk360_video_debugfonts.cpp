@@ -471,8 +471,6 @@ float XdkFont::GetTextWidth( const wchar_t * strText ) const
 //--------------------------------------------------------------------------------------
 VOID XdkFont::Begin()
 {
-    PIXBeginNamedEvent( 0, "Text Rendering" );
-
     // Set state on the first call
     if( m_dwNestedBeginCount == 0 )
     {
@@ -575,11 +573,6 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
 
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 	D3DDevice *pd3dDevice = vid->xdk360_render_device;
- 
-    // Create a PIX user-defined event that encapsulates all of the text draw calls.
-    // This makes DrawText calls easier to recognize in PIX captures, and it makes
-    // them take up fewer entries in the event list.
-    PIXBeginNamedEvent( dwColor, "DrawText: %S", strText );
 
     // Set the color as a vertex shader constant
     float vColor[4];
@@ -752,9 +745,6 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
 
     // Call End() to complete the begin/end pair for drawing text
     End();
-
-    // Close off the user-defined event opened with PIXBeginNamedEvent.
-    PIXEndNamedEvent();
 }
 
 
@@ -765,10 +755,7 @@ VOID XdkFont::DrawText( float fOriginX, float fOriginY, unsigned long dwColor,
 VOID XdkFont::End()
 {
     if( --m_dwNestedBeginCount > 0 )
-    {
-        PIXEndNamedEvent();
         return;
-    }
 
     // Restore state
     if( m_bSaveState )
@@ -798,6 +785,4 @@ VOID XdkFont::End()
         pD3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU, m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSU ] );
         pD3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV, m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSV ] );
     }
-
-    PIXEndNamedEvent();
 }
