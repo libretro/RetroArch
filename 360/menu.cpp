@@ -69,7 +69,7 @@ HRESULT CSSNES::UnregisterXuiClasses (void)
 static void filebrowser_fetch_directory_entries(const char *path, CXuiList * romlist, 
 	CXuiTextElement * rompath_title)
 {
-	filebrowser_parse_directory(&browser, path, ssnes_console_get_rom_ext());
+	filebrowser_push_directory(&browser, path, true);
 
 	unsigned long dwNum_rompath = MultiByteToWideChar(CP_ACP, 0, path, -1, NULL, 0);
 	wchar_t * rompath_name = new wchar_t[dwNum_rompath];
@@ -232,6 +232,8 @@ HRESULT CSSNESMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
 HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 {
+	char path[MAX_PATH_LENGTH];
+
 	if(hObjPressed == m_romlist)
 	{
 		int index = m_romlist.GetCurSel();
@@ -240,7 +242,7 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 			memset(strbuffer, 0, sizeof(strbuffer));
 			wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
 			memset(g_console.rom_path, 0, sizeof(g_console.rom_path));
-			sprintf(g_console.rom_path, "%s%s", g_console.default_rom_startup_dir, strbuffer);
+			sprintf(g_console.rom_path, "%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
 			
 			return_to_game();
 			g_console.initialize_ssnes_enable = 1;
@@ -249,9 +251,8 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 		{
 			memset(strbuffer, 0, sizeof(strbuffer));
 			wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
-			char strbuf[512];
-			snprintf(strbuf, sizeof(strbuf), "%s%s", g_console.default_rom_startup_dir, strbuffer);
-			filebrowser_fetch_directory_entries(strbuf, &m_romlist, &m_rompathtitle);
+			snprintf(path, sizeof(path), "%s%s\\", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
+			filebrowser_fetch_directory_entries(path, &m_romlist, &m_rompathtitle);
 		}
 	}
 	else if(hObjPressed == m_back)
@@ -357,6 +358,8 @@ int menu_init (void)
 	}
 
 	XuiSceneNavigateFirst(app.GetRootObj(), app.hMainScene, XUSER_INDEX_FOCUS);
+
+	filebrowser_new(&browser, g_console.default_rom_startup_dir, ssnes_console_get_rom_ext());
 
 	return 0;
 }
