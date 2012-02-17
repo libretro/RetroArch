@@ -131,13 +131,10 @@
     <ClCompile Include="..\..\console\main_wrap.c">
       <Filter>Source Files\console</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\360\xdk360_video_debugfonts.cpp">
-      <Filter>Source Files\360</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\360\xdk360_video_resources.cpp">
       <Filter>Source Files\360</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\360\xdk360_video_console.cpp">
+    <ClCompile Include="..\..\360\fonts.cpp">
       <Filter>Source Files\360</Filter>
     </ClCompile>
   </ItemGroup>

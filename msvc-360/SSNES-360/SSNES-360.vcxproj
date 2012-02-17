@@ -283,13 +283,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\360\file_browser.c" />
+    <ClCompile Include="..\..\360\fonts.cpp" />
     <ClCompile Include="..\..\360\main.c" />
     <ClCompile Include="..\..\360\xdk360_audio.cpp" />
     <ClCompile Include="..\..\360\xdk360_input.cpp" />
     <ClCompile Include="..\..\360\xdk360_video.cpp" />
     <ClCompile Include="..\..\360\menu.cpp" />
-    <ClCompile Include="..\..\360\xdk360_video_console.cpp" />
-    <ClCompile Include="..\..\360\xdk360_video_debugfonts.cpp" />
     <ClCompile Include="..\..\360\xdk360_video_resources.cpp" />
     <ClCompile Include="..\..\audio\hermite.c" />
     <ClCompile Include="..\..\audio\utils.c" />
