@@ -193,39 +193,32 @@ static bool sdl_joykey_pressed(sdl_input_t *sdl, int port_num, uint16_t joykey)
    // Check hat.
    if (GET_HAT_DIR(joykey))
    {
-      int hat = GET_HAT(joykey);
-      if (hat < (int)sdl->num_hats[port_num])
+      uint16_t hat = GET_HAT(joykey);
+      if (hat >= sdl->num_hats[port_num])
+         return false;
+
+      Uint8 dir = SDL_JoystickGetHat(sdl->joysticks[port_num], hat);
+      switch (GET_HAT_DIR(joykey))
       {
-         Uint8 dir = SDL_JoystickGetHat(sdl->joysticks[port_num], hat);
-         switch (GET_HAT_DIR(joykey))
-         {
-            case HAT_UP_MASK:
-               if (dir & SDL_HAT_UP)
-                  return true;
-               break;
-            case HAT_DOWN_MASK:
-               if (dir & SDL_HAT_DOWN)
-                  return true;
-               break;
-            case HAT_LEFT_MASK:
-               if (dir & SDL_HAT_LEFT)
-                  return true;
-               break;
-            case HAT_RIGHT_MASK:
-               if (dir & SDL_HAT_RIGHT)
-                  return true;
-               break;
-            default:
-               break;
-         }
+         case HAT_UP_MASK:
+            return dir & SDL_HAT_UP;
+         case HAT_DOWN_MASK:
+            return dir & SDL_HAT_DOWN;
+         case HAT_LEFT_MASK:
+            return dir & SDL_HAT_LEFT;
+         case HAT_RIGHT_MASK:
+            return dir & SDL_HAT_RIGHT;
+         default:
+            return false;
       }
    }
    else // Check the button
    {
       if (joykey < sdl->num_buttons[port_num] && SDL_JoystickGetButton(sdl->joysticks[port_num], joykey))
          return true;
+
+      return false;
    }
-   return false;
 }
 
 static bool sdl_axis_pressed(sdl_input_t *sdl, int port_num, uint32_t joyaxis)
