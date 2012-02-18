@@ -19,7 +19,7 @@
 #ifndef _XDK360_VIDEO_H
 #define _XDK360_VIDEO_H
 
-#include "xdk360_video_console.h"
+#include "fonts.h"
 
 typedef struct {
 	float x;
