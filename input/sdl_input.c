@@ -163,9 +163,12 @@ static void *sdl_input_init(void)
 
          SSNES_LOG("Opened Joystick: %s #%u on port %u\n", 
                SDL_JoystickName(g_settings.input.joypad_map[i]), g_settings.input.joypad_map[i], i + 1);
+
          sdl->num_axes[i] = SDL_JoystickNumAxes(sdl->joysticks[i]);
          sdl->num_buttons[i] = SDL_JoystickNumButtons(sdl->joysticks[i]);
          sdl->num_hats[i] = SDL_JoystickNumHats(sdl->joysticks[i]);
+         SSNES_LOG("Joypad has: %u axes, %u buttons, %u hats.\n",
+               sdl->num_axes[i], sdl->num_buttons[i], sdl->num_hats[i]);
       }
    }
 #endif
