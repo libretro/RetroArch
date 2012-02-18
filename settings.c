@@ -697,27 +697,30 @@ static void read_keybinds_keyboard(config_file_t *conf, unsigned player, unsigne
 
 static void parse_hat(struct snes_keybind *bind, const char *str)
 {
-   if (isdigit(*str))
+   if (!isdigit(*str))
+      return;
+
+   char *dir = NULL;
+   uint16_t hat = strtoul(str, &dir, 0);
+   uint16_t hat_dir = 0;
+
+   if (!dir)
    {
-      char *dir = NULL;
-      int hat = strtol(str, &dir, 0);
-      int hat_dir = 0;
-
-      if (dir)
-      {
-         if (strcasecmp(str, "up") == 0)
-            hat_dir = HAT_UP_MASK;
-         else if (strcasecmp(str, "down") == 0)
-            hat_dir = HAT_DOWN_MASK;
-         else if (strcasecmp(str, "left") == 0)
-            hat_dir = HAT_LEFT_MASK;
-         else if (strcasecmp(str, "right") == 0)
-            hat_dir = HAT_RIGHT_MASK;
-
-         if (hat_dir)
-            bind->joykey = HAT_MAP(hat, hat_dir);
-      }
+      SSNES_WARN("Found invalid hat in config!\n");
+      return;
    }
+
+   if (strcasecmp(dir, "up") == 0)
+      hat_dir = HAT_UP_MASK;
+   else if (strcasecmp(dir, "down") == 0)
+      hat_dir = HAT_DOWN_MASK;
+   else if (strcasecmp(dir, "left") == 0)
+      hat_dir = HAT_LEFT_MASK;
+   else if (strcasecmp(dir, "right") == 0)
+      hat_dir = HAT_RIGHT_MASK;
+
+   if (hat_dir)
+      bind->joykey = HAT_MAP(hat, hat_dir);
 }
 
 static void read_keybinds_button(config_file_t *conf, unsigned player, unsigned index, struct snes_keybind *bind)
