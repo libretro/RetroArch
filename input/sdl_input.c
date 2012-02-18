@@ -150,26 +150,28 @@ static void *sdl_input_init(void)
       if (g_settings.input.joypad_map[i] < 0)
          continue;
 
-      if (sdl->num_joysticks > (unsigned)g_settings.input.joypad_map[i])
+      unsigned port = g_settings.input.joypad_map[i];
+
+      if (sdl->num_joysticks <= port)
+         continue;
+
+      sdl->joysticks[i] = SDL_JoystickOpen(port);
+      if (!sdl->joysticks[i])
       {
-         sdl->joysticks[i] = SDL_JoystickOpen(g_settings.input.joypad_map[i]);
-         if (!sdl->joysticks[i])
-         {
-            SSNES_ERR("Couldn't open SDL joystick #%u on SNES port %u\n", g_settings.input.joypad_map[i], i + 1);
-            free(sdl);
-            SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
-            return NULL;
-         }
-
-         SSNES_LOG("Opened Joystick: %s #%u on port %u\n", 
-               SDL_JoystickName(g_settings.input.joypad_map[i]), g_settings.input.joypad_map[i], i + 1);
-
-         sdl->num_axes[i] = SDL_JoystickNumAxes(sdl->joysticks[i]);
-         sdl->num_buttons[i] = SDL_JoystickNumButtons(sdl->joysticks[i]);
-         sdl->num_hats[i] = SDL_JoystickNumHats(sdl->joysticks[i]);
-         SSNES_LOG("Joypad has: %u axes, %u buttons, %u hats.\n",
-               sdl->num_axes[i], sdl->num_buttons[i], sdl->num_hats[i]);
+         SSNES_ERR("Couldn't open SDL joystick #%u on SNES port %u\n", port, i + 1);
+         free(sdl);
+         SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+         return NULL;
       }
+
+      SSNES_LOG("Opened Joystick: %s (#%u) on port %u\n", 
+            SDL_JoystickName(port), port, i + 1);
+
+      sdl->num_axes[i] = SDL_JoystickNumAxes(sdl->joysticks[i]);
+      sdl->num_buttons[i] = SDL_JoystickNumButtons(sdl->joysticks[i]);
+      sdl->num_hats[i] = SDL_JoystickNumHats(sdl->joysticks[i]);
+      SSNES_LOG("Joypad has: %u axes, %u buttons, %u hats.\n",
+            sdl->num_axes[i], sdl->num_buttons[i], sdl->num_hats[i]);
    }
 #endif
 

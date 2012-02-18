@@ -418,7 +418,7 @@ bool config_load_file(const char *path)
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {
       char buf[64];
-      snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i);
+      snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i + 1);
       CONFIG_GET_INT(input.joypad_map[i], buf);
    }
 
