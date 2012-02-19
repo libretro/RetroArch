@@ -16,18 +16,28 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+
 #define FATX_MAX_FILE_LIMIT 4096
+#define MAX_FILE_LIMIT FATX_MAX_FILE_LIMIT
 
 typedef struct {
 	unsigned d_type;
+	unsigned d_namlen;
 	CHAR d_name[MAX_PATH];
 } DirectoryEntry;
 
 typedef struct {
 	unsigned file_count;			// amount of files in current directory
 	unsigned currently_selected;	// currently selected browser entry
-	DirectoryEntry cur[FATX_MAX_FILE_LIMIT];		// current file listing
+	uint32_t directory_stack_size;
+	char dir[128][2048];					/* info on the current directory */
+	DirectoryEntry cur[MAX_FILE_LIMIT];		// current file listing
 	char extensions[512];			// allowed file extensions
 } filebrowser_t;
 
+void filebrowser_new(filebrowser_t * filebrowser, const char * start_dir, const char * extensions);
 void filebrowser_parse_directory(filebrowser_t * filebrowser, const char * path, const char *extensions);
+void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path, bool with_extension);
+
+#define FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(filebrowser) (filebrowser.dir[filebrowser.directory_stack_size])

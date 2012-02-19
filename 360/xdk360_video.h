@@ -19,7 +19,7 @@
 #ifndef _XDK360_VIDEO_H
 #define _XDK360_VIDEO_H
 
-#include "xdk360_video_console.h"
+#include "fonts.h"
 
 typedef struct {
 	float x;
@@ -58,7 +58,6 @@ void xdk360_video_init(void);
 void xdk360_video_deinit(void);
 void xdk360_video_set_vsync(bool vsync);
 
-extern Console g_screen_console;
 extern unsigned g_frame_count;
 extern void *g_d3d;
 

@@ -22,6 +22,7 @@
 
 #include "xdk360_video.h"
 #include "../general.h"
+#include "../message.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -71,7 +72,6 @@ static bool g_quitting;
 static bool g_first_msg;
 unsigned g_frame_count;
 void *g_d3d;
-Console g_screen_console;
 
 static void xdk360_gfx_free(void * data)
 {
@@ -283,12 +283,12 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    {
 	   if(IS_TIMER_EXPIRED() || g_first_msg)
 	   {
-		   g_screen_console.Format(true, msg);
+		   xdk360_console_format(msg);
 		   g_first_msg = 0;
-		   SET_TIMER_EXPIRATION(60);
+		   SET_TIMER_EXPIRATION(30);
 	   }
 	   
-	   g_screen_console.Render();
+	   xdk360_console_draw();
    }
 
    if(!vid->block_swap)
@@ -363,7 +363,7 @@ void xdk360_video_init(void)
 
 	g_first_msg = true;
 
-	HRESULT hr = g_screen_console.Create("game:\\media\\Arial_12.xpr",
+	HRESULT hr = xdk360_console_init("game:\\media\\Arial_12.xpr",
 		0xff000000, 0xffffffff );
 	if(FAILED(hr))
 	{
@@ -375,6 +375,7 @@ void xdk360_video_deinit(void)
 {
 	void *data = g_d3d;
 	g_d3d = NULL;
+	xdk360_console_deinit();
 	xdk360_gfx_free(data);
 }
 

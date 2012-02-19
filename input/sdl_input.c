@@ -150,23 +150,28 @@ static void *sdl_input_init(void)
       if (g_settings.input.joypad_map[i] < 0)
          continue;
 
-      if (sdl->num_joysticks > (unsigned)g_settings.input.joypad_map[i])
-      {
-         sdl->joysticks[i] = SDL_JoystickOpen(g_settings.input.joypad_map[i]);
-         if (!sdl->joysticks[i])
-         {
-            SSNES_ERR("Couldn't open SDL joystick #%u on SNES port %u\n", g_settings.input.joypad_map[i], i + 1);
-            free(sdl);
-            SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
-            return NULL;
-         }
+      unsigned port = g_settings.input.joypad_map[i];
 
-         SSNES_LOG("Opened Joystick: %s #%u on port %u\n", 
-               SDL_JoystickName(g_settings.input.joypad_map[i]), g_settings.input.joypad_map[i], i + 1);
-         sdl->num_axes[i] = SDL_JoystickNumAxes(sdl->joysticks[i]);
-         sdl->num_buttons[i] = SDL_JoystickNumButtons(sdl->joysticks[i]);
-         sdl->num_hats[i] = SDL_JoystickNumHats(sdl->joysticks[i]);
+      if (sdl->num_joysticks <= port)
+         continue;
+
+      sdl->joysticks[i] = SDL_JoystickOpen(port);
+      if (!sdl->joysticks[i])
+      {
+         SSNES_ERR("Couldn't open SDL joystick #%u on SNES port %u\n", port, i + 1);
+         free(sdl);
+         SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+         return NULL;
       }
+
+      SSNES_LOG("Opened Joystick: %s (#%u) on port %u\n", 
+            SDL_JoystickName(port), port, i + 1);
+
+      sdl->num_axes[i] = SDL_JoystickNumAxes(sdl->joysticks[i]);
+      sdl->num_buttons[i] = SDL_JoystickNumButtons(sdl->joysticks[i]);
+      sdl->num_hats[i] = SDL_JoystickNumHats(sdl->joysticks[i]);
+      SSNES_LOG("Joypad has: %u axes, %u buttons, %u hats.\n",
+            sdl->num_axes[i], sdl->num_buttons[i], sdl->num_hats[i]);
    }
 #endif
 
@@ -188,39 +193,32 @@ static bool sdl_joykey_pressed(sdl_input_t *sdl, int port_num, uint16_t joykey)
    // Check hat.
    if (GET_HAT_DIR(joykey))
    {
-      int hat = GET_HAT(joykey);
-      if (hat < (int)sdl->num_hats[port_num])
+      uint16_t hat = GET_HAT(joykey);
+      if (hat >= sdl->num_hats[port_num])
+         return false;
+
+      Uint8 dir = SDL_JoystickGetHat(sdl->joysticks[port_num], hat);
+      switch (GET_HAT_DIR(joykey))
       {
-         Uint8 dir = SDL_JoystickGetHat(sdl->joysticks[port_num], hat);
-         switch (GET_HAT_DIR(joykey))
-         {
-            case HAT_UP_MASK:
-               if (dir & SDL_HAT_UP)
-                  return true;
-               break;
-            case HAT_DOWN_MASK:
-               if (dir & SDL_HAT_DOWN)
-                  return true;
-               break;
-            case HAT_LEFT_MASK:
-               if (dir & SDL_HAT_LEFT)
-                  return true;
-               break;
-            case HAT_RIGHT_MASK:
-               if (dir & SDL_HAT_RIGHT)
-                  return true;
-               break;
-            default:
-               break;
-         }
+         case HAT_UP_MASK:
+            return dir & SDL_HAT_UP;
+         case HAT_DOWN_MASK:
+            return dir & SDL_HAT_DOWN;
+         case HAT_LEFT_MASK:
+            return dir & SDL_HAT_LEFT;
+         case HAT_RIGHT_MASK:
+            return dir & SDL_HAT_RIGHT;
+         default:
+            return false;
       }
    }
    else // Check the button
    {
       if (joykey < sdl->num_buttons[port_num] && SDL_JoystickGetButton(sdl->joysticks[port_num], joykey))
          return true;
+
+      return false;
    }
-   return false;
 }
 
 static bool sdl_axis_pressed(sdl_input_t *sdl, int port_num, uint32_t joyaxis)

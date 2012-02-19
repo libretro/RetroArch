@@ -30,6 +30,16 @@ static const char * filebrowser_get_extension(const char * filename)
 		return "";
 }
 
+static void filebrowser_clear_current_entries(filebrowser_t * filebrowser)
+{
+	for(uint32_t i = 0; i < MAX_FILE_LIMIT; i++)
+	{
+		filebrowser->cur[filebrowser->file_count].d_type = 0;
+		filebrowser->cur[filebrowser->file_count].d_namlen = 0;
+		strcpy(filebrowser->cur[filebrowser->file_count].d_name, "\0");
+	}
+}
+
 void filebrowser_parse_directory(filebrowser_t * filebrowser, const char * path, const char *extensions)
 {
 	int error = FALSE;
@@ -60,6 +70,7 @@ void filebrowser_parse_directory(filebrowser_t * filebrowser, const char * path,
 
    do
    {
+	   strcpy(filebrowser->dir[filebrowser->directory_stack_size], path);
 	    bool found_dir = false;
 		if(!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 		{
@@ -100,4 +111,22 @@ error:
 	   SSNES_ERR("Failed to open directory: \"%s\"\n", path);
    }
    FindClose(hFind);
+}
+
+void filebrowser_new(filebrowser_t * filebrowser, const char * start_dir, const char * extensions)
+{
+	filebrowser_clear_current_entries(filebrowser);
+	filebrowser->directory_stack_size = 0;
+	strcpy(filebrowser->extensions, extensions);
+
+	filebrowser_parse_directory(filebrowser, start_dir, filebrowser->extensions);
+}
+
+void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path, bool with_extension)
+{
+	filebrowser->directory_stack_size++;
+	if(with_extension)
+		filebrowser_parse_directory(filebrowser, path, filebrowser->extensions);
+	else
+		filebrowser_parse_directory(filebrowser, path, "empty");
 }

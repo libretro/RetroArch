@@ -550,23 +550,17 @@ void save_ram_file(const char *path, int type)
    }
 }
 
-#ifdef HAVE_XML
 static char *load_xml_map(const char *path)
 {
    char *xml_buf = NULL;
    if (*path)
    {
-      if (!read_file_string(path, &xml_buf))
-         SSNES_LOG("Did not find XML memory map in \"%s\"\n", path);
-      else
+      if (read_file_string(path, &xml_buf))
          SSNES_LOG("Found XML memory map in \"%s\"\n", path);
    }
 
    return xml_buf;
 }
-#else
-#define load_xml_map(xml_name) (NULL)
-#endif
 
 static bool load_sgb_rom(void)
 {
