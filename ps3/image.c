@@ -82,7 +82,7 @@ static bool ps3graphics_load_jpeg(const char * path, struct texture_image *out_i
 
 	MallocArg.mallocCallCounts = 0;
 	FreeArg.freeCallCounts = 0;
-	InParam.spuThreadEnable = CELL_JPGDEC_SPU_THREAD_ENABLE;
+	InParam.spuThreadEnable = CELL_JPGDEC_SPU_THREAD_DISABLE;
 	InParam.ppuThreadPriority = 1001;
 	InParam.spuThreadPriority = 250;
 	InParam.cbCtrlMallocFunc = img_malloc;
@@ -104,7 +104,7 @@ static bool ps3graphics_load_jpeg(const char * path, struct texture_image *out_i
 	src.streamPtr        = NULL;
 	src.streamSize       = 0;
 
-	src.spuThreadEnable  = CELL_JPGDEC_SPU_THREAD_ENABLE;
+	src.spuThreadEnable  = CELL_JPGDEC_SPU_THREAD_DISABLE;
 
 	ret = cellJpgDecOpen(mHandle, &sHandle, &src, &opnInfo);
 
@@ -142,6 +142,7 @@ static bool ps3graphics_load_jpeg(const char * path, struct texture_image *out_i
 	return true;
 
 error:
+	SSNES_ERR("ps3graphics_load_jpeg(): error.\n");
 	if (mHandle && sHandle)
 		cellJpgDecClose(mHandle, sHandle);
 	if (mHandle)
@@ -171,7 +172,7 @@ static bool ps3graphics_load_png(const char * path, struct texture_image *out_im
 
 	MallocArg.mallocCallCounts = 0;
 	FreeArg.freeCallCounts = 0;
-	InParam.spuThreadEnable = CELL_PNGDEC_SPU_THREAD_ENABLE;
+	InParam.spuThreadEnable = CELL_PNGDEC_SPU_THREAD_DISABLE;
 	InParam.ppuThreadPriority = 512;
 	InParam.spuThreadPriority = 200;
 	InParam.cbCtrlMallocFunc = img_malloc;
@@ -193,7 +194,7 @@ static bool ps3graphics_load_png(const char * path, struct texture_image *out_im
 	src.streamPtr        = 0;
 	src.streamSize       = 0;
 
-	src.spuThreadEnable  = CELL_PNGDEC_SPU_THREAD_ENABLE;
+	src.spuThreadEnable  = CELL_PNGDEC_SPU_THREAD_DISABLE;
 
 	ret = cellPngDecOpen(mHandle, &sHandle, &src, &opnInfo);
 
@@ -234,6 +235,7 @@ static bool ps3graphics_load_png(const char * path, struct texture_image *out_im
 	return true;
 
 error:
+	SSNES_ERR("ps3graphics_load_png(): error.\n");
 	if (mHandle && sHandle)
 		cellPngDecClose(mHandle, sHandle);
 	if (mHandle)
@@ -243,15 +245,23 @@ error:
 
 bool texture_image_load(const char *path, struct texture_image *out_img)
 {
+	out_img->pixels = malloc(2048 * 2048 * 4);
+	memset(out_img->pixels, 0, (2048 * 2048 * 4));
 	if(strstr(path, ".PNG") != NULL || strstr(path, ".png") != NULL)
 	{
 		if (!ps3graphics_load_png(path, out_img))
+		{
+			free(out_img->pixels);
 			return false;
+		}
 	}
 	else
 	{
 		if (!ps3graphics_load_jpeg(path, out_img))
+		{
+			free(out_img->pixels);
 			return false;
+		}
 	}
 
 	return true;

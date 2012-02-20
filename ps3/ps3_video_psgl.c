@@ -1191,11 +1191,9 @@ bool ps3_setup_texture(void)
 	glGenTextures(1, &gl->menu_texture_id);
 
 	SSNES_LOG("Loading texture image for menu...\n");
-	gl->menu_texture.pixels = memalign(128, 2048 * 2048 * 4);
-	memset(gl->menu_texture.pixels, 0, (2048 * 2048 * 4));
 	if(!texture_image_load(DEFAULT_MENU_BORDER_FILE, &gl->menu_texture))
 	{
-		SSNES_ERR("Failed to load texture image for menu\n");
+		SSNES_ERR("Failed to load texture image for menu.\n");
 		return false;
 	}
 
