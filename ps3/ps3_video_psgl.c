@@ -196,7 +196,7 @@ static void gl_create_fbo_textures(gl_t *gl)
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-static void gl_deinit_fbo(gl_t *gl)
+void gl_deinit_fbo(gl_t *gl)
 {
 	if (gl->fbo_inited)
 	{
@@ -211,7 +211,7 @@ static void gl_deinit_fbo(gl_t *gl)
 }
 
 // Horribly long and complex FBO init :D
-static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
+void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
 	if (!g_settings.video.render_to_texture && gl_shader_num() == 0)
 		return;

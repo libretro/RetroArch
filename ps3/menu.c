@@ -901,11 +901,23 @@ static void select_directory(uint32_t menu_id)
         old_state = state;
 }
 
-
-
-
-static void apply_scaling(void)
+static void apply_scaling (unsigned init_mode)
 {
+	switch(init_mode)
+	{
+		case FBO_DEINIT:
+			gl_deinit_fbo(g_gl);
+			break;
+		case FBO_INIT:
+			gl_init_fbo(g_gl, SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_x),
+					SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_y));
+			break;
+		case FBO_REINIT:
+			gl_deinit_fbo(g_gl);
+			gl_init_fbo(g_gl, SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_x),
+					SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_y));
+			break;
+	}
 }
 
 static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
@@ -1076,47 +1088,59 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
 
-				#if 0
 				if(g_settings.video.render_to_texture)
-					ps3graphics_set_fbo_scale(1, Settings.ScaleFactor);
+					apply_scaling(FBO_INIT);
 				else
-					ps3graphics_set_fbo_scale(0, 0);
-				#endif
+				{
+					set_text_message("", 7);
+					apply_scaling(FBO_DEINIT);
+				}
 
 				set_text_message("", 7);
+
 			}
 			if(CTRL_START(state))
 			{
-				g_settings.video.render_to_texture = 2;
-				//ps3graphics_set_fbo_scale(1, Settings.ScaleFactor);
+				g_settings.video.render_to_texture = true;
+				g_settings.video.fbo_scale_x = 2.0f;
+				g_settings.video.fbo_scale_y = 2.0f;
+				apply_scaling(FBO_DEINIT);
+				apply_scaling(FBO_INIT);
 			}
 			break;
 		case SETTING_SCALE_FACTOR:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 			{
-				if((g_settings.video.fbo_scale_x > 1.0f))
+				if(g_settings.video.render_to_texture)
 				{
-					g_settings.video.fbo_scale_x -= 1.0f;
-					g_settings.video.fbo_scale_y -= 1.0f;
-					apply_scaling();
+					if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
+					{
+						g_settings.video.fbo_scale_x -= 1.0f;
+						g_settings.video.fbo_scale_y -= 1.0f;
+						apply_scaling(FBO_REINIT);
+					}
+					set_text_message("", 7);
 				}
-				set_text_message("", 7);
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				if((g_settings.video.fbo_scale_x < 5.0f))
+				if(g_settings.video.render_to_texture)
 				{
-					g_settings.video.fbo_scale_x += 1.0f;
-					g_settings.video.fbo_scale_y += 1.0f;
-					apply_scaling();
+					if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
+					{
+						g_settings.video.fbo_scale_x += 1.0f;
+						g_settings.video.fbo_scale_y += 1.0f;
+						apply_scaling(FBO_REINIT);
+					}
+					set_text_message("", 7);
 				}
-				set_text_message("", 7);
 			}
 			if(CTRL_START(state))
 			{
 				g_settings.video.fbo_scale_x = 2.0f;
 				g_settings.video.fbo_scale_y = 2.0f;
-				apply_scaling();
+				apply_scaling(FBO_DEINIT);
+				apply_scaling(FBO_INIT);
 			}
 			break;
 		case SETTING_HW_OVERSCAN_AMOUNT:
@@ -1767,6 +1791,40 @@ static void ingame_menu(uint32_t menu_id)
 					ps3graphics_set_orientation(g_console.screen_orientation);
 				}
 				strcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.");
+			case MENU_ITEM_SCALE_FACTOR:
+				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
+				{
+					if(g_settings.video.render_to_texture)
+					{
+						if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
+						{
+							g_settings.video.fbo_scale_x -= 1.0f;
+							g_settings.video.fbo_scale_y -= 1.0f;
+							apply_scaling(FBO_REINIT);
+						}
+						set_text_message("", 7);
+					}
+				}
+				if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+				{
+					if(g_settings.video.render_to_texture)
+					{
+						if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
+						{
+							g_settings.video.fbo_scale_x += 1.0f;
+							g_settings.video.fbo_scale_y += 1.0f;
+							apply_scaling(FBO_REINIT);
+						}
+						set_text_message("", 7);
+					}
+				}
+				if(CTRL_START(state))
+				{
+					g_settings.video.fbo_scale_x = 2.0f;
+					g_settings.video.fbo_scale_y = 2.0f;
+					apply_scaling(FBO_REINIT);
+				}
+				strcpy(comment, "Press LEFT or RIGHT to change the [Scaling] settings.\nPress START to reset back to default values.");
 				break;
 			case MENU_ITEM_FRAME_ADVANCE:
 				if(CTRL_CROSS(state) || CTRL_R2(state) || CTRL_L2(state))
@@ -1906,6 +1964,9 @@ static void ingame_menu(uint32_t menu_id)
 	cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), "Overscan: %f", g_console.overscan_amount);
 
 	cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), "Orientation: %s", msg_temp);
+	cellDbgFontDraw();
+
+	cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_SCALE_FACTOR)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), "Scale Factor: %d", (int)(g_settings.video.fbo_scale_x));
 	cellDbgFontDraw();
 
 	cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_RESIZE_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE), "Resize Mode");

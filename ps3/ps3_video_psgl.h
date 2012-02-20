@@ -25,10 +25,21 @@
 #include "menu-port-defines.h"
 #include <cell/dbgfont.h>
 
+#define FBO_DEINIT	0
+#define FBO_INIT	1
+#define FBO_REINIT	2
+
 #define MAX_SHADERS 16
 
 #define TEXTURES 8
 #define TEXTURES_MASK (TEXTURES - 1)
+
+#define MIN_SCALING_FACTOR (1.0f)
+#define MAX_SCALING_FACTOR (4.0f)
+
+#define IS_TIMER_NOT_EXPIRED() (g_frame_count < g_console.timer_expiration_frame_count)
+#define IS_TIMER_EXPIRED() 	(!(IS_TIMER_NOT_EXPIRED()))
+#define SET_TIMER_EXPIRATION(value) g_console.timer_expiration_frame_count = g_frame_count + value;
 
 enum
 {
@@ -89,14 +100,13 @@ typedef struct gl
    void *empty_buf;
 } gl_t;
 
-#define IS_TIMER_NOT_EXPIRED() (g_frame_count < g_console.timer_expiration_frame_count)
-#define IS_TIMER_EXPIRED() 	(!(IS_TIMER_NOT_EXPIRED()))
-#define SET_TIMER_EXPIRATION(value) g_console.timer_expiration_frame_count = g_frame_count + value;
 
 bool ps3_setup_texture(void);
 const char * ps3_get_resolution_label(uint32_t resolution);
 int ps3_check_resolution(uint32_t resolution_id);
 void gl_frame_menu(void);
+void gl_deinit_fbo(gl_t * gl);
+void gl_init_fbo(gl_t * gl, unsigned width, unsigned height);
 void ps3_previous_resolution (void);
 void ps3_next_resolution (void);
 void ps3_set_filtering(unsigned index, bool set_smooth);
