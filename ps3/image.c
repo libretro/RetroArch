@@ -82,7 +82,7 @@ static bool ps3graphics_load_jpeg(const char * path, struct texture_image *out_i
 
 	MallocArg.mallocCallCounts = 0;
 	FreeArg.freeCallCounts = 0;
-	InParam.spuThreadEnable = CELL_JPGDEC_SPU_THREAD_DISABLE;
+	InParam.spuThreadEnable = CELL_JPGDEC_SPU_THREAD_ENABLE;
 	InParam.ppuThreadPriority = 1001;
 	InParam.spuThreadPriority = 250;
 	InParam.cbCtrlMallocFunc = img_malloc;
@@ -104,7 +104,7 @@ static bool ps3graphics_load_jpeg(const char * path, struct texture_image *out_i
 	src.streamPtr        = NULL;
 	src.streamSize       = 0;
 
-	src.spuThreadEnable  = CELL_JPGDEC_SPU_THREAD_DISABLE;
+	src.spuThreadEnable  = CELL_JPGDEC_SPU_THREAD_ENABLE;
 
 	ret = cellJpgDecOpen(mHandle, &sHandle, &src, &opnInfo);
 
@@ -172,7 +172,7 @@ static bool ps3graphics_load_png(const char * path, struct texture_image *out_im
 
 	MallocArg.mallocCallCounts = 0;
 	FreeArg.freeCallCounts = 0;
-	InParam.spuThreadEnable = CELL_PNGDEC_SPU_THREAD_DISABLE;
+	InParam.spuThreadEnable = CELL_PNGDEC_SPU_THREAD_ENABLE;
 	InParam.ppuThreadPriority = 512;
 	InParam.spuThreadPriority = 200;
 	InParam.cbCtrlMallocFunc = img_malloc;
@@ -194,7 +194,7 @@ static bool ps3graphics_load_png(const char * path, struct texture_image *out_im
 	src.streamPtr        = 0;
 	src.streamSize       = 0;
 
-	src.spuThreadEnable  = CELL_PNGDEC_SPU_THREAD_DISABLE;
+	src.spuThreadEnable  = CELL_PNGDEC_SPU_THREAD_ENABLE;
 
 	ret = cellPngDecOpen(mHandle, &sHandle, &src, &opnInfo);
 

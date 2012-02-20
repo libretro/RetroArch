@@ -988,10 +988,13 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_SHADER_PRESETS:
 			if((CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state)))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = PRESET_CHOICE;
-				set_initial_dir_tmpbrowser = true;
+				if(g_console.emulator_initialized)
+				{
+					menuStackindex++;
+					menuStack[menuStackindex] = menu_filebrowser;
+					menuStack[menuStackindex].enum_id = PRESET_CHOICE;
+					set_initial_dir_tmpbrowser = true;
+				}
 			}
 			if(CTRL_START(state))
 			{
