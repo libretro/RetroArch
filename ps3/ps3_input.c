@@ -68,6 +68,7 @@ static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
 static void ps3_free_input(void *data)
 {
    (void)data;
+   cell_pad_input_deinit();
 }
 
 static void* ps3_input_initialize(void)
@@ -78,11 +79,6 @@ static void* ps3_input_initialize(void)
 void ps3_input_init(void)
 {
    cell_pad_input_init();
-}
-
-void ps3_input_deinit(void)
-{
-   cell_pad_input_deinit();
 }
 
 static bool ps3_key_pressed(void *data, int key)

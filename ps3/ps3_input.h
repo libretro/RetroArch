@@ -22,6 +22,5 @@
 #include "cellframework2/input/pad_input.h"
 
 void ps3_input_init(void);
-void ps3_input_deinit(void);
 
 #endif

@@ -170,15 +170,17 @@ struct settings
 #ifdef SSNES_CONSOLE
 struct console_settings
 {
+   bool autostart_game;
    bool block_config_read;
    bool default_sram_dir_enable;
    bool default_savestate_dir_enable;
+   bool external_launcher_support;
    bool frame_advance_enable;
    bool initialize_ssnes_enable;
    bool ingame_menu_enable;
    bool menu_enable;
    bool overscan_enable;
-   bool return_to_multiman_enable;
+   bool return_to_launcher;
    bool screenshots_enable;
    bool throttle_enable;
    bool triple_buffering_enable;

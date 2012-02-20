@@ -62,6 +62,8 @@ char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
 char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 char MULTIMAN_GAME_TO_BOOT[MAX_PATH_LENGTH];
 
+const char * MULTIMAN_EXECUTABLE = "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF";
+
 int ssnes_main(int argc, char *argv[]);
 
 SYS_PROCESS_PARAM(1001, 0x100000)
@@ -276,8 +278,10 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 	}
 }
 
-static void get_environment_settings(void)
+static void get_environment_settings(int argc)
 {
+	g_extern.verbose = true;
+
 	unsigned int get_type;
 	unsigned int get_attributes;
 	CellGameContentSize size;
@@ -286,16 +290,24 @@ static void get_environment_settings(void)
 	SSNES_LOG("Registering Callback\n");
 	cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
 
-#ifdef MULTIMAN_SUPPORT
-	g_console.return_to_multiman_enable = true;
+	if(path_file_exists(MULTIMAN_EXECUTABLE))
+	{
+		g_console.external_launcher_support = true;
+		SSNES_LOG("multiMAN found, support enabled.\n");
+	}
+	else
+	{
+		g_console.external_launcher_support = false;
+		SSNES_WARN("multiMAN not found, support disabled.\n");
+	}
 
 	if(argc > 1)
 	{
-		strncpy(MULTIMAN_GAME_TO_BOOT, argv[1], sizeof(MULTIMAN_GAME_TO_BOOT));
+		g_console.autostart_game = true;
+		SSNES_LOG("Started from multiMAN, will auto-start game\n");
 	}
-#else
-	g_console.return_to_multiman_enable = false;
-#endif
+	else
+		g_console.autostart_game = false;
 
 	memset(&size, 0x00, sizeof(CellGameContentSize));
 
@@ -312,7 +324,7 @@ static void get_environment_settings(void)
 
 		ret = cellGameContentPermit(contentInfoPath, usrDirPath);
 
-		if(g_console.return_to_multiman_enable)
+		if(g_console.external_launcher_support)
 		{
 			snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
 			snprintf(usrDirPath, sizeof(usrDirPath), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
@@ -342,6 +354,29 @@ static void get_environment_settings(void)
 		snprintf(DEFAULT_MENU_SHADER_FILE, sizeof(DEFAULT_MENU_SHADER_FILE), "%s/shaders/Borders/Menu/border-only-ssnes.cg", usrDirPath);
 		snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/ssnes.cfg", usrDirPath);
 	}
+
+	g_extern.verbose = false;
+}
+
+static void startup_ssnes(void)
+{
+	if(g_console.initialize_ssnes_enable)
+	{
+		if(g_console.emulator_initialized)
+			ssnes_main_deinit();
+
+		struct ssnes_main_wrap args = {
+			.verbose = g_extern.verbose,
+			.config_path = SYS_CONFIG_FILE,
+			.sram_path = g_console.default_sram_dir_enable ? g_console.default_sram_dir : NULL,
+			.state_path = g_console.default_savestate_dir_enable ? g_console.default_savestate_dir : NULL,
+			.rom_path = g_console.rom_path
+		};
+
+		int init_ret = ssnes_main_init_wrap(&args);
+		g_console.emulator_initialized = 1;
+		g_console.initialize_ssnes_enable = 0;
+	}
 }
 
 int main(int argc, char *argv[])
@@ -356,7 +391,7 @@ int main(int argc, char *argv[])
 	cellSysmoduleLoadModule(CELL_SYSMODULE_PNGDEC);
 	cellSysmoduleLoadModule(CELL_SYSMODULE_JPGDEC);
 
-	get_environment_settings();
+	get_environment_settings(argc);
 
 	ssnes_main_clear_state();
 
@@ -384,6 +419,14 @@ int main(int argc, char *argv[])
 	menu_init();
 	g_console.mode_switch = MODE_MENU;
 
+	if(g_console.autostart_game)
+	{
+		strncpy(g_console.rom_path, argv[1], sizeof(g_console.rom_path));
+		g_console.initialize_ssnes_enable = 1;
+		g_console.mode_switch = MODE_EMULATION;
+		startup_ssnes();
+	}
+
 begin_loop:
 	if(g_console.mode_switch == MODE_EMULATION)
 	{
@@ -398,29 +441,8 @@ begin_loop:
 	else if(g_console.mode_switch == MODE_MENU)
 	{
 		menu_loop();
-		if(g_console.initialize_ssnes_enable)
-		{
-			if(g_console.emulator_initialized)
-				ssnes_main_deinit();
-
-			struct ssnes_main_wrap args = {
-			.verbose = g_extern.verbose,
-			.config_path = SYS_CONFIG_FILE,
-			.sram_path = g_console.default_sram_dir_enable ? g_console.default_sram_dir : NULL,
-			.state_path = g_console.default_savestate_dir_enable ? g_console.default_savestate_dir : NULL,
-			.rom_path = g_console.rom_path
-			};
-
-			int init_ret = ssnes_main_init_wrap(&args);
-			g_console.emulator_initialized = 1;
-			g_console.initialize_ssnes_enable = 0;
-		}
+		startup_ssnes();
 	}
-#ifdef MULTIMAN_SUPPORT
-	else if(g_console.mode_switch == MODE_MULTIMAN_STARTUP)
-	{
-	}
-#endif
 	else
 		goto begin_shutdown;
 
@@ -429,7 +451,19 @@ begin_loop:
 begin_shutdown:
 	if(path_file_exists(SYS_CONFIG_FILE))
 		save_settings();
-	ps3_input_deinit();
-	ps3_video_deinit();
-	sys_process_exit(0);
+	if(g_console.emulator_initialized)
+		ssnes_main_deinit();
+	else
+	{
+		cell_pad_input_deinit();
+		ps3_video_deinit();
+	}
+	ssnes_main_clear_state();
+	if(g_console.return_to_launcher)
+	{
+		sys_spu_initialize(6, 0);
+		sys_game_process_exitspawn2((char*)MULTIMAN_EXECUTABLE, NULL, NULL, NULL, 0, 2048,
+		SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+	}
+	return 1;
 }
