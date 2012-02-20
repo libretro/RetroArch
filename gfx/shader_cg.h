@@ -60,6 +60,10 @@ struct gl_cg_cgp_info
    bool filter_linear[2];
    bool render_to_texture;
    float fbo_scale;
+
+   const char *lut_texture_path;
+   const char *lut_texture_id;
+   bool lut_texture_absolute;
 };
 
 bool gl_cg_save_cgp(const char *path, const struct gl_cg_cgp_info *info);
