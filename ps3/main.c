@@ -286,7 +286,7 @@ static void get_environment_settings(int argc)
 	CellGameContentSize size;
 	char dirName[CELL_GAME_DIRNAME_SIZE];
 
-	SSNES_LOG("Registering callback...\n");
+	SSNES_LOG("Registering system utility callback...\n");
 	cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
 
 	if(path_file_exists(MULTIMAN_EXECUTABLE))
@@ -471,6 +471,14 @@ begin_shutdown:
 		ps3_video_deinit();
 	}
 	ssnes_main_clear_state();
+
+	if(g_console.screenshots_enable)
+		cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+	cellSysmoduleUnloadModule(CELL_SYSMODULE_JPGDEC);
+	cellSysmoduleUnloadModule(CELL_SYSMODULE_PNGDEC);
+	cellSysmoduleUnloadModule(CELL_SYSMODULE_AVCONF_EXT);
+	cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
+
 	if(g_console.return_to_launcher)
 	{
 		sys_spu_initialize(6, 0);
