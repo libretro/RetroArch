@@ -24,6 +24,7 @@
 #include <stdint.h>
 
 bool gl_cg_init(const char *path);
+bool gl_cg_reinit(const char *path);
 
 void gl_cg_deinit(void);
 

@@ -290,16 +290,37 @@ void gl_cg_set_params(unsigned width, unsigned height,
 #endif
 }
 
-void gl_cg_deinit(void)
+static void gl_cg_deinit_progs(void)
 {
-   if (!cg_active)
-      return;
+   cgGLUnbindProgram(cgFProf);
+   cgGLUnbindProgram(cgVProf);
 
+   // Programs may alias [0].
+   for (unsigned i = 1; i < SSNES_CG_MAX_SHADERS; i++)
+   {
+      if (prg[i].fprg != prg[0].fprg)
+         cgDestroyProgram(prg[i].fprg);
+      if (prg[i].vprg != prg[0].vprg)
+         cgDestroyProgram(prg[i].vprg);
+   }
+
+   if (prg[0].fprg)
+      cgDestroyProgram(prg[0].fprg);
+   if (prg[0].vprg)
+      cgDestroyProgram(prg[0].vprg);
+
+   memset(prg, 0, sizeof(prg));
+}
+
+static void gl_cg_deinit_state(void)
+{
    gl_cg_reset_attrib();
 
    cg_active = false;
    cg_shader_num = 0;
-   memset(prg, 0, sizeof(prg));
+
+   gl_cg_deinit_progs();
+
    memset(cg_scale, 0, sizeof(cg_scale));
    memset(fbo_smooth, 0, sizeof(fbo_smooth));
 
@@ -313,17 +334,46 @@ void gl_cg_deinit(void)
       snes_tracker = NULL;
    }
 #endif
+}
 
+// Final deinit.
+static void gl_cg_deinit_context_state(void)
+{
    if (menu_cg_program)
    {
       free(menu_cg_program);
       menu_cg_program = NULL;
    }
 
+   // Destroying context breaks on PS3 for some unknown reason.
 #ifndef __CELLOS_LV2__
-   cgDestroyContext(cgCtx);
-   cgCtx = NULL;
+   if (cgCtx)
+   {
+      cgDestroyContext(cgCtx);
+      cgCtx = NULL;
+   }
 #endif
+}
+
+// Full deinit.
+void gl_cg_deinit(void)
+{
+   if (!cg_active)
+      return;
+
+   gl_cg_deinit_state();
+   gl_cg_deinit_context_state();
+}
+
+// Deinit as much as possible without resetting context (broken on PS3),
+// and reinit cleanly.
+// If this fails, we're kinda screwed without resetting everything on PS3.
+bool gl_cg_reinit(const char *path)
+{
+   if (cg_active)
+      gl_cg_deinit_state();
+
+   return gl_cg_init(path);
 }
 
 #define SET_LISTING(type) \
@@ -1066,7 +1116,9 @@ bool gl_cg_init(const char *path)
    cgRTCgcInit();
 #endif
 
-   cgCtx = cgCreateContext();
+   if (!cgCtx)
+      cgCtx = cgCreateContext();
+
    if (cgCtx == NULL)
    {
       SSNES_ERR("Failed to create Cg context\n");
