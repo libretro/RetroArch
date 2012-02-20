@@ -335,8 +335,20 @@ void init_audio(void)
    ssnes_assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
    ssnes_assert(g_extern.audio_data.outsamples = (float*)malloc(max_bufsamples * sizeof(float) * AUDIO_MAX_RATIO));
 
-   g_extern.audio_data.src_ratio =
+   g_extern.audio_data.orig_src_ratio =
+      g_extern.audio_data.src_ratio =
       (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
+
+   if (g_settings.audio.rate_control)
+   {
+      if (driver.audio->buffer_size && driver.audio->write_avail)
+      {
+         g_extern.audio_data.driver_buffer_size = driver.audio->buffer_size(driver.audio_data);
+         g_extern.audio_data.rate_control = true;
+      }
+      else
+         SSNES_WARN("Audio rate control was desired, but driver does not support needed features.\n");
+   }
 
 #ifdef HAVE_DYLIB
    init_dsp_plugin();

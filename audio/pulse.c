@@ -30,6 +30,7 @@ typedef struct
    pa_context *context;
    pa_stream *stream;
    bool nonblock;
+   size_t buffer_size;
 } pa_t;
 
 static void pulse_free(void *data)
@@ -153,6 +154,8 @@ static void *pulse_init(const char *device, unsigned rate, unsigned latency)
    buffer_attr.minreq = -1;
    buffer_attr.fragsize = -1;
 
+   pa->buffer_size = buffer_attr.tlength;
+
    if (pa_stream_connect_playback(pa->stream, NULL, &buffer_attr, PA_STREAM_ADJUST_LATENCY, NULL, NULL) < 0)
       goto error;
 
@@ -177,8 +180,9 @@ static ssize_t pulse_write(void *data, const void *buf, size_t size)
    pa_t *pa = (pa_t*)data;
 
    pa_threaded_mainloop_lock(pa->mainloop);
-   unsigned length = pa_stream_writable_size(pa->stream);
+   size_t length = pa_stream_writable_size(pa->stream);
    pa_threaded_mainloop_unlock(pa->mainloop);
+
    while (length < size)
    {
       pa_threaded_mainloop_wait(pa->mainloop);
@@ -222,6 +226,21 @@ static bool pulse_use_float(void *data)
    return true;
 }
 
+static size_t pulse_write_avail(void *data)
+{
+   pa_t *pa = (pa_t*)data;
+   pa_threaded_mainloop_lock(pa->mainloop);
+   size_t length = pa_stream_writable_size(pa->stream);
+   pa_threaded_mainloop_unlock(pa->mainloop);
+   return length;
+}
+
+static size_t pulse_buffer_size(void *data)
+{
+   pa_t *pa = (pa_t*)data;
+   return pa->buffer_size;
+}
+
 const audio_driver_t audio_pulse = {
    pulse_init,
    pulse_write,
@@ -230,6 +249,8 @@ const audio_driver_t audio_pulse = {
    pulse_set_nonblock_state,
    pulse_free,
    pulse_use_float,
-   "pulse"
+   "pulse",
+   pulse_write_avail,
+   pulse_buffer_size,
 };
 

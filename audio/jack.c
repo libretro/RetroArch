@@ -41,6 +41,7 @@ typedef struct jack
 
    pthread_cond_t cond;
    pthread_mutex_t cond_lock;
+   size_t buffer_size;
 } jack_t;
 
 static int process_cb(jack_nframes_t nframes, void *data)
@@ -163,6 +164,8 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
    }
 
    bufsize = find_buffersize(jd, latency);
+   jd->buffer_size = bufsize;
+
    SSNES_LOG("JACK: Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));
    for (int i = 0; i < 2; i++)
    {
@@ -304,6 +307,18 @@ static bool ja_use_float(void *data)
    return true;
 }
 
+static size_t ja_write_avail(void *data)
+{
+   jack_t *jd = (jack_t*)data;
+   return jack_ringbuffer_write_space(jd->buffer[0]);
+}
+
+static size_t ja_buffer_size(void *data)
+{
+   jack_t *jd = (jack_t*)data;
+   return jd->buffer_size;
+}
+
 const audio_driver_t audio_jack = {
    ja_init,
    ja_write,
@@ -312,6 +327,8 @@ const audio_driver_t audio_jack = {
    ja_set_nonblock_state,
    ja_free,
    ja_use_float,
-   "jack"
+   "jack",
+   ja_write_avail,
+   ja_buffer_size,
 };
 

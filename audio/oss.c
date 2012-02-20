@@ -58,8 +58,8 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
       return NULL;
    }
 
-   int frags = (latency * rate * 4)/(1000 * (1 << 9));
-   int frag = (frags << 16) | 9;
+   int frags = (latency * rate * 4)/(1000 * (1 << 10));
+   int frag = (frags << 16) | 10;
 
    if (ioctl(*fd, SNDCTL_DSP_SETFRAGMENT, &frag) < 0)
    {
@@ -135,7 +135,7 @@ static void oss_set_nonblock_state(void *data, bool state)
    else
       rc = fcntl(*fd, F_SETFL, fcntl(*fd, F_GETFL) & (~O_NONBLOCK));
    if (rc != 0)
-      fprintf(stderr, "SSNES [ERROR]: Could not set nonblocking on OSS file descriptor. Will not be able to fast-forward.\n");
+      SSNES_WARN("Could not set nonblocking on OSS file descriptor. Will not be able to fast-forward.\n");
 }
 
 static void oss_free(void *data)
@@ -147,6 +147,34 @@ static void oss_free(void *data)
    free(fd);
 }
 
+static size_t oss_write_avail(void *data)
+{
+   int *fd = (int*)data;
+
+   audio_buf_info info;
+   if (ioctl(*fd, SNDCTL_DSP_GETOSPACE, &info) < 0)
+   {
+      SSNES_ERR("SNDCTL_DSP_GETOSPACE failed ...\n");
+      return 0;
+   }
+
+   return info.bytes;
+}
+
+static size_t oss_buffer_size(void *data)
+{
+   int *fd = (int*)data;
+
+   audio_buf_info info;
+   if (ioctl(*fd, SNDCTL_DSP_GETOSPACE, &info) < 0)
+   {
+      SSNES_ERR("SNDCTL_DSP_GETOSPACE failed ...\n");
+      return 1; // Return something non-zero to avoid SIGFPE.
+   }
+
+   return info.fragsize * info.fragstotal;
+}
+
 const audio_driver_t audio_oss = {
    oss_init,
    oss_write,
@@ -155,6 +183,8 @@ const audio_driver_t audio_oss = {
    oss_set_nonblock_state,
    oss_free,
    NULL,
-   "oss"
+   "oss",
+   oss_write_avail,
+   oss_buffer_size,
 };
 

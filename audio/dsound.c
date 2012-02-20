@@ -373,6 +373,20 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
    return written;
 }
 
+static size_t dsound_write_avail(void *data)
+{
+   dsound_t *ds = (dsound_t*)data;
+   EnterCriticalSection(&ds->crit);
+   size_t avail = fifo_write_avail(ds->buffer);
+   LeaveCriticalSection(&ds->crit);
+   return avail;
+}
+
+static size_t dsound_buffer_size(void *data)
+{
+   return 4 * 1024;
+}
+
 const audio_driver_t audio_dsound = {
    dsound_init,
    dsound_write,
@@ -381,6 +395,8 @@ const audio_driver_t audio_dsound = {
    dsound_set_nonblock_state,
    dsound_free,
    NULL,
-   "dsound"
+   "dsound",
+   dsound_write_avail,
+   dsound_buffer_size,
 };
 
