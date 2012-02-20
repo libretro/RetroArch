@@ -908,17 +908,17 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
 	gl->vsync = video->vsync;
 
-	SSNES_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
+	SSNES_LOG("GL: Using resolution %ux%u.\n", gl->win_width, gl->win_height);
 
-	SSNES_LOG("GL: Initializing debug fonts \n");
+	SSNES_LOG("GL: Initializing debug fonts...\n");
 	psgl_init_dbgfont(gl);
 
-	SSNES_LOG("Initializing menu shader\n");
+	SSNES_LOG("Initializing menu shader...\n");
 	gl_cg_set_menu_shader(DEFAULT_MENU_SHADER_FILE);
 
 	if (!gl_shader_init())
 	{
-		SSNES_ERR("Menu shader init failed.\n");
+		SSNES_ERR("Menu shader initialization failed.\n");
 		psgl_deinit(gl);
 		free(gl);
 		return NULL;
@@ -950,8 +950,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 	gl->base_size = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
 	glEnable(GL_TEXTURE_2D);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_DITHER);
 	glClearColor(0, 0, 0, 1);
 
 	glMatrixMode(GL_MODELVIEW);
@@ -1051,11 +1049,6 @@ static void ps3graphics_set_swap_block_swap(void * data, bool toggle)
 	(void)data;
 	gl_t *gl = g_gl;
 	gl->block_swap = toggle;
-
-	if(toggle)
-		SSNES_LOG("Swap is set to blocked\n");
-	else
-		SSNES_LOG("Swap is set to non-blocked\n");
 }
 
 static void ps3graphics_swap(void * data)
@@ -1066,16 +1059,17 @@ static void ps3graphics_swap(void * data)
 	cellSysutilCheckCallback();
 }
 
-const video_driver_t video_gl = {
-   .init = gl_init,
-   .frame = gl_frame,
-   .alive = gl_alive,
-   .set_nonblock_state = gl_set_nonblock_state,
-   .focus = gl_focus,
-   .free = gl_free,
-   .ident = "gl",
-   .set_swap_block_state = ps3graphics_set_swap_block_swap,
-   .swap = ps3graphics_swap
+const video_driver_t video_gl = 
+{
+	.init = gl_init,
+	.frame = gl_frame,
+	.alive = gl_alive,
+	.set_nonblock_state = gl_set_nonblock_state,
+	.focus = gl_focus,
+	.free = gl_free,
+	.ident = "gl",
+	.set_swap_block_state = ps3graphics_set_swap_block_swap,
+	.swap = ps3graphics_swap
 };
 
 static void get_all_available_resolutions (void)
@@ -1223,29 +1217,29 @@ bool ps3_setup_texture(void)
 
 void ps3_set_filtering(unsigned index, bool set_smooth)
 {
-   gl_t *gl = g_gl;
+	gl_t *gl = g_gl;
 
-   if (!gl)
-      return;
+	if (!gl)
+		return;
 
-   if (index == 1)
-   {
-      // Apply to all PREV textures.
-      for (unsigned i = 0; i < TEXTURES; i++)
-      {
-         glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-      }
-   }
-   else if (index >= 2 && gl->fbo_inited)
-   {
-      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index - 2]);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-   }
+	if (index == 1)
+	{
+		// Apply to all PREV textures.
+		for (unsigned i = 0; i < TEXTURES; i++)
+		{
+			glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+		}
+	}
+	else if (index >= 2 && gl->fbo_inited)
+	{
+		glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index - 2]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+	}
 
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+	glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
 void ps3graphics_set_overscan(bool overscan_enable, float amount, bool recalculate_viewport)
