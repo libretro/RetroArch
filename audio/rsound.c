@@ -181,6 +181,24 @@ static void rs_free(void *data)
    free(rsd);
 }
 
+static size_t rs_write_avail(void *data)
+{
+   rsd_t *rsd = (rsd_t*)data;
+
+   if (rsd->has_error)
+      return 0;
+   rsd_callback_lock(rsd->rd);
+   size_t val = fifo_write_avail(rsd->buffer);
+   rsd_callback_unlock(rsd->rd);
+   return val;
+}
+
+static size_t rs_buffer_size(void *data)
+{
+   (void)data;
+   return 1024 * 4;
+}
+
 const audio_driver_t audio_rsound = {
    rs_init,
    rs_write,
@@ -189,6 +207,8 @@ const audio_driver_t audio_rsound = {
    rs_set_nonblock_state,
    rs_free,
    NULL,
-   "rsound"
+   "rsound",
+   rs_write_avail,
+   rs_buffer_size,
 };
    

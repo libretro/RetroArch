@@ -231,6 +231,16 @@ static const int out_latency = 64;
 // Will sync audio. (recommended) 
 static const bool audio_sync = true;
 
+// Experimental rate control
+static const bool rate_control = false;
+
+// Rate control delta. Defines how much rate_control is allowed to adjust input rate.
+static const float rate_control_delta = 0.005;
+
+//////////////
+// Misc
+//////////////
+
 // Enables use of rewind. This will incur some memory footprint depending on the save state buffer.
 // This rewind only works when using bSNES core atm.
 static const bool rewind_enable = false;

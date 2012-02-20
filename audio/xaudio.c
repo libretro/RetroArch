@@ -24,6 +24,7 @@ typedef struct
 {
    xaudio2_t *xa;
    bool nonblock;
+   size_t bufsize;
 } xa_t;
 
 static void *xa_init(const char *device, unsigned rate, unsigned latency)
@@ -39,7 +40,9 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
 
    SSNES_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize * 1000 / rate);
 
-   xa->xa = xaudio2_new(rate, 2, bufsize * 2 * sizeof(float));
+   xa->bufsize = bufsize * 2 * sizeof(float);
+
+   xa->xa = xaudio2_new(rate, 2, xa->bufsize);
    if (!xa->xa)
    {
       SSNES_ERR("Failed to init XAudio2.\n");
@@ -103,6 +106,18 @@ static void xa_free(void *data)
    }
 }
 
+static size_t xa_write_avail(void *data)
+{
+   xa_t *xa = (xa_t*)data;
+   return xaudio2_write_avail(xa->xa);
+}
+
+static size_t xa_buffer_size(void *data)
+{
+   xa_t *xa = (xa_t*)data;
+   return xa->bufsize;
+}
+
 const audio_driver_t audio_xa = {
    xa_init,
    xa_write,
@@ -111,5 +126,7 @@ const audio_driver_t audio_xa = {
    xa_set_nonblock_state,
    xa_free,
    xa_use_float,
-   "xaudio"
+   "xaudio",
+   xa_write_avail,
+   xa_buffer_size,
 };
