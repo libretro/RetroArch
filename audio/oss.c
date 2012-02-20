@@ -58,8 +58,8 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
       return NULL;
    }
 
-   int frags = (latency * rate * 4)/(1000 * (1 << 9));
-   int frag = (frags << 16) | 9;
+   int frags = (latency * rate * 4)/(1000 * (1 << 10));
+   int frag = (frags << 16) | 10;
 
    if (ioctl(*fd, SNDCTL_DSP_SETFRAGMENT, &frag) < 0)
    {
