@@ -785,5 +785,123 @@ void config_read_keybinds(config_file_t *conf)
       read_keybinds_player(conf, i);
 }
 
+static void save_keybind_key(config_file_t *conf,
+      const struct bind_map *map, const struct snes_keybind *bind)
+{
+   char ascii[2] = {0};
+   const char *btn = ascii;
+
+   if (bind->key >= SK_a && bind->key <= SK_z)
+      ascii[0] = 'a' + (bind->key - SK_a);
+   else
+   {
+      for (unsigned i = 0; i < sizeof(sk_map) / sizeof(sk_map[0]); i++)
+      {
+         if (sk_map[i].key == bind->key)
+         {
+            btn = sk_map[i].str;
+            break;
+         }
+      }
+   }
+
+   config_set_string(conf, map->key, btn);
+}
+
+#ifndef SSNES_CONSOLE
+static void save_keybind_hat(config_file_t *conf,
+      const struct bind_map *map, const struct snes_keybind *bind)
+{
+   unsigned hat = GET_HAT(bind->joykey);
+   const char *dir = NULL;
+
+   switch (GET_HAT_DIR(hat))
+   {
+      case HAT_UP_MASK:
+         dir = "up";
+         break;
+
+      case HAT_DOWN_MASK:
+         dir = "down";
+         break;
+
+      case HAT_LEFT_MASK:
+         dir = "left";
+         break;
+
+      case HAT_RIGHT_MASK:
+         dir = "right";
+         break;
+
+      default:
+         ssnes_assert(0);
+   }
+
+   char config[16];
+   snprintf(config, sizeof(config), "h%u%s", hat, dir);
+   config_set_string(conf, map->btn, config);
+}
+#endif
+
+static void save_keybind_joykey(config_file_t *conf,
+      const struct bind_map *map, const struct snes_keybind *bind)
+{
+   if (bind->joykey == NO_BTN)
+      config_set_string(conf, map->btn, "nul");
+#ifndef SSNES_CONSOLE // Consoles don't understand hats.
+   else if (GET_HAT_DIR(bind->joykey))
+      save_keybind_hat(conf, map, bind);
+#endif
+   else
+      config_set_int(conf, map->btn, bind->joykey);
+}
+
+static void save_keybind_axis(config_file_t *conf,
+      const struct bind_map *map, const struct snes_keybind *bind)
+{
+   unsigned axis = 0;
+   char dir = '\0';
+
+   if (bind->joyaxis == AXIS_NONE)
+      config_set_string(conf, map->axis, "nul");
+   else if (AXIS_NEG_GET(bind->joyaxis) != NO_BTN)
+   {
+      dir = '-';
+      axis = AXIS_NEG_GET(bind->joyaxis);
+   }
+   else if (AXIS_POS_GET(bind->joyaxis) != NO_BTN)
+   {
+      dir = '+';
+      axis = AXIS_POS_GET(bind->joyaxis);
+   }
+
+   char config[16];
+   snprintf(config, sizeof(config), "%c%u", dir, axis);
+   config_set_string(conf, map->axis, config);
+}
+
+static void save_keybind(config_file_t *conf,
+      const struct bind_map *map, const struct snes_keybind *bind)
+{
+   if (!map->valid)
+      return;
+
+   save_keybind_key(conf, map, bind);
+   save_keybind_joykey(conf, map, bind);
+   save_keybind_axis(conf, map, bind);
+}
+
+static void save_keybinds_player(config_file_t *conf, unsigned i)
+{
+   for (unsigned j = 0; j < SSNES_BIND_LIST_END; j++)
+      save_keybind(conf, &bind_maps[i][j], &g_settings.input.binds[i][j]);
+}
+
+void config_save_keybinds(config_file_t *conf)
+{
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+      save_keybinds_player(conf, i);
+}
+
 #endif
 
