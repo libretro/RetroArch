@@ -223,7 +223,7 @@ static void update_element(
 // Updates 16-bit input in same format as SNES itself.
 static void update_input(snes_tracker_t *tracker)
 {
-   if (!driver.input_data)
+   if (driver.input == NULL)
       return;
 
    static const unsigned buttons[] = {
