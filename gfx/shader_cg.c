@@ -455,8 +455,8 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
    const char *id = strtok(textures, ";");;
    while (id && lut_textures_num < MAX_TEXTURES)
    {
-      char *path;
-      if (!config_get_string(conf, id, &path))
+      char path[PATH_MAX];
+      if (!config_get_array(conf, id, path, sizeof(path)))
       {
          SSNES_ERR("Cannot find path to texture \"%s\" ...\n", id);
          ret = false;
@@ -465,29 +465,38 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
 
       char id_filter[64];
       print_buf(id_filter, "%s_linear", id);
-      bool smooth;
+
+      bool smooth = true;
       if (!config_get_bool(conf, id_filter, &smooth))
          smooth = true;
 
+      char id_absolute[64];
+      print_buf(id_absolute, "%s_absolute", id);
+
+      bool absolute = false;
+      if (!config_get_bool(conf, id_absolute, &absolute))
+         absolute = false;
+
       char image_path[512];
-      print_buf(image_path, "%s%s", dir_path, path);
+      if (absolute)
+         print_buf(image_path, "%s", path);
+      else
+         print_buf(image_path, "%s%s", dir_path, path);
 
       SSNES_LOG("Loading image from: \"%s\".\n", image_path);
       struct texture_image img;
       if (!texture_image_load(image_path, &img))
       {
          SSNES_ERR("Failed to load picture ...\n");
-         free(path);
          ret = false;
          goto end;
       }
 
-      strlcpy(lut_textures_uniform[lut_textures_num], id, sizeof(lut_textures_uniform[lut_textures_num]));
+      strlcpy(lut_textures_uniform[lut_textures_num],
+            id, sizeof(lut_textures_uniform[lut_textures_num]));
 
       load_texture_data(&lut_textures[lut_textures_num], &img, smooth);
       lut_textures_num++;
-
-      free(path);
 
       id = strtok(NULL, ";");
    }
@@ -1217,9 +1226,9 @@ bool gl_cg_save_cgp(const char *path, const struct gl_cg_cgp_info *info)
    unsigned shaders = info->shader[1] && *info->shader[1] ? 2 : 1;
    fprintf(file, "shaders = %u\n", shaders);
 
-   fprintf(file, "shader0 = %s\n", info->shader[0]);
+   fprintf(file, "shader0 = \"%s\"\n", info->shader[0]);
    if (shaders == 2)
-      fprintf(file, "shader1 = %s\n", info->shader[1]);
+      fprintf(file, "shader1 = \"%s\"\n", info->shader[1]);
 
    fprintf(file, "filter_linear0 = %s\n", info->filter_linear[0] ? "true" : "false");
 
@@ -1228,6 +1237,17 @@ bool gl_cg_save_cgp(const char *path, const struct gl_cg_cgp_info *info)
       fprintf(file, "filter_linear1 = %s\n", info->filter_linear[1] ? "true" : "false");
       fprintf(file, "scale_type0 = source\n");
       fprintf(file, "scale0 = %.1f\n", info->fbo_scale);
+   }
+
+   if (info->lut_texture_path && info->lut_texture_id)
+   {
+      fprintf(file, "textures = %s\n", info->lut_texture_id);
+      fprintf(file, "%s = \"%s\"\n",
+            info->lut_texture_id, info->lut_texture_path);
+
+      fprintf(file, "%s_absolute = %s\n",
+            info->lut_texture_id,
+            info->lut_texture_absolute ? "true" : "false");
    }
 
    fclose(file);
