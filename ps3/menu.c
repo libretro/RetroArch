@@ -316,14 +316,22 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), ps3_get_resolution_label(g_console.supported_resolutions[g_console.current_resolution_index]));
 			break;
 		case SETTING_SHADER_PRESETS:
-			/* add a comment */
+			{
+				char fname[MAX_PATH_LENGTH];
+				if(g_console.cgp_path == DEFAULT_PRESET_FILE)
+					menu_obj->items[currentsetting].text_color = GREEN;
+				else
+					menu_obj->items[currentsetting].text_color = ORANGE;
+				fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), fname);
+			}
 			break;
 		case SETTING_BORDER:
 			break;
 		case SETTING_SHADER:
 			{
 				char fname[MAX_PATH_LENGTH];
-				fill_pathname_base(&fname, g_settings.video.cg_shader_path, sizeof(fname));
+				fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
 				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
 				if(strcmp(g_settings.video.cg_shader_path,DEFAULT_SHADER_FILE) == 0)
@@ -335,7 +343,7 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 		case SETTING_SHADER_2:
 			{
 				char fname[MAX_PATH_LENGTH];
-				fill_pathname_base(&fname, g_settings.video.second_pass_shader, sizeof(fname));
+				fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
 				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
 				if(strcmp(g_settings.video.second_pass_shader,DEFAULT_SHADER_FILE) == 0)
@@ -343,8 +351,6 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 				else
 					menu_obj->items[currentsetting].text_color = ORANGE;
 			}
-			break;
-		case SETTING_GAME_AWARE_SHADER:
 			break;
 		case SETTING_FONT_SIZE:
 			if(g_console.menu_font_size == 1.0f)
@@ -672,6 +678,25 @@ static void menu_reinit_settings (void)
 	menu_init_settings_pages(&menu_controlssettings);
 }
 
+static void apply_scaling (unsigned init_mode)
+{
+	switch(init_mode)
+	{
+		case FBO_DEINIT:
+			gl_deinit_fbo(g_gl);
+			break;
+		case FBO_INIT:
+			gl_init_fbo(g_gl, SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_x),
+					SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_y));
+			break;
+		case FBO_REINIT:
+			gl_deinit_fbo(g_gl);
+			gl_init_fbo(g_gl, SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_x),
+					SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_y));
+			break;
+	}
+}
+
 static void select_file(uint32_t menu_id)
 {
 	char extensions[256], title[256], object[256], comment[256], dir_path[MAX_PATH_LENGTH],
@@ -685,13 +710,6 @@ static void select_file(uint32_t menu_id)
 
 	switch(menu_id)
 	{
-		case GAME_AWARE_SHADER_CHOICE:
-			strncpy(dir_path, GAME_AWARE_SHADER_DIR_PATH, sizeof(dir_path));
-			strncpy(extensions, "cfg|CFG", sizeof(extensions));
-			strncpy(title, "GAME AWARE SHADER SELECTION", sizeof(title));
-			strncpy(object, "Game Aware Shader", sizeof(object));
-			strncpy(comment, "INFO - Select a 'Game Aware Shader' script from the menu by pressing X.", sizeof(comment));
-			break;
 		case SHADER_CHOICE:
 			strncpy(dir_path, SHADERS_DIR_PATH, sizeof(dir_path));
 			strncpy(extensions, "cg|CG", sizeof(extensions));
@@ -701,7 +719,7 @@ static void select_file(uint32_t menu_id)
 			break;
 		case PRESET_CHOICE:
 			strncpy(dir_path, PRESETS_DIR_PATH, sizeof(dir_path));
-			strncpy(extensions, "conf|CONF", sizeof(extensions));
+			strncpy(extensions, "cgp", sizeof(extensions));
 			strncpy(title, "SHADER PRESETS SELECTION", sizeof(title));
 			strncpy(object, "Shader", sizeof(object));
 			strncpy(object, "Shader preset", sizeof(object));
@@ -762,8 +780,6 @@ static void select_file(uint32_t menu_id)
 
 			switch(menu_id)
 			{
-				case GAME_AWARE_SHADER_CHOICE:
-					break;
 				case SHADER_CHOICE:
 					gl_cg_load_shader(set_shader+1, path);
 					switch(set_shader+1)
@@ -778,6 +794,10 @@ static void select_file(uint32_t menu_id)
 					menu_reinit_settings();
 					break;
 				case PRESET_CHOICE:
+					strlcpy(g_console.cgp_path, path, sizeof(g_console.cgp_path));
+					apply_scaling(FBO_DEINIT);
+					gl_cg_reinit(path);
+					apply_scaling(FBO_INIT);
 					break;
 				case INPUT_PRESET_CHOICE:
 					break;
@@ -901,24 +921,6 @@ static void select_directory(uint32_t menu_id)
         old_state = state;
 }
 
-static void apply_scaling (unsigned init_mode)
-{
-	switch(init_mode)
-	{
-		case FBO_DEINIT:
-			gl_deinit_fbo(g_gl);
-			break;
-		case FBO_INIT:
-			gl_init_fbo(g_gl, SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_x),
-					SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_y));
-			break;
-		case FBO_REINIT:
-			gl_deinit_fbo(g_gl);
-			gl_init_fbo(g_gl, SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_x),
-					SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_y));
-			break;
-	}
-}
 
 static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 {
@@ -973,9 +975,18 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			   }
 			   break;
 			 */
-		case SETTING_GAME_AWARE_SHADER:
-			break;
 		case SETTING_SHADER_PRESETS:
+			if((CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state)))
+			{
+				menuStackindex++;
+				menuStack[menuStackindex] = menu_filebrowser;
+				menuStack[menuStackindex].enum_id = PRESET_CHOICE;
+				set_initial_dir_tmpbrowser = true;
+			}
+			if(CTRL_START(state))
+			{
+				strlcpy(g_console.cgp_path, "", sizeof(g_console.cgp_path));
+			}
 			break;
 		case SETTING_BORDER:
 			break;
@@ -2053,7 +2064,6 @@ void menu_loop(void)
 			case CONTROLS_MENU:
 				select_setting(&menuStack[menuStackindex]);
 				break;
-			case GAME_AWARE_SHADER_CHOICE:
 			case SHADER_CHOICE:
 			case PRESET_CHOICE:
 			case BORDER_CHOICE:

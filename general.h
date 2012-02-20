@@ -202,6 +202,7 @@ struct console_settings
 #ifdef _XBOX
    DWORD volume_device_type;
 #endif
+   char cgp_path[PATH_MAX];
    char rom_path[PATH_MAX];
    char aspect_ratio_name[PATH_MAX];
    char default_rom_startup_dir[PATH_MAX];
