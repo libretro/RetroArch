@@ -37,9 +37,9 @@
 #define MIN_SCALING_FACTOR (1.0f)
 #define MAX_SCALING_FACTOR (4.0f)
 
-#define IS_TIMER_NOT_EXPIRED() (g_frame_count < g_console.timer_expiration_frame_count)
-#define IS_TIMER_EXPIRED() 	(!(IS_TIMER_NOT_EXPIRED()))
-#define SET_TIMER_EXPIRATION(value) g_console.timer_expiration_frame_count = g_frame_count + value;
+#define IS_TIMER_NOT_EXPIRED(getter) (g_frame_count < getter)
+#define IS_TIMER_EXPIRED(getter) 	(!(IS_TIMER_NOT_EXPIRED(getter)))
+#define SET_TIMER_EXPIRATION(setter, value) setter = g_frame_count + value;
 
 enum
 {

@@ -44,6 +44,8 @@
 menu menuStack[25];
 int menuStackindex = 0;
 static bool set_initial_dir_tmpbrowser;
+
+char special_action_msg[256];			/* message which should be overlaid on top of the screen */
 filebrowser_t browser;				/* main file browser->for rom browser*/
 filebrowser_t tmpBrowser;			/* tmp file browser->for everything else*/
 uint32_t set_shader = 0;
@@ -155,6 +157,12 @@ static void display_menubar(uint32_t menu_enum)
 	cellDbgFontDraw();
 }
 
+static void set_text_message(const char * message, unsigned speed)
+{
+	strlcpy(special_action_msg, message, sizeof(special_action_msg));
+	SET_TIMER_EXPIRATION(g_console.control_timer_expiration_frame_count, speed);
+}
+
 static void browser_update(filebrowser_t * b)
 {
 	static uint64_t old_state = 0;
@@ -164,7 +172,7 @@ static void browser_update(filebrowser_t * b)
 	diff_state = old_state ^ state;
 	button_was_pressed = old_state & diff_state;
 
-	if(IS_TIMER_EXPIRED())
+	if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
 	{
 		if (CTRL_LSTICK_DOWN(state))
 		{
@@ -678,6 +686,8 @@ static void menu_reinit_settings (void)
 	menu_init_settings_pages(&menu_controlssettings);
 }
 
+#define INPUT_SCALE 2
+
 static void apply_scaling (unsigned init_mode)
 {
 	switch(init_mode)
@@ -686,13 +696,13 @@ static void apply_scaling (unsigned init_mode)
 			gl_deinit_fbo(g_gl);
 			break;
 		case FBO_INIT:
-			gl_init_fbo(g_gl, SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_x),
-					SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_y));
+			gl_init_fbo(g_gl, SSNES_SCALE_BASE * INPUT_SCALE,
+					SSNES_SCALE_BASE * INPUT_SCALE);
 			break;
 		case FBO_REINIT:
 			gl_deinit_fbo(g_gl);
-			gl_init_fbo(g_gl, SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_x),
-					SSNES_SCALE_BASE * (unsigned)(g_settings.video.fbo_scale_y));
+			gl_init_fbo(g_gl, SSNES_SCALE_BASE * INPUT_SCALE,
+					SSNES_SCALE_BASE * INPUT_SCALE);
 			break;
 	}
 }
@@ -1444,7 +1454,7 @@ static void select_setting(menu * menu_obj)
 	button_was_pressed = old_state & diff_state;
 
 
-	if(IS_TIMER_EXPIRED())
+	if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
 	{
 		/* back to ROM menu if CIRCLE is pressed */
 		if (CTRL_L1(button_was_pressed) || CTRL_CIRCLE(button_was_pressed))
@@ -1670,7 +1680,7 @@ static void ingame_menu(uint32_t menu_id)
 	uint64_t stuck_in_loop = 1;
 	static uint64_t blocking = 0;
 
-	if(IS_TIMER_EXPIRED() && blocking == false)
+	if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count) && blocking == false)
 	{
 		if(CTRL_CIRCLE(state))
 			return_to_game();
@@ -2005,11 +2015,8 @@ static void ingame_menu(uint32_t menu_id)
 	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libsnes core: %s", snes_library_id());
 	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
 	cellDbgFontDraw();
-	if(IS_TIMER_NOT_EXPIRED())
-	{
-		cellDbgFontPrintf (0.05f, 0.90f, 1.10f, WHITE, special_action_msg);
-		cellDbgFontDraw();
-	}
+	cellDbgFontPrintf (0.05f, 0.90f, 1.10f, WHITE, special_action_msg);
+	cellDbgFontDraw();
 	cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, comment);
 	cellDbgFontDraw();
 }
@@ -2084,7 +2091,7 @@ void menu_loop(void)
 
 		if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
 		{
-			SET_TIMER_EXPIRATION(30);
+			SET_TIMER_EXPIRATION(g_console.timer_expiration_frame_count, 30);
 		}
 
 		video_gl.swap(NULL);

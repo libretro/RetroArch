@@ -45,8 +45,6 @@
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 
-char special_action_msg[256]; /* message which should be overlaid on top of the screen*/
-
 char contentInfoPath[MAX_PATH_LENGTH];
 char usrDirPath[MAX_PATH_LENGTH];
 char DEFAULT_PRESET_FILE[MAX_PATH_LENGTH];
@@ -68,12 +66,6 @@ int ssnes_main(int argc, char *argv[]);
 SYS_PROCESS_PARAM(1001, 0x100000)
 
 #undef main
-
-void set_text_message(const char * message, uint32_t speed)
-{
-	snprintf(special_action_msg, sizeof(special_action_msg), message);
-	SET_TIMER_EXPIRATION(speed);
-}
 
 static void set_default_settings(void)
 {

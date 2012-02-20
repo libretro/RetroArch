@@ -57,7 +57,6 @@ enum {
 
 #define MENU_ITEM_LAST           MENU_ITEM_RETURN_TO_XMB+1
 
-extern char special_action_msg[256];
 extern unsigned g_frame_count;
 extern bool g_quitting;
 
@@ -75,5 +74,3 @@ extern char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
 extern char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
 extern char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 extern char MULTIMAN_GAME_TO_BOOT[MAX_PATH_LENGTH];
-
-extern void set_text_message(const char * message, uint32_t speed);

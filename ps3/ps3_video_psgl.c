@@ -629,79 +629,76 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 	if (gl->fbo_inited)
 	{
-		if (gl->fbo_inited)
+		// Render the rest of our passes.
+		glTexCoordPointer(2, GL_FLOAT, 0, gl->fbo_tex_coords);
+
+		// It's kinda handy ... :)
+		const struct gl_fbo_rect *prev_rect;
+		const struct gl_fbo_rect *rect;
+		struct gl_tex_info *fbo_info;
+
+		// Calculate viewports, texture coordinates etc, and render all passes from FBOs, to another FBO.
+		for (int i = 1; i < gl->fbo_pass; i++)
 		{
-			// Render the rest of our passes.
-			glTexCoordPointer(2, GL_FLOAT, 0, gl->fbo_tex_coords);
+			prev_rect = &gl->fbo_rect[i - 1];
+			rect = &gl->fbo_rect[i];
+			fbo_info = &fbo_tex_info[i - 1];
 
-			// It's kinda handy ... :)
-			const struct gl_fbo_rect *prev_rect;
-			const struct gl_fbo_rect *rect;
-			struct gl_tex_info *fbo_info;
-
-			// Calculate viewports, texture coordinates etc, and render all passes from FBOs, to another FBO.
-			for (int i = 1; i < gl->fbo_pass; i++)
-			{
-				prev_rect = &gl->fbo_rect[i - 1];
-				rect = &gl->fbo_rect[i];
-				fbo_info = &fbo_tex_info[i - 1];
-
-				GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
-				GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
-
-				set_texture_coords(gl->fbo_tex_coords, xamt, yamt);
-
-				fbo_info->tex = gl->fbo_texture[i - 1];
-				fbo_info->input_size[0] = prev_rect->img_width;
-				fbo_info->input_size[1] = prev_rect->img_height;
-				fbo_info->tex_size[0] = prev_rect->width;
-				fbo_info->tex_size[1] = prev_rect->height;
-				memcpy(fbo_info->coord, gl->fbo_tex_coords, sizeof(gl->fbo_tex_coords));
-
-				glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[i]);
-				gl_cg_use(i + 1);
-				glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
-
-				glClear(GL_COLOR_BUFFER_BIT);
-
-				// Render to FBO with certain size.
-				set_viewport(gl, rect->img_width, rect->img_height, true);
-				gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
-						prev_rect->width, prev_rect->height, 
-						gl->vp_width, gl->vp_height, g_frame_count, 
-						&tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
-
-				glDrawArrays(GL_QUADS, 0, 4);
-
-				fbo_tex_info_cnt++;
-			}
-
-			// Render our last FBO texture directly to screen.
-			prev_rect = &gl->fbo_rect[gl->fbo_pass - 1];
 			GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
 			GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
 
 			set_texture_coords(gl->fbo_tex_coords, xamt, yamt);
 
-			// Render our FBO texture to back buffer.
-			glBindFramebufferOES(GL_FRAMEBUFFER_OES, 0);
-			gl_cg_use(gl->fbo_pass + 1);
+			fbo_info->tex = gl->fbo_texture[i - 1];
+			fbo_info->input_size[0] = prev_rect->img_width;
+			fbo_info->input_size[1] = prev_rect->img_height;
+			fbo_info->tex_size[0] = prev_rect->width;
+			fbo_info->tex_size[1] = prev_rect->height;
+			memcpy(fbo_info->coord, gl->fbo_tex_coords, sizeof(gl->fbo_tex_coords));
 
-			glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
+			glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[i]);
+			gl_cg_use(i + 1);
+			glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
 			glClear(GL_COLOR_BUFFER_BIT);
-			gl->render_to_tex = false;
-			set_viewport(gl, gl->win_width, gl->win_height, false);
+
+			// Render to FBO with certain size.
+			set_viewport(gl, rect->img_width, rect->img_height, true);
 			gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
 					prev_rect->width, prev_rect->height, 
 					gl->vp_width, gl->vp_height, g_frame_count, 
 					&tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
-			glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
 			glDrawArrays(GL_QUADS, 0, 4);
 
-			glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
+			fbo_tex_info_cnt++;
 		}
+
+		// Render our last FBO texture directly to screen.
+		prev_rect = &gl->fbo_rect[gl->fbo_pass - 1];
+		GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
+		GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
+
+		set_texture_coords(gl->fbo_tex_coords, xamt, yamt);
+
+		// Render our FBO texture to back buffer.
+		glBindFramebufferOES(GL_FRAMEBUFFER_OES, 0);
+		gl_cg_use(gl->fbo_pass + 1);
+
+		glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
+
+		glClear(GL_COLOR_BUFFER_BIT);
+		gl->render_to_tex = false;
+		set_viewport(gl, gl->win_width, gl->win_height, false);
+		gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
+				prev_rect->width, prev_rect->height, 
+				gl->vp_width, gl->vp_height, g_frame_count, 
+				&tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
+
+		glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
+		glDrawArrays(GL_QUADS, 0, 4);
+
+		glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
 	}
 
 	memmove(gl->prev_info + 1, gl->prev_info, sizeof(tex_info) * (TEXTURES - 1));
