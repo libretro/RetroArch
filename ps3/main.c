@@ -60,7 +60,6 @@ char SHADERS_DIR_PATH[MAX_PATH_LENGTH];
 char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
 char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
 char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
-char MULTIMAN_GAME_TO_BOOT[MAX_PATH_LENGTH];
 
 const char * MULTIMAN_EXECUTABLE = "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF";
 
@@ -287,7 +286,7 @@ static void get_environment_settings(int argc)
 	CellGameContentSize size;
 	char dirName[CELL_GAME_DIRNAME_SIZE];
 
-	SSNES_LOG("Registering Callback\n");
+	SSNES_LOG("Registering callback...\n");
 	cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
 
 	if(path_file_exists(MULTIMAN_EXECUTABLE))
@@ -304,7 +303,7 @@ static void get_environment_settings(int argc)
 	if(argc > 1)
 	{
 		g_console.autostart_game = true;
-		SSNES_LOG("Started from multiMAN, will auto-start game\n");
+		SSNES_LOG("Started from multiMAN, will auto-start game.\n");
 	}
 	else
 		g_console.autostart_game = false;
@@ -314,13 +313,26 @@ static void get_environment_settings(int argc)
 	int ret = cellGameBootCheck(&get_type, &get_attributes, &size, dirName);
 	if(ret < 0)
 	{
-		SSNES_ERR("cellGameBootCheck() Error: 0x%x\n", ret);
+		SSNES_ERR("cellGameBootCheck() Error: 0x%x.\n", ret);
 	}
 	else
 	{
-		SSNES_LOG("cellGameBootCheck() OK\n");
-		SSNES_LOG(" get_type = [%d] get_attributes = [0x%08x] dirName = [%s]\n", get_type, get_attributes, dirName);
-		SSNES_LOG(" hddFreeSizeKB = [%d] sizeKB = [%d] sysSizeKB = [%d]\n", size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
+		SSNES_LOG("cellGameBootCheck() OK.\n");
+		SSNES_LOG("Directory name: [%s].\n", dirName);
+		SSNES_LOG(" HDD Free Size (in KB) = [%d] Size (in KB) = [%d] System Size (in KB) = [%d].\n", size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
+
+		switch(get_type)
+		{
+			case CELL_GAME_GAMETYPE_DISC:
+				SSNES_LOG("SSNES was launched on Optical Disc Drive.\n");
+				break;
+			case CELL_GAME_GAMETYPE_HDD:
+				SSNES_LOG("SSNES was launched on HDD.\n");
+				break;
+		}
+
+		if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) == CELL_GAME_ATTRIBUTE_APP_HOME)
+			SSNES_LOG("SSNES was launched from host machine (APP_HOME).\n");
 
 		ret = cellGameContentPermit(contentInfoPath, usrDirPath);
 
@@ -336,9 +348,9 @@ static void get_environment_settings(int argc)
 		}
 		else
 		{
-			SSNES_LOG("cellGameContentPermit() OK\n");
-			SSNES_LOG("contentInfoPath:[%s]\n", contentInfoPath);
-			SSNES_LOG("usrDirPath:[%s]\n", usrDirPath);
+			SSNES_LOG("cellGameContentPermit() OK.\n");
+			SSNES_LOG("contentInfoPath : [%s].\n", contentInfoPath);
+			SSNES_LOG("usrDirPath : [%s].\n", usrDirPath);
 		}
 
 		/* now we fill in all the variables */
