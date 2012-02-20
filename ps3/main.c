@@ -271,8 +271,6 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 			g_quitting = true;
 			g_console.ingame_menu_enable = false;
 			g_console.mode_switch = MODE_EXIT;
-			if(g_console.emulator_initialized)
-				ssnes_main_deinit();
 			break;
 	}
 }
@@ -465,12 +463,8 @@ begin_shutdown:
 		save_settings();
 	if(g_console.emulator_initialized)
 		ssnes_main_deinit();
-	else
-	{
-		cell_pad_input_deinit();
-		ps3_video_deinit();
-	}
-	ssnes_main_clear_state();
+	cell_pad_input_deinit();
+	ps3_video_deinit();
 
 	if(g_console.screenshots_enable)
 		cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
