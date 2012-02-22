@@ -1306,3 +1306,8 @@ bool gl_cg_save_cgp(const char *path, const struct gl_cg_cgp_info *info)
    return true;
 }
 
+void gl_cg_invalidate_context(void)
+{
+   cgCtx = NULL;
+}
+
