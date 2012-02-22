@@ -25,7 +25,6 @@
 #include <cell/sysmodule.h>
 #include <sysutil/sysutil_screenshot.h>
 #include <sysutil/sysutil_common.h>
-#include <sys/spu_initialize.h>
 #include <sysutil/sysutil_gamecontent.h>
 
 #include "ps3_input.h"
@@ -381,9 +380,6 @@ static void startup_ssnes(void)
 
 int main(int argc, char *argv[])
 {
-	// Initialize 6 SPUs but reserve 1 SPU as a raw SPU for PSGL
-	sys_spu_initialize(6, 1);
-
 	cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
 	cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
 	cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_GAME);
