@@ -70,4 +70,12 @@ struct gl_cg_cgp_info
 bool gl_cg_save_cgp(const char *path, const struct gl_cg_cgp_info *info);
 void gl_cg_invalidate_context(void); // Call when resetting GL context on PS3.
 
+struct gl_cg_lut_info
+{
+   char id[64];
+   GLuint tex;
+};
+
+unsigned gl_cg_get_lut_info(struct gl_cg_lut_info *info, unsigned elems);
+
 #endif

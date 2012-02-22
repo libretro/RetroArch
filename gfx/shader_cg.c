@@ -133,7 +133,7 @@ static unsigned cg_shader_num = 0;
 static struct gl_fbo_scale cg_scale[SSNES_CG_MAX_SHADERS];
 static unsigned fbo_smooth[SSNES_CG_MAX_SHADERS];
 
-static unsigned lut_textures[MAX_TEXTURES];
+static GLuint lut_textures[MAX_TEXTURES];
 static unsigned lut_textures_num = 0;
 static char lut_textures_uniform[MAX_TEXTURES][64];
 
@@ -1309,5 +1309,21 @@ bool gl_cg_save_cgp(const char *path, const struct gl_cg_cgp_info *info)
 void gl_cg_invalidate_context(void)
 {
    cgCtx = NULL;
+}
+
+unsigned gl_cg_get_lut_info(struct gl_cg_lut_info *info, unsigned elems)
+{
+   if (!cg_active)
+      return 0;
+
+   elems = elems > lut_textures_num ? lut_textures_num : elems;
+
+   for (unsigned i = 0; i < elems; i++)
+   {
+      strlcpy(info[i].id, lut_textures_uniform[i], sizeof(info[i].id));
+      info[i].tex = lut_textures[i];
+   }
+
+   return elems;
 }
 
