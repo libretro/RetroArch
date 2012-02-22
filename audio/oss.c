@@ -86,11 +86,18 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
       return NULL;
    }
 
-   if (ioctl(*fd, SNDCTL_DSP_SPEED, &rate) < 0)
+   int new_rate = rate;
+   if (ioctl(*fd, SNDCTL_DSP_SPEED, &new_rate) < 0)
    {
       close(*fd);
       free(fd);
       return NULL;
+   }
+
+   if (new_rate != (int)rate)
+   {
+      SSNES_WARN("Requested sample rate not supported. Adjusting output rate to %d Hz.\n", new_rate);
+      g_settings.audio.out_rate = new_rate;
    }
 
    return fd;
