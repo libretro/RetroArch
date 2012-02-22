@@ -800,12 +800,7 @@ static void gl_free(void *data)
 	glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
 	glDeleteBuffers(1, &gl->pbo);
 
-	if (gl->fbo_inited)
-	{
-		glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
-		glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
-	}
-
+	gl_deinit_fbo(gl);
 	psgl_deinit(gl);
 
 	if (gl->empty_buf)
@@ -834,9 +829,7 @@ static bool psgl_init_device(gl_t *gl, const video_info_t *video, uint32_t resol
 		.maxSPUs = 1,
 		.initializeSPUs = GL_FALSE,
 	};
-#if CELL_SDK_VERSION > 0x340000
-	options.enable |= PSGL_INIT_TRANSIENT_MEMORY_SIZE;
-#else
+#if CELL_SDK_VERSION < 0x340000
 	options.enable |=	PSGL_INIT_HOST_MEMORY_SIZE;
 #endif
 

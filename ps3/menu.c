@@ -157,15 +157,48 @@ static void display_menubar(uint32_t menu_enum)
 	cellDbgFontDraw();
 }
 
-static void set_text_message(const char * message, unsigned speed)
+enum
 {
-	strlcpy(special_action_msg, message, sizeof(special_action_msg));
+	DELAY_NONE,
+	DELAY_SMALLEST,
+	DELAY_SMALL,
+	DELAY_MEDIUM,
+	DELAY_LONG
+};
+
+static uint32_t set_delay = DELAY_NONE;
+static uint64_t old_state = 0;
+
+static void set_delay_speed(unsigned delaymode)
+{
+	unsigned speed;
+
+	speed = 0;
+
+	switch(delaymode)
+	{
+		case DELAY_NONE:
+			break;
+		case DELAY_SMALLEST:
+			speed = 4;
+			break;
+		case DELAY_SMALL:
+			speed = 7;
+			break;
+		case DELAY_MEDIUM:
+			speed = 14;
+			break;
+		case DELAY_LONG:
+			speed = 30;
+			break;
+	}
+
+	strlcpy(special_action_msg, "", sizeof(special_action_msg));
 	SET_TIMER_EXPIRATION(g_console.control_timer_expiration_frame_count, speed);
 }
 
 static void browser_update(filebrowser_t * b)
 {
-	static uint64_t old_state = 0;
 	uint64_t state, diff_state, button_was_pressed;
 
 	state = cell_pad_input_poll_device(0);
@@ -174,12 +207,18 @@ static void browser_update(filebrowser_t * b)
 
 	if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
 	{
+		set_delay = DELAY_NONE;
+
 		if (CTRL_LSTICK_DOWN(state))
 		{
 			if(b->currently_selected < b->file_count-1)
 			{
 				FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
-				set_text_message("", 4);
+
+				if(g_console.emulator_initialized)
+					set_delay = DELAY_SMALL;
+				else
+					set_delay = DELAY_SMALLEST;
 			}
 		}
 
@@ -188,7 +227,10 @@ static void browser_update(filebrowser_t * b)
 			if(b->currently_selected < b->file_count-1)
 			{
 				FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
-				set_text_message("", 7);
+				if(g_console.emulator_initialized)
+					set_delay = DELAY_SMALL;
+				else
+					set_delay = DELAY_SMALLEST;
 			}
 		}
 
@@ -197,7 +239,10 @@ static void browser_update(filebrowser_t * b)
 			if(b->currently_selected > 0)
 			{
 				FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
-				set_text_message("", 4);
+				if(g_console.emulator_initialized)
+					set_delay = DELAY_SMALL;
+				else
+					set_delay = DELAY_SMALLEST;
 			}
 		}
 
@@ -206,20 +251,30 @@ static void browser_update(filebrowser_t * b)
 			if(b->currently_selected > 0)
 			{
 				FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
-				set_text_message("", 7);
+				if(g_console.emulator_initialized)
+					set_delay = DELAY_SMALL;
+				else
+					set_delay = DELAY_SMALLEST;
 			}
 		}
 
 		if (CTRL_RIGHT(state))
 		{
 			b->currently_selected = (MIN(b->currently_selected + 5, b->file_count-1));
-			set_text_message("", 7);
+
+			if(g_console.emulator_initialized)
+				set_delay = DELAY_MEDIUM;
+			else
+				set_delay = DELAY_SMALL;
 		}
 
 		if (CTRL_LSTICK_RIGHT(state))
 		{
 			b->currently_selected = (MIN(b->currently_selected + 5, b->file_count-1));
-			set_text_message("", 4);
+			if(g_console.emulator_initialized)
+				set_delay = DELAY_SMALL;
+			else
+				set_delay = DELAY_SMALLEST;
 		}
 
 		if (CTRL_LEFT(state))
@@ -229,7 +284,10 @@ static void browser_update(filebrowser_t * b)
 			else
 				b->currently_selected -= 5;
 
-			set_text_message("", 7);
+			if(g_console.emulator_initialized)
+				set_delay = DELAY_MEDIUM;
+			else
+				set_delay = DELAY_SMALL;
 		}
 
 		if (CTRL_LSTICK_LEFT(state))
@@ -239,29 +297,34 @@ static void browser_update(filebrowser_t * b)
 			else
 				b->currently_selected -= 5;
 
-			set_text_message("", 4);
+			if(g_console.emulator_initialized)
+				set_delay = DELAY_SMALL;
+			else
+				set_delay = DELAY_SMALLEST;
 		}
 
 		if (CTRL_R1(state))
 		{
 			b->currently_selected = (MIN(b->currently_selected + NUM_ENTRY_PER_PAGE, b->file_count-1));
-			set_text_message("", 7);
+			set_delay = DELAY_MEDIUM;
 		}
 
 		if (CTRL_R2(state))
 		{
 			b->currently_selected = (MIN(b->currently_selected + 50, b->file_count-1));
-			set_text_message("", 7);
+			if(b->currently_selected < 0)
+				b->currently_selected = 0;
+			set_delay = DELAY_SMALL;
 		}
 
 		if (CTRL_L2(state))
 		{
-			if (b->currently_selected <= NUM_ENTRY_PER_PAGE)
+			if (b->currently_selected <= 50)
 				b->currently_selected= 0;
 			else
 				b->currently_selected -= 50;
 
-			set_text_message("", 7);
+			set_delay = DELAY_SMALL;
 		}
 
 		if (CTRL_L1(state))
@@ -271,18 +334,15 @@ static void browser_update(filebrowser_t * b)
 			else
 				b->currently_selected -= NUM_ENTRY_PER_PAGE;
 
-			set_text_message("", 7);
+			set_delay = DELAY_MEDIUM;
 		}
 
 		if (CTRL_CIRCLE(button_was_pressed))
 		{
-			old_state = state;
 			filebrowser_pop_directory(b);
 		}
 
 
-		g_console.menu_enable = !((CTRL_L3(state) && CTRL_R3(state) && g_console.emulator_initialized));
-		g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
 
 		old_state = state;
 	}
@@ -712,7 +772,6 @@ static void select_file(uint32_t menu_id)
 	char extensions[256], title[256], object[256], comment[256], dir_path[MAX_PATH_LENGTH],
 	path[MAX_PATH_LENGTH], *separatorslash;
 	uint64_t state, diff_state, button_was_pressed;
-	static uint64_t old_state = 0;
 
 	state = cell_pad_input_poll_device(0);
 	diff_state = old_state ^ state;
@@ -762,66 +821,68 @@ static void select_file(uint32_t menu_id)
 
 	browser_update(&tmpBrowser);
 
-	if (CTRL_START(button_was_pressed))
-		filebrowser_reset_start_directory(&tmpBrowser, "/", extensions);
-
-	if (CTRL_CROSS(button_was_pressed))
+	if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
 	{
-		if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
+		if (CTRL_START(button_was_pressed))
+			filebrowser_reset_start_directory(&tmpBrowser, "/", extensions);
+
+		if (CTRL_CROSS(button_was_pressed))
 		{
-			/*if 'filename' is in fact '..' - then pop back directory instead of 
-			adding '..' to filename path */
-			if(tmpBrowser.currently_selected == 0)
+			if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
 			{
-				old_state = state;
-				filebrowser_pop_directory(&tmpBrowser);
+				/*if 'filename' is in fact '..' - then pop back directory instead of 
+				  adding '..' to filename path */
+				if(tmpBrowser.currently_selected == 0)
+				{
+					filebrowser_pop_directory(&tmpBrowser);
+				}
+				else
+				{
+					separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
+					snprintf(path, sizeof(path), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+					filebrowser_push_directory(&tmpBrowser, path, true);
+				}
 			}
-			else
+			else if (FILEBROWSER_IS_CURRENT_A_FILE(tmpBrowser))
 			{
-                                separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
-				snprintf(path, sizeof(path), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-				filebrowser_push_directory(&tmpBrowser, path, true);
+				snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+				printf("path: %s\n", path);
+
+				switch(menu_id)
+				{
+					case SHADER_CHOICE:
+						gl_cg_load_shader(set_shader+1, path);
+						switch(set_shader+1)
+						{
+							case 1:
+								strlcpy(g_settings.video.cg_shader_path, path, sizeof(g_settings.video.cg_shader_path));
+								break;
+							case 2:
+								strlcpy(g_settings.video.second_pass_shader, path, sizeof(g_settings.video.second_pass_shader));
+								break;
+						}
+						menu_reinit_settings();
+						break;
+					case PRESET_CHOICE:
+						strlcpy(g_console.cgp_path, path, sizeof(g_console.cgp_path));
+						apply_scaling(FBO_DEINIT);
+						gl_cg_reinit(path);
+						apply_scaling(FBO_INIT);
+						break;
+					case INPUT_PRESET_CHOICE:
+						break;
+					case BORDER_CHOICE:
+						break;
+						EXTRA_SELECT_FILE_PART2();
+				}
+
+				menuStackindex--;
 			}
 		}
-		else if (FILEBROWSER_IS_CURRENT_A_FILE(tmpBrowser))
-		{
-			snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-			printf("path: %s\n", path);
 
-			switch(menu_id)
-			{
-				case SHADER_CHOICE:
-					gl_cg_load_shader(set_shader+1, path);
-					switch(set_shader+1)
-					{
-						case 1:
-							strlcpy(g_settings.video.cg_shader_path, path, sizeof(g_settings.video.cg_shader_path));
-							break;
-						case 2:
-							strlcpy(g_settings.video.second_pass_shader, path, sizeof(g_settings.video.second_pass_shader));
-							break;
-					}
-					menu_reinit_settings();
-					break;
-				case PRESET_CHOICE:
-					strlcpy(g_console.cgp_path, path, sizeof(g_console.cgp_path));
-					apply_scaling(FBO_DEINIT);
-					gl_cg_reinit(path);
-					apply_scaling(FBO_INIT);
-					break;
-				case INPUT_PRESET_CHOICE:
-					break;
-				case BORDER_CHOICE:
-					break;
-				EXTRA_SELECT_FILE_PART2();
-			}
-
+		if (CTRL_TRIANGLE(button_was_pressed))
 			menuStackindex--;
-		}
 	}
-
-	if (CTRL_TRIANGLE(button_was_pressed))
-		menuStackindex--;
 
         cellDbgFontPrintf(0.09f, 0.09f, Emulator_GetFontSize(), YELLOW, "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
 	cellDbgFontPuts	(0.09f,	0.05f,	Emulator_GetFontSize(),	RED,	title);
@@ -837,7 +898,6 @@ static void select_directory(uint32_t menu_id)
 {
         char path[1024], newpath[1024], *separatorslash;
 	uint64_t state, diff_state, button_was_pressed;
-        static uint64_t old_state = 0;
 
         state = cell_pad_input_poll_device(0);
         diff_state = old_state ^ state;
@@ -851,72 +911,74 @@ static void select_directory(uint32_t menu_id)
 
         browser_update(&tmpBrowser);
 
-        if (CTRL_START(button_was_pressed))
-		filebrowser_reset_start_directory(&tmpBrowser, "/","empty");
+	if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+	{
+		if (CTRL_START(button_was_pressed))
+			filebrowser_reset_start_directory(&tmpBrowser, "/","empty");
 
-        if (CTRL_SQUARE(button_was_pressed))
-        {
-                if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
-                {
-                        snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-                        switch(menu_id)
-                        {
-                                case PATH_SAVESTATES_DIR_CHOICE:
-                                        strcpy(g_console.default_savestate_dir, path);
-                                        break;
-                                case PATH_SRAM_DIR_CHOICE:
+		if (CTRL_SQUARE(button_was_pressed))
+		{
+			if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
+			{
+				snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+				switch(menu_id)
+				{
+					case PATH_SAVESTATES_DIR_CHOICE:
+						strcpy(g_console.default_savestate_dir, path);
+						break;
+					case PATH_SRAM_DIR_CHOICE:
+						strcpy(g_console.default_sram_dir, path);
+						break;
+					case PATH_DEFAULT_ROM_DIR_CHOICE:
+						strcpy(g_console.default_rom_startup_dir, path);
+						break;
+					case PATH_CHEATS_DIR_CHOICE:
+						strcpy(g_settings.cheat_database, path);
+						break;
+				}
+				menuStackindex--;
+			}
+		}
+		if (CTRL_TRIANGLE(button_was_pressed))
+		{
+			strcpy(path, usrDirPath);
+			switch(menu_id)
+			{
+				case PATH_SAVESTATES_DIR_CHOICE:
+					strcpy(g_console.default_savestate_dir, path);
+					break;
+				case PATH_SRAM_DIR_CHOICE:
 					strcpy(g_console.default_sram_dir, path);
-                                        break;
-                                case PATH_DEFAULT_ROM_DIR_CHOICE:
-                                        strcpy(g_console.default_rom_startup_dir, path);
-                                        break;
+					break;
+				case PATH_DEFAULT_ROM_DIR_CHOICE:
+					strcpy(g_console.default_rom_startup_dir, path);
+					break;
 				case PATH_CHEATS_DIR_CHOICE:
 					strcpy(g_settings.cheat_database, path);
 					break;
-                        }
-                        menuStackindex--;
-                }
-        }
-        if (CTRL_TRIANGLE(button_was_pressed))
-        {
-                strcpy(path, usrDirPath);
-                switch(menu_id)
-                {
-                        case PATH_SAVESTATES_DIR_CHOICE:
-				strcpy(g_console.default_savestate_dir, path);
-                                break;
-                        case PATH_SRAM_DIR_CHOICE:
-				strcpy(g_console.default_sram_dir, path);
-                                break;
-                        case PATH_DEFAULT_ROM_DIR_CHOICE:
-				strcpy(g_console.default_rom_startup_dir, path);
-                                break;
-			case PATH_CHEATS_DIR_CHOICE:
-				strcpy(g_settings.cheat_database, path);
-				break;
-                }
-                menuStackindex--;
-        }
-        if (CTRL_CROSS(button_was_pressed))
-        {
-                if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
-                {
-                        /* if 'filename' is in fact '..' - then pop back 
-			directory instead of adding '..' to filename path */
+			}
+			menuStackindex--;
+		}
+		if (CTRL_CROSS(button_was_pressed))
+		{
+			if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
+			{
+				/* if 'filename' is in fact '..' - then pop back 
+				   directory instead of adding '..' to filename path */
 
-                        if(tmpBrowser.currently_selected == 0)
-                        {
-                                old_state = state;
-				filebrowser_pop_directory(&tmpBrowser);
-                        }
-                        else
-                        {
-                                separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
-                                snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-                                filebrowser_push_directory(&tmpBrowser, newpath, false);
-                        }
-                }
-        }
+				if(tmpBrowser.currently_selected == 0)
+				{
+					filebrowser_pop_directory(&tmpBrowser);
+				}
+				else
+				{
+					separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
+					snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+					filebrowser_push_directory(&tmpBrowser, newpath, false);
+				}
+			}
+		}
+	}
 
         cellDbgFontPrintf (0.09f,  0.09f, Emulator_GetFontSize(), YELLOW, 
 	"PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
@@ -944,12 +1006,12 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) )
 			{
 				ps3_next_resolution();
-				set_text_message("", 7);
+				set_delay = DELAY_SMALL;
 			}
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) )
 			{
 				ps3_previous_resolution();
-				set_text_message("", 7);
+				set_delay = DELAY_SMALL;
 			}
 			if(CTRL_CROSS(state))
 			{
@@ -994,6 +1056,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 					menuStack[menuStackindex] = menu_filebrowser;
 					menuStack[menuStackindex].enum_id = PRESET_CHOICE;
 					set_initial_dir_tmpbrowser = true;
+					set_delay = DELAY_LONG;
 				}
 			}
 			if(CTRL_START(state))
@@ -1011,6 +1074,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				menuStack[menuStackindex].enum_id = SHADER_CHOICE;
 				set_shader = 0;
 				set_initial_dir_tmpbrowser = true;
+				set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
@@ -1027,6 +1091,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				menuStack[menuStackindex].enum_id = SHADER_CHOICE;
 				set_shader = 1;
 				set_initial_dir_tmpbrowser = true;
+				set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
@@ -1041,7 +1106,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				if(g_console.menu_font_size > 0) 
 				{
 					g_console.menu_font_size -= 0.01f;
-					set_text_message("", 7);
+					set_delay = DELAY_MEDIUM;
 				}
 			}
 			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
@@ -1049,7 +1114,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				if((g_console.menu_font_size < 2.0f))
 				{
 					g_console.menu_font_size += 0.01f;
-					set_text_message("", 7);
+					set_delay = DELAY_MEDIUM;
 				}
 			}
 			if(CTRL_START(state))
@@ -1062,7 +1127,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				{
 					g_console.aspect_ratio_index--;
 					ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
-					set_text_message("", 7);
+					set_delay = DELAY_SMALL;
 				}
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
@@ -1071,14 +1136,13 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				{
 					g_console.aspect_ratio_index++;
 					ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
-					set_text_message("", 7);
+					set_delay = DELAY_SMALL;
 				}
 			}
 			if(CTRL_START(state))
 			{
 				g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
 				ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
-				set_text_message("", 7);
 			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER:
@@ -1086,7 +1150,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				g_settings.video.smooth = !g_settings.video.smooth;
 				ps3_set_filtering(1, g_settings.video.smooth);
-				set_text_message("", 7);
+				set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
@@ -1099,7 +1163,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
 				ps3_set_filtering(2, g_settings.video.second_pass_smooth);
-				set_text_message("", 7);
+				set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
@@ -1115,12 +1179,9 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				if(g_settings.video.render_to_texture)
 					apply_scaling(FBO_INIT);
 				else
-				{
-					set_text_message("", 7);
 					apply_scaling(FBO_DEINIT);
-				}
 
-				set_text_message("", 7);
+				set_delay = DELAY_MEDIUM;
 
 			}
 			if(CTRL_START(state))
@@ -1142,8 +1203,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 						g_settings.video.fbo_scale_x -= 1.0f;
 						g_settings.video.fbo_scale_y -= 1.0f;
 						apply_scaling(FBO_REINIT);
+						set_delay = DELAY_MEDIUM;
 					}
-					set_text_message("", 7);
 				}
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
@@ -1155,8 +1216,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 						g_settings.video.fbo_scale_x += 1.0f;
 						g_settings.video.fbo_scale_y += 1.0f;
 						apply_scaling(FBO_REINIT);
+						set_delay = DELAY_MEDIUM;
 					}
-					set_text_message("", 7);
 				}
 			}
 			if(CTRL_START(state))
@@ -1177,6 +1238,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 					g_console.overscan_enable = false;
 
 				ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+				set_delay = DELAY_SMALLEST;
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
@@ -1187,6 +1249,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 					g_console.overscan_enable = 0;
 
 				ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+				set_delay = DELAY_SMALLEST;
 			}
 			if(CTRL_START(state))
 			{
@@ -1200,13 +1263,13 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				g_console.throttle_enable = !g_console.throttle_enable;
 				ps3graphics_set_vsync(g_console.throttle_enable);
-				set_text_message("", 7);
+				set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
 				g_console.throttle_enable = true;
 				ps3graphics_set_vsync(g_console.throttle_enable);
-				set_text_message("", 7);
+				set_delay = DELAY_MEDIUM;
 			}
 			break;
 		case SETTING_TRIPLE_BUFFERING:
@@ -1214,7 +1277,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				g_console.triple_buffering_enable = !g_console.triple_buffering_enable;
 				ps3graphics_video_reinit();
-				set_text_message("", 7);
+				set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
@@ -1246,7 +1309,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 					cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
 				}
 
-				set_text_message("", 7);
+				set_delay = DELAY_MEDIUM;
 #endif
 			}
 			if(CTRL_START(state))
@@ -1274,12 +1337,12 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				if(g_extern.state_slot != 0)
 					g_extern.state_slot--;
 
-				set_text_message("", 7);
+				set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
 				g_extern.state_slot++;
-				set_text_message("", 7);
+				set_delay = DELAY_MEDIUM;
 			}
 
 			if(CTRL_START(state))
@@ -1290,7 +1353,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				g_settings.rewind_enable = !g_settings.rewind_enable;
 
-				set_text_message("", 7);
+				set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
@@ -1302,7 +1365,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				g_extern.audio_data.mute = !g_extern.audio_data.mute;
 
-				set_text_message("", 7);
+				set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
@@ -1320,6 +1383,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				menuStack[menuStackindex] = menu_filebrowser;
 				menuStack[menuStackindex].enum_id = PATH_DEFAULT_ROM_DIR_CHOICE;
 				set_initial_dir_tmpbrowser = true;
+				set_delay = DELAY_LONG;
 			}
 
 			if(CTRL_START(state))
@@ -1332,6 +1396,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				menuStack[menuStackindex] = menu_filebrowser;
 				menuStack[menuStackindex].enum_id = PATH_SAVESTATES_DIR_CHOICE;
 				set_initial_dir_tmpbrowser = true;
+				set_delay = DELAY_LONG;
 			}
 
 			if(CTRL_START(state))
@@ -1345,6 +1410,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				menuStack[menuStackindex] = menu_filebrowser;
 				menuStack[menuStackindex].enum_id = PATH_SRAM_DIR_CHOICE;
 				set_initial_dir_tmpbrowser = true;
+				set_delay = DELAY_LONG;
 			}
 
 			if(CTRL_START(state))
@@ -1357,6 +1423,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				menuStack[menuStackindex] = menu_filebrowser;
 				menuStack[menuStackindex].enum_id = PATH_CHEATS_DIR_CHOICE;
 				set_initial_dir_tmpbrowser = true;
+				set_delay = DELAY_LONG;
 			}
 
 			if(CTRL_START(state))
@@ -1367,13 +1434,12 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				g_console.default_sram_dir_enable = !g_console.default_sram_dir_enable;
 				menu_reinit_settings();
-				set_text_message("", 7);
+				set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
 				g_console.default_sram_dir_enable = true;
 				menu_reinit_settings();
-				set_text_message("", 7);
 			}
 			break;
 		case SETTING_ENABLE_STATE_PATH:
@@ -1381,13 +1447,12 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				g_console.default_savestate_dir_enable = !g_console.default_savestate_dir_enable;
 				menu_reinit_settings();
-				set_text_message("", 7);
+				set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
 				g_console.default_savestate_dir_enable = true;
 				menu_reinit_settings();
-				set_text_message("", 7);
 			}
 			break;
 		case SETTING_PATH_DEFAULT_ALL:
@@ -1450,7 +1515,6 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 static void select_setting(menu * menu_obj)
 {
 	uint64_t state, diff_state, button_was_pressed, i;
-	static uint64_t old_state = 0;
 
 	state = cell_pad_input_poll_device(0);
 	diff_state = old_state ^ state;
@@ -1459,13 +1523,10 @@ static void select_setting(menu * menu_obj)
 
 	if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
 	{
+		set_delay = DELAY_NONE;
 		/* back to ROM menu if CIRCLE is pressed */
 		if (CTRL_L1(button_was_pressed) || CTRL_CIRCLE(button_was_pressed))
-		{
 			menuStackindex--;
-			old_state = state;
-			return;
-		}
 
 		if (CTRL_R1(button_was_pressed))
 		{
@@ -1474,32 +1535,26 @@ static void select_setting(menu * menu_obj)
 				case GENERAL_VIDEO_MENU:
 					menuStackindex++;
 					menuStack[menuStackindex] = menu_generalaudiosettings;
-					old_state = state;
 					break;
 				case GENERAL_AUDIO_MENU:
 					menuStackindex++;
 					menuStack[menuStackindex] = menu_emu_settings;
-					old_state = state;
 					break;
 				case EMU_GENERAL_MENU:
 					menuStackindex++;
 					menuStack[menuStackindex] = menu_emu_videosettings;
-					old_state = state;
 					break;
 				case EMU_VIDEO_MENU:
 					menuStackindex++;
 					menuStack[menuStackindex] = menu_emu_audiosettings;
-					old_state = state;
 					break;
 				case EMU_AUDIO_MENU:
 					menuStackindex++;
 					menuStack[menuStackindex] = menu_pathsettings;
-					old_state = state;
 					break;
 				case PATH_MENU:
 					menuStackindex++;
 					menuStack[menuStackindex] = menu_controlssettings;
-					old_state = state;
 					break;
 				case CONTROLS_MENU:
 					break;
@@ -1518,7 +1573,7 @@ static void select_setting(menu * menu_obj)
 			if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
 				menu_obj->page = menu_obj->items[menu_obj->selected].page;
 
-			set_text_message("", 7);
+			set_delay = DELAY_MEDIUM;
 		}
 
 		/* up to previous setting */
@@ -1533,23 +1588,8 @@ static void select_setting(menu * menu_obj)
 			if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
 				menu_obj->page = menu_obj->items[menu_obj->selected].page;
 
-			set_text_message("", 7);
+			set_delay = DELAY_MEDIUM;
 		}
-
-		/* if a rom is loaded then resume it */
-
-		if (CTRL_L3(state) && CTRL_R3(state))
-		{
-			if (g_console.emulator_initialized)
-			{
-				g_console.menu_enable = false;
-				g_console.mode_switch = MODE_EMULATION;
-				set_text_message("", 15);
-			}
-			old_state = state;
-			return;
-		}
-
 
 		producesettingentry(menu_obj, menu_obj->selected);
 	}
@@ -1579,7 +1619,6 @@ static void select_rom(void)
 {
 	char newpath[1024], *separatorslash;
 	uint64_t state, diff_state, button_was_pressed;
-	static uint64_t old_state = 0;
 
 	state = cell_pad_input_poll_device(0);
 	diff_state = old_state ^ state;
@@ -1587,50 +1626,48 @@ static void select_rom(void)
 
 	browser_update(&browser);
 
-	if (CTRL_SELECT(button_was_pressed))
+	if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
 	{
-		menuStackindex++;
-		menuStack[menuStackindex] = menu_generalvideosettings;
-	}
-
-	if (CTRL_START(button_was_pressed))
-		filebrowser_reset_start_directory(&browser, "/", ssnes_console_get_rom_ext());
-
-	if (CTRL_CROSS(button_was_pressed))
-	{
-		if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(browser))
+		if (CTRL_SELECT(button_was_pressed))
 		{
-			/*if 'filename' is in fact '..' - then pop back directory 
-			instead of adding '..' to filename path */
+			menuStackindex++;
+			menuStack[menuStackindex] = menu_generalvideosettings;
+		}
 
-			if(browser.currently_selected == 0)
+		if (CTRL_START(button_was_pressed))
+			filebrowser_reset_start_directory(&browser, "/", ssnes_console_get_rom_ext());
+
+		if (CTRL_CROSS(button_was_pressed))
+		{
+			if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(browser))
 			{
-				old_state = state;
-				filebrowser_pop_directory(&browser);
+				/*if 'filename' is in fact '..' - then pop back directory 
+				  instead of adding '..' to filename path */
+
+				if(browser.currently_selected == 0)
+				{
+					filebrowser_pop_directory(&browser);
+				}
+				else
+				{
+					separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser),"/") == 0) ? "" : "/";
+					snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(browser));
+					filebrowser_push_directory(&browser, newpath, true);
+				}
 			}
-			else
+			else if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
 			{
-				separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser),"/") == 0) ? "" : "/";
-				snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(browser));
-				filebrowser_push_directory(&browser, newpath, true);
+				char rom_path_temp[MAX_PATH_LENGTH];
+
+				snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+
+				g_console.menu_enable = false;
+				snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+				g_console.initialize_ssnes_enable = 1;
+				g_console.mode_switch = MODE_EMULATION;
 			}
 		}
-		else if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
-		{
-			char rom_path_temp[MAX_PATH_LENGTH];
-
-			snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
-
-			g_console.menu_enable = false;
-			snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
-			g_console.initialize_ssnes_enable = 1;
-			g_console.mode_switch = MODE_EMULATION;
-
-			old_state = state;
-			return;
-		}
 	}
-
 
 	if (FILEBROWSER_IS_CURRENT_A_DIRECTORY(browser))
 	{
@@ -1672,19 +1709,22 @@ static void ingame_menu(uint32_t menu_id)
 {
 	char comment[256], msg_temp[256];
 	static uint32_t menuitem_colors[MENU_ITEM_LAST];
+	uint64_t state, stuck_in_loop;
+	static uint64_t blocking;
 
 	for(int i = 0; i < MENU_ITEM_LAST; i++)
 		menuitem_colors[i] = GREEN;
 	
 	menuitem_colors[g_console.ingame_menu_item] = RED;
 
-	uint64_t state = cell_pad_input_poll_device(0);
-	static uint64_t old_state = 0;
-	uint64_t stuck_in_loop = 1;
-	static uint64_t blocking = 0;
+	state = cell_pad_input_poll_device(0);
+	stuck_in_loop = 1;
+	blocking = 0;
 
 	if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count) && blocking == false)
 	{
+		set_delay = DELAY_NONE;
+
 		if(CTRL_CIRCLE(state))
 			return_to_game();
 
@@ -1699,13 +1739,13 @@ static void ingame_menu(uint32_t menu_id)
 				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 				{
 					ssnes_state_slot_decrease();
-					set_text_message("", 30);
+					set_delay = DELAY_LONG;
 					blocking = 0;
 				}
 				if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 				{
 					ssnes_state_slot_increase();
-					set_text_message("", 30);
+					set_delay = DELAY_LONG;
 					blocking = 0;
 				}
 
@@ -1720,13 +1760,13 @@ static void ingame_menu(uint32_t menu_id)
 				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 				{
 					ssnes_state_slot_decrease();
-					set_text_message("", 30);
+					set_delay = DELAY_LONG;
 					blocking = 0;
 				}
 				if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 				{
 					ssnes_state_slot_increase();
-					set_text_message("", 30);
+					set_delay = DELAY_LONG;
 					blocking = 0;
 				}
 
@@ -1739,7 +1779,7 @@ static void ingame_menu(uint32_t menu_id)
 					{
 						g_console.aspect_ratio_index--;
 						ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
-						set_text_message("", 7);
+						set_delay = DELAY_LONG;
 					}
 				}
 				if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
@@ -1748,7 +1788,7 @@ static void ingame_menu(uint32_t menu_id)
 					{
 						g_console.aspect_ratio_index++;
 						ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
-						set_text_message("", 7);
+						set_delay = DELAY_LONG;
 					}
 				}
 				if(CTRL_START(state))
@@ -1768,7 +1808,7 @@ static void ingame_menu(uint32_t menu_id)
 						g_console.overscan_enable = false;
 
 					ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
-					set_text_message("", 7);
+					set_delay = DELAY_SMALLEST;
 				}
 				if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_LSTICK_RIGHT(state))
 				{
@@ -1778,7 +1818,7 @@ static void ingame_menu(uint32_t menu_id)
 						g_console.overscan_amount = false;
 
 					ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
-					set_text_message("", 7);
+					set_delay = DELAY_SMALLEST;
 				}
 				if(CTRL_START(state))
 				{
@@ -1795,7 +1835,7 @@ static void ingame_menu(uint32_t menu_id)
 					{
 						g_console.screen_orientation--;
 						ps3graphics_set_orientation(g_console.screen_orientation);
-						set_text_message("", 7);
+						set_delay = DELAY_LONG;
 					}
 				}
 
@@ -1805,7 +1845,7 @@ static void ingame_menu(uint32_t menu_id)
 					{
 						g_console.screen_orientation++;
 						ps3graphics_set_orientation(g_console.screen_orientation);
-						set_text_message("", 7);
+						set_delay = DELAY_LONG;
 					}
 				}
 
@@ -1815,6 +1855,7 @@ static void ingame_menu(uint32_t menu_id)
 					ps3graphics_set_orientation(g_console.screen_orientation);
 				}
 				strcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.");
+				break;
 			case MENU_ITEM_SCALE_FACTOR:
 				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 				{
@@ -1825,8 +1866,8 @@ static void ingame_menu(uint32_t menu_id)
 							g_settings.video.fbo_scale_x -= 1.0f;
 							g_settings.video.fbo_scale_y -= 1.0f;
 							apply_scaling(FBO_REINIT);
+							set_delay = DELAY_LONG;
 						}
-						set_text_message("", 7);
 					}
 				}
 				if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
@@ -1838,8 +1879,8 @@ static void ingame_menu(uint32_t menu_id)
 							g_settings.video.fbo_scale_x += 1.0f;
 							g_settings.video.fbo_scale_y += 1.0f;
 							apply_scaling(FBO_REINIT);
+							set_delay = DELAY_LONG;
 						}
-						set_text_message("", 7);
 					}
 				}
 				if(CTRL_START(state))
@@ -1874,14 +1915,13 @@ static void ingame_menu(uint32_t menu_id)
 						state = cell_pad_input_poll_device(0);
 						if(CTRL_CIRCLE(state))
 						{
-							set_text_message("", 7);
+							set_delay = DELAY_MEDIUM;
 							stuck_in_loop = 0;
 						}
 
 						ssnes_render_cached_frame();
 
 						video_gl.swap(NULL);
-						old_state = state;
 					}
 				}
 
@@ -1904,11 +1944,11 @@ static void ingame_menu(uint32_t menu_id)
 			case MENU_ITEM_RETURN_TO_MENU:
 				if(CTRL_CROSS(state))
 				{
-					g_console.ingame_menu_item = 0;
 					g_console.menu_enable = false;
+					g_console.ingame_menu_item = 0;
 					g_console.mode_switch = MODE_MENU;
+					set_delay = DELAY_LONG;
 				}
-
 				strcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.");
 				break;
 #ifdef MULTIMAN_SUPPORT
@@ -1941,7 +1981,7 @@ static void ingame_menu(uint32_t menu_id)
 			if(g_console.ingame_menu_item > 0)
 			{
 				g_console.ingame_menu_item--;
-				set_text_message("", 14);
+				set_delay = DELAY_MEDIUM;
 			}
 		}
 
@@ -1950,8 +1990,13 @@ static void ingame_menu(uint32_t menu_id)
 			if(g_console.ingame_menu_item < (MENU_ITEM_LAST-1))
 			{
 				g_console.ingame_menu_item++;
-				set_text_message("", 14);
+				set_delay = DELAY_MEDIUM;
 			}
+		}
+
+		if(CTRL_L3(state) && CTRL_R3(state))
+		{
+			return_to_game();
 		}
 	}
 
@@ -2022,6 +2067,8 @@ static void ingame_menu(uint32_t menu_id)
 	cellDbgFontDraw();
 	cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, comment);
 	cellDbgFontDraw();
+
+	old_state = state;
 }
 
 void menu_init (void)
@@ -2092,6 +2139,34 @@ void menu_loop(void)
 				break;
 		}
 
+
+		if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+		{
+			// if we want to force goto the emulation loop, skip this
+			if(g_console.mode_switch != MODE_EMULATION)
+			{
+				// for ingame menu, we need a different precondition because menu_enable
+				// can be set to false when going back from ingame menu to menu
+				if(g_console.ingame_menu_enable == true)
+				{
+					//we want to force exit when mode_switch is set to MODE_EXIT
+					if(g_console.mode_switch != MODE_EXIT)
+						g_console.mode_switch = ((CTRL_L3(old_state) && CTRL_R3(old_state) && g_console.emulator_initialized)) ? MODE_EMULATION : MODE_MENU;
+				}
+				else
+				{
+					g_console.menu_enable = !((CTRL_L3(old_state) && CTRL_R3(old_state) && g_console.emulator_initialized));
+					g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
+				}
+			}
+
+			//set new timer delay after previous one has expired
+			if(set_delay != DELAY_NONE)
+				set_delay_speed(set_delay);
+		}
+
+		// set a timer delay so that we don't instantly switch back to the menu when
+		// press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
 		if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
 		{
 			SET_TIMER_EXPIRATION(g_console.timer_expiration_frame_count, 30);
@@ -2106,6 +2181,6 @@ void menu_loop(void)
 
 	if(g_console.emulator_initialized)
 		video_gl.set_swap_block_state(NULL, false);
-	
+
 	g_console.ingame_menu_enable = false;
 }

@@ -18,6 +18,20 @@
 
 #define MAX_PATH_LENGTH 1024
 
+/* ABGR color format */
+
+#define WHITE		0xffffffffu
+#define RED		0xff0000ffu
+#define GREEN		0xff00ff00u
+#define BLUE		0xffff0000u
+#define YELLOW		0xff00ffffu
+#define PURPLE		0xffff00ffu
+#define CYAN		0xffffff00u
+#define ORANGE		0xff0063ffu
+#define SILVER		0xff8c848cu
+#define LIGHTBLUE	0xFFFFE0E0U
+#define LIGHTORANGE	0xFFE0EEFFu
+
 enum
 {
 	MODE_EMULATION,
@@ -65,7 +79,6 @@ extern char usrDirPath[MAX_PATH_LENGTH];
 extern char DEFAULT_PRESET_FILE[MAX_PATH_LENGTH];
 extern char DEFAULT_BORDER_FILE[MAX_PATH_LENGTH];
 extern char DEFAULT_MENU_BORDER_FILE[MAX_PATH_LENGTH];
-extern char GAME_AWARE_SHADER_DIR_PATH[MAX_PATH_LENGTH];
 extern char PRESETS_DIR_PATH[MAX_PATH_LENGTH];
 extern char INPUT_PRESETS_DIR_PATH[MAX_PATH_LENGTH];
 extern char BORDERS_DIR_PATH[MAX_PATH_LENGTH];

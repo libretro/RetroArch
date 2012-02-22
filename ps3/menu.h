@@ -19,8 +19,6 @@
 #ifndef MENU_H_
 #define MENU_H_
 
-#include "colors.h"
-
 typedef struct
 {
 	uint32_t enum_id;			/* enum ID of item				*/
@@ -80,7 +78,6 @@ enum
 	SETTING_BORDER,
 	SETTING_SHADER,
 	SETTING_SHADER_2,
-	SETTING_GAME_AWARE_SHADER,
 	SETTING_FONT_SIZE,
 	SETTING_KEEP_ASPECT_RATIO,
 	SETTING_HW_TEXTURE_FILTER,

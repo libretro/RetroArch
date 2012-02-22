@@ -50,7 +50,6 @@ char usrDirPath[MAX_PATH_LENGTH];
 char DEFAULT_PRESET_FILE[MAX_PATH_LENGTH];
 char DEFAULT_BORDER_FILE[MAX_PATH_LENGTH];
 char DEFAULT_MENU_BORDER_FILE[MAX_PATH_LENGTH];
-char GAME_AWARE_SHADER_DIR_PATH[MAX_PATH_LENGTH];
 char PRESETS_DIR_PATH[MAX_PATH_LENGTH];
 char INPUT_PRESETS_DIR_PATH[MAX_PATH_LENGTH];
 char BORDERS_DIR_PATH[MAX_PATH_LENGTH];
@@ -347,7 +346,6 @@ static void get_environment_settings(int argc)
 		snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/presets/stock.conf", usrDirPath);
 		snprintf(DEFAULT_BORDER_FILE, sizeof(DEFAULT_BORDER_FILE), "%s/borders/Centered-1080p/mega-man-2.png", usrDirPath);
 		snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/borders/Menu/main-menu.png", usrDirPath);
-		snprintf(GAME_AWARE_SHADER_DIR_PATH, sizeof(GAME_AWARE_SHADER_DIR_PATH), "%s/gameaware", usrDirPath);
 		snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/presets", usrDirPath);
 		snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/input-presets", usrDirPath);
 		snprintf(BORDERS_DIR_PATH, sizeof(BORDERS_DIR_PATH), "%s/borders", usrDirPath);
