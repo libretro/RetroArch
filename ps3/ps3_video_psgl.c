@@ -28,6 +28,8 @@
 #include <string.h>
 #include <math.h>
 
+#include <sys/spu_initialize.h>
+
 #include "../general.h"
 #include "shared.h"
 
@@ -772,16 +774,7 @@ static void psgl_deinit(gl_t *gl)
    psglDestroyContext(gl->gl_context);
    psglDestroyDevice(gl->gl_device);
 
-#if(CELL_SDK_VERSION > 0x340000)
-   // FIXME: It will crash here for 1.92 - termination of the PSGL library - works fine for 3.41
    psglExit();
-#else
-   // For 1.92
-   gl->min_width = 0;
-   gl->min_height = 0;
-   gl->gl_context = NULL;
-   gl->gl_device = NULL;
-#endif
 }
 
 static void gl_free(void *data)
@@ -833,6 +826,8 @@ static bool psgl_init_device(gl_t *gl, const video_info_t *video, uint32_t resol
 	options.enable |=	PSGL_INIT_HOST_MEMORY_SIZE;
 #endif
 
+	// Initialize 6 SPUs but reserve 1 SPU as a raw SPU for PSGL
+	sys_spu_initialize(6, 1);
 	psglInit(&options);
 
 	PSGLdeviceParameters params;
@@ -1343,6 +1338,7 @@ void ps3graphics_video_reinit(void)
 		return;
 
 	ps3_video_deinit();
+	gl_cg_invalidate_context();
 	ps3graphics_video_init(false);
 }
 
