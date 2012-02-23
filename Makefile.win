@@ -1,6 +1,6 @@
 TARGET = ssnes.exe
 JTARGET = ssnes-joyconfig.exe
-OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o message.o rewind.o movie.o gfx/gfx_common.o bps.o ups.o strl.o screenshot.o audio/hermite.o getopt.o audio/utils.o posix_string.o
+OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o message.o rewind.o movie.o gfx/gfx_common.o bps.o ups.o strl.o screenshot.o getopt.o audio/utils.o posix_string.o
 JOBJ = conf/config_file.o tools/ssnes-joyconfig.o strl.o posix_string.o
 
 CC = gcc
@@ -15,6 +15,7 @@ HAVE_DYLIB = 1
 HAVE_NETPLAY = 1
 HAVE_THREADS = 1
 DYNAMIC = 1
+HAVE_SINC = 0
 
 ifeq ($(SLIM),)
    HAVE_SDL_IMAGE = 1
@@ -137,6 +138,12 @@ ifeq ($(HAVE_FFMPEG), 1)
    DEFINES += -DHAVE_FFMPEG_AVFORMAT_NEW_STREAM
    DEFINES += -DHAVE_X264RGB
    OBJ += record/ffemu.o
+endif
+
+ifeq ($(HAVE_SINC), 1)
+   OBJ += audio/sinc.o
+else
+   OBJ += audio/hermite.o
 endif
 
 ifneq ($(V), 1)
