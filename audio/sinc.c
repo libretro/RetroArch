@@ -92,7 +92,7 @@ static void init_sinc_table(ssnes_resampler_t *resamp)
 
 ssnes_resampler_t *resampler_new(void)
 {
-   ssnes_resampler_t *re = memalign(16, sizeof(*re));
+   ssnes_resampler_t *re = (ssnes_resampler_t*)memalign(16, sizeof(*re));
    if (!re)
       return NULL;
 
@@ -103,7 +103,7 @@ ssnes_resampler_t *resampler_new(void)
 }
 
 #if __SSE__
-static void process_sinc(ssnes_resampler_t *resamp, float * restrict out_buffer)
+static void process_sinc(ssnes_resampler_t *resamp, float *out_buffer)
 {
    __m128 sum_l = _mm_setzero_ps();
    __m128 sum_r = _mm_setzero_ps();
@@ -177,7 +177,7 @@ static void process_sinc(ssnes_resampler_t *resamp, float * restrict out_buffer)
    out_buffer[1] = u.f[2] + u.f[3];
 }
 #else // Plain ol' C99
-static void process_sinc(struct maru_resampler *resamp, float * restrict out_buffer)
+static void process_sinc(ssnes_resampler_t *resamp, float *out_buffer)
 {
    float sum_l = 0.0f;
    float sum_r = 0.0f;
