@@ -56,7 +56,7 @@
 #include "netplay.h"
 #endif
 
-#include "audio/hermite.h"
+#include "audio/resampler.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
@@ -282,7 +282,7 @@ struct global
 
    struct
    {
-      hermite_resampler_t *source;
+      ssnes_resampler_t *source;
 
       float *data;
       size_t data_ptr;

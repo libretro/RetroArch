@@ -325,7 +325,7 @@ void init_audio(void)
       g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
    }
 
-   g_extern.audio_data.source = hermite_new();
+   g_extern.audio_data.source = resampler_new();
    if (!g_extern.audio_data.source)
       g_extern.audio_active = false;
 
@@ -374,7 +374,7 @@ void uninit_audio(void)
       driver.audio->free(driver.audio_data);
 
    if (g_extern.audio_data.source)
-      hermite_free(g_extern.audio_data.source);
+      resampler_free(g_extern.audio_data.source);
 
    free(g_extern.audio_data.data);
    g_extern.audio_data.data = NULL;

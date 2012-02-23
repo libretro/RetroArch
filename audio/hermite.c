@@ -17,12 +17,13 @@
 
 // Hermite resampler based on bsnes' audio library.
 
-#include "hermite.h"
+#include "resampler.h"
 #include <stdlib.h>
+#include "../boolean.h"
 
 #define CHANNELS 2
 
-struct hermite_resampler
+struct ssnes_resampler
 {
    float chan_data[CHANNELS][4];
    double r_frac;
@@ -46,13 +47,12 @@ static inline float hermite_kernel(float mu1, float a, float b, float c, float d
    return (a0 * b) + (a1 * m0) + (a2 * m1) + (a3 * c);
 }
 
-hermite_resampler_t *hermite_new(void)
+ssnes_resampler_t *resampler_new(void)
 {
-   return (hermite_resampler_t*)calloc(1, sizeof(hermite_resampler_t));
+   return (ssnes_resampler_t*)calloc(1, sizeof(ssnes_resampler_t));
 }
 
-// We make sure to allocate enough output data beforehand ... ;)
-void hermite_process(hermite_resampler_t *re, struct hermite_data *data)
+void resampler_process(ssnes_resampler_t *re, struct resampler_data *data)
 {
    double r_step = 1.0 / data->ratio;
    size_t processed_out = 0;
@@ -88,7 +88,7 @@ void hermite_process(hermite_resampler_t *re, struct hermite_data *data)
    data->output_frames = processed_out;
 }
 
-void hermite_free(hermite_resampler_t *re)
+void resampler_free(ssnes_resampler_t *re)
 {
    free(re);
 }

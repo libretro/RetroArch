@@ -15,20 +15,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Hermite resampler based on bsnes' audio library.
-// Attempts to be similiar to the libsamplerate process interface.
 
-#ifndef __SSNES_HERMITE_H
-#define __SSNES_HERMITE_H
+#ifndef __SSNES_RESAMPLER_H
+#define __SSNES_RESAMPLER_H
 
 #include <stddef.h>
-#include "../boolean.h"
 
-typedef struct hermite_resampler hermite_resampler_t;
+typedef struct ssnes_resampler ssnes_resampler_t;
 
-hermite_resampler_t *hermite_new(void);
-
-struct hermite_data
+struct resampler_data
 {
    const float *data_in;
    float *data_out;
@@ -39,8 +34,9 @@ struct hermite_data
    double ratio;
 };
 
-void hermite_process(hermite_resampler_t *re, struct hermite_data *data);
-void hermite_free(hermite_resampler_t *re);
+ssnes_resampler_t *resampler_new(void);
+void resampler_process(ssnes_resampler_t *re, struct resampler_data *data);
+void resampler_free(ssnes_resampler_t *re);
 
 #endif
 
