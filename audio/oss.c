@@ -55,18 +55,15 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
    if ((*fd = open(oss_device, O_WRONLY)) < 0)
    {
       free(fd);
+      perror("open");
       return NULL;
    }
 
-   int frags = (latency * rate * 4)/(1000 * (1 << 10));
+   int frags = (latency * rate * 4) / (1000 * (1 << 10));
    int frag = (frags << 16) | 10;
 
    if (ioctl(*fd, SNDCTL_DSP_SETFRAGMENT, &frag) < 0)
-   {
-      close(*fd);
-      free(fd);
-      return NULL;
-   }
+      SSNES_WARN("Cannot set fragment sizes. Latency might not be as expected ...\n");
 
    int channels = 2;
    int format = is_little_endian() ?
@@ -76,6 +73,7 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
    {
       close(*fd);
       free(fd);
+      perror("ioctl");
       return NULL;
    }
 
@@ -83,6 +81,7 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
    {
       close(*fd);
       free(fd);
+      perror("ioctl");
       return NULL;
    }
 
@@ -91,6 +90,7 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
    {
       close(*fd);
       free(fd);
+      perror("ioctl");
       return NULL;
    }
 

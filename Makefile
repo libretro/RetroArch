@@ -2,7 +2,7 @@ include config.mk
 
 TARGET = ssnes tools/ssnes-joyconfig
 
-OBJ = ssnes.o file.o driver.o settings.o dynamic.o message.o rewind.o movie.o gfx/gfx_common.o ups.o bps.o strl.o getopt.o screenshot.o audio/hermite.o audio/utils.o
+OBJ = ssnes.o file.o driver.o settings.o dynamic.o message.o rewind.o movie.o gfx/gfx_common.o ups.o bps.o strl.o getopt.o screenshot.o audio/utils.o
 JOYCONFIG_OBJ = tools/ssnes-joyconfig.o conf/config_file.o strl.o
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
@@ -172,6 +172,12 @@ ifeq ($(HAVE_PYTHON), 1)
    DEFINES += $(PYTHON_CFLAGS) -Wno-unused-parameter
    LIBS += $(PYTHON_LIBS)
    OBJ += gfx/py_state/py_state.o
+endif
+
+ifeq ($(HAVE_SINC), 1)
+   OBJ += audio/sinc.o
+else
+   OBJ += audio/hermite.o
 endif
 
 ifneq ($(V),1)
