@@ -61,15 +61,13 @@ void ssnes_console_name_from_id(char *name, size_t size)
 
    name[strlen(id)] = '\0';
 
-   for (size_t i = 0; i < size && id[i]; i++)
+   for (size_t i = 0; id[i] != '\0'; i++)
    {
       char c = id[i];
       if (isspace(c) || isblank(c))
          name[i] = '_';
-      else if (isupper(c))
-         name[i] = tolower(c);
       else
-         name[i] = c;
+         name[i] = tolower(c);
    }
 }
 
