@@ -26,11 +26,18 @@
 #include <sysutil/sysutil_screenshot.h>
 #include <sysutil/sysutil_common.h>
 #include <sysutil/sysutil_gamecontent.h>
-#include <sys/spu_initialize.h>
+
+#include <cell/sysmodule.h>
+#include <sysutil/sysutil_common.h>
+#include <sys/process.h>
+#include <netex/net.h>
+#include <np.h>
+#include <np/drm.h>
 
 #include "ps3_input.h"
 #include "ps3_video_psgl.h"
 
+#include "../console/rom_ext.h"
 #include "../console/main_wrap.h"
 #include "../conf/config_file.h"
 #include "../conf/config_file_macros.h"
@@ -45,6 +52,9 @@
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 
+#define NP_POOL_SIZE (128*1024)
+
+static uint8_t np_pool[NP_POOL_SIZE];
 char contentInfoPath[MAX_PATH_LENGTH];
 char usrDirPath[MAX_PATH_LENGTH];
 char DEFAULT_PRESET_FILE[MAX_PATH_LENGTH];
@@ -387,6 +397,12 @@ int main(int argc, char *argv[])
 	cellSysmoduleLoadModule(CELL_SYSMODULE_AVCONF_EXT);
 	cellSysmoduleLoadModule(CELL_SYSMODULE_PNGDEC);
 	cellSysmoduleLoadModule(CELL_SYSMODULE_JPGDEC);
+	cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
+	cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_NP);
+
+	sys_net_initialize_network();
+
+	sceNpInit(NP_POOL_SIZE, np_pool);
 
 	get_environment_settings(argc);
 
@@ -462,9 +478,33 @@ begin_shutdown:
 
 	if(g_console.return_to_launcher)
 	{
+		/* for multiman - need to refactor this
 		sys_spu_initialize(6, 0);
 		sys_game_process_exitspawn2((char*)MULTIMAN_EXECUTABLE, NULL, NULL, NULL, 0, 2048,
 		SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+		*/
+		char self_path[1024];
+		snprintf(self_path, sizeof(self_path), "%s/CORE.SELF", usrDirPath);
+		char spawn_data[256];
+		for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
+			spawn_data[i] = i & 0xff;
+
+		char spawn_data_size[16];
+		sprintf(spawn_data_size, "%d", 256);
+
+		const char * const spawn_argv[] = {
+			spawn_data_size,
+			"test argv for",
+			"sceNpDrmProcessExitSpawn2()",
+			NULL
+		};
+
+		SceNpDrmKey * k_licensee = NULL;
+		int ret = sceNpDrmProcessExitSpawn2(k_licensee, self_path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+		printf("ret: %x\n", ret);
+		sceNpTerm();
+		cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);
+		cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
 	}
 	return 1;
 }

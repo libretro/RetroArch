@@ -50,7 +50,7 @@ else
 	GL_LIBS := -lPSGL -lPSGLcgc
 endif
 
-LIBS = -ldbgfont $(GL_LIBS) -lcgc -lgcm_cmd -lgcm_sys_stub -lsnes -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_screenshot_stub -lpngdec_stub -ljpgdec_stub -lsysmodule_stub -laudio_stub -lnet_stub -lpthread
+LIBS = -ldbgfont $(GL_LIBS) -lcgc -lgcm_cmd -lgcm_sys_stub -lsnes -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_screenshot_stub -lsysutil_np_stub -lpngdec_stub -ljpgdec_stub -lsysmodule_stub -laudio_stub -lnet_stub -lpthread
 
 DEFINES += -DSSNES_CONSOLE -DHAVE_OPENGL=1 -DHAVE_CG=1 -DHAVE_FBO=1 -D__CELLOS_LV2__ -DHAVE_CONFIGFILE=1 -DHAVE_NETPLAY=1 -DHAVE_SOCKET_LEGACY=1 -DPACKAGE_VERSION=\"0.9.4.1\" -DHAVE_SCREENSHOTS_BUILTIN=1 -Dmain=ssnes_main
 
@@ -85,6 +85,7 @@ ifeq ($(DOWNLOAD_SHADERS),1)
 	git clone git://github.com/twinaphex/common-shaders.git ps3/pkg/USRDIR/shaders
 endif
 	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) ps3/pkg/USRDIR/EBOOT.BIN
+	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) ps3/pkg/USRDIR/CORE.SELF
 	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
 
 clean:

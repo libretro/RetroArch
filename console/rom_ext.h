@@ -23,5 +23,8 @@
 // Returns NULL if library doesn't have any preferences in particular.
 const char *ssnes_console_get_rom_ext(void);
 
+#ifdef __CELLOS_LV2__
+void ssnes_exitspawn(const char * filepath);
 #endif
 
+#endif

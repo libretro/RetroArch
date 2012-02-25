@@ -15,10 +15,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+#include <string.h>
 #include "rom_ext.h"
 #include "../boolean.h"
 #include "../libsnes.hpp"
-#include <string.h>
 
 const char *ssnes_console_get_rom_ext(void)
 {
@@ -45,4 +46,3 @@ const char *ssnes_console_get_rom_ext(void)
 
    return NULL;
 }
-

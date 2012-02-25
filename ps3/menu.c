@@ -394,6 +394,8 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), fname);
 			}
 			break;
+		case SETTING_BORDER:
+			break;
 		case SETTING_SHADER:
 			{
 				char fname[MAX_PATH_LENGTH];
@@ -1061,6 +1063,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				strlcpy(g_console.cgp_path, "", sizeof(g_console.cgp_path));
 			}
+			break;
+		case SETTING_BORDER:
 			break;
 		case SETTING_SHADER:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
@@ -1947,10 +1951,20 @@ static void ingame_menu(uint32_t menu_id)
 				}
 				strcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.");
 				break;
+			case MENU_ITEM_CHANGE_LIBSNES:
+				if(CTRL_CROSS(state))
+				{
+					g_console.return_to_launcher = true;
+					g_console.menu_enable = false;
+					g_console.mode_switch = MODE_EXIT;
+				}
+				strcpy(comment, "Press 'CROSS' to choose a different emulator core.");
+				break;
 #ifdef MULTIMAN_SUPPORT
 			case MENU_ITEM_RETURN_TO_MULTIMAN:
 				if(CTRL_CROSS(state))
 				{
+					g_console.return_to_launcher = true;
 					g_console.menu_enable = false;
 					g_console.mode_switch = MODE_EXIT;
 				}
@@ -2047,6 +2061,9 @@ static void ingame_menu(uint32_t menu_id)
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_GAME)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME), "Return to Game");
 
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MENU)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU), "Return to Menu");
+	cellDbgFontDraw();
+
+	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_CHANGE_LIBSNES)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBSNES), "Change libsnes core");
 	cellDbgFontDraw();
 #ifdef MULTIMAN_SUPPORT
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");

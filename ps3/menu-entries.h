@@ -45,6 +45,21 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0.83f,
 	},
 	{
+		SETTING_BORDER,
+		"Selected border",
+		"",
+		0.0f,
+		0.0f,
+		YELLOW,
+		"INFO - Select an image file as the background border for 'border shaders'.\nNOTE: The image has to be in PNG format.",
+		WHITE,
+		0.91f,
+		0.09f,
+		0.83f,
+		0,
+		1
+	},
+	{
 		SETTING_SHADER,
 		"Selected shader #1",
 		"",
