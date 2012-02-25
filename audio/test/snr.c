@@ -22,96 +22,64 @@
 #include <math.h>
 #include <assert.h>
 
-static void gen_signal(float *out, double freq, double sample_rate, double bias_phase, size_t samples)
+static void gen_signal(float *out, double freq, double sample_rate, unsigned bias_samples, size_t samples)
 {
+   double omega = 2.0 * M_PI * freq / sample_rate;
+
    for (size_t i = 0; i < samples; i += 2)
    {
-      out[i + 0] = cos((2.0 * M_PI * freq * ((i >> 1) + bias_phase)) / sample_rate);
+      out[i + 0] = cos(((i >> 1) + bias_samples) * omega);
       out[i + 1] = out[i + 0];
    }
 }
 
-static double calculate_snr(const float *orig, const float *resamp, size_t samples)
+static double calculate_gain(const float *orig, const float *resamp, size_t samples)
+{
+   double orig_power = 0.0;
+   double resamp_power = 0.0;
+
+   for (size_t i = 0; i < samples; i += 2)
+      orig_power += orig[i] * orig[i];
+
+   for (size_t i = 0; i < samples; i += 2)
+      resamp_power += resamp[i] * resamp[i];
+
+   return sqrt(resamp_power / orig_power);
+}
+
+struct snr_result
+{
+   double snr;
+   double gain;
+};
+
+static void calculate_snr(struct snr_result *res, const float *orig, const float *resamp, size_t samples)
 {
    double noise = 0.0;
    double signal = 0.0;
+
+   // Account for gain losses at higher frequencies as it's not really noise.
+   double filter_gain = calculate_gain(orig, resamp, samples);
+   double makeup_gain = 1.0 / filter_gain;
 
    for (size_t i = 0; i < samples; i += 2)
       signal += orig[i] * orig[i];
 
    for (size_t i = 0; i < samples; i += 2)
    {
-      double diff = resamp[i] - orig[i];
+      double diff = makeup_gain * resamp[i] - orig[i];
       noise += diff * diff;
    }
 
-   double snr = 10 * log10(signal / noise);
-
-   return snr;
-}
-
-#define SAMPLES 0x100000
-
-// This approach is kinda stupid.
-// There should be a good way to directly (and accurately) determine phase after correlating
-// the two signals.
-double find_best_snr(const float *output,
-      size_t samples,
-      double freq,
-      double out_rate,
-      uint64_t *first_offset, uint64_t *last_offset,
-      uint64_t *first_subphase, uint64_t *last_subphase, uint64_t *subphases)
-{
-   static float output_expected[SAMPLES];
-
-   double max_snr = -100.0;
-   uint64_t best_offset = *first_offset;
-   uint64_t best_subphase = *first_subphase;
-
-   for (uint64_t offset = *first_offset; offset <= *last_offset; offset += 2)
-   {
-      for (uint64_t subphase = *first_subphase; subphase <= *last_subphase; subphase++)
-      {
-         gen_signal(output_expected, freq, out_rate, (double)subphase / *subphases, samples);
-         double snr = calculate_snr(output_expected, output + offset, samples);
-         if (snr > max_snr)
-         {
-            max_snr = snr;
-            best_offset = offset;
-            best_subphase = subphase;
-         }
-      }
-   }
-
-   // Narrow down the search area.
-   uint64_t left_offset  = *first_offset;
-   uint64_t right_offset = *last_offset;
-   if (best_offset > left_offset)
-      left_offset = best_offset - 1;
-   if (best_offset < right_offset)
-      right_offset = best_offset + 1;
-
-   *first_offset = left_offset;
-   *last_offset = right_offset;
-
-   *subphases *= 2;
-   best_subphase *= 2;
-
-   uint64_t left_subphase  = best_subphase - 2;
-   uint64_t right_subphase = best_subphase + 2;
-   if (best_subphase < 2)
-      left_subphase = 0;
-
-   *first_subphase = left_subphase;
-   *last_subphase = right_subphase;
-
-   return max_snr;
+   res->snr = 10 * log10(signal / noise);
+   res->gain = 20.0 * log10(filter_gain);
 }
 
 int main(int argc, char *argv[])
 {
-   static float input[SAMPLES];
-   static float output[SAMPLES * 8];
+   float *input;
+   float *output;
+   float *output_expected;
 
    if (argc != 3)
    {
@@ -119,10 +87,10 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   double in_rate = strtod(argv[1], NULL);
-   double out_rate = strtod(argv[2], NULL);
+   unsigned in_rate = strtoul(argv[1], NULL, 0);
+   unsigned out_rate = strtoul(argv[2], NULL, 0);
 
-   double ratio = out_rate / in_rate;
+   double ratio = (double)out_rate / in_rate;
    if (ratio >= 7.99)
    {
       fprintf(stderr, "Ratio is too high ...\n");
@@ -136,47 +104,78 @@ int main(int argc, char *argv[])
    }
 
    static const float freq_list[] = {
-      100, 200, 400, 600, 800, 1000,
-      2000, 3000, 5000, 8000, 10000, 12000, 15000, 18000, 20000,
+       30,  50,
+      100, 150,
+      200, 250,
+      300, 350,
+      400, 450,
+      500, 550,
+      600, 650,
+      700, 800,
+      900, 1000,
+      1100, 1200,
+      1300, 1500,
+      1600, 1700,
+      1800, 1900,
+      2000, 2100,
+      2200, 2300,
+      2500, 3000,
+      3500, 4000,
+      4500, 5000,
+      5500, 6000,
+      6500, 7000,
+      7500, 8000,
+      9000, 9500,
+      10000, 11000,
+      12000, 13000,
+      14000, 15000,
+      16000, 17000,
+      18000, 19000,
+      20000, 21000,
+      22000,
    };
 
-   for (unsigned i = 0; i < sizeof(freq_list) / sizeof(freq_list[0]); i++)
+   unsigned samples = in_rate * 2;
+   input = calloc(sizeof(float), samples);
+   output = calloc(sizeof(float), samples * 8);
+   output_expected = calloc(sizeof(float), samples * 8);
+   assert(input);
+   assert(output);
+   assert(output_expected);
+
+   ssnes_resampler_t *re = resampler_new();
+   assert(re);
+
+   for (unsigned i = 0; i < sizeof(freq_list) / sizeof(freq_list[0]) && freq_list[i] < 0.5f * in_rate; i++)
    {
-      gen_signal(input, freq_list[i], in_rate, 0.0, SAMPLES);
+      double omega = 2.0 * M_PI * freq_list[i] / in_rate;
+      unsigned sample_offset;
+      resampler_preinit(re, omega, &sample_offset);
+
+      gen_signal(input, freq_list[i], in_rate, sample_offset, samples);
 
       struct resampler_data data = {
          .data_in = input,
          .data_out = output,
-         .input_frames = SAMPLES / 2,
+         .input_frames = in_rate,
          .ratio = ratio,
       };
 
-      ssnes_resampler_t *re = resampler_new();
-      assert(re);
       resampler_process(re, &data);
-      resampler_free(re);
 
-#define MAX_OFFSET 128
-      uint64_t first_offset = 0;
-      uint64_t last_offset = MAX_OFFSET - 2;
-      uint64_t first_subphase = 0;
-      uint64_t last_subphase = 1;
-      uint64_t subphases = 2;
+      unsigned out_samples = data.output_frames * 2;
+      gen_signal(output_expected, freq_list[i], out_rate, 0, out_samples);
 
-      double max_snr = -100.0;
+      struct snr_result res;
+      calculate_snr(&res, output_expected, output, out_samples);
 
-      // Iteratively find the correct SNR value.
-      for (unsigned j = 0; j < 48; j++)
-      {
-         double snr = find_best_snr(output, SAMPLES - MAX_OFFSET, freq_list[i], out_rate,
-               &first_offset, &last_offset,
-               &first_subphase, &last_subphase, &subphases);
-
-         if (snr > max_snr)
-            max_snr = snr;
-      }
-
-      printf("SNR @ %.0f Hz: %lf dB\n", freq_list[i], max_snr);
+      printf("SNR @ %7.1f Hz: %6.2lf dB, Gain: %6.1f dB\n",
+            freq_list[i], res.snr, res.gain);
    }
+
+   resampler_free(re);
+   free(input);
+   free(output);
+   free(output_expected);
 }
 

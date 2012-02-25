@@ -20,6 +20,12 @@
 #define __SSNES_RESAMPLER_H
 
 #include <stddef.h>
+#include <math.h>
+
+// M_PI is left out of ISO C99 :(
+#ifndef M_PI
+#define M_PI 3.14159265358979323846264338327
+#endif
 
 typedef struct ssnes_resampler ssnes_resampler_t;
 
@@ -37,6 +43,9 @@ struct resampler_data
 ssnes_resampler_t *resampler_new(void);
 void resampler_process(ssnes_resampler_t *re, struct resampler_data *data);
 void resampler_free(ssnes_resampler_t *re);
+
+// Generate a starting cosine pulse with given frequency for testing (SNR, etc) purposes.
+void resampler_preinit(ssnes_resampler_t *re, double omega, unsigned *samples_offset);
 
 #endif
 

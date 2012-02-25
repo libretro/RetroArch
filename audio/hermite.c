@@ -19,6 +19,7 @@
 
 #include "resampler.h"
 #include <stdlib.h>
+#include <math.h>
 #include "../boolean.h"
 
 #define CHANNELS 2
@@ -28,6 +29,18 @@ struct ssnes_resampler
    float chan_data[CHANNELS][4];
    double r_frac;
 };
+
+void resampler_preinit(ssnes_resampler_t *re, double omega, unsigned *samples_offset)
+{
+   *samples_offset = 4;
+   for (unsigned i = 0; i < 4; i++)
+   {
+      re->chan_data[0][i] = cos(i * omega);
+      re->chan_data[1][i] = re->chan_data[0][i];
+   }
+
+   re->r_frac = 0.0;
+}
 
 static inline float hermite_kernel(float mu1, float a, float b, float c, float d)
 {

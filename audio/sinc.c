@@ -31,11 +31,6 @@
 #define SSNES_LOG(...)
 #endif
 
-// M_PI is left out of ISO C99 :(
-#ifndef M_PI
-#define M_PI 3.14159265358979323846264338327
-#endif
-
 #if __SSE__
 #include <xmmintrin.h>
 #endif
@@ -69,6 +64,18 @@ struct ssnes_resampler
 
    uint32_t time;
 };
+
+void resampler_preinit(ssnes_resampler_t *re, double omega, unsigned *samples_offset)
+{
+   *samples_offset = SIDELOBES + 1;
+   for (int i = 0; i < 2 * SIDELOBES; i++)
+   {
+      re->buffer_l[i] = cos((i - (SIDELOBES - 1)) * omega);
+      re->buffer_r[i] = re->buffer_l[i];
+   }
+
+   re->time = 0;
+}
 
 static inline double sinc(double val)
 {
