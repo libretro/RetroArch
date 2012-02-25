@@ -103,7 +103,7 @@ static void init_sinc_table(ssnes_resampler_t *resamp)
    // Sinc phases: [..., p + 3, p + 2, p + 1, p + 0, p - 1, p - 2, p - 3, p - 4, ...]
    for (int i = 0; i < PHASES; i++)
    {
-      for (int j = 0; j < 2 * SIDELOBES; j++)
+      for (int j = 0; j < TAPS; j++)
       {
          double p = (double)i / PHASES;
          double sinc_phase = M_PI * (p + (SIDELOBES - 1 - j));
@@ -114,11 +114,22 @@ static void init_sinc_table(ssnes_resampler_t *resamp)
    // Optimize linear interpolation.
    for (int i = 0; i < PHASES - 1; i++)
    {
-      for (int j = 0; j < 2 * SIDELOBES; j++)
+      for (int j = 0; j < TAPS; j++)
       {
          resamp->phase_table[i][DELTA_INDEX][j] =
             (resamp->phase_table[i + 1][PHASE_INDEX][j] - resamp->phase_table[i][PHASE_INDEX][j]) / SUBPHASES;
       }
+   }
+
+   // Interpolation between [PHASES - 1] => [PHASES] 
+   for (int j = 0; j < TAPS; j++)
+   {
+      double p = 1.0;
+      double sinc_phase = M_PI * (p + (SIDELOBES - 1 - j));
+      double phase = sinc(sinc_phase) * blackman(sinc_phase / SIDELOBES);
+
+      float result = (phase - resamp->phase_table[PHASES - 1][PHASE_INDEX][j]) / SUBPHASES;
+      resamp->phase_table[PHASES - 1][DELTA_INDEX][j] = result;
    }
 }
 
@@ -186,8 +197,8 @@ static void process_sinc(ssnes_resampler_t *resamp, float *out_buffer)
       [1] = { .v = sum_r },
    };
 
-   out_buffer[0] = u[0].f[0] + u[0].f[1] + u[0].f[2] + u[0].f[3];
-   out_buffer[1] = u[1].f[0] + u[1].f[1] + u[1].f[2] + u[1].f[3];
+   out_buffer[0] = (u[0].f[0] + u[0].f[1]) + (u[0].f[2] + u[0].f[3]);
+   out_buffer[1] = (u[1].f[0] + u[1].f[1]) + (u[1].f[2] + u[1].f[3]);
 #endif
 }
 #else // Plain ol' C99
