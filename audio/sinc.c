@@ -19,12 +19,22 @@
 // Only suitable as an upsampler, as there is no low-pass filter stage.
 
 #include "resampler.h"
-#include "../general.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <malloc.h>
 #include <string.h>
+
+#ifndef RESAMPLER_TEST
+#include "../general.h"
+#else
+#define SSNES_LOG(...)
+#endif
+
+// M_PI is left out of ISO C99 :(
+#ifndef M_PI
+#define M_PI 3.14159265358979323846264338327
+#endif
 
 #if __SSE__
 #include <xmmintrin.h>
@@ -45,7 +55,7 @@
 #define PHASES_WRAP (1 << (PHASE_BITS + SUBPHASE_BITS))
 #define FRAMES_SHIFT (PHASE_BITS + SUBPHASE_BITS)
 
-#define SIDELOBES 8
+#define SIDELOBES 16
 #define TAPS (SIDELOBES * 2)
 
 #define PHASE_INDEX 0
