@@ -18,10 +18,15 @@
 #ifndef ROM_EXT_H__
 #define ROM_EXT_H__
 
+#include <stddef.h>
+
 // Get rom extensions for current library.
 // Infers info from snes_library_id().
 // Returns NULL if library doesn't have any preferences in particular.
 const char *ssnes_console_get_rom_ext(void);
+
+// Transforms a library id to a name suitable as a pathname.
+void ssnes_console_name_from_id(char *name, size_t size);
 
 #endif
 
