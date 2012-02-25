@@ -65,7 +65,7 @@ struct ssnes_resampler
    uint32_t time;
 };
 
-void resampler_preinit(ssnes_resampler_t *re, double omega, unsigned *samples_offset)
+void resampler_preinit(ssnes_resampler_t *re, double omega, double *samples_offset)
 {
    *samples_offset = SIDELOBES + 1;
    for (int i = 0; i < 2 * SIDELOBES; i++)

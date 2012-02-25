@@ -30,12 +30,12 @@ struct ssnes_resampler
    double r_frac;
 };
 
-void resampler_preinit(ssnes_resampler_t *re, double omega, unsigned *samples_offset)
+void resampler_preinit(ssnes_resampler_t *re, double omega, double *samples_offset)
 {
-   *samples_offset = 4;
-   for (unsigned i = 0; i < 4; i++)
+   *samples_offset = 2.0;
+   for (int i = 0; i < 4; i++)
    {
-      re->chan_data[0][i] = cos(i * omega);
+      re->chan_data[0][i] = cos((i - 2) * omega);
       re->chan_data[1][i] = re->chan_data[0][i];
    }
 

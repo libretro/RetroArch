@@ -45,7 +45,7 @@ void resampler_process(ssnes_resampler_t *re, struct resampler_data *data);
 void resampler_free(ssnes_resampler_t *re);
 
 // Generate a starting cosine pulse with given frequency for testing (SNR, etc) purposes.
-void resampler_preinit(ssnes_resampler_t *re, double omega, unsigned *samples_offset);
+void resampler_preinit(ssnes_resampler_t *re, double omega, double *samples_offset);
 
 #endif
 

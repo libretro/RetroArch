@@ -22,7 +22,7 @@
 #include <math.h>
 #include <assert.h>
 
-static void gen_signal(float *out, double freq, double sample_rate, unsigned bias_samples, size_t samples)
+static void gen_signal(float *out, double freq, double sample_rate, double bias_samples, size_t samples)
 {
    double omega = 2.0 * M_PI * freq / sample_rate;
 
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
    for (unsigned i = 0; i < sizeof(freq_list) / sizeof(freq_list[0]) && freq_list[i] < 0.5f * in_rate; i++)
    {
       double omega = 2.0 * M_PI * freq_list[i] / in_rate;
-      unsigned sample_offset;
+      double sample_offset;
       resampler_preinit(re, omega, &sample_offset);
 
       gen_signal(input, freq_list[i], in_rate, sample_offset, samples);
@@ -171,6 +171,11 @@ int main(int argc, char *argv[])
 
       printf("SNR @ %7.1f Hz: %6.2lf dB, Gain: %6.1f dB\n",
             freq_list[i], res.snr, res.gain);
+
+      //printf("Generated:\n\t");
+      //for (unsigned i = 0; i < 10; i++)
+      //   printf("%.4f, ", output[i]);
+      //printf("\n");
    }
 
    resampler_free(re);
