@@ -6,15 +6,12 @@ DOWNLOAD_SHADERS	= 1
 STRIPPING_ENABLE	= 0
 HAVE_SSNES_GL		= 0
 
-## Platform detection from nall/Makefile. Only two applicable hosts for PS3 SDK.
-ifeq ($(platform),)
-  uname := $(shell uname -a)
-endif
-
-ifeq ($(uname),)
-    platform := win
-else
+ifeq ($(shell uname), Linux)
     platform := linux
+    CELL_HOST_PATH  = $(CELL_SDK)/host-linux
+else
+    platform := win
+    CELL_HOST_PATH  = $(CELL_SDK)/host-win32
 endif
 
 ifeq ($(platform),win)
@@ -41,8 +38,8 @@ PPU_TARGET := ssnes.elf
 LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
 INCDIRS = -I. -Icommon
 
-MAKE_FSELF_NPDRM = $(CELL_SDK)/$(HOST_DIR)/bin/make_fself_npdrm
-MAKE_PACKAGE_NPDRM = $(CELL_SDK)/$(HOST_DIR)/bin/make_package_npdrm
+MAKE_FSELF_NPDRM    = $(CELL_HOST_PATH)/bin/make_fself_npdrm
+MAKE_PACKAGE_NPDRM  = $(CELL_HOST_PATH)/bin/make_package_npdrm
 
 OBJ = fifo_buffer.o ps3/cellframework2/fileio/file_browser.o ps3/ps3_audio.o ps3/menu.o console/main_wrap.o console/rom_ext.o ps3/ps3_input.o ps3/cellframework2/input/pad_input.o getopt.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o netplay.o netplay_compat.o gfx/gfx_common.o ps3/ps3_video_psgl.o gfx/shader_cg.o gfx/snes_state.o ups.o bps.o strl.o audio/hermite.o dynamic.o ps3/main.o audio/utils.o conf/config_file.o ps3/image.o
 
