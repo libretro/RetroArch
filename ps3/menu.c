@@ -394,8 +394,6 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), fname);
 			}
 			break;
-		case SETTING_BORDER:
-			break;
 		case SETTING_SHADER:
 			{
 				char fname[MAX_PATH_LENGTH];
@@ -1063,8 +1061,6 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				strlcpy(g_console.cgp_path, "", sizeof(g_console.cgp_path));
 			}
-			break;
-		case SETTING_BORDER:
 			break;
 		case SETTING_SHADER:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))

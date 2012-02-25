@@ -26,6 +26,7 @@
 #include <sysutil/sysutil_screenshot.h>
 #include <sysutil/sysutil_common.h>
 #include <sysutil/sysutil_gamecontent.h>
+#include <sys/spu_initialize.h>
 
 #include "ps3_input.h"
 #include "ps3_video_psgl.h"
