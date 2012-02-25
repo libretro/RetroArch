@@ -15,6 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+#include <string.h>
 #include "rom_ext.h"
 #include "../boolean.h"
 #include "../libsnes.hpp"
@@ -70,4 +72,3 @@ void ssnes_console_name_from_id(char *name, size_t size)
          name[i] = tolower(c);
    }
 }
-

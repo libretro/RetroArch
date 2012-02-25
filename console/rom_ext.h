@@ -29,4 +29,3 @@ const char *ssnes_console_get_rom_ext(void);
 void ssnes_console_name_from_id(char *name, size_t size);
 
 #endif
-
