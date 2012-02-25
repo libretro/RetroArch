@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
             max_snr = snr;
       }
 
-      printf("SNR @ %.0lf Hz: %lf dB\n", freq_list[i], max_snr);
+      printf("SNR @ %.0f Hz: %lf dB\n", freq_list[i], max_snr);
    }
 }
 
