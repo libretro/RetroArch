@@ -20,6 +20,8 @@
 #include "rom_ext.h"
 #include "../boolean.h"
 #include "../libsnes.hpp"
+#include <string.h>
+#include <ctype.h>
 
 const char *ssnes_console_get_rom_ext(void)
 {
@@ -45,4 +47,28 @@ const char *ssnes_console_get_rom_ext(void)
       return "md|smd|bin|gen|zip|MD|SMD|bin|GEN|ZIP|sms|SMS|gg|GG|sg|SG";
 
    return NULL;
+}
+
+void ssnes_console_name_from_id(char *name, size_t size)
+{
+   if (size == 0)
+      return;
+
+   const char *id = snes_library_id();
+   if (!id || strlen(id) >= size)
+   {
+      name[0] = '\0';
+      return;
+   }
+
+   name[strlen(id)] = '\0';
+
+   for (size_t i = 0; id[i] != '\0'; i++)
+   {
+      char c = id[i];
+      if (isspace(c) || isblank(c))
+         name[i] = '_';
+      else
+         name[i] = tolower(c);
+   }
 }
