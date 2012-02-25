@@ -31,26 +31,40 @@ static void gen_signal(float *out, double freq, double sample_rate, double bias_
    }
 }
 
+static double calculate_gain(const float *orig, const float *resamp, size_t samples)
+{
+   double orig_power = 0.0;
+   double resamp_power = 0.0;
+
+   for (size_t i = 0; i < samples; i += 2)
+      orig_power += orig[i] * orig[i];
+
+   for (size_t i = 0; i < samples; i += 2)
+      resamp_power += resamp[i] * resamp[i];
+
+   return resamp_power / orig_power;
+}
+
 static double calculate_snr(const float *orig, const float *resamp, size_t samples)
 {
    double noise = 0.0;
    double signal = 0.0;
+
+   double make_up_gain = 1.0 / calculate_gain(orig, resamp, samples);
 
    for (size_t i = 0; i < samples; i += 2)
       signal += orig[i] * orig[i];
 
    for (size_t i = 0; i < samples; i += 2)
    {
-      double diff = resamp[i] - orig[i];
+      double diff = make_up_gain * resamp[i] - orig[i];
       noise += diff * diff;
    }
 
-   double snr = 10 * log10(signal / noise);
-
-   return snr;
+   return 10.0 * log10(signal / noise);
 }
 
-#define SAMPLES 0x100000
+#define SAMPLES 0x40000
 
 // This approach is kinda stupid.
 // There should be a good way to directly (and accurately) determine phase after correlating
