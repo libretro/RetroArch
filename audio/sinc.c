@@ -22,7 +22,6 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <malloc.h>
 #include <string.h>
 
 #ifndef RESAMPLER_TEST
@@ -122,9 +121,29 @@ static void init_sinc_table(ssnes_resampler_t *resamp)
    }
 }
 
+// No memalign() for us on Win32 ...
+static void *aligned_alloc(size_t boundary, size_t size)
+{
+   void *ptr = malloc(boundary + size + sizeof(uintptr_t));
+   if (!ptr)
+      return NULL;
+
+   uintptr_t addr = ((uintptr_t)ptr + sizeof(uintptr_t) + boundary) & ~(boundary - 1);
+   void **place = (void**)addr;
+   place[-1] = ptr;
+
+   return (void*)addr;
+}
+
+static void aligned_free(void *ptr)
+{
+   void **p = (void**)ptr;
+   free(p[-1]);
+}
+
 ssnes_resampler_t *resampler_new(void)
 {
-   ssnes_resampler_t *re = (ssnes_resampler_t*)memalign(16, sizeof(*re));
+   ssnes_resampler_t *re = (ssnes_resampler_t*)aligned_alloc(16, sizeof(*re));
    if (!re)
       return NULL;
 
@@ -255,6 +274,6 @@ void resampler_process(ssnes_resampler_t *re, struct resampler_data *data)
 
 void resampler_free(ssnes_resampler_t *re)
 {
-   free(re);
+   aligned_free(re);
 }
 
