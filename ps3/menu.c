@@ -808,6 +808,14 @@ static void select_file(uint32_t menu_id)
 			strncpy(object, "Border image file", sizeof(object));
 			strncpy(comment, "INFO - Select a border image file from the menu by pressing the X button. ", sizeof(comment));
 			break;
+		case LIBSNES_CHOICE:
+			strncpy(dir_path, LIBSNES_DIR_PATH, sizeof(dir_path));
+			strncpy(extensions, "self|SELF", sizeof(extensions));
+			strncpy(title, "LIBSNES CORE SELECTION", sizeof(title));
+			strncpy(object, "Libsnes", sizeof(object));
+			strncpy(object, "Libsnes core file", sizeof(object));
+			strncpy(comment, "INFO - Select a Libsnes core file from the menu by pressing the X button. ", sizeof(comment));
+			break;
 		EXTRA_SELECT_FILE_PART1();
 	}
 
@@ -870,6 +878,12 @@ static void select_file(uint32_t menu_id)
 					case INPUT_PRESET_CHOICE:
 						break;
 					case BORDER_CHOICE:
+						break;
+					case LIBSNES_CHOICE:
+						strlcpy(g_settings.libsnes, path, sizeof(g_settings.libsnes));
+						g_console.return_to_launcher = true;
+						g_console.menu_enable = false;
+						g_console.mode_switch = MODE_EXIT;
 						break;
 						EXTRA_SELECT_FILE_PART2();
 				}
@@ -1950,9 +1964,11 @@ static void ingame_menu(uint32_t menu_id)
 			case MENU_ITEM_CHANGE_LIBSNES:
 				if(CTRL_CROSS(state))
 				{
-					g_console.return_to_launcher = true;
-					g_console.menu_enable = false;
-					g_console.mode_switch = MODE_EXIT;
+					menuStackindex++;
+					menuStack[menuStackindex] = menu_filebrowser;
+					menuStack[menuStackindex].enum_id = LIBSNES_CHOICE;
+					set_initial_dir_tmpbrowser = true;
+					set_delay = DELAY_LONG;
 				}
 				strcpy(comment, "Press 'CROSS' to choose a different emulator core.");
 				break;
@@ -2133,6 +2149,7 @@ void menu_loop(void)
 			case SHADER_CHOICE:
 			case PRESET_CHOICE:
 			case BORDER_CHOICE:
+			case LIBSNES_CHOICE:
 			case INPUT_PRESET_CHOICE:
 				select_file(menuStack[menuStackindex].enum_id);
 				break;

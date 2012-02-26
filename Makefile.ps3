@@ -34,6 +34,7 @@ endif
 STRIP = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-strip
 
 PPU_TARGET := ssnes.elf
+SALAMANDER_TARGET := ssnes-salamander.elf
 
 LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
 INCDIRS = -I. -Icommon
@@ -42,6 +43,8 @@ MAKE_FSELF_NPDRM    = $(CELL_HOST_PATH)/bin/make_fself_npdrm
 MAKE_PACKAGE_NPDRM  = $(CELL_HOST_PATH)/bin/make_package_npdrm
 
 OBJ = fifo_buffer.o ps3/cellframework2/fileio/file_browser.o ps3/ps3_audio.o ps3/menu.o console/main_wrap.o console/rom_ext.o ps3/ps3_input.o ps3/cellframework2/input/pad_input.o getopt.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o netplay.o netplay_compat.o gfx/gfx_common.o ps3/ps3_video_psgl.o gfx/shader_cg.o gfx/snes_state.o ups.o bps.o strl.o audio/hermite.o dynamic.o ps3/main.o audio/utils.o conf/config_file.o ps3/image.o
+
+SALAMANDER_CSRCS = ps3/salamander/main.c conf/config_file.c strl.c
 
 ifeq ($(HAVE_SSNES_GL), 1)
 	DEFINES = -DHAVE_SSNES_GL
@@ -60,8 +63,6 @@ else
    PPU_OPTIMIZE_LV	:= -O3 -g
 endif
 
-
-## Use this for new SDK!
 CFLAGS = $(PPU_OPTIMIZE_LV) $(DEFINES)
 CXXFLAGS = $(PPU_OPTIMIZE_LV) $(DEFINES)
 
@@ -81,14 +82,16 @@ endif
 
 pkg: $(PPU_TARGET)
 ifeq ($(DOWNLOAD_SHADERS),1)
-	rm -rf ps3/pkg/USRDIR/shaders
-	git clone git://github.com/twinaphex/common-shaders.git ps3/pkg/USRDIR/shaders
+	rm -rf ps3/pkg/USRDIR/cores/shaders
+	git clone git://github.com/twinaphex/common-shaders.git ps3/pkg/USRDIR/cores/shaders
 endif
-	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) ps3/pkg/USRDIR/EBOOT.BIN
-	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) ps3/pkg/USRDIR/CORE.SELF
+	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) ps3/pkg/USRDIR/cores/CORE.SELF
+	$(CC) -g -L. -ldbgfont -lgcm_cmd -lgcm_sys_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_np_stub  -lsysmodule_stub -lnet_stub $(SALAMANDER_CSRCS) -o $(SALAMANDER_TARGET)
+	$(MAKE_FSELF_NPDRM) $(SALAMANDER_TARGET) ps3/pkg/USRDIR/EBOOT.BIN
 	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
 
 clean:
+	rm -f $(SALAMANDER_TARGET)
 	rm -f $(PPU_TARGET)
 	rm -f $(OBJ)
 	rm -f *.pkg
