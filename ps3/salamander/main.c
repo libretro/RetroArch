@@ -291,6 +291,14 @@ int main(int argc, char *argv[])
 
 	SceNpDrmKey * k_licensee = NULL;
 	int ret = sceNpDrmProcessExitSpawn2(k_licensee, libsnes_path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+	if(ret == SCE_NP_DRM_ERROR_FORMAT)
+	{
+		SSNES_LOG("SELF file is not of NPDRM type, trying another approach to boot it...\n");
+		char * launchargv[7];
+		memset(launchargv, 0, sizeof(launchargv));
+		exitspawn(libsnes_path, (char * const*)launchargv, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+
+	}
 	SSNES_LOG("Launch libsnes core: [%s] (return code: %x]).\n", libsnes_path, ret);
 
 	sceNpTerm();

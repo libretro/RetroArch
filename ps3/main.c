@@ -621,6 +621,12 @@ begin_shutdown:
 		SceNpDrmKey * k_licensee = NULL;
 		int ret = sceNpDrmProcessExitSpawn2(k_licensee, g_settings.libsnes, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
 		SSNES_LOG("Attempt to load SELF: [%s] (return code: [%x]).\n", g_settings.libsnes, ret);
+		if(ret == SCE_NP_DRM_ERROR_FORMAT)
+		{
+			SSNES_LOG("SELF file is not of NPDRM type, trying another approach to boot it...\n");
+			exitspawn(g_settings.libsnes, spawn_argv, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+			
+		}
 		sceNpTerm();
 		cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);
 		cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
