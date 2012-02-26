@@ -39,6 +39,7 @@ typedef struct coreaudio
 
    fifo_buffer_t *buffer;
    bool nonblock;
+   size_t buffer_size;
 } coreaudio_t;
 
 static void coreaudio_free(void *data)
@@ -193,6 +194,7 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
 
    fifo_size = (latency * g_settings.audio.out_rate) / 1000;
    fifo_size *= 2 * sizeof(float);
+   dev->buffer_size = fifo_size;
 
    dev->buffer = fifo_new(fifo_size);
    if (!dev->buffer)
@@ -270,6 +272,21 @@ static bool coreaudio_use_float(void *data)
    return true;
 }
 
+static size_t coreaudio_write_avail(void *data)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   pthread_mutex_lock(&dev->lock);
+   size_t avail = fifo_write_avail(dev->buffer);
+   pthread_mutex_unlock(&dev->lock);
+   return avail;
+}
+
+static size_t coreaudio_buffer_size(void *data)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   return dev->buffer_size;
+}
+
 const audio_driver_t audio_coreaudio = {
    coreaudio_init,
    coreaudio_write,
@@ -278,6 +295,8 @@ const audio_driver_t audio_coreaudio = {
    coreaudio_set_nonblock_state,
    coreaudio_free,
    coreaudio_use_float,
-   "coreaudio"
+   "coreaudio",
+   coreaudio_write_avail,
+   coreaudio_buffer_size,
 };
 
