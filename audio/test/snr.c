@@ -22,10 +22,8 @@
 #include <math.h>
 #include <assert.h>
 
-static void gen_signal(float *out, double freq, double sample_rate, double bias_samples, size_t samples)
+static void gen_signal(float *out, double omega, double bias_samples, size_t samples)
 {
-   double omega = 2.0 * M_PI * freq / sample_rate;
-
    for (size_t i = 0; i < samples; i += 2)
    {
       out[i + 0] = cos(((i >> 1) + bias_samples) * omega);
@@ -47,32 +45,61 @@ static double calculate_gain(const float *orig, const float *resamp, size_t samp
    return sqrt(resamp_power / orig_power);
 }
 
+static double calculate_phase(const float *orig, const float *resamp, double makeup_gain, size_t samples)
+{
+   double max_correlation = 0.0;
+   for (size_t i = 0; i < samples; i += 2)
+      max_correlation += orig[i] * orig[i];
+
+   double actual_correlation = 0.0;
+   for (size_t i = 0; i < samples; i += 2)
+   {
+      double resampled = makeup_gain * resamp[i];
+      actual_correlation += resampled * orig[i];
+   }
+
+   double corr = actual_correlation / max_correlation;
+   if (corr > 1.0)
+      corr = 1.0;
+
+   if (fabs(corr) < 0.0001)
+      return 0.5 * M_PI;
+   else
+      return acos(corr);
+}
+
 struct snr_result
 {
    double snr;
    double gain;
+   double phase;
 };
 
-static void calculate_snr(struct snr_result *res, const float *orig, const float *resamp, size_t samples)
+static void calculate_snr(struct snr_result *res,
+      double omega,
+      float *orig, const float *resamp, size_t samples)
 {
    double noise = 0.0;
    double signal = 0.0;
+
+   gen_signal(orig, omega, 0, samples);
 
    // Account for gain losses at higher frequencies as it's not really noise.
    double filter_gain = calculate_gain(orig, resamp, samples);
    double makeup_gain = 1.0 / filter_gain;
 
-   for (size_t i = 0; i < samples; i += 2)
-      signal += orig[i] * orig[i];
+   double phase = calculate_phase(orig, resamp, makeup_gain, samples);
 
    for (size_t i = 0; i < samples; i += 2)
    {
+      signal += orig[i] * orig[i];
       double diff = makeup_gain * resamp[i] - orig[i];
       noise += diff * diff;
    }
 
    res->snr = 10 * log10(signal / noise);
    res->gain = 20.0 * log10(filter_gain);
+   res->phase = phase;
 }
 
 int main(int argc, char *argv[])
@@ -149,10 +176,11 @@ int main(int argc, char *argv[])
    for (unsigned i = 0; i < sizeof(freq_list) / sizeof(freq_list[0]) && freq_list[i] < 0.5f * in_rate; i++)
    {
       double omega = 2.0 * M_PI * freq_list[i] / in_rate;
+      double omega_out = 2.0 * M_PI * freq_list[i] / out_rate;
       double sample_offset;
       resampler_preinit(re, omega, &sample_offset);
 
-      gen_signal(input, freq_list[i], in_rate, sample_offset, samples);
+      gen_signal(input, omega, sample_offset, samples);
 
       struct resampler_data data = {
          .data_in = input,
@@ -164,13 +192,12 @@ int main(int argc, char *argv[])
       resampler_process(re, &data);
 
       unsigned out_samples = data.output_frames * 2;
-      gen_signal(output_expected, freq_list[i], out_rate, 0, out_samples);
 
       struct snr_result res;
-      calculate_snr(&res, output_expected, output, out_samples);
+      calculate_snr(&res, omega_out, output_expected, output, out_samples);
 
-      printf("SNR @ %7.1f Hz: %6.2lf dB, Gain: %6.1f dB\n",
-            freq_list[i], res.snr, res.gain);
+      printf("SNR @ %7.1f Hz: %6.2lf dB, Gain: %6.1lf dB, Phase: %6.4f rad\n",
+            freq_list[i], res.snr, res.gain, res.phase);
 
       //printf("Generated:\n\t");
       //for (unsigned i = 0; i < 10; i++)
