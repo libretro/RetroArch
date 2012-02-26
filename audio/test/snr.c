@@ -75,6 +75,8 @@ struct snr_result
    double phase;
 };
 
+// This doesn't yet take account for slight phase distortions,
+// so reported SNR is lower than reality.
 static void calculate_snr(struct snr_result *res,
       double omega,
       float *orig, const float *resamp, size_t samples)
