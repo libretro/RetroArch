@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU General Public License along with SSNES.
  * If not, see <http://www.gnu.org/licenses/>.
  */
+#include <cell/pad.h>
 #include <cell/sysmodule.h>
 #include <sysutil/sysutil_gamecontent.h>
 #include <sys/process.h>
@@ -261,6 +262,11 @@ static void get_environment_settings (void)
 
 int main(int argc, char *argv[])
 {
+	CellPadData pad_data;
+	char spawn_data[256], spawn_data_size[16];
+	SceNpDrmKey * k_licensee = NULL;
+	int ret;
+
 	cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
 	cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
 	cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_GAME);
@@ -272,14 +278,28 @@ int main(int argc, char *argv[])
 	sceNpInit(NP_POOL_SIZE, np_pool);
 
 	get_environment_settings();
+	
+	cellPadInit(7);
 
-	init_settings();
+	cellPadGetData(0, &pad_data);
 
-	char spawn_data[256];
+	if(pad_data.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_TRIANGLE)
+	{
+		//override path, boot first SELF in cores directory
+		SSNES_LOG("Fallback - Will boot first SELF in SSNES cores/ directory.\n");
+		find_and_set_first_file();
+	}
+	else
+	{
+		//normal SELF loading path
+		init_settings();
+	}
+
+	cellPadEnd();
+
 	for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
 		spawn_data[i] = i & 0xff;
 
-	char spawn_data_size[16];
 	sprintf(spawn_data_size, "%d", 256);
 
 	const char * const spawn_argv[] = {
@@ -289,14 +309,11 @@ int main(int argc, char *argv[])
 		NULL
 	};
 
-	SceNpDrmKey * k_licensee = NULL;
-	int ret = sceNpDrmProcessExitSpawn2(k_licensee, libsnes_path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+	ret = sceNpDrmProcessExitSpawn2(k_licensee, libsnes_path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
 	if(ret == SCE_NP_DRM_ERROR_FORMAT)
 	{
 		SSNES_LOG("SELF file is not of NPDRM type, trying another approach to boot it...\n");
-		char * launchargv[7];
-		memset(launchargv, 0, sizeof(launchargv));
-		exitspawn(libsnes_path, (char * const*)launchargv, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+		exitspawn(libsnes_path, (const char** const)spawn_argv, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
 
 	}
 	SSNES_LOG("Launch libsnes core: [%s] (return code: %x]).\n", libsnes_path, ret);
