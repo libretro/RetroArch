@@ -121,7 +121,7 @@ ifeq ($(DOWNLOAD_SHADERS),1)
 	git clone git://github.com/twinaphex/common-shaders.git ps3/pkg/USRDIR/cores/shaders
 endif
 
-pkg: $(PPU_TARGET) create-shaders create-salamander-npdrm create-npdrm-core
+pkg: $(PPU_TARGET) create-shaders create-npdrm-salamander create-npdrm-core
 	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
 
 pkg-signed: $(PPU_TARGET) create-shaders create-salamander create-npdrm-core
