@@ -438,6 +438,9 @@ extern struct console_settings g_console;
 #endif
 /////////
 
+#if defined(SSNES_CONSOLE) && defined(HAVE_LOGGER)
+#include <logger_override.h>
+#else
 #define SSNES_LOG(...) do { \
    if (g_extern.verbose) \
       fprintf(stderr, "SSNES: " __VA_ARGS__); \
@@ -453,6 +456,7 @@ extern struct console_settings g_console;
       fprintf(stderr, "SSNES [WARN] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
+#endif
 
 #ifndef max
 #define max(a, b) ((a) > (b) ? (a) : (b))
