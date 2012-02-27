@@ -37,7 +37,6 @@ struct snr_result
 {
    double snr;
    double gain;
-   double phase;
 };
 
 static unsigned bitrange(unsigned len)
@@ -154,10 +153,7 @@ static void calculate_snr(struct snr_result *res,
    samples >>= 1;
    calculate_fft(resamp, butterfly_buf, samples);
 
-   complex double phase = butterfly_buf[in_rate];
-   res->phase = carg(phase);
-
-   double signal = cabs(phase * phase);
+   double signal = cabs(butterfly_buf[in_rate] * butterfly_buf[in_rate]);
    butterfly_buf[in_rate] = 0.0;
 
    double noise = 0.0;
@@ -261,8 +257,8 @@ int main(int argc, char *argv[])
       struct snr_result res;
       calculate_snr(&res, freq_list[i], output, butterfly_buf, fft_samples * 2);
 
-      printf("SNR @ %5u Hz: %6.2lf dB, Gain: %6.1lf dB, Phase: %6.4f rad\n",
-            freq_list[i], res.snr, res.gain, res.phase);
+      printf("SNR @ %5u Hz: %6.2lf dB, Gain: %6.1lf dB\n",
+            freq_list[i], res.snr, res.gain);
    }
 
    resampler_free(re);
