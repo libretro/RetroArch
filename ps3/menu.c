@@ -371,7 +371,7 @@ static void browser_render(filebrowser_t * b)
 	cellDbgFontDraw();
 }
 
-static void set_setting_label(menu * menu_obj, int currentsetting)
+static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 {
 	switch(currentsetting)
 	{
@@ -2107,8 +2107,6 @@ void menu_loop(void)
 	menuStack[0].enum_id = FILE_BROWSER_MENU;
 
 	g_console.menu_enable = true;
-
-	gl_t * gl = g_gl;
 
 	menu_reinit_settings();
 

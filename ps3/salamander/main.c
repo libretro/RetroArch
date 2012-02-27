@@ -20,9 +20,11 @@
 #include <cell/sysmodule.h>
 #include <sysutil/sysutil_gamecontent.h>
 #include <sys/process.h>
+#ifdef HAVE_EXITSPAWN_NPDRM
 #include <netex/net.h>
 #include <np.h>
 #include <np/drm.h>
+#endif
 #include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,6 +37,12 @@
 #define NP_POOL_SIZE (128*1024)
 #define MAX_PATH_LENGTH 1024
 
+#ifdef HAVE_LOGGER
+#include "../cellframework2/fileio/logger.h"
+#define SSNES_LOG(...) net_send("SSNES Salamander: " __VA_ARGS__);
+#define SSNES_ERR(...) net_send("SSNES Salamander [ERROR] :: " __VA_ARGS__);
+#define SSNES_WARN(...) net_send("SSNES Salamander [WARN] :: " __VA_ARGS__);
+#else
 #define SSNES_LOG(...) do { \
       fprintf(stderr, "SSNES Salamander: " __VA_ARGS__); \
       fflush(stderr); \
@@ -49,8 +57,11 @@
       fprintf(stderr, "SSNES Salamander [WARN] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
+#endif
 
+#ifdef HAVE_EXITSPAWN_NPDRM
 static uint8_t np_pool[NP_POOL_SIZE];
+#endif
 char contentInfoPath[MAX_PATH_LENGTH];
 char usrDirPath[MAX_PATH_LENGTH];
 char LIBSNES_DIR_PATH[MAX_PATH_LENGTH];
@@ -263,19 +274,34 @@ static void get_environment_settings (void)
 int main(int argc, char *argv[])
 {
 	CellPadData pad_data;
+#ifdef HAVE_EXITSPAWN_NPDRM
 	char spawn_data[256], spawn_data_size[16];
 	SceNpDrmKey * k_licensee = NULL;
+#endif
 	int ret;
 
 	cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
 	cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
 	cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_GAME);
+#if defined(HAVE_EXITSPAWN_NPDRM) || defined(HAVE_LOGGER)
 	cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
+#endif
+
+#ifdef HAVE_EXITSPAWN_NPDRM
 	cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_NP);
+#endif
 
+#if defined(HAVE_EXITSPAWN_NPDRM) || defined(HAVE_LOGGER)
 	sys_net_initialize_network();
+#endif
 
+#ifdef HAVE_LOGGER
+	logger_init();
+#endif
+
+#ifdef HAVE_EXITSPAWN_NPDRM
 	sceNpInit(NP_POOL_SIZE, np_pool);
+#endif
 
 	get_environment_settings();
 	
@@ -297,6 +323,11 @@ int main(int argc, char *argv[])
 
 	cellPadEnd();
 
+#ifdef HAVE_LOGGER
+	logger_shutdown();
+#endif
+
+#ifdef HAVE_EXITSPAWN_NPDRM
 	for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
 		spawn_data[i] = i & 0xff;
 
@@ -310,17 +341,29 @@ int main(int argc, char *argv[])
 	};
 
 	ret = sceNpDrmProcessExitSpawn2(k_licensee, libsnes_path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-	if(ret == SCE_NP_DRM_ERROR_FORMAT)
+	SSNES_LOG("Launch libsnes core: [%s] (return code: %x]).\n", libsnes_path, ret);
+	if(ret < 0)
 	{
 		SSNES_LOG("SELF file is not of NPDRM type, trying another approach to boot it...\n");
-		exitspawn(libsnes_path, (const char** const)spawn_argv, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+		sys_game_process_exitspawn2(libsnes_path, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
 
 	}
-	SSNES_LOG("Launch libsnes core: [%s] (return code: %x]).\n", libsnes_path, ret);
-
 	sceNpTerm();
+#else
+	sys_game_process_exitspawn2((char*)libsnes_path, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+#endif
+
+#if defined(HAVE_EXITSPAWN_NPDRM) || defined(HAVE_LOGGER)
+	sys_net_finalize_network();
+#endif
+
+#ifdef HAVE_EXITSPAWN_NPDRM
 	cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);
+#endif
+
+#if defined(HAVE_EXITSPAWN_NPDRM) || defined(HAVE_LOGGER)
 	cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
+#endif
 	cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
 	cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
 	cellSysmoduleLoadModule(CELL_SYSMODULE_IO);

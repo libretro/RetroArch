@@ -719,53 +719,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 	return true;
 }
 
-static void gl_update_resize(void)
-{
-	gl_t * gl = g_gl;
-
-	if(!gl)
-		return;
-
-	if (!gl->render_to_tex)
-		set_viewport(gl, gl->win_width, gl->win_height, false);
-	else
-	{
-		// Check if we have to recreate our FBO textures.
-		for (int i = 0; i < gl->fbo_pass; i++)
-		{
-			// Check proactively since we might suddently get sizes of tex_w width or tex_h height.
-			if (gl->fbo_rect[i].max_img_width > gl->fbo_rect[i].width ||
-					gl->fbo_rect[i].max_img_height > gl->fbo_rect[i].height)
-			{
-				unsigned img_width = gl->fbo_rect[i].max_img_width;
-				unsigned img_height = gl->fbo_rect[i].max_img_height;
-				unsigned max = img_width > img_height ? img_width : img_height;
-				unsigned pow2_size = next_pow2(max);
-				gl->fbo_rect[i].width = gl->fbo_rect[i].height = pow2_size;
-
-				glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[i]);
-				glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
-				glTexImage2D(GL_TEXTURE_2D,
-						0, GL_ARGB_SCE, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_ARGB_SCE,
-						GL_UNSIGNED_INT_8_8_8_8, NULL);
-
-				glFramebufferTexture2DOES(GL_FRAMEBUFFER_OES, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
-
-				GLenum status = glCheckFramebufferStatusOES(GL_FRAMEBUFFER_OES);
-				if (status != GL_FRAMEBUFFER_COMPLETE_OES)
-					SSNES_WARN("Failed to reinit FBO texture.\n");
-
-				SSNES_LOG("Recreating FBO texture #%d: %ux%u\n", i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
-			}
-		}
-
-		// Go back to what we're supposed to do, render to FBO #0 :D
-		glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-		glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[0]);
-		set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
-	}
-}
-
 static void psgl_deinit(gl_t *gl)
 {
    glFinish();

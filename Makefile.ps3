@@ -1,61 +1,79 @@
-# Makefile for SSNES PS3. Somewhat generic and avoids using the odd SDK examples.
+SSNES_VERSION		= "0.9.4.1"
+
+#which compiler to build  with - GCC or SNC
+#set to GCC for debug builds for use with debugger
+CELL_BUILD_TOOLS	= SNC
+CELL_SDK		?= /usr/local/cell
+CELL_GPU_TYPE	   	= RSX
+CELL_PSGL_VERSION	= ultra-opt
 
 DEBUG			= 0
-CELL_BUILD_TOOLS	= GCC
 DOWNLOAD_SHADERS	= 1
 STRIPPING_ENABLE	= 0
 HAVE_SSNES_GL		= 0
 
-ifeq ($(shell uname), Linux)
-    platform := linux
-    CELL_HOST_PATH  = $(CELL_SDK)/host-linux
-else
-    platform := win
-    CELL_HOST_PATH  = $(CELL_SDK)/host-win32
-endif
+CONTENT_ID_FULL		= UP0001-SSNE10000_00-0000000000000001
+CONTENT_ID		= SSNE10000
 
-ifeq ($(platform),win)
-   HOST_DIR := host-win32
-   CELL_SDK := /c/usr/local/cell/
-else
-   HOST_DIR := host-linux
-   CELL_SDK := /usr/local/cell
-endif
+CELL_MK_DIR		?= $(CELL_SDK)/samples/mk
+include $(CELL_MK_DIR)/sdk.makedef.mk
 
-ifeq ($(CELL_BUILD_TOOLS),SNC)
-CC = $(CELL_SDK)/$(HOST_DIR)/sn/bin/ps3ppusnc
-CXX = $(CC)
-LD = $(CELL_SDK)/$(HOST_DIR)/sn/bin/ps3ppuld
-else
-CC = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-gcc
-CXX = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-g++
-LD = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-g++
-endif
-STRIP = $(CELL_SDK)/$(HOST_DIR)/ppu/bin/ppu-lv2-strip
+PPU_TARGET		= ssnes.elf
+SALAMANDER_TARGET	= ssnes-salamander.elf
 
-PPU_TARGET := ssnes.elf
-SALAMANDER_TARGET := ssnes-salamander.elf
+EBOOT_PATH		= ps3/pkg/USRDIR/EBOOT.BIN
+CORE_PATH		= ps3/pkg/USRDIR/cores/CORE.SELF
 
 LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
 INCDIRS = -I. -Icommon
 
-MAKE_FSELF_NPDRM    = $(CELL_HOST_PATH)/bin/make_fself_npdrm
-MAKE_PACKAGE_NPDRM  = $(CELL_HOST_PATH)/bin/make_package_npdrm
+MAKE_SELF		= make_self_npdrm
 
-OBJ = fifo_buffer.o ps3/cellframework2/fileio/file_browser.o ps3/ps3_audio.o ps3/menu.o console/main_wrap.o console/rom_ext.o ps3/ps3_input.o ps3/cellframework2/input/pad_input.o getopt.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o netplay.o netplay_compat.o gfx/gfx_common.o ps3/ps3_video_psgl.o gfx/shader_cg.o gfx/snes_state.o ups.o bps.o strl.o audio/hermite.o dynamic.o ps3/main.o audio/utils.o conf/config_file.o ps3/image.o
+PKG_SCRIPT		= ps3/ps3py/pkg.py
+PKG_FINALIZE         	= package_finalize
 
-SALAMANDER_CSRCS = ps3/salamander/main.c conf/config_file.c strl.c
+PPU_SRCS		= fifo_buffer.c \
+			ps3/cellframework2/fileio/file_browser.c \
+			ps3/ps3_audio.c \
+			ps3/menu.c \
+			console/main_wrap.c \
+			console/rom_ext.c \
+			ps3/ps3_input.c \
+			ps3/cellframework2/input/pad_input.c \
+			getopt.c \
+			ssnes.c \
+			driver.c \
+			file.c \
+			settings.c \
+			message.c \
+			rewind.c \
+			movie.c \
+			netplay.c \
+			netplay_compat.c \
+			gfx/gfx_common.c \
+			ps3/ps3_video_psgl.c \
+			gfx/shader_cg.c \
+			gfx/snes_state.c \
+			ups.c \
+			bps.c \
+			strl.c \
+			audio/hermite.c \
+			dynamic.c \
+			ps3/main.c \
+			audio/utils.c \
+			conf/config_file.c \
+			ps3/image.c
 
 ifeq ($(HAVE_SSNES_GL), 1)
-	DEFINES = -DHAVE_SSNES_GL
-	GL_LIBS := -lSSNESGL -lSSNESGLcgc
+DEFINES			= -DHAVE_SSNES_GL
+GL_LIBS			:= -lSSNESGL -lSSNESGLcgc
 else
-	GL_LIBS := -lPSGL -lPSGLcgc
+GL_LIBS			:= -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt -lPSGL -lPSGLcgc
 endif
 
-LIBS = -ldbgfont $(GL_LIBS) -lcgc -lgcm_cmd -lgcm_sys_stub -lsnes -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_screenshot_stub -lsysutil_np_stub -lpngdec_stub -ljpgdec_stub -lsysmodule_stub -laudio_stub -lnet_stub -lpthread
+PPU_LDLIBS = -ldbgfont $(GL_LIBS) -lcgc -lgcm_cmd -lgcm_sys_stub -lsnes -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_screenshot_stub -lsysutil_np_stub -lpngdec_stub -ljpgdec_stub -lsysmodule_stub -laudio_stub -lnet_stub -lpthread
 
-DEFINES += -DSSNES_CONSOLE -DHAVE_OPENGL=1 -DHAVE_CG=1 -DHAVE_FBO=1 -D__CELLOS_LV2__ -DHAVE_CONFIGFILE=1 -DHAVE_NETPLAY=1 -DHAVE_SOCKET_LEGACY=1 -DPACKAGE_VERSION=\"0.9.4.1\" -DHAVE_SCREENSHOTS_BUILTIN=1 -Dmain=ssnes_main
+DEFINES += -DSSNES_CONSOLE -DHAVE_OPENGL=1 -DHAVE_CG=1 -DHAVE_FBO=1 -D__CELLOS_LV2__ -DHAVE_CONFIGFILE=1 -DHAVE_NETPLAY=1 -DHAVE_SOCKET_LEGACY=1 -DPACKAGE_VERSION=\"$(SSNES_VERSION)\" -DHAVE_SCREENSHOTS_BUILTIN=1 -Dmain=ssnes_main
 
 ifeq ($(DEBUG), 1)
    PPU_OPTIMIZE_LV	:= -O0 -g
@@ -63,38 +81,73 @@ else
    PPU_OPTIMIZE_LV	:= -O3 -g
 endif
 
-CFLAGS = $(PPU_OPTIMIZE_LV) $(DEFINES)
-CXXFLAGS = $(PPU_OPTIMIZE_LV) $(DEFINES)
+PPU_CFLAGS = $(PPU_OPTIMIZE_LV) $(DEFINES)
+PPU_CXXFLAGS = $(PPU_OPTIMIZE_LV) $(DEFINES)
 
-all: pkg
+EXIST_EBOOT_WILDCARD := $(wildcard $(EBOOT_PATH))
+EXIST_CORE_WILDCARD := $(wildcard $(CORE_PATH))
 
-$(PPU_TARGET): $(OBJ)
-	$(LD) -o $@ $(OBJ) $(LDFLAGS) $(LDDIRS) $(LIBS)
-ifeq ($(STRIPPING_ENABLE),1)
-	$(STRIP) $(PPU_TARGET)
+EBOOT_EXISTS		= 1
+CORE_EXISTS		= 1
+
+ifneq ($(strip $(EXIST_EBOOT_WILDCARD)),)
+EBOOT_EXISTS		= 0
 endif
 
-%.o: %.c config.h
-	$(CC) $(INCDIRS) $(CFLAGS) -c -o $@ $<
+ifneq ($(strip $(EXIST_CORE_WILDCARD)),)
+CORE_EXISTS		= 0
+endif
 
-%.o: %.cpp config.h
-	$(CXX) $(INCDIRS) $(CXXFLAGS) -c -o $@ $<
+include $(CELL_MK_DIR)/sdk.target.mk
 
-pkg: $(PPU_TARGET)
+.PHONY: create-selfs-npdrm create-npdrm-core create-core create-npdrm-salamander create-npdrm-salamander create-shaders clean-selfs
+
+create-npdrm-core:
+	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) $(CORE_PATH)
+
+create-core:
+	$(MAKE_SELF) $(PPU_TARGET) $(CORE_PATH) $(CONTENT_ID)
+
+create-npdrm-salamander:
+	$(MAKE_FSELF_NPDRM) $(SALAMANDER_TARGET) $(EBOOT_PATH)
+	
+create-salamander:
+	$(MAKE_SELF) $(SALAMANDER_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
+
+
+create-shaders:
 ifeq ($(DOWNLOAD_SHADERS),1)
-	rm -rf ps3/pkg/USRDIR/cores/shaders
+	$(RM) -rf ps3/pkg/USRDIR/cores/shaders
 	git clone git://github.com/twinaphex/common-shaders.git ps3/pkg/USRDIR/cores/shaders
 endif
-	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) ps3/pkg/USRDIR/cores/CORE.SELF
-	$(CC) -g -L. -ldbgfont -lgcm_cmd -lgcm_sys_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_np_stub  -lsysmodule_stub -lnet_stub $(SALAMANDER_CSRCS) -o $(SALAMANDER_TARGET)
-	$(MAKE_FSELF_NPDRM) $(SALAMANDER_TARGET) ps3/pkg/USRDIR/EBOOT.BIN
+
+pkg: $(PPU_TARGET) create-shaders create-salamander-npdrm create-npdrm-core
 	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
 
-clean:
-	rm -f $(SALAMANDER_TARGET)
-	rm -f $(PPU_TARGET)
-	rm -f $(OBJ)
-	rm -f *.pkg
+pkg-signed: $(PPU_TARGET) create-shaders create-salamander create-npdrm-core
+	python2 $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(SSNES_VERSION).pkg
 
-.PHONY: all clean pkg
+pkg-signed-standalone: $(PPU_TARGET) create-shaders create-core
+	$(MAKE_SELF) $(PPU_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
+	python2 $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(SSNES_VERSION).pkg
 
+pkg-signed-cfw: $(PPU_TARGET) create-shaders create-salamander create-core
+	python2 $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(SSNES_VERSION)-kmeaw.pkg
+	$(PKG_FINALIZE) ssnes-ps3-cfw-$(SSNES_VERSION)-kmeaw.pkg
+
+pkg-signed-cfw-standalone: $(PPU_TARGET) create-shaders create-core
+	$(MAKE_SELF) $(PPU_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
+	python2 $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(SSNES_VERSION).pkg
+	$(PKG_FINALIZE) ssnes-ps3-cfw-$(SSNES_VERSION)-kmeaw.pkg
+
+clean-selfs:
+ifeq ($(EBOOT_EXISTS),1)
+	@echo "WARNING: Couldn't find file to delete: [$(EBOOT_PATH)], skipping this step."
+else
+	rm $(EBOOT_PATH)
+endif
+ifeq ($(CORE_EXISTS),1)
+	@echo "WARNING: Couldn't find file to delete: [$(CORE_PATH)], skipping this step."
+else
+	rm $(CORE_PATH)
+endif

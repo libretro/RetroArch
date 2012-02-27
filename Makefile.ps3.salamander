@@ -1,0 +1,43 @@
+CELL_BUILD_TOOLS	= SNC
+CELL_SDK		?= /usr/local/cell
+CELL_GPU_TYPE		= RSX
+CELL_PSGL_VERSION	= opt
+HAVE_LOGGER		= 0
+
+CELL_MK_DIR		?= $(CELL_SDK)/samples/mk
+include $(CELL_MK_DIR)/sdk.makedef.mk
+
+MAKE_SELF		= make_self_npdrm
+PKG_SCRIPT		= ps3/ps3py/pkg.py
+PKG_FINALIZE		= package_finalize
+
+STRIP			= $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-strip
+COPY			= cp
+MOVE			= mv
+C			= $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-gcc
+CC			= $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-g++
+
+PPU_CFLAGS		+= -I. -O2 -g -DHAVE_EXITSPAWN_NPDRM 
+PPU_SRCS		= ps3/salamander/main.c strl.c conf/config_file.c
+
+ifeq ($(HAVE_LOGGER), 1)
+PPU_CFLAGS		+= -DHAVE_LOGGER
+PPU_SRCS		+= ps3/cellframework2/fileio/logger.c
+endif
+
+PPU_TARGET		= ssnes-salamander.elf
+
+ifeq ($(CELL_BUILD_TOOLS),SNC)
+PPU_CFLAGS		+= -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 \
+			-Xunroll=1 -Xautovecreg=1 
+PPU_CXXFLAGS		+= -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 \
+			 -Xunroll=1 -Xautovecreg=1
+else
+PPU_CFLAGS		+= -funroll-loops
+PPU_CXXFLAGS		+= -funroll-loops
+endif
+
+PPU_OPTIMIZE_LV		:= -O2
+PPU_LDLIBS		+= -lpthread -lm -lnet_stub -lnetctl_stub -lm -ldbgfont_gcm -lgcm_cmd -lgcm_sys_stub -lio_stub -lsysmodule_stub -lsysutil_stub -lsysutil_game_stub -lfs_stub -lsysutil_np_stub
+
+include $(CELL_MK_DIR)/sdk.target.mk
