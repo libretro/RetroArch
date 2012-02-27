@@ -439,7 +439,7 @@ extern struct console_settings g_console;
 /////////
 
 #if defined(SSNES_CONSOLE) && defined(HAVE_LOGGER)
-#include <logger_override.h>
+#include "logger_override.h"
 #else
 #define SSNES_LOG(...) do { \
    if (g_extern.verbose) \

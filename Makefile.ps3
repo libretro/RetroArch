@@ -11,6 +11,7 @@ DEBUG			= 0
 DOWNLOAD_SHADERS	= 1
 STRIPPING_ENABLE	= 0
 HAVE_SSNES_GL		= 0
+HAVE_LOGGER		= 0
 
 CONTENT_ID_FULL		= UP0001-SSNE10000_00-0000000000000001
 CONTENT_ID		= SSNE10000
@@ -25,7 +26,7 @@ EBOOT_PATH		= ps3/pkg/USRDIR/EBOOT.BIN
 CORE_PATH		= ps3/pkg/USRDIR/cores/CORE.SELF
 
 LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
-INCDIRS = -I. -Icommon
+INCDIRS = -I. -Ips3 -Icommon
 
 MAKE_SELF		= make_self_npdrm
 
@@ -71,7 +72,7 @@ else
 GL_LIBS			:= -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt -lPSGL -lPSGLcgc
 endif
 
-PPU_LDLIBS = -ldbgfont $(GL_LIBS) -lcgc -lgcm_cmd -lgcm_sys_stub -lsnes -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_screenshot_stub -lsysutil_np_stub -lpngdec_stub -ljpgdec_stub -lsysmodule_stub -laudio_stub -lnet_stub -lpthread
+PPU_LDLIBS = -ldbgfont $(GL_LIBS) -lcgc -lgcm_cmd -lgcm_sys_stub -lsnes -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_screenshot_stub -lsysutil_np_stub -lpngdec_stub -ljpgdec_stub -lsysmodule_stub -laudio_stub -lnet_stub -lnetctl_stub -lpthread
 
 DEFINES += -DSSNES_CONSOLE -DHAVE_OPENGL=1 -DHAVE_CG=1 -DHAVE_FBO=1 -D__CELLOS_LV2__ -DHAVE_CONFIGFILE=1 -DHAVE_NETPLAY=1 -DHAVE_SOCKET_LEGACY=1 -DPACKAGE_VERSION=\"$(SSNES_VERSION)\" -DHAVE_SCREENSHOTS_BUILTIN=1 -Dmain=ssnes_main
 
@@ -81,8 +82,13 @@ else
    PPU_OPTIMIZE_LV	:= -O3 -g
 endif
 
-PPU_CFLAGS = $(PPU_OPTIMIZE_LV) $(DEFINES)
-PPU_CXXFLAGS = $(PPU_OPTIMIZE_LV) $(DEFINES)
+PPU_CFLAGS = $(PPU_OPTIMIZE_LV) $(INCDIRS) $(DEFINES)
+PPU_CXXFLAGS = $(PPU_OPTIMIZE_LV) $(INCDIRS) $(DEFINES)
+
+ifeq ($(HAVE_LOGGER), 1)
+PPU_CFLAGS		+= -DHAVE_LOGGER
+PPU_SRCS		+= ps3/cellframework2/fileio/logger.c
+endif
 
 EXIST_EBOOT_WILDCARD := $(wildcard $(EBOOT_PATH))
 EXIST_CORE_WILDCARD := $(wildcard $(CORE_PATH))

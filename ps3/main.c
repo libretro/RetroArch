@@ -521,6 +521,10 @@ int main(int argc, char *argv[])
 
 	sys_net_initialize_network();
 
+#ifdef HAVE_LOGGER
+	logger_init();
+#endif
+
 	sceNpInit(NP_POOL_SIZE, np_pool);
 
 	get_environment_settings(argc);
@@ -589,6 +593,10 @@ begin_shutdown:
 		ssnes_main_deinit();
 	cell_pad_input_deinit();
 	ps3_video_deinit();
+
+#ifdef HAVE_LOGGER
+	logger_shutdown();
+#endif
 
 	if(g_console.screenshots_enable)
 		cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
