@@ -112,7 +112,7 @@ static void calculate_fft(const float *data, complex double *butterfly_buf, size
 
    // We only have real data.
    for (unsigned i = 1; i < samples / 2; i++)
-      butterfly_buf[i] += butterfly_buf[samples - i];
+      butterfly_buf[i] += conj(butterfly_buf[samples - i]);
 
    // Normalize amplitudes.
    for (unsigned i = 0; i < samples / 2; i++)
@@ -125,23 +125,29 @@ static void test_fft(void)
    float signal[32];
    complex double butterfly_buf[16];
 
-   const float freqs[] = {
+   const float cos_freqs[] = {
       1.0, 4.0, 6.0,
+   };
+
+   const float sin_freqs[] = {
+      -2.0, 5.0, 7.0,
    };
 
    for (unsigned i = 0; i < 16; i++)
    {
       signal[2 * i] = 0.0;
-      for (unsigned j = 0; j < sizeof(freqs) / sizeof(freqs[0]); j++)
-         signal[2 * i] += cos(2.0 * M_PI * i * freqs[j] / 16.0);
+      for (unsigned j = 0; j < sizeof(cos_freqs) / sizeof(cos_freqs[0]); j++)
+         signal[2 * i] += cos(2.0 * M_PI * i * cos_freqs[j] / 16.0);
+      for (unsigned j = 0; j < sizeof(sin_freqs) / sizeof(sin_freqs[0]); j++)
+         signal[2 * i] += sin(2.0 * M_PI * i * sin_freqs[j] / 16.0);
    }
 
    calculate_fft(signal, butterfly_buf, 16);
 
    printf("FFT: { ");
    for (unsigned i = 0; i < 7; i++)
-      printf("%4.2lf, ", cabs(butterfly_buf[i]));
-   printf("%4.2lf }\n", cabs(butterfly_buf[7]));
+      printf("(%4.2lf, %4.2lf), ", creal(butterfly_buf[i]), cimag(butterfly_buf[i]));
+   printf("(%4.2lf, %4.2lf) }\n", creal(butterfly_buf[7]), cimag(butterfly_buf[7]));
 }
 
 // This doesn't yet take account for slight phase distortions,
