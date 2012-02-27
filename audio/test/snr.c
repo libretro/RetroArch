@@ -185,36 +185,11 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   static const unsigned freq_list[] = {
-       30,  50,
-      100, 150,
-      200, 250,
-      300, 350,
-      400, 450,
-      500, 550,
-      600, 650,
-      700, 800,
-      900, 1000,
-      1100, 1200,
-      1300, 1500,
-      1600, 1700,
-      1800, 1900,
-      2000, 2100,
-      2200, 2300,
-      2500, 3000,
-      3500, 4000,
-      4500, 5000,
-      5500, 6000,
-      6500, 7000,
-      7500, 8000,
-      9000, 9500,
-      10000, 11000,
-      12000, 13000,
-      14000, 15000,
-      16000, 17000,
-      18000, 19000,
-      20000, 21000,
-      22000,
+   static const float freq_list[] = {
+      0.001, 0.002, 0.003, 0.004, 0.005, 0.008, 
+      0.010, 0.015, 0.020, 0.025, 0.030, 0.035, 0.040, 0.045, 0.050,
+      0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45,
+      0.46, 0.47, 0.48, 0.49, 0.495,
    };
 
    unsigned samples = in_rate * 2;
@@ -230,9 +205,10 @@ int main(int argc, char *argv[])
 
    test_fft();
 
-   for (unsigned i = 0; i < sizeof(freq_list) / sizeof(freq_list[0]) && freq_list[i] < 0.5f * in_rate; i++)
+   for (unsigned i = 0; i < sizeof(freq_list) / sizeof(freq_list[0]); i++)
    {
-      double omega = 2.0 * M_PI * freq_list[i] / in_rate;
+      unsigned freq = freq_list[i] * in_rate;
+      double omega = 2.0 * M_PI * freq / in_rate;
       double sample_offset;
       resampler_preinit(re, omega, &sample_offset);
       gen_signal(input, omega, sample_offset, samples);
@@ -255,9 +231,9 @@ int main(int argc, char *argv[])
       }
 
       struct snr_result res;
-      calculate_snr(&res, freq_list[i], output, butterfly_buf, fft_samples * 2);
+      calculate_snr(&res, freq, output, butterfly_buf, fft_samples * 2);
 
-      printf("SNR @ %5u Hz: %6.2lf dB, Gain: %6.1lf dB\n",
+      printf("SNR @ w = %5.3f : %6.2lf dB, Gain: %6.1lf dB\n",
             freq_list[i], res.snr, res.gain);
    }
 
