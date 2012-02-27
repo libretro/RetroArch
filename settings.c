@@ -272,9 +272,7 @@ static config_file_t *open_default_config_file(void)
    }
    if (!conf)
       conf = config_file_new("/etc/ssnes.cfg");
-#elif defined(__CELLOS_LV2__) || defined(_XBOX)
-   return NULL;
-#else
+#elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
    const char *xdg = getenv("XDG_CONFIG_HOME");
    if (!xdg)
       SSNES_WARN("XDG_CONFIG_HOME is not defined. Will look for config in $HOME/.ssnes.cfg ...\n");

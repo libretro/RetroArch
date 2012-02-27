@@ -62,7 +62,6 @@ static inline bool gl_check_error(void)
          break;
       case GL_NO_ERROR:
          return true;
-         break;
       default:
          SSNES_ERR("Non specified error :v\n");
    }
