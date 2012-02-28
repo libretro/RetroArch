@@ -17,7 +17,7 @@ MOVE			= mv
 C			= $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-gcc
 CC			= $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-g++
 
-PPU_CFLAGS		+= -I. -O2 -g -DHAVE_EXITSPAWN_NPDRM 
+PPU_CFLAGS		+= -I. -O2 -g
 PPU_SRCS		= ps3/salamander/main.c strl.c conf/config_file.c
 
 ifeq ($(HAVE_LOGGER), 1)
