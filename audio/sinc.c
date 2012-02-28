@@ -68,8 +68,8 @@ void resampler_preinit(ssnes_resampler_t *re, double omega, double *samples_offs
    *samples_offset = SIDELOBES + 1;
    for (int i = 0; i < 2 * SIDELOBES; i++)
    {
-      re->buffer_l[i] = cos((i - (SIDELOBES - 1)) * omega);
-      re->buffer_r[i] = re->buffer_l[i];
+      re->buffer_l[i] = re->buffer_l[i + TAPS] = cos((i - (SIDELOBES - 1)) * omega);
+      re->buffer_r[i] = re->buffer_r[i + TAPS] = re->buffer_l[i];
    }
 
    re->time = 0;
