@@ -49,7 +49,13 @@
 
 #include "logger.h"
 
+#if !defined(PC_DEVELOPMENT_IP_ADDRESS)
 #define PC_DEVELOPMENT_IP_ADDRESS "192.168.1.7"
+#endif
+
+#if !defined(PC_DEVELOPMENT_UDP_PORT)
+#define PC_DEVELOPMENT_UDP_PORT 3490
+#endif
 
 static int g_sid;
 static int sock;
@@ -92,7 +98,7 @@ static int if_up_with(int index)
 	sock=socket(AF_INET,SOCK_DGRAM ,0);
 
 	target.sin_family = AF_INET;
-	target.sin_port = htons(3490);
+	target.sin_port = htons(PC_DEVELOPMENT_UDP_PORT);
 	inet_pton(AF_INET, PC_DEVELOPMENT_IP_ADDRESS, &target.sin_addr);
 
 	return (0);
