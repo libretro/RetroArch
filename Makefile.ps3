@@ -130,7 +130,7 @@ endif
 pkg: $(PPU_TARGET) create-shaders create-npdrm-salamander create-npdrm-core
 	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
 
-pkg-signed: $(PPU_TARGET) create-shaders create-salamander create-npdrm-core
+pkg-signed: $(PPU_TARGET) create-shaders create-salamander create-core
 	python2 $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(SSNES_VERSION).pkg
 
 pkg-signed-standalone: $(PPU_TARGET) create-shaders create-core
