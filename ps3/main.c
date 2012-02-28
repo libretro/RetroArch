@@ -326,7 +326,7 @@ static void get_environment_settings(int argc, char *argv[])
 	CellGameContentSize size;
 	char dirName[CELL_GAME_DIRNAME_SIZE];
 
-	if(argc >= 2)
+	if(argc > 1)
 	{
 		/* launched from external launcher */
 		strncpy(MULTIMAN_EXECUTABLE, argv[1], sizeof(MULTIMAN_EXECUTABLE));
