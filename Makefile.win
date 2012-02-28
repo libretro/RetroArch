@@ -25,7 +25,6 @@ ifeq ($(SLIM),)
    HAVE_CG = 1
    HAVE_PYTHON = 1
    HAVE_FFMPEG = 1
-   HAVE_SINC = 1
 endif
 
 libsnes ?= -lsnes
@@ -142,7 +141,6 @@ endif
 
 ifeq ($(HAVE_SINC), 1)
    OBJ += audio/sinc.o
-   CFLAGS += -msse
 else
    OBJ += audio/hermite.o
 endif

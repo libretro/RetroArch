@@ -81,6 +81,7 @@ do_build()
    SSNES_DIR="$1"
    LIBZIPNAME="$2"
    BUILDTYPE="$3"
+   MAKEARGS="$4"
 
    if [ ! -d "$SSNES_DIR" ]; then
       git clone git://github.com/Themaister/SSNES.git "$SSNES_DIR"
@@ -95,8 +96,8 @@ do_build()
    fi
 
    make -f Makefile.win clean || die "Failed to clean ..."
-   make -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" -j4 all SLIM=1 || die "Failed to build ..."
-   make -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" dist_${BUILDTYPE} SLIM=1 || die "Failed to dist ..."
+   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" -j4 all SLIM=1 || die "Failed to build ..."
+   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" dist_${BUILDTYPE} SLIM=1 || die "Failed to dist ..."
    if [ -z "`find . | grep "ssnes-win"`" ]; then
       die "Did not find build ..."
    fi
@@ -115,8 +116,8 @@ do_build()
    mv -v "$ZIP_BASE" "../$ZIP_SLIM" || die "Failed to move final build ..."
 
    make -f Makefile.win clean || die "Failed to clean ..."
-   make -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" -j4 all || die "Failed to build ..."
-   make -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" dist_${BUILDTYPE} || die "Failed to dist ..."
+   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" -j4 all || die "Failed to build ..."
+   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" dist_${BUILDTYPE} || die "Failed to dist ..."
 
    if [ "$BUILD_PHOENIX_GUI" = "yes" ]; then
       zip "$ZIP_BASE" ssnes-phoenix.exe ssnes-phoenix.cfg
@@ -131,7 +132,7 @@ if [ "$BUILD_32BIT" = yes ]; then
    C_COMPILER=${MINGW32_BASE}-gcc
    CXX_COMPILER=${MINGW32_BASE}-g++
    WINDRES=${MINGW32_BASE}-windres
-   do_build "SSNES-w32" "SSNES-win32-libs.zip" "x86"
+   do_build "SSNES-w32" "SSNES-win32-libs.zip" "x86" ""
 fi
 
 if [ "$BUILD_64BIT" = yes ]; then
@@ -139,7 +140,7 @@ if [ "$BUILD_64BIT" = yes ]; then
    C_COMPILER=${MINGW64_BASE}-gcc
    CXX_COMPILER=${MINGW64_BASE}-g++
    WINDRES=${MINGW64_BASE}-windres
-   do_build "SSNES-w64" "SSNES-win64-libs.zip" "x86_64"
+   do_build "SSNES-w64" "SSNES-win64-libs.zip" "x86_64" "HAVE_SINC=1"
 fi
 
 message "Built successfully! :)"
