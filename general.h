@@ -173,11 +173,9 @@ struct settings
 #ifdef SSNES_CONSOLE
 struct console_settings
 {
-   bool autostart_game;
    bool block_config_read;
    bool default_sram_dir_enable;
    bool default_savestate_dir_enable;
-   bool external_launcher_support;
    bool frame_advance_enable;
    bool initialize_ssnes_enable;
    bool ingame_menu_enable;
@@ -190,6 +188,7 @@ struct console_settings
    float overscan_amount;
    uint32_t aspect_ratio_index;
    uint32_t emulator_initialized;
+   uint32_t external_launcher_support;
    uint32_t screen_orientation;
    uint32_t current_resolution_index;
    uint32_t current_resolution_id;
@@ -209,6 +208,7 @@ struct console_settings
    char default_rom_startup_dir[PATH_MAX];
    char default_savestate_dir[PATH_MAX];
    char default_sram_dir[PATH_MAX];
+   char launch_app_on_exit[PATH_MAX];
    float menu_font_size;
 };
 #endif

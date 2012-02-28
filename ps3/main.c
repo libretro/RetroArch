@@ -70,8 +70,7 @@ char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
 char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
 char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 char EMULATOR_CORE_SELF[MAX_PATH_LENGTH];
-
-const char * MULTIMAN_EXECUTABLE = "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF";
+char MULTIMAN_EXECUTABLE[MAX_PATH_LENGTH];
 
 int ssnes_main(int argc, char *argv[]);
 
@@ -318,7 +317,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 	}
 }
 
-static void get_environment_settings(int argc)
+static void get_environment_settings(int argc, char *argv[])
 {
 	g_extern.verbose = true;
 
@@ -327,27 +326,28 @@ static void get_environment_settings(int argc)
 	CellGameContentSize size;
 	char dirName[CELL_GAME_DIRNAME_SIZE];
 
-
-	if(path_file_exists(MULTIMAN_EXECUTABLE))
+	if(argc >= 2)
 	{
-		g_console.external_launcher_support = true;
-		SSNES_LOG("multiMAN found, support enabled.\n");
+		/* launched from external launcher */
+		strncpy(MULTIMAN_EXECUTABLE, argv[1], sizeof(MULTIMAN_EXECUTABLE));
 	}
 	else
 	{
-		g_console.external_launcher_support = false;
-		SSNES_WARN("multiMAN not found, support disabled.\n");
+		/* not launched from external launcher, set default path */
+		strncpy(MULTIMAN_EXECUTABLE, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
+		sizeof(MULTIMAN_EXECUTABLE));
 	}
 
-	#if 0
-	if(argc > 1)
+	if(path_file_exists(MULTIMAN_EXECUTABLE) && (strcmp(argv[2],"") != 0))
 	{
-		g_console.autostart_game = true;
-		SSNES_LOG("Started from multiMAN, will auto-start game.\n");
+		g_console.external_launcher_support = EXTERN_LAUNCHER_MULTIMAN;
+		SSNES_LOG("Started from multiMAN, auto-game start enabled.\n");
 	}
 	else
-		g_console.autostart_game = false;
-	#endif
+	{
+		g_console.external_launcher_support = EXTERN_LAUNCHER_SALAMANDER;
+		SSNES_WARN("Not started from multiMAN, auto-game start disabled.\n");
+	}
 
 	memset(&size, 0x00, sizeof(CellGameContentSize));
 
@@ -377,7 +377,7 @@ static void get_environment_settings(int argc)
 
 		ret = cellGameContentPermit(contentInfoPath, usrDirPath);
 
-		if(g_console.external_launcher_support)
+		if(g_console.external_launcher_support == EXTERN_LAUNCHER_MULTIMAN)
 		{
 			snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
 			snprintf(usrDirPath, sizeof(usrDirPath), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
@@ -528,7 +528,7 @@ int main(int argc, char *argv[])
 
 	sceNpInit(NP_POOL_SIZE, np_pool);
 
-	get_environment_settings(argc);
+	get_environment_settings(argc, argv);
 
 	ssnes_main_clear_state();
 
@@ -558,12 +558,17 @@ int main(int argc, char *argv[])
 	menu_init();
 	g_console.mode_switch = MODE_MENU;
 
-	if(g_console.autostart_game)
+	switch(g_console.external_launcher_support)
 	{
-		strncpy(g_console.rom_path, argv[1], sizeof(g_console.rom_path));
-		g_console.initialize_ssnes_enable = 1;
-		g_console.mode_switch = MODE_EMULATION;
-		startup_ssnes();
+		case EXTERN_LAUNCHER_SALAMANDER:
+			break;
+		case EXTERN_LAUNCHER_MULTIMAN:
+			SSNES_LOG("Started from multiMAN, will auto-start game.\n");
+			strncpy(g_console.rom_path, argv[1], sizeof(g_console.rom_path));
+			g_console.initialize_ssnes_enable = 1;
+			g_console.mode_switch = MODE_EMULATION;
+			startup_ssnes();
+			break;
 	}
 
 begin_loop:
@@ -628,12 +633,12 @@ begin_shutdown:
 		};
 
 		SceNpDrmKey * k_licensee = NULL;
-		int ret = sceNpDrmProcessExitSpawn2(k_licensee, g_settings.libsnes, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-		SSNES_LOG("Attempt to load SELF: [%s] (return code: [%x]).\n", g_settings.libsnes, ret);
+		int ret = sceNpDrmProcessExitSpawn2(k_licensee, g_console.launch_app_on_exit, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+		SSNES_LOG("Attempt to load SELF: [%s] (return code: [%x]).\n", g_console.launch_app_on_exit, ret);
 		if(ret <  0)
 		{
 			SSNES_LOG("SELF file is not of NPDRM type, trying another approach to boot it...\n");
-			sys_game_process_exitspawn(g_settings.libsnes, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+			sys_game_process_exitspawn(g_console.launch_app_on_exit, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
 			
 		}
 		sceNpTerm();

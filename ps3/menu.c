@@ -810,7 +810,7 @@ static void select_file(uint32_t menu_id)
 			break;
 		case LIBSNES_CHOICE:
 			strncpy(dir_path, LIBSNES_DIR_PATH, sizeof(dir_path));
-			strncpy(extensions, "self|SELF", sizeof(extensions));
+			strncpy(extensions, "self|SELF|bin|BIN", sizeof(extensions));
 			strncpy(title, "LIBSNES CORE SELECTION", sizeof(title));
 			strncpy(object, "Libsnes", sizeof(object));
 			strncpy(object, "Libsnes core file", sizeof(object));
@@ -880,7 +880,8 @@ static void select_file(uint32_t menu_id)
 					case BORDER_CHOICE:
 						break;
 					case LIBSNES_CHOICE:
-						strlcpy(g_settings.libsnes, path, sizeof(g_settings.libsnes));
+						strlcpy(g_console.launch_app_on_exit, path, 
+						sizeof(g_console.launch_app_on_exit));
 						g_console.return_to_launcher = true;
 						g_console.menu_enable = false;
 						g_console.mode_switch = MODE_EXIT;
@@ -1972,24 +1973,20 @@ static void ingame_menu(uint32_t menu_id)
 				}
 				strcpy(comment, "Press 'CROSS' to choose a different emulator core.");
 				break;
-#ifdef MULTIMAN_SUPPORT
 			case MENU_ITEM_RETURN_TO_MULTIMAN:
-				if(CTRL_CROSS(state))
+				if(CTRL_CROSS(state) && path_file_exists(MULTIMAN_EXECUTABLE))
 				{
+					strlcpy(g_console.launch_app_on_exit, MULTIMAN_EXECUTABLE,
+					sizeof(g_console.launch_app_on_exit));
 					g_console.return_to_launcher = true;
 					g_console.menu_enable = false;
 					g_console.mode_switch = MODE_EXIT;
 				}
-
 				strcpy(comment, "Press 'CROSS' to quit the emulator and return to multiMAN.");
 				break;
-#endif
 			case MENU_ITEM_RETURN_TO_XMB:
 				if(CTRL_CROSS(state))
 				{
-#ifdef MULTIMAN_SUPPORT
-					return_to_MM = false;
-#endif
 					g_console.menu_enable = false;
 					g_console.mode_switch = MODE_EXIT;
 				}
@@ -2071,15 +2068,15 @@ static void ingame_menu(uint32_t menu_id)
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RESET)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESET), "Reset");
 
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_GAME)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME), "Return to Game");
+	cellDbgFontDraw();
 
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MENU)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU), "Return to Menu");
 	cellDbgFontDraw();
 
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_CHANGE_LIBSNES)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBSNES), "Change libsnes core");
 	cellDbgFontDraw();
-#ifdef MULTIMAN_SUPPORT
+
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");
-#endif
 
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_XMB), "Return to XMB");
 	cellDbgFontDraw();
