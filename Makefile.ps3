@@ -28,6 +28,7 @@ CORE_PATH		= ps3/pkg/USRDIR/cores/CORE.SELF
 LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
 INCDIRS = -I. -Ips3 -Icommon
 
+MAKE_SELF_WC		= make_self_wc
 MAKE_SELF		= make_self_npdrm
 
 PKG_SCRIPT		= ps3/ps3py/pkg.py
@@ -112,13 +113,13 @@ create-npdrm-core:
 	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) $(CORE_PATH)
 
 create-core:
-	$(MAKE_SELF) $(PPU_TARGET) $(CORE_PATH) $(CONTENT_ID)
+	$(MAKE_SELF_WC) $(PPU_TARGET) $(CORE_PATH)
 
 create-npdrm-salamander:
 	$(MAKE_FSELF_NPDRM) $(SALAMANDER_TARGET) $(EBOOT_PATH)
 	
 create-salamander:
-	$(MAKE_SELF) $(SALAMANDER_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
+	$(MAKE_SELF) $(SALAMANDER_TARGET) $(EBOOT_PATH) $(CONTENT_ID_FULL)
 
 
 create-shaders:
