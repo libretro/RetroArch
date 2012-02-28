@@ -51,6 +51,7 @@
 #define MAX_PATH_LENGTH 1024
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
+#define EMULATOR_CORE_DIR "cores"
 
 #define NP_POOL_SIZE (128*1024)
 
@@ -194,7 +195,7 @@ static void init_settings(bool load_libsnes_path)
 				char ** dir_list = dir_list_new(LIBSNES_DIR_PATH, ".SELF");
 				if (!dir_list)
 				{
-					SSNES_ERR("Couldn't read cores directory.\n");
+					SSNES_ERR("Couldn't read %s directory.\n", EMULATOR_CORE_DIR);
 					return;
 				}
 
@@ -202,12 +203,12 @@ static void init_settings(bool load_libsnes_path)
 
 				if(first_self)
 				{
-					SSNES_LOG("Set first entry in libsnes cores dir: [%s] to libsnes path.\n", first_self);
+					SSNES_LOG("Set first entry in libsnes %s dir: [%s] to libsnes path.\n", EMULATOR_CORE_DIR, first_self);
 					strlcpy(g_settings.libsnes, first_self, sizeof(g_settings.libsnes));
 				}
 				else
 				{
-					SSNES_ERR("Failed to set first entry in libsnes cores dir to libsnes path.\n");
+					SSNES_ERR("Failed to set first entry in libsnes %s dir to libsnes path.\n", EMULATOR_CORE_DIR);
 				}
 
 				dir_list_free(dir_list);
@@ -394,16 +395,16 @@ static void get_environment_settings(int argc)
 		}
 
 		/* now we fill in all the variables */
-		snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/cores/presets/stock.conf", usrDirPath);
-		snprintf(DEFAULT_BORDER_FILE, sizeof(DEFAULT_BORDER_FILE), "%s/cores/borders/Centered-1080p/mega-man-2.png", usrDirPath);
-		snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/cores/borders/Menu/main-menu.png", usrDirPath);
-		snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/cores/presets", usrDirPath);
-		snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/cores/input-presets", usrDirPath);
-		snprintf(LIBSNES_DIR_PATH, sizeof(LIBSNES_DIR_PATH), "%s/cores", usrDirPath);
-		snprintf(BORDERS_DIR_PATH, sizeof(BORDERS_DIR_PATH), "%s/cores/borders", usrDirPath);
-		snprintf(SHADERS_DIR_PATH, sizeof(SHADERS_DIR_PATH), "%s/cores/shaders", usrDirPath);
-		snprintf(DEFAULT_SHADER_FILE, sizeof(DEFAULT_SHADER_FILE), "%s/cores/shaders/stock.cg", usrDirPath);
-		snprintf(DEFAULT_MENU_SHADER_FILE, sizeof(DEFAULT_MENU_SHADER_FILE), "%s/cores/shaders/Borders/Menu/border-only-ssnes.cg", usrDirPath);
+		snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/%s/presets/stock.conf", usrDirPath, EMULATOR_CORE_DIR);
+		snprintf(DEFAULT_BORDER_FILE, sizeof(DEFAULT_BORDER_FILE), "%s/%s/borders/Centered-1080p/mega-man-2.png", usrDirPath, EMULATOR_CORE_DIR);
+		snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/%s/borders/Menu/main-menu.png", usrDirPath, EMULATOR_CORE_DIR);
+		snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/%s/presets", usrDirPath, EMULATOR_CORE_DIR);
+		snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/%s/input-presets", usrDirPath, EMULATOR_CORE_DIR);
+		snprintf(LIBSNES_DIR_PATH, sizeof(LIBSNES_DIR_PATH), "%s/%s", usrDirPath, EMULATOR_CORE_DIR);
+		snprintf(BORDERS_DIR_PATH, sizeof(BORDERS_DIR_PATH), "%s/%s/borders", usrDirPath, EMULATOR_CORE_DIR);
+		snprintf(SHADERS_DIR_PATH, sizeof(SHADERS_DIR_PATH), "%s/%s/shaders", usrDirPath, EMULATOR_CORE_DIR);
+		snprintf(DEFAULT_SHADER_FILE, sizeof(DEFAULT_SHADER_FILE), "%s/%s/shaders/stock.cg", usrDirPath, EMULATOR_CORE_DIR);
+		snprintf(DEFAULT_MENU_SHADER_FILE, sizeof(DEFAULT_MENU_SHADER_FILE), "%s/%s/shaders/Borders/Menu/border-only-ssnes.cg", usrDirPath, EMULATOR_CORE_DIR);
 		snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/ssnes.cfg", usrDirPath);
 	}
 
@@ -438,7 +439,7 @@ static bool manage_libsnes_core(void)
 
 	bool set_libsnes_path = false;
 	char tmp_path[1024], tmp_path2[1024], tmp_pathnewfile[1024];
-	snprintf(tmp_path, sizeof(tmp_path), "%s/cores/CORE.SELF", usrDirPath);
+	snprintf(tmp_path, sizeof(tmp_path), "%s/%s/CORE.SELF", usrDirPath, EMULATOR_CORE_DIR);
 	SSNES_LOG("Assumed path of CORE.SELF: [%s]\n", tmp_path);
 	if(path_file_exists(tmp_path))
 	{
@@ -450,7 +451,7 @@ static bool manage_libsnes_core(void)
 
 		ssnes_console_name_from_id(tmp_path2, sizeof(tmp_path2));
 		strlcat(tmp_path2, ".SELF", sizeof(tmp_path2));
-		snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s/cores/%s", usrDirPath, tmp_path2);
+		snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s/%s/%s", usrDirPath, EMULATOR_CORE_DIR, tmp_path2);
 
 		if(path_file_exists(tmp_pathnewfile))
 		{
