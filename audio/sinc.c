@@ -54,9 +54,11 @@
 
 struct ssnes_resampler
 {
-   float phase_table[PHASES][2][2 * SIDELOBES];
-   float buffer_l[2 * SIDELOBES];
-   float buffer_r[2 * SIDELOBES];
+   float phase_table[PHASES][2][TAPS];
+   float buffer_l[2 * TAPS];
+   float buffer_r[2 * TAPS];
+
+   unsigned ptr;
 
    uint32_t time;
 };
@@ -71,6 +73,7 @@ void resampler_preinit(ssnes_resampler_t *re, double omega, double *samples_offs
    }
 
    re->time = 0;
+   re->ptr = 0;
 }
 
 static inline double sinc(double val)
@@ -167,8 +170,8 @@ static void process_sinc(ssnes_resampler_t *resamp, float *out_buffer)
    __m128 sum_l = _mm_setzero_ps();
    __m128 sum_r = _mm_setzero_ps();
 
-   const float *buffer_l = resamp->buffer_l;
-   const float *buffer_r = resamp->buffer_r;
+   const float *buffer_l = resamp->buffer_l + resamp->ptr;
+   const float *buffer_r = resamp->buffer_r + resamp->ptr;
 
    unsigned phase = resamp->time >> PHASES_SHIFT;
    unsigned delta = (resamp->time >> SUBPHASES_SHIFT) & SUBPHASES_MASK;
@@ -179,8 +182,8 @@ static void process_sinc(ssnes_resampler_t *resamp, float *out_buffer)
 
    for (unsigned i = 0; i < TAPS; i += 4)
    {
-      __m128 buf_l  = _mm_load_ps(buffer_l + i);
-      __m128 buf_r  = _mm_load_ps(buffer_r + i);
+      __m128 buf_l  = _mm_loadu_ps(buffer_l + i);
+      __m128 buf_r  = _mm_loadu_ps(buffer_r + i);
 
       __m128 phases = _mm_load_ps(phase_table + i);
       __m128 deltas = _mm_load_ps(delta_table + i);
@@ -201,7 +204,7 @@ static void process_sinc(ssnes_resampler_t *resamp, float *out_buffer)
    // sum   = { r1, r0, l1, l0 } + { r3, r2, l3, l2 }
    // sum   = { R1, R0, L1, L0 }
 
-   sum        = _mm_add_ps(_mm_shuffle_ps(sum, sum, _MM_SHUFFLE(3, 3, 1, 1)), sum);
+   sum = _mm_add_ps(_mm_shuffle_ps(sum, sum, _MM_SHUFFLE(3, 3, 1, 1)), sum);
 
    // sum   = {R1, R1, L1, L1 } + { R1, R0, L1, L0 }
    // sum   = { X,  R,  X,  L } 
@@ -217,8 +220,8 @@ static void process_sinc(ssnes_resampler_t *resamp, float *out_buffer)
 {
    float sum_l = 0.0f;
    float sum_r = 0.0f;
-   const float *buffer_l = resamp->buffer_l;
-   const float *buffer_r = resamp->buffer_r;
+   const float *buffer_l = resamp->buffer_l + resamp->ptr;
+   const float *buffer_r = resamp->buffer_r + resamp->ptr;
 
    unsigned phase = resamp->time >> PHASES_SHIFT;
    unsigned delta = (resamp->time >> SUBPHASES_SHIFT) & SUBPHASES_MASK;
@@ -257,13 +260,9 @@ void resampler_process(ssnes_resampler_t *re, struct resampler_data *data)
       re->time += ratio;
       while (re->time >= PHASES_WRAP)
       {
-         memmove(re->buffer_l, re->buffer_l + 1,
-               sizeof(re->buffer_l) - sizeof(float));
-         memmove(re->buffer_r, re->buffer_r + 1,
-               sizeof(re->buffer_r) - sizeof(float));
-
-         re->buffer_l[2 * SIDELOBES - 1] = *input++;
-         re->buffer_r[2 * SIDELOBES - 1] = *input++;
+         re->buffer_l[re->ptr + TAPS] = re->buffer_l[re->ptr] = *input++;
+         re->buffer_r[re->ptr + TAPS] = re->buffer_r[re->ptr] = *input++;
+         re->ptr = (re->ptr + 1) & (TAPS - 1);
 
          re->time -= PHASES_WRAP;
          frames--;
