@@ -414,12 +414,6 @@ static inline void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned he
 	}
 }
 
-#define gl_start_frame_fbo(gl) \
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]); \
-   glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[0]); \
-   gl->render_to_tex = true; \
-   set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
-
 static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full)
 {
 	uint32_t m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
@@ -489,11 +483,11 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
 
 static void set_lut_texture_coords(const GLfloat *coords)
 {
-   // For texture images.
-   pglClientActiveTexture(GL_TEXTURE1);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glTexCoordPointer(2, GL_FLOAT, 0, coords);
-   pglClientActiveTexture(GL_TEXTURE0);
+	// For texture images.
+	pglClientActiveTexture(GL_TEXTURE1);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glTexCoordPointer(2, GL_FLOAT, 0, coords);
+	pglClientActiveTexture(GL_TEXTURE0);
 }
 
 #define set_texture_coords(coords, xamt, yamt) \
@@ -530,26 +524,26 @@ void gl_frame_menu (void)
 
 void ps3graphics_set_orientation(uint32_t orientation)
 {
-   switch (orientation)
-   {
-      case ORIENTATION_NORMAL:
-         vertex_ptr = vertexes_flipped;
-         break;
+	switch (orientation)
+	{
+		case ORIENTATION_NORMAL:
+			vertex_ptr = vertexes_flipped;
+			break;
 
-      case ORIENTATION_VERTICAL:
-         vertex_ptr = vertexes_90;
-         break;
+		case ORIENTATION_VERTICAL:
+			vertex_ptr = vertexes_90;
+			break;
 
-      case ORIENTATION_FLIPPED:
-         vertex_ptr = vertexes_180;
-         break;
+		case ORIENTATION_FLIPPED:
+			vertex_ptr = vertexes_180;
+			break;
 
-      case ORIENTATION_FLIPPED_ROTATED:
-         vertex_ptr = vertexes_270;
-         break;
-   }
+		case ORIENTATION_FLIPPED_ROTATED:
+			vertex_ptr = vertexes_270;
+			break;
+	}
 
-   glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
+	glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
 }
 
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
@@ -565,7 +559,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 	if (gl->fbo_inited)
 	{
 		gl_compute_fbo_geometry(gl, width, height, gl->vp_out_width, gl->vp_out_height);
-		gl_start_frame_fbo(gl);
+		glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+		glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[0]);
+		gl->render_to_tex = true;
+		set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
 	}
 
 
@@ -721,13 +718,13 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 static void psgl_deinit(gl_t *gl)
 {
-   glFinish();
-   cellDbgFontExit();
+	glFinish();
+	cellDbgFontExit();
 
-   psglDestroyContext(gl->gl_context);
-   psglDestroyDevice(gl->gl_device);
+	psglDestroyContext(gl->gl_context);
+	psglDestroyDevice(gl->gl_device);
 
-   psglExit();
+	psglExit();
 }
 
 static void gl_free(void *data)
@@ -971,15 +968,15 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
 static bool gl_alive(void *data)
 {
-   (void)data;
-   cellSysutilCheckCallback();
-   return !g_quitting;
+	(void)data;
+	cellSysutilCheckCallback();
+	return !g_quitting;
 }
 
 static bool gl_focus(void *data)
 {
-   (void)data;
-   return true;
+	(void)data;
+	return true;
 }
 
 static void ps3graphics_set_swap_block_swap(void * data, bool toggle)

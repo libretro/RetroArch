@@ -312,7 +312,7 @@ static void browser_update(filebrowser_t * b)
 		if (CTRL_R2(state))
 		{
 			b->currently_selected = (MIN(b->currently_selected + 50, b->file_count-1));
-			if(b->currently_selected < 0)
+			if(!b->currently_selected)
 				b->currently_selected = 0;
 			set_delay = DELAY_SMALL;
 		}
@@ -370,6 +370,38 @@ static void browser_render(filebrowser_t * b)
 	}
 	cellDbgFontDraw();
 }
+
+static uint32_t default_keybind_lut[] = 
+{
+	CTRL_CROSS_MASK,			//SNES_DEVICE_ID_JOYPAD_B
+	CTRL_SQUARE_MASK,			//SNES_DEVICE_ID_JOYPAD_Y
+	CTRL_SELECT_MASK,			//SNES_DEVICE_ID_JOYPAD_SELECT
+	CTRL_START_MASK,			//SNES_DEVICE_ID_JOYPAD_START
+	CTRL_UP_MASK,				//SNES_DEVICE_ID_JOYPAD_UP
+	CTRL_DOWN_MASK,				//SNES_DEVICE_ID_JOYPAD_DOWN
+	CTRL_LEFT_MASK,				//SNES_DEVICE_ID_JOYPAD_LEFT
+	CTRL_RIGHT_MASK,			//SNES_DEVICE_ID_JOYPAD_RIGHT
+	CTRL_CIRCLE_MASK,			//SNES_DEVICE_ID_JOYPAD_A
+	CTRL_TRIANGLE_MASK,			//SNES_DEVICE_ID_JOYPAD_X
+	CTRL_L1_MASK,				//SNES_DEVICE_ID_JOYPAD_L
+	CTRL_R1_MASK				//SNES_DEVICE_ID_JOYPAD_R
+};
+
+static const char * default_keybind_name_lut[] = 
+{
+	"Button B",				//SNES_DEVICE_ID_JOYPAD_B
+	"Button Y",				//SNES_DEVICE_ID_JOYPAD_Y
+	"Select button",			//SNES_DEVICE_ID_JOYPAD_SELECT
+	"Start button",				//SNES_DEVICE_ID_JOYPAD_START
+	"D-Pad Up",				//SNES_DEVICE_ID_JOYPAD_UP
+	"D-Pad Down",				//SNES_DEVICE_ID_JOYPAD_DOWN
+	"D-Pad Left",				//SNES_DEVICE_ID_JOYPAD_LEFT
+	"D-Pad Right",				//SNES_DEVICE_ID_JOYPAD_RIGHT
+	"Button A",			//SNES_DEVICE_ID_JOYPAD_A
+	"Button X",			//SNES_DEVICE_ID_JOYPAD_X
+	"L Button",				//SNES_DEVICE_ID_JOYPAD_L
+	"R Button"				//SNES_DEVICE_ID_JOYPAD_R
+};
 
 static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 {
@@ -654,6 +686,10 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		case SETTING_CONTROLS_SCHEME:
 			break;
 		case SETTING_CONTROLS_NUMBER:
+			if(currently_selected_controller_menu == 0)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
 			break;
 		case SETTING_CONTROLS_DPAD_UP:
 		case SETTING_CONTROLS_DPAD_DOWN:
@@ -667,26 +703,12 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		case SETTING_CONTROLS_BUTTON_START:
 		case SETTING_CONTROLS_BUTTON_L1:
 		case SETTING_CONTROLS_BUTTON_R1:
-		case SETTING_CONTROLS_BUTTON_L2:
-		case SETTING_CONTROLS_BUTTON_R2:
-		case SETTING_CONTROLS_BUTTON_L3:
-		case SETTING_CONTROLS_BUTTON_R3:
-		case SETTING_CONTROLS_BUTTON_L2_BUTTON_L3:
-		case SETTING_CONTROLS_BUTTON_L2_BUTTON_R3:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_RIGHT:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_LEFT:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_UP:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_DOWN:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_RIGHT:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_LEFT:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_UP:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_DOWN:
-		case SETTING_CONTROLS_BUTTON_R2_BUTTON_R3:
-		case SETTING_CONTROLS_BUTTON_R3_BUTTON_L3:
-		case SETTING_CONTROLS_ANALOG_R_UP:
-		case SETTING_CONTROLS_ANALOG_R_DOWN:
-		case SETTING_CONTROLS_ANALOG_R_LEFT:
-		case SETTING_CONTROLS_ANALOG_R_RIGHT:
+			if(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey == default_keybind_lut[currentsetting-FIRST_CONTROL_BIND])
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [%s] on the PS3 controller is mapped to action:\n[%s].", menu_obj->items[currentsetting].text, default_keybind_name_lut[g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].id]);
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), default_keybind_name_lut[g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].id]);
 			break;
 		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
 			if(menu_obj->selected == currentsetting)
@@ -1006,6 +1028,49 @@ static void select_directory(uint32_t menu_id)
         old_state = state;
 }
 
+
+
+static void set_keybind_digital(uint64_t state, uint32_t system_joypad_id, uint32_t default_snes_joypad_id)
+{
+	bool found_keybind = false;
+
+	if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state))
+	{
+		for(uint32_t i = 0; i < SNES_DEVICE_ID_MAX_JOYPAD_BUTTON && !found_keybind; i++)
+		{
+			if(g_settings.input.binds[currently_selected_controller_menu][i].joykey == system_joypad_id)
+			{
+				found_keybind = true;
+
+				if(g_settings.input.binds[currently_selected_controller_menu][i].id > 0)
+					g_settings.input.binds[currently_selected_controller_menu][i].id--;
+			}
+		}
+		set_delay = DELAY_MEDIUM;
+	}
+
+	if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+	{
+		for(uint32_t i = 0; i < SNES_DEVICE_ID_MAX_JOYPAD_BUTTON && !found_keybind; i++)
+		{
+			if(g_settings.input.binds[currently_selected_controller_menu][i].joykey == system_joypad_id)
+			{
+				found_keybind = true;
+
+				if(g_settings.input.binds[currently_selected_controller_menu][i].id < SNES_DEVICE_ID_MAX_JOYPAD_BUTTON)
+					g_settings.input.binds[currently_selected_controller_menu][i].id++;
+			}
+		}
+		set_delay = DELAY_MEDIUM;
+	}
+
+	if(CTRL_START(state))
+	{
+		g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].id = default_snes_joypad_id;
+		g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey = default_keybind_lut[default_snes_joypad_id];
+		set_delay = DELAY_MEDIUM;
+	}
+}
 
 static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 {
@@ -1480,39 +1545,58 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_CONTROLS_SCHEME:
 			break;
 		case SETTING_CONTROLS_NUMBER:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
+			{
+				if(currently_selected_controller_menu != 0)
+					currently_selected_controller_menu--;
+				set_delay = DELAY_MEDIUM;
+			}
+
+			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				if(currently_selected_controller_menu < 6)
+					currently_selected_controller_menu++;
+				set_delay = DELAY_MEDIUM;
+			}
+
+			if(CTRL_START(state))
+				currently_selected_controller_menu = 0;
 			break; 
 		case SETTING_CONTROLS_DPAD_UP:
+			set_keybind_digital(state, CTRL_UP_MASK, SNES_DEVICE_ID_JOYPAD_UP);
+			break;
 		case SETTING_CONTROLS_DPAD_DOWN:
+			set_keybind_digital(state, CTRL_DOWN_MASK, SNES_DEVICE_ID_JOYPAD_DOWN);
+			break;
 		case SETTING_CONTROLS_DPAD_LEFT:
+			set_keybind_digital(state, CTRL_LEFT_MASK, SNES_DEVICE_ID_JOYPAD_LEFT);
+			break;
 		case SETTING_CONTROLS_DPAD_RIGHT:
+			set_keybind_digital(state, CTRL_RIGHT_MASK, SNES_DEVICE_ID_JOYPAD_RIGHT);
+			break;
 		case SETTING_CONTROLS_BUTTON_CIRCLE:
+			set_keybind_digital(state, CTRL_CIRCLE_MASK, SNES_DEVICE_ID_JOYPAD_A);
+			break;
 		case SETTING_CONTROLS_BUTTON_CROSS:
+			set_keybind_digital(state, CTRL_CROSS_MASK, SNES_DEVICE_ID_JOYPAD_B);
+			break;
 		case SETTING_CONTROLS_BUTTON_TRIANGLE:
+			set_keybind_digital(state, CTRL_TRIANGLE_MASK, SNES_DEVICE_ID_JOYPAD_X);
+			break;
 		case SETTING_CONTROLS_BUTTON_SQUARE:
+			set_keybind_digital(state, CTRL_SQUARE_MASK, SNES_DEVICE_ID_JOYPAD_Y);
+			break;
 		case SETTING_CONTROLS_BUTTON_SELECT:
+			set_keybind_digital(state, CTRL_SELECT_MASK, SNES_DEVICE_ID_JOYPAD_SELECT);
+			break;
 		case SETTING_CONTROLS_BUTTON_START:
+			set_keybind_digital(state, CTRL_START_MASK, SNES_DEVICE_ID_JOYPAD_START);
+			break;
 		case SETTING_CONTROLS_BUTTON_L1:
+			set_keybind_digital(state, CTRL_L1_MASK, SNES_DEVICE_ID_JOYPAD_L);
+			break;
 		case SETTING_CONTROLS_BUTTON_R1:
-		case SETTING_CONTROLS_BUTTON_L2:
-		case SETTING_CONTROLS_BUTTON_R2:
-		case SETTING_CONTROLS_BUTTON_L3:
-		case SETTING_CONTROLS_BUTTON_R3:
-		case SETTING_CONTROLS_BUTTON_L2_BUTTON_L3:
-		case SETTING_CONTROLS_BUTTON_L2_BUTTON_R3:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_RIGHT:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_LEFT:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_UP:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_DOWN:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_RIGHT:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_LEFT:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_UP:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_DOWN:
-		case SETTING_CONTROLS_BUTTON_R2_BUTTON_R3:
-		case SETTING_CONTROLS_BUTTON_R3_BUTTON_L3:
-		case SETTING_CONTROLS_ANALOG_R_UP:
-		case SETTING_CONTROLS_ANALOG_R_DOWN:
-		case SETTING_CONTROLS_ANALOG_R_LEFT:
-		case SETTING_CONTROLS_ANALOG_R_RIGHT:
+			set_keybind_digital(state, CTRL_R1_MASK, SNES_DEVICE_ID_JOYPAD_R);
 			break;
 		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
 			break;

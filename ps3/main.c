@@ -613,11 +613,6 @@ begin_shutdown:
 
 	if(g_console.return_to_launcher)
 	{
-		/* for multiman - need to refactor this
-		sys_spu_initialize(6, 0);
-		sys_game_process_exitspawn2((char*)MULTIMAN_EXECUTABLE, NULL, NULL, NULL, 0, 2048,
-		SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-		*/
 		char spawn_data[256];
 		for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
 			spawn_data[i] = i & 0xff;
