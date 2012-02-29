@@ -414,7 +414,7 @@ void config_set_defaults(void);
 #include "conf/config_file.h"
 bool config_load_file(const char *path);
 void config_read_keybinds(config_file_t *conf);
-void config_save_keybinds(config_file_t *conf);
+bool config_save_keybinds(const char *path);
 #endif
 
 void ssnes_game_reset(void);

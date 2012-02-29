@@ -895,10 +895,20 @@ static void save_keybinds_player(config_file_t *conf, unsigned i)
       save_keybind(conf, &bind_maps[i][j], &g_settings.input.binds[i][j]);
 }
 
-void config_save_keybinds(config_file_t *conf)
+bool config_save_keybinds(const char *path)
 {
+   config_file_t *conf = config_file_new(path);
+   if (!conf)
+      conf = config_file_new(NULL);
+   if (!conf)
+      return NULL;
+
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
       save_keybinds_player(conf, i);
+
+   config_file_write(conf, path);
+   config_file_free(conf);
+   return true;
 }
 
 #endif
