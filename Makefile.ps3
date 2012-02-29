@@ -45,6 +45,7 @@ PPU_SRCS		= fifo_buffer.c \
 			console/rom_ext.c \
 			ps3/ps3_input.c \
 			ps3/cellframework2/input/pad_input.c \
+			ps3/cellframework2/utility/oskutil.c \
 			getopt.c \
 			ssnes.c \
 			driver.c \
