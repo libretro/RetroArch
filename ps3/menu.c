@@ -1036,7 +1036,7 @@ static void set_keybind_digital(uint64_t state, uint32_t system_joypad_id, uint3
 
 	if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state))
 	{
-		for(uint32_t i = 0; i < SNES_DEVICE_ID_MAX_JOYPAD_BUTTON && !found_keybind; i++)
+		for(uint32_t i = 0; i < (SNES_DEVICE_ID_MAX_JOYPAD_BUTTON+1) && !found_keybind; i++)
 		{
 			if(g_settings.input.binds[currently_selected_controller_menu][i].joykey == system_joypad_id)
 			{
@@ -1051,7 +1051,7 @@ static void set_keybind_digital(uint64_t state, uint32_t system_joypad_id, uint3
 
 	if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 	{
-		for(uint32_t i = 0; i < SNES_DEVICE_ID_MAX_JOYPAD_BUTTON && !found_keybind; i++)
+		for(uint32_t i = 0; i < (SNES_DEVICE_ID_MAX_JOYPAD_BUTTON+1) && !found_keybind; i++)
 		{
 			if(g_settings.input.binds[currently_selected_controller_menu][i].joykey == system_joypad_id)
 			{
