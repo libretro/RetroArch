@@ -303,6 +303,8 @@ static config_file_t *open_default_config_file(void)
 
 
 #ifdef HAVE_CONFIGFILE
+static void config_read_keybinds_conf(config_file_t *conf);
+
 static void parse_config_file(void)
 {
    bool ret;
@@ -497,7 +499,7 @@ bool config_load_file(const char *path)
          SSNES_WARN("savestate_directory is not a directory, ignoring ...\n");
    }
 
-   config_read_keybinds(conf);
+   config_read_keybinds_conf(conf);
 
    config_file_free(conf);
    return true;
@@ -777,10 +779,20 @@ static void read_keybinds_player(config_file_t *conf, unsigned player)
    }
 }
 
-void config_read_keybinds(config_file_t *conf)
+static void config_read_keybinds_conf(config_file_t *conf)
 {
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
       read_keybinds_player(conf, i);
+}
+
+bool config_read_keybinds(const char *path)
+{
+   config_file_t *conf = config_file_new(path);
+   if (!conf)
+      return false;
+   config_read_keybinds_conf(conf);
+   config_file_free(conf);
+   return true;
 }
 
 static void save_keybind_key(config_file_t *conf,
