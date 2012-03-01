@@ -554,6 +554,10 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 			}
 			break;
 		case SETTING_SAVE_SHADER_PRESET:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
 			break;
 		case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
 			break;
@@ -818,7 +822,7 @@ static void select_file(uint32_t menu_id)
 			break;
 		case PRESET_CHOICE:
 			strncpy(dir_path, PRESETS_DIR_PATH, sizeof(dir_path));
-			strncpy(extensions, "cgp", sizeof(extensions));
+			strncpy(extensions, "cgp|CGP", sizeof(extensions));
 			strncpy(title, "SHADER PRESETS SELECTION", sizeof(title));
 			strncpy(object, "Shader", sizeof(object));
 			strncpy(object, "Shader preset", sizeof(object));
@@ -1110,17 +1114,12 @@ static void ssnes_filename_input_and_save (unsigned filename_type)
 		switch(filename_type)
 		{
 			case CONFIG_FILE:
-				{
-				}
 				break;
 			case SHADER_PRESET_FILE:
-				{
-				}
+				snprintf(filepath, sizeof(filepath), "%s/%s.cgp", PRESETS_DIR_PATH, filename_tmp);
 				break;
 			case INPUT_PRESET_FILE:
-				{
-					snprintf(filepath, sizeof(filepath), "%s/%s.cfg", INPUT_PRESETS_DIR_PATH, filename_tmp);
-				}
+				snprintf(filepath, sizeof(filepath), "%s/%s.cfg", INPUT_PRESETS_DIR_PATH, filename_tmp);
 				break;
 		}
 		filename_entered = true;
@@ -1148,13 +1147,21 @@ static void ssnes_filename_input_and_save (unsigned filename_type)
 		else
 			snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", "Custom");
 
-		SSNES_LOG("path to save to: %s\n", filepath);
-
 		switch(filename_type)
 		{
 			case CONFIG_FILE:
 				break;
 			case SHADER_PRESET_FILE:
+				{
+					struct gl_cg_cgp_info current_settings;
+					current_settings.shader[0] = g_settings.video.cg_shader_path;
+					current_settings.shader[1] = g_settings.video.second_pass_shader;
+					current_settings.filter_linear[0] = g_settings.video.smooth;
+					current_settings.filter_linear[1] = g_settings.video.second_pass_smooth;
+					current_settings.render_to_texture = true;
+					current_settings.fbo_scale = g_settings.video.fbo_scale_x;	//fbo_scale_x and y are the same anyway
+					gl_cg_save_cgp(filepath, &current_settings);
+				}
 				break;
 			case INPUT_PRESET_FILE:
 				config_save_keybinds(filepath);
@@ -1487,6 +1494,10 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			break;
 		case SETTING_SAVE_SHADER_PRESET:
+			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state)  || CTRL_RIGHT(state) | CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				ssnes_filename_input_and_save(SHADER_PRESET_FILE);
+			}
 			break;
 		case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
 			break;
