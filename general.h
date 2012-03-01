@@ -37,6 +37,7 @@
 
 #ifdef __CELLOS_LV2__
 #include <sys/timer.h>
+#include "ps3/cellframework2/utility/oskutil.h"
 #endif
 
 #ifdef XENON
@@ -203,6 +204,7 @@ struct console_settings
    DWORD volume_device_type;
 #endif
    char cgp_path[PATH_MAX];
+   char input_cfg_path[PATH_MAX];
    char rom_path[PATH_MAX];
    char aspect_ratio_name[PATH_MAX];
    char default_rom_startup_dir[PATH_MAX];
@@ -210,6 +212,9 @@ struct console_settings
    char default_sram_dir[PATH_MAX];
    char launch_app_on_exit[PATH_MAX];
    float menu_font_size;
+#ifdef __CELLOS_LV2__
+   oskutil_params oskutil_handle;
+#endif
 };
 #endif
 

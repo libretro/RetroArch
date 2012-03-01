@@ -684,12 +684,22 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 				menu_obj->items[currentsetting].text_color = ORANGE;
 			break;
 		case SETTING_CONTROLS_SCHEME:
+			if(strcmp(g_console.input_cfg_path,"") == 0)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - Input scheme preset [%s] is selected.", g_console.input_cfg_path);
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.input_cfg_path);
 			break;
 		case SETTING_CONTROLS_NUMBER:
 			if(currently_selected_controller_menu == 0)
 				menu_obj->items[currentsetting].text_color = GREEN;
 			else
 				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "Controller %d is currently selected.", currently_selected_controller_menu+1);
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%d", currently_selected_controller_menu+1);
 			break;
 		case SETTING_CONTROLS_DPAD_UP:
 		case SETTING_CONTROLS_DPAD_DOWN:
@@ -816,7 +826,7 @@ static void select_file(uint32_t menu_id)
 			break;
 		case INPUT_PRESET_CHOICE:
 			strncpy(dir_path, INPUT_PRESETS_DIR_PATH, sizeof(dir_path));
-			strncpy(extensions, "conf|CONF", sizeof(extensions));
+			strncpy(extensions, "cfg|CFG", sizeof(extensions));
 			strncpy(title, "INPUT PRESETS SELECTION", sizeof(title));
 			strncpy(object, "Input", sizeof(object));
 			strncpy(object, "Input preset", sizeof(object));
@@ -898,6 +908,9 @@ static void select_file(uint32_t menu_id)
 						apply_scaling(FBO_INIT);
 						break;
 					case INPUT_PRESET_CHOICE:
+						strlcpy(g_console.input_cfg_path, path, sizeof(g_console.input_cfg_path));
+						config_read_keybinds(path);
+						menu_reinit_settings();
 						break;
 					case BORDER_CHOICE:
 						break;
@@ -1069,6 +1082,84 @@ static void set_keybind_digital(uint64_t state, uint32_t system_joypad_id, uint3
 		g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].id = default_snes_joypad_id;
 		g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey = default_keybind_lut[default_snes_joypad_id];
 		set_delay = DELAY_MEDIUM;
+	}
+}
+
+static void ssnes_filename_input_and_save (unsigned filename_type)
+{
+	bool filename_entered = false;
+	char filename_tmp[256], filepath[MAX_PATH_LENGTH];
+	oskutil_write_initial_message(&g_console.oskutil_handle, L"example");
+	oskutil_write_message(&g_console.oskutil_handle, L"Enter filename for preset (with no file extension)");
+
+	oskutil_start(&g_console.oskutil_handle);
+
+	while(OSK_IS_RUNNING(g_console.oskutil_handle))
+	{
+		glClear(GL_COLOR_BUFFER_BIT);
+		gl_frame_menu();
+		psglSwap();
+		cell_console_poll();
+		cellSysutilCheckCallback();
+	}
+
+
+	if(g_console.oskutil_handle.text_can_be_fetched)
+	{
+		strncpy(filename_tmp, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(filename_tmp));
+		switch(filename_type)
+		{
+			case CONFIG_FILE:
+				{
+				}
+				break;
+			case SHADER_PRESET_FILE:
+				{
+				}
+				break;
+			case INPUT_PRESET_FILE:
+				{
+					snprintf(filepath, sizeof(filepath), "%s/%s.cfg", INPUT_PRESETS_DIR_PATH, filename_tmp);
+				}
+				break;
+		}
+		filename_entered = true;
+	}
+
+	if(filename_entered)
+	{
+		char filetitle_tmp[512];
+		oskutil_write_initial_message(&g_console.oskutil_handle, L"Example file title");
+		oskutil_write_message(&g_console.oskutil_handle, L"Enter title for preset");
+		oskutil_start(&g_console.oskutil_handle);
+
+		while(OSK_IS_RUNNING(g_console.oskutil_handle))
+		{
+			/* OSK Util gets updated */
+			glClear(GL_COLOR_BUFFER_BIT);
+			ps3graphics_draw_menu();
+			psglSwap();
+			cell_console_poll();
+			cellSysutilCheckCallback();
+		}
+
+		if(g_console.oskutil_handle.text_can_be_fetched)
+			snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", OUTPUT_TEXT_STRING(g_console.oskutil_handle));
+		else
+			snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", "Custom");
+
+		SSNES_LOG("path to save to: %s\n", filepath);
+
+		switch(filename_type)
+		{
+			case CONFIG_FILE:
+				break;
+			case SHADER_PRESET_FILE:
+				break;
+			case INPUT_PRESET_FILE:
+				config_save_keybinds(filepath);
+				break;
+		}
 	}
 }
 
@@ -1543,12 +1634,25 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			break;
 		case SETTING_CONTROLS_SCHEME:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) | CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				menuStackindex++;
+				menuStack[menuStackindex] = menu_filebrowser;
+				menuStack[menuStackindex].enum_id = INPUT_PRESET_CHOICE;
+				set_initial_dir_tmpbrowser = true;
+				set_delay = DELAY_LONG;
+			}
+			if(CTRL_START(state))
+			{
+				menu_reinit_settings();
+			}
 			break;
 		case SETTING_CONTROLS_NUMBER:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
 			{
 				if(currently_selected_controller_menu != 0)
 					currently_selected_controller_menu--;
+				menu_reinit_settings();
 				set_delay = DELAY_MEDIUM;
 			}
 
@@ -1556,6 +1660,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				if(currently_selected_controller_menu < 6)
 					currently_selected_controller_menu++;
+				menu_reinit_settings();
 				set_delay = DELAY_MEDIUM;
 			}
 
@@ -1599,8 +1704,51 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			set_keybind_digital(state, CTRL_R1_MASK, SNES_DEVICE_ID_JOYPAD_R);
 			break;
 		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
+			{
+				ssnes_filename_input_and_save(INPUT_PRESET_FILE);
+			}
 			break;
 		case SETTING_CONTROLS_DEFAULT_ALL:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
+			{
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_UP].id = SNES_DEVICE_ID_JOYPAD_UP;
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_UP].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_UP];
+
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_DOWN].id = SNES_DEVICE_ID_JOYPAD_DOWN;
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_DOWN];
+
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_LEFT].id = SNES_DEVICE_ID_JOYPAD_LEFT;
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_LEFT];
+
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_RIGHT].id = SNES_DEVICE_ID_JOYPAD_RIGHT;
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_RIGHT];
+
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_A].id = SNES_DEVICE_ID_JOYPAD_A;
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_A].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_A];
+
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_B].id = SNES_DEVICE_ID_JOYPAD_B;
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_B].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_B];
+
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_X].id = SNES_DEVICE_ID_JOYPAD_X;
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_X].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_X];
+
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_Y].id = SNES_DEVICE_ID_JOYPAD_Y;
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_Y].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_Y];
+
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_L].id = SNES_DEVICE_ID_JOYPAD_L;
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_L].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_L];
+
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_R].id = SNES_DEVICE_ID_JOYPAD_R;
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_R].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_R];
+
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_START].id = SNES_DEVICE_ID_JOYPAD_START;
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_START].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_START];
+
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_SELECT].id = SNES_DEVICE_ID_JOYPAD_SELECT;
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_SELECT].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_SELECT];
+				menu_reinit_settings();
+			}
 			break;
 	}
 

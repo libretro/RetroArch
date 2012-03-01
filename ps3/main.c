@@ -314,6 +314,13 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 			g_console.ingame_menu_enable = false;
 			g_console.mode_switch = MODE_EXIT;
 			break;
+		case CELL_SYSUTIL_OSKDIALOG_FINISHED:
+			oskutil_close(&g_console.oskutil_handle);
+			oskutil_finished(&g_console.oskutil_handle);
+			break;
+		case CELL_SYSUTIL_OSKDIALOG_UNLOADED:
+			oskutil_unload(&g_console.oskutil_handle);
+			break;
 	}
 }
 
@@ -399,7 +406,7 @@ static void get_environment_settings(int argc, char *argv[])
 		snprintf(DEFAULT_BORDER_FILE, sizeof(DEFAULT_BORDER_FILE), "%s/%s/borders/Centered-1080p/mega-man-2.png", usrDirPath, EMULATOR_CORE_DIR);
 		snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/%s/borders/Menu/main-menu.png", usrDirPath, EMULATOR_CORE_DIR);
 		snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/%s/presets", usrDirPath, EMULATOR_CORE_DIR);
-		snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/%s/input-presets", usrDirPath, EMULATOR_CORE_DIR);
+		snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/input", PRESETS_DIR_PATH);
 		snprintf(LIBSNES_DIR_PATH, sizeof(LIBSNES_DIR_PATH), "%s/%s", usrDirPath, EMULATOR_CORE_DIR);
 		snprintf(BORDERS_DIR_PATH, sizeof(BORDERS_DIR_PATH), "%s/%s/borders", usrDirPath, EMULATOR_CORE_DIR);
 		snprintf(SHADERS_DIR_PATH, sizeof(SHADERS_DIR_PATH), "%s/%s/shaders", usrDirPath, EMULATOR_CORE_DIR);
@@ -554,6 +561,7 @@ int main(int argc, char *argv[])
 
 	ps3graphics_video_init(true);
 	ps3_input_init();
+	oskutil_init(&g_console.oskutil_handle, 0);
 
 	menu_init();
 	g_console.mode_switch = MODE_MENU;
@@ -599,7 +607,8 @@ begin_shutdown:
 		ssnes_main_deinit();
 	cell_pad_input_deinit();
 	ps3_video_deinit();
-
+	if(g_console.oskutil_handle.is_running)
+		oskutil_unload(&g_console.oskutil_handle);
 #ifdef HAVE_LOGGER
 	logger_shutdown();
 #endif
