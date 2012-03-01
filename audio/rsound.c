@@ -16,9 +16,13 @@
  */
 
 
-#include "driver.h"
+#include "../driver.h"
 #include <stdlib.h>
+#ifdef SSNES_CONSOLE
+#include "../console/librsound/rsound.h"
+#else
 #include <rsound.h>
+#endif
 #include "fifo_buffer.h"
 #include "../boolean.h"
 #include "../thread.h"

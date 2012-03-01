@@ -43,6 +43,7 @@ PPU_SRCS		= fifo_buffer.c \
 			ps3/menu.c \
 			console/main_wrap.c \
 			console/rom_ext.c \
+			console/librsound/librsound.c \
 			ps3/ps3_input.c \
 			ps3/cellframework2/input/pad_input.c \
 			ps3/cellframework2/utility/oskutil.c \
@@ -64,11 +65,13 @@ PPU_SRCS		= fifo_buffer.c \
 			bps.c \
 			strl.c \
 			audio/hermite.c \
+			audio/rsound.c \
 			dynamic.c \
 			ps3/main.c \
 			audio/utils.c \
 			conf/config_file.c \
-			ps3/image.c
+			ps3/image.c \
+			thread.c
 
 ifeq ($(HAVE_SSNES_GL), 1)
 DEFINES			= -DHAVE_SSNES_GL

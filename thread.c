@@ -286,6 +286,7 @@ void scond_wait(scond_t *cond, slock_t *lock)
    pthread_cond_wait(&cond->cond, &lock->lock);
 }
 
+#ifndef SSNES_CONSOLE
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, unsigned timeout_ms)
 {
    struct timespec now;
@@ -311,6 +312,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, unsigned timeout_ms)
    int ret = pthread_cond_timedwait(&cond->cond, &lock->lock, &now);
    return ret == 0;
 }
+#endif
 
 void scond_signal(scond_t *cond)
 {
