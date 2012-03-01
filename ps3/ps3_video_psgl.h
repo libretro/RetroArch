@@ -55,9 +55,10 @@ enum
 	ASPECT_RATIO_3_4,
 	ASPECT_RATIO_1_1,
 	ASPECT_RATIO_AUTO,
-	ASPECT_RATIO_CUSTOM,
-	LAST_ASPECT_RATIO
+	ASPECT_RATIO_CUSTOM
 };
+
+#define LAST_ASPECT_RATIO ASPECT_RATIO_CUSTOM
 
 typedef struct gl
 {
@@ -70,6 +71,10 @@ typedef struct gl
    bool overscan_enable;
    int fbo_pass;
    unsigned base_size; /* 2 or 4*/
+   unsigned custom_viewport_x;
+   unsigned custom_viewport_y;
+   unsigned custom_viewport_width;
+   unsigned custom_viewport_height;
    unsigned last_width[TEXTURES];
    unsigned last_height[TEXTURES];
    unsigned tex_index; /* For use with PREV. */

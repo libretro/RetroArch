@@ -1102,7 +1102,7 @@ static void ssnes_filename_input_and_save (unsigned filename_type)
 	{
 		glClear(GL_COLOR_BUFFER_BIT);
 		gl_frame_menu();
-		psglSwap();
+		video_gl.swap(NULL);
 		cell_console_poll();
 		cellSysutilCheckCallback();
 	}
@@ -1137,7 +1137,7 @@ static void ssnes_filename_input_and_save (unsigned filename_type)
 			/* OSK Util gets updated */
 			glClear(GL_COLOR_BUFFER_BIT);
 			ps3graphics_draw_menu();
-			psglSwap();
+			video_gl.swap(NULL);
 			cell_console_poll();
 			cellSysutilCheckCallback();
 		}
@@ -1966,10 +1966,17 @@ static void ingame_menu(uint32_t menu_id)
 	uint64_t state, stuck_in_loop;
 	static uint64_t blocking;
 
+	float x_position = 0.3f;
+	float font_size = 1.1f;
+	float ypos = 0.19f;
+	float ypos_increment = 0.04f;
+
 	for(int i = 0; i < MENU_ITEM_LAST; i++)
 		menuitem_colors[i] = GREEN;
 	
 	menuitem_colors[g_console.ingame_menu_item] = RED;
+	
+	gl_t * gl = g_gl;
 
 	state = cell_pad_input_poll_device(0);
 	stuck_in_loop = 1;
@@ -2158,6 +2165,126 @@ static void ingame_menu(uint32_t menu_id)
 			case MENU_ITEM_RESIZE_MODE:
 				if(CTRL_CROSS(state))
 				{
+					g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
+					ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
+					while(stuck_in_loop && g_console.ingame_menu_enable)
+					{
+						state = cell_pad_input_poll_device(0);
+
+						if(CTRL_SQUARE(~state))
+						{
+							glClear(GL_COLOR_BUFFER_BIT);
+							glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+							glEnable(GL_BLEND);
+						}
+						ssnes_render_cached_frame();
+
+						if(CTRL_SQUARE(~state))
+						{
+							gl_frame_menu();
+						}
+
+						if(CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state))
+							gl->custom_viewport_x -= 1;
+						else if (CTRL_LSTICK_RIGHT(state) || CTRL_RIGHT(state))
+							gl->custom_viewport_x += 1;
+
+						if (CTRL_LSTICK_UP(state) || CTRL_UP(state))
+							gl->custom_viewport_y += 1;
+						else if (CTRL_LSTICK_DOWN(state) || CTRL_DOWN(state)) 
+							gl->custom_viewport_y -= 1;
+
+						if (CTRL_RSTICK_LEFT(state) || CTRL_L1(state))
+							gl->custom_viewport_width -= 1;
+						else if (CTRL_RSTICK_RIGHT(state) || CTRL_R1(state))
+							gl->custom_viewport_width += 1;
+
+						if (CTRL_RSTICK_UP(state) || CTRL_L2(state))
+							gl->custom_viewport_height += 1;
+						else if (CTRL_RSTICK_DOWN(state) || CTRL_R2(state))
+							gl->custom_viewport_height -= 1;
+
+						if (CTRL_TRIANGLE(state))
+						{
+							gl->custom_viewport_x = 0;
+							gl->custom_viewport_y = 0;
+							gl->custom_viewport_width = gl->win_width;
+							gl->custom_viewport_height = gl->win_height;
+						}
+						if(CTRL_CIRCLE(state))
+						{
+							set_delay = DELAY_MEDIUM;
+							stuck_in_loop = 0;
+						}
+
+						if(CTRL_SQUARE(~state))
+						{
+							cellDbgFontPuts	(0.09f,	0.05f,	Emulator_GetFontSize(),	RED,	"QUICK MENU");
+							cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libsnes core: %s", snes_library_id());
+							cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
+							cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
+							cellDbgFontPrintf	(x_position,	ypos,	font_size,	GREEN,	"Viewport X: #%d", gl->custom_viewport_x);
+
+							cellDbgFontPrintf	(x_position,	ypos+(ypos_increment*1),	font_size,	GREEN,	"Viewport Y: #%d", gl->custom_viewport_y);
+
+							cellDbgFontPrintf	(x_position,	ypos+(ypos_increment*2),	font_size,	GREEN,	"Viewport Width: #%d", gl->custom_viewport_width);
+
+							cellDbgFontPrintf	(x_position,	ypos+(ypos_increment*3),	font_size,	GREEN,	"Viewport Height: #%d", gl->custom_viewport_height);
+
+							cellDbgFontPrintf (0.09f,   0.40f,   font_size,      LIGHTBLUE,           "CONTROLS:");
+
+							cellDbgFontPrintf (0.09f,   0.46f,   font_size,      LIGHTBLUE,           "LEFT or LSTICK UP");
+							cellDbgFontPrintf (0.5f,   0.46f,   font_size,      LIGHTBLUE,           "- Decrease Viewport X");
+
+							cellDbgFontDraw();
+
+							cellDbgFontPrintf (0.09f,   0.48f,   font_size,      LIGHTBLUE,           "RIGHT or LSTICK RIGHT");
+							cellDbgFontPrintf (0.5f,   0.48f,   font_size,      LIGHTBLUE,           "- Increase Viewport X");
+
+							cellDbgFontPrintf (0.09f,   0.50f,   font_size,      LIGHTBLUE,           "UP or LSTICK UP");
+							cellDbgFontPrintf (0.5f,   0.50f,   font_size,      LIGHTBLUE,           "- Increase Viewport Y");
+
+							cellDbgFontDraw();
+
+							cellDbgFontPrintf (0.09f,   0.52f,   font_size,      LIGHTBLUE,           "DOWN or LSTICK DOWN");
+							cellDbgFontPrintf (0.5f,   0.52f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Y");
+
+							cellDbgFontPrintf (0.09f,   0.54f,   font_size,      LIGHTBLUE,           "L1 or RSTICK LEFT");
+							cellDbgFontPrintf (0.5f,   0.54f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Width");
+
+							cellDbgFontDraw();
+
+							cellDbgFontPrintf (0.09f,   0.56f,   font_size,      LIGHTBLUE,           "R1 or RSTICK RIGHT");
+							cellDbgFontPrintf (0.5f,   0.56f,   font_size,      LIGHTBLUE,           "- Increase Viewport Width");
+
+							cellDbgFontPrintf (0.09f,   0.58f,   font_size,      LIGHTBLUE,           "L2 or  RSTICK UP");
+							cellDbgFontPrintf (0.5f,   0.58f,   font_size,      LIGHTBLUE,           "- Increase Viewport Height");
+
+							cellDbgFontDraw();
+
+							cellDbgFontPrintf (0.09f,   0.60f,   font_size,      LIGHTBLUE,           "R2 or RSTICK DOWN");
+							cellDbgFontPrintf (0.5f,   0.60f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Height");
+
+							cellDbgFontPrintf (0.09f,   0.66f,   font_size,      LIGHTBLUE,           "TRIANGLE");
+							cellDbgFontPrintf (0.5f,   0.66f,   font_size,      LIGHTBLUE,           "- Reset To Defaults");
+
+							cellDbgFontPrintf (0.09f,   0.68f,   font_size,      LIGHTBLUE,           "SQUARE");
+							cellDbgFontPrintf (0.5f,   0.68f,   font_size,      LIGHTBLUE,           "- Show Game Screen");
+
+							cellDbgFontPrintf (0.09f,   0.70f,   font_size,      LIGHTBLUE,           "CIRCLE");
+							cellDbgFontPrintf (0.5f,   0.70f,   font_size,      LIGHTBLUE,           "- Return to Ingame Menu");
+
+							cellDbgFontDraw();
+
+							cellDbgFontPrintf (0.09f,   0.83f,   0.91f,      LIGHTBLUE,           "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the menu.");
+							cellDbgFontDraw();
+						}
+						video_gl.swap(NULL);
+						if(CTRL_SQUARE(~state))
+						{
+							glDisable(GL_BLEND);
+						}
+					}
 				}
 				strcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back.");
 				break;
@@ -2262,10 +2389,6 @@ static void ingame_menu(uint32_t menu_id)
 		}
 	}
 
-	float x_position = 0.3f;
-	float font_size = 1.1f;
-	float ypos = 0.19f;
-	float ypos_increment = 0.04f;
 
 	switch(g_console.screen_orientation)
 	{

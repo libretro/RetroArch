@@ -416,6 +416,7 @@ static inline void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned he
 
 static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full)
 {
+
 	uint32_t m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
 	GLfloat m_left, m_right, m_bottom, m_top, m_zNear, m_zFar;
 
@@ -441,7 +442,14 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
 		float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
 
 		// If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
-		if (device_aspect > desired_aspect)
+		if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
+		{
+			m_viewport_x_temp = gl->custom_viewport_x;
+			m_viewport_y_temp = gl->custom_viewport_y;
+			m_viewport_width_temp = gl->custom_viewport_width;
+			m_viewport_height_temp = gl->custom_viewport_height;
+		}
+		else if (device_aspect > desired_aspect)
 		{
 			m_viewport_x_temp = (GLint)(width * (0.5 - delta));
 			m_viewport_width_temp = (GLint)(2.0 * width * delta);
@@ -807,6 +815,12 @@ static bool psgl_init_device(gl_t *gl, const video_info_t *video, uint32_t resol
 
 	gl->gl_device = psglCreateDeviceExtended(&params);
 	psglGetDeviceDimensions(gl->gl_device, &gl->win_width, &gl->win_height); 
+
+	if(gl->custom_viewport_width == 0)
+		gl->custom_viewport_width = gl->win_width;
+	if(gl->custom_viewport_height == 0)
+		gl->custom_viewport_height = gl->win_height;
+
 	gl->gl_context = psglCreateContext();
 	psglMakeCurrent(gl->gl_context, gl->gl_device);
 	psglResetCurrentContext();
