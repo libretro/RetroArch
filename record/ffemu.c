@@ -36,9 +36,10 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include "../boolean.h"
-#include "ffemu.h"
 #include "../fifo_buffer.h"
 #include "../thread.h"
+#include "../general.h"
+#include "ffemu.h"
 #include <assert.h>
 
 #ifdef HAVE_CONFIG_H
@@ -107,7 +108,7 @@ struct ffemu
    volatile bool can_sleep;
 };
 
-static bool init_audio(struct ff_audio_info *audio, struct ffemu_params *param)
+static bool ffemu_init_audio(struct ff_audio_info *audio, struct ffemu_params *param)
 {
    AVCodec *codec = avcodec_find_encoder(CODEC_ID_FLAC);
    if (!codec)
@@ -153,10 +154,10 @@ static bool init_audio(struct ff_audio_info *audio, struct ffemu_params *param)
    return true;
 }
 
-static bool init_video(struct ff_video_info *video, const struct ffemu_params *param)
+static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_params *param)
 {
 #ifdef HAVE_X264RGB
-   AVCodec *codec = avcodec_find_encoder(CODEC_ID_H264);
+   AVCodec *codec = avcodec_find_encoder(g_settings.video.h264_record ? CODEC_ID_H264 : CODEC_ID_FFV1);
 #else
    AVCodec *codec = avcodec_find_encoder(CODEC_ID_FFV1);
 #endif
@@ -178,7 +179,7 @@ static bool init_video(struct ff_video_info *video, const struct ffemu_params *p
    }
 
 #ifdef HAVE_X264RGB
-   video->pix_fmt = PIX_FMT_BGR24;
+   video->pix_fmt = g_settings.video.h264_record ? PIX_FMT_BGR24 : PIX_FMT_RGB32;
 #else
    video->pix_fmt = PIX_FMT_RGB32;
 #endif
@@ -201,8 +202,13 @@ static bool init_video(struct ff_video_info *video, const struct ffemu_params *p
 #endif
 
 #ifdef HAVE_X264RGB
-   video->codec->thread_count = 3;
-   av_dict_set(&opts, "qp", "0", 0);
+   if (g_settings.video.h264_record)
+   {
+      video->codec->thread_count = 3;
+      av_dict_set(&opts, "qp", "0", 0);
+   }
+   else
+      video->codec->thread_count = 2;
 #else
    video->codec->thread_count = 2;
 #endif
@@ -233,7 +239,7 @@ static bool init_video(struct ff_video_info *video, const struct ffemu_params *p
    return true;
 }
 
-static bool init_muxer(ffemu_t *handle)
+static bool ffemu_init_muxer(ffemu_t *handle)
 {
    AVFormatContext *ctx = avformat_alloc_context();
    av_strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
@@ -285,7 +291,8 @@ static bool init_muxer(ffemu_t *handle)
    handle->muxer.astream = stream;
 
 #ifdef HAVE_X264RGB // Avoids a warning at end about non-monotonically increasing DTS values. It seems to be harmless to disable this.
-   ctx->oformat->flags |= AVFMT_TS_NONSTRICT;
+   if (g_settings.video.h264_record)
+      ctx->oformat->flags |= AVFMT_TS_NONSTRICT;
 #endif
 
    av_dict_set(&ctx->metadata, "title", "SSNES video dump", 0); 
@@ -379,13 +386,13 @@ ffemu_t *ffemu_new(const struct ffemu_params *params)
 
    handle->params = *params;
 
-   if (!init_video(&handle->video, &handle->params))
+   if (!ffemu_init_video(&handle->video, &handle->params))
       goto error;
 
-   if (!init_audio(&handle->audio, &handle->params))
+   if (!ffemu_init_audio(&handle->audio, &handle->params))
       goto error;
 
-   if (!init_muxer(handle))
+   if (!ffemu_init_muxer(handle))
       goto error;
 
    if (!init_thread(handle))

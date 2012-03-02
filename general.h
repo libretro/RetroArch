@@ -121,6 +121,7 @@ struct settings
       bool disable_composition;
 
       bool hires_record;
+      bool h264_record;
       bool post_filter_record;
 
       char external_driver[PATH_MAX];
