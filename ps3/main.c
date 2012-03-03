@@ -579,11 +579,11 @@ int main(int argc, char *argv[])
 	oskutil_init(&g_console.oskutil_handle, 0);
 
 	menu_init();
-	g_console.mode_switch = MODE_MENU;
 
 	switch(g_console.external_launcher_support)
 	{
 		case EXTERN_LAUNCHER_SALAMANDER:
+			g_console.mode_switch = MODE_MENU;
 			break;
 		case EXTERN_LAUNCHER_MULTIMAN:
 			SSNES_LOG("Started from multiMAN, will auto-start game.\n");
