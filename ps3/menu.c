@@ -569,18 +569,27 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 				case SOUND_MODE_NORMAL:
 					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Sound Output] is set to 'Normal' - normal audio output will be\nused.");
 					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Normal");
+					menu_obj->items[currentsetting].text_color = GREEN;
 					break;
 				case SOUND_MODE_RSOUND:
 					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Sound Output] is set to 'RSound' - the sound will be streamed over the\n network to the RSound audio server." );
 					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "RSound");
+					menu_obj->items[currentsetting].text_color = ORANGE;
 					break;
 				case SOUND_MODE_HEADSET:
 					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Sound Output] is set to 'USB/Bluetooth Headset' - sound will\n be output through the headset");
 					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "USB/Bluetooth Headset");
+					menu_obj->items[currentsetting].text_color = ORANGE;
 					break;
 			}
 			break;
 		case SETTING_RSOUND_SERVER_IP_ADDRESS:
+			if(strcmp(g_console.rsound_ip_address,"0.0.0.0") == 0)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.rsound_ip_address);
 			break;
 		case SETTING_DEFAULT_AUDIO_ALL:
 			break;
