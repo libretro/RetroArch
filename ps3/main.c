@@ -112,19 +112,15 @@ static void set_default_settings(void)
 
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].id = SNES_DEVICE_ID_JOYPAD_UP;
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].joykey = CTRL_UP_MASK;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].joyaxis = CTRL_LSTICK_UP_MASK;
 
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].id = SNES_DEVICE_ID_JOYPAD_DOWN;
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = CTRL_DOWN_MASK;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].joyaxis = CTRL_LSTICK_DOWN_MASK;
 
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].id = SNES_DEVICE_ID_JOYPAD_LEFT;
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = CTRL_LEFT_MASK;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].joyaxis = CTRL_LSTICK_LEFT_MASK;
 
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].id = SNES_DEVICE_ID_JOYPAD_RIGHT;
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = CTRL_RIGHT_MASK;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].joyaxis = CTRL_LSTICK_RIGHT_MASK;
 
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_A].id = SNES_DEVICE_ID_JOYPAD_A;
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_A].joykey = CTRL_CIRCLE_MASK;
@@ -137,6 +133,8 @@ static void set_default_settings(void)
 
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_R].id = SNES_DEVICE_ID_JOYPAD_R;
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_R].joykey = CTRL_R1_MASK;
+
+		g_settings.input.dpad_emulation[x] = DPAD_EMULATION_LSTICK;
 	}
 
 	// g_console
@@ -232,6 +230,14 @@ static void init_settings(bool load_libsnes_path)
 		CONFIG_GET_BOOL(video.vsync, "video_vsync");
 		CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
 
+		CONFIG_GET_INT(input.dpad_emulation[0], "dpad_emulation_p1");
+		CONFIG_GET_INT(input.dpad_emulation[1], "dpad_emulation_p2");
+		CONFIG_GET_INT(input.dpad_emulation[2], "dpad_emulation_p3");
+		CONFIG_GET_INT(input.dpad_emulation[3], "dpad_emulation_p4");
+		CONFIG_GET_INT(input.dpad_emulation[4], "dpad_emulation_p5");
+		CONFIG_GET_INT(input.dpad_emulation[5], "dpad_emulation_p6");
+		CONFIG_GET_INT(input.dpad_emulation[6], "dpad_emulation_p7");
+
 		// g_console
 
 		CONFIG_GET_BOOL_CONSOLE(overscan_enable, "overscan_enable");
@@ -287,6 +293,14 @@ static void save_settings(void)
 		config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
 		config_set_bool(conf, "video_smooth", g_settings.video.smooth);
 		config_set_bool(conf, "video_vsync", g_settings.video.vsync);
+
+		config_set_int(conf, "dpad_emulation_p1", g_settings.input.dpad_emulation[0]);
+		config_set_int(conf, "dpad_emulation_p2", g_settings.input.dpad_emulation[1]);
+		config_set_int(conf, "dpad_emulation_p3", g_settings.input.dpad_emulation[2]);
+		config_set_int(conf, "dpad_emulation_p4", g_settings.input.dpad_emulation[3]);
+		config_set_int(conf, "dpad_emulation_p5", g_settings.input.dpad_emulation[4]);
+		config_set_int(conf, "dpad_emulation_p6", g_settings.input.dpad_emulation[5]);
+		config_set_int(conf, "dpad_emulation_p7", g_settings.input.dpad_emulation[6]);
 
 		// g_console
 		config_set_bool(conf, "overscan_enable", g_console.overscan_enable);

@@ -151,6 +151,9 @@ struct settings
       struct snes_keybind binds[MAX_PLAYERS][SSNES_BIND_LIST_END];
       float axis_threshold;
       int joypad_map[MAX_PLAYERS];
+#ifdef SSNES_CONSOLE
+      unsigned dpad_emulation[MAX_PLAYERS];
+#endif
       bool netplay_client_swap_input;
    } input;
 
@@ -200,6 +203,7 @@ struct console_settings
    uint32_t current_resolution_id;
    uint32_t ingame_menu_item;
    uint32_t initial_resolution_id;
+   uint32_t map_dpad_to_stick;
    uint32_t mode_switch;
    uint32_t sound_mode;
    uint32_t *supported_resolutions;

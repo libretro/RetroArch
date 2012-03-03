@@ -72,7 +72,11 @@ struct snes_keybind
    bool valid;
    int id;
    enum ssnes_key key;
+#ifdef __CELLOS_LV2__
+   uint64_t joykey;
+#else
    uint16_t joykey;
+#endif
    uint32_t joyaxis;
 };
 

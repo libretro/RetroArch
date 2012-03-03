@@ -22,5 +22,6 @@
 #include "cellframework2/input/pad_input.h"
 
 void ps3_input_init(void);
+void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id);
 
 #endif

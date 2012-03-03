@@ -78,6 +78,33 @@ static void* ps3_input_initialize(void)
 void ps3_input_init(void)
 {
    cell_pad_input_init();
+   for(unsigned i = 0; i < MAX_PADS; i++)
+   	ps3_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
+}
+
+void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
+{
+	switch(map_dpad_enum)
+	{
+		case DPAD_EMULATION_NONE:
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_UP].joykey = CTRL_UP_MASK;
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = CTRL_DOWN_MASK;
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = CTRL_LEFT_MASK;
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = CTRL_RIGHT_MASK;
+			break;
+		case DPAD_EMULATION_LSTICK:
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_UP].joykey = CTRL_UP_MASK | CTRL_LSTICK_UP_MASK;
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = CTRL_DOWN_MASK | CTRL_LSTICK_DOWN_MASK;
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = CTRL_LEFT_MASK | CTRL_LSTICK_LEFT_MASK;
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = CTRL_RIGHT_MASK | CTRL_LSTICK_RIGHT_MASK;
+			break;
+		case DPAD_EMULATION_RSTICK:
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_UP].joykey = CTRL_UP_MASK | CTRL_RSTICK_UP_MASK;
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = CTRL_DOWN_MASK | CTRL_RSTICK_DOWN_MASK;
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = CTRL_LEFT_MASK | CTRL_RSTICK_LEFT_MASK;
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = CTRL_RIGHT_MASK | CTRL_RSTICK_RIGHT_MASK;
+			break;
+	}
 }
 
 static bool ps3_key_pressed(void *data, int key)
