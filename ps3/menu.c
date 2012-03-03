@@ -564,6 +564,21 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		case SETTING_DEFAULT_VIDEO_ALL:
 			break;
 		case SETTING_SOUND_MODE:
+			switch(g_console.sound_mode)
+			{
+				case SOUND_MODE_NORMAL:
+					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Sound Output] is set to 'Normal' - normal audio output will be\nused.");
+					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Normal");
+					break;
+				case SOUND_MODE_RSOUND:
+					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Sound Output] is set to 'RSound' - the sound will be streamed over the\n network to the RSound audio server." );
+					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "RSound");
+					break;
+				case SOUND_MODE_HEADSET:
+					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Sound Output] is set to 'USB/Bluetooth Headset' - sound will\n be output through the headset");
+					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "USB/Bluetooth Headset");
+					break;
+			}
 			break;
 		case SETTING_RSOUND_SERVER_IP_ADDRESS:
 			break;
@@ -1504,8 +1519,51 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_DEFAULT_VIDEO_ALL:
 			break;
 		case SETTING_SOUND_MODE:
+			if(CTRL_LEFT(state) ||  CTRL_LSTICK_LEFT(state))
+			{
+				if(g_console.sound_mode != SOUND_MODE_NORMAL)
+				{
+					g_console.sound_mode--;
+					//emulator_toggle_sound(g_console.sound_mode);
+					set_delay = DELAY_MEDIUM;
+				}
+			}
+			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				if(g_console.sound_mode < SOUND_MODE_HEADSET)
+				{
+					g_console.sound_mode++;
+					//emulator_toggle_sound(g_console.sound_mode);
+					set_delay = DELAY_MEDIUM;
+				}
+			}
+			if(CTRL_START(state))
+			{
+				g_console.sound_mode = SOUND_MODE_NORMAL;
+				//emulator_toggle_sound(g_console.sound_mode);
+				set_delay = DELAY_MEDIUM;
+			}
 			break;
 		case SETTING_RSOUND_SERVER_IP_ADDRESS:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_CROSS(state) | CTRL_LSTICK_RIGHT(state) )
+			{
+				oskutil_write_initial_message(&g_console.oskutil_handle, L"192.168.1.1");
+				oskutil_write_message(&g_console.oskutil_handle, L"Enter IP address for the RSound Server.");
+				oskutil_start(&g_console.oskutil_handle);
+				while(OSK_IS_RUNNING(g_console.oskutil_handle))
+				{
+					glClear(GL_COLOR_BUFFER_BIT);
+					ps3graphics_draw_menu();
+					video_gl.swap(NULL);
+					cell_console_poll();
+					cellSysutilCheckCallback();
+				}
+
+				if(g_console.oskutil_handle.text_can_be_fetched)
+					strcpy(g_console.rsound_ip_address, OUTPUT_TEXT_STRING(g_console.oskutil_handle));
+			}
+			if(CTRL_START(state))
+				strcpy(g_console.rsound_ip_address, "0.0.0.0");
 			break;
 		case SETTING_DEFAULT_AUDIO_ALL:
 			break;

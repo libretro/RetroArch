@@ -160,6 +160,11 @@ static void set_default_settings(void)
 	g_console.menu_font_size = 1.0f;
 	g_console.overscan_enable = false;
 	g_console.overscan_amount = 0.0f;
+	g_console.sound_mode = SOUND_MODE_NORMAL;
+	g_console.custom_viewport_width = 0;
+	g_console.custom_viewport_height = 0;
+	g_console.custom_viewport_x = 0;
+	g_console.custom_viewport_y = 0;
 	
 	// g_extern
 	g_extern.state_slot = 0;
@@ -234,7 +239,12 @@ static void init_settings(bool load_libsnes_path)
 		CONFIG_GET_BOOL_CONSOLE(triple_buffering_enable, "triple_buffering_enable");
 		CONFIG_GET_INT_CONSOLE(aspect_ratio_index, "aspect_ratio_index");
 		CONFIG_GET_INT_CONSOLE(current_resolution_id, "current_resolution_id");
+		CONFIG_GET_INT_CONSOLE(custom_viewport_x, "custom_viewport_x");
+		CONFIG_GET_INT_CONSOLE(custom_viewport_y, "custom_viewport_y");
+		CONFIG_GET_INT_CONSOLE(custom_viewport_width, "custom_viewport_width");
+		CONFIG_GET_INT_CONSOLE(custom_viewport_height, "custom_viewport_height");
 		CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
+		CONFIG_GET_INT_CONSOLE(sound_mode, "sound_mode");
 		CONFIG_GET_STRING_CONSOLE(aspect_ratio_name, "aspect_ratio_name");
 		CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
 		CONFIG_GET_FLOAT_CONSOLE(menu_font_size, "menu_font_size");
@@ -282,8 +292,13 @@ static void save_settings(void)
 		config_set_bool(conf, "screenshots_enable", g_console.screenshots_enable);
 		config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
 		config_set_bool(conf, "triple_buffering_enable", g_console.triple_buffering_enable);
+		config_set_int(conf, "sound_mode", g_console.sound_mode);
 		config_set_int(conf, "aspect_ratio_index", g_console.aspect_ratio_index);
 		config_set_int(conf, "current_resolution_id", g_console.current_resolution_id);
+		config_set_int(conf, "custom_viewport_width", g_console.custom_viewport_width);
+		config_set_int(conf, "custom_viewport_height", g_console.custom_viewport_height);
+		config_set_int(conf, "custom_viewport_x", g_console.custom_viewport_x);
+		config_set_int(conf, "custom_viewport_y", g_console.custom_viewport_y);
 		config_set_int(conf, "screen_orientation", g_console.screen_orientation);
 		config_set_string(conf, "aspect_ratio_name", g_console.aspect_ratio_name);
 		config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
@@ -643,7 +658,6 @@ begin_shutdown:
 		{
 			SSNES_LOG("SELF file is not of NPDRM type, trying another approach to boot it...\n");
 			sys_game_process_exitspawn(g_console.launch_app_on_exit, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-			
 		}
 		sceNpTerm();
 		cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);

@@ -1284,6 +1284,11 @@ void ps3graphics_video_init(bool get_all_resolutions)
 
 	gl_t * gl = g_gl;
 
+	gl->custom_viewport_width = g_console.custom_viewport_width;
+	gl->custom_viewport_height = g_console.custom_viewport_height;
+	gl->custom_viewport_x = g_console.custom_viewport_x;
+	gl->custom_viewport_y = g_console.custom_viewport_y;
+
 	gl->overscan_enable = g_console.overscan_enable;
 	gl->overscan_amount = g_console.overscan_amount;
 

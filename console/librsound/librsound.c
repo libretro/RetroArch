@@ -1,3 +1,21 @@
+/*  SSNES - A Super Ninteno Entertainment System (SNES) Emulator frontend for libsnes.
+ *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2012 - Daniel De Matteis
+ *
+ *  Some code herein may be based on code found in BSNES.
+ * 
+ *  SSNES is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with SSNES.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /*  RSound - A PCM audio client/server
  *  Copyright (C) 2010 - Hans-Kristian Arntzen
  * 
@@ -78,7 +96,7 @@ enum rsd_conn_type
 static inline int rsnd_is_little_endian(void);
 static inline void rsnd_swap_endian_16(uint16_t * x);
 static inline void rsnd_swap_endian_32(uint32_t * x);
-static inline int rsnd_format_to_samplesize(enum rsd_format fmt);
+static inline int rsnd_format_to_samplesize(uint16_t fmt);
 static int rsnd_connect_server(rsound_t *rd);
 static int rsnd_send_header_info(rsound_t *rd);
 static int rsnd_get_backend_info(rsound_t *rd);
@@ -137,7 +155,7 @@ static inline void rsnd_swap_endian_32 ( uint32_t * x )
       (*x << 24);
 }
 
-static inline int rsnd_format_to_samplesize ( enum rsd_format fmt )
+static inline int rsnd_format_to_samplesize ( uint16_t fmt )
 {
    switch(fmt)
    {
@@ -178,6 +196,7 @@ int rsd_samplesize( rsound_t *rd )
 static int rsnd_connect_server( rsound_t *rd )
 {
    struct sockaddr_in addr;
+   struct pollfd fd;
    int i = 1;
 
    memset(&addr, 0, sizeof(addr));
@@ -214,10 +233,8 @@ static int rsnd_connect_server( rsound_t *rd )
    /* Nonblocking connect with 3 second timeout */
    connect(rd->conn.socket, (struct sockaddr*)&addr, sizeof(addr));
 
-   struct pollfd fd = {
-      .fd = rd->conn.socket,
-      .events = POLLOUT
-   };
+   fd.fd = rd->conn.socket;
+   fd.events = POLLOUT;
 
    rsnd_poll(&fd, 1, 3000);
    if (!(fd.revents & POLLOUT))

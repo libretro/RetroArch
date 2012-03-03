@@ -189,6 +189,10 @@ struct console_settings
    bool triple_buffering_enable;
    float overscan_amount;
    uint32_t aspect_ratio_index;
+   uint32_t custom_viewport_width;
+   uint32_t custom_viewport_height;
+   uint32_t custom_viewport_x;
+   uint32_t custom_viewport_y;
    uint32_t emulator_initialized;
    uint32_t external_launcher_support;
    uint32_t screen_orientation;
@@ -197,6 +201,7 @@ struct console_settings
    uint32_t ingame_menu_item;
    uint32_t initial_resolution_id;
    uint32_t mode_switch;
+   uint32_t sound_mode;
    uint32_t *supported_resolutions;
    uint32_t supported_resolutions_count;
    uint32_t control_timer_expiration_frame_count;
@@ -207,6 +212,7 @@ struct console_settings
    char cgp_path[PATH_MAX];
    char input_cfg_path[PATH_MAX];
    char rom_path[PATH_MAX];
+   char rsound_ip_address[PATH_MAX];
    char aspect_ratio_name[PATH_MAX];
    char default_rom_startup_dir[PATH_MAX];
    char default_savestate_dir[PATH_MAX];

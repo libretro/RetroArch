@@ -18,6 +18,7 @@
 
 #include "../driver.h"
 #include "../general.h"
+#include "shared.h"
 #include <stdlib.h>
 #include <cell/audio.h>
 #include <sys/timer.h>
@@ -90,7 +91,10 @@ static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
    cellAudioInit();
    params.nChannel = AUDIO_CHANNELS;
    params.nBlock = AUDIO_BLOCKS;
-   params.attr = 0;
+   if(g_console.sound_mode == SOUND_MODE_HEADSET)
+	   params.attr = CELL_AUDIO_PORTATTR_OUT_SECONDARY;
+   else
+	   params.attr = 0;
 
    if (cellAudioPortOpen(&params, &data->audio_port) != CELL_OK)
    {
