@@ -346,6 +346,21 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		1
 	},
 	{
+		SETTING_SSNES_DEFAULT_EMU,
+		"Default emulator core",
+		"",
+		0.0f,
+		0.0f,
+		YELLOW,
+		"INFO - Select a default emulator core to launch at start-up.",
+		WHITE,
+		0.91f,
+		0.09f,
+		0.83f,
+		0,
+		1
+	},
+	{
 		SETTING_EMU_DEFAULT_ALL,
 		"DEFAULT",
 		"",

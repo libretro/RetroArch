@@ -627,6 +627,15 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Rewind] feature is set to 'OFF'.");
 			}
 			break;
+		case SETTING_SSNES_DEFAULT_EMU:
+			{
+				char fname[MAX_PATH_LENGTH];
+				fill_pathname_base(fname, g_settings.libsnes, sizeof(fname));
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
+
+				menu_obj->items[currentsetting].text_color = GREEN;
+			}
+			break;
 		case SETTING_EMU_AUDIO_MUTE:
 			if(g_extern.audio_data.mute)
 			{
@@ -1620,6 +1629,19 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_START(state))
 			{
 				g_settings.rewind_enable = false;
+			}
+			break;
+		case SETTING_SSNES_DEFAULT_EMU:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				menuStackindex++;
+				menuStack[menuStackindex] = menu_filebrowser;
+				menuStack[menuStackindex].enum_id = LIBSNES_CHOICE;
+				set_initial_dir_tmpbrowser = true;
+				set_delay = DELAY_LONG;
+			}
+			if(CTRL_START(state))
+			{
 			}
 			break;
 		case SETTING_EMU_AUDIO_MUTE:
