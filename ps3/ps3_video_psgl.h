@@ -71,10 +71,6 @@ typedef struct gl
    bool overscan_enable;
    int fbo_pass;
    unsigned base_size; /* 2 or 4*/
-   unsigned custom_viewport_x;
-   unsigned custom_viewport_y;
-   unsigned custom_viewport_width;
-   unsigned custom_viewport_height;
    unsigned last_width[TEXTURES];
    unsigned last_height[TEXTURES];
    unsigned tex_index; /* For use with PREV. */

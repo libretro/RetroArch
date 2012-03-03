@@ -2252,31 +2252,31 @@ static void ingame_menu(uint32_t menu_id)
 						}
 
 						if(CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state))
-							gl->custom_viewport_x -= 1;
+							g_console.custom_viewport_x -= 1;
 						else if (CTRL_LSTICK_RIGHT(state) || CTRL_RIGHT(state))
-							gl->custom_viewport_x += 1;
+							g_console.custom_viewport_x += 1;
 
 						if (CTRL_LSTICK_UP(state) || CTRL_UP(state))
-							gl->custom_viewport_y += 1;
+							g_console.custom_viewport_y += 1;
 						else if (CTRL_LSTICK_DOWN(state) || CTRL_DOWN(state)) 
-							gl->custom_viewport_y -= 1;
+							g_console.custom_viewport_y -= 1;
 
 						if (CTRL_RSTICK_LEFT(state) || CTRL_L1(state))
-							gl->custom_viewport_width -= 1;
+							g_console.custom_viewport_width -= 1;
 						else if (CTRL_RSTICK_RIGHT(state) || CTRL_R1(state))
-							gl->custom_viewport_width += 1;
+							g_console.custom_viewport_width += 1;
 
 						if (CTRL_RSTICK_UP(state) || CTRL_L2(state))
-							gl->custom_viewport_height += 1;
+							g_console.custom_viewport_height += 1;
 						else if (CTRL_RSTICK_DOWN(state) || CTRL_R2(state))
-							gl->custom_viewport_height -= 1;
+							g_console.custom_viewport_height -= 1;
 
 						if (CTRL_TRIANGLE(state))
 						{
-							gl->custom_viewport_x = 0;
-							gl->custom_viewport_y = 0;
-							gl->custom_viewport_width = gl->win_width;
-							gl->custom_viewport_height = gl->win_height;
+							g_console.custom_viewport_x = 0;
+							g_console.custom_viewport_y = 0;
+							g_console.custom_viewport_width = gl->win_width;
+							g_console.custom_viewport_height = gl->win_height;
 						}
 						if(CTRL_CIRCLE(state))
 						{
@@ -2290,13 +2290,13 @@ static void ingame_menu(uint32_t menu_id)
 							cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libsnes core: %s", snes_library_id());
 							cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
 							cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
-							cellDbgFontPrintf	(x_position,	ypos,	font_size,	GREEN,	"Viewport X: #%d", gl->custom_viewport_x);
+							cellDbgFontPrintf	(x_position,	ypos,	font_size,	GREEN,	"Viewport X: #%d", g_console.custom_viewport_x);
 
-							cellDbgFontPrintf	(x_position,	ypos+(ypos_increment*1),	font_size,	GREEN,	"Viewport Y: #%d", gl->custom_viewport_y);
+							cellDbgFontPrintf	(x_position,	ypos+(ypos_increment*1),	font_size,	GREEN,	"Viewport Y: #%d", g_console.custom_viewport_y);
 
-							cellDbgFontPrintf	(x_position,	ypos+(ypos_increment*2),	font_size,	GREEN,	"Viewport Width: #%d", gl->custom_viewport_width);
+							cellDbgFontPrintf	(x_position,	ypos+(ypos_increment*2),	font_size,	GREEN,	"Viewport Width: #%d", g_console.custom_viewport_width);
 
-							cellDbgFontPrintf	(x_position,	ypos+(ypos_increment*3),	font_size,	GREEN,	"Viewport Height: #%d", gl->custom_viewport_height);
+							cellDbgFontPrintf	(x_position,	ypos+(ypos_increment*3),	font_size,	GREEN,	"Viewport Height: #%d", g_console.custom_viewport_height);
 
 							cellDbgFontPrintf (0.09f,   0.40f,   font_size,      LIGHTBLUE,           "CONTROLS:");
 

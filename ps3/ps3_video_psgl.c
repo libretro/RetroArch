@@ -444,10 +444,10 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
 		// If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
 		if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
 		{
-			m_viewport_x_temp = gl->custom_viewport_x;
-			m_viewport_y_temp = gl->custom_viewport_y;
-			m_viewport_width_temp = gl->custom_viewport_width;
-			m_viewport_height_temp = gl->custom_viewport_height;
+			m_viewport_x_temp = g_console.custom_viewport_x;
+			m_viewport_y_temp = g_console.custom_viewport_y;
+			m_viewport_width_temp = g_console.custom_viewport_width;
+			m_viewport_height_temp = g_console.custom_viewport_height;
 		}
 		else if (device_aspect > desired_aspect)
 		{
@@ -816,10 +816,10 @@ static bool psgl_init_device(gl_t *gl, const video_info_t *video, uint32_t resol
 	gl->gl_device = psglCreateDeviceExtended(&params);
 	psglGetDeviceDimensions(gl->gl_device, &gl->win_width, &gl->win_height); 
 
-	if(gl->custom_viewport_width == 0)
-		gl->custom_viewport_width = gl->win_width;
-	if(gl->custom_viewport_height == 0)
-		gl->custom_viewport_height = gl->win_height;
+	if(g_console.custom_viewport_width == 0)
+		g_console.custom_viewport_width = gl->win_width;
+	if(g_console.custom_viewport_height == 0)
+		g_console.custom_viewport_height = gl->win_height;
 
 	gl->gl_context = psglCreateContext();
 	psglMakeCurrent(gl->gl_context, gl->gl_device);
@@ -1283,11 +1283,6 @@ void ps3graphics_video_init(bool get_all_resolutions)
 	g_gl = gl_init(&video_info, NULL, NULL);
 
 	gl_t * gl = g_gl;
-
-	gl->custom_viewport_width = g_console.custom_viewport_width;
-	gl->custom_viewport_height = g_console.custom_viewport_height;
-	gl->custom_viewport_x = g_console.custom_viewport_x;
-	gl->custom_viewport_y = g_console.custom_viewport_y;
 
 	gl->overscan_enable = g_console.overscan_enable;
 	gl->overscan_amount = g_console.overscan_amount;
