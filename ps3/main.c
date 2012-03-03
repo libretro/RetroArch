@@ -21,11 +21,16 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <sdk_version.h>
 #include <sys/process.h>
 #include <cell/sysmodule.h>
 #include <sysutil/sysutil_screenshot.h>
 #include <sysutil/sysutil_common.h>
 #include <sysutil/sysutil_gamecontent.h>
+
+#if(CELL_SDK_VERSION > 0x340000)
+#include <sysutil/sysutil_bgmplayback.h>
+#endif
 
 #include <cell/sysmodule.h>
 #include <sysutil/sysutil_common.h>
@@ -141,7 +146,7 @@ static void set_default_settings(void)
 	g_console.block_config_read = true;
 	g_console.frame_advance_enable = false;
 	g_console.emulator_initialized = 0;
-	g_console.screenshots_enable = false;
+	g_console.screenshots_enable = true;
 	g_console.throttle_enable = true;
 	g_console.initialize_ssnes_enable = false;
 	g_console.triple_buffering_enable = true;
@@ -164,6 +169,7 @@ static void set_default_settings(void)
 	g_console.custom_viewport_x = 0;
 	g_console.custom_viewport_y = 0;
 	strlcpy(g_console.rsound_ip_address, "0.0.0.0", sizeof(g_console.rsound_ip_address));
+	g_console.custom_bgm_enable = true;
 	
 	// g_extern
 	g_extern.state_slot = 0;
@@ -240,6 +246,7 @@ static void init_settings(bool load_libsnes_path)
 
 		// g_console
 
+		CONFIG_GET_BOOL_CONSOLE(custom_bgm_enable, "custom_bgm_enable");
 		CONFIG_GET_BOOL_CONSOLE(overscan_enable, "overscan_enable");
 		CONFIG_GET_BOOL_CONSOLE(screenshots_enable, "screenshots_enable");
 		CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
@@ -303,6 +310,7 @@ static void save_settings(void)
 		config_set_int(conf, "dpad_emulation_p7", g_settings.input.dpad_emulation[6]);
 
 		// g_console
+		config_set_bool(conf, "custom_bgm_enable", g_console.custom_bgm_enable);
 		config_set_bool(conf, "overscan_enable", g_console.overscan_enable);
 		config_set_bool(conf, "screenshots_enable", g_console.screenshots_enable);
 		config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
@@ -586,6 +594,8 @@ int main(int argc, char *argv[])
 		cellScreenShotSetParameter (&screenshot_param);
 		cellScreenShotEnable();
 	}
+	if (g_console.custom_bgm_enable)
+		cellSysutilEnableBgmPlayback();
 #endif
 
 	ps3graphics_video_init(true);

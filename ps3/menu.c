@@ -16,9 +16,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <sdk_version.h>
 #include <cell/sysmodule.h>
 #include <sysutil/sysutil_screenshot.h>
 #include <cell/dbgfont.h>
+
+#if(CELL_SDK_VERSION > 0x340000)
+#include <sysutil/sysutil_bgmplayback.h>
+#endif
 
 #include "cellframework2/input/pad_input.h"
 #include "cellframework2/fileio/file_browser.h"
@@ -634,6 +639,18 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
 				menu_obj->items[currentsetting].text_color = GREEN;
 				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Audio Mute] feature is set to 'OFF'.");
+			}
+			break;
+		case SETTING_ENABLE_CUSTOM_BGM:
+			if(g_console.custom_bgm_enable)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				menu_obj->items[currentsetting].text_color = GREEN;
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				menu_obj->items[currentsetting].text_color = ORANGE;
 			}
 			break;
 		case SETTING_EMU_VIDEO_DEFAULT_ALL:
@@ -1513,7 +1530,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_START(state))
 			{
 #if(CELL_SDK_VERSION > 0x340000)
-				g_console.screenshots_enable = false;
+				g_console.screenshots_enable = true;
 #endif
 			}
 			break;
@@ -1615,6 +1632,26 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_START(state))
 			{
 				g_extern.audio_data.mute = false;
+			}
+			break;
+		case SETTING_ENABLE_CUSTOM_BGM:
+			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			{
+#if(CELL_SDK_VERSION > 0x340000)
+				g_console.custom_bgm_enable = !g_console.custom_bgm_enable;
+				if(g_console.custom_bgm_enable)
+					cellSysutilEnableBgmPlayback();
+				else
+					cellSysutilDisableBgmPlayback();
+
+				set_delay = DELAY_MEDIUM;
+#endif
+			}
+			if(CTRL_START(state))
+			{
+#if(CELL_SDK_VERSION > 0x340000)
+				g_console.custom_bgm_enable = true;
+#endif
 			}
 			break;
 		case SETTING_EMU_VIDEO_DEFAULT_ALL:

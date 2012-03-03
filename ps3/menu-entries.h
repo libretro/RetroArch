@@ -300,6 +300,21 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		1
 	},
 	{
+		SETTING_ENABLE_CUSTOM_BGM,
+		"Enable Custom BGM Feature",
+		"",
+		0.0f,
+		0.0f,
+		YELLOW,
+		"INFO - [Enable Custom BGM] feature is set to 'ON'.",
+		WHITE,
+		0.91f,
+		0.09f,
+		0.83f,
+		1,
+		1
+	},
+	{
 		SETTING_DEFAULT_AUDIO_ALL,
 		"DEFAULT",
 		"",
