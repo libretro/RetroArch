@@ -551,9 +551,8 @@ int main(int argc, char *argv[])
 
 	sceNpInit(NP_POOL_SIZE, np_pool);
 
-	get_environment_settings(argc, argv);
-
 	ssnes_main_clear_state();
+	get_environment_settings(argc, argv);
 
 	config_set_defaults();
 

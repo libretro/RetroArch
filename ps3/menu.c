@@ -397,8 +397,8 @@ static const char * default_keybind_name_lut[] =
 	"D-Pad Down",				//SNES_DEVICE_ID_JOYPAD_DOWN
 	"D-Pad Left",				//SNES_DEVICE_ID_JOYPAD_LEFT
 	"D-Pad Right",				//SNES_DEVICE_ID_JOYPAD_RIGHT
-	"Button A",			//SNES_DEVICE_ID_JOYPAD_A
-	"Button X",			//SNES_DEVICE_ID_JOYPAD_X
+	"Button A",				//SNES_DEVICE_ID_JOYPAD_A
+	"Button X",				//SNES_DEVICE_ID_JOYPAD_X
 	"L Button",				//SNES_DEVICE_ID_JOYPAD_L
 	"R Button"				//SNES_DEVICE_ID_JOYPAD_R
 };
