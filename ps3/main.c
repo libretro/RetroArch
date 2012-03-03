@@ -236,13 +236,12 @@ static void init_settings(bool load_libsnes_path)
 		CONFIG_GET_BOOL(video.vsync, "video_vsync");
 		CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
 
-		CONFIG_GET_INT(input.dpad_emulation[0], "dpad_emulation_p1");
-		CONFIG_GET_INT(input.dpad_emulation[1], "dpad_emulation_p2");
-		CONFIG_GET_INT(input.dpad_emulation[2], "dpad_emulation_p3");
-		CONFIG_GET_INT(input.dpad_emulation[3], "dpad_emulation_p4");
-		CONFIG_GET_INT(input.dpad_emulation[4], "dpad_emulation_p5");
-		CONFIG_GET_INT(input.dpad_emulation[5], "dpad_emulation_p6");
-		CONFIG_GET_INT(input.dpad_emulation[6], "dpad_emulation_p7");
+      for (unsigned i = 0; i < 7; i++)
+      {
+         char cfg[64];
+         snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
+         CONFIG_GET_INT(input.dpad_emulation[i], cfg);
+      }
 
 		// g_console
 
@@ -301,13 +300,12 @@ static void save_settings(void)
 		config_set_bool(conf, "video_smooth", g_settings.video.smooth);
 		config_set_bool(conf, "video_vsync", g_settings.video.vsync);
 
-		config_set_int(conf, "dpad_emulation_p1", g_settings.input.dpad_emulation[0]);
-		config_set_int(conf, "dpad_emulation_p2", g_settings.input.dpad_emulation[1]);
-		config_set_int(conf, "dpad_emulation_p3", g_settings.input.dpad_emulation[2]);
-		config_set_int(conf, "dpad_emulation_p4", g_settings.input.dpad_emulation[3]);
-		config_set_int(conf, "dpad_emulation_p5", g_settings.input.dpad_emulation[4]);
-		config_set_int(conf, "dpad_emulation_p6", g_settings.input.dpad_emulation[5]);
-		config_set_int(conf, "dpad_emulation_p7", g_settings.input.dpad_emulation[6]);
+      for (unsigned i = 0; i < 7; i++)
+      {
+         char cfg[64];
+         snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
+         config_set_int(conf, cfg, input.dpad_emulation[i]);
+      }
 
 		// g_console
 		config_set_bool(conf, "custom_bgm_enable", g_console.custom_bgm_enable);
