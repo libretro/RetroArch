@@ -2278,7 +2278,7 @@ static void ingame_menu(uint32_t menu_id)
 						if(CTRL_SQUARE(~state))
 						{
 							glClear(GL_COLOR_BUFFER_BIT);
-							glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+							glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 							glEnable(GL_BLEND);
 						}
 						ssnes_render_cached_frame();
@@ -2590,7 +2590,7 @@ void menu_loop(void)
 	do
 	{
 		glClear(GL_COLOR_BUFFER_BIT);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_BLEND);
 		if(g_console.emulator_initialized)
 			ssnes_render_cached_frame();
