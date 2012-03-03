@@ -67,16 +67,18 @@ enum
    SSNES_BIND_LIST_END
 };
 
+#ifdef __CELLOS_LV2__
+typedef uint64_t ssnes_joykey_t;
+#else
+typedef uint16_t ssnes_joykey_t;
+#endif
+
 struct snes_keybind
 {
    bool valid;
    int id;
    enum ssnes_key key;
-#ifdef __CELLOS_LV2__
-   uint64_t joykey;
-#else
-   uint16_t joykey;
-#endif
+   ssnes_joykey_t joykey;
    uint32_t joyaxis;
 };
 
@@ -114,7 +116,7 @@ typedef struct audio_driver
 #define AXIS_NEG_GET(x) (((uint32_t)(x) >> 16) & UINT16_C(0xFFFF))
 #define AXIS_POS_GET(x) ((uint32_t)(x) & UINT16_C(0xFFFF))
 
-#define NO_BTN UINT16_C(0xFFFF) // I hope no joypad will ever have this many buttons ... ;)
+#define NO_BTN ((ssnes_joykey_t)-1) // I hope no joypad will ever have this many buttons ... ;)
 
 #define HAT_UP_MASK (1 << 15)
 #define HAT_DOWN_MASK (1 << 14)
