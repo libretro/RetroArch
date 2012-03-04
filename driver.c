@@ -289,9 +289,10 @@ void init_audio(void)
 {
    // Accomodate rewind since at some point we might have two full buffers.
    size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
+   size_t outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * g_settings.slowmotion_ratio;
 
    // Used for recording even if audio isn't enabled.
-   ssnes_assert(g_extern.audio_data.conv_outsamples = (int16_t*)malloc(max_bufsamples * sizeof(int16_t) * AUDIO_MAX_RATIO));
+   ssnes_assert(g_extern.audio_data.conv_outsamples = (int16_t*)malloc(outsamples_max * sizeof(int16_t)));
 
    g_extern.audio_data.block_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
    g_extern.audio_data.nonblock_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
@@ -333,7 +334,7 @@ void init_audio(void)
    g_extern.audio_data.data_ptr = 0;
 
    ssnes_assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
-   ssnes_assert(g_extern.audio_data.outsamples = (float*)malloc(max_bufsamples * sizeof(float) * AUDIO_MAX_RATIO * g_settings.slowmotion_ratio));
+   ssnes_assert(g_extern.audio_data.outsamples = (float*)malloc(outsamples_max * sizeof(float)));
 
    g_extern.audio_data.orig_src_ratio =
       g_extern.audio_data.src_ratio =

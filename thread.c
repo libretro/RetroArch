@@ -184,7 +184,7 @@ static void *thread_wrap(void *data_)
    struct thread_data *data = (struct thread_data*)data_;
    data->func(data->userdata);
    free(data);
-   pthread_exit(NULL);
+   return NULL;
 }
 
 sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
