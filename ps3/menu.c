@@ -1103,7 +1103,7 @@ static void set_keybind_digital(uint64_t state, uint32_t system_joypad_id, uint3
 	{
 		for(uint32_t i = 1; i < SSNES_FIRST_META_KEY; i++)
 		{
-			if(g_settings.input.binds[currently_selected_controller_menu][i].joykey == system_joypad_id)
+			if(g_settings.input.binds[currently_selected_controller_menu][i].joykey & system_joypad_id)
 			{
 				g_settings.input.binds[currently_selected_controller_menu][i].joykey &= ~system_joypad_id;
 				g_settings.input.binds[currently_selected_controller_menu][i - 1].joykey |= system_joypad_id;
@@ -1117,7 +1117,7 @@ static void set_keybind_digital(uint64_t state, uint32_t system_joypad_id, uint3
 	{
 		for(uint32_t i = 0; i < SSNES_FIRST_META_KEY - 1; i++)
 		{
-			if(g_settings.input.binds[currently_selected_controller_menu][i].joykey == system_joypad_id)
+			if(g_settings.input.binds[currently_selected_controller_menu][i].joykey & system_joypad_id)
 			{
 				g_settings.input.binds[currently_selected_controller_menu][i].joykey &= ~system_joypad_id;
 				g_settings.input.binds[currently_selected_controller_menu][i + 1].joykey |= system_joypad_id;
