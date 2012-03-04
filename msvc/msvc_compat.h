@@ -34,6 +34,7 @@ typedef int ssize_t;
 #endif
 
 #define snprintf _snprintf
+#define strtoull _strtoui64
 
 // Disable some of the annoying warnings.
 #pragma warning(disable : 4800)
