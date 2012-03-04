@@ -3,6 +3,9 @@
  * For conditions of distribution and use, see copyright notice in zlib.h 
  */
 
+/* This source as presented is a modified version of original zlib for use with SSNES,
+ * and must not be confused with the original software. */
+
 #include "szlib.h"
 
 const char inflate_copyright[] =

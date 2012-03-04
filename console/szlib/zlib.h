@@ -28,6 +28,9 @@
   (zlib format), rfc1951.txt (deflate format) and rfc1952.txt (gzip format).
 */
 
+/* This source as presented is a modified version of original zlib for use with SSNES,
+ * and must not be confused with the original software. */
+
 #ifndef _ZLIB_H
 #define _ZLIB_H
 
