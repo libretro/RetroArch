@@ -62,10 +62,12 @@
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include "msvc/msvc_compat.h"
 #elif defined(_XBOX)
 #include <xtl.h>
-#include "360/msvc_compat.h"
+#endif
+
+#if defined(_WIN32)
+#include "msvc/msvc_compat.h"
 #endif
 
 #define MAX_PLAYERS 8

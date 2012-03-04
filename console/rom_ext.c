@@ -23,6 +23,10 @@
 #include <string.h>
 #include <ctype.h>
 
+#ifdef _WIN32
+#include "../posix_string.h"
+#endif
+
 const char *ssnes_console_get_rom_ext(void)
 {
    const char *id = snes_library_id();

@@ -292,7 +292,9 @@
     <ClCompile Include="..\..\360\xdk360_video_resources.cpp" />
     <ClCompile Include="..\..\audio\hermite.c" />
     <ClCompile Include="..\..\audio\utils.c" />
-    <ClCompile Include="..\..\autosave.c" />
+    <ClCompile Include="..\..\autosave.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\bps.c" />
     <ClCompile Include="..\..\cheats.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">true</ExcludedFromBuild>
