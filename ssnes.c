@@ -307,6 +307,8 @@ static bool audio_flush(const int16_t *data, size_t samples)
          readjust_audio_input_rate();
 
       src_data.ratio = g_extern.audio_data.src_ratio;
+      if (g_extern.is_slowmotion)
+         src_data.ratio *= g_settings.slowmotion_ratio;
 
       resampler_process(g_extern.audio_data.source, &src_data);
 
@@ -1750,6 +1752,16 @@ static void check_rewind(void)
    psnes_set_audio_sample(g_extern.frame_is_reverse ? audio_sample_rewind : audio_sample);
 }
 
+static void check_slowmotion(void)
+{
+   g_extern.is_slowmotion = driver.input->key_pressed(driver.input_data, SSNES_SLOWMOTION);
+   if (g_extern.is_slowmotion)
+   {
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, g_extern.frame_is_reverse ? "Slow motion rewind." : "Slow motion.", 0, 30);
+   }
+}
+
 static void check_movie_record(void)
 {
    static bool old_button = false;
@@ -2070,6 +2082,7 @@ static void do_state_checks(void)
       }
 
       check_rewind();
+      check_slowmotion();
 
       if (g_extern.bsv.movie_playback)
          check_movie_playback();

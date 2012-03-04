@@ -202,6 +202,7 @@ void config_set_defaults(void)
    g_settings.rewind_enable = rewind_enable;
    g_settings.rewind_buffer_size = rewind_buffer_size;
    g_settings.rewind_granularity = rewind_granularity;
+   g_settings.slowmotion_ratio = slowmotion_ratio;
    g_settings.pause_nonactive = pause_nonactive;
    g_settings.autosave_interval = autosave_interval;
 
@@ -458,6 +459,9 @@ bool config_load_file(const char *path)
       g_settings.rewind_buffer_size = buffer_size * UINT64_C(1000000);
 
    CONFIG_GET_INT(rewind_granularity, "rewind_granularity");
+   CONFIG_GET_FLOAT(slowmotion_ratio, "slowmotion_ratio");
+   if (g_settings.slowmotion_ratio < 1.0f)
+      g_settings.slowmotion_ratio = 1.0f;
 
    CONFIG_GET_BOOL(pause_nonactive, "pause_nonactive");
    CONFIG_GET_INT(autosave_interval, "autosave_interval");
@@ -573,6 +577,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][SSNES_BIND_LIST_END] = {
       DECLARE_BIND(dsp_config,            SSNES_DSP_CONFIG),
       DECLARE_BIND(audio_mute,            SSNES_MUTE),
       DECLARE_BIND(netplay_flip_players,  SSNES_NETPLAY_FLIP),
+      DECLARE_BIND(slowmotion,            SSNES_SLOWMOTION),
    },
 
    DECL_PLAYER(2),

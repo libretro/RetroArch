@@ -167,6 +167,8 @@ struct settings
    size_t rewind_buffer_size;
    unsigned rewind_granularity;
 
+   float slowmotion_ratio;
+
    bool pause_nonactive;
    unsigned autosave_interval;
 
@@ -373,6 +375,7 @@ struct global
    // Pausing support
    bool is_paused;
    bool is_oneshot;
+   bool is_slowmotion;
 
    // Autosave support.
    autosave_t *autosave[2];

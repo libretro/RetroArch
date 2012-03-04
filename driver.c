@@ -333,7 +333,7 @@ void init_audio(void)
    g_extern.audio_data.data_ptr = 0;
 
    ssnes_assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
-   ssnes_assert(g_extern.audio_data.outsamples = (float*)malloc(max_bufsamples * sizeof(float) * AUDIO_MAX_RATIO));
+   ssnes_assert(g_extern.audio_data.outsamples = (float*)malloc(max_bufsamples * sizeof(float) * AUDIO_MAX_RATIO * g_settings.slowmotion_ratio));
 
    g_extern.audio_data.orig_src_ratio =
       g_extern.audio_data.src_ratio =

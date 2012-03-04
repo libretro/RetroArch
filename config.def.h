@@ -271,6 +271,9 @@ static const bool block_sram_overwrite = false;
 // When the ROM is loaded, state index will be set to the highest existing value.
 static const bool savestate_auto_index = false;
 
+// Slowmotion ratio.
+static const float slowmotion_ratio = 3.0;
+
 
 ////////////////////
 // Keybinds, Joypad
@@ -323,6 +326,7 @@ static const struct snes_keybind snes_keybinds_1[] = {
    { true, SSNES_DSP_CONFIG,                 SK_c,      NO_BTN,      AXIS_NONE },
    { true, SSNES_MUTE,                       SK_F9,     NO_BTN,      AXIS_NONE },
    { true, SSNES_NETPLAY_FLIP,               SK_i,      NO_BTN,      AXIS_NONE },
+   { true, SSNES_SLOWMOTION,                 SK_e,      NO_BTN,      AXIS_NONE },
 };
 
 // Player 2-5
