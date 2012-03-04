@@ -20,6 +20,7 @@
 #define CONFIG_FILE_MACROS_H__
 
 // Macros to ease config getting.
+#include <stdint.h>
 
 #define CONFIG_GET_BOOL_BASE(conf, base, var, key) do { \
    bool tmp; \
@@ -29,6 +30,12 @@
 
 #define CONFIG_GET_INT_BASE(conf, base, var, key) do { \
    int tmp; \
+   if (config_get_int(conf, key, &tmp)) \
+      base.var = tmp; \
+} while(0)
+
+#define CONFIG_GET_UINT64_BASE(conf, base, var, key) do { \
+   uint64_t tmp; \
    if (config_get_int(conf, key, &tmp)) \
       base.var = tmp; \
 } while(0)
@@ -44,6 +51,7 @@
 
 #define CONFIG_GET_BOOL(var, key) CONFIG_GET_BOOL_BASE(conf, g_settings, var, key)
 #define CONFIG_GET_INT(var, key) CONFIG_GET_INT_BASE(conf, g_settings, var, key)
+#define CONFIG_GET_UINT64(var, key) CONFIG_GET_UINT64_BASE(conf, g_settings, var, key)
 #define CONFIG_GET_FLOAT(var, key) CONFIG_GET_FLOAT_BASE(conf, g_settings, var, key)
 #define CONFIG_GET_STRING(var, key) CONFIG_GET_STRING_BASE(conf, g_settings, var, key)
 

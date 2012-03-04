@@ -463,6 +463,30 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
    return false;
 }
 
+bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
+{
+   struct entry_list *list = conf->entries;
+
+   while (list)
+   {
+      if (strcmp(key, list->key) == 0)
+      {
+         errno = 0;
+         uint64_t val = strtoull(list->value, NULL, 0);
+         if (errno == 0)
+         {
+            *in = val;
+            return true;
+         }
+         return
+            false;
+      }
+      list = list->next;
+   }
+   return false;
+}
+
+
 bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
 {
   struct entry_list *list = conf->entries;
@@ -628,6 +652,13 @@ void config_set_int(config_file_t *conf, const char *key, int val)
 {
    char buf[128];
    snprintf(buf, sizeof(buf), "%d", val);
+   config_set_string(conf, key, buf);
+}
+
+void config_set_uint64(config_file_t *conf, const char *key, uint64_t val)
+{
+   char buf[128];
+   snprintf(buf, sizeof(buf), "%llu", (long long unsigned)val);
    config_set_string(conf, key, buf);
 }
 

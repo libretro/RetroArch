@@ -748,7 +748,7 @@ static void read_keybinds_button(config_file_t *conf, unsigned player, unsigned 
          if (*btn == 'h')
             parse_hat(bind, btn + 1);
          else
-            bind->joykey = strtol(tmp, NULL, 0);
+            bind->joykey = strtoull(tmp, NULL, 0);
       }
    }
 }
@@ -870,7 +870,7 @@ static void save_keybind_joykey(config_file_t *conf,
       save_keybind_hat(conf, map, bind);
 #endif
    else
-      config_set_int(conf, map->btn, bind->joykey);
+      config_set_uint64(conf, map->btn, bind->joykey);
 }
 
 static void save_keybind_axis(config_file_t *conf,

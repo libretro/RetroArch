@@ -55,7 +55,9 @@ bool config_get_float(config_file_t *conf, const char *entry, float *in);
 bool config_get_int(config_file_t *conf, const char *entry, int *in);
 // Extracts an uint from config file.
 bool config_get_uint(config_file_t *conf, const char *entry, unsigned *in);
-// Extracts an int from config file. (Hexadecimal)
+// Extracts an uint64 from config file.
+bool config_get_uint64(config_file_t *conf, const char *entry, uint64_t *in);
+// Extracts an unsigned int from config file treating input as hex.
 bool config_get_hex(config_file_t *conf, const char *entry, unsigned *in);
 // Extracts a single char. If value consists of several chars, this is an error.
 bool config_get_char(config_file_t *conf, const char *entry, char *in);
@@ -71,6 +73,7 @@ bool config_get_bool(config_file_t *conf, const char *entry, bool *in);
 void config_set_double(config_file_t *conf, const char *entry, double value);
 void config_set_float(config_file_t *conf, const char *entry, float value);
 void config_set_int(config_file_t *conf, const char *entry, int val);
+void config_set_uint64(config_file_t *conf, const char *entry, uint64_t val);
 void config_set_char(config_file_t *conf, const char *entry, char val);
 void config_set_string(config_file_t *conf, const char *entry, const char *val);
 void config_set_bool(config_file_t *conf, const char *entry, bool val);
