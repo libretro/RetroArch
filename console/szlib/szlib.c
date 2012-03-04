@@ -1751,8 +1751,7 @@ gzFile ZEXPORT gzdopen (int fd, const char * mode)
 	return gz_open (name, mode, fd);
 }
 
-static int get_byte(s)
-    gz_stream *s;
+static int get_byte(gz_stream *s)
 {
     if (s->z_eof) return EOF;
     if (s->stream.avail_in == 0) {

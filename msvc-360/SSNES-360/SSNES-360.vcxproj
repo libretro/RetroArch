@@ -304,6 +304,14 @@
     <ClCompile Include="..\..\conf\config_file.c" />
     <ClCompile Include="..\..\console\main_wrap.c" />
     <ClCompile Include="..\..\console\rom_ext.c" />
+    <ClCompile Include="..\..\console\szlib\szlib.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
+    </ClCompile>
     <ClCompile Include="..\..\driver.c" />
     <ClCompile Include="..\..\dynamic.c" />
     <ClCompile Include="..\..\fifo_buffer.c" />
