@@ -35,7 +35,7 @@ void resampler_preinit(ssnes_resampler_t *re, double omega, double *samples_offs
    *samples_offset = 2.0;
    for (int i = 0; i < 4; i++)
    {
-      re->chan_data[0][i] = cos((i - 2) * omega);
+      re->chan_data[0][i] = (float)cos((i - 2) * omega);
       re->chan_data[1][i] = re->chan_data[0][i];
    }
 
