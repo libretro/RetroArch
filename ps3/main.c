@@ -304,7 +304,7 @@ static void save_settings(void)
       {
          char cfg[64];
          snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
-         config_set_int(conf, cfg, input.dpad_emulation[i]);
+         config_set_int(conf, cfg, g_settings.input.dpad_emulation[i]);
       }
 
 		// g_console
