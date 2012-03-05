@@ -739,7 +739,7 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 			case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_L:
 			case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_R:
 				{
-				if(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey == default_keybind_lut[currentsetting-FIRST_CONTROL_BIND])
+				if(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey == ssnes_default_keybind_lut[currentsetting-FIRST_CONTROL_BIND])
 					menu_obj->items[currentsetting].text_color = GREEN;
 				else
 					menu_obj->items[currentsetting].text_color = ORANGE;
@@ -1093,7 +1093,7 @@ static void set_keybind_digital(uint64_t state, uint64_t system_joypad_id, uint6
 	if(CTRL_START(state))
 	{
 		g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].id = default_snes_joypad_id;
-		g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey = default_keybind_lut[default_snes_joypad_id];
+		g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey = ssnes_default_keybind_lut[default_snes_joypad_id];
 		set_delay = DELAY_MEDIUM;
 	}
 }
@@ -1809,40 +1809,40 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
 			{
 				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_UP].id = SNES_DEVICE_ID_JOYPAD_UP;
-				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_UP].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_UP];
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_UP].joykey = ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_UP];
 
 				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_DOWN].id = SNES_DEVICE_ID_JOYPAD_DOWN;
-				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_DOWN];
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_DOWN];
 
 				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_LEFT].id = SNES_DEVICE_ID_JOYPAD_LEFT;
-				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_LEFT];
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_LEFT];
 
 				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_RIGHT].id = SNES_DEVICE_ID_JOYPAD_RIGHT;
-				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_RIGHT];
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_RIGHT];
 
 				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_A].id = SNES_DEVICE_ID_JOYPAD_A;
-				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_A].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_A];
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_A].joykey = ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_A];
 
 				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_B].id = SNES_DEVICE_ID_JOYPAD_B;
-				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_B].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_B];
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_B].joykey = ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_B];
 
 				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_X].id = SNES_DEVICE_ID_JOYPAD_X;
-				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_X].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_X];
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_X].joykey = ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_X];
 
 				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_Y].id = SNES_DEVICE_ID_JOYPAD_Y;
-				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_Y].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_Y];
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_Y].joykey = ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_Y];
 
 				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_L].id = SNES_DEVICE_ID_JOYPAD_L;
-				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_L].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_L];
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_L].joykey = ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_L];
 
 				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_R].id = SNES_DEVICE_ID_JOYPAD_R;
-				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_R].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_R];
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_R].joykey = ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_R];
 
 				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_START].id = SNES_DEVICE_ID_JOYPAD_START;
-				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_START].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_START];
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_START].joykey = ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_START];
 
 				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_SELECT].id = SNES_DEVICE_ID_JOYPAD_SELECT;
-				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_SELECT].joykey = default_keybind_lut[SNES_DEVICE_ID_JOYPAD_SELECT];
+				g_settings.input.binds[currently_selected_controller_menu][SNES_DEVICE_ID_JOYPAD_SELECT].joykey = ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_SELECT];
 				menu_reinit_settings();
 			}
 			break;

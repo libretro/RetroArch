@@ -19,10 +19,10 @@
 #include <stddef.h>
 #include "input_luts.h"
 
-uint64_t default_keybind_lut[SSNES_FIRST_META_KEY];
+uint64_t ssnes_default_keybind_lut[SSNES_FIRST_META_KEY];
 
 #if defined(__CELLOS_LV2__)
-uint64_t platform_keybind_lut[SSNES_LAST_PLATFORM_KEY] = {
+uint64_t ssnes_platform_keybind_lut[SSNES_LAST_PLATFORM_KEY] = {
    CTRL_CIRCLE_MASK,
    CTRL_CROSS_MASK,
    CTRL_TRIANGLE_MASK,
