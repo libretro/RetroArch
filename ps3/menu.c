@@ -1068,15 +1068,18 @@ static void select_directory(uint32_t menu_id)
 
 static void set_keybind_digital(uint64_t state, uint64_t system_joypad_id, uint64_t default_snes_joypad_id)
 {
+	bool found_keybind = false;
+
 	if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state))
 	{
-		for(uint32_t i = 1; i < SSNES_FIRST_META_KEY; i++)
+		for(uint32_t i = 0; i < SSNES_FIRST_META_KEY && !found_keybind; i++)
 		{
 			if(g_settings.input.binds[currently_selected_controller_menu][i].joykey & system_joypad_id)
 			{
-				g_settings.input.binds[currently_selected_controller_menu][i].joykey &= ~system_joypad_id;
-				g_settings.input.binds[currently_selected_controller_menu][i - 1].joykey |= system_joypad_id;
-				break;
+				found_keybind = true;
+
+				if(g_settings.input.binds[currently_selected_controller_menu][i].id > 0)
+					g_settings.input.binds[currently_selected_controller_menu][i].id--;
 			}
 		}
 		set_delay = DELAY_MEDIUM;
@@ -1084,13 +1087,14 @@ static void set_keybind_digital(uint64_t state, uint64_t system_joypad_id, uint6
 
 	if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 	{
-		for(uint32_t i = 0; i < SSNES_FIRST_META_KEY - 1; i++)
+		for(uint32_t i = 0; i < SSNES_FIRST_META_KEY && !found_keybind; i++)
 		{
 			if(g_settings.input.binds[currently_selected_controller_menu][i].joykey & system_joypad_id)
 			{
-				g_settings.input.binds[currently_selected_controller_menu][i].joykey &= ~system_joypad_id;
-				g_settings.input.binds[currently_selected_controller_menu][i + 1].joykey |= system_joypad_id;
-				break;
+				found_keybind = true;
+
+				if(g_settings.input.binds[currently_selected_controller_menu][i].id < SSNES_FIRST_META_KEY - 1)
+					g_settings.input.binds[currently_selected_controller_menu][i].id++;
 			}
 		}
 		set_delay = DELAY_MEDIUM;
@@ -1098,6 +1102,7 @@ static void set_keybind_digital(uint64_t state, uint64_t system_joypad_id, uint6
 
 	if(CTRL_START(state))
 	{
+		g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].id = default_snes_joypad_id;
 		g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey = default_keybind_lut[default_snes_joypad_id];
 		set_delay = DELAY_MEDIUM;
 	}
