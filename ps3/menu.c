@@ -726,24 +726,24 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 			snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "Controller %d is currently selected.", currently_selected_controller_menu+1);
 			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%d", currently_selected_controller_menu+1);
 			break;
-		case SETTING_CONTROLS_DPAD_UP:
-		case SETTING_CONTROLS_DPAD_DOWN:
-		case SETTING_CONTROLS_DPAD_LEFT:
-		case SETTING_CONTROLS_DPAD_RIGHT:
-		case SETTING_CONTROLS_BUTTON_CIRCLE:
-		case SETTING_CONTROLS_BUTTON_CROSS:
-		case SETTING_CONTROLS_BUTTON_TRIANGLE:
-		case SETTING_CONTROLS_BUTTON_SQUARE:
-		case SETTING_CONTROLS_BUTTON_SELECT:
-		case SETTING_CONTROLS_BUTTON_START:
-		case SETTING_CONTROLS_BUTTON_L1:
-		case SETTING_CONTROLS_BUTTON_R1:
-			if(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey == default_keybind_lut[currentsetting-FIRST_CONTROL_BIND])
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [%s] on the PS3 controller is mapped to action:\n[%s].", menu_obj->items[currentsetting].text, default_libsnes_keybind_name_lut[g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].id]);
-			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), default_libsnes_keybind_name_lut[g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].id]);
+			case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_B:
+			case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_Y:
+			case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_SELECT:
+			case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_START:
+			case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_UP:
+			case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_DOWN:
+			case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_LEFT:
+			case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_RIGHT:
+			case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_A:
+			case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_X:
+			case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_L:
+			case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_R:
+				if(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey == default_keybind_lut[currentsetting-FIRST_CONTROL_BIND])
+					menu_obj->items[currentsetting].text_color = GREEN;
+				else
+					menu_obj->items[currentsetting].text_color = ORANGE;
+				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [%s] on the PS3 controller is mapped to action:\n[%s].", menu_obj->items[currentsetting].text, default_libsnes_keybind_name_lut[g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].id]);
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), default_libsnes_keybind_name_lut[g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].id]);
 			break;
 		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
 			if(menu_obj->selected == currentsetting)
@@ -1768,40 +1768,40 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_START(state))
 				currently_selected_controller_menu = 0;
 			break; 
-		case SETTING_CONTROLS_DPAD_UP:
+		case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_UP:
 			set_keybind_digital(state, platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_UP], SNES_DEVICE_ID_JOYPAD_UP);
 			break;
-		case SETTING_CONTROLS_DPAD_DOWN:
+		case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_DOWN:
 			set_keybind_digital(state, platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_DOWN], SNES_DEVICE_ID_JOYPAD_DOWN);
 			break;
-		case SETTING_CONTROLS_DPAD_LEFT:
+		case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_LEFT:
 			set_keybind_digital(state, platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_LEFT], SNES_DEVICE_ID_JOYPAD_LEFT);
 			break;
-		case SETTING_CONTROLS_DPAD_RIGHT:
+		case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_RIGHT:
 			set_keybind_digital(state, platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_RIGHT], SNES_DEVICE_ID_JOYPAD_RIGHT);
 			break;
-		case SETTING_CONTROLS_BUTTON_CIRCLE:
+		case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_A:
 			set_keybind_digital(state, platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_CIRCLE], SNES_DEVICE_ID_JOYPAD_A);
 			break;
-		case SETTING_CONTROLS_BUTTON_CROSS:
+		case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_B:
 			set_keybind_digital(state, platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_CROSS], SNES_DEVICE_ID_JOYPAD_B);
 			break;
-		case SETTING_CONTROLS_BUTTON_TRIANGLE:
+		case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_X:
 			set_keybind_digital(state, platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_TRIANGLE], SNES_DEVICE_ID_JOYPAD_X);
 			break;
-		case SETTING_CONTROLS_BUTTON_SQUARE:
+		case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_Y:
 			set_keybind_digital(state, platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_SQUARE], SNES_DEVICE_ID_JOYPAD_Y);
 			break;
-		case SETTING_CONTROLS_BUTTON_SELECT:
+		case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_SELECT:
 			set_keybind_digital(state, platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_SELECT], SNES_DEVICE_ID_JOYPAD_SELECT);
 			break;
-		case SETTING_CONTROLS_BUTTON_START:
+		case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_START:
 			set_keybind_digital(state, platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_START], SNES_DEVICE_ID_JOYPAD_START);
 			break;
-		case SETTING_CONTROLS_BUTTON_L1:
+		case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_L:
 			set_keybind_digital(state, platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_L1], SNES_DEVICE_ID_JOYPAD_L);
 			break;
-		case SETTING_CONTROLS_BUTTON_R1:
+		case SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_R:
 			set_keybind_digital(state, platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_R1], SNES_DEVICE_ID_JOYPAD_R);
 			break;
 		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:

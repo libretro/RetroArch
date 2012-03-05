@@ -21,16 +21,16 @@
 uint64_t default_keybind_lut[SSNES_FIRST_META_KEY];
 
 const char *default_libsnes_keybind_name_lut[SSNES_FIRST_META_KEY] = {
-   "Button B",          // SNES_DEVICE_ID_JOYPAD_B
-   "Button Y",          // SNES_DEVICE_ID_JOYPAD_Y
+   "B Button",          // SNES_DEVICE_ID_JOYPAD_B
+   "Y Button",          // SNES_DEVICE_ID_JOYPAD_Y
    "Select button",     // SNES_DEVICE_ID_JOYPAD_SELECT
    "Start button",      // SNES_DEVICE_ID_JOYPAD_START
    "D-Pad Up",          // SNES_DEVICE_ID_JOYPAD_UP
    "D-Pad Down",        // SNES_DEVICE_ID_JOYPAD_DOWN
    "D-Pad Left",        // SNES_DEVICE_ID_JOYPAD_LEFT
    "D-Pad Right",       // SNES_DEVICE_ID_JOYPAD_RIGHT
-   "Button A",          // SNES_DEVICE_ID_JOYPAD_A
-   "Button X",          // SNES_DEVICE_ID_JOYPAD_X
+   "A Button",          // SNES_DEVICE_ID_JOYPAD_A
+   "X Button",          // SNES_DEVICE_ID_JOYPAD_X
    "L Button",          // SNES_DEVICE_ID_JOYPAD_L
    "R Button",          // SNES_DEVICE_ID_JOYPAD_R
 };
