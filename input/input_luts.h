@@ -68,7 +68,7 @@ enum ps3_device_id
 #endif
 
 extern uint64_t platform_keybind_lut[SSNES_LAST_PLATFORM_KEY];
-char platform_keybind_name_lut[SSNES_LAST_PLATFORM_KEY][256];
+extern char platform_keybind_name_lut[SSNES_LAST_PLATFORM_KEY][256];
 extern uint64_t default_keybind_lut[SSNES_FIRST_META_KEY];
 extern const char *default_libsnes_keybind_name_lut[SSNES_FIRST_META_KEY];
 
