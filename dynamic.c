@@ -240,7 +240,10 @@ void uninit_libsnes_sym(void)
 dylib_t dylib_load(const char *path)
 {
 #ifdef _WIN32
-   return LoadLibrary(path);
+   dylib_t lib = LoadLibrary(path);
+   if (!lib)
+      SSNES_ERR("Failed to load library, error code: 0x%x\n", (unsigned)GetLastError());
+   return lib;
 #else
    return dlopen(path, RTLD_LAZY);
 #endif
