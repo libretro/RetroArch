@@ -258,7 +258,7 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 			memset(strbuffer, 0, sizeof(strbuffer));
 			wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
 			memset(g_console.rom_path, 0, sizeof(g_console.rom_path));
-			sprintf(g_console.rom_path, "%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
+			sprintf(g_console.rom_path, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
 			
 			return_to_game();
 			g_console.initialize_ssnes_enable = 1;
@@ -267,7 +267,7 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 		{
 			memset(strbuffer, 0, sizeof(strbuffer));
 			wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
-			snprintf(path, sizeof(path), "%s%s\\", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
+			snprintf(path, sizeof(path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
 			filebrowser_fetch_directory_entries(path, &browser, &m_romlist, &m_rompathtitle);
 		}
 	}

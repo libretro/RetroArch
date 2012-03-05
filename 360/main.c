@@ -181,7 +181,7 @@ static void set_default_settings (void)
 	g_console.initialize_ssnes_enable = false;
 	g_console.emulator_initialized = 0;
 	g_console.mode_switch = MODE_MENU;
-	strlcpy(g_console.default_rom_startup_dir, "game:\\roms\\", sizeof(g_console.default_rom_startup_dir));
+	strlcpy(g_console.default_rom_startup_dir, "game:", sizeof(g_console.default_rom_startup_dir));
 
 	//g_extern
 	g_extern.state_slot = 0;
