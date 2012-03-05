@@ -19,23 +19,7 @@
 #include <stddef.h>
 #include "input_luts.h"
 
-/*
 uint64_t default_keybind_lut[SSNES_FIRST_META_KEY];
-
-const char *default_libsnes_keybind_name_lut[SSNES_FIRST_META_KEY] = {
-   "B Button",          // SNES_DEVICE_ID_JOYPAD_B
-   "Y Button",          // SNES_DEVICE_ID_JOYPAD_Y
-   "Select button",     // SNES_DEVICE_ID_JOYPAD_SELECT
-   "Start button",      // SNES_DEVICE_ID_JOYPAD_START
-   "D-Pad Up",          // SNES_DEVICE_ID_JOYPAD_UP
-   "D-Pad Down",        // SNES_DEVICE_ID_JOYPAD_DOWN
-   "D-Pad Left",        // SNES_DEVICE_ID_JOYPAD_LEFT
-   "D-Pad Right",       // SNES_DEVICE_ID_JOYPAD_RIGHT
-   "A Button",          // SNES_DEVICE_ID_JOYPAD_A
-   "X Button",          // SNES_DEVICE_ID_JOYPAD_X
-   "L Button",          // SNES_DEVICE_ID_JOYPAD_L
-   "R Button",          // SNES_DEVICE_ID_JOYPAD_R
-};
 
 #if defined(__CELLOS_LV2__)
 uint64_t platform_keybind_lut[SSNES_LAST_PLATFORM_KEY] = {
@@ -72,42 +56,7 @@ uint64_t platform_keybind_lut[SSNES_LAST_PLATFORM_KEY] = {
    CTRL_UP_MASK | CTRL_RSTICK_UP_MASK,
    CTRL_DOWN_MASK | CTRL_RSTICK_DOWN_MASK,
 };
-
-char platform_keybind_name_lut[SSNES_LAST_PLATFORM_KEY][256] = {
-   "Circle button",
-   "Cross button",
-   "Triangle button",
-   "Square button",
-   "D-Pad Up",
-   "D-Pad Down",
-   "D-Pad Left",
-   "D-Pad Right",
-   "Select button",
-   "Start button",
-   "L1 button",
-   "L2 button",
-   "L3 button",
-   "R1 button",
-   "R2 button",
-   "R3 button",
-   "LStick Left",
-   "LStick Right",
-   "LStick Up",
-   "LStick Down",
-   "LStick D-Pad Left",
-   "LStick D-Pad Right",
-   "LStick D-Pad Up",
-   "LStick D-Pad Down",
-   "RStick Left",
-   "RStick Right",
-   "RStick Up",
-   "RStick Down",
-   "RStick D-Pad Left",
-   "RStick D-Pad Right",
-   "RStick D-Pad Up",
-   "RStick D-Pad Down",
-};
-*/
+#endif
 
 struct platform_bind
 {
@@ -192,8 +141,8 @@ const char *ssnes_input_find_platform_key_label(uint64_t joykey)
    size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
    for (size_t i = 0; i < arr_size; i++)
    {
-      if (bind_label[i].joykey == joykey)
-         return bind_label[i].label;
+      if (platform_keys[i].joykey == joykey)
+         return platform_keys[i].label;
    }
 
    return "Unknown";

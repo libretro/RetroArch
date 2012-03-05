@@ -67,12 +67,8 @@ enum ps3_device_id
 #elif defined(_XBOX)
 #endif
 
-#if 0
-extern uint64_t platform_keybind_lut[SSNES_LAST_PLATFORM_KEY];
-extern char platform_keybind_name_lut[SSNES_LAST_PLATFORM_KEY][256];
 extern uint64_t default_keybind_lut[SSNES_FIRST_META_KEY];
-extern const char *default_libsnes_keybind_name_lut[SSNES_FIRST_META_KEY];
-#endif
+extern uint64_t platform_keybind_lut[SSNES_LAST_PLATFORM_KEY];
 
 const char *ssnes_input_find_platform_key_label(uint64_t joykey);
 uint64_t ssnes_input_find_previous_platform_key(uint64_t joykey);
