@@ -26,11 +26,11 @@
 
 #include <stdlib.h>
 
-static uint64_t state[5];
+static uint64_t state[MAX_PADS];
 static void ps3_input_poll(void *data)
 {
    (void)data;
-   for (unsigned i = 0; i < 5; i++)
+   for (unsigned i = 0; i < MAX_PADS; i++)
       state[i] = cell_pad_input_poll_device(i);
 }
 
