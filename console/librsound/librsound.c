@@ -685,9 +685,6 @@ static int rsnd_poll(struct pollfd *fd, int numfd, int timeout)
       }
       return 0;
    }
-
-   // Avoids warning
-   return 0;
 }
 
 static void rsnd_sleep(int msecs)
