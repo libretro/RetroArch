@@ -1,4 +1,4 @@
-/*  SSNES - A Super Ninteno Entertainment System (SNES) Emulator frontend for libsnes.
+/*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2012 - Daniel De Matteis
  *
@@ -27,8 +27,8 @@
 #define XINPUT_GAMEPAD_RSTICK_RIGHT_MASK	(2097152)
 #define XINPUT_GAMEPAD_RSTICK_UP_MASK		(4194304)
 #define XINPUT_GAMEPAD_RSTICK_DOWN_MASK		(8388608)
-#define XINPUT_GAMEPAD_LEFT_TRIGGER			(16777216)
+#define XINPUT_GAMEPAD_LEFT_TRIGGER		(16777216)
 #define XINPUT_GAMEPAD_RIGHT_TRIGGER		(33554432)
-#define DEADZONE							(16000)
+#define DEADZONE				(16000)
 
 #endif
