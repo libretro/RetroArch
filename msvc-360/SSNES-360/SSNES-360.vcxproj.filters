@@ -264,5 +264,8 @@
     <CustomBuild Include="..\..\360\media\ssnes_quickmenu.xui">
       <Filter>Source Files\media</Filter>
     </CustomBuild>
+    <CustomBuild Include="..\..\360\media\ssnes_libsnescore_browser.xui">
+      <Filter>Source Files\media</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

@@ -15,7 +15,7 @@
 <Properties>
 <Id>XuiBtnRomBrowser</Id>
 <Width>488.312012</Width>
-<Height>38.000000</Height>
+<Height>30.799988</Height>
 <Position>38.127724,64.215515,0.000000</Position>
 <Pivot>245.362122,102.247192,0.000000</Pivot>
 <NavUp>XuiBtnQuit</NavUp>
@@ -40,10 +40,10 @@
 <Properties>
 <Id>XuiBtnSettings</Id>
 <Width>488.312012</Width>
-<Height>38.000000</Height>
-<Position>38.127960,201.615982,0.000000</Position>
+<Height>30.799988</Height>
+<Position>38.127960,196.615982,0.000000</Position>
 <NavUp>XuiBtnControls</NavUp>
-<NavDown>XuiBtnQuit</NavDown>
+<NavDown>XuiBtnLibsnesCore</NavDown>
 <Text>Settings</Text>
 </Properties>
 </XuiButton>
@@ -51,10 +51,10 @@
 <Properties>
 <Id>XuiBtnQuit</Id>
 <Width>488.312012</Width>
-<Height>38.000000</Height>
-<Position>38.327736,246.007980,0.000000</Position>
+<Height>30.799988</Height>
+<Position>38.327736,287.007996,0.000000</Position>
 <Pivot>245.162109,-84.153275,0.000000</Pivot>
-<NavUp>XuiBtnSettings</NavUp>
+<NavUp>XuiBtnLibsnesCore</NavUp>
 <NavDown>XuiBtnRomBrowser</NavDown>
 <Text>Quit</Text>
 </Properties>
@@ -64,7 +64,7 @@
 <Id>XuiLblCore</Id>
 <Width>124.000000</Width>
 <Height>28.000000</Height>
-<Position>12.544006,319.792023,0.000000</Position>
+<Position>12.544006,324.792023,0.000000</Position>
 <Text>Libsnes core:</Text>
 </Properties>
 </XuiLabel>
@@ -73,7 +73,7 @@
 <Id>XuiTxtCoreText</Id>
 <Width>224.399963</Width>
 <Height>34.000000</Height>
-<Position>134.944031,319.391998,0.000000</Position>
+<Position>134.944031,324.391998,0.000000</Position>
 <TextColor>0xff0f0f0f</TextColor>
 <DropShadowColor>0x800f0f0f</DropShadowColor>
 <Font>Arial Unicode MS</Font>
@@ -83,8 +83,8 @@
 <Properties>
 <Id>XuiBtnQuickMenu</Id>
 <Width>488.312012</Width>
-<Height>38.000000</Height>
-<Position>38.130001,111.655991,0.000000</Position>
+<Height>30.799988</Height>
+<Position>38.130001,106.655991,0.000000</Position>
 <NavUp>XuiBtnRomBrowser</NavUp>
 <NavDown>XuiBtnControls</NavDown>
 <Text>Quick Menu</Text>
@@ -94,11 +94,22 @@
 <Properties>
 <Id>XuiBtnControls</Id>
 <Width>488.312012</Width>
-<Height>38.000000</Height>
-<Position>38.130001,156.655991,0.000000</Position>
+<Height>30.799988</Height>
+<Position>38.130001,151.655991,0.000000</Position>
 <NavUp>XuiBtnQuickMenu</NavUp>
 <NavDown>XuiBtnSettings</NavDown>
 <Text>Controls</Text>
+</Properties>
+</XuiButton>
+<XuiButton>
+<Properties>
+<Id>XuiBtnLibsnesCore</Id>
+<Width>488.312012</Width>
+<Height>30.799988</Height>
+<Position>38.127960,241.615982,0.000000</Position>
+<NavUp>XuiBtnSettings</NavUp>
+<NavDown>XuiBtnQuit</NavDown>
+<Text>Change libsnes core</Text>
 </Properties>
 </XuiButton>
 </XuiScene>

@@ -27,6 +27,7 @@ class CSSNES : public CXuiModule
 public:
 	HXUIOBJ		hMainScene;
 	HXUIOBJ		hFileBrowser;
+	HXUIOBJ		hCoreBrowser;
 	HXUIOBJ		hQuickMenu;
 	HXUIOBJ		hSSNESSettings;
 protected:
@@ -43,6 +44,7 @@ protected:
 	CXuiControl m_quick_menu;
 	CXuiControl m_controls;
 	CXuiControl m_settings;
+	CXuiControl m_change_libsnes_core;
 	CXuiControl m_quit;
 	CXuiTextElement m_title;
 	CXuiTextElement m_core;
@@ -74,6 +76,24 @@ public:
 	XUI_END_MSG_MAP();
 
 	XUI_IMPLEMENT_CLASS(CSSNESFileBrowser, L"SSNESFileBrowser", XUI_CLASS_SCENE)
+};
+
+class CSSNESCoreBrowser: public CXuiSceneImpl
+{
+protected:
+	CXuiList m_romlist;
+	CXuiControl m_back;
+	CXuiTextElement m_rompathtitle;
+public:
+	HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+
+	XUI_BEGIN_MSG_MAP()
+		XUI_ON_XM_INIT( OnInit)
+		XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+	XUI_END_MSG_MAP();
+
+	XUI_IMPLEMENT_CLASS(CSSNESCoreBrowser, L"SSNESCoreBrowser", XUI_CLASS_SCENE)
 };
 
 class CSSNESQuickMenu: public CXuiSceneImpl

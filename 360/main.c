@@ -560,5 +560,12 @@ begin_shutdown:
 	if(path_file_exists(SYS_CONFIG_FILE))
 		save_settings();
 	xdk360_video_deinit();
+
+	if(g_console.return_to_launcher)
+	{
+		SSNES_LOG("Attempt to load XEX: [%s].\n", g_console.launch_app_on_exit);
+		XLaunchNewImage(g_console.launch_app_on_exit, NULL);
+	}
+	return 0;
 }
 
