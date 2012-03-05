@@ -22,13 +22,12 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../libsnes.hpp"
+#include "xdk360_input.h"
 #include "xdk360_video.h"
 #include "shared.h"
 
-static XINPUT_STATE state[4];
+static uint64_t state[4];
 static unsigned pads_connected;
-
-#define DEADZONE (16000)
 
 static void xdk360_input_poll(void *data)
 {
@@ -38,8 +37,20 @@ static void xdk360_input_poll(void *data)
 
    for (unsigned i = 0; i < 4; i++)
    {
-      unsigned long retval = XInputGetState(i, &state[i]);
+	   XINPUT_STATE state_tmp;
+      unsigned long retval = XInputGetState(i, &state_tmp);
 	  pads_connected += (retval == ERROR_DEVICE_NOT_CONNECTED) ? 0 : 1;
+	  state[i] = state_tmp.Gamepad.wButtons;
+	  state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE))			<< 16;
+	  state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE))			<< 17;
+	  state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE))			<< 18;
+	  state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE))			<< 19;
+	  state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE))			<< 20;
+	  state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE))			<< 21;
+	  state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE))			<< 22;
+	  state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE))			<< 23;
+	  state[i] |= ((state_tmp.Gamepad.bLeftTrigger > 128 ? 1 : 0))	<< 24;
+	  state[i] |= ((state_tmp.Gamepad.bRightTrigger > 128 ? 1 : 0)) << 25;
    }
 }
 
@@ -69,7 +80,7 @@ static int16_t xdk360_input_state(void *data, const struct snes_keybind **binds,
 
    button = binds[player][id].joykey;
 
-   return (state[player].Gamepad.wButtons & button) ? 1 : 0;
+   return (state[player] & button) ? 1 : 0;
 }
 
 static void xdk360_free_input(void *data)
@@ -85,23 +96,24 @@ static void* xdk360_input_init(void)
 static bool xdk360_key_pressed(void *data, int key)
 {
    (void)data;
-   XInputGetState(0, &state[0]);
+   XINPUT_STATE state;
    bool retval;
 
+   XInputGetState(0, &state);
    retval = false;
 
    switch(key)
    {
 	   case SSNES_FAST_FORWARD_HOLD_KEY:
-		   return ((state[0].Gamepad.sThumbRY < -DEADZONE) && !(state[0].Gamepad.bRightTrigger > 128));
+		   return ((state.Gamepad.sThumbRY < -DEADZONE) && !(state.Gamepad.bRightTrigger > 128));
 	   case SSNES_LOAD_STATE_KEY:
-		   return ((state[0].Gamepad.sThumbRY > DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
+		   return ((state.Gamepad.sThumbRY > DEADZONE) && (state.Gamepad.bRightTrigger > 128));
 	   case SSNES_SAVE_STATE_KEY:
-		   return ((state[0].Gamepad.sThumbRY < -DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
+		   return ((state.Gamepad.sThumbRY < -DEADZONE) && (state.Gamepad.bRightTrigger > 128));
 	   case SSNES_STATE_SLOT_PLUS:
-		   return ((state[0].Gamepad.sThumbRX > DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
+		   return ((state.Gamepad.sThumbRX > DEADZONE) && (state.Gamepad.bRightTrigger > 128));
 	   case SSNES_STATE_SLOT_MINUS:
-		   return ((state[0].Gamepad.sThumbRX < -DEADZONE) && (state[0].Gamepad.bRightTrigger > 128));
+		   return ((state.Gamepad.sThumbRX < -DEADZONE) && (state.Gamepad.bRightTrigger > 128));
 	   case SSNES_FRAMEADVANCE:
 		   if(g_console.frame_advance_enable)
 		   {
@@ -111,12 +123,12 @@ static bool xdk360_key_pressed(void *data, int key)
 		   }
 		   return false;
 	   case SSNES_REWIND:
-		   return ((state[0].Gamepad.sThumbRY > DEADZONE) && !(state[0].Gamepad.bRightTrigger > 128));
+		   return ((state.Gamepad.sThumbRY > DEADZONE) && !(state.Gamepad.bRightTrigger > 128));
 		case SSNES_QUIT_KEY:
 			if(IS_TIMER_EXPIRED())
 			{
-				uint32_t left_thumb_pressed = (state[0].Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB);
-				uint32_t right_thumb_pressed = (state[0].Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
+				uint32_t left_thumb_pressed = (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB);
+				uint32_t right_thumb_pressed = (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
 
 				g_console.menu_enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED();
 				g_console.ingame_menu_enable = right_thumb_pressed && !left_thumb_pressed;

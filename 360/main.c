@@ -22,6 +22,7 @@
 #include <string>
 #include <xbdm.h>
 #include "menu.h"
+#include "xdk360_input.h"
 #include "xdk360_video.h"
 
 #include "../console/main_wrap.h"
@@ -148,20 +149,16 @@ static void set_default_settings (void)
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_START].joykey = XINPUT_GAMEPAD_START;
 
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].id = SNES_DEVICE_ID_JOYPAD_UP;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].joykey = XINPUT_GAMEPAD_DPAD_UP;
-		//g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].joyaxis = CTRL_LSTICK_UP_MASK;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].joykey = XINPUT_GAMEPAD_DPAD_UP | XINPUT_GAMEPAD_LSTICK_UP_MASK;
 
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].id = SNES_DEVICE_ID_JOYPAD_DOWN;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = XINPUT_GAMEPAD_DPAD_DOWN;
-		//g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].joyaxis = CTRL_LSTICK_DOWN_MASK;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = XINPUT_GAMEPAD_DPAD_DOWN | XINPUT_GAMEPAD_LSTICK_DOWN_MASK;
 
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].id = SNES_DEVICE_ID_JOYPAD_LEFT;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = XINPUT_GAMEPAD_DPAD_LEFT;
-		//g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].joyaxis = CTRL_LSTICK_LEFT_MASK;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = XINPUT_GAMEPAD_DPAD_LEFT | XINPUT_GAMEPAD_LSTICK_LEFT_MASK;
 
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].id = SNES_DEVICE_ID_JOYPAD_RIGHT;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = XINPUT_GAMEPAD_DPAD_RIGHT;
-		//g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].joyaxis = CTRL_LSTICK_RIGHT_MASK;
+		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = XINPUT_GAMEPAD_DPAD_RIGHT | XINPUT_GAMEPAD_LSTICK_RIGHT_MASK;
 
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_A].id = SNES_DEVICE_ID_JOYPAD_A;
 		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_A].joykey = XINPUT_GAMEPAD_B;
