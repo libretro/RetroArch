@@ -523,7 +523,7 @@ static void print_help(void)
    puts("\t-C/--connect: Connect to netplay as player 2.");
    puts("\t--port: Port used to netplay. Default is 55435.");
    puts("\t-F/--frames: Sync frames when using netplay.");
-   puts("\t--spectate: Netplay will become spectacting mode.");
+   puts("\t--spectate: Netplay will become spectating mode.");
    puts("\t\tHost can live stream the game content to players that connect.");
    puts("\t\tHowever, the client will not be able to play. Multiple clients can connect to the host.");
    puts("\t--nick: Picks a nickname for use with netplay. Not mandatory.");
