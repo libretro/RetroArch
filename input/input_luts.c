@@ -82,7 +82,7 @@ static const struct platform_bind platform_keys[] = {
    { CTRL_R1_MASK, "R1 button" },
    { CTRL_R2_MASK, "R2 button" },
    { CTRL_R3_MASK, "R3 button" },
-   { CTRL_LSTICK_LEFT_MASK, "LStick Left " },
+   { CTRL_LSTICK_LEFT_MASK, "LStick Left" },
    { CTRL_LSTICK_RIGHT_MASK, "LStick Right" },
    { CTRL_LSTICK_UP_MASK, "LStick Up" },
    { CTRL_LSTICK_DOWN_MASK, "LStick Down" },
