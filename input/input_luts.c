@@ -16,6 +16,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include "input_luts.h"
 
 uint64_t default_keybind_lut[SSNES_FIRST_META_KEY];
@@ -105,6 +106,225 @@ char platform_keybind_name_lut[SSNES_LAST_PLATFORM_KEY][256] = {
    "RStick D-Pad Up",
    "RStick D-Pad Down",
 };
+
+uint64_t ssnes_input_find_previous_platform_key(uint64_t joykey)
+{
+	switch(joykey)
+	{
+		case CTRL_CIRCLE_MASK:
+			return CTRL_CIRCLE_MASK;
+		case CTRL_CROSS_MASK:
+			return CTRL_CIRCLE_MASK;
+		case CTRL_TRIANGLE_MASK:
+			return CTRL_CROSS_MASK;
+		case CTRL_SQUARE_MASK:
+			return CTRL_TRIANGLE_MASK;
+		case CTRL_UP_MASK:
+			return CTRL_SQUARE_MASK;
+		case CTRL_DOWN_MASK:
+			return CTRL_UP_MASK;
+		case CTRL_LEFT_MASK:
+			return CTRL_DOWN_MASK;
+		case CTRL_RIGHT_MASK:
+			return CTRL_LEFT_MASK;
+		case CTRL_SELECT_MASK:
+			return CTRL_RIGHT_MASK;
+		case CTRL_START_MASK:
+			return CTRL_SELECT_MASK;
+		case CTRL_L1_MASK:
+			return CTRL_START_MASK;
+		case CTRL_L2_MASK:
+			return CTRL_L1_MASK;
+		case CTRL_L3_MASK:
+			return CTRL_L2_MASK;
+		case CTRL_R1_MASK:
+			return CTRL_L3_MASK;
+		case CTRL_R2_MASK:
+			return CTRL_R1_MASK;
+		case CTRL_R3_MASK:
+			return CTRL_R2_MASK;
+		case CTRL_LSTICK_LEFT_MASK:
+			return CTRL_R3_MASK;
+		case CTRL_LSTICK_RIGHT_MASK:
+			return CTRL_LSTICK_LEFT_MASK;
+		case CTRL_LSTICK_UP_MASK:
+			return CTRL_LSTICK_RIGHT_MASK;
+		case CTRL_LSTICK_DOWN_MASK:
+			return CTRL_LSTICK_UP_MASK;
+		case CTRL_LEFT_MASK | CTRL_LSTICK_LEFT_MASK:
+			return CTRL_LSTICK_DOWN_MASK;
+		case CTRL_RIGHT_MASK | CTRL_LSTICK_RIGHT_MASK:
+			return (CTRL_LEFT_MASK | CTRL_LSTICK_LEFT_MASK);
+		case CTRL_UP_MASK | CTRL_LSTICK_UP_MASK:
+			return (CTRL_RIGHT_MASK | CTRL_LSTICK_RIGHT_MASK);
+		case CTRL_DOWN_MASK | CTRL_LSTICK_DOWN_MASK:
+			return (CTRL_UP_MASK | CTRL_LSTICK_UP_MASK);
+		case CTRL_RSTICK_LEFT_MASK:
+			return (CTRL_DOWN_MASK | CTRL_LSTICK_DOWN_MASK);
+		case CTRL_RSTICK_RIGHT_MASK:
+			return CTRL_RSTICK_LEFT_MASK;
+		case CTRL_RSTICK_UP_MASK:
+			return CTRL_RSTICK_RIGHT_MASK;
+		case CTRL_RSTICK_DOWN_MASK:
+			return CTRL_RSTICK_UP_MASK;
+		case CTRL_LEFT_MASK | CTRL_RSTICK_LEFT_MASK:
+			return CTRL_RSTICK_DOWN_MASK;
+		case CTRL_RIGHT_MASK | CTRL_RSTICK_RIGHT_MASK:
+			return (CTRL_LEFT_MASK | CTRL_RSTICK_LEFT_MASK);
+		case CTRL_UP_MASK | CTRL_RSTICK_UP_MASK:
+			return (CTRL_RIGHT_MASK | CTRL_RSTICK_RIGHT_MASK);
+		case CTRL_DOWN_MASK | CTRL_RSTICK_DOWN_MASK:
+			return (CTRL_UP_MASK | CTRL_RSTICK_UP_MASK);
+	}
+
+	return NO_BTN;
+}
+
+uint64_t ssnes_input_find_next_platform_key(uint64_t joykey)
+{
+	switch(joykey)
+	{
+		case CTRL_CIRCLE_MASK:
+			return CTRL_CROSS_MASK;
+		case CTRL_CROSS_MASK:
+			return CTRL_TRIANGLE_MASK;
+		case CTRL_TRIANGLE_MASK:
+			return CTRL_SQUARE_MASK;
+		case CTRL_SQUARE_MASK:
+			return CTRL_UP_MASK;
+		case CTRL_UP_MASK:
+			return CTRL_DOWN_MASK;
+		case CTRL_DOWN_MASK:
+			return CTRL_LEFT_MASK;
+		case CTRL_LEFT_MASK:
+			return CTRL_RIGHT_MASK;
+		case CTRL_RIGHT_MASK:
+			return CTRL_SELECT_MASK;
+		case CTRL_SELECT_MASK:
+			return CTRL_START_MASK;
+		case CTRL_START_MASK:
+			return CTRL_L1_MASK;
+		case CTRL_L1_MASK:
+			return CTRL_L2_MASK;
+		case CTRL_L2_MASK:
+			return CTRL_L3_MASK;
+		case CTRL_L3_MASK:
+			return CTRL_R1_MASK;
+		case CTRL_R1_MASK:
+			return CTRL_R2_MASK;
+		case CTRL_R2_MASK:
+			return CTRL_R3_MASK;
+		case CTRL_R3_MASK:
+			return CTRL_LSTICK_LEFT_MASK;
+		case CTRL_LSTICK_LEFT_MASK:
+			return CTRL_LSTICK_RIGHT_MASK;
+		case CTRL_LSTICK_RIGHT_MASK:
+			return CTRL_LSTICK_UP_MASK;
+		case CTRL_LSTICK_UP_MASK:
+			return CTRL_LSTICK_DOWN_MASK;
+		case CTRL_LSTICK_DOWN_MASK:
+			return (CTRL_LEFT_MASK | CTRL_LSTICK_LEFT_MASK);
+		case CTRL_LEFT_MASK | CTRL_LSTICK_LEFT_MASK:
+			return (CTRL_RIGHT_MASK | CTRL_LSTICK_RIGHT_MASK);
+		case CTRL_RIGHT_MASK | CTRL_LSTICK_RIGHT_MASK:
+			return (CTRL_UP_MASK | CTRL_LSTICK_UP_MASK);
+		case CTRL_UP_MASK | CTRL_LSTICK_UP_MASK:
+			return (CTRL_DOWN_MASK | CTRL_LSTICK_DOWN_MASK);
+		case CTRL_DOWN_MASK | CTRL_LSTICK_DOWN_MASK:
+			return CTRL_RSTICK_LEFT_MASK;
+		case CTRL_RSTICK_LEFT_MASK:
+			return CTRL_RSTICK_RIGHT_MASK;
+		case CTRL_RSTICK_RIGHT_MASK:
+			return CTRL_RSTICK_UP_MASK;
+		case CTRL_RSTICK_UP_MASK:
+			return CTRL_RSTICK_DOWN_MASK;
+		case CTRL_RSTICK_DOWN_MASK:
+			return (CTRL_LEFT_MASK | CTRL_RSTICK_LEFT_MASK);
+		case CTRL_LEFT_MASK | CTRL_RSTICK_LEFT_MASK:
+			return (CTRL_RIGHT_MASK | CTRL_RSTICK_RIGHT_MASK);
+		case CTRL_RIGHT_MASK | CTRL_RSTICK_RIGHT_MASK:
+			return (CTRL_UP_MASK | CTRL_RSTICK_UP_MASK);
+		case CTRL_UP_MASK | CTRL_RSTICK_UP_MASK:
+			return (CTRL_DOWN_MASK | CTRL_RSTICK_DOWN_MASK);
+		case CTRL_DOWN_MASK | CTRL_RSTICK_DOWN_MASK:
+			return (CTRL_DOWN_MASK | CTRL_RSTICK_DOWN_MASK);
+	}
+
+	return NO_BTN;
+}
+
+const char * ssnes_input_find_platform_key_label(uint64_t joykey)
+{
+	switch(joykey)
+	{
+		case CTRL_CIRCLE_MASK:
+			return "Circle button";
+		case CTRL_CROSS_MASK:
+			return "Cross button";
+		case CTRL_TRIANGLE_MASK:
+			return "Triangle button";
+		case CTRL_SQUARE_MASK:
+			return "Square button";
+		case CTRL_UP_MASK:
+			return "D-Pad Up";
+		case CTRL_DOWN_MASK:
+			return "D-Pad Down";
+		case CTRL_LEFT_MASK:
+			return "D-Pad Left";
+		case CTRL_RIGHT_MASK:
+			return "D-Pad Right";
+		case CTRL_SELECT_MASK:
+			return "Select button";
+		case CTRL_START_MASK:
+			return "Start button";
+		case CTRL_L1_MASK:
+			return "L1 button";
+		case CTRL_L2_MASK:
+			return "L2 button";
+		case CTRL_L3_MASK:
+			return "L3 button";
+		case CTRL_R1_MASK:
+			return "R1 button";
+		case CTRL_R2_MASK:
+			return "R2 button";
+		case CTRL_R3_MASK:
+			return "R3 button";
+		case CTRL_LSTICK_LEFT_MASK:
+			return "LStick Left";
+		case CTRL_LSTICK_RIGHT_MASK:
+			return "LStick Right";
+		case CTRL_LSTICK_UP_MASK:
+			return "LStick Up";
+		case CTRL_LSTICK_DOWN_MASK:
+			return "LStick Down";
+		case CTRL_LEFT_MASK | CTRL_LSTICK_LEFT_MASK:
+			return "LStick D-Pad Left";
+		case CTRL_RIGHT_MASK | CTRL_LSTICK_RIGHT_MASK:
+			return "LStick D-Pad Right";
+		case CTRL_UP_MASK | CTRL_LSTICK_UP_MASK:
+			return "LStick D-Pad Up";
+		case CTRL_DOWN_MASK | CTRL_LSTICK_DOWN_MASK:
+			return "LStick D-Pad Down";
+		case CTRL_RSTICK_LEFT_MASK:
+			return "RStick Left";
+		case CTRL_RSTICK_RIGHT_MASK:
+			return "RStick Right";
+		case CTRL_RSTICK_UP_MASK:
+			return "RStick Up";
+		case CTRL_RSTICK_DOWN_MASK:
+			return "RStick Down";
+		case CTRL_LEFT_MASK | CTRL_RSTICK_LEFT_MASK:
+			return "RStick D-Pad Left";
+		case CTRL_RIGHT_MASK | CTRL_RSTICK_RIGHT_MASK:
+			return "RStick D-Pad Right";
+		case CTRL_UP_MASK | CTRL_RSTICK_UP_MASK:
+			return "RStick D-Pad Up";
+		case CTRL_DOWN_MASK | CTRL_RSTICK_DOWN_MASK:
+			return "RStick D-Pad Down";
+	}
+
+	return "Unknown";
+}
 #elif defined(_XBOX)
 #endif
 
