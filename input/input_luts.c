@@ -87,6 +87,42 @@ uint64_t platform_keybind_lut[SSNES_LAST_PLATFORM_KEY+1] =
 	CTRL_UP_MASK | CTRL_RSTICK_UP_MASK,
 	CTRL_DOWN_MASK | CTRL_RSTICK_DOWN_MASK,
 };
+
+char platform_keybind_name_lut[SSNES_LAST_PLATFORM_KEY+1][256] = 
+{
+	"Circle button",
+	"Cross button",
+	"Triangle button",
+	"Square button",
+	"D-Pad Up",
+	"D-Pad Down",
+	"D-Pad Left",
+	"D-Pad Right",
+	"Select button",
+	"Start button",
+	"L1 button",
+	"L2 button",
+	"L3 button",
+	"R1 button",
+	"R2 button",
+	"R3 button",
+	"LStick Left",
+	"LStick Right",
+	"LStick Up",
+	"LStick Down",
+	"LStick D-Pad Left",
+	"LStick D-Pad Right",
+	"LStick D-Pad Up",
+	"LStick D-Pad Down",
+	"RStick Left",
+	"RStick Right",
+	"RStick Up",
+	"RStick Down",
+	"RStick D-Pad Left",
+	"RStick D-Pad Right",
+	"RStick D-Pad Up",
+	"RStick D-Pad Down"
+};
 #elif defined(_XBOX)
 
 #endif

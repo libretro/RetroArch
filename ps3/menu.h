@@ -22,7 +22,7 @@
 typedef struct
 {
 	uint32_t enum_id;			/* enum ID of item				*/
-	char text[256];				/* item label					*/
+	const char * text;			/* item label					*/
 	char setting_text[256];			/* setting label				*/
 	float text_xpos;			/* text X position (upper left corner)		*/
 	float text_ypos;			/* text Y position (upper left corner)		*/

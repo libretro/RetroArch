@@ -559,7 +559,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	},
 	{
 		SETTING_CONTROLS_BUTTON_CROSS,
-		"Cross button",
+		platform_keybind_name_lut[PS3_DEVICE_ID_JOYPAD_CROSS],
 		"",
 		0.0f,
 		0.0f,
@@ -573,7 +573,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	},
 	{
 		SETTING_CONTROLS_BUTTON_SQUARE,
-		"Square button",
+		platform_keybind_name_lut[PS3_DEVICE_ID_JOYPAD_SQUARE],
 		"",
 		0.0f,
 		0.0f,
@@ -587,7 +587,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	},
 	{
 		SETTING_CONTROLS_BUTTON_SELECT,
-		"Select button",
+		platform_keybind_name_lut[PS3_DEVICE_ID_JOYPAD_SELECT],
 		"",
 		0.0f,
 		0.0f,
@@ -601,7 +601,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	},
 	{
 		SETTING_CONTROLS_BUTTON_START,
-		"Start button",
+		platform_keybind_name_lut[PS3_DEVICE_ID_JOYPAD_START],
 		"",
 		0.0f,
 		0.0f,
@@ -615,7 +615,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	},
 	{
 		SETTING_CONTROLS_DPAD_UP,
-		"D-Pad Up",
+		platform_keybind_name_lut[PS3_DEVICE_ID_JOYPAD_UP],
 		"",
 		0.0f,
 		0.0f,
@@ -629,7 +629,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	},
 	{
 		SETTING_CONTROLS_DPAD_DOWN,
-		"D-Pad Down",
+		platform_keybind_name_lut[PS3_DEVICE_ID_JOYPAD_DOWN],
 		"",
 		0.0f,
 		0.0f,
@@ -643,7 +643,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	},
 	{
 		SETTING_CONTROLS_DPAD_LEFT,
-		"D-Pad Left",
+		platform_keybind_name_lut[PS3_DEVICE_ID_JOYPAD_LEFT],
 		"",
 		0.0f,	
 		0.0f,
@@ -657,7 +657,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	},
 	{
 		SETTING_CONTROLS_DPAD_RIGHT,
-		"D-Pad Right",
+		platform_keybind_name_lut[PS3_DEVICE_ID_JOYPAD_RIGHT],
 		"",
 		0.0f,
 		0.0f,
@@ -671,7 +671,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	},
 	{
 		SETTING_CONTROLS_BUTTON_CIRCLE,
-		"Circle button",
+		platform_keybind_name_lut[PS3_DEVICE_ID_JOYPAD_CIRCLE],
 		"",
 		0.0f,
 		0.0f,
@@ -685,7 +685,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	},
 	{
 		SETTING_CONTROLS_BUTTON_TRIANGLE,
-		"Triangle button",
+		platform_keybind_name_lut[PS3_DEVICE_ID_JOYPAD_TRIANGLE],
 		"",
 		0.0f,
 		0.0f,
@@ -699,7 +699,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L1,
-		"L1 button",
+		platform_keybind_name_lut[PS3_DEVICE_ID_JOYPAD_L1],
 		"",
 		0.0f,
 		0.0f,
@@ -713,7 +713,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R1,
-		"R1 button",
+		platform_keybind_name_lut[PS3_DEVICE_ID_JOYPAD_R1],
 		"",
 		0.0f,
 		0.0f,

@@ -68,6 +68,7 @@ enum
 #endif
 
 uint64_t platform_keybind_lut[SSNES_LAST_PLATFORM_KEY+1];
+char platform_keybind_name_lut[SSNES_LAST_PLATFORM_KEY+1][256];
 #endif
 
 extern uint64_t default_keybind_lut[SSNES_FIRST_META_KEY];
