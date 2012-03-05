@@ -81,21 +81,26 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">
     <LinkIncremental>true</LinkIncremental>
+    <ImageXexOutput>$(OutDir)CORE.xex</ImageXexOutput>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">
     <LinkIncremental>false</LinkIncremental>
+    <ImageXexOutput>$(OutDir)CORE.xex</ImageXexOutput>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">
     <LinkIncremental>false</LinkIncremental>
+    <ImageXexOutput>$(OutDir)CORE.xex</ImageXexOutput>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">
     <LinkIncremental>false</LinkIncremental>
+    <ImageXexOutput>$(OutDir)CORE.xex</ImageXexOutput>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">
     <LinkIncremental>false</LinkIncremental>
+    <ImageXexOutput>$(OutDir)CORE.xex</ImageXexOutput>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">
     <ClCompile>
@@ -122,7 +127,16 @@
     </Deploy>
     <ImageXex>
       <AdditionalOptions>/privilege=6 %(AdditionalOptions)</AdditionalOptions>
+      <CrossPlatformSystemLink>true</CrossPlatformSystemLink>
     </ImageXex>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">
     <ClCompile>
@@ -150,7 +164,16 @@
     </Deploy>
     <ImageXex>
       <AdditionalOptions>/privilege=6 %(AdditionalOptions)</AdditionalOptions>
+      <CrossPlatformSystemLink>true</CrossPlatformSystemLink>
     </ImageXex>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">
     <ClCompile>
@@ -183,7 +206,16 @@
     </Deploy>
     <ImageXex>
       <AdditionalOptions>/privilege=6 %(AdditionalOptions)</AdditionalOptions>
+      <CrossPlatformSystemLink>true</CrossPlatformSystemLink>
     </ImageXex>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">
     <ClCompile>
@@ -215,7 +247,16 @@
     </Deploy>
     <ImageXex>
       <AdditionalOptions>/privilege=6 %(AdditionalOptions)</AdditionalOptions>
+      <CrossPlatformSystemLink>true</CrossPlatformSystemLink>
     </ImageXex>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">
     <ClCompile>
@@ -246,7 +287,16 @@
     </Deploy>
     <ImageXex>
       <AdditionalOptions>/privilege=6 %(AdditionalOptions)</AdditionalOptions>
+      <CrossPlatformSystemLink>true</CrossPlatformSystemLink>
     </ImageXex>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">
     <ClCompile>
@@ -279,7 +329,16 @@
     </Deploy>
     <ImageXex>
       <AdditionalOptions>/privilege=6 %(AdditionalOptions)</AdditionalOptions>
+      <CrossPlatformSystemLink>true</CrossPlatformSystemLink>
     </ImageXex>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\360\file_browser.c" />

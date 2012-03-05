@@ -25,6 +25,7 @@
 #include "xdk360_input.h"
 #include "xdk360_video.h"
 
+#include "../console/rom_ext.h"
 #include "../console/main_wrap.h"
 #include "../conf/config_file.h"
 #include "../conf/config_file_macros.h"
@@ -188,8 +189,80 @@ static void set_default_settings (void)
 	g_extern.verbose = true;
 }
 
-static void init_settings (void)
+static char **dir_list_new_360(const char *dir, const char *ext)
 {
+	size_t cur_ptr = 0;
+	size_t cur_size = 32;
+	char **dir_list = NULL;
+
+	WIN32_FIND_DATA ffd;
+	HANDLE hFind = INVALID_HANDLE_VALUE;
+
+	char path_buf[PATH_MAX];
+
+	if (strlcpy(path_buf, dir, sizeof(path_buf)) >= sizeof(path_buf))
+	goto error;
+	if (strlcat(path_buf, "*", sizeof(path_buf)) >= sizeof(path_buf))
+	goto error;
+
+	if (ext)
+	{
+	if (strlcat(path_buf, ext, sizeof(path_buf)) >= sizeof(path_buf))
+		goto error;
+	}
+
+	hFind = FindFirstFile(path_buf, &ffd);
+	if (hFind == INVALID_HANDLE_VALUE)
+	goto error;
+
+	dir_list = (char**)calloc(cur_size, sizeof(char*));
+	if (!dir_list)
+	goto error;
+
+	do
+	{
+	// Not a perfect search of course, but hopefully good enough in practice.
+	if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		continue;
+	if (ext && !strstr(ffd.cFileName, ext))
+		continue;
+
+	dir_list[cur_ptr] = (char*)malloc(PATH_MAX);
+	if (!dir_list[cur_ptr])
+		goto error;
+
+	strlcpy(dir_list[cur_ptr], dir, PATH_MAX);
+	strlcat(dir_list[cur_ptr], ffd.cFileName, PATH_MAX);
+
+	cur_ptr++;
+	if (cur_ptr + 1 == cur_size) // Need to reserve for NULL.
+	{
+		cur_size *= 2;
+		dir_list = (char**)realloc(dir_list, cur_size * sizeof(char*));
+		if (!dir_list)
+		goto error;
+
+		// Make sure it's all NULL'd out since we cannot rely on realloc to do this.
+		memset(dir_list + cur_ptr, 0, (cur_size - cur_ptr) * sizeof(char*));
+	}
+	}while (FindNextFile(hFind, &ffd) != 0);
+
+	FindClose(hFind);
+	return dir_list;
+
+	error:
+	SSNES_ERR("Failed to open directory: \"%s\"\n", dir);
+	if (hFind != INVALID_HANDLE_VALUE)
+	FindClose(hFind);
+	dir_list_free(dir_list);
+	return NULL;
+}
+
+
+static void init_settings (bool load_libsnes_path)
+{
+	char fname_tmp[MAX_PATH_LENGTH];
+
 	if(!path_file_exists(SYS_CONFIG_FILE))
 	{
 		SSNES_ERR("Config file \"%s\" desn't exist. Creating...\n", "game:\\ssnes.cfg");
@@ -199,6 +272,53 @@ static void init_settings (void)
 	}
 
 	config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
+
+	if(load_libsnes_path)
+	{
+		CONFIG_GET_STRING(libsnes, "libsnes_path");
+
+		if(!strcmp(g_settings.libsnes, ""))
+		{
+			//We need to set libsnes to the first entry in the cores
+			//directory so that it will be saved to the config file
+			char ** dir_list = dir_list_new_360("game:\\", ".xex");
+			if (!dir_list)
+			{
+				SSNES_ERR("Couldn't read directory.\n");
+				return;
+			}
+
+			const char * first_xex = dir_list[0];
+
+			if(first_xex)
+			{
+				fill_pathname_base(fname_tmp, first_xex, sizeof(fname_tmp));
+
+				if(strcmp(fname_tmp, "SSNES-Salamander.xex") == 0)
+				{
+					SSNES_WARN("First entry is SSNES Salamander itself, increment entry by one and check if it exists.\n");
+					first_xex = dir_list[1];
+					fill_pathname_base(fname_tmp, first_xex, sizeof(fname_tmp));
+					
+					if(!first_xex)
+					{
+						//This is very unlikely to happen
+						SSNES_WARN("There is no second entry - no choice but to set it to SSNES Salamander\n");
+						first_xex = dir_list[0];
+						fill_pathname_base(fname_tmp, first_xex, sizeof(fname_tmp));
+					}
+				}
+				SSNES_LOG("Set first .xex entry in dir: [%s] to libsnes path.\n", fname_tmp);
+				snprintf(g_settings.libsnes, sizeof(g_settings.libsnes), "game:\\%s", fname_tmp);
+			}
+			else
+			{
+				SSNES_ERR("Failed to set first .xex entry to libsnes path.\n");
+			}
+
+			dir_list_free(dir_list);
+		}
+	}
 
 	// g_settings
 	CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
@@ -229,6 +349,7 @@ static void save_settings (void)
 			conf = config_file_new(NULL);
 
 	// g_settings
+	config_set_string(conf, "libsnes_path", g_settings.libsnes);
 	config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
 	config_set_bool(conf, "video_smooth", g_settings.video.smooth);
 	config_set_bool(conf, "video_vsync", g_settings.video.vsync);
@@ -310,15 +431,91 @@ static void get_environment_settings (void)
 	strlcpy(SYS_CONFIG_FILE, "game:\\ssnes.cfg", sizeof(SYS_CONFIG_FILE));
 }
 
+static bool manage_libsnes_core(void)
+{
+	g_extern.verbose = true;
+	bool return_code;
+
+	bool set_libsnes_path = false;
+	char tmp_path[1024], tmp_path2[1024], tmp_pathnewfile[1024];
+	snprintf(tmp_path, sizeof(tmp_path), "game:\\CORE.xex");
+	SSNES_LOG("Assumed path of CORE.xex: [%s]\n", tmp_path);
+	if(path_file_exists(tmp_path))
+	{
+		//if CORE.xex exists, this indicates we have just installed
+		//a new libsnes port and that we need to change it to a more
+		//sane name.
+
+		int ret;
+
+		ssnes_console_name_from_id(tmp_path2, sizeof(tmp_path2));
+		strlcat(tmp_path2, ".xex", sizeof(tmp_path2));
+		snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "game:\\%s", tmp_path2);
+
+		if(path_file_exists(tmp_pathnewfile))
+		{
+			SSNES_LOG("Upgrading emulator core...\n");
+			//if libsnes core already exists, then that means we are
+			//upgrading the libsnes core - so delete pre-existing
+			//file first
+			ret = DeleteFile(tmp_pathnewfile);
+			if(ret != 0)
+			{
+				SSNES_LOG("Succeeded in removing pre-existing libsnes core: [%s].\n", tmp_pathnewfile);
+			}
+			else
+			{
+				SSNES_LOG("Failed to remove pre-existing libsnes core: [%s].\n", tmp_pathnewfile);
+			}
+		}
+
+		//now attempt the renaming
+		ret = MoveFileExA(tmp_path, tmp_pathnewfile, NULL);
+		if(ret == 0)
+		{
+			SSNES_ERR("Failed to rename CORE.xex.\n");
+		}
+		else
+		{
+			SSNES_LOG("Libsnes core [%s] renamed to: [%s].\n", tmp_path, tmp_pathnewfile);
+			set_libsnes_path = true;
+		}
+	}
+	else
+	{
+		SSNES_LOG("CORE.xex was not found, libsnes core path will be loaded from config file.\n");
+	}
+
+	if(set_libsnes_path)
+	{
+		//CORE.xex has been renamed, libsnes path will now be set to the recently
+		//renamed new libsnes core
+		strlcpy(g_settings.libsnes, tmp_pathnewfile, sizeof(g_settings.libsnes));
+		return_code = 0;
+	}
+	else
+	{
+		//There was no CORE.xex present, or the CORE.xex file was not renamed.
+		//The libsnes core path will still be loaded from the config file
+		return_code = 1;
+	}
+
+	g_extern.verbose = false;
+
+	return return_code;
+}
+
 int main(int argc, char *argv[])
 {
 	get_environment_settings();
 
 	ssnes_main_clear_state();
 	config_set_defaults();
+	
+	bool load_libsnes_path = manage_libsnes_core();
 
 	set_default_settings();
-	init_settings();
+	init_settings(load_libsnes_path);
 
 	xdk360_video_init();
 	menu_init();
