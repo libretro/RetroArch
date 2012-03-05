@@ -46,6 +46,7 @@
 #include "../console/main_wrap.h"
 #include "../conf/config_file.h"
 #include "../conf/config_file_macros.h"
+#include "../input/input_luts.h"
 #include "../general.h"
 #include "../file.h"
 
@@ -100,45 +101,27 @@ static void set_default_settings(void)
 	g_settings.video.msg_pos_x = 0.05f;
 	g_settings.video.msg_pos_y = 0.90f;
 	g_settings.video.aspect_ratio = -1.0f;
+	
+	default_keybind_lut[SNES_DEVICE_ID_JOYPAD_B]		=	platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_CROSS];
+	default_keybind_lut[SNES_DEVICE_ID_JOYPAD_Y]		=	platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_SQUARE];
+	default_keybind_lut[SNES_DEVICE_ID_JOYPAD_SELECT]	=	platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_SELECT];
+	default_keybind_lut[SNES_DEVICE_ID_JOYPAD_START]	=	platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_START];
+	default_keybind_lut[SNES_DEVICE_ID_JOYPAD_UP]		=	platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_UP];
+	default_keybind_lut[SNES_DEVICE_ID_JOYPAD_DOWN]		=	platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_DOWN];
+	default_keybind_lut[SNES_DEVICE_ID_JOYPAD_LEFT]		=	platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_LEFT];
+	default_keybind_lut[SNES_DEVICE_ID_JOYPAD_RIGHT]	=	platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_RIGHT];
+	default_keybind_lut[SNES_DEVICE_ID_JOYPAD_A]		=	platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_CIRCLE];
+	default_keybind_lut[SNES_DEVICE_ID_JOYPAD_X]		=	platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_TRIANGLE];
+	default_keybind_lut[SNES_DEVICE_ID_JOYPAD_L]		=	platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_L1];
+	default_keybind_lut[SNES_DEVICE_ID_JOYPAD_R]		=	platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_R1];
 
 	for(uint32_t x = 0; x < MAX_PLAYERS; x++)
 	{
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_B].id = SNES_DEVICE_ID_JOYPAD_B;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_B].joykey = CTRL_CROSS_MASK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_Y].id = SNES_DEVICE_ID_JOYPAD_Y;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_Y].joykey = CTRL_SQUARE_MASK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_SELECT].id = SNES_DEVICE_ID_JOYPAD_SELECT;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_SELECT].joykey = CTRL_SELECT_MASK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_START].id = SNES_DEVICE_ID_JOYPAD_START;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_START].joykey = CTRL_START_MASK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].id = SNES_DEVICE_ID_JOYPAD_UP;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].joykey = CTRL_UP_MASK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].id = SNES_DEVICE_ID_JOYPAD_DOWN;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = CTRL_DOWN_MASK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].id = SNES_DEVICE_ID_JOYPAD_LEFT;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = CTRL_LEFT_MASK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].id = SNES_DEVICE_ID_JOYPAD_RIGHT;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = CTRL_RIGHT_MASK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_A].id = SNES_DEVICE_ID_JOYPAD_A;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_A].joykey = CTRL_CIRCLE_MASK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_X].id = SNES_DEVICE_ID_JOYPAD_X;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_X].joykey = CTRL_TRIANGLE_MASK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_L].id = SNES_DEVICE_ID_JOYPAD_L;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_L].joykey = CTRL_L1_MASK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_R].id = SNES_DEVICE_ID_JOYPAD_R;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_R].joykey = CTRL_R1_MASK;
-
+		for(uint32_t y = 0; y < SSNES_FIRST_META_KEY; y++)
+		{
+			g_settings.input.binds[x][y].id = y;
+			g_settings.input.binds[x][y].joykey = default_keybind_lut[y];
+		}
 		g_settings.input.dpad_emulation[x] = DPAD_EMULATION_LSTICK;
 	}
 

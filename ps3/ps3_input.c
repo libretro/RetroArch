@@ -16,15 +16,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../driver.h"
+#include <stdint.h>
+#include <stdlib.h>
 #include "ps3_input.h"
 #include "ps3_video_psgl.h"
-#include <stdint.h>
+#include "../driver.h"
+#include "../input/input_luts.h"
 #include "../libsnes.hpp"
 #include "../general.h"
 #include "shared.h"
-
-#include <stdlib.h>
 
 static uint64_t state[MAX_PADS];
 static void ps3_input_poll(void *data)
@@ -87,22 +87,22 @@ void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
 	switch(map_dpad_enum)
 	{
 		case DPAD_EMULATION_NONE:
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_UP].joykey = CTRL_UP_MASK;
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = CTRL_DOWN_MASK;
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = CTRL_LEFT_MASK;
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = CTRL_RIGHT_MASK;
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_UP].joykey		= platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_UP];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_DOWN];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_LEFT];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_RIGHT];
 			break;
 		case DPAD_EMULATION_LSTICK:
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_UP].joykey = CTRL_UP_MASK | CTRL_LSTICK_UP_MASK;
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = CTRL_DOWN_MASK | CTRL_LSTICK_DOWN_MASK;
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = CTRL_LEFT_MASK | CTRL_LSTICK_LEFT_MASK;
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = CTRL_RIGHT_MASK | CTRL_LSTICK_RIGHT_MASK;
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_UP].joykey		= platform_keybind_lut[PS3_DEVICE_ID_LSTICK_UP_DPAD];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keybind_lut[PS3_DEVICE_ID_LSTICK_DOWN_DPAD];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keybind_lut[PS3_DEVICE_ID_LSTICK_LEFT_DPAD];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keybind_lut[PS3_DEVICE_ID_LSTICK_RIGHT_DPAD];
 			break;
 		case DPAD_EMULATION_RSTICK:
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_UP].joykey = CTRL_UP_MASK | CTRL_RSTICK_UP_MASK;
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = CTRL_DOWN_MASK | CTRL_RSTICK_DOWN_MASK;
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = CTRL_LEFT_MASK | CTRL_RSTICK_LEFT_MASK;
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = CTRL_RIGHT_MASK | CTRL_RSTICK_RIGHT_MASK;
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_UP].joykey		= platform_keybind_lut[PS3_DEVICE_ID_RSTICK_UP_DPAD];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keybind_lut[PS3_DEVICE_ID_RSTICK_DOWN_DPAD];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keybind_lut[PS3_DEVICE_ID_RSTICK_LEFT_DPAD];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keybind_lut[PS3_DEVICE_ID_RSTICK_RIGHT_DPAD];
 			break;
 	}
 }
