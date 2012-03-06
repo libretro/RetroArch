@@ -46,28 +46,13 @@
 
 /* Type declarations */
 
-#ifndef OF /* function prototypes */
-#define OF(args)  args
-#endif
-
-#ifndef FAR
-#   define FAR
-#endif
-
 #if !defined(MACOS) && !defined(TARGET_OS_MAC)
 typedef unsigned char  Byte;  /* 8 bits */
 #endif
-typedef unsigned int   uInt;  /* 16 bits or more */
-typedef unsigned long  uLong; /* 32 bits or more */
 
-typedef Byte  FAR Bytef;
-typedef char  FAR charf;
-typedef int   FAR intf;
-typedef uInt  FAR uIntf;
-typedef uLong FAR uLongf;
-
-typedef void FAR *voidpf;
-typedef void     *voidp;
+typedef Byte	Bytef;
+typedef void	*voidpf;
+typedef void	*voidp;
 
 #ifdef HAVE_UNISTD_H
 #  include <sys/types.h> /* for off_t */

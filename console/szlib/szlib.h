@@ -62,36 +62,36 @@
 #define zlib_version zlibVersion()
 /* for compatibility with versions < 1.0.2 */
 
-typedef voidpf (*alloc_func) OF((voidpf opaque, uInt items, uInt size));
-typedef void   (*free_func)  OF((voidpf opaque, voidpf address));
+typedef voidpf (*alloc_func) (voidpf opaque, unsigned int items, unsigned int size);
+typedef void   (*free_func)  (voidpf opaque, voidpf address);
 
 typedef struct z_stream_s {
     Bytef    *next_in;  /* next input byte */
-    uInt     avail_in;  /* number of bytes available at next_in */
-    uLong    total_in;  /* total nb of input bytes read so far */
+    unsigned int     avail_in;  /* number of bytes available at next_in */
+    unsigned long    total_in;  /* total nb of input bytes read so far */
 
     Bytef    *next_out; /* next output byte should be put there */
-    uInt     avail_out; /* remaining free space at next_out */
-    uLong    total_out; /* total nb of bytes output so far */
+    unsigned int     avail_out; /* remaining free space at next_out */
+    unsigned long    total_out; /* total nb of bytes output so far */
 
     char     *msg;      /* last error message, NULL if no error */
-    struct internal_state FAR *state; /* not visible by applications */
+    struct internal_state *state; /* not visible by applications */
 
     alloc_func zalloc;  /* used to allocate the internal state */
     free_func  zfree;   /* used to free the internal state */
     voidpf     opaque;  /* private data object passed to zalloc and zfree */
 
     int     data_type;  /* best guess about the data type: ascii or binary */
-    uLong   adler;      /* adler32 value of the uncompressed data */
-    uLong   reserved;   /* reserved for future use */
+    unsigned long   adler;      /* adler32 value of the uncompressed data */
+    unsigned long   reserved;   /* reserved for future use */
 } z_stream;
 
-typedef z_stream FAR *z_streamp;
+typedef z_stream *z_streamp;
 
 typedef unsigned char  uch;
-typedef unsigned char FAR uchf;
+typedef unsigned char uchf;
 typedef unsigned short ush;
-typedef unsigned short FAR ushf;
+typedef unsigned short ushf;
 typedef unsigned long  ulg;
 
 extern const char *z_errmsg[10]; /* indexed by 2-zlib_error */
@@ -174,16 +174,16 @@ extern const char *z_errmsg[10]; /* indexed by 2-zlib_error */
 /* functions */
 
 #ifdef HAVE_STRERROR
-   extern char *strerror OF((int));
+   extern char *strerror (int);
 #  define zstrerror(errnum) strerror(errnum)
 #else
 #  define zstrerror(errnum) ""
 #endif
 
-typedef uLong ( *check_func) OF((uLong check, const Bytef *buf,
-				       uInt len));
-voidpf zcalloc OF((voidpf opaque, unsigned items, unsigned size));
-void   zcfree  OF((voidpf opaque, voidpf ptr));
+typedef unsigned long ( *check_func) (unsigned long check, const Bytef *buf,
+				       unsigned int len);
+voidpf zcalloc (voidpf opaque, unsigned items, unsigned size);
+void   zcfree  (voidpf opaque, voidpf ptr);
 
 #define ZALLOC(strm, items, size) \
            (*((strm)->zalloc))((strm)->opaque, (items), (size))
@@ -192,7 +192,7 @@ void   zcfree  OF((voidpf opaque, voidpf ptr));
 /* Huffman code lookup table entry--this entry is four bytes for machines
    that have 16-bit pointers (e.g. PC's in the small or medium model). */
 
-typedef struct inflate_huft_s FAR inflate_huft;
+typedef struct inflate_huft_s inflate_huft;
 
 struct inflate_huft_s {
   union {
@@ -200,9 +200,9 @@ struct inflate_huft_s {
       Byte Exop;        /* number of extra bits or operation */
       Byte Bits;        /* number of bits in this code or subcode */
     } what;
-    uInt pad;           /* pad structure to a power of 2 (4 bytes for */
+    unsigned int pad;           /* pad structure to a power of 2 (4 bytes for */
   } word;               /*  16-bit, 8 bytes for 32-bit int's) */
-  uInt base;            /* literal, length base, distance base,
+  unsigned int base;            /* literal, length base, distance base,
                            or table offset */
 };
 
@@ -213,65 +213,65 @@ struct inflate_huft_s {
    value below is more than safe. */
 #define MANY 1440
 
-extern int inflate_trees_bits OF((
-    uIntf *,                    /* 19 code lengths */
-    uIntf *,                    /* bits tree desired/actual depth */
-    inflate_huft * FAR *,       /* bits tree result */
+extern int inflate_trees_bits (
+    unsigned int *,                    /* 19 code lengths */
+    unsigned int *,                    /* bits tree desired/actual depth */
+    inflate_huft **,       /* bits tree result */
     inflate_huft *,             /* space for trees */
-    z_streamp));                /* for messages */
+    z_streamp);                /* for messages */
 
-extern int inflate_trees_dynamic OF((
-    uInt,                       /* number of literal/length codes */
-    uInt,                       /* number of distance codes */
-    uIntf *,                    /* that many (total) code lengths */
-    uIntf *,                    /* literal desired/actual bit depth */
-    uIntf *,                    /* distance desired/actual bit depth */
-    inflate_huft * FAR *,       /* literal/length tree result */
-    inflate_huft * FAR *,       /* distance tree result */
+extern int inflate_trees_dynamic (
+    unsigned int,                       /* number of literal/length codes */
+    unsigned int,                       /* number of distance codes */
+    unsigned int *,                    /* that many (total) code lengths */
+    unsigned int *,                    /* literal desired/actual bit depth */
+    unsigned int *,                    /* distance desired/actual bit depth */
+    inflate_huft **,       /* literal/length tree result */
+    inflate_huft **,       /* distance tree result */
     inflate_huft *,             /* space for trees */
-    z_streamp));                /* for messages */
+    z_streamp);                /* for messages */
 
-extern int inflate_trees_fixed OF((
-    uIntf *,                    /* literal desired/actual bit depth */
-    uIntf *,                    /* distance desired/actual bit depth */
-    inflate_huft * FAR *,       /* literal/length tree result */
-    inflate_huft * FAR *,       /* distance tree result */
-    z_streamp));                /* for memory allocation */
+extern int inflate_trees_fixed (
+    unsigned int *,                    /* literal desired/actual bit depth */
+    unsigned int *,                    /* distance desired/actual bit depth */
+    inflate_huft **,       /* literal/length tree result */
+    inflate_huft **,       /* distance tree result */
+    z_streamp);                /* for memory allocation */
 
 struct inflate_blocks_state;
-typedef struct inflate_blocks_state FAR inflate_blocks_statef;
+typedef struct inflate_blocks_state inflate_blocks_statef;
 
-extern inflate_blocks_statef * inflate_blocks_new OF((
+extern inflate_blocks_statef * inflate_blocks_new (
     z_streamp z,
     check_func c,               /* check function */
-    uInt w));                   /* window size */
+    unsigned int w);                   /* window size */
 
-extern int inflate_blocks OF((
+extern int inflate_blocks (
     inflate_blocks_statef *,
     z_streamp ,
-    int));                      /* initial return code */
+    int);                      /* initial return code */
 
-extern void inflate_blocks_reset OF((
+extern void inflate_blocks_reset (
     inflate_blocks_statef *,
     z_streamp ,
-    uLongf *));                  /* check value on output */
+    unsigned long *);                  /* check value on output */
 
-extern int inflate_blocks_free OF((
+extern int inflate_blocks_free (
     inflate_blocks_statef *,
-    z_streamp));
+    z_streamp);
 
 struct inflate_codes_state;
-typedef struct inflate_codes_state FAR inflate_codes_statef;
+typedef struct inflate_codes_state inflate_codes_statef;
 
-extern inflate_codes_statef *inflate_codes_new OF((
-    uInt, uInt,
+extern inflate_codes_statef *inflate_codes_new (
+    unsigned int, unsigned int,
     inflate_huft *, inflate_huft *,
-    z_streamp ));
+    z_streamp );
 
-extern int inflate_codes OF((
+extern int inflate_codes (
     inflate_blocks_statef *,
     z_streamp ,
-    int));
+    int);
 
 typedef enum {
       TYPE,     /* get type bits (3, including end bit) */
@@ -294,12 +294,12 @@ struct inflate_blocks_state {
 
   /* mode dependent information */
   union {
-    uInt left;          /* if STORED, bytes left to copy */
+    unsigned int left;          /* if STORED, bytes left to copy */
     struct {
-      uInt table;               /* table lengths (14 bits) */
-      uInt index;               /* index into blens (or border) */
-      uIntf *blens;             /* bit lengths of codes */
-      uInt bb;                  /* bit length tree depth */
+      unsigned int table;               /* table lengths (14 bits) */
+      unsigned int index;               /* index into blens (or border) */
+      unsigned int *blens;             /* bit lengths of codes */
+      unsigned int bb;                  /* bit length tree depth */
       inflate_huft *tb;         /* bit length decoding tree */
     } trees;            /* if DTREE, decoding info for trees */
     struct {
@@ -307,18 +307,18 @@ struct inflate_blocks_state {
          *codes;
     } decode;           /* if CODES, current state */
   } sub;                /* submode */
-  uInt last;            /* true if this block is the last block */
+  unsigned int last;            /* true if this block is the last block */
 
   /* mode independent information */
-  uInt bitk;            /* bits in bit buffer */
-  uLong bitb;           /* bit buffer */
+  unsigned int bitk;            /* bits in bit buffer */
+  unsigned long bitb;           /* bit buffer */
   inflate_huft *hufts;  /* single malloc for tree space */
   Bytef *window;        /* sliding window */
   Bytef *end;           /* one byte after sliding window */
   Bytef *read;          /* window read pointer */
   Bytef *write;         /* window write pointer */
   check_func checkfn;   /* check function */
-  uLong check;          /* check on output */
+  unsigned long check;          /* check on output */
 
 };
 
@@ -334,12 +334,12 @@ struct inflate_blocks_state {
 #define LOADIN {p=z->next_in;n=z->avail_in;b=s->bitb;k=s->bitk;}
 #define NEEDBYTE {if(n)r=Z_OK;else LEAVE}
 #define NEXTBYTE (n--,*p++)
-#define NEEDBITS(j) {while(k<(j)){NEEDBYTE;b|=((uLong)NEXTBYTE)<<k;k+=8;}}
+#define NEEDBITS(j) {while(k<(j)){NEEDBYTE;b|=((unsigned long)NEXTBYTE)<<k;k+=8;}}
 #define DUMPBITS(j) {b>>=(j);k-=(j);}
 /*   output bytes */
-#define WAVAIL (uInt)(q<s->read?s->read-q-1:s->end-q)
-#define LOADOUT {q=s->write;m=(uInt)WAVAIL;}
-#define WRAP {if(q==s->end&&s->read!=s->window){q=s->window;m=(uInt)WAVAIL;}}
+#define WAVAIL (unsigned int)(q<s->read?s->read-q-1:s->end-q)
+#define LOADOUT {q=s->write;m=(unsigned int)WAVAIL;}
+#define WRAP {if(q==s->end&&s->read!=s->window){q=s->window;m=(unsigned int)WAVAIL;}}
 #define FLUSH {UPDOUT r=inflate_flush(s,z,r); LOADOUT}
 #define NEEDOUT {if(m==0){WRAP if(m==0){FLUSH WRAP if(m==0) LEAVE}}r=Z_OK;}
 #define OUTBYTE(a) {*q++=(Byte)(a);m--;}
@@ -347,40 +347,40 @@ struct inflate_blocks_state {
 #define LOAD {LOADIN LOADOUT}
 
 /* masks for lower bits (size given to avoid silly warnings with Visual C++) */
-extern uInt	inflate_mask[17];
+extern unsigned int	inflate_mask[17];
 
 /* copy as much as possible from the sliding window to the output area */
-extern int	inflate_flush OF((inflate_blocks_statef *, z_streamp , int));
+extern int	inflate_flush (inflate_blocks_statef *, z_streamp , int);
 
 // utility functions
 
-extern voidp	gzopen  OF((const char *path, const char *mode));
-extern voidp	gzdopen  OF((int fd, const char *mode));
-extern int	gzread  OF((voidp file, voidp buf, unsigned len));
-extern int	gzwrite OF((voidp file, const voidp buf, unsigned len));
-extern int	gzprintf OF((voidp file, const char *format, ...));
-extern int	gzputs OF((voidp file, const char *s));
-extern char *	gzgets OF((voidp file, char *buf, int len));
-extern int	gzputc OF((voidp file, int c));
-extern int	gzgetc OF((voidp file));
-extern int	gzflush OF((voidp file, int flush));
-extern z_off_t	gzseek OF((voidp file, z_off_t offset, int whence));
-extern int	gzrewind OF((voidp file));
-extern z_off_t	gztell OF((voidp file));
-extern int	gzeof OF((voidp file));
-extern int	gzclose OF((voidp file));
+extern voidp	gzopen  (const char *path, const char *mode);
+extern voidp	gzdopen  (int fd, const char *mode);
+extern int	gzread  (voidp file, voidp buf, unsigned len);
+extern int	gzwrite (voidp file, const voidp buf, unsigned len);
+extern int	gzprintf (voidp file, const char *format, ...);
+extern int	gzputs (voidp file, const char *s);
+extern char *	gzgets (voidp file, char *buf, int len);
+extern int	gzputc (voidp file, int c);
+extern int	gzgetc (voidp file);
+extern int	gzflush (voidp file, int flush);
+extern z_off_t	gzseek (voidp file, z_off_t offset, int whence);
+extern int	gzrewind (voidp file);
+extern z_off_t	gztell (voidp file);
+extern int	gzeof (voidp file);
+extern int	gzclose (voidp file);
 
-extern const char *  gzerror OF((voidp file, int *errnum));
+extern const char *  gzerror (voidp file, int *errnum);
 
 /* checksum functions */
 
-extern uLong	adler32 OF((uLong adler, const Bytef *buf, uInt len));
-extern uLong	crc32   OF((uLong crc, const Bytef *buf, uInt len));
+extern unsigned long	adler32 (unsigned long adler, const Bytef *buf, unsigned int len);
+extern unsigned long	crc32   (unsigned long crc, const Bytef *buf, unsigned int len);
 
 /* various hacks, don't look :) */
 
-extern int	inflateInit_ OF((z_streamp strm, const char * version, int stream_size));
-extern int	inflateInit2_ OF((z_streamp strm, int  windowBits, const char *version, int stream_size));
+extern int	inflateInit_ (z_streamp strm, const char * version, int stream_size);
+extern int	inflateInit2_ (z_streamp strm, int  windowBits, const char *version, int stream_size);
 
 #define inflateInit(strm) \
         inflateInit_((strm),                ZLIB_VERSION, sizeof(z_stream))
