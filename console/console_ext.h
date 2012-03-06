@@ -28,4 +28,8 @@ const char *ssnes_console_get_rom_ext(void);
 // Transforms a library id to a name suitable as a pathname.
 void ssnes_console_name_from_id(char *name, size_t size);
 
+// Sets custom default keybind names (some systems emulated by the emulator
+// will need different keybind names for buttons, etc.)
+void ssnes_console_set_default_keybind_names_for_emulator(void);
+
 #endif

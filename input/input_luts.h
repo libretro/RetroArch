@@ -108,6 +108,7 @@ enum xdk360_device_id
 
 extern uint64_t ssnes_default_keybind_lut[SSNES_FIRST_META_KEY];
 extern uint64_t ssnes_platform_keybind_lut[SSNES_LAST_PLATFORM_KEY];
+extern char ssnes_default_libsnes_keybind_name_lut[SSNES_FIRST_META_KEY][256];
 
 const char *ssnes_input_find_platform_key_label(uint64_t joykey);
 uint64_t ssnes_input_find_previous_platform_key(uint64_t joykey);

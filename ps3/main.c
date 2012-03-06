@@ -583,6 +583,8 @@ int main(int argc, char *argv[])
 	ps3_input_init();
 	oskutil_init(&g_console.oskutil_handle, 0);
 
+	ssnes_console_set_default_keybind_names_for_emulator();
+
 	menu_init();
 
 	switch(g_console.external_launcher_support)

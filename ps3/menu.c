@@ -744,6 +744,7 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 				else
 					menu_obj->items[currentsetting].text_color = ORANGE;
 				const char * value = ssnes_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey);
+				snprintf(menu_obj->items[currentsetting].text, sizeof(menu_obj->items[currentsetting].text), ssnes_default_libsnes_keybind_name_lut[currentsetting-(FIRST_CONTROL_BIND)]);
 				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [%s] on the PS3 controller is mapped to action:\n[%s].", menu_obj->items[currentsetting].text, value);
 				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), value);
 				}
