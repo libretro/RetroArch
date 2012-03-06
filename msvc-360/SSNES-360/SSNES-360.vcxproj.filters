@@ -44,9 +44,6 @@
     <ClCompile Include="..\..\360\xdk360_video.cpp">
       <Filter>Source Files\360</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\360\xdk360_input.cpp">
-      <Filter>Source Files\360</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\ups.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -128,9 +125,6 @@
     <ClCompile Include="..\..\netplay_compat.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\console\rom_ext.c">
-      <Filter>Source Files\console</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\360\file_browser.c">
       <Filter>Source Files\360</Filter>
     </ClCompile>
@@ -148,6 +142,12 @@
     </ClCompile>
     <ClCompile Include="..\..\input\input_luts.c">
       <Filter>Source Files\input</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\console\console_ext.c">
+      <Filter>Source Files\console</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\360\xdk360_input.c">
+      <Filter>Source Files\360</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -42,7 +42,7 @@ PPU_SRCS		= fifo_buffer.c \
 			ps3/ps3_audio.c \
 			ps3/menu.c \
 			console/main_wrap.c \
-			console/rom_ext.c \
+			console/console_ext.c \
 			console/librsound/librsound.c \
 			console/szlib/szlib.c \
 			ps3/ps3_input.c \

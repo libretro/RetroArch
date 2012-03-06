@@ -21,7 +21,7 @@
 #include <tchar.h>
 #include <xtl.h>
 #include "file_browser.h"
-#include "../console/rom_ext.h"
+#include "../console/console_ext.h"
 #include "xdk360_video.h"
 #include "menu.h"
 #include "shared.h"

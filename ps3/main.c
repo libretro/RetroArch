@@ -42,7 +42,7 @@
 #include "ps3_input.h"
 #include "ps3_video_psgl.h"
 
-#include "../console/rom_ext.h"
+#include "../console/console_ext.h"
 #include "../console/main_wrap.h"
 #include "../conf/config_file.h"
 #include "../conf/config_file_macros.h"

@@ -17,7 +17,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "rom_ext.h"
+#include "console_ext.h"
 #include "../boolean.h"
 #include "../libsnes.hpp"
 #include <string.h>

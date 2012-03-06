@@ -345,7 +345,7 @@
     <ClCompile Include="..\..\360\fonts.cpp" />
     <ClCompile Include="..\..\360\main.c" />
     <ClCompile Include="..\..\360\xdk360_audio.cpp" />
-    <ClCompile Include="..\..\360\xdk360_input.cpp" />
+    <ClCompile Include="..\..\360\xdk360_input.c" />
     <ClCompile Include="..\..\360\xdk360_video.cpp" />
     <ClCompile Include="..\..\360\menu.cpp" />
     <ClCompile Include="..\..\360\xdk360_video_resources.cpp" />
@@ -362,7 +362,7 @@
     </ClCompile>
     <ClCompile Include="..\..\conf\config_file.c" />
     <ClCompile Include="..\..\console\main_wrap.c" />
-    <ClCompile Include="..\..\console\rom_ext.c" />
+    <ClCompile Include="..\..\console\console_ext.c" />
     <ClCompile Include="..\..\console\szlib\szlib.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>

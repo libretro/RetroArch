@@ -29,7 +29,7 @@
 #include "cellframework2/fileio/file_browser.h"
 
 #include "../input/input_luts.h"
-#include "../console/rom_ext.h"
+#include "../console/console_ext.h"
 
 #include "ps3_video_psgl.h"
 
