@@ -50,40 +50,6 @@
 #define OF(args)  args
 #endif
 
-/* Compile with -DZLIB_DLL for Windows DLL support */
-#if defined(ZLIB_DLL)
-#  if defined(_WINDOWS) || defined(WINDOWS)
-#    ifdef FAR
-#      undef FAR
-#    endif
-#    include <windows.h>
-#    define ZEXPORT  WINAPI
-#    ifdef WIN32
-#      define ZEXPORTVA  WINAPIV
-#    else
-#      define ZEXPORTVA  FAR _cdecl _export
-#    endif
-#  endif
-#endif
-
-#if defined (__BEOS__)
-#  if defined (ZLIB_DLL)
-#    define ZEXTERN extern __declspec(dllexport)
-#  else
-#    define ZEXTERN extern __declspec(dllimport)
-#  endif
-#endif
-
-#ifndef ZEXPORT
-#  define ZEXPORT
-#endif
-#ifndef ZEXPORTVA
-#  define ZEXPORTVA
-#endif
-#ifndef ZEXTERN
-#  define ZEXTERN extern
-#endif
-
 #ifndef FAR
 #   define FAR
 #endif

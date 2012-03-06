@@ -180,7 +180,7 @@ extern const char *z_errmsg[10]; /* indexed by 2-zlib_error */
 #  define zstrerror(errnum) ""
 #endif
 
-typedef uLong (ZEXPORT *check_func) OF((uLong check, const Bytef *buf,
+typedef uLong ( *check_func) OF((uLong check, const Bytef *buf,
 				       uInt len));
 voidpf zcalloc OF((voidpf opaque, unsigned items, unsigned size));
 void   zcfree  OF((voidpf opaque, voidpf ptr));
@@ -347,60 +347,40 @@ struct inflate_blocks_state {
 #define LOAD {LOADIN LOADOUT}
 
 /* masks for lower bits (size given to avoid silly warnings with Visual C++) */
-extern uInt inflate_mask[17];
+extern uInt	inflate_mask[17];
 
 /* copy as much as possible from the sliding window to the output area */
-extern int inflate_flush OF((inflate_blocks_statef *, z_streamp , int));
+extern int	inflate_flush OF((inflate_blocks_statef *, z_streamp , int));
 
 // utility functions
 
-typedef voidp gzFile;
+extern voidp	gzopen  OF((const char *path, const char *mode));
+extern voidp	gzdopen  OF((int fd, const char *mode));
+extern int	gzread  OF((voidp file, voidp buf, unsigned len));
+extern int	gzwrite OF((voidp file, const voidp buf, unsigned len));
+extern int	gzprintf OF((voidp file, const char *format, ...));
+extern int	gzputs OF((voidp file, const char *s));
+extern char *	gzgets OF((voidp file, char *buf, int len));
+extern int	gzputc OF((voidp file, int c));
+extern int	gzgetc OF((voidp file));
+extern int	gzflush OF((voidp file, int flush));
+extern z_off_t	gzseek OF((voidp file, z_off_t offset, int whence));
+extern int	gzrewind OF((voidp file));
+extern z_off_t	gztell OF((voidp file));
+extern int	gzeof OF((voidp file));
+extern int	gzclose OF((voidp file));
 
-ZEXTERN gzFile ZEXPORT gzopen  OF((const char *path, const char *mode));
+extern const char *  gzerror OF((voidp file, int *errnum));
 
-ZEXTERN gzFile ZEXPORT gzdopen  OF((int fd, const char *mode));
+/* checksum functions */
 
-ZEXTERN int ZEXPORT    gzread  OF((gzFile file, voidp buf, unsigned len));
+extern uLong	adler32 OF((uLong adler, const Bytef *buf, uInt len));
+extern uLong	crc32   OF((uLong crc, const Bytef *buf, uInt len));
 
-ZEXTERN int ZEXPORT    gzwrite OF((gzFile file, 
-				   const voidp buf, unsigned len));
-ZEXTERN int ZEXPORTVA   gzprintf OF((gzFile file, const char *format, ...));
+/* various hacks, don't look :) */
 
-ZEXTERN int ZEXPORT gzputs OF((gzFile file, const char *s));
-
-ZEXTERN char * ZEXPORT gzgets OF((gzFile file, char *buf, int len));
-
-ZEXTERN int ZEXPORT    gzputc OF((gzFile file, int c));
-
-ZEXTERN int ZEXPORT    gzgetc OF((gzFile file));
-
-ZEXTERN int ZEXPORT    gzflush OF((gzFile file, int flush));
-
-ZEXTERN z_off_t ZEXPORT    gzseek OF((gzFile file,
-				      z_off_t offset, int whence));
-
-ZEXTERN int ZEXPORT    gzrewind OF((gzFile file));
-
-ZEXTERN z_off_t ZEXPORT    gztell OF((gzFile file));
-
-ZEXTERN int ZEXPORT gzeof OF((gzFile file));
-
-ZEXTERN int ZEXPORT    gzclose OF((gzFile file));
-
-ZEXTERN const char * ZEXPORT gzerror OF((gzFile file, int *errnum));
-
-                        /* checksum functions */
-
-ZEXTERN uLong ZEXPORT adler32 OF((uLong adler, const Bytef *buf, uInt len));
-
-ZEXTERN uLong ZEXPORT crc32   OF((uLong crc, const Bytef *buf, uInt len));
-
-                        /* various hacks, don't look :) */
-
-ZEXTERN int ZEXPORT inflateInit_ OF((z_streamp strm,
-                                     const char *version, int stream_size));
-ZEXTERN int ZEXPORT inflateInit2_ OF((z_streamp strm, int  windowBits,
-                                      const char *version, int stream_size));
+extern int	inflateInit_ OF((z_streamp strm, const char * version, int stream_size));
+extern int	inflateInit2_ OF((z_streamp strm, int  windowBits, const char *version, int stream_size));
 
 #define inflateInit(strm) \
         inflateInit_((strm),                ZLIB_VERSION, sizeof(z_stream))
