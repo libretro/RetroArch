@@ -26,18 +26,18 @@
 uint64_t ssnes_default_keybind_lut[SSNES_FIRST_META_KEY];
 
 char ssnes_default_libsnes_keybind_name_lut[SSNES_FIRST_META_KEY][256] = {
-	"B Button",          /* SNES_DEVICE_ID_JOYPAD_B		*/
-	"Y Button",          /* SNES_DEVICE_ID_JOYPAD_Y		*/
-	"Select button",     /* SNES_DEVICE_ID_JOYPAD_SELECT	*/
-	"Start button",      /* SNES_DEVICE_ID_JOYPAD_START	*/
-	"D-Pad Up",          /* SNES_DEVICE_ID_JOYPAD_UP	*/
-	"D-Pad Down",        /* SNES_DEVICE_ID_JOYPAD_DOWN	*/
-	"D-Pad Left",        /* SNES_DEVICE_ID_JOYPAD_LEFT	*/
-	"D-Pad Right",       /* SNES_DEVICE_ID_JOYPAD_RIGHT	*/
-	"A Button",          /* SNES_DEVICE_ID_JOYPAD_A		*/
-	"X Button",          /* SNES_DEVICE_ID_JOYPAD_X		*/
-	"L Button",          /* SNES_DEVICE_ID_JOYPAD_L		*/
-	"R Button",          /* SNES_DEVICE_ID_JOYPAD_R		*/
+   "B Button",          /* SNES_DEVICE_ID_JOYPAD_B      */
+   "Y Button",          /* SNES_DEVICE_ID_JOYPAD_Y      */
+   "Select button",     /* SNES_DEVICE_ID_JOYPAD_SELECT */
+   "Start button",      /* SNES_DEVICE_ID_JOYPAD_START  */
+   "D-Pad Up",          /* SNES_DEVICE_ID_JOYPAD_UP     */
+   "D-Pad Down",        /* SNES_DEVICE_ID_JOYPAD_DOWN   */
+   "D-Pad Left",        /* SNES_DEVICE_ID_JOYPAD_LEFT   */
+   "D-Pad Right",       /* SNES_DEVICE_ID_JOYPAD_RIGHT  */
+   "A Button",          /* SNES_DEVICE_ID_JOYPAD_A      */
+   "X Button",          /* SNES_DEVICE_ID_JOYPAD_X      */
+   "L Button",          /* SNES_DEVICE_ID_JOYPAD_L      */
+   "R Button",          /* SNES_DEVICE_ID_JOYPAD_R      */
 };
 
 #if defined(__CELLOS_LV2__)
