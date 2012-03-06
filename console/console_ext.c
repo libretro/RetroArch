@@ -27,8 +27,7 @@
 
 #ifdef HAVE_ZLIB
 #include "szlib/zlib.h"
-
-#define WRITEBUFFERSIZE (512192)
+#define WRITEBUFFERSIZE (1024 * 512)
 #endif
 
 #ifdef _WIN32
@@ -85,143 +84,138 @@ void ssnes_console_name_from_id(char *name, size_t size)
    }
 }
 
-void ssnes_console_set_default_keybind_names_for_emulator (void)
+void ssnes_console_set_default_keybind_names_for_emulator(void)
 {
    const char *id = snes_library_id();
 
    // Genesis Plus GX/Next
    if (strstr(id, "Genesis Plus GX"))
    {
-   	strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_B], "B button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_B]));
-   	strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_A], "C button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_A]));
-   	strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_X], "Y button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_X]));
-   	strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_Y], "A button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_Y]));
-   	strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_L], "X button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_L]));
-   	strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_R], "Z button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_R]));
-   	strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_SELECT], "Mode button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_SELECT]));
+      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_B],
+            "B button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_B]));
+      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_A],
+            "C button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_A]));
+      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_X],
+            "Y button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_X]));
+      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_Y],
+            "A button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_Y]));
+      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_L],
+            "X button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_L]));
+      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_R],
+            "Z button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_R]));
+      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_SELECT],
+            "Mode button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_SELECT]));
    }
 }
 
 #ifdef HAVE_ZLIB
 static int ssnes_extract_currentfile_in_zip(unzFile uf)
 {
-	char filename_inzip[256];
-	int err=UNZ_OK;
-	FILE *fout=NULL;
-	void* buf;
-	unsigned int size_buf;
+   char filename_inzip[PATH_MAX];
+   FILE *fout = NULL;
 
-	unz_file_info file_info;
-	err = unzGetCurrentFileInfo(uf,&file_info,filename_inzip,sizeof(filename_inzip),NULL,0,NULL,0);
+   unz_file_info file_info;
+   int err = unzGetCurrentFileInfo(uf,
+         &file_info, filename_inzip, sizeof(filename_inzip),
+         NULL, 0, NULL, 0);
 
-	if (err!=UNZ_OK)
-	{
-		SSNES_ERR("error %d with zipfile in unzGetCurrentFileInfo\n",err);
-		return err;
-	}
+   if (err != UNZ_OK)
+   {
+      SSNES_ERR("Error %d with zipfile in unzGetCurrentFileInfo.\n", err);
+      return err;
+   }
 
-	size_buf = WRITEBUFFERSIZE;
-	buf = (void*)malloc(size_buf);
-	if (buf==NULL)
-	{
-		SSNES_ERR("Error allocating memory\n");
-		return UNZ_INTERNALERROR;
-	}
+   size_t size_buf = WRITEBUFFERSIZE;
+   void *buf = malloc(size_buf);
+   if (!buf)
+   {
+      SSNES_ERR("Error allocating memory\n");
+      return UNZ_INTERNALERROR;
+   }
 
-	char write_filename[1024];
+   char write_filename[PATH_MAX];
 
-	/* TODO: currently hardcoded for PS3, fix this */
-	snprintf(write_filename, sizeof(write_filename), "/dev_hdd1/%s", filename_inzip);
+   /* TODO: currently hardcoded for PS3, fix this */
+   snprintf(write_filename, sizeof(write_filename), "/dev_hdd1/%s", filename_inzip);
 
-	err = unzOpenCurrentFile(uf);
-	if (err!=UNZ_OK)
-	{
-		/* failure */
-		SSNES_ERR("error %d with zipfile in unzOpenCurrentFile\n",err);
-	}
-	else
-	{
-		/* success */
-		fout=fopen(write_filename,"wb");
+   err = unzOpenCurrentFile(uf);
+   if (err != UNZ_OK)
+      SSNES_ERR("Error %d with zipfile in unzOpenCurrentFile.\n", err);
+   else
+   {
+      /* success */
+      fout = fopen(write_filename, "wb");
 
-		if (fout==NULL)
-		{
-			SSNES_ERR("error opening %s\n",write_filename);
-		}
-	}
+      if (!fout)
+         SSNES_ERR("Error opening %s.\n", write_filename);
+   }
 
-	if (fout!=NULL)
-	{
-		SSNES_LOG(" extracting: %s\n",write_filename);
+   if (fout)
+   {
+      SSNES_LOG("Extracting: %s\n", write_filename);
 
-		do
-		{
-			err = unzReadCurrentFile(uf,buf,size_buf);
-			if (err<0)
-			{
-				SSNES_ERR("error %d with zipfile in unzReadCurrentFile\n",err);
-				break;
-			}
-			if (err>0)
-				if (fwrite(buf,err,1,fout)!=1)
-				{
-					SSNES_ERR("error in writing extracted file\n");
-					err=UNZ_ERRNO;
-					break;
-				}
-		}while (err>0);
+      do
+      {
+         err = unzReadCurrentFile(uf, buf, size_buf);
+         if (err < 0)
+         {
+            SSNES_ERR("error %d with zipfile in unzReadCurrentFile.\n", err);
+            break;
+         }
 
-		if (fout)
-			fclose(fout);
+         if (err>0)
+         {
+            if (fwrite(buf, err, 1, fout) != 1)
+            {
+               SSNES_ERR("Error in writing extracted file.\n");
+               err = UNZ_ERRNO;
+               break;
+            }
+         }
+      } while (err > 0);
 
-	}
+      if (fout)
+         fclose(fout);
+   }
 
-	if (err==UNZ_OK)
-	{
-		err = unzCloseCurrentFile (uf);
-		if (err!=UNZ_OK)
-		{
-			SSNES_ERR("error %d with zipfile in unzCloseCurrentFile\n",err);
-		}
-	}
-	else
-		unzCloseCurrentFile(uf); 
+   if (err == UNZ_OK)
+   {
+      err = unzCloseCurrentFile (uf);
+      if (err != UNZ_OK)
+         SSNES_ERR("Error %d with zipfile in unzCloseCurrentFile.\n", err);
+   }
+   else
+      unzCloseCurrentFile(uf); 
 
-	free(buf);
-	return err;
+   free(buf);
+   return err;
 }
 
-int ssnes_extract_zipfile(const char * zip_path)
+int ssnes_extract_zipfile(const char *zip_path)
 {
-	unsigned long i;
-	unz_global_info gi;
-	int err;
-	unzFile uf;
+   unzFile uf = unzOpen(zip_path); 
 
-	uf = unzOpen(zip_path); 
+   unz_global_info gi;
+   int err = unzGetGlobalInfo(uf, &gi);
+   if (err != UNZ_OK)
+      SSNES_ERR("error %d with zipfile in unzGetGlobalInfo \n",err);
 
-	err = unzGetGlobalInfo(uf,&gi);
-	if (err!=UNZ_OK)
-	{
-		SSNES_ERR("error %d with zipfile in unzGetGlobalInfo \n",err);
-	}
+   for (unsigned i = 0; i < gi.number_entry; i++)
+   {
+      if (ssnes_extract_currentfile_in_zip(uf) != UNZ_OK)
+         break;
 
-	for (i = 0; i < gi.number_entry; i++)
-	{
-		if (ssnes_extract_currentfile_in_zip(uf) != UNZ_OK)
-			break;
+      if ((i + 1) < gi.number_entry)
+      {
+         err = unzGoToNextFile(uf);
+         if (err != UNZ_OK)
+         {
+            SSNES_ERR("error %d with zipfile in unzGoToNextFile\n",err);
+            break;
+         }
+      }
+   }
 
-		if ((i+1)<gi.number_entry)
-		{
-			err = unzGoToNextFile(uf);
-			if (err!=UNZ_OK)
-			{
-				SSNES_ERR("error %d with zipfile in unzGoToNextFile\n",err);
-				break;
-			}
-		}
-	}
-
-	return 0;
+   return 0;
 }
 #endif

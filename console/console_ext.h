@@ -33,7 +33,7 @@ void ssnes_console_name_from_id(char *name, size_t size);
 void ssnes_console_set_default_keybind_names_for_emulator(void);
 
 #ifdef HAVE_ZLIB
-int ssnes_extract_zipfile(const char * zip_path);
+int ssnes_extract_zipfile(const char *zip_path);
 #endif
 
 #endif
