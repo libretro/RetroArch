@@ -25,6 +25,12 @@
 #include <string.h>
 #include <ctype.h>
 
+#ifdef HAVE_ZLIB
+#include "szlib/zlib.h"
+
+#define WRITEBUFFERSIZE (512192)
+#endif
+
 #ifdef _WIN32
 #include "../posix_string.h"
 #endif
@@ -95,3 +101,127 @@ void ssnes_console_set_default_keybind_names_for_emulator (void)
    	strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_SELECT], "Mode button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_SELECT]));
    }
 }
+
+#ifdef HAVE_ZLIB
+static int ssnes_extract_currentfile_in_zip(unzFile uf)
+{
+	char filename_inzip[256];
+	int err=UNZ_OK;
+	FILE *fout=NULL;
+	void* buf;
+	unsigned int size_buf;
+
+	unz_file_info file_info;
+	err = unzGetCurrentFileInfo(uf,&file_info,filename_inzip,sizeof(filename_inzip),NULL,0,NULL,0);
+
+	if (err!=UNZ_OK)
+	{
+		SSNES_ERR("error %d with zipfile in unzGetCurrentFileInfo\n",err);
+		return err;
+	}
+
+	size_buf = WRITEBUFFERSIZE;
+	buf = (void*)malloc(size_buf);
+	if (buf==NULL)
+	{
+		SSNES_ERR("Error allocating memory\n");
+		return UNZ_INTERNALERROR;
+	}
+
+	char write_filename[1024];
+
+	/* TODO: currently hardcoded for PS3, fix this */
+	snprintf(write_filename, sizeof(write_filename), "/dev_hdd1/%s", filename_inzip);
+
+	err = unzOpenCurrentFile(uf);
+	if (err!=UNZ_OK)
+	{
+		/* failure */
+		SSNES_ERR("error %d with zipfile in unzOpenCurrentFile\n",err);
+	}
+	else
+	{
+		/* success */
+		fout=fopen(write_filename,"wb");
+
+		if (fout==NULL)
+		{
+			SSNES_ERR("error opening %s\n",write_filename);
+		}
+	}
+
+	if (fout!=NULL)
+	{
+		SSNES_LOG(" extracting: %s\n",write_filename);
+
+		do
+		{
+			err = unzReadCurrentFile(uf,buf,size_buf);
+			if (err<0)
+			{
+				SSNES_ERR("error %d with zipfile in unzReadCurrentFile\n",err);
+				break;
+			}
+			if (err>0)
+				if (fwrite(buf,err,1,fout)!=1)
+				{
+					SSNES_ERR("error in writing extracted file\n");
+					err=UNZ_ERRNO;
+					break;
+				}
+		}while (err>0);
+
+		if (fout)
+			fclose(fout);
+
+	}
+
+	if (err==UNZ_OK)
+	{
+		err = unzCloseCurrentFile (uf);
+		if (err!=UNZ_OK)
+		{
+			SSNES_ERR("error %d with zipfile in unzCloseCurrentFile\n",err);
+		}
+	}
+	else
+		unzCloseCurrentFile(uf); 
+
+	free(buf);
+	return err;
+}
+
+int ssnes_extract_zipfile(const char * zip_path)
+{
+	unsigned long i;
+	unz_global_info gi;
+	int err;
+	unzFile uf;
+
+	uf = unzOpen(zip_path); 
+
+	err = unzGetGlobalInfo(uf,&gi);
+	if (err!=UNZ_OK)
+	{
+		SSNES_ERR("error %d with zipfile in unzGetGlobalInfo \n",err);
+	}
+
+	for (i = 0; i < gi.number_entry; i++)
+	{
+		if (ssnes_extract_currentfile_in_zip(uf) != UNZ_OK)
+			break;
+
+		if ((i+1)<gi.number_entry)
+		{
+			err = unzGoToNextFile(uf);
+			if (err!=UNZ_OK)
+			{
+				SSNES_ERR("error %d with zipfile in unzGoToNextFile\n",err);
+				break;
+			}
+		}
+	}
+
+	return 0;
+}
+#endif

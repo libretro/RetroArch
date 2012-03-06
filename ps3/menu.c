@@ -2001,10 +2001,15 @@ static void select_rom(void)
 
 				snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 
-				g_console.menu_enable = false;
-				snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
-				g_console.initialize_ssnes_enable = 1;
-				g_console.mode_switch = MODE_EMULATION;
+				if(strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP"))
+					ssnes_extract_zipfile(rom_path_temp);
+				else
+				{
+					g_console.menu_enable = false;
+					snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+					g_console.initialize_ssnes_enable = 1;
+					g_console.mode_switch = MODE_EMULATION;
+				}
 			}
 		}
 	}

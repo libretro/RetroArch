@@ -32,4 +32,8 @@ void ssnes_console_name_from_id(char *name, size_t size);
 // will need different keybind names for buttons, etc.)
 void ssnes_console_set_default_keybind_names_for_emulator(void);
 
+#ifdef HAVE_ZLIB
+int ssnes_extract_zipfile(const char * zip_path);
+#endif
+
 #endif
