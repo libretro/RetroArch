@@ -163,7 +163,7 @@ static int ssnes_extract_currentfile_in_zip(unzFile uf)
             break;
          }
 
-         if (err>0)
+         if (err > 0)
          {
             if (fwrite(buf, err, 1, fout) != 1)
             {
@@ -218,4 +218,6 @@ int ssnes_extract_zipfile(const char *zip_path)
 
    return 0;
 }
+
 #endif
+
