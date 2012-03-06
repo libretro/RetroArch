@@ -22,6 +22,7 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../libsnes.hpp"
+#include "../input/input_luts.h"
 #include "xdk360_input.h"
 #include "xdk360_video.h"
 #include "shared.h"
@@ -88,9 +89,40 @@ static void xdk360_free_input(void *data)
    (void)data;
 }
 
-static void* xdk360_input_init(void)
+static void* xdk360_input_initialize(void)
 {
    return (void*)-1;
+}
+
+void xdk360_input_init(void)
+{
+   for(unsigned i = 0; i < 4; i++)
+	   xdk360_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
+}
+
+void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
+{
+	switch(map_dpad_enum)
+	{
+		case DPAD_EMULATION_NONE:
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_UP].joykey		= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_UP];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_DOWN];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_LEFT];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_RIGHT];
+			break;
+		case DPAD_EMULATION_LSTICK:
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_UP].joykey		= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_LSTICK_UP_DPAD];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_LSTICK_DOWN_DPAD];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_LSTICK_LEFT_DPAD];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_LSTICK_RIGHT_DPAD];
+			break;
+		case DPAD_EMULATION_RSTICK:
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_UP].joykey		= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_RSTICK_UP_DPAD];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_RSTICK_DOWN_DPAD];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_RSTICK_LEFT_DPAD];
+			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_RSTICK_RIGHT_DPAD];
+			break;
+	}
 }
 
 static bool xdk360_key_pressed(void *data, int key)
@@ -149,7 +181,7 @@ static bool xdk360_key_pressed(void *data, int key)
 }
 
 const input_driver_t input_xdk360 = {
-	xdk360_input_init,
+	xdk360_input_initialize,
 	xdk360_input_poll,
 	xdk360_input_state,
 	xdk360_key_pressed,

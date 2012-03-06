@@ -25,6 +25,7 @@
 #include "xdk360_input.h"
 #include "xdk360_video.h"
 
+#include "../input/input_luts.h"
 #include "../console/rom_ext.h"
 #include "../console/main_wrap.h"
 #include "../conf/config_file.h"
@@ -135,45 +136,28 @@ static void set_default_settings (void)
 	g_settings.video.vsync = true;
 	g_settings.video.smooth = true;
 
+	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_B]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_A];
+	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_Y]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_X];
+	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_SELECT]	=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_BACK];
+	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_START]	=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_START];
+	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_UP]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_UP];
+	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_DOWN]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_DOWN];
+	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_LEFT]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_LEFT];
+	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_RIGHT]	=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_RIGHT];
+	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_A]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_B];
+	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_X]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_Y];
+	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_L]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_LB];
+	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_R]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_RB];
+
 	for(uint32_t x = 0; x < MAX_PLAYERS; x++)
 	{
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_B].id = SNES_DEVICE_ID_JOYPAD_B;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_B].joykey = XINPUT_GAMEPAD_A;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_Y].id = SNES_DEVICE_ID_JOYPAD_Y;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_Y].joykey = XINPUT_GAMEPAD_X;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_SELECT].id = SNES_DEVICE_ID_JOYPAD_SELECT;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_SELECT].joykey = XINPUT_GAMEPAD_BACK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_START].id = SNES_DEVICE_ID_JOYPAD_START;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_START].joykey = XINPUT_GAMEPAD_START;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].id = SNES_DEVICE_ID_JOYPAD_UP;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_UP].joykey = XINPUT_GAMEPAD_DPAD_UP | XINPUT_GAMEPAD_LSTICK_UP_MASK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].id = SNES_DEVICE_ID_JOYPAD_DOWN;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_DOWN].joykey = XINPUT_GAMEPAD_DPAD_DOWN | XINPUT_GAMEPAD_LSTICK_DOWN_MASK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].id = SNES_DEVICE_ID_JOYPAD_LEFT;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_LEFT].joykey = XINPUT_GAMEPAD_DPAD_LEFT | XINPUT_GAMEPAD_LSTICK_LEFT_MASK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].id = SNES_DEVICE_ID_JOYPAD_RIGHT;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey = XINPUT_GAMEPAD_DPAD_RIGHT | XINPUT_GAMEPAD_LSTICK_RIGHT_MASK;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_A].id = SNES_DEVICE_ID_JOYPAD_A;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_A].joykey = XINPUT_GAMEPAD_B;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_X].id = SNES_DEVICE_ID_JOYPAD_X;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_X].joykey = XINPUT_GAMEPAD_Y;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_L].id = SNES_DEVICE_ID_JOYPAD_L;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_L].joykey = XINPUT_GAMEPAD_LEFT_SHOULDER;
-
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_R].id = SNES_DEVICE_ID_JOYPAD_R;
-		g_settings.input.binds[x][SNES_DEVICE_ID_JOYPAD_R].joykey = XINPUT_GAMEPAD_RIGHT_SHOULDER;
+		for(uint32_t y = 0; y < SSNES_FIRST_META_KEY; y++)
+		{
+			g_settings.input.binds[x][y].id = y;
+			g_settings.input.binds[x][y].joykey = ssnes_default_keybind_lut[y];
+		}
+		g_settings.input.dpad_emulation[x] = DPAD_EMULATION_LSTICK;
 	}
-
 
 	//g_console
 	g_console.block_config_read = true;
@@ -518,6 +502,7 @@ int main(int argc, char *argv[])
 	init_settings(load_libsnes_path);
 
 	xdk360_video_init();
+	xdk360_input_init();
 	menu_init();
 
 begin_loop:
