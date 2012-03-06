@@ -42,33 +42,33 @@ extern "C" {
 
 #define ZLIB_VERSION "1.1.4"
 
-typedef voidpf (*alloc_func) OF((voidpf opaque, uInt items, uInt size));
-typedef void   (*free_func)  OF((voidpf opaque, voidpf address));
+typedef voidpf (*alloc_func) (voidpf opaque, unsigned int items, unsigned int size);
+typedef void   (*free_func)  (voidpf opaque, voidpf address);
 
 struct internal_state;
 
 typedef struct z_stream_s {
     Bytef    *next_in;  /* next input byte */
-    uInt     avail_in;  /* number of bytes available at next_in */
-    uLong    total_in;  /* total nb of input bytes read so far */
+    unsigned int     avail_in;  /* number of bytes available at next_in */
+    unsigned long    total_in;  /* total nb of input bytes read so far */
 
     Bytef    *next_out; /* next output byte should be put there */
-    uInt     avail_out; /* remaining free space at next_out */
-    uLong    total_out; /* total nb of bytes output so far */
+    unsigned int     avail_out; /* remaining free space at next_out */
+    unsigned long    total_out; /* total nb of bytes output so far */
 
     char     *msg;      /* last error message, NULL if no error */
-    struct internal_state FAR *state; /* not visible by applications */
+    struct internal_state *state; /* not visible by applications */
 
     alloc_func zalloc;  /* used to allocate the internal state */
     free_func  zfree;   /* used to free the internal state */
     voidpf     opaque;  /* private data object passed to zalloc and zfree */
 
     int     data_type;  /* best guess about the data type: ascii or binary */
-    uLong   adler;      /* adler32 value of the uncompressed data */
-    uLong   reserved;   /* reserved for future use */
+    unsigned long   adler;      /* adler32 value of the uncompressed data */
+    unsigned long   reserved;   /* reserved for future use */
 } z_stream;
 
-typedef z_stream FAR *z_streamp;
+typedef z_stream *z_streamp;
 
 /* constants */
 
@@ -119,74 +119,50 @@ typedef z_stream FAR *z_streamp;
 
 typedef voidp gzFile;
 
-extern const char *  zlibVersion OF((void));
+extern const char *  zlibVersion (void);
 
-extern int  inflate OF((z_streamp strm, int flush));
+extern int  inflate (z_streamp strm, int flush);
 
-extern int  inflateEnd OF((z_streamp strm));
+extern int  inflateEnd (z_streamp strm);
 
 // The following functions are needed only in some special applications.
 
-extern int  inflateReset OF((z_streamp strm));
+extern int  inflateReset (z_streamp strm);
 
 // utility functions
 
-extern gzFile  gzopen  OF((const char *path, const char *mode));
+extern gzFile	gzopen  (const char *path, const char *mode);
+extern gzFile	gzdopen  (int fd, const char *mode);
+extern int	gzread  (gzFile file, voidp buf, unsigned len);
+extern int	gzwrite (gzFile file, const voidp buf, unsigned len);
+extern int	gzprintf (gzFile file, const char *format, ...);
+extern int	gzputs (gzFile file, const char *s);
+extern char *	gzgets (gzFile file, char *buf, int len);
+extern int	gzputc (gzFile file, int c);
+extern int	gzgetc (gzFile file);
+extern int	gzflush (gzFile file, int flush);
+extern z_off_t	gzseek (gzFile file, z_off_t offset, int whence);
+extern int     gzrewind (gzFile file);
+extern z_off_t     gztell (gzFile file);
+extern int  gzeof (gzFile file);
+extern int     gzclose (gzFile file);
+extern const char *  gzerror (gzFile file, int *errnum);
 
-extern gzFile  gzdopen  OF((int fd, const char *mode));
+/* checksum functions */
 
-extern int     gzread  OF((gzFile file, voidp buf, unsigned len));
+extern unsigned long  adler32 (unsigned long adler, const Bytef *buf, unsigned int len);
+extern unsigned long  crc32   (unsigned long crc, const Bytef *buf, unsigned int len);
 
-extern int     gzwrite OF((gzFile file, 
-				   const voidp buf, unsigned len));
-extern int VA   gzprintf OF((gzFile file, const char *format, ...));
+/* various hacks, don't look :) */
 
-extern int  gzputs OF((gzFile file, const char *s));
-
-extern char *  gzgets OF((gzFile file, char *buf, int len));
-
-extern int     gzputc OF((gzFile file, int c));
-
-extern int     gzgetc OF((gzFile file));
-
-extern int     gzflush OF((gzFile file, int flush));
-
-extern z_off_t     gzseek OF((gzFile file,
-				      z_off_t offset, int whence));
-
-extern int     gzrewind OF((gzFile file));
-
-extern z_off_t     gztell OF((gzFile file));
-
-extern int  gzeof OF((gzFile file));
-
-extern int     gzclose OF((gzFile file));
-
-extern const char *  gzerror OF((gzFile file, int *errnum));
-
-                        /* checksum functions */
-
-extern uLong  adler32 OF((uLong adler, const Bytef *buf, uInt len));
-
-extern uLong  crc32   OF((uLong crc, const Bytef *buf, uInt len));
-
-                        /* various hacks, don't look :) */
-
-extern int  inflateInit_ OF((z_streamp strm,
-                                     const char *version, int stream_size));
-extern int  inflateInit2_ OF((z_streamp strm, int  windowBits,
-                                      const char *version, int stream_size));
+extern int  inflateInit_ (z_streamp strm, const char *version, int stream_size);
+extern int  inflateInit2_ (z_streamp strm, int  windowBits, const char *version, int stream_size);
 #define inflateInit(strm) \
         inflateInit_((strm),                ZLIB_VERSION, sizeof(z_stream))
 #define inflateInit2(strm, windowBits) \
         inflateInit2_((strm), (windowBits), ZLIB_VERSION, sizeof(z_stream))
 
-
-#if !defined(_Z_UTIL_H) && !defined(NO_DUMMY_DECL)
-    struct internal_state {int dummy;}; /* hack for buggy compilers */
-#endif
-
-extern const char   *  zError           OF((int err));
+extern const char   *  zError           (int err);
 
 #ifdef __cplusplus
 }

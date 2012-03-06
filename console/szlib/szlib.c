@@ -6,10 +6,8 @@
 /* This source as presented is a modified version of original zlib for use with SSNES,
  * and must not be confused with the original software. */
 
+#include <stdio.h>
 #include "szlib.h"
-
-const char inflate_copyright[] =
-   " inflate 1.1.4 Copyright 1995-2002 Mark Adler ";
 
 /* And'ing with mask[n] masks the lower n bits */
 unsigned int inflate_mask[17] = 
@@ -1599,7 +1597,6 @@ int  inflate(z_streamp z, int f)
  *
  */
 
-#include <stdio.h>
 
 #ifdef _MSC_VER
 #pragma warning (disable:4996)
@@ -1641,10 +1638,115 @@ typedef struct gz_stream {
     long     startpos; /* start of compressed data in file (header skipped) */
 } gz_stream;
 
+static int get_byte(gz_stream *s)
+{
+    if (s->z_eof) return EOF;
+    if (s->stream.avail_in == 0) {
+	errno = 0;
+	s->stream.avail_in = fread(s->inbuf, 1, Z_BUFSIZE, s->file);
+	if (s->stream.avail_in == 0) {
+	    s->z_eof = 1;
+	    if (ferror(s->file)) s->z_err = Z_ERRNO;
+	    return EOF;
+	}
+	s->stream.next_in = s->inbuf;
+    }
+    s->stream.avail_in--;
+    return *(s->stream.next_in)++;
+}
 
-static void   check_header (gz_stream *s);
-static int    destroy      (gz_stream *s);
-static unsigned long  getLong      (gz_stream *s);
+static unsigned long getLong (gz_stream *s)
+{
+	unsigned long x = (unsigned long)get_byte(s);
+	int c;
+
+	x += ((unsigned long)get_byte(s))<<8;
+	x += ((unsigned long)get_byte(s))<<16;
+	c = get_byte(s);
+	if (c == EOF) s->z_err = Z_DATA_ERROR;
+	x += ((unsigned long)c)<<24;
+	return x;
+}
+
+static int destroy (gz_stream *s)
+{
+	int err = Z_OK;
+
+	if (!s) return Z_STREAM_ERROR;
+
+	if(s->msg)
+		free(s->msg);
+
+	if (s->stream.state != NULL) {
+		if (s->mode == 'w') {
+			err = Z_STREAM_ERROR;
+		} else if (s->mode == 'r') {
+			err = inflateEnd(&(s->stream));
+		}
+	}
+	if (s->file != NULL && fclose(s->file)) {
+		err = Z_ERRNO;
+	}
+	if (s->z_err < 0) err = s->z_err;
+
+	if(s->inbuf)
+		free(s->inbuf);
+	if(s->outbuf)
+		free(s->outbuf);
+	if(s->path)
+		free(s->path);
+	if(s)
+		free(s);
+	return err;
+}
+
+static void check_header(gz_stream *s)
+{
+	int method; /* method byte */
+	int flags;  /* flags byte */
+	unsigned int len;
+	int c;
+
+	/* Check the gzip magic header */
+	for (len = 0; len < 2; len++) {
+		c = get_byte(s);
+		if (c != gz_magic[len]) {
+			if (len != 0) s->stream.avail_in++, s->stream.next_in--;
+			if (c != EOF) {
+				s->stream.avail_in++, s->stream.next_in--;
+				s->transparent = 1;
+			}
+			s->z_err = s->stream.avail_in != 0 ? Z_OK : Z_STREAM_END;
+			return;
+		}
+	}
+	method = get_byte(s);
+	flags = get_byte(s);
+	if (method != Z_DEFLATED || (flags & RESERVED) != 0) {
+		s->z_err = Z_DATA_ERROR;
+		return;
+	}
+
+	/* Discard time, xflags and OS code: */
+	for (len = 0; len < 6; len++) (void)get_byte(s);
+
+	if ((flags & EXTRA_FIELD) != 0) { /* skip the extra field */
+		len  =  (unsigned int)get_byte(s);
+		len += ((unsigned int)get_byte(s))<<8;
+		/* len is garbage if EOF but the loop below will quit anyway */
+		while (len-- != 0 && get_byte(s) != EOF) ;
+	}
+	if ((flags & ORIG_NAME) != 0) { /* skip the original file name */
+		while ((c = get_byte(s)) != 0 && c != EOF) ;
+	}
+	if ((flags & COMMENT) != 0) {   /* skip the .gz file comment */
+		while ((c = get_byte(s)) != 0 && c != EOF) ;
+	}
+	if ((flags & HEAD_CRC) != 0) {  /* skip the header crc */
+		for (len = 0; len < 2; len++) (void)get_byte(s);
+	}
+	s->z_err = s->z_eof ? Z_DATA_ERROR : Z_OK;
+}
 
 static voidp gz_open (const char * path, const char *mode, int fd)
 {
@@ -1749,103 +1851,6 @@ voidp  gzdopen (int fd, const char * mode)
 	sprintf(name, "<fd:%d>", fd); /* for debugging */
 
 	return gz_open (name, mode, fd);
-}
-
-static int get_byte(gz_stream *s)
-{
-    if (s->z_eof) return EOF;
-    if (s->stream.avail_in == 0) {
-	errno = 0;
-	s->stream.avail_in = fread(s->inbuf, 1, Z_BUFSIZE, s->file);
-	if (s->stream.avail_in == 0) {
-	    s->z_eof = 1;
-	    if (ferror(s->file)) s->z_err = Z_ERRNO;
-	    return EOF;
-	}
-	s->stream.next_in = s->inbuf;
-    }
-    s->stream.avail_in--;
-    return *(s->stream.next_in)++;
-}
-
-static void check_header(gz_stream *s)
-{
-	int method; /* method byte */
-	int flags;  /* flags byte */
-	unsigned int len;
-	int c;
-
-	/* Check the gzip magic header */
-	for (len = 0; len < 2; len++) {
-		c = get_byte(s);
-		if (c != gz_magic[len]) {
-			if (len != 0) s->stream.avail_in++, s->stream.next_in--;
-			if (c != EOF) {
-				s->stream.avail_in++, s->stream.next_in--;
-				s->transparent = 1;
-			}
-			s->z_err = s->stream.avail_in != 0 ? Z_OK : Z_STREAM_END;
-			return;
-		}
-	}
-	method = get_byte(s);
-	flags = get_byte(s);
-	if (method != Z_DEFLATED || (flags & RESERVED) != 0) {
-		s->z_err = Z_DATA_ERROR;
-		return;
-	}
-
-	/* Discard time, xflags and OS code: */
-	for (len = 0; len < 6; len++) (void)get_byte(s);
-
-	if ((flags & EXTRA_FIELD) != 0) { /* skip the extra field */
-		len  =  (unsigned int)get_byte(s);
-		len += ((unsigned int)get_byte(s))<<8;
-		/* len is garbage if EOF but the loop below will quit anyway */
-		while (len-- != 0 && get_byte(s) != EOF) ;
-	}
-	if ((flags & ORIG_NAME) != 0) { /* skip the original file name */
-		while ((c = get_byte(s)) != 0 && c != EOF) ;
-	}
-	if ((flags & COMMENT) != 0) {   /* skip the .gz file comment */
-		while ((c = get_byte(s)) != 0 && c != EOF) ;
-	}
-	if ((flags & HEAD_CRC) != 0) {  /* skip the header crc */
-		for (len = 0; len < 2; len++) (void)get_byte(s);
-	}
-	s->z_err = s->z_eof ? Z_DATA_ERROR : Z_OK;
-}
-
-static int destroy (gz_stream *s)
-{
-	int err = Z_OK;
-
-	if (!s) return Z_STREAM_ERROR;
-
-	if(s->msg)
-		free(s->msg);
-
-	if (s->stream.state != NULL) {
-		if (s->mode == 'w') {
-			err = Z_STREAM_ERROR;
-		} else if (s->mode == 'r') {
-			err = inflateEnd(&(s->stream));
-		}
-	}
-	if (s->file != NULL && fclose(s->file)) {
-		err = Z_ERRNO;
-	}
-	if (s->z_err < 0) err = s->z_err;
-
-	if(s->inbuf)
-		free(s->inbuf);
-	if(s->outbuf)
-		free(s->outbuf);
-	if(s->path)
-		free(s->path);
-	if(s)
-		free(s);
-	return err;
 }
 
 int  gzread (voidp file, voidp buf, unsigned len)
@@ -2035,18 +2040,6 @@ int  gzeof (voidp file)
 	return (s == NULL || s->mode != 'r') ? 0 : s->z_eof;
 }
 
-static unsigned long getLong (gz_stream *s)
-{
-	unsigned long x = (unsigned long)get_byte(s);
-	int c;
-
-	x += ((unsigned long)get_byte(s))<<8;
-	x += ((unsigned long)get_byte(s))<<16;
-	c = get_byte(s);
-	if (c == EOF) s->z_err = Z_DATA_ERROR;
-	x += ((unsigned long)c)<<24;
-	return x;
-}
 
 int  gzclose (voidp file)
 {
