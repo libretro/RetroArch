@@ -36,6 +36,9 @@
     <Filter Include="Source Files\console\szlib">
       <UniqueIdentifier>{60603fec-c1c0-4562-8573-b1dc3af0ee40}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\input">
+      <UniqueIdentifier>{b19dc1de-69d4-4501-87ef-b8ee4a7795c5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\360\xdk360_video.cpp">
@@ -142,6 +145,9 @@
     </ClCompile>
     <ClCompile Include="..\..\console\szlib\szlib.c">
       <Filter>Source Files\console\szlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\input\input_luts.c">
+      <Filter>Source Files\input</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
