@@ -27,6 +27,7 @@
 #include <sysutil/sysutil_screenshot.h>
 #include <sysutil/sysutil_common.h>
 #include <sysutil/sysutil_gamecontent.h>
+#include <sysutil/sysutil_syscache.h>
 
 #if(CELL_SDK_VERSION > 0x340000)
 #include <sysutil/sysutil_bgmplayback.h>
@@ -59,6 +60,7 @@
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 #define EMULATOR_CORE_DIR "cores"
 
+#define CACHE_ID "ABCD12345"
 #define NP_POOL_SIZE (128*1024)
 
 static uint8_t np_pool[NP_POOL_SIZE];
@@ -347,10 +349,20 @@ static void get_environment_settings(int argc, char *argv[])
 {
 	g_extern.verbose = true;
 
+	int ret;
 	unsigned int get_type;
 	unsigned int get_attributes;
 	CellGameContentSize size;
 	char dirName[CELL_GAME_DIRNAME_SIZE];
+	CellSysCacheParam param;
+	memset(&param, 0x00, sizeof(CellSysCacheParam));
+	strncpy(param.cacheId,CACHE_ID, sizeof(CellSysCacheParam));
+
+	ret = cellSysCacheMount(&param);
+	if(ret != CELL_SYSCACHE_RET_OK_CLEARED)
+	{
+		SSNES_ERR("System cache partition could not be mounted, it might be already mounted.\n");
+	}
 
 	if(argc > 1)
 	{
@@ -377,7 +389,7 @@ static void get_environment_settings(int argc, char *argv[])
 
 	memset(&size, 0x00, sizeof(CellGameContentSize));
 
-	int ret = cellGameBootCheck(&get_type, &get_attributes, &size, dirName);
+	ret = cellGameBootCheck(&get_type, &get_attributes, &size, dirName);
 	if(ret < 0)
 	{
 		SSNES_ERR("cellGameBootCheck() Error: 0x%x.\n", ret);
@@ -642,6 +654,13 @@ begin_shutdown:
 	cellSysmoduleUnloadModule(CELL_SYSMODULE_AVCONF_EXT);
 	cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
 
+	int ret = cellSysCacheClear();
+
+	if(ret != CELL_SYSCACHE_RET_OK_CLEARED)
+	{
+		SSNES_ERR("System cache partition could not be cleared on exit.\n");
+	}
+
 	if(g_console.return_to_launcher)
 	{
 		char spawn_data[256];
@@ -663,7 +682,7 @@ begin_shutdown:
 		SSNES_LOG("Attempt to load SELF: [%s] (return code: [%x]).\n", g_console.launch_app_on_exit, ret);
 		if(ret <  0)
 		{
-			SSNES_LOG("SELF file is not of NPDRM type, trying another approach to boot it...\n");
+			SSNES_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
 			sys_game_process_exitspawn(g_console.launch_app_on_exit, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
 		}
 		sceNpTerm();
