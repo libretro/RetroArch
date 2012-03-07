@@ -658,7 +658,11 @@ void config_set_int(config_file_t *conf, const char *key, int val)
 void config_set_uint64(config_file_t *conf, const char *key, uint64_t val)
 {
    char buf[128];
+#ifdef _WIN32
+   snprintf(buf, sizeof(buf), "%I64u", val);
+#else
    snprintf(buf, sizeof(buf), "%llu", (long long unsigned)val);
+#endif
    config_set_string(conf, key, buf);
 }
 
