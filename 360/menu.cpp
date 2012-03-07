@@ -96,6 +96,8 @@ HRESULT CSSNESFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	GetChildById(L"XuiRomList", &m_romlist);
 	GetChildById(L"XuiBackButton1", &m_back);
 	GetChildById(L"XuiTxtRomPath", &m_rompathtitle);
+	GetChildById(L"XuiBtnGameDir", &m_dir_game);
+	GetChildById(L"XuiBtnCacheDir", &m_dir_cache);
 
 	filebrowser_fetch_directory_entries(g_console.default_rom_startup_dir, &browser, &m_romlist, &m_rompathtitle);
 
@@ -257,11 +259,19 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 		{
 			memset(strbuffer, 0, sizeof(strbuffer));
 			wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
-			memset(g_console.rom_path, 0, sizeof(g_console.rom_path));
-			sprintf(g_console.rom_path, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
-			
-			return_to_game();
-			g_console.initialize_ssnes_enable = 1;
+			if(strstr(strbuffer, ".zip") || strstr(strbuffer, ".ZIP"))
+			{
+				char path_tmp[1024];
+				sprintf(path_tmp, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
+				ssnes_extract_zipfile(path_tmp);
+			}
+			else
+			{
+				memset(g_console.rom_path, 0, sizeof(g_console.rom_path));
+				sprintf(g_console.rom_path, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
+				return_to_game();
+				g_console.initialize_ssnes_enable = 1;
+			}
 		}
 		else if(browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
 		{
@@ -270,6 +280,16 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 			snprintf(path, sizeof(path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
 			filebrowser_fetch_directory_entries(path, &browser, &m_romlist, &m_rompathtitle);
 		}
+	}
+	else if (hObjPressed == m_dir_game)
+	{
+		filebrowser_new(&browser, g_console.default_rom_startup_dir, ssnes_console_get_rom_ext());
+		filebrowser_fetch_directory_entries(g_console.default_rom_startup_dir, &browser, &m_romlist, &m_rompathtitle);
+	}
+	else if (hObjPressed == m_dir_cache)
+	{
+		filebrowser_new(&browser, "cache:", ssnes_console_get_rom_ext());
+		filebrowser_fetch_directory_entries("cache:", &browser, &m_romlist, &m_rompathtitle);
 	}
 	else if(hObjPressed == m_back)
 		NavigateBack(app.hMainScene);

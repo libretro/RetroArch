@@ -17,7 +17,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "console_ext.h"
 #include "../boolean.h"
 #include "../libsnes.hpp"
 #include "../input/input_luts.h"
@@ -25,16 +24,14 @@
 #include <string.h>
 #include <ctype.h>
 
-#ifdef HAVE_ZLIB
 #include "szlib/zlib.h"
 #define WRITEBUFFERSIZE (1024 * 512)
-#endif
 
 #ifdef _WIN32
 #include "../posix_string.h"
 #endif
 
-const char *ssnes_console_get_rom_ext(void)
+const char * ssnes_console_get_rom_ext(void)
 {
    const char *id = snes_library_id();
 
@@ -108,7 +105,6 @@ void ssnes_console_set_default_keybind_names_for_emulator(void)
    }
 }
 
-#ifdef HAVE_ZLIB
 static int ssnes_extract_currentfile_in_zip(unzFile uf)
 {
    char filename_inzip[PATH_MAX];
@@ -135,8 +131,11 @@ static int ssnes_extract_currentfile_in_zip(unzFile uf)
 
    char write_filename[PATH_MAX];
 
-   /* TODO: currently hardcoded for PS3, fix this */
+#if defined(__CELLOS_LV2__)
    snprintf(write_filename, sizeof(write_filename), "/dev_hdd1/%s", filename_inzip);
+#elif defined(_XBOX)
+   snprintf(write_filename, sizeof(write_filename), "cache:\\%s", filename_inzip);
+#endif
 
    err = unzOpenCurrentFile(uf);
    if (err != UNZ_OK)
@@ -218,6 +217,3 @@ int ssnes_extract_zipfile(const char *zip_path)
 
    return 0;
 }
-
-#endif
-

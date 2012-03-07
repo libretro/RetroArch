@@ -17,6 +17,7 @@
  */
 
 #include <xtl.h>
+#include <xfilecache.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string>
@@ -376,12 +377,15 @@ static void get_environment_settings (void)
 	{
 		SSNES_ERR("Couldn't change number of bytes reserved for file system cache.\n");
 	}
-	unsigned long result = XMountUtilityDriveEx(XMOUNTUTILITYDRIVE_FORMAT0,8192, 0);
 
-	if(result != ERROR_SUCCESS)
-	{
-		SSNES_ERR("Couldn't mount/format utility drive.\n");
-	}
+	XFileCacheInit(XFILECACHE_CLEAR_ALL, 0x100000, XFILECACHE_DEFAULT_THREAD, 0, 1);
+	XFlushUtilityDrive();
+	//unsigned long result = XMountUtilityDriveEx(XMOUNTUTILITYDRIVE_FORMAT0,8192, 0);
+
+	//if(result != ERROR_SUCCESS)
+	//{
+	//	SSNES_ERR("Couldn't mount/format utility drive.\n");
+	//}
 
 	// detect install environment
 	unsigned long license_mask;

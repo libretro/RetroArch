@@ -9,7 +9,7 @@
 #ifndef _SZLIB_H
 #define _SZLIB_H
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
@@ -437,7 +437,6 @@ typedef  64BIT_INT_CUSTOM_TYPE ZPOS64_T;
 typedef uint64_t ZPOS64_T;
 #else
 
-
 #if defined(_MSC_VER) || defined(__BORLANDC__)
 typedef unsigned __int64 ZPOS64_T;
 #else
@@ -445,13 +444,6 @@ typedef unsigned long long int ZPOS64_T;
 #endif
 #endif
 #endif
-
-
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 #define ZLIB_FILEFUNC_SEEK_CUR (1)
 #define ZLIB_FILEFUNC_SEEK_END (2)
@@ -686,7 +678,7 @@ extern unsigned long  unzGetOffset (unzFile file);
 extern int  unzSetOffset64 (unzFile file, ZPOS64_T pos);
 extern int  unzSetOffset (unzFile file, unsigned long pos);
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 }
 #endif
 
