@@ -745,18 +745,21 @@ static bool ffemu_push_audio_thread(ffemu_t *handle, const struct ffemu_audio_da
 static void ffemu_flush_audio(ffemu_t *handle, int16_t *audio_buf, size_t audio_buf_size)
 {
    size_t avail = fifo_read_avail(handle->audio_fifo);
-   fifo_read(handle->audio_fifo, audio_buf, avail);
+   if (avail)
+   {
+      fifo_read(handle->audio_fifo, audio_buf, avail);
 
-   struct ffemu_audio_data aud = {0};
-   aud.frames = avail / (sizeof(int16_t) * handle->params.channels);
-   aud.data = audio_buf;
+      struct ffemu_audio_data aud = {0};
+      aud.frames = avail / (sizeof(int16_t) * handle->params.channels);
+      aud.data = audio_buf;
 
-   ffemu_push_audio_thread(handle, &aud, false);
+      ffemu_push_audio_thread(handle, &aud, false);
+   }
 
    for (;;)
    {
       AVPacket pkt;
-      if (!encode_audio(handle, &pkt, true) ||
+      if (!encode_audio(handle, &pkt, true) || !pkt.size ||
             av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
          break;
    }
