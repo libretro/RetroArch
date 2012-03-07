@@ -24,8 +24,10 @@
 #include <string.h>
 #include <ctype.h>
 
+#ifdef HAVE_ZLIB
 #include "szlib/zlib.h"
 #define WRITEBUFFERSIZE (1024 * 512)
+#endif
 
 #ifdef _WIN32
 #include "../posix_string.h"
@@ -104,6 +106,8 @@ void ssnes_console_set_default_keybind_names_for_emulator(void)
             "Mode button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_SELECT]));
    }
 }
+
+#ifdef HAVE_ZLIB
 
 static int ssnes_extract_currentfile_in_zip(unzFile uf)
 {
@@ -217,3 +221,5 @@ int ssnes_extract_zipfile(const char *zip_path)
 
    return 0;
 }
+
+#endif
