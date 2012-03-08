@@ -83,7 +83,7 @@ public:
 
     D3DResource* GetResource( unsigned long dwOffset ) const
     {
-        return RegisterResource( ( D3DResource* )GetData( dwOffset ) );
+        return (( D3DResource* )GetData( dwOffset ) );
     }
 
     D3DTexture* GetTexture( unsigned long dwOffset ) const
@@ -116,7 +116,7 @@ public:
 
     D3DResource* GetResource( const char * strName ) const
     {
-        return RegisterResource( ( D3DResource* )GetData( strName ) );
+        return ( ( D3DResource* )GetData( strName ) );
     }
 
     D3DTexture* GetTexture( const char * strName ) const

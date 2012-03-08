@@ -311,14 +311,14 @@ static const char g_strFontShader[] =
         "}\n"
     "}\n";
 
-typedef struct AtgFont_Locals_t {
+typedef struct Font_Locals_t {
     D3DVertexDeclaration* m_pFontVertexDecl;    // Shared vertex buffer
     D3DVertexShader* m_pFontVertexShader;       // Created vertex shader
     D3DPixelShader* m_pFontPixelShader;         // Created pixel shader
-} AtgFont_Locals_t;
+} Font_Locals_t;
 
 // All elements are defaulted to NULL
-static AtgFont_Locals_t s_AtgFontLocals;    // Global static instance
+static Font_Locals_t s_FontLocals;    // Global static instance
 
 static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
 {   
@@ -331,7 +331,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
     
     HRESULT hr;
 
-    if (!s_AtgFontLocals.m_pFontVertexDecl)
+    if (!s_FontLocals.m_pFontVertexDecl)
     {
         // Use the do {} while(0); trick for a fake goto
         // It simplies tear down on error conditions.
@@ -355,7 +355,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
 			xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
             D3DDevice *pd3dDevice = vid->xdk360_render_device;
 
-            hr = pd3dDevice->CreateVertexDeclaration( decl, &s_AtgFontLocals.m_pFontVertexDecl );
+            hr = pd3dDevice->CreateVertexDeclaration( decl, &s_FontLocals.m_pFontVertexDecl );
             if (SUCCEEDED(hr))
             {
 
@@ -366,7 +366,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
                 if (SUCCEEDED(hr))
                 {
                     hr = pd3dDevice->CreateVertexShader( ( unsigned long * )pShaderCode->GetBufferPointer(),
-                        &s_AtgFontLocals.m_pFontVertexShader );
+                        &s_FontLocals.m_pFontVertexShader );
                     // Release the compiled shader
                     pShaderCode->Release();
                     
@@ -378,7 +378,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
                         if ( SUCCEEDED(hr))
                         {
                             hr = pd3dDevice->CreatePixelShader( ( DWORD* )pShaderCode->GetBufferPointer(),
-                                &s_AtgFontLocals.m_pFontPixelShader );
+                                &s_FontLocals.m_pFontPixelShader );
                             // Release the compiled shader
                             pShaderCode->Release();
 
@@ -391,27 +391,23 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
                         // If the code got to here, a fatal error has occured
                         // and a clean shutdown needs to be performed.
 
-                        s_AtgFontLocals.m_pFontVertexShader->Release();
+						D3DResource_Release((D3DResource *)s_FontLocals.m_pFontVertexShader);
                     }
                     // Ensure the pointer is NULL
-                    s_AtgFontLocals.m_pFontVertexShader = NULL;
+                    s_FontLocals.m_pFontVertexShader = NULL;
                 }
-                s_AtgFontLocals.m_pFontVertexDecl->Release();
+				D3DResource_Release((D3DResource *)s_FontLocals.m_pFontVertexDecl);
             }
             // Ensure this pointer is NULL    
-            s_AtgFontLocals.m_pFontVertexDecl = NULL;
+            s_FontLocals.m_pFontVertexDecl = NULL;
         }while(0);            // Exit point for the break command.
         return hr;
     }
     else
     {
-    //
-    // Already initialized, so just add to the ref counts
-    //
-
-        s_AtgFontLocals.m_pFontVertexDecl->AddRef();
-        s_AtgFontLocals.m_pFontVertexShader->AddRef();
-        s_AtgFontLocals.m_pFontPixelShader->AddRef();
+		D3DResource_AddRef((D3DResource *)s_FontLocals.m_pFontVertexDecl);
+		D3DResource_AddRef((D3DResource *)s_FontLocals.m_pFontVertexShader);
+		D3DResource_AddRef((D3DResource *)s_FontLocals.m_pFontPixelShader);
         hr = S_OK;
     }
     return hr;          // Return the error code if any
@@ -511,12 +507,12 @@ void xdk360_video_font_deinit(xdk360_video_font_t * font)
     // NOTE: They are released in reverse order of creation
     // to make sure any interdependencies are dealt with
 
-    if( ( s_AtgFontLocals.m_pFontPixelShader != NULL ) && ( s_AtgFontLocals.m_pFontPixelShader->Release() == 0 ) )
-        s_AtgFontLocals.m_pFontPixelShader = NULL;
-    if( ( s_AtgFontLocals.m_pFontVertexShader != NULL ) && ( s_AtgFontLocals.m_pFontVertexShader->Release() == 0 ) )
-        s_AtgFontLocals.m_pFontVertexShader = NULL;
-    if( ( s_AtgFontLocals.m_pFontVertexDecl != NULL ) && ( s_AtgFontLocals.m_pFontVertexDecl->Release() == 0 ) )
-        s_AtgFontLocals.m_pFontVertexDecl = NULL;
+    if( ( s_FontLocals.m_pFontPixelShader != NULL ) && ( s_FontLocals.m_pFontPixelShader->Release() == 0 ) )
+        s_FontLocals.m_pFontPixelShader = NULL;
+    if( ( s_FontLocals.m_pFontVertexShader != NULL ) && ( s_FontLocals.m_pFontVertexShader->Release() == 0 ) )
+        s_FontLocals.m_pFontVertexShader = NULL;
+    if( ( s_FontLocals.m_pFontVertexDecl != NULL ) && ( s_FontLocals.m_pFontVertexDecl->Release() == 0 ) )
+        s_FontLocals.m_pFontVertexDecl = NULL;
 
     if( m_xprResource.m_bInitialized)
         m_xprResource.Destroy();
@@ -622,21 +618,19 @@ void xdk360_video_font_begin (xdk360_video_font_t * font)
             pD3dDevice->GetRenderState( D3DRS_ALPHAFUNC, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAFUNC ] );
             pD3dDevice->GetRenderState( D3DRS_FILLMODE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_FILLMODE ] );
             pD3dDevice->GetRenderState( D3DRS_CULLMODE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_CULLMODE ] );
-            pD3dDevice->GetRenderState( D3DRS_ZENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ZENABLE ] );
-            pD3dDevice->GetRenderState( D3DRS_STENCILENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_STENCILENABLE ] );
             pD3dDevice->GetRenderState( D3DRS_VIEWPORTENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
-            pD3dDevice->GetSamplerState( 0, D3DSAMP_MINFILTER, &font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ] );
-            pD3dDevice->GetSamplerState( 0, D3DSAMP_MAGFILTER, &font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ] );
-            pD3dDevice->GetSamplerState( 0, D3DSAMP_ADDRESSU, &font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSU ] );
-            pD3dDevice->GetSamplerState( 0, D3DSAMP_ADDRESSV, &font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSV ] );
+            font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ] = D3DDevice_GetSamplerState_MinFilter( pD3dDevice, 0 );
+            font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ] = D3DDevice_GetSamplerState_MagFilter( pD3dDevice, 0 );
+            font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSU ] = D3DDevice_GetSamplerState_AddressU( pD3dDevice, 0);
+            font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSV ]  = D3DDevice_GetSamplerState_AddressV( pD3dDevice, 0);
         }
 
         // Set the texture scaling factor as a vertex shader constant
         D3DSURFACE_DESC TextureDesc;
-        font->m_pFontTexture->GetLevelDesc( 0, &TextureDesc );		// Get the description
+		D3DTexture_GetLevelDesc(font->m_pFontTexture, 0, &TextureDesc); // Get the description
  
         // Set render state
-        pD3dDevice->SetTexture( 0, font->m_pFontTexture );
+		D3DDevice_SetTexture_Inline(pD3dDevice, 0, font->m_pFontTexture);
  
         // Read the TextureDesc here to ensure no load/hit/store from GetLevelDesc()
         float vTexScale[4];
@@ -645,26 +639,24 @@ void xdk360_video_font_begin (xdk360_video_font_t * font)
         vTexScale[2] = 0.0f;
         vTexScale[3] = 0.0f;
         
-        pD3dDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
-        pD3dDevice->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA );
-        pD3dDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
-        pD3dDevice->SetRenderState( D3DRS_BLENDOP, D3DBLENDOP_ADD );
+        D3DDevice_SetRenderState_AlphaBlendEnable( pD3dDevice, TRUE );
+        D3DDevice_SetRenderState_SrcBlend(pD3dDevice, D3DBLEND_SRCALPHA );
+        D3DDevice_SetRenderState_DestBlend( pD3dDevice, D3DBLEND_INVSRCALPHA );
+        D3DDevice_SetRenderState_BlendOp( pD3dDevice, D3DBLENDOP_ADD );
         pD3dDevice->SetRenderState( D3DRS_ALPHATESTENABLE, TRUE );
         pD3dDevice->SetRenderState( D3DRS_ALPHAREF, 0x08 );
         pD3dDevice->SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL );
         pD3dDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID );
         pD3dDevice->SetRenderState( D3DRS_CULLMODE, D3DCULL_CCW );
-        pD3dDevice->SetRenderState( D3DRS_ZENABLE, FALSE );
-        pD3dDevice->SetRenderState( D3DRS_STENCILENABLE, FALSE );
         pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, FALSE );
-        pD3dDevice->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-        pD3dDevice->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-        pD3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP );
-        pD3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP );
+        D3DDevice_SetSamplerState_MinFilter(pD3dDevice, 0, D3DTEXF_LINEAR );
+        D3DDevice_SetSamplerState_MagFilter(pD3dDevice, 0, D3DTEXF_LINEAR );
+        D3DDevice_SetSamplerState_AddressU_Inline(pD3dDevice, 0, D3DTADDRESS_CLAMP );
+        D3DDevice_SetSamplerState_AddressV_Inline(pD3dDevice, 0, D3DTADDRESS_CLAMP );
         
-        pD3dDevice->SetVertexDeclaration( s_AtgFontLocals.m_pFontVertexDecl );
-        pD3dDevice->SetVertexShader( s_AtgFontLocals.m_pFontVertexShader );
-        pD3dDevice->SetPixelShader( s_AtgFontLocals.m_pFontPixelShader );
+        D3DDevice_SetVertexDeclaration(pD3dDevice, s_FontLocals.m_pFontVertexDecl );
+        D3DDevice_SetVertexShader(pD3dDevice, s_FontLocals.m_pFontVertexShader );
+        D3DDevice_SetPixelShader(pD3dDevice, s_FontLocals.m_pFontPixelShader );
 
         // Set the texture scaling factor as a vertex shader constant
         // Call here to avoid load hit store from writing to vTexScale above
@@ -687,26 +679,24 @@ void xdk360_video_font_end(xdk360_video_font_t * font)
 		xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 		D3DDevice *pD3dDevice = vid->xdk360_render_device;
 
-        pD3dDevice->SetTexture( 0, NULL );
-        pD3dDevice->SetVertexDeclaration( NULL );
-        pD3dDevice->SetVertexShader( NULL );
-        pD3dDevice->SetPixelShader( NULL );
-        pD3dDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHABLENDENABLE ] );
-        pD3dDevice->SetRenderState( D3DRS_SRCBLEND, font->m_dwSavedState[ SAVEDSTATE_D3DRS_SRCBLEND ] );
-        pD3dDevice->SetRenderState( D3DRS_DESTBLEND, font->m_dwSavedState[ SAVEDSTATE_D3DRS_DESTBLEND ] );
-        pD3dDevice->SetRenderState( D3DRS_BLENDOP, font->m_dwSavedState[ SAVEDSTATE_D3DRS_BLENDOP ] );
+		D3DDevice_SetTexture_Inline(pD3dDevice, 0, NULL);
+		D3DDevice_SetVertexDeclaration(pD3dDevice, NULL);
+        D3DDevice_SetVertexShader(pD3dDevice, NULL );
+        D3DDevice_SetPixelShader(pD3dDevice, NULL );
+		D3DDevice_SetRenderState_AlphaBlendEnable(pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHABLENDENABLE ]);
+        D3DDevice_SetRenderState_SrcBlend(pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_SRCBLEND ] );
+        D3DDevice_SetRenderState_DestBlend( pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_DESTBLEND ] );
+        D3DDevice_SetRenderState_BlendOp( pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_BLENDOP ] );
         pD3dDevice->SetRenderState( D3DRS_ALPHATESTENABLE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHATESTENABLE ] );
         pD3dDevice->SetRenderState( D3DRS_ALPHAREF, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAREF ] );
         pD3dDevice->SetRenderState( D3DRS_ALPHAFUNC, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAFUNC ] );
         pD3dDevice->SetRenderState( D3DRS_FILLMODE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_FILLMODE ] );
         pD3dDevice->SetRenderState( D3DRS_CULLMODE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_CULLMODE ] );
-        pD3dDevice->SetRenderState( D3DRS_ZENABLE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ZENABLE ] );
-        pD3dDevice->SetRenderState( D3DRS_STENCILENABLE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_STENCILENABLE ] );
         pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
-        pD3dDevice->SetSamplerState( 0, D3DSAMP_MINFILTER, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ] );
-        pD3dDevice->SetSamplerState( 0, D3DSAMP_MAGFILTER, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ] );
-        pD3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSU ] );
-        pD3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSV ] );
+        D3DDevice_SetSamplerState_MinFilter(pD3dDevice, 0, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ] );
+        D3DDevice_SetSamplerState_MagFilter(pD3dDevice, 0, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ] );
+        D3DDevice_SetSamplerState_AddressU_Inline(pD3dDevice, 0, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSU ] );
+        D3DDevice_SetSamplerState_AddressV_Inline(pD3dDevice, 0, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSV ] );
     }
 }
 
@@ -882,7 +872,7 @@ void xdk360_video_font_draw_text(xdk360_video_font_t * font, float fOriginX, flo
     }
 
     // Stop drawing vertices
-    pd3dDevice->EndVertices();
+	D3DDevice_EndVertices(pd3dDevice);
 
     // Undo window offsets
     font->m_fCursorX -= Winx;

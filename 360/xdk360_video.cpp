@@ -126,8 +126,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    vid->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
    vid->d3dpp.MultiSampleQuality      = 0;
    vid->d3dpp.BackBufferCount         = 2;
-   vid->d3dpp.EnableAutoDepthStencil  = TRUE;
-   vid->d3dpp.AutoDepthStencilFormat  = D3DFMT_D24S8;
+   vid->d3dpp.EnableAutoDepthStencil  = FALSE;
    vid->d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
    vid->d3dpp.PresentationInterval    = video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 

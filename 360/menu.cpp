@@ -496,8 +496,7 @@ void menu_loop(void)
 			ssnes_render_cached_frame();
 		else
 			D3DDevice_Clear(vid->xdk360_render_device, 0, NULL,
-			D3DCLEAR_TARGET | D3DCLEAR_STENCIL | D3DCLEAR_ZBUFFER,
-			D3DCOLOR_ARGB(255, 32, 32, 64), 1.0, 0, FALSE);
+			D3DCLEAR_TARGET, D3DCOLOR_ARGB(255, 32, 32, 64), 1.0, 0, FALSE);
 
 		XINPUT_STATE state;
 		XInputGetState(0, &state);
