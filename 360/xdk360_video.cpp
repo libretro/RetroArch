@@ -1,4 +1,4 @@
-/*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
+﻿/*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2012 - Daniel De Matteis
  *
@@ -119,10 +119,10 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    if(!vid->video_mode.fIsWideScreen)
 	   vid->d3dpp.Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
    
-   vid->d3dpp.BackBufferWidth		= vid->video_mode.fIsHiDef ? 1280 : 640;
-   vid->d3dpp.BackBufferHeight      = vid->video_mode.fIsHiDef ? 720 : 480;
-   vid->d3dpp.BackBufferFormat        = (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8);
-   vid->d3dpp.FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
+   vid->d3dpp.BackBufferWidth         = vid->video_mode.fIsHiDef ? 1280 : 640;
+   vid->d3dpp.BackBufferHeight        = vid->video_mode.fIsHiDef ? 720 : 480;
+   vid->d3dpp.BackBufferFormat        = g_console.gamma_correction_enable ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : D3DFMT_A8R8G8B8;
+   vid->d3dpp.FrontBufferFormat       = g_console.gamma_correction_enable ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8) : D3DFMT_LE_X8R8G8B8;
    vid->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
    vid->d3dpp.MultiSampleQuality      = 0;
    vid->d3dpp.BackBufferCount         = 2;

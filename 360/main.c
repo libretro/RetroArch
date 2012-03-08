@@ -162,11 +162,12 @@ static void set_default_settings (void)
 
 	//g_console
 	g_console.block_config_read = true;
-	g_console.throttle_enable = true;
+	g_console.gamma_correction_enable = false;
 	g_console.initialize_ssnes_enable = false;
 	g_console.emulator_initialized = 0;
 	g_console.mode_switch = MODE_MENU;
 	g_console.screen_orientation = ORIENTATION_NORMAL;
+	g_console.throttle_enable = true;
 	strlcpy(g_console.default_rom_startup_dir, "game:", sizeof(g_console.default_rom_startup_dir));
 
 	//g_extern
@@ -313,6 +314,7 @@ static void init_settings (bool load_libsnes_path)
 
 	// g_console
 	CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
+	CONFIG_GET_BOOL_CONSOLE(gamma_correction_enable, "gamma_correction_enable");
 	CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
 	CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
 
@@ -343,6 +345,7 @@ static void save_settings (void)
 
 	// g_console
 	config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
+	config_set_bool(conf, "gamma_correction_enable", g_console.gamma_correction_enable);
 	config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
 	config_set_int(conf, "screen_orientation", g_console.screen_orientation);
 

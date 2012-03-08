@@ -22,6 +22,13 @@
 #include <xui.h>
 #include <xuiapp.h>
 
+enum
+{
+	SETTING_EMU_REWIND_ENABLED = 0,
+	SETTING_GAMMA_CORRECTION_ENABLED,
+	SETTING_HARDWARE_FILTERING
+};
+
 class CSSNES : public CXuiModule
 {
 public:
@@ -118,9 +125,7 @@ public:
 class CSSNESSettings: public CXuiSceneImpl
 {
 protected:
-	CXuiControl m_rewind;
-	CXuiCheckbox m_rewind_cb;
-	CXuiControl m_hw_filter;
+	CXuiList m_settingslist;
 	CXuiControl m_back;
 public:
 	HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
@@ -131,7 +136,7 @@ public:
 		XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
 	XUI_END_MSG_MAP();
 
-	XUI_IMPLEMENT_CLASS(CSSNESSettings, L"SSNESSettings", XUI_CLASS_TABSCENE)
+	XUI_IMPLEMENT_CLASS(CSSNESSettings, L"SSNESSettings", XUI_CLASS_SCENE)
 };
 
 int menu_init (void);

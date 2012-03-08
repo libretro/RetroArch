@@ -192,6 +192,7 @@ struct console_settings
    bool force_resize_enable;
 #endif
    bool frame_advance_enable;
+   bool gamma_correction_enable;
    bool initialize_ssnes_enable;
    bool ingame_menu_enable;
    bool menu_enable;

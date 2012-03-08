@@ -131,13 +131,12 @@ static const wchar_t * set_filter_element(int index)
 
 HRESULT CSSNESSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
-	GetChildById(L"XuiBtnRewind", &m_rewind);
-	GetChildById(L"XuiCheckbox1", &m_rewind_cb);
-	GetChildById(L"XuiBackButton1", &m_back);
-	GetChildById(L"XuiBtnHWFilter", &m_hw_filter);
+	GetChildById(L"XuiSettingsList", &m_settingslist);
+	GetChildById(L"XuiBackButton", &m_back);
 
-	m_hw_filter.SetText(set_filter_element(g_settings.video.smooth));
-	m_rewind_cb.SetCheck(g_settings.rewind_enable);
+	m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
+	m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+	m_settingslist.SetText(SETTING_HARDWARE_FILTERING, set_filter_element(g_settings.video.smooth));
 	return S_OK;
 }
 
@@ -369,17 +368,30 @@ HRESULT CSSNESCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 
 HRESULT CSSNESSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
-	if ( hObjPressed == m_rewind)
+	int current_index;
+
+	if ( hObjPressed == m_settingslist)
 	{
-		g_settings.rewind_enable = !g_settings.rewind_enable;
-		m_rewind_cb.SetCheck(g_settings.rewind_enable);
+		current_index = m_settingslist.GetCurSel();
+
+		switch(current_index)
+		{
+			case SETTING_EMU_REWIND_ENABLED:
+				g_settings.rewind_enable = !g_settings.rewind_enable;
+				m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
+				break;
+			case SETTING_GAMMA_CORRECTION_ENABLED:
+				g_console.gamma_correction_enable = !g_console.gamma_correction_enable;
+				m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+				break;
+			case SETTING_HARDWARE_FILTERING:
+				g_settings.video.smooth = !g_settings.video.smooth;
+				m_settingslist.SetText(SETTING_HARDWARE_FILTERING, set_filter_element(g_settings.video.smooth));
+				break;
+		}
 	}
-	else if ( hObjPressed == m_hw_filter)
-	{
-		g_settings.video.smooth = !g_settings.video.smooth;
-		m_hw_filter.SetText(set_filter_element(g_settings.video.smooth));
-	}
-	else if ( hObjPressed == m_back )
+	
+	if ( hObjPressed == m_back )
 		NavigateBack(app.hMainScene);
 
 	bHandled = TRUE;
