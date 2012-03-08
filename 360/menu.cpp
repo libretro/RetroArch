@@ -193,6 +193,17 @@ HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 				m_quickmenulist.SetText(MENU_ITEM_HARDWARE_FILTERING, set_filter_element(g_settings.video.smooth));
 				break;
 			case MENU_ITEM_KEEP_ASPECT_RATIO:
+				{
+				if(g_console.aspect_ratio_index < LAST_ASPECT_RATIO)
+					g_console.aspect_ratio_index++;
+				else
+					g_console.aspect_ratio_index = 0;
+
+				xdk360_set_aspect_ratio(g_console.aspect_ratio_index);
+				wchar_t aspectstr[512];
+				swprintf(aspectstr, L"Aspect Ratio: %s", g_console.aspect_ratio_name);
+				m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, aspectstr);
+				}
 				break;
 			case MENU_ITEM_OVERSCAN_AMOUNT:
 				break;

@@ -89,6 +89,126 @@ static void xdk360_gfx_free(void * data)
    free(vid);
 }
 
+static void set_viewport(bool force_full)
+{
+	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+
+	DWORD width = vid->video_mode.fIsHiDef ? 1280 : 640;
+	DWORD height = vid->video_mode.fIsHiDef ? 1280 : 640;
+	DWORD m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
+	float m_zNear, m_zFar;
+
+	m_viewport_x_temp = 0;
+	m_viewport_y_temp = 0;
+	m_viewport_width_temp = width;
+	m_viewport_height_temp = height;
+
+	m_zNear = -1.0f;
+	m_zFar = 1.0f;
+
+	if (!force_full)
+	{
+		float desired_aspect = g_settings.video.aspect_ratio;
+		float device_aspect = (float)width / height;
+		float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
+
+		// If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
+		//if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
+		//{
+		//	m_viewport_x_temp = g_console.custom_viewport_x;
+		//	m_viewport_y_temp = g_console.custom_viewport_y;
+		//	m_viewport_width_temp = g_console.custom_viewport_width;
+		//	m_viewport_height_temp = g_console.custom_viewport_height;
+		//}
+		if (device_aspect > desired_aspect)
+		{
+			m_viewport_x_temp = (int)(width * (0.5 - delta));
+			m_viewport_width_temp = (int)(2.0 * width * delta);
+			width = (unsigned)(2.0 * width * delta);
+		}
+		else
+		{
+			m_viewport_y_temp = (int)(height * (0.5 - delta));
+			m_viewport_height_temp = (int)(2.0 * height * delta);
+			height = (unsigned)(2.0 * height * delta);
+		}
+	}
+
+	D3DVIEWPORT9 vp = {0};
+	vp.Width  = m_viewport_x_temp;
+	vp.Height = m_viewport_y_temp;
+	vp.MinZ   = m_zNear;
+	vp.MaxZ   = m_zFar;
+	D3DDevice_SetViewport(vid->xdk360_render_device, &vp);
+
+	//if(gl->overscan_enable && !force_full)
+	//{
+	//	m_left = -gl->overscan_amount/2;
+	//	m_right = 1 + gl->overscan_amount/2;
+	//	m_bottom = -gl->overscan_amount/2;
+	//}
+}
+
+void xdk360_set_aspect_ratio(uint32_t aspectratio_index)
+{
+	switch(aspectratio_index)
+	{
+		case ASPECT_RATIO_4_3:
+			g_settings.video.aspect_ratio = 1.33333333333;
+			strlcpy(g_console.aspect_ratio_name, "4:3", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_5_4:
+			g_settings.video.aspect_ratio = 1.25;
+			strlcpy(g_console.aspect_ratio_name, "5:4", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_8_7:
+			g_settings.video.aspect_ratio = 1.14287142857;
+			strlcpy(g_console.aspect_ratio_name, "8:7", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_16_9:
+			g_settings.video.aspect_ratio = 1.777778;
+			strlcpy(g_console.aspect_ratio_name, "16:9", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_16_10:
+			g_settings.video.aspect_ratio = 1.6;
+			strlcpy(g_console.aspect_ratio_name, "16:10", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_16_15:
+			g_settings.video.aspect_ratio = 3.2;
+			strlcpy(g_console.aspect_ratio_name, "16:15", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_19_14:
+			g_settings.video.aspect_ratio = 1.35714285714;
+			strlcpy(g_console.aspect_ratio_name, "19:14", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_2_1:
+			g_settings.video.aspect_ratio = 2.0;
+			strlcpy(g_console.aspect_ratio_name, "2:1", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_3_2:
+			g_settings.video.aspect_ratio = 1.5;
+			strlcpy(g_console.aspect_ratio_name, "3:2", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_3_4:
+			g_settings.video.aspect_ratio = 1.5;
+			strlcpy(g_console.aspect_ratio_name, "3:4", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_1_1:
+			g_settings.video.aspect_ratio = 1.0;
+			strlcpy(g_console.aspect_ratio_name, "1:1", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_AUTO:
+			strlcpy(g_console.aspect_ratio_name, "(Auto)", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_CUSTOM:
+			strlcpy(g_console.aspect_ratio_name, "(Custom)", sizeof(g_console.aspect_ratio_name));
+			break;
+	}
+	g_settings.video.force_aspect = false;
+	set_viewport(false);
+}
+
+
 static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
 	HRESULT ret;

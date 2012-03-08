@@ -19,6 +19,7 @@
 #ifndef _XDK360_VIDEO_H
 #define _XDK360_VIDEO_H
 
+#include <stdint.h>
 #include "fonts.h"
 
 typedef struct {
@@ -56,6 +57,25 @@ typedef struct xdk360_video
    XVIDEO_MODE video_mode;
 } xdk360_video_t;
 
+enum
+{
+	ASPECT_RATIO_4_3,
+	ASPECT_RATIO_5_4,
+	ASPECT_RATIO_8_7,
+	ASPECT_RATIO_16_9,
+	ASPECT_RATIO_16_10,
+	ASPECT_RATIO_16_15,
+	ASPECT_RATIO_19_14,
+	ASPECT_RATIO_2_1,
+	ASPECT_RATIO_3_2,
+	ASPECT_RATIO_3_4,
+	ASPECT_RATIO_1_1,
+	ASPECT_RATIO_AUTO,
+	ASPECT_RATIO_CUSTOM
+};
+
+#define LAST_ASPECT_RATIO ASPECT_RATIO_CUSTOM
+
 #define IS_TIMER_NOT_EXPIRED() (g_frame_count < g_console.timer_expiration_frame_count)
 #define IS_TIMER_EXPIRED() 	(!(IS_TIMER_NOT_EXPIRED()))
 #define SET_TIMER_EXPIRATION(value) g_console.timer_expiration_frame_count = g_frame_count + value;
@@ -63,6 +83,7 @@ typedef struct xdk360_video
 void xdk360_video_init(void);
 void xdk360_video_deinit(void);
 void xdk360_video_set_vsync(bool vsync);
+void xdk360_set_aspect_ratio(uint32_t aspectratio_index);
 
 extern unsigned g_frame_count;
 extern void *g_d3d;
