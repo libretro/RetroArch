@@ -147,6 +147,21 @@ HRESULT CSSNESQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	GetChildById(L"XuiBackButton", &m_back);
 
 	m_quickmenulist.SetText(MENU_ITEM_HARDWARE_FILTERING, set_filter_element(g_settings.video.smooth));
+	switch(g_console.screen_orientation)
+	{
+		case ORIENTATION_NORMAL:
+			m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Normal");
+			break;
+		case ORIENTATION_VERTICAL:
+			m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
+			break;
+		case ORIENTATION_FLIPPED:
+			m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
+			break;
+		case ORIENTATION_FLIPPED_ROTATED:
+			m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
+			break;
+	}
 	return S_OK;
 }
 
@@ -183,6 +198,29 @@ HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 			case MENU_ITEM_OVERSCAN_AMOUNT:
 				break;
 			case MENU_ITEM_ORIENTATION:
+				switch(g_console.screen_orientation)
+				{
+					case ORIENTATION_NORMAL:
+						g_console.screen_orientation = ORIENTATION_VERTICAL;
+						m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
+						g_console.force_resize_enable = true;
+						break;
+					case ORIENTATION_VERTICAL:
+						g_console.screen_orientation = ORIENTATION_FLIPPED;
+						m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
+						g_console.force_resize_enable = true;
+						break;
+					case ORIENTATION_FLIPPED:
+						g_console.screen_orientation = ORIENTATION_FLIPPED_ROTATED;
+						m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
+						g_console.force_resize_enable = true;
+						break;
+					case ORIENTATION_FLIPPED_ROTATED:
+						g_console.screen_orientation = ORIENTATION_NORMAL;
+						m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Normal");
+						g_console.force_resize_enable = true;
+						break;
+				}
 				break;
 			case MENU_ITEM_RESIZE_MODE:
 				break;

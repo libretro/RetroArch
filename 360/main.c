@@ -166,6 +166,7 @@ static void set_default_settings (void)
 	g_console.initialize_ssnes_enable = false;
 	g_console.emulator_initialized = 0;
 	g_console.mode_switch = MODE_MENU;
+	g_console.screen_orientation = ORIENTATION_NORMAL;
 	strlcpy(g_console.default_rom_startup_dir, "game:", sizeof(g_console.default_rom_startup_dir));
 
 	//g_extern
@@ -313,6 +314,7 @@ static void init_settings (bool load_libsnes_path)
 	// g_console
 	CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
 	CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
+	CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
 
 	// g_extern
 	CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
@@ -342,6 +344,7 @@ static void save_settings (void)
 	// g_console
 	config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
 	config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
+	config_set_int(conf, "screen_orientation", g_console.screen_orientation);
 
 	// g_extern
 	config_set_int(conf, "state_slot", g_extern.state_slot);
@@ -355,6 +358,8 @@ static void save_settings (void)
 
 static void get_environment_settings (void)
 {
+	DWORD ret;
+
 	//for devkits only, we will need to mount all partitions for retail
 	//in a different way
 	//DmMapDevkitDrive();
@@ -371,14 +376,20 @@ static void get_environment_settings (void)
 	Mounted[DEVICE_MEMORY_ONBOARD] = Mount(DEVICE_MEMORY_ONBOARD,"OnBoardMU:"); 
 	Mounted[DEVICE_CDROM0] = Mount(DEVICE_CDROM0,"Dvd:"); 
 
-	int result_filecache = XSetFileCacheSize(0x100000);
+	ret = XSetFileCacheSize(0x100000);
 
-	if(result_filecache != TRUE)
+	if(ret != TRUE)
 	{
 		SSNES_ERR("Couldn't change number of bytes reserved for file system cache.\n");
 	}
 
-	XFileCacheInit(XFILECACHE_CLEAR_ALL, 0x100000, XFILECACHE_DEFAULT_THREAD, 0, 1);
+	ret = XFileCacheInit(XFILECACHE_CLEAR_ALL, 0x100000, XFILECACHE_DEFAULT_THREAD, 0, 1);
+
+	if(ret != ERROR_SUCCESS)
+	{
+		SSNES_ERR("File cache could not be initialized.\n");
+	}
+
 	XFlushUtilityDrive();
 	//unsigned long result = XMountUtilityDriveEx(XMOUNTUTILITYDRIVE_FORMAT0,8192, 0);
 

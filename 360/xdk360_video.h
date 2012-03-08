@@ -33,6 +33,12 @@ typedef struct {
 #define DFONT_MAX	4096
 #define PRIM_FVF		(D3DFVF_XYZRHW | D3DFVF_TEX1)
 
+typedef struct DrawVerticeFormats
+{
+   float x, y;
+   float u, v;
+} DrawVerticeFormats;
+
 typedef struct xdk360_video
 {
 	bool block_swap;

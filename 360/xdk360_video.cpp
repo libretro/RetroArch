@@ -23,6 +23,7 @@
 #include "xdk360_video.h"
 #include "../general.h"
 #include "../message.h"
+#include "shared.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -61,12 +62,6 @@ static const char* g_strVertexShaderProgram =
     "     output.coord = input.coord;               "
     "     return output;                            "
     " }                                             ";
-
-typedef struct DrawVerticeFormats
-{
-   float x, y;
-   float u, v;
-} DrawVerticeFormats;
 
 static bool g_quitting;
 static bool g_first_msg;
@@ -227,7 +222,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    vid->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
          0xff000000, 1.0f, 0);
 
-   if (vid->last_width != width || vid->last_height != height)
+   if (vid->last_width != width || vid->last_height != height || g_console.force_resize_enable)
    {
       D3DLOCKED_RECT d3dlr;
       if (SUCCEEDED(vid->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
@@ -238,20 +233,61 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 
       float tex_w = width / 512.0f;
       float tex_h = height / 512.0f;
-      const DrawVerticeFormats verts[] = {
-         { -1.0f, -1.0f, 0.0f,  tex_h },
-         {  1.0f, -1.0f, tex_w, tex_h },
-         { -1.0f,  1.0f, 0.0f,  0.0f },
-         {  1.0f,  1.0f, tex_w, 0.0f },
+
+	  //normal
+		const DrawVerticeFormats vertexes_normal[] = {
+			{ -1.0f, -1.0f, 0.0f,  tex_h },
+			{  1.0f, -1.0f, tex_w, tex_h },
+			{ -1.0f,  1.0f, 0.0f,  0.0f },
+			{  1.0f,  1.0f, tex_w, 0.0f },
+		};
+
+	  	  //vertical
+	  const DrawVerticeFormats vertexes_vertical[] = {
+         { 1.0f, -1.0f, tex_w,  0.0f },
+         { 1.0f, 1.0f, 0.0f, 0.0f },
+         { -1.0f, -1.0f, tex_w,  tex_h },
+         { -1.0f,  1.0f, 0.0f, tex_h },
+      };
+
+	  //flipped
+	  const DrawVerticeFormats vertexes_flipped[] = {
+         { -1.0f, 1.0f, 0.0f,  tex_h },
+         {  1.0f, 1.0f, tex_w, tex_h },
+         { -1.0f, -1.0f, 0.0f,  0.0f },
+         {  1.0f, -1.0f, tex_w, 0.0f },
+      };
+
+	  // flipped vertical
+	        const DrawVerticeFormats vertexes_flipped_vertical[] = {
+         { -1.0f, -1.0f, 0.0f,  0.0f },
+         { -1.0f, 1.0f, tex_w, 0.0f },
+         { 1.0f, -1.0f, 0.0f,  tex_h },
+         {  1.0f,  1.0f, tex_w, tex_h },
       };
 
       void *verts_ptr;
       vid->vertex_buf->Lock(0, 0, &verts_ptr, 0);
-      memcpy(verts_ptr, verts, sizeof(verts));
+	  switch(g_console.screen_orientation)
+	  {
+		case ORIENTATION_NORMAL:
+			memcpy(verts_ptr, vertexes_normal, sizeof(vertexes_normal));
+			break;
+		case ORIENTATION_VERTICAL:
+			memcpy(verts_ptr, vertexes_vertical, sizeof(vertexes_vertical));
+			break;
+		case ORIENTATION_FLIPPED:
+			memcpy(verts_ptr, vertexes_flipped, sizeof(vertexes_flipped));
+			break;
+		case ORIENTATION_FLIPPED_ROTATED:
+			memcpy(verts_ptr, vertexes_flipped_vertical, sizeof(vertexes_flipped_vertical));
+			break;
+	  }
       vid->vertex_buf->Unlock();
 
       vid->last_width = width;
       vid->last_height = height;
+	  g_console.force_resize_enable = false;
    }
 
    D3DLOCKED_RECT d3dlr;
