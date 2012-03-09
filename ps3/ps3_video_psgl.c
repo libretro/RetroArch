@@ -439,11 +439,12 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
 	{
 		float desired_aspect = g_settings.video.aspect_ratio;
 		float device_aspect = (float)width / height;
-		float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
+		float delta;
 
 		// If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
 		if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
 		{
+			delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
 			m_viewport_x_temp = g_console.custom_viewport_x;
 			m_viewport_y_temp = g_console.custom_viewport_y;
 			m_viewport_width_temp = g_console.custom_viewport_width;
@@ -451,12 +452,14 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
 		}
 		else if (device_aspect > desired_aspect)
 		{
+			delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
 			m_viewport_x_temp = (GLint)(width * (0.5 - delta));
 			m_viewport_width_temp = (GLint)(2.0 * width * delta);
 			width = (unsigned)(2.0 * width * delta);
 		}
 		else
 		{
+			delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
 			m_viewport_y_temp = (GLint)(height * (0.5 - delta));
 			m_viewport_height_temp = (GLint)(2.0 * height * delta);
 			height = (unsigned)(2.0 * height * delta);
