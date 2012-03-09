@@ -881,12 +881,12 @@ static void save_keybind_axis(config_file_t *conf,
 
    if (bind->joyaxis == AXIS_NONE)
       config_set_string(conf, map->axis, "nul");
-   else if (AXIS_NEG_GET(bind->joyaxis) != NO_BTN)
+   else if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
       dir = '-';
       axis = AXIS_NEG_GET(bind->joyaxis);
    }
-   else if (AXIS_POS_GET(bind->joyaxis) != NO_BTN)
+   else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
       dir = '+';
       axis = AXIS_POS_GET(bind->joyaxis);

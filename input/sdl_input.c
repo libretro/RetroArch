@@ -185,7 +185,7 @@ static bool sdl_key_pressed(int key)
 }
 
 #ifndef HAVE_DINPUT
-static bool sdl_joykey_pressed(sdl_input_t *sdl, int port_num, uint16_t joykey)
+static bool sdl_joykey_pressed(sdl_input_t *sdl, int port_num, uint64_t joykey)
 {
    if (joykey == NO_BTN)
       return false;

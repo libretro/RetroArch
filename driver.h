@@ -73,7 +73,11 @@ struct snes_keybind
    bool valid;
    int id;
    enum ssnes_key key;
-   uint64_t joykey; // PC only uses lower 16-bits.
+
+   // PC only uses lower 16-bits.
+   // Full 64-bit can be used for port-specific purposes, like simplifying multiple binds, etc.
+   uint64_t joykey;
+
    uint32_t joyaxis;
 };
 
@@ -107,11 +111,12 @@ typedef struct audio_driver
 #define AXIS_NEG(x) (((uint32_t)(x) << 16) | UINT16_C(0xFFFF))
 #define AXIS_POS(x) ((uint32_t)(x) | UINT32_C(0xFFFF0000))
 #define AXIS_NONE UINT32_C(0xFFFFFFFF)
+#define AXIS_DIR_NONE UINT16_C(0xFFFF)
 
 #define AXIS_NEG_GET(x) (((uint32_t)(x) >> 16) & UINT16_C(0xFFFF))
 #define AXIS_POS_GET(x) ((uint32_t)(x) & UINT16_C(0xFFFF))
 
-#define NO_BTN UINT64_C(0xFFFFFFFFFFFFFFFF) // I hope no joypad will ever have this many buttons ... ;)
+#define NO_BTN UINT16_C(0xFFFF) // I hope no joypad will ever have this many buttons ... ;)
 
 #define HAT_UP_MASK (1 << 15)
 #define HAT_DOWN_MASK (1 << 14)
