@@ -161,6 +161,13 @@ HRESULT CSSNESQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 			m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
 			break;
 	}
+	char aspectratio_label[32];
+	sprintf(aspectratio_label, "Aspect Ratio: %s", g_console.aspect_ratio_name);
+	unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, aspectratio_label, -1, NULL, 0);
+	wchar_t * aspectratio_label_w = new wchar_t[dwNum];
+	MultiByteToWideChar(CP_ACP, 0, aspectratio_label, -1, aspectratio_label_w, dwNum);
+	m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, aspectratio_label_w);
+	delete[] aspectratio_label_w;
 	return S_OK;
 }
 
@@ -200,9 +207,13 @@ HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 					g_console.aspect_ratio_index = 0;
 
 				xdk360_set_aspect_ratio(g_console.aspect_ratio_index);
-				wchar_t aspectstr[512];
-				swprintf(aspectstr, L"Aspect Ratio: %s", g_console.aspect_ratio_name);
-				m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, aspectstr);
+				char aspectratio_label[32];
+				sprintf(aspectratio_label, "Aspect Ratio: %s", g_console.aspect_ratio_name);
+				unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, aspectratio_label, -1, NULL, 0);
+				wchar_t * aspectratio_label_w = new wchar_t[dwNum];
+				MultiByteToWideChar(CP_ACP, 0, aspectratio_label, -1, aspectratio_label_w, dwNum);
+				m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, aspectratio_label_w);
+				delete[] aspectratio_label_w;
 				}
 				break;
 			case MENU_ITEM_OVERSCAN_AMOUNT:

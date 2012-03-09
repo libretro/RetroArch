@@ -92,10 +92,12 @@ static void xdk360_gfx_free(void * data)
 static void set_viewport(bool force_full)
 {
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+	D3DDevice_Clear(vid->xdk360_render_device, 0, NULL, D3DCLEAR_TARGET,
+	   0xff000000, 1.0f, 0, FALSE);
 
-	DWORD width = vid->video_mode.fIsHiDef ? 1280 : 640;
-	DWORD height = vid->video_mode.fIsHiDef ? 1280 : 640;
-	DWORD m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
+	int width = vid->video_mode.fIsHiDef ? 1280 : 640;
+	int height = vid->video_mode.fIsHiDef ? 720 : 480;
+	int m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
 	float m_zNear, m_zFar;
 
 	m_viewport_x_temp = 0;
@@ -103,14 +105,14 @@ static void set_viewport(bool force_full)
 	m_viewport_width_temp = width;
 	m_viewport_height_temp = height;
 
-	m_zNear = -1.0f;
+	m_zNear = 0.0f;
 	m_zFar = 1.0f;
 
 	if (!force_full)
 	{
 		float desired_aspect = g_settings.video.aspect_ratio;
 		float device_aspect = (float)width / height;
-		float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
+		float delta;
 
 		// If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
 		//if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
@@ -122,12 +124,14 @@ static void set_viewport(bool force_full)
 		//}
 		if (device_aspect > desired_aspect)
 		{
+			delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
 			m_viewport_x_temp = (int)(width * (0.5 - delta));
 			m_viewport_width_temp = (int)(2.0 * width * delta);
 			width = (unsigned)(2.0 * width * delta);
 		}
 		else
 		{
+			delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
 			m_viewport_y_temp = (int)(height * (0.5 - delta));
 			m_viewport_height_temp = (int)(2.0 * height * delta);
 			height = (unsigned)(2.0 * height * delta);
@@ -135,8 +139,10 @@ static void set_viewport(bool force_full)
 	}
 
 	D3DVIEWPORT9 vp = {0};
-	vp.Width  = m_viewport_x_temp;
-	vp.Height = m_viewport_y_temp;
+	vp.Width  = m_viewport_width_temp;
+	vp.Height = m_viewport_height_temp;
+	vp.X      = m_viewport_x_temp;
+	vp.Y      = m_viewport_y_temp;
 	vp.MinZ   = m_zNear;
 	vp.MaxZ   = m_zFar;
 	D3DDevice_SetViewport(vid->xdk360_render_device, &vp);
@@ -178,7 +184,7 @@ void xdk360_set_aspect_ratio(uint32_t aspectratio_index)
 			strlcpy(g_console.aspect_ratio_name, "16:15", sizeof(g_console.aspect_ratio_name));
 			break;
 		case ASPECT_RATIO_19_14:
-			g_settings.video.aspect_ratio = 1.35714285714;
+			g_settings.video.aspect_ratio = 1.36;
 			strlcpy(g_console.aspect_ratio_name, "19:14", sizeof(g_console.aspect_ratio_name));
 			break;
 		case ASPECT_RATIO_2_1:
