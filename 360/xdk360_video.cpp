@@ -29,40 +29,6 @@
 #include "config.h"
 #endif
 
-static const char* g_strPixelShaderProgram =
-    " sampler2D tex : register(s0);       "
-    " struct PS_IN                        "
-    " {                                   "
-    "     float2 coord : TEXCOORD0;       "
-    " };                                  "
-    "                                     "
-    " float4 main(PS_IN input) : COLOR    "
-    " {                                   "
-    "     return tex2D(tex, input.coord); "
-    " }                                   ";
-
-static const char* g_strVertexShaderProgram =
-    " struct VS_IN                                  "
-    "                                               "
-    " {                                             "
-    "     float2 pos : POSITION;                    "
-    "     float2 coord : TEXCOORD0;                 "
-    " };                                            "
-    "                                               "
-    " struct VS_OUT                                 "
-    " {                                             "
-    "     float4 pos : POSITION;                    "
-    "     float2 coord : TEXCOORD0;                 "
-    " };                                            "
-    "                                               "
-    " VS_OUT main(VS_IN input)                      "
-    " {                                             "
-    "     VS_OUT output;                            "
-    "     output.pos = float4(input.pos, 0.0, 1.0); "
-    "     output.coord = input.coord;               "
-    "     return output;                            "
-    " }                                             ";
-
 static bool g_quitting;
 static bool g_first_msg;
 unsigned g_frame_count;
@@ -263,13 +229,30 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    ID3DXBuffer* pShaderCodeP = NULL;
    ID3DXBuffer* pErrorMsg = NULL;
 
-   HRESULT hr = D3DXCompileShader(g_strVertexShaderProgram, (UINT)strlen(g_strVertexShaderProgram),
-         NULL, NULL, "main", "vs_2_0", 0, &pShaderCodeV, &pErrorMsg, NULL);
+   HRESULT hr = D3DXCompileShaderFromFile(
+	   "game:\\media\\shaders\\stock.cg",	//filepath
+	   NULL,						//macros
+	   NULL,						//includes
+	   "main_vertex",				// main function
+	   "vs_2_0",					// shader profile
+	   0,							// flags
+	   &pShaderCodeV,				// compiled operations
+	   &pErrorMsg,					// errors
+	   NULL);						// constants
 
    if (SUCCEEDED(hr))
    {
-      hr = D3DXCompileShader(g_strPixelShaderProgram, (UINT)strlen(g_strPixelShaderProgram),
-            NULL, NULL, "main", "ps_2_0", 0, &pShaderCodeP, &pErrorMsg, NULL);
+	   SSNES_LOG("Vertex shader program from [%s] successfully compiled.\n", "game:\\media\\shaders\\stock.cg");
+	   HRESULT hr = D3DXCompileShaderFromFile(
+	   "game:\\media\\shaders\\stock.cg",	//filepath
+	   NULL,						//macros
+	   NULL,						//includes
+	   "main_fragment",				// main function
+	   "ps_2_0",					// shader profile
+	   0,							// flags
+	   &pShaderCodeP,				// compiled operations
+	   &pErrorMsg,					// errors
+	   NULL);						// constants
    }
 
    if (FAILED(hr))
@@ -279,6 +262,10 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
 	  Direct3D_Release();
       free(vid);
       return NULL;
+   }
+   else
+   {
+	    SSNES_LOG("Pixel shader program from [%s] successfully compiled.\n", "game:\\media\\shaders\\stock.cg");
    }
    
    vid->pVertexShader = D3DDevice_CreateVertexShader((const DWORD*)pShaderCodeV->GetBufferPointer());

@@ -122,7 +122,7 @@
     </Link>
     <Deploy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
     </Deploy>
     <ImageXex>
@@ -158,7 +158,7 @@
       <AdditionalDependencies>xapilibd.lib;d3d9d.lib;d3dx9d.lib;xgraphicsd.lib;xboxkrnl.lib;xnetd.lib;xaudiod2.lib;xactd3.lib;x3daudiod.lib;xmcored.lib;xbdm.lib;vcompd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Deploy>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
@@ -200,7 +200,7 @@
       <AdditionalDependencies>xapilibi.lib;d3d9i.lib;d3dx9.lib;xgraphics.lib;xboxkrnl.lib;xnet.lib;xaudio2.lib;xact3i.lib;x3daudioi.lib;xmcorei.lib;xbdm.lib;vcomp.lib;$(TargetDir)libsnes.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Deploy>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
@@ -241,7 +241,7 @@
       <AdditionalDependencies>xapilib.lib;d3d9.lib;d3dx9.lib;xgraphics.lib;xboxkrnl.lib;xnet.lib;xaudio2.lib;xact3.lib;x3daudio.lib;xmcore.lib;vcomp.lib;xbdm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Deploy>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
@@ -282,7 +282,7 @@
     </Link>
     <Deploy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
     </Deploy>
     <ImageXex>
@@ -324,7 +324,7 @@
       <ForceCopy>true</ForceCopy>
     </Deploy>
     <Deploy>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
     <ImageXex>
@@ -599,6 +599,23 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\ssnes_libsnescore_browser.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\ssnes_libsnescore_browser.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\ssnes_libsnescore_browser.xur;</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\360\media\shaders\stock.cg">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\shaders\stock.cg;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\shaders\stock.cg;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\shaders\stock.cg;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\shaders\stock.cg;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\shaders\stock.cg;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\shaders\stock.cg;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
     </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

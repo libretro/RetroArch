@@ -39,6 +39,9 @@
     <Filter Include="Source Files\input">
       <UniqueIdentifier>{b19dc1de-69d4-4501-87ef-b8ee4a7795c5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\media\shader">
+      <UniqueIdentifier>{3a05047b-b9ec-4821-bb28-d1b0e9e3e8bb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\360\xdk360_video.cpp">
@@ -272,6 +275,9 @@
     </CustomBuild>
     <CustomBuild Include="..\..\360\media\ssnes_libsnescore_browser.xui">
       <Filter>Source Files\media</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\360\media\shaders\stock.cg">
+      <Filter>Source Files\media\shader</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>
