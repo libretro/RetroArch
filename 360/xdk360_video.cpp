@@ -358,7 +358,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    D3DDevice_Clear(vid->xdk360_render_device, 0, NULL, D3DCLEAR_TARGET,
 	   0xff000000, 1.0f, 0, FALSE);
 
-   if (vid->last_width != width || vid->last_height != height || g_console.force_resize_enable)
+   if (vid->last_width != width || vid->last_height != height)
    {
       D3DLOCKED_RECT d3dlr;
 
@@ -382,7 +382,6 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 
       vid->last_width = width;
       vid->last_height = height;
-	  g_console.force_resize_enable = false;
    }
 
    vid->xdk360_render_device->SetVertexShaderConstantF(0, (FLOAT*)&vid->modelViewProj, 4);

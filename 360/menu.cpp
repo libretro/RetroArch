@@ -224,22 +224,18 @@ HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 					case ORIENTATION_NORMAL:
 						g_console.screen_orientation = ORIENTATION_VERTICAL;
 						m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
-						g_console.force_resize_enable = true;
 						break;
 					case ORIENTATION_VERTICAL:
 						g_console.screen_orientation = ORIENTATION_FLIPPED;
 						m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
-						g_console.force_resize_enable = true;
 						break;
 					case ORIENTATION_FLIPPED:
 						g_console.screen_orientation = ORIENTATION_FLIPPED_ROTATED;
 						m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
-						g_console.force_resize_enable = true;
 						break;
 					case ORIENTATION_FLIPPED_ROTATED:
 						g_console.screen_orientation = ORIENTATION_NORMAL;
 						m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Normal");
-						g_console.force_resize_enable = true;
 						break;
 				}
 				xdk360_set_orientation(g_console.screen_orientation);
