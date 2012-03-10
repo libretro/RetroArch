@@ -214,7 +214,6 @@ void xdk360_set_aspect_ratio(uint32_t aspectratio_index)
 	set_viewport(false);
 }
 
-
 static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
 	HRESULT ret;
@@ -272,7 +271,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
 	   0,							// flags
 	   &pShaderCodeV,				// compiled operations
 	   &pErrorMsg,					// errors
-	   &vid->constantTable);			// constants
+	   &vid->vertex_constant_table);	 // constants
 
    if (SUCCEEDED(ret))
    {
@@ -286,7 +285,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
 	   0,							// flags
 	   &pShaderCodeP,				// compiled operations
 	   &pErrorMsg,					// errors
-	   NULL);						// constants
+	   &vid->fragment_constant_table); // constants
    }
 
    if (FAILED(ret))
@@ -396,7 +395,8 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 
    vid->xdk360_render_device->SetVertexShaderConstantF(0, (FLOAT*)&hlsl_program.modelViewProj, 4);
 
-   vid->constantTable->SetDefaults(vid->xdk360_render_device);
+   vid->vertex_constant_table->SetDefaults(vid->xdk360_render_device);
+   vid->fragment_constant_table->SetDefaults(vid->xdk360_render_device);
 
    //TODO: Update the shader constants
 

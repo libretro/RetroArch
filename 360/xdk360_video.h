@@ -53,7 +53,8 @@ typedef struct xdk360_video
    IDirect3DVertexBuffer9* vertex_buf;
    IDirect3DTexture9* font_texture;
    IDirect3DTexture9* lpTexture;
-   LPD3DXCONSTANTTABLE constantTable;
+   LPD3DXCONSTANTTABLE vertex_constant_table;
+   LPD3DXCONSTANTTABLE fragment_constant_table;
    D3DPRESENT_PARAMETERS d3dpp;
    XVIDEO_MODE video_mode;
 } xdk360_video_t;
