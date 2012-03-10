@@ -1,40 +1,40 @@
-sampler2D decal : register(s0);
-float4x4 modelViewProj : register(c0);
-
-struct FP_IN
+/*
+VERTEX_SHADER
+*/
+void main_vertex
+(
+	float2 position : POSITION,
+	float2 texCoord : TEXCOORD0,
+	uniform float4x4 modelViewProj : register(c0),
+	out float4 oPosition : POSITION,
+	out float2 otexCoord : TEXCOORD
+)
 {
-	float2 texCoord : TEXCOORD0;
-};
+	oPosition = mul(modelViewProj, float4(position, 0.0, 1.0));
+	otexCoord = texCoord;
+}
 
-struct VP_IN
-{
-	float2 position : POSITION;
-	float2 texCoord : TEXCOORD0;
-};
 
-struct VP_OUT
-{
-	float4 oPosition : POSITION;
-	float2 otexCoord : TEXCOORD0;
-};
-
-struct FP_OUT
+/*
+FRAGMENT SHADER
+*/
+struct output
 {
 	float4 color : COLOR;
 };
 
-FP_OUT main_fragment(FP_IN input) : COLOR
+struct input
 {
-	FP_OUT output;
-	output.color = tex2D(decal, input.texCoord);
-	return output;
-}
+	float2 video_size;
+	float2 texture_size;
+	float2 output_size;
+};
 
-VP_OUT main_vertex(VP_IN input)
+
+output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D decal : register(s0), uniform input IN) : COLOR
 {
-	VP_OUT output;
-	output.oPosition = mul(modelViewProj, float4(input.position, 0.0, 1.0));
-	output.otexCoord = input.texCoord;
-	return output;
+	output OUT;
+	OUT.color = tex2D(decal, texCoord);
+	return OUT;
 }
 

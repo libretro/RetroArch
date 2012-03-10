@@ -56,7 +56,6 @@ typedef struct xdk360_video
    LPD3DXCONSTANTTABLE constantTable;
    D3DPRESENT_PARAMETERS d3dpp;
    XVIDEO_MODE video_mode;
-   XMMATRIX modelViewProj;
 } xdk360_video_t;
 
 enum

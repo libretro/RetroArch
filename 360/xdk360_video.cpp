@@ -34,6 +34,17 @@ static bool g_first_msg;
 unsigned g_frame_count;
 void *g_d3d;
 
+struct hlsl_program_t
+{
+	D3DXHANDLE	vid_size_f;
+	D3DXHANDLE	tex_size_f;
+	D3DXHANDLE	out_size_f;
+	D3DXHANDLE	vid_size_v;
+	D3DXHANDLE	tex_size_v;
+	D3DXHANDLE	out_size_v;
+	XMMATRIX modelViewProj;
+} hlsl_program;
+
 static void xdk360_gfx_free(void * data)
 {
    if (g_d3d)
@@ -141,7 +152,7 @@ void xdk360_set_orientation(uint32_t orientation)
 			angle = M_PI * 90 / 180;
 			break;
 	}
-	vid->modelViewProj = XMMatrixRotationZ(angle);
+	hlsl_program.modelViewProj = XMMatrixRotationZ(angle);
 }
 
 void xdk360_set_aspect_ratio(uint32_t aspectratio_index)
@@ -252,7 +263,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    ID3DXBuffer* pShaderCodeP = NULL;
    ID3DXBuffer* pErrorMsg = NULL;
 
-   HRESULT hr = D3DXCompileShaderFromFile(
+   ret = D3DXCompileShaderFromFile(
 	   g_settings.video.cg_shader_path,	//filepath
 	   NULL,						//macros
 	   NULL,						//includes
@@ -263,10 +274,10 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
 	   &pErrorMsg,					// errors
 	   &vid->constantTable);			// constants
 
-   if (SUCCEEDED(hr))
+   if (SUCCEEDED(ret))
    {
 	   SSNES_LOG("Vertex shader program from [%s] successfully compiled.\n", "game:\\media\\shaders\\stock.cg");
-	   HRESULT hr = D3DXCompileShaderFromFile(
+	   ret = D3DXCompileShaderFromFile(
 	   g_settings.video.cg_shader_path,	//filepath
 	   NULL,						//macros
 	   NULL,						//includes
@@ -278,9 +289,10 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
 	   NULL);						// constants
    }
 
-   if (FAILED(hr))
+   if (FAILED(ret))
    {
-      OutputDebugString(pErrorMsg ? (char*)pErrorMsg->GetBufferPointer() : "");
+	  if(pErrorMsg)
+		  SSNES_LOG("%s\n", (char*)pErrorMsg->GetBufferPointer());
       D3DDevice_Release(vid->xdk360_render_device);
 	  Direct3D_Release();
       free(vid);
@@ -342,7 +354,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    vp.MaxZ   = 1.0f;
    D3DDevice_SetViewport(vid->xdk360_render_device, &vp);
 
-   vid->modelViewProj = XMMatrixIdentity();
+   hlsl_program.modelViewProj = XMMatrixIdentity();
 
    return vid;
 }
@@ -382,7 +394,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
       vid->last_height = height;
    }
 
-   vid->xdk360_render_device->SetVertexShaderConstantF(0, (FLOAT*)&vid->modelViewProj, 4);
+   vid->xdk360_render_device->SetVertexShaderConstantF(0, (FLOAT*)&hlsl_program.modelViewProj, 4);
 
    vid->constantTable->SetDefaults(vid->xdk360_render_device);
 
