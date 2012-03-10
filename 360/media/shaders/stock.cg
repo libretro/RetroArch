@@ -31,7 +31,7 @@ struct input
 };
 
 
-output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D decal : register(s0), uniform input IN) : COLOR
+output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D decal : register(s0), uniform input IN)
 {
 	output OUT;
 	OUT.color = tex2D(decal, texCoord);
