@@ -87,6 +87,7 @@ struct bsv_movie
 {
    FILE *file;
    uint8_t *state;
+   size_t state_size;
 
    size_t *frame_pos; // A ring buffer keeping track of positions in the file for each frame.
    size_t frame_mask;
@@ -163,10 +164,10 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
 
    uint32_t state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
 
-   // If we're playing back from the start, state_size is 0.
    if (state_size)
    {
       handle->state = (uint8_t*)malloc(state_size);
+      handle->state_size = state_size;
       if (!handle->state)
          return false;
 
@@ -176,14 +177,10 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
          return false;
       }
 
-      if (psnes_serialize_size() != state_size)
-      {
-         SSNES_ERR("Movie format seems to have a different serializer version. Cannot continue.\n");
-         ssnes_fail(1, "init_playback()");
-      }
-
-      // Unserialize to start playback.
-      psnes_unserialize(handle->state, state_size);
+      if (psnes_serialize_size() == state_size)
+         psnes_unserialize(handle->state, state_size);
+      else
+         SSNES_WARN("Movie format seems to have a different serializer version. Will most likely fail.\n");
    }
 
    handle->min_file_pos = sizeof(header) + state_size;
@@ -202,7 +199,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
 
    uint32_t header[4] = {0};
 
-   // This value is supposed to show up as BSV1 in a HEX editor.
+   // This value is supposed to show up as BSV1 in a HEX editor, big-endian.
    header[MAGIC_INDEX] = swap_if_little32(BSV_MAGIC);
 
    header[CRC_INDEX] = swap_if_big32(g_extern.cart_crc);
@@ -212,14 +209,15 @@ static bool init_record(bsv_movie_t *handle, const char *path)
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
    fwrite(header, 4, sizeof(uint32_t), handle->file);
 
-   handle->state = (uint8_t*)malloc(state_size);
-   if (!handle->state)
-      return false;
-
    handle->min_file_pos = sizeof(header) + state_size;
+   handle->state_size = state_size;
 
-   if (state_size > 0)
+   if (state_size)
    {
+      handle->state = (uint8_t*)malloc(state_size);
+      if (!handle->state)
+         return false;
+
       psnes_serialize(handle->state, state_size);
       fwrite(handle->state, 1, state_size, handle->file);
    }
@@ -321,8 +319,8 @@ void bsv_movie_frame_rewind(bsv_movie_t *handle)
       if (!handle->playback)
       {
          fseek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
-         psnes_serialize(handle->state, psnes_serialize_size());
-         fwrite(handle->state, 1, psnes_serialize_size(), handle->file);
+         psnes_serialize(handle->state, handle->state_size);
+         fwrite(handle->state, 1, handle->state_size, handle->file);
       }
       else
          fseek(handle->file, handle->min_file_pos, SEEK_SET);
