@@ -53,6 +53,7 @@ typedef struct _STRING {
 	char * Buffer;
 } STRING;
 
+char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
 char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 
 extern "C" int __stdcall ObCreateSymbolicLink( STRING*, STRING*);
@@ -134,6 +135,7 @@ static void set_default_settings (void)
 {
 	//g_settings
 	g_settings.rewind_enable = false;
+	strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
 	g_settings.video.vsync = true;
 	g_settings.video.smooth = true;
 	g_settings.video.aspect_ratio = -1.0f;
@@ -445,7 +447,8 @@ static void get_environment_settings (void)
 
 		}
 	}
-
+	
+	strlcpy(DEFAULT_SHADER_FILE, "game:\\media\\shaders\\stock.cg", sizeof(DEFAULT_SHADER_FILE));
 	strlcpy(SYS_CONFIG_FILE, "game:\\ssnes.cfg", sizeof(SYS_CONFIG_FILE));
 }
 

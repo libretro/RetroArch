@@ -53,8 +53,10 @@ typedef struct xdk360_video
    IDirect3DVertexBuffer9* vertex_buf;
    IDirect3DTexture9* font_texture;
    IDirect3DTexture9* lpTexture;
+   LPD3DXCONSTANTTABLE constantTable;
    D3DPRESENT_PARAMETERS d3dpp;
    XVIDEO_MODE video_mode;
+   XMMATRIX modelViewProj;
 } xdk360_video_t;
 
 enum

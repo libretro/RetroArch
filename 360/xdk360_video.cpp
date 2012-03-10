@@ -230,7 +230,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    ID3DXBuffer* pErrorMsg = NULL;
 
    HRESULT hr = D3DXCompileShaderFromFile(
-	   "game:\\media\\shaders\\stock.cg",	//filepath
+	   g_settings.video.cg_shader_path,	//filepath
 	   NULL,						//macros
 	   NULL,						//includes
 	   "main_vertex",				// main function
@@ -238,13 +238,13 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
 	   0,							// flags
 	   &pShaderCodeV,				// compiled operations
 	   &pErrorMsg,					// errors
-	   NULL);						// constants
+	   &vid->constantTable);			// constants
 
    if (SUCCEEDED(hr))
    {
 	   SSNES_LOG("Vertex shader program from [%s] successfully compiled.\n", "game:\\media\\shaders\\stock.cg");
 	   HRESULT hr = D3DXCompileShaderFromFile(
-	   "game:\\media\\shaders\\stock.cg",	//filepath
+	   g_settings.video.cg_shader_path,	//filepath
 	   NULL,						//macros
 	   NULL,						//includes
 	   "main_fragment",				// main function
@@ -318,6 +318,24 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
    D3DDevice_SetViewport(vid->xdk360_render_device, &vp);
+
+    // World matrix
+    XMMATRIX matWorld = XMMatrixIdentity();
+
+    // View matrix
+    XMVECTOR vEyePt = XMVectorSet( 0.0f, -4.0f, -4.0f, 0.0f );
+    XMVECTOR vLookatPt = XMVectorSet( 0.0f, 0.0f, 0.0f, 0.0f );
+    XMVECTOR vUp = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
+    XMMATRIX matView = XMMatrixLookAtLH( vEyePt, vLookatPt, vUp );
+
+    // Determine the aspect ratio
+    FLOAT fAspectRatio = ( FLOAT )vid->d3dpp.BackBufferWidth / ( FLOAT )vid->d3dpp.BackBufferHeight;
+
+    // Projection matrix
+    XMMATRIX matProj = XMMatrixPerspectiveFovLH( XM_PI / 4, fAspectRatio, 1.0f, 200.0f );
+
+    // World*view*projection
+    vid->modelViewProj = matWorld * matView * matProj;
 
    return vid;
 }
@@ -396,6 +414,12 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
       vid->last_height = height;
 	  g_console.force_resize_enable = false;
    }
+
+   vid->xdk360_render_device->SetVertexShaderConstantF(0, (FLOAT*)&vid->modelViewProj, 4);
+
+   vid->constantTable->SetDefaults(vid->xdk360_render_device);
+
+   //TODO: Update the shader constants
 
    D3DLOCKED_RECT d3dlr;
    D3DTexture_LockRect(vid->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);

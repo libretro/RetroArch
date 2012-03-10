@@ -1,32 +1,40 @@
-sampler2D tex : register(s0);
+sampler2D decal : register(s0);
+float4x4 modelViewProj : register(c0);
 
-struct PS_IN
+struct FP_IN
 {
-	float2 coord : TEXCOORD0;
+	float2 texCoord : TEXCOORD0;
 };
 
-struct VS_IN
+struct VP_IN
 {
-	float2 pos : POSITION;
-	float2 coord : TEXCOORD0;
+	float2 position : POSITION;
+	float2 texCoord : TEXCOORD0;
 };
 
-struct VS_OUT
+struct VP_OUT
 {
-	float4 pos : POSITION;
-	float2 coord : TEXCOORD0;
+	float4 oPosition : POSITION;
+	float2 otexCoord : TEXCOORD0;
 };
 
-float4 main_fragment(PS_IN input) : COLOR
+struct FP_OUT
 {
-	return tex2D(tex, input.coord);
+	float4 color : COLOR;
+};
+
+FP_OUT main_fragment(FP_IN input) : COLOR
+{
+	FP_OUT output;
+	output.color = tex2D(decal, input.texCoord);
+	return output;
 }
 
-VS_OUT main_vertex(VS_IN input)
+VP_OUT main_vertex(VP_IN input)
 {
-	VS_OUT output;
-	output.pos = float4(input.pos, 0.0, 1.0);
-	output.coord = input.coord;
+	VP_OUT output;
+	output.oPosition = mul(modelViewProj, input.position);
+	output.otexCoord = input.texCoord;
 	return output;
 }
 
