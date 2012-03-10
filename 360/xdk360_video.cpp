@@ -134,13 +134,13 @@ void xdk360_set_orientation(uint32_t orientation)
 			angle = M_PI * 0 / 180;
 			break;
 		case ORIENTATION_VERTICAL:
-			angle = M_PI * 90 / 180;
+			angle = M_PI * 270 / 180;
 			break;
 		case ORIENTATION_FLIPPED:
 			angle = M_PI * 180 / 180;
 			break;
 		case ORIENTATION_FLIPPED_ROTATED:
-			angle = M_PI * 270 / 180;
+			angle = M_PI * 90 / 180;
 			break;
 	}
 	vid->modelViewProj = XMMatrixRotationZ(angle);
@@ -368,6 +368,17 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 
       float tex_w = width / 512.0f;
       float tex_h = height / 512.0f;
+	  
+	  const DrawVerticeFormats verts[] = {
+		  { -1.0f, -1.0f, 0.0f,  tex_h },
+		  {  1.0f, -1.0f, tex_w, tex_h },
+		  { -1.0f,  1.0f, 0.0f,  0.0f },
+		  {  1.0f,  1.0f, tex_w, 0.0f },
+	  };
+	  
+	  void *verts_ptr = (BYTE*)D3DVertexBuffer_Lock(vid->vertex_buf, 0, 0, 0);
+	  memcpy(verts_ptr, verts, sizeof(verts));
+	  D3DVertexBuffer_Unlock(vid->vertex_buf);
 
       vid->last_width = width;
       vid->last_height = height;
