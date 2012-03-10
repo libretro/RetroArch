@@ -86,6 +86,7 @@ void xdk360_video_init(void);
 void xdk360_video_deinit(void);
 void xdk360_video_set_vsync(bool vsync);
 void xdk360_set_aspect_ratio(uint32_t aspectratio_index);
+void xdk360_set_orientation(uint32_t orientation);
 
 extern unsigned g_frame_count;
 extern void *g_d3d;

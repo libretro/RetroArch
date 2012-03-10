@@ -121,6 +121,31 @@ static void set_viewport(bool force_full)
 	//}
 }
 
+void xdk360_set_orientation(uint32_t orientation)
+{
+	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+
+	XMMATRIX matWorld;
+	FLOAT angle;
+
+	switch(orientation)
+	{
+		case ORIENTATION_NORMAL:
+			angle = M_PI * 0 / 180;
+			break;
+		case ORIENTATION_VERTICAL:
+			angle = M_PI * 90 / 180;
+			break;
+		case ORIENTATION_FLIPPED:
+			angle = M_PI * 180 / 180;
+			break;
+		case ORIENTATION_FLIPPED_ROTATED:
+			angle = M_PI * 270 / 180;
+			break;
+	}
+	vid->modelViewProj = XMMatrixRotationZ(angle);
+}
+
 void xdk360_set_aspect_ratio(uint32_t aspectratio_index)
 {
 	switch(aspectratio_index)
@@ -319,11 +344,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    vp.MaxZ   = 1.0f;
    D3DDevice_SetViewport(vid->xdk360_render_device, &vp);
 
-    // World matrix
-    XMMATRIX matWorld = XMMatrixIdentity();
-
-    // World*view*projection
-    vid->modelViewProj = matWorld;
+   vid->modelViewProj = XMMatrixIdentity();
 
    return vid;
 }
@@ -347,56 +368,6 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 
       float tex_w = width / 512.0f;
       float tex_h = height / 512.0f;
-
-	  //normal
-		const DrawVerticeFormats vertexes_normal[] = {
-			{ -1.0f, -1.0f, 0.0f,  tex_h },
-			{  1.0f, -1.0f, tex_w, tex_h },
-			{ -1.0f,  1.0f, 0.0f,  0.0f },
-			{  1.0f,  1.0f, tex_w, 0.0f },
-		};
-
-	  	  //vertical
-	  const DrawVerticeFormats vertexes_vertical[] = {
-         { 1.0f, -1.0f, tex_w,  0.0f },
-         { 1.0f, 1.0f, 0.0f, 0.0f },
-         { -1.0f, -1.0f, tex_w,  tex_h },
-         { -1.0f,  1.0f, 0.0f, tex_h },
-      };
-
-	  //flipped
-	  const DrawVerticeFormats vertexes_flipped[] = {
-         { -1.0f, 1.0f, 0.0f,  tex_h },
-         {  1.0f, 1.0f, tex_w, tex_h },
-         { -1.0f, -1.0f, 0.0f,  0.0f },
-         {  1.0f, -1.0f, tex_w, 0.0f },
-      };
-
-	  // flipped vertical
-	        const DrawVerticeFormats vertexes_flipped_vertical[] = {
-         { -1.0f, -1.0f, 0.0f,  0.0f },
-         { -1.0f, 1.0f, tex_w, 0.0f },
-         { 1.0f, -1.0f, 0.0f,  tex_h },
-         {  1.0f,  1.0f, tex_w, tex_h },
-      };
-
-      void *verts_ptr = (BYTE*)D3DVertexBuffer_Lock(vid->vertex_buf, 0, 0, 0);
-	  switch(g_console.screen_orientation)
-	  {
-		case ORIENTATION_NORMAL:
-			memcpy(verts_ptr, vertexes_normal, sizeof(vertexes_normal));
-			break;
-		case ORIENTATION_VERTICAL:
-			memcpy(verts_ptr, vertexes_vertical, sizeof(vertexes_vertical));
-			break;
-		case ORIENTATION_FLIPPED:
-			memcpy(verts_ptr, vertexes_flipped, sizeof(vertexes_flipped));
-			break;
-		case ORIENTATION_FLIPPED_ROTATED:
-			memcpy(verts_ptr, vertexes_flipped_vertical, sizeof(vertexes_flipped_vertical));
-			break;
-	  }
-	  D3DVertexBuffer_Unlock(vid->vertex_buf);
 
       vid->last_width = width;
       vid->last_height = height;

@@ -242,6 +242,7 @@ HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 						g_console.force_resize_enable = true;
 						break;
 				}
+				xdk360_set_orientation(g_console.screen_orientation);
 				break;
 			case MENU_ITEM_RESIZE_MODE:
 				break;
