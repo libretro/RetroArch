@@ -1568,19 +1568,26 @@ void ssnes_save_state(void)
 }
 
 // Save or load state here.
-static void check_savestates(void)
+static void check_savestates(bool immutable)
 {
    static bool old_should_savestate = false;
-   bool should_savestate = driver.input->key_pressed(driver.input_data, SSNES_SAVE_STATE_KEY);
+   bool should_savestate = driver.input->key_pressed(driver.input_data,
+         SSNES_SAVE_STATE_KEY);
+
    if (should_savestate && !old_should_savestate)
       ssnes_save_state();
    old_should_savestate = should_savestate;
 
-   static bool old_should_loadstate = false;
-   bool should_loadstate = driver.input->key_pressed(driver.input_data, SSNES_LOAD_STATE_KEY);
-   if (!should_savestate && should_loadstate && !old_should_loadstate)
-      ssnes_load_state();
-   old_should_loadstate = should_loadstate;
+   if (!immutable)
+   {
+      static bool old_should_loadstate = false;
+      bool should_loadstate = driver.input->key_pressed(driver.input_data,
+            SSNES_LOAD_STATE_KEY);
+
+      if (!should_savestate && should_loadstate && !old_should_loadstate)
+         ssnes_load_state();
+      old_should_loadstate = should_loadstate;
+   }
 }
 
 static bool check_fullscreen(void)
@@ -2077,11 +2084,8 @@ static void do_state_checks(void)
             driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY),
             driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_HOLD_KEY));
 
-      if (!g_extern.bsv.movie)
-      {
-         check_stateslots();
-         check_savestates();
-      }
+      check_stateslots();
+      check_savestates(g_extern.bsv.movie);
 
       check_rewind();
       check_slowmotion();
