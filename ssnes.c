@@ -1771,56 +1771,55 @@ static void check_slowmotion(void)
    }
 }
 
-static void check_movie_record(void)
+static void movie_record_toggle(void)
 {
-   static bool old_button = false;
-   bool new_button;
-   if ((new_button = driver.input->key_pressed(driver.input_data, SSNES_MOVIE_RECORD_TOGGLE)) && !old_button)
+   if (g_extern.bsv.movie)
    {
-      if (g_extern.bsv.movie)
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, "Stopping movie record.", 2, 180);
+      SSNES_LOG("Stopping movie record.\n");
+      bsv_movie_free(g_extern.bsv.movie);
+      g_extern.bsv.movie = NULL;
+   }
+   else
+   {
+      g_settings.rewind_granularity = 1;
+
+      char path[PATH_MAX];
+      if (g_extern.state_slot > 0)
       {
-         msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, "Stopping movie record.", 2, 180);
-         SSNES_LOG("Stopping movie record.\n");
-         bsv_movie_free(g_extern.bsv.movie);
-         g_extern.bsv.movie = NULL;
+         snprintf(path, sizeof(path), "%s%u.bsv",
+               g_extern.bsv.movie_path, g_extern.state_slot);
       }
       else
       {
-         g_settings.rewind_granularity = 1;
-
-         char path[PATH_MAX];
-         if (g_extern.state_slot > 0)
-         {
-            snprintf(path, sizeof(path), "%s%u.bsv",
-                  g_extern.bsv.movie_path, g_extern.state_slot);
-         }
-         else
-         {
-            snprintf(path, sizeof(path), "%s.bsv",
-                  g_extern.bsv.movie_path);
-         }
-
-         char msg[PATH_MAX];
-         snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
-
-         g_extern.bsv.movie = bsv_movie_init(path, SSNES_MOVIE_RECORD);
-         msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ? msg : "Failed to start movie record.", 1, 180);
-
-         if (g_extern.bsv.movie)
-            SSNES_LOG("Starting movie record to \"%s\".\n", path);
-         else
-            SSNES_ERR("Failed to start movie record.\n");
+         snprintf(path, sizeof(path), "%s.bsv",
+               g_extern.bsv.movie_path);
       }
-   }
 
-   old_button = new_button;
+      char msg[PATH_MAX];
+      snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
+
+      g_extern.bsv.movie = bsv_movie_init(path, SSNES_MOVIE_RECORD);
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ? msg : "Failed to start movie record.", 1, 180);
+
+      if (g_extern.bsv.movie)
+         SSNES_LOG("Starting movie record to \"%s\".\n", path);
+      else
+         SSNES_ERR("Failed to start movie record.\n");
+   }
 }
 
-static void check_movie_playback(void)
+static void check_movie_record(bool pressed)
 {
-   if (g_extern.bsv.movie_end)
+   if (pressed)
+      movie_record_toggle();
+}
+
+static void check_movie_playback(bool pressed)
+{
+   if (g_extern.bsv.movie_end || pressed)
    {
       msg_queue_push(g_extern.msg_queue, "Movie playback ended.", 1, 180);
       SSNES_LOG("Movie playback ended.\n");
@@ -1830,6 +1829,20 @@ static void check_movie_playback(void)
       g_extern.bsv.movie_end = false;
       g_extern.bsv.movie_playback = false;
    }
+}
+
+static void check_movie(void)
+{
+   static bool old_button = false;
+   bool new_button = driver.input->key_pressed(driver.input_data, SSNES_MOVIE_RECORD_TOGGLE);
+   bool pressed = new_button && !old_button;
+
+   if (g_extern.bsv.movie_playback)
+      check_movie_playback(pressed);
+   else
+      check_movie_record(pressed);
+
+   old_button = new_button;
 }
 
 static void check_pause(void)
@@ -2090,10 +2103,7 @@ static void do_state_checks(void)
       check_rewind();
       check_slowmotion();
 
-      if (g_extern.bsv.movie_playback)
-         check_movie_playback();
-      else
-         check_movie_record();
+      check_movie();
      
 #ifdef HAVE_XML
       check_shader_dir();
