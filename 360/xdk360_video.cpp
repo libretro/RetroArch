@@ -322,20 +322,8 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
     // World matrix
     XMMATRIX matWorld = XMMatrixIdentity();
 
-    // View matrix
-    XMVECTOR vEyePt = XMVectorSet( 0.0f, -4.0f, -4.0f, 0.0f );
-    XMVECTOR vLookatPt = XMVectorSet( 0.0f, 0.0f, 0.0f, 0.0f );
-    XMVECTOR vUp = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
-    XMMATRIX matView = XMMatrixLookAtLH( vEyePt, vLookatPt, vUp );
-
-    // Determine the aspect ratio
-    FLOAT fAspectRatio = ( FLOAT )vid->d3dpp.BackBufferWidth / ( FLOAT )vid->d3dpp.BackBufferHeight;
-
-    // Projection matrix
-    XMMATRIX matProj = XMMatrixPerspectiveFovLH( XM_PI / 4, fAspectRatio, 1.0f, 200.0f );
-
     // World*view*projection
-    vid->modelViewProj = matWorld * matView * matProj;
+    vid->modelViewProj = matWorld;
 
    return vid;
 }

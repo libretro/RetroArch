@@ -33,7 +33,7 @@ FP_OUT main_fragment(FP_IN input) : COLOR
 VP_OUT main_vertex(VP_IN input)
 {
 	VP_OUT output;
-	output.oPosition = mul(modelViewProj, input.position);
+	output.oPosition = mul(modelViewProj, float4(input.position, 0.0, 1.0));
 	output.otexCoord = input.texCoord;
 	return output;
 }
