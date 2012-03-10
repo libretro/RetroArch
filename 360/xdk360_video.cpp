@@ -124,8 +124,6 @@ static void set_viewport(bool force_full)
 void xdk360_set_orientation(uint32_t orientation)
 {
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-
-	XMMATRIX matWorld;
 	FLOAT angle;
 
 	switch(orientation)
