@@ -32,6 +32,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #elif defined(_XBOX)
+#define NOD3D
+#define NONET
 #include <xtl.h>
 #endif
 

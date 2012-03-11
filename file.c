@@ -44,6 +44,8 @@
 #define setmode _setmode
 #endif
 #elif defined(_XBOX)
+#define NOD3D
+#define NONET
 #include <xtl.h>
 #define setmode _setmode
 #define INVALID_FILE_ATTRIBUTES -1

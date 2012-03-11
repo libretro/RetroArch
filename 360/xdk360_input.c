@@ -18,13 +18,15 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#define NOD3D
+#define NONET
 #include <xtl.h>
 #include "../driver.h"
 #include "../general.h"
 #include "../libsnes.hpp"
 #include "../input/input_luts.h"
 #include "xdk360_input.h"
-#include "xdk360_video.h"
+#include "xdk360_video_general.h"
 #include "shared.h"
 
 static uint64_t state[4];

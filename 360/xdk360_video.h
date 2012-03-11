@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 #include "fonts.h"
+#include "xdk360_video_general.h"
 
 typedef struct {
 	float x;
@@ -73,19 +74,12 @@ enum
 	ASPECT_RATIO_CUSTOM
 };
 
-#define LAST_ASPECT_RATIO ASPECT_RATIO_CUSTOM
-
-#define IS_TIMER_NOT_EXPIRED() (g_frame_count < g_console.timer_expiration_frame_count)
-#define IS_TIMER_EXPIRED() 	(!(IS_TIMER_NOT_EXPIRED()))
-#define SET_TIMER_EXPIRATION(value) g_console.timer_expiration_frame_count = g_frame_count + value;
-
 void xdk360_video_init(void);
 void xdk360_video_deinit(void);
 void xdk360_video_set_vsync(bool vsync);
 void xdk360_set_aspect_ratio(uint32_t aspectratio_index);
 void xdk360_set_orientation(uint32_t orientation);
 
-extern unsigned g_frame_count;
 extern void *g_d3d;
 
 #endif

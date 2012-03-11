@@ -17,6 +17,8 @@
  */
 
 #ifdef _XBOX
+#define NOD3D
+#define NONET
 #include <xtl.h>
 #endif
 
