@@ -30,7 +30,7 @@ endif
 libsnes ?= -lsnes
 
 LIBS = -lm
-DEFINES = -I. -DHAVE_CONFIGFILE -DPACKAGE_VERSION=\"0.9.4.1\"
+DEFINES = -I. -DHAVE_CONFIGFILE -DPACKAGE_VERSION=\"0.9.5\"
 LDFLAGS = -L. -static-libgcc
 LDCXXFLAGS = -static-libstdc++ -s
 
@@ -188,10 +188,10 @@ clean:
 	rm -f tools/*.o
 
 dist_x86: all
-	zip -r ssnes-win32-0.9.4.1.zip $(TARGET) $(JTARGET) ssnes.cfg snes.dll SDL.dll
+	zip -r ssnes-win32-0.9.5.zip $(TARGET) $(JTARGET) ssnes.cfg snes.dll SDL.dll
 
 dist_x86_64: all
-	zip -r ssnes-win64-0.9.4.1.zip $(TARGET) $(JTARGET) ssnes.cfg snes.dll SDL.dll
+	zip -r ssnes-win64-0.9.5.zip $(TARGET) $(JTARGET) ssnes.cfg snes.dll SDL.dll
 
 libs_x86:
 	wget https://github.com/downloads/Themaister/SSNES/SSNES-win32-libs.zip --no-check-certificate

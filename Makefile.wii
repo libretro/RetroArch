@@ -25,7 +25,7 @@ LIBS := -lfat -lsnes -lwiiuse -logc -lbte -lfreetype
 
 OBJ = wii/main.o fifo_buffer.o ssnes.o driver.o gfx/fonts.o file.o settings.o message.o rewind.o movie.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o wii/audio.o wii/input.o wii/video.o console/sgui.o console/list.o console/font.bmpobj
 
-CFLAGS += -std=gnu99 -DSSNES_CONSOLE -DHAVE_CONFIGFILE=1 -DHAVE_GETOPT_LONG -DHAVE_FREETYPE -DPACKAGE_VERSION=\"0.9.4.1\" -Dmain=ssnes_main -Wno-char-subscripts
+CFLAGS += -std=gnu99 -DSSNES_CONSOLE -DHAVE_CONFIGFILE=1 -DHAVE_GETOPT_LONG -DHAVE_FREETYPE -DPACKAGE_VERSION=\"0.9.5\" -Dmain=ssnes_main -Wno-char-subscripts
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g

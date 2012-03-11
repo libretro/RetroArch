@@ -1,4 +1,4 @@
-SSNES_VERSION		= "0.9.4.1"
+SSNES_VERSION		= "0.9.5"
 
 #which compiler to build  with - GCC or SNC
 #set to GCC for debug builds for use with debugger

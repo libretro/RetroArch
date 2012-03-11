@@ -21,7 +21,7 @@ INCDIRS = -I. -I$(DEVKITXENON)/usr/include
 OBJ = fifo_buffer.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o gfx/gfx_common.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o xenon/main.o xenon/xenon360_audio.o xenon/xenon360_input.o xenon/xenon360_video.o
 
 LIBS = -lsnes -lxenon -lm -lc
-DEFINES = -std=gnu99 -DHAVE_CONFIGFILE=1 -DPACKAGE_VERSION=\"0.9.4.1\" -DSSNES_CONSOLE -DHAVE_GETOPT_LONG=1 -Dmain=ssnes_main
+DEFINES = -std=gnu99 -DHAVE_CONFIGFILE=1 -DPACKAGE_VERSION=\"0.9.5\" -DSSNES_CONSOLE -DHAVE_GETOPT_LONG=1 -Dmain=ssnes_main
 DEFINES += -maltivec -mhard-float -m32 -mpowerpc64 -mcpu=cell -mtune=cell -fno-pic -g -Wall -DXENON $(INCDIRS)
 DEFINES += -u read -u _start -u exc_base
 
