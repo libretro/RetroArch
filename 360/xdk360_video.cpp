@@ -271,7 +271,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
 	   0,							// flags
 	   &pShaderCodeV,				// compiled operations
 	   &pErrorMsg,					// errors
-	   &vid->vertex_constant_table);	 // constants
+	   NULL);	 // constants
 
    if (SUCCEEDED(ret))
    {
@@ -285,7 +285,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
 	   0,							// flags
 	   &pShaderCodeP,				// compiled operations
 	   &pErrorMsg,					// errors
-	   &vid->fragment_constant_table); // constants
+	   NULL); // constants
    }
 
    if (FAILED(ret))
@@ -353,7 +353,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    vp.MaxZ   = 1.0f;
    D3DDevice_SetViewport(vid->xdk360_render_device, &vp);
 
-   hlsl_program.modelViewProj = XMMatrixIdentity();
+   xdk360_set_orientation(g_console.screen_orientation);
 
    return vid;
 }
@@ -394,9 +394,6 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    }
 
    vid->xdk360_render_device->SetVertexShaderConstantF(0, (FLOAT*)&hlsl_program.modelViewProj, 4);
-
-   vid->vertex_constant_table->SetDefaults(vid->xdk360_render_device);
-   vid->fragment_constant_table->SetDefaults(vid->xdk360_render_device);
 
    //TODO: Update the shader constants
 
