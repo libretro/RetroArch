@@ -24,7 +24,8 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 #elif defined(_XBOX)
-#include <Xtl.h>
+#define NOD3D
+#include <xtl.h>
 #else
 #include <sys/select.h>
 #include <sys/types.h>
