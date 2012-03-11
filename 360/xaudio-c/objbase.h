@@ -33,19 +33,11 @@ typedef double DOUBLE;
 #endif
 
 #ifndef DECLSPEC_NOVTABLE
-#if (_MSC_VER >= 1100) && defined(__cplusplus)
-#define DECLSPEC_NOVTABLE __declspec(novtable)
-#else
 #define DECLSPEC_NOVTABLE
-#endif
 #endif
 
 #ifndef DECLSPEC_UUID
-#if (_MSC_VER >= 1100) && defined(__cplusplus)
-#define DECLSPEC_UUID(x) __declspec(uuid(x))
-#else
 #define DECLSPEC_UUID(x)
-#endif
 #endif
 
 #define MIDL_INTERFACE(x)   struct DECLSPEC_UUID(x) DECLSPEC_NOVTABLE
@@ -111,27 +103,6 @@ typedef double DOUBLE;
  *          };
  */
 
-#if defined(__cplusplus) && !defined(CINTERFACE)
-//#define interface               struct FAR
-#define interface struct
-#define STDMETHOD(method)       virtual HRESULT STDMETHODCALLTYPE method
-#define STDMETHOD_(type,method) virtual type STDMETHODCALLTYPE method
-#define STDMETHODV(method)       virtual HRESULT STDMETHODVCALLTYPE method
-#define STDMETHODV_(type,method) virtual type STDMETHODVCALLTYPE method
-#define PURE                    = 0
-#define THIS_
-#define THIS                    void
-#define DECLARE_INTERFACE(iface)    interface DECLSPEC_NOVTABLE iface
-#define DECLARE_INTERFACE_(iface, baseiface)    interface DECLSPEC_NOVTABLE iface : public baseiface
-
-
-#if !defined(BEGIN_INTERFACE)
-   #define BEGIN_INTERFACE
-   #define END_INTERFACE
-#endif
-
-#else
-
 #define interface               struct
 
 #define STDMETHOD(method)       HRESULT (STDMETHODCALLTYPE * method)
@@ -167,7 +138,6 @@ typedef double DOUBLE;
 #endif
 #define DECLARE_INTERFACE_(iface, baseiface)    DECLARE_INTERFACE(iface)
 
-#endif
 
 
 
@@ -176,11 +146,7 @@ typedef double DOUBLE;
 
 
 #ifndef FARSTRUCT
-#ifdef __cplusplus
-#define FARSTRUCT   FAR
-#else
 #define FARSTRUCT
-#endif  // __cplusplus
 #endif  // FARSTRUCT
 
 
@@ -242,55 +208,7 @@ typedef /* [unique] */ IUnknown __RPC_FAR *PUNKNOWN;
 // Link that library in with your proxies, clients and servers
 //////////////////////////////////////////////////////////////////
 
-#if (_MSC_VER >= 1100) && defined(__cplusplus) && !defined(CINTERFACE)
-    EXTERN_C const IID IID_IUnknown;
-    extern "C++"
-    {
-        MIDL_INTERFACE("00000000-0000-0000-C000-000000000046")
-        IUnknown
-        {
-        public:
-            BEGIN_INTERFACE
-            virtual HRESULT STDMETHODCALLTYPE QueryInterface( 
-                /* [in] */ __in REFIID riid,
-                /* [iid_is][out] */ __deref_out void __RPC_FAR *__RPC_FAR *ppvObject) = 0;
-            
-            virtual ULONG STDMETHODCALLTYPE AddRef( void) = 0;
-            
-            virtual ULONG STDMETHODCALLTYPE Release( void) = 0;
-        
-            template<class Q>
-            HRESULT STDMETHODCALLTYPE QueryInterface(Q** pp)
-            {
-                return QueryInterface(__uuidof(Q), (void **)pp);
-            }
-            
-            END_INTERFACE
-        };
-    } // extern C++
-#else // VC6 hack
-
 EXTERN_C const IID IID_IUnknown;
-
-#if defined(__cplusplus) && !defined(CINTERFACE)
-    
-    MIDL_INTERFACE("00000000-0000-0000-C000-000000000046")
-    IUnknown
-    {
-    public:
-        BEGIN_INTERFACE
-        virtual HRESULT STDMETHODCALLTYPE QueryInterface( 
-            /* [in] */ __in REFIID riid,
-            /* [iid_is][out] */ __deref_out void __RPC_FAR *__RPC_FAR *ppvObject) = 0;
-        
-        virtual ULONG STDMETHODCALLTYPE AddRef( void) = 0;
-        
-        virtual ULONG STDMETHODCALLTYPE Release( void) = 0;
-        
-        END_INTERFACE
-    };
-    
-#else 	/* C style interface */
 
     typedef struct IUnknownVtbl
     {
@@ -315,10 +233,6 @@ EXTERN_C const IID IID_IUnknown;
         CONST_VTBL struct IUnknownVtbl __RPC_FAR *lpVtbl;
     };
 
-    
-
-#ifdef COBJMACROS
-
 
 #define IUnknown_QueryInterface(This,riid,ppvObject)	\
     (This)->lpVtbl -> QueryInterface(This,riid,ppvObject)
@@ -329,12 +243,9 @@ EXTERN_C const IID IID_IUnknown;
 #define IUnknown_Release(This)	\
     (This)->lpVtbl -> Release(This)
 
-#endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
 
-#endif 	/* __IUnknown_INTERFACE_DEFINED__ */
 
 
 /* interface __MIDL_itf_unknwn_0005 */
@@ -357,26 +268,6 @@ typedef interface ISequentialStream ISequentialStream;
 
 
 EXTERN_C const IID IID_ISequentialStream;
-
-#if defined(__cplusplus) && !defined(CINTERFACE)
-    
-    MIDL_INTERFACE("0c733a30-2a1c-11ce-ade5-00aa0044773d")
-    ISequentialStream : public IUnknown
-    {
-    public:
-        virtual /* [local] */ HRESULT STDMETHODCALLTYPE Read( 
-            /* [length_is][size_is][out] */ __out_bcount_part_opt(cb, *pcbRead) void __RPC_FAR *pv,
-            /* [in] */ __in ULONG cb,
-            /* [out] */ __out_opt ULONG __RPC_FAR *pcbRead) = 0;
-        
-        virtual /* [local] */ HRESULT STDMETHODCALLTYPE Write( 
-            /* [size_is][in] */ __in_bcount_opt(cb) const void __RPC_FAR *pv,
-            /* [in] */ __in ULONG cb,
-            /* [out] */ __out_opt ULONG __RPC_FAR *pcbWritten) = 0;
-        
-    };
-    
-#else 	/* C style interface */
 
     typedef struct ISequentialStreamVtbl
     {
@@ -413,10 +304,6 @@ EXTERN_C const IID IID_ISequentialStream;
         CONST_VTBL struct ISequentialStreamVtbl __RPC_FAR *lpVtbl;
     };
 
-    
-
-#ifdef COBJMACROS
-
 
 #define ISequentialStream_QueryInterface(This,riid,ppvObject)	\
     (This)->lpVtbl -> QueryInterface(This,riid,ppvObject)
@@ -433,11 +320,6 @@ EXTERN_C const IID IID_ISequentialStream;
 
 #define ISequentialStream_Write(This,pv,cb,pcbWritten)	\
     (This)->lpVtbl -> Write(This,pv,cb,pcbWritten)
-
-#endif /* COBJMACROS */
-
-
-#endif 	/* C style interface */
 
 
 #endif 	/* __ISequentialStream_INTERFACE_DEFINED__ */
@@ -498,51 +380,6 @@ enum tagLOCKTYPE
 
 EXTERN_C const IID IID_IStream;
 
-#if defined(__cplusplus) && !defined(CINTERFACE)
-    
-    MIDL_INTERFACE("0000000c-0000-0000-C000-000000000046")
-    IStream : public ISequentialStream
-    {
-    public:
-        virtual /* [local] */ HRESULT STDMETHODCALLTYPE Seek( 
-            /* [in] */ __in LARGE_INTEGER dlibMove,
-            /* [in] */ __in DWORD dwOrigin,
-            /* [out] */ __out_opt ULARGE_INTEGER __RPC_FAR *plibNewPosition) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE SetSize( 
-            /* [in] */ __in ULARGE_INTEGER libNewSize) = 0;
-        
-        virtual /* [local] */ HRESULT STDMETHODCALLTYPE CopyTo( 
-            /* [unique][in] */ __in IStream __RPC_FAR *pstm,
-            /* [in] */ __in ULARGE_INTEGER cb,
-            /* [out] */ __out_opt ULARGE_INTEGER __RPC_FAR *pcbRead,
-            /* [out] */ __out_opt ULARGE_INTEGER __RPC_FAR *pcbWritten) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE Commit( 
-            /* [in] */ __in DWORD grfCommitFlags) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE Revert( void) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE LockRegion( 
-            /* [in] */ __in ULARGE_INTEGER libOffset,
-            /* [in] */ __in ULARGE_INTEGER cb,
-            /* [in] */ __in DWORD dwLockType) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE UnlockRegion( 
-            /* [in] */ __in ULARGE_INTEGER libOffset,
-            /* [in] */ __in ULARGE_INTEGER cb,
-            /* [in] */ __in DWORD dwLockType) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE Stat( 
-            /* [out] */ __out STATSTG __RPC_FAR *pstatstg,
-            /* [in] */ __in DWORD grfStatFlag) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE Clone( 
-            /* [out] */ __deref_out_opt IStream __RPC_FAR *__RPC_FAR *ppstm) = 0;
-        
-    };
-    
-#else 	/* C style interface */
 
     typedef struct IStreamVtbl
     {
@@ -624,10 +461,6 @@ EXTERN_C const IID IID_IStream;
         CONST_VTBL struct IStreamVtbl __RPC_FAR *lpVtbl;
     };
 
-    
-
-#ifdef COBJMACROS
-
 
 #define IStream_QueryInterface(This,riid,ppvObject)	\
     (This)->lpVtbl -> QueryInterface(This,riid,ppvObject)
@@ -673,10 +506,7 @@ EXTERN_C const IID IID_IStream;
 #define IStream_Clone(This,ppstm)	\
     (This)->lpVtbl -> Clone(This,ppstm)
 
-#endif /* COBJMACROS */
 
-
-#endif 	/* C style interface */
 
 
 #endif 	/* __IStream_INTERFACE_DEFINED__ */
@@ -699,23 +529,6 @@ typedef /* [unique] */ IClassFactory __RPC_FAR *LPCLASSFACTORY;
 
 EXTERN_C const IID IID_IClassFactory;
 
-#if defined(__cplusplus) && !defined(CINTERFACE)
-    
-    MIDL_INTERFACE("00000001-0000-0000-C000-000000000046")
-    IClassFactory : public IUnknown
-    {
-    public:
-        virtual /* [local] */ HRESULT STDMETHODCALLTYPE CreateInstance( 
-            /* [unique][in] */ __in_opt IUnknown __RPC_FAR *pUnkOuter,
-            /* [in] */ __in REFIID riid,
-            /* [iid_is][out] */ __deref_out void __RPC_FAR *__RPC_FAR *ppvObject) = 0;
-        
-        virtual /* [local] */ HRESULT STDMETHODCALLTYPE LockServer( 
-            /* [in] */ __in BOOL fLock) = 0;
-        
-    };
-    
-#else 	/* C style interface */
 
     typedef struct IClassFactoryVtbl
     {
@@ -750,9 +563,6 @@ EXTERN_C const IID IID_IClassFactory;
         CONST_VTBL struct IClassFactoryVtbl __RPC_FAR *lpVtbl;
     };
 
-    
-
-#ifdef COBJMACROS
 
 
 #define IClassFactory_QueryInterface(This,riid,ppvObject)	\
@@ -771,10 +581,8 @@ EXTERN_C const IID IID_IClassFactory;
 #define IClassFactory_LockServer(This,fLock)	\
     (This)->lpVtbl -> LockServer(This,fLock)
 
-#endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
 
 
 #endif 	/* __IClassFactory_INTERFACE_DEFINED__ */
@@ -798,18 +606,6 @@ typedef /* [unique] */ IPersist __RPC_FAR *LPPERSIST;
 
 EXTERN_C const IID IID_IPersist;
 
-#if defined(__cplusplus) && !defined(CINTERFACE)
-    
-    MIDL_INTERFACE("0000010c-0000-0000-C000-000000000046")
-    IPersist : public IUnknown
-    {
-    public:
-        virtual HRESULT STDMETHODCALLTYPE GetClassID( 
-            /* [out] */ __out CLSID __RPC_FAR *pClassID) = 0;
-        
-    };
-    
-#else 	/* C style interface */
 
     typedef struct IPersistVtbl
     {
@@ -838,9 +634,6 @@ EXTERN_C const IID IID_IPersist;
         CONST_VTBL struct IPersistVtbl __RPC_FAR *lpVtbl;
     };
 
-    
-
-#ifdef COBJMACROS
 
 
 #define IPersist_QueryInterface(This,riid,ppvObject)	\
@@ -856,10 +649,8 @@ EXTERN_C const IID IID_IPersist;
 #define IPersist_GetClassID(This,pClassID)	\
     (This)->lpVtbl -> GetClassID(This,pClassID)
 
-#endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
 
 
 #endif 	/* __IPersist_INTERFACE_DEFINED__ */
@@ -883,28 +674,6 @@ typedef /* [unique] */ IPersistStream __RPC_FAR *LPPERSISTSTREAM;
 
 
 EXTERN_C const IID IID_IPersistStream;
-
-#if defined(__cplusplus) && !defined(CINTERFACE)
-    
-    MIDL_INTERFACE("00000109-0000-0000-C000-000000000046")
-    IPersistStream : public IPersist
-    {
-    public:
-        virtual HRESULT STDMETHODCALLTYPE IsDirty( void) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE Load( 
-            /* [unique][in] */ __in_opt IStream __RPC_FAR *pStm) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE Save( 
-            /* [unique][in] */ __in_opt IStream __RPC_FAR *pStm,
-            /* [in] */ __in BOOL fClearDirty) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE GetSizeMax( 
-            /* [out] */ __out ULARGE_INTEGER __RPC_FAR *pcbSize) = 0;
-        
-    };
-    
-#else 	/* C style interface */
 
     typedef struct IPersistStreamVtbl
     {
@@ -949,9 +718,6 @@ EXTERN_C const IID IID_IPersistStream;
         CONST_VTBL struct IPersistStreamVtbl __RPC_FAR *lpVtbl;
     };
 
-    
-
-#ifdef COBJMACROS
 
 
 #define IPersistStream_QueryInterface(This,riid,ppvObject)	\
@@ -980,10 +746,8 @@ EXTERN_C const IID IID_IPersistStream;
 #define IPersistStream_GetSizeMax(This,pcbSize)	\
     (This)->lpVtbl -> GetSizeMax(This,pcbSize)
 
-#endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
 
 
 #endif 	/* __IPersistStream_INTERFACE_DEFINED__ */
