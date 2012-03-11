@@ -50,7 +50,7 @@ const char * ssnes_console_get_rom_ext(void)
    else if (strstr(id, "gambatte"))
       return "gb|gbc|GB|GBC|zip|ZIP";
    // FBA Next
-   else if (strstr(id, "FBA"))
+   else if (strstr(id, "FB Alpha"))
       return "zip|ZIP";
    // Genesis Plus GX/Next
    else if (strstr(id, "Genesis Plus GX"))
@@ -118,7 +118,7 @@ int can_extract_zip_files(void)
 	const char *id = snes_library_id();
 
 	// FBA Next
-	if (strstr(id, "FBA"))
+	if (strstr(id, "FB Alpha"))
 		retval =  0;
 
 	return retval;
