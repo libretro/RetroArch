@@ -18,7 +18,7 @@
 #include "../driver.h"
 #include <stdlib.h>
 #include <xtl.h>
-#include <xaudio2.h>
+#include "xaudio-c/xaudio.h"
 #include "../general.h"
 
 #define MAX_BUFFERS 16
@@ -49,7 +49,7 @@ struct XAudio : public IXAudio2VoiceCallback
       if (hEvent)
          CloseHandle(hEvent);
 
-      delete[] buf;
+      free(buf);
    }
 
    bool init(unsigned rate, unsigned latency)
@@ -81,7 +81,7 @@ struct XAudio : public IXAudio2VoiceCallback
       hEvent = CreateEvent(0, FALSE, FALSE, 0);
 
       bufsize = size / MAX_BUFFERS;
-      buf = new uint8_t[bufsize * MAX_BUFFERS];
+      buf = (uint8_t*)malloc(bufsize * MAX_BUFFERS);
       memset(buf, 0, bufsize * MAX_BUFFERS);
 
       if (FAILED(pSourceVoice->Start(0)))
