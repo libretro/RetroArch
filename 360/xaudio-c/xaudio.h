@@ -82,11 +82,7 @@ DEFINE_IID(IXAudio2, 8bcf1f58, 9fe7, 4583, 8a, c6, e2, ad, c4, 65, c8, bb);
 #define XAUDIO2_E_XAPO_CREATION_FAILED  0x88960003    // XAudio2 failed to initialize an XAPO effect
 #define XAUDIO2_E_DEVICE_INVALIDATED    0x88960004    // An audio device became unusable (unplugged, etc)
 
-#ifdef __cplusplus
-    #define FWD_DECLARE(x) interface x
-#else
-    #define FWD_DECLARE(x) typedef interface x x
-#endif
+#define FWD_DECLARE(x) typedef interface x x
 
 FWD_DECLARE(IXAudio2);
 FWD_DECLARE(IXAudio2Voice);
@@ -233,12 +229,7 @@ typedef struct XAUDIO2_VOICE_STATE
 #define XAUDIO2_LOG_MEMORY     0x0100   // Memory heap usage information.
 #define XAUDIO2_LOG_STREAMING  0x1000   // Audio streaming information.
 
-// Use default arguments if compiling as C++
-#ifdef __cplusplus
-    #define X2DEFAULT(x) =x
-#else
-    #define X2DEFAULT(x)
-#endif
+#define X2DEFAULT(x)
 
 #undef INTERFACE
 #define INTERFACE IXAudio2
@@ -395,8 +386,6 @@ DECLARE_INTERFACE(IXAudio2VoiceCallback)
     STDMETHOD_(void, OnVoiceError) (THIS_ void* pBufferContext, HRESULT Error) PURE;
 };
 
-#ifndef __cplusplus
-
 // IXAudio2
 #define IXAudio2_QueryInterface(This,riid,ppvInterface) ((This)->lpVtbl->QueryInterface(This,riid,ppvInterface))
 #define IXAudio2_AddRef(This) ((This)->lpVtbl->AddRef(This))
@@ -504,8 +493,6 @@ DECLARE_INTERFACE(IXAudio2VoiceCallback)
 #define IXAudio2MasteringVoice_SetOutputMatrix IXAudio2Voice_SetOutputMatrix
 #define IXAudio2MasteringVoice_GetOutputMatrix IXAudio2Voice_GetOutputMatrix
 #define IXAudio2MasteringVoice_DestroyVoice IXAudio2Voice_DestroyVoice
-
-#endif // #ifndef __cplusplus
 
 STDAPI XAudio2Create(__deref_out IXAudio2** ppXAudio2, UINT32 Flags X2DEFAULT(0),
                      XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR));

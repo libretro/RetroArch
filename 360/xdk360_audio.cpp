@@ -59,7 +59,7 @@ struct XAudio : public IXAudio2VoiceCallback
 
       SSNES_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize_ * 1000 / rate);
 
-      if (FAILED(XAudio2Create(&pXAudio2, 0)))
+      if (FAILED(XAudio2Create(&pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
          return false;
 
       if (FAILED(pXAudio2->CreateMasteringVoice(&pMasteringVoice, 2, rate, 0, 0, NULL)))
@@ -84,7 +84,7 @@ struct XAudio : public IXAudio2VoiceCallback
       buf = (uint8_t*)malloc(bufsize * MAX_BUFFERS);
       memset(buf, 0, bufsize * MAX_BUFFERS);
 
-      if (FAILED(pSourceVoice->Start(0)))
+      if (FAILED(pSourceVoice->Start(0, XAUDIO2_COMMIT_NOW)))
          return false;
 
       return true;
@@ -122,7 +122,7 @@ struct XAudio : public IXAudio2VoiceCallback
             xa2buffer.AudioBytes = bufsize;
             xa2buffer.pAudioData = buf + write_buffer * bufsize;
 
-            if (FAILED(pSourceVoice->SubmitSourceBuffer(&xa2buffer)))
+            if (FAILED(pSourceVoice->SubmitSourceBuffer(&xa2buffer, NULL)))
                return 0;
 
             InterlockedIncrement(&buffers);
