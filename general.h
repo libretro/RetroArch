@@ -189,6 +189,7 @@ struct console_settings
    bool block_config_read;
    bool default_sram_dir_enable;
    bool default_savestate_dir_enable;
+   bool extract_zip_files_enable;
    bool frame_advance_enable;
    bool gamma_correction_enable;
    bool initialize_ssnes_enable;

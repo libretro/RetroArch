@@ -178,6 +178,7 @@ static void set_default_settings (void)
 	g_console.custom_viewport_height = 0;
 	g_console.custom_viewport_x = 0;
 	g_console.custom_viewport_y = 0;
+	g_console.extract_zip_files_enable = can_extract_zip_files();
 
 	//g_extern
 	g_extern.state_slot = 0;

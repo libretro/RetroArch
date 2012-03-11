@@ -109,6 +109,21 @@ void ssnes_console_set_default_keybind_names_for_emulator(void)
 
 #ifdef HAVE_ZLIB
 
+/* if 0, the emulator core uses zlib internally and therefore we can't extract zip files to the cache partitions. If 1, zip files can be extracted to the cache partitions */
+
+int can_extract_zip_files(void)
+{
+	bool retval = 1;
+
+	const char *id = snes_library_id();
+
+	// FBA Next
+	if (strstr(id, "FBA"))
+		retval =  0;
+
+	return retval;
+}
+
 static int ssnes_extract_currentfile_in_zip(unzFile uf)
 {
    char filename_inzip[PATH_MAX];

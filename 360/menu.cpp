@@ -315,7 +315,7 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 		{
 			memset(strbuffer, 0, sizeof(strbuffer));
 			wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
-			if(strstr(strbuffer, ".zip") || strstr(strbuffer, ".ZIP"))
+			if((strstr(strbuffer, ".zip") || strstr(strbuffer, ".ZIP")) && g_console.extract_zip_files_enable)
 			{
 				char path_tmp[1024];
 				sprintf(path_tmp, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
