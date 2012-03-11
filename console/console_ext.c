@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../boolean.h"
+#include "../strl.h"
 #include "../libsnes.hpp"
 #include "../input/input_luts.h"
 #include "../general.h"
@@ -33,7 +34,14 @@
 #include "../posix_string.h"
 #endif
 
-const char * ssnes_console_get_rom_ext(void)
+static char g_rom_ext[1024];
+
+void ssnes_console_set_rom_ext(const char *ext)
+{
+   strlcpy(g_rom_ext, ext, sizeof(g_rom_ext));
+}
+
+const char *ssnes_console_get_rom_ext(void)
 {
    const char *id = snes_library_id();
 
@@ -55,6 +63,8 @@ const char * ssnes_console_get_rom_ext(void)
    // Genesis Plus GX/Next
    else if (strstr(id, "Genesis Plus GX"))
       return "md|smd|bin|gen|zip|MD|SMD|bin|GEN|ZIP|sms|SMS|gg|GG|sg|SG";
+   else if (*g_rom_ext)
+      return g_rom_ext;
 
    return NULL;
 }
@@ -108,22 +118,6 @@ void ssnes_console_set_default_keybind_names_for_emulator(void)
 }
 
 #ifdef HAVE_ZLIB
-
-/* if 0, the emulator core uses zlib internally and therefore we can't extract zip files to the cache partitions. If 1, zip files can be extracted to the cache partitions */
-
-int can_extract_zip_files(void)
-{
-	bool retval = 1;
-
-	const char *id = snes_library_id();
-
-	// FBA Next
-	if (strstr(id, "FB Alpha"))
-		retval =  0;
-
-	return retval;
-}
-
 static int ssnes_extract_currentfile_in_zip(unzFile uf)
 {
    char filename_inzip[PATH_MAX];

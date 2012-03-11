@@ -20,10 +20,11 @@
 
 #include <stddef.h>
 
+void ssnes_console_set_rom_ext(const char *ext);
+
 // Get rom extensions for current library.
-// Infers info from snes_library_id().
 // Returns NULL if library doesn't have any preferences in particular.
-const char * ssnes_console_get_rom_ext(void);
+const char *ssnes_console_get_rom_ext(void);
 
 // Transforms a library id to a name suitable as a pathname.
 void ssnes_console_name_from_id(char *name, size_t size);
@@ -33,7 +34,6 @@ void ssnes_console_name_from_id(char *name, size_t size);
 void ssnes_console_set_default_keybind_names_for_emulator(void);
 
 #ifdef HAVE_ZLIB
-int can_extract_zip_files(void);
 int ssnes_extract_zipfile(const char *zip_path);
 #endif
 

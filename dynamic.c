@@ -20,6 +20,10 @@
 #include "strl.h"
 #include <string.h>
 
+#ifdef SSNES_CONSOLE
+#include "console/console_ext.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -379,6 +383,25 @@ static bool environment_cb(unsigned cmd, void *data)
             vars++;
          }
          SSNES_LOG("=======================\n");
+         break;
+      }
+
+#ifdef SSNES_CONSOLE
+      case SNES_ENVIRONMENT_SET_BATCH_LOAD:
+         g_console.block_zip_extract = *(const bool*)data;
+         break;
+
+      case SNES_ENVIRONMENT_SET_ROM_FORMATS:
+         ssnes_console_set_rom_ext((const char*)data);
+         break;
+#endif
+
+      case SNES_ENVIRONMENT_SET_MESSAGE:
+      {
+         const struct snes_message *msg = (const struct snes_message*)data;
+         SSNES_LOG("Environ SET_MESSAGE: %s\n", msg->msg);
+         if (g_extern.msg_queue)
+            msg_queue_push(g_extern.msg_queue, msg->msg, 1, msg->frames);
          break;
       }
 

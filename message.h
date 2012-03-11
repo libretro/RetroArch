@@ -27,7 +27,6 @@ typedef struct msg_queue msg_queue_t;
 msg_queue_t *msg_queue_new(size_t size);
 
 // Higher prio is... higher prio :) Duration is how many times a message can be pulled from queue before it vanishes. (E.g. show a message for 3 seconds @ 60fps = 180 duration). 
-
 void msg_queue_push(msg_queue_t *queue, const char *msg, unsigned prio, unsigned duration);
 
 // Pulls highest prio message in queue. Returns NULL if no message in queue.
