@@ -450,8 +450,6 @@ static void get_environment_settings (void)
 	
 	strlcpy(DEFAULT_SHADER_FILE, "game:\\media\\shaders\\stock.cg", sizeof(DEFAULT_SHADER_FILE));
 	strlcpy(SYS_CONFIG_FILE, "game:\\ssnes.cfg", sizeof(SYS_CONFIG_FILE));
-
-	init_libsnes_sym();
 }
 
 static bool manage_libsnes_core(void)
@@ -539,6 +537,7 @@ int main(int argc, char *argv[])
 
 	set_default_settings();
 	init_settings(load_libsnes_path);
+	init_libsnes_sym();
 
 	xdk360_video_init();
 	xdk360_input_init();
