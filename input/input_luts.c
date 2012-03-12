@@ -23,7 +23,9 @@
 #endif
 
 #include <stddef.h>
+#include <string.h>
 #include "input_luts.h"
+#include "../strl.h"
 
 uint64_t ssnes_default_keybind_lut[SSNES_FIRST_META_KEY];
 
@@ -238,3 +240,26 @@ const char *ssnes_input_find_platform_key_label(uint64_t joykey)
    return "Unknown";
 }
 
+void ssnes_input_set_default_keybind_names_for_emulator(void)
+{
+   const char *id = snes_library_id();
+
+   // Genesis Plus GX/Next
+   if (strstr(id, "Genesis Plus GX"))
+   {
+      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_B],
+            "B button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_B]));
+      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_A],
+            "C button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_A]));
+      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_X],
+            "Y button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_X]));
+      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_Y],
+            "A button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_Y]));
+      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_L],
+            "X button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_L]));
+      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_R],
+            "Z button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_R]));
+      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_SELECT],
+            "Mode button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_SELECT]));
+   }
+}

@@ -114,5 +114,9 @@ const char *ssnes_input_find_platform_key_label(uint64_t joykey);
 uint64_t ssnes_input_find_previous_platform_key(uint64_t joykey);
 uint64_t ssnes_input_find_next_platform_key(uint64_t joykey);
 
+// Sets custom default keybind names (some systems emulated by the emulator
+// will need different keybind names for buttons, etc.)
+void ssnes_input_set_default_keybind_names_for_emulator(void);
+
 #endif
 

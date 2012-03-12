@@ -541,6 +541,9 @@ int main(int argc, char *argv[])
 
 	xdk360_video_init();
 	xdk360_input_init();
+
+	ssnes_input_set_default_keybind_names_for_emulator();
+
 	menu_init();
 
 begin_loop:
