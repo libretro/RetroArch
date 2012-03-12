@@ -189,8 +189,6 @@ struct console_settings
    bool block_config_read;
    bool default_sram_dir_enable;
    bool default_savestate_dir_enable;
-   bool extract_zip_files_enable;
-   bool block_zip_extract;
    bool frame_advance_enable;
    bool gamma_correction_enable;
    bool initialize_ssnes_enable;
@@ -202,6 +200,7 @@ struct console_settings
    bool throttle_enable;
    bool triple_buffering_enable;
    float overscan_amount;
+   uint32_t block_zip_extract;
    uint32_t aspect_ratio_index;
    uint32_t custom_viewport_width;
    uint32_t custom_viewport_height;

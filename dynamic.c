@@ -388,7 +388,7 @@ static bool environment_cb(unsigned cmd, void *data)
 
 #ifdef SSNES_CONSOLE
       case SNES_ENVIRONMENT_SET_BATCH_LOAD:
-         g_console.block_zip_extract = *(const bool*)data;
+         g_console.block_zip_extract = *(uint32_t*)data;
          break;
 
       case SNES_ENVIRONMENT_SET_ROM_FORMATS:
