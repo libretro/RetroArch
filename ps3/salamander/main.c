@@ -36,10 +36,10 @@
 #define MAX_PATH_LENGTH 1024
 
 #ifdef HAVE_LOGGER
-#include "../cellframework2/fileio/logger.h"
-#define SSNES_LOG(...) net_send("SSNES Salamander: " __VA_ARGS__);
-#define SSNES_ERR(...) net_send("SSNES Salamander [ERROR] :: " __VA_ARGS__);
-#define SSNES_WARN(...) net_send("SSNES Salamander [WARN] :: " __VA_ARGS__);
+#include "logger.h"
+#define SSNES_LOG(...) logger_send("SSNES Salamander: " __VA_ARGS__);
+#define SSNES_ERR(...) logger_send("SSNES Salamander [ERROR] :: " __VA_ARGS__);
+#define SSNES_WARN(...) logger_send("SSNES Salamander [WARN] :: " __VA_ARGS__);
 #else
 #define SSNES_LOG(...) do { \
       fprintf(stderr, "SSNES Salamander: " __VA_ARGS__); \

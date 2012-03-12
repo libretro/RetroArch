@@ -82,5 +82,6 @@ void freeaddrinfo(struct addrinfo *res);
 // gai_strerror() not used, so we skip that.
 
 #endif
+
 #endif
 

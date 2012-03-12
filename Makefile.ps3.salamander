@@ -22,7 +22,7 @@ PPU_SRCS		= ps3/salamander/main.c strl.c conf/config_file.c
 
 ifeq ($(HAVE_LOGGER), 1)
 PPU_CFLAGS		+= -DHAVE_LOGGER
-PPU_SRCS		+= ps3/cellframework2/fileio/logger.c
+PPU_SRCS		+= console/logger/logger.c
 endif
 
 PPU_TARGET		= ssnes-salamander.elf

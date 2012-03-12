@@ -1,23 +1,3 @@
-/*  -- Cellframework Mk.II -  Open framework to abstract the common tasks related to
- *                            PS3 application development.
- *
- *  Copyright (C) 2010-2012
- *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
-
 /*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2012 - Daniel De Matteis
@@ -36,16 +16,26 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef __CELLOS_LV2__
 #include <netex/net.h>
 #include <cell/sysmodule.h>
 #include <netex/libnetctl.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/timer.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif
+
+#ifdef HW_RVL
+#include <network.h>
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
+
+#include "../../netplay_compat.h"
 
 #include "logger.h"
 
@@ -62,13 +52,26 @@ static int sock;
 static struct sockaddr_in target;
 static char sendbuf[4096];
 
+#ifdef HW_RVL
+#define sendto(s, msg, len, flags, addr, tolen) net_sendto(s, msg, len, flags, addr, tolen)
+#define socket(domain, type, protocol) net_socket(domain, type, protocol)
+
+static int inet_pton(int af, const char *src, void *dst)
+{
+	if (af != AF_INET)
+		return -1;
+	return inet_aton (src, dst);
+}
+#endif
+
 static int if_up_with(int index)
 {
+	(void)index;
+#ifdef __CELLOS_LV2__
 	int timeout_count = 10;
 	int state;
 	int ret;
 
-	(void)index;
 	ret = cellNetCtlInit();
 	if (ret < 0)
 	{
@@ -94,6 +97,7 @@ static int if_up_with(int index)
 			return (0);
 		}
 	}
+#endif
 
 	sock=socket(AF_INET,SOCK_DGRAM ,0);
 
@@ -107,7 +111,9 @@ static int if_up_with(int index)
 static int if_down(int sid)
 {
 	(void)sid;
+#ifdef __CELLOS_LV2__
 	cellNetCtlTerm();
+#endif
 	return (0);
 }
 
@@ -121,7 +127,7 @@ void logger_shutdown (void)
 	if_down(g_sid);
 }
 
-void net_send(const char *__format,...)
+void logger_send(const char *__format,...)
 {
 	va_list args;
 
@@ -130,5 +136,5 @@ void net_send(const char *__format,...)
 	va_end(args);
 
 	int len=strlen(sendbuf);
-	sendto(sock,sendbuf,len,MSG_DONTWAIT,(const struct sockaddr*)&target,sizeof(target));
+	sendto(sock,sendbuf,len,MSG_DONTWAIT,(struct sockaddr*)&target,sizeof(target));
 }

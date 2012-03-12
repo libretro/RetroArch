@@ -19,20 +19,20 @@
 #ifndef __SSNES_LOGGER_OVERRIDE_H
 #define __SSNES_LOGGER_OVERRIDE_H
 
-#ifdef __CELLOS_LV2__
+#if (defined(__CELLOS_LV2__) || defined(HW_RVL)) && defined(HAVE_LOGGER)
 
-#include "ps3/cellframework2/fileio/logger.h"
+#include "console/logger/logger.h"
 
 #define SSNES_LOG(...) do { \
-   if (g_extern.verbose) net_send("SSNES: " __VA_ARGS__); \
+   if (g_extern.verbose) logger_send("SSNES: " __VA_ARGS__); \
 } while(0)
 
 #define SSNES_ERR(...) do { \
-   net_send("SSNES [ERROR] :: " __VA_ARGS__); \
+   logger_send("SSNES [ERROR] :: " __VA_ARGS__); \
 } while(0)
 
 #define SSNES_WARN(...) do { \
-   net_send("SSNES [WARN] :: " __VA_ARGS__); \
+   logger_send("SSNES [WARN] :: " __VA_ARGS__); \
 } while(0)
 
 #endif

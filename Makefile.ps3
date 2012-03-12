@@ -96,7 +96,7 @@ PPU_CXXFLAGS = $(PPU_OPTIMIZE_LV) $(INCDIRS) $(DEFINES)
 
 ifeq ($(HAVE_LOGGER), 1)
 PPU_CFLAGS		+= -DHAVE_LOGGER
-PPU_SRCS		+= ps3/cellframework2/fileio/logger.c
+PPU_SRCS		+= console/logger/logger.c
 endif
 
 EXIST_EBOOT_WILDCARD := $(wildcard $(EBOOT_PATH))

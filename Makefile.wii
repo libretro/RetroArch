@@ -5,7 +5,11 @@
 ###
 ##
 
-DEBUG = 0
+DEBUG			= 0
+HAVE_LOGGER		= 0
+
+PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.7"
+PC_DEVELOPMENT_UDP_PORT		= 3490
 
 CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc
 CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++
@@ -25,7 +29,12 @@ LIBS := -lfat -lsnes -lwiiuse -logc -lbte -lfreetype
 
 OBJ = wii/main.o fifo_buffer.o ssnes.o driver.o gfx/fonts.o file.o settings.o message.o rewind.o movie.o ups.o bps.o strl.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o wii/audio.o wii/input.o wii/video.o console/sgui.o console/list.o console/font.bmpobj console/main_wrap.o console/console_ext.o console/szlib/szlib.o
 
-CFLAGS += -std=gnu99 -DSSNES_CONSOLE -DHAVE_CONFIGFILE=1 -DHAVE_GETOPT_LONG -DHAVE_FREETYPE -DPACKAGE_VERSION=\"0.9.5\" -Dmain=ssnes_main -Wno-char-subscripts
+ifeq ($(HAVE_LOGGER), 1)
+CFLAGS		+= -DHAVE_LOGGER
+OBJ += console/logger/logger.o
+endif
+
+CFLAGS += -std=gnu99 -DSSNES_CONSOLE -DHAVE_CONFIGFILE=1 -DHAVE_GETOPT_LONG -DHAVE_FREETYPE -DPACKAGE_VERSION=\"0.9.5\" -Dmain=ssnes_main -Wno-char-subscripts -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
