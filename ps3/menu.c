@@ -2001,7 +2001,7 @@ static void select_rom(void)
 
 				snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 
-				if((strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP")) && g_console.extract_zip_files_enable)
+				if((strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP")) && !g_console.block_zip_extract)
 					ssnes_extract_zipfile(rom_path_temp);
 				else
 				{

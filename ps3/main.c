@@ -155,7 +155,6 @@ static void set_default_settings(void)
 	g_console.custom_viewport_y = 0;
 	strlcpy(g_console.rsound_ip_address, "0.0.0.0", sizeof(g_console.rsound_ip_address));
 	g_console.custom_bgm_enable = true;
-	g_console.extract_zip_files_enable = can_extract_zip_files();
 	
 	// g_extern
 	g_extern.state_slot = 0;
@@ -576,6 +575,7 @@ int main(int argc, char *argv[])
 
 	set_default_settings();
 	init_settings(load_libsnes_path);
+	init_libsnes_sym();
 
 #if(CELL_SDK_VERSION > 0x340000)
 	if (g_console.screenshots_enable)
