@@ -44,7 +44,9 @@ void ssnes_console_set_rom_ext(const char *ext)
 const char *ssnes_console_get_rom_ext(void)
 {
    const char *id = snes_library_id();
-
+   
+   if (*g_rom_ext)
+	   return g_rom_ext;
    // SNES9x / bSNES
    if (strstr(id, "SNES"))
       return "smc|fig|sfc|gd3|gd7|dx2|bsx|swc|zip|SMC|FIG|SFC|BSX|GD3|GD7|DX2|SWC|ZIP";
@@ -63,8 +65,6 @@ const char *ssnes_console_get_rom_ext(void)
    // Genesis Plus GX/Next
    else if (strstr(id, "Genesis Plus GX"))
       return "md|smd|bin|gen|zip|MD|SMD|bin|GEN|ZIP|sms|SMS|gg|GG|sg|SG";
-   else if (*g_rom_ext)
-      return g_rom_ext;
 
    return NULL;
 }

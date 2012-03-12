@@ -178,7 +178,6 @@ static void set_default_settings (void)
 	g_console.custom_viewport_height = 0;
 	g_console.custom_viewport_x = 0;
 	g_console.custom_viewport_y = 0;
-	g_console.extract_zip_files_enable = can_extract_zip_files();
 
 	//g_extern
 	g_extern.state_slot = 0;
@@ -451,6 +450,8 @@ static void get_environment_settings (void)
 	
 	strlcpy(DEFAULT_SHADER_FILE, "game:\\media\\shaders\\stock.cg", sizeof(DEFAULT_SHADER_FILE));
 	strlcpy(SYS_CONFIG_FILE, "game:\\ssnes.cfg", sizeof(SYS_CONFIG_FILE));
+
+	init_libsnes_sym();
 }
 
 static bool manage_libsnes_core(void)
