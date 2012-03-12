@@ -437,7 +437,7 @@ static void init_filter(void)
    ssnes_assert(g_extern.filter.colormap);
 
    // Set up conversion map from 16-bit XRGB1555 to 32-bit ARGB.
-   for (int i = 0; i < 32768; i++)
+   for (unsigned i = 0; i < 32768; i++)
    {
       unsigned r = (i >> 10) & 31;
       unsigned g = (i >>  5) & 31;
@@ -452,14 +452,14 @@ static void init_filter(void)
 
 static void deinit_filter(void)
 {
-   if (g_extern.filter.active)
-   {
-      g_extern.filter.active = false;
-      dylib_close(g_extern.filter.lib);
-      g_extern.filter.lib = NULL;
-      free(g_extern.filter.buffer);
-      free(g_extern.filter.colormap);
-   }
+   if (!g_extern.filter.active)
+      return;
+
+   g_extern.filter.active = false;
+   dylib_close(g_extern.filter.lib);
+   g_extern.filter.lib = NULL;
+   free(g_extern.filter.buffer);
+   free(g_extern.filter.colormap);
 }
 #endif
 
