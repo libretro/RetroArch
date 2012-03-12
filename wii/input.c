@@ -82,28 +82,28 @@ static void wii_input_poll(void *data)
 
    unsigned pads = PAD_ScanPads();
    unsigned wpads = WPAD_ScanPads();
-#define _B(btn) pad_state[i][SNES_DEVICE_ID_JOYPAD_##btn] = down & PAD_BUTTON_##btn
+#define _BIND(btn) pad_state[i][SNES_DEVICE_ID_JOYPAD_##btn] = down & PAD_BUTTON_##btn
    for (unsigned i = 0; i < pads; i++)
    {
       uint16_t down = PAD_ButtonsHeld(i) | PAD_ButtonsDown(i);
       down &= ~PAD_ButtonsUp(i);
 
-      _B(B);
-      _B(Y);
+      _BIND(B);
+      _BIND(Y);
       pad_state[i][SNES_DEVICE_ID_JOYPAD_SELECT] = down & PAD_TRIGGER_Z;
-      _B(START);
-      _B(UP);
-      _B(DOWN);
-      _B(LEFT);
-      _B(RIGHT);
-      _B(A);
-      _B(X);
+      _BIND(START);
+      _BIND(UP);
+      _BIND(DOWN);
+      _BIND(LEFT);
+      _BIND(RIGHT);
+      _BIND(A);
+      _BIND(X);
       pad_state[i][SNES_DEVICE_ID_JOYPAD_L] = down & PAD_TRIGGER_L;
       pad_state[i][SNES_DEVICE_ID_JOYPAD_R] = down & PAD_TRIGGER_R;
    }
-#undef _B
 
-#define _B(btn) \
+#undef _BIND
+#define _BIND(btn) \
    wpad_state[i][SNES_DEVICE_ID_JOYPAD_##btn] = down & WPAD_CLASSIC_BUTTON_##btn;
 
    for (unsigned i = 0; i < wpads; i++)
@@ -111,16 +111,16 @@ static void wii_input_poll(void *data)
       uint32_t down = WPAD_ButtonsHeld(i) | WPAD_ButtonsDown(i);
       down &= ~WPAD_ButtonsUp(i);
 
-      _B(B);
-      _B(Y);
+      _BIND(B);
+      _BIND(Y);
       wpad_state[i][SNES_DEVICE_ID_JOYPAD_SELECT] = down & WPAD_CLASSIC_BUTTON_MINUS;
       wpad_state[i][SNES_DEVICE_ID_JOYPAD_START] = down & WPAD_CLASSIC_BUTTON_PLUS;
-      _B(UP);
-      _B(DOWN);
-      _B(LEFT);
-      _B(RIGHT);
-      _B(A);
-      _B(X);
+      _BIND(UP);
+      _BIND(DOWN);
+      _BIND(LEFT);
+      _BIND(RIGHT);
+      _BIND(A);
+      _BIND(X);
       wpad_state[i][SNES_DEVICE_ID_JOYPAD_L] = down & WPAD_CLASSIC_BUTTON_FULL_L;
       wpad_state[i][SNES_DEVICE_ID_JOYPAD_R] = down & WPAD_CLASSIC_BUTTON_FULL_R;
    }
