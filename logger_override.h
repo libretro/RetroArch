@@ -23,9 +23,17 @@
 
 #include "ps3/cellframework2/fileio/logger.h"
 
-#define SSNES_LOG(...) do{ if (g_extern.verbose) net_send("SSNES: " __VA_ARGS__); }while(0)
-#define SSNES_ERR(...) do{ net_send("SSNES [ERROR] :: " __VA_ARGS__); }while(0)
-#define SSNES_WARN(...) do{ net_send("SSNES [WARN] :: " __VA_ARGS__); }while(0)
+#define SSNES_LOG(...) do { \
+   if (g_extern.verbose) net_send("SSNES: " __VA_ARGS__); \
+} while(0)
+
+#define SSNES_ERR(...) do { \
+   net_send("SSNES [ERROR] :: " __VA_ARGS__); \
+} while(0)
+
+#define SSNES_WARN(...) do { \
+   net_send("SSNES [WARN] :: " __VA_ARGS__); \
+} while(0)
 
 #endif
 
