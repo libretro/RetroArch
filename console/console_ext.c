@@ -43,13 +43,12 @@ void ssnes_console_set_rom_ext(const char *ext)
 
 const char *ssnes_console_get_rom_ext(void)
 {
-	const char *retval;
-	const char *id = snes_library_id();
-   
+   const char *retval = NULL;
+
    if (*g_rom_ext)
-	   retval = g_rom_ext;
+      retval = g_rom_ext;
    else
-	   retval = "ZIP|zip";
+      retval = "ZIP|zip";
 
    return retval;
 }
