@@ -57,7 +57,6 @@ PPU_SRCS		= fifo_buffer.c \
 			rewind.c \
 			movie.c \
 			netplay.c \
-			netplay_compat.c \
 			ps3/ps3_video_psgl.c \
 			gfx/shader_cg.c \
 			gfx/snes_state.c \
