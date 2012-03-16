@@ -19,7 +19,7 @@
 
 #include <xtl.h>
 
-#include "../../strl.h"
+#include "../../compat/strl.h"
 #include "../../conf/config_file.h"
 #include "../../msvc/msvc_compat.h"
 

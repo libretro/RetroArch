@@ -9,19 +9,25 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="Source Files\compat">
+      <UniqueIdentifier>{442ff913-d338-430f-8b84-57bd7d4117db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\conf">
+      <UniqueIdentifier>{7ffc19c2-b69a-4272-b986-4fafee630f77}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\360\salamander\main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\conf\config_file.c">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\conf</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\strl.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\compat\strl.c">
+      <Filter>Source Files\compat</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\posix_string.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\compat\posix_string.c">
+      <Filter>Source Files\compat</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
