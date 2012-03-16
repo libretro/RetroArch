@@ -1404,3 +1404,116 @@ void netplay_post_frame(netplay_t *handle)
       netplay_post_frame_net(handle);
 }
 
+#ifdef HAVE_SOCKET_LEGACY
+
+#undef getaddrinfo
+#undef freeaddrinfo
+#undef sockaddr_storage
+#undef addrinfo
+
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+
+#define addrinfo addrinfo_ssnes__
+
+// Yes, we love shitty implementations, don't we? :(
+#ifdef _XBOX
+struct hostent
+{
+   char **h_addr_list; // Just do the minimal needed ...
+};
+
+static struct hostent *gethostbyname(const char *name)
+{
+   static struct hostent he;
+   static struct in_addr addr;
+   static char *addr_ptr;
+
+   he.h_addr_list = &addr_ptr;
+   addr_ptr = (char*)&addr;
+
+   if (!name)
+      return NULL;
+
+   XNDNS *dns = NULL;
+   WSAEVENT event = WSACreateEvent();
+   XNetDnsLookup(name, event, &dns);
+   if (!dns)
+      goto error;
+
+   WaitForSingleObject((HANDLE)event, INFINITE);
+   if (dns->iStatus)
+      goto error;
+
+   memcpy(&addr, dns->aina, sizeof(addr));
+
+   WSACloseEvent(event);
+   XNetDnsRelease(dns);
+
+   return &he;
+
+error:
+   if (event)
+      WSACloseEvent(event);
+   return NULL;
+}
+#endif
+
+int getaddrinfo_ssnes__(const char *node, const char *service,
+      const struct addrinfo *hints,
+      struct addrinfo **res)
+{
+   struct addrinfo *info = (struct addrinfo*)calloc(1, sizeof(*info));
+   if (!info)
+      return -1;
+
+   info->ai_family = AF_INET;
+   info->ai_socktype = hints->ai_socktype;
+
+   struct sockaddr_in *in_addr = (struct sockaddr_in*)calloc(1, sizeof(*in_addr));
+   if (!in_addr)
+   {
+      free(info);
+      return -1;
+   }
+
+   info->ai_addrlen = sizeof(*in_addr);
+
+   in_addr->sin_family = AF_INET;
+   in_addr->sin_port = htons(strtoul(service, NULL, 0));
+
+   if (!node && (hints->ai_flags & AI_PASSIVE))
+      in_addr->sin_addr.s_addr = INADDR_ANY;
+   else if (node && isdigit(*node))
+      in_addr->sin_addr.s_addr = inet_addr(node);
+   else if (node && !isdigit(*node))
+   {
+      struct hostent *host = gethostbyname(node);
+      if (!host || !host->h_addr_list[0])
+         goto error;
+
+      in_addr->sin_addr.s_addr = inet_addr(host->h_addr_list[0]);
+   }
+   else
+      goto error;
+
+   info->ai_addr = (struct sockaddr*)in_addr;
+   *res = info;
+
+   return 0;
+
+error:
+   free(in_addr);
+   free(info);
+   return -1;
+}
+
+void freeaddrinfo_ssnes__(struct addrinfo *res)
+{
+   free(res->ai_addr);
+   free(res);
+}
+
+#endif
+

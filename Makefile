@@ -43,9 +43,6 @@ endif
 
 ifeq ($(HAVE_NETPLAY), 1)
    OBJ += netplay.o
-ifeq ($(HAVE_SOCKET_LEGACY), 1)
-   OBJ += netplay_compat.o
-endif
 endif
 
 ifeq ($(HAVE_RSOUND), 1)
