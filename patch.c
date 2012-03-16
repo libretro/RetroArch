@@ -15,8 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "bps.h"
-#include "ups.h"
+#include "patch.h"
 #include "movie.h"
 #include "boolean.h"
 #include "msvc/msvc_compat.h"

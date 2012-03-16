@@ -15,13 +15,32 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __UPS_H
-#define __UPS_H
+#ifndef __PATCH_H
+#define __PATCH_H
 
 #include <stdint.h>
 #include <stddef.h>
 
-// UPS implementation from bSNES.
+// BPS/UPS implementation from bSNES (nall::).
+
+typedef enum bps_error
+{
+   BPS_UNKNOWN,
+   BPS_SUCCESS,
+   BPS_PATCH_TOO_SMALL,
+   BPS_PATCH_INVALID_HEADER,
+   BPS_SOURCE_TOO_SMALL,
+   BPS_TARGET_TOO_SMALL,
+   BPS_SOURCE_CHECKSUM_INVALID,
+   BPS_TARGET_CHECKSUM_INVALID,
+   BPS_PATCH_CHECKSUM_INVALID
+} bps_error_t;
+
+bps_error_t bps_apply_patch(
+      const uint8_t *patch_data, size_t patch_length,
+      const uint8_t *source_data, size_t source_length,
+      uint8_t *target_data, size_t *target_length);
+
 
 typedef enum ups_error
 {

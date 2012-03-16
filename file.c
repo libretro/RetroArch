@@ -24,8 +24,7 @@
 #include <time.h>
 #include "dynamic.h"
 #include "movie.h"
-#include "ups.h"
-#include "bps.h"
+#include "patch.h"
 #include "compat/strl.h"
 
 #ifdef HAVE_XML
