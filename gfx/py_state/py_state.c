@@ -25,8 +25,8 @@
 #include "../../libsnes.hpp"
 #include "py_state.h"
 #include "../../general.h"
-#include "../../strl.h"
-#include "../../posix_string.h"
+#include "../../compat/strl.h"
+#include "../../compat/posix_string.h"
 #include "../../file.h"
 
 #define PY_READ_FUNC_DECL(RAMTYPE) py_read_##RAMTYPE

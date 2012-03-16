@@ -30,7 +30,7 @@
 #include "../boolean.h"
 #include "general.h"
 #include <assert.h>
-#include "../posix_string.h"
+#include "../compat/posix_string.h"
 
 static int g_player = 1;
 static int g_joypad = 0;

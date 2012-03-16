@@ -25,7 +25,7 @@
 #include <stddef.h>
 #include <string.h>
 #include "input_luts.h"
-#include "../strl.h"
+#include "../compat/strl.h"
 
 uint64_t ssnes_default_keybind_lut[SSNES_FIRST_META_KEY];
 

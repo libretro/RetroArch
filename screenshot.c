@@ -16,7 +16,7 @@
  */
 
 #include "screenshot.h"
-#include "strl.h"
+#include "compat/strl.h"
 #include <stdio.h>
 #include <time.h>
 #include "boolean.h"

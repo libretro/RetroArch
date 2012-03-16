@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "posix_string.h"
+#include "compat/posix_string.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

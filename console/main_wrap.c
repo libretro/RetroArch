@@ -17,7 +17,7 @@
 
 #include "main_wrap.h"
 #include "../general.h"
-#include "../strl.h"
+#include "../compat/strl.h"
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>

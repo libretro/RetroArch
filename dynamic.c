@@ -17,7 +17,7 @@
 
 #include "dynamic.h"
 #include "general.h"
-#include "strl.h"
+#include "compat/strl.h"
 #include <string.h>
 
 #ifdef SSNES_CONSOLE

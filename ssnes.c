@@ -30,10 +30,10 @@
 #include "record/ffemu.h"
 #include "rewind.h"
 #include "movie.h"
-#include "strl.h"
+#include "compat/strl.h"
 #include "screenshot.h"
 #include "cheats.h"
-#include "getopt_ssnes.h"
+#include "compat/getopt_ssnes.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN

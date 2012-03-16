@@ -19,7 +19,7 @@
 #include "sha256.h"
 #include "dynamic.h"
 #include "general.h"
-#include "strl.h"
+#include "compat/strl.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

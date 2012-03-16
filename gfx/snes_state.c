@@ -17,7 +17,7 @@
 
 #include "snes_state.h"
 #include <stdlib.h>
-#include "../strl.h"
+#include "../compat/strl.h"
 #include "../general.h"
 #include "../libsnes.hpp"
 

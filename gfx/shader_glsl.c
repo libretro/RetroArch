@@ -19,8 +19,8 @@
 #include <string.h>
 #include "../general.h"
 #include "shader_glsl.h"
-#include "../strl.h"
-#include "../posix_string.h"
+#include "../compat/strl.h"
+#include "../compat/posix_string.h"
 #include "snes_state.h"
 #include "../dynamic.h"
 

@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "boolean.h"
-#include "posix_string.h"
+#include "compat/posix_string.h"
 
 struct queue_elem
 {

@@ -32,7 +32,7 @@
 #include "gl_common.h"
 #include "gfx_common.h"
 #include "sdlwrap.h"
-#include "../strl.h"
+#include "../compat/strl.h"
 
 #define NO_SDL_GLEXT
 #include "SDL.h"

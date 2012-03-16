@@ -22,8 +22,8 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
-#include "../strl.h"
-#include "../posix_string.h"
+#include "../compat/strl.h"
+#include "../compat/posix_string.h"
 #include "../msvc/msvc_compat.h"
 
 #if !defined(_WIN32) && !defined(__CELLOS_LV2__) && !defined(_XBOX)

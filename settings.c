@@ -19,10 +19,10 @@
 #include "conf/config_file.h"
 #include "conf/config_file_macros.h"
 #include "input/keysym.h"
-#include "strl.h"
+#include "compat/strl.h"
 #include "config.def.h"
 #include "file.h"
-#include "posix_string.h"
+#include "compat/posix_string.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

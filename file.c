@@ -26,7 +26,7 @@
 #include "movie.h"
 #include "ups.h"
 #include "bps.h"
-#include "strl.h"
+#include "compat/strl.h"
 
 #ifdef HAVE_XML
 #include "sha256.h"

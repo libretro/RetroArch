@@ -33,7 +33,7 @@
 #include "dynamic.h"
 #include "cheats.h"
 #include "audio/ext/ssnes_dsp.h"
-#include "strl.h"
+#include "compat/strl.h"
 
 #ifdef __CELLOS_LV2__
 #include <sys/timer.h>

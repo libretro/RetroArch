@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../boolean.h"
-#include "../strl.h"
+#include "../compat/strl.h"
 #include "../libsnes.hpp"
 #include "../general.h"
 #include <string.h>
