@@ -61,8 +61,7 @@ PPU_SRCS		= fifo_buffer.c \
 			ps3/ps3_video_psgl.c \
 			gfx/shader_cg.c \
 			gfx/snes_state.c \
-			ups.c \
-			bps.c \
+			patch.c \
 			compat/strl.c \
 			audio/hermite.c \
 			audio/rsound.c \
