@@ -20,11 +20,11 @@
 #include <Cg/cgGL.h>
 #include "../general.h"
 #include <string.h>
-#include "../strl.h"
+#include "../compat/strl.h"
 #include "../conf/config_file.h"
 #include "image.h"
 #include "../dynamic.h"
-#include "../posix_string.h"
+#include "../compat/posix_string.h"
 
 #ifdef HAVE_CONFIGFILE
 #include "snes_state.h"

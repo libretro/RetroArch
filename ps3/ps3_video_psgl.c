@@ -37,7 +37,7 @@
 #include "config.h"
 #endif
 
-#include "../strl.h"
+#include "../compat/strl.h"
 
 #include "../gfx/shader_cg.h"
 

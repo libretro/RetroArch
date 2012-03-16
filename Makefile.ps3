@@ -48,7 +48,7 @@ PPU_SRCS		= fifo_buffer.c \
 			input/input_luts.c \
 			ps3/cellframework2/input/pad_input.c \
 			ps3/cellframework2/utility/oskutil.c \
-			getopt.c \
+			compat/getopt.c \
 			ssnes.c \
 			driver.c \
 			file.c \
@@ -63,7 +63,7 @@ PPU_SRCS		= fifo_buffer.c \
 			gfx/snes_state.c \
 			ups.c \
 			bps.c \
-			strl.c \
+			compat/strl.c \
 			audio/hermite.c \
 			audio/rsound.c \
 			dynamic.c \
