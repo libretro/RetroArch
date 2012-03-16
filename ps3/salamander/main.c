@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../strl.h"
+#include "../../compat/strl.h"
 #include "../../conf/config_file.h"
 
 #define PATH_MAX (512UL)
