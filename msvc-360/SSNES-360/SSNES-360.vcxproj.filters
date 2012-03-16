@@ -116,9 +116,6 @@
     <ClCompile Include="..\..\360\menu.cpp">
       <Filter>Source Files\360</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\netplay_compat.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\360\file_browser.c">
       <Filter>Source Files\360</Filter>
     </ClCompile>

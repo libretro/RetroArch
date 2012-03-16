@@ -389,7 +389,6 @@
     <ClCompile Include="..\..\netplay.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\netplay_compat.c" />
     <ClCompile Include="..\..\patch.c" />
     <ClCompile Include="..\..\rewind.c" />
     <ClCompile Include="..\..\screenshot.c" />
