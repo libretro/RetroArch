@@ -42,18 +42,18 @@
     <Filter Include="Source Files\media\shader">
       <UniqueIdentifier>{3a05047b-b9ec-4821-bb28-d1b0e9e3e8bb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\compat">
+      <UniqueIdentifier>{34c33a54-e69d-4fb2-ba70-ae9c34654825}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\compat">
+      <UniqueIdentifier>{cf25b88e-c7b2-4823-876a-ed0dd8020821}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\360\xdk360_video.cpp">
       <Filter>Source Files\360</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\ups.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\autosave.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\bps.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\cheats.c">
@@ -71,9 +71,6 @@
     <ClCompile Include="..\..\file.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\getopt.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\message.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -81,9 +78,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\netplay.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\posix_string.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\rewind.c">
@@ -99,9 +93,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\ssnes.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\strl.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\thread.c">
@@ -152,6 +143,18 @@
     <ClCompile Include="..\..\360\xdk360_input.c">
       <Filter>Source Files\360</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\patch.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\compat\strl.c">
+      <Filter>Source Files\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\compat\getopt.c">
+      <Filter>Source Files\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\compat\posix_string.c">
+      <Filter>Source Files\compat</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\ups.h">
@@ -190,9 +193,6 @@
     <ClInclude Include="..\..\general.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\getopt_ssnes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\libsnes.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -205,9 +205,6 @@
     <ClInclude Include="..\..\netplay.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\posix_string.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\rewind.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -215,9 +212,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\sha256.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\strl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\thread.h">
@@ -240,6 +234,15 @@
     </ClInclude>
     <ClInclude Include="..\..\360\menu.h">
       <Filter>Header Files\360</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\compat\strl.h">
+      <Filter>Header Files\compat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\compat\getopt_ssnes.h">
+      <Filter>Header Files\compat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\compat\posix_string.h">
+      <Filter>Header Files\compat</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

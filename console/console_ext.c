@@ -30,7 +30,7 @@
 #endif
 
 #ifdef _WIN32
-#include "../posix_string.h"
+#include "../compat/posix_string.h"
 #endif
 
 static char g_rom_ext[1024];

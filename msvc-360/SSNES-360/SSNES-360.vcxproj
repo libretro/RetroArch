@@ -360,12 +360,14 @@
     <ClCompile Include="..\..\autosave.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\bps.c" />
     <ClCompile Include="..\..\cheats.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\compat\getopt.c" />
+    <ClCompile Include="..\..\compat\posix_string.c" />
+    <ClCompile Include="..\..\compat\strl.c" />
     <ClCompile Include="..\..\conf\config_file.c" />
     <ClCompile Include="..\..\console\main_wrap.c" />
     <ClCompile Include="..\..\console\console_ext.c" />
@@ -381,7 +383,6 @@
     <ClCompile Include="..\..\dynamic.c" />
     <ClCompile Include="..\..\fifo_buffer.c" />
     <ClCompile Include="..\..\file.c" />
-    <ClCompile Include="..\..\getopt.c" />
     <ClCompile Include="..\..\input\input_luts.c" />
     <ClCompile Include="..\..\message.c" />
     <ClCompile Include="..\..\movie.c" />
@@ -389,15 +390,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\netplay_compat.c" />
-    <ClCompile Include="..\..\posix_string.c" />
+    <ClCompile Include="..\..\patch.c" />
     <ClCompile Include="..\..\rewind.c" />
     <ClCompile Include="..\..\screenshot.c" />
     <ClCompile Include="..\..\settings.c" />
     <ClCompile Include="..\..\sha256.c" />
     <ClCompile Include="..\..\ssnes.c" />
-    <ClCompile Include="..\..\strl.c" />
     <ClCompile Include="..\..\thread.c" />
-    <ClCompile Include="..\..\ups.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\360\menu.h" />
@@ -409,6 +408,9 @@
     <ClInclude Include="..\..\boolean.h" />
     <ClInclude Include="..\..\bps.h" />
     <ClInclude Include="..\..\cheats.h" />
+    <ClInclude Include="..\..\compat\getopt_ssnes.h" />
+    <ClInclude Include="..\..\compat\posix_string.h" />
+    <ClInclude Include="..\..\compat\strl.h" />
     <ClInclude Include="..\..\config.def.h" />
     <ClInclude Include="..\..\config.features.h" />
     <ClInclude Include="..\..\conf\config_file.h" />
@@ -417,16 +419,13 @@
     <ClInclude Include="..\..\fifo_buffer.h" />
     <ClInclude Include="..\..\file.h" />
     <ClInclude Include="..\..\general.h" />
-    <ClInclude Include="..\..\getopt_ssnes.h" />
     <ClInclude Include="..\..\libsnes.hpp" />
     <ClInclude Include="..\..\message.h" />
     <ClInclude Include="..\..\movie.h" />
     <ClInclude Include="..\..\netplay.h" />
-    <ClInclude Include="..\..\posix_string.h" />
     <ClInclude Include="..\..\rewind.h" />
     <ClInclude Include="..\..\screenshot.h" />
     <ClInclude Include="..\..\sha256.h" />
-    <ClInclude Include="..\..\strl.h" />
     <ClInclude Include="..\..\thread.h" />
     <ClInclude Include="..\..\ups.h" />
   </ItemGroup>
