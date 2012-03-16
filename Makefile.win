@@ -1,6 +1,6 @@
 TARGET = ssnes.exe
 JTARGET = ssnes-joyconfig.exe
-OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o message.o rewind.o movie.o gfx/gfx_common.o bps.o ups.o compat/strl.o screenshot.o compat/getopt.o audio/utils.o compat/posix_string.o
+OBJ = ssnes.o file.o driver.o conf/config_file.o settings.o dynamic.o message.o rewind.o movie.o gfx/gfx_common.o patch.o compat/strl.o screenshot.o compat/getopt.o audio/utils.o compat/posix_string.o
 JOBJ = conf/config_file.o tools/ssnes-joyconfig.o compat/strl.o compat/posix_string.o
 
 CC = gcc
