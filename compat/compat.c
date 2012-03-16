@@ -16,6 +16,8 @@
  */
 
 #include "getopt_ssnes.h"
+#include "strl.h"
+#include "posix_string.h"
 
 #ifndef HAVE_GETOPT_LONG
 
@@ -192,6 +194,88 @@ int getopt_long(int argc, char *argv[],
       return parse_long(longopts, &argv[optind]);
    else
       return '?';
+}
+
+#endif
+
+#ifndef HAVE_STRL
+
+// Implementation of strlcpy()/strlcat() based on OpenBSD.
+
+size_t strlcpy(char *dest, const char *source, size_t size)
+{
+   size_t src_size = 0;
+   size_t n = size;
+
+   if (n)
+      while (--n && (*dest++ = *source++)) src_size++;
+
+   if (!n)
+   {
+      if (size) *dest = '\0';
+      while (*source++) src_size++;
+   }
+
+   return src_size;
+}
+
+size_t strlcat(char *dest, const char *source, size_t size)
+{
+   size_t len = strlen(dest);
+   dest += len;
+
+   if (len > size)
+      size = 0;
+   else
+      size -= len;
+
+   return len + strlcpy(dest, source, size);
+}
+
+#endif
+
+#ifdef _WIN32
+
+#undef strcasecmp
+#undef strdup
+#undef isblank
+#include <ctype.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include "strl.h"
+
+#include <string.h>
+
+int strcasecmp_ssnes__(const char *a, const char *b)
+{
+   while (*a && *b)
+   {
+      int a_ = tolower(*a);
+      int b_ = tolower(*b);
+      if (a_ != b_)
+         return a_ - b_;
+
+      a++;
+      b++;
+   }
+
+   return tolower(*a) - tolower(*b);
+}
+
+char *strdup_ssnes__(const char *orig)
+{
+   size_t len = strlen(orig) + 1;
+   char *ret = (char*)malloc(len);
+   if (!ret)
+      return NULL;
+
+   strlcpy(ret, orig, len);
+   return ret;
+}
+
+int isblank_ssnes__(int c)
+{
+   return (c == ' ') || (c == '\t');
 }
 
 #endif
