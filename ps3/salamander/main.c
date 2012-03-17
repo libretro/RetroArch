@@ -16,6 +16,9 @@
  * You should have received a copy of the GNU General Public License along with SSNES.
  * If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <stdlib.h>
+#include <string.h>
 #include <cell/pad.h>
 #include <cell/sysmodule.h>
 #include <sysutil/sysutil_gamecontent.h>
@@ -24,8 +27,6 @@
 #include <np.h>
 #include <np/drm.h>
 #include <dirent.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "../../compat/strl.h"
 #include "../../conf/config_file.h"

@@ -1,4 +1,4 @@
-CELL_BUILD_TOOLS	= GCC
+CELL_BUILD_TOOLS	= SNC
 CELL_SDK		?= /usr/local/cell
 CELL_GPU_TYPE		= RSX
 CELL_PSGL_VERSION	= opt
@@ -7,17 +7,17 @@ HAVE_LOGGER		= 0
 CELL_MK_DIR		?= $(CELL_SDK)/samples/mk
 include $(CELL_MK_DIR)/sdk.makedef.mk
 
+MAKE_SELF_WC		= make_self_wc
 MAKE_SELF		= make_self_npdrm
+
 PKG_SCRIPT		= ps3/ps3py/pkg.py
 PKG_FINALIZE		= package_finalize
 
-STRIP			= $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-strip
+STRIP			= $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-strip.exe
 COPY			= cp
 MOVE			= mv
-C			= $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-gcc
-CC			= $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-g++
 
-PPU_CFLAGS		+= -I. -O2 -g
+PPU_CFLAGS		+= -I. -D__CELLOS_LV2__
 PPU_SRCS		= ps3/salamander/main.c compat/compat.c conf/config_file.c
 
 ifeq ($(HAVE_LOGGER), 1)
@@ -28,16 +28,23 @@ endif
 PPU_TARGET		= ssnes-salamander.elf
 
 ifeq ($(CELL_BUILD_TOOLS),SNC)
-PPU_CFLAGS		+= -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 \
-			-Xunroll=1 -Xautovecreg=1 
-PPU_CXXFLAGS		+= -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 \
-			 -Xunroll=1 -Xautovecreg=1
+	PPU_CFLAGS		+= -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 -Xunroll=1 -Xautovecreg=1 
+	PPU_CXXFLAGS		+= -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 -Xunroll=1 -Xautovecreg=1
+	PPU_CXXLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe
+	PPU_CXX	= $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
+	PPU_CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
 else
-PPU_CFLAGS		+= -funroll-loops
-PPU_CXXFLAGS		+= -funroll-loops
+	PPU_CXX	= $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-g++.exe
+	PPU_CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
+	PPU_CXXLD = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ld.exe
 endif
 
-PPU_OPTIMIZE_LV		:= -O2
 PPU_LDLIBS		+= -lpthread -lm -lnet_stub -lnetctl_stub -lm -ldbgfont_gcm -lgcm_cmd -lgcm_sys_stub -lio_stub -lsysmodule_stub -lsysutil_stub -lsysutil_game_stub -lfs_stub -lsysutil_np_stub
 
+PPU_OPTIMIZE_LV		:= -O2
+
 include $(CELL_MK_DIR)/sdk.target.mk
+
+MAKE_FSELF = $(CELL_SDK)/host-win32/bin/make_fself.exe
+MAKE_FSELF_NPDRM = $(CELL_SDK)/host-win32/bin/make_fself_npdrm.exe
+MAKE_PACKAGE_NPDRM = $(CELL_SDK)/host-win32/bin/make_package_npdrm.exe
