@@ -1,5 +1,6 @@
 /*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2012 - Daniel De Matteis
  *
  *  Some code herein may be based on code found in BSNES.
  * 
@@ -17,8 +18,6 @@
 
 #ifndef ROM_EXT_H__
 #define ROM_EXT_H__
-
-#include <stddef.h>
 
 void ssnes_console_set_rom_ext(const char *ext);
 

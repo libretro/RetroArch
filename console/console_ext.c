@@ -1,5 +1,6 @@
 /*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2012 - Daniel De Matteis
  *
  *  Some code herein may be based on code found in BSNES.
  * 
@@ -16,13 +17,16 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
+#include <ctype.h>
 #include "../boolean.h"
 #include "../compat/strl.h"
 #include "../libsnes.hpp"
 #include "../general.h"
-#include <string.h>
-#include <ctype.h>
+#include "../compat/strl.h"
+#include "main_wrap.h"
 
 #ifdef HAVE_ZLIB
 #include "szlib/zlib.h"
@@ -32,6 +36,8 @@
 #ifdef _WIN32
 #include "../compat/posix_string.h"
 #endif
+
+#define MAX_ARGS 32
 
 static char g_rom_ext[1024];
 
@@ -191,3 +197,46 @@ int ssnes_extract_zipfile(const char *zip_path)
 }
 
 #endif
+
+int ssnes_main_init_wrap(const struct ssnes_main_wrap *args)
+{
+   int argc = 0;
+   char *argv[MAX_ARGS] = {NULL};
+
+   argv[argc++] = strdup("ssnes");
+   
+   if (args->rom_path)
+      argv[argc++] = strdup(args->rom_path);
+
+   if (args->sram_path)
+   {
+      argv[argc++] = strdup("-s");
+      argv[argc++] = strdup(args->sram_path);
+   }
+
+   if (args->state_path)
+   {
+      argv[argc++] = strdup("-S");
+      argv[argc++] = strdup(args->state_path);
+   }
+
+   if (args->config_path)
+   {
+      argv[argc++] = strdup("-c");
+      argv[argc++] = strdup(args->config_path);
+   }
+
+   if (args->verbose)
+      argv[argc++] = strdup("-v");
+
+   int ret = ssnes_main_init(argc, argv);
+
+   char **tmp = argv;
+   while (*tmp)
+   {
+      free(*tmp);
+      tmp++;
+   }
+
+   return ret;
+}

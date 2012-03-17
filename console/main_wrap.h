@@ -1,5 +1,6 @@
 /*  SSNES - A Super Nintendo Entertainment System (SNES) Emulator frontend for libsnes.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2012 - Daniel De Matteis
  *
  *  Some code herein may be based on code found in BSNES.
  * 
@@ -15,13 +16,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MAIN_WRAP_H__
-#define MAIN_WRAP_H__
-
-#ifndef __cplusplus
-#include <stdbool.h>
-#endif
-
 // Builds argc/argv and calls ssnes_main_init().
 
 struct ssnes_main_wrap
@@ -34,6 +28,3 @@ struct ssnes_main_wrap
 };
 
 int ssnes_main_init_wrap(const struct ssnes_main_wrap *args);
-
-#endif
-

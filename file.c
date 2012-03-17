@@ -143,6 +143,7 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
 
    const char *patch_desc = NULL;
    const char *patch_path = NULL;
+   patch_error_t err = PATCH_UNKNOWN;
    patch_func_t func = NULL;
 
    ssize_t patch_size = 0;
@@ -183,7 +184,7 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
       goto error;
    }
 
-   patch_error_t err = func((const uint8_t*)patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
+   err = func((const uint8_t*)patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
    if (err == PATCH_SUCCESS)
    {
       SSNES_LOG("ROM patched successfully (%s).\n", patch_desc);
