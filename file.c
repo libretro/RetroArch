@@ -136,21 +136,17 @@ error:
    return false;
 }
 
-enum patch_type
-{
-   PATCH_NONE,
-   PATCH_UPS,
-   PATCH_BPS
-};
-
 static void patch_rom(uint8_t **buf, ssize_t *size)
 {
    uint8_t *ret_buf = *buf;
    ssize_t ret_size = *size;
 
+   const char *patch_desc = NULL;
+   const char *patch_path = NULL;
+   patch_func_t func = NULL;
+
    ssize_t patch_size = 0;
    void *patch_data = NULL;
-   enum patch_type type = PATCH_NONE;
    bool success = false;
 
    if (g_extern.ups_pref && g_extern.bps_pref)
@@ -160,28 +156,24 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
    }
 
    if (!g_extern.bps_pref && *g_extern.ups_name && (patch_size = read_file(g_extern.ups_name, &patch_data)) >= 0)
-      type = PATCH_UPS;
+   {
+      patch_desc = "UPS";
+      patch_path = g_extern.ups_name;
+      func = ups_apply_patch;
+   }
    else if (!g_extern.ups_pref && *g_extern.bps_name && (patch_size = read_file(g_extern.bps_name, &patch_data)) >= 0)
-      type = PATCH_BPS;
-
-   if (type == PATCH_NONE)
+   {
+      patch_desc = "BPS";
+      patch_path = g_extern.bps_name;
+      func = bps_apply_patch;
+   }
+   else
    {
       SSNES_LOG("Did not find a valid ROM patch.\n");
       return;
    }
 
-   switch (type)
-   {
-      case PATCH_UPS:
-         SSNES_LOG("Found UPS file in \"%s\", attempting to patch ...\n", g_extern.ups_name);
-         break;
-      case PATCH_BPS:
-         SSNES_LOG("Found BPS file in \"%s\", attempting to patch ...\n", g_extern.bps_name);
-         break;
-
-      default:
-         return; // Should not happen, but.
-   }
+   SSNES_LOG("Found %s file in \"%s\", attempting to patch ...\n", patch_desc, patch_path);
 
    size_t target_size = ret_size * 4; // Just to be sure ...
    uint8_t *patched_rom = (uint8_t*)malloc(target_size);
@@ -191,39 +183,14 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
       goto error;
    }
 
-   switch (type)
+   patch_error_t err = func((const uint8_t*)patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
+   if (err == PATCH_SUCCESS)
    {
-      case PATCH_UPS:
-      {
-         ups_error_t err = ups_apply_patch((const uint8_t*)patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
-         if (err == UPS_SUCCESS)
-         {
-            SSNES_LOG("ROM patched successfully (UPS).\n");
-            success = true;
-         }
-         else
-            SSNES_ERR("Failed to patch UPS: Error #%u\n", (unsigned)err);
-
-         break;
-      }
-
-      case PATCH_BPS:
-      {
-         bps_error_t err = bps_apply_patch((const uint8_t*)patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
-         if (err == BPS_SUCCESS)
-         {
-            SSNES_LOG("ROM patched successfully (BPS).\n");
-            success = true;
-         }
-         else
-            SSNES_ERR("Failed to patch BPS: Error #%u\n", (unsigned)err);
-
-         break;
-      }
-
-      default:
-         return;
+      SSNES_LOG("ROM patched successfully (%s).\n", patch_desc);
+      success = true;
    }
+   else
+      SSNES_ERR("Failed to patch %s: Error #%u\n", patch_desc, (unsigned)err);
 
    if (success)
    {

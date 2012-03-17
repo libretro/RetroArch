@@ -70,13 +70,13 @@ static void bps_write(struct bps_data *bps, uint8_t data)
    bps->target_checksum = crc32_adjust(bps->target_checksum, data);
 }
 
-bps_error_t bps_apply_patch(
+patch_error_t bps_apply_patch(
       const uint8_t *modify_data, size_t modify_length,
       const uint8_t *source_data, size_t source_length,
       uint8_t *target_data, size_t *target_length)
 {
    if (modify_length < 19)
-      return BPS_PATCH_TOO_SMALL;
+      return PATCH_PATCH_TOO_SMALL;
 
    struct bps_data bps = {0};
    bps.modify_data = modify_data;
@@ -89,7 +89,7 @@ bps_error_t bps_apply_patch(
    bps.target_checksum = ~0;
 
    if ((bps_read(&bps) != 'B') || (bps_read(&bps) != 'P') || (bps_read(&bps) != 'S') || (bps_read(&bps) != '1'))
-      return BPS_PATCH_INVALID_HEADER;
+      return PATCH_PATCH_INVALID_HEADER;
 
    size_t modify_source_size = bps_decode(&bps);
    size_t modify_target_size = bps_decode(&bps);
@@ -98,9 +98,9 @@ bps_error_t bps_apply_patch(
       bps_read(&bps);
 
    if (modify_source_size > bps.source_length)
-      return BPS_SOURCE_TOO_SMALL;
+      return PATCH_SOURCE_TOO_SMALL;
    if (modify_target_size > bps.target_length)
-      return BPS_TARGET_TOO_SMALL;
+      return PATCH_TARGET_TOO_SMALL;
 
    while (bps.modify_offset < bps.modify_length - 12)
    {
@@ -161,15 +161,15 @@ bps_error_t bps_apply_patch(
    bps.target_checksum = ~bps.target_checksum;
 
    if (bps.source_checksum != modify_source_checksum)
-      return BPS_SOURCE_CHECKSUM_INVALID;
+      return PATCH_SOURCE_CHECKSUM_INVALID;
    if (bps.target_checksum != modify_target_checksum)
-      return BPS_TARGET_CHECKSUM_INVALID;
+      return PATCH_TARGET_CHECKSUM_INVALID;
    if (checksum != modify_modify_checksum)
-      return BPS_PATCH_CHECKSUM_INVALID;
+      return PATCH_PATCH_CHECKSUM_INVALID;
 
    *target_length = modify_target_size;
 
-   return BPS_SUCCESS;
+   return PATCH_SUCCESS;
 }
 
 struct ups_data
@@ -229,7 +229,7 @@ static uint64_t ups_decode(struct ups_data *data)
    return offset;
 }
 
-ups_error_t ups_apply_patch(
+patch_error_t ups_apply_patch(
       const uint8_t *patchdata, size_t patchlength,
       const uint8_t *sourcedata, size_t sourcelength,
       uint8_t *targetdata, size_t *targetlength)
@@ -246,24 +246,24 @@ ups_error_t ups_apply_patch(
    data.target_checksum = ~0;
 
    if (data.patch_length < 18) 
-      return UPS_PATCH_INVALID;
+      return PATCH_PATCH_INVALID;
    if (ups_patch_read(&data) != 'U') 
-      return UPS_PATCH_INVALID;
+      return PATCH_PATCH_INVALID;
    if (ups_patch_read(&data) != 'P') 
-      return UPS_PATCH_INVALID;
+      return PATCH_PATCH_INVALID;
    if (ups_patch_read(&data) != 'S') 
-      return UPS_PATCH_INVALID;
+      return PATCH_PATCH_INVALID;
    if (ups_patch_read(&data) != '1') 
-      return UPS_PATCH_INVALID;
+      return PATCH_PATCH_INVALID;
 
    unsigned source_read_length = ups_decode(&data);
    unsigned target_read_length = ups_decode(&data);
 
    if (data.source_length != source_read_length && data.source_length != target_read_length) 
-      return UPS_SOURCE_INVALID;
+      return PATCH_SOURCE_INVALID;
    *targetlength = (data.source_length == source_read_length ? target_read_length : source_read_length);
    if (data.target_length < *targetlength) 
-      return UPS_TARGET_TOO_SMALL;
+      return PATCH_TARGET_TOO_SMALL;
    data.target_length = *targetlength;
 
    while (data.patch_offset < data.patch_length - 12) 
@@ -298,21 +298,21 @@ ups_error_t ups_apply_patch(
       patch_read_checksum |= ups_patch_read(&data) << (i * 8);
 
    if (patch_result_checksum != patch_read_checksum) 
-      return UPS_PATCH_INVALID;
+      return PATCH_PATCH_INVALID;
 
    if (data.source_checksum == source_read_checksum && data.source_length == source_read_length) 
    {
       if (data.target_checksum == target_read_checksum && data.target_length == target_read_length) 
-         return UPS_SUCCESS;
-      return UPS_TARGET_INVALID;
+         return PATCH_SUCCESS;
+      return PATCH_TARGET_INVALID;
    } 
    else if (data.source_checksum == target_read_checksum && data.source_length == target_read_length) 
    {
       if (data.target_checksum == source_read_checksum && data.target_length == source_read_length) 
-         return UPS_SUCCESS;
-      return UPS_TARGET_INVALID;
+         return PATCH_SUCCESS;
+      return PATCH_TARGET_INVALID;
    } 
    else
-      return UPS_SOURCE_INVALID;
+      return PATCH_SOURCE_INVALID;
 }
 

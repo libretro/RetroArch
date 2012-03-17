@@ -23,39 +23,30 @@
 
 // BPS/UPS implementation from bSNES (nall::).
 
-typedef enum bps_error
+typedef enum
 {
-   BPS_UNKNOWN,
-   BPS_SUCCESS,
-   BPS_PATCH_TOO_SMALL,
-   BPS_PATCH_INVALID_HEADER,
-   BPS_SOURCE_TOO_SMALL,
-   BPS_TARGET_TOO_SMALL,
-   BPS_SOURCE_CHECKSUM_INVALID,
-   BPS_TARGET_CHECKSUM_INVALID,
-   BPS_PATCH_CHECKSUM_INVALID
-} bps_error_t;
+   PATCH_UNKNOWN,
+   PATCH_SUCCESS,
+   PATCH_PATCH_TOO_SMALL,
+   PATCH_PATCH_INVALID_HEADER,
+   PATCH_PATCH_INVALID,
+   PATCH_SOURCE_TOO_SMALL,
+   PATCH_TARGET_TOO_SMALL,
+   PATCH_SOURCE_INVALID,
+   PATCH_TARGET_INVALID,
+   PATCH_SOURCE_CHECKSUM_INVALID,
+   PATCH_TARGET_CHECKSUM_INVALID,
+   PATCH_PATCH_CHECKSUM_INVALID
+} patch_error_t;
 
-bps_error_t bps_apply_patch(
+typedef patch_error_t (*patch_func_t)(const uint8_t*, size_t, const uint8_t*, size_t, uint8_t*, size_t*);
+
+patch_error_t bps_apply_patch(
       const uint8_t *patch_data, size_t patch_length,
       const uint8_t *source_data, size_t source_length,
       uint8_t *target_data, size_t *target_length);
 
-
-typedef enum ups_error
-{
-   UPS_UNKNOWN,
-   UPS_SUCCESS,
-   UPS_PATCH_INVALID,
-   UPS_SOURCE_INVALID,
-   UPS_TARGET_INVALID,
-   UPS_TARGET_TOO_SMALL,
-   UPS_PATCH_CHECKSUM_INVALID,
-   UPS_SOURCE_CHECKSUM_INVALID,
-   UPS_TARGET_CHECKSUM_INVALID
-} ups_error_t;
-
-ups_error_t ups_apply_patch(
+patch_error_t ups_apply_patch(
       const uint8_t *patch_data, size_t patch_length,
       const uint8_t *source_data, size_t source_length,
       uint8_t *target_data, size_t *target_length);
