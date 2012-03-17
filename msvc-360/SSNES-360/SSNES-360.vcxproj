@@ -365,9 +365,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\compat\getopt.c" />
-    <ClCompile Include="..\..\compat\posix_string.c" />
-    <ClCompile Include="..\..\compat\strl.c" />
+    <ClCompile Include="..\..\compat\compat.c" />
     <ClCompile Include="..\..\conf\config_file.c" />
     <ClCompile Include="..\..\console\main_wrap.c" />
     <ClCompile Include="..\..\console\console_ext.c" />

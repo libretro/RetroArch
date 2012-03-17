@@ -143,13 +143,7 @@
     <ClCompile Include="..\..\patch.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\compat\strl.c">
-      <Filter>Source Files\compat</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\compat\getopt.c">
-      <Filter>Source Files\compat</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\compat\posix_string.c">
+    <ClCompile Include="..\..\compat\compat.c">
       <Filter>Source Files\compat</Filter>
     </ClCompile>
   </ItemGroup>

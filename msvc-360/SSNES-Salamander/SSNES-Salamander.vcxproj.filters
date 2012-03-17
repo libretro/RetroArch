@@ -23,10 +23,7 @@
     <ClCompile Include="..\..\conf\config_file.c">
       <Filter>Source Files\conf</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\compat\strl.c">
-      <Filter>Source Files\compat</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\compat\posix_string.c">
+    <ClCompile Include="..\..\compat\compat.c">
       <Filter>Source Files\compat</Filter>
     </ClCompile>
   </ItemGroup>
