@@ -367,7 +367,6 @@
     </ClCompile>
     <ClCompile Include="..\..\compat\compat.c" />
     <ClCompile Include="..\..\conf\config_file.c" />
-    <ClCompile Include="..\..\console\main_wrap.c" />
     <ClCompile Include="..\..\console\console_ext.c" />
     <ClCompile Include="..\..\console\szlib\szlib.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
