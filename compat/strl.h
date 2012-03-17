@@ -30,7 +30,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-// Avoid possible naming collitions during link since we prefer to use the actual name.
+// Avoid possible naming collisions during link since we prefer to use the actual name.
 #define strlcpy(dst, src, size) strlcpy_ssnes__(dst, src, size)
 #define strlcat(dst, src, size) strlcat_ssnes__(dst, src, size)
 
