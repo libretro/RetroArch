@@ -119,9 +119,6 @@
     <ClCompile Include="..\..\360\file_browser.c">
       <Filter>Source Files\360</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\360\xdk360_video_resources.cpp">
-      <Filter>Source Files\360</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\360\fonts.cpp">
       <Filter>Source Files\360</Filter>
     </ClCompile>
