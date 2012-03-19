@@ -32,7 +32,11 @@ libsnes ?= -lsnes
 LIBS = -lm
 DEFINES = -I. -DHAVE_CONFIGFILE -DPACKAGE_VERSION=\"0.9.5\"
 LDFLAGS = -L. -static-libgcc
-LDCXXFLAGS = -static-libstdc++ -s
+LDCXXFLAGS = -s
+
+ifeq ($(TDM_GCC),)
+   LDCXXFLAGS += -static-libstdc++
+endif
 
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl_gfx.o gfx/gl.o gfx/sdlwrap.o input/sdl_input.o audio/sdl_audio.o fifo_buffer.o
