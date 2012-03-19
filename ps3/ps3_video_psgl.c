@@ -131,20 +131,6 @@ static bool gl_shader_init(void)
 	return true;
 }
 
-static void gl_shader_set_params(unsigned width, unsigned height, 
-      unsigned tex_width, unsigned tex_height, 
-      unsigned out_width, unsigned out_height,
-      unsigned frame_count,
-      const struct gl_tex_info *info,
-      const struct gl_tex_info *prev_info,
-      const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
-{
-	gl_cg_set_params(width, height, 
-			tex_width, tex_height, 
-			out_width, out_height, 
-			frame_count, info, prev_info, fbo_info, fbo_info_cnt);
-}
-
 static unsigned gl_shader_num(void)
 {
 	unsigned num = 0;
@@ -632,8 +618,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 	memcpy(tex_info.coord, gl->tex_coords, sizeof(gl->tex_coords));
 
 	glClear(GL_COLOR_BUFFER_BIT);
-	gl_shader_set_params(width, height, gl->tex_w, gl->tex_h, gl->vp_width, gl->vp_height, g_frame_count, 
-			&tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
+	gl_cg_set_params(width, height, 
+			gl->tex_w, gl->tex_h, 
+			gl->vp_width, gl->vp_height, 
+			g_frame_count, &tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
 	glDrawArrays(GL_QUADS, 0, 4);
 
@@ -674,7 +662,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 			// Render to FBO with certain size.
 			set_viewport(gl, rect->img_width, rect->img_height, true);
-			gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
+			gl_cg_set_params(prev_rect->img_width, prev_rect->img_height, 
 					prev_rect->width, prev_rect->height, 
 					gl->vp_width, gl->vp_height, g_frame_count, 
 					&tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
@@ -700,7 +688,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 		glClear(GL_COLOR_BUFFER_BIT);
 		gl->render_to_tex = false;
 		set_viewport(gl, gl->win_width, gl->win_height, false);
-		gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
+		gl_cg_set_params(prev_rect->img_width, prev_rect->img_height, 
 				prev_rect->width, prev_rect->height, 
 				gl->vp_width, gl->vp_height, g_frame_count, 
 				&tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
