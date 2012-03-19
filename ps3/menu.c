@@ -25,7 +25,7 @@
 #include <sysutil/sysutil_bgmplayback.h>
 #endif
 
-#include "cellframework2/input/pad_input.h"
+#include "ps3_input.h"
 #include "cellframework2/fileio/file_browser.h"
 
 #include "../input/input_luts.h"

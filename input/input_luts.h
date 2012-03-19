@@ -24,7 +24,8 @@
 #include <stdint.h>
 
 #if defined(__CELLOS_LV2__)
-#include "../ps3/cellframework2/input/pad_input.h"
+
+#include "../ps3/ps3_input.h"
 
 enum ps3_device_id
 {
