@@ -286,6 +286,7 @@ struct global
    char savestate_name[PATH_MAX];
    char xml_name[PATH_MAX];
 
+   bool block_patch;
    bool ups_pref;
    bool bps_pref;
    bool ips_pref;

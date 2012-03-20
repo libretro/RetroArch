@@ -289,8 +289,11 @@ static ssize_t read_rom_file(FILE *file, void **buf)
       ret_buf = (uint8_t*)rom_buf;
    }
 
-   // Attempt to apply a patch.
-   patch_rom(&ret_buf, &ret);
+   if (!g_extern.block_patch)
+   {
+      // Attempt to apply a patch.
+      patch_rom(&ret_buf, &ret);
+   }
    
    // Remove copier header if present (512 first bytes).
    if ((ret & 0x7fff) == 512)

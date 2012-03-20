@@ -537,6 +537,7 @@ static void print_help(void)
    puts("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM.");
    puts("\t--bps: Specifies path for BPS patch that will be applied to ROM.");
    puts("\t--ips: Specifies path for IPS patch that will be applied to ROM.");
+   puts("\t--no-patch: Disables all forms of rom patching.");
    puts("\t-X/--xml: Specifies path to XML memory map.");
    puts("\t-D/--detach: Detach SSNES from the running console. Not relevant for all platforms.\n");
 }
@@ -685,6 +686,7 @@ static void parse_input(int argc, char *argv[])
       { "ups", 1, NULL, 'U' },
       { "bps", 1, &val, 'B' },
       { "ips", 1, &val, 'I' },
+      { "no-patch", 0, &val, 'n' },
       { "xml", 1, NULL, 'X' },
       { "detach", 0, NULL, 'D' },
       { "features", 0, &val, 'f' },
@@ -914,6 +916,10 @@ static void parse_input(int argc, char *argv[])
                case 'I':
                   strlcpy(g_extern.ips_name, optarg, sizeof(g_extern.ips_name));
                   g_extern.ips_pref = true;
+                  break;
+
+               case 'n':
+                  g_extern.block_patch = true;
                   break;
 
 #ifdef HAVE_FFMPEG
