@@ -223,7 +223,7 @@ error:
 }
 
 // Load SNES rom only. Applies a hack for headered ROMs.
-static ssize_t read_rom_file(FILE* file, void** buf)
+static ssize_t read_rom_file(FILE *file, void **buf)
 {
    ssize_t ret = 0;
    uint8_t *ret_buf = NULL;
