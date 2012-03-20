@@ -536,6 +536,7 @@ static void print_help(void)
    puts("\t-v/--verbose: Verbose logging.");
    puts("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM.");
    puts("\t--bps: Specifies path for BPS patch that will be applied to ROM.");
+   puts("\t--ips: Specifies path for IPS patch that will be applied to ROM.");
    puts("\t-X/--xml: Specifies path to XML memory map.");
    puts("\t-D/--detach: Detach SSNES from the running console. Not relevant for all platforms.\n");
 }
@@ -683,6 +684,7 @@ static void parse_input(int argc, char *argv[])
 #endif
       { "ups", 1, NULL, 'U' },
       { "bps", 1, &val, 'B' },
+      { "ips", 1, &val, 'I' },
       { "xml", 1, NULL, 'X' },
       { "detach", 0, NULL, 'D' },
       { "features", 0, &val, 'f' },
@@ -907,6 +909,11 @@ static void parse_input(int argc, char *argv[])
                case 'B':
                   strlcpy(g_extern.bps_name, optarg, sizeof(g_extern.bps_name));
                   g_extern.bps_pref = true;
+                  break;
+
+               case 'I':
+                  strlcpy(g_extern.ips_name, optarg, sizeof(g_extern.ips_name));
+                  g_extern.ips_pref = true;
                   break;
 
 #ifdef HAVE_FFMPEG
@@ -1510,6 +1517,9 @@ static void fill_pathnames(void)
 
       if (!(*g_extern.bps_name))
          fill_pathname_noext(g_extern.bps_name, g_extern.basename, ".bps", sizeof(g_extern.bps_name));
+
+      if (!(*g_extern.ips_name))
+         fill_pathname_noext(g_extern.ips_name, g_extern.basename, ".ips", sizeof(g_extern.ips_name));
 
       if (!(*g_extern.xml_name))
          fill_pathname_noext(g_extern.xml_name, g_extern.basename, ".xml", sizeof(g_extern.xml_name));

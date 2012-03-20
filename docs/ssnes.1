@@ -193,6 +193,12 @@ Attempts to apply a BPS patch to the current ROM image. No files are altered.
 If this flag is not specified, SSNES will look for a .bps file with same basename as ROM specified.
 
 .TP
+\fB--ips PATCH\fR
+Attempts to apply a IPS patch to the current ROM image. No files are altered. 
+If this flag is not specified, SSNES will look for a .ips file with same basename as ROM specified.
+Note that SSNES cannot perform any error checking if patching was successful due to how IPS works.
+
+.TP
 \fB--xml MAP, -X MAP\fR
 Specifies path to XML memory map for the given ROM.
 If this flag is not specified, SSNES will look for a .xml file with same basename as ROM specified.

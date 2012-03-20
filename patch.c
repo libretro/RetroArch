@@ -15,11 +15,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// BPS/UPS/IPS implementation from bSNES (nall::).
+// Modified for SSNES.
+
 #include "patch.h"
 #include "movie.h"
 #include "boolean.h"
 #include "msvc/msvc_compat.h"
 #include <stdint.h>
+#include <string.h>
 
 enum bps_mode
 {
@@ -314,5 +318,84 @@ patch_error_t ups_apply_patch(
    } 
    else
       return PATCH_SOURCE_INVALID;
+}
+
+patch_error_t ips_apply_patch(
+      const uint8_t *patchdata, size_t patchlen,
+      const uint8_t *sourcedata, size_t sourcelength,
+      uint8_t *targetdata, size_t *targetlength)
+{
+   if (patchlen < 8 ||
+         patchdata[0] != 'P' ||
+         patchdata[1] != 'A' ||
+         patchdata[2] != 'T' ||
+         patchdata[3] != 'C' ||
+         patchdata[4] != 'H')
+      return PATCH_PATCH_INVALID;
+
+   memcpy(targetdata, sourcedata, sourcelength);
+
+   uint32_t offset = 5;
+   *targetlength = sourcelength;
+
+   for (;;)
+   {
+      if (offset > patchlen - 3)
+         break;
+
+      uint32_t address = patchdata[offset++] << 16;
+      address |= patchdata[offset++] << 8;
+      address |= patchdata[offset++] << 0;
+
+      if (address == 0x454f46) // EOF
+      {
+         if (offset == patchlen)
+            return PATCH_SUCCESS;
+         else if (offset == patchlen - 3)
+         {
+            uint32_t size = patchdata[offset++] << 16;
+            size |= patchdata[offset++] << 8;
+            size |= patchdata[offset++] << 0;
+            *targetlength = size;
+            return PATCH_SUCCESS;
+         }
+      }
+
+      if (offset > patchlen - 2)
+         break;
+
+      unsigned length = patchdata[offset++] << 8;
+      length |= patchdata[offset++] << 0;
+
+      if (length) // Copy
+      {
+         if (offset > patchlen - length)
+            break;
+
+         while (length--)
+            targetdata[address++] = patchdata[offset++];
+      }
+      else // RLE
+      {
+         if (offset > patchlen - 3)
+            break;
+
+         length  = patchdata[offset++] << 8;
+         length |= patchdata[offset++] << 0;
+
+         if (length == 0) // Illegal
+            break;
+
+         while (length--)
+            targetdata[address++] = patchdata[offset];
+
+         offset++;
+      }
+
+      if (address > *targetlength)
+         *targetlength = address;
+   }
+
+   return PATCH_PATCH_INVALID;
 }
 

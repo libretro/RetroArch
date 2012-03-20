@@ -21,7 +21,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-// BPS/UPS implementation from bSNES (nall::).
+// BPS/UPS/IPS implementation from bSNES (nall::).
+// Modified for SSNES.
 
 typedef enum
 {
@@ -47,6 +48,12 @@ patch_error_t bps_apply_patch(
       uint8_t *target_data, size_t *target_length);
 
 patch_error_t ups_apply_patch(
+      const uint8_t *patch_data, size_t patch_length,
+      const uint8_t *source_data, size_t source_length,
+      uint8_t *target_data, size_t *target_length);
+
+
+patch_error_t ips_apply_patch(
       const uint8_t *patch_data, size_t patch_length,
       const uint8_t *source_data, size_t source_length,
       uint8_t *target_data, size_t *target_length);

@@ -288,8 +288,10 @@ struct global
 
    bool ups_pref;
    bool bps_pref;
+   bool ips_pref;
    char ups_name[PATH_MAX];
    char bps_name[PATH_MAX];
+   char ips_name[PATH_MAX];
 
    unsigned state_slot;
 

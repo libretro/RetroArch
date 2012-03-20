@@ -150,23 +150,33 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
    void *patch_data = NULL;
    bool success = false;
 
-   if (g_extern.ups_pref && g_extern.bps_pref)
+   if (g_extern.ups_pref + g_extern.bps_pref + g_extern.ips_pref > 1)
    {
-      SSNES_WARN("Both UPS and BPS patch explicitly defined, ignoring both ...\n");
+      SSNES_WARN("Several patches are explicitly defined, ignoring all ...\n");
       return;
    }
 
-   if (!g_extern.bps_pref && *g_extern.ups_name && (patch_size = read_file(g_extern.ups_name, &patch_data)) >= 0)
+   bool allow_bps = !g_extern.ups_pref && !g_extern.ips_pref;
+   bool allow_ups = !g_extern.bps_pref && !g_extern.ips_pref;
+   bool allow_ips = !g_extern.ups_pref && !g_extern.bps_pref;
+
+   if (allow_ups && *g_extern.ups_name && (patch_size = read_file(g_extern.ups_name, &patch_data)) >= 0)
    {
       patch_desc = "UPS";
       patch_path = g_extern.ups_name;
       func = ups_apply_patch;
    }
-   else if (!g_extern.ups_pref && *g_extern.bps_name && (patch_size = read_file(g_extern.bps_name, &patch_data)) >= 0)
+   else if (allow_bps && *g_extern.bps_name && (patch_size = read_file(g_extern.bps_name, &patch_data)) >= 0)
    {
       patch_desc = "BPS";
       patch_path = g_extern.bps_name;
       func = bps_apply_patch;
+   }
+   else if (allow_ips && *g_extern.ips_name && (patch_size = read_file(g_extern.ips_name, &patch_data)) >= 0)
+   {
+      patch_desc = "IPS";
+      patch_path = g_extern.ips_name;
+      func = ips_apply_patch;
    }
    else
    {
@@ -279,6 +289,9 @@ static ssize_t read_rom_file(FILE* file, void** buf)
       ret_buf = (uint8_t*)rom_buf;
    }
 
+   // Attempt to apply a patch.
+   patch_rom(&ret_buf, &ret);
+   
    // Remove copier header if present (512 first bytes).
    if ((ret & 0x7fff) == 512)
    {
@@ -286,9 +299,6 @@ static ssize_t read_rom_file(FILE* file, void** buf)
       ret -= 512;
    }
 
-   // Attempt to apply a patch :)
-   patch_rom(&ret_buf, &ret);
-   
    g_extern.cart_crc = crc32_calculate(ret_buf, ret);
 #ifdef HAVE_XML
    sha256_hash(g_extern.sha256, ret_buf, ret);
