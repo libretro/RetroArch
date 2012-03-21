@@ -2273,9 +2273,11 @@ error:
 
 bool ssnes_main_iterate(void)
 {
+#ifdef HAVE_DYLIB
    // DSP plugin GUI events.
    if (g_extern.audio_data.dsp_handle && g_extern.audio_data.dsp_plugin->events)
       g_extern.audio_data.dsp_plugin->events(g_extern.audio_data.dsp_handle);
+#endif
 
    // Time to drop?
    if (driver.input->key_pressed(driver.input_data, SSNES_QUIT_KEY) ||
@@ -2286,7 +2288,9 @@ bool ssnes_main_iterate(void)
    do_state_checks();
 
    // Run libsnes for one frame.
+#ifndef SSNES_CONSOLE // On consoles pausing is handled better elsewhere.
    if (!g_extern.is_paused || g_extern.is_oneshot)
+#endif
    {
 #ifdef HAVE_THREADS
       lock_autosave();
@@ -2312,11 +2316,13 @@ bool ssnes_main_iterate(void)
       unlock_autosave();
 #endif
    }
+#ifndef SSNES_CONSOLE
    else
    {
       input_poll();
       ssnes_sleep(10);
    }
+#endif
 
    return true;
 }
