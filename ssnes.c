@@ -139,7 +139,7 @@ static void take_screenshot(void)
 }
 #endif
 
-
+#ifndef SSNES_CONSOLE
 static inline void adjust_crop(const uint16_t **data, unsigned *height)
 {
    // Rather SNES specific.
@@ -159,6 +159,25 @@ static inline void adjust_crop(const uint16_t **data, unsigned *height)
    }
 }
 
+static void readjust_audio_input_rate(void)
+{
+   int avail = driver.audio->write_avail(driver.audio_data);
+   //fprintf(stderr, "Audio buffer is %u%% full\n",
+   //      (unsigned)(100 - (avail * 100) / g_extern.audio_data.driver_buffer_size));
+
+   int half_size = g_extern.audio_data.driver_buffer_size / 2;
+   int delta_mid = avail - half_size;
+   double direction = (double)delta_mid / half_size;
+
+   double adjust = 1.0 + g_settings.audio.rate_control_delta * direction;
+
+   g_extern.audio_data.src_ratio = g_extern.audio_data.orig_src_ratio * adjust;
+
+   //fprintf(stderr, "New rate: %lf, Orig rate: %lf\n",
+   //      g_extern.audio_data.src_ratio, g_extern.audio_data.orig_src_ratio);
+}
+#endif
+
 // libsnes: 0.065
 // Format received is 16-bit 0RRRRRGGGGGBBBBB
 static void video_frame(const uint16_t *data, unsigned width, unsigned height)
@@ -166,7 +185,9 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    if (!g_extern.video_active)
       return;
 
+#ifndef SSNES_CONSOLE
    adjust_crop(&data, &height);
+#endif
 
    // Slightly messy code,
    // but we really need to do processing before blocking on VSync for best possible scheduling.
@@ -249,24 +270,6 @@ void ssnes_render_cached_frame(void)
 #endif
 }
 
-static void readjust_audio_input_rate(void)
-{
-   int avail = driver.audio->write_avail(driver.audio_data);
-   //fprintf(stderr, "Audio buffer is %u%% full\n",
-   //      (unsigned)(100 - (avail * 100) / g_extern.audio_data.driver_buffer_size));
-
-   int half_size = g_extern.audio_data.driver_buffer_size / 2;
-   int delta_mid = avail - half_size;
-   double direction = (double)delta_mid / half_size;
-
-   double adjust = 1.0 + g_settings.audio.rate_control_delta * direction;
-
-   g_extern.audio_data.src_ratio = g_extern.audio_data.orig_src_ratio * adjust;
-
-   //fprintf(stderr, "New rate: %lf, Orig rate: %lf\n",
-   //      g_extern.audio_data.src_ratio, g_extern.audio_data.orig_src_ratio);
-}
-
 static bool audio_flush(const int16_t *data, size_t samples)
 {
 #ifdef HAVE_FFMPEG
@@ -306,8 +309,10 @@ static bool audio_flush(const int16_t *data, size_t samples)
       src_data.data_out = g_extern.audio_data.outsamples;
       src_data.input_frames = dsp_output.samples ? dsp_output.frames : (samples / 2);
 
+#ifndef SSNES_CONSOLE
       if (g_extern.audio_data.rate_control)
          readjust_audio_input_rate();
+#endif
 
       src_data.ratio = g_extern.audio_data.src_ratio;
       if (g_extern.is_slowmotion)
