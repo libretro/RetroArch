@@ -182,10 +182,10 @@ static void readjust_audio_input_rate(void)
 // Format received is 16-bit 0RRRRRGGGGGBBBBB
 static void video_frame(const uint16_t *data, unsigned width, unsigned height)
 {
+#ifndef SSNES_CONSOLE
    if (!g_extern.video_active)
       return;
 
-#ifndef SSNES_CONSOLE
    adjust_crop(&data, &height);
 #endif
 
@@ -292,15 +292,17 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
    audio_convert_s16_to_float(g_extern.audio_data.data, data, samples);
 
+   ssnes_dsp_output_t dsp_output = {0};
+   dsp_output.should_resample = SSNES_TRUE;
+
+#ifdef HAVE_DYLIB
    ssnes_dsp_input_t dsp_input = {0};
    dsp_input.samples = g_extern.audio_data.data;
    dsp_input.frames = samples / 2;
 
-   ssnes_dsp_output_t dsp_output = {0};
-   dsp_output.should_resample = SSNES_TRUE;
-
    if (g_extern.audio_data.dsp_plugin)
       g_extern.audio_data.dsp_plugin->process(g_extern.audio_data.dsp_handle, &dsp_output, &dsp_input);
+#endif
 
    if (dsp_output.should_resample)
    {
@@ -323,11 +325,13 @@ static bool audio_flush(const int16_t *data, size_t samples)
       output_data = g_extern.audio_data.outsamples;
       output_frames = src_data.output_frames;
    }
+#if !defined(SSNES_CONSOLE) || defined(HAVE_DYLIB)
    else
    {
       output_data = dsp_output.samples;
       output_frames = dsp_output.frames;
    }
+#endif
 
    union
    {
@@ -1612,6 +1616,7 @@ static void check_savestates(bool immutable)
    }
 }
 
+#ifndef SSNES_CONSOLE
 static bool check_fullscreen(void)
 {
    // If we go fullscreen we drop all drivers and reinit to be safe.
@@ -1632,6 +1637,7 @@ static bool check_fullscreen(void)
    was_pressed = pressed;
    return toggle;
 }
+#endif
 
 void ssnes_state_slot_increase(void)
 {
@@ -2109,7 +2115,11 @@ static void do_state_checks(void)
       check_pause();
       check_oneshot();
 
+#ifdef SSNES_CONSOLE
+      if (g_extern.is_paused)
+#else
       if (check_fullscreen() && g_extern.is_paused)
+#endif
          ssnes_render_cached_frame();
 
       if (g_extern.is_paused && !g_extern.is_oneshot)
@@ -2141,7 +2151,9 @@ static void do_state_checks(void)
    else
    {
       check_netplay_flip();
+#ifndef SSNES_CONSOLE
       check_fullscreen();
+#endif
    }
 #endif
 
