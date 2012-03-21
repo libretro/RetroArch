@@ -328,8 +328,13 @@ static bool environment_cb(unsigned cmd, void *data)
          break;
 
       case SNES_ENVIRONMENT_GET_CAN_DUPE:
+#ifdef HAVE_FFMPEG
          *(bool*)data = true;
          SSNES_LOG("Environ GET_CAN_DUPE: true\n");
+#else
+         *(bool*)data = false;
+         SSNES_LOG("Environ GET_CAN_DUPE: false\n");
+#endif
          break;
 
       case SNES_ENVIRONMENT_SET_NEED_FULLPATH:
