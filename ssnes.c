@@ -325,7 +325,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
       output_data = g_extern.audio_data.outsamples;
       output_frames = src_data.output_frames;
    }
-#if !defined(SSNES_CONSOLE) || defined(HAVE_DYLIB)
+#ifdef HAVE_DYLIB
    else
    {
       output_data = dsp_output.samples;
