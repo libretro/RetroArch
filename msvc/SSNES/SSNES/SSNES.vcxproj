@@ -170,14 +170,13 @@
     <ClCompile Include="..\..\..\audio\xaudio-c\xaudio-c.c" />
     <ClCompile Include="..\..\..\audio\xaudio.c" />
     <ClCompile Include="..\..\..\autosave.c" />
-    <ClCompile Include="..\..\..\bps.c" />
     <ClCompile Include="..\..\..\cheats.c" />
+    <ClCompile Include="..\..\..\compat\compat.c" />
     <ClCompile Include="..\..\..\conf\config_file.c" />
     <ClCompile Include="..\..\..\driver.c" />
     <ClCompile Include="..\..\..\dynamic.c" />
     <ClCompile Include="..\..\..\fifo_buffer.c" />
     <ClCompile Include="..\..\..\file.c" />
-    <ClCompile Include="..\..\..\getopt.c" />
     <ClCompile Include="..\..\..\gfx\ext_gfx.c" />
     <ClCompile Include="..\..\..\gfx\fonts.c" />
     <ClCompile Include="..\..\..\gfx\gfx_common.c" />
@@ -194,16 +193,14 @@
     <ClCompile Include="..\..\..\message.c" />
     <ClCompile Include="..\..\..\movie.c" />
     <ClCompile Include="..\..\..\netplay.c" />
-    <ClCompile Include="..\..\..\posix_string.c" />
+    <ClCompile Include="..\..\..\patch.c" />
     <ClCompile Include="..\..\..\record\ffemu.c" />
     <ClCompile Include="..\..\..\rewind.c" />
     <ClCompile Include="..\..\..\screenshot.c" />
     <ClCompile Include="..\..\..\settings.c" />
     <ClCompile Include="..\..\..\sha256.c" />
     <ClCompile Include="..\..\..\ssnes.c" />
-    <ClCompile Include="..\..\..\strl.c" />
     <ClCompile Include="..\..\..\thread.c" />
-    <ClCompile Include="..\..\..\ups.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\audio\ext\ssnes_audio.h" />

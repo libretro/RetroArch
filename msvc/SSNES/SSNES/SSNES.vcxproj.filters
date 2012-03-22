@@ -49,9 +49,6 @@
     <ClCompile Include="..\..\..\audio\utils.c">
       <Filter>Sources\top</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\bps.c">
-      <Filter>Sources\top</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\cheats.c">
       <Filter>Sources\top</Filter>
     </ClCompile>
@@ -76,9 +73,6 @@
     <ClCompile Include="..\..\..\gfx\fonts.c">
       <Filter>Sources\top</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\getopt.c">
-      <Filter>Sources\top</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\audio\hermite.c">
       <Filter>Sources\top</Filter>
     </ClCompile>
@@ -92,9 +86,6 @@
       <Filter>Sources\top</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\netplay.c">
-      <Filter>Sources\top</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\posix_string.c">
       <Filter>Sources\top</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\gfx\py_state\py_state.c">
@@ -118,14 +109,14 @@
     <ClCompile Include="..\..\..\ssnes.c">
       <Filter>Sources\top</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\strl.c">
-      <Filter>Sources\top</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\thread.c">
       <Filter>Sources\top</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\ups.c">
+    <ClCompile Include="..\..\..\patch.c">
       <Filter>Sources\top</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\compat\compat.c">
+      <Filter>Sources\compat</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -295,6 +286,9 @@
     </Filter>
     <Filter Include="Headers\audio">
       <UniqueIdentifier>{8adc8069-5b48-4fca-9fe8-22214a5fcc08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\compat">
+      <UniqueIdentifier>{705155a3-9237-44b0-952a-32b8a384210d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
