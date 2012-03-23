@@ -252,6 +252,9 @@ static bool ffemu_init_muxer(ffemu_t *handle)
    av_strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
    ctx->oformat = av_guess_format(NULL, ctx->filename, NULL);
 
+   if (!ctx->oformat)
+      return false;
+
    // FFmpeg sure likes to make things difficult.
 #if defined(AVIO_FLAG_WRITE)
 #define FFMPEG_FLAG_RW AVIO_FLAG_WRITE
