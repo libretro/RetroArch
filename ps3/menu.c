@@ -36,7 +36,6 @@
 #include "shared.h"
 #include "../file.h"
 #include "../general.h"
-#include "../gfx/shader_cg.h"
 
 #include "menu-port-defines.h"
 #include "menu.h"

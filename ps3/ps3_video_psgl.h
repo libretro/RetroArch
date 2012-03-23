@@ -41,6 +41,9 @@
 #define IS_TIMER_EXPIRED(getter) 	(!(IS_TIMER_NOT_EXPIRED(getter)))
 #define SET_TIMER_EXPIRATION(setter, value) setter = g_frame_count + value;
 
+#define SSNES_CG_MAX_SHADERS 16
+#define SSNES_CG_MENU_SHADER_INDEX (SSNES_CG_MAX_SHADERS - 1)
+
 enum
 {
 	ASPECT_RATIO_4_3,
@@ -101,6 +104,24 @@ typedef struct gl
    void *empty_buf;
 } gl_t;
 
+struct gl_cg_cgp_info
+{
+   const char *shader[2];
+   bool filter_linear[2];
+   bool render_to_texture;
+   float fbo_scale;
+
+   const char *lut_texture_path;
+   const char *lut_texture_id;
+   bool lut_texture_absolute;
+};
+
+struct gl_cg_lut_info
+{
+   char id[64];
+   GLuint tex;
+};
+
 
 bool ps3_setup_texture(void);
 const char * ps3_get_resolution_label(uint32_t resolution);
@@ -119,6 +140,13 @@ void ps3graphics_set_orientation(uint32_t orientation);
 void ps3graphics_set_vsync(uint32_t vsync);
 void ps3graphics_video_init(bool get_all_resolutions);
 void ps3graphics_video_reinit(void);
+
+bool gl_cg_reinit(const char *path);
+bool gl_cg_save_cgp(const char *path, const struct gl_cg_cgp_info *info);
+bool gl_cg_load_shader(unsigned index, const char *path);
+
+
+unsigned gl_cg_get_lut_info(struct gl_cg_lut_info *info, unsigned elems);
 
 extern void *g_gl;
 extern unsigned g_frame_count;
