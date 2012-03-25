@@ -356,14 +356,6 @@
     <ClCompile Include="..\..\360\menu.cpp" />
     <ClCompile Include="..\..\audio\hermite.c" />
     <ClCompile Include="..\..\audio\utils.c" />
-    <ClCompile Include="..\..\autosave.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\cheats.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\compat\compat.c" />
     <ClCompile Include="..\..\conf\config_file.c" />
     <ClCompile Include="..\..\console\console_ext.c" />
@@ -387,7 +379,6 @@
     <ClCompile Include="..\..\rewind.c" />
     <ClCompile Include="..\..\screenshot.c" />
     <ClCompile Include="..\..\settings.c" />
-    <ClCompile Include="..\..\sha256.c" />
     <ClCompile Include="..\..\ssnes.c" />
     <ClCompile Include="..\..\thread.c" />
   </ItemGroup>

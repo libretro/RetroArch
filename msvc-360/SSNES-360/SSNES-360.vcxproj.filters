@@ -50,12 +50,6 @@
     <ClCompile Include="..\..\360\xdk360_video.cpp">
       <Filter>Source Files\360</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\autosave.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\cheats.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\driver.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -81,9 +75,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\settings.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\sha256.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\ssnes.c">
