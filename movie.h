@@ -22,6 +22,13 @@
 #include <stddef.h>
 #include "boolean.h"
 
+#define BSV_MAGIC 0x42535631
+
+#define MAGIC_INDEX 0
+#define SERIALIZER_INDEX 1
+#define CRC_INDEX 2
+#define STATE_SIZE_INDEX 3
+
 typedef struct bsv_movie bsv_movie_t;
 
 enum ssnes_movie_type
@@ -29,9 +36,6 @@ enum ssnes_movie_type
    SSNES_MOVIE_PLAYBACK,
    SSNES_MOVIE_RECORD
 };
-
-uint32_t *bsv_header_generate(size_t *size, uint32_t magic);
-bool bsv_parse_header(const uint32_t *header, uint32_t magic);
 
 bsv_movie_t *bsv_movie_init(const char *path, enum ssnes_movie_type type);
 

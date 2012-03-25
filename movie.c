@@ -40,38 +40,6 @@ struct bsv_movie
    bool did_rewind;
 };
 
-#define BSV_MAGIC 0x42535631
-
-#define MAGIC_INDEX 0
-#define SERIALIZER_INDEX 1
-#define CRC_INDEX 2
-#define STATE_SIZE_INDEX 3
-
-// Convert to big-endian if needed
-static inline uint32_t swap_if_big32(uint32_t val)
-{
-   if (is_little_endian()) // Little-endian
-      return val;
-   else
-      return (val >> 24) | ((val >> 8) & 0xFF00) | ((val << 8) & 0xFF0000) | (val << 24);
-}
-
-static inline uint32_t swap_if_little32(uint32_t val)
-{
-   if (!is_little_endian()) // Big-endian
-      return val;
-   else
-      return (val >> 24) | ((val >> 8) & 0xFF00) | ((val << 8) & 0xFF0000) | (val << 24);
-}
-
-static inline uint16_t swap_if_big16(uint16_t val)
-{
-   if (is_little_endian())
-      return val;
-   else
-      return (val >> 8) | (val << 8);
-}
-
 static bool init_playback(bsv_movie_t *handle, const char *path)
 {
    handle->playback = true;
@@ -265,66 +233,5 @@ void bsv_movie_frame_rewind(bsv_movie_t *handle)
       else
          fseek(handle->file, handle->min_file_pos, SEEK_SET);
    }
-}
-
-uint32_t *bsv_header_generate(size_t *size, uint32_t magic)
-{
-   uint32_t bsv_header[4] = {0};
-   unsigned serialize_size = psnes_serialize_size();
-   size_t header_size = sizeof(bsv_header) + serialize_size;
-   *size = header_size;
-
-   uint32_t *header = (uint32_t*)malloc(header_size);
-   if (!header)
-      return NULL;
-
-   bsv_header[MAGIC_INDEX] = swap_if_little32(BSV_MAGIC);
-   bsv_header[SERIALIZER_INDEX] = swap_if_big32(magic);
-   bsv_header[CRC_INDEX] = swap_if_big32(g_extern.cart_crc);
-   bsv_header[STATE_SIZE_INDEX] = swap_if_big32(serialize_size);
-
-   if (serialize_size && !psnes_serialize((uint8_t*)header + sizeof(bsv_header), serialize_size))
-   {
-      free(header);
-      return NULL;
-   }
-
-   memcpy(header, bsv_header, sizeof(bsv_header));
-   return header;
-}
-
-bool bsv_parse_header(const uint32_t *header, uint32_t magic)
-{
-   uint32_t in_bsv = swap_if_little32(header[MAGIC_INDEX]);
-   if (in_bsv != BSV_MAGIC)
-   {
-      SSNES_ERR("BSV magic mismatch, got 0x%x, expected 0x%x.\n",
-            in_bsv, BSV_MAGIC);
-      return false;
-   }
-
-   uint32_t in_magic = swap_if_big32(header[SERIALIZER_INDEX]);
-   if (in_magic != magic)
-   {
-      SSNES_ERR("Magic mismatch, got 0x%x, expected 0x%x.\n", in_magic, magic);
-      return false;
-   }
-
-   uint32_t in_crc = swap_if_big32(header[CRC_INDEX]);
-   if (in_crc != g_extern.cart_crc)
-   {
-      SSNES_ERR("CRC32 mismatch, got 0x%x, expected 0x%x.\n", in_crc, g_extern.cart_crc);
-      return false;
-   }
-
-   uint32_t in_state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
-   if (in_state_size != psnes_serialize_size())
-   {
-      SSNES_ERR("Serialization size mismatch, got 0x%x, expected 0x%x.\n",
-            in_state_size, psnes_serialize_size());
-      return false;
-   }
-
-   return true;
 }
 
