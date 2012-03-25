@@ -71,9 +71,6 @@
     <ClCompile Include="..\..\message.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\movie.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\netplay.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -176,9 +173,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\message.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\movie.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\netplay.h">

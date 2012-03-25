@@ -380,7 +380,6 @@
     <ClCompile Include="..\..\fifo_buffer.c" />
     <ClCompile Include="..\..\file.c" />
     <ClCompile Include="..\..\message.c" />
-    <ClCompile Include="..\..\movie.c" />
     <ClCompile Include="..\..\netplay.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">true</ExcludedFromBuild>
     </ClCompile>
@@ -415,7 +414,6 @@
     <ClInclude Include="..\..\general.h" />
     <ClInclude Include="..\..\libsnes.hpp" />
     <ClInclude Include="..\..\message.h" />
-    <ClInclude Include="..\..\movie.h" />
     <ClInclude Include="..\..\netplay.h" />
     <ClInclude Include="..\..\rewind.h" />
     <ClInclude Include="..\..\screenshot.h" />
