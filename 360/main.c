@@ -26,7 +26,6 @@
 #include "xdk360_input.h"
 #include "xdk360_video.h"
 
-#include "../input/input_luts.h"
 #include "../console/console_ext.h"
 #include "../console/main_wrap.h"
 #include "../conf/config_file.h"

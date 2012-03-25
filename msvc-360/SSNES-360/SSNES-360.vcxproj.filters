@@ -36,9 +36,6 @@
     <Filter Include="Source Files\console\szlib">
       <UniqueIdentifier>{60603fec-c1c0-4562-8573-b1dc3af0ee40}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\input">
-      <UniqueIdentifier>{b19dc1de-69d4-4501-87ef-b8ee4a7795c5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\media\shader">
       <UniqueIdentifier>{3a05047b-b9ec-4821-bb28-d1b0e9e3e8bb}</UniqueIdentifier>
     </Filter>
@@ -124,9 +121,6 @@
     </ClCompile>
     <ClCompile Include="..\..\console\szlib\szlib.c">
       <Filter>Source Files\console\szlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\input\input_luts.c">
-      <Filter>Source Files\input</Filter>
     </ClCompile>
     <ClCompile Include="..\..\console\console_ext.c">
       <Filter>Source Files\console</Filter>

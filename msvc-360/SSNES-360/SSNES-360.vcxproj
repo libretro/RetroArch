@@ -379,7 +379,6 @@
     <ClCompile Include="..\..\dynamic.c" />
     <ClCompile Include="..\..\fifo_buffer.c" />
     <ClCompile Include="..\..\file.c" />
-    <ClCompile Include="..\..\input\input_luts.c" />
     <ClCompile Include="..\..\message.c" />
     <ClCompile Include="..\..\movie.c" />
     <ClCompile Include="..\..\netplay.c">

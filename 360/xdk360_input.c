@@ -24,7 +24,7 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../libsnes.hpp"
-#include "../input/input_luts.h"
+#include "../console/console_ext_input.h"
 #include "xdk360_input.h"
 #include "xdk360_video_general.h"
 #include "shared.h"
