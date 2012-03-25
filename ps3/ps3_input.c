@@ -25,7 +25,7 @@
 #include "ps3_input.h"
 #include "ps3_video_psgl.h"
 #include "../driver.h"
-#include "../input/input_luts.h"
+#include "../console/console_ext_input.h"
 #include "../libsnes.hpp"
 #include "../general.h"
 #include "shared.h"

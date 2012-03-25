@@ -16,17 +16,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_INPUT_LUTS_H
-#define __SSNES_INPUT_LUTS_H
+#ifndef ROM_EXT_INPUT_H__
+#define ROM_EXT_INPUT_H__
 
 #include "../driver.h"
-#include "../libsnes.hpp"
-#include <stdint.h>
 
 #if defined(__CELLOS_LV2__)
-
 #include "../ps3/ps3_input.h"
-
 enum ps3_device_id
 {
    PS3_DEVICE_ID_JOYPAD_CIRCLE = 0,
@@ -111,13 +107,4 @@ extern uint64_t ssnes_default_keybind_lut[SSNES_FIRST_META_KEY];
 extern uint64_t ssnes_platform_keybind_lut[SSNES_LAST_PLATFORM_KEY];
 extern char ssnes_default_libsnes_keybind_name_lut[SSNES_FIRST_META_KEY][256];
 
-const char *ssnes_input_find_platform_key_label(uint64_t joykey);
-uint64_t ssnes_input_find_previous_platform_key(uint64_t joykey);
-uint64_t ssnes_input_find_next_platform_key(uint64_t joykey);
-
-// Sets custom default keybind names (some systems emulated by the emulator
-// will need different keybind names for buttons, etc.)
-void ssnes_input_set_default_keybind_names_for_emulator(void);
-
 #endif
-
