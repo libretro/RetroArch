@@ -19,6 +19,11 @@
 #ifndef _PS3_INPUT_H_
 #define _PS3_INPUT_H_
 
+#include <stdbool.h>
+#include <wchar.h>
+#include <sysutil/sysutil_oskdialog.h>
+#include <sysutil/sysutil_common.h>
+
 #define MAX_PADS 7
 
 #define CTRL_SELECT_MASK 0x01
@@ -113,17 +118,46 @@
 #define RSTICK_UP_SHIFT 54
 #define RSTICK_DOWN_SHIFT 55
 
+#define OSK_IS_RUNNING(object) object.is_running
+#define OUTPUT_TEXT_STRING(object) object.osk_text_buffer_char
+
 typedef uint64_t cell_input_state_t;
 
 int cell_pad_input_init(void);
 void cell_pad_input_deinit(void);
 
-// Get number of pads connected
 uint32_t cell_pad_input_pads_connected(void);
 
 cell_input_state_t cell_pad_input_poll_device(uint32_t id);
 
 void ps3_input_init(void);
 void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id);
+
+typedef struct
+{
+	unsigned int osk_memorycontainer;
+	wchar_t init_message[CELL_OSKDIALOG_STRING_SIZE + 1];
+	wchar_t message[CELL_OSKDIALOG_STRING_SIZE + 1];
+	wchar_t osk_text_buffer[CELL_OSKDIALOG_STRING_SIZE + 1];
+	char osk_text_buffer_char[CELL_OSKDIALOG_STRING_SIZE + 1];
+	uint32_t flags;
+	bool is_running;
+	bool text_can_be_fetched;
+	sys_memory_container_t containerid;
+	CellOskDialogPoint pos;
+	CellOskDialogInputFieldInfo inputFieldInfo;
+	CellOskDialogCallbackReturnParam outputInfo;
+	CellOskDialogParam dialogParam;
+} oskutil_params;
+
+void oskutil_write_message(oskutil_params *params, const wchar_t* msg);
+void oskutil_write_initial_message(oskutil_params *params, const wchar_t* msg);
+void oskutil_init(oskutil_params *params, unsigned int containersize);
+bool oskutil_start(oskutil_params *params);
+void oskutil_stop(oskutil_params *params);
+void oskutil_finished(oskutil_params *params);
+void oskutil_close(oskutil_params *params);
+void oskutil_unload(oskutil_params *params);
+
 
 #endif

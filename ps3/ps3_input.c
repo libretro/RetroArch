@@ -21,6 +21,9 @@
 
 #include <cell/pad.h>
 #include <sdk_version.h>
+#include <sys/memory.h>
+#include <sysutil/sysutil_oskdialog.h>
+#include <sysutil/sysutil_common.h>
 
 #include "ps3_input.h"
 #include "ps3_video_psgl.h"
@@ -30,9 +33,13 @@
 #include "../general.h"
 #include "shared.h"
 
-static uint64_t state[MAX_PADS];
+/*============================================================
+	PS3 PAD
+============================================================ */
 
 #define MAP(x) (x & 0xFF)
+
+static uint64_t state[MAX_PADS];
 
 void cell_pad_input_deinit(void)
 {
@@ -122,6 +129,136 @@ static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
 
    return CTRL_MASK(state[player], button) ? 1 : 0;
 }
+
+/*============================================================
+	ON-SCREEN KEYBOARD UTILITY
+============================================================ */
+
+#define OSK_IN_USE	(0x00000001)
+
+void oskutil_init(oskutil_params *params, unsigned int containersize)
+{
+   params->flags = 0;
+   params->is_running = false;
+   if(containersize)
+      params->osk_memorycontainer =  containersize; 
+   else
+      params->osk_memorycontainer =  1024*1024*7;
+}
+
+static bool oskutil_enable_key_layout()
+{
+   int ret = cellOskDialogSetKeyLayoutOption(CELL_OSKDIALOG_10KEY_PANEL | \
+      CELL_OSKDIALOG_FULLKEY_PANEL);
+   if (ret < 0)
+      return (false);
+   else
+      return (true);
+}
+
+static void oskutil_create_activation_parameters(oskutil_params *params)
+{
+   params->dialogParam.controlPoint.x = 0.0;
+   params->dialogParam.controlPoint.y = 0.0;
+
+   int32_t LayoutMode = CELL_OSKDIALOG_LAYOUTMODE_X_ALIGN_CENTER | CELL_OSKDIALOG_LAYOUTMODE_Y_ALIGN_TOP;
+   cellOskDialogSetLayoutMode(LayoutMode);
+
+   params->dialogParam.allowOskPanelFlg = 
+   CELL_OSKDIALOG_PANELMODE_ALPHABET |
+   CELL_OSKDIALOG_PANELMODE_NUMERAL | 
+   CELL_OSKDIALOG_PANELMODE_NUMERAL_FULL_WIDTH |
+   CELL_OSKDIALOG_PANELMODE_ENGLISH;
+
+   params->dialogParam.firstViewPanel = CELL_OSKDIALOG_PANELMODE_ENGLISH;
+   params->dialogParam.prohibitFlgs = 0;
+}
+
+void oskutil_write_message(oskutil_params *params, const wchar_t* msg)
+{
+   params->inputFieldInfo.message = (uint16_t*)msg;
+}
+
+void oskutil_write_initial_message(oskutil_params *params, const wchar_t* msg)
+{
+   params->inputFieldInfo.init_text = (uint16_t*)msg;
+}
+
+bool oskutil_start(oskutil_params *params) 
+{
+   memset(params->osk_text_buffer, 0, sizeof(*params->osk_text_buffer));
+   memset(params->osk_text_buffer_char, 0, 256);
+
+   params->text_can_be_fetched = false;
+
+   if (params->flags & OSK_IN_USE)
+      return (true);
+
+   int ret = sys_memory_container_create(&params->containerid, params->osk_memorycontainer);
+
+   if(ret < 0)
+      return (false);
+
+   params->inputFieldInfo.limit_length = CELL_OSKDIALOG_STRING_SIZE;	
+
+   oskutil_create_activation_parameters(params);
+
+   if(!oskutil_enable_key_layout())
+      return (false);
+
+   ret = cellOskDialogLoadAsync(params->containerid, &params->dialogParam, &params->inputFieldInfo);
+   if(ret < 0)
+      return (false);
+
+   params->flags |= OSK_IN_USE;
+   params->is_running = true;
+
+   return (true);
+}
+
+void oskutil_close(oskutil_params *params)
+{
+   cellOskDialogAbort();
+}
+
+void oskutil_finished(oskutil_params *params)
+{
+   int num;
+
+   params->outputInfo.result = CELL_OSKDIALOG_INPUT_FIELD_RESULT_OK;
+   params->outputInfo.numCharsResultString = 256;
+   params->outputInfo.pResultString = (uint16_t *)params->osk_text_buffer;
+
+   cellOskDialogUnloadAsync(&params->outputInfo);
+
+   switch (params->outputInfo.result)
+   {
+      case CELL_OSKDIALOG_INPUT_FIELD_RESULT_OK:
+         num = wcstombs(params->osk_text_buffer_char, params->osk_text_buffer, 256);
+         params->osk_text_buffer_char[num]=0;
+         params->text_can_be_fetched = true;
+         break;
+      case CELL_OSKDIALOG_INPUT_FIELD_RESULT_CANCELED:
+      case CELL_OSKDIALOG_INPUT_FIELD_RESULT_ABORT:
+      case CELL_OSKDIALOG_INPUT_FIELD_RESULT_NO_INPUT_TEXT:
+      default:
+         params->osk_text_buffer_char[0]=0;
+         params->text_can_be_fetched = false;
+         break;
+   }
+
+   params->flags &= ~OSK_IN_USE;
+}
+
+void oskutil_unload(oskutil_params *params)
+{
+   sys_memory_container_destroy(params->containerid);
+   params->is_running = false;
+}
+
+/*============================================================
+	SSNES PS3 INPUT DRIVER 
+============================================================ */
 
 static void ps3_free_input(void *data)
 {

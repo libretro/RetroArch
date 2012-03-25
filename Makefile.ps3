@@ -44,7 +44,6 @@ PPU_SRCS		= fifo_buffer.c \
 			console/librsound/librsound.c \
 			console/szlib/szlib.c \
 			ps3/ps3_input.c \
-			ps3/cellframework2/utility/oskutil.c \
 			compat/compat.c \
 			ssnes.c \
 			driver.c \

@@ -37,7 +37,7 @@
 
 #ifdef __CELLOS_LV2__
 #include <sys/timer.h>
-#include "ps3/cellframework2/utility/oskutil.h"
+#include "ps3/ps3_input.h"
 #endif
 
 #ifdef XENON
