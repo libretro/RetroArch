@@ -26,7 +26,7 @@
 #endif
 
 #include "ps3_input.h"
-#include "cellframework2/fileio/file_browser.h"
+#include "file_browser.h"
 
 #include "../console/console_ext.h"
 

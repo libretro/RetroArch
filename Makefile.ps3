@@ -37,7 +37,7 @@ PKG_SCRIPT		= ps3/ps3py/pkg.py
 PKG_FINALIZE         	= package_finalize
 
 PPU_SRCS		= fifo_buffer.c \
-			ps3/cellframework2/fileio/file_browser.c \
+			ps3/file_browser.c \
 			ps3/ps3_audio.c \
 			ps3/menu.c \
 			console/console_ext.c \
