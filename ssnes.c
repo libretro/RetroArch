@@ -282,10 +282,12 @@ static bool audio_flush(const int16_t *data, size_t samples)
    }
 #endif
 
+#ifndef SSNES_CONSOLE
    if (g_extern.is_paused)
       return true;
    if (!g_extern.audio_active)
       return false;
+#endif
 
    const float *output_data = NULL;
    unsigned output_frames = 0;
@@ -1873,6 +1875,7 @@ static void check_movie(void)
    old_button = new_button;
 }
 
+#ifndef SSNES_CONSOLE
 static void check_pause(void)
 {
    static bool old_state = false;
@@ -1934,6 +1937,7 @@ static void check_pause(void)
    old_focus = focus;
    old_state = new_state;
 }
+#endif
 
 static void check_oneshot(void)
 {
@@ -2112,7 +2116,9 @@ static void do_state_checks(void)
    if (!g_extern.netplay)
    {
 #endif
+#ifndef SSNES_CONSOLE
       check_pause();
+#endif
       check_oneshot();
 
 #ifdef SSNES_CONSOLE
@@ -2122,8 +2128,10 @@ static void do_state_checks(void)
 #endif
          ssnes_render_cached_frame();
 
+#ifndef SSNES_CONSOLE
       if (g_extern.is_paused && !g_extern.is_oneshot)
          return;
+#endif
 
       set_fast_forward_button(
             driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY),
