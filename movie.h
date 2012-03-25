@@ -48,8 +48,8 @@ void bsv_movie_frame_rewind(bsv_movie_t *handle);
 
 void bsv_movie_free(bsv_movie_t *handle);
 
-uint32_t crc32_calculate(const uint8_t *data, unsigned length);
-uint32_t crc32_adjust(uint32_t crc32, uint8_t input);
+uint32_t crc32_calculate(const uint8_t *data, size_t length);
+uint32_t crc32_adjust(uint32_t crc, uint8_t data);
 
 #endif
 

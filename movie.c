@@ -22,8 +22,19 @@
 #include "general.h"
 #include "dynamic.h"
 
-// CRC32 implementation taken from BSNES source :)
+#ifdef HAVE_ZLIB
+#include "console/szlib/zlib.h"
+uint32_t crc32_calculate(const uint8_t *data, size_t length)
+{
+   return crc32(0, data, length);
+}
 
+uint32_t crc32_adjust(uint32_t crc, uint8_t data)
+{
+   return crc32(crc, &data, 1);
+}
+#else
+// Zlib crc32.
 static const uint32_t crc32_table[256] = {
     0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
     0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
@@ -75,13 +86,14 @@ uint32_t crc32_adjust(uint32_t crc32, uint8_t input)
    return ((crc32 >> 8) & 0x00ffffff) ^ crc32_table[(crc32 ^ input) & 0xff];
 }
 
-uint32_t crc32_calculate(const uint8_t *data, unsigned length)
+uint32_t crc32_calculate(const uint8_t *data, size_t length)
 {
    uint32_t crc32 = ~0;
-   for (unsigned i = 0; i < length; i++)
+   for (size_t i = 0; i < length; i++)
       crc32 = crc32_adjust(crc32, data[i]);
    return ~crc32;
 }
+#endif
 
 struct bsv_movie
 {
