@@ -2268,7 +2268,9 @@ int ssnes_main_init(int argc, char *argv[])
    set_savestate_auto_index();
 
    g_extern.use_sram = true;
+#ifdef HAVE_XML
    bool allow_cheats = true;
+#endif
 
    if (!init_rom_file(g_extern.game_type))
       goto error;
