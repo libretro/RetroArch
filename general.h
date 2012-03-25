@@ -362,6 +362,7 @@ struct global
    size_t state_size;
    bool frame_is_reverse;
 
+#ifdef HAVE_BSV_MOVIE
    // Movie playback/recording support.
    struct
    {
@@ -375,6 +376,7 @@ struct global
       bool movie_start_playback;
       bool movie_end;
    } bsv;
+#endif
 
    bool sram_load_disable;
    bool sram_save_disable;

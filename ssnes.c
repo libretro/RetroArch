@@ -397,6 +397,7 @@ static void input_poll(void)
 
 static int16_t input_state(bool port, unsigned device, unsigned index, unsigned id)
 {
+#ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie && g_extern.bsv.movie_playback)
    {
       int16_t ret;
@@ -405,6 +406,7 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
       else
          g_extern.bsv.movie_end = true;
    }
+#endif
 
    static const struct snes_keybind *binds[MAX_PLAYERS] = {
       g_settings.input.binds[0],
@@ -421,8 +423,10 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
    if (id < SSNES_FIRST_META_KEY)
       res = driver.input->input_state(driver.input_data, binds, port, device, index, id);
 
+#ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie && !g_extern.bsv.movie_playback)
       bsv_movie_set_input(g_extern.bsv.movie, res);
+#endif
 
    return res;
 }
@@ -524,9 +528,11 @@ static void print_help(void)
    puts("\t-j/--justifier: Connect a virtual Konami Justifier into port 2 of the SNES.");
    puts("\t-J/--justifiers: Daisy chain two virtual Konami Justifiers into port 2 of the SNES.");
    puts("\t-4/--multitap: Connect a multitap to port 2 of the SNES.");
+#ifdef HAVE_BSV_MOVIE
    puts("\t-P/--bsvplay: Playback a BSV movie file.");
    puts("\t-R/--bsvrecord: Start recording a BSV movie file from the beginning.");
    puts("\t-M/--sram-mode: Takes an argument telling how SRAM should be handled in the session.");
+#endif
    puts("\t\t{no,}load-{no,}save describes if SRAM should be loaded, and if SRAM should be saved.");
    puts("\t\tDo note that noload-save implies that save files will be deleted and overwritten.");
 
@@ -684,9 +690,11 @@ static void parse_input(int argc, char *argv[])
       { "multitap", 0, NULL, '4' },
       { "sufamiA", 1, NULL, 'Y' },
       { "sufamiB", 1, NULL, 'Z' },
+#ifdef HAVE_BSV_MOVIE
       { "bsvplay", 1, NULL, 'P' },
       { "bsvrecord", 1, NULL, 'R' },
       { "sram-mode", 1, NULL, 'M' },
+#endif
 #ifdef HAVE_NETPLAY
       { "host", 0, NULL, 'H' },
       { "connect", 1, NULL, 'C' },
@@ -729,7 +737,13 @@ static void parse_input(int argc, char *argv[])
 #define NETPLAY_ARG
 #endif
 
-   const char *optstring = "hs:fvS:m:p4jJg:b:B:Y:Z:P:R:M:U:DN:X:" NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+#ifdef HAVE_BSV_MOVIE
+#define BSV_MOVIE_ARG "P:R:M:"
+#else
+#define BSV_MOVIE_ARG
+#endif
+
+   const char *optstring = "hs:fvS:m:p4jJg:b:B:Y:Z:U:DN:X:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for (;;)
    {
       val = 0;
@@ -845,6 +859,7 @@ static void parse_input(int argc, char *argv[])
             break;
 #endif
 
+#ifdef HAVE_BSV_MOVIE
          case 'P':
          case 'R':
             strlcpy(g_extern.bsv.movie_start_path, optarg,
@@ -870,6 +885,7 @@ static void parse_input(int argc, char *argv[])
                ssnes_fail(1, "parse_input()");
             }
             break;
+#endif
 
 #ifdef HAVE_NETPLAY
          case 'H':
@@ -1228,6 +1244,7 @@ static void deinit_rewind(void)
       free(g_extern.state_buf);
 }
 
+#ifdef HAVE_BSV_MOVIE
 static void init_movie(void)
 {
    if (g_extern.bsv.movie_start_playback)
@@ -1270,6 +1287,7 @@ static void deinit_movie(void)
    if (g_extern.bsv.movie)
       bsv_movie_free(g_extern.bsv.movie);
 }
+#endif
 
 #define SSNES_DEFAULT_PORT 55435
 
@@ -1526,7 +1544,9 @@ static void fill_pathnames(void)
                g_extern.savefile_name_srm, ".rtc", sizeof(g_extern.savefile_name_rtc));
    }
 
+#ifdef HAVE_BSV_MOVIE
    fill_pathname(g_extern.bsv.movie_path, g_extern.savefile_name_srm, "", sizeof(g_extern.bsv.movie_path));
+#endif
 
    if (*g_extern.basename)
    {
@@ -1771,8 +1791,10 @@ static void check_rewind(void)
          msg_queue_push(g_extern.msg_queue, "Rewinding.", 0, g_extern.is_paused ? 1 : 30);
          psnes_unserialize((uint8_t*)buf, g_extern.state_size);
 
+#ifdef HAVE_BSV_MOVIE
          if (g_extern.bsv.movie)
             bsv_movie_frame_rewind(g_extern.bsv.movie);
+#endif
       }
       else
          msg_queue_push(g_extern.msg_queue, "Reached end of rewind buffer.", 0, 30);
@@ -1781,7 +1803,11 @@ static void check_rewind(void)
    {
       static unsigned cnt = 0;
       cnt = (cnt + 1) % (g_settings.rewind_granularity ? g_settings.rewind_granularity : 1); // Avoid possible SIGFPE.
+#ifdef HAVE_BSV_MOVIE
       if (cnt == 0 || g_extern.bsv.movie)
+#else
+      if (cnt == 0)
+#endif
       {
          psnes_serialize((uint8_t*)g_extern.state_buf, g_extern.state_size);
          state_manager_push(g_extern.state_manager, g_extern.state_buf);
@@ -1801,6 +1827,7 @@ static void check_slowmotion(void)
    }
 }
 
+#ifdef HAVE_BSV_MOVIE
 static void movie_record_toggle(void)
 {
    if (g_extern.bsv.movie)
@@ -1874,6 +1901,7 @@ static void check_movie(void)
 
    old_button = new_button;
 }
+#endif
 
 #ifndef SSNES_CONSOLE
 static void check_pause(void)
@@ -2138,12 +2166,18 @@ static void do_state_checks(void)
             driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_HOLD_KEY));
 
       check_stateslots();
+#ifdef HAVE_BSV_MOVIE
       check_savestates(g_extern.bsv.movie);
+#else
+      check_savestates(false);
+#endif
 
       check_rewind();
       check_slowmotion();
 
+#ifdef HAVE_BSV_MOVIE
       check_movie();
+#endif
      
 #ifdef HAVE_XML
       check_shader_dir();
@@ -2234,6 +2268,7 @@ int ssnes_main_init(int argc, char *argv[])
    set_savestate_auto_index();
 
    g_extern.use_sram = true;
+   bool allow_cheats = true;
 
    if (!init_rom_file(g_extern.game_type))
       goto error;
@@ -2245,7 +2280,9 @@ int ssnes_main_init(int argc, char *argv[])
    else
       SSNES_LOG("Skipping SRAM load.\n");
 
+#ifdef HAVE_BSV_MOVIE
    init_movie();
+#endif
 
 #ifdef HAVE_NETPLAY
    init_netplay();
@@ -2278,10 +2315,12 @@ int ssnes_main_init(int argc, char *argv[])
       
 #ifdef HAVE_XML
 #ifdef HAVE_NETPLAY
-   if (!g_extern.bsv.movie && !g_extern.netplay)
-#else
-   if (!g_extern.bsv.movie)
+   allow_cheats &= !g_extern.netplay;
 #endif
+#ifdef HAVE_BSV_MOVIE
+   allow_cheats &= !g_extern.bsv.movie;
+#endif
+   if (allow_cheats)
       init_cheats();
 #endif
 
@@ -2326,13 +2365,19 @@ bool ssnes_main_iterate(void)
       if (g_extern.netplay)
          netplay_pre_frame(g_extern.netplay);
 #endif
+
+#ifdef HAVE_BSV_MOVIE
       if (g_extern.bsv.movie)
          bsv_movie_set_frame_start(g_extern.bsv.movie);
+#endif
 
       psnes_run();
 
+#ifdef HAVE_BSV_MOVIE
       if (g_extern.bsv.movie)
          bsv_movie_set_frame_end(g_extern.bsv.movie);
+#endif
+
 #ifdef HAVE_NETPLAY
       if (g_extern.netplay)
          netplay_post_frame(g_extern.netplay);
@@ -2378,7 +2423,9 @@ void ssnes_main_deinit(void)
    deinit_cheats();
 #endif
 
+#ifdef HAVE_BSV_MOVIE
    deinit_movie();
+#endif
    deinit_msg_queue();
 
    psnes_unload_cartridge();

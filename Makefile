@@ -2,12 +2,12 @@ include config.mk
 
 TARGET = ssnes tools/ssnes-joyconfig
 
-OBJ = ssnes.o file.o hash.o driver.o settings.o dynamic.o message.o rewind.o movie.o gfx/gfx_common.o patch.o compat/compat.o screenshot.o audio/utils.o
+OBJ = ssnes.o file.o hash.o driver.o settings.o dynamic.o message.o rewind.o gfx/gfx_common.o patch.o compat/compat.o screenshot.o audio/utils.o
 JOYCONFIG_OBJ = tools/ssnes-joyconfig.o conf/config_file.o compat/compat.o
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
 LIBS = -lm
-DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE
+DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS
 
 ifeq ($(REENTRANT_TEST), 1)
    DEFINES += -Dmain=ssnes_main
@@ -39,6 +39,10 @@ endif
 
 ifeq ($(HAVE_CONFIGFILE), 1)
    OBJ += conf/config_file.o
+endif
+
+ifeq ($(HAVE_BSV_MOVIE), 1)
+   OBJ += movie.o
 endif
 
 ifeq ($(HAVE_NETPLAY), 1)
