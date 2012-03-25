@@ -19,7 +19,7 @@
 // Modified for SSNES.
 
 #include "patch.h"
-#include "movie.h"
+#include "hash.h"
 #include "boolean.h"
 #include "msvc/msvc_compat.h"
 #include <stdint.h>

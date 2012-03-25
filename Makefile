@@ -2,7 +2,7 @@ include config.mk
 
 TARGET = ssnes tools/ssnes-joyconfig
 
-OBJ = ssnes.o file.o driver.o settings.o dynamic.o message.o rewind.o movie.o gfx/gfx_common.o patch.o compat/compat.o screenshot.o audio/utils.o
+OBJ = ssnes.o file.o hash.o driver.o settings.o dynamic.o message.o rewind.o movie.o gfx/gfx_common.o patch.o compat/compat.o screenshot.o audio/utils.o
 JOYCONFIG_OBJ = tools/ssnes-joyconfig.o conf/config_file.o compat/compat.o
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
@@ -122,7 +122,7 @@ ifeq ($(HAVE_CG), 1)
 endif
 
 ifeq ($(HAVE_XML), 1)
-   OBJ += sha256.o cheats.o 
+   OBJ += cheats.o 
    LIBS += $(XML_LIBS)
    DEFINES += $(XML_CFLAGS)
 

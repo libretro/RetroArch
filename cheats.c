@@ -16,7 +16,7 @@
  */
 
 #include "cheats.h"
-#include "sha256.h"
+#include "hash.h"
 #include "dynamic.h"
 #include "general.h"
 #include "compat/strl.h"

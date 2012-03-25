@@ -26,10 +26,7 @@
 #include "movie.h"
 #include "patch.h"
 #include "compat/strl.h"
-
-#ifdef HAVE_XML
-#include "sha256.h"
-#endif
+#include "hash.h"
 
 #ifdef __CELLOS_LV2__
 #include <cell/cell_fs.h>

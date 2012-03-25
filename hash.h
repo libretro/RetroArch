@@ -15,14 +15,30 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_SHA256_H
-#define __SSNES_SHA256_H
+#ifndef __SSNES_HASH_H
+#define __SSNES_HASH_H
 
 #include <stdint.h>
 #include <stddef.h>
 
 // Hashes sha256 and outputs a human readable string for comparing with the cheat XML values.
 void sha256_hash(char *out, const uint8_t *in, size_t size);
+
+#ifdef HAVE_ZLIB
+#include "console/szlib/zlib.h"
+static inline uint32_t crc32_calculate(const uint8_t *data, size_t length)
+{
+   return crc32(0, data, length);
+}
+
+static inline uint32_t crc32_adjust(uint32_t crc, uint8_t data)
+{
+   return crc32(crc, &data, 1);
+}
+#else
+uint32_t crc32_calculate(const uint8_t *data, size_t length);
+uint32_t crc32_adjust(uint32_t crc, uint8_t data);
+#endif
 
 #endif
 
