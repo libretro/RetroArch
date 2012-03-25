@@ -7,7 +7,7 @@ JOYCONFIG_OBJ = tools/ssnes-joyconfig.o conf/config_file.o compat/compat.o
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
 LIBS = -lm
-DEFINES = -DHAVE_CONFIG_H
+DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE
 
 ifeq ($(REENTRANT_TEST), 1)
    DEFINES += -Dmain=ssnes_main

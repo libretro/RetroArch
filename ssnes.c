@@ -97,7 +97,7 @@ static inline unsigned lines_to_pitch(unsigned height)
       return g_extern.system.pitch;
 }
 
-#ifndef HAVE_SCREENSHOTS_BUILTIN
+#ifdef HAVE_SCREENSHOTS
 static void take_screenshot(void)
 {
    if (!(*g_settings.screenshot_directory))
@@ -2045,7 +2045,7 @@ static void check_cheats(void)
 }
 #endif
 
-#ifndef HAVE_SCREENSHOTS_BUILTIN
+#ifdef HAVE_SCREENSHOTS
 static void check_screenshot(void)
 {
    static bool old_pressed = false;
@@ -2107,7 +2107,7 @@ static void check_netplay_flip(void)
 
 static void do_state_checks(void)
 {
-#ifndef HAVE_SCREENSHOTS_BUILTIN
+#ifdef HAVE_SCREENSHOTS
    check_screenshot();
 #endif
    check_mute();
