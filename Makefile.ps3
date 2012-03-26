@@ -30,11 +30,20 @@ CORE_PATH		= ps3/pkg/USRDIR/cores/CORE.SELF
 LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
 INCDIRS = -I. -Ips3 -Icommon
 
+PKG_SCRIPT		= ps3/ps3py/pkg.py
+ifeq ($(shell uname), Linux)
+PKG_FINALIZE         	= package_finalize
 MAKE_SELF_WC		= make_self_wc
 MAKE_SELF		= make_self_npdrm
-
-PKG_SCRIPT		= ps3/ps3py/pkg.py
-PKG_FINALIZE         	= package_finalize
+PYTHON2			= python2
+GIT			= git
+else
+PKG_FINALIZE         	= package_finalize.exe
+MAKE_SELF_WC		= make_self_wc.exe
+MAKE_SELF		= make_self_npdrm.exe
+PYTHON2			= python2.exe
+GIT			= git.exe
+endif
 
 PPU_SRCS		= fifo_buffer.c \
 			ps3/file_browser.c \
@@ -138,26 +147,26 @@ create-salamander:
 create-shaders:
 ifeq ($(DOWNLOAD_SHADERS),1)
 	$(RM) -rf ps3/pkg/USRDIR/cores/shaders
-	git clone git://github.com/twinaphex/common-shaders.git ps3/pkg/USRDIR/cores/shaders
+	$(GIT) clone git://github.com/twinaphex/common-shaders.git ps3/pkg/USRDIR/cores/shaders
 endif
 
 pkg: $(PPU_TARGET) create-shaders create-npdrm-salamander create-npdrm-core
 	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
 
 pkg-signed: $(PPU_TARGET) create-shaders create-salamander create-core
-	python2 $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(SSNES_VERSION).pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(SSNES_VERSION).pkg
 
 pkg-signed-standalone: $(PPU_TARGET) create-shaders create-core
 	$(MAKE_SELF) $(PPU_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
-	python2 $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(SSNES_VERSION).pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(SSNES_VERSION).pkg
 
 pkg-signed-cfw: $(PPU_TARGET) create-shaders create-salamander create-core
-	python2 $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(SSNES_VERSION)-kmeaw.pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(SSNES_VERSION)-kmeaw.pkg
 	$(PKG_FINALIZE) ssnes-ps3-cfw-$(SSNES_VERSION)-kmeaw.pkg
 
 pkg-signed-cfw-standalone: $(PPU_TARGET) create-shaders create-core
 	$(MAKE_SELF) $(PPU_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
-	python2 $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(SSNES_VERSION).pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(SSNES_VERSION).pkg
 	$(PKG_FINALIZE) ssnes-ps3-cfw-$(SSNES_VERSION)-kmeaw.pkg
 
 clean-selfs:
