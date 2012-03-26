@@ -19,6 +19,14 @@
 #ifndef MENU_H_
 #define MENU_H_
 
+#define FONT_SIZE (g_console.menu_font_size)
+#define EMU_MENU_TITLE "SSNES |"
+#define VIDEO_MENU_TITLE "SSNES VIDEO |"
+#define AUDIO_MENU_TITLE "SSNES AUDIO |"
+
+#define EMULATOR_NAME "SSNES"
+#define EMULATOR_VERSION PACKAGE_VERSION
+
 typedef struct
 {
 	uint32_t enum_id;			/* enum ID of item				*/

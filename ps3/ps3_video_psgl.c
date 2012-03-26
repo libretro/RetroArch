@@ -2172,7 +2172,6 @@ static void ps3graphics_swap(void * data)
 {
 	(void)data;
 	psglSwap();
-	cell_console_poll();
 	cellSysutilCheckCallback();
 }
 

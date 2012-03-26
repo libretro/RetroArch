@@ -22,7 +22,6 @@
 #include "../gfx/gl_common.h"
 #include "../gfx/gfx_common.h"
 #include "../gfx/image.h"
-#include "menu-port-defines.h"
 #include <cell/dbgfont.h>
 
 #define FBO_DEINIT	0

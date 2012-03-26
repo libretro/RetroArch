@@ -36,7 +36,6 @@
 #include "../file.h"
 #include "../general.h"
 
-#include "menu-port-defines.h"
 #include "menu.h"
 #include "menu-entries.h"
 
@@ -151,13 +150,13 @@ static menu menu_controlssettings = {
 
 static void display_menubar(uint32_t menu_enum)
 {
-	cellDbgFontPuts    (0.09f,  0.05f,  Emulator_GetFontSize(),  menu_enum == GENERAL_VIDEO_MENU ? RED : GREEN,   menu_generalvideosettings.title);
-	cellDbgFontPuts    (0.19f,  0.05f,  Emulator_GetFontSize(),  menu_enum == GENERAL_AUDIO_MENU ? RED : GREEN,  menu_generalaudiosettings.title);
-	cellDbgFontPuts    (0.29f,  0.05f,  Emulator_GetFontSize(),  menu_enum == EMU_GENERAL_MENU ? RED : GREEN,  menu_emu_settings.title);
-	cellDbgFontPuts    (0.39f,  0.05f,  Emulator_GetFontSize(),  menu_enum == EMU_VIDEO_MENU ? RED : GREEN,   menu_emu_videosettings.title);
-	cellDbgFontPuts    (0.57f,  0.05f,  Emulator_GetFontSize(),  menu_enum == EMU_AUDIO_MENU ? RED : GREEN,   menu_emu_audiosettings.title);
-	cellDbgFontPuts    (0.75f,  0.05f,  Emulator_GetFontSize(),  menu_enum == PATH_MENU ? RED : GREEN,  menu_pathsettings.title);
-	cellDbgFontPuts    (0.84f,  0.05f,  Emulator_GetFontSize(), menu_enum == CONTROLS_MENU ? RED : GREEN,  menu_controlssettings.title); 
+	cellDbgFontPuts    (0.09f,  0.05f,  FONT_SIZE,  menu_enum == GENERAL_VIDEO_MENU ? RED : GREEN,   menu_generalvideosettings.title);
+	cellDbgFontPuts    (0.19f,  0.05f,  FONT_SIZE,  menu_enum == GENERAL_AUDIO_MENU ? RED : GREEN,  menu_generalaudiosettings.title);
+	cellDbgFontPuts    (0.29f,  0.05f,  FONT_SIZE,  menu_enum == EMU_GENERAL_MENU ? RED : GREEN,  menu_emu_settings.title);
+	cellDbgFontPuts    (0.39f,  0.05f,  FONT_SIZE,  menu_enum == EMU_VIDEO_MENU ? RED : GREEN,   menu_emu_videosettings.title);
+	cellDbgFontPuts    (0.57f,  0.05f,  FONT_SIZE,  menu_enum == EMU_AUDIO_MENU ? RED : GREEN,   menu_emu_audiosettings.title);
+	cellDbgFontPuts    (0.75f,  0.05f,  FONT_SIZE,  menu_enum == PATH_MENU ? RED : GREEN,  menu_pathsettings.title);
+	cellDbgFontPuts    (0.84f,  0.05f,  FONT_SIZE, menu_enum == CONTROLS_MENU ? RED : GREEN,  menu_controlssettings.title); 
 	cellDbgFontDraw();
 }
 
@@ -369,7 +368,7 @@ static void browser_render(filebrowser_t * b)
 	for ( i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
 	{
 		currentY = currentY + ySpacing;
-		cellDbgFontPuts(currentX, currentY, Emulator_GetFontSize(), i == current_index ? RED : b->cur[i].d_type == CELL_FS_TYPE_DIRECTORY ? GREEN : WHITE, b->cur[i].d_name);
+		cellDbgFontPuts(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->cur[i].d_type == CELL_FS_TYPE_DIRECTORY ? GREEN : WHITE, b->cur[i].d_name);
 		cellDbgFontDraw();
 	}
 	cellDbgFontDraw();
@@ -875,7 +874,6 @@ static void select_file(uint32_t menu_id)
 			strncpy(object, "Libsnes core file", sizeof(object));
 			strncpy(comment, "INFO - Select a Libsnes core file from the menu by pressing the X button. ", sizeof(comment));
 			break;
-		EXTRA_SELECT_FILE_PART1();
 	}
 
 	if(set_initial_dir_tmpbrowser)
@@ -948,7 +946,6 @@ static void select_file(uint32_t menu_id)
 						g_console.menu_enable = false;
 						g_console.mode_switch = MODE_EXIT;
 						break;
-						EXTRA_SELECT_FILE_PART2();
 				}
 
 				menuStackindex--;
@@ -959,8 +956,8 @@ static void select_file(uint32_t menu_id)
 			menuStackindex--;
 	}
 
-        cellDbgFontPrintf(0.09f, 0.09f, Emulator_GetFontSize(), YELLOW, "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
-	cellDbgFontPuts	(0.09f,	0.05f,	Emulator_GetFontSize(),	RED,	title);
+        cellDbgFontPrintf(0.09f, 0.09f, FONT_SIZE, YELLOW, "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
+	cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	title);
 	cellDbgFontPrintf(0.09f, 0.92f, 0.92, YELLOW, "X - Select %s  /\\ - return to settings  START - Reset Startdir", object);
 	cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s", comment);
 	cellDbgFontDraw();
@@ -1055,9 +1052,9 @@ static void select_directory(uint32_t menu_id)
 		}
 	}
 
-        cellDbgFontPrintf (0.09f,  0.09f, Emulator_GetFontSize(), YELLOW, 
+        cellDbgFontPrintf (0.09f,  0.09f, FONT_SIZE, YELLOW, 
 	"PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
-        cellDbgFontPuts (0.09f, 0.05f,  Emulator_GetFontSize(), RED,    "DIRECTORY SELECTION");
+        cellDbgFontPuts (0.09f, 0.05f,  FONT_SIZE, RED,    "DIRECTORY SELECTION");
         cellDbgFontPuts(0.09f, 0.93f, 0.92f, YELLOW,
 	"X - Enter dir  /\\ - return to settings  START - Reset Startdir");
         cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s",
@@ -1111,7 +1108,6 @@ static void ssnes_filename_input_and_save (unsigned filename_type)
 		glClear(GL_COLOR_BUFFER_BIT);
 		gl_frame_menu();
 		video_gl.swap(NULL);
-		cell_console_poll();
 		cellSysutilCheckCallback();
 	}
 
@@ -1144,9 +1140,7 @@ static void ssnes_filename_input_and_save (unsigned filename_type)
 		{
 			/* OSK Util gets updated */
 			glClear(GL_COLOR_BUFFER_BIT);
-			ps3graphics_draw_menu();
 			video_gl.swap(NULL);
-			cell_console_poll();
 			cellSysutilCheckCallback();
 		}
 
@@ -1546,9 +1540,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				while(OSK_IS_RUNNING(g_console.oskutil_handle))
 				{
 					glClear(GL_COLOR_BUFFER_BIT);
-					ps3graphics_draw_menu();
 					video_gl.swap(NULL);
-					cell_console_poll();
 					cellSysutilCheckCallback();
 				}
 
@@ -1939,16 +1931,16 @@ static void select_setting(menu * menu_obj)
 	{
 		if(menu_obj->items[i].page == menu_obj->page)
 		{
-			cellDbgFontPuts(menu_obj->items[i].text_xpos, menu_obj->items[i].text_ypos, Emulator_GetFontSize(), menu_obj->selected == menu_obj->items[i].enum_id ? YELLOW : menu_obj->items[i].item_color, menu_obj->items[i].text);
-			cellDbgFontPuts(0.5f, menu_obj->items[i].text_ypos, Emulator_GetFontSize(), menu_obj->items[i].text_color, menu_obj->items[i].setting_text);
+			cellDbgFontPuts(menu_obj->items[i].text_xpos, menu_obj->items[i].text_ypos, FONT_SIZE, menu_obj->selected == menu_obj->items[i].enum_id ? YELLOW : menu_obj->items[i].item_color, menu_obj->items[i].text);
+			cellDbgFontPuts(0.5f, menu_obj->items[i].text_ypos, FONT_SIZE, menu_obj->items[i].text_color, menu_obj->items[i].setting_text);
 			cellDbgFontDraw();
 		}
 	}
 
 	cellDbgFontPuts(0.09f, menu_obj->items[menu_obj->selected].comment_ypos, 0.86f, LIGHTBLUE, menu_obj->items[menu_obj->selected].comment);
 
-	cellDbgFontPuts(0.09f, 0.91f, Emulator_GetFontSize(), YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
-	cellDbgFontPuts(0.09f, 0.95f, Emulator_GetFontSize(), YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
+	cellDbgFontPuts(0.09f, 0.91f, FONT_SIZE, YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
+	cellDbgFontPuts(0.09f, 0.95f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
 	cellDbgFontDraw();
 	old_state = state;
 }
@@ -2025,12 +2017,12 @@ static void select_rom(void)
 	if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
 		cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
 
-	cellDbgFontPuts	(0.09f,	0.05f,	Emulator_GetFontSize(),	RED,	"FILE BROWSER");
+	cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"FILE BROWSER");
 	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libsnes core: %s", snes_library_id());
 	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
-	cellDbgFontPrintf (0.09f, 0.09f, Emulator_GetFontSize(), YELLOW,
+	cellDbgFontPrintf (0.09f, 0.09f, FONT_SIZE, YELLOW,
 	"PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser));
-	cellDbgFontPuts   (0.09f, 0.93f, Emulator_GetFontSize(), YELLOW,
+	cellDbgFontPuts   (0.09f, 0.93f, FONT_SIZE, YELLOW,
 	"L3 + R3 - resume game           SELECT - Settings screen");
 	cellDbgFontDraw();
 
@@ -2308,7 +2300,7 @@ static void ingame_menu(uint32_t menu_id)
 
 						if(CTRL_SQUARE(~state))
 						{
-							cellDbgFontPuts	(0.09f,	0.05f,	Emulator_GetFontSize(),	RED,	"QUICK MENU");
+							cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"QUICK MENU");
 							cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libsnes core: %s", snes_library_id());
 							cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
 							cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
@@ -2536,7 +2528,7 @@ static void ingame_menu(uint32_t menu_id)
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_XMB), "Return to XMB");
 	cellDbgFontDraw();
 
-	cellDbgFontPuts	(0.09f,	0.05f,	Emulator_GetFontSize(),	RED,	"QUICK MENU");
+	cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"QUICK MENU");
 	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libsnes core: %s", snes_library_id());
 	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
 	cellDbgFontDraw();
