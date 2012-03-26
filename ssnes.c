@@ -1364,9 +1364,9 @@ static void init_libsnes_cbs(void)
    psnes_set_input_poll(input_poll);
 }
 
+#ifdef HAVE_THREADS
 static void init_autosave(void)
 {
-#ifdef HAVE_THREADS
    int ram_types[2] = {-1, -1};
    const char *ram_paths[2] = {NULL, NULL};
 
@@ -1416,19 +1416,17 @@ static void init_autosave(void)
          }
       }
    }
-#endif
 }
 
 static void deinit_autosave(void)
 {
-#ifdef HAVE_THREADS
    for (unsigned i = 0; i < sizeof(g_extern.autosave)/sizeof(g_extern.autosave[0]); i++)
    {
       if (g_extern.autosave[i])
          autosave_free(g_extern.autosave[i]);
    }
-#endif
 }
+#endif
 
 static void set_savestate_auto_index(void)
 {
@@ -1562,6 +1560,7 @@ static void fill_pathnames(void)
       if (!(*g_extern.xml_name))
          fill_pathname_noext(g_extern.xml_name, g_extern.basename, ".xml", sizeof(g_extern.xml_name));
 
+#ifdef HAVE_SCREENSHOTS
       if (!(*g_settings.screenshot_directory))
       {
          strlcpy(g_settings.screenshot_directory, g_extern.basename, sizeof(g_settings.screenshot_directory));
@@ -1571,6 +1570,7 @@ static void fill_pathnames(void)
          if (dir)
             *dir = '\0';
       }
+#endif
    }
 }
 
@@ -2100,6 +2100,7 @@ static void check_dsp_config(void)
 }
 #endif
 
+#ifndef SSNES_CONSOLE
 static void check_mute(void)
 {
    if (!g_extern.audio_active)
@@ -2120,6 +2121,7 @@ static void check_mute(void)
 
    old_pressed = pressed;
 }
+#endif
 
 #ifdef HAVE_NETPLAY
 static void check_netplay_flip(void)
@@ -2138,7 +2140,9 @@ static void do_state_checks(void)
 #ifdef HAVE_SCREENSHOTS
    check_screenshot();
 #endif
+#ifndef SSNES_CONSOLE
    check_mute();
+#endif
 
 #ifdef HAVE_NETPLAY
    if (!g_extern.netplay)
@@ -2312,8 +2316,10 @@ int ssnes_main_init(int argc, char *argv[])
    if (!g_extern.use_sram)
       SSNES_LOG("SRAM will not be saved.\n");
 
+#ifdef HAVE_THREADS
    if (g_extern.use_sram)
       init_autosave();
+#endif
       
 #ifdef HAVE_XML
 #ifdef HAVE_NETPLAY
@@ -2406,8 +2412,10 @@ void ssnes_main_deinit(void)
    deinit_netplay();
 #endif
 
+#ifdef HAVE_THREADS
    if (g_extern.use_sram)
       deinit_autosave();
+#endif
 
 #ifdef HAVE_FFMPEG
    deinit_recording();
