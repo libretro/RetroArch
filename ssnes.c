@@ -390,6 +390,28 @@ static void audio_sample(uint16_t left, uint16_t right)
    g_extern.audio_data.data_ptr = 0;
 }
 
+// Non-standard, alternative callback better suited for systems that process audio in batch.
+// Avoids tons of calls to audio_sample() ...
+unsigned audio_sample_batch(const int16_t *data, unsigned frames)
+{
+   if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
+      frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
+
+   memcpy(g_extern.audio_data.conv_outsamples,
+         data, (frames << 1) * sizeof(int16_t));
+   g_extern.audio_data.data_ptr = frames << 1;
+
+   if (g_extern.audio_data.data_ptr >= g_extern.audio_data.chunk_size)
+   {
+      g_extern.audio_active = audio_flush(g_extern.audio_data.conv_outsamples,
+            g_extern.audio_data.data_ptr) && g_extern.audio_active;
+
+      g_extern.audio_data.data_ptr = 0;
+   }
+
+   return frames;
+}
+
 static void input_poll(void)
 {
    driver.input->poll(driver.input_data);

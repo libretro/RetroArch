@@ -289,6 +289,8 @@ void dylib_close(dylib_t lib)
 }
 #endif
 
+unsigned audio_sample_batch(const int16_t *, unsigned);
+
 #if defined(NEED_DYNAMIC) || defined(SSNES_CONSOLE)
 static bool environment_cb(unsigned cmd, void *data)
 {
@@ -409,6 +411,11 @@ static bool environment_cb(unsigned cmd, void *data)
             msg_queue_push(g_extern.msg_queue, msg->msg, 1, msg->frames);
          break;
       }
+
+      case SNES_ENVIRONMENT_GET_AUDIO_BATCH_CB:
+         SSNES_LOG("Environ GET_AUDIO_BATCH_CB\n");
+         *(snes_audio_sample_batch_t*)data = audio_sample_batch;
+         break;
 
       default:
          SSNES_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
