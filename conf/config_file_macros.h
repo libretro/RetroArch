@@ -23,25 +23,25 @@
 #include <stdint.h>
 
 #define CONFIG_GET_BOOL_BASE(conf, base, var, key) do { \
-   bool tmp; \
+   bool tmp = false; \
    if (config_get_bool(conf, key, &tmp)) \
       base.var = tmp; \
 } while(0)
 
 #define CONFIG_GET_INT_BASE(conf, base, var, key) do { \
-   int tmp; \
+   int tmp = 0; \
    if (config_get_int(conf, key, &tmp)) \
       base.var = tmp; \
 } while(0)
 
 #define CONFIG_GET_UINT64_BASE(conf, base, var, key) do { \
-   uint64_t tmp; \
+   uint64_t tmp = 0; \
    if (config_get_int(conf, key, &tmp)) \
       base.var = tmp; \
 } while(0)
 
 #define CONFIG_GET_FLOAT_BASE(conf, base, var, key) do { \
-   float tmp; \
+   float tmp = 0.0f; \
    if (config_get_float(conf, key, &tmp)) \
       base.var = tmp; \
 } while(0)
