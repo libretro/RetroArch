@@ -2466,6 +2466,8 @@ void ssnes_main_deinit(void)
    uninit_libsnes_sym();
 }
 
+#ifndef SSNES_CONSOLE
+// Consoles use the higher level API.
 int main(int argc, char *argv[])
 {
    int init_ret;
@@ -2475,4 +2477,5 @@ int main(int argc, char *argv[])
    ssnes_main_clear_state();
    return 0;
 }
+#endif
 
