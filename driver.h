@@ -213,6 +213,7 @@ extern const input_driver_t input_xdk360;
 // Convenience macros.
 
 #ifdef HAVE_GRIFFIN
+#include "console/griffin/hook.h"
 #else
 #define audio_init_func(device, rate, latency)  driver.audio->init(device, rate, latency)
 #define audio_write_func(buf, size)             driver.audio->write(driver.audio_data, buf, size)
