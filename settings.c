@@ -454,7 +454,7 @@ bool config_load_file(const char *path)
 
    CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
 
-   int buffer_size;
+   int buffer_size = 0;
    if (config_get_int(conf, "rewind_buffer_size", &buffer_size))
       g_settings.rewind_buffer_size = buffer_size * UINT64_C(1000000);
 
