@@ -45,33 +45,11 @@ PYTHON2			= python2.exe
 GIT			= git.exe
 endif
 
-PPU_SRCS		= fifo_buffer.c \
+PPU_SRCS		= console/griffin/griffin.c \
 			ps3/file_browser.c \
-			ps3/ps3_audio.c \
 			ps3/menu.c \
-			console/console_ext.c \
-			console/librsound/librsound.c \
 			console/szlib/szlib.c \
-			ps3/ps3_input.c \
-			compat/compat.c \
-			ssnes.c \
-			driver.c \
-			file.c \
-			settings.c \
-			message.c \
-			rewind.c \
-			netplay.c \
-			ps3/ps3_video_psgl.c \
-			gfx/snes_state.c \
-			patch.c \
-			audio/hermite.c \
-			audio/rsound.c \
-			dynamic.c \
-			ps3/main.c \
-			audio/utils.c \
-			conf/config_file.c \
-			ps3/image.c \
-			thread.c
+			ps3/image.c
 
 ifeq ($(HAVE_SSNES_GL), 1)
 DEFINES			= -DHAVE_SSNES_GL

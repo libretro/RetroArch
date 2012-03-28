@@ -16,6 +16,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _PS3_SHARED_H
+#define _PS3_SHARED_H
+
 #define MAX_PATH_LENGTH 1024
 
 /* ABGR color format */
@@ -109,3 +112,5 @@ extern char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
 extern char LIBSNES_DIR_PATH[MAX_PATH_LENGTH];
 extern char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 extern char MULTIMAN_EXECUTABLE[MAX_PATH_LENGTH];
+
+#endif

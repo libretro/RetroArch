@@ -18,6 +18,9 @@
 
 // Builds argc/argv and calls ssnes_main_init().
 
+#ifndef _SSNES_WRAP_H
+#define _SSNES_WRAP_H
+
 struct ssnes_main_wrap
 {
    const char *rom_path;
@@ -28,3 +31,5 @@ struct ssnes_main_wrap
 };
 
 int ssnes_main_init_wrap(const struct ssnes_main_wrap *args);
+
+#endif
