@@ -210,4 +210,37 @@ extern const input_driver_t input_wii;
 extern const input_driver_t input_xdk360;
 ////////////////////////////////////////////////
 
+// Convenience macros.
+
+#ifdef HAVE_GRIFFIN
+#else
+#define audio_init_func(device, rate, latency)  driver.audio->init(device, rate, latency)
+#define audio_write_func(buf, size)             driver.audio->write(driver.audio_data, buf, size)
+#define audio_stop_func()                       driver.audio->stop(driver.audio_data)
+#define audio_start_func()                      driver.audio->start(driver.audio_data)
+#define audio_set_nonblock_state_func(state)    driver.audio->set_nonblock_state(driver.audio_data, state)
+#define audio_free_func()                       driver.audio->free(driver.audio_data)
+#define audio_use_float_func()                  driver.audio->use_float(driver.audio_data)
+#define audio_write_avail_func()                driver.audio->write_avail(driver.audio_data)
+#define audio_buffer_size_func()                driver.audio->buffer_size(driver.audio_data)
+
+#define video_init_func(video_info, input, input_data) \
+                                                driver.video->init(video_info, input, input_data)
+#define video_frame_func(data, width, height, pitch, msg) \
+                                                driver.video->frame(driver.video_data, data, width, height, pitch, msg)
+#define video_set_nonblock_state_func(state) driver.video->set_nonblock_state(driver.video_data, state)
+#define video_alive_func()                      driver.video->alive(driver.video_data)
+#define video_focus_func()                      driver.video->focus(driver.video_data)
+#define video_xml_shader_func(path)             driver.video->xml_shader(driver.video_data, path)
+#define video_free_func()                       driver.video->free(driver.video_data)
+
+#define input_init_func()                       driver.input->init()
+#define input_poll_func()                       driver.input->poll(driver.input_data)
+#define input_input_state_func(snes_keybinds, port, device, index, id) \
+                                                driver.input->input_state(driver.input_data, snes_keybinds, port, device, index, id)
+#define input_key_pressed_func(key)             driver.input->key_pressed(driver.input_data, key)
+#define input_free_func()                       driver.input->free(driver.input_data)
 #endif
+
+#endif
+

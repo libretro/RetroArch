@@ -85,8 +85,7 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
       g_settings.input.binds[4],
    };
 
-   int16_t res = driver.input->input_state(driver.input_data, 
-         binds, player > 1, 
+   int16_t res = input_input_state_func(binds, player > 1, 
          player > 2 ? SNES_DEVICE_MULTITAP : SNES_DEVICE_JOYPAD,
          player > 2 ? player - 2 : 0,
          key);
@@ -108,7 +107,7 @@ static PyObject *py_read_input_meta(PyObject *self, PyObject *args)
    if (key < SSNES_FIRST_META_KEY)
       return NULL;
 
-   bool ret = driver.input->key_pressed(driver.input_data, key);
+   bool ret = input_key_pressed_func(key);
    return PyBool_FromLong(ret);
 }
 

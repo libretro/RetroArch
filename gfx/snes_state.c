@@ -250,8 +250,8 @@ static void update_input(snes_tracker_t *tracker)
    uint16_t state[2] = {0};
    for (unsigned i = 4; i < 16; i++)
    {
-      state[0] |= (driver.input->input_state(driver.input_data, binds, SNES_PORT_1, SNES_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
-      state[1] |= (driver.input->input_state(driver.input_data, binds, SNES_PORT_2, SNES_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
+      state[0] |= (input_input_state_func(binds, SNES_PORT_1, SNES_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
+      state[1] |= (input_input_state_func(binds, SNES_PORT_2, SNES_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
    }
 
    for (unsigned i = 0; i < 2; i++)

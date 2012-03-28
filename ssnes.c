@@ -75,14 +75,13 @@ static void set_fast_forward_button(bool new_button_state, bool new_hold_button_
    if (update_sync)
    {
       if (g_extern.video_active)
-         driver.video->set_nonblock_state(driver.video_data, syncing_state);
+         video_set_nonblock_state_func(syncing_state);
       if (g_extern.audio_active)
-         driver.audio->set_nonblock_state(driver.audio_data, (g_settings.audio.sync) ? syncing_state : true);
+         audio_set_nonblock_state_func(g_settings.audio.sync ? syncing_state : true);
 
       if (syncing_state)
-         g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
-      else
-         g_extern.audio_data.chunk_size = g_extern.audio_data.block_chunk_size;
+         g_extern.audio_data.chunk_size =
+            syncing_state ? g_extern.audio_data.nonblock_chunk_size : g_extern.audio_data.block_chunk_size;
    }
 
    old_button_state = new_button_state;
@@ -161,7 +160,7 @@ static inline void adjust_crop(const uint16_t **data, unsigned *height)
 
 static void readjust_audio_input_rate(void)
 {
-   int avail = driver.audio->write_avail(driver.audio_data);
+   int avail = audio_write_avail_func();
    //fprintf(stderr, "Audio buffer is %u%% full\n",
    //      (unsigned)(100 - (avail * 100) / g_extern.audio_data.driver_buffer_size));
 
@@ -232,13 +231,13 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
       }
 #endif
 
-      if (!driver.video->frame(driver.video_data, g_extern.filter.buffer, owidth, oheight, g_extern.filter.pitch, msg))
+      if (!video_frame_func(g_extern.filter.buffer, owidth, oheight, g_extern.filter.pitch, msg))
          g_extern.video_active = false;
    }
-   else if (!driver.video->frame(driver.video_data, data, width, height, lines_to_pitch(height), msg))
+   else if (!video_frame_func(data, width, height, lines_to_pitch(height), msg))
       g_extern.video_active = false;
 #else
-   if (!driver.video->frame(driver.video_data, data, width, height, lines_to_pitch(height), msg))
+   if (!video_frame_func(data, width, height, lines_to_pitch(height), msg))
       g_extern.video_active = false;
 #endif
 
@@ -343,8 +342,8 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
    if (g_extern.audio_data.use_float)
    {
-      if (driver.audio->write(driver.audio_data,
-               g_extern.audio_data.mute ? empty_buf.f : output_data, output_frames * sizeof(float) * 2) < 0)
+      if (audio_write_func(g_extern.audio_data.mute ? empty_buf.f : output_data,
+               output_frames * sizeof(float) * 2) < 0)
       {
          fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
          return false;
@@ -358,8 +357,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
                output_data, output_frames * 2);
       }
 
-      if (driver.audio->write(driver.audio_data,
-               g_extern.audio_data.mute ? empty_buf.i : g_extern.audio_data.conv_outsamples,
+      if (audio_write_func(g_extern.audio_data.mute ? empty_buf.i : g_extern.audio_data.conv_outsamples,
                output_frames * sizeof(int16_t) * 2) < 0)
       {
          fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
@@ -414,7 +412,7 @@ unsigned audio_sample_batch(const int16_t *data, unsigned frames)
 
 static void input_poll(void)
 {
-   driver.input->poll(driver.input_data);
+   input_poll_func();
 }
 
 static int16_t input_state(bool port, unsigned device, unsigned index, unsigned id)
@@ -443,7 +441,7 @@ static int16_t input_state(bool port, unsigned device, unsigned index, unsigned 
 
    int16_t res = 0;
    if (id < SSNES_FIRST_META_KEY)
-      res = driver.input->input_state(driver.input_data, binds, port, device, index, id);
+      res = input_input_state_func(binds, port, device, index, id);
 
 #ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie && !g_extern.bsv.movie_playback)
@@ -1641,8 +1639,7 @@ void ssnes_save_state(void)
 static void check_savestates(bool immutable)
 {
    static bool old_should_savestate = false;
-   bool should_savestate = driver.input->key_pressed(driver.input_data,
-         SSNES_SAVE_STATE_KEY);
+   bool should_savestate = input_key_pressed_func(SSNES_SAVE_STATE_KEY);
 
    if (should_savestate && !old_should_savestate)
       ssnes_save_state();
@@ -1651,8 +1648,7 @@ static void check_savestates(bool immutable)
    if (!immutable)
    {
       static bool old_should_loadstate = false;
-      bool should_loadstate = driver.input->key_pressed(driver.input_data,
-            SSNES_LOAD_STATE_KEY);
+      bool should_loadstate = input_key_pressed_func(SSNES_LOAD_STATE_KEY);
 
       if (!should_savestate && should_loadstate && !old_should_loadstate)
          ssnes_load_state();
@@ -1665,7 +1661,7 @@ static bool check_fullscreen(void)
 {
    // If we go fullscreen we drop all drivers and reinit to be safe.
    static bool was_pressed = false;
-   bool pressed = driver.input->key_pressed(driver.input_data, SSNES_FULLSCREEN_TOGGLE_KEY);
+   bool pressed = input_key_pressed_func(SSNES_FULLSCREEN_TOGGLE_KEY);
    bool toggle = pressed && !was_pressed;
    if (toggle)
    {
@@ -1675,7 +1671,7 @@ static bool check_fullscreen(void)
 
       // Poll input to avoid possibly stale data to corrupt things.
       if (driver.input)
-         driver.input->poll(driver.input_data);
+         input_poll_func();
    }
 
    was_pressed = pressed;
@@ -1721,13 +1717,13 @@ static void check_stateslots(void)
 {
    // Save state slots
    static bool old_should_slot_increase = false;
-   bool should_slot_increase = driver.input->key_pressed(driver.input_data, SSNES_STATE_SLOT_PLUS);
+   bool should_slot_increase = input_key_pressed_func(SSNES_STATE_SLOT_PLUS);
    if (should_slot_increase && !old_should_slot_increase)
       ssnes_state_slot_increase();
    old_should_slot_increase = should_slot_increase;
 
    static bool old_should_slot_decrease = false;
-   bool should_slot_decrease = driver.input->key_pressed(driver.input_data, SSNES_STATE_SLOT_MINUS);
+   bool should_slot_decrease = input_key_pressed_func(SSNES_STATE_SLOT_MINUS);
    if (should_slot_decrease && !old_should_slot_decrease)
       ssnes_state_slot_decrease();
    old_should_slot_decrease = should_slot_decrease;
@@ -1736,12 +1732,12 @@ static void check_stateslots(void)
 static void check_input_rate(void)
 {
    bool display = false;
-   if (driver.input->key_pressed(driver.input_data, SSNES_AUDIO_INPUT_RATE_PLUS))
+   if (input_key_pressed_func(SSNES_AUDIO_INPUT_RATE_PLUS))
    {
       g_settings.audio.in_rate += g_settings.audio.rate_step;
       display = true;
    }
-   else if (driver.input->key_pressed(driver.input_data, SSNES_AUDIO_INPUT_RATE_MINUS))
+   else if (input_key_pressed_func(SSNES_AUDIO_INPUT_RATE_MINUS))
    {
       g_settings.audio.in_rate -= g_settings.audio.rate_step;
       display = true;
@@ -1801,7 +1797,7 @@ static void check_rewind(void)
    if (!g_extern.state_manager)
       return;
 
-   if (driver.input->key_pressed(driver.input_data, SSNES_REWIND))
+   if (input_key_pressed_func(SSNES_REWIND))
    {
       msg_queue_clear(g_extern.msg_queue);
       void *buf;
@@ -1841,7 +1837,7 @@ static void check_rewind(void)
 
 static void check_slowmotion(void)
 {
-   g_extern.is_slowmotion = driver.input->key_pressed(driver.input_data, SSNES_SLOWMOTION);
+   g_extern.is_slowmotion = input_key_pressed_func(SSNES_SLOWMOTION);
    if (g_extern.is_slowmotion)
    {
       msg_queue_clear(g_extern.msg_queue);
@@ -1913,7 +1909,7 @@ static void check_movie_playback(bool pressed)
 static void check_movie(void)
 {
    static bool old_button = false;
-   bool new_button = driver.input->key_pressed(driver.input_data, SSNES_MOVIE_RECORD_TOGGLE);
+   bool new_button = input_key_pressed_func(SSNES_MOVIE_RECORD_TOGGLE);
    bool pressed = new_button && !old_button;
 
    if (g_extern.bsv.movie_playback)
@@ -1929,16 +1925,16 @@ static void check_movie(void)
 static void check_pause(void)
 {
    static bool old_state = false;
-   bool new_state = driver.input->key_pressed(driver.input_data, SSNES_PAUSE_TOGGLE);
+   bool new_state = input_key_pressed_func(SSNES_PAUSE_TOGGLE);
 
    // FRAMEADVANCE will set us into pause mode.
-   new_state |= !g_extern.is_paused && driver.input->key_pressed(driver.input_data, SSNES_FRAMEADVANCE);
+   new_state |= !g_extern.is_paused && input_key_pressed_func(SSNES_FRAMEADVANCE);
 
    static bool old_focus = true;
    bool focus = true;
 
    if (g_settings.pause_nonactive)
-      focus = driver.video->focus(driver.video_data);
+      focus = video_focus_func();
 
    if (focus && new_state && !old_state)
    {
@@ -1948,14 +1944,14 @@ static void check_pause(void)
       {
          SSNES_LOG("Paused.\n");
          if (driver.audio_data)
-            driver.audio->stop(driver.audio_data);
+            audio_stop_func();
       }
       else 
       {
          SSNES_LOG("Unpaused.\n");
          if (driver.audio_data)
          {
-            if (!driver.audio->start(driver.audio_data))
+            if (!audio_start_func())
             {
                SSNES_ERR("Failed to resume audio driver. Will continue without audio.\n");
                g_extern.audio_active = false;
@@ -1967,13 +1963,10 @@ static void check_pause(void)
    {
       SSNES_LOG("Unpaused.\n");
       g_extern.is_paused = false;
-      if (driver.audio_data)
+      if (driver.audio_data && !audio_start_func())
       {
-         if (!driver.audio->start(driver.audio_data))
-         {
-               SSNES_ERR("Failed to resume audio driver. Will continue without audio.\n");
-               g_extern.audio_active = false;
-         }
+         SSNES_ERR("Failed to resume audio driver. Will continue without audio.\n");
+         g_extern.audio_active = false;
       }
    }
    else if (!focus && old_focus)
@@ -1981,7 +1974,7 @@ static void check_pause(void)
       SSNES_LOG("Paused.\n");
       g_extern.is_paused = true;
       if (driver.audio_data)
-         driver.audio->stop(driver.audio_data);
+         audio_stop_func();
    }
 
    old_focus = focus;
@@ -1992,13 +1985,13 @@ static void check_pause(void)
 static void check_oneshot(void)
 {
    static bool old_state = false;
-   bool new_state = driver.input->key_pressed(driver.input_data, SSNES_FRAMEADVANCE);
+   bool new_state = input_key_pressed_func(SSNES_FRAMEADVANCE);
    g_extern.is_oneshot = (new_state && !old_state);
    old_state = new_state;
 
    // Rewind buttons works like FRAMEREWIND when paused. We will one-shot in that case.
    static bool old_rewind_state = false;
-   bool new_rewind_state = driver.input->key_pressed(driver.input_data, SSNES_REWIND);
+   bool new_rewind_state = input_key_pressed_func(SSNES_REWIND);
    g_extern.is_oneshot |= new_rewind_state && !old_rewind_state;
    old_rewind_state = new_rewind_state;
 }
@@ -2015,7 +2008,7 @@ void ssnes_game_reset(void)
 static void check_reset(void)
 {
    static bool old_state = false;
-   bool new_state = driver.input->key_pressed(driver.input_data, SSNES_RESET);
+   bool new_state = input_key_pressed_func(SSNES_RESET);
    if (new_state && !old_state)
       ssnes_game_reset();
 
@@ -2032,8 +2025,8 @@ static void check_shader_dir(void)
       return;
 
    bool should_apply = false;
-   bool pressed_next = driver.input->key_pressed(driver.input_data, SSNES_SHADER_NEXT);
-   bool pressed_prev = driver.input->key_pressed(driver.input_data, SSNES_SHADER_PREV);
+   bool pressed_next = input_key_pressed_func(SSNES_SHADER_NEXT);
+   bool pressed_prev = input_key_pressed_func(SSNES_SHADER_PREV);
    if (pressed_next && !old_pressed_next)
    {
       should_apply = true;
@@ -2061,7 +2054,7 @@ static void check_shader_dir(void)
       msg_queue_push(g_extern.msg_queue, msg, 1, 120);
       SSNES_LOG("Applying shader \"%s\"\n", shader);
 
-      if (!driver.video->xml_shader(driver.video_data, shader))
+      if (!video_xml_shader_func(shader))
          SSNES_WARN("Failed to apply shader.\n");
    }
 
@@ -2078,9 +2071,9 @@ static void check_cheats(void)
    static bool old_pressed_next = false;
    static bool old_pressed_toggle = false;
 
-   bool pressed_next = driver.input->key_pressed(driver.input_data, SSNES_CHEAT_INDEX_PLUS);
-   bool pressed_prev = driver.input->key_pressed(driver.input_data, SSNES_CHEAT_INDEX_MINUS);
-   bool pressed_toggle = driver.input->key_pressed(driver.input_data, SSNES_CHEAT_TOGGLE);
+   bool pressed_next = input_key_pressed_func(SSNES_CHEAT_INDEX_PLUS);
+   bool pressed_prev = input_key_pressed_func(SSNES_CHEAT_INDEX_MINUS);
+   bool pressed_toggle = input_key_pressed_func(SSNES_CHEAT_TOGGLE);
 
    if (pressed_next && !old_pressed_next)
       cheat_manager_index_next(g_extern.cheat);
@@ -2099,7 +2092,7 @@ static void check_cheats(void)
 static void check_screenshot(void)
 {
    static bool old_pressed = false;
-   bool pressed = driver.input->key_pressed(driver.input_data, SSNES_SCREENSHOT);
+   bool pressed = input_key_pressed_func(SSNES_SCREENSHOT);
    if (pressed && !old_pressed)
       take_screenshot();
 
@@ -2114,7 +2107,7 @@ static void check_dsp_config(void)
       return;
 
    static bool old_pressed = false;
-   bool pressed = driver.input->key_pressed(driver.input_data, SSNES_DSP_CONFIG);
+   bool pressed = input_key_pressed_func(SSNES_DSP_CONFIG);
    if (pressed && !old_pressed)
       g_extern.audio_data.dsp_plugin->config(g_extern.audio_data.dsp_handle);
 
@@ -2129,7 +2122,7 @@ static void check_mute(void)
       return;
 
    static bool old_pressed = false;
-   bool pressed = driver.input->key_pressed(driver.input_data, SSNES_MUTE);
+   bool pressed = input_key_pressed_func(SSNES_MUTE);
    if (pressed && !old_pressed)
    {
       g_extern.audio_data.mute = !g_extern.audio_data.mute;
@@ -2149,7 +2142,7 @@ static void check_mute(void)
 static void check_netplay_flip(void)
 {
    static bool old_pressed = false;
-   bool pressed = driver.input->key_pressed(driver.input_data, SSNES_NETPLAY_FLIP);
+   bool pressed = input_key_pressed_func(SSNES_NETPLAY_FLIP);
    if (pressed && !old_pressed)
       netplay_flip_players(g_extern.netplay);
 
@@ -2188,8 +2181,8 @@ static void do_state_checks(void)
 #endif
 
       set_fast_forward_button(
-            driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_KEY),
-            driver.input->key_pressed(driver.input_data, SSNES_FAST_FORWARD_HOLD_KEY));
+            input_key_pressed_func(SSNES_FAST_FORWARD_KEY),
+            input_key_pressed_func(SSNES_FAST_FORWARD_HOLD_KEY));
 
       check_stateslots();
 #ifdef HAVE_BSV_MOVIE
@@ -2375,8 +2368,8 @@ bool ssnes_main_iterate(void)
 #endif
 
    // Time to drop?
-   if (driver.input->key_pressed(driver.input_data, SSNES_QUIT_KEY) ||
-         !driver.video->alive(driver.video_data))
+   if (input_key_pressed_func(SSNES_QUIT_KEY) ||
+         !video_alive_func())
       return false;
 
    // Checks for stuff like fullscreen, save states, etc.

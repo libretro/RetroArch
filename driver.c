@@ -311,18 +311,18 @@ void init_audio(void)
    adjust_audio_input_rate();
    find_audio_driver();
 
-   driver.audio_data = driver.audio->init(*g_settings.audio.device ? g_settings.audio.device : NULL,
+   driver.audio_data = audio_init_func(*g_settings.audio.device ? g_settings.audio.device : NULL,
          g_settings.audio.out_rate, g_settings.audio.latency);
 
    if (!driver.audio_data)
       g_extern.audio_active = false;
 
-   if (g_extern.audio_active && driver.audio->use_float && driver.audio->use_float(driver.audio_data))
+   if (g_extern.audio_active && driver.audio->use_float && audio_use_float_func())
       g_extern.audio_data.use_float = true;
 
    if (!g_settings.audio.sync && g_extern.audio_active)
    {
-      driver.audio->set_nonblock_state(driver.audio_data, true);
+      audio_set_nonblock_state_func(true);
       g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
    }
 
@@ -344,7 +344,7 @@ void init_audio(void)
    {
       if (driver.audio->buffer_size && driver.audio->write_avail)
       {
-         g_extern.audio_data.driver_buffer_size = driver.audio->buffer_size(driver.audio_data);
+         g_extern.audio_data.driver_buffer_size = audio_buffer_size_func();
          g_extern.audio_data.rate_control = true;
       }
       else
@@ -552,7 +552,7 @@ void init_video_input(void)
    video.rgb32 = g_extern.filter.active;
 
    const input_driver_t *tmp = driver.input;
-   driver.video_data = driver.video->init(&video, &driver.input, &driver.input_data);
+   driver.video_data = video_init_func(&video, &driver.input, &driver.input_data);
 
    if (driver.video_data == NULL)
    {
@@ -566,7 +566,7 @@ void init_video_input(void)
       driver.input = tmp;
       if (driver.input != NULL)
       {
-         driver.input_data = driver.input->init();
+         driver.input_data = input_init_func();
          if (driver.input_data == NULL)
          {
             SSNES_ERR("Cannot init input driver. Exiting ...\n");
@@ -584,10 +584,10 @@ void init_video_input(void)
 void uninit_video_input(void)
 {
    if (driver.input_data != driver.video_data && driver.input)
-      driver.input->free(driver.input_data);
+      input_free_func();
 
    if (driver.video_data && driver.video)
-      driver.video->free(driver.video_data);
+      video_free_func();
 
 #ifdef HAVE_DYLIB
    deinit_filter();
