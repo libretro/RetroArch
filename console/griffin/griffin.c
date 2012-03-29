@@ -112,10 +112,8 @@
 /*============================================================
 	FILE
 ============================================================ */
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) || defined(_XBOX)
 #include "../../ps3/file_browser.c"
-#elif defined(_XBOX)
-#include "../../360/file_browser.c"
 #endif
 #include "../../file.c"
 

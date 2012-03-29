@@ -41,24 +41,27 @@
 
 #define MAXJOLIET	255
 #define MAX_PATH_LENGTH	1024
-#define CELL_FS_MAX_FS_FILE_NAME_LENGTH (255)
-#define MAX_FILE_LIMIT_CFS 30000
 
+#include <stdint.h>
+#include <stdlib.h>
+
+#ifdef __CELLOS_LV2__
 #include <stdbool.h>
 #include <cell/cell_fs.h>
-
-#include <string.h>
-
 #include <sys/types.h>
-
-#ifdef __cplusplus
-extern "C" {
+#define FS_MAX_PATH 256
+#define FS_MAX_FS_PATH_LENGTH 255
+#define MAX_FILE_LIMIT 30000
+#elif defined(_XBOX)
+#define FS_MAX_PATH MAX_PATH
+#define FS_MAX_FS_PATH_LENGTH 2048
+#define MAX_FILE_LIMIT 4096
 #endif
 
 typedef struct {
    uint8_t d_type;
    uint8_t d_namlen;
-   char d_name[CELL_FS_MAX_FS_FILE_NAME_LENGTH+1];
+   char d_name[FS_MAX_PATH];
 } DirectoryEntry;
 
 typedef struct
@@ -66,8 +69,8 @@ typedef struct
    uint32_t file_count;				/* amount of files in current dir*/
    uint32_t currently_selected;			/* currently select browser entry*/
    uint32_t directory_stack_size;
-   char dir[128][CELL_FS_MAX_FS_PATH_LENGTH];	/* info of the current directory*/
-   DirectoryEntry cur[MAX_FILE_LIMIT_CFS];	/* current file listing*/
+   char dir[128][FS_MAX_FS_PATH_LENGTH];	/* info of the current directory*/
+   DirectoryEntry cur[MAX_FILE_LIMIT];	/* current file listing*/
    char extensions[512];			/* allowed extensions*/
 } filebrowser_t;
 
@@ -112,9 +115,5 @@ void filebrowser_pop_directory (filebrowser_t * filebrowser);
 #define FILEBROWSER_GET_CURRENT_ENTRY_INDEX(filebrowser) (filebrowser.currently_selected)
 #define FILEBROWSER_IS_CURRENT_A_FILE(filebrowser)	(filebrowser.cur[filebrowser.currently_selected].d_type == CELL_FS_TYPE_REGULAR)
 #define FILEBROWSER_IS_CURRENT_A_DIRECTORY(filebrowser)	(filebrowser.cur[filebrowser.currently_selected].d_type == CELL_FS_TYPE_DIRECTORY)
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* FILEBROWSER_H_ */
