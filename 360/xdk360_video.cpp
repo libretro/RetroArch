@@ -116,7 +116,7 @@ HRESULT PackedResource::Create( const char * strFilename )
     m_dwVidMemDataSize = xprh.dwDataSize;
 
     // Allocate memory
-    m_pSysMemData = new BYTE[m_dwSysMemDataSize];
+    m_pSysMemData = (BYTE*)malloc(m_dwSysMemDataSize);
     if( m_pSysMemData == NULL )
     {
         SSNES_ERR( "Could not allocate system memory.\n" );
@@ -131,7 +131,7 @@ HRESULT PackedResource::Create( const char * strFilename )
         SSNES_ERR( "Could not allocate physical memory.\n" );
         m_dwSysMemDataSize = 0;
         m_dwVidMemDataSize = 0;
-        delete[] m_pSysMemData;
+        free(m_pSysMemData);
         m_pSysMemData = NULL;
         return E_FAIL;
     }

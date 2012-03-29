@@ -96,16 +96,6 @@ public:
         return ( D3DArrayTexture* )GetResource( dwOffset );
     }
 
-    D3DCubeTexture* GetCubemap( unsigned long dwOffset ) const
-    {
-        return ( D3DCubeTexture* )GetResource( dwOffset );
-    }
-
-    D3DVolumeTexture* GetVolumeTexture( unsigned long dwOffset ) const
-    {
-        return ( D3DVolumeTexture* )GetResource( dwOffset );
-    }
-
     D3DVertexBuffer* GetVertexBuffer( unsigned long dwOffset ) const
     {
         return ( D3DVertexBuffer* )GetResource( dwOffset );
@@ -127,16 +117,6 @@ public:
     D3DArrayTexture* GetArrayTexture( const char * strName ) const
     {
         return ( D3DArrayTexture* )GetResource( strName );
-    }
-
-    D3DCubeTexture* GetCubemap( const char * strName ) const
-    {
-        return ( D3DCubeTexture* )GetResource( strName );
-    }
-
-    D3DVolumeTexture* GetVolumeTexture( const char * strName ) const
-    {
-        return ( D3DVolumeTexture* )GetResource( strName );
     }
 
     D3DVertexBuffer* GetVertexBuffer( const char * strName ) const
