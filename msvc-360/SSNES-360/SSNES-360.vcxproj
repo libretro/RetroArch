@@ -347,18 +347,8 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\360\file_browser.c" />
-    <ClCompile Include="..\..\360\fonts.cpp" />
-    <ClCompile Include="..\..\360\main.c" />
-    <ClCompile Include="..\..\360\xdk360_audio.cpp" />
-    <ClCompile Include="..\..\360\xdk360_input.c" />
-    <ClCompile Include="..\..\360\xdk360_video.cpp" />
     <ClCompile Include="..\..\360\menu.cpp" />
-    <ClCompile Include="..\..\audio\hermite.c" />
-    <ClCompile Include="..\..\audio\utils.c" />
-    <ClCompile Include="..\..\compat\compat.c" />
-    <ClCompile Include="..\..\conf\config_file.c" />
-    <ClCompile Include="..\..\console\console_ext.c" />
+    <ClCompile Include="..\..\console\griffin\griffin.c" />
     <ClCompile Include="..\..\console\szlib\szlib.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
@@ -367,20 +357,6 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\..\driver.c" />
-    <ClCompile Include="..\..\dynamic.c" />
-    <ClCompile Include="..\..\fifo_buffer.c" />
-    <ClCompile Include="..\..\file.c" />
-    <ClCompile Include="..\..\message.c" />
-    <ClCompile Include="..\..\netplay.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\patch.c" />
-    <ClCompile Include="..\..\rewind.c" />
-    <ClCompile Include="..\..\screenshot.c" />
-    <ClCompile Include="..\..\settings.c" />
-    <ClCompile Include="..\..\ssnes.c" />
-    <ClCompile Include="..\..\thread.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\360\menu.h" />

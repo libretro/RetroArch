@@ -16,12 +16,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define NONET
 #include <xtl.h>
 #include <xgraphics.h>
-
 #include "../driver.h"
-
 #include "xdk360_video.h"
 #include "xdk360_video_resources.h"
 #include "../general.h"

@@ -16,6 +16,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if defined(_XBOX)
+#include "../../msvc/msvc_compat.h"
+#endif
+
 /*============================================================
 	CONSOLE EXTENSIONS
 ============================================================ */
@@ -29,21 +33,31 @@
 /*============================================================
 	CONFIG FILE
 ============================================================ */
+#ifdef _XBOX
+#undef __SSNES_POSIX_STRING_H
+#undef __SSNES_MSVC_COMPAT_H
+#undef strcasecmp
+#endif
 #include "../../conf/config_file.c"
 
 /*============================================================
 	VIDEO
 ============================================================ */
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__)
 #include "../../ps3/ps3_video_psgl.c"
 #include "../../ps3/image.c"
+#elif defined(_XBOX)
+#include "../../360/xdk360_video.cpp"
+#include "../../360/fonts.cpp"
 #endif
 
 /*============================================================
 	INPUT
 ============================================================ */
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__)
 #include "../../ps3/ps3_input.c"
+#elif defined(_XBOX)
+#include "../../360/xdk360_input.c"
 #endif
 
 /*============================================================
@@ -67,14 +81,12 @@
 #include "../../audio/hermite.c"
 
 /*============================================================
-	LIBRSOUND
-============================================================ */
-#include "../../console/librsound/librsound.c"
-
-/*============================================================
 	RSOUND
 ============================================================ */
+#ifdef __CELLOS_LV2__
+#include "../../console/librsound/librsound.c"
 #include "../../audio/rsound.c"
+#endif
 
 /*============================================================
 	AUDIO UTILS
@@ -84,8 +96,10 @@
 /*============================================================
 	AUDIO
 ============================================================ */
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__)
 #include "../../ps3/ps3_audio.c"
+#elif defined(_XBOX)
+#include "../../360/xdk360_audio.cpp"
 #endif
 
 /*============================================================
@@ -96,8 +110,10 @@
 /*============================================================
 	FILE
 ============================================================ */
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__)
 #include "../../ps3/file_browser.c"
+#elif defined(_XBOX)
+#include "../../360/file_browser.c"
 #endif
 #include "../../file.c"
 
@@ -126,8 +142,10 @@
 /*============================================================
 	MAIN
 ============================================================ */
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__)
 #include "../../ps3/main.c"
+#elif defined(_XBOX)
+#include "../../360/main.c"
 #endif
 
 /*============================================================

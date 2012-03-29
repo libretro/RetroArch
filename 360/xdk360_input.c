@@ -18,8 +18,6 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#define NOD3D
-#define NONET
 #include <xtl.h>
 #include "../driver.h"
 #include "../general.h"

@@ -16,8 +16,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define NOD3D
-#define NONET
 #include <xtl.h>
 #include "file_browser.h"
 #include "../general.h"

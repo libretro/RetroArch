@@ -16,6 +16,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _360_SHARED_H
+#define _360_SHARED_H
+
 #define MAX_PATH_LENGTH 1024
 
 enum
@@ -57,3 +60,5 @@ enum {
 };
 
 #define MENU_ITEM_LAST MENU_ITEM_RETURN_TO_DASHBOARD+1
+
+#endif

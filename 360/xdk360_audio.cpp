@@ -17,8 +17,6 @@
 
 #include "../driver.h"
 #include <stdlib.h>
-#define NOD3D
-#define NONET
 #include <xtl.h>
 #include "xaudio-c/xaudio.h"
 #include "../general.h"

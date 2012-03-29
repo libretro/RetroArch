@@ -35,6 +35,8 @@ typedef int ssize_t;
 
 #define snprintf _snprintf
 #define strtoull _strtoui64
+#undef strcasecmp
+#define strcasecmp _stricmp
 
 // Disable some of the annoying warnings.
 #pragma warning(disable : 4800)
@@ -43,10 +45,7 @@ typedef int ssize_t;
 #pragma warning(disable : 4146)
 #pragma warning(disable : 4267)
 
-static inline float roundf(float in)
-{
-   return in >= 0.0f ? floorf(in + 0.5f) : ceilf(in - 0.5f);
-}
+#define roundf(in) (in >= 0.0f ? floorf(in + 0.5f) : ceilf(in - 0.5f))
 
 #ifndef PATH_MAX
 #define PATH_MAX MAX_PATH

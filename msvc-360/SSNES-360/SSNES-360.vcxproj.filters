@@ -18,14 +18,8 @@
     <Filter Include="Source Files\360">
       <UniqueIdentifier>{b9371e8d-2e72-4ced-8bf6-6ee6a77a1f78}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\audio">
-      <UniqueIdentifier>{c8038d65-499b-493b-80e9-90bd7c57383f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\conf">
       <UniqueIdentifier>{755ce6db-d242-40fb-9c8b-c14154fc94e1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\conf">
-      <UniqueIdentifier>{82e8787f-e939-4783-82e1-fcab34285121}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\media">
       <UniqueIdentifier>{b7d54b1f-ffda-45f9-8175-7bf67010253d}</UniqueIdentifier>
@@ -39,88 +33,22 @@
     <Filter Include="Source Files\media\shader">
       <UniqueIdentifier>{3a05047b-b9ec-4821-bb28-d1b0e9e3e8bb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\compat">
-      <UniqueIdentifier>{34c33a54-e69d-4fb2-ba70-ae9c34654825}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\compat">
       <UniqueIdentifier>{cf25b88e-c7b2-4823-876a-ed0dd8020821}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\console\griffin">
+      <UniqueIdentifier>{c868cc96-a0ac-4672-a4ca-dd7c28277972}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\360\xdk360_video.cpp">
-      <Filter>Source Files\360</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\driver.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\dynamic.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\fifo_buffer.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\file.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\message.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\netplay.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\rewind.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\screenshot.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\settings.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ssnes.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\thread.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\audio\hermite.c">
-      <Filter>Source Files\audio</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\audio\utils.c">
-      <Filter>Source Files\audio</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\360\xdk360_audio.cpp">
-      <Filter>Source Files\360</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\360\main.c">
-      <Filter>Source Files\360</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\conf\config_file.c">
-      <Filter>Source Files\conf</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\360\menu.cpp">
-      <Filter>Source Files\360</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\360\file_browser.c">
-      <Filter>Source Files\360</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\360\fonts.cpp">
       <Filter>Source Files\360</Filter>
     </ClCompile>
     <ClCompile Include="..\..\console\szlib\szlib.c">
       <Filter>Source Files\console\szlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\console\console_ext.c">
-      <Filter>Source Files\console</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\360\xdk360_input.c">
-      <Filter>Source Files\360</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\patch.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\compat\compat.c">
-      <Filter>Source Files\compat</Filter>
+    <ClCompile Include="..\..\console\griffin\griffin.c">
+      <Filter>Source Files\console\griffin</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
