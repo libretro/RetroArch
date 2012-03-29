@@ -123,7 +123,7 @@
     </Link>
     <Deploy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
     </Deploy>
     <ImageXex>
@@ -160,7 +160,7 @@
       <StackCommitSize>524288</StackCommitSize>
     </Link>
     <Deploy>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
@@ -203,7 +203,7 @@
       <StackCommitSize>524288</StackCommitSize>
     </Link>
     <Deploy>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
@@ -245,7 +245,7 @@
       <StackCommitSize>524288</StackCommitSize>
     </Link>
     <Deploy>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
@@ -287,7 +287,7 @@
     </Link>
     <Deploy>
       <DeploymentType>CopyToHardDrive</DeploymentType>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
       <ForceCopy>true</ForceCopy>
     </Deploy>
     <ImageXex>
@@ -330,7 +330,7 @@
       <ForceCopy>true</ForceCopy>
     </Deploy>
     <Deploy>
-      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)=$(OutDir)cfg;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
+      <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media;$(RemoteRoot)\media\shaders=$(OutDir)media\shaders</DeploymentFiles>
       <DeploymentType>CopyToHardDrive</DeploymentType>
     </Deploy>
     <ImageXex>
@@ -394,23 +394,6 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\ssnes.ttf;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\ssnes.ttf;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">copy %(FullPath) $(OutDir)media\ssnes.ttf</Command>
-    </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="..\..\ssnes.cfg">
-      <FileType>Document</FileType>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)cfg\ssnes.cfg;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">copy %(FullPath) $(OutDir)cfg\ssnes.cfg</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">copy %(FullPath) $(OutDir)cfg\ssnes.cfg</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">copy %(FullPath) $(OutDir)cfg\ssnes.cfg</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)cfg\ssnes.cfg;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)cfg\ssnes.cfg;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)cfg\ssnes.cfg;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)cfg\ssnes.cfg;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)cfg\ssnes.cfg;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">copy %(FullPath) $(OutDir)cfg\ssnes.cfg</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">copy %(FullPath) $(OutDir)cfg\ssnes.cfg</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">copy %(FullPath) $(OutDir)cfg\ssnes.cfg</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>

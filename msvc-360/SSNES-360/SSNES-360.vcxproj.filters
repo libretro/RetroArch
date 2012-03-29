@@ -135,9 +135,6 @@
     <CustomBuild Include="..\..\360\media\ssnes.ttf">
       <Filter>Source Files\media</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\..\ssnes.cfg">
-      <Filter>Source Files</Filter>
-    </CustomBuild>
     <CustomBuild Include="..\..\360\media\ssnes_scene_skin.xui">
       <Filter>Source Files\media</Filter>
     </CustomBuild>
