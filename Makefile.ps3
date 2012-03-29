@@ -46,7 +46,6 @@ GIT			= git.exe
 endif
 
 PPU_SRCS		= console/griffin/griffin.c \
-			ps3/menu.c \
 			console/szlib/szlib.c
 
 ifeq ($(HAVE_SSNES_GL), 1)

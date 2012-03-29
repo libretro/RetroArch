@@ -246,6 +246,11 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    g_extern.frame_cache.height = height;
 }
 
+#ifdef HAVE_GRIFFIN
+#include "console/griffin/ssnes_func_hooks.h"
+#endif
+
+#ifndef HAVE_GRIFFIN_OVERRIDE_VIDEO_FRAME_FUNC
 void ssnes_render_cached_frame(void)
 {
 #ifdef HAVE_FFMPEG
@@ -268,9 +273,6 @@ void ssnes_render_cached_frame(void)
    g_extern.recording = recording;
 #endif
 }
-
-#ifdef HAVE_GRIFFIN
-#include "console/griffin/func_hooks.h"
 #endif
 
 #ifndef HAVE_GRIFFIN_OVERRIDE_AUDIO_FLUSH_FUNC
@@ -2179,7 +2181,9 @@ static void do_state_checks(void)
 #else
       if (check_fullscreen() && g_extern.is_paused)
 #endif
+      {
          ssnes_render_cached_frame();
+      }
 
 #ifndef SSNES_CONSOLE
       if (g_extern.is_paused && !g_extern.is_oneshot)

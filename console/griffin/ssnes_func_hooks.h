@@ -15,17 +15,47 @@
  *  You should have received a copy of the GNU General Public License along with SSNES.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _FUNC_HOOKS_H
-#define _FUNC_HOOKS_H
+
+#ifndef _SSNES_FUNC_HOOKS_H
+#define _SSNES_FUNC_HOOKS_H
 
 /*============================================================
 	PLAYSTATION3
 ============================================================ */
 
 #ifdef __CELLOS_LV2__
-#define ssnes_render_cached_frame() \
-   const char *msg = msg_queue_pull(g_extern.msg_queue); \
-   video_frame_func(g_extern.frame_cache.data, g_extern.frame_cache.width, g_extern.frame_cache.height, lines_to_pitch(g_extern.frame_cache.height), msg);
+
+#define HAVE_GRIFFIN_OVERRIDE_AUDIO_FLUSH_FUNC 1
+#define HAVE_GRIFFIN_OVERRIDE_VIDEO_FRAME_FUNC 1
+
+static bool audio_flush(const int16_t *data, size_t samples)
+{
+   const float *output_data = NULL;
+   unsigned output_frames = 0;
+
+   audio_convert_s16_to_float(g_extern.audio_data.data, data, samples);
+
+   struct resampler_data src_data = {0};
+   src_data.data_in = g_extern.audio_data.data;
+   src_data.data_out = g_extern.audio_data.outsamples;
+   src_data.input_frames = (samples / 2);
+
+   src_data.ratio = g_extern.audio_data.src_ratio;
+   if (g_extern.is_slowmotion)
+      src_data.ratio *= g_settings.slowmotion_ratio;
+
+   resampler_process(g_extern.audio_data.source, &src_data);
+
+   output_data = g_extern.audio_data.outsamples;
+   output_frames = src_data.output_frames;
+
+   if (audio_write_func(output_data, output_frames * sizeof(float) * 2) < 0)
+	   return false;
+
+   return true;
+}
+
 #endif
+
 
 #endif

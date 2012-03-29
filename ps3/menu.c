@@ -2570,7 +2570,9 @@ void menu_loop(void)
 		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_BLEND);
 		if(g_console.emulator_initialized)
+		{
 			ssnes_render_cached_frame();
+		}
 
 		gl_frame_menu();
 
