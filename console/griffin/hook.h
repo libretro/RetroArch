@@ -25,7 +25,9 @@
 #define audio_write_avail_func()                driver.audio->write_avail(driver.audio_data)
 #define audio_buffer_size_func()                driver.audio->buffer_size(driver.audio_data)
 
-/* PlayStation3 */
+/*============================================================
+	PLAYSTATION3
+============================================================ */
 
 #ifdef __CELLOS_LV2__
 #define video_init_func(video_info, input, input_data) \
@@ -45,7 +47,12 @@
 #define input_key_pressed_func(key)             ps3_key_pressed(driver.input_data, key)
 #define input_free_func()                       ps3_free_input(driver.input_data)
 
-#elif defined(_XBOX)	/* Xbox 360 */
+/*============================================================
+	XBOX 360
+============================================================ */
+
+#elif defined(_XBOX)
+
 #define video_init_func(video_info, input, input_data) \
                                                 xdk360_gfx_init(video_info, input, input_data)
 #define video_frame_func(data, width, height, pitch, msg) \

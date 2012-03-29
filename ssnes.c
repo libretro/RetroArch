@@ -269,6 +269,11 @@ void ssnes_render_cached_frame(void)
 #endif
 }
 
+#ifdef HAVE_GRIFFIN
+#include "console/griffin/func_hooks.h"
+#endif
+
+#ifndef HAVE_GRIFFIN_OVERRIDE_AUDIO_FLUSH_FUNC
 static bool audio_flush(const int16_t *data, size_t samples)
 {
 #ifdef HAVE_FFMPEG
@@ -367,6 +372,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
    return true;
 }
+#endif
 
 static void audio_sample_rewind(uint16_t left, uint16_t right)
 {
