@@ -113,7 +113,7 @@
 	FILE
 ============================================================ */
 #if defined(__CELLOS_LV2__) || defined(_XBOX)
-#include "../../ps3/file_browser.c"
+#include "../fileio/file_browser.c"
 #endif
 #include "../../file.c"
 
