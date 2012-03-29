@@ -21,7 +21,9 @@
 /*============================================================
 	GENERAL
 ============================================================ */
+#if defined(__CELLOS_LV2__) || defined(_XBOX)
 #define HAVE_GRIFFIN_OVERRIDE_VIDEO_FRAME_FUNC 1
+#endif
 
 #define ssnes_render_cached_frame() \
    const char *msg = msg_queue_pull(g_extern.msg_queue); \
