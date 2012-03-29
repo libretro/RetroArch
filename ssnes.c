@@ -288,12 +288,10 @@ static bool audio_flush(const int16_t *data, size_t samples)
    }
 #endif
 
-#ifndef SSNES_CONSOLE
    if (g_extern.is_paused)
       return true;
    if (!g_extern.audio_active)
       return false;
-#endif
 
    const float *output_data = NULL;
    unsigned output_frames = 0;
@@ -319,10 +317,8 @@ static bool audio_flush(const int16_t *data, size_t samples)
       src_data.data_out = g_extern.audio_data.outsamples;
       src_data.input_frames = dsp_output.samples ? dsp_output.frames : (samples / 2);
 
-#ifndef SSNES_CONSOLE
       if (g_extern.audio_data.rate_control)
          readjust_audio_input_rate();
-#endif
 
       src_data.ratio = g_extern.audio_data.src_ratio;
       if (g_extern.is_slowmotion)
@@ -403,15 +399,9 @@ unsigned audio_sample_batch(const int16_t *data, unsigned frames)
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
 
-   memcpy(g_extern.audio_data.conv_outsamples,
-         data, (frames << 1) * sizeof(int16_t));
-   g_extern.audio_data.data_ptr = frames << 1;
-
    if (g_extern.audio_data.data_ptr >= g_extern.audio_data.chunk_size)
    {
-      g_extern.audio_active = audio_flush(g_extern.audio_data.conv_outsamples,
-            g_extern.audio_data.data_ptr) && g_extern.audio_active;
-
+      g_extern.audio_active = audio_flush(data, frames << 1) && g_extern.audio_active;
       g_extern.audio_data.data_ptr = 0;
    }
 
