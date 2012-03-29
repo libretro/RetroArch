@@ -44,4 +44,22 @@
                                                 ps3_input_state(driver.input_data, snes_keybinds, port, device, index, id)
 #define input_key_pressed_func(key)             ps3_key_pressed(driver.input_data, key)
 #define input_free_func()                       ps3_free_input(driver.input_data)
+
+#elif defined(_XBOX)	/* Xbox 360 */
+#define video_init_func(video_info, input, input_data) \
+                                                xdk360_gfx_init(video_info, input, input_data)
+#define video_frame_func(data, width, height, pitch, msg) \
+                                                xdk360_gfx_frame(driver.video_data, data, width, height, pitch, msg)
+#define video_set_nonblock_state_func(state) driver.video->set_nonblock_state(driver.video_data, state)
+#define video_alive_func()                      xdk360_gfx_alive(driver.video_data)
+#define video_focus_func()                      xdk360_gfx_focus(driver.video_data)
+#define video_xml_shader_func(path)             driver.video->xml_shader(driver.video_data, path)
+#define video_free_func()                       xdk360_gfx_free(driver.video_data)
+
+#define input_init_func()                       xdk360_input_initialize()
+#define input_poll_func()                       xdk360_input_poll(driver.input_data)
+#define input_input_state_func(snes_keybinds, port, device, index, id) \
+                                                xdk360_input_state(driver.input_data, snes_keybinds, port, device, index, id)
+#define input_key_pressed_func(key)             xdk360_key_pressed(driver.input_data, key)
+#define input_free_func()                       xdk360_free_input(driver.input_data)
 #endif
