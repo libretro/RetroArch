@@ -486,8 +486,8 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
    }
 
    char attr_name_buf[64];
-   float fattr;
-   int iattr;
+   float fattr = 0.0f;
+   int iattr = 0;
    struct gl_fbo_scale *scale = &cg_scale[i + 1]; // Shader 0 is passthrough shader. Start at 1.
 
    scale->valid = true;
@@ -583,7 +583,7 @@ end:
 
 static bool load_shader(const char *dir_path, unsigned i, config_file_t *conf)
 {
-   char *shader_path;
+   char *shader_path = NULL;
    char attr_buf[64];
    char path_buf[PATH_MAX];
 
@@ -820,10 +820,10 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
          goto end;
       }
 
-      unsigned bitmask;
+      unsigned bitmask = 0;
       if (!config_get_hex(conf, mask_buf, &bitmask))
          bitmask = 0;
-      unsigned bitequal;
+      unsigned bitequal = 0;
       if (!config_get_hex(conf, equal_buf, &bitequal))
          bitequal = 0;
 
@@ -864,7 +864,7 @@ static bool load_preset(const char *path)
    if (!load_stock())
       return false;
 
-   int shaders;
+   int shaders = 0;
    // Basedir.
    char dir_path[PATH_MAX];
    char *ptr = NULL;
@@ -907,7 +907,7 @@ static bool load_preset(const char *path)
    // Check filter params.
    for (int i = 0; i < shaders; i++)
    {
-      bool smooth;
+      bool smooth = false;
       char filter_name_buf[64];
       print_buf(filter_name_buf, "filter_linear%u", i);
       if (config_get_bool(conf, filter_name_buf, &smooth))
@@ -1345,7 +1345,7 @@ static void gl_create_fbo_textures(gl_t *gl)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
 		GLuint filter_type = base_filt;
-		bool smooth;
+		bool smooth = false;
 		if (gl_shader_filter_type(i + 2, &smooth))
 			filter_type = smooth ? GL_LINEAR : GL_NEAREST;
 
@@ -2056,7 +2056,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 	gl_cg_use(1);
 	set_viewport(gl, gl->win_width, gl->win_height, false);
 
-	bool force_smooth;
+	bool force_smooth = false;
 	if (gl_shader_filter_type(1, &force_smooth))
 		gl->tex_filter = force_smooth ? GL_LINEAR : GL_NEAREST;
 	else
