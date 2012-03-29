@@ -26,7 +26,6 @@
 #ifdef __CELLOS_LV2__
 
 #define HAVE_GRIFFIN_OVERRIDE_AUDIO_FLUSH_FUNC 1
-#define HAVE_GRIFFIN_OVERRIDE_VIDEO_FRAME_FUNC 1
 
 static bool audio_flush(const int16_t *data, size_t samples)
 {

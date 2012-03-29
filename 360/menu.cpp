@@ -524,7 +524,9 @@ void menu_loop(void)
 	{
 		g_frame_count++;
 		if(g_console.emulator_initialized)
+		{
 			ssnes_render_cached_frame();
+		}
 		else
 			D3DDevice_Clear(vid->xdk360_render_device, 0, NULL,
 			D3DCLEAR_TARGET, D3DCOLOR_ARGB(255, 32, 32, 64), 1.0, 0, FALSE);

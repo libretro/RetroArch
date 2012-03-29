@@ -347,7 +347,6 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\360\menu.cpp" />
     <ClCompile Include="..\..\console\griffin\griffin.c" />
     <ClCompile Include="..\..\console\szlib\szlib.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>

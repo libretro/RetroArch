@@ -15,6 +15,8 @@
  *  You should have received a copy of the GNU General Public License along with SSNES.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef FILEBROWSER_H_
+#define FILEBROWSER_H_
 
 #include <stdint.h>
 
@@ -41,3 +43,5 @@ void filebrowser_parse_directory(filebrowser_t * filebrowser, const char * path,
 void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path, bool with_extension);
 
 #define FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(filebrowser) (filebrowser.dir[filebrowser.directory_stack_size])
+
+#endif

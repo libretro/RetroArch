@@ -210,6 +210,12 @@ static void xa_free(void *data)
       delete xa;
 }
 
+static bool xa_use_float(void *data)
+{
+   (void)data;
+   return false;
+}
+
 const audio_driver_t audio_xdk360 = {
    xa_init,
    xa_write,
@@ -217,6 +223,6 @@ const audio_driver_t audio_xdk360 = {
    xa_start,
    xa_set_nonblock_state,
    xa_free,
-   NULL,
+   xa_use_float,
    "xdk360"
 };

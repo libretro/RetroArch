@@ -19,13 +19,12 @@
 #define _FUNC_HOOKS_H
 
 /*============================================================
-	PLAYSTATION3
+	GENERAL
 ============================================================ */
+#define HAVE_GRIFFIN_OVERRIDE_VIDEO_FRAME_FUNC 1
 
-#ifdef __CELLOS_LV2__
 #define ssnes_render_cached_frame() \
    const char *msg = msg_queue_pull(g_extern.msg_queue); \
    video_frame_func(g_extern.frame_cache.data, g_extern.frame_cache.width, g_extern.frame_cache.height, lines_to_pitch(g_extern.frame_cache.height), msg);
-#endif
 
 #endif

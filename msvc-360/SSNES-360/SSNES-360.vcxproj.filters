@@ -15,9 +15,6 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Source Files\360">
-      <UniqueIdentifier>{b9371e8d-2e72-4ced-8bf6-6ee6a77a1f78}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\conf">
       <UniqueIdentifier>{755ce6db-d242-40fb-9c8b-c14154fc94e1}</UniqueIdentifier>
     </Filter>
@@ -41,9 +38,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\360\menu.cpp">
-      <Filter>Source Files\360</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\console\szlib\szlib.c">
       <Filter>Source Files\console\szlib</Filter>
     </ClCompile>
