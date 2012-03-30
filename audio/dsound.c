@@ -249,10 +249,28 @@ static void dsound_free(void *data)
    }
 }
 
+struct dsound_dev
+{
+   unsigned device;
+   unsigned total_count;
+   LPGUID guid;
+};
+
+static BOOL CALLBACK enumerate_cb(LPGUID guid, LPCSTR desc, LPCSTR module, LPVOID context)
+{
+   struct dsound_dev *dev = (struct dsound_dev*)context;
+   SSNES_LOG("\t%u: %s\n", dev->total_count, desc);
+   if (dev->device == dev->total_count)
+      dev->guid = guid;
+   dev->total_count++;
+   return TRUE;
+}
+
 static void *dsound_init(const char *device, unsigned rate, unsigned latency)
 {
    WAVEFORMATEX wfx = {0};
    DSBUFFERDESC bufdesc = {0};
+   struct dsound_dev dev = {0};
 
    dsound_t *ds = (dsound_t*)calloc(1, sizeof(*ds));
    if (!ds)
@@ -260,7 +278,13 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
 
    InitializeCriticalSection(&ds->crit);
 
-   if (DirectSoundCreate(NULL, &ds->ds, NULL) != DS_OK)
+   if (device)
+      dev.device = strtoul(device, NULL, 0);
+
+   SSNES_LOG("DirectSound devices:\n");
+   DirectSoundEnumerate(enumerate_cb, &dev);
+
+   if (DirectSoundCreate(dev.guid, &ds->ds, NULL) != DS_OK)
       goto error;
 
    if (IDirectSound_SetCooperativeLevel(ds->ds, GetDesktopWindow(), DSSCL_PRIORITY) != DS_OK)
