@@ -32,6 +32,10 @@
 // Avoid possible naming collitions during link since we prefer to use the actual name.
 #define getopt_long(argc, argv, optstring, longopts, longindex) __getopt_long_ssnes(argc, argv, optstring, longopts, longindex)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct option
 {
    const char *name;
@@ -46,6 +50,9 @@ int getopt_long(int argc, char *argv[],
       const char *optstring, const struct option *longopts, int *longindex);
 extern char *optarg;
 extern int optind, opterr, optopt;
+#ifdef __cplusplus
+}
+#endif
 #endif
 
 #endif

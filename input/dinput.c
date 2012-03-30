@@ -69,7 +69,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    unsigned n;
    for (n = 0; n < MAX_PLAYERS; n++)
    {
-      if (!di->joypad[n] && g_settings.input.joypad_map[n] == di->joypad_cnt)
+      if (!di->joypad[n] && g_settings.input.joypad_map[n] == (int)di->joypad_cnt)
          break;
 
       if (di->joypad[n])
