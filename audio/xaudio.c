@@ -42,13 +42,20 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
 
    xa->bufsize = bufsize * 2 * sizeof(float);
 
-   xa->xa = xaudio2_new(rate, 2, xa->bufsize);
+   unsigned device_index = 0;
+   if (device)
+      device_index = strtoul(device, NULL, 0);
+
+   xa->xa = xaudio2_new(rate, 2, xa->bufsize, device_index);
    if (!xa->xa)
    {
       SSNES_ERR("Failed to init XAudio2.\n");
       free(xa);
       return NULL;
    }
+
+   if (g_extern.verbose)
+      xaudio2_enumerate_devices(xa->xa);
 
    return xa;
 }

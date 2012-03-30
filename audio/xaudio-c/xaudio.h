@@ -63,7 +63,14 @@ typedef enum XAUDIO2_FILTER_TYPE {
    HighPassFilter 
 } XAUDIO2_FILTER_TYPE;
 
-typedef struct XAUDIO2_DEVICE_DETAILS XAUDIO2_DEVICE_DETAILS;
+typedef struct XAUDIO2_DEVICE_DETAILS
+{
+   WCHAR DeviceID[256];
+   WCHAR DisplayName[256];
+   XAUDIO2_DEVICE_ROLE Role;
+   WAVEFORMATEXTENSIBLE OutputFormat;
+} XAUDIO2_DEVICE_DETAILS;
+
 typedef struct XAUDIO2_VOICE_DETAILS XAUDIO2_VOICE_DETAILS;
 typedef struct XAUDIO2_VOICE_SENDS XAUDIO2_VOICE_SENDS;
 typedef struct XAUDIO2_EFFECT_DESCRIPTOR XAUDIO2_EFFECT_DESCRIPTOR;
@@ -195,14 +202,16 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
 };
 
 // C hooks.
-#define IXAudio2_Initialize(THIS, a, b) (THIS)->lpVtbl->Initialize(THIS, a, b)
+#define IXAudio2_Initialize(THIS, ...) (THIS)->lpVtbl->Initialize(THIS, __VA_ARGS__)
 #define IXAudio2_Release(THIS) (THIS)->lpVtbl->Release(THIS)
-#define IXAudio2_CreateSourceVoice(THIS, a, b, c, d, e, f, g) (THIS)->lpVtbl->CreateSourceVoice(THIS, a, b, c, d, e, f, g)
-#define IXAudio2_CreateMasteringVoice(THIS, a, b, c, d, e, f) (THIS)->lpVtbl->CreateMasteringVoice(THIS, a, b, c, d, e, f)
+#define IXAudio2_CreateSourceVoice(THIS, ...) (THIS)->lpVtbl->CreateSourceVoice(THIS, __VA_ARGS__)
+#define IXAudio2_CreateMasteringVoice(THIS, ...) (THIS)->lpVtbl->CreateMasteringVoice(THIS, __VA_ARGS__)
+#define IXAudio2_GetDeviceCount(THIS, ...) (THIS)->lpVtbl->GetDeviceCount(THIS, __VA_ARGS__)
+#define IXAudio2_GetDeviceDetails(THIS, ...) (THIS)->lpVtbl->GetDeviceDetails(THIS, __VA_ARGS__)
 
-#define IXAudio2SourceVoice_Start(THIS, a, b) (THIS)->lpVtbl->Start(THIS, a, b)
-#define IXAudio2SourceVoice_Stop(THIS, a, b) (THIS)->lpVtbl->Stop(THIS, a, b)
-#define IXAudio2SourceVoice_SubmitSourceBuffer(THIS, a, b) (THIS)->lpVtbl->SubmitSourceBuffer(THIS, a, b)
+#define IXAudio2SourceVoice_Start(THIS, ...) (THIS)->lpVtbl->Start(THIS, __VA_ARGS__)
+#define IXAudio2SourceVoice_Stop(THIS, ...) (THIS)->lpVtbl->Stop(THIS, __VA_ARGS__)
+#define IXAudio2SourceVoice_SubmitSourceBuffer(THIS, ...) (THIS)->lpVtbl->SubmitSourceBuffer(THIS, __VA_ARGS__)
 #define IXAudio2SourceVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
 #define IXAudio2MasteringVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
 

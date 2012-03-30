@@ -7,6 +7,7 @@
 #include "xaudio.h"
 #include "xaudio-c.h"
 #include <stdint.h>
+#include <stdio.h>
 #include "../../msvc/msvc_compat.h"
 
 #define MAX_BUFFERS 16
@@ -55,8 +56,22 @@ const struct IXAudio2VoiceCallbackVtbl voice_vtable = {
    dummy_voidp,
    dummy_voidp_hresult,
 };
-   
-xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels, size_t size)
+
+void xaudio2_enumerate_devices(xaudio2_t *xa)
+{
+   UINT32 dev_count;
+   IXAudio2_GetDeviceCount(xa->pXAudio2, &dev_count);
+   fprintf(stderr, "XAudio2 devices:\n");
+   for (unsigned i = 0; i < dev_count; i++)
+   {
+      XAUDIO2_DEVICE_DETAILS dev_detail;
+      IXAudio2_GetDeviceDetails(xa->pXAudio2, i, &dev_detail);
+      fwprintf(stderr, L"\t%u: %s\n", i, dev_detail.DisplayName);
+   }
+}
+
+xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
+    size_t size, unsigned device)
 {
    xaudio2_t *handle = (xaudio2_t*)calloc(1, sizeof(*handle));
    if (!handle)
@@ -70,7 +85,7 @@ xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels, size_t size)
       goto error;
 
    if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2,
-               &handle->pMasterVoice, channels, samplerate, 0, 0, 0)))
+               &handle->pMasterVoice, channels, samplerate, 0, device, NULL)))
       goto error;
 
    wfx.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
