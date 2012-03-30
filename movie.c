@@ -65,9 +65,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
    }
 
    if (swap_if_big32(header[CRC_INDEX]) != g_extern.cart_crc)
-   {
       SSNES_WARN("CRC32 checksum mismatch between ROM file and saved ROM checksum in replay file header; replay highly likely to desync on playback.\n");
-   }
 
    uint32_t state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
 
