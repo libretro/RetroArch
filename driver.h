@@ -156,6 +156,7 @@ typedef struct video_driver
    void (*set_swap_block_state)(void *data, bool toggle); // Block swapping from being called in ::frame().
    void (*swap)(void *data); // Explicitly swap buffers. Only useful when set_swap_block_state() is set to true.
 #endif
+   void (*set_rotation)(void *data, unsigned rotation);
 } video_driver_t;
 
 typedef struct driver
@@ -233,6 +234,7 @@ extern const input_driver_t input_xdk360;
 #define video_alive_func()                      driver.video->alive(driver.video_data)
 #define video_focus_func()                      driver.video->focus(driver.video_data)
 #define video_xml_shader_func(path)             driver.video->xml_shader(driver.video_data, path)
+#define video_set_rotation_func(rotate)         driver.video->set_rotation(driver.video_data, rotate)
 #define video_free_func()                       driver.video->free(driver.video_data)
 
 #define input_init_func()                       driver.input->init()

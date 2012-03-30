@@ -417,6 +417,17 @@ static bool environment_cb(unsigned cmd, void *data)
          *(snes_audio_sample_batch_t*)data = audio_sample_batch;
          break;
 
+      case SNES_ENVIRONMENT_SET_ROTATION:
+      {
+         unsigned rotation = *(const unsigned*)data;
+         SSNES_LOG("Environ SET_ROTATION: %u\n", rotation);
+         if (driver.video && driver.video_data && driver.video->set_rotation)
+            video_set_rotation_func(rotation);
+         else
+            return false;
+         break;
+      }
+
       default:
          SSNES_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;

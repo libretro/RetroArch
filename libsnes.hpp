@@ -129,8 +129,12 @@ extern "C" {
                                                 //
 #define SNES_ENVIRONMENT_GET_AUDIO_BATCH_CB 13  // snes_audio_sample_batch_t * --
                                                 // Retrieves callback to a more optimized audio callback.
-
-
+                                                //
+#define SNES_ENVIRONMENT_SET_ROTATION 14        // const unsigned * --
+                                                // Sets screen rotation of graphics.
+                                                // Is only implemented if rotation can be accelerated by hardware.
+                                                // Valid values are 0, 1, 2, 3, which rotates screen by 0, 90, 180, 270 degrees
+                                                // counter-clockwise respectively.
 
 struct snes_message
 {
