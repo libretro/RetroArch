@@ -2186,6 +2186,7 @@ const video_driver_t video_gl =
 	.free = gl_free,
 	.ident = "gl",
 	.set_swap_block_state = ps3graphics_set_swap_block_swap,
+	.set_rotation = ps3graphics_set_orientation,
 	.swap = ps3graphics_swap
 };
 
