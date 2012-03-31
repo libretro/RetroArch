@@ -135,7 +135,6 @@ void ps3_video_deinit(void);
 void ps3graphics_reinit_fbos (void);
 void ps3graphics_set_aspect_ratio(uint32_t aspectratio_index);
 void ps3graphics_set_overscan(bool overscan_enable, float amount, bool recalculate_viewport);
-void ps3graphics_set_orientation(uint32_t orientation);
 void ps3graphics_set_vsync(uint32_t vsync);
 void ps3graphics_video_init(bool get_all_resolutions);
 void ps3graphics_video_reinit(void);

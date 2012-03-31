@@ -2176,7 +2176,7 @@ static void ingame_menu(uint32_t menu_id)
 					if(g_console.screen_orientation > ORIENTATION_NORMAL)
 					{
 						g_console.screen_orientation--;
-						ps3graphics_set_orientation(g_console.screen_orientation);
+						video_gl.set_rotation(NULL, g_console.screen_orientation);
 						set_delay = DELAY_LONG;
 					}
 				}
@@ -2186,7 +2186,7 @@ static void ingame_menu(uint32_t menu_id)
 					if((g_console.screen_orientation+1) < ORIENTATION_END)
 					{
 						g_console.screen_orientation++;
-						ps3graphics_set_orientation(g_console.screen_orientation);
+						video_gl.set_rotation(NULL, g_console.screen_orientation);
 						set_delay = DELAY_LONG;
 					}
 				}
@@ -2194,7 +2194,7 @@ static void ingame_menu(uint32_t menu_id)
 				if(CTRL_START(state))
 				{
 					g_console.screen_orientation = ORIENTATION_NORMAL;
-					ps3graphics_set_orientation(g_console.screen_orientation);
+					video_gl.set_rotation(NULL, g_console.screen_orientation);
 				}
 				strcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.");
 				break;

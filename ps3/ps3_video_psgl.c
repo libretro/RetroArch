@@ -1696,8 +1696,9 @@ void gl_frame_menu (void)
 	glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
-void ps3graphics_set_orientation(uint32_t orientation)
+static void ps3graphics_set_orientation(void * data, uint32_t orientation)
 {
+	(void)data;
 	switch (orientation)
 	{
 		case ORIENTATION_NORMAL:
