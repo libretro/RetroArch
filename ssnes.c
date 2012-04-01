@@ -2307,12 +2307,13 @@ int ssnes_main_init(int argc, char *argv[])
       goto error;
 
    init_msg_queue();
-   load_auto_state();
 
    if (!g_extern.sram_load_disable)
       load_save_files();
    else
       SSNES_LOG("Skipping SRAM load.\n");
+
+   load_auto_state();
 
 #ifdef HAVE_BSV_MOVIE
    init_movie();
