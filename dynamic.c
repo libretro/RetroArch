@@ -426,8 +426,11 @@ static bool environment_cb(unsigned cmd, void *data)
 
          g_extern.system.rotation = rotation;
 
-         if (driver.video && driver.video_data && driver.video->set_rotation)
-            video_set_rotation_func(rotation);
+         if (driver.video && driver.video->set_rotation)
+         {
+            if (driver.video_data)
+               video_set_rotation_func(rotation);
+         }
          else
             return false;
          break;

@@ -170,6 +170,7 @@ typedef struct driver
 } driver_t;
 
 void init_drivers(void);
+void init_drivers_pre(void);
 void uninit_drivers(void);
 
 void init_video_input(void);

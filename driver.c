@@ -178,6 +178,13 @@ static void find_input_driver(void)
    ssnes_fail(1, "find_input_driver()");
 }
 
+void init_drivers_pre(void)
+{
+   find_audio_driver();
+   find_video_driver();
+   find_input_driver();
+}
+
 void init_drivers(void)
 {
    init_video_input();
@@ -309,7 +316,6 @@ void init_audio(void)
    }
 
    adjust_audio_input_rate();
-   find_audio_driver();
 
    driver.audio_data = audio_init_func(*g_settings.audio.device ? g_settings.audio.device : NULL,
          g_settings.audio.out_rate, g_settings.audio.latency);
@@ -505,9 +511,6 @@ void init_video_input(void)
    unsigned max_dim = max(g_extern.system.geom.max_width, g_extern.system.geom.max_height);
    unsigned scale = max_dim / SSNES_SCALE_BASE;
    scale = max(scale, 1);
-
-   find_video_driver();
-   find_input_driver();
 
    if (g_extern.filter.active)
       scale = g_extern.filter.scale;

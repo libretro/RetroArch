@@ -2287,6 +2287,7 @@ int ssnes_main_init(int argc, char *argv[])
    config_load();
    init_libsnes_sym();
    fill_title_buf();
+   init_drivers_pre();
 
    psnes_init();
    if (*g_extern.basename)
