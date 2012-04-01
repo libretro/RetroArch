@@ -277,8 +277,9 @@ static void set_viewport(bool force_full)
 	//}
 }
 
-void xdk360_set_orientation(uint32_t orientation)
+static void xdk360_set_orientation(void * data, uint32_t orientation)
 {
+	(void)data;
 	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 	FLOAT angle;
 
@@ -498,7 +499,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    vp.MaxZ   = 1.0f;
    D3DDevice_SetViewport(vid->xdk360_render_device, &vp);
 
-   xdk360_set_orientation(g_console.screen_orientation);
+   xdk360_set_orientation(NULL, g_console.screen_orientation);
 
    return vid;
 }
@@ -674,5 +675,6 @@ const video_driver_t video_xdk360 = {
    xdk360_gfx_free,
    "xdk360",
    xdk360_set_swap_block_swap,
-   xdk360_swap
+   xdk360_swap,
+   xdk360_set_orientation
 };

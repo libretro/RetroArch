@@ -238,7 +238,7 @@ HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 						m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Normal");
 						break;
 				}
-				xdk360_set_orientation(g_console.screen_orientation);
+				video_xdk360.set_rotation(NULL, g_console.screen_orientation);
 				break;
 			case MENU_ITEM_RESIZE_MODE:
 				break;

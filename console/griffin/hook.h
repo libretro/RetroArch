@@ -63,6 +63,7 @@
 #define video_focus_func()                      xdk360_gfx_focus(driver.video_data)
 #define video_xml_shader_func(path)             driver.video->xml_shader(driver.video_data, path)
 #define video_free_func()                       xdk360_gfx_free(driver.video_data)
+#define video_set_rotation_func(orientation)	xdk360_set_orientation(driver.video_data, orientation)
 
 #define input_init_func()                       xdk360_input_initialize()
 #define input_poll_func()                       xdk360_input_poll(driver.input_data)

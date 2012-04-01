@@ -157,6 +157,7 @@ static inline void adjust_crop(const uint16_t **data, unsigned *height)
       }
    }
 }
+#endif
 
 static void readjust_audio_input_rate(void)
 {
@@ -175,7 +176,6 @@ static void readjust_audio_input_rate(void)
    //fprintf(stderr, "New rate: %lf, Orig rate: %lf\n",
    //      g_extern.audio_data.src_ratio, g_extern.audio_data.orig_src_ratio);
 }
-#endif
 
 // libsnes: 0.065
 // Format received is 16-bit 0RRRRRGGGGGBBBBB
