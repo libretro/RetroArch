@@ -367,6 +367,10 @@ static void get_environment_settings(int argc, char *argv[])
 	{
 		/* launched from external launcher */
 		strncpy(MULTIMAN_EXECUTABLE, argv[2], sizeof(MULTIMAN_EXECUTABLE));
+		SSNES_LOG("Started from multiMAN, auto-game start enabled.\n");
+
+		if(path_file_exists(MULTIMAN_EXECUTABLE) && path_file_exists(argv[1]))
+			g_console.external_launcher_support = EXTERN_LAUNCHER_MULTIMAN;
 	}
 	else
 	{
@@ -375,11 +379,6 @@ static void get_environment_settings(int argc, char *argv[])
 		sizeof(MULTIMAN_EXECUTABLE));
 	}
 
-	if(path_file_exists(MULTIMAN_EXECUTABLE) && (strcmp(argv[1],"") != 0))
-	{
-		g_console.external_launcher_support = EXTERN_LAUNCHER_MULTIMAN;
-		SSNES_LOG("Started from multiMAN, auto-game start enabled.\n");
-	}
 	else
 	{
 		g_console.external_launcher_support = EXTERN_LAUNCHER_SALAMANDER;
