@@ -436,6 +436,11 @@ static bool environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case SNES_ENVIRONMENT_SET_CORE_VERSION:
+         strlcpy(g_extern.system.version, (const char*)data, sizeof(g_extern.system.version));
+         SSNES_LOG("Environ SET_CORE_VERSION: %s\n", g_extern.system.version);
+         break;
+
       default:
          SSNES_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;

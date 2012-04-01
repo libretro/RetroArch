@@ -135,6 +135,9 @@ extern "C" {
                                                 // Is only implemented if rotation can be accelerated by hardware.
                                                 // Valid values are 0, 1, 2, 3, which rotates screen by 0, 90, 180, 270 degrees
                                                 // counter-clockwise respectively.
+                                                //
+#define SNES_ENVIRONMENT_SET_CORE_VERSION 15    // const char * --
+                                                // Sets version of core as a human readable string.
 
 struct snes_message
 {

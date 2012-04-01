@@ -309,6 +309,7 @@ struct global
       char *environment_split;
 
       unsigned rotation;
+      char version[64];
    } system;
 
    struct
