@@ -212,6 +212,10 @@ static const float refresh_rate = 59.92;
 static const float refresh_rate = 59.95; 
 #endif
 
+// Allow games to set rotation. If false, rotation requests are honored, but ignored.
+// Used for setups where one manually rotates the monitor.
+static const bool allow_rotate = true;
+
 ////////////////
 // Audio
 ////////////////

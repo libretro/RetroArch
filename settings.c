@@ -164,6 +164,7 @@ void config_set_defaults(void)
    g_settings.video.crop_overscan = crop_overscan;
    g_settings.video.aspect_ratio = -1.0f; // Automatic
    g_settings.video.shader_type = SSNES_SHADER_AUTO;
+   g_settings.video.allow_rotate = allow_rotate;
 
 #ifdef HAVE_FREETYPE
    g_settings.video.font_enable = font_enable;
@@ -371,6 +372,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_FLOAT(video.fbo_scale_x, "video_fbo_scale_x");
    CONFIG_GET_FLOAT(video.fbo_scale_y, "video_fbo_scale_y");
    CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
+   CONFIG_GET_BOOL(video.allow_rotate, "video_allow_rotate");
 
 #ifdef HAVE_FREETYPE
    CONFIG_GET_STRING(video.font_path, "video_font_path");

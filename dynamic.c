@@ -421,6 +421,9 @@ static bool environment_cb(unsigned cmd, void *data)
       {
          unsigned rotation = *(const unsigned*)data;
          SSNES_LOG("Environ SET_ROTATION: %u\n", rotation);
+         if (!g_settings.video.allow_rotate)
+            break;
+
          if (driver.video && driver.video_data && driver.video->set_rotation)
             video_set_rotation_func(rotation);
          else

@@ -126,6 +126,7 @@ struct settings
       bool h264_record;
       bool post_filter_record;
 
+      bool allow_rotate;
       char external_driver[PATH_MAX];
    } video;
 
