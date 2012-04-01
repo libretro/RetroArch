@@ -1587,6 +1587,23 @@ static void fill_pathnames(void)
    }
 }
 
+static void load_auto_state(void)
+{
+   char savestate_name_auto[PATH_MAX];
+   fill_pathname_noext(savestate_name_auto, g_extern.savestate_name,
+         ".auto", sizeof(savestate_name_auto));
+
+   if (path_file_exists(savestate_name_auto))
+   {
+      SSNES_LOG("Found auto savestate in: %s\n", savestate_name_auto);
+      load_state(savestate_name_auto);
+
+      char msg[PATH_MAX];
+      snprintf(msg, sizeof(msg), "Auto-loaded savestate from: \"%s\"", savestate_name_auto);
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   }
+}
+
 void ssnes_load_state(void)
 {
    char load_path[PATH_MAX];
@@ -2278,18 +2295,19 @@ int ssnes_main_init(int argc, char *argv[])
    SSNES_LOG("Version of libsnes API: %u.%u\n",
          psnes_library_revision_major(), psnes_library_revision_minor());
 
-   fill_pathnames();
-   set_savestate_auto_index();
-
    g_extern.use_sram = true;
 #ifdef HAVE_XML
    bool allow_cheats = true;
 #endif
 
+   fill_pathnames();
+   set_savestate_auto_index();
+
    if (!init_rom_file(g_extern.game_type))
       goto error;
 
    init_msg_queue();
+   load_auto_state();
 
    if (!g_extern.sram_load_disable)
       load_save_files();
