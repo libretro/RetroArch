@@ -163,6 +163,7 @@ typedef struct gl
    bool quitting;
    bool fullscreen;
    bool keep_aspect;
+   unsigned rotation;
 
    unsigned full_x, full_y;
 
@@ -560,11 +561,18 @@ static inline unsigned get_alignment(unsigned pitch)
    return 8;
 }
 
-static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full)
+static void set_projection(gl_t *gl)
 {
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
+   glRotatef(gl->rotation, 0, 0, 1);
+   glOrtho(0, 1, 0, 1, -1, 1);
+   glMatrixMode(GL_MODELVIEW);
+   glLoadIdentity();
+}
 
+static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full)
+{
    if (gl->keep_aspect && !force_full)
    {
       float desired_aspect = g_settings.video.aspect_ratio;
@@ -573,9 +581,7 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
       // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
       // assume they are actually equal.
       if (fabs(device_aspect - desired_aspect) < 0.0001)
-      {
          glViewport(0, 0, width, height);
-      }
       else if (device_aspect > desired_aspect)
       {
          float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
@@ -592,9 +598,7 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
    else
       glViewport(0, 0, width, height);
 
-   glOrtho(0, 1, 0, 1, -1, 1);
-   glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
+   set_projection(gl);
 
    gl_shader_set_proj_matrix();
 
@@ -609,6 +613,13 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
    }
 
    //SSNES_LOG("Setting viewport @ %ux%u\n", width, height);
+}
+
+static void gl_set_rotation(void *data, unsigned rotation)
+{
+   gl_t *gl = (gl_t*)data;
+   gl->rotation = 90 * rotation;
+   set_projection(gl);
 }
 
 #ifdef HAVE_FREETYPE
@@ -1435,6 +1446,8 @@ const video_driver_t video_gl = {
    NULL,
 #endif
    gl_free,
-   "gl"
+   "gl",
+
+   gl_set_rotation,
 };
 

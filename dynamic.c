@@ -424,6 +424,8 @@ static bool environment_cb(unsigned cmd, void *data)
          if (!g_settings.video.allow_rotate)
             break;
 
+         g_extern.system.rotation = rotation;
+
          if (driver.video && driver.video_data && driver.video->set_rotation)
             video_set_rotation_func(rotation);
          else

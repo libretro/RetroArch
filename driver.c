@@ -560,6 +560,9 @@ void init_video_input(void)
       ssnes_fail(1, "init_video_input()");
    }
 
+   if (driver.video->set_rotation && g_extern.system.rotation)
+      video_set_rotation_func(g_extern.system.rotation);
+
    // Video driver didn't provide an input driver so we use configured one.
    if (driver.input == NULL)
    {
