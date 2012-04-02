@@ -561,17 +561,22 @@ static inline unsigned get_alignment(unsigned pitch)
    return 8;
 }
 
-static void set_projection(gl_t *gl)
+static void set_projection(gl_t *gl, bool allow_rotate)
 {
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
-   glRotatef(gl->rotation, 0, 0, 1);
+
+   if (allow_rotate)
+      glRotatef(gl->rotation, 0, 0, 1);
+
    glOrtho(0, 1, 0, 1, -1, 1);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
+
+   gl_shader_set_proj_matrix();
 }
 
-static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full)
+static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
 {
    if (gl->keep_aspect && !force_full)
    {
@@ -598,9 +603,7 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
    else
       glViewport(0, 0, width, height);
 
-   set_projection(gl);
-
-   gl_shader_set_proj_matrix();
+   set_projection(gl, allow_rotate);
 
    gl->vp_width = width;
    gl->vp_height = height;
@@ -619,7 +622,7 @@ static void gl_set_rotation(void *data, unsigned rotation)
 {
    gl_t *gl = (gl_t*)data;
    gl->rotation = 90 * rotation;
-   set_projection(gl);
+   set_projection(gl, true);
 }
 
 #ifdef HAVE_FREETYPE
@@ -772,7 +775,7 @@ static void gl_render_msg(gl_t *gl, const char *msg)
 
    // Deactivate custom shaders. Enable the font texture.
    gl_shader_use(0);
-   set_viewport(gl, gl->win_width, gl->win_height, false);
+   set_viewport(gl, gl->win_width, gl->win_height, false, false);
    glBindTexture(GL_TEXTURE_2D, gl->font_tex);
    glTexCoordPointer(2, GL_FLOAT, 0, font_tex_coords);
 
@@ -815,6 +818,7 @@ static void gl_render_msg(gl_t *gl, const char *msg)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    glDisable(GL_BLEND);
+   set_projection(gl, true);
 }
 #else
 static void gl_render_msg(gl_t *gl, const char *msg)
@@ -920,7 +924,7 @@ static void gl_start_frame_fbo(gl_t *gl)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
    gl->render_to_tex = true;
-   set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
+   set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true, false);
 
    // Need to preserve the "flipped" state when in FBO as well to have 
    // consistent texture coordinates.
@@ -1002,7 +1006,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
       glClear(GL_COLOR_BUFFER_BIT);
 
       // Render to FBO with certain size.
-      set_viewport(gl, rect->img_width, rect->img_height, true);
+      set_viewport(gl, rect->img_width, rect->img_height, true, false);
       gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
             gl->vp_width, gl->vp_height, gl->frame_count, 
@@ -1028,7 +1032,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
 
    glClear(GL_COLOR_BUFFER_BIT);
    gl->render_to_tex = false;
-   set_viewport(gl, gl->win_width, gl->win_height, false);
+   set_viewport(gl, gl->win_width, gl->win_height, false, true);
    gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
          gl->vp_width, gl->vp_height, gl->frame_count, 
@@ -1045,7 +1049,7 @@ static void gl_update_resize(gl_t *gl)
 {
 #ifdef HAVE_FBO
    if (!gl->render_to_tex)
-      set_viewport(gl, gl->win_width, gl->win_height, false);
+      set_viewport(gl, gl->win_width, gl->win_height, false, true);
    else
    {
       gl_check_fbo_dimensions(gl);
@@ -1054,7 +1058,7 @@ static void gl_update_resize(gl_t *gl)
       gl_start_frame_fbo(gl);
    }
 #else
-   set_viewport(gl, gl->win_width, gl->win_height, false);
+   set_viewport(gl, gl->win_width, gl->win_height, false, true);
 #endif
 }
 
@@ -1290,9 +1294,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
    gl_shader_use(0);
-   set_viewport(gl, gl->win_width, gl->win_height, false);
+   set_viewport(gl, gl->win_width, gl->win_height, false, true);
    gl_shader_use(1);
-   set_viewport(gl, gl->win_width, gl->win_height, false);
+   set_viewport(gl, gl->win_width, gl->win_height, false, true);
 
    bool force_smooth;
    if (gl_shader_filter_type(1, &force_smooth))
@@ -1426,9 +1430,9 @@ static bool gl_xml_shader(void *data, const char *path)
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
    gl_shader_use(0);
-   set_viewport(gl, gl->win_width, gl->win_height, false);
+   set_viewport(gl, gl->win_width, gl->win_height, false, true);
    gl_shader_use(1);
-   set_viewport(gl, gl->win_width, gl->win_height, false);
+   set_viewport(gl, gl->win_width, gl->win_height, false, true);
 
    return true;
 }
