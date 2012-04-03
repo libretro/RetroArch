@@ -870,9 +870,9 @@ static void select_file(uint32_t menu_id)
 			strncpy(dir_path, LIBSNES_DIR_PATH, sizeof(dir_path));
 			strncpy(extensions, "self|SELF|bin|BIN", sizeof(extensions));
 			strncpy(title, "LIBSNES CORE SELECTION", sizeof(title));
-			strncpy(object, "Libsnes", sizeof(object));
-			strncpy(object, "Libsnes core file", sizeof(object));
-			strncpy(comment, "INFO - Select a Libsnes core file from the menu by pressing the X button. ", sizeof(comment));
+			strncpy(object, "Libretro", sizeof(object));
+			strncpy(object, "Libretro core library", sizeof(object));
+			strncpy(comment, "INFO - Select a Libretro core library from the menu by pressing the X button. ", sizeof(comment));
 			break;
 	}
 
@@ -2018,7 +2018,7 @@ static void select_rom(void)
 		cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
 
 	cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"FILE BROWSER");
-	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libsnes core: %s", snes_library_id());
+	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s (v%s)", snes_library_id(), g_extern.system.version);
 	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
 	cellDbgFontPrintf (0.09f, 0.09f, FONT_SIZE, YELLOW,
 	"PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser));
@@ -2301,7 +2301,7 @@ static void ingame_menu(uint32_t menu_id)
 						if(CTRL_SQUARE(~state))
 						{
 							cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"QUICK MENU");
-							cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libsnes core: %s", snes_library_id());
+							cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", snes_library_id());
 							cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
 							cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
 							cellDbgFontPrintf	(x_position,	ypos,	font_size,	GREEN,	"Viewport X: #%d", g_console.custom_viewport_x);
@@ -2529,7 +2529,7 @@ static void ingame_menu(uint32_t menu_id)
 	cellDbgFontDraw();
 
 	cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"QUICK MENU");
-	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libsnes core: %s", snes_library_id());
+	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", snes_library_id());
 	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
 	cellDbgFontDraw();
 	cellDbgFontPrintf (0.05f, 0.90f, 1.10f, WHITE, special_action_msg);
