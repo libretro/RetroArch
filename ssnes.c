@@ -477,7 +477,7 @@ static void print_features(void)
    _PSUPP(xml, "XML", "bSNES XML pixel shaders");
    _PSUPP(sdl_image, "SDL_image", "SDL_image image loading");
    _PSUPP(fbo, "FBO", "OpenGL render-to-texture (multi-pass shaders)");
-   _PSUPP(dynamic, "Dynamic", "Dynamic run-time loading of libsnes library");
+   _PSUPP(dynamic, "Dynamic", "Dynamic run-time loading of libretro library");
    _PSUPP(ffmpeg, "FFmpeg", "On-the-fly recording of gameplay with libavcodec");
    _PSUPP(x264rgb, "x264 RGB", "x264 lossless RGB recording for FFmpeg");
    _PSUPP(configfile, "Config file", "Configuration file support");
@@ -514,7 +514,7 @@ static void print_compiler(FILE *file)
 static void print_help(void)
 {
    puts("===================================================================");
-   puts("ssnes: Simple Super Nintendo Emulator (libsnes) -- v" PACKAGE_VERSION " --");
+   puts("ssnes: Frontend for libretro -- v" PACKAGE_VERSION " --");
    print_compiler(stdout);
    puts("===================================================================");
    puts("Usage: ssnes [rom file] [options...]");
@@ -527,7 +527,7 @@ static void print_help(void)
    puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
 #endif
 #ifdef HAVE_DYNAMIC
-   puts("\t-L/--libsnes: Path to libsnes implementation. Overrides any config setting.");
+   puts("\t-L/--libretro: Path to libretro implementation. Overrides any config setting.");
 #endif
    puts("\t-g/--gameboy: Path to Gameboy ROM. Load SuperGameBoy as the regular rom.");
    puts("\t-b/--bsx: Path to BSX rom. Load BSX BIOS as the regular rom.");
@@ -678,7 +678,7 @@ static void parse_input(int argc, char *argv[])
 
    const struct option opts[] = {
 #ifdef HAVE_DYNAMIC
-      { "libsnes", 1, NULL, 'L' },
+      { "libretro", 1, NULL, 'L' },
 #endif
       { "help", 0, NULL, 'h' },
       { "save", 1, NULL, 's' },
@@ -2293,7 +2293,7 @@ int ssnes_main_init(int argc, char *argv[])
    if (*g_extern.basename)
       psnes_set_cartridge_basename(g_extern.basename);
 
-   SSNES_LOG("Version of libsnes API: %u.%u\n",
+   SSNES_LOG("Version of libretro API: %u.%u\n",
          psnes_library_revision_major(), psnes_library_revision_minor());
 
    g_extern.use_sram = true;

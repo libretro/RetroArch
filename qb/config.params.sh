@@ -8,7 +8,7 @@ PACKAGE_VERSION=0.9.5
 # $2: Comment                 
 # $3: Default arg. auto implies that HAVE_ALSA will be set according to library checks later on.
 add_command_line_enable DYNAMIC "Disable dynamic loading of libsnes library" yes
-add_command_line_string LIBSNES "libsnes library used" ""
+add_command_line_string LIBRETRO "libretro library used" ""
 add_command_line_enable THREADS "Threading support" auto
 add_command_line_enable FFMPEG "Enable FFmpeg recording support" auto
 add_command_line_enable X264RGB "Enable lossless X264 RGB recording" no

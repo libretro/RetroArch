@@ -18,17 +18,17 @@ else
    DYLIB=-ldl
 fi
 
-if [ -z "$LIBSNES" ]; then
-   LIBSNES="-lsnes"
+if [ -z "$LIBRETRO" ]; then
+   LIBRETRO="-lretro"
 else
    echo "Explicit libsnes used, disabling dynamic libsnes loading ..."
    HAVE_DYNAMIC=no
 fi
 
 if [ $HAVE_DYNAMIC != yes ]; then
-   check_lib_cxx SNES $LIBSNES snes_init $DYLIB
-   check_critical SNES "Cannot find libsnes."
-   add_define_make libsnes $LIBSNES
+   check_lib_cxx RETRO $LIBRETRO retro_init $DYLIB
+   check_critical RETRO "Cannot find libretro."
+   add_define_make libretro $LIBRETRO
 fi
 
 check_lib THREADS -lpthread pthread_create
