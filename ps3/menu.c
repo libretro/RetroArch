@@ -2006,18 +2006,23 @@ static void select_rom(void)
 		}
 	}
 
-	if (FILEBROWSER_IS_CURRENT_A_DIRECTORY(browser))
-	{
-		if(!strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),"app_home") || !strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),"host_root"))
-			cellDbgFontPrintf(0.09f, 0.83f, 0.91f, RED, "WARNING - This path only works on DEX PS3 systems. Do not attempt to open\n this directory on CEX PS3 systems, or you might have to restart.");
-		else if(!strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),".."))
-			cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to go back to the previous directory.");
-		else
-			cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to enter the directory.");
-	}
+	const char * msg = msg_queue_pull_simple(g_extern.stderr_queue);
 
-	if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
-		cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
+	if(!msg)
+	{
+		if (FILEBROWSER_IS_CURRENT_A_DIRECTORY(browser))
+		{
+			if(!strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),"app_home") || !strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),"host_root"))
+				cellDbgFontPrintf(0.09f, 0.83f, 0.91f, RED, "WARNING - This path only works on DEX PS3 systems. Do not attempt to open\n this directory on CEX PS3 systems, or you might have to restart.");
+			else if(!strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),".."))
+				cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to go back to the previous directory.");
+			else
+				cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to enter the directory.");
+		}
+
+		if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
+			cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
+	}
 
 	cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"FILE BROWSER");
 	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s (v%s)", snes_library_id(), g_extern.system.version);
@@ -2643,6 +2648,11 @@ void menu_loop(void)
 		{
 			SET_TIMER_EXPIRATION(g_console.timer_expiration_frame_count, 30);
 		}
+
+		const char * msg = msg_queue_pull_simple(g_extern.stderr_queue);
+
+		if(msg)
+			cellDbgFontPrintf(g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 1.11f, LIGHTBLUE,	msg);
 
 		video_gl.swap(NULL);
 		glDisable(GL_BLEND);
