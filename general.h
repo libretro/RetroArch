@@ -183,7 +183,6 @@ struct settings
 #ifdef SSNES_CONSOLE
 struct console_settings
 {
-   msg_queue_t *stderr_queue;
 #ifdef __CELLOS_LV2__
    bool custom_bgm_enable;
 #endif
@@ -359,6 +358,7 @@ struct global
    } filter;
 
    msg_queue_t *msg_queue;
+   msg_queue_t *stderr_queue;
 
    // Rewind support.
    state_manager_t *state_manager;
@@ -480,35 +480,33 @@ extern struct console_settings g_console;
 #include "logger_override.h"
 #else
 
-#ifdef SSNES_CONSOLE
-#define SSNES_LOG_MSG_QUEUE(base, ...) do { \
-   char msg[512];
-   snprintf(msg, sizeof(msg), base ## __VA_ARGS__); \
-   if (g_console.stderr_queue) \
-      msg_queue_push_simple(g_console.stderr_queue, msg); \
+#define SSNES_LOG_MSG_QUEUE(...) do { \
+   char msg__[512]; \
+   snprintf(msg__, sizeof(msg__), __VA_ARGS__); \
+   if (g_extern.stderr_queue) \
+      msg_queue_push_simple(g_extern.stderr_queue, msg__); \
 } while(0)
-#else
-#define SSNES_LOG_MSG_QUEUE(base, ...) ((void)0)
-#endif
 
 #define SSNES_LOG(...) do { \
    if (g_extern.verbose) \
+   { \
       fprintf(stderr, "SSNES: " __VA_ARGS__); \
       fflush(stderr); \
-      SSNES_LOG_MSG_QUEUE("SSNES: ", __VA_ARGS__); \
-   } while (0)
+      SSNES_LOG_MSG_QUEUE("SSNES: " __VA_ARGS__); \
+   } \
+} while (0)
 
 #define SSNES_ERR(...) do { \
-      fprintf(stderr, "SSNES [ERROR] :: " __VA_ARGS__); \
-      fflush(stderr); \
-      SSNES_LOG_MSG_QUEUE("SSNES [ERROR]: ", __VA_ARGS__); \
-   } while (0)
+   fprintf(stderr, "SSNES [ERROR] :: " __VA_ARGS__); \
+   fflush(stderr); \
+   SSNES_LOG_MSG_QUEUE("SSNES [ERROR]: " __VA_ARGS__); \
+} while (0)
 
 #define SSNES_WARN(...) do { \
-      fprintf(stderr, "SSNES [WARN] :: " __VA_ARGS__); \
-      fflush(stderr); \
-      SSNES_LOG_MSG_QUEUE("SSNES [WARN]: ", __VA_ARGS__); \
-   } while (0)
+   fprintf(stderr, "SSNES [WARN] :: " __VA_ARGS__); \
+   fflush(stderr); \
+   SSNES_LOG_MSG_QUEUE("SSNES [WARN]: " __VA_ARGS__); \
+} while (0)
 #endif
 
 #ifndef max

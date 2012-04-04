@@ -1197,10 +1197,8 @@ void ssnes_init_msg_queue(void)
    if (!g_extern.msg_queue)
       ssnes_assert(g_extern.msg_queue = msg_queue_new(8));
 
-#ifdef SSNES_CONSOLE
-   if (!g_console.stderr_queue)
-      ssnes_assert(g_console.stderr_queue = msg_queue_new(256));
-#endif
+   if (!g_extern.stderr_queue)
+      ssnes_assert(g_extern.stderr_queue = msg_queue_new(256));
 }
 
 static void deinit_msg_queue(void)
@@ -1208,10 +1206,8 @@ static void deinit_msg_queue(void)
    if (g_extern.msg_queue)
       msg_queue_free(g_extern.msg_queue);
 
-#ifdef SSNES_CONSOLE
-   if (g_console.stderr_queue)
-      msg_queue_free(g_console.stderr_queue);
-#endif
+   if (g_extern.stderr_queue)
+      msg_queue_free(g_extern.stderr_queue);
 }
 
 #ifdef HAVE_XML
