@@ -942,6 +942,8 @@ static void select_file(uint32_t menu_id)
 					case LIBSNES_CHOICE:
 						strlcpy(g_settings.libsnes, path, 
 						sizeof(g_settings.libsnes));
+						strlcpy(g_console.launch_app_on_exit, path, 
+						sizeof(g_console.launch_app_on_exit));
 						g_console.return_to_launcher = true;
 						g_console.menu_enable = false;
 						g_console.mode_switch = MODE_EXIT;
