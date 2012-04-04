@@ -6,17 +6,17 @@
 <XuiScene>
 <Properties>
 <Id>XuiScene1</Id>
-<Width>584.528076</Width>
-<Height>363.320007</Height>
-<Position>347.429474,184.843964,0.000000</Position>
+<Width>752.000061</Width>
+<Height>512.000122</Height>
+<Position>264.000031,88.000008,0.000000</Position>
 <ClassOverride>SSNESMain</ClassOverride>
 </Properties>
 <XuiButton>
 <Properties>
 <Id>XuiBtnRomBrowser</Id>
-<Width>488.312012</Width>
-<Height>30.799988</Height>
-<Position>38.127724,64.215515,0.000000</Position>
+<Width>689.672302</Width>
+<Height>48.992096</Height>
+<Position>38.127724,73.215515,0.000000</Position>
 <Pivot>245.362122,102.247192,0.000000</Pivot>
 <NavUp>XuiBtnQuit</NavUp>
 <NavDown>XuiBtnQuickMenu</NavDown>
@@ -39,9 +39,9 @@
 <XuiButton>
 <Properties>
 <Id>XuiBtnSettings</Id>
-<Width>488.312012</Width>
-<Height>30.799988</Height>
-<Position>38.127960,196.615982,0.000000</Position>
+<Width>689.672302</Width>
+<Height>48.992096</Height>
+<Position>40.000000,263.960022,0.000000</Position>
 <NavUp>XuiBtnControls</NavUp>
 <NavDown>XuiBtnLibsnesCore</NavDown>
 <Text>Settings</Text>
@@ -50,9 +50,9 @@
 <XuiButton>
 <Properties>
 <Id>XuiBtnQuit</Id>
-<Width>488.312012</Width>
-<Height>30.799988</Height>
-<Position>38.327736,287.007996,0.000000</Position>
+<Width>689.672302</Width>
+<Height>48.992096</Height>
+<Position>40.199776,392.352020,0.000000</Position>
 <Pivot>245.162109,-84.153275,0.000000</Pivot>
 <NavUp>XuiBtnLibsnesCore</NavUp>
 <NavDown>XuiBtnRomBrowser</NavDown>
@@ -64,8 +64,8 @@
 <Id>XuiLblCore</Id>
 <Width>124.000000</Width>
 <Height>28.000000</Height>
-<Position>12.544006,324.792023,0.000000</Position>
-<Text>Libsnes core:</Text>
+<Position>40.000000,448.400055,0.000000</Position>
+<Text>Libretro core:</Text>
 </Properties>
 </XuiLabel>
 <XuiText>
@@ -73,7 +73,7 @@
 <Id>XuiTxtCoreText</Id>
 <Width>224.399963</Width>
 <Height>34.000000</Height>
-<Position>134.944031,324.391998,0.000000</Position>
+<Position>162.400024,448.000031,0.000000</Position>
 <TextColor>0xff0f0f0f</TextColor>
 <DropShadowColor>0x800f0f0f</DropShadowColor>
 <Font>Arial Unicode MS</Font>
@@ -82,9 +82,9 @@
 <XuiButton>
 <Properties>
 <Id>XuiBtnQuickMenu</Id>
-<Width>488.312012</Width>
-<Height>30.799988</Height>
-<Position>38.130001,106.655991,0.000000</Position>
+<Width>689.672302</Width>
+<Height>48.992096</Height>
+<Position>39.999996,138.000000,0.000000</Position>
 <NavUp>XuiBtnRomBrowser</NavUp>
 <NavDown>XuiBtnControls</NavDown>
 <Text>Quick Menu</Text>
@@ -93,9 +93,9 @@
 <XuiButton>
 <Properties>
 <Id>XuiBtnControls</Id>
-<Width>488.312012</Width>
-<Height>30.799988</Height>
-<Position>38.130001,151.655991,0.000000</Position>
+<Width>689.672302</Width>
+<Height>48.992096</Height>
+<Position>40.002041,202.000015,0.000000</Position>
 <NavUp>XuiBtnQuickMenu</NavUp>
 <NavDown>XuiBtnSettings</NavDown>
 <Text>Controls</Text>
@@ -104,12 +104,12 @@
 <XuiButton>
 <Properties>
 <Id>XuiBtnLibsnesCore</Id>
-<Width>488.312012</Width>
-<Height>30.799988</Height>
-<Position>38.127960,241.615982,0.000000</Position>
+<Width>689.672302</Width>
+<Height>48.992096</Height>
+<Position>40.000000,328.959991,0.000000</Position>
 <NavUp>XuiBtnSettings</NavUp>
 <NavDown>XuiBtnQuit</NavDown>
-<Text>Change libsnes core</Text>
+<Text>Change libretro core</Text>
 </Properties>
 </XuiButton>
 </XuiScene>

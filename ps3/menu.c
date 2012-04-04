@@ -2520,7 +2520,7 @@ static void ingame_menu(uint32_t menu_id)
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MENU)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU), "Return to Menu");
 	cellDbgFontDraw();
 
-	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_CHANGE_LIBSNES)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBSNES), "Change libsnes core");
+	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_CHANGE_LIBSNES)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBSNES), "Change libretro core");
 	cellDbgFontDraw();
 
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");

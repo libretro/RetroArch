@@ -419,11 +419,15 @@ HRESULT CSSNESSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
 HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
+	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+
+	bool hdmenus_allowed = vid->video_mode.fIsHiDef && (g_console.aspect_ratio_index >= ASPECT_RATIO_16_9);
+
 	HRESULT hr;
 
 	if ( hObjPressed == m_filebrowser )
 	{
-		hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_filebrowser.xur", NULL, &app.hFileBrowser);
+		hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"ssnes_filebrowser.xur", NULL, &app.hFileBrowser);
 		
 		if (FAILED(hr))
 		{
@@ -434,7 +438,7 @@ HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 	}
 	else if ( hObjPressed == m_quick_menu)
 	{
-		hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_quickmenu.xur", NULL, &app.hQuickMenu);
+		hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"ssnes_quickmenu.xur", NULL, &app.hQuickMenu);
 		
 		if (FAILED(hr))
 			SSNES_ERR("Failed to load scene.\n");
@@ -443,7 +447,7 @@ HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 	}
 	else if ( hObjPressed == m_change_libsnes_core )
 	{
-		hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_libsnescore_browser.xur", NULL, &app.hCoreBrowser);
+		hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"ssnes_libsnescore_browser.xur", NULL, &app.hCoreBrowser);
 		
 		if (FAILED(hr))
 		{
@@ -453,7 +457,7 @@ HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 	}
 	else if ( hObjPressed == m_settings )
 	{
-		hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_settings.xur", NULL, &app.hSSNESSettings);
+		hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"ssnes_settings.xur", NULL, &app.hSSNESSettings);
 		
 		if (FAILED(hr))
 			SSNES_ERR("Failed to load scene.\n");
@@ -496,7 +500,7 @@ int menu_init (void)
 		return 1;
 	}
 
-	hr = XuiSceneCreate(L"file://game:/media/", L"ssnes_main.xur", NULL, &app.hMainScene);
+	hr = XuiSceneCreate(L"file://game:/media/sd/", L"ssnes_main.xur", NULL, &app.hMainScene);
 	if (FAILED(hr))
 	{
 		SSNES_ERR("Failed to create scene 'ssnes_main.xur'.\n");
