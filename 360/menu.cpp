@@ -287,7 +287,8 @@ HRESULT CSSNESMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	GetChildById(L"XuiTxtCoreText", &m_core);
 	GetChildById(L"XuiBtnLibsnesCore", &m_change_libsnes_core);
 
-	const char * core_text = snes_library_id();
+	char core_text[256];
+	sprintf(core_text, "%s (v%s)", snes_library_id(), g_extern.system.version);
 	char package_version[32];
 	sprintf(package_version, "SSNES %s", PACKAGE_VERSION);
 	unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, core_text, -1, NULL, 0);
