@@ -463,6 +463,8 @@ void ssnes_load_state(void);
 void ssnes_save_state(void);
 void ssnes_state_slot_increase(void);
 void ssnes_state_slot_decrease(void);
+
+void ssnes_init_msg_queue(void);
 /////////
 
 // Public data structures
