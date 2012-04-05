@@ -20,30 +20,33 @@
 #define __SSNES_NETPLAY_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include "boolean.h"
-#include "libsnes.hpp"
+#include "libretro.h"
 
 void input_poll_net(void);
-int16_t input_state_net(bool port, unsigned device, unsigned index, unsigned id);
-void video_frame_net(const uint16_t *data, unsigned width, unsigned height);
-void audio_sample_net(uint16_t left, uint16_t right);
+int16_t input_state_net(unsigned port, unsigned device, unsigned index, unsigned id);
+void video_frame_net(const uint16_t *data, unsigned width, unsigned height, size_t pitch);
+void audio_sample_net(int16_t left, int16_t right);
+void audio_sample_batch_net(const int16_t *data, size_t frames);
 
-int16_t input_state_spectate(bool port, unsigned device, unsigned index, unsigned id);
-int16_t input_state_spectate_client(bool port, unsigned device, unsigned index, unsigned id);
+int16_t input_state_spectate(unsigned port, unsigned device, unsigned index, unsigned id);
+int16_t input_state_spectate_client(unsigned port, unsigned device, unsigned index, unsigned id);
 
 typedef struct netplay netplay_t;
 
-struct snes_callbacks
+struct retro_callbacks
 {
-   snes_video_refresh_t frame_cb;
-   snes_audio_sample_t sample_cb;
-   snes_input_state_t state_cb;
+   retro_video_refresh_t frame_cb;
+   retro_audio_sample_t sample_cb;
+   retro_audio_sample_batch_t sample_batch_cb;
+   retro_input_state_t state_cb;
 };
 
 // Creates a new netplay handle. A NULL host means we're hosting (player 1). :)
 netplay_t *netplay_new(const char *server,
       uint16_t port, unsigned frames,
-      const struct snes_callbacks *cb, bool spectate,
+      const struct retro_callbacks *cb, bool spectate,
       const char *nick);
 void netplay_free(netplay_t *handle);
 

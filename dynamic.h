@@ -19,7 +19,7 @@
 #define __DYNAMIC_H
 
 #include "boolean.h"
-#include "libsnes.hpp"
+#include "libretro.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -31,8 +31,8 @@
 #undef NEED_DYNAMIC
 #endif
 
-void init_libsnes_sym(void);
-void uninit_libsnes_sym(void);
+void init_libretro_sym(void);
+void uninit_libretro_sym(void);
 
 typedef void *dylib_t;
 #ifdef NEED_DYNAMIC
@@ -43,53 +43,42 @@ void dylib_close(dylib_t lib);
 function_t dylib_proc(dylib_t lib, const char *proc);
 #endif
 
-extern void (*psnes_init)(void);
+extern void (*pretro_init)(void);
+extern void (*pretro_deinit)(void);
 
-extern void (*psnes_set_video_refresh)(snes_video_refresh_t);
-extern void (*psnes_set_audio_sample)(snes_audio_sample_t);
-extern void (*psnes_set_input_poll)(snes_input_poll_t);
-extern void (*psnes_set_input_state)(snes_input_state_t);
+extern unsigned (*pretro_api_version)(void);
 
-extern void (*psnes_cheat_reset)(void);
-extern void (*psnes_cheat_set)(unsigned, bool, const char*);
+extern void (*pretro_get_system_info)(struct retro_system_info*);
+extern void (*pretro_get_system_av_info)(struct retro_system_av_info*);
 
-extern const char *(*psnes_library_id)(void);
-extern unsigned (*psnes_library_revision_minor)(void);
-extern unsigned (*psnes_library_revision_major)(void);
+extern void (*pretro_set_environment)(retro_environment_t);
+extern void (*pretro_set_video_refresh)(retro_video_refresh_t);
+extern void (*pretro_set_audio_sample)(retro_audio_sample_t);
+extern void (*pretro_set_audio_sample_batch)(retro_audio_sample_batch_t);
+extern void (*pretro_set_input_poll)(retro_input_poll_t);
+extern void (*pretro_set_input_state)(retro_input_state_t);
 
-extern bool (*psnes_load_cartridge_normal)(const char*, const uint8_t*, unsigned);
-extern bool (*psnes_load_cartridge_super_game_boy)(
-         const char*, const uint8_t*, unsigned, 
-         const char*, const uint8_t*, unsigned);
-extern bool (*psnes_load_cartridge_bsx)(
-         const char*, const uint8_t*, unsigned, 
-         const char*, const uint8_t*, unsigned);
-extern bool (*psnes_load_cartridge_bsx_slotted)(
-         const char*, const uint8_t*, unsigned, 
-         const char*, const uint8_t*, unsigned);
-extern bool (*psnes_load_cartridge_sufami_turbo)(
-         const char*, const uint8_t*, unsigned, 
-         const char*, const uint8_t*, unsigned, 
-         const char*, const uint8_t*, unsigned);
+extern void (*pretro_set_controller_port_device)(bool, unsigned);
 
-extern void (*psnes_set_controller_port_device)(bool, unsigned);
+extern void (*pretro_reset)(void);
+extern void (*pretro_run)(void);
 
-extern bool (*psnes_get_region)(void);
+extern size_t (*pretro_serialize_size)(void);
+extern bool (*pretro_serialize)(void*, size_t);
+extern bool (*pretro_unserialize)(const void*, size_t);
 
-extern unsigned (*psnes_serialize_size)(void);
-extern bool (*psnes_serialize)(uint8_t*, unsigned);
-extern bool (*psnes_unserialize)(const uint8_t*, unsigned);
+extern void (*pretro_cheat_reset)(void);
+extern void (*pretro_cheat_set)(unsigned, bool, const char*);
 
-extern void (*psnes_reset)(void);
-extern void (*psnes_run)(void);
+extern bool (*pretro_load_game)(const struct retro_game_info*);
+extern bool (*pretro_load_game_special)(unsigned, const struct retro_game_info*, size_t);
 
-extern void (*psnes_set_cartridge_basename)(const char*);
+extern void (*pretro_unload_game)(void);
 
-extern uint8_t* (*psnes_get_memory_data)(unsigned);
-extern unsigned (*psnes_get_memory_size)(unsigned);
+extern unsigned (*pretro_get_region)(void);
 
-extern void (*psnes_unload_cartridge)(void);
-extern void (*psnes_term)(void);
+extern void *(*pretro_get_memory_data)(unsigned);
+extern size_t (*pretro_get_memory_size)(unsigned);
 
 #endif
 

@@ -16,7 +16,7 @@
  */
 
 #include "boolean.h"
-#include "libsnes.hpp"
+#include "libretro.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -88,14 +88,6 @@ static void set_fast_forward_button(bool new_button_state, bool new_hold_button_
    old_hold_button_state = new_hold_button_state;
 }
 
-static inline unsigned lines_to_pitch(unsigned height)
-{
-   if (g_extern.system.pitch == 0) // SNES semantics
-      return ((height == 448) || (height == 478)) ? 1024 : 2048;
-   else
-      return g_extern.system.pitch;
-}
-
 #ifdef HAVE_SCREENSHOTS
 static void take_screenshot(void)
 {
@@ -108,10 +100,10 @@ static void take_screenshot(void)
       const uint16_t *data = g_extern.frame_cache.data;
       unsigned width = g_extern.frame_cache.width;
       unsigned height = g_extern.frame_cache.height;
+      size_t pitch = g_extern.frame_cache.pitch;
       ret = screenshot_dump(g_settings.screenshot_directory,
             data, 
-            width, height,
-            lines_to_pitch(height));
+            width, height, pitch);
    }
 
    const char *msg = NULL;
@@ -138,27 +130,6 @@ static void take_screenshot(void)
 }
 #endif
 
-#ifndef SSNES_CONSOLE
-static inline void adjust_crop(const uint16_t **data, unsigned *height)
-{
-   // Rather SNES specific.
-   unsigned pixel_pitch = lines_to_pitch(*height) >> 1;
-   if (g_settings.video.crop_overscan)
-   {
-      if (*height == 239)
-      {
-         *data += 7 * pixel_pitch; // Skip 7 top scanlines.
-         *height = 224;
-      }
-      else if (*height == 478)
-      {
-         *data += 15 * pixel_pitch; // Skip 15 top scanlines.
-         *height = 448;
-      }
-   }
-}
-#endif
-
 static void readjust_audio_input_rate(void)
 {
    int avail = audio_write_avail_func();
@@ -177,15 +148,11 @@ static void readjust_audio_input_rate(void)
    //      g_extern.audio_data.src_ratio, g_extern.audio_data.orig_src_ratio);
 }
 
-// libsnes: 0.065
-// Format received is 16-bit 0RRRRRGGGGGBBBBB
-static void video_frame(const uint16_t *data, unsigned width, unsigned height)
+static void video_frame(const void *data, unsigned width, unsigned height, size_t pitch)
 {
 #ifndef SSNES_CONSOLE
    if (!g_extern.video_active)
       return;
-
-   adjust_crop(&data, &height);
 #endif
 
    // Slightly messy code,
@@ -197,7 +164,7 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
    {
       struct ffemu_video_data ffemu_data = {0};
       ffemu_data.data = data;
-      ffemu_data.pitch = lines_to_pitch(height);
+      ffemu_data.pitch = pitch;
       ffemu_data.width = width;
       ffemu_data.height = height;
       ffemu_data.is_dupe = is_dupe;
@@ -217,7 +184,7 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
       unsigned oheight = height;
       g_extern.filter.psize(&owidth, &oheight);
       g_extern.filter.prender(g_extern.filter.colormap, g_extern.filter.buffer, 
-            g_extern.filter.pitch, data, lines_to_pitch(height), width, height);
+            g_extern.filter.pitch, data, pitch, width, height);
 
 #ifdef HAVE_FFMPEG
       if (g_extern.recording && g_settings.video.post_filter_record)
@@ -234,16 +201,17 @@ static void video_frame(const uint16_t *data, unsigned width, unsigned height)
       if (!video_frame_func(g_extern.filter.buffer, owidth, oheight, g_extern.filter.pitch, msg))
          g_extern.video_active = false;
    }
-   else if (!video_frame_func(data, width, height, lines_to_pitch(height), msg))
+   else if (!video_frame_func(data, width, height, pitch, msg))
       g_extern.video_active = false;
 #else
-   if (!video_frame_func(data, width, height, lines_to_pitch(height), msg))
+   if (!video_frame_func(data, width, height, pitch, msg))
       g_extern.video_active = false;
 #endif
 
    g_extern.frame_cache.data = data;
    g_extern.frame_cache.width = width;
    g_extern.frame_cache.height = height;
+   g_extern.frame_cache.pitch = pitch;
 }
 
 #ifdef HAVE_GRIFFIN
@@ -266,7 +234,8 @@ void ssnes_render_cached_frame(void)
    {
       video_frame(g_extern.frame_cache.data,
             g_extern.frame_cache.width,
-            g_extern.frame_cache.height);
+            g_extern.frame_cache.height,
+            g_extern.frame_cache.pitch);
    }
 
 #ifdef HAVE_FFMPEG
@@ -1018,17 +987,17 @@ static void init_controllers(void)
    if (g_extern.has_justifier)
    {
       SSNES_LOG("Connecting Justifier to port 2.\n");
-      psnes_set_controller_port_device(SNES_PORT_2, SNES_DEVICE_JUSTIFIER);
+      pretro_set_controller_port_device(1, RETRO_DEVICE_LIGHTGUN_JUSTIFIER);
    }
    else if (g_extern.has_justifiers)
    {
       SSNES_LOG("Connecting Justifiers to port 2.\n");
-      psnes_set_controller_port_device(SNES_PORT_2, SNES_DEVICE_JUSTIFIERS);
+      pretro_set_controller_port_device(1, RETRO_DEVICE_LIGHTGUN_JUSTIFIERS);
    }
    else if (g_extern.has_multitap)
    {
       SSNES_LOG("Connecting Multitap to port 2.\n");
-      psnes_set_controller_port_device(SNES_PORT_2, SNES_DEVICE_MULTITAP);
+      pretro_set_controller_port_device(1, RETRO_DEVICE_JOYPAD_MULTITAP);
    }
    else
    {
@@ -1037,17 +1006,17 @@ static void init_controllers(void)
          if (g_extern.disconnect_device[i])
          {
             SSNES_LOG("Disconnecting device from port %u.\n", i + 1);
-            psnes_set_controller_port_device(i, SNES_DEVICE_NONE);
+            pretro_set_controller_port_device(i, RETRO_DEVICE_NONE);
          }
          else if (g_extern.has_mouse[i])
          {
             SSNES_LOG("Connecting mouse to port %u.\n", i + 1);
-            psnes_set_controller_port_device(i, SNES_DEVICE_MOUSE);
+            pretro_set_controller_port_device(i, RETRO_DEVICE_MOUSE);
          }
          else if (g_extern.has_scope[i])
          {
             SSNES_LOG("Connecting scope to port %u.\n", i + 1);
-            psnes_set_controller_port_device(i, SNES_DEVICE_SUPER_SCOPE);
+            pretro_set_controller_port_device(i, RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE);
          }
       }
    }

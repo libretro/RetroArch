@@ -298,18 +298,16 @@ struct global
 
    struct
    {
-      struct snes_geometry geom;
-      unsigned pitch; // If 0, has classic libsnes semantics.
+      struct retro_game_geometry geom;
+      struct retro_system_timing timing;
+      struct retro_system_info info;
+
       char fullpath[PATH_MAX];
-      struct snes_system_timing timing;
-      bool timing_set;
-      bool need_fullpath;
 
       char *environment;
       char *environment_split;
 
       unsigned rotation;
-      char version[64];
    } system;
 
    struct
@@ -416,9 +414,10 @@ struct global
 
    struct
    {
-      const uint16_t *data;
+      const void *data;
       unsigned width;
       unsigned height;
+      size_t pitch;
    } frame_cache;
 
    char title_buf[64];

@@ -19,6 +19,7 @@ extern "C" {
 #define RETRO_DEVICE_KEYBOARD     3
 #define RETRO_DEVICE_LIGHTGUN     4
 
+#define RETRO_DEVICE_JOYPAD_MULTITAP        ((1 << 8) | RETRO_DEVICE_JOYPAD)
 #define RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE   ((1 << 8) | RETRO_DEVICE_LIGHTGUN)
 #define RETRO_DEVICE_LIGHTGUN_JUSTIFIER     ((2 << 8) | RETRO_DEVICE_LIGHTGUN)
 #define RETRO_DEVICE_LIGHTGUN_JUSTIFIERS    ((3 << 8) | RETRO_DEVICE_LIGHTGUN)
@@ -51,9 +52,9 @@ extern "C" {
 #define RETRO_REGION_NTSC  0
 #define RETRO_REGION_PAL   1
 
-#define RETRO_MEMORY_SAVE_RAM            0
-#define RETRO_MEMORY_RTC                 1
-#define RETRO_MEMORY_SYSTEM_RAM          2
+#define RETRO_MEMORY_SAVE_RAM    0
+#define RETRO_MEMORY_RTC         1
+#define RETRO_MEMORY_SYSTEM_RAM  2
 
 #define RETRO_MEMORY_SNES_BSX_RAM             0x100
 #define RETRO_MEMORY_SNES_BSX_PRAM            0x101
@@ -62,52 +63,45 @@ extern "C" {
 #define RETRO_MEMORY_SNES_GAME_BOY_RAM        0x104
 #define RETRO_MEMORY_SNES_GAME_BOY_RTC        0x105
 
-#define RETRO_GAME_TYPE_BSX              0x100
-#define RETRO_GAME_TYPE_BSX_SLOTTED      0x101
-#define RETRO_GAME_TYPE_SUFAMI_TURBO     0x102
-#define RETRO_GAME_TYPE_SUPER_GAME_BOY   0x103
+#define RETRO_GAME_TYPE_BSX             0x100
+#define RETRO_GAME_TYPE_BSX_SLOTTED     0x101
+#define RETRO_GAME_TYPE_SUFAMI_TURBO    0x102
+#define RETRO_GAME_TYPE_SUPER_GAME_BOY  0x103
 
 
 // Environment commands.
-#define RETRO_ENVIRONMENT_SET_GEOMETRY  1  // const struct retro_geometry * --
-                                           // Window geometry information for the system/game.
-                                           //
-#define RETRO_ENVIRONMENT_SET_TIMING    2  // const struct retro_system_timing * --
-                                           // Set exact timings of the system. Used primarily for video recording.
-                                           //
-#define RETRO_ENVIRONMENT_SET_ROTATION  3  // const unsigned * --
+#define RETRO_ENVIRONMENT_SET_ROTATION  1  // const unsigned * --
                                            // Sets screen rotation of graphics.
                                            // Is only implemented if rotation can be accelerated by hardware.
                                            // Valid values are 0, 1, 2, 3, which rotates screen by 0, 90, 180, 270 degrees
                                            // counter-clockwise respectively.
                                            //
-#define RETRO_ENVIRONMENT_GET_OVERSCAN  4  // bool * --
-                                           // Boolean value whether or not the implementation should use overscan.
+#define RETRO_ENVIRONMENT_GET_OVERSCAN  2  // bool * --
+                                           // Boolean value whether or not the implementation should use overscan, or crop away overscan.
                                            //
-#define RETRO_ENVIRONMENT_GET_CAN_DUPE  5  // bool * --
+#define RETRO_ENVIRONMENT_GET_CAN_DUPE  3  // bool * --
                                            // Boolean value whether or not SSNES supports frame duping,
                                            // passing NULL to video frame callback.
                                            //
-                                           //
-#define RETRO_ENVIRONMENT_GET_VARIABLE  6  // struct retro_variable * --
+#define RETRO_ENVIRONMENT_GET_VARIABLE  4  // struct retro_variable * --
                                            // Interface to aquire user-defined information from environment
                                            // that cannot feasibly be supported in a multi-system way.
                                            // Mostly used for obscure,
                                            // specific features that the user can tap into when neseccary.
                                            //
-#define RETRO_ENVIRONMENT_SET_VARIABLES 7  // const struct retro_variable * --
+#define RETRO_ENVIRONMENT_SET_VARIABLES 5  // const struct retro_variable * --
                                            // Allows an implementation to signal the environment
                                            // which variables it might want to check for later using GET_VARIABLE.
                                            // 'data' points to an array of retro_variable structs terminated by a { NULL, NULL } element.
                                            // retro_variable::value should contain a human readable description of the key.
                                            //
-#define RETRO_ENVIRONMENT_SET_MESSAGE   8  // const struct retro_message * --
+#define RETRO_ENVIRONMENT_SET_MESSAGE   6  // const struct retro_message * --
                                            // Sets a message to be displayed in implementation-specific manner for a certain amount of 'frames'.
 
 struct retro_message
 {
    const char *msg;
-   unsigned frames;
+   unsigned    frames;
 };
 
 struct retro_system_info
@@ -115,7 +109,27 @@ struct retro_system_info
    const char *library_name;
    const char *library_version;
    const char *valid_extensions;
-   bool need_fullpath;
+   bool        need_fullpath;
+};
+
+struct retro_game_geometry
+{
+   unsigned base_width;    // Nominal video width of game.
+   unsigned base_height;   // Nominal video height of game.
+   unsigned max_width;     // Maximum possible width of game.
+   unsigned max_height;    // Maximum possible height of game.
+};
+
+struct retro_system_timing
+{
+   double fps;             // FPS of video content.
+   double sample_rate;     // Sampling rate of audio.
+};
+
+struct retro_system_av_info
+{
+   struct retro_game_geometry geometry;
+   struct retro_system_timing timing;
 };
 
 struct retro_variable
@@ -127,26 +141,13 @@ struct retro_variable
    const char *value;      // Value to be obtained. If key does not exist, it is set to NULL.
 };
 
-struct retro_game_geometry
-{
-   unsigned base_width;    // Nominal video width of system.
-   unsigned base_height;   // Nominal video height of system.
-   unsigned max_width;     // Maximum possible width of system.
-   unsigned max_height;    // Maximum possible height of system.
-};
-
 struct retro_game_info
 {
-   const char *path;
-   const void *game_data;
-   size_t game_size;
-   const char *game_meta;
-};
-
-struct retro_system_timing
-{
-   double fps;
-   double sample_rate;
+   const char *path;       // Path to game. Usually used as a reference.
+   const void *data;       // Memory buffer of loaded game. If the game is too big to load in one go. SET_NEED_FULLPATH should be used.
+                           //    In this case, data and size will be 0, and game can be loaded from path.
+   size_t      size;       // Size of memory buffer.
+   const char *meta;       // String of implementation specific meta-data.
 };
 
 typedef bool (*retro_environment_t)(unsigned cmd, void *data);
@@ -157,9 +158,13 @@ typedef size_t (*retro_audio_sample_batch_t)(const int16_t *data, size_t frames)
 typedef void (*retro_input_poll_t)(void);
 typedef int16_t (*retro_input_state_t)(unsigned port, unsigned device, unsigned index, unsigned id);
 
+void retro_init(void);
+void retro_deinit(void);
+
 unsigned retro_api_version(void);
 
 void retro_get_system_info(struct retro_system_info *info);
+void retro_get_system_av_info(struct retro_system_av_info *info);
 
 void retro_set_environment(retro_environment_t);
 void retro_set_video_refresh(retro_video_refresh_t);
@@ -169,9 +174,6 @@ void retro_set_input_poll(retro_input_poll_t);
 void retro_set_input_state(retro_input_state_t);
 
 void retro_set_controller_port_device(unsigned port, unsigned device);
-
-void retro_init(void);
-void retro_deinit(void);
 
 void retro_reset(void);
 void retro_run(void);
@@ -183,10 +185,7 @@ bool retro_unserialize(const void *data, size_t size);
 void retro_cheat_reset(void);
 void retro_cheat_set(unsigned index, bool enabled, const char *code);
 
-bool retro_load_game(const char *game_path,
-      const void *game_data, size_t game_size,
-      const char *game_meta
-);
+bool retro_load_game(const struct retro_game_info *game);
 
 bool retro_load_game_special(
   unsigned game_type,
