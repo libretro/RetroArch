@@ -130,7 +130,7 @@ typedef struct input_driver
 {
    void *(*init)(void);
    void (*poll)(void *data);
-   int16_t (*input_state)(void *data, const struct snes_keybind **snes_keybinds, bool port, unsigned device, unsigned index, unsigned id);
+   int16_t (*input_state)(void *data, const struct snes_keybind **snes_keybinds, unsigned port, unsigned device, unsigned index, unsigned id);
    bool (*key_pressed)(void *data, int key);
    void (*free)(void *data);
    const char *ident;

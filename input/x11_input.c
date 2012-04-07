@@ -183,7 +183,7 @@ static bool x_bind_button_pressed(void *data, int key)
       input_sdl.key_pressed(x11->sdl, key);
 }
 
-static int16_t x_input_state(void *data, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
+static int16_t x_input_state(void *data, const struct snes_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
    x11_input_t *x11 = (x11_input_t*)data;
 
@@ -191,10 +191,6 @@ static int16_t x_input_state(void *data, const struct snes_keybind **binds, bool
    {
       case RETRO_DEVICE_JOYPAD:
          return x_is_pressed(x11, binds[port], id) ||
-            input_sdl.input_state(x11->sdl, binds, port, device, index, id);
-
-      case RETRO_DEVICE_JOYPAD_MULTITAP:
-         return x_is_pressed(x11, binds[(port == 1) ? 1 + index : 0], id) ||
             input_sdl.input_state(x11->sdl, binds, port, device, index, id);
 
       default:

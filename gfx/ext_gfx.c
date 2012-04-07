@@ -58,15 +58,11 @@ static void input_ext_poll(void *data)
    ext->driver->poll(ext->handle);
 }
 
-static int16_t input_ext_input_state(void *data, const struct snes_keybind **snes_keybinds, bool port, unsigned device, unsigned index, unsigned id)
+static int16_t input_ext_input_state(void *data, const struct snes_keybind **snes_keybinds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
    input_ext_t *ext = (input_ext_t*)data;
 
-   unsigned player = 0;
-   if (device == RETRO_DEVICE_JOYPAD_MULTITAP)
-      player = (port == 1) ? 1 : index + 2;
-   else
-      player = port + 1;
+   unsigned player = port + 1;
 
    if (id < SSNES_BIND_LIST_END)
    {
