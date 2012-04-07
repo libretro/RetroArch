@@ -1323,7 +1323,7 @@ static void deinit_netplay(void)
 }
 #endif
 
-static void init_libsnes_cbs_plain(void)
+static void init_libretro_cbs_plain(void)
 {
    pretro_set_video_refresh(video_frame);
    pretro_set_audio_sample(audio_sample);
@@ -1332,7 +1332,7 @@ static void init_libsnes_cbs_plain(void)
    pretro_set_input_poll(input_poll);
 }
 
-static void init_libsnes_cbs(void)
+static void init_libretro_cbs(void)
 {
 #ifdef HAVE_NETPLAY
    if (g_extern.netplay)
@@ -1350,9 +1350,9 @@ static void init_libsnes_cbs(void)
             : input_state_net);
    }
    else
-      init_libsnes_cbs_plain();
+      init_libretro_cbs_plain();
 #else
-   init_libsnes_cbs_plain();
+   init_libretro_cbs_plain();
 #endif
 }
 
@@ -2333,7 +2333,7 @@ int ssnes_main_init(int argc, char *argv[])
 #endif
       init_rewind();
       
-   init_libsnes_cbs();
+   init_libretro_cbs();
    init_controllers();
    
 #ifdef HAVE_FFMPEG
@@ -2393,7 +2393,7 @@ bool ssnes_main_iterate(void)
    // Checks for stuff like fullscreen, save states, etc.
    do_state_checks();
 
-   // Run libsnes for one frame.
+   // Run libretro for one frame.
 #ifndef SSNES_CONSOLE // On consoles pausing is handled better elsewhere.
    if (!g_extern.is_paused || g_extern.is_oneshot)
 #endif
