@@ -846,7 +846,7 @@ static void parse_input(int argc, char *argv[])
 
 #ifdef HAVE_DYNAMIC
          case 'L':
-            strlcpy(g_settings.libsnes, optarg, sizeof(g_settings.libsnes));
+            strlcpy(g_settings.libretro, optarg, sizeof(g_settings.libretro));
             break;
 #endif
 
@@ -2244,7 +2244,7 @@ void ssnes_main_clear_state(void)
 static void init_system_info(void)
 {
    struct retro_system_info *info = &g_extern.system.info;
-   retro_get_system_info(info);
+   pretro_get_system_info(info);
 
    if (!info->library_name)
       info->library_name = "Unknown";
@@ -2257,7 +2257,7 @@ static void init_system_info(void)
 
 static void init_system_av_info(void)
 {
-   retro_get_system_av_info(&g_extern.system.av_info);
+   pretro_get_system_av_info(&g_extern.system.av_info);
 }
 
 static void verify_api_version(void)

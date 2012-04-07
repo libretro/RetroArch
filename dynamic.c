@@ -43,7 +43,7 @@
 #define SYM(x) do { \
    function_t func = dylib_proc(lib_handle, #x); \
    memcpy(&p##x, &func, sizeof(func)); \
-   if (p##x == NULL) { SSNES_ERR("Failed to load symbol: \"%s\"\n", #x); ssnes_fail(1, "init_libsnes_sym()"); } \
+   if (p##x == NULL) { SSNES_ERR("Failed to load symbol: \"%s\"\n", #x); ssnes_fail(1, "init_libretro_sym()"); } \
 } while (0)
 
 static dylib_t lib_handle = NULL;
@@ -94,11 +94,11 @@ static void set_environment_defaults(void);
 static void load_symbols(void)
 {
 #ifdef HAVE_DYNAMIC
-   SSNES_LOG("Loading dynamic libsnes from: \"%s\"\n", g_settings.libsnes);
-   lib_handle = dylib_load(g_settings.libsnes);
+   SSNES_LOG("Loading dynamic libsnes from: \"%s\"\n", g_settings.libretro);
+   lib_handle = dylib_load(g_settings.libretro);
    if (!lib_handle)
    {
-      SSNES_ERR("Failed to open dynamic library: \"%s\"\n", g_settings.libsnes);
+      SSNES_ERR("Failed to open dynamic library: \"%s\"\n", g_settings.libretro);
       ssnes_fail(1, "load_dynamic()");
    }
 #endif
@@ -138,7 +138,7 @@ static void load_symbols(void)
    SYM(retro_get_memory_size);
 }
 
-void init_libsnes_sym(void)
+void init_libretro_sym(void)
 {
    // Guarantee that we can do "dirty" casting.
    // Every OS that this program supports should pass this ...
@@ -153,18 +153,19 @@ void init_libsnes_sym(void)
       SSNES_ERR("Serious problem. SSNES wants to load libsnes dyamically, but it is already linked.\n"); 
       SSNES_ERR("This could happen if other modules SSNES depends on link against libsnes directly.\n");
       SSNES_ERR("Proceeding could cause a crash. Aborting ...\n");
-      ssnes_fail(1, "init_libsnes_sym()");
+      ssnes_fail(1, "init_libretro_sym()");
    }
 
-   if (!*g_settings.libsnes)
+   if (!*g_settings.libretro)
    {
 #if defined(_WIN32)
-      strlcpy(g_settings.libsnes, "retro.dll", sizeof(g_settings.libsnes));
+      const char *libretro_path = "retro.dll";
 #elif defined(__APPLE__)
-      strlcpy(g_settings.libsnes, "libretro.dylib", sizeof(g_settings.libsnes));
+      const char *libretro_path = "libretro.dylib";
 #else
-      strlcpy(g_settings.libsnes, "libretro.so", sizeof(g_settings.libsnes));
+      const char *libretro_path = "libretro.so";
 #endif
+      strlcpy(g_settings.libretro, libretro_path, sizeof(g_settings.libretro));
    }
 #endif
 
@@ -174,7 +175,7 @@ void init_libsnes_sym(void)
    set_environment();
 }
 
-void uninit_libsnes_sym(void)
+void uninit_libretro_sym(void)
 {
 #ifdef HAVE_DYNAMIC
    if (lib_handle)

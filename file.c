@@ -604,9 +604,9 @@ static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
    }
 
    if (rom_type == 0)
-      ret = retro_load_game(&info[0]);
+      ret = pretro_load_game(&info[0]);
    else
-      ret = retro_load_game_special(rom_type, info, roms);
+      ret = pretro_load_game_special(rom_type, info, roms);
 
    if (!ret)
       SSNES_ERR("Failed to load game.\n");

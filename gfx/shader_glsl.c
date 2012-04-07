@@ -21,7 +21,7 @@
 #include "shader_glsl.h"
 #include "../compat/strl.h"
 #include "../compat/posix_string.h"
-#include "snes_state.h"
+#include "state_tracker.h"
 #include "../dynamic.h"
 
 #ifdef __APPLE__
@@ -120,8 +120,8 @@ static GLuint gl_teximage[MAX_TEXTURES];
 static unsigned gl_teximage_cnt = 0;
 static char gl_teximage_uniforms[MAX_TEXTURES][64];
 
-static snes_tracker_t *gl_snes_tracker = NULL;
-static struct snes_tracker_uniform_info gl_tracker_info[MAX_VARIABLES];
+static state_tracker_t *gl_state_tracker = NULL;
+static struct state_tracker_uniform_info gl_tracker_info[MAX_VARIABLES];
 static unsigned gl_tracker_info_cnt = 0;
 static char gl_tracker_script[PATH_MAX];
 static char gl_tracker_script_class[64];
@@ -475,16 +475,12 @@ static bool get_import_value(xmlNodePtr ptr)
    xmlChar *semantic = xmlGetProp(ptr, (const xmlChar*)"semantic");
    xmlChar *wram = xmlGetProp(ptr, (const xmlChar*)"wram");
    xmlChar *input = xmlGetProp(ptr, (const xmlChar*)"input_slot");
-   xmlChar *apuram = xmlGetProp(ptr, (const xmlChar*)"apuram");
-   xmlChar *vram = xmlGetProp(ptr, (const xmlChar*)"vram");
-   xmlChar *oam = xmlGetProp(ptr, (const xmlChar*)"oam");
-   xmlChar *cgram = xmlGetProp(ptr, (const xmlChar*)"cgram");
    xmlChar *bitmask = xmlGetProp(ptr, (const xmlChar*)"mask");
    xmlChar *bitequal = xmlGetProp(ptr, (const xmlChar*)"equal");
 
    unsigned memtype;
-   enum snes_tracker_type tracker_type;
-   enum snes_ram_type ram_type = SSNES_STATE_NONE;
+   enum state_tracker_type tracker_type;
+   enum state_ram_type ram_type = SSNES_STATE_NONE;
    uint32_t addr = 0;
    unsigned mask_value = 0;
    unsigned mask_equal = 0;
@@ -495,7 +491,6 @@ static bool get_import_value(xmlNodePtr ptr)
       ret = false;
       goto end;
    }
-
 
    if (strcmp((const char*)semantic, "capture") == 0)
       tracker_type = SSNES_STATE_CAPTURE;
@@ -540,11 +535,11 @@ static bool get_import_value(xmlNodePtr ptr)
                goto end;
          }
       }
-      else if (wram)   { addr = strtoul((const char*)wram, NULL, 16);   ram_type = SSNES_STATE_WRAM; }
-      else if (apuram) { addr = strtoul((const char*)apuram, NULL, 16); ram_type = SSNES_STATE_APURAM; }
-      else if (vram)   { addr = strtoul((const char*)vram, NULL, 16);   ram_type = SSNES_STATE_VRAM; }
-      else if (oam)    { addr = strtoul((const char*)oam, NULL, 16);    ram_type = SSNES_STATE_OAM; }
-      else if (cgram)  { addr = strtoul((const char*)cgram, NULL, 16);  ram_type = SSNES_STATE_CGRAM; }
+      else if (wram)
+      {
+         addr = strtoul((const char*)wram, NULL, 16);
+         ram_type = SSNES_STATE_WRAM;
+      }
       else
       {
          SSNES_ERR("No RAM address specificed for import value.\n");
@@ -556,26 +551,14 @@ static bool get_import_value(xmlNodePtr ptr)
    switch (ram_type)
    {
       case SSNES_STATE_WRAM:
-         memtype = SNES_MEMORY_WRAM;
-         break;
-      case SSNES_STATE_APURAM:
-         memtype = SNES_MEMORY_APURAM;
-         break;
-      case SSNES_STATE_VRAM:
-         memtype = SNES_MEMORY_VRAM;
-         break;
-      case SSNES_STATE_OAM:
-         memtype = SNES_MEMORY_OAM;
-         break;
-      case SSNES_STATE_CGRAM:
-         memtype = SNES_MEMORY_CGRAM;
+         memtype = RETRO_MEMORY_SYSTEM_RAM;
          break;
 
       default:
          memtype = -1u;
    }
 
-   if ((memtype != -1u) && (addr >= psnes_get_memory_size(memtype)))
+   if ((memtype != -1u) && (addr >= pretro_get_memory_size(memtype)))
    {
       SSNES_ERR("Address out of bounds.\n");
       ret = false;
@@ -600,10 +583,6 @@ end:
    if (semantic) xmlFree(semantic);
    if (wram) xmlFree(wram);
    if (input) xmlFree(input);
-   if (apuram) xmlFree(apuram);
-   if (vram) xmlFree(vram);
-   if (oam) xmlFree(oam);
-   if (cgram) xmlFree(cgram);
    if (bitmask) xmlFree(bitmask);
    if (bitequal) xmlFree(bitequal);
    return ret;
@@ -981,12 +960,8 @@ bool gl_glsl_init(const char *path)
 
    if (gl_tracker_info_cnt > 0)
    {
-      struct snes_tracker_info info = {0};
-      info.wram = psnes_get_memory_data(SNES_MEMORY_WRAM);
-      info.vram = psnes_get_memory_data(SNES_MEMORY_VRAM);
-      info.cgram = psnes_get_memory_data(SNES_MEMORY_CGRAM);
-      info.apuram = psnes_get_memory_data(SNES_MEMORY_APURAM);
-      info.oam = psnes_get_memory_data(SNES_MEMORY_OAM);
+      struct state_tracker_info info = {0};
+      info.wram = pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
       info.info = gl_tracker_info;
       info.info_elem = gl_tracker_info_cnt;
 
@@ -1002,9 +977,9 @@ bool gl_glsl_init(const char *path)
       info.script_is_file = *gl_tracker_script;
 #endif
 
-      gl_snes_tracker = snes_tracker_init(&info);
-      if (!gl_snes_tracker)
-         SSNES_WARN("Failed to init SNES tracker.\n");
+      gl_state_tracker = state_tracker_init(&info);
+      if (!gl_state_tracker)
+         SSNES_WARN("Failed to init state tracker.\n");
    }
    
    glsl_enable = true;
@@ -1057,10 +1032,10 @@ void gl_glsl_deinit(void)
       xmlFree(gl_script_program);
       gl_script_program = NULL;
    }
-   if (gl_snes_tracker)
+   if (gl_state_tracker)
    {
-      snes_tracker_free(gl_snes_tracker);
-      gl_snes_tracker = NULL;
+      state_tracker_free(gl_state_tracker);
+      gl_state_tracker = NULL;
    }
 
    gl_glsl_reset_attrib();
@@ -1235,13 +1210,13 @@ void gl_glsl_set_params(unsigned width, unsigned height,
 
    pglActiveTexture(GL_TEXTURE0);
 
-   if (gl_snes_tracker)
+   if (gl_state_tracker)
    {
-      static struct snes_tracker_uniform info[MAX_VARIABLES];
+      static struct state_tracker_uniform info[MAX_VARIABLES];
       static unsigned cnt = 0;
 
       if (active_index == 1)
-         cnt = snes_get_uniform(gl_snes_tracker, info, MAX_VARIABLES, frame_count);
+         cnt = state_get_uniform(gl_state_tracker, info, MAX_VARIABLES, frame_count);
 
       for (unsigned i = 0; i < cnt; i++)
       {

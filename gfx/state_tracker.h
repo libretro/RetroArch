@@ -15,8 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_SNES_STATE_H
-#define __SSNES_SNES_STATE_H
+#ifndef __SSNES_SNES_TRACKER_H
+#define __SSNES_SNES_TRACKER_H
 
 #include <stdint.h>
 #include "../boolean.h"
@@ -25,7 +25,7 @@
 #include "config.h"
 #endif
 
-enum snes_tracker_type
+enum state_tracker_type
 {
 #ifdef HAVE_PYTHON
    SSNES_STATE_PYTHON,
@@ -37,37 +37,29 @@ enum snes_tracker_type
    SSNES_STATE_TRANSITION_PREV
 };
 
-enum snes_ram_type
+enum state_ram_type
 {
    SSNES_STATE_NONE,
    SSNES_STATE_WRAM,
-   SSNES_STATE_APURAM,
-   SSNES_STATE_OAM,
-   SSNES_STATE_CGRAM,
-   SSNES_STATE_VRAM,
    SSNES_STATE_INPUT_SLOT1,
    SSNES_STATE_INPUT_SLOT2
 };
 
-struct snes_tracker_uniform_info
+struct state_tracker_uniform_info
 {
    char id[64];
    uint32_t addr;
-   enum snes_tracker_type type;
-   enum snes_ram_type ram_type;
+   enum state_tracker_type type;
+   enum state_ram_type ram_type;
    uint16_t mask;
    uint16_t equal;
 };
 
-struct snes_tracker_info
+struct state_tracker_info
 {
    const uint8_t *wram;
-   const uint8_t *vram;
-   const uint8_t *cgram;
-   const uint8_t *oam;
-   const uint8_t *apuram;
 
-   const struct snes_tracker_uniform_info *info;
+   const struct state_tracker_uniform_info *info;
    unsigned info_elem;
 
 #ifdef HAVE_PYTHON
@@ -77,17 +69,17 @@ struct snes_tracker_info
 #endif
 };
 
-struct snes_tracker_uniform
+struct state_tracker_uniform
 {
    const char *id;
    float value;
 };
 
-typedef struct snes_tracker snes_tracker_t;
+typedef struct state_tracker state_tracker_t;
 
-snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info);
-void snes_tracker_free(snes_tracker_t *tracker);
+state_tracker_t* state_tracker_init(const struct state_tracker_info *info);
+void state_tracker_free(state_tracker_t *tracker);
 
-unsigned snes_get_uniform(snes_tracker_t *tracker, struct snes_tracker_uniform *uniforms, unsigned elem, unsigned frame_count);
+unsigned state_get_uniform(state_tracker_t *tracker, struct state_tracker_uniform *uniforms, unsigned elem, unsigned frame_count);
 
 #endif

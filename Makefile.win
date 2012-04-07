@@ -84,7 +84,7 @@ ifeq ($(HAVE_RSOUND), 1)
 endif
 
 ifeq ($(HAVE_XML), 1)
-   OBJ += gfx/shader_glsl.o gfx/image.o gfx/snes_state.o cheats.o
+   OBJ += gfx/shader_glsl.o gfx/image.o gfx/state_tracker.o cheats.o
    DEFINES += -Ilibxml2 -DHAVE_XML
    LIBS += -lxml2 -liconv
 endif

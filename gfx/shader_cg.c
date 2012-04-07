@@ -27,7 +27,7 @@
 #include "../compat/posix_string.h"
 
 #ifdef HAVE_CONFIGFILE
-#include "snes_state.h"
+#include "state_tracker.h"
 #endif
 
 //#define SSNES_CG_DEBUG
@@ -141,7 +141,7 @@ static CGparameter cg_attribs[PREV_TEXTURES + 1 + SSNES_CG_MAX_SHADERS];
 static unsigned cg_attrib_index;
 
 #ifdef HAVE_CONFIGFILE
-static snes_tracker_t *snes_tracker = NULL;
+static state_tracker_t *state_tracker = NULL;
 #endif
 
 static void gl_cg_reset_attrib(void)
@@ -271,13 +271,13 @@ void gl_cg_set_params(unsigned width, unsigned height,
 
 #ifdef HAVE_CONFIGFILE
    // Set state parameters
-   if (snes_tracker)
+   if (state_tracker)
    {
-      static struct snes_tracker_uniform info[MAX_VARIABLES];
+      static struct state_tracker_uniform info[MAX_VARIABLES];
       static unsigned cnt = 0;
 
       if (active_index == 1)
-         cnt = snes_get_uniform(snes_tracker, info, MAX_VARIABLES, frame_count);
+         cnt = state_get_uniform(state_tracker, info, MAX_VARIABLES, frame_count);
 
       for (unsigned i = 0; i < cnt; i++)
       {
@@ -328,10 +328,10 @@ static void gl_cg_deinit_state(void)
    lut_textures_num = 0;
 
 #ifdef HAVE_CONFIGFILE
-   if (snes_tracker)
+   if (state_tracker)
    {
-      snes_tracker_free(snes_tracker);
-      snes_tracker = NULL;
+      state_tracker_free(state_tracker);
+      state_tracker = NULL;
    }
 #endif
 }
@@ -565,9 +565,9 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
    if (!config_get_string(conf, "imports", &imports))
       return true;
 
-   struct snes_tracker_uniform_info info[MAX_VARIABLES];
+   struct state_tracker_uniform_info info[MAX_VARIABLES];
    unsigned info_cnt = 0;
-   struct snes_tracker_info tracker_info = {0};
+   struct state_tracker_info tracker_info = {0};
 
 #ifdef HAVE_PYTHON
    char script_path[128];
@@ -581,20 +581,12 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
       char semantic_buf[64];
       char wram_buf[64];
       char input_slot_buf[64];
-      char apuram_buf[64];
-      char oam_buf[64];
-      char cgram_buf[64];
-      char vram_buf[64];
       char mask_buf[64];
       char equal_buf[64];
 
       print_buf(semantic_buf, "%s_semantic", id);
       print_buf(wram_buf, "%s_wram", id);
       print_buf(input_slot_buf, "%s_input_slot", id);
-      print_buf(apuram_buf, "%s_apuram", id);
-      print_buf(oam_buf, "%s_oam", id);
-      print_buf(cgram_buf, "%s_cgram", id);
-      print_buf(vram_buf, "%s_vram", id);
       print_buf(mask_buf, "%s_mask", id);
       print_buf(equal_buf, "%s_equal", id);
 
@@ -609,8 +601,8 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
          goto end;
       }
 
-      enum snes_tracker_type tracker_type;
-      enum snes_ram_type ram_type = SSNES_STATE_NONE;
+      enum state_tracker_type tracker_type;
+      enum state_ram_type ram_type = SSNES_STATE_NONE;
 
       if (strcmp(semantic, "capture") == 0)
          tracker_type = SSNES_STATE_CAPTURE;
@@ -659,14 +651,6 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
          }
          else if (config_get_hex(conf, wram_buf, &addr))
             ram_type = SSNES_STATE_WRAM;
-         else if (config_get_hex(conf, apuram_buf, &addr))
-            ram_type = SSNES_STATE_APURAM;
-         else if (config_get_hex(conf, oam_buf, &addr))
-            ram_type = SSNES_STATE_OAM;
-         else if (config_get_hex(conf, cgram_buf, &addr))
-            ram_type = SSNES_STATE_CGRAM;
-         else if (config_get_hex(conf, vram_buf, &addr))
-            ram_type = SSNES_STATE_VRAM;
          else
          {
             SSNES_ERR("No address assigned to semantic.\n");
@@ -679,26 +663,14 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
       switch (ram_type)
       {
          case SSNES_STATE_WRAM:
-            memtype = SNES_MEMORY_WRAM;
-            break;
-         case SSNES_STATE_APURAM:
-            memtype = SNES_MEMORY_APURAM;
-            break;
-         case SSNES_STATE_VRAM:
-            memtype = SNES_MEMORY_VRAM;
-            break;
-         case SSNES_STATE_OAM:
-            memtype = SNES_MEMORY_OAM;
-            break;
-         case SSNES_STATE_CGRAM:
-            memtype = SNES_MEMORY_CGRAM;
+            memtype = RETRO_MEMORY_SYSTEM_RAM;
             break;
 
          default:
             memtype = -1u;
       }
 
-      if ((memtype != -1u) && (addr >= psnes_get_memory_size(memtype)))
+      if ((memtype != -1u) && (addr >= pretro_get_memory_size(memtype)))
       {
          SSNES_ERR("Address out of bounds.\n");
          ret = false;
@@ -725,11 +697,7 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
       id = strtok(NULL, ";");
    }
 
-   tracker_info.wram = psnes_get_memory_data(SNES_MEMORY_WRAM);
-   tracker_info.vram = psnes_get_memory_data(SNES_MEMORY_VRAM);
-   tracker_info.cgram = psnes_get_memory_data(SNES_MEMORY_CGRAM);
-   tracker_info.oam = psnes_get_memory_data(SNES_MEMORY_OAM);
-   tracker_info.apuram = psnes_get_memory_data(SNES_MEMORY_APURAM);
+   tracker_info.wram = pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
    tracker_info.info = info;
    tracker_info.info_elem = info_cnt;
 
@@ -747,9 +715,9 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
    tracker_info.script_is_file = true;
 #endif
 
-   snes_tracker = snes_tracker_init(&tracker_info);
-   if (!snes_tracker)
-      SSNES_WARN("Failed to init SNES tracker.\n");
+   state_tracker = state_tracker_init(&tracker_info);
+   if (!state_tracker)
+      SSNES_WARN("Failed to init state tracker.\n");
 
 #ifdef HAVE_PYTHON
    if (script)
@@ -834,8 +802,10 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
    scale->type_y = SSNES_SCALE_INPUT;
    scale->scale_x = 1.0;
    scale->scale_y = 1.0;
-   scale->abs_x = g_extern.system.geom.base_width;
-   scale->abs_y = g_extern.system.geom.base_height;
+
+   const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+   scale->abs_x = geom->base_width;
+   scale->abs_y = geom->base_height;
 
    if (strcmp(scale_type_x, "source") == 0)
       scale->type_x = SSNES_SCALE_INPUT;

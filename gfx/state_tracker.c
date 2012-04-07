@@ -15,17 +15,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "snes_state.h"
+#include "state_tracker.h"
 #include <stdlib.h>
 #include "../compat/strl.h"
 #include "../general.h"
-#include "../libsnes.hpp"
+#include "../libretro.h"
 
 #ifdef HAVE_PYTHON
 #include "py_state/py_state.h"
 #endif
 
-struct snes_tracker_internal
+struct state_tracker_internal
 {
    char id[64];
 
@@ -41,7 +41,7 @@ struct snes_tracker_internal
 
    uint16_t equal;
 
-   enum snes_tracker_type type;
+   enum state_tracker_type type;
 
    uint32_t prev[2];
    int frame_count;
@@ -50,9 +50,9 @@ struct snes_tracker_internal
    int transition_count;
 };
 
-struct snes_tracker
+struct state_tracker
 {
-   struct snes_tracker_internal *info;
+   struct state_tracker_internal *info;
    unsigned info_elem;
 
    uint16_t input_state[2];
@@ -62,9 +62,9 @@ struct snes_tracker
 #endif
 };
 
-snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
+state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
 {
-   snes_tracker_t *tracker = (snes_tracker_t*)calloc(1, sizeof(*tracker));
+   state_tracker_t *tracker = (state_tracker_t*)calloc(1, sizeof(*tracker));
    if (!tracker)
       return NULL;
 
@@ -81,7 +81,7 @@ snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
    }
 #endif
 
-   tracker->info = (struct snes_tracker_internal*)calloc(info->info_elem, sizeof(struct snes_tracker_internal));
+   tracker->info = (struct state_tracker_internal*)calloc(info->info_elem, sizeof(struct state_tracker_internal));
    tracker->info_elem = info->info_elem;
 
    for (unsigned i = 0; i < info->info_elem; i++)
@@ -105,18 +105,6 @@ snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
          case SSNES_STATE_WRAM:
             tracker->info[i].ptr = info->wram ? info->wram : &empty;
             break;
-         case SSNES_STATE_APURAM:
-            tracker->info[i].ptr = info->apuram ? info->apuram : &empty;
-            break;
-         case SSNES_STATE_OAM:
-            tracker->info[i].ptr = info->oam ? info->oam : &empty;
-            break;
-         case SSNES_STATE_CGRAM:
-            tracker->info[i].ptr = info->cgram ? info->cgram : &empty;
-            break;
-         case SSNES_STATE_VRAM:
-            tracker->info[i].ptr = info->vram ? info->vram : &empty;
-            break;
          case SSNES_STATE_INPUT_SLOT1:
             tracker->info[i].input_ptr = &tracker->input_state[0];
             tracker->info[i].is_input = true;
@@ -134,7 +122,7 @@ snes_tracker_t* snes_tracker_init(const struct snes_tracker_info *info)
    return tracker;
 }
 
-void snes_tracker_free(snes_tracker_t *tracker)
+void state_tracker_free(state_tracker_t *tracker)
 {
    free(tracker->info);
 #ifdef HAVE_PYTHON
@@ -143,7 +131,7 @@ void snes_tracker_free(snes_tracker_t *tracker)
    free(tracker);
 }
 
-static inline uint16_t fetch(const struct snes_tracker_internal *info)
+static inline uint16_t fetch(const struct state_tracker_internal *info)
 {
    uint16_t val = 0;
    if (info->is_input)
@@ -160,8 +148,8 @@ static inline uint16_t fetch(const struct snes_tracker_internal *info)
 }
 
 static void update_element(
-      struct snes_tracker_uniform *uniform,
-      struct snes_tracker_internal *info,
+      struct state_tracker_uniform *uniform,
+      struct state_tracker_internal *info,
       unsigned frame_count)
 {
    uniform->id = info->id;
@@ -221,24 +209,24 @@ static void update_element(
 }
 
 // Updates 16-bit input in same format as SNES itself.
-static void update_input(snes_tracker_t *tracker)
+static void update_input(state_tracker_t *tracker)
 {
    if (driver.input == NULL)
       return;
 
    static const unsigned buttons[] = {
-      SNES_DEVICE_ID_JOYPAD_R,
-      SNES_DEVICE_ID_JOYPAD_L,
-      SNES_DEVICE_ID_JOYPAD_X,
-      SNES_DEVICE_ID_JOYPAD_A,
-      SNES_DEVICE_ID_JOYPAD_RIGHT,
-      SNES_DEVICE_ID_JOYPAD_LEFT,
-      SNES_DEVICE_ID_JOYPAD_DOWN,
-      SNES_DEVICE_ID_JOYPAD_UP,
-      SNES_DEVICE_ID_JOYPAD_START,
-      SNES_DEVICE_ID_JOYPAD_SELECT,
-      SNES_DEVICE_ID_JOYPAD_Y,
-      SNES_DEVICE_ID_JOYPAD_B,
+      RETRO_DEVICE_ID_JOYPAD_R,
+      RETRO_DEVICE_ID_JOYPAD_L,
+      RETRO_DEVICE_ID_JOYPAD_X,
+      RETRO_DEVICE_ID_JOYPAD_A,
+      RETRO_DEVICE_ID_JOYPAD_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_LEFT,
+      RETRO_DEVICE_ID_JOYPAD_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_UP,
+      RETRO_DEVICE_ID_JOYPAD_START,
+      RETRO_DEVICE_ID_JOYPAD_SELECT,
+      RETRO_DEVICE_ID_JOYPAD_Y,
+      RETRO_DEVICE_ID_JOYPAD_B,
    };
 
    // Only bind for up to two players for now.
@@ -250,15 +238,15 @@ static void update_input(snes_tracker_t *tracker)
    uint16_t state[2] = {0};
    for (unsigned i = 4; i < 16; i++)
    {
-      state[0] |= (input_input_state_func(binds, SNES_PORT_1, SNES_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
-      state[1] |= (input_input_state_func(binds, SNES_PORT_2, SNES_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
+      state[0] |= (input_input_state_func(binds, 0, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
+      state[1] |= (input_input_state_func(binds, 1, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
    }
 
    for (unsigned i = 0; i < 2; i++)
       tracker->input_state[i] = state[i];
 }
 
-unsigned snes_get_uniform(snes_tracker_t *tracker, struct snes_tracker_uniform *uniforms, unsigned elem, unsigned frame_count)
+unsigned state_get_uniform(state_tracker_t *tracker, struct state_tracker_uniform *uniforms, unsigned elem, unsigned frame_count)
 {
    unsigned elems = tracker->info_elem < elem ? tracker->info_elem : elem;
 

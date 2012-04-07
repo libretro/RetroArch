@@ -160,7 +160,7 @@ struct settings
       bool netplay_client_swap_input;
    } input;
 
-   char libsnes[PATH_MAX];
+   char libretro[PATH_MAX];
    char cheat_database[PATH_MAX];
    char cheat_settings_path[PATH_MAX];
 

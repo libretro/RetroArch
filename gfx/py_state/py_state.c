@@ -22,45 +22,38 @@
 #include <string.h>
 
 #include "../../dynamic.h"
-#include "../../libsnes.hpp"
+#include "../../libretro.h"
 #include "py_state.h"
 #include "../../general.h"
 #include "../../compat/strl.h"
 #include "../../compat/posix_string.h"
 #include "../../file.h"
 
-#define PY_READ_FUNC_DECL(RAMTYPE) py_read_##RAMTYPE
-#define PY_READ_FUNC(RAMTYPE) \
-   static PyObject* PY_READ_FUNC_DECL(RAMTYPE) (PyObject *self, PyObject *args) \
-   { \
-      (void)self; \
-\
-      const uint8_t *data = psnes_get_memory_data(SNES_MEMORY_##RAMTYPE); \
-      if (!data) \
-      { \
-         Py_INCREF(Py_None); \
-         return Py_None; \
-      } \
-      unsigned max = psnes_get_memory_size(SNES_MEMORY_##RAMTYPE); \
-\
-      unsigned addr; \
-      if (!PyArg_ParseTuple(args, "I", &addr)) \
-         return NULL; \
-\
-      if (addr >= max || addr < 0) \
-      { \
-         Py_INCREF(Py_None); \
-         return Py_None; \
-      } \
-\
-      return PyLong_FromLong((long)data[addr]); \
+static PyObject* py_read_wram(PyObject *self, PyObject *args)
+{
+   (void)self;
+
+   const uint8_t *data = (const uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+   if (!data)
+   {
+      Py_INCREF(Py_None);
+      return Py_None;
    }
 
-PY_READ_FUNC(WRAM)
-PY_READ_FUNC(VRAM)
-PY_READ_FUNC(APURAM)
-PY_READ_FUNC(CGRAM)
-PY_READ_FUNC(OAM)
+   size_t max = pretro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
+
+   unsigned addr;
+   if (!PyArg_ParseTuple(args, "I", &addr))
+      return NULL;
+
+   if (addr >= max || addr < 0)
+   {
+      Py_INCREF(Py_None);
+      return Py_None;
+   }
+
+   return PyLong_FromLong(data[addr]);
+}
 
 static PyObject *py_read_input(PyObject *self, PyObject *args)
 {
@@ -86,7 +79,7 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    };
 
    int16_t res = input_input_state_func(binds, player > 1, 
-         player > 2 ? SNES_DEVICE_MULTITAP : SNES_DEVICE_JOYPAD,
+         player > 2 ? RETRO_DEVICE_JOYPAD_MULTITAP : RETRO_DEVICE_JOYPAD,
          player > 2 ? player - 2 : 0,
          key);
 
@@ -112,17 +105,13 @@ static PyObject *py_read_input_meta(PyObject *self, PyObject *args)
 }
 
 static PyMethodDef SNESMethods[] = {
-   { "read_wram",    PY_READ_FUNC_DECL(WRAM),   METH_VARARGS, "Read WRAM from SNES." },
-   { "read_vram",    PY_READ_FUNC_DECL(VRAM),   METH_VARARGS, "Read VRAM from SNES." },
-   { "read_apuram",  PY_READ_FUNC_DECL(APURAM), METH_VARARGS, "Read APURAM from SNES." },
-   { "read_cgram",   PY_READ_FUNC_DECL(CGRAM),  METH_VARARGS, "Read CGRAM from SNES." },
-   { "read_oam",     PY_READ_FUNC_DECL(OAM),    METH_VARARGS, "Read OAM from SNES." },
-   { "input",        py_read_input,             METH_VARARGS, "Read input state from SNES." },
+   { "read_wram",    py_read_wram,              METH_VARARGS, "Read WRAM from system." },
+   { "input",        py_read_input,             METH_VARARGS, "Read input state from system." },
    { "input_meta",   py_read_input_meta,        METH_VARARGS, "Read SSNES specific input." },
    { NULL, NULL, 0, NULL }
 };
 
-#define DECL_ATTR_SNES(attr) PyObject_SetAttrString(mod, #attr, PyLong_FromLong(SNES_DEVICE_ID_JOYPAD_##attr))
+#define DECL_ATTR_SNES(attr) PyObject_SetAttrString(mod, #attr, PyLong_FromLong(RETRO_DEVICE_ID_JOYPAD_##attr))
 #define DECL_ATTR_SSNES(attr) PyObject_SetAttrString(mod, #attr, PyLong_FromLong(SSNES_##attr))
 static void py_set_attrs(PyObject *mod)
 {

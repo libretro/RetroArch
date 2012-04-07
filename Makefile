@@ -136,9 +136,9 @@ endif
 endif
 
 ifeq ($(HAVE_XML), 1)
-   OBJ += gfx/snes_state.o gfx/image.o 
+   OBJ += gfx/state_tracker.o gfx/image.o 
 else ifeq ($(HAVE_CG), 1)
-   OBJ += gfx/snes_state.o gfx/image.o 
+   OBJ += gfx/state_tracker.o gfx/image.o 
 endif
 
 ifeq ($(HAVE_DYLIB), 1)

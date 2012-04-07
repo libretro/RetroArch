@@ -142,11 +142,11 @@ static bool xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
 static void cheat_manager_apply_cheats(cheat_manager_t *handle)
 {
    unsigned index = 0;
-   psnes_cheat_reset();
+   pretro_cheat_reset();
    for (unsigned i = 0; i < handle->size; i++)
    {
       if (handle->cheats[i].state)
-         psnes_cheat_set(index++, true, handle->cheats[i].code);
+         pretro_cheat_set(index++, true, handle->cheats[i].code);
    }
 }
 
@@ -238,7 +238,7 @@ cheat_manager_t* cheat_manager_new(const char *path)
 {
    LIBXML_TEST_VERSION;
 
-   psnes_cheat_reset();
+   pretro_cheat_reset();
 
    xmlParserCtxtPtr ctx = NULL;
    xmlDocPtr doc = NULL;

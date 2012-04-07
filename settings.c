@@ -444,8 +444,8 @@ bool config_load_file(const char *path)
    CONFIG_GET_STRING(audio.dsp_plugin, "audio_dsp_plugin");
    CONFIG_GET_STRING(input.driver, "input_driver");
 
-   if (!*g_settings.libsnes)
-      CONFIG_GET_STRING(libsnes, "libsnes_path");
+   if (!*g_settings.libretro)
+      CONFIG_GET_STRING(libretro, "libretro_path");
 
    CONFIG_GET_STRING(screenshot_directory, "screenshot_directory");
    if (*g_settings.screenshot_directory && !path_is_directory(g_settings.screenshot_directory))

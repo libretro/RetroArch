@@ -65,10 +65,10 @@ static int16_t input_ext_input_state(void *data, const struct snes_keybind **sne
    input_ext_t *ext = (input_ext_t*)data;
 
    unsigned player = 0;
-   if (device == SNES_DEVICE_MULTITAP)
-      player = (port == SNES_PORT_1) ? 1 : index + 2;
+   if (device == RETRO_DEVICE_JOYPAD_MULTITAP)
+      player = (port == 1) ? 1 : index + 2;
    else
-      player = (port == SNES_PORT_1) ? 1 : 2;
+      player = port + 1;
 
    if (id < SSNES_BIND_LIST_END)
    {
