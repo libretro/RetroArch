@@ -278,6 +278,7 @@ struct global
 #endif
    
    char basename[PATH_MAX];
+   char fullpath[PATH_MAX];
    char savefile_name_srm[PATH_MAX];
    char savefile_name_rtc[PATH_MAX]; // Make sure that fill_pathname has space.
    char savefile_name_psrm[PATH_MAX];
@@ -298,11 +299,8 @@ struct global
 
    struct
    {
-      struct retro_game_geometry geom;
-      struct retro_system_timing timing;
       struct retro_system_info info;
-
-      char fullpath[PATH_MAX];
+      struct retro_system_av_info av_info;
 
       char *environment;
       char *environment_split;

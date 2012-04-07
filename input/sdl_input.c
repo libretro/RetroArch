@@ -22,7 +22,7 @@
 #include "../general.h"
 #include <stdint.h>
 #include <stdlib.h>
-#include "../libsnes.hpp"
+#include "../libretro.h"
 #include "ssnes_sdl_input.h"
 #include "keysym.h"
 
@@ -293,60 +293,36 @@ static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
 {
    switch (id)
    {
-      case SNES_DEVICE_ID_MOUSE_LEFT:
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
          return sdl->mouse_l;
-      case SNES_DEVICE_ID_MOUSE_RIGHT:
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
          return sdl->mouse_r;
-      case SNES_DEVICE_ID_MOUSE_X:
+      case RETRO_DEVICE_ID_MOUSE_X:
          return sdl->mouse_x;
-      case SNES_DEVICE_ID_MOUSE_Y:
+      case RETRO_DEVICE_ID_MOUSE_Y:
          return sdl->mouse_y;
       default:
          return 0;
    }
 }
 
-// TODO: Missing some controllers, but hey :)
-static int16_t sdl_scope_device_state(sdl_input_t *sdl, unsigned id)
+static int16_t sdl_lightgun_device_state(sdl_input_t *sdl, unsigned id)
 {
    switch (id)
    {
-      case SNES_DEVICE_ID_SUPER_SCOPE_X:
+      case RETRO_DEVICE_ID_LIGHTGUN_X:
          return sdl->mouse_x;
-      case SNES_DEVICE_ID_SUPER_SCOPE_Y:
+      case RETRO_DEVICE_ID_LIGHTGUN_Y:
          return sdl->mouse_y;
-      case SNES_DEVICE_ID_SUPER_SCOPE_TRIGGER:
+      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
          return sdl->mouse_l;
-      case SNES_DEVICE_ID_SUPER_SCOPE_CURSOR:
+      case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
          return sdl->mouse_m;
-      case SNES_DEVICE_ID_SUPER_SCOPE_TURBO:
+      case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
          return sdl->mouse_r;
       default:
          return 0;
    }
-}
-
-// TODO: Support two players.
-static int16_t sdl_justifier_device_state(sdl_input_t *sdl, unsigned index, unsigned id)
-{
-   if (index == 0)
-   {
-      switch (id)
-      {
-         case SNES_DEVICE_ID_JUSTIFIER_X:
-            return sdl->mouse_x;
-         case SNES_DEVICE_ID_JUSTIFIER_Y:
-            return sdl->mouse_y;
-         case SNES_DEVICE_ID_JUSTIFIER_TRIGGER:
-            return sdl->mouse_l;
-         case SNES_DEVICE_ID_JUSTIFIER_START:
-            return sdl->mouse_r;
-         default:
-            return 0;
-      }
-   }
-   else
-      return 0;
 }
 
 static int16_t sdl_input_state(void *data_, const struct snes_keybind **binds, bool port, unsigned device, unsigned index, unsigned id)
@@ -354,17 +330,14 @@ static int16_t sdl_input_state(void *data_, const struct snes_keybind **binds, b
    sdl_input_t *data = (sdl_input_t*)data_;
    switch (device)
    {
-      case SNES_DEVICE_JOYPAD:
-         return sdl_joypad_device_state(data, binds, (port == SNES_PORT_1) ? 0 : 1, id);
-      case SNES_DEVICE_MULTITAP:
-         return sdl_joypad_device_state(data, binds, (port == SNES_PORT_2) ? 1 + index : 0, id);
-      case SNES_DEVICE_MOUSE:
+      case RETRO_DEVICE_JOYPAD:
+         return sdl_joypad_device_state(data, binds, port, id);
+      case RETRO_DEVICE_JOYPAD_MULTITAP:
+         return sdl_joypad_device_state(data, binds, (port == 1) ? 1 + index : 0, id);
+      case RETRO_DEVICE_MOUSE:
          return sdl_mouse_device_state(data, id);
-      case SNES_DEVICE_SUPER_SCOPE:
-         return sdl_scope_device_state(data, id);
-      case SNES_DEVICE_JUSTIFIER:
-      case SNES_DEVICE_JUSTIFIERS:
-         return sdl_justifier_device_state(data, index, id);
+      case RETRO_DEVICE_LIGHTGUN:
+         return sdl_lightgun_device_state(data, id);
 
       default:
          return 0;

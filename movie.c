@@ -82,8 +82,8 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
          return false;
       }
 
-      if (psnes_serialize_size() == state_size)
-         psnes_unserialize(handle->state, state_size);
+      if (pretro_serialize_size() == state_size)
+         pretro_unserialize(handle->state, state_size);
       else
          SSNES_WARN("Movie format seems to have a different serializer version. Will most likely fail.\n");
    }
@@ -109,7 +109,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
 
    header[CRC_INDEX] = swap_if_big32(g_extern.cart_crc);
 
-   uint32_t state_size = psnes_serialize_size();
+   uint32_t state_size = pretro_serialize_size();
 
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
    fwrite(header, 4, sizeof(uint32_t), handle->file);
@@ -123,7 +123,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
       if (!handle->state)
          return false;
 
-      psnes_serialize(handle->state, state_size);
+      pretro_serialize(handle->state, state_size);
       fwrite(handle->state, 1, state_size, handle->file);
    }
 
@@ -224,7 +224,7 @@ void bsv_movie_frame_rewind(bsv_movie_t *handle)
       if (!handle->playback)
       {
          fseek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
-         psnes_serialize(handle->state, handle->state_size);
+         pretro_serialize(handle->state, handle->state_size);
          fwrite(handle->state, 1, handle->state_size, handle->file);
       }
       else

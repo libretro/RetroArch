@@ -19,7 +19,7 @@
 #include "../driver.h"
 
 #include <stdint.h>
-#include "../libsnes.hpp"
+#include "../libretro.h"
 #include <stdio.h>
 #include <string.h>
 #include "../general.h"

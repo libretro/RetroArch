@@ -29,7 +29,7 @@
 #endif
 
 #include "boolean.h"
-#include "libsnes.hpp"
+#include "libretro.h"
 
 #ifdef NEED_DYNAMIC
 #ifdef _WIN32
@@ -41,7 +41,7 @@
 
 #ifdef HAVE_DYNAMIC
 #define SYM(x) do { \
-   function_t func = dylib_proc(lib, #x); \
+   function_t func = dylib_proc(lib_handle, #x); \
    memcpy(&p##x, &func, sizeof(func)); \
    if (p##x == NULL) { SSNES_ERR("Failed to load symbol: \"%s\"\n", #x); ssnes_fail(1, "init_libsnes_sym()"); } \
 } while (0)
@@ -78,8 +78,8 @@ bool (*pretro_unserialize)(const void*, size_t);
 void (*pretro_cheat_reset)(void);
 void (*pretro_cheat_set)(unsigned, bool, const char*);
 
-bool (*pretro_load_game)(const retro_game_info*);
-bool (*pretro_load_game_special)(unsigned, const retro_game_info*, size_t);
+bool (*pretro_load_game)(const struct retro_game_info*);
+bool (*pretro_load_game_special)(unsigned, const struct retro_game_info*, size_t);
 
 void (*pretro_unload_game)(void);
 
@@ -236,12 +236,12 @@ static bool environment_cb(unsigned cmd, void *data)
 {
    switch (cmd)
    {
-      case SNES_ENVIRONMENT_GET_OVERSCAN:
+      case RETRO_ENVIRONMENT_GET_OVERSCAN:
          *(bool*)data = !g_settings.video.crop_overscan;
          SSNES_LOG("Environ GET_OVERSCAN: %u\n", (unsigned)!g_settings.video.crop_overscan);
          break;
 
-      case SNES_ENVIRONMENT_GET_CAN_DUPE:
+      case RETRO_ENVIRONMENT_GET_CAN_DUPE:
 #ifdef HAVE_FFMPEG
          *(bool*)data = true;
          SSNES_LOG("Environ GET_CAN_DUPE: true\n");
@@ -251,9 +251,9 @@ static bool environment_cb(unsigned cmd, void *data)
 #endif
          break;
 
-      case SNES_ENVIRONMENT_GET_VARIABLE:
+      case RETRO_ENVIRONMENT_GET_VARIABLE:
       {
-         struct snes_variable *var = (struct snes_variable*)data;
+         struct retro_variable *var = (struct retro_variable*)data;
          if (var->key)
          {
             // Split string has '\0' delimiters so we have to find the position in original string,
@@ -278,11 +278,11 @@ static bool environment_cb(unsigned cmd, void *data)
          break;
       }
 
-      case SNES_ENVIRONMENT_SET_VARIABLES:
+      case RETRO_ENVIRONMENT_SET_VARIABLES:
       {
          SSNES_LOG("Environ SET_VARIABLES:\n");
          SSNES_LOG("=======================\n");
-         const struct snes_variable *vars = (const struct snes_variable*)data;
+         const struct retro_variable *vars = (const struct retro_variable*)data;
          while (vars->key)
          {
             SSNES_LOG("\t%s :: %s\n",
@@ -295,16 +295,16 @@ static bool environment_cb(unsigned cmd, void *data)
          break;
       }
 
-      case SNES_ENVIRONMENT_SET_MESSAGE:
+      case RETRO_ENVIRONMENT_SET_MESSAGE:
       {
-         const struct snes_message *msg = (const struct snes_message*)data;
+         const struct retro_message *msg = (const struct retro_message*)data;
          SSNES_LOG("Environ SET_MESSAGE: %s\n", msg->msg);
          if (g_extern.msg_queue)
             msg_queue_push(g_extern.msg_queue, msg->msg, 1, msg->frames);
          break;
       }
 
-      case SNES_ENVIRONMENT_SET_ROTATION:
+      case RETRO_ENVIRONMENT_SET_ROTATION:
       {
          unsigned rotation = *(const unsigned*)data;
          SSNES_LOG("Environ SET_ROTATION: %u\n", rotation);
@@ -330,7 +330,6 @@ static bool environment_cb(unsigned cmd, void *data)
 
    return true;
 }
-#endif
 
 static void set_environment(void)
 {

@@ -467,8 +467,9 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    attributes.border_pixel = 0;
    attributes.event_mask = StructureNotifyMask | DestroyNotify | ClientMessage;
 
-   width = video->fullscreen ? ((video->width == 0) ? g_extern.system.geom.base_width : video->width) : video->width;
-   height = video->fullscreen ? ((video->height == 0) ? g_extern.system.geom.base_height : video->height) : video->height;
+   const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+   width = video->fullscreen ? ((video->width == 0) ? geom->base_width : video->width) : video->width;
+   height = video->fullscreen ? ((video->height == 0) ? geom->base_height : video->height) : video->height;
    xv->window = XCreateWindow(xv->display, DefaultRootWindow(xv->display),
          0, 0, width, height,
          0, xv->depth, InputOutput, visualinfo->visual,
@@ -492,8 +493,8 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    atom = XInternAtom(xv->display, "XV_AUTOPAINT_COLORKEY", true);
    if (atom != None) XvSetPortAttribute(xv->display, xv->port, atom, 1);
 
-   xv->width = g_extern.system.geom.max_width;
-   xv->height = g_extern.system.geom.max_height;
+   xv->width = geom->max_width;
+   xv->height = geom->max_height;
 
    xv->image = XvShmCreateImage(xv->display, xv->port, xv->fourcc, NULL, xv->width, xv->height, &xv->shminfo);
    if (!xv->image) 

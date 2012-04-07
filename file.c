@@ -19,7 +19,7 @@
 #include "general.h"
 #include <stdlib.h>
 #include "boolean.h"
-#include "libsnes.hpp"
+#include "libretro.h"
 #include <string.h>
 #include <time.h>
 #include "dynamic.h"
@@ -325,21 +325,21 @@ static const char *ramtype2str(int type)
 {
    switch (type)
    {
-      case SNES_MEMORY_CARTRIDGE_RAM:
-      case SNES_MEMORY_GAME_BOY_RAM:
-      case SNES_MEMORY_BSX_RAM:
+      case RETRO_MEMORY_SAVE_RAM:
+      case RETRO_MEMORY_SNES_GAME_BOY_RAM:
+      case RETRO_MEMORY_SNES_BSX_RAM:
          return ".srm";
 
-      case SNES_MEMORY_CARTRIDGE_RTC:
-      case SNES_MEMORY_GAME_BOY_RTC:
+      case RETRO_MEMORY_RTC:
+      case RETRO_MEMORY_SNES_GAME_BOY_RTC:
          return ".rtc";
 
-      case SNES_MEMORY_BSX_PRAM:
+      case RETRO_MEMORY_SNES_BSX_PRAM:
          return ".pram";
 
-      case SNES_MEMORY_SUFAMI_TURBO_A_RAM:
+      case RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM:
          return ".aram";
-      case SNES_MEMORY_SUFAMI_TURBO_B_RAM:
+      case RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM:
          return ".bram";
 
       default:
@@ -385,7 +385,7 @@ error:
 bool save_state(const char *path)
 {
    SSNES_LOG("Saving state: \"%s\".\n", path);
-   size_t size = psnes_serialize_size();
+   size_t size = pretro_serialize_size();
    if (size == 0)
       return false;
 
@@ -397,7 +397,7 @@ bool save_state(const char *path)
    }
 
    SSNES_LOG("State size: %d bytes.\n", (int)size);
-   bool ret = psnes_serialize((uint8_t*)data, size);
+   bool ret = pretro_serialize(data, size);
    if (ret)
       ret = dump_to_file(path, data, size);
 
@@ -421,11 +421,11 @@ bool load_state(const char *path)
    }
 
    bool ret = true;
-   SSNES_LOG("State size: %d bytes.\n", (int)size);
+   SSNES_LOG("State size: %u bytes.\n", (unsigned)size);
 
-   uint8_t *block_buf[2] = {NULL, NULL};
+   void *block_buf[2] = {NULL, NULL};
    int block_type[2] = {-1, -1};
-   unsigned block_size[2] = {0};
+   size_t block_size[2] = {0};
 
    if (g_settings.block_sram_overwrite)
    {
@@ -433,55 +433,55 @@ bool load_state(const char *path)
       switch (g_extern.game_type)
       {
          case SSNES_CART_NORMAL:
-            block_type[0] = SNES_MEMORY_CARTRIDGE_RAM;
-            block_type[1] = SNES_MEMORY_CARTRIDGE_RTC;
+            block_type[0] = RETRO_MEMORY_SAVE_RAM;
+            block_type[1] = RETRO_MEMORY_RTC;
             break;
 
          case SSNES_CART_BSX:
          case SSNES_CART_BSX_SLOTTED:
-            block_type[0] = SNES_MEMORY_BSX_RAM;
-            block_type[1] = SNES_MEMORY_BSX_PRAM;
+            block_type[0] = RETRO_MEMORY_SNES_BSX_RAM;
+            block_type[1] = RETRO_MEMORY_SNES_BSX_PRAM;
             break;
 
          case SSNES_CART_SUFAMI:
-            block_type[0] = SNES_MEMORY_SUFAMI_TURBO_A_RAM;
-            block_type[1] = SNES_MEMORY_SUFAMI_TURBO_B_RAM;
+            block_type[0] = RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM;
+            block_type[1] = RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM;
             break;
 
          case SSNES_CART_SGB:
-            block_type[0] = SNES_MEMORY_GAME_BOY_RAM;
-            block_type[1] = SNES_MEMORY_GAME_BOY_RTC;
+            block_type[0] = RETRO_MEMORY_SNES_GAME_BOY_RAM;
+            block_type[1] = RETRO_MEMORY_SNES_GAME_BOY_RTC;
             break;
       }
    }
 
    for (unsigned i = 0; i < 2; i++)
       if (block_type[i] != -1)
-         block_size[i] = psnes_get_memory_size(block_type[i]);
+         block_size[i] = pretro_get_memory_size(block_type[i]);
 
    for (unsigned i = 0; i < 2; i++)
       if (block_size[i])
-         block_buf[i] = (uint8_t*)malloc(block_size[i]);
+         block_buf[i] = malloc(block_size[i]);
 
    // Backup current SRAM which is overwritten by unserialize.
    for (unsigned i = 0; i < 2; i++)
    {
       if (block_buf[i])
       {
-         const uint8_t *ptr = psnes_get_memory_data(block_type[i]);
+         const void *ptr = pretro_get_memory_data(block_type[i]);
          if (ptr)
             memcpy(block_buf[i], ptr, block_size[i]);
       }
    }
 
-   ret = psnes_unserialize((uint8_t*)buf, size);
+   ret = pretro_unserialize(buf, size);
 
    // Flush back :D
    for (unsigned i = 0; i < 2 && ret; i++)
    {
       if (block_buf[i])
       {
-         uint8_t *ptr = psnes_get_memory_data(block_type[i]);
+         void *ptr = pretro_get_memory_data(block_type[i]);
          if (ptr)
             memcpy(ptr, block_buf[i], block_size[i]);
       }
@@ -497,8 +497,8 @@ bool load_state(const char *path)
 
 void load_ram_file(const char *path, int type)
 {
-   size_t size = psnes_get_memory_size(type);
-   uint8_t *data = psnes_get_memory_data(type);
+   size_t size = pretro_get_memory_size(type);
+   uint8_t *data = pretro_get_memory_data(type);
 
    if (size == 0 || !data)
       return;
@@ -513,14 +513,14 @@ void load_ram_file(const char *path, int type)
 
 void save_ram_file(const char *path, int type)
 {
-   size_t size = psnes_get_memory_size(type);
-   uint8_t *data = psnes_get_memory_data(type);
+   size_t size = pretro_get_memory_size(type);
+   uint8_t *data = pretro_get_memory_data(type);
 
    if (data && size > 0)
    {
       if (!dump_to_file(path, data, size))
       {
-         SSNES_ERR("Failed to save SNES RAM.\n");
+         SSNES_ERR("Failed to save SRAM.\n");
          SSNES_WARN("Attempting to recover ...\n");
          dump_to_file_desperate(data, size, type);
       }
@@ -539,190 +539,25 @@ static char *load_xml_map(const char *path)
    return xml_buf;
 }
 
-static bool load_sgb_rom(void)
-{
-   void *rom_buf = NULL;
-   ssize_t rom_len = 0;
+#define MAX_ROMS 4
 
-   FILE *extra_rom = NULL;
-   void *extra_rom_buf = NULL;
-   ssize_t extra_rom_len = 0;
-   char *xml_buf = 0;
+static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
+{
    bool ret = true;
 
-   if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
+   if (roms == 0)
+      return false;
+
+   if (roms > MAX_ROMS)
+      return false;
+
+   void *rom_buf[MAX_ROMS] = {NULL};
+   ssize_t rom_len[MAX_ROMS] = {0};
+   struct retro_game_info info[MAX_ROMS] = {{NULL}};
+
+   if (!g_extern.system.info.need_fullpath)
    {
-      SSNES_ERR("Could not read ROM file.\n");
-      ret = false;
-      goto end;
-   }
-
-   if ((extra_rom_len = read_file(g_extern.gb_rom_path, &extra_rom_buf)) == -1)
-   {
-      SSNES_ERR("Cannot read GameBoy rom.\n");
-      ret = false;
-      goto end;
-   }
-
-   xml_buf = load_xml_map(g_extern.xml_name);
-
-   if (!psnes_load_cartridge_super_game_boy(
-            xml_buf, (const uint8_t*)rom_buf, rom_len,
-            NULL, (const uint8_t*)extra_rom_buf, extra_rom_len))
-   {
-      SSNES_ERR("Cannot load SGB/GameBoy rom.\n");
-      ret = false;
-      goto end;
-   }
-
-   if (xml_buf)
-      free(xml_buf);
-
-end:
-   if (g_extern.rom_file)
-      fclose(g_extern.rom_file);
-   if (extra_rom)
-      fclose(extra_rom);
-   free(rom_buf);
-   free(extra_rom_buf);
-   return ret;
-}
-
-static bool load_bsx_rom(bool slotted)
-{
-   void *rom_buf = NULL;
-   ssize_t rom_len = 0;
-
-   FILE *extra_rom = NULL;
-   void *extra_rom_buf = NULL;
-   ssize_t extra_rom_len = 0;
-   char *xml_buf = 0;
-   bool ret = true;
-
-   if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
-   {
-      SSNES_ERR("Could not read ROM file.\n");
-      ret = false;
-      goto end;
-   }
-
-   if ((extra_rom_len = read_file(g_extern.bsx_rom_path, &extra_rom_buf)) == -1)
-   {
-      SSNES_ERR("Cannot read BSX game rom.\n");
-      ret = false;
-      goto end;
-   }
-
-   xml_buf = load_xml_map(g_extern.xml_name);
-
-   if (slotted)
-   {   
-      if (!psnes_load_cartridge_bsx_slotted(
-               xml_buf, (const uint8_t*)rom_buf, rom_len,
-               NULL, (const uint8_t*)extra_rom_buf, extra_rom_len))
-      {
-         SSNES_ERR("Cannot load BSX slotted rom.\n");
-         ret = false;
-         goto end;
-      }
-
-   }
-   else
-   {
-      if (!psnes_load_cartridge_bsx(
-               NULL, (const uint8_t*)rom_buf, rom_len,
-               NULL, (const uint8_t*)extra_rom_buf, extra_rom_len))
-      {
-         SSNES_ERR("Cannot load BSX rom.\n");
-         ret = false;
-         goto end;
-      }
-   }
-
-   if (xml_buf)
-      free(xml_buf);
-
-end:
-   if (g_extern.rom_file)
-      fclose(g_extern.rom_file);
-   if (extra_rom)
-      fclose(extra_rom);
-   free(rom_buf);
-   free(extra_rom_buf);
-   return ret;
-}
-
-static bool load_sufami_rom(void)
-{
-   void *rom_buf = NULL;
-   ssize_t rom_len = 0;
-
-   FILE *extra_rom[2] = {NULL};
-   void *extra_rom_buf[2] = {NULL};
-   ssize_t extra_rom_len[2] = {0};
-   char *xml_buf = 0;
-   const char *roms[2] = {0};
-   bool ret = true;
-
-   if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
-   {
-      SSNES_ERR("Could not read ROM file.\n");
-      ret = false;
-      goto end;
-   }
-   
-   roms[0] = g_extern.sufami_rom_path[0];
-   roms[1] = g_extern.sufami_rom_path[1];
-
-   for (unsigned i = 0; i < 2; i++)
-   {
-      if (*(roms[i]))
-      {
-         if ((extra_rom_len[i] = read_file(roms[i], &extra_rom_buf[i])) == -1)
-         {
-            SSNES_ERR("Cannot read Sufami game rom.\n");
-            ret = false;
-            goto end;
-         }
-      }
-   }
-
-   xml_buf = load_xml_map(g_extern.xml_name);
-
-   if (!psnes_load_cartridge_sufami_turbo(
-            xml_buf, (const uint8_t*)rom_buf, rom_len,
-            NULL, (const uint8_t*)extra_rom_buf[0], extra_rom_len[0],
-            NULL, (const uint8_t*)extra_rom_buf[1], extra_rom_len[1]))
-   {
-      SSNES_ERR("Cannot load Sufami Turbo rom.\n");
-      ret = false;
-      goto end;
-   }
-
-   if (xml_buf)
-      free(xml_buf);
-
-end:
-   if (g_extern.rom_file)
-      fclose(g_extern.rom_file);
-   for (unsigned i = 0; i < 2; i++)
-   {
-      if (extra_rom[i])
-         fclose(extra_rom[i]);
-      free(extra_rom_buf[i]);
-   }
-   free(rom_buf);
-   return ret;
-}
-
-static bool load_normal_rom(void)
-{
-   void *rom_buf = NULL;
-   ssize_t rom_len = 0;
-
-   if (!g_extern.system.need_fullpath)
-   {
-      if ((rom_len = read_rom_file(g_extern.rom_file, &rom_buf)) == -1)
+      if ((rom_len[0] = read_rom_file(g_extern.rom_file, &rom_buf[0])) == -1)
       {
          SSNES_ERR("Could not read ROM file.\n");
          return false;
@@ -731,7 +566,7 @@ static bool load_normal_rom(void)
       if (g_extern.rom_file)
          fclose(g_extern.rom_file);
 
-      SSNES_LOG("ROM size: %d bytes\n", (int)rom_len);
+      SSNES_LOG("ROM size: %u bytes.\n", (unsigned)rom_len[0]);
    }
    else
    {
@@ -744,20 +579,81 @@ static bool load_normal_rom(void)
       fclose(g_extern.rom_file);
       SSNES_LOG("ROM loading skipped. Implementation will load it on its own.\n");
    }
-   
+
    char *xml_buf = load_xml_map(g_extern.xml_name);
 
-   if (!psnes_load_cartridge_normal(xml_buf, (const uint8_t*)rom_buf, rom_len))
+   info[0].path = rom_paths[0];
+   info[0].data = rom_buf[0];
+   info[0].size = rom_len[0];
+   info[0].meta = xml_buf;
+
+   for (size_t i = 1; i < roms; i++)
    {
-      SSNES_ERR("ROM file is not valid.\n");
-      free(rom_buf);
-      free(xml_buf);
-      return false;
+      if (rom_paths[i] &&
+            !g_extern.system.info.need_fullpath &&
+            (rom_len[i] = read_file(rom_paths[i], &rom_buf[i])) == -1)
+      {
+         SSNES_ERR("Could not read ROM file: \"%s\".\n", rom_paths[i]);
+         ret = false;
+         goto end;
+      }
+      
+      info[i].path = rom_paths[i];
+      info[i].data = rom_buf[i];
+      info[i].size = rom_len[i];
    }
 
+   if (rom_type == 0)
+      ret = retro_load_game(&info[0]);
+   else
+      ret = retro_load_game_special(rom_type, info, roms);
+
+   if (!ret)
+      SSNES_ERR("Failed to load game.\n");
+
+end:
+   for (unsigned i = 0; i < MAX_ROMS; i++)
+      free(rom_buf[i]);
    free(xml_buf);
-   free(rom_buf);
-   return true;
+
+   return ret;
+}
+
+static bool load_normal_rom(void)
+{
+   const char *path = *g_extern.fullpath ? g_extern.fullpath : NULL;
+   return load_roms(0, &path, 1);
+}
+
+static bool load_sgb_rom(void)
+{
+   const char *path[2] = {
+      *g_extern.fullpath ? g_extern.fullpath : NULL,
+      g_extern.gb_rom_path
+   };
+
+   return load_roms(RETRO_GAME_TYPE_SUPER_GAME_BOY, path, 2);
+}
+
+static bool load_bsx_rom(bool slotted)
+{
+   const char *path[2] = {
+      *g_extern.fullpath ? g_extern.fullpath : NULL,
+      g_extern.bsx_rom_path
+   };
+
+   return load_roms(slotted ? RETRO_GAME_TYPE_BSX_SLOTTED : RETRO_GAME_TYPE_BSX, path, 2); 
+}
+
+static bool load_sufami_rom(void)
+{
+   const char *path[3] = {
+      *g_extern.fullpath ? g_extern.fullpath : NULL,
+      g_extern.sufami_rom_path[0] ? g_extern.sufami_rom_path[0] : NULL,
+      g_extern.sufami_rom_path[1] ? g_extern.sufami_rom_path[1] : NULL,
+   };
+
+   return load_roms(RETRO_GAME_TYPE_SUFAMI_TURBO, path, 3);
 }
 
 bool init_rom_file(enum ssnes_game_type type)

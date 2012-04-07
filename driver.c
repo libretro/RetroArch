@@ -265,29 +265,20 @@ static void deinit_dsp_plugin(void)
 
 static void adjust_audio_input_rate(void)
 {
-   if (g_extern.system.timing_set)
-   {
-      float timing_skew = fabs(1.0f - g_extern.system.timing.fps / g_settings.video.refresh_rate);
-      if (timing_skew > 0.05f) // We don't want to adjust pitch too much. If we have extreme cases, just don't readjust at all.
-      {
-         SSNES_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
-               g_settings.video.refresh_rate,
-               (float)g_extern.system.timing.fps);
+   const struct retro_system_timing *info = &g_extern.system.av_info.timing;
 
-         g_settings.video.refresh_rate = g_extern.system.timing.fps;
-      }
+   float timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
+   if (timing_skew > 0.05f) // We don't want to adjust pitch too much. If we have extreme cases, just don't readjust at all.
+   {
+      SSNES_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
+            g_settings.video.refresh_rate,
+            (float)info->fps);
+
+      g_settings.video.refresh_rate = info->fps;
    }
 
-   if (g_extern.system.timing_set)
-   {
-      g_settings.audio.in_rate = g_extern.system.timing.sample_rate *
-         (g_settings.video.refresh_rate / g_extern.system.timing.fps);
-   }
-   else
-   {
-      g_settings.audio.in_rate = 32040.5 *
-         (g_settings.video.refresh_rate / (21477272.0 / 357366.0)); // SNES metrics.
-   }
+   g_settings.audio.in_rate = info->sample_rate *
+      (g_settings.video.refresh_rate / info->fps);
 
    SSNES_LOG("Set audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
 }
@@ -426,8 +417,9 @@ static void init_filter(void)
 
    g_extern.filter.active = true;
 
-   unsigned width = g_extern.system.geom.max_width;
-   unsigned height = g_extern.system.geom.max_height;
+   struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+   unsigned width = geom->max_width;
+   unsigned height = geom->max_height;
    g_extern.filter.psize(&width, &height);
 
    unsigned pow2_x = next_pow2(width);
@@ -508,7 +500,8 @@ void init_video_input(void)
    init_shader_dir();
 #endif
 
-   unsigned max_dim = max(g_extern.system.geom.max_width, g_extern.system.geom.max_height);
+   struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+   unsigned max_dim = max(geom->max_width, geom->max_height);
    unsigned scale = max_dim / SSNES_SCALE_BASE;
    scale = max(scale, 1);
 
@@ -526,19 +519,19 @@ void init_video_input(void)
    {
       if (g_settings.video.force_aspect && (g_settings.video.aspect_ratio > 0.0f))
       {
-         width = roundf(g_extern.system.geom.base_height * g_settings.video.xscale * g_settings.video.aspect_ratio);
-         height = roundf(g_extern.system.geom.base_height * g_settings.video.yscale);
+         width = roundf(geom->base_height * g_settings.video.xscale * g_settings.video.aspect_ratio);
+         height = roundf(geom->base_height * g_settings.video.yscale);
       }
       else
       {
-         width = roundf(g_extern.system.geom.base_width * g_settings.video.xscale);
-         height = roundf(g_extern.system.geom.base_height * g_settings.video.yscale);
+         width = roundf(geom->base_width * g_settings.video.xscale);
+         height = roundf(geom->base_height * g_settings.video.yscale);
       }
    }
 
    if (g_settings.video.aspect_ratio < 0.0f)
    {
-      g_settings.video.aspect_ratio = (float)g_extern.system.geom.base_width / g_extern.system.geom.base_height;
+      g_settings.video.aspect_ratio = (float)geom->base_width / geom->base_height;
       SSNES_LOG("Adjusting aspect ratio to %.2f\n", g_settings.video.aspect_ratio);
    }
 

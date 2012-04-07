@@ -525,35 +525,35 @@ struct bind_map
 #define DECLARE_BIND(x, bind) { true, "input_" #x, "input_" #x "_btn", "input_" #x "_axis", bind }
 #define DECL_PLAYER(P) \
    { \
-      DECLARE_BIND(player##P##_b,             SNES_DEVICE_ID_JOYPAD_B), \
-      DECLARE_BIND(player##P##_y,             SNES_DEVICE_ID_JOYPAD_Y), \
-      DECLARE_BIND(player##P##_select,        SNES_DEVICE_ID_JOYPAD_SELECT), \
-      DECLARE_BIND(player##P##_start,         SNES_DEVICE_ID_JOYPAD_START), \
-      DECLARE_BIND(player##P##_up,            SNES_DEVICE_ID_JOYPAD_UP), \
-      DECLARE_BIND(player##P##_down,          SNES_DEVICE_ID_JOYPAD_DOWN), \
-      DECLARE_BIND(player##P##_left,          SNES_DEVICE_ID_JOYPAD_LEFT), \
-      DECLARE_BIND(player##P##_right,         SNES_DEVICE_ID_JOYPAD_RIGHT), \
-      DECLARE_BIND(player##P##_a,             SNES_DEVICE_ID_JOYPAD_A), \
-      DECLARE_BIND(player##P##_x,             SNES_DEVICE_ID_JOYPAD_X), \
-      DECLARE_BIND(player##P##_l,             SNES_DEVICE_ID_JOYPAD_L), \
-      DECLARE_BIND(player##P##_r,             SNES_DEVICE_ID_JOYPAD_R), \
+      DECLARE_BIND(player##P##_b,             RETRO_DEVICE_ID_JOYPAD_B), \
+      DECLARE_BIND(player##P##_y,             RETRO_DEVICE_ID_JOYPAD_Y), \
+      DECLARE_BIND(player##P##_select,        RETRO_DEVICE_ID_JOYPAD_SELECT), \
+      DECLARE_BIND(player##P##_start,         RETRO_DEVICE_ID_JOYPAD_START), \
+      DECLARE_BIND(player##P##_up,            RETRO_DEVICE_ID_JOYPAD_UP), \
+      DECLARE_BIND(player##P##_down,          RETRO_DEVICE_ID_JOYPAD_DOWN), \
+      DECLARE_BIND(player##P##_left,          RETRO_DEVICE_ID_JOYPAD_LEFT), \
+      DECLARE_BIND(player##P##_right,         RETRO_DEVICE_ID_JOYPAD_RIGHT), \
+      DECLARE_BIND(player##P##_a,             RETRO_DEVICE_ID_JOYPAD_A), \
+      DECLARE_BIND(player##P##_x,             RETRO_DEVICE_ID_JOYPAD_X), \
+      DECLARE_BIND(player##P##_l,             RETRO_DEVICE_ID_JOYPAD_L), \
+      DECLARE_BIND(player##P##_r,             RETRO_DEVICE_ID_JOYPAD_R), \
    }
 
 // Big and nasty bind map... :)
 static const struct bind_map bind_maps[MAX_PLAYERS][SSNES_BIND_LIST_END] = {
    {
-      DECLARE_BIND(player1_b,             SNES_DEVICE_ID_JOYPAD_B),
-      DECLARE_BIND(player1_y,             SNES_DEVICE_ID_JOYPAD_Y),
-      DECLARE_BIND(player1_select,        SNES_DEVICE_ID_JOYPAD_SELECT),
-      DECLARE_BIND(player1_start,         SNES_DEVICE_ID_JOYPAD_START),
-      DECLARE_BIND(player1_up,            SNES_DEVICE_ID_JOYPAD_UP),
-      DECLARE_BIND(player1_down,          SNES_DEVICE_ID_JOYPAD_DOWN),
-      DECLARE_BIND(player1_left,          SNES_DEVICE_ID_JOYPAD_LEFT),
-      DECLARE_BIND(player1_right,         SNES_DEVICE_ID_JOYPAD_RIGHT),
-      DECLARE_BIND(player1_a,             SNES_DEVICE_ID_JOYPAD_A),
-      DECLARE_BIND(player1_x,             SNES_DEVICE_ID_JOYPAD_X),
-      DECLARE_BIND(player1_l,             SNES_DEVICE_ID_JOYPAD_L),
-      DECLARE_BIND(player1_r,             SNES_DEVICE_ID_JOYPAD_R),
+      DECLARE_BIND(player1_b,             RETRO_DEVICE_ID_JOYPAD_B),
+      DECLARE_BIND(player1_y,             RETRO_DEVICE_ID_JOYPAD_Y),
+      DECLARE_BIND(player1_select,        RETRO_DEVICE_ID_JOYPAD_SELECT),
+      DECLARE_BIND(player1_start,         RETRO_DEVICE_ID_JOYPAD_START),
+      DECLARE_BIND(player1_up,            RETRO_DEVICE_ID_JOYPAD_UP),
+      DECLARE_BIND(player1_down,          RETRO_DEVICE_ID_JOYPAD_DOWN),
+      DECLARE_BIND(player1_left,          RETRO_DEVICE_ID_JOYPAD_LEFT),
+      DECLARE_BIND(player1_right,         RETRO_DEVICE_ID_JOYPAD_RIGHT),
+      DECLARE_BIND(player1_a,             RETRO_DEVICE_ID_JOYPAD_A),
+      DECLARE_BIND(player1_x,             RETRO_DEVICE_ID_JOYPAD_X),
+      DECLARE_BIND(player1_l,             RETRO_DEVICE_ID_JOYPAD_L),
+      DECLARE_BIND(player1_r,             RETRO_DEVICE_ID_JOYPAD_R),
 
       DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY),
       DECLARE_BIND(hold_fast_forward,     SSNES_FAST_FORWARD_HOLD_KEY),

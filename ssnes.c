@@ -341,13 +341,22 @@ static bool audio_flush(const int16_t *data, size_t samples)
 }
 #endif
 
-static void audio_sample_rewind(uint16_t left, uint16_t right)
+static void audio_sample_rewind(int16_t left, int16_t right)
 {
    g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = right;
    g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = left;
 }
 
-static void audio_sample(uint16_t left, uint16_t right)
+size_t audio_sample_batch_rewind(const int16_t *data, size_t frames)
+{
+   size_t samples = frames << 1;
+   for (size_t i = 0; i < samples; i++)
+      g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = data[i];
+
+   return frames;
+}
+
+static void audio_sample(int16_t left, int16_t right)
 {
    g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr++] = left;
    g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr++] = right;
@@ -361,9 +370,7 @@ static void audio_sample(uint16_t left, uint16_t right)
    g_extern.audio_data.data_ptr = 0;
 }
 
-// Non-standard, alternative callback better suited for systems that process audio in batch.
-// Avoids tons of calls to audio_sample() ...
-unsigned audio_sample_batch(const int16_t *data, unsigned frames)
+size_t audio_sample_batch(const int16_t *data, size_t frames)
 {
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
@@ -377,8 +384,10 @@ static void input_poll(void)
    input_poll_func();
 }
 
-static int16_t input_state(bool port, unsigned device, unsigned index, unsigned id)
+static int16_t input_state(unsigned port, unsigned device, unsigned index, unsigned id)
 {
+   device &= RETRO_DEVICE_MASK;
+
 #ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie && g_extern.bsv.movie_playback)
    {
@@ -544,7 +553,7 @@ static void print_help(void)
 
 static void set_basename(const char *path)
 {
-   strlcpy(g_extern.system.fullpath, path, sizeof(g_extern.system.fullpath));
+   strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
 
    strlcpy(g_extern.basename, path, sizeof(g_extern.basename));
    char *dst = strrchr(g_extern.basename, '.');
@@ -1027,24 +1036,24 @@ static inline void load_save_files(void)
    switch (g_extern.game_type)
    {
       case SSNES_CART_NORMAL:
-         load_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
-         load_ram_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+         load_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SAVE_RAM);
+         load_ram_file(g_extern.savefile_name_rtc, RETRO_MEMORY_RTC);
          break;
 
       case SSNES_CART_SGB:
-         save_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_GAME_BOY_RAM);
-         save_ram_file(g_extern.savefile_name_rtc, SNES_MEMORY_GAME_BOY_RTC);
+         save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_GAME_BOY_RAM);
+         save_ram_file(g_extern.savefile_name_rtc, RETRO_MEMORY_SNES_GAME_BOY_RTC);
          break;
 
       case SSNES_CART_BSX:
       case SSNES_CART_BSX_SLOTTED:
-         load_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_BSX_RAM);
-         load_ram_file(g_extern.savefile_name_psrm, SNES_MEMORY_BSX_PRAM);
+         load_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_BSX_RAM);
+         load_ram_file(g_extern.savefile_name_psrm, RETRO_MEMORY_SNES_BSX_PRAM);
          break;
 
       case SSNES_CART_SUFAMI:
-         load_ram_file(g_extern.savefile_name_asrm, SNES_MEMORY_SUFAMI_TURBO_A_RAM);
-         load_ram_file(g_extern.savefile_name_bsrm, SNES_MEMORY_SUFAMI_TURBO_B_RAM);
+         load_ram_file(g_extern.savefile_name_asrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM);
+         load_ram_file(g_extern.savefile_name_bsrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM);
          break;
 
       default:
@@ -1058,27 +1067,27 @@ static inline void save_files(void)
    {
       case SSNES_CART_NORMAL:
          SSNES_LOG("Saving regular SRAM.\n");
-         save_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_CARTRIDGE_RAM);
-         save_ram_file(g_extern.savefile_name_rtc, SNES_MEMORY_CARTRIDGE_RTC);
+         save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SAVE_RAM);
+         save_ram_file(g_extern.savefile_name_rtc, RETRO_MEMORY_RTC);
          break;
 
       case SSNES_CART_SGB:
          SSNES_LOG("Saving Gameboy SRAM.\n");
-         save_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_GAME_BOY_RAM);
-         save_ram_file(g_extern.savefile_name_rtc, SNES_MEMORY_GAME_BOY_RTC);
+         save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_GAME_BOY_RAM);
+         save_ram_file(g_extern.savefile_name_rtc, RETRO_MEMORY_SNES_GAME_BOY_RTC);
          break;
 
       case SSNES_CART_BSX:
       case SSNES_CART_BSX_SLOTTED:
          SSNES_LOG("Saving BSX (P)RAM.\n");
-         save_ram_file(g_extern.savefile_name_srm, SNES_MEMORY_BSX_RAM);
-         save_ram_file(g_extern.savefile_name_psrm, SNES_MEMORY_BSX_PRAM);
+         save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_BSX_RAM);
+         save_ram_file(g_extern.savefile_name_psrm, RETRO_MEMORY_SNES_BSX_PRAM);
          break;
 
       case SSNES_CART_SUFAMI:
          SSNES_LOG("Saving Sufami turbo A/B RAM.\n");
-         save_ram_file(g_extern.savefile_name_asrm, SNES_MEMORY_SUFAMI_TURBO_A_RAM);
-         save_ram_file(g_extern.savefile_name_bsrm, SNES_MEMORY_SUFAMI_TURBO_B_RAM);
+         save_ram_file(g_extern.savefile_name_asrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM);
+         save_ram_file(g_extern.savefile_name_bsrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM);
          break;
 
       default:
@@ -1093,26 +1102,21 @@ static void init_recording(void)
    if (!g_extern.recording)
       return;
 
-   // Canonical values.
-   double fps = psnes_get_region() == SNES_REGION_NTSC ? 60.00 : 50.00;
-   double samplerate = 32000.0;
-   if (g_extern.system.timing_set)
-   {
-      fps = g_extern.system.timing.fps;
-      samplerate = g_extern.system.timing.sample_rate;
-      SSNES_LOG("Custom timing given: FPS: %.4f, Sample rate: %.4f\n", (float)fps, (float)samplerate);
-   }
+   double fps = g_extern.system.av_info.timing.fps;
+   double samplerate = g_extern.system.av_info.timing.sample_rate;
+   SSNES_LOG("Custom timing given: FPS: %.4f, Sample rate: %.4f\n", (float)fps, (float)samplerate);
 
    struct ffemu_params params = {0};
-   params.out_width = g_extern.system.geom.base_width;
-   params.out_height = g_extern.system.geom.base_height;
-   params.fb_width = g_extern.system.geom.max_width;
-   params.fb_height = g_extern.system.geom.max_height;
-   params.channels = 2;
-   params.filename = g_extern.record_path;
-   params.fps = fps;
+   const struct retro_system_av_info *info = &g_extern.system.av_info;
+   params.out_width  = info->geometry.base_width;
+   params.out_height = info->geometry.base_height;
+   params.fb_width   = info->geometry.max_width;
+   params.fb_height  = info->geometry.max_height;
+   params.channels   = 2;
+   params.filename   = g_extern.record_path;
+   params.fps        = fps;
    params.samplerate = samplerate;
-   params.rgb32 = false;
+   params.rgb32      = false;
 
    if (g_extern.record_width || g_extern.record_height)
    {
@@ -1191,7 +1195,7 @@ static void init_rewind(void)
    if (!g_settings.rewind_enable)
       return;
 
-   g_extern.state_size = psnes_serialize_size();
+   g_extern.state_size = pretro_serialize_size();
 
    // Make sure we allocate at least 4-byte multiple.
    size_t aligned_state_size = (g_extern.state_size + 3) & ~3;
@@ -1203,7 +1207,7 @@ static void init_rewind(void)
       return;
    }
 
-   if (!psnes_serialize((uint8_t*)g_extern.state_buf, g_extern.state_size))
+   if (!pretro_serialize(g_extern.state_buf, g_extern.state_size))
    {
       SSNES_ERR("Failed to perform initial serialization for rewind.\n");
       free(g_extern.state_buf);
@@ -1279,9 +1283,10 @@ static void init_netplay(void)
    if (!g_extern.netplay_enable)
       return;
 
-   struct snes_callbacks cbs = {0};
+   struct retro_callbacks cbs = {0};
    cbs.frame_cb = video_frame;
    cbs.sample_cb = audio_sample;
+   cbs.sample_batch_cb = audio_sample_batch;
    cbs.state_cb = input_state;
 
    if (*g_extern.netplay_server)
@@ -1318,32 +1323,37 @@ static void deinit_netplay(void)
 }
 #endif
 
+static void init_libsnes_cbs_plain(void)
+{
+   pretro_set_video_refresh(video_frame);
+   pretro_set_audio_sample(audio_sample);
+   pretro_set_audio_sample_batch(audio_sample_batch);
+   pretro_set_input_state(input_state);
+   pretro_set_input_poll(input_poll);
+}
+
 static void init_libsnes_cbs(void)
 {
 #ifdef HAVE_NETPLAY
    if (g_extern.netplay)
    {
-      psnes_set_video_refresh(g_extern.netplay_is_spectate ?
+      pretro_set_video_refresh(g_extern.netplay_is_spectate ?
             video_frame : video_frame_net);
-      psnes_set_audio_sample(g_extern.netplay_is_spectate ?
-            audio_sample : audio_sample_net);
 
-      psnes_set_input_state(g_extern.netplay_is_spectate ?
+      pretro_set_audio_sample(g_extern.netplay_is_spectate ?
+            audio_sample : audio_sample_net);
+      pretro_set_audio_sample_batch(g_extern.netplay_is_spectate ?
+            audio_sample_batch : audio_sample_batch_net);
+
+      pretro_set_input_state(g_extern.netplay_is_spectate ?
             (g_extern.netplay_is_client ? input_state_spectate_client : input_state_spectate)
             : input_state_net);
    }
    else
-   {
-      psnes_set_video_refresh(video_frame);
-      psnes_set_audio_sample(audio_sample);
-      psnes_set_input_state(input_state);
-   }
+      init_libsnes_cbs_plain();
 #else
-   psnes_set_video_refresh(video_frame);
-   psnes_set_audio_sample(audio_sample);
-   psnes_set_input_state(input_state);
+   init_libsnes_cbs_plain();
 #endif
-   psnes_set_input_poll(input_poll);
 }
 
 #ifdef HAVE_THREADS
@@ -1356,42 +1366,42 @@ static void init_autosave(void)
    {
       case SSNES_CART_BSX:
       case SSNES_CART_BSX_SLOTTED:
-         ram_types[0] = SNES_MEMORY_BSX_RAM;
-         ram_types[1] = SNES_MEMORY_BSX_PRAM;
+         ram_types[0] = RETRO_MEMORY_SNES_BSX_RAM;
+         ram_types[1] = RETRO_MEMORY_SNES_BSX_PRAM;
          ram_paths[0] = g_extern.savefile_name_srm;
          ram_paths[1] = g_extern.savefile_name_psrm;
          break;
 
       case SSNES_CART_SUFAMI:
-         ram_types[0] = SNES_MEMORY_SUFAMI_TURBO_A_RAM;
-         ram_types[1] = SNES_MEMORY_SUFAMI_TURBO_B_RAM;
+         ram_types[0] = RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM;
+         ram_types[1] = RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM;
          ram_paths[0] = g_extern.savefile_name_asrm;
          ram_paths[1] = g_extern.savefile_name_bsrm;
          break;
 
       case SSNES_CART_SGB:
-         ram_types[0] = SNES_MEMORY_GAME_BOY_RAM;
-         ram_types[1] = SNES_MEMORY_GAME_BOY_RTC;
+         ram_types[0] = RETRO_MEMORY_SNES_GAME_BOY_RAM;
+         ram_types[1] = RETRO_MEMORY_SNES_GAME_BOY_RTC;
          ram_paths[0] = g_extern.savefile_name_srm;
          ram_paths[1] = g_extern.savefile_name_rtc;
          break;
 
       default:
-         ram_types[0] = SNES_MEMORY_CARTRIDGE_RAM;
-         ram_types[1] = SNES_MEMORY_CARTRIDGE_RTC;
+         ram_types[0] = RETRO_MEMORY_SAVE_RAM;
+         ram_types[1] = RETRO_MEMORY_RTC;
          ram_paths[0] = g_extern.savefile_name_srm;
          ram_paths[1] = g_extern.savefile_name_rtc;
    }
 
    if (g_settings.autosave_interval > 0)
    {
-      for (unsigned i = 0; i < sizeof(g_extern.autosave)/sizeof(g_extern.autosave[0]); i++)
+      for (unsigned i = 0; i < sizeof(g_extern.autosave) / sizeof(g_extern.autosave[0]); i++)
       {
-         if (ram_paths[i] && strlen(ram_paths[i]) > 0 && psnes_get_memory_size(ram_types[i]) > 0)
+         if (ram_paths[i] && *ram_paths[i] && pretro_get_memory_size(ram_types[i]) > 0)
          {
             g_extern.autosave[i] = autosave_new(ram_paths[i], 
-                  psnes_get_memory_data(ram_types[i]), 
-                  psnes_get_memory_size(ram_types[i]), 
+                  pretro_get_memory_data(ram_types[i]), 
+                  pretro_get_memory_size(ram_types[i]), 
                   g_settings.autosave_interval);
             if (!g_extern.autosave[i])
                SSNES_WARN("Could not initialize autosave.\n");
@@ -1402,7 +1412,7 @@ static void init_autosave(void)
 
 static void deinit_autosave(void)
 {
-   for (unsigned i = 0; i < sizeof(g_extern.autosave)/sizeof(g_extern.autosave[0]); i++)
+   for (unsigned i = 0; i < sizeof(g_extern.autosave) / sizeof(g_extern.autosave[0]); i++)
    {
       if (g_extern.autosave[i])
          autosave_free(g_extern.autosave[i]);
@@ -1786,7 +1796,7 @@ static void check_rewind(void)
          setup_rewind_audio();
 
          msg_queue_push(g_extern.msg_queue, "Rewinding.", 0, g_extern.is_paused ? 1 : 30);
-         psnes_unserialize((uint8_t*)buf, g_extern.state_size);
+         pretro_unserialize(buf, g_extern.state_size);
 
 #ifdef HAVE_BSV_MOVIE
          if (g_extern.bsv.movie)
@@ -1806,12 +1816,15 @@ static void check_rewind(void)
       if (cnt == 0)
 #endif
       {
-         psnes_serialize((uint8_t*)g_extern.state_buf, g_extern.state_size);
+         pretro_serialize(g_extern.state_buf, g_extern.state_size);
          state_manager_push(g_extern.state_manager, g_extern.state_buf);
       }
    }
 
-   psnes_set_audio_sample(g_extern.frame_is_reverse ? audio_sample_rewind : audio_sample);
+   pretro_set_audio_sample(g_extern.frame_is_reverse ?
+         audio_sample_rewind : audio_sample);
+   pretro_set_audio_sample_batch(g_extern.frame_is_reverse ?
+         audio_sample_batch_rewind : audio_sample_batch);
 }
 
 static void check_slowmotion(void)
@@ -1980,7 +1993,7 @@ void ssnes_game_reset(void)
    SSNES_LOG("Resetting game.\n");
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, "Reset.", 1, 120);
-   psnes_reset();
+   pretro_reset();
    init_controllers(); // bSNES since v073r01 resets controllers to JOYPAD after a reset, so just enforce it here.
 }
 
@@ -2206,11 +2219,6 @@ static void do_state_checks(void)
       check_input_rate();
 }
 
-static void fill_title_buf(void)
-{
-   snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "SSNES : %s", psnes_library_id());
-}
-
 static void init_state(void)
 {
    g_extern.video_active = true;
@@ -2231,6 +2239,33 @@ void ssnes_main_clear_state(void)
 #endif
 
    init_state();
+}
+
+static void init_system_info(void)
+{
+   struct retro_system_info *info = &g_extern.system.info;
+   retro_get_system_info(info);
+
+   if (!info->library_name)
+      info->library_name = "Unknown";
+   if (!info->library_version)
+      info->library_version = "v0";
+
+   snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "SSNES : %s %s",
+         info->library_name, info->library_version);
+}
+
+static void init_system_av_info(void)
+{
+   retro_get_system_av_info(&g_extern.system.av_info);
+}
+
+static void verify_api_version(void)
+{
+   SSNES_LOG("Version of libretro API: %u\n", pretro_api_version());
+   SSNES_LOG("Compiled against API: %u\n", RETRO_API_VERSION);
+   if (pretro_api_version() != RETRO_API_VERSION)
+      SSNES_WARN("SSNES is compiled against a different version of libretro than this libretro implementation.\n");
 }
 
 int ssnes_main_init(int argc, char *argv[])
@@ -2254,16 +2289,14 @@ int ssnes_main_init(int argc, char *argv[])
    }
 
    config_load();
-   init_libsnes_sym();
-   fill_title_buf();
+
+   init_libretro_sym();
+   init_system_info();
+
    init_drivers_pre();
 
-   psnes_init();
-   if (*g_extern.basename)
-      psnes_set_cartridge_basename(g_extern.basename);
-
-   SSNES_LOG("Version of libretro API: %u.%u\n",
-         psnes_library_revision_major(), psnes_library_revision_minor());
+   verify_api_version();
+   pretro_init();
 
    g_extern.use_sram = true;
 #ifdef HAVE_XML
@@ -2276,6 +2309,7 @@ int ssnes_main_init(int argc, char *argv[])
    if (!init_rom_file(g_extern.game_type))
       goto error;
 
+   init_system_av_info();
    init_msg_queue();
 
    if (!g_extern.sram_load_disable)
@@ -2335,10 +2369,10 @@ int ssnes_main_init(int argc, char *argv[])
    return 0;
 
 error:
-   psnes_unload_cartridge();
-   psnes_term();
+   pretro_unload_game();
+   pretro_deinit();
    uninit_drivers();
-   uninit_libsnes_sym();
+   uninit_libretro_sym();
 
    return 1;
 }
@@ -2378,7 +2412,7 @@ bool ssnes_main_iterate(void)
          bsv_movie_set_frame_start(g_extern.bsv.movie);
 #endif
 
-      psnes_run();
+      pretro_run();
 
 #ifdef HAVE_BSV_MOVIE
       if (g_extern.bsv.movie)
@@ -2437,10 +2471,10 @@ void ssnes_main_deinit(void)
 #endif
    deinit_msg_queue();
 
-   psnes_unload_cartridge();
-   psnes_term();
+   pretro_unload_game();
+   pretro_deinit();
    uninit_drivers();
-   uninit_libsnes_sym();
+   uninit_libretro_sym();
 }
 
 #ifndef SSNES_CONSOLE

@@ -23,7 +23,7 @@
 #define __CONFIG_DEF_H
 
 #include "boolean.h"
-#include "libsnes.hpp"
+#include "libretro.h"
 #include "driver.h"
 
 #ifdef HAVE_CONFIG_H
@@ -293,18 +293,18 @@ static const float axis_threshold = 0.5;
 // Player 1
 static const struct snes_keybind snes_keybinds_1[] = {
            // SNES button               | keyboard key | js btn | js axis |
-   { true, SNES_DEVICE_ID_JOYPAD_B,          SK_z,      NO_BTN,      AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_Y,          SK_a,      NO_BTN,      AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_SELECT,     SK_RSHIFT, NO_BTN,      AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_START,      SK_RETURN, NO_BTN,      AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_UP,         SK_UP,     NO_BTN,      AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_DOWN,       SK_DOWN,   NO_BTN,      AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_LEFT,       SK_LEFT,   NO_BTN,      AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_RIGHT,      SK_RIGHT,  NO_BTN,      AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_A,          SK_x,      NO_BTN,      AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_X,          SK_s,      NO_BTN,      AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_L,          SK_q,      NO_BTN,      AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_R,          SK_w,      NO_BTN,      AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_B,         SK_z,      NO_BTN,      AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_Y,         SK_a,      NO_BTN,      AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_SELECT,    SK_RSHIFT, NO_BTN,      AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_START,     SK_RETURN, NO_BTN,      AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_UP,        SK_UP,     NO_BTN,      AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_DOWN,      SK_DOWN,   NO_BTN,      AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_LEFT,      SK_LEFT,   NO_BTN,      AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_RIGHT,     SK_RIGHT,  NO_BTN,      AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_A,         SK_x,      NO_BTN,      AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_X,         SK_s,      NO_BTN,      AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_L,         SK_q,      NO_BTN,      AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_R,         SK_w,      NO_BTN,      AXIS_NONE },
 
    { true, SSNES_FAST_FORWARD_KEY,           SK_SPACE,  NO_BTN,      AXIS_NONE },
    { true, SSNES_FAST_FORWARD_HOLD_KEY,      SK_l,      NO_BTN,      AXIS_NONE },
@@ -335,18 +335,18 @@ static const struct snes_keybind snes_keybinds_1[] = {
 
 // Player 2-5
 static const struct snes_keybind snes_keybinds_rest[] = {
-   { true, SNES_DEVICE_ID_JOYPAD_B,          SK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_Y,          SK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_SELECT,     SK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_START,      SK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_UP,         SK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_DOWN,       SK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_LEFT,       SK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_RIGHT,      SK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_A,          SK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_X,          SK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_L,          SK_UNKNOWN, NO_BTN, AXIS_NONE },
-   { true, SNES_DEVICE_ID_JOYPAD_R,          SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_B,         SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_Y,         SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_SELECT,    SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_START,     SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_UP,        SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_DOWN,      SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_LEFT,      SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_RIGHT,     SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_A,         SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_X,         SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_L,         SK_UNKNOWN, NO_BTN, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_R,         SK_UNKNOWN, NO_BTN, AXIS_NONE },
 };
 
 #endif

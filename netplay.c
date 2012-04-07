@@ -63,7 +63,6 @@ static int16_t netplay_input_state(netplay_t *handle, bool port, unsigned device
 // If we're fast-forward replaying to resync, check if we should actually show frame.
 static bool netplay_should_skip(netplay_t *handle);
 static bool netplay_can_poll(netplay_t *handle);
-static const struct snes_callbacks* netplay_callbacks(netplay_t *handle);
 static void netplay_set_spectate_input(netplay_t *handle, int16_t input);
 
 static bool netplay_send_cmd(netplay_t *handle, uint32_t cmd, const void *data, size_t size);
@@ -74,7 +73,7 @@ static bool netplay_get_cmd(netplay_t *handle);
 
 struct delta_frame
 {
-   uint8_t *state;
+   void *state;
 
    uint16_t real_input_state;
    uint16_t simulated_input_state;
@@ -96,7 +95,7 @@ struct netplay
    char other_nick[32];
    struct sockaddr_storage other_addr;
 
-   struct snes_callbacks cbs;
+   struct retro_callbacks cbs;
    int fd; // TCP connection for state sending, etc. Also used for commands.
    int udp_fd; // UDP connection for game state updates.
    unsigned port; // Which port is governed by netplay (other player)?
@@ -188,24 +187,32 @@ void input_poll_net(void)
       netplay_poll(g_extern.netplay);
 }
 
-void video_frame_net(const uint16_t *data, unsigned width, unsigned height)
+void video_frame_net(const void *data, unsigned width, unsigned height, size_t pitch)
 {
    if (!netplay_should_skip(g_extern.netplay))
-      netplay_callbacks(g_extern.netplay)->frame_cb(data, width, height);
+      g_extern.netplay->cbs.frame_cb(data, width, height, pitch);
 }
 
-void audio_sample_net(uint16_t left, uint16_t right)
+void audio_sample_net(int16_t left, int16_t right)
 {
    if (!netplay_should_skip(g_extern.netplay))
-      netplay_callbacks(g_extern.netplay)->sample_cb(left, right);
+      g_extern.netplay->cbs.sample_cb(left, right);
 }
 
-int16_t input_state_net(bool port, unsigned device, unsigned index, unsigned id)
+size_t audio_sample_batch_net(const int16_t *data, size_t frames)
+{
+   if (!netplay_should_skip(g_extern.netplay))
+      return g_extern.netplay->cbs.sample_batch_cb(data, frames);
+   else
+      return frames;
+}
+
+int16_t input_state_net(unsigned port, unsigned device, unsigned index, unsigned id)
 {
    if (netplay_is_alive(g_extern.netplay))
       return netplay_input_state(g_extern.netplay, port, device, index, id);
    else
-      return netplay_callbacks(g_extern.netplay)->state_cb(port, device, index, id);
+      return g_extern.netplay->cbs.state_cb(port, device, index, id);
 }
 
 #ifndef HAVE_SOCKET_LEGACY
@@ -447,15 +454,17 @@ bool netplay_can_poll(netplay_t *handle)
 static uint32_t implementation_magic_value(void)
 {
    uint32_t res = 0;
-   unsigned major = psnes_library_revision_major();
-   unsigned minor = psnes_library_revision_minor();
+   unsigned api = pretro_api_version();
 
-   res |= (major & 0xf) << 0;
-   res |= (minor & 0xf) << 4;
+   res |= api;
 
-   // Shouldn't really use this, but oh well :) It'll do the job.
-   const char *lib = psnes_library_id();
+   const char *lib = g_extern.system.info.library_name;
    size_t len = strlen(lib);
+   for (size_t i = 0; i < len; i++)
+      res ^= lib[i] << (i & 0xf);
+
+   lib = g_extern.system.info.library_version;
+   len = strlen(lib);
    for (size_t i = 0; i < len; i++)
       res ^= lib[i] << (i & 0xf);
 
@@ -516,7 +525,7 @@ static bool send_info(netplay_t *handle)
    uint32_t header[3] = {
       htonl(g_extern.cart_crc),
       htonl(implementation_magic_value()),
-      htonl(psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM))
+      htonl(pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM))
    };
 
    if (!send_all(handle->fd, header, sizeof(header)))
@@ -528,9 +537,9 @@ static bool send_info(netplay_t *handle)
       return false;
    }
 
-   // Get SRAM data from Player 1 :)
-   uint8_t *sram = psnes_get_memory_data(SNES_MEMORY_CARTRIDGE_RAM);
-   unsigned sram_size = psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM);
+   // Get SRAM data from Player 1.
+   void *sram = pretro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+   unsigned sram_size = pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
 
    if (!recv_all(handle->fd, sram, sram_size))
    {
@@ -574,7 +583,7 @@ static bool get_info(netplay_t *handle)
       return false;
    }
 
-   if (psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM) != ntohl(header[2]))
+   if (pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM) != ntohl(header[2]))
    {
       SSNES_ERR("Cartridge SRAM sizes do not correspond.\n");
       return false;
@@ -586,9 +595,9 @@ static bool get_info(netplay_t *handle)
       return false;
    }
 
-   // Send SRAM data to our Player 2 :)
-   const uint8_t *sram = psnes_get_memory_data(SNES_MEMORY_CARTRIDGE_RAM);
-   unsigned sram_size = psnes_get_memory_size(SNES_MEMORY_CARTRIDGE_RAM);
+   // Send SRAM data to our Player 2.
+   const void *sram = pretro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+   unsigned sram_size = pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
    if (!send_all(handle->fd, sram, sram_size))
    {
       SSNES_ERR("Failed to send SRAM data to client.\n");
@@ -611,7 +620,7 @@ static bool get_info(netplay_t *handle)
 static uint32_t *bsv_header_generate(size_t *size, uint32_t magic)
 {
    uint32_t bsv_header[4] = {0};
-   unsigned serialize_size = psnes_serialize_size();
+   size_t serialize_size = pretro_serialize_size();
    size_t header_size = sizeof(bsv_header) + serialize_size;
    *size = header_size;
 
@@ -624,7 +633,7 @@ static uint32_t *bsv_header_generate(size_t *size, uint32_t magic)
    bsv_header[CRC_INDEX] = swap_if_big32(g_extern.cart_crc);
    bsv_header[STATE_SIZE_INDEX] = swap_if_big32(serialize_size);
 
-   if (serialize_size && !psnes_serialize((uint8_t*)header + sizeof(bsv_header), serialize_size))
+   if (serialize_size && !pretro_serialize(header + sizeof(bsv_header), serialize_size))
    {
       free(header);
       return NULL;
@@ -659,10 +668,10 @@ static bool bsv_parse_header(const uint32_t *header, uint32_t magic)
    }
 
    uint32_t in_state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
-   if (in_state_size != psnes_serialize_size())
+   if (in_state_size != pretro_serialize_size())
    {
       SSNES_ERR("Serialization size mismatch, got 0x%x, expected 0x%x.\n",
-            in_state_size, psnes_serialize_size());
+            (unsigned)in_state_size, (unsigned)pretro_serialize_size());
       return false;
    }
 
@@ -696,30 +705,29 @@ static bool get_info_spectate(netplay_t *handle)
       return false;
    }
 
-   unsigned save_state_size = psnes_serialize_size();
+   size_t save_state_size = pretro_serialize_size();
    if (!bsv_parse_header(header, implementation_magic_value()))
    {
       SSNES_ERR("Received invalid BSV header from host.\n");
       return false;
    }
 
-   uint8_t *buf = (uint8_t*)malloc(save_state_size);
+   void *buf = malloc(save_state_size);
    if (!buf)
       return false;
 
    size_t size = save_state_size;
-   uint8_t *tmp_buf = buf;
 
-   if (!recv_all(handle->fd, tmp_buf, size))
+   if (!recv_all(handle->fd, buf, size))
    {
       SSNES_ERR("Failed to receive save state from host.\n");
-      free(tmp_buf);
+      free(buf);
       return false;
    }
 
    bool ret = true;
    if (save_state_size)
-      ret = psnes_unserialize(buf, save_state_size);
+      ret = pretro_unserialize(buf, save_state_size);
 
    free(buf);
    return ret;
@@ -728,16 +736,16 @@ static bool get_info_spectate(netplay_t *handle)
 static void init_buffers(netplay_t *handle)
 {
    handle->buffer = (struct delta_frame*)calloc(handle->buffer_size, sizeof(*handle->buffer));
-   handle->state_size = psnes_serialize_size();
+   handle->state_size = pretro_serialize_size();
    for (unsigned i = 0; i < handle->buffer_size; i++)
    {
-      handle->buffer[i].state = (uint8_t*)malloc(handle->state_size);
+      handle->buffer[i].state = malloc(handle->state_size);
       handle->buffer[i].is_simulated = true;
    }
 }
 
 netplay_t *netplay_new(const char *server, uint16_t port,
-      unsigned frames, const struct snes_callbacks *cb,
+      unsigned frames, const struct retro_callbacks *cb,
       bool spectate,
       const char *nick)
 {
@@ -896,11 +904,11 @@ static bool get_self_input_state(netplay_t *handle)
    uint32_t state = 0;
    if (handle->frame_count > 0) // First frame we always give zero input since relying on input from first frame screws up when we use -F 0.
    {
-      snes_input_state_t cb = handle->cbs.state_cb;
+      retro_input_state_t cb = handle->cbs.state_cb;
       for (unsigned i = 0; i < SSNES_FIRST_META_KEY; i++)
       {
          int16_t tmp = cb(g_settings.input.netplay_client_swap_input ? 0 : !handle->port,
-               SNES_DEVICE_JOYPAD, 0, i);
+               RETRO_DEVICE_JOYPAD, 0, i);
          state |= tmp ? 1 << i : 0;
       }
    }
@@ -1221,11 +1229,6 @@ void netplay_free(netplay_t *handle)
    free(handle);
 }
 
-static const struct snes_callbacks* netplay_callbacks(netplay_t *handle)
-{
-   return &handle->cbs;
-}
-
 static bool netplay_should_skip(netplay_t *handle)
 {
    return handle->is_replay && handle->has_connection;
@@ -1233,7 +1236,7 @@ static bool netplay_should_skip(netplay_t *handle)
 
 static void netplay_pre_frame_net(netplay_t *handle)
 {
-   psnes_serialize(handle->buffer[handle->self_ptr].state, handle->state_size);
+   pretro_serialize(handle->buffer[handle->self_ptr].state, handle->state_size);
    handle->can_poll = true;
 
    input_poll_net();
@@ -1252,9 +1255,9 @@ static void netplay_set_spectate_input(netplay_t *handle, int16_t input)
    handle->spectate_input[handle->spectate_input_ptr++] = swap_if_big16(input);
 }
 
-int16_t input_state_spectate(bool port, unsigned device, unsigned index, unsigned id)
+int16_t input_state_spectate(unsigned port, unsigned device, unsigned index, unsigned id)
 {
-   int16_t res = netplay_callbacks(g_extern.netplay)->state_cb(port, device, index, id);
+   int16_t res = g_extern.netplay->cbs.state_cb(port, device, index, id);
    netplay_set_spectate_input(g_extern.netplay, res);
    return res;
 }
@@ -1270,12 +1273,12 @@ static int16_t netplay_get_spectate_input(netplay_t *handle, bool port, unsigned
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, "Connection with host was cut.", 1, 180);
 
-      psnes_set_input_state(netplay_callbacks(g_extern.netplay)->state_cb);
-      return netplay_callbacks(g_extern.netplay)->state_cb(port, device, index, id);
+      pretro_set_input_state(g_extern.netplay->cbs.state_cb);
+      return g_extern.netplay->cbs.state_cb(port, device, index, id);
    }
 }
 
-int16_t input_state_spectate_client(bool port, unsigned device, unsigned index, unsigned id)
+int16_t input_state_spectate_client(unsigned port, unsigned device, unsigned index, unsigned id)
 {
    return netplay_get_spectate_input(g_extern.netplay, port, device, index, id);
 }
@@ -1397,15 +1400,15 @@ static void netplay_post_frame_net(netplay_t *handle)
       handle->tmp_ptr = handle->other_ptr;
       handle->tmp_frame_count = handle->other_frame_count;
 
-      psnes_unserialize(handle->buffer[handle->other_ptr].state, handle->state_size);
+      pretro_unserialize(handle->buffer[handle->other_ptr].state, handle->state_size);
       bool first = true;
       while (first || (handle->tmp_ptr != handle->self_ptr))
       {
-         psnes_serialize(handle->buffer[handle->tmp_ptr].state, handle->state_size);
+         pretro_serialize(handle->buffer[handle->tmp_ptr].state, handle->state_size);
 #ifdef HAVE_THREADS
          lock_autosave();
 #endif
-         psnes_run();
+         pretro_run();
 #ifdef HAVE_THREADS
          unlock_autosave();
 #endif

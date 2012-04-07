@@ -144,9 +144,14 @@ struct retro_variable
 
 struct retro_game_info
 {
-   const char *path;       // Path to game. Usually used as a reference.
-   const void *data;       // Memory buffer of loaded game. If the game is too big to load in one go. SET_NEED_FULLPATH should be used.
-                           //    In this case, data and size will be 0, and game can be loaded from path.
+   const char *path;       // Path to game, UTF-8 encoded. Usually used as a reference.
+                           // May be NULL if rom was loaded from stdin or similar.
+                           // SET_NEED_FULLPATH path guaranteed that this path is valid.
+   const void *data;       // Memory buffer of loaded game.
+                           // If the game is too big to load in one go.
+                           // SET_NEED_FULLPATH should be used.
+                           // In this case, data and size will be 0,
+                           // and game can be loaded from path.
    size_t      size;       // Size of memory buffer.
    const char *meta;       // String of implementation specific meta-data.
 };
