@@ -206,7 +206,7 @@ HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 				else
 					g_console.aspect_ratio_index = 0;
 
-				xdk360_set_aspect_ratio(g_console.aspect_ratio_index);
+				video_xdk360.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 				char aspectratio_label[32];
 				sprintf(aspectratio_label, "Aspect Ratio: %s", g_console.aspect_ratio_name);
 				unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, aspectratio_label, -1, NULL, 0);

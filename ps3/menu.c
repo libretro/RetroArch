@@ -1304,7 +1304,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				if(g_console.aspect_ratio_index > 0)
 				{
 					g_console.aspect_ratio_index--;
-					ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
+					video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 					set_delay = DELAY_SMALL;
 				}
 			}
@@ -1313,14 +1313,14 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				if(g_console.aspect_ratio_index < LAST_ASPECT_RATIO)
 				{
 					g_console.aspect_ratio_index++;
-					ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
+					video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 					set_delay = DELAY_SMALL;
 				}
 			}
 			if(CTRL_START(state))
 			{
 				g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
-				ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
+				video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER:
@@ -2122,7 +2122,7 @@ static void ingame_menu(uint32_t menu_id)
 					if(g_console.aspect_ratio_index > 0)
 					{
 						g_console.aspect_ratio_index--;
-						ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
+						video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 						set_delay = DELAY_LONG;
 					}
 				}
@@ -2131,14 +2131,14 @@ static void ingame_menu(uint32_t menu_id)
 					if(g_console.aspect_ratio_index < LAST_ASPECT_RATIO)
 					{
 						g_console.aspect_ratio_index++;
-						ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
+						video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 						set_delay = DELAY_LONG;
 					}
 				}
 				if(CTRL_START(state))
 				{
 					g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
-					ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
+					video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 				}
 				strcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.");
 				break;
@@ -2249,7 +2249,7 @@ static void ingame_menu(uint32_t menu_id)
 				if(CTRL_CROSS(state))
 				{
 					g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
-					ps3graphics_set_aspect_ratio(g_console.aspect_ratio_index);
+					video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 					while(stuck_in_loop && g_console.ingame_menu_enable)
 					{
 						state = cell_pad_input_poll_device(0);

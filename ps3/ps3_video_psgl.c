@@ -2176,6 +2176,101 @@ static void ps3graphics_swap(void * data)
 	cellSysutilCheckCallback();
 }
 
+static void ps3graphics_set_aspect_ratio(void * data, uint32_t aspectratio_index)
+{
+	(void)data;
+	gl_t * gl = g_gl;
+
+	switch(aspectratio_index)
+	{
+		case ASPECT_RATIO_4_3:
+			g_settings.video.aspect_ratio = 1.33333333333;
+			strlcpy(g_console.aspect_ratio_name, "4:3", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_4_4:
+			g_settings.video.aspect_ratio = 1.0;
+			strlcpy(g_console.aspect_ratio_name, "4:4", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_4_1:
+			g_settings.video.aspect_ratio = 4.0;
+			strlcpy(g_console.aspect_ratio_name, "4:1", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_5_4:
+			g_settings.video.aspect_ratio = 1.25;
+			strlcpy(g_console.aspect_ratio_name, "5:4", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_6_5:
+			g_settings.video.aspect_ratio = 1.2;
+			strlcpy(g_console.aspect_ratio_name, "6:5", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_7_9:
+			g_settings.video.aspect_ratio = 0.77777777777;
+			strlcpy(g_console.aspect_ratio_name, "7:9", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_8_3:
+			g_settings.video.aspect_ratio = 2.66666666666;
+			strlcpy(g_console.aspect_ratio_name, "8:3", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_8_7:
+			g_settings.video.aspect_ratio = 1.14287142857;
+			strlcpy(g_console.aspect_ratio_name, "8:7", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_16_9:
+			g_settings.video.aspect_ratio = 1.777778;
+			strlcpy(g_console.aspect_ratio_name, "16:9", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_16_10:
+			g_settings.video.aspect_ratio = 1.6;
+			strlcpy(g_console.aspect_ratio_name, "16:10", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_16_15:
+			g_settings.video.aspect_ratio = 3.2;
+			strlcpy(g_console.aspect_ratio_name, "16:15", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_19_12:
+			g_settings.video.aspect_ratio = 1.58333333333;
+			strlcpy(g_console.aspect_ratio_name, "19:12", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_19_14:
+			g_settings.video.aspect_ratio = 1.35714285714;
+			strlcpy(g_console.aspect_ratio_name, "19:14", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_30_17:
+			g_settings.video.aspect_ratio = 1.76470588235;
+			strlcpy(g_console.aspect_ratio_name, "30:17", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_32_9:
+			g_settings.video.aspect_ratio = 3.55555555555;
+			strlcpy(g_console.aspect_ratio_name, "32:9", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_2_1:
+			g_settings.video.aspect_ratio = 2.0;
+			strlcpy(g_console.aspect_ratio_name, "2:1", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_3_2:
+			g_settings.video.aspect_ratio = 1.5;
+			strlcpy(g_console.aspect_ratio_name, "3:2", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_3_4:
+			g_settings.video.aspect_ratio = 0.75;
+			strlcpy(g_console.aspect_ratio_name, "3:4", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_1_1:
+			g_settings.video.aspect_ratio = 1.0;
+			strlcpy(g_console.aspect_ratio_name, "1:1", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_AUTO:
+			strlcpy(g_console.aspect_ratio_name, "(Auto)", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_CUSTOM:
+			strlcpy(g_console.aspect_ratio_name, "(Custom)", sizeof(g_console.aspect_ratio_name));
+			break;
+	}
+	g_settings.video.force_aspect = false;
+	gl->keep_aspect = true;
+	set_viewport(gl, gl->win_width, gl->win_height, false);
+}
+
 const video_driver_t video_gl = 
 {
 	.init = gl_init,
@@ -2187,6 +2282,7 @@ const video_driver_t video_gl =
 	.ident = "gl",
 	.set_swap_block_state = ps3graphics_set_swap_block_swap,
 	.set_rotation = ps3graphics_set_orientation,
+	.set_aspect_ratio = ps3graphics_set_aspect_ratio,
 	.swap = ps3graphics_swap
 };
 
@@ -2371,67 +2467,6 @@ void ps3graphics_set_overscan(bool overscan_enable, float amount, bool recalcula
 		set_viewport(gl, gl->win_width, gl->win_height, false);
 }
 
-void ps3graphics_set_aspect_ratio(uint32_t aspectratio_index)
-{
-	gl_t * gl = g_gl;
-
-	switch(aspectratio_index)
-	{
-		case ASPECT_RATIO_4_3:
-			g_settings.video.aspect_ratio = 1.33333333333;
-			strlcpy(g_console.aspect_ratio_name, "4:3", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_5_4:
-			g_settings.video.aspect_ratio = 1.25;
-			strlcpy(g_console.aspect_ratio_name, "5:4", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_8_7:
-			g_settings.video.aspect_ratio = 1.14287142857;
-			strlcpy(g_console.aspect_ratio_name, "8:7", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_16_9:
-			g_settings.video.aspect_ratio = 1.777778;
-			strlcpy(g_console.aspect_ratio_name, "16:9", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_16_10:
-			g_settings.video.aspect_ratio = 1.6;
-			strlcpy(g_console.aspect_ratio_name, "16:10", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_16_15:
-			g_settings.video.aspect_ratio = 3.2;
-			strlcpy(g_console.aspect_ratio_name, "16:15", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_19_14:
-			g_settings.video.aspect_ratio = 1.35714285714;
-			strlcpy(g_console.aspect_ratio_name, "19:14", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_2_1:
-			g_settings.video.aspect_ratio = 2.0;
-			strlcpy(g_console.aspect_ratio_name, "2:1", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_3_2:
-			g_settings.video.aspect_ratio = 1.5;
-			strlcpy(g_console.aspect_ratio_name, "3:2", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_3_4:
-			g_settings.video.aspect_ratio = 1.5;
-			strlcpy(g_console.aspect_ratio_name, "3:4", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_1_1:
-			g_settings.video.aspect_ratio = 1.0;
-			strlcpy(g_console.aspect_ratio_name, "1:1", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_AUTO:
-			strlcpy(g_console.aspect_ratio_name, "(Auto)", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_CUSTOM:
-			strlcpy(g_console.aspect_ratio_name, "(Custom)", sizeof(g_console.aspect_ratio_name));
-			break;
-	}
-	g_settings.video.force_aspect = false;
-	gl->keep_aspect = true;
-	set_viewport(gl, gl->win_width, gl->win_height, false);
-}
 
 /* PS3 needs a working graphics stack before SSNES even starts.
 

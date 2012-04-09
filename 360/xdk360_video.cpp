@@ -21,6 +21,7 @@
 #include "../driver.h"
 #include "xdk360_video.h"
 #include "xdk360_video_resources.h"
+#include "../console/console_ext.h"
 #include "../general.h"
 #include "../message.h"
 #include "shared.h"
@@ -301,17 +302,38 @@ static void xdk360_set_orientation(void * data, uint32_t orientation)
 	hlsl_program.modelViewProj = XMMatrixRotationZ(angle);
 }
 
-void xdk360_set_aspect_ratio(uint32_t aspectratio_index)
+static void xdk360_set_aspect_ratio(void * data, uint32_t aspectratio_index)
 {
+	(void)data;
 	switch(aspectratio_index)
 	{
 		case ASPECT_RATIO_4_3:
 			g_settings.video.aspect_ratio = 1.33333333333;
 			strlcpy(g_console.aspect_ratio_name, "4:3", sizeof(g_console.aspect_ratio_name));
 			break;
+		case ASPECT_RATIO_4_4:
+			g_settings.video.aspect_ratio = 1.0;
+			strlcpy(g_console.aspect_ratio_name, "4:4", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_4_1:
+			g_settings.video.aspect_ratio = 4.0;
+			strlcpy(g_console.aspect_ratio_name, "4:1", sizeof(g_console.aspect_ratio_name));
+			break;
 		case ASPECT_RATIO_5_4:
 			g_settings.video.aspect_ratio = 1.25;
 			strlcpy(g_console.aspect_ratio_name, "5:4", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_6_5:
+			g_settings.video.aspect_ratio = 1.2;
+			strlcpy(g_console.aspect_ratio_name, "6:5", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_7_9:
+			g_settings.video.aspect_ratio = 0.77777777777;
+			strlcpy(g_console.aspect_ratio_name, "7:9", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_8_3:
+			g_settings.video.aspect_ratio = 2.66666666666;
+			strlcpy(g_console.aspect_ratio_name, "8:3", sizeof(g_console.aspect_ratio_name));
 			break;
 		case ASPECT_RATIO_8_7:
 			g_settings.video.aspect_ratio = 1.14287142857;
@@ -329,9 +351,21 @@ void xdk360_set_aspect_ratio(uint32_t aspectratio_index)
 			g_settings.video.aspect_ratio = 3.2;
 			strlcpy(g_console.aspect_ratio_name, "16:15", sizeof(g_console.aspect_ratio_name));
 			break;
+		case ASPECT_RATIO_19_12:
+			g_settings.video.aspect_ratio = 1.58333333333;
+			strlcpy(g_console.aspect_ratio_name, "19:12", sizeof(g_console.aspect_ratio_name));
+			break;
 		case ASPECT_RATIO_19_14:
-			g_settings.video.aspect_ratio = 1.36;
+			g_settings.video.aspect_ratio = 1.35714285714;
 			strlcpy(g_console.aspect_ratio_name, "19:14", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_30_17:
+			g_settings.video.aspect_ratio = 1.76470588235;
+			strlcpy(g_console.aspect_ratio_name, "30:17", sizeof(g_console.aspect_ratio_name));
+			break;
+		case ASPECT_RATIO_32_9:
+			g_settings.video.aspect_ratio = 3.55555555555;
+			strlcpy(g_console.aspect_ratio_name, "32:9", sizeof(g_console.aspect_ratio_name));
 			break;
 		case ASPECT_RATIO_2_1:
 			g_settings.video.aspect_ratio = 2.0;
@@ -342,7 +376,7 @@ void xdk360_set_aspect_ratio(uint32_t aspectratio_index)
 			strlcpy(g_console.aspect_ratio_name, "3:2", sizeof(g_console.aspect_ratio_name));
 			break;
 		case ASPECT_RATIO_3_4:
-			g_settings.video.aspect_ratio = 1.5;
+			g_settings.video.aspect_ratio = 0.75;
 			strlcpy(g_console.aspect_ratio_name, "3:4", sizeof(g_console.aspect_ratio_name));
 			break;
 		case ASPECT_RATIO_1_1:
@@ -676,5 +710,6 @@ const video_driver_t video_xdk360 = {
    "xdk360",
    xdk360_set_swap_block_swap,
    xdk360_swap,
-   xdk360_set_orientation
+   xdk360_set_orientation,
+   xdk360_set_aspect_ratio
 };

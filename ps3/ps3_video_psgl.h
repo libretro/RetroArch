@@ -22,6 +22,7 @@
 #include "../gfx/gl_common.h"
 #include "../gfx/gfx_common.h"
 #include "../gfx/image.h"
+#include "../console/console_ext.h"
 #include <cell/dbgfont.h>
 
 #define FBO_DEINIT	0
@@ -42,25 +43,6 @@
 
 #define SSNES_CG_MAX_SHADERS 16
 #define SSNES_CG_MENU_SHADER_INDEX (SSNES_CG_MAX_SHADERS - 1)
-
-enum
-{
-	ASPECT_RATIO_4_3,
-	ASPECT_RATIO_5_4,
-	ASPECT_RATIO_8_7,
-	ASPECT_RATIO_16_9,
-	ASPECT_RATIO_16_10,
-	ASPECT_RATIO_16_15,
-	ASPECT_RATIO_19_14,
-	ASPECT_RATIO_2_1,
-	ASPECT_RATIO_3_2,
-	ASPECT_RATIO_3_4,
-	ASPECT_RATIO_1_1,
-	ASPECT_RATIO_AUTO,
-	ASPECT_RATIO_CUSTOM
-};
-
-#define LAST_ASPECT_RATIO ASPECT_RATIO_CUSTOM
 
 typedef struct gl
 {
@@ -133,7 +115,6 @@ void ps3_next_resolution (void);
 void ps3_set_filtering(unsigned index, bool set_smooth);
 void ps3_video_deinit(void);
 void ps3graphics_reinit_fbos (void);
-void ps3graphics_set_aspect_ratio(uint32_t aspectratio_index);
 void ps3graphics_set_overscan(bool overscan_enable, float amount, bool recalculate_viewport);
 void ps3graphics_set_vsync(uint32_t vsync);
 void ps3graphics_video_init(bool get_all_resolutions);
