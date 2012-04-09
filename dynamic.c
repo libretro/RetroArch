@@ -64,7 +64,7 @@ void (*pretro_set_audio_sample_batch)(retro_audio_sample_batch_t);
 void (*pretro_set_input_poll)(retro_input_poll_t);
 void (*pretro_set_input_state)(retro_input_state_t);
 
-void (*pretro_set_controller_port_device)(bool, unsigned);
+void (*pretro_set_controller_port_device)(unsigned, unsigned);
 
 void (*pretro_reset)(void);
 void (*pretro_run)(void);

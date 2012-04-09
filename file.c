@@ -647,8 +647,8 @@ static bool load_sufami_rom(void)
 {
    const char *path[3] = {
       *g_extern.fullpath ? g_extern.fullpath : NULL,
-      g_extern.sufami_rom_path[0] ? g_extern.sufami_rom_path[0] : NULL,
-      g_extern.sufami_rom_path[1] ? g_extern.sufami_rom_path[1] : NULL,
+      *g_extern.sufami_rom_path[0] ? g_extern.sufami_rom_path[0] : NULL,
+      *g_extern.sufami_rom_path[1] ? g_extern.sufami_rom_path[1] : NULL,
    };
 
    return load_roms(RETRO_GAME_TYPE_SUFAMI_TURBO, path, 3);

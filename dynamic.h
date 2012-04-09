@@ -56,7 +56,7 @@ extern void (*pretro_set_audio_sample_batch)(retro_audio_sample_batch_t);
 extern void (*pretro_set_input_poll)(retro_input_poll_t);
 extern void (*pretro_set_input_state)(retro_input_state_t);
 
-extern void (*pretro_set_controller_port_device)(bool, unsigned);
+extern void (*pretro_set_controller_port_device)(unsigned, unsigned);
 
 extern void (*pretro_reset)(void);
 extern void (*pretro_run)(void);
