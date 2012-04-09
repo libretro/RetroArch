@@ -710,6 +710,6 @@ const video_driver_t video_xdk360 = {
    "xdk360",
    xdk360_set_swap_block_swap,
    xdk360_swap,
+   xdk360_set_aspect_ratio,
    xdk360_set_orientation,
-   xdk360_set_aspect_ratio
 };
