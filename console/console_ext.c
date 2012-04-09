@@ -465,7 +465,9 @@ const char *ssnes_input_find_platform_key_label(uint64_t joykey)
 
 void ssnes_input_set_default_keybind_names_for_emulator(void)
 {
-   const char *id = snes_library_id();
+   struct retro_system_info info;
+   retro_get_system_info(&info);
+   const char *id = info.library_name ? info.library_name : "Unknown";
 
    // Genesis Plus GX/Next
    if (strstr(id, "Genesis Plus GX"))
