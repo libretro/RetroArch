@@ -95,7 +95,7 @@ static void take_screenshot(void)
    bool ret = false;
    if (g_extern.frame_cache.data)
    {
-      const uint16_t *data = g_extern.frame_cache.data;
+      const uint16_t *data = (const uint16_t*)g_extern.frame_cache.data;
       unsigned width = g_extern.frame_cache.width;
       unsigned height = g_extern.frame_cache.height;
       size_t pitch = g_extern.frame_cache.pitch;
@@ -182,7 +182,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
       unsigned oheight = height;
       g_extern.filter.psize(&owidth, &oheight);
       g_extern.filter.prender(g_extern.filter.colormap, g_extern.filter.buffer, 
-            g_extern.filter.pitch, data, pitch, width, height);
+            g_extern.filter.pitch, (const uint16_t*)data, pitch, width, height);
 
 #ifdef HAVE_FFMPEG
       if (g_extern.recording && g_settings.video.post_filter_record)

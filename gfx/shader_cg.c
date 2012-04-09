@@ -695,7 +695,7 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
       id = strtok(NULL, ";");
    }
 
-   tracker_info.wram = pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+   tracker_info.wram = (uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
    tracker_info.info = info;
    tracker_info.info_elem = info_cnt;
 

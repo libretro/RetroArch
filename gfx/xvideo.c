@@ -412,6 +412,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    void *xinput = NULL;
    XVisualInfo *visualinfo = NULL;
    XVisualInfo visualtemplate = {0};
+   const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
 
    if (!XShmQueryExtension(xv->display))
    {
@@ -465,7 +466,6 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    attributes.border_pixel = 0;
    attributes.event_mask = StructureNotifyMask | DestroyNotify | ClientMessage;
 
-   const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
    width = video->fullscreen ? ((video->width == 0) ? geom->base_width : video->width) : video->width;
    height = video->fullscreen ? ((video->height == 0) ? geom->base_height : video->height) : video->height;
    xv->window = XCreateWindow(xv->display, DefaultRootWindow(xv->display),
@@ -650,7 +650,7 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
       int base_y = _base_y - head->off_y;
       if (base_y >= 0)
       {
-         for (int y = 0; y < (int)head->height && (base_y + y) < height; y++)
+         for (int y = 0; y < (int)head->height && (base_y + y) < (int)height; y++)
          {
             if (base_x < 0)
                continue;
@@ -658,12 +658,12 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
             const uint8_t *a = head->output + head->pitch * y;
             uint8_t *out = (uint8_t*)xv->image->data + (base_y - head->height + y) * pitch + base_x;
 
-            for (int x = 0; x < (head->width << 1) && (base_x + x) < pitch; x += 4)
+            for (int x = 0; x < (int)(head->width << 1) && (base_x + x) < (int)pitch; x += 4)
             {
                unsigned alpha[2];
                alpha[0] = a[(x >> 1) + 0];
 
-               if (((x >> 1) + 1) == head->width) // We reached the end, uhoh. Branching like a BOSS. :D
+               if (((x >> 1) + 1) == (int)head->width) // We reached the end, uhoh. Branching like a BOSS. :D
                   alpha[1] = 0;
                else
                   alpha[1] = a[(x >> 1) + 1];

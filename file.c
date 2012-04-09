@@ -496,7 +496,7 @@ bool load_state(const char *path)
 void load_ram_file(const char *path, int type)
 {
    size_t size = pretro_get_memory_size(type);
-   uint8_t *data = pretro_get_memory_data(type);
+   void *data = pretro_get_memory_data(type);
 
    if (size == 0 || !data)
       return;
@@ -512,7 +512,7 @@ void load_ram_file(const char *path, int type)
 void save_ram_file(const char *path, int type)
 {
    size_t size = pretro_get_memory_size(type);
-   uint8_t *data = pretro_get_memory_data(type);
+   void *data = pretro_get_memory_data(type);
 
    if (data && size > 0)
    {

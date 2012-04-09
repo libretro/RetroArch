@@ -959,7 +959,7 @@ bool gl_glsl_init(const char *path)
    if (gl_tracker_info_cnt > 0)
    {
       struct state_tracker_info info = {0};
-      info.wram = pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+      info.wram = (uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
       info.info = gl_tracker_info;
       info.info_elem = gl_tracker_info_cnt;
 

@@ -63,7 +63,7 @@ static ssize_t ra_write(void *data, const void *buf, size_t size)
    while (written < size)
    {
       size_t write_amt = size - written;
-      if ((rc = roar_vs_write(roar->vss, (const char*)buf + written, write_amt, &err)) < write_amt)
+      if ((rc = roar_vs_write(roar->vss, (const char*)buf + written, write_amt, &err)) < (ssize_t)write_amt)
       {
          if (roar->nonblocking)
             return rc;
