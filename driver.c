@@ -498,7 +498,7 @@ void init_video_input(void)
    init_shader_dir();
 #endif
 
-   struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+   const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
    unsigned max_dim = max(geom->max_width, geom->max_height);
    unsigned scale = max_dim / SSNES_SCALE_BASE;
    scale = max(scale, 1);
@@ -529,7 +529,11 @@ void init_video_input(void)
 
    if (g_settings.video.aspect_ratio < 0.0f)
    {
-      g_settings.video.aspect_ratio = (float)geom->base_width / geom->base_height;
+      if (geom->aspect_ratio > 0.0f && g_settings.video.aspect_ratio_auto)
+         g_settings.video.aspect_ratio = geom->aspect_ratio;
+      else
+         g_settings.video.aspect_ratio = (float)geom->base_width / geom->base_height;
+
       SSNES_LOG("Adjusting aspect ratio to %.2f\n", g_settings.video.aspect_ratio);
    }
 
