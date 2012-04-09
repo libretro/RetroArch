@@ -38,9 +38,6 @@ struct msg_queue
 
 msg_queue_t *msg_queue_new(size_t size)
 {
-   if (size == 0)
-      return NULL;
-
    msg_queue_t *queue = (msg_queue_t*)calloc(1, sizeof(*queue));
    if (!queue)
       return NULL;
@@ -69,7 +66,7 @@ void msg_queue_push(msg_queue_t *queue, const char *msg, unsigned prio, unsigned
    if (queue->ptr >= queue->size)
       return;
 
-   struct queue_elem *new_elem = (struct queue_elem*)calloc(1, sizeof(*new_elem));
+   struct queue_elem *new_elem = (struct queue_elem*)calloc(1, sizeof(struct queue_elem));
    new_elem->prio = prio;
    new_elem->duration = duration;
    new_elem->msg = msg ? strdup(msg) : NULL;
@@ -84,48 +81,13 @@ void msg_queue_push(msg_queue_t *queue, const char *msg, unsigned prio, unsigned
 
       if (child->prio <= parent->prio)
          break;
-
-      queue->elems[tmp_ptr >> 1] = child;
-      queue->elems[tmp_ptr] = parent;
+      else
+      {
+         queue->elems[tmp_ptr >> 1] = child;
+         queue->elems[tmp_ptr] = parent;
+      }
       tmp_ptr >>= 1;
    }
-}
-
-void msg_queue_push_simple(msg_queue_t *queue, const char *msg)
-{
-   if (queue->ptr >= queue->size)
-   {
-      if (queue->elems[1])
-      {
-         free(queue->elems[1]->msg);
-         free(queue->elems[1]);
-      }
-
-      queue->ptr--;
-      memmove(queue->elems, queue->elems + 1, queue->ptr * sizeof(struct queue_elem));
-   }
-
-   struct queue_elem *new_elem = (struct queue_elem*)calloc(1, sizeof(*new_elem));
-   new_elem->prio = 1;
-   new_elem->duration = 1;
-   new_elem->msg = msg ? strdup(msg) : NULL;
-
-   queue->elems[queue->ptr++] = new_elem;
-}
-
-const char *msg_queue_pull_simple(msg_queue_t *queue)
-{
-   if (queue->ptr == 1)
-      return NULL;
-
-   free(queue->tmp_msg);
-   queue->tmp_msg = queue->elems[1]->msg;
-   queue->elems[1]->msg = NULL;
-   free(queue->elems[1]);
-
-   queue->ptr--;
-   memmove(queue->elems, queue->elems + 1, queue->ptr * sizeof(struct queue_elem));
-   return queue->tmp_msg;
 }
 
 void msg_queue_clear(msg_queue_t *queue)
@@ -150,48 +112,48 @@ const char *msg_queue_pull(msg_queue_t *queue)
       return NULL;
 
    struct queue_elem *front = queue->elems[1];
-
    front->duration--;
    if (front->duration > 0)
       return front->msg;
-
-   free(queue->tmp_msg);
-   queue->tmp_msg = front->msg;
-   front->msg = NULL;
-
-   struct queue_elem *last = queue->elems[--queue->ptr];
-   queue->elems[1] = last;
-   free(front);
-
-   size_t tmp_ptr = 1;
-   for (;;)
+   else
    {
-      bool left = (tmp_ptr * 2 <= queue->ptr) && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2]);
-      bool right = (tmp_ptr * 2 + 1 <= queue->ptr) && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2 + 1]);
+      free(queue->tmp_msg);
+      queue->tmp_msg = front->msg;
+      front->msg = NULL;
 
-      if (!left && !right)
-         break;
+      struct queue_elem *front = queue->elems[1];
+      struct queue_elem *last = queue->elems[--queue->ptr];
+      queue->elems[1] = last;
+      free(front);
 
-      size_t switch_index = tmp_ptr;
-      if (left && !right)
-         switch_index <<= 1;
-      else if (right && !left)
-         switch_index += switch_index + 1;
-      else
+      size_t tmp_ptr = 1;
+      for (;;)
       {
-         if (queue->elems[tmp_ptr * 2] >= queue->elems[tmp_ptr * 2 + 1])
+         bool left = (tmp_ptr * 2 <= queue->ptr) && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2]);
+         bool right = (tmp_ptr * 2 + 1 <= queue->ptr) && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2 + 1]);
+
+         if (!left && !right)
+            break;
+
+         size_t switch_index = tmp_ptr;
+         if (left && !right)
             switch_index <<= 1;
-         else
+         else if (right && !left)
             switch_index += switch_index + 1;
+         else
+         {
+            if (queue->elems[tmp_ptr * 2] >= queue->elems[tmp_ptr * 2 + 1])
+               switch_index <<= 1;
+            else
+               switch_index += switch_index + 1;
+         }
+         struct queue_elem *parent = queue->elems[tmp_ptr];
+         struct queue_elem *child = queue->elems[switch_index];
+         queue->elems[tmp_ptr] = child;
+         queue->elems[switch_index] = parent;
+         tmp_ptr = switch_index;
       }
 
-      struct queue_elem *parent = queue->elems[tmp_ptr];
-      struct queue_elem *child = queue->elems[switch_index];
-      queue->elems[tmp_ptr] = child;
-      queue->elems[switch_index] = parent;
-      tmp_ptr = switch_index;
+      return queue->tmp_msg;
    }
-
-   return queue->tmp_msg;
 }
-

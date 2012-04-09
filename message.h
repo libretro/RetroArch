@@ -32,10 +32,6 @@ void msg_queue_push(msg_queue_t *queue, const char *msg, unsigned prio, unsigned
 // Pulls highest prio message in queue. Returns NULL if no message in queue.
 const char *msg_queue_pull(msg_queue_t *queue);
 
-// Pushes and pulls in a FIFO fashion, duration is fixed to one frame, prio doesn't matter.
-void msg_queue_push_simple(msg_queue_t *queue, const char *msg);
-const char *msg_queue_pull_simple(msg_queue_t *queue);
-
 // Clear out everything in queue.
 void msg_queue_clear(msg_queue_t *queue);
 
