@@ -111,6 +111,7 @@ struct retro_system_info
    const char *library_version;
    const char *valid_extensions;
    bool        need_fullpath;
+   bool        block_extract;
 };
 
 struct retro_game_geometry
