@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include "../boolean.h"
 #include "../compat/strl.h"
-#include "../libsnes.hpp"
+#include "../libretro.h"
 #include "../general.h"
 #include "../compat/strl.h"
 #include "main_wrap.h"
@@ -260,19 +260,19 @@ struct platform_bind
 
 uint64_t ssnes_default_keybind_lut[SSNES_FIRST_META_KEY];
 
-char ssnes_default_libsnes_keybind_name_lut[SSNES_FIRST_META_KEY][256] = {
-   "B Button",          /* SNES_DEVICE_ID_JOYPAD_B      */
-   "Y Button",          /* SNES_DEVICE_ID_JOYPAD_Y      */
-   "Select button",     /* SNES_DEVICE_ID_JOYPAD_SELECT */
-   "Start button",      /* SNES_DEVICE_ID_JOYPAD_START  */
-   "D-Pad Up",          /* SNES_DEVICE_ID_JOYPAD_UP     */
-   "D-Pad Down",        /* SNES_DEVICE_ID_JOYPAD_DOWN   */
-   "D-Pad Left",        /* SNES_DEVICE_ID_JOYPAD_LEFT   */
-   "D-Pad Right",       /* SNES_DEVICE_ID_JOYPAD_RIGHT  */
-   "A Button",          /* SNES_DEVICE_ID_JOYPAD_A      */
-   "X Button",          /* SNES_DEVICE_ID_JOYPAD_X      */
-   "L Button",          /* SNES_DEVICE_ID_JOYPAD_L      */
-   "R Button",          /* SNES_DEVICE_ID_JOYPAD_R      */
+char ssnes_default_libretro_keybind_name_lut[SSNES_FIRST_META_KEY][256] = {
+   "B Button",          /* RETRO_DEVICE_ID_JOYPAD_B      */
+   "Y Button",          /* RETRO_DEVICE_ID_JOYPAD_Y      */
+   "Select button",     /* RETRO_DEVICE_ID_JOYPAD_SELECT */
+   "Start button",      /* RETRO_DEVICE_ID_JOYPAD_START  */
+   "D-Pad Up",          /* RETRO_DEVICE_ID_JOYPAD_UP     */
+   "D-Pad Down",        /* RETRO_DEVICE_ID_JOYPAD_DOWN   */
+   "D-Pad Left",        /* RETRO_DEVICE_ID_JOYPAD_LEFT   */
+   "D-Pad Right",       /* RETRO_DEVICE_ID_JOYPAD_RIGHT  */
+   "A Button",          /* RETRO_DEVICE_ID_JOYPAD_A      */
+   "X Button",          /* RETRO_DEVICE_ID_JOYPAD_X      */
+   "L Button",          /* RETRO_DEVICE_ID_JOYPAD_L      */
+   "R Button",          /* RETRO_DEVICE_ID_JOYPAD_R      */
 };
 
 #if defined(__CELLOS_LV2__)
@@ -472,19 +472,19 @@ void ssnes_input_set_default_keybind_names_for_emulator(void)
    // Genesis Plus GX/Next
    if (strstr(id, "Genesis Plus GX"))
    {
-      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_B],
-            "B button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_B]));
-      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_A],
-            "C button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_A]));
-      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_X],
-            "Y button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_X]));
-      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_Y],
-            "A button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_Y]));
-      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_L],
-            "X button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_L]));
-      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_R],
-            "Z button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_R]));
-      strlcpy(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_SELECT],
-            "Mode button", sizeof(ssnes_default_libsnes_keybind_name_lut[SNES_DEVICE_ID_JOYPAD_SELECT]));
+      strlcpy(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_B],
+            "B button", sizeof(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_B]));
+      strlcpy(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_A],
+            "C button", sizeof(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_A]));
+      strlcpy(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_X],
+            "Y button", sizeof(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_X]));
+      strlcpy(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_Y],
+            "A button", sizeof(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_Y]));
+      strlcpy(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_L],
+            "X button", sizeof(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_L]));
+      strlcpy(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_R],
+            "Z button", sizeof(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_R]));
+      strlcpy(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_SELECT],
+            "Mode button", sizeof(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]));
    }
 }

@@ -101,18 +101,18 @@ static void set_default_settings(void)
 	g_settings.video.msg_pos_y = 0.90f;
 	g_settings.video.aspect_ratio = -1.0f;
 	
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_B]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_CROSS];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_Y]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_SQUARE];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_SELECT]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_SELECT];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_START]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_START];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_UP]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_UP];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_DOWN]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_DOWN];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_LEFT]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_LEFT];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_RIGHT]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_RIGHT];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_A]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_CIRCLE];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_X]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_TRIANGLE];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_L]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_L1];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_R]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_R1];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_CROSS];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_SQUARE];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_SELECT];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_START];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_UP];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_DOWN];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_LEFT];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_RIGHT];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_CIRCLE];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_TRIANGLE];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_L1];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_R1];
 
 	for(uint32_t x = 0; x < MAX_PLAYERS; x++)
 	{

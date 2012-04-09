@@ -83,25 +83,6 @@ typedef struct gl
    void *empty_buf;
 } gl_t;
 
-struct gl_cg_cgp_info
-{
-   const char *shader[2];
-   bool filter_linear[2];
-   bool render_to_texture;
-   float fbo_scale;
-
-   const char *lut_texture_path;
-   const char *lut_texture_id;
-   bool lut_texture_absolute;
-};
-
-struct gl_cg_lut_info
-{
-   char id[64];
-   GLuint tex;
-};
-
-
 bool ps3_setup_texture(void);
 const char * ps3_get_resolution_label(uint32_t resolution);
 int ps3_check_resolution(uint32_t resolution_id);

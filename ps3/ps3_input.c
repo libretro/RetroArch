@@ -27,7 +27,7 @@
 #include "ps3_video_psgl.h"
 #include "../driver.h"
 #include "../console/console_ext_input.h"
-#include "../libsnes.hpp"
+#include "../libretro.h"
 #include "../general.h"
 #include "shared.h"
 
@@ -109,17 +109,17 @@ static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
    player = 0;
    pads_connected = cell_pad_input_pads_connected(); 
 
-   if (device != SNES_DEVICE_JOYPAD)
+   if (device != RETRO_DEVICE_JOYPAD)
       return 0;
 
-   if (port == SNES_PORT_2)
+   if (port == 1)
    {
 	   if(pads_connected < 2)
 		   return 0;
 
 	   player = 1;
 
-	   if(device == SNES_DEVICE_MULTITAP)
+	   if(device == RETRO_DEVICE_MULTITAP)
 	      player += index;
    }
 
@@ -280,22 +280,22 @@ void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
 	switch(map_dpad_enum)
 	{
 		case DPAD_EMULATION_NONE:
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_UP].joykey		= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_UP];
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_DOWN];
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_LEFT];
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_RIGHT];
+			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey		= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_UP];
+			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_DOWN];
+			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_LEFT];
+			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_RIGHT];
 			break;
 		case DPAD_EMULATION_LSTICK:
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_UP].joykey		= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_UP_DPAD];
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_DOWN_DPAD];
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_LEFT_DPAD];
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_RIGHT_DPAD];
+			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey		= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_UP_DPAD];
+			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_DOWN_DPAD];
+			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_LEFT_DPAD];
+			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_RIGHT_DPAD];
 			break;
 		case DPAD_EMULATION_RSTICK:
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_UP].joykey		= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_UP_DPAD];
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_DOWN_DPAD];
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_LEFT_DPAD];
-			g_settings.input.binds[controller_id][SNES_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_RIGHT_DPAD];
+			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey		= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_UP_DPAD];
+			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_DOWN_DPAD];
+			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_LEFT_DPAD];
+			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_RIGHT_DPAD];
 			break;
 	}
 }

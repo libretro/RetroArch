@@ -556,7 +556,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0.83f,
 	},
 	{
-		SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_B,
+		SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B,
 		"B Button",
 		"",
 		0.0f,
@@ -569,7 +569,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0.83f,
 	},
 	{
-		SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_Y,
+		SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y,
 		"Y Button",
 		"",
 		0.0f,
@@ -582,7 +582,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0.83f,
 	},
 	{
-		SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_SELECT,
+		SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT,
 		"Select button",
 		"",
 		0.0f,
@@ -595,7 +595,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0.83f,
 	},
 	{
-		SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_START,
+		SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START,
 		"Start button",
 		"",
 		0.0f,
@@ -608,7 +608,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0.83f,
 	},
 	{
-		SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_UP,
+		SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP,
 		"D-Pad Up",
 		"",
 		0.0f,
@@ -621,7 +621,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0.83f,
 	},
 	{
-		SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_DOWN,
+		SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN,
 		"D-Pad Down",
 		"",
 		0.0f,
@@ -634,7 +634,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0.83f,
 	},
 	{
-		SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_LEFT,
+		SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT,
 		"D-Pad Left",
 		"",
 		0.0f,	
@@ -647,7 +647,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0.83f,
 	},
 	{
-		SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_RIGHT,
+		SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT,
 		"D-Pad Right",
 		"",
 		0.0f,
@@ -660,7 +660,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0.83f,
 	},
 	{
-		SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_A,
+		SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A,
 		"A Button",
 		"",
 		0.0f,
@@ -673,7 +673,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0.83f,
 	},
 	{
-		SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_X,
+		SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X,
 		"X Button",
 		"",
 		0.0f,
@@ -686,7 +686,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0.83f,
 	},
 	{
-		SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_L,
+		SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L,
 		"L Button",
 		"",
 		0.0f,
@@ -699,7 +699,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0.83f,
 	},
 	{
-		SETTING_CONTROLS_SNES_DEVICE_ID_JOYPAD_R,
+		SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R,
 		"R Button",
 		"",
 		0.0f,
