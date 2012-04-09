@@ -50,8 +50,6 @@ enum
 	ROM EXTENSIONS
 ============================================================ */
 
-void ssnes_console_set_rom_ext(const char *ext);
-
 // Get rom extensions for current library.
 // Returns NULL if library doesn't have any preferences in particular.
 const char *ssnes_console_get_rom_ext(void);

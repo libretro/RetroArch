@@ -20,7 +20,7 @@
 #include <string.h>
 
 #include "../driver.h"
-#include "../libsnes.hpp"
+#include "../libretro.h"
 #include <stdlib.h>
 
 // Just plain pads for now.
@@ -29,21 +29,14 @@ static bool wpad_state[5][SSNES_FIRST_META_KEY];
 static bool g_quit;
 
 static int16_t wii_input_state(void *data, const struct snes_keybind **binds,
-      bool port, unsigned device,
+      unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
    (void)data;
    (void)binds;
    (void)index;
 
-   if (device != SNES_DEVICE_JOYPAD)
-      return 0;
-
-   unsigned player = 0;
-   if (port == SNES_PORT_2 && device == SNES_DEVICE_MULTITAP)
-      player = index + 1;
-   else if (port == SNES_PORT_2)
-      player = 1;
+   unsigned player = port;
 
    return pad_state[player][id] || wpad_state[player][id];
 }

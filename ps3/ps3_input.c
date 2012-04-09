@@ -98,32 +98,13 @@ static void ps3_input_poll(void *data)
 }
 
 static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
-      bool port, unsigned device,
+      unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
    (void)data;
 
-   unsigned pads_connected, player;
-   uint64_t button;
-
-   player = 0;
-   pads_connected = cell_pad_input_pads_connected(); 
-
-   if (device != RETRO_DEVICE_JOYPAD)
-      return 0;
-
-   if (port == 1)
-   {
-	   if(pads_connected < 2)
-		   return 0;
-
-	   player = 1;
-
-	   if(device == RETRO_DEVICE_MULTITAP)
-	      player += index;
-   }
-
-   button = binds[player][id].joykey;
+   unsigned player = port;
+   uint64_t button = binds[player][id].joykey;
 
    return CTRL_MASK(state[player], button) ? 1 : 0;
 }

@@ -159,7 +159,7 @@ static void set_default_settings(void)
 	g_extern.verbose = true;
 }
 
-static void init_settings(bool load_libsnes_path)
+static void init_settings(bool load_libretro_path)
 {
 	if(!path_file_exists(SYS_CONFIG_FILE))
 	{
@@ -175,13 +175,13 @@ static void init_settings(bool load_libsnes_path)
 
 		// g_settings
 
-		if(load_libsnes_path)
+		if(load_libretro_path)
 		{
-			CONFIG_GET_STRING(libsnes, "libsnes_path");
+			CONFIG_GET_STRING(libretro, "libretro_path");
 
-			if(!strcmp(g_settings.libsnes, ""))
+			if(!strcmp(g_settings.libretro, ""))
 			{
-				//We need to set libsnes to the first entry in the cores
+				//We need to set libretro to the first entry in the cores
 				//directory so that it will be saved to the config file
 				char ** dir_list = dir_list_new(LIBSNES_DIR_PATH, ".SELF");
 				if (!dir_list)
@@ -194,12 +194,12 @@ static void init_settings(bool load_libsnes_path)
 
 				if(first_self)
 				{
-					SSNES_LOG("Set first entry in libsnes %s dir: [%s] to libsnes path.\n", EMULATOR_CORE_DIR, first_self);
-					strlcpy(g_settings.libsnes, first_self, sizeof(g_settings.libsnes));
+					SSNES_LOG("Set first entry in libretro %s dir: [%s] to libretro path.\n", EMULATOR_CORE_DIR, first_self);
+					strlcpy(g_settings.libretro, first_self, sizeof(g_settings.libretro));
 				}
 				else
 				{
-					SSNES_ERR("Failed to set first entry in libsnes %s dir to libsnes path.\n", EMULATOR_CORE_DIR);
+					SSNES_ERR("Failed to set first entry in libretro %s dir to libretro path.\n", EMULATOR_CORE_DIR);
 				}
 
 				dir_list_free(dir_list);
@@ -269,7 +269,7 @@ static void save_settings(void)
 			conf = config_file_new(NULL);
 
 		// g_settings
-		config_set_string(conf, "libsnes_path", g_settings.libsnes);
+		config_set_string(conf, "libretro_path", g_settings.libretro);
 		config_set_string(conf, "cheat_database_path", g_settings.cheat_database);
 		config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
 		config_set_string(conf, "video_cg_shader", g_settings.video.cg_shader_path);
@@ -467,19 +467,19 @@ static void startup_ssnes(void)
 	}
 }
 
-static bool manage_libsnes_core(void)
+static bool manage_libretro_core(void)
 {
 	g_extern.verbose = true;
 	bool return_code;
 
-	bool set_libsnes_path = false;
+	bool set_libretro_path = false;
 	char tmp_path[1024], tmp_path2[1024], tmp_pathnewfile[1024];
 	snprintf(tmp_path, sizeof(tmp_path), "%s/%s/CORE.SELF", usrDirPath, EMULATOR_CORE_DIR);
 	SSNES_LOG("Assumed path of CORE.SELF: [%s]\n", tmp_path);
 	if(path_file_exists(tmp_path))
 	{
 		//if CORE.SELF exists, this indicates we have just installed
-		//a new libsnes port and that we need to change it to a more
+		//a new libretro port and that we need to change it to a more
 		//sane name.
 
 		CellFsErrno ret;
@@ -491,17 +491,17 @@ static bool manage_libsnes_core(void)
 		if(path_file_exists(tmp_pathnewfile))
 		{
 			SSNES_LOG("Upgrading emulator core...\n");
-			//if libsnes core already exists, then that means we are
-			//upgrading the libsnes core - so delete pre-existing
+			//if libretro core already exists, then that means we are
+			//upgrading the libretro core - so delete pre-existing
 			//file first
 			ret = cellFsUnlink(tmp_pathnewfile);
 			if(ret == CELL_FS_SUCCEEDED)
 			{
-				SSNES_LOG("Succeeded in removing pre-existing libsnes core: [%s].\n", tmp_pathnewfile);
+				SSNES_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
 			}
 			else
 			{
-				SSNES_LOG("Failed to remove pre-existing libsnes core: [%s].\n", tmp_pathnewfile);
+				SSNES_LOG("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
 			}
 		}
 
@@ -514,25 +514,25 @@ static bool manage_libsnes_core(void)
 		else
 		{
 			SSNES_LOG("Libsnes core [%s] renamed to: [%s].\n", tmp_path, tmp_pathnewfile);
-			set_libsnes_path = true;
+			set_libretro_path = true;
 		}
 	}
 	else
 	{
-		SSNES_LOG("CORE.SELF was not found, libsnes core path will be loaded from config file.\n");
+		SSNES_LOG("CORE.SELF was not found, libretro core path will be loaded from config file.\n");
 	}
 
-	if(set_libsnes_path)
+	if(set_libretro_path)
 	{
-		//CORE.BIN has been renamed, libsnes path will now be set to the recently
-		//renamed new libsnes core
-		strlcpy(g_settings.libsnes, tmp_pathnewfile, sizeof(g_settings.libsnes));
+		//CORE.BIN has been renamed, libretro path will now be set to the recently
+		//renamed new libretro core
+		strlcpy(g_settings.libretro, tmp_pathnewfile, sizeof(g_settings.libretro));
 		return_code = 0;
 	}
 	else
 	{
 		//There was no CORE.BIN present, or the CORE.BIN file was not renamed.
-		//The libsnes core path will still be loaded from the config file
+		//The libretro core path will still be loaded from the config file
 		return_code = 1;
 	}
 
@@ -568,11 +568,11 @@ int main(int argc, char *argv[])
 
 	config_set_defaults();
 
-	bool load_libsnes_path = manage_libsnes_core();
+	bool load_libretro_path = manage_libretro_core();
 
 	set_default_settings();
-	init_settings(load_libsnes_path);
-	init_libsnes_sym();
+	init_settings(load_libretro_path);
+	init_libretro_sym();
 
 #if(CELL_SDK_VERSION > 0x340000)
 	if (g_console.screenshots_enable)

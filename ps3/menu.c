@@ -596,7 +596,7 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		case SETTING_SSNES_DEFAULT_EMU:
 			{
 				char fname[MAX_PATH_LENGTH];
-				fill_pathname_base(fname, g_settings.libsnes, sizeof(fname));
+				fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
 				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
 				menu_obj->items[currentsetting].text_color = GREEN;
@@ -739,7 +739,7 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 				else
 					menu_obj->items[currentsetting].text_color = ORANGE;
 				const char * value = ssnes_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey);
-				snprintf(menu_obj->items[currentsetting].text, sizeof(menu_obj->items[currentsetting].text), ssnes_default_libsnes_keybind_name_lut[currentsetting-(FIRST_CONTROL_BIND)]);
+				snprintf(menu_obj->items[currentsetting].text, sizeof(menu_obj->items[currentsetting].text), ssnes_default_libretro_keybind_name_lut[currentsetting-(FIRST_CONTROL_BIND)]);
 				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [%s] on the PS3 controller is mapped to action:\n[%s].", menu_obj->items[currentsetting].text, value);
 				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), value);
 				}
@@ -938,8 +938,8 @@ static void select_file(uint32_t menu_id)
 					case BORDER_CHOICE:
 						break;
 					case LIBSNES_CHOICE:
-						strlcpy(g_settings.libsnes, path, 
-						sizeof(g_settings.libsnes));
+						strlcpy(g_settings.libretro, path, 
+						sizeof(g_settings.libretro));
 						strlcpy(g_console.launch_app_on_exit, path, 
 						sizeof(g_console.launch_app_on_exit));
 						g_console.return_to_launcher = true;
@@ -2017,8 +2017,12 @@ static void select_rom(void)
 	if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
 		cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
 
+	struct retro_system_info info;
+	retro_get_system_info(&info);
+	const char *id = info.library_name ? info.library_name : "Unknown";
+
 	cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"FILE BROWSER");
-	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s (v%s)", snes_library_id(), g_extern.system.version);
+	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s (v%s)", id, info.library_version);
 	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
 	cellDbgFontPrintf (0.09f, 0.09f, FONT_SIZE, YELLOW,
 	"PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser));
@@ -2300,8 +2304,11 @@ static void ingame_menu(uint32_t menu_id)
 
 						if(CTRL_SQUARE(~state))
 						{
+							struct retro_system_info info;
+							retro_get_system_info(&info);
+							const char *id = info.library_name ? info.library_name : "Unknown";
 							cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"QUICK MENU");
-							cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", snes_library_id());
+							cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
 							cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
 							cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
 							cellDbgFontPrintf	(x_position,	ypos,	font_size,	GREEN,	"Viewport X: #%d", g_console.custom_viewport_x);
@@ -2528,8 +2535,12 @@ static void ingame_menu(uint32_t menu_id)
 	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_XMB), "Return to XMB");
 	cellDbgFontDraw();
 
+	struct retro_system_info info;
+	retro_get_system_info(&info);
+	const char *id = info.library_name ? info.library_name : "Unknown";
+
 	cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"QUICK MENU");
-	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", snes_library_id());
+	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
 	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
 	cellDbgFontDraw();
 	cellDbgFontPrintf (0.05f, 0.90f, 1.10f, WHITE, special_action_msg);

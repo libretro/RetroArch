@@ -41,19 +41,15 @@
 	ROM EXTENSIONS
 ============================================================ */
 
-static char g_rom_ext[1024];
-
-void ssnes_console_set_rom_ext(const char *ext)
-{
-   strlcpy(g_rom_ext, ext, sizeof(g_rom_ext));
-}
-
 const char *ssnes_console_get_rom_ext(void)
 {
    const char *retval = NULL;
 
-   if (*g_rom_ext)
-      retval = g_rom_ext;
+   struct retro_system_info info;
+   retro_get_system_info(&info);
+
+   if (info.valid_extensions)
+      retval = info.valid_extensions;
    else
       retval = "ZIP|zip";
 
