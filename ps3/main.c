@@ -573,7 +573,6 @@ int main(int argc, char *argv[])
 	bool load_libsnes_path = manage_libsnes_core();
 
 	set_default_settings();
-	ssnes_init_msg_queue();
 	init_settings(load_libsnes_path);
 	init_libsnes_sym();
 
