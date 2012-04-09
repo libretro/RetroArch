@@ -1192,10 +1192,9 @@ static void deinit_recording(void)
 }
 #endif
 
-void ssnes_init_msg_queue(void)
+static void init_msg_queue(void)
 {
-   if (!g_extern.msg_queue)
-      ssnes_assert(g_extern.msg_queue = msg_queue_new(8));
+   ssnes_assert(g_extern.msg_queue = msg_queue_new(8));
 }
 
 static void deinit_msg_queue(void)
@@ -2308,7 +2307,7 @@ int ssnes_main_init(int argc, char *argv[])
    if (!init_rom_file(g_extern.game_type))
       goto error;
 
-   ssnes_init_msg_queue();
+   init_msg_queue();
 
    if (!g_extern.sram_load_disable)
       load_save_files();
