@@ -65,7 +65,10 @@ void ssnes_console_name_from_id(char *name, size_t size)
    if (size == 0)
       return;
 
-   const char *id = snes_library_id();
+   struct retro_system_info info;
+   retro_get_system_info(&info);
+   const char *id = info.library_name ? info.library_name : "Unknown";
+
    if (!id || strlen(id) >= size)
    {
       name[0] = '\0';
