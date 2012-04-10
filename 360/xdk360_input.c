@@ -36,20 +36,20 @@ static void xdk360_input_poll(void *data)
 
    for (unsigned i = 0; i < 4; i++)
    {
-	   XINPUT_STATE state_tmp;
+      XINPUT_STATE state_tmp;
       unsigned long retval = XInputGetState(i, &state_tmp);
-	  pads_connected += (retval == ERROR_DEVICE_NOT_CONNECTED) ? 0 : 1;
-	  state[i] = state_tmp.Gamepad.wButtons;
-	  state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE))			<< 16;
-	  state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE))			<< 17;
-	  state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE))			<< 18;
-	  state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE))			<< 19;
-	  state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE))			<< 20;
-	  state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE))			<< 21;
-	  state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE))			<< 22;
-	  state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE))			<< 23;
-	  state[i] |= ((state_tmp.Gamepad.bLeftTrigger > 128 ? 1 : 0))	<< 24;
-	  state[i] |= ((state_tmp.Gamepad.bRightTrigger > 128 ? 1 : 0)) << 25;
+      pads_connected += (retval == ERROR_DEVICE_NOT_CONNECTED) ? 0 : 1;
+      state[i] = state_tmp.Gamepad.wButtons;
+      state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE))			<< 16;
+      state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE))			<< 17;
+      state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE))			<< 18;
+      state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE))			<< 19;
+      state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE))			<< 20;
+      state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE))			<< 21;
+      state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE))			<< 22;
+      state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE))			<< 23;
+      state[i] |= ((state_tmp.Gamepad.bLeftTrigger > 128 ? 1 : 0))	<< 24;
+      state[i] |= ((state_tmp.Gamepad.bRightTrigger > 128 ? 1 : 0)) << 25;
    }
 }
 
@@ -77,32 +77,32 @@ static void* xdk360_input_initialize(void)
 void xdk360_input_init(void)
 {
    for(unsigned i = 0; i < 4; i++)
-	   xdk360_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
+      xdk360_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
 }
 
 void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
 {
-	switch(map_dpad_enum)
-	{
-		case DPAD_EMULATION_NONE:
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey		= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_UP];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_DOWN];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_LEFT];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_RIGHT];
-			break;
-		case DPAD_EMULATION_LSTICK:
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey		= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_LSTICK_UP_DPAD];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_LSTICK_DOWN_DPAD];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_LSTICK_LEFT_DPAD];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_LSTICK_RIGHT_DPAD];
-			break;
-		case DPAD_EMULATION_RSTICK:
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey		= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_RSTICK_UP_DPAD];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_RSTICK_DOWN_DPAD];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_RSTICK_LEFT_DPAD];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_RSTICK_RIGHT_DPAD];
-			break;
-	}
+   switch(map_dpad_enum)
+   {
+      case DPAD_EMULATION_NONE:
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_UP];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_DOWN];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_LEFT];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_RIGHT];
+	 break;
+      case DPAD_EMULATION_LSTICK:
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_LSTICK_UP_DPAD];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_LSTICK_DOWN_DPAD];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_LSTICK_LEFT_DPAD];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_LSTICK_RIGHT_DPAD];
+	 break;
+      case DPAD_EMULATION_RSTICK:
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_RSTICK_UP_DPAD];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_RSTICK_DOWN_DPAD];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_RSTICK_LEFT_DPAD];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[XDK360_DEVICE_ID_RSTICK_RIGHT_DPAD];
+	 break;
+   }
 }
 
 static bool xdk360_key_pressed(void *data, int key)
@@ -116,45 +116,44 @@ static bool xdk360_key_pressed(void *data, int key)
 
    switch(key)
    {
-	   case SSNES_FAST_FORWARD_HOLD_KEY:
-		   return ((state.Gamepad.sThumbRY < -DEADZONE) && !(state.Gamepad.bRightTrigger > 128));
-	   case SSNES_LOAD_STATE_KEY:
-		   return ((state.Gamepad.sThumbRY > DEADZONE) && (state.Gamepad.bRightTrigger > 128));
-	   case SSNES_SAVE_STATE_KEY:
-		   return ((state.Gamepad.sThumbRY < -DEADZONE) && (state.Gamepad.bRightTrigger > 128));
-	   case SSNES_STATE_SLOT_PLUS:
-		   return ((state.Gamepad.sThumbRX > DEADZONE) && (state.Gamepad.bRightTrigger > 128));
-	   case SSNES_STATE_SLOT_MINUS:
-		   return ((state.Gamepad.sThumbRX < -DEADZONE) && (state.Gamepad.bRightTrigger > 128));
-	   case SSNES_FRAMEADVANCE:
-		   if(g_console.frame_advance_enable)
-		   {
-			   g_console.menu_enable = true;
-			   g_console.ingame_menu_enable = true;
-			   g_console.mode_switch = MODE_MENU;
-		   }
-		   return false;
-	   case SSNES_REWIND:
-		   return ((state.Gamepad.sThumbRY > DEADZONE) && !(state.Gamepad.bRightTrigger > 128));
-		case SSNES_QUIT_KEY:
-			if(IS_TIMER_EXPIRED())
-			{
-				uint32_t left_thumb_pressed = (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB);
-				uint32_t right_thumb_pressed = (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
+      case SSNES_FAST_FORWARD_HOLD_KEY:
+         return ((state.Gamepad.sThumbRY < -DEADZONE) && !(state.Gamepad.bRightTrigger > 128));
+      case SSNES_LOAD_STATE_KEY:
+	 return ((state.Gamepad.sThumbRY > DEADZONE) && (state.Gamepad.bRightTrigger > 128));
+      case SSNES_SAVE_STATE_KEY:
+	 return ((state.Gamepad.sThumbRY < -DEADZONE) && (state.Gamepad.bRightTrigger > 128));
+      case SSNES_STATE_SLOT_PLUS:
+	 return ((state.Gamepad.sThumbRX > DEADZONE) && (state.Gamepad.bRightTrigger > 128));
+      case SSNES_STATE_SLOT_MINUS:
+	 return ((state.Gamepad.sThumbRX < -DEADZONE) && (state.Gamepad.bRightTrigger > 128));
+      case SSNES_FRAMEADVANCE:
+	 if(g_console.frame_advance_enable)
+	 {
+            g_console.menu_enable = true;
+	    g_console.ingame_menu_enable = true;
+	    g_console.mode_switch = MODE_MENU;
+	 }
+	 return false;
+      case SSNES_REWIND:
+	 return ((state.Gamepad.sThumbRY > DEADZONE) && !(state.Gamepad.bRightTrigger > 128));
+      case SSNES_QUIT_KEY:
+	 if(IS_TIMER_EXPIRED())
+	 {
+            uint32_t left_thumb_pressed = (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB);
+	    uint32_t right_thumb_pressed = (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
 
-				g_console.menu_enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED();
-				g_console.ingame_menu_enable = right_thumb_pressed && !left_thumb_pressed;
-			
-				if(g_console.menu_enable || (g_console.ingame_menu_enable
-				&& !g_console.menu_enable))
-				{
-					g_console.mode_switch = MODE_MENU;
-					SET_TIMER_EXPIRATION(30);
-					retval = g_console.menu_enable;
-				}
+	    g_console.menu_enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED();
+	    g_console.ingame_menu_enable = right_thumb_pressed && !left_thumb_pressed;
 
-				retval = g_console.ingame_menu_enable ? g_console.ingame_menu_enable : g_console.menu_enable;
-			}
+	    if(g_console.menu_enable || (g_console.ingame_menu_enable && !g_console.menu_enable))
+	    {
+               g_console.mode_switch = MODE_MENU;
+	       SET_TIMER_EXPIRATION(30);
+	       retval = g_console.menu_enable;
+	    }
+
+	    retval = g_console.ingame_menu_enable ? g_console.ingame_menu_enable : g_console.menu_enable;
+	 }
    }
 
    return retval;

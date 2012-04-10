@@ -56,83 +56,85 @@ static char sendbuf[4096];
 
 static int inet_pton(int af, const char *src, void *dst)
 {
-	if (af != AF_INET)
-		return -1;
-	return inet_aton (src, dst);
+   if (af != AF_INET)
+      return -1;
+
+   return inet_aton (src, dst);
 }
 #endif
 
 static int if_up_with(int index)
 {
-	(void)index;
+   (void)index;
 #ifdef __CELLOS_LV2__
-	int timeout_count = 10;
-	int state;
-	int ret;
+   int timeout_count = 10;
+   int state;
+   int ret;
 
-	ret = cellNetCtlInit();
-	if (ret < 0)
-	{
-		printf("cellNetCtlInit() failed(%x)\n", ret);
-		return (-1);
-	}
+   ret = cellNetCtlInit();
+   if (ret < 0)
+   {
+      printf("cellNetCtlInit() failed(%x)\n", ret);
+      return (-1);
+   }
 
-	for (;;)
-	{
-		ret = cellNetCtlGetState(&state);
-		if (ret < 0)
-		{
-			printf("cellNetCtlGetState() failed(%x)\n", ret);
-			return (-1);
-		}
-		if (state == CELL_NET_CTL_STATE_IPObtained)
-			break;
-		sys_timer_usleep(500 * 1000);
-		timeout_count--;
-		if (index && timeout_count < 0)
-		{
-			printf("if_up_with(%d) timeout\n", index);
-			return (0);
-		}
-	}
+   for (;;)
+   {
+      ret = cellNetCtlGetState(&state);
+      if (ret < 0)
+      {
+         printf("cellNetCtlGetState() failed(%x)\n", ret);
+	 return (-1);
+      }
+      if (state == CELL_NET_CTL_STATE_IPObtained)
+         break;
+
+      sys_timer_usleep(500 * 1000);
+      timeout_count--;
+      if (index && timeout_count < 0)
+      {
+         printf("if_up_with(%d) timeout\n", index);
+	 return (0);
+      }
+   }
 #endif
 
-	sock=socket(AF_INET,SOCK_DGRAM ,0);
+   sock=socket(AF_INET,SOCK_DGRAM ,0);
 
-	target.sin_family = AF_INET;
-	target.sin_port = htons(PC_DEVELOPMENT_UDP_PORT);
-	inet_pton(AF_INET, PC_DEVELOPMENT_IP_ADDRESS, &target.sin_addr);
+   target.sin_family = AF_INET;
+   target.sin_port = htons(PC_DEVELOPMENT_UDP_PORT);
+   inet_pton(AF_INET, PC_DEVELOPMENT_IP_ADDRESS, &target.sin_addr);
 
-	return (0);
+   return (0);
 }
 
 static int if_down(int sid)
 {
-	(void)sid;
+   (void)sid;
 #ifdef __CELLOS_LV2__
-	cellNetCtlTerm();
+   cellNetCtlTerm();
 #endif
-	return (0);
+   return (0);
 }
 
 void logger_init (void)
 {
-	g_sid = if_up_with(1);
+   g_sid = if_up_with(1);
 }
 
 void logger_shutdown (void)
 {
-	if_down(g_sid);
+   if_down(g_sid);
 }
 
 void logger_send(const char *__format,...)
 {
-	va_list args;
+   va_list args;
 
-	va_start(args,__format);
-	vsnprintf(sendbuf,4000,__format, args);
-	va_end(args);
+   va_start(args,__format);
+   vsnprintf(sendbuf,4000,__format, args);
+   va_end(args);
 
-	int len=strlen(sendbuf);
-	sendto(sock,sendbuf,len,MSG_DONTWAIT,(struct sockaddr*)&target,sizeof(target));
+   int len=strlen(sendbuf);
+   sendto(sock,sendbuf,len,MSG_DONTWAIT,(struct sockaddr*)&target,sizeof(target));
 }

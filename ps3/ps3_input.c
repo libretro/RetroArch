@@ -120,7 +120,7 @@ static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
 	ON-SCREEN KEYBOARD UTILITY
 ============================================================ */
 
-#define OSK_IN_USE	(0x00000001)
+#define OSK_IN_USE 1
 
 void oskutil_init(oskutil_params *params, unsigned int containersize)
 {
@@ -265,27 +265,27 @@ void ps3_input_init(void)
 
 void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
 {
-	switch(map_dpad_enum)
-	{
-		case DPAD_EMULATION_NONE:
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey		= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_UP];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_DOWN];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_LEFT];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_RIGHT];
-			break;
-		case DPAD_EMULATION_LSTICK:
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey		= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_UP_DPAD];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_DOWN_DPAD];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_LEFT_DPAD];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_RIGHT_DPAD];
-			break;
-		case DPAD_EMULATION_RSTICK:
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey		= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_UP_DPAD];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_DOWN_DPAD];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_LEFT_DPAD];
-			g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_RIGHT_DPAD];
-			break;
-	}
+   switch(map_dpad_enum)
+   {
+      case DPAD_EMULATION_NONE:
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_UP];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_DOWN];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_LEFT];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_RIGHT];
+	 break;
+      case DPAD_EMULATION_LSTICK:
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_UP_DPAD];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_DOWN_DPAD];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_LEFT_DPAD];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_LSTICK_RIGHT_DPAD];
+	 break;
+      case DPAD_EMULATION_RSTICK:
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_UP_DPAD];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_DOWN_DPAD];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_LEFT_DPAD];
+	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= ssnes_platform_keybind_lut[PS3_DEVICE_ID_RSTICK_RIGHT_DPAD];
+	 break;
+   }
 }
 
 static bool ps3_key_pressed(void *data, int key)
@@ -316,21 +316,21 @@ static bool ps3_key_pressed(void *data, int key)
       case SSNES_QUIT_KEY:
 	 if(IS_TIMER_EXPIRED(g_console.timer_expiration_frame_count))
 	 {
-		 uint32_t r3_pressed = CTRL_R3(state[0]);
-		 uint32_t l3_pressed = CTRL_L3(state[0]);
-		 bool retval = false;
-		 g_console.menu_enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED(g_console.timer_expiration_frame_count));
-		 g_console.ingame_menu_enable = r3_pressed && !l3_pressed;
+            uint32_t r3_pressed = CTRL_R3(state[0]);
+	    uint32_t l3_pressed = CTRL_L3(state[0]);
+	    bool retval = false;
+	    g_console.menu_enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED(g_console.timer_expiration_frame_count));
+	    g_console.ingame_menu_enable = r3_pressed && !l3_pressed;
 
-		 if(g_console.menu_enable || (g_console.ingame_menu_enable && !g_console.menu_enable))
-		 {
-			 g_console.mode_switch = MODE_MENU;
-			 SET_TIMER_EXPIRATION(g_console.control_timer_expiration_frame_count, 30);
-			 retval = g_console.menu_enable;
-		 }
+	    if(g_console.menu_enable || (g_console.ingame_menu_enable && !g_console.menu_enable))
+	    {
+               g_console.mode_switch = MODE_MENU;
+	       SET_TIMER_EXPIRATION(g_console.control_timer_expiration_frame_count, 30);
+	       retval = g_console.menu_enable;
+	    }
 
-		 retval = g_console.ingame_menu_enable ? g_console.ingame_menu_enable : g_console.menu_enable;
-		 return retval;
+	    retval = g_console.ingame_menu_enable ? g_console.ingame_menu_enable : g_console.menu_enable;
+	    return retval;
 	 }
       default:
          return false;

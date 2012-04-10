@@ -133,19 +133,19 @@ void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
 
 typedef struct
 {
-	unsigned int osk_memorycontainer;
-	wchar_t init_message[CELL_OSKDIALOG_STRING_SIZE + 1];
-	wchar_t message[CELL_OSKDIALOG_STRING_SIZE + 1];
-	wchar_t osk_text_buffer[CELL_OSKDIALOG_STRING_SIZE + 1];
-	char osk_text_buffer_char[CELL_OSKDIALOG_STRING_SIZE + 1];
-	uint32_t flags;
-	bool is_running;
-	bool text_can_be_fetched;
-	sys_memory_container_t containerid;
-	CellOskDialogPoint pos;
-	CellOskDialogInputFieldInfo inputFieldInfo;
-	CellOskDialogCallbackReturnParam outputInfo;
-	CellOskDialogParam dialogParam;
+   unsigned int osk_memorycontainer;
+   wchar_t init_message[CELL_OSKDIALOG_STRING_SIZE + 1];
+   wchar_t message[CELL_OSKDIALOG_STRING_SIZE + 1];
+   wchar_t osk_text_buffer[CELL_OSKDIALOG_STRING_SIZE + 1];
+   char osk_text_buffer_char[CELL_OSKDIALOG_STRING_SIZE + 1];
+   uint32_t flags;
+   bool is_running;
+   bool text_can_be_fetched;
+   sys_memory_container_t containerid;
+   CellOskDialogPoint pos;
+   CellOskDialogInputFieldInfo inputFieldInfo;
+   CellOskDialogCallbackReturnParam outputInfo;
+   CellOskDialogParam dialogParam;
 } oskutil_params;
 
 void oskutil_write_message(oskutil_params *params, const wchar_t* msg);

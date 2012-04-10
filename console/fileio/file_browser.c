@@ -71,57 +71,58 @@ const char * path, const char * extensions)
 
    if (strlcpy(path_buf, path, sizeof(path_buf)) >= sizeof(path_buf))
    {
-	  error = 1;
+      error = 1;
       goto error;
    }
    if (strlcat(path_buf, "\\*", sizeof(path_buf)) >= sizeof(path_buf))
    {
-	  error = 1;
+      error = 1;
       goto error;
    }
 
    hFind = FindFirstFile(path_buf, &ffd);
    if (hFind == INVALID_HANDLE_VALUE)
    {
-	  error = 1;
+      error = 1;
       goto error;
    }
 
    do
    {
-	   strcpy(filebrowser->dir[filebrowser->directory_stack_size], path);
-	    bool found_dir = false;
-		if(!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-		{
-			char tmp_extensions[512];
-			strncpy(tmp_extensions, extensions, sizeof(tmp_extensions));
-			const char * current_extension = filebrowser_get_extension(ffd.cFileName);
-			bool found_rom = false;
+      strcpy(filebrowser->dir[filebrowser->directory_stack_size], path);
+      bool found_dir = false;
 
-			if(current_extension)
-			{
-				char * pch = strtok(tmp_extensions, "|");
-				while (pch != NULL)
-				{
-					if(strcmp(current_extension, pch) == 0)
-					{
-						found_rom = true;
-						break;
-					}
-					pch = strtok(NULL, "|");
-				}
-			}
+      if(!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+      {
+         char tmp_extensions[512];
+	 strncpy(tmp_extensions, extensions, sizeof(tmp_extensions));
+	 const char * current_extension = filebrowser_get_extension(ffd.cFileName);
+	 bool found_rom = false;
 
-			if(!found_rom)
-				continue;
-		}
-		else if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			found_dir = true;
+	 if(current_extension)
+	 {
+		 char * pch = strtok(tmp_extensions, "|");
+		 while (pch != NULL)
+		 {
+                    if(strcmp(current_extension, pch) == 0)
+		    {
+                       found_rom = true;
+		       break;
+		    }
+		    pch = strtok(NULL, "|");
+		 }
+	 }
 
-	  filebrowser->cur[filebrowser->file_count].d_type = found_dir ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
+	 if(!found_rom)
+            continue;
+      }
+      else if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+         found_dir = true;
+
+      filebrowser->cur[filebrowser->file_count].d_type = found_dir ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
       sprintf(filebrowser->cur[filebrowser->file_count].d_name, ffd.cFileName);
 
-	  filebrowser->file_count++;
+      filebrowser->file_count++;
    }while (FindNextFile(hFind, &ffd) != 0 && (filebrowser->file_count + 1) < MAX_FILE_LIMIT);
 #elif defined(__CELLOS_LV2__)
    int fd;
@@ -203,7 +204,7 @@ const char * path, const char * extensions)
    error:
    if(error)
    {
-	   SSNES_ERR("Failed to open directory: \"%s\"\n", path);
+      SSNES_ERR("Failed to open directory: \"%s\"\n", path);
    }
 #ifdef _XBOX
    FindClose(hFind);

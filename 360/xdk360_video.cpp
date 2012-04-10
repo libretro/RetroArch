@@ -35,13 +35,13 @@ void *g_d3d;
 
 struct hlsl_program_t
 {
-	D3DXHANDLE	vid_size_f;
-	D3DXHANDLE	tex_size_f;
-	D3DXHANDLE	out_size_f;
-	D3DXHANDLE	vid_size_v;
-	D3DXHANDLE	tex_size_v;
-	D3DXHANDLE	out_size_v;
-	XMMATRIX modelViewProj;
+   D3DXHANDLE	vid_size_f;
+   D3DXHANDLE	tex_size_f;
+   D3DXHANDLE	out_size_f;
+   D3DXHANDLE	vid_size_v;
+   D3DXHANDLE	tex_size_v;
+   D3DXHANDLE	out_size_v;
+   XMMATRIX modelViewProj;
 } hlsl_program;
 
 struct XPR_HEADER
@@ -212,189 +212,193 @@ static void xdk360_gfx_free(void * data)
 
 static void set_viewport(bool force_full)
 {
-	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-	D3DDevice_Clear(vid->xdk360_render_device, 0, NULL, D3DCLEAR_TARGET,
-	   0xff000000, 1.0f, 0, FALSE);
+   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   D3DDevice_Clear(vid->xdk360_render_device, 0, NULL, D3DCLEAR_TARGET,
+		   0xff000000, 1.0f, 0, FALSE);
 
-	int width = vid->video_mode.fIsHiDef ? 1280 : 640;
-	int height = vid->video_mode.fIsHiDef ? 720 : 480;
-	int m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
-	float m_zNear, m_zFar;
+   int width = vid->video_mode.fIsHiDef ? 1280 : 640;
+   int height = vid->video_mode.fIsHiDef ? 720 : 480;
+   int m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
+   float m_zNear, m_zFar;
 
-	m_viewport_x_temp = 0;
-	m_viewport_y_temp = 0;
-	m_viewport_width_temp = width;
-	m_viewport_height_temp = height;
+   m_viewport_x_temp = 0;
+   m_viewport_y_temp = 0;
+   m_viewport_width_temp = width;
+   m_viewport_height_temp = height;
 
-	m_zNear = 0.0f;
-	m_zFar = 1.0f;
+   m_zNear = 0.0f;
+   m_zFar = 1.0f;
 
-	if (!force_full)
-	{
-		float desired_aspect = g_settings.video.aspect_ratio;
-		float device_aspect = (float)width / height;
-		float delta;
+   if (!force_full)
+   {
+      float desired_aspect = g_settings.video.aspect_ratio;
+      float device_aspect = (float)width / height;
+      float delta;
 
-		// If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
-		//if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
-		//{
-		//	m_viewport_x_temp = g_console.custom_viewport_x;
-		//	m_viewport_y_temp = g_console.custom_viewport_y;
-		//	m_viewport_width_temp = g_console.custom_viewport_width;
-		//	m_viewport_height_temp = g_console.custom_viewport_height;
-		//}
-		if (device_aspect > desired_aspect)
-		{
-			delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-			m_viewport_x_temp = (int)(width * (0.5 - delta));
-			m_viewport_width_temp = (int)(2.0 * width * delta);
-			width = (unsigned)(2.0 * width * delta);
-		}
-		else
-		{
-			delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-			m_viewport_y_temp = (int)(height * (0.5 - delta));
-			m_viewport_height_temp = (int)(2.0 * height * delta);
-			height = (unsigned)(2.0 * height * delta);
-		}
-	}
+      // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
+      //if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
+      //{
+      //	m_viewport_x_temp = g_console.custom_viewport_x;
+      //	m_viewport_y_temp = g_console.custom_viewport_y;
+      //	m_viewport_width_temp = g_console.custom_viewport_width;
+      //	m_viewport_height_temp = g_console.custom_viewport_height;
+      //}
+      if (device_aspect > desired_aspect)
+      {
+         delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
+	 m_viewport_x_temp = (int)(width * (0.5 - delta));
+	 m_viewport_width_temp = (int)(2.0 * width * delta);
+	 width = (unsigned)(2.0 * width * delta);
+      }
+      else
+      {
+         delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
+	 m_viewport_y_temp = (int)(height * (0.5 - delta));
+	 m_viewport_height_temp = (int)(2.0 * height * delta);
+	 height = (unsigned)(2.0 * height * delta);
+      }
+   }
 
-	D3DVIEWPORT9 vp = {0};
-	vp.Width  = m_viewport_width_temp;
-	vp.Height = m_viewport_height_temp;
-	vp.X      = m_viewport_x_temp;
-	vp.Y      = m_viewport_y_temp;
-	vp.MinZ   = m_zNear;
-	vp.MaxZ   = m_zFar;
-	D3DDevice_SetViewport(vid->xdk360_render_device, &vp);
+   D3DVIEWPORT9 vp = {0};
+   vp.Width  = m_viewport_width_temp;
+   vp.Height = m_viewport_height_temp;
+   vp.X      = m_viewport_x_temp;
+   vp.Y      = m_viewport_y_temp;
+   vp.MinZ   = m_zNear;
+   vp.MaxZ   = m_zFar;
+   D3DDevice_SetViewport(vid->xdk360_render_device, &vp);
 
-	//if(gl->overscan_enable && !force_full)
-	//{
-	//	m_left = -gl->overscan_amount/2;
-	//	m_right = 1 + gl->overscan_amount/2;
-	//	m_bottom = -gl->overscan_amount/2;
-	//}
+   //if(gl->overscan_enable && !force_full)
+   //{
+   //	m_left = -gl->overscan_amount/2;
+   //	m_right = 1 + gl->overscan_amount/2;
+   //	m_bottom = -gl->overscan_amount/2;
+   //}
 }
 
 static void xdk360_set_orientation(void * data, uint32_t orientation)
 {
-	(void)data;
-	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-	FLOAT angle;
+   (void)data;
+   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   FLOAT angle;
 
-	switch(orientation)
-	{
-		case ORIENTATION_NORMAL:
-			angle = M_PI * 0 / 180;
-			break;
-		case ORIENTATION_VERTICAL:
-			angle = M_PI * 270 / 180;
-			break;
-		case ORIENTATION_FLIPPED:
-			angle = M_PI * 180 / 180;
-			break;
-		case ORIENTATION_FLIPPED_ROTATED:
-			angle = M_PI * 90 / 180;
-			break;
-	}
-	hlsl_program.modelViewProj = XMMatrixRotationZ(angle);
+   switch(orientation)
+   {
+      case ORIENTATION_NORMAL:
+         angle = M_PI * 0 / 180;
+	 break;
+      case ORIENTATION_VERTICAL:
+	 angle = M_PI * 270 / 180;
+	 break;
+      case ORIENTATION_FLIPPED:
+	 angle = M_PI * 180 / 180;
+	 break;
+      case ORIENTATION_FLIPPED_ROTATED:
+	 angle = M_PI * 90 / 180;
+	 break;
+   }
+
+   hlsl_program.modelViewProj = XMMatrixRotationZ(angle);
 }
 
 static void xdk360_set_aspect_ratio(void * data, uint32_t aspectratio_index)
 {
-	(void)data;
-	switch(aspectratio_index)
-	{
-		case ASPECT_RATIO_4_3:
-			g_settings.video.aspect_ratio = 1.33333333333;
-			strlcpy(g_console.aspect_ratio_name, "4:3", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_4_4:
-			g_settings.video.aspect_ratio = 1.0;
-			strlcpy(g_console.aspect_ratio_name, "4:4", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_4_1:
-			g_settings.video.aspect_ratio = 4.0;
-			strlcpy(g_console.aspect_ratio_name, "4:1", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_5_4:
-			g_settings.video.aspect_ratio = 1.25;
-			strlcpy(g_console.aspect_ratio_name, "5:4", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_6_5:
-			g_settings.video.aspect_ratio = 1.2;
-			strlcpy(g_console.aspect_ratio_name, "6:5", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_7_9:
-			g_settings.video.aspect_ratio = 0.77777777777;
-			strlcpy(g_console.aspect_ratio_name, "7:9", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_8_3:
-			g_settings.video.aspect_ratio = 2.66666666666;
-			strlcpy(g_console.aspect_ratio_name, "8:3", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_8_7:
-			g_settings.video.aspect_ratio = 1.14287142857;
-			strlcpy(g_console.aspect_ratio_name, "8:7", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_16_9:
-			g_settings.video.aspect_ratio = 1.777778;
-			strlcpy(g_console.aspect_ratio_name, "16:9", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_16_10:
-			g_settings.video.aspect_ratio = 1.6;
-			strlcpy(g_console.aspect_ratio_name, "16:10", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_16_15:
-			g_settings.video.aspect_ratio = 3.2;
-			strlcpy(g_console.aspect_ratio_name, "16:15", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_19_12:
-			g_settings.video.aspect_ratio = 1.58333333333;
-			strlcpy(g_console.aspect_ratio_name, "19:12", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_19_14:
-			g_settings.video.aspect_ratio = 1.35714285714;
-			strlcpy(g_console.aspect_ratio_name, "19:14", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_30_17:
-			g_settings.video.aspect_ratio = 1.76470588235;
-			strlcpy(g_console.aspect_ratio_name, "30:17", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_32_9:
-			g_settings.video.aspect_ratio = 3.55555555555;
-			strlcpy(g_console.aspect_ratio_name, "32:9", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_2_1:
-			g_settings.video.aspect_ratio = 2.0;
-			strlcpy(g_console.aspect_ratio_name, "2:1", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_3_2:
-			g_settings.video.aspect_ratio = 1.5;
-			strlcpy(g_console.aspect_ratio_name, "3:2", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_3_4:
-			g_settings.video.aspect_ratio = 0.75;
-			strlcpy(g_console.aspect_ratio_name, "3:4", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_1_1:
-			g_settings.video.aspect_ratio = 1.0;
-			strlcpy(g_console.aspect_ratio_name, "1:1", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_AUTO:
-			strlcpy(g_console.aspect_ratio_name, "(Auto)", sizeof(g_console.aspect_ratio_name));
-			break;
-		case ASPECT_RATIO_CUSTOM:
-			strlcpy(g_console.aspect_ratio_name, "(Custom)", sizeof(g_console.aspect_ratio_name));
-			break;
-	}
-	g_settings.video.force_aspect = false;
-	set_viewport(false);
+   (void)data;
+
+   switch(aspectratio_index)
+   {
+      case ASPECT_RATIO_4_3:
+         g_settings.video.aspect_ratio = 1.33333333333;
+	 strlcpy(g_console.aspect_ratio_name, "4:3", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_4_4:
+	 g_settings.video.aspect_ratio = 1.0;
+	 strlcpy(g_console.aspect_ratio_name, "4:4", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_4_1:
+	 g_settings.video.aspect_ratio = 4.0;
+	 strlcpy(g_console.aspect_ratio_name, "4:1", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_5_4:
+	 g_settings.video.aspect_ratio = 1.25;
+	 strlcpy(g_console.aspect_ratio_name, "5:4", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_6_5:
+	 g_settings.video.aspect_ratio = 1.2;
+	 strlcpy(g_console.aspect_ratio_name, "6:5", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_7_9:
+	 g_settings.video.aspect_ratio = 0.77777777777;
+	 strlcpy(g_console.aspect_ratio_name, "7:9", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_8_3:
+	 g_settings.video.aspect_ratio = 2.66666666666;
+	 strlcpy(g_console.aspect_ratio_name, "8:3", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_8_7:
+	 g_settings.video.aspect_ratio = 1.14287142857;
+	 strlcpy(g_console.aspect_ratio_name, "8:7", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_16_9:
+	 g_settings.video.aspect_ratio = 1.777778;
+	 strlcpy(g_console.aspect_ratio_name, "16:9", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_16_10:
+	 g_settings.video.aspect_ratio = 1.6;
+	 strlcpy(g_console.aspect_ratio_name, "16:10", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_16_15:
+	 g_settings.video.aspect_ratio = 3.2;
+	 strlcpy(g_console.aspect_ratio_name, "16:15", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_19_12:
+	 g_settings.video.aspect_ratio = 1.58333333333;
+	 strlcpy(g_console.aspect_ratio_name, "19:12", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_19_14:
+	 g_settings.video.aspect_ratio = 1.35714285714;
+	 strlcpy(g_console.aspect_ratio_name, "19:14", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_30_17:
+	 g_settings.video.aspect_ratio = 1.76470588235;
+	 strlcpy(g_console.aspect_ratio_name, "30:17", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_32_9:
+	 g_settings.video.aspect_ratio = 3.55555555555;
+	 strlcpy(g_console.aspect_ratio_name, "32:9", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_2_1:
+	 g_settings.video.aspect_ratio = 2.0;
+	 strlcpy(g_console.aspect_ratio_name, "2:1", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_3_2:
+	 g_settings.video.aspect_ratio = 1.5;
+	 strlcpy(g_console.aspect_ratio_name, "3:2", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_3_4:
+	 g_settings.video.aspect_ratio = 0.75;
+	 strlcpy(g_console.aspect_ratio_name, "3:4", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_1_1:
+	 g_settings.video.aspect_ratio = 1.0;
+	 strlcpy(g_console.aspect_ratio_name, "1:1", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_AUTO:
+	 strlcpy(g_console.aspect_ratio_name, "(Auto)", sizeof(g_console.aspect_ratio_name));
+	 break;
+      case ASPECT_RATIO_CUSTOM:
+	 strlcpy(g_console.aspect_ratio_name, "(Custom)", sizeof(g_console.aspect_ratio_name));
+	 break;
+   }
+
+   g_settings.video.force_aspect = false;
+   set_viewport(false);
 }
 
 static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-	HRESULT ret;
+   HRESULT ret;
+
    if (g_d3d)
       return g_d3d;
 
@@ -420,7 +424,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    // no letterboxing in 4:3 mode (if widescreen is
    // unsupported
    if(!vid->video_mode.fIsWideScreen)
-	   vid->d3dpp.Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
+      vid->d3dpp.Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
    
    vid->d3dpp.BackBufferWidth         = vid->video_mode.fIsHiDef ? 1280 : 640;
    vid->d3dpp.BackBufferHeight        = vid->video_mode.fIsHiDef ? 720 : 480;
@@ -453,31 +457,31 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
 
    if (SUCCEEDED(ret))
    {
-	   SSNES_LOG("Vertex shader program from [%s] successfully compiled.\n", "game:\\media\\shaders\\stock.cg");
-	   ret = D3DXCompileShaderFromFile(
-	   g_settings.video.cg_shader_path,	//filepath
-	   NULL,						//macros
-	   NULL,						//includes
-	   "main_fragment",				// main function
-	   "ps_2_0",					// shader profile
-	   0,							// flags
-	   &pShaderCodeP,				// compiled operations
-	   &pErrorMsg,					// errors
-	   NULL); // constants
+      SSNES_LOG("Vertex shader program from [%s] successfully compiled.\n", "game:\\media\\shaders\\stock.cg");
+      ret = D3DXCompileShaderFromFile(
+		      g_settings.video.cg_shader_path,			//filepath
+		      NULL,						//macros
+		      NULL,						//includes
+		      "main_fragment",					// main function
+		      "ps_2_0",						// shader profile
+		      0,						// flags
+		      &pShaderCodeP,					// compiled operations
+		      &pErrorMsg,					// errors
+		      NULL); 						// constants
    }
 
    if (FAILED(ret))
    {
-	  if(pErrorMsg)
-		  SSNES_LOG("%s\n", (char*)pErrorMsg->GetBufferPointer());
+      if(pErrorMsg)
+         SSNES_LOG("%s\n", (char*)pErrorMsg->GetBufferPointer());
       D3DDevice_Release(vid->xdk360_render_device);
-	  Direct3D_Release();
+      Direct3D_Release();
       free(vid);
       return NULL;
    }
    else
    {
-	    SSNES_LOG("Pixel shader program from [%s] successfully compiled.\n", "game:\\media\\shaders\\stock.cg");
+      SSNES_LOG("Pixel shader program from [%s] successfully compiled.\n", "game:\\media\\shaders\\stock.cg");
    }
    
    vid->pVertexShader = D3DDevice_CreateVertexShader((const DWORD*)pShaderCodeV->GetBufferPointer());
@@ -486,7 +490,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    pShaderCodeP->Release();
 
    vid->lpTexture = (D3DTexture*) D3DDevice_CreateTexture(512, 512, 1, 1, 0, D3DFMT_LIN_X1R5G5B5,
-               0, D3DRTYPE_TEXTURE);
+		   0, D3DRTYPE_TEXTURE);
 
    D3DLOCKED_RECT d3dlr;
    D3DTexture_LockRect(vid->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
@@ -549,23 +553,23 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    {
       D3DLOCKED_RECT d3dlr;
 
-	  D3DTexture_LockRect(vid->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-	  memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
-	  D3DTexture_UnlockRect(vid->lpTexture, 0);
+      D3DTexture_LockRect(vid->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+      memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
+      D3DTexture_UnlockRect(vid->lpTexture, 0);
 
       float tex_w = width / 512.0f;
       float tex_h = height / 512.0f;
 	  
-	  const DrawVerticeFormats verts[] = {
-		  { -1.0f, -1.0f, 0.0f,  tex_h },
-		  {  1.0f, -1.0f, tex_w, tex_h },
-		  { -1.0f,  1.0f, 0.0f,  0.0f },
-		  {  1.0f,  1.0f, tex_w, 0.0f },
-	  };
-	  
-	  void *verts_ptr = (BYTE*)D3DVertexBuffer_Lock(vid->vertex_buf, 0, 0, 0);
-	  memcpy(verts_ptr, verts, sizeof(verts));
-	  D3DVertexBuffer_Unlock(vid->vertex_buf);
+      const DrawVerticeFormats verts[] = {
+	      { -1.0f, -1.0f, 0.0f,  tex_h },
+	      {  1.0f, -1.0f, tex_w, tex_h },
+	      { -1.0f,  1.0f, 0.0f,  0.0f },
+	      {  1.0f,  1.0f, tex_w, 0.0f },
+      };
+
+      void *verts_ptr = (BYTE*)D3DVertexBuffer_Lock(vid->vertex_buf, 0, 0, 0);
+      memcpy(verts_ptr, verts, sizeof(verts));
+      D3DVertexBuffer_Unlock(vid->vertex_buf);
 
       vid->last_width = width;
       vid->last_height = height;
@@ -579,9 +583,9 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    D3DTexture_LockRect(vid->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    for (unsigned y = 0; y < height; y++)
    {
-	   const uint8_t *in = (const uint8_t*)frame + y * pitch;
-	   uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
-	   memcpy(out, in, width * sizeof(uint16_t));
+      const uint8_t *in = (const uint8_t*)frame + y * pitch;
+      uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
+      memcpy(out, in, width * sizeof(uint16_t));
    }
    D3DTexture_UnlockRect(vid->lpTexture, 0);
 
@@ -601,39 +605,39 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    D3DDevice_DrawVertices(vid->xdk360_render_device, D3DPT_TRIANGLESTRIP, 0, D3DVERTEXCOUNT(D3DPT_TRIANGLESTRIP, 2));
    if (msg)
    {
-	   if(IS_TIMER_EXPIRED() || g_first_msg)
-	   {
-		   xdk360_console_format(msg);
-		   g_first_msg = 0;
-		   SET_TIMER_EXPIRATION(30);
-	   }
+      if(IS_TIMER_EXPIRED() || g_first_msg)
+      {
+         xdk360_console_format(msg);
+	 g_first_msg = 0;
+	 SET_TIMER_EXPIRATION(30);
+      }
 	   
-	   xdk360_console_draw();
+      xdk360_console_draw();
    }
 
    if(!vid->block_swap)
-	   D3DDevice_Present(vid->xdk360_render_device);
+      D3DDevice_Present(vid->xdk360_render_device);
 
    return true;
 }
 
 static void xdk360_set_swap_block_swap (void * data, bool toggle)
 {
-	(void)data;
-	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-	vid->block_swap = toggle;
+   (void)data;
+   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   vid->block_swap = toggle;
 
-	if(toggle)
-		SSNES_LOG("Swap is set to blocked.\n");
-	else
-		SSNES_LOG("Swap is set to non-blocked.\n");
+   if(toggle)
+      SSNES_LOG("Swap is set to blocked.\n");
+   else
+      SSNES_LOG("Swap is set to non-blocked.\n");
 }
 
 static void xdk360_swap (void * data)
 {
-	(void)data;
-	xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-	D3DDevice_Present(vid->xdk360_render_device);
+   (void)data;
+   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   D3DDevice_Present(vid->xdk360_render_device);
 }
 
 static void xdk360_gfx_set_nonblock_state(void *data, bool state)
@@ -641,9 +645,9 @@ static void xdk360_gfx_set_nonblock_state(void *data, bool state)
    xdk360_video_t *vid = (xdk360_video_t*)data;
    SSNES_LOG("D3D Vsync => %s\n", state ? "off" : "on");
    if(state)
-	   D3DDevice_SetRenderState_PresentInterval(vid->xdk360_render_device, D3DPRESENT_INTERVAL_IMMEDIATE);
+      D3DDevice_SetRenderState_PresentInterval(vid->xdk360_render_device, D3DPRESENT_INTERVAL_IMMEDIATE);
    else
-	   D3DDevice_SetRenderState_PresentInterval(vid->xdk360_render_device, D3DPRESENT_INTERVAL_ONE);
+      D3DDevice_SetRenderState_PresentInterval(vid->xdk360_render_device, D3DPRESENT_INTERVAL_ONE);
 }
 
 static bool xdk360_gfx_alive(void *data)
@@ -660,7 +664,7 @@ static bool xdk360_gfx_focus(void *data)
 
 void xdk360_video_set_vsync(bool vsync)
 {
-	xdk360_gfx_set_nonblock_state(g_d3d, vsync);
+   xdk360_gfx_set_nonblock_state(g_d3d, vsync);
 }
 
 // 360 needs a working graphics stack before SSNESeven starts.
@@ -670,31 +674,32 @@ void xdk360_video_set_vsync(bool vsync)
 // When SSNES wants to free it, it is ignored.
 void xdk360_video_init(void)
 {
-	video_info_t video_info = {0};
-	// Might have to supply correct values here.
-	video_info.vsync = g_settings.video.vsync;
-	video_info.force_aspect = false;
-	video_info.smooth = g_settings.video.smooth;
-	video_info.input_scale = 2;
+   video_info_t video_info = {0};
 
-	g_d3d = xdk360_gfx_init(&video_info, NULL, NULL);
+   video_info.vsync = g_settings.video.vsync;
+   video_info.force_aspect = false;
+   video_info.smooth = g_settings.video.smooth;
+   video_info.input_scale = 2;
 
-	g_first_msg = true;
+   g_d3d = xdk360_gfx_init(&video_info, NULL, NULL);
 
-	HRESULT hr = xdk360_console_init("game:\\media\\Arial_12.xpr",
-		0xff000000, 0xffffffff );
-	if(FAILED(hr))
-	{
-		SSNES_ERR("Couldn't create debug console.\n");
-	}
+   g_first_msg = true;
+
+   HRESULT hr = xdk360_console_init("game:\\media\\Arial_12.xpr",
+		   0xff000000, 0xffffffff );
+
+   if(FAILED(hr))
+   {
+      SSNES_ERR("Couldn't create debug console.\n");
+   }
 }
 
 void xdk360_video_deinit(void)
 {
-	void *data = g_d3d;
-	g_d3d = NULL;
-	xdk360_console_deinit();
-	xdk360_gfx_free(data);
+   void *data = g_d3d;
+   g_d3d = NULL;
+   xdk360_console_deinit();
+   xdk360_gfx_free(data);
 }
 
 const video_driver_t video_xdk360 = {
