@@ -102,7 +102,9 @@ enum xdk360_device_id
 #endif
 
 extern uint64_t ssnes_default_keybind_lut[SSNES_FIRST_META_KEY];
+#ifndef HW_RVL
 extern uint64_t ssnes_platform_keybind_lut[SSNES_LAST_PLATFORM_KEY];
+#endif
 extern char ssnes_default_libsnes_keybind_name_lut[SSNES_FIRST_META_KEY][256];
 
 #endif
