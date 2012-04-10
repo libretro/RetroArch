@@ -61,7 +61,7 @@ char contentInfoPath[MAX_PATH_LENGTH];
 char usrDirPath[MAX_PATH_LENGTH];
 char LIBSNES_DIR_PATH[MAX_PATH_LENGTH];
 char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
-char libsnes_path[MAX_PATH_LENGTH];
+char libretro_path[MAX_PATH_LENGTH];
 
 SYS_PROCESS_PARAM(1001, 0x100000)
 
@@ -157,8 +157,8 @@ static void find_and_set_first_file(void)
 
 	if(first_self)
 	{
-		SSNES_LOG("Start first entry in libsnes cores dir: [%s].\n", first_self);
-		strlcpy(libsnes_path, first_self, sizeof(libsnes_path));
+		SSNES_LOG("Start first entry in libretro cores dir: [%s].\n", first_self);
+		strlcpy(libretro_path, first_self, sizeof(libretro_path));
 	}
 	else
 	{
@@ -193,23 +193,23 @@ static void init_settings(void)
 	if(path_file_exists(core_self))
 	{
 		//Start CORE.SELF
-		snprintf(libsnes_path, sizeof(libsnes_path), core_self);
-		SSNES_LOG("Start [%s].\n", libsnes_path);
+		snprintf(libretro_path, sizeof(libretro_path), core_self);
+		SSNES_LOG("Start [%s].\n", libretro_path);
 	}
 	else
 	{
 		if(config_file_exists)
 		{
 			config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
-			config_get_array(conf, "libsnes_path", tmp_str, sizeof(tmp_str));
-			snprintf(libsnes_path, sizeof(libsnes_path), tmp_str);
+			config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
+			snprintf(libretro_path, sizeof(libretro_path), tmp_str);
 		}
 
-		if(!config_file_exists || !strcmp(libsnes_path, ""))
+		if(!config_file_exists || !strcmp(libretro_path, ""))
 			find_and_set_first_file();
 		else
 		{
-			SSNES_LOG("Start [%s] found in ssnes.cfg.\n", libsnes_path);
+			SSNES_LOG("Start [%s] found in ssnes.cfg.\n", libretro_path);
 		}
 	}
 }
@@ -324,12 +324,12 @@ int main(int argc, char *argv[])
 		NULL
 	};
 
-	ret = sceNpDrmProcessExitSpawn2(k_licensee, libsnes_path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-	SSNES_LOG("Launch libsnes core: [%s] (return code: %x]).\n", libsnes_path, ret);
+	ret = sceNpDrmProcessExitSpawn2(k_licensee, libretro_path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+	SSNES_LOG("Launch libretro core: [%s] (return code: %x]).\n", libretro_path, ret);
 	if(ret < 0)
 	{
 		SSNES_LOG("SELF file is not of NPDRM type, trying another approach to boot it...\n");
-		sys_game_process_exitspawn2(libsnes_path, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+		sys_game_process_exitspawn2(libretro_path, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
 
 	}
 	sceNpTerm();

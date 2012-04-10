@@ -40,7 +40,7 @@
 
 char LIBSNES_DIR_PATH[MAX_PATH_LENGTH];
 char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
-char libsnes_path[MAX_PATH_LENGTH];
+char libretro_path[MAX_PATH_LENGTH];
 DWORD volume_device_type;
 
 static bool path_file_exists(const char *path)
@@ -183,10 +183,10 @@ static void find_and_set_first_file(void)
 			}
 		}
 
-		SSNES_LOG("Start first entry in libsnes cores dir: [%s].\n", first_xex);
+		SSNES_LOG("Start first entry in libretro cores dir: [%s].\n", first_xex);
 
 		snprintf(fname, sizeof(fname), "game:\\%s", fname_tmp);
-		strlcpy(libsnes_path, fname, sizeof(libsnes_path));
+		strlcpy(libretro_path, fname, sizeof(libretro_path));
 	}
 	else
 	{
@@ -221,23 +221,23 @@ static void init_settings(void)
 	if(path_file_exists(core_xex))
 	{
 		//Start CORE.xex
-		snprintf(libsnes_path, sizeof(libsnes_path), core_xex);
-		SSNES_LOG("Start [%s].\n", libsnes_path);
+		snprintf(libretro_path, sizeof(libretro_path), core_xex);
+		SSNES_LOG("Start [%s].\n", libretro_path);
 	}
 	else
 	{
 		if(config_file_exists)
 		{
 			config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
-			config_get_array(conf, "libsnes_path", tmp_str, sizeof(tmp_str));
-			snprintf(libsnes_path, sizeof(libsnes_path), tmp_str);
+			config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
+			snprintf(libretro_path, sizeof(libretro_path), tmp_str);
 		}
 
-		if(!config_file_exists || !strcmp(libsnes_path, ""))
+		if(!config_file_exists || !strcmp(libretro_path, ""))
 			find_and_set_first_file();
 		else
 		{
-			SSNES_LOG("Start [%s] found in ssnes.cfg.\n", libsnes_path);
+			SSNES_LOG("Start [%s] found in ssnes.cfg.\n", libretro_path);
 		}
 	}
 }
@@ -314,8 +314,8 @@ int main(int argc, char *argv[])
 		init_settings();
 	}
 	
-	XLaunchNewImage(libsnes_path, NULL);
-	SSNES_LOG("Launch libsnes core: [%s] (return code: %x]).\n", libsnes_path, ret);
+	XLaunchNewImage(libretro_path, NULL);
+	SSNES_LOG("Launch libretro core: [%s] (return code: %x]).\n", libretro_path, ret);
 
 	return 1;
 }
