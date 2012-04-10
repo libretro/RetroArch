@@ -108,7 +108,7 @@ static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
 
    unsigned player = port;
    uint64_t button = binds[player][id].joykey;
-   int16_t retval = CTRL_MASK(state[player], button);
+   int16_t retval = CTRL_MASK(state[player], button) ? 1 : 0;
 
    if(player >= pads_connected || device != RETRO_DEVICE_JOYPAD)
       retval = 0;
