@@ -54,7 +54,7 @@ static void xdk360_input_poll(void *data)
 }
 
 static int16_t xdk360_input_state(void *data, const struct snes_keybind **binds,
-      bool port, unsigned device,
+      unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
    (void)data;

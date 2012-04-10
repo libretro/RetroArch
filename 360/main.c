@@ -137,18 +137,18 @@ static void set_default_settings (void)
 	g_settings.video.smooth = true;
 	g_settings.video.aspect_ratio = -1.0f;
 
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_B]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_A];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_Y]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_X];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_SELECT]	=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_BACK];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_START]	=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_START];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_UP]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_UP];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_DOWN]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_DOWN];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_LEFT]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_LEFT];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_RIGHT]	=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_RIGHT];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_A]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_B];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_X]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_Y];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_L]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_LB];
-	ssnes_default_keybind_lut[SNES_DEVICE_ID_JOYPAD_R]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_RB];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_A];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_X];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_BACK];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_START];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_UP];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_DOWN];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_LEFT];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_RIGHT];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_B];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_Y];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_LB];
+	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_RB];
 
 	for(uint32_t x = 0; x < MAX_PLAYERS; x++)
 	{
@@ -252,7 +252,7 @@ static char **dir_list_new_360(const char *dir, const char *ext)
 }
 
 
-static void init_settings (bool load_libsnes_path)
+static void init_settings (bool load_libretro_path)
 {
 	char fname_tmp[MAX_PATH_LENGTH];
 
@@ -266,13 +266,13 @@ static void init_settings (bool load_libsnes_path)
 
 	config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
 
-	if(load_libsnes_path)
+	if(load_libretro_path)
 	{
-		CONFIG_GET_STRING(libsnes, "libsnes_path");
+		CONFIG_GET_STRING(libretro, "libretro_path");
 
-		if(!strcmp(g_settings.libsnes, ""))
+		if(!strcmp(g_settings.libretro, ""))
 		{
-			//We need to set libsnes to the first entry in the cores
+			//We need to set libretro to the first entry in the cores
 			//directory so that it will be saved to the config file
 			char ** dir_list = dir_list_new_360("game:\\", ".xex");
 			if (!dir_list)
@@ -301,12 +301,12 @@ static void init_settings (bool load_libsnes_path)
 						fill_pathname_base(fname_tmp, first_xex, sizeof(fname_tmp));
 					}
 				}
-				SSNES_LOG("Set first .xex entry in dir: [%s] to libsnes path.\n", fname_tmp);
-				snprintf(g_settings.libsnes, sizeof(g_settings.libsnes), "game:\\%s", fname_tmp);
+				SSNES_LOG("Set first .xex entry in dir: [%s] to libretro path.\n", fname_tmp);
+				snprintf(g_settings.libretro, sizeof(g_settings.libretro), "game:\\%s", fname_tmp);
 			}
 			else
 			{
-				SSNES_ERR("Failed to set first .xex entry to libsnes path.\n");
+				SSNES_ERR("Failed to set first .xex entry to libretro path.\n");
 			}
 
 			dir_list_free(dir_list);
@@ -347,7 +347,7 @@ static void save_settings (void)
 			conf = config_file_new(NULL);
 
 	// g_settings
-	config_set_string(conf, "libsnes_path", g_settings.libsnes);
+	config_set_string(conf, "libretro_path", g_settings.libretro);
 	config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
 	config_set_bool(conf, "video_smooth", g_settings.video.smooth);
 	config_set_bool(conf, "video_vsync", g_settings.video.vsync);
@@ -449,19 +449,19 @@ static void get_environment_settings (void)
 	strlcpy(SYS_CONFIG_FILE, "game:\\ssnes.cfg", sizeof(SYS_CONFIG_FILE));
 }
 
-static bool manage_libsnes_core(void)
+static bool manage_libretro_core(void)
 {
 	g_extern.verbose = true;
 	bool return_code;
 
-	bool set_libsnes_path = false;
+	bool set_libretro_path = false;
 	char tmp_path[1024], tmp_path2[1024], tmp_pathnewfile[1024];
 	snprintf(tmp_path, sizeof(tmp_path), "game:\\CORE.xex");
 	SSNES_LOG("Assumed path of CORE.xex: [%s]\n", tmp_path);
 	if(path_file_exists(tmp_path))
 	{
 		//if CORE.xex exists, this indicates we have just installed
-		//a new libsnes port and that we need to change it to a more
+		//a new libretro port and that we need to change it to a more
 		//sane name.
 
 		int ret;
@@ -473,17 +473,17 @@ static bool manage_libsnes_core(void)
 		if(path_file_exists(tmp_pathnewfile))
 		{
 			SSNES_LOG("Upgrading emulator core...\n");
-			//if libsnes core already exists, then that means we are
-			//upgrading the libsnes core - so delete pre-existing
+			//if libretro core already exists, then that means we are
+			//upgrading the libretro core - so delete pre-existing
 			//file first
 			ret = DeleteFile(tmp_pathnewfile);
 			if(ret != 0)
 			{
-				SSNES_LOG("Succeeded in removing pre-existing libsnes core: [%s].\n", tmp_pathnewfile);
+				SSNES_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
 			}
 			else
 			{
-				SSNES_LOG("Failed to remove pre-existing libsnes core: [%s].\n", tmp_pathnewfile);
+				SSNES_LOG("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
 			}
 		}
 
@@ -495,26 +495,26 @@ static bool manage_libsnes_core(void)
 		}
 		else
 		{
-			SSNES_LOG("Libsnes core [%s] renamed to: [%s].\n", tmp_path, tmp_pathnewfile);
-			set_libsnes_path = true;
+			SSNES_LOG("libretro core [%s] renamed to: [%s].\n", tmp_path, tmp_pathnewfile);
+			set_libretro_path = true;
 		}
 	}
 	else
 	{
-		SSNES_LOG("CORE.xex was not found, libsnes core path will be loaded from config file.\n");
+		SSNES_LOG("CORE.xex was not found, libretro core path will be loaded from config file.\n");
 	}
 
-	if(set_libsnes_path)
+	if(set_libretro_path)
 	{
-		//CORE.xex has been renamed, libsnes path will now be set to the recently
-		//renamed new libsnes core
-		strlcpy(g_settings.libsnes, tmp_pathnewfile, sizeof(g_settings.libsnes));
+		//CORE.xex has been renamed, libretro path will now be set to the recently
+		//renamed new libretro core
+		strlcpy(g_settings.libretro, tmp_pathnewfile, sizeof(g_settings.libretro));
 		return_code = 0;
 	}
 	else
 	{
 		//There was no CORE.xex present, or the CORE.xex file was not renamed.
-		//The libsnes core path will still be loaded from the config file
+		//The libretro core path will still be loaded from the config file
 		return_code = 1;
 	}
 
@@ -530,11 +530,11 @@ int main(int argc, char *argv[])
 	ssnes_main_clear_state();
 	config_set_defaults();
 	
-	bool load_libsnes_path = manage_libsnes_core();
+	bool load_libretro_path = manage_libretro_core();
 
 	set_default_settings();
-	init_settings(load_libsnes_path);
-	init_libsnes_sym();
+	init_settings(load_libretro_path);
+	init_libretro_sym();
 
 	xdk360_video_init();
 	xdk360_input_init();

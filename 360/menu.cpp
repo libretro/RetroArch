@@ -276,6 +276,10 @@ HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
 HRESULT CSSNESMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
+	struct retro_system_info info;
+	retro_get_system_info(&info);
+	const char *id = info.library_name ? info.library_name : "Unknown";
+
 	GetChildById(L"XuiBtnRomBrowser", &m_filebrowser);
 	GetChildById(L"XuiBtnSettings", &m_settings);
 	GetChildById(L"XuiBtnQuickMenu", &m_quick_menu);
@@ -286,7 +290,7 @@ HRESULT CSSNESMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	GetChildById(L"XuiBtnLibsnesCore", &m_change_libsnes_core);
 
 	char core_text[256];
-	sprintf(core_text, "%s (v%s)", snes_library_id(), g_extern.system.version);
+	sprintf(core_text, "%s (v%s)", id, info.library_version);
 	char package_version[32];
 	sprintf(package_version, "SSNES %s", PACKAGE_VERSION);
 	unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, core_text, -1, NULL, 0);
