@@ -125,7 +125,7 @@ void oskutil_init(oskutil_params *params, unsigned int containersize)
       params->osk_memorycontainer =  1024*1024*7;
 }
 
-static bool oskutil_enable_key_layout()
+static bool oskutil_enable_key_layout (void)
 {
    int ret = cellOskDialogSetKeyLayoutOption(CELL_OSKDIALOG_10KEY_PANEL | \
       CELL_OSKDIALOG_FULLKEY_PANEL);

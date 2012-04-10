@@ -111,22 +111,13 @@ static bool gl_shader_init(void)
 	switch (g_settings.video.shader_type)
 	{
 		case SSNES_SHADER_AUTO:
-			{
-				if (strlen(g_settings.video.cg_shader_path) > 0 && strlen(g_settings.video.bsnes_shader_path) > 0)
-					SSNES_WARN("Both Cg and bSNES XML shader are defined in config file. Cg shader will be selected by default.\n");
-
-				if (strlen(g_settings.video.cg_shader_path) > 0)
-					return gl_cg_init(g_settings.video.cg_shader_path);
-				break;
-			}
-
+			if (strlen(g_settings.video.cg_shader_path) > 0 && strlen(g_settings.video.bsnes_shader_path) > 0)
+				SSNES_WARN("Both Cg and bSNES XML shader are defined in config file. Cg shader will be selected by default.\n");
+			// fall-through
 		case SSNES_SHADER_CG:
-			{
-				if (strlen(g_settings.video.cg_shader_path) > 0)
-					return gl_cg_init(g_settings.video.cg_shader_path);
-				break;
-			}
-
+			if (strlen(g_settings.video.cg_shader_path) > 0)
+				return gl_cg_init(g_settings.video.cg_shader_path);
+			break;
 		default:
 			break;
 	}

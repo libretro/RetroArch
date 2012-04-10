@@ -90,19 +90,19 @@ static const char *get_rom_path(sgui_handle_t *sgui)
       for (unsigned i = 0; i < SSNES_FIRST_META_KEY; i++)
       {
          input_state |= input_wii.input_state(NULL, NULL, false,
-               SNES_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
+               RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
       }
 
       uint16_t trigger_state = input_state & ~old_input_state;
 
       sgui_action_t action = SGUI_ACTION_NOOP;
-      if (trigger_state & (1 << SNES_DEVICE_ID_JOYPAD_B))
+      if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
          action = SGUI_ACTION_CANCEL;
-      else if (trigger_state & (1 << SNES_DEVICE_ID_JOYPAD_A))
+      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_A))
          action = SGUI_ACTION_OK;
-      else if (trigger_state & (1 << SNES_DEVICE_ID_JOYPAD_UP))
+      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
          action = SGUI_ACTION_UP;
-      else if (trigger_state & (1 << SNES_DEVICE_ID_JOYPAD_DOWN))
+      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
          action = SGUI_ACTION_DOWN;
 
       const char *ret = sgui_iterate(sgui, action);

@@ -73,7 +73,7 @@ static void wii_input_poll(void *data)
 
    unsigned pads = PAD_ScanPads();
    unsigned wpads = WPAD_ScanPads();
-#define _BIND(btn) pad_state[i][SNES_DEVICE_ID_JOYPAD_##btn] = down & PAD_BUTTON_##btn
+#define _BIND(btn) pad_state[i][RETRO_DEVICE_ID_JOYPAD_##btn] = down & PAD_BUTTON_##btn
    for (unsigned i = 0; i < pads; i++)
    {
       uint16_t down = PAD_ButtonsHeld(i) | PAD_ButtonsDown(i);
@@ -81,7 +81,7 @@ static void wii_input_poll(void *data)
 
       _BIND(B);
       _BIND(Y);
-      pad_state[i][SNES_DEVICE_ID_JOYPAD_SELECT] = down & PAD_TRIGGER_Z;
+      pad_state[i][RETRO_DEVICE_ID_JOYPAD_SELECT] = down & PAD_TRIGGER_Z;
       _BIND(START);
       _BIND(UP);
       _BIND(DOWN);
@@ -89,13 +89,13 @@ static void wii_input_poll(void *data)
       _BIND(RIGHT);
       _BIND(A);
       _BIND(X);
-      pad_state[i][SNES_DEVICE_ID_JOYPAD_L] = down & PAD_TRIGGER_L;
-      pad_state[i][SNES_DEVICE_ID_JOYPAD_R] = down & PAD_TRIGGER_R;
+      pad_state[i][RETRO_DEVICE_ID_JOYPAD_L] = down & PAD_TRIGGER_L;
+      pad_state[i][RETRO_DEVICE_ID_JOYPAD_R] = down & PAD_TRIGGER_R;
    }
 
 #undef _BIND
 #define _BIND(btn) \
-   wpad_state[i][SNES_DEVICE_ID_JOYPAD_##btn] = down & WPAD_CLASSIC_BUTTON_##btn;
+   wpad_state[i][RETRO_DEVICE_ID_JOYPAD_##btn] = down & WPAD_CLASSIC_BUTTON_##btn;
 
    for (unsigned i = 0; i < wpads; i++)
    {
@@ -104,16 +104,16 @@ static void wii_input_poll(void *data)
 
       _BIND(B);
       _BIND(Y);
-      wpad_state[i][SNES_DEVICE_ID_JOYPAD_SELECT] = down & WPAD_CLASSIC_BUTTON_MINUS;
-      wpad_state[i][SNES_DEVICE_ID_JOYPAD_START] = down & WPAD_CLASSIC_BUTTON_PLUS;
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_SELECT] = down & WPAD_CLASSIC_BUTTON_MINUS;
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_START] = down & WPAD_CLASSIC_BUTTON_PLUS;
       _BIND(UP);
       _BIND(DOWN);
       _BIND(LEFT);
       _BIND(RIGHT);
       _BIND(A);
       _BIND(X);
-      wpad_state[i][SNES_DEVICE_ID_JOYPAD_L] = down & WPAD_CLASSIC_BUTTON_FULL_L;
-      wpad_state[i][SNES_DEVICE_ID_JOYPAD_R] = down & WPAD_CLASSIC_BUTTON_FULL_R;
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_L] = down & WPAD_CLASSIC_BUTTON_FULL_L;
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_R] = down & WPAD_CLASSIC_BUTTON_FULL_R;
    }
 }
 
@@ -124,14 +124,14 @@ static bool wii_key_pressed(void *data, int key)
    {
       case SSNES_QUIT_KEY:
          return g_quit ||
-            (pad_state[0][SNES_DEVICE_ID_JOYPAD_SELECT] &&
-             pad_state[0][SNES_DEVICE_ID_JOYPAD_START] &&
-             pad_state[0][SNES_DEVICE_ID_JOYPAD_L] &&
-             pad_state[0][SNES_DEVICE_ID_JOYPAD_R]) ||
-            (wpad_state[0][SNES_DEVICE_ID_JOYPAD_SELECT] &&
-             wpad_state[0][SNES_DEVICE_ID_JOYPAD_START] &&
-             wpad_state[0][SNES_DEVICE_ID_JOYPAD_L] &&
-             wpad_state[0][SNES_DEVICE_ID_JOYPAD_R]);
+            (pad_state[0][RETRO_DEVICE_ID_JOYPAD_SELECT] &&
+             pad_state[0][RETRO_DEVICE_ID_JOYPAD_START] &&
+             pad_state[0][RETRO_DEVICE_ID_JOYPAD_L] &&
+             pad_state[0][RETRO_DEVICE_ID_JOYPAD_R]) ||
+            (wpad_state[0][RETRO_DEVICE_ID_JOYPAD_SELECT] &&
+             wpad_state[0][RETRO_DEVICE_ID_JOYPAD_START] &&
+             wpad_state[0][RETRO_DEVICE_ID_JOYPAD_L] &&
+             wpad_state[0][RETRO_DEVICE_ID_JOYPAD_R]);
       default:
          return false;
    }
