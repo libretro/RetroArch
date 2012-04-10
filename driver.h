@@ -28,7 +28,7 @@
 #define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
 #define AUDIO_MAX_RATIO 16
 
-// SNES has 12 buttons from 0-11 (libsnes.hpp)
+// libretro has 12 buttons from 0-11 (libretro.h)
 #define SSNES_FIRST_META_KEY 12
 enum
 {
