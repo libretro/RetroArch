@@ -25,6 +25,6 @@
 
 #define ssnes_render_cached_frame() \
    const char *msg = msg_queue_pull(g_extern.msg_queue); \
-   video_frame_func(g_extern.frame_cache.data, g_extern.frame_cache.width, g_extern.frame_cache.height, g_extern.frame_cache.height, msg);
+   video_frame_func(g_extern.frame_cache.data, g_extern.frame_cache.width, g_extern.frame_cache.height, g_extern.frame_cache.pitch, msg);
 
 #endif
