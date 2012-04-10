@@ -38,6 +38,7 @@
 #define MAP(x) (x & 0xFF)
 
 static uint64_t state[MAX_PADS];
+static unsigned pads_connected;
 
 void cell_pad_input_deinit(void)
 {
@@ -95,6 +96,8 @@ static void ps3_input_poll(void *data)
    (void)data;
    for (unsigned i = 0; i < MAX_PADS; i++)
       state[i] = cell_pad_input_poll_device(i);
+
+   pads_connected = cell_pad_input_pads_connected(); 
 }
 
 static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
@@ -105,8 +108,12 @@ static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
 
    unsigned player = port;
    uint64_t button = binds[player][id].joykey;
+   int16_t retval = CTRL_MASK(state[player], button);
 
-   return CTRL_MASK(state[player], button) ? 1 : 0;
+   if(player >= pads_connected || device != RETRO_DEVICE_JOYPAD)
+      retval = 0;
+
+   return retval;
 }
 
 /*============================================================
