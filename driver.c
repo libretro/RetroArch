@@ -500,7 +500,7 @@ void init_video_input(void)
 
    const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
    unsigned max_dim = max(geom->max_width, geom->max_height);
-   unsigned scale = max_dim / SSNES_SCALE_BASE;
+   unsigned scale = next_pow2(max_dim) / SSNES_SCALE_BASE;
    scale = max(scale, 1);
 
    if (g_extern.filter.active)
