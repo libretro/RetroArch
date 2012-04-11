@@ -17,6 +17,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+
+#if defined(__CELLOS_LV2__)
 #include <cell/pad.h>
 #include <cell/sysmodule.h>
 #include <sysutil/sysutil_gamecontent.h>
@@ -25,13 +27,21 @@
 #include <np.h>
 #include <np/drm.h>
 #include <dirent.h>
+#elif defined(_XBOX)
+#include <xtl.h>
+#endif
 
 #include "../../compat/strl.h"
 #include "../../conf/config_file.h"
 
+#if defined(_XBOX)
+#include "../../msvc/msvc_compat.h"
+#elif defined(__CELLOS_LV2__)
+#define NP_POOL_SIZE (128*1024)
+#endif
+
 #define PATH_MAX (512UL)
 
-#define NP_POOL_SIZE (128*1024)
 #define MAX_PATH_LENGTH 1024
 
 #ifdef HAVE_LOGGER
@@ -56,14 +66,18 @@
    } while (0)
 #endif
 
+#if defined(__CELLOS_LV2__)
 static uint8_t np_pool[NP_POOL_SIZE];
 char contentInfoPath[MAX_PATH_LENGTH];
 char usrDirPath[MAX_PATH_LENGTH];
+SYS_PROCESS_PARAM(1001, 0x100000)
+#elif defined(_XBOX)
+DWORD volume_device_type;
+#endif
+
 char LIBSNES_DIR_PATH[MAX_PATH_LENGTH];
 char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 char libretro_path[MAX_PATH_LENGTH];
-
-SYS_PROCESS_PARAM(1001, 0x100000)
 
 static bool path_file_exists(const char *path)
 {
@@ -87,12 +101,89 @@ static void dir_list_free(char **dir_list)
    free(orig);
 }
 
+#ifdef _XBOX
+static void fill_pathname_base(char *out_dir, const char *in_path, size_t size)
+{
+   const char *ptr = strrchr(in_path, '/');
+   if (!ptr)
+      ptr = strrchr(in_path, '\\');
+
+   if (ptr)
+      ptr++;
+   else
+      ptr = in_path;
+   
+   strlcpy(out_dir, ptr, size);
+}
+#endif
+
 static char **dir_list_new(const char *dir, const char *ext)
 {
    size_t cur_ptr = 0;
    size_t cur_size = 32;
    char **dir_list = NULL;
 
+#if defined(_XBOX)
+   WIN32_FIND_DATA ffd;
+   HANDLE hFind = INVALID_HANDLE_VALUE;
+
+   char path_buf[PATH_MAX];
+
+   if (strlcpy(path_buf, dir, sizeof(path_buf)) >= sizeof(path_buf))
+      goto error;
+   if (strlcat(path_buf, "*", sizeof(path_buf)) >= sizeof(path_buf))
+      goto error;
+
+   if (ext)
+   {
+	   if (strlcat(path_buf, ext, sizeof(path_buf)) >= sizeof(path_buf))
+              goto error;
+   }
+
+   hFind = FindFirstFile(path_buf, &ffd);
+   if (hFind == INVALID_HANDLE_VALUE)
+	   goto error;
+
+   dir_list = (char**)calloc(cur_size, sizeof(char*));
+   if (!dir_list)
+	   goto error;
+
+   do
+   {
+	   // Not a perfect search of course, but hopefully good enough in practice.
+	   if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		   continue;
+	   if (ext && !strstr(ffd.cFileName, ext))
+		   continue;
+
+	   dir_list[cur_ptr] = (char*)malloc(PATH_MAX);
+	   if (!dir_list[cur_ptr])
+		   goto error;
+
+	   strlcpy(dir_list[cur_ptr], dir, PATH_MAX);
+	   strlcat(dir_list[cur_ptr], ffd.cFileName, PATH_MAX);
+
+	   cur_ptr++;
+	   if (cur_ptr + 1 == cur_size) // Need to reserve for NULL.
+	   {
+		   cur_size *= 2;
+		   dir_list = (char**)realloc(dir_list, cur_size * sizeof(char*));
+		   if (!dir_list)
+			   goto error;
+
+		   // Make sure it's all NULL'd out since we cannot rely on realloc to do this.
+		   memset(dir_list + cur_ptr, 0, (cur_size - cur_ptr) * sizeof(char*));
+	   }
+   }while (FindNextFile(hFind, &ffd) != 0);
+
+   FindClose(hFind);
+   return dir_list;
+
+error:
+   SSNES_ERR("Failed to open directory: \"%s\"\n", dir);
+   if (hFind != INVALID_HANDLE_VALUE)
+	   FindClose(hFind);
+#elif defined(__CELLOS_LV2__)
    DIR *directory = NULL;
    const struct dirent *entry = NULL;
 
@@ -139,6 +230,7 @@ error:
 
    if (directory)
       closedir(directory);
+#endif
 
    dir_list_free(dir_list);
    return NULL;
@@ -146,26 +238,54 @@ error:
 
 static void find_and_set_first_file(void)
 {
-   //Last fallback - we'll need to start the first .SELF file 
+   //Last fallback - we'll need to start the first executable file 
    // we can find in the SSNES cores directory
 
+#if defined(_XBOX)
+   char ** dir_list = dir_list_new("game:\\", ".xex");
+#elif defined(__CELLOS_LV2__)
    char ** dir_list = dir_list_new(LIBSNES_DIR_PATH, ".SELF");
+#endif
+
    if (!dir_list)
    {
       SSNES_ERR("Failed last fallback - SSNES Salamander will exit.\n");
       return;
    }
 
-   const char * first_self = dir_list[0];
+   char * first_executable = dir_list[0];
 
-   if(first_self)
+   if(first_executable)
    {
-      SSNES_LOG("Start first entry in libretro cores dir: [%s].\n", first_self);
-      strlcpy(libretro_path, first_self, sizeof(libretro_path));
+#ifdef _XBOX
+	   //Check if it's SSNES Salamander itself - if so, first_executable needs to
+	   //be overridden
+	   char fname_tmp[MAX_PATH_LENGTH];
+
+	   fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
+
+	   if(strcmp(fname_tmp, "SSNES-Salamander.xex") == 0)
+	   {
+		   SSNES_WARN("First entry is SSNES Salamander itself, increment entry by one and check if it exists.\n");
+		   first_executable = dir_list[1];
+		   fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
+
+		   if(!first_executable)
+		   {
+			   SSNES_WARN("There is no second entry - no choice but to boot SSNES Salamander\n");
+			   first_executable = dir_list[0];
+			   fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
+		   }
+	   }
+
+	   snprintf(first_executable, sizeof(first_executable), "game:\\%s", fname_tmp);
+#endif
+	   SSNES_LOG("Start first entry in libretro cores dir: [%s].\n", first_executable);
+	   strlcpy(libretro_path, first_executable, sizeof(libretro_path));
    }
    else
    {
-      SSNES_ERR("Failed last fallback - SSNES Salamander will exit.\n");
+	   SSNES_ERR("Failed last fallback - SSNES Salamander will exit.\n");
    }
 
    dir_list_free(dir_list);
@@ -186,16 +306,19 @@ static void init_settings(void)
    }
    else
       config_file_exists = true;
-		
 
-   //try to find CORE.SELF 
-   char core_self[1024];
-   snprintf(core_self, sizeof(core_self), "%s/CORE.SELF", LIBSNES_DIR_PATH);
+   //try to find CORE executable
+   char core_executable[1024];
+#if defined(_XBOX)
+   snprintf(core_executable, sizeof(core_executable), "game:\\CORE.xex");
+#elif defined(__CELLOS_LV2__)
+   snprintf(core_executable, sizeof(core_executable), "%s/CORE.SELF", LIBSNES_DIR_PATH);
+#endif
 
-   if(path_file_exists(core_self))
+   if(path_file_exists(core_executable))
    {
-      //Start CORE.SELF
-      snprintf(libretro_path, sizeof(libretro_path), core_self);
+      //Start CORE executable
+      snprintf(libretro_path, sizeof(libretro_path), core_executable);
       SSNES_LOG("Start [%s].\n", libretro_path);
    }
    else
@@ -218,6 +341,54 @@ static void init_settings(void)
 
 static void get_environment_settings (void)
 {
+#if defined(_XBOX)
+   //for devkits only, we will need to mount all partitions for retail
+   //in a different way
+   //DmMapDevkitDrive();
+
+   int result_filecache = XSetFileCacheSize(0x100000);
+
+   if(result_filecache != TRUE)
+   {
+      SSNES_ERR("Couldn't change number of bytes reserved for file system cache.\n");
+   }
+   unsigned long result = XMountUtilityDriveEx(XMOUNTUTILITYDRIVE_FORMAT0,8192, 0);
+
+   if(result != ERROR_SUCCESS)
+   {
+      SSNES_ERR("Couldn't mount/format utility drive.\n");
+   }
+
+   // detect install environment
+   unsigned long license_mask;
+
+   if (XContentGetLicenseMask(&license_mask, NULL) != ERROR_SUCCESS)
+   {
+      SSNES_LOG("SSNES was launched as a standalone DVD, or using DVD emulation, or from the development area of the HDD.\n");
+   }
+   else
+   {
+      XContentQueryVolumeDeviceType("GAME",&volume_device_type, NULL);
+
+      switch(volume_device_type)
+      {
+         case XCONTENTDEVICETYPE_HDD:
+            SSNES_LOG("SSNES was launched from a content package on HDD.\n");
+	    break;
+	 case XCONTENTDEVICETYPE_MU:
+	    SSNES_LOG("SSNES was launched from a content package on USB or Memory Unit.\n");
+	    break;
+	 case XCONTENTDEVICETYPE_ODD:
+	    SSNES_LOG("SSNES was launched from a content package on Optical Disc Drive.\n");
+	    break;
+	 default:
+	    SSNES_LOG("SSNES was launched from a content package on an unknown device type.\n");
+	    break;
+      }
+   }
+
+   strlcpy(SYS_CONFIG_FILE, "game:\\ssnes.cfg", sizeof(SYS_CONFIG_FILE));
+#elif defined(__CELLOS_LV2__)
    unsigned int get_type;
    unsigned int get_attributes;
    CellGameContentSize size;
@@ -266,14 +437,37 @@ static void get_environment_settings (void)
       snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/ssnes.cfg", usrDirPath);
       snprintf(LIBSNES_DIR_PATH, sizeof(LIBSNES_DIR_PATH), "%s/cores", usrDirPath);
    }
+#endif
 }
 
 int main(int argc, char *argv[])
 {
+   int ret;
+#if defined(_XBOX)
+   XINPUT_STATE state;
+
+   get_environment_settings();
+
+   XInputGetState(0, &state);
+
+   if(state.Gamepad.wButtons & XINPUT_GAMEPAD_Y)
+   {
+      //override path, boot first XEX in cores directory
+      SSNES_LOG("Fallback - Will boot first XEX in SSNES directory.\n");
+      find_and_set_first_file();
+   }
+   else
+   {
+      //normal XEX loading path
+      init_settings();
+   }
+
+   XLaunchNewImage(libretro_path, NULL);
+   SSNES_LOG("Launch libretro core: [%s] (return code: %x]).\n", libretro_path, ret);
+#elif defined(__CELLOS_LV2__)
    CellPadData pad_data;
    char spawn_data[256], spawn_data_size[16];
    SceNpDrmKey * k_licensee = NULL;
-   int ret;
 
    cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
@@ -345,6 +539,7 @@ int main(int argc, char *argv[])
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
    cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
+#endif
 
    return 1;
 }
