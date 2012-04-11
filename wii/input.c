@@ -16,7 +16,9 @@
 #include <stdint.h>
 #include <gccore.h>
 #include <ogc/pad.h>
+#ifdef HW_RVL
 #include <wiiuse/wpad.h>
+#endif
 #include <string.h>
 
 #include "../driver.h"
@@ -24,7 +26,9 @@
 #include <stdlib.h>
 
 static bool pad_state[5][SSNES_FIRST_META_KEY];   /* Gamecube pads */
+#ifdef HW_RVL
 static bool wpad_state[5][SSNES_FIRST_META_KEY];  /* Wii Classic pads */
+#endif
 
 static bool g_quit;
 
@@ -54,7 +58,9 @@ static void reset_callback(void)
 void wii_input_init(void)
 {
    PAD_Init();
+#ifdef HW_RVL
    WPAD_Init();
+#endif
    SYS_SetResetCallback(reset_callback);
    SYS_SetPowerCallback(reset_callback);
 }
@@ -72,7 +78,9 @@ static void wii_input_poll(void *data)
    (void)data;
 
    unsigned pads = PAD_ScanPads();
+#ifdef HW_RVL
    unsigned wpads = WPAD_ScanPads();
+#endif
 
    /* Gamecube controller */
    for (unsigned i = 0; i < pads; i++)
@@ -95,6 +103,7 @@ static void wii_input_poll(void *data)
       pad_state[i][RETRO_DEVICE_ID_JOYPAD_R] = down & PAD_TRIGGER_R;
    }
 
+#ifdef HW_RVL
    /* Wii Classic controller */
    for (unsigned i = 0; i < wpads; i++)
    {
@@ -114,6 +123,7 @@ static void wii_input_poll(void *data)
       wpad_state[i][RETRO_DEVICE_ID_JOYPAD_L] = down & WPAD_CLASSIC_BUTTON_FULL_L;
       wpad_state[i][RETRO_DEVICE_ID_JOYPAD_R] = down & WPAD_CLASSIC_BUTTON_FULL_R;
    }
+#endif
 }
 
 static bool wii_key_pressed(void *data, int key)
@@ -126,11 +136,15 @@ static bool wii_key_pressed(void *data, int key)
             (pad_state[0][RETRO_DEVICE_ID_JOYPAD_SELECT] &&
              pad_state[0][RETRO_DEVICE_ID_JOYPAD_START] &&
              pad_state[0][RETRO_DEVICE_ID_JOYPAD_L] &&
-             pad_state[0][RETRO_DEVICE_ID_JOYPAD_R]) ||
+             pad_state[0][RETRO_DEVICE_ID_JOYPAD_R])
+#ifdef HW_RVL
+		||
             (wpad_state[0][RETRO_DEVICE_ID_JOYPAD_SELECT] &&
              wpad_state[0][RETRO_DEVICE_ID_JOYPAD_START] &&
              wpad_state[0][RETRO_DEVICE_ID_JOYPAD_L] &&
-             wpad_state[0][RETRO_DEVICE_ID_JOYPAD_R]);
+             wpad_state[0][RETRO_DEVICE_ID_JOYPAD_R])
+#endif
+	;
       default:
          return false;
    }
