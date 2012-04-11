@@ -23,9 +23,9 @@
 #include "../libretro.h"
 #include <stdlib.h>
 
-// Just plain pads for now.
-static bool pad_state[5][SSNES_FIRST_META_KEY];
-static bool wpad_state[5][SSNES_FIRST_META_KEY];
+static bool pad_state[5][SSNES_FIRST_META_KEY];   /* Gamecube pads */
+static bool wpad_state[5][SSNES_FIRST_META_KEY];  /* Wii Classic pads */
+
 static bool g_quit;
 
 static int16_t wii_input_state(void *data, const struct snes_keybind **binds,
@@ -73,45 +73,44 @@ static void wii_input_poll(void *data)
 
    unsigned pads = PAD_ScanPads();
    unsigned wpads = WPAD_ScanPads();
-#define _BIND(btn) pad_state[i][RETRO_DEVICE_ID_JOYPAD_##btn] = down & PAD_BUTTON_##btn
+
+   /* Gamecube controller */
    for (unsigned i = 0; i < pads; i++)
    {
       uint16_t down = PAD_ButtonsHeld(i) | PAD_ButtonsDown(i);
       down &= ~PAD_ButtonsUp(i);
 
-      _BIND(B);
-      _BIND(Y);
+      pad_state[i][RETRO_DEVICE_ID_JOYPAD_B] = down & PAD_BUTTON_B;
+      pad_state[i][RETRO_DEVICE_ID_JOYPAD_Y] = down & PAD_BUTTON_Y;
+      pad_state[i][RETRO_DEVICE_ID_JOYPAD_Y] = down & PAD_BUTTON_Y;
       pad_state[i][RETRO_DEVICE_ID_JOYPAD_SELECT] = down & PAD_TRIGGER_Z;
-      _BIND(START);
-      _BIND(UP);
-      _BIND(DOWN);
-      _BIND(LEFT);
-      _BIND(RIGHT);
-      _BIND(A);
-      _BIND(X);
+      pad_state[i][RETRO_DEVICE_ID_JOYPAD_START] = down & PAD_BUTTON_START;
+      pad_state[i][RETRO_DEVICE_ID_JOYPAD_UP] = down & PAD_BUTTON_UP;
+      pad_state[i][RETRO_DEVICE_ID_JOYPAD_DOWN] = down & PAD_BUTTON_DOWN;
+      pad_state[i][RETRO_DEVICE_ID_JOYPAD_LEFT] = down & PAD_BUTTON_LEFT;
+      pad_state[i][RETRO_DEVICE_ID_JOYPAD_RIGHT] = down & PAD_BUTTON_RIGHT;
+      pad_state[i][RETRO_DEVICE_ID_JOYPAD_A] = down & PAD_BUTTON_A;
+      pad_state[i][RETRO_DEVICE_ID_JOYPAD_X] = down & PAD_BUTTON_X;
       pad_state[i][RETRO_DEVICE_ID_JOYPAD_L] = down & PAD_TRIGGER_L;
       pad_state[i][RETRO_DEVICE_ID_JOYPAD_R] = down & PAD_TRIGGER_R;
    }
 
-#undef _BIND
-#define _BIND(btn) \
-   wpad_state[i][RETRO_DEVICE_ID_JOYPAD_##btn] = down & WPAD_CLASSIC_BUTTON_##btn;
-
+   /* Wii Classic controller */
    for (unsigned i = 0; i < wpads; i++)
    {
       uint32_t down = WPAD_ButtonsHeld(i) | WPAD_ButtonsDown(i);
       down &= ~WPAD_ButtonsUp(i);
 
-      _BIND(B);
-      _BIND(Y);
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_B] = down & WPAD_CLASSIC_BUTTON_B;
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_Y] = down & WPAD_CLASSIC_BUTTON_Y;
       wpad_state[i][RETRO_DEVICE_ID_JOYPAD_SELECT] = down & WPAD_CLASSIC_BUTTON_MINUS;
       wpad_state[i][RETRO_DEVICE_ID_JOYPAD_START] = down & WPAD_CLASSIC_BUTTON_PLUS;
-      _BIND(UP);
-      _BIND(DOWN);
-      _BIND(LEFT);
-      _BIND(RIGHT);
-      _BIND(A);
-      _BIND(X);
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_UP] = down & WPAD_CLASSIC_BUTTON_UP;
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_DOWN] = down & WPAD_CLASSIC_BUTTON_DOWN;
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_LEFT] = down & WPAD_CLASSIC_BUTTON_LEFT;
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_RIGHT] = down & WPAD_CLASSIC_BUTTON_RIGHT;
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_A] = down & WPAD_CLASSIC_BUTTON_A;
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_X] = down & WPAD_CLASSIC_BUTTON_X;
       wpad_state[i][RETRO_DEVICE_ID_JOYPAD_L] = down & WPAD_CLASSIC_BUTTON_FULL_L;
       wpad_state[i][RETRO_DEVICE_ID_JOYPAD_R] = down & WPAD_CLASSIC_BUTTON_FULL_R;
    }
