@@ -172,30 +172,30 @@ static uint64_t old_state = 0;
 
 static void set_delay_speed(unsigned delaymode)
 {
-	unsigned speed;
+   unsigned speed;
 
-	speed = 0;
+   speed = 0;
 
-	switch(delaymode)
-	{
-		case DELAY_NONE:
-			break;
-		case DELAY_SMALLEST:
-			speed = 4;
-			break;
-		case DELAY_SMALL:
-			speed = 7;
-			break;
-		case DELAY_MEDIUM:
-			speed = 14;
-			break;
-		case DELAY_LONG:
-			speed = 30;
-			break;
-	}
+   switch(delaymode)
+   {
+      case DELAY_NONE:
+         break;
+      case DELAY_SMALLEST:
+	 speed = 4;
+	 break;
+      case DELAY_SMALL:
+	 speed = 7;
+	 break;
+      case DELAY_MEDIUM:
+	 speed = 14;
+	 break;
+      case DELAY_LONG:
+	 speed = 30;
+	 break;
+   }
 
-	strlcpy(special_action_msg, "", sizeof(special_action_msg));
-	SET_TIMER_EXPIRATION(g_console.control_timer_expiration_frame_count, speed);
+   strlcpy(special_action_msg, "", sizeof(special_action_msg));
+   SET_TIMER_EXPIRATION(g_console.control_timer_expiration_frame_count, speed);
 }
 
 static void browser_update(filebrowser_t * b)
@@ -351,28 +351,26 @@ static void browser_update(filebrowser_t * b)
 
 static void browser_render(filebrowser_t * b)
 {
-	uint32_t file_count = b->file_count;
-	int current_index, page_number, page_base, i;
-	float currentX, currentY, ySpacing;
+   uint32_t file_count = b->file_count;
+   int current_index, page_number, page_base, i;
+   float currentX, currentY, ySpacing;
 
-	current_index = b->currently_selected;
-	page_number = current_index / NUM_ENTRY_PER_PAGE;
-	page_base = page_number * NUM_ENTRY_PER_PAGE;
+   current_index = b->currently_selected;
+   page_number = current_index / NUM_ENTRY_PER_PAGE;
+   page_base = page_number * NUM_ENTRY_PER_PAGE;
 
-	currentX = 0.09f;
-	currentY = 0.10f;
-	ySpacing = 0.035f;
+   currentX = 0.09f;
+   currentY = 0.10f;
+   ySpacing = 0.035f;
 
-	for ( i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
-	{
-		currentY = currentY + ySpacing;
-		cellDbgFontPuts(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->cur[i].d_type == CELL_FS_TYPE_DIRECTORY ? GREEN : WHITE, b->cur[i].d_name);
-		cellDbgFontDraw();
-	}
-	cellDbgFontDraw();
+   for ( i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
+   {
+      currentY = currentY + ySpacing;
+      cellDbgFontPuts(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->cur[i].d_type == CELL_FS_TYPE_DIRECTORY ? GREEN : WHITE, b->cur[i].d_name);
+      cellDbgFontDraw();
+   }
+   cellDbgFontDraw();
 }
-
-
 
 static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 {
@@ -763,62 +761,62 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 
 static void menu_init_settings_pages(menu * menu_obj)
 {
-	int page, i, j;
-	float increment;
+   int page, i, j;
+   float increment;
 
-	page = 0;
-	j = 0;
-	increment = 0.16f;
+   page = 0;
+   j = 0;
+   increment = 0.16f;
 
-	for(i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
-	{
-		if(!(j < (NUM_ENTRY_PER_PAGE)))
-		{
-			j = 0;
-			increment = 0.16f;
-			page++;
-		}
+   for(i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
+   {
+      if(!(j < (NUM_ENTRY_PER_PAGE)))
+      {
+         j = 0;
+	 increment = 0.16f;
+	 page++;
+      }
 
-		menu_obj->items[i].text_xpos = 0.09f;
-		menu_obj->items[i].text_ypos = increment; 
-		menu_obj->items[i].page = page;
-		set_setting_label(menu_obj, i);
-		increment += 0.03f;
-		j++;
-	}
-	menu_obj->refreshpage = 0;
+      menu_obj->items[i].text_xpos = 0.09f;
+      menu_obj->items[i].text_ypos = increment; 
+      menu_obj->items[i].page = page;
+      set_setting_label(menu_obj, i);
+      increment += 0.03f;
+      j++;
+   }
+   menu_obj->refreshpage = 0;
 }
 
 static void menu_reinit_settings (void)
 {
-	menu_init_settings_pages(&menu_generalvideosettings);
-	menu_init_settings_pages(&menu_generalaudiosettings);
-	menu_init_settings_pages(&menu_emu_settings);
-	menu_init_settings_pages(&menu_emu_videosettings);
-	menu_init_settings_pages(&menu_emu_audiosettings);
-	menu_init_settings_pages(&menu_pathsettings);
-	menu_init_settings_pages(&menu_controlssettings);
+   menu_init_settings_pages(&menu_generalvideosettings);
+   menu_init_settings_pages(&menu_generalaudiosettings);
+   menu_init_settings_pages(&menu_emu_settings);
+   menu_init_settings_pages(&menu_emu_videosettings);
+   menu_init_settings_pages(&menu_emu_audiosettings);
+   menu_init_settings_pages(&menu_pathsettings);
+   menu_init_settings_pages(&menu_controlssettings);
 }
 
 #define INPUT_SCALE 2
 
 static void apply_scaling (unsigned init_mode)
 {
-	switch(init_mode)
-	{
-		case FBO_DEINIT:
-			gl_deinit_fbo(g_gl);
-			break;
-		case FBO_INIT:
-			gl_init_fbo(g_gl, SSNES_SCALE_BASE * INPUT_SCALE,
-					SSNES_SCALE_BASE * INPUT_SCALE);
-			break;
-		case FBO_REINIT:
-			gl_deinit_fbo(g_gl);
-			gl_init_fbo(g_gl, SSNES_SCALE_BASE * INPUT_SCALE,
-					SSNES_SCALE_BASE * INPUT_SCALE);
-			break;
-	}
+   switch(init_mode)
+   {
+      case FBO_DEINIT:
+         gl_deinit_fbo(g_gl);
+	 break;
+      case FBO_INIT:
+	 gl_init_fbo(g_gl, SSNES_SCALE_BASE * INPUT_SCALE,
+			 SSNES_SCALE_BASE * INPUT_SCALE);
+	 break;
+      case FBO_REINIT:
+	 gl_deinit_fbo(g_gl);
+	 gl_init_fbo(g_gl, SSNES_SCALE_BASE * INPUT_SCALE,
+			 SSNES_SCALE_BASE * INPUT_SCALE);
+	 break;
+   }
 }
 
 static void select_file(uint32_t menu_id)
@@ -1067,31 +1065,28 @@ static void select_directory(uint32_t menu_id)
 
 static void set_keybind_digital(uint64_t state, uint64_t system_joypad_id, uint64_t default_snes_joypad_id)
 {
-	uint64_t new_key;
+   uint64_t new_key;
 
-	if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state))
-	{
-		new_key = ssnes_input_find_previous_platform_key(g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey);
+   if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state))
+   {
+      new_key = ssnes_input_find_previous_platform_key(g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey);
+      g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey = new_key;
+      set_delay = DELAY_MEDIUM;
+   }
 
-		g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey = new_key;
-		set_delay = DELAY_MEDIUM;
-	}
+   if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+   {
+      new_key = ssnes_input_find_next_platform_key(g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey);
+      g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey = new_key;
+      set_delay = DELAY_MEDIUM;
+   }
 
-	if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
-	{
-		new_key = ssnes_input_find_next_platform_key(g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey);
-
-		g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey = new_key;
-
-		set_delay = DELAY_MEDIUM;
-	}
-
-	if(CTRL_START(state))
-	{
-		g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].id = default_snes_joypad_id;
-		g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey = ssnes_default_keybind_lut[default_snes_joypad_id];
-		set_delay = DELAY_MEDIUM;
-	}
+   if(CTRL_START(state))
+   {
+      g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].id = default_snes_joypad_id;
+      g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey = ssnes_default_keybind_lut[default_snes_joypad_id];
+      set_delay = DELAY_MEDIUM;
+   }
 }
 
 static void ssnes_filename_input_and_save (unsigned filename_type)
@@ -2038,10 +2033,10 @@ static void select_rom(void)
 
 static void return_to_game (void)
 {
-	g_console.frame_advance_enable = false;
-	g_console.ingame_menu_item = 0;
-	g_console.menu_enable = false;
-	g_console.mode_switch = MODE_EMULATION;
+   g_console.frame_advance_enable = false;
+   g_console.ingame_menu_item = 0;
+   g_console.menu_enable = false;
+   g_console.mode_switch = MODE_EMULATION;
 }
 
 static void ingame_menu(uint32_t menu_id)
@@ -2553,115 +2548,115 @@ static void ingame_menu(uint32_t menu_id)
 
 void menu_init (void)
 {
-	filebrowser_new(&browser, g_console.default_rom_startup_dir, ssnes_console_get_rom_ext());
+   filebrowser_new(&browser, g_console.default_rom_startup_dir, ssnes_console_get_rom_ext());
 }
 
 void menu_loop(void)
 {
-	menuStack[0] = menu_filebrowser;
-	menuStack[0].enum_id = FILE_BROWSER_MENU;
+   menuStack[0] = menu_filebrowser;
+   menuStack[0].enum_id = FILE_BROWSER_MENU;
 
-	g_console.menu_enable = true;
+   g_console.menu_enable = true;
 
-	menu_reinit_settings();
+   menu_reinit_settings();
 
-	if(g_console.emulator_initialized)
-		video_gl.set_swap_block_state(NULL, true);
+   if(g_console.emulator_initialized)
+	   video_gl.set_swap_block_state(NULL, true);
 
-	if(g_console.ingame_menu_enable)
-	{
-		menuStackindex++;
-		menuStack[menuStackindex] = menu_filebrowser;
-		menuStack[menuStackindex].enum_id = INGAME_MENU;
-	}
+   if(g_console.ingame_menu_enable)
+   {
+      menuStackindex++;
+      menuStack[menuStackindex] = menu_filebrowser;
+      menuStack[menuStackindex].enum_id = INGAME_MENU;
+   }
 
-	do
-	{
-		glClear(GL_COLOR_BUFFER_BIT);
-		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-		glEnable(GL_BLEND);
-		if(g_console.emulator_initialized)
-		{
-			ssnes_render_cached_frame();
-		}
+   do
+   {
+      glClear(GL_COLOR_BUFFER_BIT);
+      glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+      glEnable(GL_BLEND);
+      if(g_console.emulator_initialized)
+      {
+         ssnes_render_cached_frame();
+      }
 
-		gl_frame_menu();
+      gl_frame_menu();
 
-		switch(menuStack[menuStackindex].enum_id)
-		{
-			case FILE_BROWSER_MENU:
-				select_rom();
-				break;
-			case GENERAL_VIDEO_MENU:
-			case GENERAL_AUDIO_MENU:
-			case EMU_GENERAL_MENU:
-			case EMU_VIDEO_MENU:
-			case EMU_AUDIO_MENU:
-			case PATH_MENU:
-			case CONTROLS_MENU:
-				select_setting(&menuStack[menuStackindex]);
-				break;
-			case SHADER_CHOICE:
-			case PRESET_CHOICE:
-			case BORDER_CHOICE:
-			case LIBSNES_CHOICE:
-			case INPUT_PRESET_CHOICE:
-				select_file(menuStack[menuStackindex].enum_id);
-				break;
-			case PATH_SAVESTATES_DIR_CHOICE:
-			case PATH_DEFAULT_ROM_DIR_CHOICE:
-			case PATH_CHEATS_DIR_CHOICE:
-			case PATH_SRAM_DIR_CHOICE:
-				select_directory(menuStack[menuStackindex].enum_id);
-				break;
-			case INGAME_MENU:
-				if(g_console.ingame_menu_enable)
-					ingame_menu(menuStack[menuStackindex].enum_id);
-				break;
-		}
+      switch(menuStack[menuStackindex].enum_id)
+      {
+         case FILE_BROWSER_MENU:
+            select_rom();
+	    break;
+	 case GENERAL_VIDEO_MENU:
+	 case GENERAL_AUDIO_MENU:
+	 case EMU_GENERAL_MENU:
+	 case EMU_VIDEO_MENU:
+	 case EMU_AUDIO_MENU:
+	 case PATH_MENU:
+	 case CONTROLS_MENU:
+	    select_setting(&menuStack[menuStackindex]);
+	    break;
+	 case SHADER_CHOICE:
+	 case PRESET_CHOICE:
+	 case BORDER_CHOICE:
+	 case LIBSNES_CHOICE:
+	 case INPUT_PRESET_CHOICE:
+	    select_file(menuStack[menuStackindex].enum_id);
+	    break;
+	 case PATH_SAVESTATES_DIR_CHOICE:
+	 case PATH_DEFAULT_ROM_DIR_CHOICE:
+	 case PATH_CHEATS_DIR_CHOICE:
+	 case PATH_SRAM_DIR_CHOICE:
+	    select_directory(menuStack[menuStackindex].enum_id);
+	    break;
+	 case INGAME_MENU:
+	    if(g_console.ingame_menu_enable)
+		    ingame_menu(menuStack[menuStackindex].enum_id);
+	    break;
+      }
 
 
-		if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
-		{
-			// if we want to force goto the emulation loop, skip this
-			if(g_console.mode_switch != MODE_EMULATION)
-			{
-				// for ingame menu, we need a different precondition because menu_enable
-				// can be set to false when going back from ingame menu to menu
-				if(g_console.ingame_menu_enable == true)
-				{
-					//we want to force exit when mode_switch is set to MODE_EXIT
-					if(g_console.mode_switch != MODE_EXIT)
-						g_console.mode_switch = ((CTRL_L3(old_state) && CTRL_R3(old_state) && g_console.emulator_initialized)) ? MODE_EMULATION : MODE_MENU;
-				}
-				else
-				{
-					g_console.menu_enable = !((CTRL_L3(old_state) && CTRL_R3(old_state) && g_console.emulator_initialized));
-					g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
-				}
-			}
+      if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+      {
+         // if we want to force goto the emulation loop, skip this
+         if(g_console.mode_switch != MODE_EMULATION)
+	 {
+            // for ingame menu, we need a different precondition because menu_enable
+	    // can be set to false when going back from ingame menu to menu
+            if(g_console.ingame_menu_enable == true)
+	    {
+               //we want to force exit when mode_switch is set to MODE_EXIT
+               if(g_console.mode_switch != MODE_EXIT)
+                  g_console.mode_switch = ((CTRL_L3(old_state) && CTRL_R3(old_state) && g_console.emulator_initialized)) ? MODE_EMULATION : MODE_MENU;
+	    }
+	    else
+	    {
+               g_console.menu_enable = !((CTRL_L3(old_state) && CTRL_R3(old_state) && g_console.emulator_initialized));
+	       g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
+	    }
+	 }
 
-			//set new timer delay after previous one has expired
-			if(set_delay != DELAY_NONE)
-				set_delay_speed(set_delay);
-		}
+	 //set new timer delay after previous one has expired
+	 if(set_delay != DELAY_NONE)
+            set_delay_speed(set_delay);
+      }
 
-		// set a timer delay so that we don't instantly switch back to the menu when
-		// press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
-		if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
-		{
-			SET_TIMER_EXPIRATION(g_console.timer_expiration_frame_count, 30);
-		}
+      // set a timer delay so that we don't instantly switch back to the menu when
+      // press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
+      if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
+      {
+         SET_TIMER_EXPIRATION(g_console.timer_expiration_frame_count, 30);
+      }
 
-		video_gl.swap(NULL);
-		glDisable(GL_BLEND);
-	}while (g_console.menu_enable);
+      video_gl.swap(NULL);
+      glDisable(GL_BLEND);
+   }while (g_console.menu_enable);
 
-	if(g_console.ingame_menu_enable)
-		menuStackindex--;		// pop ingame menu from stack
+   if(g_console.ingame_menu_enable)
+      menuStackindex--;		// pop ingame menu from stack
 
-	if(g_console.emulator_initialized)
-		video_gl.set_swap_block_state(NULL, false);
+   if(g_console.emulator_initialized)
+      video_gl.set_swap_block_state(NULL, false);
 
-	g_console.ingame_menu_enable = false;
+   g_console.ingame_menu_enable = false;
 }

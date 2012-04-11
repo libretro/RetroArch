@@ -19,7 +19,7 @@
 #include <string.h>
 
 #include "../driver.h"
-#include "../libsnes.hpp"
+#include "../libretro.h"
 
 #include <input/input.h>
 #include <usb/usbmain.h>

@@ -33,7 +33,7 @@ static int less_than_key(const void * a, const void * b)
 
    return strcasecmp(a_dir->d_name, b_dir->d_name);
 #else
-	return 0;
+   return 0;
 #endif
 }
 
@@ -101,16 +101,16 @@ const char * path, const char * extensions)
 
 	 if(current_extension)
 	 {
-		 char * pch = strtok(tmp_extensions, "|");
-		 while (pch != NULL)
-		 {
-                    if(strcmp(current_extension, pch) == 0)
-		    {
-                       found_rom = true;
-		       break;
-		    }
-		    pch = strtok(NULL, "|");
-		 }
+            char * pch = strtok(tmp_extensions, "|");
+	    while (pch != NULL)
+	    {
+               if(strcmp(current_extension, pch) == 0)
+	       {
+                  found_rom = true;
+		  break;
+	       }
+	       pch = strtok(NULL, "|");
+	    }
 	 }
 
 	 if(!found_rom)

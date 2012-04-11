@@ -85,170 +85,170 @@ SYS_PROCESS_PARAM(1001, 0x100000)
 
 static void set_default_settings(void)
 {
-	// g_settings
-	strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
-	g_settings.rewind_enable = false;
-	strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
-	g_settings.video.fbo_scale_x = 2.0f;
-	g_settings.video.fbo_scale_y = 2.0f;
-	g_settings.video.render_to_texture = true;
-	strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
-	g_settings.video.second_pass_smooth = true;
-	g_settings.video.smooth = true;
-	g_settings.video.vsync = true;
-	strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
-	g_settings.video.msg_pos_x = 0.05f;
-	g_settings.video.msg_pos_y = 0.90f;
-	g_settings.video.aspect_ratio = -1.0f;
-	
-	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_CROSS];
-	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_SQUARE];
-	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_SELECT];
-	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_START];
-	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_UP];
-	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_DOWN];
-	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_LEFT];
-	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_RIGHT];
-	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_CIRCLE];
-	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_TRIANGLE];
-	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_L1];
-	ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_R1];
+   // g_settings
+   strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
+   g_settings.rewind_enable = false;
+   strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
+   g_settings.video.fbo_scale_x = 2.0f;
+   g_settings.video.fbo_scale_y = 2.0f;
+   g_settings.video.render_to_texture = true;
+   strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
+   g_settings.video.second_pass_smooth = true;
+   g_settings.video.smooth = true;
+   g_settings.video.vsync = true;
+   strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
+   g_settings.video.msg_pos_x = 0.05f;
+   g_settings.video.msg_pos_y = 0.90f;
+   g_settings.video.aspect_ratio = -1.0f;
 
-	for(uint32_t x = 0; x < MAX_PLAYERS; x++)
-	{
-		for(uint32_t y = 0; y < SSNES_FIRST_META_KEY; y++)
-		{
-			g_settings.input.binds[x][y].id = y;
-			g_settings.input.binds[x][y].joykey = ssnes_default_keybind_lut[y];
-		}
-		g_settings.input.dpad_emulation[x] = DPAD_EMULATION_LSTICK;
-	}
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_CROSS];
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_SQUARE];
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_SELECT];
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_START];
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_UP];
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_DOWN];
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_LEFT];
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_RIGHT];
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_CIRCLE];
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_TRIANGLE];
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_L1];
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_R1];
 
-	// g_console
-	g_console.block_config_read = true;
-	g_console.frame_advance_enable = false;
-	g_console.emulator_initialized = 0;
-	g_console.screenshots_enable = true;
-	g_console.throttle_enable = true;
-	g_console.initialize_ssnes_enable = false;
-	g_console.triple_buffering_enable = true;
-	g_console.default_savestate_dir_enable = false;
-	g_console.default_sram_dir_enable = false;
-	g_console.mode_switch = MODE_MENU;
-	g_console.screen_orientation = ORIENTATION_NORMAL;
-	g_console.current_resolution_id = CELL_VIDEO_OUT_RESOLUTION_UNDEFINED;
-	strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
-	strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
-	strlcpy(g_console.default_sram_dir, usrDirPath, sizeof(g_console.default_sram_dir));
-	g_console.aspect_ratio_index = 0;
-	strlcpy(g_console.aspect_ratio_name, "4:3", sizeof(g_console.aspect_ratio_name));
-	g_console.menu_font_size = 1.0f;
-	g_console.overscan_enable = false;
-	g_console.overscan_amount = 0.0f;
-	g_console.sound_mode = SOUND_MODE_NORMAL;
-	g_console.custom_viewport_width = 0;
-	g_console.custom_viewport_height = 0;
-	g_console.custom_viewport_x = 0;
-	g_console.custom_viewport_y = 0;
-	strlcpy(g_console.rsound_ip_address, "0.0.0.0", sizeof(g_console.rsound_ip_address));
-	g_console.custom_bgm_enable = true;
-	
-	// g_extern
-	g_extern.state_slot = 0;
-	g_extern.audio_data.mute = 0;
-	g_extern.verbose = true;
+   for(uint32_t x = 0; x < MAX_PLAYERS; x++)
+   {
+      for(uint32_t y = 0; y < SSNES_FIRST_META_KEY; y++)
+      {
+         g_settings.input.binds[x][y].id = y;
+	 g_settings.input.binds[x][y].joykey = ssnes_default_keybind_lut[y];
+      }
+      g_settings.input.dpad_emulation[x] = DPAD_EMULATION_LSTICK;
+   }
+
+   // g_console
+   g_console.block_config_read = true;
+   g_console.frame_advance_enable = false;
+   g_console.emulator_initialized = 0;
+   g_console.screenshots_enable = true;
+   g_console.throttle_enable = true;
+   g_console.initialize_ssnes_enable = false;
+   g_console.triple_buffering_enable = true;
+   g_console.default_savestate_dir_enable = false;
+   g_console.default_sram_dir_enable = false;
+   g_console.mode_switch = MODE_MENU;
+   g_console.screen_orientation = ORIENTATION_NORMAL;
+   g_console.current_resolution_id = CELL_VIDEO_OUT_RESOLUTION_UNDEFINED;
+   strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
+   strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
+   strlcpy(g_console.default_sram_dir, usrDirPath, sizeof(g_console.default_sram_dir));
+   g_console.aspect_ratio_index = 0;
+   strlcpy(g_console.aspect_ratio_name, "4:3", sizeof(g_console.aspect_ratio_name));
+   g_console.menu_font_size = 1.0f;
+   g_console.overscan_enable = false;
+   g_console.overscan_amount = 0.0f;
+   g_console.sound_mode = SOUND_MODE_NORMAL;
+   g_console.custom_viewport_width = 0;
+   g_console.custom_viewport_height = 0;
+   g_console.custom_viewport_x = 0;
+   g_console.custom_viewport_y = 0;
+   strlcpy(g_console.rsound_ip_address, "0.0.0.0", sizeof(g_console.rsound_ip_address));
+   g_console.custom_bgm_enable = true;
+
+   // g_extern
+   g_extern.state_slot = 0;
+   g_extern.audio_data.mute = 0;
+   g_extern.verbose = true;
 }
 
 static void init_settings(bool load_libretro_path)
 {
-	if(!path_file_exists(SYS_CONFIG_FILE))
-	{
-		SSNES_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
-		FILE * f;
-		f = fopen(SYS_CONFIG_FILE, "w");
-		fclose(f);
-	}
-	else
-	{
+   if(!path_file_exists(SYS_CONFIG_FILE))
+   {
+	   SSNES_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
+	   FILE * f;
+	   f = fopen(SYS_CONFIG_FILE, "w");
+	   fclose(f);
+   }
+   else
+   {
+      config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
 
-		config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
+      // g_settings
 
-		// g_settings
+      if(load_libretro_path)
+      {
+         CONFIG_GET_STRING(libretro, "libretro_path");
 
-		if(load_libretro_path)
-		{
-			CONFIG_GET_STRING(libretro, "libretro_path");
+	 if(!strcmp(g_settings.libretro, ""))
+	 {
+            //We need to set libretro to the first entry in the cores
+	    //directory so that it will be saved to the config file
+            char ** dir_list = dir_list_new(LIBSNES_DIR_PATH, ".SELF");
 
-			if(!strcmp(g_settings.libretro, ""))
-			{
-				//We need to set libretro to the first entry in the cores
-				//directory so that it will be saved to the config file
-				char ** dir_list = dir_list_new(LIBSNES_DIR_PATH, ".SELF");
-				if (!dir_list)
-				{
-					SSNES_ERR("Couldn't read %s directory.\n", EMULATOR_CORE_DIR);
-					return;
-				}
+	    if (!dir_list)
+	    {
+               SSNES_ERR("Couldn't read %s directory.\n", EMULATOR_CORE_DIR);
+	       return;
+	    }
 
-				const char * first_self = dir_list[0];
+	    const char * first_self = dir_list[0];
 
-				if(first_self)
-				{
-					SSNES_LOG("Set first entry in libretro %s dir: [%s] to libretro path.\n", EMULATOR_CORE_DIR, first_self);
-					strlcpy(g_settings.libretro, first_self, sizeof(g_settings.libretro));
-				}
-				else
-				{
-					SSNES_ERR("Failed to set first entry in libretro %s dir to libretro path.\n", EMULATOR_CORE_DIR);
-				}
+	    if(first_self)
+	    {
+               SSNES_LOG("Set first entry in libretro %s dir: [%s] to libretro path.\n", EMULATOR_CORE_DIR, first_self);
+	       strlcpy(g_settings.libretro, first_self, sizeof(g_settings.libretro));
+	    }
+	    else
+	    {
+               SSNES_ERR("Failed to set first entry in libretro %s dir to libretro path.\n", EMULATOR_CORE_DIR);
+	    }
 
-				dir_list_free(dir_list);
-			}
-		}
+	    dir_list_free(dir_list);
+	 }
+      }
 
-		CONFIG_GET_STRING(cheat_database, "cheat_database");
-		CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
-		CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
-		CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
-		CONFIG_GET_FLOAT(video.fbo_scale_x, "video_fbo_scale_x");
-		CONFIG_GET_FLOAT(video.fbo_scale_y, "video_fbo_scale_y");
-		CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
-		CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
-		CONFIG_GET_BOOL(video.smooth, "video_smooth");
-		CONFIG_GET_BOOL(video.vsync, "video_vsync");
-		CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
+      CONFIG_GET_STRING(cheat_database, "cheat_database");
+      CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
+      CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
+      CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
+      CONFIG_GET_FLOAT(video.fbo_scale_x, "video_fbo_scale_x");
+      CONFIG_GET_FLOAT(video.fbo_scale_y, "video_fbo_scale_y");
+      CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
+      CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
+      CONFIG_GET_BOOL(video.smooth, "video_smooth");
+      CONFIG_GET_BOOL(video.vsync, "video_vsync");
+      CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
 
       for (unsigned i = 0; i < 7; i++)
       {
          char cfg[64];
-         snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
-         CONFIG_GET_INT(input.dpad_emulation[i], cfg);
+	 snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
+	 CONFIG_GET_INT(input.dpad_emulation[i], cfg);
       }
 
-		// g_console
+      // g_console
 
-		CONFIG_GET_BOOL_CONSOLE(custom_bgm_enable, "custom_bgm_enable");
-		CONFIG_GET_BOOL_CONSOLE(overscan_enable, "overscan_enable");
-		CONFIG_GET_BOOL_CONSOLE(screenshots_enable, "screenshots_enable");
-		CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
-		CONFIG_GET_BOOL_CONSOLE(triple_buffering_enable, "triple_buffering_enable");
-		CONFIG_GET_INT_CONSOLE(aspect_ratio_index, "aspect_ratio_index");
-		CONFIG_GET_INT_CONSOLE(current_resolution_id, "current_resolution_id");
-		CONFIG_GET_INT_CONSOLE(custom_viewport_x, "custom_viewport_x");
-		CONFIG_GET_INT_CONSOLE(custom_viewport_y, "custom_viewport_y");
-		CONFIG_GET_INT_CONSOLE(custom_viewport_width, "custom_viewport_width");
-		CONFIG_GET_INT_CONSOLE(custom_viewport_height, "custom_viewport_height");
-		CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
-		CONFIG_GET_INT_CONSOLE(sound_mode, "sound_mode");
-		CONFIG_GET_STRING_CONSOLE(aspect_ratio_name, "aspect_ratio_name");
-		CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
-		CONFIG_GET_FLOAT_CONSOLE(menu_font_size, "menu_font_size");
-		CONFIG_GET_FLOAT_CONSOLE(overscan_amount, "overscan_amount");
+      CONFIG_GET_BOOL_CONSOLE(custom_bgm_enable, "custom_bgm_enable");
+      CONFIG_GET_BOOL_CONSOLE(overscan_enable, "overscan_enable");
+      CONFIG_GET_BOOL_CONSOLE(screenshots_enable, "screenshots_enable");
+      CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
+      CONFIG_GET_BOOL_CONSOLE(triple_buffering_enable, "triple_buffering_enable");
+      CONFIG_GET_INT_CONSOLE(aspect_ratio_index, "aspect_ratio_index");
+      CONFIG_GET_INT_CONSOLE(current_resolution_id, "current_resolution_id");
+      CONFIG_GET_INT_CONSOLE(custom_viewport_x, "custom_viewport_x");
+      CONFIG_GET_INT_CONSOLE(custom_viewport_y, "custom_viewport_y");
+      CONFIG_GET_INT_CONSOLE(custom_viewport_width, "custom_viewport_width");
+      CONFIG_GET_INT_CONSOLE(custom_viewport_height, "custom_viewport_height");
+      CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
+      CONFIG_GET_INT_CONSOLE(sound_mode, "sound_mode");
+      CONFIG_GET_STRING_CONSOLE(aspect_ratio_name, "aspect_ratio_name");
+      CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
+      CONFIG_GET_FLOAT_CONSOLE(menu_font_size, "menu_font_size");
+      CONFIG_GET_FLOAT_CONSOLE(overscan_amount, "overscan_amount");
 
-		// g_extern
-		CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
-		CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
-	}
+      // g_extern
+      CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
+      CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
+   }
 }
 
 static void save_settings(void)
@@ -321,371 +321,372 @@ static void save_settings(void)
 
 static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
 {
-	(void) param;
-	(void) userdata;
+   (void) param;
+   (void) userdata;
 
-	switch (status)
-	{
-		case CELL_SYSUTIL_REQUEST_EXITGAME:
-			g_console.menu_enable = false;
-			g_quitting = true;
-			g_console.ingame_menu_enable = false;
-			g_console.mode_switch = MODE_EXIT;
-			break;
-		case CELL_SYSUTIL_OSKDIALOG_FINISHED:
-			oskutil_close(&g_console.oskutil_handle);
-			oskutil_finished(&g_console.oskutil_handle);
-			break;
-		case CELL_SYSUTIL_OSKDIALOG_UNLOADED:
-			oskutil_unload(&g_console.oskutil_handle);
-			break;
-	}
+   switch (status)
+   {
+      case CELL_SYSUTIL_REQUEST_EXITGAME:
+         g_console.menu_enable = false;
+	 g_quitting = true;
+	 g_console.ingame_menu_enable = false;
+	 g_console.mode_switch = MODE_EXIT;
+	 break;
+      case CELL_SYSUTIL_OSKDIALOG_FINISHED:
+	 oskutil_close(&g_console.oskutil_handle);
+	 oskutil_finished(&g_console.oskutil_handle);
+	 break;
+      case CELL_SYSUTIL_OSKDIALOG_UNLOADED:
+	 oskutil_unload(&g_console.oskutil_handle);
+	 break;
+   }
 }
 
 static void get_environment_settings(int argc, char *argv[])
 {
-	g_extern.verbose = true;
+   g_extern.verbose = true;
 
-	int ret;
-	unsigned int get_type;
-	unsigned int get_attributes;
-	CellGameContentSize size;
-	char dirName[CELL_GAME_DIRNAME_SIZE];
-	CellSysCacheParam param;
-	memset(&param, 0x00, sizeof(CellSysCacheParam));
-	strncpy(param.cacheId,CACHE_ID, sizeof(CellSysCacheParam));
+   int ret;
+   unsigned int get_type;
+   unsigned int get_attributes;
+   CellGameContentSize size;
+   char dirName[CELL_GAME_DIRNAME_SIZE];
+   CellSysCacheParam param;
+   memset(&param, 0x00, sizeof(CellSysCacheParam));
+   strncpy(param.cacheId,CACHE_ID, sizeof(CellSysCacheParam));
 
-	ret = cellSysCacheMount(&param);
-	if(ret != CELL_SYSCACHE_RET_OK_CLEARED)
-	{
-		SSNES_ERR("System cache partition could not be mounted, it might be already mounted.\n");
-	}
+   ret = cellSysCacheMount(&param);
+   if(ret != CELL_SYSCACHE_RET_OK_CLEARED)
+   {
+      SSNES_ERR("System cache partition could not be mounted, it might be already mounted.\n");
+   }
 
-	if(argc > 1)
-	{
-		/* launched from external launcher */
-		strncpy(MULTIMAN_EXECUTABLE, argv[2], sizeof(MULTIMAN_EXECUTABLE));
-	}
-	else
-	{
-		/* not launched from external launcher, set default path */
-		strncpy(MULTIMAN_EXECUTABLE, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
-		sizeof(MULTIMAN_EXECUTABLE));
-	}
+   if(argc > 1)
+   {
+      /* launched from external launcher */
+      strncpy(MULTIMAN_EXECUTABLE, argv[2], sizeof(MULTIMAN_EXECUTABLE));
+   }
+   else
+   {
+      /* not launched from external launcher, set default path */
+      strncpy(MULTIMAN_EXECUTABLE, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
+		   sizeof(MULTIMAN_EXECUTABLE));
+   }
 
-	if(path_file_exists(MULTIMAN_EXECUTABLE) && argc > 1 &&  path_file_exists(argv[1]))
-	{
-		g_console.external_launcher_support = EXTERN_LAUNCHER_MULTIMAN;
-		SSNES_LOG("Started from multiMAN, auto-game start enabled.\n");
-	}
-	else
-	{
-		g_console.external_launcher_support = EXTERN_LAUNCHER_SALAMANDER;
-		SSNES_WARN("Not started from multiMAN, auto-game start disabled.\n");
-	}
+   if(path_file_exists(MULTIMAN_EXECUTABLE) && argc > 1 &&  path_file_exists(argv[1]))
+   {
+	   g_console.external_launcher_support = EXTERN_LAUNCHER_MULTIMAN;
+	   SSNES_LOG("Started from multiMAN, auto-game start enabled.\n");
+   }
+   else
+   {
+	   g_console.external_launcher_support = EXTERN_LAUNCHER_SALAMANDER;
+	   SSNES_WARN("Not started from multiMAN, auto-game start disabled.\n");
+   }
 
-	memset(&size, 0x00, sizeof(CellGameContentSize));
+   memset(&size, 0x00, sizeof(CellGameContentSize));
 
-	ret = cellGameBootCheck(&get_type, &get_attributes, &size, dirName);
-	if(ret < 0)
-	{
-		SSNES_ERR("cellGameBootCheck() Error: 0x%x.\n", ret);
-	}
-	else
-	{
-		SSNES_LOG("cellGameBootCheck() OK.\n");
-		SSNES_LOG("Directory name: [%s].\n", dirName);
-		SSNES_LOG(" HDD Free Size (in KB) = [%d] Size (in KB) = [%d] System Size (in KB) = [%d].\n", size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
+   ret = cellGameBootCheck(&get_type, &get_attributes, &size, dirName);
+   if(ret < 0)
+   {
+	   SSNES_ERR("cellGameBootCheck() Error: 0x%x.\n", ret);
+   }
+   else
+   {
+	   SSNES_LOG("cellGameBootCheck() OK.\n");
+	   SSNES_LOG("Directory name: [%s].\n", dirName);
+	   SSNES_LOG(" HDD Free Size (in KB) = [%d] Size (in KB) = [%d] System Size (in KB) = [%d].\n", size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
 
-		switch(get_type)
-		{
-			case CELL_GAME_GAMETYPE_DISC:
-				SSNES_LOG("SSNES was launched on Optical Disc Drive.\n");
-				break;
-			case CELL_GAME_GAMETYPE_HDD:
-				SSNES_LOG("SSNES was launched on HDD.\n");
-				break;
-		}
+	   switch(get_type)
+	   {
+		   case CELL_GAME_GAMETYPE_DISC:
+			   SSNES_LOG("SSNES was launched on Optical Disc Drive.\n");
+			   break;
+		   case CELL_GAME_GAMETYPE_HDD:
+			   SSNES_LOG("SSNES was launched on HDD.\n");
+			   break;
+	   }
 
-		if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) == CELL_GAME_ATTRIBUTE_APP_HOME)
-			SSNES_LOG("SSNES was launched from host machine (APP_HOME).\n");
+	   if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) == CELL_GAME_ATTRIBUTE_APP_HOME)
+		   SSNES_LOG("SSNES was launched from host machine (APP_HOME).\n");
 
-		ret = cellGameContentPermit(contentInfoPath, usrDirPath);
+	   ret = cellGameContentPermit(contentInfoPath, usrDirPath);
 
-		if(g_console.external_launcher_support == EXTERN_LAUNCHER_MULTIMAN)
-		{
-			snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
-			snprintf(usrDirPath, sizeof(usrDirPath), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
-		}
+	   if(g_console.external_launcher_support == EXTERN_LAUNCHER_MULTIMAN)
+	   {
+		   snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
+		   snprintf(usrDirPath, sizeof(usrDirPath), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
+	   }
 
-		if(ret < 0)
-		{
-			SSNES_ERR("cellGameContentPermit() Error: 0x%x\n", ret);
-		}
-		else
-		{
-			SSNES_LOG("cellGameContentPermit() OK.\n");
-			SSNES_LOG("contentInfoPath : [%s].\n", contentInfoPath);
-			SSNES_LOG("usrDirPath : [%s].\n", usrDirPath);
-		}
+	   if(ret < 0)
+	   {
+		   SSNES_ERR("cellGameContentPermit() Error: 0x%x\n", ret);
+	   }
+	   else
+	   {
+		   SSNES_LOG("cellGameContentPermit() OK.\n");
+		   SSNES_LOG("contentInfoPath : [%s].\n", contentInfoPath);
+		   SSNES_LOG("usrDirPath : [%s].\n", usrDirPath);
+	   }
 
-		/* now we fill in all the variables */
-		snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/%s/presets/stock.conf", usrDirPath, EMULATOR_CORE_DIR);
-		snprintf(DEFAULT_BORDER_FILE, sizeof(DEFAULT_BORDER_FILE), "%s/%s/borders/Centered-1080p/mega-man-2.png", usrDirPath, EMULATOR_CORE_DIR);
-		snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/%s/borders/Menu/main-menu.png", usrDirPath, EMULATOR_CORE_DIR);
-		snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/%s/presets", usrDirPath, EMULATOR_CORE_DIR);
-		snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/input", PRESETS_DIR_PATH);
-		snprintf(LIBSNES_DIR_PATH, sizeof(LIBSNES_DIR_PATH), "%s/%s", usrDirPath, EMULATOR_CORE_DIR);
-		snprintf(BORDERS_DIR_PATH, sizeof(BORDERS_DIR_PATH), "%s/%s/borders", usrDirPath, EMULATOR_CORE_DIR);
-		snprintf(SHADERS_DIR_PATH, sizeof(SHADERS_DIR_PATH), "%s/%s/shaders", usrDirPath, EMULATOR_CORE_DIR);
-		snprintf(DEFAULT_SHADER_FILE, sizeof(DEFAULT_SHADER_FILE), "%s/%s/shaders/stock.cg", usrDirPath, EMULATOR_CORE_DIR);
-		snprintf(DEFAULT_MENU_SHADER_FILE, sizeof(DEFAULT_MENU_SHADER_FILE), "%s/%s/shaders/Borders/Menu/border-only-ssnes.cg", usrDirPath, EMULATOR_CORE_DIR);
-		snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/ssnes.cfg", usrDirPath);
-	}
+	   /* now we fill in all the variables */
+	   snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/%s/presets/stock.conf", usrDirPath, EMULATOR_CORE_DIR);
+	   snprintf(DEFAULT_BORDER_FILE, sizeof(DEFAULT_BORDER_FILE), "%s/%s/borders/Centered-1080p/mega-man-2.png", usrDirPath, EMULATOR_CORE_DIR);
+	   snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/%s/borders/Menu/main-menu.png", usrDirPath, EMULATOR_CORE_DIR);
+	   snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/%s/presets", usrDirPath, EMULATOR_CORE_DIR);
+	   snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/input", PRESETS_DIR_PATH);
+	   snprintf(LIBSNES_DIR_PATH, sizeof(LIBSNES_DIR_PATH), "%s/%s", usrDirPath, EMULATOR_CORE_DIR);
+	   snprintf(BORDERS_DIR_PATH, sizeof(BORDERS_DIR_PATH), "%s/%s/borders", usrDirPath, EMULATOR_CORE_DIR);
+	   snprintf(SHADERS_DIR_PATH, sizeof(SHADERS_DIR_PATH), "%s/%s/shaders", usrDirPath, EMULATOR_CORE_DIR);
+	   snprintf(DEFAULT_SHADER_FILE, sizeof(DEFAULT_SHADER_FILE), "%s/%s/shaders/stock.cg", usrDirPath, EMULATOR_CORE_DIR);
+	   snprintf(DEFAULT_MENU_SHADER_FILE, sizeof(DEFAULT_MENU_SHADER_FILE), "%s/%s/shaders/Borders/Menu/border-only-ssnes.cg", usrDirPath, EMULATOR_CORE_DIR);
+	   snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/ssnes.cfg", usrDirPath);
+   }
 
-	g_extern.verbose = false;
+   g_extern.verbose = false;
 }
 
 static void startup_ssnes(void)
 {
-	if(g_console.initialize_ssnes_enable)
-	{
-		if(g_console.emulator_initialized)
-			ssnes_main_deinit();
+   if(g_console.initialize_ssnes_enable)
+   {
+      if(g_console.emulator_initialized)
+         ssnes_main_deinit();
 
-		struct ssnes_main_wrap args = {
-			.verbose = g_extern.verbose,
-			.config_path = SYS_CONFIG_FILE,
-			.sram_path = g_console.default_sram_dir_enable ? g_console.default_sram_dir : NULL,
-			.state_path = g_console.default_savestate_dir_enable ? g_console.default_savestate_dir : NULL,
-			.rom_path = g_console.rom_path
-		};
+      struct ssnes_main_wrap args = {
+	      .verbose = g_extern.verbose,
+	      .config_path = SYS_CONFIG_FILE,
+	      .sram_path = g_console.default_sram_dir_enable ? g_console.default_sram_dir : NULL,
+	      .state_path = g_console.default_savestate_dir_enable ? g_console.default_savestate_dir : NULL,
+	      .rom_path = g_console.rom_path
+      };
 
-		int init_ret = ssnes_main_init_wrap(&args);
-		g_console.emulator_initialized = 1;
-		g_console.initialize_ssnes_enable = 0;
-	}
+      int init_ret = ssnes_main_init_wrap(&args);
+      g_console.emulator_initialized = 1;
+      g_console.initialize_ssnes_enable = 0;
+   }
 }
 
 static bool manage_libretro_core(void)
 {
-	g_extern.verbose = true;
-	bool return_code;
+   g_extern.verbose = true;
+   bool return_code;
 
-	bool set_libretro_path = false;
-	char tmp_path[1024], tmp_path2[1024], tmp_pathnewfile[1024];
-	snprintf(tmp_path, sizeof(tmp_path), "%s/%s/CORE.SELF", usrDirPath, EMULATOR_CORE_DIR);
-	SSNES_LOG("Assumed path of CORE.SELF: [%s]\n", tmp_path);
-	if(path_file_exists(tmp_path))
-	{
-		//if CORE.SELF exists, this indicates we have just installed
-		//a new libretro port and that we need to change it to a more
-		//sane name.
+   bool set_libretro_path = false;
+   char tmp_path[1024], tmp_path2[1024], tmp_pathnewfile[1024];
+   snprintf(tmp_path, sizeof(tmp_path), "%s/%s/CORE.SELF", usrDirPath, EMULATOR_CORE_DIR);
+   SSNES_LOG("Assumed path of CORE.SELF: [%s]\n", tmp_path);
 
-		CellFsErrno ret;
+   if(path_file_exists(tmp_path))
+   {
+	   //if CORE.SELF exists, this indicates we have just installed
+	   //a new libretro port and that we need to change it to a more
+	   //sane name.
 
-		ssnes_console_name_from_id(tmp_path2, sizeof(tmp_path2));
-		strlcat(tmp_path2, ".SELF", sizeof(tmp_path2));
-		snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s/%s/%s", usrDirPath, EMULATOR_CORE_DIR, tmp_path2);
+	   CellFsErrno ret;
 
-		if(path_file_exists(tmp_pathnewfile))
-		{
-			SSNES_LOG("Upgrading emulator core...\n");
-			//if libretro core already exists, then that means we are
-			//upgrading the libretro core - so delete pre-existing
-			//file first
-			ret = cellFsUnlink(tmp_pathnewfile);
-			if(ret == CELL_FS_SUCCEEDED)
-			{
-				SSNES_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-			}
-			else
-			{
-				SSNES_LOG("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-			}
-		}
+	   ssnes_console_name_from_id(tmp_path2, sizeof(tmp_path2));
+	   strlcat(tmp_path2, ".SELF", sizeof(tmp_path2));
+	   snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s/%s/%s", usrDirPath, EMULATOR_CORE_DIR, tmp_path2);
 
-		//now attempt the renaming
-		ret = cellFsRename(tmp_path, tmp_pathnewfile);
-		if(ret != CELL_FS_SUCCEEDED)
-		{
-			SSNES_ERR("Failed to rename CORE.SELF.\n");
-		}
-		else
-		{
-			SSNES_LOG("Libsnes core [%s] renamed to: [%s].\n", tmp_path, tmp_pathnewfile);
-			set_libretro_path = true;
-		}
-	}
-	else
-	{
-		SSNES_LOG("CORE.SELF was not found, libretro core path will be loaded from config file.\n");
-	}
+	   if(path_file_exists(tmp_pathnewfile))
+	   {
+		   SSNES_LOG("Upgrading emulator core...\n");
+		   //if libretro core already exists, then that means we are
+		   //upgrading the libretro core - so delete pre-existing
+		   //file first
+		   ret = cellFsUnlink(tmp_pathnewfile);
+		   if(ret == CELL_FS_SUCCEEDED)
+		   {
+			   SSNES_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+		   }
+		   else
+		   {
+			   SSNES_LOG("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+		   }
+	   }
 
-	if(set_libretro_path)
-	{
-		//CORE.BIN has been renamed, libretro path will now be set to the recently
-		//renamed new libretro core
-		strlcpy(g_settings.libretro, tmp_pathnewfile, sizeof(g_settings.libretro));
-		return_code = 0;
-	}
-	else
-	{
-		//There was no CORE.BIN present, or the CORE.BIN file was not renamed.
-		//The libretro core path will still be loaded from the config file
-		return_code = 1;
-	}
+	   //now attempt the renaming
+	   ret = cellFsRename(tmp_path, tmp_pathnewfile);
+	   if(ret != CELL_FS_SUCCEEDED)
+	   {
+		   SSNES_ERR("Failed to rename CORE.SELF.\n");
+	   }
+	   else
+	   {
+		   SSNES_LOG("Libsnes core [%s] renamed to: [%s].\n", tmp_path, tmp_pathnewfile);
+		   set_libretro_path = true;
+	   }
+   }
+   else
+   {
+	   SSNES_LOG("CORE.SELF was not found, libretro core path will be loaded from config file.\n");
+   }
 
-	g_extern.verbose = false;
+   if(set_libretro_path)
+   {
+	   //CORE.BIN has been renamed, libretro path will now be set to the recently
+	   //renamed new libretro core
+	   strlcpy(g_settings.libretro, tmp_pathnewfile, sizeof(g_settings.libretro));
+	   return_code = 0;
+   }
+   else
+   {
+	   //There was no CORE.BIN present, or the CORE.BIN file was not renamed.
+	   //The libretro core path will still be loaded from the config file
+	   return_code = 1;
+   }
 
-	return return_code;
+   g_extern.verbose = false;
+
+   return return_code;
 }
 
 int main(int argc, char *argv[])
 {
-	SSNES_LOG("Registering system utility callback...\n");
-	cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
+   SSNES_LOG("Registering system utility callback...\n");
+   cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
 
-	cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
-	cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
-	cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_GAME);
-	cellSysmoduleLoadModule(CELL_SYSMODULE_AVCONF_EXT);
-	cellSysmoduleLoadModule(CELL_SYSMODULE_PNGDEC);
-	cellSysmoduleLoadModule(CELL_SYSMODULE_JPGDEC);
-	cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
-	cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_NP);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_GAME);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_AVCONF_EXT);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_PNGDEC);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_JPGDEC);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_NP);
 
-	sys_net_initialize_network();
+   sys_net_initialize_network();
 
 #ifdef HAVE_LOGGER
-	logger_init();
+   logger_init();
 #endif
 
-	sceNpInit(NP_POOL_SIZE, np_pool);
+   sceNpInit(NP_POOL_SIZE, np_pool);
 
-	ssnes_main_clear_state();
-	get_environment_settings(argc, argv);
+   ssnes_main_clear_state();
+   get_environment_settings(argc, argv);
 
-	config_set_defaults();
+   config_set_defaults();
 
-	bool load_libretro_path = manage_libretro_core();
+   bool load_libretro_path = manage_libretro_core();
 
-	set_default_settings();
-	init_settings(load_libretro_path);
-	init_libretro_sym();
+   set_default_settings();
+   init_settings(load_libretro_path);
+   init_libretro_sym();
 
 #if(CELL_SDK_VERSION > 0x340000)
-	if (g_console.screenshots_enable)
-	{
-		cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
-		CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
+   if (g_console.screenshots_enable)
+   {
+      cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+      CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
 
-		screenshot_param.photo_title = "SSNES PS3";
-		screenshot_param.game_title = "SSNES PS3";
-		cellScreenShotSetParameter (&screenshot_param);
-		cellScreenShotEnable();
-	}
-	if (g_console.custom_bgm_enable)
-		cellSysutilEnableBgmPlayback();
+      screenshot_param.photo_title = "SSNES PS3";
+      screenshot_param.game_title = "SSNES PS3";
+      cellScreenShotSetParameter (&screenshot_param);
+      cellScreenShotEnable();
+   }
+   if (g_console.custom_bgm_enable)
+      cellSysutilEnableBgmPlayback();
 #endif
 
-	ps3graphics_video_init(true);
-	ps3_input_init();
-	oskutil_init(&g_console.oskutil_handle, 0);
+   ps3graphics_video_init(true);
+   ps3_input_init();
+   oskutil_init(&g_console.oskutil_handle, 0);
 
-	ssnes_input_set_default_keybind_names_for_emulator();
+   ssnes_input_set_default_keybind_names_for_emulator();
 
-	menu_init();
+   menu_init();
 
-	switch(g_console.external_launcher_support)
-	{
-		case EXTERN_LAUNCHER_SALAMANDER:
-			g_console.mode_switch = MODE_MENU;
-			break;
-		case EXTERN_LAUNCHER_MULTIMAN:
-			SSNES_LOG("Started from multiMAN, will auto-start game.\n");
-			strncpy(g_console.rom_path, argv[1], sizeof(g_console.rom_path));
-			g_console.initialize_ssnes_enable = 1;
-			g_console.mode_switch = MODE_EMULATION;
-			startup_ssnes();
-			break;
-	}
+   switch(g_console.external_launcher_support)
+   {
+      case EXTERN_LAUNCHER_SALAMANDER:
+         g_console.mode_switch = MODE_MENU;
+	 break;
+      case EXTERN_LAUNCHER_MULTIMAN:
+	 SSNES_LOG("Started from multiMAN, will auto-start game.\n");
+	 strncpy(g_console.rom_path, argv[1], sizeof(g_console.rom_path));
+	 g_console.initialize_ssnes_enable = 1;
+	 g_console.mode_switch = MODE_EMULATION;
+	 startup_ssnes();
+	 break;
+   }
 
 begin_loop:
-	if(g_console.mode_switch == MODE_EMULATION)
-	{
-		bool repeat = false;
+   if(g_console.mode_switch == MODE_EMULATION)
+   {
+      bool repeat = false;
 
-		input_ps3.poll(NULL);
+      input_ps3.poll(NULL);
 
-		do{
-			repeat = ssnes_main_iterate();
-		}while(repeat && !g_console.frame_advance_enable);
-	}
-	else if(g_console.mode_switch == MODE_MENU)
-	{
-		menu_loop();
-		startup_ssnes();
-	}
-	else
-		goto begin_shutdown;
+      do{
+         repeat = ssnes_main_iterate();
+      }while(repeat && !g_console.frame_advance_enable);
+   }
+   else if(g_console.mode_switch == MODE_MENU)
+   {
+      menu_loop();
+      startup_ssnes();
+   }
+   else
+      goto begin_shutdown;
 
-	goto begin_loop;
+   goto begin_loop;
 
 begin_shutdown:
-	if(path_file_exists(SYS_CONFIG_FILE))
-		save_settings();
-	if(g_console.emulator_initialized)
-		ssnes_main_deinit();
-	cell_pad_input_deinit();
-	ps3_video_deinit();
-	if(g_console.oskutil_handle.is_running)
-		oskutil_unload(&g_console.oskutil_handle);
+   if(path_file_exists(SYS_CONFIG_FILE))
+      save_settings();
+   if(g_console.emulator_initialized)
+      ssnes_main_deinit();
+   cell_pad_input_deinit();
+   ps3_video_deinit();
+   if(g_console.oskutil_handle.is_running)
+      oskutil_unload(&g_console.oskutil_handle);
 #ifdef HAVE_LOGGER
-	logger_shutdown();
+   logger_shutdown();
 #endif
 
-	if(g_console.screenshots_enable)
-		cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
-	cellSysmoduleUnloadModule(CELL_SYSMODULE_JPGDEC);
-	cellSysmoduleUnloadModule(CELL_SYSMODULE_PNGDEC);
-	cellSysmoduleUnloadModule(CELL_SYSMODULE_AVCONF_EXT);
-	cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
+   if(g_console.screenshots_enable)
+      cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_JPGDEC);
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_PNGDEC);
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_AVCONF_EXT);
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
 
-	int ret = cellSysCacheClear();
+   int ret = cellSysCacheClear();
 
-	if(ret != CELL_SYSCACHE_RET_OK_CLEARED)
-	{
-		SSNES_ERR("System cache partition could not be cleared on exit.\n");
-	}
+   if(ret != CELL_SYSCACHE_RET_OK_CLEARED)
+   {
+      SSNES_ERR("System cache partition could not be cleared on exit.\n");
+   }
 
-	if(g_console.return_to_launcher)
-	{
-		char spawn_data[256];
-		for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
-			spawn_data[i] = i & 0xff;
+   if(g_console.return_to_launcher)
+   {
+      char spawn_data[256];
+      for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
+         spawn_data[i] = i & 0xff;
 
-		char spawn_data_size[16];
-		sprintf(spawn_data_size, "%d", 256);
+      char spawn_data_size[16];
+      sprintf(spawn_data_size, "%d", 256);
 
-		const char * const spawn_argv[] = {
-			spawn_data_size,
-			"test argv for",
-			"sceNpDrmProcessExitSpawn2()",
-			NULL
-		};
+      const char * const spawn_argv[] = {
+	      spawn_data_size,
+	      "test argv for",
+	      "sceNpDrmProcessExitSpawn2()",
+	      NULL
+      };
 
-		SceNpDrmKey * k_licensee = NULL;
-		int ret = sceNpDrmProcessExitSpawn2(k_licensee, g_console.launch_app_on_exit, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-		SSNES_LOG("Attempt to load SELF: [%s] (return code: [%x]).\n", g_console.launch_app_on_exit, ret);
-		if(ret <  0)
-		{
-			SSNES_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
-			sys_game_process_exitspawn(g_console.launch_app_on_exit, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-		}
-		sceNpTerm();
-		cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);
-		cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
-	}
-	return 1;
+      SceNpDrmKey * k_licensee = NULL;
+      int ret = sceNpDrmProcessExitSpawn2(k_licensee, g_console.launch_app_on_exit, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+      SSNES_LOG("Attempt to load SELF: [%s] (return code: [%x]).\n", g_console.launch_app_on_exit, ret);
+      if(ret <  0)
+      {
+         SSNES_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
+	 sys_game_process_exitspawn(g_console.launch_app_on_exit, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+      }
+      sceNpTerm();
+      cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);
+      cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
+   }
+   return 1;
 }
