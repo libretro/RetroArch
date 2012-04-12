@@ -1674,7 +1674,11 @@ void ssnes_state_slot_increase(void)
       msg_queue_clear(g_extern.msg_queue);
    char msg[256];
 
+#ifdef HAVE_BSV_MOVIE
    snprintf(msg, sizeof(msg), "Save state/movie slot: %u", g_extern.state_slot);
+#else
+   snprintf(msg, sizeof(msg), "Save state slot: %u", g_extern.state_slot);
+#endif
 
    if (g_extern.msg_queue)
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
@@ -1692,7 +1696,11 @@ void ssnes_state_slot_decrease(void)
 
    char msg[256];
 
+#ifdef HAVE_BSV_MOVIE
    snprintf(msg, sizeof(msg), "Save state/movie slot: %u", g_extern.state_slot);
+#else
+   snprintf(msg, sizeof(msg), "Save state slot: %u", g_extern.state_slot);
+#endif
 
    if (g_extern.msg_queue)
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
