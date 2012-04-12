@@ -321,9 +321,12 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
       int index = m_romlist.GetCurSel();
       if(browser.cur[index].d_type != FILE_ATTRIBUTE_DIRECTORY)
       {
+         struct retro_system_info info;
+	 retro_get_system_info(&info);
+	 bool block_zip_extract  = info.block_extract;
          memset(strbuffer, 0, sizeof(strbuffer));
 	 wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
-	 if((strstr(strbuffer, ".zip") || strstr(strbuffer, ".ZIP")) && !g_console.block_zip_extract)
+	 if((strstr(strbuffer, ".zip") || strstr(strbuffer, ".ZIP")) && !block_zip_extract)
 	 {
             char path_tmp[1024];
 	    sprintf(path_tmp, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);

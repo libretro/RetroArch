@@ -1983,10 +1983,13 @@ static void select_rom(void)
 			else if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
 			{
 				char rom_path_temp[MAX_PATH_LENGTH];
+				struct retro_system_info info;
+				retro_get_system_info(&info);
+				bool block_zip_extract  = info.block_extract;
 
 				snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 
-				if((strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP")) && !g_console.block_zip_extract)
+				if((strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP")) && !block_zip_extract)
 					ssnes_extract_zipfile(rom_path_temp);
 				else
 				{

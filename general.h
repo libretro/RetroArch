@@ -186,7 +186,6 @@ struct console_settings
    bool custom_bgm_enable;
 #endif
    bool block_config_read;
-   bool block_zip_extract;
    bool default_sram_dir_enable;
    bool default_savestate_dir_enable;
    bool frame_advance_enable;
