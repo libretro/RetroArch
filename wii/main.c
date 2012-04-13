@@ -131,6 +131,7 @@ int main(void)
    fatInitDefault();
 
 #ifdef HAVE_FILE_LOGGER
+   g_extern.verbose = true;
    log_fp = fopen("sd:/ssnes-log.txt", "w");
 #endif
 

@@ -636,6 +636,13 @@ int ssnes_main_init_wrap(const struct ssnes_main_wrap *args)
    if (args->verbose)
       argv[argc++] = strdup("-v");
 
+#ifdef HAVE_FILE_LOGGER
+   SSNES_LOG("foo\n");
+   for(int i = 0; i < argc; i++)
+      SSNES_LOG("arg #%d: %s\n", i, argv[i]);
+   SSNES_LOG("bar\n");
+#endif
+
    int ret = ssnes_main_init(argc, argv);
 
    char **tmp = argv;
@@ -644,6 +651,7 @@ int ssnes_main_init_wrap(const struct ssnes_main_wrap *args)
       free(*tmp);
       tmp++;
    }
+
 
    return ret;
 }
