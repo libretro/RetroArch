@@ -272,6 +272,7 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsCpp</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsCpp</CompileAs>
     </ClCompile>
+    <ClCompile Include="..\..\file_path.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

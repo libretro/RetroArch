@@ -26,5 +26,8 @@
     <ClCompile Include="..\..\compat\compat.c">
       <Filter>Source Files\compat</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\file_path.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
