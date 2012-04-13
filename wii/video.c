@@ -16,6 +16,7 @@
 #include "../driver.h"
 #include "../general.h"
 #include "driver.h"
+#include "../console/console_ext.h"
 #include <gccore.h>
 #include <ogcsys.h>
 #include <malloc.h>
@@ -274,6 +275,30 @@ static void wii_free(void *data)
    (void)data;
 }
 
+static void wii_swap(void * data)
+{
+   (void)data;
+   /* TODO */
+}
+
+static void wii_set_aspect_ratio(void * data, uint32_t aspectratio_index)
+{
+   (void)data;
+
+   g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
+   g_settings.video.force_aspect = false;
+
+   /* TODO */
+}
+
+static void wii_set_rotation(void * data, uint32_t orientation)
+{
+   (void)data;
+   (void)orientation;
+
+   /* TODO */
+}
+
 const video_driver_t video_wii = {
    .init = wii_init,
    .frame = wii_frame,
@@ -281,6 +306,9 @@ const video_driver_t video_wii = {
    .set_nonblock_state = wii_set_nonblock_state,
    .focus = wii_focus,
    .free = wii_free,
-   .ident = "wii"
+   .ident = "wii",
+   .set_swap_block_state = wii_swap,
+   .set_rotation = wii_set_rotation,
+   .set_aspect_ratio = wii_set_aspect_ratio,
+   .swap = wii_swap
 };
-

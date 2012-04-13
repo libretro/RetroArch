@@ -71,4 +71,29 @@
                                                 xdk360_input_state(driver.input_data, snes_keybinds, port, device, index, id)
 #define input_key_pressed_func(key)             xdk360_key_pressed(driver.input_data, key)
 #define input_free_func()                       xdk360_free_input(driver.input_data)
+
+/*============================================================
+	GAMECUBE / WII
+============================================================ */
+
+#elif defined(GEKKO)
+
+#define video_init_func(video_info, input, input_data) wii_init(video_info, input, input_data)
+#define video_frame_func(data, width, height, pitch, msg) \
+                                                wii_frame(driver.video_data, data, width, height, pitch, msg)
+#define video_set_nonblock_state_func(state) wii_set_nonblock_state(driver.video_data, state)
+#define video_alive_func()                      wii_alive(driver.video_data)
+#define video_focus_func()                      wii_focus(driver.video_data)
+#define video_xml_shader_func(path)             driver.video->xml_shader(driver.video_data, path)
+#define video_free_func()                       wii_free(driver.video_data)
+#define video_set_rotation_func(orientation)	wii_set_orientation(driver.video_data, orientation)
+#define video_set_aspect_ratio_func(aspectratio_idx) wii_set_aspect_ratio(driver.video_data, aspectratio_idx)
+
+#define input_init_func()                       wii_input_initialize()
+#define input_poll_func()                       wii_input_poll(driver.input_data)
+#define input_input_state_func(snes_keybinds, port, device, index, id) \
+                                                wii_input_state(driver.input_data, snes_keybinds, port, device, index, id)
+#define input_key_pressed_func(key)             wii_key_pressed(driver.input_data, key)
+#define input_free_func()                       wii_free_input(driver.input_data)
+
 #endif

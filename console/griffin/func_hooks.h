@@ -19,7 +19,7 @@
 /*============================================================
 	GENERAL
 ============================================================ */
-#if defined(__CELLOS_LV2__) || defined(_XBOX)
+#if defined(__CELLOS_LV2__) || defined(_XBOX) || defined(GEKKO)
 #define HAVE_GRIFFIN_OVERRIDE_VIDEO_FRAME_FUNC 1
 #endif
 

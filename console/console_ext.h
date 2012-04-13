@@ -50,6 +50,8 @@ struct aspect_ratio_elem
    float value;
 };
 
+extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
+
 #include "console_ext_input.h"
 
 /*============================================================
