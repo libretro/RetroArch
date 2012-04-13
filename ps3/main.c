@@ -457,80 +457,6 @@ static void startup_ssnes(void)
    }
 }
 
-static bool manage_libretro_core(void)
-{
-   g_extern.verbose = true;
-   bool return_code;
-
-   bool set_libretro_path = false;
-   char tmp_path[1024], tmp_path2[1024], tmp_pathnewfile[1024];
-   snprintf(tmp_path, sizeof(tmp_path), "%s/%s/CORE.SELF", usrDirPath, EMULATOR_CORE_DIR);
-   SSNES_LOG("Assumed path of CORE.SELF: [%s]\n", tmp_path);
-
-   if(path_file_exists(tmp_path))
-   {
-	   //if CORE.SELF exists, this indicates we have just installed
-	   //a new libretro port and that we need to change it to a more
-	   //sane name.
-
-	   CellFsErrno ret;
-
-	   ssnes_console_name_from_id(tmp_path2, sizeof(tmp_path2));
-	   strlcat(tmp_path2, ".SELF", sizeof(tmp_path2));
-	   snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s/%s/%s", usrDirPath, EMULATOR_CORE_DIR, tmp_path2);
-
-	   if(path_file_exists(tmp_pathnewfile))
-	   {
-		   SSNES_LOG("Upgrading emulator core...\n");
-		   //if libretro core already exists, then that means we are
-		   //upgrading the libretro core - so delete pre-existing
-		   //file first
-		   ret = cellFsUnlink(tmp_pathnewfile);
-		   if(ret == CELL_FS_SUCCEEDED)
-		   {
-			   SSNES_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-		   }
-		   else
-		   {
-			   SSNES_LOG("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-		   }
-	   }
-
-	   //now attempt the renaming
-	   ret = cellFsRename(tmp_path, tmp_pathnewfile);
-	   if(ret != CELL_FS_SUCCEEDED)
-	   {
-		   SSNES_ERR("Failed to rename CORE.SELF.\n");
-	   }
-	   else
-	   {
-		   SSNES_LOG("Libsnes core [%s] renamed to: [%s].\n", tmp_path, tmp_pathnewfile);
-		   set_libretro_path = true;
-	   }
-   }
-   else
-   {
-	   SSNES_LOG("CORE.SELF was not found, libretro core path will be loaded from config file.\n");
-   }
-
-   if(set_libretro_path)
-   {
-	   //CORE.BIN has been renamed, libretro path will now be set to the recently
-	   //renamed new libretro core
-	   strlcpy(g_settings.libretro, tmp_pathnewfile, sizeof(g_settings.libretro));
-	   return_code = 0;
-   }
-   else
-   {
-	   //There was no CORE.BIN present, or the CORE.BIN file was not renamed.
-	   //The libretro core path will still be loaded from the config file
-	   return_code = 1;
-   }
-
-   g_extern.verbose = false;
-
-   return return_code;
-}
 
 int main(int argc, char *argv[])
 {
@@ -559,7 +485,10 @@ int main(int argc, char *argv[])
 
    config_set_defaults();
 
-   bool load_libretro_path = manage_libretro_core();
+   char full_path[1024], tmp_path[1024];
+   snprintf(full_path, sizeof(full_path), "%s/%s/CORE.SELF", usrDirPath, EMULATOR_CORE_DIR);
+   snprintf(tmp_path, sizeof(tmp_path), "%s/%s/", usrDirPath, EMULATOR_CORE_DIR);
+   bool load_libretro_path = ssnes_manage_libretro_core(full_path, tmp_path, ".SELF");
 
    set_default_settings();
    init_settings(load_libretro_path);

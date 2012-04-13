@@ -26,6 +26,7 @@
 #include "../compat/strl.h"
 #include "main_wrap.h"
 #include "console_ext.h"
+#include "../file.h"
 
 #ifdef HAVE_ZLIB
 #include "szlib/zlib.h"
@@ -594,3 +595,99 @@ struct aspectratios_list_t aspectratio_lut[ASPECT_RATIO_CUSTOM+1] = {
 	{"Auto", 0.0f},
 	{"Custom", 0.0f}
 };
+
+/*============================================================
+	LIBRETRO
+============================================================ */
+
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+bool ssnes_manage_libretro_core(const char * full_path, const char * path, const char * exe_ext)
+{
+   g_extern.verbose = true;
+   bool return_code;
+
+   bool set_libretro_path = false;
+   char tmp_path2[1024], tmp_pathnewfile[1024];
+   SSNES_LOG("Assumed path of CORE executable: [%s]\n", full_path);
+
+   if(path_file_exists(full_path))
+   {
+      //if CORE executable exists, this means we have just installed
+      //a new libretro port and therefore we need to change it to a more
+      //sane name.
+
+#if defined(__CELLOS_LV2__)
+      CellFsErrno ret;
+#else
+      int ret;
+#endif
+
+      ssnes_console_name_from_id(tmp_path2, sizeof(tmp_path2));
+      strlcat(tmp_path2, exe_ext, sizeof(tmp_path2));
+      snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", path, tmp_path2);
+
+      if(path_file_exists(tmp_pathnewfile))
+      {
+	 //if libretro core already exists, this means we are
+	 //upgrading the libretro core - so delete pre-existing
+	 //file first.
+	 
+         SSNES_LOG("Upgrading emulator core...\n");
+#if defined(__CELLOS_LV2__)
+	 ret = cellFsUnlink(tmp_pathnewfile);
+	 if(ret == CELL_FS_SUCCEEDED)
+#elif defined(_XBOX)
+         ret = DeleteFile(tmp_pathnewfile);
+         if(ret != 0)
+#endif
+	 {
+            SSNES_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+	 }
+	 else
+	 {
+            SSNES_LOG("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+	 }
+      }
+
+      //now attempt the renaming.
+#if defined(__CELLOS_LV2__)
+      ret = cellFsRename(full_path, tmp_pathnewfile);
+
+      if(ret != CELL_FS_SUCCEEDED)
+#elif defined(_XBOX)
+      ret = MoveFileExA(full_path, tmp_pathnewfile, NULL);
+      if(ret == 0)
+#endif
+      {
+         SSNES_ERR("Failed to rename CORE executable.\n");
+      }
+      else
+      {
+         SSNES_LOG("Libsnes core [%s] renamed to: [%s].\n", full_path, tmp_pathnewfile);
+	 set_libretro_path = true;
+      }
+   }
+   else
+   {
+      SSNES_LOG("CORE executable was not found, libretro core path will be loaded from config file.\n");
+   }
+
+   if(set_libretro_path)
+   {
+      //CORE executable has been renamed, libretro path will now be set to the recently
+      //renamed new libretro core.
+      strlcpy(g_settings.libretro, tmp_pathnewfile, sizeof(g_settings.libretro));
+      return_code = 0;
+   }
+   else
+   {
+      //There was no CORE executable present, or the CORE executable file was not renamed.
+      //The libretro core path will still be loaded from the config file.
+      return_code = 1;
+   }
+
+   g_extern.verbose = false;
+
+   return return_code;
+}
+#endif

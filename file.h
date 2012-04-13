@@ -24,6 +24,10 @@
 #include <sys/types.h>
 #include "general.h"
 
+#ifdef __CELLOS_LV2__
+#include <cell/cell_fs.h>
+#endif
+
 // Generic file, path and directory handling.
 
 ssize_t read_file(const char *path, void **buf);

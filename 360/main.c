@@ -369,83 +369,6 @@ static void get_environment_settings (void)
    strlcpy(SYS_CONFIG_FILE, "game:\\ssnes.cfg", sizeof(SYS_CONFIG_FILE));
 }
 
-static bool manage_libretro_core(void)
-{
-   g_extern.verbose = true;
-   bool return_code;
-
-   bool set_libretro_path = false;
-   char tmp_path[1024], tmp_path2[1024], tmp_pathnewfile[1024];
-   snprintf(tmp_path, sizeof(tmp_path), "game:\\CORE.xex");
-   SSNES_LOG("Assumed path of CORE.xex: [%s]\n", tmp_path);
-
-   if(path_file_exists(tmp_path))
-   {
-      //if CORE.xex exists, this indicates we have just installed
-      //a new libretro port and that we need to change it to a more
-      //sane name.
-
-      int ret;
-
-      ssnes_console_name_from_id(tmp_path2, sizeof(tmp_path2));
-      strlcat(tmp_path2, ".xex", sizeof(tmp_path2));
-      snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "game:\\%s", tmp_path2);
-
-      if(path_file_exists(tmp_pathnewfile))
-      {
-         SSNES_LOG("Upgrading emulator core...\n");
-
-	 //if libretro core already exists, then that means we are
-	 //upgrading the libretro core - so delete pre-existing
-	 //file first
-	 
-         ret = DeleteFile(tmp_pathnewfile);
-	 if(ret != 0)
-	 {
-            SSNES_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-	 }
-	 else
-	 {
-            SSNES_LOG("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-	 }
-      }
-
-      //now attempt the renaming
-      ret = MoveFileExA(tmp_path, tmp_pathnewfile, NULL);
-      if(ret == 0)
-      {
-         SSNES_ERR("Failed to rename CORE.xex.\n");
-      }
-      else
-      {
-         SSNES_LOG("libretro core [%s] renamed to: [%s].\n", tmp_path, tmp_pathnewfile);
-	 set_libretro_path = true;
-      }
-   }
-   else
-   {
-      SSNES_LOG("CORE.xex was not found, libretro core path will be loaded from config file.\n");
-   }
-
-   if(set_libretro_path)
-   {
-      //CORE.xex has been renamed, libretro path will now be set to the recently
-      //renamed new libretro core
-      strlcpy(g_settings.libretro, tmp_pathnewfile, sizeof(g_settings.libretro));
-      return_code = 0;
-   }
-   else
-   {
-      //There was no CORE.xex present, or the CORE.xex file was not renamed.
-      //The libretro core path will still be loaded from the config file
-      return_code = 1;
-   }
-
-   g_extern.verbose = false;
-
-   return return_code;
-}
-
 int main(int argc, char *argv[])
 {
    get_environment_settings();
@@ -453,7 +376,10 @@ int main(int argc, char *argv[])
    ssnes_main_clear_state();
    config_set_defaults();
 
-   bool load_libretro_path = manage_libretro_core();
+   char full_path[1024];
+   snprintf(full_path, sizeof(full_path), "game:\\CORE.xex");
+
+   bool load_libretro_path = ssnes_manage_libretro_core(full_path, "game:\\", ".xex");
 
    set_default_settings();
    init_settings(load_libretro_path);

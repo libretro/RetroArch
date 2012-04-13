@@ -81,4 +81,8 @@ void ssnes_input_set_default_keybind_names_for_emulator(void);
 
 void ssnes_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
 
+#if defined(__CELLOS_LV2__) || defined(_XBOX)
+bool ssnes_manage_libretro_core(const char * full_path, const char * path, const char * exe_ext);
+#endif
+
 #endif
