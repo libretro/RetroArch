@@ -163,7 +163,7 @@ HRESULT CSSNESQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	 break;
    }
    char aspectratio_label[32];
-   sprintf(aspectratio_label, "Aspect Ratio: %s", g_console.aspect_ratio_name);
+   sprintf(aspectratio_label, "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
    unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, aspectratio_label, -1, NULL, 0);
    wchar_t * aspectratio_label_w = new wchar_t[dwNum];
    MultiByteToWideChar(CP_ACP, 0, aspectratio_label, -1, aspectratio_label_w, dwNum);
@@ -210,7 +210,7 @@ HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
 	       video_xdk360.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 	       char aspectratio_label[32];
-	       sprintf(aspectratio_label, "Aspect Ratio: %s", g_console.aspect_ratio_name);
+	       sprintf(aspectratio_label, "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
 	       unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, aspectratio_label, -1, NULL, 0);
 	       wchar_t * aspectratio_label_w = new wchar_t[dwNum];
 	       MultiByteToWideChar(CP_ACP, 0, aspectratio_label, -1, aspectratio_label_w, dwNum);
