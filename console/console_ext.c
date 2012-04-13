@@ -658,3 +658,52 @@ void ssnes_startup (const char * config_path)
 }
 
 #endif
+
+#ifdef HAVE_SSNES_EXEC
+
+#ifdef __CELLOS_LV2__
+#include <cell/sysmodule.h>
+#include <sys/process.h>
+#include <sysutil/sysutil_common.h>
+#include <netex/net.h>
+#include <np.h>
+#include <np/drm.h>
+#endif
+
+void ssnes_exec (void)
+{
+   if(g_console.return_to_launcher)
+   {
+      SSNES_LOG("Attempt to load executable: [%s].\n", g_console.launch_app_on_exit);
+#if defined(_XBOX)
+      XLaunchNewImage(g_console.launch_app_on_exit, NULL);
+#elif defined(__CELLOS_LV2__)
+      char spawn_data[256];
+      for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
+         spawn_data[i] = i & 0xff;
+
+      char spawn_data_size[16];
+      sprintf(spawn_data_size, "%d", 256);
+
+      const char * const spawn_argv[] = {
+         spawn_data_size,
+         "test argv for",
+         "sceNpDrmProcessExitSpawn2()",
+         NULL
+      };
+
+      SceNpDrmKey * k_licensee = NULL;
+      int ret = sceNpDrmProcessExitSpawn2(k_licensee, g_console.launch_app_on_exit, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+      if(ret <  0)
+      {
+         SSNES_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
+	 sys_game_process_exitspawn(g_console.launch_app_on_exit, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+      }
+      sceNpTerm();
+      cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);
+      cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
+#endif
+   }
+}
+
+#endif

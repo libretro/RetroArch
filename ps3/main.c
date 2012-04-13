@@ -557,33 +557,7 @@ begin_shutdown:
       SSNES_ERR("System cache partition could not be cleared on exit.\n");
    }
 
-   if(g_console.return_to_launcher)
-   {
-      char spawn_data[256];
-      for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
-         spawn_data[i] = i & 0xff;
+   ssnes_exec();
 
-      char spawn_data_size[16];
-      sprintf(spawn_data_size, "%d", 256);
-
-      const char * const spawn_argv[] = {
-	      spawn_data_size,
-	      "test argv for",
-	      "sceNpDrmProcessExitSpawn2()",
-	      NULL
-      };
-
-      SceNpDrmKey * k_licensee = NULL;
-      int ret = sceNpDrmProcessExitSpawn2(k_licensee, g_console.launch_app_on_exit, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-      SSNES_LOG("Attempt to load SELF: [%s] (return code: [%x]).\n", g_console.launch_app_on_exit, ret);
-      if(ret <  0)
-      {
-         SSNES_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
-	 sys_game_process_exitspawn(g_console.launch_app_on_exit, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-      }
-      sceNpTerm();
-      cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);
-      cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
-   }
    return 1;
 }

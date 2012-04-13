@@ -88,9 +88,13 @@ bool ssnes_manage_libretro_core(const char *full_path, const char *path, const c
 #endif
 
 /*============================================================
-  SSNES MAIN WRAP
+  SSNES
   ============================================================ */
 
 #ifdef HAVE_SSNES_MAIN_WRAP
 void ssnes_startup (const char * config_path);
+#endif
+
+#ifdef HAVE_SSNES_EXEC
+void ssnes_exec (void);
 #endif
