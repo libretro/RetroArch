@@ -2483,7 +2483,7 @@ void ssnes_main_deinit(void)
    uninit_libretro_sym();
 }
 
-#ifndef SSNES_CONSOLE
+#if !defined(SSNES_CONSOLE) || defined(GEKKO)
 // Consoles use the higher level API.
 int main(int argc, char *argv[])
 {

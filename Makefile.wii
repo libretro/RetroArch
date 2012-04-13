@@ -19,20 +19,20 @@ ELF_TARGET := ssnes.elf
 INCLUDE := -I. -I$(DEVKITPRO)/libogc/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 
-MACHDEP := -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
+MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 CXXFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
-LIBS := -lfat -lretro -lwiiuse -logc -lbte
+LIBS := -lfat -lretro -lwiiuse -logc -lbte -lfreetype
 
-OBJ = wii/main.o fifo_buffer.o ssnes.o driver.o file.o settings.o message.o rewind.o movie.o patch.o compat/compat.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o wii/audio.o wii/input.o wii/video.o console/sgui/sgui.o console/sgui/list.o console/sgui/font.bmpobj console/console_ext.o console/szlib/szlib.o
+OBJ = wii/main.o fifo_buffer.o ssnes.o driver.o gfx/fonts.o file.o settings.o message.o rewind.o movie.o patch.o compat/compat.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o wii/audio.o wii/input.o wii/video.o console/sgui/sgui.o console/sgui/list.o console/font.bmpobj console/console_ext.o console/szlib/szlib.o
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
 OBJ += console/logger/logger.o
 endif
 
-CFLAGS += -std=gnu99 -DSSNES_CONSOLE -DHAVE_CONFIGFILE=1 -DHW_RVL -DHAVE_GETOPT_LONG -DPACKAGE_VERSION=\"0.9.5\" -Dmain=ssnes_main -Wno-char-subscripts -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
+CFLAGS += -std=gnu99 -DSSNES_CONSOLE -DHAVE_CONFIGFILE=1 -DGEKKO -DHW_RVL -DHAVE_ZLIB -DHAVE_GETOPT_LONG -DHAVE_FREETYPE -DPACKAGE_VERSION=\"0.9.5\" -Dmain=ssnes_main -Wno-char-subscripts -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g

@@ -99,6 +99,11 @@ enum xdk360_device_id
 
    SSNES_LAST_PLATFORM_KEY
 };
+#elif defined(GEKKO)
+#include <ogc/pad.h>
+#ifdef HW_RVL
+#include <wiiuse/wpad.h>
+#endif
 #endif
 
 extern uint64_t ssnes_default_keybind_lut[SSNES_FIRST_META_KEY];

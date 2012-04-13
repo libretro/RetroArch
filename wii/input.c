@@ -90,7 +90,6 @@ static void wii_input_poll(void *data)
 
       pad_state[i][RETRO_DEVICE_ID_JOYPAD_B] = down & PAD_BUTTON_B;
       pad_state[i][RETRO_DEVICE_ID_JOYPAD_Y] = down & PAD_BUTTON_Y;
-      pad_state[i][RETRO_DEVICE_ID_JOYPAD_Y] = down & PAD_BUTTON_Y;
       pad_state[i][RETRO_DEVICE_ID_JOYPAD_SELECT] = down & PAD_TRIGGER_Z;
       pad_state[i][RETRO_DEVICE_ID_JOYPAD_START] = down & PAD_BUTTON_START;
       pad_state[i][RETRO_DEVICE_ID_JOYPAD_UP] = down & PAD_BUTTON_UP;
