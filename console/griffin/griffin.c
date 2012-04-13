@@ -115,6 +115,7 @@
 #include "../fileio/file_browser.c"
 #endif
 #include "../../file.c"
+#include "../../file_path.c"
 
 /*============================================================
 	MESSAGE
