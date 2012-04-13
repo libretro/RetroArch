@@ -203,7 +203,7 @@ HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
 	    {
-               if(g_console.aspect_ratio_index < LAST_ASPECT_RATIO)
+               if(g_console.aspect_ratio_index < ASPECT_RATIO_END)
                   g_console.aspect_ratio_index++;
 	       else
                   g_console.aspect_ratio_index = 0;

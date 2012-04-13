@@ -137,18 +137,18 @@ static void set_default_settings (void)
    g_settings.video.smooth = true;
    g_settings.video.aspect_ratio = -1.0f;
 
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_A];
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_X];
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_BACK];
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_START];
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_UP];
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]	=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_DOWN];
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]	=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_LEFT];
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_RIGHT];
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_B];
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_Y];
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_LB];
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		=	ssnes_platform_keybind_lut[XDK360_DEVICE_ID_JOYPAD_RB];
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_A].joykey;
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_X].joykey;
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_BACK].joykey;
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_START].joykey;
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_UP].joykey;
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_DOWN].joykey;
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_LEFT].joykey;
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_RIGHT].joykey;
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_B].joykey;
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_Y].joykey;
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_LB].joykey;
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_RB].joykey;
 
    for(uint32_t x = 0; x < MAX_PLAYERS; x++)
       ssnes_input_set_default_keybinds(x);

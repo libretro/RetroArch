@@ -1296,7 +1296,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
-				if(g_console.aspect_ratio_index < LAST_ASPECT_RATIO)
+				if(g_console.aspect_ratio_index < ASPECT_RATIO_END)
 				{
 					g_console.aspect_ratio_index++;
 					video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
@@ -2087,7 +2087,7 @@ static void ingame_menu(uint32_t menu_id)
 				}
 				if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 				{
-					if(g_console.aspect_ratio_index < LAST_ASPECT_RATIO)
+					if(g_console.aspect_ratio_index < ASPECT_RATIO_END)
 					{
 						g_console.aspect_ratio_index++;
 						video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
