@@ -79,4 +79,6 @@ uint64_t ssnes_input_find_next_platform_key(uint64_t joykey);
 // will need different keybind names for buttons, etc.)
 void ssnes_input_set_default_keybind_names_for_emulator(void);
 
+void ssnes_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
+
 #endif

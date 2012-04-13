@@ -1063,30 +1063,23 @@ static void select_directory(uint32_t menu_id)
         old_state = state;
 }
 
-static void set_keybind_digital(uint64_t state, uint64_t system_joypad_id, uint64_t default_snes_joypad_id)
+static void set_keybind_digital(uint64_t state, uint64_t default_retro_joypad_id)
 {
-   uint64_t new_key;
+   unsigned keybind_action = KEYBIND_NOACTION;
 
    if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state))
-   {
-      new_key = ssnes_input_find_previous_platform_key(g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey);
-      g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey = new_key;
-      set_delay = DELAY_MEDIUM;
-   }
+      keybind_action = KEYBIND_DECREMENT;
 
    if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
-   {
-      new_key = ssnes_input_find_next_platform_key(g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey);
-      g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey = new_key;
-      set_delay = DELAY_MEDIUM;
-   }
+      keybind_action = KEYBIND_INCREMENT;
 
    if(CTRL_START(state))
-   {
-      g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].id = default_snes_joypad_id;
-      g_settings.input.binds[currently_selected_controller_menu][default_snes_joypad_id].joykey = ssnes_default_keybind_lut[default_snes_joypad_id];
+      keybind_action = KEYBIND_DEFAULT;
+
+   ssnes_input_set_keybind(currently_selected_controller_menu, keybind_action, default_retro_joypad_id);
+
+   if(keybind_action != KEYBIND_NOACTION)
       set_delay = DELAY_MEDIUM;
-   }
 }
 
 static void ssnes_filename_input_and_save (unsigned filename_type)
@@ -1750,40 +1743,40 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				currently_selected_controller_menu = 0;
 			break; 
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
-			set_keybind_digital(state, PS3_DEVICE_ID_JOYPAD_UP, RETRO_DEVICE_ID_JOYPAD_UP);
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_UP);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN:
-			set_keybind_digital(state, PS3_DEVICE_ID_JOYPAD_DOWN, RETRO_DEVICE_ID_JOYPAD_DOWN);
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_DOWN);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT:
-			set_keybind_digital(state, PS3_DEVICE_ID_JOYPAD_LEFT, RETRO_DEVICE_ID_JOYPAD_LEFT);
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_LEFT);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT:
-			set_keybind_digital(state, PS3_DEVICE_ID_JOYPAD_RIGHT, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_RIGHT);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A:
-			set_keybind_digital(state, PS3_DEVICE_ID_JOYPAD_CIRCLE, RETRO_DEVICE_ID_JOYPAD_A);
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_A);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
-			set_keybind_digital(state, PS3_DEVICE_ID_JOYPAD_CROSS, RETRO_DEVICE_ID_JOYPAD_B);
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_B);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X:
-			set_keybind_digital(state, PS3_DEVICE_ID_JOYPAD_TRIANGLE, RETRO_DEVICE_ID_JOYPAD_X);
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_X);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
-			set_keybind_digital(state, PS3_DEVICE_ID_JOYPAD_SQUARE, RETRO_DEVICE_ID_JOYPAD_Y);
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_Y);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT:
-			set_keybind_digital(state, PS3_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_SELECT);
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_SELECT);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START:
-			set_keybind_digital(state, PS3_DEVICE_ID_JOYPAD_START, RETRO_DEVICE_ID_JOYPAD_START);
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_START);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L:
-			set_keybind_digital(state, PS3_DEVICE_ID_JOYPAD_L1, RETRO_DEVICE_ID_JOYPAD_L);
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_L);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
-			set_keybind_digital(state, PS3_DEVICE_ID_JOYPAD_R1, RETRO_DEVICE_ID_JOYPAD_R);
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_R);
 			break;
 		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
@@ -1794,41 +1787,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_CONTROLS_DEFAULT_ALL:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
 			{
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_UP].id = RETRO_DEVICE_ID_JOYPAD_UP;
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_UP].joykey = ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP];
-
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_DOWN].id = RETRO_DEVICE_ID_JOYPAD_DOWN;
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey = ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN];
-
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_LEFT].id = RETRO_DEVICE_ID_JOYPAD_LEFT;
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey = ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT];
-
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_RIGHT].id = RETRO_DEVICE_ID_JOYPAD_RIGHT;
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT];
-
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_A].id = RETRO_DEVICE_ID_JOYPAD_A;
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_A].joykey = ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A];
-
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_B].id = RETRO_DEVICE_ID_JOYPAD_B;
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_B].joykey = ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B];
-
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_X].id = RETRO_DEVICE_ID_JOYPAD_X;
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_X].joykey = ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X];
-
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_Y].id = RETRO_DEVICE_ID_JOYPAD_Y;
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_Y].joykey = ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y];
-
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_L].id = RETRO_DEVICE_ID_JOYPAD_L;
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_L].joykey = ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L];
-
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_R].id = RETRO_DEVICE_ID_JOYPAD_R;
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_R].joykey = ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R];
-
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_START].id = RETRO_DEVICE_ID_JOYPAD_START;
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_START].joykey = ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START];
-
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_SELECT].id = RETRO_DEVICE_ID_JOYPAD_SELECT;
-				g_settings.input.binds[currently_selected_controller_menu][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT];
+				ssnes_input_set_default_keybinds(currently_selected_controller_menu);
 				menu_reinit_settings();
 			}
 			break;

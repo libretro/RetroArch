@@ -508,6 +508,38 @@ const char *ssnes_input_find_platform_key_label(uint64_t joykey)
    return "Unknown";
 }
 
+void ssnes_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id)
+{
+   uint64_t new_key;
+
+   switch(keybind_action)
+   {
+      case KEYBIND_DECREMENT:
+         new_key = ssnes_input_find_previous_platform_key(g_settings.input.binds[player][default_retro_joypad_id].joykey);
+         g_settings.input.binds[player][default_retro_joypad_id].joykey = new_key;
+         break;
+      case KEYBIND_INCREMENT:
+         new_key = ssnes_input_find_next_platform_key(g_settings.input.binds[player][default_retro_joypad_id].joykey);
+         g_settings.input.binds[player][default_retro_joypad_id].joykey = new_key;
+         break;
+      case KEYBIND_DEFAULT:
+         g_settings.input.binds[player][default_retro_joypad_id].id = default_retro_joypad_id;
+         g_settings.input.binds[player][default_retro_joypad_id].joykey = ssnes_default_keybind_lut[default_retro_joypad_id];
+         break;
+      case KEYBIND_NOACTION:
+         break;
+   }
+}
+
+void ssnes_input_set_default_keybinds(unsigned player)
+{
+   for(unsigned i = 0; i < SSNES_FIRST_META_KEY; i++)
+   {
+      g_settings.input.binds[player][i].id = i;
+      g_settings.input.binds[player][i].joykey = ssnes_default_keybind_lut[i];
+   }
+}
+
 void ssnes_input_set_default_keybind_names_for_emulator(void)
 {
    struct retro_system_info info;

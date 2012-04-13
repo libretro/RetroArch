@@ -19,6 +19,14 @@
 
 #include "../driver.h"
 
+enum keybind_set_id
+{
+   KEYBIND_NOACTION,
+   KEYBIND_DECREMENT,
+   KEYBIND_INCREMENT,
+   KEYBIND_DEFAULT
+};
+
 #if defined(__CELLOS_LV2__)
 #include "../ps3/ps3_input.h"
 enum ps3_device_id
