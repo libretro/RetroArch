@@ -299,13 +299,13 @@ int main(int argc, char *argv[])
 
    if(state.Gamepad.wButtons & XINPUT_GAMEPAD_Y)
    {
-      //override path, boot first XEX in cores directory
-      SSNES_LOG("Fallback - Will boot first XEX in SSNES directory.\n");
+      //override path, boot first executable in cores directory
+      SSNES_LOG("Fallback - Will boot first executable in SSNES cores directory.\n");
       find_and_set_first_file();
    }
    else
    {
-      //normal XEX loading path
+      //normal executable loading path
       init_settings();
    }
 
@@ -339,13 +339,13 @@ int main(int argc, char *argv[])
 
    if(pad_data.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_TRIANGLE)
    {
-      //override path, boot first SELF in cores directory
-      SSNES_LOG("Fallback - Will boot first SELF in SSNES cores/ directory.\n");
+      //override path, boot first executable in cores directory
+      SSNES_LOG("Fallback - Will boot first executable in SSNES cores/ directory.\n");
       find_and_set_first_file();
    }
    else
    {
-      //normal SELF loading path
+      //normal executable loading path
       init_settings();
    }
 
@@ -372,7 +372,7 @@ int main(int argc, char *argv[])
 
    if(ret < 0)
    {
-      SSNES_LOG("SELF file is not of NPDRM type, trying another approach to boot it...\n");
+      SSNES_LOG("Executable file is not of NPDRM type, trying another approach to boot it...\n");
       sys_game_process_exitspawn2(libretro_path, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
    }
 

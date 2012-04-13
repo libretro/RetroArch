@@ -24,7 +24,6 @@
 #include "../libretro.h"
 #include "../general.h"
 #include "../compat/strl.h"
-#include "main_wrap.h"
 #include "console_ext.h"
 #include "../file.h"
 
@@ -201,48 +200,6 @@ int ssnes_extract_zipfile(const char *zip_path)
 
 #endif
 
-int ssnes_main_init_wrap(const struct ssnes_main_wrap *args)
-{
-   int argc = 0;
-   char *argv[MAX_ARGS] = {NULL};
-
-   argv[argc++] = strdup("ssnes");
-   
-   if (args->rom_path)
-      argv[argc++] = strdup(args->rom_path);
-
-   if (args->sram_path)
-   {
-      argv[argc++] = strdup("-s");
-      argv[argc++] = strdup(args->sram_path);
-   }
-
-   if (args->state_path)
-   {
-      argv[argc++] = strdup("-S");
-      argv[argc++] = strdup(args->state_path);
-   }
-
-   if (args->config_path)
-   {
-      argv[argc++] = strdup("-c");
-      argv[argc++] = strdup(args->config_path);
-   }
-
-   if (args->verbose)
-      argv[argc++] = strdup("-v");
-
-   int ret = ssnes_main_init(argc, argv);
-
-   char **tmp = argv;
-   while (*tmp)
-   {
-      free(*tmp);
-      tmp++;
-   }
-
-   return ret;
-}
 
 /*============================================================
 	INPUT EXTENSIONS
@@ -655,6 +612,49 @@ void ssnes_startup (const char * config_path)
       g_console.emulator_initialized = 1;
       g_console.initialize_ssnes_enable = 0;
    }
+}
+
+int ssnes_main_init_wrap(const struct ssnes_main_wrap *args)
+{
+   int argc = 0;
+   char *argv[MAX_ARGS] = {NULL};
+
+   argv[argc++] = strdup("ssnes");
+   
+   if (args->rom_path)
+      argv[argc++] = strdup(args->rom_path);
+
+   if (args->sram_path)
+   {
+      argv[argc++] = strdup("-s");
+      argv[argc++] = strdup(args->sram_path);
+   }
+
+   if (args->state_path)
+   {
+      argv[argc++] = strdup("-S");
+      argv[argc++] = strdup(args->state_path);
+   }
+
+   if (args->config_path)
+   {
+      argv[argc++] = strdup("-c");
+      argv[argc++] = strdup(args->config_path);
+   }
+
+   if (args->verbose)
+      argv[argc++] = strdup("-v");
+
+   int ret = ssnes_main_init(argc, argv);
+
+   char **tmp = argv;
+   while (*tmp)
+   {
+      free(*tmp);
+      tmp++;
+   }
+
+   return ret;
 }
 
 #endif

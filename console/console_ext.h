@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ROM_EXT_H__
-#define ROM_EXT_H__
+#ifndef CONSOLE_EXT_H__
+#define CONSOLE_EXT_H__
 
 enum aspect_ratio
 {
@@ -85,16 +85,27 @@ void ssnes_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t 
 bool ssnes_manage_libretro_core(const char *full_path, const char *path, const char *exe_ext);
 #endif
 
-#endif
-
 /*============================================================
   SSNES
   ============================================================ */
 
 #ifdef HAVE_SSNES_MAIN_WRAP
+
+struct ssnes_main_wrap
+{
+   const char *rom_path;
+   const char *sram_path;
+   const char *state_path;
+   const char *config_path;
+   bool verbose;
+};
+
+int ssnes_main_init_wrap(const struct ssnes_main_wrap *args);
 void ssnes_startup (const char * config_path);
 #endif
 
 #ifdef HAVE_SSNES_EXEC
 void ssnes_exec (void);
+#endif
+
 #endif

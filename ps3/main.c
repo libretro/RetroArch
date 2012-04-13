@@ -42,7 +42,6 @@
 #include "ps3_video_psgl.h"
 
 #include "../console/console_ext.h"
-#include "../console/main_wrap.h"
 #include "../conf/config_file.h"
 #include "../conf/config_file_macros.h"
 #include "../general.h"
