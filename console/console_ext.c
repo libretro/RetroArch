@@ -538,6 +538,7 @@ void ssnes_input_set_default_keybinds(unsigned player)
       g_settings.input.binds[player][i].id = i;
       g_settings.input.binds[player][i].joykey = ssnes_default_keybind_lut[i];
    }
+   g_settings.input.dpad_emulation[player] = DPAD_EMULATION_LSTICK;
 }
 
 void ssnes_input_set_default_keybind_names_for_emulator(void)

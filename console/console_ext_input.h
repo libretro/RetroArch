@@ -27,6 +27,13 @@ enum keybind_set_id
    KEYBIND_DEFAULT
 };
 
+enum
+{
+   DPAD_EMULATION_NONE,
+   DPAD_EMULATION_LSTICK,
+   DPAD_EMULATION_RSTICK
+};
+
 #if defined(__CELLOS_LV2__)
 #include "../ps3/ps3_input.h"
 enum ps3_device_id

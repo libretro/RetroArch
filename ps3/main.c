@@ -115,14 +115,7 @@ static void set_default_settings(void)
    ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_R1];
 
    for(uint32_t x = 0; x < MAX_PLAYERS; x++)
-   {
-      for(uint32_t y = 0; y < SSNES_FIRST_META_KEY; y++)
-      {
-         g_settings.input.binds[x][y].id = y;
-	 g_settings.input.binds[x][y].joykey = ssnes_default_keybind_lut[y];
-      }
-      g_settings.input.dpad_emulation[x] = DPAD_EMULATION_LSTICK;
-   }
+      ssnes_input_set_default_keybinds(x);
 
    // g_console
    g_console.block_config_read = true;
