@@ -17,8 +17,7 @@
 #ifndef __SSNES_LOGGER_OVERRIDE_H
 #define __SSNES_LOGGER_OVERRIDE_H
 
-#if (defined(__CELLOS_LV2__) || defined(HW_RVL)) && defined(HAVE_LOGGER)
-
+#if defined(HAVE_LOGGER)
 #include "console/logger/logger.h"
 
 #define SSNES_LOG(...) do { \
@@ -32,6 +31,29 @@
 #define SSNES_WARN(...) do { \
    logger_send("SSNES [WARN] :: " __VA_ARGS__); \
 } while(0)
+#elif defined(HAVE_FILE_LOGGER)
+extern FILE * log_fp;
+#ifndef SSNES_LOG
+#define SSNES_LOG(...) do { \
+   if (g_extern.verbose) \
+      fprintf(log_fp, "SSNES: " __VA_ARGS__); \
+      fflush(log_fp); \
+   } while (0)
+#endif
+
+#ifndef SSNES_ERR
+#define SSNES_ERR(...) do { \
+      fprintf(log_fp, "SSNES [ERROR] :: " __VA_ARGS__); \
+      fflush(log_fp); \
+   } while (0)
+#endif
+
+#ifndef SSNES_WARN
+#define SSNES_WARN(...) do { \
+      fprintf(log_fp, "SSNES [WARN] :: " __VA_ARGS__); \
+      fflush(log_fp); \
+   } while (0)
+#endif
 
 #endif
 

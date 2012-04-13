@@ -35,6 +35,10 @@
 #include <sdcard/gcsd.h>
 #include <fat.h>
 
+#ifdef HAVE_FILE_LOGGER
+FILE * log_fp;
+#endif
+
 static uint16_t menu_framebuf[SGUI_WIDTH * SGUI_HEIGHT];
 
 static bool folder_cb(const char *directory, sgui_file_enum_cb_t file_cb,
@@ -126,6 +130,10 @@ int main(void)
 {
    fatInitDefault();
 
+#ifdef HAVE_FILE_LOGGER
+   log_fp = fopen("sd:/ssnes-log.txt", "w");
+#endif
+
    wii_video_init();
    wii_input_init();
 
@@ -145,6 +153,10 @@ int main(void)
 
    wii_input_deinit();
    wii_video_deinit();
+
+#ifdef HAVE_FILE_LOGGER
+   fclose(log_fp);
+#endif
 
    sgui_free(sgui);
    return ret;
