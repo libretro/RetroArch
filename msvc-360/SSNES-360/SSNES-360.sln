@@ -27,6 +27,7 @@ Global
 		{9CE8EEF7-CC1C-4A04-BB5C-62411CB5BADE}.Release_LTCG|Xbox 360.Build.0 = Release_LTCG|Xbox 360
 		{9CE8EEF7-CC1C-4A04-BB5C-62411CB5BADE}.Release|Xbox 360.ActiveCfg = Release|Xbox 360
 		{9CE8EEF7-CC1C-4A04-BB5C-62411CB5BADE}.Release|Xbox 360.Build.0 = Release|Xbox 360
+		{9CE8EEF7-CC1C-4A04-BB5C-62411CB5BADE}.Release|Xbox 360.Deploy.0 = Release|Xbox 360
 		{29D5B973-F267-4039-84E7-8D34E9D00800}.CodeAnalysis|Xbox 360.ActiveCfg = CodeAnalysis|Xbox 360
 		{29D5B973-F267-4039-84E7-8D34E9D00800}.CodeAnalysis|Xbox 360.Build.0 = CodeAnalysis|Xbox 360
 		{29D5B973-F267-4039-84E7-8D34E9D00800}.Debug|Xbox 360.ActiveCfg = Debug|Xbox 360
@@ -39,6 +40,7 @@ Global
 		{29D5B973-F267-4039-84E7-8D34E9D00800}.Release_LTCG|Xbox 360.Build.0 = Release_LTCG|Xbox 360
 		{29D5B973-F267-4039-84E7-8D34E9D00800}.Release|Xbox 360.ActiveCfg = Release|Xbox 360
 		{29D5B973-F267-4039-84E7-8D34E9D00800}.Release|Xbox 360.Build.0 = Release|Xbox 360
+		{29D5B973-F267-4039-84E7-8D34E9D00800}.Release|Xbox 360.Deploy.0 = Release|Xbox 360
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

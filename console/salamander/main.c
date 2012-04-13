@@ -40,8 +40,6 @@
 #define NP_POOL_SIZE (128*1024)
 #endif
 
-#define PATH_MAX (512UL)
-
 #define MAX_PATH_LENGTH 1024
 
 #ifdef HAVE_LOGGER
