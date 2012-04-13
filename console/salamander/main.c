@@ -33,7 +33,6 @@
 
 #include "../../compat/strl.h"
 #include "../../conf/config_file.h"
-#include "../../file.h"
 
 #if defined(_XBOX)
 #include "../../msvc/msvc_compat.h"
@@ -68,6 +67,8 @@
       fflush(stderr); \
    } while (0)
 #endif
+
+#include "../../file.h"
 
 #if defined(__CELLOS_LV2__)
 static uint8_t np_pool[NP_POOL_SIZE];
