@@ -2483,7 +2483,7 @@ void ssnes_main_deinit(void)
    uninit_libretro_sym();
 }
 
-#if !defined(SSNES_CONSOLE) || defined(GEKKO)
+#ifndef HAVE_SSNES_MAIN_WRAP
 // Consoles use the higher level API.
 int main(int argc, char *argv[])
 {
@@ -2495,4 +2495,3 @@ int main(int argc, char *argv[])
    return 0;
 }
 #endif
-

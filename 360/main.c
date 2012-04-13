@@ -406,22 +406,7 @@ begin_loop:
    else if(g_console.mode_switch == MODE_MENU)
    {
       menu_loop();
-
-      if(g_console.initialize_ssnes_enable)
-      {
-         if(g_console.emulator_initialized)
-            ssnes_main_deinit();
-
-	 struct ssnes_main_wrap args = {0};
-
-	 args.verbose = g_extern.verbose;
-	 args.config_path = SYS_CONFIG_FILE;
-	 args.rom_path = g_console.rom_path;
-
-	 int init_ret = ssnes_main_init_wrap(&args);
-	 g_console.emulator_initialized = 1;
-	 g_console.initialize_ssnes_enable = 0;
-      }
+      ssnes_startup(SYS_CONFIG_FILE);
    }
    else
       goto begin_shutdown;

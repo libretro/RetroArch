@@ -620,3 +620,41 @@ bool ssnes_manage_libretro_core(const char *full_path, const char *path, const c
 }
 #endif
 
+/*============================================================
+  SSNES MAIN WRAP
+  ============================================================ */
+
+#ifdef HAVE_SSNES_MAIN_WRAP
+
+void ssnes_startup (const char * config_path)
+{
+   if(g_console.initialize_ssnes_enable)
+   {
+      if(g_console.emulator_initialized)
+         ssnes_main_deinit();
+
+#ifdef __cplusplus
+      struct ssnes_main_wrap args = {0};
+
+      args.verbose = g_extern.verbose;
+      args.config_path = config_path;
+      args.sram_path = g_console.default_sram_dir_enable ? g_console.default_sram_dir : NULL,
+      args.state_path = g_console.default_savestate_dir_enable ? g_console.default_savestate_dir : NULL,
+      args.rom_path = g_console.rom_path;
+#else
+      struct ssnes_main_wrap args = {
+         .verbose = g_extern.verbose,
+         .config_path = config_path,
+         .sram_path = g_console.default_sram_dir_enable ? g_console.default_sram_dir : NULL,
+         .state_path = g_console.default_savestate_dir_enable ? g_console.default_savestate_dir : NULL,
+         .rom_path = g_console.rom_path
+      };
+#endif
+
+      int init_ret = ssnes_main_init_wrap(&args);
+      g_console.emulator_initialized = 1;
+      g_console.initialize_ssnes_enable = 0;
+   }
+}
+
+#endif

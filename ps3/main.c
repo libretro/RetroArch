@@ -436,28 +436,6 @@ static void get_environment_settings(int argc, char *argv[])
    g_extern.verbose = false;
 }
 
-static void startup_ssnes(void)
-{
-   if(g_console.initialize_ssnes_enable)
-   {
-      if(g_console.emulator_initialized)
-         ssnes_main_deinit();
-
-      struct ssnes_main_wrap args = {
-	      .verbose = g_extern.verbose,
-	      .config_path = SYS_CONFIG_FILE,
-	      .sram_path = g_console.default_sram_dir_enable ? g_console.default_sram_dir : NULL,
-	      .state_path = g_console.default_savestate_dir_enable ? g_console.default_savestate_dir : NULL,
-	      .rom_path = g_console.rom_path
-      };
-
-      int init_ret = ssnes_main_init_wrap(&args);
-      g_console.emulator_initialized = 1;
-      g_console.initialize_ssnes_enable = 0;
-   }
-}
-
-
 int main(int argc, char *argv[])
 {
    SSNES_LOG("Registering system utility callback...\n");
@@ -527,7 +505,7 @@ int main(int argc, char *argv[])
 	 strncpy(g_console.rom_path, argv[1], sizeof(g_console.rom_path));
 	 g_console.initialize_ssnes_enable = 1;
 	 g_console.mode_switch = MODE_EMULATION;
-	 startup_ssnes();
+	 ssnes_startup(SYS_CONFIG_FILE);
 	 break;
    }
 
@@ -545,7 +523,7 @@ begin_loop:
    else if(g_console.mode_switch == MODE_MENU)
    {
       menu_loop();
-      startup_ssnes();
+      ssnes_startup(SYS_CONFIG_FILE);
    }
    else
       goto begin_shutdown;
