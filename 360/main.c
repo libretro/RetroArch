@@ -174,78 +174,6 @@ static void set_default_settings (void)
    g_extern.verbose = true;
 }
 
-static char **dir_list_new_360(const char *dir, const char *ext)
-{
-   size_t cur_ptr = 0;
-   size_t cur_size = 32;
-   char **dir_list = NULL;
-
-   WIN32_FIND_DATA ffd;
-   HANDLE hFind = INVALID_HANDLE_VALUE;
-
-   char path_buf[PATH_MAX];
-
-   if (strlcpy(path_buf, dir, sizeof(path_buf)) >= sizeof(path_buf))
-      goto error;
-   if (strlcat(path_buf, "*", sizeof(path_buf)) >= sizeof(path_buf))
-      goto error;
-
-   if (ext)
-   {
-      if (strlcat(path_buf, ext, sizeof(path_buf)) >= sizeof(path_buf))
-         goto error;
-   }
-
-   hFind = FindFirstFile(path_buf, &ffd);
-   if (hFind == INVALID_HANDLE_VALUE)
-      goto error;
-
-   dir_list = (char**)calloc(cur_size, sizeof(char*));
-   if (!dir_list)
-      goto error;
-
-   do
-   {
-      // Not a perfect search of course, but hopefully good enough in practice.
-      if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-         continue;
-      if (ext && !strstr(ffd.cFileName, ext))
-         continue;
-
-      dir_list[cur_ptr] = (char*)malloc(PATH_MAX);
-      if (!dir_list[cur_ptr])
-         goto error;
-
-      strlcpy(dir_list[cur_ptr], dir, PATH_MAX);
-      strlcat(dir_list[cur_ptr], ffd.cFileName, PATH_MAX);
-
-      cur_ptr++;
-      if (cur_ptr + 1 == cur_size) // Need to reserve for NULL.
-      {
-         cur_size *= 2;
-	 dir_list = (char**)realloc(dir_list, cur_size * sizeof(char*));
-	 if (!dir_list)
-            goto error;
-
-	 // Make sure it's all NULL'd out since we cannot rely on realloc to do this.
-	 memset(dir_list + cur_ptr, 0, (cur_size - cur_ptr) * sizeof(char*));
-      }
-   }while (FindNextFile(hFind, &ffd) != 0);
-
-   FindClose(hFind);
-   return dir_list;
-
-error:
-   SSNES_ERR("Failed to open directory: \"%s\"\n", dir);
-
-   if (hFind != INVALID_HANDLE_VALUE)
-      FindClose(hFind);
-
-   dir_list_free(dir_list);
-   return NULL;
-}
-
-
 static void init_settings (bool load_libretro_path)
 {
    char fname_tmp[MAX_PATH_LENGTH];
@@ -268,7 +196,7 @@ static void init_settings (bool load_libretro_path)
       {
          //We need to set libretro to the first entry in the cores
 	 //directory so that it will be saved to the config file
-	 char ** dir_list = dir_list_new_360("game:\\", ".xex");
+	 char ** dir_list = dir_list_new("game:\\", ".xex");
 
 	 if (!dir_list)
 	 {

@@ -706,7 +706,11 @@ char **dir_list_new(const char *dir, const char *ext)
 
    if (strlcpy(path_buf, dir, sizeof(path_buf)) >= sizeof(path_buf))
       goto error;
+#ifdef _XBOX
+   if (strlcat(path_buf, "*", sizeof(path_buf)) >= sizeof(path_buf))
+#else
    if (strlcat(path_buf, "/*", sizeof(path_buf)) >= sizeof(path_buf))
+#endif
       goto error;
 
    if (ext)
@@ -753,7 +757,9 @@ char **dir_list_new(const char *dir, const char *ext)
          goto error;
 
       strlcpy(dir_list[cur_ptr], dir, PATH_MAX);
+#ifndef _XBOX
       strlcat(dir_list[cur_ptr], "/", PATH_MAX);
+#endif
 #ifdef _WIN32
       strlcat(dir_list[cur_ptr], ffd.cFileName, PATH_MAX);
 #else
