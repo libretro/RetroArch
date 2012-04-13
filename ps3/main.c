@@ -106,8 +106,8 @@ static void set_default_settings(void)
    ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_SELECT];
    ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_START];
    ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_UP];
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_DOWN];
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_LEFT];
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_DOWN];
+   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_LEFT];
    ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_RIGHT];
    ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_CIRCLE];
    ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		=	ssnes_platform_keybind_lut[PS3_DEVICE_ID_JOYPAD_TRIANGLE];
