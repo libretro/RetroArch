@@ -511,30 +511,30 @@ const char *ssnes_input_find_platform_key_label(uint64_t joykey)
 
 void ssnes_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id)
 {
-   uint64_t new_key;
+   uint64_t *key = &g_settings.input.binds[player][default_retro_joypad_id].joykey;
 
-   switch(keybind_action)
+   switch (keybind_action)
    {
       case KEYBIND_DECREMENT:
-         new_key = ssnes_input_find_previous_platform_key(g_settings.input.binds[player][default_retro_joypad_id].joykey);
-         g_settings.input.binds[player][default_retro_joypad_id].joykey = new_key;
+         *key = ssnes_input_find_previous_platform_key(*key);
          break;
+
       case KEYBIND_INCREMENT:
-         new_key = ssnes_input_find_next_platform_key(g_settings.input.binds[player][default_retro_joypad_id].joykey);
-         g_settings.input.binds[player][default_retro_joypad_id].joykey = new_key;
+         *key = ssnes_input_find_next_platform_key(*key);
          break;
+
       case KEYBIND_DEFAULT:
-         g_settings.input.binds[player][default_retro_joypad_id].id = default_retro_joypad_id;
-         g_settings.input.binds[player][default_retro_joypad_id].joykey = ssnes_default_keybind_lut[default_retro_joypad_id];
+         *key = ssnes_default_keybind_lut[default_retro_joypad_id];
          break;
-      case KEYBIND_NOACTION:
+
+      default:
          break;
    }
 }
 
 void ssnes_input_set_default_keybinds(unsigned player)
 {
-   for(unsigned i = 0; i < SSNES_FIRST_META_KEY; i++)
+   for (unsigned i = 0; i < SSNES_FIRST_META_KEY; i++)
    {
       g_settings.input.binds[player][i].id = i;
       g_settings.input.binds[player][i].joykey = ssnes_default_keybind_lut[i];
@@ -569,39 +569,39 @@ void ssnes_input_set_default_keybind_names_for_emulator(void)
 }
 
 /*============================================================
-	VIDEO EXTENSIONS
-============================================================ */
+  VIDEO EXTENSIONS
+  ============================================================ */
 
-struct aspectratios_list_t aspectratio_lut[ASPECT_RATIO_CUSTOM+1] = {
-	{"1:1", 1.0f},
-	{"2:1", 2.0f},
-	{"3:2", 1.5f},
-	{"3:4", 0.75f},
-	{"4:1", 4.0f},
-	{"4:3", 1.33333333333f},
-	{"4:4", 1.0f},
-	{"5:4", 1.25f},
-	{"6:5", 1.2f},
-	{"7:9", 0.77777777777f},
-	{"8:3", 2.66666666666f},
-	{"8:7", 1.14287142857f},
-	{"16:9", 1.777778f},
-	{"16:10", 1.6f},
-	{"16:15", 3.2f},
-	{"19:12", 1.58333333333f},
-	{"19:14", 1.35714285714f},
-	{"30:17", 1.76470588235f},
-	{"32:9", 3.55555555555f},
-	{"Auto", 0.0f},
-	{"Custom", 0.0f}
+struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
+   { "1:1",    1.0f },
+   { "2:1",    2.0f },
+   { "3:2",    1.5f },
+   { "3:4",    0.75f },
+   { "4:1",    4.0f },
+   { "4:3",    1.3333f },
+   { "4:4",    1.0f },
+   { "5:4",    1.25f },
+   { "6:5",    1.2f },
+   { "7:9",    0.7777f },
+   { "8:3",    2.6666f },
+   { "8:7",    1.1428f },
+   { "16:9",   1.7778f },
+   { "16:10",  1.6f },
+   { "16:15",  3.2f },
+   { "19:12",  1.5833f },
+   { "19:14",  1.3571f },
+   { "30:17",  1.7647f },
+   { "32:9",   3.5555f },
+   { "Auto",   0.0f },
+   { "Custom", 0.0f }
 };
 
 /*============================================================
-	LIBRETRO
-============================================================ */
+  LIBRETRO
+  ============================================================ */
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-bool ssnes_manage_libretro_core(const char * full_path, const char * path, const char * exe_ext)
+bool ssnes_manage_libretro_core(const char *full_path, const char *path, const char *exe_ext)
 {
    g_extern.verbose = true;
    bool return_code;
@@ -610,11 +610,11 @@ bool ssnes_manage_libretro_core(const char * full_path, const char * path, const
    char tmp_path2[1024], tmp_pathnewfile[1024];
    SSNES_LOG("Assumed path of CORE executable: [%s]\n", full_path);
 
-   if(path_file_exists(full_path))
+   if (path_file_exists(full_path))
    {
-      //if CORE executable exists, this means we have just installed
-      //a new libretro port and therefore we need to change it to a more
-      //sane name.
+      // if CORE executable exists, this means we have just installed
+      // a new libretro port and therefore we need to change it to a more
+      // sane name.
 
 #if defined(__CELLOS_LV2__)
       CellFsErrno ret;
@@ -626,37 +626,35 @@ bool ssnes_manage_libretro_core(const char * full_path, const char * path, const
       strlcat(tmp_path2, exe_ext, sizeof(tmp_path2));
       snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", path, tmp_path2);
 
-      if(path_file_exists(tmp_pathnewfile))
+      if (path_file_exists(tmp_pathnewfile))
       {
-	 //if libretro core already exists, this means we are
-	 //upgrading the libretro core - so delete pre-existing
-	 //file first.
-	 
+         // if libretro core already exists, this means we are
+         // upgrading the libretro core - so delete pre-existing
+         // file first.
+
          SSNES_LOG("Upgrading emulator core...\n");
 #if defined(__CELLOS_LV2__)
-	 ret = cellFsUnlink(tmp_pathnewfile);
-	 if(ret == CELL_FS_SUCCEEDED)
+         ret = cellFsUnlink(tmp_pathnewfile);
+         if (ret == CELL_FS_SUCCEEDED)
 #elif defined(_XBOX)
-         ret = DeleteFile(tmp_pathnewfile);
-         if(ret != 0)
+            ret = DeleteFile(tmp_pathnewfile);
+         if (ret != 0)
 #endif
-	 {
+         {
             SSNES_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-	 }
-	 else
-	 {
+         }
+         else
             SSNES_LOG("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-	 }
       }
 
       //now attempt the renaming.
 #if defined(__CELLOS_LV2__)
       ret = cellFsRename(full_path, tmp_pathnewfile);
 
-      if(ret != CELL_FS_SUCCEEDED)
+      if (ret != CELL_FS_SUCCEEDED)
 #elif defined(_XBOX)
-      ret = MoveFileExA(full_path, tmp_pathnewfile, NULL);
-      if(ret == 0)
+         ret = MoveFileExA(full_path, tmp_pathnewfile, NULL);
+      if (ret == 0)
 #endif
       {
          SSNES_ERR("Failed to rename CORE executable.\n");
@@ -664,7 +662,7 @@ bool ssnes_manage_libretro_core(const char * full_path, const char * path, const
       else
       {
          SSNES_LOG("Libsnes core [%s] renamed to: [%s].\n", full_path, tmp_pathnewfile);
-	 set_libretro_path = true;
+         set_libretro_path = true;
       }
    }
    else
@@ -672,17 +670,17 @@ bool ssnes_manage_libretro_core(const char * full_path, const char * path, const
       SSNES_LOG("CORE executable was not found, libretro core path will be loaded from config file.\n");
    }
 
-   if(set_libretro_path)
+   if (set_libretro_path)
    {
-      //CORE executable has been renamed, libretro path will now be set to the recently
-      //renamed new libretro core.
+      // CORE executable has been renamed, libretro path will now be set to the recently
+      // renamed new libretro core.
       strlcpy(g_settings.libretro, tmp_pathnewfile, sizeof(g_settings.libretro));
       return_code = 0;
    }
    else
    {
-      //There was no CORE executable present, or the CORE executable file was not renamed.
-      //The libretro core path will still be loaded from the config file.
+      // There was no CORE executable present, or the CORE executable file was not renamed.
+      // The libretro core path will still be loaded from the config file.
       return_code = 1;
    }
 
@@ -691,3 +689,4 @@ bool ssnes_manage_libretro_core(const char * full_path, const char * path, const
    return return_code;
 }
 #endif
+

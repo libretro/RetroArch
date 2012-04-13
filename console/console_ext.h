@@ -17,9 +17,9 @@
 #ifndef ROM_EXT_H__
 #define ROM_EXT_H__
 
-enum
+enum aspect_ratio
 {
-   ASPECT_RATIO_1_1,
+   ASPECT_RATIO_1_1 = 0,
    ASPECT_RATIO_2_1,
    ASPECT_RATIO_3_2,
    ASPECT_RATIO_3_4,
@@ -39,16 +39,16 @@ enum
    ASPECT_RATIO_30_17,
    ASPECT_RATIO_32_9,
    ASPECT_RATIO_AUTO,
-   ASPECT_RATIO_CUSTOM
+   ASPECT_RATIO_CUSTOM,
+
+   ASPECT_RATIO_END,
 };
 
-struct aspectratios_list_t
+struct aspect_ratio_elem
 {
-   char name[PATH_MAX];
+   char name[64];
    float value;
 };
-
-#define LAST_ASPECT_RATIO ASPECT_RATIO_CUSTOM
 
 #include "console_ext_input.h"
 
@@ -82,7 +82,7 @@ void ssnes_input_set_default_keybind_names_for_emulator(void);
 void ssnes_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-bool ssnes_manage_libretro_core(const char * full_path, const char * path, const char * exe_ext);
+bool ssnes_manage_libretro_core(const char *full_path, const char *path, const char *exe_ext);
 #endif
 
 #endif
