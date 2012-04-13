@@ -25,6 +25,7 @@
 #include "../general.h"
 #include "../compat/strl.h"
 #include "main_wrap.h"
+#include "console_ext.h"
 
 #ifdef HAVE_ZLIB
 #include "szlib/zlib.h"
@@ -532,3 +533,31 @@ void ssnes_input_set_default_keybind_names_for_emulator(void)
             "Mode button", sizeof(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]));
    }
 }
+
+/*============================================================
+	VIDEO EXTENSIONS
+============================================================ */
+
+struct aspectratios_list_t aspectratio_lut[ASPECT_RATIO_CUSTOM+1] = {
+	{"1:1", 1.0f},
+	{"2:1", 2.0f},
+	{"3:2", 1.5f},
+	{"3:4", 0.75f},
+	{"4:1", 4.0f},
+	{"4:3", 1.33333333333f},
+	{"4:4", 1.0f},
+	{"5:4", 1.25f},
+	{"6:5", 1.2f},
+	{"7:9", 0.77777777777f},
+	{"8:3", 2.66666666666f},
+	{"8:7", 1.14287142857f},
+	{"16:9", 1.777778f},
+	{"16:10", 1.6f},
+	{"16:15", 3.2f},
+	{"19:12", 1.58333333333f},
+	{"19:14", 1.35714285714f},
+	{"30:17", 1.76470588235f},
+	{"32:9", 3.55555555555f},
+	{"Auto", 0.0f},
+	{"Custom", 0.0f}
+};

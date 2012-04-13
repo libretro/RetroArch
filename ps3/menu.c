@@ -431,7 +431,7 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 				menu_obj->items[currentsetting].text_color = GREEN;
 			else
 				menu_obj->items[currentsetting].text_color = ORANGE;
-			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.aspect_ratio_name);
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), aspectratio_lut[g_console.aspect_ratio_index].name);
 			break;
 		case SETTING_HW_TEXTURE_FILTER:
 			if(g_settings.video.smooth)
@@ -2499,7 +2499,7 @@ static void ingame_menu(uint32_t menu_id)
 	cellDbgFontPrintf(x_position, ypos+(ypos_increment*MENU_ITEM_SAVE_STATE), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), "Save State #%d", g_extern.state_slot);
 	cellDbgFontDraw();
 
-	cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), "Aspect Ratio: %s", g_console.aspect_ratio_name);
+	cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
 
 	cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), "Overscan: %f", g_console.overscan_amount);
 
