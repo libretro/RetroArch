@@ -145,11 +145,20 @@ int main(void)
    int ret = 0;
    while ((rom_path = get_rom_path(sgui)) && ret == 0)
    {
-      char *argv[] = { strdup("ssnes"), strdup(rom_path), NULL };
-      ret = ssnes_main(sizeof(argv) / sizeof(argv[0]) - 1, argv);
-      free(argv[0]);
-      free(argv[1]);
+      g_console.initialize_ssnes_enable = true;
+      strlcpy(g_console.rom_path, rom_path, sizeof(g_console.rom_path));
+      ssnes_startup(NULL);
+      bool repeat = false;
+
+      input_wii.poll(NULL);
+
+      do{
+         repeat = ssnes_main_iterate();
+      }while(repeat && !g_console.frame_advance_enable);
    }
+
+   if(g_console.emulator_initialized)
+      ssnes_main_deinit();
 
    wii_input_deinit();
    wii_video_deinit();

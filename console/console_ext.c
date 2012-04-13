@@ -609,6 +609,7 @@ void ssnes_startup (const char * config_path)
 #endif
 
       int init_ret = ssnes_main_init_wrap(&args);
+      (void)init_ret;
       g_console.emulator_initialized = 1;
       g_console.initialize_ssnes_enable = 0;
    }
