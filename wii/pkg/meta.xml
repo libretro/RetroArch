@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <app version="1">
   <name>SSNES</name>
-  <coder>Themaister</coder>
+  <coder>Themaister, Squarepusher2</coder>
   <version>0.9.5</version>
   <release_date>2012</release_date>
   <short_description>Multi-system emulator</short_description> 

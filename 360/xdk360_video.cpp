@@ -46,41 +46,41 @@ struct hlsl_program_t
 
 struct XPR_HEADER
 {
-    unsigned long dwMagic;
-    unsigned long dwHeaderSize;
-    unsigned long dwDataSize;
+   unsigned long dwMagic;
+   unsigned long dwHeaderSize;
+   unsigned long dwDataSize;
 };
 
 #define XPR2_MAGIC_VALUE (0x58505232)
 
 PackedResource::PackedResource()
 {
-    m_pSysMemData = NULL;
-    m_dwSysMemDataSize = 0L;
-    m_pVidMemData = NULL;
-    m_dwVidMemDataSize = 0L;
-    m_pResourceTags = NULL;
-    m_dwNumResourceTags = 0L;
-    m_bInitialized = FALSE;
+   m_pSysMemData = NULL;
+   m_dwSysMemDataSize = 0L;
+   m_pVidMemData = NULL;
+   m_dwVidMemDataSize = 0L;
+   m_pResourceTags = NULL;
+   m_dwNumResourceTags = 0L;
+   m_bInitialized = FALSE;
 }
 
 PackedResource::~PackedResource()
 {
-    Destroy();
+   Destroy();
 }
 
 void * PackedResource::GetData( const char * strName ) const
 {
-    if( m_pResourceTags == NULL || strName == NULL )
-        return NULL;
+   if( m_pResourceTags == NULL || strName == NULL )
+      return NULL;
 
-    for( unsigned long i = 0; i < m_dwNumResourceTags; i++ )
-    {
-        if( !_stricmp( strName, m_pResourceTags[i].strName ) )
-            return &m_pSysMemData[m_pResourceTags[i].dwOffset];
-    }
+   for( unsigned long i = 0; i < m_dwNumResourceTags; i++ )
+   {
+      if( !_stricmp( strName, m_pResourceTags[i].strName ) )
+         return &m_pSysMemData[m_pResourceTags[i].dwOffset];
+   }
 
-    return NULL;
+   return NULL;
 }
 
 HRESULT PackedResource::Create( const char * strFilename )
