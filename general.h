@@ -470,21 +470,28 @@ extern struct console_settings g_console;
 #if defined(SSNES_CONSOLE) && defined(HAVE_LOGGER)
 #include "logger_override.h"
 #else
+
+#ifndef SSNES_LOG
 #define SSNES_LOG(...) do { \
    if (g_extern.verbose) \
       fprintf(stderr, "SSNES: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
+#endif
 
+#ifndef SSNES_ERR
 #define SSNES_ERR(...) do { \
       fprintf(stderr, "SSNES [ERROR] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
+#endif
 
+#ifndef SSNES_WARN
 #define SSNES_WARN(...) do { \
       fprintf(stderr, "SSNES [WARN] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
+#endif
 #endif
 
 #ifndef max
