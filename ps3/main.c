@@ -154,10 +154,10 @@ static void init_settings(bool load_libretro_path)
 {
    if(!path_file_exists(SYS_CONFIG_FILE))
    {
-	   SSNES_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
-	   FILE * f;
-	   f = fopen(SYS_CONFIG_FILE, "w");
-	   fclose(f);
+      SSNES_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
+      FILE * f;
+      f = fopen(SYS_CONFIG_FILE, "w");
+      fclose(f);
    }
    else
    {
@@ -243,69 +243,68 @@ static void init_settings(bool load_libretro_path)
 
 static void save_settings(void)
 {
-	if(!path_file_exists(SYS_CONFIG_FILE))
-	{
-		SSNES_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
-		FILE * f;
-		f = fopen(SYS_CONFIG_FILE, "w");
-		fclose(f);
-	}
-	else
-	{
+   if(!path_file_exists(SYS_CONFIG_FILE))
+   {
+      SSNES_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
+      FILE * f;
+      f = fopen(SYS_CONFIG_FILE, "w");
+      fclose(f);
+   }
+   else
+   {
+      config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
 
-		config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
+      if(conf == NULL)
+         conf = config_file_new(NULL);
 
-		if(conf == NULL)
-			conf = config_file_new(NULL);
-
-		// g_settings
-		config_set_string(conf, "libretro_path", g_settings.libretro);
-		config_set_string(conf, "cheat_database_path", g_settings.cheat_database);
-		config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
-		config_set_string(conf, "video_cg_shader", g_settings.video.cg_shader_path);
-		config_set_string(conf, "video_second_pass_shader", g_settings.video.second_pass_shader);
-		config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
-		config_set_float(conf, "video_fbo_scale_x", g_settings.video.fbo_scale_x);
-		config_set_float(conf, "video_fbo_scale_y", g_settings.video.fbo_scale_y);
-		config_set_bool(conf, "video_render_to_texture", g_settings.video.render_to_texture);
-		config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
-		config_set_bool(conf, "video_smooth", g_settings.video.smooth);
-		config_set_bool(conf, "video_vsync", g_settings.video.vsync);
+      // g_settings
+      config_set_string(conf, "libretro_path", g_settings.libretro);
+      config_set_string(conf, "cheat_database_path", g_settings.cheat_database);
+      config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
+      config_set_string(conf, "video_cg_shader", g_settings.video.cg_shader_path);
+      config_set_string(conf, "video_second_pass_shader", g_settings.video.second_pass_shader);
+      config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
+      config_set_float(conf, "video_fbo_scale_x", g_settings.video.fbo_scale_x);
+      config_set_float(conf, "video_fbo_scale_y", g_settings.video.fbo_scale_y);
+      config_set_bool(conf, "video_render_to_texture", g_settings.video.render_to_texture);
+      config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
+      config_set_bool(conf, "video_smooth", g_settings.video.smooth);
+      config_set_bool(conf, "video_vsync", g_settings.video.vsync);
 
       for (unsigned i = 0; i < 7; i++)
       {
          char cfg[64];
-         snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
-         config_set_int(conf, cfg, g_settings.input.dpad_emulation[i]);
+	 snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
+	 config_set_int(conf, cfg, g_settings.input.dpad_emulation[i]);
       }
 
-		// g_console
-		config_set_bool(conf, "custom_bgm_enable", g_console.custom_bgm_enable);
-		config_set_bool(conf, "overscan_enable", g_console.overscan_enable);
-		config_set_bool(conf, "screenshots_enable", g_console.screenshots_enable);
-		config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
-		config_set_bool(conf, "triple_buffering_enable", g_console.triple_buffering_enable);
-		config_set_int(conf, "sound_mode", g_console.sound_mode);
-		config_set_int(conf, "aspect_ratio_index", g_console.aspect_ratio_index);
-		config_set_int(conf, "current_resolution_id", g_console.current_resolution_id);
-		config_set_int(conf, "custom_viewport_width", g_console.custom_viewport_width);
-		config_set_int(conf, "custom_viewport_height", g_console.custom_viewport_height);
-		config_set_int(conf, "custom_viewport_x", g_console.custom_viewport_x);
-		config_set_int(conf, "custom_viewport_y", g_console.custom_viewport_y);
-		config_set_int(conf, "screen_orientation", g_console.screen_orientation);
-		config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
-		config_set_float(conf, "menu_font_size", g_console.menu_font_size);
-		config_set_float(conf, "overscan_amount", g_console.overscan_amount);
+      // g_console
+      config_set_bool(conf, "custom_bgm_enable", g_console.custom_bgm_enable);
+      config_set_bool(conf, "overscan_enable", g_console.overscan_enable);
+      config_set_bool(conf, "screenshots_enable", g_console.screenshots_enable);
+      config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
+      config_set_bool(conf, "triple_buffering_enable", g_console.triple_buffering_enable);
+      config_set_int(conf, "sound_mode", g_console.sound_mode);
+      config_set_int(conf, "aspect_ratio_index", g_console.aspect_ratio_index);
+      config_set_int(conf, "current_resolution_id", g_console.current_resolution_id);
+      config_set_int(conf, "custom_viewport_width", g_console.custom_viewport_width);
+      config_set_int(conf, "custom_viewport_height", g_console.custom_viewport_height);
+      config_set_int(conf, "custom_viewport_x", g_console.custom_viewport_x);
+      config_set_int(conf, "custom_viewport_y", g_console.custom_viewport_y);
+      config_set_int(conf, "screen_orientation", g_console.screen_orientation);
+      config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
+      config_set_float(conf, "menu_font_size", g_console.menu_font_size);
+      config_set_float(conf, "overscan_amount", g_console.overscan_amount);
 
-		// g_extern
-		config_set_int(conf, "state_slot", g_extern.state_slot);
-		config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
+      // g_extern
+      config_set_int(conf, "state_slot", g_extern.state_slot);
+      config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
 
-		if (!config_file_write(conf, SYS_CONFIG_FILE))
-			SSNES_ERR("Failed to write config file to \"%s\". Check permissions.\n", SYS_CONFIG_FILE);
+      if (!config_file_write(conf, SYS_CONFIG_FILE))
+         SSNES_ERR("Failed to write config file to \"%s\". Check permissions.\n", SYS_CONFIG_FILE);
 
-		free(conf);
-	}
+      free(conf);
+   }
 }
 
 static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
@@ -359,18 +358,18 @@ static void get_environment_settings(int argc, char *argv[])
    {
       /* not launched from external launcher, set default path */
       strncpy(MULTIMAN_EXECUTABLE, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
-		   sizeof(MULTIMAN_EXECUTABLE));
+         sizeof(MULTIMAN_EXECUTABLE));
    }
 
    if(path_file_exists(MULTIMAN_EXECUTABLE) && argc > 1 &&  path_file_exists(argv[1]))
    {
-	   g_console.external_launcher_support = EXTERN_LAUNCHER_MULTIMAN;
-	   SSNES_LOG("Started from multiMAN, auto-game start enabled.\n");
+      g_console.external_launcher_support = EXTERN_LAUNCHER_MULTIMAN;
+      SSNES_LOG("Started from multiMAN, auto-game start enabled.\n");
    }
    else
    {
-	   g_console.external_launcher_support = EXTERN_LAUNCHER_SALAMANDER;
-	   SSNES_WARN("Not started from multiMAN, auto-game start disabled.\n");
+      g_console.external_launcher_support = EXTERN_LAUNCHER_SALAMANDER;
+      SSNES_WARN("Not started from multiMAN, auto-game start disabled.\n");
    }
 
    memset(&size, 0x00, sizeof(CellGameContentSize));
@@ -378,58 +377,58 @@ static void get_environment_settings(int argc, char *argv[])
    ret = cellGameBootCheck(&get_type, &get_attributes, &size, dirName);
    if(ret < 0)
    {
-	   SSNES_ERR("cellGameBootCheck() Error: 0x%x.\n", ret);
+      SSNES_ERR("cellGameBootCheck() Error: 0x%x.\n", ret);
    }
    else
    {
-	   SSNES_LOG("cellGameBootCheck() OK.\n");
-	   SSNES_LOG("Directory name: [%s].\n", dirName);
-	   SSNES_LOG(" HDD Free Size (in KB) = [%d] Size (in KB) = [%d] System Size (in KB) = [%d].\n", size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
+      SSNES_LOG("cellGameBootCheck() OK.\n");
+      SSNES_LOG("Directory name: [%s].\n", dirName);
+      SSNES_LOG(" HDD Free Size (in KB) = [%d] Size (in KB) = [%d] System Size (in KB) = [%d].\n", size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
 
-	   switch(get_type)
-	   {
-		   case CELL_GAME_GAMETYPE_DISC:
-			   SSNES_LOG("SSNES was launched on Optical Disc Drive.\n");
-			   break;
-		   case CELL_GAME_GAMETYPE_HDD:
-			   SSNES_LOG("SSNES was launched on HDD.\n");
-			   break;
-	   }
+      switch(get_type)
+      {
+         case CELL_GAME_GAMETYPE_DISC:
+            SSNES_LOG("SSNES was launched on Optical Disc Drive.\n");
+	    break;
+	 case CELL_GAME_GAMETYPE_HDD:
+	    SSNES_LOG("SSNES was launched on HDD.\n");
+	    break;
+      }
 
-	   if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) == CELL_GAME_ATTRIBUTE_APP_HOME)
-		   SSNES_LOG("SSNES was launched from host machine (APP_HOME).\n");
+      if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) == CELL_GAME_ATTRIBUTE_APP_HOME)
+         SSNES_LOG("SSNES was launched from host machine (APP_HOME).\n");
 
-	   ret = cellGameContentPermit(contentInfoPath, usrDirPath);
+      ret = cellGameContentPermit(contentInfoPath, usrDirPath);
 
-	   if(g_console.external_launcher_support == EXTERN_LAUNCHER_MULTIMAN)
-	   {
-		   snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
-		   snprintf(usrDirPath, sizeof(usrDirPath), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
-	   }
+      if(g_console.external_launcher_support == EXTERN_LAUNCHER_MULTIMAN)
+      {
+         snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
+	 snprintf(usrDirPath, sizeof(usrDirPath), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
+      }
 
-	   if(ret < 0)
-	   {
-		   SSNES_ERR("cellGameContentPermit() Error: 0x%x\n", ret);
-	   }
-	   else
-	   {
-		   SSNES_LOG("cellGameContentPermit() OK.\n");
-		   SSNES_LOG("contentInfoPath : [%s].\n", contentInfoPath);
-		   SSNES_LOG("usrDirPath : [%s].\n", usrDirPath);
-	   }
+      if(ret < 0)
+      {
+         SSNES_ERR("cellGameContentPermit() Error: 0x%x\n", ret);
+      }
+      else
+      {
+         SSNES_LOG("cellGameContentPermit() OK.\n");
+	 SSNES_LOG("contentInfoPath : [%s].\n", contentInfoPath);
+	 SSNES_LOG("usrDirPath : [%s].\n", usrDirPath);
+      }
 
-	   /* now we fill in all the variables */
-	   snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/%s/presets/stock.conf", usrDirPath, EMULATOR_CORE_DIR);
-	   snprintf(DEFAULT_BORDER_FILE, sizeof(DEFAULT_BORDER_FILE), "%s/%s/borders/Centered-1080p/mega-man-2.png", usrDirPath, EMULATOR_CORE_DIR);
-	   snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/%s/borders/Menu/main-menu.png", usrDirPath, EMULATOR_CORE_DIR);
-	   snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/%s/presets", usrDirPath, EMULATOR_CORE_DIR);
-	   snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/input", PRESETS_DIR_PATH);
-	   snprintf(LIBSNES_DIR_PATH, sizeof(LIBSNES_DIR_PATH), "%s/%s", usrDirPath, EMULATOR_CORE_DIR);
-	   snprintf(BORDERS_DIR_PATH, sizeof(BORDERS_DIR_PATH), "%s/%s/borders", usrDirPath, EMULATOR_CORE_DIR);
-	   snprintf(SHADERS_DIR_PATH, sizeof(SHADERS_DIR_PATH), "%s/%s/shaders", usrDirPath, EMULATOR_CORE_DIR);
-	   snprintf(DEFAULT_SHADER_FILE, sizeof(DEFAULT_SHADER_FILE), "%s/%s/shaders/stock.cg", usrDirPath, EMULATOR_CORE_DIR);
-	   snprintf(DEFAULT_MENU_SHADER_FILE, sizeof(DEFAULT_MENU_SHADER_FILE), "%s/%s/shaders/Borders/Menu/border-only-ssnes.cg", usrDirPath, EMULATOR_CORE_DIR);
-	   snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/ssnes.cfg", usrDirPath);
+      /* now we fill in all the variables */
+      snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/%s/presets/stock.conf", usrDirPath, EMULATOR_CORE_DIR);
+      snprintf(DEFAULT_BORDER_FILE, sizeof(DEFAULT_BORDER_FILE), "%s/%s/borders/Centered-1080p/mega-man-2.png", usrDirPath, EMULATOR_CORE_DIR);
+      snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/%s/borders/Menu/main-menu.png", usrDirPath, EMULATOR_CORE_DIR);
+      snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/%s/presets", usrDirPath, EMULATOR_CORE_DIR);
+      snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/input", PRESETS_DIR_PATH);
+      snprintf(LIBSNES_DIR_PATH, sizeof(LIBSNES_DIR_PATH), "%s/%s", usrDirPath, EMULATOR_CORE_DIR);
+      snprintf(BORDERS_DIR_PATH, sizeof(BORDERS_DIR_PATH), "%s/%s/borders", usrDirPath, EMULATOR_CORE_DIR);
+      snprintf(SHADERS_DIR_PATH, sizeof(SHADERS_DIR_PATH), "%s/%s/shaders", usrDirPath, EMULATOR_CORE_DIR);
+      snprintf(DEFAULT_SHADER_FILE, sizeof(DEFAULT_SHADER_FILE), "%s/%s/shaders/stock.cg", usrDirPath, EMULATOR_CORE_DIR);
+      snprintf(DEFAULT_MENU_SHADER_FILE, sizeof(DEFAULT_MENU_SHADER_FILE), "%s/%s/shaders/Borders/Menu/border-only-ssnes.cg", usrDirPath, EMULATOR_CORE_DIR);
+      snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/ssnes.cfg", usrDirPath);
    }
 
    g_extern.verbose = false;
