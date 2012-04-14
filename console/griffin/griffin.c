@@ -49,7 +49,15 @@ VIDEO
 #include "../../ps3/image.c"
 #elif defined(_XBOX)
 #include "../../360/xdk360_video.cpp"
+#elif defined(GEKKO)
+#include "../../wii/video.c"
+#endif
+
+#if defined(_XBOX)
 #include "../../360/fonts.cpp"
+#elif defined(GEKKO)
+#include "../../gfx/fonts.c"
+#include "../font.bmp"
 #endif
 
 /*============================================================
@@ -59,6 +67,8 @@ INPUT
 #include "../../ps3/ps3_input.c"
 #elif defined(_XBOX)
 #include "../../360/xdk360_input.c"
+#elif defined(GEKKO)
+#include "../../wii/input.c"
 #endif
 
 /*============================================================
@@ -101,6 +111,8 @@ AUDIO
 #include "../../ps3/ps3_audio.c"
 #elif defined(_XBOX)
 #include "../../360/xdk360_audio.cpp"
+#elif defined(GEKKO)
+#include "../../wii/audio.c"
 #endif
 
 /*============================================================
@@ -137,8 +149,6 @@ REWIND
 ============================================================ */
 #include "../../rewind.c"
 
-
-
 /*============================================================
 MAIN
 ============================================================ */
@@ -146,6 +156,8 @@ MAIN
 #include "../../ps3/main.c"
 #elif defined(_XBOX)
 #include "../../360/main.c"
+#elif defined(GEKKO)
+#include "../../wii/main.c"
 #endif
 
 /*============================================================
@@ -170,4 +182,7 @@ MENU
 #include "../../ps3/menu.c"
 #elif defined(_XBOX)
 #include "../../360/menu.cpp"
+#elif defined(GEKKO)
+#include "../sgui/sgui.c"
+#include "../sgui/list.c"
 #endif
