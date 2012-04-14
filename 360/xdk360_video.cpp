@@ -288,7 +288,6 @@ static void xdk360_set_orientation(void * data, uint32_t orientation)
          break;
    }
 
-   //hlsl_use(vid->xdk360_render_device, 0);
    hlsl_set_proj_matrix(XMMatrixRotationZ(angle));
 }
 

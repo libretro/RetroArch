@@ -87,7 +87,6 @@ void hlsl_set_params(void)
 
 static bool load_program(unsigned index, const char *prog, bool path_is_file)
 {
-   SSNES_LOG("test\n");
    bool ret, ret_fp, ret_vp;
    ID3DXBuffer *listing_f = NULL;
    ID3DXBuffer *listing_v = NULL;
@@ -105,6 +104,7 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    }
    else
    {
+      /* TODO - crashes currently - to do with 'end of line' of stock shader */
       ret_fp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL, "main_fragment", "ps_2_0", 0, &code_f, &listing_f, NULL );
       ret_vp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL, "main_vertex", "vs_2_0", 0, &code_v, &listing_v, NULL );
    }
