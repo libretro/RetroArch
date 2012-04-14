@@ -19,7 +19,7 @@
 #include "../driver.h"
 #include "xdk360_video.h"
 #include "xdk360_video_resources.h"
-#include "../gfx/hlsl_shader.h"
+#include "../gfx/shader_hlsl.h"
 #include "../console/console_ext.h"
 #include "../general.h"
 #include "../message.h"
@@ -204,7 +204,7 @@ static void set_viewport(bool force_full)
 {
    xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
    D3DDevice_Clear(vid->xdk360_render_device, 0, NULL, D3DCLEAR_TARGET,
-		   0xff000000, 1.0f, 0, FALSE);
+      0xff000000, 1.0f, 0, FALSE);
 
    int width = vid->video_mode.fIsHiDef ? 1280 : 640;
    int height = vid->video_mode.fIsHiDef ? 720 : 480;
@@ -236,16 +236,16 @@ static void set_viewport(bool force_full)
       if (device_aspect > desired_aspect)
       {
          delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-	 m_viewport_x_temp = (int)(width * (0.5 - delta));
-	 m_viewport_width_temp = (int)(2.0 * width * delta);
-	 width = (unsigned)(2.0 * width * delta);
+         m_viewport_x_temp = (int)(width * (0.5 - delta));
+         m_viewport_width_temp = (int)(2.0 * width * delta);
+         width = (unsigned)(2.0 * width * delta);
       }
       else
       {
          delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-	 m_viewport_y_temp = (int)(height * (0.5 - delta));
-	 m_viewport_height_temp = (int)(2.0 * height * delta);
-	 height = (unsigned)(2.0 * height * delta);
+         m_viewport_y_temp = (int)(height * (0.5 - delta));
+         m_viewport_height_temp = (int)(2.0 * height * delta);
+         height = (unsigned)(2.0 * height * delta);
       }
    }
 
@@ -276,19 +276,19 @@ static void xdk360_set_orientation(void * data, uint32_t orientation)
    {
       case ORIENTATION_NORMAL:
          angle = M_PI * 0 / 180;
-	 break;
+	     break;
       case ORIENTATION_VERTICAL:
-	 angle = M_PI * 270 / 180;
-	 break;
+         angle = M_PI * 270 / 180;
+         break;
       case ORIENTATION_FLIPPED:
-	 angle = M_PI * 180 / 180;
-	 break;
+         angle = M_PI * 180 / 180;
+         break;
       case ORIENTATION_FLIPPED_ROTATED:
-	 angle = M_PI * 90 / 180;
-	 break;
+         angle = M_PI * 90 / 180;
+         break;
    }
 
-   hlsl_use(vid->xdk360_render_device, 0);
+   //hlsl_use(vid->xdk360_render_device, 0);
    hlsl_set_proj_matrix(XMMatrixRotationZ(angle));
 }
 
@@ -346,7 +346,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    // D3DCREATE_HARDWARE_VERTEXPROCESSING is ignored on 360
    ret = Direct3D_CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &vid->d3dpp, &vid->xdk360_render_device);
 
-   hlsl_init(NULL);
+   hlsl_init(g_settings.video.cg_shader_path);
 
    vid->lpTexture = (D3DTexture*) D3DDevice_CreateTexture(512, 512, 1, 1, 0, D3DFMT_LIN_X1R5G5B5,
 		   0, D3DRTYPE_TEXTURE);

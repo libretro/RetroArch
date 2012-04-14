@@ -48,6 +48,7 @@ VIDEO
 #include "../../ps3/ps3_video_psgl.c"
 #include "../../ps3/image.c"
 #elif defined(_XBOX)
+#include "../../gfx/shader_hlsl.c"
 #include "../../360/xdk360_video.cpp"
 #elif defined(GEKKO)
 #include "../../wii/video.c"

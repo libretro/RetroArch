@@ -32,45 +32,47 @@ struct hlsl_program
    XMMATRIX mvp;
 };
 
-static struct hlsl_program prg[SSNES_HLSL_MAX_SHADERS];
+static struct hlsl_program prg[SSNES_HLSL_MAX_SHADERS] = {0};
 static bool hlsl_active = false;
+static unsigned active_index = 0;
 
-static const char *stock_hlsl_program =
-      "void main_vertex"
-      "("
-      "	float2 position : POSITION,"
-      "	float2 texCoord : TEXCOORD0,"
-      " uniform float4x4 modelViewProj : register(c0),"
-      "	out float4 oPosition : POSITION,"
-      "	out float2 otexCoord : TEXCOORD"
-      ")"
-      "{"
-      "	oPosition = mul(modelViewProj, float4(position, 0.0, 1.0));"
-      "	otexCoord = texCoord;"
-      "}"
-      ""
-      "struct output"
-      "{"
-      " float4 color: COLOR;"
-      "}"
-      ""
-      "struct input"
-      "{"
-      " float2 video_size;"
-      " float2 texture_size;"
-      " float2 output_size;"
-      "}"
-      ""
-      "output main_fragment(float2 tex : TEXCOORD0, uniform sampler2D decal : register(s0), uniform input IN)"
-      "{"
-      "   output OUT;"
-      "   OUT.color = tex2D(decal, tex);"
-      "   return OUT;"
-      "}";
+static const char* stock_hlsl_program =
+      "void main_vertex                                                "
+      "(                                                               "
+	  "   float2 position : POSITION,                                  "
+      "   float2 texCoord : TEXCOORD0,                                 "
+      "   uniform float4x4 modelViewProj : register(c0),               "
+      "   out float4 oPosition : POSITION,                             "
+      "   out float2 otexCoord : TEXCOORD                              "
+      ")                                                               "
+      "{                                                               "
+      "   oPosition = mul(modelViewProj, float4(position, 0.0, 1.0));  "
+      "   otexCoord = texCoord;                                        "
+      "}                                                               "
+	  "                                                                "
+      "struct output                                                   "
+	  "{                                                               "
+      "   float4 color: COLOR;                                         "
+      "};                                                              "
+	  "                                                                "
+      "struct input                                                    "
+      "{                                                               "
+      "   float2 video_size;                                           "
+      "   float2 texture_size;                                         "
+	  "   float2 output_size;                                          "
+      "};                                                              "
+	  "                                                                "
+      "output main_fragment(float2 texCoord : TEXCOORD0,               " 
+	  "uniform sampler2D decal : register(s0), uniform input IN)       "
+      "{                                                               "
+      "   output OUT;                                                  "
+      "   OUT.color = tex2D(decal, tex);                               "
+      "   return OUT;                                                  "
+      "}                                                               ";
 
 void hlsl_set_proj_matrix(XMMATRIX rotation_value)
 {
-   if (hlsl_active && prg[active_index].mvp)
+   if (hlsl_active)
       prg[active_index].mvp = rotation_value;
 }
 
@@ -79,12 +81,12 @@ void hlsl_set_params(IDirect3DDevice9 * device)
    if (!hlsl_active)
       return;
 
-   if (prg[active_index].mvp)
-      device->SetVertexShaderConstantF(0, (FLOAT*)&prg[active_index].mvp, 4);
+   device->SetVertexShaderConstantF(0, (FLOAT*)&prg[active_index].mvp, 4);
 }
 
 static bool load_program(unsigned index, const char *prog, bool path_is_file)
 {
+   SSNES_LOG("test\n");
    bool ret, ret_fp, ret_vp;
    ID3DXBuffer *listing_f = NULL;
    ID3DXBuffer *listing_v = NULL;
@@ -92,6 +94,8 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    ID3DXBuffer *code_v = NULL;
 
    ret = true;
+   ret_fp = false;
+   ret_vp = false;
 
    if (path_is_file)
    {
@@ -100,8 +104,8 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    }
    else
    {
-      ret_fp = D3DXCompileShader(prog, sizeof(prog), NULL, NULL, "main_fragment", "ps_2_0", 0, &code_f, &listing_f, NULL );
-      ret_vp = D3DXCompileShader(prog, sizeof(prog), NULL, NULL, "main_vertex", "vs_2_0", 0, &code_v, &listing_v, NULL );
+      ret_fp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL, "main_fragment", "ps_2_0", 0, &code_f, &listing_f, NULL );
+      ret_vp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL, "main_vertex", "vs_2_0", 0, &code_v, &listing_v, NULL );
    }
 
    if (FAILED(ret_fp) || FAILED(ret_vp))
@@ -140,23 +144,27 @@ static bool load_stock(void)
 
 static bool load_plain(const char *path)
 {
+#if 0
    if (!load_stock())
       return false;
+#endif
 
-#if 0
    SSNES_LOG("Loading HLSL file: %s\n", path);
 
-   if (!load_program(1, path, true))
+   if (!load_program(0, path, true))
       return false;
-#endif
 
    return true;
 }
 
 static void hlsl_deinit_progs(void)
 {
-   D3DResource_Release((D3DResource *)vid->pPixelShader);
-   D3DResource_Release((D3DResource *)vid->pVertexShader);
+   if (prg[0].fprg)
+      D3DResource_Release((D3DResource *)prg[0].fprg);
+   if (prg[0].vprg)
+      D3DResource_Release((D3DResource *)prg[0].vprg);
+
+   memset(prg, 0, sizeof(prg));
 }
 
 static void hlsl_deinit_state(void)
@@ -164,6 +172,11 @@ static void hlsl_deinit_state(void)
    hlsl_active = false;
 
    hlsl_deinit_progs();
+}
+
+static bool load_preset(const char *path)
+{
+   return false;
 }
 
 bool hlsl_init(const char *path)
@@ -179,6 +192,7 @@ bool hlsl_init(const char *path)
          return false;
    }
 
+   active_index = 0;
    hlsl_active = true;
    return true;
 }
