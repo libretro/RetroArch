@@ -1898,94 +1898,93 @@ static void select_setting(menu * menu_obj)
 
 static void select_rom(void)
 {
-	char newpath[1024], *separatorslash;
-	uint64_t state, diff_state, button_was_pressed;
+   char newpath[1024], *separatorslash;
+   uint64_t state, diff_state, button_was_pressed;
 
-	state = cell_pad_input_poll_device(0);
-	diff_state = old_state ^ state;
-	button_was_pressed = old_state & diff_state;
+   state = cell_pad_input_poll_device(0);
+   diff_state = old_state ^ state;
+   button_was_pressed = old_state & diff_state;
 
-	browser_update(&browser);
+   browser_update(&browser);
 
-	if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
-	{
-		if (CTRL_SELECT(button_was_pressed))
-		{
-			menuStackindex++;
-			menuStack[menuStackindex] = menu_generalvideosettings;
-		}
+   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+   {
+      if (CTRL_SELECT(button_was_pressed))
+      {
+         menuStackindex++;
+	 menuStack[menuStackindex] = menu_generalvideosettings;
+      }
 
-		if (CTRL_START(button_was_pressed))
-			filebrowser_reset_start_directory(&browser, "/", ssnes_console_get_rom_ext());
+      if (CTRL_START(button_was_pressed))
+         filebrowser_reset_start_directory(&browser, "/", ssnes_console_get_rom_ext());
 
-		if (CTRL_CROSS(button_was_pressed))
-		{
-			if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(browser))
-			{
-				/*if 'filename' is in fact '..' - then pop back directory 
-				  instead of adding '..' to filename path */
+      if (CTRL_CROSS(button_was_pressed))
+      {
+         if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(browser))
+	 {
+            /*if 'filename' is in fact '..' - then pop back directory  instead of adding '..' to filename path */
 
-				if(browser.currently_selected == 0)
-				{
-					filebrowser_pop_directory(&browser);
-				}
-				else
-				{
-					separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser),"/") == 0) ? "" : "/";
-					snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(browser));
-					filebrowser_push_directory(&browser, newpath, true);
-				}
-			}
-			else if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
-			{
-				char rom_path_temp[MAX_PATH_LENGTH];
-				struct retro_system_info info;
-				retro_get_system_info(&info);
-				bool block_zip_extract  = info.block_extract;
+            if(browser.currently_selected == 0)
+	    {
+               filebrowser_pop_directory(&browser);
+	    }
+	    else
+	    {
+               separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser),"/") == 0) ? "" : "/";
+	       snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(browser));
+	       filebrowser_push_directory(&browser, newpath, true);
+	    }
+	 }
+	 else if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
+	 {
+            char rom_path_temp[MAX_PATH_LENGTH];
+	    struct retro_system_info info;
+	    retro_get_system_info(&info);
+	    bool block_zip_extract  = info.block_extract;
 
-				snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+	    snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 
-				if((strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP")) && !block_zip_extract)
-					ssnes_extract_zipfile(rom_path_temp);
-				else
-				{
-					g_console.menu_enable = false;
-					snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
-					g_console.initialize_ssnes_enable = 1;
-					g_console.mode_switch = MODE_EMULATION;
-				}
-			}
-		}
-	}
+	    if((strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP")) && !block_zip_extract)
+               ssnes_extract_zipfile(rom_path_temp);
+	    else
+	    {
+               g_console.menu_enable = false;
+	       snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+	       g_console.initialize_ssnes_enable = 1;
+	       g_console.mode_switch = MODE_EMULATION;
+	    }
+	 }
+      }
+   }
 
-	if (FILEBROWSER_IS_CURRENT_A_DIRECTORY(browser))
-	{
-		if(!strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),"app_home") || !strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),"host_root"))
-			cellDbgFontPrintf(0.09f, 0.83f, 0.91f, RED, "WARNING - This path only works on DEX PS3 systems. Do not attempt to open\n this directory on CEX PS3 systems, or you might have to restart.");
-		else if(!strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),".."))
-			cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to go back to the previous directory.");
-		else
-			cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to enter the directory.");
-	}
+   if (FILEBROWSER_IS_CURRENT_A_DIRECTORY(browser))
+   {
+      if(!strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),"app_home") || !strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),"host_root"))
+         cellDbgFontPrintf(0.09f, 0.83f, 0.91f, RED, "WARNING - This path only works on DEX PS3 systems. Do not attempt to open\n this directory on CEX PS3 systems, or you might have to restart.");
+      else if(!strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),".."))
+         cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to go back to the previous directory.");
+      else
+         cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to enter the directory.");
+   }
 
-	if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
-		cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
+   if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
+      cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
 
-	struct retro_system_info info;
-	retro_get_system_info(&info);
-	const char *id = info.library_name ? info.library_name : "Unknown";
+   struct retro_system_info info;
+   retro_get_system_info(&info);
+   const char *id = info.library_name ? info.library_name : "Unknown";
 
-	cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"FILE BROWSER");
-	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s (v%s)", id, info.library_version);
-	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
-	cellDbgFontPrintf (0.09f, 0.09f, FONT_SIZE, YELLOW,
-	"PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser));
-	cellDbgFontPuts   (0.09f, 0.93f, FONT_SIZE, YELLOW,
-	"L3 + R3 - resume game           SELECT - Settings screen");
-	cellDbgFontDraw();
+   cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"FILE BROWSER");
+   cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s (v%s)", id, info.library_version);
+   cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
+   cellDbgFontPrintf (0.09f, 0.09f, FONT_SIZE, YELLOW,
+		   "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser));
+   cellDbgFontPuts   (0.09f, 0.93f, FONT_SIZE, YELLOW,
+		   "L3 + R3 - resume game           SELECT - Settings screen");
+   cellDbgFontDraw();
 
-	browser_render(&browser);
-	old_state = state;
+   browser_render(&browser);
+   old_state = state;
 }
 
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
@@ -2000,509 +1999,512 @@ static void return_to_game (void)
 
 static void ingame_menu(uint32_t menu_id)
 {
-	char comment[256], msg_temp[256];
-	static uint32_t menuitem_colors[MENU_ITEM_LAST];
-	uint64_t state, stuck_in_loop;
-	static uint64_t blocking;
-
-	float x_position = 0.3f;
-	float font_size = 1.1f;
-	float ypos = 0.19f;
-	float ypos_increment = 0.04f;
-
-	for(int i = 0; i < MENU_ITEM_LAST; i++)
-		menuitem_colors[i] = GREEN;
-	
-	menuitem_colors[g_console.ingame_menu_item] = RED;
-	
-	gl_t * gl = g_gl;
-
-	state = cell_pad_input_poll_device(0);
-	stuck_in_loop = 1;
-	blocking = 0;
-
-	if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count) && blocking == false)
-	{
-		set_delay = DELAY_NONE;
-
-		if(CTRL_CIRCLE(state))
-			return_to_game();
-
-		switch(g_console.ingame_menu_item)
-		{
-			case MENU_ITEM_LOAD_STATE:
-				if(CTRL_CROSS(state))
-				{
-					ssnes_load_state();
-					return_to_game();
-				}
-				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
-				{
-					ssnes_state_slot_decrease();
-					set_delay = DELAY_LONG;
-					blocking = 0;
-				}
-				if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
-				{
-					ssnes_state_slot_increase();
-					set_delay = DELAY_LONG;
-					blocking = 0;
-				}
-
-				strcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the state from the currently selected save state slot.");
-				break;
-			case MENU_ITEM_SAVE_STATE:
-				if(CTRL_CROSS(state))
-				{
-					ssnes_save_state();
-					return_to_game();
-				}
-				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
-				{
-					ssnes_state_slot_decrease();
-					set_delay = DELAY_LONG;
-					blocking = 0;
-				}
-				if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
-				{
-					ssnes_state_slot_increase();
-					set_delay = DELAY_LONG;
-					blocking = 0;
-				}
-
-				strcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.");
-				break;
-			case MENU_ITEM_KEEP_ASPECT_RATIO:
-				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
-				{
-					if(g_console.aspect_ratio_index > 0)
-					{
-						g_console.aspect_ratio_index--;
-						video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-						set_delay = DELAY_LONG;
-					}
-				}
-				if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
-				{
-					if(g_console.aspect_ratio_index < ASPECT_RATIO_END)
-					{
-						g_console.aspect_ratio_index++;
-						video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-						set_delay = DELAY_LONG;
-					}
-				}
-				if(CTRL_START(state))
-				{
-					g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
-					video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-				}
-				strcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.");
-				break;
-			case MENU_ITEM_OVERSCAN_AMOUNT:
-				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) || CTRL_LSTICK_LEFT(state))
-				{
-					g_console.overscan_amount -= 0.01f;
-					g_console.overscan_enable = true;
-
-					if(g_console.overscan_amount == 0.00f)
-						g_console.overscan_enable = false;
-
-					ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
-					set_delay = DELAY_SMALLEST;
-				}
-				if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_LSTICK_RIGHT(state))
-				{
-					g_console.overscan_amount += 0.01f;
-					g_console.overscan_enable = true;
-					if(g_console.overscan_amount == 0.0f)
-						g_console.overscan_amount = false;
-
-					ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
-					set_delay = DELAY_SMALLEST;
-				}
-				if(CTRL_START(state))
-				{
-					g_console.overscan_amount = 0.0f;
-					g_console.overscan_enable = false;
-					ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
-				}
-				strcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.");
-				break;
-			case MENU_ITEM_ORIENTATION:
-				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) || CTRL_LSTICK_LEFT(state))
-				{
-					if(g_console.screen_orientation > ORIENTATION_NORMAL)
-					{
-						g_console.screen_orientation--;
-						video_gl.set_rotation(NULL, g_console.screen_orientation);
-						set_delay = DELAY_LONG;
-					}
-				}
-
-				if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_LSTICK_RIGHT(state))
-				{
-					if((g_console.screen_orientation+1) < ORIENTATION_END)
-					{
-						g_console.screen_orientation++;
-						video_gl.set_rotation(NULL, g_console.screen_orientation);
-						set_delay = DELAY_LONG;
-					}
-				}
-
-				if(CTRL_START(state))
-				{
-					g_console.screen_orientation = ORIENTATION_NORMAL;
-					video_gl.set_rotation(NULL, g_console.screen_orientation);
-				}
-				strcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.");
-				break;
-			case MENU_ITEM_SCALE_FACTOR:
-				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
-				{
-					if(g_settings.video.render_to_texture)
-					{
-						if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
-						{
-							g_settings.video.fbo_scale_x -= 1.0f;
-							g_settings.video.fbo_scale_y -= 1.0f;
-							apply_scaling(FBO_REINIT);
-							set_delay = DELAY_LONG;
-						}
-					}
-				}
-				if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
-				{
-					if(g_settings.video.render_to_texture)
-					{
-						if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
-						{
-							g_settings.video.fbo_scale_x += 1.0f;
-							g_settings.video.fbo_scale_y += 1.0f;
-							apply_scaling(FBO_REINIT);
-							set_delay = DELAY_LONG;
-						}
-					}
-				}
-				if(CTRL_START(state))
-				{
-					g_settings.video.fbo_scale_x = 2.0f;
-					g_settings.video.fbo_scale_y = 2.0f;
-					apply_scaling(FBO_REINIT);
-				}
-				strcpy(comment, "Press LEFT or RIGHT to change the [Scaling] settings.\nPress START to reset back to default values.");
-				break;
-			case MENU_ITEM_FRAME_ADVANCE:
-				if(CTRL_CROSS(state) || CTRL_R2(state) || CTRL_L2(state))
-				{
-					g_console.frame_advance_enable = true;
-					g_console.ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
-					g_console.menu_enable = false;
-					g_console.mode_switch = MODE_EMULATION;
-				}
-				strcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame. Pressing the button\nrapidly will advance the frame more slowly.");
-				break;
-			case MENU_ITEM_RESIZE_MODE:
-				if(CTRL_CROSS(state))
-				{
-					g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
-					video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-					while(stuck_in_loop && g_console.ingame_menu_enable)
-					{
-						state = cell_pad_input_poll_device(0);
-
-						if(CTRL_SQUARE(~state))
-						{
-							glClear(GL_COLOR_BUFFER_BIT);
-							glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-							glEnable(GL_BLEND);
-						}
-						ssnes_render_cached_frame();
-
-						if(CTRL_SQUARE(~state))
-						{
-							gl_frame_menu();
-						}
-
-						if(CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state))
-							g_console.custom_viewport_x -= 1;
-						else if (CTRL_LSTICK_RIGHT(state) || CTRL_RIGHT(state))
-							g_console.custom_viewport_x += 1;
-
-						if (CTRL_LSTICK_UP(state) || CTRL_UP(state))
-							g_console.custom_viewport_y += 1;
-						else if (CTRL_LSTICK_DOWN(state) || CTRL_DOWN(state)) 
-							g_console.custom_viewport_y -= 1;
-
-						if (CTRL_RSTICK_LEFT(state) || CTRL_L1(state))
-							g_console.custom_viewport_width -= 1;
-						else if (CTRL_RSTICK_RIGHT(state) || CTRL_R1(state))
-							g_console.custom_viewport_width += 1;
-
-						if (CTRL_RSTICK_UP(state) || CTRL_L2(state))
-							g_console.custom_viewport_height += 1;
-						else if (CTRL_RSTICK_DOWN(state) || CTRL_R2(state))
-							g_console.custom_viewport_height -= 1;
-
-						if (CTRL_TRIANGLE(state))
-						{
-							g_console.custom_viewport_x = 0;
-							g_console.custom_viewport_y = 0;
-							g_console.custom_viewport_width = gl->win_width;
-							g_console.custom_viewport_height = gl->win_height;
-						}
-						if(CTRL_CIRCLE(state))
-						{
-							set_delay = DELAY_MEDIUM;
-							stuck_in_loop = 0;
-						}
-
-						if(CTRL_SQUARE(~state))
-						{
-							struct retro_system_info info;
-							retro_get_system_info(&info);
-							const char *id = info.library_name ? info.library_name : "Unknown";
-							cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"QUICK MENU");
-							cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
-							cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
-							cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
-							cellDbgFontPrintf	(x_position,	ypos,	font_size,	GREEN,	"Viewport X: #%d", g_console.custom_viewport_x);
-
-							cellDbgFontPrintf	(x_position,	ypos+(ypos_increment*1),	font_size,	GREEN,	"Viewport Y: #%d", g_console.custom_viewport_y);
-
-							cellDbgFontPrintf	(x_position,	ypos+(ypos_increment*2),	font_size,	GREEN,	"Viewport Width: #%d", g_console.custom_viewport_width);
-
-							cellDbgFontPrintf	(x_position,	ypos+(ypos_increment*3),	font_size,	GREEN,	"Viewport Height: #%d", g_console.custom_viewport_height);
-
-							cellDbgFontPrintf (0.09f,   0.40f,   font_size,      LIGHTBLUE,           "CONTROLS:");
-
-							cellDbgFontPrintf (0.09f,   0.46f,   font_size,      LIGHTBLUE,           "LEFT or LSTICK UP");
-							cellDbgFontPrintf (0.5f,   0.46f,   font_size,      LIGHTBLUE,           "- Decrease Viewport X");
-
-							cellDbgFontDraw();
-
-							cellDbgFontPrintf (0.09f,   0.48f,   font_size,      LIGHTBLUE,           "RIGHT or LSTICK RIGHT");
-							cellDbgFontPrintf (0.5f,   0.48f,   font_size,      LIGHTBLUE,           "- Increase Viewport X");
-
-							cellDbgFontPrintf (0.09f,   0.50f,   font_size,      LIGHTBLUE,           "UP or LSTICK UP");
-							cellDbgFontPrintf (0.5f,   0.50f,   font_size,      LIGHTBLUE,           "- Increase Viewport Y");
-
-							cellDbgFontDraw();
-
-							cellDbgFontPrintf (0.09f,   0.52f,   font_size,      LIGHTBLUE,           "DOWN or LSTICK DOWN");
-							cellDbgFontPrintf (0.5f,   0.52f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Y");
-
-							cellDbgFontPrintf (0.09f,   0.54f,   font_size,      LIGHTBLUE,           "L1 or RSTICK LEFT");
-							cellDbgFontPrintf (0.5f,   0.54f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Width");
-
-							cellDbgFontDraw();
-
-							cellDbgFontPrintf (0.09f,   0.56f,   font_size,      LIGHTBLUE,           "R1 or RSTICK RIGHT");
-							cellDbgFontPrintf (0.5f,   0.56f,   font_size,      LIGHTBLUE,           "- Increase Viewport Width");
-
-							cellDbgFontPrintf (0.09f,   0.58f,   font_size,      LIGHTBLUE,           "L2 or  RSTICK UP");
-							cellDbgFontPrintf (0.5f,   0.58f,   font_size,      LIGHTBLUE,           "- Increase Viewport Height");
-
-							cellDbgFontDraw();
-
-							cellDbgFontPrintf (0.09f,   0.60f,   font_size,      LIGHTBLUE,           "R2 or RSTICK DOWN");
-							cellDbgFontPrintf (0.5f,   0.60f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Height");
-
-							cellDbgFontPrintf (0.09f,   0.66f,   font_size,      LIGHTBLUE,           "TRIANGLE");
-							cellDbgFontPrintf (0.5f,   0.66f,   font_size,      LIGHTBLUE,           "- Reset To Defaults");
-
-							cellDbgFontPrintf (0.09f,   0.68f,   font_size,      LIGHTBLUE,           "SQUARE");
-							cellDbgFontPrintf (0.5f,   0.68f,   font_size,      LIGHTBLUE,           "- Show Game Screen");
-
-							cellDbgFontPrintf (0.09f,   0.70f,   font_size,      LIGHTBLUE,           "CIRCLE");
-							cellDbgFontPrintf (0.5f,   0.70f,   font_size,      LIGHTBLUE,           "- Return to Ingame Menu");
-
-							cellDbgFontDraw();
-
-							cellDbgFontPrintf (0.09f,   0.83f,   0.91f,      LIGHTBLUE,           "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the menu.");
-							cellDbgFontDraw();
-						}
-						video_gl.swap(NULL);
-						if(CTRL_SQUARE(~state))
-						{
-							glDisable(GL_BLEND);
-						}
-					}
-				}
-				strcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back.");
-				break;
-			case MENU_ITEM_SCREENSHOT_MODE:
-				if(CTRL_CROSS(state))
-				{
-					while(stuck_in_loop && g_console.ingame_menu_enable)
-					{
-						state = cell_pad_input_poll_device(0);
-						if(CTRL_CIRCLE(state))
-						{
-							set_delay = DELAY_MEDIUM;
-							stuck_in_loop = 0;
-						}
-
-						ssnes_render_cached_frame();
-
-						video_gl.swap(NULL);
-					}
-				}
-
-				strcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.");
-				break;
-			case MENU_ITEM_RETURN_TO_GAME:
-				if(CTRL_CROSS(state))
-					return_to_game();
-
-				strcpy(comment, "Press 'CROSS' to return back to the game.");
-				break;
-			case MENU_ITEM_RESET:
-				if(CTRL_CROSS(state))
-				{
-					return_to_game();
-					ssnes_game_reset();
-				}
-				strcpy(comment, "Press 'CROSS' to reset the game.");
-				break;
-			case MENU_ITEM_RETURN_TO_MENU:
-				if(CTRL_CROSS(state))
-				{
-					g_console.menu_enable = false;
-					g_console.ingame_menu_item = 0;
-					g_console.mode_switch = MODE_MENU;
-					set_delay = DELAY_LONG;
-				}
-				strcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.");
-				break;
-			case MENU_ITEM_CHANGE_LIBSNES:
-				if(CTRL_CROSS(state))
-				{
-					menuStackindex++;
-					menuStack[menuStackindex] = menu_filebrowser;
-					menuStack[menuStackindex].enum_id = LIBSNES_CHOICE;
-					set_initial_dir_tmpbrowser = true;
-					set_delay = DELAY_LONG;
-				}
-				strcpy(comment, "Press 'CROSS' to choose a different emulator core.");
-				break;
-			case MENU_ITEM_RETURN_TO_MULTIMAN:
-				if(CTRL_CROSS(state) && path_file_exists(MULTIMAN_EXECUTABLE))
-				{
-					strlcpy(g_console.launch_app_on_exit, MULTIMAN_EXECUTABLE,
-					sizeof(g_console.launch_app_on_exit));
-					g_console.return_to_launcher = true;
-					g_console.menu_enable = false;
-					g_console.mode_switch = MODE_EXIT;
-				}
-				strcpy(comment, "Press 'CROSS' to quit the emulator and return to multiMAN.");
-				break;
-			case MENU_ITEM_RETURN_TO_XMB:
-				if(CTRL_CROSS(state))
-				{
-					g_console.menu_enable = false;
-					g_console.mode_switch = MODE_EXIT;
-				}
-
-				strcpy(comment, "Press 'CROSS' to quit the emulator and return to the XMB.");
-				break;
-		}
-
-		if(CTRL_UP(state) || CTRL_LSTICK_UP(state))
-		{
-			if(g_console.ingame_menu_item > 0)
-			{
-				g_console.ingame_menu_item--;
-				set_delay = DELAY_MEDIUM;
-			}
-		}
-
-		if(CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))
-		{
-			if(g_console.ingame_menu_item < (MENU_ITEM_LAST-1))
-			{
-				g_console.ingame_menu_item++;
-				set_delay = DELAY_MEDIUM;
-			}
-		}
-
-		if(CTRL_L3(state) && CTRL_R3(state))
-		{
-			return_to_game();
-		}
-	}
-
-
-	switch(g_console.screen_orientation)
-	{
-		case ORIENTATION_NORMAL:
-			snprintf(msg_temp, sizeof(msg_temp), "Normal");
-			break;
-		case ORIENTATION_VERTICAL:
-			snprintf(msg_temp, sizeof(msg_temp), "Vertical");
-			break;
-		case ORIENTATION_FLIPPED:
-			snprintf(msg_temp, sizeof(msg_temp), "Flipped");
-			break;
-		case ORIENTATION_FLIPPED_ROTATED:
-			snprintf(msg_temp, sizeof(msg_temp), "Flipped Rotated");
-			break;
-	}
-
-	cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Quick Menu");
-
-	cellDbgFontPrintf(x_position, ypos, font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), "Load State #%d", g_extern.state_slot);
-
-	cellDbgFontPrintf(x_position, ypos+(ypos_increment*MENU_ITEM_SAVE_STATE), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), "Save State #%d", g_extern.state_slot);
-	cellDbgFontDraw();
-
-	cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
-
-	cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), "Overscan: %f", g_console.overscan_amount);
-
-	cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), "Orientation: %s", msg_temp);
-	cellDbgFontDraw();
-
-	cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_SCALE_FACTOR)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), "Scale Factor: %d", (int)(g_settings.video.fbo_scale_x));
-	cellDbgFontDraw();
-
-	cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_RESIZE_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE), "Resize Mode");
-
-	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_FRAME_ADVANCE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_FRAME_ADVANCE), "Frame Advance");
-
-	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_SCREENSHOT_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCREENSHOT_MODE), "Screenshot Mode");
-
-	cellDbgFontDraw();
-
-	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RESET)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESET), "Reset");
-
-	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_GAME)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME), "Return to Game");
-	cellDbgFontDraw();
-
-	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MENU)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU), "Return to Menu");
-	cellDbgFontDraw();
-
-	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_CHANGE_LIBSNES)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBSNES), "Change libretro core");
-	cellDbgFontDraw();
-
-	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");
-
-	cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_XMB), "Return to XMB");
-	cellDbgFontDraw();
-
-	struct retro_system_info info;
-	retro_get_system_info(&info);
-	const char *id = info.library_name ? info.library_name : "Unknown";
-
-	cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"QUICK MENU");
-	cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
-	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
-	cellDbgFontDraw();
-	cellDbgFontPrintf (0.05f, 0.90f, 1.10f, WHITE, special_action_msg);
-	cellDbgFontDraw();
-	cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, comment);
-	cellDbgFontDraw();
-
-	old_state = state;
+   char comment[256], msg_temp[256];
+   static uint32_t menuitem_colors[MENU_ITEM_LAST];
+   uint64_t state, stuck_in_loop;
+   static uint64_t blocking;
+
+   float x_position = 0.3f;
+   float font_size = 1.1f;
+   float ypos = 0.19f;
+   float ypos_increment = 0.04f;
+
+   for(int i = 0; i < MENU_ITEM_LAST; i++)
+      menuitem_colors[i] = GREEN;
+
+   menuitem_colors[g_console.ingame_menu_item] = RED;
+
+   gl_t * gl = g_gl;
+
+   state = cell_pad_input_poll_device(0);
+   stuck_in_loop = 1;
+   blocking = 0;
+
+   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count) && blocking == false)
+   {
+      set_delay = DELAY_NONE;
+
+      if(CTRL_CIRCLE(state))
+         return_to_game();
+
+      switch(g_console.ingame_menu_item)
+      {
+         case MENU_ITEM_LOAD_STATE:
+            if(CTRL_CROSS(state))
+	    {
+               ssnes_load_state();
+	       return_to_game();
+	    }
+	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
+	    {
+               ssnes_state_slot_decrease();
+	       set_delay = DELAY_LONG;
+	       blocking = 0;
+	    }
+	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+	    {
+               ssnes_state_slot_increase();
+	       set_delay = DELAY_LONG;
+	       blocking = 0;
+	    }
+
+	    strcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the state from the currently selected save state slot.");
+	    break;
+	 case MENU_ITEM_SAVE_STATE:
+	    if(CTRL_CROSS(state))
+	    {
+               ssnes_save_state();
+	       return_to_game();
+	    }
+	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
+	    {
+               ssnes_state_slot_decrease();
+	       set_delay = DELAY_LONG;
+	       blocking = 0;
+	    }
+	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+	    {
+               ssnes_state_slot_increase();
+	       set_delay = DELAY_LONG;
+	       blocking = 0;
+	    }
+
+	    strcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.");
+	    break;
+	 case MENU_ITEM_KEEP_ASPECT_RATIO:
+	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
+	    {
+               if(g_console.aspect_ratio_index > 0)
+	       {
+                  g_console.aspect_ratio_index--;
+		  video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+		  set_delay = DELAY_LONG;
+	       }
+	    }
+	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+	    {
+               if(g_console.aspect_ratio_index < ASPECT_RATIO_END)
+	       {
+                  g_console.aspect_ratio_index++;
+		  video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+		  set_delay = DELAY_LONG;
+	       }
+	    }
+	    if(CTRL_START(state))
+	    {
+               g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
+	       video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+	    }
+	    strcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.");
+	    break;
+	 case MENU_ITEM_OVERSCAN_AMOUNT:
+	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) || CTRL_LSTICK_LEFT(state))
+	    {
+               g_console.overscan_amount -= 0.01f;
+	       g_console.overscan_enable = true;
+
+	       if(g_console.overscan_amount == 0.00f)
+                  g_console.overscan_enable = false;
+
+	       ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+	       set_delay = DELAY_SMALLEST;
+	    }
+	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_LSTICK_RIGHT(state))
+	    {
+               g_console.overscan_amount += 0.01f;
+	       g_console.overscan_enable = true;
+	       if(g_console.overscan_amount == 0.0f)
+                  g_console.overscan_amount = false;
+
+	       ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+	       set_delay = DELAY_SMALLEST;
+	    }
+	    if(CTRL_START(state))
+	    {
+               g_console.overscan_amount = 0.0f;
+	       g_console.overscan_enable = false;
+	       ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+	    }
+	    strcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.");
+	    break;
+	 case MENU_ITEM_ORIENTATION:
+	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) || CTRL_LSTICK_LEFT(state))
+	    {
+               if(g_console.screen_orientation > ORIENTATION_NORMAL)
+	       {
+                  g_console.screen_orientation--;
+		  video_gl.set_rotation(NULL, g_console.screen_orientation);
+		  set_delay = DELAY_LONG;
+	       }
+	    }
+
+	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_LSTICK_RIGHT(state))
+	    {
+               if((g_console.screen_orientation+1) < ORIENTATION_END)
+	       {
+                  g_console.screen_orientation++;
+		  video_gl.set_rotation(NULL, g_console.screen_orientation);
+		  set_delay = DELAY_LONG;
+	       }
+	    }
+
+	    if(CTRL_START(state))
+	    {
+               g_console.screen_orientation = ORIENTATION_NORMAL;
+	       video_gl.set_rotation(NULL, g_console.screen_orientation);
+	    }
+	    strcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.");
+	    break;
+	 case MENU_ITEM_SCALE_FACTOR:
+	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
+	    {
+               if(g_settings.video.render_to_texture)
+	       {
+                  if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
+		  {
+                     g_settings.video.fbo_scale_x -= 1.0f;
+		     g_settings.video.fbo_scale_y -= 1.0f;
+		     apply_scaling(FBO_REINIT);
+		     set_delay = DELAY_LONG;
+		  }
+	       }
+	    }
+	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+	    {
+               if(g_settings.video.render_to_texture)
+	       {
+                  if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
+		  {
+                     g_settings.video.fbo_scale_x += 1.0f;
+		     g_settings.video.fbo_scale_y += 1.0f;
+		     apply_scaling(FBO_REINIT);
+		     set_delay = DELAY_LONG;
+		  }
+	       }
+	    }
+	    if(CTRL_START(state))
+	    {
+               g_settings.video.fbo_scale_x = 2.0f;
+	       g_settings.video.fbo_scale_y = 2.0f;
+	       apply_scaling(FBO_REINIT);
+	    }
+	    strcpy(comment, "Press LEFT or RIGHT to change the [Scaling] settings.\nPress START to reset back to default values.");
+	    break;
+	 case MENU_ITEM_FRAME_ADVANCE:
+	    if(CTRL_CROSS(state) || CTRL_R2(state) || CTRL_L2(state))
+	    {
+               g_console.frame_advance_enable = true;
+	       g_console.ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
+	       g_console.menu_enable = false;
+	       g_console.mode_switch = MODE_EMULATION;
+	    }
+	    strcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame. Pressing the button\nrapidly will advance the frame more slowly.");
+	    break;
+	 case MENU_ITEM_RESIZE_MODE:
+	    if(CTRL_CROSS(state))
+	    {
+               g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
+	       video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+	       while(stuck_in_loop && g_console.ingame_menu_enable)
+	       {
+                  state = cell_pad_input_poll_device(0);
+
+		  if(CTRL_SQUARE(~state))
+		  {
+                     glClear(GL_COLOR_BUFFER_BIT);
+		     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		     glEnable(GL_BLEND);
+		  }
+
+		  ssnes_render_cached_frame();
+
+		  if(CTRL_SQUARE(~state))
+		  {
+                     gl_frame_menu();
+		  }
+
+		  if(CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state))
+			  g_console.custom_viewport_x -= 1;
+		  else if (CTRL_LSTICK_RIGHT(state) || CTRL_RIGHT(state))
+			  g_console.custom_viewport_x += 1;
+
+		  if (CTRL_LSTICK_UP(state) || CTRL_UP(state))
+			  g_console.custom_viewport_y += 1;
+		  else if (CTRL_LSTICK_DOWN(state) || CTRL_DOWN(state)) 
+			  g_console.custom_viewport_y -= 1;
+
+		  if (CTRL_RSTICK_LEFT(state) || CTRL_L1(state))
+			  g_console.custom_viewport_width -= 1;
+		  else if (CTRL_RSTICK_RIGHT(state) || CTRL_R1(state))
+			  g_console.custom_viewport_width += 1;
+
+		  if (CTRL_RSTICK_UP(state) || CTRL_L2(state))
+			  g_console.custom_viewport_height += 1;
+		  else if (CTRL_RSTICK_DOWN(state) || CTRL_R2(state))
+			  g_console.custom_viewport_height -= 1;
+
+		  if (CTRL_TRIANGLE(state))
+		  {
+			  g_console.custom_viewport_x = 0;
+			  g_console.custom_viewport_y = 0;
+			  g_console.custom_viewport_width = gl->win_width;
+			  g_console.custom_viewport_height = gl->win_height;
+		  }
+		  if(CTRL_CIRCLE(state))
+		  {
+			  set_delay = DELAY_MEDIUM;
+			  stuck_in_loop = 0;
+		  }
+
+		  if(CTRL_SQUARE(~state))
+		  {
+                     struct retro_system_info info;
+		     retro_get_system_info(&info);
+		     const char *id = info.library_name ? info.library_name : "Unknown";
+
+		     cellDbgFontPuts (0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
+		     cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
+		     cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
+		     cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
+		     cellDbgFontPrintf(x_position,	ypos, font_size, GREEN,	"Viewport X: #%d", g_console.custom_viewport_x);
+
+		     cellDbgFontPrintf(x_position,	ypos+(ypos_increment*1), font_size, GREEN, "Viewport Y: #%d", g_console.custom_viewport_y);
+
+		     cellDbgFontPrintf(x_position,	ypos+(ypos_increment*2), font_size, GREEN, "Viewport Width: #%d", g_console.custom_viewport_width);
+
+		     cellDbgFontPrintf(x_position,	ypos+(ypos_increment*3), font_size, GREEN, "Viewport Height: #%d", g_console.custom_viewport_height);
+
+		     cellDbgFontPrintf (0.09f,   0.40f, font_size, LIGHTBLUE, "CONTROLS:");
+
+		     cellDbgFontPrintf (0.09f,   0.46f, font_size,  LIGHTBLUE, "LEFT or LSTICK UP");
+		     cellDbgFontPrintf (0.5f,   0.46f, font_size, LIGHTBLUE, "- Decrease Viewport X");
+
+		     cellDbgFontDraw();
+
+		     cellDbgFontPrintf (0.09f,   0.48f,   font_size,      LIGHTBLUE,           "RIGHT or LSTICK RIGHT");
+		     cellDbgFontPrintf (0.5f,   0.48f,   font_size,      LIGHTBLUE,           "- Increase Viewport X");
+
+		     cellDbgFontPrintf (0.09f,   0.50f,   font_size,      LIGHTBLUE,           "UP or LSTICK UP");
+		     cellDbgFontPrintf (0.5f,   0.50f,   font_size,      LIGHTBLUE,           "- Increase Viewport Y");
+
+		     cellDbgFontDraw();
+
+		     cellDbgFontPrintf (0.09f,   0.52f,   font_size,      LIGHTBLUE,           "DOWN or LSTICK DOWN");
+		     cellDbgFontPrintf (0.5f,   0.52f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Y");
+
+		     cellDbgFontPrintf (0.09f,   0.54f,   font_size,      LIGHTBLUE,           "L1 or RSTICK LEFT");
+		     cellDbgFontPrintf (0.5f,   0.54f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Width");
+
+		     cellDbgFontDraw();
+
+		     cellDbgFontPrintf (0.09f,   0.56f,   font_size,      LIGHTBLUE,           "R1 or RSTICK RIGHT");
+		     cellDbgFontPrintf (0.5f,   0.56f,   font_size,      LIGHTBLUE,           "- Increase Viewport Width");
+
+		     cellDbgFontPrintf (0.09f,   0.58f,   font_size,      LIGHTBLUE,           "L2 or  RSTICK UP");
+		     cellDbgFontPrintf (0.5f,   0.58f,   font_size,      LIGHTBLUE,           "- Increase Viewport Height");
+
+		     cellDbgFontDraw();
+
+		     cellDbgFontPrintf (0.09f,   0.60f,   font_size,      LIGHTBLUE,           "R2 or RSTICK DOWN");
+		     cellDbgFontPrintf (0.5f,   0.60f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Height");
+
+		     cellDbgFontPrintf (0.09f,   0.66f,   font_size,      LIGHTBLUE,           "TRIANGLE");
+		     cellDbgFontPrintf (0.5f,   0.66f,   font_size,      LIGHTBLUE,           "- Reset To Defaults");
+
+		     cellDbgFontPrintf (0.09f,   0.68f,   font_size,      LIGHTBLUE,           "SQUARE");
+		     cellDbgFontPrintf (0.5f,   0.68f,   font_size,      LIGHTBLUE,           "- Show Game Screen");
+
+		     cellDbgFontPrintf (0.09f,   0.70f,   font_size,      LIGHTBLUE,           "CIRCLE");
+		     cellDbgFontPrintf (0.5f,   0.70f,   font_size,      LIGHTBLUE,           "- Return to Ingame Menu");
+
+		     cellDbgFontDraw();
+
+		     cellDbgFontPrintf (0.09f, 0.83f, 0.91f, LIGHTBLUE, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the menu.");
+		     cellDbgFontDraw();
+		  }
+		  video_gl.swap(NULL);
+		  if(CTRL_SQUARE(~state))
+		  {
+                     glDisable(GL_BLEND);
+		  }
+	       }
+	    }
+	    strcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back.");
+	    break;
+	 case MENU_ITEM_SCREENSHOT_MODE:
+	    if(CTRL_CROSS(state))
+	    {
+               while(stuck_in_loop && g_console.ingame_menu_enable)
+	       {
+                  state = cell_pad_input_poll_device(0);
+		  if(CTRL_CIRCLE(state))
+		  {
+                     set_delay = DELAY_MEDIUM;
+		     stuck_in_loop = 0;
+		  }
+
+		  ssnes_render_cached_frame();
+
+		  video_gl.swap(NULL);
+	       }
+	    }
+
+	    strcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.");
+	    break;
+	 case MENU_ITEM_RETURN_TO_GAME:
+	    if(CTRL_CROSS(state))
+               return_to_game();
+
+	    strcpy(comment, "Press 'CROSS' to return back to the game.");
+	    break;
+	 case MENU_ITEM_RESET:
+	    if(CTRL_CROSS(state))
+	    {
+               return_to_game();
+	       ssnes_game_reset();
+	    }
+	    strcpy(comment, "Press 'CROSS' to reset the game.");
+	    break;
+	 case MENU_ITEM_RETURN_TO_MENU:
+	    if(CTRL_CROSS(state))
+	    {
+               g_console.menu_enable = false;
+	       g_console.ingame_menu_item = 0;
+	       g_console.mode_switch = MODE_MENU;
+	       set_delay = DELAY_LONG;
+	    }
+	    strcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.");
+	    break;
+	 case MENU_ITEM_CHANGE_LIBSNES:
+	    if(CTRL_CROSS(state))
+	    {
+               menuStackindex++;
+	       menuStack[menuStackindex] = menu_filebrowser;
+	       menuStack[menuStackindex].enum_id = LIBSNES_CHOICE;
+	       set_initial_dir_tmpbrowser = true;
+	       set_delay = DELAY_LONG;
+	    }
+	    strcpy(comment, "Press 'CROSS' to choose a different emulator core.");
+	    break;
+	 case MENU_ITEM_RETURN_TO_MULTIMAN:
+	    if(CTRL_CROSS(state) && path_file_exists(MULTIMAN_EXECUTABLE))
+	    {
+               strlcpy(g_console.launch_app_on_exit, MULTIMAN_EXECUTABLE,
+                  sizeof(g_console.launch_app_on_exit));
+
+	       g_console.return_to_launcher = true;
+	       g_console.menu_enable = false;
+	       g_console.mode_switch = MODE_EXIT;
+	    }
+	    strcpy(comment, "Press 'CROSS' to quit the emulator and return to multiMAN.");
+	    break;
+	 case MENU_ITEM_RETURN_TO_XMB:
+	    if(CTRL_CROSS(state))
+	    {
+               g_console.menu_enable = false;
+	       g_console.mode_switch = MODE_EXIT;
+	    }
+
+	    strcpy(comment, "Press 'CROSS' to quit the emulator and return to the XMB.");
+	    break;
+      }
+
+      if(CTRL_UP(state) || CTRL_LSTICK_UP(state))
+      {
+         if(g_console.ingame_menu_item > 0)
+	 {
+            g_console.ingame_menu_item--;
+	    set_delay = DELAY_MEDIUM;
+	 }
+      }
+
+      if(CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))
+      {
+         if(g_console.ingame_menu_item < (MENU_ITEM_LAST-1))
+	 {
+            g_console.ingame_menu_item++;
+	    set_delay = DELAY_MEDIUM;
+	 }
+      }
+
+      if(CTRL_L3(state) && CTRL_R3(state))
+      {
+         return_to_game();
+      }
+   }
+
+
+   switch(g_console.screen_orientation)
+   {
+      case ORIENTATION_NORMAL:
+         snprintf(msg_temp, sizeof(msg_temp), "Normal");
+	 break;
+      case ORIENTATION_VERTICAL:
+	 snprintf(msg_temp, sizeof(msg_temp), "Vertical");
+	 break;
+      case ORIENTATION_FLIPPED:
+	 snprintf(msg_temp, sizeof(msg_temp), "Flipped");
+	 break;
+      case ORIENTATION_FLIPPED_ROTATED:
+	 snprintf(msg_temp, sizeof(msg_temp), "Flipped Rotated");
+	 break;
+   }
+
+   cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Quick Menu");
+
+   cellDbgFontPrintf(x_position, ypos, font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), "Load State #%d", g_extern.state_slot);
+
+   cellDbgFontPrintf(x_position, ypos+(ypos_increment*MENU_ITEM_SAVE_STATE), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), "Save State #%d", g_extern.state_slot);
+   cellDbgFontDraw();
+
+   cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
+
+   cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), "Overscan: %f", g_console.overscan_amount);
+
+   cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), "Orientation: %s", msg_temp);
+   cellDbgFontDraw();
+
+   cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_SCALE_FACTOR)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), "Scale Factor: %d", (int)(g_settings.video.fbo_scale_x));
+   cellDbgFontDraw();
+
+   cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_RESIZE_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE), "Resize Mode");
+
+   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_FRAME_ADVANCE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_FRAME_ADVANCE), "Frame Advance");
+
+   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_SCREENSHOT_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCREENSHOT_MODE), "Screenshot Mode");
+
+   cellDbgFontDraw();
+
+   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RESET)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESET), "Reset");
+
+   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_GAME)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME), "Return to Game");
+   cellDbgFontDraw();
+
+   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MENU)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU), "Return to Menu");
+   cellDbgFontDraw();
+
+   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_CHANGE_LIBSNES)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBSNES), "Change libretro core");
+   cellDbgFontDraw();
+
+   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");
+
+   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_XMB), "Return to XMB");
+   cellDbgFontDraw();
+
+   struct retro_system_info info;
+   retro_get_system_info(&info);
+   const char *id = info.library_name ? info.library_name : "Unknown";
+
+   cellDbgFontPuts(0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
+   cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
+   cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
+   cellDbgFontDraw();
+   cellDbgFontPrintf (0.05f, 0.90f, 1.10f, WHITE, special_action_msg);
+   cellDbgFontDraw();
+   cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, comment);
+   cellDbgFontDraw();
+
+   old_state = state;
 }
 
 void menu_init (void)
