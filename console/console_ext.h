@@ -44,6 +44,15 @@ enum aspect_ratio
    ASPECT_RATIO_END,
 };
 
+enum rotation
+{
+   ORIENTATION_NORMAL = 0,
+   ORIENTATION_VERTICAL,
+   ORIENTATION_FLIPPED,
+   ORIENTATION_FLIPPED_ROTATED,
+   ORIENTATION_END
+};
+
 struct aspect_ratio_elem
 {
    char name[64];

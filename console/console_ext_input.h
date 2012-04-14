@@ -21,7 +21,7 @@
 
 enum keybind_set_id
 {
-   KEYBIND_NOACTION,
+   KEYBIND_NOACTION = 0,
    KEYBIND_DECREMENT,
    KEYBIND_INCREMENT,
    KEYBIND_DEFAULT
@@ -29,7 +29,14 @@ enum keybind_set_id
 
 enum
 {
-   DPAD_EMULATION_NONE,
+   MODE_EMULATION = 0,
+   MODE_MENU,
+   MODE_EXIT
+};
+
+enum
+{
+   DPAD_EMULATION_NONE = 0,
    DPAD_EMULATION_LSTICK,
    DPAD_EMULATION_RSTICK
 };
