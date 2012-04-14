@@ -29,6 +29,8 @@ struct hlsl_program
    D3DXHANDLE	vid_size_v;
    D3DXHANDLE	tex_size_v;
    D3DXHANDLE	out_size_v;
+   LPD3DXCONSTANTTABLE v_ctable;
+   LPD3DXCONSTANTTABLE f_ctable;
    XMMATRIX mvp;
 };
 
@@ -99,17 +101,17 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
 
    if (path_is_file)
    {
-      ret_fp = D3DXCompileShaderFromFile(prog, NULL, NULL, "main_fragment", "ps_2_0", 0, &code_f, &listing_f, NULL); 
-      ret_vp = D3DXCompileShaderFromFile(prog, NULL, NULL, "main_vertex", "vs_2_0", 0, &code_v, &listing_v, NULL); 
+      ret_fp = D3DXCompileShaderFromFile(prog, NULL, NULL, "main_fragment", "ps_2_0", 0, &code_f, &listing_f, &prg[index].f_ctable); 
+      ret_vp = D3DXCompileShaderFromFile(prog, NULL, NULL, "main_vertex", "vs_2_0", 0, &code_v, &listing_v, &prg[index].v_ctable); 
    }
    else
    {
       /* TODO - crashes currently - to do with 'end of line' of stock shader */
-      ret_fp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL, "main_fragment", "ps_2_0", 0, &code_f, &listing_f, NULL );
-      ret_vp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL, "main_vertex", "vs_2_0", 0, &code_v, &listing_v, NULL );
+      ret_fp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL, "main_fragment", "ps_2_0", 0, &code_f, &listing_f, &prg[index].f_ctable );
+      ret_vp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL, "main_vertex", "vs_2_0", 0, &code_v, &listing_v, &prg[index].v_ctable );
    }
 
-   if (FAILED(ret_fp) || FAILED(ret_vp))
+   if (FAILED(ret_fp) || FAILED(ret_vp) || listing_v || listing_f)
    {
       SSNES_ERR("HLSL error:\n");
       if(listing_f)
