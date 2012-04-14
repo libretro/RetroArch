@@ -346,7 +346,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    // D3DCREATE_HARDWARE_VERTEXPROCESSING is ignored on 360
    ret = Direct3D_CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &vid->d3dpp, &vid->xdk360_render_device);
 
-   hlsl_init(g_settings.video.cg_shader_path);
+   hlsl_init(g_settings.video.cg_shader_path, vid->xdk360_render_device);
 
    vid->lpTexture = (D3DTexture*) D3DDevice_CreateTexture(512, 512, 1, 1, 0, D3DFMT_LIN_X1R5G5B5,
 		   0, D3DRTYPE_TEXTURE);
@@ -434,8 +434,8 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
       vid->last_height = height;
    }
 
-   hlsl_use(vid->xdk360_render_device, 0);
-   hlsl_set_params(vid->xdk360_render_device);
+   hlsl_use(0);
+   hlsl_set_params();
 
    D3DLOCKED_RECT d3dlr;
    D3DTexture_LockRect(vid->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);

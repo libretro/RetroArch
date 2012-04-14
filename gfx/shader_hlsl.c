@@ -32,6 +32,7 @@ struct hlsl_program
    XMMATRIX mvp;
 };
 
+static IDirect3DDevice9 * d3d_device_ptr;
 static struct hlsl_program prg[SSNES_HLSL_MAX_SHADERS] = {0};
 static bool hlsl_active = false;
 static unsigned active_index = 0;
@@ -76,12 +77,12 @@ void hlsl_set_proj_matrix(XMMATRIX rotation_value)
       prg[active_index].mvp = rotation_value;
 }
 
-void hlsl_set_params(IDirect3DDevice9 * device)
+void hlsl_set_params(void)
 {
    if (!hlsl_active)
       return;
 
-   device->SetVertexShaderConstantF(0, (FLOAT*)&prg[active_index].mvp, 4);
+   d3d_device_ptr->SetVertexShaderConstantF(0, (FLOAT*)&prg[active_index].mvp, 4);
 }
 
 static bool load_program(unsigned index, const char *prog, bool path_is_file)
@@ -171,6 +172,8 @@ static void hlsl_deinit_state(void)
 {
    hlsl_active = false;
 
+   d3d_device_ptr = NULL;
+
    hlsl_deinit_progs();
 }
 
@@ -179,8 +182,13 @@ static bool load_preset(const char *path)
    return false;
 }
 
-bool hlsl_init(const char *path)
+bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
 {
+   if (device_ptr != NULL)
+	   d3d_device_ptr = device_ptr;
+   else
+       return false;
+
    if (strstr(path, ".cgp"))
    {
       if (!load_preset(path))
@@ -197,13 +205,13 @@ bool hlsl_init(const char *path)
    return true;
 }
 
-void hlsl_use(IDirect3DDevice9 * device, unsigned index)
+void hlsl_use(unsigned index)
 {
    if (hlsl_active && prg[index].vprg && prg[index].fprg)
    {
       active_index = index;
-      D3DDevice_SetVertexShader(device, prg[index].vprg);
-      D3DDevice_SetPixelShader(device, prg[index].fprg);
+      D3DDevice_SetVertexShader(d3d_device_ptr, prg[index].vprg);
+      D3DDevice_SetPixelShader(d3d_device_ptr, prg[index].fprg);
    }
 }
 

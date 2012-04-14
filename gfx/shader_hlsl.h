@@ -19,15 +19,15 @@
 
 #include <stdint.h>
 
-bool hlsl_init(const char *path);
+bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr);
 
 void hlsl_deinit(void);
 
 void hlsl_set_proj_matrix(XMMATRIX rotation_value);
 
-void hlsl_set_params(IDirect3DDevice9 * device);
+void hlsl_set_params(void);
 
-void hlsl_use(IDirect3DDevice9 * device, unsigned index);
+void hlsl_use(unsigned index);
 
 #define SSNES_HLSL_MAX_SHADERS 16
 
