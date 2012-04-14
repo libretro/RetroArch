@@ -43,6 +43,8 @@
 #define BLUE		0xffff0000u
 #define WHITE		0xffffffffu
 
+#define FORCE_16BIT_COLOR 1
+
 // Used for the last pass when rendering to the back buffer.
 static const GLfloat vertexes_flipped[] = {
    0, 0,
@@ -378,7 +380,7 @@ unsigned vp_width, unsigned vp_height)
    }
 }
 
-static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full)
+static void set_viewport(gl_t *gl, unsigned width, unsigned height)
 {
    uint32_t m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
    GLfloat m_left, m_right, m_bottom, m_top, m_zNear, m_zFar;
@@ -398,7 +400,7 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
    m_zNear = -1.0f;
    m_zFar = 1.0f;
 
-   if (gl->keep_aspect && !force_full)
+   if (gl->keep_aspect)
    {
       float desired_aspect = g_settings.video.aspect_ratio;
       float device_aspect = (float)width / height;
@@ -431,7 +433,7 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
 
    glViewport(m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp);
 
-   if(gl->overscan_enable && !force_full)
+   if(gl->overscan_enable)
    {
       m_left = -gl->overscan_amount/2;
       m_right = 1 + gl->overscan_amount/2;
@@ -449,12 +451,21 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
    gl->vp_height = height;
 
    // Set last backbuffer viewport.
-   if (!force_full)
-   {
-      gl->vp_out_width = width;
-      gl->vp_out_height = height;
-   }
+   gl->vp_out_width = width;
+   gl->vp_out_height = height;
 }
+
+#define set_viewport_force_full(gl, width, height) \
+   glMatrixMode(GL_PROJECTION); \
+   glLoadIdentity(); \
+   glViewport(0, 0, width, height); \
+   glOrthof(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f); \
+   glMatrixMode(GL_MODELVIEW); \
+   glLoadIdentity(); \
+   if (prg[active_index].mvp) \
+      cgGLSetStateMatrixParameter(prg[active_index].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY); \
+   gl->vp_width = width; \
+   gl->vp_height = height;
 
 static void set_lut_texture_coords(const GLfloat *coords)
 {
@@ -486,7 +497,7 @@ void gl_frame_menu (void)
 		   gl->win_height, gl->win_width, gl->win_height, g_frame_count,
 		   NULL, NULL, NULL, 0);
 
-   set_viewport(gl, gl->win_width, gl->win_height, true);
+   set_viewport_force_full(gl, gl->win_width, gl->win_height);
 
    glActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture_id);
@@ -518,6 +529,12 @@ static void ps3graphics_set_orientation(void * data, uint32_t orientation)
    glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
 }
 
+#ifdef FORCE_16BIT_COLOR
+#define gl_base_size (sizeof(uint16_t))
+#else
+#define gl_base_size (gl->base_size)
+#endif
+
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *gl = data;
@@ -534,18 +551,19 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
       glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[0]);
       gl->render_to_tex = true;
-      set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true);
+      set_viewport_force_full(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height);
    }
 
 
-   if ((width != gl->last_width[gl->tex_index] || height != gl->last_height[gl->tex_index]) && gl->empty_buf) // Res change. need to clear out texture.
+   if ((width != gl->last_width[gl->tex_index] || height != gl->last_height[gl->tex_index]))
    {
+      //Resolution change, need to clear out texture.
       gl->last_width[gl->tex_index] = width;
       gl->last_height[gl->tex_index] = height;
 
       glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
-		      gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
-		      gl->tex_w * gl->tex_h * gl->base_size,
+		      gl->tex_w * gl->tex_h * gl->tex_index * gl_base_size,
+		      gl->tex_w * gl->tex_h * gl_base_size,
 		      gl->empty_buf);
 
       GLfloat xamt = (GLfloat)width / gl->tex_w;
@@ -555,7 +573,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    }
    else if (width != gl->last_width[(gl->tex_index - 1) & TEXTURES_MASK] || height != gl->last_height[(gl->tex_index - 1) & TEXTURES_MASK])
    {
-	   // We might have used different texture coordinates last frame. Edge case if resolution changes very rapidly.
+      // We might have used different texture coordinates last frame. Edge case if resolution changes very rapidly.
       GLfloat xamt = (GLfloat)width / gl->tex_w;
       GLfloat yamt = (GLfloat)height / gl->tex_h;
       set_texture_coords(gl->tex_coords, xamt, yamt);
@@ -566,10 +584,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (gl->render_to_tex)
       glVertexPointer(2, GL_FLOAT, 0, vertexes);
 
-   size_t buffer_addr = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
-   size_t buffer_stride = gl->tex_w * gl->base_size;
+   size_t buffer_addr = gl->tex_w * gl->tex_h * gl->tex_index * gl_base_size;
+   size_t buffer_stride = gl->tex_w * gl_base_size;
    const uint8_t *frame_copy = frame;
-   size_t frame_copy_size = width * gl->base_size;
+   size_t frame_copy_size = width * gl_base_size;
    for (unsigned h = 0; h < height; h++)
    {
       glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE, 
@@ -635,7 +653,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 	 glClear(GL_COLOR_BUFFER_BIT);
 
 	 // Render to FBO with certain size.
-	 set_viewport(gl, rect->img_width, rect->img_height, true);
+	 set_viewport_force_full(gl, rect->img_width, rect->img_height);
 	 gl_cg_set_params(prev_rect->img_width, prev_rect->img_height, 
 			 prev_rect->width, prev_rect->height, 
 			 gl->vp_width, gl->vp_height, g_frame_count, 
@@ -661,7 +679,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
       glClear(GL_COLOR_BUFFER_BIT);
       gl->render_to_tex = false;
-      set_viewport(gl, gl->win_width, gl->win_height, false);
+      set_viewport(gl, gl->win_width, gl->win_height);
       gl_cg_set_params(prev_rect->img_width, prev_rect->img_height, 
 		      prev_rect->width, prev_rect->height, 
 		      gl->vp_width, gl->vp_height, g_frame_count, 
@@ -852,9 +870,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
    gl_cg_use(0);
-   set_viewport(gl, gl->win_width, gl->win_height, false);
+   set_viewport(gl, gl->win_width, gl->win_height);
    gl_cg_use(1);
-   set_viewport(gl, gl->win_width, gl->win_height, false);
+   set_viewport(gl, gl->win_width, gl->win_height);
 
    bool force_smooth = false;
    if (gl_shader_filter_type(1, &force_smooth))
@@ -876,7 +894,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->tex_h = SSNES_SCALE_BASE * video->input_scale;
    glGenBuffers(1, &gl->pbo);
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
-   glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
+   glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->tex_w * gl->tex_h * gl_base_size * TEXTURES, NULL, GL_STREAM_DRAW);
 
    glGenTextures(TEXTURES, gl->texture);
 
@@ -904,7 +922,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    set_lut_texture_coords(tex_coords);
 
    // Empty buffer that we use to clear out the texture with on res change.
-   gl->empty_buf = calloc(gl->tex_w * gl->tex_h, gl->base_size);
+   gl->empty_buf = calloc(gl->tex_w * gl->tex_h, gl_base_size);
 
    for (unsigned i = 0; i < TEXTURES; i++)
    {
@@ -912,8 +930,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       glTextureReferenceSCE(GL_TEXTURE_2D, 1,
 		      gl->tex_w, gl->tex_h, 0, 
 		      gl->texture_fmt,
-		      gl->tex_w * gl->base_size,
-		      gl->tex_w * gl->tex_h * i * gl->base_size);
+		      gl->tex_w * gl_base_size,
+		      gl->tex_w * gl->tex_h * i * gl_base_size);
    }
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
@@ -983,7 +1001,7 @@ static void ps3graphics_set_aspect_ratio(void * data, uint32_t aspectratio_index
    g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
    g_settings.video.force_aspect = false;
    gl->keep_aspect = true;
-   set_viewport(gl, gl->win_width, gl->win_height, false);
+   set_viewport(gl, gl->win_width, gl->win_height);
 }
 
 const video_driver_t video_gl = 
@@ -1179,7 +1197,9 @@ void ps3graphics_set_overscan(bool overscan_enable, float amount, bool recalcula
    gl->overscan_amount = amount;
 
    if(recalculate_viewport)
-      set_viewport(gl, gl->win_width, gl->win_height, false);
+   { 
+      set_viewport(gl, gl->win_width, gl->win_height);
+   }
 }
 
 
