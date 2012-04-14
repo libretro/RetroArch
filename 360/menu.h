@@ -22,119 +22,119 @@
 
 enum
 {
-	SETTING_EMU_REWIND_ENABLED = 0,
-	SETTING_GAMMA_CORRECTION_ENABLED,
-	SETTING_HARDWARE_FILTERING
+   SETTING_EMU_REWIND_ENABLED = 0,
+   SETTING_GAMMA_CORRECTION_ENABLED,
+   SETTING_HARDWARE_FILTERING
 };
 
 class CSSNES : public CXuiModule
 {
 public:
-	HXUIOBJ		hMainScene;
-	HXUIOBJ		hFileBrowser;
-	HXUIOBJ		hCoreBrowser;
-	HXUIOBJ		hQuickMenu;
-	HXUIOBJ		hSSNESSettings;
+   HXUIOBJ		hMainScene;
+   HXUIOBJ		hFileBrowser;
+   HXUIOBJ		hCoreBrowser;
+   HXUIOBJ		hQuickMenu;
+   HXUIOBJ		hSSNESSettings;
 protected:
-	/* Override so that Cssnes can register classes */
-	virtual HRESULT RegisterXuiClasses();
-	/* Override so that Cssnes can unregister classes */
-	virtual HRESULT UnregisterXuiClasses();
+   /* Override so that Cssnes can register classes */
+   virtual HRESULT RegisterXuiClasses();
+   /* Override so that Cssnes can unregister classes */
+   virtual HRESULT UnregisterXuiClasses();
 };
 
 class CSSNESMain: public CXuiSceneImpl
 {
 protected:
-	CXuiControl m_filebrowser;
-	CXuiControl m_quick_menu;
-	CXuiControl m_controls;
-	CXuiControl m_settings;
-	CXuiControl m_change_libsnes_core;
-	CXuiControl m_quit;
-	CXuiTextElement m_title;
-	CXuiTextElement m_core;
+   CXuiControl m_filebrowser;
+   CXuiControl m_quick_menu;
+   CXuiControl m_controls;
+   CXuiControl m_settings;
+   CXuiControl m_change_libsnes_core;
+   CXuiControl m_quit;
+   CXuiTextElement m_title;
+   CXuiTextElement m_core;
 public:
-	HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+   HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+   HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
 
-	XUI_BEGIN_MSG_MAP()
-		XUI_ON_XM_INIT( OnInit)
-		XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-	XUI_END_MSG_MAP();
+   XUI_BEGIN_MSG_MAP()
+      XUI_ON_XM_INIT( OnInit)
+      XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+   XUI_END_MSG_MAP();
 
-	XUI_IMPLEMENT_CLASS(CSSNESMain, L"SSNESMain", XUI_CLASS_SCENE)
+   XUI_IMPLEMENT_CLASS(CSSNESMain, L"SSNESMain", XUI_CLASS_SCENE)
 };
 
 class CSSNESFileBrowser: public CXuiSceneImpl
 {
 protected:
-	CXuiList m_romlist;
-	CXuiControl m_back;
-	CXuiControl m_dir_game;
-	CXuiControl m_dir_cache;
-	CXuiTextElement m_rompathtitle;
+   CXuiList m_romlist;
+   CXuiControl m_back;
+   CXuiControl m_dir_game;
+   CXuiControl m_dir_cache;
+   CXuiTextElement m_rompathtitle;
 public:
-	HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+   HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+   HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
 
-	XUI_BEGIN_MSG_MAP()
-		XUI_ON_XM_INIT( OnInit)
-		XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-	XUI_END_MSG_MAP();
+   XUI_BEGIN_MSG_MAP()
+      XUI_ON_XM_INIT( OnInit)
+      XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+   XUI_END_MSG_MAP();
 
-	XUI_IMPLEMENT_CLASS(CSSNESFileBrowser, L"SSNESFileBrowser", XUI_CLASS_SCENE)
+   XUI_IMPLEMENT_CLASS(CSSNESFileBrowser, L"SSNESFileBrowser", XUI_CLASS_SCENE)
 };
 
 class CSSNESCoreBrowser: public CXuiSceneImpl
 {
 protected:
-	CXuiList m_romlist;
-	CXuiControl m_back;
-	CXuiTextElement m_rompathtitle;
+   CXuiList m_romlist;
+   CXuiControl m_back;
+   CXuiTextElement m_rompathtitle;
 public:
-	HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+   HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+   HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
 
-	XUI_BEGIN_MSG_MAP()
-		XUI_ON_XM_INIT( OnInit)
-		XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-	XUI_END_MSG_MAP();
+   XUI_BEGIN_MSG_MAP()
+      XUI_ON_XM_INIT( OnInit)
+      XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+   XUI_END_MSG_MAP();
 
-	XUI_IMPLEMENT_CLASS(CSSNESCoreBrowser, L"SSNESCoreBrowser", XUI_CLASS_SCENE)
+   XUI_IMPLEMENT_CLASS(CSSNESCoreBrowser, L"SSNESCoreBrowser", XUI_CLASS_SCENE)
 };
 
 class CSSNESQuickMenu: public CXuiSceneImpl
 {
 protected:
-	CXuiList m_quickmenulist;
-	CXuiControl m_back;
+   CXuiList m_quickmenulist;
+   CXuiControl m_back;
 public:
-	HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+   HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+   HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
 
-	XUI_BEGIN_MSG_MAP()
-		XUI_ON_XM_INIT( OnInit)
-		XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-	XUI_END_MSG_MAP();
+   XUI_BEGIN_MSG_MAP()
+      XUI_ON_XM_INIT( OnInit)
+      XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+   XUI_END_MSG_MAP();
 
-	XUI_IMPLEMENT_CLASS(CSSNESQuickMenu, L"SSNESQuickMenu", XUI_CLASS_SCENE)
+   XUI_IMPLEMENT_CLASS(CSSNESQuickMenu, L"SSNESQuickMenu", XUI_CLASS_SCENE)
 };
 
 class CSSNESSettings: public CXuiSceneImpl
 {
 protected:
-	CXuiList m_settingslist;
-	CXuiControl m_back;
+   CXuiList m_settingslist;
+   CXuiControl m_back;
 public:
-	HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-	HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+   HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+   HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
 
-	XUI_BEGIN_MSG_MAP()
-		XUI_ON_XM_INIT( OnInit)
-		XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-	XUI_END_MSG_MAP();
+   XUI_BEGIN_MSG_MAP()
+      XUI_ON_XM_INIT( OnInit)
+      XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+   XUI_END_MSG_MAP();
 
-	XUI_IMPLEMENT_CLASS(CSSNESSettings, L"SSNESSettings", XUI_CLASS_SCENE)
+   XUI_IMPLEMENT_CLASS(CSSNESSettings, L"SSNESSettings", XUI_CLASS_SCENE)
 };
 
 int menu_init (void);
