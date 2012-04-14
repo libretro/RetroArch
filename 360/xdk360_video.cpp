@@ -360,29 +360,29 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    ID3DXBuffer* pErrorMsg = NULL;
 
    ret = D3DXCompileShaderFromFile(
-	   g_settings.video.cg_shader_path,	//filepath
-	   NULL,						//macros
-	   NULL,						//includes
-	   "main_vertex",				// main function
-	   "vs_2_0",					// shader profile
-	   0,							// flags
-	   &pShaderCodeV,				// compiled operations
-	   &pErrorMsg,					// errors
-	   NULL);	 // constants
+      g_settings.video.cg_shader_path,      //filepath
+      NULL,                                 //macros
+      NULL,                                 //includes
+      "main_vertex",                        // main function
+      "vs_2_0",                             // shader profile
+      0,                                    // flags
+      &pShaderCodeV,                        // compiled operations
+      &pErrorMsg,                           // errors
+      NULL);                                // constants
 
    if (SUCCEEDED(ret))
    {
       SSNES_LOG("Vertex shader program from [%s] successfully compiled.\n", "game:\\media\\shaders\\stock.cg");
       ret = D3DXCompileShaderFromFile(
-		      g_settings.video.cg_shader_path,			//filepath
-		      NULL,						//macros
-		      NULL,						//includes
-		      "main_fragment",					// main function
-		      "ps_2_0",						// shader profile
-		      0,						// flags
-		      &pShaderCodeP,					// compiled operations
-		      &pErrorMsg,					// errors
-		      NULL); 						// constants
+         g_settings.video.cg_shader_path,   //filepath
+         NULL,                              //macros
+         NULL,                              //includes
+         "main_fragment",                   // main function
+         "ps_2_0",                          // shader profile
+         0,                                 // flags
+         &pShaderCodeP,                     // compiled operations
+         &pErrorMsg,                        // errors
+         NULL);                             // constants
    }
 
    if (FAILED(ret))
@@ -476,10 +476,10 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
       float tex_h = height / 512.0f;
 	  
       const DrawVerticeFormats verts[] = {
-	      { -1.0f, -1.0f, 0.0f,  tex_h },
-	      {  1.0f, -1.0f, tex_w, tex_h },
-	      { -1.0f,  1.0f, 0.0f,  0.0f },
-	      {  1.0f,  1.0f, tex_w, 0.0f },
+         { -1.0f, -1.0f, 0.0f,  tex_h },
+	 {  1.0f, -1.0f, tex_w, tex_h },
+	 { -1.0f,  1.0f, 0.0f,  0.0f },
+	 {  1.0f,  1.0f, tex_w, 0.0f },
       };
 
       void *verts_ptr = (BYTE*)D3DVertexBuffer_Lock(vid->vertex_buf, 0, 0, 0);
@@ -515,7 +515,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 
    D3DDevice_SetVertexDeclaration(vid->xdk360_render_device, vid->pVertexDecl);
    D3DDevice_SetStreamSource_Inline(vid->xdk360_render_device, 0, vid->vertex_buf, 0, 
-	   sizeof(DrawVerticeFormats));
+      sizeof(DrawVerticeFormats));
 
    D3DDevice_DrawVertices(vid->xdk360_render_device, D3DPT_TRIANGLESTRIP, 0, D3DVERTEXCOUNT(D3DPT_TRIANGLESTRIP, 2));
    if (msg)
@@ -601,7 +601,7 @@ void xdk360_video_init(void)
    g_first_msg = true;
 
    HRESULT hr = xdk360_console_init("game:\\media\\Arial_12.xpr",
-		   0xff000000, 0xffffffff );
+      0xff000000, 0xffffffff );
 
    if(FAILED(hr))
    {

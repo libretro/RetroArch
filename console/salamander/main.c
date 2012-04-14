@@ -105,34 +105,34 @@ static void find_and_set_first_file(void)
    if(first_executable)
    {
 #ifdef _XBOX
-	   //Check if it's SSNES Salamander itself - if so, first_executable needs to
-	   //be overridden
-	   char fname_tmp[MAX_PATH_LENGTH];
+      //Check if it's SSNES Salamander itself - if so, first_executable needs to
+      //be overridden
+      char fname_tmp[MAX_PATH_LENGTH];
 
-	   fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
+      fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
 
-	   if(strcmp(fname_tmp, "SSNES-Salamander.xex") == 0)
-	   {
-		   SSNES_WARN("First entry is SSNES Salamander itself, increment entry by one and check if it exists.\n");
-		   first_executable = dir_list[1];
-		   fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
+      if(strcmp(fname_tmp, "SSNES-Salamander.xex") == 0)
+      {
+         SSNES_WARN("First entry is SSNES Salamander itself, increment entry by one and check if it exists.\n");
+	 first_executable = dir_list[1];
+	 fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
 
-		   if(!first_executable)
-		   {
-			   SSNES_WARN("There is no second entry - no choice but to boot SSNES Salamander\n");
-			   first_executable = dir_list[0];
-			   fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
-		   }
-	   }
+	 if(!first_executable)
+	 {
+            SSNES_WARN("There is no second entry - no choice but to boot SSNES Salamander\n");
+	    first_executable = dir_list[0];
+	    fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
+	 }
+      }
 
-	   snprintf(first_executable, sizeof(first_executable), "game:\\%s", fname_tmp);
+      snprintf(first_executable, sizeof(first_executable), "game:\\%s", fname_tmp);
 #endif
-	   SSNES_LOG("Start first entry in libretro cores dir: [%s].\n", first_executable);
-	   strlcpy(libretro_path, first_executable, sizeof(libretro_path));
+      SSNES_LOG("Start first entry in libretro cores dir: [%s].\n", first_executable);
+      strlcpy(libretro_path, first_executable, sizeof(libretro_path));
    }
    else
    {
-	   SSNES_ERR("Failed last fallback - SSNES Salamander will exit.\n");
+      SSNES_ERR("Failed last fallback - SSNES Salamander will exit.\n");
    }
 
    dir_list_free(dir_list);

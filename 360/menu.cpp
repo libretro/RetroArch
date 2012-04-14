@@ -26,10 +26,10 @@
 
 #include "../general.h"
 
-CSSNES		app;
+CSSNES        app;
 filebrowser_t browser;
 filebrowser_t tmp_browser;
-char		strbuffer[1024];
+char          strbuffer[1024];
 
 static void return_to_game (void)
 {
@@ -70,7 +70,7 @@ HRESULT CSSNES::UnregisterXuiClasses (void)
 }
 
 static void filebrowser_fetch_directory_entries(const char *path, filebrowser_t * browser, CXuiList * romlist, 
-	CXuiTextElement * rompath_title)
+   CXuiTextElement * rompath_title)
 {
    filebrowser_push_directory(browser, path, true);
 

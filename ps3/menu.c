@@ -200,153 +200,151 @@ static void set_delay_speed(unsigned delaymode)
 
 static void browser_update(filebrowser_t * b)
 {
-	uint64_t state, diff_state, button_was_pressed;
+   uint64_t state, diff_state, button_was_pressed;
 
-	state = cell_pad_input_poll_device(0);
-	diff_state = old_state ^ state;
-	button_was_pressed = old_state & diff_state;
+   state = cell_pad_input_poll_device(0);
+   diff_state = old_state ^ state;
+   button_was_pressed = old_state & diff_state;
 
-	if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
-	{
-		set_delay = DELAY_NONE;
+   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+   {
+      set_delay = DELAY_NONE;
 
-		if (CTRL_LSTICK_DOWN(state))
-		{
-			if(b->currently_selected < b->file_count-1)
-			{
-				FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
+      if (CTRL_LSTICK_DOWN(state))
+      {
+         if(b->currently_selected < b->file_count-1)
+	 {
+            FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
 
-				if(g_console.emulator_initialized)
-					set_delay = DELAY_SMALL;
-				else
-					set_delay = DELAY_SMALLEST;
-			}
-		}
+	    if(g_console.emulator_initialized)
+               set_delay = DELAY_SMALL;
+	    else
+               set_delay = DELAY_SMALLEST;
+	 }
+      }
 
-		if (CTRL_DOWN(state))
-		{
-			if(b->currently_selected < b->file_count-1)
-			{
-				FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
-				if(g_console.emulator_initialized)
-					set_delay = DELAY_SMALL;
-				else
-					set_delay = DELAY_SMALLEST;
-			}
-		}
+      if (CTRL_DOWN(state))
+      {
+         if(b->currently_selected < b->file_count-1)
+	 {
+            FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
+	    if(g_console.emulator_initialized)
+               set_delay = DELAY_SMALL;
+	    else
+               set_delay = DELAY_SMALLEST;
+	 }
+      }
 
-		if (CTRL_LSTICK_UP(state))
-		{
-			if(b->currently_selected > 0)
-			{
-				FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
-				if(g_console.emulator_initialized)
-					set_delay = DELAY_SMALL;
-				else
-					set_delay = DELAY_SMALLEST;
-			}
-		}
+      if (CTRL_LSTICK_UP(state))
+      {
+         if(b->currently_selected > 0)
+	 {
+            FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
+	    if(g_console.emulator_initialized)
+               set_delay = DELAY_SMALL;
+	    else
+               set_delay = DELAY_SMALLEST;
+	 }
+      }
 
-		if (CTRL_UP(state))
-		{
-			if(b->currently_selected > 0)
-			{
-				FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
-				if(g_console.emulator_initialized)
-					set_delay = DELAY_SMALL;
-				else
-					set_delay = DELAY_SMALLEST;
-			}
-		}
+      if (CTRL_UP(state))
+      {
+         if(b->currently_selected > 0)
+	 {
+            FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
+	    if(g_console.emulator_initialized)
+               set_delay = DELAY_SMALL;
+	    else
+               set_delay = DELAY_SMALLEST;
+	 }
+      }
 
-		if (CTRL_RIGHT(state))
-		{
-			b->currently_selected = (MIN(b->currently_selected + 5, b->file_count-1));
+      if (CTRL_RIGHT(state))
+      {
+         b->currently_selected = (MIN(b->currently_selected + 5, b->file_count-1));
 
-			if(g_console.emulator_initialized)
-				set_delay = DELAY_MEDIUM;
-			else
-				set_delay = DELAY_SMALL;
-		}
+	 if(g_console.emulator_initialized)
+            set_delay = DELAY_MEDIUM;
+	 else
+            set_delay = DELAY_SMALL;
+      }
 
-		if (CTRL_LSTICK_RIGHT(state))
-		{
-			b->currently_selected = (MIN(b->currently_selected + 5, b->file_count-1));
-			if(g_console.emulator_initialized)
-				set_delay = DELAY_SMALL;
-			else
-				set_delay = DELAY_SMALLEST;
-		}
+      if (CTRL_LSTICK_RIGHT(state))
+      {
+         b->currently_selected = (MIN(b->currently_selected + 5, b->file_count-1));
+	 if(g_console.emulator_initialized)
+            set_delay = DELAY_SMALL;
+	 else
+            set_delay = DELAY_SMALLEST;
+      }
 
-		if (CTRL_LEFT(state))
-		{
-			if (b->currently_selected <= 5)
-				b->currently_selected = 0;
-			else
-				b->currently_selected -= 5;
+      if (CTRL_LEFT(state))
+      {
+         if (b->currently_selected <= 5)
+            b->currently_selected = 0;
+	 else
+            b->currently_selected -= 5;
 
-			if(g_console.emulator_initialized)
-				set_delay = DELAY_MEDIUM;
-			else
-				set_delay = DELAY_SMALL;
-		}
+	 if(g_console.emulator_initialized)
+            set_delay = DELAY_MEDIUM;
+	 else
+            set_delay = DELAY_SMALL;
+      }
 
-		if (CTRL_LSTICK_LEFT(state))
-		{
-			if (b->currently_selected <= 5)
-				b->currently_selected = 0;
-			else
-				b->currently_selected -= 5;
+      if (CTRL_LSTICK_LEFT(state))
+      {
+         if (b->currently_selected <= 5)
+            b->currently_selected = 0;
+	 else
+            b->currently_selected -= 5;
 
-			if(g_console.emulator_initialized)
-				set_delay = DELAY_SMALL;
-			else
-				set_delay = DELAY_SMALLEST;
-		}
+	 if(g_console.emulator_initialized)
+            set_delay = DELAY_SMALL;
+	 else
+            set_delay = DELAY_SMALLEST;
+      }
 
-		if (CTRL_R1(state))
-		{
-			b->currently_selected = (MIN(b->currently_selected + NUM_ENTRY_PER_PAGE, b->file_count-1));
-			set_delay = DELAY_MEDIUM;
-		}
+      if (CTRL_R1(state))
+      {
+         b->currently_selected = (MIN(b->currently_selected + NUM_ENTRY_PER_PAGE, b->file_count-1));
+	 set_delay = DELAY_MEDIUM;
+      }
 
-		if (CTRL_R2(state))
-		{
-			b->currently_selected = (MIN(b->currently_selected + 50, b->file_count-1));
-			if(!b->currently_selected)
-				b->currently_selected = 0;
-			set_delay = DELAY_SMALL;
-		}
+      if (CTRL_R2(state))
+      {
+         b->currently_selected = (MIN(b->currently_selected + 50, b->file_count-1));
+	 if(!b->currently_selected)
+            b->currently_selected = 0;
+	 set_delay = DELAY_SMALL;
+      }
 
-		if (CTRL_L2(state))
-		{
-			if (b->currently_selected <= 50)
-				b->currently_selected= 0;
-			else
-				b->currently_selected -= 50;
+      if (CTRL_L2(state))
+      {
+         if (b->currently_selected <= 50)
+            b->currently_selected= 0;
+	 else
+            b->currently_selected -= 50;
 
-			set_delay = DELAY_SMALL;
-		}
+	 set_delay = DELAY_SMALL;
+      }
 
-		if (CTRL_L1(state))
-		{
-			if (b->currently_selected <= NUM_ENTRY_PER_PAGE)
-				b->currently_selected= 0;
-			else
-				b->currently_selected -= NUM_ENTRY_PER_PAGE;
+      if (CTRL_L1(state))
+      {
+         if (b->currently_selected <= NUM_ENTRY_PER_PAGE)
+            b->currently_selected= 0;
+	 else
+            b->currently_selected -= NUM_ENTRY_PER_PAGE;
 
-			set_delay = DELAY_MEDIUM;
-		}
+	 set_delay = DELAY_MEDIUM;
+      }
 
-		if (CTRL_CIRCLE(button_was_pressed))
-		{
-			filebrowser_pop_directory(b);
-		}
+      if (CTRL_CIRCLE(button_was_pressed))
+      {
+         filebrowser_pop_directory(b);
+      }
 
-
-
-		old_state = state;
-	}
+      old_state = state;
+   }
 }
 
 static void browser_render(filebrowser_t * b)
@@ -374,389 +372,389 @@ static void browser_render(filebrowser_t * b)
 
 static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 {
-	switch(currentsetting)
-	{
-		case SETTING_CHANGE_RESOLUTION:
-			if(g_console.initial_resolution_id == g_console.supported_resolutions[g_console.current_resolution_index])
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
+   switch(currentsetting)
+   {
+	   case SETTING_CHANGE_RESOLUTION:
+		   if(g_console.initial_resolution_id == g_console.supported_resolutions[g_console.current_resolution_index])
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
 
-			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), ps3_get_resolution_label(g_console.supported_resolutions[g_console.current_resolution_index]));
-			break;
-		case SETTING_SHADER_PRESETS:
-			{
-				char fname[MAX_PATH_LENGTH];
-				if(g_console.cgp_path == DEFAULT_PRESET_FILE)
-					menu_obj->items[currentsetting].text_color = GREEN;
-				else
-					menu_obj->items[currentsetting].text_color = ORANGE;
-				fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), fname);
-			}
-			break;
-		case SETTING_SHADER:
-			{
-				char fname[MAX_PATH_LENGTH];
-				fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
+		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), ps3_get_resolution_label(g_console.supported_resolutions[g_console.current_resolution_index]));
+		   break;
+	   case SETTING_SHADER_PRESETS:
+		   {
+			   char fname[MAX_PATH_LENGTH];
+			   if(g_console.cgp_path == DEFAULT_PRESET_FILE)
+				   menu_obj->items[currentsetting].text_color = GREEN;
+			   else
+				   menu_obj->items[currentsetting].text_color = ORANGE;
+			   fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), fname);
+		   }
+		   break;
+	   case SETTING_SHADER:
+		   {
+			   char fname[MAX_PATH_LENGTH];
+			   fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
-				if(strcmp(g_settings.video.cg_shader_path,DEFAULT_SHADER_FILE) == 0)
-					menu_obj->items[currentsetting].text_color = GREEN;
-				else
-					menu_obj->items[currentsetting].text_color = ORANGE;
-			}
-			break;
-		case SETTING_SHADER_2:
-			{
-				char fname[MAX_PATH_LENGTH];
-				fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
+			   if(strcmp(g_settings.video.cg_shader_path,DEFAULT_SHADER_FILE) == 0)
+				   menu_obj->items[currentsetting].text_color = GREEN;
+			   else
+				   menu_obj->items[currentsetting].text_color = ORANGE;
+		   }
+		   break;
+	   case SETTING_SHADER_2:
+		   {
+			   char fname[MAX_PATH_LENGTH];
+			   fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
-				if(strcmp(g_settings.video.second_pass_shader,DEFAULT_SHADER_FILE) == 0)
-					menu_obj->items[currentsetting].text_color = GREEN;
-				else
-					menu_obj->items[currentsetting].text_color = ORANGE;
-			}
-			break;
-		case SETTING_FONT_SIZE:
-			if(g_console.menu_font_size == 1.0f)
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%f", g_console.menu_font_size);
-			break;
-		case SETTING_KEEP_ASPECT_RATIO:
-			if(g_console.aspect_ratio_index == ASPECT_RATIO_4_3)
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), aspectratio_lut[g_console.aspect_ratio_index].name);
-			break;
-		case SETTING_HW_TEXTURE_FILTER:
-			if(g_settings.video.smooth)
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Linear interpolation");
-				menu_obj->items[currentsetting].text_color = GREEN;
-			}
-			else
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Point filtering");
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			}
-			break;
-		case SETTING_HW_TEXTURE_FILTER_2:
-			if(g_settings.video.second_pass_smooth)
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Linear interpolation");
-				menu_obj->items[currentsetting].text_color = GREEN;
-			}
-			else
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Point filtering");
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			}
-			break;
-		case SETTING_SCALE_ENABLED:
-			if(g_settings.video.render_to_texture)
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
-				menu_obj->items[currentsetting].text_color = GREEN;
-			}
-			else
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			}
-			break;
-		case SETTING_SCALE_FACTOR:
-			if(g_settings.video.fbo_scale_x == 2.0f)
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
+			   if(strcmp(g_settings.video.second_pass_shader,DEFAULT_SHADER_FILE) == 0)
+				   menu_obj->items[currentsetting].text_color = GREEN;
+			   else
+				   menu_obj->items[currentsetting].text_color = ORANGE;
+		   }
+		   break;
+	   case SETTING_FONT_SIZE:
+		   if(g_console.menu_font_size == 1.0f)
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%f", g_console.menu_font_size);
+		   break;
+	   case SETTING_KEEP_ASPECT_RATIO:
+		   if(g_console.aspect_ratio_index == ASPECT_RATIO_4_3)
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), aspectratio_lut[g_console.aspect_ratio_index].name);
+		   break;
+	   case SETTING_HW_TEXTURE_FILTER:
+		   if(g_settings.video.smooth)
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Linear interpolation");
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   }
+		   else
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Point filtering");
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   }
+		   break;
+	   case SETTING_HW_TEXTURE_FILTER_2:
+		   if(g_settings.video.second_pass_smooth)
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Linear interpolation");
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   }
+		   else
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Point filtering");
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   }
+		   break;
+	   case SETTING_SCALE_ENABLED:
+		   if(g_settings.video.render_to_texture)
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   }
+		   else
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   }
+		   break;
+	   case SETTING_SCALE_FACTOR:
+		   if(g_settings.video.fbo_scale_x == 2.0f)
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
 
-			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
-			snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Custom Scaling Factor] is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
-			break;
-		case SETTING_HW_OVERSCAN_AMOUNT:
-			if(g_console.overscan_amount == 0.0f)
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
+		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
+		   snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Custom Scaling Factor] is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
+		   break;
+	   case SETTING_HW_OVERSCAN_AMOUNT:
+		   if(g_console.overscan_amount == 0.0f)
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
 
-			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%f", g_console.overscan_amount);
-			break;
-		case SETTING_THROTTLE_MODE:
-			if(g_console.throttle_enable)
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
-				menu_obj->items[currentsetting].text_color = GREEN;
-			}
-			else
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			}
-			break;
-		case SETTING_TRIPLE_BUFFERING:
-			if(g_console.triple_buffering_enable)
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
-				menu_obj->items[currentsetting].text_color = GREEN;
-			}
-			else
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			}
-			break;
-		case SETTING_ENABLE_SCREENSHOTS:
-			if(g_console.screenshots_enable)
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
-				menu_obj->items[currentsetting].text_color = GREEN;
-			}
-			else
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			}
-			break;
-		case SETTING_SAVE_SHADER_PRESET:
-			if(menu_obj->selected == currentsetting)
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			break;
-		case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
-			break;
-		case SETTING_DEFAULT_VIDEO_ALL:
-			break;
-		case SETTING_SOUND_MODE:
-			switch(g_console.sound_mode)
-			{
-				case SOUND_MODE_NORMAL:
-					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Sound Output] is set to 'Normal' - normal audio output will be\nused.");
-					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Normal");
-					menu_obj->items[currentsetting].text_color = GREEN;
-					break;
-				case SOUND_MODE_RSOUND:
-					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Sound Output] is set to 'RSound' - the sound will be streamed over the\n network to the RSound audio server." );
-					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "RSound");
-					menu_obj->items[currentsetting].text_color = ORANGE;
-					break;
-				case SOUND_MODE_HEADSET:
-					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Sound Output] is set to 'USB/Bluetooth Headset' - sound will\n be output through the headset");
-					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "USB/Bluetooth Headset");
-					menu_obj->items[currentsetting].text_color = ORANGE;
-					break;
-			}
-			break;
-		case SETTING_RSOUND_SERVER_IP_ADDRESS:
-			if(strcmp(g_console.rsound_ip_address,"0.0.0.0") == 0)
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
+		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%f", g_console.overscan_amount);
+		   break;
+	   case SETTING_THROTTLE_MODE:
+		   if(g_console.throttle_enable)
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   }
+		   else
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   }
+		   break;
+	   case SETTING_TRIPLE_BUFFERING:
+		   if(g_console.triple_buffering_enable)
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   }
+		   else
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   }
+		   break;
+	   case SETTING_ENABLE_SCREENSHOTS:
+		   if(g_console.screenshots_enable)
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   }
+		   else
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   }
+		   break;
+	   case SETTING_SAVE_SHADER_PRESET:
+		   if(menu_obj->selected == currentsetting)
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   break;
+	   case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
+		   break;
+	   case SETTING_DEFAULT_VIDEO_ALL:
+		   break;
+	   case SETTING_SOUND_MODE:
+		   switch(g_console.sound_mode)
+		   {
+			   case SOUND_MODE_NORMAL:
+				   snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Sound Output] is set to 'Normal' - normal audio output will be\nused.");
+				   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Normal");
+				   menu_obj->items[currentsetting].text_color = GREEN;
+				   break;
+			   case SOUND_MODE_RSOUND:
+				   snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Sound Output] is set to 'RSound' - the sound will be streamed over the\n network to the RSound audio server." );
+				   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "RSound");
+				   menu_obj->items[currentsetting].text_color = ORANGE;
+				   break;
+			   case SOUND_MODE_HEADSET:
+				   snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Sound Output] is set to 'USB/Bluetooth Headset' - sound will\n be output through the headset");
+				   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "USB/Bluetooth Headset");
+				   menu_obj->items[currentsetting].text_color = ORANGE;
+				   break;
+		   }
+		   break;
+	   case SETTING_RSOUND_SERVER_IP_ADDRESS:
+		   if(strcmp(g_console.rsound_ip_address,"0.0.0.0") == 0)
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
 
-			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.rsound_ip_address);
-			break;
-		case SETTING_DEFAULT_AUDIO_ALL:
-			break;
-		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-			if(g_extern.state_slot == 0)
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
+		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.rsound_ip_address);
+		   break;
+	   case SETTING_DEFAULT_AUDIO_ALL:
+		   break;
+	   case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
+		   if(g_extern.state_slot == 0)
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
 
-			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%d", g_extern.state_slot);
-			break;
-		/* emu-specific */
-		case SETTING_EMU_DEFAULT_ALL:
-			if(menu_obj->selected == currentsetting)
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			break;
-		case SETTING_EMU_REWIND_ENABLED:
-			if(g_settings.rewind_enable)
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
-				menu_obj->items[currentsetting].text_color = ORANGE;
-				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Rewind] feature is set to 'ON'. You can rewind the game in real-time.");
-			}
-			else
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
-				menu_obj->items[currentsetting].text_color = GREEN;
-				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Rewind] feature is set to 'OFF'.");
-			}
-			break;
-		case SETTING_SSNES_DEFAULT_EMU:
-			{
-				char fname[MAX_PATH_LENGTH];
-				fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
+		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%d", g_extern.state_slot);
+		   break;
+		   /* emu-specific */
+	   case SETTING_EMU_DEFAULT_ALL:
+		   if(menu_obj->selected == currentsetting)
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   break;
+	   case SETTING_EMU_REWIND_ENABLED:
+		   if(g_settings.rewind_enable)
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+			   snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Rewind] feature is set to 'ON'. You can rewind the game in real-time.");
+		   }
+		   else
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+			   menu_obj->items[currentsetting].text_color = GREEN;
+			   snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Rewind] feature is set to 'OFF'.");
+		   }
+		   break;
+	   case SETTING_SSNES_DEFAULT_EMU:
+		   {
+			   char fname[MAX_PATH_LENGTH];
+			   fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
-				menu_obj->items[currentsetting].text_color = GREEN;
-			}
-			break;
-		case SETTING_EMU_AUDIO_MUTE:
-			if(g_extern.audio_data.mute)
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
-				menu_obj->items[currentsetting].text_color = ORANGE;
-				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Audio Mute] feature is set to 'ON'. The game audio will be muted.");
-			}
-			else
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
-				menu_obj->items[currentsetting].text_color = GREEN;
-				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Audio Mute] feature is set to 'OFF'.");
-			}
-			break;
-		case SETTING_ENABLE_CUSTOM_BGM:
-			if(g_console.custom_bgm_enable)
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
-				menu_obj->items[currentsetting].text_color = GREEN;
-			}
-			else
-			{
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			}
-			break;
-		case SETTING_EMU_VIDEO_DEFAULT_ALL:
-			if(menu_obj->selected == currentsetting)
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			break;
-		case SETTING_EMU_AUDIO_DEFAULT_ALL:
-			if(menu_obj->selected == currentsetting)
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			break;
-		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-			if(!(strcmp(g_console.default_rom_startup_dir, "/")))
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   }
+		   break;
+	   case SETTING_EMU_AUDIO_MUTE:
+		   if(g_extern.audio_data.mute)
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+			   snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Audio Mute] feature is set to 'ON'. The game audio will be muted.");
+		   }
+		   else
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+			   menu_obj->items[currentsetting].text_color = GREEN;
+			   snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Audio Mute] feature is set to 'OFF'.");
+		   }
+		   break;
+	   case SETTING_ENABLE_CUSTOM_BGM:
+		   if(g_console.custom_bgm_enable)
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   }
+		   else
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   }
+		   break;
+	   case SETTING_EMU_VIDEO_DEFAULT_ALL:
+		   if(menu_obj->selected == currentsetting)
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   break;
+	   case SETTING_EMU_AUDIO_DEFAULT_ALL:
+		   if(menu_obj->selected == currentsetting)
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   break;
+	   case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
+		   if(!(strcmp(g_console.default_rom_startup_dir, "/")))
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
 
-			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.default_rom_startup_dir);
-			break;
-		case SETTING_PATH_SAVESTATES_DIRECTORY:
-			if(!(strcmp(g_console.default_savestate_dir, usrDirPath)))
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
+		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.default_rom_startup_dir);
+		   break;
+	   case SETTING_PATH_SAVESTATES_DIRECTORY:
+		   if(!(strcmp(g_console.default_savestate_dir, usrDirPath)))
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
 
-			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.default_savestate_dir);
-			break;
-		case SETTING_PATH_SRAM_DIRECTORY:
-			if(!(strcmp(g_console.default_sram_dir, usrDirPath)))
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
+		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.default_savestate_dir);
+		   break;
+	   case SETTING_PATH_SRAM_DIRECTORY:
+		   if(!(strcmp(g_console.default_sram_dir, usrDirPath)))
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
 
-			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.default_sram_dir);
-			break;
-		case SETTING_PATH_CHEATS:
-			if(!(strcmp(g_settings.cheat_database, usrDirPath)))
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
+		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.default_sram_dir);
+		   break;
+	   case SETTING_PATH_CHEATS:
+		   if(!(strcmp(g_settings.cheat_database, usrDirPath)))
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
 
-			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_settings.cheat_database);
-			break;
-		case SETTING_ENABLE_SRAM_PATH:
-			if(g_console.default_sram_dir_enable)
-			{
-				menu_obj->items[currentsetting].text_color = ORANGE;
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
-			}
-			else
-			{
-				menu_obj->items[currentsetting].text_color = GREEN;
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
-			}
+		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_settings.cheat_database);
+		   break;
+	   case SETTING_ENABLE_SRAM_PATH:
+		   if(g_console.default_sram_dir_enable)
+		   {
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+		   }
+		   else
+		   {
+			   menu_obj->items[currentsetting].text_color = GREEN;
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+		   }
 
-			break;
-		case SETTING_ENABLE_STATE_PATH:
-			if(g_console.default_savestate_dir_enable)
-			{
-				menu_obj->items[currentsetting].text_color = ORANGE;
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
-			}
-			else
-			{
-				menu_obj->items[currentsetting].text_color = GREEN;
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
-			}
-			break;
-		case SETTING_PATH_DEFAULT_ALL:
-			if(menu_obj->selected == currentsetting)
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			break;
-		case SETTING_CONTROLS_SCHEME:
-			if(strcmp(g_console.input_cfg_path,"") == 0)
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
+		   break;
+	   case SETTING_ENABLE_STATE_PATH:
+		   if(g_console.default_savestate_dir_enable)
+		   {
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+		   }
+		   else
+		   {
+			   menu_obj->items[currentsetting].text_color = GREEN;
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+		   }
+		   break;
+	   case SETTING_PATH_DEFAULT_ALL:
+		   if(menu_obj->selected == currentsetting)
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   break;
+	   case SETTING_CONTROLS_SCHEME:
+		   if(strcmp(g_console.input_cfg_path,"") == 0)
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
 
-			snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - Input scheme preset [%s] is selected.", g_console.input_cfg_path);
-			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.input_cfg_path);
-			break;
-		case SETTING_CONTROLS_NUMBER:
-			if(currently_selected_controller_menu == 0)
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
+		   snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - Input scheme preset [%s] is selected.", g_console.input_cfg_path);
+		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.input_cfg_path);
+		   break;
+	   case SETTING_CONTROLS_NUMBER:
+		   if(currently_selected_controller_menu == 0)
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
 
-			snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "Controller %d is currently selected.", currently_selected_controller_menu+1);
-			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%d", currently_selected_controller_menu+1);
-			break;
-			case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
-			case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
-			case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT:
-			case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START:
-			case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
-			case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN:
-			case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT:
-			case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT:
-			case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A:
-			case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X:
-			case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L:
-			case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
-				{
-				if(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey == ssnes_default_keybind_lut[currentsetting-FIRST_CONTROL_BIND])
-					menu_obj->items[currentsetting].text_color = GREEN;
-				else
-					menu_obj->items[currentsetting].text_color = ORANGE;
-				const char * value = ssnes_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey);
-				snprintf(menu_obj->items[currentsetting].text, sizeof(menu_obj->items[currentsetting].text), ssnes_default_libretro_keybind_name_lut[currentsetting-(FIRST_CONTROL_BIND)]);
-				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [%s] on the PS3 controller is mapped to action:\n[%s].", menu_obj->items[currentsetting].text, value);
-				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), value);
-				}
-			break;
-		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-			if(menu_obj->selected == currentsetting)
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			break;
-		case SETTING_CONTROLS_DEFAULT_ALL:
-			if(menu_obj->selected == currentsetting)
-				menu_obj->items[currentsetting].text_color = GREEN;
-			else
-				menu_obj->items[currentsetting].text_color = ORANGE;
-			break;
-		default:
-			break;
-	}
+		   snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "Controller %d is currently selected.", currently_selected_controller_menu+1);
+		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%d", currently_selected_controller_menu+1);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT:
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START:
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN:
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT:
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT:
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A:
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X:
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L:
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
+		   {
+			   if(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey == ssnes_default_keybind_lut[currentsetting-FIRST_CONTROL_BIND])
+				   menu_obj->items[currentsetting].text_color = GREEN;
+			   else
+				   menu_obj->items[currentsetting].text_color = ORANGE;
+			   const char * value = ssnes_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey);
+			   snprintf(menu_obj->items[currentsetting].text, sizeof(menu_obj->items[currentsetting].text), ssnes_default_libretro_keybind_name_lut[currentsetting-(FIRST_CONTROL_BIND)]);
+			   snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [%s] on the PS3 controller is mapped to action:\n[%s].", menu_obj->items[currentsetting].text, value);
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), value);
+		   }
+		   break;
+	   case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
+		   if(menu_obj->selected == currentsetting)
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   break;
+	   case SETTING_CONTROLS_DEFAULT_ALL:
+		   if(menu_obj->selected == currentsetting)
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   else
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   break;
+	   default:
+		   break;
+   }
 }
 
 static void menu_init_settings_pages(menu * menu_obj)
@@ -821,246 +819,246 @@ static void apply_scaling (unsigned init_mode)
 
 static void select_file(uint32_t menu_id)
 {
-	char extensions[256], title[256], object[256], comment[256], dir_path[MAX_PATH_LENGTH],
-	path[MAX_PATH_LENGTH], *separatorslash;
-	uint64_t state, diff_state, button_was_pressed;
+   char extensions[256], title[256], object[256], comment[256], dir_path[MAX_PATH_LENGTH],
+      path[MAX_PATH_LENGTH], *separatorslash;
+   uint64_t state, diff_state, button_was_pressed;
 
-	state = cell_pad_input_poll_device(0);
-	diff_state = old_state ^ state;
-	button_was_pressed = old_state & diff_state;
+   state = cell_pad_input_poll_device(0);
+   diff_state = old_state ^ state;
+   button_was_pressed = old_state & diff_state;
 
-	switch(menu_id)
-	{
-		case SHADER_CHOICE:
-			strncpy(dir_path, SHADERS_DIR_PATH, sizeof(dir_path));
-			strncpy(extensions, "cg|CG", sizeof(extensions));
-			strncpy(title, "SHADER SELECTION", sizeof(title));
-			strncpy(object, "Shader", sizeof(object));
-			strncpy(comment, "INFO - Select a shader from the menu by pressing the X button.", sizeof(comment));
+   switch(menu_id)
+   {
+      case SHADER_CHOICE:
+         strncpy(dir_path, SHADERS_DIR_PATH, sizeof(dir_path));
+	 strncpy(extensions, "cg|CG", sizeof(extensions));
+	 strncpy(title, "SHADER SELECTION", sizeof(title));
+	 strncpy(object, "Shader", sizeof(object));
+	 strncpy(comment, "INFO - Select a shader from the menu by pressing the X button.", sizeof(comment));
+	 break;
+      case PRESET_CHOICE:
+	 strncpy(dir_path, PRESETS_DIR_PATH, sizeof(dir_path));
+	 strncpy(extensions, "cgp|CGP", sizeof(extensions));
+	 strncpy(title, "SHADER PRESETS SELECTION", sizeof(title));
+	 strncpy(object, "Shader", sizeof(object));
+	 strncpy(object, "Shader preset", sizeof(object));
+	 strncpy(comment, "INFO - Select a shader preset from the menu by pressing the X button. ", sizeof(comment));
+	 break;
+      case INPUT_PRESET_CHOICE:
+	 strncpy(dir_path, INPUT_PRESETS_DIR_PATH, sizeof(dir_path));
+	 strncpy(extensions, "cfg|CFG", sizeof(extensions));
+	 strncpy(title, "INPUT PRESETS SELECTION", sizeof(title));
+	 strncpy(object, "Input", sizeof(object));
+	 strncpy(object, "Input preset", sizeof(object));
+	 strncpy(comment, "INFO - Select an input preset from the menu by pressing the X button. ", sizeof(comment));
+	 break;
+      case BORDER_CHOICE:
+	 strncpy(dir_path, BORDERS_DIR_PATH, sizeof(dir_path));
+	 strncpy(extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(extensions));
+	 strncpy(title, "BORDER SELECTION", sizeof(title));
+	 strncpy(object, "Border", sizeof(object));
+	 strncpy(object, "Border image file", sizeof(object));
+	 strncpy(comment, "INFO - Select a border image file from the menu by pressing the X button. ", sizeof(comment));
+	 break;
+      case LIBSNES_CHOICE:
+	 strncpy(dir_path, LIBSNES_DIR_PATH, sizeof(dir_path));
+	 strncpy(extensions, "self|SELF|bin|BIN", sizeof(extensions));
+	 strncpy(title, "LIBSNES CORE SELECTION", sizeof(title));
+	 strncpy(object, "Libretro", sizeof(object));
+	 strncpy(object, "Libretro core library", sizeof(object));
+	 strncpy(comment, "INFO - Select a Libretro core library from the menu by pressing the X button. ", sizeof(comment));
+	 break;
+   }
+
+   if(set_initial_dir_tmpbrowser)
+   {
+      filebrowser_new(&tmpBrowser, dir_path, extensions);
+      set_initial_dir_tmpbrowser = false;
+   }
+
+   browser_update(&tmpBrowser);
+
+   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+   {
+      if (CTRL_START(button_was_pressed))
+         filebrowser_reset_start_directory(&tmpBrowser, "/", extensions);
+
+      if (CTRL_CROSS(button_was_pressed))
+      {
+         if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
+	 {
+            /*if 'filename' is in fact '..' - then pop back directory instead of 
+	      adding '..' to filename path */
+            if(tmpBrowser.currently_selected == 0)
+	    {
+               filebrowser_pop_directory(&tmpBrowser);
+	    }
+	    else
+	    {
+               separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
+	       snprintf(path, sizeof(path), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+	       filebrowser_push_directory(&tmpBrowser, path, true);
+	    }
+	 }
+	 else if (FILEBROWSER_IS_CURRENT_A_FILE(tmpBrowser))
+	 {
+            snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+	    printf("path: %s\n", path);
+
+	    switch(menu_id)
+	    {
+               case SHADER_CHOICE:
+                  gl_cg_load_shader(set_shader+1, path);
+		  switch(set_shader+1)
+		  {
+                     case 1:
+                        strlcpy(g_settings.video.cg_shader_path, path, sizeof(g_settings.video.cg_shader_path));
 			break;
-		case PRESET_CHOICE:
-			strncpy(dir_path, PRESETS_DIR_PATH, sizeof(dir_path));
-			strncpy(extensions, "cgp|CGP", sizeof(extensions));
-			strncpy(title, "SHADER PRESETS SELECTION", sizeof(title));
-			strncpy(object, "Shader", sizeof(object));
-			strncpy(object, "Shader preset", sizeof(object));
-                        strncpy(comment, "INFO - Select a shader preset from the menu by pressing the X button. ", sizeof(comment));
+		     case 2:
+			strlcpy(g_settings.video.second_pass_shader, path, sizeof(g_settings.video.second_pass_shader));
 			break;
-		case INPUT_PRESET_CHOICE:
-			strncpy(dir_path, INPUT_PRESETS_DIR_PATH, sizeof(dir_path));
-			strncpy(extensions, "cfg|CFG", sizeof(extensions));
-			strncpy(title, "INPUT PRESETS SELECTION", sizeof(title));
-			strncpy(object, "Input", sizeof(object));
-			strncpy(object, "Input preset", sizeof(object));
-                        strncpy(comment, "INFO - Select an input preset from the menu by pressing the X button. ", sizeof(comment));
-			break;
-		case BORDER_CHOICE:
-			strncpy(dir_path, BORDERS_DIR_PATH, sizeof(dir_path));
-			strncpy(extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(extensions));
-			strncpy(title, "BORDER SELECTION", sizeof(title));
-			strncpy(object, "Border", sizeof(object));
-			strncpy(object, "Border image file", sizeof(object));
-			strncpy(comment, "INFO - Select a border image file from the menu by pressing the X button. ", sizeof(comment));
-			break;
-		case LIBSNES_CHOICE:
-			strncpy(dir_path, LIBSNES_DIR_PATH, sizeof(dir_path));
-			strncpy(extensions, "self|SELF|bin|BIN", sizeof(extensions));
-			strncpy(title, "LIBSNES CORE SELECTION", sizeof(title));
-			strncpy(object, "Libretro", sizeof(object));
-			strncpy(object, "Libretro core library", sizeof(object));
-			strncpy(comment, "INFO - Select a Libretro core library from the menu by pressing the X button. ", sizeof(comment));
-			break;
-	}
+		  }
+		  menu_reinit_settings();
+		  break;
+	       case PRESET_CHOICE:
+		  strlcpy(g_console.cgp_path, path, sizeof(g_console.cgp_path));
+		  apply_scaling(FBO_DEINIT);
+		  gl_cg_reinit(path);
+		  apply_scaling(FBO_INIT);
+		  break;
+	       case INPUT_PRESET_CHOICE:
+		  strlcpy(g_console.input_cfg_path, path, sizeof(g_console.input_cfg_path));
+		  config_read_keybinds(path);
+		  menu_reinit_settings();
+		  break;
+	       case BORDER_CHOICE:
+		  break;
+	       case LIBSNES_CHOICE:
+		  strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
+		  strlcpy(g_console.launch_app_on_exit, path, sizeof(g_console.launch_app_on_exit));
+		  g_console.return_to_launcher = true;
+		  g_console.menu_enable = false;
+		  g_console.mode_switch = MODE_EXIT;
+		  break;
+	    }
 
-	if(set_initial_dir_tmpbrowser)
-	{
-		filebrowser_new(&tmpBrowser, dir_path, extensions);
-		set_initial_dir_tmpbrowser = false;
-	}
+            menuStackindex--;
+	 }
+      }
 
-	browser_update(&tmpBrowser);
+      if (CTRL_TRIANGLE(button_was_pressed))
+         menuStackindex--;
+   }
 
-	if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
-	{
-		if (CTRL_START(button_was_pressed))
-			filebrowser_reset_start_directory(&tmpBrowser, "/", extensions);
+   cellDbgFontPrintf(0.09f, 0.09f, FONT_SIZE, YELLOW, "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
+   cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	title);
+   cellDbgFontPrintf(0.09f, 0.92f, 0.92, YELLOW, "X - Select %s  /\\ - return to settings  START - Reset Startdir", object);
+   cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s", comment);
+   cellDbgFontDraw();
 
-		if (CTRL_CROSS(button_was_pressed))
-		{
-			if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
-			{
-				/*if 'filename' is in fact '..' - then pop back directory instead of 
-				  adding '..' to filename path */
-				if(tmpBrowser.currently_selected == 0)
-				{
-					filebrowser_pop_directory(&tmpBrowser);
-				}
-				else
-				{
-					separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
-					snprintf(path, sizeof(path), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-					filebrowser_push_directory(&tmpBrowser, path, true);
-				}
-			}
-			else if (FILEBROWSER_IS_CURRENT_A_FILE(tmpBrowser))
-			{
-				snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-				printf("path: %s\n", path);
-
-				switch(menu_id)
-				{
-					case SHADER_CHOICE:
-						gl_cg_load_shader(set_shader+1, path);
-						switch(set_shader+1)
-						{
-							case 1:
-								strlcpy(g_settings.video.cg_shader_path, path, sizeof(g_settings.video.cg_shader_path));
-								break;
-							case 2:
-								strlcpy(g_settings.video.second_pass_shader, path, sizeof(g_settings.video.second_pass_shader));
-								break;
-						}
-						menu_reinit_settings();
-						break;
-					case PRESET_CHOICE:
-						strlcpy(g_console.cgp_path, path, sizeof(g_console.cgp_path));
-						apply_scaling(FBO_DEINIT);
-						gl_cg_reinit(path);
-						apply_scaling(FBO_INIT);
-						break;
-					case INPUT_PRESET_CHOICE:
-						strlcpy(g_console.input_cfg_path, path, sizeof(g_console.input_cfg_path));
-						config_read_keybinds(path);
-						menu_reinit_settings();
-						break;
-					case BORDER_CHOICE:
-						break;
-					case LIBSNES_CHOICE:
-						strlcpy(g_settings.libretro, path, 
-						sizeof(g_settings.libretro));
-						strlcpy(g_console.launch_app_on_exit, path, 
-						sizeof(g_console.launch_app_on_exit));
-						g_console.return_to_launcher = true;
-						g_console.menu_enable = false;
-						g_console.mode_switch = MODE_EXIT;
-						break;
-				}
-
-				menuStackindex--;
-			}
-		}
-
-		if (CTRL_TRIANGLE(button_was_pressed))
-			menuStackindex--;
-	}
-
-        cellDbgFontPrintf(0.09f, 0.09f, FONT_SIZE, YELLOW, "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
-	cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	title);
-	cellDbgFontPrintf(0.09f, 0.92f, 0.92, YELLOW, "X - Select %s  /\\ - return to settings  START - Reset Startdir", object);
-	cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s", comment);
-	cellDbgFontDraw();
-
-	browser_render(&tmpBrowser);
-	old_state = state;
+   browser_render(&tmpBrowser);
+   old_state = state;
 }
 
 static void select_directory(uint32_t menu_id)
 {
-        char path[1024], newpath[1024], *separatorslash;
-	uint64_t state, diff_state, button_was_pressed;
+   char path[1024], newpath[1024], *separatorslash;
+   uint64_t state, diff_state, button_was_pressed;
 
-        state = cell_pad_input_poll_device(0);
-        diff_state = old_state ^ state;
-        button_was_pressed = old_state & diff_state;
+   state = cell_pad_input_poll_device(0);
+   diff_state = old_state ^ state;
+   button_was_pressed = old_state & diff_state;
 
-	if(set_initial_dir_tmpbrowser)
-	{
-		filebrowser_new(&tmpBrowser, "/\0", "empty");
-		set_initial_dir_tmpbrowser = false;
-	}
+   if(set_initial_dir_tmpbrowser)
+   {
+	   filebrowser_new(&tmpBrowser, "/\0", "empty");
+	   set_initial_dir_tmpbrowser = false;
+   }
 
-        browser_update(&tmpBrowser);
+   browser_update(&tmpBrowser);
 
-	if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
-	{
-		if (CTRL_START(button_was_pressed))
-			filebrowser_reset_start_directory(&tmpBrowser, "/","empty");
+   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+   {
+      if (CTRL_START(button_was_pressed))
+         filebrowser_reset_start_directory(&tmpBrowser, "/","empty");
 
-		if (CTRL_SQUARE(button_was_pressed))
-		{
-			if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
-			{
-				snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-				switch(menu_id)
-				{
-					case PATH_SAVESTATES_DIR_CHOICE:
-						strcpy(g_console.default_savestate_dir, path);
-						break;
-					case PATH_SRAM_DIR_CHOICE:
-						strcpy(g_console.default_sram_dir, path);
-						break;
-					case PATH_DEFAULT_ROM_DIR_CHOICE:
-						strcpy(g_console.default_rom_startup_dir, path);
-						break;
-					case PATH_CHEATS_DIR_CHOICE:
-						strcpy(g_settings.cheat_database, path);
-						break;
-				}
-				menuStackindex--;
-			}
-		}
-		if (CTRL_TRIANGLE(button_was_pressed))
-		{
-			strcpy(path, usrDirPath);
-			switch(menu_id)
-			{
-				case PATH_SAVESTATES_DIR_CHOICE:
-					strcpy(g_console.default_savestate_dir, path);
-					break;
-				case PATH_SRAM_DIR_CHOICE:
-					strcpy(g_console.default_sram_dir, path);
-					break;
-				case PATH_DEFAULT_ROM_DIR_CHOICE:
-					strcpy(g_console.default_rom_startup_dir, path);
-					break;
-				case PATH_CHEATS_DIR_CHOICE:
-					strcpy(g_settings.cheat_database, path);
-					break;
-			}
-			menuStackindex--;
-		}
-		if (CTRL_CROSS(button_was_pressed))
-		{
-			if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
-			{
-				/* if 'filename' is in fact '..' - then pop back 
-				   directory instead of adding '..' to filename path */
+      if (CTRL_SQUARE(button_was_pressed))
+      {
+         if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
+	 {
+            snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+	    switch(menu_id)
+	    {
+               case PATH_SAVESTATES_DIR_CHOICE:
+                  strcpy(g_console.default_savestate_dir, path);
+		  break;
+	       case PATH_SRAM_DIR_CHOICE:
+		  strcpy(g_console.default_sram_dir, path);
+		  break;
+	       case PATH_DEFAULT_ROM_DIR_CHOICE:
+		  strcpy(g_console.default_rom_startup_dir, path);
+		  break;
+	       case PATH_CHEATS_DIR_CHOICE:
+		  strcpy(g_settings.cheat_database, path);
+		  break;
+	    }
+	    menuStackindex--;
+	 }
+      }
 
-				if(tmpBrowser.currently_selected == 0)
-				{
-					filebrowser_pop_directory(&tmpBrowser);
-				}
-				else
-				{
-					separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
-					snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-					filebrowser_push_directory(&tmpBrowser, newpath, false);
-				}
-			}
-		}
-	}
+      if (CTRL_TRIANGLE(button_was_pressed))
+      {
+         strcpy(path, usrDirPath);
+	 switch(menu_id)
+	 {
+            case PATH_SAVESTATES_DIR_CHOICE:
+               strcpy(g_console.default_savestate_dir, path);
+	       break;
+	    case PATH_SRAM_DIR_CHOICE:
+	       strcpy(g_console.default_sram_dir, path);
+	       break;
+	    case PATH_DEFAULT_ROM_DIR_CHOICE:
+	       strcpy(g_console.default_rom_startup_dir, path);
+	       break;
+	    case PATH_CHEATS_DIR_CHOICE:
+	       strcpy(g_settings.cheat_database, path);
+	       break;
+	 }
+	 menuStackindex--;
+      }
 
-        cellDbgFontPrintf (0.09f,  0.09f, FONT_SIZE, YELLOW, 
-	"PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
-        cellDbgFontPuts (0.09f, 0.05f,  FONT_SIZE, RED,    "DIRECTORY SELECTION");
-        cellDbgFontPuts(0.09f, 0.93f, 0.92f, YELLOW,
-	"X - Enter dir  /\\ - return to settings  START - Reset Startdir");
-        cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s",
-	"INFO - Browse to a directory and assign it as the path by\npressing SQUARE button.");
-        cellDbgFontDraw();
+      if (CTRL_CROSS(button_was_pressed))
+      {
+         if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
+	 {
+            /* if 'filename' is in fact '..' - then pop back directory instead of 
+             * adding '..' to filename path */
 
-        browser_render(&tmpBrowser);
-        old_state = state;
+            if(tmpBrowser.currently_selected == 0)
+	    {
+               filebrowser_pop_directory(&tmpBrowser);
+	    }
+	    else
+	    {
+               separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
+	       snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+	       filebrowser_push_directory(&tmpBrowser, newpath, false);
+	    }
+	 }
+      }
+   }
+
+   cellDbgFontPrintf (0.09f,  0.09f, FONT_SIZE, YELLOW, 
+      "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
+   cellDbgFontPuts (0.09f, 0.05f,  FONT_SIZE, RED,    "DIRECTORY SELECTION");
+   cellDbgFontPuts(0.09f, 0.93f, 0.92f, YELLOW,
+      "X - Enter dir  /\\ - return to settings  START - Reset Startdir");
+   cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s",
+      "INFO - Browse to a directory and assign it as the path by\npressing SQUARE button.");
+   cellDbgFontDraw();
+
+   browser_render(&tmpBrowser);
+   old_state = state;
 }
 
 static void set_keybind_digital(uint64_t state, uint64_t default_retro_joypad_id)
@@ -1084,80 +1082,80 @@ static void set_keybind_digital(uint64_t state, uint64_t default_retro_joypad_id
 
 static void ssnes_filename_input_and_save (unsigned filename_type)
 {
-	bool filename_entered = false;
-	char filename_tmp[256], filepath[MAX_PATH_LENGTH];
-	oskutil_write_initial_message(&g_console.oskutil_handle, L"example");
-	oskutil_write_message(&g_console.oskutil_handle, L"Enter filename for preset (with no file extension)");
+   bool filename_entered = false;
+   char filename_tmp[256], filepath[MAX_PATH_LENGTH];
+   oskutil_write_initial_message(&g_console.oskutil_handle, L"example");
+   oskutil_write_message(&g_console.oskutil_handle, L"Enter filename for preset (with no file extension)");
 
-	oskutil_start(&g_console.oskutil_handle);
+   oskutil_start(&g_console.oskutil_handle);
 
-	while(OSK_IS_RUNNING(g_console.oskutil_handle))
-	{
-		glClear(GL_COLOR_BUFFER_BIT);
-		gl_frame_menu();
-		video_gl.swap(NULL);
-		cellSysutilCheckCallback();
-	}
+   while(OSK_IS_RUNNING(g_console.oskutil_handle))
+   {
+      glClear(GL_COLOR_BUFFER_BIT);
+      gl_frame_menu();
+      video_gl.swap(NULL);
+      cellSysutilCheckCallback();
+   }
 
+   if(g_console.oskutil_handle.text_can_be_fetched)
+   {
+      strncpy(filename_tmp, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(filename_tmp));
+      switch(filename_type)
+      {
+         case CONFIG_FILE:
+            break;
+	 case SHADER_PRESET_FILE:
+	    snprintf(filepath, sizeof(filepath), "%s/%s.cgp", PRESETS_DIR_PATH, filename_tmp);
+	    break;
+	 case INPUT_PRESET_FILE:
+	    snprintf(filepath, sizeof(filepath), "%s/%s.cfg", INPUT_PRESETS_DIR_PATH, filename_tmp);
+	    break;
+      }
 
-	if(g_console.oskutil_handle.text_can_be_fetched)
-	{
-		strncpy(filename_tmp, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(filename_tmp));
-		switch(filename_type)
-		{
-			case CONFIG_FILE:
-				break;
-			case SHADER_PRESET_FILE:
-				snprintf(filepath, sizeof(filepath), "%s/%s.cgp", PRESETS_DIR_PATH, filename_tmp);
-				break;
-			case INPUT_PRESET_FILE:
-				snprintf(filepath, sizeof(filepath), "%s/%s.cfg", INPUT_PRESETS_DIR_PATH, filename_tmp);
-				break;
-		}
-		filename_entered = true;
-	}
+      filename_entered = true;
+   }
 
-	if(filename_entered)
-	{
-		char filetitle_tmp[512];
-		oskutil_write_initial_message(&g_console.oskutil_handle, L"Example file title");
-		oskutil_write_message(&g_console.oskutil_handle, L"Enter title for preset");
-		oskutil_start(&g_console.oskutil_handle);
+   if(filename_entered)
+   {
+      char filetitle_tmp[512];
+      oskutil_write_initial_message(&g_console.oskutil_handle, L"Example file title");
+      oskutil_write_message(&g_console.oskutil_handle, L"Enter title for preset");
+      oskutil_start(&g_console.oskutil_handle);
 
-		while(OSK_IS_RUNNING(g_console.oskutil_handle))
-		{
-			/* OSK Util gets updated */
-			glClear(GL_COLOR_BUFFER_BIT);
-			video_gl.swap(NULL);
-			cellSysutilCheckCallback();
-		}
+      while(OSK_IS_RUNNING(g_console.oskutil_handle))
+      {
+         /* OSK Util gets updated */
+         glClear(GL_COLOR_BUFFER_BIT);
+	 video_gl.swap(NULL);
+	 cellSysutilCheckCallback();
+      }
 
-		if(g_console.oskutil_handle.text_can_be_fetched)
-			snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", OUTPUT_TEXT_STRING(g_console.oskutil_handle));
-		else
-			snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", "Custom");
+      if(g_console.oskutil_handle.text_can_be_fetched)
+         snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", OUTPUT_TEXT_STRING(g_console.oskutil_handle));
+      else
+         snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", "Custom");
 
-		switch(filename_type)
-		{
-			case CONFIG_FILE:
-				break;
-			case SHADER_PRESET_FILE:
-				{
-					struct gl_cg_cgp_info current_settings;
-					current_settings.shader[0] = g_settings.video.cg_shader_path;
-					current_settings.shader[1] = g_settings.video.second_pass_shader;
-					current_settings.filter_linear[0] = g_settings.video.smooth;
-					current_settings.filter_linear[1] = g_settings.video.second_pass_smooth;
-					current_settings.render_to_texture = true;
-					current_settings.fbo_scale = g_settings.video.fbo_scale_x;	//fbo_scale_x and y are the same anyway
-					gl_cg_save_cgp(filepath, &current_settings);
-				}
-				break;
-			case INPUT_PRESET_FILE:
-				config_save_keybinds(filepath);
-				break;
-		}
-	}
+      switch(filename_type)
+      {
+         case CONFIG_FILE:
+            break;
+	 case SHADER_PRESET_FILE:
+	    {
+               struct gl_cg_cgp_info current_settings;
+	       current_settings.shader[0] = g_settings.video.cg_shader_path;
+	       current_settings.shader[1] = g_settings.video.second_pass_shader;
+	       current_settings.filter_linear[0] = g_settings.video.smooth;
+	       current_settings.filter_linear[1] = g_settings.video.second_pass_smooth;
+	       current_settings.render_to_texture = true;
+	       current_settings.fbo_scale = g_settings.video.fbo_scale_x; //fbo_scale_x and y are the same anyway
+	       gl_cg_save_cgp(filepath, &current_settings);
+	    }
+	    break;
+	 case INPUT_PRESET_FILE:
+	    config_save_keybinds(filepath);
+	    break;
+      }
+   }
 }
 
 static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
@@ -1798,105 +1796,104 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 
 static void select_setting(menu * menu_obj)
 {
-	uint64_t state, diff_state, button_was_pressed, i;
+   uint64_t state, diff_state, button_was_pressed, i;
 
-	state = cell_pad_input_poll_device(0);
-	diff_state = old_state ^ state;
-	button_was_pressed = old_state & diff_state;
+   state = cell_pad_input_poll_device(0);
+   diff_state = old_state ^ state;
+   button_was_pressed = old_state & diff_state;
 
+   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+   {
+      set_delay = DELAY_NONE;
+      /* back to ROM menu if CIRCLE is pressed */
+      if (CTRL_L1(button_was_pressed) || CTRL_CIRCLE(button_was_pressed))
+         menuStackindex--;
 
-	if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
-	{
-		set_delay = DELAY_NONE;
-		/* back to ROM menu if CIRCLE is pressed */
-		if (CTRL_L1(button_was_pressed) || CTRL_CIRCLE(button_was_pressed))
-			menuStackindex--;
+      if (CTRL_R1(button_was_pressed))
+      {
+         switch(menu_obj->enum_id)
+	 {
+            case GENERAL_VIDEO_MENU:
+               menuStackindex++;
+	       menuStack[menuStackindex] = menu_generalaudiosettings;
+	       break;
+	    case GENERAL_AUDIO_MENU:
+	       menuStackindex++;
+	       menuStack[menuStackindex] = menu_emu_settings;
+	       break;
+	    case EMU_GENERAL_MENU:
+	       menuStackindex++;
+	       menuStack[menuStackindex] = menu_emu_videosettings;
+	       break;
+	    case EMU_VIDEO_MENU:
+	       menuStackindex++;
+	       menuStack[menuStackindex] = menu_emu_audiosettings;
+	       break;
+	    case EMU_AUDIO_MENU:
+	       menuStackindex++;
+	       menuStack[menuStackindex] = menu_pathsettings;
+	       break;
+	    case PATH_MENU:
+	       menuStackindex++;
+	       menuStack[menuStackindex] = menu_controlssettings;
+	       break;
+	    case CONTROLS_MENU:
+	       break;
+	 }
+      }
 
-		if (CTRL_R1(button_was_pressed))
-		{
-			switch(menu_obj->enum_id)
-			{
-				case GENERAL_VIDEO_MENU:
-					menuStackindex++;
-					menuStack[menuStackindex] = menu_generalaudiosettings;
-					break;
-				case GENERAL_AUDIO_MENU:
-					menuStackindex++;
-					menuStack[menuStackindex] = menu_emu_settings;
-					break;
-				case EMU_GENERAL_MENU:
-					menuStackindex++;
-					menuStack[menuStackindex] = menu_emu_videosettings;
-					break;
-				case EMU_VIDEO_MENU:
-					menuStackindex++;
-					menuStack[menuStackindex] = menu_emu_audiosettings;
-					break;
-				case EMU_AUDIO_MENU:
-					menuStackindex++;
-					menuStack[menuStackindex] = menu_pathsettings;
-					break;
-				case PATH_MENU:
-					menuStackindex++;
-					menuStack[menuStackindex] = menu_controlssettings;
-					break;
-				case CONTROLS_MENU:
-					break;
-			}
-		}
+      /* down to next setting */
 
-		/* down to next setting */
+      if (CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))
+      {
+         menu_obj->selected++;
 
-		if (CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))
-		{
-			menu_obj->selected++;
+	 if (menu_obj->selected >= menu_obj->max_settings)
+            menu_obj->selected = menu_obj->first_setting; 
 
-			if (menu_obj->selected >= menu_obj->max_settings)
-				menu_obj->selected = menu_obj->first_setting; 
+	 if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
+            menu_obj->page = menu_obj->items[menu_obj->selected].page;
 
-			if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
-				menu_obj->page = menu_obj->items[menu_obj->selected].page;
+	 set_delay = DELAY_MEDIUM;
+      }
 
-			set_delay = DELAY_MEDIUM;
-		}
+      /* up to previous setting */
 
-		/* up to previous setting */
+      if (CTRL_UP(state) || CTRL_LSTICK_UP(state))
+      {
+         if (menu_obj->selected == menu_obj->first_setting)
+            menu_obj->selected = menu_obj->max_settings-1;
+	 else
+            menu_obj->selected--;
 
-		if (CTRL_UP(state) || CTRL_LSTICK_UP(state))
-		{
-			if (menu_obj->selected == menu_obj->first_setting)
-				menu_obj->selected = menu_obj->max_settings-1;
-			else
-				menu_obj->selected--;
+	 if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
+            menu_obj->page = menu_obj->items[menu_obj->selected].page;
 
-			if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
-				menu_obj->page = menu_obj->items[menu_obj->selected].page;
+	 set_delay = DELAY_MEDIUM;
+      }
 
-			set_delay = DELAY_MEDIUM;
-		}
+      producesettingentry(menu_obj, menu_obj->selected);
+   }
 
-		producesettingentry(menu_obj, menu_obj->selected);
-	}
+   display_menubar(menu_obj->enum_id);
+   cellDbgFontDraw();
 
-	display_menubar(menu_obj->enum_id);
-	cellDbgFontDraw();
+   for ( i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
+   {
+      if(menu_obj->items[i].page == menu_obj->page)
+      {
+         cellDbgFontPuts(menu_obj->items[i].text_xpos, menu_obj->items[i].text_ypos, FONT_SIZE, menu_obj->selected == menu_obj->items[i].enum_id ? YELLOW : menu_obj->items[i].item_color, menu_obj->items[i].text);
+	 cellDbgFontPuts(0.5f, menu_obj->items[i].text_ypos, FONT_SIZE, menu_obj->items[i].text_color, menu_obj->items[i].setting_text);
+	 cellDbgFontDraw();
+      }
+   }
 
-	for ( i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
-	{
-		if(menu_obj->items[i].page == menu_obj->page)
-		{
-			cellDbgFontPuts(menu_obj->items[i].text_xpos, menu_obj->items[i].text_ypos, FONT_SIZE, menu_obj->selected == menu_obj->items[i].enum_id ? YELLOW : menu_obj->items[i].item_color, menu_obj->items[i].text);
-			cellDbgFontPuts(0.5f, menu_obj->items[i].text_ypos, FONT_SIZE, menu_obj->items[i].text_color, menu_obj->items[i].setting_text);
-			cellDbgFontDraw();
-		}
-	}
+   cellDbgFontPuts(0.09f, menu_obj->items[menu_obj->selected].comment_ypos, 0.86f, LIGHTBLUE, menu_obj->items[menu_obj->selected].comment);
 
-	cellDbgFontPuts(0.09f, menu_obj->items[menu_obj->selected].comment_ypos, 0.86f, LIGHTBLUE, menu_obj->items[menu_obj->selected].comment);
-
-	cellDbgFontPuts(0.09f, 0.91f, FONT_SIZE, YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
-	cellDbgFontPuts(0.09f, 0.95f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
-	cellDbgFontDraw();
-	old_state = state;
+   cellDbgFontPuts(0.09f, 0.91f, FONT_SIZE, YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
+   cellDbgFontPuts(0.09f, 0.95f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
+   cellDbgFontDraw();
+   old_state = state;
 }
 
 static void select_rom(void)

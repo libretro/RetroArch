@@ -91,14 +91,6 @@ enum rsd_conn_type
 #define RSD_ERR(fmt, args...)
 #define RSD_DEBUG(fmt, args...)
 
-static inline int rsnd_is_little_endian(void);
-static inline void rsnd_swap_endian_16(uint16_t * x);
-static inline void rsnd_swap_endian_32(uint32_t * x);
-static inline int rsnd_format_to_samplesize(uint16_t fmt);
-static int rsnd_connect_server(rsound_t *rd);
-static int rsnd_send_header_info(rsound_t *rd);
-static int rsnd_get_backend_info(rsound_t *rd);
-static int rsnd_create_connection(rsound_t *rd);
 static ssize_t rsnd_send_chunk(int socket, const void *buf, size_t size, int blocking);
 static ssize_t rsnd_recv_chunk(int socket, void *buf, size_t size, int blocking);
 static int rsnd_start_thread(rsound_t *rd);

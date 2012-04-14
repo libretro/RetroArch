@@ -26,23 +26,23 @@
 //--------------------------------------------------------------------------------------
 struct RESOURCE
 {
-    unsigned long dwType;
-    unsigned long dwOffset;
-    unsigned long dwSize;
-    char * strName;
+   unsigned long dwType;
+   unsigned long dwOffset;
+   unsigned long dwSize;
+   char * strName;
 };
 
 
 // Resource types
 enum
 {
-    RESOURCETYPE_USERDATA       = ( ( 'U' << 24 ) | ( 'S' << 16 ) | ( 'E' << 8 ) | ( 'R' ) ),
-    RESOURCETYPE_TEXTURE        = ( ( 'T' << 24 ) | ( 'X' << 16 ) | ( '2' << 8 ) | ( 'D' ) ),
-    RESOURCETYPE_CUBEMAP        = ( ( 'T' << 24 ) | ( 'X' << 16 ) | ( 'C' << 8 ) | ( 'M' ) ),
-    RESOURCETYPE_VOLUMETEXTURE  = ( ( 'T' << 24 ) | ( 'X' << 16 ) | ( '3' << 8 ) | ( 'D' ) ),
-    RESOURCETYPE_VERTEXBUFFER   = ( ( 'V' << 24 ) | ( 'B' << 16 ) | ( 'U' << 8 ) | ( 'F' ) ),
-    RESOURCETYPE_INDEXBUFFER    = ( ( 'I' << 24 ) | ( 'B' << 16 ) | ( 'U' << 8 ) | ( 'F' ) ),
-    RESOURCETYPE_EOF            = 0xffffffff
+   RESOURCETYPE_USERDATA       = ( ( 'U' << 24 ) | ( 'S' << 16 ) | ( 'E' << 8 ) | ( 'R' ) ),
+   RESOURCETYPE_TEXTURE        = ( ( 'T' << 24 ) | ( 'X' << 16 ) | ( '2' << 8 ) | ( 'D' ) ),
+   RESOURCETYPE_CUBEMAP        = ( ( 'T' << 24 ) | ( 'X' << 16 ) | ( 'C' << 8 ) | ( 'M' ) ),
+   RESOURCETYPE_VOLUMETEXTURE  = ( ( 'T' << 24 ) | ( 'X' << 16 ) | ( '3' << 8 ) | ( 'D' ) ),
+   RESOURCETYPE_VERTEXBUFFER   = ( ( 'V' << 24 ) | ( 'B' << 16 ) | ( 'U' << 8 ) | ( 'F' ) ),
+   RESOURCETYPE_INDEXBUFFER    = ( ( 'I' << 24 ) | ( 'B' << 16 ) | ( 'U' << 8 ) | ( 'F' ) ),
+   RESOURCETYPE_EOF            = 0xffffffff
 };
 
 
@@ -52,28 +52,23 @@ enum
 class PackedResource
 {
 protected:
-    unsigned char * m_pSysMemData;        // Alloc'ed memory for resource headers etc.
-    unsigned long m_dwSysMemDataSize;
+   unsigned char * m_pSysMemData;        // Alloc'ed memory for resource headers etc.
+   unsigned long m_dwSysMemDataSize;
 
-    unsigned char * m_pVidMemData;        // Alloc'ed memory for resource data, etc.
-    unsigned long m_dwVidMemDataSize;
+   unsigned char * m_pVidMemData;        // Alloc'ed memory for resource data, etc.
+   unsigned long m_dwVidMemDataSize;
 
-    RESOURCE* m_pResourceTags;      // Tags to associate names with the resources
-    unsigned long m_dwNumResourceTags;  // Number of resource tags
+   RESOURCE* m_pResourceTags;            // Tags to associate names with the resources
+   unsigned long m_dwNumResourceTags;    // Number of resource tags
 public:
-	int m_bInitialized;       // Resource is fully initialized
-    // Loads the resources out of the specified bundle
+   int m_bInitialized;                   // Resource is fully initialized
     HRESULT Create( const char * strFilename );
-
     void    Destroy();
-
-    // Helper function to make sure a resource is registered
     D3DResource* RegisterResource( D3DResource* pResource ) const
     {
         return pResource;
     }
 
-    // Functions to retrieve resources by their offset
     void * GetData( unsigned long dwOffset ) const
     {
         return &m_pSysMemData[dwOffset];
@@ -99,7 +94,6 @@ public:
         return ( D3DVertexBuffer* )GetResource( dwOffset );
     }
 
-    // Functions to retrieve resources by their name
     void * GetData( const char * strName ) const;
 
     D3DResource* GetResource( const char * strName ) const
@@ -122,8 +116,8 @@ public:
         return ( D3DVertexBuffer* )GetResource( strName );
     }
 
-            PackedResource();
-            ~PackedResource();
+    PackedResource();
+    ~PackedResource();
 };
 
 #endif

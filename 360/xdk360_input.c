@@ -40,15 +40,15 @@ static void xdk360_input_poll(void *data)
       unsigned long retval = XInputGetState(i, &state_tmp);
       pads_connected += (retval == ERROR_DEVICE_NOT_CONNECTED) ? 0 : 1;
       state[i] = state_tmp.Gamepad.wButtons;
-      state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE))			<< 16;
-      state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE))			<< 17;
-      state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE))			<< 18;
-      state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE))			<< 19;
-      state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE))			<< 20;
-      state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE))			<< 21;
-      state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE))			<< 22;
-      state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE))			<< 23;
-      state[i] |= ((state_tmp.Gamepad.bLeftTrigger > 128 ? 1 : 0))	<< 24;
+      state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE))        << 16;
+      state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE))         << 17;
+      state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE))         << 18;
+      state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE))        << 19;
+      state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE))        << 20;
+      state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE))         << 21;
+      state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE))         << 22;
+      state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE))        << 23;
+      state[i] |= ((state_tmp.Gamepad.bLeftTrigger > 128 ? 1 : 0))  << 24;
       state[i] |= ((state_tmp.Gamepad.bRightTrigger > 128 ? 1 : 0)) << 25;
    }
 }
