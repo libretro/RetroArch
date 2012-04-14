@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ROM_EXT_INPUT_H__
-#define ROM_EXT_INPUT_H__
+#ifndef CONSOLE_EXT_INPUT_H__
+#define CONSOLE_EXT_INPUT_H__
 
 #include "../driver.h"
 
