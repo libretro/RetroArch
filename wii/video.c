@@ -299,6 +299,12 @@ static void wii_set_rotation(void * data, uint32_t orientation)
    /* TODO */
 }
 
+static void wii_set_swap_block_state(void * data, bool toggle)
+{
+   (void)data;
+   (void)toggle;
+}
+
 const video_driver_t video_wii = {
    .init = wii_init,
    .frame = wii_frame,
@@ -307,7 +313,7 @@ const video_driver_t video_wii = {
    .focus = wii_focus,
    .free = wii_free,
    .ident = "wii",
-   .set_swap_block_state = wii_swap,
+   .set_swap_block_state = wii_set_swap_block_state,
    .set_rotation = wii_set_rotation,
    .set_aspect_ratio = wii_set_aspect_ratio,
    .swap = wii_swap
