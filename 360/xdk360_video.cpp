@@ -19,6 +19,7 @@
 #include "../driver.h"
 #include "xdk360_video.h"
 #include "xdk360_video_resources.h"
+#include "../gfx/hlsl_shader.h"
 #include "../console/console_ext.h"
 #include "../general.h"
 #include "../message.h"
@@ -32,17 +33,6 @@ static bool g_quitting;
 static bool g_first_msg;
 unsigned g_frame_count;
 void *g_d3d;
-
-struct hlsl_program_t
-{
-   D3DXHANDLE	vid_size_f;
-   D3DXHANDLE	tex_size_f;
-   D3DXHANDLE	out_size_f;
-   D3DXHANDLE	vid_size_v;
-   D3DXHANDLE	tex_size_v;
-   D3DXHANDLE	out_size_v;
-   XMMATRIX modelViewProj;
-} hlsl_program;
 
 struct XPR_HEADER
 {
@@ -199,11 +189,11 @@ static void xdk360_gfx_free(void * data)
    if (!vid)
       return;
 
+   hlsl_deinit();
+
    D3DResource_Release((D3DResource *)vid->lpTexture);
    D3DResource_Release((D3DResource *)vid->vertex_buf);
-   D3DResource_Release((D3DResource *)vid->pVertexDecl);
-   D3DResource_Release((D3DResource *)vid->pPixelShader);
-   D3DResource_Release((D3DResource *)vid->pVertexShader);
+   D3DResource_Release((D3DResource *)vid->v_decl);
    D3DDevice_Release(vid->xdk360_render_device);
    Direct3D_Release();
 
@@ -298,7 +288,8 @@ static void xdk360_set_orientation(void * data, uint32_t orientation)
 	 break;
    }
 
-   hlsl_program.modelViewProj = XMMatrixRotationZ(angle);
+   hlsl_use(vid->xdk360_render_device, 0);
+   hlsl_set_proj_matrix(XMMatrixRotationZ(angle));
 }
 
 static void xdk360_set_aspect_ratio(void * data, uint32_t aspectratio_index)
@@ -355,54 +346,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    // D3DCREATE_HARDWARE_VERTEXPROCESSING is ignored on 360
    ret = Direct3D_CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &vid->d3dpp, &vid->xdk360_render_device);
 
-   ID3DXBuffer* pShaderCodeV = NULL;
-   ID3DXBuffer* pShaderCodeP = NULL;
-   ID3DXBuffer* pErrorMsg = NULL;
-
-   ret = D3DXCompileShaderFromFile(
-      g_settings.video.cg_shader_path,      //filepath
-      NULL,                                 //macros
-      NULL,                                 //includes
-      "main_vertex",                        // main function
-      "vs_2_0",                             // shader profile
-      0,                                    // flags
-      &pShaderCodeV,                        // compiled operations
-      &pErrorMsg,                           // errors
-      NULL);                                // constants
-
-   if (SUCCEEDED(ret))
-   {
-      SSNES_LOG("Vertex shader program from [%s] successfully compiled.\n", "game:\\media\\shaders\\stock.cg");
-      ret = D3DXCompileShaderFromFile(
-         g_settings.video.cg_shader_path,   //filepath
-         NULL,                              //macros
-         NULL,                              //includes
-         "main_fragment",                   // main function
-         "ps_2_0",                          // shader profile
-         0,                                 // flags
-         &pShaderCodeP,                     // compiled operations
-         &pErrorMsg,                        // errors
-         NULL);                             // constants
-   }
-
-   if (FAILED(ret))
-   {
-      if(pErrorMsg)
-         SSNES_LOG("%s\n", (char*)pErrorMsg->GetBufferPointer());
-      D3DDevice_Release(vid->xdk360_render_device);
-      Direct3D_Release();
-      free(vid);
-      return NULL;
-   }
-   else
-   {
-      SSNES_LOG("Pixel shader program from [%s] successfully compiled.\n", "game:\\media\\shaders\\stock.cg");
-   }
-   
-   vid->pVertexShader = D3DDevice_CreateVertexShader((const DWORD*)pShaderCodeV->GetBufferPointer());
-   vid->pPixelShader =  D3DDevice_CreatePixelShader((const DWORD*)pShaderCodeP->GetBufferPointer());
-   pShaderCodeV->Release();
-   pShaderCodeP->Release();
+   hlsl_init(NULL);
 
    vid->lpTexture = (D3DTexture*) D3DDevice_CreateTexture(512, 512, 1, 1, 0, D3DFMT_LIN_X1R5G5B5,
 		   0, D3DRTYPE_TEXTURE);
@@ -435,7 +379,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
       D3DDECL_END()
    };
 
-   vid->pVertexDecl = D3DDevice_CreateVertexDeclaration(VertexElements);
+   vid->v_decl = D3DDevice_CreateVertexDeclaration(VertexElements);
    
    D3DDevice_Clear(vid->xdk360_render_device, 0, NULL, D3DCLEAR_TARGET,
 	   0xff000000, 1.0f, 0, FALSE);
@@ -459,10 +403,10 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    xdk360_video_t *vid = (xdk360_video_t*)data;
-   g_frame_count++;
 
    D3DDevice_Clear(vid->xdk360_render_device, 0, NULL, D3DCLEAR_TARGET,
 	   0xff000000, 1.0f, 0, FALSE);
+   g_frame_count++;
 
    if (vid->last_width != width || vid->last_height != height)
    {
@@ -490,9 +434,8 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
       vid->last_height = height;
    }
 
-   vid->xdk360_render_device->SetVertexShaderConstantF(0, (FLOAT*)&hlsl_program.modelViewProj, 4);
-
-   //TODO: Update the shader constants
+   hlsl_use(vid->xdk360_render_device, 0);
+   hlsl_set_params(vid->xdk360_render_device);
 
    D3DLOCKED_RECT d3dlr;
    D3DTexture_LockRect(vid->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
@@ -510,10 +453,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    D3DDevice_SetSamplerState(vid->xdk360_render_device, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    D3DDevice_SetSamplerState(vid->xdk360_render_device, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 
-   D3DDevice_SetVertexShader(vid->xdk360_render_device, vid->pVertexShader);
-   D3DDevice_SetPixelShader(vid->xdk360_render_device, vid->pPixelShader);
-
-   D3DDevice_SetVertexDeclaration(vid->xdk360_render_device, vid->pVertexDecl);
+   D3DDevice_SetVertexDeclaration(vid->xdk360_render_device, vid->v_decl);
    D3DDevice_SetStreamSource_Inline(vid->xdk360_render_device, 0, vid->vertex_buf, 0, 
       sizeof(DrawVerticeFormats));
 

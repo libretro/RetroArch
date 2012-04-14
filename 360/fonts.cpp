@@ -282,7 +282,7 @@ static const char g_strFontShader[] =
    "uniform float4 Color : register(c1);\n"
    "uniform float2 TexScale : register(c2);\n"
    "sampler FontTexture : register(s0);\n"
-   "VS_OUT FontVertexShader( VS_IN In )\n"
+   "VS_OUT main_vertex( VS_IN In )\n"
    "{\n"
      "VS_OUT Out;\n"
      "Out.Position.x  = (In.Pos.x-0.5);\n"
@@ -295,7 +295,7 @@ static const char g_strFontShader[] =
      "Out.ChannelSelector = In.ChannelSelector;\n"
      "return Out;\n"
    "}\n"
-   "float4 FontPixelShader( VS_OUT In ) : COLOR0\n"
+   "float4 main_fragment( VS_OUT In ) : COLOR0\n"
    "{\n"
      "float4 FontTexel = tex2D( FontTexture, In.TexCoord0 );\n"
      "if( dot( In.ChannelSelector, float4(1,1,1,1) ) )\n"
@@ -364,7 +364,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
                 ID3DXBuffer* pShaderCode;
 
                 hr = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
-                    NULL, NULL, "FontVertexShader", "vs.2.0", 0,&pShaderCode, NULL, NULL );
+                    NULL, NULL, "main_vertex", "vs.2.0", 0,&pShaderCode, NULL, NULL );
                 if (SUCCEEDED(hr))
                 {
                     hr = pd3dDevice->CreateVertexShader( ( unsigned long * )pShaderCode->GetBufferPointer(),
@@ -376,7 +376,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
                     {
                         // Step #3, create my pixel shader
                         hr = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
-                            NULL, NULL, "FontPixelShader", "ps.2.0", 0,&pShaderCode, NULL, NULL );
+                            NULL, NULL, "main_fragment", "ps.2.0", 0,&pShaderCode, NULL, NULL );
                         if ( SUCCEEDED(hr))
                         {
                             hr = pd3dDevice->CreatePixelShader( ( DWORD* )pShaderCode->GetBufferPointer(),

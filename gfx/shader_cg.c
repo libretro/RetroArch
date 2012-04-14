@@ -715,7 +715,7 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
 
    state_tracker = state_tracker_init(&tracker_info);
    if (!state_tracker)
-      SSNES_WARN("Failed to init state tracker.\n");
+      SSNES_WARN("Failed to initialize state tracker.\n");
 
 #ifdef HAVE_PYTHON
    if (script)

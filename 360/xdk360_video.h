@@ -48,11 +48,9 @@ typedef struct xdk360_video
    unsigned last_height;
    IDirect3D9* xdk360_device;
    IDirect3DDevice9* xdk360_render_device;
-   IDirect3DVertexShader9 *pVertexShader;
-   IDirect3DPixelShader9* pPixelShader;
-   IDirect3DVertexDeclaration9* pVertexDecl;
    IDirect3DVertexBuffer9* vertex_buf;
    IDirect3DTexture9* lpTexture;
+   IDirect3DVertexDeclaration9* v_decl;
    D3DPRESENT_PARAMETERS d3dpp;
    XVIDEO_MODE video_mode;
 } xdk360_video_t;
