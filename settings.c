@@ -160,7 +160,8 @@ void config_set_defaults(void)
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
    g_settings.video.crop_overscan = crop_overscan;
-   g_settings.video.aspect_ratio = -1.0f; // Automatic
+   g_settings.video.aspect_ratio = aspect_ratio;
+   g_settings.video.aspect_ratio_auto = aspect_ratio_auto; // Let implementation decide if automatic, or 1:1 PAR.
    g_settings.video.shader_type = SSNES_SHADER_AUTO;
    g_settings.video.allow_rotate = allow_rotate;
 
@@ -361,6 +362,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.force_aspect, "video_force_aspect");
    CONFIG_GET_BOOL(video.crop_overscan, "video_crop_overscan");
    CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
+   CONFIG_GET_BOOL(video.aspect_ratio_auto, "video_aspect_ratio_auto");
    CONFIG_GET_FLOAT(video.refresh_rate, "video_refresh_rate");
 
    CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
