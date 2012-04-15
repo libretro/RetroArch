@@ -18,6 +18,7 @@
 #ifndef __SSNES_HLSL_H
 #define __SSNES_HLSL_H
 
+#include "../boolean.h"
 #include <stdint.h>
 
 bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr);

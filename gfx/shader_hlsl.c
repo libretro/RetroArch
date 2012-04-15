@@ -106,6 +106,11 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    ret_fp = false;
    ret_vp = false;
 
+   if(prg[index].f_ctable)
+      D3DResource_Release((D3DResource *)prg[index].f_ctable);
+   if(prg[index].v_ctable)
+      D3DResource_Release((D3DResource *)prg[0].v_ctable);
+
    if (path_is_file)
    {
       ret_fp = D3DXCompileShaderFromFile(prog, NULL, NULL, "main_fragment", "ps_2_0", 0, &code_f, &listing_f, &prg[index].f_ctable); 
@@ -129,6 +134,11 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
       ret = false;
       goto end;
    }
+
+   if(prg[index].fprg)
+      D3DResource_Release((D3DResource *)prg[0].fprg);
+   if(prg[index].vprg)
+      D3DResource_Release((D3DResource *)prg[0].vprg);
 
    prg[index].fprg = D3DDevice_CreatePixelShader((const DWORD*)code_f->GetBufferPointer());
    prg[index].vprg = D3DDevice_CreateVertexShader((const DWORD*)code_v->GetBufferPointer());
@@ -171,12 +181,6 @@ static bool load_plain(const char *path)
 
 static void hlsl_deinit_progs(void)
 {
-   if (prg[0].fprg)
-      D3DResource_Release((D3DResource *)prg[0].fprg);
-   if (prg[0].vprg)
-      D3DResource_Release((D3DResource *)prg[0].vprg);
-   D3DResource_Release((D3DResource *)prg[0].f_ctable);
-   D3DResource_Release((D3DResource *)prg[0].v_ctable);
 }
 
 static void hlsl_deinit_state(void)
@@ -210,10 +214,10 @@ static void set_program_attributes(unsigned i)
 
 bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
 {
-   if (device_ptr != NULL)
-	   d3d_device_ptr = device_ptr;
-   else
-       return false;
+   if(!device_ptr)
+      return false;
+
+   d3d_device_ptr = device_ptr;
 
    if (strstr(path, ".cgp"))
    {

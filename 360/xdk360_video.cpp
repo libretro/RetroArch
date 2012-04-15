@@ -189,13 +189,14 @@ static void xdk360_gfx_free(void * data)
    if (!vid)
       return;
 
-   hlsl_deinit();
-
    D3DResource_Release((D3DResource *)vid->lpTexture);
    D3DResource_Release((D3DResource *)vid->vertex_buf);
    D3DResource_Release((D3DResource *)vid->v_decl);
    D3DDevice_Release(vid->xdk360_render_device);
    Direct3D_Release();
+
+   //breaks right now
+   //hlsl_deinit();
 
    free(vid);
 }
