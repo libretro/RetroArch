@@ -6,12 +6,14 @@
 
 #ifdef __cplusplus
 extern "C" {
-#elif defined(_MSC_VER)
-typedef unsigned char bool;
-typedef enum {false, true};
 #else
+#if defined(_MSC_VER) && !defined(__cplusplus)
+#define bool unsigned char
+#define true 1
+#define false 0
 #else
 #include <stdbool.h>
+#endif
 #endif
 
 #define RETRO_API_VERSION         1
