@@ -435,7 +435,8 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    }
 
    hlsl_use(0);
-   hlsl_set_params();
+   hlsl_set_params(width, height, 512, 512, vid->d3dpp.BackBufferWidth,
+      vid->d3dpp.BackBufferHeight);
 
    D3DLOCKED_RECT d3dlr;
    D3DTexture_LockRect(vid->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);

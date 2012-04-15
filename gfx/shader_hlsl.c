@@ -84,12 +84,28 @@ void hlsl_set_proj_matrix(XMMATRIX rotation_value)
       prg[active_index].mvp_val = rotation_value;
 }
 
-void hlsl_set_params(void)
+#define set_param_2f(param, xy, constanttable) \
+   if (param) constanttable->SetFloatArray(d3d_device_ptr, param, xy, 2);
+
+void hlsl_set_params(unsigned width, unsigned height,
+      unsigned tex_width, unsigned tex_height,
+      unsigned out_width, unsigned out_height)
 {
    if (!hlsl_active)
       return;
 
-   //const float val[2] = {2.5f, 2.5f};
+   const float ori_size[2] = {(float)width,     (float)height    };
+   const float out_size[2] = {(float)out_width, (float)out_height};
+   const float tex_size[2] = {(float)tex_width, (float)tex_height};
+
+   set_param_2f(prg[active_index].vid_size_f, ori_size, prg[active_index].f_ctable);
+   set_param_2f(prg[active_index].tex_size_f, tex_size, prg[active_index].f_ctable);
+   set_param_2f(prg[active_index].out_size_f, out_size, prg[active_index].f_ctable);
+
+   set_param_2f(prg[active_index].vid_size_v, ori_size, prg[active_index].v_ctable);
+   set_param_2f(prg[active_index].tex_size_v, tex_size, prg[active_index].v_ctable);
+   set_param_2f(prg[active_index].out_size_v, out_size, prg[active_index].v_ctable);
+
    prg[active_index].v_ctable->SetMatrix(d3d_device_ptr, prg[active_index].mvp, (D3DXMATRIX*)&prg[active_index].mvp_val);
    //prg[active_index].f_ctable->SetFloatArray(d3d_device_ptr, prg[active_index].out_size_f, val, 2);
 }

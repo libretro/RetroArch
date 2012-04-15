@@ -27,7 +27,9 @@ void hlsl_deinit(void);
 
 void hlsl_set_proj_matrix(XMMATRIX rotation_value);
 
-void hlsl_set_params(void);
+void hlsl_set_params(unsigned width, unsigned height,
+      unsigned tex_width, unsigned tex_height,
+      unsigned out_width, unsigned out_height);
 
 void hlsl_use(unsigned index);
 
