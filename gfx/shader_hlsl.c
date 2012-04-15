@@ -26,9 +26,13 @@ struct hlsl_program
    D3DXHANDLE	vid_size_f;
    D3DXHANDLE	tex_size_f;
    D3DXHANDLE	out_size_f;
+   D3DXHANDLE   frame_cnt_f;
+   D3DXHANDLE   frame_dir_f;
    D3DXHANDLE	vid_size_v;
    D3DXHANDLE	tex_size_v;
    D3DXHANDLE	out_size_v;
+   D3DXHANDLE   frame_cnt_v;
+   D3DXHANDLE   frame_dir_v;
    LPD3DXCONSTANTTABLE v_ctable;
    LPD3DXCONSTANTTABLE f_ctable;
    XMMATRIX mvp;
@@ -84,7 +88,10 @@ void hlsl_set_params(void)
    if (!hlsl_active)
       return;
 
+   //const float val[2] = {2.5f, 2.5f};
+   
    d3d_device_ptr->SetVertexShaderConstantF(0, (FLOAT*)&prg[active_index].mvp, 4);
+   //prg[active_index].f_ctable->SetFloatArray(d3d_device_ptr, prg[active_index].out_size_f, val, 2);
 }
 
 static bool load_program(unsigned index, const char *prog, bool path_is_file)
@@ -129,8 +136,10 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    code_v->Release();
 
 end:
-   free(listing_f);
-   free(listing_v);
+   if(listing_f)
+      listing_f->Release();
+   if(listing_v)
+      listing_v->Release();
    return ret;
 }
 
@@ -166,8 +175,8 @@ static void hlsl_deinit_progs(void)
       D3DResource_Release((D3DResource *)prg[0].fprg);
    if (prg[0].vprg)
       D3DResource_Release((D3DResource *)prg[0].vprg);
-
-   memset(prg, 0, sizeof(prg));
+   D3DResource_Release((D3DResource *)prg[0].f_ctable);
+   D3DResource_Release((D3DResource *)prg[0].v_ctable);
 }
 
 static void hlsl_deinit_state(void)
@@ -182,6 +191,20 @@ static void hlsl_deinit_state(void)
 static bool load_preset(const char *path)
 {
    return false;
+}
+
+static void set_program_attributes(unsigned i)
+{
+   prg[i].vid_size_f  = prg[i].f_ctable->GetConstantByName(NULL, "$IN.video_size");
+   prg[i].tex_size_f  = prg[i].f_ctable->GetConstantByName(NULL, "$IN.texture_size");
+   prg[i].out_size_f  = prg[i].f_ctable->GetConstantByName(NULL, "$IN.output_size");
+   prg[i].frame_cnt_f = prg[i].f_ctable->GetConstantByName(NULL, "$IN.frame_count");
+   prg[i].frame_dir_f = prg[i].f_ctable->GetConstantByName(NULL, "$IN.frame_direction");
+   prg[i].vid_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.video_size");
+   prg[i].tex_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.texture_size");
+   prg[i].out_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.output_size");
+   prg[i].frame_cnt_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_count");
+   prg[i].frame_dir_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_direction");
 }
 
 bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
@@ -201,6 +224,8 @@ bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
       if (!load_plain(path))
          return false;
    }
+
+   set_program_attributes(0);
 
    active_index = 0;
    hlsl_active = true;
