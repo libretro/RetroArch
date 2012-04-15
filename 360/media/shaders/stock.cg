@@ -5,7 +5,7 @@ void main_vertex
 (
 	float2 position : POSITION,
 	float2 texCoord : TEXCOORD0,
-	uniform float4x4 modelViewProj : register(c0),
+	uniform float4x4 modelViewProj,
 	out float4 oPosition : POSITION,
 	out float2 otexCoord : TEXCOORD
 )
