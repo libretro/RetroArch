@@ -506,6 +506,16 @@ void init_video_input(void)
    if (g_extern.filter.active)
       scale = g_extern.filter.scale;
 
+   if (g_settings.video.aspect_ratio < 0.0f)
+   {
+      if (geom->aspect_ratio > 0.0f && g_settings.video.aspect_ratio_auto)
+         g_settings.video.aspect_ratio = geom->aspect_ratio;
+      else
+         g_settings.video.aspect_ratio = (float)geom->base_width / geom->base_height; // 1:1 PAR.
+
+      SSNES_LOG("Adjusting aspect ratio to %.2f\n", g_settings.video.aspect_ratio);
+   }
+
    unsigned width;
    unsigned height;
    if (g_settings.video.fullscreen)
@@ -515,7 +525,7 @@ void init_video_input(void)
    }
    else
    {
-      if (g_settings.video.force_aspect && (g_settings.video.aspect_ratio > 0.0f))
+      if (g_settings.video.force_aspect)
       {
          width = roundf(geom->base_height * g_settings.video.xscale * g_settings.video.aspect_ratio);
          height = roundf(geom->base_height * g_settings.video.yscale);
@@ -525,16 +535,6 @@ void init_video_input(void)
          width = roundf(geom->base_width * g_settings.video.xscale);
          height = roundf(geom->base_height * g_settings.video.yscale);
       }
-   }
-
-   if (g_settings.video.aspect_ratio < 0.0f)
-   {
-      if (geom->aspect_ratio > 0.0f && g_settings.video.aspect_ratio_auto)
-         g_settings.video.aspect_ratio = geom->aspect_ratio;
-      else
-         g_settings.video.aspect_ratio = (float)geom->base_width / geom->base_height; // 1:1 PAR.
-
-      SSNES_LOG("Adjusting aspect ratio to %.2f\n", g_settings.video.aspect_ratio);
    }
 
    SSNES_LOG("Video @ %ux%u\n", width, height);
