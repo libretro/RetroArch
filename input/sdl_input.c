@@ -322,6 +322,10 @@ static int16_t sdl_lightgun_device_state(sdl_input_t *sdl, unsigned id)
          return sdl->mouse_m;
       case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
          return sdl->mouse_r;
+      case RETRO_DEVICE_ID_LIGHTGUN_START:
+         return sdl->mouse_m && sdl->mouse_r; 
+      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+         return sdl->mouse_m && sdl->mouse_l; 
       default:
          return 0;
    }
