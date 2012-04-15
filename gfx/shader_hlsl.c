@@ -33,9 +33,10 @@ struct hlsl_program
    D3DXHANDLE	out_size_v;
    D3DXHANDLE   frame_cnt_v;
    D3DXHANDLE   frame_dir_v;
+   D3DXHANDLE   mvp;
    LPD3DXCONSTANTTABLE v_ctable;
    LPD3DXCONSTANTTABLE f_ctable;
-   XMMATRIX mvp;
+   XMMATRIX mvp_val;
 };
 
 static IDirect3DDevice9 * d3d_device_ptr;
@@ -80,7 +81,7 @@ static const char* stock_hlsl_program =
 void hlsl_set_proj_matrix(XMMATRIX rotation_value)
 {
    if (hlsl_active)
-      prg[active_index].mvp = rotation_value;
+      prg[active_index].mvp_val = rotation_value;
 }
 
 void hlsl_set_params(void)
@@ -89,8 +90,7 @@ void hlsl_set_params(void)
       return;
 
    //const float val[2] = {2.5f, 2.5f};
-   
-   d3d_device_ptr->SetVertexShaderConstantF(0, (FLOAT*)&prg[active_index].mvp, 4);
+   prg[active_index].v_ctable->SetMatrix(d3d_device_ptr, prg[active_index].mvp, (D3DXMATRIX*)&prg[active_index].mvp_val);
    //prg[active_index].f_ctable->SetFloatArray(d3d_device_ptr, prg[active_index].out_size_f, val, 2);
 }
 
@@ -205,6 +205,7 @@ static void set_program_attributes(unsigned i)
    prg[i].out_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.output_size");
    prg[i].frame_cnt_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_count");
    prg[i].frame_dir_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_direction");
+   prg[i].mvp         = prg[i].v_ctable->GetConstantByName(NULL, "$modelViewProj");
 }
 
 bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
