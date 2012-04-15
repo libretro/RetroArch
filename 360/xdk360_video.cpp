@@ -189,13 +189,14 @@ static void xdk360_gfx_free(void * data)
    if (!vid)
       return;
 
-   hlsl_deinit();
-
    D3DResource_Release((D3DResource *)vid->lpTexture);
    D3DResource_Release((D3DResource *)vid->vertex_buf);
    D3DResource_Release((D3DResource *)vid->v_decl);
    D3DDevice_Release(vid->xdk360_render_device);
    Direct3D_Release();
+
+   //breaks right now
+   //hlsl_deinit();
 
    free(vid);
 }
@@ -434,7 +435,8 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    }
 
    hlsl_use(0);
-   hlsl_set_params();
+   hlsl_set_params(width, height, 512, 512, vid->d3dpp.BackBufferWidth,
+      vid->d3dpp.BackBufferHeight);
 
    D3DLOCKED_RECT d3dlr;
    D3DTexture_LockRect(vid->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);

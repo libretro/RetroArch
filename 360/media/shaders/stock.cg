@@ -5,7 +5,7 @@ void main_vertex
 (
 	float2 position : POSITION,
 	float2 texCoord : TEXCOORD0,
-	uniform float4x4 modelViewProj : register(c0),
+	uniform float4x4 modelViewProj,
 	out float4 oPosition : POSITION,
 	out float2 otexCoord : TEXCOORD
 )
@@ -31,11 +31,10 @@ struct input
 };
 
 
-output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D decal : register(s0), uniform input IN)
+output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEXUNIT0, uniform input IN)
 {
 	output OUT;
 	OUT.color = tex2D(decal, texCoord);
-	OUT.color *= IN.output_size.x;
 	return OUT;
 }
 

@@ -163,6 +163,10 @@ static const bool video_smooth = true;
 // On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 
 
+// Controls aspect ratio handling.
+static const float aspect_ratio = -1.0; // Automatic
+static const bool aspect_ratio_auto = false; // 1:1 PAR
+
 // Crop overscanned frames (7/8 or 15/15 for interlaced frames).
 static const bool crop_overscan = true;
 

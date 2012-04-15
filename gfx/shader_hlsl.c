@@ -33,9 +33,10 @@ struct hlsl_program
    D3DXHANDLE	out_size_v;
    D3DXHANDLE   frame_cnt_v;
    D3DXHANDLE   frame_dir_v;
+   D3DXHANDLE   mvp;
    LPD3DXCONSTANTTABLE v_ctable;
    LPD3DXCONSTANTTABLE f_ctable;
-   XMMATRIX mvp;
+   XMMATRIX mvp_val;
 };
 
 static IDirect3DDevice9 * d3d_device_ptr;
@@ -80,17 +81,32 @@ static const char* stock_hlsl_program =
 void hlsl_set_proj_matrix(XMMATRIX rotation_value)
 {
    if (hlsl_active)
-      prg[active_index].mvp = rotation_value;
+      prg[active_index].mvp_val = rotation_value;
 }
 
-void hlsl_set_params(void)
+#define set_param_2f(param, xy, constanttable) \
+   if (param) constanttable->SetFloatArray(d3d_device_ptr, param, xy, 2);
+
+void hlsl_set_params(unsigned width, unsigned height,
+      unsigned tex_width, unsigned tex_height,
+      unsigned out_width, unsigned out_height)
 {
    if (!hlsl_active)
       return;
 
-   //const float val[2] = {2.5f, 2.5f};
-   
-   d3d_device_ptr->SetVertexShaderConstantF(0, (FLOAT*)&prg[active_index].mvp, 4);
+   const float ori_size[2] = {(float)width,     (float)height    };
+   const float out_size[2] = {(float)out_width, (float)out_height};
+   const float tex_size[2] = {(float)tex_width, (float)tex_height};
+
+   set_param_2f(prg[active_index].vid_size_f, ori_size, prg[active_index].f_ctable);
+   set_param_2f(prg[active_index].tex_size_f, tex_size, prg[active_index].f_ctable);
+   set_param_2f(prg[active_index].out_size_f, out_size, prg[active_index].f_ctable);
+
+   set_param_2f(prg[active_index].vid_size_v, ori_size, prg[active_index].v_ctable);
+   set_param_2f(prg[active_index].tex_size_v, tex_size, prg[active_index].v_ctable);
+   set_param_2f(prg[active_index].out_size_v, out_size, prg[active_index].v_ctable);
+
+   prg[active_index].v_ctable->SetMatrix(d3d_device_ptr, prg[active_index].mvp, (D3DXMATRIX*)&prg[active_index].mvp_val);
    //prg[active_index].f_ctable->SetFloatArray(d3d_device_ptr, prg[active_index].out_size_f, val, 2);
 }
 
@@ -105,6 +121,11 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    ret = true;
    ret_fp = false;
    ret_vp = false;
+
+   if(prg[index].f_ctable)
+      D3DResource_Release((D3DResource *)prg[index].f_ctable);
+   if(prg[index].v_ctable)
+      D3DResource_Release((D3DResource *)prg[0].v_ctable);
 
    if (path_is_file)
    {
@@ -129,6 +150,11 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
       ret = false;
       goto end;
    }
+
+   if(prg[index].fprg)
+      D3DResource_Release((D3DResource *)prg[0].fprg);
+   if(prg[index].vprg)
+      D3DResource_Release((D3DResource *)prg[0].vprg);
 
    prg[index].fprg = D3DDevice_CreatePixelShader((const DWORD*)code_f->GetBufferPointer());
    prg[index].vprg = D3DDevice_CreateVertexShader((const DWORD*)code_v->GetBufferPointer());
@@ -171,12 +197,6 @@ static bool load_plain(const char *path)
 
 static void hlsl_deinit_progs(void)
 {
-   if (prg[0].fprg)
-      D3DResource_Release((D3DResource *)prg[0].fprg);
-   if (prg[0].vprg)
-      D3DResource_Release((D3DResource *)prg[0].vprg);
-   D3DResource_Release((D3DResource *)prg[0].f_ctable);
-   D3DResource_Release((D3DResource *)prg[0].v_ctable);
 }
 
 static void hlsl_deinit_state(void)
@@ -205,14 +225,15 @@ static void set_program_attributes(unsigned i)
    prg[i].out_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.output_size");
    prg[i].frame_cnt_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_count");
    prg[i].frame_dir_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_direction");
+   prg[i].mvp         = prg[i].v_ctable->GetConstantByName(NULL, "$modelViewProj");
 }
 
 bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
 {
-   if (device_ptr != NULL)
-	   d3d_device_ptr = device_ptr;
-   else
-       return false;
+   if(!device_ptr)
+      return false;
+
+   d3d_device_ptr = device_ptr;
 
    if (strstr(path, ".cgp"))
    {

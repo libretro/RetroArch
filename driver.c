@@ -532,7 +532,7 @@ void init_video_input(void)
       if (geom->aspect_ratio > 0.0f && g_settings.video.aspect_ratio_auto)
          g_settings.video.aspect_ratio = geom->aspect_ratio;
       else
-         g_settings.video.aspect_ratio = (float)geom->base_width / geom->base_height;
+         g_settings.video.aspect_ratio = (float)geom->base_width / geom->base_height; // 1:1 PAR.
 
       SSNES_LOG("Adjusting aspect ratio to %.2f\n", g_settings.video.aspect_ratio);
    }
