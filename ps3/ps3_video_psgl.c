@@ -1038,7 +1038,7 @@ static void get_all_available_resolutions (void)
    resolution_count = 0;
    for (i = 0; i < num_videomodes; i++)
       if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i], CELL_VIDEO_OUT_ASPECT_AUTO,0))
-			resolution_count++;
+         resolution_count++;
 	
    g_console.supported_resolutions = (uint32_t*)malloc(resolution_count * sizeof(uint32_t));
 
@@ -1075,8 +1075,8 @@ void ps3_next_resolution (void)
 {
    if(g_console.current_resolution_index+1 < g_console.supported_resolutions_count)
    {
-	   g_console.current_resolution_index++;
-	   g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
+      g_console.current_resolution_index++;
+      g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
    }
 }
 
@@ -1084,8 +1084,8 @@ void ps3_previous_resolution (void)
 {
    if(g_console.current_resolution_index)
    {
-	   g_console.current_resolution_index--;
-	   g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
+      g_console.current_resolution_index--;
+      g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
    }
 }
 

@@ -159,10 +159,12 @@ static bool xdk360_key_pressed(void *data, int key)
    return retval;
 }
 
-const input_driver_t input_xdk360 = {
-	xdk360_input_initialize,
-	xdk360_input_poll,
-	xdk360_input_state,
-	xdk360_key_pressed,
-	xdk360_free_input,
-	"xdk360"};
+const input_driver_t input_xdk360 = 
+{
+   xdk360_input_initialize,
+   xdk360_input_poll,
+   xdk360_input_state,
+   xdk360_key_pressed,
+   xdk360_free_input,
+   "xdk360"
+};
