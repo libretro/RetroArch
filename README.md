@@ -26,7 +26,7 @@ SSNES has been ported to the following platforms :
    - Xbox 360 (Libxenon/XeXDK)
    - Wii (Libogc)
 
-# Dependencies
+# Dependencies (PC)
 
 SSNES requires these libraries to build:
 
@@ -53,6 +53,11 @@ SSNES needs at least one of these audio driver libraries:
 
 To run properly, SSNES requires a libretro implementation present, however, as it's typically loaded
 dynamically, it's not required at build time.
+
+# Dependencies (Console ports)
+
+Console ports have their own dependencies, but generally do not require
+anything other than what the respective SDKs provide.
 
 # Configuring
 
