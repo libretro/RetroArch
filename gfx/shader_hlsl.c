@@ -39,15 +39,15 @@ struct hlsl_program
    XMMATRIX mvp_val;
 };
 
-static IDirect3DDevice9 * d3d_device_ptr;
+static IDirect3DDevice9 *d3d_device_ptr;
 static struct hlsl_program prg[SSNES_HLSL_MAX_SHADERS] = {0};
 static bool hlsl_active = false;
 static unsigned active_index = 0;
 
-static const char* stock_hlsl_program =
+static const char *stock_hlsl_program =
       "void main_vertex                                                "
       "(                                                               "
-	  "   float2 position : POSITION,                                  "
+      "   float2 position : POSITION,                                  "
       "   float2 texCoord : TEXCOORD0,                                 "
       "   uniform float4x4 modelViewProj : register(c0),               "
       "   out float4 oPosition : POSITION,                             "
@@ -57,21 +57,21 @@ static const char* stock_hlsl_program =
       "   oPosition = mul(modelViewProj, float4(position, 0.0, 1.0));  "
       "   otexCoord = texCoord;                                        "
       "}                                                               "
-	  "                                                                "
+      "                                                                "
       "struct output                                                   "
-	  "{                                                               "
+      "{                                                               "
       "   float4 color: COLOR;                                         "
       "};                                                              "
-	  "                                                                "
+      "                                                                "
       "struct input                                                    "
       "{                                                               "
       "   float2 video_size;                                           "
       "   float2 texture_size;                                         "
-	  "   float2 output_size;                                          "
+      "   float2 output_size;                                          "
       "};                                                              "
-	  "                                                                "
+      "                                                                "
       "output main_fragment(float2 texCoord : TEXCOORD0,               " 
-	  "uniform sampler2D decal : register(s0), uniform input IN)       "
+      "uniform sampler2D decal : register(s0), uniform input IN)       "
       "{                                                               "
       "   output OUT;                                                  "
       "   OUT.color = tex2D(decal, tex);                               "
@@ -85,9 +85,9 @@ void hlsl_set_proj_matrix(XMMATRIX rotation_value)
 }
 
 #define set_param_2f(param, xy, constanttable) \
-   if (param) constanttable->SetFloatArray(d3d_device_ptr, param, xy, 2);
+   if (param) constanttable->SetFloatArray(d3d_device_ptr, param, xy, 2)
 #define set_param_1f(param, x, constanttable) \
-   if (param) constanttable->SetFloat(d3d_device_ptr, param, x);
+   if (param) constanttable->SetFloat(d3d_device_ptr, param, x)
 
 void hlsl_set_params(unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height,
@@ -97,9 +97,9 @@ void hlsl_set_params(unsigned width, unsigned height,
    if (!hlsl_active)
       return;
 
-   const float ori_size[2] = {(float)width,     (float)height    };
-   const float out_size[2] = {(float)out_width, (float)out_height};
-   const float tex_size[2] = {(float)tex_width, (float)tex_height};
+   const float ori_size[2] = { (float)width,     (float)height     };
+   const float tex_size[2] = { (float)tex_width, (float)tex_height };
+   const float out_size[2] = { (float)out_width, (float)out_height };
 
    set_param_2f(prg[active_index].vid_size_f, ori_size, prg[active_index].f_ctable);
    set_param_2f(prg[active_index].tex_size_f, tex_size, prg[active_index].f_ctable);
@@ -126,21 +126,25 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    ret_fp = false;
    ret_vp = false;
 
-   if(prg[index].f_ctable)
+   if (prg[index].f_ctable)
       D3DResource_Release((D3DResource *)prg[index].f_ctable);
-   if(prg[index].v_ctable)
+   if (prg[index].v_ctable)
       D3DResource_Release((D3DResource *)prg[0].v_ctable);
 
    if (path_is_file)
    {
-      ret_fp = D3DXCompileShaderFromFile(prog, NULL, NULL, "main_fragment", "ps_2_0", 0, &code_f, &listing_f, &prg[index].f_ctable); 
-      ret_vp = D3DXCompileShaderFromFile(prog, NULL, NULL, "main_vertex", "vs_2_0", 0, &code_v, &listing_v, &prg[index].v_ctable); 
+      ret_fp = D3DXCompileShaderFromFile(prog, NULL, NULL,
+            "main_fragment", "ps_2_0", 0, &code_f, &listing_f, &prg[index].f_ctable); 
+      ret_vp = D3DXCompileShaderFromFile(prog, NULL, NULL,
+            "main_vertex", "vs_2_0", 0, &code_v, &listing_v, &prg[index].v_ctable); 
    }
    else
    {
       /* TODO - crashes currently - to do with 'end of line' of stock shader */
-      ret_fp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL, "main_fragment", "ps_2_0", 0, &code_f, &listing_f, &prg[index].f_ctable );
-      ret_vp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL, "main_vertex", "vs_2_0", 0, &code_v, &listing_v, &prg[index].v_ctable );
+      ret_fp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL,
+            "main_fragment", "ps_2_0", 0, &code_f, &listing_f, &prg[index].f_ctable );
+      ret_vp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL,
+            "main_vertex", "vs_2_0", 0, &code_v, &listing_v, &prg[index].v_ctable );
    }
 
    if (FAILED(ret_fp) || FAILED(ret_vp) || listing_v || listing_f)
@@ -155,9 +159,9 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
       goto end;
    }
 
-   if(prg[index].fprg)
+   if (prg[index].fprg)
       D3DResource_Release((D3DResource *)prg[0].fprg);
-   if(prg[index].vprg)
+   if (prg[index].vprg)
       D3DResource_Release((D3DResource *)prg[0].vprg);
 
    prg[index].fprg = D3DDevice_CreatePixelShader((const DWORD*)code_f->GetBufferPointer());
@@ -166,9 +170,9 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    code_v->Release();
 
 end:
-   if(listing_f)
+   if (listing_f)
       listing_f->Release();
-   if(listing_v)
+   if (listing_v)
       listing_v->Release();
    return ret;
 }
@@ -200,8 +204,7 @@ static bool load_plain(const char *path)
 }
 
 static void hlsl_deinit_progs(void)
-{
-}
+{}
 
 static void hlsl_deinit_state(void)
 {
@@ -234,7 +237,7 @@ static void set_program_attributes(unsigned i)
 
 bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
 {
-   if(!device_ptr)
+   if (!device_ptr)
       return false;
 
    d3d_device_ptr = device_ptr;
@@ -275,3 +278,4 @@ void hlsl_deinit(void)
 
    hlsl_deinit_state();
 }
+
