@@ -105,20 +105,31 @@ extern "C" {
                                            //
 #define RETRO_ENVIRONMENT_SET_MESSAGE   6  // const struct retro_message * --
                                            // Sets a message to be displayed in implementation-specific manner for a certain amount of 'frames'.
+                                           // Should not be used for trivial messages, which should simply be logged to stderr.
 
 struct retro_message
 {
-   const char *msg;
-   unsigned    frames;
+   const char *msg;        // Message to be displayed.
+   unsigned    frames;     // Duration in frames of message.
 };
 
 struct retro_system_info
 {
-   const char *library_name;
-   const char *library_version;
-   const char *valid_extensions;
-   bool        need_fullpath;
-   bool        block_extract;
+   const char *library_name;      // Descriptive name of library. Should not contain any version numbers, etc.
+   const char *library_version;   // Descriptive version of core.
+
+   const char *valid_extensions;  // A string listing probably rom extensions the core will be able to load, separated with pipe.
+                                  // I.e. "bin|rom|iso".
+                                  // Typically used for a GUI to filter out extensions.
+
+   bool        need_fullpath;     // If true, retro_load_game() is guaranteed to provide a valid pathname in retro_game_info::path.
+                                  // ::data and ::size are both invalid.
+                                  // If false, ::data and ::size are guaranteed to be valid, but ::path might not be valid.
+                                  // This is typically set to true for libretro implementations that must load from file.
+                                  // Implementations should strive for setting this to false, as it allows the frontend to perform patching, etc.
+
+   bool        block_extract;     // If true, the frontend is not allowed to extract any archives before loading the real ROM.
+                                  // Necessary for certain libretro implementations that load games from zipped archives.
 };
 
 struct retro_game_geometry
@@ -158,32 +169,39 @@ struct retro_game_info
 {
    const char *path;       // Path to game, UTF-8 encoded. Usually used as a reference.
                            // May be NULL if rom was loaded from stdin or similar.
-                           // SET_NEED_FULLPATH path guaranteed that this path is valid.
-   const void *data;       // Memory buffer of loaded game.
-                           // If the game is too big to load in one go.
-                           // SET_NEED_FULLPATH should be used.
-                           // In this case, data and size will be 0,
-                           // and game can be loaded from path.
+                           // retro_system_info::need_fullpath guaranteed that this path is valid.
+   const void *data;       // Memory buffer of loaded game. Will be NULL if need_fullpath was set.
    size_t      size;       // Size of memory buffer.
    const char *meta;       // String of implementation specific meta-data.
 };
 
+// Callbacks
+//
+// Environment callback. Gives implementations a way of performing uncommon tasks. Extensible.
 typedef bool (*retro_environment_t)(unsigned cmd, void *data);
+
+// Render a frame. Pixel format is 15-bit XRGB1555 native endian.
+// Width and height specify dimensions of buffer.
+// Pitch specifices length in bytes between two lines in buffer.
 typedef void (*retro_video_refresh_t)(const void *data, unsigned width, unsigned height, size_t pitch);
+
+// Renders a single audio frame. Should only be used if implementation generates a single sample at a time.
+// Format is signed 16-bit native endian.
 typedef void (*retro_audio_sample_t)(int16_t left, int16_t right);
+// Renders multiple audio frames in one go. One frame is defined as a sample of left and right channels, interleaved.
+// I.e. int16_t buf[4] = { l, r, l, r }; would be 2 frames.
+// Only one of the audio callbacks must ever be used.
 typedef size_t (*retro_audio_sample_batch_t)(const int16_t *data, size_t frames);
 
+// Polls input.
 typedef void (*retro_input_poll_t)(void);
+// Queries for input for player 'port'. device will be masked with RETRO_DEVICE_MASK.
+// Specialization of devices such as RETRO_DEVICE_JOYPAD_MULTITAP that have been set with retro_set_controller_port_device()
+// will still use the higher level RETRO_DEVICE_JOYPAD to request input.
 typedef int16_t (*retro_input_state_t)(unsigned port, unsigned device, unsigned index, unsigned id);
 
-void retro_init(void);
-void retro_deinit(void);
-
-unsigned retro_api_version(void);
-
-void retro_get_system_info(struct retro_system_info *info);
-void retro_get_system_av_info(struct retro_system_av_info *info);
-
+// Sets callbacks. retro_set_environment() is guaranteed to be called before retro_init().
+// The rest of the set_* functions are guaranteed to have been called before the first call to retro_run() is made.
 void retro_set_environment(retro_environment_t);
 void retro_set_video_refresh(retro_video_refresh_t);
 void retro_set_audio_sample(retro_audio_sample_t);
@@ -191,29 +209,63 @@ void retro_set_audio_sample_batch(retro_audio_sample_batch_t);
 void retro_set_input_poll(retro_input_poll_t);
 void retro_set_input_state(retro_input_state_t);
 
+// Library global initialization/deinitialization.
+void retro_init(void);
+void retro_deinit(void);
+
+// Must return RETRO_API_VERSION. Used to validate ABI compatibility when the API is revised.
+unsigned retro_api_version(void);
+
+// Gets statically known system info. Pointers provided in *info must be statically allocated.
+// Can be called at any time, even before retro_init().
+void retro_get_system_info(struct retro_system_info *info);
+
+// Gets information about system audio/video timings and geometry.
+// Can be called only after retro_load_game() has successfully completed.
+void retro_get_system_av_info(struct retro_system_av_info *info);
+
+// Sets device to be used for player 'port'.
 void retro_set_controller_port_device(unsigned port, unsigned device);
 
+// Resets the current game.
 void retro_reset(void);
+
+// Runs the game for one video frame.
+// During retro_run(), input_poll callback must be called at least once.
+//
+// If a frame is not rendered for reasons where a game "dropped" a frame,
+// this still counts as a frame, and retro_run() should explicitly dupe a frame if GET_CAN_DUPE returns true.
+// In this case, the video callback can take a NULL argument for data.
 void retro_run(void);
 
+// Returns the amount of data the implementation requires to serialize internal state (save states).
+// Beetween calls to retro_load_game() and retro_unload_game(), the returned size is never allowed to be larger than a previous returned value, to
+// ensure that the frontend can allocate a save state buffer once.
 size_t retro_serialize_size(void);
+
+// Serializes internal state. If failed, or size is lower than retro_serialize_size(), it should return false, true otherwise.
 bool retro_serialize(void *data, size_t size);
 bool retro_unserialize(const void *data, size_t size);
 
 void retro_cheat_reset(void);
 void retro_cheat_set(unsigned index, bool enabled, const char *code);
 
+// Loads a game.
 bool retro_load_game(const struct retro_game_info *game);
 
+// Loads a "special" kind of game. Should not be used except in extreme cases.
 bool retro_load_game_special(
   unsigned game_type,
   const struct retro_game_info *info, size_t num_info
 );
 
+// Unloads a currently loaded game.
 void retro_unload_game(void);
 
+// Gets region of game.
 unsigned retro_get_region(void);
 
+// Gets region of memory.
 void *retro_get_memory_data(unsigned id);
 size_t retro_get_memory_size(unsigned id);
 
