@@ -86,10 +86,13 @@ void hlsl_set_proj_matrix(XMMATRIX rotation_value)
 
 #define set_param_2f(param, xy, constanttable) \
    if (param) constanttable->SetFloatArray(d3d_device_ptr, param, xy, 2);
+#define set_param_1f(param, x, constanttable) \
+   if (param) constanttable->SetFloat(d3d_device_ptr, param, x);
 
 void hlsl_set_params(unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height,
-      unsigned out_width, unsigned out_height)
+      unsigned out_width, unsigned out_height,
+      unsigned frame_count)
 {
    if (!hlsl_active)
       return;
@@ -101,13 +104,14 @@ void hlsl_set_params(unsigned width, unsigned height,
    set_param_2f(prg[active_index].vid_size_f, ori_size, prg[active_index].f_ctable);
    set_param_2f(prg[active_index].tex_size_f, tex_size, prg[active_index].f_ctable);
    set_param_2f(prg[active_index].out_size_f, out_size, prg[active_index].f_ctable);
+   set_param_1f(prg[active_index].frame_cnt_f, (float)frame_count, prg[active_index].f_ctable);
 
    set_param_2f(prg[active_index].vid_size_v, ori_size, prg[active_index].v_ctable);
    set_param_2f(prg[active_index].tex_size_v, tex_size, prg[active_index].v_ctable);
    set_param_2f(prg[active_index].out_size_v, out_size, prg[active_index].v_ctable);
+   set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count, prg[active_index].v_ctable);
 
    prg[active_index].v_ctable->SetMatrix(d3d_device_ptr, prg[active_index].mvp, (D3DXMATRIX*)&prg[active_index].mvp_val);
-   //prg[active_index].f_ctable->SetFloatArray(d3d_device_ptr, prg[active_index].out_size_f, val, 2);
 }
 
 static bool load_program(unsigned index, const char *prog, bool path_is_file)
