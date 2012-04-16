@@ -438,6 +438,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    hlsl_set_params(width, height, 512, 512, vid->d3dpp.BackBufferWidth,
       vid->d3dpp.BackBufferHeight, g_frame_count);
 
+   D3DDevice_SetTexture_Inline(vid->xdk360_render_device, 0, NULL);
    D3DLOCKED_RECT d3dlr;
    D3DTexture_LockRect(vid->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    for (unsigned y = 0; y < height; y++)
