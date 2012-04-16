@@ -190,7 +190,7 @@ ifeq ($(DEBUG), 1)
    OPTIMIZE_FLAG = -O0
 endif
 
-CFLAGS += -Wall $(OPTIMIZE_FLAG) -g -I. -pedantic
+CFLAGS += -Wall -Wno-unused-result $(OPTIMIZE_FLAG) -g -I. -pedantic
 ifeq ($(CXX_BUILD), 1)
    CFLAGS += -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS
 else
