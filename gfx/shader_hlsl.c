@@ -36,7 +36,7 @@ struct hlsl_program
    D3DXHANDLE   mvp;
    LPD3DXCONSTANTTABLE v_ctable;
    LPD3DXCONSTANTTABLE f_ctable;
-   XMMATRIX mvp_val;
+   XMMATRIX mvp_val;   /* TODO: Move to D3DXMATRIX here */
 };
 
 static IDirect3DDevice9 *d3d_device_ptr;
@@ -111,6 +111,7 @@ void hlsl_set_params(unsigned width, unsigned height,
    set_param_2f(prg[active_index].out_size_v, out_size, prg[active_index].v_ctable);
    set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count, prg[active_index].v_ctable);
 
+   /* TODO: Move to D3DXMATRIX here */
    prg[active_index].v_ctable->SetMatrix(d3d_device_ptr, prg[active_index].mvp, (D3DXMATRIX*)&prg[active_index].mvp_val);
 }
 

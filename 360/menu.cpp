@@ -489,7 +489,7 @@ int menu_init (void)
 
    xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 
-   hr = app.InitShared(vid->xdk360_render_device, &vid->d3dpp, XuiPNGTextureLoader);
+   hr = app.InitShared(vid->d3d_render_device, &vid->d3dpp, XuiPNGTextureLoader);
 
    if (FAILED(hr))
    {
@@ -544,8 +544,8 @@ void menu_loop(void)
          ssnes_render_cached_frame();
       }
       else
-         D3DDevice_Clear(vid->xdk360_render_device, 0, NULL,
-			      D3DCLEAR_TARGET, D3DCOLOR_ARGB(255, 32, 32, 64), 1.0, 0, FALSE);
+         vid->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+	   D3DCOLOR_ARGB(255, 32, 32, 64), 1.0f, 0);
 
       XINPUT_STATE state;
       XInputGetState(0, &state);

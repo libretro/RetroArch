@@ -14,8 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// Xbox 360-specific headers
 #include <xtl.h>
 #include <xgraphics.h>
+
 #include "../driver.h"
 #include "xdk360_video.h"
 #include "xdk360_video_resources.h"
@@ -33,6 +35,8 @@ static bool g_quitting;
 static bool g_first_msg;
 unsigned g_frame_count;
 void *g_d3d;
+
+/* Xbox 360 specific code */
 
 struct XPR_HEADER
 {
@@ -179,6 +183,8 @@ void PackedResource::Destroy()
     m_bInitialized = FALSE;
 }
 
+/* end of Xbox 360 specific code */
+
 static void xdk360_gfx_free(void * data)
 {
    if (g_d3d)
@@ -193,8 +199,8 @@ static void xdk360_gfx_free(void * data)
    vid->vertex_buf->Release();
    vid->v_decl->Release();
    hlsl_deinit();
-   vid->xdk360_render_device->Release();
-   vid->xdk360_device->Release();
+   vid->d3d_render_device->Release();
+   vid->d3d_device->Release();
 
    free(vid);
 }
@@ -202,7 +208,7 @@ static void xdk360_gfx_free(void * data)
 static void set_viewport(bool force_full)
 {
    xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-   vid->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+   vid->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
 	   0xff000000, 1.0f, 0);
 
    int width = vid->video_mode.fIsHiDef ? 1280 : 640;
@@ -255,7 +261,7 @@ static void set_viewport(bool force_full)
    vp.Y      = m_viewport_y_temp;
    vp.MinZ   = m_zNear;
    vp.MaxZ   = m_zFar;
-   vid->xdk360_render_device->SetViewport(&vp);
+   vid->d3d_render_device->SetViewport(&vp);
 
    //if(gl->overscan_enable && !force_full)
    //{
@@ -287,6 +293,7 @@ static void xdk360_set_orientation(void * data, uint32_t orientation)
          break;
    }
 
+   /* TODO: Move to D3DXMATRIX here */
    hlsl_set_proj_matrix(XMMatrixRotationZ(angle));
 }
 
@@ -308,8 +315,8 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    if (!vid)
       return NULL;
 
-   vid->xdk360_device = Direct3DCreate9(D3D_SDK_VERSION);
-   if (!vid->xdk360_device)
+   vid->d3d_device = Direct3DCreate9(D3D_SDK_VERSION);
+   if (!vid->d3d_device)
    {
       free(vid);
       return NULL;
@@ -340,12 +347,12 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    vid->d3dpp.PresentationInterval    = video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 
    // D3DCREATE_HARDWARE_VERTEXPROCESSING is ignored on 360
-   vid->xdk360_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
-	   &vid->d3dpp, &vid->xdk360_render_device);
+   vid->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
+	   &vid->d3dpp, &vid->d3d_render_device);
 
-   hlsl_init(g_settings.video.cg_shader_path, vid->xdk360_render_device);
+   hlsl_init(g_settings.video.cg_shader_path, vid->d3d_render_device);
 
-   vid->xdk360_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
+   vid->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
       0, &vid->lpTexture, NULL);
 
    D3DLOCKED_RECT d3dlr;
@@ -356,7 +363,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    vid->last_width = 512;
    vid->last_height = 512;
 
-   vid->xdk360_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
+   vid->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
 	   0, 0, 0, &vid->vertex_buf, NULL);
 
    static const DrawVerticeFormats init_verts[] = {
@@ -378,20 +385,20 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
       D3DDECL_END()
    };
 
-   vid->xdk360_render_device->CreateVertexDeclaration(VertexElements, &vid->v_decl);
+   vid->d3d_render_device->CreateVertexDeclaration(VertexElements, &vid->v_decl);
    
-   vid->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+   vid->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
 	   0xff000000, 1.0f, 0);
 
-   vid->xdk360_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-   vid->xdk360_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
+   vid->d3d_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+   vid->d3d_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
 
    D3DVIEWPORT9 vp = {0};
    vp.Width  = vid->video_mode.fIsHiDef ? 1280 : 640;
    vp.Height = vid->video_mode.fIsHiDef ? 720 : 480;
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
-   vid->xdk360_render_device->SetViewport(&vp);
+   vid->d3d_render_device->SetViewport(&vp);
 
    xdk360_set_orientation(NULL, g_console.screen_orientation);
 
@@ -403,7 +410,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 {
    xdk360_video_t *vid = (xdk360_video_t*)data;
 
-   vid->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+   vid->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
 	   0xff000000, 1.0f, 0);
    g_frame_count++;
 
@@ -438,7 +445,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    hlsl_set_params(width, height, 512, 512, vid->d3dpp.BackBufferWidth,
       vid->d3dpp.BackBufferHeight, g_frame_count);
 
-   vid->xdk360_render_device->SetTexture(0, NULL);
+   vid->d3d_render_device->SetTexture(0, NULL);
 
    D3DLOCKED_RECT d3dlr;
    vid->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
@@ -450,16 +457,18 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    }
    vid->lpTexture->UnlockRect(0);
 
-   vid->xdk360_render_device->SetTexture(0, vid->lpTexture);
-   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   vid->d3d_render_device->SetTexture(0, vid->lpTexture);
+   vid->d3d_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   vid->d3d_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   vid->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   vid->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 
-   vid->xdk360_render_device->SetVertexDeclaration(vid->v_decl);
-   vid->xdk360_render_device->SetStreamSource(0, vid->vertex_buf, 0, sizeof(DrawVerticeFormats));
+   vid->d3d_render_device->SetVertexDeclaration(vid->v_decl);
+   vid->d3d_render_device->SetStreamSource(0, vid->vertex_buf, 0, sizeof(DrawVerticeFormats));
 
-   vid->xdk360_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+   vid->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+
+   /* XBox 360 specific font code */
    if (msg)
    {
       if(IS_TIMER_EXPIRED() || g_first_msg)
@@ -473,7 +482,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    }
 
    if(!vid->block_swap)
-      vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);
+      vid->d3d_render_device->Present(NULL, NULL, NULL, NULL);
 
    return true;
 }
@@ -494,17 +503,18 @@ static void xdk360_swap (void * data)
 {
    (void)data;
    xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-   vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);
+   vid->d3d_render_device->Present(NULL, NULL, NULL, NULL);
 }
 
 static void xdk360_gfx_set_nonblock_state(void *data, bool state)
 {
    xdk360_video_t *vid = (xdk360_video_t*)data;
    SSNES_LOG("D3D Vsync => %s\n", state ? "off" : "on");
+   /* XBox 360 specific code */
    if(state)
-      vid->xdk360_render_device->SetRenderState(D3DRS_PRESENTINTERVAL, D3DPRESENT_INTERVAL_IMMEDIATE);
+      vid->d3d_render_device->SetRenderState(D3DRS_PRESENTINTERVAL, D3DPRESENT_INTERVAL_IMMEDIATE);
    else
-      vid->xdk360_render_device->SetRenderState(D3DRS_PRESENTINTERVAL, D3DPRESENT_INTERVAL_ONE);
+      vid->d3d_render_device->SetRenderState(D3DRS_PRESENTINTERVAL, D3DPRESENT_INTERVAL_ONE);
 }
 
 static bool xdk360_gfx_alive(void *data)
@@ -542,6 +552,7 @@ void xdk360_video_init(void)
 
    g_first_msg = true;
 
+   /* XBox 360 specific font code */
    HRESULT hr = xdk360_console_init("game:\\media\\Arial_12.xpr",
       0xff000000, 0xffffffff );
 
