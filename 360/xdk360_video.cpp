@@ -195,9 +195,6 @@ static void xdk360_gfx_free(void * data)
    if (!vid)
       return;
 
-   vid->lpTexture->Release();
-   vid->vertex_buf->Release();
-   vid->v_decl->Release();
    hlsl_deinit();
    vid->d3d_render_device->Release();
    vid->d3d_device->Release();
