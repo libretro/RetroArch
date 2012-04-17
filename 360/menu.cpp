@@ -526,6 +526,11 @@ int menu_init (void)
    return 0;
 }
 
+void menu_deinit (void)
+{
+	app.Uninit();
+}
+
 void menu_loop(void)
 {
    g_console.menu_enable = true;

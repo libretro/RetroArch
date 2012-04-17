@@ -416,6 +416,7 @@ begin_shutdown:
    if(path_file_exists(SYS_CONFIG_FILE))
       save_settings();
 
+   menu_deinit();
    xdk360_video_deinit();
    ssnes_exec();
 
