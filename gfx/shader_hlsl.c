@@ -105,11 +105,13 @@ void hlsl_set_params(unsigned width, unsigned height,
    set_param_2f(prg[active_index].tex_size_f, tex_size, prg[active_index].f_ctable);
    set_param_2f(prg[active_index].out_size_f, out_size, prg[active_index].f_ctable);
    set_param_1f(prg[active_index].frame_cnt_f, (float)frame_count, prg[active_index].f_ctable);
+   set_param_1f(prg[active_index].frame_dir_f, g_extern.frame_is_reverse ? -1.0 : 1.0,prg[active_index].f_ctable);
 
    set_param_2f(prg[active_index].vid_size_v, ori_size, prg[active_index].v_ctable);
    set_param_2f(prg[active_index].tex_size_v, tex_size, prg[active_index].v_ctable);
    set_param_2f(prg[active_index].out_size_v, out_size, prg[active_index].v_ctable);
    set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count, prg[active_index].v_ctable);
+   set_param_1f(prg[active_index].frame_dir_v, g_extern.frame_is_reverse ? -1.0 : 1.0,prg[active_index].v_ctable);
 
    /* TODO: Move to D3DXMATRIX here */
    prg[active_index].v_ctable->SetMatrix(d3d_device_ptr, prg[active_index].mvp, (D3DXMATRIX*)&prg[active_index].mvp_val);
@@ -135,17 +137,17 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    if (path_is_file)
    {
       ret_fp = D3DXCompileShaderFromFile(prog, NULL, NULL,
-            "main_fragment", "ps_2_0", 0, &code_f, &listing_f, &prg[index].f_ctable); 
+            "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &prg[index].f_ctable); 
       ret_vp = D3DXCompileShaderFromFile(prog, NULL, NULL,
-            "main_vertex", "vs_2_0", 0, &code_v, &listing_v, &prg[index].v_ctable); 
+            "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &prg[index].v_ctable); 
    }
    else
    {
       /* TODO - crashes currently - to do with 'end of line' of stock shader */
       ret_fp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL,
-            "main_fragment", "ps_2_0", 0, &code_f, &listing_f, &prg[index].f_ctable );
+            "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &prg[index].f_ctable );
       ret_vp = D3DXCompileShader(prog, (UINT)strlen(prog), NULL, NULL,
-            "main_vertex", "vs_2_0", 0, &code_v, &listing_v, &prg[index].v_ctable );
+            "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &prg[index].v_ctable );
    }
 
    if (FAILED(ret_fp) || FAILED(ret_vp) || listing_v || listing_f)
@@ -231,16 +233,27 @@ static bool load_preset(const char *path)
 
 static void set_program_attributes(unsigned i)
 {
+   SSNES_LOG("Fragment: IN.video_size.\n");
    prg[i].vid_size_f  = prg[i].f_ctable->GetConstantByName(NULL, "$IN.video_size");
+   SSNES_LOG("Fragment: IN.texture_size.\n");
    prg[i].tex_size_f  = prg[i].f_ctable->GetConstantByName(NULL, "$IN.texture_size");
+   SSNES_LOG("Fragment: IN.output_size.\n");
    prg[i].out_size_f  = prg[i].f_ctable->GetConstantByName(NULL, "$IN.output_size");
+   SSNES_LOG("Fragment: IN.frame_count.\n");
    prg[i].frame_cnt_f = prg[i].f_ctable->GetConstantByName(NULL, "$IN.frame_count");
+   SSNES_LOG("Fragment: IN.frame_direction.\n");
    prg[i].frame_dir_f = prg[i].f_ctable->GetConstantByName(NULL, "$IN.frame_direction");
+   SSNES_LOG("Vertex: IN.video_size.\n");
    prg[i].vid_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.video_size");
+   SSNES_LOG("Vertex: IN.texture_size.\n");
    prg[i].tex_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.texture_size");
+   SSNES_LOG("Vertex: IN.output_size.\n");
    prg[i].out_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.output_size");
+   SSNES_LOG("Vertex: IN.frame_count.\n");
    prg[i].frame_cnt_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_count");
+   SSNES_LOG("Vertex: IN.frame_direction.\n");
    prg[i].frame_dir_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_direction");
+   SSNES_LOG("Vertex: modelViewProj.\n");
    prg[i].mvp         = prg[i].v_ctable->GetConstantByName(NULL, "$modelViewProj");
 }
 
