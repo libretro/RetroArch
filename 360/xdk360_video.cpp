@@ -189,14 +189,12 @@ static void xdk360_gfx_free(void * data)
    if (!vid)
       return;
 
-   D3DResource_Release((D3DResource *)vid->lpTexture);
-   D3DResource_Release((D3DResource *)vid->vertex_buf);
-   D3DResource_Release((D3DResource *)vid->v_decl);
-   D3DDevice_Release(vid->xdk360_render_device);
-   Direct3D_Release();
-
-   //breaks right now
-   //hlsl_deinit();
+   vid->lpTexture->Release();
+   vid->vertex_buf->Release();
+   vid->v_decl->Release();
+   hlsl_deinit();
+   vid->xdk360_render_device->Release();
+   vid->xdk360_device->Release();
 
    free(vid);
 }
@@ -204,8 +202,8 @@ static void xdk360_gfx_free(void * data)
 static void set_viewport(bool force_full)
 {
    xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-   D3DDevice_Clear(vid->xdk360_render_device, 0, NULL, D3DCLEAR_TARGET,
-      0xff000000, 1.0f, 0, FALSE);
+   vid->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+	   0xff000000, 1.0f, 0);
 
    int width = vid->video_mode.fIsHiDef ? 1280 : 640;
    int height = vid->video_mode.fIsHiDef ? 720 : 480;
@@ -257,7 +255,7 @@ static void set_viewport(bool force_full)
    vp.Y      = m_viewport_y_temp;
    vp.MinZ   = m_zNear;
    vp.MaxZ   = m_zFar;
-   D3DDevice_SetViewport(vid->xdk360_render_device, &vp);
+   vid->xdk360_render_device->SetViewport(&vp);
 
    //if(gl->overscan_enable && !force_full)
    //{
@@ -303,8 +301,6 @@ static void xdk360_set_aspect_ratio(void * data, uint32_t aspectratio_index)
 
 static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-   HRESULT ret;
-
    if (g_d3d)
       return g_d3d;
 
@@ -344,22 +340,24 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    vid->d3dpp.PresentationInterval    = video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 
    // D3DCREATE_HARDWARE_VERTEXPROCESSING is ignored on 360
-   ret = Direct3D_CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &vid->d3dpp, &vid->xdk360_render_device);
+   vid->xdk360_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
+	   &vid->d3dpp, &vid->xdk360_render_device);
 
    hlsl_init(g_settings.video.cg_shader_path, vid->xdk360_render_device);
 
-   vid->lpTexture = (D3DTexture*) D3DDevice_CreateTexture(512, 512, 1, 1, 0, D3DFMT_LIN_X1R5G5B5,
-		   0, D3DRTYPE_TEXTURE);
+   vid->xdk360_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
+      0, &vid->lpTexture, NULL);
 
    D3DLOCKED_RECT d3dlr;
-   D3DTexture_LockRect(vid->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   vid->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
-   D3DTexture_UnlockRect(vid->lpTexture, 0);
+   vid->lpTexture->UnlockRect(0);
 
    vid->last_width = 512;
    vid->last_height = 512;
 
-   vid->vertex_buf = D3DDevice_CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 0, 0);
+   vid->xdk360_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
+	   0, 0, 0, &vid->vertex_buf, NULL);
 
    static const DrawVerticeFormats init_verts[] = {
       { -1.0f, -1.0f, 0.0f, 1.0f },
@@ -368,9 +366,10 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
       {  1.0f,  1.0f, 1.0f, 0.0f },
    };
    
-   void *verts_ptr = (BYTE*)D3DVertexBuffer_Lock(vid->vertex_buf, 0, 0, 0);
+   void *verts_ptr;
+   vid->vertex_buf->Lock(0, 0, &verts_ptr, 0);
    memcpy(verts_ptr, init_verts, sizeof(init_verts));
-   D3DVertexBuffer_Unlock(vid->vertex_buf);
+   vid->vertex_buf->Unlock();
 
    static const D3DVERTEXELEMENT9 VertexElements[] =
    {
@@ -379,20 +378,20 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
       D3DDECL_END()
    };
 
-   vid->v_decl = D3DDevice_CreateVertexDeclaration(VertexElements);
+   vid->xdk360_render_device->CreateVertexDeclaration(VertexElements, &vid->v_decl);
    
-   D3DDevice_Clear(vid->xdk360_render_device, 0, NULL, D3DCLEAR_TARGET,
-	   0xff000000, 1.0f, 0, FALSE);
+   vid->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+	   0xff000000, 1.0f, 0);
 
-   D3DDevice_SetRenderState_CullMode(vid->xdk360_render_device, D3DCULL_NONE);
-   D3DDevice_SetRenderState_ZEnable(vid->xdk360_render_device, FALSE);
+   vid->xdk360_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+   vid->xdk360_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
 
    D3DVIEWPORT9 vp = {0};
    vp.Width  = vid->video_mode.fIsHiDef ? 1280 : 640;
    vp.Height = vid->video_mode.fIsHiDef ? 720 : 480;
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
-   D3DDevice_SetViewport(vid->xdk360_render_device, &vp);
+   vid->xdk360_render_device->SetViewport(&vp);
 
    xdk360_set_orientation(NULL, g_console.screen_orientation);
 
@@ -404,17 +403,17 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 {
    xdk360_video_t *vid = (xdk360_video_t*)data;
 
-   D3DDevice_Clear(vid->xdk360_render_device, 0, NULL, D3DCLEAR_TARGET,
-	   0xff000000, 1.0f, 0, FALSE);
+   vid->xdk360_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+	   0xff000000, 1.0f, 0);
    g_frame_count++;
 
    if (vid->last_width != width || vid->last_height != height)
    {
       D3DLOCKED_RECT d3dlr;
 
-      D3DTexture_LockRect(vid->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+      vid->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
       memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
-      D3DTexture_UnlockRect(vid->lpTexture, 0);
+      vid->lpTexture->UnlockRect(0);
 
       float tex_w = width / 512.0f;
       float tex_h = height / 512.0f;
@@ -426,9 +425,10 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 	 {  1.0f,  1.0f, tex_w, 0.0f },
       };
 
-      void *verts_ptr = (BYTE*)D3DVertexBuffer_Lock(vid->vertex_buf, 0, 0, 0);
+      void *verts_ptr;
+	  vid->vertex_buf->Lock(0, 0, &verts_ptr, 0);
       memcpy(verts_ptr, verts, sizeof(verts));
-      D3DVertexBuffer_Unlock(vid->vertex_buf);
+	  vid->vertex_buf->Unlock();
 
       vid->last_width = width;
       vid->last_height = height;
@@ -438,42 +438,42 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    hlsl_set_params(width, height, 512, 512, vid->d3dpp.BackBufferWidth,
       vid->d3dpp.BackBufferHeight, g_frame_count);
 
-   D3DDevice_SetTexture_Inline(vid->xdk360_render_device, 0, NULL);
+   vid->xdk360_render_device->SetTexture(0, NULL);
+
    D3DLOCKED_RECT d3dlr;
-   D3DTexture_LockRect(vid->lpTexture, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   vid->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    for (unsigned y = 0; y < height; y++)
    {
       const uint8_t *in = (const uint8_t*)frame + y * pitch;
       uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
       memcpy(out, in, width * sizeof(uint16_t));
    }
-   D3DTexture_UnlockRect(vid->lpTexture, 0);
+   vid->lpTexture->UnlockRect(0);
 
-   D3DDevice_SetTexture_Inline(vid->xdk360_render_device, 0, vid->lpTexture);
-   D3DDevice_SetSamplerState(vid->xdk360_render_device, 0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   D3DDevice_SetSamplerState(vid->xdk360_render_device, 0, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   D3DDevice_SetSamplerState(vid->xdk360_render_device, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   D3DDevice_SetSamplerState(vid->xdk360_render_device, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   vid->xdk360_render_device->SetTexture(0, vid->lpTexture);
+   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   vid->xdk360_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 
-   D3DDevice_SetVertexDeclaration(vid->xdk360_render_device, vid->v_decl);
-   D3DDevice_SetStreamSource_Inline(vid->xdk360_render_device, 0, vid->vertex_buf, 0, 
-      sizeof(DrawVerticeFormats));
+   vid->xdk360_render_device->SetVertexDeclaration(vid->v_decl);
+   vid->xdk360_render_device->SetStreamSource(0, vid->vertex_buf, 0, sizeof(DrawVerticeFormats));
 
-   D3DDevice_DrawVertices(vid->xdk360_render_device, D3DPT_TRIANGLESTRIP, 0, D3DVERTEXCOUNT(D3DPT_TRIANGLESTRIP, 2));
+   vid->xdk360_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
    if (msg)
    {
       if(IS_TIMER_EXPIRED() || g_first_msg)
       {
          xdk360_console_format(msg);
-	 g_first_msg = 0;
-	 SET_TIMER_EXPIRATION(30);
+         g_first_msg = 0;
+         SET_TIMER_EXPIRATION(30);
       }
 	   
       xdk360_console_draw();
    }
 
    if(!vid->block_swap)
-      D3DDevice_Present(vid->xdk360_render_device);
+      vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);
 
    return true;
 }
@@ -494,7 +494,7 @@ static void xdk360_swap (void * data)
 {
    (void)data;
    xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-   D3DDevice_Present(vid->xdk360_render_device);
+   vid->xdk360_render_device->Present(NULL, NULL, NULL, NULL);
 }
 
 static void xdk360_gfx_set_nonblock_state(void *data, bool state)
@@ -502,9 +502,9 @@ static void xdk360_gfx_set_nonblock_state(void *data, bool state)
    xdk360_video_t *vid = (xdk360_video_t*)data;
    SSNES_LOG("D3D Vsync => %s\n", state ? "off" : "on");
    if(state)
-      D3DDevice_SetRenderState_PresentInterval(vid->xdk360_render_device, D3DPRESENT_INTERVAL_IMMEDIATE);
+      vid->xdk360_render_device->SetRenderState(D3DRS_PRESENTINTERVAL, D3DPRESENT_INTERVAL_IMMEDIATE);
    else
-      D3DDevice_SetRenderState_PresentInterval(vid->xdk360_render_device, D3DPRESENT_INTERVAL_ONE);
+      vid->xdk360_render_device->SetRenderState(D3DRS_PRESENTINTERVAL, D3DPRESENT_INTERVAL_ONE);
 }
 
 static bool xdk360_gfx_alive(void *data)

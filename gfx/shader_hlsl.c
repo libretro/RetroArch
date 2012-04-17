@@ -127,9 +127,9 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    ret_vp = false;
 
    if (prg[index].f_ctable)
-      D3DResource_Release((D3DResource *)prg[index].f_ctable);
+      prg[index].f_ctable->Release();
    if (prg[index].v_ctable)
-      D3DResource_Release((D3DResource *)prg[0].v_ctable);
+      prg[index].v_ctable->Release();
 
    if (path_is_file)
    {
@@ -160,12 +160,12 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    }
 
    if (prg[index].fprg)
-      D3DResource_Release((D3DResource *)prg[0].fprg);
+	   prg[index].fprg->Release();
    if (prg[index].vprg)
-      D3DResource_Release((D3DResource *)prg[0].vprg);
+	   prg[index].vprg->Release();
 
-   prg[index].fprg = D3DDevice_CreatePixelShader((const DWORD*)code_f->GetBufferPointer());
-   prg[index].vprg = D3DDevice_CreateVertexShader((const DWORD*)code_v->GetBufferPointer());
+   d3d_device_ptr->CreatePixelShader((const DWORD*)code_f->GetBufferPointer(), &prg[index].fprg);
+   d3d_device_ptr->CreateVertexShader((const DWORD*)code_v->GetBufferPointer(), &prg[index].vprg);
    code_f->Release();
    code_v->Release();
 
@@ -204,7 +204,15 @@ static bool load_plain(const char *path)
 }
 
 static void hlsl_deinit_progs(void)
-{}
+{
+   for(int i = 0; i < SSNES_HLSL_MAX_SHADERS; i++)
+   {
+      if (prg[i].fprg)
+         prg[i].fprg->Release();
+      if (prg[i].vprg)
+         prg[i].vprg->Release();
+   }
+}
 
 static void hlsl_deinit_state(void)
 {
@@ -265,8 +273,8 @@ void hlsl_use(unsigned index)
    if (hlsl_active && prg[index].vprg && prg[index].fprg)
    {
       active_index = index;
-      D3DDevice_SetVertexShader(d3d_device_ptr, prg[index].vprg);
-      D3DDevice_SetPixelShader(d3d_device_ptr, prg[index].fprg);
+	  d3d_device_ptr->SetVertexShader(prg[index].vprg);
+	  d3d_device_ptr->SetPixelShader(prg[index].fprg);
    }
 }
 
