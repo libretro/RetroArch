@@ -87,7 +87,7 @@ void hlsl_set_proj_matrix(XMMATRIX rotation_value)
 #define set_param_2f(param, xy, constanttable) \
    if (param) constanttable->SetFloatArray(d3d_device_ptr, param, xy, 2)
 #define set_param_1f(param, x, constanttable) \
-   if (param) constanttable->SetFloat(d3d_device_ptr, param, x)
+   constanttable->SetFloat(d3d_device_ptr, param, x)
 
 void hlsl_set_params(unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height,
@@ -100,17 +100,21 @@ void hlsl_set_params(unsigned width, unsigned height,
    const float ori_size[2] = { (float)width,     (float)height     };
    const float tex_size[2] = { (float)tex_width, (float)tex_height };
    const float out_size[2] = { (float)out_width, (float)out_height };
+   float frame_cnt = frame_count;
+
+   prg[active_index].f_ctable->SetDefaults(d3d_device_ptr);
+   prg[active_index].v_ctable->SetDefaults(d3d_device_ptr);
 
    set_param_2f(prg[active_index].vid_size_f, ori_size, prg[active_index].f_ctable);
    set_param_2f(prg[active_index].tex_size_f, tex_size, prg[active_index].f_ctable);
    set_param_2f(prg[active_index].out_size_f, out_size, prg[active_index].f_ctable);
-   set_param_1f(prg[active_index].frame_cnt_f, (float)frame_count, prg[active_index].f_ctable);
+   set_param_1f(prg[active_index].frame_cnt_f, frame_cnt, prg[active_index].f_ctable);
    set_param_1f(prg[active_index].frame_dir_f, g_extern.frame_is_reverse ? -1.0 : 1.0,prg[active_index].f_ctable);
 
    set_param_2f(prg[active_index].vid_size_v, ori_size, prg[active_index].v_ctable);
    set_param_2f(prg[active_index].tex_size_v, tex_size, prg[active_index].v_ctable);
    set_param_2f(prg[active_index].out_size_v, out_size, prg[active_index].v_ctable);
-   set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count, prg[active_index].v_ctable);
+   set_param_1f(prg[active_index].frame_cnt_v, frame_cnt, prg[active_index].v_ctable);
    set_param_1f(prg[active_index].frame_dir_v, g_extern.frame_is_reverse ? -1.0 : 1.0,prg[active_index].v_ctable);
 
    /* TODO: Move to D3DXMATRIX here */
@@ -284,12 +288,12 @@ bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
 
 void hlsl_use(unsigned index)
 {
-   if (hlsl_active && prg[index].vprg && prg[index].fprg)
-   {
-      active_index = index;
-	  d3d_device_ptr->SetVertexShader(prg[index].vprg);
-	  d3d_device_ptr->SetPixelShader(prg[index].fprg);
-   }
+   if (!hlsl_active)
+      return;
+   
+   active_index = index;
+   d3d_device_ptr->SetVertexShader(prg[index].vprg);
+   d3d_device_ptr->SetPixelShader(prg[index].fprg);
 }
 
 // Full deinit.
