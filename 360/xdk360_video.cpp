@@ -395,6 +395,8 @@ static bool xdk360_init_fbo(xdk360_video_t * vid, unsigned width, unsigned heigh
    vid->d3d_render_device->CreateRenderTarget(height * g_settings.video.fbo_scale_x, height * g_settings.video.fbo_scale_y, ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ),
       D3DMULTISAMPLE_NONE, 0, 0, &vid->fbo, NULL );
 
+   vid->fbo_inited = true;
+
    return true;
 }
 
@@ -517,8 +519,16 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
       memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
       vid->lpTexture->UnlockRect(0);
 
-      float tex_w = width / (512.0f * g_settings.video.fbo_scale_x);
-      float tex_h = height / (512.0f * g_settings.video.fbo_scale_y);
+	  ifdef(vid->fbo_inited)
+	  {
+         float tex_w = width / (512.0f * g_settings.video.fbo_scale_x);
+         float tex_h = height / (512.0f * g_settings.video.fbo_scale_y);
+	  }
+      else
+      {
+		 float tex_w = width / (512.0f);
+         float tex_h = height / (512.0f);
+      }
 	  
       const DrawVerticeFormats verts[] = {
          { -1.0f, -1.0f, 0.0f,  tex_h },
