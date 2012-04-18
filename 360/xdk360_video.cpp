@@ -390,10 +390,12 @@ static bool xdk360_init_fbo(xdk360_video_t * vid, unsigned width, unsigned heigh
       return false;
 
    vid->d3d_render_device->CreateTexture(width * g_settings.video.fbo_scale_x, width * g_settings.video.fbo_scale_y, 1, 0, D3DFMT_LIN_X1R5G5B5,
-      0, &vid->lpTexture, NULL);
+      0, &vid->lpTexture2, NULL);
    
    vid->d3d_render_device->CreateRenderTarget(height * g_settings.video.fbo_scale_x, height * g_settings.video.fbo_scale_y, ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ),
       D3DMULTISAMPLE_NONE, 0, 0, &vid->fbo, NULL );
+
+   xdk360_convert_texture_to_as16_srgb(vid->lpTexture2);
 
    vid->fbo_inited = true;
 
@@ -446,12 +448,11 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
 
    hlsl_init(g_settings.video.cg_shader_path, vid->d3d_render_device);
 
-   if(!xdk360_init_fbo(vid, SSNES_SCALE_BASE * video->input_scale,
-	                    SSNES_SCALE_BASE * video->input_scale))
-   {
-	  vid->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
+   xdk360_init_fbo(vid, SSNES_SCALE_BASE * video->input_scale, 
+	   SSNES_SCALE_BASE * video->input_scale);
+
+   vid->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
       0, &vid->lpTexture, NULL);
-   }
 
    xdk360_convert_texture_to_as16_srgb(vid->lpTexture);
 

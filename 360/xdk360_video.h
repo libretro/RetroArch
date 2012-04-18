@@ -51,6 +51,7 @@ typedef struct xdk360_video
    IDirect3DDevice9* d3d_render_device;
    IDirect3DVertexBuffer9* vertex_buf;
    IDirect3DTexture9* lpTexture;
+   IDirect3DTexture9* lpTexture2;
    IDirect3DVertexDeclaration9* v_decl;
    LPDIRECT3DSURFACE9 fbo;
    D3DPRESENT_PARAMETERS d3dpp;
