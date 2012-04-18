@@ -76,7 +76,8 @@ static void context_state_cb(pa_context *c, void *data)
 static void stream_state_cb(pa_stream *s, void *data) 
 {
    pa_t *pa = (pa_t*)data;
-   switch (pa_stream_get_state(s)) {
+   switch (pa_stream_get_state(s))
+   {
       case PA_STREAM_READY:
       case PA_STREAM_FAILED:
       case PA_STREAM_TERMINATED:
