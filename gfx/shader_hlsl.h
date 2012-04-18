@@ -21,7 +21,7 @@
 #include "../boolean.h"
 #include <stdint.h>
 
-bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr);
+bool hlsl_init(const char *path, IDirect3DDevice9 *device_ptr);
 
 void hlsl_deinit(void);
 

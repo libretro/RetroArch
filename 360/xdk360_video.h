@@ -46,8 +46,8 @@ typedef struct xdk360_video
    bool vsync; 
    unsigned last_width;
    unsigned last_height;
-   IDirect3D9* xdk360_device;
-   IDirect3DDevice9* xdk360_render_device;
+   IDirect3D9* d3d_device;
+   IDirect3DDevice9* d3d_render_device;
    IDirect3DVertexBuffer9* vertex_buf;
    IDirect3DTexture9* lpTexture;
    IDirect3DVertexDeclaration9* v_decl;

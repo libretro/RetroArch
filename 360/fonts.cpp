@@ -27,7 +27,7 @@ static xdk360_video_font_t m_Font;
 void xdk360_console_draw(void)
 {
    xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-   D3DDevice *m_pd3dDevice = vid->xdk360_render_device;
+   D3DDevice *m_pd3dDevice = vid->d3d_render_device;
 
    // The top line
    unsigned int nTextLine = ( video_console.m_nCurLine - 
@@ -55,7 +55,7 @@ HRESULT xdk360_console_init( LPCSTR strFontFileName, unsigned long colBackColor,
    unsigned long colTextColor)
 {
    xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-   D3DDevice *m_pd3dDevice = vid->xdk360_render_device;
+   D3DDevice *m_pd3dDevice = vid->d3d_render_device;
 
    video_console.first_message = true;
    video_console.m_Buffer = NULL;
@@ -354,7 +354,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
             
             // Cache this global into a register
             xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-            D3DDevice *pd3dDevice = vid->xdk360_render_device;
+            D3DDevice *pd3dDevice = vid->d3d_render_device;
 
             hr = pd3dDevice->CreateVertexDeclaration( decl, &s_FontLocals.m_pFontVertexDecl );
 
@@ -482,7 +482,7 @@ HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * strFontF
    }
 
    xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-   D3DDevice *pd3dDevice = vid->xdk360_render_device;
+   D3DDevice *pd3dDevice = vid->d3d_render_device;
 
    // Initialize the window
    D3DDISPLAYMODE DisplayMode;
@@ -604,7 +604,7 @@ void xdk360_video_font_begin (xdk360_video_font_t * font)
    {
       // Cache the global pointer into a register
       xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-      D3DDevice *pD3dDevice = vid->xdk360_render_device;
+      D3DDevice *pD3dDevice = vid->d3d_render_device;
 
       // Save state
       if( font->m_bSaveState )
@@ -681,7 +681,7 @@ void xdk360_video_font_end(xdk360_video_font_t * font)
    {
       // Cache the global pointer into a register
       xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-      D3DDevice *pD3dDevice = vid->xdk360_render_device;
+      D3DDevice *pD3dDevice = vid->d3d_render_device;
 
       D3DDevice_SetTexture_Inline(pD3dDevice, 0, NULL);
       D3DDevice_SetVertexDeclaration(pD3dDevice, NULL);
@@ -711,7 +711,7 @@ void xdk360_video_font_draw_text(xdk360_video_font_t * font, float fOriginX, flo
       return;
 
    xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-   D3DDevice *pd3dDevice = vid->xdk360_render_device;
+   D3DDevice *pd3dDevice = vid->d3d_render_device;
 
    // Set the color as a vertex shader constant
    float vColor[4];

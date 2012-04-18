@@ -1,11 +1,13 @@
 # SSNES
 
-SSNES is a simple frontend for the libsnes library.
+SSNES is a simple frontend for the libretro API. An API that attempts to generalize
+a retro gaming system, such as SNES, NES, GameBoy, Arcade machines, etc.
 
-# libsnes
+# libretro
 
-libsnes is the emulator core of [bSNES](http://www.byuu.org), the most accurate SNES emulator to date, in library form. The libsnes API has been implemented by SNES9x as well, allowing multiple different cores to be used for an emulator that supports libsnes.
-This enables the possibility of custom front-ends for the emulator.
+libretro is an API that exposes the core of a retro gaming system.
+A frontend for libretro handles video output, audio output and input.
+A libretro core written in portable C or C++ can run seamlessly on many platforms.
 
 # Binaries
 
@@ -24,11 +26,10 @@ SSNES has been ported to the following platforms :
    - Xbox 360 (Libxenon/XeXDK)
    - Wii (Libogc)
 
-# Dependencies
+# Dependencies (PC)
 
 SSNES requires these libraries to build:
 
-   - [libsnes](http://byuu.org/bsnes/)
    - SDL
 
 SSNES can utilize these libraries if enabled:
@@ -50,26 +51,25 @@ SSNES needs at least one of these audio driver libraries:
    - XAudio2 (Win32)
    - PulseAudio
 
-# Building libsnes
+To run properly, SSNES requires a libretro implementation present, however, as it's typically loaded
+dynamically, it's not required at build time.
 
-   - Download bSNES source (link over).
-   - Add -fPIC to flags in Makefile.
-   - <tt>$ make library profile=performance</tt> (accuracy, compatibility are the other profiles. compatibility is a great choice for decent PCs. :D)
-   - <tt># make prefix=/usr library-install</tt>
-   - <tt># cp snes/libsnes/libsnes.hpp /usr/include/</tt>
-   - ?!?!
-   - Profit!
+# Dependencies (Console ports)
+
+Console ports have their own dependencies, but generally do not require
+anything other than what the respective SDKs provide.
 
 # Configuring
 
 The default configuration is defined in config.def.h. 
-These can later be tweaked by using the ssnes config file. 
+These can later be tweaked by using a config file. 
 A sample configuration file is installed to /etc/ssnes.cfg. 
 This is the system-wide config file. 
 Each user should create a config file in $XDG\_CONFIG\_HOME/ssnes/ssnes.cfg.
 The users only need to configure a certain option if the desired value deviates from the value defined in config.def.h.
 
-To configure joypads, start up <tt>jstest /dev/input/js0</tt> to determine which joypad buttons (and axis) to use. It is also possible to use the <tt>ssnes-joyconfig</tt> tool as well for simple configuration.
+To configure joypads, start up <tt>jstest /dev/input/js0</tt> to determine which joypad buttons (and axis) to use.
+It is also possible to use the <tt>ssnes-joyconfig</tt> tool as well for simple configuration.
 
 # Compiling and installing
 
@@ -78,8 +78,8 @@ As most packages, SSNES is built using the standard <tt>./configure && make && m
 Do note that the build system is not autotools based, but resembles it.
 
 Notable options for ./configure: 
---with-libsnes=: Normally libsnes is located with -lsnes, however, this can be overridden.
---enable-dynamic: Do not link to libsnes at compile time, but load libsnes dynamically at runtime. libsnes\_path in config file defines which library to load. Useful for development.
+--with-libretro=: Normally libretro is located with -lsnes, however, this can be overridden.
+--enable-dynamic: Do not link to libretro at compile time, but load libretro dynamically at runtime. libretro\_path in config file defines which library to load. Useful for development.
 
 Do note that these two options are mutually exclusive.
 
@@ -87,12 +87,12 @@ Do note that these two options are mutually exclusive.
 It is possible with MinGW to compile for Windows in either msys or Linux/Unix based systems. Do note that Windows build uses a static Makefile since configuration scripts create more harm than good on this platform. Libraries, headers, etc, needed to compile and run SSNES can be fetched with a Makefile target.
 
 In Linux/Unix:<br/>
-<tt>make -f Makefile.win32 libs</tt></br>
-<tt>make -f Makefile.win32 CC=i486-mingw32-gcc CXX=i486-mingw32-g++</tt></br>
+<tt>make -f Makefile.win libs</tt></br>
+<tt>make -f Makefile.win CC=i486-mingw32-gcc CXX=i486-mingw32-g++</tt></br>
 
 In MSYS:
-<tt>mingw32-make -f Makefile.win32 libs</tt>. # You will need to have wget in your patch for this command! MSYS should provide this.</br>
-<tt>mingw32-make -f Makefile.win32</tt>
+<tt>mingw32-make -f Makefile.win libs</tt>. # You will need to have wget in your patch for this command! MSYS should provide this.</br>
+<tt>mingw32-make -f Makefile.win</tt>
 
 <b>Win32 (MSVC)</b><br />
 In addition to Mingw, it is also possible to compile a Win32 version of SSNES with Microsoft Visual Studio 2010.
@@ -109,7 +109,7 @@ The solution file can be found at the following location:
 
 A PKG file will be built which you will be able to install on a jailbroken PS3.
 
-NOTE: A pre-existing libsnes library needs to be present in the root directory in order to link SSNES PS3. This file needs to be called 'libsnes.a'.
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link SSNES PS3. This file needs to be called 'libretro.a'.
 
 <b> Xbox 360 (XeXDK)</b><br />
 
@@ -119,7 +119,7 @@ The solution file can be found at the following location:
 
 <tt>msvc-360/SSNES-360/SSNES-360.sln</tt>
 
-NOTE: A pre-existing libsnes library needs to be present in the root directory in order to link SSNES 360.
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link SSNES 360.
 
 <b> Xbox 360 (Libxenon)</b><br />
 
@@ -127,7 +127,7 @@ You will need to have the libxenon libraries and a working Devkit Xenon toolchai
 
 <tt>make -f Makefile.xenon</tt>
 
-NOTE: A pre-existing libsnes library needs to be present in the root directory in order to link SSNES 360 Libxenon. This file needs to be called 'libsnes.a'.
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link SSNES 360 Libxenon. This file needs to be called 'libretro.a'.
 
 <b> Wii</b><br >
 
@@ -135,7 +135,7 @@ You will need to have the libogc libraries and a working Devkit PPC toolchain in
 
 <tt>make -f Makefile.wii</tt>
 
-NOTE: A pre-existing libsnes library needs to be present in the root directory in order to link SSNES Wii. This file needs to be called 'libsnes.a'.
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link SSNES Wii. This file needs to be called 'libretro.a'.
 
 # Filters, bSNES XML shaders and Cg shader support
 
