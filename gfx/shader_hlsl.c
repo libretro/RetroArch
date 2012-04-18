@@ -87,7 +87,7 @@ void hlsl_set_proj_matrix(XMMATRIX rotation_value)
 #define set_param_2f(param, xy, constanttable) \
    if (param) constanttable->SetFloatArray(d3d_device_ptr, param, xy, 2)
 #define set_param_1f(param, x, constanttable) \
-   constanttable->SetFloat(d3d_device_ptr, param, x)
+   if (param) constanttable->SetFloat(d3d_device_ptr, param, x)
 
 void hlsl_set_params(unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height,
@@ -237,27 +237,16 @@ static bool load_preset(const char *path)
 
 static void set_program_attributes(unsigned i)
 {
-   SSNES_LOG("Fragment: IN.video_size.\n");
    prg[i].vid_size_f  = prg[i].f_ctable->GetConstantByName(NULL, "$IN.video_size");
-   SSNES_LOG("Fragment: IN.texture_size.\n");
    prg[i].tex_size_f  = prg[i].f_ctable->GetConstantByName(NULL, "$IN.texture_size");
-   SSNES_LOG("Fragment: IN.output_size.\n");
    prg[i].out_size_f  = prg[i].f_ctable->GetConstantByName(NULL, "$IN.output_size");
-   SSNES_LOG("Fragment: IN.frame_count.\n");
    prg[i].frame_cnt_f = prg[i].f_ctable->GetConstantByName(NULL, "$IN.frame_count");
-   SSNES_LOG("Fragment: IN.frame_direction.\n");
    prg[i].frame_dir_f = prg[i].f_ctable->GetConstantByName(NULL, "$IN.frame_direction");
-   SSNES_LOG("Vertex: IN.video_size.\n");
    prg[i].vid_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.video_size");
-   SSNES_LOG("Vertex: IN.texture_size.\n");
    prg[i].tex_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.texture_size");
-   SSNES_LOG("Vertex: IN.output_size.\n");
    prg[i].out_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.output_size");
-   SSNES_LOG("Vertex: IN.frame_count.\n");
    prg[i].frame_cnt_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_count");
-   SSNES_LOG("Vertex: IN.frame_direction.\n");
    prg[i].frame_dir_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_direction");
-   SSNES_LOG("Vertex: modelViewProj.\n");
    prg[i].mvp         = prg[i].v_ctable->GetConstantByName(NULL, "$modelViewProj");
 }
 
