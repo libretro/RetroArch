@@ -310,7 +310,10 @@ void init_audio(void)
          g_settings.audio.out_rate, g_settings.audio.latency);
 
    if (!driver.audio_data)
+   {
+      SSNES_ERR("Failed to initialize audio driver. Will continue without audio.\n");
       g_extern.audio_active = false;
+   }
 
    if (g_extern.audio_active && driver.audio->use_float && audio_use_float_func())
       g_extern.audio_data.use_float = true;
@@ -335,7 +338,7 @@ void init_audio(void)
       g_extern.audio_data.src_ratio =
       (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
 
-   if (g_settings.audio.rate_control)
+   if (g_extern.audio_active && g_settings.audio.rate_control)
    {
       if (driver.audio->buffer_size && driver.audio->write_avail)
       {
