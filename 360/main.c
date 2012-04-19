@@ -132,8 +132,13 @@ static void set_default_settings (void)
    //g_settings
    g_settings.rewind_enable = false;
    strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
-   g_settings.video.vsync = true;
+   g_settings.video.fbo_scale_x = 2.0f;
+   g_settings.video.fbo_scale_y = 2.0f;
+   g_settings.video.render_to_texture = false;
+   strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
+   g_settings.video.second_pass_smooth = true;
    g_settings.video.smooth = true;
+   g_settings.video.vsync = true;
    g_settings.video.aspect_ratio = -1.0f;
 
    ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_A].joykey;

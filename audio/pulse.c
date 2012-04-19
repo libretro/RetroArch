@@ -76,7 +76,8 @@ static void context_state_cb(pa_context *c, void *data)
 static void stream_state_cb(pa_stream *s, void *data) 
 {
    pa_t *pa = (pa_t*)data;
-   switch (pa_stream_get_state(s)) {
+   switch (pa_stream_get_state(s))
+   {
       case PA_STREAM_READY:
       case PA_STREAM_FAILED:
       case PA_STREAM_TERMINATED:
@@ -181,18 +182,15 @@ static ssize_t pulse_write(void *data, const void *buf, size_t size)
    size_t length = pa_stream_writable_size(pa->stream);
    pa_threaded_mainloop_unlock(pa->mainloop);
 
-   while (length < size)
+   while (length < size && !pa->nonblock)
    {
-      pa_threaded_mainloop_wait(pa->mainloop);
       pa_threaded_mainloop_lock(pa->mainloop);
+      pa_threaded_mainloop_wait(pa->mainloop);
       length = pa_stream_writable_size(pa->stream);
       pa_threaded_mainloop_unlock(pa->mainloop);
-
-      if (pa->nonblock)
-         break;
    }
 
-   size_t write_size = length < size ? length : size;
+   size_t write_size = min(length, size);
 
    pa_threaded_mainloop_lock(pa->mainloop);
    pa_stream_write(pa->stream, buf, write_size, NULL, 0LL, PA_SEEK_RELATIVE);

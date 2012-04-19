@@ -38,7 +38,7 @@ void *g_d3d;
 
 /* Xbox 360 specific code */
 
-const DWORD g_MapLinearToSrgbGpuFormat[] = 
+const DWORD linear_to_srgb_gpu_fmt_lut[] = 
 {
     GPUTEXTUREFORMAT_1_REVERSE,
     GPUTEXTUREFORMAT_1,
@@ -381,7 +381,25 @@ static void xdk360_convert_texture_to_as16_srgb( D3DTexture *pTexture )
     XGGetTextureDesc( pTexture, 0, &desc );
 
     //convert to AS_16_16_16_16 format
-    pTexture->Format.DataFormat = g_MapLinearToSrgbGpuFormat[ (desc.Format & D3DFORMAT_TEXTUREFORMAT_MASK) >> D3DFORMAT_TEXTUREFORMAT_SHIFT ];
+    pTexture->Format.DataFormat = linear_to_srgb_gpu_fmt_lut[ (desc.Format & D3DFORMAT_TEXTUREFORMAT_MASK) >> D3DFORMAT_TEXTUREFORMAT_SHIFT ];
+}
+
+static bool xdk360_init_fbo(xdk360_video_t * vid, unsigned width, unsigned height)
+{
+   if (!g_settings.video.render_to_texture)
+      return false;
+
+   vid->d3d_render_device->CreateTexture(width * g_settings.video.fbo_scale_x, width * g_settings.video.fbo_scale_y, 1, 0, D3DFMT_LIN_X1R5G5B5,
+      0, &vid->lpTexture2, NULL);
+   
+   vid->d3d_render_device->CreateRenderTarget(height * g_settings.video.fbo_scale_x, height * g_settings.video.fbo_scale_y, ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ),
+      D3DMULTISAMPLE_NONE, 0, 0, &vid->fbo, NULL );
+
+   xdk360_convert_texture_to_as16_srgb(vid->lpTexture2);
+
+   vid->fbo_inited = true;
+
+   return true;
 }
 
 static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
@@ -429,6 +447,9 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
 	   &vid->d3dpp, &vid->d3d_render_device);
 
    hlsl_init(g_settings.video.cg_shader_path, vid->d3d_render_device);
+
+   xdk360_init_fbo(vid, SSNES_SCALE_BASE * video->input_scale, 
+	   SSNES_SCALE_BASE * video->input_scale);
 
    vid->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
       0, &vid->lpTexture, NULL);
@@ -489,21 +510,27 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    xdk360_video_t *vid = (xdk360_video_t*)data;
-
-   vid->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
-	   0xff000000, 1.0f, 0);
-   g_frame_count++;
+   D3DSurface* pRenderTarget0;
 
    if (vid->last_width != width || vid->last_height != height)
    {
       D3DLOCKED_RECT d3dlr;
+	  float tex_w, tex_h;
 
       vid->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
       memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
       vid->lpTexture->UnlockRect(0);
 
-      float tex_w = width / 512.0f;
-      float tex_h = height / 512.0f;
+	  if(vid->fbo_inited)
+	  {
+         tex_w = width / (512.0f * g_settings.video.fbo_scale_x);
+         tex_h = height / (512.0f * g_settings.video.fbo_scale_y);
+	  }
+      else
+      {
+		 tex_w = width / (512.0f);
+         tex_h = height / (512.0f);
+      }
 	  
       const DrawVerticeFormats verts[] = {
          { -1.0f, -1.0f, 0.0f,  tex_h },
@@ -521,21 +548,45 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
       vid->last_height = height;
    }
 
-   hlsl_use(0);
-   hlsl_set_params(width, height, 512, 512, vid->d3dpp.BackBufferWidth,
+   if(vid->fbo_inited)
+   {
+      vid->d3d_render_device->GetRenderTarget( 0, &pRenderTarget0 );
+      // Set the render target to be our offscreen texture
+      vid->d3d_render_device->SetRenderTarget( 0, vid->fbo );
+   }
+
+   vid->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+	   0xff000000, 1.0f, 0);
+   g_frame_count++;
+   
+   if(vid->fbo_inited)
+   {
+      vid->d3d_render_device->Resolve( D3DRESOLVE_RENDERTARGET0, NULL, vid->lpTexture,
+   NULL, 0, 0, NULL, 0, 0, NULL );
+
+	  hlsl_use(0);
+      hlsl_set_params(width, height, 512 * g_settings.video.fbo_scale_x, 512 * g_settings.video.fbo_scale_y, vid->d3dpp.BackBufferWidth,
       vid->d3dpp.BackBufferHeight, g_frame_count);
 
-   vid->d3d_render_device->SetTexture(0, NULL);
+      vid->d3d_render_device->SetTexture(0, NULL);
 
-   D3DLOCKED_RECT d3dlr;
-   vid->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-   for (unsigned y = 0; y < height; y++)
-   {
-      const uint8_t *in = (const uint8_t*)frame + y * pitch;
-      uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
-      memcpy(out, in, width * sizeof(uint16_t));
+      D3DLOCKED_RECT d3dlr;
+      vid->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+      for (unsigned y = 0; y < height; y++)
+      {
+         const uint8_t *in = (const uint8_t*)frame + y * pitch;
+         uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
+         memcpy(out, in, width * sizeof(uint16_t));
+      }
+     vid->lpTexture->UnlockRect(0);
+	  
+	  // Set the render target back to the back buffer
+      vid->d3d_render_device->SetRenderTarget( 0, pRenderTarget0 );
+      pRenderTarget0->Release();
    }
-   vid->lpTexture->UnlockRect(0);
+
+   vid->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+	   0xff000000, 1.0f, 0);
 
    vid->d3d_render_device->SetTexture(0, vid->lpTexture);
    vid->d3d_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
