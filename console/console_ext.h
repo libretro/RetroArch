@@ -97,7 +97,7 @@ bool rarch_manage_libretro_core(const char *full_path, const char *path, const c
 #endif
 
 /*============================================================
-  SSNES
+  RetroArch
   ============================================================ */
 
 #ifdef HAVE_RARCH_MAIN_WRAP

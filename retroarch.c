@@ -421,11 +421,11 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
 }
 
 #ifdef _WIN32
-#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tDefaults to ssnes.cfg in same directory as ssnes.exe."
+#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tDefaults to retroarch.cfg in same directory as ssnes.exe."
 #elif defined(__APPLE__)
-#define RARCH_DEFAULT_CONF_PATH_STR " Defaults to $HOME/.ssnes.cfg."
+#define RARCH_DEFAULT_CONF_PATH_STR " Defaults to $HOME/.retroarch.cfg."
 #else
-#define RARCH_DEFAULT_CONF_PATH_STR " Defaults to $XDG_CONFIG_HOME/ssnes/ssnes.cfg,\n\t\tor $HOME/.ssnes.cfg, if $XDG_CONFIG_HOME is not defined."
+#define RARCH_DEFAULT_CONF_PATH_STR " Defaults to $XDG_CONFIG_HOME/ssnes/retroarch.cfg,\n\t\tor $HOME/.retroarch.cfg, if $XDG_CONFIG_HOME is not defined."
 #endif
 
 #include "config.features.h"

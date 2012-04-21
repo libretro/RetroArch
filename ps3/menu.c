@@ -842,7 +842,7 @@ static void select_file(uint32_t menu_id)
 	 strncpy(title, "SHADER PRESETS SELECTION", sizeof(title));
 	 strncpy(object, "Shader", sizeof(object));
 	 strncpy(object, "Shader preset", sizeof(object));
-	 strncpy(comment, "INFO - Select a shader preset from the menu by pressing the X button. ", sizeof(comment));
+	 strncpy(comment, "INFO - Select a shader preset from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case INPUT_PRESET_CHOICE:
 	 strncpy(dir_path, INPUT_PRESETS_DIR_PATH, sizeof(dir_path));
@@ -850,7 +850,7 @@ static void select_file(uint32_t menu_id)
 	 strncpy(title, "INPUT PRESETS SELECTION", sizeof(title));
 	 strncpy(object, "Input", sizeof(object));
 	 strncpy(object, "Input preset", sizeof(object));
-	 strncpy(comment, "INFO - Select an input preset from the menu by pressing the X button. ", sizeof(comment));
+	 strncpy(comment, "INFO - Select an input preset from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case BORDER_CHOICE:
 	 strncpy(dir_path, BORDERS_DIR_PATH, sizeof(dir_path));
@@ -858,15 +858,15 @@ static void select_file(uint32_t menu_id)
 	 strncpy(title, "BORDER SELECTION", sizeof(title));
 	 strncpy(object, "Border", sizeof(object));
 	 strncpy(object, "Border image file", sizeof(object));
-	 strncpy(comment, "INFO - Select a border image file from the menu by pressing the X button. ", sizeof(comment));
+	 strncpy(comment, "INFO - Select a border image file from the menu by pressing the X button.", sizeof(comment));
 	 break;
-      case LIBSNES_CHOICE:
-	 strncpy(dir_path, LIBSNES_DIR_PATH, sizeof(dir_path));
+      case LIBRETRO_CHOICE:
+	 strncpy(dir_path, LIBRETRO_DIR_PATH, sizeof(dir_path));
 	 strncpy(extensions, "self|SELF|bin|BIN", sizeof(extensions));
-	 strncpy(title, "LIBSNES CORE SELECTION", sizeof(title));
+	 strncpy(title, "LIBRETRO CORE SELECTION", sizeof(title));
 	 strncpy(object, "Libretro", sizeof(object));
 	 strncpy(object, "Libretro core library", sizeof(object));
-	 strncpy(comment, "INFO - Select a Libretro core library from the menu by pressing the X button. ", sizeof(comment));
+	 strncpy(comment, "INFO - Select a Libretro core from the menu by pressing the X button.", sizeof(comment));
 	 break;
    }
 
@@ -933,7 +933,7 @@ static void select_file(uint32_t menu_id)
 		  break;
 	       case BORDER_CHOICE:
 		  break;
-	       case LIBSNES_CHOICE:
+	       case LIBRETRO_CHOICE:
 		  strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
 		  strlcpy(g_console.launch_app_on_exit, path, sizeof(g_console.launch_app_on_exit));
 		  g_console.return_to_launcher = true;
@@ -1572,7 +1572,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				menuStackindex++;
 				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = LIBSNES_CHOICE;
+				menuStack[menuStackindex].enum_id = LIBRETRO_CHOICE;
 				set_initial_dir_tmpbrowser = true;
 				set_delay = DELAY_LONG;
 			}
@@ -2374,12 +2374,12 @@ static void ingame_menu(uint32_t menu_id)
 	    }
 	    strcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.");
 	    break;
-	 case MENU_ITEM_CHANGE_LIBSNES:
+	 case MENU_ITEM_CHANGE_LIBRETRO:
 	    if(CTRL_CROSS(state))
 	    {
                menuStackindex++;
 	       menuStack[menuStackindex] = menu_filebrowser;
-	       menuStack[menuStackindex].enum_id = LIBSNES_CHOICE;
+	       menuStack[menuStackindex].enum_id = LIBRETRO_CHOICE;
 	       set_initial_dir_tmpbrowser = true;
 	       set_delay = DELAY_LONG;
 	    }
@@ -2482,7 +2482,7 @@ static void ingame_menu(uint32_t menu_id)
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MENU)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU), "Return to Menu");
    cellDbgFontDraw();
 
-   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_CHANGE_LIBSNES)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBSNES), "Change libretro core");
+   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_CHANGE_LIBRETRO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBRETRO), "Change libretro core");
    cellDbgFontDraw();
 
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");
@@ -2559,7 +2559,7 @@ void menu_loop(void)
 	 case SHADER_CHOICE:
 	 case PRESET_CHOICE:
 	 case BORDER_CHOICE:
-	 case LIBSNES_CHOICE:
+	 case LIBRETRO_CHOICE:
 	 case INPUT_PRESET_CHOICE:
 	    select_file(menuStack[menuStackindex].enum_id);
 	    break;

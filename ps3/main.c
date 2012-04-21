@@ -69,7 +69,7 @@ char PRESETS_DIR_PATH[MAX_PATH_LENGTH];
 char INPUT_PRESETS_DIR_PATH[MAX_PATH_LENGTH];
 char BORDERS_DIR_PATH[MAX_PATH_LENGTH];
 char SHADERS_DIR_PATH[MAX_PATH_LENGTH];
-char LIBSNES_DIR_PATH[MAX_PATH_LENGTH];
+char LIBRETRO_DIR_PATH[MAX_PATH_LENGTH];
 char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
 char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
 char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
@@ -173,7 +173,7 @@ static void init_settings(bool load_libretro_path)
 	 {
             //We need to set libretro to the first entry in the cores
 	    //directory so that it will be saved to the config file
-            char ** dir_list = dir_list_new(LIBSNES_DIR_PATH, ".SELF");
+            char ** dir_list = dir_list_new(LIBRETRO_DIR_PATH, ".SELF");
 
 	    if (!dir_list)
 	    {
@@ -423,12 +423,12 @@ static void get_environment_settings(int argc, char *argv[])
       snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/%s/borders/Menu/main-menu.png", usrDirPath, EMULATOR_CORE_DIR);
       snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/%s/presets", usrDirPath, EMULATOR_CORE_DIR);
       snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/input", PRESETS_DIR_PATH);
-      snprintf(LIBSNES_DIR_PATH, sizeof(LIBSNES_DIR_PATH), "%s/%s", usrDirPath, EMULATOR_CORE_DIR);
+      snprintf(LIBRETRO_DIR_PATH, sizeof(LIBRETRO_DIR_PATH), "%s/%s", usrDirPath, EMULATOR_CORE_DIR);
       snprintf(BORDERS_DIR_PATH, sizeof(BORDERS_DIR_PATH), "%s/%s/borders", usrDirPath, EMULATOR_CORE_DIR);
       snprintf(SHADERS_DIR_PATH, sizeof(SHADERS_DIR_PATH), "%s/%s/shaders", usrDirPath, EMULATOR_CORE_DIR);
       snprintf(DEFAULT_SHADER_FILE, sizeof(DEFAULT_SHADER_FILE), "%s/%s/shaders/stock.cg", usrDirPath, EMULATOR_CORE_DIR);
-      snprintf(DEFAULT_MENU_SHADER_FILE, sizeof(DEFAULT_MENU_SHADER_FILE), "%s/%s/shaders/Borders/Menu/border-only-ssnes.cg", usrDirPath, EMULATOR_CORE_DIR);
-      snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/ssnes.cfg", usrDirPath);
+      snprintf(DEFAULT_MENU_SHADER_FILE, sizeof(DEFAULT_MENU_SHADER_FILE), "%s/%s/shaders/Borders/Menu/border-only-rarch.cg", usrDirPath, EMULATOR_CORE_DIR);
+      snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/retroarch.cfg", usrDirPath);
    }
 
    g_extern.verbose = false;

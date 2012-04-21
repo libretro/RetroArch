@@ -180,7 +180,7 @@ static void init_settings (bool load_libretro_path)
    if(!path_file_exists(SYS_CONFIG_FILE))
    {
       FILE * f;
-      RARCH_ERR("Config file \"%s\" desn't exist. Creating...\n", "game:\\ssnes.cfg");
+      RARCH_ERR("Config file \"%s\" desn't exist. Creating...\n", "game:\\retroarch.cfg");
       f = fopen(SYS_CONFIG_FILE, "w");
       fclose(f);
    }
@@ -209,7 +209,7 @@ static void init_settings (bool load_libretro_path)
 	 {
             fill_pathname_base(fname_tmp, first_xex, sizeof(fname_tmp));
 
-	    if(strcmp(fname_tmp, "SSNES-Salamander.xex") == 0)
+	    if(strcmp(fname_tmp, "RetroArch-Salamander.xex") == 0)
 	    {
                RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
 	       first_xex = dir_list[1];
@@ -365,7 +365,7 @@ static void get_environment_settings (void)
    }
 
    strlcpy(DEFAULT_SHADER_FILE, "game:\\media\\shaders\\stock.cg", sizeof(DEFAULT_SHADER_FILE));
-   strlcpy(SYS_CONFIG_FILE, "game:\\ssnes.cfg", sizeof(SYS_CONFIG_FILE));
+   strlcpy(SYS_CONFIG_FILE, "game:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
 }
 
 int main(int argc, char *argv[])
