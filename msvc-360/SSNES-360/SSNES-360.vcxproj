@@ -367,7 +367,7 @@
     <ClInclude Include="..\..\boolean.h" />
     <ClInclude Include="..\..\bps.h" />
     <ClInclude Include="..\..\cheats.h" />
-    <ClInclude Include="..\..\compat\getopt_ssnes.h" />
+    <ClInclude Include="..\..\compat\getopt_rarch.h" />
     <ClInclude Include="..\..\compat\posix_string.h" />
     <ClInclude Include="..\..\compat\strl.h" />
     <ClInclude Include="..\..\config.def.h" />
@@ -388,80 +388,80 @@
     <ClInclude Include="..\..\ups.h" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\ssnes.ttf">
+    <CustomBuild Include="..\..\360\media\rarch.ttf">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">copy %(FullPath) $(OutDir)media\ssnes.ttf</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\ssnes.ttf;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\ssnes.ttf;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">copy %(FullPath) $(OutDir)media\ssnes.ttf</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">copy %(FullPath) $(OutDir)media\rarch.ttf</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\rarch.ttf;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\rarch.ttf;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">copy %(FullPath) $(OutDir)media\rarch.ttf</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\ssnes_scene_skin.xui">
+    <CustomBuild Include="..\..\360\media\rarch_scene_skin.xui">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_scene_skin.xui" "$(OutDir)media\ssnes_scene_skin.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_scene_skin.xui" "$(OutDir)media\ssnes_scene_skin.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_scene_skin.xui" "$(OutDir)media\ssnes_scene_skin.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_scene_skin.xui" "$(OutDir)media\ssnes_scene_skin.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_scene_skin.xui" "$(OutDir)media\ssnes_scene_skin.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_scene_skin.xui" "$(OutDir)media\ssnes_scene_skin.xur"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\ssnes_scene_skin.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\ssnes_scene_skin.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\ssnes_scene_skin.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\ssnes_scene_skin.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\ssnes_scene_skin.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\ssnes_scene_skin.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_scene_skin.xui" "$(OutDir)media\rarch_scene_skin.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_scene_skin.xui" "$(OutDir)media\rarch_scene_skin.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_scene_skin.xui" "$(OutDir)media\rarch_scene_skin.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_scene_skin.xui" "$(OutDir)media\rarch_scene_skin.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_scene_skin.xui" "$(OutDir)media\rarch_scene_skin.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_scene_skin.xui" "$(OutDir)media\rarch_scene_skin.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\rarch_scene_skin.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\rarch_scene_skin.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\rarch_scene_skin.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\rarch_scene_skin.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\rarch_scene_skin.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\rarch_scene_skin.xur;</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\sd\ssnes_main.xui">
+    <CustomBuild Include="..\..\360\media\sd\rarch_main.xui">
       <FileType>Document</FileType>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\ssnes_main.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\ssnes_main.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\sd\ssnes_main.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\sd\ssnes_main.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\sd\ssnes_main.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\ssnes_main.xur;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\sd\ssnes_main.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\sd\ssnes_main.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\sd\ssnes_main.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\sd\ssnes_main.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\sd\ssnes_main.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\sd\ssnes_main.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\rarch_main.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\rarch_main.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\sd\rarch_main.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\sd\rarch_main.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\sd\rarch_main.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\rarch_main.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\sd\rarch_main.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\sd\rarch_main.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\sd\rarch_main.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\sd\rarch_main.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\sd\rarch_main.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\sd\rarch_main.xur"</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\sd\ssnes_settings.xui">
+    <CustomBuild Include="..\..\360\media\sd\rarch_settings.xui">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\sd\ssnes_settings.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\sd\ssnes_settings.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\sd\ssnes_settings.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\sd\ssnes_settings.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\sd\ssnes_settings.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\sd\ssnes_settings.xur"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\ssnes_settings.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\sd\ssnes_settings.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\sd\ssnes_settings.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\sd\ssnes_settings.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\ssnes_settings.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\ssnes_settings.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_settings.xui" "$(OutDir)media\sd\rarch_settings.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_settings.xui" "$(OutDir)media\sd\rarch_settings.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_settings.xui" "$(OutDir)media\sd\rarch_settings.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_settings.xui" "$(OutDir)media\sd\rarch_settings.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_settings.xui" "$(OutDir)media\sd\rarch_settings.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_settings.xui" "$(OutDir)media\sd\rarch_settings.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\rarch_settings.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\sd\rarch_settings.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\sd\rarch_settings.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\sd\rarch_settings.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\rarch_settings.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\rarch_settings.xur;</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\sd\ssnes_filebrowser.xui">
+    <CustomBuild Include="..\..\360\media\sd\rarch_filebrowser.xui">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\sd\ssnes_filebrowser.xur"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\ssnes_filebrowser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\ssnes_filebrowser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\sd\ssnes_filebrowser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\sd\ssnes_filebrowser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\sd\ssnes_filebrowser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\ssnes_filebrowser.xur;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\sd\ssnes_filebrowser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\sd\ssnes_filebrowser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\sd\ssnes_filebrowser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\sd\ssnes_filebrowser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\sd\ssnes_filebrowser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\sd\rarch_filebrowser.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\rarch_filebrowser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\rarch_filebrowser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\sd\rarch_filebrowser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\sd\rarch_filebrowser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\sd\rarch_filebrowser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\rarch_filebrowser.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\sd\rarch_filebrowser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\sd\rarch_filebrowser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\sd\rarch_filebrowser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\sd\rarch_filebrowser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\sd\rarch_filebrowser.xur"</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
@@ -514,37 +514,37 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\sd\ssnes_quickmenu.xui">
+    <CustomBuild Include="..\..\360\media\sd\rarch_quickmenu.xui">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_quickmenu.xui" "$(OutDir)media\sd\ssnes_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_quickmenu.xui" "$(OutDir)media\sd\ssnes_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_quickmenu.xui" "$(OutDir)media\sd\ssnes_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_quickmenu.xui" "$(OutDir)media\sd\ssnes_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_quickmenu.xui" "$(OutDir)media\sd\ssnes_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_quickmenu.xui" "$(OutDir)media\sd\ssnes_quickmenu.xur"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\ssnes_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\sd\ssnes_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\sd\ssnes_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\sd\ssnes_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\ssnes_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\ssnes_quickmenu.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\sd\rarch_quickmenu.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\sd\rarch_quickmenu.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\sd\rarch_quickmenu.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\sd\rarch_quickmenu.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\sd\rarch_quickmenu.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\sd\rarch_quickmenu.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\rarch_quickmenu.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\sd\rarch_quickmenu.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\sd\rarch_quickmenu.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\sd\rarch_quickmenu.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\rarch_quickmenu.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\rarch_quickmenu.xur;</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\sd\ssnes_libsnescore_browser.xui">
+    <CustomBuild Include="..\..\360\media\sd\rarch_libsnescore_browser.xui">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_libsnescore_browser.xui" "$(OutDir)media\sd\ssnes_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_libsnescore_browser.xui" "$(OutDir)media\sd\ssnes_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_libsnescore_browser.xui" "$(OutDir)media\sd\ssnes_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_libsnescore_browser.xui" "$(OutDir)media\sd\ssnes_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_libsnescore_browser.xui" "$(OutDir)media\sd\ssnes_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_libsnescore_browser.xui" "$(OutDir)media\sd\ssnes_libsnescore_browser.xur"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\ssnes_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\sd\ssnes_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\sd\ssnes_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\sd\ssnes_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\ssnes_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\ssnes_libsnescore_browser.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\sd\rarch_libsnescore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\sd\rarch_libsnescore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\sd\rarch_libsnescore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\sd\rarch_libsnescore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\sd\rarch_libsnescore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\sd\rarch_libsnescore_browser.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\rarch_libsnescore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\sd\rarch_libsnescore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\sd\rarch_libsnescore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\sd\rarch_libsnescore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\rarch_libsnescore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\rarch_libsnescore_browser.xur;</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
@@ -571,80 +571,80 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\hd\ssnes_filebrowser.xui">
+    <CustomBuild Include="..\..\360\media\hd\rarch_filebrowser.xui">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\hd\ssnes_filebrowser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\hd\ssnes_filebrowser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\hd\ssnes_filebrowser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\hd\ssnes_filebrowser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\hd\ssnes_filebrowser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_filebrowser.xui" "$(OutDir)media\hd\ssnes_filebrowser.xur"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\ssnes_filebrowser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\ssnes_filebrowser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\hd\ssnes_filebrowser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\hd\ssnes_filebrowser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\ssnes_filebrowser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\ssnes_filebrowser.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\hd\rarch_filebrowser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\hd\rarch_filebrowser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\hd\rarch_filebrowser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\hd\rarch_filebrowser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\hd\rarch_filebrowser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\hd\rarch_filebrowser.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_filebrowser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_filebrowser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\hd\rarch_filebrowser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\hd\rarch_filebrowser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\rarch_filebrowser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\rarch_filebrowser.xur;</Outputs>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\hd\ssnes_libsnescore_browser.xui">
+    <CustomBuild Include="..\..\360\media\hd\rarch_libsnescore_browser.xui">
       <FileType>Document</FileType>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\ssnes_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\ssnes_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\hd\ssnes_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\hd\ssnes_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\ssnes_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\ssnes_libsnescore_browser.xur;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_libsnescore_browser.xui" "$(OutDir)media\hd\ssnes_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_libsnescore_browser.xui" "$(OutDir)media\hd\ssnes_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_libsnescore_browser.xui" "$(OutDir)media\hd\ssnes_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_libsnescore_browser.xui" "$(OutDir)media\hd\ssnes_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_libsnescore_browser.xui" "$(OutDir)media\hd\ssnes_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_libsnescore_browser.xui" "$(OutDir)media\hd\ssnes_libsnescore_browser.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_libsnescore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_libsnescore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\hd\rarch_libsnescore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\hd\rarch_libsnescore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\rarch_libsnescore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\rarch_libsnescore_browser.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\hd\rarch_libsnescore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\hd\rarch_libsnescore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\hd\rarch_libsnescore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\hd\rarch_libsnescore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\hd\rarch_libsnescore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\hd\rarch_libsnescore_browser.xur"</Command>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\hd\ssnes_main.xui">
+    <CustomBuild Include="..\..\360\media\hd\rarch_main.xui">
       <FileType>Document</FileType>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\ssnes_main.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\ssnes_main.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\hd\ssnes_main.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\hd\ssnes_main.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\ssnes_main.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\ssnes_main.xur;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\hd\ssnes_main.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\hd\ssnes_main.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\hd\ssnes_main.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\hd\ssnes_main.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\hd\ssnes_main.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_main.xui" "$(OutDir)media\hd\ssnes_main.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_main.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_main.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\hd\rarch_main.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\hd\rarch_main.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\rarch_main.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\rarch_main.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\hd\rarch_main.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\hd\rarch_main.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\hd\rarch_main.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\hd\rarch_main.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\hd\rarch_main.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\hd\rarch_main.xur"</Command>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\hd\ssnes_quickmenu.xui">
+    <CustomBuild Include="..\..\360\media\hd\rarch_quickmenu.xui">
       <FileType>Document</FileType>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\ssnes_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\ssnes_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\hd\ssnes_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\hd\ssnes_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\ssnes_quickmenu.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\ssnes_quickmenu.xur;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_quickmenu.xui" "$(OutDir)media\hd\ssnes_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_quickmenu.xui" "$(OutDir)media\hd\ssnes_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_quickmenu.xui" "$(OutDir)media\hd\ssnes_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_quickmenu.xui" "$(OutDir)media\hd\ssnes_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_quickmenu.xui" "$(OutDir)media\hd\ssnes_quickmenu.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_quickmenu.xui" "$(OutDir)media\hd\ssnes_quickmenu.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_quickmenu.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_quickmenu.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\hd\rarch_quickmenu.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\hd\rarch_quickmenu.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\rarch_quickmenu.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\rarch_quickmenu.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\hd\rarch_quickmenu.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\hd\rarch_quickmenu.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\hd\rarch_quickmenu.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\hd\rarch_quickmenu.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\hd\rarch_quickmenu.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\hd\rarch_quickmenu.xur"</Command>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\hd\ssnes_settings.xui">
+    <CustomBuild Include="..\..\360\media\hd\rarch_settings.xui">
       <FileType>Document</FileType>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\ssnes_settings.xur;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\hd\ssnes_settings.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\hd\ssnes_settings.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\hd\ssnes_settings.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\hd\ssnes_settings.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\hd\ssnes_settings.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)ssnes_settings.xui" "$(OutDir)media\hd\ssnes_settings.xur"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\ssnes_settings.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\ssnes_settings.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\hd\ssnes_settings.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\hd\ssnes_settings.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\ssnes_settings.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\rarch_settings.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_settings.xui" "$(OutDir)media\hd\rarch_settings.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_settings.xui" "$(OutDir)media\hd\rarch_settings.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_settings.xui" "$(OutDir)media\hd\rarch_settings.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_settings.xui" "$(OutDir)media\hd\rarch_settings.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_settings.xui" "$(OutDir)media\hd\rarch_settings.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_settings.xui" "$(OutDir)media\hd\rarch_settings.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_settings.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_settings.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\hd\rarch_settings.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\hd\rarch_settings.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\rarch_settings.xur;</Outputs>
     </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
