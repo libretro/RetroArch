@@ -1,6 +1,6 @@
-# SSNES
+# RetroArch
 
-SSNES is a simple frontend for the libretro API. An API that attempts to generalize
+RetroArch is a simple frontend for the libretro API. An API that attempts to generalize
 a retro gaming system, such as SNES, NES, GameBoy, Arcade machines, etc.
 
 # libretro
@@ -11,16 +11,16 @@ A libretro core written in portable C or C++ can run seamlessly on many platform
 
 # Binaries
 
-Latest Windows binaries are currently hosted on my [homepage](http://themaister.net/ssnes.html).
+Latest Windows binaries are currently hosted on my [homepage](http://themaister.net/retroarch.html).
 
 # Philosophy
 
-SSNES attempts to be very small and lean, while still having all the useful core features expected from an emulator. 
+RetroArch attempts to be very small and lean, while still having all the useful core features expected from an emulator. 
 It is used through command-line.
 
 # Platforms
 
-SSNES has been ported to the following platforms :
+RetroArch has been ported to the following platforms :
 
    - PlayStation3
    - Xbox 360 (Libxenon/XeXDK)
@@ -28,18 +28,18 @@ SSNES has been ported to the following platforms :
 
 # Dependencies (PC)
 
-SSNES requires these libraries to build:
+RetroArch requires these libraries to build:
 
    - SDL
 
-SSNES can utilize these libraries if enabled:
+RetroArch can utilize these libraries if enabled:
 
    - nvidia-cg-toolkit
    - libxml2 (bSNES XML shaders)
    - libfreetype2 (TTF font rendering on screen)
    - libsamplerate
 
-SSNES needs at least one of these audio driver libraries:
+RetroArch needs at least one of these audio driver libraries:
 
    - ALSA
    - OSS
@@ -51,7 +51,7 @@ SSNES needs at least one of these audio driver libraries:
    - XAudio2 (Win32)
    - PulseAudio
 
-To run properly, SSNES requires a libretro implementation present, however, as it's typically loaded
+To run properly, RetroArch requires a libretro implementation present, however, as it's typically loaded
 dynamically, it's not required at build time.
 
 # Dependencies (Console ports)
@@ -74,7 +74,7 @@ It is also possible to use the <tt>ssnes-joyconfig</tt> tool as well for simple 
 # Compiling and installing
 
 <b>Linux/Unix</b><br/>
-As most packages, SSNES is built using the standard <tt>./configure && make && make install</tt>
+As most packages, RetroArch is built using the standard <tt>./configure && make && make install</tt>
 Do note that the build system is not autotools based, but resembles it.
 
 Notable options for ./configure: 
@@ -84,7 +84,7 @@ Notable options for ./configure:
 Do note that these two options are mutually exclusive.
 
 <b>Win32</b><br/>
-It is possible with MinGW to compile for Windows in either msys or Linux/Unix based systems. Do note that Windows build uses a static Makefile since configuration scripts create more harm than good on this platform. Libraries, headers, etc, needed to compile and run SSNES can be fetched with a Makefile target.
+It is possible with MinGW to compile for Windows in either msys or Linux/Unix based systems. Do note that Windows build uses a static Makefile since configuration scripts create more harm than good on this platform. Libraries, headers, etc, needed to compile and run RetroArch can be fetched with a Makefile target.
 
 In Linux/Unix:<br/>
 <tt>make -f Makefile.win libs</tt></br>
@@ -95,13 +95,13 @@ In MSYS:
 <tt>mingw32-make -f Makefile.win</tt>
 
 <b>Win32 (MSVC)</b><br />
-In addition to Mingw, it is also possible to compile a Win32 version of SSNES with Microsoft Visual Studio 2010.
+In addition to Mingw, it is also possible to compile a Win32 version of RetroArch with Microsoft Visual Studio 2010.
 
-You will need Microsoft Visual Studio 2010 intalled (or higher) in order to compile SSNES with the MSVC compiler.
+You will need Microsoft Visual Studio 2010 intalled (or higher) in order to compile RetroArch with the MSVC compiler.
 
 The solution file can be found at the following location:
 
-<tt>msvc/SSNES/SSNES.sln</tt>
+<tt>msvc/RetroArch/RetroArch.sln</tt>
 
 <b>PlayStation3</b><br/>
 
@@ -109,33 +109,33 @@ The solution file can be found at the following location:
 
 A PKG file will be built which you will be able to install on a jailbroken PS3.
 
-NOTE: A pre-existing libretro library needs to be present in the root directory in order to link SSNES PS3. This file needs to be called 'libretro.a'.
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch PS3. This file needs to be called 'libretro.a'.
 
 <b> Xbox 360 (XeXDK)</b><br />
 
-You will need Microsoft Visual Studio 2010 installed (or higher) in order to compile SSNES 360.
+You will need Microsoft Visual Studio 2010 installed (or higher) in order to compile RetroArch 360.
 
 The solution file can be found at the following location:
 
-<tt>msvc-360/SSNES-360/SSNES-360.sln</tt>
+<tt>msvc-360/RetroArch-360/RetroArch-360.sln</tt>
 
-NOTE: A pre-existing libretro library needs to be present in the root directory in order to link SSNES 360.
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch 360.
 
 <b> Xbox 360 (Libxenon)</b><br />
 
-You will need to have the libxenon libraries and a working Devkit Xenon toolchain installed in order to compile SSNES 360 Libxenon.
+You will need to have the libxenon libraries and a working Devkit Xenon toolchain installed in order to compile RetroArch 360 Libxenon.
 
 <tt>make -f Makefile.xenon</tt>
 
-NOTE: A pre-existing libretro library needs to be present in the root directory in order to link SSNES 360 Libxenon. This file needs to be called 'libretro.a'.
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch 360 Libxenon. This file needs to be called 'libretro.a'.
 
 <b> Wii</b><br >
 
-You will need to have the libogc libraries and a working Devkit PPC toolchain installed in order to compile SSNES Wii.
+You will need to have the libogc libraries and a working Devkit PPC toolchain installed in order to compile RetroArch Wii.
 
 <tt>make -f Makefile.wii</tt>
 
-NOTE: A pre-existing libretro library needs to be present in the root directory in order to link SSNES Wii. This file needs to be called 'libretro.a'.
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch Wii. This file needs to be called 'libretro.a'.
 
 # Filters, bSNES XML shaders and Cg shader support
 
