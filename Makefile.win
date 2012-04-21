@@ -192,21 +192,22 @@ clean:
 	rm -f tools/*.o
 
 dist_x86: all
-	zip -r ssnes-win32-0.9.5.zip $(TARGET) $(JTARGET) ssnes.cfg snes.dll SDL.dll
+	zip -r retroarch-win32-0.9.5.zip $(TARGET) $(JTARGET) retroarch.cfg SDL.dll
 
 dist_x86_64: all
-	zip -r ssnes-win64-0.9.5.zip $(TARGET) $(JTARGET) ssnes.cfg snes.dll SDL.dll
+	zip -r retroarch-win64-0.9.5.zip $(TARGET) $(JTARGET) retroarch.cfg SDL.dll
 
 libs_x86:
-	wget https://github.com/downloads/Themaister/SSNES/SSNES-win32-libs.zip --no-check-certificate
-	unzip SSNES-win32-libs.zip
-	wget https://github.com/downloads/Themaister/SSNES/SSNES-win32-headers.zip --no-check-certificate
-	unzip SSNES-win32-headers.zip
+	wget https://github.com/downloads/Themaister/RetroArch/RetroArch-win32-libs.zip --no-check-certificate
+	unzip RetroArch-win32-libs.zip
+	wget https://github.com/downloads/Themaister/RetroArch/RetroArch-win32-headers.zip --no-check-certificate
+	unzip RetroArch-win32-headers.zip
 
 libs_x86_64:
-	wget https://github.com/downloads/Themaister/SSNES/SSNES-win64-libs.zip --no-check-certificate
-	unzip SSNES-win64-libs.zip
-	wget https://github.com/downloads/Themaister/SSNES/SSNES-win64-headers.zip --no-check-certificate
-	unzip SSNES-win64-headers.zip
+	wget https://github.com/downloads/Themaister/RetroArch/RetroArch-win64-libs.zip --no-check-certificate
+	unzip RetroArch-win64-libs.zip
+	wget https://github.com/downloads/Themaister/RetroArch/RetroArch-win64-headers.zip --no-check-certificate
+	unzip RetroArch-win64-headers.zip
 
 .PHONY: all install uninstall clean dist_x86 dist_x86_64 libs_x86 libs_x86_64
+
