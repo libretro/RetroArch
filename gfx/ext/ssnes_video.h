@@ -1,5 +1,5 @@
 /////
-// API header for external SSNES video and input plugins.
+// API header for external RetroArch video and input plugins.
 //
 //
 
@@ -131,7 +131,7 @@ typedef struct ssnes_video_info
 
    // Functions to peek into the python runtime for shaders.
    // Check typedefs above for explanation.
-   // These may be NULL if SSNES is not built with Python support.
+   // These may be NULL if RetroArch is not built with Python support.
    python_state_new_cb python_state_new;
    python_state_get_cb python_state_get;
    python_state_free_cb python_state_free;
@@ -183,7 +183,7 @@ struct ssnes_keybind
 
    // Keyboard key. The key values use the SDL 1.2 keysyms, 
    // which probably need to be transformed to the native format.
-   // The actual keysyms SSNES uses are found in input/keysym.h.
+   // The actual keysyms RetroArch uses are found in input/keysym.h.
    unsigned short key;
 
    // Joypad key. Joypad POV (hats) are embedded into this key as well.
@@ -266,7 +266,7 @@ typedef struct ssnes_video_driver
    int api_version;
 } ssnes_video_driver_t;
 
-// Called by SSNES on startup to get a driver handle.
+// Called by RetroArch on startup to get a driver handle.
 // This is NOT dynamically allocated.
 SSNES_API_EXPORT const ssnes_video_driver_t* SSNES_API_CALLTYPE
    ssnes_video_init(void);

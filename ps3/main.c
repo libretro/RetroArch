@@ -1,12 +1,12 @@
-/* SSNES - A frontend for libretro.
+/* RetroArch - A frontend for libretro.
  * Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  * Copyright (C) 2011-2012 - Daniel De Matteis
  *
- * SSNES is free software: you can redistribute it and/or modify it under the terms
+ * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
  * ation, either version 3 of the License, or (at your option) any later version.
  *
- * SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  * PURPOSE. See the GNU General Public License for more details.
  *
@@ -388,15 +388,15 @@ static void get_environment_settings(int argc, char *argv[])
       switch(get_type)
       {
          case CELL_GAME_GAMETYPE_DISC:
-            SSNES_LOG("SSNES was launched on Optical Disc Drive.\n");
+            SSNES_LOG("RetroArch was launched on Optical Disc Drive.\n");
 	    break;
 	 case CELL_GAME_GAMETYPE_HDD:
-	    SSNES_LOG("SSNES was launched on HDD.\n");
+	    SSNES_LOG("RetroArch was launched on HDD.\n");
 	    break;
       }
 
       if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) == CELL_GAME_ATTRIBUTE_APP_HOME)
-         SSNES_LOG("SSNES was launched from host machine (APP_HOME).\n");
+         SSNES_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 
       ret = cellGameContentPermit(contentInfoPath, usrDirPath);
 

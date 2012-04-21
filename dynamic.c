@@ -1,11 +1,11 @@
-/*  SSNES - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  * 
- *  SSNES is free software: you can redistribute it and/or modify it under the terms
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
  *
- *  SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
@@ -148,8 +148,8 @@ void init_libretro_sym(void)
    function_t sym = dylib_proc(NULL, "retro_init");
    if (sym)
    {
-      SSNES_ERR("Serious problem. SSNES wants to load libsnes dyamically, but it is already linked.\n"); 
-      SSNES_ERR("This could happen if other modules SSNES depends on link against libsnes directly.\n");
+      SSNES_ERR("Serious problem. RetroArch wants to load libsnes dyamically, but it is already linked.\n"); 
+      SSNES_ERR("This could happen if other modules RetroArch depends on link against libsnes directly.\n");
       SSNES_ERR("Proceeding could cause a crash. Aborting ...\n");
       ssnes_fail(1, "init_libretro_sym()");
    }

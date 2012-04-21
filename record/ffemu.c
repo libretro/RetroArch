@@ -1,11 +1,11 @@
-/*  SSNES - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  *
- *  SSNES is free software: you can redistribute it and/or modify it under the terms
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
  *
- *  SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
@@ -303,7 +303,7 @@ static bool ffemu_init_muxer(ffemu_t *handle)
       ctx->oformat->flags |= AVFMT_TS_NONSTRICT;
 #endif
 
-   av_dict_set(&ctx->metadata, "title", "SSNES video dump", 0); 
+   av_dict_set(&ctx->metadata, "title", "RetroArch video dump", 0); 
 
 #ifdef HAVE_FFMPEG_AVFORMAT_WRITE_HEADER
    if (avformat_write_header(ctx, NULL) < 0)

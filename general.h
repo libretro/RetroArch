@@ -1,11 +1,11 @@
-/*  SSNES - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  * 
- *  SSNES is free software: you can redistribute it and/or modify it under the terms
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
  *
- *  SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
@@ -481,14 +481,14 @@ extern struct console_settings g_console;
 
 #ifndef SSNES_ERR
 #define SSNES_ERR(...) do { \
-      fprintf(stderr, "SSNES [ERROR] :: " __VA_ARGS__); \
+      fprintf(stderr, "RetroArch [ERROR] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
 #endif
 
 #ifndef SSNES_WARN
 #define SSNES_WARN(...) do { \
-      fprintf(stderr, "SSNES [WARN] :: " __VA_ARGS__); \
+      fprintf(stderr, "RetroArch [WARN] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
 #endif

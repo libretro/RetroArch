@@ -207,11 +207,11 @@ config.mk: configure qb/*
 	@echo "config.mk is outdated or non-existing. Run ./configure again."
 	@exit 1
 
-ssnes: $(OBJ)
+retroarch: $(OBJ)
 	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 	@$(if $(Q), $(shell echo echo LD $@),)
 
-tools/ssnes-joyconfig: $(JOYCONFIG_OBJ)
+tools/retroarch-joyconfig: $(JOYCONFIG_OBJ)
 ifeq ($(CXX_BUILD), 1)
 	$(Q)$(CXX) -o $@ $(JOYCONFIG_OBJ) $(SDL_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 else

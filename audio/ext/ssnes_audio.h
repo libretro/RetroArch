@@ -1,5 +1,5 @@
 /////
-// API header for external SSNES audio driver plugins.
+// API header for external RetroArch audio driver plugins.
 //
 //
 
@@ -105,7 +105,7 @@ typedef struct ssnes_audio_driver
 
    // The driver might be forced to use a certain output frequency
    // (i.e. Jack), and thus to avoid double resampling, the driver
-   // can request SSNES to resample to a different sample rate.
+   // can request RetroArch to resample to a different sample rate.
    // This function can be set to NULL if the driver does not
    // desire to override the sample rate.
    unsigned (*sample_rate)(void *data);

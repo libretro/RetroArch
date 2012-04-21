@@ -1,11 +1,11 @@
-/*  SSNES - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  * 
- *  SSNES is free software: you can redistribute it and/or modify it under the terms
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
  *
- *  SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
@@ -86,7 +86,7 @@ static void ra_set_nonblock_state(void *data, bool state)
 {
    roar_t *roar = (roar_t*)data;
    if (roar_vs_blocking(roar->vss, (state) ? ROAR_VS_FALSE : ROAR_VS_TRUE, NULL) < 0)
-      fprintf(stderr, "SSNES [ERROR]: Can't set nonblocking. Will not be able to fast-forward.\n");
+      fprintf(stderr, "RetroArch [ERROR]: Can't set nonblocking. Will not be able to fast-forward.\n");
    roar->nonblocking = state;
 }
 

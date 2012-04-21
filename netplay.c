@@ -1,11 +1,11 @@
-/*  SSNES - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  *
- *  SSNES is free software: you can redistribute it and/or modify it under the terms
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
  *
- *  SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
@@ -577,7 +577,7 @@ static bool get_info(netplay_t *handle)
 
    if (implementation_magic_value() != ntohl(header[1]))
    {
-      SSNES_ERR("Implementations differ, make sure you're using exact same libsnes implementations and SSNES version.\n");
+      SSNES_ERR("Implementations differ, make sure you're using exact same libsnes implementations and RetroArch version.\n");
       return false;
    }
 

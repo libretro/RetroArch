@@ -1,11 +1,11 @@
-/*  SSNES - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  * 
- *  SSNES is free software: you can redistribute it and/or modify it under the terms
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
  *
- *  SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
@@ -105,7 +105,7 @@ static PyObject *py_read_input_meta(PyObject *self, PyObject *args)
 static PyMethodDef SNESMethods[] = {
    { "read_wram",    py_read_wram,              METH_VARARGS, "Read WRAM from system." },
    { "input",        py_read_input,             METH_VARARGS, "Read input state from system." },
-   { "input_meta",   py_read_input_meta,        METH_VARARGS, "Read SSNES specific input." },
+   { "input_meta",   py_read_input_meta,        METH_VARARGS, "Read RetroArch specific input." },
    { NULL, NULL, 0, NULL }
 };
 

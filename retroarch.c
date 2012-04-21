@@ -1,11 +1,11 @@
-/*  SSNES - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  * 
- *  SSNES is free software: you can redistribute it and/or modify it under the terms
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
  *
- *  SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
@@ -315,7 +315,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
       if (audio_write_func(g_extern.audio_data.mute ? empty_buf.f : output_data,
                output_frames * sizeof(float) * 2) < 0)
       {
-         fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
+         fprintf(stderr, "RetroArch [ERROR]: Audio backend failed to write. Will continue without sound.\n");
          return false;
       }
    }
@@ -330,7 +330,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
       if (audio_write_func(g_extern.audio_data.mute ? empty_buf.i : g_extern.audio_data.conv_outsamples,
                output_frames * sizeof(int16_t) * 2) < 0)
       {
-         fprintf(stderr, "SSNES [ERROR]: Audio backend failed to write. Will continue without sound.\n");
+         fprintf(stderr, "RetroArch [ERROR]: Audio backend failed to write. Will continue without sound.\n");
          return false;
       }
    }
@@ -490,14 +490,14 @@ static void print_compiler(FILE *file)
 static void print_help(void)
 {
    puts("===================================================================");
-   puts("ssnes: Frontend for libretro -- v" PACKAGE_VERSION " --");
+   puts("RetroArch: Frontend for libretro -- v" PACKAGE_VERSION " --");
    print_compiler(stdout);
    puts("===================================================================");
    puts("Usage: ssnes [rom file] [options...]");
    puts("\t-h/--help: Show this help message.");
-   puts("\t--features: Prints available features compiled into SSNES.");
+   puts("\t--features: Prints available features compiled into RetroArch.");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin.");
-   puts("\t-f/--fullscreen: Start SSNES in fullscreen regardless of config settings.");
+   puts("\t-f/--fullscreen: Start RetroArch in fullscreen regardless of config settings.");
    puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
 #ifdef HAVE_CONFIGFILE
    puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
@@ -546,7 +546,7 @@ static void print_help(void)
    puts("\t--ips: Specifies path for IPS patch that will be applied to ROM.");
    puts("\t--no-patch: Disables all forms of rom patching.");
    puts("\t-X/--xml: Specifies path to XML memory map.");
-   puts("\t-D/--detach: Detach SSNES from the running console. Not relevant for all platforms.\n");
+   puts("\t-D/--detach: Detach RetroArch from the running console. Not relevant for all platforms.\n");
 }
 
 static void set_basename(const char *path)
@@ -2257,7 +2257,7 @@ static void init_system_info(void)
    if (!info->library_version)
       info->library_version = "v0";
 
-   snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "SSNES : %s %s",
+   snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "RetroArch : %s %s",
          info->library_name, info->library_version);
 }
 
@@ -2271,7 +2271,7 @@ static void verify_api_version(void)
    SSNES_LOG("Version of libretro API: %u\n", pretro_api_version());
    SSNES_LOG("Compiled against API: %u\n", RETRO_API_VERSION);
    if (pretro_api_version() != RETRO_API_VERSION)
-      SSNES_WARN("SSNES is compiled against a different version of libretro than this libretro implementation.\n");
+      SSNES_WARN("RetroArch is compiled against a different version of libretro than this libretro implementation.\n");
 }
 
 int ssnes_main_init(int argc, char *argv[])

@@ -1,11 +1,11 @@
-/*  SSNES - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  * 
- *  SSNES is free software: you can redistribute it and/or modify it under the terms
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
  *
- *  SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
@@ -937,7 +937,7 @@ bool gl_glsl_init(const char *path)
    if (!compile_programs(&gl_program[1], progs, num_progs))
       return false;
 
-   // SSNES custom two-pass with two different files.
+   // RetroArch custom two-pass with two different files.
    if (num_progs == 1 && *g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
    {
       unsigned secondary_progs = get_xml_shaders(g_settings.video.second_pass_shader, progs, 1);

@@ -1,5 +1,5 @@
 /////
-// API header for external SSNES DSP plugins.
+// API header for external RetroArch DSP plugins.
 //
 //
 
@@ -38,7 +38,7 @@ typedef struct ssnes_dsp_info
    // Some small variance is allowed due to syncing behavior.
    float input_rate;
 
-   // SSNES requests that the DSP plugin resamples the 
+   // RetroArch requests that the DSP plugin resamples the 
    // input to a certain frequency.
    //
    // However, the plugin might ignore this
@@ -117,7 +117,7 @@ typedef struct ssnes_dsp_plugin
    void (*events)(void *data);
 } ssnes_dsp_plugin_t;
 
-// Called by SSNES at startup to get the callback struct.
+// Called by RetroArch at startup to get the callback struct.
 // This is NOT dynamically allocated!
 SSNES_API_EXPORT const ssnes_dsp_plugin_t* SSNES_API_CALLTYPE 
    ssnes_dsp_plugin_init(void);

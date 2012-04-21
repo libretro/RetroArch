@@ -1,13 +1,13 @@
-/* SSNES - A frontend for libretro.
- * SSNES Salamander - A frontend for managing some pre-launch tasks.
+/* RetroArch - A frontend for libretro.
+ * RetroArch Salamander - A frontend for managing some pre-launch tasks.
  * Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  * Copyright (C) 2011-2012 - Daniel De Matteis
  *
- * SSNES is free software: you can redistribute it and/or modify it under the terms
+ * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
  * ation, either version 3 of the License, or (at your option) any later version.
  *
- * SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  * PURPOSE. See the GNU General Public License for more details.
  *
@@ -48,22 +48,22 @@
 
 #ifdef HAVE_LOGGER
 #include "logger.h"
-#define SSNES_LOG(...) logger_send("SSNES Salamander: " __VA_ARGS__);
-#define SSNES_ERR(...) logger_send("SSNES Salamander [ERROR] :: " __VA_ARGS__);
-#define SSNES_WARN(...) logger_send("SSNES Salamander [WARN] :: " __VA_ARGS__);
+#define SSNES_LOG(...) logger_send("RetroArch Salamander: " __VA_ARGS__);
+#define SSNES_ERR(...) logger_send("RetroArch Salamander [ERROR] :: " __VA_ARGS__);
+#define SSNES_WARN(...) logger_send("RetroArch Salamander [WARN] :: " __VA_ARGS__);
 #else
 #define SSNES_LOG(...) do { \
-      fprintf(stderr, "SSNES Salamander: " __VA_ARGS__); \
+      fprintf(stderr, "RetroArch Salamander: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
 
 #define SSNES_ERR(...) do { \
-      fprintf(stderr, "SSNES Salamander [ERROR] :: " __VA_ARGS__); \
+      fprintf(stderr, "RetroArch Salamander [ERROR] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
 
 #define SSNES_WARN(...) do { \
-      fprintf(stderr, "SSNES Salamander [WARN] :: " __VA_ARGS__); \
+      fprintf(stderr, "RetroArch Salamander [WARN] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
 #endif
@@ -86,7 +86,7 @@ char libretro_path[MAX_PATH_LENGTH];
 static void find_and_set_first_file(void)
 {
    //Last fallback - we'll need to start the first executable file 
-   // we can find in the SSNES cores directory
+   // we can find in the RetroArch cores directory
 
 #if defined(_XBOX)
    char ** dir_list = dir_list_new("game:\\", ".xex");
@@ -96,7 +96,7 @@ static void find_and_set_first_file(void)
 
    if (!dir_list)
    {
-      SSNES_ERR("Failed last fallback - SSNES Salamander will exit.\n");
+      SSNES_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
       return;
    }
 
@@ -105,7 +105,7 @@ static void find_and_set_first_file(void)
    if(first_executable)
    {
 #ifdef _XBOX
-      //Check if it's SSNES Salamander itself - if so, first_executable needs to
+      //Check if it's RetroArch Salamander itself - if so, first_executable needs to
       //be overridden
       char fname_tmp[MAX_PATH_LENGTH];
 
@@ -113,13 +113,13 @@ static void find_and_set_first_file(void)
 
       if(strcmp(fname_tmp, "SSNES-Salamander.xex") == 0)
       {
-         SSNES_WARN("First entry is SSNES Salamander itself, increment entry by one and check if it exists.\n");
+         SSNES_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
 	 first_executable = dir_list[1];
 	 fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
 
 	 if(!first_executable)
 	 {
-            SSNES_WARN("There is no second entry - no choice but to boot SSNES Salamander\n");
+            SSNES_WARN("There is no second entry - no choice but to boot RetroArch Salamander\n");
 	    first_executable = dir_list[0];
 	    fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
 	 }
@@ -132,7 +132,7 @@ static void find_and_set_first_file(void)
    }
    else
    {
-      SSNES_ERR("Failed last fallback - SSNES Salamander will exit.\n");
+      SSNES_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
    }
 
    dir_list_free(dir_list);
@@ -211,7 +211,7 @@ static void get_environment_settings (void)
 
    if (XContentGetLicenseMask(&license_mask, NULL) != ERROR_SUCCESS)
    {
-      SSNES_LOG("SSNES was launched as a standalone DVD, or using DVD emulation, or from the development area of the HDD.\n");
+      SSNES_LOG("RetroArch was launched as a standalone DVD, or using DVD emulation, or from the development area of the HDD.\n");
    }
    else
    {
@@ -220,16 +220,16 @@ static void get_environment_settings (void)
       switch(volume_device_type)
       {
          case XCONTENTDEVICETYPE_HDD:
-            SSNES_LOG("SSNES was launched from a content package on HDD.\n");
+            SSNES_LOG("RetroArch was launched from a content package on HDD.\n");
 	    break;
 	 case XCONTENTDEVICETYPE_MU:
-	    SSNES_LOG("SSNES was launched from a content package on USB or Memory Unit.\n");
+	    SSNES_LOG("RetroArch was launched from a content package on USB or Memory Unit.\n");
 	    break;
 	 case XCONTENTDEVICETYPE_ODD:
-	    SSNES_LOG("SSNES was launched from a content package on Optical Disc Drive.\n");
+	    SSNES_LOG("RetroArch was launched from a content package on Optical Disc Drive.\n");
 	    break;
 	 default:
-	    SSNES_LOG("SSNES was launched from a content package on an unknown device type.\n");
+	    SSNES_LOG("RetroArch was launched from a content package on an unknown device type.\n");
 	    break;
       }
    }
@@ -257,15 +257,15 @@ static void get_environment_settings (void)
       switch(get_type)
       {
          case CELL_GAME_GAMETYPE_DISC:
-            SSNES_LOG("SSNES was launched on Optical Disc Drive.\n");
+            SSNES_LOG("RetroArch was launched on Optical Disc Drive.\n");
 	    break;
 	 case CELL_GAME_GAMETYPE_HDD:
-	    SSNES_LOG("SSNES was launched on HDD.\n");
+	    SSNES_LOG("RetroArch was launched on HDD.\n");
 	    break;
       }
 
       if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) == CELL_GAME_ATTRIBUTE_APP_HOME)
-         SSNES_LOG("SSNES was launched from host machine (APP_HOME).\n");
+         SSNES_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 
       ret = cellGameContentPermit(contentInfoPath, usrDirPath);
 
@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
    if(state.Gamepad.wButtons & XINPUT_GAMEPAD_Y)
    {
       //override path, boot first executable in cores directory
-      SSNES_LOG("Fallback - Will boot first executable in SSNES cores directory.\n");
+      SSNES_LOG("Fallback - Will boot first executable in RetroArch cores directory.\n");
       find_and_set_first_file();
    }
    else
@@ -340,7 +340,7 @@ int main(int argc, char *argv[])
    if(pad_data.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_TRIANGLE)
    {
       //override path, boot first executable in cores directory
-      SSNES_LOG("Fallback - Will boot first executable in SSNES cores/ directory.\n");
+      SSNES_LOG("Fallback - Will boot first executable in RetroArch cores/ directory.\n");
       find_and_set_first_file();
    }
    else

@@ -1,12 +1,12 @@
-/*  SSNES - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2012 - Daniel De Matteis
  * 
- *  SSNES is free software: you can redistribute it and/or modify it under the terms
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
  *
- *  SSNES is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
@@ -211,14 +211,14 @@ static void init_settings (bool load_libretro_path)
 
 	    if(strcmp(fname_tmp, "SSNES-Salamander.xex") == 0)
 	    {
-               SSNES_WARN("First entry is SSNES Salamander itself, increment entry by one and check if it exists.\n");
+               SSNES_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
 	       first_xex = dir_list[1];
 	       fill_pathname_base(fname_tmp, first_xex, sizeof(fname_tmp));
 
 	       if(!first_xex)
 	       {
                   //This is very unlikely to happen
-                  SSNES_WARN("There is no second entry - no choice but to set it to SSNES Salamander\n");
+                  SSNES_WARN("There is no second entry - no choice but to set it to RetroArch Salamander\n");
 		  first_xex = dir_list[0];
 		  fill_pathname_base(fname_tmp, first_xex, sizeof(fname_tmp));
 	       }
@@ -341,7 +341,7 @@ static void get_environment_settings (void)
 
    if (XContentGetLicenseMask(&license_mask, NULL) != ERROR_SUCCESS)
    {
-      printf("SSNES was launched as a standalone DVD, or using DVD emulation, or from the development area of the HDD.\n");
+      printf("RetroArch was launched as a standalone DVD, or using DVD emulation, or from the development area of the HDD.\n");
    }
    else
    {
@@ -350,16 +350,16 @@ static void get_environment_settings (void)
       switch(g_console.volume_device_type)
       {
          case XCONTENTDEVICETYPE_HDD:
-            printf("SSNES was launched from a content package on HDD.\n");
+            printf("RetroArch was launched from a content package on HDD.\n");
 	    break;
 	 case XCONTENTDEVICETYPE_MU:
-	    printf("SSNES was launched from a content package on USB or Memory Unit.\n");
+	    printf("RetroArch was launched from a content package on USB or Memory Unit.\n");
 	    break;
 	 case XCONTENTDEVICETYPE_ODD:
-	    printf("SSNES was launched from a content package on Optical Disc Drive.\n");
+	    printf("RetroArch was launched from a content package on Optical Disc Drive.\n");
 	    break;
 	 default:
-	    printf("SSNES was launched from a content package on an unknown device type.\n");
+	    printf("RetroArch was launched from a content package on an unknown device type.\n");
 	    break;
       }
    }
