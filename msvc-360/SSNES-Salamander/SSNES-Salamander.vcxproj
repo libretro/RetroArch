@@ -29,6 +29,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{29D5B973-F267-4039-84E7-8D34E9D00800}</ProjectGuid>
     <Keyword>Xbox360Proj</Keyword>
+    <ProjectName>RetroArch-Salamander</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'" Label="Configuration">

@@ -150,8 +150,6 @@
     <CustomBuild Include="..\..\360\media\shaders\stock.cg">
       <Filter>Source Files\media\shader</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\rarch.ttf" />
-    <CustomBuild Include="..\..\360\media\rarch_scene_skin.xui" />
     <CustomBuild Include="..\..\360\media\sd\rarch_filebrowser.xui">
       <Filter>Source Files\media\sd</Filter>
     </CustomBuild>
@@ -181,6 +179,12 @@
     </CustomBuild>
     <CustomBuild Include="..\..\360\media\sd\rarch_settings.xui">
       <Filter>Source Files\media\sd</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\360\media\rarch.ttf">
+      <Filter>Source Files\media</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\360\media\rarch_scene_skin.xui">
+      <Filter>Source Files\media</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>
