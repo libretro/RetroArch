@@ -476,8 +476,8 @@ int main(int argc, char *argv[])
       cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
       CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
 
-      screenshot_param.photo_title = "SSNES PS3";
-      screenshot_param.game_title = "SSNES PS3";
+      screenshot_param.photo_title = "RetroArch PS3";
+      screenshot_param.game_title = "RetroArch PS3";
       cellScreenShotSetParameter (&screenshot_param);
       cellScreenShotEnable();
    }
