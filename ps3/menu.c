@@ -1976,7 +1976,6 @@ static void select_rom(void)
 
    cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"FILE BROWSER");
    cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s (v%s)", id, info.library_version);
-   cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
    cellDbgFontPrintf (0.09f, 0.09f, FONT_SIZE, YELLOW,
 		   "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser));
    cellDbgFontPuts   (0.09f, 0.93f, FONT_SIZE, YELLOW,
@@ -2264,7 +2263,7 @@ static void ingame_menu(uint32_t menu_id)
 
 		     cellDbgFontPuts (0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
 		     cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
-		     cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
+		     cellDbgFontPrintf (0.9f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
 		     cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
 		     cellDbgFontPrintf(x_position,	ypos, font_size, GREEN,	"Viewport X: #%d", g_console.custom_viewport_x);
 
@@ -2497,7 +2496,7 @@ static void ingame_menu(uint32_t menu_id)
 
    cellDbgFontPuts(0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
    cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
-   cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
+   cellDbgFontPrintf (0.9f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
    cellDbgFontDraw();
    cellDbgFontPrintf (0.05f, 0.90f, 1.10f, WHITE, special_action_msg);
    cellDbgFontDraw();
