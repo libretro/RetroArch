@@ -378,7 +378,7 @@
     <ClInclude Include="..\..\fifo_buffer.h" />
     <ClInclude Include="..\..\file.h" />
     <ClInclude Include="..\..\general.h" />
-    <ClInclude Include="..\..\libsnes.hpp" />
+    <ClInclude Include="..\..\libretro.hpp" />
     <ClInclude Include="..\..\message.h" />
     <ClInclude Include="..\..\netplay.h" />
     <ClInclude Include="..\..\rewind.h" />
@@ -531,20 +531,20 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\sd\rarch_libsnescore_browser.xui">
+    <CustomBuild Include="..\..\360\media\sd\rarch_libretrocore_browser.xui">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\sd\rarch_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\sd\rarch_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\sd\rarch_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\sd\rarch_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\sd\rarch_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\sd\rarch_libsnescore_browser.xur"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\rarch_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\sd\rarch_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\sd\rarch_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\sd\rarch_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\rarch_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\rarch_libsnescore_browser.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\sd\rarch_libretrocore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\sd\rarch_libretrocore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\sd\rarch_libretrocore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\sd\rarch_libretrocore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\sd\rarch_libretrocore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\sd\rarch_libretrocore_browser.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\rarch_libretrocore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\sd\rarch_libretrocore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\sd\rarch_libretrocore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\sd\rarch_libretrocore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\rarch_libretrocore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\sd\rarch_libretrocore_browser.xur;</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
@@ -586,20 +586,20 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\rarch_filebrowser.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\rarch_filebrowser.xur;</Outputs>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\hd\rarch_libsnescore_browser.xui">
+    <CustomBuild Include="..\..\360\media\hd\rarch_libretrocore_browser.xui">
       <FileType>Document</FileType>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\hd\rarch_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\hd\rarch_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\rarch_libsnescore_browser.xur;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\rarch_libsnescore_browser.xur;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\hd\rarch_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\hd\rarch_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\hd\rarch_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\hd\rarch_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\hd\rarch_libsnescore_browser.xur"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libsnescore_browser.xui" "$(OutDir)media\hd\rarch_libsnescore_browser.xur"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_libretrocore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_libretrocore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\hd\rarch_libretrocore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\hd\rarch_libretrocore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\rarch_libretrocore_browser.xur;</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\rarch_libretrocore_browser.xur;</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\hd\rarch_libretrocore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\hd\rarch_libretrocore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\hd\rarch_libretrocore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\hd\rarch_libretrocore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\hd\rarch_libretrocore_browser.xur"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\hd\rarch_libretrocore_browser.xur"</Command>
     </CustomBuild>
     <CustomBuild Include="..\..\360\media\hd\rarch_main.xui">
       <FileType>Document</FileType>

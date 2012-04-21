@@ -88,9 +88,6 @@
     <ClInclude Include="..\..\general.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libsnes.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\message.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -130,20 +127,17 @@
     <ClInclude Include="..\..\compat\strl.h">
       <Filter>Header Files\compat</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\compat\getopt_ssnes.h">
-      <Filter>Header Files\compat</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\compat\posix_string.h">
       <Filter>Header Files\compat</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\compat\getopt_rarch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libretro.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\ssnes.ttf">
-      <Filter>Source Files\media</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\360\media\ssnes_scene_skin.xui">
-      <Filter>Source Files\media</Filter>
-    </CustomBuild>
     <CustomBuild Include="..\..\360\media\a.png">
       <Filter>Source Files\media</Filter>
     </CustomBuild>
@@ -156,35 +150,37 @@
     <CustomBuild Include="..\..\360\media\shaders\stock.cg">
       <Filter>Source Files\media\shader</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\sd\ssnes_filebrowser.xui">
+    <CustomBuild Include="..\..\360\media\rarch.ttf" />
+    <CustomBuild Include="..\..\360\media\rarch_scene_skin.xui" />
+    <CustomBuild Include="..\..\360\media\sd\rarch_filebrowser.xui">
       <Filter>Source Files\media\sd</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\sd\ssnes_libsnescore_browser.xui">
+    <CustomBuild Include="..\..\360\media\hd\rarch_filebrowser.xui">
+      <Filter>Source Files\media\hd</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\360\media\sd\rarch_libretrocore_browser.xui">
       <Filter>Source Files\media\sd</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\sd\ssnes_main.xui">
+    <CustomBuild Include="..\..\360\media\hd\rarch_libretrocore_browser.xui">
+      <Filter>Source Files\media\hd</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\360\media\sd\rarch_main.xui">
       <Filter>Source Files\media\sd</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\sd\ssnes_quickmenu.xui">
+    <CustomBuild Include="..\..\360\media\hd\rarch_main.xui">
+      <Filter>Source Files\media\hd</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\360\media\hd\rarch_quickmenu.xui">
+      <Filter>Source Files\media\hd</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\360\media\sd\rarch_quickmenu.xui">
       <Filter>Source Files\media\sd</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\sd\ssnes_settings.xui">
+    <CustomBuild Include="..\..\360\media\hd\rarch_settings.xui">
+      <Filter>Source Files\media\hd</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\360\media\sd\rarch_settings.xui">
       <Filter>Source Files\media\sd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\360\media\hd\ssnes_filebrowser.xui">
-      <Filter>Source Files\media\hd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\360\media\hd\ssnes_libsnescore_browser.xui">
-      <Filter>Source Files\media\hd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\360\media\hd\ssnes_main.xui">
-      <Filter>Source Files\media\hd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\360\media\hd\ssnes_quickmenu.xui">
-      <Filter>Source Files\media\hd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\360\media\hd\ssnes_settings.xui">
-      <Filter>Source Files\media\hd</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>
