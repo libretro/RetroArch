@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "getopt_ssnes.h"
+#include "getopt_rarch.h"
 #include "strl.h"
 #include "posix_string.h"
 

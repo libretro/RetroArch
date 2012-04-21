@@ -17,7 +17,7 @@
 // Reruns RetroArch main loop with all roms defined on command-line
 // to check if libsnes can load multiple roms after each other.
 
-#include "../getopt_ssnes.h"
+#include "../getopt_rarch.h"
 #include "../general.h"
 #include <string.h>
 

@@ -31,7 +31,7 @@
 #include "compat/strl.h"
 #include "screenshot.h"
 #include "cheats.h"
-#include "compat/getopt_ssnes.h"
+#include "compat/getopt_rarch.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
