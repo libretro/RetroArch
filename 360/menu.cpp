@@ -48,11 +48,11 @@ static void return_to_dashboard (void)
 /* Register custom classes */
 HRESULT CRetroArch::RegisterXuiClasses (void)
 {
-   CSSNESMain::Register();
-   CSSNESFileBrowser::Register();
-   CSSNESCoreBrowser::Register();
-   CSSNESQuickMenu::Register();
-   CSSNESSettings::Register();
+   CRetroArchMain::Register();
+   CRetroArchFileBrowser::Register();
+   CRetroArchCoreBrowser::Register();
+   CRetroArchQuickMenu::Register();
+   CRetroArchSettings::Register();
 
    return S_OK;
 }
@@ -60,11 +60,11 @@ HRESULT CRetroArch::RegisterXuiClasses (void)
 /* Unregister custom classes */
 HRESULT CRetroArch::UnregisterXuiClasses (void)
 {
-   CSSNESMain::Unregister();
-   CSSNESCoreBrowser::Unregister();
-   CSSNESFileBrowser::Unregister();
-   CSSNESQuickMenu::Register();
-   CSSNESSettings::Unregister();
+   CRetroArchMain::Unregister();
+   CRetroArchCoreBrowser::Unregister();
+   CRetroArchFileBrowser::Unregister();
+   CRetroArchQuickMenu::Register();
+   CRetroArchSettings::Unregister();
 
    return S_OK;
 }
@@ -91,7 +91,7 @@ static void filebrowser_fetch_directory_entries(const char *path, filebrowser_t 
    }
 }
 
-HRESULT CSSNESFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    GetChildById(L"XuiRomList", &m_romlist);
    GetChildById(L"XuiBackButton1", &m_back);
@@ -104,7 +104,7 @@ HRESULT CSSNESFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    return S_OK;
 }
 
-HRESULT CSSNESCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    GetChildById(L"XuiRomList", &m_romlist);
    GetChildById(L"XuiBackButton1", &m_back);
@@ -129,7 +129,7 @@ static const wchar_t * set_filter_element(int index)
    return L"";
 }
 
-HRESULT CSSNESSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    GetChildById(L"XuiSettingsList", &m_settingslist);
    GetChildById(L"XuiBackButton", &m_back);
@@ -141,7 +141,7 @@ HRESULT CSSNESSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    return S_OK;
 }
 
-HRESULT CSSNESQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    GetChildById(L"XuiQuickMenuList", &m_quickmenulist);
    GetChildById(L"XuiBackButton", &m_back);
@@ -173,7 +173,7 @@ HRESULT CSSNESQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    return S_OK;
 }
 
-HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
+HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
    int current_index;
 
@@ -279,7 +279,7 @@ HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
    return S_OK;
 }
 
-HRESULT CSSNESMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    struct retro_system_info info;
    retro_get_system_info(&info);
@@ -312,7 +312,7 @@ HRESULT CSSNESMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    return S_OK;
 }
 
-HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
+HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 {
    char path[MAX_PATH_LENGTH];
 
@@ -366,7 +366,7 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
    return S_OK;
 }
 
-HRESULT CSSNESCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
+HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 {
    char path[MAX_PATH_LENGTH];
 
@@ -397,7 +397,7 @@ HRESULT CSSNESCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
    return S_OK;
 }
 
-HRESULT CSSNESSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
+HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
    int current_index;
 
@@ -429,7 +429,7 @@ HRESULT CSSNESSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
    return S_OK;
 }
 
-HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
+HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
    xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 
@@ -469,12 +469,12 @@ HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
    }
    else if ( hObjPressed == m_settings )
    {
-      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_settings.xur", NULL, &app.hSSNESSettings);
+      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_settings.xur", NULL, &app.hRetroArchSettings);
 
       if (FAILED(hr))
          RARCH_ERR("Failed to load scene.\n");
 
-      NavigateForward(app.hSSNESSettings);
+      NavigateForward(app.hRetroArchSettings);
    }
    else if ( hObjPressed == m_quit )
       return_to_dashboard();

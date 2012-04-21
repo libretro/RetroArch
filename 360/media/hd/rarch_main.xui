@@ -9,7 +9,7 @@
 <Width>752.000061</Width>
 <Height>512.000122</Height>
 <Position>264.000031,88.000008,0.000000</Position>
-<ClassOverride>SSNESMain</ClassOverride>
+<ClassOverride>RetroArchMain</ClassOverride>
 </Properties>
 <XuiButton>
 <Properties>

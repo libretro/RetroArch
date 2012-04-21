@@ -9,7 +9,7 @@
 <Width>776.000061</Width>
 <Height>512.000061</Height>
 <Position>198.000031,112.000023,0.000000</Position>
-<ClassOverride>SSNESSettings</ClassOverride>
+<ClassOverride>RetroArchSettings</ClassOverride>
 </Properties>
 <XuiText>
 <Properties>
@@ -53,6 +53,18 @@ Gamma Correction:
 Hardware filtering:
 </ItemsText>
 </Properties>
+<XuiListItem>
+<Properties>
+<Id>control_ListItem</Id>
+<Width>226.000000</Width>
+<Height>45.000000</Height>
+<Position>7.000000,22.000000,0.000000</Position>
+<Anchor>5</Anchor>
+<Show>false</Show>
+<Visual>XuiButton</Visual>
+<InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
+</Properties>
+</XuiListItem>
 <XuiListItem>
 <Properties>
 <Id>control_ListItem</Id>

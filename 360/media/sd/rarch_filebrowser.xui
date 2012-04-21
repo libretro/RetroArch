@@ -9,7 +9,7 @@
 <Width>575.888062</Width>
 <Height>336.017609</Height>
 <Position>333.995880,209.035965,0.000000</Position>
-<ClassOverride>SSNESFileBrowser</ClassOverride>
+<ClassOverride>RetroArchFileBrowser</ClassOverride>
 </Properties>
 <XuiText>
 <Properties>
@@ -35,6 +35,18 @@
 <NavUp>XuiBtnGameDir</NavUp>
 <NavDown>XuiBtnGameDir</NavDown>
 </Properties>
+<XuiListItem>
+<Properties>
+<Id>control_ListItem</Id>
+<Width>226.000000</Width>
+<Height>45.000000</Height>
+<Position>7.000000,22.000000,0.000000</Position>
+<Anchor>5</Anchor>
+<Show>false</Show>
+<Visual>XuiButton</Visual>
+<InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
+</Properties>
+</XuiListItem>
 <XuiListItem>
 <Properties>
 <Id>control_ListItem</Id>
