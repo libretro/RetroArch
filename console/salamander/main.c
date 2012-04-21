@@ -79,7 +79,7 @@ SYS_PROCESS_PARAM(1001, 0x100000)
 DWORD volume_device_type;
 #endif
 
-char LIBSNES_DIR_PATH[MAX_PATH_LENGTH];
+char LIBRETRO_DIR_PATH[MAX_PATH_LENGTH];
 char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 char libretro_path[MAX_PATH_LENGTH];
 
@@ -91,7 +91,7 @@ static void find_and_set_first_file(void)
 #if defined(_XBOX)
    char ** dir_list = dir_list_new("game:\\", ".xex");
 #elif defined(__CELLOS_LV2__)
-   char ** dir_list = dir_list_new(LIBSNES_DIR_PATH, ".SELF");
+   char ** dir_list = dir_list_new(LIBRETRO_DIR_PATH, ".SELF");
 #endif
 
    if (!dir_list)
@@ -159,7 +159,7 @@ static void init_settings(void)
 #if defined(_XBOX)
    snprintf(core_executable, sizeof(core_executable), "game:\\CORE.xex");
 #elif defined(__CELLOS_LV2__)
-   snprintf(core_executable, sizeof(core_executable), "%s/CORE.SELF", LIBSNES_DIR_PATH);
+   snprintf(core_executable, sizeof(core_executable), "%s/CORE.SELF", LIBRETRO_DIR_PATH);
 #endif
 
    if(path_file_exists(core_executable))
@@ -282,7 +282,7 @@ static void get_environment_settings (void)
 
       /* now we fill in all the variables */
       snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/retroarch.cfg", usrDirPath);
-      snprintf(LIBSNES_DIR_PATH, sizeof(LIBSNES_DIR_PATH), "%s/cores", usrDirPath);
+      snprintf(LIBRETRO_DIR_PATH, sizeof(LIBRETRO_DIR_PATH), "%s/cores", usrDirPath);
    }
 #endif
 }
