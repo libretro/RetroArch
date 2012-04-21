@@ -111,7 +111,7 @@ static void find_and_set_first_file(void)
 
       fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
 
-      if(strcmp(fname_tmp, "SSNES-Salamander.xex") == 0)
+      if(strcmp(fname_tmp, "RetroArch-Salamander.xex") == 0)
       {
          RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
 	 first_executable = dir_list[1];
@@ -181,7 +181,7 @@ static void init_settings(void)
          find_and_set_first_file();
       else
       {
-         RARCH_LOG("Start [%s] found in ssnes.cfg.\n", libretro_path);
+         RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
       }
    }
 }
@@ -234,7 +234,7 @@ static void get_environment_settings (void)
       }
    }
 
-   strlcpy(SYS_CONFIG_FILE, "game:\\ssnes.cfg", sizeof(SYS_CONFIG_FILE));
+   strlcpy(SYS_CONFIG_FILE, "game:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
 #elif defined(__CELLOS_LV2__)
    unsigned int get_type;
    unsigned int get_attributes;
@@ -281,7 +281,7 @@ static void get_environment_settings (void)
       }
 
       /* now we fill in all the variables */
-      snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/ssnes.cfg", usrDirPath);
+      snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/retroarch.cfg", usrDirPath);
       snprintf(LIBSNES_DIR_PATH, sizeof(LIBSNES_DIR_PATH), "%s/cores", usrDirPath);
    }
 #endif
