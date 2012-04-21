@@ -498,7 +498,7 @@ int menu_init (void)
    }
 
    /* Register font */
-   hr = app.RegisterDefaultTypeface(L"Arial Unicode MS", L"file://game:/media/ssnes.ttf" );
+   hr = app.RegisterDefaultTypeface(L"Arial Unicode MS", L"file://game:/media/rarch.ttf" );
    if (FAILED(hr))
    {
       RARCH_ERR("Failed to register default typeface.\n");
