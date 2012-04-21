@@ -49,7 +49,7 @@ protected:
    CXuiControl m_quick_menu;
    CXuiControl m_controls;
    CXuiControl m_settings;
-   CXuiControl m_change_libsnes_core;
+   CXuiControl m_change_libretro_core;
    CXuiControl m_quit;
    CXuiTextElement m_title;
    CXuiTextElement m_core;

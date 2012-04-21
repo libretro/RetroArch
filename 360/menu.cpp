@@ -292,7 +292,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiBtnQuit", &m_quit);
    GetChildById(L"XuiTxtTitle", &m_title);
    GetChildById(L"XuiTxtCoreText", &m_core);
-   GetChildById(L"XuiBtnLibsnesCore", &m_change_libsnes_core);
+   GetChildById(L"XuiBtnLibsnesCore", &m_change_libretro_core);
 
    char core_text[256];
    sprintf(core_text, "%s (v%s)", id, info.library_version);
@@ -457,9 +457,9 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
       NavigateForward(app.hQuickMenu);
    }
-   else if ( hObjPressed == m_change_libsnes_core )
+   else if ( hObjPressed == m_change_libretro_core )
    {
-      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_libsnescore_browser.xur", NULL, &app.hCoreBrowser);
+      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_libretrocore_browser.xur", NULL, &app.hCoreBrowser);
 
       if (FAILED(hr))
       {
