@@ -21,8 +21,8 @@ PC_DEVELOPMENT_UDP_PORT		= 3490
 CELL_MK_DIR		?= $(CELL_SDK)/samples/mk
 include $(CELL_MK_DIR)/sdk.makedef.mk
 
-PPU_TARGET		= ssnes.elf
-SALAMANDER_TARGET	= ssnes-salamander.elf
+PPU_TARGET		= retroarch.elf
+SALAMANDER_TARGET	= retroarch-salamander.elf
 
 EBOOT_PATH		= ps3/pkg/USRDIR/EBOOT.BIN
 CORE_PATH		= ps3/pkg/USRDIR/cores/CORE.SELF
@@ -68,7 +68,7 @@ endif
 
 PPU_LDLIBS = -ldbgfont $(GL_LIBS) -lretro -lcgc -lgcm_cmd -lgcm_sys_stub -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_screenshot_stub -lsysutil_np_stub -lpngdec_stub -ljpgdec_stub -lsysmodule_stub -laudio_stub -lnet_stub -lnetctl_stub -lpthread
 
-DEFINES += -DRARCH_CONSOLE -DHAVE_OPENGL -DHAVE_CG -DHAVE_FBO -DHAVE_RARCH_MAIN_WRAP -DHAVE_RARCH_EXEC -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_RSOUND -DHAVE_ZLIB -D__CELLOS_LV2__ -DHAVE_CONFIGFILE=1 -DHAVE_NETPLAY=1 -DHAVE_SOCKET_LEGACY=1 -DHAVE_GRIFFIN=1 -DPACKAGE_VERSION=\"$(RARCH_VERSION)\" -Dmain=ssnes_main -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
+DEFINES += -DRARCH_CONSOLE -DHAVE_OPENGL -DHAVE_CG -DHAVE_FBO -DHAVE_RARCH_MAIN_WRAP -DHAVE_RARCH_EXEC -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_RSOUND -DHAVE_ZLIB -D__CELLOS_LV2__ -DHAVE_CONFIGFILE=1 -DHAVE_NETPLAY=1 -DHAVE_SOCKET_LEGACY=1 -DHAVE_GRIFFIN=1 -DPACKAGE_VERSION=\"$(RARCH_VERSION)\" -Dmain=rarch_main -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
 
 ifeq ($(DEBUG), 1)
    PPU_OPTIMIZE_LV	:= -O0 -g
@@ -129,20 +129,20 @@ pkg: $(PPU_TARGET) create-shaders create-npdrm-salamander create-npdrm-core
 	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
 
 pkg-signed: $(PPU_TARGET) create-shaders create-salamander create-core
-	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(RARCH_VERSION).pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION).pkg
 
 pkg-signed-standalone: $(PPU_TARGET) create-shaders create-core
 	$(MAKE_SELF) $(PPU_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
-	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(RARCH_VERSION).pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION).pkg
 
 pkg-signed-cfw: $(PPU_TARGET) create-shaders create-salamander create-core
-	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
-	$(PKG_FINALIZE) ssnes-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
+	$(PKG_FINALIZE) retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
 
 pkg-signed-cfw-standalone: $(PPU_TARGET) create-shaders create-core
 	$(MAKE_SELF) $(PPU_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
-	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ ssnes-ps3-cfw-$(RARCH_VERSION).pkg
-	$(PKG_FINALIZE) ssnes-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION).pkg
+	$(PKG_FINALIZE) retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
 
 clean-selfs:
 ifeq ($(EBOOT_EXISTS),1)

@@ -25,7 +25,7 @@ PPU_CFLAGS		+= -DHAVE_LOGGER
 PPU_SRCS		+= console/logger/logger.c
 endif
 
-PPU_TARGET		= ssnes-salamander.elf
+PPU_TARGET		= retroarch-salamander.elf
 
 ifeq ($(CELL_BUILD_TOOLS),SNC)
 	PPU_CFLAGS		+= -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 -Xunroll=1 -Xautovecreg=1 
