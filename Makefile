@@ -3,14 +3,14 @@ include config.mk
 TARGET = retroarch tools/retroarch-joyconfig
 
 OBJ = retroarch.o file.o file_path.o hash.o driver.o settings.o dynamic.o message.o rewind.o gfx/gfx_common.o patch.o compat/compat.o screenshot.o audio/utils.o
-JOYCONFIG_OBJ = tools/ssnes-joyconfig.o conf/config_file.o compat/compat.o
+JOYCONFIG_OBJ = tools/retroarch-joyconfig.o conf/config_file.o compat/compat.o
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
 LIBS = -lm
 DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS
 
 ifeq ($(REENTRANT_TEST), 1)
-   DEFINES += -Dmain=ssnes_main
+   DEFINES += -Dmain=retroarch_main
    OBJ += console/test.o
 endif
 
@@ -228,18 +228,18 @@ install: $(TARGET)
 	mkdir -p $(DESTDIR)/etc 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1 2>/dev/null || /bin/true
 	install -m755 $(TARGET) $(DESTDIR)$(PREFIX)/bin 
-	install -m644 ssnes.cfg $(DESTDIR)/etc/ssnes.cfg
-	install -m644 docs/ssnes.1 $(DESTDIR)$(PREFIX)/share/man/man1
-	install -m644 docs/ssnes-joyconfig.1 $(DESTDIR)$(PREFIX)/share/man/man1
-	install -m755 ssnes-zip $(DESTDIR)$(PREFIX)/bin
+	install -m644 retroarch.cfg $(DESTDIR)/etc/retroarch.cfg
+	install -m644 docs/retroarch.1 $(DESTDIR)$(PREFIX)/share/man/man1
+	install -m644 docs/retroarch-joyconfig.1 $(DESTDIR)$(PREFIX)/share/man/man1
+	install -m755 retroarch-zip $(DESTDIR)$(PREFIX)/bin
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/ssnes
-	rm -f $(DESTDIR)$(PREFIX)/bin/ssnes-joyconfig
-	rm -f $(DESTDIR)$(PREFIX)/bin/ssnes-zip
-	rm -f $(DESTDIR)/etc/ssnes.cfg
-	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/ssnes.1
-	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/ssnes-joyconfig.1
+	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch
+	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-joyconfig
+	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-zip
+	rm -f $(DESTDIR)/etc/retroarch.cfg
+	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch.1
+	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch-joyconfig.1
 
 clean:
 	rm -f *.o 

@@ -9,7 +9,7 @@
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License along with SSNES.
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -251,7 +251,7 @@ static config_file_t *open_default_config_file(void)
    config_file_t *conf = NULL;
 #if defined(_WIN32) && !defined(_XBOX)
    // Just do something for now.
-   conf = config_file_new("ssnes.cfg");
+   conf = config_file_new("retroarch.cfg");
    if (!conf)
    {
       const char *appdata = getenv("APPDATA");
@@ -259,7 +259,7 @@ static config_file_t *open_default_config_file(void)
       {
          char conf_path[PATH_MAX];
          strlcpy(conf_path, appdata, sizeof(conf_path));
-         strlcat(conf_path, "/ssnes.cfg", sizeof(conf_path));
+         strlcat(conf_path, "/retroarch.cfg", sizeof(conf_path));
          conf = config_file_new(conf_path);
       }
    }
@@ -269,34 +269,34 @@ static config_file_t *open_default_config_file(void)
    {
       char conf_path[PATH_MAX];
       strlcpy(conf_path, home, sizeof(conf_path));
-      strlcat(conf_path, "/.ssnes.cfg", sizeof(conf_path));
+      strlcat(conf_path, "/.retroarch.cfg", sizeof(conf_path));
       conf = config_file_new(conf_path);
    }
    if (!conf)
-      conf = config_file_new("/etc/ssnes.cfg");
+      conf = config_file_new("/etc/retroarch.cfg");
 #elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
    const char *xdg = getenv("XDG_CONFIG_HOME");
    if (!xdg)
-      RARCH_WARN("XDG_CONFIG_HOME is not defined. Will look for config in $HOME/.ssnes.cfg ...\n");
+      RARCH_WARN("XDG_CONFIG_HOME is not defined. Will look for config in $HOME/.retroarch.cfg ...\n");
 
    const char *home = getenv("HOME");
    if (xdg)
    {
       char conf_path[PATH_MAX];
       strlcpy(conf_path, xdg, sizeof(conf_path));
-      strlcat(conf_path, "/ssnes/ssnes.cfg", sizeof(conf_path));
+      strlcat(conf_path, "/retroarch/retroarch.cfg", sizeof(conf_path));
       conf = config_file_new(conf_path);
    }
    else if (home)
    {
       char conf_path[PATH_MAX];
       strlcpy(conf_path, home, sizeof(conf_path));
-      strlcat(conf_path, "/.ssnes.cfg", sizeof(conf_path));
+      strlcat(conf_path, "/.retroarch.cfg", sizeof(conf_path));
       conf = config_file_new(conf_path);
    }
    // Try this as a last chance...
    if (!conf)
-      conf = config_file_new("/etc/ssnes.cfg");
+      conf = config_file_new("/etc/retroarch.cfg");
 #endif
 
    return conf;

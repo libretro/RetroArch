@@ -9,7 +9,7 @@
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License along with SSNES.
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -39,7 +39,7 @@ static bool g_use_misc = false;
 static void print_help(void)
 {
    puts("==================");
-   puts("ssnes-joyconfig");
+   puts("retroarch-joyconfig");
    puts("==================");
    puts("Usage: ssnes-joyconfig [ -p/--player <1-5> | -j/--joypad <num> | -i/--input <file> | -o/--output <file> | -h/--help ]");
    puts("");
@@ -48,7 +48,7 @@ static void print_help(void)
    puts("-i/--input: Input file to configure with. Binds will be added on or overwritten.");
    puts("\tIf not selected, an empty config will be used as a base.");
    puts("-o/--output: Output file to write to. If not selected, config file will be dumped to stdout.");
-   puts("-m/--misc: Also configure various keybinds that are not directly SNES related. These configurations are for player 1 only.");
+   puts("-m/--misc: Also configure various keybinds that are not directly libretro related. These configurations are for player 1 only.");
    puts("-h/--help: This help.");
 }
 
@@ -138,7 +138,8 @@ static void get_binds(config_file_t *conf, int player, int joypad)
    for (int i = 0; i < num_axes; i++)
       initial_axes[i] = SDL_JoystickGetAxis(joystick, i);
 
-   fprintf(stderr, "Configuring binds for player #%d on joypad #%d (%s)\n", player + 1, joypad, SDL_JoystickName(joypad));
+   fprintf(stderr, "Configuring binds for player #%d on joypad #%d (%s)\n",
+         player + 1, joypad, SDL_JoystickName(joypad));
    fprintf(stderr, "Press Ctrl-C to exit early.\n");
    fprintf(stderr, "\n");
 
@@ -322,7 +323,10 @@ int main(int argc, char *argv[])
       "input_player2_joypad_index", 
       "input_player3_joypad_index", 
       "input_player4_joypad_index", 
-      "input_player5_joypad_index"
+      "input_player5_joypad_index",
+      "input_player6_joypad_index",
+      "input_player7_joypad_index",
+      "input_player8_joypad_index",
    };
 
    config_set_int(conf, index_list[g_player - 1], g_joypad);
