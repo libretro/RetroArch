@@ -297,7 +297,7 @@ HRESULT CSSNESMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    char core_text[256];
    sprintf(core_text, "%s (v%s)", id, info.library_version);
    char package_version[32];
-   sprintf(package_version, "SSNES %s", PACKAGE_VERSION);
+   sprintf(package_version, "RetroArch %s", PACKAGE_VERSION);
    unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, core_text, -1, NULL, 0);
    unsigned long dwNum_package = MultiByteToWideChar(CP_ACP, 0, package_version, -1, NULL, 0);
    wchar_t * core_text_utf = new wchar_t[dwNum];
