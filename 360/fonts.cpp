@@ -76,7 +76,7 @@ HRESULT xdk360_console_init( LPCSTR strFontFileName, unsigned long colBackColor,
    HRESULT hr = xdk360_video_font_init(&m_Font, strFontFileName );
    if( FAILED( hr ) )
    {
-      SSNES_ERR( "Could not create font.\n" );
+      RARCH_ERR( "Could not create font.\n" );
       return -1;
    }
 
@@ -470,14 +470,14 @@ HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * strFontF
    }
    else
    {
-      SSNES_ERR( "Incorrect version number on font file.\n" );
+      RARCH_ERR( "Incorrect version number on font file.\n" );
       return E_FAIL;
    }
 
    // Create the vertex and pixel shaders for rendering the font
    if( FAILED( xdk360_video_font_create_shaders(font) ) )
    {
-      SSNES_ERR( "Could not create font shaders.\n" );
+      RARCH_ERR( "Could not create font shaders.\n" );
       return E_FAIL;
    }
 
@@ -763,7 +763,7 @@ void xdk360_video_font_draw_text(xdk360_video_font_t * font, float fOriginX, flo
    // The ring buffer may run out of space when tiling, doing z-prepasses,
    // or using BeginCommandBuffer. If so, make the buffer larger.
    if( FAILED( hr ) )
-      SSNES_ERR( "Ring buffer out of memory.\n" );
+      RARCH_ERR( "Ring buffer out of memory.\n" );
 
    // Draw four vertices for each glyph
    while( *strText )

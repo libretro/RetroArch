@@ -13,14 +13,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_SDL_INPUT_H
-#define __SSNES_SDL_INPUT_H
+#ifndef __RARCH_SDL_INPUT_H
+#define __RARCH_SDL_INPUT_H
 
 #include "SDL.h"
 #include "../general.h"
 
 #ifdef HAVE_DINPUT
-#include "ssnes_dinput.h"
+#include "rarch_dinput.h"
 #endif
 
 typedef struct sdl_input

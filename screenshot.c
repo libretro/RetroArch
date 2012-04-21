@@ -99,7 +99,7 @@ bool screenshot_dump(const char *folder, const uint16_t *frame,
    FILE *file = fopen(filename, "wb");
    if (!file)
    {
-      SSNES_ERR("Failed to open file \"%s\" for screenshot.\n", filename);
+      RARCH_ERR("Failed to open file \"%s\" for screenshot.\n", filename);
       return false;
    }
 

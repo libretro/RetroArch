@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _SSNES_FUNC_HOOKS_H
-#define _SSNES_FUNC_HOOKS_H
+#ifndef _RARCH_FUNC_HOOKS_H
+#define _RARCH_FUNC_HOOKS_H
 
 /*============================================================
 	PLAYSTATION3

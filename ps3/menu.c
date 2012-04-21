@@ -589,7 +589,7 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 			   snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Rewind] feature is set to 'OFF'.");
 		   }
 		   break;
-	   case SETTING_SSNES_DEFAULT_EMU:
+	   case SETTING_RARCH_DEFAULT_EMU:
 		   {
 			   char fname[MAX_PATH_LENGTH];
 			   fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
@@ -730,12 +730,12 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L:
 	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
 		   {
-			   if(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey == ssnes_default_keybind_lut[currentsetting-FIRST_CONTROL_BIND])
+			   if(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey == rarch_default_keybind_lut[currentsetting-FIRST_CONTROL_BIND])
 				   menu_obj->items[currentsetting].text_color = GREEN;
 			   else
 				   menu_obj->items[currentsetting].text_color = ORANGE;
-			   const char * value = ssnes_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey);
-			   snprintf(menu_obj->items[currentsetting].text, sizeof(menu_obj->items[currentsetting].text), ssnes_default_libretro_keybind_name_lut[currentsetting-(FIRST_CONTROL_BIND)]);
+			   const char * value = rarch_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey);
+			   snprintf(menu_obj->items[currentsetting].text, sizeof(menu_obj->items[currentsetting].text), rarch_default_libretro_keybind_name_lut[currentsetting-(FIRST_CONTROL_BIND)]);
 			   snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [%s] on the PS3 controller is mapped to action:\n[%s].", menu_obj->items[currentsetting].text, value);
 			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), value);
 		   }
@@ -806,13 +806,13 @@ static void apply_scaling (unsigned init_mode)
          gl_deinit_fbo(g_gl);
 	 break;
       case FBO_INIT:
-	 gl_init_fbo(g_gl, SSNES_SCALE_BASE * INPUT_SCALE,
-			 SSNES_SCALE_BASE * INPUT_SCALE);
+	 gl_init_fbo(g_gl, RARCH_SCALE_BASE * INPUT_SCALE,
+			 RARCH_SCALE_BASE * INPUT_SCALE);
 	 break;
       case FBO_REINIT:
 	 gl_deinit_fbo(g_gl);
-	 gl_init_fbo(g_gl, SSNES_SCALE_BASE * INPUT_SCALE,
-			 SSNES_SCALE_BASE * INPUT_SCALE);
+	 gl_init_fbo(g_gl, RARCH_SCALE_BASE * INPUT_SCALE,
+			 RARCH_SCALE_BASE * INPUT_SCALE);
 	 break;
    }
 }
@@ -1074,13 +1074,13 @@ static void set_keybind_digital(uint64_t state, uint64_t default_retro_joypad_id
    if(CTRL_START(state))
       keybind_action = KEYBIND_DEFAULT;
 
-   ssnes_input_set_keybind(currently_selected_controller_menu, keybind_action, default_retro_joypad_id);
+   rarch_input_set_keybind(currently_selected_controller_menu, keybind_action, default_retro_joypad_id);
 
    if(keybind_action != KEYBIND_NOACTION)
       set_delay = DELAY_MEDIUM;
 }
 
-static void ssnes_filename_input_and_save (unsigned filename_type)
+static void rarch_filename_input_and_save (unsigned filename_type)
 {
    bool filename_entered = false;
    char filename_tmp[256], filepath[MAX_PATH_LENGTH];
@@ -1484,7 +1484,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_SAVE_SHADER_PRESET:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state)  || CTRL_RIGHT(state) | CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				ssnes_filename_input_and_save(SHADER_PRESET_FILE);
+				rarch_filename_input_and_save(SHADER_PRESET_FILE);
 			}
 			break;
 		case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
@@ -1567,7 +1567,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				g_settings.rewind_enable = false;
 			}
 			break;
-		case SETTING_SSNES_DEFAULT_EMU:
+		case SETTING_RARCH_DEFAULT_EMU:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
 				menuStackindex++;
@@ -1779,13 +1779,13 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
 			{
-				ssnes_filename_input_and_save(INPUT_PRESET_FILE);
+				rarch_filename_input_and_save(INPUT_PRESET_FILE);
 			}
 			break;
 		case SETTING_CONTROLS_DEFAULT_ALL:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
 			{
-				ssnes_input_set_default_keybinds(currently_selected_controller_menu);
+				rarch_input_set_default_keybinds(currently_selected_controller_menu);
 				menu_reinit_settings();
 			}
 			break;
@@ -1916,7 +1916,7 @@ static void select_rom(void)
       }
 
       if (CTRL_START(button_was_pressed))
-         filebrowser_reset_start_directory(&browser, "/", ssnes_console_get_rom_ext());
+         filebrowser_reset_start_directory(&browser, "/", rarch_console_get_rom_ext());
 
       if (CTRL_CROSS(button_was_pressed))
       {
@@ -1945,12 +1945,12 @@ static void select_rom(void)
 	    snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 
 	    if((strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP")) && !block_zip_extract)
-               ssnes_extract_zipfile(rom_path_temp);
+               rarch_extract_zipfile(rom_path_temp);
 	    else
 	    {
                g_console.menu_enable = false;
 	       snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
-	       g_console.initialize_ssnes_enable = 1;
+	       g_console.initialize_rarch_enable = 1;
 	       g_console.mode_switch = MODE_EMULATION;
 	    }
 	 }
@@ -2032,18 +2032,18 @@ static void ingame_menu(uint32_t menu_id)
          case MENU_ITEM_LOAD_STATE:
             if(CTRL_CROSS(state))
 	    {
-               ssnes_load_state();
+               rarch_load_state();
 	       return_to_game();
 	    }
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 	    {
-               ssnes_state_slot_decrease();
+               rarch_state_slot_decrease();
 	       set_delay = DELAY_LONG;
 	       blocking = 0;
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 	    {
-               ssnes_state_slot_increase();
+               rarch_state_slot_increase();
 	       set_delay = DELAY_LONG;
 	       blocking = 0;
 	    }
@@ -2053,18 +2053,18 @@ static void ingame_menu(uint32_t menu_id)
 	 case MENU_ITEM_SAVE_STATE:
 	    if(CTRL_CROSS(state))
 	    {
-               ssnes_save_state();
+               rarch_save_state();
 	       return_to_game();
 	    }
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 	    {
-               ssnes_state_slot_decrease();
+               rarch_state_slot_decrease();
 	       set_delay = DELAY_LONG;
 	       blocking = 0;
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 	    {
-               ssnes_state_slot_increase();
+               rarch_state_slot_increase();
 	       set_delay = DELAY_LONG;
 	       blocking = 0;
 	    }
@@ -2216,7 +2216,7 @@ static void ingame_menu(uint32_t menu_id)
 		     glEnable(GL_BLEND);
 		  }
 
-		  ssnes_render_cached_frame();
+		  rarch_render_cached_frame();
 
 		  if(CTRL_SQUARE(~state))
 		  {
@@ -2343,7 +2343,7 @@ static void ingame_menu(uint32_t menu_id)
 		     stuck_in_loop = 0;
 		  }
 
-		  ssnes_render_cached_frame();
+		  rarch_render_cached_frame();
 
 		  video_gl.swap(NULL);
 	       }
@@ -2361,7 +2361,7 @@ static void ingame_menu(uint32_t menu_id)
 	    if(CTRL_CROSS(state))
 	    {
                return_to_game();
-	       ssnes_game_reset();
+	       rarch_game_reset();
 	    }
 	    strcpy(comment, "Press 'CROSS' to reset the game.");
 	    break;
@@ -2509,7 +2509,7 @@ static void ingame_menu(uint32_t menu_id)
 
 void menu_init (void)
 {
-   filebrowser_new(&browser, g_console.default_rom_startup_dir, ssnes_console_get_rom_ext());
+   filebrowser_new(&browser, g_console.default_rom_startup_dir, rarch_console_get_rom_ext());
 }
 
 void menu_loop(void)
@@ -2538,7 +2538,7 @@ void menu_loop(void)
       glEnable(GL_BLEND);
       if(g_console.emulator_initialized)
       {
-         ssnes_render_cached_frame();
+         rarch_render_cached_frame();
       }
 
       gl_frame_menu();

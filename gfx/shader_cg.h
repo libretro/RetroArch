@@ -14,8 +14,8 @@
  */
 
 
-#ifndef __SSNES_CG_H
-#define __SSNES_CG_H
+#ifndef __RARCH_CG_H
+#define __RARCH_CG_H
 
 #include "../boolean.h"
 #include "gl_common.h"
@@ -46,8 +46,8 @@ void gl_cg_shader_scale(unsigned index, struct gl_fbo_scale *scale);
 
 // Used on PS3, but not really platform specific.
 
-#define SSNES_CG_MAX_SHADERS 16
-#define SSNES_CG_MENU_SHADER_INDEX (SSNES_CG_MAX_SHADERS - 1)
+#define RARCH_CG_MAX_SHADERS 16
+#define RARCH_CG_MENU_SHADER_INDEX (RARCH_CG_MAX_SHADERS - 1)
 void gl_cg_set_menu_shader(const char *path);
 void gl_cg_set_compiler_args(const char **argv);
 

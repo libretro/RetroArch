@@ -56,7 +56,7 @@ extern "C" int __stdcall ObCreateSymbolicLink( STRING*, STRING*);
 
 int Mounted[20];
 
-int ssnes_main(int argc, char *argv[]);
+int rarch_main(int argc, char *argv[]);
 
 #undef main
 
@@ -136,26 +136,26 @@ static void set_default_settings (void)
    g_settings.video.smooth = true;
    g_settings.video.aspect_ratio = -1.0f;
 
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_A].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_X].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_BACK].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_START].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_UP].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_DOWN].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_LEFT].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_RIGHT].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_B].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_Y].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_LB].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_RB].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_A].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_X].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_BACK].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_START].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_UP].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_DOWN].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_LEFT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_RIGHT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_B].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_Y].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_LB].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_RB].joykey;
 
    for(uint32_t x = 0; x < MAX_PLAYERS; x++)
-      ssnes_input_set_default_keybinds(x);
+      rarch_input_set_default_keybinds(x);
 
    //g_console
    g_console.block_config_read = true;
    g_console.gamma_correction_enable = false;
-   g_console.initialize_ssnes_enable = false;
+   g_console.initialize_rarch_enable = false;
    g_console.emulator_initialized = 0;
    g_console.mode_switch = MODE_MENU;
    g_console.screen_orientation = ORIENTATION_NORMAL;
@@ -180,7 +180,7 @@ static void init_settings (bool load_libretro_path)
    if(!path_file_exists(SYS_CONFIG_FILE))
    {
       FILE * f;
-      SSNES_ERR("Config file \"%s\" desn't exist. Creating...\n", "game:\\ssnes.cfg");
+      RARCH_ERR("Config file \"%s\" desn't exist. Creating...\n", "game:\\ssnes.cfg");
       f = fopen(SYS_CONFIG_FILE, "w");
       fclose(f);
    }
@@ -199,7 +199,7 @@ static void init_settings (bool load_libretro_path)
 
 	 if (!dir_list)
 	 {
-            SSNES_ERR("Couldn't read directory.\n");
+            RARCH_ERR("Couldn't read directory.\n");
 	    return;
 	 }
 
@@ -211,24 +211,24 @@ static void init_settings (bool load_libretro_path)
 
 	    if(strcmp(fname_tmp, "SSNES-Salamander.xex") == 0)
 	    {
-               SSNES_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
+               RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
 	       first_xex = dir_list[1];
 	       fill_pathname_base(fname_tmp, first_xex, sizeof(fname_tmp));
 
 	       if(!first_xex)
 	       {
                   //This is very unlikely to happen
-                  SSNES_WARN("There is no second entry - no choice but to set it to RetroArch Salamander\n");
+                  RARCH_WARN("There is no second entry - no choice but to set it to RetroArch Salamander\n");
 		  first_xex = dir_list[0];
 		  fill_pathname_base(fname_tmp, first_xex, sizeof(fname_tmp));
 	       }
 	    }
-	    SSNES_LOG("Set first .xex entry in dir: [%s] to libretro path.\n", fname_tmp);
+	    RARCH_LOG("Set first .xex entry in dir: [%s] to libretro path.\n", fname_tmp);
 	    snprintf(g_settings.libretro, sizeof(g_settings.libretro), "game:\\%s", fname_tmp);
 	 }
 	 else
 	 {
-            SSNES_ERR("Failed to set first .xex entry to libretro path.\n");
+            RARCH_ERR("Failed to set first .xex entry to libretro path.\n");
 	 }
 
 	 dir_list_free(dir_list);
@@ -289,7 +289,7 @@ static void save_settings (void)
    config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
 
    if (!config_file_write(conf, SYS_CONFIG_FILE))
-      SSNES_ERR("Failed to write config file to \"%s\". Check permissions.\n", SYS_CONFIG_FILE);
+      RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", SYS_CONFIG_FILE);
 
    free(conf);
 }
@@ -318,14 +318,14 @@ static void get_environment_settings (void)
 
    if(ret != TRUE)
    {
-      SSNES_ERR("Couldn't change number of bytes reserved for file system cache.\n");
+      RARCH_ERR("Couldn't change number of bytes reserved for file system cache.\n");
    }
 
    ret = XFileCacheInit(XFILECACHE_CLEAR_ALL, 0x100000, XFILECACHE_DEFAULT_THREAD, 0, 1);
 
    if(ret != ERROR_SUCCESS)
    {
-      SSNES_ERR("File cache could not be initialized.\n");
+      RARCH_ERR("File cache could not be initialized.\n");
    }
 
    XFlushUtilityDrive();
@@ -333,7 +333,7 @@ static void get_environment_settings (void)
 
    //if(result != ERROR_SUCCESS)
    //{
-   //	SSNES_ERR("Couldn't mount/format utility drive.\n");
+   //	RARCH_ERR("Couldn't mount/format utility drive.\n");
    //}
 
    // detect install environment
@@ -372,13 +372,13 @@ int main(int argc, char *argv[])
 {
    get_environment_settings();
 
-   ssnes_main_clear_state();
+   rarch_main_clear_state();
    config_set_defaults();
 
    char full_path[1024];
    snprintf(full_path, sizeof(full_path), "game:\\CORE.xex");
 
-   bool load_libretro_path = ssnes_manage_libretro_core(full_path, "game:\\", ".xex");
+   bool load_libretro_path = rarch_manage_libretro_core(full_path, "game:\\", ".xex");
 
    set_default_settings();
    init_settings(load_libretro_path);
@@ -387,7 +387,7 @@ int main(int argc, char *argv[])
    xdk360_video_init();
    xdk360_input_init();
 
-   ssnes_input_set_default_keybind_names_for_emulator();
+   rarch_input_set_default_keybind_names_for_emulator();
 
    menu_init();
 
@@ -399,13 +399,13 @@ begin_loop:
       input_xdk360.poll(NULL);
 
       do{
-         repeat = ssnes_main_iterate();
+         repeat = rarch_main_iterate();
       }while(repeat && !g_console.frame_advance_enable);
    }
    else if(g_console.mode_switch == MODE_MENU)
    {
       menu_loop();
-      ssnes_startup(SYS_CONFIG_FILE);
+      rarch_startup(SYS_CONFIG_FILE);
    }
    else
       goto begin_shutdown;
@@ -418,7 +418,7 @@ begin_shutdown:
 
    menu_deinit();
    xdk360_video_deinit();
-   ssnes_exec();
+   rarch_exec();
 
    return 0;
 }

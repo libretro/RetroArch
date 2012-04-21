@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_GETOPT_H
-#define __SSNES_GETOPT_H
+#ifndef __RARCH_GETOPT_H
+#define __RARCH_GETOPT_H
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

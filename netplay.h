@@ -14,8 +14,8 @@
  */
 
 
-#ifndef __SSNES_NETPLAY_H
-#define __SSNES_NETPLAY_H
+#ifndef __RARCH_NETPLAY_H
+#define __RARCH_NETPLAY_H
 
 #include <stdint.h>
 #include <stddef.h>

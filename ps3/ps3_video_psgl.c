@@ -112,11 +112,11 @@ static bool gl_shader_init(void)
 {
    switch (g_settings.video.shader_type)
    {
-      case SSNES_SHADER_AUTO:
+      case RARCH_SHADER_AUTO:
          if (strlen(g_settings.video.cg_shader_path) > 0 && strlen(g_settings.video.bsnes_shader_path) > 0)
-            SSNES_WARN("Both Cg and bSNES XML shader are defined in config file. Cg shader will be selected by default.\n");
+            RARCH_WARN("Both Cg and bSNES XML shader are defined in config file. Cg shader will be selected by default.\n");
 	 // fall-through
-      case SSNES_SHADER_CG:
+      case RARCH_SHADER_CG:
          if (strlen(g_settings.video.cg_shader_path) > 0)
             return gl_cg_init(g_settings.video.cg_shader_path);
 	 break;
@@ -220,18 +220,18 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    {
       scale.scale_x = g_settings.video.fbo_scale_x;
       scale.scale_y = g_settings.video.fbo_scale_y;
-      scale.type_x = scale.type_y = SSNES_SCALE_INPUT;
+      scale.type_x = scale.type_y = RARCH_SCALE_INPUT;
    }
 
    switch (scale.type_x)
    {
-      case SSNES_SCALE_INPUT:
+      case RARCH_SCALE_INPUT:
          gl->fbo_rect[0].width = width * next_pow2(ceil(scale.scale_x));
 	 break;
-      case SSNES_SCALE_ABSOLUTE:
+      case RARCH_SCALE_ABSOLUTE:
 	 gl->fbo_rect[0].width = next_pow2(scale.abs_x);
 	 break;
-      case SSNES_SCALE_VIEWPORT:
+      case RARCH_SCALE_VIEWPORT:
 	 gl->fbo_rect[0].width = next_pow2(gl->win_width);
 	 break;
       default:
@@ -240,13 +240,13 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
    switch (scale.type_y)
    {
-      case SSNES_SCALE_INPUT:
+      case RARCH_SCALE_INPUT:
          gl->fbo_rect[0].height = height * next_pow2(ceil(scale.scale_y));
 	 break;
-      case SSNES_SCALE_ABSOLUTE:
+      case RARCH_SCALE_ABSOLUTE:
 	 gl->fbo_rect[0].height = next_pow2(scale.abs_y);
 	 break;
-      case SSNES_SCALE_VIEWPORT:
+      case RARCH_SCALE_VIEWPORT:
 	 gl->fbo_rect[0].height = next_pow2(gl->win_height);
 	 break;
       default:
@@ -256,7 +256,7 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    unsigned last_width = gl->fbo_rect[0].width, last_height = gl->fbo_rect[0].height;
    gl->fbo_scale[0] = scale;
 
-   SSNES_LOG("Creating FBO 0 @ %ux%u\n", gl->fbo_rect[0].width, gl->fbo_rect[0].height);
+   RARCH_LOG("Creating FBO 0 @ %ux%u\n", gl->fbo_rect[0].width, gl->fbo_rect[0].height);
 
    for (int i = 1; i < gl->fbo_pass; i++)
    {
@@ -265,13 +265,13 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
       {
          switch (gl->fbo_scale[i].type_x)
 	 {
-            case SSNES_SCALE_INPUT:
+            case RARCH_SCALE_INPUT:
                gl->fbo_rect[i].width = last_width * next_pow2(ceil(gl->fbo_scale[i].scale_x));
 	       break;
-	    case SSNES_SCALE_ABSOLUTE:
+	    case RARCH_SCALE_ABSOLUTE:
 	       gl->fbo_rect[i].width = next_pow2(gl->fbo_scale[i].abs_x);
 	       break;
-	    case SSNES_SCALE_VIEWPORT:
+	    case RARCH_SCALE_VIEWPORT:
 	       gl->fbo_rect[i].width = next_pow2(gl->win_width);
 	       break;
 	    default:
@@ -280,13 +280,13 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
 	 switch (gl->fbo_scale[i].type_y)
 	 {
-            case SSNES_SCALE_INPUT:
+            case RARCH_SCALE_INPUT:
                gl->fbo_rect[i].height = last_height * next_pow2(ceil(gl->fbo_scale[i].scale_y));
 	       break;
-	    case SSNES_SCALE_ABSOLUTE:
+	    case RARCH_SCALE_ABSOLUTE:
 	       gl->fbo_rect[i].height = next_pow2(gl->fbo_scale[i].abs_y);
 	       break;
-	    case SSNES_SCALE_VIEWPORT:
+	    case RARCH_SCALE_VIEWPORT:
 	       gl->fbo_rect[i].height = next_pow2(gl->win_height);
 	       break;
 	    default:
@@ -301,10 +301,10 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
          // Use previous values, essentially a 1x scale compared to last shader in chain.
          gl->fbo_rect[i] = gl->fbo_rect[i - 1];
 	 gl->fbo_scale[i].scale_x = gl->fbo_scale[i].scale_y = 1.0;
-	 gl->fbo_scale[i].type_x = gl->fbo_scale[i].type_y = SSNES_SCALE_INPUT;
+	 gl->fbo_scale[i].type_x = gl->fbo_scale[i].type_y = RARCH_SCALE_INPUT;
       }
 
-      SSNES_LOG("Creating FBO %d @ %ux%u\n", i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
+      RARCH_LOG("Creating FBO %d @ %ux%u\n", i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
    }
 
    gl_create_fbo_textures(gl);
@@ -327,7 +327,7 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 error:
    glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
    glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
-   SSNES_ERR("Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
+   RARCH_ERR("Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
 }
 
 static inline void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
@@ -343,14 +343,14 @@ unsigned vp_width, unsigned vp_height)
    {
       switch (gl->fbo_scale[i].type_x)
       {
-         case SSNES_SCALE_INPUT:
+         case RARCH_SCALE_INPUT:
             gl->fbo_rect[i].img_width = last_width * gl->fbo_scale[i].scale_x;
 	    gl->fbo_rect[i].max_img_width = last_max_width * gl->fbo_scale[i].scale_x;
 	    break;
-	 case SSNES_SCALE_ABSOLUTE:
+	 case RARCH_SCALE_ABSOLUTE:
 	    gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].abs_x;
 	    break;
-	 case SSNES_SCALE_VIEWPORT:
+	 case RARCH_SCALE_VIEWPORT:
 	    gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].scale_x * gl->vp_out_width;
 	    break;
 	 default:
@@ -359,14 +359,14 @@ unsigned vp_width, unsigned vp_height)
 
       switch (gl->fbo_scale[i].type_y)
       {
-         case SSNES_SCALE_INPUT:
+         case RARCH_SCALE_INPUT:
             gl->fbo_rect[i].img_height = last_height * gl->fbo_scale[i].scale_y;
 	    gl->fbo_rect[i].max_img_height = last_max_height * gl->fbo_scale[i].scale_y;
 	    break;
-	 case SSNES_SCALE_ABSOLUTE:
+	 case RARCH_SCALE_ABSOLUTE:
 	    gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].abs_y;
 	    break;
-	 case SSNES_SCALE_VIEWPORT:
+	 case RARCH_SCALE_VIEWPORT:
 	    gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].scale_y * gl->vp_out_height;
 	    break;
 	 default:
@@ -491,7 +491,7 @@ void gl_frame_menu (void)
    if(!gl)
 	   return;
 
-   gl_cg_use(SSNES_CG_MENU_SHADER_INDEX);
+   gl_cg_use(RARCH_CG_MENU_SHADER_INDEX);
 
    gl_cg_set_params(gl->win_width, gl->win_height, gl->win_width, 
 		   gl->win_height, gl->win_width, gl->win_height, g_frame_count,
@@ -749,7 +749,7 @@ static void gl_set_nonblock_state(void *data, bool state)
    gl_t *gl = data;
    if (gl->vsync)
    {
-      SSNES_LOG("GL VSync => %s\n", state ? "off" : "on");
+      RARCH_LOG("GL VSync => %s\n", state ? "off" : "on");
       if(state)
          glDisable(GL_VSYNC_SCE);
       else
@@ -837,33 +837,33 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
 
 
-   SSNES_LOG("Detecting resolution %ux%u.\n", gl->win_width, gl->win_height);
+   RARCH_LOG("Detecting resolution %ux%u.\n", gl->win_width, gl->win_height);
 
    video->vsync ? glEnable(GL_VSYNC_SCE) : glDisable(GL_VSYNC_SCE);
 
    gl->vsync = video->vsync;
 
-   SSNES_LOG("GL: Using resolution %ux%u.\n", gl->win_width, gl->win_height);
+   RARCH_LOG("GL: Using resolution %ux%u.\n", gl->win_width, gl->win_height);
 
-   SSNES_LOG("GL: Initializing debug fonts...\n");
+   RARCH_LOG("GL: Initializing debug fonts...\n");
    psgl_init_dbgfont(gl);
 
-   SSNES_LOG("Initializing menu shader...\n");
+   RARCH_LOG("Initializing menu shader...\n");
    gl_cg_set_menu_shader(DEFAULT_MENU_SHADER_FILE);
 
    if (!gl_shader_init())
    {
-      SSNES_ERR("Menu shader initialization failed.\n");
+      RARCH_ERR("Menu shader initialization failed.\n");
       psgl_deinit(gl);
       free(gl);
       return NULL;
    }
 
-   SSNES_LOG("GL: Loaded %u program(s).\n", gl_shader_num());
+   RARCH_LOG("GL: Loaded %u program(s).\n", gl_shader_num());
 
    // Set up render to texture.
-   gl_init_fbo(gl, SSNES_SCALE_BASE * video->input_scale,
-		   SSNES_SCALE_BASE * video->input_scale);
+   gl_init_fbo(gl, RARCH_SCALE_BASE * video->input_scale,
+		   RARCH_SCALE_BASE * video->input_scale);
 
 
    gl->keep_aspect = video->force_aspect;
@@ -890,8 +890,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 
-   gl->tex_w = SSNES_SCALE_BASE * video->input_scale;
-   gl->tex_h = SSNES_SCALE_BASE * video->input_scale;
+   gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
+   gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
    glGenBuffers(1, &gl->pbo);
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
    glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->tex_w * gl->tex_h * gl_base_size * TEXTURES, NULL, GL_STREAM_DRAW);
@@ -1137,10 +1137,10 @@ bool ps3_setup_texture(void)
 
    glGenTextures(1, &gl->menu_texture_id);
 
-   SSNES_LOG("Loading texture image for menu...\n");
+   RARCH_LOG("Loading texture image for menu...\n");
    if(!texture_image_load(DEFAULT_MENU_BORDER_FILE, &gl->menu_texture))
    {
-      SSNES_ERR("Failed to load texture image for menu.\n");
+      RARCH_ERR("Failed to load texture image for menu.\n");
       return false;
    }
 

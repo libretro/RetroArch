@@ -32,8 +32,8 @@ COMPATIBILITY
 CONFIG FILE
 ============================================================ */
 #ifdef _XBOX
-#undef __SSNES_POSIX_STRING_H
-#undef __SSNES_MSVC_COMPAT_H
+#undef __RARCH_POSIX_STRING_H
+#undef __RARCH_MSVC_COMPAT_H
 #undef strcasecmp
 #endif
 #include "../../conf/config_file.c"

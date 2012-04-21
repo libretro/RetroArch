@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_HASH_H
-#define __SSNES_HASH_H
+#ifndef __RARCH_HASH_H
+#define __RARCH_HASH_H
 
 #include <stdint.h>
 #include <stddef.h>

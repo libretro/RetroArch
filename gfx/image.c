@@ -47,7 +47,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
 
    const SDL_PixelFormat *fmt = img->format;
    
-   SSNES_LOG("SDL_image: %dx%d @ %d bpp\n", img->w, img->h, img->format->BitsPerPixel);
+   RARCH_LOG("SDL_image: %dx%d @ %d bpp\n", img->w, img->h, img->format->BitsPerPixel);
    if (img->format->BitsPerPixel == 32)
    {
       for (int y = 0; y < img->h; y++)
@@ -88,7 +88,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    }
    else
    {
-      SSNES_ERR("8-bit and 16-bit image support are not implemented.\n");
+      RARCH_ERR("8-bit and 16-bit image support are not implemented.\n");
       SDL_FreeSurface(img);
       return false;
    }
@@ -129,7 +129,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    height = info[2] + ((unsigned)info[3] * 256);
    unsigned bits = info[4];
 
-   SSNES_LOG("Loaded TGA: (%ux%u @ %u bpp)\n", width, height, bits);
+   RARCH_LOG("Loaded TGA: (%ux%u @ %u bpp)\n", width, height, bits);
 
    unsigned size = width * height * sizeof(uint32_t);
    out_img->pixels = (uint32_t*)malloc(size);

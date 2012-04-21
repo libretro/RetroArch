@@ -40,7 +40,7 @@ struct hlsl_program
 };
 
 static IDirect3DDevice9 *d3d_device_ptr;
-static struct hlsl_program prg[SSNES_HLSL_MAX_SHADERS] = {0};
+static struct hlsl_program prg[RARCH_HLSL_MAX_SHADERS] = {0};
 static bool hlsl_active = false;
 static unsigned active_index = 0;
 
@@ -156,11 +156,11 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
 
    if (FAILED(ret_fp) || FAILED(ret_vp) || listing_v || listing_f)
    {
-      SSNES_ERR("HLSL error:\n");
+      RARCH_ERR("HLSL error:\n");
       if(listing_f)
-         SSNES_ERR("Fragment:\n%s\n", (char*)listing_f->GetBufferPointer());
+         RARCH_ERR("Fragment:\n%s\n", (char*)listing_f->GetBufferPointer());
       if(listing_v)
-         SSNES_ERR("Vertex:\n%s\n", (char*)listing_v->GetBufferPointer());
+         RARCH_ERR("Vertex:\n%s\n", (char*)listing_v->GetBufferPointer());
 
       ret = false;
       goto end;
@@ -188,7 +188,7 @@ static bool load_stock(void)
 {
    if (!load_program(0, stock_hlsl_program, false))
    {
-      SSNES_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
+      RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
       return false;
    }
 
@@ -202,7 +202,7 @@ static bool load_plain(const char *path)
       return false;
 #endif
 
-   SSNES_LOG("Loading HLSL file: %s\n", path);
+   RARCH_LOG("Loading HLSL file: %s\n", path);
 
    if (!load_program(0, path, true))
       return false;
@@ -212,7 +212,7 @@ static bool load_plain(const char *path)
 
 static void hlsl_deinit_progs(void)
 {
-   for(int i = 0; i < SSNES_HLSL_MAX_SHADERS; i++)
+   for(int i = 0; i < RARCH_HLSL_MAX_SHADERS; i++)
    {
       if (prg[i].fprg)
          prg[i].fprg->Release();

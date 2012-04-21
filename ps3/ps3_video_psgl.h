@@ -39,8 +39,8 @@
 #define IS_TIMER_EXPIRED(getter) 	(!(IS_TIMER_NOT_EXPIRED(getter)))
 #define SET_TIMER_EXPIRATION(setter, value) setter = g_frame_count + value;
 
-#define SSNES_CG_MAX_SHADERS 16
-#define SSNES_CG_MENU_SHADER_INDEX (SSNES_CG_MAX_SHADERS - 1)
+#define RARCH_CG_MAX_SHADERS 16
+#define RARCH_CG_MENU_SHADER_INDEX (RARCH_CG_MAX_SHADERS - 1)
 
 typedef struct gl
 {

@@ -42,10 +42,10 @@ static bool find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
 {
    if (snd_pcm_hw_params_test_format(pcm, params, SND_PCM_FORMAT_FLOAT) == 0)
    {
-      SSNES_LOG("ALSA: Using floating point format.\n");
+      RARCH_LOG("ALSA: Using floating point format.\n");
       return true;
    }
-   SSNES_LOG("ALSA: Using signed 16-bit format.\n");
+   RARCH_LOG("ALSA: Using signed 16-bit format.\n");
    return false;
 }
 
@@ -86,9 +86,9 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency)
    TRY_ALSA(snd_pcm_hw_params(alsa->pcm, params));
 
    snd_pcm_hw_params_get_period_size(params, &buffer_size, NULL);
-   SSNES_LOG("ALSA: Period size: %d frames\n", (int)buffer_size);
+   RARCH_LOG("ALSA: Period size: %d frames\n", (int)buffer_size);
    snd_pcm_hw_params_get_buffer_size(params, &buffer_size);
-   SSNES_LOG("ALSA: Buffer size: %d frames\n", (int)buffer_size);
+   RARCH_LOG("ALSA: Buffer size: %d frames\n", (int)buffer_size);
    alsa->buffer_size = snd_pcm_frames_to_bytes(alsa->pcm, buffer_size);
 
    TRY_ALSA(snd_pcm_sw_params_malloc(&sw_params));
@@ -102,7 +102,7 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency)
    return alsa;
 
 error:
-   SSNES_ERR("ALSA: Failed to initialize...\n");
+   RARCH_ERR("ALSA: Failed to initialize...\n");
    if (params)
       snd_pcm_hw_params_free(params);
 

@@ -39,7 +39,7 @@ static void *ra_init(const char *device, unsigned rate, unsigned latency)
    roar_vs_t *vss;
    if ((vss = roar_vs_new_simple(device, "SSNES", rate, 2, ROAR_CODEC_PCM_S, 16, ROAR_DIR_PLAY, &err)) == NULL)
    {
-      SSNES_ERR("RoarAudio: \"%s\"\n", roar_vs_strerr(err));
+      RARCH_ERR("RoarAudio: \"%s\"\n", roar_vs_strerr(err));
       free(roar);
       return NULL;
    }

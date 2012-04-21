@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_MSVC_COMPAT_H
-#define __SSNES_MSVC_COMPAT_H
+#ifndef __RARCH_MSVC_COMPAT_H
+#define __RARCH_MSVC_COMPAT_H
 
 #ifdef _MSC_VER
 

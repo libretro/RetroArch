@@ -25,9 +25,9 @@
 #include "../libretro.h"
 #include <stdlib.h>
 
-static bool pad_state[5][SSNES_FIRST_META_KEY];   /* Gamecube pads */
+static bool pad_state[5][RARCH_FIRST_META_KEY];   /* Gamecube pads */
 #ifdef HW_RVL
-static bool wpad_state[5][SSNES_FIRST_META_KEY];  /* Wii Classic pads */
+static bool wpad_state[5][RARCH_FIRST_META_KEY];  /* Wii Classic pads */
 #endif
 
 static bool g_quit;
@@ -130,7 +130,7 @@ static bool wii_key_pressed(void *data, int key)
    (void)data;
    switch (key)
    {
-      case SSNES_QUIT_KEY:
+      case RARCH_QUIT_KEY:
          return g_quit ||
             (pad_state[0][RETRO_DEVICE_ID_JOYPAD_SELECT] &&
              pad_state[0][RETRO_DEVICE_ID_JOYPAD_START] &&

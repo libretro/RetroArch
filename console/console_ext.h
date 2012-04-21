@@ -69,40 +69,40 @@ extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
 // Get rom extensions for current library.
 // Returns NULL if library doesn't have any preferences in particular.
-const char *ssnes_console_get_rom_ext(void);
+const char *rarch_console_get_rom_ext(void);
 
 // Transforms a library id to a name suitable as a pathname.
-void ssnes_console_name_from_id(char *name, size_t size);
+void rarch_console_name_from_id(char *name, size_t size);
 
 #ifdef HAVE_ZLIB
-int ssnes_extract_zipfile(const char *zip_path);
+int rarch_extract_zipfile(const char *zip_path);
 #endif
 
 /*============================================================
 	INPUT EXTENSIONS
 ============================================================ */
 
-const char *ssnes_input_find_platform_key_label(uint64_t joykey);
-uint64_t ssnes_input_find_previous_platform_key(uint64_t joykey);
-uint64_t ssnes_input_find_next_platform_key(uint64_t joykey);
+const char *rarch_input_find_platform_key_label(uint64_t joykey);
+uint64_t rarch_input_find_previous_platform_key(uint64_t joykey);
+uint64_t rarch_input_find_next_platform_key(uint64_t joykey);
 
 // Sets custom default keybind names (some systems emulated by the emulator
 // will need different keybind names for buttons, etc.)
-void ssnes_input_set_default_keybind_names_for_emulator(void);
+void rarch_input_set_default_keybind_names_for_emulator(void);
 
-void ssnes_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
+void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-bool ssnes_manage_libretro_core(const char *full_path, const char *path, const char *exe_ext);
+bool rarch_manage_libretro_core(const char *full_path, const char *path, const char *exe_ext);
 #endif
 
 /*============================================================
   SSNES
   ============================================================ */
 
-#ifdef HAVE_SSNES_MAIN_WRAP
+#ifdef HAVE_RARCH_MAIN_WRAP
 
-struct ssnes_main_wrap
+struct rarch_main_wrap
 {
    const char *rom_path;
    const char *sram_path;
@@ -111,12 +111,12 @@ struct ssnes_main_wrap
    bool verbose;
 };
 
-int ssnes_main_init_wrap(const struct ssnes_main_wrap *args);
-void ssnes_startup (const char * config_path);
+int rarch_main_init_wrap(const struct rarch_main_wrap *args);
+void rarch_startup (const char * config_path);
 #endif
 
-#ifdef HAVE_SSNES_EXEC
-void ssnes_exec (void);
+#ifdef HAVE_RARCH_EXEC
+void rarch_exec (void);
 #endif
 
 #endif

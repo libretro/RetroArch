@@ -14,42 +14,42 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_LOGGER_OVERRIDE_H
-#define __SSNES_LOGGER_OVERRIDE_H
+#ifndef __RARCH_LOGGER_OVERRIDE_H
+#define __RARCH_LOGGER_OVERRIDE_H
 
 #if defined(HAVE_LOGGER)
 #include "console/logger/logger.h"
 
-#define SSNES_LOG(...) do { \
+#define RARCH_LOG(...) do { \
    if (g_extern.verbose) logger_send("SSNES: " __VA_ARGS__); \
 } while(0)
 
-#define SSNES_ERR(...) do { \
+#define RARCH_ERR(...) do { \
    logger_send("RetroArch [ERROR] :: " __VA_ARGS__); \
 } while(0)
 
-#define SSNES_WARN(...) do { \
+#define RARCH_WARN(...) do { \
    logger_send("RetroArch [WARN] :: " __VA_ARGS__); \
 } while(0)
 #elif defined(HAVE_FILE_LOGGER)
 extern FILE * log_fp;
-#ifndef SSNES_LOG
-#define SSNES_LOG(...) do { \
+#ifndef RARCH_LOG
+#define RARCH_LOG(...) do { \
    if (g_extern.verbose) \
       fprintf(log_fp, "SSNES: " __VA_ARGS__); \
       fflush(log_fp); \
    } while (0)
 #endif
 
-#ifndef SSNES_ERR
-#define SSNES_ERR(...) do { \
+#ifndef RARCH_ERR
+#define RARCH_ERR(...) do { \
       fprintf(log_fp, "RetroArch [ERROR] :: " __VA_ARGS__); \
       fflush(log_fp); \
    } while (0)
 #endif
 
-#ifndef SSNES_WARN
-#define SSNES_WARN(...) do { \
+#ifndef RARCH_WARN
+#define RARCH_WARN(...) do { \
       fprintf(log_fp, "RetroArch [WARN] :: " __VA_ARGS__); \
       fflush(log_fp); \
    } while (0)

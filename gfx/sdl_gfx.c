@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../general.h"
-#include "../input/ssnes_sdl_input.h"
+#include "../input/rarch_sdl_input.h"
 #include "gfx_common.h"
 
 #ifdef HAVE_CONFIG_H
@@ -109,10 +109,10 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
          vid->font_b = b;
       }
       else
-         SSNES_WARN("Failed to init font.\n");
+         RARCH_WARN("Failed to init font.\n");
    }
    else
-      SSNES_LOG("Did not find default font.\n");
+      RARCH_LOG("Did not find default font.\n");
 #else
    (void)vid;
    (void)font_path;
@@ -256,16 +256,16 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
       return NULL;
 
    const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
-   ssnes_assert(video_info);
+   rarch_assert(video_info);
    unsigned full_x = video_info->current_w;
    unsigned full_y = video_info->current_h;
-   SSNES_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
    sdl_input_t *sdl_input = NULL;
    const SDL_PixelFormat *fmt = NULL;
 
    if (!video->fullscreen)
-      SSNES_LOG("Creating window @ %ux%u\n", video->width, video->height);
+      RARCH_LOG("Creating window @ %ux%u\n", video->width, video->height);
 
    vid->render32 = video->rgb32 && !g_settings.video.force_16bit;
    vid->screen = SDL_SetVideoMode(video->width, video->height, vid->render32 ? 32 : 15, SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
@@ -274,13 +274,13 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    {
       vid->upsample = true;
       vid->screen = SDL_SetVideoMode(video->width, video->height, 32, SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
-      SSNES_WARN("SDL: 15-bit colors failed, attempting 32-bit colors.\n");
+      RARCH_WARN("SDL: 15-bit colors failed, attempting 32-bit colors.\n");
       vid->render32 = true;
    }
 
    if (!vid->screen)
    {
-      SSNES_ERR("Failed to init SDL surface: %s\n", SDL_GetError());
+      RARCH_ERR("Failed to init SDL surface: %s\n", SDL_GetError());
       goto error;
    }
 
@@ -289,24 +289,24 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    fmt = vid->screen->format;
    if (vid->render32)
    {
-      SSNES_LOG("SDL: Creating 32-bit buffer.\n");
-      vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, SSNES_SCALE_BASE * video->input_scale,
-            SSNES_SCALE_BASE * video->input_scale, 32,
+      RARCH_LOG("SDL: Creating 32-bit buffer.\n");
+      vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, RARCH_SCALE_BASE * video->input_scale,
+            RARCH_SCALE_BASE * video->input_scale, 32,
             fmt->Rmask, fmt->Bmask, fmt->Gmask, fmt->Amask);
    }
    else
    {
-      SSNES_LOG("SDL: Creating 15-bit buffer.\n");
-      vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, SSNES_SCALE_BASE * video->input_scale,
-            SSNES_SCALE_BASE * video->input_scale, 15,
+      RARCH_LOG("SDL: Creating 15-bit buffer.\n");
+      vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, RARCH_SCALE_BASE * video->input_scale,
+            RARCH_SCALE_BASE * video->input_scale, 15,
             fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
    }
-   SSNES_LOG("[Debug]: SDL Pixel format: Rshift = %u, Gshift = %u, Bshift = %u\n", 
+   RARCH_LOG("[Debug]: SDL Pixel format: Rshift = %u, Gshift = %u, Bshift = %u\n", 
          (unsigned)fmt->Rshift, (unsigned)fmt->Gshift, (unsigned)fmt->Bshift);
 
    if (!vid->buffer)
    {
-      SSNES_ERR("SDL_CreateRGBSurface failed: %s\n", SDL_GetError());
+      RARCH_ERR("SDL_CreateRGBSurface failed: %s\n", SDL_GetError());
       goto error;
    }
 
@@ -328,23 +328,23 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 
    if (fmt->Rshift == 10 && fmt->Gshift ==  5 && fmt->Bshift == 0) // XRGB1555
    {
-      SSNES_LOG("SDL: 15-bit format matches. Fast blit.\n");
+      RARCH_LOG("SDL: 15-bit format matches. Fast blit.\n");
       vid->convert_15_func = convert_15bit_15bit_direct;
    }
    else
    {
-      SSNES_LOG("SDL: 15-bit format does not match. Needs conversion.\n");
+      RARCH_LOG("SDL: 15-bit format does not match. Needs conversion.\n");
       vid->convert_15_func = convert_15bit_15bit_shift;
    }
 
    if (fmt->Rshift == 16 && fmt->Gshift == 8 && fmt->Bshift == 0) // ARGB8888
    {
-      SSNES_LOG("SDL: 32-bit format matches. Fast blit.\n");
+      RARCH_LOG("SDL: 32-bit format matches. Fast blit.\n");
       vid->convert_32_func = convert_32bit_32bit_direct;
    }
    else
    {
-      SSNES_LOG("SDL: 32-bit format does not match. Needs conversion.\n");
+      RARCH_LOG("SDL: 32-bit format does not match. Needs conversion.\n");
       vid->convert_32_func = convert_32bit_32bit_shift;
    }
 

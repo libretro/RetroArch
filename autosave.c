@@ -60,18 +60,18 @@ static void autosave_thread(void *data)
             // Avoid spamming down stderr ... :)
             if (first_log)
             {
-               SSNES_LOG("Autosaving SRAM to \"%s\", will continue to check every %u seconds ...\n", save->path, save->interval);
+               RARCH_LOG("Autosaving SRAM to \"%s\", will continue to check every %u seconds ...\n", save->path, save->interval);
                first_log = false;
             }
             else
-               SSNES_LOG("SRAM changed ... autosaving ...\n");
+               RARCH_LOG("SRAM changed ... autosaving ...\n");
 
             bool failed = false;
             failed |= fwrite(save->buffer, 1, save->bufsize, file) != save->bufsize;
             failed |= fflush(file) != 0;
             failed |= fclose(file) != 0;
             if (failed)
-               SSNES_WARN("Failed to autosave SRAM. Disk might be full.\n");
+               RARCH_WARN("Failed to autosave SRAM. Disk might be full.\n");
          }
       }
 

@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_DINPUT_H
-#define __SSNES_DINPUT_H
+#ifndef __RARCH_DINPUT_H
+#define __RARCH_DINPUT_H
 
 #undef DIRECTINPUT_VERSION
 #define DIRECTINPUT_VERSION 0x0800

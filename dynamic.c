@@ -18,7 +18,7 @@
 #include "compat/strl.h"
 #include <string.h>
 
-#ifdef SSNES_CONSOLE
+#ifdef RARCH_CONSOLE
 #include "console/console_ext.h"
 #endif
 
@@ -41,7 +41,7 @@
 #define SYM(x) do { \
    function_t func = dylib_proc(lib_handle, #x); \
    memcpy(&p##x, &func, sizeof(func)); \
-   if (p##x == NULL) { SSNES_ERR("Failed to load symbol: \"%s\"\n", #x); ssnes_fail(1, "init_libretro_sym()"); } \
+   if (p##x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); rarch_fail(1, "init_libretro_sym()"); } \
 } while (0)
 
 static dylib_t lib_handle = NULL;
@@ -92,12 +92,12 @@ static void set_environment_defaults(void);
 static void load_symbols(void)
 {
 #ifdef HAVE_DYNAMIC
-   SSNES_LOG("Loading dynamic libsnes from: \"%s\"\n", g_settings.libretro);
+   RARCH_LOG("Loading dynamic libsnes from: \"%s\"\n", g_settings.libretro);
    lib_handle = dylib_load(g_settings.libretro);
    if (!lib_handle)
    {
-      SSNES_ERR("Failed to open dynamic library: \"%s\"\n", g_settings.libretro);
-      ssnes_fail(1, "load_dynamic()");
+      RARCH_ERR("Failed to open dynamic library: \"%s\"\n", g_settings.libretro);
+      rarch_fail(1, "load_dynamic()");
    }
 #endif
 
@@ -140,7 +140,7 @@ void init_libretro_sym(void)
 {
    // Guarantee that we can do "dirty" casting.
    // Every OS that this program supports should pass this ...
-   ssnes_assert(sizeof(void*) == sizeof(void (*)(void)));
+   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
 
 #ifdef HAVE_DYNAMIC
    // Try to verify that -lsnes was not linked in from other modules
@@ -148,10 +148,10 @@ void init_libretro_sym(void)
    function_t sym = dylib_proc(NULL, "retro_init");
    if (sym)
    {
-      SSNES_ERR("Serious problem. RetroArch wants to load libsnes dyamically, but it is already linked.\n"); 
-      SSNES_ERR("This could happen if other modules RetroArch depends on link against libsnes directly.\n");
-      SSNES_ERR("Proceeding could cause a crash. Aborting ...\n");
-      ssnes_fail(1, "init_libretro_sym()");
+      RARCH_ERR("Serious problem. RetroArch wants to load libsnes dyamically, but it is already linked.\n"); 
+      RARCH_ERR("This could happen if other modules RetroArch depends on link against libsnes directly.\n");
+      RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
+      rarch_fail(1, "init_libretro_sym()");
    }
 
    if (!*g_settings.libretro)
@@ -188,7 +188,7 @@ dylib_t dylib_load(const char *path)
 #ifdef _WIN32
    dylib_t lib = LoadLibrary(path);
    if (!lib)
-      SSNES_ERR("Failed to load library, error code: 0x%x\n", (unsigned)GetLastError());
+      RARCH_ERR("Failed to load library, error code: 0x%x\n", (unsigned)GetLastError());
    return lib;
 #else
    return dlopen(path, RTLD_LAZY);
@@ -237,16 +237,16 @@ static bool environment_cb(unsigned cmd, void *data)
    {
       case RETRO_ENVIRONMENT_GET_OVERSCAN:
          *(bool*)data = !g_settings.video.crop_overscan;
-         SSNES_LOG("Environ GET_OVERSCAN: %u\n", (unsigned)!g_settings.video.crop_overscan);
+         RARCH_LOG("Environ GET_OVERSCAN: %u\n", (unsigned)!g_settings.video.crop_overscan);
          break;
 
       case RETRO_ENVIRONMENT_GET_CAN_DUPE:
 #ifdef HAVE_FFMPEG
          *(bool*)data = true;
-         SSNES_LOG("Environ GET_CAN_DUPE: true\n");
+         RARCH_LOG("Environ GET_CAN_DUPE: true\n");
 #else
          *(bool*)data = false;
-         SSNES_LOG("Environ GET_CAN_DUPE: false\n");
+         RARCH_LOG("Environ GET_CAN_DUPE: false\n");
 #endif
          break;
 
@@ -270,7 +270,7 @@ static bool environment_cb(unsigned cmd, void *data)
          else
             var->value = g_extern.system.environment;
 
-         SSNES_LOG("Environ GET_VARIABLE: %s=%s\n",
+         RARCH_LOG("Environ GET_VARIABLE: %s=%s\n",
                var->key ? var->key : "null",
                var->value ? var->value : "null");
 
@@ -279,25 +279,25 @@ static bool environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_VARIABLES:
       {
-         SSNES_LOG("Environ SET_VARIABLES:\n");
-         SSNES_LOG("=======================\n");
+         RARCH_LOG("Environ SET_VARIABLES:\n");
+         RARCH_LOG("=======================\n");
          const struct retro_variable *vars = (const struct retro_variable*)data;
          while (vars->key)
          {
-            SSNES_LOG("\t%s :: %s\n",
+            RARCH_LOG("\t%s :: %s\n",
                   vars->key,
                   vars->value ? vars->value : "N/A");
 
             vars++;
          }
-         SSNES_LOG("=======================\n");
+         RARCH_LOG("=======================\n");
          break;
       }
 
       case RETRO_ENVIRONMENT_SET_MESSAGE:
       {
          const struct retro_message *msg = (const struct retro_message*)data;
-         SSNES_LOG("Environ SET_MESSAGE: %s\n", msg->msg);
+         RARCH_LOG("Environ SET_MESSAGE: %s\n", msg->msg);
          if (g_extern.msg_queue)
             msg_queue_push(g_extern.msg_queue, msg->msg, 1, msg->frames);
          break;
@@ -306,7 +306,7 @@ static bool environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_ROTATION:
       {
          unsigned rotation = *(const unsigned*)data;
-         SSNES_LOG("Environ SET_ROTATION: %u\n", rotation);
+         RARCH_LOG("Environ SET_ROTATION: %u\n", rotation);
          if (!g_settings.video.allow_rotate)
             break;
 
@@ -323,7 +323,7 @@ static bool environment_cb(unsigned cmd, void *data)
       }
 
       default:
-         SSNES_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
+         RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;
    }
 

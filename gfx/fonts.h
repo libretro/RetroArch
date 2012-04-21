@@ -14,8 +14,8 @@
  */
 
 
-#ifndef __SSNES_FONTS_H
-#define __SSNES_FONTS_H
+#ifndef __RARCH_FONTS_H
+#define __RARCH_FONTS_H
 
 #include <stdint.h>
 

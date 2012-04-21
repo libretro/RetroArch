@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
    assert(input);
    assert(output);
 
-   ssnes_resampler_t *re = resampler_new();
+   rarch_resampler_t *re = resampler_new();
    assert(re);
 
    test_fft();

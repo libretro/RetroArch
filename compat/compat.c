@@ -147,7 +147,7 @@ static void shuffle_block(char **begin, char **last, char **end)
 {
    ptrdiff_t len = last - begin;
    const char **tmp = (const char**)calloc(len, sizeof(const char*));
-   ssnes_assert(tmp);
+   rarch_assert(tmp);
 
    memcpy(tmp, begin, sizeof(tmp));
    memmove(begin, last, (end - last) * sizeof(char*));
@@ -186,7 +186,7 @@ int getopt_long(int argc, char *argv[],
       long_index = 0;
    }
 
-   ssnes_assert(short_index == 0 || long_index == 0);
+   rarch_assert(short_index == 0 || long_index == 0);
 
    if (short_index == 0)
       return parse_short(optstring, &argv[optind]);
@@ -246,7 +246,7 @@ size_t strlcat(char *dest, const char *source, size_t size)
 
 #include <string.h>
 
-int strcasecmp_ssnes__(const char *a, const char *b)
+int strcasecmp_rarch__(const char *a, const char *b)
 {
    while (*a && *b)
    {
@@ -262,7 +262,7 @@ int strcasecmp_ssnes__(const char *a, const char *b)
    return tolower(*a) - tolower(*b);
 }
 
-char *strdup_ssnes__(const char *orig)
+char *strdup_rarch__(const char *orig)
 {
    size_t len = strlen(orig) + 1;
    char *ret = (char*)malloc(len);
@@ -273,7 +273,7 @@ char *strdup_ssnes__(const char *orig)
    return ret;
 }
 
-int isblank_ssnes__(int c)
+int isblank_rarch__(int c)
 {
    return (c == ' ') || (c == '\t');
 }

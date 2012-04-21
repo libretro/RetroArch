@@ -3,8 +3,8 @@
 //
 //
 
-#ifndef __SSNES_VIDEO_DRIVER_H
-#define __SSNES_VIDEO_DRIVER_H
+#ifndef __RARCH_VIDEO_DRIVER_H
+#define __RARCH_VIDEO_DRIVER_H
 
 #include <stddef.h>
 
@@ -13,42 +13,42 @@ extern "C" {
 #endif
 
 #ifdef _WIN32
-#ifdef SSNES_DLL_IMPORT
-#define SSNES_API_EXPORT __declspec(dllimport) 
+#ifdef RARCH_DLL_IMPORT
+#define RARCH_API_EXPORT __declspec(dllimport) 
 #else
-#define SSNES_API_EXPORT __declspec(dllexport) 
+#define RARCH_API_EXPORT __declspec(dllexport) 
 #endif
-#define SSNES_API_CALLTYPE __cdecl
+#define RARCH_API_CALLTYPE __cdecl
 #else
-#define SSNES_API_EXPORT
-#define SSNES_API_CALLTYPE
+#define RARCH_API_EXPORT
+#define RARCH_API_CALLTYPE
 #endif
 
-#define SSNES_GRAPHICS_API_VERSION 2
+#define RARCH_GRAPHICS_API_VERSION 2
 
 // Since we don't want to rely on C++ or C99 for a proper boolean type,
 // make sure return semantics are perfectly clear ... ;)
 
-#ifndef SSNES_OK
-#define SSNES_OK 1
+#ifndef RARCH_OK
+#define RARCH_OK 1
 #endif
 
-#ifndef SSNES_ERROR
-#define SSNES_ERROR 0
+#ifndef RARCH_ERROR
+#define RARCH_ERROR 0
 #endif
 
-#ifndef SSNES_TRUE
-#define SSNES_TRUE 1
+#ifndef RARCH_TRUE
+#define RARCH_TRUE 1
 #endif
 
-#ifndef SSNES_FALSE
-#define SSNES_FALSE 0
+#ifndef RARCH_FALSE
+#define RARCH_FALSE 0
 #endif
 
-#define SSNES_COLOR_FORMAT_XRGB1555 0
-#define SSNES_COLOR_FORMAT_ARGB8888 1
+#define RARCH_COLOR_FORMAT_XRGB1555 0
+#define RARCH_COLOR_FORMAT_ARGB8888 1
 
-#define SSNES_INPUT_SCALE_BASE 256
+#define RARCH_INPUT_SCALE_BASE 256
 
 typedef struct py_state py_state_t;
 
@@ -65,7 +65,7 @@ typedef float (*python_state_get_cb)(py_state_t *handle, const char *id, unsigne
 // Frees the runtime.
 typedef void (*python_state_free_cb)(py_state_t *handle);
 
-typedef struct ssnes_video_info
+typedef struct rarch_video_info
 { 
    // Width of window. 
    // If fullscreen mode is requested, 
@@ -98,7 +98,7 @@ typedef struct ssnes_video_info
 
    // input_scale defines the maximum size of the picture that will
    // ever be used with the frame callback.
-   // The maximum resolution is a multiple of 256x256 size (SSNES_INPUT_SCALE_BASE),
+   // The maximum resolution is a multiple of 256x256 size (RARCH_INPUT_SCALE_BASE),
    // so an input scale of 2
    // means you should allocate a texture or of 512x512.
    unsigned input_scale;
@@ -135,40 +135,40 @@ typedef struct ssnes_video_info
    python_state_new_cb python_state_new;
    python_state_get_cb python_state_get;
    python_state_free_cb python_state_free;
-} ssnes_video_info_t;
+} rarch_video_info_t;
 
 // Some convenience macros.
 // Extract which axes to test for in negative or positive direction.
-// May be equal to SSNES_NO_AXIS, which means testing should not occur.
-#define SSNES_AXIS_NEG_GET(x) (((unsigned)(x) >> 16) & 0xFFFFU)
-#define SSNES_AXIS_POS_GET(x) ((unsigned)(x) & 0xFFFFU)
+// May be equal to RARCH_NO_AXIS, which means testing should not occur.
+#define RARCH_AXIS_NEG_GET(x) (((unsigned)(x) >> 16) & 0xFFFFU)
+#define RARCH_AXIS_POS_GET(x) ((unsigned)(x) & 0xFFFFU)
 
 // I hope no joypad will ever have this many buttons or axes ... ;)
 // If joykey is this value, do not check that button.
-#define SSNES_NO_AXIS (0xFFFFFFFFU)
-#define SSNES_NO_BTN ((unsigned short)0xFFFFU)
+#define RARCH_NO_AXIS (0xFFFFFFFFU)
+#define RARCH_NO_BTN ((unsigned short)0xFFFFU)
 
 // Masks to test on joykey which hat direction is to be tested for.
-#define SSNES_HAT_UP_MASK (1 << 15)
-#define SSNES_HAT_DOWN_MASK (1 << 14)
-#define SSNES_HAT_LEFT_MASK (1 << 13)
-#define SSNES_HAT_RIGHT_MASK (1 << 12)
-#define SSNES_HAT_MAP(x, hat) ((x & ((1 << 12) - 1)) | hat)
+#define RARCH_HAT_UP_MASK (1 << 15)
+#define RARCH_HAT_DOWN_MASK (1 << 14)
+#define RARCH_HAT_LEFT_MASK (1 << 13)
+#define RARCH_HAT_RIGHT_MASK (1 << 12)
+#define RARCH_HAT_MAP(x, hat) ((x & ((1 << 12) - 1)) | hat)
 
-#define SSNES_HAT_MASK (SSNES_HAT_UP_MASK | SSNES_HAT_DOWN_MASK | \
-      SSNES_HAT_LEFT_MASK | SSNES_HAT_RIGHT_MASK)
+#define RARCH_HAT_MASK (RARCH_HAT_UP_MASK | RARCH_HAT_DOWN_MASK | \
+      RARCH_HAT_LEFT_MASK | RARCH_HAT_RIGHT_MASK)
 
 // Test this on the joykey. If true, we want to test for a joypad hat
 // rather than a button.
-#define SSNES_GET_HAT_DIR(x) (x & SSNES_HAT_MASK)
+#define RARCH_GET_HAT_DIR(x) (x & RARCH_HAT_MASK)
 
 // Gets the joypad hat to be tested for. 
-// Only valid when SSNES_GET_HAT_DIR() returns true.
-#define SSNES_GET_HAT(x) (x & (~SSNES_HAT_MASK))
+// Only valid when RARCH_GET_HAT_DIR() returns true.
+#define RARCH_GET_HAT(x) (x & (~RARCH_HAT_MASK))
 
 // key, joykey and joyaxis are all checked at the same time.
 // If any one of these are pressed, return 1 in state callback.
-struct ssnes_keybind
+struct rarch_keybind
 {
    // If analog_x is true, we request an analog device to be polled
    // rather than normal keys.
@@ -193,7 +193,7 @@ struct ssnes_keybind
    unsigned joyaxis;
 };
 
-typedef struct ssnes_input_driver
+typedef struct rarch_input_driver
 {
    // Inits input driver. 
    // Joypad index denotes which joypads are desired for the various players.
@@ -213,7 +213,7 @@ typedef struct ssnes_input_driver
    // Players are 1 - 5.
    // For digital inputs, pressed key is 1, not pressed key is 0.
    // Analog values have same range as a signed 16-bit integer.
-   int (*input_state)(void *data, const struct ssnes_keybind *bind,
+   int (*input_state)(void *data, const struct rarch_keybind *bind,
          unsigned player);
 
    // Frees the input struct.
@@ -221,9 +221,9 @@ typedef struct ssnes_input_driver
 
    // Human readable indentification string.
    const char *ident;
-} ssnes_input_driver_t;
+} rarch_input_driver_t;
 
-typedef struct ssnes_video_driver
+typedef struct rarch_video_driver
 {
    // Inits the video driver. Returns an opaque handle pointer to the driver.
    // Returns NULL on error.
@@ -231,12 +231,12 @@ typedef struct ssnes_video_driver
    // Should the video driver request that a certain input driver is used,
    // it is possible to set the driver to *input.
    // If no certain driver is desired, set *input to NULL.
-   void *(*init)(const ssnes_video_info_t *video, 
-         const ssnes_input_driver_t **input); 
+   void *(*init)(const rarch_video_info_t *video, 
+         const rarch_input_driver_t **input); 
 
    // Updates frame on the screen. 
    // Frame can be either XRGB1555 or ARGB32 format
-   // depending on rgb32 setting in ssnes_video_info_t. 
+   // depending on rgb32 setting in rarch_video_info_t. 
    // Pitch is the distance in bytes between two scanlines in memory. 
    // 
    // When msg is non-NULL, 
@@ -261,15 +261,15 @@ typedef struct ssnes_video_driver
    // A human-readable identification of the video driver.
    const char *ident;
 
-   // Needs to be defined to SSNES_GRAPHICS_API_VERSION. 
+   // Needs to be defined to RARCH_GRAPHICS_API_VERSION. 
    // This is used to detect API/ABI mismatches.
    int api_version;
-} ssnes_video_driver_t;
+} rarch_video_driver_t;
 
 // Called by RetroArch on startup to get a driver handle.
 // This is NOT dynamically allocated.
-SSNES_API_EXPORT const ssnes_video_driver_t* SSNES_API_CALLTYPE
-   ssnes_video_init(void);
+RARCH_API_EXPORT const rarch_video_driver_t* RARCH_API_CALLTYPE
+   rarch_video_init(void);
 
 #ifdef __cplusplus
 }

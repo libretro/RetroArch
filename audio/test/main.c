@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   ssnes_resampler_t *resamp = resampler_new();
+   rarch_resampler_t *resamp = resampler_new();
    if (!resamp)
    {
       fprintf(stderr, "Failed to allocate resampler ...\n");

@@ -36,7 +36,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
 
    size_t bufsize = latency * rate / 1000;
 
-   SSNES_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize * 1000 / rate);
+   RARCH_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize * 1000 / rate);
 
    xa->bufsize = bufsize * 2 * sizeof(float);
 
@@ -47,7 +47,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
    xa->xa = xaudio2_new(rate, 2, xa->bufsize, device_index);
    if (!xa->xa)
    {
-      SSNES_ERR("Failed to init XAudio2.\n");
+      RARCH_ERR("Failed to init XAudio2.\n");
       free(xa);
       return NULL;
    }

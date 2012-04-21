@@ -83,7 +83,7 @@ static void xv_set_nonblock_state(void *data, bool state)
    if (atom != None && xv->port)
       XvSetPortAttribute(xv->display, xv->port, atom, !state);
    else
-      SSNES_WARN("Failed to set SYNC_TO_VBLANK attribute.\n");
+      RARCH_WARN("Failed to set SYNC_TO_VBLANK attribute.\n");
 }
 
 static volatile sig_atomic_t g_quit = 0;
@@ -155,7 +155,7 @@ static void set_fullscreen(xv_t *xv)
 
    if (!XA_NET_WM_STATE || !XA_NET_WM_STATE_FULLSCREEN)
    {
-      SSNES_WARN("X11: Cannot set fullscreen.\n");
+      RARCH_WARN("X11: Cannot set fullscreen.\n");
       return;
    }
 
@@ -204,10 +204,10 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
                r, g, b);
       }
       else
-         SSNES_WARN("Failed to init font.\n");
+         RARCH_WARN("Failed to init font.\n");
    }
    else
-      SSNES_LOG("Did not find default font.\n");
+      RARCH_LOG("Did not find default font.\n");
 #endif
 }
 
@@ -416,7 +416,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
 
    if (!XShmQueryExtension(xv->display))
    {
-      SSNES_ERR("XVideo: XShm extension not found.\n");
+      RARCH_ERR("XVideo: XShm extension not found.\n");
       goto error;
    }
 
@@ -438,14 +438,14 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
       xv->depth    = adaptor_info[i].formats->depth;
       xv->visualid = adaptor_info[i].formats->visual_id;
 
-      SSNES_LOG("XVideo: Found suitable XvPort #%u\n", (unsigned)xv->port);
+      RARCH_LOG("XVideo: Found suitable XvPort #%u\n", (unsigned)xv->port);
       break;
    }
    XvFreeAdaptorInfo(adaptor_info);
 
    if (xv->port == 0) 
    {
-      SSNES_ERR("XVideo: Failed to find valid XvPort or format.\n");
+      RARCH_ERR("XVideo: Failed to find valid XvPort or format.\n");
       goto error;
    }
 
@@ -457,7 +457,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    if (visualmatches < 1 || !visualinfo->visual) 
    {
       if (visualinfo) XFree(visualinfo);
-      SSNES_ERR("XVideo: Unable to find Xv-compatible visual.\n");
+      RARCH_ERR("XVideo: Unable to find Xv-compatible visual.\n");
       goto error;
    }
 
@@ -497,7 +497,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    xv->image = XvShmCreateImage(xv->display, xv->port, xv->fourcc, NULL, xv->width, xv->height, &xv->shminfo);
    if (!xv->image) 
    {
-      SSNES_ERR("XVideo: XShmCreateImage failed.\n");
+      RARCH_ERR("XVideo: XShmCreateImage failed.\n");
       goto error;
    }
    xv->width = xv->image->width;
@@ -508,7 +508,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    xv->shminfo.readOnly = false;
    if (!XShmAttach(xv->display, &xv->shminfo)) 
    {
-      SSNES_ERR("XVideo: XShmAttach failed.\n");
+      RARCH_ERR("XVideo: XShmAttach failed.\n");
       goto error;
    }
    XSync(xv->display, False);
@@ -563,7 +563,7 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
       xv->image = XvShmCreateImage(xv->display, xv->port, xv->fourcc, NULL, xv->width, xv->height, &xv->shminfo);
       if (xv->image == None)
       {
-         SSNES_ERR("Failed to create image.\n");
+         RARCH_ERR("Failed to create image.\n");
          return false;
       }
 
@@ -573,7 +573,7 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
       xv->shminfo.shmid = shmget(IPC_PRIVATE, xv->image->data_size, IPC_CREAT | 0777);
       if (xv->shminfo.shmid < 0)
       {
-         SSNES_ERR("Failed to init SHM.\n");
+         RARCH_ERR("Failed to init SHM.\n");
          return false;
       }
 
@@ -582,7 +582,7 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
       
       if (!XShmAttach(xv->display, &xv->shminfo))
       {
-         SSNES_ERR("Failed to reattch XvShm image.\n");
+         RARCH_ERR("Failed to reattch XvShm image.\n");
          return false;
       }
       XSync(xv->display, False);

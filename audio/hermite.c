@@ -22,13 +22,13 @@
 
 #define CHANNELS 2
 
-struct ssnes_resampler
+struct rarch_resampler
 {
    float chan_data[CHANNELS][4];
    double r_frac;
 };
 
-void resampler_preinit(ssnes_resampler_t *re, double omega, double *samples_offset)
+void resampler_preinit(rarch_resampler_t *re, double omega, double *samples_offset)
 {
    *samples_offset = 2.0;
    for (int i = 0; i < 4; i++)
@@ -58,12 +58,12 @@ static inline float hermite_kernel(float mu1, float a, float b, float c, float d
    return (a0 * b) + (a1 * m0) + (a2 * m1) + (a3 * c);
 }
 
-ssnes_resampler_t *resampler_new(void)
+rarch_resampler_t *resampler_new(void)
 {
-   return (ssnes_resampler_t*)calloc(1, sizeof(ssnes_resampler_t));
+   return (rarch_resampler_t*)calloc(1, sizeof(rarch_resampler_t));
 }
 
-void resampler_process(ssnes_resampler_t *re, struct resampler_data *data)
+void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
 {
    double r_step = 1.0 / data->ratio;
    size_t processed_out = 0;
@@ -99,7 +99,7 @@ void resampler_process(ssnes_resampler_t *re, struct resampler_data *data)
    data->output_frames = processed_out;
 }
 
-void resampler_free(ssnes_resampler_t *re)
+void resampler_free(rarch_resampler_t *re)
 {
    free(re);
 }

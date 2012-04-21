@@ -65,7 +65,7 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    if (!PyArg_ParseTuple(args, "II", &player, &key))
       return NULL;
 
-   if (player > MAX_PLAYERS || player < 1 || key >= SSNES_FIRST_META_KEY)
+   if (player > MAX_PLAYERS || player < 1 || key >= RARCH_FIRST_META_KEY)
       return NULL;
 
    static const struct snes_keybind *binds[MAX_PLAYERS] = {
@@ -95,7 +95,7 @@ static PyObject *py_read_input_meta(PyObject *self, PyObject *args)
    if (!PyArg_ParseTuple(args, "I", &key))
       return NULL;
 
-   if (key < SSNES_FIRST_META_KEY)
+   if (key < RARCH_FIRST_META_KEY)
       return NULL;
 
    bool ret = input_key_pressed_func(key);
@@ -110,7 +110,7 @@ static PyMethodDef SNESMethods[] = {
 };
 
 #define DECL_ATTR_SNES(attr) PyObject_SetAttrString(mod, #attr, PyLong_FromLong(RETRO_DEVICE_ID_JOYPAD_##attr))
-#define DECL_ATTR_SSNES(attr) PyObject_SetAttrString(mod, #attr, PyLong_FromLong(SSNES_##attr))
+#define DECL_ATTR_SSNES(attr) PyObject_SetAttrString(mod, #attr, PyLong_FromLong(RARCH_##attr))
 static void py_set_attrs(PyObject *mod)
 {
    DECL_ATTR_SNES(B);
@@ -232,10 +232,10 @@ static char *align_program(const char *program)
 
 py_state_t *py_state_new(const char *script, unsigned is_file, const char *pyclass)
 {
-   SSNES_LOG("Initializing Python runtime ...\n");
+   RARCH_LOG("Initializing Python runtime ...\n");
    PyImport_AppendInittab("snes", &PyInit_SNES);
    Py_Initialize();
-   SSNES_LOG("Initialized Python runtime.\n");
+   RARCH_LOG("Initialized Python runtime.\n");
 
    py_state_t *handle = (py_state_t*)calloc(1, sizeof(*handle));
    PyObject *hook = NULL;
@@ -254,7 +254,7 @@ py_state_t *py_state_new(const char *script, unsigned is_file, const char *pycla
       char *script_ = NULL;
       if (read_file(script, (void**)&script_) < 0)
       {
-         SSNES_ERR("Python: Failed to read script\n");
+         RARCH_ERR("Python: Failed to read script\n");
          goto error;
       }
 
@@ -271,11 +271,11 @@ py_state_t *py_state_new(const char *script, unsigned is_file, const char *pycla
       }
    }
 
-   SSNES_LOG("Python: Script loaded.\n");
+   RARCH_LOG("Python: Script loaded.\n");
    handle->dict = PyModule_GetDict(handle->main);
    if (!handle->dict)
    {
-      SSNES_ERR("Python: PyModule_GetDict() failed.\n");
+      RARCH_ERR("Python: PyModule_GetDict() failed.\n");
       goto error;
    }
    Py_INCREF(handle->dict);
@@ -283,14 +283,14 @@ py_state_t *py_state_new(const char *script, unsigned is_file, const char *pycla
    hook = PyDict_GetItemString(handle->dict, pyclass);
    if (!hook)
    {
-      SSNES_ERR("Python: PyDict_GetItemString() failed.\n");
+      RARCH_ERR("Python: PyDict_GetItemString() failed.\n");
       goto error;
    }
 
    handle->inst = PyObject_CallFunction(hook, NULL);
    if (!handle->inst)
    {
-      SSNES_ERR("Python: PyObject_CallFunction() failed.\n");
+      RARCH_ERR("Python: PyObject_CallFunction() failed.\n");
       goto error;
    }
    Py_INCREF(handle->inst);
@@ -327,7 +327,7 @@ float py_state_get(py_state_t *handle, const char *id,
    if (!ret)
    {
       if (!handle->warned_ret)
-         SSNES_WARN("Didn't get return value from script. Bug?\n");
+         RARCH_WARN("Didn't get return value from script. Bug?\n");
       handle->warned_ret = true;
       return 0.0f;
    }

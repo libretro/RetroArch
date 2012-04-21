@@ -35,7 +35,7 @@
 #define NO_SDL_GLEXT
 #include "SDL.h"
 #include "SDL_opengl.h"
-#include "../input/ssnes_sdl_input.h"
+#include "../input/rarch_sdl_input.h"
 
 #ifdef HAVE_CG
 #include "shader_cg.h"
@@ -196,10 +196,10 @@ static bool gl_shader_init(void)
 {
    switch (g_settings.video.shader_type)
    {
-      case SSNES_SHADER_AUTO:
+      case RARCH_SHADER_AUTO:
       {
          if (*g_settings.video.cg_shader_path && *g_settings.video.bsnes_shader_path)
-            SSNES_WARN("Both Cg and bSNES XML shader are defined in config file. Cg shader will be selected by default.\n");
+            RARCH_WARN("Both Cg and bSNES XML shader are defined in config file. Cg shader will be selected by default.\n");
 
 #ifdef HAVE_CG
          if (*g_settings.video.cg_shader_path)
@@ -214,7 +214,7 @@ static bool gl_shader_init(void)
       }
 
 #ifdef HAVE_CG
-      case SSNES_SHADER_CG:
+      case RARCH_SHADER_CG:
       {
          return gl_cg_init(g_settings.video.cg_shader_path);
          break;
@@ -222,7 +222,7 @@ static bool gl_shader_init(void)
 #endif
 
 #ifdef HAVE_XML
-      case SSNES_SHADER_BSNES:
+      case RARCH_SHADER_BSNES:
       {
          return gl_glsl_init(g_settings.video.bsnes_shader_path);
          break;
@@ -369,10 +369,10 @@ static inline void gl_init_font(gl_t *gl, const char *font_path, unsigned font_s
          glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
       }
       else
-         SSNES_WARN("Couldn't init font renderer with font \"%s\"...\n", font_path);
+         RARCH_WARN("Couldn't init font renderer with font \"%s\"...\n", font_path);
    }
    else
-      SSNES_LOG("Did not find default font.\n");
+      RARCH_LOG("Did not find default font.\n");
 
    for (unsigned i = 0; i < 4; i++)
    {
@@ -444,7 +444,7 @@ static bool gl_create_fbo_targets(gl_t *gl)
 
 error:
    pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
-   SSNES_ERR("Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
+   RARCH_ERR("Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
    return false;
 }
 
@@ -478,7 +478,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
    if (!load_fbo_proc())
    {
-      SSNES_ERR("Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
+      RARCH_ERR("Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
       return;
    }
 
@@ -493,7 +493,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    {
       scale.scale_x = g_settings.video.fbo_scale_x;
       scale.scale_y = g_settings.video.fbo_scale_y;
-      scale.type_x  = scale.type_y = SSNES_SCALE_INPUT;
+      scale.type_x  = scale.type_y = RARCH_SCALE_INPUT;
       scale.valid   = true;
    }
 
@@ -506,7 +506,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
       if (!gl->fbo_scale[i].valid)
       {
          gl->fbo_scale[i].scale_x = gl->fbo_scale[i].scale_y = 1.0f;
-         gl->fbo_scale[i].type_x  = gl->fbo_scale[i].type_y  = SSNES_SCALE_INPUT;
+         gl->fbo_scale[i].type_x  = gl->fbo_scale[i].type_y  = RARCH_SCALE_INPUT;
          gl->fbo_scale[i].valid   = true;
       }
    }
@@ -517,7 +517,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    {
       gl->fbo_rect[i].width  = next_pow2(gl->fbo_rect[i].img_width);
       gl->fbo_rect[i].height = next_pow2(gl->fbo_rect[i].img_height);
-      SSNES_LOG("Creating FBO %d @ %ux%u\n", i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
+      RARCH_LOG("Creating FBO %d @ %ux%u\n", i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
    }
 
    gl_create_fbo_textures(gl);
@@ -613,7 +613,7 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
       gl->vp_out_height = height;
    }
 
-   //SSNES_LOG("Setting viewport @ %ux%u\n", width, height);
+   //RARCH_LOG("Setting viewport @ %ux%u\n", width, height);
 }
 
 static void gl_set_rotation(void *data, unsigned rotation)
@@ -874,16 +874,16 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
    {
       switch (gl->fbo_scale[i].type_x)
       {
-         case SSNES_SCALE_INPUT:
+         case RARCH_SCALE_INPUT:
             gl->fbo_rect[i].img_width = last_width * gl->fbo_scale[i].scale_x;
             gl->fbo_rect[i].max_img_width = last_max_width * gl->fbo_scale[i].scale_x;
             break;
 
-         case SSNES_SCALE_ABSOLUTE:
+         case RARCH_SCALE_ABSOLUTE:
             gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].abs_x;
             break;
 
-         case SSNES_SCALE_VIEWPORT:
+         case RARCH_SCALE_VIEWPORT:
             gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].scale_x * vp_width;
             break;
 
@@ -893,16 +893,16 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
 
       switch (gl->fbo_scale[i].type_y)
       {
-         case SSNES_SCALE_INPUT:
+         case RARCH_SCALE_INPUT:
             gl->fbo_rect[i].img_height = last_height * gl->fbo_scale[i].scale_y;
             gl->fbo_rect[i].max_img_height = last_max_height * gl->fbo_scale[i].scale_y;
             break;
 
-         case SSNES_SCALE_ABSOLUTE:
+         case RARCH_SCALE_ABSOLUTE:
             gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].abs_y;
             break;
 
-         case SSNES_SCALE_VIEWPORT:
+         case RARCH_SCALE_VIEWPORT:
             gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].scale_y * vp_height;
             break;
 
@@ -956,9 +956,9 @@ static void gl_check_fbo_dimensions(gl_t *gl)
 
          GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
          if (status != GL_FRAMEBUFFER_COMPLETE)
-            SSNES_WARN("Failed to reinit FBO texture.\n");
+            RARCH_WARN("Failed to reinit FBO texture.\n");
 
-         SSNES_LOG("Recreating FBO texture #%d: %ux%u\n", i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
+         RARCH_LOG("Recreating FBO texture #%d: %ux%u\n", i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
       }
    }
 }
@@ -1202,7 +1202,7 @@ static void gl_set_nonblock_state(void *data, bool state)
    gl_t *gl = (gl_t*)data;
    if (gl->vsync)
    {
-      SSNES_LOG("GL VSync => %s\n", state ? "off" : "on");
+      RARCH_LOG("GL VSync => %s\n", state ? "off" : "on");
       sdlwrap_set_swap_interval(state ? 0 : 1, true);
    }
 }
@@ -1217,10 +1217,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
 
    const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
-   ssnes_assert(video_info);
+   rarch_assert(video_info);
    unsigned full_x = video_info->current_w;
    unsigned full_y = video_info->current_h;
-   SSNES_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
    sdlwrap_set_swap_interval(video->vsync ? 1 : 0, false);
 
@@ -1270,22 +1270,22 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->win_width = win_width;
    gl->win_height = win_height;
 
-   SSNES_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
+   RARCH_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
 
    if (!gl_shader_init())
    {
-      SSNES_ERR("Shader init failed.\n");
+      RARCH_ERR("Shader init failed.\n");
       sdlwrap_destroy();
       free(gl);
       return NULL;
    }
 
-   SSNES_LOG("GL: Loaded %u program(s).\n", gl_shader_num());
+   RARCH_LOG("GL: Loaded %u program(s).\n", gl_shader_num());
 
 #ifdef HAVE_FBO
    // Set up render to texture.
-   gl_init_fbo(gl, SSNES_SCALE_BASE * video->input_scale,
-         SSNES_SCALE_BASE * video->input_scale);
+   gl_init_fbo(gl, RARCH_SCALE_BASE * video->input_scale,
+         RARCH_SCALE_BASE * video->input_scale);
 #endif
    
    gl->keep_aspect = video->force_aspect;
@@ -1339,8 +1339,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    set_lut_texture_coords(tex_coords);
 
-   gl->tex_w = SSNES_SCALE_BASE * video->input_scale;
-   gl->tex_h = SSNES_SCALE_BASE * video->input_scale;
+   gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
+   gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
 
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(gl->tex_w * gl->tex_h, gl->base_size);

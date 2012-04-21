@@ -55,7 +55,7 @@ struct XAudio : public IXAudio2VoiceCallback
       size_t bufsize_ = latency * rate / 1000;
       size_t size = bufsize_ * 2 * sizeof(int16_t);
 
-      SSNES_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize_ * 1000 / rate);
+      RARCH_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize_ * 1000 / rate);
 
       if (FAILED(XAudio2Create(&pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
          return false;
@@ -168,7 +168,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
    return xa;
 
 error:
-   SSNES_ERR("Failed to init XAudio2.\n");
+   RARCH_ERR("Failed to init XAudio2.\n");
    delete xa;
    return NULL;
 }

@@ -82,7 +82,7 @@ static void *sdl_audio_init(const char *device, unsigned rate, unsigned latency)
 
    if (SDL_OpenAudio(&spec, &out) < 0)
    {
-      SSNES_ERR("Failed to open SDL audio: %s\n", SDL_GetError());
+      RARCH_ERR("Failed to open SDL audio: %s\n", SDL_GetError());
       free(sdl);
       return 0;
    }
@@ -91,7 +91,7 @@ static void *sdl_audio_init(const char *device, unsigned rate, unsigned latency)
    sdl->lock = slock_new();
    sdl->cond = scond_new();
 
-   SSNES_LOG("SDL audio: Requested %d ms latency, got %d ms\n", latency, (int)(out.samples * 4 * 1000 / g_settings.audio.out_rate));
+   RARCH_LOG("SDL audio: Requested %d ms latency, got %d ms\n", latency, (int)(out.samples * 4 * 1000 / g_settings.audio.out_rate));
 
    // Create a buffer twice as big as needed and prefill the buffer.
    size_t bufsize = out.samples * 4 * sizeof(int16_t);

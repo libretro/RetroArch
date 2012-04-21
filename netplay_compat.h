@@ -51,9 +51,9 @@
 #ifdef HAVE_SOCKET_LEGACY
 
 #define sockaddr_storage sockaddr_in
-#define addrinfo addrinfo_ssnes__
-#define getaddrinfo(serv, port, hints, res) getaddrinfo_ssnes__(serv, port, hints, res)
-#define freeaddrinfo(res) freeaddrinfo_ssnes__(res)
+#define addrinfo addrinfo_rarch__
+#define getaddrinfo(serv, port, hints, res) getaddrinfo_rarch__(serv, port, hints, res)
+#define freeaddrinfo(res) freeaddrinfo_rarch__(res)
 
 struct addrinfo
 {

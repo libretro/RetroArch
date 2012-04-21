@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ext/ssnes_audio.h"
+#include "ext/rarch_audio.h"
 #include "../boolean.h"
 #include <stdlib.h>
 #include <stdint.h>
@@ -25,7 +25,7 @@
 typedef struct audio_ext
 {
    dylib_t lib;
-   const ssnes_audio_driver_t *driver;
+   const rarch_audio_driver_t *driver;
    void *handle;
    bool is_float;
 } audio_ext_t;
@@ -47,7 +47,7 @@ static void *audio_ext_init(const char *device, unsigned rate, unsigned latency)
 {
    if (!(*g_settings.audio.external_driver))
    {
-      SSNES_ERR("Please define an external audio driver.\n");
+      RARCH_ERR("Please define an external audio driver.\n");
       return NULL;
    }
 
@@ -55,36 +55,36 @@ static void *audio_ext_init(const char *device, unsigned rate, unsigned latency)
    if (!ext)
       return NULL;
 
-   ssnes_audio_driver_info_t info = {0};
-   const ssnes_audio_driver_t *(*plugin_load)(void) = NULL;
+   rarch_audio_driver_info_t info = {0};
+   const rarch_audio_driver_t *(*plugin_load)(void) = NULL;
 
    ext->lib = dylib_load(g_settings.audio.external_driver);
    if (!ext->lib)
    {
-      SSNES_ERR("Failed to load external library \"%s\"\n", g_settings.audio.external_driver);
+      RARCH_ERR("Failed to load external library \"%s\"\n", g_settings.audio.external_driver);
       goto error;
    }
 
-   plugin_load = (const ssnes_audio_driver_t *(*)(void))dylib_proc(ext->lib, "ssnes_audio_driver_init");
+   plugin_load = (const rarch_audio_driver_t *(*)(void))dylib_proc(ext->lib, "rarch_audio_driver_init");
 
    if (!plugin_load)
    {
-      SSNES_ERR("Failed to find symbol \"ssnes_audio_driver_init\" in plugin.\n");
+      RARCH_ERR("Failed to find symbol \"rarch_audio_driver_init\" in plugin.\n");
       goto error;
    }
 
    ext->driver = plugin_load();
    if (!ext->driver)
    {
-      SSNES_ERR("Received invalid driver from plugin.\n");
+      RARCH_ERR("Received invalid driver from plugin.\n");
       goto error;
    }
 
-   SSNES_LOG("Loaded external audio driver: \"%s\"\n", ext->driver->ident ? ext->driver->ident : "Unknown");
+   RARCH_LOG("Loaded external audio driver: \"%s\"\n", ext->driver->ident ? ext->driver->ident : "Unknown");
 
-   if (ext->driver->api_version != SSNES_AUDIO_API_VERSION)
+   if (ext->driver->api_version != RARCH_AUDIO_API_VERSION)
    {
-      SSNES_ERR("API mismatch in external audio plugin. SSNES: %d, Plugin: %d ...\n", SSNES_AUDIO_API_VERSION, ext->driver->api_version);
+      RARCH_ERR("API mismatch in external audio plugin. SSNES: %d, Plugin: %d ...\n", RARCH_AUDIO_API_VERSION, ext->driver->api_version);
       goto error;
    }
 
@@ -95,7 +95,7 @@ static void *audio_ext_init(const char *device, unsigned rate, unsigned latency)
    ext->handle = ext->driver->init(&info);
    if (!ext->handle)
    {
-      SSNES_ERR("Failed to init audio driver.\n");
+      RARCH_ERR("Failed to init audio driver.\n");
       goto error;
    }
 
@@ -103,7 +103,7 @@ static void *audio_ext_init(const char *device, unsigned rate, unsigned latency)
       g_settings.audio.out_rate = ext->driver->sample_rate(ext->handle);
 
    if (!g_settings.audio.sync)
-      ext->driver->set_nonblock_state(ext->handle, SSNES_TRUE);
+      ext->driver->set_nonblock_state(ext->handle, RARCH_TRUE);
 
    return ext;
 

@@ -21,12 +21,12 @@
 #include "../general.h"
 #include <string.h>
 
-int ssnes_main(int argc, char *argv[]);
+int rarch_main(int argc, char *argv[]);
 
 #undef main
 int main(int argc, char *argv[])
 {
-   while (ssnes_main(argc, argv) == 0)
+   while (rarch_main(argc, argv) == 0)
    {
       if (optind + 1 >= argc)
          return 0;
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
       memmove(&argv[optind], &argv[optind + 1], (argc - optind - 1) * sizeof(char*));
       argc--;
 
-      ssnes_main_clear_state();
+      rarch_main_clear_state();
    }
 }
 

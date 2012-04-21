@@ -15,8 +15,8 @@
  */
 
 
-#ifndef __SSNES_HLSL_H
-#define __SSNES_HLSL_H
+#ifndef __RARCH_HLSL_H
+#define __RARCH_HLSL_H
 
 #include "../boolean.h"
 #include <stdint.h>
@@ -34,6 +34,6 @@ void hlsl_set_params(unsigned width, unsigned height,
 
 void hlsl_use(unsigned index);
 
-#define SSNES_HLSL_MAX_SHADERS 16
+#define RARCH_HLSL_MAX_SHADERS 16
 
 #endif

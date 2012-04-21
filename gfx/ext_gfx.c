@@ -15,8 +15,8 @@
 
 // Loader for external API plugins.
 
-#define SSNES_DLL_IMPORT
-#include "ext/ssnes_video.h"
+#define RARCH_DLL_IMPORT
+#include "ext/rarch_video.h"
 #include "../boolean.h"
 #include <stdlib.h>
 #include <stdint.h>
@@ -42,7 +42,7 @@ static dylib_t g_lib = NULL;
 
 typedef struct
 {
-   const ssnes_input_driver_t *driver;
+   const rarch_input_driver_t *driver;
    void *handle;
 } input_ext_t;
 
@@ -64,16 +64,16 @@ static int16_t input_ext_input_state(void *data, const struct snes_keybind **sne
 
    unsigned player = port + 1;
 
-   if (id < SSNES_BIND_LIST_END)
+   if (id < RARCH_BIND_LIST_END)
    {
-      const struct snes_keybind *ssnes_bind = &snes_keybinds[player - 1][id];
-      if (!ssnes_bind->valid)
+      const struct snes_keybind *rarch_bind = &snes_keybinds[player - 1][id];
+      if (!rarch_bind->valid)
          return 0;
 
-      struct ssnes_keybind bind = {0};
-      bind.key = ssnes_bind->key;
-      bind.joykey = ssnes_bind->joykey;
-      bind.joyaxis = ssnes_bind->joyaxis;
+      struct rarch_keybind bind = {0};
+      bind.key = rarch_bind->key;
+      bind.joykey = rarch_bind->joykey;
+      bind.joyaxis = rarch_bind->joyaxis;
 
       return ext->driver->input_state(ext->handle, &bind, player);
    }
@@ -85,16 +85,16 @@ static bool input_ext_key_pressed(void *data, int key)
 {
    input_ext_t *ext = (input_ext_t*)data;
 
-   if (key >= 0 && key < SSNES_BIND_LIST_END)
+   if (key >= 0 && key < RARCH_BIND_LIST_END)
    {
-      const struct snes_keybind *ssnes_bind = &g_settings.input.binds[0][key];
-      if (!ssnes_bind->valid)
+      const struct snes_keybind *rarch_bind = &g_settings.input.binds[0][key];
+      if (!rarch_bind->valid)
          return false;
 
-      struct ssnes_keybind bind = {0};
-      bind.key = ssnes_bind->key;
-      bind.joykey = ssnes_bind->joykey;
-      bind.joyaxis = ssnes_bind->joyaxis;
+      struct rarch_keybind bind = {0};
+      bind.key = rarch_bind->key;
+      bind.joykey = rarch_bind->joykey;
+      bind.joyaxis = rarch_bind->joyaxis;
 
       return ext->driver->input_state(ext->handle, &bind, 1);
    }
@@ -134,7 +134,7 @@ static const input_driver_t input_ext = {
 //////////// Video hook
 typedef struct
 {
-   const ssnes_video_driver_t *driver;
+   const rarch_video_driver_t *driver;
    void *handle;
 } ext_t;
 
@@ -182,7 +182,7 @@ static bool video_ext_frame(void *data, const void *frame, unsigned width, unsig
    return ext->driver->frame(ext->handle, frame, width, height, pitch, msg);
 }
 
-static void *setup_input(ext_t *ext, const ssnes_input_driver_t *driver)
+static void *setup_input(ext_t *ext, const rarch_input_driver_t *driver)
 {
    // TODO: Change external API to allow more players. To be done in next major ABI break.
    int joypad_index[5];
@@ -205,21 +205,21 @@ static void *setup_input(ext_t *ext, const ssnes_input_driver_t *driver)
 
 static bool setup_video(ext_t *ext, const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-   SSNES_LOG("Loaded driver: \"%s\"\n", ext->driver->ident ? ext->driver->ident : "Unknown");
+   RARCH_LOG("Loaded driver: \"%s\"\n", ext->driver->ident ? ext->driver->ident : "Unknown");
 
-   if (SSNES_GRAPHICS_API_VERSION != ext->driver->api_version)
+   if (RARCH_GRAPHICS_API_VERSION != ext->driver->api_version)
    {
-      SSNES_ERR("API version mismatch detected.\n");
-      SSNES_ERR("Required API version: %d, Library version: %d\n", SSNES_GRAPHICS_API_VERSION, ext->driver->api_version);
+      RARCH_ERR("API version mismatch detected.\n");
+      RARCH_ERR("Required API version: %d, Library version: %d\n", RARCH_GRAPHICS_API_VERSION, ext->driver->api_version);
       return false;
    }
 
    const char *cg_shader = NULL;
    const char *xml_shader = NULL;
-   enum ssnes_shader_type type = g_settings.video.shader_type;
-   if ((type == SSNES_SHADER_CG || type == SSNES_SHADER_AUTO) && *g_settings.video.cg_shader_path)
+   enum rarch_shader_type type = g_settings.video.shader_type;
+   if ((type == RARCH_SHADER_CG || type == RARCH_SHADER_AUTO) && *g_settings.video.cg_shader_path)
       cg_shader = g_settings.video.cg_shader_path;
-   else if ((type == SSNES_SHADER_BSNES || type == SSNES_SHADER_AUTO) && *g_settings.video.bsnes_shader_path)
+   else if ((type == RARCH_SHADER_BSNES || type == RARCH_SHADER_AUTO) && *g_settings.video.bsnes_shader_path)
       xml_shader = g_settings.video.bsnes_shader_path;
 
    int font_color_r = g_settings.video.msg_color_r * 255;
@@ -247,7 +247,7 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
    gfx_window_title_reset();
    gfx_window_title(title_buf, sizeof(title_buf));
 
-   ssnes_video_info_t info = {0};
+   rarch_video_info_t info = {0};
    info.width = video->width;
    info.height = video->height;
    info.fullscreen = video->fullscreen;
@@ -256,7 +256,7 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
    info.aspect_ratio = g_settings.video.aspect_ratio;
    info.smooth = video->smooth;
    info.input_scale = video->input_scale;
-   info.color_format = video->rgb32 ? SSNES_COLOR_FORMAT_ARGB8888 : SSNES_COLOR_FORMAT_XRGB1555;
+   info.color_format = video->rgb32 ? RARCH_COLOR_FORMAT_ARGB8888 : RARCH_COLOR_FORMAT_XRGB1555;
    info.xml_shader = xml_shader;
    info.cg_shader = cg_shader;
    info.ttf_font = font;
@@ -270,7 +270,7 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
    info.python_state_free = py_state_free;
 #endif
 
-   const ssnes_input_driver_t *input_driver = NULL;
+   const rarch_input_driver_t *input_driver = NULL;
    ext->handle = ext->driver->init(&info, &input_driver);
    if (!ext->handle)
       return false;
@@ -290,38 +290,38 @@ static void *video_ext_init(const video_info_t *video, const input_driver_t **in
    if (!ext)
       return NULL;
 
-   const ssnes_video_driver_t *(*video_init)(void) = NULL;
+   const rarch_video_driver_t *(*video_init)(void) = NULL;
 
    if (!(*g_settings.video.external_driver))
    {
-      SSNES_ERR("External driver needs video_external_driver path to be set.\n");
+      RARCH_ERR("External driver needs video_external_driver path to be set.\n");
       goto error;
    }
 
    g_lib = dylib_load(g_settings.video.external_driver);
    if (!g_lib)
    {
-      SSNES_ERR("Failed to open library: \"%s\"\n", g_settings.video.external_driver);
+      RARCH_ERR("Failed to open library: \"%s\"\n", g_settings.video.external_driver);
       goto error;
    }
 
-   video_init = (const ssnes_video_driver_t *(*)(void))dylib_proc(g_lib, "ssnes_video_init");
+   video_init = (const rarch_video_driver_t *(*)(void))dylib_proc(g_lib, "rarch_video_init");
    if (!video_init)
    {
-      SSNES_ERR("Couldn't find function ssnes_video_init in library ...\n");
+      RARCH_ERR("Couldn't find function rarch_video_init in library ...\n");
       goto error;
    }
 
    ext->driver = video_init();
    if (!ext->driver)
    {
-      SSNES_ERR("External driver returned invalid driver handle.\n");
+      RARCH_ERR("External driver returned invalid driver handle.\n");
       goto error;
    }
 
    if (!setup_video(ext, video, input, input_data))
    {
-      SSNES_ERR("Failed to start driver.\n");
+      RARCH_ERR("Failed to start driver.\n");
       goto error;
    }
 

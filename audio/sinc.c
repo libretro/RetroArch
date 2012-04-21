@@ -25,7 +25,7 @@
 #ifndef RESAMPLER_TEST
 #include "../general.h"
 #else
-#define SSNES_LOG(...)
+#define RARCH_LOG(...)
 #endif
 
 #if __SSE__
@@ -50,7 +50,7 @@
 #define PHASE_INDEX 0
 #define DELTA_INDEX 1
 
-struct ssnes_resampler
+struct rarch_resampler
 {
    float phase_table[PHASES][2][TAPS];
    float buffer_l[2 * TAPS];
@@ -61,7 +61,7 @@ struct ssnes_resampler
    uint32_t time;
 };
 
-void resampler_preinit(ssnes_resampler_t *re, double omega, double *samples_offset)
+void resampler_preinit(rarch_resampler_t *re, double omega, double *samples_offset)
 {
    *samples_offset = SIDELOBES + 1;
    for (int i = 0; i < 2 * SIDELOBES; i++)
@@ -87,7 +87,7 @@ static inline double lanzcos(double index)
    return sinc(index);
 }
 
-static void init_sinc_table(ssnes_resampler_t *resamp)
+static void init_sinc_table(rarch_resampler_t *resamp)
 {
    // Sinc phases: [..., p + 3, p + 2, p + 1, p + 0, p - 1, p - 2, p - 3, p - 4, ...]
    for (int i = 0; i < PHASES; i++)
@@ -143,9 +143,9 @@ static void aligned_free(void *ptr)
    free(p[-1]);
 }
 
-ssnes_resampler_t *resampler_new(void)
+rarch_resampler_t *resampler_new(void)
 {
-   ssnes_resampler_t *re = (ssnes_resampler_t*)aligned_alloc(16, sizeof(*re));
+   rarch_resampler_t *re = (rarch_resampler_t*)aligned_alloc(16, sizeof(*re));
    if (!re)
       return NULL;
 
@@ -154,16 +154,16 @@ ssnes_resampler_t *resampler_new(void)
    init_sinc_table(re);
 
 #if __SSE__
-   SSNES_LOG("Sinc resampler [SSE]\n");
+   RARCH_LOG("Sinc resampler [SSE]\n");
 #else
-   SSNES_LOG("Sinc resampler [C]\n");
+   RARCH_LOG("Sinc resampler [C]\n");
 #endif
 
    return re;
 }
 
 #if __SSE__
-static void process_sinc(ssnes_resampler_t *resamp, float *out_buffer)
+static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
 {
    __m128 sum_l = _mm_setzero_ps();
    __m128 sum_r = _mm_setzero_ps();
@@ -214,7 +214,7 @@ static void process_sinc(ssnes_resampler_t *resamp, float *out_buffer)
    _mm_store_ss(out_buffer + 1, _mm_movehl_ps(sum, sum));
 }
 #else // Plain ol' C99
-static void process_sinc(ssnes_resampler_t *resamp, float *out_buffer)
+static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
 {
    float sum_l = 0.0f;
    float sum_r = 0.0f;
@@ -240,7 +240,7 @@ static void process_sinc(ssnes_resampler_t *resamp, float *out_buffer)
 }
 #endif
 
-void resampler_process(ssnes_resampler_t *re, struct resampler_data *data)
+void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
 {
    uint32_t ratio = PHASES_WRAP / data->ratio;
 
@@ -270,7 +270,7 @@ void resampler_process(ssnes_resampler_t *re, struct resampler_data *data)
    data->output_frames = out_frames;
 }
 
-void resampler_free(ssnes_resampler_t *re)
+void resampler_free(rarch_resampler_t *re)
 {
    aligned_free(re);
 }

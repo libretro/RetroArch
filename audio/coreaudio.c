@@ -158,7 +158,7 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
    if (res != noErr)
       goto error;
 
-   SSNES_LOG("[CoreAudio]: Using output sample rate of %.1f Hz\n", (float)real_desc.mSampleRate);
+   RARCH_LOG("[CoreAudio]: Using output sample rate of %.1f Hz\n", (float)real_desc.mSampleRate);
    g_settings.audio.out_rate = real_desc.mSampleRate;
 
    if (real_desc.mChannelsPerFrame != stream_desc.mChannelsPerFrame)
@@ -198,7 +198,7 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
    if (!dev->buffer)
       goto error;
 
-   SSNES_LOG("[CoreAudio]: Using buffer size of %u bytes: (latency = %u ms)\n", (unsigned)fifo_size, latency);
+   RARCH_LOG("[CoreAudio]: Using buffer size of %u bytes: (latency = %u ms)\n", (unsigned)fifo_size, latency);
 
    res = AudioOutputUnitStart(dev->dev);
    if (res != noErr)
@@ -207,7 +207,7 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
    return dev;
 
 error:
-   SSNES_ERR("[CoreAudio]: Failed to initialize driver ...\n");
+   RARCH_ERR("[CoreAudio]: Failed to initialize driver ...\n");
    coreaudio_free(dev);
    return NULL;
 }

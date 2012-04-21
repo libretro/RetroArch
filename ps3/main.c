@@ -76,7 +76,7 @@ char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 char EMULATOR_CORE_SELF[MAX_PATH_LENGTH];
 char MULTIMAN_EXECUTABLE[MAX_PATH_LENGTH];
 
-int ssnes_main(int argc, char *argv[]);
+int rarch_main(int argc, char *argv[]);
 
 SYS_PROCESS_PARAM(1001, 0x100000)
 
@@ -100,21 +100,21 @@ static void set_default_settings(void)
    g_settings.video.msg_pos_y = 0.90f;
    g_settings.video.aspect_ratio = -1.0f;
 
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_CROSS].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_SQUARE].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	=	platform_keys[PS3_DEVICE_ID_JOYPAD_SELECT].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	=	platform_keys[PS3_DEVICE_ID_JOYPAD_START].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_UP].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]	=	platform_keys[PS3_DEVICE_ID_JOYPAD_DOWN].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]	=	platform_keys[PS3_DEVICE_ID_JOYPAD_LEFT].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	=	platform_keys[PS3_DEVICE_ID_JOYPAD_RIGHT].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_CIRCLE].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_TRIANGLE].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_L1].joykey;
-   ssnes_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_R1].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_CROSS].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_SQUARE].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	=	platform_keys[PS3_DEVICE_ID_JOYPAD_SELECT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	=	platform_keys[PS3_DEVICE_ID_JOYPAD_START].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_UP].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]	=	platform_keys[PS3_DEVICE_ID_JOYPAD_DOWN].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]	=	platform_keys[PS3_DEVICE_ID_JOYPAD_LEFT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	=	platform_keys[PS3_DEVICE_ID_JOYPAD_RIGHT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_CIRCLE].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_TRIANGLE].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_L1].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_R1].joykey;
 
    for(uint32_t x = 0; x < MAX_PLAYERS; x++)
-      ssnes_input_set_default_keybinds(x);
+      rarch_input_set_default_keybinds(x);
 
    // g_console
    g_console.block_config_read = true;
@@ -122,7 +122,7 @@ static void set_default_settings(void)
    g_console.emulator_initialized = 0;
    g_console.screenshots_enable = true;
    g_console.throttle_enable = true;
-   g_console.initialize_ssnes_enable = false;
+   g_console.initialize_rarch_enable = false;
    g_console.triple_buffering_enable = true;
    g_console.default_savestate_dir_enable = false;
    g_console.default_sram_dir_enable = false;
@@ -154,7 +154,7 @@ static void init_settings(bool load_libretro_path)
 {
    if(!path_file_exists(SYS_CONFIG_FILE))
    {
-      SSNES_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
+      RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
       FILE * f;
       f = fopen(SYS_CONFIG_FILE, "w");
       fclose(f);
@@ -177,7 +177,7 @@ static void init_settings(bool load_libretro_path)
 
 	    if (!dir_list)
 	    {
-               SSNES_ERR("Couldn't read %s directory.\n", EMULATOR_CORE_DIR);
+               RARCH_ERR("Couldn't read %s directory.\n", EMULATOR_CORE_DIR);
 	       return;
 	    }
 
@@ -185,12 +185,12 @@ static void init_settings(bool load_libretro_path)
 
 	    if(first_self)
 	    {
-               SSNES_LOG("Set first entry in libretro %s dir: [%s] to libretro path.\n", EMULATOR_CORE_DIR, first_self);
+               RARCH_LOG("Set first entry in libretro %s dir: [%s] to libretro path.\n", EMULATOR_CORE_DIR, first_self);
 	       strlcpy(g_settings.libretro, first_self, sizeof(g_settings.libretro));
 	    }
 	    else
 	    {
-               SSNES_ERR("Failed to set first entry in libretro %s dir to libretro path.\n", EMULATOR_CORE_DIR);
+               RARCH_ERR("Failed to set first entry in libretro %s dir to libretro path.\n", EMULATOR_CORE_DIR);
 	    }
 
 	    dir_list_free(dir_list);
@@ -245,7 +245,7 @@ static void save_settings(void)
 {
    if(!path_file_exists(SYS_CONFIG_FILE))
    {
-      SSNES_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
+      RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
       FILE * f;
       f = fopen(SYS_CONFIG_FILE, "w");
       fclose(f);
@@ -301,7 +301,7 @@ static void save_settings(void)
       config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
 
       if (!config_file_write(conf, SYS_CONFIG_FILE))
-         SSNES_ERR("Failed to write config file to \"%s\". Check permissions.\n", SYS_CONFIG_FILE);
+         RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", SYS_CONFIG_FILE);
 
       free(conf);
    }
@@ -346,7 +346,7 @@ static void get_environment_settings(int argc, char *argv[])
    ret = cellSysCacheMount(&param);
    if(ret != CELL_SYSCACHE_RET_OK_CLEARED)
    {
-      SSNES_ERR("System cache partition could not be mounted, it might be already mounted.\n");
+      RARCH_ERR("System cache partition could not be mounted, it might be already mounted.\n");
    }
 
    if(argc > 1)
@@ -364,12 +364,12 @@ static void get_environment_settings(int argc, char *argv[])
    if(path_file_exists(MULTIMAN_EXECUTABLE) && argc > 1 &&  path_file_exists(argv[1]))
    {
       g_console.external_launcher_support = EXTERN_LAUNCHER_MULTIMAN;
-      SSNES_LOG("Started from multiMAN, auto-game start enabled.\n");
+      RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
    }
    else
    {
       g_console.external_launcher_support = EXTERN_LAUNCHER_SALAMANDER;
-      SSNES_WARN("Not started from multiMAN, auto-game start disabled.\n");
+      RARCH_WARN("Not started from multiMAN, auto-game start disabled.\n");
    }
 
    memset(&size, 0x00, sizeof(CellGameContentSize));
@@ -377,26 +377,26 @@ static void get_environment_settings(int argc, char *argv[])
    ret = cellGameBootCheck(&get_type, &get_attributes, &size, dirName);
    if(ret < 0)
    {
-      SSNES_ERR("cellGameBootCheck() Error: 0x%x.\n", ret);
+      RARCH_ERR("cellGameBootCheck() Error: 0x%x.\n", ret);
    }
    else
    {
-      SSNES_LOG("cellGameBootCheck() OK.\n");
-      SSNES_LOG("Directory name: [%s].\n", dirName);
-      SSNES_LOG(" HDD Free Size (in KB) = [%d] Size (in KB) = [%d] System Size (in KB) = [%d].\n", size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
+      RARCH_LOG("cellGameBootCheck() OK.\n");
+      RARCH_LOG("Directory name: [%s].\n", dirName);
+      RARCH_LOG(" HDD Free Size (in KB) = [%d] Size (in KB) = [%d] System Size (in KB) = [%d].\n", size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
 
       switch(get_type)
       {
          case CELL_GAME_GAMETYPE_DISC:
-            SSNES_LOG("RetroArch was launched on Optical Disc Drive.\n");
+            RARCH_LOG("RetroArch was launched on Optical Disc Drive.\n");
 	    break;
 	 case CELL_GAME_GAMETYPE_HDD:
-	    SSNES_LOG("RetroArch was launched on HDD.\n");
+	    RARCH_LOG("RetroArch was launched on HDD.\n");
 	    break;
       }
 
       if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) == CELL_GAME_ATTRIBUTE_APP_HOME)
-         SSNES_LOG("RetroArch was launched from host machine (APP_HOME).\n");
+         RARCH_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 
       ret = cellGameContentPermit(contentInfoPath, usrDirPath);
 
@@ -408,13 +408,13 @@ static void get_environment_settings(int argc, char *argv[])
 
       if(ret < 0)
       {
-         SSNES_ERR("cellGameContentPermit() Error: 0x%x\n", ret);
+         RARCH_ERR("cellGameContentPermit() Error: 0x%x\n", ret);
       }
       else
       {
-         SSNES_LOG("cellGameContentPermit() OK.\n");
-	 SSNES_LOG("contentInfoPath : [%s].\n", contentInfoPath);
-	 SSNES_LOG("usrDirPath : [%s].\n", usrDirPath);
+         RARCH_LOG("cellGameContentPermit() OK.\n");
+	 RARCH_LOG("contentInfoPath : [%s].\n", contentInfoPath);
+	 RARCH_LOG("usrDirPath : [%s].\n", usrDirPath);
       }
 
       /* now we fill in all the variables */
@@ -436,7 +436,7 @@ static void get_environment_settings(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-   SSNES_LOG("Registering system utility callback...\n");
+   RARCH_LOG("Registering system utility callback...\n");
    cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
 
    cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
@@ -456,7 +456,7 @@ int main(int argc, char *argv[])
 
    sceNpInit(NP_POOL_SIZE, np_pool);
 
-   ssnes_main_clear_state();
+   rarch_main_clear_state();
    get_environment_settings(argc, argv);
 
    config_set_defaults();
@@ -464,7 +464,7 @@ int main(int argc, char *argv[])
    char full_path[1024], tmp_path[1024];
    snprintf(full_path, sizeof(full_path), "%s/%s/CORE.SELF", usrDirPath, EMULATOR_CORE_DIR);
    snprintf(tmp_path, sizeof(tmp_path), "%s/%s/", usrDirPath, EMULATOR_CORE_DIR);
-   bool load_libretro_path = ssnes_manage_libretro_core(full_path, tmp_path, ".SELF");
+   bool load_libretro_path = rarch_manage_libretro_core(full_path, tmp_path, ".SELF");
 
    set_default_settings();
    init_settings(load_libretro_path);
@@ -489,7 +489,7 @@ int main(int argc, char *argv[])
    ps3_input_init();
    oskutil_init(&g_console.oskutil_handle, 0);
 
-   ssnes_input_set_default_keybind_names_for_emulator();
+   rarch_input_set_default_keybind_names_for_emulator();
 
    menu_init();
 
@@ -499,11 +499,11 @@ int main(int argc, char *argv[])
          g_console.mode_switch = MODE_MENU;
 	 break;
       case EXTERN_LAUNCHER_MULTIMAN:
-	 SSNES_LOG("Started from multiMAN, will auto-start game.\n");
+	 RARCH_LOG("Started from multiMAN, will auto-start game.\n");
 	 strncpy(g_console.rom_path, argv[1], sizeof(g_console.rom_path));
-	 g_console.initialize_ssnes_enable = 1;
+	 g_console.initialize_rarch_enable = 1;
 	 g_console.mode_switch = MODE_EMULATION;
-	 ssnes_startup(SYS_CONFIG_FILE);
+	 rarch_startup(SYS_CONFIG_FILE);
 	 break;
    }
 
@@ -515,13 +515,13 @@ begin_loop:
       input_ps3.poll(NULL);
 
       do{
-         repeat = ssnes_main_iterate();
+         repeat = rarch_main_iterate();
       }while(repeat && !g_console.frame_advance_enable);
    }
    else if(g_console.mode_switch == MODE_MENU)
    {
       menu_loop();
-      ssnes_startup(SYS_CONFIG_FILE);
+      rarch_startup(SYS_CONFIG_FILE);
    }
    else
       goto begin_shutdown;
@@ -532,7 +532,7 @@ begin_shutdown:
    if(path_file_exists(SYS_CONFIG_FILE))
       save_settings();
    if(g_console.emulator_initialized)
-      ssnes_main_deinit();
+      rarch_main_deinit();
    cell_pad_input_deinit();
    ps3_video_deinit();
    if(g_console.oskutil_handle.is_running)
@@ -552,10 +552,10 @@ begin_shutdown:
 
    if(ret != CELL_SYSCACHE_RET_OK_CLEARED)
    {
-      SSNES_ERR("System cache partition could not be cleared on exit.\n");
+      RARCH_ERR("System cache partition could not be cleared on exit.\n");
    }
 
-   ssnes_exec();
+   rarch_exec();
 
    return 1;
 }

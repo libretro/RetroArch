@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SSNES_360_FONTS_H
-#define SSNES_360_FONTS_H
+#ifndef RARCH_360_FONTS_H
+#define RARCH_360_FONTS_H
 
 #include "xdk360_video_resources.h"
 

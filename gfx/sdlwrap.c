@@ -65,13 +65,13 @@ void sdlwrap_set_swap_interval(unsigned interval, bool inited)
       if (glx_swap_interval)
          success = glx_swap_interval(g_interval) == 0;
       else 
-         SSNES_WARN("Could not find GLX VSync call.\n");
+         RARCH_WARN("Could not find GLX VSync call.\n");
 #endif
       
    }
 #endif
    if (!success)
-      SSNES_WARN("Failed to set swap interval.\n");
+      RARCH_WARN("Failed to set swap interval.\n");
 }
 
 bool sdlwrap_init(void)
@@ -85,7 +85,7 @@ bool sdlwrap_init(void)
    bool ret = SDL_Init(SDL_INIT_VIDEO) == 0;
 #endif
    if (!ret)
-      SSNES_ERR("Failed to init SDL video.\n");
+      RARCH_ERR("Failed to init SDL video.\n");
    return ret;
 }
 
@@ -145,7 +145,7 @@ bool sdlwrap_set_video_mode(
       width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : resizable));
    if (!g_window)
    {
-      SSNES_ERR("Failed to create SDL window.\n");
+      RARCH_ERR("Failed to create SDL window.\n");
       return false;
    }
 
@@ -154,7 +154,7 @@ bool sdlwrap_set_video_mode(
    if (!SDL_SetVideoMode(width, height, bits,
          SDL_OPENGL | (fullscreen ? SDL_FULLSCREEN : resizable)))
    {
-      SSNES_ERR("Failed to create SDL window.\n");
+      RARCH_ERR("Failed to create SDL window.\n");
       return false;
    }
 #endif
@@ -166,7 +166,7 @@ bool sdlwrap_set_video_mode(
    SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &attr);
    if (attr <= 0 && g_interval)
    {
-      SSNES_WARN("SDL failed to setup VSync, attempting to recover using native calls.\n");
+      RARCH_WARN("SDL failed to setup VSync, attempting to recover using native calls.\n");
       sdlwrap_set_swap_interval(g_interval, true);
    }
 #endif
@@ -176,7 +176,7 @@ bool sdlwrap_set_video_mode(
    attr = 0;
    SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &attr);
    if (attr <= 0)
-      SSNES_WARN("GL double buffer has not been enabled.\n");
+      RARCH_WARN("GL double buffer has not been enabled.\n");
 
    return true;
 }
@@ -326,7 +326,7 @@ void sdlwrap_check_window(bool *quit,
          *resize = true;
          *width = new_width;
          *height = new_height;
-         SSNES_LOG("GL: Verified window size: %u x %u\n", *width, *height);
+         RARCH_LOG("GL: Verified window size: %u x %u\n", *width, *height);
       }
    }
 #endif

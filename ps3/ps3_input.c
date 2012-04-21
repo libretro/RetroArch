@@ -293,17 +293,17 @@ static bool ps3_key_pressed(void *data, int key)
    (void)data;
    switch (key)
    {
-      case SSNES_FAST_FORWARD_HOLD_KEY:
+      case RARCH_FAST_FORWARD_HOLD_KEY:
          return CTRL_RSTICK_DOWN(state[0]) && CTRL_R2(~state[0]);
-      case SSNES_LOAD_STATE_KEY:
+      case RARCH_LOAD_STATE_KEY:
          return (CTRL_RSTICK_UP(state[0]) && CTRL_R2(state[0]));
-      case SSNES_SAVE_STATE_KEY:
+      case RARCH_SAVE_STATE_KEY:
          return (CTRL_RSTICK_DOWN(state[0]) && CTRL_R2(state[0]));
-      case SSNES_STATE_SLOT_PLUS:
+      case RARCH_STATE_SLOT_PLUS:
          return (CTRL_RSTICK_RIGHT(state[0]) && CTRL_R2(state[0]));
-      case SSNES_STATE_SLOT_MINUS:
+      case RARCH_STATE_SLOT_MINUS:
          return (CTRL_RSTICK_LEFT(state[0]) && CTRL_R2(state[0]));
-      case SSNES_FRAMEADVANCE:
+      case RARCH_FRAMEADVANCE:
       	if(g_console.frame_advance_enable)
 	{
 		g_console.menu_enable = true;
@@ -311,9 +311,9 @@ static bool ps3_key_pressed(void *data, int key)
 		g_console.mode_switch = MODE_MENU;
 	}
 	 return false;
-      case SSNES_REWIND:
+      case RARCH_REWIND:
          return CTRL_RSTICK_UP(state[0]) && CTRL_R2(~state[0]);
-      case SSNES_QUIT_KEY:
+      case RARCH_QUIT_KEY:
 	 if(IS_TIMER_EXPIRED(g_console.timer_expiration_frame_count))
 	 {
             uint32_t r3_pressed = CTRL_R3(state[0]);

@@ -28,7 +28,7 @@
 #include "state_tracker.h"
 #endif
 
-//#define SSNES_CG_DEBUG
+//#define RARCH_CG_DEBUG
 
 // Used when we call deactivate() since just unbinding the program didn't seem to work... :(
 static const char *stock_cg_program =
@@ -57,7 +57,7 @@ static const char *stock_cg_program =
 
 static char *menu_cg_program;
 
-#ifdef SSNES_CG_DEBUG
+#ifdef RARCH_CG_DEBUG
 static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
 {
    (void)ctx;
@@ -66,18 +66,18 @@ static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
    switch (error)
    {
       case CG_INVALID_PARAM_HANDLE_ERROR:
-         SSNES_ERR("Invalid param handle.\n");
+         RARCH_ERR("Invalid param handle.\n");
          break;
 
       case CG_INVALID_PARAMETER_ERROR:
-         SSNES_ERR("Invalid parameter.\n");
+         RARCH_ERR("Invalid parameter.\n");
          break;
 
       default:
          break;
    }
 
-   SSNES_ERR("CG error!: \"%s\".\n", cgGetErrorString(error));
+   RARCH_ERR("CG error!: \"%s\".\n", cgGetErrorString(error));
 }
 #endif
 
@@ -113,7 +113,7 @@ struct cg_program
    CGparameter frame_dir_v;
    CGparameter mvp;
 
-   struct cg_fbo_params fbo[SSNES_CG_MAX_SHADERS];
+   struct cg_fbo_params fbo[RARCH_CG_MAX_SHADERS];
    struct cg_fbo_params orig;
    struct cg_fbo_params prev[PREV_TEXTURES];
 };
@@ -122,20 +122,20 @@ struct cg_program
 #define FILTER_LINEAR 1
 #define FILTER_NEAREST 2
 
-static struct cg_program prg[SSNES_CG_MAX_SHADERS];
+static struct cg_program prg[RARCH_CG_MAX_SHADERS];
 static const char **cg_arguments;
 static bool cg_active = false;
 static CGprofile cgVProf, cgFProf;
 static unsigned active_index = 0;
 static unsigned cg_shader_num = 0;
-static struct gl_fbo_scale cg_scale[SSNES_CG_MAX_SHADERS];
-static unsigned fbo_smooth[SSNES_CG_MAX_SHADERS];
+static struct gl_fbo_scale cg_scale[RARCH_CG_MAX_SHADERS];
+static unsigned fbo_smooth[RARCH_CG_MAX_SHADERS];
 
 static GLuint lut_textures[MAX_TEXTURES];
 static unsigned lut_textures_num = 0;
 static char lut_textures_uniform[MAX_TEXTURES][64];
 
-static CGparameter cg_attribs[PREV_TEXTURES + 1 + SSNES_CG_MAX_SHADERS];
+static CGparameter cg_attribs[PREV_TEXTURES + 1 + RARCH_CG_MAX_SHADERS];
 static unsigned cg_attrib_index;
 
 #ifdef HAVE_CONFIGFILE
@@ -185,7 +185,7 @@ void gl_cg_set_params(unsigned width, unsigned height,
    set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count);
    set_param_1f(prg[active_index].frame_dir_v, g_extern.frame_is_reverse ? -1.0 : 1.0);
 
-   if (active_index == SSNES_CG_MENU_SHADER_INDEX)
+   if (active_index == RARCH_CG_MENU_SHADER_INDEX)
       return;
 
    // Set orig texture.
@@ -294,7 +294,7 @@ static void gl_cg_deinit_progs(void)
    cgGLUnbindProgram(cgVProf);
 
    // Programs may alias [0].
-   for (unsigned i = 1; i < SSNES_CG_MAX_SHADERS; i++)
+   for (unsigned i = 1; i < RARCH_CG_MAX_SHADERS; i++)
    {
       if (prg[i].fprg != prg[0].fprg)
          cgDestroyProgram(prg[i].fprg);
@@ -404,11 +404,11 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
 
    if (!prg[index].fprg || !prg[index].vprg)
    {
-      SSNES_ERR("CG error: %s\n", cgGetErrorString(cgGetError()));
+      RARCH_ERR("CG error: %s\n", cgGetErrorString(cgGetError()));
       if (listing_f)
-         SSNES_ERR("Fragment:\n%s\n", listing_f);
+         RARCH_ERR("Fragment:\n%s\n", listing_f);
       else if (listing_v)
-         SSNES_ERR("Vertex:\n%s\n", listing_v);
+         RARCH_ERR("Vertex:\n%s\n", listing_v);
 
       ret = false;
       goto end;
@@ -427,7 +427,7 @@ static bool load_stock(void)
 {
    if (!load_program(0, stock_cg_program, false))
    {
-      SSNES_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
+      RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
       return false;
    }
 
@@ -439,7 +439,7 @@ static bool load_plain(const char *path)
    if (!load_stock())
       return false;
 
-   SSNES_LOG("Loading Cg file: %s\n", path);
+   RARCH_LOG("Loading Cg file: %s\n", path);
 
    if (!load_program(1, path, true))
       return false;
@@ -462,7 +462,7 @@ static bool load_plain(const char *path)
 
 static bool load_menu_shader(void)
 {
-   return load_program(SSNES_CG_MENU_SHADER_INDEX, menu_cg_program, true);
+   return load_program(RARCH_CG_MENU_SHADER_INDEX, menu_cg_program, true);
 }
 
 #define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
@@ -506,7 +506,7 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
       char path[PATH_MAX];
       if (!config_get_array(conf, id, path, sizeof(path)))
       {
-         SSNES_ERR("Cannot find path to texture \"%s\" ...\n", id);
+         RARCH_ERR("Cannot find path to texture \"%s\" ...\n", id);
          ret = false;
          goto end;
       }
@@ -531,11 +531,11 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
       else
          print_buf(image_path, "%s%s", dir_path, path);
 
-      SSNES_LOG("Loading image from: \"%s\".\n", image_path);
+      RARCH_LOG("Loading image from: \"%s\".\n", image_path);
       struct texture_image img;
       if (!texture_image_load(image_path, &img))
       {
-         SSNES_ERR("Failed to load picture ...\n");
+         RARCH_ERR("Failed to load picture ...\n");
          ret = false;
          goto end;
       }
@@ -594,38 +594,38 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
    
       if (!semantic)
       {
-         SSNES_ERR("No semantic for import variable.\n");
+         RARCH_ERR("No semantic for import variable.\n");
          ret = false;
          goto end;
       }
 
       enum state_tracker_type tracker_type;
-      enum state_ram_type ram_type = SSNES_STATE_NONE;
+      enum state_ram_type ram_type = RARCH_STATE_NONE;
 
       if (strcmp(semantic, "capture") == 0)
-         tracker_type = SSNES_STATE_CAPTURE;
+         tracker_type = RARCH_STATE_CAPTURE;
       else if (strcmp(semantic, "transition") == 0)
-         tracker_type = SSNES_STATE_TRANSITION;
+         tracker_type = RARCH_STATE_TRANSITION;
       else if (strcmp(semantic, "transition_count") == 0)
-         tracker_type = SSNES_STATE_TRANSITION_COUNT;
+         tracker_type = RARCH_STATE_TRANSITION_COUNT;
       else if (strcmp(semantic, "capture_previous") == 0)
-         tracker_type = SSNES_STATE_CAPTURE_PREV;
+         tracker_type = RARCH_STATE_CAPTURE_PREV;
       else if (strcmp(semantic, "transition_previous") == 0)
-         tracker_type = SSNES_STATE_TRANSITION_PREV;
+         tracker_type = RARCH_STATE_TRANSITION_PREV;
 #ifdef HAVE_PYTHON
       else if (strcmp(semantic, "python") == 0)
-         tracker_type = SSNES_STATE_PYTHON;
+         tracker_type = RARCH_STATE_PYTHON;
 #endif
       else
       {
-         SSNES_ERR("Invalid semantic.\n");
+         RARCH_ERR("Invalid semantic.\n");
          ret = false;
          goto end;
       }
 
       unsigned addr = 0;
 #ifdef HAVE_PYTHON
-      if (tracker_type != SSNES_STATE_PYTHON)
+      if (tracker_type != RARCH_STATE_PYTHON)
 #endif
       {
          unsigned input_slot = 0;
@@ -634,24 +634,24 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
             switch (input_slot)
             {
                case 1:
-                  ram_type = SSNES_STATE_INPUT_SLOT1;
+                  ram_type = RARCH_STATE_INPUT_SLOT1;
                   break;
 
                case 2:
-                  ram_type = SSNES_STATE_INPUT_SLOT2;
+                  ram_type = RARCH_STATE_INPUT_SLOT2;
                   break;
 
                default:
-                  SSNES_ERR("Invalid input slot for import.\n");
+                  RARCH_ERR("Invalid input slot for import.\n");
                   ret = false;
                   goto end;
             }
          }
          else if (config_get_hex(conf, wram_buf, &addr))
-            ram_type = SSNES_STATE_WRAM;
+            ram_type = RARCH_STATE_WRAM;
          else
          {
-            SSNES_ERR("No address assigned to semantic.\n");
+            RARCH_ERR("No address assigned to semantic.\n");
             ret = false;
             goto end;
          }
@@ -660,7 +660,7 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
       unsigned memtype;
       switch (ram_type)
       {
-         case SSNES_STATE_WRAM:
+         case RARCH_STATE_WRAM:
             memtype = RETRO_MEMORY_SYSTEM_RAM;
             break;
 
@@ -670,7 +670,7 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
 
       if ((memtype != -1u) && (addr >= pretro_get_memory_size(memtype)))
       {
-         SSNES_ERR("Address out of bounds.\n");
+         RARCH_ERR("Address out of bounds.\n");
          ret = false;
          goto end;
       }
@@ -715,7 +715,7 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
 
    state_tracker = state_tracker_init(&tracker_info);
    if (!state_tracker)
-      SSNES_WARN("Failed to initialize state tracker.\n");
+      RARCH_WARN("Failed to initialize state tracker.\n");
 
 #ifdef HAVE_PYTHON
    if (script)
@@ -745,11 +745,11 @@ static bool load_shader(const char *dir_path, unsigned i, config_file_t *conf)
    }
    else
    {
-      SSNES_ERR("Didn't find shader path in config ...\n");
+      RARCH_ERR("Didn't find shader path in config ...\n");
       return false;
    }
 
-   SSNES_LOG("Loading Cg shader: \"%s\".\n", path_buf);
+   RARCH_LOG("Loading Cg shader: \"%s\".\n", path_buf);
 
    if (!load_program(i + 1, path_buf, true))
       return false;
@@ -796,8 +796,8 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
    struct gl_fbo_scale *scale = &cg_scale[i + 1]; // Shader 0 is passthrough shader. Start at 1.
 
    scale->valid = true;
-   scale->type_x = SSNES_SCALE_INPUT;
-   scale->type_y = SSNES_SCALE_INPUT;
+   scale->type_x = RARCH_SCALE_INPUT;
+   scale->type_y = RARCH_SCALE_INPUT;
    scale->scale_x = 1.0;
    scale->scale_y = 1.0;
 
@@ -806,32 +806,32 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
    scale->abs_y = geom->base_height;
 
    if (strcmp(scale_type_x, "source") == 0)
-      scale->type_x = SSNES_SCALE_INPUT;
+      scale->type_x = RARCH_SCALE_INPUT;
    else if (strcmp(scale_type_x, "viewport") == 0)
-      scale->type_x = SSNES_SCALE_VIEWPORT;
+      scale->type_x = RARCH_SCALE_VIEWPORT;
    else if (strcmp(scale_type_x, "absolute") == 0)
-      scale->type_x = SSNES_SCALE_ABSOLUTE;
+      scale->type_x = RARCH_SCALE_ABSOLUTE;
    else
    {
-      SSNES_ERR("Invalid attribute.\n");
+      RARCH_ERR("Invalid attribute.\n");
       ret = false;
       goto end;
    }
 
    if (strcmp(scale_type_y, "source") == 0)
-      scale->type_y = SSNES_SCALE_INPUT;
+      scale->type_y = RARCH_SCALE_INPUT;
    else if (strcmp(scale_type_y, "viewport") == 0)
-      scale->type_y = SSNES_SCALE_VIEWPORT;
+      scale->type_y = RARCH_SCALE_VIEWPORT;
    else if (strcmp(scale_type_y, "absolute") == 0)
-      scale->type_y = SSNES_SCALE_ABSOLUTE;
+      scale->type_y = RARCH_SCALE_ABSOLUTE;
    else
    {
-      SSNES_ERR("Invalid attribute.\n");
+      RARCH_ERR("Invalid attribute.\n");
       ret = false;
       goto end;
    }
 
-   if (scale->type_x == SSNES_SCALE_ABSOLUTE)
+   if (scale->type_x == RARCH_SCALE_ABSOLUTE)
    {
       print_buf(attr_name_buf, "scale%u", i);
       if (config_get_int(conf, attr_name_buf, &iattr))
@@ -856,7 +856,7 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
       }
    }
 
-   if (scale->type_y == SSNES_SCALE_ABSOLUTE)
+   if (scale->type_y == RARCH_SCALE_ABSOLUTE)
    {
       print_buf(attr_name_buf, "scale%u", i);
       if (config_get_int(conf, attr_name_buf, &iattr))
@@ -901,34 +901,34 @@ static bool load_preset(const char *path)
    char dir_path[PATH_MAX];
    char *ptr = NULL;
 
-   SSNES_LOG("Loading Cg meta-shader: %s\n", path);
+   RARCH_LOG("Loading Cg meta-shader: %s\n", path);
    config_file_t *conf = config_file_new(path);
    if (!conf)
    {
-      SSNES_ERR("Failed to load preset.\n");
+      RARCH_ERR("Failed to load preset.\n");
       ret = false;
       goto end;
    }
 
    if (!config_get_int(conf, "shaders", &shaders))
    {
-      SSNES_ERR("Cannot find \"shaders\" param.\n");
+      RARCH_ERR("Cannot find \"shaders\" param.\n");
       ret = false;
       goto end;
    }
 
    if (shaders < 1)
    {
-      SSNES_ERR("Need to define at least 1 shader.\n");
+      RARCH_ERR("Need to define at least 1 shader.\n");
       ret = false;
       goto end;
    }
 
    cg_shader_num = shaders;
-   if (shaders > SSNES_CG_MAX_SHADERS - 3)
+   if (shaders > RARCH_CG_MAX_SHADERS - 3)
    {
-      SSNES_WARN("Too many shaders ... Capping shader amount to %d.\n", SSNES_CG_MAX_SHADERS - 3);
-      cg_shader_num = shaders = SSNES_CG_MAX_SHADERS - 3;
+      RARCH_WARN("Too many shaders ... Capping shader amount to %d.\n", RARCH_CG_MAX_SHADERS - 3);
+      cg_shader_num = shaders = RARCH_CG_MAX_SHADERS - 3;
    }
    // If we aren't using last pass non-FBO shader, 
    // this shader will be assumed to be "fixed-function".
@@ -958,14 +958,14 @@ static bool load_preset(const char *path)
    {
       if (!load_shader_params(i, conf))
       {
-         SSNES_ERR("Failed to load shader params ...\n");
+         RARCH_ERR("Failed to load shader params ...\n");
          ret = false;
          goto end;
       }
 
       if (!load_shader(dir_path, i, conf))
       {
-         SSNES_ERR("Failed to load shaders ...\n");
+         RARCH_ERR("Failed to load shaders ...\n");
          ret = false;
          goto end;
       }
@@ -973,14 +973,14 @@ static bool load_preset(const char *path)
 
    if (!load_textures(dir_path, conf))
    {
-      SSNES_ERR("Failed to load lookup textures ...\n");
+      RARCH_ERR("Failed to load lookup textures ...\n");
       ret = false;
       goto end;
    }
 
    if (!load_imports(dir_path, conf))
    {
-      SSNES_ERR("Failed to load imports ...\n");
+      RARCH_ERR("Failed to load imports ...\n");
       ret = false;
       goto end;
    }
@@ -992,7 +992,7 @@ end:
 
 #else
    (void)path;
-   SSNES_ERR("No config file support compiled in.\n");
+   RARCH_ERR("No config file support compiled in.\n");
    return false;
 #endif
 }
@@ -1016,7 +1016,7 @@ static void set_program_attributes(unsigned i)
    if (prg[i].mvp)
       cgGLSetStateMatrixParameter(prg[i].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 
-   if (i == SSNES_CG_MENU_SHADER_INDEX)
+   if (i == RARCH_CG_MENU_SHADER_INDEX)
       return;
 
    prg[i].orig.tex = cgGetNamedParameter(prg[i].fprg, "ORIG.texture");
@@ -1089,11 +1089,11 @@ bool gl_cg_init(const char *path)
 
    if (cgCtx == NULL)
    {
-      SSNES_ERR("Failed to create Cg context\n");
+      RARCH_ERR("Failed to create Cg context\n");
       return false;
    }
 
-#ifdef SSNES_CG_DEBUG
+#ifdef RARCH_CG_DEBUG
    cgGLSetDebugMode(CG_TRUE);
    cgSetErrorHandler(cg_error_handler, NULL);
 #endif
@@ -1102,7 +1102,7 @@ bool gl_cg_init(const char *path)
    cgVProf = cgGLGetLatestProfile(CG_GL_VERTEX);
    if (cgFProf == CG_PROFILE_UNKNOWN || cgVProf == CG_PROFILE_UNKNOWN)
    {
-      SSNES_ERR("Invalid profile type\n");
+      RARCH_ERR("Invalid profile type\n");
       return false;
    }
    cgGLSetOptimalOptions(cgFProf);
@@ -1132,7 +1132,7 @@ bool gl_cg_init(const char *path)
       set_program_attributes(i);
 
    if (menu_cg_program)
-      set_program_attributes(SSNES_CG_MENU_SHADER_INDEX);
+      set_program_attributes(RARCH_CG_MENU_SHADER_INDEX);
 
    cgGLBindProgram(prg[1].fprg);
    cgGLBindProgram(prg[1].vprg);

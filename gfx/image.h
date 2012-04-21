@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_IMAGE_H
-#define __SSNES_IMAGE_H
+#ifndef __RARCH_IMAGE_H
+#define __RARCH_IMAGE_H
 
 #include <stdint.h>
 #include "../boolean.h"

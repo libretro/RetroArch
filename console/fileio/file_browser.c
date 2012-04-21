@@ -204,7 +204,7 @@ const char * path, const char * extensions)
    error:
    if(error)
    {
-      SSNES_ERR("Failed to open directory: \"%s\"\n", path);
+      RARCH_ERR("Failed to open directory: \"%s\"\n", path);
    }
 #ifdef _XBOX
    FindClose(hFind);

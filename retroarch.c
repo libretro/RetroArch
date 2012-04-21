@@ -107,12 +107,12 @@ static void take_screenshot(void)
    const char *msg = NULL;
    if (ret)
    {
-      SSNES_LOG("Taking screenshot.\n");
+      RARCH_LOG("Taking screenshot.\n");
       msg = "Taking screenshot.";
    }
    else
    {
-      SSNES_WARN("Failed to take screenshot ...\n");
+      RARCH_WARN("Failed to take screenshot ...\n");
       msg = "Failed to take screenshot.";
    }
 
@@ -121,7 +121,7 @@ static void take_screenshot(void)
    if (g_extern.is_paused)
    {
       msg_queue_push(g_extern.msg_queue, msg, 1, 1);
-      ssnes_render_cached_frame();
+      rarch_render_cached_frame();
    }
    else
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
@@ -148,7 +148,7 @@ static void readjust_audio_input_rate(void)
 
 static void video_frame(const void *data, unsigned width, unsigned height, size_t pitch)
 {
-#ifndef SSNES_CONSOLE
+#ifndef RARCH_CONSOLE
    if (!g_extern.video_active)
       return;
 #endif
@@ -213,11 +213,11 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 }
 
 #ifdef HAVE_GRIFFIN
-#include "console/griffin/ssnes_func_hooks.h"
+#include "console/griffin/rarch_func_hooks.h"
 #endif
 
 #ifndef HAVE_GRIFFIN_OVERRIDE_VIDEO_FRAME_FUNC
-void ssnes_render_cached_frame(void)
+void rarch_render_cached_frame(void)
 {
 #ifdef HAVE_FFMPEG
    // Cannot allow FFmpeg recording when pushing duped frames.
@@ -265,11 +265,11 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
    audio_convert_s16_to_float(g_extern.audio_data.data, data, samples);
 
-   ssnes_dsp_output_t dsp_output = {0};
-   dsp_output.should_resample = SSNES_TRUE;
+   rarch_dsp_output_t dsp_output = {0};
+   dsp_output.should_resample = RARCH_TRUE;
 
 #ifdef HAVE_DYLIB
-   ssnes_dsp_input_t dsp_input = {0};
+   rarch_dsp_input_t dsp_input = {0};
    dsp_input.samples = g_extern.audio_data.data;
    dsp_input.frames = samples / 2;
 
@@ -409,7 +409,7 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
    };
 
    int16_t res = 0;
-   if (id < SSNES_FIRST_META_KEY)
+   if (id < RARCH_FIRST_META_KEY)
       res = input_input_state_func(binds, port, device, index, id);
 
 #ifdef HAVE_BSV_MOVIE
@@ -421,11 +421,11 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
 }
 
 #ifdef _WIN32
-#define SSNES_DEFAULT_CONF_PATH_STR "\n\t\tDefaults to ssnes.cfg in same directory as ssnes.exe."
+#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tDefaults to ssnes.cfg in same directory as ssnes.exe."
 #elif defined(__APPLE__)
-#define SSNES_DEFAULT_CONF_PATH_STR " Defaults to $HOME/.ssnes.cfg."
+#define RARCH_DEFAULT_CONF_PATH_STR " Defaults to $HOME/.ssnes.cfg."
 #else
-#define SSNES_DEFAULT_CONF_PATH_STR " Defaults to $XDG_CONFIG_HOME/ssnes/ssnes.cfg,\n\t\tor $HOME/.ssnes.cfg, if $XDG_CONFIG_HOME is not defined."
+#define RARCH_DEFAULT_CONF_PATH_STR " Defaults to $XDG_CONFIG_HOME/ssnes/ssnes.cfg,\n\t\tor $HOME/.ssnes.cfg, if $XDG_CONFIG_HOME is not defined."
 #endif
 
 #include "config.features.h"
@@ -500,7 +500,7 @@ static void print_help(void)
    puts("\t-f/--fullscreen: Start RetroArch in fullscreen regardless of config settings.");
    puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
 #ifdef HAVE_CONFIGFILE
-   puts("\t-c/--config: Path for config file." SSNES_DEFAULT_CONF_PATH_STR);
+   puts("\t-c/--config: Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
 #endif
 #ifdef HAVE_DYNAMIC
    puts("\t-L/--libretro: Path to libretro implementation. Overrides any config setting.");
@@ -563,12 +563,12 @@ static void set_paths(const char *path)
 {
    set_basename(path);
 
-   SSNES_LOG("Opening file: \"%s\"\n", path);
+   RARCH_LOG("Opening file: \"%s\"\n", path);
    g_extern.rom_file = fopen(path, "rb");
    if (g_extern.rom_file == NULL)
    {
-      SSNES_ERR("Could not open file: \"%s\"\n", path);
-      ssnes_fail(1, "set_paths()");
+      RARCH_ERR("Could not open file: \"%s\"\n", path);
+      rarch_fail(1, "set_paths()");
    }
 
    if (!g_extern.has_set_save_path)
@@ -579,23 +579,23 @@ static void set_paths(const char *path)
    if (path_is_directory(g_extern.savefile_name_srm))
    {
       fill_pathname_dir(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
-      SSNES_LOG("Redirecting save file to \"%s\".\n", g_extern.savefile_name_srm);
+      RARCH_LOG("Redirecting save file to \"%s\".\n", g_extern.savefile_name_srm);
    }
    if (path_is_directory(g_extern.savestate_name))
    {
       fill_pathname_dir(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
-      SSNES_LOG("Redirecting save state to \"%s\".\n", g_extern.savestate_name);
+      RARCH_LOG("Redirecting save state to \"%s\".\n", g_extern.savestate_name);
    }
 
 #ifdef HAVE_CONFIGFILE
    if (*g_extern.config_path && path_is_directory(g_extern.config_path))
    {
       fill_pathname_dir(g_extern.config_path, g_extern.basename, ".cfg", sizeof(g_extern.config_path));
-      SSNES_LOG("Redirecting config file to \"%s\".\n", g_extern.config_path);
+      RARCH_LOG("Redirecting config file to \"%s\".\n", g_extern.config_path);
       if (!path_file_exists(g_extern.config_path))
       {
          *g_extern.config_path = '\0';
-         SSNES_LOG("Did not find config file. Using system default.\n");
+         RARCH_LOG("Did not find config file. Using system default.\n");
       }
    }
 #endif
@@ -605,36 +605,36 @@ static void verify_stdin_paths(void)
 {
    if (strlen(g_extern.savefile_name_srm) == 0)
    {
-      SSNES_ERR("Need savefile path argument (--save) when reading rom from stdin.\n");
+      RARCH_ERR("Need savefile path argument (--save) when reading rom from stdin.\n");
       print_help();
-      ssnes_fail(1, "verify_stdin_paths()");
+      rarch_fail(1, "verify_stdin_paths()");
    }
    else if (strlen(g_extern.savestate_name) == 0)
    {
-      SSNES_ERR("Need savestate path argument (--savestate) when reading rom from stdin.\n");
+      RARCH_ERR("Need savestate path argument (--savestate) when reading rom from stdin.\n");
       print_help();
-      ssnes_fail(1, "verify_stdin_paths()");
+      rarch_fail(1, "verify_stdin_paths()");
    }
 
    if (path_is_directory(g_extern.savefile_name_srm))
    {
-      SSNES_ERR("Cannot specify directory for path argument (--save) when reading from stdin.\n");
+      RARCH_ERR("Cannot specify directory for path argument (--save) when reading from stdin.\n");
       print_help();
-      ssnes_fail(1, "verify_stdin_paths()");
+      rarch_fail(1, "verify_stdin_paths()");
    }
    else if (path_is_directory(g_extern.savestate_name))
    {
-      SSNES_ERR("Cannot specify directory for path argument (--savestate) when reading from stdin.\n");
+      RARCH_ERR("Cannot specify directory for path argument (--savestate) when reading from stdin.\n");
       print_help();
-      ssnes_fail(1, "verify_stdin_paths()");
+      rarch_fail(1, "verify_stdin_paths()");
    }
 
 #ifdef HAVE_CONFIGFILE
    else if (path_is_directory(g_extern.config_path))
    {
-      SSNES_ERR("Cannot specify directory for config file (--config) when reading from stdin.\n");
+      RARCH_ERR("Cannot specify directory for config file (--config) when reading from stdin.\n");
       print_help();
-      ssnes_fail(1, "verify_stdin_paths()");
+      rarch_fail(1, "verify_stdin_paths()");
    }
 #endif
 }
@@ -644,7 +644,7 @@ static void parse_input(int argc, char *argv[])
    if (argc < 2)
    {
       print_help();
-      ssnes_fail(1, "parse_input()");
+      rarch_fail(1, "parse_input()");
    }
 
    // Make sure we can call parse_input several times ...
@@ -771,27 +771,27 @@ static void parse_input(int argc, char *argv[])
 
          case 'g':
             strlcpy(g_extern.gb_rom_path, optarg, sizeof(g_extern.gb_rom_path));
-            g_extern.game_type = SSNES_CART_SGB;
+            g_extern.game_type = RARCH_CART_SGB;
             break;
 
          case 'b':
             strlcpy(g_extern.bsx_rom_path, optarg, sizeof(g_extern.bsx_rom_path));
-            g_extern.game_type = SSNES_CART_BSX;
+            g_extern.game_type = RARCH_CART_BSX;
             break;
 
          case 'B':
             strlcpy(g_extern.bsx_rom_path, optarg, sizeof(g_extern.bsx_rom_path));
-            g_extern.game_type = SSNES_CART_BSX_SLOTTED;
+            g_extern.game_type = RARCH_CART_BSX_SLOTTED;
             break;
 
          case 'Y':
             strlcpy(g_extern.sufami_rom_path[0], optarg, sizeof(g_extern.sufami_rom_path[0]));
-            g_extern.game_type = SSNES_CART_SUFAMI;
+            g_extern.game_type = RARCH_CART_SUFAMI;
             break;
 
          case 'Z':
             strlcpy(g_extern.sufami_rom_path[1], optarg, sizeof(g_extern.sufami_rom_path[1]));
-            g_extern.game_type = SSNES_CART_SUFAMI;
+            g_extern.game_type = RARCH_CART_SUFAMI;
             break;
 
          case 'S':
@@ -807,9 +807,9 @@ static void parse_input(int argc, char *argv[])
             port = strtol(optarg, NULL, 0);
             if (port < 1 || port > 2)
             {
-               SSNES_ERR("Connect mouse to port 1 or 2.\n");
+               RARCH_ERR("Connect mouse to port 1 or 2.\n");
                print_help();
-               ssnes_fail(1, "parse_input()");
+               rarch_fail(1, "parse_input()");
             }
             g_extern.has_mouse[port - 1] = true;
             break;
@@ -818,9 +818,9 @@ static void parse_input(int argc, char *argv[])
             port = strtol(optarg, NULL, 0);
             if (port < 1 || port > 2)
             {
-               SSNES_ERR("Disconnected device from port 1 or 2.\n");
+               RARCH_ERR("Disconnected device from port 1 or 2.\n");
                print_help();
-               ssnes_fail(1, "parse_input()");
+               rarch_fail(1, "parse_input()");
             }
             g_extern.disconnect_device[port - 1] = true;
             break;
@@ -869,9 +869,9 @@ static void parse_input(int argc, char *argv[])
                g_extern.sram_save_disable = true;
             else if (strcmp(optarg, "load-save") != 0)
             {
-               SSNES_ERR("Invalid argument in --sram-mode.\n");
+               RARCH_ERR("Invalid argument in --sram-mode.\n");
                print_help();
-               ssnes_fail(1, "parse_input()");
+               rarch_fail(1, "parse_input()");
             }
             break;
 #endif
@@ -947,18 +947,18 @@ static void parse_input(int argc, char *argv[])
                   g_extern.record_width = strtoul(optarg, &ptr, 0);
                   if ((*ptr != 'x') || errno)
                   {
-                     SSNES_ERR("Wrong format for --size.\n");
+                     RARCH_ERR("Wrong format for --size.\n");
                      print_help();
-                     ssnes_fail(1, "parse_input()");
+                     rarch_fail(1, "parse_input()");
                   }
 
                   ptr++;
                   g_extern.record_height = strtoul(ptr, &ptr, 0);
                   if ((*ptr != '\0') || errno)
                   {
-                     SSNES_ERR("Wrong format for --size.\n");
+                     RARCH_ERR("Wrong format for --size.\n");
                      print_help();
-                     ssnes_fail(1, "parse_input()");
+                     rarch_fail(1, "parse_input()");
                   }
                   break;
                }
@@ -974,11 +974,11 @@ static void parse_input(int argc, char *argv[])
 
          case '?':
             print_help();
-            ssnes_fail(1, "parse_input()");
+            rarch_fail(1, "parse_input()");
 
          default:
-            SSNES_ERR("Error parsing arguments.\n");
-            ssnes_fail(1, "parse_input()");
+            RARCH_ERR("Error parsing arguments.\n");
+            rarch_fail(1, "parse_input()");
       }
    }
 
@@ -993,17 +993,17 @@ static void init_controllers(void)
 {
    if (g_extern.has_justifier)
    {
-      SSNES_LOG("Connecting Justifier to port 2.\n");
+      RARCH_LOG("Connecting Justifier to port 2.\n");
       pretro_set_controller_port_device(1, RETRO_DEVICE_LIGHTGUN_JUSTIFIER);
    }
    else if (g_extern.has_justifiers)
    {
-      SSNES_LOG("Connecting Justifiers to port 2.\n");
+      RARCH_LOG("Connecting Justifiers to port 2.\n");
       pretro_set_controller_port_device(1, RETRO_DEVICE_LIGHTGUN_JUSTIFIERS);
    }
    else if (g_extern.has_multitap)
    {
-      SSNES_LOG("Connecting Multitap to port 2.\n");
+      RARCH_LOG("Connecting Multitap to port 2.\n");
       pretro_set_controller_port_device(1, RETRO_DEVICE_JOYPAD_MULTITAP);
    }
    else
@@ -1012,17 +1012,17 @@ static void init_controllers(void)
       {
          if (g_extern.disconnect_device[i])
          {
-            SSNES_LOG("Disconnecting device from port %u.\n", i + 1);
+            RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
             pretro_set_controller_port_device(i, RETRO_DEVICE_NONE);
          }
          else if (g_extern.has_mouse[i])
          {
-            SSNES_LOG("Connecting mouse to port %u.\n", i + 1);
+            RARCH_LOG("Connecting mouse to port %u.\n", i + 1);
             pretro_set_controller_port_device(i, RETRO_DEVICE_MOUSE);
          }
          else if (g_extern.has_scope[i])
          {
-            SSNES_LOG("Connecting scope to port %u.\n", i + 1);
+            RARCH_LOG("Connecting scope to port %u.\n", i + 1);
             pretro_set_controller_port_device(i, RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE);
          }
       }
@@ -1033,23 +1033,23 @@ static inline void load_save_files(void)
 {
    switch (g_extern.game_type)
    {
-      case SSNES_CART_NORMAL:
+      case RARCH_CART_NORMAL:
          load_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SAVE_RAM);
          load_ram_file(g_extern.savefile_name_rtc, RETRO_MEMORY_RTC);
          break;
 
-      case SSNES_CART_SGB:
+      case RARCH_CART_SGB:
          save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_GAME_BOY_RAM);
          save_ram_file(g_extern.savefile_name_rtc, RETRO_MEMORY_SNES_GAME_BOY_RTC);
          break;
 
-      case SSNES_CART_BSX:
-      case SSNES_CART_BSX_SLOTTED:
+      case RARCH_CART_BSX:
+      case RARCH_CART_BSX_SLOTTED:
          load_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_BSX_RAM);
          load_ram_file(g_extern.savefile_name_psrm, RETRO_MEMORY_SNES_BSX_PRAM);
          break;
 
-      case SSNES_CART_SUFAMI:
+      case RARCH_CART_SUFAMI:
          load_ram_file(g_extern.savefile_name_asrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM);
          load_ram_file(g_extern.savefile_name_bsrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM);
          break;
@@ -1063,27 +1063,27 @@ static inline void save_files(void)
 {
    switch (g_extern.game_type)
    {
-      case SSNES_CART_NORMAL:
-         SSNES_LOG("Saving regular SRAM.\n");
+      case RARCH_CART_NORMAL:
+         RARCH_LOG("Saving regular SRAM.\n");
          save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SAVE_RAM);
          save_ram_file(g_extern.savefile_name_rtc, RETRO_MEMORY_RTC);
          break;
 
-      case SSNES_CART_SGB:
-         SSNES_LOG("Saving Gameboy SRAM.\n");
+      case RARCH_CART_SGB:
+         RARCH_LOG("Saving Gameboy SRAM.\n");
          save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_GAME_BOY_RAM);
          save_ram_file(g_extern.savefile_name_rtc, RETRO_MEMORY_SNES_GAME_BOY_RTC);
          break;
 
-      case SSNES_CART_BSX:
-      case SSNES_CART_BSX_SLOTTED:
-         SSNES_LOG("Saving BSX (P)RAM.\n");
+      case RARCH_CART_BSX:
+      case RARCH_CART_BSX_SLOTTED:
+         RARCH_LOG("Saving BSX (P)RAM.\n");
          save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_BSX_RAM);
          save_ram_file(g_extern.savefile_name_psrm, RETRO_MEMORY_SNES_BSX_PRAM);
          break;
 
-      case SSNES_CART_SUFAMI:
-         SSNES_LOG("Saving Sufami turbo A/B RAM.\n");
+      case RARCH_CART_SUFAMI:
+         RARCH_LOG("Saving Sufami turbo A/B RAM.\n");
          save_ram_file(g_extern.savefile_name_asrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM);
          save_ram_file(g_extern.savefile_name_bsrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM);
          break;
@@ -1102,7 +1102,7 @@ static void init_recording(void)
 
    double fps = g_extern.system.av_info.timing.fps;
    double samplerate = g_extern.system.av_info.timing.sample_rate;
-   SSNES_LOG("Custom timing given: FPS: %.4f, Sample rate: %.4f\n", (float)fps, (float)samplerate);
+   RARCH_LOG("Custom timing given: FPS: %.4f, Sample rate: %.4f\n", (float)fps, (float)samplerate);
 
    struct ffemu_params params = {0};
    const struct retro_system_av_info *info = &g_extern.system.av_info;
@@ -1144,11 +1144,11 @@ static void init_recording(void)
       params.fb_height = next_pow2(max_height);
    }
 
-   SSNES_LOG("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u 32-bit: %s)\n", g_extern.record_path, params.out_width, params.out_height, params.fb_width, params.fb_height, params.rgb32 ? "yes" : "no");
+   RARCH_LOG("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u 32-bit: %s)\n", g_extern.record_path, params.out_width, params.out_height, params.fb_width, params.fb_height, params.rgb32 ? "yes" : "no");
    g_extern.rec = ffemu_new(&params);
    if (!g_extern.rec)
    {
-      SSNES_ERR("Failed to start FFmpeg recording.\n");
+      RARCH_ERR("Failed to start FFmpeg recording.\n");
       g_extern.recording = false;
    }
 }
@@ -1165,7 +1165,7 @@ static void deinit_recording(void)
 
 static void init_msg_queue(void)
 {
-   ssnes_assert(g_extern.msg_queue = msg_queue_new(8));
+   rarch_assert(g_extern.msg_queue = msg_queue_new(8));
 }
 
 static void deinit_msg_queue(void)
@@ -1201,23 +1201,23 @@ static void init_rewind(void)
 
    if (!g_extern.state_buf)
    {
-      SSNES_ERR("Failed to allocate memory for rewind buffer.\n");
+      RARCH_ERR("Failed to allocate memory for rewind buffer.\n");
       return;
    }
 
    if (!pretro_serialize(g_extern.state_buf, g_extern.state_size))
    {
-      SSNES_ERR("Failed to perform initial serialization for rewind.\n");
+      RARCH_ERR("Failed to perform initial serialization for rewind.\n");
       free(g_extern.state_buf);
       g_extern.state_buf = NULL;
       return;
    }
 
-   SSNES_LOG("Initing rewind buffer with size: %u MB\n", (unsigned)(g_settings.rewind_buffer_size / 1000000));
+   RARCH_LOG("Initing rewind buffer with size: %u MB\n", (unsigned)(g_settings.rewind_buffer_size / 1000000));
    g_extern.state_manager = state_manager_new(aligned_state_size, g_settings.rewind_buffer_size, g_extern.state_buf);
 
    if (!g_extern.state_manager)
-      SSNES_WARN("Failed to init rewind buffer. Rewinding will be disabled.\n");
+      RARCH_WARN("Failed to init rewind buffer. Rewinding will be disabled.\n");
 }
 
 static void deinit_rewind(void)
@@ -1233,16 +1233,16 @@ static void init_movie(void)
 {
    if (g_extern.bsv.movie_start_playback)
    {
-      g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, SSNES_MOVIE_PLAYBACK);
+      g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, RARCH_MOVIE_PLAYBACK);
       if (!g_extern.bsv.movie)
       {
-         SSNES_ERR("Failed to load movie file: \"%s\".\n", g_extern.bsv.movie_start_path);
-         ssnes_fail(1, "init_movie()");
+         RARCH_ERR("Failed to load movie file: \"%s\".\n", g_extern.bsv.movie_start_path);
+         rarch_fail(1, "init_movie()");
       }
 
       g_extern.bsv.movie_playback = true;
       msg_queue_push(g_extern.msg_queue, "Starting movie playback.", 2, 180);
-      SSNES_LOG("Starting movie playback.\n");
+      RARCH_LOG("Starting movie playback.\n");
       g_settings.rewind_granularity = 1;
    }
    else if (g_extern.bsv.movie_start_recording)
@@ -1251,18 +1251,18 @@ static void init_movie(void)
       snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".",
             g_extern.bsv.movie_start_path);
 
-      g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, SSNES_MOVIE_RECORD);
+      g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, RARCH_MOVIE_RECORD);
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue,
             g_extern.bsv.movie ? msg : "Failed to start movie record.", 1, 180);
 
       if (g_extern.bsv.movie)
       {
-         SSNES_LOG("Starting movie record to \"%s\".\n", g_extern.bsv.movie_start_path);
+         RARCH_LOG("Starting movie record to \"%s\".\n", g_extern.bsv.movie_start_path);
          g_settings.rewind_granularity = 1;
       }
       else
-         SSNES_ERR("Failed to start movie record.\n");
+         RARCH_ERR("Failed to start movie record.\n");
    }
 }
 
@@ -1273,7 +1273,7 @@ static void deinit_movie(void)
 }
 #endif
 
-#define SSNES_DEFAULT_PORT 55435
+#define RARCH_DEFAULT_PORT 55435
 
 #ifdef HAVE_NETPLAY
 static void init_netplay(void)
@@ -1289,21 +1289,21 @@ static void init_netplay(void)
 
    if (*g_extern.netplay_server)
    {
-      SSNES_LOG("Connecting to netplay host...\n");
+      RARCH_LOG("Connecting to netplay host...\n");
       g_extern.netplay_is_client = true;
    }
    else
-      SSNES_LOG("Waiting for client...\n");
+      RARCH_LOG("Waiting for client...\n");
 
    g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL,
-         g_extern.netplay_port ? g_extern.netplay_port : SSNES_DEFAULT_PORT,
+         g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT,
          g_extern.netplay_sync_frames, &cbs, g_extern.netplay_is_spectate,
          g_extern.netplay_nick);
 
    if (!g_extern.netplay)
    {
       g_extern.netplay_is_client = false;
-      SSNES_WARN("Failed to init netplay ...\n");
+      RARCH_WARN("Failed to init netplay ...\n");
 
       if (g_extern.msg_queue)
       {
@@ -1362,22 +1362,22 @@ static void init_autosave(void)
 
    switch (g_extern.game_type)
    {
-      case SSNES_CART_BSX:
-      case SSNES_CART_BSX_SLOTTED:
+      case RARCH_CART_BSX:
+      case RARCH_CART_BSX_SLOTTED:
          ram_types[0] = RETRO_MEMORY_SNES_BSX_RAM;
          ram_types[1] = RETRO_MEMORY_SNES_BSX_PRAM;
          ram_paths[0] = g_extern.savefile_name_srm;
          ram_paths[1] = g_extern.savefile_name_psrm;
          break;
 
-      case SSNES_CART_SUFAMI:
+      case RARCH_CART_SUFAMI:
          ram_types[0] = RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM;
          ram_types[1] = RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM;
          ram_paths[0] = g_extern.savefile_name_asrm;
          ram_paths[1] = g_extern.savefile_name_bsrm;
          break;
 
-      case SSNES_CART_SGB:
+      case RARCH_CART_SGB:
          ram_types[0] = RETRO_MEMORY_SNES_GAME_BOY_RAM;
          ram_types[1] = RETRO_MEMORY_SNES_GAME_BOY_RTC;
          ram_paths[0] = g_extern.savefile_name_srm;
@@ -1402,7 +1402,7 @@ static void init_autosave(void)
                   pretro_get_memory_size(ram_types[i]), 
                   g_settings.autosave_interval);
             if (!g_extern.autosave[i])
-               SSNES_WARN("Could not initialize autosave.\n");
+               RARCH_WARN("Could not initialize autosave.\n");
          }
       }
    }
@@ -1462,15 +1462,15 @@ static void set_savestate_auto_index(void)
    dir_list_free(dir_list);
 
    g_extern.state_slot = max_index;
-   SSNES_LOG("Found last state slot: #%u\n", g_extern.state_slot);
+   RARCH_LOG("Found last state slot: #%u\n", g_extern.state_slot);
 }
 
 static void fill_pathnames(void)
 {
    switch (g_extern.game_type)
    {
-      case SSNES_CART_BSX:
-      case SSNES_CART_BSX_SLOTTED:
+      case RARCH_CART_BSX:
+      case RARCH_CART_BSX_SLOTTED:
          // BSX PSRM
          if (!g_extern.has_set_save_path)
          {
@@ -1488,9 +1488,9 @@ static void fill_pathnames(void)
          }
          break;
 
-      case SSNES_CART_SUFAMI:
+      case RARCH_CART_SUFAMI:
          if (g_extern.has_set_save_path && *g_extern.sufami_rom_path[0] && *g_extern.sufami_rom_path[1])
-            SSNES_WARN("Sufami Turbo SRAM paths will be inferred from their respective paths to avoid conflicts.\n");
+            RARCH_WARN("Sufami Turbo SRAM paths will be inferred from their respective paths to avoid conflicts.\n");
 
          // SUFAMI ARAM
          fill_pathname(g_extern.savefile_name_asrm,
@@ -1509,7 +1509,7 @@ static void fill_pathnames(void)
          }
          break;
 
-      case SSNES_CART_SGB:
+      case RARCH_CART_SGB:
          if (!g_extern.has_set_save_path)
          {
             fill_pathname(g_extern.savefile_name_srm,
@@ -1572,7 +1572,7 @@ static void load_auto_state(void)
 
    if (path_file_exists(savestate_name_auto))
    {
-      SSNES_LOG("Found auto savestate in: %s\n", savestate_name_auto);
+      RARCH_LOG("Found auto savestate in: %s\n", savestate_name_auto);
       load_state(savestate_name_auto);
 
       char msg[PATH_MAX];
@@ -1581,7 +1581,7 @@ static void load_auto_state(void)
    }
 }
 
-void ssnes_load_state(void)
+void rarch_load_state(void)
 {
    char load_path[PATH_MAX];
 
@@ -1600,7 +1600,7 @@ void ssnes_load_state(void)
    msg_queue_push(g_extern.msg_queue, msg, 2, 180);
 }
 
-void ssnes_save_state(void)
+void rarch_save_state(void)
 {
    if (g_settings.savestate_auto_index)
       g_extern.state_slot++;
@@ -1626,29 +1626,29 @@ void ssnes_save_state(void)
 static void check_savestates(bool immutable)
 {
    static bool old_should_savestate = false;
-   bool should_savestate = input_key_pressed_func(SSNES_SAVE_STATE_KEY);
+   bool should_savestate = input_key_pressed_func(RARCH_SAVE_STATE_KEY);
 
    if (should_savestate && !old_should_savestate)
-      ssnes_save_state();
+      rarch_save_state();
    old_should_savestate = should_savestate;
 
    if (!immutable)
    {
       static bool old_should_loadstate = false;
-      bool should_loadstate = input_key_pressed_func(SSNES_LOAD_STATE_KEY);
+      bool should_loadstate = input_key_pressed_func(RARCH_LOAD_STATE_KEY);
 
       if (!should_savestate && should_loadstate && !old_should_loadstate)
-         ssnes_load_state();
+         rarch_load_state();
       old_should_loadstate = should_loadstate;
    }
 }
 
-#ifndef SSNES_CONSOLE
+#ifndef RARCH_CONSOLE
 static bool check_fullscreen(void)
 {
    // If we go fullscreen we drop all drivers and reinit to be safe.
    static bool was_pressed = false;
-   bool pressed = input_key_pressed_func(SSNES_FULLSCREEN_TOGGLE_KEY);
+   bool pressed = input_key_pressed_func(RARCH_FULLSCREEN_TOGGLE_KEY);
    bool toggle = pressed && !was_pressed;
    if (toggle)
    {
@@ -1666,7 +1666,7 @@ static bool check_fullscreen(void)
 }
 #endif
 
-void ssnes_state_slot_increase(void)
+void rarch_state_slot_increase(void)
 {
    g_extern.state_slot++;
 
@@ -1683,10 +1683,10 @@ void ssnes_state_slot_increase(void)
    if (g_extern.msg_queue)
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
-   SSNES_LOG("%s\n", msg);
+   RARCH_LOG("%s\n", msg);
 }
 
-void ssnes_state_slot_decrease(void)
+void rarch_state_slot_decrease(void)
 {
    if (g_extern.state_slot > 0)
       g_extern.state_slot--;
@@ -1705,34 +1705,34 @@ void ssnes_state_slot_decrease(void)
    if (g_extern.msg_queue)
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
-   SSNES_LOG("%s\n", msg);
+   RARCH_LOG("%s\n", msg);
 }
 
 static void check_stateslots(void)
 {
    // Save state slots
    static bool old_should_slot_increase = false;
-   bool should_slot_increase = input_key_pressed_func(SSNES_STATE_SLOT_PLUS);
+   bool should_slot_increase = input_key_pressed_func(RARCH_STATE_SLOT_PLUS);
    if (should_slot_increase && !old_should_slot_increase)
-      ssnes_state_slot_increase();
+      rarch_state_slot_increase();
    old_should_slot_increase = should_slot_increase;
 
    static bool old_should_slot_decrease = false;
-   bool should_slot_decrease = input_key_pressed_func(SSNES_STATE_SLOT_MINUS);
+   bool should_slot_decrease = input_key_pressed_func(RARCH_STATE_SLOT_MINUS);
    if (should_slot_decrease && !old_should_slot_decrease)
-      ssnes_state_slot_decrease();
+      rarch_state_slot_decrease();
    old_should_slot_decrease = should_slot_decrease;
 }
 
 static void check_input_rate(void)
 {
    bool display = false;
-   if (input_key_pressed_func(SSNES_AUDIO_INPUT_RATE_PLUS))
+   if (input_key_pressed_func(RARCH_AUDIO_INPUT_RATE_PLUS))
    {
       g_settings.audio.in_rate += g_settings.audio.rate_step;
       display = true;
    }
-   else if (input_key_pressed_func(SSNES_AUDIO_INPUT_RATE_MINUS))
+   else if (input_key_pressed_func(RARCH_AUDIO_INPUT_RATE_MINUS))
    {
       g_settings.audio.in_rate -= g_settings.audio.rate_step;
       display = true;
@@ -1745,7 +1745,7 @@ static void check_input_rate(void)
 
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-      SSNES_LOG("%s\n", msg);
+      RARCH_LOG("%s\n", msg);
 
       g_extern.audio_data.src_ratio =
          (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
@@ -1792,7 +1792,7 @@ static void check_rewind(void)
    if (!g_extern.state_manager)
       return;
 
-   if (input_key_pressed_func(SSNES_REWIND))
+   if (input_key_pressed_func(RARCH_REWIND))
    {
       msg_queue_clear(g_extern.msg_queue);
       void *buf;
@@ -1835,7 +1835,7 @@ static void check_rewind(void)
 
 static void check_slowmotion(void)
 {
-   g_extern.is_slowmotion = input_key_pressed_func(SSNES_SLOWMOTION);
+   g_extern.is_slowmotion = input_key_pressed_func(RARCH_SLOWMOTION);
    if (g_extern.is_slowmotion)
    {
       msg_queue_clear(g_extern.msg_queue);
@@ -1850,7 +1850,7 @@ static void movie_record_toggle(void)
    {
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, "Stopping movie record.", 2, 180);
-      SSNES_LOG("Stopping movie record.\n");
+      RARCH_LOG("Stopping movie record.\n");
       bsv_movie_free(g_extern.bsv.movie);
       g_extern.bsv.movie = NULL;
    }
@@ -1873,14 +1873,14 @@ static void movie_record_toggle(void)
       char msg[PATH_MAX];
       snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
 
-      g_extern.bsv.movie = bsv_movie_init(path, SSNES_MOVIE_RECORD);
+      g_extern.bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ? msg : "Failed to start movie record.", 1, 180);
 
       if (g_extern.bsv.movie)
-         SSNES_LOG("Starting movie record to \"%s\".\n", path);
+         RARCH_LOG("Starting movie record to \"%s\".\n", path);
       else
-         SSNES_ERR("Failed to start movie record.\n");
+         RARCH_ERR("Failed to start movie record.\n");
    }
 }
 
@@ -1895,7 +1895,7 @@ static void check_movie_playback(bool pressed)
    if (g_extern.bsv.movie_end || pressed)
    {
       msg_queue_push(g_extern.msg_queue, "Movie playback ended.", 1, 180);
-      SSNES_LOG("Movie playback ended.\n");
+      RARCH_LOG("Movie playback ended.\n");
 
       bsv_movie_free(g_extern.bsv.movie);
       g_extern.bsv.movie = NULL;
@@ -1907,7 +1907,7 @@ static void check_movie_playback(bool pressed)
 static void check_movie(void)
 {
    static bool old_button = false;
-   bool new_button = input_key_pressed_func(SSNES_MOVIE_RECORD_TOGGLE);
+   bool new_button = input_key_pressed_func(RARCH_MOVIE_RECORD_TOGGLE);
    bool pressed = new_button && !old_button;
 
    if (g_extern.bsv.movie_playback)
@@ -1919,14 +1919,14 @@ static void check_movie(void)
 }
 #endif
 
-#ifndef SSNES_CONSOLE
+#ifndef RARCH_CONSOLE
 static void check_pause(void)
 {
    static bool old_state = false;
-   bool new_state = input_key_pressed_func(SSNES_PAUSE_TOGGLE);
+   bool new_state = input_key_pressed_func(RARCH_PAUSE_TOGGLE);
 
    // FRAMEADVANCE will set us into pause mode.
-   new_state |= !g_extern.is_paused && input_key_pressed_func(SSNES_FRAMEADVANCE);
+   new_state |= !g_extern.is_paused && input_key_pressed_func(RARCH_FRAMEADVANCE);
 
    static bool old_focus = true;
    bool focus = true;
@@ -1940,18 +1940,18 @@ static void check_pause(void)
 
       if (g_extern.is_paused)
       {
-         SSNES_LOG("Paused.\n");
+         RARCH_LOG("Paused.\n");
          if (driver.audio_data)
             audio_stop_func();
       }
       else 
       {
-         SSNES_LOG("Unpaused.\n");
+         RARCH_LOG("Unpaused.\n");
          if (driver.audio_data)
          {
             if (!audio_start_func())
             {
-               SSNES_ERR("Failed to resume audio driver. Will continue without audio.\n");
+               RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
                g_extern.audio_active = false;
             }
          }
@@ -1959,17 +1959,17 @@ static void check_pause(void)
    }
    else if (focus && !old_focus)
    {
-      SSNES_LOG("Unpaused.\n");
+      RARCH_LOG("Unpaused.\n");
       g_extern.is_paused = false;
       if (driver.audio_data && !audio_start_func())
       {
-         SSNES_ERR("Failed to resume audio driver. Will continue without audio.\n");
+         RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
          g_extern.audio_active = false;
       }
    }
    else if (!focus && old_focus)
    {
-      SSNES_LOG("Paused.\n");
+      RARCH_LOG("Paused.\n");
       g_extern.is_paused = true;
       if (driver.audio_data)
          audio_stop_func();
@@ -1983,20 +1983,20 @@ static void check_pause(void)
 static void check_oneshot(void)
 {
    static bool old_state = false;
-   bool new_state = input_key_pressed_func(SSNES_FRAMEADVANCE);
+   bool new_state = input_key_pressed_func(RARCH_FRAMEADVANCE);
    g_extern.is_oneshot = (new_state && !old_state);
    old_state = new_state;
 
    // Rewind buttons works like FRAMEREWIND when paused. We will one-shot in that case.
    static bool old_rewind_state = false;
-   bool new_rewind_state = input_key_pressed_func(SSNES_REWIND);
+   bool new_rewind_state = input_key_pressed_func(RARCH_REWIND);
    g_extern.is_oneshot |= new_rewind_state && !old_rewind_state;
    old_rewind_state = new_rewind_state;
 }
 
-void ssnes_game_reset(void)
+void rarch_game_reset(void)
 {
-   SSNES_LOG("Resetting game.\n");
+   RARCH_LOG("Resetting game.\n");
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, "Reset.", 1, 120);
    pretro_reset();
@@ -2006,9 +2006,9 @@ void ssnes_game_reset(void)
 static void check_reset(void)
 {
    static bool old_state = false;
-   bool new_state = input_key_pressed_func(SSNES_RESET);
+   bool new_state = input_key_pressed_func(RARCH_RESET);
    if (new_state && !old_state)
-      ssnes_game_reset();
+      rarch_game_reset();
 
    old_state = new_state;
 }
@@ -2023,8 +2023,8 @@ static void check_shader_dir(void)
       return;
 
    bool should_apply = false;
-   bool pressed_next = input_key_pressed_func(SSNES_SHADER_NEXT);
-   bool pressed_prev = input_key_pressed_func(SSNES_SHADER_PREV);
+   bool pressed_next = input_key_pressed_func(RARCH_SHADER_NEXT);
+   bool pressed_prev = input_key_pressed_func(RARCH_SHADER_PREV);
    if (pressed_next && !old_pressed_next)
    {
       should_apply = true;
@@ -2044,16 +2044,16 @@ static void check_shader_dir(void)
       const char *shader = g_extern.shader_dir.elems[g_extern.shader_dir.ptr];
 
       strlcpy(g_settings.video.bsnes_shader_path, shader, sizeof(g_settings.video.bsnes_shader_path));
-      g_settings.video.shader_type = SSNES_SHADER_BSNES;
+      g_settings.video.shader_type = RARCH_SHADER_BSNES;
 
       msg_queue_clear(g_extern.msg_queue);
       char msg[512];
       snprintf(msg, sizeof(msg), "XML shader #%u: \"%s\"", (unsigned)g_extern.shader_dir.ptr, shader);
       msg_queue_push(g_extern.msg_queue, msg, 1, 120);
-      SSNES_LOG("Applying shader \"%s\"\n", shader);
+      RARCH_LOG("Applying shader \"%s\"\n", shader);
 
       if (!video_xml_shader_func(shader))
-         SSNES_WARN("Failed to apply shader.\n");
+         RARCH_WARN("Failed to apply shader.\n");
    }
 
    old_pressed_next = pressed_next;
@@ -2069,9 +2069,9 @@ static void check_cheats(void)
    static bool old_pressed_next = false;
    static bool old_pressed_toggle = false;
 
-   bool pressed_next = input_key_pressed_func(SSNES_CHEAT_INDEX_PLUS);
-   bool pressed_prev = input_key_pressed_func(SSNES_CHEAT_INDEX_MINUS);
-   bool pressed_toggle = input_key_pressed_func(SSNES_CHEAT_TOGGLE);
+   bool pressed_next = input_key_pressed_func(RARCH_CHEAT_INDEX_PLUS);
+   bool pressed_prev = input_key_pressed_func(RARCH_CHEAT_INDEX_MINUS);
+   bool pressed_toggle = input_key_pressed_func(RARCH_CHEAT_TOGGLE);
 
    if (pressed_next && !old_pressed_next)
       cheat_manager_index_next(g_extern.cheat);
@@ -2090,7 +2090,7 @@ static void check_cheats(void)
 static void check_screenshot(void)
 {
    static bool old_pressed = false;
-   bool pressed = input_key_pressed_func(SSNES_SCREENSHOT);
+   bool pressed = input_key_pressed_func(RARCH_SCREENSHOT);
    if (pressed && !old_pressed)
       take_screenshot();
 
@@ -2105,7 +2105,7 @@ static void check_dsp_config(void)
       return;
 
    static bool old_pressed = false;
-   bool pressed = input_key_pressed_func(SSNES_DSP_CONFIG);
+   bool pressed = input_key_pressed_func(RARCH_DSP_CONFIG);
    if (pressed && !old_pressed)
       g_extern.audio_data.dsp_plugin->config(g_extern.audio_data.dsp_handle);
 
@@ -2113,14 +2113,14 @@ static void check_dsp_config(void)
 }
 #endif
 
-#ifndef SSNES_CONSOLE
+#ifndef RARCH_CONSOLE
 static void check_mute(void)
 {
    if (!g_extern.audio_active)
       return;
 
    static bool old_pressed = false;
-   bool pressed = input_key_pressed_func(SSNES_MUTE);
+   bool pressed = input_key_pressed_func(RARCH_MUTE);
    if (pressed && !old_pressed)
    {
       g_extern.audio_data.mute = !g_extern.audio_data.mute;
@@ -2129,7 +2129,7 @@ static void check_mute(void)
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
-      SSNES_LOG("%s\n", msg);
+      RARCH_LOG("%s\n", msg);
    }
 
    old_pressed = pressed;
@@ -2140,7 +2140,7 @@ static void check_mute(void)
 static void check_netplay_flip(void)
 {
    static bool old_pressed = false;
-   bool pressed = input_key_pressed_func(SSNES_NETPLAY_FLIP);
+   bool pressed = input_key_pressed_func(RARCH_NETPLAY_FLIP);
    if (pressed && !old_pressed)
       netplay_flip_players(g_extern.netplay);
 
@@ -2153,7 +2153,7 @@ static void do_state_checks(void)
 #ifdef HAVE_SCREENSHOTS
    check_screenshot();
 #endif
-#ifndef SSNES_CONSOLE
+#ifndef RARCH_CONSOLE
    check_mute();
 #endif
 
@@ -2161,28 +2161,28 @@ static void do_state_checks(void)
    if (!g_extern.netplay)
    {
 #endif
-#ifndef SSNES_CONSOLE
+#ifndef RARCH_CONSOLE
       check_pause();
 #endif
       check_oneshot();
 
-#ifdef SSNES_CONSOLE
+#ifdef RARCH_CONSOLE
       if (g_extern.is_paused)
 #else
       if (check_fullscreen() && g_extern.is_paused)
 #endif
       {
-         ssnes_render_cached_frame();
+         rarch_render_cached_frame();
       }
 
-#ifndef SSNES_CONSOLE
+#ifndef RARCH_CONSOLE
       if (g_extern.is_paused && !g_extern.is_oneshot)
          return;
 #endif
 
       set_fast_forward_button(
-            input_key_pressed_func(SSNES_FAST_FORWARD_KEY),
-            input_key_pressed_func(SSNES_FAST_FORWARD_HOLD_KEY));
+            input_key_pressed_func(RARCH_FAST_FORWARD_KEY),
+            input_key_pressed_func(RARCH_FAST_FORWARD_HOLD_KEY));
 
       check_stateslots();
 #ifdef HAVE_BSV_MOVIE
@@ -2212,7 +2212,7 @@ static void do_state_checks(void)
    else
    {
       check_netplay_flip();
-#ifndef SSNES_CONSOLE
+#ifndef RARCH_CONSOLE
       check_fullscreen();
 #endif
    }
@@ -2229,10 +2229,10 @@ static void init_state(void)
 {
    g_extern.video_active = true;
    g_extern.audio_active = true;
-   g_extern.game_type = SSNES_CART_NORMAL;
+   g_extern.game_type = RARCH_CART_NORMAL;
 }
 
-void ssnes_main_clear_state(void)
+void rarch_main_clear_state(void)
 {
    memset(&g_settings, 0, sizeof(g_settings));
 
@@ -2240,7 +2240,7 @@ void ssnes_main_clear_state(void)
    free(g_extern.system.environment_split);
    memset(&g_extern, 0, sizeof(g_extern));
 
-#ifdef SSNES_CONSOLE
+#ifdef RARCH_CONSOLE
    memset(&g_console, 0, sizeof(g_console));
 #endif
 
@@ -2268,13 +2268,13 @@ static void init_system_av_info(void)
 
 static void verify_api_version(void)
 {
-   SSNES_LOG("Version of libretro API: %u\n", pretro_api_version());
-   SSNES_LOG("Compiled against API: %u\n", RETRO_API_VERSION);
+   RARCH_LOG("Version of libretro API: %u\n", pretro_api_version());
+   RARCH_LOG("Compiled against API: %u\n", RETRO_API_VERSION);
    if (pretro_api_version() != RETRO_API_VERSION)
-      SSNES_WARN("RetroArch is compiled against a different version of libretro than this libretro implementation.\n");
+      RARCH_WARN("RetroArch is compiled against a different version of libretro than this libretro implementation.\n");
 }
 
-int ssnes_main_init(int argc, char *argv[])
+int rarch_main_init(int argc, char *argv[])
 {
    init_state();
    parse_input(argc, argv);
@@ -2282,7 +2282,7 @@ int ssnes_main_init(int argc, char *argv[])
    int sjlj_ret;
    if ((sjlj_ret = setjmp(g_extern.error_sjlj_context)) > 0)
    {
-      SSNES_ERR("Fatal error received in: \"%s\"\n", g_extern.error_string); 
+      RARCH_ERR("Fatal error received in: \"%s\"\n", g_extern.error_string); 
       return sjlj_ret;
    }
    g_extern.error_in_init = true;
@@ -2321,7 +2321,7 @@ int ssnes_main_init(int argc, char *argv[])
    if (!g_extern.sram_load_disable)
       load_save_files();
    else
-      SSNES_LOG("Skipping SRAM load.\n");
+      RARCH_LOG("Skipping SRAM load.\n");
 
    load_auto_state();
 
@@ -2353,7 +2353,7 @@ int ssnes_main_init(int argc, char *argv[])
 #endif
 
    if (!g_extern.use_sram)
-      SSNES_LOG("SRAM will not be saved.\n");
+      RARCH_LOG("SRAM will not be saved.\n");
 
 #ifdef HAVE_THREADS
    if (g_extern.use_sram)
@@ -2383,7 +2383,7 @@ error:
    return 1;
 }
 
-bool ssnes_main_iterate(void)
+bool rarch_main_iterate(void)
 {
 #ifdef HAVE_DYLIB
    // DSP plugin GUI events.
@@ -2392,7 +2392,7 @@ bool ssnes_main_iterate(void)
 #endif
 
    // Time to drop?
-   if (input_key_pressed_func(SSNES_QUIT_KEY) ||
+   if (input_key_pressed_func(RARCH_QUIT_KEY) ||
          !video_alive_func())
       return false;
 
@@ -2400,7 +2400,7 @@ bool ssnes_main_iterate(void)
    do_state_checks();
 
    // Run libretro for one frame.
-#ifndef SSNES_CONSOLE // On consoles pausing is handled better elsewhere.
+#ifndef RARCH_CONSOLE // On consoles pausing is handled better elsewhere.
    if (!g_extern.is_paused || g_extern.is_oneshot)
 #endif
    {
@@ -2434,18 +2434,18 @@ bool ssnes_main_iterate(void)
       unlock_autosave();
 #endif
    }
-#ifndef SSNES_CONSOLE
+#ifndef RARCH_CONSOLE
    else
    {
       input_poll();
-      ssnes_sleep(10);
+      rarch_sleep(10);
    }
 #endif
 
    return true;
 }
 
-void ssnes_main_deinit(void)
+void rarch_main_deinit(void)
 {
 #ifdef HAVE_NETPLAY
    deinit_netplay();
@@ -2483,15 +2483,15 @@ void ssnes_main_deinit(void)
    uninit_libretro_sym();
 }
 
-#ifndef HAVE_SSNES_MAIN_WRAP
+#ifndef HAVE_RARCH_MAIN_WRAP
 // Consoles use the higher level API.
 int main(int argc, char *argv[])
 {
    int init_ret;
-   if ((init_ret = ssnes_main_init(argc, argv))) return init_ret;
-   while (ssnes_main_iterate());
-   ssnes_main_deinit();
-   ssnes_main_clear_state();
+   if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
+   while (rarch_main_iterate());
+   rarch_main_deinit();
+   rarch_main_clear_state();
    return 0;
 }
 #endif

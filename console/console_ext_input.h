@@ -78,7 +78,7 @@ enum ps3_device_id
    PS3_DEVICE_ID_RSTICK_UP_DPAD,
    PS3_DEVICE_ID_RSTICK_DOWN_DPAD,
 
-   SSNES_LAST_PLATFORM_KEY
+   RARCH_LAST_PLATFORM_KEY
 };
 
 #elif defined(_XBOX)
@@ -119,7 +119,7 @@ enum xdk360_device_id
    XDK360_DEVICE_ID_RSTICK_UP_DPAD,
    XDK360_DEVICE_ID_RSTICK_DOWN_DPAD,
 
-   SSNES_LAST_PLATFORM_KEY
+   RARCH_LAST_PLATFORM_KEY
 };
 #elif defined(GEKKO)
 #include <ogc/pad.h>
@@ -128,7 +128,7 @@ enum xdk360_device_id
 #endif
 #endif
 
-extern uint64_t ssnes_default_keybind_lut[SSNES_FIRST_META_KEY];
-extern char ssnes_default_libsnes_keybind_name_lut[SSNES_FIRST_META_KEY][256];
+extern uint64_t rarch_default_keybind_lut[RARCH_FIRST_META_KEY];
+extern char rarch_default_libsnes_keybind_name_lut[RARCH_FIRST_META_KEY][256];
 
 #endif

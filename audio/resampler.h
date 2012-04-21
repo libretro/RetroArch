@@ -14,8 +14,8 @@
  */
 
 
-#ifndef __SSNES_RESAMPLER_H
-#define __SSNES_RESAMPLER_H
+#ifndef __RARCH_RESAMPLER_H
+#define __RARCH_RESAMPLER_H
 
 #include <stddef.h>
 #include <math.h>
@@ -25,7 +25,7 @@
 #define M_PI 3.14159265358979323846264338327
 #endif
 
-typedef struct ssnes_resampler ssnes_resampler_t;
+typedef struct rarch_resampler rarch_resampler_t;
 
 struct resampler_data
 {
@@ -38,12 +38,12 @@ struct resampler_data
    double ratio;
 };
 
-ssnes_resampler_t *resampler_new(void);
-void resampler_process(ssnes_resampler_t *re, struct resampler_data *data);
-void resampler_free(ssnes_resampler_t *re);
+rarch_resampler_t *resampler_new(void);
+void resampler_process(rarch_resampler_t *re, struct resampler_data *data);
+void resampler_free(rarch_resampler_t *re);
 
 // Generate a starting cosine pulse with given frequency for testing (SNR, etc) purposes.
-void resampler_preinit(ssnes_resampler_t *re, double omega, double *samples_offset);
+void resampler_preinit(rarch_resampler_t *re, double omega, double *samples_offset);
 
 #endif
 

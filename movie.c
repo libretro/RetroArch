@@ -44,26 +44,26 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
    handle->file = fopen(path, "rb");
    if (!handle->file)
    {
-      SSNES_ERR("Couldn't open BSV file \"%s\" for playback.\n", path);
+      RARCH_ERR("Couldn't open BSV file \"%s\" for playback.\n", path);
       return false;
    }
 
    uint32_t header[4] = {0};
    if (fread(header, sizeof(uint32_t), 4, handle->file) != 4)
    {
-      SSNES_ERR("Couldn't read movie header.\n");
+      RARCH_ERR("Couldn't read movie header.\n");
       return false;
    }
 
    // Compatibility with old implementation that used incorrect documentation.
    if (swap_if_little32(header[MAGIC_INDEX]) != BSV_MAGIC && swap_if_big32(header[MAGIC_INDEX]) != BSV_MAGIC)
    {
-      SSNES_ERR("Movie file is not a valid BSV1 file.\n");
+      RARCH_ERR("Movie file is not a valid BSV1 file.\n");
       return false;
    }
 
    if (swap_if_big32(header[CRC_INDEX]) != g_extern.cart_crc)
-      SSNES_WARN("CRC32 checksum mismatch between ROM file and saved ROM checksum in replay file header; replay highly likely to desync on playback.\n");
+      RARCH_WARN("CRC32 checksum mismatch between ROM file and saved ROM checksum in replay file header; replay highly likely to desync on playback.\n");
 
    uint32_t state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
 
@@ -76,14 +76,14 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
 
       if (fread(handle->state, 1, state_size, handle->file) != state_size)
       {
-         SSNES_ERR("Couldn't read state from movie.\n");
+         RARCH_ERR("Couldn't read state from movie.\n");
          return false;
       }
 
       if (pretro_serialize_size() == state_size)
          pretro_unserialize(handle->state, state_size);
       else
-         SSNES_WARN("Movie format seems to have a different serializer version. Will most likely fail.\n");
+         RARCH_WARN("Movie format seems to have a different serializer version. Will most likely fail.\n");
    }
 
    handle->min_file_pos = sizeof(header) + state_size;
@@ -96,7 +96,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
    handle->file = fopen(path, "wb");
    if (!handle->file)
    {
-      SSNES_ERR("Couldn't open BSV \"%s\" for recording.\n", path);
+      RARCH_ERR("Couldn't open BSV \"%s\" for recording.\n", path);
       return false;
    }
 
@@ -155,13 +155,13 @@ void bsv_movie_set_input(bsv_movie_t *handle, int16_t input)
    fwrite(&input, sizeof(int16_t), 1, handle->file);
 }
 
-bsv_movie_t *bsv_movie_init(const char *path, enum ssnes_movie_type type)
+bsv_movie_t *bsv_movie_init(const char *path, enum rarch_movie_type type)
 {
    bsv_movie_t *handle = (bsv_movie_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
 
-   if (type == SSNES_MOVIE_PLAYBACK)
+   if (type == RARCH_MOVIE_PLAYBACK)
    {
       if (!init_playback(handle, path))
          goto error;

@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_MOVIE_H
-#define __SSNES_MOVIE_H
+#ifndef __RARCH_MOVIE_H
+#define __RARCH_MOVIE_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -29,13 +29,13 @@
 
 typedef struct bsv_movie bsv_movie_t;
 
-enum ssnes_movie_type
+enum rarch_movie_type
 {
-   SSNES_MOVIE_PLAYBACK,
-   SSNES_MOVIE_RECORD
+   RARCH_MOVIE_PLAYBACK,
+   RARCH_MOVIE_RECORD
 };
 
-bsv_movie_t *bsv_movie_init(const char *path, enum ssnes_movie_type type);
+bsv_movie_t *bsv_movie_init(const char *path, enum rarch_movie_type type);
 
 // Playback
 bool bsv_movie_get_input(bsv_movie_t *handle, int16_t *input);

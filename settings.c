@@ -30,7 +30,7 @@
 
 struct settings g_settings;
 struct global g_extern;
-#ifdef SSNES_CONSOLE
+#ifdef RARCH_CONSOLE
 struct console_settings g_console;
 #endif
 
@@ -162,7 +162,7 @@ void config_set_defaults(void)
    g_settings.video.crop_overscan = crop_overscan;
    g_settings.video.aspect_ratio = aspect_ratio;
    g_settings.video.aspect_ratio_auto = aspect_ratio_auto; // Let implementation decide if automatic, or 1:1 PAR.
-   g_settings.video.shader_type = SSNES_SHADER_AUTO;
+   g_settings.video.shader_type = RARCH_SHADER_AUTO;
    g_settings.video.allow_rotate = allow_rotate;
 
 #ifdef HAVE_FREETYPE
@@ -209,17 +209,17 @@ void config_set_defaults(void)
    g_settings.block_sram_overwrite = block_sram_overwrite;
    g_settings.savestate_auto_index = savestate_auto_index;
 
-   ssnes_assert(sizeof(g_settings.input.binds[0]) >= sizeof(snes_keybinds_1));
-   ssnes_assert(sizeof(g_settings.input.binds[1]) >= sizeof(snes_keybinds_rest));
+   rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(snes_keybinds_1));
+   rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(snes_keybinds_rest));
    memcpy(g_settings.input.binds[0], snes_keybinds_1, sizeof(snes_keybinds_1));
    for (unsigned i = 1; i < MAX_PLAYERS; i++)
       memcpy(g_settings.input.binds[i], snes_keybinds_rest, sizeof(snes_keybinds_rest));
 
    // Verify that binds are in proper order.
    for (int i = 0; i < MAX_PLAYERS; i++)
-      for (int j = 0; j < SSNES_BIND_LIST_END; j++)
+      for (int j = 0; j < RARCH_BIND_LIST_END; j++)
          if (g_settings.input.binds[i][j].valid)
-            ssnes_assert(j == g_settings.input.binds[i][j].id);
+            rarch_assert(j == g_settings.input.binds[i][j].id);
 
    g_settings.input.axis_threshold = axis_threshold;
    g_settings.input.netplay_client_swap_input = netplay_client_swap_input;
@@ -233,7 +233,7 @@ static void parse_config_file(void);
 
 void config_load(void)
 {
-#ifdef SSNES_CONSOLE
+#ifdef RARCH_CONSOLE
    if (!g_console.block_config_read)
 #endif
    {
@@ -277,7 +277,7 @@ static config_file_t *open_default_config_file(void)
 #elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
    const char *xdg = getenv("XDG_CONFIG_HOME");
    if (!xdg)
-      SSNES_WARN("XDG_CONFIG_HOME is not defined. Will look for config in $HOME/.ssnes.cfg ...\n");
+      RARCH_WARN("XDG_CONFIG_HOME is not defined. Will look for config in $HOME/.ssnes.cfg ...\n");
 
    const char *home = getenv("HOME");
    if (xdg)
@@ -317,8 +317,8 @@ static void parse_config_file(void)
 
    if (!ret)
    {
-      SSNES_ERR("Couldn't find config at path: \"%s\"\n", g_extern.config_path);
-      ssnes_fail(1, "parse_config_file()");
+      RARCH_ERR("Couldn't find config at path: \"%s\"\n", g_extern.config_path);
+      rarch_fail(1, "parse_config_file()");
    }
 }
 
@@ -405,13 +405,13 @@ bool config_load_file(const char *path)
    if (config_get_array(conf, "video_shader_type", tmp_str, sizeof(tmp_str)))
    {
       if (strcmp("cg", tmp_str) == 0)
-         g_settings.video.shader_type = SSNES_SHADER_CG;
+         g_settings.video.shader_type = RARCH_SHADER_CG;
       else if (strcmp("bsnes", tmp_str) == 0)
-         g_settings.video.shader_type = SSNES_SHADER_BSNES;
+         g_settings.video.shader_type = RARCH_SHADER_BSNES;
       else if (strcmp("auto", tmp_str) == 0)
-         g_settings.video.shader_type = SSNES_SHADER_AUTO;
+         g_settings.video.shader_type = RARCH_SHADER_AUTO;
       else if (strcmp("none", tmp_str) == 0)
-         g_settings.video.shader_type = SSNES_SHADER_NONE;
+         g_settings.video.shader_type = RARCH_SHADER_NONE;
    }
 #endif
 
@@ -450,7 +450,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_STRING(screenshot_directory, "screenshot_directory");
    if (*g_settings.screenshot_directory && !path_is_directory(g_settings.screenshot_directory))
    {
-      SSNES_WARN("screenshot_directory is not an existing directory, ignoring ...\n");
+      RARCH_WARN("screenshot_directory is not an existing directory, ignoring ...\n");
       *g_settings.screenshot_directory = '\0';
    }
 
@@ -480,7 +480,7 @@ bool config_load_file(const char *path)
       g_extern.system.environment_split = strdup(g_extern.system.environment);
       if (!g_extern.system.environment_split)
       {
-         SSNES_ERR("Failed to allocate environment variables. Will ignore them.\n");
+         RARCH_ERR("Failed to allocate environment variables. Will ignore them.\n");
          free(g_extern.system.environment);
          g_extern.system.environment = NULL;
       }
@@ -494,7 +494,7 @@ bool config_load_file(const char *path)
          fill_pathname_dir(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
       }
       else
-         SSNES_WARN("savefile_directory is not a directory, ignoring ....\n");
+         RARCH_WARN("savefile_directory is not a directory, ignoring ....\n");
    }
    if (!g_extern.has_set_state_path && config_get_array(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
@@ -504,7 +504,7 @@ bool config_load_file(const char *path)
          fill_pathname_dir(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
       }
       else
-         SSNES_WARN("savestate_directory is not a directory, ignoring ...\n");
+         RARCH_WARN("savestate_directory is not a directory, ignoring ...\n");
    }
 
    config_read_keybinds_conf(conf);
@@ -540,7 +540,7 @@ struct bind_map
    }
 
 // Big and nasty bind map... :)
-static const struct bind_map bind_maps[MAX_PLAYERS][SSNES_BIND_LIST_END] = {
+static const struct bind_map bind_maps[MAX_PLAYERS][RARCH_BIND_LIST_END] = {
    {
       DECLARE_BIND(player1_b,             RETRO_DEVICE_ID_JOYPAD_B),
       DECLARE_BIND(player1_y,             RETRO_DEVICE_ID_JOYPAD_Y),
@@ -555,31 +555,31 @@ static const struct bind_map bind_maps[MAX_PLAYERS][SSNES_BIND_LIST_END] = {
       DECLARE_BIND(player1_l,             RETRO_DEVICE_ID_JOYPAD_L),
       DECLARE_BIND(player1_r,             RETRO_DEVICE_ID_JOYPAD_R),
 
-      DECLARE_BIND(toggle_fast_forward,   SSNES_FAST_FORWARD_KEY),
-      DECLARE_BIND(hold_fast_forward,     SSNES_FAST_FORWARD_HOLD_KEY),
-      DECLARE_BIND(load_state,            SSNES_LOAD_STATE_KEY),
-      DECLARE_BIND(save_state,            SSNES_SAVE_STATE_KEY),
-      DECLARE_BIND(toggle_fullscreen,     SSNES_FULLSCREEN_TOGGLE_KEY),
-      DECLARE_BIND(exit_emulator,         SSNES_QUIT_KEY),
-      DECLARE_BIND(state_slot_increase,   SSNES_STATE_SLOT_PLUS),
-      DECLARE_BIND(state_slot_decrease,   SSNES_STATE_SLOT_MINUS),
-      DECLARE_BIND(rate_step_up,          SSNES_AUDIO_INPUT_RATE_PLUS),
-      DECLARE_BIND(rate_step_down,        SSNES_AUDIO_INPUT_RATE_MINUS),
-      DECLARE_BIND(rewind,                SSNES_REWIND),
-      DECLARE_BIND(movie_record_toggle,   SSNES_MOVIE_RECORD_TOGGLE),
-      DECLARE_BIND(pause_toggle,          SSNES_PAUSE_TOGGLE),
-      DECLARE_BIND(frame_advance,         SSNES_FRAMEADVANCE),
-      DECLARE_BIND(reset,                 SSNES_RESET),
-      DECLARE_BIND(shader_next,           SSNES_SHADER_NEXT),
-      DECLARE_BIND(shader_prev,           SSNES_SHADER_PREV),
-      DECLARE_BIND(cheat_index_plus,      SSNES_CHEAT_INDEX_PLUS),
-      DECLARE_BIND(cheat_index_minus,     SSNES_CHEAT_INDEX_MINUS),
-      DECLARE_BIND(cheat_toggle,          SSNES_CHEAT_TOGGLE),
-      DECLARE_BIND(screenshot,            SSNES_SCREENSHOT),
-      DECLARE_BIND(dsp_config,            SSNES_DSP_CONFIG),
-      DECLARE_BIND(audio_mute,            SSNES_MUTE),
-      DECLARE_BIND(netplay_flip_players,  SSNES_NETPLAY_FLIP),
-      DECLARE_BIND(slowmotion,            SSNES_SLOWMOTION),
+      DECLARE_BIND(toggle_fast_forward,   RARCH_FAST_FORWARD_KEY),
+      DECLARE_BIND(hold_fast_forward,     RARCH_FAST_FORWARD_HOLD_KEY),
+      DECLARE_BIND(load_state,            RARCH_LOAD_STATE_KEY),
+      DECLARE_BIND(save_state,            RARCH_SAVE_STATE_KEY),
+      DECLARE_BIND(toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY),
+      DECLARE_BIND(exit_emulator,         RARCH_QUIT_KEY),
+      DECLARE_BIND(state_slot_increase,   RARCH_STATE_SLOT_PLUS),
+      DECLARE_BIND(state_slot_decrease,   RARCH_STATE_SLOT_MINUS),
+      DECLARE_BIND(rate_step_up,          RARCH_AUDIO_INPUT_RATE_PLUS),
+      DECLARE_BIND(rate_step_down,        RARCH_AUDIO_INPUT_RATE_MINUS),
+      DECLARE_BIND(rewind,                RARCH_REWIND),
+      DECLARE_BIND(movie_record_toggle,   RARCH_MOVIE_RECORD_TOGGLE),
+      DECLARE_BIND(pause_toggle,          RARCH_PAUSE_TOGGLE),
+      DECLARE_BIND(frame_advance,         RARCH_FRAMEADVANCE),
+      DECLARE_BIND(reset,                 RARCH_RESET),
+      DECLARE_BIND(shader_next,           RARCH_SHADER_NEXT),
+      DECLARE_BIND(shader_prev,           RARCH_SHADER_PREV),
+      DECLARE_BIND(cheat_index_plus,      RARCH_CHEAT_INDEX_PLUS),
+      DECLARE_BIND(cheat_index_minus,     RARCH_CHEAT_INDEX_MINUS),
+      DECLARE_BIND(cheat_toggle,          RARCH_CHEAT_TOGGLE),
+      DECLARE_BIND(screenshot,            RARCH_SCREENSHOT),
+      DECLARE_BIND(dsp_config,            RARCH_DSP_CONFIG),
+      DECLARE_BIND(audio_mute,            RARCH_MUTE),
+      DECLARE_BIND(netplay_flip_players,  RARCH_NETPLAY_FLIP),
+      DECLARE_BIND(slowmotion,            RARCH_SLOWMOTION),
    },
 
    DECL_PLAYER(2),
@@ -704,7 +704,7 @@ static void read_keybinds_keyboard(config_file_t *conf, unsigned player, unsigne
       int key = find_sk_key(tmp);
 
       if (key >= 0)
-         bind->key = (enum ssnes_key)key;
+         bind->key = (enum rarch_key)key;
    }
 }
 
@@ -719,7 +719,7 @@ static void parse_hat(struct snes_keybind *bind, const char *str)
 
    if (!dir)
    {
-      SSNES_WARN("Found invalid hat in config!\n");
+      RARCH_WARN("Found invalid hat in config!\n");
       return;
    }
 
@@ -780,7 +780,7 @@ static void read_keybinds_player(config_file_t *conf, unsigned player)
    for (unsigned i = 0; bind_maps[player][i].valid; i++)
    {
       struct snes_keybind *bind = find_snes_bind(player, bind_maps[player][i].snes_key);
-      ssnes_assert(bind);
+      rarch_assert(bind);
 
       read_keybinds_keyboard(conf, player, i, bind);
       read_keybinds_button(conf, player, i, bind);
@@ -827,7 +827,7 @@ static void save_keybind_key(config_file_t *conf,
    config_set_string(conf, map->key, btn);
 }
 
-#ifndef SSNES_CONSOLE
+#ifndef RARCH_CONSOLE
 static void save_keybind_hat(config_file_t *conf,
       const struct bind_map *map, const struct snes_keybind *bind)
 {
@@ -853,7 +853,7 @@ static void save_keybind_hat(config_file_t *conf,
          break;
 
       default:
-         ssnes_assert(0);
+         rarch_assert(0);
    }
 
    char config[16];
@@ -867,7 +867,7 @@ static void save_keybind_joykey(config_file_t *conf,
 {
    if (bind->joykey == NO_BTN)
       config_set_string(conf, map->btn, "nul");
-#ifndef SSNES_CONSOLE // Consoles don't understand hats.
+#ifndef RARCH_CONSOLE // Consoles don't understand hats.
    else if (GET_HAT_DIR(bind->joykey))
       save_keybind_hat(conf, map, bind);
 #endif
@@ -912,7 +912,7 @@ static void save_keybind(config_file_t *conf,
 
 static void save_keybinds_player(config_file_t *conf, unsigned i)
 {
-   for (unsigned j = 0; j < SSNES_BIND_LIST_END; j++)
+   for (unsigned j = 0; j < RARCH_BIND_LIST_END; j++)
       save_keybind(conf, &bind_maps[i][j], &g_settings.input.binds[i][j]);
 }
 

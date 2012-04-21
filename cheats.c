@@ -115,7 +115,7 @@ static bool xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
          xmlChar *name = xmlNodeGetContent(ptr);
          if (name)
          {
-            SSNES_LOG("Found cheat for game: \"%s\"\n", name);
+            RARCH_LOG("Found cheat for game: \"%s\"\n", name);
             xmlFree(name);
          }
       }
@@ -199,7 +199,7 @@ static void cheat_manager_save_config(cheat_manager_t *handle, const char *path,
 
    if (!conf)
    {
-      SSNES_ERR("Cannot save XML cheat settings.\n");
+      RARCH_ERR("Cannot save XML cheat settings.\n");
       return;
    }
 
@@ -221,7 +221,7 @@ static void cheat_manager_save_config(cheat_manager_t *handle, const char *path,
    config_set_string(conf, sha256, conf_str);
 
    if (!config_file_write(conf, path))
-      SSNES_ERR("Failed to write XML cheat settings to \"%s\". Check permissions.\n", path);
+      RARCH_ERR("Failed to write XML cheat settings to \"%s\". Check permissions.\n", path);
 
    config_file_free(conf);
 
@@ -262,13 +262,13 @@ cheat_manager_t* cheat_manager_new(const char *path)
    doc = xmlCtxtReadFile(ctx, path, NULL, 0);
    if (!doc)
    {
-      SSNES_ERR("Failed to parse XML file: %s\n", path);
+      RARCH_ERR("Failed to parse XML file: %s\n", path);
       goto error;
    }
 
    if (ctx->valid == 0)
    {
-      SSNES_ERR("Cannot validate XML file: %s\n", path);
+      RARCH_ERR("Cannot validate XML file: %s\n", path);
       goto error;
    }
 
@@ -308,13 +308,13 @@ cheat_manager_t* cheat_manager_new(const char *path)
 
    if (!xml_grab_cheats(handle, cur->children))
    {
-      SSNES_ERR("Failed to grab cheats. This should not happen.\n");
+      RARCH_ERR("Failed to grab cheats. This should not happen.\n");
       goto error;
    }
 
    if (handle->size == 0)
    {
-      SSNES_ERR("Did not find any cheats in XML file: %s\n", path);
+      RARCH_ERR("Did not find any cheats in XML file: %s\n", path);
       goto error;
    }
 
@@ -359,7 +359,7 @@ static void cheat_manager_update(cheat_manager_t *handle)
    char msg[256];
    snprintf(msg, sizeof(msg), "Cheat: #%u [%s]: %s", handle->ptr, handle->cheats[handle->ptr].state ? "ON" : "OFF", handle->cheats[handle->ptr].desc);
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-   SSNES_LOG("%s\n", msg);
+   RARCH_LOG("%s\n", msg);
 }
 
 

@@ -42,7 +42,7 @@ static void return_to_dashboard (void)
 {
    g_console.menu_enable = false;
    g_console.mode_switch = MODE_EXIT;
-   g_console.initialize_ssnes_enable = false;
+   g_console.initialize_rarch_enable = false;
 }
 
 /* Register custom classes */
@@ -186,14 +186,14 @@ HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
          case MENU_ITEM_LOAD_STATE:
             if (g_console.emulator_initialized)
 	    {
-               ssnes_load_state();
+               rarch_load_state();
 	       return_to_game();
 	    }
 	    break;
 	 case MENU_ITEM_SAVE_STATE:
 	    if (g_console.emulator_initialized)
 	    {
-               ssnes_save_state();
+               rarch_save_state();
 	       return_to_game();
 	    }
 	    break;
@@ -258,7 +258,7 @@ HRESULT CSSNESQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 	    if (g_console.emulator_initialized)
 	    {
                return_to_game();
-	       ssnes_game_reset();
+	       rarch_game_reset();
 	    }
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
@@ -330,14 +330,14 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 	 {
             char path_tmp[1024];
 	    sprintf(path_tmp, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
-	    ssnes_extract_zipfile(path_tmp);
+	    rarch_extract_zipfile(path_tmp);
 	 }
 	 else
 	 {
             memset(g_console.rom_path, 0, sizeof(g_console.rom_path));
 	    sprintf(g_console.rom_path, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
 	    return_to_game();
-	    g_console.initialize_ssnes_enable = 1;
+	    g_console.initialize_rarch_enable = 1;
 	 }
       }
       else if(browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
@@ -350,12 +350,12 @@ HRESULT CSSNESFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
    }
    else if (hObjPressed == m_dir_game)
    {
-      filebrowser_new(&browser, g_console.default_rom_startup_dir, ssnes_console_get_rom_ext());
+      filebrowser_new(&browser, g_console.default_rom_startup_dir, rarch_console_get_rom_ext());
       filebrowser_fetch_directory_entries(g_console.default_rom_startup_dir, &browser, &m_romlist, &m_rompathtitle);
    }
    else if (hObjPressed == m_dir_cache)
    {
-      filebrowser_new(&browser, "cache:", ssnes_console_get_rom_ext());
+      filebrowser_new(&browser, "cache:", rarch_console_get_rom_ext());
       filebrowser_fetch_directory_entries("cache:", &browser, &m_romlist, &m_rompathtitle);
    }
    else if(hObjPressed == m_back)
@@ -439,40 +439,40 @@ HRESULT CSSNESMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
    if ( hObjPressed == m_filebrowser )
    {
-      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"ssnes_filebrowser.xur", NULL, &app.hFileBrowser);
+      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_filebrowser.xur", NULL, &app.hFileBrowser);
 
       if (FAILED(hr))
       {
-         SSNES_ERR("Failed to load scene.\n");
+         RARCH_ERR("Failed to load scene.\n");
       }
 
       NavigateForward(app.hFileBrowser);
    }
    else if ( hObjPressed == m_quick_menu)
    {
-      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"ssnes_quickmenu.xur", NULL, &app.hQuickMenu);
+      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_quickmenu.xur", NULL, &app.hQuickMenu);
 
       if (FAILED(hr))
-         SSNES_ERR("Failed to load scene.\n");
+         RARCH_ERR("Failed to load scene.\n");
 
       NavigateForward(app.hQuickMenu);
    }
    else if ( hObjPressed == m_change_libsnes_core )
    {
-      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"ssnes_libsnescore_browser.xur", NULL, &app.hCoreBrowser);
+      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_libsnescore_browser.xur", NULL, &app.hCoreBrowser);
 
       if (FAILED(hr))
       {
-         SSNES_ERR("Failed to load scene.\n");
+         RARCH_ERR("Failed to load scene.\n");
       }
       NavigateForward(app.hCoreBrowser);
    }
    else if ( hObjPressed == m_settings )
    {
-      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"ssnes_settings.xur", NULL, &app.hSSNESSettings);
+      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_settings.xur", NULL, &app.hSSNESSettings);
 
       if (FAILED(hr))
-         SSNES_ERR("Failed to load scene.\n");
+         RARCH_ERR("Failed to load scene.\n");
 
       NavigateForward(app.hSSNESSettings);
    }
@@ -493,7 +493,7 @@ int menu_init (void)
 
    if (FAILED(hr))
    {
-      SSNES_ERR("Failed initializing XUI application.\n");
+      RARCH_ERR("Failed initializing XUI application.\n");
       return 1;
    }
 
@@ -501,27 +501,27 @@ int menu_init (void)
    hr = app.RegisterDefaultTypeface(L"Arial Unicode MS", L"file://game:/media/ssnes.ttf" );
    if (FAILED(hr))
    {
-      SSNES_ERR("Failed to register default typeface.\n");
+      RARCH_ERR("Failed to register default typeface.\n");
       return 1;
    }
 
-   hr = app.LoadSkin( L"file://game:/media/ssnes_scene_skin.xur");
+   hr = app.LoadSkin( L"file://game:/media/rarch_scene_skin.xur");
    if (FAILED(hr))
    {
-      SSNES_ERR("Failed to load skin.\n");
+      RARCH_ERR("Failed to load skin.\n");
       return 1;
    }
 
-   hr = XuiSceneCreate(L"file://game:/media/sd/", L"ssnes_main.xur", NULL, &app.hMainScene);
+   hr = XuiSceneCreate(L"file://game:/media/sd/", L"rarch_main.xur", NULL, &app.hMainScene);
    if (FAILED(hr))
    {
-      SSNES_ERR("Failed to create scene 'ssnes_main.xur'.\n");
+      RARCH_ERR("Failed to create scene 'rarch_main.xur'.\n");
       return 1;
    }
 
    XuiSceneNavigateFirst(app.GetRootObj(), app.hMainScene, XUSER_INDEX_FOCUS);
 
-   filebrowser_new(&browser, g_console.default_rom_startup_dir, ssnes_console_get_rom_ext());
+   filebrowser_new(&browser, g_console.default_rom_startup_dir, rarch_console_get_rom_ext());
 
    return 0;
 }
@@ -546,7 +546,7 @@ void menu_loop(void)
       g_frame_count++;
       if(g_console.emulator_initialized)
       {
-         ssnes_render_cached_frame();
+         rarch_render_cached_frame();
       }
       else
          vid->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,

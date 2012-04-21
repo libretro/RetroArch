@@ -152,7 +152,7 @@ HRESULT PackedResource::Create( const char * strFilename )
                                OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL );
     if( hFile == INVALID_HANDLE_VALUE )
     {
-        SSNES_ERR( "File <%s> not found.\n", strFilename );
+        RARCH_ERR( "File <%s> not found.\n", strFilename );
         return E_FAIL;
     }
 
@@ -160,14 +160,14 @@ HRESULT PackedResource::Create( const char * strFilename )
     XPR_HEADER xprh;
     if( !ReadFile( hFile, &xprh, sizeof( XPR_HEADER ), &dwNumBytesRead, NULL ) )
     {
-        SSNES_ERR( "Error reading XPR header in file <%s>.\n", strFilename );
+        RARCH_ERR( "Error reading XPR header in file <%s>.\n", strFilename );
         CloseHandle( hFile );
         return E_FAIL;
     }
 
     if( xprh.dwMagic != XPR2_MAGIC_VALUE )
     {
-        SSNES_ERR( "Invalid Xbox Packed Resource (.xpr) file: Magic = 0x%08lx.\n", xprh.dwMagic );
+        RARCH_ERR( "Invalid Xbox Packed Resource (.xpr) file: Magic = 0x%08lx.\n", xprh.dwMagic );
         CloseHandle( hFile );
         return E_FAIL;
     }
@@ -180,7 +180,7 @@ HRESULT PackedResource::Create( const char * strFilename )
     m_pSysMemData = (BYTE*)malloc(m_dwSysMemDataSize);
     if( m_pSysMemData == NULL )
     {
-        SSNES_ERR( "Could not allocate system memory.\n" );
+        RARCH_ERR( "Could not allocate system memory.\n" );
         m_dwSysMemDataSize = 0;
         return E_FAIL;
     }
@@ -189,7 +189,7 @@ HRESULT PackedResource::Create( const char * strFilename )
 
     if( m_pVidMemData == NULL )
     {
-        SSNES_ERR( "Could not allocate physical memory.\n" );
+        RARCH_ERR( "Could not allocate physical memory.\n" );
         m_dwSysMemDataSize = 0;
         m_dwVidMemDataSize = 0;
         free(m_pSysMemData);
@@ -201,7 +201,7 @@ HRESULT PackedResource::Create( const char * strFilename )
     if( !ReadFile( hFile, m_pSysMemData, m_dwSysMemDataSize, &dwNumBytesRead, NULL ) ||
         !ReadFile( hFile, m_pVidMemData, m_dwVidMemDataSize, &dwNumBytesRead, NULL ) )
     {
-        SSNES_ERR( "Unable to read Xbox Packed Resource (.xpr) file.\n" );
+        RARCH_ERR( "Unable to read Xbox Packed Resource (.xpr) file.\n" );
         CloseHandle( hFile );
         return E_FAIL;
     }
@@ -574,9 +574,9 @@ static void xdk360_set_swap_block_swap (void * data, bool toggle)
    vid->block_swap = toggle;
 
    if(toggle)
-      SSNES_LOG("Swap is set to blocked.\n");
+      RARCH_LOG("Swap is set to blocked.\n");
    else
-      SSNES_LOG("Swap is set to non-blocked.\n");
+      RARCH_LOG("Swap is set to non-blocked.\n");
 }
 
 static void xdk360_swap (void * data)
@@ -589,7 +589,7 @@ static void xdk360_swap (void * data)
 static void xdk360_gfx_set_nonblock_state(void *data, bool state)
 {
    xdk360_video_t *vid = (xdk360_video_t*)data;
-   SSNES_LOG("D3D Vsync => %s\n", state ? "off" : "on");
+   RARCH_LOG("D3D Vsync => %s\n", state ? "off" : "on");
    /* XBox 360 specific code */
    if(state)
       vid->d3d_render_device->SetRenderState(D3DRS_PRESENTINTERVAL, D3DPRESENT_INTERVAL_IMMEDIATE);
@@ -638,7 +638,7 @@ void xdk360_video_init(void)
 
    if(FAILED(hr))
    {
-      SSNES_ERR("Couldn't create debug console.\n");
+      RARCH_ERR("Couldn't create debug console.\n");
    }
 }
 

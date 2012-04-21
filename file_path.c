@@ -141,7 +141,7 @@ char **dir_list_new(const char *dir, const char *ext)
    return dir_list;
 
 error:
-   SSNES_ERR("Failed to open directory: \"%s\"\n", dir);
+   RARCH_ERR("Failed to open directory: \"%s\"\n", dir);
 #ifdef _WIN32
    if (hFind != INVALID_HANDLE_VALUE)
       FindClose(hFind);
@@ -203,24 +203,24 @@ void fill_pathname(char *out_path, const char *in_path, const char *replace, siz
 {
    char tmp_path[PATH_MAX];
 
-   ssnes_assert(strlcpy(tmp_path, in_path, sizeof(tmp_path)) < sizeof(tmp_path));
+   rarch_assert(strlcpy(tmp_path, in_path, sizeof(tmp_path)) < sizeof(tmp_path));
    char *tok = strrchr(tmp_path, '.');
    if (tok)
       *tok = '\0';
 
-   ssnes_assert(strlcpy(out_path, tmp_path, size) < size);
-   ssnes_assert(strlcat(out_path, replace, size) < size);
+   rarch_assert(strlcpy(out_path, tmp_path, size) < size);
+   rarch_assert(strlcat(out_path, replace, size) < size);
 }
 
 void fill_pathname_noext(char *out_path, const char *in_path, const char *replace, size_t size)
 {
-   ssnes_assert(strlcpy(out_path, in_path, size) < size);
-   ssnes_assert(strlcat(out_path, replace, size) < size);
+   rarch_assert(strlcpy(out_path, in_path, size) < size);
+   rarch_assert(strlcat(out_path, replace, size) < size);
 }
 
 void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replace, size_t size)
 {
-   ssnes_assert(strlcat(in_dir, "/", size) < size);
+   rarch_assert(strlcat(in_dir, "/", size) < size);
 
    const char *base = strrchr(in_basename, '/');
    if (!base)
@@ -231,8 +231,8 @@ void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replac
    else
       base = in_basename;
 
-   ssnes_assert(strlcat(in_dir, base, size) < size);
-   ssnes_assert(strlcat(in_dir, replace, size) < size);
+   rarch_assert(strlcat(in_dir, base, size) < size);
+   rarch_assert(strlcat(in_dir, replace, size) < size);
 }
 
 void fill_pathname_base(char *out_dir, const char *in_path, size_t size)
@@ -246,6 +246,6 @@ void fill_pathname_base(char *out_dir, const char *in_path, size_t size)
    else
       ptr = in_path;
 
-   ssnes_assert(strlcpy(out_dir, ptr, size) < size);
+   rarch_assert(strlcpy(out_dir, ptr, size) < size);
 }
 

@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_BOOLEAN_H
-#define __SSNES_BOOLEAN_H
+#ifndef __RARCH_BOOLEAN_H
+#define __RARCH_BOOLEAN_H
 
 #ifndef __cplusplus
 #include <stdbool.h>

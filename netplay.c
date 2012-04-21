@@ -174,7 +174,7 @@ static bool recv_all(int fd, void *data_, size_t size)
 
 static void warn_hangup(void)
 {
-   SSNES_WARN("Netplay has disconnected. Will continue without connection ...\n");
+   RARCH_WARN("Netplay has disconnected. Will continue without connection ...\n");
    if (g_extern.msg_queue)
       msg_queue_push(g_extern.msg_queue, "Netplay has disconnected. Will continue without connection.", 0, 480);
 }
@@ -258,7 +258,7 @@ static void log_connection(const struct sockaddr_storage *their_addr,
       char msg[512];
       snprintf(msg, sizeof(msg), "Got connection from: \"%s (%s)\" (#%u)", nick, str, slot);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-      SSNES_LOG("%s\n", msg);
+      RARCH_LOG("%s\n", msg);
    }
 }
 #endif
@@ -287,7 +287,7 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
    handle->fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
    if (handle->fd < 0)
    {
-      SSNES_ERR("Failed to init socket...\n");
+      RARCH_ERR("Failed to init socket...\n");
 
       if (res)
          freeaddrinfo(res);
@@ -298,7 +298,7 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
    {
       if (connect(handle->fd, res->ai_addr, res->ai_addrlen) < 0)
       {
-         SSNES_ERR("Failed to connect to server.\n");
+         RARCH_ERR("Failed to connect to server.\n");
          close(handle->fd);
          handle->fd = -1;
          freeaddrinfo(res);
@@ -313,7 +313,7 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
       if (bind(handle->fd, res->ai_addr, res->ai_addrlen) < 0 ||
             listen(handle->fd, MAX_SPECTATORS) < 0)
       {
-         SSNES_ERR("Failed to bind socket.\n");
+         RARCH_ERR("Failed to bind socket.\n");
          close(handle->fd);
          handle->fd = -1;
          freeaddrinfo(res);
@@ -328,7 +328,7 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
       if (bind(handle->fd, res->ai_addr, res->ai_addrlen) < 0 ||
             listen(handle->fd, 1) < 0)
       {
-         SSNES_ERR("Failed to bind socket.\n");
+         RARCH_ERR("Failed to bind socket.\n");
          close(handle->fd);
          handle->fd = -1;
          freeaddrinfo(res);
@@ -340,7 +340,7 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
             (struct sockaddr*)&handle->other_addr, &addr_size);
       if (new_fd < 0)
       {
-         SSNES_ERR("Failed to accept socket.\n");
+         RARCH_ERR("Failed to accept socket.\n");
          close(handle->fd);
          handle->fd = -1;
          freeaddrinfo(res);
@@ -379,7 +379,7 @@ static bool init_udp_socket(netplay_t *handle, const char *server, uint16_t port
    handle->udp_fd = socket(handle->addr->ai_family, handle->addr->ai_socktype, handle->addr->ai_protocol);
    if (handle->udp_fd < 0)
    {
-      SSNES_ERR("Failed to init socket...\n");
+      RARCH_ERR("Failed to init socket...\n");
       return false;
    }
 
@@ -391,7 +391,7 @@ static bool init_udp_socket(netplay_t *handle, const char *server, uint16_t port
 
       if (bind(handle->udp_fd, handle->addr->ai_addr, handle->addr->ai_addrlen) < 0)
       {
-         SSNES_ERR("Failed to bind socket.\n");
+         RARCH_ERR("Failed to bind socket.\n");
          close(handle->udp_fd);
          handle->udp_fd = -1;
       }
@@ -480,13 +480,13 @@ static bool send_nickname(netplay_t *handle, int fd)
 
    if (!send_all(fd, &nick_size, sizeof(nick_size)))
    {
-      SSNES_ERR("Failed to send nick size.\n");
+      RARCH_ERR("Failed to send nick size.\n");
       return false;
    }
 
    if (!send_all(fd, handle->nick, nick_size))
    {
-      SSNES_ERR("Failed to send nick.\n");
+      RARCH_ERR("Failed to send nick.\n");
       return false;
    }
 
@@ -499,19 +499,19 @@ static bool get_nickname(netplay_t *handle, int fd)
 
    if (!recv_all(fd, &nick_size, sizeof(nick_size)))
    {
-      SSNES_ERR("Failed to receive nick size from host.\n");
+      RARCH_ERR("Failed to receive nick size from host.\n");
       return false;
    }
 
    if (nick_size >= sizeof(handle->other_nick))
    {
-      SSNES_ERR("Invalid nick size.\n");
+      RARCH_ERR("Invalid nick size.\n");
       return false;
    }
 
    if (!recv_all(fd, handle->other_nick, nick_size))
    {
-      SSNES_ERR("Failed to receive nick.\n");
+      RARCH_ERR("Failed to receive nick.\n");
       return false;
    }
 
@@ -531,7 +531,7 @@ static bool send_info(netplay_t *handle)
 
    if (!send_nickname(handle, handle->fd))
    {
-      SSNES_ERR("Failed to send nick to host.\n");
+      RARCH_ERR("Failed to send nick to host.\n");
       return false;
    }
 
@@ -541,19 +541,19 @@ static bool send_info(netplay_t *handle)
 
    if (!recv_all(handle->fd, sram, sram_size))
    {
-      SSNES_ERR("Failed to receive SRAM data from host.\n");
+      RARCH_ERR("Failed to receive SRAM data from host.\n");
       return false;
    }
 
    if (!get_nickname(handle, handle->fd))
    {
-      SSNES_ERR("Failed to receive nick from host.\n");
+      RARCH_ERR("Failed to receive nick from host.\n");
       return false;
    }
 
    char msg[512];
    snprintf(msg, sizeof(msg), "Connected to: \"%s\"", handle->other_nick);
-   SSNES_LOG("%s\n", msg);
+   RARCH_LOG("%s\n", msg);
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
    return true;
@@ -565,31 +565,31 @@ static bool get_info(netplay_t *handle)
 
    if (!recv_all(handle->fd, header, sizeof(header)))
    {
-      SSNES_ERR("Failed to receive header from client.\n");
+      RARCH_ERR("Failed to receive header from client.\n");
       return false;
    }
 
    if (g_extern.cart_crc != ntohl(header[0]))
    {
-      SSNES_ERR("Cart CRC32s differ. Cannot use different games.\n");
+      RARCH_ERR("Cart CRC32s differ. Cannot use different games.\n");
       return false;
    }
 
    if (implementation_magic_value() != ntohl(header[1]))
    {
-      SSNES_ERR("Implementations differ, make sure you're using exact same libsnes implementations and RetroArch version.\n");
+      RARCH_ERR("Implementations differ, make sure you're using exact same libsnes implementations and RetroArch version.\n");
       return false;
    }
 
    if (pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM) != ntohl(header[2]))
    {
-      SSNES_ERR("Cartridge SRAM sizes do not correspond.\n");
+      RARCH_ERR("Cartridge SRAM sizes do not correspond.\n");
       return false;
    }
 
    if (!get_nickname(handle, handle->fd))
    {
-      SSNES_ERR("Failed to get nickname from client.\n");
+      RARCH_ERR("Failed to get nickname from client.\n");
       return false;
    }
 
@@ -598,13 +598,13 @@ static bool get_info(netplay_t *handle)
    unsigned sram_size = pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
    if (!send_all(handle->fd, sram, sram_size))
    {
-      SSNES_ERR("Failed to send SRAM data to client.\n");
+      RARCH_ERR("Failed to send SRAM data to client.\n");
       return false;
    }
 
    if (!send_nickname(handle, handle->fd))
    {
-      SSNES_ERR("Failed to send nickname to client.\n");
+      RARCH_ERR("Failed to send nickname to client.\n");
       return false;
    }
 
@@ -646,7 +646,7 @@ static bool bsv_parse_header(const uint32_t *header, uint32_t magic)
    uint32_t in_bsv = swap_if_little32(header[MAGIC_INDEX]);
    if (in_bsv != BSV_MAGIC)
    {
-      SSNES_ERR("BSV magic mismatch, got 0x%x, expected 0x%x.\n",
+      RARCH_ERR("BSV magic mismatch, got 0x%x, expected 0x%x.\n",
             in_bsv, BSV_MAGIC);
       return false;
    }
@@ -654,21 +654,21 @@ static bool bsv_parse_header(const uint32_t *header, uint32_t magic)
    uint32_t in_magic = swap_if_big32(header[SERIALIZER_INDEX]);
    if (in_magic != magic)
    {
-      SSNES_ERR("Magic mismatch, got 0x%x, expected 0x%x.\n", in_magic, magic);
+      RARCH_ERR("Magic mismatch, got 0x%x, expected 0x%x.\n", in_magic, magic);
       return false;
    }
 
    uint32_t in_crc = swap_if_big32(header[CRC_INDEX]);
    if (in_crc != g_extern.cart_crc)
    {
-      SSNES_ERR("CRC32 mismatch, got 0x%x, expected 0x%x.\n", in_crc, g_extern.cart_crc);
+      RARCH_ERR("CRC32 mismatch, got 0x%x, expected 0x%x.\n", in_crc, g_extern.cart_crc);
       return false;
    }
 
    uint32_t in_state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
    if (in_state_size != pretro_serialize_size())
    {
-      SSNES_ERR("Serialization size mismatch, got 0x%x, expected 0x%x.\n",
+      RARCH_ERR("Serialization size mismatch, got 0x%x, expected 0x%x.\n",
             (unsigned)in_state_size, (unsigned)pretro_serialize_size());
       return false;
    }
@@ -680,33 +680,33 @@ static bool get_info_spectate(netplay_t *handle)
 {
    if (!send_nickname(handle, handle->fd))
    {
-      SSNES_ERR("Failed to send nickname to host.\n");
+      RARCH_ERR("Failed to send nickname to host.\n");
       return false;
    }
 
    if (!get_nickname(handle, handle->fd))
    {
-      SSNES_ERR("Failed to receive nickname from host.\n");
+      RARCH_ERR("Failed to receive nickname from host.\n");
       return false;
    }
 
    char msg[512];
    snprintf(msg, sizeof(msg), "Connected to \"%s\"", handle->other_nick);
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-   SSNES_LOG("%s\n", msg);
+   RARCH_LOG("%s\n", msg);
 
    uint32_t header[4];
 
    if (!recv_all(handle->fd, header, sizeof(header)))
    {
-      SSNES_ERR("Cannot get header from host.\n");
+      RARCH_ERR("Cannot get header from host.\n");
       return false;
    }
 
    size_t save_state_size = pretro_serialize_size();
    if (!bsv_parse_header(header, implementation_magic_value()))
    {
-      SSNES_ERR("Received invalid BSV header from host.\n");
+      RARCH_ERR("Received invalid BSV header from host.\n");
       return false;
    }
 
@@ -718,7 +718,7 @@ static bool get_info_spectate(netplay_t *handle)
 
    if (!recv_all(handle->fd, buf, size))
    {
-      SSNES_ERR("Failed to receive save state from host.\n");
+      RARCH_ERR("Failed to receive save state from host.\n");
       free(buf);
       return false;
    }
@@ -884,7 +884,7 @@ static int poll_input(netplay_t *handle, bool block)
 
       if (block)
       {
-         SSNES_LOG("Network is stalling, resending packet... Count %u of %d ...\n",
+         RARCH_LOG("Network is stalling, resending packet... Count %u of %d ...\n",
                handle->timeout_cnt, MAX_RETRIES);
       }
    } while ((handle->timeout_cnt < MAX_RETRIES) && block);
@@ -903,7 +903,7 @@ static bool get_self_input_state(netplay_t *handle)
    if (handle->frame_count > 0) // First frame we always give zero input since relying on input from first frame screws up when we use -F 0.
    {
       retro_input_state_t cb = handle->cbs.state_cb;
-      for (unsigned i = 0; i < SSNES_FIRST_META_KEY; i++)
+      for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
          int16_t tmp = cb(g_settings.input.netplay_client_swap_input ? 0 : !handle->port,
                RETRO_DEVICE_JOYPAD, 0, i);
@@ -1088,35 +1088,35 @@ static bool netplay_get_cmd(netplay_t *handle)
       {
          if (cmd_size != sizeof(uint32_t))
          {
-            SSNES_ERR("CMD_FLIP_PLAYERS has unexpected command size.\n");
+            RARCH_ERR("CMD_FLIP_PLAYERS has unexpected command size.\n");
             return netplay_cmd_nak(handle);
          }
 
          uint32_t flip_frame;
          if (!recv_all(handle->fd, &flip_frame, sizeof(flip_frame)))
          {
-            SSNES_ERR("Failed to receive CMD_FLIP_PLAYERS argument.\n");
+            RARCH_ERR("Failed to receive CMD_FLIP_PLAYERS argument.\n");
             return netplay_cmd_nak(handle);
          }
 
          flip_frame = ntohl(flip_frame);
          if (flip_frame < handle->flip_frame)
          {
-            SSNES_ERR("Host asked us to flip players in the past. Not possible ...\n");
+            RARCH_ERR("Host asked us to flip players in the past. Not possible ...\n");
             return netplay_cmd_nak(handle);
          }
 
          handle->flip ^= true;
          handle->flip_frame = flip_frame;
 
-         SSNES_LOG("Netplay players are flipped.\n");
+         RARCH_LOG("Netplay players are flipped.\n");
          msg_queue_push(g_extern.msg_queue, "Netplay players are flipped.", 1, 180);
 
          return netplay_cmd_ack(handle);
       }
 
       default:
-         SSNES_ERR("Unknown netplay command received.\n");
+         RARCH_ERR("Unknown netplay command received.\n");
          return netplay_cmd_nak(handle);
    }
 }
@@ -1149,7 +1149,7 @@ void netplay_flip_players(netplay_t *handle)
    if (netplay_send_cmd(handle, NETPLAY_CMD_FLIP_PLAYERS, &flip_frame_net, sizeof(flip_frame_net))
          && netplay_get_response(handle))
    {
-      SSNES_LOG("Netplay players are flipped.\n");
+      RARCH_LOG("Netplay players are flipped.\n");
       msg_queue_push(g_extern.msg_queue, "Netplay players are flipped.", 1, 180);
 
       // Queue up a flip well enough in the future.
@@ -1165,7 +1165,7 @@ void netplay_flip_players(netplay_t *handle)
    return;
 
 error:
-   SSNES_WARN("%s\n", msg);
+   RARCH_WARN("%s\n", msg);
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 }
 
@@ -1267,7 +1267,7 @@ static int16_t netplay_get_spectate_input(netplay_t *handle, bool port, unsigned
       return swap_if_big16(inp);
    else
    {
-      SSNES_ERR("Connection with host was cut.\n");
+      RARCH_ERR("Connection with host was cut.\n");
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, "Connection with host was cut.", 1, 180);
 
@@ -1302,7 +1302,7 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
    int new_fd = accept(handle->fd, (struct sockaddr*)&their_addr, &addr_size);
    if (new_fd < 0)
    {
-      SSNES_ERR("Failed to accept incoming spectator.\n");
+      RARCH_ERR("Failed to accept incoming spectator.\n");
       return;
    }
 
@@ -1325,14 +1325,14 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
 
    if (!get_nickname(handle, new_fd))
    {
-      SSNES_ERR("Failed to get nickname from client.\n");
+      RARCH_ERR("Failed to get nickname from client.\n");
       close(new_fd);
       return;
    }
 
    if (!send_nickname(handle, new_fd))
    {
-      SSNES_ERR("Failed to send nickname to client.\n");
+      RARCH_ERR("Failed to send nickname to client.\n");
       close(new_fd);
       return;
    }
@@ -1341,7 +1341,7 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
    uint32_t *header = bsv_header_generate(&header_size, implementation_magic_value());
    if (!header)
    {
-      SSNES_ERR("Failed to generate BSV header.\n");
+      RARCH_ERR("Failed to generate BSV header.\n");
       close(new_fd);
       return;
    }
@@ -1351,7 +1351,7 @@ static void netplay_pre_frame_spectate(netplay_t *handle)
 
    if (!send_all(new_fd, header, header_size))
    {
-      SSNES_ERR("Failed to send header to client.\n");
+      RARCH_ERR("Failed to send header to client.\n");
       close(new_fd);
       free(header);
       return;
@@ -1434,7 +1434,7 @@ static void netplay_post_frame_spectate(netplay_t *handle)
       if (!send_all(handle->spectate_fds[i],
                handle->spectate_input, handle->spectate_input_ptr * sizeof(int16_t)))
       {
-         SSNES_LOG("Client (#%u) disconnected ...\n", i);
+         RARCH_LOG("Client (#%u) disconnected ...\n", i);
 
          char msg[512];
          snprintf(msg, sizeof(msg), "Client (#%u) disconnected.", i);
@@ -1469,7 +1469,7 @@ void netplay_post_frame(netplay_t *handle)
 #include <ctype.h>
 #include <string.h>
 
-#define addrinfo addrinfo_ssnes__
+#define addrinfo addrinfo_rarch__
 
 // Yes, we love shitty implementations, don't we? :(
 #ifdef _XBOX
@@ -1514,7 +1514,7 @@ error:
 }
 #endif
 
-int getaddrinfo_ssnes__(const char *node, const char *service,
+int getaddrinfo_rarch__(const char *node, const char *service,
       const struct addrinfo *hints,
       struct addrinfo **res)
 {
@@ -1563,7 +1563,7 @@ error:
    return -1;
 }
 
-void freeaddrinfo_ssnes__(struct addrinfo *res)
+void freeaddrinfo_rarch__(struct addrinfo *res)
 {
    free(res->ai_addr);
    free(res);

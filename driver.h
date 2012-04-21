@@ -29,48 +29,48 @@
 #define AUDIO_MAX_RATIO 16
 
 // libretro has 12 buttons from 0-11 (libretro.h)
-#define SSNES_FIRST_META_KEY 12
+#define RARCH_FIRST_META_KEY 12
 enum
 {
-   SSNES_FAST_FORWARD_KEY = SSNES_FIRST_META_KEY,
-   SSNES_FAST_FORWARD_HOLD_KEY,
-   SSNES_LOAD_STATE_KEY,
-   SSNES_SAVE_STATE_KEY,
-   SSNES_FULLSCREEN_TOGGLE_KEY,
-   SSNES_QUIT_KEY,
-   SSNES_STATE_SLOT_PLUS,
-   SSNES_STATE_SLOT_MINUS,
-   SSNES_AUDIO_INPUT_RATE_PLUS,
-   SSNES_AUDIO_INPUT_RATE_MINUS,
-   SSNES_REWIND,
-   SSNES_MOVIE_RECORD_TOGGLE,
-   SSNES_PAUSE_TOGGLE,
-   SSNES_FRAMEADVANCE,
-   SSNES_RESET,
-   SSNES_SHADER_NEXT,
-   SSNES_SHADER_PREV,
-   SSNES_CHEAT_INDEX_PLUS,
-   SSNES_CHEAT_INDEX_MINUS,
-   SSNES_CHEAT_TOGGLE,
-   SSNES_SCREENSHOT,
-   SSNES_DSP_CONFIG,
-   SSNES_MUTE,
-   SSNES_NETPLAY_FLIP,
-   SSNES_SLOWMOTION,
+   RARCH_FAST_FORWARD_KEY = RARCH_FIRST_META_KEY,
+   RARCH_FAST_FORWARD_HOLD_KEY,
+   RARCH_LOAD_STATE_KEY,
+   RARCH_SAVE_STATE_KEY,
+   RARCH_FULLSCREEN_TOGGLE_KEY,
+   RARCH_QUIT_KEY,
+   RARCH_STATE_SLOT_PLUS,
+   RARCH_STATE_SLOT_MINUS,
+   RARCH_AUDIO_INPUT_RATE_PLUS,
+   RARCH_AUDIO_INPUT_RATE_MINUS,
+   RARCH_REWIND,
+   RARCH_MOVIE_RECORD_TOGGLE,
+   RARCH_PAUSE_TOGGLE,
+   RARCH_FRAMEADVANCE,
+   RARCH_RESET,
+   RARCH_SHADER_NEXT,
+   RARCH_SHADER_PREV,
+   RARCH_CHEAT_INDEX_PLUS,
+   RARCH_CHEAT_INDEX_MINUS,
+   RARCH_CHEAT_TOGGLE,
+   RARCH_SCREENSHOT,
+   RARCH_DSP_CONFIG,
+   RARCH_MUTE,
+   RARCH_NETPLAY_FLIP,
+   RARCH_SLOWMOTION,
 
-#ifdef SSNES_CONSOLE
-   SSNES_CHEAT_INPUT,
-   SSNES_SRAM_WRITE_PROTECT,
+#ifdef RARCH_CONSOLE
+   RARCH_CHEAT_INPUT,
+   RARCH_SRAM_WRITE_PROTECT,
 #endif
 
-   SSNES_BIND_LIST_END
+   RARCH_BIND_LIST_END
 };
 
 struct snes_keybind
 {
    bool valid;
    int id;
-   enum ssnes_key key;
+   enum rarch_key key;
 
    // PC only uses lower 16-bits.
    // Full 64-bit can be used for port-specific purposes, like simplifying multiple binds, etc.
@@ -87,7 +87,7 @@ typedef struct video_info
    bool vsync;
    bool force_aspect;
    bool smooth;
-   unsigned input_scale; // Maximum input size: SSNES_SCALE_BASE * input_scale
+   unsigned input_scale; // Maximum input size: RARCH_SCALE_BASE * input_scale
    bool rgb32; // Use 32-bit RGBA rather than native XBGR1555.
 } video_info_t;
 
@@ -150,7 +150,7 @@ typedef struct video_driver
    const char *ident;
 
    // Callbacks essentially useless on PC, but useful on consoles where the drivers are used for more stuff.
-#ifdef SSNES_CONSOLE
+#ifdef RARCH_CONSOLE
    void (*set_swap_block_state)(void *data, bool toggle); // Block swapping from being called in ::frame().
    void (*swap)(void *data); // Explicitly swap buffers. Only useful when set_swap_block_state() is set to true.
    void (*set_aspect_ratio)(void *data, unsigned aspectratio_idx); // TODO: refactor this properly to float.

@@ -42,7 +42,7 @@ scond_t *scond_new(void);
 void scond_free(scond_t *cond);
 
 void scond_wait(scond_t *cond, slock_t *lock);
-#ifndef SSNES_CONSOLE
+#ifndef RARCH_CONSOLE
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, unsigned timeout_ms);
 #endif
 void scond_signal(scond_t *cond);

@@ -102,14 +102,14 @@ static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer = NULL;
 
 enum filter_type
 {
-   SSNES_GL_NOFORCE,
-   SSNES_GL_LINEAR,
-   SSNES_GL_NEAREST
+   RARCH_GL_NOFORCE,
+   RARCH_GL_LINEAR,
+   RARCH_GL_NEAREST
 };
 
 static bool glsl_enable = false;
 static GLuint gl_program[MAX_PROGRAMS] = {0};
-static enum filter_type gl_filter_type[MAX_PROGRAMS] = {SSNES_GL_NOFORCE};
+static enum filter_type gl_filter_type[MAX_PROGRAMS] = {RARCH_GL_NOFORCE};
 static struct gl_fbo_scale gl_scale[MAX_PROGRAMS];
 static unsigned gl_num_programs = 0;
 static unsigned active_index = 0;
@@ -164,7 +164,7 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
 {
    prog->scale_x = 1.0;
    prog->scale_y = 1.0;
-   prog->type_x = prog->type_y = SSNES_SCALE_INPUT;
+   prog->type_x = prog->type_y = RARCH_SCALE_INPUT;
    prog->valid_scale = false;
 
    // Check if shader forces a certain texture filtering.
@@ -173,21 +173,21 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
    {
       if (strcmp((const char*)attr, "nearest") == 0)
       {
-         prog->filter = SSNES_GL_NEAREST;
-         SSNES_LOG("XML: Shader forces GL_NEAREST.\n");
+         prog->filter = RARCH_GL_NEAREST;
+         RARCH_LOG("XML: Shader forces GL_NEAREST.\n");
       }
       else if (strcmp((const char*)attr, "linear") == 0)
       {
-         prog->filter = SSNES_GL_LINEAR;
-         SSNES_LOG("XML: Shader forces GL_LINEAR.\n");
+         prog->filter = RARCH_GL_LINEAR;
+         RARCH_LOG("XML: Shader forces GL_LINEAR.\n");
       }
       else
-         SSNES_WARN("XML: Invalid property for filter.\n");
+         RARCH_WARN("XML: Invalid property for filter.\n");
 
       xmlFree(attr);
    }
    else
-      prog->filter = SSNES_GL_NOFORCE;
+      prog->filter = RARCH_GL_NOFORCE;
 
    // Check for scaling attributes *lots of code <_<*
    xmlChar *attr_scale = xmlGetProp(ptr, (const xmlChar*)"scale");
@@ -208,8 +208,8 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       prog->scale_x = scale;
       prog->scale_y = scale;
       prog->valid_scale = true;
-      prog->type_x = prog->type_y = SSNES_SCALE_INPUT;
-      SSNES_LOG("Got scale attr: %.1f\n", scale);
+      prog->type_x = prog->type_y = RARCH_SCALE_INPUT;
+      RARCH_LOG("Got scale attr: %.1f\n", scale);
       x_attr_cnt++;
       y_attr_cnt++;
    }
@@ -219,8 +219,8 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       float scale = strtod((const char*)attr_scale_x, NULL);
       prog->scale_x = scale;
       prog->valid_scale = true;
-      prog->type_x = SSNES_SCALE_INPUT;
-      SSNES_LOG("Got scale_x attr: %.1f\n", scale);
+      prog->type_x = RARCH_SCALE_INPUT;
+      RARCH_LOG("Got scale_x attr: %.1f\n", scale);
       x_attr_cnt++;
    }
 
@@ -229,8 +229,8 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       float scale = strtod((const char*)attr_scale_y, NULL);
       prog->scale_y = scale;
       prog->valid_scale = true;
-      prog->type_y = SSNES_SCALE_INPUT;
-      SSNES_LOG("Got scale_y attr: %.1f\n", scale);
+      prog->type_y = RARCH_SCALE_INPUT;
+      RARCH_LOG("Got scale_y attr: %.1f\n", scale);
       y_attr_cnt++;
    }
    
@@ -238,8 +238,8 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
    {
       prog->abs_x = prog->abs_y = strtoul((const char*)attr_size, NULL, 0);
       prog->valid_scale = true;
-      prog->type_x = prog->type_y = SSNES_SCALE_ABSOLUTE;
-      SSNES_LOG("Got size attr: %u\n", prog->abs_x);
+      prog->type_x = prog->type_y = RARCH_SCALE_ABSOLUTE;
+      RARCH_LOG("Got size attr: %u\n", prog->abs_x);
       x_attr_cnt++;
       y_attr_cnt++;
    }
@@ -248,8 +248,8 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
    {
       prog->abs_x = strtoul((const char*)attr_size_x, NULL, 0);
       prog->valid_scale = true;
-      prog->type_x = SSNES_SCALE_ABSOLUTE;
-      SSNES_LOG("Got size_x attr: %u\n", prog->abs_x);
+      prog->type_x = RARCH_SCALE_ABSOLUTE;
+      RARCH_LOG("Got size_x attr: %u\n", prog->abs_x);
       x_attr_cnt++;
    }
 
@@ -257,8 +257,8 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
    {
       prog->abs_y = strtoul((const char*)attr_size_y, NULL, 0);
       prog->valid_scale = true;
-      prog->type_y = SSNES_SCALE_ABSOLUTE;
-      SSNES_LOG("Got size_y attr: %u\n", prog->abs_y);
+      prog->type_y = RARCH_SCALE_ABSOLUTE;
+      RARCH_LOG("Got size_y attr: %u\n", prog->abs_y);
       y_attr_cnt++;
    }
 
@@ -268,8 +268,8 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       prog->scale_x = scale;
       prog->scale_y = scale;
       prog->valid_scale = true;
-      prog->type_x = prog->type_y = SSNES_SCALE_VIEWPORT;
-      SSNES_LOG("Got outscale attr: %.1f\n", scale);
+      prog->type_x = prog->type_y = RARCH_SCALE_VIEWPORT;
+      RARCH_LOG("Got outscale attr: %.1f\n", scale);
       x_attr_cnt++;
       y_attr_cnt++;
    }
@@ -279,8 +279,8 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       float scale = strtod((const char*)attr_outscale_x, NULL);
       prog->scale_x = scale;
       prog->valid_scale = true;
-      prog->type_x = SSNES_SCALE_VIEWPORT;
-      SSNES_LOG("Got outscale_x attr: %.1f\n", scale);
+      prog->type_x = RARCH_SCALE_VIEWPORT;
+      RARCH_LOG("Got outscale_x attr: %.1f\n", scale);
       x_attr_cnt++;
    }
 
@@ -289,8 +289,8 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       float scale = strtod((const char*)attr_outscale_y, NULL);
       prog->scale_y = scale;
       prog->valid_scale = true;
-      prog->type_y = SSNES_SCALE_VIEWPORT;
-      SSNES_LOG("Got outscale_y attr: %.1f\n", scale);
+      prog->type_y = RARCH_SCALE_VIEWPORT;
+      RARCH_LOG("Got outscale_y attr: %.1f\n", scale);
       y_attr_cnt++;
    }
 
@@ -325,7 +325,7 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
 {
    if (gl_teximage_cnt >= MAX_TEXTURES)
    {
-      SSNES_WARN("Too many texture images. Ignoring ...\n");
+      RARCH_WARN("Too many texture images. Ignoring ...\n");
       return true;
    }
 
@@ -338,13 +338,13 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
 
    if (!id)
    {
-      SSNES_ERR("Could not find ID in texture.\n");
+      RARCH_ERR("Could not find ID in texture.\n");
       goto error;
    }
 
    if (!filename)
    {
-      SSNES_ERR("Could not find filename in texture.\n");
+      RARCH_ERR("Could not find filename in texture.\n");
       goto error;
    }
 
@@ -360,10 +360,10 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
 
    strlcat(tex_path, (const char*)filename, sizeof(tex_path));
 
-   SSNES_LOG("Loading texture image from: \"%s\" ...\n", tex_path);
+   RARCH_LOG("Loading texture image from: \"%s\" ...\n", tex_path);
    if (!texture_image_load(tex_path, &img))
    {
-      SSNES_ERR("Failed to load texture image from: \"%s\"\n", tex_path);
+      RARCH_ERR("Failed to load texture image from: \"%s\"\n", tex_path);
       goto error;
    }
 
@@ -411,7 +411,7 @@ static bool get_script(const char *path, xmlNodePtr ptr)
 {
    if (*gl_tracker_script || gl_script_program)
    {
-      SSNES_ERR("Script already imported.\n");
+      RARCH_ERR("Script already imported.\n");
       return false;
    }
 
@@ -425,7 +425,7 @@ static bool get_script(const char *path, xmlNodePtr ptr)
    xmlChar *language = xmlGetProp(ptr, (const xmlChar*)"language");
    if (!language || strcmp((const char*)language, "python") != 0)
    {
-      SSNES_ERR("Script language is not Python.\n");
+      RARCH_ERR("Script language is not Python.\n");
       if (language)
          xmlFree(language);
       return false;
@@ -450,7 +450,7 @@ static bool get_script(const char *path, xmlNodePtr ptr)
       xmlChar *script = xmlNodeGetContent(ptr);
       if (!script)
       {
-         SSNES_ERR("No content in script.\n");
+         RARCH_ERR("No content in script.\n");
          return false;
       }
       gl_script_program = script;
@@ -465,7 +465,7 @@ static bool get_import_value(xmlNodePtr ptr)
    bool ret = true;
    if (gl_tracker_info_cnt >= MAX_VARIABLES)
    {
-      SSNES_ERR("Too many import variables ...\n");
+      RARCH_ERR("Too many import variables ...\n");
       return false;
    }
 
@@ -478,41 +478,41 @@ static bool get_import_value(xmlNodePtr ptr)
 
    unsigned memtype;
    enum state_tracker_type tracker_type;
-   enum state_ram_type ram_type = SSNES_STATE_NONE;
+   enum state_ram_type ram_type = RARCH_STATE_NONE;
    uint32_t addr = 0;
    unsigned mask_value = 0;
    unsigned mask_equal = 0;
 
    if (!semantic || !id)
    {
-      SSNES_ERR("No semantic or ID for import value.\n");
+      RARCH_ERR("No semantic or ID for import value.\n");
       ret = false;
       goto end;
    }
 
    if (strcmp((const char*)semantic, "capture") == 0)
-      tracker_type = SSNES_STATE_CAPTURE;
+      tracker_type = RARCH_STATE_CAPTURE;
    else if (strcmp((const char*)semantic, "capture_previous") == 0)
-      tracker_type = SSNES_STATE_CAPTURE_PREV;
+      tracker_type = RARCH_STATE_CAPTURE_PREV;
    else if (strcmp((const char*)semantic, "transition") == 0)
-      tracker_type = SSNES_STATE_TRANSITION;
+      tracker_type = RARCH_STATE_TRANSITION;
    else if (strcmp((const char*)semantic, "transition_count") == 0)
-      tracker_type = SSNES_STATE_TRANSITION_COUNT;
+      tracker_type = RARCH_STATE_TRANSITION_COUNT;
    else if (strcmp((const char*)semantic, "transition_previous") == 0)
-      tracker_type = SSNES_STATE_TRANSITION_PREV;
+      tracker_type = RARCH_STATE_TRANSITION_PREV;
 #ifdef HAVE_PYTHON
    else if (strcmp((const char*)semantic, "python") == 0)
-      tracker_type = SSNES_STATE_PYTHON;
+      tracker_type = RARCH_STATE_PYTHON;
 #endif
    else
    {
-      SSNES_ERR("Invalid semantic for import value.\n");
+      RARCH_ERR("Invalid semantic for import value.\n");
       ret = false;
       goto end;
    }
 
 #ifdef HAVE_PYTHON
-   if (tracker_type != SSNES_STATE_PYTHON)
+   if (tracker_type != RARCH_STATE_PYTHON)
 #endif
    {
       if (input) 
@@ -521,14 +521,14 @@ static bool get_import_value(xmlNodePtr ptr)
          switch (slot)
          {
             case 1:
-               ram_type = SSNES_STATE_INPUT_SLOT1;
+               ram_type = RARCH_STATE_INPUT_SLOT1;
                break;
             case 2:
-               ram_type = SSNES_STATE_INPUT_SLOT2;
+               ram_type = RARCH_STATE_INPUT_SLOT2;
                break;
 
             default:
-               SSNES_ERR("Invalid input slot for import.\n");
+               RARCH_ERR("Invalid input slot for import.\n");
                ret = false;
                goto end;
          }
@@ -536,11 +536,11 @@ static bool get_import_value(xmlNodePtr ptr)
       else if (wram)
       {
          addr = strtoul((const char*)wram, NULL, 16);
-         ram_type = SSNES_STATE_WRAM;
+         ram_type = RARCH_STATE_WRAM;
       }
       else
       {
-         SSNES_ERR("No RAM address specificed for import value.\n");
+         RARCH_ERR("No RAM address specificed for import value.\n");
          ret = false;
          goto end;
       }
@@ -548,7 +548,7 @@ static bool get_import_value(xmlNodePtr ptr)
 
    switch (ram_type)
    {
-      case SSNES_STATE_WRAM:
+      case RARCH_STATE_WRAM:
          memtype = RETRO_MEMORY_SYSTEM_RAM;
          break;
 
@@ -558,7 +558,7 @@ static bool get_import_value(xmlNodePtr ptr)
 
    if ((memtype != -1u) && (addr >= pretro_get_memory_size(memtype)))
    {
-      SSNES_ERR("Address out of bounds.\n");
+      RARCH_ERR("Address out of bounds.\n");
       ret = false;
       goto end;
    }
@@ -593,11 +593,11 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
    xmlParserCtxtPtr ctx = xmlNewParserCtxt();
    if (!ctx)
    {
-      SSNES_ERR("Failed to load libxml2 context.\n");
+      RARCH_ERR("Failed to load libxml2 context.\n");
       return false;
    }
 
-   SSNES_LOG("Loading XML shader: %s\n", path);
+   RARCH_LOG("Loading XML shader: %s\n", path);
    xmlDocPtr doc = xmlCtxtReadFile(ctx, path, NULL, 0);
    xmlNodePtr head = NULL;
    xmlNodePtr cur = NULL;
@@ -605,13 +605,13 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
 
    if (!doc)
    {
-      SSNES_ERR("Failed to parse XML file: %s\n", path);
+      RARCH_ERR("Failed to parse XML file: %s\n", path);
       goto error;
    }
 
    if (ctx->valid == 0)
    {
-      SSNES_ERR("Cannot validate XML shader: %s\n", path);
+      RARCH_ERR("Cannot validate XML shader: %s\n", path);
       goto error;
    }
 
@@ -653,7 +653,7 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       {
          if (prog[num].vertex)
          {
-            SSNES_ERR("Cannot have more than one vertex shader in a program.\n");
+            RARCH_ERR("Cannot have more than one vertex shader in a program.\n");
             xmlFree(content);
             goto error;
          }
@@ -665,7 +665,7 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
          prog[num].fragment = (char*)content;
          if (!get_xml_attrs(&prog[num], cur))
          {
-            SSNES_ERR("XML shader attributes do not comply with specifications.\n");
+            RARCH_ERR("XML shader attributes do not comply with specifications.\n");
             goto error;
          }
          num++;
@@ -674,7 +674,7 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       {
          if (!get_texture_image(path, cur))
          {
-            SSNES_ERR("Texture image failed to load.\n");
+            RARCH_ERR("Texture image failed to load.\n");
             goto error;
          }
       }
@@ -682,7 +682,7 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       {
          if (!get_import_value(cur))
          {
-            SSNES_ERR("Import value is invalid.\n");
+            RARCH_ERR("Import value is invalid.\n");
             goto error;
          }
       }
@@ -691,7 +691,7 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       {
          if (!get_script(path, cur))
          {
-            SSNES_ERR("Script is invalid.\n");
+            RARCH_ERR("Script is invalid.\n");
             goto error;
          }
       }
@@ -700,7 +700,7 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
 
    if (num == 0)
    {
-      SSNES_ERR("Couldn't find vertex shader nor fragment shader in XML file.\n");
+      RARCH_ERR("Couldn't find vertex shader nor fragment shader in XML file.\n");
       goto error;
    }
 
@@ -709,7 +709,7 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
    return num;
 
 error:
-   SSNES_ERR("Failed to load XML shader ...\n");
+   RARCH_ERR("Failed to load XML shader ...\n");
    if (doc)
       xmlFreeDoc(doc);
    xmlFreeParserCtxt(ctx);
@@ -733,7 +733,7 @@ static void print_shader_log(GLuint obj)
    pglGetShaderInfoLog(obj, max_len, &info_len, info_log);
 
    if (info_len > 0)
-      SSNES_LOG("Shader log: %s\n", info_log);
+      RARCH_LOG("Shader log: %s\n", info_log);
 
    free(info_log);
 }
@@ -755,7 +755,7 @@ static void print_linker_log(GLuint obj)
    pglGetProgramInfoLog(obj, max_len, &info_len, info_log);
 
    if (info_len > 0)
-      SSNES_LOG("Linker log: %s\n", info_log);
+      RARCH_LOG("Linker log: %s\n", info_log);
 
    free(info_log);
 }
@@ -797,17 +797,17 @@ static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size
 
       if (gl_prog[i] == 0)
       {
-         SSNES_ERR("Failed to create GL program #%u.\n", i);
+         RARCH_ERR("Failed to create GL program #%u.\n", i);
          return false;
       }
 
       if (progs[i].vertex)
       {
-         SSNES_LOG("Found GLSL vertex shader.\n");
+         RARCH_LOG("Found GLSL vertex shader.\n");
          GLuint shader = pglCreateShader(GL_VERTEX_SHADER);
          if (!compile_shader(shader, progs[i].vertex))
          {
-            SSNES_ERR("Failed to compile vertex shader #%u\n", i);
+            RARCH_ERR("Failed to compile vertex shader #%u\n", i);
             return false;
          }
 
@@ -817,11 +817,11 @@ static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size
 
       if (progs[i].fragment)
       {
-         SSNES_LOG("Found GLSL fragment shader.\n");
+         RARCH_LOG("Found GLSL fragment shader.\n");
          GLuint shader = pglCreateShader(GL_FRAGMENT_SHADER);
          if (!compile_shader(shader, progs[i].fragment))
          {
-            SSNES_ERR("Failed to compile fragment shader #%u\n", i);
+            RARCH_ERR("Failed to compile fragment shader #%u\n", i);
             return false;
          }
 
@@ -831,10 +831,10 @@ static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size
 
       if (progs[i].vertex || progs[i].fragment)
       {
-         SSNES_LOG("Linking GLSL program.\n");
+         RARCH_LOG("Linking GLSL program.\n");
          if (!link_program(gl_prog[i]))
          {
-            SSNES_ERR("Failed to link program #%u\n", i);
+            RARCH_ERR("Failed to link program #%u\n", i);
             return false;
          }
 
@@ -886,7 +886,7 @@ bool gl_glsl_init(const char *path)
    LOAD_GL_SYM(VertexAttribPointer);
 #endif
 
-   SSNES_LOG("Checking GLSL shader support ...\n");
+   RARCH_LOG("Checking GLSL shader support ...\n");
 #ifdef __APPLE__
    const bool shader_support = true;
 #else
@@ -902,7 +902,7 @@ bool gl_glsl_init(const char *path)
 
    if (!shader_support)
    {
-      SSNES_ERR("GLSL shaders aren't supported by your OpenGL driver.\n");
+      RARCH_ERR("GLSL shaders aren't supported by your OpenGL driver.\n");
       return false;
    }
 
@@ -918,7 +918,7 @@ bool gl_glsl_init(const char *path)
 
    if (num_progs == 0)
    {
-      SSNES_ERR("Couldn't find any valid shaders in XML file.\n");
+      RARCH_ERR("Couldn't find any valid shaders in XML file.\n");
       return false;
    }
 
@@ -948,13 +948,13 @@ bool gl_glsl_init(const char *path)
       }
       else
       {
-         SSNES_ERR("Did not find valid shader in secondary shader file.\n");
+         RARCH_ERR("Did not find valid shader in secondary shader file.\n");
          return false;
       }
    }
 
    //if (!gl_check_error())
-   //   SSNES_WARN("Detected GL error.\n");
+   //   RARCH_WARN("Detected GL error.\n");
 
    if (gl_tracker_info_cnt > 0)
    {
@@ -977,7 +977,7 @@ bool gl_glsl_init(const char *path)
 
       gl_state_tracker = state_tracker_init(&info);
       if (!gl_state_tracker)
-         SSNES_WARN("Failed to init state tracker.\n");
+         RARCH_WARN("Failed to init state tracker.\n");
    }
    
    glsl_enable = true;
@@ -1250,14 +1250,14 @@ bool gl_glsl_filter_type(unsigned index, bool *smooth)
 
    switch (gl_filter_type[index])
    {
-      case SSNES_GL_NOFORCE:
+      case RARCH_GL_NOFORCE:
          return false;
 
-      case SSNES_GL_NEAREST:
+      case RARCH_GL_NEAREST:
          *smooth = false;
          return true;
 
-      case SSNES_GL_LINEAR:
+      case RARCH_GL_LINEAR:
          *smooth = true;
          return true;
 

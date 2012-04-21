@@ -16,7 +16,7 @@
 
 #include "../driver.h"
 #include <stdlib.h>
-#ifdef SSNES_CONSOLE
+#ifdef RARCH_CONSOLE
 #include "../console/librsound/rsound.h"
 #else
 #include <rsound.h>

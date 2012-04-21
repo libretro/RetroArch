@@ -132,12 +132,12 @@ static void find_audio_driver(void)
          return;
       }
    }
-   SSNES_ERR("Couldn't find any audio driver named \"%s\"\n", g_settings.audio.driver);
+   RARCH_ERR("Couldn't find any audio driver named \"%s\"\n", g_settings.audio.driver);
    fprintf(stderr, "Available audio drivers are:\n");
    for (size_t i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
       fprintf(stderr, "\t%s\n", audio_drivers[i]->ident);
 
-   ssnes_fail(1, "find_audio_driver()");
+   rarch_fail(1, "find_audio_driver()");
 }
 
 static void find_video_driver(void)
@@ -150,12 +150,12 @@ static void find_video_driver(void)
          return;
       }
    }
-   SSNES_ERR("Couldn't find any video driver named \"%s\"\n", g_settings.video.driver);
+   RARCH_ERR("Couldn't find any video driver named \"%s\"\n", g_settings.video.driver);
    fprintf(stderr, "Available video drivers are:\n");
    for (size_t i = 0; i < sizeof(video_drivers) / sizeof(video_driver_t*); i++)
       fprintf(stderr, "\t%s\n", video_drivers[i]->ident);
 
-   ssnes_fail(1, "find_video_driver()");
+   rarch_fail(1, "find_video_driver()");
 }
 
 static void find_input_driver(void)
@@ -168,12 +168,12 @@ static void find_input_driver(void)
          return;
       }
    }
-   SSNES_ERR("Couldn't find any input driver named \"%s\"\n", g_settings.input.driver);
+   RARCH_ERR("Couldn't find any input driver named \"%s\"\n", g_settings.input.driver);
    fprintf(stderr, "Available input drivers are:\n");
    for (size_t i = 0; i < sizeof(input_drivers) / sizeof(input_driver_t*); i++)
       fprintf(stderr, "\t%s\n", input_drivers[i]->ident);
 
-   ssnes_fail(1, "find_input_driver()");
+   rarch_fail(1, "find_input_driver()");
 }
 
 void init_drivers_pre(void)
@@ -200,37 +200,37 @@ static void init_dsp_plugin(void)
 {
    if (!(*g_settings.audio.dsp_plugin))
       return;
-   ssnes_dsp_info_t info = {0};
+   rarch_dsp_info_t info = {0};
 
    g_extern.audio_data.dsp_lib = dylib_load(g_settings.audio.dsp_plugin);
    if (!g_extern.audio_data.dsp_lib)
    {
-      SSNES_ERR("Failed to open DSP plugin: \"%s\" ...\n", g_settings.audio.dsp_plugin);
+      RARCH_ERR("Failed to open DSP plugin: \"%s\" ...\n", g_settings.audio.dsp_plugin);
       return;
    }
 
-   const ssnes_dsp_plugin_t* (SSNES_API_CALLTYPE *plugin_init)(void) = 
-      (const ssnes_dsp_plugin_t *(SSNES_API_CALLTYPE*)(void))dylib_proc(g_extern.audio_data.dsp_lib, "ssnes_dsp_plugin_init");
+   const rarch_dsp_plugin_t* (RARCH_API_CALLTYPE *plugin_init)(void) = 
+      (const rarch_dsp_plugin_t *(RARCH_API_CALLTYPE*)(void))dylib_proc(g_extern.audio_data.dsp_lib, "rarch_dsp_plugin_init");
    if (!plugin_init)
    {
-      SSNES_ERR("Failed to find symbol \"ssnes_dsp_plugin_init\" in DSP plugin.\n");
+      RARCH_ERR("Failed to find symbol \"rarch_dsp_plugin_init\" in DSP plugin.\n");
       goto error;
    }
 
    g_extern.audio_data.dsp_plugin = plugin_init();
    if (!g_extern.audio_data.dsp_plugin)
    {
-      SSNES_ERR("Failed to get a valid DSP plugin.\n");
+      RARCH_ERR("Failed to get a valid DSP plugin.\n");
       goto error;
    }
 
-   if (g_extern.audio_data.dsp_plugin->api_version != SSNES_DSP_API_VERSION)
+   if (g_extern.audio_data.dsp_plugin->api_version != RARCH_DSP_API_VERSION)
    {
-      SSNES_ERR("DSP plugin API mismatch. SSNES: %d, Plugin: %d\n", SSNES_DSP_API_VERSION, g_extern.audio_data.dsp_plugin->api_version);
+      RARCH_ERR("DSP plugin API mismatch. SSNES: %d, Plugin: %d\n", RARCH_DSP_API_VERSION, g_extern.audio_data.dsp_plugin->api_version);
       goto error;
    }
 
-   SSNES_LOG("Loaded DSP plugin: \"%s\"\n", g_extern.audio_data.dsp_plugin->ident ? g_extern.audio_data.dsp_plugin->ident : "Unknown");
+   RARCH_LOG("Loaded DSP plugin: \"%s\"\n", g_extern.audio_data.dsp_plugin->ident ? g_extern.audio_data.dsp_plugin->ident : "Unknown");
 
    info.input_rate = g_settings.audio.in_rate;
    info.output_rate = g_settings.audio.out_rate;
@@ -238,7 +238,7 @@ static void init_dsp_plugin(void)
    g_extern.audio_data.dsp_handle = g_extern.audio_data.dsp_plugin->init(&info);
    if (!g_extern.audio_data.dsp_handle)
    {
-      SSNES_ERR("Failed to init DSP plugin.\n");
+      RARCH_ERR("Failed to init DSP plugin.\n");
       goto error;
    }
 
@@ -268,7 +268,7 @@ static void adjust_audio_input_rate(void)
    float timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
    if (timing_skew > 0.05f) // We don't want to adjust pitch too much. If we have extreme cases, just don't readjust at all.
    {
-      SSNES_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
+      RARCH_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
             g_settings.video.refresh_rate,
             (float)info->fps);
 
@@ -278,7 +278,7 @@ static void adjust_audio_input_rate(void)
    g_settings.audio.in_rate = info->sample_rate *
       (g_settings.video.refresh_rate / info->fps);
 
-   SSNES_LOG("Set audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
+   RARCH_LOG("Set audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
 }
 
 void init_audio(void)
@@ -288,14 +288,14 @@ void init_audio(void)
    size_t outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * g_settings.slowmotion_ratio;
 
    // Used for recording even if audio isn't enabled.
-   ssnes_assert(g_extern.audio_data.conv_outsamples = (int16_t*)malloc(outsamples_max * sizeof(int16_t)));
+   rarch_assert(g_extern.audio_data.conv_outsamples = (int16_t*)malloc(outsamples_max * sizeof(int16_t)));
 
    g_extern.audio_data.block_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
    g_extern.audio_data.nonblock_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
    g_extern.audio_data.chunk_size = g_extern.audio_data.block_chunk_size;
 
    // Needs to be able to hold full content of a full max_bufsamples in addition to its own.
-   ssnes_assert(g_extern.audio_data.rewind_buf = (int16_t*)malloc(max_bufsamples * sizeof(int16_t)));
+   rarch_assert(g_extern.audio_data.rewind_buf = (int16_t*)malloc(max_bufsamples * sizeof(int16_t)));
    g_extern.audio_data.rewind_size = max_bufsamples;
 
    if (!g_settings.audio.enable)
@@ -311,7 +311,7 @@ void init_audio(void)
 
    if (!driver.audio_data)
    {
-      SSNES_ERR("Failed to initialize audio driver. Will continue without audio.\n");
+      RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
       g_extern.audio_active = false;
    }
 
@@ -328,11 +328,11 @@ void init_audio(void)
    if (!g_extern.audio_data.source)
       g_extern.audio_active = false;
 
-   ssnes_assert(g_extern.audio_data.data = (float*)malloc(max_bufsamples * sizeof(float)));
+   rarch_assert(g_extern.audio_data.data = (float*)malloc(max_bufsamples * sizeof(float)));
    g_extern.audio_data.data_ptr = 0;
 
-   ssnes_assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
-   ssnes_assert(g_extern.audio_data.outsamples = (float*)malloc(outsamples_max * sizeof(float)));
+   rarch_assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
+   rarch_assert(g_extern.audio_data.outsamples = (float*)malloc(outsamples_max * sizeof(float)));
 
    g_extern.audio_data.orig_src_ratio =
       g_extern.audio_data.src_ratio =
@@ -346,7 +346,7 @@ void init_audio(void)
          g_extern.audio_data.rate_control = true;
       }
       else
-         SSNES_WARN("Audio rate control was desired, but driver does not support needed features.\n");
+         RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
    }
 
 #ifdef HAVE_DYLIB
@@ -394,11 +394,11 @@ static void init_filter(void)
    if (*g_settings.video.filter_path == '\0')
       return;
 
-   SSNES_LOG("Loading bSNES filter from \"%s\"\n", g_settings.video.filter_path);
+   RARCH_LOG("Loading bSNES filter from \"%s\"\n", g_settings.video.filter_path);
    g_extern.filter.lib = dylib_load(g_settings.video.filter_path);
    if (!g_extern.filter.lib)
    {
-      SSNES_ERR("Failed to load filter \"%s\"\n", g_settings.video.filter_path);
+      RARCH_ERR("Failed to load filter \"%s\"\n", g_settings.video.filter_path);
       return;
    }
 
@@ -410,7 +410,7 @@ static void init_filter(void)
                 unsigned, unsigned, unsigned))dylib_proc(g_extern.filter.lib, "filter_render");
    if (!g_extern.filter.psize || !g_extern.filter.prender)
    {
-      SSNES_ERR("Failed to find functions in filter...\n");
+      RARCH_ERR("Failed to find functions in filter...\n");
       dylib_close(g_extern.filter.lib);
       g_extern.filter.lib = NULL;
       return;
@@ -426,14 +426,14 @@ static void init_filter(void)
    unsigned pow2_x = next_pow2(width);
    unsigned pow2_y = next_pow2(height);
    unsigned maxsize = pow2_x > pow2_y ? pow2_x : pow2_y; 
-   g_extern.filter.scale = maxsize / SSNES_SCALE_BASE;
+   g_extern.filter.scale = maxsize / RARCH_SCALE_BASE;
 
-   g_extern.filter.buffer = (uint32_t*)malloc(SSNES_SCALE_BASE * SSNES_SCALE_BASE * g_extern.filter.scale * g_extern.filter.scale * sizeof(uint32_t));
-   g_extern.filter.pitch = SSNES_SCALE_BASE * g_extern.filter.scale * sizeof(uint32_t);
-   ssnes_assert(g_extern.filter.buffer);
+   g_extern.filter.buffer = (uint32_t*)malloc(RARCH_SCALE_BASE * RARCH_SCALE_BASE * g_extern.filter.scale * g_extern.filter.scale * sizeof(uint32_t));
+   g_extern.filter.pitch = RARCH_SCALE_BASE * g_extern.filter.scale * sizeof(uint32_t);
+   rarch_assert(g_extern.filter.buffer);
 
    g_extern.filter.colormap = (uint32_t*)malloc(32768 * sizeof(uint32_t));
-   ssnes_assert(g_extern.filter.colormap);
+   rarch_assert(g_extern.filter.colormap);
 
    // Set up conversion map from 16-bit XRGB1555 to 32-bit ARGB.
    for (unsigned i = 0; i < 32768; i++)
@@ -475,7 +475,7 @@ static void init_shader_dir(void)
    {
       while (g_extern.shader_dir.elems[g_extern.shader_dir.size])
       {
-         SSNES_LOG("Found shader \"%s\"\n", g_extern.shader_dir.elems[g_extern.shader_dir.size]);
+         RARCH_LOG("Found shader \"%s\"\n", g_extern.shader_dir.elems[g_extern.shader_dir.size]);
          g_extern.shader_dir.size++;
       }
    }
@@ -503,7 +503,7 @@ void init_video_input(void)
 
    const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
    unsigned max_dim = max(geom->max_width, geom->max_height);
-   unsigned scale = next_pow2(max_dim) / SSNES_SCALE_BASE;
+   unsigned scale = next_pow2(max_dim) / RARCH_SCALE_BASE;
    scale = max(scale, 1);
 
    if (g_extern.filter.active)
@@ -516,7 +516,7 @@ void init_video_input(void)
       else
          g_settings.video.aspect_ratio = (float)geom->base_width / geom->base_height; // 1:1 PAR.
 
-      SSNES_LOG("Adjusting aspect ratio to %.2f\n", g_settings.video.aspect_ratio);
+      RARCH_LOG("Adjusting aspect ratio to %.2f\n", g_settings.video.aspect_ratio);
    }
 
    unsigned width;
@@ -540,7 +540,7 @@ void init_video_input(void)
       }
    }
 
-   SSNES_LOG("Video @ %ux%u\n", width, height);
+   RARCH_LOG("Video @ %ux%u\n", width, height);
 
    video_info_t video = {0};
    video.width = width;
@@ -557,8 +557,8 @@ void init_video_input(void)
 
    if (driver.video_data == NULL)
    {
-      SSNES_ERR("Cannot open video driver ... Exiting ...\n");
-      ssnes_fail(1, "init_video_input()");
+      RARCH_ERR("Cannot open video driver ... Exiting ...\n");
+      rarch_fail(1, "init_video_input()");
    }
 
    if (driver.video->set_rotation && g_extern.system.rotation)
@@ -573,14 +573,14 @@ void init_video_input(void)
          driver.input_data = input_init_func();
          if (driver.input_data == NULL)
          {
-            SSNES_ERR("Cannot init input driver. Exiting ...\n");
-            ssnes_fail(1, "init_video_input()");
+            RARCH_ERR("Cannot init input driver. Exiting ...\n");
+            rarch_fail(1, "init_video_input()");
          }
       }
       else
       {
-         SSNES_ERR("Cannot find input driver. Exiting ...\n");
-         ssnes_fail(1, "init_video_input()");
+         RARCH_ERR("Cannot find input driver. Exiting ...\n");
+         rarch_fail(1, "init_video_input()");
       }
    }
 }

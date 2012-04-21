@@ -21,13 +21,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "../libretro.h"
-#include "ssnes_sdl_input.h"
+#include "rarch_sdl_input.h"
 #include "keysym.h"
 
 struct key_bind
 {
    unsigned sdl;
-   enum ssnes_key sk;
+   enum rarch_key sk;
 };
 
 static unsigned keysym_lut[SK_LAST];
@@ -137,7 +137,7 @@ static void *sdl_input_init(void)
    if (!sdl->di)
    {
       free(sdl);
-      SSNES_ERR("Failed to init SDL/DInput.\n");
+      RARCH_ERR("Failed to init SDL/DInput.\n");
       return NULL;
    }
 #else
@@ -160,19 +160,19 @@ static void *sdl_input_init(void)
       sdl->joysticks[i] = SDL_JoystickOpen(port);
       if (!sdl->joysticks[i])
       {
-         SSNES_ERR("Couldn't open SDL joystick #%u on SNES port %u\n", port, i + 1);
+         RARCH_ERR("Couldn't open SDL joystick #%u on SNES port %u\n", port, i + 1);
          free(sdl);
          SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
          return NULL;
       }
 
-      SSNES_LOG("Opened Joystick: %s (#%u) on port %u\n", 
+      RARCH_LOG("Opened Joystick: %s (#%u) on port %u\n", 
             SDL_JoystickName(port), port, i + 1);
 
       sdl->num_axes[i] = SDL_JoystickNumAxes(sdl->joysticks[i]);
       sdl->num_buttons[i] = SDL_JoystickNumButtons(sdl->joysticks[i]);
       sdl->num_hats[i] = SDL_JoystickNumHats(sdl->joysticks[i]);
-      SSNES_LOG("Joypad has: %u axes, %u buttons, %u hats.\n",
+      RARCH_LOG("Joypad has: %u axes, %u buttons, %u hats.\n",
             sdl->num_axes[i], sdl->num_buttons[i], sdl->num_hats[i]);
    }
 #endif
@@ -269,7 +269,7 @@ static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num, const struct sne
 static bool sdl_bind_button_pressed(void *data, int key)
 {
    const struct snes_keybind *binds = g_settings.input.binds[0];
-   if (key >= 0 && key < SSNES_BIND_LIST_END)
+   if (key >= 0 && key < RARCH_BIND_LIST_END)
    {
       const struct snes_keybind *bind = &binds[key];
       return sdl_is_pressed((sdl_input_t*)data, 0, bind);
@@ -282,7 +282,7 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct snes_keybi
       unsigned port_num, unsigned id)
 {
    const struct snes_keybind *binds = binds_[port_num];
-   if (id < SSNES_BIND_LIST_END)
+   if (id < RARCH_BIND_LIST_END)
    {
       const struct snes_keybind *bind = &binds[id];
       return bind->valid ? (sdl_is_pressed(sdl, port_num, bind) ? 1 : 0) : 0;

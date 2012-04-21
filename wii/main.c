@@ -83,7 +83,7 @@ static const char *get_rom_path(sgui_handle_t *sgui)
       uint16_t input_state = 0;
       input_wii.poll(NULL);
 
-      if (input_wii.key_pressed(NULL, SSNES_QUIT_KEY))
+      if (input_wii.key_pressed(NULL, RARCH_QUIT_KEY))
       {
          if (can_quit)
             return NULL;
@@ -91,7 +91,7 @@ static const char *get_rom_path(sgui_handle_t *sgui)
       else
          can_quit = true;
 
-      for (unsigned i = 0; i < SSNES_FIRST_META_KEY; i++)
+      for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
          input_state |= input_wii.input_state(NULL, NULL, false,
                RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
@@ -118,11 +118,11 @@ static const char *get_rom_path(sgui_handle_t *sgui)
             SGUI_WIDTH * sizeof(uint16_t), NULL);
 
       old_input_state = input_state;
-      ssnes_sleep(10);
+      rarch_sleep(10);
    }
 }
 
-int ssnes_main(int argc, char **argv);
+int rarch_main(int argc, char **argv);
 
 extern uint8_t _binary_console_font_bmp_start[];
 
@@ -146,20 +146,20 @@ int main(void)
    int ret = 0;
    while ((rom_path = get_rom_path(sgui)) && ret == 0)
    {
-      g_console.initialize_ssnes_enable = true;
+      g_console.initialize_rarch_enable = true;
       strlcpy(g_console.rom_path, rom_path, sizeof(g_console.rom_path));
-      ssnes_startup(NULL);
+      rarch_startup(NULL);
       bool repeat = false;
 
       input_wii.poll(NULL);
 
       do{
-         repeat = ssnes_main_iterate();
+         repeat = rarch_main_iterate();
       }while(repeat && !g_console.frame_advance_enable);
    }
 
    if(g_console.emulator_initialized)
-      ssnes_main_deinit();
+      rarch_main_deinit();
 
    wii_input_deinit();
    wii_video_deinit();

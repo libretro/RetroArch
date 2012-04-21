@@ -61,7 +61,7 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
    int frag = (frags << 16) | 10;
 
    if (ioctl(*fd, SNDCTL_DSP_SETFRAGMENT, &frag) < 0)
-      SSNES_WARN("Cannot set fragment sizes. Latency might not be as expected ...\n");
+      RARCH_WARN("Cannot set fragment sizes. Latency might not be as expected ...\n");
 
    int channels = 2;
    int format = is_little_endian() ?
@@ -94,7 +94,7 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
 
    if (new_rate != (int)rate)
    {
-      SSNES_WARN("Requested sample rate not supported. Adjusting output rate to %d Hz.\n", new_rate);
+      RARCH_WARN("Requested sample rate not supported. Adjusting output rate to %d Hz.\n", new_rate);
       g_settings.audio.out_rate = new_rate;
    }
 
@@ -140,7 +140,7 @@ static void oss_set_nonblock_state(void *data, bool state)
    else
       rc = fcntl(*fd, F_SETFL, fcntl(*fd, F_GETFL) & (~O_NONBLOCK));
    if (rc != 0)
-      SSNES_WARN("Could not set nonblocking on OSS file descriptor. Will not be able to fast-forward.\n");
+      RARCH_WARN("Could not set nonblocking on OSS file descriptor. Will not be able to fast-forward.\n");
 }
 
 static void oss_free(void *data)
@@ -159,7 +159,7 @@ static size_t oss_write_avail(void *data)
    audio_buf_info info;
    if (ioctl(*fd, SNDCTL_DSP_GETOSPACE, &info) < 0)
    {
-      SSNES_ERR("SNDCTL_DSP_GETOSPACE failed ...\n");
+      RARCH_ERR("SNDCTL_DSP_GETOSPACE failed ...\n");
       return 0;
    }
 
@@ -173,7 +173,7 @@ static size_t oss_buffer_size(void *data)
    audio_buf_info info;
    if (ioctl(*fd, SNDCTL_DSP_GETOSPACE, &info) < 0)
    {
-      SSNES_ERR("SNDCTL_DSP_GETOSPACE failed ...\n");
+      RARCH_ERR("SNDCTL_DSP_GETOSPACE failed ...\n");
       return 1; // Return something non-zero to avoid SIGFPE.
    }
 

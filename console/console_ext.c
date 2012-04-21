@@ -42,7 +42,7 @@
 	ROM EXTENSIONS
 ============================================================ */
 
-const char *ssnes_console_get_rom_ext(void)
+const char *rarch_console_get_rom_ext(void)
 {
    const char *retval = NULL;
 
@@ -57,7 +57,7 @@ const char *ssnes_console_get_rom_ext(void)
    return retval;
 }
 
-void ssnes_console_name_from_id(char *name, size_t size)
+void rarch_console_name_from_id(char *name, size_t size)
 {
    if (size == 0)
       return;
@@ -85,7 +85,7 @@ void ssnes_console_name_from_id(char *name, size_t size)
 }
 
 #ifdef HAVE_ZLIB
-static int ssnes_extract_currentfile_in_zip(unzFile uf)
+static int rarch_extract_currentfile_in_zip(unzFile uf)
 {
    char filename_inzip[PATH_MAX];
    FILE *fout = NULL;
@@ -97,7 +97,7 @@ static int ssnes_extract_currentfile_in_zip(unzFile uf)
 
    if (err != UNZ_OK)
    {
-      SSNES_ERR("Error %d with zipfile in unzGetCurrentFileInfo.\n", err);
+      RARCH_ERR("Error %d with zipfile in unzGetCurrentFileInfo.\n", err);
       return err;
    }
 
@@ -105,7 +105,7 @@ static int ssnes_extract_currentfile_in_zip(unzFile uf)
    void *buf = malloc(size_buf);
    if (!buf)
    {
-      SSNES_ERR("Error allocating memory\n");
+      RARCH_ERR("Error allocating memory\n");
       return UNZ_INTERNALERROR;
    }
 
@@ -119,26 +119,26 @@ static int ssnes_extract_currentfile_in_zip(unzFile uf)
 
    err = unzOpenCurrentFile(uf);
    if (err != UNZ_OK)
-      SSNES_ERR("Error %d with zipfile in unzOpenCurrentFile.\n", err);
+      RARCH_ERR("Error %d with zipfile in unzOpenCurrentFile.\n", err);
    else
    {
       /* success */
       fout = fopen(write_filename, "wb");
 
       if (!fout)
-         SSNES_ERR("Error opening %s.\n", write_filename);
+         RARCH_ERR("Error opening %s.\n", write_filename);
    }
 
    if (fout)
    {
-      SSNES_LOG("Extracting: %s\n", write_filename);
+      RARCH_LOG("Extracting: %s\n", write_filename);
 
       do
       {
          err = unzReadCurrentFile(uf, buf, size_buf);
          if (err < 0)
          {
-            SSNES_ERR("error %d with zipfile in unzReadCurrentFile.\n", err);
+            RARCH_ERR("error %d with zipfile in unzReadCurrentFile.\n", err);
             break;
          }
 
@@ -146,7 +146,7 @@ static int ssnes_extract_currentfile_in_zip(unzFile uf)
          {
             if (fwrite(buf, err, 1, fout) != 1)
             {
-               SSNES_ERR("Error in writing extracted file.\n");
+               RARCH_ERR("Error in writing extracted file.\n");
                err = UNZ_ERRNO;
                break;
             }
@@ -161,7 +161,7 @@ static int ssnes_extract_currentfile_in_zip(unzFile uf)
    {
       err = unzCloseCurrentFile (uf);
       if (err != UNZ_OK)
-         SSNES_ERR("Error %d with zipfile in unzCloseCurrentFile.\n", err);
+         RARCH_ERR("Error %d with zipfile in unzCloseCurrentFile.\n", err);
    }
    else
       unzCloseCurrentFile(uf); 
@@ -170,18 +170,18 @@ static int ssnes_extract_currentfile_in_zip(unzFile uf)
    return err;
 }
 
-int ssnes_extract_zipfile(const char *zip_path)
+int rarch_extract_zipfile(const char *zip_path)
 {
    unzFile uf = unzOpen(zip_path); 
 
    unz_global_info gi;
    int err = unzGetGlobalInfo(uf, &gi);
    if (err != UNZ_OK)
-      SSNES_ERR("error %d with zipfile in unzGetGlobalInfo \n",err);
+      RARCH_ERR("error %d with zipfile in unzGetGlobalInfo \n",err);
 
    for (unsigned i = 0; i < gi.number_entry; i++)
    {
-      if (ssnes_extract_currentfile_in_zip(uf) != UNZ_OK)
+      if (rarch_extract_currentfile_in_zip(uf) != UNZ_OK)
          break;
 
       if ((i + 1) < gi.number_entry)
@@ -189,7 +189,7 @@ int ssnes_extract_zipfile(const char *zip_path)
          err = unzGoToNextFile(uf);
          if (err != UNZ_OK)
          {
-            SSNES_ERR("error %d with zipfile in unzGoToNextFile\n",err);
+            RARCH_ERR("error %d with zipfile in unzGoToNextFile\n",err);
             break;
          }
       }
@@ -213,9 +213,9 @@ struct platform_bind
    const char *label;
 };
 
-uint64_t ssnes_default_keybind_lut[SSNES_FIRST_META_KEY];
+uint64_t rarch_default_keybind_lut[RARCH_FIRST_META_KEY];
 
-char ssnes_default_libretro_keybind_name_lut[SSNES_FIRST_META_KEY][256] = {
+char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][256] = {
    "B Button",          /* RETRO_DEVICE_ID_JOYPAD_B      */
    "Y Button",          /* RETRO_DEVICE_ID_JOYPAD_Y      */
    "Select button",     /* RETRO_DEVICE_ID_JOYPAD_SELECT */
@@ -350,7 +350,7 @@ static const struct platform_bind platform_keys[] = {
 };
 #endif
 
-uint64_t ssnes_input_find_previous_platform_key(uint64_t joykey)
+uint64_t rarch_input_find_previous_platform_key(uint64_t joykey)
 {
    size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
 
@@ -366,7 +366,7 @@ uint64_t ssnes_input_find_previous_platform_key(uint64_t joykey)
    return NO_BTN;
 }
 
-uint64_t ssnes_input_find_next_platform_key(uint64_t joykey)
+uint64_t rarch_input_find_next_platform_key(uint64_t joykey)
 {
    size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
    if (platform_keys[arr_size - 1].joykey == joykey)
@@ -381,7 +381,7 @@ uint64_t ssnes_input_find_next_platform_key(uint64_t joykey)
    return NO_BTN;
 }
 
-const char *ssnes_input_find_platform_key_label(uint64_t joykey)
+const char *rarch_input_find_platform_key_label(uint64_t joykey)
 {
    if (joykey == NO_BTN)
       return "No button";
@@ -396,22 +396,22 @@ const char *ssnes_input_find_platform_key_label(uint64_t joykey)
    return "Unknown";
 }
 
-void ssnes_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id)
+void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id)
 {
    uint64_t *key = &g_settings.input.binds[player][default_retro_joypad_id].joykey;
 
    switch (keybind_action)
    {
       case KEYBIND_DECREMENT:
-         *key = ssnes_input_find_previous_platform_key(*key);
+         *key = rarch_input_find_previous_platform_key(*key);
          break;
 
       case KEYBIND_INCREMENT:
-         *key = ssnes_input_find_next_platform_key(*key);
+         *key = rarch_input_find_next_platform_key(*key);
          break;
 
       case KEYBIND_DEFAULT:
-         *key = ssnes_default_keybind_lut[default_retro_joypad_id];
+         *key = rarch_default_keybind_lut[default_retro_joypad_id];
          break;
 
       default:
@@ -419,17 +419,17 @@ void ssnes_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t 
    }
 }
 
-void ssnes_input_set_default_keybinds(unsigned player)
+void rarch_input_set_default_keybinds(unsigned player)
 {
-   for (unsigned i = 0; i < SSNES_FIRST_META_KEY; i++)
+   for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
       g_settings.input.binds[player][i].id = i;
-      g_settings.input.binds[player][i].joykey = ssnes_default_keybind_lut[i];
+      g_settings.input.binds[player][i].joykey = rarch_default_keybind_lut[i];
    }
    g_settings.input.dpad_emulation[player] = DPAD_EMULATION_LSTICK;
 }
 
-void ssnes_input_set_default_keybind_names_for_emulator(void)
+void rarch_input_set_default_keybind_names_for_emulator(void)
 {
    struct retro_system_info info;
    retro_get_system_info(&info);
@@ -438,20 +438,20 @@ void ssnes_input_set_default_keybind_names_for_emulator(void)
    // Genesis Plus GX/Next
    if (strstr(id, "Genesis Plus GX"))
    {
-      strlcpy(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_B],
-            "B button", sizeof(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_B]));
-      strlcpy(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_A],
-            "C button", sizeof(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_A]));
-      strlcpy(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_X],
-            "Y button", sizeof(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_X]));
-      strlcpy(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_Y],
-            "A button", sizeof(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_Y]));
-      strlcpy(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_L],
-            "X button", sizeof(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_L]));
-      strlcpy(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_R],
-            "Z button", sizeof(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_R]));
-      strlcpy(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_SELECT],
-            "Mode button", sizeof(ssnes_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]));
+      strlcpy(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_B],
+            "B button", sizeof(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_B]));
+      strlcpy(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_A],
+            "C button", sizeof(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_A]));
+      strlcpy(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_X],
+            "Y button", sizeof(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_X]));
+      strlcpy(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_Y],
+            "A button", sizeof(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_Y]));
+      strlcpy(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_L],
+            "X button", sizeof(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_L]));
+      strlcpy(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_R],
+            "Z button", sizeof(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_R]));
+      strlcpy(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_SELECT],
+            "Mode button", sizeof(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]));
    }
 }
 
@@ -488,14 +488,14 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
   ============================================================ */
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-bool ssnes_manage_libretro_core(const char *full_path, const char *path, const char *exe_ext)
+bool rarch_manage_libretro_core(const char *full_path, const char *path, const char *exe_ext)
 {
    g_extern.verbose = true;
    bool return_code;
 
    bool set_libretro_path = false;
    char tmp_path2[1024], tmp_pathnewfile[1024];
-   SSNES_LOG("Assumed path of CORE executable: [%s]\n", full_path);
+   RARCH_LOG("Assumed path of CORE executable: [%s]\n", full_path);
 
    if (path_file_exists(full_path))
    {
@@ -509,7 +509,7 @@ bool ssnes_manage_libretro_core(const char *full_path, const char *path, const c
       int ret;
 #endif
 
-      ssnes_console_name_from_id(tmp_path2, sizeof(tmp_path2));
+      rarch_console_name_from_id(tmp_path2, sizeof(tmp_path2));
       strlcat(tmp_path2, exe_ext, sizeof(tmp_path2));
       snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", path, tmp_path2);
 
@@ -519,7 +519,7 @@ bool ssnes_manage_libretro_core(const char *full_path, const char *path, const c
          // upgrading the libretro core - so delete pre-existing
          // file first.
 
-         SSNES_LOG("Upgrading emulator core...\n");
+         RARCH_LOG("Upgrading emulator core...\n");
 #if defined(__CELLOS_LV2__)
          ret = cellFsUnlink(tmp_pathnewfile);
          if (ret == CELL_FS_SUCCEEDED)
@@ -528,10 +528,10 @@ bool ssnes_manage_libretro_core(const char *full_path, const char *path, const c
          if (ret != 0)
 #endif
          {
-            SSNES_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+            RARCH_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
          }
          else
-            SSNES_LOG("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+            RARCH_LOG("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
       }
 
       //now attempt the renaming.
@@ -544,17 +544,17 @@ bool ssnes_manage_libretro_core(const char *full_path, const char *path, const c
       if (ret == 0)
 #endif
       {
-         SSNES_ERR("Failed to rename CORE executable.\n");
+         RARCH_ERR("Failed to rename CORE executable.\n");
       }
       else
       {
-         SSNES_LOG("Libsnes core [%s] renamed to: [%s].\n", full_path, tmp_pathnewfile);
+         RARCH_LOG("Libsnes core [%s] renamed to: [%s].\n", full_path, tmp_pathnewfile);
          set_libretro_path = true;
       }
    }
    else
    {
-      SSNES_LOG("CORE executable was not found, libretro core path will be loaded from config file.\n");
+      RARCH_LOG("CORE executable was not found, libretro core path will be loaded from config file.\n");
    }
 
    if (set_libretro_path)
@@ -581,16 +581,16 @@ bool ssnes_manage_libretro_core(const char *full_path, const char *path, const c
   RetroArch MAIN WRAP
   ============================================================ */
 
-#ifdef HAVE_SSNES_MAIN_WRAP
+#ifdef HAVE_RARCH_MAIN_WRAP
 
-void ssnes_startup (const char * config_path)
+void rarch_startup (const char * config_path)
 {
-   if(g_console.initialize_ssnes_enable)
+   if(g_console.initialize_rarch_enable)
    {
       if(g_console.emulator_initialized)
-         ssnes_main_deinit();
+         rarch_main_deinit();
 
-      struct ssnes_main_wrap args = {0};
+      struct rarch_main_wrap args = {0};
 
       args.verbose = g_extern.verbose;
       args.config_path = config_path;
@@ -598,14 +598,14 @@ void ssnes_startup (const char * config_path)
       args.state_path = g_console.default_savestate_dir_enable ? g_console.default_savestate_dir : NULL,
       args.rom_path = g_console.rom_path;
 
-      int init_ret = ssnes_main_init_wrap(&args);
+      int init_ret = rarch_main_init_wrap(&args);
       (void)init_ret;
       g_console.emulator_initialized = 1;
-      g_console.initialize_ssnes_enable = 0;
+      g_console.initialize_rarch_enable = 0;
    }
 }
 
-int ssnes_main_init_wrap(const struct ssnes_main_wrap *args)
+int rarch_main_init_wrap(const struct rarch_main_wrap *args)
 {
    int argc = 0;
    char *argv[MAX_ARGS] = {NULL};
@@ -637,13 +637,13 @@ int ssnes_main_init_wrap(const struct ssnes_main_wrap *args)
       argv[argc++] = strdup("-v");
 
 #ifdef HAVE_FILE_LOGGER
-   SSNES_LOG("foo\n");
+   RARCH_LOG("foo\n");
    for(int i = 0; i < argc; i++)
-      SSNES_LOG("arg #%d: %s\n", i, argv[i]);
-   SSNES_LOG("bar\n");
+      RARCH_LOG("arg #%d: %s\n", i, argv[i]);
+   RARCH_LOG("bar\n");
 #endif
 
-   int ret = ssnes_main_init(argc, argv);
+   int ret = rarch_main_init(argc, argv);
 
    char **tmp = argv;
    while (*tmp)
@@ -658,7 +658,7 @@ int ssnes_main_init_wrap(const struct ssnes_main_wrap *args)
 
 #endif
 
-#ifdef HAVE_SSNES_EXEC
+#ifdef HAVE_RARCH_EXEC
 
 #ifdef __CELLOS_LV2__
 #include <cell/sysmodule.h>
@@ -669,11 +669,11 @@ int ssnes_main_init_wrap(const struct ssnes_main_wrap *args)
 #include <np/drm.h>
 #endif
 
-void ssnes_exec (void)
+void rarch_exec (void)
 {
    if(g_console.return_to_launcher)
    {
-      SSNES_LOG("Attempt to load executable: [%s].\n", g_console.launch_app_on_exit);
+      RARCH_LOG("Attempt to load executable: [%s].\n", g_console.launch_app_on_exit);
 #if defined(_XBOX)
       XLaunchNewImage(g_console.launch_app_on_exit, NULL);
 #elif defined(__CELLOS_LV2__)
@@ -695,7 +695,7 @@ void ssnes_exec (void)
       int ret = sceNpDrmProcessExitSpawn2(k_licensee, g_console.launch_app_on_exit, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
       if(ret <  0)
       {
-         SSNES_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
+         RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
 	 sys_game_process_exitspawn(g_console.launch_app_on_exit, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
       }
       sceNpTerm();

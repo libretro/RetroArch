@@ -48,21 +48,21 @@
 
 #ifdef HAVE_LOGGER
 #include "logger.h"
-#define SSNES_LOG(...) logger_send("RetroArch Salamander: " __VA_ARGS__);
-#define SSNES_ERR(...) logger_send("RetroArch Salamander [ERROR] :: " __VA_ARGS__);
-#define SSNES_WARN(...) logger_send("RetroArch Salamander [WARN] :: " __VA_ARGS__);
+#define RARCH_LOG(...) logger_send("RetroArch Salamander: " __VA_ARGS__);
+#define RARCH_ERR(...) logger_send("RetroArch Salamander [ERROR] :: " __VA_ARGS__);
+#define RARCH_WARN(...) logger_send("RetroArch Salamander [WARN] :: " __VA_ARGS__);
 #else
-#define SSNES_LOG(...) do { \
+#define RARCH_LOG(...) do { \
       fprintf(stderr, "RetroArch Salamander: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
 
-#define SSNES_ERR(...) do { \
+#define RARCH_ERR(...) do { \
       fprintf(stderr, "RetroArch Salamander [ERROR] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
 
-#define SSNES_WARN(...) do { \
+#define RARCH_WARN(...) do { \
       fprintf(stderr, "RetroArch Salamander [WARN] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
@@ -96,7 +96,7 @@ static void find_and_set_first_file(void)
 
    if (!dir_list)
    {
-      SSNES_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
+      RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
       return;
    }
 
@@ -113,13 +113,13 @@ static void find_and_set_first_file(void)
 
       if(strcmp(fname_tmp, "SSNES-Salamander.xex") == 0)
       {
-         SSNES_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
+         RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
 	 first_executable = dir_list[1];
 	 fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
 
 	 if(!first_executable)
 	 {
-            SSNES_WARN("There is no second entry - no choice but to boot RetroArch Salamander\n");
+            RARCH_WARN("There is no second entry - no choice but to boot RetroArch Salamander\n");
 	    first_executable = dir_list[0];
 	    fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
 	 }
@@ -127,12 +127,12 @@ static void find_and_set_first_file(void)
 
       snprintf(first_executable, sizeof(first_executable), "game:\\%s", fname_tmp);
 #endif
-      SSNES_LOG("Start first entry in libretro cores dir: [%s].\n", first_executable);
+      RARCH_LOG("Start first entry in libretro cores dir: [%s].\n", first_executable);
       strlcpy(libretro_path, first_executable, sizeof(libretro_path));
    }
    else
    {
-      SSNES_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
+      RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
    }
 
    dir_list_free(dir_list);
@@ -147,7 +147,7 @@ static void init_settings(void)
    {
       FILE * f;
       config_file_exists = false;
-      SSNES_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
+      RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
       f = fopen(SYS_CONFIG_FILE, "w");
       fclose(f);
    }
@@ -166,7 +166,7 @@ static void init_settings(void)
    {
       //Start CORE executable
       snprintf(libretro_path, sizeof(libretro_path), core_executable);
-      SSNES_LOG("Start [%s].\n", libretro_path);
+      RARCH_LOG("Start [%s].\n", libretro_path);
    }
    else
    {
@@ -181,7 +181,7 @@ static void init_settings(void)
          find_and_set_first_file();
       else
       {
-         SSNES_LOG("Start [%s] found in ssnes.cfg.\n", libretro_path);
+         RARCH_LOG("Start [%s] found in ssnes.cfg.\n", libretro_path);
       }
    }
 }
@@ -197,13 +197,13 @@ static void get_environment_settings (void)
 
    if(result_filecache != TRUE)
    {
-      SSNES_ERR("Couldn't change number of bytes reserved for file system cache.\n");
+      RARCH_ERR("Couldn't change number of bytes reserved for file system cache.\n");
    }
    unsigned long result = XMountUtilityDriveEx(XMOUNTUTILITYDRIVE_FORMAT0,8192, 0);
 
    if(result != ERROR_SUCCESS)
    {
-      SSNES_ERR("Couldn't mount/format utility drive.\n");
+      RARCH_ERR("Couldn't mount/format utility drive.\n");
    }
 
    // detect install environment
@@ -211,7 +211,7 @@ static void get_environment_settings (void)
 
    if (XContentGetLicenseMask(&license_mask, NULL) != ERROR_SUCCESS)
    {
-      SSNES_LOG("RetroArch was launched as a standalone DVD, or using DVD emulation, or from the development area of the HDD.\n");
+      RARCH_LOG("RetroArch was launched as a standalone DVD, or using DVD emulation, or from the development area of the HDD.\n");
    }
    else
    {
@@ -220,16 +220,16 @@ static void get_environment_settings (void)
       switch(volume_device_type)
       {
          case XCONTENTDEVICETYPE_HDD:
-            SSNES_LOG("RetroArch was launched from a content package on HDD.\n");
+            RARCH_LOG("RetroArch was launched from a content package on HDD.\n");
 	    break;
 	 case XCONTENTDEVICETYPE_MU:
-	    SSNES_LOG("RetroArch was launched from a content package on USB or Memory Unit.\n");
+	    RARCH_LOG("RetroArch was launched from a content package on USB or Memory Unit.\n");
 	    break;
 	 case XCONTENTDEVICETYPE_ODD:
-	    SSNES_LOG("RetroArch was launched from a content package on Optical Disc Drive.\n");
+	    RARCH_LOG("RetroArch was launched from a content package on Optical Disc Drive.\n");
 	    break;
 	 default:
-	    SSNES_LOG("RetroArch was launched from a content package on an unknown device type.\n");
+	    RARCH_LOG("RetroArch was launched from a content package on an unknown device type.\n");
 	    break;
       }
    }
@@ -246,38 +246,38 @@ static void get_environment_settings (void)
    int ret = cellGameBootCheck(&get_type, &get_attributes, &size, dirName);
    if(ret < 0)
    {
-      SSNES_ERR("cellGameBootCheck() Error: 0x%x.\n", ret);
+      RARCH_ERR("cellGameBootCheck() Error: 0x%x.\n", ret);
    }
    else
    {
-      SSNES_LOG("cellGameBootCheck() OK.\n");
-      SSNES_LOG("Directory name: [%s].\n", dirName);
-      SSNES_LOG(" HDD Free Size (in KB) = [%d] Size (in KB) = [%d] System Size (in KB) = [%d].\n", size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
+      RARCH_LOG("cellGameBootCheck() OK.\n");
+      RARCH_LOG("Directory name: [%s].\n", dirName);
+      RARCH_LOG(" HDD Free Size (in KB) = [%d] Size (in KB) = [%d] System Size (in KB) = [%d].\n", size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
 
       switch(get_type)
       {
          case CELL_GAME_GAMETYPE_DISC:
-            SSNES_LOG("RetroArch was launched on Optical Disc Drive.\n");
+            RARCH_LOG("RetroArch was launched on Optical Disc Drive.\n");
 	    break;
 	 case CELL_GAME_GAMETYPE_HDD:
-	    SSNES_LOG("RetroArch was launched on HDD.\n");
+	    RARCH_LOG("RetroArch was launched on HDD.\n");
 	    break;
       }
 
       if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) == CELL_GAME_ATTRIBUTE_APP_HOME)
-         SSNES_LOG("RetroArch was launched from host machine (APP_HOME).\n");
+         RARCH_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 
       ret = cellGameContentPermit(contentInfoPath, usrDirPath);
 
       if(ret < 0)
       {
-         SSNES_ERR("cellGameContentPermit() Error: 0x%x\n", ret);
+         RARCH_ERR("cellGameContentPermit() Error: 0x%x\n", ret);
       }
       else
       {
-         SSNES_LOG("cellGameContentPermit() OK.\n");
-	 SSNES_LOG("contentInfoPath : [%s].\n", contentInfoPath);
-	 SSNES_LOG("usrDirPath : [%s].\n", usrDirPath);
+         RARCH_LOG("cellGameContentPermit() OK.\n");
+	 RARCH_LOG("contentInfoPath : [%s].\n", contentInfoPath);
+	 RARCH_LOG("usrDirPath : [%s].\n", usrDirPath);
       }
 
       /* now we fill in all the variables */
@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
    if(state.Gamepad.wButtons & XINPUT_GAMEPAD_Y)
    {
       //override path, boot first executable in cores directory
-      SSNES_LOG("Fallback - Will boot first executable in RetroArch cores directory.\n");
+      RARCH_LOG("Fallback - Will boot first executable in RetroArch cores directory.\n");
       find_and_set_first_file();
    }
    else
@@ -310,7 +310,7 @@ int main(int argc, char *argv[])
    }
 
    XLaunchNewImage(libretro_path, NULL);
-   SSNES_LOG("Launch libretro core: [%s] (return code: %x]).\n", libretro_path, ret);
+   RARCH_LOG("Launch libretro core: [%s] (return code: %x]).\n", libretro_path, ret);
 #elif defined(__CELLOS_LV2__)
    CellPadData pad_data;
    char spawn_data[256], spawn_data_size[16];
@@ -340,7 +340,7 @@ int main(int argc, char *argv[])
    if(pad_data.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_TRIANGLE)
    {
       //override path, boot first executable in cores directory
-      SSNES_LOG("Fallback - Will boot first executable in RetroArch cores/ directory.\n");
+      RARCH_LOG("Fallback - Will boot first executable in RetroArch cores/ directory.\n");
       find_and_set_first_file();
    }
    else
@@ -368,11 +368,11 @@ int main(int argc, char *argv[])
    };
 
    ret = sceNpDrmProcessExitSpawn2(k_licensee, libretro_path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-   SSNES_LOG("Launch libretro core: [%s] (return code: %x]).\n", libretro_path, ret);
+   RARCH_LOG("Launch libretro core: [%s] (return code: %x]).\n", libretro_path, ret);
 
    if(ret < 0)
    {
-      SSNES_LOG("Executable file is not of NPDRM type, trying another approach to boot it...\n");
+      RARCH_LOG("Executable file is not of NPDRM type, trying another approach to boot it...\n");
       sys_game_process_exitspawn2(libretro_path, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
    }
 

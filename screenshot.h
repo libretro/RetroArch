@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_SCREENSHOT_H
-#define __SSNES_SCREENSHOT_H
+#ifndef __RARCH_SCREENSHOT_H
+#define __RARCH_SCREENSHOT_H
 
 #include <stdint.h>
 #include "boolean.h"

@@ -344,7 +344,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	   1
    },
    {
-	   SETTING_SSNES_DEFAULT_EMU,
+	   SETTING_RARCH_DEFAULT_EMU,
 	   "Default emulator core",
 	   "",
 	   0.0f,

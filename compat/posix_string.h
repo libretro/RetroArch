@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_POSIX_STRING_H
-#define __SSNES_POSIX_STRING_H
+#ifndef __RARCH_POSIX_STRING_H
+#define __RARCH_POSIX_STRING_H
 
 #ifdef _WIN32
 
@@ -23,9 +23,9 @@ extern "C" {
 #endif
 
 #undef strcasecmp
-#define strcasecmp(a, b) strcasecmp_ssnes__(a, b)
-#define strdup(orig) strdup_ssnes__(orig)
-#define isblank(c) isblank_ssnes__(c)
+#define strcasecmp(a, b) strcasecmp_rarch__(a, b)
+#define strdup(orig) strdup_rarch__(orig)
+#define isblank(c) isblank_rarch__(c)
 int strcasecmp(const char *a, const char *b);
 char *strdup(const char *orig);
 int isblank(int c);

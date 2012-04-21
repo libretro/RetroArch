@@ -111,11 +111,11 @@ static size_t find_buffersize(jack_t *jd, int latency)
          jack_latency = range.max;
    }
 
-   SSNES_LOG("JACK: Jack latency is %d frames.\n", jack_latency);
+   RARCH_LOG("JACK: Jack latency is %d frames.\n", jack_latency);
 
    int buffer_frames = frames - jack_latency;
    int min_buffer_frames = jack_get_buffer_size(jd->client) * 2;
-   SSNES_LOG("JACK: Minimum buffer size is %d frames.\n", min_buffer_frames);
+   RARCH_LOG("JACK: Minimum buffer size is %d frames.\n", min_buffer_frames);
 
    if (buffer_frames < min_buffer_frames)
       buffer_frames = min_buffer_frames;
@@ -150,27 +150,27 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
    jd->ports[1] = jack_port_register(jd->client, "right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
    if (jd->ports[0] == NULL || jd->ports[1] == NULL)
    {
-      SSNES_ERR("Failed to register ports.\n");
+      RARCH_ERR("Failed to register ports.\n");
       goto error;
    }
    
    jports = jack_get_ports(jd->client, NULL, NULL, JackPortIsPhysical | JackPortIsInput);
    if (jports == NULL)
    {
-      SSNES_ERR("Failed to get ports.\n");
+      RARCH_ERR("Failed to get ports.\n");
       goto error;
    }
 
    bufsize = find_buffersize(jd, latency);
    jd->buffer_size = bufsize;
 
-   SSNES_LOG("JACK: Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));
+   RARCH_LOG("JACK: Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));
    for (int i = 0; i < 2; i++)
    {
       jd->buffer[i] = jack_ringbuffer_create(bufsize);
       if (jd->buffer[i] == NULL)
       {
-         SSNES_ERR("Failed to create buffers.\n");
+         RARCH_ERR("Failed to create buffers.\n");
          goto error;
       }
    }
@@ -179,7 +179,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
 
    if (jack_activate(jd->client) < 0)
    {
-      SSNES_ERR("Failed to activate Jack...\n");
+      RARCH_ERR("Failed to activate Jack...\n");
       goto error;
    }
 
@@ -187,7 +187,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
    {
       if (jack_connect(jd->client, jack_port_name(jd->ports[i]), dest_ports[i]))
       {
-         SSNES_ERR("Failed to connect to Jack port.\n");
+         RARCH_ERR("Failed to connect to Jack port.\n");
          goto error;
       }
    }

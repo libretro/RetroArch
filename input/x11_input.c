@@ -20,7 +20,7 @@
 #include "general.h"
 #include <stdint.h>
 #include <stdlib.h>
-#include "ssnes_sdl_input.h"
+#include "rarch_sdl_input.h"
 #include "keysym.h"
 
 #include <X11/Xlib.h>
@@ -37,7 +37,7 @@ typedef struct x11_input
 struct key_bind
 {
    unsigned x;
-   enum ssnes_key sk;
+   enum rarch_key sk;
 };
 
 static unsigned keysym_lut[SK_LAST];
@@ -171,7 +171,7 @@ static bool x_key_pressed(x11_input_t *x11, int key)
 
 static bool x_is_pressed(x11_input_t *x11, const struct snes_keybind *binds, unsigned id)
 {
-   if (id < SSNES_BIND_LIST_END)
+   if (id < RARCH_BIND_LIST_END)
    {
       const struct snes_keybind *bind = &binds[id];
       return bind->valid && x_key_pressed(x11, binds[id].key);

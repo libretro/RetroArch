@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_PY_STATE_H
-#define __SSNES_PY_STATE_H
+#ifndef __RARCH_PY_STATE_H
+#define __RARCH_PY_STATE_H
 
 #include <stdint.h>
 #include "../../boolean.h"

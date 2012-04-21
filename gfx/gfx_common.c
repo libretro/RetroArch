@@ -109,7 +109,7 @@ void gfx_set_dwm(void)
    dwmlib = dylib_load("dwmapi.dll");
    if (!dwmlib)
    {
-      SSNES_LOG("Did not find dwmapi.dll.\n");
+      RARCH_LOG("Did not find dwmapi.dll.\n");
       return;
    }
    atexit(gfx_dwm_shutdown);
@@ -117,7 +117,7 @@ void gfx_set_dwm(void)
    HRESULT (WINAPI *mmcss)(BOOL) = (HRESULT (WINAPI*)(BOOL))dylib_proc(dwmlib, "DwmEnableMMCSS");
    if (mmcss)
    {
-      SSNES_LOG("Setting multimedia scheduling for DWM.\n");
+      RARCH_LOG("Setting multimedia scheduling for DWM.\n");
       mmcss(TRUE);
    }
 
@@ -127,13 +127,13 @@ void gfx_set_dwm(void)
    HRESULT (WINAPI *composition_enable)(UINT) = (HRESULT (WINAPI*)(UINT))dylib_proc(dwmlib, "DwmEnableComposition");
    if (!composition_enable)
    {
-      SSNES_ERR("Did not find DwmEnableComposition ...\n");
+      RARCH_ERR("Did not find DwmEnableComposition ...\n");
       return;
    }
 
    HRESULT ret = composition_enable(0);
    if (FAILED(ret))
-      SSNES_ERR("Failed to set composition state ...\n");
+      RARCH_ERR("Failed to set composition state ...\n");
 }
 #endif
 

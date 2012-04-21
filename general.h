@@ -14,8 +14,8 @@
  */
 
 
-#ifndef __SSNES_GENERAL_H
-#define __SSNES_GENERAL_H
+#ifndef __RARCH_GENERAL_H
+#define __RARCH_GENERAL_H
 
 #include "boolean.h"
 #include <stdio.h>
@@ -30,7 +30,7 @@
 #include "autosave.h"
 #include "dynamic.h"
 #include "cheats.h"
-#include "audio/ext/ssnes_dsp.h"
+#include "audio/ext/rarch_dsp.h"
 #include "compat/strl.h"
 
 #ifdef __CELLOS_LV2__
@@ -70,12 +70,12 @@
 
 #define MAX_PLAYERS 8
 
-enum ssnes_shader_type
+enum rarch_shader_type
 {
-   SSNES_SHADER_CG,
-   SSNES_SHADER_BSNES,
-   SSNES_SHADER_AUTO,
-   SSNES_SHADER_NONE
+   RARCH_SHADER_CG,
+   RARCH_SHADER_BSNES,
+   RARCH_SHADER_AUTO,
+   RARCH_SHADER_NONE
 };
 
 // All config related settings go here.
@@ -98,7 +98,7 @@ struct settings
       char cg_shader_path[PATH_MAX];
       char bsnes_shader_path[PATH_MAX];
       char filter_path[PATH_MAX];
-      enum ssnes_shader_type shader_type;
+      enum rarch_shader_type shader_type;
       float refresh_rate;
 
       bool render_to_texture;
@@ -150,10 +150,10 @@ struct settings
    struct
    {
       char driver[32];
-      struct snes_keybind binds[MAX_PLAYERS][SSNES_BIND_LIST_END];
+      struct snes_keybind binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
       float axis_threshold;
       int joypad_map[MAX_PLAYERS];
-#ifdef SSNES_CONSOLE
+#ifdef RARCH_CONSOLE
       unsigned dpad_emulation[MAX_PLAYERS];
 #endif
       bool netplay_client_swap_input;
@@ -179,7 +179,7 @@ struct settings
 };
 
 // Settings and/or global state that is specific to a console-style implementation.
-#ifdef SSNES_CONSOLE
+#ifdef RARCH_CONSOLE
 struct console_settings
 {
 #ifdef __CELLOS_LV2__
@@ -190,7 +190,7 @@ struct console_settings
    bool default_savestate_dir_enable;
    bool frame_advance_enable;
    bool gamma_correction_enable;
-   bool initialize_ssnes_enable;
+   bool initialize_rarch_enable;
    bool ingame_menu_enable;
    bool menu_enable;
    bool overscan_enable;
@@ -236,13 +236,13 @@ struct console_settings
 };
 #endif
 
-enum ssnes_game_type
+enum rarch_game_type
 {
-   SSNES_CART_NORMAL = 0,
-   SSNES_CART_SGB,
-   SSNES_CART_BSX,
-   SSNES_CART_BSX_SLOTTED,
-   SSNES_CART_SUFAMI
+   RARCH_CART_NORMAL = 0,
+   RARCH_CART_SGB,
+   RARCH_CART_BSX,
+   RARCH_CART_BSX_SLOTTED,
+   RARCH_CART_SUFAMI
 };
 
 // All run-time- / command line flag-related globals go here.
@@ -261,7 +261,7 @@ struct global
    bool disconnect_device[2];
 
    FILE *rom_file;
-   enum ssnes_game_type game_type;
+   enum rarch_game_type game_type;
    uint32_t cart_crc;
 
    char gb_rom_path[PATH_MAX];
@@ -307,7 +307,7 @@ struct global
 
    struct
    {
-      ssnes_resampler_t *source;
+      rarch_resampler_t *source;
 
       float *data;
       size_t data_ptr;
@@ -328,7 +328,7 @@ struct global
       size_t rewind_size;
 
       dylib_t dsp_lib;
-      const ssnes_dsp_plugin_t *dsp_plugin;
+      const rarch_dsp_plugin_t *dsp_plugin;
       void *dsp_handle;
 
       bool rate_control; 
@@ -446,48 +446,48 @@ bool config_read_keybinds(const char *path);
 bool config_save_keybinds(const char *path);
 #endif
 
-void ssnes_game_reset(void);
-void ssnes_main_clear_state(void);
-int ssnes_main_init(int argc, char *argv[]);
-bool ssnes_main_iterate(void);
-void ssnes_main_deinit(void);
-void ssnes_render_cached_frame(void);
+void rarch_game_reset(void);
+void rarch_main_clear_state(void);
+int rarch_main_init(int argc, char *argv[]);
+bool rarch_main_iterate(void);
+void rarch_main_deinit(void);
+void rarch_render_cached_frame(void);
 
-void ssnes_load_state(void);
-void ssnes_save_state(void);
-void ssnes_state_slot_increase(void);
-void ssnes_state_slot_decrease(void);
+void rarch_load_state(void);
+void rarch_save_state(void);
+void rarch_state_slot_increase(void);
+void rarch_state_slot_decrease(void);
 /////////
 
 // Public data structures
 extern struct settings g_settings;
 extern struct global g_extern;
-#ifdef SSNES_CONSOLE
+#ifdef RARCH_CONSOLE
 extern struct console_settings g_console;
 #endif
 /////////
 
-#if defined(SSNES_CONSOLE) && (defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER))
+#if defined(RARCH_CONSOLE) && (defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER))
 #include "logger_override.h"
 #else
 
-#ifndef SSNES_LOG
-#define SSNES_LOG(...) do { \
+#ifndef RARCH_LOG
+#define RARCH_LOG(...) do { \
    if (g_extern.verbose) \
       fprintf(stderr, "SSNES: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
 #endif
 
-#ifndef SSNES_ERR
-#define SSNES_ERR(...) do { \
+#ifndef RARCH_ERR
+#define RARCH_ERR(...) do { \
       fprintf(stderr, "RetroArch [ERROR] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
 #endif
 
-#ifndef SSNES_WARN
-#define SSNES_WARN(...) do { \
+#ifndef RARCH_WARN
+#define RARCH_WARN(...) do { \
       fprintf(stderr, "RetroArch [WARN] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
@@ -502,7 +502,7 @@ extern struct console_settings g_console;
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-#define SSNES_SCALE_BASE 256
+#define RARCH_SCALE_BASE 256
 
 static inline uint32_t next_pow2(uint32_t v)
 {
@@ -564,7 +564,7 @@ static inline uint16_t swap_if_little16(uint16_t val)
 #include <unistd.h>
 #endif
 
-static inline void ssnes_sleep(unsigned msec)
+static inline void rarch_sleep(unsigned msec)
 {
 #ifdef __CELLOS_LV2__
    sys_timer_usleep(1000 * msec);
@@ -582,14 +582,14 @@ static inline void ssnes_sleep(unsigned msec)
 #endif
 }
 
-#define ssnes_assert(cond) \
-   if (!(cond)) { SSNES_ERR("Assertion failed at %s:%d.\n", __FILE__, __LINE__); exit(2); }
+#define rarch_assert(cond) \
+   if (!(cond)) { RARCH_ERR("Assertion failed at %s:%d.\n", __FILE__, __LINE__); exit(2); }
 
-static inline void ssnes_fail(int error_code, const char *error)
+static inline void rarch_fail(int error_code, const char *error)
 {
-   // We cannot longjmp unless we're in ssnes_main_init().
+   // We cannot longjmp unless we're in rarch_main_init().
    // If not, something went very wrong, and we should just exit right away.
-   ssnes_assert(g_extern.error_in_init);
+   rarch_assert(g_extern.error_in_init);
 
    strlcpy(g_extern.error_string, error, sizeof(g_extern.error_string));
    longjmp(g_extern.error_sjlj_context, error_code);

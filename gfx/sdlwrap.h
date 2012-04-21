@@ -35,7 +35,7 @@
 
 // Not legal to cast (void*) to fn-pointer. Need workaround to be compliant.
 #define SDL_SYM_WRAP(sym, symbol) { \
-   ssnes_assert(sizeof(void*) == sizeof(void (*)(void))); \
+   rarch_assert(sizeof(void*) == sizeof(void (*)(void))); \
    void *sym__ = SDL_GL_GetProcAddress(symbol); \
    memcpy(&(sym), &sym__, sizeof(void*)); \
 }

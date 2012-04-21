@@ -41,27 +41,27 @@ static inline bool gl_check_error(void)
    switch (error)
    {
       case GL_INVALID_ENUM:
-         SSNES_ERR("GL: Invalid enum.\n");
+         RARCH_ERR("GL: Invalid enum.\n");
          break;
       case GL_INVALID_VALUE:
-         SSNES_ERR("GL: Invalid value. (You're not alone.)\n");
+         RARCH_ERR("GL: Invalid value. (You're not alone.)\n");
          break;
       case GL_INVALID_OPERATION:
-         SSNES_ERR("GL: Invalid operation.\n");
+         RARCH_ERR("GL: Invalid operation.\n");
          break;
       case GL_STACK_OVERFLOW:
-         SSNES_ERR("GL: Stack overflow. (wtf)\n");
+         RARCH_ERR("GL: Stack overflow. (wtf)\n");
          break;
       case GL_STACK_UNDERFLOW:
-         SSNES_ERR("GL: Stack underflow. (:v)\n");
+         RARCH_ERR("GL: Stack underflow. (:v)\n");
          break;
       case GL_OUT_OF_MEMORY:
-         SSNES_ERR("GL: Out of memory. Harhar.\n");
+         RARCH_ERR("GL: Out of memory. Harhar.\n");
          break;
       case GL_NO_ERROR:
          return true;
       default:
-         SSNES_ERR("Non specified error :v\n");
+         RARCH_ERR("Non specified error :v\n");
    }
 
    return false;
@@ -79,9 +79,9 @@ struct gl_fbo_rect
 
 enum gl_scale_type
 {
-   SSNES_SCALE_ABSOLUTE,
-   SSNES_SCALE_INPUT,
-   SSNES_SCALE_VIEWPORT
+   RARCH_SCALE_ABSOLUTE,
+   RARCH_SCALE_INPUT,
+   RARCH_SCALE_VIEWPORT
 };
 
 struct gl_fbo_scale

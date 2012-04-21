@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ssnes_dinput.h"
+#include "rarch_dinput.h"
 #include "SDL.h"
 #include "SDL_syswm.h"
 #include "../boolean.h"
@@ -110,7 +110,7 @@ sdl_dinput_t* sdl_dinput_init(void)
 
    if (!sdlwrap_get_wm_info(&info))
    {
-      SSNES_ERR("Failed to get SysWM info.\n");
+      RARCH_ERR("Failed to get SysWM info.\n");
       goto error;
    }
 
@@ -130,13 +130,13 @@ sdl_dinput_t* sdl_dinput_init(void)
       (void**)&di->ctx, NULL)))
 #endif
    {
-      SSNES_ERR("Failed to init DirectInput.\n");
+      RARCH_ERR("Failed to init DirectInput.\n");
       goto error;
    }
 
-   SSNES_LOG("Enumerating DInput devices ...\n");
+   RARCH_LOG("Enumerating DInput devices ...\n");
    IDirectInput8_EnumDevices(di->ctx, DI8DEVCLASS_GAMECTRL, enum_joypad_cb, di, DIEDFL_ATTACHEDONLY);
-   SSNES_LOG("Done enumerating DInput devices ...\n");
+   RARCH_LOG("Done enumerating DInput devices ...\n");
 
    return di;
 

@@ -73,7 +73,7 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
       if (!tracker->py)
       {
          free(tracker);
-         SSNES_ERR("Failed to init Python script.\n");
+         RARCH_ERR("Failed to init Python script.\n");
          return NULL;
       }
    }
@@ -91,7 +91,7 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
       tracker->info[i].equal = info->info[i].equal;
 
 #ifdef HAVE_PYTHON
-      if (info->info[i].type == SSNES_STATE_PYTHON)
+      if (info->info[i].type == RARCH_STATE_PYTHON)
          tracker->info[i].py = tracker->py;
 #endif
 
@@ -100,14 +100,14 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
 
       switch (info->info[i].ram_type)
       {
-         case SSNES_STATE_WRAM:
+         case RARCH_STATE_WRAM:
             tracker->info[i].ptr = info->wram ? info->wram : &empty;
             break;
-         case SSNES_STATE_INPUT_SLOT1:
+         case RARCH_STATE_INPUT_SLOT1:
             tracker->info[i].input_ptr = &tracker->input_state[0];
             tracker->info[i].is_input = true;
             break;
-         case SSNES_STATE_INPUT_SLOT2:
+         case RARCH_STATE_INPUT_SLOT2:
             tracker->info[i].input_ptr = &tracker->input_state[1];
             tracker->info[i].is_input = true;
             break;
@@ -154,11 +154,11 @@ static void update_element(
 
    switch (info->type)
    {
-      case SSNES_STATE_CAPTURE:
+      case RARCH_STATE_CAPTURE:
          uniform->value = fetch(info);
          break;
 
-      case SSNES_STATE_CAPTURE_PREV:
+      case RARCH_STATE_CAPTURE_PREV:
          if (info->prev[0] != fetch(info))
          {
             info->prev[1] = info->prev[0];
@@ -167,7 +167,7 @@ static void update_element(
          uniform->value = info->prev[1];
          break;
 
-      case SSNES_STATE_TRANSITION:
+      case RARCH_STATE_TRANSITION:
          if (info->old_value != fetch(info))
          {
             info->old_value = fetch(info);
@@ -176,7 +176,7 @@ static void update_element(
          uniform->value = info->frame_count;
          break;
 
-      case SSNES_STATE_TRANSITION_COUNT:
+      case RARCH_STATE_TRANSITION_COUNT:
          if (info->old_value != fetch(info))
          {
             info->old_value = fetch(info);
@@ -185,7 +185,7 @@ static void update_element(
          uniform->value = info->transition_count;
          break;
 
-      case SSNES_STATE_TRANSITION_PREV:
+      case RARCH_STATE_TRANSITION_PREV:
          if (info->old_value != fetch(info))
          {
             info->old_value = fetch(info);
@@ -196,7 +196,7 @@ static void update_element(
          break;
       
 #ifdef HAVE_PYTHON
-      case SSNES_STATE_PYTHON:
+      case RARCH_STATE_PYTHON:
          uniform->value = py_state_get(info->py, info->id, frame_count);
          break;
 #endif

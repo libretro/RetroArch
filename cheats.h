@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_CHEATS_H
-#define __SSNES_CHEATS_H
+#ifndef __RARCH_CHEATS_H
+#define __RARCH_CHEATS_H
 
 typedef struct cheat_manager cheat_manager_t;
 

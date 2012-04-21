@@ -14,8 +14,8 @@
  */
 
 
-#ifndef __SSNES_GLSL_H
-#define __SSNES_GLSL_H
+#ifndef __RARCH_GLSL_H
+#define __RARCH_GLSL_H
 
 #include "../boolean.h"
 #include "gl_common.h"

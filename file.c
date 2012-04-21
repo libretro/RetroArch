@@ -52,12 +52,12 @@ ssize_t read_file(const char *path, void **buf)
    rom_buf = malloc(len + 1);
    if (!rom_buf)
    {
-      SSNES_ERR("Couldn't allocate memory.\n");
+      RARCH_ERR("Couldn't allocate memory.\n");
       goto error;
    }
 
    if ((rc = fread(rom_buf, 1, len, file)) < (ssize_t)len)
-      SSNES_WARN("Didn't read whole file.\n");
+      RARCH_WARN("Didn't read whole file.\n");
 
    *buf = rom_buf;
    // Allow for easy reading of strings to be safe.
@@ -134,7 +134,7 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
 
    if (g_extern.ups_pref + g_extern.bps_pref + g_extern.ips_pref > 1)
    {
-      SSNES_WARN("Several patches are explicitly defined, ignoring all ...\n");
+      RARCH_WARN("Several patches are explicitly defined, ignoring all ...\n");
       return;
    }
 
@@ -162,28 +162,28 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
    }
    else
    {
-      SSNES_LOG("Did not find a valid ROM patch.\n");
+      RARCH_LOG("Did not find a valid ROM patch.\n");
       return;
    }
 
-   SSNES_LOG("Found %s file in \"%s\", attempting to patch ...\n", patch_desc, patch_path);
+   RARCH_LOG("Found %s file in \"%s\", attempting to patch ...\n", patch_desc, patch_path);
 
    size_t target_size = ret_size * 4; // Just to be sure ...
    uint8_t *patched_rom = (uint8_t*)malloc(target_size);
    if (!patched_rom)
    {
-      SSNES_ERR("Failed to allocate memory for patched ROM ...\n");
+      RARCH_ERR("Failed to allocate memory for patched ROM ...\n");
       goto error;
    }
 
    err = func((const uint8_t*)patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
    if (err == PATCH_SUCCESS)
    {
-      SSNES_LOG("ROM patched successfully (%s).\n", patch_desc);
+      RARCH_LOG("ROM patched successfully (%s).\n", patch_desc);
       success = true;
    }
    else
-      SSNES_ERR("Failed to patch %s: Error #%u\n", patch_desc, (unsigned)err);
+      RARCH_ERR("Failed to patch %s: Error #%u\n", patch_desc, (unsigned)err);
 
    if (success)
    {
@@ -216,13 +216,13 @@ static ssize_t read_rom_file(FILE *file, void **buf)
       setmode(0, O_BINARY);
 #endif
 
-      SSNES_LOG("Reading ROM from stdin ...\n");
+      RARCH_LOG("Reading ROM from stdin ...\n");
       size_t buf_size = 0xFFFFF; // Some initial guesstimate.
       size_t buf_ptr = 0;
       uint8_t *rom_buf = (uint8_t*)malloc(buf_size);
       if (rom_buf == NULL)
       {
-         SSNES_ERR("Couldn't allocate memory.\n");
+         RARCH_ERR("Couldn't allocate memory.\n");
          return -1;
       }
 
@@ -238,7 +238,7 @@ static ssize_t read_rom_file(FILE *file, void **buf)
          rom_buf = (uint8_t*)realloc(rom_buf, buf_size * 2);
          if (rom_buf == NULL)
          {
-            SSNES_ERR("Couldn't allocate memory.\n");
+            RARCH_ERR("Couldn't allocate memory.\n");
             return -1;
          }
 
@@ -257,13 +257,13 @@ static ssize_t read_rom_file(FILE *file, void **buf)
       void *rom_buf = malloc(ret);
       if (rom_buf == NULL)
       {
-         SSNES_ERR("Couldn't allocate memory.\n");
+         RARCH_ERR("Couldn't allocate memory.\n");
          return -1;
       }
 
       if (fread(rom_buf, 1, ret, file) < (size_t)ret)
       {
-         SSNES_ERR("Didn't read whole file.\n");
+         RARCH_ERR("Didn't read whole file.\n");
          free(rom_buf);
          return -1;
       }
@@ -287,7 +287,7 @@ static ssize_t read_rom_file(FILE *file, void **buf)
    g_extern.cart_crc = crc32_calculate(ret_buf, ret);
 #ifdef HAVE_XML
    sha256_hash(g_extern.sha256, ret_buf, ret);
-   SSNES_LOG("SHA256 sum: %s\n", g_extern.sha256);
+   RARCH_LOG("SHA256 sum: %s\n", g_extern.sha256);
 #endif
    *buf = ret_buf;
    return ret;
@@ -359,19 +359,19 @@ static void dump_to_file_desperate(const void *data, size_t size, int type)
    strlcat(path, ramtype2str(type), sizeof(path));
 
    if (dump_to_file(path, data, size))
-      SSNES_WARN("Succeeded in saving RAM data to \"%s\". Phew ... :D\n", path);
+      RARCH_WARN("Succeeded in saving RAM data to \"%s\". Phew ... :D\n", path);
    else
       goto error;
 
    return;
 
 error:
-   SSNES_WARN("Failed ... Tough luck ... :(\n");
+   RARCH_WARN("Failed ... Tough luck ... :(\n");
 }
 
 bool save_state(const char *path)
 {
-   SSNES_LOG("Saving state: \"%s\".\n", path);
+   RARCH_LOG("Saving state: \"%s\".\n", path);
    size_t size = pretro_serialize_size();
    if (size == 0)
       return false;
@@ -379,17 +379,17 @@ bool save_state(const char *path)
    void *data = malloc(size);
    if (!data)
    {
-      SSNES_ERR("Failed to allocate memory for save state buffer.\n");
+      RARCH_ERR("Failed to allocate memory for save state buffer.\n");
       return false;
    }
 
-   SSNES_LOG("State size: %d bytes.\n", (int)size);
+   RARCH_LOG("State size: %d bytes.\n", (int)size);
    bool ret = pretro_serialize(data, size);
    if (ret)
       ret = dump_to_file(path, data, size);
 
    if (!ret)
-      SSNES_ERR("Failed to save state to \"%s\".\n", path);
+      RARCH_ERR("Failed to save state to \"%s\".\n", path);
 
    free(data);
    return ret;
@@ -397,18 +397,18 @@ bool save_state(const char *path)
 
 bool load_state(const char *path)
 {
-   SSNES_LOG("Loading state: \"%s\".\n", path);
+   RARCH_LOG("Loading state: \"%s\".\n", path);
    void *buf = NULL;
    ssize_t size = read_file(path, &buf);
 
    if (size < 0)
    {
-      SSNES_ERR("Failed to load state from \"%s\".\n", path);
+      RARCH_ERR("Failed to load state from \"%s\".\n", path);
       return false;
    }
 
    bool ret = true;
-   SSNES_LOG("State size: %u bytes.\n", (unsigned)size);
+   RARCH_LOG("State size: %u bytes.\n", (unsigned)size);
 
    void *block_buf[2] = {NULL, NULL};
    int block_type[2] = {-1, -1};
@@ -416,26 +416,26 @@ bool load_state(const char *path)
 
    if (g_settings.block_sram_overwrite)
    {
-      SSNES_LOG("Blocking SRAM overwrite.\n");
+      RARCH_LOG("Blocking SRAM overwrite.\n");
       switch (g_extern.game_type)
       {
-         case SSNES_CART_NORMAL:
+         case RARCH_CART_NORMAL:
             block_type[0] = RETRO_MEMORY_SAVE_RAM;
             block_type[1] = RETRO_MEMORY_RTC;
             break;
 
-         case SSNES_CART_BSX:
-         case SSNES_CART_BSX_SLOTTED:
+         case RARCH_CART_BSX:
+         case RARCH_CART_BSX_SLOTTED:
             block_type[0] = RETRO_MEMORY_SNES_BSX_RAM;
             block_type[1] = RETRO_MEMORY_SNES_BSX_PRAM;
             break;
 
-         case SSNES_CART_SUFAMI:
+         case RARCH_CART_SUFAMI:
             block_type[0] = RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM;
             block_type[1] = RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM;
             break;
 
-         case SSNES_CART_SGB:
+         case RARCH_CART_SGB:
             block_type[0] = RETRO_MEMORY_SNES_GAME_BOY_RAM;
             block_type[1] = RETRO_MEMORY_SNES_GAME_BOY_RTC;
             break;
@@ -507,8 +507,8 @@ void save_ram_file(const char *path, int type)
    {
       if (!dump_to_file(path, data, size))
       {
-         SSNES_ERR("Failed to save SRAM.\n");
-         SSNES_WARN("Attempting to recover ...\n");
+         RARCH_ERR("Failed to save SRAM.\n");
+         RARCH_WARN("Attempting to recover ...\n");
          dump_to_file_desperate(data, size, type);
       }
    }
@@ -520,7 +520,7 @@ static char *load_xml_map(const char *path)
    if (*path)
    {
       if (read_file_string(path, &xml_buf))
-         SSNES_LOG("Found XML memory map in \"%s\"\n", path);
+         RARCH_LOG("Found XML memory map in \"%s\"\n", path);
    }
 
    return xml_buf;
@@ -546,25 +546,25 @@ static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
    {
       if ((rom_len[0] = read_rom_file(g_extern.rom_file, &rom_buf[0])) == -1)
       {
-         SSNES_ERR("Could not read ROM file.\n");
+         RARCH_ERR("Could not read ROM file.\n");
          return false;
       }
 
       if (g_extern.rom_file)
          fclose(g_extern.rom_file);
 
-      SSNES_LOG("ROM size: %u bytes.\n", (unsigned)rom_len[0]);
+      RARCH_LOG("ROM size: %u bytes.\n", (unsigned)rom_len[0]);
    }
    else
    {
       if (!g_extern.rom_file)
       {
-         SSNES_ERR("Implementation requires a full path to be set, cannot load ROM from stdin. Aborting ...\n");
+         RARCH_ERR("Implementation requires a full path to be set, cannot load ROM from stdin. Aborting ...\n");
          return false;
       }
 
       fclose(g_extern.rom_file);
-      SSNES_LOG("ROM loading skipped. Implementation will load it on its own.\n");
+      RARCH_LOG("ROM loading skipped. Implementation will load it on its own.\n");
    }
 
    char *xml_buf = load_xml_map(g_extern.xml_name);
@@ -580,7 +580,7 @@ static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
             !g_extern.system.info.need_fullpath &&
             (rom_len[i] = read_file(rom_paths[i], &rom_buf[i])) == -1)
       {
-         SSNES_ERR("Could not read ROM file: \"%s\".\n", rom_paths[i]);
+         RARCH_ERR("Could not read ROM file: \"%s\".\n", rom_paths[i]);
          ret = false;
          goto end;
       }
@@ -596,7 +596,7 @@ static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
       ret = pretro_load_game_special(rom_type, info, roms);
 
    if (!ret)
-      SSNES_ERR("Failed to load game.\n");
+      RARCH_ERR("Failed to load game.\n");
 
 end:
    for (unsigned i = 0; i < MAX_ROMS; i++)
@@ -643,37 +643,37 @@ static bool load_sufami_rom(void)
    return load_roms(RETRO_GAME_TYPE_SUFAMI_TURBO, path, 3);
 }
 
-bool init_rom_file(enum ssnes_game_type type)
+bool init_rom_file(enum rarch_game_type type)
 {
    switch (type)
    {
-      case SSNES_CART_SGB:
+      case RARCH_CART_SGB:
          if (!load_sgb_rom())
             return false;
          break;
 
-      case SSNES_CART_NORMAL:
+      case RARCH_CART_NORMAL:
          if (!load_normal_rom())
             return false;
          break;
 
-      case SSNES_CART_BSX:
+      case RARCH_CART_BSX:
          if (!load_bsx_rom(false))
             return false;
          break;
 
-      case SSNES_CART_BSX_SLOTTED:
+      case RARCH_CART_BSX_SLOTTED:
          if (!load_bsx_rom(true))
             return false;
          break;
 
-      case SSNES_CART_SUFAMI:
+      case RARCH_CART_SUFAMI:
          if (!load_sufami_rom())
             return false;
          break;
          
       default:
-         SSNES_ERR("Invalid ROM type.\n");
+         RARCH_ERR("Invalid ROM type.\n");
          return false;
    }
 

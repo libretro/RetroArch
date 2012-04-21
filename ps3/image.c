@@ -140,7 +140,7 @@ static bool ps3graphics_load_jpeg(const char * path, struct texture_image *out_i
    return true;
 
 error:
-   SSNES_ERR("ps3graphics_load_jpeg(): error.\n");
+   RARCH_ERR("ps3graphics_load_jpeg(): error.\n");
    if (mHandle && sHandle)
 	   cellJpgDecClose(mHandle, sHandle);
    if (mHandle)
@@ -231,7 +231,7 @@ static bool ps3graphics_load_png(const char * path, struct texture_image *out_im
    return true;
 
 error:
-   SSNES_ERR("ps3graphics_load_png(): error.\n");
+   RARCH_ERR("ps3graphics_load_png(): error.\n");
 
    if (mHandle && sHandle)
       cellPngDecClose(mHandle, sHandle);

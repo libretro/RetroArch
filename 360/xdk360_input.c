@@ -116,17 +116,17 @@ static bool xdk360_key_pressed(void *data, int key)
 
    switch(key)
    {
-      case SSNES_FAST_FORWARD_HOLD_KEY:
+      case RARCH_FAST_FORWARD_HOLD_KEY:
          return ((state.Gamepad.sThumbRY < -DEADZONE) && !(state.Gamepad.bRightTrigger > 128));
-      case SSNES_LOAD_STATE_KEY:
+      case RARCH_LOAD_STATE_KEY:
 	 return ((state.Gamepad.sThumbRY > DEADZONE) && (state.Gamepad.bRightTrigger > 128));
-      case SSNES_SAVE_STATE_KEY:
+      case RARCH_SAVE_STATE_KEY:
 	 return ((state.Gamepad.sThumbRY < -DEADZONE) && (state.Gamepad.bRightTrigger > 128));
-      case SSNES_STATE_SLOT_PLUS:
+      case RARCH_STATE_SLOT_PLUS:
 	 return ((state.Gamepad.sThumbRX > DEADZONE) && (state.Gamepad.bRightTrigger > 128));
-      case SSNES_STATE_SLOT_MINUS:
+      case RARCH_STATE_SLOT_MINUS:
 	 return ((state.Gamepad.sThumbRX < -DEADZONE) && (state.Gamepad.bRightTrigger > 128));
-      case SSNES_FRAMEADVANCE:
+      case RARCH_FRAMEADVANCE:
 	 if(g_console.frame_advance_enable)
 	 {
             g_console.menu_enable = true;
@@ -134,9 +134,9 @@ static bool xdk360_key_pressed(void *data, int key)
 	    g_console.mode_switch = MODE_MENU;
 	 }
 	 return false;
-      case SSNES_REWIND:
+      case RARCH_REWIND:
 	 return ((state.Gamepad.sThumbRY > DEADZONE) && !(state.Gamepad.bRightTrigger > 128));
-      case SSNES_QUIT_KEY:
+      case RARCH_QUIT_KEY:
 	 if(IS_TIMER_EXPIRED())
 	 {
             uint32_t left_thumb_pressed = (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB);

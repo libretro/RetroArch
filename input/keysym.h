@@ -13,13 +13,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SSNES_KEYSYM_H
-#define __SSNES_KEYSYM_H
+#ifndef __RARCH_KEYSYM_H
+#define __RARCH_KEYSYM_H
 
 // Global keysym table for SSNES.
 // As you may have noticed, it's the same as SDL 1.2 since I'm lazy.
 
-enum ssnes_key
+enum rarch_key
 {
    SK_UNKNOWN        = 0,
    SK_FIRST          = 0,

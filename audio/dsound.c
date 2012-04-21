@@ -95,7 +95,7 @@ static inline bool grab_region(dsound_t *ds, DWORD write_ptr, struct audio_lock 
 
    if (err)
    {
-      SSNES_WARN("[DirectSound error]: %s\n", err);
+      RARCH_WARN("[DirectSound error]: %s\n", err);
       return false;
    }
 
@@ -257,7 +257,7 @@ struct dsound_dev
 static BOOL CALLBACK enumerate_cb(LPGUID guid, LPCSTR desc, LPCSTR module, LPVOID context)
 {
    struct dsound_dev *dev = (struct dsound_dev*)context;
-   SSNES_LOG("\t%u: %s\n", dev->total_count, desc);
+   RARCH_LOG("\t%u: %s\n", dev->total_count, desc);
    if (dev->device == dev->total_count)
       dev->guid = guid;
    dev->total_count++;
@@ -279,7 +279,7 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
    if (device)
       dev.device = strtoul(device, NULL, 0);
 
-   SSNES_LOG("DirectSound devices:\n");
+   RARCH_LOG("DirectSound devices:\n");
    DirectSoundEnumerate(enumerate_cb, &dev);
 
    if (DirectSoundCreate(dev.guid, &ds->ds, NULL) != DS_OK)
@@ -301,8 +301,8 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
    if (ds->buffer_size < 4 * CHUNK_SIZE)
       ds->buffer_size = 4 * CHUNK_SIZE;
 
-   SSNES_LOG("[DirectSound]: Setting buffer size of %u bytes\n", ds->buffer_size);
-   SSNES_LOG("[DirectSound]: Latency = %u ms\n", (unsigned)((1000 * ds->buffer_size) / wfx.nAvgBytesPerSec));
+   RARCH_LOG("[DirectSound]: Setting buffer size of %u bytes\n", ds->buffer_size);
+   RARCH_LOG("[DirectSound]: Latency = %u ms\n", (unsigned)((1000 * ds->buffer_size) / wfx.nAvgBytesPerSec));
 
    bufdesc.dwSize = sizeof(DSBUFFERDESC);
    bufdesc.dwFlags = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_GLOBALFOCUS;
@@ -333,7 +333,7 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
    return ds;
 
 error:
-   SSNES_ERR("[DirectSound] Error occured in init.\n");
+   RARCH_ERR("[DirectSound] Error occured in init.\n");
    dsound_free(ds);
    return NULL;
 }

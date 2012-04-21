@@ -1,5 +1,5 @@
-#ifndef __SSNES_FEATURES_H
-#define __SSNES_FEATURES_H
+#ifndef __RARCH_FEATURES_H
+#define __RARCH_FEATURES_H
 
 #include <stddef.h>
 #include "boolean.h"

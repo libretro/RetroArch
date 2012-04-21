@@ -3,44 +3,44 @@
 //
 //
 
-#ifndef __SSNES_AUDIO_DRIVER_PLUGIN_H
-#define __SSNES_AUDIO_DRIVER_PLUGIN_H
+#ifndef __RARCH_AUDIO_DRIVER_PLUGIN_H
+#define __RARCH_AUDIO_DRIVER_PLUGIN_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #ifdef _WIN32
-#ifdef SSNES_DLL_IMPORT
-#define SSNES_API_EXPORT __declspec(dllimport) 
+#ifdef RARCH_DLL_IMPORT
+#define RARCH_API_EXPORT __declspec(dllimport) 
 #else
-#define SSNES_API_EXPORT __declspec(dllexport) 
+#define RARCH_API_EXPORT __declspec(dllexport) 
 #endif
-#define SSNES_API_CALLTYPE __cdecl
+#define RARCH_API_CALLTYPE __cdecl
 #else
-#define SSNES_API_EXPORT
-#define SSNES_API_CALLTYPE
+#define RARCH_API_EXPORT
+#define RARCH_API_CALLTYPE
 #endif
 
-#ifndef SSNES_TRUE
-#define SSNES_TRUE 1
+#ifndef RARCH_TRUE
+#define RARCH_TRUE 1
 #endif
 
-#ifndef SSNES_FALSE
-#define SSNES_FALSE 0
+#ifndef RARCH_FALSE
+#define RARCH_FALSE 0
 #endif
 
-#ifndef SSNES_OK
-#define SSNES_OK 1
+#ifndef RARCH_OK
+#define RARCH_OK 1
 #endif
 
-#ifndef SSNES_ERROR
-#define SSNES_ERROR 0
+#ifndef RARCH_ERROR
+#define RARCH_ERROR 0
 #endif
 
-#define SSNES_AUDIO_API_VERSION 2
+#define RARCH_AUDIO_API_VERSION 2
 
-typedef struct ssnes_audio_driver_info
+typedef struct rarch_audio_driver_info
 {
    // A hint for a subdevice of the audio driver.
    // This is driver independent, and not relevant for all
@@ -56,12 +56,12 @@ typedef struct ssnes_audio_driver_info
    // If driver is not able to provide this latency, it can
    // be disregarded.
    unsigned latency;
-} ssnes_audio_driver_info_t;
+} rarch_audio_driver_info_t;
 
-typedef struct ssnes_audio_driver
+typedef struct rarch_audio_driver
 {
    // Initializes the device.
-   void *(*init)(const ssnes_audio_driver_info_t *info);
+   void *(*init)(const rarch_audio_driver_info_t *info);
 
    // Write data in buffer to audio driver.
    // A frame here is defined as one combined sample of left and right
@@ -113,13 +113,13 @@ typedef struct ssnes_audio_driver
    // Human readable identification string for the driver.
    const char *ident;
 
-   // Must be set to SSNES_AUDIO_API_VERSION.
+   // Must be set to RARCH_AUDIO_API_VERSION.
    // Used for detecting API mismatch.
    int api_version;
-} ssnes_audio_driver_t;
+} rarch_audio_driver_t;
 
-SSNES_API_EXPORT const ssnes_audio_driver_t* SSNES_API_CALLTYPE
-   ssnes_audio_driver_init(void);
+RARCH_API_EXPORT const rarch_audio_driver_t* RARCH_API_CALLTYPE
+   rarch_audio_driver_init(void);
 
 #ifdef __cplusplus
 }

@@ -70,13 +70,13 @@ state_manager_t *state_manager_new(size_t state_size, size_t buffer_size, void *
       return NULL;
 
    // We need 4-byte aligned state_size to avoid having to enforce this with unneeded memcpy's!
-   ssnes_assert(state_size % 4 == 0);
+   rarch_assert(state_size % 4 == 0);
    state->top_ptr = 1;
 
    state->state_size = state_size / sizeof(uint32_t); // Works in multiple of 4.
    state->buf_size = nearest_pow2_size(buffer_size) / sizeof(uint64_t); // Works in multiple of 8.
    state->buf_size_mask = state->buf_size - 1;
-   SSNES_LOG("Readjusted rewind buffer size to %u MiB\n", (unsigned)(sizeof(uint64_t) * (state->buf_size >> 20)));
+   RARCH_LOG("Readjusted rewind buffer size to %u MiB\n", (unsigned)(sizeof(uint64_t) * (state->buf_size >> 20)));
 
    if (!(state->buffer = (uint64_t*)calloc(1, state->buf_size * sizeof(uint64_t))))
       goto error;

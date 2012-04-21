@@ -14,8 +14,8 @@
  */
 
 
-#ifndef __SSNES_FILE_H
-#define __SSNES_FILE_H
+#ifndef __RARCH_FILE_H
+#define __RARCH_FILE_H
 
 #include "boolean.h"
 #include <stdio.h>
@@ -38,7 +38,7 @@ bool save_state(const char *path);
 void load_ram_file(const char *path, int type);
 void save_ram_file(const char *path, int type);
 
-bool init_rom_file(enum ssnes_game_type type);
+bool init_rom_file(enum rarch_game_type type);
 
 // Returns a NULL-terminated list of files in a directory with full paths.
 // If ext is NULL, any file will be picked.

@@ -34,14 +34,14 @@
 
 #undef main
 
-int ssnes_main(int argc, char **argv);
+int rarch_main(int argc, char **argv);
 static void start_ssnes(const char *path)
 {
    char arg0[] = "ssnes";
    char arg1[256];
    strncpy(arg1, path, sizeof(arg1));
    char *argv[3] = { arg0, arg1, NULL };
-   ssnes_main(sizeof(argv) / sizeof(argv[0]) - 1, argv);
+   rarch_main(sizeof(argv) / sizeof(argv[0]) - 1, argv);
 }
 
 #define FG_COL -1

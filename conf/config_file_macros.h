@@ -58,7 +58,7 @@
 #define CONFIG_GET_FLOAT_EXTERN(var, key) CONFIG_GET_FLOAT_BASE(conf, g_extern, var, key)
 #define CONFIG_GET_STRING_EXTERN(var, key) CONFIG_GET_STRING_BASE(conf, g_extern, var, key)
 
-#ifdef SSNES_CONSOLE
+#ifdef RARCH_CONSOLE
 #define CONFIG_GET_BOOL_CONSOLE(var, key) CONFIG_GET_BOOL_BASE(conf, g_console, var, key)
 #define CONFIG_GET_INT_CONSOLE(var, key) CONFIG_GET_INT_BASE(conf, g_console, var, key)
 #define CONFIG_GET_FLOAT_CONSOLE(var, key) CONFIG_GET_FLOAT_BASE(conf, g_console, var, key)
