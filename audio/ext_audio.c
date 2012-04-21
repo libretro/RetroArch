@@ -66,6 +66,8 @@ static void *audio_ext_init(const char *device, unsigned rate, unsigned latency)
    }
 
    plugin_load = (const rarch_audio_driver_t *(*)(void))dylib_proc(ext->lib, "rarch_audio_driver_init");
+   if (!plugin_load)
+      plugin_load = (const rarch_audio_driver_t *(*)(void))dylib_proc(ext->lib, "ssnes_audio_driver_init"); // Compat. Will be dropped on ABI break.
 
    if (!plugin_load)
    {
