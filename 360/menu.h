@@ -34,7 +34,7 @@ public:
    HXUIOBJ		hFileBrowser;
    HXUIOBJ		hCoreBrowser;
    HXUIOBJ		hQuickMenu;
-   HXUIOBJ		hSSNESSettings;
+   HXUIOBJ		hRetroArchSettings;
 protected:
    /* Override so that Cssnes can register classes */
    virtual HRESULT RegisterXuiClasses();
@@ -42,7 +42,7 @@ protected:
    virtual HRESULT UnregisterXuiClasses();
 };
 
-class CSSNESMain: public CXuiSceneImpl
+class CRetroArchMain: public CXuiSceneImpl
 {
 protected:
    CXuiControl m_filebrowser;
@@ -62,10 +62,10 @@ public:
       XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
    XUI_END_MSG_MAP();
 
-   XUI_IMPLEMENT_CLASS(CSSNESMain, L"SSNESMain", XUI_CLASS_SCENE)
+   XUI_IMPLEMENT_CLASS(CRetroArchMain, L"RetroArchMain", XUI_CLASS_SCENE)
 };
 
-class CSSNESFileBrowser: public CXuiSceneImpl
+class CRetroArchFileBrowser: public CXuiSceneImpl
 {
 protected:
    CXuiList m_romlist;
@@ -82,10 +82,10 @@ public:
       XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
    XUI_END_MSG_MAP();
 
-   XUI_IMPLEMENT_CLASS(CSSNESFileBrowser, L"SSNESFileBrowser", XUI_CLASS_SCENE)
+   XUI_IMPLEMENT_CLASS(CRetroArchFileBrowser, L"RetroArchFileBrowser", XUI_CLASS_SCENE)
 };
 
-class CSSNESCoreBrowser: public CXuiSceneImpl
+class CRetroArchCoreBrowser: public CXuiSceneImpl
 {
 protected:
    CXuiList m_romlist;
@@ -100,10 +100,10 @@ public:
       XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
    XUI_END_MSG_MAP();
 
-   XUI_IMPLEMENT_CLASS(CSSNESCoreBrowser, L"SSNESCoreBrowser", XUI_CLASS_SCENE)
+   XUI_IMPLEMENT_CLASS(CRetroArchCoreBrowser, L"RetroArchCoreBrowser", XUI_CLASS_SCENE)
 };
 
-class CSSNESQuickMenu: public CXuiSceneImpl
+class CRetroArchQuickMenu: public CXuiSceneImpl
 {
 protected:
    CXuiList m_quickmenulist;
@@ -117,10 +117,10 @@ public:
       XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
    XUI_END_MSG_MAP();
 
-   XUI_IMPLEMENT_CLASS(CSSNESQuickMenu, L"SSNESQuickMenu", XUI_CLASS_SCENE)
+   XUI_IMPLEMENT_CLASS(CRetroArchQuickMenu, L"RetroArchQuickMenu", XUI_CLASS_SCENE)
 };
 
-class CSSNESSettings: public CXuiSceneImpl
+class CRetroArchSettings: public CXuiSceneImpl
 {
 protected:
    CXuiList m_settingslist;
@@ -134,7 +134,7 @@ public:
       XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
    XUI_END_MSG_MAP();
 
-   XUI_IMPLEMENT_CLASS(CSSNESSettings, L"SSNESSettings", XUI_CLASS_SCENE)
+   XUI_IMPLEMENT_CLASS(CRetroArchSettings, L"RetroArchSettings", XUI_CLASS_SCENE)
 };
 
 int menu_init (void);
