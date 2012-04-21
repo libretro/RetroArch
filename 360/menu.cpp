@@ -46,7 +46,7 @@ static void return_to_dashboard (void)
 }
 
 /* Register custom classes */
-HRESULT CSSNES::RegisterXuiClasses (void)
+HRESULT CRetroArch::RegisterXuiClasses (void)
 {
    CSSNESMain::Register();
    CSSNESFileBrowser::Register();
@@ -58,7 +58,7 @@ HRESULT CSSNES::RegisterXuiClasses (void)
 }
 
 /* Unregister custom classes */
-HRESULT CSSNES::UnregisterXuiClasses (void)
+HRESULT CRetroArch::UnregisterXuiClasses (void)
 {
    CSSNESMain::Unregister();
    CSSNESCoreBrowser::Unregister();
