@@ -1,6 +1,6 @@
 #!/bin/sh
 ###
-## Wrapper script that enables loading of compressed roms for SSNES.
+## Wrapper script that enables loading of compressed roms for RetroArch.
 ## Author: Themaister
 ## License: Do whatever you want with it.
 #
@@ -83,13 +83,13 @@ SAVENAME="`basename \"$COMP_FILE\" $EXTENSION`"
 DIRNAME="`dirname \"$COMP_FILE\"`"
 SAVENAME="${SAVENAME}.srm"
 
-SSNES_PATH="`which ssnes`"
-if [ -z "$SSNES_PATH" ]; then
-   die "Cannot find SSNES in path."
+RetroArch_PATH="`which retroarch`"
+if [ -z "$RetroArch_PATH" ]; then
+   die "Cannot find RetroArch in path."
 fi
 
 echo "Temp ROM: $TMPROM"
 echo "Savename: ${DIRNAME}/${SAVENAME}"
-"$SSNES_PATH" "$TMPROM" -s "${DIRNAME}/${SAVENAME}" "$@"
+"$RetroArch_PATH" "$TMPROM" -s "${DIRNAME}/${SAVENAME}" "$@"
 rm "$TMPROM"
 rm -r "$TMPDIR"
