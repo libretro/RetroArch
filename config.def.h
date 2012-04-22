@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/// Config header for SSNES
+/// Config header for RetroArch
 //
 //
 

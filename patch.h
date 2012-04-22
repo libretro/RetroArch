@@ -20,7 +20,7 @@
 #include <stddef.h>
 
 // BPS/UPS/IPS implementation from bSNES (nall::).
-// Modified for SSNES.
+// Modified for RetroArch.
 
 typedef enum
 {

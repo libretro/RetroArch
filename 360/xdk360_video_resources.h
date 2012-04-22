@@ -16,8 +16,8 @@
 
 #pragma once
 
-#ifndef SSNES360_RESOURCES_H
-#define SSNES360_RESOURCES_H
+#ifndef RARCH_360_RESOURCES_H
+#define RARCH_360_RESOURCES_H
 
 //--------------------------------------------------------------------------------------
 // Name tag for resources. An app may initialize this structure, and pass
@@ -31,7 +31,6 @@ struct RESOURCE
    unsigned long dwSize;
    char * strName;
 };
-
 
 // Resource types
 enum

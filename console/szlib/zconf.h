@@ -3,8 +3,8 @@
  * For conditions of distribution and use, see copyright notice in zlib.h 
  */
 
-/* This source as presented is a modified version of original zlib for use with SSNES,
- * and must not be confused with the original software. */
+/* This source as presented is a modified version of original zlib for use with
+ * RetroArch, and must not be confused with the original software. */
 
 
 #ifndef _ZCONF_H

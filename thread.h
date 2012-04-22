@@ -18,7 +18,7 @@
 
 #include "boolean.h"
 
-// Implements the bare minimum needed for SSNES. :)
+// Implements the bare minimum needed for RetroArch. :)
 
 typedef struct sthread sthread_t;
 

@@ -614,7 +614,7 @@ void xdk360_video_set_vsync(bool vsync)
    xdk360_gfx_set_nonblock_state(g_d3d, vsync);
 }
 
-// 360 needs a working graphics stack before SSNESeven starts.
+// 360 needs a working graphics stack before RetroArch even starts.
 // To deal with this main.c,
 // the top level module owns the instance, and is created beforehand.
 // When RetroArch gets around to init it, it is already allocated.

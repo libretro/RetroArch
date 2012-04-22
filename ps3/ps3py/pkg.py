@@ -517,9 +517,9 @@ try:
 	import pkgcrypt
 except:
 	print ""
-	print "-----------------"
-	print "SSNES BUILD ERROR"
-	print "-----------------"
+	print "---------------------"
+	print "RETROARCH BUILD ERROR"
+	print "---------------------"
 	print "Couldn't make PKG file. Go into the ps3py directory, and type the following:"
 	print ""
 	print "python2 setup.py build"
