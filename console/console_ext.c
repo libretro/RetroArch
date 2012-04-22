@@ -610,7 +610,7 @@ int rarch_main_init_wrap(const struct rarch_main_wrap *args)
    int argc = 0;
    char *argv[MAX_ARGS] = {NULL};
 
-   argv[argc++] = strdup("ssnes");
+   argv[argc++] = strdup("retroarch");
    
    if (args->rom_path)
       argv[argc++] = strdup(args->rom_path);
