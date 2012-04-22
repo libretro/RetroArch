@@ -166,7 +166,7 @@ endif
 ifeq ($(HAVE_DYNAMIC), 1)
    LIBS += $(DYLIB_LIB)
 else
-   LIBS += $(libsnes)
+   LIBS += $(libretro)
 endif
 
 ifeq ($(HAVE_PYTHON), 1)
