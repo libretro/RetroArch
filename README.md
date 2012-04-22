@@ -21,6 +21,7 @@ Latest Windows binaries are currently hosted on my [homepage](http://themaister.
 GUI frontend for PC: [RetroArch-Phoenix](https://github.com/Themaister/RetroArch-Phoenix)
 Cg shaders: [common-shaders](https://github.com/twinaphex/common-shaders)
 More Cg shaders: [Emulator-Shader-Pack](https://github.com/Themaister/Emulator-Shader-Pack)
+Helper scripts to build libretro implementations: [libretro-super](https://github.com/Themaister/libretro-super)
 
 # Philosophy
 
