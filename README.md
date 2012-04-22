@@ -1,7 +1,8 @@
 # RetroArch
 
-RetroArch is a simple frontend for the libretro API. An API that attempts to generalize
+RetroArch (formerly known as SSNES) is a simple frontend for the libretro API. An API that attempts to generalize
 a retro gaming system, such as SNES, NES, GameBoy, Arcade machines, etc.
+Emulator/game cores are instantiated as loadable plugins.
 
 # libretro
 
@@ -9,18 +10,27 @@ libretro is an API that exposes the core of a retro gaming system.
 A frontend for libretro handles video output, audio output and input.
 A libretro core written in portable C or C++ can run seamlessly on many platforms.
 
+[libretro API header](https://github.com/Themaister/RetroArch/blob/master/libretro.h)
+
 # Binaries
 
 Latest Windows binaries are currently hosted on my [homepage](http://themaister.net/retroarch.html).
 
+# Related projects
+
+GUI frontend for PC: [RetroArch-Phoenix](https://github.com/Themaister/RetroArch-Phoenix)
+Cg shaders: [common-shaders](https://github.com/twinaphex/common-shaders)
+More Cg shaders: [Emulator-Shader-Pack](https://github.com/Themaister/Emulator-Shader-Pack)
+
 # Philosophy
 
-RetroArch attempts to be very small and lean, while still having all the useful core features expected from an emulator. 
-It is used through command-line.
+RetroArch attempts to be very small and lean,
+while still having all the useful core features expected from an emulator. 
+It is used through command-line. It is also designed to be portable.
 
 # Platforms
 
-RetroArch has been ported to the following platforms :
+RetroArch has been ported to the following platforms outside PC:
 
    - PlayStation3
    - Xbox 360 (Libxenon/XeXDK)
@@ -75,13 +85,7 @@ It is also possible to use the <tt>ssnes-joyconfig</tt> tool as well for simple 
 
 <b>Linux/Unix</b><br/>
 As most packages, RetroArch is built using the standard <tt>./configure && make && make install</tt>
-Do note that the build system is not autotools based, but resembles it.
-
-Notable options for ./configure: 
---with-libretro=: Normally libretro is located with -lsnes, however, this can be overridden.
---enable-dynamic: Do not link to libretro at compile time, but load libretro dynamically at runtime. libretro\_path in config file defines which library to load. Useful for development.
-
-Do note that these two options are mutually exclusive.
+Do note that the build system is not autotools based, but resembles it. Refer to ./configure --help for options.
 
 <b>Win32</b><br/>
 It is possible with MinGW to compile for Windows in either msys or Linux/Unix based systems. Do note that Windows build uses a static Makefile since configuration scripts create more harm than good on this platform. Libraries, headers, etc, needed to compile and run RetroArch can be fetched with a Makefile target.
@@ -136,15 +140,4 @@ You will need to have the libogc libraries and a working Devkit PPC toolchain in
 <tt>make -f Makefile.wii</tt>
 
 NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch Wii. This file needs to be called 'libretro.a'.
-
-# Filters, bSNES XML shaders and Cg shader support
-
-This is not strictly not necessary for an emulator, but it can be enabled if desired. 
-For best performance, Cg shaders or bSNES XML shaders are recommended as they do not eat up valuable CPU time (assuming your GPU can handle the shaders). 
-Cg shaders and XML shaders (GLSL) are compiled at run-time.
-All shaders share a common interface to pass some essential arguments such as texture size and viewport size. (Common for pixel art scalers)
-Some Cg shaders are included in hqflt/cg/ and could be used as an example.
-bSNES XML shaders can be found on various places on the net. Best place to start looking are the bSNES forums.
-
-The Cg shaders closely resemble the GLSL shaders found in bSNES shader pack, so porting them is trivial if desired.
 
