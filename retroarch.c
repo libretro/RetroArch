@@ -421,11 +421,11 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
 }
 
 #ifdef _WIN32
-#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tDefaults to retroarch.cfg in same directory as ssnes.exe."
+#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe."
 #elif defined(__APPLE__)
 #define RARCH_DEFAULT_CONF_PATH_STR " Defaults to $HOME/.retroarch.cfg."
 #else
-#define RARCH_DEFAULT_CONF_PATH_STR " Defaults to $XDG_CONFIG_HOME/ssnes/retroarch.cfg,\n\t\tor $HOME/.retroarch.cfg, if $XDG_CONFIG_HOME is not defined."
+#define RARCH_DEFAULT_CONF_PATH_STR " Defaults to $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n\t\tor $HOME/.retroarch.cfg, if $XDG_CONFIG_HOME is not defined."
 #endif
 
 #include "config.features.h"
@@ -493,7 +493,7 @@ static void print_help(void)
    puts("RetroArch: Frontend for libretro -- v" PACKAGE_VERSION " --");
    print_compiler(stdout);
    puts("===================================================================");
-   puts("Usage: ssnes [rom file] [options...]");
+   puts("Usage: retroarch [rom file] [options...]");
    puts("\t-h/--help: Show this help message.");
    puts("\t--features: Prints available features compiled into RetroArch.");
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin.");
