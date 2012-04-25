@@ -474,7 +474,7 @@ extern struct console_settings g_console;
 #ifndef RARCH_LOG
 #define RARCH_LOG(...) do { \
    if (g_extern.verbose) \
-      fprintf(stderr, "SSNES: " __VA_ARGS__); \
+      fprintf(stderr, "RetroArch: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
 #endif

@@ -113,6 +113,7 @@ static ssize_t oss_write(void *data, const void *buf, size_t size)
    {
       if ((fcntl(*fd, F_GETFL) & O_NONBLOCK) && errno == EAGAIN)
          return 0;
+
       return -1;
    }
 
