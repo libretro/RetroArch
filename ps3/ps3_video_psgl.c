@@ -710,7 +710,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 static void psgl_deinit(gl_t *gl)
 {
-   glFinish();
    cellDbgFontExit();
 
    psglDestroyContext(gl->gl_context);
