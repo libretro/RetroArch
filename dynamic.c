@@ -156,14 +156,8 @@ void init_libretro_sym(void)
 
    if (!*g_settings.libretro)
    {
-#if defined(_WIN32)
-      const char *libretro_path = "retro.dll";
-#elif defined(__APPLE__)
-      const char *libretro_path = "libretro.dylib";
-#else
-      const char *libretro_path = "libretro.so";
-#endif
-      strlcpy(g_settings.libretro, libretro_path, sizeof(g_settings.libretro));
+      RARCH_ERR("RetroArch is built for dynamic libretro, but libretro_path is not set. Cannot continue.\n");
+      rarch_fail(1, "init_libretro_sym()");
    }
 #endif
 
