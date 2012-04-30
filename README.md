@@ -76,11 +76,11 @@ The default configuration is defined in config.def.h.
 These can later be tweaked by using a config file. 
 A sample configuration file is installed to /etc/retroarch.cfg. 
 This is the system-wide config file. 
-Each user should create a config file in $XDG\_CONFIG\_HOME/ssnes/retroarch.cfg.
+Each user should create a config file in $XDG\_CONFIG\_HOME/retroarch/retroarch.cfg.
 The users only need to configure a certain option if the desired value deviates from the value defined in config.def.h.
 
-To configure joypads, start up <tt>jstest /dev/input/js0</tt> to determine which joypad buttons (and axis) to use.
-It is also possible to use the <tt>ssnes-joyconfig</tt> tool as well for simple configuration.
+To configure joypads, use the <tt>retroarch-joyconfig</tt> tool.
+It is also possible to configure joypads using the RetroArch-Phoenix GUI frontend.
 
 # Compiling and installing
 
