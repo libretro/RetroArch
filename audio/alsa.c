@@ -119,21 +119,20 @@ error:
    return NULL;
 }
 
-static ssize_t alsa_write(void *data, const void *buf, size_t size)
+static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
 {
    alsa_t *alsa = (alsa_t*)data;
+   const uint8_t *buf = (const uint8_t*)buf_;
 
-   snd_pcm_sframes_t frames;
    snd_pcm_sframes_t written = 0;
-   int rc;
-   size = snd_pcm_bytes_to_frames(alsa->pcm, size); // Frames to write
+   snd_pcm_sframes_t size = snd_pcm_bytes_to_frames(alsa->pcm, size_);
 
-   while (written < (snd_pcm_sframes_t)size)
+   while (size)
    {
       if (!alsa->nonblock)
       {
-         rc = snd_pcm_wait(alsa->pcm, -1);
-         if (rc == -EPIPE || rc == -ESTRPIPE)
+         int rc = snd_pcm_wait(alsa->pcm, -1);
+         if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
          {
             if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
                return -1;
@@ -141,24 +140,26 @@ static ssize_t alsa_write(void *data, const void *buf, size_t size)
          }
       }
 
-      frames = snd_pcm_writei(alsa->pcm, (const char*)buf + written * 2 * (alsa->has_float ? sizeof(float) : sizeof(int16_t)), size - written);
+      snd_pcm_sframes_t frames = snd_pcm_writei(alsa->pcm, buf, size);
 
       if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
       {
          if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
             return -1;
 
-         return 0;
+         break;
       }
       else if (frames == -EAGAIN && alsa->nonblock)
-         return 0;
+         break;
       else if (frames < 0)
          return -1;
 
       written += frames;
+      buf += (frames << 1) * (alsa->has_float ? sizeof(float) : sizeof(int16_t));
+      size -= frames;
    }
 
-   return snd_pcm_frames_to_bytes(alsa->pcm, size);
+   return written;
 }
 
 static bool alsa_stop(void *data)
@@ -180,6 +181,7 @@ static bool alsa_start(void *data)
 static void alsa_free(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
+
    if (alsa)
    {
       if (alsa->pcm)

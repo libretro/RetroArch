@@ -2,7 +2,7 @@
 <app version="1">
   <name>RetroArch Wii</name>
   <coder>Themaister, Squarepusher2</coder>
-  <version>0.9.5</version>
+  <version>0.9.6-beta1</version>
   <release_date>2012</release_date>
   <short_description>Multi-system emulator</short_description> 
   <long_description>A port of RetroArch to the Wii.</long_description> 

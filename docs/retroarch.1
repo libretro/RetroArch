@@ -12,9 +12,9 @@ retroarch \- A simple frontend for the libretro API.
 
 .SH "DESCRIPTION"
 
-\fBretroarch\fR is an emulator frontend for the libsnes API. 
-libsnes provides emulation of a Super Nintendo system, and can be implemented by any SNES emulator.
-\fBretroarch\fR focuses on exposing needed functionality through the use of command line and configuration files.
+\fBretroarch\fR is an emulator frontend for the libretro API. 
+libretro provides emulation of a game system, and can be implemented by any frontend.
+\fBretroarch\fR focuses on exposing needed functionality for the game system through the use of command line and configuration files.
 
 .SH "GENERAL OPTIONS"
 
@@ -32,10 +32,10 @@ Prints help text.
 Prints available features compiled into RetroArch, then exits.
 
 .TP
-\fB-L PATH, --libsnes PATH\fR
-Path to a libsnes implementation which is to be used.
+\fB-L PATH, --libretro PATH\fR
+Path to a libretro implementation which is to be used.
 This option will override any setting in a config file.
-This option is only available if RetroArch is compiled with dynamic libsnes loading.
+This option is only available if RetroArch is compiled with dynamic libretro loading.
 
 .TP
 \fB--save PATH, -s PATH\fR
@@ -52,7 +52,7 @@ Without this flag, the save state path will be inferred from the rom path name, 
 When rom is loaded from \fBstdin\fR, this flag is mandatory to define as no path can be inferred.
 If PATH is a directory, RetroArch will treat this as the save state directory, where the state file name will be inferred from the rom name.
 When loading a rom from stdin, the path must be a full path, however.
-Do note that save states are bound to the libsnes implementation being used. Using a different libsnes could invalidate the save state file.
+Do note that save states are bound to the libretro implementation being used. Using a different libretro could invalidate the save state file.
 
 .TP
 \fB--fullscreen, -f\fR
@@ -134,7 +134,7 @@ The video input is scaled with point filtering before being encoded at the corre
 .TP
 \fB--bsvplay PATH, -P PATH\fR
 Play back a movie recorded in the .bsv format (bSNES). Cart ROM and movie file need to correspond.
-It also requires to play back with the same libsnes backend that was used for recording.
+It also requires to play back with the same libretro backend that was used for recording.
 
 .TP
 \fB--bsvrecord PATH, -R PATH\fR

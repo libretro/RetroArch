@@ -63,6 +63,7 @@ extern "C" {
 #define RETRO_MEMORY_SAVE_RAM    0
 #define RETRO_MEMORY_RTC         1
 #define RETRO_MEMORY_SYSTEM_RAM  2
+#define RETRO_MEMORY_VIDEO_RAM   3
 
 #define RETRO_MEMORY_SNES_BSX_RAM             ((1 << 8) | RETRO_MEMORY_SAVE_RAM)
 #define RETRO_MEMORY_SNES_BSX_PRAM            ((2 << 8) | RETRO_MEMORY_SAVE_RAM)
