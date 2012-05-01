@@ -3,6 +3,9 @@
 check_switch_c C99 -std=gnu99
 check_critical C99 "Cannot find C99 compatible compiler."
 
+check_switch_c NOUNUSED -Wno-unused-result
+add_define_make NOUNUSED $HAVE_NOUNUSED
+
 # There are still broken 64-bit Linux distros out there. :)
 if [ -d /usr/lib64 ]; then
    add_library_dirs /usr/lib64
