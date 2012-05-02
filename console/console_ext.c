@@ -706,3 +706,23 @@ void rarch_exec (void)
 }
 
 #endif
+
+#ifdef HAVE_RSOUND
+bool rarch_console_rsound_start(const char *ip)
+{
+   uninit_audio();
+   strlcpy(g_settings.audio.device, ip, sizeof(g_settings.audio.device));
+   driver.audio = &audio_rsound;
+   driver.audio_data = NULL;
+   init_audio();
+   return g_extern.audio_active;
+}
+
+void rarch_console_rsound_stop(void)
+{
+   uninit_audio();
+   init_drivers_pre();
+   init_audio();
+}
+#endif
+

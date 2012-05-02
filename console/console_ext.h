@@ -119,4 +119,9 @@ void rarch_startup (const char * config_path);
 void rarch_exec (void);
 #endif
 
+#ifdef HAVE_RSOUND
+bool rarch_console_rsound_start(const char *ip);
+void rarch_console_rsound_stop(void);
+#endif
+
 #endif
