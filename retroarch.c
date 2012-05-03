@@ -1332,6 +1332,8 @@ static void init_libretro_cbs_plain(void)
 
 static void init_libretro_cbs(void)
 {
+   init_libretro_cbs_plain();
+
 #ifdef HAVE_NETPLAY
    if (g_extern.netplay)
    {
@@ -1347,10 +1349,6 @@ static void init_libretro_cbs(void)
             (g_extern.netplay_is_client ? input_state_spectate_client : input_state_spectate)
             : input_state_net);
    }
-   else
-      init_libretro_cbs_plain();
-#else
-   init_libretro_cbs_plain();
 #endif
 }
 
