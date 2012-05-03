@@ -2275,7 +2275,6 @@ static void verify_api_version(void)
 int rarch_main_init(int argc, char *argv[])
 {
    init_state();
-   parse_input(argc, argv);
 
    int sjlj_ret;
    if ((sjlj_ret = setjmp(g_extern.error_sjlj_context)) > 0)
@@ -2284,6 +2283,8 @@ int rarch_main_init(int argc, char *argv[])
       return sjlj_ret;
    }
    g_extern.error_in_init = true;
+
+   parse_input(argc, argv);
 
    if (g_extern.verbose)
    {
