@@ -1281,6 +1281,14 @@ static void init_netplay(void)
    if (!g_extern.netplay_enable)
       return;
 
+#ifdef HAVE_BSV_MOVIE
+   if (g_extern.bsv.movie_start_playback)
+   {
+      RARCH_WARN("Movie playback has started. Cannot start netplay.\n");
+      return;
+   }
+#endif
+
    struct retro_callbacks cbs = {0};
    cbs.frame_cb = video_frame;
    cbs.sample_cb = audio_sample;
@@ -1564,6 +1572,11 @@ static void fill_pathnames(void)
 
 static void load_auto_state(void)
 {
+#ifdef HAVE_NETPLAY
+   if (g_extern.netplay_enable && !g_extern.netplay_is_spectate)
+      return;
+#endif
+
    char savestate_name_auto[PATH_MAX];
    fill_pathname_noext(savestate_name_auto, g_extern.savestate_name,
          ".auto", sizeof(savestate_name_auto));
