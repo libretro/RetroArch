@@ -631,7 +631,7 @@ static uint32_t *bsv_header_generate(size_t *size, uint32_t magic)
    bsv_header[CRC_INDEX] = swap_if_big32(g_extern.cart_crc);
    bsv_header[STATE_SIZE_INDEX] = swap_if_big32(serialize_size);
 
-   if (serialize_size && !pretro_serialize(header + sizeof(bsv_header), serialize_size))
+   if (serialize_size && !pretro_serialize(header + 4, serialize_size))
    {
       free(header);
       return NULL;
