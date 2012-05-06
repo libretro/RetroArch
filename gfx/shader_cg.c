@@ -1221,16 +1221,24 @@ bool gl_cg_load_shader(unsigned index, const char *path)
 
    memset(&prg[index], 0, sizeof(prg[index]));
 
-   if (load_program(index, path, true))
+   if (path)
    {
-      set_program_attributes(index);
-      return true;
+      if (load_program(index, path, true))
+      {
+         set_program_attributes(index);
+         return true;
+      }
+      else
+      {
+         // Always make sure we have a valid shader.
+         memcpy(&prg[index], &prg[0], sizeof(prg[0]));
+         return false;
+      }
    }
    else
    {
-      // Always make sure we have a valid shader.
-      memcpy(&prg[index], &prg[0], sizeof(prg[0]));
-      return false;
+      prg[index] = prg[0];
+      return true;
    }
 }
 
