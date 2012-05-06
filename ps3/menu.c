@@ -153,8 +153,9 @@ static void display_menubar(uint32_t menu_enum)
    cellDbgFontPuts    (0.29f,  0.05f,  FONT_SIZE,  menu_enum == EMU_GENERAL_MENU ? RED : GREEN,  menu_emu_settings.title);
    cellDbgFontPuts    (0.39f,  0.05f,  FONT_SIZE,  menu_enum == EMU_VIDEO_MENU ? RED : GREEN,   menu_emu_videosettings.title);
    cellDbgFontPuts    (0.57f,  0.05f,  FONT_SIZE,  menu_enum == EMU_AUDIO_MENU ? RED : GREEN,   menu_emu_audiosettings.title);
-   cellDbgFontPuts    (0.75f,  0.05f,  FONT_SIZE,  menu_enum == PATH_MENU ? RED : GREEN,  menu_pathsettings.title);
-   cellDbgFontPuts    (0.84f,  0.05f,  FONT_SIZE, menu_enum == CONTROLS_MENU ? RED : GREEN,  menu_controlssettings.title); 
+   cellDbgFontPuts    (0.09f,  0.09f,  FONT_SIZE,  menu_enum == PATH_MENU ? RED : GREEN,  menu_pathsettings.title);
+   cellDbgFontPuts    (0.19f,  0.09f,  FONT_SIZE, menu_enum == CONTROLS_MENU ? RED : GREEN,  menu_controlssettings.title); 
+   cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
    cellDbgFontDraw();
 }
 
@@ -2496,7 +2497,7 @@ static void ingame_menu(uint32_t menu_id)
 
    cellDbgFontPuts(0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
    cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
-   cellDbgFontPrintf (0.9f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
+   cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
    cellDbgFontDraw();
    cellDbgFontPrintf (0.05f, 0.90f, 1.10f, WHITE, special_action_msg);
    cellDbgFontDraw();
