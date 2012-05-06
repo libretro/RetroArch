@@ -457,7 +457,7 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		   }
 		   break;
 	   case SETTING_SCALE_ENABLED:
-		   if(g_settings.video.render_to_texture)
+		   if(g_console.fbo_enabled)
 		   {
 			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
 			   menu_obj->items[currentsetting].text_color = GREEN;
@@ -1337,19 +1337,15 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_SCALE_ENABLED:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
-
-				if(g_settings.video.render_to_texture)
-					apply_scaling(FBO_INIT);
-				else
-					apply_scaling(FBO_DEINIT);
+				g_console.fbo_enabled = !g_console.fbo_enabled;
+				gl_set_fbo_enable(g_console.fbo_enabled);
 
 				set_delay = DELAY_MEDIUM;
 
 			}
 			if(CTRL_START(state))
 			{
-				g_settings.video.render_to_texture = true;
+				g_console.fbo_enabled = true;
 				g_settings.video.fbo_scale_x = 2.0f;
 				g_settings.video.fbo_scale_y = 2.0f;
 				apply_scaling(FBO_DEINIT);
@@ -1359,7 +1355,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_SCALE_FACTOR:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 			{
-				if(g_settings.video.render_to_texture)
+				if(g_console.fbo_enabled)
 				{
 					if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
 					{
@@ -1372,7 +1368,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				if(g_settings.video.render_to_texture)
+				if(g_console.fbo_enabled)
 				{
 					if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
 					{
@@ -2158,7 +2154,7 @@ static void ingame_menu(uint32_t menu_id)
 	 case MENU_ITEM_SCALE_FACTOR:
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 	    {
-               if(g_settings.video.render_to_texture)
+               if(g_console.fbo_enabled)
 	       {
                   if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
 		  {
@@ -2171,7 +2167,7 @@ static void ingame_menu(uint32_t menu_id)
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 	    {
-               if(g_settings.video.render_to_texture)
+               if(g_console.fbo_enabled)
 	       {
                   if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
 		  {

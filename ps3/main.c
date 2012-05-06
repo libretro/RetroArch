@@ -90,7 +90,6 @@ static void set_default_settings(void)
    strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
    g_settings.video.fbo_scale_x = 2.0f;
    g_settings.video.fbo_scale_y = 2.0f;
-   g_settings.video.render_to_texture = true;
    strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
    g_settings.video.second_pass_smooth = true;
    g_settings.video.smooth = true;
@@ -126,6 +125,7 @@ static void set_default_settings(void)
    g_console.triple_buffering_enable = true;
    g_console.default_savestate_dir_enable = false;
    g_console.default_sram_dir_enable = false;
+   g_console.fbo_enabled = true;
    g_console.mode_switch = MODE_MENU;
    g_console.screen_orientation = ORIENTATION_NORMAL;
    g_console.current_resolution_id = CELL_VIDEO_OUT_RESOLUTION_UNDEFINED;
@@ -218,6 +218,7 @@ static void init_settings(bool load_libretro_path)
 
       // g_console
 
+      CONFIG_GET_BOOL_CONSOLE(fbo_enabled, "fbo_enabled");
       CONFIG_GET_BOOL_CONSOLE(custom_bgm_enable, "custom_bgm_enable");
       CONFIG_GET_BOOL_CONSOLE(overscan_enable, "overscan_enable");
       CONFIG_GET_BOOL_CONSOLE(screenshots_enable, "screenshots_enable");
@@ -279,6 +280,7 @@ static void save_settings(void)
       }
 
       // g_console
+      config_set_bool(conf, "fbo_enabled", g_console.fbo_enabled);
       config_set_bool(conf, "custom_bgm_enable", g_console.custom_bgm_enable);
       config_set_bool(conf, "overscan_enable", g_console.overscan_enable);
       config_set_bool(conf, "screenshots_enable", g_console.screenshots_enable);

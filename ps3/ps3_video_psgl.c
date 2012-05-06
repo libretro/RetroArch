@@ -147,6 +147,13 @@ static bool gl_shader_filter_type(unsigned index, bool *smooth)
    return valid;
 }
 
+void gl_set_fbo_enable (bool enable)
+{
+   gl_t *gl = g_gl;
+
+   gl->fbo_enabled = enable;
+}
+
 static void gl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
 {
    scale->valid = false;
@@ -183,31 +190,19 @@ static void gl_create_fbo_textures(gl_t *gl)
 
 void gl_deinit_fbo(gl_t *gl)
 {
-   if (gl->fbo_inited)
-   {
-      glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
-      glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
-      memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
-      memset(gl->fbo, 0, sizeof(gl->fbo));
-      gl->fbo_inited = false;
-      gl->render_to_tex = false;
-      gl->fbo_pass = 0;
-   }
+   glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
+   glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
+   memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
+   memset(gl->fbo, 0, sizeof(gl->fbo));
+   gl->fbo_pass = 0;
 }
 
 // Horribly long and complex FBO init :D
 void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
-   if (!g_settings.video.render_to_texture && gl_shader_num() == 0)
-      return;
-
    struct gl_fbo_scale scale, scale_last;
    gl_shader_scale(1, &scale);
    gl_shader_scale(gl_shader_num(), &scale_last);
-
-   // No need to use FBOs.
-   if (gl_shader_num() == 1 && !scale.valid && !g_settings.video.render_to_texture)
-      return;
 
    gl->fbo_pass = gl_shader_num() - 1;
    if (scale_last.valid)
@@ -320,7 +315,6 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 	      goto error;
    }
 
-   gl->fbo_inited = true;
    glBindFramebufferOES(GL_FRAMEBUFFER_OES, 0);
    return;
 
@@ -545,12 +539,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    // Render to texture in first pass.
-   if (gl->fbo_inited)
+   if (gl->fbo_enabled)
    {
       gl_compute_fbo_geometry(gl, width, height, gl->vp_out_width, gl->vp_out_height);
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
       glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[0]);
-      gl->render_to_tex = true;
       set_viewport_force_full(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height);
    }
 
@@ -581,7 +574,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    // Need to preserve the "flipped" state when in FBO as well to have 
    // consistent texture coordinates.
-   if (gl->render_to_tex)
+   if (gl->fbo_enabled)
       glVertexPointer(2, GL_FLOAT, 0, vertexes);
 
    size_t buffer_addr = gl->tex_w * gl->tex_h * gl->tex_index * gl_base_size;
@@ -617,7 +610,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    glDrawArrays(GL_QUADS, 0, 4);
 
-   if (gl->fbo_inited)
+   if (gl->fbo_enabled)
    {
       // Render the rest of our passes.
       glTexCoordPointer(2, GL_FLOAT, 0, gl->fbo_tex_coords);
@@ -678,7 +671,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
       glClear(GL_COLOR_BUFFER_BIT);
-      gl->render_to_tex = false;
       set_viewport(gl, gl->win_width, gl->win_height);
       gl_cg_set_params(prev_rect->img_width, prev_rect->img_height, 
 		      prev_rect->width, prev_rect->height, 
@@ -1176,7 +1168,7 @@ void ps3_set_filtering(unsigned index, bool set_smooth)
 	 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
       }
    }
-   else if (index >= 2 && gl->fbo_inited)
+   else if (index >= 2 && gl->fbo_enabled)
    {
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index - 2]);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
@@ -1211,6 +1203,7 @@ void ps3graphics_video_init(bool get_all_resolutions)
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
    g_gl = gl_init(&video_info, NULL, NULL);
+   gl_set_fbo_enable(g_console.fbo_enabled);
 
    gl_t * gl = g_gl;
 

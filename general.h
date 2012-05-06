@@ -188,6 +188,7 @@ struct console_settings
    bool block_config_read;
    bool default_sram_dir_enable;
    bool default_savestate_dir_enable;
+   bool fbo_enabled;
    bool frame_advance_enable;
    bool gamma_correction_enable;
    bool initialize_rarch_enable;

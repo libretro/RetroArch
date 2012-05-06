@@ -45,10 +45,8 @@
 typedef struct gl
 {
    bool block_swap;
-   bool fbo_inited;
+   bool fbo_enabled;
    bool keep_aspect;
-   bool render_to_tex;
-   bool should_resize;
    bool vsync;
    bool overscan_enable;
    int fbo_pass;
@@ -89,6 +87,7 @@ int ps3_check_resolution(uint32_t resolution_id);
 void gl_frame_menu(void);
 void gl_deinit_fbo(gl_t * gl);
 void gl_init_fbo(gl_t * gl, unsigned width, unsigned height);
+void gl_set_fbo_enable(bool enable);
 void ps3_previous_resolution (void);
 void ps3_next_resolution (void);
 void ps3_set_filtering(unsigned index, bool set_smooth);
