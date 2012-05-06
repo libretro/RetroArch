@@ -17,21 +17,6 @@ PPU_LIB_TARGET		= librgl.a
 LDDIRS = -L.
 INCDIRS = -I.
 
-PKG_SCRIPT		= ps3/ps3py/pkg.py
-ifeq ($(shell uname), Linux)
-PKG_FINALIZE         	= package_finalize
-MAKE_SELF_WC		= make_self_wc
-MAKE_SELF		= make_self_npdrm
-PYTHON2			= python2
-GIT			= git
-else
-PKG_FINALIZE         	= package_finalize.exe
-MAKE_SELF_WC		= make_self_wc.exe
-MAKE_SELF		= make_self_npdrm.exe
-PYTHON2			= python2.exe
-GIT			= git.exe
-endif
-
 PPU_SRCS		= console/rgl/ps3/device_ctx.cpp \
 			  console/rgl/ps3/rgl.cpp \
 			  console/rgl/ps3/cgbio.cpp \
@@ -64,7 +49,3 @@ PPU_CFLAGS = $(PPU_OPTIMIZE_LV) $(INCDIRS) $(DEFINES)
 PPU_CXXFLAGS = $(PPU_OPTIMIZE_LV) $(INCDIRS) $(DEFINES)
 
 include $(CELL_MK_DIR)/sdk.target.mk
-
-MAKE_FSELF = $(CELL_SDK)/host-win32/bin/make_fself.exe
-MAKE_FSELF_NPDRM = $(CELL_SDK)/host-win32/bin/make_fself_npdrm.exe
-MAKE_PACKAGE_NPDRM = $(CELL_SDK)/host-win32/bin/make_package_npdrm.exe
