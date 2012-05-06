@@ -1231,7 +1231,7 @@ bool gl_cg_load_shader(unsigned index, const char *path)
       else
       {
          // Always make sure we have a valid shader.
-         memcpy(&prg[index], &prg[0], sizeof(prg[0]));
+         prg[index] = prg[0];
          return false;
       }
    }
