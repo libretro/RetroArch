@@ -187,6 +187,6 @@ MENU
 #elif defined(_XBOX)
 #include "../../360/menu.cpp"
 #elif defined(GEKKO)
-#include "../sgui/sgui.c"
-#include "../sgui/list.c"
+#include "../rgui/rgui.c"
+#include "../rgui/list.c"
 #endif

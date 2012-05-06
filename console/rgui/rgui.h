@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SGUI_H__
-#define SGUI_H__
+#ifndef RGUI_H__
+#define RGUI_H__
 
 #include <stdint.h>
 #include <stddef.h>
@@ -27,40 +27,40 @@ extern "C" {
 
 typedef enum
 {
-   SGUI_FILE_PLAIN,
-   SGUI_FILE_DIRECTORY
-} sgui_file_type_t;
+   RGUI_FILE_PLAIN,
+   RGUI_FILE_DIRECTORY
+} rgui_file_type_t;
 
 typedef enum
 {
-   SGUI_ACTION_UP,
-   SGUI_ACTION_DOWN,
-   SGUI_ACTION_LEFT,
-   SGUI_ACTION_RIGHT,
-   SGUI_ACTION_OK,
-   SGUI_ACTION_CANCEL,
-   SGUI_ACTION_REFRESH,
-   SGUI_ACTION_NOOP
-} sgui_action_t;
+   RGUI_ACTION_UP,
+   RGUI_ACTION_DOWN,
+   RGUI_ACTION_LEFT,
+   RGUI_ACTION_RIGHT,
+   RGUI_ACTION_OK,
+   RGUI_ACTION_CANCEL,
+   RGUI_ACTION_REFRESH,
+   RGUI_ACTION_NOOP
+} rgui_action_t;
 
-typedef struct sgui_handle sgui_handle_t;
+typedef struct rgui_handle rgui_handle_t;
 
-typedef void (*sgui_file_enum_cb_t)(void *ctx, const char *path,
-      sgui_file_type_t file_type);
-typedef bool (*sgui_folder_enum_cb_t)(const char *directory,
-      sgui_file_enum_cb_t file_cb, void *userdata, void *ctx);
+typedef void (*rgui_file_enum_cb_t)(void *ctx, const char *path,
+      rgui_file_type_t file_type);
+typedef bool (*rgui_folder_enum_cb_t)(const char *directory,
+      rgui_file_enum_cb_t file_cb, void *userdata, void *ctx);
 
-#define SGUI_WIDTH 320
-#define SGUI_HEIGHT 240
+#define RGUI_WIDTH 320
+#define RGUI_HEIGHT 240
 
-sgui_handle_t *sgui_init(const char *base_path,
+rgui_handle_t *rgui_init(const char *base_path,
       uint16_t *framebuf, size_t framebuf_pitch,
       const uint8_t *font_buf,
-      sgui_folder_enum_cb_t folder_cb, void *userdata);
+      rgui_folder_enum_cb_t folder_cb, void *userdata);
 
-const char *sgui_iterate(sgui_handle_t *sgui, sgui_action_t action);
+const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action);
 
-void sgui_free(sgui_handle_t *sgui);
+void rgui_free(rgui_handle_t *rgui);
 
 #ifdef __cplusplus
 }

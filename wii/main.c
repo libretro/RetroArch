@@ -16,7 +16,7 @@
 #undef main
 
 #include <stdbool.h>
-#include "../console/sgui/sgui.h"
+#include "../console/rgui/rgui.h"
 #include "../driver.h"
 #include "../general.h"
 #include "../libretro.h"
@@ -39,9 +39,9 @@
 FILE * log_fp;
 #endif
 
-static uint16_t menu_framebuf[SGUI_WIDTH * SGUI_HEIGHT];
+static uint16_t menu_framebuf[RGUI_WIDTH * RGUI_HEIGHT];
 
-static bool folder_cb(const char *directory, sgui_file_enum_cb_t file_cb,
+static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       void *userdata, void *ctx)
 {
    (void)userdata;
@@ -64,19 +64,19 @@ static bool folder_cb(const char *directory, sgui_file_enum_cb_t file_cb,
 
       file_cb(ctx,
             entry->d_name, S_ISDIR(st.st_mode) ?
-            SGUI_FILE_DIRECTORY : SGUI_FILE_PLAIN);
+            RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN);
    }
 
    closedir(dir);
    return true;
 }
 
-static const char *get_rom_path(sgui_handle_t *sgui)
+static const char *get_rom_path(rgui_handle_t *rgui)
 {
    uint16_t old_input_state = 0;
    bool can_quit = false;
 
-   sgui_iterate(sgui, SGUI_ACTION_REFRESH);
+   rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 
    for (;;)
    {
@@ -99,23 +99,23 @@ static const char *get_rom_path(sgui_handle_t *sgui)
 
       uint16_t trigger_state = input_state & ~old_input_state;
 
-      sgui_action_t action = SGUI_ACTION_NOOP;
+      rgui_action_t action = RGUI_ACTION_NOOP;
       if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
-         action = SGUI_ACTION_CANCEL;
+         action = RGUI_ACTION_CANCEL;
       else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_A))
-         action = SGUI_ACTION_OK;
+         action = RGUI_ACTION_OK;
       else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
-         action = SGUI_ACTION_UP;
+         action = RGUI_ACTION_UP;
       else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
-         action = SGUI_ACTION_DOWN;
+         action = RGUI_ACTION_DOWN;
 
-      const char *ret = sgui_iterate(sgui, action);
+      const char *ret = rgui_iterate(rgui, action);
       if (ret)
          return ret;
 
       video_wii.frame(NULL, menu_framebuf,
-            SGUI_WIDTH, SGUI_HEIGHT,
-            SGUI_WIDTH * sizeof(uint16_t), NULL);
+            RGUI_WIDTH, RGUI_HEIGHT,
+            RGUI_WIDTH * sizeof(uint16_t), NULL);
 
       old_input_state = input_state;
       rarch_sleep(10);
@@ -138,13 +138,13 @@ int main(void)
    wii_video_init();
    wii_input_init();
 
-   sgui_handle_t *sgui = sgui_init("sd:/",
-         menu_framebuf, SGUI_WIDTH * sizeof(uint16_t),
+   rgui_handle_t *rgui = rgui_init("sd:/",
+         menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
          _binary_console_font_bmp_start, folder_cb, NULL);
 
    const char *rom_path;
    int ret = 0;
-   while ((rom_path = get_rom_path(sgui)) && ret == 0)
+   while ((rom_path = get_rom_path(rgui)) && ret == 0)
    {
       g_console.initialize_rarch_enable = true;
       strlcpy(g_console.rom_path, rom_path, sizeof(g_console.rom_path));
@@ -168,7 +168,7 @@ int main(void)
    fclose(log_fp);
 #endif
 
-   sgui_free(sgui);
+   rgui_free(rgui);
    return ret;
 }
 
