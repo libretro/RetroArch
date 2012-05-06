@@ -43,6 +43,7 @@ typedef struct DrawVerticeFormats
 typedef struct xdk360_video
 {
    bool block_swap;
+   bool fbo_enabled;
    bool vsync; 
    unsigned last_width;
    unsigned last_height;
@@ -50,9 +51,12 @@ typedef struct xdk360_video
    IDirect3DDevice9* d3d_render_device;
    IDirect3DVertexBuffer9* vertex_buf;
    IDirect3DTexture9* lpTexture;
+   D3DTexture lpTexture_ot_as16srgb;
+   LPDIRECT3DTEXTURE9 lpTexture_ot;
    IDirect3DVertexDeclaration9* v_decl;
    D3DPRESENT_PARAMETERS d3dpp;
    XVIDEO_MODE video_mode;
+   LPDIRECT3DSURFACE9 lpSurface;
 } xdk360_video_t;
 
 void xdk360_video_init (void);
