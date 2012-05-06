@@ -541,7 +541,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 
    vid->d3d_render_device->SetTexture(0, vid->lpTexture);
 
-   hlsl_use(0);
+   hlsl_use(1);
    if(vid->fbo_enabled)
    {
       hlsl_set_params(width, height, 512, 512, g_settings.video.fbo_scale_x * width,
@@ -590,7 +590,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
       pRenderTarget0->Release();
       vid->d3d_render_device->SetTexture(0, &vid->lpTexture_ot_as16srgb);
 
-      hlsl_use(0);
+      hlsl_use(2);
       hlsl_set_params(g_settings.video.fbo_scale_x * width, g_settings.video.fbo_scale_y * height, g_settings.video.fbo_scale_x * 512, g_settings.video.fbo_scale_y * 512, vid->d3dpp.BackBufferWidth,
       vid->d3dpp.BackBufferHeight, g_frame_count);
       set_viewport(false);

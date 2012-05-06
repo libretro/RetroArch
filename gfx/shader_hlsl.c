@@ -43,18 +43,22 @@ static IDirect3DDevice9 *d3d_device_ptr;
 static struct hlsl_program prg[RARCH_HLSL_MAX_SHADERS] = {0};
 static bool hlsl_active = false;
 static unsigned active_index = 0;
+static unsigned hlsl_shader_num = 0;
 
 static const char *stock_hlsl_program =
       "void main_vertex                                                "
       "(                                                               "
-      "   float2 position : POSITION,                                  "
-      "   float2 texCoord : TEXCOORD0,                                 "
-      "   uniform float4x4 modelViewProj : register(c0),               "
+      "   float4 position : POSITION,                                  "
+	  "   float4 color    : COLOR,                                     "
+      "   float4 texCoord : TEXCOORD0,                                 "
+      "   uniform float4x4 modelViewProj,                              "
       "   out float4 oPosition : POSITION,                             "
+	  "   out float4 oColor : COLOR,                                   "
       "   out float2 otexCoord : TEXCOORD                              "
       ")                                                               "
       "{                                                               "
-      "   oPosition = mul(modelViewProj, float4(position, 0.0, 1.0));  "
+      "   oPosition = mul(modelViewProj, position);                    "
+	  "   oColor = color;                                              "
       "   otexCoord = texCoord;                                        "
       "}                                                               "
       "                                                                "
@@ -68,13 +72,16 @@ static const char *stock_hlsl_program =
       "   float2 video_size;                                           "
       "   float2 texture_size;                                         "
       "   float2 output_size;                                          "
+	  "   float frame_count;                                           "
+	  "   float frame_direction;                                       "
+	  "   float frame_rotation;                                        "
       "};                                                              "
       "                                                                "
       "output main_fragment(float2 texCoord : TEXCOORD0,               " 
-      "uniform sampler2D decal : register(s0), uniform input IN)       "
+      "uniform sampler2D decal : TEXUNIT0, uniform input IN)           "
       "{                                                               "
       "   output OUT;                                                  "
-      "   OUT.color = tex2D(decal, tex);                               "
+      "   OUT.color = tex2D(decal, texCoord);                          "
       "   return OUT;                                                  "
       "}                                                               ";
 
@@ -118,7 +125,8 @@ void hlsl_set_params(unsigned width, unsigned height,
    set_param_1f(prg[active_index].frame_dir_v, g_extern.frame_is_reverse ? -1.0 : 1.0,prg[active_index].v_ctable);
 
    /* TODO: Move to D3DXMATRIX here */
-   prg[active_index].v_ctable->SetMatrix(d3d_device_ptr, prg[active_index].mvp, (D3DXMATRIX*)&prg[active_index].mvp_val);
+   if(prg[active_index].mvp)
+      prg[active_index].v_ctable->SetMatrix(d3d_device_ptr, prg[active_index].mvp, (D3DXMATRIX*)&prg[active_index].mvp_val);
 }
 
 static bool load_program(unsigned index, const char *prog, bool path_is_file)
@@ -197,15 +205,26 @@ static bool load_stock(void)
 
 static bool load_plain(const char *path)
 {
-#if 0
    if (!load_stock())
       return false;
-#endif
 
    RARCH_LOG("Loading HLSL file: %s\n", path);
 
-   if (!load_program(0, path, true))
+   if (!load_program(1, path, true))
       return false;
+
+   if (*g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
+   {
+      if (!load_program(2, g_settings.video.second_pass_shader, true))
+         return false;
+
+      hlsl_shader_num = 2;
+   }
+   else
+   {
+      prg[2] = prg[0];
+      hlsl_shader_num = 1;
+   }
 
    return true;
 }
@@ -267,22 +286,25 @@ bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
       if (!load_plain(path))
          return false;
    }
+   for(unsigned i = 1; i <= hlsl_shader_num; i++)
+      set_program_attributes(i);
 
-   set_program_attributes(0);
+   active_index = 1;
+   d3d_device_ptr->SetVertexShader(prg[active_index].vprg);
+   d3d_device_ptr->SetPixelShader(prg[active_index].fprg);
 
-   active_index = 0;
    hlsl_active = true;
    return true;
 }
 
 void hlsl_use(unsigned index)
 {
-   if (!hlsl_active)
-      return;
-   
-   active_index = index;
-   d3d_device_ptr->SetVertexShader(prg[index].vprg);
-   d3d_device_ptr->SetPixelShader(prg[index].fprg);
+   if (hlsl_active)
+   {
+      active_index = index;
+      d3d_device_ptr->SetVertexShader(prg[index].vprg);
+      d3d_device_ptr->SetPixelShader(prg[index].fprg);
+   }
 }
 
 // Full deinit.
