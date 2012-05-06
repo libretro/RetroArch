@@ -1,0 +1,70 @@
+#which compiler to build  with - GCC or SNC
+#set to GCC for debug builds for use with debugger
+CELL_BUILD_TOOLS	= SNC
+CELL_GPU_TYPE	   	= RSX
+
+DEBUG			= 0
+STRIPPING_ENABLE	= 0
+
+PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.7"
+PC_DEVELOPMENT_UDP_PORT		= 3490
+
+CELL_MK_DIR		?= $(CELL_SDK)/samples/mk
+include $(CELL_MK_DIR)/sdk.makedef.mk
+
+PPU_LIB_TARGET		= librgl.a
+
+LDDIRS = -L.
+INCDIRS = -I.
+
+PKG_SCRIPT		= ps3/ps3py/pkg.py
+ifeq ($(shell uname), Linux)
+PKG_FINALIZE         	= package_finalize
+MAKE_SELF_WC		= make_self_wc
+MAKE_SELF		= make_self_npdrm
+PYTHON2			= python2
+GIT			= git
+else
+PKG_FINALIZE         	= package_finalize.exe
+MAKE_SELF_WC		= make_self_wc.exe
+MAKE_SELF		= make_self_npdrm.exe
+PYTHON2			= python2.exe
+GIT			= git.exe
+endif
+
+PPU_SRCS		= console/rgl/ps3/device_ctx.cpp \
+			  console/rgl/ps3/rgl.cpp \
+			  console/rgl/ps3/cgbio.cpp \
+			  console/rgl/ps3/cgnv2rt.cpp 
+
+ifeq ($(CELL_BUILD_TOOLS), SNC)
+	PPU_CXXLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe
+	PPU_CXX	= $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
+	PPU_CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
+	SNC_PPU_AR = $(CELL_SDK)/host-win32/sn/bin/ps3snarl.exe
+else
+	PPU_CXX	= $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-g++.exe
+	PPU_CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
+	PPU_CXXLD = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ld.exe
+	PPU_AR = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ar.exe
+endif
+
+
+PPU_LDLIBS = -lio_stub
+
+DEFINES += -D__CELLOS_LV2__
+
+ifeq ($(DEBUG), 1)
+   PPU_OPTIMIZE_LV	:= -O0 -g
+else
+   PPU_OPTIMIZE_LV	:= -O3
+endif
+
+PPU_CFLAGS = $(PPU_OPTIMIZE_LV) $(INCDIRS) $(DEFINES)
+PPU_CXXFLAGS = $(PPU_OPTIMIZE_LV) $(INCDIRS) $(DEFINES)
+
+include $(CELL_MK_DIR)/sdk.target.mk
+
+MAKE_FSELF = $(CELL_SDK)/host-win32/bin/make_fself.exe
+MAKE_FSELF_NPDRM = $(CELL_SDK)/host-win32/bin/make_fself_npdrm.exe
+MAKE_PACKAGE_NPDRM = $(CELL_SDK)/host-win32/bin/make_package_npdrm.exe

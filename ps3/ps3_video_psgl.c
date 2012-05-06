@@ -1201,15 +1201,6 @@ void ps3graphics_set_overscan(bool overscan_enable, float amount, bool recalcula
    }
 }
 
-
-/* PS3 needs a working graphics stack before RetroArch even starts.
-
-   To deal with this main.c, the top level module owns the instance, 
-   and is created beforehand. When RetroArch gets around to init it, it 
-   is already allocated.
-   
-   When RetroArch wants to free it, it is ignored. */
-
 void ps3graphics_video_init(bool get_all_resolutions)
 {
    video_info_t video_info = {0};
