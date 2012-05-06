@@ -513,7 +513,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
       float tex_w = width / 512.0f;
       float tex_h = height / 512.0f;
 
-      const DrawVerticeFormats verts[] = {
+      DrawVerticeFormats verts[] = {
          { -1.0f, -1.0f, 0.0f,  tex_h },
          {  1.0f, -1.0f, tex_w, tex_h },
          { -1.0f,  1.0f, 0.0f,  0.0f },
