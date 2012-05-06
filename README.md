@@ -114,7 +114,7 @@ RetroArch PS3 needs to be compiled in the following order:
 
 1) Compile RetroArch Salamander
 
-<tt>make -f Makefile.ps3.salamader</tt>
+<tt>make -f Makefile.ps3.salamander</tt>
 
 2) Compile the RGL video driver
 
