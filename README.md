@@ -84,29 +84,8 @@ It is also possible to configure joypads using the RetroArch-Phoenix GUI fronten
 
 # Compiling and installing
 
-<b>Linux/Unix</b><br/>
-As most packages, RetroArch is built using the standard <tt>./configure && make && make install</tt>
-Do note that the build system is not autotools based, but resembles it. Refer to ./configure --help for options.
-
-<b>Win32</b><br/>
-It is possible with MinGW to compile for Windows in either msys or Linux/Unix based systems. Do note that Windows build uses a static Makefile since configuration scripts create more harm than good on this platform. Libraries, headers, etc, needed to compile and run RetroArch can be fetched with a Makefile target.
-
-In Linux/Unix:<br/>
-<tt>make -f Makefile.win libs</tt></br>
-<tt>make -f Makefile.win CC=i486-mingw32-gcc CXX=i486-mingw32-g++</tt></br>
-
-In MSYS:
-<tt>mingw32-make -f Makefile.win libs</tt>. # You will need to have wget in your patch for this command! MSYS should provide this.</br>
-<tt>mingw32-make -f Makefile.win</tt>
-
-<b>Win32 (MSVC)</b><br />
-In addition to Mingw, it is also possible to compile a Win32 version of RetroArch with Microsoft Visual Studio 2010.
-
-You will need Microsoft Visual Studio 2010 intalled (or higher) in order to compile RetroArch with the MSVC compiler.
-
-The solution file can be found at the following location:
-
-<tt>msvc/RetroArch/RetroArch.sln</tt>
+<b>PC</b><br/>
+Instructions for compiling on PC can be found in the [wiki](https://github.com/Themaister/RetroArch/wiki).
 
 <b>PlayStation3</b><br/>
 
