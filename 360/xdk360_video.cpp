@@ -512,18 +512,25 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 
       float tex_w = width / 512.0f;
       float tex_h = height / 512.0f;
-	  
+
       const DrawVerticeFormats verts[] = {
          { -1.0f, -1.0f, 0.0f,  tex_h },
-	 {  1.0f, -1.0f, tex_w, tex_h },
-	 { -1.0f,  1.0f, 0.0f,  0.0f },
-	 {  1.0f,  1.0f, tex_w, 0.0f },
+         {  1.0f, -1.0f, tex_w, tex_h },
+         { -1.0f,  1.0f, 0.0f,  0.0f },
+         {  1.0f,  1.0f, tex_w, 0.0f },
       };
 
+      // Align texels and vertices (D3D9 quirk).
+      for (unsigned i = 0; i < 4; i++)
+      {
+         verts[i].x -= 0.5f / 512.0f;
+         verts[i].y += 0.5f / 512.0f;
+      }
+
       void *verts_ptr;
-	  vid->vertex_buf->Lock(0, 0, &verts_ptr, 0);
+      vid->vertex_buf->Lock(0, 0, &verts_ptr, 0);
       memcpy(verts_ptr, verts, sizeof(verts));
-	  vid->vertex_buf->Unlock();
+      vid->vertex_buf->Unlock();
 
       vid->last_width = width;
       vid->last_height = height;
@@ -535,8 +542,8 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
       vid->d3d_render_device->SetRenderTarget(0, vid->lpSurface);
    }
 
-	vid->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
-	   0xff000000, 1.0f, 0);
+   vid->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+         0xff000000, 1.0f, 0);
    g_frame_count++;
 
    vid->d3d_render_device->SetTexture(0, vid->lpTexture);
@@ -545,7 +552,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    if(vid->fbo_enabled)
    {
       hlsl_set_params(width, height, 512, 512, g_settings.video.fbo_scale_x * width,
-      g_settings.video.fbo_scale_y * height, g_frame_count);
+            g_settings.video.fbo_scale_y * height, g_frame_count);
       D3DVIEWPORT9 vp = {0};
       vp.Width  = g_settings.video.fbo_scale_x * width;
       vp.Height = g_settings.video.fbo_scale_y * height;
@@ -558,7 +565,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    else
    {
       hlsl_set_params(width, height, 512, 512, vid->d3dpp.BackBufferWidth,
-      vid->d3dpp.BackBufferHeight, g_frame_count);
+            vid->d3dpp.BackBufferHeight, g_frame_count);
    }
 
    D3DLOCKED_RECT d3dlr;
@@ -584,7 +591,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    if(vid->fbo_enabled)
    {
       vid->d3d_render_device->Resolve(D3DRESOLVE_RENDERTARGET0, NULL, vid->lpTexture_ot,
-	   NULL, 0, 0, NULL, 0, 0, NULL);
+            NULL, 0, 0, NULL, 0, 0, NULL);
 
       vid->d3d_render_device->SetRenderTarget(0, pRenderTarget0);
       pRenderTarget0->Release();
@@ -592,7 +599,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 
       hlsl_use(2);
       hlsl_set_params(g_settings.video.fbo_scale_x * width, g_settings.video.fbo_scale_y * height, g_settings.video.fbo_scale_x * 512, g_settings.video.fbo_scale_y * 512, vid->d3dpp.BackBufferWidth,
-      vid->d3dpp.BackBufferHeight, g_frame_count);
+            vid->d3dpp.BackBufferHeight, g_frame_count);
       set_viewport(false);
 
       vid->d3d_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
@@ -613,7 +620,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
          g_first_msg = 0;
          SET_TIMER_EXPIRATION(30);
       }
-	   
+
       xdk360_console_draw();
    }
 
