@@ -26,7 +26,7 @@ CXXFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
 LIBS := -lfat -lretro -lwiiuse -logc -lbte -lfreetype
 
-OBJ = console/griffin/griffin.o console/font.bmpobj console/szlib/szlib.o
+OBJ = console/griffin/griffin.o console/font.bmpobj console/rzlib/rzlib.o
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER

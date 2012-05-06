@@ -28,7 +28,7 @@
 #include "../file.h"
 
 #ifdef HAVE_ZLIB
-#include "szlib/zlib.h"
+#include "rzlib/zlib.h"
 #define WRITEBUFFERSIZE (1024 * 512)
 #endif
 

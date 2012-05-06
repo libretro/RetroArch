@@ -6,8 +6,8 @@
 /* This source as presented is a modified version of original zlib for use with
  * RetroArch, and must not be confused with the original software. */
 
-#ifndef _SZLIB_H
-#define _SZLIB_H
+#ifndef _RZLIB_H
+#define _RZLIB_H
 
 #if defined(__cplusplus)
 extern "C" {
@@ -682,4 +682,4 @@ extern int  unzSetOffset (unzFile file, unsigned long pos);
 }
 #endif
 
-#endif /* _SZLIB_H */
+#endif /* _RZLIB_H */

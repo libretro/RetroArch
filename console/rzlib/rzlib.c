@@ -1,8 +1,3 @@
-/* infcodes.c -- process literals and length/distance pairs
- * Copyright (C) 1995-2002 Mark Adler
- * For conditions of distribution and use, see copyright notice in zlib.h 
- */
-
 /* This source as presented is a modified version of original zlib for use 
  * with RetroArch, and must not be confused with the original software. */
 

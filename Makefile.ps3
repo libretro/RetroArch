@@ -46,7 +46,7 @@ GIT			= git.exe
 endif
 
 PPU_SRCS		= console/griffin/griffin.c \
-			console/szlib/szlib.c
+			console/rzlib/rzlib.c
 
 ifeq ($(HAVE_RGL), 1)
 DEFINES			= -DHAVE_RGL
