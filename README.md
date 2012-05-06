@@ -18,10 +18,10 @@ Latest Windows binaries are currently hosted on my [homepage](http://themaister.
 
 # Related projects
 
-GUI frontend for PC: [RetroArch-Phoenix](https://github.com/Themaister/RetroArch-Phoenix)
-Cg shaders: [common-shaders](https://github.com/twinaphex/common-shaders)
-More Cg shaders: [Emulator-Shader-Pack](https://github.com/Themaister/Emulator-Shader-Pack)
-Helper scripts to build libretro implementations: [libretro-super](https://github.com/Themaister/libretro-super)
+   - GUI frontend for PC: [RetroArch-Phoenix](https://github.com/Themaister/RetroArch-Phoenix)
+   - Cg/HLSL shaders: [common-shaders](https://github.com/twinaphex/common-shaders)
+   - More Cg shaders: [Emulator-Shader-Pack](https://github.com/Themaister/Emulator-Shader-Pack)
+   - Helper scripts to build libretro implementations: [libretro-super](https://github.com/Themaister/libretro-super)
 
 # Philosophy
 
@@ -110,9 +110,33 @@ The solution file can be found at the following location:
 
 <b>PlayStation3</b><br/>
 
+RetroArch PS3 needs to be compiled in the following order:
+
+1) Compile RetroArch Salamander
+
+<tt>make -f Makefile.ps3.salamader</tt>
+
+2) Compile the RGL video driver
+
+<tt>make -f Makefile.ps3.rgl</tt>
+
+3) Finally, compile RetroArch itself
+
 <tt>make -f Makefile.ps3</tt>
 
-A PKG file will be built which you will be able to install on a jailbroken PS3.
+Finally, you can add one of the following parameters to the above line in order to make a PKG file:
+
+<tt>make -f Makefile.ps3 pkg</tt>
+
+This creates an NPDRM package. This can be installed on debug PS3s.
+
+To make a non-NPDRM package that can be installed on a jailbroken/CFW PS3 (such as PSGroove or PS3 CFWs and other 3.55 CFW derivatives), do:
+
+<tt>make -f Makefile.ps3 pkg-signed</tt>
+
+If you're using Kmeaw 3.55 firmware, the package needs to be signed:
+
+<tt>make -f Makefile.ps3 pkg-signed-cfw</tt>
 
 NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch PS3. This file needs to be called 'libretro.a'.
 
@@ -124,7 +148,8 @@ The solution file can be found at the following location:
 
 <tt>msvc-360/RetroArch-360/RetroArch-360.sln</tt>
 
-NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch 360.
+NOTE: A pre-existing libretro library needs to be present in the 'msvc-360/SSNES-360/Release' directory in order to link RetroArch 360. This file needs to be
+called 'libretro.lib'.
 
 <b> Xbox 360 (Libxenon)</b><br />
 
