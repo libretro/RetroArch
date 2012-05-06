@@ -231,22 +231,30 @@ static bool load_plain(const char *path)
 
 static void hlsl_deinit_progs(void)
 {
-   for(int i = 0; i < RARCH_HLSL_MAX_SHADERS; i++)
+   for (unsigned i = 1; i < RARCH_HLSL_MAX_SHADERS; i++)
    {
-      if (prg[i].fprg)
+      if (prg[i].fprg && prg[i].fprg != prg[0].fprg)
          prg[i].fprg->Release();
-      if (prg[i].vprg)
+      if (prg[i].vprg && prg[i].vprg != prg[0].vprg)
          prg[i].vprg->Release();
+
+      prg[i].fprg = prg[i].vprg = NULL;
    }
+
+   if (prg[0].fprg)
+      prg[0].fprg->Release();
+   if (prg[0].vprg)
+      prg[0].vprg->Release();
+   prg[0].fprg = prg[0].vprg = NULL;
 }
 
 static void hlsl_deinit_state(void)
 {
    hlsl_active = false;
+   hlsl_deinit_progs();
+   memset(prg, 0, sizeof(prg));
 
    d3d_device_ptr = NULL;
-
-   hlsl_deinit_progs();
 }
 
 static bool load_preset(const char *path)
