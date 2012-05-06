@@ -1241,7 +1241,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			if(CTRL_START(state))
 			{
-				gl_cg_load_shader(1, DEFAULT_SHADER_FILE);
+				gl_cg_load_shader(1, NULL);
 				strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
 				menu_reinit_settings();
 			}
@@ -1258,7 +1258,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			if(CTRL_START(state))
 			{
-				gl_cg_load_shader(2, DEFAULT_SHADER_FILE);
+				gl_cg_load_shader(2, NULL);
 				strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
 				menu_reinit_settings();
 			}
