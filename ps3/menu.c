@@ -552,12 +552,12 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		   }
 		   break;
 	   case SETTING_RSOUND_SERVER_IP_ADDRESS:
-		   if(strcmp(g_console.rsound_ip_address,"0.0.0.0") == 0)
+		   if(strcmp(g_settings.audio.device,"0.0.0.0") == 0)
 			   menu_obj->items[currentsetting].text_color = GREEN;
 		   else
 			   menu_obj->items[currentsetting].text_color = ORANGE;
 
-		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_console.rsound_ip_address);
+		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), g_settings.audio.device);
 		   break;
 	   case SETTING_DEFAULT_AUDIO_ALL:
 		   break;
@@ -1500,7 +1500,6 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				if(g_console.sound_mode != SOUND_MODE_NORMAL)
 				{
 					g_console.sound_mode--;
-					//emulator_toggle_sound(g_console.sound_mode);
 					set_delay = DELAY_MEDIUM;
 				}
 			}
@@ -1509,14 +1508,24 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				if(g_console.sound_mode < SOUND_MODE_HEADSET)
 				{
 					g_console.sound_mode++;
-					//emulator_toggle_sound(g_console.sound_mode);
 					set_delay = DELAY_MEDIUM;
+				}
+			}
+			if(CTRL_UP(state) || CTRL_LSTICK_UP(state) || CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))
+			{
+				if(g_console.sound_mode != SOUND_MODE_RSOUND)
+				{
+					rarch_console_rsound_stop();
+				}
+				else
+				{
+					rarch_console_rsound_start(g_settings.audio.device);
 				}
 			}
 			if(CTRL_START(state))
 			{
 				g_console.sound_mode = SOUND_MODE_NORMAL;
-				//emulator_toggle_sound(g_console.sound_mode);
+				rarch_console_rsound_stop();
 				set_delay = DELAY_MEDIUM;
 			}
 			break;
@@ -1534,10 +1543,10 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				}
 
 				if(g_console.oskutil_handle.text_can_be_fetched)
-					strcpy(g_console.rsound_ip_address, OUTPUT_TEXT_STRING(g_console.oskutil_handle));
+					strcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_console.oskutil_handle));
 			}
 			if(CTRL_START(state))
-				strcpy(g_console.rsound_ip_address, "0.0.0.0");
+				strcpy(g_settings.audio.device, "0.0.0.0");
 			break;
 		case SETTING_DEFAULT_AUDIO_ALL:
 			break;

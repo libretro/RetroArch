@@ -145,7 +145,6 @@ static void set_default_settings(void)
    g_console.custom_viewport_height = 0;
    g_console.custom_viewport_x = 0;
    g_console.custom_viewport_y = 0;
-   strlcpy(g_console.rsound_ip_address, "0.0.0.0", sizeof(g_console.rsound_ip_address));
    g_console.custom_bgm_enable = true;
 
    // g_extern
@@ -212,6 +211,7 @@ static void init_settings(bool load_libretro_path)
       CONFIG_GET_BOOL(video.smooth, "video_smooth");
       CONFIG_GET_BOOL(video.vsync, "video_vsync");
       CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
+      CONFIG_GET_STRING(audio.device, "audio_device");
 
       for (unsigned i = 0; i < 7; i++)
       {
@@ -275,6 +275,7 @@ static void save_settings(void)
       config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
       config_set_bool(conf, "video_smooth", g_settings.video.smooth);
       config_set_bool(conf, "video_vsync", g_settings.video.vsync);
+      config_set_string(conf, "audio_device", g_settings.audio.device);
 
       for (unsigned i = 0; i < 7; i++)
       {

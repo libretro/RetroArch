@@ -225,7 +225,6 @@ struct console_settings
    char cgp_path[PATH_MAX];
    char input_cfg_path[PATH_MAX];
    char rom_path[PATH_MAX];
-   char rsound_ip_address[PATH_MAX];
    char default_rom_startup_dir[PATH_MAX];
    char default_savestate_dir[PATH_MAX];
    char default_sram_dir[PATH_MAX];

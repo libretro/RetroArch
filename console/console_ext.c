@@ -724,7 +724,9 @@ bool rarch_console_rsound_start(const char *ip)
 
 void rarch_console_rsound_stop(void)
 {
+   const char *default_audio = config_get_default_audio();
    uninit_audio();
+   strlcpy(g_settings.audio.driver, default_audio, sizeof(g_settings.audio.driver));
    init_drivers_pre();
    init_audio();
 }
