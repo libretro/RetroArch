@@ -439,6 +439,9 @@ struct global
 // Public functions
 void config_load(void);
 void config_set_defaults(void);
+const char *config_get_default_video(void);
+const char *config_get_default_audio(void);
+const char *config_get_default_input(void);
 
 #ifdef HAVE_CONFIGFILE
 #include "conf/config_file.h"

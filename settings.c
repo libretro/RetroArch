@@ -34,113 +34,94 @@ struct global g_extern;
 struct console_settings g_console;
 #endif
 
-void config_set_defaults(void)
+const char *config_get_default_audio(void)
 {
-   const char *def_video = NULL;
-   const char *def_audio = NULL;
-   const char *def_input = NULL;
-
-   switch (VIDEO_DEFAULT_DRIVER)
-   {
-      case VIDEO_GL:
-         def_video = "gl";
-         break;
-      case VIDEO_WII:
-         def_video = "wii";
-         break;
-      case VIDEO_XENON360:
-         def_video = "xenon360";
-         break;
-      case VIDEO_XDK360:
-         def_video = "xdk360";
-         break;
-      case VIDEO_XVIDEO:
-         def_video = "xvideo";
-         break;
-      case VIDEO_SDL:
-         def_video = "sdl";
-         break;
-      case VIDEO_EXT:
-         def_video = "ext";
-         break;
-      default:
-         break;
-   }
-
    switch (AUDIO_DEFAULT_DRIVER)
    {
       case AUDIO_RSOUND:
-         def_audio = "rsound";
-         break;
+         return "rsound";
       case AUDIO_OSS:
-         def_audio = "oss";
-         break;
+         return "oss";
       case AUDIO_ALSA:
-         def_audio = "alsa";
-         break;
+         return "alsa";
       case AUDIO_ROAR:
-         def_audio = "roar";
-         break;
+         return "roar";
       case AUDIO_COREAUDIO:
-         def_audio = "coreaudio";
-         break;
+         return "coreaudio";
       case AUDIO_AL:
-         def_audio = "openal";
-         break;
+         return "openal";
       case AUDIO_SDL:
-         def_audio = "sdl";
-         break;
+         return "sdl";
       case AUDIO_DSOUND:
-         def_audio = "dsound";
-         break;
+         return "dsound";
       case AUDIO_XAUDIO:
-         def_audio = "xaudio";
-         break;
+         return "xaudio";
       case AUDIO_PULSE:
-         def_audio = "pulse";
-         break;
+         return "pulse";
       case AUDIO_EXT:
-         def_audio = "ext";
-         break;
+         return "ext";
       case AUDIO_XENON360:
-         def_audio = "xenon360";
-         break;
+         return "xenon360";
       case AUDIO_XDK360:
-         def_audio = "xdk360";
-         break;
+         return "xdk360";
       case AUDIO_PS3:
-         def_audio = "ps3";
-         break;
+         return "ps3";
       case AUDIO_WII:
-         def_audio = "wii";
-         break;
+         return "wii";
       default:
-         break;
+         return NULL;
    }
+}
 
+const char *config_get_default_video(void)
+{
+   switch (VIDEO_DEFAULT_DRIVER)
+   {
+      case VIDEO_GL:
+         return "gl";
+      case VIDEO_WII:
+         return "wii";
+      case VIDEO_XENON360:
+         return "xenon360";
+      case VIDEO_XDK360:
+         return "xdk360";
+      case VIDEO_XVIDEO:
+         return "xvideo";
+      case VIDEO_SDL:
+         return "sdl";
+      case VIDEO_EXT:
+         return "ext";
+      default:
+         return NULL;
+   }
+}
+
+const char *config_get_default_input(void)
+{
    switch (INPUT_DEFAULT_DRIVER)
    {
       case INPUT_PS3:
-         def_input = "ps3";
-         break;
+         return "ps3";
       case INPUT_SDL:
-         def_input = "sdl";
-         break;
+         return "sdl";
       case INPUT_X:
-         def_input = "x";
-         break;
+         return "x";
       case INPUT_XENON360:
-         def_input = "xenon360";
-         break;
+         return "xenon360";
       case INPUT_XDK360:
-         def_input = "xdk360";
-         break;
+         return "xdk360";
       case INPUT_WII:
-         def_input = "wii";
-         break;
+         return "wii";
       default:
-         break;
+         return NULL;
    }
+}
+
+void config_set_defaults(void)
+{
+   const char *def_video = config_get_default_video();
+   const char *def_audio = config_get_default_audio();
+   const char *def_input = config_get_default_input();
 
    if (def_video)
       strlcpy(g_settings.video.driver, def_video, sizeof(g_settings.video.driver));
