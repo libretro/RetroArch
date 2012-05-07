@@ -42,6 +42,10 @@ extern "C" {
 #define RETRO_DEVICE_ID_JOYPAD_X        9
 #define RETRO_DEVICE_ID_JOYPAD_L       10
 #define RETRO_DEVICE_ID_JOYPAD_R       11
+#define RETRO_DEVICE_ID_JOYPAD_L2      12
+#define RETRO_DEVICE_ID_JOYPAD_R2      13
+#define RETRO_DEVICE_ID_JOYPAD_L3      14
+#define RETRO_DEVICE_ID_JOYPAD_R3      15
 
 #define RETRO_DEVICE_ID_MOUSE_X      0
 #define RETRO_DEVICE_ID_MOUSE_Y      1

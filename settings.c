@@ -537,6 +537,10 @@ struct bind_map
       DECLARE_BIND(player##P##_x,             RETRO_DEVICE_ID_JOYPAD_X), \
       DECLARE_BIND(player##P##_l,             RETRO_DEVICE_ID_JOYPAD_L), \
       DECLARE_BIND(player##P##_r,             RETRO_DEVICE_ID_JOYPAD_R), \
+      DECLARE_BIND(player##P##_l2,            RETRO_DEVICE_ID_JOYPAD_L2), \
+      DECLARE_BIND(player##P##_r2,            RETRO_DEVICE_ID_JOYPAD_R2), \
+      DECLARE_BIND(player##P##_l3,            RETRO_DEVICE_ID_JOYPAD_L3), \
+      DECLARE_BIND(player##P##_r3,            RETRO_DEVICE_ID_JOYPAD_R3), \
    }
 
 // Big and nasty bind map... :)
@@ -554,6 +558,10 @@ static const struct bind_map bind_maps[MAX_PLAYERS][RARCH_BIND_LIST_END] = {
       DECLARE_BIND(player1_x,             RETRO_DEVICE_ID_JOYPAD_X),
       DECLARE_BIND(player1_l,             RETRO_DEVICE_ID_JOYPAD_L),
       DECLARE_BIND(player1_r,             RETRO_DEVICE_ID_JOYPAD_R),
+      DECLARE_BIND(player1_l2,            RETRO_DEVICE_ID_JOYPAD_L2),
+      DECLARE_BIND(player1_r2,            RETRO_DEVICE_ID_JOYPAD_R2),
+      DECLARE_BIND(player1_l3,            RETRO_DEVICE_ID_JOYPAD_L3),
+      DECLARE_BIND(player1_r3,            RETRO_DEVICE_ID_JOYPAD_R3),
 
       DECLARE_BIND(toggle_fast_forward,   RARCH_FAST_FORWARD_KEY),
       DECLARE_BIND(hold_fast_forward,     RARCH_FAST_FORWARD_HOLD_KEY),

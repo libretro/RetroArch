@@ -28,8 +28,8 @@
 #define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
 #define AUDIO_MAX_RATIO 16
 
-// libretro has 12 buttons from 0-11 (libretro.h)
-#define RARCH_FIRST_META_KEY 12
+// libretro has 16 buttons from 0-15 (libretro.h)
+#define RARCH_FIRST_META_KEY 16
 enum
 {
    RARCH_FAST_FORWARD_KEY = RARCH_FIRST_META_KEY,
