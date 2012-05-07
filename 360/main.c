@@ -132,10 +132,11 @@ static void set_default_settings (void)
    //g_settings
    g_settings.rewind_enable = false;
    strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
-   g_settings.video.vsync = true;
-   g_settings.video.smooth = true;
    g_settings.video.fbo_scale_x = 2.0f;
    g_settings.video.fbo_scale_y = 2.0f;
+   g_settings.video.second_pass_smooth = true;
+   g_settings.video.smooth = true;
+   g_settings.video.vsync = true;
    g_settings.video.aspect_ratio = -1.0f;
 
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_A].joykey;
@@ -156,9 +157,10 @@ static void set_default_settings (void)
 
    //g_console
    g_console.block_config_read = true;
-   g_console.gamma_correction_enable = false;
-   g_console.initialize_rarch_enable = false;
+   g_console.frame_advance_enable = false;
    g_console.emulator_initialized = 0;
+   g_console.gamma_correction_enable = true;
+   g_console.initialize_rarch_enable = false;
    g_console.fbo_enabled = true;
    g_console.mode_switch = MODE_MENU;
    g_console.screen_orientation = ORIENTATION_NORMAL;
@@ -239,7 +241,14 @@ static void init_settings (bool load_libretro_path)
    }
 
    // g_settings
+   CONFIG_GET_STRING(cheat_database, "cheat_database");
    CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
+   CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
+   CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
+   CONFIG_GET_FLOAT(video.fbo_scale_x, "video_fbo_scale_x");
+   CONFIG_GET_FLOAT(video.fbo_scale_y, "video_fbo_scale_y");
+   CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
+   CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
    CONFIG_GET_BOOL(video.smooth, "video_smooth");
    CONFIG_GET_BOOL(video.vsync, "video_vsync");
    CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
@@ -250,6 +259,10 @@ static void init_settings (bool load_libretro_path)
    CONFIG_GET_BOOL_CONSOLE(gamma_correction_enable, "gamma_correction_enable");
    CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
    CONFIG_GET_INT_CONSOLE(aspect_ratio_index, "aspect_ratio_index");
+   CONFIG_GET_INT_CONSOLE(custom_viewport_x, "custom_viewport_x");
+   CONFIG_GET_INT_CONSOLE(custom_viewport_y, "custom_viewport_y");
+   CONFIG_GET_INT_CONSOLE(custom_viewport_width, "custom_viewport_width");
+   CONFIG_GET_INT_CONSOLE(custom_viewport_height, "custom_viewport_height");
    CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
 
    // g_extern
@@ -274,6 +287,13 @@ static void save_settings (void)
    // g_settings
    config_set_string(conf, "libretro_path", g_settings.libretro);
    config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
+   config_set_string(conf, "video_cg_shader", g_settings.video.cg_shader_path);
+   config_set_string(conf, "video_second_pass_shader", g_settings.video.second_pass_shader);
+   config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
+   config_set_float(conf, "video_fbo_scale_x", g_settings.video.fbo_scale_x);
+   config_set_float(conf, "video_fbo_scale_y", g_settings.video.fbo_scale_y);
+   config_set_bool(conf, "video_render_to_texture", g_settings.video.render_to_texture);
+   config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
    config_set_bool(conf, "video_smooth", g_settings.video.smooth);
    config_set_bool(conf, "video_vsync", g_settings.video.vsync);
 
