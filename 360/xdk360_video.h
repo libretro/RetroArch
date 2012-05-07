@@ -62,6 +62,7 @@ typedef struct xdk360_video
 void xdk360_video_init (void);
 void xdk360_video_deinit (void);
 void xdk360_video_set_vsync (bool vsync);
+void xdk360_set_fbo_enable (bool enable);
 
 extern void *g_d3d;
 

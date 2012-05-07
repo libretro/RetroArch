@@ -384,6 +384,13 @@ static void xdk360_convert_texture_to_as16_srgb( D3DTexture *pTexture )
     pTexture->Format.DataFormat = g_MapLinearToSrgbGpuFormat[ (desc.Format & D3DFORMAT_TEXTUREFORMAT_MASK) >> D3DFORMAT_TEXTUREFORMAT_SHIFT ];
 }
 
+void xdk360_set_fbo_enable (bool enable)
+{
+   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+
+   vid->fbo_enabled = enable;
+}
+
 static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    if (g_d3d)

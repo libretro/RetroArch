@@ -238,14 +238,16 @@ static void hlsl_deinit_progs(void)
       if (prg[i].vprg && prg[i].vprg != prg[0].vprg)
          prg[i].vprg->Release();
 
-      prg[i].fprg = prg[i].vprg = NULL;
+      prg[i].fprg = NULL;
+	  prg[i].vprg = NULL;
    }
 
    if (prg[0].fprg)
       prg[0].fprg->Release();
    if (prg[0].vprg)
       prg[0].vprg->Release();
-   prg[0].fprg = prg[0].vprg = NULL;
+   prg[0].fprg = NULL;
+   prg[0].vprg = NULL;
 }
 
 static void hlsl_deinit_state(void)

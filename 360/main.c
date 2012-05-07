@@ -159,6 +159,7 @@ static void set_default_settings (void)
    g_console.gamma_correction_enable = false;
    g_console.initialize_rarch_enable = false;
    g_console.emulator_initialized = 0;
+   g_console.fbo_enabled = true;
    g_console.mode_switch = MODE_MENU;
    g_console.screen_orientation = ORIENTATION_NORMAL;
    g_console.throttle_enable = true;
@@ -244,6 +245,7 @@ static void init_settings (bool load_libretro_path)
    CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
 
    // g_console
+   CONFIG_GET_BOOL_CONSOLE(fbo_enabled, "fbo_enabled");
    CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
    CONFIG_GET_BOOL_CONSOLE(gamma_correction_enable, "gamma_correction_enable");
    CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
@@ -276,6 +278,7 @@ static void save_settings (void)
    config_set_bool(conf, "video_vsync", g_settings.video.vsync);
 
    // g_console
+   config_set_bool(conf, "fbo_enabled", g_console.fbo_enabled);
    config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
    config_set_bool(conf, "gamma_correction_enable", g_console.gamma_correction_enable);
    config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
