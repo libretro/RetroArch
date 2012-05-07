@@ -1,21 +1,10 @@
 CELL_BUILD_TOOLS	= SNC
 CELL_SDK		?= /usr/local/cell
-CELL_GPU_TYPE		= RSX
-CELL_PSGL_VERSION	= opt
 HAVE_LOGGER		= 0
 
-CELL_MK_DIR		?= $(CELL_SDK)/samples/mk
 include $(CELL_MK_DIR)/sdk.makedef.mk
 
-MAKE_SELF_WC		= make_self_wc
-MAKE_SELF		= make_self_npdrm
-
-PKG_SCRIPT		= ps3/ps3py/pkg.py
-PKG_FINALIZE		= package_finalize
-
 STRIP			= $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-strip.exe
-COPY			= cp
-MOVE			= mv
 
 PPU_CFLAGS		+= -I. -D__CELLOS_LV2__
 PPU_SRCS		= console/salamander/main.c file_path.c compat/compat.c conf/config_file.c
@@ -39,12 +28,8 @@ else
 	PPU_CXXLD = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ld.exe
 endif
 
-PPU_LDLIBS		+= -lpthread -lm -lnet_stub -lnetctl_stub -lm -ldbgfont_gcm -lgcm_cmd -lgcm_sys_stub -lio_stub -lsysmodule_stub -lsysutil_stub -lsysutil_game_stub -lfs_stub -lsysutil_np_stub
+PPU_LDLIBS		+= -lm -lnet_stub -lnetctl_stub -lio_stub -lsysmodule_stub -lsysutil_stub -lsysutil_game_stub -lfs_stub -lsysutil_np_stub
 
 PPU_OPTIMIZE_LV		:= -O2
 
 include $(CELL_MK_DIR)/sdk.target.mk
-
-MAKE_FSELF = $(CELL_SDK)/host-win32/bin/make_fself.exe
-MAKE_FSELF_NPDRM = $(CELL_SDK)/host-win32/bin/make_fself_npdrm.exe
-MAKE_PACKAGE_NPDRM = $(CELL_SDK)/host-win32/bin/make_package_npdrm.exe

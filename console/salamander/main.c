@@ -287,6 +287,16 @@ static void get_environment_settings (void)
 #endif
 }
 
+#ifdef __CELLOS_LV2__
+//dummy - just to avoid the emitted warnings
+static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
+{
+   (void) param;
+   (void) userdata;
+   (void) status;
+}
+#endif
+
 int main(int argc, char *argv[])
 {
    int ret;
@@ -315,6 +325,8 @@ int main(int argc, char *argv[])
    CellPadData pad_data;
    char spawn_data[256], spawn_data_size[16];
    SceNpDrmKey * k_licensee = NULL;
+
+   cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
 
    cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
