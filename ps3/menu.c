@@ -1295,12 +1295,14 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
+				g_console.aspect_ratio_index++;
 				if(g_console.aspect_ratio_index < ASPECT_RATIO_END)
 				{
-					g_console.aspect_ratio_index++;
 					video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 					set_delay = DELAY_SMALL;
 				}
+				else
+					g_console.aspect_ratio_index = ASPECT_RATIO_END-1;
 			}
 			if(CTRL_START(state))
 			{
@@ -2079,12 +2081,14 @@ static void ingame_menu(uint32_t menu_id)
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 	    {
+               g_console.aspect_ratio_index++;
                if(g_console.aspect_ratio_index < ASPECT_RATIO_END)
 	       {
-                  g_console.aspect_ratio_index++;
 		  video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 		  set_delay = DELAY_LONG;
 	       }
+               else
+                  g_console.aspect_ratio_index = ASPECT_RATIO_END-1;
 	    }
 	    if(CTRL_START(state))
 	    {
