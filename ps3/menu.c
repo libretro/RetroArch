@@ -730,6 +730,10 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X:
 	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L:
 	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2:
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2:
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3:
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
 		   {
 			   if(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey == rarch_default_keybind_lut[currentsetting-FIRST_CONTROL_BIND])
 				   menu_obj->items[currentsetting].text_color = GREEN;
@@ -1774,6 +1778,15 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
 			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_R);
+			break;
+		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2:
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_L2);
+		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2:
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_R2);
+		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3:
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_L3);
+		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
+			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_R3);
 			break;
 		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))

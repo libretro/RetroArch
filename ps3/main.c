@@ -111,6 +111,10 @@ static void set_default_settings(void)
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_TRIANGLE].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_L1].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_R1].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_R2].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_R3].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_L2].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_L3].joykey;
 
    for(uint32_t x = 0; x < MAX_PLAYERS; x++)
       rarch_input_set_default_keybinds(x);

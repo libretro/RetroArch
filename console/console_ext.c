@@ -228,6 +228,10 @@ char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][256] = {
    "X Button",          /* RETRO_DEVICE_ID_JOYPAD_X      */
    "L Button",          /* RETRO_DEVICE_ID_JOYPAD_L      */
    "R Button",          /* RETRO_DEVICE_ID_JOYPAD_R      */
+   "L2 Button",         /* RETRO_DEVICE_ID_JOYPAD_L2     */
+   "R2 Button",         /* RETRO_DEVICE_ID_JOYPAD_R2     */
+   "L3 Button",         /* RETRO_DEVICE_ID_JOYPAD_L3     */
+   "R3 Button",         /* RETRO_DEVICE_ID_JOYPAD_R3     */
 };
 
 #if defined(__CELLOS_LV2__)
