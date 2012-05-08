@@ -277,6 +277,7 @@ int main(int argc, char *argv[])
 
    test_fft();
 
+   printf("Omega,SNR,Gain\n");
    for (unsigned i = 0; i < sizeof(freq_list) / sizeof(freq_list[0]); i++)
    {
       unsigned freq = freq_list[i] * in_rate;
@@ -299,8 +300,10 @@ int main(int argc, char *argv[])
       struct snr_result res;
       calculate_snr(&res, freq, in_rate / 2, output + fft_samples, butterfly_buf, fft_samples);
 
-      printf("SNR @ w = %5.3f : %6.2lf dB, Gain: %6.1lf dB\n",
-            freq_list[i], res.snr, res.gain);
+      //printf("SNR @ w = %5.3f : %6.2lf dB, Gain: %6.1lf dB\n",
+      //      freq_list[i], res.snr, res.gain);
+      printf("%.3f,%.2lf,%.1lf\n", freq_list[i], res.snr, res.gain);
+
       //printf("\tAliases: #1 (w = %5.3f, %6.2lf dB), #2 (w = %5.3f, %6.2lf dB), #3 (w = %5.3f, %6.2lf dB)\n",
       //      res.alias_freq[0] / (float)in_rate, res.alias_power[0],
       //      res.alias_freq[1] / (float)in_rate, res.alias_power[1],
