@@ -50,7 +50,6 @@
 <NavDown>XuiBackButton</NavDown>
 <ItemsText>Load State
 Save State
-Hardware filtering:
 Aspect Ratio: 
 Overscan: 
 Orientation:
@@ -62,6 +61,18 @@ Return to Game
 Return to Dashboard
 </ItemsText>
 </Properties>
+<XuiListItem>
+<Properties>
+<Id>control_ListItem</Id>
+<Width>226.000000</Width>
+<Height>45.000000</Height>
+<Position>7.000000,22.000000,0.000000</Position>
+<Anchor>5</Anchor>
+<Show>false</Show>
+<Visual>XuiButton</Visual>
+<InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
+</Properties>
+</XuiListItem>
 <XuiListItem>
 <Properties>
 <Id>control_ListItem</Id>

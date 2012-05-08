@@ -116,19 +116,6 @@ HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    return S_OK;
 }
 
-static const wchar_t * set_filter_element(int index)
-{
-   switch(index)
-   {
-      case FALSE:
-         return L"Hardware filtering: Point filtering";
-      case TRUE:
-	 return L"Hardware filtering: Linear interpolation";
-   }
-
-   return L"";
-}
-
 HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    GetChildById(L"XuiSettingsList", &m_settingslist);
@@ -136,7 +123,8 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-   m_settingslist.SetText(SETTING_HARDWARE_FILTERING, set_filter_element(g_settings.video.smooth));
+   m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
+   m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
 
    return S_OK;
@@ -146,8 +134,6 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    GetChildById(L"XuiQuickMenuList", &m_quickmenulist);
    GetChildById(L"XuiBackButton", &m_back);
-
-   m_quickmenulist.SetText(MENU_ITEM_HARDWARE_FILTERING, set_filter_element(g_settings.video.smooth));
    switch(g_console.screen_orientation)
    {
       case ORIENTATION_NORMAL:
@@ -197,10 +183,6 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
                rarch_save_state();
 	       return_to_game();
 	    }
-	    break;
-	 case MENU_ITEM_HARDWARE_FILTERING:
-	    g_settings.video.smooth = !g_settings.video.smooth;
-	    m_quickmenulist.SetText(MENU_ITEM_HARDWARE_FILTERING, set_filter_element(g_settings.video.smooth));
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
         {
@@ -415,9 +397,13 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    g_console.gamma_correction_enable = !g_console.gamma_correction_enable;
 	    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
 	    break;
-	 case SETTING_HARDWARE_FILTERING:
+	 case SETTING_HW_TEXTURE_FILTER:
 	    g_settings.video.smooth = !g_settings.video.smooth;
-	    m_settingslist.SetText(SETTING_HARDWARE_FILTERING, set_filter_element(g_settings.video.smooth));
+		m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
+	    break;
+	 case SETTING_HW_TEXTURE_FILTER_2:
+	    g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
+		m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
 	    break;
 	 case SETTING_SCALE_ENABLED:
         g_console.fbo_enabled = !g_console.fbo_enabled;
