@@ -169,22 +169,22 @@ static void test_fft(void)
    memcpy(buf_tmp, butterfly_buf, sizeof(buf_tmp));
    calculate_fft_adjust(buf_tmp, 1.0 / 16, true, 16);
 
-   printf("FFT: { ");
+   fprintf(stderr, "FFT: { ");
    for (unsigned i = 0; i < 7; i++)
-      printf("(%4.2lf, %4.2lf), ", creal(buf_tmp[i]), cimag(buf_tmp[i]));
-   printf("(%4.2lf, %4.2lf) }\n", creal(buf_tmp[7]), cimag(buf_tmp[7]));
+      fprintf(stderr, "(%4.2lf, %4.2lf), ", creal(buf_tmp[i]), cimag(buf_tmp[i]));
+   fprintf(stderr, "(%4.2lf, %4.2lf) }\n", creal(buf_tmp[7]), cimag(buf_tmp[7]));
 
    calculate_ifft(butterfly_buf, 16, true);
 
-   printf("Original:    { ");
+   fprintf(stderr, "Original:    { ");
    for (unsigned i = 0; i < 15; i++)
-      printf("%5.2f, ", signal[2 * i]);
-   printf("%5.2f }\n", signal[2 * 15]);
+      fprintf(stderr, "%5.2f, ", signal[2 * i]);
+   fprintf(stderr, "%5.2f }\n", signal[2 * 15]);
 
-   printf("FFT => IFFT: { ");
+   fprintf(stderr, "FFT => IFFT: { ");
    for (unsigned i = 0; i < 15; i++)
-      printf("%5.2lf, ", creal(butterfly_buf[i]));
-   printf("%5.2lf }\n", creal(butterfly_buf[15]));
+      fprintf(stderr, "%5.2lf, ", creal(butterfly_buf[i]));
+   fprintf(stderr, "%5.2lf }\n", creal(butterfly_buf[15]));
 }
 
 static void set_alias_power(struct snr_result *res, unsigned freq, double power)
