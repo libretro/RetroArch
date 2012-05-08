@@ -42,8 +42,5 @@ rarch_resampler_t *resampler_new(void);
 void resampler_process(rarch_resampler_t *re, struct resampler_data *data);
 void resampler_free(rarch_resampler_t *re);
 
-// Generate a starting cosine pulse with given frequency for testing (SNR, etc) purposes.
-void resampler_preinit(rarch_resampler_t *re, double omega, double *samples_offset);
-
 #endif
 

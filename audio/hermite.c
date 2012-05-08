@@ -28,18 +28,6 @@ struct rarch_resampler
    double r_frac;
 };
 
-void resampler_preinit(rarch_resampler_t *re, double omega, double *samples_offset)
-{
-   *samples_offset = 2.0;
-   for (int i = 0; i < 4; i++)
-   {
-      re->chan_data[0][i] = (float)cos((i - 2) * omega);
-      re->chan_data[1][i] = re->chan_data[0][i];
-   }
-
-   re->r_frac = 0.0;
-}
-
 static inline float hermite_kernel(float mu1, float a, float b, float c, float d)
 {
    float mu2, mu3, m0, m1, a0, a1, a2, a3;

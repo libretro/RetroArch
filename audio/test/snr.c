@@ -36,6 +36,9 @@ struct snr_result
 {
    double snr;
    double gain;
+
+   unsigned alias_freq[3];
+   double alias_power[3];
 };
 
 static unsigned bitrange(unsigned len)
@@ -115,7 +118,7 @@ static void calculate_fft_adjust(complex double *butterfly_buf, double gain, boo
    if (merge_high)
    {
       for (unsigned i = 1; i < samples / 2; i++)
-         butterfly_buf[i] += conj(butterfly_buf[samples - i]);
+         butterfly_buf[i] *= 2.0;
    }
 
    // Normalize amplitudes.
@@ -184,25 +187,51 @@ static void test_fft(void)
    printf("%5.2lf }\n", creal(butterfly_buf[15]));
 }
 
+static void set_alias_power(struct snr_result *res, unsigned freq, double power)
+{
+   for (unsigned i = 0; i < 3; i++)
+   {
+      if (power >= res->alias_power[i])
+      {
+         memmove(res->alias_freq + i + 1, res->alias_freq + i, (2 - i) * sizeof(res->alias_freq[0]));
+         memmove(res->alias_power + i + 1, res->alias_power + i, (2 - i) * sizeof(res->alias_power[0]));
+         res->alias_power[i] = power;
+         res->alias_freq[i] = freq;
+         break;
+      }
+   }
+}
+
 // This doesn't yet take account for slight phase distortions,
 // so reported SNR is lower than reality.
 static void calculate_snr(struct snr_result *res,
-      unsigned in_rate,
+      unsigned in_rate, unsigned max_rate,
       const float *resamp, complex double *butterfly_buf, size_t samples)
 {
    samples >>= 1;
    calculate_fft(resamp, butterfly_buf, samples);
    calculate_fft_adjust(butterfly_buf, 1.0 / samples, true, samples);
 
+   memset(res, 0, sizeof(*res));
+
    double signal = cabs(butterfly_buf[in_rate] * butterfly_buf[in_rate]);
    butterfly_buf[in_rate] = 0.0;
 
    double noise = 0.0;
-   for (unsigned i = 0; i < samples / 2; i++)
-      noise += cabs(butterfly_buf[i] * butterfly_buf[i]);
+
+   // Aliased frequencies above half the original sampling rate are not considered.
+   for (unsigned i = 0; i <= max_rate; i++)
+   {
+      double power = cabs(butterfly_buf[i] * butterfly_buf[i]);
+      set_alias_power(res, i, power);
+      noise += power;
+   }
 
    res->snr = 10.0 * log10(signal / noise);
    res->gain = 10.0 * log10(signal);
+
+   for (unsigned i = 0; i < 3; i++)
+      res->alias_power[i] = 10.0 * log10(res->alias_power[i]);
 }
 
 int main(int argc, char *argv[])
@@ -216,7 +245,7 @@ int main(int argc, char *argv[])
    double ratio = strtod(argv[1], NULL);
 
    const unsigned fft_samples = 1024 * 128;
-   unsigned out_rate = fft_samples;
+   unsigned out_rate = fft_samples / 2;
    unsigned in_rate = out_rate / ratio;
    ratio = (double)out_rate / in_rate;
 
@@ -227,17 +256,19 @@ int main(int argc, char *argv[])
    }
 
    static const float freq_list[] = {
-      0.001, 0.002, 0.003, 0.004, 0.005, 0.008, 
+      0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009,
       0.010, 0.015, 0.020, 0.025, 0.030, 0.035, 0.040, 0.045, 0.050,
-      0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45,
-      0.46, 0.47, 0.48, 0.49, 0.495,
+      0.060, 0.070, 0.080, 0.090,
+      0.10, 0.15, 0.20, 0.25, 0.30, 0.35,
+      0.40, 0.41, 0.42, 0.43, 0.44, 0.45,
+      0.46, 0.47, 0.48, 0.49,
+      0.495, 0.496, 0.497, 0.498, 0.499,
    };
 
-   unsigned samples = in_rate * 2;
+   unsigned samples = in_rate * 4;
    float *input = calloc(sizeof(float), samples);
    float *output = calloc(sizeof(float), (fft_samples + 1) * 2);
-   complex double *butterfly_buf = calloc(sizeof(complex double), fft_samples);
-   bool warned = false;
+   complex double *butterfly_buf = calloc(sizeof(complex double), fft_samples / 2);
    assert(input);
    assert(output);
 
@@ -250,32 +281,30 @@ int main(int argc, char *argv[])
    {
       unsigned freq = freq_list[i] * in_rate;
       double omega = 2.0 * M_PI * freq / in_rate;
-      double sample_offset;
-      resampler_preinit(re, omega, &sample_offset);
-      gen_signal(input, omega, sample_offset, samples);
+      gen_signal(input, omega, 0, samples);
 
       struct resampler_data data = {
          .data_in = input,
          .data_out = output,
-         .input_frames = in_rate,
+         .input_frames = in_rate * 2,
          .ratio = ratio,
       };
 
       resampler_process(re, &data);
 
       unsigned out_samples = data.output_frames * 2;
+      assert(out_samples >= fft_samples * 2);
 
-      if (out_samples != fft_samples * 2 && !warned)
-      {
-         fprintf(stderr, "Out samples != fft_samples ... %u / %u\n", out_samples, fft_samples * 2);
-         warned = true;
-      }
-
+      // We generate 2 seconds worth of audio, however, only the last second is considered so phase has stabilized.
       struct snr_result res;
-      calculate_snr(&res, freq, output, butterfly_buf, fft_samples * 2);
+      calculate_snr(&res, freq, in_rate / 2, output + fft_samples, butterfly_buf, fft_samples);
 
       printf("SNR @ w = %5.3f : %6.2lf dB, Gain: %6.1lf dB\n",
             freq_list[i], res.snr, res.gain);
+      //printf("\tAliases: #1 (w = %5.3f, %6.2lf dB), #2 (w = %5.3f, %6.2lf dB), #3 (w = %5.3f, %6.2lf dB)\n",
+      //      res.alias_freq[0] / (float)in_rate, res.alias_power[0],
+      //      res.alias_freq[1] / (float)in_rate, res.alias_power[1],
+      //      res.alias_freq[2] / (float)in_rate, res.alias_power[2]);
    }
 
    resampler_free(re);

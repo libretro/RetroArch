@@ -43,9 +43,9 @@
 #define PHASES_WRAP (1 << (PHASE_BITS + SUBPHASE_BITS))
 #define FRAMES_SHIFT (PHASE_BITS + SUBPHASE_BITS)
 
-#define SIDELOBES 16
+#define SIDELOBES 8
 #define TAPS (SIDELOBES * 2)
-#define CUTOFF 0.9
+#define CUTOFF 1.0
 
 #define PHASE_INDEX 0
 #define DELTA_INDEX 1
@@ -60,19 +60,6 @@ struct rarch_resampler
 
    uint32_t time;
 };
-
-void resampler_preinit(rarch_resampler_t *re, double omega, double *samples_offset)
-{
-   *samples_offset = SIDELOBES + 1;
-   for (int i = 0; i < 2 * SIDELOBES; i++)
-   {
-      re->buffer_l[i] = re->buffer_l[i + TAPS] = cos((i - (SIDELOBES - 1)) * omega);
-      re->buffer_r[i] = re->buffer_r[i + TAPS] = re->buffer_l[i];
-   }
-
-   re->time = 0;
-   re->ptr = 0;
-}
 
 static inline double sinc(double val)
 {
