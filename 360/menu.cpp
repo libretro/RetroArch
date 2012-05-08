@@ -137,6 +137,7 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
    m_settingslist.SetText(SETTING_HARDWARE_FILTERING, set_filter_element(g_settings.video.smooth));
+   m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
 
    return S_OK;
 }
@@ -418,6 +419,11 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    g_settings.video.smooth = !g_settings.video.smooth;
 	    m_settingslist.SetText(SETTING_HARDWARE_FILTERING, set_filter_element(g_settings.video.smooth));
 	    break;
+	 case SETTING_SCALE_ENABLED:
+        g_console.fbo_enabled = !g_console.fbo_enabled;
+		m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
+		xdk360_set_fbo_enable(g_console.fbo_enabled);
+		break;
       }
    }
 	
