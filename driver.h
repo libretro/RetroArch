@@ -63,7 +63,8 @@ enum
    RARCH_SRAM_WRITE_PROTECT,
 #endif
 
-   RARCH_BIND_LIST_END
+   RARCH_BIND_LIST_END,
+   RARCH_BIND_LIST_END_NULL
 };
 
 struct snes_keybind

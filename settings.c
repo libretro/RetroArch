@@ -525,7 +525,7 @@ struct bind_map
    }
 
 // Big and nasty bind map... :)
-static const struct bind_map bind_maps[MAX_PLAYERS][RARCH_BIND_LIST_END] = {
+static const struct bind_map bind_maps[MAX_PLAYERS][RARCH_BIND_LIST_END_NULL] = {
    {
       DECLARE_BIND(player1_b,             RETRO_DEVICE_ID_JOYPAD_B),
       DECLARE_BIND(player1_y,             RETRO_DEVICE_ID_JOYPAD_Y),
