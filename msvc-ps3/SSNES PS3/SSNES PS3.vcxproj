@@ -38,7 +38,7 @@
   <PropertyGroup />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|PS3'">
     <ClCompile>
-      <UserPreprocessorDefinitions>_DEBUG;__CELL_ASSERT__;HAVE_OPENGL=1;SSNES_CONSOLE;HAVE_CG=1;HAVE_CONFIGFILE=1;HAVE_NETPLAY=1;HAVE_SOCKET_LEGACY=1;PACKAGE_VERSION="0.9.6";HAVE_SCREENSHOTS_BUILTIN=1;main=ssnes_main;%(UserPreprocessorDefinitions)</UserPreprocessorDefinitions>
+      <UserPreprocessorDefinitions>_DEBUG;__CELL_ASSERT__;HAVE_OPENGL=1;SSNES_CONSOLE;HAVE_CG=1;HAVE_CONFIGFILE=1;HAVE_NETPLAY=1;HAVE_SOCKET_LEGACY=1;PACKAGE_VERSION="0.9.6-rc1";HAVE_SCREENSHOTS_BUILTIN=1;main=ssnes_main;%(UserPreprocessorDefinitions)</UserPreprocessorDefinitions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <PreprocessorDefinitions>%(UserPreprocessorDefinitions);$(BuiltInDefines);__INTELLISENSE__;%(PreprocessorDefinitions);</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -49,7 +49,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|PS3'">
     <ClCompile>
-      <UserPreprocessorDefinitions>NDEBUG;HAVE_OPENGL=1;SSNES_CONSOLE;HAVE_CG=1;HAVE_CONFIGFILE=1;HAVE_NETPLAY=1;HAVE_SOCKET_LEGACY=1;PACKAGE_VERSION="0.9.6";HAVE_SCREENSHOTS_BUILTIN=1;main="ssnes_main";%(UserPreprocessorDefinitions)</UserPreprocessorDefinitions>
+      <UserPreprocessorDefinitions>NDEBUG;HAVE_OPENGL=1;SSNES_CONSOLE;HAVE_CG=1;HAVE_CONFIGFILE=1;HAVE_NETPLAY=1;HAVE_SOCKET_LEGACY=1;PACKAGE_VERSION="0.9.6-rc1";HAVE_SCREENSHOTS_BUILTIN=1;main="ssnes_main";%(UserPreprocessorDefinitions)</UserPreprocessorDefinitions>
       <OptimizationLevel>Level2</OptimizationLevel>
       <PreprocessorDefinitions>%(UserPreprocessorDefinitions);$(BuiltInDefines);__INTELLISENSE__;%(PreprocessorDefinitions);</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
