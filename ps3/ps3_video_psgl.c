@@ -523,12 +523,6 @@ static void ps3graphics_set_orientation(void * data, uint32_t orientation)
    glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
 }
 
-#ifdef FORCE_16BIT_COLOR
-#define gl_base_size (sizeof(uint16_t))
-#else
-#define gl_base_size (gl->base_size)
-#endif
-
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *gl = data;
@@ -555,8 +549,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl->last_height[gl->tex_index] = height;
 
       glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
-		      gl->tex_w * gl->tex_h * gl->tex_index * gl_base_size,
-		      gl->tex_w * gl->tex_h * gl_base_size,
+		      gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
+		      gl->tex_w * gl->tex_h * gl->base_size,
 		      gl->empty_buf);
 
       GLfloat xamt = (GLfloat)width / gl->tex_w;
@@ -577,10 +571,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (gl->fbo_enabled)
       glVertexPointer(2, GL_FLOAT, 0, vertexes);
 
-   size_t buffer_addr = gl->tex_w * gl->tex_h * gl->tex_index * gl_base_size;
-   size_t buffer_stride = gl->tex_w * gl_base_size;
+   size_t buffer_addr = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
+   size_t buffer_stride = gl->tex_w * gl->base_size;
    const uint8_t *frame_copy = frame;
-   size_t frame_copy_size = width * gl_base_size;
+   size_t frame_copy_size = width * gl->base_size;
    for (unsigned h = 0; h < height; h++)
    {
       glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE, 
@@ -885,7 +879,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
    glGenBuffers(1, &gl->pbo);
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
-   glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->tex_w * gl->tex_h * gl_base_size * TEXTURES, NULL, GL_STREAM_DRAW);
+   glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
 
    glGenTextures(TEXTURES, gl->texture);
 
@@ -913,7 +907,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    set_lut_texture_coords(tex_coords);
 
    // Empty buffer that we use to clear out the texture with on res change.
-   gl->empty_buf = calloc(gl->tex_w * gl->tex_h, gl_base_size);
+   gl->empty_buf = calloc(gl->tex_w * gl->tex_h, gl->base_size);
 
    for (unsigned i = 0; i < TEXTURES; i++)
    {
@@ -921,8 +915,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       glTextureReferenceSCE(GL_TEXTURE_2D, 1,
 		      gl->tex_w, gl->tex_h, 0, 
 		      gl->texture_fmt,
-		      gl->tex_w * gl_base_size,
-		      gl->tex_w * gl->tex_h * i * gl_base_size);
+		      gl->tex_w * gl->base_size,
+		      gl->tex_w * gl->tex_h * i * gl->base_size);
    }
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
