@@ -126,7 +126,9 @@ void rarch_console_rsound_stop(void);
 
 #ifdef _XBOX
 wchar_t * rarch_convert_char_to_wchar(const char * str);
-const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr);
 #endif
+
+const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr);
+
 
 #endif

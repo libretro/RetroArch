@@ -756,11 +756,11 @@ wchar_t * rarch_convert_char_to_wchar(const char * str)
    MultiByteToWideChar(CP_ACP, 0, str, -1, w_str, dwNum);
    return w_str;
 }
+#endif
 
 const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr)
 {
-	char str[256];
-    wcstombs(str, wstr, sizeof(str));
-	return str;
+   char str[256];
+   wcstombs(str, wstr, sizeof(str));
+   return str;
 }
-#endif
