@@ -34,6 +34,8 @@ void hlsl_set_params(unsigned width, unsigned height,
 
 void hlsl_use(unsigned index);
 
+bool hlsl_load_shader(unsigned index, const char *path);
+
 #define RARCH_HLSL_MAX_SHADERS 16
 
 #endif

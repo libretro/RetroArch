@@ -30,6 +30,8 @@ CRetroArch        app;
 filebrowser_t browser;
 filebrowser_t tmp_browser;
 char          strbuffer[1024];
+bool hdmenus_allowed;
+uint32_t set_shader = 0;
 
 static void return_to_game (void)
 {
@@ -51,6 +53,7 @@ HRESULT CRetroArch::RegisterXuiClasses (void)
    CRetroArchMain::Register();
    CRetroArchFileBrowser::Register();
    CRetroArchCoreBrowser::Register();
+   CRetroArchShaderBrowser::Register();
    CRetroArchQuickMenu::Register();
    CRetroArchSettings::Register();
 
@@ -62,6 +65,7 @@ HRESULT CRetroArch::UnregisterXuiClasses (void)
 {
    CRetroArchMain::Unregister();
    CRetroArchCoreBrowser::Unregister();
+   CRetroArchShaderBrowser::Unregister();
    CRetroArchFileBrowser::Unregister();
    CRetroArchQuickMenu::Register();
    CRetroArchSettings::Unregister();
@@ -112,6 +116,18 @@ HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
 
    filebrowser_new(&tmp_browser, "game:", "xex|XEX");
    filebrowser_fetch_directory_entries("game:", &tmp_browser, &m_romlist, &m_rompathtitle);
+
+   return S_OK;
+}
+
+HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+{
+   GetChildById(L"XuiRomList", &m_shaderlist);
+   GetChildById(L"XuiBackButton1", &m_back);
+   GetChildById(L"XuiTxtRomPath", &m_shaderpathtitle);
+
+   filebrowser_new(&tmp_browser, "game:", "cg|CG");
+   filebrowser_fetch_directory_entries("game:", &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
 
    return S_OK;
 }
@@ -348,6 +364,47 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    return S_OK;
 }
 
+HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
+{
+   char path[MAX_PATH_LENGTH];
+
+   if(hObjPressed == m_shaderlist)
+   {
+      int index = m_shaderlist.GetCurSel();
+      if(tmp_browser.cur[index].d_type != FILE_ATTRIBUTE_DIRECTORY)
+      {
+         memset(strbuffer, 0, sizeof(strbuffer));
+		 wcstombs(strbuffer, (const wchar_t *)m_shaderlist.GetText(index), sizeof(strbuffer));
+		 switch(set_shader)
+		 {
+		    case 1:
+			   sprintf(g_settings.video.cg_shader_path, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+               hlsl_load_shader(set_shader, g_settings.video.cg_shader_path);
+               break;
+			case 2:
+			   sprintf(g_settings.video.second_pass_shader, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+               hlsl_load_shader(set_shader, g_settings.video.second_pass_shader);
+			   break;
+		    default:
+	           break;
+		 }
+      }
+      else if(tmp_browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
+      {
+         memset(strbuffer, 0, sizeof(strbuffer));
+		 wcstombs(strbuffer, (const wchar_t *)m_shaderlist.GetText(index), sizeof(strbuffer));
+		 snprintf(path, sizeof(path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+		 filebrowser_fetch_directory_entries(path, &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
+      }
+   }
+   else if(hObjPressed == m_back)
+      NavigateBack(app.hRetroArchSettings);
+
+   bHandled = TRUE;
+
+   return S_OK;
+}
+
 HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 {
    char path[MAX_PATH_LENGTH];
@@ -355,7 +412,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    if(hObjPressed == m_romlist)
    {
       int index = m_romlist.GetCurSel();
-      if(browser.cur[index].d_type != FILE_ATTRIBUTE_DIRECTORY)
+      if(tmp_browser.cur[index].d_type != FILE_ATTRIBUTE_DIRECTORY)
       {
          memset(strbuffer, 0, sizeof(strbuffer));
 	 wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
@@ -382,6 +439,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
 HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
    int current_index;
+   HRESULT hr;
 
    if ( hObjPressed == m_settingslist)
    {
@@ -397,6 +455,26 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    g_console.gamma_correction_enable = !g_console.gamma_correction_enable;
 	    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
 	    break;
+	 case SETTING_SHADER:
+		 set_shader = 1;
+	     hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
+
+         if (FAILED(hr))
+         {
+            RARCH_ERR("Failed to load scene.\n");
+         }
+         NavigateForward(app.hShaderBrowser);
+		 break;
+	 case SETTING_SHADER_2:
+		 set_shader = 2;
+		 hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
+
+         if (FAILED(hr))
+         {
+            RARCH_ERR("Failed to load scene.\n");
+         }
+         NavigateForward(app.hShaderBrowser);
+		 break;
 	 case SETTING_HW_TEXTURE_FILTER:
 	    g_settings.video.smooth = !g_settings.video.smooth;
 		m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
@@ -424,7 +502,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
    xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
 
-   bool hdmenus_allowed = vid->video_mode.fIsHiDef && (g_console.aspect_ratio_index >= ASPECT_RATIO_16_9);
+   hdmenus_allowed = vid->video_mode.fIsHiDef && (g_console.aspect_ratio_index >= ASPECT_RATIO_16_9);
 
    HRESULT hr;
 

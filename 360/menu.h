@@ -24,6 +24,8 @@ enum
 {
    SETTING_EMU_REWIND_ENABLED = 0,
    SETTING_GAMMA_CORRECTION_ENABLED,
+   SETTING_SHADER,
+   SETTING_SHADER_2,
    SETTING_HW_TEXTURE_FILTER,
    SETTING_HW_TEXTURE_FILTER_2,
    SETTING_SCALE_ENABLED
@@ -35,6 +37,7 @@ public:
    HXUIOBJ		hMainScene;
    HXUIOBJ		hFileBrowser;
    HXUIOBJ		hCoreBrowser;
+   HXUIOBJ      hShaderBrowser;
    HXUIOBJ		hQuickMenu;
    HXUIOBJ		hRetroArchSettings;
 protected:
@@ -103,6 +106,24 @@ public:
    XUI_END_MSG_MAP();
 
    XUI_IMPLEMENT_CLASS(CRetroArchCoreBrowser, L"RetroArchCoreBrowser", XUI_CLASS_SCENE)
+};
+
+class CRetroArchShaderBrowser: public CXuiSceneImpl
+{
+protected:
+   CXuiList m_shaderlist;
+   CXuiControl m_back;
+   CXuiTextElement m_shaderpathtitle;
+public:
+   HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+   HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+
+   XUI_BEGIN_MSG_MAP()
+      XUI_ON_XM_INIT( OnInit)
+      XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+   XUI_END_MSG_MAP();
+
+   XUI_IMPLEMENT_CLASS(CRetroArchShaderBrowser, L"RetroArchShaderBrowser", XUI_CLASS_SCENE)
 };
 
 class CRetroArchQuickMenu: public CXuiSceneImpl

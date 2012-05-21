@@ -141,11 +141,6 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    ret_fp = false;
    ret_vp = false;
 
-   if (prg[index].f_ctable)
-      prg[index].f_ctable->Release();
-   if (prg[index].v_ctable)
-      prg[index].v_ctable->Release();
-
    if (path_is_file)
    {
       ret_fp = D3DXCompileShaderFromFile(prog, NULL, NULL,
@@ -174,11 +169,6 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
       goto end;
    }
 
-   if (prg[index].fprg)
-	   prg[index].fprg->Release();
-   if (prg[index].vprg)
-	   prg[index].vprg->Release();
-
    d3d_device_ptr->CreatePixelShader((const DWORD*)code_f->GetBufferPointer(), &prg[index].fprg);
    d3d_device_ptr->CreateVertexShader((const DWORD*)code_v->GetBufferPointer(), &prg[index].vprg);
    code_f->Release();
@@ -201,6 +191,76 @@ static bool load_stock(void)
    }
 
    return true;
+}
+
+static void set_program_attributes(unsigned i)
+{
+   prg[i].vid_size_f  = prg[i].f_ctable->GetConstantByName(NULL, "$IN.video_size");
+   prg[i].tex_size_f  = prg[i].f_ctable->GetConstantByName(NULL, "$IN.texture_size");
+   prg[i].out_size_f  = prg[i].f_ctable->GetConstantByName(NULL, "$IN.output_size");
+   prg[i].frame_cnt_f = prg[i].f_ctable->GetConstantByName(NULL, "$IN.frame_count");
+   prg[i].frame_dir_f = prg[i].f_ctable->GetConstantByName(NULL, "$IN.frame_direction");
+   prg[i].vid_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.video_size");
+   prg[i].tex_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.texture_size");
+   prg[i].out_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.output_size");
+   prg[i].frame_cnt_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_count");
+   prg[i].frame_dir_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_direction");
+   prg[i].mvp         = prg[i].v_ctable->GetConstantByName(NULL, "$modelViewProj");
+}
+
+bool hlsl_load_shader(unsigned index, const char *path)
+{
+   bool retval = true;
+
+   if (!hlsl_active || index == 0)
+      retval = false;
+
+   if(retval)
+   {
+	  //check if fragment program already exists
+      if (prg[index].fprg)
+      {
+         if (prg[index].fprg)
+            prg[index].fprg->Release();
+
+         if (prg[index].f_ctable)
+            prg[index].f_ctable->Release();
+      }
+
+	  //check if vertex program already exists
+      if (prg[index].vprg)
+      {
+         if (prg[index].vprg)
+	        prg[index].vprg->Release();
+
+         if (prg[index].v_ctable)
+            prg[index].v_ctable->Release();
+      }
+
+      if (path)
+      {
+         if (load_program(index, path, true))
+         {
+            set_program_attributes(index);
+         }
+         else
+         {
+            // Always make sure we have a valid shader.
+            prg[index] = prg[0];
+		    retval = false;
+         }
+      }
+      else
+         prg[index] = prg[0];
+   }
+   else
+      goto end; // if retval is false, skip to end label
+
+   hlsl_active = true;
+   d3d_device_ptr->SetVertexShader(prg[index].vprg);
+   d3d_device_ptr->SetPixelShader(prg[index].fprg);
+end:
+   return retval;
 }
 
 static bool load_plain(const char *path)
@@ -262,21 +322,6 @@ static void hlsl_deinit_state(void)
 static bool load_preset(const char *path)
 {
    return false;
-}
-
-static void set_program_attributes(unsigned i)
-{
-   prg[i].vid_size_f  = prg[i].f_ctable->GetConstantByName(NULL, "$IN.video_size");
-   prg[i].tex_size_f  = prg[i].f_ctable->GetConstantByName(NULL, "$IN.texture_size");
-   prg[i].out_size_f  = prg[i].f_ctable->GetConstantByName(NULL, "$IN.output_size");
-   prg[i].frame_cnt_f = prg[i].f_ctable->GetConstantByName(NULL, "$IN.frame_count");
-   prg[i].frame_dir_f = prg[i].f_ctable->GetConstantByName(NULL, "$IN.frame_direction");
-   prg[i].vid_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.video_size");
-   prg[i].tex_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.texture_size");
-   prg[i].out_size_v  = prg[i].v_ctable->GetConstantByName(NULL, "$IN.output_size");
-   prg[i].frame_cnt_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_count");
-   prg[i].frame_dir_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_direction");
-   prg[i].mvp         = prg[i].v_ctable->GetConstantByName(NULL, "$modelViewProj");
 }
 
 bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
