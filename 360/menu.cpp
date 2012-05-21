@@ -130,6 +130,7 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
 
 HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
+   char shader1str[128], shader2str[128];
    GetChildById(L"XuiSettingsList", &m_settingslist);
    GetChildById(L"XuiBackButton", &m_back);
 
@@ -138,8 +139,10 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-   m_settingslist.SetText(SETTING_SHADER, L"Shader #1: %s");
-   m_settingslist.SetText(SETTING_SHADER_2, L"Shader #2: %s");
+   snprintf(shader1str, sizeof(shader1str), "Shader #1: %s", g_settings.video.cg_shader_path);
+   snprintf(shader2str, sizeof(shader2str), "Shader #2: %s", g_settings.video.second_pass_shader);
+   m_settingslist.SetText(SETTING_SHADER, rarch_convert_char_to_wchar(shader1str));
+   m_settingslist.SetText(SETTING_SHADER_2, rarch_convert_char_to_wchar(shader2str));
 
    return S_OK;
 }
