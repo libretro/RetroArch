@@ -29,7 +29,6 @@
 CRetroArch        app;
 filebrowser_t browser;
 filebrowser_t tmp_browser;
-char          strbuffer[1024];
 bool hdmenus_allowed;
 uint32_t set_shader = 0;
 
@@ -78,20 +77,17 @@ static void filebrowser_fetch_directory_entries(const char *path, filebrowser_t 
 {
    filebrowser_push_directory(browser, path, true);
 
-   unsigned long dwNum_rompath = MultiByteToWideChar(CP_ACP, 0, path, -1, NULL, 0);
-   wchar_t * rompath_name = new wchar_t[dwNum_rompath];
-   MultiByteToWideChar(CP_ACP, 0, path, -1, rompath_name, dwNum_rompath);
+   wchar_t * rompath_name = rarch_convert_char_to_wchar(path);
    rompath_title->SetText(rompath_name);
+   free(rompath_name);
 
    romlist->DeleteItems(0, romlist->GetItemCount());
    romlist->InsertItems(0, browser->file_count);
    for(unsigned i = 0; i < browser->file_count; i++)
    {
-      unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, browser->cur[i].d_name, -1, NULL, 0);
-      wchar_t * entry_name = new wchar_t[dwNum];
-      MultiByteToWideChar(CP_ACP, 0, browser->cur[i].d_name, -1, entry_name, dwNum);
+      wchar_t * entry_name = rarch_convert_char_to_wchar(browser->cur[i].d_name);
       romlist->SetText(i, entry_name);
-      delete []entry_name;
+      free(entry_name);
    }
 }
 
@@ -142,6 +138,8 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
+   m_settingslist.SetText(SETTING_SHADER, L"Shader #1: %s");
+   m_settingslist.SetText(SETTING_SHADER_2, L"Shader #2: %s");
 
    return S_OK;
 }
@@ -156,22 +154,20 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
          m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Normal");
 	 break;
       case ORIENTATION_VERTICAL:
-	 m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
+	     m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
 	 break;
       case ORIENTATION_FLIPPED:
-	 m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
+	     m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
 	 break;
       case ORIENTATION_FLIPPED_ROTATED:
-	 m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
+	     m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
 	 break;
    }
    char aspectratio_label[32];
    sprintf(aspectratio_label, "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
-   unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, aspectratio_label, -1, NULL, 0);
-   wchar_t * aspectratio_label_w = new wchar_t[dwNum];
-   MultiByteToWideChar(CP_ACP, 0, aspectratio_label, -1, aspectratio_label_w, dwNum);
+   wchar_t * aspectratio_label_w = rarch_convert_char_to_wchar(aspectratio_label);
    m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, aspectratio_label_w);
-   delete[] aspectratio_label_w;
+   free(aspectratio_label_w);
 
    return S_OK;
 }
@@ -209,11 +205,9 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 			video_xdk360.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 			char aspectratio_label[32];
 			sprintf(aspectratio_label, "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
-			unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, aspectratio_label, -1, NULL, 0);
-			wchar_t * aspectratio_label_w = new wchar_t[dwNum];
-			MultiByteToWideChar(CP_ACP, 0, aspectratio_label, -1, aspectratio_label_w, dwNum);
+			wchar_t * aspectratio_label_w = rarch_convert_char_to_wchar(aspectratio_label);
 			m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, aspectratio_label_w);
-			delete[] aspectratio_label_w;
+			free(aspectratio_label_w);
 		}
 	    break;
 	 case MENU_ITEM_OVERSCAN_AMOUNT:
@@ -223,12 +217,12 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    {
                case ORIENTATION_NORMAL:
                   g_console.screen_orientation = ORIENTATION_VERTICAL;
-		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
-		  break;
-	       case ORIENTATION_VERTICAL:
-		  g_console.screen_orientation = ORIENTATION_FLIPPED;
-		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
-		  break;
+		          m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
+		          break;
+	           case ORIENTATION_VERTICAL:
+		          g_console.screen_orientation = ORIENTATION_FLIPPED;
+		          m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
+		          break;
 	       case ORIENTATION_FLIPPED:
 		  g_console.screen_orientation = ORIENTATION_FLIPPED_ROTATED;
 		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
@@ -294,18 +288,16 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    char core_text[256];
    sprintf(core_text, "%s (v%s)", id, info.library_version);
+
    char package_version[32];
    sprintf(package_version, "RetroArch %s", PACKAGE_VERSION);
-   unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, core_text, -1, NULL, 0);
-   unsigned long dwNum_package = MultiByteToWideChar(CP_ACP, 0, package_version, -1, NULL, 0);
-   wchar_t * core_text_utf = new wchar_t[dwNum];
-   wchar_t * package_version_utf = new wchar_t[dwNum_package];
-   MultiByteToWideChar(CP_ACP, 0, core_text, -1, core_text_utf, dwNum);
-   MultiByteToWideChar(CP_ACP, 0, package_version, -1, package_version_utf, dwNum_package);
+
+   wchar_t * core_text_utf = rarch_convert_char_to_wchar(core_text);
+   wchar_t * package_version_utf = rarch_convert_char_to_wchar(package_version);
    m_core.SetText(core_text_utf);
    m_title.SetText(package_version_utf);
-   delete []core_text_utf;
-   delete []package_version_utf;
+   free(core_text_utf);
+   free(package_version_utf);
 
    return S_OK;
 }
@@ -320,30 +312,31 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       if(browser.cur[index].d_type != FILE_ATTRIBUTE_DIRECTORY)
       {
          struct retro_system_info info;
-	 retro_get_system_info(&info);
-	 bool block_zip_extract  = info.block_extract;
-         memset(strbuffer, 0, sizeof(strbuffer));
-	 wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
-	 if((strstr(strbuffer, ".zip") || strstr(strbuffer, ".ZIP")) && !block_zip_extract)
-	 {
+         retro_get_system_info(&info);
+         bool block_zip_extract  = info.block_extract;
+
+		 const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t*)m_romlist.GetText(index));
+
+         if((strstr(strbuffer, ".zip") || strstr(strbuffer, ".ZIP")) && !block_zip_extract)
+         {
             char path_tmp[1024];
-	    sprintf(path_tmp, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
-	    rarch_extract_zipfile(path_tmp);
-	 }
-	 else
-	 {
+            sprintf(path_tmp, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
+            rarch_extract_zipfile(path_tmp);
+         }
+         else
+         {
             memset(g_console.rom_path, 0, sizeof(g_console.rom_path));
-	    sprintf(g_console.rom_path, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
-	    return_to_game();
-	    g_console.initialize_rarch_enable = 1;
-	 }
+            sprintf(g_console.rom_path, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
+            return_to_game();
+            g_console.initialize_rarch_enable = 1;
+         }
       }
       else if(browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
       {
-         memset(strbuffer, 0, sizeof(strbuffer));
-	 wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
-	 snprintf(path, sizeof(path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
-	 filebrowser_fetch_directory_entries(path, &browser, &m_romlist, &m_rompathtitle);
+
+         const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
+         snprintf(path, sizeof(path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
+         filebrowser_fetch_directory_entries(path, &browser, &m_romlist, &m_rompathtitle);
       }
    }
    else if (hObjPressed == m_dir_game)
@@ -373,8 +366,8 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
       int index = m_shaderlist.GetCurSel();
       if(tmp_browser.cur[index].d_type != FILE_ATTRIBUTE_DIRECTORY)
       {
-         memset(strbuffer, 0, sizeof(strbuffer));
-		 wcstombs(strbuffer, (const wchar_t *)m_shaderlist.GetText(index), sizeof(strbuffer));
+		 const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_shaderlist.GetText(index));
+
 		 switch(set_shader)
 		 {
 		    case 1:
@@ -391,8 +384,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
       }
       else if(tmp_browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
       {
-         memset(strbuffer, 0, sizeof(strbuffer));
-		 wcstombs(strbuffer, (const wchar_t *)m_shaderlist.GetText(index), sizeof(strbuffer));
+		 const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_shaderlist.GetText(index));
 		 snprintf(path, sizeof(path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
 		 filebrowser_fetch_directory_entries(path, &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
       }
@@ -414,19 +406,17 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       int index = m_romlist.GetCurSel();
       if(tmp_browser.cur[index].d_type != FILE_ATTRIBUTE_DIRECTORY)
       {
-         memset(strbuffer, 0, sizeof(strbuffer));
-	 wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
-	 sprintf(g_console.launch_app_on_exit, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
-	 g_console.return_to_launcher = true;
-	 g_console.menu_enable = false;
-	 g_console.mode_switch = MODE_EXIT;
+	     const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
+	     sprintf(g_console.launch_app_on_exit, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+	     g_console.return_to_launcher = true;
+	     g_console.menu_enable = false;
+	     g_console.mode_switch = MODE_EXIT;
       }
       else if(tmp_browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
       {
-         memset(strbuffer, 0, sizeof(strbuffer));
-	 wcstombs(strbuffer, (const wchar_t *)m_romlist.GetText(index), sizeof(strbuffer));
-	 snprintf(path, sizeof(path), "%s%s\\", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
-	 filebrowser_fetch_directory_entries(path, &tmp_browser, &m_romlist, &m_rompathtitle);
+	     const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
+	     snprintf(path, sizeof(path), "%s%s\\", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+	     filebrowser_fetch_directory_entries(path, &tmp_browser, &m_romlist, &m_rompathtitle);
       }
    }
    else if(hObjPressed == m_back)
