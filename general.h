@@ -315,6 +315,7 @@ struct global
       char *environment_split;
 
       unsigned rotation;
+      bool shutdown;
    } system;
 
    struct

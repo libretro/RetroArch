@@ -316,6 +316,10 @@ static bool environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_SHUTDOWN:
+         g_extern.system.shutdown = true;
+         break;
+
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;

@@ -2411,7 +2411,8 @@ bool rarch_main_iterate(void)
 
    // Time to drop?
    if (input_key_pressed_func(RARCH_QUIT_KEY) ||
-         !video_alive_func())
+         !video_alive_func() ||
+         g_extern.system.shutdown)
       return false;
 
    // Checks for stuff like fullscreen, save states, etc.
