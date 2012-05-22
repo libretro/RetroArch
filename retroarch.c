@@ -2328,7 +2328,10 @@ int rarch_main_init(int argc, char *argv[])
       goto error;
 
    init_system_av_info();
+#ifndef RARCH_CONSOLE
+   //we have to init the message queue way in advance for console ports
    init_msg_queue();
+#endif
 
    if (!g_extern.sram_load_disable)
       load_save_files();

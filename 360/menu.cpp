@@ -22,6 +22,7 @@
 #include "../console/console_ext.h"
 #include "xdk360_video.h"
 #include "menu.h"
+#include "../message.h"
 #include "shared.h"
 
 #include "../general.h"
@@ -240,6 +241,8 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
 			g_console.input_loop = INPUT_LOOP_RESIZE_MODE;
+			msg_queue_clear(g_extern.msg_queue);
+			msg_queue_push(g_extern.msg_queue, "Resize the screen by moving around the two analog sticks.\nPress Y to reset to default values, and B to go back.\nNOTE: To select the resized screen mode, set Aspect Ratio to: 'Custom'.", 1, 180);
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
 	    if (g_console.emulator_initialized)
@@ -434,12 +437,16 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
       switch(current_index)
       {
          case SETTING_EMU_REWIND_ENABLED:
-            g_settings.rewind_enable = !g_settings.rewind_enable;
+           g_settings.rewind_enable = !g_settings.rewind_enable;
 	    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
+		msg_queue_clear(g_extern.msg_queue);
+		msg_queue_push(g_extern.msg_queue, "NOTE: You need to restart Retro Arch for this change to take effect.", 1, 180);
 	    break;
 	 case SETTING_GAMMA_CORRECTION_ENABLED:
 	    g_console.gamma_correction_enable = !g_console.gamma_correction_enable;
 	    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+		msg_queue_clear(g_extern.msg_queue);
+		msg_queue_push(g_extern.msg_queue, "NOTE: You need to restart Retro Arch for this change to take effect.", 1, 180);
 	    break;
 	 case SETTING_SHADER:
 		 set_shader = 1;

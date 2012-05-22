@@ -404,6 +404,8 @@ int main(int argc, char *argv[])
    rarch_main_clear_state();
    config_set_defaults();
 
+   rarch_assert(g_extern.msg_queue = msg_queue_new(8));
+
    char full_path[1024];
    snprintf(full_path, sizeof(full_path), "game:\\CORE.xex");
 
