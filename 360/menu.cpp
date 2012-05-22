@@ -124,8 +124,8 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
    GetChildById(L"XuiBackButton1", &m_back);
    GetChildById(L"XuiTxtRomPath", &m_shaderpathtitle);
 
-   filebrowser_new(&tmp_browser, "game:", "cg|CG");
-   filebrowser_fetch_directory_entries("game:", &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
+   filebrowser_new(&tmp_browser, "game:\\media\\shaders", "cg|CG");
+   filebrowser_fetch_directory_entries("game:\\media\\shaders", &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
 
    return S_OK;
 }
@@ -170,7 +170,7 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	 break;
    }
    char aspectratio_label[32];
-   sprintf(aspectratio_label, "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
+   snprintf(aspectratio_label, sizeof(aspectratio_label), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
    wchar_t * aspectratio_label_w = rarch_convert_char_to_wchar(aspectratio_label);
    m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, aspectratio_label_w);
    free(aspectratio_label_w);
@@ -210,7 +210,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 
 			video_xdk360.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 			char aspectratio_label[32];
-			sprintf(aspectratio_label, "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
+			snprintf(aspectratio_label, sizeof(aspectratio_label), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
 			wchar_t * aspectratio_label_w = rarch_convert_char_to_wchar(aspectratio_label);
 			m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, aspectratio_label_w);
 			free(aspectratio_label_w);
@@ -297,10 +297,10 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiBtnLibsnesCore", &m_change_libretro_core);
 
    char core_text[256];
-   sprintf(core_text, "%s (v%s)", id, info.library_version);
+   snprintf(core_text, sizeof(core_text), "%s (v%s)", id, info.library_version);
 
    char package_version[32];
-   sprintf(package_version, "RetroArch %s", PACKAGE_VERSION);
+   snprintf(package_version, sizeof(core_text), "RetroArch %s", PACKAGE_VERSION);
 
    wchar_t * core_text_utf = rarch_convert_char_to_wchar(core_text);
    wchar_t * package_version_utf = rarch_convert_char_to_wchar(package_version);
@@ -330,13 +330,13 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
          if((strstr(strbuffer, ".zip") || strstr(strbuffer, ".ZIP")) && !block_zip_extract)
          {
             char path_tmp[1024];
-            sprintf(path_tmp, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
+            snprintf(path_tmp, sizeof(path_tmp), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
             rarch_extract_zipfile(path_tmp);
          }
          else
          {
             memset(g_console.rom_path, 0, sizeof(g_console.rom_path));
-            sprintf(g_console.rom_path, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
+            snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
             return_to_game();
             g_console.initialize_rarch_enable = 1;
          }
@@ -381,11 +381,11 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
 		 switch(set_shader)
 		 {
 		    case 1:
-			   sprintf(g_settings.video.cg_shader_path, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+			   snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
                hlsl_load_shader(set_shader, g_settings.video.cg_shader_path);
                break;
 			case 2:
-			   sprintf(g_settings.video.second_pass_shader, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+			  snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
                hlsl_load_shader(set_shader, g_settings.video.second_pass_shader);
 			   break;
 		    default:
@@ -417,7 +417,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       if(tmp_browser.cur[index].d_type != FILE_ATTRIBUTE_DIRECTORY)
       {
 	     const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
-	     sprintf(g_console.launch_app_on_exit, "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+	     snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
 	     g_console.return_to_launcher = true;
 	     g_console.menu_enable = false;
 	     g_console.mode_switch = MODE_EXIT;
