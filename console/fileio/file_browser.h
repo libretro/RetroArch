@@ -36,6 +36,14 @@
 #define MAX_FILE_LIMIT 4096
 #endif
 
+#if defined(_XBOX)
+#define FS_TYPES_DIRECTORY (FILE_ATTRIBUTE_DIRECTORY)
+#define FS_TYPES_FILE (FILE_ATTRIBUTE_NORMAL)
+#elif defined(__CELLOS_LV2__)
+#define FS_TYPES_DIRECTORY (CELL_FS_TYPE_DIRECTORY)
+#define FS_TYPES_FILE (CELL_FS_TYPE_REGULAR)
+#endif
+
 typedef struct {
    uint8_t d_type;
    uint8_t d_namlen;

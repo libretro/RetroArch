@@ -21,20 +21,16 @@
 
 static int less_than_key(const void * a, const void * b)
 {
-#ifdef __CELLOS_LV2__
    DirectoryEntry * a_dir = (DirectoryEntry*)a;
    DirectoryEntry * b_dir = (DirectoryEntry*)b;
 
    /* compare a directory to a file directory is always lesser than*/
-   if ((a_dir->d_type == CELL_FS_TYPE_DIRECTORY && b_dir->d_type == CELL_FS_TYPE_REGULAR))
+   if ((a_dir->d_type == FS_TYPES_DIRECTORY && b_dir->d_type == FS_TYPES_FILE))
       return -1;
-   else if (a_dir->d_type == CELL_FS_TYPE_REGULAR && b_dir->d_type == CELL_FS_TYPE_DIRECTORY)
+   else if (a_dir->d_type == FS_TYPES_FILE && b_dir->d_type == FS_TYPES_DIRECTORY)
       return 1;
 
    return strcasecmp(a_dir->d_name, b_dir->d_name);
-#else
-   return 0;
-#endif
 }
 
 static const char * filebrowser_get_extension(const char * filename)
@@ -92,7 +88,7 @@ const char * path, const char * extensions)
       strlcpy(filebrowser->dir[filebrowser->directory_stack_size], path, sizeof(filebrowser->dir[filebrowser->directory_stack_size]));
       bool found_dir = false;
 
-      if(!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+      if(!(ffd.dwFileAttributes & FS_TYPES_DIRECTORY))
       {
          char tmp_extensions[512];
 	 strncpy(tmp_extensions, extensions, sizeof(tmp_extensions));
@@ -116,10 +112,10 @@ const char * path, const char * extensions)
 	 if(!found_rom)
             continue;
       }
-      else if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+      else if (ffd.dwFileAttributes & FS_TYPES_DIRECTORY)
          found_dir = true;
 
-      filebrowser->cur[filebrowser->file_count].d_type = found_dir ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
+      filebrowser->cur[filebrowser->file_count].d_type = found_dir ? FS_TYPES_DIRECTORY : FS_TYPES_FILE;
       snprintf(filebrowser->cur[filebrowser->file_count].d_name, sizeof(filebrowser->cur[filebrowser->file_count].d_name), ffd.cFileName);
 
       filebrowser->file_count++;
@@ -153,13 +149,13 @@ const char * path, const char * extensions)
          if (nread == 0)
             break;
 
-         if ((dirent.d_type != CELL_FS_TYPE_REGULAR) && (dirent.d_type != CELL_FS_TYPE_DIRECTORY))
+         if ((dirent.d_type != FS_TYPES_FILE) && (dirent.d_type != FS_TYPES_DIRECTORY))
             continue;
 
-         if (dirent.d_type == CELL_FS_TYPE_DIRECTORY && !(strcmp(dirent.d_name, ".")))
+         if (dirent.d_type == FS_TYPES_DIRECTORY && !(strcmp(dirent.d_name, ".")))
             continue;
 
-         if (dirent.d_type == CELL_FS_TYPE_REGULAR)
+         if (dirent.d_type == FS_TYPES_FILE)
          {
             char tmp_extensions[512];
             strncpy(tmp_extensions, extensions, sizeof(tmp_extensions));
@@ -198,9 +194,8 @@ const char * path, const char * extensions)
       error = 1;
       goto error;
    }
-
-   qsort(filebrowser->cur, filebrowser->file_count, sizeof(DirectoryEntry), less_than_key);
 #endif
+   qsort(filebrowser->cur, filebrowser->file_count, sizeof(DirectoryEntry), less_than_key);
    error:
    if(error)
    {
