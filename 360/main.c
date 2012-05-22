@@ -175,6 +175,7 @@ static void set_default_settings (void)
    g_console.viewports.custom_vp.height = 0;
    g_console.viewports.custom_vp.x = 0;
    g_console.viewports.custom_vp.y = 0;
+   g_console.color_format = 0;
 
    //g_extern
    g_extern.state_slot = 0;
@@ -268,6 +269,7 @@ static void init_settings (bool load_libretro_path)
    CONFIG_GET_INT_CONSOLE(viewports.custom_vp.width, "custom_viewport_width");
    CONFIG_GET_INT_CONSOLE(viewports.custom_vp.height, "custom_viewport_height");
    CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
+   CONFIG_GET_INT_CONSOLE(color_format, "color_format");
 
    // g_extern
    CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
@@ -312,6 +314,7 @@ static void save_settings (void)
    config_set_int(conf, "custom_viewport_x", g_console.viewports.custom_vp.x);
    config_set_int(conf, "custom_viewport_y", g_console.viewports.custom_vp.y);
    config_set_int(conf, "screen_orientation", g_console.screen_orientation);
+   config_set_int(conf, "color_format", g_console.color_format);
 
    // g_extern
    config_set_int(conf, "state_slot", g_extern.state_slot);

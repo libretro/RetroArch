@@ -144,6 +144,7 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    snprintf(shader1str, sizeof(shader1str), "Shader #1: %s", g_settings.video.cg_shader_path);
    snprintf(shader2str, sizeof(shader2str), "Shader #2: %s", g_settings.video.second_pass_shader);
    m_settingslist.SetText(SETTING_SHADER, rarch_convert_char_to_wchar(shader1str));
+   m_settingslist.SetText(SETTING_COLOR_FORMAT, g_console.color_format ? L"Color format: 32bit ARGB" : L"Color format: 16bit RGBA");
    m_settingslist.SetText(SETTING_SHADER_2, rarch_convert_char_to_wchar(shader2str));
 
    return S_OK;
@@ -456,6 +457,12 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 		msg_queue_clear(g_extern.msg_queue);
 		msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
 	    break;
+	 case SETTING_COLOR_FORMAT:
+		g_console.color_format = !g_console.color_format;
+	    m_settingslist.SetText(SETTING_COLOR_FORMAT, g_console.color_format ? L"Color format: 32bit ARGB" : L"Color format: 16bit RGBA");
+		msg_queue_clear(g_extern.msg_queue);
+		msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
+		 break;
 	 case SETTING_SHADER:
 		 set_shader = 1;
 	     hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);

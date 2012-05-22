@@ -423,8 +423,17 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    
    vid->d3dpp.BackBufferWidth         = vid->video_mode.fIsHiDef ? 1280 : 640;
    vid->d3dpp.BackBufferHeight        = vid->video_mode.fIsHiDef ? 720 : 480;
-   vid->d3dpp.BackBufferFormat        = g_console.gamma_correction_enable ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : D3DFMT_A8R8G8B8;
-   vid->d3dpp.FrontBufferFormat       = g_console.gamma_correction_enable ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8) : D3DFMT_LE_X8R8G8B8;
+   if(g_console.gamma_correction_enable)
+   {
+      vid->d3dpp.BackBufferFormat        = g_console.color_format ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : (D3DFORMAT)MAKESRGBFMT(D3DFMT_LIN_A1R5G5B5);
+      vid->d3dpp.FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
+   }
+   else
+   {
+      vid->d3dpp.BackBufferFormat        = g_console.color_format ? D3DFMT_A8R8G8B8 : D3DFMT_LIN_A1R5G5B5;
+      vid->d3dpp.FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;
+   }
+
    vid->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
    vid->d3dpp.MultiSampleQuality      = 0;
    vid->d3dpp.BackBufferCount         = 2;
