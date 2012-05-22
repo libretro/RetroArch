@@ -27,6 +27,7 @@
 #include "../general.h"
 
 CRetroArch        app;
+HXUIOBJ hCur;
 filebrowser_t browser;
 filebrowser_t tmp_browser;
 bool hdmenus_allowed;
@@ -266,9 +267,6 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    break;
       }
    }
-	
-   if ( hObjPressed == m_back )
-      NavigateBack(app.hMainScene);
 
    bHandled = TRUE;
 
@@ -353,8 +351,6 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       filebrowser_new(&browser, "cache:", rarch_console_get_rom_ext());
       filebrowser_fetch_directory_entries("cache:", &browser, &m_romlist, &m_rompathtitle);
    }
-   else if(hObjPressed == m_back)
-      NavigateBack(app.hMainScene);
 
    bHandled = TRUE;
 
@@ -393,8 +389,6 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
 		 filebrowser_fetch_directory_entries(path, &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
       }
    }
-   else if(hObjPressed == m_back)
-      NavigateBack(app.hRetroArchSettings);
 
    bHandled = TRUE;
 
@@ -423,8 +417,6 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
 	     filebrowser_fetch_directory_entries(path, &tmp_browser, &m_romlist, &m_rompathtitle);
       }
    }
-   else if(hObjPressed == m_back)
-	   NavigateBack(app.hMainScene);
 
    bHandled = TRUE;
    return S_OK;
@@ -457,6 +449,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
          {
             RARCH_ERR("Failed to load scene.\n");
          }
+		 hCur = app.hShaderBrowser;
          NavigateForward(app.hShaderBrowser);
 		 break;
 	 case SETTING_SHADER_2:
@@ -467,6 +460,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
          {
             RARCH_ERR("Failed to load scene.\n");
          }
+		 hCur = app.hShaderBrowser;
          NavigateForward(app.hShaderBrowser);
 		 break;
 	 case SETTING_HW_TEXTURE_FILTER:
@@ -484,9 +478,6 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 		break;
       }
    }
-	
-   if ( hObjPressed == m_back )
-      NavigateBack(app.hMainScene);
 
    bHandled = TRUE;
    return S_OK;
@@ -508,7 +499,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       {
          RARCH_ERR("Failed to load scene.\n");
       }
-
+	  hCur = app.hFileBrowser;
       NavigateForward(app.hFileBrowser);
    }
    else if ( hObjPressed == m_quick_menu)
@@ -517,7 +508,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
       if (FAILED(hr))
          RARCH_ERR("Failed to load scene.\n");
-
+	  hCur = app.hQuickMenu;
       NavigateForward(app.hQuickMenu);
    }
    else if ( hObjPressed == m_change_libretro_core )
@@ -528,6 +519,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       {
          RARCH_ERR("Failed to load scene.\n");
       }
+	  hCur = app.hCoreBrowser;
       NavigateForward(app.hCoreBrowser);
    }
    else if ( hObjPressed == m_settings )
@@ -536,7 +528,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
       if (FAILED(hr))
          RARCH_ERR("Failed to load scene.\n");
-
+	  hCur = app.hRetroArchSettings;
       NavigateForward(app.hRetroArchSettings);
    }
    else if ( hObjPressed == m_quit )
@@ -582,6 +574,7 @@ int menu_init (void)
       return 1;
    }
 
+   hCur = app.hMainScene;
    XuiSceneNavigateFirst(app.GetRootObj(), app.hMainScene, XUSER_INDEX_FOCUS);
 
    filebrowser_new(&browser, g_console.default_rom_startup_dir, rarch_console_get_rom_ext());
@@ -629,6 +622,8 @@ void menu_loop(void)
 	  {
          case INPUT_LOOP_MENU:
 			app.RunFrame();			/* Update XUI */
+            if(state.Gamepad.wButtons & XINPUT_GAMEPAD_B && hCur != app.hMainScene)
+               XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
             break;
 		 case INPUT_LOOP_RESIZE_MODE:
 			xdk360_input_loop();
