@@ -216,6 +216,8 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 		}
 	    break;
 	 case MENU_ITEM_OVERSCAN_AMOUNT:
+		 msg_queue_clear(g_extern.msg_queue);
+	     msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
 	    break;
 	 case MENU_ITEM_ORIENTATION:
 	    switch(g_console.screen_orientation)
@@ -242,7 +244,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	 case MENU_ITEM_RESIZE_MODE:
 			g_console.input_loop = INPUT_LOOP_RESIZE_MODE;
 			msg_queue_clear(g_extern.msg_queue);
-			msg_queue_push(g_extern.msg_queue, "Resize the screen by moving around the two analog sticks.\nPress Y to reset to default values, and B to go back.\nNOTE: To select the resized screen mode, set Aspect Ratio to: 'Custom'.", 1, 180);
+			msg_queue_push(g_extern.msg_queue, "INFO - Resize the screen by moving around the two analog sticks.\nPress Y to reset to default values, and B to go back.\nTo select the resized screen mode, set Aspect Ratio to: 'Custom'.", 1, 180);
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
 	    if (g_console.emulator_initialized)
@@ -253,6 +255,8 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    }
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
+		 msg_queue_clear(g_extern.msg_queue);
+	     msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
 	    break;
 	 case MENU_ITEM_RESET:
 	    if (g_console.emulator_initialized)
@@ -354,7 +358,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       filebrowser_new(&browser, "cache:", rarch_console_get_rom_ext());
       filebrowser_fetch_directory_entries("cache:", &browser, &m_romlist, &m_rompathtitle);
 	  msg_queue_clear(g_extern.msg_queue);
-	  msg_queue_push(g_extern.msg_queue, "This is the cache partition on your HDD. All the contents of the ZIP files\nyou have selected in the filebrowser will be extracted to this partition.", 1, 180);
+	  msg_queue_push(g_extern.msg_queue, "INFO - All the contents of the ZIP files you have selected in the filebrowser\nare extracted to this partition.", 1, 180);
    }
 
    bHandled = TRUE;
@@ -386,6 +390,8 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
 		    default:
 	           break;
 		 }
+		 msg_queue_clear(g_extern.msg_queue);
+	     msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
       }
       else if(tmp_browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
       {
@@ -442,13 +448,13 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
            g_settings.rewind_enable = !g_settings.rewind_enable;
 	    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 		msg_queue_clear(g_extern.msg_queue);
-		msg_queue_push(g_extern.msg_queue, "NOTE: You need to restart Retro Arch for this change to take effect.", 1, 180);
+		msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
 	    break;
 	 case SETTING_GAMMA_CORRECTION_ENABLED:
 	    g_console.gamma_correction_enable = !g_console.gamma_correction_enable;
 	    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
 		msg_queue_clear(g_extern.msg_queue);
-		msg_queue_push(g_extern.msg_queue, "NOTE: You need to restart Retro Arch for this change to take effect.", 1, 180);
+		msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
 	    break;
 	 case SETTING_SHADER:
 		 set_shader = 1;
@@ -460,7 +466,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
          }
 		 hCur = app.hShaderBrowser;
 		 msg_queue_clear(g_extern.msg_queue);
-	     msg_queue_push(g_extern.msg_queue, "NOTE: Select a shader from the menu by pressing the A button.", 1, 180);
+	     msg_queue_push(g_extern.msg_queue, "INFO - Select a shader from the menu by pressing the A button.", 1, 180);
          NavigateForward(app.hShaderBrowser);
 		 break;
 	 case SETTING_SHADER_2:
@@ -473,7 +479,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
          }
 		 hCur = app.hShaderBrowser;
 		 msg_queue_clear(g_extern.msg_queue);
-	     msg_queue_push(g_extern.msg_queue, "NOTE: Select a shader from the menu by pressing the A button.", 1, 180);
+	     msg_queue_push(g_extern.msg_queue, "INFO - Select a shader from the menu by pressing the A button.", 1, 180);
          NavigateForward(app.hShaderBrowser);
 		 break;
 	 case SETTING_HW_TEXTURE_FILTER:
@@ -524,6 +530,11 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 	  hCur = app.hQuickMenu;
       NavigateForward(app.hQuickMenu);
    }
+   else if ( hObjPressed == m_controls)
+   {
+	   	msg_queue_clear(g_extern.msg_queue);
+	    msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
+   }
    else if ( hObjPressed == m_change_libretro_core )
    {
       hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_libretrocore_browser.xur", NULL, &app.hCoreBrowser);
@@ -533,6 +544,8 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
          RARCH_ERR("Failed to load scene.\n");
       }
 	  hCur = app.hCoreBrowser;
+	  msg_queue_clear(g_extern.msg_queue);
+	  msg_queue_push(g_extern.msg_queue, "INFO - Select a Libretro core from the menu by pressing the A button.", 1, 180);
       NavigateForward(app.hCoreBrowser);
    }
    else if ( hObjPressed == m_settings )
