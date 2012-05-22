@@ -7,6 +7,10 @@
 #include <errno.h>
 #include "zlib.h"
 
+#ifdef _MSC_VER
+#include "../../msvc/msvc_compat.h"
+#endif
+
 /* And'ing with mask[n] masks the lower n bits */
 unsigned int inflate_mask[17] = 
 {

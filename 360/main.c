@@ -81,7 +81,7 @@ static int Mount( int Device, char* MountPoint )
    char MountConv[260];
    char * SysPath = NULL;
 
-   snprintf_s( MountConv, sizeof(MountConv), "\\??\\%s", MountPoint );
+   snprintf( MountConv, sizeof(MountConv), "\\??\\%s", MountPoint );
 
    switch( Device )
    {
