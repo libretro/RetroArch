@@ -108,17 +108,9 @@ void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_
 
 void xdk360_input_loop(void)
 {
-	int custom_viewport_x_tmp, custom_viewport_y_tmp, custom_viewport_width_tmp,
-		custom_viewport_height_tmp;
-
 	XINPUT_STATE state;
 
 	XInputGetState(0, &state);
-
-	custom_viewport_x_tmp = g_console.viewports.custom_vp.x;
-	custom_viewport_y_tmp = g_console.viewports.custom_vp.y;
-	custom_viewport_width_tmp = g_console.viewports.custom_vp.width;
-	custom_viewport_height_tmp = g_console.viewports.custom_vp.height;
 
 	if(state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT || state.Gamepad.sThumbLX < -DEADZONE)
 		g_console.viewports.custom_vp.x -= 1;
