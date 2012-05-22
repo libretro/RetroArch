@@ -202,8 +202,6 @@ static void set_alias_power(struct snr_result *res, unsigned freq, double power)
    }
 }
 
-// This doesn't yet take account for slight phase distortions,
-// so reported SNR is lower than reality.
 static void calculate_snr(struct snr_result *res,
       unsigned in_rate, unsigned max_rate,
       const float *resamp, complex double *butterfly_buf, size_t samples)

@@ -1165,13 +1165,19 @@ static void deinit_recording(void)
 
 static void init_msg_queue(void)
 {
+   if (g_extern.msg_queue)
+      return;
+
    rarch_assert(g_extern.msg_queue = msg_queue_new(8));
 }
 
 static void deinit_msg_queue(void)
 {
    if (g_extern.msg_queue)
+   {
       msg_queue_free(g_extern.msg_queue);
+      g_extern.msg_queue = NULL;
+   }
 }
 
 #ifdef HAVE_XML
@@ -2328,10 +2334,7 @@ int rarch_main_init(int argc, char *argv[])
       goto error;
 
    init_system_av_info();
-#ifndef RARCH_CONSOLE
-   //we have to init the message queue way in advance for console ports
    init_msg_queue();
-#endif
 
    if (!g_extern.sram_load_disable)
       load_save_files();
