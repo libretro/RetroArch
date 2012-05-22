@@ -2076,8 +2076,8 @@ const char*   gzerror (voidp file, int *errnum)
 		free(s->msg);
 	s->msg = (char*)malloc(strlen(s->path) + strlen(m) + 3);
 	strlcpy(s->msg, s->path, sizeof(s->msg));
-	strcat(s->msg, ": ");
-	strcat(s->msg, m);
+	strlcat(s->msg, ": ", sizeof(s->msg));
+	strlcat(s->msg, m, sizeof(s->msg));
 	return (const char*)s->msg;
 }
 

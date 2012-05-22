@@ -31,6 +31,7 @@
 #include <xenon_soc/xenon_power.h>
 #include <elf/elf.h>
 #include <dirent.h>
+#include "../compat/strl.h"
 
 #undef main
 
@@ -100,8 +101,8 @@ static void append_dir_to_path(char *path, const char *dir)
       return;
    else
    {
-      strcat(path,  dir);
-      strcat(path, "/");
+      strlcat(path,  dir, sizeof(path));
+      strlcat(path, "/", sizeof(path));
    }
 }
 
@@ -128,7 +129,7 @@ int main(void)
       return 0;
 
    strlcpy(path, s, sizeof(path));
-   strcat(path, ":/");	
+   strlcat(path, ":/", sizeof(path));	
 
    load_dir(path);
 
@@ -164,7 +165,7 @@ int main(void)
          {
             char fn[256];
             strlcpy(fn, path, sizeof(fn));
-            strcat(fn, entries[pos].d_name);
+            strlcat(fn, entries[pos].d_name, sizeof(fn));
 
             printf("%s\n", fn);
 
@@ -188,7 +189,7 @@ int main(void)
          } while (handle < 0);
 
          strlcpy(path, s, sizeof(path));
-         strcat(path, ":/");
+         strlcat(path, ":/", sizeof(path));
          load_dir(path);
          ppos = -1;
          pos = 0;
