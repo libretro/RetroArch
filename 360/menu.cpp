@@ -353,6 +353,8 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    {
       filebrowser_new(&browser, "cache:", rarch_console_get_rom_ext());
       filebrowser_fetch_directory_entries("cache:", &browser, &m_romlist, &m_rompathtitle);
+	  msg_queue_clear(g_extern.msg_queue);
+	  msg_queue_push(g_extern.msg_queue, "This is the cache partition on your HDD. All the contents of the ZIP files\nyou have selected in the filebrowser will be extracted to this partition.", 1, 180);
    }
 
    bHandled = TRUE;
@@ -457,6 +459,8 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             RARCH_ERR("Failed to load scene.\n");
          }
 		 hCur = app.hShaderBrowser;
+		 msg_queue_clear(g_extern.msg_queue);
+	     msg_queue_push(g_extern.msg_queue, "NOTE: Select a shader from the menu by pressing the A button.", 1, 180);
          NavigateForward(app.hShaderBrowser);
 		 break;
 	 case SETTING_SHADER_2:
@@ -468,6 +472,8 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             RARCH_ERR("Failed to load scene.\n");
          }
 		 hCur = app.hShaderBrowser;
+		 msg_queue_clear(g_extern.msg_queue);
+	     msg_queue_push(g_extern.msg_queue, "NOTE: Select a shader from the menu by pressing the A button.", 1, 180);
          NavigateForward(app.hShaderBrowser);
 		 break;
 	 case SETTING_HW_TEXTURE_FILTER:
