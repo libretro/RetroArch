@@ -557,6 +557,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       GLfloat yamt = (GLfloat)height / gl->tex_h;
 
       set_texture_coords(gl->tex_coords, xamt, yamt);
+
+      if(g_console.aspect_ratio_index == ASPECT_RATIO_AUTO )
+         rarch_set_auto_viewport(width, height);
    }
    else if (width != gl->last_width[(gl->tex_index - 1) & TEXTURES_MASK] || height != gl->last_height[(gl->tex_index - 1) & TEXTURES_MASK])
    {
@@ -983,9 +986,14 @@ static void ps3graphics_set_aspect_ratio(void * data, uint32_t aspectratio_index
    (void)data;
    gl_t * gl = g_gl;
 
+   if(g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
+      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+
    g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
    g_settings.video.force_aspect = false;
    gl->keep_aspect = true;
+
+
    set_viewport(gl, gl->win_width, gl->win_height);
 }
 

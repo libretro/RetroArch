@@ -61,6 +61,8 @@ struct aspect_ratio_elem
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
+extern void rarch_set_auto_viewport(unsigned width, unsigned height);
+
 #include "console_ext_input.h"
 
 /*============================================================

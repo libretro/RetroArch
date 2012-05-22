@@ -490,6 +490,25 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "Custom", 0.0f }
 };
 
+void rarch_set_auto_viewport(unsigned width, unsigned height)
+{
+   unsigned aspect_x, aspect_y, len, highest, i;
+
+   len = width < height ? width : height;
+   highest = 1;
+   for (i = 1; i < len; i++)
+   {
+      if ((width % i) == 0 && (height % i) == 0)
+         highest = i;
+   }
+
+   aspect_x = width / highest;
+   aspect_y = height / highest;
+
+   snprintf(aspectratio_lut[ASPECT_RATIO_AUTO].name, sizeof(aspectratio_lut[ASPECT_RATIO_AUTO].name), "%d:%d (Auto)", aspect_x, aspect_y);
+   aspectratio_lut[ASPECT_RATIO_AUTO].value = (int)aspect_x / (int)aspect_y;
+}
+
 /*============================================================
   LIBRETRO
   ============================================================ */
