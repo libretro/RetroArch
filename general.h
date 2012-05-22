@@ -186,7 +186,7 @@ typedef struct
    uint32_t y;
    uint32_t width;
    uint32_t height;
-} viewport_t;
+} rarch_viewport_t;
 
 struct console_settings
 {
@@ -211,8 +211,8 @@ struct console_settings
    uint32_t aspect_ratio_index;
    struct
    {
-      viewport_t auto_vp;
-      viewport_t custom_vp;
+      rarch_viewport_t auto_vp;
+      rarch_viewport_t custom_vp;
    } viewports;
    uint32_t emulator_initialized;
    uint32_t external_launcher_support;
