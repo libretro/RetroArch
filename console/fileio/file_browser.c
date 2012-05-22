@@ -89,7 +89,7 @@ const char * path, const char * extensions)
 
    do
    {
-      strlcpy(filebrowser->dir[filebrowser->directory_stack_size], path, sizeof(filebrowser->dir[filebrowser->directry_stack_size]));
+      strlcpy(filebrowser->dir[filebrowser->directory_stack_size], path, sizeof(filebrowser->dir[filebrowser->directory_stack_size]));
       bool found_dir = false;
 
       if(!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
