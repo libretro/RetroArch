@@ -708,7 +708,7 @@ void rarch_exec (void)
          spawn_data[i] = i & 0xff;
 
       char spawn_data_size[16];
-      sprintf(spawn_data_size, "%d", 256);
+      snprintf(spawn_data_size, sizeof(spawn_data_size), "%d", 256);
 
       const char * const spawn_argv[] = {
          spawn_data_size,

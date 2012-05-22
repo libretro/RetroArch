@@ -120,7 +120,7 @@ const char * path, const char * extensions)
          found_dir = true;
 
       filebrowser->cur[filebrowser->file_count].d_type = found_dir ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
-      sprintf(filebrowser->cur[filebrowser->file_count].d_name, ffd.cFileName);
+      snprintf(filebrowser->cur[filebrowser->file_count].d_name, sizeof(filebrowser->cur[filebrowser->file_count].d_name), ffd.cFileName);
 
       filebrowser->file_count++;
    }while (FindNextFile(hFind, &ffd) != 0 && (filebrowser->file_count + 1) < MAX_FILE_LIMIT);

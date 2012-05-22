@@ -820,7 +820,7 @@ static void fillStructureItems(_CGNVCONTAINERS &containers, CgStructureType *str
 					CgParameterEntry &parameterArrayEntry = parameterEntries[size];
 
 					char buffer[256];
-					sprintf(buffer,"%s[%i]",structuralElement->_name,k);
+					snprintf(buffer, sizeof(buffer), "%s[%i]",structuralElement->_name,k);
 					parameterArrayEntry.nameOffset = CNV2END((int)stringTableAddUnique(stringTable, buffer));
 					parameterArrayEntry.flags = CNV2END(structuralElement->_flags);
 					unsigned short structureFlag = CGP_STRUCTURE;

@@ -6902,12 +6902,12 @@ static bool cgGetElfProgramByIndex( CGELFBinary *elfBinary, int index, CGELFProg
     while ( true )
     {
         char sectionName[64];
-        sprintf( sectionName, ".text%04i", index );
+        snprintf( sectionName, sizeof(sectionName), ".text%04i", index );
         size_t texttabSize;
         const char *texttab = findSectionInPlace( elfBinary->elfFile, elfBinary->elfFileSize, sectionName, &texttabSize );
         if ( !texttab )
             break;
-        sprintf( sectionName, ".paramtab%04i", index );
+        snprintf( sectionName, sizeof(sectionName), ".paramtab%04i", index );
         size_t paramtabSize;
         const char *paramtab = findSectionInPlace( elfBinary->elfFile, elfBinary->elfFileSize, sectionName, &paramtabSize );
         if ( !paramtab )
