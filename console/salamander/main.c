@@ -370,7 +370,7 @@ int main(int argc, char *argv[])
    for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
       spawn_data[i] = i & 0xff;
 
-   sprintf(spawn_data_size, "%d", 256);
+   snprintf(spawn_data_size, sizeof(spawn_data_size), "%d", 256);
 
    const char * const spawn_argv[] = {
 	   spawn_data_size,

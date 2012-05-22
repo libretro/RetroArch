@@ -1846,7 +1846,7 @@ voidp  gzdopen (int fd, const char * mode)
 	char name[20];
 
 	if (fd < 0) return (voidp)0;
-	sprintf(name, "<fd:%d>", fd); /* for debugging */
+	snprintf(name, sizeof(name), "<fd:%d>", fd); /* for debugging */
 
 	return gz_open (name, mode, fd);
 }
