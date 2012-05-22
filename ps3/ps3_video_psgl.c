@@ -404,10 +404,10 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height)
       if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
       {
          delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-	 m_viewport_x_temp = g_console.custom_viewport_x;
-	 m_viewport_y_temp = g_console.custom_viewport_y;
-	 m_viewport_width_temp = g_console.custom_viewport_width;
-	 m_viewport_height_temp = g_console.custom_viewport_height;
+	 m_viewport_x_temp = g_console.viewports.custom_vp.x;
+	 m_viewport_y_temp = g_console.viewports.custom_vp.y;
+	 m_viewport_width_temp = g_console.viewports.custom_vp.width;
+	 m_viewport_height_temp = g_console.viewports.custom_vp.height;
       }
       else if (device_aspect > desired_aspect)
       {
@@ -786,11 +786,11 @@ static bool psgl_init_device(gl_t *gl, const video_info_t *video, uint32_t resol
    gl->gl_device = psglCreateDeviceExtended(&params);
    psglGetDeviceDimensions(gl->gl_device, &gl->win_width, &gl->win_height); 
 
-   if(g_console.custom_viewport_width == 0)
-      g_console.custom_viewport_width = gl->win_width;
+   if(g_console.viewports.custom_vp.width == 0)
+      g_console.viewports.custom_vp.width = gl->win_width;
 
-   if(g_console.custom_viewport_height == 0)
-      g_console.custom_viewport_height = gl->win_height;
+   if(g_console.viewports.custom_vp.height == 0)
+      g_console.viewports.custom_vp.height = gl->win_height;
 
    gl->gl_context = psglCreateContext();
    psglMakeCurrent(gl->gl_context, gl->gl_device);

@@ -141,10 +141,10 @@ static void set_default_settings(void)
    g_console.overscan_enable = false;
    g_console.overscan_amount = 0.0f;
    g_console.sound_mode = SOUND_MODE_NORMAL;
-   g_console.custom_viewport_width = 0;
-   g_console.custom_viewport_height = 0;
-   g_console.custom_viewport_x = 0;
-   g_console.custom_viewport_y = 0;
+   g_console.viewports.custom_vp.width = 0;
+   g_console.viewports.custom_vp.height = 0;
+   g_console.viewports.custom_vp.x = 0;
+   g_console.viewports.custom_vp.y = 0;
    g_console.custom_bgm_enable = true;
 
    // g_extern
@@ -230,10 +230,10 @@ static void init_settings(bool load_libretro_path)
       CONFIG_GET_BOOL_CONSOLE(triple_buffering_enable, "triple_buffering_enable");
       CONFIG_GET_INT_CONSOLE(aspect_ratio_index, "aspect_ratio_index");
       CONFIG_GET_INT_CONSOLE(current_resolution_id, "current_resolution_id");
-      CONFIG_GET_INT_CONSOLE(custom_viewport_x, "custom_viewport_x");
-      CONFIG_GET_INT_CONSOLE(custom_viewport_y, "custom_viewport_y");
-      CONFIG_GET_INT_CONSOLE(custom_viewport_width, "custom_viewport_width");
-      CONFIG_GET_INT_CONSOLE(custom_viewport_height, "custom_viewport_height");
+      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.x, "custom_viewport_x");
+      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.y, "custom_viewport_y");
+      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.width, "custom_viewport_width");
+      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.height, "custom_viewport_height");
       CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
       CONFIG_GET_INT_CONSOLE(sound_mode, "sound_mode");
       CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
@@ -294,10 +294,10 @@ static void save_settings(void)
       config_set_int(conf, "sound_mode", g_console.sound_mode);
       config_set_int(conf, "aspect_ratio_index", g_console.aspect_ratio_index);
       config_set_int(conf, "current_resolution_id", g_console.current_resolution_id);
-      config_set_int(conf, "custom_viewport_width", g_console.custom_viewport_width);
-      config_set_int(conf, "custom_viewport_height", g_console.custom_viewport_height);
-      config_set_int(conf, "custom_viewport_x", g_console.custom_viewport_x);
-      config_set_int(conf, "custom_viewport_y", g_console.custom_viewport_y);
+      config_set_int(conf, "custom_viewport_width", g_console.viewports.custom_vp.width);
+      config_set_int(conf, "custom_viewport_height", g_console.viewports.custom_vp.height);
+      config_set_int(conf, "custom_viewport_x", g_console.viewports.custom_vp.x);
+      config_set_int(conf, "custom_viewport_y", g_console.viewports.custom_vp.y);
       config_set_int(conf, "screen_orientation", g_console.screen_orientation);
       config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
       config_set_float(conf, "menu_font_size", g_console.menu_font_size);

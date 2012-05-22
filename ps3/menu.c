@@ -2246,31 +2246,31 @@ static void ingame_menu(uint32_t menu_id)
 		  }
 
 		  if(CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state))
-			  g_console.custom_viewport_x -= 1;
+			  g_console.viewports.custom_vp.x -= 1;
 		  else if (CTRL_LSTICK_RIGHT(state) || CTRL_RIGHT(state))
-			  g_console.custom_viewport_x += 1;
+			  g_console.viewports.custom_vp.x += 1;
 
 		  if (CTRL_LSTICK_UP(state) || CTRL_UP(state))
-			  g_console.custom_viewport_y += 1;
+			  g_console.viewports.custom_vp.y += 1;
 		  else if (CTRL_LSTICK_DOWN(state) || CTRL_DOWN(state)) 
-			  g_console.custom_viewport_y -= 1;
+			  g_console.viewports.custom_vp.y -= 1;
 
 		  if (CTRL_RSTICK_LEFT(state) || CTRL_L1(state))
-			  g_console.custom_viewport_width -= 1;
+			  g_console.viewports.custom_vp.width -= 1;
 		  else if (CTRL_RSTICK_RIGHT(state) || CTRL_R1(state))
-			  g_console.custom_viewport_width += 1;
+			  g_console.viewports.custom_vp.width += 1;
 
 		  if (CTRL_RSTICK_UP(state) || CTRL_L2(state))
-			  g_console.custom_viewport_height += 1;
+			  g_console.viewports.custom_vp.height += 1;
 		  else if (CTRL_RSTICK_DOWN(state) || CTRL_R2(state))
-			  g_console.custom_viewport_height -= 1;
+			  g_console.viewports.custom_vp.height -= 1;
 
 		  if (CTRL_TRIANGLE(state))
 		  {
-			  g_console.custom_viewport_x = 0;
-			  g_console.custom_viewport_y = 0;
-			  g_console.custom_viewport_width = gl->win_width;
-			  g_console.custom_viewport_height = gl->win_height;
+			  g_console.viewports.custom_vp.x = 0;
+			  g_console.viewports.custom_vp.y = 0;
+			  g_console.viewports.custom_vp.width = gl->win_width;
+			  g_console.viewports.custom_vp.height = gl->win_height;
 		  }
 		  if(CTRL_CIRCLE(state))
 		  {
@@ -2288,13 +2288,13 @@ static void ingame_menu(uint32_t menu_id)
 		     cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
 		     cellDbgFontPrintf (0.9f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
 		     cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
-		     cellDbgFontPrintf(x_position,	ypos, font_size, GREEN,	"Viewport X: #%d", g_console.custom_viewport_x);
+		     cellDbgFontPrintf(x_position,	ypos, font_size, GREEN,	"Viewport X: #%d", g_console.viewports.custom_vp.x);
 
-		     cellDbgFontPrintf(x_position,	ypos+(ypos_increment*1), font_size, GREEN, "Viewport Y: #%d", g_console.custom_viewport_y);
+		     cellDbgFontPrintf(x_position,	ypos+(ypos_increment*1), font_size, GREEN, "Viewport Y: #%d", g_console.viewports.custom_vp.y);
 
-		     cellDbgFontPrintf(x_position,	ypos+(ypos_increment*2), font_size, GREEN, "Viewport Width: #%d", g_console.custom_viewport_width);
+		     cellDbgFontPrintf(x_position,	ypos+(ypos_increment*2), font_size, GREEN, "Viewport Width: #%d", g_console.viewports.custom_vp.width);
 
-		     cellDbgFontPrintf(x_position,	ypos+(ypos_increment*3), font_size, GREEN, "Viewport Height: #%d", g_console.custom_viewport_height);
+		     cellDbgFontPrintf(x_position,	ypos+(ypos_increment*3), font_size, GREEN, "Viewport Height: #%d", g_console.viewports.custom_vp.height);
 
 		     cellDbgFontPrintf (0.09f,   0.40f, font_size, LIGHTBLUE, "CONTROLS:");
 
