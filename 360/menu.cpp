@@ -238,6 +238,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    video_xdk360.set_rotation(NULL, g_console.screen_orientation);
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
+			g_console.input_loop = INPUT_LOOP_RESIZE_MODE;
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
 	    if (g_console.emulator_initialized)
@@ -603,6 +604,8 @@ void menu_loop(void)
    if(g_console.emulator_initialized)
       video_xdk360.set_swap_block_state(NULL, true);
 
+   g_console.input_loop = INPUT_LOOP_MENU;
+
    do
    {
       g_frame_count++;
@@ -622,7 +625,18 @@ void menu_loop(void)
 		      && IS_TIMER_EXPIRED());
       g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
 
-      app.RunFrame();			/* Update XUI */
+	  switch(g_console.input_loop)
+	  {
+         case INPUT_LOOP_MENU:
+			app.RunFrame();			/* Update XUI */
+            break;
+		 case INPUT_LOOP_RESIZE_MODE:
+			xdk360_input_loop();
+			break;
+	     default:
+		    break;
+	  }
+
       hr = app.Render();		/* Render XUI */
       hr = XuiTimersRun();	/* Update XUI timers */
 

@@ -63,6 +63,7 @@ void xdk360_video_init (void);
 void xdk360_video_deinit (void);
 void xdk360_video_set_vsync (bool vsync);
 void xdk360_set_fbo_enable (bool enable);
+void set_viewport(bool force_full);
 
 extern void *g_d3d;
 

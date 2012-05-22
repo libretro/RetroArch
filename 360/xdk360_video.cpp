@@ -270,7 +270,7 @@ static void xdk360_gfx_free(void * data)
    free(vid);
 }
 
-static void set_viewport(bool force_full)
+void set_viewport(bool force_full)
 {
    xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
    vid->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
@@ -296,14 +296,15 @@ static void set_viewport(bool force_full)
       float delta;
 
       // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
-      //if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
-      //{
-      //	m_viewport_x_temp = g_console.custom_viewport_x;
-      //	m_viewport_y_temp = g_console.custom_viewport_y;
-      //	m_viewport_width_temp = g_console.custom_viewport_width;
-      //	m_viewport_height_temp = g_console.custom_viewport_height;
-      //}
-      if (device_aspect > desired_aspect)
+      if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
+      {
+		 delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
+      	 m_viewport_x_temp = g_console.custom_viewport_x;
+      	 m_viewport_y_temp = g_console.custom_viewport_y;
+      	 m_viewport_width_temp = g_console.custom_viewport_width;
+      	 m_viewport_height_temp = g_console.custom_viewport_height;
+      }
+      else if (device_aspect > desired_aspect)
       {
          delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
          m_viewport_x_temp = (int)(width * (0.5 - delta));
@@ -495,6 +496,12 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
    vid->d3d_render_device->SetViewport(&vp);
+
+   if(g_console.custom_viewport_width == 0)
+      g_console.custom_viewport_width = vp.Width;
+
+   if(g_console.custom_viewport_height == 0)
+      g_console.custom_viewport_height = vp.Height;
 
    xdk360_set_orientation(NULL, g_console.screen_orientation);
 

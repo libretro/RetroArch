@@ -24,6 +24,7 @@
 #include "xdk360_input.h"
 #include "xdk360_video_general.h"
 #include "shared.h"
+#include "menu.h"
 
 static uint64_t state[4];
 static unsigned pads_connected;
@@ -103,6 +104,53 @@ void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_
 	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[XDK360_DEVICE_ID_RSTICK_RIGHT_DPAD].joykey;
 	 break;
    }
+}
+
+void xdk360_input_loop(void)
+{
+	int custom_viewport_x_tmp, custom_viewport_y_tmp, custom_viewport_width_tmp,
+		custom_viewport_height_tmp;
+
+	XINPUT_STATE state;
+
+	XInputGetState(0, &state);
+
+	custom_viewport_x_tmp = g_console.custom_viewport_x;
+	custom_viewport_y_tmp = g_console.custom_viewport_y;
+	custom_viewport_width_tmp = g_console.custom_viewport_width;
+	custom_viewport_height_tmp = g_console.custom_viewport_height;
+
+	if(state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT || state.Gamepad.sThumbLX < -DEADZONE)
+		g_console.custom_viewport_x -= 1;
+	else if (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT || state.Gamepad.sThumbLX > DEADZONE)
+		g_console.custom_viewport_x += 1;
+
+	if (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP || state.Gamepad.sThumbLY > DEADZONE)
+		g_console.custom_viewport_y += 1;
+	else if (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN || state.Gamepad.sThumbLY < -DEADZONE) 
+		g_console.custom_viewport_y -= 1;
+
+	if (state.Gamepad.sThumbRX < -DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB)
+		g_console.custom_viewport_width -= 1;
+	else if (state.Gamepad.sThumbRX > DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB)
+		g_console.custom_viewport_width += 1;
+
+	if (state.Gamepad.sThumbRY > DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER)
+		g_console.custom_viewport_height += 1;
+	else if (state.Gamepad.sThumbRY < -DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
+		g_console.custom_viewport_height -= 1;
+
+	if (state.Gamepad.wButtons & XINPUT_GAMEPAD_Y)
+	{
+		g_console.custom_viewport_x = 0;
+		g_console.custom_viewport_y = 0;
+		g_console.custom_viewport_width = 1280; //FIXME: hardcoded
+		g_console.custom_viewport_height = 720; //FIXME: hardcoded
+	}
+	if(state.Gamepad.wButtons & XINPUT_GAMEPAD_B)
+	{
+		g_console.input_loop = INPUT_LOOP_MENU;
+	}
 }
 
 static bool xdk360_key_pressed(void *data, int key)

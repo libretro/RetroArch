@@ -219,6 +219,9 @@ struct console_settings
    uint32_t supported_resolutions_count;
    uint32_t control_timer_expiration_frame_count;
    uint32_t timer_expiration_frame_count;
+#ifdef RARCH_CONSOLE
+   uint32_t input_loop;
+#endif
 #ifdef _XBOX
    DWORD volume_device_type;
 #endif

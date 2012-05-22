@@ -31,6 +31,12 @@ enum
    SETTING_SCALE_ENABLED
 };
 
+enum
+{
+   INPUT_LOOP_MENU,
+   INPUT_LOOP_RESIZE_MODE
+};
+
 class CRetroArch : public CXuiModule
 {
 public:
