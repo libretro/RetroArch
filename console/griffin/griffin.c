@@ -123,7 +123,7 @@ DYNAMIC
 /*============================================================
 FILE
 ============================================================ */
-#if defined(__CELLOS_LV2__) || defined(_XBOX)
+#ifdef HAVE_FILEBROWSER
 #include "../fileio/file_browser.c"
 #endif
 #include "../../file.c"
