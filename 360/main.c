@@ -432,6 +432,8 @@ begin_loop:
 
       input_xdk360.poll(NULL);
 
+	  rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+
       do{
          repeat = rarch_main_iterate();
       }while(repeat && !g_console.frame_advance_enable);

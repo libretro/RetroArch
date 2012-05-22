@@ -486,12 +486,15 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "19:14",  1.3571f },
    { "30:17",  1.7647f },
    { "32:9",   3.5555f },
-   { "Auto",   0.0f },
+   { "Auto",   1.0f },
    { "Custom", 0.0f }
 };
 
 void rarch_set_auto_viewport(unsigned width, unsigned height)
 {
+   if(width == 0 || height == 0)
+      return;
+
    unsigned aspect_x, aspect_y, len, highest, i;
 
    len = width < height ? width : height;

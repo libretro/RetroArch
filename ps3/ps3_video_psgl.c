@@ -557,9 +557,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       GLfloat yamt = (GLfloat)height / gl->tex_h;
 
       set_texture_coords(gl->tex_coords, xamt, yamt);
-
-      if(g_console.aspect_ratio_index == ASPECT_RATIO_AUTO )
-         rarch_set_auto_viewport(width, height);
    }
    else if (width != gl->last_width[(gl->tex_index - 1) & TEXTURES_MASK] || height != gl->last_height[(gl->tex_index - 1) & TEXTURES_MASK])
    {

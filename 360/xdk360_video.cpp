@@ -367,6 +367,9 @@ static void xdk360_set_aspect_ratio(void * data, uint32_t aspectratio_index)
 {
    (void)data;
 
+   if(g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
+      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+
    g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
    g_settings.video.force_aspect = false;
    set_viewport(false);
