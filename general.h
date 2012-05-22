@@ -211,7 +211,6 @@ struct console_settings
    uint32_t aspect_ratio_index;
    struct
    {
-      rarch_viewport_t auto_vp;
       rarch_viewport_t custom_vp;
    } viewports;
    uint32_t emulator_initialized;
