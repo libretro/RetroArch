@@ -24,30 +24,12 @@
 <TextStyle>21</TextStyle>
 </Properties>
 </XuiText>
-<XuiBackButton>
-<Properties>
-<Id>XuiBackButton</Id>
-<Width>208.632019</Width>
-<Height>36.000000</Height>
-<Position>568.000061,432.000000,0.000000</Position>
-<NavLeft>XuiQuickMenuList</NavLeft>
-<NavRight>XuiQuickMenuList</NavRight>
-<NavUp>XuiQuickMenuList</NavUp>
-<NavDown>XuiQuickMenuList</NavDown>
-<Text>Go back to menu</Text>
-<PressKey>22593</PressKey>
-</Properties>
-</XuiBackButton>
 <XuiCommonList>
 <Properties>
 <Id>XuiQuickMenuList</Id>
 <Width>723.120056</Width>
 <Height>367.040009</Height>
 <Position>44.880005,64.959991,0.000000</Position>
-<NavLeft>XuiBackButton</NavLeft>
-<NavRight>XuiBackButton</NavRight>
-<NavUp>XuiBackButton</NavUp>
-<NavDown>XuiBackButton</NavDown>
 <ItemsText>Load State
 Save State
 Aspect Ratio: 
@@ -121,6 +103,40 @@ Return to Dashboard
 <InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
 </Properties>
 </XuiListItem>
+<XuiListItem>
+<Properties>
+<Id>control_ListItem</Id>
+<Width>226.000000</Width>
+<Height>45.000000</Height>
+<Position>7.000000,22.000000,0.000000</Position>
+<Anchor>5</Anchor>
+<Show>false</Show>
+<Visual>XuiButton</Visual>
+<InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
+</Properties>
+</XuiListItem>
+<XuiListItem>
+<Properties>
+<Id>control_ListItem</Id>
+<Width>226.000000</Width>
+<Height>45.000000</Height>
+<Position>7.000000,22.000000,0.000000</Position>
+<Anchor>5</Anchor>
+<Show>false</Show>
+<Visual>XuiButton</Visual>
+<InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
+</Properties>
+</XuiListItem>
 </XuiCommonList>
+<XuiBackButton>
+<Properties>
+<Id>XuiBackButton</Id>
+<Width>208.632019</Width>
+<Height>36.000000</Height>
+<Position>568.000061,432.000000,0.000000</Position>
+<Text>Go back to menu</Text>
+<PressKey>22593</PressKey>
+</Properties>
+</XuiBackButton>
 </XuiScene>
 </XuiCanvas>

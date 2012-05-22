@@ -30,11 +30,21 @@
 <Width>945.200073</Width>
 <Height>376.000031</Height>
 <Position>22.799980,88.000000,0.000000</Position>
-<NavLeft>XuiBackButton1</NavLeft>
-<NavRight>XuiBackButton1</NavRight>
 <NavUp>XuiBtnGameDir</NavUp>
 <NavDown>XuiBtnGameDir</NavDown>
 </Properties>
+<XuiListItem>
+<Properties>
+<Id>control_ListItem</Id>
+<Width>226.000000</Width>
+<Height>45.000000</Height>
+<Position>7.000000,22.000000,0.000000</Position>
+<Anchor>5</Anchor>
+<Show>false</Show>
+<Visual>XuiButton</Visual>
+<InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
+</Properties>
+</XuiListItem>
 <XuiListItem>
 <Properties>
 <Id>control_ListItem</Id>
@@ -138,10 +148,6 @@
 <Width>204.599976</Width>
 <Height>36.000000</Height>
 <Position>355.115234,484.396851,0.000000</Position>
-<NavLeft>XuiBtnCacheDir</NavLeft>
-<NavRight>XuiBtnGameDir</NavRight>
-<NavUp>XuiRomList</NavUp>
-<NavDown>XuiRomList</NavDown>
 <Text>Go back to menu</Text>
 <PressKey>22593</PressKey>
 </Properties>
@@ -171,7 +177,6 @@
 <Width>115.640007</Width>
 <Height>38.000000</Height>
 <Position>31.999985,480.000061,0.000000</Position>
-<NavLeft>XuiBackButton1</NavLeft>
 <NavRight>XuiBtnCacheDir</NavRight>
 <NavUp>XuiRomList</NavUp>
 <NavDown>XuiRomList</NavDown>
@@ -185,7 +190,6 @@
 <Height>38.000000</Height>
 <Position>161.999985,480.000061,0.000000</Position>
 <NavLeft>XuiBtnGameDir</NavLeft>
-<NavRight>XuiBackButton1</NavRight>
 <NavUp>XuiRomList</NavUp>
 <NavDown>XuiRomList</NavDown>
 <Text>cache:</Text>

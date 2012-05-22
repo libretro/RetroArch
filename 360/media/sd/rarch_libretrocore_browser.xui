@@ -30,11 +30,19 @@
 <Width>536.582458</Width>
 <Height>170.800018</Height>
 <Position>22.799980,81.600006,0.000000</Position>
-<NavLeft>XuiBackButton1</NavLeft>
-<NavRight>XuiBackButton1</NavRight>
-<NavUp>XuiBackButton1</NavUp>
-<NavDown>XuiBackButton1</NavDown>
 </Properties>
+<XuiListItem>
+<Properties>
+<Id>control_ListItem</Id>
+<Width>226.000000</Width>
+<Height>45.000000</Height>
+<Position>7.000000,22.000000,0.000000</Position>
+<Anchor>5</Anchor>
+<Show>false</Show>
+<Visual>XuiButton</Visual>
+<InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
+</Properties>
+</XuiListItem>
 <XuiListItem>
 <Properties>
 <Id>control_ListItem</Id>
@@ -138,10 +146,6 @@
 <Width>219.000000</Width>
 <Height>36.000000</Height>
 <Position>338.715210,281.396820,0.000000</Position>
-<NavLeft>XuiRomList</NavLeft>
-<NavRight>XuiRomList</NavRight>
-<NavUp>XuiRomList</NavUp>
-<NavDown>XuiRomList</NavDown>
 <Text>Go back to menu</Text>
 <PressKey>22593</PressKey>
 </Properties>
