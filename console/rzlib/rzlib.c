@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include "zlib.h"
+#include "../../compat/strl.h"
 
 #ifdef _MSC_VER
 #include "../../msvc/msvc_compat.h"
@@ -1780,7 +1781,7 @@ static voidp gz_open (const char * path, const char *mode, int fd)
 	if (s->path == NULL) {
 		return destroy(s), (voidp)0;
 	}
-	strcpy(s->path, path); /* do this early for debugging */
+	strlcpy(s->path, path, sizeof(s->path)); /* do this early for debugging */
 
 	s->mode = '\0';
 	do {
@@ -2074,7 +2075,7 @@ const char*   gzerror (voidp file, int *errnum)
 	if(s->msg)
 		free(s->msg);
 	s->msg = (char*)malloc(strlen(s->path) + strlen(m) + 3);
-	strcpy(s->msg, s->path);
+	strlcpy(s->msg, s->path, sizeof(s->msg));
 	strcat(s->msg, ": ");
 	strcat(s->msg, m);
 	return (const char*)s->msg;

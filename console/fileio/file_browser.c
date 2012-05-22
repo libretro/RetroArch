@@ -53,7 +53,7 @@ static void filebrowser_clear_current_entries(filebrowser_t * filebrowser)
    {
       filebrowser->cur[filebrowser->file_count].d_type = 0;
       filebrowser->cur[filebrowser->file_count].d_namlen = 0;
-      strcpy(filebrowser->cur[filebrowser->file_count].d_name, "\0");
+      strlcpy(filebrowser->cur[filebrowser->file_count].d_name, "\0", sizeof(filebrowser->cur[filebrowser->file_count].d_name));
    }
 }
 
@@ -89,7 +89,7 @@ const char * path, const char * extensions)
 
    do
    {
-      strcpy(filebrowser->dir[filebrowser->directory_stack_size], path);
+      strlcpy(filebrowser->dir[filebrowser->directory_stack_size], path, sizeof(filebrowser->dir[filebrowser->directry_stack_size]));
       bool found_dir = false;
 
       if(!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
@@ -141,7 +141,7 @@ const char * path, const char * extensions)
    {
       uint64_t nread = 0;
 
-      strcpy(filebrowser->dir[filebrowser->directory_stack_size], path);
+      strlcpy(filebrowser->dir[filebrowser->directory_stack_size], path, sizeof(filebrowser->dir[filebrowser->directory_stack_size]));
 
       filebrowser->file_count = 0;
       filebrowser->currently_selected = 0;
@@ -186,7 +186,7 @@ const char * path, const char * extensions)
 
          filebrowser->cur[filebrowser->file_count].d_type = dirent.d_type;
          filebrowser->cur[filebrowser->file_count].d_namlen = dirent.d_namlen;
-         strcpy(filebrowser->cur[filebrowser->file_count].d_name, dirent.d_name);
+         strlcpy(filebrowser->cur[filebrowser->file_count].d_name, dirent.d_name, sizeof(filebrowser->cur[filebrowser->file_count].d_name));
 
          ++filebrowser->file_count;
       }

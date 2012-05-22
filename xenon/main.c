@@ -127,7 +127,7 @@ int main(void)
    if (handle < 0)
       return 0;
 
-   strcpy(path, s);
+   strlcpy(path, s, sizeof(path));
    strcat(path, ":/");	
 
    load_dir(path);
@@ -163,7 +163,7 @@ int main(void)
          else
          {
             char fn[256];
-            strcpy(fn, path);
+            strlcpy(fn, path, sizeof(fn));
             strcat(fn, entries[pos].d_name);
 
             printf("%s\n", fn);
@@ -187,7 +187,7 @@ int main(void)
             handle = bdev_enum(handle, &s);
          } while (handle < 0);
 
-         strcpy(path, s);
+         strlcpy(path, s, sizeof(path));
          strcat(path, ":/");
          load_dir(path);
          ppos = -1;

@@ -995,16 +995,16 @@ static void select_directory(uint32_t menu_id)
 	    switch(menu_id)
 	    {
                case PATH_SAVESTATES_DIR_CHOICE:
-                  strcpy(g_console.default_savestate_dir, path);
+                  strlcpy(g_console.default_savestate_dir, path, sizeof(g_console.default_savestate_dir));
 		  break;
 	       case PATH_SRAM_DIR_CHOICE:
-		  strcpy(g_console.default_sram_dir, path);
+		  strlcpy(g_console.default_sram_dir, path, sizeof(g_console.default_sram_dir));
 		  break;
 	       case PATH_DEFAULT_ROM_DIR_CHOICE:
-		  strcpy(g_console.default_rom_startup_dir, path);
+		  strlcpy(g_console.default_rom_startup_dir, path, sizeof(g_console.default_rom_startup_dir));
 		  break;
 	       case PATH_CHEATS_DIR_CHOICE:
-		  strcpy(g_settings.cheat_database, path);
+		  strlcpy(g_settings.cheat_database, path, sizeof(g_settings.cheat_database));
 		  break;
 	    }
 	    menuStackindex--;
@@ -1013,20 +1013,20 @@ static void select_directory(uint32_t menu_id)
 
       if (CTRL_TRIANGLE(button_was_pressed))
       {
-         strcpy(path, usrDirPath);
+         strlcpy(path, usrDirPath, sizeof(path));
 	 switch(menu_id)
 	 {
             case PATH_SAVESTATES_DIR_CHOICE:
-               strcpy(g_console.default_savestate_dir, path);
+               strlcpy(g_console.default_savestate_dir, path, sizeof(g_console.default_savestate_dir));
 	       break;
 	    case PATH_SRAM_DIR_CHOICE:
-	       strcpy(g_console.default_sram_dir, path);
+	       strlcpy(g_console.default_sram_dir, path, sizeof(g_console.default_sram_dir));
 	       break;
 	    case PATH_DEFAULT_ROM_DIR_CHOICE:
-	       strcpy(g_console.default_rom_startup_dir, path);
+	       strlcpy(g_console.default_rom_startup_dir, path, sizeof(g_console.default_rom_startup_dir));
 	       break;
 	    case PATH_CHEATS_DIR_CHOICE:
-	       strcpy(g_settings.cheat_database, path);
+	       strlcpy(g_settings.cheat_database, path, sizeof(g_settings.cheat_database));
 	       break;
 	 }
 	 menuStackindex--;
@@ -1543,10 +1543,10 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				}
 
 				if(g_console.oskutil_handle.text_can_be_fetched)
-					strcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_console.oskutil_handle));
+					strlcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(g_settings.audio.device));
 			}
 			if(CTRL_START(state))
-				strcpy(g_settings.audio.device, "0.0.0.0");
+				strlcpy(g_settings.audio.device, "0.0.0.0", sizeof(g_settings.audio.device));
 			break;
 		case SETTING_DEFAULT_AUDIO_ALL:
 			break;
@@ -1639,7 +1639,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 
 			if(CTRL_START(state))
-				strcpy(g_console.default_rom_startup_dir, "/");
+				strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
 			break;
 		case SETTING_PATH_SAVESTATES_DIRECTORY:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
@@ -1652,7 +1652,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 
 			if(CTRL_START(state))
-				strcpy(g_console.default_savestate_dir, usrDirPath);
+				strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
 
 			break;
 		case SETTING_PATH_SRAM_DIRECTORY:
@@ -1666,7 +1666,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 
 			if(CTRL_START(state))
-				strcpy(g_console.default_sram_dir, "");
+				strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
 			break;
 		case SETTING_PATH_CHEATS:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
@@ -1679,7 +1679,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 
 			if(CTRL_START(state))
-				strcpy(g_settings.cheat_database, usrDirPath);
+				strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
 			break;
 		case SETTING_ENABLE_SRAM_PATH:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
@@ -1710,10 +1710,10 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_PATH_DEFAULT_ALL:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
 			{
-				strcpy(g_console.default_rom_startup_dir, "/");
-				strcpy(g_console.default_savestate_dir, usrDirPath);
-				strcpy(g_settings.cheat_database, usrDirPath);
-				strcpy(g_console.default_sram_dir, "");
+				strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
+				strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
+				strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
+				strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
 
 				menu_reinit_settings();
 			}
@@ -2068,7 +2068,7 @@ static void ingame_menu(uint32_t menu_id)
 	       blocking = 0;
 	    }
 
-	    strcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the state from the currently selected save state slot.");
+	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the state from the currently selected save state slot.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_SAVE_STATE:
 	    if(CTRL_CROSS(state))
@@ -2089,7 +2089,7 @@ static void ingame_menu(uint32_t menu_id)
 	       blocking = 0;
 	    }
 
-	    strcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.");
+	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
@@ -2117,7 +2117,7 @@ static void ingame_menu(uint32_t menu_id)
                g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
 	       video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 	    }
-	    strcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.");
+	    strlcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_OVERSCAN_AMOUNT:
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) || CTRL_LSTICK_LEFT(state))
@@ -2147,7 +2147,7 @@ static void ingame_menu(uint32_t menu_id)
 	       g_console.overscan_enable = false;
 	       ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
 	    }
-	    strcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.");
+	    strlcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_ORIENTATION:
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) || CTRL_LSTICK_LEFT(state))
@@ -2175,7 +2175,7 @@ static void ingame_menu(uint32_t menu_id)
                g_console.screen_orientation = ORIENTATION_NORMAL;
 	       video_gl.set_rotation(NULL, g_console.screen_orientation);
 	    }
-	    strcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.");
+	    strlcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_SCALE_FACTOR:
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
@@ -2210,7 +2210,7 @@ static void ingame_menu(uint32_t menu_id)
 	       g_settings.video.fbo_scale_y = 2.0f;
 	       apply_scaling(FBO_REINIT);
 	    }
-	    strcpy(comment, "Press LEFT or RIGHT to change the [Scaling] settings.\nPress START to reset back to default values.");
+	    strlcpy(comment, "Press LEFT or RIGHT to change the [Scaling] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
 	    if(CTRL_CROSS(state) || CTRL_R2(state) || CTRL_L2(state))
@@ -2220,7 +2220,7 @@ static void ingame_menu(uint32_t menu_id)
 	       g_console.menu_enable = false;
 	       g_console.mode_switch = MODE_EMULATION;
 	    }
-	    strcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame. Pressing the button\nrapidly will advance the frame more slowly.");
+	    strlcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame. Pressing the button\nrapidly will advance the frame more slowly.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
 	    if(CTRL_CROSS(state))
@@ -2351,7 +2351,7 @@ static void ingame_menu(uint32_t menu_id)
 		  }
 	       }
 	    }
-	    strcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back.");
+	    strlcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
 	    if(CTRL_CROSS(state))
@@ -2371,13 +2371,13 @@ static void ingame_menu(uint32_t menu_id)
 	       }
 	    }
 
-	    strcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.");
+	    strlcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
 	    if(CTRL_CROSS(state))
                return_to_game();
 
-	    strcpy(comment, "Press 'CROSS' to return back to the game.");
+	    strlcpy(comment, "Press 'CROSS' to return back to the game.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RESET:
 	    if(CTRL_CROSS(state))
@@ -2385,7 +2385,7 @@ static void ingame_menu(uint32_t menu_id)
                return_to_game();
 	       rarch_game_reset();
 	    }
-	    strcpy(comment, "Press 'CROSS' to reset the game.");
+	    strlcpy(comment, "Press 'CROSS' to reset the game.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RETURN_TO_MENU:
 	    if(CTRL_CROSS(state))
@@ -2395,7 +2395,7 @@ static void ingame_menu(uint32_t menu_id)
 	       g_console.mode_switch = MODE_MENU;
 	       set_delay = DELAY_LONG;
 	    }
-	    strcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.");
+	    strlcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_CHANGE_LIBRETRO:
 	    if(CTRL_CROSS(state))
@@ -2406,7 +2406,7 @@ static void ingame_menu(uint32_t menu_id)
 	       set_initial_dir_tmpbrowser = true;
 	       set_delay = DELAY_LONG;
 	    }
-	    strcpy(comment, "Press 'CROSS' to choose a different emulator core.");
+	    strlcpy(comment, "Press 'CROSS' to choose a different emulator core.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RETURN_TO_MULTIMAN:
 	    if(CTRL_CROSS(state) && path_file_exists(MULTIMAN_EXECUTABLE))
@@ -2418,7 +2418,7 @@ static void ingame_menu(uint32_t menu_id)
 	       g_console.menu_enable = false;
 	       g_console.mode_switch = MODE_EXIT;
 	    }
-	    strcpy(comment, "Press 'CROSS' to quit the emulator and return to multiMAN.");
+	    strlcpy(comment, "Press 'CROSS' to quit the emulator and return to multiMAN.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RETURN_TO_XMB:
 	    if(CTRL_CROSS(state))
@@ -2427,7 +2427,7 @@ static void ingame_menu(uint32_t menu_id)
 	       g_console.mode_switch = MODE_EXIT;
 	    }
 
-	    strcpy(comment, "Press 'CROSS' to quit the emulator and return to the XMB.");
+	    strlcpy(comment, "Press 'CROSS' to quit the emulator and return to the XMB.", sizeof(comment));
 	    break;
       }
 

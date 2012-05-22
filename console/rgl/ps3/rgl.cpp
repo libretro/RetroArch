@@ -20,6 +20,8 @@
 
 #include <cell/sysmodule.h>
 
+#include "../../../compat/strl.h"
+
 #define RGL_ALIGN_FAST_TRANSFER 128
 
 #define ENDIAN_32(X, F) ((F) ? endianSwapWord(X) : (X))
@@ -7649,7 +7651,7 @@ CGprogramGroup _RGLCgCreateProgramGroup( CGcontext ctx,  const char *name, void 
             group->name = ( char* )malloc( len + 1 );
             if ( !group->name )
                 break;
-            strcpy( group->name, name );
+            strlcpy( group->name, name, sizeof(group->name));
         }
         else
             group->name = NULL;
