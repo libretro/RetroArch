@@ -94,7 +94,7 @@ AUDIO HERMITE
 /*============================================================
 RSOUND
 ============================================================ */
-#ifdef __CELLOS_LV2__
+#ifdef HAVE_RSOUND
 #include "../../console/librsound/librsound.c"
 #include "../../audio/rsound.c"
 #endif

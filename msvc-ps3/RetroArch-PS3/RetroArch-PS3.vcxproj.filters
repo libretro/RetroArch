@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;cc;s;asm</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp</Extensions>
+    </Filter>
+    <Filter Include="Source Files\console">
+      <UniqueIdentifier>{1e6c0cd0-6066-4209-82b4-2be77bf07d0a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\console\rzlib">
+      <UniqueIdentifier>{5b516a7d-b155-4e31-b42a-140d883fde84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\console\griffin">
+      <UniqueIdentifier>{fac58d49-76df-48f6-bead-170b6b2117b3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\console\griffin\griffin.c">
+      <Filter>Source Files\console\griffin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\console\rzlib\rzlib.c">
+      <Filter>Source Files\console\rzlib</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
