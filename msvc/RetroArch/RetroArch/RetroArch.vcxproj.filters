@@ -100,15 +100,6 @@
     <ClCompile Include="..\..\..\settings.c">
       <Filter>Sources\top</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sha256.c">
-      <Filter>Sources\top</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\gfx\snes_state.c">
-      <Filter>Sources\top</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\ssnes.c">
-      <Filter>Sources\top</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\thread.c">
       <Filter>Sources\top</Filter>
     </ClCompile>
@@ -117,6 +108,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\compat\compat.c">
       <Filter>Sources\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\retroarch.c">
+      <Filter>Sources\top</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\gfx\state_tracker.c">
+      <Filter>Sources\gfx</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -159,7 +156,7 @@
     <ClInclude Include="..\..\..\general.h">
       <Filter>Headers\top</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\getopt_ssnes.h">
+    <ClInclude Include="..\..\..\getopt_rarch.h">
       <Filter>Headers\top</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\libsnes.hpp">
@@ -219,16 +216,13 @@
     <ClInclude Include="..\..\..\gfx\shader_glsl.h">
       <Filter>Headers\gfx</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\gfx\snes_state.h">
+    <ClInclude Include="..\..\..\gfx\ext\rarch_video.h">
       <Filter>Headers\gfx</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\gfx\ext\ssnes_video.h">
-      <Filter>Headers\gfx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\input\ssnes_sdl_input.h">
+    <ClInclude Include="..\..\..\input\rarch_sdl_input.h">
       <Filter>Headers\input</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\input\ssnes_dinput.h">
+    <ClInclude Include="..\..\..\input\rarch_dinput.h">
       <Filter>Headers\input</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\input\keysym.h">
@@ -240,20 +234,14 @@
     <ClInclude Include="..\..\..\screenshot.h">
       <Filter>Headers\gfx</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\audio\hermite.h">
-      <Filter>Headers\audio</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\audio\xaudio-c\xaudio.h">
-      <Filter>Headers\audio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\audio\ext\ssnes_audio.h">
-      <Filter>Headers\audio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\audio\ext\ssnes_dsp.h">
       <Filter>Headers\audio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\audio\xaudio-c\xaudio-c.h">
       <Filter>Headers\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\gfx\state_tracker.h">
+      <Filter>Headers\gfx</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

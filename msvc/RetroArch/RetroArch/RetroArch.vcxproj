@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{032D1FA7-7AA5-47BB-B51B-68B75ADE729D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>SSNES</RootNamespace>
+    <RootNamespace>RetroArch</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -65,19 +65,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>ssnes</TargetName>
+    <TargetName>retroarch</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>ssnes</TargetName>
+    <TargetName>retroarch</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>ssnes</TargetName>
+    <TargetName>retroarch</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>ssnes</TargetName>
+    <TargetName>retroarch</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -187,7 +187,7 @@
     <ClCompile Include="..\..\..\gfx\sdlwrap.c" />
     <ClCompile Include="..\..\..\gfx\shader_cg.c" />
     <ClCompile Include="..\..\..\gfx\shader_glsl.c" />
-    <ClCompile Include="..\..\..\gfx\snes_state.c" />
+    <ClCompile Include="..\..\..\gfx\state_tracker.c" />
     <ClCompile Include="..\..\..\input\dinput.c" />
     <ClCompile Include="..\..\..\input\sdl_input.c" />
     <ClCompile Include="..\..\..\message.c" />
@@ -195,17 +195,13 @@
     <ClCompile Include="..\..\..\netplay.c" />
     <ClCompile Include="..\..\..\patch.c" />
     <ClCompile Include="..\..\..\record\ffemu.c" />
+    <ClCompile Include="..\..\..\retroarch.c" />
     <ClCompile Include="..\..\..\rewind.c" />
     <ClCompile Include="..\..\..\screenshot.c" />
     <ClCompile Include="..\..\..\settings.c" />
-    <ClCompile Include="..\..\..\sha256.c" />
-    <ClCompile Include="..\..\..\ssnes.c" />
     <ClCompile Include="..\..\..\thread.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\audio\ext\ssnes_audio.h" />
-    <ClInclude Include="..\..\..\audio\ext\ssnes_dsp.h" />
-    <ClInclude Include="..\..\..\audio\hermite.h" />
     <ClInclude Include="..\..\..\audio\utils.h" />
     <ClInclude Include="..\..\..\audio\xaudio-c\xaudio-c.h" />
     <ClInclude Include="..\..\..\audio\xaudio-c\xaudio.h" />
@@ -221,8 +217,8 @@
     <ClInclude Include="..\..\..\fifo_buffer.h" />
     <ClInclude Include="..\..\..\file.h" />
     <ClInclude Include="..\..\..\general.h" />
-    <ClInclude Include="..\..\..\getopt_ssnes.h" />
-    <ClInclude Include="..\..\..\gfx\ext\ssnes_video.h" />
+    <ClInclude Include="..\..\..\getopt_rarch.h" />
+    <ClInclude Include="..\..\..\gfx\ext\rarch_video.h" />
     <ClInclude Include="..\..\..\gfx\fonts.h" />
     <ClInclude Include="..\..\..\gfx\gfx_common.h" />
     <ClInclude Include="..\..\..\gfx\gl_common.h" />
@@ -231,11 +227,11 @@
     <ClInclude Include="..\..\..\gfx\sdlwrap.h" />
     <ClInclude Include="..\..\..\gfx\shader_cg.h" />
     <ClInclude Include="..\..\..\gfx\shader_glsl.h" />
-    <ClInclude Include="..\..\..\gfx\snes_state.h" />
+    <ClInclude Include="..\..\..\gfx\state_tracker.h" />
     <ClInclude Include="..\..\..\input\keysym.h" />
-    <ClInclude Include="..\..\..\input\ssnes_dinput.h" />
-    <ClInclude Include="..\..\..\input\ssnes_sdl_input.h" />
-    <ClInclude Include="..\..\..\libsnes.hpp" />
+    <ClInclude Include="..\..\..\input\rarch_dinput.h" />
+    <ClInclude Include="..\..\..\input\rarch_sdl_input.h" />
+    <ClInclude Include="..\..\..\libretro.h" />
     <ClInclude Include="..\..\..\message.h" />
     <ClInclude Include="..\..\..\movie.h" />
     <ClInclude Include="..\..\..\netplay.h" />
