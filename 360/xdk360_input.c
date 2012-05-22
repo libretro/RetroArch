@@ -115,37 +115,37 @@ void xdk360_input_loop(void)
 
 	XInputGetState(0, &state);
 
-	custom_viewport_x_tmp = g_console.custom_viewport_x;
-	custom_viewport_y_tmp = g_console.custom_viewport_y;
-	custom_viewport_width_tmp = g_console.custom_viewport_width;
-	custom_viewport_height_tmp = g_console.custom_viewport_height;
+	custom_viewport_x_tmp = g_console.viewports.custom_vp.x;
+	custom_viewport_y_tmp = g_console.viewports.custom_vp.y;
+	custom_viewport_width_tmp = g_console.viewports.custom_vp.width;
+	custom_viewport_height_tmp = g_console.viewports.custom_vp.height;
 
 	if(state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT || state.Gamepad.sThumbLX < -DEADZONE)
-		g_console.custom_viewport_x -= 1;
+		g_console.viewports.custom_vp.x -= 1;
 	else if (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT || state.Gamepad.sThumbLX > DEADZONE)
-		g_console.custom_viewport_x += 1;
+		g_console.viewports.custom_vp.x += 1;
 
 	if (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP || state.Gamepad.sThumbLY > DEADZONE)
-		g_console.custom_viewport_y += 1;
+		g_console.viewports.custom_vp.y += 1;
 	else if (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN || state.Gamepad.sThumbLY < -DEADZONE) 
-		g_console.custom_viewport_y -= 1;
+		g_console.viewports.custom_vp.y -= 1;
 
 	if (state.Gamepad.sThumbRX < -DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB)
-		g_console.custom_viewport_width -= 1;
+		g_console.viewports.custom_vp.width -= 1;
 	else if (state.Gamepad.sThumbRX > DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB)
-		g_console.custom_viewport_width += 1;
+		g_console.viewports.custom_vp.width += 1;
 
 	if (state.Gamepad.sThumbRY > DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER)
-		g_console.custom_viewport_height += 1;
+		g_console.viewports.custom_vp.height += 1;
 	else if (state.Gamepad.sThumbRY < -DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
-		g_console.custom_viewport_height -= 1;
+		g_console.viewports.custom_vp.height -= 1;
 
 	if (state.Gamepad.wButtons & XINPUT_GAMEPAD_Y)
 	{
-		g_console.custom_viewport_x = 0;
-		g_console.custom_viewport_y = 0;
-		g_console.custom_viewport_width = 1280; //FIXME: hardcoded
-		g_console.custom_viewport_height = 720; //FIXME: hardcoded
+		g_console.viewports.custom_vp.x = 0;
+		g_console.viewports.custom_vp.y = 0;
+		g_console.viewports.custom_vp.width = 1280; //FIXME: hardcoded
+		g_console.viewports.custom_vp.height = 720; //FIXME: hardcoded
 	}
 	if(state.Gamepad.wButtons & XINPUT_GAMEPAD_B)
 	{

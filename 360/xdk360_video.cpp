@@ -299,10 +299,10 @@ void set_viewport(bool force_full)
       if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
       {
 		 delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-      	 m_viewport_x_temp = g_console.custom_viewport_x;
-      	 m_viewport_y_temp = g_console.custom_viewport_y;
-      	 m_viewport_width_temp = g_console.custom_viewport_width;
-      	 m_viewport_height_temp = g_console.custom_viewport_height;
+      	 m_viewport_x_temp = g_console.viewports.custom_vp.x;
+      	 m_viewport_y_temp = g_console.viewports.custom_vp.y;
+      	 m_viewport_width_temp = g_console.viewports.custom_vp.width;
+      	 m_viewport_height_temp = g_console.viewports.custom_vp.height;
       }
       else if (device_aspect > desired_aspect)
       {
@@ -497,11 +497,11 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    vp.MaxZ   = 1.0f;
    vid->d3d_render_device->SetViewport(&vp);
 
-   if(g_console.custom_viewport_width == 0)
-      g_console.custom_viewport_width = vp.Width;
+   if(g_console.viewports.custom_vp.width == 0)
+      g_console.viewports.custom_vp.width = vp.Width;
 
-   if(g_console.custom_viewport_height == 0)
-      g_console.custom_viewport_height = vp.Height;
+   if(g_console.viewports.custom_vp.height == 0)
+      g_console.viewports.custom_vp.height = vp.Height;
 
    xdk360_set_orientation(NULL, g_console.screen_orientation);
 

@@ -180,6 +180,14 @@ struct settings
 
 // Settings and/or global state that is specific to a console-style implementation.
 #ifdef RARCH_CONSOLE
+typedef struct
+{
+   uint32_t x;
+   uint32_t y;
+   uint32_t width;
+   uint32_t height;
+} viewport_t;
+
 struct console_settings
 {
 #ifdef __CELLOS_LV2__
@@ -201,10 +209,11 @@ struct console_settings
    bool triple_buffering_enable;
    float overscan_amount;
    uint32_t aspect_ratio_index;
-   uint32_t custom_viewport_width;
-   uint32_t custom_viewport_height;
-   uint32_t custom_viewport_x;
-   uint32_t custom_viewport_y;
+   struct
+   {
+      viewport_t auto_vp;
+      viewport_t custom_vp;
+   } viewports;
    uint32_t emulator_initialized;
    uint32_t external_launcher_support;
    uint32_t screen_orientation;
