@@ -97,7 +97,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf)
 
    if (err != UNZ_OK)
    {
-      RARCH_ERR("Error %d with zipfile in unzGetCurrentFileInfo.\n", err);
+      RARCH_ERR("Error %d with ZIP file in unzGetCurrentFileInfo.\n", err);
       return err;
    }
 
@@ -119,7 +119,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf)
 
    err = unzOpenCurrentFile(uf);
    if (err != UNZ_OK)
-      RARCH_ERR("Error %d with zipfile in unzOpenCurrentFile.\n", err);
+      RARCH_ERR("Error %d with ZIP file in unzOpenCurrentFile.\n", err);
    else
    {
       /* success */
@@ -138,7 +138,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf)
          err = unzReadCurrentFile(uf, buf, size_buf);
          if (err < 0)
          {
-            RARCH_ERR("error %d with zipfile in unzReadCurrentFile.\n", err);
+            RARCH_ERR("error %d with ZIP file in unzReadCurrentFile.\n", err);
             break;
          }
 
@@ -161,7 +161,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf)
    {
       err = unzCloseCurrentFile (uf);
       if (err != UNZ_OK)
-         RARCH_ERR("Error %d with zipfile in unzCloseCurrentFile.\n", err);
+         RARCH_ERR("Error %d with ZIP file in unzCloseCurrentFile.\n", err);
    }
    else
       unzCloseCurrentFile(uf); 
@@ -177,7 +177,7 @@ int rarch_extract_zipfile(const char *zip_path)
    unz_global_info gi;
    int err = unzGetGlobalInfo(uf, &gi);
    if (err != UNZ_OK)
-      RARCH_ERR("error %d with zipfile in unzGetGlobalInfo \n",err);
+      RARCH_ERR("error %d with ZIP file in unzGetGlobalInfo \n",err);
 
    for (unsigned i = 0; i < gi.number_entry; i++)
    {
@@ -189,11 +189,14 @@ int rarch_extract_zipfile(const char *zip_path)
          err = unzGoToNextFile(uf);
          if (err != UNZ_OK)
          {
-            RARCH_ERR("error %d with zipfile in unzGoToNextFile\n",err);
+            RARCH_ERR("error %d with ZIP file in unzGoToNextFile\n",err);
             break;
          }
       }
    }
+
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue, "INFO - ZIP file extracted to cache partition.", 1, 180);
 
    return 0;
 }

@@ -515,6 +515,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 {
    xdk360_video_t *vid = (xdk360_video_t*)data;
    D3DSurface* pRenderTarget0;
+   bool menu_enabled = g_console.menu_enable;
 
    if (vid->last_width != width || vid->last_height != height)
    {
@@ -626,7 +627,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
    }
 
    /* XBox 360 specific font code */
-   if (msg)
+   if (msg && !menu_enabled)
    {
       if(IS_TIMER_EXPIRED() || g_first_msg)
       {

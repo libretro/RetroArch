@@ -244,7 +244,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	 case MENU_ITEM_RESIZE_MODE:
 			g_console.input_loop = INPUT_LOOP_RESIZE_MODE;
 			msg_queue_clear(g_extern.msg_queue);
-			msg_queue_push(g_extern.msg_queue, "INFO - Resize the screen by moving around the two analog sticks.\nPress Y to reset to default values, and B to go back.\nTo select the resized screen mode, set Aspect Ratio to: 'Custom'.", 1, 180);
+			msg_queue_push(g_extern.msg_queue, "INFO - Resize the screen by moving around the two analog sticks.\nPress Y to reset to default values, and B to go back.\nTo select the resized screen mode, set Aspect Ratio to: 'Custom'.", 1, 270);
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
 	    if (g_console.emulator_initialized)
@@ -665,6 +665,23 @@ void menu_loop(void)
       {
          SET_TIMER_EXPIRATION(30);
       }
+
+	  /* XBox 360 specific font code */
+	  {
+		 const char *msg = msg_queue_pull(g_extern.msg_queue);
+
+         if (msg)
+         {
+            if(IS_TIMER_EXPIRED() || g_first_msg)
+            {
+               xdk360_console_format(msg);
+               g_first_msg = 0;
+               SET_TIMER_EXPIRATION(30);
+            }
+
+            xdk360_console_draw();
+         }
+	  }
 
       video_xdk360.swap(NULL);
    }while(g_console.menu_enable);
