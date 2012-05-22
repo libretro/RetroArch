@@ -33,6 +33,10 @@
 #include "cheats.h"
 #include "compat/getopt_rarch.h"
 
+#ifdef RARCH_CONSOLE
+#include "console/console_ext_input.h"
+#endif
+
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -2409,10 +2413,18 @@ bool rarch_main_iterate(void)
       g_extern.audio_data.dsp_plugin->events(g_extern.audio_data.dsp_handle);
 #endif
 
+   // SHUTDOWN on consoles should exit RetroArch completely.
+   if (g_extern.system.shutdown)
+   {
+#ifdef RARCH_CONSOLE
+      g_console.mode_switch = MODE_EXIT;
+#endif
+      return false;
+   }
+
    // Time to drop?
    if (input_key_pressed_func(RARCH_QUIT_KEY) ||
-         !video_alive_func() ||
-         g_extern.system.shutdown)
+         !video_alive_func())
       return false;
 
    // Checks for stuff like fullscreen, save states, etc.
