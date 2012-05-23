@@ -219,22 +219,22 @@ struct platform_bind
 uint64_t rarch_default_keybind_lut[RARCH_FIRST_META_KEY];
 
 char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][256] = {
-   "B Button",          /* RETRO_DEVICE_ID_JOYPAD_B      */
-   "Y Button",          /* RETRO_DEVICE_ID_JOYPAD_Y      */
-   "Select button",     /* RETRO_DEVICE_ID_JOYPAD_SELECT */
-   "Start button",      /* RETRO_DEVICE_ID_JOYPAD_START  */
-   "D-Pad Up",          /* RETRO_DEVICE_ID_JOYPAD_UP     */
-   "D-Pad Down",        /* RETRO_DEVICE_ID_JOYPAD_DOWN   */
-   "D-Pad Left",        /* RETRO_DEVICE_ID_JOYPAD_LEFT   */
-   "D-Pad Right",       /* RETRO_DEVICE_ID_JOYPAD_RIGHT  */
-   "A Button",          /* RETRO_DEVICE_ID_JOYPAD_A      */
-   "X Button",          /* RETRO_DEVICE_ID_JOYPAD_X      */
-   "L Button",          /* RETRO_DEVICE_ID_JOYPAD_L      */
-   "R Button",          /* RETRO_DEVICE_ID_JOYPAD_R      */
-   "L2 Button",         /* RETRO_DEVICE_ID_JOYPAD_L2     */
-   "R2 Button",         /* RETRO_DEVICE_ID_JOYPAD_R2     */
-   "L3 Button",         /* RETRO_DEVICE_ID_JOYPAD_L3     */
-   "R3 Button",         /* RETRO_DEVICE_ID_JOYPAD_R3     */
+   "RetroPad Button B",          /* RETRO_DEVICE_ID_JOYPAD_B      */
+   "RetroPad Button Y",          /* RETRO_DEVICE_ID_JOYPAD_Y      */
+   "RetroPad Button Select",     /* RETRO_DEVICE_ID_JOYPAD_SELECT */
+   "RetroPad Button Start",      /* RETRO_DEVICE_ID_JOYPAD_START  */
+   "RetroPad D-Pad Up",          /* RETRO_DEVICE_ID_JOYPAD_UP     */
+   "RetroPad D-Pad Down",        /* RETRO_DEVICE_ID_JOYPAD_DOWN   */
+   "RetroPad D-Pad Left",        /* RETRO_DEVICE_ID_JOYPAD_LEFT   */
+   "RetroPad D-Pad Right",       /* RETRO_DEVICE_ID_JOYPAD_RIGHT  */
+   "RetroPad Button A",          /* RETRO_DEVICE_ID_JOYPAD_A      */
+   "RetroPad Button X",          /* RETRO_DEVICE_ID_JOYPAD_X      */
+   "RetroPad Button L1",          /* RETRO_DEVICE_ID_JOYPAD_L      */
+   "RetroPad Button R1",          /* RETRO_DEVICE_ID_JOYPAD_R      */
+   "RetroPad Button L2",         /* RETRO_DEVICE_ID_JOYPAD_L2     */
+   "RetroPad Button R2",         /* RETRO_DEVICE_ID_JOYPAD_R2     */
+   "RetroPad Button L3",         /* RETRO_DEVICE_ID_JOYPAD_L3     */
+   "RetroPad Button R3",         /* RETRO_DEVICE_ID_JOYPAD_R3     */
 };
 
 #if defined(__CELLOS_LV2__)

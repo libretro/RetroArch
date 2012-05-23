@@ -192,5 +192,11 @@
     <CustomBuild Include="..\..\360\media\hd\rarch_shader_browser.xui">
       <Filter>Source Files\media\hd</Filter>
     </CustomBuild>
+    <CustomBuild Include="..\..\360\media\hd\rarch_controls.xui">
+      <Filter>Source Files\media\hd</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\360\media\sd\rarch_controls.xui">
+      <Filter>Source Files\media\sd</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>
