@@ -206,7 +206,7 @@ static void set_program_attributes(unsigned i)
    prg[i].frame_cnt_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_count");
    prg[i].frame_dir_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_direction");
    prg[i].mvp         = prg[i].v_ctable->GetConstantByName(NULL, "$modelViewProj");
-   prg[i].mvp_val     = XMMIdentity();
+   prg[i].mvp_val     = XMMatrixIdentity();
 }
 
 bool hlsl_load_shader(unsigned index, const char *path)
