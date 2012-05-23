@@ -206,6 +206,7 @@ static void set_program_attributes(unsigned i)
    prg[i].frame_cnt_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_count");
    prg[i].frame_dir_v = prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_direction");
    prg[i].mvp         = prg[i].v_ctable->GetConstantByName(NULL, "$modelViewProj");
+   prg[i].mvp_val     = XMMIdentity();
 }
 
 bool hlsl_load_shader(unsigned index, const char *path)
@@ -215,6 +216,8 @@ bool hlsl_load_shader(unsigned index, const char *path)
    if (!hlsl_active || index == 0)
       retval = false;
 
+   // FIXME: This could cause corruption issues if prg[index] == prg[0]
+   // (Set earlier if path == NULL).
    if(retval)
    {
 	  //check if fragment program already exists
