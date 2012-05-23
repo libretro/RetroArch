@@ -395,6 +395,35 @@ void xdk360_set_fbo_enable (bool enable)
    vid->fbo_enabled = enable;
 }
 
+static void xdk360_gfx_init_fbo(void)
+{
+   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+
+   if (vid->lpTexture_ot)
+   {
+      vid->lpTexture->Release();
+      vid->lpTexture_ot = NULL;
+   }
+
+   if (vid->lpSurface)
+   {
+      vid->lpSurface->Release();
+      vid->lpSurface = NULL;
+   }
+
+   vid->d3d_render_device->CreateTexture(512 * g_settings.video.fbo_scale_x, 512 * g_settings.video.fbo_scale_y,
+         1, 0, g_console.gamma_correction_enable ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8,
+         0, &vid->lpTexture_ot, NULL);
+
+   vid->d3d_render_device->CreateRenderTarget(512 * g_settings.video.fbo_scale_x, 512 * g_settings.video.fbo_scale_y,
+         g_console.gamma_correction_enable ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 
+	      0, 0, &vid->lpSurface, NULL);
+
+   vid->lpTexture_ot_as16srgb = *vid->lpTexture_ot;
+   xdk360_convert_texture_to_as16_srgb(vid->lpTexture);
+   xdk360_convert_texture_to_as16_srgb(&vid->lpTexture_ot_as16srgb);
+}
+
 static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    if (g_d3d)
@@ -453,16 +482,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    vid->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
       0, &vid->lpTexture, NULL);
 
-   vid->d3d_render_device->CreateTexture(512 * g_settings.video.fbo_scale_x, 512 * g_settings.video.fbo_scale_y, 1, 0, g_console.gamma_correction_enable ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8,
-      0, &vid->lpTexture_ot, NULL);
-
-   vid->d3d_render_device->CreateRenderTarget(512 * g_settings.video.fbo_scale_x, 512 * g_settings.video.fbo_scale_y, g_console.gamma_correction_enable ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 
-	   0, 0, &vid->lpSurface, NULL);
-
-   vid->lpTexture_ot_as16srgb = *vid->lpTexture_ot;
-
-   xdk360_convert_texture_to_as16_srgb(vid->lpTexture);
-   xdk360_convert_texture_to_as16_srgb(&vid->lpTexture_ot_as16srgb);
+   xdk360_gfx_init_fbo();
 
    D3DLOCKED_RECT d3dlr;
    vid->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
