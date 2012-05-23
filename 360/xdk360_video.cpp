@@ -395,13 +395,11 @@ void xdk360_set_fbo_enable (bool enable)
    vid->fbo_enabled = enable;
 }
 
-static void xdk360_gfx_init_fbo(void)
+static void xdk360_gfx_init_fbo(xdk360_video_t *vid)
 {
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-
    if (vid->lpTexture_ot)
    {
-      vid->lpTexture->Release();
+      vid->lpTexture_ot->Release();
       vid->lpTexture_ot = NULL;
    }
 
@@ -482,7 +480,7 @@ static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **i
    vid->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
       0, &vid->lpTexture, NULL);
 
-   xdk360_gfx_init_fbo();
+   xdk360_gfx_init_fbo(vid);
 
    D3DLOCKED_RECT d3dlr;
    vid->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
