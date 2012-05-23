@@ -114,6 +114,11 @@ endif
 endif
 endif
 
+ifeq ($(HAVE_RPI), 1)
+   OBJ += gfx/rpi.o
+   LIBS += -lGLESv2 -lEGL -lbcm_host
+endif
+
 ifeq ($(HAVE_XVIDEO), 1)
    OBJ += gfx/xvideo.o input/x11_input.o
    LIBS += $(XVIDEO_LIBS) $(X11_LIBS) $(XEXT_LIBS)
@@ -190,7 +195,7 @@ ifeq ($(DEBUG), 1)
    OPTIMIZE_FLAG = -O0
 endif
 
-CFLAGS += -Wall $(OPTIMIZE_FLAG) -g -I. -pedantic
+CFLAGS += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) -g -I. -pedantic
 ifeq ($(CXX_BUILD), 1)
    CFLAGS += -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS
 else
