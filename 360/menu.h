@@ -29,7 +29,8 @@ enum
    SETTING_SHADER_2,
    SETTING_HW_TEXTURE_FILTER,
    SETTING_HW_TEXTURE_FILTER_2,
-   SETTING_SCALE_ENABLED
+   SETTING_SCALE_ENABLED,
+   SETTING_SCALE_FACTOR
 };
 
 enum
@@ -180,9 +181,11 @@ protected:
 public:
    HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
    HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+   HRESULT OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled);
 
    XUI_BEGIN_MSG_MAP()
       XUI_ON_XM_INIT( OnInit)
+	  XUI_ON_XM_CONTROL_NAVIGATE( OnControlNavigate )
       XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
    XUI_END_MSG_MAP();
 

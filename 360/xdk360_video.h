@@ -24,6 +24,9 @@
 #define DFONT_MAX	4096
 #define PRIM_FVF	(D3DFVF_XYZRHW | D3DFVF_TEX1)
 
+#define MIN_SCALING_FACTOR (1.0f)
+#define MAX_SCALING_FACTOR (2.0f)
+
 typedef struct
 {
    float x;
@@ -63,6 +66,7 @@ void xdk360_video_init (void);
 void xdk360_video_deinit (void);
 void xdk360_video_set_vsync (bool vsync);
 void xdk360_set_fbo_enable (bool enable);
+void xdk360_gfx_init_fbo(xdk360_video_t *vid);
 void set_viewport(bool force_full);
 
 extern void *g_d3d;
