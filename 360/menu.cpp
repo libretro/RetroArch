@@ -56,6 +56,7 @@ HRESULT CRetroArch::RegisterXuiClasses (void)
    CRetroArchCoreBrowser::Register();
    CRetroArchShaderBrowser::Register();
    CRetroArchQuickMenu::Register();
+   CRetroArchControls::Register();
    CRetroArchSettings::Register();
 
    return S_OK;
@@ -69,6 +70,7 @@ HRESULT CRetroArch::UnregisterXuiClasses (void)
    CRetroArchShaderBrowser::Unregister();
    CRetroArchFileBrowser::Unregister();
    CRetroArchQuickMenu::Register();
+   CRetroArchControls::Register();
    CRetroArchSettings::Unregister();
 
    return S_OK;
@@ -127,6 +129,102 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
    filebrowser_new(&tmp_browser, "game:\\media\\shaders", "cg|CG");
    filebrowser_fetch_directory_entries("game:\\media\\shaders", &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
 
+   return S_OK;
+}
+
+HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+{
+   unsigned i;
+   int controlno;
+   char buttons[RARCH_FIRST_META_KEY][128];
+
+   GetChildById(L"XuiControlsList", &m_controlslist);
+   GetChildById(L"XuiBackButton", &m_back);
+   GetChildById(L"XuiControlNoSlider", &m_controlnoslider);
+
+   m_controlnoslider.SetValue(g_settings.input.currently_selected_controller_no);
+   m_controlnoslider.GetValue(&controlno);
+
+   for(i = 0; i < RARCH_FIRST_META_KEY; i++)
+   {
+	   snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+      m_controlslist.SetText(i, rarch_convert_char_to_wchar(buttons[i]));
+   }
+   
+   return S_OK;
+}
+
+HRESULT CRetroArchControls::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
+{
+   char button[128];
+   char buttons[RARCH_FIRST_META_KEY][128];
+   int controlno, i, current_index;
+   
+   current_index = m_controlslist.GetCurSel();
+   m_controlnoslider.GetValue(&controlno);
+
+   for(i = 0; i < RARCH_FIRST_META_KEY; i++)
+   {
+	   snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+      m_controlslist.SetText(i, rarch_convert_char_to_wchar(buttons[i]));
+   }
+
+	switch(pControlNavigateData->nControlNavigate)
+	{
+       case XUI_CONTROL_NAVIGATE_LEFT:
+		   if(current_index > 0 && current_index != SETTING_CONTROLS_DEFAULT_ALL)
+		   {
+              rarch_input_set_keybind(controlno, KEYBIND_DECREMENT, current_index);
+			  snprintf(button, sizeof(button), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+              m_controlslist.SetText(current_index, rarch_convert_char_to_wchar(button));
+		   }
+          break;
+	   case XUI_CONTROL_NAVIGATE_RIGHT:
+		   if(current_index < RARCH_FIRST_META_KEY && current_index != SETTING_CONTROLS_DEFAULT_ALL)
+		   {
+              rarch_input_set_keybind(controlno, KEYBIND_INCREMENT, current_index);
+			  snprintf(button, sizeof(button), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+              m_controlslist.SetText(current_index, rarch_convert_char_to_wchar(button));
+		   }
+          break;
+	   case XUI_CONTROL_NAVIGATE_UP:
+	   case XUI_CONTROL_NAVIGATE_DOWN:
+          break;
+	}
+
+	return S_OK;
+}
+
+HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
+{
+   int current_index, i, controlno;
+   char buttons[RARCH_FIRST_META_KEY][128];
+   m_controlnoslider.GetValue(&controlno);
+
+   if ( hObjPressed == m_controlslist)
+   {
+      current_index = m_controlslist.GetCurSel();
+
+      switch(current_index)
+      {
+         case SETTING_CONTROLS_DEFAULT_ALL:
+            rarch_input_set_default_keybinds(0);
+
+            for(i = 0; i < RARCH_FIRST_META_KEY; i++)
+            {
+				snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+               m_controlslist.SetText(i, rarch_convert_char_to_wchar(buttons[i]));
+            }
+            break;
+         default:
+            rarch_input_set_keybind(controlno, KEYBIND_DEFAULT, current_index);
+			snprintf(buttons[current_index], sizeof(buttons[current_index]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+            m_controlslist.SetText(current_index, rarch_convert_char_to_wchar(buttons[current_index]));
+            break;
+      }
+   }
+
+   bHandled = TRUE;
    return S_OK;
 }
 
@@ -539,8 +637,14 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
    }
    else if ( hObjPressed == m_controls)
    {
-	   	msg_queue_clear(g_extern.msg_queue);
-	    msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
+      hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_controls.xur", NULL, &app.hControlsMenu);
+
+      if (FAILED(hr))
+         RARCH_ERR("Failed to load scene.\n");
+	  hCur = app.hControlsMenu;
+	  msg_queue_clear(g_extern.msg_queue);
+	  msg_queue_push(g_extern.msg_queue, "INFO - Press LEFT/RIGHT to change the controls, and press\nSTART/A to reset a button to default values.", 1, 180);
+      NavigateForward(app.hControlsMenu);
    }
    else if ( hObjPressed == m_change_libretro_core )
    {

@@ -154,6 +154,7 @@ struct settings
       float axis_threshold;
       int joypad_map[MAX_PLAYERS];
 #ifdef RARCH_CONSOLE
+      unsigned currently_selected_controller_no;
       unsigned dpad_emulation[MAX_PLAYERS];
 #endif
       bool netplay_client_swap_input;
