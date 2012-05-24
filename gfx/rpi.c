@@ -1,202 +1,29 @@
 #include <assert.h>
 #include <math.h>
 #include <bcm_host.h>
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
+#include <VG/openvg.h>
+#include <VG/vgu.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include "../libretro.h"
 #include "../general.h"
 
-static inline unsigned get_alignment(unsigned pitch)
-{
-   if (pitch & 1)
-      return 1;
-   if (pitch & 2)
-      return 2;
-   if (pitch & 4)
-      return 4;
-   return 8;
-}
-
-static const GLfloat default_vertices[] = {
-   0, 0,
-   0, 1,
-   1, 1,
-   1, 0
-};
-
-typedef struct rpi {
+typedef struct {
 	EGLDisplay mDisplay;
 	EGLSurface mSurface;
 	EGLContext mContext;
 	uint32_t mScreenWidth;
 	uint32_t mScreenHeight;
-	GLint mTextureWidth;
-	GLint mTextureHeight;
+	unsigned mTextureWidth;
+	unsigned mTextureHeight;
 	unsigned mRenderWidth;
 	unsigned mRenderHeight;
-	int mBpp;
-	GLenum mTexType;
-	GLuint mTexture;
-	GLuint mPalette;
-	GLuint mVertBuf;
-	GLuint vshader;
-	GLuint fshader;
-	GLuint program;
-	GLfloat mTexVertices[8];
-	uint8_t *mEmptyBuf;
+	unsigned x1, y1, x2, y2;
+	VGImageFormat mTexType;
+	VGImage mImage;
+	VGfloat mTransformMatrix[9];
+	VGint scissor[4];
 } rpi_t;
-
-static uint16_t rgba1555_to_rgba5551[0x10000];
-
-static void rpi_setup_palette(rpi_t *rpi)
-{
-	// because GLES doesn't have GL_UNSIGNED_SHORT_1_5_5_5_REV, we fake it with this shader
-	static const GLchar *vertex_shader_src =
-		"attribute vec4 vertex;\n"
-		"varying vec2 tcoord;\n"
-		"void main(void)\n"
-		"{\n"
-		"vec4 pos = vertex;\n"
-		"gl_Position = vertex;\n"
-		"tcoord = vertex.xy; // * 0.5 + 0.5;\n"
-		"}";
-
-	static const GLchar *fragment_shader_16_src =
-		"uniform sampler2D pal;\n"
-		"uniform sampler2D tex;\n"
-		"varying vec2 tcoord;\n"
-		"void main()\n"
-		"{\n"
-		"const float scale = 255.0 / 256.0;\n"
-		"const float offset = 0.5 / 255.0 * scale;\n"
-		"vec4 color = texture2D(tex, tcoord.xy);\n"
-		"float r = color.r / 32.0;\n"
-		"float g = color.g;\n"
-		"float b = color.b / 32.0;\n"
-		"float a = color.a;\n"
-		"float pixelx = (a + r) * scale + offset;\n"
-		"float pixely = (g + b) * scale + offset;\n"
-		"vec2 coords = vec2(pixelx, pixely);\n"
-		"gl_FragColor = texture2D(pal, coords);\n"
-		"}";
-
-	static const GLchar *fragment_shader_32_src =
-		"uniform sampler2D pal;\n"
-		"uniform sampler2D tex;\n"
-		"varying vec2 tcoord;\n"
-		"void main()\n"
-		"{\n"
-		"vec4 color = texture2D(tex, tcoord.xy);\n"
-		"gl_FragColor = vec4(color.b, color.g, color.r, color.a);\n"
-		"}";
-
-	GLint compiled, linked;
-	GLuint unif_pal, unif_tex;
-	int i, a, r, g, b;
-
-	for(i = 0; i < 0x10000; i++)
-	{
-		a = (i & 0x8000) >> 15;
-		r = (i & 0x7C00) >> 9;
-		g = (i & 0x03E0) << 1;
-		b = (i & 0x001F) << 11;
-		rgba1555_to_rgba5551[i] = a | r | g | b;
-	}
-
-	glActiveTexture(GL_TEXTURE1);
-	glGenTextures(1, &rpi->mPalette);
-	glBindTexture(GL_TEXTURE_2D, rpi->mPalette);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 256, 0, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, rgba1555_to_rgba5551);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-	rpi->vshader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(rpi->vshader, 1, &vertex_shader_src, 0);
-	glCompileShader(rpi->vshader);
-
-	glGetShaderiv ( rpi->vshader, GL_COMPILE_STATUS, &compiled );
-
-	if ( !compiled )
-	{
-		GLint infoLen = 0;
-		glGetShaderiv ( rpi->vshader, GL_INFO_LOG_LENGTH, &infoLen );
-
-		if ( infoLen > 1 )
-		{
-			char* infoLog = malloc (sizeof(char) * infoLen );
-			glGetShaderInfoLog ( rpi->vshader, infoLen, NULL, infoLog );
-			printf ( "Error compiling shader:\n%s\n", infoLog );
-			free ( infoLog );
-		}
-
-		glDeleteShader ( rpi->vshader );
-		exit(1);
-	}
-
-	rpi->fshader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(rpi->fshader, 1, rpi->mBpp == 2 ? &fragment_shader_16_src : &fragment_shader_32_src, 0);
-	glCompileShader(rpi->fshader);
-
-	glGetShaderiv ( rpi->fshader, GL_COMPILE_STATUS, &compiled );
-
-	if ( !compiled )
-	{
-		GLint infoLen = 0;
-		glGetShaderiv ( rpi->fshader, GL_INFO_LOG_LENGTH, &infoLen );
-
-		if ( infoLen > 1 )
-		{
-			char* infoLog = malloc (sizeof(char) * infoLen );
-			glGetShaderInfoLog ( rpi->fshader, infoLen, NULL, infoLog );
-			printf ( "Error compiling shader:\n%s\n", infoLog );
-			free ( infoLog );
-		}
-
-		glDeleteShader ( rpi->fshader );
-		exit(1);
-	}
-
-	rpi->program = glCreateProgram();
-	glAttachShader(rpi->program, rpi->vshader);
-	glAttachShader(rpi->program, rpi->fshader);
-	glBindAttribLocation(rpi->program, 0, "vertex");
-	glLinkProgram(rpi->program);
-
-	glGetProgramiv ( rpi->program, GL_LINK_STATUS, &linked );
-	if ( !linked )
-	{
-		GLint infoLen = 0;
-		glGetProgramiv ( rpi->program, GL_INFO_LOG_LENGTH, &infoLen );
-
-		if ( infoLen > 1 )
-		{
-			char* infoLog = malloc (sizeof(char) * infoLen );
-			glGetProgramInfoLog ( rpi->program, infoLen, NULL, infoLog );
-			printf( "Error linking program:\n%s\n", infoLog );
-			free ( infoLog );
-		}
-
-		glDeleteProgram ( rpi->program );
-		exit(1);
-	}
-
-//	unif_pal = glGetUniformLocation(rpi->program, "pal");
-//	unif_tex = glGetUniformLocation(rpi->program, "tex");
-
-//	glUniform1i(unif_pal, 1);
-//	glUniform1i(unif_tex, 0);
-
-	// reset to screen texture
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, rpi->mTexture);
-	assert(glGetError() == 0);
-}
 
 static void rpi_set_nonblock_state(void *data, bool state)
 {
@@ -240,6 +67,7 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
 	// initialize the EGL display connection
 	result = eglInitialize(rpi->mDisplay, NULL, NULL);
 	assert(result != EGL_FALSE);
+	eglBindAPI(EGL_OPENVG_API);
 
 	// get an appropriate EGL frame buffer configuration
 	result = eglChooseConfig(rpi->mDisplay, attribute_list, &config, 1, &num_config);
@@ -283,14 +111,10 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
 	result = eglMakeCurrent(rpi->mDisplay, rpi->mSurface, rpi->mSurface, rpi->mContext);
 	assert(result != EGL_FALSE);
 
-	rpi->mBpp = video->rgb32 ? 4 : 2;
-	rpi->mTexType = video->rgb32 ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT_5_5_5_1;
+	rpi->mTexType = video->rgb32 ? VG_sXBGR_8888 : VG_sARGB_1555;
 
-	// Set background color and clear buffers
-	glClearColor(0, 0, 1, 1);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glClear(GL_DEPTH_BUFFER_BIT);
-	//glShadeModel(GL_SMOOTH);
+	VGfloat clearColor[4] = {0, 0, 0, 1};
+	vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
 
 	// set viewport for aspect ratio, taken from RetroArch
 	if (video->force_aspect)
@@ -302,66 +126,49 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
 		// assume they are actually equal.
 		if (fabs(device_aspect - desired_aspect) < 0.0001)
 		{
-			glViewport(0, 0, rpi->mScreenWidth, rpi->mScreenHeight);
+			rpi->x1 = 0;
+			rpi->y1 = 0;
+			rpi->x2 = rpi->mScreenWidth;
+			rpi->y2 = rpi->mScreenHeight;
 		}
 		else if (device_aspect > desired_aspect)
 		{
 			float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-			glViewport(rpi->mScreenWidth * (0.5 - delta), 0, 2.0 * rpi->mScreenWidth * delta, rpi->mScreenHeight);
-			rpi->mScreenWidth = 2.0 * rpi->mScreenWidth * delta;
+			rpi->x1 = rpi->mScreenWidth * (0.5 - delta);
+			rpi->y1 = 0;
+			rpi->x2 = 2.0 * rpi->mScreenWidth * delta + rpi->x1;
+			rpi->y2 = rpi->mScreenHeight + rpi->y1;
 		}
 		else
 		{
 			float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-			glViewport(0, rpi->mScreenHeight * (0.5 - delta), rpi->mScreenWidth, 2.0 * rpi->mScreenHeight * delta);
-			rpi->mScreenHeight = 2.0 * rpi->mScreenHeight * delta;
+			rpi->x1 = 0;
+			rpi->y1 = rpi->mScreenHeight * (0.5 - delta);
+			rpi->x2 = rpi->mScreenWidth + rpi->x1;
+			rpi->y2 = 2.0 * rpi->mScreenHeight * delta + rpi->y1;
 		}
 	}
 	else
 	{
-		glViewport(0, 0, rpi->mScreenWidth, rpi->mScreenHeight);
+		rpi->x1 = 0;
+		rpi->y1 = 0;
+		rpi->x2 = rpi->mScreenWidth;
+		rpi->y2 = rpi->mScreenHeight;
 	}
 
-	//glMatrixMode(GL_PROJECTION);
-	//glLoadIdentity();
+	rpi->scissor[0] = rpi->x1;
+	rpi->scissor[1] = rpi->y1;
+	rpi->scissor[2] = rpi->x2 - rpi->x1;
+	rpi->scissor[3] = rpi->y2 - rpi->y1;
 
-	//glOrthof(0, 1, 0, 1, -1, 1);
-	//glMatrixMode(GL_MODELVIEW);
-	//glLoadIdentity();
+	vgSetiv(VG_SCISSOR_RECTS, 4, rpi->scissor);
 
 	rpi->mTextureWidth = rpi->mTextureHeight = video->input_scale * RARCH_SCALE_BASE;
-
-	rpi->mEmptyBuf = calloc(rpi->mTextureWidth * rpi->mTextureHeight * rpi->mBpp, 1);
-
-	glEnable(GL_TEXTURE_2D);
-	glActiveTexture(GL_TEXTURE0);
-	glGenTextures(1, &rpi->mTexture);
-	glBindTexture(GL_TEXTURE_2D, rpi->mTexture);
-	//glPixelStorei(GL_UNPACK_ROW_LENGTH, mTextureWidth);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rpi->mTextureWidth, rpi->mTextureHeight, 0, GL_RGBA, rpi->mTexType, rpi->mEmptyBuf);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, video->smooth ? GL_LINEAR : GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, video->smooth ? GL_LINEAR : GL_NEAREST);
-
-	//glEnableClientState(GL_VERTEX_ARRAY);
-	//glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
-	rpi->mTexVertices[0] = 0;
-	rpi->mTexVertices[1] = 1;
-	rpi->mTexVertices[2] = 0;
-	rpi->mTexVertices[3] = 0;
-	rpi->mTexVertices[4] = 1;
-	rpi->mTexVertices[5] = 0;
-	rpi->mTexVertices[6] = 1;
-	rpi->mTexVertices[7] = 1;
-
-	//glVertexPointer(2, GL_FLOAT, 0, default_vertices);
-	//glTexCoordPointer(2, GL_FLOAT, 0, rpi->mTexVertices);
-
-	rpi_setup_palette(rpi);
+	// We can't use the native format because there's no sXRGB_1555 type and
+	// emulation cores can send 0 in the top bit. We lose some speed on
+	// conversion but I doubt it has any real affect, since we are only drawing
+	// one image at the end of the day.
+	rpi->mImage = vgCreateImage(VG_sXBGR_8888, rpi->mTextureWidth, rpi->mTextureHeight, VG_IMAGE_QUALITY_NONANTIALIASED);
 	rpi_set_nonblock_state(rpi, video->vsync);
 
 	return rpi;
@@ -370,13 +177,10 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
 static void rpi_free(void *data)
 {
 	rpi_t *rpi = (rpi_t*)data;
-	free(rpi->mEmptyBuf);
 
-	// clear screen
-	glClear(GL_COLOR_BUFFER_BIT);
-	eglSwapBuffers(rpi->mDisplay, rpi->mSurface);
+	vgDestroyImage(rpi->mImage);
 
-	// Release OpenGL resources
+	// Release EGL resources
 	eglMakeCurrent(rpi->mDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 	eglDestroySurface(rpi->mDisplay, rpi->mSurface);
 	eglDestroyContext(rpi->mDisplay, rpi->mContext);
@@ -389,19 +193,25 @@ static bool rpi_frame(void *data, const void *frame, unsigned width, unsigned he
 {
 	rpi_t *rpi = (rpi_t*)data;
 	(void)msg;
+
 	if (width != rpi->mRenderWidth || height != rpi->mRenderHeight)
 	{
 		rpi->mRenderWidth = width;
 		rpi->mRenderHeight = height;
-		glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
+		vguComputeWarpQuadToQuad(
+			rpi->x1, rpi->y1, rpi->x2, rpi->y1, rpi->x2, rpi->y2, rpi->x1, rpi->y2,
+			// needs to be flipped, Khronos loves their bottom-left origin
+			0, height, width, height, width, 0, 0, 0,
+			rpi->mTransformMatrix);
+		vgSeti(VG_MATRIX_MODE, VG_MATRIX_IMAGE_USER_TO_SURFACE);
+		vgLoadMatrix(rpi->mTransformMatrix);
 	}
+	vgSeti(VG_SCISSORING, VG_FALSE);
+	vgClear(0, 0, rpi->mScreenWidth, rpi->mScreenHeight);
+	vgSeti(VG_SCISSORING, VG_TRUE);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, rpi->mTexType, frame);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glUseProgram (rpi->program);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, default_vertices);
-	glEnableVertexAttribArray(0);
-	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+	vgImageSubData(rpi->mImage, frame, pitch, rpi->mTexType, 0, 0, width, height);
+	vgDrawImage(rpi->mImage);
 
 	eglSwapBuffers(rpi->mDisplay, rpi->mSurface);
 

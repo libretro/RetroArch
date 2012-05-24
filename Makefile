@@ -116,7 +116,7 @@ endif
 
 ifeq ($(HAVE_RPI), 1)
    OBJ += gfx/rpi.o
-   LIBS += -lGLESv2 -lEGL -lbcm_host
+   LIBS += -lOpenVG -lGLESv2 -lEGL -lbcm_host
 endif
 
 ifeq ($(HAVE_XVIDEO), 1)
