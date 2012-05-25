@@ -23,6 +23,7 @@
 
 #include "../boolean.h"
 
+#include "../driver.h"
 #include "SDL.h"
 #include "SDL_version.h"
 #include "SDL_syswm.h"
@@ -63,6 +64,8 @@ void sdlwrap_set_resize(unsigned width, unsigned height);
 bool sdlwrap_get_wm_info(SDL_SysWMinfo *info);
 
 bool sdlwrap_window_has_focus(void);
+
+void sdlwrap_input_driver(const input_driver_t **input, void **input_data);
 
 #endif
 

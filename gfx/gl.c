@@ -1381,15 +1381,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       memcpy(gl->prev_info[i].coord, tex_coords, sizeof(tex_coords)); 
    }
 
-   // Hook up SDL input driver to get SDL_QUIT events and RESIZE.
-   sdl_input_t *sdl_input = (sdl_input_t*)input_sdl.init();
-   if (sdl_input)
-   {
-      *input = &input_sdl;
-      *input_data = sdl_input;
-   }
-   else
-      *input = NULL;
+   sdlwrap_input_driver(input, input_data);
 
    gl_init_font(gl, g_settings.video.font_path, g_settings.video.font_size);
       

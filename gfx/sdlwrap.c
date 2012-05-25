@@ -359,3 +359,15 @@ bool sdlwrap_window_has_focus(void)
 #endif
 }
 
+void sdlwrap_input_driver(const input_driver_t **input, void **input_data)
+{
+   void *sdl_input = input_sdl.init();
+   if (sdl_input)
+   {
+      *input = &input_sdl;
+      *input_data = sdl_input;
+   }
+   else
+      *input = NULL;
+}
+
