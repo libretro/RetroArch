@@ -81,9 +81,7 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
 };
 
-#ifdef _WIN32
 #define LOAD_SYM(sym) if (!p##sym) { SDL_SYM_WRAP(p##sym, #sym) }
-#endif
 
 #ifdef HAVE_FBO
 #ifdef _WIN32

@@ -17,6 +17,7 @@
 
 #include "../driver.h"
 
+#include "ps3_video_psgl.h"
 
 #include <stdint.h>
 #include "../libretro.h"
@@ -98,38 +99,6 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
    1, 1, 1, 1,
 };
-
-#ifdef HAVE_FBO
-#if defined(HAVE_OPENGLES)
-#define pglGenFramebuffers glGenFramebuffersOES
-#define pglBindFramebuffer glBindFramebufferOES
-#define pglFramebufferTexture2D glFramebufferTexture2DOES
-#define pglCheckFramebufferStatus glCheckFramebufferStatusOES
-#define pglDeleteFramebuffers glDeleteFramebuffersOES
-#define GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
-#define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
-#define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
-static bool load_fbo_proc(void) { return true; }
-#else
-#define pglGenFramebuffers glGenFramebuffers
-#define pglBindFramebuffer glBindFramebuffer
-#define pglFramebufferTexture2D glFramebufferTexture2D
-#define pglCheckFramebufferStatus glCheckFramebufferStatus
-#define pglDeleteFramebuffers glDeleteFramebuffers
-static bool load_fbo_proc(void) { return true; }
-#endif
-#endif
-
-#define MAX_SHADERS 16
-
-#if defined(HAVE_XML) || defined(HAVE_CG)
-#define TEXTURES 8
-#else
-#define TEXTURES 1
-#endif
-#define TEXTURES_MASK (TEXTURES - 1)
-
-#include "ps3_video_psgl.h"
 
 bool g_quitting;
 unsigned g_frame_count;
@@ -637,10 +606,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    if (gl->fbo_enabled)
    {
-      GLfloat fbo_tex_coords[8] = {0.0f};
-
       // Render the rest of our passes.
-      glTexCoordPointer(2, GL_FLOAT, 0, fbo_tex_coords);
+      glTexCoordPointer(2, GL_FLOAT, 0, gl->fbo_tex_coords);
 
       // It's kinda handy ... :)
       const struct gl_fbo_rect *prev_rect;
@@ -657,14 +624,14 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 	 GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
 	 GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
 
-	 set_texture_coords(fbo_tex_coords, xamt, yamt);
+	 set_texture_coords(gl->fbo_tex_coords, xamt, yamt);
 
 	 fbo_info->tex = gl->fbo_texture[i - 1];
 	 fbo_info->input_size[0] = prev_rect->img_width;
 	 fbo_info->input_size[1] = prev_rect->img_height;
 	 fbo_info->tex_size[0] = prev_rect->width;
 	 fbo_info->tex_size[1] = prev_rect->height;
-	 memcpy(fbo_info->coord, fbo_tex_coords, sizeof(fbo_tex_coords));
+	 memcpy(fbo_info->coord, gl->fbo_tex_coords, sizeof(gl->fbo_tex_coords));
 
 	 glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[i]);
 	 gl_cg_use(i + 1);
@@ -689,7 +656,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
       GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
 
-      set_texture_coords(fbo_tex_coords, xamt, yamt);
+      set_texture_coords(gl->fbo_tex_coords, xamt, yamt);
 
       // Render our FBO texture to back buffer.
       glBindFramebufferOES(GL_FRAMEBUFFER_OES, 0);
