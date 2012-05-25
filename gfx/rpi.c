@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <math.h>
+#include <unistd.h>
 #include <bcm_host.h>
 #include <VG/openvg.h>
 #include <VG/vgu.h>
@@ -172,15 +173,16 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
 	// one image at the end of the day.
 	rpi->mImage = vgCreateImage(VG_sXBGR_8888, rpi->mTextureWidth, rpi->mTextureHeight, VG_IMAGE_QUALITY_NONANTIALIASED);
 	rpi_set_nonblock_state(rpi, !video->vsync);
-	
-	linuxraw_input_t *linuxraw_input = (linuxraw_input_t*)input_linuxraw.init();
-	if (linuxraw_input)
+
+	if (isatty(0))
 	{
-		*input = &input_linuxraw;
-		*input_data = linuxraw_input;
+		linuxraw_input_t *linuxraw_input = (linuxraw_input_t*)input_linuxraw.init();
+		if (linuxraw_input)
+		{
+			*input = &input_linuxraw;
+			*input_data = linuxraw_input;
+		}
 	}
-	else
-		*input = NULL;
 
 	return rpi;
 }
