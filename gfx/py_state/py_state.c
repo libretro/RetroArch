@@ -44,7 +44,7 @@ static PyObject* py_read_wram(PyObject *self, PyObject *args)
    if (!PyArg_ParseTuple(args, "I", &addr))
       return NULL;
 
-   if (addr >= max || addr < 0)
+   if (addr >= max)
    {
       Py_INCREF(Py_None);
       return Py_None;
