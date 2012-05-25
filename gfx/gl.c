@@ -248,7 +248,7 @@ static bool gl_shader_init(void)
    return true;
 }
 
-static inline void gl_shader_use(unsigned index)
+static void gl_shader_use(unsigned index)
 {
 #ifdef HAVE_CG
    gl_cg_use(index);
@@ -281,7 +281,7 @@ static void gl_shader_set_proj_matrix(void)
 #endif
 }
 
-static inline void gl_shader_set_params(unsigned width, unsigned height, 
+static void gl_shader_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
@@ -1101,7 +1101,7 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
    }
 }
 
-static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
+static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
    glTexSubImage2D(GL_TEXTURE_2D,
@@ -1109,7 +1109,7 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
          gl->texture_fmt, frame);
 }
 
-static inline void gl_next_texture_index(gl_t *gl, const struct gl_tex_info *tex_info)
+static void gl_next_texture_index(gl_t *gl, const struct gl_tex_info *tex_info)
 {
    memmove(gl->prev_info + 1, gl->prev_info, sizeof(*tex_info) * (TEXTURES - 1));
    memcpy(&gl->prev_info[0], tex_info, sizeof(*tex_info));
@@ -1130,7 +1130,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (gl->fbo_inited)
    {
       // Recompute FBO geometry.
-      // When width/height changes or window sizes change, we have to recalculate geometry of our FBO.
+      // When width/height changes or window sizes change, we have to recalcuate geometry of our FBO.
       gl_compute_fbo_geometry(gl, width, height, gl->vp_out_width, gl->vp_out_height);
       gl_start_frame_fbo(gl);
    }

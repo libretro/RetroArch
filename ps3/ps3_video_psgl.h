@@ -72,9 +72,7 @@ typedef struct gl
    GLuint fbo_texture[MAX_SHADERS];
    struct gl_fbo_rect fbo_rect[MAX_SHADERS];
    struct gl_fbo_scale fbo_scale[MAX_SHADERS];
-   bool render_to_tex;
    int fbo_pass;
-   bool fbo_inited;
 #endif
    GLuint menu_texture_id;
    GLuint pbo;
