@@ -102,6 +102,16 @@ static bool load_fbo_proc(void)
    return pglGenFramebuffers && pglBindFramebuffer && pglFramebufferTexture2D && 
       pglCheckFramebufferStatus && pglDeleteFramebuffers;
 }
+#elif defined(HAVE_OPENGLES)
+#define pglGenFramebuffers glGenFramebuffersOES
+#define pglBindFramebuffer glBindFramebufferOES
+#define pglFramebufferTexture2D glFramebufferTexture2DOES
+#define pglCheckFramebufferStatus glCheckFramebufferStatusOES
+#define pglDeleteFramebuffers glDeleteFramebuffersOES
+#define GL_FRAMEBUFFER (GL_FRAMEBUFFER_OES)
+#define GL_COLOR_ATTACHMENT0 (GL_COLOR_ATTACHMENT0_EXT)
+#define GL_FRAMEBUFFER_COMPLETE (GL_FRAMEBUFFER_COMPLETE_OES)
+static bool load_fbo_proc(void) { return true; }
 #else
 #define pglGenFramebuffers glGenFramebuffers
 #define pglBindFramebuffer glBindFramebuffer
