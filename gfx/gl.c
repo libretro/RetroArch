@@ -1175,10 +1175,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (msg)
       gl_render_msg(gl, msg);
 
-   char buf[128];
-   if (gfx_window_title(buf, sizeof(buf)))
-      sdlwrap_wm_set_caption(buf);
-
+   sdlwrap_update_window_title(false);
    sdlwrap_swap_buffers();
 
    return true;
@@ -1226,10 +1223,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!sdlwrap_init())
       return NULL;
 
-   const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
-   rarch_assert(video_info);
-   unsigned full_x = video_info->current_w;
-   unsigned full_y = video_info->current_h;
+   unsigned full_x = 0, full_y = 0;
+   sdlwrap_get_video_size(&full_x, &full_y);
    RARCH_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
    sdlwrap_set_swap_interval(video->vsync ? 1 : 0, false);
@@ -1246,13 +1241,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
             g_settings.video.force_16bit ? 15 : 0, video->fullscreen))
       return NULL;
 
-   gfx_window_title_reset();
-   char buf[128];
-   if (gfx_window_title(buf, sizeof(buf)))
-      sdlwrap_wm_set_caption(buf);
+   sdlwrap_update_window_title(true);
 
-   // Remove that ugly mouse :D
-   SDL_ShowCursor(SDL_DISABLE);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 #if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
@@ -1382,7 +1372,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    sdlwrap_input_driver(input, input_data);
-
    gl_init_font(gl, g_settings.video.font_path, g_settings.video.font_size);
       
    if (!gl_check_error())

@@ -15,6 +15,7 @@
 
 #include "sdlwrap.h"
 #include "SDL_syswm.h"
+#include "gfx_common.h"
 #include "../general.h"
 
 #ifdef __APPLE__
@@ -67,11 +68,38 @@ void sdlwrap_set_swap_interval(unsigned interval, bool inited)
       else 
          RARCH_WARN("Could not find GLX VSync call.\n");
 #endif
-      
    }
 #endif
+
    if (!success)
       RARCH_WARN("Failed to set swap interval.\n");
+}
+
+static void sdlwrap_wm_set_caption(const char *str)
+{
+#if SDL_MODERN
+   SDL_SetWindowTitle(g_window, str);
+#else
+   SDL_WM_SetCaption(str, NULL);
+#endif
+}
+
+void sdlwrap_update_window_title(bool reset)
+{
+   if (reset)
+      gfx_window_title_reset();
+
+   char buf[128];
+   if (gfx_window_title(buf, sizeof(buf)))
+      sdlwrap_wm_set_caption(buf);
+}
+
+void sdlwrap_get_video_size(unsigned *width, unsigned *height)
+{
+   const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
+   rarch_assert(video_info);
+   *width = video_info->current_w;
+   *height = video_info->current_h;
 }
 
 bool sdlwrap_init(void)
@@ -178,6 +206,9 @@ bool sdlwrap_set_video_mode(
    if (attr <= 0)
       RARCH_WARN("GL double buffer has not been enabled.\n");
 
+   // Remove that ugly mouse :D
+   SDL_ShowCursor(SDL_DISABLE);
+
    return true;
 }
 
@@ -195,15 +226,6 @@ void sdlwrap_set_resize(unsigned width, unsigned height)
    static const int resizable = 0;
 #endif
    SDL_SetVideoMode(width, height, 0, SDL_OPENGL | (g_fullscreen ? SDL_FULLSCREEN : resizable));
-#endif
-}
-
-void sdlwrap_wm_set_caption(const char *str)
-{
-#if SDL_MODERN
-   SDL_SetWindowTitle(g_window, str);
-#else
-   SDL_WM_SetCaption(str, NULL);
 #endif
 }
 

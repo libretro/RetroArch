@@ -50,7 +50,7 @@ bool sdlwrap_set_video_mode(
 bool sdlwrap_init(void);
 void sdlwrap_destroy(void);
 
-void sdlwrap_wm_set_caption(const char *str);
+void sdlwrap_update_window_title(bool reset);
 
 void sdlwrap_swap_buffers(void);
 
