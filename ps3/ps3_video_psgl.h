@@ -27,10 +27,6 @@
 #define FBO_INIT	1
 #define FBO_REINIT	2
 
-#define MAX_SHADERS 16
-
-#define TEXTURES 8
-#define TEXTURES_MASK (TEXTURES - 1)
 
 #define MIN_SCALING_FACTOR (1.0f)
 #define MAX_SCALING_FACTOR (4.0f)
@@ -44,16 +40,20 @@
 
 typedef struct gl
 {
+   bool vsync;
+   GLuint texture[TEXTURES];
+   unsigned tex_index; /* For use with PREV. */
+   struct gl_tex_info prev_info[TEXTURES];
+   GLuint tex_filter;
+
+   void *empty_buf;
+
    bool block_swap;
    bool fbo_enabled;
    bool keep_aspect;
-   bool vsync;
    bool overscan_enable;
-   int fbo_pass;
-   unsigned base_size; /* 2 or 4*/
    unsigned last_width[TEXTURES];
    unsigned last_height[TEXTURES];
-   unsigned tex_index; /* For use with PREV. */
    unsigned tex_w, tex_h;
    unsigned vp_width, vp_out_width;
    unsigned vp_height, vp_out_height;
@@ -61,24 +61,25 @@ typedef struct gl
    unsigned win_height;
    GLfloat overscan_amount;
    GLfloat tex_coords[8];
-   GLfloat fbo_tex_coords[8];
+
    GLenum texture_type; /* XBGR1555 or ARGB*/
    GLenum texture_fmt;
+   unsigned base_size; /* 2 or 4*/
+
+#ifdef HAVE_FBO
    /* Render-to-texture, multipass shaders */
    GLuint fbo[MAX_SHADERS];
    GLuint fbo_texture[MAX_SHADERS];
+   struct gl_fbo_rect fbo_rect[MAX_SHADERS];
+   struct gl_fbo_scale fbo_scale[MAX_SHADERS];
+   int fbo_pass;
+#endif
    GLuint menu_texture_id;
    GLuint pbo;
-   GLuint texture[TEXTURES];
-   GLuint tex_filter;
    CellVideoOutState g_video_state;
    PSGLdevice* gl_device;
    PSGLcontext* gl_context;
-   struct gl_fbo_rect fbo_rect[MAX_SHADERS];
-   struct gl_fbo_scale fbo_scale[MAX_SHADERS];
-   struct gl_tex_info prev_info[TEXTURES];
    struct texture_image menu_texture;
-   void *empty_buf;
 } gl_t;
 
 bool ps3_setup_texture(void);
