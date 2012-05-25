@@ -32,10 +32,12 @@
 #include "sdlwrap.h"
 #include "../compat/strl.h"
 
+#ifdef HAVE_SDL
 #define NO_SDL_GLEXT
 #include "SDL.h"
 #include "SDL_opengl.h"
 #include "../input/rarch_sdl_input.h"
+#endif
 
 #ifdef HAVE_CG
 #include "shader_cg.h"
@@ -81,7 +83,9 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
 };
 
+#ifdef HAVE_SDL
 #define LOAD_SYM(sym) if (!p##sym) { SDL_SYM_WRAP(p##sym, #sym) }
+#endif
 
 #ifdef HAVE_FBO
 #ifdef _WIN32

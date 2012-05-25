@@ -24,6 +24,8 @@
 #include "../boolean.h"
 
 #include "../driver.h"
+
+#ifdef HAVE_SDL
 #include "SDL.h"
 #include "SDL_version.h"
 #include "SDL_syswm.h"
@@ -40,6 +42,7 @@
    void *sym__ = SDL_GL_GetProcAddress(symbol); \
    memcpy(&(sym), &sym__, sizeof(void*)); \
 }
+#endif
 
 void sdlwrap_set_swap_interval(unsigned interval, bool inited);
 
