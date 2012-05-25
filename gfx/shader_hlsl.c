@@ -220,26 +220,6 @@ bool hlsl_load_shader(unsigned index, const char *path)
    // (Set earlier if path == NULL).
    if(retval)
    {
-	  //check if fragment program already exists
-      if (prg[index].fprg)
-      {
-         if (prg[index].fprg)
-            prg[index].fprg->Release();
-
-         if (prg[index].f_ctable)
-            prg[index].f_ctable->Release();
-      }
-
-	  //check if vertex program already exists
-      if (prg[index].vprg)
-      {
-         if (prg[index].vprg)
-	        prg[index].vprg->Release();
-
-         if (prg[index].v_ctable)
-            prg[index].v_ctable->Release();
-      }
-
       if (path)
       {
          if (load_program(index, path, true))
@@ -260,6 +240,7 @@ bool hlsl_load_shader(unsigned index, const char *path)
       goto end; // if retval is false, skip to end label
 
    hlsl_active = true;
+   active_index = index;
    d3d_device_ptr->SetVertexShader(prg[index].vprg);
    d3d_device_ptr->SetPixelShader(prg[index].fprg);
 end:

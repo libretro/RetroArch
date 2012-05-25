@@ -81,7 +81,9 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
 };
 
+#ifdef _WIN32
 #define LOAD_SYM(sym) if (!p##sym) { SDL_SYM_WRAP(p##sym, #sym) }
+#endif
 
 #ifdef HAVE_FBO
 #ifdef _WIN32
@@ -102,6 +104,16 @@ static bool load_fbo_proc(void)
    return pglGenFramebuffers && pglBindFramebuffer && pglFramebufferTexture2D && 
       pglCheckFramebufferStatus && pglDeleteFramebuffers;
 }
+#elif defined(HAVE_OPENGLES)
+#define pglGenFramebuffers glGenFramebuffersOES
+#define pglBindFramebuffer glBindFramebufferOES
+#define pglFramebufferTexture2D glFramebufferTexture2DOES
+#define pglCheckFramebufferStatus glCheckFramebufferStatusOES
+#define pglDeleteFramebuffers glDeleteFramebuffersOES
+#define GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
+#define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
+#define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
+static bool load_fbo_proc(void) { return true; }
 #else
 #define pglGenFramebuffers glGenFramebuffers
 #define pglBindFramebuffer glBindFramebuffer
@@ -236,7 +248,7 @@ static bool gl_shader_init(void)
    return true;
 }
 
-static void gl_shader_use(unsigned index)
+static inline void gl_shader_use(unsigned index)
 {
 #ifdef HAVE_CG
    gl_cg_use(index);
@@ -269,7 +281,7 @@ static void gl_shader_set_proj_matrix(void)
 #endif
 }
 
-static void gl_shader_set_params(unsigned width, unsigned height, 
+static inline void gl_shader_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
@@ -1089,7 +1101,7 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
    }
 }
 
-static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
+static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
    glTexSubImage2D(GL_TEXTURE_2D,
@@ -1097,7 +1109,7 @@ static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned 
          gl->texture_fmt, frame);
 }
 
-static void gl_next_texture_index(gl_t *gl, const struct gl_tex_info *tex_info)
+static inline void gl_next_texture_index(gl_t *gl, const struct gl_tex_info *tex_info)
 {
    memmove(gl->prev_info + 1, gl->prev_info, sizeof(*tex_info) * (TEXTURES - 1));
    memcpy(&gl->prev_info[0], tex_info, sizeof(*tex_info));
@@ -1118,7 +1130,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (gl->fbo_inited)
    {
       // Recompute FBO geometry.
-      // When width/height changes or window sizes change, we have to recalcuate geometry of our FBO.
+      // When width/height changes or window sizes change, we have to recalculate geometry of our FBO.
       gl_compute_fbo_geometry(gl, width, height, gl->vp_out_width, gl->vp_out_height);
       gl_start_frame_fbo(gl);
    }

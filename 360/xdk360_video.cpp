@@ -395,7 +395,7 @@ void xdk360_set_fbo_enable (bool enable)
    vid->fbo_enabled = enable;
 }
 
-static void xdk360_gfx_init_fbo(xdk360_video_t *vid)
+void xdk360_gfx_init_fbo(xdk360_video_t *vid)
 {
    if (vid->lpTexture_ot)
    {
