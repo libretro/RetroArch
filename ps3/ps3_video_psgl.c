@@ -954,7 +954,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 static bool gl_alive(void *data)
 {
    (void)data;
+#ifdef HAVE_SYSUTILS
    cellSysutilCheckCallback();
+#endif
    return !g_quitting;
 }
 
@@ -975,7 +977,9 @@ static void ps3graphics_swap(void * data)
 {
    (void)data;
    psglSwap();
+#ifdef HAVE_SYSUTILS
    cellSysutilCheckCallback();
+#endif
 }
 
 static void ps3graphics_set_aspect_ratio(void * data, uint32_t aspectratio_index)

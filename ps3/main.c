@@ -21,19 +21,20 @@
 
 #include <sdk_version.h>
 #include <sys/process.h>
-#include <cell/sysmodule.h>
+#ifdef HAVE_SYSUTILS
 #include <sysutil/sysutil_screenshot.h>
 #include <sysutil/sysutil_common.h>
 #include <sysutil/sysutil_gamecontent.h>
 #include <sysutil/sysutil_syscache.h>
+#endif
 
 #if(CELL_SDK_VERSION > 0x340000)
 #include <sysutil/sysutil_bgmplayback.h>
 #endif
 
+#ifdef HAVE_SYSMODULES
 #include <cell/sysmodule.h>
-#include <sysutil/sysutil_common.h>
-#include <sys/process.h>
+#endif
 #include <netex/net.h>
 #include <np.h>
 #include <np/drm.h>
@@ -314,6 +315,7 @@ static void save_settings(void)
    }
 }
 
+#ifdef HAVE_SYSUTILS
 static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
 {
    (void) param;
@@ -336,6 +338,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 	 break;
    }
 }
+#endif
 
 static void get_environment_settings(int argc, char *argv[])
 {
@@ -443,9 +446,12 @@ static void get_environment_settings(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+#ifdef HAVE_SYSUTILS
    RARCH_LOG("Registering system utility callback...\n");
    cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
+#endif
 
+#ifdef HAVE_SYSMODULES
    cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
    cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_GAME);
@@ -454,6 +460,7 @@ int main(int argc, char *argv[])
    cellSysmoduleLoadModule(CELL_SYSMODULE_JPGDEC);
    cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
    cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_NP);
+#endif
 
    sys_net_initialize_network();
 
@@ -482,16 +489,22 @@ int main(int argc, char *argv[])
 #if(CELL_SDK_VERSION > 0x340000)
    if (g_console.screenshots_enable)
    {
+#ifdef HAVE_SYSMODULES
       cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+#endif
+#ifdef HAVE_SYSUTILS
       CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
 
       screenshot_param.photo_title = "RetroArch PS3";
       screenshot_param.game_title = "RetroArch PS3";
       cellScreenShotSetParameter (&screenshot_param);
       cellScreenShotEnable();
+#endif
    }
+#ifdef HAVE_SYSUTILS
    if (g_console.custom_bgm_enable)
       cellSysutilEnableBgmPlayback();
+#endif
 #endif
 
    ps3graphics_video_init(true);
@@ -552,12 +565,14 @@ begin_shutdown:
    logger_shutdown();
 #endif
 
+#ifdef HAVE_SYSMODULES
    if(g_console.screenshots_enable)
       cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_JPGDEC);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_PNGDEC);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_AVCONF_EXT);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
+#endif
 
    int ret = cellSysCacheClear();
 
