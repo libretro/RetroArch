@@ -656,7 +656,7 @@ static void ps3graphics_set_orientation(void * data, uint32_t orientation)
    glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
 }
 
-#ifdef HAVE_LIBDBGFONT
+#ifdef HAVE_LIBDBGFONTS
 static void gl_render_msg(gl_t *gl, const char *msg)
 {
    cellDbgFontPrintf(g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 1.11f, BLUE,  msg);
@@ -877,7 +877,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 static void psgl_deinit(gl_t *gl)
 {
+#ifdef HAVE_LIBDBGFONTS
    cellDbgFontExit();
+#endif
 
    psglDestroyContext(gl->gl_context);
    psglDestroyDevice(gl->gl_device);
@@ -979,6 +981,7 @@ static bool psgl_init_device(gl_t *gl, const video_info_t *video, uint32_t resol
    return true;
 }
 
+#ifdef HAVE_LIBDBGFONTS
 static void psgl_init_dbgfont(gl_t *gl)
 {
    CellDbgFontConfig cfg;
@@ -988,6 +991,7 @@ static void psgl_init_dbgfont(gl_t *gl)
    cfg.screenHeight = gl->win_height;
    cellDbgFontInit(&cfg);
 }
+#endif
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
@@ -1010,8 +1014,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    RARCH_LOG("GL: Using resolution %ux%u.\n", gl->win_width, gl->win_height);
 
+#ifdef HAVE_LIBDBGFONTS
    RARCH_LOG("GL: Initializing debug fonts...\n");
    psgl_init_dbgfont(gl);
+#endif
 
    RARCH_LOG("Initializing menu shader...\n");
    gl_cg_set_menu_shader(DEFAULT_MENU_SHADER_FILE);
