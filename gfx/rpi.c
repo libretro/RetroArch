@@ -171,7 +171,7 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
 	// conversion but I doubt it has any real affect, since we are only drawing
 	// one image at the end of the day.
 	rpi->mImage = vgCreateImage(VG_sXBGR_8888, rpi->mTextureWidth, rpi->mTextureHeight, VG_IMAGE_QUALITY_NONANTIALIASED);
-	rpi_set_nonblock_state(rpi, video->vsync);
+	rpi_set_nonblock_state(rpi, !video->vsync);
 	
 	linuxraw_input_t *linuxraw_input = (linuxraw_input_t*)input_linuxraw.init();
 	if (linuxraw_input)
