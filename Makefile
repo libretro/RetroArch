@@ -30,6 +30,8 @@ endif
 
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
+   DEFINES += -DIS_LINUX
+   OBJ += input/linuxraw_input.o
 endif
 
 ifeq ($(HAVE_THREADS), 1)

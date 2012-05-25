@@ -123,6 +123,9 @@ static const input_driver_t *input_drivers[] = {
 #ifdef GEKKO
    &input_wii,
 #endif
+#ifdef IS_LINUX
+   &input_linuxraw,
+#endif
 };
 
 static void find_audio_driver(void)

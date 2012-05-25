@@ -63,6 +63,7 @@
 #define INPUT_XENON360 21
 #define INPUT_WII 23
 #define INPUT_XDK360 26
+#define INPUT_LINUXRAW 30
 ////////////////////////
 
 #if defined(HAVE_RPI)

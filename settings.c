@@ -114,6 +114,8 @@ const char *config_get_default_input(void)
          return "xdk360";
       case INPUT_WII:
          return "wii";
+      case INPUT_LINUXRAW:
+         return "linuxraw";
       default:
          return NULL;
    }

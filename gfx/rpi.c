@@ -7,6 +7,8 @@
 #include <EGL/eglext.h>
 #include "../libretro.h"
 #include "../general.h"
+#include "../input/linuxraw_input.h"
+#include "../driver.h"
 
 typedef struct {
 	EGLDisplay mDisplay;
@@ -28,7 +30,7 @@ typedef struct {
 static void rpi_set_nonblock_state(void *data, bool state)
 {
 	rpi_t *rpi = (rpi_t*)data;
-	eglSwapInterval(rpi->mDisplay, state ? 1 : 0);
+	eglSwapInterval(rpi->mDisplay, state ? 0 : 1);
 }
 
 static void *rpi_init(const video_info_t *video, const input_driver_t **input, void **input_data)
@@ -170,6 +172,15 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
 	// one image at the end of the day.
 	rpi->mImage = vgCreateImage(VG_sXBGR_8888, rpi->mTextureWidth, rpi->mTextureHeight, VG_IMAGE_QUALITY_NONANTIALIASED);
 	rpi_set_nonblock_state(rpi, video->vsync);
+	
+	linuxraw_input_t *linuxraw_input = (linuxraw_input_t*)input_linuxraw.init();
+	if (linuxraw_input)
+	{
+		*input = &input_linuxraw;
+		*input_data = linuxraw_input;
+	}
+	else
+		*input = NULL;
 
 	return rpi;
 }
