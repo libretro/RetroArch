@@ -22,8 +22,11 @@
 #define __SDLWRAP_H
 
 #include "../boolean.h"
-
 #include "../driver.h"
+
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
 
 #ifdef HAVE_SDL
 #include "SDL.h"
