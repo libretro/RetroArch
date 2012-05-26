@@ -313,6 +313,7 @@ extern "C"
     GLAPI void APIENTRY glLoadIdentity( void );
     GLAPI void APIENTRY glMatrixMode( GLenum mode );
     GLAPI void APIENTRY glOrthof( GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar );
+    GLAPI void APIENTRY glRotatef( GLfloat angle, GLfloat x, GLfloat y, GLfloat z );
     GLAPI void APIENTRY glPixelStorei( GLenum pname, GLint param );
     GLAPI void APIENTRY glTexCoordPointer( GLint size, GLenum type, GLsizei stride, const GLvoid *pointer );
     GLAPI void APIENTRY glTexImage2D( GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels );

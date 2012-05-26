@@ -919,8 +919,6 @@ static GLboolean _RGLTextureIsValid( const jsTexture* texture )
 static GLenum _RGLPlatformFramebufferCheckStatus( jsFramebuffer* framebuffer )
 {
    GLuint nBuffers = 0;
-   int width = 0;
-   int height = 0;
 
    jsImage* image[_RGL_MAX_COLOR_ATTACHMENTS + 2] = {0};
 
@@ -940,8 +938,6 @@ static GLenum _RGLPlatformFramebufferCheckStatus( jsFramebuffer* framebuffer )
 	 }
 
          image[nBuffers] = colorTexture->image;
-	 width = image[nBuffers]->width;
-	 height = image[nBuffers]->height;
 
 	 if ( colorFormat && colorFormat != image[nBuffers]->internalFormat )
 	 {
@@ -6078,6 +6074,82 @@ GLAPI void APIENTRY glOrthof( GLfloat left, GLfloat right, GLfloat bottom, GLflo
     LMatrix[M32] = L32 * m22;
     LMatrix[M33] = L30 * m03 + L31 * m13 + L32 * m23 + L33;
 
+    LMatrixStack->dirty = GL_TRUE;
+    if ( LContext->MatrixMode == GL_MODELVIEW )
+        LContext->InverseModelViewValid = GL_FALSE;
+}
+
+#define DEGREES_TO_RADIANS	0.017453292519943295769
+#define ELEMENTS_IN_MATRIX      16
+
+GLAPI void APIENTRY glRotatef( GLfloat angle, GLfloat x, GLfloat y, GLfloat z )
+{
+    PSGLcontext* LContext = _CurrentContext;
+    jsMatrixStack* LMatrixStack = NULL;
+    GLfloat * LMatrix = NULL;
+
+    jsContextGetMatrixStack(LContext, LContext->MatrixMode, LMatrixStack);
+
+    if (LMatrixStack)
+       LMatrix = LMatrixStack->MatrixStackf+ LMatrixStack->MatrixStackPtr*ELEMENTS_IN_MATRIX;
+
+    GLfloat a = angle * DEGREES_TO_RADIANS;
+    GLfloat c = cosf( a );
+    GLfloat one_minus_c = 1.f - c;
+    GLfloat s = sinf( a );
+    GLfloat n = x * x + y * y + z * z;
+    GLfloat m00, m01, m02, m10, m11, m12, m20, m21, m22;
+    GLfloat L00, L01, L02, L10, L11, L12, L20, L21, L22, L30, L31, L32;
+
+
+    if ( n != 1.f )
+    {
+        n = 1.f / sqrtf( n );
+        x *= n;
+        y *= n;
+        z *= n;
+    }
+
+    m00 = x * x * one_minus_c + c;
+    m01 = x * y * one_minus_c - z * s;
+    m02 = x * z * one_minus_c + y * s;
+    m10 = y * x * one_minus_c + z * s;
+    m11 = y * y * one_minus_c + c;
+    m12 = y * z * one_minus_c - x * s;
+    m20 = z * x * one_minus_c - y * s;
+    m21 = z * y * one_minus_c + x * s;
+    m22 = z * z * one_minus_c + c;
+
+    L00 = LMatrix[0];
+    L01 = LMatrix[M01];
+    L02 = LMatrix[M02];
+    L10 = LMatrix[M10];
+    L11 = LMatrix[M11];
+    L12 = LMatrix[M12];
+    L20 = LMatrix[M20];
+    L21 = LMatrix[M21];
+    L22 = LMatrix[M22];
+    L30 = LMatrix[M30];
+    L31 = LMatrix[M31];
+    L32 = LMatrix[M32];
+
+    LMatrix[0] = L00 * m00 + L01 * m10 + L02 * m20;
+    LMatrix[M01] = L00 * m01 + L01 * m11 + L02 * m21;
+    LMatrix[M02] = L00 * m02 + L01 * m12 + L02 * m22;
+
+    LMatrix[M10] = L10 * m00 + L11 * m10 + L12 * m20;
+    LMatrix[M11] = L10 * m01 + L11 * m11 + L12 * m21;
+    LMatrix[M12] = L10 * m02 + L11 * m12 + L12 * m22;
+
+    LMatrix[M20] = L20 * m00 + L21 * m10 + L22 * m20;
+    LMatrix[M21] = L20 * m01 + L21 * m11 + L22 * m21;
+    LMatrix[M22] = L20 * m02 + L21 * m12 + L22 * m22;
+
+    LMatrix[M30] = L30 * m00 + L31 * m10 + L32 * m20;
+    LMatrix[M31] = L30 * m01 + L31 * m11 + L32 * m21;
+    LMatrix[M32] = L30 * m02 + L31 * m12 + L32 * m22;
+
+    LContext->needValidate |= PSGL_VALIDATE_FFX_VERTEX_PROGRAM;
     LMatrixStack->dirty = GL_TRUE;
     if ( LContext->MatrixMode == GL_MODELVIEW )
         LContext->InverseModelViewValid = GL_FALSE;
