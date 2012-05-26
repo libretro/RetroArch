@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2012 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,19 +14,22 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GL_FONT_H__
-#define GL_FONT_H__
+#include "../gl_common.h"
 
-#include "gl_common.h"
+void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size)
+{
+   (void)gl;
+   (void)font_path;
+   (void)font_size;
+}
 
-void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size);
-void gl_deinit_font(gl_t *gl);
+void gl_deinit_font_ctx(gl_t *gl)
+{
+   (void)gl;
+}
 
-void gl_render_msg(gl_t *gl, const char *msg);
-
-extern void gl_init_font_ctx(gl_t *gl, const char *font_path, unsigned font_size);
-extern void gl_deinit_font_ctx(gl_t *gl);
-extern void gl_render_msg_ctx(gl_t *gl, const char *msg);
-
-#endif
-
+void gl_render_msg_ctx(gl_t *gl, const char *msg)
+{
+   (void)gl;
+   (void)msg;
+}
