@@ -100,7 +100,6 @@ static const GLfloat white_color[] = {
 
 struct {
    bool block_swap;
-   bool fbo_enabled;
    bool overscan_enable;
    GLfloat overscan_amount;
    GLuint menu_texture_id;
@@ -279,7 +278,9 @@ static bool gl_shader_filter_type(unsigned index, bool *smooth)
 
 void gl_set_fbo_enable (bool enable)
 {
-   ps3_gl.fbo_enabled = enable;
+   gl_t *gl = driver.video_data;
+   gl->fbo_inited = enable;
+   gl->render_to_tex = false;
 }
 
 #ifdef HAVE_FBO
@@ -328,11 +329,16 @@ static void gl_create_fbo_textures(gl_t *gl)
 
 void gl_deinit_fbo(gl_t *gl)
 {
-   glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
-   pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
-   memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
-   memset(gl->fbo, 0, sizeof(gl->fbo));
-   gl->fbo_pass = 0;
+   if (gl->fbo_inited)
+   {
+      glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
+      pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
+      memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
+      memset(gl->fbo, 0, sizeof(gl->fbo));
+      gl->fbo_inited = false;
+      gl->render_to_tex = false;
+      gl->fbo_pass = 0;
+   }
 }
 
 // Horribly long and complex FBO init :D
@@ -454,6 +460,8 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    }
 
    pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+   gl->fbo_inited = true;
    return;
 
 error:
@@ -706,7 +714,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    // Render to texture in first pass.
-   if (ps3_gl.fbo_enabled)
+   if (gl->fbo_inited)
    {
       gl_compute_fbo_geometry(gl, width, height, gl->vp_out_width, gl->vp_out_height);
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -741,7 +749,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    // Need to preserve the "flipped" state when in FBO as well to have 
    // consistent texture coordinates.
-   if (ps3_gl.fbo_enabled)
+   if (gl->fbo_inited)
       glVertexPointer(2, GL_FLOAT, 0, vertexes);
 
    gl_copy_frame(gl, frame, width, height, pitch);
@@ -764,7 +772,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    glDrawArrays(GL_QUADS, 0, 4);
 
-   if (ps3_gl.fbo_enabled)
+   if (gl->fbo_inited)
    {
       GLfloat fbo_tex_coords[8] = {0.0f};
 
@@ -1317,7 +1325,7 @@ void ps3_set_filtering(unsigned index, bool set_smooth)
 	 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
       }
    }
-   else if (index >= 2 && ps3_gl.fbo_enabled)
+   else if (index >= 2 && gl->fbo_inited)
    {
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index - 2]);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
