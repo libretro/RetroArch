@@ -105,7 +105,7 @@ ifeq ($(HAVE_SDL), 1)
    LIBS += $(SDL_LIBS)
 
 ifeq ($(HAVE_OPENGL), 1)
-	OBJ += gfx/gl.o 
+	OBJ += gfx/gl.o gfx/gl_font.o
 ifeq ($(OSX),1)
 	LIBS += -framework OpenGL
 else

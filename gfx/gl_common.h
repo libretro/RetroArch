@@ -17,6 +17,7 @@
 #define __GL_COMMON_H
 
 #include "../general.h"
+#include "fonts.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -67,6 +68,17 @@ static inline bool gl_check_error(void)
    return false;
 }
 
+static inline unsigned get_alignment(unsigned pitch)
+{
+   if (pitch & 1)
+      return 1;
+   if (pitch & 2)
+      return 2;
+   if (pitch & 4)
+      return 4;
+   return 8;
+}
+
 struct gl_fbo_rect
 {
    unsigned img_width;
@@ -102,6 +114,71 @@ struct gl_tex_info
    GLfloat tex_size[2];
    GLfloat coord[8];
 };
+
+#define MAX_SHADERS 16
+
+#if defined(HAVE_XML) || defined(HAVE_CG)
+#define TEXTURES 8
+#else
+#define TEXTURES 1
+#endif
+#define TEXTURES_MASK (TEXTURES - 1)
+
+typedef struct gl
+{
+   bool vsync;
+   GLuint texture[TEXTURES];
+   unsigned tex_index; // For use with PREV.
+   struct gl_tex_info prev_info[TEXTURES];
+   GLuint tex_filter;
+
+   void *empty_buf;
+
+   unsigned frame_count;
+
+#ifdef HAVE_FBO
+   // Render-to-texture, multipass shaders
+   GLuint fbo[MAX_SHADERS];
+   GLuint fbo_texture[MAX_SHADERS];
+   struct gl_fbo_rect fbo_rect[MAX_SHADERS];
+   struct gl_fbo_scale fbo_scale[MAX_SHADERS];
+   bool render_to_tex;
+   int fbo_pass;
+   bool fbo_inited;
+#endif
+
+   bool should_resize;
+   bool quitting;
+   bool fullscreen;
+   bool keep_aspect;
+   unsigned rotation;
+
+   unsigned full_x, full_y;
+
+   unsigned win_width;
+   unsigned win_height;
+   unsigned vp_width, vp_out_width;
+   unsigned vp_height, vp_out_height;
+   unsigned last_width[TEXTURES];
+   unsigned last_height[TEXTURES];
+   unsigned tex_w, tex_h;
+   GLfloat tex_coords[8];
+
+   GLenum texture_type; // XBGR1555 or ARGB
+   GLenum texture_fmt;
+   unsigned base_size; // 2 or 4
+
+#ifdef HAVE_FREETYPE
+   font_renderer_t *font;
+   GLuint font_tex;
+   int font_tex_w, font_tex_h;
+   void *font_tex_empty_buf;
+   char font_last_msg[256];
+   int font_last_width, font_last_height;
+   GLfloat font_color[16];
+   GLfloat font_color_dark[16];
+#endif
+} gl_t;
 
 // Windows ... <_<
 #if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
