@@ -520,11 +520,10 @@ unsigned vp_width, unsigned vp_height)
    }
 }
 
-static void set_viewport(gl_t *gl, unsigned width, unsigned height)
+static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
 {
-   uint32_t m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
+   unsigned m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
    GLfloat m_left, m_right, m_bottom, m_top, m_zNear, m_zFar;
-
 
    m_viewport_x_temp = 0;
    m_viewport_y_temp = 0;
@@ -538,13 +537,12 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height)
    m_zNear = -1.0f;
    m_zFar = 1.0f;
 
-   if (gl->keep_aspect)
+   if (gl->keep_aspect && !force_full)
    {
       float desired_aspect = g_settings.video.aspect_ratio;
       float device_aspect = (float)width / height;
       float delta;
 
-      // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
       if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
       {
          delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
@@ -552,6 +550,11 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height)
 	 m_viewport_y_temp = g_console.viewports.custom_vp.y;
 	 m_viewport_width_temp = g_console.viewports.custom_vp.width;
 	 m_viewport_height_temp = g_console.viewports.custom_vp.height;
+      }
+      // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
+      // assume they are actually equal.
+      else if (fabs(device_aspect - desired_aspect) < 0.0001)
+      {
       }
       else if (device_aspect > desired_aspect)
       {
@@ -595,18 +598,6 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height)
    gl->vp_out_width = width;
    gl->vp_out_height = height;
 }
-
-#define set_viewport_force_full(gl, width, height) \
-   glMatrixMode(GL_PROJECTION); \
-   glLoadIdentity(); \
-   glViewport(0, 0, width, height); \
-   glOrtho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f); \
-   glMatrixMode(GL_MODELVIEW); \
-   glLoadIdentity(); \
-   if (prg[active_index].mvp) \
-      cgGLSetStateMatrixParameter(prg[active_index].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY); \
-   gl->vp_width = width; \
-   gl->vp_height = height;
 
 static void set_lut_texture_coords(const GLfloat *coords)
 {
@@ -654,7 +645,7 @@ void gl_frame_menu (void)
 		   gl->win_height, gl->win_width, gl->win_height, gl->frame_count,
 		   NULL, NULL, NULL, 0);
 
-   set_viewport_force_full(gl, gl->win_width, gl->win_height);
+   set_viewport(gl, gl->win_width, gl->win_height, true, false);
 
    glActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, ps3_gl.menu_texture_id);
@@ -719,7 +710,14 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl_compute_fbo_geometry(gl, width, height, gl->vp_out_width, gl->vp_out_height);
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
       pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
-      set_viewport_force_full(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height);
+      gl->render_to_tex = true;
+      set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true, false);
+
+      // Need to preserve the "flipped" state when in FBO as well to have 
+      // consistent texture coordinates.
+      // We will "flip" it in place on last pass.
+      if (gl->render_to_tex)
+	      glVertexPointer(2, GL_FLOAT, 0, vertexes);
    }
 
 
@@ -810,7 +808,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 	 glClear(GL_COLOR_BUFFER_BIT);
 
 	 // Render to FBO with certain size.
-	 set_viewport_force_full(gl, rect->img_width, rect->img_height);
+	 set_viewport(gl, rect->img_width, rect->img_height, true, false);
 	 gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
 			 prev_rect->width, prev_rect->height, 
 			 gl->vp_width, gl->vp_height, gl->frame_count, 
@@ -835,7 +833,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
       glClear(GL_COLOR_BUFFER_BIT);
-      set_viewport(gl, gl->win_width, gl->win_height);
+      gl->render_to_tex = false;
+      set_viewport(gl, gl->win_width, gl->win_height, false, true);
       gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
 		      prev_rect->width, prev_rect->height, 
 		      gl->vp_width, gl->vp_height, gl->frame_count, 
@@ -1022,9 +1021,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
    gl_shader_use(0);
-   set_viewport(gl, gl->win_width, gl->win_height);
+   set_viewport(gl, gl->win_width, gl->win_height, false, true);
    gl_shader_use(1);
-   set_viewport(gl, gl->win_width, gl->win_height);
+   set_viewport(gl, gl->win_width, gl->win_height, false, true);
 
    bool force_smooth = false;
    if (gl_shader_filter_type(1, &force_smooth))
@@ -1159,7 +1158,7 @@ static void ps3graphics_set_aspect_ratio(void * data, uint32_t aspectratio_index
    gl->keep_aspect = true;
 
 
-   set_viewport(gl, gl->win_width, gl->win_height);
+   set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
 const video_driver_t video_gl = 
@@ -1346,7 +1345,7 @@ void ps3graphics_set_overscan(bool overscan_enable, float amount, bool recalcula
 
    if(recalculate_viewport)
    { 
-      set_viewport(gl, gl->win_width, gl->win_height);
+      set_viewport(gl, gl->win_width, gl->win_height, false, true);
    }
 }
 
