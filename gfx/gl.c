@@ -34,8 +34,7 @@
 
 #ifdef HAVE_SDL
 #define NO_SDL_GLEXT
-#include "SDL.h"
-#include "SDL_opengl.h"
+#include "context/sdl_ctx.h"
 #include "../input/rarch_sdl_input.h"
 #endif
 

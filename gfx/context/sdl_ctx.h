@@ -17,6 +17,7 @@
 #define _SDL_CTX_H
 
 #include "SDL.h"
+#include "SDL_opengl.h"
 #include "SDL_version.h"
 
 #if SDL_VERSION_ATLEAST(1, 3, 0)
