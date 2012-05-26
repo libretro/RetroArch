@@ -317,8 +317,9 @@ static void gl_create_fbo_textures(gl_t *gl)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_type);
 
       glTexImage2D(GL_TEXTURE_2D,
-            0, GL_RGBA, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_BGRA,
-            GL_UNSIGNED_INT_8_8_8_8, NULL);
+            0, RARCH_GL_INTERNAL_FORMAT, gl->fbo_rect[i].width, gl->fbo_rect[i].height,
+            0, RARCH_GL_TEXTURE_TYPE,
+            RARCH_GL_FORMAT32, NULL);
    }
 
    glBindTexture(GL_TEXTURE_2D, 0);
@@ -617,8 +618,9 @@ static void gl_check_fbo_dimensions(gl_t *gl)
          pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
          glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
          glTexImage2D(GL_TEXTURE_2D,
-               0, GL_RGBA, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_BGRA,
-               GL_UNSIGNED_INT_8_8_8_8, NULL);
+               0, RARCH_GL_INTERNAL_FORMAT, gl->fbo_rect[i].width, gl->fbo_rect[i].height,
+               0, RARCH_GL_TEXTURE_TYPE,
+               RARCH_GL_FORMAT32, NULL);
 
          pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
@@ -821,7 +823,7 @@ static void gl_init_textures(gl_t *gl)
 
       glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
       glTexImage2D(GL_TEXTURE_2D,
-            0, GL_RGBA, gl->tex_w, gl->tex_h, 0, gl->texture_type,
+            0, RARCH_GL_INTERNAL_FORMAT, gl->tex_w, gl->tex_h, 0, gl->texture_type,
             gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
    }
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -1056,8 +1058,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    else
       gl->tex_filter = video->smooth ? GL_LINEAR : GL_NEAREST;
 
-   gl->texture_type = GL_BGRA;
-   gl->texture_fmt = video->rgb32 ? GL_UNSIGNED_INT_8_8_8_8_REV : GL_UNSIGNED_SHORT_1_5_5_5_REV;
+   gl->texture_type = RARCH_GL_TEXTURE_TYPE;
+   gl->texture_fmt = video->rgb32 ? RARCH_GL_FORMAT32 : RARCH_GL_FORMAT16;
    gl->base_size = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    glEnable(GL_TEXTURE_2D);

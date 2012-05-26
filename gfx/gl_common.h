@@ -192,4 +192,9 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #define pglActiveTexture glActiveTexture
 #endif
 
+#define RARCH_GL_INTERNAL_FORMAT GL_RGBA
+#define RARCH_GL_TEXTURE_TYPE GL_BGRA
+#define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
+#define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT_1_5_5_5_REV
+
 #endif
