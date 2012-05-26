@@ -74,7 +74,6 @@ enum {
 #define MENU_ITEM_LAST           MENU_ITEM_RETURN_TO_XMB+1
 
 extern unsigned g_frame_count;
-extern bool g_quitting;
 
 extern char contentInfoPath[MAX_PATH_LENGTH];
 extern char usrDirPath[MAX_PATH_LENGTH];

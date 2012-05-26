@@ -320,12 +320,13 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 {
    (void) param;
    (void) userdata;
+   gl_t *gl = driver.video_data;
 
    switch (status)
    {
       case CELL_SYSUTIL_REQUEST_EXITGAME:
          g_console.menu_enable = false;
-	 g_quitting = true;
+	 gl->quitting = true;
 	 g_console.ingame_menu_enable = false;
 	 g_console.mode_switch = MODE_EXIT;
 	 break;

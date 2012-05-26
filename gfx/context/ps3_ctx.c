@@ -43,3 +43,21 @@ void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
    if (!success)
       RARCH_WARN("Failed to set swap interval.\n");
 }
+
+void gfx_ctx_check_window(bool *quit,
+      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+{
+   *quit = false;
+   *resize = false;
+   gl_t *gl = driver.video_data;
+
+#ifdef HAVE_SYSUTILS
+   cellSysutilCheckCallback();
+#endif
+
+   if(gl->quitting)
+      *quit = true;
+
+   if(gl->should_resize)
+      *resize = true;
+}

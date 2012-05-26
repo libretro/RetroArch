@@ -110,7 +110,6 @@ struct {
    CellVideoOutState g_video_state;
 } ps3_gl;
 
-bool g_quitting;
 unsigned g_frame_count;
 void *g_gl;
 
@@ -621,6 +620,20 @@ static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yam
    coords[7] = yamt;
 }
 
+static void check_window(gl_t *gl)
+{
+   bool quit, resize;
+
+   gfx_ctx_check_window(&quit,
+         &resize, &gl->win_width, &gl->win_height,
+         gl->frame_count);
+
+   if (quit)
+      gl->quitting = true;
+   else if (resize)
+      gl->should_resize = true;
+}
+
 void gl_frame_menu (void)
 {
    gl_t *gl = g_gl;
@@ -1102,11 +1115,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
 static bool gl_alive(void *data)
 {
-   (void)data;
-#ifdef HAVE_SYSUTILS
-   cellSysutilCheckCallback();
-#endif
-   return !g_quitting;
+   gl_t *gl = (gl_t*)data;
+   check_window(gl);
+   return !gl->quitting;
 }
 
 static bool gl_focus(void *data)
