@@ -110,8 +110,6 @@ struct {
    CellVideoOutState g_video_state;
 } ps3_gl;
 
-unsigned g_frame_count;
-
 #ifdef HAVE_FBO
 #if defined(_WIN32) && !defined(RARCH_CONSOLE)
 static PFNGLGENFRAMEBUFFERSPROC pglGenFramebuffers = NULL;
@@ -637,7 +635,7 @@ void gl_frame_menu (void)
 {
    gl_t *gl = driver.video_data;
 
-   g_frame_count++;
+   gl->frame_count++;
 
    if(!gl)
 	   return;
@@ -645,7 +643,7 @@ void gl_frame_menu (void)
    gl_shader_use(RARCH_CG_MENU_SHADER_INDEX);
 
    gl_shader_set_params(gl->win_width, gl->win_height, gl->win_width, 
-		   gl->win_height, gl->win_width, gl->win_height, g_frame_count,
+		   gl->win_height, gl->win_width, gl->win_height, gl->frame_count,
 		   NULL, NULL, NULL, 0);
 
    set_viewport_force_full(gl, gl->win_width, gl->win_height);
@@ -703,7 +701,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_t *gl = data;
 
    gl_shader_use(1);
-   g_frame_count++;
+   gl->frame_count++;
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
@@ -762,7 +760,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_shader_set_params(width, height, 
 		   gl->tex_w, gl->tex_h, 
 		   gl->vp_width, gl->vp_height, 
-		   g_frame_count, &tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
+		   gl->frame_count, &tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
    glDrawArrays(GL_QUADS, 0, 4);
 
@@ -807,7 +805,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 	 set_viewport_force_full(gl, rect->img_width, rect->img_height);
 	 gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
 			 prev_rect->width, prev_rect->height, 
-			 gl->vp_width, gl->vp_height, g_frame_count, 
+			 gl->vp_width, gl->vp_height, gl->frame_count, 
 			 &tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
 	 glDrawArrays(GL_QUADS, 0, 4);
@@ -832,7 +830,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       set_viewport(gl, gl->win_width, gl->win_height);
       gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
 		      prev_rect->width, prev_rect->height, 
-		      gl->vp_width, gl->vp_height, g_frame_count, 
+		      gl->vp_width, gl->vp_height, gl->frame_count, 
 		      &tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
       glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
@@ -1122,7 +1120,7 @@ static bool gl_alive(void *data)
 static bool gl_focus(void *data)
 {
    (void)data;
-   return true;
+   return gfx_ctx_window_has_focus();
 }
 
 static void ps3graphics_set_swap_block_swap(void * data, bool toggle)

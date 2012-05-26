@@ -33,9 +33,9 @@ enum
 #define MIN_SCALING_FACTOR (1.0f)
 #define MAX_SCALING_FACTOR (4.0f)
 
-#define IS_TIMER_NOT_EXPIRED(getter) (g_frame_count < getter)
+#define IS_TIMER_NOT_EXPIRED(getter) (gl->frame_count < getter)
 #define IS_TIMER_EXPIRED(getter) 	(!(IS_TIMER_NOT_EXPIRED(getter)))
-#define SET_TIMER_EXPIRATION(setter, value) setter = g_frame_count + value;
+#define SET_TIMER_EXPIRATION(setter, value) setter = gl->frame_count + value;
 
 bool ps3_setup_texture(void);
 const char * ps3_get_resolution_label(uint32_t resolution);
@@ -60,7 +60,5 @@ bool gl_cg_load_shader(unsigned index, const char *path);
 
 
 unsigned gl_cg_get_lut_info(struct gl_cg_lut_info *info, unsigned elems);
-
-extern unsigned g_frame_count;
 
 #endif

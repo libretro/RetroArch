@@ -291,6 +291,8 @@ void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
 static bool ps3_key_pressed(void *data, int key)
 {
    (void)data;
+   gl_t *gl = driver.video_data;
+
    switch (key)
    {
       case RARCH_FAST_FORWARD_HOLD_KEY:

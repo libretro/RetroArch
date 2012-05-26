@@ -175,6 +175,7 @@ static uint64_t old_state = 0;
 static void set_delay_speed(unsigned delaymode)
 {
    unsigned speed;
+   gl_t * gl = driver.video_data;
 
    speed = 0;
 
@@ -203,6 +204,7 @@ static void set_delay_speed(unsigned delaymode)
 static void browser_update(filebrowser_t * b)
 {
    uint64_t state, diff_state, button_was_pressed;
+   gl_t * gl = driver.video_data;
 
    state = cell_pad_input_poll_device(0);
    diff_state = old_state ^ state;
@@ -830,6 +832,7 @@ static void select_file(uint32_t menu_id)
    char extensions[256], title[256], object[256], comment[256], dir_path[MAX_PATH_LENGTH],
       path[MAX_PATH_LENGTH], *separatorslash;
    uint64_t state, diff_state, button_was_pressed;
+   gl_t * gl = driver.video_data;
 
    state = cell_pad_input_poll_device(0);
    diff_state = old_state ^ state;
@@ -972,6 +975,7 @@ static void select_directory(uint32_t menu_id)
 {
    char path[1024], newpath[1024], *separatorslash;
    uint64_t state, diff_state, button_was_pressed;
+   gl_t * gl = driver.video_data;
 
    state = cell_pad_input_poll_device(0);
    diff_state = old_state ^ state;
@@ -1821,6 +1825,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 static void select_setting(menu * menu_obj)
 {
    uint64_t state, diff_state, button_was_pressed, i;
+   gl_t * gl = driver.video_data;
 
    state = cell_pad_input_poll_device(0);
    diff_state = old_state ^ state;
@@ -1924,6 +1929,7 @@ static void select_rom(void)
 {
    char newpath[1024], *separatorslash;
    uint64_t state, diff_state, button_was_pressed;
+   gl_t * gl = driver.video_data;
 
    state = cell_pad_input_poll_device(0);
    diff_state = old_state ^ state;
@@ -2539,6 +2545,8 @@ void menu_init (void)
 
 void menu_loop(void)
 {
+   gl_t * gl = driver.video_data;
+
    menuStack[0] = menu_filebrowser;
    menuStack[0].enum_id = FILE_BROWSER_MENU;
 

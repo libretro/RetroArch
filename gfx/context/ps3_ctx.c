@@ -61,3 +61,8 @@ void gfx_ctx_check_window(bool *quit,
    if(gl->should_resize)
       *resize = true;
 }
+
+bool gfx_ctx_window_has_focus(void)
+{
+   return true;
+}
