@@ -37,7 +37,6 @@ enum
 #define IS_TIMER_EXPIRED(getter) 	(!(IS_TIMER_NOT_EXPIRED(getter)))
 #define SET_TIMER_EXPIRATION(setter, value) setter = gl->frame_count + value;
 
-bool ps3_setup_texture(void);
 const char * ps3_get_resolution_label(uint32_t resolution);
 int ps3_check_resolution(uint32_t resolution_id);
 void gl_frame_menu(void);

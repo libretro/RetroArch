@@ -102,8 +102,10 @@ struct {
    bool block_swap;
    bool overscan_enable;
    GLfloat overscan_amount;
+#ifdef HAVE_CG_MENU
    GLuint menu_texture_id;
    struct texture_image menu_texture;
+#endif
    PSGLdevice* gl_device;
    PSGLcontext* gl_context;
    CellVideoOutState g_video_state;
@@ -639,6 +641,7 @@ void gl_frame_menu (void)
    if(!gl)
 	   return;
 
+#ifdef HAVE_CG_MENU
    gl_shader_use(RARCH_CG_MENU_SHADER_INDEX);
 
    gl_shader_set_params(gl->win_width, gl->win_height, gl->win_width, 
@@ -653,6 +656,7 @@ void gl_frame_menu (void)
    glDrawArrays(GL_QUADS, 0, 4); 
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+#endif
 }
 
 static void ps3graphics_set_orientation(void * data, uint32_t orientation)
@@ -677,23 +681,76 @@ static void ps3graphics_set_orientation(void * data, uint32_t orientation)
    glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
 }
 
+#ifdef __CELLOS_LV2__
 static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
-   size_t buffer_addr = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
-   size_t buffer_stride = gl->tex_w * gl->base_size;
+   size_t buffer_addr        = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
+   size_t buffer_stride      = gl->tex_w * gl->base_size;
    const uint8_t *frame_copy = frame;
-   size_t frame_copy_size = width * gl->base_size;
+   size_t frame_copy_size    = width * gl->base_size;
+
    for (unsigned h = 0; h < height; h++)
    {
       glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE, 
-		      buffer_addr,
-		      frame_copy_size,
-		      frame_copy);
+            buffer_addr,
+            frame_copy_size,
+            frame_copy);
 
       frame_copy += pitch;
       buffer_addr += buffer_stride;
    }
 }
+
+static void gl_init_textures(gl_t *gl)
+{
+   glGenTextures(TEXTURES, gl->texture);
+
+   for (unsigned i = 0; i < TEXTURES; i++)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
+
+      glTextureReferenceSCE(GL_TEXTURE_2D, 1,
+            gl->tex_w, gl->tex_h, 0, 
+            gl->texture_fmt,
+            gl->tex_w * gl->base_size,
+            gl->tex_w * gl->tex_h * i * gl->base_size);
+   }
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+}
+#else
+static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
+{
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
+   glTexSubImage2D(GL_TEXTURE_2D,
+         0, 0, 0, width, height, gl->texture_type,
+         gl->texture_fmt, frame);
+}
+
+static void gl_init_textures(gl_t *gl)
+{
+   glGenTextures(TEXTURES, gl->texture);
+   for (unsigned i = 0; i < TEXTURES; i++)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
+
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
+      glTexImage2D(GL_TEXTURE_2D,
+            0, RARCH_GL_INTERNAL_FORMAT, gl->tex_w, gl->tex_h, 0, gl->texture_type,
+            gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
+   }
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+}
+#endif
 
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
@@ -996,15 +1053,15 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    RARCH_LOG("GL: Using resolution %ux%u.\n", gl->win_width, gl->win_height);
 
-   RARCH_LOG("GL: Initializing debug fonts...\n");
-   psgl_init_dbgfont(gl);
 
+#ifdef HAVE_CG_MENU
    RARCH_LOG("Initializing menu shader...\n");
    gl_cg_set_menu_shader(DEFAULT_MENU_SHADER_FILE);
+#endif
 
    if (!gl_shader_init())
    {
-      RARCH_ERR("Menu shader initialization failed.\n");
+      RARCH_ERR("Shader init failed.\n");
       psgl_deinit(gl);
       free(gl);
       return NULL;
@@ -1012,9 +1069,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    RARCH_LOG("GL: Loaded %u program(s).\n", gl_shader_num());
 
+#ifdef HAVE_FBO
    // Set up render to texture.
    gl_init_fbo(gl, RARCH_SCALE_BASE * video->input_scale,
 		   RARCH_SCALE_BASE * video->input_scale);
+#endif
 
 
    gl->keep_aspect = video->force_aspect;
@@ -1036,29 +1095,12 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->base_size = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    glEnable(GL_TEXTURE_2D);
+   glDisable(GL_DEPTH_TEST);
+   glDisable(GL_DITHER);
    glClearColor(0, 0, 0, 1);
 
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
-
-   gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
-   gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
-   glGenBuffers(1, &gl->pbo);
-   glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
-   glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
-
-   glGenTextures(TEXTURES, gl->texture);
-
-   for (unsigned i = 0; i < TEXTURES; i++)
-   {
-      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
-   }
 
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -1072,19 +1114,18 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    set_lut_texture_coords(tex_coords);
 
+   gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
+   gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
+
+#ifdef HAVE_OPENGL_PBO
+   glGenBuffers(1, &gl->pbo);
+   glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
+   glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
+#endif
+
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(gl->tex_w * gl->tex_h, gl->base_size);
-
-   for (unsigned i = 0; i < TEXTURES; i++)
-   {
-      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-      glTextureReferenceSCE(GL_TEXTURE_2D, 1,
-		      gl->tex_w, gl->tex_h, 0, 
-		      gl->texture_fmt,
-		      gl->tex_w * gl->base_size,
-		      gl->tex_w * gl->tex_h * i * gl->base_size);
-   }
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+   gl_init_textures(gl);
 
    for (unsigned i = 0; i < TEXTURES; i++)
    {
@@ -1101,6 +1142,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->prev_info[i].tex_size[1] = gl->tex_h;
       memcpy(gl->prev_info[i].coord, tex_coords, sizeof(tex_coords)); 
    }
+
+   psgl_init_dbgfont(gl);
 
    if (!gl_check_error())
    {
@@ -1275,13 +1318,14 @@ const char * ps3_get_resolution_label(uint32_t resolution)
    }
 }
 
-bool ps3_setup_texture(void)
+static bool ps3_setup_texture(void)
 {
    gl_t *gl = driver.video_data;
 
    if (!gl)
       return false;
 
+#ifdef HAVE_CG_MENU
    glGenTextures(1, &ps3_gl.menu_texture_id);
 
    RARCH_LOG("Loading texture image for menu...\n");
@@ -1303,6 +1347,7 @@ bool ps3_setup_texture(void)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    free(ps3_gl.menu_texture.pixels);
+#endif
 	
    return true;
 }

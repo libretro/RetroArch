@@ -1028,6 +1028,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    RARCH_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
 
+#ifdef HAVE_CG_MENU
+   RARCH_LOG("Initializing menu shader...\n");
+   gl_cg_set_menu_shader(DEFAULT_MENU_SHADER_FILE);
+#endif
+
    if (!gl_shader_init())
    {
       RARCH_ERR("Shader init failed.\n");
@@ -1084,7 +1089,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
    gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
 
-#ifdef __CELLOS_LV2__
+#ifdef HAVE_OPENGL_PBO
    glGenBuffers(1, &gl->pbo);
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
    glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
