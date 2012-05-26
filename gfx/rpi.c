@@ -114,7 +114,7 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
 	result = eglMakeCurrent(rpi->mDisplay, rpi->mSurface, rpi->mSurface, rpi->mContext);
 	assert(result != EGL_FALSE);
 
-	rpi->mTexType = video->rgb32 ? VG_sXBGR_8888 : VG_sARGB_1555;
+	rpi->mTexType = video->rgb32 ? VG_sABGR_8888 : VG_sARGB_1555;
 
 	VGfloat clearColor[4] = {0, 0, 0, 1};
 	vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
@@ -170,8 +170,8 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
 	// We can't use the native format because there's no sXRGB_1555 type and
 	// emulation cores can send 0 in the top bit. We lose some speed on
 	// conversion but I doubt it has any real affect, since we are only drawing
-	// one image at the end of the day.
-	rpi->mImage = vgCreateImage(VG_sXBGR_8888, rpi->mTextureWidth, rpi->mTextureHeight, VG_IMAGE_QUALITY_NONANTIALIASED);
+	// one image at the end of the day. Still keep the alpha channel for ABGR.
+	rpi->mImage = vgCreateImage(video->rgb32 ? VG_sABGR_8888 : VG_sXBGR_8888, rpi->mTextureWidth, rpi->mTextureHeight, video->smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
 	rpi_set_nonblock_state(rpi, !video->vsync);
 
 	if (isatty(0))
