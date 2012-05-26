@@ -760,16 +760,17 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
 #ifdef __CELLOS_LV2__
 static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
-   size_t buffer_addr = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
-   size_t buffer_stride = gl->tex_w * gl->base_size;
+   size_t buffer_addr        = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
+   size_t buffer_stride      = gl->tex_w * gl->base_size;
    const uint8_t *frame_copy = frame;
-   size_t frame_copy_size = width * gl->base_size;
+   size_t frame_copy_size    = width * gl->base_size;
+
    for (unsigned h = 0; h < height; h++)
    {
       glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE, 
-		      buffer_addr,
-		      frame_copy_size,
-		      frame_copy);
+            buffer_addr,
+            frame_copy_size,
+            frame_copy);
 
       frame_copy += pitch;
       buffer_addr += buffer_stride;
