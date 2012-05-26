@@ -776,6 +776,28 @@ static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned 
       buffer_addr += buffer_stride;
    }
 }
+
+static void gl_init_textures(gl_t *gl)
+{
+   glGenTextures(TEXTURES, gl->texture);
+
+   for (unsigned i = 0; i < TEXTURES; i++)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
+
+      glTextureReferenceSCE(GL_TEXTURE_2D, 1,
+            gl->tex_w, gl->tex_h, 0, 
+            gl->texture_fmt,
+            gl->tex_w * gl->base_size,
+            gl->tex_w * gl->tex_h * i * gl->base_size);
+   }
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+}
 #else
 static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
@@ -784,7 +806,6 @@ static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned 
          0, 0, 0, width, height, gl->texture_type,
          gl->texture_fmt, frame);
 }
-#endif
 
 static void gl_init_textures(gl_t *gl)
 {
@@ -805,6 +826,7 @@ static void gl_init_textures(gl_t *gl)
    }
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
+#endif
 
 static void gl_next_texture_index(gl_t *gl, const struct gl_tex_info *tex_info)
 {
