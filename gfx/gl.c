@@ -1089,7 +1089,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
    gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
 
-#ifdef HAVE_OPENGL_PBO
+#ifdef HAVE_OPENGL_TEXREF
    glGenBuffers(1, &gl->pbo);
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
    glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
