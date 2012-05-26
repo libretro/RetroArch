@@ -731,14 +731,11 @@ static void gl_free(void *data)
 
 static void gl_set_nonblock_state(void *data, bool state)
 {
-   gl_t *gl = data;
+   gl_t *gl = (gl_t*)data;
    if (gl->vsync)
    {
       RARCH_LOG("GL VSync => %s\n", state ? "off" : "on");
-      if(state)
-         glDisable(GL_VSYNC_SCE);
-      else
-         glEnable(GL_VSYNC_SCE);
+      gfx_ctx_set_swap_interval(state ? 0 : 1, true);
    }
 }
 
