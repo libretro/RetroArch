@@ -61,7 +61,6 @@ bool gl_cg_load_shader(unsigned index, const char *path);
 
 unsigned gl_cg_get_lut_info(struct gl_cg_lut_info *info, unsigned elems);
 
-extern void *g_gl;
 extern unsigned g_frame_count;
 
 #endif

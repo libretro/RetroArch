@@ -111,7 +111,6 @@ struct {
 } ps3_gl;
 
 unsigned g_frame_count;
-void *g_gl;
 
 #ifdef HAVE_FBO
 #if defined(_WIN32) && !defined(RARCH_CONSOLE)
@@ -636,7 +635,7 @@ static void check_window(gl_t *gl)
 
 void gl_frame_menu (void)
 {
-   gl_t *gl = g_gl;
+   gl_t *gl = driver.video_data;
 
    g_frame_count++;
 
@@ -871,7 +870,7 @@ static void psgl_deinit(gl_t *gl)
 
 static void gl_free(void *data)
 {
-   if (g_gl)
+   if (driver.video_data)
       return;
 
    gl_t *gl = data;
@@ -973,8 +972,8 @@ static void psgl_init_dbgfont(gl_t *gl)
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-   if (g_gl)
-      return g_gl;
+   if (driver.video_data)
+      return driver.video_data;
 
    gl_t *gl = calloc(1, sizeof(gl_t));
    if (!gl)
@@ -1144,7 +1143,7 @@ static void ps3graphics_swap(void * data)
 static void ps3graphics_set_aspect_ratio(void * data, uint32_t aspectratio_index)
 {
    (void)data;
-   gl_t * gl = g_gl;
+   gl_t * gl = driver.video_data;
 
    if(g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
       rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
@@ -1273,7 +1272,7 @@ const char * ps3_get_resolution_label(uint32_t resolution)
 
 bool ps3_setup_texture(void)
 {
-   gl_t *gl = g_gl;
+   gl_t *gl = driver.video_data;
 
    if (!gl)
       return false;
@@ -1305,7 +1304,7 @@ bool ps3_setup_texture(void)
 
 void ps3_set_filtering(unsigned index, bool set_smooth)
 {
-   gl_t *gl = g_gl;
+   gl_t *gl = driver.video_data;
 
    if (!gl)
       return;
@@ -1332,7 +1331,7 @@ void ps3_set_filtering(unsigned index, bool set_smooth)
 
 void ps3graphics_set_overscan(bool overscan_enable, float amount, bool recalculate_viewport)
 {
-   gl_t * gl = g_gl;
+   gl_t * gl = driver.video_data;
    if(!gl)
       return;
 
@@ -1354,7 +1353,7 @@ void ps3graphics_video_init(bool get_all_resolutions)
    video_info.force_aspect = false;
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
-   g_gl = gl_init(&video_info, NULL, NULL);
+   driver.video_data = gl_init(&video_info, NULL, NULL);
    gl_set_fbo_enable(g_console.fbo_enabled);
 
    ps3_gl.overscan_enable = g_console.overscan_enable;
@@ -1370,7 +1369,7 @@ void ps3graphics_video_init(bool get_all_resolutions)
 
 void ps3graphics_video_reinit(void)
 {
-   gl_t * gl = g_gl;
+   gl_t * gl = driver.video_data;
 
    if(!gl)
 	   return;
@@ -1382,8 +1381,8 @@ void ps3graphics_video_reinit(void)
 
 void ps3_video_deinit(void)
 {
-   void *data = g_gl;
-   g_gl = NULL;
+   void *data = driver.video_data;
+   driver.video_data = NULL;
    gl_free(data);
 }
 

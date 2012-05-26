@@ -806,18 +806,20 @@ static void menu_reinit_settings (void)
 
 static void apply_scaling (unsigned init_mode)
 {
+   gl_t *gl = driver.video_data;
+
    switch(init_mode)
    {
       case FBO_DEINIT:
-         gl_deinit_fbo(g_gl);
+         gl_deinit_fbo(gl);
 	 break;
       case FBO_INIT:
-	 gl_init_fbo(g_gl, RARCH_SCALE_BASE * INPUT_SCALE,
+	 gl_init_fbo(gl, RARCH_SCALE_BASE * INPUT_SCALE,
 			 RARCH_SCALE_BASE * INPUT_SCALE);
 	 break;
       case FBO_REINIT:
-	 gl_deinit_fbo(g_gl);
-	 gl_init_fbo(g_gl, RARCH_SCALE_BASE * INPUT_SCALE,
+	 gl_deinit_fbo(gl);
+	 gl_init_fbo(gl, RARCH_SCALE_BASE * INPUT_SCALE,
 			 RARCH_SCALE_BASE * INPUT_SCALE);
 	 break;
    }
@@ -2024,6 +2026,7 @@ static void ingame_menu(uint32_t menu_id)
    static uint32_t menuitem_colors[MENU_ITEM_LAST];
    uint64_t state, stuck_in_loop;
    static uint64_t blocking;
+   gl_t * gl = driver.video_data;
 
    float x_position = 0.3f;
    float font_size = 1.1f;
@@ -2035,7 +2038,6 @@ static void ingame_menu(uint32_t menu_id)
 
    menuitem_colors[g_console.ingame_menu_item] = RED;
 
-   gl_t * gl = g_gl;
 
    state = cell_pad_input_poll_device(0);
    stuck_in_loop = 1;
