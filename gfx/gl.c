@@ -29,7 +29,7 @@
 
 #include "gl_common.h"
 #include "gfx_common.h"
-#include "sdlwrap.h"
+#include "gfx_context.h"
 #include "../compat/strl.h"
 
 #ifdef HAVE_SDL
@@ -865,7 +865,7 @@ static void check_window(gl_t *gl)
 {
    bool quit, resize;
 
-   sdlwrap_check_window(&quit,
+   gfx_ctx_check_window(&quit,
          &resize, &gl->win_width, &gl->win_height,
          gl->frame_count);
 
@@ -1141,7 +1141,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (gl->should_resize)
    {
       gl->should_resize = false;
-      sdlwrap_set_resize(gl->win_width, gl->win_height);
+      gfx_ctx_set_resize(gl->win_width, gl->win_height);
 
       // On resize, we might have to recreate our FBOs due to "Viewport" scale, and set a new viewport.
       gl_update_resize(gl);
@@ -1179,8 +1179,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (msg)
       gl_render_msg(gl, msg);
 
-   sdlwrap_update_window_title(false);
-   sdlwrap_swap_buffers();
+   gfx_ctx_update_window_title(false);
+   gfx_ctx_swap_buffers();
 
    return true;
 }
@@ -1200,7 +1200,7 @@ static void gl_free(void *data)
    gl_deinit_fbo(gl);
 #endif
 
-   sdlwrap_destroy();
+   gfx_ctx_destroy();
 
    if (gl->empty_buf)
       free(gl->empty_buf);
@@ -1214,7 +1214,7 @@ static void gl_set_nonblock_state(void *data, bool state)
    if (gl->vsync)
    {
       RARCH_LOG("GL VSync => %s\n", state ? "off" : "on");
-      sdlwrap_set_swap_interval(state ? 0 : 1, true);
+      gfx_ctx_set_swap_interval(state ? 0 : 1, true);
    }
 }
 
@@ -1224,14 +1224,14 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gfx_set_dwm();
 #endif
 
-   if (!sdlwrap_init())
+   if (!gfx_ctx_init())
       return NULL;
 
    unsigned full_x = 0, full_y = 0;
-   sdlwrap_get_video_size(&full_x, &full_y);
+   gfx_ctx_get_video_size(&full_x, &full_y);
    RARCH_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
-   sdlwrap_set_swap_interval(video->vsync ? 1 : 0, false);
+   gfx_ctx_set_swap_interval(video->vsync ? 1 : 0, false);
 
    unsigned win_width = video->width;
    unsigned win_height = video->height;
@@ -1241,11 +1241,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       win_height = full_y;
    }
 
-   if (!sdlwrap_set_video_mode(win_width, win_height,
+   if (!gfx_ctx_set_video_mode(win_width, win_height,
             g_settings.video.force_16bit ? 15 : 0, video->fullscreen))
       return NULL;
 
-   sdlwrap_update_window_title(true);
+   gfx_ctx_update_window_title(true);
 
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -1254,7 +1254,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    // Need to load dynamically :(
    if (!load_gl_proc())
    {
-      sdlwrap_destroy();
+      gfx_ctx_destroy();
       return NULL;
    }
 #endif
@@ -1262,7 +1262,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_t *gl = (gl_t*)calloc(1, sizeof(gl_t));
    if (!gl)
    {
-      sdlwrap_destroy();
+      gfx_ctx_destroy();
       return NULL;
    }
 
@@ -1279,7 +1279,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!gl_shader_init())
    {
       RARCH_ERR("Shader init failed.\n");
-      sdlwrap_destroy();
+      gfx_ctx_destroy();
       free(gl);
       return NULL;
    }
@@ -1375,12 +1375,12 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       memcpy(gl->prev_info[i].coord, tex_coords, sizeof(tex_coords)); 
    }
 
-   sdlwrap_input_driver(input, input_data);
+   gfx_ctx_input_driver(input, input_data);
    gl_init_font(gl, g_settings.video.font_path, g_settings.video.font_size);
       
    if (!gl_check_error())
    {
-      sdlwrap_destroy();
+      gfx_ctx_destroy();
       free(gl);
       return NULL;
    }
@@ -1398,7 +1398,7 @@ static bool gl_alive(void *data)
 static bool gl_focus(void *data)
 {
    (void)data;
-   return sdlwrap_window_has_focus();
+   return gfx_ctx_window_has_focus();
 }
 
 #ifdef HAVE_XML

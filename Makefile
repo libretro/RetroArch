@@ -100,7 +100,7 @@ ifeq ($(HAVE_COREAUDIO), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o gfx/sdlwrap.o input/sdl_input.o audio/sdl_audio.o fifo_buffer.o
+   OBJ += gfx/sdl_gfx.o gfx/context/sdl_ctx.o input/sdl_input.o audio/sdl_audio.o fifo_buffer.o
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
 

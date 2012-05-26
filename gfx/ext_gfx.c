@@ -22,7 +22,6 @@
 #include <stdint.h>
 #include "../dynamic.h"
 #include "../general.h"
-#include "sdlwrap.h"
 #include "gfx_common.h"
 
 #ifdef HAVE_FREETYPE

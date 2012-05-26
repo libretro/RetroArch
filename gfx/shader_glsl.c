@@ -32,7 +32,8 @@
 
 
 #define NO_SDL_GLEXT
-#include "sdlwrap.h"
+#include "gfx_context.h"
+#include "context/sdl_ctx.h"
 #include "SDL_opengl.h"
 #include <stdlib.h>
 

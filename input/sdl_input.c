@@ -15,7 +15,7 @@
 
 #include "../driver.h"
 
-#include "../gfx/sdlwrap.h"
+#include "../gfx/gfx_context.h"
 #include "../boolean.h"
 #include "../general.h"
 #include <stdint.h>
@@ -183,7 +183,7 @@ static void *sdl_input_init(void)
 
 static bool sdl_key_pressed(int key)
 {
-   return sdlwrap_key_pressed(keysym_lut[key]);
+   return gfx_ctx_key_pressed(keysym_lut[key]);
 }
 
 #ifndef HAVE_DINPUT
