@@ -1428,13 +1428,13 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
 				g_console.throttle_enable = !g_console.throttle_enable;
-				rarch_gl_set_vsync(g_console.throttle_enable);
+				gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
 				set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
 				g_console.throttle_enable = true;
-				rarch_gl_set_vsync(g_console.throttle_enable);
+				gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
 				set_delay = DELAY_MEDIUM;
 			}
 			break;

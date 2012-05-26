@@ -14,25 +14,32 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../driver.h"
+#include "../../driver.h"
 
 #include <stdint.h>
-
-#include "gl_common.h"
-#include "gfx_common.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-/*============================================================
-	VIDEO
-============================================================ */
+#include "../gl_common.h"
 
-void rarch_gl_set_vsync(unsigned enabled)
+#include "ps3_ctx.h"
+
+void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 {
-   if(enabled)
-      glEnable(GL_VSYNC_SCE);
-   else
-      glDisable(GL_VSYNC_SCE);
+   bool success = false;
+
+   if(inited)
+   {
+      success = true;
+
+      if (interval)
+         glEnable(GL_VSYNC_SCE);
+      else
+         glDisable(GL_VSYNC_SCE);
+   }
+
+   if (!success)
+      RARCH_WARN("Failed to set swap interval.\n");
 }

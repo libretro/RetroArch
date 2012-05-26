@@ -108,7 +108,6 @@ const DWORD g_MapLinearToSrgbGpuFormat[] =
 
 struct XPR_HEADER
 {
-   unsigned long dwMagic;
    unsigned long dwHeaderSize;
    unsigned long dwDataSize;
 };
@@ -161,13 +160,6 @@ HRESULT PackedResource::Create( const char * strFilename )
     if( !ReadFile( hFile, &xprh, sizeof( XPR_HEADER ), &dwNumBytesRead, NULL ) )
     {
         RARCH_ERR( "Error reading XPR header in file <%s>.\n", strFilename );
-        CloseHandle( hFile );
-        return E_FAIL;
-    }
-
-    if( xprh.dwMagic != XPR2_MAGIC_VALUE )
-    {
-        RARCH_ERR( "Invalid Xbox Packed Resource (.xpr) file: Magic = 0x%08lx.\n", xprh.dwMagic );
         CloseHandle( hFile );
         return E_FAIL;
     }
