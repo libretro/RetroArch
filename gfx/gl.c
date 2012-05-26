@@ -764,6 +764,26 @@ static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned 
          gl->texture_fmt, frame);
 }
 
+static void gl_init_textures(gl_t *gl)
+{
+   glGenTextures(TEXTURES, gl->texture);
+   for (unsigned i = 0; i < TEXTURES; i++)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
+
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
+      glTexImage2D(GL_TEXTURE_2D,
+            0, GL_RGBA, gl->tex_w, gl->tex_h, 0, gl->texture_type,
+            gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
+   }
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+}
+
 static void gl_next_texture_index(gl_t *gl, const struct gl_tex_info *tex_info)
 {
    memmove(gl->prev_info + 1, gl->prev_info, sizeof(*tex_info) * (TEXTURES - 1));
@@ -999,19 +1019,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 
-   glGenTextures(TEXTURES, gl->texture);
-
-   for (unsigned i = 0; i < TEXTURES; i++)
-   {
-      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
-   }
-
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
    glEnableClientState(GL_COLOR_ARRAY);
@@ -1019,7 +1026,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
    glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
-
    glColorPointer(4, GL_FLOAT, 0, white_color);
 
    set_lut_texture_coords(tex_coords);
@@ -1029,16 +1035,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(gl->tex_w * gl->tex_h, gl->base_size);
-
-   for (unsigned i = 0; i < TEXTURES; i++)
-   {
-      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
-      glTexImage2D(GL_TEXTURE_2D,
-            0, GL_RGBA, gl->tex_w, gl->tex_h, 0, gl->texture_type,
-            gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
-   }
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+   gl_init_textures(gl);
 
    for (unsigned i = 0; i < TEXTURES; i++)
    {
