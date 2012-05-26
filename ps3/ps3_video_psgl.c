@@ -43,8 +43,6 @@
 #define BLUE		0xffff0000u
 #define WHITE		0xffffffffu
 
-#define FORCE_16BIT_COLOR 1
-
 // Used for the last pass when rendering to the back buffer.
 static const GLfloat vertexes_flipped[] = {
    0, 0,
@@ -100,9 +98,61 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
 };
 
+struct {
+   bool block_swap;
+   bool fbo_enabled;
+   bool overscan_enable;
+   GLfloat overscan_amount;
+   GLuint menu_texture_id;
+   struct texture_image menu_texture;
+   PSGLdevice* gl_device;
+   PSGLcontext* gl_context;
+   CellVideoOutState g_video_state;
+} ps3_gl;
+
 bool g_quitting;
 unsigned g_frame_count;
 void *g_gl;
+
+#ifdef HAVE_FBO
+#if defined(_WIN32) && !defined(RARCH_CONSOLE)
+static PFNGLGENFRAMEBUFFERSPROC pglGenFramebuffers = NULL;
+static PFNGLBINDFRAMEBUFFERPROC pglBindFramebuffer = NULL;
+static PFNGLFRAMEBUFFERTEXTURE2DPROC pglFramebufferTexture2D = NULL;
+static PFNGLCHECKFRAMEBUFFERSTATUSPROC pglCheckFramebufferStatus = NULL;
+static PFNGLDELETEFRAMEBUFFERSPROC pglDeleteFramebuffers = NULL;
+
+static bool load_fbo_proc(void)
+{
+   LOAD_SYM(glGenFramebuffers);
+   LOAD_SYM(glBindFramebuffer);
+   LOAD_SYM(glFramebufferTexture2D);
+   LOAD_SYM(glCheckFramebufferStatus);
+   LOAD_SYM(glDeleteFramebuffers);
+
+   return pglGenFramebuffers && pglBindFramebuffer && pglFramebufferTexture2D && 
+      pglCheckFramebufferStatus && pglDeleteFramebuffers;
+}
+#elif defined(HAVE_OPENGLES)
+#define pglGenFramebuffers glGenFramebuffersOES
+#define pglBindFramebuffer glBindFramebufferOES
+#define pglFramebufferTexture2D glFramebufferTexture2DOES
+#define pglCheckFramebufferStatus glCheckFramebufferStatusOES
+#define pglDeleteFramebuffers glDeleteFramebuffersOES
+#define GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
+#define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
+#define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
+#define glOrtho glOrthof
+static bool load_fbo_proc(void) { return true; }
+#else
+#define pglGenFramebuffers glGenFramebuffers
+#define pglBindFramebuffer glBindFramebuffer
+#define pglFramebufferTexture2D glFramebufferTexture2D
+#define pglCheckFramebufferStatus glCheckFramebufferStatus
+#define pglDeleteFramebuffers glDeleteFramebuffers
+static bool load_fbo_proc(void) { return true; }
+#endif
+#endif
 
 /*============================================================
 	GL IMPLEMENTATION
@@ -113,13 +163,38 @@ static bool gl_shader_init(void)
    switch (g_settings.video.shader_type)
    {
       case RARCH_SHADER_AUTO:
-         if (strlen(g_settings.video.cg_shader_path) > 0 && strlen(g_settings.video.bsnes_shader_path) > 0)
+      {
+         if (*g_settings.video.cg_shader_path && *g_settings.video.bsnes_shader_path)
             RARCH_WARN("Both Cg and bSNES XML shader are defined in config file. Cg shader will be selected by default.\n");
-	 // fall-through
-      case RARCH_SHADER_CG:
-         if (strlen(g_settings.video.cg_shader_path) > 0)
+
+#ifdef HAVE_CG
+         if (*g_settings.video.cg_shader_path)
             return gl_cg_init(g_settings.video.cg_shader_path);
-	 break;
+#endif
+
+#ifdef HAVE_XML
+         if (*g_settings.video.bsnes_shader_path)
+            return gl_glsl_init(g_settings.video.bsnes_shader_path);
+#endif
+         break;
+      }
+
+#ifdef HAVE_CG
+      case RARCH_SHADER_CG:
+      {
+         return gl_cg_init(g_settings.video.cg_shader_path);
+         break;
+      }
+#endif
+
+#ifdef HAVE_XML
+      case RARCH_SHADER_BSNES:
+      {
+         return gl_glsl_init(g_settings.video.bsnes_shader_path);
+         break;
+      }
+#endif
+
       default:
          break;
    }
@@ -129,37 +204,59 @@ static bool gl_shader_init(void)
 
 static unsigned gl_shader_num(void)
 {
-   unsigned num = 0;
+#ifdef HAVE_CG
    unsigned cg_num = gl_cg_num();
+   if (cg_num)
+      return cg_num;
+#endif
 
-   if (cg_num > num)
-      num = cg_num;
+#ifdef HAVE_XML
+   unsigned glsl_num = gl_glsl_num();
+   if (glsl_num)
+      return glsl_num;
+#endif
 
-   return num;
+   return 0;
 }
 
 static bool gl_shader_filter_type(unsigned index, bool *smooth)
 {
    bool valid = false;
+
+#ifdef HAVE_CG
    if (!valid)
       valid = gl_cg_filter_type(index, smooth);
+#endif
+
+#ifdef HAVE_XML
+   if (!valid)
+      valid = gl_glsl_filter_type(index, smooth);
+#endif
 
    return valid;
 }
 
 void gl_set_fbo_enable (bool enable)
 {
-   gl_t *gl = g_gl;
-
-   gl->fbo_enabled = enable;
+   ps3_gl.fbo_enabled = enable;
 }
 
+#ifdef HAVE_FBO
 static void gl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
 {
    scale->valid = false;
+
+#ifdef HAVE_CG
    if (!scale->valid)
       gl_cg_shader_scale(index, scale);
+#endif
+
+#ifdef HAVE_XML
+   if (!scale->valid)
+      gl_glsl_shader_scale(index, scale);
+#endif
 }
+#endif
 
 static void gl_create_fbo_textures(gl_t *gl)
 {
@@ -191,7 +288,7 @@ static void gl_create_fbo_textures(gl_t *gl)
 void gl_deinit_fbo(gl_t *gl)
 {
    glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
-   glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
+   pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
    memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
    memset(gl->fbo, 0, sizeof(gl->fbo));
    gl->fbo_pass = 0;
@@ -304,23 +401,23 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
    gl_create_fbo_textures(gl);
 
-   glGenFramebuffersOES(gl->fbo_pass, gl->fbo);
+   pglGenFramebuffers(gl->fbo_pass, gl->fbo);
    for (int i = 0; i < gl->fbo_pass; i++)
    {
-      glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[i]);
-      glFramebufferTexture2DOES(GL_FRAMEBUFFER_OES, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
+      pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
+      pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
-      GLenum status = glCheckFramebufferStatusOES(GL_FRAMEBUFFER_OES);
-      if (status != GL_FRAMEBUFFER_COMPLETE_OES)
+      GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
+      if (status != GL_FRAMEBUFFER_COMPLETE)
 	      goto error;
    }
 
-   glBindFramebufferOES(GL_FRAMEBUFFER_OES, 0);
+   pglBindFramebuffer(GL_FRAMEBUFFER, 0);
    return;
 
 error:
    glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
-   glDeleteFramebuffersOES(gl->fbo_pass, gl->fbo);
+   pglDeleteFramebuffers(gl->fbo_pass, gl->fbo);
    RARCH_ERR("Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
 }
 
@@ -379,8 +476,6 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height)
    uint32_t m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
    GLfloat m_left, m_right, m_bottom, m_top, m_zNear, m_zFar;
 
-   glMatrixMode(GL_PROJECTION);
-   glLoadIdentity();
 
    m_viewport_x_temp = 0;
    m_viewport_y_temp = 0;
@@ -427,14 +522,17 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height)
 
    glViewport(m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp);
 
-   if(gl->overscan_enable)
+   if(ps3_gl.overscan_enable)
    {
-      m_left = -gl->overscan_amount/2;
-      m_right = 1 + gl->overscan_amount/2;
-      m_bottom = -gl->overscan_amount/2;
+      m_left = -ps3_gl.overscan_amount/2;
+      m_right = 1 + ps3_gl.overscan_amount/2;
+      m_bottom = -ps3_gl.overscan_amount/2;
    }
 
-   glOrthof(m_left, m_right, m_bottom, m_top, m_zNear, m_zFar);
+   glMatrixMode(GL_PROJECTION);
+   glLoadIdentity();
+
+   glOrtho(m_left, m_right, m_bottom, m_top, m_zNear, m_zFar);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 
@@ -453,7 +551,7 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height)
    glMatrixMode(GL_PROJECTION); \
    glLoadIdentity(); \
    glViewport(0, 0, width, height); \
-   glOrthof(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f); \
+   glOrtho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f); \
    glMatrixMode(GL_MODELVIEW); \
    glLoadIdentity(); \
    if (prg[active_index].mvp) \
@@ -494,7 +592,7 @@ void gl_frame_menu (void)
    set_viewport_force_full(gl, gl->win_width, gl->win_height);
 
    glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, gl->menu_texture_id);
+   glBindTexture(GL_TEXTURE_2D, ps3_gl.menu_texture_id);
 
    glDrawArrays(GL_QUADS, 0, 4); 
 
@@ -523,6 +621,24 @@ static void ps3graphics_set_orientation(void * data, uint32_t orientation)
    glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
 }
 
+static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
+{
+   size_t buffer_addr = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
+   size_t buffer_stride = gl->tex_w * gl->base_size;
+   const uint8_t *frame_copy = frame;
+   size_t frame_copy_size = width * gl->base_size;
+   for (unsigned h = 0; h < height; h++)
+   {
+      glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE, 
+		      buffer_addr,
+		      frame_copy_size,
+		      frame_copy);
+
+      frame_copy += pitch;
+      buffer_addr += buffer_stride;
+   }
+}
+
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *gl = data;
@@ -533,11 +649,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    // Render to texture in first pass.
-   if (gl->fbo_enabled)
+   if (ps3_gl.fbo_enabled)
    {
       gl_compute_fbo_geometry(gl, width, height, gl->vp_out_width, gl->vp_out_height);
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-      glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[0]);
+      pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
       set_viewport_force_full(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height);
    }
 
@@ -568,23 +684,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    // Need to preserve the "flipped" state when in FBO as well to have 
    // consistent texture coordinates.
-   if (gl->fbo_enabled)
+   if (ps3_gl.fbo_enabled)
       glVertexPointer(2, GL_FLOAT, 0, vertexes);
 
-   size_t buffer_addr = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
-   size_t buffer_stride = gl->tex_w * gl->base_size;
-   const uint8_t *frame_copy = frame;
-   size_t frame_copy_size = width * gl->base_size;
-   for (unsigned h = 0; h < height; h++)
-   {
-      glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE, 
-		      buffer_addr,
-		      frame_copy_size,
-		      frame_copy);
-
-      frame_copy += pitch;
-      buffer_addr += buffer_stride;
-   }
+   gl_copy_frame(gl, frame, width, height, pitch);
 
    struct gl_tex_info tex_info = {
 	   .tex = gl->texture[gl->tex_index],
@@ -604,10 +707,12 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    glDrawArrays(GL_QUADS, 0, 4);
 
-   if (gl->fbo_enabled)
+   if (ps3_gl.fbo_enabled)
    {
+      GLfloat fbo_tex_coords[8] = {0.0f};
+
       // Render the rest of our passes.
-      glTexCoordPointer(2, GL_FLOAT, 0, gl->fbo_tex_coords);
+      glTexCoordPointer(2, GL_FLOAT, 0, fbo_tex_coords);
 
       // It's kinda handy ... :)
       const struct gl_fbo_rect *prev_rect;
@@ -624,16 +729,16 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 	 GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
 	 GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
 
-	 set_texture_coords(gl->fbo_tex_coords, xamt, yamt);
+	 set_texture_coords(fbo_tex_coords, xamt, yamt);
 
 	 fbo_info->tex = gl->fbo_texture[i - 1];
 	 fbo_info->input_size[0] = prev_rect->img_width;
 	 fbo_info->input_size[1] = prev_rect->img_height;
 	 fbo_info->tex_size[0] = prev_rect->width;
 	 fbo_info->tex_size[1] = prev_rect->height;
-	 memcpy(fbo_info->coord, gl->fbo_tex_coords, sizeof(gl->fbo_tex_coords));
+	 memcpy(fbo_info->coord, fbo_tex_coords, sizeof(fbo_tex_coords));
 
-	 glBindFramebufferOES(GL_FRAMEBUFFER_OES, gl->fbo[i]);
+	 pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
 	 gl_cg_use(i + 1);
 	 glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
@@ -656,10 +761,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
       GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
 
-      set_texture_coords(gl->fbo_tex_coords, xamt, yamt);
+      set_texture_coords(fbo_tex_coords, xamt, yamt);
 
       // Render our FBO texture to back buffer.
-      glBindFramebufferOES(GL_FRAMEBUFFER_OES, 0);
+      pglBindFramebuffer(GL_FRAMEBUFFER, 0);
       gl_cg_use(gl->fbo_pass + 1);
 
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
@@ -688,7 +793,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       cellDbgFontDraw();
    }
 
-   if(!gl->block_swap)
+   if(!ps3_gl.block_swap)
       psglSwap();
 
    return true;
@@ -698,8 +803,8 @@ static void psgl_deinit(gl_t *gl)
 {
    cellDbgFontExit();
 
-   psglDestroyContext(gl->gl_context);
-   psglDestroyDevice(gl->gl_device);
+   psglDestroyContext(ps3_gl.gl_context);
+   psglDestroyDevice(ps3_gl.gl_device);
 
    psglExit();
 }
@@ -780,8 +885,8 @@ static bool psgl_init_device(gl_t *gl, const video_info_t *video, uint32_t resol
       params.height = resolution.height;
    }
 
-   gl->gl_device = psglCreateDeviceExtended(&params);
-   psglGetDeviceDimensions(gl->gl_device, &gl->win_width, &gl->win_height); 
+   ps3_gl.gl_device = psglCreateDeviceExtended(&params);
+   psglGetDeviceDimensions(ps3_gl.gl_device, &gl->win_width, &gl->win_height); 
 
    if(g_console.viewports.custom_vp.width == 0)
       g_console.viewports.custom_vp.width = gl->win_width;
@@ -789,8 +894,8 @@ static bool psgl_init_device(gl_t *gl, const video_info_t *video, uint32_t resol
    if(g_console.viewports.custom_vp.height == 0)
       g_console.viewports.custom_vp.height = gl->win_height;
 
-   gl->gl_context = psglCreateContext();
-   psglMakeCurrent(gl->gl_context, gl->gl_device);
+   ps3_gl.gl_context = psglCreateContext();
+   psglMakeCurrent(ps3_gl.gl_context, ps3_gl.gl_device);
    psglResetCurrentContext();
 
    return true;
@@ -966,8 +1071,7 @@ static bool gl_focus(void *data)
 static void ps3graphics_set_swap_block_swap(void * data, bool toggle)
 {
    (void)data;
-   gl_t *gl = g_gl;
-   gl->block_swap = toggle;
+   ps3_gl.block_swap = toggle;
 }
 
 static void ps3graphics_swap(void * data)
@@ -1058,8 +1162,7 @@ static void get_all_available_resolutions (void)
 
 void ps3_set_resolution (void)
 {
-   gl_t *gl = g_gl;
-   cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &gl->g_video_state);
+   cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &ps3_gl.g_video_state);
 }
 
 void ps3_next_resolution (void)
@@ -1117,27 +1220,27 @@ bool ps3_setup_texture(void)
    if (!gl)
       return false;
 
-   glGenTextures(1, &gl->menu_texture_id);
+   glGenTextures(1, &ps3_gl.menu_texture_id);
 
    RARCH_LOG("Loading texture image for menu...\n");
-   if(!texture_image_load(DEFAULT_MENU_BORDER_FILE, &gl->menu_texture))
+   if(!texture_image_load(DEFAULT_MENU_BORDER_FILE, &ps3_gl.menu_texture))
    {
       RARCH_ERR("Failed to load texture image for menu.\n");
       return false;
    }
 
-   glBindTexture(GL_TEXTURE_2D, gl->menu_texture_id);
+   glBindTexture(GL_TEXTURE_2D, ps3_gl.menu_texture_id);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_ARGB_SCE, gl->menu_texture.width, gl->menu_texture.height, 0,
-		   GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8, gl->menu_texture.pixels);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_ARGB_SCE, ps3_gl.menu_texture.width, ps3_gl.menu_texture.height, 0,
+		   GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8, ps3_gl.menu_texture.pixels);
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
-   free(gl->menu_texture.pixels);
+   free(ps3_gl.menu_texture.pixels);
 	
    return true;
 }
@@ -1159,7 +1262,7 @@ void ps3_set_filtering(unsigned index, bool set_smooth)
 	 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
       }
    }
-   else if (index >= 2 && gl->fbo_enabled)
+   else if (index >= 2 && ps3_gl.fbo_enabled)
    {
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index - 2]);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
@@ -1175,8 +1278,8 @@ void ps3graphics_set_overscan(bool overscan_enable, float amount, bool recalcula
    if(!gl)
       return;
 
-   gl->overscan_enable = overscan_enable;
-   gl->overscan_amount = amount;
+   ps3_gl.overscan_enable = overscan_enable;
+   ps3_gl.overscan_amount = amount;
 
    if(recalculate_viewport)
    { 
@@ -1196,17 +1299,15 @@ void ps3graphics_video_init(bool get_all_resolutions)
    g_gl = gl_init(&video_info, NULL, NULL);
    gl_set_fbo_enable(g_console.fbo_enabled);
 
-   gl_t * gl = g_gl;
-
-   gl->overscan_enable = g_console.overscan_enable;
-   gl->overscan_amount = g_console.overscan_amount;
+   ps3_gl.overscan_enable = g_console.overscan_enable;
+   ps3_gl.overscan_amount = g_console.overscan_amount;
 
    if(get_all_resolutions)
       get_all_available_resolutions();
 
    ps3_set_resolution();
    ps3_setup_texture();
-   ps3graphics_set_overscan(gl->overscan_enable, gl->overscan_amount, 0);
+   ps3graphics_set_overscan(ps3_gl.overscan_enable, ps3_gl.overscan_amount, 0);
 }
 
 void ps3graphics_video_reinit(void)

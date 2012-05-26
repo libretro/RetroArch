@@ -87,7 +87,7 @@ static const GLfloat white_color[] = {
 #endif
 
 #ifdef HAVE_FBO
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(RARCH_CONSOLE)
 static PFNGLGENFRAMEBUFFERSPROC pglGenFramebuffers = NULL;
 static PFNGLBINDFRAMEBUFFERPROC pglBindFramebuffer = NULL;
 static PFNGLFRAMEBUFFERTEXTURE2DPROC pglFramebufferTexture2D = NULL;
@@ -114,6 +114,7 @@ static bool load_fbo_proc(void)
 #define GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
 #define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
 #define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
+#define glOrtho glOrthof
 static bool load_fbo_proc(void) { return true; }
 #else
 #define pglGenFramebuffers glGenFramebuffers
@@ -756,6 +757,25 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
    }
 }
 
+#ifdef __CELLOS_LV2__
+static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
+{
+   size_t buffer_addr = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
+   size_t buffer_stride = gl->tex_w * gl->base_size;
+   const uint8_t *frame_copy = frame;
+   size_t frame_copy_size = width * gl->base_size;
+   for (unsigned h = 0; h < height; h++)
+   {
+      glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE, 
+		      buffer_addr,
+		      frame_copy_size,
+		      frame_copy);
+
+      frame_copy += pitch;
+      buffer_addr += buffer_stride;
+   }
+}
+#else
 static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
@@ -763,6 +783,7 @@ static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned 
          0, 0, 0, width, height, gl->texture_type,
          gl->texture_fmt, frame);
 }
+#endif
 
 static void gl_init_textures(gl_t *gl)
 {
@@ -896,6 +917,11 @@ static void gl_free(void *data)
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDisableClientState(GL_COLOR_ARRAY);
    glDeleteTextures(TEXTURES, gl->texture);
+
+#ifdef __CELLOS_LV2__
+   glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
+   glDeleteBuffers(1, &gl->pbo);
+#endif
 
 #ifdef HAVE_FBO
    gl_deinit_fbo(gl);
@@ -1032,6 +1058,12 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
    gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
+
+#ifdef __CELLOS_LV2__
+   glGenBuffers(1, &gl->pbo);
+   glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
+   glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
+#endif
 
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(gl->tex_w * gl->tex_h, gl->base_size);

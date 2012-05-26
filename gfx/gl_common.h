@@ -164,6 +164,9 @@ typedef struct gl
    unsigned tex_w, tex_h;
    GLfloat tex_coords[8];
 
+#ifdef __CELLOS_LV2__
+   GLuint pbo;
+#endif
    GLenum texture_type; // XBGR1555 or ARGB
    GLenum texture_fmt;
    unsigned base_size; // 2 or 4

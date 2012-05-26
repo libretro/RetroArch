@@ -42,45 +42,6 @@
 #define RARCH_CG_MAX_SHADERS 16
 #define RARCH_CG_MENU_SHADER_INDEX (RARCH_CG_MAX_SHADERS - 1)
 
-typedef struct gl
-{
-   bool block_swap;
-   bool fbo_enabled;
-   bool keep_aspect;
-   bool vsync;
-   bool overscan_enable;
-   int fbo_pass;
-   unsigned base_size; /* 2 or 4*/
-   unsigned last_width[TEXTURES];
-   unsigned last_height[TEXTURES];
-   unsigned tex_index; /* For use with PREV. */
-   unsigned tex_w, tex_h;
-   unsigned vp_width, vp_out_width;
-   unsigned vp_height, vp_out_height;
-   unsigned win_width;
-   unsigned win_height;
-   GLfloat overscan_amount;
-   GLfloat tex_coords[8];
-   GLfloat fbo_tex_coords[8];
-   GLenum texture_type; /* XBGR1555 or ARGB*/
-   GLenum texture_fmt;
-   /* Render-to-texture, multipass shaders */
-   GLuint fbo[MAX_SHADERS];
-   GLuint fbo_texture[MAX_SHADERS];
-   GLuint menu_texture_id;
-   GLuint pbo;
-   GLuint texture[TEXTURES];
-   GLuint tex_filter;
-   CellVideoOutState g_video_state;
-   PSGLdevice* gl_device;
-   PSGLcontext* gl_context;
-   struct gl_fbo_rect fbo_rect[MAX_SHADERS];
-   struct gl_fbo_scale fbo_scale[MAX_SHADERS];
-   struct gl_tex_info prev_info[TEXTURES];
-   struct texture_image menu_texture;
-   void *empty_buf;
-} gl_t;
-
 bool ps3_setup_texture(void);
 const char * ps3_get_resolution_label(uint32_t resolution);
 int ps3_check_resolution(uint32_t resolution_id);
