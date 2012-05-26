@@ -16,6 +16,9 @@
 #ifndef _SDL_CTX_H
 #define _SDL_CTX_H
 
+#include "SDL.h"
+#include "SDL_version.h"
+
 #if SDL_VERSION_ATLEAST(1, 3, 0)
 #define SDL_MODERN 1
 #else

@@ -16,9 +16,6 @@
 // Compatibility wrapper between SDL 1.2/1.3 for OpenGL.
 // Wraps functions which differ in 1.2 and 1.3.
 
-#include "SDL.h"
-#include "SDL_version.h"
-
 #include "../gfx_context.h"
 #include "../gfx_common.h"
 #include "../../general.h"
