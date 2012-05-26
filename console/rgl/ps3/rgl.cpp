@@ -5939,11 +5939,6 @@ GLAPI void APIENTRY glFinish (void)
     _RGLFifoFinish( &_RGLState.fifo );
 }
 
-PSGLuint64 psglGetSystemTime()
-{
-    return sys_time_get_system_time();
-}
-
 GLAPI const GLubyte* APIENTRY glGetString( GLenum name )
 {
     switch ( name )

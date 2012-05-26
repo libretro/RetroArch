@@ -3,12 +3,6 @@
 
 #define RGL_ALIGN_FAST_TRANSFER 128
 
-typedef unsigned int	Elf32_Addr;
-typedef unsigned int	Elf32_Off;
-typedef unsigned short	Elf32_Half;
-typedef unsigned int	Elf32_Word;
-typedef int		Elf32_Sword;
-
 #define EI_MAG0		0
 #define EI_MAG1		1
 #define EI_MAG2		2
@@ -48,19 +42,19 @@ typedef int		Elf32_Sword;
 
 typedef struct {
   unsigned char	e_ident[EI_NIDENT];
-  Elf32_Half	e_type;
-  Elf32_Half	e_machine;
-  Elf32_Word	e_version;
-  Elf32_Addr	e_entry;
-  Elf32_Off	e_phoff;
-  Elf32_Off	e_shoff;
-  Elf32_Word	e_flags;
-  Elf32_Half	e_ehsize;
-  Elf32_Half	e_phentsize;
-  Elf32_Half	e_phnum;
-  Elf32_Half	e_shentsize;
-  Elf32_Half	e_shnum;
-  Elf32_Half	e_shstrndx;
+  unsigned short	e_type;
+  unsigned short	e_machine;
+  unsigned int	e_version;
+  unsigned int	e_entry;
+  unsigned int	e_phoff;
+  unsigned int	e_shoff;
+  unsigned int	e_flags;
+  unsigned short	e_ehsize;
+  unsigned short	e_phentsize;
+  unsigned short	e_phnum;
+  unsigned short	e_shentsize;
+  unsigned short	e_shnum;
+  unsigned short	e_shstrndx;
 } Elf32_Ehdr;
 
 #define PT_NULL		0
@@ -76,14 +70,14 @@ typedef struct {
 #define PT_HIPROC	0x7fffffff
 
 typedef struct {
-  Elf32_Word	p_type;
-  Elf32_Off	p_offset;
-  Elf32_Addr	p_vaddr;
-  Elf32_Addr	p_paddr;
-  Elf32_Word	p_filesz;
-  Elf32_Word	p_memsz;
-  Elf32_Word	p_flags;
-  Elf32_Word	p_align;
+  unsigned int	p_type;
+  unsigned int	p_offset;
+  unsigned int	p_vaddr;
+  unsigned int	p_paddr;
+  unsigned int	p_filesz;
+  unsigned int	p_memsz;
+  unsigned int	p_flags;
+  unsigned int	p_align;
 } Elf32_Phdr;
 
 #define SHT_NULL	0
@@ -112,16 +106,16 @@ typedef struct {
 
 
 typedef struct {
-  Elf32_Word	sh_name;
-  Elf32_Word	sh_type;
-  Elf32_Word	sh_flags;
-  Elf32_Addr	sh_addr;
-  Elf32_Off	sh_offset;
-  Elf32_Word	sh_size;
-  Elf32_Word	sh_link;
-  Elf32_Word	sh_info;
-  Elf32_Word	sh_addralign;
-  Elf32_Word	sh_entsize;
+  unsigned int	sh_name;
+  unsigned int	sh_type;
+  unsigned int	sh_flags;
+  unsigned int	sh_addr;
+  unsigned int	sh_offset;
+  unsigned int	sh_size;
+  unsigned int	sh_link;
+  unsigned int	sh_info;
+  unsigned int	sh_addralign;
+  unsigned int	sh_entsize;
 } Elf32_Shdr;
 
 #define SHN_UNDEF	0
@@ -136,26 +130,26 @@ typedef struct {
 #define SHN_HIRESERVE	0xffff
 
 typedef struct {
-  Elf32_Word	st_name;
-  Elf32_Word	st_value;
-  Elf32_Word	st_size;
+  unsigned int	st_name;
+  unsigned int	st_value;
+  unsigned int	st_size;
   unsigned char	st_info;
   unsigned char	st_other;
-  Elf32_Half	st_shndx;
+  unsigned short	st_shndx;
 } Elf32_Sym;
 
 
 typedef struct
 {
-  Elf32_Addr	r_offset;
-  Elf32_Word	r_info;
+  unsigned int	r_offset;
+  unsigned int	r_info;
 } Elf32_Rel;
 
 typedef struct
 {
-  Elf32_Addr	r_offset;
-  Elf32_Word	r_info;
-  Elf32_Sword	r_addend;
+  unsigned int	r_offset;
+  unsigned int	r_info;
+  int	r_addend;
 } Elf32_Rela;
 
 #endif /* ELF_H */
