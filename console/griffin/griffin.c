@@ -43,6 +43,10 @@ CONFIG FILE
 /*============================================================
 VIDEO
 ============================================================ */
+#ifdef HAVE_OPENGL
+#include "../../gfx/gl_common.c"
+#endif
+
 #if defined(__CELLOS_LV2__)
 #include "../../gfx/shader_cg.c"
 #include "../../ps3/ps3_video_psgl.c"

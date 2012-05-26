@@ -1113,15 +1113,6 @@ const char * ps3_get_resolution_label(uint32_t resolution)
    }
 }
 
-
-void ps3graphics_set_vsync(uint32_t vsync)
-{
-   if(vsync)
-      glEnable(GL_VSYNC_SCE);
-   else
-      glDisable(GL_VSYNC_SCE);
-}
-
 bool ps3_setup_texture(void)
 {
    gl_t *gl = g_gl;

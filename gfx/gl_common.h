@@ -112,4 +112,6 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #define pglActiveTexture glActiveTexture
 #endif
 
+void rarch_gl_set_vsync(unsigned enabled);
+
 #endif
