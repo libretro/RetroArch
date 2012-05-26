@@ -23,14 +23,12 @@
 #include "../console/console_ext.h"
 #include <cell/dbgfont.h>
 
-#define FBO_DEINIT	0
-#define FBO_INIT	1
-#define FBO_REINIT	2
-
-#define MAX_SHADERS 16
-
-#define TEXTURES 8
-#define TEXTURES_MASK (TEXTURES - 1)
+enum
+{
+   FBO_DEINIT = 0,
+   FBO_INIT,
+   FBO_REINIT
+};
 
 #define MIN_SCALING_FACTOR (1.0f)
 #define MAX_SCALING_FACTOR (4.0f)
@@ -38,9 +36,6 @@
 #define IS_TIMER_NOT_EXPIRED(getter) (g_frame_count < getter)
 #define IS_TIMER_EXPIRED(getter) 	(!(IS_TIMER_NOT_EXPIRED(getter)))
 #define SET_TIMER_EXPIRATION(setter, value) setter = g_frame_count + value;
-
-#define RARCH_CG_MAX_SHADERS 16
-#define RARCH_CG_MENU_SHADER_INDEX (RARCH_CG_MAX_SHADERS - 1)
 
 bool ps3_setup_texture(void);
 const char * ps3_get_resolution_label(uint32_t resolution);
