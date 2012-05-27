@@ -67,5 +67,7 @@ void gfx_ctx_set_filtering(unsigned index, bool set_smooth);
 void gfx_ctx_get_available_resolutions (void);
 #endif
 
+void gfx_ctx_set_projection(gl_t *gl, bool allow_rotate);
+
 #endif
 

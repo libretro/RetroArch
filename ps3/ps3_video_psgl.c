@@ -615,7 +615,7 @@ static void check_window(gl_t *gl)
 
 void gl_set_projection(gl_t *gl, bool allow_rotate)
 {
-   gfx_ctx_set_rotation(gl, allow_rotate);
+   gfx_ctx_set_projection(gl, allow_rotate);
    gl_shader_set_proj_matrix();
 }
 

@@ -344,7 +344,7 @@ const char * ps3_get_resolution_label(uint32_t resolution)
    }
 }
 
-void gfx_ctx_set_rotation(gl_t *gl, bool allow_rotate)
+void gfx_ctx_set_projection(gl_t *gl, bool allow_rotate)
 {
    if(allow_rotate)
    {

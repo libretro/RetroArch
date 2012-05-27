@@ -425,7 +425,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
 void gl_set_projection(gl_t *gl, bool allow_rotate)
 {
-   gfx_ctx_set_rotation(gl, allow_rotate);
+   gfx_ctx_set_projection(gl, allow_rotate);
    gl_shader_set_proj_matrix();
 }
 
