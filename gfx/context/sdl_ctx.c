@@ -406,7 +406,7 @@ void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_r
    if (allow_rotate)
       glRotatef(gl->rotation, 0, 0, 1);
 
-   glOrtho(ortho->left, ortho->right, ortho->bottom, ortho->top, ortho->near, ortho->far);
+   glOrtho(ortho->left, ortho->right, ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 }

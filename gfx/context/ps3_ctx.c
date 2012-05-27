@@ -381,7 +381,7 @@ void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_r
 
    glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
 
-   glOrtho(ortho->left, ortho->right, ortho->bottom, ortho->top, ortho->near, ortho->far);
+   glOrtho(ortho->left, ortho->right, ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 }

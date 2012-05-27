@@ -452,8 +452,8 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full,
    ortho.right = 1.0f;
    ortho.bottom = 0.0f;
    ortho.top = 1.0f;
-   ortho.near = -1.0f;
-   ortho.far = 1.0f;
+   ortho.znear = -1.0f;
+   ortho.zfar = 1.0f;
 
    if (gl->keep_aspect && !force_full)
    {
@@ -514,14 +514,7 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full,
 
 static void gl_set_rotation(void *data, unsigned rotation)
 {
-   struct gl_ortho ortho = {0};
-
-   ortho.left = 0;
-   ortho.right = 1;
-   ortho.bottom = 0;
-   ortho.top = 1;
-   ortho.near = -1;
-   ortho.far = 1;
+   struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    gl_t *gl = (gl_t*)driver.video_data;
    gl->rotation = 90 * rotation;
