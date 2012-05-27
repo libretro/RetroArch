@@ -34,7 +34,6 @@
 static bool g_quitting;
 static bool g_first_msg;
 unsigned g_frame_count;
-void *g_d3d;
 
 /* Xbox 360 specific code */
 
@@ -255,8 +254,10 @@ void PackedResource::Destroy()
 
 static void xdk360_gfx_free(void * data)
 {
-   if (g_d3d)
+#ifdef RARCH_CONSOLE
+   if (driver.video_data)
 	   return;
+#endif
 
    xdk360_video_t *vid = (xdk360_video_t*)data;
 
@@ -272,7 +273,8 @@ static void xdk360_gfx_free(void * data)
 
 void set_viewport(bool force_full)
 {
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
+
    vid->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
 	   0xff000000, 1.0f, 0);
 
@@ -340,7 +342,7 @@ void set_viewport(bool force_full)
 static void xdk360_set_orientation(void * data, uint32_t orientation)
 {
    (void)data;
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
    FLOAT angle;
 
    switch(orientation)
@@ -390,7 +392,7 @@ static void xdk360_convert_texture_to_as16_srgb( D3DTexture *pTexture )
 
 void xdk360_set_fbo_enable (bool enable)
 {
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
 
    vid->fbo_enabled = enable;
 }
@@ -424,8 +426,8 @@ void xdk360_gfx_init_fbo(xdk360_video_t *vid)
 
 static void *xdk360_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-   if (g_d3d)
-      return g_d3d;
+   if (driver.video_data)
+      return driver.video_data;
 
    xdk360_video_t *vid = (xdk360_video_t*)calloc(1, sizeof(xdk360_video_t));
    if (!vid)
@@ -678,7 +680,7 @@ static bool xdk360_gfx_frame(void *data, const void *frame,
 static void xdk360_set_swap_block_swap (void * data, bool toggle)
 {
    (void)data;
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
    vid->block_swap = toggle;
 
    if(toggle)
@@ -690,7 +692,7 @@ static void xdk360_set_swap_block_swap (void * data, bool toggle)
 static void xdk360_swap (void * data)
 {
    (void)data;
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
    vid->d3d_render_device->Present(NULL, NULL, NULL, NULL);
 }
 
@@ -719,7 +721,7 @@ static bool xdk360_gfx_focus(void *data)
 
 void xdk360_video_set_vsync(bool vsync)
 {
-   xdk360_gfx_set_nonblock_state(g_d3d, vsync);
+   xdk360_gfx_set_nonblock_state(driver.video_data, vsync);
 }
 
 // 360 needs a working graphics stack before RetroArch even starts.
@@ -733,10 +735,11 @@ static void xdk360_start(void)
 
    video_info.vsync = g_settings.video.vsync;
    video_info.force_aspect = false;
+   video_info.fullscreen = true;
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
 
-   g_d3d = xdk360_gfx_init(&video_info, NULL, NULL);
+   driver.video_data = xdk360_gfx_init(&video_info, NULL, NULL);
 
    g_first_msg = true;
 
@@ -756,8 +759,8 @@ static void xdk360_restart(void)
 
 static void xdk360_stop(void)
 {
-   void *data = g_d3d;
-   g_d3d = NULL;
+   void *data = driver.video_data;
+   driver.video_data = NULL;
    xdk360_console_deinit();
    xdk360_gfx_free(data);
 }

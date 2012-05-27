@@ -255,7 +255,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 {
    char scalefactor[128];
    int current_index;
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
    
    current_index = m_settingslist.GetCurSel();
 
@@ -668,7 +668,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
 HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
 
    hdmenus_allowed = vid->video_mode.fIsHiDef && (g_console.aspect_ratio_index >= ASPECT_RATIO_16_9);
 
@@ -738,7 +738,7 @@ int menu_init (void)
 {
    HRESULT hr;
 
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
 
    hr = app.InitShared(vid->d3d_render_device, &vid->d3dpp, XuiPNGTextureLoader);
 
@@ -788,7 +788,7 @@ void menu_loop(void)
    g_console.menu_enable = true;
 
    HRESULT hr;
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
 
    if(g_console.emulator_initialized)
       video_xdk360.set_swap_block_state(NULL, true);
