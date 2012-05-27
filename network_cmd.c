@@ -31,7 +31,7 @@ static bool socket_nonblock(int fd)
 {
 #ifdef _WIN32
    u_long mode = 1;
-	ioctlsocket(fd, FIONBIO, &mode);
+   return ioctlsocket(fd, FIONBIO, &mode) == 0;
 #else
    return fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) == 0;
 #endif
