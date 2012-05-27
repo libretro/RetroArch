@@ -62,5 +62,9 @@ void gfx_ctx_input_driver(const input_driver_t **input, void **input_data);
 bool gfx_ctx_menu_init(void)
 #endif
 
+#ifdef RARCH_CONSOLE
+void gfx_ctx_set_filtering(unsigned index, bool set_smooth);
+#endif
+
 #endif
 

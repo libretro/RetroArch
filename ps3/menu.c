@@ -1328,33 +1328,33 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
 				g_settings.video.smooth = !g_settings.video.smooth;
-				ps3_set_filtering(1, g_settings.video.smooth);
+				gfx_ctx_set_filtering(1, g_settings.video.smooth);
 				set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
 				g_settings.video.smooth = 1;
-				ps3_set_filtering(1, g_settings.video.smooth);
+				gfx_ctx_set_filtering(1, g_settings.video.smooth);
 			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER_2:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
 				g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
-				ps3_set_filtering(2, g_settings.video.second_pass_smooth);
+				gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
 				set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
 				g_settings.video.second_pass_smooth = 1;
-				ps3_set_filtering(2, g_settings.video.second_pass_smooth);
+				gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
 			}
 			break;
 		case SETTING_SCALE_ENABLED:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
 				g_console.fbo_enabled = !g_console.fbo_enabled;
-				gl_set_fbo_enable(g_console.fbo_enabled);
+				gfx_ctx_set_fbo(g_console.fbo_enabled);
 
 				set_delay = DELAY_MEDIUM;
 

@@ -275,13 +275,6 @@ static bool gl_shader_filter_type(unsigned index, bool *smooth)
    return valid;
 }
 
-void gl_set_fbo_enable (bool enable)
-{
-   gl_t *gl = driver.video_data;
-   gl->fbo_inited = enable;
-   gl->render_to_tex = false;
-}
-
 #ifdef HAVE_FBO
 static void gl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
 {
@@ -1281,33 +1274,6 @@ const char * ps3_get_resolution_label(uint32_t resolution)
    }
 }
 
-void ps3_set_filtering(unsigned index, bool set_smooth)
-{
-   gl_t *gl = driver.video_data;
-
-   if (!gl)
-      return;
-
-   if (index == 1)
-   {
-      // Apply to all PREV textures.
-      for (unsigned i = 0; i < TEXTURES; i++)
-      {
-         glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-	 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-	 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-      }
-   }
-   else if (index >= 2 && gl->fbo_inited)
-   {
-      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index - 2]);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-   }
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-}
-
 void ps3graphics_set_overscan(void)
 {
    gl_t * gl = driver.video_data;
@@ -1333,7 +1299,10 @@ void ps3graphics_video_init(bool get_all_resolutions)
       video_info.height = g_console.viewports.custom_vp.height;
    }
    driver.video_data = gl_init(&video_info, NULL, NULL);
-   gl_set_fbo_enable(g_console.fbo_enabled);
+
+#ifdef HAVE_FBO
+   gfx_ctx_set_fbo(g_console.fbo_enabled);
+#endif
 
    if(get_all_resolutions)
       get_all_available_resolutions();

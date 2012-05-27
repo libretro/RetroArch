@@ -178,3 +178,37 @@ void gfx_ctx_destroy(void)
 }
 
 void gfx_ctx_input_driver(const input_driver_t **input, void **input_data) { }
+
+void gfx_ctx_set_filtering(unsigned index, bool set_smooth)
+{
+   gl_t *gl = driver.video_data;
+
+   if (!gl)
+      return;
+
+   if (index == 1)
+   {
+      // Apply to all PREV textures.
+      for (unsigned i = 0; i < TEXTURES; i++)
+      {
+         glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+	 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+	 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+      }
+   }
+   else if (index >= 2 && gl->fbo_inited)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index - 2]);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+   }
+
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+}
+
+void gfx_ctx_set_fbo(bool enable)
+{
+   gl_t *gl = driver.video_data;
+   gl->fbo_inited = enable;
+   gl->render_to_tex = enable;
+}
