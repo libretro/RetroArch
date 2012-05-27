@@ -16,7 +16,7 @@
 
 #include "../gl_common.h"
 
-void gl_init_font_ctx(gl_t *gl, const char *font_path, unsigned font_size)
+void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size)
 {
 #ifdef HAVE_FREETYPE
    if (!g_settings.video.font_enable)
@@ -66,7 +66,7 @@ void gl_init_font_ctx(gl_t *gl, const char *font_path, unsigned font_size)
 #endif
 }
 
-void gl_deinit_font_ctx(gl_t *gl)
+void gl_deinit_font(gl_t *gl)
 {
 #ifdef HAVE_FREETYPE
    if (gl->font)
@@ -221,7 +221,7 @@ static void calculate_font_coords(gl_t *gl,
 }
 #endif
 
-void gl_render_msg_ctx(gl_t *gl, const char *msg)
+void gl_render_msg(gl_t *gl, const char *msg)
 {
 #ifdef HAVE_FREETYPE
    if (!gl->font)

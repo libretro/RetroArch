@@ -46,9 +46,8 @@
 #include "shader_glsl.h"
 #endif
 
-
 #ifdef HAVE_FREETYPE
-#include "fonts.h"
+#include "fonts/fonts.h"
 #endif
 
 // Used for the last pass when rendering to the back buffer.

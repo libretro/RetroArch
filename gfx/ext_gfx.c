@@ -25,7 +25,7 @@
 #include "gfx_common.h"
 
 #ifdef HAVE_FREETYPE
-#include "fonts.h"
+#include "fonts/fonts.h"
 #endif
 
 #ifdef HAVE_PYTHON

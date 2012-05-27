@@ -17,7 +17,7 @@
 #define __GL_COMMON_H
 
 #include "../general.h"
-#include "fonts.h"
+#include "fonts/fonts.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

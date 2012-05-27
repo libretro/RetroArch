@@ -28,37 +28,30 @@
 
 void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 {
-   bool success = false;
-
-   if(inited)
+   if (inited)
    {
-      success = true;
-
       if (interval)
          glEnable(GL_VSYNC_SCE);
       else
          glDisable(GL_VSYNC_SCE);
    }
-
-   if (!success)
-      RARCH_WARN("Failed to set swap interval.\n");
 }
 
 void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+   gl_t *gl = driver.video_data;
    *quit = false;
    *resize = false;
-   gl_t *gl = driver.video_data;
 
 #ifdef HAVE_SYSUTILS
    cellSysutilCheckCallback();
 #endif
 
-   if(gl->quitting)
+   if (gl->quitting)
       *quit = true;
 
-   if(gl->should_resize)
+   if (gl->should_resize)
       *resize = true;
 }
 
@@ -66,3 +59,4 @@ bool gfx_ctx_window_has_focus(void)
 {
    return true;
 }
+

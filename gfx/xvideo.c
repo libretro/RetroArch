@@ -20,7 +20,7 @@
 #include <signal.h>
 #include <math.h>
 #ifdef HAVE_FREETYPE
-#include "fonts.h"
+#include "fonts/fonts.h"
 #endif
 #include "gfx_common.h"
 
