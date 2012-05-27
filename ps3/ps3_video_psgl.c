@@ -100,15 +100,12 @@ static const GLfloat white_color[] = {
 };
 
 struct {
-   bool overscan_enable;
-   GLfloat overscan_amount;
 #ifdef HAVE_CG_MENU
    GLuint menu_texture_id;
    struct texture_image menu_texture;
 #endif
    PSGLdevice* gl_device;
    PSGLcontext* gl_context;
-   CellVideoOutState g_video_state;
 } ps3_gl;
 
 #ifdef HAVE_FBO
@@ -1284,11 +1281,6 @@ static void get_all_available_resolutions (void)
       g_console.current_resolution_index = g_console.supported_resolutions_count-1;
 }
 
-void ps3_set_resolution (void)
-{
-   cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &ps3_gl.g_video_state);
-}
-
 void ps3_next_resolution (void)
 {
    if(g_console.current_resolution_index+1 < g_console.supported_resolutions_count)
@@ -1422,7 +1414,8 @@ void ps3graphics_video_init(bool get_all_resolutions)
    if(get_all_resolutions)
       get_all_available_resolutions();
 
-   ps3_set_resolution();
+   CellVideoOutState g_video_state;
+   cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &g_video_state);
    ps3_setup_texture();
 }
 
