@@ -397,6 +397,7 @@ void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
       *input = NULL;
 }
 
+#ifdef HAVE_OPENGL
 void gfx_ctx_set_projection(gl_t *gl, bool allow_rotate)
 {
    glMatrixMode(GL_PROJECTION);
@@ -409,3 +410,5 @@ void gfx_ctx_set_projection(gl_t *gl, bool allow_rotate)
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 }
+#endif
+

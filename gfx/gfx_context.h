@@ -21,8 +21,13 @@
 #include "../boolean.h"
 #include "../driver.h"
 
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
+#endif
+
+#ifdef HAVE_OPENGL
+#include "gl_common.h"
 #endif
 
 #ifdef HAVE_SDL
@@ -64,10 +69,12 @@ bool gfx_ctx_menu_init(void)
 
 #ifdef RARCH_CONSOLE
 void gfx_ctx_set_filtering(unsigned index, bool set_smooth);
-void gfx_ctx_get_available_resolutions (void);
+void gfx_ctx_get_available_resolutions(void);
 #endif
 
+#ifdef HAVE_OPENGL
 void gfx_ctx_set_projection(gl_t *gl, bool allow_rotate);
+#endif
 
 #endif
 
