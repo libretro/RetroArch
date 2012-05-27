@@ -33,9 +33,12 @@
 static struct texture_image menu_texture;
 static PSGLdevice* gl_device;
 static PSGLcontext* gl_context;
+static unsigned swap_interval;
 
 void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 {
+   swap_interval = interval;
+
    if (inited)
    {
       if (interval)
@@ -84,7 +87,7 @@ bool gfx_ctx_menu_init(void)
    glGenTextures(1, &gl->menu_texture_id);
 
    RARCH_LOG("Loading texture image for menu...\n");
-   if(!texture_image_load(DEFAULT_MENU_BORDER_FILE, &menu_texture))
+   if (!texture_image_load(DEFAULT_MENU_BORDER_FILE, &menu_texture))
    {
       RARCH_ERR("Failed to load texture image for menu.\n");
       return false;
@@ -114,8 +117,7 @@ void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 
 bool gfx_ctx_init(void)
 {
-   PSGLinitOptions options =
-   {
+   PSGLinitOptions options = {
 	   .enable = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS,
 	   .maxSPUs = 1,
 	   .initializeSPUs = GL_FALSE,
@@ -130,20 +132,20 @@ bool gfx_ctx_init(void)
 
    PSGLdeviceParameters params;
 
-   params.enable = PSGL_DEVICE_PARAMETERS_COLOR_FORMAT | \
-		   PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT | \
+   params.enable = PSGL_DEVICE_PARAMETERS_COLOR_FORMAT |
+		   PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT |
 		   PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE;
    params.colorFormat = GL_ARGB_SCE;
    params.depthFormat = GL_NONE;
    params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
 
-   if(g_console.triple_buffering_enable)
+   if (g_console.triple_buffering_enable)
    {
       params.enable |= PSGL_DEVICE_PARAMETERS_BUFFERING_MODE;
       params.bufferingMode = PSGL_BUFFERING_MODE_TRIPLE;
    }
 
-   if(g_console.current_resolution_id)
+   if (g_console.current_resolution_id)
    {
       CellVideoOutResolution resolution;
       cellVideoOutGetResolution(g_console.current_resolution_id, &resolution);
@@ -159,6 +161,7 @@ bool gfx_ctx_init(void)
    psglMakeCurrent(gl_context, gl_device);
    psglResetCurrentContext();
 
+   gfx_ctx_set_swap_interval(swap_interval, true);
    return true;
 }
 
@@ -192,8 +195,8 @@ void gfx_ctx_set_filtering(unsigned index, bool set_smooth)
       for (unsigned i = 0; i < TEXTURES; i++)
       {
          glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-	 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-	 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
       }
    }
    else if (index >= 2 && gl->fbo_inited)
@@ -212,3 +215,4 @@ void gfx_ctx_set_fbo(bool enable)
    gl->fbo_inited = enable;
    gl->render_to_tex = enable;
 }
+
