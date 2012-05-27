@@ -1337,7 +1337,9 @@ static void deinit_netplay(void)
    if (g_extern.netplay)
       netplay_free(g_extern.netplay);
 }
+#endif
 
+#ifdef HAVE_NETWORK_CMD
 static void init_network_cmd(void)
 {
    if (!g_settings.network_cmd_enable)
@@ -2372,8 +2374,11 @@ int rarch_main_init(int argc, char *argv[])
 
 #ifdef HAVE_NETPLAY
    init_netplay();
+#endif
+#ifdef HAVE_NETWORK_CMD
    init_network_cmd();
 #endif
+
    init_drivers();
 
 #ifdef HAVE_NETPLAY
@@ -2447,7 +2452,7 @@ bool rarch_main_iterate(void)
          !video_alive_func())
       return false;
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORK_CMD
    if (driver.network_cmd)
       network_cmd_pre_frame(driver.network_cmd);
 #endif
@@ -2505,6 +2510,8 @@ void rarch_main_deinit(void)
 {
 #ifdef HAVE_NETPLAY
    deinit_netplay();
+#endif
+#ifdef HAVE_NETWORK_CMD
    deinit_network_cmd();
 #endif
 

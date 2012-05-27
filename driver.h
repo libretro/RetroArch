@@ -28,7 +28,7 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORK_CMD
 #include "network_cmd.h"
 #endif
 
@@ -176,7 +176,7 @@ typedef struct driver
    void *video_data;
    void *input_data;
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORK_CMD
    network_cmd_t *network_cmd;
 #endif
 } driver_t;
@@ -260,7 +260,7 @@ extern const input_driver_t input_xdk360;
 static inline bool input_key_pressed_func(int key)
 {
    bool ret = driver.input->key_pressed(driver.input_data, key);
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORK_CMD
    if (!ret && driver.network_cmd)
       ret = network_cmd_get(driver.network_cmd, key);
 #endif
