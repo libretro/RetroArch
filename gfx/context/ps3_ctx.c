@@ -18,6 +18,8 @@
 
 #include <stdint.h>
 
+#include <sys/spu_initialize.h>
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -29,6 +31,8 @@
 #include "ps3_ctx.h"
 
 static struct texture_image menu_texture;
+static PSGLdevice* gl_device;
+static PSGLcontext* gl_context;
 
 void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 {
@@ -102,3 +106,75 @@ bool gfx_ctx_menu_init(void)
 	
    return true;
 }
+
+void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+{
+   psglGetDeviceDimensions(gl_device, width, height); 
+}
+
+bool gfx_ctx_init(void)
+{
+   PSGLinitOptions options =
+   {
+	   .enable = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS,
+	   .maxSPUs = 1,
+	   .initializeSPUs = GL_FALSE,
+   };
+#if CELL_SDK_VERSION < 0x340000
+   options.enable |=	PSGL_INIT_HOST_MEMORY_SIZE;
+#endif
+
+   // Initialize 6 SPUs but reserve 1 SPU as a raw SPU for PSGL
+   sys_spu_initialize(6, 1);
+   psglInit(&options);
+
+   PSGLdeviceParameters params;
+
+   params.enable = PSGL_DEVICE_PARAMETERS_COLOR_FORMAT | \
+		   PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT | \
+		   PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE;
+   params.colorFormat = GL_ARGB_SCE;
+   params.depthFormat = GL_NONE;
+   params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
+
+   if(g_console.triple_buffering_enable)
+   {
+      params.enable |= PSGL_DEVICE_PARAMETERS_BUFFERING_MODE;
+      params.bufferingMode = PSGL_BUFFERING_MODE_TRIPLE;
+   }
+
+   if(g_console.current_resolution_id)
+   {
+      CellVideoOutResolution resolution;
+      cellVideoOutGetResolution(g_console.current_resolution_id, &resolution);
+
+      params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
+      params.width = resolution.width;
+      params.height = resolution.height;
+   }
+
+   gl_device = psglCreateDeviceExtended(&params);
+   gl_context = psglCreateContext();
+
+   psglMakeCurrent(gl_context, gl_device);
+   psglResetCurrentContext();
+
+   return true;
+}
+
+bool gfx_ctx_set_video_mode(
+      unsigned width, unsigned height,
+      unsigned bits, bool fullscreen)
+{
+   return true;
+}
+
+void gfx_ctx_destroy(void)
+{
+   psglDestroyContext(gl_context);
+   psglDestroyDevice(gl_device);
+
+   psglExit();
+}
+
+void gfx_ctx_input_driver(const input_driver_t **input, void **input_data) { }

@@ -958,7 +958,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    unsigned full_x = 0, full_y = 0;
    gfx_ctx_get_video_size(&full_x, &full_y);
-   RARCH_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("Detecting resolution %ux%u.\n", full_x, full_y);
 
    gfx_ctx_set_swap_interval(video->vsync ? 1 : 0, false);
 
@@ -1031,7 +1031,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_shader_use(1);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 
-   bool force_smooth;
+   bool force_smooth = false;
    if (gl_shader_filter_type(1, &force_smooth))
       gl->tex_filter = force_smooth ? GL_LINEAR : GL_NEAREST;
    else

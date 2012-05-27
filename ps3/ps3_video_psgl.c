@@ -26,8 +26,6 @@
 #include <string.h>
 #include <math.h>
 
-#include <sys/spu_initialize.h>
-
 #include "../gfx/state_tracker.h"
 #include "../gfx/shader_cg.h"
 #include "../general.h"
@@ -98,11 +96,6 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
    1, 1, 1, 1,
 };
-
-struct {
-   PSGLdevice* gl_device;
-   PSGLcontext* gl_context;
-} ps3_gl;
 
 #ifdef HAVE_FBO
 #if defined(_WIN32) && !defined(RARCH_CONSOLE)
@@ -944,14 +937,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    return true;
 }
 
-static void psgl_deinit(gl_t *gl)
-{
-   psglDestroyContext(ps3_gl.gl_context);
-   psglDestroyDevice(ps3_gl.gl_device);
-
-   psglExit();
-}
-
 static void gl_free(void *data)
 {
    if (driver.video_data)
@@ -966,11 +951,17 @@ static void gl_free(void *data)
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDisableClientState(GL_COLOR_ARRAY);
    glDeleteTextures(TEXTURES, gl->texture);
+
+#ifdef HAVE_OPENGL_TEXREF
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
    glDeleteBuffers(1, &gl->pbo);
+#endif
 
+#ifdef HAVE_FBO
    gl_deinit_fbo(gl);
-   psgl_deinit(gl);
+#endif
+
+   gfx_ctx_destroy();
 
    if (gl->empty_buf)
       free(gl->empty_buf);
@@ -988,63 +979,6 @@ static void gl_set_nonblock_state(void *data, bool state)
    }
 }
 
-static bool psgl_init_device(gl_t *gl)
-{
-   PSGLinitOptions options =
-   {
-	   .enable = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS,
-	   .maxSPUs = 1,
-	   .initializeSPUs = GL_FALSE,
-   };
-#if CELL_SDK_VERSION < 0x340000
-   options.enable |=	PSGL_INIT_HOST_MEMORY_SIZE;
-#endif
-
-   // Initialize 6 SPUs but reserve 1 SPU as a raw SPU for PSGL
-   sys_spu_initialize(6, 1);
-   psglInit(&options);
-
-   PSGLdeviceParameters params;
-
-   params.enable = PSGL_DEVICE_PARAMETERS_COLOR_FORMAT | \
-		   PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT | \
-		   PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE;
-   params.colorFormat = GL_ARGB_SCE;
-   params.depthFormat = GL_NONE;
-   params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
-
-   if(g_console.triple_buffering_enable)
-   {
-      params.enable |= PSGL_DEVICE_PARAMETERS_BUFFERING_MODE;
-      params.bufferingMode = PSGL_BUFFERING_MODE_TRIPLE;
-   }
-
-   if(g_console.current_resolution_id)
-   {
-      CellVideoOutResolution resolution;
-      cellVideoOutGetResolution(g_console.current_resolution_id, &resolution);
-
-      params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
-      params.width = resolution.width;
-      params.height = resolution.height;
-   }
-
-   ps3_gl.gl_device = psglCreateDeviceExtended(&params);
-   psglGetDeviceDimensions(ps3_gl.gl_device, &gl->win_width, &gl->win_height); 
-
-   if(g_console.viewports.custom_vp.width == 0)
-      g_console.viewports.custom_vp.width = gl->win_width;
-
-   if(g_console.viewports.custom_vp.height == 0)
-      g_console.viewports.custom_vp.height = gl->win_height;
-
-   ps3_gl.gl_context = psglCreateContext();
-   psglMakeCurrent(ps3_gl.gl_context, ps3_gl.gl_device);
-   psglResetCurrentContext();
-
-   return true;
-}
-
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    if (driver.video_data)
@@ -1054,18 +988,53 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!gl)
       return NULL;
 
-   if (!psgl_init_device(gl))
+   if (!gfx_ctx_init())
+   {
+      free(gl);
       return NULL;
+   }
 
+   unsigned full_x = 0, full_y = 0;
+   gfx_ctx_get_video_size(&full_x, &full_y);
+   RARCH_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
-   RARCH_LOG("Detecting resolution %ux%u.\n", gl->win_width, gl->win_height);
+   gfx_ctx_set_swap_interval(video->vsync ? 1 : 0, false);
 
-   video->vsync ? glEnable(GL_VSYNC_SCE) : glDisable(GL_VSYNC_SCE);
+   unsigned win_width = video->width;
+   unsigned win_height = video->height;
+   if (video->fullscreen && (win_width == 0) && (win_height == 0))
+   {
+      win_width = full_x;
+      win_height = full_y;
+   }
+
+   if (!gfx_ctx_set_video_mode(win_width, win_height,
+            g_settings.video.force_16bit ? 15 : 0, video->fullscreen))
+   {
+      free(gl);
+      return NULL;
+   }
+
+#if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
+   // Win32 GL lib doesn't have some functions needed for XML shaders.
+   // Need to load dynamically :(
+   if (!load_gl_proc())
+   {
+      gfx_ctx_destroy();
+      free(gl);
+      return NULL;
+   }
+#endif
 
    gl->vsync = video->vsync;
+   gl->fullscreen = video->fullscreen;
+   
+   gl->full_x = full_x;
+   gl->full_y = full_y;
+   gl->win_width = win_width;
+   gl->win_height = win_height;
 
    RARCH_LOG("GL: Using resolution %ux%u.\n", gl->win_width, gl->win_height);
-
 
 #ifdef HAVE_CG_MENU
    RARCH_LOG("Initializing menu shader...\n");
@@ -1075,7 +1044,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!gl_shader_init())
    {
       RARCH_ERR("Shader init failed.\n");
-      psgl_deinit(gl);
+      gfx_ctx_destroy();
       free(gl);
       return NULL;
    }
@@ -1122,7 +1091,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
    glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
-
    glColorPointer(4, GL_FLOAT, 0, white_color);
 
    set_lut_texture_coords(tex_coords);
@@ -1156,19 +1124,15 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       memcpy(gl->prev_info[i].coord, tex_coords, sizeof(tex_coords)); 
    }
 
+   gfx_ctx_input_driver(input, input_data);
    gl_init_font(gl, g_settings.video.font_path, g_settings.video.font_size);
 
    if (!gl_check_error())
    {
-      psgl_deinit(gl);
+      gfx_ctx_destroy();
       free(gl);
       return NULL;
    }
-
-   if (input)
-      *input = NULL;
-   if (input_data)
-      *input_data = NULL;
 
    return gl;
 }
@@ -1362,6 +1326,12 @@ void ps3graphics_video_init(bool get_all_resolutions)
    video_info.force_aspect = false;
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
+   video_info.fullscreen = true;
+   if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
+   {
+      video_info.width = g_console.viewports.custom_vp.width;
+      video_info.height = g_console.viewports.custom_vp.height;
+   }
    driver.video_data = gl_init(&video_info, NULL, NULL);
    gl_set_fbo_enable(g_console.fbo_enabled);
 
