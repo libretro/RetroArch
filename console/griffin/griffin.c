@@ -49,7 +49,13 @@ VIDEO
 #if defined(__CELLOS_LV2__)
 #include "../../gfx/context/ps3_ctx.c"
 #include "../../gfx/shader_cg.c"
-#include "../../ps3/ps3_video_psgl.c"
+#endif
+
+#ifdef HAVE_OPENGL
+#include "../../gfx/gl.c"
+#endif
+
+#if defined(__CELLOS_LV2__)
 #include "../../ps3/image.c"
 #elif defined(_XBOX)
 #include "../../gfx/shader_hlsl.c"

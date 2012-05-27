@@ -30,6 +30,10 @@
 
 #include "ps3_ctx.h"
 
+#ifdef HAVE_OPENGLES
+#define glOrtho glOrthof
+#endif
+
 static struct texture_image menu_texture;
 static PSGLdevice* gl_device;
 static PSGLcontext* gl_context;
@@ -96,6 +100,8 @@ bool gfx_ctx_window_has_focus(void)
    return true;
 }
 
+void gfx_ctx_set_resize(unsigned width, unsigned height) { }
+
 void gfx_ctx_swap_buffers(void)
 {
    psglSwap();
@@ -134,6 +140,8 @@ bool gfx_ctx_menu_init(void)
 	
    return true;
 }
+
+void gfx_ctx_update_window_title(bool reset) { }
 
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
@@ -344,8 +352,11 @@ const char * ps3_get_resolution_label(uint32_t resolution)
    }
 }
 
-void gfx_ctx_set_projection(gl_t *gl, bool allow_rotate)
+void gfx_ctx_set_projection(gl_t *gl, ortho_t *ortho, bool allow_rotate)
 {
+   glMatrixMode(GL_PROJECTION);
+   glLoadIdentity();
+
    if(allow_rotate)
    {
       switch (gl->rotation)
@@ -367,6 +378,10 @@ void gfx_ctx_set_projection(gl_t *gl, bool allow_rotate)
     }
 
    glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
+
+   glOrtho(ortho->left, ortho->right, ortho->bottom, ortho->top, ortho->near, ortho->far);
+   glMatrixMode(GL_MODELVIEW);
+   glLoadIdentity();
 }
 
 void gfx_ctx_set_aspect_ratio(void * data, unsigned aspectratio_index)

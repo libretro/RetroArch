@@ -423,40 +423,79 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
 ////////////
 
-void gl_set_projection(gl_t *gl, bool allow_rotate)
+void gl_set_projection(gl_t *gl, ortho_t *ortho, bool allow_rotate)
 {
-   gfx_ctx_set_projection(gl, allow_rotate);
+#ifdef RARCH_CONSOLE
+   if(g_console.overscan_enable)
+   {
+      ortho->left = -g_console.overscan_amount/2;
+      ortho->right = 1 + g_console.overscan_amount/2;
+      ortho->bottom = -g_console.overscan_amount/2;
+   }
+#endif
+
+   gfx_ctx_set_projection(gl, ortho, allow_rotate);
    gl_shader_set_proj_matrix();
 }
 
-void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
+static void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
 {
+   unsigned vp_x_temp, vp_y_temp, vp_width_temp, vp_height_temp;
+   ortho_t ortho;
+
+   vp_x_temp = 0;
+   vp_y_temp = 0;
+   vp_width_temp = width;
+   vp_height_temp = height;
+
+   ortho.left = 0.0f;
+   ortho.right = 1.0f;
+   ortho.bottom = 0.0f;
+   ortho.top = 1.0f;
+   ortho.near = -1.0f;
+   ortho.far = 1.0f;
+
    if (gl->keep_aspect && !force_full)
    {
       float desired_aspect = g_settings.video.aspect_ratio;
       float device_aspect = (float)width / height;
+      float delta;
 
-      // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
-      // assume they are actually equal.
+#ifdef RARCH_CONSOLE
+      if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
+      {
+         delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
+	 vp_x_temp = g_console.viewports.custom_vp.x;
+	 vp_y_temp = g_console.viewports.custom_vp.y;
+	 vp_width_temp = g_console.viewports.custom_vp.width;
+	 vp_height_temp = g_console.viewports.custom_vp.height;
+      }
+      else
+#endif
       if (fabs(device_aspect - desired_aspect) < 0.0001)
-         glViewport(0, 0, width, height);
+      {
+         // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
+         // assume they are actually equal.
+      }
       else if (device_aspect > desired_aspect)
       {
-         float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-         glViewport(width * (0.5 - delta), 0, 2.0 * width * delta, height);
-         width = 2.0 * width * delta;
+         delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
+	 vp_x_temp = (GLint)(width * (0.5 - delta));
+	 vp_width_temp = (GLint)(2.0 * width * delta);
+	 width = (unsigned)(2.0 * width * delta);
       }
       else
       {
-         float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         glViewport(0, height * (0.5 - delta), width, 2.0 * height * delta);
-         height = 2.0 * height * delta;
+         delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
+	 vp_y_temp = (GLint)(height * (0.5 - delta));
+	 vp_height_temp = (GLint)(2.0 * height * delta);
+	 height = (unsigned)(2.0 * height * delta);
       }
    }
-   else
-      glViewport(0, 0, width, height);
 
-   gl_set_projection(gl, allow_rotate);
+   glViewport(vp_x_temp, vp_y_temp, vp_width_temp, vp_height_temp);
+
+   gl_set_projection(gl, &ortho, allow_rotate);
 
    gl->vp_width = width;
    gl->vp_height = height;
@@ -473,9 +512,18 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full,
 
 static void gl_set_rotation(void *data, unsigned rotation)
 {
+   ortho_t ortho;
+
+   ortho.left = 0;
+   ortho.right = 1;
+   ortho.bottom = 0;
+   ortho.top = 1;
+   ortho.near = -1;
+   ortho.far = 1;
+
    gl_t * gl = driver.video_data;
    gl->rotation = 90 * rotation;
-   gl_set_projection(gl, true);
+   gl_set_projection(gl, &ortho, true);
 }
 
 static inline void set_lut_texture_coords(const GLfloat *coords)
@@ -720,12 +768,20 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
    {
       gl->last_width[gl->tex_index] = width;
       gl->last_height[gl->tex_index] = height;
+
+#ifdef HAVE_OPENGL_TEXREF
+      glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
+		      gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
+		      gl->tex_w * gl->tex_h * gl->base_size,
+		      gl->empty_buf);
+#else
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
       glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
 
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
             gl->texture_fmt, gl->empty_buf);
+#endif
 
       GLfloat xamt = (GLfloat)width / gl->tex_w;
       GLfloat yamt = (GLfloat)height / gl->tex_h;
@@ -885,13 +941,42 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    }
 
    gfx_ctx_update_window_title(false);
-   gfx_ctx_swap_buffers();
+
+#ifdef RARCH_CONSOLE
+   if(!gl->block_swap)
+#endif
+      gfx_ctx_swap_buffers();
+
+#ifdef HAVE_CG_MENU
+   if(gl->menu_render)
+   {
+      gl_shader_use(RARCH_CG_MENU_SHADER_INDEX);
+
+      gl_shader_set_params(gl->win_width, gl->win_height, gl->win_width, 
+		   gl->win_height, gl->win_width, gl->win_height, gl->frame_count,
+		   NULL, NULL, NULL, 0);
+
+      gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
+
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, gl->menu_texture_id);
+
+      glVertexPointer(2, GL_FLOAT, 0, default_vertex_ptr);
+      glDrawArrays(GL_QUADS, 0, 4); 
+      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+   }
+#endif
 
    return true;
 }
 
 static void gl_free(void *data)
 {
+#ifdef RARCH_CONSOLE
+   if (driver.video_data)
+      return;
+#endif
+
    gl_t *gl = (gl_t*)data;
 
    gl_deinit_font(gl);
@@ -934,6 +1019,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gfx_set_dwm();
 #endif
 
+#ifdef RARCH_CONSOLE
+   if (driver.video_data)
+      return driver.video_data;
+#endif
+
    gl_t *gl = (gl_t*)calloc(1, sizeof(gl_t));
    if (!gl)
       return NULL;
@@ -965,9 +1055,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
+#ifndef RARCH_CONSOLE
    gfx_ctx_update_window_title(true);
 
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+#endif
 
 #if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
    // Win32 GL lib doesn't have some functions needed for XML shaders.
@@ -1134,20 +1226,72 @@ static bool gl_xml_shader(void *data, const char *path)
 }
 #endif
 
-const video_driver_t video_gl = {
-   gl_init,
-   gl_frame,
-   gl_set_nonblock_state,
-   gl_alive,
-   gl_focus,
-#ifdef HAVE_XML
-   gl_xml_shader,
-#else
-   NULL,
+#ifdef RARCH_CONSOLE
+static void gl_start(void)
+{
+   video_info_t video_info = {0};
+
+   // Might have to supply correct values here.
+   video_info.vsync = g_settings.video.vsync;
+   video_info.force_aspect = false;
+   video_info.smooth = g_settings.video.smooth;
+   video_info.input_scale = 2;
+   video_info.fullscreen = true;
+   if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
+   {
+      video_info.width = g_console.viewports.custom_vp.width;
+      video_info.height = g_console.viewports.custom_vp.height;
+   }
+   driver.video_data = gl_init(&video_info, NULL, NULL);
+
+#ifdef HAVE_FBO
+   gfx_ctx_set_fbo(g_console.fbo_enabled);
 #endif
-   gl_free,
-   "gl",
 
-   gl_set_rotation,
+   gfx_ctx_get_available_resolutions();
+
+#ifdef HAVE_CG_MENU
+   gfx_ctx_menu_init();
+#endif
+}
+
+static void gl_stop(void)
+{
+   void *data = driver.video_data;
+   driver.video_data = NULL;
+   gl_free(data);
+}
+
+static void gl_restart(void)
+{
+   gl_t * gl = driver.video_data;
+
+   if(!gl)
+	   return;
+
+   gl_stop();
+   gl_cg_invalidate_context();
+   gl_start();
+}
+#endif
+
+const video_driver_t video_gl = {
+   .init = gl_init,
+   .frame = gl_frame,
+   .set_nonblock_state = gl_set_nonblock_state,
+   .alive = gl_alive,
+   .focus = gl_focus,
+#ifdef HAVE_XML
+   .xml_shader = gl_xml_shader,
+#else
+   .xml_shader = NULL,
+#endif
+   .free = gl_free,
+   .ident = "gl",
+   .set_rotation = gl_set_rotation,
+#ifdef RARCH_CONSOLE
+   .start = gl_start,
+   .restart = gl_restart,
+   .stop = gl_stop,
+#endif
 };
-

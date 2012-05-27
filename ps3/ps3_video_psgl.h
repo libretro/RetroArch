@@ -43,12 +43,10 @@ void ps3_next_resolution (void);
 
 void gl_deinit_fbo(gl_t * gl);
 void gl_init_fbo(gl_t * gl, unsigned width, unsigned height);
-void ps3graphics_reinit_fbos(void);
 
 bool gl_cg_reinit(const char *path);
 bool gl_cg_save_cgp(const char *path, const struct gl_cg_cgp_info *info);
 bool gl_cg_load_shader(unsigned index, const char *path);
-
 
 unsigned gl_cg_get_lut_info(struct gl_cg_lut_info *info, unsigned elems);
 

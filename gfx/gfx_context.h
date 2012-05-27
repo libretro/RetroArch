@@ -64,7 +64,7 @@ bool gfx_ctx_window_has_focus(void);
 void gfx_ctx_input_driver(const input_driver_t **input, void **input_data);
 
 #ifdef HAVE_CG_MENU
-bool gfx_ctx_menu_init(void)
+bool gfx_ctx_menu_init(void);
 #endif
 
 #ifdef RARCH_CONSOLE
@@ -73,7 +73,7 @@ void gfx_ctx_get_available_resolutions(void);
 #endif
 
 #ifdef HAVE_OPENGL
-void gfx_ctx_set_projection(gl_t *gl, bool allow_rotate);
+void gfx_ctx_set_projection(gl_t *gl, ortho_t *ortho, bool allow_rotate);
 #endif
 
 #endif

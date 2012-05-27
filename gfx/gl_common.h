@@ -107,6 +107,16 @@ struct gl_fbo_scale
    bool valid;
 };
 
+typedef struct
+{
+   float left;
+   float right;
+   float bottom;
+   float top;
+   float near;
+   float far;
+} ortho_t;
+
 struct gl_tex_info
 {
    GLuint tex;
@@ -212,7 +222,7 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #endif
 
 void gl_shader_use(unsigned index);
-void gl_set_projection(gl_t *gl, bool allow_rotate);
+void gl_set_projection(gl_t *gl, ortho_t *ortho, bool allow_rotate);
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate);
 
 #endif
