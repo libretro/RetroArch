@@ -22,6 +22,7 @@ void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size);
 void gl_deinit_font(gl_t *gl);
 
 void gl_render_msg(gl_t *gl, const char *msg);
+void gl_render_msg_post(gl_t *gl);
 
 #endif
 

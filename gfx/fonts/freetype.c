@@ -220,18 +220,10 @@ static void calculate_font_coords(gl_t *gl,
    font_tex_coords[7] = hy;
 }
 
-static void gl_render_msg_pre(gl_t *gl)
-{
-   gl_shader_use(0);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
-   glEnable(GL_BLEND);
-   (void)gl;
-}
-
 extern const GLfloat vertexes_flipped[];
 extern const GLfloat white_color[];
 
-static void gl_render_msg_post(gl_t *gl)
+void gl_render_msg_post(gl_t *gl)
 {
    // Go back to old rendering path.
    glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
@@ -250,7 +242,9 @@ void gl_render_msg(gl_t *gl, const char *msg)
    if (!gl->font)
       return;
 
-   gl_render_msg_pre(gl);
+   gl_shader_use(0);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
+   glEnable(GL_BLEND);
 
    GLfloat font_vertex[8]; 
    GLfloat font_vertex_dark[8]; 
@@ -286,12 +280,9 @@ void gl_render_msg(gl_t *gl, const char *msg)
    glVertexPointer(2, GL_FLOAT, 0, font_vertex);
    glColorPointer(4, GL_FLOAT, 0, gl->font_color);
    glDrawArrays(GL_QUADS, 0, 4);
-
-   gl_render_msg_post(gl);
 #else
    (void)gl;
    (void)msg;
 #endif
 }
-
 
