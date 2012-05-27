@@ -21,7 +21,6 @@
 #include "../gfx/gfx_common.h"
 #include "../gfx/image.h"
 #include "../console/console_ext.h"
-#include <cell/dbgfont.h>
 
 enum
 {

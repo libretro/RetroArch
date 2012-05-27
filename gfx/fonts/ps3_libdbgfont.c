@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cell/dbgfont.h>
 #include "../gl_common.h"
 
 void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size)
