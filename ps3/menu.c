@@ -1105,8 +1105,10 @@ static void rarch_filename_input_and_save (unsigned filename_type)
    {
       glClear(GL_COLOR_BUFFER_BIT);
       gl_frame_menu();
-      video_gl.swap(NULL);
+      gfx_ctx_swap_buffers();
+#ifdef HAVE_SYSUTILS
       cellSysutilCheckCallback();
+#endif
    }
 
    if(g_console.oskutil_handle.text_can_be_fetched)
@@ -1138,8 +1140,10 @@ static void rarch_filename_input_and_save (unsigned filename_type)
       {
          /* OSK Util gets updated */
          glClear(GL_COLOR_BUFFER_BIT);
-	 video_gl.swap(NULL);
-	 cellSysutilCheckCallback();
+	 gfx_ctx_swap_buffers();
+#ifdef HAVE_SYSUTILS
+         cellSysutilCheckCallback();
+#endif
       }
 
       if(g_console.oskutil_handle.text_can_be_fetched)
@@ -1545,8 +1549,10 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				while(OSK_IS_RUNNING(g_console.oskutil_handle))
 				{
 					glClear(GL_COLOR_BUFFER_BIT);
-					video_gl.swap(NULL);
-					cellSysutilCheckCallback();
+					gfx_ctx_swap_buffers();
+#ifdef HAVE_SYSUTILS
+                                        cellSysutilCheckCallback();
+#endif
 				}
 
 				if(g_console.oskutil_handle.text_can_be_fetched)
@@ -2353,7 +2359,10 @@ static void ingame_menu(uint32_t menu_id)
 		     cellDbgFontPrintf (0.09f, 0.83f, 0.91f, LIGHTBLUE, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the menu.");
 		     cellDbgFontDraw();
 		  }
-		  video_gl.swap(NULL);
+		  gfx_ctx_swap_buffers();
+#ifdef HAVE_SYSUTILS
+                  cellSysutilCheckCallback();
+#endif
 		  if(CTRL_SQUARE(~state))
 		  {
                      glDisable(GL_BLEND);
@@ -2376,7 +2385,10 @@ static void ingame_menu(uint32_t menu_id)
 
 		  rarch_render_cached_frame();
 
-		  video_gl.swap(NULL);
+		  gfx_ctx_swap_buffers();
+#ifdef HAVE_SYSUTILS
+                  cellSysutilCheckCallback();
+#endif
 	       }
 	    }
 
@@ -2642,7 +2654,10 @@ void menu_loop(void)
          SET_TIMER_EXPIRATION(g_console.timer_expiration_frame_count, 30);
       }
 
-      video_gl.swap(NULL);
+      gfx_ctx_swap_buffers();
+#ifdef HAVE_SYSUTILS
+      cellSysutilCheckCallback();
+#endif
       glDisable(GL_BLEND);
    }while (g_console.menu_enable);
 

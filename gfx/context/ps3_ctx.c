@@ -60,3 +60,7 @@ bool gfx_ctx_window_has_focus(void)
    return true;
 }
 
+void gfx_ctx_swap_buffers(void)
+{
+   psglSwap();
+}

@@ -100,7 +100,6 @@ static const GLfloat white_color[] = {
 };
 
 struct {
-   bool block_swap;
    bool overscan_enable;
    GLfloat overscan_amount;
 #ifdef HAVE_CG_MENU
@@ -954,8 +953,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl_render_msg_post(gl);
    }
 
-   if(!ps3_gl.block_swap)
-      psglSwap();
+   if(!gl->block_swap)
+      gfx_ctx_swap_buffers();
 
    return true;
 }
@@ -1202,19 +1201,11 @@ static bool gl_focus(void *data)
    return gfx_ctx_window_has_focus();
 }
 
-static void ps3graphics_set_swap_block_swap(void * data, bool toggle)
+static void ps3graphics_set_swap_block_swap(void * data, bool enable)
 {
-   (void)data;
-   ps3_gl.block_swap = toggle;
-}
+   gl_t *gl = driver.video_data;
 
-static void ps3graphics_swap(void * data)
-{
-   (void)data;
-   psglSwap();
-#ifdef HAVE_SYSUTILS
-   cellSysutilCheckCallback();
-#endif
+   gl->block_swap = enable;
 }
 
 static void ps3graphics_set_aspect_ratio(void * data, uint32_t aspectratio_index)
@@ -1245,7 +1236,6 @@ const video_driver_t video_gl =
    .set_swap_block_state = ps3graphics_set_swap_block_swap,
    .set_rotation = ps3graphics_set_orientation,
    .set_aspect_ratio = ps3graphics_set_aspect_ratio,
-   .swap = ps3graphics_swap
 };
 
 static void get_all_available_resolutions (void)

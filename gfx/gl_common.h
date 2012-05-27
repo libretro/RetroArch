@@ -126,6 +126,9 @@ struct gl_tex_info
 
 typedef struct gl
 {
+#ifdef RARCH_CONSOLE
+   bool block_swap;
+#endif
    bool vsync;
    GLuint texture[TEXTURES];
    unsigned tex_index; // For use with PREV.
