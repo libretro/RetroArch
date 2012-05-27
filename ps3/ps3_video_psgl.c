@@ -100,9 +100,6 @@ static const GLfloat white_color[] = {
 };
 
 struct {
-#ifdef HAVE_CG_MENU
-   struct texture_image menu_texture;
-#endif
    PSGLdevice* gl_device;
    PSGLcontext* gl_context;
 } ps3_gl;
@@ -991,7 +988,7 @@ static void gl_set_nonblock_state(void *data, bool state)
    }
 }
 
-static bool psgl_init_device(gl_t *gl, const video_info_t *video, uint32_t resolution_id)
+static bool psgl_init_device(gl_t *gl)
 {
    PSGLinitOptions options =
    {
@@ -1022,10 +1019,10 @@ static bool psgl_init_device(gl_t *gl, const video_info_t *video, uint32_t resol
       params.bufferingMode = PSGL_BUFFERING_MODE_TRIPLE;
    }
 
-   if(resolution_id)
+   if(g_console.current_resolution_id)
    {
       CellVideoOutResolution resolution;
-      cellVideoOutGetResolution(resolution_id, &resolution);
+      cellVideoOutGetResolution(g_console.current_resolution_id, &resolution);
 
       params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
       params.width = resolution.width;
@@ -1057,7 +1054,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!gl)
       return NULL;
 
-   if (!psgl_init_device(gl, video, g_console.current_resolution_id))
+   if (!psgl_init_device(gl))
       return NULL;
 
 
@@ -1318,40 +1315,6 @@ const char * ps3_get_resolution_label(uint32_t resolution)
       default:
 	      return "Unknown";
    }
-}
-
-static bool gfx_ctx_menu_init(void)
-{
-   gl_t *gl = driver.video_data;
-
-   if (!gl)
-      return false;
-
-#ifdef HAVE_CG_MENU
-   glGenTextures(1, &gl->menu_texture_id);
-
-   RARCH_LOG("Loading texture image for menu...\n");
-   if(!texture_image_load(DEFAULT_MENU_BORDER_FILE, &ps3_gl.menu_texture))
-   {
-      RARCH_ERR("Failed to load texture image for menu.\n");
-      return false;
-   }
-
-   glBindTexture(GL_TEXTURE_2D, gl->menu_texture_id);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_ARGB_SCE, ps3_gl.menu_texture.width, ps3_gl.menu_texture.height, 0,
-		   GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8, ps3_gl.menu_texture.pixels);
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-
-   free(ps3_gl.menu_texture.pixels);
-#endif
-	
-   return true;
 }
 
 void ps3_set_filtering(unsigned index, bool set_smooth)

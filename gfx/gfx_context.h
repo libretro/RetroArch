@@ -58,5 +58,9 @@ bool gfx_ctx_window_has_focus(void);
 
 void gfx_ctx_input_driver(const input_driver_t **input, void **input_data);
 
+#ifdef HAVE_CG_MENU
+bool gfx_ctx_menu_init(void)
+#endif
+
 #endif
 
