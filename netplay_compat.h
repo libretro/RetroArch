@@ -39,6 +39,7 @@
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <fcntl.h>
 
 #ifdef __CELLOS_LV2__
 #include <cell/sysmodule.h>

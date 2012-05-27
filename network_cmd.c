@@ -19,7 +19,6 @@
 #include "general.h"
 #include <stdio.h>
 #include <string.h>
-#include <fcntl.h>
 
 struct network_cmd
 {
