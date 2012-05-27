@@ -223,8 +223,11 @@ static void calculate_font_coords(gl_t *gl,
 extern const GLfloat vertexes_flipped[];
 extern const GLfloat white_color[];
 
+#endif
+
 void gl_render_msg_post(gl_t *gl)
 {
+#ifdef HAVE_FREETYPE
    // Go back to old rendering path.
    glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
    glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);
@@ -233,8 +236,10 @@ void gl_render_msg_post(gl_t *gl)
 
    glDisable(GL_BLEND);
    gl_set_projection(gl, true);
-}
+#else
+   (void)gl;
 #endif
+}
 
 void gl_render_msg(gl_t *gl, const char *msg)
 {
