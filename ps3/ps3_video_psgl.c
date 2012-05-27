@@ -1065,8 +1065,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    else
       gl->tex_filter = video->smooth ? GL_LINEAR : GL_NEAREST;
 
-   gl->texture_type = GL_BGRA;
-   gl->texture_fmt = video->rgb32 ? GL_ARGB_SCE : GL_RGB5_A1;
+   gl->texture_type = RARCH_GL_TEXTURE_TYPE;
+   gl->texture_fmt = video->rgb32 ? RARCH_GL_FORMAT32 : RARCH_GL_FORMAT16;
    gl->base_size = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    glEnable(GL_TEXTURE_2D);
