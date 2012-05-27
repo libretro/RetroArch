@@ -2254,8 +2254,14 @@ static void ingame_menu(uint32_t menu_id)
 
 		  rarch_render_cached_frame();
 
-		  if(CTRL_SQUARE(~state))
+		  if(CTRL_SQUARE(state))
+                  {
                      gl->menu_render = false;
+                  }
+                  else
+                  {
+                     gl->menu_render = true;
+                  }
 
 		  if(CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state))
 			  g_console.viewports.custom_vp.x -= 1;
