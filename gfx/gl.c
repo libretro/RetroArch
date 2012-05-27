@@ -878,6 +878,26 @@ static void gl_next_texture_index(gl_t *gl, const struct gl_tex_info *tex_info)
    gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
 }
 
+#ifdef HAVE_CG_MENU
+static void gl_render_menu(gl_t *gl)
+{
+   gl_shader_use(RARCH_CG_MENU_SHADER_INDEX);
+
+   gl_shader_set_params(gl->win_width, gl->win_height, gl->win_width, 
+         gl->win_height, gl->win_width, gl->win_height, gl->frame_count,
+         NULL, NULL, NULL, 0);
+
+   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
+
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, gl->menu_texture_id);
+
+   glVertexPointer(2, GL_FLOAT, 0, default_vertex_ptr);
+   glDrawArrays(GL_QUADS, 0, 4); 
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+}
+#endif
+
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *gl = (gl_t*)data;
@@ -950,23 +970,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gfx_ctx_swap_buffers();
 
 #ifdef HAVE_CG_MENU
-   if(gl->menu_render)
-   {
-      gl_shader_use(RARCH_CG_MENU_SHADER_INDEX);
-
-      gl_shader_set_params(gl->win_width, gl->win_height, gl->win_width, 
-		   gl->win_height, gl->win_width, gl->win_height, gl->frame_count,
-		   NULL, NULL, NULL, 0);
-
-      gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
-
-      glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_2D, gl->menu_texture_id);
-
-      glVertexPointer(2, GL_FLOAT, 0, default_vertex_ptr);
-      glDrawArrays(GL_QUADS, 0, 4); 
-      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   }
+   if (gl->menu_render)
+      gl_render_menu(gl);
 #endif
 
    return true;
