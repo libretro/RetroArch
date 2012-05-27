@@ -197,7 +197,7 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
 #define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT_1_5_5_5_REV
 
-void gl_shader_use(unsigned);
+void gl_shader_use(unsigned index);
 void gl_set_projection(gl_t *gl, bool allow_rotate);
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate);
 

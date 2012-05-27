@@ -910,7 +910,7 @@ static void gl_free(void *data)
    glDisableClientState(GL_COLOR_ARRAY);
    glDeleteTextures(TEXTURES, gl->texture);
 
-#ifdef __CELLOS_LV2__
+#ifdef HAVE_OPENGL_TEXREF
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
    glDeleteBuffers(1, &gl->pbo);
 #endif
@@ -1059,7 +1059,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #ifdef HAVE_OPENGL_TEXREF
    glGenBuffers(1, &gl->pbo);
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
-   glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
+   glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
+         gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
 #endif
 
    // Empty buffer that we use to clear out the texture with on res change.
