@@ -946,8 +946,15 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gfx_set_dwm();
 #endif
 
-   if (!gfx_ctx_init())
+   gl_t *gl = (gl_t*)calloc(1, sizeof(gl_t));
+   if (!gl)
       return NULL;
+
+   if (!gfx_ctx_init())
+   {
+      free(gl);
+      return NULL;
+   }
 
    unsigned full_x = 0, full_y = 0;
    gfx_ctx_get_video_size(&full_x, &full_y);
@@ -965,7 +972,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    if (!gfx_ctx_set_video_mode(win_width, win_height,
             g_settings.video.force_16bit ? 15 : 0, video->fullscreen))
+   {
+      free(gl);
       return NULL;
+   }
 
    gfx_ctx_update_window_title(true);
 
@@ -977,16 +987,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!load_gl_proc())
    {
       gfx_ctx_destroy();
+      free(gl);
       return NULL;
    }
 #endif
-
-   gl_t *gl = (gl_t*)calloc(1, sizeof(gl_t));
-   if (!gl)
-   {
-      gfx_ctx_destroy();
-      return NULL;
-   }
 
    gl->vsync = video->vsync;
    gl->fullscreen = video->fullscreen;
