@@ -107,6 +107,9 @@ struct gl_fbo_scale
    bool valid;
 };
 
+// DOS creeps into Win32, yay.
+#undef near
+#undef far
 struct gl_ortho
 {
    GLfloat left;

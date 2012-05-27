@@ -1309,3 +1309,4 @@ const video_driver_t video_gl = {
 
    gl_set_rotation,
 };
+
