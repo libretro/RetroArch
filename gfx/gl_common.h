@@ -199,10 +199,17 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #define pglActiveTexture glActiveTexture
 #endif
 
+#ifdef __CELLOS_LV2__
+#define RARCH_GL_INTERNAL_FORMAT GL_ARGB_SCE
+#define RARCH_GL_TEXTURE_TYPE GL_ARGB_SCE
+#define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8
+#define RARCH_GL_FORMAT16 GL_RGB5_A1
+#else
 #define RARCH_GL_INTERNAL_FORMAT GL_RGBA
 #define RARCH_GL_TEXTURE_TYPE GL_BGRA
 #define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
 #define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT_1_5_5_5_REV
+#endif
 
 void gl_shader_use(unsigned index);
 void gl_set_projection(gl_t *gl, bool allow_rotate);

@@ -306,8 +306,9 @@ static void gl_create_fbo_textures(gl_t *gl)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_type);
 
       glTexImage2D(GL_TEXTURE_2D,
-		      0, GL_ARGB_SCE, gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0, GL_ARGB_SCE,
-		      GL_UNSIGNED_INT_8_8_8_8, NULL);
+            0, RARCH_GL_INTERNAL_FORMAT, gl->fbo_rect[i].width, gl->fbo_rect[i].height,
+            0, RARCH_GL_TEXTURE_TYPE,
+            RARCH_GL_FORMAT32, NULL);
    }
 
    glBindTexture(GL_TEXTURE_2D, 0);
