@@ -950,7 +950,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    if (msg)
    {
-      gl_render_msg_pre(gl);
       gl_render_msg(gl, msg);
       gl_render_msg_post(gl);
    }
