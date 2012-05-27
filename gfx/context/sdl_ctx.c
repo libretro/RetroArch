@@ -397,3 +397,15 @@ void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
       *input = NULL;
 }
 
+void gfx_ctx_set_rotation(gl_t *gl, bool allow_rotate)
+{
+   glMatrixMode(GL_PROJECTION);
+   glLoadIdentity();
+
+   if (allow_rotate)
+      glRotatef(gl->rotation, 0, 0, 1);
+
+   glOrtho(0, 1, 0, 1, -1, 1);
+   glMatrixMode(GL_MODELVIEW);
+   glLoadIdentity();
+}

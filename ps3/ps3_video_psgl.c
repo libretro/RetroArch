@@ -50,30 +50,6 @@ static const GLfloat vertexes_flipped[] = {
    1, 0
 };
 
-// Other vertex orientations
-static const GLfloat vertexes_90[] = {
-   0, 1,
-   1, 1,
-   1, 0,
-   0, 0
-};
-
-static const GLfloat vertexes_180[] = {
-   1, 1,
-   1, 0,
-   0, 0,
-   0, 1
-};
-
-static const GLfloat vertexes_270[] = {
-   1, 0,
-   0, 0,
-   0, 1,
-   1, 1
-};
-
-static const GLfloat *vertex_ptr = vertexes_flipped;
-
 // Used when rendering to an FBO.
 // Texture coords have to be aligned with vertex coordinates.
 static const GLfloat vertexes[] = {
@@ -96,6 +72,9 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
    1, 1, 1, 1,
 };
+
+const GLfloat *vertex_ptr = vertexes_flipped;
+const GLfloat *default_vertex_ptr = vertexes_flipped;
 
 #ifdef HAVE_FBO
 #if defined(_WIN32) && !defined(RARCH_CONSOLE)
@@ -634,26 +613,17 @@ static void check_window(gl_t *gl)
       gl->should_resize = true;
 }
 
-static void ps3graphics_set_orientation(void * data, uint32_t orientation)
+void gl_set_projection(gl_t *gl, bool allow_rotate)
 {
-   (void)data;
-   switch (orientation)
-   {
-      case ORIENTATION_NORMAL:
-         vertex_ptr = vertexes_flipped;
-	 break;
-      case ORIENTATION_VERTICAL:
-	 vertex_ptr = vertexes_90;
-	 break;
-      case ORIENTATION_FLIPPED:
-	 vertex_ptr = vertexes_180;
-	 break;
-      case ORIENTATION_FLIPPED_ROTATED:
-	 vertex_ptr = vertexes_270;
-	 break;
-   }
+   gfx_ctx_set_rotation(gl, allow_rotate);
+   gl_shader_set_proj_matrix();
+}
 
-   glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
+static void gl_set_rotation(void *data, unsigned rotation)
+{
+   gl_t * gl = driver.video_data;
+   gl->rotation = 90 * rotation;
+   gl_set_projection(gl, true);
 }
 
 #ifdef __CELLOS_LV2__
@@ -1212,7 +1182,7 @@ const video_driver_t video_gl =
    .focus = gl_focus,
    .free = gl_free,
    .ident = "gl",
-   .set_rotation = ps3graphics_set_orientation,
+   .set_rotation = gl_set_rotation,
    .set_aspect_ratio = ps3graphics_set_aspect_ratio,
 #ifdef RARCH_CONSOLE
    .start = gl_start,

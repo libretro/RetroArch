@@ -37,7 +37,7 @@
 #define video_focus_func()                      gl_focus(driver.video_data)
 #define video_xml_shader_func(path)             driver.video->xml_shader(driver.video_data, path)
 #define video_free_func()                       gl_free(driver.video_data)
-#define video_set_rotation_func(orientation)	ps3graphics_set_orientation(driver.video_data, orientation)
+#define video_set_rotation_func(rotation)	gl_set_rotation(driver.video_data, rotation)
 #define video_set_aspect_ratio_func(aspectratio_idx) ps3graphics_set_aspect_ratio(driver.video_data, aspectratio_idx)
 
 #define input_init_func()                       ps3_input_initialize()

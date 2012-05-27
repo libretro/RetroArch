@@ -77,6 +77,9 @@ const GLfloat white_color[] = {
    1, 1, 1, 1,
 };
 
+const GLfloat *vertex_ptr = vertexes_flipped;
+const GLfloat *default_vertex_ptr = vertexes_flipped;
+
 #ifdef HAVE_SDL
 #define LOAD_SYM(sym) if (!p##sym) { SDL_SYM_WRAP(p##sym, #sym) }
 #endif
@@ -422,16 +425,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
 void gl_set_projection(gl_t *gl, bool allow_rotate)
 {
-   glMatrixMode(GL_PROJECTION);
-   glLoadIdentity();
-
-   if (allow_rotate)
-      glRotatef(gl->rotation, 0, 0, 1);
-
-   glOrtho(0, 1, 0, 1, -1, 1);
-   glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
-
+   gfx_ctx_set_rotation(gl, allow_rotate);
    gl_shader_set_proj_matrix();
 }
 
@@ -479,7 +473,7 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full,
 
 static void gl_set_rotation(void *data, unsigned rotation)
 {
-   gl_t *gl = (gl_t*)data;
+   gl_t * gl = driver.video_data;
    gl->rotation = 90 * rotation;
    gl_set_projection(gl, true);
 }
@@ -695,7 +689,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
          gl->vp_width, gl->vp_height, gl->frame_count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
-   glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);
+   glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
    glDrawArrays(GL_QUADS, 0, 4);
 
    glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
@@ -1046,7 +1040,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
    glEnableClientState(GL_COLOR_ARRAY);
-   glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);
+   glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
 
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
    glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
