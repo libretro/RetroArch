@@ -164,18 +164,12 @@ static bool gl_shader_init(void)
 
 #ifdef HAVE_CG
       case RARCH_SHADER_CG:
-      {
          return gl_cg_init(g_settings.video.cg_shader_path);
-         break;
-      }
 #endif
 
 #ifdef HAVE_XML
       case RARCH_SHADER_BSNES:
-      {
          return gl_glsl_init(g_settings.video.bsnes_shader_path);
-         break;
-      }
 #endif
 
       default:
