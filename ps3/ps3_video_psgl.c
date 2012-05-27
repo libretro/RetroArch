@@ -605,11 +605,11 @@ static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_f
 
    glViewport(m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp);
 
-   if(ps3_gl.overscan_enable)
+   if(g_console.overscan_enable)
    {
-      m_left = -ps3_gl.overscan_amount/2;
-      m_right = 1 + ps3_gl.overscan_amount/2;
-      m_bottom = -ps3_gl.overscan_amount/2;
+      m_left = -g_console.overscan_amount/2;
+      m_right = 1 + g_console.overscan_amount/2;
+      m_bottom = -g_console.overscan_amount/2;
    }
 
    glMatrixMode(GL_PROJECTION);
@@ -1408,19 +1408,13 @@ void ps3_set_filtering(unsigned index, bool set_smooth)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
-void ps3graphics_set_overscan(bool overscan_enable, float amount, bool recalculate_viewport)
+void ps3graphics_set_overscan(void)
 {
    gl_t * gl = driver.video_data;
    if(!gl)
       return;
 
-   ps3_gl.overscan_enable = overscan_enable;
-   ps3_gl.overscan_amount = amount;
-
-   if(recalculate_viewport)
-   { 
-      set_viewport(gl, gl->win_width, gl->win_height, false, true);
-   }
+   set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
 void ps3graphics_video_init(bool get_all_resolutions)
@@ -1435,15 +1429,11 @@ void ps3graphics_video_init(bool get_all_resolutions)
    driver.video_data = gl_init(&video_info, NULL, NULL);
    gl_set_fbo_enable(g_console.fbo_enabled);
 
-   ps3_gl.overscan_enable = g_console.overscan_enable;
-   ps3_gl.overscan_amount = g_console.overscan_amount;
-
    if(get_all_resolutions)
       get_all_available_resolutions();
 
    ps3_set_resolution();
    ps3_setup_texture();
-   ps3graphics_set_overscan(ps3_gl.overscan_enable, ps3_gl.overscan_amount, 0);
 }
 
 void ps3graphics_video_reinit(void)

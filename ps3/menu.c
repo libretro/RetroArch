@@ -1409,7 +1409,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				if(g_console.overscan_amount == 0.0f)
 					g_console.overscan_enable = false;
 
-				ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+				ps3graphics_set_overscan();
 				set_delay = DELAY_SMALLEST;
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
@@ -1420,14 +1420,14 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				if(g_console.overscan_amount == 0.0f)
 					g_console.overscan_enable = 0;
 
-				ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+				ps3graphics_set_overscan();
 				set_delay = DELAY_SMALLEST;
 			}
 			if(CTRL_START(state))
 			{
 				g_console.overscan_amount = 0.0f;
 				g_console.overscan_enable = false;
-				ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+				ps3graphics_set_overscan();
 			}
 			break;
 		case SETTING_THROTTLE_MODE:
@@ -2137,7 +2137,7 @@ static void ingame_menu(uint32_t menu_id)
 	       if(g_console.overscan_amount == 0.00f)
                   g_console.overscan_enable = false;
 
-	       ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+	       ps3graphics_set_overscan();
 	       set_delay = DELAY_SMALLEST;
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_LSTICK_RIGHT(state))
@@ -2147,14 +2147,14 @@ static void ingame_menu(uint32_t menu_id)
 	       if(g_console.overscan_amount == 0.0f)
                   g_console.overscan_amount = false;
 
-	       ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+	       ps3graphics_set_overscan();
 	       set_delay = DELAY_SMALLEST;
 	    }
 	    if(CTRL_START(state))
 	    {
                g_console.overscan_amount = 0.0f;
 	       g_console.overscan_enable = false;
-	       ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+	       ps3graphics_set_overscan();
 	    }
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
