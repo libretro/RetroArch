@@ -1104,7 +1104,6 @@ static void rarch_filename_input_and_save (unsigned filename_type)
    while(OSK_IS_RUNNING(g_console.oskutil_handle))
    {
       glClear(GL_COLOR_BUFFER_BIT);
-      gl_frame_menu();
       gfx_ctx_swap_buffers();
 #ifdef HAVE_SYSUTILS
       cellSysutilCheckCallback();
@@ -2256,9 +2255,7 @@ static void ingame_menu(uint32_t menu_id)
 		  rarch_render_cached_frame();
 
 		  if(CTRL_SQUARE(~state))
-		  {
-                     gl_frame_menu();
-		  }
+                     gl->menu_render = false;
 
 		  if(CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state))
 			  g_console.viewports.custom_vp.x -= 1;
@@ -2566,8 +2563,7 @@ void menu_loop(void)
 
    menu_reinit_settings();
 
-   if(g_console.emulator_initialized)
-	   video_gl.set_swap_block_state(NULL, true);
+   video_gl.set_swap_block_state(NULL, true);
 
    if(g_console.ingame_menu_enable)
    {
@@ -2576,17 +2572,14 @@ void menu_loop(void)
       menuStack[menuStackindex].enum_id = INGAME_MENU;
    }
 
+   gl->menu_render = true;
+
    do
    {
       glClear(GL_COLOR_BUFFER_BIT);
       glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
       glEnable(GL_BLEND);
-      if(g_console.emulator_initialized)
-      {
-         rarch_render_cached_frame();
-      }
-
-      gl_frame_menu();
+      rarch_render_cached_frame();
 
       switch(menuStack[menuStackindex].enum_id)
       {
@@ -2661,11 +2654,12 @@ void menu_loop(void)
       glDisable(GL_BLEND);
    }while (g_console.menu_enable);
 
+   gl->menu_render = false;
+
    if(g_console.ingame_menu_enable)
       menuStackindex--;		// pop ingame menu from stack
 
-   if(g_console.emulator_initialized)
-      video_gl.set_swap_block_state(NULL, false);
+   video_gl.set_swap_block_state(NULL, false);
 
    g_console.ingame_menu_enable = false;
 }

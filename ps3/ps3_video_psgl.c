@@ -101,7 +101,6 @@ static const GLfloat white_color[] = {
 
 struct {
 #ifdef HAVE_CG_MENU
-   GLuint menu_texture_id;
    struct texture_image menu_texture;
 #endif
    PSGLdevice* gl_device;
@@ -657,33 +656,6 @@ static void check_window(gl_t *gl)
       gl->should_resize = true;
 }
 
-void gl_frame_menu (void)
-{
-   gl_t *gl = driver.video_data;
-
-   gl->frame_count++;
-
-   if(!gl)
-	   return;
-
-#ifdef HAVE_CG_MENU
-   gl_shader_use(RARCH_CG_MENU_SHADER_INDEX);
-
-   gl_shader_set_params(gl->win_width, gl->win_height, gl->win_width, 
-		   gl->win_height, gl->win_width, gl->win_height, gl->frame_count,
-		   NULL, NULL, NULL, 0);
-
-   set_viewport(gl, gl->win_width, gl->win_height, true, false);
-
-   glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, ps3_gl.menu_texture_id);
-
-   glDrawArrays(GL_QUADS, 0, 4); 
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-#endif
-}
-
 static void ps3graphics_set_orientation(void * data, uint32_t orientation)
 {
    (void)data;
@@ -952,6 +924,25 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    if(!gl->block_swap)
       gfx_ctx_swap_buffers();
+
+#ifdef HAVE_CG_MENU
+   if(gl->menu_render)
+   {
+      gl_shader_use(RARCH_CG_MENU_SHADER_INDEX);
+
+      gl_shader_set_params(gl->win_width, gl->win_height, gl->win_width, 
+		   gl->win_height, gl->win_width, gl->win_height, gl->frame_count,
+		   NULL, NULL, NULL, 0);
+
+      set_viewport(gl, gl->win_width, gl->win_height, true, false);
+
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, gl->menu_texture_id);
+
+      glDrawArrays(GL_QUADS, 0, 4); 
+      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+   }
+#endif
 
    return true;
 }
@@ -1329,7 +1320,7 @@ const char * ps3_get_resolution_label(uint32_t resolution)
    }
 }
 
-static bool ps3_setup_texture(void)
+static bool gfx_ctx_menu_init(void)
 {
    gl_t *gl = driver.video_data;
 
@@ -1337,7 +1328,7 @@ static bool ps3_setup_texture(void)
       return false;
 
 #ifdef HAVE_CG_MENU
-   glGenTextures(1, &ps3_gl.menu_texture_id);
+   glGenTextures(1, &gl->menu_texture_id);
 
    RARCH_LOG("Loading texture image for menu...\n");
    if(!texture_image_load(DEFAULT_MENU_BORDER_FILE, &ps3_gl.menu_texture))
@@ -1346,7 +1337,7 @@ static bool ps3_setup_texture(void)
       return false;
    }
 
-   glBindTexture(GL_TEXTURE_2D, ps3_gl.menu_texture_id);
+   glBindTexture(GL_TEXTURE_2D, gl->menu_texture_id);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -1416,7 +1407,9 @@ void ps3graphics_video_init(bool get_all_resolutions)
 
    CellVideoOutState g_video_state;
    cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &g_video_state);
-   ps3_setup_texture();
+#ifdef HAVE_CG_MENU
+   gfx_ctx_menu_init();
+#endif
 }
 
 void ps3graphics_video_reinit(void)
@@ -1437,4 +1430,3 @@ void ps3_video_deinit(void)
    driver.video_data = NULL;
    gl_free(data);
 }
-

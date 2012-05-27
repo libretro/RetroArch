@@ -129,6 +129,10 @@ typedef struct gl
 #ifdef RARCH_CONSOLE
    bool block_swap;
 #endif
+#ifdef HAVE_CG_MENU
+   bool menu_render;
+   GLuint menu_texture_id;
+#endif
    bool vsync;
    GLuint texture[TEXTURES];
    unsigned tex_index; // For use with PREV.
