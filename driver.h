@@ -163,7 +163,11 @@ typedef struct video_driver
    void (*set_swap_block_state)(void *data, bool toggle); // Block swapping from being called in ::frame().
    void (*swap)(void *data); // Explicitly swap buffers. Only useful when set_swap_block_state() is set to true.
    void (*set_aspect_ratio)(void *data, unsigned aspectratio_idx); // TODO: refactor this properly to float.
+   void (*start)(void);
+   void (*stop)(void);
+   void (*restart)(void);
 #endif
+
    void (*set_rotation)(void *data, unsigned rotation);
 } video_driver_t;
 
