@@ -48,6 +48,9 @@ VIDEO
 
 #if defined(__CELLOS_LV2__)
 #include "../../gfx/context/ps3_ctx.c"
+#endif
+
+#ifdef HAVE_CG
 #include "../../gfx/shader_cg.c"
 #endif
 
