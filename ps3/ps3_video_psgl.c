@@ -1138,13 +1138,6 @@ static bool gl_focus(void *data)
    return gfx_ctx_window_has_focus();
 }
 
-static void ps3graphics_set_swap_block_swap(void * data, bool enable)
-{
-   gl_t *gl = driver.video_data;
-
-   gl->block_swap = enable;
-}
-
 static void ps3graphics_set_aspect_ratio(void * data, uint32_t aspectratio_index)
 {
    (void)data;
@@ -1208,7 +1201,6 @@ static void gl_restart(void)
    gl_cg_invalidate_context();
    gl_start();
 }
-
 #endif
 
 const video_driver_t video_gl = 
@@ -1220,12 +1212,13 @@ const video_driver_t video_gl =
    .focus = gl_focus,
    .free = gl_free,
    .ident = "gl",
-   .set_swap_block_state = ps3graphics_set_swap_block_swap,
    .set_rotation = ps3graphics_set_orientation,
    .set_aspect_ratio = ps3graphics_set_aspect_ratio,
+#ifdef RARCH_CONSOLE
    .start = gl_start,
    .restart = gl_restart,
    .stop = gl_stop,
+#endif
 };
 
 void ps3graphics_set_overscan(void)

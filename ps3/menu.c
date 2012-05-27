@@ -2569,7 +2569,7 @@ void menu_loop(void)
 
    menu_reinit_settings();
 
-   video_gl.set_swap_block_state(NULL, true);
+   gl->block_swap = true;
 
    if(g_console.ingame_menu_enable)
    {
@@ -2665,7 +2665,7 @@ void menu_loop(void)
    if(g_console.ingame_menu_enable)
       menuStackindex--;		// pop ingame menu from stack
 
-   video_gl.set_swap_block_state(NULL, false);
+   gl->block_swap = false;
 
    g_console.ingame_menu_enable = false;
 }
