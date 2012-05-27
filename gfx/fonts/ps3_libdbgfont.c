@@ -18,19 +18,25 @@
 
 void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size)
 {
-   (void)gl;
    (void)font_path;
    (void)font_size;
+   CellDbgFontConfig cfg;
+
+   memset(&cfg, 0, sizeof(cfg));
+   cfg.bufSize = 512;
+   cfg.screenWidth = gl->win_width;
+   cfg.screenHeight = gl->win_height;
+   cellDbgFontInit(&cfg);
 }
 
 void gl_deinit_font(gl_t *gl)
 {
-   (void)gl;
+   cellDbgFontExit();
 }
 
 void gl_render_msg(gl_t *gl, const char *msg)
 {
-   (void)gl;
-   (void)msg;
+   cellDbgFontPrintf(g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 1.11f, BLUE,	msg);
+   cellDbgFontPrintf(g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 1.10f, WHITE, msg);
 }
 

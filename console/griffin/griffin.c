@@ -40,9 +40,12 @@ CONFIG FILE
 
 #include "func_hooks.h"
 
+
+
 /*============================================================
 VIDEO
 ============================================================ */
+
 #if defined(__CELLOS_LV2__)
 #include "../../gfx/context/ps3_ctx.c"
 #include "../../gfx/shader_cg.c"
@@ -55,10 +58,16 @@ VIDEO
 #include "../../wii/video.c"
 #endif
 
-#if defined(_XBOX)
+/*============================================================
+FONTS
+============================================================ */
+
+#if defined(__CELLOS_LV2__)
+#include "../../gfx/fonts/ps3_libdbgfont.c"
+#elif defined(_XBOX)
 #include "../../360/fonts.cpp"
 #elif defined(GEKKO)
-#include "../../gfx/fonts.c"
+#include "../../gfx/fonts/fonts.c"
 #endif
 
 /*============================================================

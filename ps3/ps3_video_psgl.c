@@ -38,6 +38,7 @@
 #include "config.h"
 #endif
 
+#include "../gfx/gl_font.h"
 #include "../compat/strl.h"
 
 #define BLUE		0xffff0000u
@@ -752,6 +753,37 @@ static void gl_init_textures(gl_t *gl)
 }
 #endif
 
+#ifdef HAVE_FREETYPE
+static inline void gl_render_msg_pre(gl_t *gl)
+{
+   gl_shader_use(0);
+   set_viewport(gl, gl->win_width, gl->win_height, false, false);
+   glEnable(GL_BLEND);
+}
+
+static inline void gl_render_msg_post(gl_t *gl)
+{
+   // Go back to old rendering path.
+   glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
+   glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);
+   glColorPointer(4, GL_FLOAT, 0, white_color);
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+
+   glDisable(GL_BLEND);
+   set_projection(gl, true);
+}
+#elif defined(__CELLOS_LV2__)
+static inline void gl_render_msg_pre(gl_t *gl) { }
+
+static inline void gl_render_msg_post(gl_t *gl)
+{
+   cellDbgFontDraw();
+}
+#else
+#define gl_render_msg_pre(...)
+#define gl_render_msg_post(...)
+#endif
+
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *gl = data;
@@ -909,9 +941,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    if (msg)
    {
-      cellDbgFontPrintf(g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 1.11f, BLUE,	msg);
-      cellDbgFontPrintf(g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 1.10f, WHITE, msg);
-      cellDbgFontDraw();
+      gl_render_msg_pre(gl);
+      gl_render_msg(gl, msg);
+      gl_render_msg_post(gl);
    }
 
    if(!ps3_gl.block_swap)
@@ -922,8 +954,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 static void psgl_deinit(gl_t *gl)
 {
-   cellDbgFontExit();
-
    psglDestroyContext(ps3_gl.gl_context);
    psglDestroyDevice(ps3_gl.gl_device);
 
@@ -937,6 +967,7 @@ static void gl_free(void *data)
 
    gl_t *gl = data;
 
+   gl_deinit_font(gl);
    gl_shader_deinit();
 
    glDisableClientState(GL_VERTEX_ARRAY);
@@ -1020,16 +1051,6 @@ static bool psgl_init_device(gl_t *gl, const video_info_t *video, uint32_t resol
    psglResetCurrentContext();
 
    return true;
-}
-
-static void psgl_init_dbgfont(gl_t *gl)
-{
-   CellDbgFontConfig cfg;
-   memset(&cfg, 0, sizeof(cfg));
-   cfg.bufSize = 512;
-   cfg.screenWidth = gl->win_width;
-   cfg.screenHeight = gl->win_height;
-   cellDbgFontInit(&cfg);
 }
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
@@ -1143,7 +1164,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       memcpy(gl->prev_info[i].coord, tex_coords, sizeof(tex_coords)); 
    }
 
-   psgl_init_dbgfont(gl);
+   gl_init_font(gl, g_settings.video.font_path, g_settings.video.font_size);
 
    if (!gl_check_error())
    {

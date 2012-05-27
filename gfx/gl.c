@@ -855,6 +855,13 @@ static inline void gl_render_msg_post(gl_t *gl)
    glDisable(GL_BLEND);
    set_projection(gl, true);
 }
+#elif defined(__CELLOS_LV2__)
+static inline void gl_render_msg_pre(gl_t *gl) { }
+
+static inline void gl_render_msg_post(gl_t *gl)
+{
+   cellDbgFontDraw();
+}
 #else
 #define gl_render_msg_pre(...)
 #define gl_render_msg_post(...)
