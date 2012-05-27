@@ -158,18 +158,12 @@ static bool gl_shader_init(void)
 
 #ifdef HAVE_CG
       case RARCH_SHADER_CG:
-      {
          return gl_cg_init(g_settings.video.cg_shader_path);
-         break;
-      }
 #endif
 
 #ifdef HAVE_XML
       case RARCH_SHADER_BSNES:
-      {
          return gl_glsl_init(g_settings.video.bsnes_shader_path);
-         break;
-      }
 #endif
 
       default:
@@ -304,7 +298,7 @@ static void gl_create_fbo_textures(gl_t *gl)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
       GLuint filter_type = base_filt;
-      bool smooth;
+      bool smooth = false;
       if (gl_shader_filter_type(i + 2, &smooth))
          filter_type = smooth ? GL_LINEAR : GL_NEAREST;
 
