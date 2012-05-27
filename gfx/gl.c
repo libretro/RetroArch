@@ -1276,22 +1276,25 @@ static void gl_restart(void)
 #endif
 
 const video_driver_t video_gl = {
-   .init = gl_init,
-   .frame = gl_frame,
-   .set_nonblock_state = gl_set_nonblock_state,
-   .alive = gl_alive,
-   .focus = gl_focus,
+   gl_init,
+   gl_frame,
+   gl_set_nonblock_state,
+   gl_alive,
+   gl_focus,
 #ifdef HAVE_XML
-   .xml_shader = gl_xml_shader,
+   gl_xml_shader,
 #else
-   .xml_shader = NULL,
+   NULL,
 #endif
-   .free = gl_free,
-   .ident = "gl",
-   .set_rotation = gl_set_rotation,
+   gl_free,
+   "gl",
 #ifdef RARCH_CONSOLE
-   .start = gl_start,
-   .restart = gl_restart,
-   .stop = gl_stop,
+   NULL, //FIXME: set_swap_block_state - to be removed
+   NULL, //FIXME: swap - to be removed
+   NULL, //FIXME: set_aspect_ratio - to be removed
+   gl_start,
+   gl_stop,
+   gl_restart,
 #endif
+   .set_rotation = gl_set_rotation,
 };
