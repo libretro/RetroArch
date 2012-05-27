@@ -46,8 +46,13 @@ CONFIG FILE
 VIDEO
 ============================================================ */
 
+#ifdef HAVE_VID_CONTEXT
+
 #if defined(__CELLOS_LV2__)
 #include "../../gfx/context/ps3_ctx.c"
+#elif defined(_XBOX)
+#endif
+
 #endif
 
 #ifdef HAVE_CG
