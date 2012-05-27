@@ -438,7 +438,7 @@ void gl_set_projection(gl_t *gl, ortho_t *ortho, bool allow_rotate)
    gl_shader_set_proj_matrix();
 }
 
-static void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
+void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
 {
    unsigned vp_x_temp, vp_y_temp, vp_width_temp, vp_height_temp;
    ortho_t ortho;
