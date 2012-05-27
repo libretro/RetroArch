@@ -1109,22 +1109,6 @@ static bool gl_focus(void *data)
    return gfx_ctx_window_has_focus();
 }
 
-static void ps3graphics_set_aspect_ratio(void * data, uint32_t aspectratio_index)
-{
-   (void)data;
-   gl_t * gl = driver.video_data;
-
-   if(g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
-      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
-
-   g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
-   g_settings.video.force_aspect = false;
-   gl->keep_aspect = true;
-
-
-   set_viewport(gl, gl->win_width, gl->win_height, false, true);
-}
-
 #ifdef RARCH_CONSOLE
 static void gl_start(void)
 {
@@ -1184,7 +1168,6 @@ const video_driver_t video_gl =
    .free = gl_free,
    .ident = "gl",
    .set_rotation = gl_set_rotation,
-   .set_aspect_ratio = ps3graphics_set_aspect_ratio,
 #ifdef RARCH_CONSOLE
    .start = gl_start,
    .restart = gl_restart,
@@ -1192,12 +1175,4 @@ const video_driver_t video_gl =
 #endif
 };
 
-void ps3graphics_set_overscan(void)
-{
-   gl_t * gl = driver.video_data;
-   if(!gl)
-      return;
-
-   set_viewport(gl, gl->win_width, gl->win_height, false, true);
-}
 

@@ -368,3 +368,26 @@ void gfx_ctx_set_projection(gl_t *gl, bool allow_rotate)
 
    glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
 }
+
+void gfx_ctx_set_aspect_ratio(void * data, unsigned aspectratio_index)
+{
+   (void)data;
+   gl_t * gl = driver.video_data;
+
+   if(g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
+      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+
+   g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
+   g_settings.video.force_aspect = false;
+   gl->keep_aspect = true;
+   gl->should_resize = true;
+}
+
+void gfx_ctx_set_overscan(void)
+{
+   gl_t * gl = driver.video_data;
+   if(!gl)
+      return;
+
+   gl->should_resize = true;
+}
