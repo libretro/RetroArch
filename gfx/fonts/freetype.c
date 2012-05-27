@@ -227,7 +227,6 @@ extern const GLfloat white_color[];
 
 void gl_render_msg_post(gl_t *gl)
 {
-   ortho_t ortho = {0}; //dummy - no overscan on PC 
 #ifdef HAVE_FREETYPE
    // Go back to old rendering path.
    glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
@@ -236,6 +235,8 @@ void gl_render_msg_post(gl_t *gl)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    glDisable(GL_BLEND);
+
+   struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
    gl_set_projection(gl, &ortho, true);
 #else
    (void)gl;

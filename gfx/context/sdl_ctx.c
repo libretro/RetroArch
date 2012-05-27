@@ -398,7 +398,7 @@ void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 }
 
 #ifdef HAVE_OPENGL
-void gfx_ctx_set_projection(gl_t *gl, ortho_t *ortho, bool allow_rotate)
+void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)
 {
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
@@ -406,7 +406,7 @@ void gfx_ctx_set_projection(gl_t *gl, ortho_t *ortho, bool allow_rotate)
    if (allow_rotate)
       glRotatef(gl->rotation, 0, 0, 1);
 
-   glOrtho(0, 1, 0, 1, -1, 1);
+   glOrtho(ortho->left, ortho->right, ortho->bottom, ortho->top, ortho->near, ortho->far);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 }

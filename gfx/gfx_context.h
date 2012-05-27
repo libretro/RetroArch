@@ -73,7 +73,7 @@ void gfx_ctx_get_available_resolutions(void);
 #endif
 
 #ifdef HAVE_OPENGL
-void gfx_ctx_set_projection(gl_t *gl, ortho_t *ortho, bool allow_rotate);
+void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate);
 #endif
 
 #endif

@@ -256,57 +256,59 @@ void gfx_ctx_set_fbo(bool enable)
 void gfx_ctx_get_available_resolutions (void)
 {
    bool defaultresolution;
-   uint32_t i, resolution_count;
+   uint32_t resolution_count;
    uint16_t num_videomodes;
 
-   if(g_console.check_available_resolutions)
+   if (g_console.check_available_resolutions)
       return;
 
    defaultresolution = true;
 
    uint32_t videomode[] = {
-	   CELL_VIDEO_OUT_RESOLUTION_480, CELL_VIDEO_OUT_RESOLUTION_576,
-	   CELL_VIDEO_OUT_RESOLUTION_960x1080, CELL_VIDEO_OUT_RESOLUTION_720,
-	   CELL_VIDEO_OUT_RESOLUTION_1280x1080, CELL_VIDEO_OUT_RESOLUTION_1440x1080,
-	   CELL_VIDEO_OUT_RESOLUTION_1600x1080, CELL_VIDEO_OUT_RESOLUTION_1080};
+      CELL_VIDEO_OUT_RESOLUTION_480, CELL_VIDEO_OUT_RESOLUTION_576,
+      CELL_VIDEO_OUT_RESOLUTION_960x1080, CELL_VIDEO_OUT_RESOLUTION_720,
+      CELL_VIDEO_OUT_RESOLUTION_1280x1080, CELL_VIDEO_OUT_RESOLUTION_1440x1080,
+      CELL_VIDEO_OUT_RESOLUTION_1600x1080, CELL_VIDEO_OUT_RESOLUTION_1080
+   };
 
-   num_videomodes = sizeof(videomode)/sizeof(uint32_t);
+   num_videomodes = sizeof(videomode) / sizeof(uint32_t);
 
    resolution_count = 0;
-   for (i = 0; i < num_videomodes; i++)
-      if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i], CELL_VIDEO_OUT_ASPECT_AUTO,0))
+   for (unsigned i = 0; i < num_videomodes; i++)
+   {
+      if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i], CELL_VIDEO_OUT_ASPECT_AUTO, 0))
          resolution_count++;
-	
-   g_console.supported_resolutions = (uint32_t*)malloc(resolution_count * sizeof(uint32_t));
+   }
 
+   g_console.supported_resolutions = malloc(resolution_count * sizeof(uint32_t));
    g_console.supported_resolutions_count = 0;
 
-   for (i = 0; i < num_videomodes; i++)
+   for (unsigned i = 0; i < num_videomodes; i++)
    {
-      if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i], CELL_VIDEO_OUT_ASPECT_AUTO,0))
+      if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i], CELL_VIDEO_OUT_ASPECT_AUTO, 0))
       {
          g_console.supported_resolutions[g_console.supported_resolutions_count++] = videomode[i];
-	 g_console.initial_resolution_id = videomode[i];
+         g_console.initial_resolution_id = videomode[i];
 
-	 if (g_console.current_resolution_id == videomode[i])
-	 {
-	    defaultresolution = false;
-	    g_console.current_resolution_index = g_console.supported_resolutions_count-1;
-	 }
+         if (g_console.current_resolution_id == videomode[i])
+         {
+            defaultresolution = false;
+            g_console.current_resolution_index = g_console.supported_resolutions_count-1;
+         }
       }
    }
 
    /* In case we didn't specify a resolution - make the last resolution
-      that was added to the list (the highest resolution) the default resolution*/
+      that was added to the list (the highest resolution) the default resolution */
    if (g_console.current_resolution_id > num_videomodes || defaultresolution)
-      g_console.current_resolution_index = g_console.supported_resolutions_count-1;
+      g_console.current_resolution_index = g_console.supported_resolutions_count - 1;
 
    g_console.check_available_resolutions = true;
 }
 
 void ps3_next_resolution (void)
 {
-   if(g_console.current_resolution_index+1 < g_console.supported_resolutions_count)
+   if (g_console.current_resolution_index + 1 < g_console.supported_resolutions_count)
    {
       g_console.current_resolution_index++;
       g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
@@ -315,7 +317,7 @@ void ps3_next_resolution (void)
 
 void ps3_previous_resolution (void)
 {
-   if(g_console.current_resolution_index)
+   if (g_console.current_resolution_index)
    {
       g_console.current_resolution_index--;
       g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
@@ -324,12 +326,12 @@ void ps3_previous_resolution (void)
 
 int ps3_check_resolution(uint32_t resolution_id)
 {
-   return cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, resolution_id, CELL_VIDEO_OUT_ASPECT_AUTO,0);
+   return cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, resolution_id, CELL_VIDEO_OUT_ASPECT_AUTO, 0);
 }
 
-const char * ps3_get_resolution_label(uint32_t resolution)
+const char *ps3_get_resolution_label(uint32_t resolution)
 {
-   switch(resolution)
+   switch (resolution)
    {
       case CELL_VIDEO_OUT_RESOLUTION_480:
 	      return  "720x480 (480p)";
@@ -352,30 +354,30 @@ const char * ps3_get_resolution_label(uint32_t resolution)
    }
 }
 
-void gfx_ctx_set_projection(gl_t *gl, ortho_t *ortho, bool allow_rotate)
+void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)
 {
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
 
-   if(allow_rotate)
+   if (allow_rotate)
    {
       switch (gl->rotation)
       {
          case 90:
-	    vertex_ptr = vertexes_90;
-	    break;
+            vertex_ptr = vertexes_90;
+            break;
          case 180:
-	    vertex_ptr = vertexes_180;
-	    break;
+            vertex_ptr = vertexes_180;
+            break;
          case 270:
-	    vertex_ptr = vertexes_270;
-	    break;
+            vertex_ptr = vertexes_270;
+            break;
          case 0:
          default:
             vertex_ptr = default_vertex_ptr;
-	    break;
+            break;
       }
-    }
+   }
 
    glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
 
@@ -384,12 +386,12 @@ void gfx_ctx_set_projection(gl_t *gl, ortho_t *ortho, bool allow_rotate)
    glLoadIdentity();
 }
 
-void gfx_ctx_set_aspect_ratio(void * data, unsigned aspectratio_index)
+void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
    (void)data;
-   gl_t * gl = driver.video_data;
+   gl_t *gl = driver.video_data;
 
-   if(g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
+   if (g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
       rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
 
    g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
@@ -400,9 +402,10 @@ void gfx_ctx_set_aspect_ratio(void * data, unsigned aspectratio_index)
 
 void gfx_ctx_set_overscan(void)
 {
-   gl_t * gl = driver.video_data;
-   if(!gl)
+   gl_t *gl = driver.video_data;
+   if (!gl)
       return;
 
    gl->should_resize = true;
 }
+

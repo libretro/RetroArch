@@ -423,14 +423,14 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
 ////////////
 
-void gl_set_projection(gl_t *gl, ortho_t *ortho, bool allow_rotate)
+void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
 {
 #ifdef RARCH_CONSOLE
-   if(g_console.overscan_enable)
+   if (g_console.overscan_enable)
    {
-      ortho->left = -g_console.overscan_amount/2;
-      ortho->right = 1 + g_console.overscan_amount/2;
-      ortho->bottom = -g_console.overscan_amount/2;
+      ortho->left = -g_console.overscan_amount / 2;
+      ortho->right = 1 + g_console.overscan_amount / 2;
+      ortho->bottom = -g_console.overscan_amount / 2;
    }
 #endif
 
@@ -441,7 +441,7 @@ void gl_set_projection(gl_t *gl, ortho_t *ortho, bool allow_rotate)
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
 {
    unsigned vp_x_temp, vp_y_temp, vp_width_temp, vp_height_temp;
-   ortho_t ortho;
+   struct gl_ortho ortho = {0};
 
    vp_x_temp = 0;
    vp_y_temp = 0;
@@ -462,34 +462,36 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full,
       float delta;
 
 #ifdef RARCH_CONSOLE
-      if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
+      if (g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
       {
          delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-	 vp_x_temp = g_console.viewports.custom_vp.x;
-	 vp_y_temp = g_console.viewports.custom_vp.y;
-	 vp_width_temp = g_console.viewports.custom_vp.width;
-	 vp_height_temp = g_console.viewports.custom_vp.height;
+         vp_x_temp = g_console.viewports.custom_vp.x;
+         vp_y_temp = g_console.viewports.custom_vp.y;
+         vp_width_temp = g_console.viewports.custom_vp.width;
+         vp_height_temp = g_console.viewports.custom_vp.height;
       }
       else
 #endif
-      if (fabs(device_aspect - desired_aspect) < 0.0001)
       {
-         // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
-         // assume they are actually equal.
-      }
-      else if (device_aspect > desired_aspect)
-      {
-         delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-	 vp_x_temp = (GLint)(width * (0.5 - delta));
-	 vp_width_temp = (GLint)(2.0 * width * delta);
-	 width = (unsigned)(2.0 * width * delta);
-      }
-      else
-      {
-         delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-	 vp_y_temp = (GLint)(height * (0.5 - delta));
-	 vp_height_temp = (GLint)(2.0 * height * delta);
-	 height = (unsigned)(2.0 * height * delta);
+         if (fabs(device_aspect - desired_aspect) < 0.0001)
+         {
+            // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
+            // assume they are actually equal.
+         }
+         else if (device_aspect > desired_aspect)
+         {
+            delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
+            vp_x_temp = (GLint)(width * (0.5 - delta));
+            vp_width_temp = (GLint)(2.0 * width * delta);
+            width = (unsigned)(2.0 * width * delta);
+         }
+         else
+         {
+            delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
+            vp_y_temp = (GLint)(height * (0.5 - delta));
+            vp_height_temp = (GLint)(2.0 * height * delta);
+            height = (unsigned)(2.0 * height * delta);
+         }
       }
    }
 
@@ -512,7 +514,7 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full,
 
 static void gl_set_rotation(void *data, unsigned rotation)
 {
-   ortho_t ortho;
+   struct gl_ortho ortho = {0};
 
    ortho.left = 0;
    ortho.right = 1;
@@ -521,7 +523,7 @@ static void gl_set_rotation(void *data, unsigned rotation)
    ortho.near = -1;
    ortho.far = 1;
 
-   gl_t * gl = driver.video_data;
+   gl_t *gl = (gl_t*)driver.video_data;
    gl->rotation = 90 * rotation;
    gl_set_projection(gl, &ortho, true);
 }
@@ -943,7 +945,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gfx_ctx_update_window_title(false);
 
 #ifdef RARCH_CONSOLE
-   if(!gl->block_swap)
+   if (!gl->block_swap)
 #endif
       gfx_ctx_swap_buffers();
 
@@ -1237,7 +1239,7 @@ static void gl_start(void)
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
    video_info.fullscreen = true;
-   if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
+   if (g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
    {
       video_info.width = g_console.viewports.custom_vp.width;
       video_info.height = g_console.viewports.custom_vp.height;
@@ -1264,9 +1266,9 @@ static void gl_stop(void)
 
 static void gl_restart(void)
 {
-   gl_t * gl = driver.video_data;
+   gl_t *gl = driver.video_data;
 
-   if(!gl)
+   if (!gl)
 	   return;
 
    gl_stop();
