@@ -1337,6 +1337,25 @@ static void deinit_netplay(void)
    if (g_extern.netplay)
       netplay_free(g_extern.netplay);
 }
+
+static void init_network_cmd(void)
+{
+   if (!g_settings.network_cmd_enable)
+      return;
+
+   driver.network_cmd = network_cmd_new(g_settings.network_cmd_port);
+   if (!driver.network_cmd)
+      RARCH_ERR("Failed to initialize network command interface.\n");
+}
+
+static void deinit_network_cmd(void)
+{
+   if (driver.network_cmd)
+   {
+      network_cmd_free(driver.network_cmd);
+      driver.network_cmd = NULL;
+   }
+}
 #endif
 
 static void init_libretro_cbs_plain(void)
@@ -2353,6 +2372,7 @@ int rarch_main_init(int argc, char *argv[])
 
 #ifdef HAVE_NETPLAY
    init_netplay();
+   init_network_cmd();
 #endif
    init_drivers();
 
@@ -2427,6 +2447,11 @@ bool rarch_main_iterate(void)
          !video_alive_func())
       return false;
 
+#ifdef HAVE_NETPLAY
+   if (driver.network_cmd)
+      network_cmd_pre_frame(driver.network_cmd);
+#endif
+
    // Checks for stuff like fullscreen, save states, etc.
    do_state_checks();
 
@@ -2480,6 +2505,7 @@ void rarch_main_deinit(void)
 {
 #ifdef HAVE_NETPLAY
    deinit_netplay();
+   deinit_network_cmd();
 #endif
 
 #ifdef HAVE_THREADS

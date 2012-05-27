@@ -53,6 +53,7 @@
 
 #ifdef HAVE_NETPLAY
 #include "netplay.h"
+#include "network_cmd.h"
 #endif
 
 #include "audio/resampler.h"
@@ -177,6 +178,9 @@ struct settings
 
    bool block_sram_overwrite;
    bool savestate_auto_index;
+
+   bool network_cmd_enable;
+   uint16_t network_cmd_port;
 };
 
 // Settings and/or global state that is specific to a console-style implementation.

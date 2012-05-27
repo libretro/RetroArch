@@ -24,6 +24,14 @@
 #include "msvc/msvc_compat.h"
 #include "input/keysym.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_NETPLAY
+#include "network_cmd.h"
+#endif
+
 #define AUDIO_CHUNK_SIZE_BLOCKING 64
 #define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
 #define AUDIO_MAX_RATIO 16
@@ -167,6 +175,10 @@ typedef struct driver
    void *audio_data;
    void *video_data;
    void *input_data;
+
+#ifdef HAVE_NETPLAY
+   network_cmd_t *network_cmd;
+#endif
 } driver_t;
 
 void init_drivers(void);
@@ -243,8 +255,17 @@ extern const input_driver_t input_xdk360;
 #define input_poll_func()                       driver.input->poll(driver.input_data)
 #define input_input_state_func(snes_keybinds, port, device, index, id) \
                                                 driver.input->input_state(driver.input_data, snes_keybinds, port, device, index, id)
-#define input_key_pressed_func(key)             driver.input->key_pressed(driver.input_data, key)
 #define input_free_func()                       driver.input->free(driver.input_data)
+
+static inline bool input_key_pressed_func(int key)
+{
+   bool ret = driver.input->key_pressed(driver.input_data, key);
+#ifdef HAVE_NETPLAY
+   if (!ret && driver.network_cmd)
+      ret = network_cmd_get(driver.network_cmd, key);
+#endif
+   return ret;
+}
 #endif
 
 #endif

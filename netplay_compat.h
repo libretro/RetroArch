@@ -20,6 +20,34 @@
 #include "config.h"
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX)
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0501
+#endif
+#define WIN32_LEAN_AND_MEAN
+#include <winsock2.h>
+#include <windows.h>
+#include <ws2tcpip.h>
+#elif defined(_XBOX)
+#define NOD3D
+#include <xtl.h>
+#else
+#include <sys/select.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
+#ifdef __CELLOS_LV2__
+#include <cell/sysmodule.h>
+#include <netex/net.h>
+#else
+#include <signal.h>
+#endif
+#endif
+
 #ifdef _XBOX
 #define socklen_t int
 #endif
@@ -29,9 +57,7 @@
 #define close(x) closesocket(x)
 #define CONST_CAST (const char*)
 #define NONCONST_CAST (char*)
-
 #else
-
 #define CONST_CAST
 #define NONCONST_CAST
 #include <sys/time.h>
@@ -41,7 +67,6 @@
 #define close(x) socketclose(x)
 #define select(nfds, readfds, writefds, errorfds, timeout) socketselect(nfds, readfds, writefds, errorfds, timeout)
 #endif
-
 #endif
 
 // Compatibility layer for legacy or incomplete BSD socket implementations.
@@ -80,6 +105,5 @@ void freeaddrinfo(struct addrinfo *res);
 // gai_strerror() not used, so we skip that.
 
 #endif
-
 #endif
 

@@ -13,35 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined(_WIN32) && !defined(_XBOX)
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0501
-#endif
-#define WIN32_LEAN_AND_MEAN
-#include <winsock2.h>
-#include <windows.h>
-#include <ws2tcpip.h>
-#elif defined(_XBOX)
-#define NOD3D
-#include <xtl.h>
-#else
-#include <sys/select.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-
-#ifdef __CELLOS_LV2__
-#include <cell/sysmodule.h>
-#include <netex/net.h>
-#else
-#include <signal.h>
-#endif
-
-#endif
-
+#include "netplay_compat.h"
 #include "netplay.h"
 #include "general.h"
 #include "autosave.h"
@@ -49,8 +21,6 @@
 #include "message.h"
 #include <stdlib.h>
 #include <string.h>
-
-#include "netplay_compat.h"
 
 // Checks if input port/index is controlled by netplay or not.
 static bool netplay_is_alive(netplay_t *handle);
