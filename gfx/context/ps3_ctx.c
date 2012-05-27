@@ -214,3 +214,101 @@ void gfx_ctx_set_fbo(bool enable)
    gl->render_to_tex = enable;
 }
 
+/*============================================================
+	MISC
+        TODO: Refactor
+============================================================ */
+
+static void get_all_available_resolutions (void)
+{
+   bool defaultresolution;
+   uint32_t i, resolution_count;
+   uint16_t num_videomodes;
+
+   defaultresolution = true;
+
+   uint32_t videomode[] = {
+	   CELL_VIDEO_OUT_RESOLUTION_480, CELL_VIDEO_OUT_RESOLUTION_576,
+	   CELL_VIDEO_OUT_RESOLUTION_960x1080, CELL_VIDEO_OUT_RESOLUTION_720,
+	   CELL_VIDEO_OUT_RESOLUTION_1280x1080, CELL_VIDEO_OUT_RESOLUTION_1440x1080,
+	   CELL_VIDEO_OUT_RESOLUTION_1600x1080, CELL_VIDEO_OUT_RESOLUTION_1080};
+
+   num_videomodes = sizeof(videomode)/sizeof(uint32_t);
+
+   resolution_count = 0;
+   for (i = 0; i < num_videomodes; i++)
+      if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i], CELL_VIDEO_OUT_ASPECT_AUTO,0))
+         resolution_count++;
+	
+   g_console.supported_resolutions = (uint32_t*)malloc(resolution_count * sizeof(uint32_t));
+
+   g_console.supported_resolutions_count = 0;
+
+   for (i = 0; i < num_videomodes; i++)
+   {
+      if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i], CELL_VIDEO_OUT_ASPECT_AUTO,0))
+      {
+         g_console.supported_resolutions[g_console.supported_resolutions_count++] = videomode[i];
+	 g_console.initial_resolution_id = videomode[i];
+
+	 if (g_console.current_resolution_id == videomode[i])
+	 {
+	    defaultresolution = false;
+	    g_console.current_resolution_index = g_console.supported_resolutions_count-1;
+	 }
+      }
+   }
+
+   /* In case we didn't specify a resolution - make the last resolution
+      that was added to the list (the highest resolution) the default resolution*/
+   if (g_console.current_resolution_id > num_videomodes || defaultresolution)
+      g_console.current_resolution_index = g_console.supported_resolutions_count-1;
+}
+
+void ps3_next_resolution (void)
+{
+   if(g_console.current_resolution_index+1 < g_console.supported_resolutions_count)
+   {
+      g_console.current_resolution_index++;
+      g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
+   }
+}
+
+void ps3_previous_resolution (void)
+{
+   if(g_console.current_resolution_index)
+   {
+      g_console.current_resolution_index--;
+      g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
+   }
+}
+
+int ps3_check_resolution(uint32_t resolution_id)
+{
+   return cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, resolution_id, CELL_VIDEO_OUT_ASPECT_AUTO,0);
+}
+
+const char * ps3_get_resolution_label(uint32_t resolution)
+{
+   switch(resolution)
+   {
+      case CELL_VIDEO_OUT_RESOLUTION_480:
+	      return  "720x480 (480p)";
+      case CELL_VIDEO_OUT_RESOLUTION_576:
+	      return "720x576 (576p)"; 
+      case CELL_VIDEO_OUT_RESOLUTION_720:
+	      return "1280x720 (720p)";
+      case CELL_VIDEO_OUT_RESOLUTION_960x1080:
+	      return "960x1080";
+      case CELL_VIDEO_OUT_RESOLUTION_1280x1080:
+	      return "1280x1080";
+      case CELL_VIDEO_OUT_RESOLUTION_1440x1080:
+	      return "1440x1080";
+      case CELL_VIDEO_OUT_RESOLUTION_1600x1080:
+	      return "1600x1080";
+      case CELL_VIDEO_OUT_RESOLUTION_1080:
+	      return "1920x1080 (1080p)";
+      default:
+	      return "Unknown";
+   }
+}
