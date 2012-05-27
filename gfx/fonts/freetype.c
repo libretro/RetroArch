@@ -219,17 +219,13 @@ static void calculate_font_coords(gl_t *gl,
    font_tex_coords[6] = hx;
    font_tex_coords[7] = hy;
 }
-#endif
 
 static void gl_render_msg_pre(gl_t *gl)
 {
-#ifdef HAVE_FREETYPE
    gl_shader_use(0);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
    glEnable(GL_BLEND);
-#else
    (void)gl;
-#endif
 }
 
 extern const GLfloat vertexes_flipped[];
@@ -237,7 +233,6 @@ extern const GLfloat white_color[];
 
 static void gl_render_msg_post(gl_t *gl)
 {
-#ifdef HAVE_FREETYPE
    // Go back to old rendering path.
    glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
    glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);
@@ -246,10 +241,8 @@ static void gl_render_msg_post(gl_t *gl)
 
    glDisable(GL_BLEND);
    gl_set_projection(gl, true);
-#else
-   (void)gl;
-#endif
 }
+#endif
 
 void gl_render_msg(gl_t *gl, const char *msg)
 {
