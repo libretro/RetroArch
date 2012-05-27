@@ -266,3 +266,21 @@ void gl_render_msg(gl_t *gl, const char *msg)
    (void)msg;
 #endif
 }
+
+void gl_render_msg_pre(gl_t *gl)
+{
+#ifdef HAVE_FREETYPE
+#ifdef HAVE_CG
+   gl_shader_use(0);
+#endif
+   set_viewport(gl, gl->win_width, gl->win_height, false, false);
+   glEnable(GL_BLEND);
+#endif
+}
+
+void gl_render_msg_post(gl_t *gl)
+{
+#ifdef HAVE_FREETYPE
+   gl_old_render_path(gl);
+#endif
+}

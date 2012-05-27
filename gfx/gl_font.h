@@ -23,9 +23,8 @@ void gl_deinit_font(gl_t *gl);
 
 void gl_render_msg(gl_t *gl, const char *msg);
 
-extern void gl_init_font_ctx(gl_t *gl, const char *font_path, unsigned font_size);
-extern void gl_deinit_font_ctx(gl_t *gl);
-extern void gl_render_msg_ctx(gl_t *gl, const char *msg);
+void gl_render_msg_post(gl_t *gl);
+void gl_render_msg_pre(gl_t *gl);
 
 #endif
 

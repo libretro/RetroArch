@@ -445,7 +445,7 @@ static void set_projection(gl_t *gl, bool allow_rotate)
    gl_shader_set_proj_matrix();
 }
 
-static void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
+void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
 {
    if (gl->keep_aspect && !force_full)
    {
@@ -836,15 +836,7 @@ static void gl_next_texture_index(gl_t *gl, const struct gl_tex_info *tex_info)
    gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
 }
 
-#ifdef HAVE_FREETYPE
-static inline void gl_render_msg_pre(gl_t *gl)
-{
-   gl_shader_use(0);
-   set_viewport(gl, gl->win_width, gl->win_height, false, false);
-   glEnable(GL_BLEND);
-}
-
-static inline void gl_render_msg_post(gl_t *gl)
+void gl_old_render_path (gl_t *gl)
 {
    // Go back to old rendering path.
    glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
@@ -855,17 +847,6 @@ static inline void gl_render_msg_post(gl_t *gl)
    glDisable(GL_BLEND);
    set_projection(gl, true);
 }
-#elif defined(__CELLOS_LV2__)
-static inline void gl_render_msg_pre(gl_t *gl) { }
-
-static inline void gl_render_msg_post(gl_t *gl)
-{
-   cellDbgFontDraw();
-}
-#else
-#define gl_render_msg_pre(...)
-#define gl_render_msg_post(...)
-#endif
 
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
