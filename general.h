@@ -53,6 +53,9 @@
 
 #ifdef HAVE_NETPLAY
 #include "netplay.h"
+#endif
+
+#ifdef HAVE_NETWORK_CMD
 #include "network_cmd.h"
 #endif
 

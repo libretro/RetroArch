@@ -17,7 +17,7 @@
 #define NETWORK_CMD_H__
 
 #include <stdint.h>
-#include <stdbool.h>
+#include "boolean.h"
 
 typedef struct network_cmd network_cmd_t;
 
