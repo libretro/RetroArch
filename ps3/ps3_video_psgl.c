@@ -887,6 +887,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, gl->menu_texture_id);
 
+      glVertexPointer(2, GL_FLOAT, 0, default_vertex_ptr);
       glDrawArrays(GL_QUADS, 0, 4); 
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    }
