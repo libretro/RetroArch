@@ -21,12 +21,13 @@ void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size)
 {
    (void)font_path;
    (void)font_size;
-   CellDbgFontConfig cfg;
 
-   memset(&cfg, 0, sizeof(cfg));
-   cfg.bufSize = 512;
-   cfg.screenWidth = gl->win_width;
-   cfg.screenHeight = gl->win_height;
+   CellDbgFontConfig cfg = {
+      .bufSize      = 512,
+      .screenWidth  = gl->win_width,
+      .screenHeight = gl->win_height,
+   };
+
    cellDbgFontInit(&cfg);
 }
 
@@ -39,11 +40,6 @@ void gl_render_msg(gl_t *gl, const char *msg)
 {
    cellDbgFontPrintf(g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 1.11f, BLUE,	msg);
    cellDbgFontPrintf(g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 1.10f, WHITE, msg);
-}
-
-void gl_render_msg_pre(gl_t *gl) { }
-
-void gl_render_msg_post(gl_t *gl)
-{
    cellDbgFontDraw();
 }
+

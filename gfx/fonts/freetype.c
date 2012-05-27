@@ -221,11 +221,43 @@ static void calculate_font_coords(gl_t *gl,
 }
 #endif
 
+static void gl_render_msg_pre(gl_t *gl)
+{
+#ifdef HAVE_FREETYPE
+   gl_shader_use(0);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
+   glEnable(GL_BLEND);
+#else
+   (void)gl;
+#endif
+}
+
+extern const GLfloat vertexes_flipped[];
+extern const GLfloat white_color[];
+
+static void gl_render_msg_post(gl_t *gl)
+{
+#ifdef HAVE_FREETYPE
+   // Go back to old rendering path.
+   glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
+   glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);
+   glColorPointer(4, GL_FLOAT, 0, white_color);
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+
+   glDisable(GL_BLEND);
+   gl_set_projection(gl, true);
+#else
+   (void)gl;
+#endif
+}
+
 void gl_render_msg(gl_t *gl, const char *msg)
 {
 #ifdef HAVE_FREETYPE
    if (!gl->font)
       return;
+
+   gl_render_msg_pre(gl);
 
    GLfloat font_vertex[8]; 
    GLfloat font_vertex_dark[8]; 
@@ -261,26 +293,12 @@ void gl_render_msg(gl_t *gl, const char *msg)
    glVertexPointer(2, GL_FLOAT, 0, font_vertex);
    glColorPointer(4, GL_FLOAT, 0, gl->font_color);
    glDrawArrays(GL_QUADS, 0, 4);
+
+   gl_render_msg_post(gl);
 #else
    (void)gl;
    (void)msg;
 #endif
 }
 
-void gl_render_msg_pre(gl_t *gl)
-{
-#ifdef HAVE_FREETYPE
-#ifdef HAVE_CG
-   gl_shader_use(0);
-#endif
-   set_viewport(gl, gl->win_width, gl->win_height, false, false);
-   glEnable(GL_BLEND);
-#endif
-}
 
-void gl_render_msg_post(gl_t *gl)
-{
-#ifdef HAVE_FREETYPE
-   gl_old_render_path(gl);
-#endif
-}

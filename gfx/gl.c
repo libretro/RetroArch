@@ -46,12 +46,8 @@
 #include "shader_glsl.h"
 #endif
 
-#ifdef HAVE_FREETYPE
-#include "fonts/fonts.h"
-#endif
-
 // Used for the last pass when rendering to the back buffer.
-static const GLfloat vertexes_flipped[] = {
+const GLfloat vertexes_flipped[] = {
    0, 0,
    0, 1,
    1, 1,
@@ -74,7 +70,7 @@ static const GLfloat tex_coords[] = {
    1, 1
 };
 
-static const GLfloat white_color[] = {
+const GLfloat white_color[] = {
    1, 1, 1, 1,
    1, 1, 1, 1,
    1, 1, 1, 1,
@@ -183,7 +179,7 @@ static bool gl_shader_init(void)
    return true;
 }
 
-static void gl_shader_use(unsigned index)
+void gl_shader_use(unsigned index)
 {
 #ifdef HAVE_CG
    gl_cg_use(index);
@@ -430,7 +426,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
 ////////////
 
-static void set_projection(gl_t *gl, bool allow_rotate)
+void gl_set_projection(gl_t *gl, bool allow_rotate)
 {
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
@@ -445,7 +441,7 @@ static void set_projection(gl_t *gl, bool allow_rotate)
    gl_shader_set_proj_matrix();
 }
 
-void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
+void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
 {
    if (gl->keep_aspect && !force_full)
    {
@@ -472,7 +468,7 @@ void set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bo
    else
       glViewport(0, 0, width, height);
 
-   set_projection(gl, allow_rotate);
+   gl_set_projection(gl, allow_rotate);
 
    gl->vp_width = width;
    gl->vp_height = height;
@@ -491,7 +487,7 @@ static void gl_set_rotation(void *data, unsigned rotation)
 {
    gl_t *gl = (gl_t*)data;
    gl->rotation = 90 * rotation;
-   set_projection(gl, true);
+   gl_set_projection(gl, true);
 }
 
 static inline void set_lut_texture_coords(const GLfloat *coords)
@@ -590,7 +586,7 @@ static void gl_start_frame_fbo(gl_t *gl)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
    gl->render_to_tex = true;
-   set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true, false);
+   gl_set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true, false);
 
    // Need to preserve the "flipped" state when in FBO as well to have 
    // consistent texture coordinates.
@@ -673,7 +669,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
       glClear(GL_COLOR_BUFFER_BIT);
 
       // Render to FBO with certain size.
-      set_viewport(gl, rect->img_width, rect->img_height, true, false);
+      gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
       gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
             gl->vp_width, gl->vp_height, gl->frame_count, 
@@ -699,7 +695,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
 
    glClear(GL_COLOR_BUFFER_BIT);
    gl->render_to_tex = false;
-   set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
    gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
          gl->vp_width, gl->vp_height, gl->frame_count, 
@@ -716,7 +712,7 @@ static void gl_update_resize(gl_t *gl)
 {
 #ifdef HAVE_FBO
    if (!gl->render_to_tex)
-      set_viewport(gl, gl->win_width, gl->win_height, false, true);
+      gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
    else
    {
       gl_check_fbo_dimensions(gl);
@@ -725,7 +721,7 @@ static void gl_update_resize(gl_t *gl)
       gl_start_frame_fbo(gl);
    }
 #else
-   set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 #endif
 }
 
@@ -836,18 +832,6 @@ static void gl_next_texture_index(gl_t *gl, const struct gl_tex_info *tex_info)
    gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
 }
 
-void gl_old_render_path (gl_t *gl)
-{
-   // Go back to old rendering path.
-   glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
-   glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);
-   glColorPointer(4, GL_FLOAT, 0, white_color);
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-
-   glDisable(GL_BLEND);
-   set_projection(gl, true);
-}
-
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *gl = (gl_t*)data;
@@ -907,11 +891,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_next_texture_index(gl, &tex_info);
 
    if (msg)
-   {
-      gl_render_msg_pre(gl);
       gl_render_msg(gl, msg);
-      gl_render_msg_post(gl);
-   }
 
    gfx_ctx_update_window_title(false);
    gfx_ctx_swap_buffers();
@@ -1040,9 +1020,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
    gl_shader_use(0);
-   set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
    gl_shader_use(1);
-   set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 
    bool force_smooth;
    if (gl_shader_filter_type(1, &force_smooth))
@@ -1150,9 +1130,9 @@ static bool gl_xml_shader(void *data, const char *path)
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
    gl_shader_use(0);
-   set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
    gl_shader_use(1);
-   set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 
    return true;
 }
