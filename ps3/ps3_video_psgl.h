@@ -38,16 +38,14 @@ enum
 
 const char * ps3_get_resolution_label(uint32_t resolution);
 int ps3_check_resolution(uint32_t resolution_id);
-void gl_deinit_fbo(gl_t * gl);
-void gl_init_fbo(gl_t * gl, unsigned width, unsigned height);
 void ps3_previous_resolution (void);
 void ps3_next_resolution (void);
-void ps3_video_deinit(void);
+
+void gl_deinit_fbo(gl_t * gl);
+void gl_init_fbo(gl_t * gl, unsigned width, unsigned height);
 void ps3graphics_reinit_fbos(void);
 void ps3graphics_set_overscan(void);
 void ps3graphics_set_vsync(uint32_t vsync);
-void ps3graphics_video_init(bool get_all_resolutions);
-void ps3graphics_video_reinit(void);
 
 bool gl_cg_reinit(const char *path);
 bool gl_cg_save_cgp(const char *path, const struct gl_cg_cgp_info *info);

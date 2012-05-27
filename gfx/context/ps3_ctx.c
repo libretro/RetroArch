@@ -219,11 +219,14 @@ void gfx_ctx_set_fbo(bool enable)
         TODO: Refactor
 ============================================================ */
 
-static void get_all_available_resolutions (void)
+void gfx_ctx_get_available_resolutions (void)
 {
    bool defaultresolution;
    uint32_t i, resolution_count;
    uint16_t num_videomodes;
+
+   if(g_console.check_available_resolutions)
+      return;
 
    defaultresolution = true;
 
@@ -263,6 +266,8 @@ static void get_all_available_resolutions (void)
       that was added to the list (the highest resolution) the default resolution*/
    if (g_console.current_resolution_id > num_videomodes || defaultresolution)
       g_console.current_resolution_index = g_console.supported_resolutions_count-1;
+
+   g_console.check_available_resolutions = true;
 }
 
 void ps3_next_resolution (void)

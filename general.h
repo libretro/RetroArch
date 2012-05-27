@@ -198,6 +198,7 @@ struct console_settings
 #ifdef __CELLOS_LV2__
    bool custom_bgm_enable;
 #endif
+   bool check_available_resolutions;
    bool block_config_read;
    bool default_sram_dir_enable;
    bool default_savestate_dir_enable;

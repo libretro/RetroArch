@@ -1199,13 +1199,13 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 					if(ps3_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
 					{
 						//ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
-						ps3graphics_video_reinit();
+						video_gl.restart();
 					}
 				}
 				else
 				{
 					//ps3graphics_set_pal60hz(0);
-					ps3graphics_video_reinit();
+					video_gl.restart();
 				}
 			}
 			break;
@@ -1451,7 +1451,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
 				g_console.triple_buffering_enable = !g_console.triple_buffering_enable;
-				ps3graphics_video_reinit();
+				video_gl.restart();
 				set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
@@ -1459,7 +1459,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				if(!g_console.triple_buffering_enable)
 				{
 					g_console.triple_buffering_enable = true;
-					ps3graphics_video_reinit();
+					video_gl.restart();
 				}
 			}
 			break;

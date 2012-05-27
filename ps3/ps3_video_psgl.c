@@ -1161,30 +1161,8 @@ static void ps3graphics_set_aspect_ratio(void * data, uint32_t aspectratio_index
    set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
-const video_driver_t video_gl = 
-{
-   .init = gl_init,
-   .frame = gl_frame,
-   .alive = gl_alive,
-   .set_nonblock_state = gl_set_nonblock_state,
-   .focus = gl_focus,
-   .free = gl_free,
-   .ident = "gl",
-   .set_swap_block_state = ps3graphics_set_swap_block_swap,
-   .set_rotation = ps3graphics_set_orientation,
-   .set_aspect_ratio = ps3graphics_set_aspect_ratio,
-};
-
-void ps3graphics_set_overscan(void)
-{
-   gl_t * gl = driver.video_data;
-   if(!gl)
-      return;
-
-   set_viewport(gl, gl->win_width, gl->win_height, false, true);
-}
-
-void ps3graphics_video_init(bool get_all_resolutions)
+#ifdef RARCH_CONSOLE
+static void gl_start(void)
 {
    video_info_t video_info = {0};
 
@@ -1205,31 +1183,57 @@ void ps3graphics_video_init(bool get_all_resolutions)
    gfx_ctx_set_fbo(g_console.fbo_enabled);
 #endif
 
-   if(get_all_resolutions)
-      get_all_available_resolutions();
+   gfx_ctx_get_available_resolutions();
 
-   CellVideoOutState g_video_state;
-   cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &g_video_state);
 #ifdef HAVE_CG_MENU
    gfx_ctx_menu_init();
 #endif
 }
 
-void ps3graphics_video_reinit(void)
+static void gl_stop(void)
+{
+   void *data = driver.video_data;
+   driver.video_data = NULL;
+   gl_free(data);
+}
+
+static void gl_restart(void)
 {
    gl_t * gl = driver.video_data;
 
    if(!gl)
 	   return;
 
-   ps3_video_deinit();
+   gl_stop();
    gl_cg_invalidate_context();
-   ps3graphics_video_init(false);
+   gl_start();
 }
 
-void ps3_video_deinit(void)
+#endif
+
+const video_driver_t video_gl = 
 {
-   void *data = driver.video_data;
-   driver.video_data = NULL;
-   gl_free(data);
+   .init = gl_init,
+   .frame = gl_frame,
+   .alive = gl_alive,
+   .set_nonblock_state = gl_set_nonblock_state,
+   .focus = gl_focus,
+   .free = gl_free,
+   .ident = "gl",
+   .set_swap_block_state = ps3graphics_set_swap_block_swap,
+   .set_rotation = ps3graphics_set_orientation,
+   .set_aspect_ratio = ps3graphics_set_aspect_ratio,
+   .start = gl_start,
+   .restart = gl_restart,
+   .stop = gl_stop,
+};
+
+void ps3graphics_set_overscan(void)
+{
+   gl_t * gl = driver.video_data;
+   if(!gl)
+      return;
+
+   set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
+

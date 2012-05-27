@@ -508,7 +508,8 @@ int main(int argc, char *argv[])
 #endif
 #endif
 
-   ps3graphics_video_init(true);
+   video_gl.start();
+
    ps3_input_init();
    oskutil_init(&g_console.oskutil_handle, 0);
 
@@ -559,7 +560,9 @@ begin_shutdown:
    if(g_console.emulator_initialized)
       rarch_main_deinit();
    cell_pad_input_deinit();
-   ps3_video_deinit();
+
+   video_gl.stop();
+
    if(g_console.oskutil_handle.is_running)
       oskutil_unload(&g_console.oskutil_handle);
 #ifdef HAVE_LOGGER
