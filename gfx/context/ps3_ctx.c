@@ -33,13 +33,12 @@
 static struct texture_image menu_texture;
 static PSGLdevice* gl_device;
 static PSGLcontext* gl_context;
-static unsigned swap_interval;
 
 void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 {
-   swap_interval = interval;
+   (void)inited;
 
-   if (inited)
+   if (gl_context)
    {
       if (interval)
          glEnable(GL_VSYNC_SCE);
@@ -161,7 +160,6 @@ bool gfx_ctx_init(void)
    psglMakeCurrent(gl_context, gl_device);
    psglResetCurrentContext();
 
-   gfx_ctx_set_swap_interval(swap_interval, true);
    return true;
 }
 
