@@ -62,8 +62,6 @@ typedef struct xdk360_video
    LPDIRECT3DSURFACE9 lpSurface;
 } xdk360_video_t;
 
-void xdk360_video_init (void);
-void xdk360_video_deinit (void);
 void xdk360_video_set_vsync (bool vsync);
 void xdk360_set_fbo_enable (bool enable);
 void xdk360_gfx_init_fbo(xdk360_video_t *vid);

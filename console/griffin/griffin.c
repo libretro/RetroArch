@@ -58,10 +58,13 @@ VIDEO
 #include "../../gfx/gl.c"
 #endif
 
+#ifdef HAVE_HLSL
+#include "../../gfx/shader_hlsl.c"
+#endif
+
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/image.c"
 #elif defined(_XBOX)
-#include "../../gfx/shader_hlsl.c"
 #include "../../360/xdk360_video.cpp"
 #elif defined(GEKKO)
 #include "../../wii/video.c"

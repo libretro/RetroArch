@@ -719,7 +719,7 @@ void xdk360_video_set_vsync(bool vsync)
 // the top level module owns the instance, and is created beforehand.
 // When RetroArch gets around to init it, it is already allocated.
 // When RetroArch wants to free it, it is ignored.
-void xdk360_video_init(void)
+static void xdk360_start(void)
 {
    video_info_t video_info = {0};
 
@@ -742,7 +742,11 @@ void xdk360_video_init(void)
    }
 }
 
-void xdk360_video_deinit(void)
+static void xdk360_restart(void)
+{
+}
+
+static void xdk360_stop(void)
 {
    void *data = g_d3d;
    g_d3d = NULL;
@@ -762,5 +766,8 @@ const video_driver_t video_xdk360 = {
    xdk360_set_swap_block_swap,
    xdk360_swap,
    xdk360_set_aspect_ratio,
+   xdk360_start,
+   xdk360_stop,
+   xdk360_restart,
    xdk360_set_orientation,
 };
