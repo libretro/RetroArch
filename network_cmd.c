@@ -19,12 +19,23 @@
 #include "general.h"
 #include <stdio.h>
 #include <string.h>
+#include <fcntl.h>
 
 struct network_cmd
 {
    int fd;
    bool state[RARCH_BIND_LIST_END];
 };
+
+static bool socket_nonblock(int fd)
+{
+#ifdef _WIN32
+   u_long mode = 1;
+	ioctlsocket(fd, FIONBIO, &mode);
+#else
+   return fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) == 0;
+#endif
+}
 
 network_cmd_t *network_cmd_new(uint16_t port)
 {
@@ -51,8 +62,11 @@ network_cmd_t *network_cmd_new(uint16_t port)
    if (getaddrinfo(NULL, port_buf, &hints, &res) < 0)
       goto error;
 
-   handle->fd = socket(res->ai_family, res->ai_socktype | SOCK_NONBLOCK, res->ai_protocol);
+   handle->fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
    if (handle->fd < 0)
+      goto error;
+
+   if (!socket_nonblock(handle->fd))
       goto error;
 
    setsockopt(handle->fd, SOL_SOCKET, SO_REUSEADDR, CONST_CAST &yes, sizeof(int));
