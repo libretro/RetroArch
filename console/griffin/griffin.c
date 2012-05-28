@@ -36,11 +36,12 @@ CONFIG FILE
 #undef __RARCH_MSVC_COMPAT_H
 #undef strcasecmp
 #endif
+
+#ifdef HAVE_CONFIGFILE
 #include "../../conf/config_file.c"
+#endif
 
 #include "func_hooks.h"
-
-
 
 /*============================================================
 VIDEO CONTEXT
