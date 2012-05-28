@@ -28,6 +28,11 @@
 
 #ifdef HAVE_OPENGL
 #include "gl_common.h"
+#define VID_HANDLE gl_t
+#endif
+
+#ifdef HAVE_D3D9
+#define VID_HANDLE xdk360_video_t
 #endif
 
 #ifdef HAVE_SDL
@@ -72,8 +77,8 @@ void gfx_ctx_set_filtering(unsigned index, bool set_smooth);
 void gfx_ctx_get_available_resolutions(void);
 #endif
 
-#ifdef HAVE_OPENGL
-void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate);
+#if defined(HAVE_OPENGL) || defined(HAVE_D3D9)
+void gfx_ctx_set_projection(VID_HANDLE *gl, const struct gl_ortho *ortho, bool allow_rotate);
 #endif
 
 #endif

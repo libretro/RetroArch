@@ -160,9 +160,6 @@ typedef struct video_driver
 
    // Callbacks essentially useless on PC, but useful on consoles where the drivers are used for more stuff.
 #ifdef RARCH_CONSOLE
-   void (*set_swap_block_state)(void *data, bool toggle); // Block swapping from being called in ::frame().
-   void (*swap)(void *data); // Explicitly swap buffers. Only useful when set_swap_block_state() is set to true.
-   void (*set_aspect_ratio)(void *data, unsigned aspectratio_idx); // TODO: refactor this properly to float.
    void (*start)(void);
    void (*stop)(void);
    void (*restart)(void);

@@ -150,6 +150,7 @@ static bool xdk360_key_pressed(void *data, int key)
    (void)data;
    XINPUT_STATE state;
    bool retval;
+   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
 
    XInputGetState(0, &state);
    retval = false;

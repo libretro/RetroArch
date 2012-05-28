@@ -1295,9 +1295,6 @@ const video_driver_t video_gl = {
    "gl",
 
 #ifdef RARCH_CONSOLE
-   NULL, // FIXME: set_swap_block_state - to be removed
-   NULL, // FIXME: swap - to be removed
-   NULL, // FIXME: set_aspect_ratio - to be removed
    gl_start,
    gl_stop,
    gl_restart,
