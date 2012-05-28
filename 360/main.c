@@ -324,10 +324,21 @@ int main(int argc, char *argv[])
    char full_path[1024];
    snprintf(full_path, sizeof(full_path), "game:\\CORE.xex");
 
-   bool load_libretro_path = rarch_manage_libretro_install(full_path, "game:\\", ".xex");
+   g_extern.verbose = true;
+
+   const char *libretro_core_installed = rarch_manage_libretro_install(full_path, "game:\\", ".xex");
+
+   g_extern.verbose = false;
+
+   bool find_libretro_file = false;
+
+   if(libretro_core_installed != NULL)
+      strlcpy(g_settings.libretro, libretro_core_installed, sizeof(g_settings.libretro));
+   else
+      find_libretro_file = true;
 
    set_default_settings();
-   init_settings(load_libretro_path);
+   init_settings(find_libretro_file);
    init_libretro_sym();
 
    video_xdk360.start();

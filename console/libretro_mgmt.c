@@ -18,13 +18,12 @@
 
 #include "console_ext.h"
 
-bool rarch_manage_libretro_install(const char *full_path, const char *path, const char *exe_ext)
+const char *rarch_manage_libretro_install(const char *full_path, const char *path, const char *exe_ext)
 {
-   g_extern.verbose = true;
-   bool return_code;
-
-   bool set_libretro_path = false;
+   int ret;
+   const char *retstr = NULL;
    char tmp_path2[1024], tmp_pathnewfile[1024];
+
    RARCH_LOG("Assumed path of CORE executable: [%s]\n", full_path);
 
    if (path_file_exists(full_path))
@@ -32,8 +31,6 @@ bool rarch_manage_libretro_install(const char *full_path, const char *path, cons
       // if CORE executable exists, this means we have just installed
       // a new libretro port and therefore we need to change it to a more
       // sane name.
-
-      int ret;
 
       rarch_console_name_from_id(tmp_path2, sizeof(tmp_path2));
       strlcat(tmp_path2, exe_ext, sizeof(tmp_path2));
@@ -50,14 +47,14 @@ bool rarch_manage_libretro_install(const char *full_path, const char *path, cons
          ret = cellFsUnlink(tmp_pathnewfile);
          if (ret == CELL_FS_SUCCEEDED)
 #elif defined(_XBOX)
-            ret = DeleteFile(tmp_pathnewfile);
+         ret = DeleteFile(tmp_pathnewfile);
          if (ret != 0)
 #endif
          {
             RARCH_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
          }
          else
-            RARCH_LOG("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+            RARCH_ERR("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
       }
 
       //now attempt the renaming.
@@ -75,34 +72,17 @@ bool rarch_manage_libretro_install(const char *full_path, const char *path, cons
       else
       {
          RARCH_LOG("Libsnes core [%s] renamed to: [%s].\n", full_path, tmp_pathnewfile);
-         set_libretro_path = true;
+	 retstr = tmp_pathnewfile;
+         goto done;
       }
    }
-   else
-   {
-      RARCH_LOG("CORE executable was not found, libretro core path will be loaded from config file.\n");
-   }
 
-   if (set_libretro_path)
-   {
-      // CORE executable has been renamed, libretro path will now be set to the recently
-      // renamed new libretro core.
-      strlcpy(g_settings.libretro, tmp_pathnewfile, sizeof(g_settings.libretro));
-      return_code = 0;
-   }
-   else
-   {
-      // There was no CORE executable present, or the CORE executable file was not renamed.
-      // The libretro core path will still be loaded from the config file.
-      return_code = 1;
-   }
-
-   g_extern.verbose = false;
-
-   return return_code;
+   RARCH_WARN("CORE executable was not found, or some other errors occurred. Will attempt to load libretro core path from config file.\n");
+done:
+   return retstr;
 }
 
-const char * rarch_manage_libretro_set_first_file(const char *libretro_path, const char * exe_ext)
+const char *rarch_manage_libretro_set_first_file(const char *libretro_path, const char * exe_ext)
 {
    //We need to set libretro to the first entry in the cores
    //directory so that it will be saved to the config file

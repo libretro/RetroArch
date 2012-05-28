@@ -389,10 +389,22 @@ int main(int argc, char *argv[])
    char full_path[1024], tmp_path[1024];
    snprintf(full_path, sizeof(full_path), "%s/%s/CORE.SELF", usrDirPath, EMULATOR_CORE_DIR);
    snprintf(tmp_path, sizeof(tmp_path), "%s/%s/", usrDirPath, EMULATOR_CORE_DIR);
-   bool load_libretro_path = rarch_manage_libretro_install(full_path, tmp_path, ".SELF");
+
+   g_extern.verbose = true;
+
+   const char *libretro_core_installed = rarch_manage_libretro_install(full_path, tmp_path, ".SELF");
+
+   g_extern.verbose = false;
+
+   bool find_libretro_file = false;
+
+   if(libretro_core_installed != NULL)
+      strlcpy(g_settings.libretro, libretro_core_installed, sizeof(g_settings.libretro));
+   else
+      find_libretro_file = true;
 
    set_default_settings();
-   init_settings(load_libretro_path);
+   init_settings(find_libretro_file);
    init_libretro_sym();
 
 #if(CELL_SDK_VERSION > 0x340000)
