@@ -207,6 +207,9 @@ struct console_settings
    bool default_savestate_dir_enable;
    bool fbo_enabled;
    bool frame_advance_enable;
+#ifdef _XBOX
+   bool menus_hd_enable;
+#endif
    bool initialize_rarch_enable;
    bool info_msg_enable;
    bool gamma_correction_enable;

@@ -31,7 +31,6 @@ CRetroArch        app;
 HXUIOBJ hCur;
 filebrowser_t browser;
 filebrowser_t tmp_browser;
-bool hdmenus_allowed;
 uint32_t set_shader = 0;
 
 static void return_to_game (void)
@@ -239,6 +238,8 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    snprintf(scalefactor, sizeof(scalefactor), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 
    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
+   m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_console.info_msg_enable ? L"Info messages: ON" : L"Info messages: OFF");
+   m_settingslist.SetText(SETTING_EMU_MENUS, g_console.menus_hd_enable ? L"Menus: HD" : L"Menus: SD");
    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
@@ -629,24 +630,35 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	       msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
             }
 	    break;
+	 case SETTING_EMU_SHOW_INFO_MSG:
+	    g_console.info_msg_enable = !g_console.info_msg_enable;
+	    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_console.info_msg_enable ? L"Info messages: ON" : L"Info messages: OFF");
+	    break;
+	 case SETTING_EMU_MENUS:
+        g_console.menus_hd_enable = !g_console.menus_hd_enable;
+        m_settingslist.SetText(SETTING_EMU_MENUS, g_console.menus_hd_enable ? L"Menus: HD" : L"Menus: SD");
+        break;
 	 case SETTING_GAMMA_CORRECTION_ENABLED:
 	    g_console.gamma_correction_enable = !g_console.gamma_correction_enable;
 	    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-		msg_queue_clear(g_extern.msg_queue);
-		msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
+        if(g_console.info_msg_enable)
+		{
+		   msg_queue_clear(g_extern.msg_queue);
+		   msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
+		}
 	    break;
 	 case SETTING_COLOR_FORMAT:
 	    g_console.color_format = !g_console.color_format;
 	    m_settingslist.SetText(SETTING_COLOR_FORMAT, g_console.color_format ? L"Color format: 32bit ARGB" : L"Color format: 16bit RGBA");
 	    if (g_console.info_msg_enable)
-            {
-               msg_queue_clear(g_extern.msg_queue);
-	       msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
-            }
+        {
+           msg_queue_clear(g_extern.msg_queue);
+           msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
+        }
 	    break;
 	 case SETTING_SHADER:
 	    set_shader = 1;
-	    hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
+	    hr = XuiSceneCreate(g_console.menus_hd_enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
 
 	    if (hr < 0)
 	    {
@@ -654,25 +666,25 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    }
 	    hCur = app.hShaderBrowser;
 	    if (g_console.info_msg_enable)
-            {
+        {
 	       msg_queue_clear(g_extern.msg_queue);
 	       msg_queue_push(g_extern.msg_queue, "INFO - Select a shader from the menu by pressing the A button.", 1, 180);
-            }
+        }
 	    NavigateForward(app.hShaderBrowser);
 	    break;
 	 case SETTING_SHADER_2:
             set_shader = 2;
-	    hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
+	    hr = XuiSceneCreate(g_console.menus_hd_enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
 	    if (hr < 0)
 	    {
 		    RARCH_ERR("Failed to load scene.\n");
 	    }
 	    hCur = app.hShaderBrowser;
 	    if (g_console.info_msg_enable)
-            {
+        {
 	       msg_queue_clear(g_extern.msg_queue);
 	       msg_queue_push(g_extern.msg_queue, "INFO - Select a shader from the menu by pressing the A button.", 1, 180);
-            }
+        }
 	    NavigateForward(app.hShaderBrowser);
 	    break;
 	 case SETTING_HW_TEXTURE_FILTER:
@@ -699,7 +711,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
    xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
 
-   hdmenus_allowed = vid->video_mode.fIsHiDef && (g_console.aspect_ratio_index >= ASPECT_RATIO_16_9);
+   bool hdmenus_allowed = g_console.menus_hd_enable;
 
    HRESULT hr;
 

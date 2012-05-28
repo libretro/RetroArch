@@ -454,6 +454,8 @@ static void *xdk360_init(const video_info_t *video, const input_driver_t **input
    // unsupported
    if(!d3d9->video_mode.fIsWideScreen)
       d3d9->d3dpp.Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
+
+   g_console.menus_hd_enable = d3d9->video_mode.fIsHiDef;
    
    d3d9->d3dpp.BackBufferWidth         = d3d9->video_mode.fIsHiDef ? 1280 : 640;
    d3d9->d3dpp.BackBufferHeight        = d3d9->video_mode.fIsHiDef ? 720 : 480;
