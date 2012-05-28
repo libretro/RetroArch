@@ -805,30 +805,36 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
    scale->abs_x = geom->base_width;
    scale->abs_y = geom->base_height;
 
-   if (strcmp(scale_type_x, "source") == 0)
-      scale->type_x = RARCH_SCALE_INPUT;
-   else if (strcmp(scale_type_x, "viewport") == 0)
-      scale->type_x = RARCH_SCALE_VIEWPORT;
-   else if (strcmp(scale_type_x, "absolute") == 0)
-      scale->type_x = RARCH_SCALE_ABSOLUTE;
-   else
+   if (scale_type_x)
    {
-      RARCH_ERR("Invalid attribute.\n");
-      ret = false;
-      goto end;
+      if (strcmp(scale_type_x, "source") == 0)
+         scale->type_x = RARCH_SCALE_INPUT;
+      else if (strcmp(scale_type_x, "viewport") == 0)
+         scale->type_x = RARCH_SCALE_VIEWPORT;
+      else if (strcmp(scale_type_x, "absolute") == 0)
+         scale->type_x = RARCH_SCALE_ABSOLUTE;
+      else
+      {
+         RARCH_ERR("Invalid attribute.\n");
+         ret = false;
+         goto end;
+      }
    }
 
-   if (strcmp(scale_type_y, "source") == 0)
-      scale->type_y = RARCH_SCALE_INPUT;
-   else if (strcmp(scale_type_y, "viewport") == 0)
-      scale->type_y = RARCH_SCALE_VIEWPORT;
-   else if (strcmp(scale_type_y, "absolute") == 0)
-      scale->type_y = RARCH_SCALE_ABSOLUTE;
-   else
+   if (scale_type_y)
    {
-      RARCH_ERR("Invalid attribute.\n");
-      ret = false;
-      goto end;
+      if (strcmp(scale_type_y, "source") == 0)
+         scale->type_y = RARCH_SCALE_INPUT;
+      else if (strcmp(scale_type_y, "viewport") == 0)
+         scale->type_y = RARCH_SCALE_VIEWPORT;
+      else if (strcmp(scale_type_y, "absolute") == 0)
+         scale->type_y = RARCH_SCALE_ABSOLUTE;
+      else
+      {
+         RARCH_ERR("Invalid attribute.\n");
+         ret = false;
+         goto end;
+      }
    }
 
    if (scale->type_x == RARCH_SCALE_ABSOLUTE)
