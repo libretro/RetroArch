@@ -32,10 +32,6 @@ enum
 #define MIN_SCALING_FACTOR (1.0f)
 #define MAX_SCALING_FACTOR (4.0f)
 
-#define IS_TIMER_NOT_EXPIRED(getter) (gl->frame_count < getter)
-#define IS_TIMER_EXPIRED(getter) 	(!(IS_TIMER_NOT_EXPIRED(getter)))
-#define SET_TIMER_EXPIRATION(setter, value) setter = gl->frame_count + value;
-
 const char * ps3_get_resolution_label(uint32_t resolution);
 int ps3_check_resolution(uint32_t resolution_id);
 void ps3_previous_resolution (void);

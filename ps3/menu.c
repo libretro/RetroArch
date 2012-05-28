@@ -198,7 +198,7 @@ static void set_delay_speed(unsigned delaymode)
    }
 
    strlcpy(special_action_msg, "", sizeof(special_action_msg));
-   SET_TIMER_EXPIRATION(g_console.control_timer_expiration_frame_count, speed);
+   SET_TIMER_EXPIRATION(gl, speed);
 }
 
 static void browser_update(filebrowser_t * b)
@@ -210,7 +210,7 @@ static void browser_update(filebrowser_t * b)
    diff_state = old_state ^ state;
    button_was_pressed = old_state & diff_state;
 
-   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+   if(IS_TIMER_EXPIRED(gl))
    {
       set_delay = DELAY_NONE;
 
@@ -889,7 +889,7 @@ static void select_file(uint32_t menu_id)
 
    browser_update(&tmpBrowser);
 
-   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+   if(IS_TIMER_EXPIRED(gl))
    {
       if (CTRL_START(button_was_pressed))
          filebrowser_reset_start_directory(&tmpBrowser, "/", extensions);
@@ -989,7 +989,7 @@ static void select_directory(uint32_t menu_id)
 
    browser_update(&tmpBrowser);
 
-   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+   if(IS_TIMER_EXPIRED(gl))
    {
       if (CTRL_START(button_was_pressed))
          filebrowser_reset_start_directory(&tmpBrowser, "/","empty");
@@ -1836,7 +1836,7 @@ static void select_setting(menu * menu_obj)
    diff_state = old_state ^ state;
    button_was_pressed = old_state & diff_state;
 
-   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+   if(IS_TIMER_EXPIRED(gl))
    {
       set_delay = DELAY_NONE;
       /* back to ROM menu if CIRCLE is pressed */
@@ -1942,7 +1942,7 @@ static void select_rom(void)
 
    browser_update(&browser);
 
-   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+   if(IS_TIMER_EXPIRED(gl))
    {
       if (CTRL_SELECT(button_was_pressed))
       {
@@ -2054,7 +2054,7 @@ static void ingame_menu(uint32_t menu_id)
    stuck_in_loop = 1;
    blocking = 0;
 
-   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count) && blocking == false)
+   if(IS_TIMER_EXPIRED(gl) && blocking == false)
    {
       set_delay = DELAY_NONE;
 
@@ -2621,7 +2621,7 @@ void menu_loop(void)
       }
 
 
-      if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+      if(IS_TIMER_EXPIRED(gl))
       {
          // if we want to force goto the emulation loop, skip this
          if(g_console.mode_switch != MODE_EMULATION)
@@ -2650,7 +2650,7 @@ void menu_loop(void)
       // press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
       if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
       {
-         SET_TIMER_EXPIRATION(g_console.timer_expiration_frame_count, 30);
+         SET_TIMER_EXPIRATION(gl, 30);
       }
 
       gfx_ctx_swap_buffers();

@@ -316,18 +316,18 @@ static bool ps3_key_pressed(void *data, int key)
       case RARCH_REWIND:
          return CTRL_RSTICK_UP(state[0]) && CTRL_R2(~state[0]);
       case RARCH_QUIT_KEY:
-	 if(IS_TIMER_EXPIRED(g_console.timer_expiration_frame_count))
+	 if(IS_TIMER_EXPIRED(gl))
 	 {
             uint32_t r3_pressed = CTRL_R3(state[0]);
 	    uint32_t l3_pressed = CTRL_L3(state[0]);
 	    bool retval = false;
-	    g_console.menu_enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED(g_console.timer_expiration_frame_count));
+	    g_console.menu_enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED(gl));
 	    g_console.ingame_menu_enable = r3_pressed && !l3_pressed;
 
 	    if(g_console.menu_enable || (g_console.ingame_menu_enable && !g_console.menu_enable))
 	    {
                g_console.mode_switch = MODE_MENU;
-	       SET_TIMER_EXPIRATION(g_console.control_timer_expiration_frame_count, 30);
+	       SET_TIMER_EXPIRATION(gl, 30);
 	       retval = g_console.menu_enable;
 	    }
 
