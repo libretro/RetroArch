@@ -217,31 +217,6 @@ void xdk360_console_format(_In_z_ _Printf_format_string_ LPCSTR strFormat, ... )
    va_end( pArgList );
 }
 
-void xdk360_console_format_w(_In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... )
-{
-   video_console.m_nCurLine = 0;
-   video_console.m_cCurLineLength = 0;
-   memset( video_console.m_Buffer, 0, video_console.m_cScreenHeightVirtual 
-      * ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-
-   va_list pArgList;
-   va_start( pArgList, wstrFormat );
-
-   // Count the required length of the string
-   unsigned long dwStrLen = _vscwprintf( wstrFormat, pArgList ) + 1;    // +1 = null terminator
-   wchar_t * strMessage = ( wchar_t * )_malloca( dwStrLen * sizeof( wchar_t ) );
-   vswprintf_s( strMessage, dwStrLen, wstrFormat, pArgList );
-
-   // Output the string to the console
-   unsigned long uStringLength = wcslen( strMessage );
-   for( unsigned long i = 0; i < uStringLength; i++ )
-      xdk360_console_add( strMessage[i] );
-
-   _freea( strMessage );
-
-   va_end( pArgList );
-}
-
 #define CALCFONTFILEHEADERSIZE(x) ( sizeof(unsigned long) + (sizeof(float)* 4) + sizeof(unsigned short) + (sizeof(wchar_t)*(x)) )
 #define FONTFILEVERSION 5
 
