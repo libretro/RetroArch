@@ -169,7 +169,11 @@ static void init_settings(bool load_libretro_path)
          CONFIG_GET_STRING(libretro, "libretro_path");
 
          if(!strcmp(g_settings.libretro, ""))
-            rarch_manage_libretro_set_first_file(LIBRETRO_DIR_PATH, ".SELF");
+         {
+            const char *first_file = rarch_manage_libretro_set_first_file(LIBRETRO_DIR_PATH, ".SELF");
+            if(first_file != NULL)
+               strlcpy(g_settings.libretro, first_file, sizeof(g_settings.libretro));
+         }
       }
 #endif
 

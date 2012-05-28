@@ -102,28 +102,28 @@ bool rarch_manage_libretro_install(const char *full_path, const char *path, cons
    return return_code;
 }
 
-void rarch_manage_libretro_set_first_file(const char *libretro_path, const char * exe_ext)
+const char * rarch_manage_libretro_set_first_file(const char *libretro_path, const char * exe_ext)
 {
-#ifdef _XBOX
-   char fname_tmp[PATH_MAX];
-#endif
-
    //We need to set libretro to the first entry in the cores
    //directory so that it will be saved to the config file
 
    char ** dir_list = dir_list_new(libretro_path, exe_ext);
 
+   const char * retstr = NULL;
+   const char * first_exe;
+
    if (!dir_list)
    {
       RARCH_ERR("Couldn't read directory.\n");
-      return;
+      goto error;
    }
 
-   const char * first_exe = dir_list[0];
+   first_exe = dir_list[0];
 
    if(first_exe)
    {
 #ifdef _XBOX
+      char fname_tmp[PATH_MAX];
       fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
 
       if(strcmp(fname_tmp, "RetroArch-Salamander.xex") == 0)
@@ -140,17 +140,17 @@ void rarch_manage_libretro_set_first_file(const char *libretro_path, const char 
 	 }
       }
 
-      RARCH_LOG("Set first entry in libretro core dir to libretro path: [%s].\n", fname_tmp);
-      snprintf(g_settings.libretro, sizeof(g_settings.libretro), "game:\\%s", fname_tmp);
+      retstr = fname_tmp;
 #else
-      RARCH_LOG("Set first entry in libretro core dir to libretro path: [%s].\n", first_exe);
-      strlcpy(g_settings.libretro, first_exe, sizeof(g_settings.libretro));
+      retstr = first_exe;
 #endif
-   }
-   else
-   {
-      RARCH_ERR("Failed to set first .xex entry to libretro path.\n");
+      RARCH_LOG("Set first entry in libretro core dir to libretro path: [%s].\n", retstr);
+      goto end;
    }
 
+error:
+   RARCH_ERR("Failed to set first entry to libretro path.\n");
+end:
    dir_list_free(dir_list);
+   return retstr;
 }
