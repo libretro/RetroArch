@@ -153,76 +153,6 @@ static void set_default_settings(void)
    g_extern.verbose = true;
 }
 
-static void init_settings(bool load_libretro_path)
-{
-   if(!path_file_exists(SYS_CONFIG_FILE))
-      rarch_config_create_default(SYS_CONFIG_FILE);
-   else
-   {
-      config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
-
-      // g_settings
-
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-      if(load_libretro_path)
-      {
-         CONFIG_GET_STRING(libretro, "libretro_path");
-
-         if(!strcmp(g_settings.libretro, ""))
-         {
-            const char *first_file = rarch_manage_libretro_set_first_file(LIBRETRO_DIR_PATH, ".SELF");
-            if(first_file != NULL)
-               strlcpy(g_settings.libretro, first_file, sizeof(g_settings.libretro));
-         }
-      }
-#endif
-
-      CONFIG_GET_STRING(cheat_database, "cheat_database");
-      CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
-      CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
-      CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
-      CONFIG_GET_FLOAT(video.fbo_scale_x, "video_fbo_scale_x");
-      CONFIG_GET_FLOAT(video.fbo_scale_y, "video_fbo_scale_y");
-      CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
-      CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
-      CONFIG_GET_BOOL(video.smooth, "video_smooth");
-      CONFIG_GET_BOOL(video.vsync, "video_vsync");
-      CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
-      CONFIG_GET_STRING(audio.device, "audio_device");
-
-      for (unsigned i = 0; i < 7; i++)
-      {
-         char cfg[64];
-	 snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
-	 CONFIG_GET_INT(input.dpad_emulation[i], cfg);
-      }
-
-      // g_console
-
-      CONFIG_GET_BOOL_CONSOLE(fbo_enabled, "fbo_enabled");
-      CONFIG_GET_BOOL_CONSOLE(custom_bgm_enable, "custom_bgm_enable");
-      CONFIG_GET_BOOL_CONSOLE(overscan_enable, "overscan_enable");
-      CONFIG_GET_BOOL_CONSOLE(screenshots_enable, "screenshots_enable");
-      CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
-      CONFIG_GET_BOOL_CONSOLE(triple_buffering_enable, "triple_buffering_enable");
-      CONFIG_GET_INT_CONSOLE(aspect_ratio_index, "aspect_ratio_index");
-      CONFIG_GET_INT_CONSOLE(current_resolution_id, "current_resolution_id");
-      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.x, "custom_viewport_x");
-      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.y, "custom_viewport_y");
-      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.width, "custom_viewport_width");
-      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.height, "custom_viewport_height");
-      CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
-      CONFIG_GET_INT_CONSOLE(sound_mode, "sound_mode");
-      CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
-      CONFIG_GET_FLOAT_CONSOLE(menu_font_size, "menu_font_size");
-      CONFIG_GET_FLOAT_CONSOLE(overscan_amount, "overscan_amount");
-
-      // g_extern
-      CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
-      CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
-   }
-}
-
 #ifdef HAVE_SYSUTILS
 static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
 {
@@ -404,7 +334,7 @@ int main(int argc, char *argv[])
       find_libretro_file = true;
 
    set_default_settings();
-   init_settings(find_libretro_file);
+   rarch_config_load(SYS_CONFIG_FILE, LIBRETRO_DIR_PATH, ".SELF", find_libretro_file);
    init_libretro_sym();
 
 #if(CELL_SDK_VERSION > 0x340000)
