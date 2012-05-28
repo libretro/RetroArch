@@ -275,34 +275,12 @@ static void wii_free(void *data)
    (void)data;
 }
 
-static void wii_swap(void * data)
-{
-   (void)data;
-   /* TODO */
-}
-
-static void wii_set_aspect_ratio(void * data, uint32_t aspectratio_index)
-{
-   (void)data;
-
-   g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
-   g_settings.video.force_aspect = false;
-
-   /* TODO */
-}
-
 static void wii_set_rotation(void * data, uint32_t orientation)
 {
    (void)data;
    (void)orientation;
 
    /* TODO */
-}
-
-static void wii_set_swap_block_state(void * data, bool toggle)
-{
-   (void)data;
-   (void)toggle;
 }
 
 const video_driver_t video_wii = {
@@ -313,8 +291,5 @@ const video_driver_t video_wii = {
    .focus = wii_focus,
    .free = wii_free,
    .ident = "wii",
-   .set_swap_block_state = wii_set_swap_block_state,
    .set_rotation = wii_set_rotation,
-   .set_aspect_ratio = wii_set_aspect_ratio,
-   .swap = wii_swap
 };

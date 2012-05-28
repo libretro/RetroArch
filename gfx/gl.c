@@ -187,7 +187,7 @@ void gl_shader_use(unsigned index)
 #endif
 }
 
-static void gl_shader_deinit(void)
+static inline void gl_shader_deinit(void)
 {
 #ifdef HAVE_CG
    gl_cg_deinit();
@@ -198,7 +198,7 @@ static void gl_shader_deinit(void)
 #endif
 }
 
-static void gl_shader_set_proj_matrix(void)
+static inline void gl_shader_set_proj_matrix(void)
 {
 #ifdef HAVE_CG
    gl_cg_set_proj_matrix();
@@ -209,7 +209,7 @@ static void gl_shader_set_proj_matrix(void)
 #endif
 }
 
-static void gl_shader_set_params(unsigned width, unsigned height, 
+static inline void gl_shader_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
