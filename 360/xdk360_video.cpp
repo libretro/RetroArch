@@ -669,11 +669,11 @@ static bool xdk360_frame(void *data, const void *frame,
    /* XBox 360 specific font code */
    if (msg && !menu_enabled)
    {
-      if(IS_TIMER_EXPIRED() || g_first_msg)
+      if(IS_TIMER_EXPIRED(d3d9) || g_first_msg)
       {
          xdk360_console_format(msg);
          g_first_msg = 0;
-         SET_TIMER_EXPIRATION(30);
+         SET_TIMER_EXPIRATION(d3d9, 30);
       }
 
       xdk360_console_draw();

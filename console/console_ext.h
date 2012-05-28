@@ -17,6 +17,10 @@
 #ifndef CONSOLE_EXT_H__
 #define CONSOLE_EXT_H__
 
+#define IS_TIMER_NOT_EXPIRED(handle) (handle->frame_count < g_console.timer_expiration_frame_count)
+#define IS_TIMER_EXPIRED(handle) 	(!(IS_TIMER_NOT_EXPIRED(handle)))
+#define SET_TIMER_EXPIRATION(handle, value) (g_console.timer_expiration_frame_count = handle->frame_count + value)
+
 enum aspect_ratio
 {
    ASPECT_RATIO_1_1 = 0,
@@ -43,6 +47,8 @@ enum aspect_ratio
 
    ASPECT_RATIO_END,
 };
+
+#define LAST_ASPECT_RATIO ASPECT_RATIO_CUSTOM
 
 enum rotation
 {

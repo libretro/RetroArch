@@ -20,9 +20,8 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../libretro.h"
-#include "../console/console_ext_input.h"
+#include "../console/console_ext.h"
 #include "xdk360_input.h"
-#include "xdk360_video_general.h"
 #include "shared.h"
 #include "menu.h"
 
@@ -178,18 +177,18 @@ static bool xdk360_key_pressed(void *data, int key)
       case RARCH_REWIND:
 	 return ((state.Gamepad.sThumbRY > DEADZONE) && !(state.Gamepad.bRightTrigger > 128));
       case RARCH_QUIT_KEY:
-	 if(IS_TIMER_EXPIRED())
+	 if(IS_TIMER_EXPIRED(d3d9))
 	 {
             uint32_t left_thumb_pressed = (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB);
 	    uint32_t right_thumb_pressed = (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
 
-	    g_console.menu_enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED();
+	    g_console.menu_enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED(d3d9);
 	    g_console.ingame_menu_enable = right_thumb_pressed && !left_thumb_pressed;
 
 	    if(g_console.menu_enable || (g_console.ingame_menu_enable && !g_console.menu_enable))
 	    {
                g_console.mode_switch = MODE_MENU;
-	       SET_TIMER_EXPIRATION(30);
+	       SET_TIMER_EXPIRATION(d3d9, 30);
 	       retval = g_console.menu_enable;
 	    }
 

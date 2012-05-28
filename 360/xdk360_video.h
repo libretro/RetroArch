@@ -19,7 +19,6 @@
 
 #include <stdint.h>
 #include "fonts.h"
-#include "xdk360_video_general.h"
 
 #define DFONT_MAX	4096
 #define PRIM_FVF	(D3DFVF_XYZRHW | D3DFVF_TEX1)

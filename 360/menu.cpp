@@ -804,7 +804,7 @@ void menu_loop(void)
 
       g_console.menu_enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
 		      && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_console.emulator_initialized)
-		      && IS_TIMER_EXPIRED());
+		      && IS_TIMER_EXPIRED(d3d9));
       g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
 
 	  switch(g_console.input_loop)
@@ -826,7 +826,7 @@ void menu_loop(void)
 
       if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
       {
-         SET_TIMER_EXPIRATION(30);
+         SET_TIMER_EXPIRATION(d3d9, 30);
       }
 
 	  /* XBox 360 specific font code */
@@ -835,11 +835,11 @@ void menu_loop(void)
 
          if (msg)
          {
-            if(IS_TIMER_EXPIRED() || g_first_msg)
+            if(IS_TIMER_EXPIRED(d3d9) || g_first_msg)
             {
                xdk360_console_format(msg);
                g_first_msg = 0;
-               SET_TIMER_EXPIRATION(30);
+               SET_TIMER_EXPIRATION(d3d9, 30);
             }
 
             xdk360_console_draw();
