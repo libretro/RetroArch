@@ -219,11 +219,7 @@ static void browser_update(filebrowser_t * b)
          if(b->currently_selected < b->file_count-1)
 	 {
             FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
-
-	    if(g_console.emulator_initialized)
-               set_delay = DELAY_SMALL;
-	    else
-               set_delay = DELAY_SMALLEST;
+	    set_delay = DELAY_SMALLEST;
 	 }
       }
 
@@ -232,10 +228,7 @@ static void browser_update(filebrowser_t * b)
          if(b->currently_selected < b->file_count-1)
 	 {
             FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
-	    if(g_console.emulator_initialized)
-               set_delay = DELAY_SMALL;
-	    else
-               set_delay = DELAY_SMALLEST;
+	    set_delay = DELAY_SMALLEST;
 	 }
       }
 
@@ -244,10 +237,7 @@ static void browser_update(filebrowser_t * b)
          if(b->currently_selected > 0)
 	 {
             FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
-	    if(g_console.emulator_initialized)
-               set_delay = DELAY_SMALL;
-	    else
-               set_delay = DELAY_SMALLEST;
+	    set_delay = DELAY_SMALLEST;
 	 }
       }
 
@@ -256,30 +246,20 @@ static void browser_update(filebrowser_t * b)
          if(b->currently_selected > 0)
 	 {
             FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
-	    if(g_console.emulator_initialized)
-               set_delay = DELAY_SMALL;
-	    else
-               set_delay = DELAY_SMALLEST;
+	    set_delay = DELAY_SMALLEST;
 	 }
       }
 
       if (CTRL_RIGHT(state))
       {
          b->currently_selected = (MIN(b->currently_selected + 5, b->file_count-1));
-
-	 if(g_console.emulator_initialized)
-            set_delay = DELAY_MEDIUM;
-	 else
-            set_delay = DELAY_SMALL;
+	 set_delay = DELAY_SMALL;
       }
 
       if (CTRL_LSTICK_RIGHT(state))
       {
          b->currently_selected = (MIN(b->currently_selected + 5, b->file_count-1));
-	 if(g_console.emulator_initialized)
-            set_delay = DELAY_SMALL;
-	 else
-            set_delay = DELAY_SMALLEST;
+	 set_delay = DELAY_SMALLEST;
       }
 
       if (CTRL_LEFT(state))
@@ -289,10 +269,7 @@ static void browser_update(filebrowser_t * b)
 	 else
             b->currently_selected -= 5;
 
-	 if(g_console.emulator_initialized)
-            set_delay = DELAY_MEDIUM;
-	 else
-            set_delay = DELAY_SMALL;
+	 set_delay = DELAY_SMALL;
       }
 
       if (CTRL_LSTICK_LEFT(state))
@@ -302,10 +279,7 @@ static void browser_update(filebrowser_t * b)
 	 else
             b->currently_selected -= 5;
 
-	 if(g_console.emulator_initialized)
-            set_delay = DELAY_SMALL;
-	 else
-            set_delay = DELAY_SMALLEST;
+	 set_delay = DELAY_SMALLEST;
       }
 
       if (CTRL_R1(state))
