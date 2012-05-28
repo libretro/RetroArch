@@ -207,8 +207,9 @@ struct console_settings
    bool default_savestate_dir_enable;
    bool fbo_enabled;
    bool frame_advance_enable;
-   bool gamma_correction_enable;
    bool initialize_rarch_enable;
+   bool info_msg_enable;
+   bool gamma_correction_enable;
    bool ingame_menu_enable;
    bool menu_enable;
    bool overscan_enable;

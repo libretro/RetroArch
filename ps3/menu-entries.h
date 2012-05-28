@@ -327,7 +327,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	   0,
 	   1
    },
-   /* port-specific */
    {
 	   SETTING_EMU_CURRENT_SAVE_STATE_SLOT, 
 	   "Current save state slot", 
@@ -336,6 +335,21 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	   0.0f,
 	   YELLOW,
 	   "INFO - Set the current savestate slot (can also be configured ingame).",
+	   WHITE,
+	   0.91f,
+	   0.09f,
+	   0.83f,
+	   0,
+	   1
+   },
+   {
+	   SETTING_EMU_SHOW_INFO_MSG, 
+	   "Info messages", 
+	   "",
+	   0.0f,
+	   0.0f,
+	   YELLOW,
+	   "INFO - Show onscreen info messages in the menu.",
 	   WHITE,
 	   0.91f,
 	   0.09f,

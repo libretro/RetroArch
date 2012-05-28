@@ -375,20 +375,24 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 		}
 	    break;
 	 case MENU_ITEM_OVERSCAN_AMOUNT:
-		 msg_queue_clear(g_extern.msg_queue);
-	     msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
+            msg_queue_clear(g_extern.msg_queue);
+            if(g_console.info_msg_enable)
+            {
+                msg_queue_clear(g_extern.msg_queue);
+	        msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
+            }
 	    break;
 	 case MENU_ITEM_ORIENTATION:
 	    switch(g_console.screen_orientation)
 	    {
                case ORIENTATION_NORMAL:
                   g_console.screen_orientation = ORIENTATION_VERTICAL;
-		          m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
-		          break;
-	           case ORIENTATION_VERTICAL:
-		          g_console.screen_orientation = ORIENTATION_FLIPPED;
-		          m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
-		          break;
+                  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
+		  break;
+	       case ORIENTATION_VERTICAL:
+		  g_console.screen_orientation = ORIENTATION_FLIPPED;
+		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
+		  break;
 	       case ORIENTATION_FLIPPED:
 		  g_console.screen_orientation = ORIENTATION_FLIPPED_ROTATED;
 		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
@@ -401,9 +405,12 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    video_xdk360.set_rotation(driver.video_data, g_console.screen_orientation);
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
-			g_console.input_loop = INPUT_LOOP_RESIZE_MODE;
-			msg_queue_clear(g_extern.msg_queue);
-			msg_queue_push(g_extern.msg_queue, "INFO - Resize the screen by moving around the two analog sticks.\nPress Y to reset to default values, and B to go back.\nTo select the resized screen mode, set Aspect Ratio to: 'Custom'.", 1, 270);
+	    g_console.input_loop = INPUT_LOOP_RESIZE_MODE;
+            if (g_console.info_msg_enable)
+            {
+	       msg_queue_clear(g_extern.msg_queue);
+	       msg_queue_push(g_extern.msg_queue, "INFO - Resize the screen by moving around the two analog sticks.\nPress Y to reset to default values, and B to go back.\nTo select the resized screen mode, set Aspect Ratio to: 'Custom'.", 1, 270);
+            }
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
 	    if (g_console.emulator_initialized)
@@ -414,8 +421,11 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    }
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
-		 msg_queue_clear(g_extern.msg_queue);
-	     msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
+            if (g_console.info_msg_enable)
+	    {
+               msg_queue_clear(g_extern.msg_queue);
+	       msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
+            }
 	    break;
 	 case MENU_ITEM_RESET:
 	    if (g_console.emulator_initialized)
@@ -516,8 +526,11 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    {
       filebrowser_new(&browser, "cache:", rarch_console_get_rom_ext());
       filebrowser_fetch_directory_entries("cache:", &browser, &m_romlist, &m_rompathtitle);
-	  msg_queue_clear(g_extern.msg_queue);
-	  msg_queue_push(g_extern.msg_queue, "INFO - All the contents of the ZIP files you have selected in the filebrowser\nare extracted to this partition.", 1, 180);
+      if (g_console.info_msg_enable)
+      {
+         msg_queue_clear(g_extern.msg_queue);
+	 msg_queue_push(g_extern.msg_queue, "INFO - All the contents of the ZIP files you have selected in the filebrowser\nare extracted to this partition.", 1, 180);
+      }
    }
 
    bHandled = TRUE;
@@ -534,29 +547,33 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
       int index = m_shaderlist.GetCurSel();
       if(tmp_browser.cur[index].d_type != FILE_ATTRIBUTE_DIRECTORY)
       {
-		 const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_shaderlist.GetText(index));
+         const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_shaderlist.GetText(index));
 
-		 switch(set_shader)
-		 {
-		    case 1:
-			   snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
-               hlsl_load_shader(set_shader, g_settings.video.cg_shader_path);
-               break;
-			case 2:
-			  snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
-               hlsl_load_shader(set_shader, g_settings.video.second_pass_shader);
-			   break;
-		    default:
-	           break;
-		 }
-		 msg_queue_clear(g_extern.msg_queue);
-	     msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
+	 switch(set_shader)
+	 {
+            case 1:
+               snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+	       hlsl_load_shader(set_shader, g_settings.video.cg_shader_path);
+	       break;
+	    case 2:
+	       snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+	       hlsl_load_shader(set_shader, g_settings.video.second_pass_shader);
+	       break;
+	    default:
+	       break;
+	 }
+
+         if (g_console.info_msg_enable)
+         {
+            msg_queue_clear(g_extern.msg_queue);
+	    msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
+         }
       }
       else if(tmp_browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
       {
-		 const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_shaderlist.GetText(index));
-		 snprintf(path, sizeof(path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
-		 filebrowser_fetch_directory_entries(path, &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
+         const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_shaderlist.GetText(index));
+	 snprintf(path, sizeof(path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+	 filebrowser_fetch_directory_entries(path, &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
       }
    }
 
@@ -606,8 +623,11 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
          case SETTING_EMU_REWIND_ENABLED:
            g_settings.rewind_enable = !g_settings.rewind_enable;
 	    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-		msg_queue_clear(g_extern.msg_queue);
-		msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
+	    if (g_console.info_msg_enable)
+            {
+               msg_queue_clear(g_extern.msg_queue);
+	       msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
+            }
 	    break;
 	 case SETTING_GAMMA_CORRECTION_ENABLED:
 	    g_console.gamma_correction_enable = !g_console.gamma_correction_enable;
@@ -616,50 +636,58 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 		msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
 	    break;
 	 case SETTING_COLOR_FORMAT:
-		g_console.color_format = !g_console.color_format;
+	    g_console.color_format = !g_console.color_format;
 	    m_settingslist.SetText(SETTING_COLOR_FORMAT, g_console.color_format ? L"Color format: 32bit ARGB" : L"Color format: 16bit RGBA");
-		msg_queue_clear(g_extern.msg_queue);
-		msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
-		 break;
+	    if (g_console.info_msg_enable)
+            {
+               msg_queue_clear(g_extern.msg_queue);
+	       msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
+            }
+	    break;
 	 case SETTING_SHADER:
-		 set_shader = 1;
-	     hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
+	    set_shader = 1;
+	    hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
 
-         if (hr < 0)
-         {
-            RARCH_ERR("Failed to load scene.\n");
-         }
-		 hCur = app.hShaderBrowser;
-		 msg_queue_clear(g_extern.msg_queue);
-	     msg_queue_push(g_extern.msg_queue, "INFO - Select a shader from the menu by pressing the A button.", 1, 180);
-         NavigateForward(app.hShaderBrowser);
-		 break;
+	    if (hr < 0)
+	    {
+               RARCH_ERR("Failed to load scene.\n");
+	    }
+	    hCur = app.hShaderBrowser;
+	    if (g_console.info_msg_enable)
+            {
+	       msg_queue_clear(g_extern.msg_queue);
+	       msg_queue_push(g_extern.msg_queue, "INFO - Select a shader from the menu by pressing the A button.", 1, 180);
+            }
+	    NavigateForward(app.hShaderBrowser);
+	    break;
 	 case SETTING_SHADER_2:
-		 set_shader = 2;
-		 hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
-
-         if (hr < 0)
-         {
-            RARCH_ERR("Failed to load scene.\n");
-         }
-		 hCur = app.hShaderBrowser;
-		 msg_queue_clear(g_extern.msg_queue);
-	     msg_queue_push(g_extern.msg_queue, "INFO - Select a shader from the menu by pressing the A button.", 1, 180);
-         NavigateForward(app.hShaderBrowser);
-		 break;
+            set_shader = 2;
+	    hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
+	    if (hr < 0)
+	    {
+		    RARCH_ERR("Failed to load scene.\n");
+	    }
+	    hCur = app.hShaderBrowser;
+	    if (g_console.info_msg_enable)
+            {
+	       msg_queue_clear(g_extern.msg_queue);
+	       msg_queue_push(g_extern.msg_queue, "INFO - Select a shader from the menu by pressing the A button.", 1, 180);
+            }
+	    NavigateForward(app.hShaderBrowser);
+	    break;
 	 case SETTING_HW_TEXTURE_FILTER:
 	    g_settings.video.smooth = !g_settings.video.smooth;
-		m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
+	    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
 	    break;
 	 case SETTING_HW_TEXTURE_FILTER_2:
 	    g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
-		m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
+	    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
 	    break;
 	 case SETTING_SCALE_ENABLED:
-        g_console.fbo_enabled = !g_console.fbo_enabled;
-		m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-		gfx_ctx_set_fbo(g_console.fbo_enabled);
-		break;
+	    g_console.fbo_enabled = !g_console.fbo_enabled;
+	    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
+	    gfx_ctx_set_fbo(g_console.fbo_enabled);
+	    break;
       }
    }
 
@@ -680,10 +708,9 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_filebrowser.xur", NULL, &app.hFileBrowser);
 
       if (hr < 0)
-      {
          RARCH_ERR("Failed to load scene.\n");
-      }
-	  hCur = app.hFileBrowser;
+
+      hCur = app.hFileBrowser;
       NavigateForward(app.hFileBrowser);
    }
    else if ( hObjPressed == m_quick_menu)
@@ -692,7 +719,8 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
       if (hr < 0)
          RARCH_ERR("Failed to load scene.\n");
-	  hCur = app.hQuickMenu;
+
+      hCur = app.hQuickMenu;
       NavigateForward(app.hQuickMenu);
    }
    else if ( hObjPressed == m_controls)
@@ -701,9 +729,13 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
       if (hr < 0)
          RARCH_ERR("Failed to load scene.\n");
-	  hCur = app.hControlsMenu;
-	  msg_queue_clear(g_extern.msg_queue);
-	  msg_queue_push(g_extern.msg_queue, "INFO - Press LEFT/RIGHT to change the controls, and press\nSTART/A to reset a button to default values.", 1, 180);
+
+      hCur = app.hControlsMenu;
+      if (g_console.info_msg_enable)
+      {
+         msg_queue_clear(g_extern.msg_queue);
+         msg_queue_push(g_extern.msg_queue, "INFO - Press LEFT/RIGHT to change the controls, and press\nSTART/A to reset a button to default values.", 1, 180);
+      }
       NavigateForward(app.hControlsMenu);
    }
    else if ( hObjPressed == m_change_libretro_core )
@@ -714,9 +746,12 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       {
          RARCH_ERR("Failed to load scene.\n");
       }
-	  hCur = app.hCoreBrowser;
-	  msg_queue_clear(g_extern.msg_queue);
-	  msg_queue_push(g_extern.msg_queue, "INFO - Select a Libretro core from the menu by pressing the A button.", 1, 180);
+      hCur = app.hCoreBrowser;
+      if (g_console.info_msg_enable)
+      {
+         msg_queue_clear(g_extern.msg_queue);
+	 msg_queue_push(g_extern.msg_queue, "INFO - Select a Libretro core from the menu by pressing the A button.", 1, 180);
+      }
       NavigateForward(app.hCoreBrowser);
    }
    else if ( hObjPressed == m_settings )
@@ -725,7 +760,8 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
       if (hr < 0)
          RARCH_ERR("Failed to load scene.\n");
-	  hCur = app.hRetroArchSettings;
+
+      hCur = app.hRetroArchSettings;
       NavigateForward(app.hRetroArchSettings);
    }
    else if ( hObjPressed == m_quit )

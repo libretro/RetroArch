@@ -548,6 +548,18 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%d", g_extern.state_slot);
 		   break;
 		   /* emu-specific */
+	   case SETTING_EMU_SHOW_INFO_MSG:
+		   if(g_console.info_msg_enable)
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   }
+		   else
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   }
+		   break;
 	   case SETTING_EMU_DEFAULT_ALL:
 		   if(menu_obj->selected == currentsetting)
 			   menu_obj->items[currentsetting].text_color = GREEN;
@@ -1558,14 +1570,29 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_START(state))
 				g_extern.state_slot = 0;
 			break;
+		case SETTING_EMU_SHOW_INFO_MSG:
+			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			{
+				g_console.info_msg_enable = !g_console.info_msg_enable;
+				set_delay = DELAY_MEDIUM;
+			}
+			if(CTRL_START(state))
+			{
+				g_console.info_msg_enable = true;
+				set_delay = DELAY_MEDIUM;
+			}
+			break;
 		case SETTING_EMU_REWIND_ENABLED:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
 				g_settings.rewind_enable = !g_settings.rewind_enable;
 
 				set_delay = DELAY_MEDIUM;
-                                msg_queue_clear(g_extern.msg_queue);
-				msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
+				if(g_console.info_msg_enable)
+				{
+                                   msg_queue_clear(g_extern.msg_queue);
+				   msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
+				}
 			}
 			if(CTRL_START(state))
 			{

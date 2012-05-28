@@ -200,8 +200,11 @@ int rarch_extract_zipfile(const char *zip_path)
       }
    }
 
-   msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, "INFO - ZIP file extracted to cache partition.", 1, 180);
+   if(g_console.info_msg_enable)
+   {
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, "INFO - ZIP file extracted to cache partition.", 1, 180);
+   }
 
    return 0;
 }
@@ -776,6 +779,7 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       CONFIG_GET_BOOL_CONSOLE(screenshots_enable, "screenshots_enable");
       CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
       CONFIG_GET_BOOL_CONSOLE(triple_buffering_enable, "triple_buffering_enable");
+      CONFIG_GET_BOOL_CONSOLE(info_msg_enable, "info_msg_enable");
       CONFIG_GET_INT_CONSOLE(aspect_ratio_index, "aspect_ratio_index");
       CONFIG_GET_INT_CONSOLE(current_resolution_id, "current_resolution_id");
       CONFIG_GET_INT_CONSOLE(viewports.custom_vp.x, "custom_viewport_x");
@@ -844,6 +848,7 @@ void rarch_config_save(const char * conf_name)
 #endif
       config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
       config_set_bool(conf, "triple_buffering_enable", g_console.triple_buffering_enable);
+      config_set_bool(conf, "info_msg_enable", g_console.info_msg_enable);
       config_set_int(conf, "sound_mode", g_console.sound_mode);
       config_set_int(conf, "aspect_ratio_index", g_console.aspect_ratio_index);
       config_set_int(conf, "current_resolution_id", g_console.current_resolution_id);

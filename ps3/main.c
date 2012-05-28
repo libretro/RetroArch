@@ -146,6 +146,7 @@ static void set_default_settings(void)
    g_console.viewports.custom_vp.x = 0;
    g_console.viewports.custom_vp.y = 0;
    g_console.custom_bgm_enable = true;
+   g_console.info_msg_enable = true;
 
    // g_extern
    g_extern.state_slot = 0;
