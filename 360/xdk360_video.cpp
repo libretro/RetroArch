@@ -542,6 +542,7 @@ static void *xdk360_init(const video_info_t *video, const input_driver_t **input
    xdk360_set_rotation(d3d9, g_console.screen_orientation);
 
    d3d9->fbo_enabled = 1;
+   d3d9->vsync = video->vsync;
 
    return d3d9;
 }
@@ -679,28 +680,9 @@ static bool xdk360_frame(void *data, const void *frame,
    }
 
    if(!d3d9->block_swap)
-      d3d9->d3d_render_device->Present(NULL, NULL, NULL, NULL);
+      gfx_ctx_swap_buffers();
 
    return true;
-}
-
-static void xdk360_set_swap_block_swap (void * data, bool toggle)
-{
-   (void)data;
-   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
-   d3d9->block_swap = toggle;
-
-   if(toggle)
-      RARCH_LOG("Swap is set to blocked.\n");
-   else
-      RARCH_LOG("Swap is set to non-blocked.\n");
-}
-
-static void xdk360_swap (void * data)
-{
-   (void)data;
-   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
-   d3d9->d3d_render_device->Present(NULL, NULL, NULL, NULL);
 }
 
 static void xdk360_set_nonblock_state(void *data, bool state)
@@ -743,6 +725,10 @@ static void xdk360_start(void)
    video_info.input_scale = 2;
 
    driver.video_data = xdk360_init(&video_info, NULL, NULL);
+
+   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
+
+   gfx_ctx_set_swap_interval(d3d9->vsync ? 1 : 0, false);
 
    g_first_msg = true;
 
