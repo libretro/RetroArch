@@ -401,7 +401,7 @@ static void xdk360_convert_texture_to_as16_srgb( D3DTexture *pTexture )
     pTexture->Format.DataFormat = g_MapLinearToSrgbGpuFormat[ (desc.Format & D3DFORMAT_TEXTUREFORMAT_MASK) >> D3DFORMAT_TEXTUREFORMAT_SHIFT ];
 }
 
-void xdk360_init_fbo(xdk360_video_t *d3d9)
+static void xdk360_init_fbo(xdk360_video_t *d3d9)
 {
    if (d3d9->lpTexture_ot)
    {
