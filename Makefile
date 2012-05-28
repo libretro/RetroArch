@@ -48,7 +48,7 @@ ifeq ($(HAVE_BSV_MOVIE), 1)
 endif
 
 ifeq ($(HAVE_NETPLAY), 1)
-   OBJ += netplay.o
+   OBJ += netplay.o network_cmd.o
 endif
 
 ifeq ($(HAVE_RSOUND), 1)
@@ -102,12 +102,12 @@ ifeq ($(HAVE_COREAUDIO), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o gfx/sdlwrap.o input/sdl_input.o audio/sdl_audio.o fifo_buffer.o
+   OBJ += gfx/sdl_gfx.o gfx/context/sdl_ctx.o input/sdl_input.o audio/sdl_audio.o fifo_buffer.o
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
 
 ifeq ($(HAVE_OPENGL), 1)
-	OBJ += gfx/gl.o 
+	OBJ += gfx/gl.o gfx/fonts/freetype.o
 ifeq ($(OSX),1)
 	LIBS += -framework OpenGL
 else
@@ -154,7 +154,7 @@ ifeq ($(HAVE_DYLIB), 1)
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)
-   OBJ += gfx/fonts.o
+   OBJ += gfx/fonts/fonts.o
    LIBS += $(FREETYPE_LIBS)
    DEFINES += $(FREETYPE_CFLAGS)
 endif

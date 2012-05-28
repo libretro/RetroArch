@@ -26,7 +26,7 @@
 #endif
 
 #ifdef HAVE_FREETYPE
-#include "fonts.h"
+#include "fonts/fonts.h"
 #endif
 
 static void convert_15bit_15bit_direct(uint16_t *out, unsigned outpitch, const uint16_t *input, unsigned width, unsigned height, unsigned pitch, const SDL_PixelFormat *fmt);

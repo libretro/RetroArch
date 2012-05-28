@@ -24,6 +24,14 @@
 #include "msvc/msvc_compat.h"
 #include "input/keysym.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_NETWORK_CMD
+#include "network_cmd.h"
+#endif
+
 #define AUDIO_CHUNK_SIZE_BLOCKING 64
 #define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
 #define AUDIO_MAX_RATIO 16
@@ -152,10 +160,11 @@ typedef struct video_driver
 
    // Callbacks essentially useless on PC, but useful on consoles where the drivers are used for more stuff.
 #ifdef RARCH_CONSOLE
-   void (*set_swap_block_state)(void *data, bool toggle); // Block swapping from being called in ::frame().
-   void (*swap)(void *data); // Explicitly swap buffers. Only useful when set_swap_block_state() is set to true.
-   void (*set_aspect_ratio)(void *data, unsigned aspectratio_idx); // TODO: refactor this properly to float.
+   void (*start)(void);
+   void (*stop)(void);
+   void (*restart)(void);
 #endif
+
    void (*set_rotation)(void *data, unsigned rotation);
 } video_driver_t;
 
@@ -167,6 +176,10 @@ typedef struct driver
    void *audio_data;
    void *video_data;
    void *input_data;
+
+#ifdef HAVE_NETWORK_CMD
+   network_cmd_t *network_cmd;
+#endif
 } driver_t;
 
 void init_drivers(void);
@@ -245,8 +258,17 @@ extern const input_driver_t input_linuxraw;
 #define input_poll_func()                       driver.input->poll(driver.input_data)
 #define input_input_state_func(snes_keybinds, port, device, index, id) \
                                                 driver.input->input_state(driver.input_data, snes_keybinds, port, device, index, id)
-#define input_key_pressed_func(key)             driver.input->key_pressed(driver.input_data, key)
 #define input_free_func()                       driver.input->free(driver.input_data)
+
+static inline bool input_key_pressed_func(int key)
+{
+   bool ret = driver.input->key_pressed(driver.input_data, key);
+#ifdef HAVE_NETWORK_CMD
+   if (!ret && driver.network_cmd)
+      ret = network_cmd_get(driver.network_cmd, key);
+#endif
+   return ret;
+}
 #endif
 
 #endif

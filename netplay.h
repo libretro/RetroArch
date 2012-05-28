@@ -57,3 +57,4 @@ void netplay_pre_frame(netplay_t *handle);
 void netplay_post_frame(netplay_t *handle);
 
 #endif
+

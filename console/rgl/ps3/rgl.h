@@ -1092,12 +1092,6 @@ void _RGLSetNativeCgFragmentProgram( const void *header );
 			    clipY1 - clipY0, zNear, zFar, scale, offset );
     }
 
-
-
-
-
-
-
 #define PSGL_DEVICE_PARAMETERS_COLOR_FORMAT             0x0001
 #define PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT             0x0002
 #define PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE       0x0004
@@ -1147,8 +1141,6 @@ void _RGLSetNativeCgFragmentProgram( const void *header );
 #define PSGL_INIT_USE_PMQUERIES           0x0080
 
 
-typedef unsigned long long int PSGLuint64;
-
 extern void	psglInit( PSGLinitOptions* options );
 extern void	psglExit();
 
@@ -1166,8 +1158,6 @@ void psglResetCurrentContext();
 PSGLcontext* psglGetCurrentContext();
 PSGLdevice* psglGetCurrentDevice();
 void psglSwap( void );
-
-PSGLuint64 psglGetSystemTime();
 
 static inline  void psglRescAdjustAspectRatio( const float horizontalScale, const float verticalScale )
     { cellRescAdjustAspectRatio( horizontalScale, verticalScale ); }

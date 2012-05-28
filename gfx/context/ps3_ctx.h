@@ -14,22 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _XDK360_INPUT_H
-#define _XDK360_INPUT_H
-
-#define XINPUT_GAMEPAD_LSTICK_LEFT_MASK		(65536)
-#define XINPUT_GAMEPAD_LSTICK_RIGHT_MASK	(131072)
-#define XINPUT_GAMEPAD_LSTICK_UP_MASK		(262144)
-#define XINPUT_GAMEPAD_LSTICK_DOWN_MASK		(524288)
-#define XINPUT_GAMEPAD_RSTICK_LEFT_MASK		(1048576)
-#define XINPUT_GAMEPAD_RSTICK_RIGHT_MASK	(2097152)
-#define XINPUT_GAMEPAD_RSTICK_UP_MASK		(4194304)
-#define XINPUT_GAMEPAD_RSTICK_DOWN_MASK		(8388608)
-#define XINPUT_GAMEPAD_LEFT_TRIGGER             (16777216)
-#define XINPUT_GAMEPAD_RIGHT_TRIGGER		(33554432)
-#define DEADZONE                                (16000)
-
-extern void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id);
-extern void xdk360_input_loop(void);
+#ifndef _PS3_CTX_H
+#define _PS3_CTX_H
 
 #endif

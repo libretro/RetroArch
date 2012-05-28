@@ -55,6 +55,10 @@
 #include "netplay.h"
 #endif
 
+#ifdef HAVE_NETWORK_CMD
+#include "network_cmd.h"
+#endif
+
 #include "audio/resampler.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
@@ -177,6 +181,9 @@ struct settings
 
    bool block_sram_overwrite;
    bool savestate_auto_index;
+
+   bool network_cmd_enable;
+   uint16_t network_cmd_port;
 };
 
 // Settings and/or global state that is specific to a console-style implementation.
@@ -194,6 +201,7 @@ struct console_settings
 #ifdef __CELLOS_LV2__
    bool custom_bgm_enable;
 #endif
+   bool check_available_resolutions;
    bool block_config_read;
    bool default_sram_dir_enable;
    bool default_savestate_dir_enable;

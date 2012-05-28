@@ -29,6 +29,7 @@
 #include "../console/console_ext.h"
 
 #include "ps3_video_psgl.h"
+#include "../gfx/gl_common.h"
 
 #include "shared.h"
 #include "../file.h"
@@ -174,6 +175,7 @@ static uint64_t old_state = 0;
 static void set_delay_speed(unsigned delaymode)
 {
    unsigned speed;
+   gl_t * gl = driver.video_data;
 
    speed = 0;
 
@@ -196,18 +198,19 @@ static void set_delay_speed(unsigned delaymode)
    }
 
    strlcpy(special_action_msg, "", sizeof(special_action_msg));
-   SET_TIMER_EXPIRATION(g_console.control_timer_expiration_frame_count, speed);
+   SET_TIMER_EXPIRATION(gl, speed);
 }
 
 static void browser_update(filebrowser_t * b)
 {
    uint64_t state, diff_state, button_was_pressed;
+   gl_t * gl = driver.video_data;
 
    state = cell_pad_input_poll_device(0);
    diff_state = old_state ^ state;
    button_was_pressed = old_state & diff_state;
 
-   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+   if(IS_TIMER_EXPIRED(gl))
    {
       set_delay = DELAY_NONE;
 
@@ -216,11 +219,7 @@ static void browser_update(filebrowser_t * b)
          if(b->currently_selected < b->file_count-1)
 	 {
             FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
-
-	    if(g_console.emulator_initialized)
-               set_delay = DELAY_SMALL;
-	    else
-               set_delay = DELAY_SMALLEST;
+	    set_delay = DELAY_SMALLEST;
 	 }
       }
 
@@ -229,10 +228,7 @@ static void browser_update(filebrowser_t * b)
          if(b->currently_selected < b->file_count-1)
 	 {
             FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
-	    if(g_console.emulator_initialized)
-               set_delay = DELAY_SMALL;
-	    else
-               set_delay = DELAY_SMALLEST;
+	    set_delay = DELAY_SMALLEST;
 	 }
       }
 
@@ -241,10 +237,7 @@ static void browser_update(filebrowser_t * b)
          if(b->currently_selected > 0)
 	 {
             FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
-	    if(g_console.emulator_initialized)
-               set_delay = DELAY_SMALL;
-	    else
-               set_delay = DELAY_SMALLEST;
+	    set_delay = DELAY_SMALLEST;
 	 }
       }
 
@@ -253,30 +246,20 @@ static void browser_update(filebrowser_t * b)
          if(b->currently_selected > 0)
 	 {
             FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
-	    if(g_console.emulator_initialized)
-               set_delay = DELAY_SMALL;
-	    else
-               set_delay = DELAY_SMALLEST;
+	    set_delay = DELAY_SMALLEST;
 	 }
       }
 
       if (CTRL_RIGHT(state))
       {
          b->currently_selected = (MIN(b->currently_selected + 5, b->file_count-1));
-
-	 if(g_console.emulator_initialized)
-            set_delay = DELAY_MEDIUM;
-	 else
-            set_delay = DELAY_SMALL;
+	 set_delay = DELAY_SMALL;
       }
 
       if (CTRL_LSTICK_RIGHT(state))
       {
          b->currently_selected = (MIN(b->currently_selected + 5, b->file_count-1));
-	 if(g_console.emulator_initialized)
-            set_delay = DELAY_SMALL;
-	 else
-            set_delay = DELAY_SMALLEST;
+	 set_delay = DELAY_SMALLEST;
       }
 
       if (CTRL_LEFT(state))
@@ -286,10 +269,7 @@ static void browser_update(filebrowser_t * b)
 	 else
             b->currently_selected -= 5;
 
-	 if(g_console.emulator_initialized)
-            set_delay = DELAY_MEDIUM;
-	 else
-            set_delay = DELAY_SMALL;
+	 set_delay = DELAY_SMALL;
       }
 
       if (CTRL_LSTICK_LEFT(state))
@@ -299,10 +279,7 @@ static void browser_update(filebrowser_t * b)
 	 else
             b->currently_selected -= 5;
 
-	 if(g_console.emulator_initialized)
-            set_delay = DELAY_SMALL;
-	 else
-            set_delay = DELAY_SMALLEST;
+	 set_delay = DELAY_SMALLEST;
       }
 
       if (CTRL_R1(state))
@@ -805,18 +782,20 @@ static void menu_reinit_settings (void)
 
 static void apply_scaling (unsigned init_mode)
 {
+   gl_t *gl = driver.video_data;
+
    switch(init_mode)
    {
       case FBO_DEINIT:
-         gl_deinit_fbo(g_gl);
+         gl_deinit_fbo(gl);
 	 break;
       case FBO_INIT:
-	 gl_init_fbo(g_gl, RARCH_SCALE_BASE * INPUT_SCALE,
+	 gl_init_fbo(gl, RARCH_SCALE_BASE * INPUT_SCALE,
 			 RARCH_SCALE_BASE * INPUT_SCALE);
 	 break;
       case FBO_REINIT:
-	 gl_deinit_fbo(g_gl);
-	 gl_init_fbo(g_gl, RARCH_SCALE_BASE * INPUT_SCALE,
+	 gl_deinit_fbo(gl);
+	 gl_init_fbo(gl, RARCH_SCALE_BASE * INPUT_SCALE,
 			 RARCH_SCALE_BASE * INPUT_SCALE);
 	 break;
    }
@@ -827,6 +806,7 @@ static void select_file(uint32_t menu_id)
    char extensions[256], title[256], object[256], comment[256], dir_path[MAX_PATH_LENGTH],
       path[MAX_PATH_LENGTH], *separatorslash;
    uint64_t state, diff_state, button_was_pressed;
+   gl_t * gl = driver.video_data;
 
    state = cell_pad_input_poll_device(0);
    diff_state = old_state ^ state;
@@ -883,7 +863,7 @@ static void select_file(uint32_t menu_id)
 
    browser_update(&tmpBrowser);
 
-   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+   if(IS_TIMER_EXPIRED(gl))
    {
       if (CTRL_START(button_was_pressed))
          filebrowser_reset_start_directory(&tmpBrowser, "/", extensions);
@@ -969,6 +949,7 @@ static void select_directory(uint32_t menu_id)
 {
    char path[1024], newpath[1024], *separatorslash;
    uint64_t state, diff_state, button_was_pressed;
+   gl_t * gl = driver.video_data;
 
    state = cell_pad_input_poll_device(0);
    diff_state = old_state ^ state;
@@ -982,7 +963,7 @@ static void select_directory(uint32_t menu_id)
 
    browser_update(&tmpBrowser);
 
-   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+   if(IS_TIMER_EXPIRED(gl))
    {
       if (CTRL_START(button_was_pressed))
          filebrowser_reset_start_directory(&tmpBrowser, "/","empty");
@@ -1097,9 +1078,10 @@ static void rarch_filename_input_and_save (unsigned filename_type)
    while(OSK_IS_RUNNING(g_console.oskutil_handle))
    {
       glClear(GL_COLOR_BUFFER_BIT);
-      gl_frame_menu();
-      video_gl.swap(NULL);
+      gfx_ctx_swap_buffers();
+#ifdef HAVE_SYSUTILS
       cellSysutilCheckCallback();
+#endif
    }
 
    if(g_console.oskutil_handle.text_can_be_fetched)
@@ -1131,8 +1113,10 @@ static void rarch_filename_input_and_save (unsigned filename_type)
       {
          /* OSK Util gets updated */
          glClear(GL_COLOR_BUFFER_BIT);
-	 video_gl.swap(NULL);
-	 cellSysutilCheckCallback();
+	 gfx_ctx_swap_buffers();
+#ifdef HAVE_SYSUTILS
+         cellSysutilCheckCallback();
+#endif
       }
 
       if(g_console.oskutil_handle.text_can_be_fetched)
@@ -1189,13 +1173,13 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 					if(ps3_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
 					{
 						//ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
-						ps3graphics_video_reinit();
+						video_gl.restart();
 					}
 				}
 				else
 				{
 					//ps3graphics_set_pal60hz(0);
-					ps3graphics_video_reinit();
+					video_gl.restart();
 				}
 			}
 			break;
@@ -1293,7 +1277,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				if(g_console.aspect_ratio_index > 0)
 				{
 					g_console.aspect_ratio_index--;
-					video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+					gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 					set_delay = DELAY_SMALL;
 				}
 			}
@@ -1302,7 +1286,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				g_console.aspect_ratio_index++;
 				if(g_console.aspect_ratio_index < ASPECT_RATIO_END)
 				{
-					video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+					gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 					set_delay = DELAY_SMALL;
 				}
 				else
@@ -1311,40 +1295,40 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_START(state))
 			{
 				g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
-				video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+				gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
 				g_settings.video.smooth = !g_settings.video.smooth;
-				ps3_set_filtering(1, g_settings.video.smooth);
+				gfx_ctx_set_filtering(1, g_settings.video.smooth);
 				set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
 				g_settings.video.smooth = 1;
-				ps3_set_filtering(1, g_settings.video.smooth);
+				gfx_ctx_set_filtering(1, g_settings.video.smooth);
 			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER_2:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
 				g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
-				ps3_set_filtering(2, g_settings.video.second_pass_smooth);
+				gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
 				set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
 				g_settings.video.second_pass_smooth = 1;
-				ps3_set_filtering(2, g_settings.video.second_pass_smooth);
+				gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
 			}
 			break;
 		case SETTING_SCALE_ENABLED:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
 				g_console.fbo_enabled = !g_console.fbo_enabled;
-				gl_set_fbo_enable(g_console.fbo_enabled);
+				gfx_ctx_set_fbo(g_console.fbo_enabled);
 
 				set_delay = DELAY_MEDIUM;
 
@@ -1402,7 +1386,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				if(g_console.overscan_amount == 0.0f)
 					g_console.overscan_enable = false;
 
-				ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+				gfx_ctx_set_overscan();
 				set_delay = DELAY_SMALLEST;
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
@@ -1413,27 +1397,27 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				if(g_console.overscan_amount == 0.0f)
 					g_console.overscan_enable = 0;
 
-				ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+				gfx_ctx_set_overscan();
 				set_delay = DELAY_SMALLEST;
 			}
 			if(CTRL_START(state))
 			{
 				g_console.overscan_amount = 0.0f;
 				g_console.overscan_enable = false;
-				ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+				gfx_ctx_set_overscan();
 			}
 			break;
 		case SETTING_THROTTLE_MODE:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
 				g_console.throttle_enable = !g_console.throttle_enable;
-				ps3graphics_set_vsync(g_console.throttle_enable);
+				gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
 				set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
 				g_console.throttle_enable = true;
-				ps3graphics_set_vsync(g_console.throttle_enable);
+				gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
 				set_delay = DELAY_MEDIUM;
 			}
 			break;
@@ -1441,7 +1425,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
 				g_console.triple_buffering_enable = !g_console.triple_buffering_enable;
-				ps3graphics_video_reinit();
+				video_gl.restart();
 				set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
@@ -1449,7 +1433,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				if(!g_console.triple_buffering_enable)
 				{
 					g_console.triple_buffering_enable = true;
-					ps3graphics_video_reinit();
+					video_gl.restart();
 				}
 			}
 			break;
@@ -1538,8 +1522,10 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				while(OSK_IS_RUNNING(g_console.oskutil_handle))
 				{
 					glClear(GL_COLOR_BUFFER_BIT);
-					video_gl.swap(NULL);
-					cellSysutilCheckCallback();
+					gfx_ctx_swap_buffers();
+#ifdef HAVE_SYSUTILS
+                                        cellSysutilCheckCallback();
+#endif
 				}
 
 				if(g_console.oskutil_handle.text_can_be_fetched)
@@ -1818,12 +1804,13 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 static void select_setting(menu * menu_obj)
 {
    uint64_t state, diff_state, button_was_pressed, i;
+   gl_t * gl = driver.video_data;
 
    state = cell_pad_input_poll_device(0);
    diff_state = old_state ^ state;
    button_was_pressed = old_state & diff_state;
 
-   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+   if(IS_TIMER_EXPIRED(gl))
    {
       set_delay = DELAY_NONE;
       /* back to ROM menu if CIRCLE is pressed */
@@ -1921,6 +1908,7 @@ static void select_rom(void)
 {
    char newpath[1024], *separatorslash;
    uint64_t state, diff_state, button_was_pressed;
+   gl_t * gl = driver.video_data;
 
    state = cell_pad_input_poll_device(0);
    diff_state = old_state ^ state;
@@ -1928,7 +1916,7 @@ static void select_rom(void)
 
    browser_update(&browser);
 
-   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+   if(IS_TIMER_EXPIRED(gl))
    {
       if (CTRL_SELECT(button_was_pressed))
       {
@@ -2023,6 +2011,7 @@ static void ingame_menu(uint32_t menu_id)
    static uint32_t menuitem_colors[MENU_ITEM_LAST];
    uint64_t state, stuck_in_loop;
    static uint64_t blocking;
+   gl_t * gl = driver.video_data;
 
    float x_position = 0.3f;
    float font_size = 1.1f;
@@ -2034,13 +2023,12 @@ static void ingame_menu(uint32_t menu_id)
 
    menuitem_colors[g_console.ingame_menu_item] = RED;
 
-   gl_t * gl = g_gl;
 
    state = cell_pad_input_poll_device(0);
    stuck_in_loop = 1;
    blocking = 0;
 
-   if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count) && blocking == false)
+   if(IS_TIMER_EXPIRED(gl) && blocking == false)
    {
       set_delay = DELAY_NONE;
 
@@ -2097,7 +2085,7 @@ static void ingame_menu(uint32_t menu_id)
                if(g_console.aspect_ratio_index > 0)
 	       {
                   g_console.aspect_ratio_index--;
-		  video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+		  gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 		  set_delay = DELAY_LONG;
 	       }
 	    }
@@ -2106,7 +2094,7 @@ static void ingame_menu(uint32_t menu_id)
                g_console.aspect_ratio_index++;
                if(g_console.aspect_ratio_index < ASPECT_RATIO_END)
 	       {
-		  video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+		  gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 		  set_delay = DELAY_LONG;
 	       }
                else
@@ -2115,7 +2103,7 @@ static void ingame_menu(uint32_t menu_id)
 	    if(CTRL_START(state))
 	    {
                g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
-	       video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+	       gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 	    }
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.", sizeof(comment));
 	    break;
@@ -2128,7 +2116,7 @@ static void ingame_menu(uint32_t menu_id)
 	       if(g_console.overscan_amount == 0.00f)
                   g_console.overscan_enable = false;
 
-	       ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+	       gfx_ctx_set_overscan();
 	       set_delay = DELAY_SMALLEST;
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_LSTICK_RIGHT(state))
@@ -2138,14 +2126,14 @@ static void ingame_menu(uint32_t menu_id)
 	       if(g_console.overscan_amount == 0.0f)
                   g_console.overscan_amount = false;
 
-	       ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+	       gfx_ctx_set_overscan();
 	       set_delay = DELAY_SMALLEST;
 	    }
 	    if(CTRL_START(state))
 	    {
                g_console.overscan_amount = 0.0f;
 	       g_console.overscan_enable = false;
-	       ps3graphics_set_overscan(g_console.overscan_enable, g_console.overscan_amount, 1);
+	       gfx_ctx_set_overscan();
 	    }
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
@@ -2226,7 +2214,7 @@ static void ingame_menu(uint32_t menu_id)
 	    if(CTRL_CROSS(state))
 	    {
                g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
-	       video_gl.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+	       gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 	       while(stuck_in_loop && g_console.ingame_menu_enable)
 	       {
                   state = cell_pad_input_poll_device(0);
@@ -2240,10 +2228,14 @@ static void ingame_menu(uint32_t menu_id)
 
 		  rarch_render_cached_frame();
 
-		  if(CTRL_SQUARE(~state))
-		  {
-                     gl_frame_menu();
-		  }
+		  if(CTRL_SQUARE(state))
+                  {
+                     gl->menu_render = false;
+                  }
+                  else
+                  {
+                     gl->menu_render = true;
+                  }
 
 		  if(CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state))
 			  g_console.viewports.custom_vp.x -= 1;
@@ -2344,7 +2336,10 @@ static void ingame_menu(uint32_t menu_id)
 		     cellDbgFontPrintf (0.09f, 0.83f, 0.91f, LIGHTBLUE, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the menu.");
 		     cellDbgFontDraw();
 		  }
-		  video_gl.swap(NULL);
+		  gfx_ctx_swap_buffers();
+#ifdef HAVE_SYSUTILS
+                  cellSysutilCheckCallback();
+#endif
 		  if(CTRL_SQUARE(~state))
 		  {
                      glDisable(GL_BLEND);
@@ -2367,7 +2362,10 @@ static void ingame_menu(uint32_t menu_id)
 
 		  rarch_render_cached_frame();
 
-		  video_gl.swap(NULL);
+		  gfx_ctx_swap_buffers();
+#ifdef HAVE_SYSUTILS
+                  cellSysutilCheckCallback();
+#endif
 	       }
 	    }
 
@@ -2536,6 +2534,8 @@ void menu_init (void)
 
 void menu_loop(void)
 {
+   gl_t * gl = driver.video_data;
+
    menuStack[0] = menu_filebrowser;
    menuStack[0].enum_id = FILE_BROWSER_MENU;
 
@@ -2543,8 +2543,7 @@ void menu_loop(void)
 
    menu_reinit_settings();
 
-   if(g_console.emulator_initialized)
-	   video_gl.set_swap_block_state(NULL, true);
+   gl->block_swap = true;
 
    if(g_console.ingame_menu_enable)
    {
@@ -2553,17 +2552,14 @@ void menu_loop(void)
       menuStack[menuStackindex].enum_id = INGAME_MENU;
    }
 
+   gl->menu_render = true;
+
    do
    {
       glClear(GL_COLOR_BUFFER_BIT);
       glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
       glEnable(GL_BLEND);
-      if(g_console.emulator_initialized)
-      {
-         rarch_render_cached_frame();
-      }
-
-      gl_frame_menu();
+      rarch_render_cached_frame();
 
       switch(menuStack[menuStackindex].enum_id)
       {
@@ -2599,7 +2595,7 @@ void menu_loop(void)
       }
 
 
-      if(IS_TIMER_EXPIRED(g_console.control_timer_expiration_frame_count))
+      if(IS_TIMER_EXPIRED(gl))
       {
          // if we want to force goto the emulation loop, skip this
          if(g_console.mode_switch != MODE_EMULATION)
@@ -2628,18 +2624,22 @@ void menu_loop(void)
       // press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
       if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
       {
-         SET_TIMER_EXPIRATION(g_console.timer_expiration_frame_count, 30);
+         SET_TIMER_EXPIRATION(gl, 30);
       }
 
-      video_gl.swap(NULL);
+      gfx_ctx_swap_buffers();
+#ifdef HAVE_SYSUTILS
+      cellSysutilCheckCallback();
+#endif
       glDisable(GL_BLEND);
    }while (g_console.menu_enable);
+
+   gl->menu_render = false;
 
    if(g_console.ingame_menu_enable)
       menuStackindex--;		// pop ingame menu from stack
 
-   if(g_console.emulator_initialized)
-      video_gl.set_swap_block_state(NULL, false);
+   gl->block_swap = false;
 
    g_console.ingame_menu_enable = false;
 }

@@ -919,8 +919,6 @@ static GLboolean _RGLTextureIsValid( const jsTexture* texture )
 static GLenum _RGLPlatformFramebufferCheckStatus( jsFramebuffer* framebuffer )
 {
    GLuint nBuffers = 0;
-   int width = 0;
-   int height = 0;
 
    jsImage* image[_RGL_MAX_COLOR_ATTACHMENTS + 2] = {0};
 
@@ -940,8 +938,6 @@ static GLenum _RGLPlatformFramebufferCheckStatus( jsFramebuffer* framebuffer )
 	 }
 
          image[nBuffers] = colorTexture->image;
-	 width = image[nBuffers]->width;
-	 height = image[nBuffers]->height;
 
 	 if ( colorFormat && colorFormat != image[nBuffers]->internalFormat )
 	 {
@@ -2486,9 +2482,7 @@ static GmmBlock *gmmAllocBlock(GmmAllocator *pAllocator, uint32_t size)
     {
         pNewBlock = (GmmBlock *)gmmAllocFixed(0);
         if (pNewBlock == NULL)
-        {
             return NULL;
-        }
 
         memset(pNewBlock, 0, sizeof(GmmBlock));
 
@@ -2545,9 +2539,7 @@ static GmmTileBlock *gmmFindFreeTileBlock(
         pNewBlock = (GmmTileBlock *)gmmAllocFixed(1);
 
         if (pNewBlock == NULL)
-        {
             return NULL;
-        }
 
         memset(pNewBlock, 0, sizeof(GmmTileBlock));
 
@@ -2580,9 +2572,7 @@ static GmmTileBlock *gmmCreateTileBlock(
     address = pAllocator->tileStartAddress - size;
 
     if (address > pAllocator->startAddress + pAllocator->size)
-    {
         return NULL;
-    }
 
     if (pAllocator->pTail &&
         pAllocator->pTail->base.address + pAllocator->pTail->base.size > address)
@@ -2629,23 +2619,15 @@ static void gmmFreeTileBlock(
     GmmAllocator    *pAllocator;
 
     if (pTileBlock->pPrev)
-    {
         pTileBlock->pPrev->pNext = pTileBlock->pNext;
-    }
 
     if (pTileBlock->pNext)
-    {
         pTileBlock->pNext->pPrev = pTileBlock->pPrev;
-    }
 
     if (pTileBlock->base.isMain)
-    {
         pAllocator = pGmmMainAllocator;
-    }
     else
-    {
         pAllocator = pGmmLocalAllocator;
-    }
 
     if (pAllocator->pTileHead == pTileBlock)
     {
@@ -2757,9 +2739,7 @@ uint32_t gmmAllocExtendedTileBlock(const uint32_t size, const uint32_t tag)
     }
 
     if (retId == 0)
-    {
         return GMM_ERROR;
-    }
 
     if (!resizeSucceed)
     {
@@ -2778,9 +2758,7 @@ static GmmTileBlock *gmmAllocTileBlock(
     GmmTileBlock    *pBlock = gmmFindFreeTileBlock(pAllocator, size); 
 
     if (pBlock == NULL)
-    {
         pBlock = gmmCreateTileBlock(pAllocator, size);
-    }
 
     return pBlock;
 }
@@ -2792,32 +2770,22 @@ static void gmmFreeBlock(
     GmmAllocator    *pAllocator;
 
     if (pBlock->pPrev)
-    {
         pBlock->pPrev->pNext = pBlock->pNext;
-    }
 
     if (pBlock->pNext)
-    {
         pBlock->pNext->pPrev = pBlock->pPrev;
-    }
    
     if (pBlock->base.isMain)
-    {
         pAllocator = pGmmMainAllocator;
-    }
     else
-    {
         pAllocator = pGmmLocalAllocator;
-    }
 
     if (pAllocator->pHead == pBlock)
     {
         pAllocator->pHead = pBlock->pNext;
 
         if (pAllocator->pHead)
-        {
             pAllocator->pHead->pPrev = NULL;
-        }
     }
 
     if (pAllocator->pTail == pBlock)
@@ -2825,15 +2793,11 @@ static void gmmFreeBlock(
         pAllocator->pTail = pBlock->pPrev;
         
         if (pAllocator->pTail)
-        {
             pAllocator->pTail->pNext = NULL;
-        }
     }
 
     if (pBlock->pPrev == NULL)
-    {
         pAllocator->pSweepHead = pAllocator->pHead;
-    }
     else if (pBlock->pPrev &&
              (pAllocator->pSweepHead == NULL || 
               (pAllocator->pSweepHead &&
@@ -2854,13 +2818,9 @@ static void gmmAddPendingFree(
     GmmAllocator    *pAllocator;
 
     if (pBlock->base.isMain)
-    {
         pAllocator = pGmmMainAllocator;
-    }
     else
-    {
         pAllocator = pGmmLocalAllocator;
-    }
 
     if (pAllocator->pPendingFreeTail)
     {
@@ -3015,9 +2975,7 @@ static inline void gmmMemcpy(const uint32_t dstOffset, const uint32_t srcOffset,
 		uint32_t iterations = (moveSize+moveBlockSize-1)/moveBlockSize;
 
 		for (uint32_t i=0; i<iterations; i++)
-		{
-			gmmLocalMemcpy(dstOffset+(i*moveBlockSize), srcOffset+(i*moveBlockSize), moveBlockSize);
-		}
+                   gmmLocalMemcpy(dstOffset+(i*moveBlockSize), srcOffset+(i*moveBlockSize), moveBlockSize);
 	}
 }
 
@@ -5943,11 +5901,6 @@ GLAPI void APIENTRY glFinish (void)
     _RGLFifoFinish( &_RGLState.fifo );
 }
 
-PSGLuint64 psglGetSystemTime()
-{
-    return sys_time_get_system_time();
-}
-
 GLAPI const GLubyte* APIENTRY glGetString( GLenum name )
 {
     switch ( name )
@@ -6696,11 +6649,6 @@ GLAPI void APIENTRY glViewport( GLint x, GLint y, GLsizei width, GLsizei height 
 		    LContext->ViewPort.XSize, LContext->ViewPort.YSize, 0.0f, 1.0f);
 }
 
-
-
-
-
-
 jsTexture *_RGLGetCurrentTexture( const jsTextureImageUnit *unit, GLenum target )
 {
     PSGLcontext*	LContext = _CurrentContext;
@@ -6712,21 +6660,6 @@ jsTexture *_RGLGetCurrentTexture( const jsTextureImageUnit *unit, GLenum target 
     else
     	return defaultTexture;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 CgprogramHookFunction _cgProgramCreateHook = NULL;
 CgprogramHookFunction _cgProgramDestroyHook = NULL;
@@ -7486,31 +7419,6 @@ CG_API void cgDestroyProgram( CGprogram program )
 	}
     }
     return;
-}
-
-CG_API CGprofile cgGetProgramProfile( CGprogram prog )
-{
-    if ( !CG_IS_PROGRAM( prog ) )
-    {
-        _RGLCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
-        return CG_PROFILE_UNKNOWN;
-    }
-
-    return ( CGprofile )_cgGetProgPtr( prog )->header.profile;
-}
-
-CG_API CGprofile cgGetProgramDomainProfile( CGprogram program, int index )
-{
-    if ( !CG_IS_PROGRAM( program ) )
-    {
-        _RGLCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
-        return CG_PROFILE_UNKNOWN;
-    }
-
-    if ( index >= 1 )
-        return CG_PROFILE_UNKNOWN;
-
-    return ( CGprofile )_cgGetProgPtr( program )->header.profile;
 }
 
 static CGprogram _RGLCgUpdateProgramAtIndex( CGprogramGroup group, int index, int refcount )
@@ -8374,41 +8282,20 @@ CGGL_API void cgGLSetTextureParameter( CGparameter param, GLuint texobj )
     ptr->samplerSetter( ptr, &texobj, 0 );
 }
 
-CGGL_API GLuint cgGLGetTextureParameter( CGparameter param )
-{
-    CgRuntimeParameter* ptr = _cgGLTestTextureParameter( param );
-    if ( ptr == NULL ) return 0;
-if ( !( ptr->parameterEntry->flags & CGPF_REFERENCED ) ) { _RGLCgRaiseError( CG_INVALID_PARAMETER_ERROR ); return 0; }
-    return *( GLuint* )ptr->pushBufferPointer;
-    return 0;
-}
-
 CGGL_API void cgGLEnableTextureParameter( CGparameter param )
 {
     CgRuntimeParameter* ptr = _cgGLTestTextureParameter( param );
     ptr->samplerSetter( ptr, NULL, 0 );
 }
 
-CGGL_API void cgGLDisableTextureParameter( CGparameter param )
-{
-    if ( _cgGLTestTextureParameter( param ) )
-    {
-    }
-}
-
-CGGL_API void cgGLSetDebugMode( CGbool debug )
-{
-    return;
-}
-
-void _RGLCgContextZero( _CGcontext* p )
+static void _RGLCgContextZero( _CGcontext* p )
 {
     memset( p, 0, sizeof( *p ) );
     p->compileType = CG_UNKNOWN;
 
 }
 
-void _RGLCgContextPushFront( _CGcontext* ctx )
+static void _RGLCgContextPushFront( _CGcontext* ctx )
 {
     if ( _CurrentContext->RGLcgContextHead )
     {
@@ -8424,25 +8311,6 @@ static void destroy_context( _CGcontext*ctx )
     _RGLEraseName( &_CurrentContext->cgContextNameSpace, ( jsName )ctx->id );
     _RGLCgContextZero( ctx );
     free( ctx );
-}
-
-void _RGLCgContextPopFront()
-{
-    if ( _CurrentContext->RGLcgContextHead )
-    {
-        _CGcontext* head = _cgGetContextPtr( _CurrentContext->RGLcgContextHead );
-        _CGcontext* temp = head->next;
-        destroy_context( head );
-
-        if ( temp )
-        {
-            _CurrentContext->RGLcgContextHead = temp->id;
-        }
-        else
-        {
-            _CurrentContext->RGLcgContextHead = 0;
-        }
-    }
 }
 
 CG_API CGcontext cgCreateContext( void )

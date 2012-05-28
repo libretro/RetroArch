@@ -13,14 +13,19 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "sdlwrap.h"
-#include "SDL_syswm.h"
-#include "../general.h"
+// Compatibility wrapper between SDL 1.2/1.3 for OpenGL.
+// Wraps functions which differ in 1.2 and 1.3.
+
+#include "../gfx_context.h"
+#include "../gfx_common.h"
+#include "../../general.h"
 
 #ifdef __APPLE__
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
 #endif
+
+#include "sdl_ctx.h"
 
 // SDL 1.2 is portable, sure, but you still need some platform specific workarounds ;)
 // Hopefully SDL 1.3 will solve this more cleanly :D
@@ -35,7 +40,7 @@ static SDL_GLContext g_ctx;
 static bool g_fullscreen;
 static unsigned g_interval;
 
-void sdlwrap_set_swap_interval(unsigned interval, bool inited)
+void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 {
    g_interval = interval;
 
@@ -67,14 +72,41 @@ void sdlwrap_set_swap_interval(unsigned interval, bool inited)
       else 
          RARCH_WARN("Could not find GLX VSync call.\n");
 #endif
-      
    }
 #endif
+
    if (!success)
       RARCH_WARN("Failed to set swap interval.\n");
 }
 
-bool sdlwrap_init(void)
+static void gfx_ctx_wm_set_caption(const char *str)
+{
+#if SDL_MODERN
+   SDL_SetWindowTitle(g_window, str);
+#else
+   SDL_WM_SetCaption(str, NULL);
+#endif
+}
+
+void gfx_ctx_update_window_title(bool reset)
+{
+   if (reset)
+      gfx_window_title_reset();
+
+   char buf[128];
+   if (gfx_window_title(buf, sizeof(buf)))
+      gfx_ctx_wm_set_caption(buf);
+}
+
+void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+{
+   const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
+   rarch_assert(video_info);
+   *width = video_info->current_w;
+   *height = video_info->current_h;
+}
+
+bool gfx_ctx_init(void)
 {
 #if SDL_MODERN
    bool ret = SDL_VideoInit(NULL) == 0;
@@ -90,7 +122,7 @@ bool sdlwrap_init(void)
 }
 
 #if SDL_MODERN
-void sdlwrap_destroy(void)
+void gfx_ctx_destroy(void)
 {
    if (g_ctx)
       SDL_GL_DeleteContext(g_ctx);
@@ -102,13 +134,13 @@ void sdlwrap_destroy(void)
    SDL_VideoQuit();
 }
 #else
-void sdlwrap_destroy(void) 
+void gfx_ctx_destroy(void) 
 {
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 #endif
 
-bool sdlwrap_set_video_mode(
+bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen)
 {
@@ -167,7 +199,7 @@ bool sdlwrap_set_video_mode(
    if (attr <= 0 && g_interval)
    {
       RARCH_WARN("SDL failed to setup VSync, attempting to recover using native calls.\n");
-      sdlwrap_set_swap_interval(g_interval, true);
+      gfx_ctx_set_swap_interval(g_interval, true);
    }
 #endif
 
@@ -178,12 +210,15 @@ bool sdlwrap_set_video_mode(
    if (attr <= 0)
       RARCH_WARN("GL double buffer has not been enabled.\n");
 
+   // Remove that ugly mouse :D
+   SDL_ShowCursor(SDL_DISABLE);
+
    return true;
 }
 
 // SDL 1.2 has an awkward model where you need to "confirm" window resizing.
 // SDL 1.3 luckily removes this quirk.
-void sdlwrap_set_resize(unsigned width, unsigned height)
+void gfx_ctx_set_resize(unsigned width, unsigned height)
 {
 #if SDL_MODERN
    (void)width;
@@ -198,16 +233,7 @@ void sdlwrap_set_resize(unsigned width, unsigned height)
 #endif
 }
 
-void sdlwrap_wm_set_caption(const char *str)
-{
-#if SDL_MODERN
-   SDL_SetWindowTitle(g_window, str);
-#else
-   SDL_WM_SetCaption(str, NULL);
-#endif
-}
-
-void sdlwrap_swap_buffers(void)
+void gfx_ctx_swap_buffers(void)
 {
 #if SDL_MODERN
    SDL_GL_SwapWindow(g_window);
@@ -216,7 +242,7 @@ void sdlwrap_swap_buffers(void)
 #endif
 }
 
-bool sdlwrap_key_pressed(int key)
+bool gfx_ctx_key_pressed(int key)
 {
    int num_keys;
 #if SDL_MODERN
@@ -238,7 +264,7 @@ bool sdlwrap_key_pressed(int key)
 // 1.2 specific workaround for tiling WMs. In 1.3 we call GetSize directly, so we don't need to rely on
 // proper event handling (I hope).
 #if !defined(__APPLE__) && !defined(_WIN32) && !SDL_MODERN && !defined(XENON)
-static void sdlwrap_get_window_size(unsigned *width, unsigned *height)
+static void gfx_ctx_get_window_size(unsigned *width, unsigned *height)
 {
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
@@ -255,7 +281,7 @@ static void sdlwrap_get_window_size(unsigned *width, unsigned *height)
 }
 #endif
 
-void sdlwrap_check_window(bool *quit,
+void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    *quit = false;
@@ -320,7 +346,7 @@ void sdlwrap_check_window(bool *quit,
    if (!*resize && !g_fullscreen)
    {
       unsigned new_width, new_height;
-      sdlwrap_get_window_size(&new_width, &new_height);
+      gfx_ctx_get_window_size(&new_width, &new_height);
       if ((new_width != *width || new_height != *height) || (frame_count == 10)) // Ugly hack :D
       {
          *resize = true;
@@ -333,7 +359,7 @@ void sdlwrap_check_window(bool *quit,
 #endif
 }
 
-bool sdlwrap_get_wm_info(SDL_SysWMinfo *info)
+bool gfx_ctx_get_wm_info(SDL_SysWMinfo *info)
 {
 #ifdef XENON
    (void)info;
@@ -348,7 +374,7 @@ bool sdlwrap_get_wm_info(SDL_SysWMinfo *info)
 #endif
 }
 
-bool sdlwrap_window_has_focus(void)
+bool gfx_ctx_window_has_focus(void)
 {
 #if SDL_MODERN
    Uint32 flags = SDL_GetWindowFlags(g_window);
@@ -358,4 +384,31 @@ bool sdlwrap_window_has_focus(void)
    return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
 #endif
 }
+
+void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+{
+   void *sdl_input = input_sdl.init();
+   if (sdl_input)
+   {
+      *input = &input_sdl;
+      *input_data = sdl_input;
+   }
+   else
+      *input = NULL;
+}
+
+#ifdef HAVE_OPENGL
+void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)
+{
+   glMatrixMode(GL_PROJECTION);
+   glLoadIdentity();
+
+   if (allow_rotate)
+      glRotatef(gl->rotation, 0, 0, 1);
+
+   glOrtho(ortho->left, ortho->right, ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
+   glMatrixMode(GL_MODELVIEW);
+   glLoadIdentity();
+}
+#endif
 

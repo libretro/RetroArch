@@ -36,28 +36,71 @@ CONFIG FILE
 #undef __RARCH_MSVC_COMPAT_H
 #undef strcasecmp
 #endif
+
+#ifdef HAVE_CONFIGFILE
 #include "../../conf/config_file.c"
+#endif
 
 #include "func_hooks.h"
 
 /*============================================================
-VIDEO
+VIDEO CONTEXT
 ============================================================ */
+
+#ifdef HAVE_VID_CONTEXT
+
 #if defined(__CELLOS_LV2__)
-#include "../../gfx/shader_cg.c"
-#include "../../ps3/ps3_video_psgl.c"
-#include "../../ps3/image.c"
+#include "../../gfx/context/ps3_ctx.c"
 #elif defined(_XBOX)
+#include "../../gfx/context/xdk360_ctx.c"
+#endif
+
+#endif
+
+/*============================================================
+VIDEO SHADERS
+============================================================ */
+
+#ifdef HAVE_CG
+#include "../../gfx/shader_cg.c"
+#endif
+
+#ifdef HAVE_HLSL
 #include "../../gfx/shader_hlsl.c"
+#endif
+
+/*============================================================
+VIDEO IMAGE
+============================================================ */
+
+#if defined(__CELLOS_LV2__)
+#include "../../ps3/image.c"
+#endif
+
+/*============================================================
+VIDEO DRIVER
+============================================================ */
+
+#ifdef HAVE_OPENGL
+#include "../../gfx/gl.c"
+#endif
+
+#if defined(_XBOX)
 #include "../../360/xdk360_video.cpp"
 #elif defined(GEKKO)
 #include "../../wii/video.c"
 #endif
 
-#if defined(_XBOX)
+/*============================================================
+FONTS
+============================================================ */
+
+#if defined(__CELLOS_LV2__)
+#include "../../gfx/fonts/ps3_libdbgfont.c"
+#elif defined(_XBOX)
 #include "../../360/fonts.cpp"
 #elif defined(GEKKO)
-#include "../../gfx/fonts.c"
+#include "../../gfx/fonts/fonts.c"
 #endif
 
 /*============================================================
@@ -72,7 +115,7 @@ INPUT
 #endif
 
 /*============================================================
-SNES STATE
+STATE TRACKER
 ============================================================ */
 #include "../../gfx/state_tracker.c"
 
@@ -175,7 +218,7 @@ THREAD
 /*============================================================
 NETPLAY
 ============================================================ */
-#ifndef GEKKO
+#ifdef HAVE_NETPLAY
 #include "../../netplay.c"
 #endif
 

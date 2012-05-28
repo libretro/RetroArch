@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
-#include "../gfx/sdlwrap.h"
+#include "../gfx/gfx_context.h"
 
 void sdl_dinput_free(sdl_dinput_t *di)
 {
@@ -108,7 +108,7 @@ sdl_dinput_t* sdl_dinput_init(void)
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
 
-   if (!sdlwrap_get_wm_info(&info))
+   if (!gfx_ctx_get_wm_info(&info))
    {
       RARCH_ERR("Failed to get SysWM info.\n");
       goto error;

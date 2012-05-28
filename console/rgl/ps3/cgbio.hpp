@@ -11,25 +11,18 @@
 #define CGF_DEPTHREPLACE 0x02
 #define CGF_PIXELKILL 0x04
 
-typedef unsigned int	Elf32_Addr;
-typedef unsigned short	Elf32_Half;
-typedef short		Elf32_Shalf;
-typedef unsigned int	Elf32_Off;
-typedef signed   int	Elf32_Sword;
-typedef unsigned int	Elf32_Word;
-
 typedef size_t ptrdiff_t;
 typedef size_t ptrdiff_t;
 
 typedef struct _Elf32_cgParameter {
-	Elf32_Word cgp_name;
-	Elf32_Word cgp_semantic;
-	Elf32_Half cgp_default;
-	Elf32_Half cgp_reloc;
-	Elf32_Half cgp_resource;
-	Elf32_Half cgp_resource_index;
+	unsigned int cgp_name;
+	unsigned int cgp_semantic;
+	unsigned short cgp_default;
+	unsigned short cgp_reloc;
+	unsigned short cgp_resource;
+	unsigned short cgp_resource_index;
 	unsigned char cgp_type;
-	Elf32_Half cgp_info;
+	unsigned short cgp_info;
 	unsigned char unused;
 } Elf32_cgParameter;
 
@@ -182,77 +175,77 @@ typedef struct _Elf32_cgParameter {
 
 struct Elf32_Ehdr {
     unsigned char e_ident[EI_NIDENT];
-    Elf32_Half    e_type;
-    Elf32_Half    e_machine;
-    Elf32_Word    e_version;
-    Elf32_Addr    e_entry;
-    Elf32_Off     e_phoff;
-    Elf32_Off     e_shoff;
-    Elf32_Word    e_flags;
-    Elf32_Half    e_ehsize;
-    Elf32_Half    e_phentsize;
-    Elf32_Half    e_phnum;
-    Elf32_Half    e_shentsize;
-    Elf32_Half    e_shnum;
-    Elf32_Half    e_shstrndx;
+    unsigned short    e_type;
+    unsigned short    e_machine;
+    unsigned int    e_version;
+    unsigned int    e_entry;
+    unsigned int     e_phoff;
+    unsigned int     e_shoff;
+    unsigned int    e_flags;
+    unsigned short    e_ehsize;
+    unsigned short    e_phentsize;
+    unsigned short    e_phnum;
+    unsigned short    e_shentsize;
+    unsigned short    e_shnum;
+    unsigned short    e_shstrndx;
 };
 
 struct Elf32_Shdr {
-    Elf32_Word sh_name;
-    Elf32_Word sh_type;
-    Elf32_Word sh_flags;
-    Elf32_Addr sh_addr;
-    Elf32_Off  sh_offset;
-    Elf32_Word sh_size;
-    Elf32_Word sh_link;
-    Elf32_Word sh_info;
-    Elf32_Word sh_addralign;
-    Elf32_Word sh_entsize;
+    unsigned int sh_name;
+    unsigned int sh_type;
+    unsigned int sh_flags;
+    unsigned int sh_addr;
+    unsigned int  sh_offset;
+    unsigned int sh_size;
+    unsigned int sh_link;
+    unsigned int sh_info;
+    unsigned int sh_addralign;
+    unsigned int sh_entsize;
 };
 
 struct Elf32_Phdr {
-    Elf32_Word p_type;
-    Elf32_Off  p_offset;
-    Elf32_Addr p_vaddr;
-    Elf32_Addr p_paddr;
-    Elf32_Word p_filesz;
-    Elf32_Word p_memsz;
-    Elf32_Word p_flags;
-    Elf32_Word p_align;
+    unsigned int p_type;
+    unsigned int  p_offset;
+    unsigned int p_vaddr;
+    unsigned int p_paddr;
+    unsigned int p_filesz;
+    unsigned int p_memsz;
+    unsigned int p_flags;
+    unsigned int p_align;
 };
 
 struct Elf32_Sym {
-    Elf32_Word    st_name;
-    Elf32_Addr    st_value;
-    Elf32_Word    st_size;
+    unsigned int    st_name;
+    unsigned int    st_value;
+    unsigned int    st_size;
     unsigned char st_info;
     unsigned char st_other;
-    Elf32_Half    st_shndx;
+    unsigned short    st_shndx;
 };
 
 struct Elf32_Note {
-	Elf32_Word	n_namesz;	/* Name size */
-	Elf32_Word	n_descsz;	/* Content size */
-	Elf32_Word	n_type;		/* Content type */
+	unsigned int	n_namesz;	/* Name size */
+	unsigned int	n_descsz;	/* Content size */
+	unsigned int	n_type;		/* Content type */
 };
 
 
 struct Elf32_Rel {
-    Elf32_Addr r_offset;
-    Elf32_Word r_info;
+    unsigned int r_offset;
+    unsigned int r_info;
 };
 
 struct Elf32_Rela {
-    Elf32_Addr  r_offset;
-    Elf32_Word  r_info;
-    Elf32_Sword r_addend;
+    unsigned int  r_offset;
+    unsigned int  r_info;
+    signed int r_addend;
 };
 
 struct Elf32_Dyn {
-    Elf32_Sword d_tag;
+    signed int d_tag;
     union {
-        Elf32_Word d_val;
-        Elf32_Addr d_ptr;
+        unsigned int d_val;
+        unsigned int d_ptr;
     } d_un;
 };
 
@@ -381,16 +374,16 @@ class isection
     virtual int		reference() const = 0;
     virtual int		release()   const = 0;
 
-    virtual Elf32_Half	index()     const = 0;
+    virtual unsigned short	index()     const = 0;
     virtual char *name() const = 0;
-    virtual Elf32_Word	type()      const = 0;
-    virtual Elf32_Word	flags()     const = 0;
-    virtual Elf32_Addr	addr()      const = 0;
-    virtual Elf32_Word	size()      const = 0;
-    virtual Elf32_Word	link()      const = 0;
-    virtual Elf32_Word	info()      const = 0;
-    virtual Elf32_Word	addralign() const = 0;
-    virtual Elf32_Word	entsize()   const = 0;
+    virtual unsigned int	type()      const = 0;
+    virtual unsigned int	flags()     const = 0;
+    virtual unsigned int	addr()      const = 0;
+    virtual unsigned int	size()      const = 0;
+    virtual unsigned int	link()      const = 0;
+    virtual unsigned int	info()      const = 0;
+    virtual unsigned int	addralign() const = 0;
+    virtual unsigned int	entsize()   const = 0;
     virtual const char*	data()      const = 0;
 };
 

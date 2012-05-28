@@ -284,6 +284,10 @@ static const bool savestate_auto_index = false;
 // Slowmotion ratio.
 static const float slowmotion_ratio = 3.0;
 
+// Enable network command interface
+static const bool network_cmd_enable = false;
+static const uint16_t network_cmd_port = 55355;
+
 
 ////////////////////
 // Keybinds, Joypad

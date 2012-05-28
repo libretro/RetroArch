@@ -255,7 +255,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 {
    char scalefactor[128];
    int current_index;
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
    
    current_index = m_settingslist.GetCurSel();
 
@@ -337,6 +337,7 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
 HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
+   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
    int current_index;
 
    if ( hObjPressed == m_quickmenulist)
@@ -365,7 +366,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 			if(g_console.aspect_ratio_index >= ASPECT_RATIO_END)
 			   g_console.aspect_ratio_index = 0;
 
-			video_xdk360.set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+			gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
 			char aspectratio_label[32];
 			snprintf(aspectratio_label, sizeof(aspectratio_label), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
 			wchar_t * aspectratio_label_w = rarch_convert_char_to_wchar(aspectratio_label);
@@ -397,7 +398,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Normal");
 		  break;
 	    }
-	    video_xdk360.set_rotation(NULL, g_console.screen_orientation);
+	    video_xdk360.set_rotation(driver.video_data, g_console.screen_orientation);
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
 			g_console.input_loop = INPUT_LOOP_RESIZE_MODE;
@@ -657,7 +658,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	 case SETTING_SCALE_ENABLED:
         g_console.fbo_enabled = !g_console.fbo_enabled;
 		m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-		xdk360_set_fbo_enable(g_console.fbo_enabled);
+		gfx_ctx_set_fbo(g_console.fbo_enabled);
 		break;
       }
    }
@@ -668,7 +669,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
 HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
 
    hdmenus_allowed = vid->video_mode.fIsHiDef && (g_console.aspect_ratio_index >= ASPECT_RATIO_16_9);
 
@@ -738,7 +739,7 @@ int menu_init (void)
 {
    HRESULT hr;
 
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
 
    hr = app.InitShared(vid->d3d_render_device, &vid->d3dpp, XuiPNGTextureLoader);
 
@@ -785,33 +786,25 @@ void menu_deinit (void)
 
 void menu_loop(void)
 {
+   HRESULT hr;
+   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
+
    g_console.menu_enable = true;
 
-   HRESULT hr;
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
-
-   if(g_console.emulator_initialized)
-      video_xdk360.set_swap_block_state(NULL, true);
+   d3d9->block_swap = true;
 
    g_console.input_loop = INPUT_LOOP_MENU;
 
    do
    {
-      g_frame_count++;
-      if(g_console.emulator_initialized)
-      {
-         rarch_render_cached_frame();
-      }
-      else
-         vid->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
-	   D3DCOLOR_ARGB(255, 32, 32, 64), 1.0f, 0);
+      rarch_render_cached_frame();
 
       XINPUT_STATE state;
       XInputGetState(0, &state);
 
       g_console.menu_enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
 		      && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_console.emulator_initialized)
-		      && IS_TIMER_EXPIRED());
+		      && IS_TIMER_EXPIRED(d3d9));
       g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
 
 	  switch(g_console.input_loop)
@@ -833,7 +826,7 @@ void menu_loop(void)
 
       if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
       {
-         SET_TIMER_EXPIRATION(30);
+         SET_TIMER_EXPIRATION(d3d9, 30);
       }
 
 	  /* XBox 360 specific font code */
@@ -842,22 +835,21 @@ void menu_loop(void)
 
          if (msg)
          {
-            if(IS_TIMER_EXPIRED() || g_first_msg)
+            if(IS_TIMER_EXPIRED(d3d9) || g_first_msg)
             {
                xdk360_console_format(msg);
                g_first_msg = 0;
-               SET_TIMER_EXPIRATION(30);
+               SET_TIMER_EXPIRATION(d3d9, 30);
             }
 
             xdk360_console_draw();
          }
 	  }
 
-      video_xdk360.swap(NULL);
+      gfx_ctx_swap_buffers();
    }while(g_console.menu_enable);
 
-   if(g_console.emulator_initialized)
-      video_xdk360.set_swap_block_state(NULL, false);
+   d3d9->block_swap = false;
 
    g_console.ingame_menu_enable = false;
 }

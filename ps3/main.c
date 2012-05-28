@@ -320,12 +320,13 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 {
    (void) param;
    (void) userdata;
+   gl_t *gl = driver.video_data;
 
    switch (status)
    {
       case CELL_SYSUTIL_REQUEST_EXITGAME:
          g_console.menu_enable = false;
-	 g_quitting = true;
+	 gl->quitting = true;
 	 g_console.ingame_menu_enable = false;
 	 g_console.mode_switch = MODE_EXIT;
 	 break;
@@ -507,8 +508,10 @@ int main(int argc, char *argv[])
 #endif
 #endif
 
-   ps3graphics_video_init(true);
-   ps3_input_init();
+   video_gl.start();
+
+   input_ps3.init();
+
    oskutil_init(&g_console.oskutil_handle, 0);
 
    rarch_input_set_default_keybind_names_for_emulator();
@@ -557,8 +560,10 @@ begin_shutdown:
       save_settings();
    if(g_console.emulator_initialized)
       rarch_main_deinit();
-   cell_pad_input_deinit();
-   ps3_video_deinit();
+   input_ps3.free(NULL);
+
+   video_gl.stop();
+
    if(g_console.oskutil_handle.is_running)
       oskutil_unload(&g_console.oskutil_handle);
 #ifdef HAVE_LOGGER

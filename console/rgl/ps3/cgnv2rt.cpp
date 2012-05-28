@@ -109,7 +109,7 @@ static unsigned int stringTableAdd( STL_NAMESPACE vector<char> &stringTable, con
 static unsigned int stringTableAddUnique( STL_NAMESPACE vector<char> &stringTable, const char* str );
 template<class Type> static size_t array_size(STL_NAMESPACE vector<Type> &array);
 template<class Type> static void array_push(char* &parameterOffset, STL_NAMESPACE vector<Type> &array);
-inline static Elf32_Word swap16(const Elf32_Word v);
+inline static unsigned int swap16(const unsigned int v);
 static unsigned short getFlags(CGenum var, CGenum dir, int no,	bool is_referenced, bool is_shared, int paramIndex);
 
 static void fillStructureItems(_CGNVCONTAINERS &containers, CgStructureType *structure,
@@ -211,16 +211,16 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
 		cgShader.fragmentProgram.flags = CNV2END(flags);
 	}
 
-	Elf32_Word *tmp = (Elf32_Word *)nvbr->ucode();
+	unsigned int *tmp = (unsigned int *)nvbr->ucode();
 	const char *ucode;
-	Elf32_Word *buffer = NULL;
+	unsigned int *buffer = NULL;
 	if (doSwap)
 	{
-		int size = (int)nvbr->ucode_size()/sizeof(Elf32_Word);
-		buffer = new Elf32_Word[size];
+		int size = (int)nvbr->ucode_size()/sizeof(unsigned int);
+		buffer = new unsigned int[size];
 		for (int i=0;i<size;i++)
 		{
-			Elf32_Word val = ENDSWAP(tmp[i]);
+			unsigned int val = ENDSWAP(tmp[i]);
 			if (!bIsVertexProgram)
 				val = swap16(val);
 			buffer[i] = val;
@@ -230,8 +230,8 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
 	else
 	    {
 		ucode = (const char*)tmp;
-		int size = (int)nvbr->ucode_size()/sizeof(Elf32_Word);
-		buffer = new Elf32_Word[size];
+		int size = (int)nvbr->ucode_size()/sizeof(unsigned int);
+		buffer = new unsigned int[size];
 		for (int i=0;i<size;i++)
 		{
 			buffer[i] = tmp[i];
@@ -1033,7 +1033,7 @@ template<class Type> static void array_push(char* &parameterOffset, STL_NAMESPAC
 	parameterOffset += dataSize;
 }
 
-Elf32_Word inline static swap16(const Elf32_Word v)
+unsigned int inline static swap16(const unsigned int v)
 {
 	return (v>>16) | (v<<16);
 }
@@ -1041,7 +1041,8 @@ Elf32_Word inline static swap16(const Elf32_Word v)
 unsigned short getFlags(CGenum var, CGenum dir, int no,	bool is_referenced, bool is_shared, int paramIndex)
 {
 	(void)paramIndex;
-	Elf32_Half flags = 0;
+	unsigned short flags = 0;
+
 	if (var == CG_VARYING)
 		flags |= CGPV_VARYING;
 	else if (var == CG_UNIFORM)

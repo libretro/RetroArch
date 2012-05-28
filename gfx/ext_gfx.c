@@ -22,11 +22,10 @@
 #include <stdint.h>
 #include "../dynamic.h"
 #include "../general.h"
-#include "sdlwrap.h"
 #include "gfx_common.h"
 
 #ifdef HAVE_FREETYPE
-#include "fonts.h"
+#include "fonts/fonts.h"
 #endif
 
 #ifdef HAVE_PYTHON

@@ -26,7 +26,7 @@ static xdk360_video_font_t m_Font;
 
 void xdk360_console_draw(void)
 {
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
    D3DDevice *m_pd3dDevice = vid->d3d_render_device;
 
    // The top line
@@ -54,7 +54,7 @@ void xdk360_console_draw(void)
 HRESULT xdk360_console_init( LPCSTR strFontFileName, unsigned long colBackColor,
    unsigned long colTextColor)
 {
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
    D3DDevice *m_pd3dDevice = vid->d3d_render_device;
 
    video_console.first_message = true;
@@ -217,31 +217,6 @@ void xdk360_console_format(_In_z_ _Printf_format_string_ LPCSTR strFormat, ... )
    va_end( pArgList );
 }
 
-void xdk360_console_format_w(_In_z_ _Printf_format_string_ LPCWSTR wstrFormat, ... )
-{
-   video_console.m_nCurLine = 0;
-   video_console.m_cCurLineLength = 0;
-   memset( video_console.m_Buffer, 0, video_console.m_cScreenHeightVirtual 
-      * ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-
-   va_list pArgList;
-   va_start( pArgList, wstrFormat );
-
-   // Count the required length of the string
-   unsigned long dwStrLen = _vscwprintf( wstrFormat, pArgList ) + 1;    // +1 = null terminator
-   wchar_t * strMessage = ( wchar_t * )_malloca( dwStrLen * sizeof( wchar_t ) );
-   vswprintf_s( strMessage, dwStrLen, wstrFormat, pArgList );
-
-   // Output the string to the console
-   unsigned long uStringLength = wcslen( strMessage );
-   for( unsigned long i = 0; i < uStringLength; i++ )
-      xdk360_console_add( strMessage[i] );
-
-   _freea( strMessage );
-
-   va_end( pArgList );
-}
-
 #define CALCFONTFILEHEADERSIZE(x) ( sizeof(unsigned long) + (sizeof(float)* 4) + sizeof(unsigned short) + (sizeof(wchar_t)*(x)) )
 #define FONTFILEVERSION 5
 
@@ -353,7 +328,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
             };
             
             // Cache this global into a register
-            xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+            xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
             D3DDevice *pd3dDevice = vid->d3d_render_device;
 
             hr = pd3dDevice->CreateVertexDeclaration( decl, &s_FontLocals.m_pFontVertexDecl );
@@ -481,7 +456,7 @@ HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * strFontF
       return E_FAIL;
    }
 
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
    D3DDevice *pd3dDevice = vid->d3d_render_device;
 
    // Initialize the window
@@ -603,7 +578,7 @@ void xdk360_video_font_begin (xdk360_video_font_t * font)
    if( font->m_dwNestedBeginCount == 0 )
    {
       // Cache the global pointer into a register
-      xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+      xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
       D3DDevice *pD3dDevice = vid->d3d_render_device;
 
       // Save state
@@ -680,7 +655,7 @@ void xdk360_video_font_end(xdk360_video_font_t * font)
    if( font->m_bSaveState )
    {
       // Cache the global pointer into a register
-      xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+      xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
       D3DDevice *pD3dDevice = vid->d3d_render_device;
 
       D3DDevice_SetTexture_Inline(pD3dDevice, 0, NULL);
@@ -710,7 +685,7 @@ void xdk360_video_font_draw_text(xdk360_video_font_t * font, float fOriginX, flo
    if( strText == NULL || strText[0] == L'\0')
       return;
 
-   xdk360_video_t *vid = (xdk360_video_t*)g_d3d;
+   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
    D3DDevice *pd3dDevice = vid->d3d_render_device;
 
    // Set the color as a vertex shader constant

@@ -30,7 +30,7 @@ endif
 libretro ?= -lretro
 
 LIBS = -lm
-DEFINES = -I. -DHAVE_CONFIGFILE -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DPACKAGE_VERSION=\"0.9.6-rc1\"
+DEFINES = -I. -DHAVE_CONFIGFILE -DHAVE_SDL -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DPACKAGE_VERSION=\"0.9.6-rc1\"
 LDFLAGS = -L. -static-libgcc
 LDCXXFLAGS = -s
 
@@ -39,7 +39,7 @@ ifeq ($(TDM_GCC),)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o gfx/gl.o gfx/sdlwrap.o input/sdl_input.o audio/sdl_audio.o fifo_buffer.o
+   OBJ += gfx/sdl_gfx.o gfx/gl.o gfx/fonts/freetype.o gfx/context/sdl_ctx.o input/sdl_input.o audio/sdl_audio.o fifo_buffer.o
    LIBS += -lSDL
    DEFINES += -ISDL -DHAVE_SDL
 endif
@@ -95,12 +95,12 @@ endif
 
 ifeq ($(HAVE_NETPLAY), 1)
    DEFINES += -DHAVE_NETPLAY
-   OBJ += netplay.o
+   OBJ += netplay.o network_cmd.o
    LIBS += -lws2_32
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)
-   OBJ += gfx/fonts.o
+   OBJ += gfx/fonts/fonts.o
    DEFINES += -DHAVE_FREETYPE -Ifreetype2
    LIBS += -lfreetype -lz
 endif

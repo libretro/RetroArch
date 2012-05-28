@@ -55,7 +55,7 @@ static void reset_callback(void)
    g_quit = true;
 }
 
-void wii_input_init(void)
+static void *wii_input_initialize(void)
 {
    PAD_Init();
 #ifdef HW_RVL
@@ -63,13 +63,6 @@ void wii_input_init(void)
 #endif
    SYS_SetResetCallback(reset_callback);
    SYS_SetPowerCallback(reset_callback);
-}
-
-void wii_input_deinit(void)
-{}
-
-static void *wii_input_initialize(void)
-{
    return (void*)-1;
 }
 
