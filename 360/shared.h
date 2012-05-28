@@ -17,8 +17,6 @@
 #ifndef _360_SHARED_H
 #define _360_SHARED_H
 
-#define MAX_PATH_LENGTH 1024
-
 enum {
    MENU_ITEM_LOAD_STATE = 0,
    MENU_ITEM_SAVE_STATE,

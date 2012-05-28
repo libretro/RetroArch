@@ -362,7 +362,7 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		   break;
 	   case SETTING_SHADER_PRESETS:
 		   {
-			   char fname[MAX_PATH_LENGTH];
+			   char fname[PATH_MAX];
 			   if(g_console.cgp_path == DEFAULT_PRESET_FILE)
 				   menu_obj->items[currentsetting].text_color = GREEN;
 			   else
@@ -373,7 +373,7 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		   break;
 	   case SETTING_SHADER:
 		   {
-			   char fname[MAX_PATH_LENGTH];
+			   char fname[PATH_MAX];
 			   fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
 			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
@@ -385,7 +385,7 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		   break;
 	   case SETTING_SHADER_2:
 		   {
-			   char fname[MAX_PATH_LENGTH];
+			   char fname[PATH_MAX];
 			   fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
 			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
@@ -569,7 +569,7 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		   break;
 	   case SETTING_RARCH_DEFAULT_EMU:
 		   {
-			   char fname[MAX_PATH_LENGTH];
+			   char fname[PATH_MAX];
 			   fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
 			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
@@ -803,8 +803,8 @@ static void apply_scaling (unsigned init_mode)
 
 static void select_file(uint32_t menu_id)
 {
-   char extensions[256], title[256], object[256], comment[256], dir_path[MAX_PATH_LENGTH],
-      path[MAX_PATH_LENGTH], *separatorslash;
+   char extensions[256], title[256], object[256], comment[256], dir_path[PATH_MAX],
+      path[PATH_MAX], *separatorslash;
    uint64_t state, diff_state, button_was_pressed;
    gl_t * gl = driver.video_data;
 
@@ -1069,7 +1069,7 @@ static void set_keybind_digital(uint64_t state, uint64_t default_retro_joypad_id
 static void rarch_filename_input_and_save (unsigned filename_type)
 {
    bool filename_entered = false;
-   char filename_tmp[256], filepath[MAX_PATH_LENGTH];
+   char filename_tmp[256], filepath[PATH_MAX];
    oskutil_write_initial_message(&g_console.oskutil_handle, L"example");
    oskutil_write_message(&g_console.oskutil_handle, L"Enter filename for preset (with no file extension)");
 
@@ -1946,7 +1946,7 @@ static void select_rom(void)
 	 }
 	 else if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
 	 {
-            char rom_path_temp[MAX_PATH_LENGTH];
+            char rom_path_temp[PATH_MAX];
 	    struct retro_system_info info;
 	    retro_get_system_info(&info);
 	    bool block_zip_extract  = info.block_extract;

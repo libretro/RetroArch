@@ -44,8 +44,6 @@
 #define PATH_MAX 512
 #endif
 
-#define MAX_PATH_LENGTH 1024
-
 #ifdef HAVE_LOGGER
 #include "logger.h"
 #define RARCH_LOG(...) logger_send("RetroArch Salamander: " __VA_ARGS__);
@@ -72,16 +70,16 @@
 
 #if defined(__CELLOS_LV2__)
 static uint8_t np_pool[NP_POOL_SIZE];
-char contentInfoPath[MAX_PATH_LENGTH];
-char usrDirPath[MAX_PATH_LENGTH];
+char contentInfoPath[PATH_MAX];
+char usrDirPath[PATH_MAX];
 SYS_PROCESS_PARAM(1001, 0x100000)
 #elif defined(_XBOX)
 DWORD volume_device_type;
 #endif
 
-char LIBRETRO_DIR_PATH[MAX_PATH_LENGTH];
-char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
-char libretro_path[MAX_PATH_LENGTH];
+char LIBRETRO_DIR_PATH[PATH_MAX];
+char SYS_CONFIG_FILE[PATH_MAX];
+char libretro_path[PATH_MAX];
 
 static void find_and_set_first_file(void)
 {
@@ -107,7 +105,7 @@ static void find_and_set_first_file(void)
 #ifdef _XBOX
       //Check if it's RetroArch Salamander itself - if so, first_executable needs to
       //be overridden
-      char fname_tmp[MAX_PATH_LENGTH];
+      char fname_tmp[PATH_MAX];
 
       fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
 
@@ -140,7 +138,7 @@ static void find_and_set_first_file(void)
 
 static void init_settings(void)
 {
-   char tmp_str[MAX_PATH_LENGTH];
+   char tmp_str[PATH_MAX];
    bool config_file_exists;
 
    if(!path_file_exists(SYS_CONFIG_FILE))

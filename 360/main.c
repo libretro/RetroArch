@@ -49,8 +49,8 @@ typedef struct _STRING {
    char * Buffer;
 } STRING;
 
-char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
-char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
+char DEFAULT_SHADER_FILE[PATH_MAX];
+char SYS_CONFIG_FILE[PATH_MAX];
 
 extern "C" int __stdcall ObCreateSymbolicLink( STRING*, STRING*);
 
@@ -187,7 +187,7 @@ static void set_default_settings (void)
 
 static void init_settings (bool load_libretro_path)
 {
-   char fname_tmp[MAX_PATH_LENGTH];
+   char fname_tmp[PATH_MAX];
 
    if(!path_file_exists(SYS_CONFIG_FILE))
       rarch_create_default_config_file(SYS_CONFIG_FILE);

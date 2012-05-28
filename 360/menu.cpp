@@ -472,7 +472,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
 HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 {
-   char path[MAX_PATH_LENGTH];
+   char path[PATH_MAX];
 
    if(hObjPressed == m_romlist)
    {
@@ -527,7 +527,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
 
 HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 {
-   char path[MAX_PATH_LENGTH];
+   char path[PATH_MAX];
 
    if(hObjPressed == m_shaderlist)
    {
@@ -567,7 +567,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
 
 HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 {
-   char path[MAX_PATH_LENGTH];
+   char path[PATH_MAX];
 
    if(hObjPressed == m_romlist)
    {
