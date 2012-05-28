@@ -138,7 +138,7 @@ int main(void)
    rarch_assert(g_extern.msg_queue = msg_queue_new(8));
 
    wii_video_init();
-   wii_input_init();
+   input_wii.init();
 
    rgui_handle_t *rgui = rgui_init("sd:/",
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
@@ -163,8 +163,8 @@ int main(void)
    if(g_console.emulator_initialized)
       rarch_main_deinit();
 
-   wii_input_deinit();
    wii_video_deinit();
+   input_wii.free(NULL);
 
 #ifdef HAVE_FILE_LOGGER
    fclose(log_fp);

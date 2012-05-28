@@ -510,7 +510,8 @@ int main(int argc, char *argv[])
 
    video_gl.start();
 
-   ps3_input_init();
+   input_ps3.init();
+
    oskutil_init(&g_console.oskutil_handle, 0);
 
    rarch_input_set_default_keybind_names_for_emulator();
@@ -559,7 +560,7 @@ begin_shutdown:
       save_settings();
    if(g_console.emulator_initialized)
       rarch_main_deinit();
-   cell_pad_input_deinit();
+   input_ps3.free(NULL);
 
    video_gl.stop();
 

@@ -71,13 +71,9 @@ static void xdk360_free_input(void *data)
 
 static void* xdk360_input_initialize(void)
 {
-   return (void*)-1;
-}
-
-void xdk360_input_init(void)
-{
    for(unsigned i = 0; i < 4; i++)
       xdk360_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
+   return (void*)-1;
 }
 
 void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)

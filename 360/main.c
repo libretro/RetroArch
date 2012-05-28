@@ -419,7 +419,7 @@ int main(int argc, char *argv[])
    init_libretro_sym();
 
    video_xdk360.start();
-   xdk360_input_init();
+   input_xdk360.init();
 
    rarch_input_set_default_keybind_names_for_emulator();
 
@@ -454,6 +454,7 @@ begin_shutdown:
 
    menu_deinit();
    video_xdk360.stop();
+   input_xdk360.free(NULL);
    rarch_exec();
 
    return 0;

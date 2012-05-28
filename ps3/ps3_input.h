@@ -121,14 +121,10 @@
 
 typedef uint64_t cell_input_state_t;
 
-int cell_pad_input_init(void);
-void cell_pad_input_deinit(void);
-
 uint32_t cell_pad_input_pads_connected(void);
 
 cell_input_state_t cell_pad_input_poll_device(uint32_t id);
 
-void ps3_input_init(void);
 void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id);
 
 typedef struct

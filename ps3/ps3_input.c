@@ -40,11 +40,6 @@
 static uint64_t state[MAX_PADS];
 static unsigned pads_connected;
 
-void cell_pad_input_deinit(void)
-{
-   cellPadEnd();
-}
-
 uint32_t cell_pad_input_pads_connected(void)
 {
 #if(CELL_SDK_VERSION > 0x340000)
@@ -249,18 +244,15 @@ void oskutil_unload(oskutil_params *params)
 static void ps3_free_input(void *data)
 {
    (void)data;
+   cellPadEnd();
 }
 
 static void* ps3_input_initialize(void)
 {
-   return (void*)-1;
-}
-
-void ps3_input_init(void)
-{
    cellPadInit(MAX_PADS);
    for(unsigned i = 0; i < MAX_PADS; i++)
    	ps3_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
+   return (void*)-1;
 }
 
 void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
