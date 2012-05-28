@@ -46,6 +46,7 @@
 menu menuStack[25];
 int menuStackindex = 0;
 static bool set_initial_dir_tmpbrowser;
+static bool set_libretro_core_as_launch;
 
 char special_action_msg[256];			/* message which should be overlaid on top of the screen */
 filebrowser_t browser;				/* main file browser->for rom browser*/
@@ -920,10 +921,14 @@ static void select_file(uint32_t menu_id)
 		  break;
 	       case LIBRETRO_CHOICE:
 		  strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
-		  strlcpy(g_console.launch_app_on_exit, path, sizeof(g_console.launch_app_on_exit));
-		  g_console.return_to_launcher = true;
-		  g_console.menu_enable = false;
-		  g_console.mode_switch = MODE_EXIT;
+		  if(set_libretro_core_as_launch)
+		  {
+		     strlcpy(g_console.launch_app_on_exit, path, sizeof(g_console.launch_app_on_exit));
+                     set_libretro_core_as_launch = false;
+		     g_console.return_to_launcher = true;
+		     g_console.menu_enable = false;
+		     g_console.mode_switch = MODE_EXIT;
+		  }
 		  break;
 	    }
 
@@ -1559,6 +1564,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				g_settings.rewind_enable = !g_settings.rewind_enable;
 
 				set_delay = DELAY_MEDIUM;
+                                msg_queue_clear(g_extern.msg_queue);
+				msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
 			}
 			if(CTRL_START(state))
 			{
@@ -1572,6 +1579,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				menuStack[menuStackindex] = menu_filebrowser;
 				menuStack[menuStackindex].enum_id = LIBRETRO_CHOICE;
 				set_initial_dir_tmpbrowser = true;
+				set_libretro_core_as_launch = false;
 				set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
@@ -2401,6 +2409,7 @@ static void ingame_menu(uint32_t menu_id)
                menuStackindex++;
 	       menuStack[menuStackindex] = menu_filebrowser;
 	       menuStack[menuStackindex].enum_id = LIBRETRO_CHOICE;
+	       set_libretro_core_as_launch = true;
 	       set_initial_dir_tmpbrowser = true;
 	       set_delay = DELAY_LONG;
 	    }
@@ -2625,6 +2634,18 @@ void menu_loop(void)
       if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
       {
          SET_TIMER_EXPIRATION(gl, 30);
+      }
+
+      const char * message = msg_queue_pull(g_extern.msg_queue);
+
+      if (message)
+      {
+         if(IS_TIMER_EXPIRED(gl))
+         {
+            SET_TIMER_EXPIRATION(gl, 30);
+         }
+         cellDbgFontPrintf(g_settings.video.msg_pos_x, 0.75f, 1.05f, WHITE, message);
+         gl_render_msg_post(gl);
       }
 
       gfx_ctx_swap_buffers();
