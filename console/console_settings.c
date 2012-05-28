@@ -26,6 +26,12 @@ void rarch_settings_change(unsigned setting)
 {
    switch(setting)
    {
+      case S_HW_TEXTURE_FILTER:
+         g_settings.video.smooth = !g_settings.video.smooth;
+         break;
+      case S_HW_TEXTURE_FILTER_2:
+	 g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
+         break;
       case S_OVERSCAN_DECREMENT:
          g_console.overscan_amount -= 0.01f;
 	 g_console.overscan_enable = true;
@@ -79,6 +85,12 @@ void rarch_settings_default(unsigned setting)
 {
    switch(setting)
    {
+      case S_DEF_HW_TEXTURE_FILTER:
+         g_settings.video.smooth = 1;
+         break;
+      case S_DEF_HW_TEXTURE_FILTER_2:
+	 g_settings.video.second_pass_smooth = 1;
+         break;
       case S_DEF_OVERSCAN:
          g_console.overscan_amount = 0.0f;
 	 g_console.overscan_enable = false;
