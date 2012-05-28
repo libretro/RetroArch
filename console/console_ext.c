@@ -794,10 +794,82 @@ const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr)
   CONFIG
   ============================================================ */
 
-void rarch_create_default_config_file(const char * conf_name)
+void rarch_config_create_default(const char * conf_name)
 {
    FILE * f;
    RARCH_WARN("Config file \"%s\" doesn't exist. Creating...\n", conf_name);
    f = fopen(conf_name, "w");
    fclose(f);
+}
+
+void rarch_config_save(const char * conf_name)
+{
+   if(!path_file_exists(conf_name))
+      rarch_config_create_default(conf_name);
+   else
+   {
+      config_file_t * conf = config_file_new(conf_name);
+
+      if(conf == NULL)
+         conf = config_file_new(NULL);
+
+      // g_settings
+      config_set_string(conf, "libretro_path", g_settings.libretro);
+#ifdef HAVE_XML
+      config_set_string(conf, "cheat_database_path", g_settings.cheat_database);
+#endif
+      config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
+      config_set_string(conf, "video_cg_shader", g_settings.video.cg_shader_path);
+      config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
+#ifdef HAVE_FBO
+      config_set_float(conf, "video_fbo_scale_x", g_settings.video.fbo_scale_x);
+      config_set_float(conf, "video_fbo_scale_y", g_settings.video.fbo_scale_y);
+      config_set_string(conf, "video_second_pass_shader", g_settings.video.second_pass_shader);
+      config_set_bool(conf, "video_render_to_texture", g_settings.video.render_to_texture);
+      config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
+#endif
+      config_set_bool(conf, "video_smooth", g_settings.video.smooth);
+      config_set_bool(conf, "video_vsync", g_settings.video.vsync);
+      config_set_string(conf, "audio_device", g_settings.audio.device);
+
+      for (unsigned i = 0; i < 7; i++)
+      {
+         char cfg[64];
+	 snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
+	 config_set_int(conf, cfg, g_settings.input.dpad_emulation[i]);
+      }
+
+#ifdef RARCH_CONSOLE
+      config_set_bool(conf, "fbo_enabled", g_console.fbo_enabled);
+      config_set_bool(conf, "custom_bgm_enable", g_console.custom_bgm_enable);
+      config_set_bool(conf, "overscan_enable", g_console.overscan_enable);
+      config_set_bool(conf, "screenshots_enable", g_console.screenshots_enable);
+#ifdef _XBOX
+      config_set_bool(conf, "gamma_correction_enable", g_console.gamma_correction_enable);
+      config_set_int(conf, "color_format", g_console.color_format);
+#endif
+      config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
+      config_set_bool(conf, "triple_buffering_enable", g_console.triple_buffering_enable);
+      config_set_int(conf, "sound_mode", g_console.sound_mode);
+      config_set_int(conf, "aspect_ratio_index", g_console.aspect_ratio_index);
+      config_set_int(conf, "current_resolution_id", g_console.current_resolution_id);
+      config_set_int(conf, "custom_viewport_width", g_console.viewports.custom_vp.width);
+      config_set_int(conf, "custom_viewport_height", g_console.viewports.custom_vp.height);
+      config_set_int(conf, "custom_viewport_x", g_console.viewports.custom_vp.x);
+      config_set_int(conf, "custom_viewport_y", g_console.viewports.custom_vp.y);
+      config_set_int(conf, "screen_orientation", g_console.screen_orientation);
+      config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
+      config_set_float(conf, "menu_font_size", g_console.menu_font_size);
+      config_set_float(conf, "overscan_amount", g_console.overscan_amount);
+#endif
+
+      // g_extern
+      config_set_int(conf, "state_slot", g_extern.state_slot);
+      config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
+
+      if (!config_file_write(conf, conf_name))
+         RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", conf_name);
+
+      free(conf);
+   }
 }

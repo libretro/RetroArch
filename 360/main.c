@@ -190,7 +190,7 @@ static void init_settings (bool load_libretro_path)
    char fname_tmp[PATH_MAX];
 
    if(!path_file_exists(SYS_CONFIG_FILE))
-      rarch_create_default_config_file(SYS_CONFIG_FILE);
+      rarch_config_create_default(SYS_CONFIG_FILE);
 
    config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
 
@@ -271,52 +271,6 @@ static void init_settings (bool load_libretro_path)
    // g_extern
    CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
    CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
-}
-
-static void save_settings (void)
-{
-   if(!path_file_exists(SYS_CONFIG_FILE))
-      rarch_create_default_config_file(SYS_CONFIG_FILE);
-
-   config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
-
-   if(conf == NULL)
-      conf = config_file_new(NULL);
-
-   // g_settings
-   config_set_string(conf, "libretro_path", g_settings.libretro);
-   config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
-   config_set_string(conf, "video_cg_shader", g_settings.video.cg_shader_path);
-   config_set_string(conf, "video_second_pass_shader", g_settings.video.second_pass_shader);
-   config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
-   config_set_float(conf, "video_fbo_scale_x", g_settings.video.fbo_scale_x);
-   config_set_float(conf, "video_fbo_scale_y", g_settings.video.fbo_scale_y);
-   config_set_bool(conf, "video_render_to_texture", g_settings.video.render_to_texture);
-   config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
-   config_set_bool(conf, "video_smooth", g_settings.video.smooth);
-   config_set_bool(conf, "video_vsync", g_settings.video.vsync);
-
-   // g_console
-   config_set_bool(conf, "fbo_enabled", g_console.fbo_enabled);
-   config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
-   config_set_bool(conf, "gamma_correction_enable", g_console.gamma_correction_enable);
-   config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
-   config_set_int(conf, "aspect_ratio_index", g_console.aspect_ratio_index);
-   config_set_int(conf, "custom_viewport_width", g_console.viewports.custom_vp.width);
-   config_set_int(conf, "custom_viewport_height", g_console.viewports.custom_vp.height);
-   config_set_int(conf, "custom_viewport_x", g_console.viewports.custom_vp.x);
-   config_set_int(conf, "custom_viewport_y", g_console.viewports.custom_vp.y);
-   config_set_int(conf, "screen_orientation", g_console.screen_orientation);
-   config_set_int(conf, "color_format", g_console.color_format);
-
-   // g_extern
-   config_set_int(conf, "state_slot", g_extern.state_slot);
-   config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
-
-   if (!config_file_write(conf, SYS_CONFIG_FILE))
-      RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", SYS_CONFIG_FILE);
-
-   free(conf);
 }
 
 static void get_environment_settings (void)
@@ -443,7 +397,7 @@ begin_loop:
 
 begin_shutdown:
    if(path_file_exists(SYS_CONFIG_FILE))
-      save_settings();
+      rarch_config_save(SYS_CONFIG_FILE);
 
    menu_deinit();
    video_xdk360.stop();
