@@ -2014,14 +2014,6 @@ static void select_rom(void)
 
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
-static void return_to_game (void)
-{
-   g_console.frame_advance_enable = false;
-   g_console.ingame_menu_item = 0;
-   g_console.menu_enable = false;
-   g_console.mode_switch = MODE_EMULATION;
-}
-
 static void ingame_menu(uint32_t menu_id)
 {
    char comment[256], msg_temp[256];
@@ -2050,7 +2042,7 @@ static void ingame_menu(uint32_t menu_id)
       set_delay = DELAY_NONE;
 
       if(CTRL_CIRCLE(state))
-         return_to_game();
+         rarch_settings_change(S_RETURN_TO_GAME);
 
       switch(g_console.ingame_menu_item)
       {
@@ -2058,7 +2050,7 @@ static void ingame_menu(uint32_t menu_id)
             if(CTRL_CROSS(state))
 	    {
                rarch_load_state();
-	       return_to_game();
+               rarch_settings_change(S_RETURN_TO_GAME);
 	    }
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 	    {
@@ -2079,7 +2071,7 @@ static void ingame_menu(uint32_t menu_id)
 	    if(CTRL_CROSS(state))
 	    {
                rarch_save_state();
-	       return_to_game();
+               rarch_settings_change(S_RETURN_TO_GAME);
 	    }
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 	    {
@@ -2212,10 +2204,8 @@ static void ingame_menu(uint32_t menu_id)
 	 case MENU_ITEM_FRAME_ADVANCE:
 	    if(CTRL_CROSS(state) || CTRL_R2(state) || CTRL_L2(state))
 	    {
-               g_console.frame_advance_enable = true;
+               rarch_settings_change(S_FRAME_ADVANCE);
 	       g_console.ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
-	       g_console.menu_enable = false;
-	       g_console.mode_switch = MODE_EMULATION;
 	    }
 	    strlcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame. Pressing the button\nrapidly will advance the frame more slowly.", sizeof(comment));
 	    break;
@@ -2382,14 +2372,14 @@ static void ingame_menu(uint32_t menu_id)
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
 	    if(CTRL_CROSS(state))
-               return_to_game();
+               rarch_settings_change(S_RETURN_TO_GAME);
 
 	    strlcpy(comment, "Press 'CROSS' to return back to the game.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RESET:
 	    if(CTRL_CROSS(state))
 	    {
-               return_to_game();
+               rarch_settings_change(S_RETURN_TO_GAME);
 	       rarch_game_reset();
 	    }
 	    strlcpy(comment, "Press 'CROSS' to reset the game.", sizeof(comment));
@@ -2458,9 +2448,7 @@ static void ingame_menu(uint32_t menu_id)
       }
 
       if(CTRL_L3(state) && CTRL_R3(state))
-      {
-         return_to_game();
-      }
+         rarch_settings_change(S_RETURN_TO_GAME);
    }
 
 
