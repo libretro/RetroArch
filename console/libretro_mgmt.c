@@ -33,11 +33,7 @@ bool rarch_manage_libretro_install(const char *full_path, const char *path, cons
       // a new libretro port and therefore we need to change it to a more
       // sane name.
 
-#if defined(__CELLOS_LV2__)
-      CellFsErrno ret;
-#else
       int ret;
-#endif
 
       rarch_console_name_from_id(tmp_path2, sizeof(tmp_path2));
       strlcat(tmp_path2, exe_ext, sizeof(tmp_path2));

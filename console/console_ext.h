@@ -17,6 +17,10 @@
 #ifndef CONSOLE_EXT_H__
 #define CONSOLE_EXT_H__
 
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+#include "libretro_mgmt.h"
+#endif
+
 #define IS_TIMER_NOT_EXPIRED(handle) (handle->frame_count < g_console.timer_expiration_frame_count)
 #define IS_TIMER_EXPIRED(handle) 	(!(IS_TIMER_NOT_EXPIRED(handle)))
 #define SET_TIMER_EXPIRATION(handle, value) (g_console.timer_expiration_frame_count = handle->frame_count + value)
@@ -100,14 +104,6 @@ void rarch_input_set_default_keybind_names_for_emulator(void);
 
 void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-/*============================================================
-	LIBRETRO MANAGEMENT
-============================================================ */
-
-bool rarch_manage_libretro_install(const char *full_path, const char *path, const char *exe_ext);
-void rarch_manage_libretro_set_first_file(const char *libretro_path, const char * exe_ext);
-#endif
 
 /*============================================================
   RetroArch
