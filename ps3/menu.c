@@ -1220,18 +1220,18 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_SHADER_PRESETS:
 			if((CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state)))
 			{
-				if(g_console.emulator_initialized)
-				{
-					menuStackindex++;
-					menuStack[menuStackindex] = menu_filebrowser;
-					menuStack[menuStackindex].enum_id = PRESET_CHOICE;
-					set_initial_dir_tmpbrowser = true;
-					set_delay = DELAY_LONG;
-				}
+                           if(g_console.emulator_initialized)
+			   {
+                              menuStackindex++;
+			      menuStack[menuStackindex] = menu_filebrowser;
+			      menuStack[menuStackindex].enum_id = PRESET_CHOICE;
+			      set_initial_dir_tmpbrowser = true;
+			      set_delay = DELAY_LONG;
+			   }
 			}
 			if(CTRL_START(state))
 			{
-				strlcpy(g_console.cgp_path, "", sizeof(g_console.cgp_path));
+                           strlcpy(g_console.cgp_path, "", sizeof(g_console.cgp_path));
 			}
 			break;
 		case SETTING_SHADER:
@@ -1344,17 +1344,13 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_SCALE_ENABLED:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				g_console.fbo_enabled = !g_console.fbo_enabled;
+                                rarch_settings_change(S_SCALE_ENABLED);
 				gfx_ctx_set_fbo(g_console.fbo_enabled);
-
 				set_delay = DELAY_MEDIUM;
-
 			}
 			if(CTRL_START(state))
 			{
-				g_console.fbo_enabled = true;
-				g_settings.video.fbo_scale_x = 2.0f;
-				g_settings.video.fbo_scale_y = 2.0f;
+                                rarch_settings_default(S_DEF_SCALE_ENABLED);
 				apply_scaling(FBO_DEINIT);
 				apply_scaling(FBO_INIT);
 			}
@@ -1364,10 +1360,10 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				if(g_console.fbo_enabled)
 				{
-					if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
+					bool should_decrement = g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR;
+					if(should_decrement)
 					{
-						g_settings.video.fbo_scale_x -= 1.0f;
-						g_settings.video.fbo_scale_y -= 1.0f;
+						rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
 						apply_scaling(FBO_REINIT);
 						set_delay = DELAY_MEDIUM;
 					}
@@ -1377,10 +1373,10 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				if(g_console.fbo_enabled)
 				{
-					if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
+					bool should_increment = g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR;
+					if(should_increment)
 					{
-						g_settings.video.fbo_scale_x += 1.0f;
-						g_settings.video.fbo_scale_y += 1.0f;
+						rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
 						apply_scaling(FBO_REINIT);
 						set_delay = DELAY_MEDIUM;
 					}
@@ -1388,8 +1384,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			if(CTRL_START(state))
 			{
-				g_settings.video.fbo_scale_x = 2.0f;
-				g_settings.video.fbo_scale_y = 2.0f;
+				rarch_settings_default(S_DEF_SCALE_FACTOR);
 				apply_scaling(FBO_DEINIT);
 				apply_scaling(FBO_INIT);
 			}
@@ -1397,43 +1392,32 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_HW_OVERSCAN_AMOUNT:
 			if(CTRL_LEFT(state)  ||  CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
 			{
-				g_console.overscan_amount -= 0.01f;
-				g_console.overscan_enable = true;
-
-				if(g_console.overscan_amount == 0.0f)
-					g_console.overscan_enable = false;
-
+				rarch_settings_change(S_OVERSCAN_DECREMENT);
 				gfx_ctx_set_overscan();
 				set_delay = DELAY_SMALLEST;
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				g_console.overscan_amount += 0.01f;
-				g_console.overscan_enable = true;
-
-				if(g_console.overscan_amount == 0.0f)
-					g_console.overscan_enable = 0;
-
+				rarch_settings_change(S_OVERSCAN_INCREMENT);
 				gfx_ctx_set_overscan();
 				set_delay = DELAY_SMALLEST;
 			}
 			if(CTRL_START(state))
 			{
-				g_console.overscan_amount = 0.0f;
-				g_console.overscan_enable = false;
+				rarch_settings_default(S_DEF_OVERSCAN);
 				gfx_ctx_set_overscan();
 			}
 			break;
 		case SETTING_THROTTLE_MODE:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
-				g_console.throttle_enable = !g_console.throttle_enable;
+				rarch_settings_change(S_THROTTLE);
 				gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
 				set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
-				g_console.throttle_enable = true;
+				rarch_settings_default(S_DEF_THROTTLE);
 				gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
 				set_delay = DELAY_MEDIUM;
 			}
@@ -1441,17 +1425,17 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_TRIPLE_BUFFERING:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
-				g_console.triple_buffering_enable = !g_console.triple_buffering_enable;
+				rarch_settings_change(S_TRIPLE_BUFFERING);
 				video_gl.restart();
 				set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
-				if(!g_console.triple_buffering_enable)
-				{
-					g_console.triple_buffering_enable = true;
-					video_gl.restart();
-				}
+				bool old_state = g_console.triple_buffering_enable;
+				rarch_settings_default(S_DEF_TRIPLE_BUFFERING);
+
+				if(!old_state)
+                                   video_gl.restart();
 			}
 			break;
 		case SETTING_ENABLE_SCREENSHOTS:
@@ -1556,19 +1540,17 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
 			{
-				if(g_extern.state_slot != 0)
-					g_extern.state_slot--;
-
-				set_delay = DELAY_MEDIUM;
+                           rarch_settings_change(S_OVERSCAN_DECREMENT);
+			   set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				g_extern.state_slot++;
-				set_delay = DELAY_MEDIUM;
+                           rarch_settings_change(S_OVERSCAN_INCREMENT);
+			   set_delay = DELAY_MEDIUM;
 			}
 
 			if(CTRL_START(state))
-				g_extern.state_slot = 0;
+                           rarch_settings_default(S_DEF_SAVE_STATE);
 			break;
 		case SETTING_EMU_SHOW_INFO_MSG:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
@@ -2145,29 +2127,19 @@ static void ingame_menu(uint32_t menu_id)
 	 case MENU_ITEM_OVERSCAN_AMOUNT:
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) || CTRL_LSTICK_LEFT(state))
 	    {
-               g_console.overscan_amount -= 0.01f;
-	       g_console.overscan_enable = true;
-
-	       if(g_console.overscan_amount == 0.00f)
-                  g_console.overscan_enable = false;
-
+               rarch_settings_change(S_OVERSCAN_DECREMENT);
 	       gfx_ctx_set_overscan();
 	       set_delay = DELAY_SMALLEST;
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_LSTICK_RIGHT(state))
 	    {
-               g_console.overscan_amount += 0.01f;
-	       g_console.overscan_enable = true;
-	       if(g_console.overscan_amount == 0.0f)
-                  g_console.overscan_amount = false;
-
+               rarch_settings_change(S_OVERSCAN_INCREMENT);
 	       gfx_ctx_set_overscan();
 	       set_delay = DELAY_SMALLEST;
 	    }
 	    if(CTRL_START(state))
 	    {
-               g_console.overscan_amount = 0.0f;
-	       g_console.overscan_enable = false;
+               rarch_settings_default(S_DEF_OVERSCAN);
 	       gfx_ctx_set_overscan();
 	    }
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.", sizeof(comment));
@@ -2175,9 +2147,10 @@ static void ingame_menu(uint32_t menu_id)
 	 case MENU_ITEM_ORIENTATION:
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) || CTRL_LSTICK_LEFT(state))
 	    {
-               if(g_console.screen_orientation > ORIENTATION_NORMAL)
+               bool should_rotate_decrement = g_console.screen_orientation > ORIENTATION_NORMAL;
+               if(should_rotate_decrement)
 	       {
-                  g_console.screen_orientation--;
+                  rarch_settings_change(S_ROTATION_DECREMENT);
 		  video_gl.set_rotation(NULL, g_console.screen_orientation);
 		  set_delay = DELAY_MEDIUM;
 	       }
@@ -2185,9 +2158,10 @@ static void ingame_menu(uint32_t menu_id)
 
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_LSTICK_RIGHT(state))
 	    {
-               if((g_console.screen_orientation+1) < ORIENTATION_END)
+               bool should_rotate_increment = (g_console.screen_orientation+1) < ORIENTATION_END;
+               if(should_rotate_increment)
 	       {
-                  g_console.screen_orientation++;
+                  rarch_settings_change(S_ROTATION_INCREMENT);
 		  video_gl.set_rotation(NULL, g_console.screen_orientation);
 		  set_delay = DELAY_MEDIUM;
 	       }

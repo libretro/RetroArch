@@ -22,6 +22,7 @@
 CONSOLE EXTENSIONS
 ============================================================ */
 #include "../console_ext.c"
+#include "../console_settings.c"
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
 #include "../libretro_mgmt.c"
