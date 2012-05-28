@@ -190,12 +190,7 @@ static void init_settings (bool load_libretro_path)
    char fname_tmp[MAX_PATH_LENGTH];
 
    if(!path_file_exists(SYS_CONFIG_FILE))
-   {
-      FILE * f;
-      RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
-      f = fopen(SYS_CONFIG_FILE, "w");
-      fclose(f);
-   }
+      rarch_create_default_config_file(SYS_CONFIG_FILE);
 
    config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
 
@@ -281,11 +276,7 @@ static void init_settings (bool load_libretro_path)
 static void save_settings (void)
 {
    if(!path_file_exists(SYS_CONFIG_FILE))
-   {
-      FILE * f;
-      f = fopen(SYS_CONFIG_FILE, "w");
-      fclose(f);
-   }
+      rarch_create_default_config_file(SYS_CONFIG_FILE);
 
    config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
 

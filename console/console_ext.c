@@ -789,3 +789,15 @@ const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr)
    wcstombs(str, wstr, sizeof(str));
    return str;
 }
+
+/*============================================================
+  CONFIG
+  ============================================================ */
+
+void rarch_create_default_config_file(const char * conf_name)
+{
+   FILE * f;
+   RARCH_WARN("Config file \"%s\" doesn't exist. Creating...\n", conf_name);
+   f = fopen(conf_name, "w");
+   fclose(f);
+}

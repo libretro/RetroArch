@@ -138,5 +138,6 @@ wchar_t * rarch_convert_char_to_wchar(const char * str);
 
 const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr);
 
+void rarch_create_default_config_file(const char * conf_name);
 
 #endif
