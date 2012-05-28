@@ -209,9 +209,7 @@ void config_set_defaults(void)
    for (int i = 0; i < MAX_PLAYERS; i++)
       g_settings.input.joypad_map[i] = i;
 
-#ifdef RARCH_CONSOLE
-   rarch_assert(g_extern.msg_queue = msg_queue_new(8));
-#endif
+   rarch_init_msg_queue();
 }
 
 #ifdef HAVE_CONFIGFILE

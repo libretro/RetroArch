@@ -1167,7 +1167,7 @@ static void deinit_recording(void)
 }
 #endif
 
-static void init_msg_queue(void)
+void rarch_init_msg_queue(void)
 {
    if (g_extern.msg_queue)
       return;
@@ -2359,7 +2359,7 @@ int rarch_main_init(int argc, char *argv[])
       goto error;
 
    init_system_av_info();
-   init_msg_queue();
+   rarch_init_msg_queue();
 
    if (!g_extern.sram_load_disable)
       load_save_files();
