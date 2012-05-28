@@ -43,7 +43,7 @@ CONFIG FILE
 
 
 /*============================================================
-VIDEO
+VIDEO CONTEXT
 ============================================================ */
 
 #ifdef HAVE_VID_CONTEXT
@@ -56,21 +56,35 @@ VIDEO
 
 #endif
 
+/*============================================================
+VIDEO SHADERS
+============================================================ */
+
 #ifdef HAVE_CG
 #include "../../gfx/shader_cg.c"
-#endif
-
-#ifdef HAVE_OPENGL
-#include "../../gfx/gl.c"
 #endif
 
 #ifdef HAVE_HLSL
 #include "../../gfx/shader_hlsl.c"
 #endif
 
+/*============================================================
+VIDEO IMAGE
+============================================================ */
+
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/image.c"
-#elif defined(_XBOX)
+#endif
+
+/*============================================================
+VIDEO DRIVER
+============================================================ */
+
+#ifdef HAVE_OPENGL
+#include "../../gfx/gl.c"
+#endif
+
+#if defined(_XBOX)
 #include "../../360/xdk360_video.cpp"
 #elif defined(GEKKO)
 #include "../../wii/video.c"
@@ -100,7 +114,7 @@ INPUT
 #endif
 
 /*============================================================
-SNES STATE
+STATE TRACKER
 ============================================================ */
 #include "../../gfx/state_tracker.c"
 
@@ -203,7 +217,7 @@ THREAD
 /*============================================================
 NETPLAY
 ============================================================ */
-#ifndef GEKKO
+#ifdef HAVE_NETPLAY
 #include "../../netplay.c"
 #endif
 
