@@ -840,10 +840,9 @@ void menu_loop(void)
 
          if (msg)
          {
-            if(IS_TIMER_EXPIRED(d3d9) || g_first_msg)
+            if(IS_TIMER_EXPIRED(d3d9))
             {
                xdk360_console_format(msg);
-               g_first_msg = 0;
                SET_TIMER_EXPIRATION(d3d9, 30);
             }
 

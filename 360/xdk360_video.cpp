@@ -38,8 +38,6 @@
 #include "config.h"
 #endif
 
-static bool g_first_msg;
-
 /* Xbox 360 specific code */
 
 const DWORD g_MapLinearToSrgbGpuFormat[] = 
@@ -669,10 +667,9 @@ static bool xdk360_frame(void *data, const void *frame,
    /* XBox 360 specific font code */
    if (msg && !menu_enabled)
    {
-      if(IS_TIMER_EXPIRED(d3d9) || g_first_msg)
+      if(IS_TIMER_EXPIRED(d3d9))
       {
          xdk360_console_format(msg);
-         g_first_msg = 0;
          SET_TIMER_EXPIRATION(d3d9, 30);
       }
 
@@ -729,8 +726,6 @@ static void xdk360_start(void)
    xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
 
    gfx_ctx_set_swap_interval(d3d9->vsync ? 1 : 0, false);
-
-   g_first_msg = true;
 
    /* XBox 360 specific font code */
    HRESULT hr = xdk360_console_init("game:\\media\\Arial_12.xpr",
