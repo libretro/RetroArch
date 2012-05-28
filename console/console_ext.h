@@ -106,7 +106,7 @@ void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t 
 ============================================================ */
 
 bool rarch_manage_libretro_install(const char *full_path, const char *path, const char *exe_ext);
-void rarch_manage_libretro_set_first_file(const char * conf_name, const char *libretro_path, const char * exe_ext);
+void rarch_manage_libretro_set_first_file(const char *libretro_path, const char * exe_ext);
 #endif
 
 /*============================================================

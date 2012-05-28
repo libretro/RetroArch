@@ -165,7 +165,12 @@ static void init_settings(bool load_libretro_path)
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
       if(load_libretro_path)
-         rarch_manage_libretro_set_first_file(SYS_CONFIG_FILE, LIBRETRO_DIR_PATH, ".SELF");
+      {
+         CONFIG_GET_STRING(libretro, "libretro_path");
+
+         if(!strcmp(g_settings.libretro, ""))
+            rarch_manage_libretro_set_first_file(LIBRETRO_DIR_PATH, ".SELF");
+      }
 #endif
 
       CONFIG_GET_STRING(cheat_database, "cheat_database");
