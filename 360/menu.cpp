@@ -625,7 +625,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 		 set_shader = 1;
 	     hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
 
-         if (FAILED(hr))
+         if (hr < 0)
          {
             RARCH_ERR("Failed to load scene.\n");
          }
@@ -638,7 +638,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 		 set_shader = 2;
 		 hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
 
-         if (FAILED(hr))
+         if (hr < 0)
          {
             RARCH_ERR("Failed to load scene.\n");
          }
@@ -679,7 +679,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
    {
       hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_filebrowser.xur", NULL, &app.hFileBrowser);
 
-      if (FAILED(hr))
+      if (hr < 0)
       {
          RARCH_ERR("Failed to load scene.\n");
       }
@@ -690,7 +690,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
    {
       hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_quickmenu.xur", NULL, &app.hQuickMenu);
 
-      if (FAILED(hr))
+      if (hr < 0)
          RARCH_ERR("Failed to load scene.\n");
 	  hCur = app.hQuickMenu;
       NavigateForward(app.hQuickMenu);
@@ -699,7 +699,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
    {
       hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_controls.xur", NULL, &app.hControlsMenu);
 
-      if (FAILED(hr))
+      if (hr < 0)
          RARCH_ERR("Failed to load scene.\n");
 	  hCur = app.hControlsMenu;
 	  msg_queue_clear(g_extern.msg_queue);
@@ -710,7 +710,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
    {
       hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_libretrocore_browser.xur", NULL, &app.hCoreBrowser);
 
-      if (FAILED(hr))
+      if (hr < 0)
       {
          RARCH_ERR("Failed to load scene.\n");
       }
@@ -723,7 +723,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
    {
       hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_settings.xur", NULL, &app.hRetroArchSettings);
 
-      if (FAILED(hr))
+      if (hr < 0)
          RARCH_ERR("Failed to load scene.\n");
 	  hCur = app.hRetroArchSettings;
       NavigateForward(app.hRetroArchSettings);
@@ -732,7 +732,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       return_to_dashboard();
 
    bHandled = TRUE;
-   return S_OK;
+   return 0;
 }
 
 int menu_init (void)
@@ -743,7 +743,7 @@ int menu_init (void)
 
    hr = app.InitShared(vid->d3d_render_device, &vid->d3dpp, XuiPNGTextureLoader);
 
-   if (FAILED(hr))
+   if (hr < 0)
    {
       RARCH_ERR("Failed initializing XUI application.\n");
       return 1;
@@ -751,21 +751,21 @@ int menu_init (void)
 
    /* Register font */
    hr = app.RegisterDefaultTypeface(L"Arial Unicode MS", L"file://game:/media/rarch.ttf" );
-   if (FAILED(hr))
+   if (hr < 0)
    {
       RARCH_ERR("Failed to register default typeface.\n");
       return 1;
    }
 
    hr = app.LoadSkin( L"file://game:/media/rarch_scene_skin.xur");
-   if (FAILED(hr))
+   if (hr < 0)
    {
       RARCH_ERR("Failed to load skin.\n");
       return 1;
    }
 
    hr = XuiSceneCreate(L"file://game:/media/sd/", L"rarch_main.xur", NULL, &app.hMainScene);
-   if (FAILED(hr))
+   if (hr < 0)
    {
       RARCH_ERR("Failed to create scene 'rarch_main.xur'.\n");
       return 1;

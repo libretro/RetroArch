@@ -736,7 +736,7 @@ static void xdk360_start(void)
    HRESULT hr = xdk360_console_init("game:\\media\\Arial_12.xpr",
       0xff000000, 0xffffffff );
 
-   if(FAILED(hr))
+   if(hr < 0)
    {
       RARCH_ERR("Couldn't create debug console.\n");
    }
