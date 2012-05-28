@@ -27,6 +27,11 @@
 #include "console_ext.h"
 #include "../file.h"
 
+#ifdef HAVE_CONFIGFILE
+#include "../conf/config_file.h"
+#include "../conf/config_file_macros.h"
+#endif
+
 #ifdef HAVE_ZLIB
 #include "rzlib/zlib.h"
 #define WRITEBUFFERSIZE (1024 * 512)
@@ -517,7 +522,7 @@ void rarch_set_auto_viewport(unsigned width, unsigned height)
   ============================================================ */
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-bool rarch_manage_libretro_core(const char *full_path, const char *path, const char *exe_ext)
+bool rarch_manage_libretro_install(const char *full_path, const char *path, const char *exe_ext)
 {
    g_extern.verbose = true;
    bool return_code;
@@ -604,6 +609,68 @@ bool rarch_manage_libretro_core(const char *full_path, const char *path, const c
 
    return return_code;
 }
+
+#ifdef HAVE_CONFIGFILE
+void rarch_manage_libretro_set_first_file(const char * conf_name, const char *libretro_path, const char * exe_ext)
+{
+#ifdef _XBOX
+   char fname_tmp[PATH_MAX];
+#endif
+
+   config_file_t * conf = config_file_new(conf_name);
+
+   CONFIG_GET_STRING(libretro, "libretro_path");
+
+   if(!strcmp(g_settings.libretro, ""))
+   {
+      //We need to set libretro to the first entry in the cores
+      //directory so that it will be saved to the config file
+
+      char ** dir_list = dir_list_new(libretro_path, exe_ext);
+
+      if (!dir_list)
+      {
+         RARCH_ERR("Couldn't read directory.\n");
+	 return;
+      }
+
+      const char * first_exe = dir_list[0];
+
+      if(first_exe)
+      {
+#ifdef _XBOX
+         fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
+
+	 if(strcmp(fname_tmp, "RetroArch-Salamander.xex") == 0)
+	 {
+            RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
+	    first_exe = dir_list[1];
+	    fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
+
+	    if(!first_exe)
+	    {
+               RARCH_ERR("Unlikely error happened - no second entry - no choice but to set it to RetroArch Salamander\n");
+	       first_exe = dir_list[0];
+	       fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
+	    }
+	 }
+
+	 RARCH_LOG("Set first entry in libretro core dir to libretro path: [%s].\n", fname_tmp);
+	 snprintf(g_settings.libretro, sizeof(g_settings.libretro), "game:\\%s", fname_tmp);
+#else
+	 RARCH_LOG("Set first entry in libretro core dir to libretro path: [%s].\n", first_exe);
+         strlcpy(g_settings.libretro, first_exe, sizeof(g_settings.libretro));
+#endif
+      }
+      else
+      {
+         RARCH_ERR("Failed to set first .xex entry to libretro path.\n");
+      }
+
+      dir_list_free(dir_list);
+   }
+}
+#endif
 #endif
 
 /*============================================================
@@ -794,6 +861,7 @@ const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr)
   CONFIG
   ============================================================ */
 
+#ifdef HAVE_CONFIGFILE
 void rarch_config_create_default(const char * conf_name)
 {
    FILE * f;
@@ -873,3 +941,4 @@ void rarch_config_save(const char * conf_name)
       free(conf);
    }
 }
+#endif

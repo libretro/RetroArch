@@ -101,7 +101,12 @@ void rarch_input_set_default_keybind_names_for_emulator(void);
 void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-bool rarch_manage_libretro_core(const char *full_path, const char *path, const char *exe_ext);
+/*============================================================
+	LIBRETRO MANAGEMENT
+============================================================ */
+
+bool rarch_manage_libretro_install(const char *full_path, const char *path, const char *exe_ext);
+void rarch_manage_libretro_set_first_file(const char * conf_name, const char *libretro_path, const char * exe_ext);
 #endif
 
 /*============================================================

@@ -187,60 +187,16 @@ static void set_default_settings (void)
 
 static void init_settings (bool load_libretro_path)
 {
-   char fname_tmp[PATH_MAX];
 
    if(!path_file_exists(SYS_CONFIG_FILE))
       rarch_config_create_default(SYS_CONFIG_FILE);
 
    config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
 
+#ifdef HAVE_LIBRETRO_MANAGEMENT
    if(load_libretro_path)
-   {
-      CONFIG_GET_STRING(libretro, "libretro_path");
-
-      if(!strcmp(g_settings.libretro, ""))
-      {
-         //We need to set libretro to the first entry in the cores
-	 //directory so that it will be saved to the config file
-	 char ** dir_list = dir_list_new("game:\\", ".xex");
-
-	 if (!dir_list)
-	 {
-            RARCH_ERR("Couldn't read directory.\n");
-	    return;
-	 }
-
-	 const char * first_xex = dir_list[0];
-
-	 if(first_xex)
-	 {
-            fill_pathname_base(fname_tmp, first_xex, sizeof(fname_tmp));
-
-	    if(strcmp(fname_tmp, "RetroArch-Salamander.xex") == 0)
-	    {
-               RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
-	       first_xex = dir_list[1];
-	       fill_pathname_base(fname_tmp, first_xex, sizeof(fname_tmp));
-
-	       if(!first_xex)
-	       {
-                  //This is very unlikely to happen
-                  RARCH_WARN("There is no second entry - no choice but to set it to RetroArch Salamander\n");
-		  first_xex = dir_list[0];
-		  fill_pathname_base(fname_tmp, first_xex, sizeof(fname_tmp));
-	       }
-	    }
-	    RARCH_LOG("Set first .xex entry in dir: [%s] to libretro path.\n", fname_tmp);
-	    snprintf(g_settings.libretro, sizeof(g_settings.libretro), "game:\\%s", fname_tmp);
-	 }
-	 else
-	 {
-            RARCH_ERR("Failed to set first .xex entry to libretro path.\n");
-	 }
-
-	 dir_list_free(dir_list);
-      }
-   }
+      rarch_manage_libretro_set_first_file(SYS_CONFIG_FILE, "game:\\", ".xex");
+#endif
 
    // g_settings
    CONFIG_GET_STRING(cheat_database, "cheat_database");
@@ -359,7 +315,7 @@ int main(int argc, char *argv[])
    char full_path[1024];
    snprintf(full_path, sizeof(full_path), "game:\\CORE.xex");
 
-   bool load_libretro_path = rarch_manage_libretro_core(full_path, "game:\\", ".xex");
+   bool load_libretro_path = rarch_manage_libretro_install(full_path, "game:\\", ".xex");
 
    set_default_settings();
    init_settings(load_libretro_path);

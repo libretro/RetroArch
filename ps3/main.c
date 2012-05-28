@@ -163,37 +163,10 @@ static void init_settings(bool load_libretro_path)
 
       // g_settings
 
+#ifdef HAVE_LIBRETRO_MANAGEMENT
       if(load_libretro_path)
-      {
-         CONFIG_GET_STRING(libretro, "libretro_path");
-
-	 if(!strcmp(g_settings.libretro, ""))
-	 {
-            //We need to set libretro to the first entry in the cores
-	    //directory so that it will be saved to the config file
-            char ** dir_list = dir_list_new(LIBRETRO_DIR_PATH, ".SELF");
-
-	    if (!dir_list)
-	    {
-               RARCH_ERR("Couldn't read %s directory.\n", EMULATOR_CORE_DIR);
-	       return;
-	    }
-
-	    const char * first_self = dir_list[0];
-
-	    if(first_self)
-	    {
-               RARCH_LOG("Set first entry in libretro %s dir: [%s] to libretro path.\n", EMULATOR_CORE_DIR, first_self);
-	       strlcpy(g_settings.libretro, first_self, sizeof(g_settings.libretro));
-	    }
-	    else
-	    {
-               RARCH_ERR("Failed to set first entry in libretro %s dir to libretro path.\n", EMULATOR_CORE_DIR);
-	    }
-
-	    dir_list_free(dir_list);
-	 }
-      }
+         rarch_manage_libretro_set_first_file(SYS_CONFIG_FILE, LIBRETRO_DIR_PATH, ".SELF");
+#endif
 
       CONFIG_GET_STRING(cheat_database, "cheat_database");
       CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
@@ -407,7 +380,7 @@ int main(int argc, char *argv[])
    char full_path[1024], tmp_path[1024];
    snprintf(full_path, sizeof(full_path), "%s/%s/CORE.SELF", usrDirPath, EMULATOR_CORE_DIR);
    snprintf(tmp_path, sizeof(tmp_path), "%s/%s/", usrDirPath, EMULATOR_CORE_DIR);
-   bool load_libretro_path = rarch_manage_libretro_core(full_path, tmp_path, ".SELF");
+   bool load_libretro_path = rarch_manage_libretro_install(full_path, tmp_path, ".SELF");
 
    set_default_settings();
    init_settings(load_libretro_path);
