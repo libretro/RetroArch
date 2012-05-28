@@ -689,8 +689,11 @@ static void xdk360_set_nonblock_state(void *data, bool state)
 {
    xdk360_video_t *d3d9 = (xdk360_video_t*)data;
 
-   RARCH_LOG("D3D Vsync => %s\n", state ? "off" : "on");
-   gfx_ctx_set_swap_interval(state ? 0 : 1, TRUE);
+   if(d3d9->vsync)
+   {
+      RARCH_LOG("D3D Vsync => %s\n", state ? "off" : "on");
+      gfx_ctx_set_swap_interval(state ? 0 : 1, TRUE);
+   }
 }
 
 static bool xdk360_alive(void *data)
