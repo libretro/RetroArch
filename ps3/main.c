@@ -343,7 +343,7 @@ static void get_environment_settings(int argc, char *argv[])
    char dirName[CELL_GAME_DIRNAME_SIZE];
    CellSysCacheParam param;
    memset(&param, 0x00, sizeof(CellSysCacheParam));
-   strncpy(param.cacheId,CACHE_ID, sizeof(CellSysCacheParam));
+   strlcpy(param.cacheId,CACHE_ID, sizeof(CellSysCacheParam));
 
    ret = cellSysCacheMount(&param);
    if(ret != CELL_SYSCACHE_RET_OK_CLEARED)
@@ -354,12 +354,12 @@ static void get_environment_settings(int argc, char *argv[])
    if(argc > 1)
    {
       /* launched from external launcher */
-      strncpy(MULTIMAN_EXECUTABLE, argv[2], sizeof(MULTIMAN_EXECUTABLE));
+      strlcpy(MULTIMAN_EXECUTABLE, argv[2], sizeof(MULTIMAN_EXECUTABLE));
    }
    else
    {
       /* not launched from external launcher, set default path */
-      strncpy(MULTIMAN_EXECUTABLE, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
+      strlcpy(MULTIMAN_EXECUTABLE, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
          sizeof(MULTIMAN_EXECUTABLE));
    }
 
@@ -516,7 +516,7 @@ int main(int argc, char *argv[])
 	 break;
       case EXTERN_LAUNCHER_MULTIMAN:
 	 RARCH_LOG("Started from multiMAN, will auto-start game.\n");
-	 strncpy(g_console.rom_path, argv[1], sizeof(g_console.rom_path));
+	 strlcpy(g_console.rom_path, argv[1], sizeof(g_console.rom_path));
 	 g_console.initialize_rarch_enable = 1;
 	 g_console.mode_switch = MODE_EMULATION;
 	 rarch_startup(SYS_CONFIG_FILE);

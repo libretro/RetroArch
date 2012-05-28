@@ -40,7 +40,7 @@ static void start_ssnes(const char *path)
 {
    char arg0[] = "ssnes";
    char arg1[256];
-   strncpy(arg1, path, sizeof(arg1));
+   strlcpy(arg1, path, sizeof(arg1));
    char *argv[3] = { arg0, arg1, NULL };
    rarch_main(sizeof(argv) / sizeof(argv[0]) - 1, argv);
 }

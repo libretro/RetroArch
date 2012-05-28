@@ -815,43 +815,43 @@ static void select_file(uint32_t menu_id)
    switch(menu_id)
    {
       case SHADER_CHOICE:
-         strncpy(dir_path, SHADERS_DIR_PATH, sizeof(dir_path));
-	 strncpy(extensions, "cg|CG", sizeof(extensions));
-	 strncpy(title, "SHADER SELECTION", sizeof(title));
-	 strncpy(object, "Shader", sizeof(object));
-	 strncpy(comment, "INFO - Select a shader from the menu by pressing the X button.", sizeof(comment));
+         strlcpy(dir_path, SHADERS_DIR_PATH, sizeof(dir_path));
+	 strlcpy(extensions, "cg|CG", sizeof(extensions));
+	 strlcpy(title, "SHADER SELECTION", sizeof(title));
+	 strlcpy(object, "Shader", sizeof(object));
+	 strlcpy(comment, "INFO - Select a shader from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case PRESET_CHOICE:
-	 strncpy(dir_path, PRESETS_DIR_PATH, sizeof(dir_path));
-	 strncpy(extensions, "cgp|CGP", sizeof(extensions));
-	 strncpy(title, "SHADER PRESETS SELECTION", sizeof(title));
-	 strncpy(object, "Shader", sizeof(object));
-	 strncpy(object, "Shader preset", sizeof(object));
-	 strncpy(comment, "INFO - Select a shader preset from the menu by pressing the X button.", sizeof(comment));
+	 strlcpy(dir_path, PRESETS_DIR_PATH, sizeof(dir_path));
+	 strlcpy(extensions, "cgp|CGP", sizeof(extensions));
+	 strlcpy(title, "SHADER PRESETS SELECTION", sizeof(title));
+	 strlcpy(object, "Shader", sizeof(object));
+	 strlcpy(object, "Shader preset", sizeof(object));
+	 strlcpy(comment, "INFO - Select a shader preset from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case INPUT_PRESET_CHOICE:
-	 strncpy(dir_path, INPUT_PRESETS_DIR_PATH, sizeof(dir_path));
-	 strncpy(extensions, "cfg|CFG", sizeof(extensions));
-	 strncpy(title, "INPUT PRESETS SELECTION", sizeof(title));
-	 strncpy(object, "Input", sizeof(object));
-	 strncpy(object, "Input preset", sizeof(object));
-	 strncpy(comment, "INFO - Select an input preset from the menu by pressing the X button.", sizeof(comment));
+	 strlcpy(dir_path, INPUT_PRESETS_DIR_PATH, sizeof(dir_path));
+	 strlcpy(extensions, "cfg|CFG", sizeof(extensions));
+	 strlcpy(title, "INPUT PRESETS SELECTION", sizeof(title));
+	 strlcpy(object, "Input", sizeof(object));
+	 strlcpy(object, "Input preset", sizeof(object));
+	 strlcpy(comment, "INFO - Select an input preset from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case BORDER_CHOICE:
-	 strncpy(dir_path, BORDERS_DIR_PATH, sizeof(dir_path));
-	 strncpy(extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(extensions));
-	 strncpy(title, "BORDER SELECTION", sizeof(title));
-	 strncpy(object, "Border", sizeof(object));
-	 strncpy(object, "Border image file", sizeof(object));
-	 strncpy(comment, "INFO - Select a border image file from the menu by pressing the X button.", sizeof(comment));
+	 strlcpy(dir_path, BORDERS_DIR_PATH, sizeof(dir_path));
+	 strlcpy(extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(extensions));
+	 strlcpy(title, "BORDER SELECTION", sizeof(title));
+	 strlcpy(object, "Border", sizeof(object));
+	 strlcpy(object, "Border image file", sizeof(object));
+	 strlcpy(comment, "INFO - Select a border image file from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case LIBRETRO_CHOICE:
-	 strncpy(dir_path, LIBRETRO_DIR_PATH, sizeof(dir_path));
-	 strncpy(extensions, "self|SELF|bin|BIN", sizeof(extensions));
-	 strncpy(title, "LIBRETRO CORE SELECTION", sizeof(title));
-	 strncpy(object, "Libretro", sizeof(object));
-	 strncpy(object, "Libretro core library", sizeof(object));
-	 strncpy(comment, "INFO - Select a Libretro core from the menu by pressing the X button.", sizeof(comment));
+	 strlcpy(dir_path, LIBRETRO_DIR_PATH, sizeof(dir_path));
+	 strlcpy(extensions, "self|SELF|bin|BIN", sizeof(extensions));
+	 strlcpy(title, "LIBRETRO CORE SELECTION", sizeof(title));
+	 strlcpy(object, "Libretro", sizeof(object));
+	 strlcpy(object, "Libretro core library", sizeof(object));
+	 strlcpy(comment, "INFO - Select a Libretro core from the menu by pressing the X button.", sizeof(comment));
 	 break;
    }
 
@@ -1086,7 +1086,7 @@ static void rarch_filename_input_and_save (unsigned filename_type)
 
    if(g_console.oskutil_handle.text_can_be_fetched)
    {
-      strncpy(filename_tmp, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(filename_tmp));
+      strlcpy(filename_tmp, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(filename_tmp));
       switch(filename_type)
       {
          case CONFIG_FILE:
