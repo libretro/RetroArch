@@ -134,6 +134,7 @@ static void set_default_settings (void)
    strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
    g_settings.video.fbo_scale_x = 2.0f;
    g_settings.video.fbo_scale_y = 2.0f;
+   strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
    g_settings.video.second_pass_smooth = true;
    g_settings.video.smooth = true;
    g_settings.video.vsync = true;
@@ -190,7 +191,7 @@ static void init_settings (bool load_libretro_path)
    if(!path_file_exists(SYS_CONFIG_FILE))
    {
       FILE * f;
-      RARCH_ERR("Config file \"%s\" desn't exist. Creating...\n", "game:\\retroarch.cfg");
+      RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
       f = fopen(SYS_CONFIG_FILE, "w");
       fclose(f);
    }

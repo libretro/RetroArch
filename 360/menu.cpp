@@ -797,7 +797,12 @@ void menu_loop(void)
 
    do
    {
-      rarch_render_cached_frame();
+      if(!g_console.emulator_initialized)
+         d3d9->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
+	  else
+	  {
+         rarch_render_cached_frame();
+	  }
 
       XINPUT_STATE state;
       XInputGetState(0, &state);
