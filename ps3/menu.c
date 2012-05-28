@@ -1897,7 +1897,7 @@ static void select_setting(menu * menu_obj)
 	 if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
             menu_obj->page = menu_obj->items[menu_obj->selected].page;
 
-	 set_delay = DELAY_MEDIUM;
+	 set_delay = DELAY_SMALL;
       }
 
       /* up to previous setting */
@@ -1912,7 +1912,7 @@ static void select_setting(menu * menu_obj)
 	 if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
             menu_obj->page = menu_obj->items[menu_obj->selected].page;
 
-	 set_delay = DELAY_MEDIUM;
+	 set_delay = DELAY_SMALL;
       }
 
       producesettingentry(menu_obj, menu_obj->selected);
@@ -2081,13 +2081,13 @@ static void ingame_menu(uint32_t menu_id)
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 	    {
                rarch_state_slot_decrease();
-	       set_delay = DELAY_LONG;
+	       set_delay = DELAY_MEDIUM;
 	       blocking = 0;
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 	    {
                rarch_state_slot_increase();
-	       set_delay = DELAY_LONG;
+	       set_delay = DELAY_MEDIUM;
 	       blocking = 0;
 	    }
 
@@ -2102,13 +2102,13 @@ static void ingame_menu(uint32_t menu_id)
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 	    {
                rarch_state_slot_decrease();
-	       set_delay = DELAY_LONG;
+	       set_delay = DELAY_MEDIUM;
 	       blocking = 0;
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 	    {
                rarch_state_slot_increase();
-	       set_delay = DELAY_LONG;
+	       set_delay = DELAY_MEDIUM;
 	       blocking = 0;
 	    }
 
@@ -2121,7 +2121,7 @@ static void ingame_menu(uint32_t menu_id)
 	       {
                   g_console.aspect_ratio_index--;
 		  gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-		  set_delay = DELAY_LONG;
+		  set_delay = DELAY_MEDIUM;
 	       }
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
@@ -2130,7 +2130,7 @@ static void ingame_menu(uint32_t menu_id)
                if(g_console.aspect_ratio_index < ASPECT_RATIO_END)
 	       {
 		  gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-		  set_delay = DELAY_LONG;
+		  set_delay = DELAY_MEDIUM;
 	       }
                else
                   g_console.aspect_ratio_index = ASPECT_RATIO_END-1;
@@ -2179,7 +2179,7 @@ static void ingame_menu(uint32_t menu_id)
 	       {
                   g_console.screen_orientation--;
 		  video_gl.set_rotation(NULL, g_console.screen_orientation);
-		  set_delay = DELAY_LONG;
+		  set_delay = DELAY_MEDIUM;
 	       }
 	    }
 
@@ -2189,7 +2189,7 @@ static void ingame_menu(uint32_t menu_id)
 	       {
                   g_console.screen_orientation++;
 		  video_gl.set_rotation(NULL, g_console.screen_orientation);
-		  set_delay = DELAY_LONG;
+		  set_delay = DELAY_MEDIUM;
 	       }
 	    }
 
@@ -2210,7 +2210,7 @@ static void ingame_menu(uint32_t menu_id)
                      g_settings.video.fbo_scale_x -= 1.0f;
 		     g_settings.video.fbo_scale_y -= 1.0f;
 		     apply_scaling(FBO_REINIT);
-		     set_delay = DELAY_LONG;
+		     set_delay = DELAY_MEDIUM;
 		  }
 	       }
 	    }
@@ -2223,7 +2223,7 @@ static void ingame_menu(uint32_t menu_id)
                      g_settings.video.fbo_scale_x += 1.0f;
 		     g_settings.video.fbo_scale_y += 1.0f;
 		     apply_scaling(FBO_REINIT);
-		     set_delay = DELAY_LONG;
+		     set_delay = DELAY_MEDIUM;
 		  }
 	       }
 	    }
@@ -2426,7 +2426,7 @@ static void ingame_menu(uint32_t menu_id)
                g_console.menu_enable = false;
 	       g_console.ingame_menu_item = 0;
 	       g_console.mode_switch = MODE_MENU;
-	       set_delay = DELAY_LONG;
+	       set_delay = DELAY_MEDIUM;
 	    }
 	    strlcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.", sizeof(comment));
 	    break;
@@ -2470,7 +2470,7 @@ static void ingame_menu(uint32_t menu_id)
          if(g_console.ingame_menu_item > 0)
 	 {
             g_console.ingame_menu_item--;
-	    set_delay = DELAY_MEDIUM;
+	    set_delay = DELAY_SMALL;
 	 }
       }
 
@@ -2479,7 +2479,7 @@ static void ingame_menu(uint32_t menu_id)
          if(g_console.ingame_menu_item < (MENU_ITEM_LAST-1))
 	 {
             g_console.ingame_menu_item++;
-	    set_delay = DELAY_MEDIUM;
+	    set_delay = DELAY_SMALL;
 	 }
       }
 
