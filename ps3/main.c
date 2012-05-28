@@ -315,8 +315,6 @@ int main(int argc, char *argv[])
 
    config_set_defaults();
 
-   rarch_assert(g_extern.msg_queue = msg_queue_new(8));
-
    char full_path[1024], tmp_path[1024];
    snprintf(full_path, sizeof(full_path), "%s/%s/CORE.SELF", usrDirPath, EMULATOR_CORE_DIR);
    snprintf(tmp_path, sizeof(tmp_path), "%s/%s/", usrDirPath, EMULATOR_CORE_DIR);

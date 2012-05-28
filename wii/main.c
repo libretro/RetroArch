@@ -135,7 +135,7 @@ int main(void)
    log_fp = fopen("sd:/ssnes-log.txt", "w");
 #endif
 
-   rarch_assert(g_extern.msg_queue = msg_queue_new(8));
+   config_set_defaults();
 
    wii_video_init();
    input_wii.init();
