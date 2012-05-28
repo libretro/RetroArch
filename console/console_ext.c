@@ -753,7 +753,9 @@ void rarch_config_save(const char * conf_name)
 
 #ifdef RARCH_CONSOLE
       config_set_bool(conf, "fbo_enabled", g_console.fbo_enabled);
+#ifdef __CELLOS_LV2__
       config_set_bool(conf, "custom_bgm_enable", g_console.custom_bgm_enable);
+#endif
       config_set_bool(conf, "overscan_enable", g_console.overscan_enable);
       config_set_bool(conf, "screenshots_enable", g_console.screenshots_enable);
 #ifdef _XBOX
