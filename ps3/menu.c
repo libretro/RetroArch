@@ -2420,10 +2420,7 @@ static void ingame_menu(uint32_t menu_id)
 	    break;
 	 case MENU_ITEM_RETURN_TO_XMB:
 	    if(CTRL_CROSS(state))
-	    {
-               g_console.menu_enable = false;
-	       g_console.mode_switch = MODE_EXIT;
-	    }
+               rarch_settings_change(S_RETURN_TO_DASHBOARD);
 
 	    strlcpy(comment, "Press 'CROSS' to quit the emulator and return to the XMB.", sizeof(comment));
 	    break;
