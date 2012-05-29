@@ -200,15 +200,15 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
             for(i = 0; i < RARCH_FIRST_META_KEY; i++)
             {
-               rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
                snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+               rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
                m_controlslist.SetText(i, strw_buffer);
             }
             break;
          default:
-            rarch_convert_char_to_wchar(strw_buffer, buttons[current_index], sizeof(strw_buffer));
             rarch_input_set_keybind(controlno, KEYBIND_DEFAULT, current_index);
             snprintf(buttons[current_index], sizeof(buttons[current_index]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+            rarch_convert_char_to_wchar(strw_buffer, buttons[current_index], sizeof(strw_buffer));
             m_controlslist.SetText(current_index, strw_buffer);
             break;
       }
