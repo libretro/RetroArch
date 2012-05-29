@@ -33,13 +33,6 @@ filebrowser_t browser;
 filebrowser_t tmp_browser;
 uint32_t set_shader = 0;
 
-static void return_to_dashboard (void)
-{
-   g_console.menu_enable = false;
-   g_console.mode_switch = MODE_EXIT;
-   g_console.initialize_rarch_enable = false;
-}
-
 /* Register custom classes */
 HRESULT CRetroArch::RegisterXuiClasses (void)
 {
@@ -429,7 +422,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
            rarch_settings_change(S_RETURN_TO_GAME);
 	    break;
 	 case MENU_ITEM_RETURN_TO_DASHBOARD:
-	    return_to_dashboard();
+	    rarch_settings_change(S_RETURN_TO_DASHBOARD);
 	    break;
       }
    }
@@ -766,7 +759,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       NavigateForward(app.hRetroArchSettings);
    }
    else if ( hObjPressed == m_quit )
-      return_to_dashboard();
+      rarch_settings_change(S_RETURN_TO_DASHBOARD);
 
    bHandled = TRUE;
    return 0;
