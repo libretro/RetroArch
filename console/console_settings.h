@@ -82,7 +82,8 @@ enum
    S_LBL_ROTATION,
    S_LBL_SHADER,
    S_LBL_SHADER_2,
-   S_LBL_SCALE_FACTOR
+   S_LBL_SCALE_FACTOR,
+   S_LBL_STATE_SLOT,
 };
 
 void rarch_settings_change(unsigned setting);

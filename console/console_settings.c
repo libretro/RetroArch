@@ -223,6 +223,9 @@ void rarch_settings_create_menu_item_label(wchar_t * strwbuf, unsigned setting, 
 	  case S_LBL_ROTATION:
          snprintf(str, sizeof(str), "Rotation: %s", rotation_lut[g_console.screen_orientation]);
          break;
+	  case S_LBL_STATE_SLOT:
+		  snprintf(str, sizeof(str), "Load State #%d", g_extern.state_slot);
+         break;
    }
 
    rarch_convert_char_to_wchar(strwbuf, str, size);
