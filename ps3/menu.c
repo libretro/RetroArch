@@ -2359,7 +2359,7 @@ static void ingame_menu(uint32_t menu_id)
 	    }
 	    strlcpy(comment, "Press 'CROSS' to quit the emulator and return to multiMAN.", sizeof(comment));
 	    break;
-	 case MENU_ITEM_RETURN_TO_XMB:
+	 case MENU_ITEM_RETURN_TO_DASHBOARD:
 	    if(CTRL_CROSS(state))
                rarch_settings_change(S_RETURN_TO_DASHBOARD);
 
@@ -2433,7 +2433,7 @@ static void ingame_menu(uint32_t menu_id)
 
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");
 
-   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_XMB), "Return to XMB");
+   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_DASHBOARD)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_DASHBOARD), "Return to XMB");
    cellDbgFontDraw();
 
    struct retro_system_info info;

@@ -31,7 +31,6 @@
 #include "../console/console_ext.h"
 #include "../general.h"
 #include "../message.h"
-#include "shared.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

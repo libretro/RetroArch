@@ -23,7 +23,6 @@
 #include "xdk360_video.h"
 #include "menu.h"
 #include "../message.h"
-#include "shared.h"
 
 #include "../general.h"
 

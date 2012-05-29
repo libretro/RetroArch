@@ -115,6 +115,30 @@ void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t 
   RetroArch
   ============================================================ */
 
+enum {
+   MENU_ITEM_LOAD_STATE = 0,
+   MENU_ITEM_SAVE_STATE,
+   MENU_ITEM_KEEP_ASPECT_RATIO,
+   MENU_ITEM_OVERSCAN_AMOUNT,
+   MENU_ITEM_ORIENTATION,
+#ifdef __CELLOS_LV2__
+   MENU_ITEM_SCALE_FACTOR,
+#endif
+   MENU_ITEM_RESIZE_MODE,
+   MENU_ITEM_FRAME_ADVANCE,
+   MENU_ITEM_SCREENSHOT_MODE,
+   MENU_ITEM_RESET,
+   MENU_ITEM_RETURN_TO_GAME,
+#ifdef __CELLOS_LV2__
+   MENU_ITEM_RETURN_TO_MENU,
+   MENU_ITEM_CHANGE_LIBRETRO,
+   MENU_ITEM_RETURN_TO_MULTIMAN,
+#endif
+   MENU_ITEM_RETURN_TO_DASHBOARD
+};
+
+#define MENU_ITEM_LAST MENU_ITEM_RETURN_TO_DASHBOARD+1
+
 #ifdef HAVE_RARCH_MAIN_WRAP
 
 struct rarch_main_wrap

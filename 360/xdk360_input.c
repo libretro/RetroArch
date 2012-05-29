@@ -22,7 +22,6 @@
 #include "../libretro.h"
 #include "../console/console_ext.h"
 #include "xdk360_input.h"
-#include "shared.h"
 #include "menu.h"
 
 static uint64_t state[4];

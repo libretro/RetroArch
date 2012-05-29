@@ -29,7 +29,6 @@
 #include "../conf/config_file_macros.h"
 #include "../file.h"
 #include "../general.h"
-#include "shared.h"
 
 #define DEVICE_MEMORY_UNIT0 1
 #define DEVICE_MEMORY_UNIT1 2
