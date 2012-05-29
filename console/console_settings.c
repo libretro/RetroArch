@@ -51,8 +51,8 @@ void rarch_settings_change(unsigned setting)
          break;
       case S_QUIT:
          g_console.menu_enable = false;
-	 g_console.ingame_menu_enable = false;
-	 g_console.mode_switch = MODE_EXIT;
+         g_console.ingame_menu_enable = false;
+         g_console.mode_switch = MODE_EXIT;
          break;
       case S_RETURN_TO_DASHBOARD:
          g_console.menu_enable = false;

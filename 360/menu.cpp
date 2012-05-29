@@ -44,7 +44,7 @@ HRESULT CRetroArch::RegisterXuiClasses (void)
    CRetroArchControls::Register();
    CRetroArchSettings::Register();
 
-   return S_OK;
+   return 0;
 }
 
 /* Unregister custom classes */
@@ -58,7 +58,7 @@ HRESULT CRetroArch::UnregisterXuiClasses (void)
    CRetroArchControls::Register();
    CRetroArchSettings::Unregister();
 
-   return S_OK;
+   return 0;
 }
 
 static void filebrowser_fetch_directory_entries(const char *path, filebrowser_t * browser, CXuiList * romlist, 
@@ -90,7 +90,7 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
 
    filebrowser_fetch_directory_entries(g_console.default_rom_startup_dir, &browser, &m_romlist, &m_rompathtitle);
 
-   return S_OK;
+   return 0;
 }
 
 HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
@@ -102,7 +102,7 @@ HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    filebrowser_new(&tmp_browser, "game:", "xex|XEX");
    filebrowser_fetch_directory_entries("game:", &tmp_browser, &m_romlist, &m_rompathtitle);
 
-   return S_OK;
+   return 0;
 }
 
 HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
@@ -114,7 +114,7 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
    filebrowser_new(&tmp_browser, "game:\\media\\shaders", "cg|CG");
    filebrowser_fetch_directory_entries("game:\\media\\shaders", &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
 
-   return S_OK;
+   return 0;
 }
 
 HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
@@ -136,7 +136,7 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
       m_controlslist.SetText(i, rarch_convert_char_to_wchar(buttons[i]));
    }
    
-   return S_OK;
+   return 0;
 }
 
 HRESULT CRetroArchControls::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
@@ -177,7 +177,7 @@ HRESULT CRetroArchControls::OnControlNavigate(XUIMessageControlNavigate *pContro
           break;
 	}
 
-	return S_OK;
+	return 0;
 }
 
 HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
@@ -210,7 +210,7 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
    }
 
    bHandled = TRUE;
-   return S_OK;
+   return 0;
 }
 
 HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
@@ -235,7 +235,7 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_SHADER_2, rarch_convert_char_to_wchar(shader2str));
    m_settingslist.SetText(SETTING_SCALE_FACTOR, rarch_convert_char_to_wchar(scalefactor));
 
-   return S_OK;
+   return 0;
 }
 
 HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
@@ -289,7 +289,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
           break;
 	}
 
-	return S_OK;
+	return 0;
 }
 
 HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
@@ -317,7 +317,7 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, aspectratio_label_w);
    free(aspectratio_label_w);
 
-   return S_OK;
+   return 0;
 }
 
 HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
@@ -360,7 +360,6 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 		}
 	    break;
 	 case MENU_ITEM_OVERSCAN_AMOUNT:
-            msg_queue_clear(g_extern.msg_queue);
             if(g_console.info_msg_enable)
             {
                if(g_console.info_msg_enable)
@@ -430,7 +429,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 
    bHandled = TRUE;
 
-   return S_OK;
+   return 0;
 }
 
 HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
@@ -461,7 +460,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    free(core_text_utf);
    free(package_version_utf);
 
-   return S_OK;
+   return 0;
 }
 
 HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
@@ -519,7 +518,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
 
    bHandled = TRUE;
 
-   return S_OK;
+   return 0;
 }
 
 HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
@@ -563,7 +562,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
 
    bHandled = TRUE;
 
-   return S_OK;
+   return 0;
 }
 
 HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
@@ -577,9 +576,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       {
 	     const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
 	     snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
-	     g_console.return_to_launcher = true;
-	     g_console.menu_enable = false;
-	     g_console.mode_switch = MODE_EXIT;
+	     rarch_settings_change(S_RETURN_TO_LAUNCHER);
       }
       else if(tmp_browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
       {
@@ -590,7 +587,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    }
 
    bHandled = TRUE;
-   return S_OK;
+   return 0;
 }
 
 HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
@@ -688,7 +685,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
    }
 
    bHandled = TRUE;
-   return S_OK;
+   return 0;
 }
 
 HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
