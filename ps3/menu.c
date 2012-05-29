@@ -1559,10 +1559,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 
 			   set_delay = DELAY_MEDIUM;
 			   if(g_console.info_msg_enable)
-			   {
-                              msg_queue_clear(g_extern.msg_queue);
-			      msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
-			   }
+                              rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
 			}
 			if(CTRL_START(state))
                            g_settings.rewind_enable = false;
