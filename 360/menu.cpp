@@ -130,8 +130,8 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
-      rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer)); 
       snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+      rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer)); 
       m_controlslist.SetText(i, strw_buffer);
    }
    
@@ -149,8 +149,8 @@ HRESULT CRetroArchControls::OnControlNavigate(XUIMessageControlNavigate *pContro
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
-      rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
       snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+      rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
       m_controlslist.SetText(i, strw_buffer);
    }
 
