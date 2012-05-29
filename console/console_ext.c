@@ -685,12 +685,12 @@ void rarch_console_rsound_stop(void)
   ============================================================ */
 
 #ifdef _XBOX
-wchar_t * rarch_convert_char_to_wchar(const char * str)
+void rarch_convert_char_to_wchar(wchar_t *buf, const char * str, size_t size)
 {
    unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, str, -1, NULL, 0);
-   wchar_t * w_str = (wchar_t*)malloc(sizeof(wchar_t) * dwNum);
-   MultiByteToWideChar(CP_ACP, 0, str, -1, w_str, dwNum);
-   return w_str;
+   size /= sizeof(wchar_t);
+   rarch_assert(size >= dwNum);
+   MultiByteToWideChar(CP_ACP, 0, str, -1, buf, dwNum);
 }
 #endif
 

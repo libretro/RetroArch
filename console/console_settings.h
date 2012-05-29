@@ -75,8 +75,17 @@ enum
    S_MSG_SHADER_LOADING_SUCCEEDED
 };
 
+enum
+{
+   S_LBL_ASPECT_RATIO = 0,
+};
+
 void rarch_settings_change(unsigned setting);
 void rarch_settings_default(unsigned setting);
 void rarch_settings_msg(unsigned setting, unsigned delay);
+
+#ifdef _XBOX
+void rarch_settings_create_menu_item_label(wchar_t * strwbuf, unsigned setting, size_t size);
+#endif
 
 #endif

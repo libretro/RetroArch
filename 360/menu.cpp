@@ -32,6 +32,7 @@ HXUIOBJ hCur;
 filebrowser_t browser;
 filebrowser_t tmp_browser;
 uint32_t set_shader = 0;
+wchar_t strw_buffer[PATH_MAX];
 
 /* Register custom classes */
 HRESULT CRetroArch::RegisterXuiClasses (void)
@@ -66,17 +67,15 @@ static void filebrowser_fetch_directory_entries(const char *path, filebrowser_t 
 {
    filebrowser_push_directory(browser, path, true);
 
-   wchar_t * rompath_name = rarch_convert_char_to_wchar(path);
-   rompath_title->SetText(rompath_name);
-   free(rompath_name);
+   rarch_convert_char_to_wchar(strw_buffer, path, sizeof(strw_buffer));
+   rompath_title->SetText(strw_buffer);
 
    romlist->DeleteItems(0, romlist->GetItemCount());
    romlist->InsertItems(0, browser->file_count);
    for(unsigned i = 0; i < browser->file_count; i++)
    {
-      wchar_t * entry_name = rarch_convert_char_to_wchar(browser->cur[i].d_name);
-      romlist->SetText(i, entry_name);
-      free(entry_name);
+      rarch_convert_char_to_wchar(strw_buffer, browser->cur[i].d_name, sizeof(strw_buffer));
+      romlist->SetText(i, strw_buffer);
    }
 }
 
@@ -132,8 +131,9 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
+      rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer)); 
       snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
-      m_controlslist.SetText(i, rarch_convert_char_to_wchar(buttons[i]));
+      m_controlslist.SetText(i, strw_buffer);
    }
    
    return 0;
@@ -150,31 +150,34 @@ HRESULT CRetroArchControls::OnControlNavigate(XUIMessageControlNavigate *pContro
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
+      rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
       snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
-      m_controlslist.SetText(i, rarch_convert_char_to_wchar(buttons[i]));
+      m_controlslist.SetText(i, strw_buffer);
    }
 
    switch(pControlNavigateData->nControlNavigate)
    {
       case XUI_CONTROL_NAVIGATE_LEFT:
          if(current_index > 0 && current_index != SETTING_CONTROLS_DEFAULT_ALL)
-	 {
+         {
             rarch_input_set_keybind(controlno, KEYBIND_DECREMENT, current_index);
-	    snprintf(button, sizeof(button), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
-	    m_controlslist.SetText(current_index, rarch_convert_char_to_wchar(button));
-	 }
-	 break;
+            rarch_convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
+            snprintf(button, sizeof(button), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+            m_controlslist.SetText(current_index, strw_buffer);
+         }
+         break;
       case XUI_CONTROL_NAVIGATE_RIGHT:
-	 if(current_index < RARCH_FIRST_META_KEY && current_index != SETTING_CONTROLS_DEFAULT_ALL)
-	 {
+         if(current_index < RARCH_FIRST_META_KEY && current_index != SETTING_CONTROLS_DEFAULT_ALL)
+         {
             rarch_input_set_keybind(controlno, KEYBIND_INCREMENT, current_index);
-	    snprintf(button, sizeof(button), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
-	    m_controlslist.SetText(current_index, rarch_convert_char_to_wchar(button));
-	 }
-	 break;
+            rarch_convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
+            snprintf(button, sizeof(button), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+            m_controlslist.SetText(current_index, strw_buffer);
+         }
+         break;
       case XUI_CONTROL_NAVIGATE_UP:
       case XUI_CONTROL_NAVIGATE_DOWN:
-	 break;
+         break;
    }
 
 	return 0;
@@ -197,14 +200,16 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
             for(i = 0; i < RARCH_FIRST_META_KEY; i++)
             {
+               rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
                snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
-               m_controlslist.SetText(i, rarch_convert_char_to_wchar(buttons[i]));
+               m_controlslist.SetText(i, strw_buffer);
             }
             break;
          default:
+            rarch_convert_char_to_wchar(strw_buffer, buttons[current_index], sizeof(strw_buffer));
             rarch_input_set_keybind(controlno, KEYBIND_DEFAULT, current_index);
             snprintf(buttons[current_index], sizeof(buttons[current_index]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
-            m_controlslist.SetText(current_index, rarch_convert_char_to_wchar(buttons[current_index]));
+            m_controlslist.SetText(current_index, strw_buffer);
             break;
       }
    }
@@ -223,6 +228,7 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    snprintf(shader2str, sizeof(shader2str), "Shader #2: %s", g_settings.video.second_pass_shader);
    snprintf(scalefactor, sizeof(scalefactor), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 
+
    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_console.info_msg_enable ? L"Info messages: ON" : L"Info messages: OFF");
    m_settingslist.SetText(SETTING_EMU_MENUS, g_console.menus_hd_enable ? L"Menus: HD" : L"Menus: SD");
@@ -230,10 +236,13 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-   m_settingslist.SetText(SETTING_SHADER, rarch_convert_char_to_wchar(shader1str));
+   rarch_convert_char_to_wchar(strw_buffer, shader1str, sizeof(strw_buffer));
+   m_settingslist.SetText(SETTING_SHADER, strw_buffer);
    m_settingslist.SetText(SETTING_COLOR_FORMAT, g_console.color_format ? L"Color format: 32bit ARGB" : L"Color format: 16bit RGBA");
-   m_settingslist.SetText(SETTING_SHADER_2, rarch_convert_char_to_wchar(shader2str));
-   m_settingslist.SetText(SETTING_SCALE_FACTOR, rarch_convert_char_to_wchar(scalefactor));
+   rarch_convert_char_to_wchar(strw_buffer, shader2str, sizeof(strw_buffer));
+   m_settingslist.SetText(SETTING_SHADER_2, strw_buffer);
+   rarch_convert_char_to_wchar(strw_buffer, scalefactor, sizeof(strw_buffer));
+   m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
 
    return 0;
 }
@@ -250,43 +259,45 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
    {
       case XUI_CONTROL_NAVIGATE_LEFT:
          switch(current_index)
-	 {
+         {
             case SETTING_SCALE_FACTOR:
                if(vid->fbo_enabled)
-	       {
+               {
                   if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
-		  {
+                  {
                      rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
-		     //xdk360_gfx_init_fbo(vid);
-		     snprintf(scalefactor, sizeof(scalefactor), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
-		     m_settingslist.SetText(SETTING_SCALE_FACTOR, rarch_convert_char_to_wchar(scalefactor));
-		  }
-	       }
-	    default:
-	       break;
-	 }
-	 break;
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-	 switch(current_index)
-	 {
+                     //xdk360_gfx_init_fbo(vid);
+                     snprintf(scalefactor, sizeof(scalefactor), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
+                     rarch_convert_char_to_wchar(strw_buffer, scalefactor, sizeof(strw_buffer));
+                     m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
+                  }
+               }
+            default:
+               break;
+         }
+         break;
+    case XUI_CONTROL_NAVIGATE_RIGHT:
+        switch(current_index)
+        {
             case SETTING_SCALE_FACTOR:
-               if(vid->fbo_enabled)
-	       {
-                  if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
-		  {
-                     rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
-		     //xdk360_gfx_init_fbo(vid);
-		     snprintf(scalefactor, sizeof(scalefactor), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
-		     m_settingslist.SetText(SETTING_SCALE_FACTOR, rarch_convert_char_to_wchar(scalefactor));
-		  }
-	       }
-	    default:
-		    break;
-	 }
-	 break;
-      case XUI_CONTROL_NAVIGATE_UP:
-      case XUI_CONTROL_NAVIGATE_DOWN:
-	 break;
+                if(vid->fbo_enabled)
+                {
+                   if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
+                   {
+                       rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
+                       //xdk360_gfx_init_fbo(vid);
+                       snprintf(scalefactor, sizeof(scalefactor), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
+                       rarch_convert_char_to_wchar(strw_buffer, scalefactor, sizeof(strw_buffer));
+                       m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
+                   }
+                }
+            default:
+                break;
+        }
+        break;
+    case XUI_CONTROL_NAVIGATE_UP:
+    case XUI_CONTROL_NAVIGATE_DOWN:
+        break;
    }
 
     bHandled = TRUE;
@@ -327,9 +338,8 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    char aspectratio_label[32];
    snprintf(aspectratio_label, sizeof(aspectratio_label), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
-   wchar_t * aspectratio_label_w = rarch_convert_char_to_wchar(aspectratio_label);
-   m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, aspectratio_label_w);
-   free(aspectratio_label_w);
+   rarch_convert_char_to_wchar(strw_buffer, aspectratio_label, sizeof(strw_buffer));
+   m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
 
    return 0;
 }
@@ -374,11 +384,8 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
    if(aspectratio_changed)
    {
       gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
-      char aspectratio_label[32];
-      snprintf(aspectratio_label, sizeof(aspectratio_label), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
-      wchar_t * aspectratio_label_w = rarch_convert_char_to_wchar(aspectratio_label);
-      m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, aspectratio_label_w);
-      free(aspectratio_label_w);
+	  rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
+      m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
    }
 
    bHandled = TRUE;
@@ -428,9 +435,8 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	       gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
 	       char aspectratio_label[32];
 	       snprintf(aspectratio_label, sizeof(aspectratio_label), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
-	       wchar_t * aspectratio_label_w = rarch_convert_char_to_wchar(aspectratio_label);
-	       m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, aspectratio_label_w);
-	       free(aspectratio_label_w);
+	       rarch_convert_char_to_wchar(strw_buffer, aspectratio_label, sizeof(strw_buffer));
+	       m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
 	    }
 	    break;
 	 case MENU_ITEM_OVERSCAN_AMOUNT:
@@ -515,12 +521,10 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    char package_version[32];
    snprintf(package_version, sizeof(core_text), "RetroArch %s", PACKAGE_VERSION);
 
-   wchar_t * core_text_utf = rarch_convert_char_to_wchar(core_text);
-   wchar_t * package_version_utf = rarch_convert_char_to_wchar(package_version);
-   m_core.SetText(core_text_utf);
-   m_title.SetText(package_version_utf);
-   free(core_text_utf);
-   free(package_version_utf);
+   rarch_convert_char_to_wchar(strw_buffer, core_text, sizeof(strw_buffer));
+   m_core.SetText(strw_buffer);
+   rarch_convert_char_to_wchar(strw_buffer, package_version, sizeof(strw_buffer));
+   m_title.SetText(strw_buffer);
 
    return 0;
 }

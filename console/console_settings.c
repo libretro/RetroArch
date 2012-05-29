@@ -197,3 +197,19 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
 
    msg_queue_push(g_extern.msg_queue, str, 1, delay);
 }
+
+#ifdef _XBOX
+void rarch_settings_create_menu_item_label(wchar_t * strwbuf, unsigned setting, size_t size)
+{
+   char str[PATH_MAX];
+
+   switch (setting)
+   {
+      case S_LBL_ASPECT_RATIO:
+         snprintf(str, sizeof(str), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
+         break;
+   }
+
+   rarch_convert_char_to_wchar(strwbuf, str, size);
+}
+#endif
