@@ -220,14 +220,8 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
 HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
-   char shader1str[128], shader2str[128], scalefactor[128];
    GetChildById(L"XuiSettingsList", &m_settingslist);
    GetChildById(L"XuiBackButton", &m_back);
-
-   snprintf(shader1str, sizeof(shader1str), "Shader #1: %s", g_settings.video.cg_shader_path);
-   snprintf(shader2str, sizeof(shader2str), "Shader #2: %s", g_settings.video.second_pass_shader);
-   snprintf(scalefactor, sizeof(scalefactor), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
-
 
    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_console.info_msg_enable ? L"Info messages: ON" : L"Info messages: OFF");
@@ -236,12 +230,12 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-   rarch_convert_char_to_wchar(strw_buffer, shader1str, sizeof(strw_buffer));
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SHADER, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SHADER, strw_buffer);
    m_settingslist.SetText(SETTING_COLOR_FORMAT, g_console.color_format ? L"Color format: 32bit ARGB" : L"Color format: 16bit RGBA");
-   rarch_convert_char_to_wchar(strw_buffer, shader2str, sizeof(strw_buffer));
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SHADER_2, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SHADER_2, strw_buffer);
-   rarch_convert_char_to_wchar(strw_buffer, scalefactor, sizeof(strw_buffer));
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
 
    return 0;
@@ -249,7 +243,6 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
 HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
 {
-   char scalefactor[128];
    int current_index;
    xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
    
@@ -267,8 +260,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                   {
                      rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
                      //xdk360_gfx_init_fbo(vid);
-                     snprintf(scalefactor, sizeof(scalefactor), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
-                     rarch_convert_char_to_wchar(strw_buffer, scalefactor, sizeof(strw_buffer));
+                     rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
                      m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
                   }
                }
@@ -286,8 +278,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                    {
                        rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
                        //xdk360_gfx_init_fbo(vid);
-                       snprintf(scalefactor, sizeof(scalefactor), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
-                       rarch_convert_char_to_wchar(strw_buffer, scalefactor, sizeof(strw_buffer));
+                       rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
                        m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
                    }
                 }

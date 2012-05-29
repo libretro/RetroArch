@@ -78,6 +78,9 @@ enum
 enum
 {
    S_LBL_ASPECT_RATIO = 0,
+   S_LBL_SHADER,
+   S_LBL_SHADER_2,
+   S_LBL_SCALE_FACTOR
 };
 
 void rarch_settings_change(unsigned setting);
