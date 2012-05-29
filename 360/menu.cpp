@@ -542,8 +542,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
          {
             memset(g_console.rom_path, 0, sizeof(g_console.rom_path));
             snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
-            rarch_settings_change(S_RETURN_TO_GAME);
-            g_console.initialize_rarch_enable = 1;
+            rarch_settings_change(S_START_RARCH);
          }
       }
       else if(browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
