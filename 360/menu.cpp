@@ -33,13 +33,6 @@ filebrowser_t browser;
 filebrowser_t tmp_browser;
 uint32_t set_shader = 0;
 
-static void return_to_game (void)
-{
-   g_console.frame_advance_enable = false;
-   g_console.menu_enable = false;
-   g_console.mode_switch = MODE_EMULATION;
-}
-
 static void return_to_dashboard (void)
 {
    g_console.menu_enable = false;
@@ -349,16 +342,16 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
       {
          case MENU_ITEM_LOAD_STATE:
             if (g_console.emulator_initialized)
-	    {
+            {
                rarch_load_state();
-	       return_to_game();
-	    }
-	    break;
+               rarch_settings_change(S_RETURN_TO_GAME);
+            }
+            break;
 	 case MENU_ITEM_SAVE_STATE:
 	    if (g_console.emulator_initialized)
 	    {
-               rarch_save_state();
-	       return_to_game();
+           rarch_save_state();
+           rarch_settings_change(S_RETURN_TO_GAME);
 	    }
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
@@ -386,22 +379,22 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	 case MENU_ITEM_ORIENTATION:
 	    switch(g_console.screen_orientation)
 	    {
-               case ORIENTATION_NORMAL:
-                  g_console.screen_orientation = ORIENTATION_VERTICAL;
-                  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
-		  break;
-	       case ORIENTATION_VERTICAL:
-		  g_console.screen_orientation = ORIENTATION_FLIPPED;
-		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
-		  break;
-	       case ORIENTATION_FLIPPED:
-		  g_console.screen_orientation = ORIENTATION_FLIPPED_ROTATED;
-		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
-		  break;
-	       case ORIENTATION_FLIPPED_ROTATED:
-		  g_console.screen_orientation = ORIENTATION_NORMAL;
-		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Normal");
-		  break;
+           case ORIENTATION_NORMAL:
+              g_console.screen_orientation = ORIENTATION_VERTICAL;
+              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
+              break;
+		   case ORIENTATION_VERTICAL:
+              g_console.screen_orientation = ORIENTATION_FLIPPED;
+              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
+              break;
+           case ORIENTATION_FLIPPED:
+              g_console.screen_orientation = ORIENTATION_FLIPPED_ROTATED;
+              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
+              break;
+           case ORIENTATION_FLIPPED_ROTATED:
+              g_console.screen_orientation = ORIENTATION_NORMAL;
+              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Normal");
+              break;
 	    }
 	    video_xdk360.set_rotation(driver.video_data, g_console.screen_orientation);
 	    break;
@@ -415,29 +408,25 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
 	    if (g_console.emulator_initialized)
-	    {
-               g_console.frame_advance_enable = true;
-	       g_console.menu_enable = false;
-	       g_console.mode_switch = MODE_EMULATION;
-	    }
+           rarch_settings_change(S_FRAME_ADVANCE);
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
-            if (g_console.info_msg_enable)
+        if (g_console.info_msg_enable)
 	    {
-               msg_queue_clear(g_extern.msg_queue);
-	       msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
-            }
+           msg_queue_clear(g_extern.msg_queue);
+           msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
+        }
 	    break;
 	 case MENU_ITEM_RESET:
-	    if (g_console.emulator_initialized)
+        if (g_console.emulator_initialized)
 	    {
-               return_to_game();
-	       rarch_game_reset();
+           rarch_settings_change(S_RETURN_TO_GAME);
+           rarch_game_reset();
 	    }
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
 	    if (g_console.emulator_initialized)
-               return_to_game();
+           rarch_settings_change(S_RETURN_TO_GAME);
 	    break;
 	 case MENU_ITEM_RETURN_TO_DASHBOARD:
 	    return_to_dashboard();
@@ -506,7 +495,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
          {
             memset(g_console.rom_path, 0, sizeof(g_console.rom_path));
             snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
-            return_to_game();
+            rarch_settings_change(S_RETURN_TO_GAME);
             g_console.initialize_rarch_enable = 1;
          }
       }
