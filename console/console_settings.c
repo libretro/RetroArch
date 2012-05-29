@@ -49,12 +49,12 @@ void rarch_settings_change(unsigned setting)
          if(g_console.overscan_amount == 0.0f)
             g_console.overscan_enable = 0;
          break;
-	  case S_RETURN_TO_DASHBOARD:
+      case S_RETURN_TO_DASHBOARD:
          g_console.menu_enable = false;
          g_console.initialize_rarch_enable = false;
          g_console.mode_switch = MODE_EXIT;
          break;
-	  case S_RETURN_TO_GAME:
+      case S_RETURN_TO_GAME:
          g_console.frame_advance_enable = false;
          //g_console.ingame_menu_item = 0;
          g_console.menu_enable = false;

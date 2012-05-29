@@ -256,8 +256,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 				 {
                     if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
 					{
-					   g_settings.video.fbo_scale_x -= 1.0f;
-					   g_settings.video.fbo_scale_y -= 1.0f;
+                       rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
 					   //xdk360_gfx_init_fbo(vid);
 					   snprintf(scalefactor, sizeof(scalefactor), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
                        m_settingslist.SetText(SETTING_SCALE_FACTOR, rarch_convert_char_to_wchar(scalefactor));
@@ -275,8 +274,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 				 {
                     if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
 					{
-					   g_settings.video.fbo_scale_x += 1.0f;
-					   g_settings.video.fbo_scale_y += 1.0f;
+                       rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
 					   //xdk360_gfx_init_fbo(vid);
                        snprintf(scalefactor, sizeof(scalefactor), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
                        m_settingslist.SetText(SETTING_SCALE_FACTOR, rarch_convert_char_to_wchar(scalefactor));
@@ -365,8 +363,11 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             msg_queue_clear(g_extern.msg_queue);
             if(g_console.info_msg_enable)
             {
-                msg_queue_clear(g_extern.msg_queue);
-	        msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
+               if(g_console.info_msg_enable)
+			   {
+                  msg_queue_clear(g_extern.msg_queue);
+                  msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
+			   }
             }
 	    break;
 	 case MENU_ITEM_ORIENTATION:
@@ -393,11 +394,11 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
 	    g_console.input_loop = INPUT_LOOP_RESIZE_MODE;
-            if (g_console.info_msg_enable)
-            {
-	       msg_queue_clear(g_extern.msg_queue);
-	       msg_queue_push(g_extern.msg_queue, "INFO - Resize the screen by moving around the two analog sticks.\nPress Y to reset to default values, and B to go back.\nTo select the resized screen mode, set Aspect Ratio to: 'Custom'.", 1, 270);
-            }
+        if (g_console.info_msg_enable)
+        {
+           msg_queue_clear(g_extern.msg_queue);
+           msg_queue_push(g_extern.msg_queue, "INFO - Resize the screen by moving around the two analog sticks.\nPress Y to reset to default values, and B to go back.\nTo select the resized screen mode, set Aspect Ratio to: 'Custom'.", 1, 270);
+        }
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
 	    if (g_console.emulator_initialized)
@@ -512,7 +513,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       if (g_console.info_msg_enable)
       {
          msg_queue_clear(g_extern.msg_queue);
-	 msg_queue_push(g_extern.msg_queue, "INFO - All the contents of the ZIP files you have selected in the filebrowser\nare extracted to this partition.", 1, 180);
+         msg_queue_push(g_extern.msg_queue, "INFO - All the contents of the ZIP files you have selected in the filebrowser\nare extracted to this partition.", 1, 180);
       }
    }
 
@@ -531,32 +532,32 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
       if(tmp_browser.cur[index].d_type != FILE_ATTRIBUTE_DIRECTORY)
       {
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_shaderlist.GetText(index));
-
-	 switch(set_shader)
-	 {
+		 
+         switch(set_shader)
+         {
             case 1:
                snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
-	       hlsl_load_shader(set_shader, g_settings.video.cg_shader_path);
-	       break;
-	    case 2:
-	       snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
-	       hlsl_load_shader(set_shader, g_settings.video.second_pass_shader);
-	       break;
-	    default:
-	       break;
-	 }
+               hlsl_load_shader(set_shader, g_settings.video.cg_shader_path);
+               break;
+            case 2:
+               snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+               hlsl_load_shader(set_shader, g_settings.video.second_pass_shader);
+               break;
+            default:
+               break;
+         }
 
          if (g_console.info_msg_enable)
          {
             msg_queue_clear(g_extern.msg_queue);
-	    msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
+            msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
          }
       }
       else if(tmp_browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
       {
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_shaderlist.GetText(index));
-	 snprintf(path, sizeof(path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
-	 filebrowser_fetch_directory_entries(path, &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
+         snprintf(path, sizeof(path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+         filebrowser_fetch_directory_entries(path, &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
       }
    }
 
@@ -604,14 +605,15 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
       switch(current_index)
       {
          case SETTING_EMU_REWIND_ENABLED:
-           g_settings.rewind_enable = !g_settings.rewind_enable;
-	    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-	    if (g_console.info_msg_enable)
+            g_settings.rewind_enable = !g_settings.rewind_enable;
+            m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
+			
+            if (g_console.info_msg_enable)
             {
                msg_queue_clear(g_extern.msg_queue);
-	       msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
+               msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
             }
-	    break;
+            break;
 	 case SETTING_EMU_SHOW_INFO_MSG:
 	    g_console.info_msg_enable = !g_console.info_msg_enable;
 	    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_console.info_msg_enable ? L"Info messages: ON" : L"Info messages: OFF");
@@ -655,7 +657,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    NavigateForward(app.hShaderBrowser);
 	    break;
 	 case SETTING_SHADER_2:
-            set_shader = 2;
+        set_shader = 2;
 	    hr = XuiSceneCreate(g_console.menus_hd_enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
 	    if (hr < 0)
 	    {
@@ -741,10 +743,11 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
          RARCH_ERR("Failed to load scene.\n");
       }
       hCur = app.hCoreBrowser;
+
       if (g_console.info_msg_enable)
       {
          msg_queue_clear(g_extern.msg_queue);
-	 msg_queue_push(g_extern.msg_queue, "INFO - Select a Libretro core from the menu by pressing the A button.", 1, 180);
+         msg_queue_push(g_extern.msg_queue, "INFO - Select a Libretro core from the menu by pressing the A button.", 1, 180);
       }
       NavigateForward(app.hCoreBrowser);
    }
