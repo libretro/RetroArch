@@ -244,7 +244,7 @@ void oskutil_unload(oskutil_params *params)
 static void ps3_free_input(void *data)
 {
    (void)data;
-   cellPadEnd();
+   //cellPadEnd();
 }
 
 static void* ps3_input_initialize(void)
