@@ -349,9 +349,9 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
 	    {
-               g_console.aspect_ratio_index++;
+           g_console.aspect_ratio_index++;
 	       if(g_console.aspect_ratio_index >= ASPECT_RATIO_END)
-                  g_console.aspect_ratio_index = 0;
+              g_console.aspect_ratio_index = 0;
 
 	       gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
 	       char aspectratio_label[32];
@@ -362,44 +362,35 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    }
 	    break;
 	 case MENU_ITEM_OVERSCAN_AMOUNT:
-            if(g_console.info_msg_enable)
-            {
-               if(g_console.info_msg_enable)
-	       {
-                  msg_queue_clear(g_extern.msg_queue);
-		  msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
-	       }
-            }
+        if(g_console.info_msg_enable)
+           rarch_settings_msg(S_MSG_NOT_IMPLEMENTED, S_DELAY_180);
 	    break;
 	 case MENU_ITEM_ORIENTATION:
 	    switch(g_console.screen_orientation)
 	    {
-               case ORIENTATION_NORMAL:
-                  g_console.screen_orientation = ORIENTATION_VERTICAL;
-		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
-		  break;
+           case ORIENTATION_NORMAL:
+              g_console.screen_orientation = ORIENTATION_VERTICAL;
+              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
+              break;
 	       case ORIENTATION_VERTICAL:
-		  g_console.screen_orientation = ORIENTATION_FLIPPED;
-		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
-		  break;
-	       case ORIENTATION_FLIPPED:
-		  g_console.screen_orientation = ORIENTATION_FLIPPED_ROTATED;
-		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
-		  break;
-	       case ORIENTATION_FLIPPED_ROTATED:
-		  g_console.screen_orientation = ORIENTATION_NORMAL;
-		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Normal");
-		  break;
+              g_console.screen_orientation = ORIENTATION_FLIPPED;
+              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
+              break;
+           case ORIENTATION_FLIPPED:
+              g_console.screen_orientation = ORIENTATION_FLIPPED_ROTATED;
+              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
+              break;
+           case ORIENTATION_FLIPPED_ROTATED:
+              g_console.screen_orientation = ORIENTATION_NORMAL;
+              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Normal");
+              break;
 	    }
 	    video_xdk360.set_rotation(driver.video_data, g_console.screen_orientation);
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
 	    g_console.input_loop = INPUT_LOOP_RESIZE_MODE;
 	    if (g_console.info_msg_enable)
-	    {
-               msg_queue_clear(g_extern.msg_queue);
-	       msg_queue_push(g_extern.msg_queue, "INFO - Resize the screen by moving around the two analog sticks.\nPress Y to reset to default values, and B to go back.\nTo select the resized screen mode, set Aspect Ratio to: 'Custom'.", 1, 270);
-	    }
+           rarch_settings_msg(S_MSG_RESIZE_SCREEN, S_DELAY_270);
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
 	    if (g_console.emulator_initialized)
@@ -407,16 +398,13 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
 	    if (g_console.info_msg_enable)
-	    {
-               msg_queue_clear(g_extern.msg_queue);
-	       msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
-	    }
+           rarch_settings_msg(S_MSG_NOT_IMPLEMENTED, S_DELAY_180);
 	    break;
 	 case MENU_ITEM_RESET:
 	    if (g_console.emulator_initialized)
 	    {
-               rarch_settings_change(S_RETURN_TO_GAME);
-	       rarch_game_reset();
+           rarch_settings_change(S_RETURN_TO_GAME);
+           rarch_game_reset();
 	    }
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
@@ -512,10 +500,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       filebrowser_new(&browser, "cache:", rarch_console_get_rom_ext());
       filebrowser_fetch_directory_entries("cache:", &browser, &m_romlist, &m_rompathtitle);
       if (g_console.info_msg_enable)
-      {
-         msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, "INFO - All the contents of the ZIP files you have selected in the filebrowser\nare extracted to this partition.", 1, 180);
-      }
+         rarch_settings_msg(S_MSG_CACHE_PARTITION, S_DELAY_180);
    }
 
    bHandled = TRUE;
@@ -549,10 +534,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
          }
 
          if (g_console.info_msg_enable)
-         {
-            msg_queue_clear(g_extern.msg_queue);
-            msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
-         }
+            rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
       }
       else if(tmp_browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
       {
@@ -608,10 +590,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 			
             if (g_console.info_msg_enable)
-            {
-               msg_queue_clear(g_extern.msg_queue);
-               msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
-            }
+	           rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
             break;
 	 case SETTING_EMU_SHOW_INFO_MSG:
 	    g_console.info_msg_enable = !g_console.info_msg_enable;
@@ -625,19 +604,13 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    g_console.gamma_correction_enable = !g_console.gamma_correction_enable;
 	    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
 	    if(g_console.info_msg_enable)
-	    {
-               msg_queue_clear(g_extern.msg_queue);
-	       msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
-	    }
+           rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
 	    break;
 	 case SETTING_COLOR_FORMAT:
 	    g_console.color_format = !g_console.color_format;
 	    m_settingslist.SetText(SETTING_COLOR_FORMAT, g_console.color_format ? L"Color format: 32bit ARGB" : L"Color format: 16bit RGBA");
-	    if (g_console.info_msg_enable)
-            {
-               msg_queue_clear(g_extern.msg_queue);
-	       msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
-            }
+	    if(g_console.info_msg_enable)
+           rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
 	    break;
 	 case SETTING_SHADER:
 	    set_shader = 1;
@@ -649,11 +622,8 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    }
 	    hCur = app.hShaderBrowser;
 
-            if (g_console.info_msg_enable)
-            {
-               msg_queue_clear(g_extern.msg_queue);
-	       msg_queue_push(g_extern.msg_queue, "INFO - Select a shader from the menu by pressing the A button.", 1, 180);
-            }
+        if (g_console.info_msg_enable)
+           rarch_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
 	    NavigateForward(app.hShaderBrowser);
 	    break;
 	 case SETTING_SHADER_2:
@@ -665,10 +635,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    }
 	    hCur = app.hShaderBrowser;
 	    if (g_console.info_msg_enable)
-            {
-               msg_queue_clear(g_extern.msg_queue);
-	       msg_queue_push(g_extern.msg_queue, "INFO - Select a shader from the menu by pressing the A button.", 1, 180);
-            }
+           rarch_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
 	    NavigateForward(app.hShaderBrowser);
 	    break;
 	 case SETTING_HW_TEXTURE_FILTER:
@@ -728,10 +695,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
       hCur = app.hControlsMenu;
       if (g_console.info_msg_enable)
-      {
-         msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, "INFO - Press LEFT/RIGHT to change the controls, and press\nSTART/A to reset a button to default values.", 1, 180);
-      }
+         rarch_settings_msg(S_MSG_CHANGE_CONTROLS, S_DELAY_180);
       NavigateForward(app.hControlsMenu);
    }
    else if ( hObjPressed == m_change_libretro_core )
@@ -745,10 +709,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hCur = app.hCoreBrowser;
 
       if (g_console.info_msg_enable)
-      {
-         msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, "INFO - Select a Libretro core from the menu by pressing the A button.", 1, 180);
-      }
+         rarch_settings_msg(S_MSG_SELECT_LIBRETRO_CORE, S_DELAY_180);
       NavigateForward(app.hCoreBrowser);
    }
    else if ( hObjPressed == m_settings )
@@ -830,10 +791,14 @@ void menu_loop(void)
 
    do
    {
-      if(!g_console.emulator_initialized)
-         d3d9->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
-      else
+      if(g_console.emulator_initialized)
+	  {
          rarch_render_cached_frame();
+	  }
+	  else
+	  {
+         d3d9->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
+	  }
 
       XINPUT_STATE state;
       XInputGetState(0, &state);
@@ -848,14 +813,14 @@ void menu_loop(void)
       {
          case INPUT_LOOP_MENU:
             app.RunFrame();			/* Update XUI */
-	    if(state.Gamepad.wButtons & XINPUT_GAMEPAD_B && hCur != app.hMainScene)
+            if(state.Gamepad.wButtons & XINPUT_GAMEPAD_B && hCur != app.hMainScene)
                XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
-	    break;
-	 case INPUT_LOOP_RESIZE_MODE:
-	    xdk360_input_loop();
-	    break;
-	 default:
-	    break;
+            break;
+         case INPUT_LOOP_RESIZE_MODE:
+            xdk360_input_loop();
+            break;
+         default:
+            break;
       }
 
       hr = app.Render();		/* Render XUI */
@@ -866,17 +831,16 @@ void menu_loop(void)
          SET_TIMER_EXPIRATION(d3d9, 30);
       }
 
-      const char *msg = msg_queue_pull(g_extern.msg_queue);
+      const char *message = msg_queue_pull(g_extern.msg_queue);
 
-      if (msg)
+      if (message)
       {
          if(IS_TIMER_EXPIRED(d3d9))
-	 {
-            xdk360_console_format(msg);
-	    SET_TIMER_EXPIRATION(d3d9, 30);
-	 }
-
-	 xdk360_console_draw();
+         {
+            xdk360_console_format(message);
+            SET_TIMER_EXPIRATION(d3d9, 30);
+         }
+         xdk360_console_draw();
       }
 
       gfx_ctx_swap_buffers();

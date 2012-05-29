@@ -201,10 +201,7 @@ int rarch_extract_zipfile(const char *zip_path)
    }
 
    if(g_console.info_msg_enable)
-   {
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, "INFO - ZIP file extracted to cache partition.", 1, 180);
-   }
+      rarch_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
 
    return 0;
 }

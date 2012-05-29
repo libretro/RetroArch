@@ -19,6 +19,12 @@
 
 enum
 {
+   S_DELAY_180 = 180,
+   S_DELAY_270 = 270,
+} delays;
+
+enum
+{
    S_FRAME_ADVANCE = 0,
    S_HW_TEXTURE_FILTER,
    S_HW_TEXTURE_FILTER_2,
@@ -53,7 +59,21 @@ enum
    S_DEF_SCALE_FACTOR,
 } default_settings;
 
+enum
+{
+   S_MSG_CACHE_PARTITION = 0,
+   S_MSG_CHANGE_CONTROLS,
+   S_MSG_EXTRACTED_ZIPFILE,
+   S_MSG_NOT_IMPLEMENTED,
+   S_MSG_RESIZE_SCREEN,
+   S_MSG_RESTART_RARCH,
+   S_MSG_SELECT_LIBRETRO_CORE,
+   S_MSG_SELECT_SHADER,
+   S_MSG_SHADER_LOADING_SUCCEEDED,
+};
+
 void rarch_settings_change (unsigned setting);
 void rarch_settings_default (unsigned setting);
+void rarch_settings_msg(unsigned setting, unsigned delay);
 
 #endif
