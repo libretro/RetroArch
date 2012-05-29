@@ -798,6 +798,7 @@ void menu_loop(void)
 	  else
 	  {
          d3d9->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
+         d3d9->frame_count++;
 	  }
 
       XINPUT_STATE state;
