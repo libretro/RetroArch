@@ -234,8 +234,11 @@ void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t 
 	  case S_LBL_ROTATION:
          snprintf(str, SIZEOF_STR, "Rotation: %s", rotation_lut[g_console.screen_orientation]);
          break;
-	  case S_LBL_STATE_SLOT:
+	  case S_LBL_LOAD_STATE_SLOT:
          snprintf(str, SIZEOF_STR, "Load State #%d", g_extern.state_slot);
+         break;
+	  case S_LBL_SAVE_STATE_SLOT:
+		 snprintf(str, SIZEOF_STR, "Save State #%d", g_extern.state_slot);
          break;
    }
 

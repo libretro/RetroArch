@@ -317,8 +317,10 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
    m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
    
-   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_STATE_SLOT, sizeof(strw_buffer));
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
    m_quickmenulist.SetText(MENU_ITEM_LOAD_STATE, strw_buffer);
+
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
    m_quickmenulist.SetText(MENU_ITEM_SAVE_STATE, strw_buffer);
 
    return 0;
@@ -340,8 +342,9 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
             case MENU_ITEM_LOAD_STATE:
 			case MENU_ITEM_SAVE_STATE:
                rarch_state_slot_decrease();
-               rarch_settings_create_menu_item_label(strw_buffer, S_LBL_STATE_SLOT, sizeof(strw_buffer));
+               rarch_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_LOAD_STATE, strw_buffer);
+               rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_SAVE_STATE, strw_buffer);
                break;
             case MENU_ITEM_KEEP_ASPECT_RATIO:
@@ -364,8 +367,9 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
             case MENU_ITEM_LOAD_STATE:
 			case MENU_ITEM_SAVE_STATE:
                rarch_state_slot_increase();
-               rarch_settings_create_menu_item_label(strw_buffer, S_LBL_STATE_SLOT, sizeof(strw_buffer));
+               rarch_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_LOAD_STATE, strw_buffer);
+               rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_SAVE_STATE, strw_buffer);
                break;
             case MENU_ITEM_KEEP_ASPECT_RATIO:
