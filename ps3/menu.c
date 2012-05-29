@@ -53,6 +53,7 @@ filebrowser_t browser;				/* main file browser->for rom browser*/
 filebrowser_t tmpBrowser;			/* tmp file browser->for everything else*/
 uint32_t set_shader = 0;
 static uint32_t currently_selected_controller_menu = 0;
+static char strw_buffer[PATH_MAX];
 
 static menu menu_filebrowser = {
    "FILE BROWSER |",		/* title*/
@@ -1283,26 +1284,20 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_KEEP_ASPECT_RATIO:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 			{
-				if(g_console.aspect_ratio_index > 0)
-				{
-                                        rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
-					gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-					set_delay = DELAY_SMALL;
-				}
+                           rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
+			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+			   set_delay = DELAY_SMALL;
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
-				if(g_console.aspect_ratio_index < ASPECT_RATIO_END-1)
-				{
-                                        rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
-					gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-					set_delay = DELAY_SMALL;
-				}
+                           rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
+			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+			   set_delay = DELAY_SMALL;
 			}
 			if(CTRL_START(state))
 			{
-                                rarch_settings_default(S_DEF_ASPECT_RATIO);
-				gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+                           rarch_settings_default(S_DEF_ASPECT_RATIO);
+			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER:
@@ -1948,10 +1943,8 @@ static void select_rom(void)
                rarch_extract_zipfile(rom_path_temp);
 	    else
 	    {
-               g_console.menu_enable = false;
 	       snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
-	       g_console.initialize_rarch_enable = 1;
-	       g_console.mode_switch = MODE_EMULATION;
+               rarch_settings_change(S_START_RARCH);
 	    }
 	 }
       }
@@ -1990,7 +1983,7 @@ static void select_rom(void)
 
 static void ingame_menu(uint32_t menu_id)
 {
-   char comment[256], msg_temp[256];
+   char comment[256];
    static uint32_t menuitem_colors[MENU_ITEM_LAST];
    uint64_t state, stuck_in_loop;
    static uint64_t blocking;
@@ -2064,21 +2057,15 @@ static void ingame_menu(uint32_t menu_id)
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 	    {
-               if(g_console.aspect_ratio_index > 0)
-	       {
-                  rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
-		  gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-		  set_delay = DELAY_MEDIUM;
-	       }
+               rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
+	       gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+	       set_delay = DELAY_MEDIUM;
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 	    {
-               if(g_console.aspect_ratio_index < ASPECT_RATIO_END-1)
-	       {
-                  rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
-		  gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-		  set_delay = DELAY_MEDIUM;
-	       }
+               rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
+	       gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+	       set_delay = DELAY_MEDIUM;
 	    }
 	    if(CTRL_START(state))
 	    {
@@ -2110,29 +2097,21 @@ static void ingame_menu(uint32_t menu_id)
 	 case MENU_ITEM_ORIENTATION:
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) || CTRL_LSTICK_LEFT(state))
 	    {
-               bool should_rotate_decrement = g_console.screen_orientation > ORIENTATION_NORMAL;
-               if(should_rotate_decrement)
-	       {
-                  rarch_settings_change(S_ROTATION_DECREMENT);
-		  video_gl.set_rotation(NULL, g_console.screen_orientation);
-		  set_delay = DELAY_MEDIUM;
-	       }
+               rarch_settings_change(S_ROTATION_DECREMENT);
+	       video_gl.set_rotation(NULL, g_console.screen_orientation);
+	       set_delay = DELAY_MEDIUM;
 	    }
 
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_LSTICK_RIGHT(state))
 	    {
-               bool should_rotate_increment = (g_console.screen_orientation+1) < ORIENTATION_END;
-               if(should_rotate_increment)
-	       {
-                  rarch_settings_change(S_ROTATION_INCREMENT);
-		  video_gl.set_rotation(NULL, g_console.screen_orientation);
-		  set_delay = DELAY_MEDIUM;
-	       }
+               rarch_settings_change(S_ROTATION_INCREMENT);
+	       video_gl.set_rotation(NULL, g_console.screen_orientation);
+	       set_delay = DELAY_MEDIUM;
 	    }
 
 	    if(CTRL_START(state))
 	    {
-               g_console.screen_orientation = ORIENTATION_NORMAL;
+               rarch_settings_default(S_DEF_ROTATION);
 	       video_gl.set_rotation(NULL, g_console.screen_orientation);
 	    }
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.", sizeof(comment));
@@ -2241,7 +2220,7 @@ static void ingame_menu(uint32_t menu_id)
 
 		     cellDbgFontPuts (0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
 		     cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
-		     cellDbgFontPrintf (0.9f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
+		     cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
 		     cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
 		     cellDbgFontPrintf(x_position,	ypos, font_size, GREEN,	"Viewport X: #%d", g_console.viewports.custom_vp.x);
 
@@ -2411,37 +2390,26 @@ static void ingame_menu(uint32_t menu_id)
    }
 
 
-   switch(g_console.screen_orientation)
-   {
-      case ORIENTATION_NORMAL:
-         snprintf(msg_temp, sizeof(msg_temp), "Normal");
-	 break;
-      case ORIENTATION_VERTICAL:
-	 snprintf(msg_temp, sizeof(msg_temp), "Vertical");
-	 break;
-      case ORIENTATION_FLIPPED:
-	 snprintf(msg_temp, sizeof(msg_temp), "Flipped");
-	 break;
-      case ORIENTATION_FLIPPED_ROTATED:
-	 snprintf(msg_temp, sizeof(msg_temp), "Flipped Rotated");
-	 break;
-   }
-
    cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Quick Menu");
 
-   cellDbgFontPrintf(x_position, ypos, font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), "Load State #%d", g_extern.state_slot);
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
+   cellDbgFontPrintf(x_position, ypos, font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), strw_buffer);
 
-   cellDbgFontPrintf(x_position, ypos+(ypos_increment*MENU_ITEM_SAVE_STATE), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), "Save State #%d", g_extern.state_slot);
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
+   cellDbgFontPrintf(x_position, ypos+(ypos_increment*MENU_ITEM_SAVE_STATE), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), strw_buffer);
    cellDbgFontDraw();
 
-   cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
+   cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), strw_buffer);
 
    cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), "Overscan: %f", g_console.overscan_amount);
 
-   cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), "Orientation: %s", msg_temp);
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+   cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), strw_buffer);
    cellDbgFontDraw();
 
-   cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_SCALE_FACTOR)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), "Scale Factor: %d", (int)(g_settings.video.fbo_scale_x));
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
+   cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_SCALE_FACTOR)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), strw_buffer);
    cellDbgFontDraw();
 
    cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_RESIZE_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE), "Resize Mode");

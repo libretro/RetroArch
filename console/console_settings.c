@@ -83,13 +83,18 @@ void rarch_settings_change(unsigned setting)
          g_console.ingame_menu_item = 0;
          g_console.mode_switch = MODE_MENU;
          break;
-	  case S_ROTATION_DECREMENT:
-	     if(g_console.screen_orientation > 0)
+      case S_ROTATION_DECREMENT:
+         if(g_console.screen_orientation > 0)
             g_console.screen_orientation--;
          break;
-	  case S_ROTATION_INCREMENT:
-	     if(g_console.screen_orientation < LAST_ORIENTATION)
+      case S_ROTATION_INCREMENT:
+         if(g_console.screen_orientation < LAST_ORIENTATION)
             g_console.screen_orientation++;
+         break;
+      case S_START_RARCH:
+         g_console.menu_enable = false;
+         g_console.initialize_rarch_enable = 1;
+         g_console.mode_switch = MODE_EMULATION;
          break;
       case S_REWIND:
          g_settings.rewind_enable = !g_settings.rewind_enable;
