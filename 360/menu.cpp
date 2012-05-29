@@ -289,6 +289,18 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 	 break;
    }
 
+    bHandled = TRUE;
+	
+    switch(pControlNavigateData->nControlNavigate)
+	{
+       case XUI_CONTROL_NAVIGATE_LEFT:
+       case XUI_CONTROL_NAVIGATE_RIGHT:
+       case XUI_CONTROL_NAVIGATE_UP:
+       case XUI_CONTROL_NAVIGATE_DOWN:
+          pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
+          break;
+    }
+
 	return 0;
 }
 
@@ -322,6 +334,68 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    return 0;
 }
 
+HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
+{
+   bool aspectratio_changed = false;
+   int current_index;
+   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
+   
+   current_index = m_quickmenulist.GetCurSel();
+
+   switch(pControlNavigateData->nControlNavigate)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+         switch(current_index)
+         {
+            case MENU_ITEM_KEEP_ASPECT_RATIO:
+               rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
+               aspectratio_changed = true;
+               break;
+            default:
+               break;
+         }
+         break;
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+         switch(current_index)
+         {
+            case MENU_ITEM_KEEP_ASPECT_RATIO:
+               rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
+	           aspectratio_changed = true;
+               break;
+            default:
+               break;
+         }
+         break;
+      case XUI_CONTROL_NAVIGATE_UP:
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         break;
+   }
+
+   if(aspectratio_changed)
+   {
+      gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
+      char aspectratio_label[32];
+      snprintf(aspectratio_label, sizeof(aspectratio_label), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
+      wchar_t * aspectratio_label_w = rarch_convert_char_to_wchar(aspectratio_label);
+      m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, aspectratio_label_w);
+      free(aspectratio_label_w);
+   }
+
+   bHandled = TRUE;
+
+    switch(pControlNavigateData->nControlNavigate)
+	{
+       case XUI_CONTROL_NAVIGATE_LEFT:
+       case XUI_CONTROL_NAVIGATE_RIGHT:
+       case XUI_CONTROL_NAVIGATE_UP:
+       case XUI_CONTROL_NAVIGATE_DOWN:
+          pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
+          break;
+    }
+
+   return 0;
+}
+
 HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
    xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
@@ -349,9 +423,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
 	    {
-           rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
-	       if(g_console.aspect_ratio_index == ASPECT_RATIO_END)
-              g_console.aspect_ratio_index = 0;
+           rarch_settings_default(S_DEF_ASPECT_RATIO);
 
 	       gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
 	       char aspectratio_label[32];

@@ -31,7 +31,7 @@ void rarch_settings_change(unsigned setting)
             g_console.aspect_ratio_index--;
          break;
 	  case S_ASPECT_RATIO_INCREMENT:
-	     if(g_console.aspect_ratio_index < ASPECT_RATIO_END-1)
+	     if(g_console.aspect_ratio_index < LAST_ASPECT_RATIO)
             g_console.aspect_ratio_index++;
          break;
       case S_FRAME_ADVANCE:
