@@ -161,8 +161,8 @@ HRESULT CRetroArchControls::OnControlNavigate(XUIMessageControlNavigate *pContro
          if(current_index > 0 && current_index != SETTING_CONTROLS_DEFAULT_ALL)
          {
             rarch_input_set_keybind(controlno, KEYBIND_DECREMENT, current_index);
-            rarch_convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
             snprintf(button, sizeof(button), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+            rarch_convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
             m_controlslist.SetText(current_index, strw_buffer);
          }
          break;
@@ -170,8 +170,8 @@ HRESULT CRetroArchControls::OnControlNavigate(XUIMessageControlNavigate *pContro
          if(current_index < RARCH_FIRST_META_KEY && current_index != SETTING_CONTROLS_DEFAULT_ALL)
          {
             rarch_input_set_keybind(controlno, KEYBIND_INCREMENT, current_index);
-            rarch_convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
             snprintf(button, sizeof(button), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+            rarch_convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
             m_controlslist.SetText(current_index, strw_buffer);
          }
          break;
@@ -336,9 +336,7 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	 break;
    }
 
-   char aspectratio_label[32];
-   snprintf(aspectratio_label, sizeof(aspectratio_label), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
-   rarch_convert_char_to_wchar(strw_buffer, aspectratio_label, sizeof(strw_buffer));
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
    m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
 
    return 0;
@@ -433,9 +431,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
            rarch_settings_default(S_DEF_ASPECT_RATIO);
 
 	       gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
-	       char aspectratio_label[32];
-	       snprintf(aspectratio_label, sizeof(aspectratio_label), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
-	       rarch_convert_char_to_wchar(strw_buffer, aspectratio_label, sizeof(strw_buffer));
+		   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
 	       m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
 	    }
 	    break;
@@ -635,14 +631,14 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       if(tmp_browser.cur[index].d_type != FILE_ATTRIBUTE_DIRECTORY)
       {
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
-	 snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
-	 rarch_settings_change(S_RETURN_TO_LAUNCHER);
+         snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+         rarch_settings_change(S_RETURN_TO_LAUNCHER);
       }
       else if(tmp_browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
       {
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
-	 snprintf(path, sizeof(path), "%s%s\\", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
-	 filebrowser_fetch_directory_entries(path, &tmp_browser, &m_romlist, &m_rompathtitle);
+         snprintf(path, sizeof(path), "%s%s\\", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+         filebrowser_fetch_directory_entries(path, &tmp_browser, &m_romlist, &m_rompathtitle);
       }
    }
 
