@@ -937,9 +937,7 @@ static void select_file(uint32_t menu_id)
 		  {
 		     strlcpy(g_console.launch_app_on_exit, path, sizeof(g_console.launch_app_on_exit));
                      set_libretro_core_as_launch = false;
-		     g_console.return_to_launcher = true;
-		     g_console.menu_enable = false;
-		     g_console.mode_switch = MODE_EXIT;
+                     rarch_settings_change(S_RETURN_TO_LAUNCHER);
 		  }
 		  break;
 	    }
@@ -2173,8 +2171,7 @@ static void ingame_menu(uint32_t menu_id)
 	       {
                   if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
 		  {
-                     g_settings.video.fbo_scale_x -= 1.0f;
-		     g_settings.video.fbo_scale_y -= 1.0f;
+                     rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
 		     apply_scaling(FBO_REINIT);
 		     set_delay = DELAY_MEDIUM;
 		  }
@@ -2186,8 +2183,7 @@ static void ingame_menu(uint32_t menu_id)
 	       {
                   if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
 		  {
-                     g_settings.video.fbo_scale_x += 1.0f;
-		     g_settings.video.fbo_scale_y += 1.0f;
+                     rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
 		     apply_scaling(FBO_REINIT);
 		     set_delay = DELAY_MEDIUM;
 		  }
@@ -2195,8 +2191,7 @@ static void ingame_menu(uint32_t menu_id)
 	    }
 	    if(CTRL_START(state))
 	    {
-               g_settings.video.fbo_scale_x = 2.0f;
-	       g_settings.video.fbo_scale_y = 2.0f;
+               rarch_settings_default(S_DEF_SCALE_FACTOR);
 	       apply_scaling(FBO_REINIT);
 	    }
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Scaling] settings.\nPress START to reset back to default values.", sizeof(comment));
@@ -2410,9 +2405,7 @@ static void ingame_menu(uint32_t menu_id)
                strlcpy(g_console.launch_app_on_exit, MULTIMAN_EXECUTABLE,
                   sizeof(g_console.launch_app_on_exit));
 
-	       g_console.return_to_launcher = true;
-	       g_console.menu_enable = false;
-	       g_console.mode_switch = MODE_EXIT;
+               rarch_settings_change(S_RETURN_TO_DASHBOARD);
 	    }
 	    strlcpy(comment, "Press 'CROSS' to quit the emulator and return to multiMAN.", sizeof(comment));
 	    break;
