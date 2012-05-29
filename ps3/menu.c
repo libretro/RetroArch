@@ -1285,25 +1285,23 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 				if(g_console.aspect_ratio_index > 0)
 				{
-					g_console.aspect_ratio_index--;
+                                        rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
 					gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 					set_delay = DELAY_SMALL;
 				}
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
-				g_console.aspect_ratio_index++;
-				if(g_console.aspect_ratio_index < ASPECT_RATIO_END)
+				if(g_console.aspect_ratio_index < ASPECT_RATIO_END-1)
 				{
+                                        rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
 					gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 					set_delay = DELAY_SMALL;
 				}
-				else
-					g_console.aspect_ratio_index = ASPECT_RATIO_END-1;
 			}
 			if(CTRL_START(state))
 			{
-				g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
+                                rarch_settings_default(S_DEF_ASPECT_RATIO);
 				gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 			}
 			break;
@@ -2068,25 +2066,23 @@ static void ingame_menu(uint32_t menu_id)
 	    {
                if(g_console.aspect_ratio_index > 0)
 	       {
-                  g_console.aspect_ratio_index--;
+                  rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
 		  gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 		  set_delay = DELAY_MEDIUM;
 	       }
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 	    {
-               g_console.aspect_ratio_index++;
-               if(g_console.aspect_ratio_index < ASPECT_RATIO_END)
+               if(g_console.aspect_ratio_index < ASPECT_RATIO_END-1)
 	       {
+                  rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
 		  gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 		  set_delay = DELAY_MEDIUM;
 	       }
-               else
-                  g_console.aspect_ratio_index = ASPECT_RATIO_END-1;
 	    }
 	    if(CTRL_START(state))
 	    {
-               g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
+               rarch_settings_default(S_DEF_ASPECT_RATIO);
 	       gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 	    }
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.", sizeof(comment));
