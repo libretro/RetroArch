@@ -217,6 +217,9 @@ void rarch_settings_create_menu_item_label(wchar_t * strwbuf, unsigned setting, 
 	  case S_LBL_SHADER_2:
          snprintf(str, sizeof(str), "Shader #2: %s", g_settings.video.second_pass_shader);
          break;
+	  case S_LBL_RARCH_VERSION:
+         snprintf(str, sizeof(str), "RetroArch %s", PACKAGE_VERSION);
+         break;
 	  case S_LBL_SCALE_FACTOR:
          snprintf(str, sizeof(str), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
          break;

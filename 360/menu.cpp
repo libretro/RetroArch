@@ -506,12 +506,9 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    char core_text[256];
    snprintf(core_text, sizeof(core_text), "%s (v%s)", id, info.library_version);
 
-   char package_version[32];
-   snprintf(package_version, sizeof(core_text), "RetroArch %s", PACKAGE_VERSION);
-
    rarch_convert_char_to_wchar(strw_buffer, core_text, sizeof(strw_buffer));
    m_core.SetText(strw_buffer);
-   rarch_convert_char_to_wchar(strw_buffer, package_version, sizeof(strw_buffer));
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
    m_title.SetText(strw_buffer);
 
    return 0;

@@ -79,6 +79,7 @@ enum
 enum
 {
    S_LBL_ASPECT_RATIO = 0,
+   S_LBL_RARCH_VERSION,
    S_LBL_ROTATION,
    S_LBL_SHADER,
    S_LBL_SHADER_2,
