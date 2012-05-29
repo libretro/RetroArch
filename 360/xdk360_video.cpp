@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Xbox 360-specific headers
 #ifdef _XBOX
 #include <xtl.h>
 #include <xgraphics.h>
@@ -42,70 +41,70 @@
 
 const DWORD g_MapLinearToSrgbGpuFormat[] = 
 {
-    GPUTEXTUREFORMAT_1_REVERSE,
-    GPUTEXTUREFORMAT_1,
-    GPUTEXTUREFORMAT_8,
-    GPUTEXTUREFORMAT_1_5_5_5,
-    GPUTEXTUREFORMAT_5_6_5,
-    GPUTEXTUREFORMAT_6_5_5,
-    GPUTEXTUREFORMAT_8_8_8_8_AS_16_16_16_16,
-    GPUTEXTUREFORMAT_2_10_10_10_AS_16_16_16_16,
-    GPUTEXTUREFORMAT_8_A,
-    GPUTEXTUREFORMAT_8_B,
-    GPUTEXTUREFORMAT_8_8,
-    GPUTEXTUREFORMAT_Cr_Y1_Cb_Y0_REP,     
-    GPUTEXTUREFORMAT_Y1_Cr_Y0_Cb_REP,      
-    GPUTEXTUREFORMAT_16_16_EDRAM,          
-    GPUTEXTUREFORMAT_8_8_8_8_A,
-    GPUTEXTUREFORMAT_4_4_4_4,
-    GPUTEXTUREFORMAT_10_11_11_AS_16_16_16_16,
-    GPUTEXTUREFORMAT_11_11_10_AS_16_16_16_16,
-    GPUTEXTUREFORMAT_DXT1_AS_16_16_16_16,
-    GPUTEXTUREFORMAT_DXT2_3_AS_16_16_16_16,  
-    GPUTEXTUREFORMAT_DXT4_5_AS_16_16_16_16,
-    GPUTEXTUREFORMAT_16_16_16_16_EDRAM,
-    GPUTEXTUREFORMAT_24_8,
-    GPUTEXTUREFORMAT_24_8_FLOAT,
-    GPUTEXTUREFORMAT_16,
-    GPUTEXTUREFORMAT_16_16,
-    GPUTEXTUREFORMAT_16_16_16_16,
-    GPUTEXTUREFORMAT_16_EXPAND,
-    GPUTEXTUREFORMAT_16_16_EXPAND,
-    GPUTEXTUREFORMAT_16_16_16_16_EXPAND,
-    GPUTEXTUREFORMAT_16_FLOAT,
-    GPUTEXTUREFORMAT_16_16_FLOAT,
-    GPUTEXTUREFORMAT_16_16_16_16_FLOAT,
-    GPUTEXTUREFORMAT_32,
-    GPUTEXTUREFORMAT_32_32,
-    GPUTEXTUREFORMAT_32_32_32_32,
-    GPUTEXTUREFORMAT_32_FLOAT,
-    GPUTEXTUREFORMAT_32_32_FLOAT,
-    GPUTEXTUREFORMAT_32_32_32_32_FLOAT,
-    GPUTEXTUREFORMAT_32_AS_8,
-    GPUTEXTUREFORMAT_32_AS_8_8,
-    GPUTEXTUREFORMAT_16_MPEG,
-    GPUTEXTUREFORMAT_16_16_MPEG,
-    GPUTEXTUREFORMAT_8_INTERLACED,
-    GPUTEXTUREFORMAT_32_AS_8_INTERLACED,
-    GPUTEXTUREFORMAT_32_AS_8_8_INTERLACED,
-    GPUTEXTUREFORMAT_16_INTERLACED,
-    GPUTEXTUREFORMAT_16_MPEG_INTERLACED,
-    GPUTEXTUREFORMAT_16_16_MPEG_INTERLACED,
-    GPUTEXTUREFORMAT_DXN,
-    GPUTEXTUREFORMAT_8_8_8_8_AS_16_16_16_16,
-    GPUTEXTUREFORMAT_DXT1_AS_16_16_16_16,
-    GPUTEXTUREFORMAT_DXT2_3_AS_16_16_16_16,
-    GPUTEXTUREFORMAT_DXT4_5_AS_16_16_16_16,
-    GPUTEXTUREFORMAT_2_10_10_10_AS_16_16_16_16,
-    GPUTEXTUREFORMAT_10_11_11_AS_16_16_16_16,
-    GPUTEXTUREFORMAT_11_11_10_AS_16_16_16_16,
-    GPUTEXTUREFORMAT_32_32_32_FLOAT,
-    GPUTEXTUREFORMAT_DXT3A,
-    GPUTEXTUREFORMAT_DXT5A,
-    GPUTEXTUREFORMAT_CTX1,
-    GPUTEXTUREFORMAT_DXT3A_AS_1_1_1_1,
-    GPUTEXTUREFORMAT_8_8_8_8_GAMMA_EDRAM,
-    GPUTEXTUREFORMAT_2_10_10_10_FLOAT_EDRAM,
+   GPUTEXTUREFORMAT_1_REVERSE,
+   GPUTEXTUREFORMAT_1,
+   GPUTEXTUREFORMAT_8,
+   GPUTEXTUREFORMAT_1_5_5_5,
+   GPUTEXTUREFORMAT_5_6_5,
+   GPUTEXTUREFORMAT_6_5_5,
+   GPUTEXTUREFORMAT_8_8_8_8_AS_16_16_16_16,
+   GPUTEXTUREFORMAT_2_10_10_10_AS_16_16_16_16,
+   GPUTEXTUREFORMAT_8_A,
+   GPUTEXTUREFORMAT_8_B,
+   GPUTEXTUREFORMAT_8_8,
+   GPUTEXTUREFORMAT_Cr_Y1_Cb_Y0_REP,     
+   GPUTEXTUREFORMAT_Y1_Cr_Y0_Cb_REP,      
+   GPUTEXTUREFORMAT_16_16_EDRAM,          
+   GPUTEXTUREFORMAT_8_8_8_8_A,
+   GPUTEXTUREFORMAT_4_4_4_4,
+   GPUTEXTUREFORMAT_10_11_11_AS_16_16_16_16,
+   GPUTEXTUREFORMAT_11_11_10_AS_16_16_16_16,
+   GPUTEXTUREFORMAT_DXT1_AS_16_16_16_16,
+   GPUTEXTUREFORMAT_DXT2_3_AS_16_16_16_16,  
+   GPUTEXTUREFORMAT_DXT4_5_AS_16_16_16_16,
+   GPUTEXTUREFORMAT_16_16_16_16_EDRAM,
+   GPUTEXTUREFORMAT_24_8,
+   GPUTEXTUREFORMAT_24_8_FLOAT,
+   GPUTEXTUREFORMAT_16,
+   GPUTEXTUREFORMAT_16_16,
+   GPUTEXTUREFORMAT_16_16_16_16,
+   GPUTEXTUREFORMAT_16_EXPAND,
+   GPUTEXTUREFORMAT_16_16_EXPAND,
+   GPUTEXTUREFORMAT_16_16_16_16_EXPAND,
+   GPUTEXTUREFORMAT_16_FLOAT,
+   GPUTEXTUREFORMAT_16_16_FLOAT,
+   GPUTEXTUREFORMAT_16_16_16_16_FLOAT,
+   GPUTEXTUREFORMAT_32,
+   GPUTEXTUREFORMAT_32_32,
+   GPUTEXTUREFORMAT_32_32_32_32,
+   GPUTEXTUREFORMAT_32_FLOAT,
+   GPUTEXTUREFORMAT_32_32_FLOAT,
+   GPUTEXTUREFORMAT_32_32_32_32_FLOAT,
+   GPUTEXTUREFORMAT_32_AS_8,
+   GPUTEXTUREFORMAT_32_AS_8_8,
+   GPUTEXTUREFORMAT_16_MPEG,
+   GPUTEXTUREFORMAT_16_16_MPEG,
+   GPUTEXTUREFORMAT_8_INTERLACED,
+   GPUTEXTUREFORMAT_32_AS_8_INTERLACED,
+   GPUTEXTUREFORMAT_32_AS_8_8_INTERLACED,
+   GPUTEXTUREFORMAT_16_INTERLACED,
+   GPUTEXTUREFORMAT_16_MPEG_INTERLACED,
+   GPUTEXTUREFORMAT_16_16_MPEG_INTERLACED,
+   GPUTEXTUREFORMAT_DXN,
+   GPUTEXTUREFORMAT_8_8_8_8_AS_16_16_16_16,
+   GPUTEXTUREFORMAT_DXT1_AS_16_16_16_16,
+   GPUTEXTUREFORMAT_DXT2_3_AS_16_16_16_16,
+   GPUTEXTUREFORMAT_DXT4_5_AS_16_16_16_16,
+   GPUTEXTUREFORMAT_2_10_10_10_AS_16_16_16_16,
+   GPUTEXTUREFORMAT_10_11_11_AS_16_16_16_16,
+   GPUTEXTUREFORMAT_11_11_10_AS_16_16_16_16,
+   GPUTEXTUREFORMAT_32_32_32_FLOAT,
+   GPUTEXTUREFORMAT_DXT3A,
+   GPUTEXTUREFORMAT_DXT5A,
+   GPUTEXTUREFORMAT_CTX1,
+   GPUTEXTUREFORMAT_DXT3A_AS_1_1_1_1,
+   GPUTEXTUREFORMAT_8_8_8_8_GAMMA_EDRAM,
+   GPUTEXTUREFORMAT_2_10_10_10_FLOAT_EDRAM,
 };
 
 struct XPR_HEADER
@@ -149,89 +148,90 @@ void * PackedResource::GetData( const char * strName ) const
 
 HRESULT PackedResource::Create( const char * strFilename )
 {
-    unsigned long dwNumBytesRead;
-    void * hFile = CreateFile( strFilename, GENERIC_READ, FILE_SHARE_READ, NULL,
-                               OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL );
-    if( hFile == INVALID_HANDLE_VALUE )
-    {
-        RARCH_ERR( "File <%s> not found.\n", strFilename );
-        return E_FAIL;
-    }
+   unsigned long dwNumBytesRead;
+   void * hFile = CreateFile( strFilename, GENERIC_READ, FILE_SHARE_READ, NULL,
+      OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL );
 
-    // Read in and verify the XPR magic header
-    XPR_HEADER xprh;
-    if( !ReadFile( hFile, &xprh, sizeof( XPR_HEADER ), &dwNumBytesRead, NULL ) )
-    {
-        RARCH_ERR( "Error reading XPR header in file <%s>.\n", strFilename );
-        CloseHandle( hFile );
-        return E_FAIL;
-    }
+   if( hFile == INVALID_HANDLE_VALUE )
+   {
+      RARCH_ERR( "File <%s> not found.\n", strFilename );
+      return E_FAIL;
+   }
 
-    if( xprh.dwMagic != XPR2_MAGIC_VALUE )
-    {
-       RARCH_ERR( "Invalid Xbox Packed Resource (.xpr) file: Magic = 0x%08lx.\n", xprh.dwMagic );
-       CloseHandle( hFile );
-       return E_FAIL;
-    }
+   // Read in and verify the XPR magic header
+   XPR_HEADER xprh;
+   if( !ReadFile( hFile, &xprh, sizeof( XPR_HEADER ), &dwNumBytesRead, NULL ) )
+   {
+      RARCH_ERR( "Error reading XPR header in file <%s>.\n", strFilename );
+      CloseHandle( hFile );
+      return E_FAIL;
+   }
 
-    // Compute memory requirements
-    m_dwSysMemDataSize = xprh.dwHeaderSize;
-    m_dwVidMemDataSize = xprh.dwDataSize;
+   if( xprh.dwMagic != XPR2_MAGIC_VALUE )
+   {
+      RARCH_ERR( "Invalid Xbox Packed Resource (.xpr) file: Magic = 0x%08lx.\n", xprh.dwMagic );
+      CloseHandle( hFile );
+      return E_FAIL;
+   }
 
-    // Allocate memory
-    m_pSysMemData = (unsigned char*)malloc(m_dwSysMemDataSize);
-    if( m_pSysMemData == NULL )
-    {
-        RARCH_ERR( "Could not allocate system memory.\n" );
-        m_dwSysMemDataSize = 0;
-        return E_FAIL;
-    }
-    m_pVidMemData = ( unsigned char* )XMemAlloc( m_dwVidMemDataSize, MAKE_XALLOC_ATTRIBUTES( 0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
-			    XALLOC_PHYSICAL_ALIGNMENT_4K, XALLOC_MEMPROTECT_WRITECOMBINE, 0, XALLOC_MEMTYPE_PHYSICAL ) );
+   // Compute memory requirements
+   m_dwSysMemDataSize = xprh.dwHeaderSize;
+   m_dwVidMemDataSize = xprh.dwDataSize;
 
-    if( m_pVidMemData == NULL )
-    {
-        RARCH_ERR( "Could not allocate physical memory.\n" );
-        m_dwSysMemDataSize = 0;
-        m_dwVidMemDataSize = 0;
-        free(m_pSysMemData);
-        m_pSysMemData = NULL;
-        return E_FAIL;
-    }
+   // Allocate memory
+   m_pSysMemData = (unsigned char*)malloc(m_dwSysMemDataSize);
+   if( m_pSysMemData == NULL )
+   {
+      RARCH_ERR( "Could not allocate system memory.\n" );
+      m_dwSysMemDataSize = 0;
+      return E_FAIL;
+   }
+   m_pVidMemData = ( unsigned char* )XMemAlloc( m_dwVidMemDataSize, MAKE_XALLOC_ATTRIBUTES( 0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
+      XALLOC_PHYSICAL_ALIGNMENT_4K, XALLOC_MEMPROTECT_WRITECOMBINE, 0, XALLOC_MEMTYPE_PHYSICAL ) );
 
-    // Read in the data from the file
-    if( !ReadFile( hFile, m_pSysMemData, m_dwSysMemDataSize, &dwNumBytesRead, NULL ) ||
-        !ReadFile( hFile, m_pVidMemData, m_dwVidMemDataSize, &dwNumBytesRead, NULL ) )
-    {
-        RARCH_ERR( "Unable to read Xbox Packed Resource (.xpr) file.\n" );
-        CloseHandle( hFile );
-        return E_FAIL;
-    }
+   if( m_pVidMemData == NULL )
+   {
+      RARCH_ERR( "Could not allocate physical memory.\n" );
+      m_dwSysMemDataSize = 0;
+      m_dwVidMemDataSize = 0;
+      free(m_pSysMemData);
+      m_pSysMemData = NULL;
+      return E_FAIL;
+   }
 
-    // Done with the file
-    CloseHandle( hFile );
+   // Read in the data from the file
+   if( !ReadFile( hFile, m_pSysMemData, m_dwSysMemDataSize, &dwNumBytesRead, NULL ) ||
+      !ReadFile( hFile, m_pVidMemData, m_dwVidMemDataSize, &dwNumBytesRead, NULL ) )
+   {
+      RARCH_ERR( "Unable to read Xbox Packed Resource (.xpr) file.\n" );
+      CloseHandle( hFile );
+      return E_FAIL;
+   }
 
-    // Extract resource table from the header data
-    m_dwNumResourceTags = *( unsigned long * )( m_pSysMemData + 0 );
-    m_pResourceTags = ( RESOURCE* )( m_pSysMemData + 4 );
+   // Done with the file
+   CloseHandle( hFile );
 
-    // Patch up the resources
-    for( unsigned long i = 0; i < m_dwNumResourceTags; i++ )
-    {
-        m_pResourceTags[i].strName = ( char * )( m_pSysMemData + ( unsigned long )m_pResourceTags[i].strName );
+   // Extract resource table from the header data
+   m_dwNumResourceTags = *( unsigned long * )( m_pSysMemData + 0 );
+   m_pResourceTags = ( RESOURCE* )( m_pSysMemData + 4 );
 
-        // Fixup the texture memory
-        if( ( m_pResourceTags[i].dwType & 0xffff0000 ) == ( RESOURCETYPE_TEXTURE & 0xffff0000 ) )
-        {
-            D3DTexture* pTexture = ( D3DTexture* )&m_pSysMemData[m_pResourceTags[i].dwOffset];
-            // Adjust Base address according to where memory was allocated
-            XGOffsetBaseTextureAddress( pTexture, m_pVidMemData, m_pVidMemData );
-        }
-    }
+   // Patch up the resources
+   for( unsigned long i = 0; i < m_dwNumResourceTags; i++ )
+   {
+      m_pResourceTags[i].strName = ( char * )( m_pSysMemData + ( unsigned long )m_pResourceTags[i].strName );
 
-    m_bInitialized = TRUE;
+      // Fixup the texture memory
+      if( ( m_pResourceTags[i].dwType & 0xffff0000 ) == ( RESOURCETYPE_TEXTURE & 0xffff0000 ) )
+      {
+         D3DTexture* pTexture = ( D3DTexture* )&m_pSysMemData[m_pResourceTags[i].dwOffset];
+	 // Adjust Base address according to where memory was allocated
+	 XGOffsetBaseTextureAddress( pTexture, m_pVidMemData, m_pVidMemData );
+      }
+   }
 
-    return 0;
+   m_bInitialized = TRUE;
+
+   return 0;
 }
 
 void PackedResource::Destroy()
@@ -241,8 +241,8 @@ void PackedResource::Destroy()
     m_dwSysMemDataSize = 0L;
 
     if( m_pVidMemData != NULL )
-	    XMemFree( m_pVidMemData, MAKE_XALLOC_ATTRIBUTES( 0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
-            0, 0, 0, XALLOC_MEMTYPE_PHYSICAL ) );
+       XMemFree( m_pVidMemData, MAKE_XALLOC_ATTRIBUTES( 0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
+       0, 0, 0, XALLOC_MEMTYPE_PHYSICAL ) );
 
     m_pVidMemData = NULL;
     m_dwVidMemDataSize = 0L;
@@ -295,7 +295,7 @@ static void xdk360_set_viewport(bool force_full)
    xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
 
    d3d9->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
-	   0xff000000, 1.0f, 0);
+      0xff000000, 1.0f, 0);
 
    int width = d3d9->video_mode.fIsHiDef ? 1280 : 640;
    int height = d3d9->video_mode.fIsHiDef ? 720 : 480;
@@ -319,7 +319,7 @@ static void xdk360_set_viewport(bool force_full)
       // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
       if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
       {
-		 delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
+         delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
       	 m_viewport_x_temp = g_console.viewports.custom_vp.x;
       	 m_viewport_y_temp = g_console.viewports.custom_vp.y;
       	 m_viewport_width_temp = g_console.viewports.custom_vp.width;
@@ -368,7 +368,7 @@ static void xdk360_set_rotation(void * data, unsigned orientation)
    {
       case ORIENTATION_NORMAL:
          angle = M_PI * 0 / 180;
-	     break;
+	 break;
       case ORIENTATION_VERTICAL:
          angle = M_PI * 270 / 180;
          break;
@@ -459,6 +459,7 @@ static void *xdk360_init(const video_info_t *video, const input_driver_t **input
    
    d3d9->d3dpp.BackBufferWidth         = d3d9->video_mode.fIsHiDef ? 1280 : 640;
    d3d9->d3dpp.BackBufferHeight        = d3d9->video_mode.fIsHiDef ? 720 : 480;
+
    if(g_console.gamma_correction_enable)
    {
       d3d9->d3dpp.BackBufferFormat        = g_console.color_format ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : (D3DFORMAT)MAKESRGBFMT(D3DFMT_LIN_A1R5G5B5);
@@ -646,7 +647,7 @@ static bool xdk360_frame(void *data, const void *frame,
    if(d3d9->fbo_enabled)
    {
       d3d9->d3d_render_device->Resolve(D3DRESOLVE_RENDERTARGET0, NULL, d3d9->lpTexture_ot,
-            NULL, 0, 0, NULL, 0, 0, NULL);
+         NULL, 0, 0, NULL, 0, 0, NULL);
 
       d3d9->d3d_render_device->SetRenderTarget(0, pRenderTarget0);
       pRenderTarget0->Release();
@@ -708,11 +709,6 @@ static bool xdk360_focus(void *data)
    return gfx_ctx_window_has_focus();
 }
 
-// 360 needs a working graphics stack before RetroArch even starts.
-// To deal with this main.c,
-// the top level module owns the instance, and is created beforehand.
-// When RetroArch gets around to init it, it is already allocated.
-// When RetroArch wants to free it, it is ignored.
 static void xdk360_start(void)
 {
    video_info_t video_info = {0};

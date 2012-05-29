@@ -86,8 +86,9 @@ typedef struct {
 // All elements are defaulted to NULL
 static Font_Locals_t s_FontLocals;    // Global static instance
 
-static void xdk360_video_font_draw_text(xdk360_video_font_t * font, float fOriginX, float fOriginY, unsigned long dwColor,
-	const wchar_t * strText, float fMaxPixelWidth )
+static void xdk360_video_font_draw_text(xdk360_video_font_t * font, 
+   float fOriginX, float fOriginY, unsigned long dwColor,
+   const wchar_t * strText, float fMaxPixelWidth )
 {
    if( strText == NULL || strText[0] == L'\0')
       return;
@@ -164,7 +165,8 @@ static void xdk360_video_font_draw_text(xdk360_video_font_t * font, float fOrigi
       }
 
       // Translate unprintable characters
-      const GLYPH_ATTR * pGlyph = &font->m_Glyphs[ ( letter <= font->m_cMaxGlyph ) ? font->m_TranslatorTable[letter] : 0 ];
+      const GLYPH_ATTR * pGlyph = &font->m_Glyphs[ ( letter <= font->m_cMaxGlyph )
+      ? font->m_TranslatorTable[letter] : 0 ];
 
       float fOffset = font->m_fXScaleFactor * (float)pGlyph->wOffset;
       float fAdvance = font->m_fXScaleFactor * (float)pGlyph->wAdvance;

@@ -318,9 +318,7 @@ static void browser_update(filebrowser_t * b)
       }
 
       if (CTRL_CIRCLE(button_was_pressed))
-      {
          filebrowser_pop_directory(b);
-      }
 
       old_state = state;
    }
@@ -355,45 +353,45 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
    {
 	   case SETTING_CHANGE_RESOLUTION:
 		   if(g_console.initial_resolution_id == g_console.supported_resolutions[g_console.current_resolution_index])
-			   menu_obj->items[currentsetting].text_color = GREEN;
+                      menu_obj->items[currentsetting].text_color = GREEN;
 		   else
-			   menu_obj->items[currentsetting].text_color = ORANGE;
+                      menu_obj->items[currentsetting].text_color = ORANGE;
 
 		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), ps3_get_resolution_label(g_console.supported_resolutions[g_console.current_resolution_index]));
 		   break;
 	   case SETTING_SHADER_PRESETS:
 		   {
-			   char fname[PATH_MAX];
-			   if(g_console.cgp_path == DEFAULT_PRESET_FILE)
-				   menu_obj->items[currentsetting].text_color = GREEN;
-			   else
-				   menu_obj->items[currentsetting].text_color = ORANGE;
-			   fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
-			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), fname);
+                      char fname[PATH_MAX];
+		      if(g_console.cgp_path == DEFAULT_PRESET_FILE)
+                         menu_obj->items[currentsetting].text_color = GREEN;
+		      else
+                         menu_obj->items[currentsetting].text_color = ORANGE;
+		      fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
+		      snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), fname);
 		   }
 		   break;
 	   case SETTING_SHADER:
 		   {
-			   char fname[PATH_MAX];
-			   fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
-			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
+                      char fname[PATH_MAX];
+		      fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
+		      snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
-			   if(strcmp(g_settings.video.cg_shader_path,DEFAULT_SHADER_FILE) == 0)
-				   menu_obj->items[currentsetting].text_color = GREEN;
-			   else
-				   menu_obj->items[currentsetting].text_color = ORANGE;
+		      if(strcmp(g_settings.video.cg_shader_path,DEFAULT_SHADER_FILE) == 0)
+                         menu_obj->items[currentsetting].text_color = GREEN;
+		      else
+                         menu_obj->items[currentsetting].text_color = ORANGE;
 		   }
 		   break;
 	   case SETTING_SHADER_2:
 		   {
-			   char fname[PATH_MAX];
-			   fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
-			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
+                      char fname[PATH_MAX];
+		      fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
+		      snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
-			   if(strcmp(g_settings.video.second_pass_shader,DEFAULT_SHADER_FILE) == 0)
-				   menu_obj->items[currentsetting].text_color = GREEN;
-			   else
-				   menu_obj->items[currentsetting].text_color = ORANGE;
+		      if(strcmp(g_settings.video.second_pass_shader,DEFAULT_SHADER_FILE) == 0)
+                         menu_obj->items[currentsetting].text_color = GREEN;
+		      else
+                         menu_obj->items[currentsetting].text_color = ORANGE;
 		   }
 		   break;
 	   case SETTING_FONT_SIZE:
@@ -737,15 +735,15 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		   break;
 	   case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
 		   if(menu_obj->selected == currentsetting)
-			   menu_obj->items[currentsetting].text_color = GREEN;
+                      menu_obj->items[currentsetting].text_color = GREEN;
 		   else
-			   menu_obj->items[currentsetting].text_color = ORANGE;
+                      menu_obj->items[currentsetting].text_color = ORANGE;
 		   break;
 	   case SETTING_CONTROLS_DEFAULT_ALL:
 		   if(menu_obj->selected == currentsetting)
-			   menu_obj->items[currentsetting].text_color = GREEN;
+                      menu_obj->items[currentsetting].text_color = GREEN;
 		   else
-			   menu_obj->items[currentsetting].text_color = ORANGE;
+                      menu_obj->items[currentsetting].text_color = ORANGE;
 		   break;
 	   default:
 		   break;
@@ -888,9 +886,7 @@ static void select_file(uint32_t menu_id)
             /*if 'filename' is in fact '..' - then pop back directory instead of 
 	      adding '..' to filename path */
             if(tmpBrowser.currently_selected == 0)
-	    {
                filebrowser_pop_directory(&tmpBrowser);
-	    }
 	    else
 	    {
                separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
@@ -972,8 +968,8 @@ static void select_directory(uint32_t menu_id)
 
    if(set_initial_dir_tmpbrowser)
    {
-	   filebrowser_new(&tmpBrowser, "/\0", "empty");
-	   set_initial_dir_tmpbrowser = false;
+      filebrowser_new(&tmpBrowser, "/\0", "empty");
+      set_initial_dir_tmpbrowser = false;
    }
 
    browser_update(&tmpBrowser);
@@ -1036,9 +1032,7 @@ static void select_directory(uint32_t menu_id)
              * adding '..' to filename path */
 
             if(tmpBrowser.currently_selected == 0)
-	    {
                filebrowser_pop_directory(&tmpBrowser);
-	    }
 	    else
 	    {
                separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
@@ -1173,29 +1167,29 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_CHANGE_RESOLUTION:
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) )
 			{
-				ps3_next_resolution();
-				set_delay = DELAY_SMALL;
+                           ps3_next_resolution();
+			   set_delay = DELAY_SMALL;
 			}
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) )
 			{
-				ps3_previous_resolution();
-				set_delay = DELAY_SMALL;
+                           ps3_previous_resolution();
+			   set_delay = DELAY_SMALL;
 			}
 			if(CTRL_CROSS(state))
 			{
-				if (g_console.supported_resolutions[g_console.current_resolution_index] == CELL_VIDEO_OUT_RESOLUTION_576)
-				{
-					if(ps3_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
-					{
-						//ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
-						video_gl.restart();
-					}
-				}
-				else
-				{
-					//ps3graphics_set_pal60hz(0);
-					video_gl.restart();
-				}
+                           if (g_console.supported_resolutions[g_console.current_resolution_index] == CELL_VIDEO_OUT_RESOLUTION_576)
+			   {
+                              if(ps3_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
+			      {
+                                 //ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
+                                 video_gl.restart();
+			      }
+			   }
+			   else
+			   {
+                              //ps3graphics_set_pal60hz(0);
+                              video_gl.restart();
+			   }
 			}
 			break;
 			/*
@@ -1235,35 +1229,35 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_SHADER:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = SHADER_CHOICE;
-				set_shader = 0;
-				set_initial_dir_tmpbrowser = true;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = SHADER_CHOICE;
+			   set_shader = 0;
+			   set_initial_dir_tmpbrowser = true;
+			   set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
-				gl_cg_load_shader(1, NULL);
-				strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
-				menu_reinit_settings();
+                           gl_cg_load_shader(1, NULL);
+			   strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
+			   menu_reinit_settings();
 			}
 			break;
 		case SETTING_SHADER_2:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = SHADER_CHOICE;
-				set_shader = 1;
-				set_initial_dir_tmpbrowser = true;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = SHADER_CHOICE;
+			   set_shader = 1;
+			   set_initial_dir_tmpbrowser = true;
+			   set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
-				gl_cg_load_shader(2, NULL);
-				strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
-				menu_reinit_settings();
+                           gl_cg_load_shader(2, NULL);
+			   strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
+			   menu_reinit_settings();
 			}
 			break;
 		case SETTING_FONT_SIZE:
@@ -1356,35 +1350,35 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_SCALE_FACTOR:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 			{
-				if(g_console.fbo_enabled)
-				{
-					bool should_decrement = g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR;
-					if(should_decrement)
-					{
-						rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
-						apply_scaling(FBO_REINIT);
-						set_delay = DELAY_MEDIUM;
-					}
-				}
+                           if(g_console.fbo_enabled)
+			   {
+                              bool should_decrement = g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR;
+			      if(should_decrement)
+			      {
+                                 rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
+				 apply_scaling(FBO_REINIT);
+				 set_delay = DELAY_MEDIUM;
+			      }
+			   }
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				if(g_console.fbo_enabled)
-				{
-					bool should_increment = g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR;
-					if(should_increment)
-					{
-						rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
-						apply_scaling(FBO_REINIT);
-						set_delay = DELAY_MEDIUM;
-					}
-				}
+                           if(g_console.fbo_enabled)
+			   {
+                              bool should_increment = g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR;
+			      if(should_increment)
+			      {
+                                 rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
+				 apply_scaling(FBO_REINIT);
+				 set_delay = DELAY_MEDIUM;
+			      }
+			   }
 			}
 			if(CTRL_START(state))
 			{
-				rarch_settings_default(S_DEF_SCALE_FACTOR);
-				apply_scaling(FBO_DEINIT);
-				apply_scaling(FBO_INIT);
+                           rarch_settings_default(S_DEF_SCALE_FACTOR);
+			   apply_scaling(FBO_DEINIT);
+			   apply_scaling(FBO_INIT);
 			}
 			break;
 		case SETTING_HW_OVERSCAN_AMOUNT:
@@ -1440,37 +1434,37 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
 #if(CELL_SDK_VERSION > 0x340000)
-				g_console.screenshots_enable = !g_console.screenshots_enable;
-				if(g_console.screenshots_enable)
-				{
-					cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
-					CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
+                           g_console.screenshots_enable = !g_console.screenshots_enable;
+			   if(g_console.screenshots_enable)
+			   {
+                              cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+			      CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
 
-					screenshot_param.photo_title = EMULATOR_NAME;
-					screenshot_param.game_title = EMULATOR_NAME;
-					cellScreenShotSetParameter (&screenshot_param);
-					cellScreenShotEnable();
-				}
-				else
-				{
-					cellScreenShotDisable();
-					cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
-				}
+			      screenshot_param.photo_title = EMULATOR_NAME;
+			      screenshot_param.game_title = EMULATOR_NAME;
+			      cellScreenShotSetParameter (&screenshot_param);
+			      cellScreenShotEnable();
+			   }
+			   else
+			   {
+                              cellScreenShotDisable();
+			      cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+			   }
 
-				set_delay = DELAY_MEDIUM;
+			   set_delay = DELAY_MEDIUM;
 #endif
 			}
 			if(CTRL_START(state))
 			{
 #if(CELL_SDK_VERSION > 0x340000)
-				g_console.screenshots_enable = true;
+                           g_console.screenshots_enable = true;
 #endif
 			}
 			break;
 		case SETTING_SAVE_SHADER_PRESET:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state)  || CTRL_RIGHT(state) | CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				rarch_filename_input_and_save(SHADER_PRESET_FILE);
+                           rarch_filename_input_and_save(SHADER_PRESET_FILE);
 			}
 			break;
 		case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
@@ -1480,58 +1474,54 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_SOUND_MODE:
 			if(CTRL_LEFT(state) ||  CTRL_LSTICK_LEFT(state))
 			{
-				if(g_console.sound_mode != SOUND_MODE_NORMAL)
-				{
-					g_console.sound_mode--;
-					set_delay = DELAY_MEDIUM;
-				}
+                           if(g_console.sound_mode != SOUND_MODE_NORMAL)
+			   {
+                              g_console.sound_mode--;
+			      set_delay = DELAY_MEDIUM;
+			   }
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				if(g_console.sound_mode < SOUND_MODE_HEADSET)
-				{
-					g_console.sound_mode++;
-					set_delay = DELAY_MEDIUM;
-				}
+                           if(g_console.sound_mode < SOUND_MODE_HEADSET)
+			   {
+                              g_console.sound_mode++;
+			      set_delay = DELAY_MEDIUM;
+			   }
 			}
 			if(CTRL_UP(state) || CTRL_LSTICK_UP(state) || CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))
 			{
-				if(g_console.sound_mode != SOUND_MODE_RSOUND)
-				{
-					rarch_console_rsound_stop();
-				}
-				else
-				{
-					rarch_console_rsound_start(g_settings.audio.device);
-				}
+                           if(g_console.sound_mode != SOUND_MODE_RSOUND)
+                              rarch_console_rsound_stop();
+			   else
+                              rarch_console_rsound_start(g_settings.audio.device);
 			}
 			if(CTRL_START(state))
 			{
-				g_console.sound_mode = SOUND_MODE_NORMAL;
-				rarch_console_rsound_stop();
-				set_delay = DELAY_MEDIUM;
+                           g_console.sound_mode = SOUND_MODE_NORMAL;
+			   rarch_console_rsound_stop();
+			   set_delay = DELAY_MEDIUM;
 			}
 			break;
 		case SETTING_RSOUND_SERVER_IP_ADDRESS:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_CROSS(state) | CTRL_LSTICK_RIGHT(state) )
 			{
-				oskutil_write_initial_message(&g_console.oskutil_handle, L"192.168.1.1");
-				oskutil_write_message(&g_console.oskutil_handle, L"Enter IP address for the RSound Server.");
-				oskutil_start(&g_console.oskutil_handle);
-				while(OSK_IS_RUNNING(g_console.oskutil_handle))
-				{
-					glClear(GL_COLOR_BUFFER_BIT);
-					gfx_ctx_swap_buffers();
+                           oskutil_write_initial_message(&g_console.oskutil_handle, L"192.168.1.1");
+			   oskutil_write_message(&g_console.oskutil_handle, L"Enter IP address for the RSound Server.");
+			   oskutil_start(&g_console.oskutil_handle);
+			   while(OSK_IS_RUNNING(g_console.oskutil_handle))
+			   {
+                              glClear(GL_COLOR_BUFFER_BIT);
+			      gfx_ctx_swap_buffers();
 #ifdef HAVE_SYSUTILS
-                                        cellSysutilCheckCallback();
+			      cellSysutilCheckCallback();
 #endif
-				}
+			   }
 
-				if(g_console.oskutil_handle.text_can_be_fetched)
-					strlcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(g_settings.audio.device));
+			   if(g_console.oskutil_handle.text_can_be_fetched)
+                              strlcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(g_settings.audio.device));
 			}
 			if(CTRL_START(state))
-				strlcpy(g_settings.audio.device, "0.0.0.0", sizeof(g_settings.audio.device));
+                           strlcpy(g_settings.audio.device, "0.0.0.0", sizeof(g_settings.audio.device));
 			break;
 		case SETTING_DEFAULT_AUDIO_ALL:
 			break;
@@ -1553,39 +1543,39 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_EMU_SHOW_INFO_MSG:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
-				g_console.info_msg_enable = !g_console.info_msg_enable;
-				set_delay = DELAY_MEDIUM;
+                           g_console.info_msg_enable = !g_console.info_msg_enable;
+			   set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
-				g_console.info_msg_enable = true;
-				set_delay = DELAY_MEDIUM;
+                           g_console.info_msg_enable = true;
+			   set_delay = DELAY_MEDIUM;
 			}
 			break;
 		case SETTING_EMU_REWIND_ENABLED:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-                                rarch_settings_change(S_REWIND);
+                           rarch_settings_change(S_REWIND);
 
-				set_delay = DELAY_MEDIUM;
-				if(g_console.info_msg_enable)
-				{
-                                   msg_queue_clear(g_extern.msg_queue);
-				   msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
-				}
+			   set_delay = DELAY_MEDIUM;
+			   if(g_console.info_msg_enable)
+			   {
+                              msg_queue_clear(g_extern.msg_queue);
+			      msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
+			   }
 			}
 			if(CTRL_START(state))
-				g_settings.rewind_enable = false;
+                           g_settings.rewind_enable = false;
 			break;
 		case SETTING_RARCH_DEFAULT_EMU:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = LIBRETRO_CHOICE;
-				set_initial_dir_tmpbrowser = true;
-				set_libretro_core_as_launch = false;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = LIBRETRO_CHOICE;
+			   set_initial_dir_tmpbrowser = true;
+			   set_libretro_core_as_launch = false;
+			   set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
@@ -1594,26 +1584,23 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_EMU_AUDIO_MUTE:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				g_extern.audio_data.mute = !g_extern.audio_data.mute;
-
-				set_delay = DELAY_MEDIUM;
+                           g_extern.audio_data.mute = !g_extern.audio_data.mute;
+			   set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
-			{
-				g_extern.audio_data.mute = false;
-			}
+                           g_extern.audio_data.mute = false;
 			break;
 		case SETTING_ENABLE_CUSTOM_BGM:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
 #if(CELL_SDK_VERSION > 0x340000)
-				g_console.custom_bgm_enable = !g_console.custom_bgm_enable;
-				if(g_console.custom_bgm_enable)
-					cellSysutilEnableBgmPlayback();
-				else
-					cellSysutilDisableBgmPlayback();
+                           g_console.custom_bgm_enable = !g_console.custom_bgm_enable;
+			   if(g_console.custom_bgm_enable)
+                              cellSysutilEnableBgmPlayback();
+			   else
+                              cellSysutilDisableBgmPlayback();
 
-				set_delay = DELAY_MEDIUM;
+			   set_delay = DELAY_MEDIUM;
 #endif
 			}
 			if(CTRL_START(state))
@@ -1630,11 +1617,11 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = PATH_DEFAULT_ROM_DIR_CHOICE;
-				set_initial_dir_tmpbrowser = true;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = PATH_DEFAULT_ROM_DIR_CHOICE;
+			   set_initial_dir_tmpbrowser = true;
+			   set_delay = DELAY_LONG;
 			}
 
 			if(CTRL_START(state))
@@ -1643,113 +1630,111 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_PATH_SAVESTATES_DIRECTORY:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = PATH_SAVESTATES_DIR_CHOICE;
-				set_initial_dir_tmpbrowser = true;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = PATH_SAVESTATES_DIR_CHOICE;
+			   set_initial_dir_tmpbrowser = true;
+			   set_delay = DELAY_LONG;
 			}
 
 			if(CTRL_START(state))
-				strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
+                           strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
 
 			break;
 		case SETTING_PATH_SRAM_DIRECTORY:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = PATH_SRAM_DIR_CHOICE;
-				set_initial_dir_tmpbrowser = true;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = PATH_SRAM_DIR_CHOICE;
+			   set_initial_dir_tmpbrowser = true;
+			   set_delay = DELAY_LONG;
 			}
 
 			if(CTRL_START(state))
-				strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
+                           strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
 			break;
 		case SETTING_PATH_CHEATS:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = PATH_CHEATS_DIR_CHOICE;
-				set_initial_dir_tmpbrowser = true;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = PATH_CHEATS_DIR_CHOICE;
+			   set_initial_dir_tmpbrowser = true;
+			   set_delay = DELAY_LONG;
 			}
 
 			if(CTRL_START(state))
-				strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
+                           strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
 			break;
 		case SETTING_ENABLE_SRAM_PATH:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
-				g_console.default_sram_dir_enable = !g_console.default_sram_dir_enable;
-				menu_reinit_settings();
-				set_delay = DELAY_MEDIUM;
+                           g_console.default_sram_dir_enable = !g_console.default_sram_dir_enable;
+			   menu_reinit_settings();
+			   set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
-				g_console.default_sram_dir_enable = true;
-				menu_reinit_settings();
+                           g_console.default_sram_dir_enable = true;
+			   menu_reinit_settings();
 			}
 			break;
 		case SETTING_ENABLE_STATE_PATH:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
-				g_console.default_savestate_dir_enable = !g_console.default_savestate_dir_enable;
-				menu_reinit_settings();
-				set_delay = DELAY_MEDIUM;
+                           g_console.default_savestate_dir_enable = !g_console.default_savestate_dir_enable;
+			   menu_reinit_settings();
+			   set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
-				g_console.default_savestate_dir_enable = true;
-				menu_reinit_settings();
+                           g_console.default_savestate_dir_enable = true;
+			   menu_reinit_settings();
 			}
 			break;
 		case SETTING_PATH_DEFAULT_ALL:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
 			{
-				strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
-				strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
-				strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
-				strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
+                           strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
+			   strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
+			   strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
+			   strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
 
-				menu_reinit_settings();
+			   menu_reinit_settings();
 			}
 			break;
 		case SETTING_CONTROLS_SCHEME:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) | CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = INPUT_PRESET_CHOICE;
-				set_initial_dir_tmpbrowser = true;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = INPUT_PRESET_CHOICE;
+			   set_initial_dir_tmpbrowser = true;
+			   set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
-			{
-				menu_reinit_settings();
-			}
+                           menu_reinit_settings();
 			break;
 		case SETTING_CONTROLS_NUMBER:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
 			{
-				if(currently_selected_controller_menu != 0)
-					currently_selected_controller_menu--;
-				menu_reinit_settings();
-				set_delay = DELAY_MEDIUM;
+                           if(currently_selected_controller_menu != 0)
+                              currently_selected_controller_menu--;
+			   menu_reinit_settings();
+			   set_delay = DELAY_MEDIUM;
 			}
 
 			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				if(currently_selected_controller_menu < 6)
-					currently_selected_controller_menu++;
-				menu_reinit_settings();
-				set_delay = DELAY_MEDIUM;
+                           if(currently_selected_controller_menu < 6)
+                              currently_selected_controller_menu++;
+			   menu_reinit_settings();
+			   set_delay = DELAY_MEDIUM;
 			}
 
 			if(CTRL_START(state))
-				currently_selected_controller_menu = 0;
+                           currently_selected_controller_menu = 0;
 			break; 
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
 			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_UP);
@@ -1798,15 +1783,13 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			break;
 		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
-			{
-				rarch_filename_input_and_save(INPUT_PRESET_FILE);
-			}
+                           rarch_filename_input_and_save(INPUT_PRESET_FILE);
 			break;
 		case SETTING_CONTROLS_DEFAULT_ALL:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
 			{
-				rarch_input_set_default_keybinds(currently_selected_controller_menu);
-				menu_reinit_settings();
+                           rarch_input_set_default_keybinds(currently_selected_controller_menu);
+			   menu_reinit_settings();
 			}
 			break;
 	}
@@ -2028,7 +2011,6 @@ static void ingame_menu(uint32_t menu_id)
 
    menuitem_colors[g_console.ingame_menu_item] = RED;
 
-
    state = cell_pad_input_poll_device(0);
    stuck_in_loop = 1;
    blocking = 0;
@@ -2221,13 +2203,9 @@ static void ingame_menu(uint32_t menu_id)
 		  rarch_render_cached_frame();
 
 		  if(CTRL_SQUARE(state))
-                  {
                      gl->menu_render = false;
-                  }
                   else
-                  {
                      gl->menu_render = true;
-                  }
 
 		  if(CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state))
 			  g_console.viewports.custom_vp.x -= 1;
@@ -2576,7 +2554,7 @@ void menu_loop(void)
 	    break;
 	 case INGAME_MENU:
 	    if(g_console.ingame_menu_enable)
-		    ingame_menu(menuStack[menuStackindex].enum_id);
+               ingame_menu(menuStack[menuStackindex].enum_id);
 	    break;
       }
 

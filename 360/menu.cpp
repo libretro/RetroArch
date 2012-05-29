@@ -27,7 +27,7 @@
 
 #include "../general.h"
 
-CRetroArch        app;
+CRetroArch app;
 HXUIOBJ hCur;
 filebrowser_t browser;
 filebrowser_t tmp_browser;
@@ -132,7 +132,7 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
-	   snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+      snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
       m_controlslist.SetText(i, rarch_convert_char_to_wchar(buttons[i]));
    }
    
@@ -150,32 +150,32 @@ HRESULT CRetroArchControls::OnControlNavigate(XUIMessageControlNavigate *pContro
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
-	   snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+      snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
       m_controlslist.SetText(i, rarch_convert_char_to_wchar(buttons[i]));
    }
 
-	switch(pControlNavigateData->nControlNavigate)
-	{
-       case XUI_CONTROL_NAVIGATE_LEFT:
-		   if(current_index > 0 && current_index != SETTING_CONTROLS_DEFAULT_ALL)
-		   {
-              rarch_input_set_keybind(controlno, KEYBIND_DECREMENT, current_index);
-			  snprintf(button, sizeof(button), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
-              m_controlslist.SetText(current_index, rarch_convert_char_to_wchar(button));
-		   }
-          break;
-	   case XUI_CONTROL_NAVIGATE_RIGHT:
-		   if(current_index < RARCH_FIRST_META_KEY && current_index != SETTING_CONTROLS_DEFAULT_ALL)
-		   {
-              rarch_input_set_keybind(controlno, KEYBIND_INCREMENT, current_index);
-			  snprintf(button, sizeof(button), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
-              m_controlslist.SetText(current_index, rarch_convert_char_to_wchar(button));
-		   }
-          break;
-	   case XUI_CONTROL_NAVIGATE_UP:
-	   case XUI_CONTROL_NAVIGATE_DOWN:
-          break;
-	}
+   switch(pControlNavigateData->nControlNavigate)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+         if(current_index > 0 && current_index != SETTING_CONTROLS_DEFAULT_ALL)
+	 {
+            rarch_input_set_keybind(controlno, KEYBIND_DECREMENT, current_index);
+	    snprintf(button, sizeof(button), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+	    m_controlslist.SetText(current_index, rarch_convert_char_to_wchar(button));
+	 }
+	 break;
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+	 if(current_index < RARCH_FIRST_META_KEY && current_index != SETTING_CONTROLS_DEFAULT_ALL)
+	 {
+            rarch_input_set_keybind(controlno, KEYBIND_INCREMENT, current_index);
+	    snprintf(button, sizeof(button), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+	    m_controlslist.SetText(current_index, rarch_convert_char_to_wchar(button));
+	 }
+	 break;
+      case XUI_CONTROL_NAVIGATE_UP:
+      case XUI_CONTROL_NAVIGATE_DOWN:
+	 break;
+   }
 
 	return 0;
 }
@@ -197,13 +197,13 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
             for(i = 0; i < RARCH_FIRST_META_KEY; i++)
             {
-				snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+               snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
                m_controlslist.SetText(i, rarch_convert_char_to_wchar(buttons[i]));
             }
             break;
          default:
             rarch_input_set_keybind(controlno, KEYBIND_DEFAULT, current_index);
-			snprintf(buttons[current_index], sizeof(buttons[current_index]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+            snprintf(buttons[current_index], sizeof(buttons[current_index]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
             m_controlslist.SetText(current_index, rarch_convert_char_to_wchar(buttons[current_index]));
             break;
       }
@@ -246,48 +246,48 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
    
    current_index = m_settingslist.GetCurSel();
 
-	switch(pControlNavigateData->nControlNavigate)
-	{
-       case XUI_CONTROL_NAVIGATE_LEFT:
-		   switch(current_index)
-		   {
-		      case SETTING_SCALE_FACTOR:
-                 if(vid->fbo_enabled)
-				 {
-                    if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
-					{
-                       rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
-					   //xdk360_gfx_init_fbo(vid);
-					   snprintf(scalefactor, sizeof(scalefactor), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
-                       m_settingslist.SetText(SETTING_SCALE_FACTOR, rarch_convert_char_to_wchar(scalefactor));
-					}
-				 }
-		      default:
-                 break;
-		   }
-          break;
-	   case XUI_CONTROL_NAVIGATE_RIGHT:
-		   switch(current_index)
-		   {
-		      case SETTING_SCALE_FACTOR:
-                 if(vid->fbo_enabled)
-				 {
-                    if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
-					{
-                       rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
-					   //xdk360_gfx_init_fbo(vid);
-                       snprintf(scalefactor, sizeof(scalefactor), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
-                       m_settingslist.SetText(SETTING_SCALE_FACTOR, rarch_convert_char_to_wchar(scalefactor));
-					}
-				 }
-		      default:
-                 break;
-		   }
-          break;
-	   case XUI_CONTROL_NAVIGATE_UP:
-	   case XUI_CONTROL_NAVIGATE_DOWN:
-          break;
-	}
+   switch(pControlNavigateData->nControlNavigate)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+         switch(current_index)
+	 {
+            case SETTING_SCALE_FACTOR:
+               if(vid->fbo_enabled)
+	       {
+                  if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
+		  {
+                     rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
+		     //xdk360_gfx_init_fbo(vid);
+		     snprintf(scalefactor, sizeof(scalefactor), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
+		     m_settingslist.SetText(SETTING_SCALE_FACTOR, rarch_convert_char_to_wchar(scalefactor));
+		  }
+	       }
+	    default:
+	       break;
+	 }
+	 break;
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+	 switch(current_index)
+	 {
+            case SETTING_SCALE_FACTOR:
+               if(vid->fbo_enabled)
+	       {
+                  if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
+		  {
+                     rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
+		     //xdk360_gfx_init_fbo(vid);
+		     snprintf(scalefactor, sizeof(scalefactor), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
+		     m_settingslist.SetText(SETTING_SCALE_FACTOR, rarch_convert_char_to_wchar(scalefactor));
+		  }
+	       }
+	    default:
+		    break;
+	 }
+	 break;
+      case XUI_CONTROL_NAVIGATE_UP:
+      case XUI_CONTROL_NAVIGATE_DOWN:
+	 break;
+   }
 
 	return 0;
 }
@@ -296,6 +296,7 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    GetChildById(L"XuiQuickMenuList", &m_quickmenulist);
    GetChildById(L"XuiBackButton", &m_back);
+
    switch(g_console.screen_orientation)
    {
       case ORIENTATION_NORMAL:
@@ -311,6 +312,7 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 	     m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
 	 break;
    }
+
    char aspectratio_label[32];
    snprintf(aspectratio_label, sizeof(aspectratio_label), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
    wchar_t * aspectratio_label_w = rarch_convert_char_to_wchar(aspectratio_label);
@@ -346,80 +348,80 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    }
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
-        {
-			g_console.aspect_ratio_index++;
-			if(g_console.aspect_ratio_index >= ASPECT_RATIO_END)
-			   g_console.aspect_ratio_index = 0;
+	    {
+               g_console.aspect_ratio_index++;
+	       if(g_console.aspect_ratio_index >= ASPECT_RATIO_END)
+                  g_console.aspect_ratio_index = 0;
 
-			gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
-			char aspectratio_label[32];
-			snprintf(aspectratio_label, sizeof(aspectratio_label), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
-			wchar_t * aspectratio_label_w = rarch_convert_char_to_wchar(aspectratio_label);
-			m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, aspectratio_label_w);
-			free(aspectratio_label_w);
-		}
+	       gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
+	       char aspectratio_label[32];
+	       snprintf(aspectratio_label, sizeof(aspectratio_label), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
+	       wchar_t * aspectratio_label_w = rarch_convert_char_to_wchar(aspectratio_label);
+	       m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, aspectratio_label_w);
+	       free(aspectratio_label_w);
+	    }
 	    break;
 	 case MENU_ITEM_OVERSCAN_AMOUNT:
             if(g_console.info_msg_enable)
             {
                if(g_console.info_msg_enable)
-			   {
+	       {
                   msg_queue_clear(g_extern.msg_queue);
-                  msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
-			   }
+		  msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
+	       }
             }
 	    break;
 	 case MENU_ITEM_ORIENTATION:
 	    switch(g_console.screen_orientation)
 	    {
-           case ORIENTATION_NORMAL:
-              g_console.screen_orientation = ORIENTATION_VERTICAL;
-              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
-              break;
-		   case ORIENTATION_VERTICAL:
-              g_console.screen_orientation = ORIENTATION_FLIPPED;
-              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
-              break;
-           case ORIENTATION_FLIPPED:
-              g_console.screen_orientation = ORIENTATION_FLIPPED_ROTATED;
-              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
-              break;
-           case ORIENTATION_FLIPPED_ROTATED:
-              g_console.screen_orientation = ORIENTATION_NORMAL;
-              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Normal");
-              break;
+               case ORIENTATION_NORMAL:
+                  g_console.screen_orientation = ORIENTATION_VERTICAL;
+		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
+		  break;
+	       case ORIENTATION_VERTICAL:
+		  g_console.screen_orientation = ORIENTATION_FLIPPED;
+		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
+		  break;
+	       case ORIENTATION_FLIPPED:
+		  g_console.screen_orientation = ORIENTATION_FLIPPED_ROTATED;
+		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
+		  break;
+	       case ORIENTATION_FLIPPED_ROTATED:
+		  g_console.screen_orientation = ORIENTATION_NORMAL;
+		  m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Normal");
+		  break;
 	    }
 	    video_xdk360.set_rotation(driver.video_data, g_console.screen_orientation);
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
 	    g_console.input_loop = INPUT_LOOP_RESIZE_MODE;
-        if (g_console.info_msg_enable)
-        {
-           msg_queue_clear(g_extern.msg_queue);
-           msg_queue_push(g_extern.msg_queue, "INFO - Resize the screen by moving around the two analog sticks.\nPress Y to reset to default values, and B to go back.\nTo select the resized screen mode, set Aspect Ratio to: 'Custom'.", 1, 270);
-        }
+	    if (g_console.info_msg_enable)
+	    {
+               msg_queue_clear(g_extern.msg_queue);
+	       msg_queue_push(g_extern.msg_queue, "INFO - Resize the screen by moving around the two analog sticks.\nPress Y to reset to default values, and B to go back.\nTo select the resized screen mode, set Aspect Ratio to: 'Custom'.", 1, 270);
+	    }
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
 	    if (g_console.emulator_initialized)
-           rarch_settings_change(S_FRAME_ADVANCE);
+               rarch_settings_change(S_FRAME_ADVANCE);
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
-        if (g_console.info_msg_enable)
+	    if (g_console.info_msg_enable)
 	    {
-           msg_queue_clear(g_extern.msg_queue);
-           msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
-        }
+               msg_queue_clear(g_extern.msg_queue);
+	       msg_queue_push(g_extern.msg_queue, "TODO - Not yet implemented.", 1, 180);
+	    }
 	    break;
 	 case MENU_ITEM_RESET:
-        if (g_console.emulator_initialized)
+	    if (g_console.emulator_initialized)
 	    {
-           rarch_settings_change(S_RETURN_TO_GAME);
-           rarch_game_reset();
+               rarch_settings_change(S_RETURN_TO_GAME);
+	       rarch_game_reset();
 	    }
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
 	    if (g_console.emulator_initialized)
-           rarch_settings_change(S_RETURN_TO_GAME);
+               rarch_settings_change(S_RETURN_TO_GAME);
 	    break;
 	 case MENU_ITEM_RETURN_TO_DASHBOARD:
 	    rarch_settings_change(S_RETURN_TO_DASHBOARD);
@@ -476,7 +478,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
          retro_get_system_info(&info);
          bool block_zip_extract  = info.block_extract;
 
-		 const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t*)m_romlist.GetText(index));
+	 const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t*)m_romlist.GetText(index));
 
          if((strstr(strbuffer, ".zip") || strstr(strbuffer, ".ZIP")) && !block_zip_extract)
          {
@@ -574,15 +576,15 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       int index = m_romlist.GetCurSel();
       if(tmp_browser.cur[index].d_type != FILE_ATTRIBUTE_DIRECTORY)
       {
-	     const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
-	     snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
-	     rarch_settings_change(S_RETURN_TO_LAUNCHER);
+         const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
+	 snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+	 rarch_settings_change(S_RETURN_TO_LAUNCHER);
       }
       else if(tmp_browser.cur[index].d_type == FILE_ATTRIBUTE_DIRECTORY)
       {
-	     const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
-	     snprintf(path, sizeof(path), "%s%s\\", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
-	     filebrowser_fetch_directory_entries(path, &tmp_browser, &m_romlist, &m_rompathtitle);
+         const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
+	 snprintf(path, sizeof(path), "%s%s\\", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+	 filebrowser_fetch_directory_entries(path, &tmp_browser, &m_romlist, &m_rompathtitle);
       }
    }
 
@@ -616,26 +618,26 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_console.info_msg_enable ? L"Info messages: ON" : L"Info messages: OFF");
 	    break;
 	 case SETTING_EMU_MENUS:
-        g_console.menus_hd_enable = !g_console.menus_hd_enable;
-        m_settingslist.SetText(SETTING_EMU_MENUS, g_console.menus_hd_enable ? L"Menus: HD" : L"Menus: SD");
-        break;
+	    g_console.menus_hd_enable = !g_console.menus_hd_enable;
+	    m_settingslist.SetText(SETTING_EMU_MENUS, g_console.menus_hd_enable ? L"Menus: HD" : L"Menus: SD");
+	    break;
 	 case SETTING_GAMMA_CORRECTION_ENABLED:
 	    g_console.gamma_correction_enable = !g_console.gamma_correction_enable;
 	    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-        if(g_console.info_msg_enable)
-		{
-		   msg_queue_clear(g_extern.msg_queue);
-		   msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
-		}
+	    if(g_console.info_msg_enable)
+	    {
+               msg_queue_clear(g_extern.msg_queue);
+	       msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
+	    }
 	    break;
 	 case SETTING_COLOR_FORMAT:
 	    g_console.color_format = !g_console.color_format;
 	    m_settingslist.SetText(SETTING_COLOR_FORMAT, g_console.color_format ? L"Color format: 32bit ARGB" : L"Color format: 16bit RGBA");
 	    if (g_console.info_msg_enable)
-        {
-           msg_queue_clear(g_extern.msg_queue);
-           msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
-        }
+            {
+               msg_queue_clear(g_extern.msg_queue);
+	       msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch for this change to take effect.", 1, 180);
+            }
 	    break;
 	 case SETTING_SHADER:
 	    set_shader = 1;
@@ -646,11 +648,12 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
                RARCH_ERR("Failed to load scene.\n");
 	    }
 	    hCur = app.hShaderBrowser;
-	    if (g_console.info_msg_enable)
-        {
-	       msg_queue_clear(g_extern.msg_queue);
+
+            if (g_console.info_msg_enable)
+            {
+               msg_queue_clear(g_extern.msg_queue);
 	       msg_queue_push(g_extern.msg_queue, "INFO - Select a shader from the menu by pressing the A button.", 1, 180);
-        }
+            }
 	    NavigateForward(app.hShaderBrowser);
 	    break;
 	 case SETTING_SHADER_2:
@@ -662,10 +665,10 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    }
 	    hCur = app.hShaderBrowser;
 	    if (g_console.info_msg_enable)
-        {
-	       msg_queue_clear(g_extern.msg_queue);
+            {
+               msg_queue_clear(g_extern.msg_queue);
 	       msg_queue_push(g_extern.msg_queue, "INFO - Select a shader from the menu by pressing the A button.", 1, 180);
-        }
+            }
 	    NavigateForward(app.hShaderBrowser);
 	    break;
 	 case SETTING_HW_TEXTURE_FILTER:
@@ -811,7 +814,7 @@ int menu_init (void)
 
 void menu_deinit (void)
 {
-	app.Uninit();
+   app.Uninit();
 }
 
 void menu_loop(void)
@@ -829,32 +832,31 @@ void menu_loop(void)
    {
       if(!g_console.emulator_initialized)
          d3d9->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
-	  else
-	  {
+      else
          rarch_render_cached_frame();
-	  }
 
       XINPUT_STATE state;
       XInputGetState(0, &state);
 
       g_console.menu_enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
-		      && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_console.emulator_initialized)
-		      && IS_TIMER_EXPIRED(d3d9));
+      && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_console.emulator_initialized)
+      && IS_TIMER_EXPIRED(d3d9));
+
       g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
 
-	  switch(g_console.input_loop)
-	  {
+      switch(g_console.input_loop)
+      {
          case INPUT_LOOP_MENU:
-			app.RunFrame();			/* Update XUI */
-            if(state.Gamepad.wButtons & XINPUT_GAMEPAD_B && hCur != app.hMainScene)
+            app.RunFrame();			/* Update XUI */
+	    if(state.Gamepad.wButtons & XINPUT_GAMEPAD_B && hCur != app.hMainScene)
                XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
-            break;
-		 case INPUT_LOOP_RESIZE_MODE:
-			xdk360_input_loop();
-			break;
-	     default:
-		    break;
-	  }
+	    break;
+	 case INPUT_LOOP_RESIZE_MODE:
+	    xdk360_input_loop();
+	    break;
+	 default:
+	    break;
+      }
 
       hr = app.Render();		/* Render XUI */
       hr = XuiTimersRun();	/* Update XUI timers */
@@ -864,21 +866,18 @@ void menu_loop(void)
          SET_TIMER_EXPIRATION(d3d9, 30);
       }
 
-	  /* XBox 360 specific font code */
-	  {
-		 const char *msg = msg_queue_pull(g_extern.msg_queue);
+      const char *msg = msg_queue_pull(g_extern.msg_queue);
 
-         if (msg)
-         {
-            if(IS_TIMER_EXPIRED(d3d9))
-            {
-               xdk360_console_format(msg);
-               SET_TIMER_EXPIRATION(d3d9, 30);
-            }
+      if (msg)
+      {
+         if(IS_TIMER_EXPIRED(d3d9))
+	 {
+            xdk360_console_format(msg);
+	    SET_TIMER_EXPIRATION(d3d9, 30);
+	 }
 
-            xdk360_console_draw();
-         }
-	  }
+	 xdk360_console_draw();
+      }
 
       gfx_ctx_swap_buffers();
    }while(g_console.menu_enable);
