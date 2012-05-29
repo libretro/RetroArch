@@ -495,6 +495,14 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "Custom", 0.0f }
 };
 
+char rotation_lut[ASPECT_RATIO_END][PATH_MAX] =
+{
+	"Normal",
+    "Vertical",
+	"Flipped",
+    "Flipped Rotated"
+};
+
 void rarch_set_auto_viewport(unsigned width, unsigned height)
 {
    if(width == 0 || height == 0)

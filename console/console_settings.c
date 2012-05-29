@@ -83,16 +83,16 @@ void rarch_settings_change(unsigned setting)
          g_console.ingame_menu_item = 0;
          g_console.mode_switch = MODE_MENU;
          break;
-      case S_REWIND:
-         g_settings.rewind_enable = !g_settings.rewind_enable;
-         break;
-      case S_ROTATION_DECREMENT:
-         if(g_console.screen_orientation > ORIENTATION_NORMAL)
+	  case S_ROTATION_DECREMENT:
+	     if(g_console.screen_orientation > 0)
             g_console.screen_orientation--;
          break;
-      case S_ROTATION_INCREMENT:
-         if((g_console.screen_orientation+1) < ORIENTATION_END)
+	  case S_ROTATION_INCREMENT:
+	     if(g_console.screen_orientation < LAST_ORIENTATION)
             g_console.screen_orientation++;
+         break;
+      case S_REWIND:
+         g_settings.rewind_enable = !g_settings.rewind_enable;
          break;
       case S_SAVESTATE_DECREMENT:
          if(g_extern.state_slot != 0)
@@ -137,6 +137,9 @@ void rarch_settings_default(unsigned setting)
       case S_DEF_OVERSCAN:
          g_console.overscan_amount = 0.0f;
          g_console.overscan_enable = false;
+         break;
+	  case S_DEF_ROTATION:
+         g_console.screen_orientation = ORIENTATION_NORMAL;
          break;
       case S_DEF_THROTTLE:
          g_console.throttle_enable = true;
@@ -216,6 +219,9 @@ void rarch_settings_create_menu_item_label(wchar_t * strwbuf, unsigned setting, 
          break;
 	  case S_LBL_SCALE_FACTOR:
          snprintf(str, sizeof(str), "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
+         break;
+	  case S_LBL_ROTATION:
+         snprintf(str, sizeof(str), "Rotation: %s", rotation_lut[g_console.screen_orientation]);
          break;
    }
 

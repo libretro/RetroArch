@@ -65,6 +65,10 @@ enum rotation
    ORIENTATION_END
 };
 
+#define LAST_ORIENTATION (ORIENTATION_END-1)
+
+extern char rotation_lut[ASPECT_RATIO_END][PATH_MAX];
+
 struct aspect_ratio_elem
 {
    char name[64];

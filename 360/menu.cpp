@@ -311,21 +311,8 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiQuickMenuList", &m_quickmenulist);
    GetChildById(L"XuiBackButton", &m_back);
 
-   switch(g_console.screen_orientation)
-   {
-      case ORIENTATION_NORMAL:
-         m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Normal");
-	 break;
-      case ORIENTATION_VERTICAL:
-	     m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
-	 break;
-      case ORIENTATION_FLIPPED:
-	     m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
-	 break;
-      case ORIENTATION_FLIPPED_ROTATED:
-	     m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
-	 break;
-   }
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+   m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
    m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
@@ -350,6 +337,12 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
                rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
                aspectratio_changed = true;
                break;
+            case MENU_ITEM_ORIENTATION:
+               rarch_settings_change(S_ROTATION_DECREMENT);
+               rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+               m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
+               video_xdk360.set_rotation(driver.video_data, g_console.screen_orientation);
+               break;
             default:
                break;
          }
@@ -360,6 +353,12 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
             case MENU_ITEM_KEEP_ASPECT_RATIO:
                rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
 	           aspectratio_changed = true;
+               break;
+            case MENU_ITEM_ORIENTATION:
+               rarch_settings_change(S_ROTATION_INCREMENT);
+               rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+               m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
+               video_xdk360.set_rotation(driver.video_data, g_console.screen_orientation);
                break;
             default:
                break;
@@ -431,25 +430,9 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
            rarch_settings_msg(S_MSG_NOT_IMPLEMENTED, S_DELAY_180);
 	    break;
 	 case MENU_ITEM_ORIENTATION:
-	    switch(g_console.screen_orientation)
-	    {
-           case ORIENTATION_NORMAL:
-              g_console.screen_orientation = ORIENTATION_VERTICAL;
-              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Vertical");
-              break;
-	       case ORIENTATION_VERTICAL:
-              g_console.screen_orientation = ORIENTATION_FLIPPED;
-              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped");
-              break;
-           case ORIENTATION_FLIPPED:
-              g_console.screen_orientation = ORIENTATION_FLIPPED_ROTATED;
-              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Flipped Rotated");
-              break;
-           case ORIENTATION_FLIPPED_ROTATED:
-              g_console.screen_orientation = ORIENTATION_NORMAL;
-              m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, L"Orientation: Normal");
-              break;
-	    }
+        rarch_settings_default(S_DEF_ROTATION);
+        rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+        m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
 	    video_xdk360.set_rotation(driver.video_data, g_console.screen_orientation);
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
