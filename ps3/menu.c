@@ -1538,12 +1538,12 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
 			{
-                           rarch_settings_change(S_OVERSCAN_DECREMENT);
+                           rarch_settings_change(S_SAVESTATE_DECREMENT);
 			   set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-                           rarch_settings_change(S_OVERSCAN_INCREMENT);
+                           rarch_settings_change(S_SAVESTATE_INCREMENT);
 			   set_delay = DELAY_MEDIUM;
 			}
 
@@ -1565,7 +1565,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_EMU_REWIND_ENABLED:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				g_settings.rewind_enable = !g_settings.rewind_enable;
+                                rarch_settings_change(S_REWIND);
 
 				set_delay = DELAY_MEDIUM;
 				if(g_console.info_msg_enable)
@@ -1575,9 +1575,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				}
 			}
 			if(CTRL_START(state))
-			{
 				g_settings.rewind_enable = false;
-			}
 			break;
 		case SETTING_RARCH_DEFAULT_EMU:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
@@ -2347,6 +2345,7 @@ static void ingame_menu(uint32_t menu_id)
 	    {
                while(stuck_in_loop && g_console.ingame_menu_enable)
 	       {
+                  gl->menu_render = false;
                   state = cell_pad_input_poll_device(0);
 		  if(CTRL_CIRCLE(state))
 		  {
@@ -2361,6 +2360,7 @@ static void ingame_menu(uint32_t menu_id)
                   cellSysutilCheckCallback();
 #endif
 	       }
+               gl->menu_render = true;
 	    }
 
 	    strlcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.", sizeof(comment));
@@ -2615,7 +2615,7 @@ void menu_loop(void)
 
       const char * message = msg_queue_pull(g_extern.msg_queue);
 
-      if (message)
+      if (message && g_console.info_msg_enable)
       {
          if(IS_TIMER_EXPIRED(gl))
          {
