@@ -26,6 +26,14 @@ void rarch_settings_change(unsigned setting)
 {
    switch(setting)
    {
+      case S_ASPECT_RATIO_DECREMENT:
+	     if(g_console.aspect_ratio_index > 0)
+            g_console.aspect_ratio_index--;
+         break;
+	  case S_ASPECT_RATIO_INCREMENT:
+	     if(g_console.aspect_ratio_index < ASPECT_RATIO_END-1)
+            g_console.aspect_ratio_index++;
+         break;
       case S_FRAME_ADVANCE:
          g_console.frame_advance_enable = true;
          g_console.menu_enable = false;
@@ -117,6 +125,9 @@ void rarch_settings_default(unsigned setting)
 {
    switch(setting)
    {
+      case S_DEF_ASPECT_RATIO:
+         g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
+         break;
       case S_DEF_HW_TEXTURE_FILTER:
          g_settings.video.smooth = 1;
          break;
@@ -158,11 +169,11 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
       case S_MSG_CACHE_PARTITION:
          snprintf(str, sizeof(str), "INFO - All the contents of the ZIP files you have selected in the filebrowser\nare extracted to this partition.");
          break;
-	  case S_MSG_CHANGE_CONTROLS:
+      case S_MSG_CHANGE_CONTROLS:
          snprintf(str, sizeof(str), "INFO - Press LEFT/RIGHT to change the controls, and press\n[RetroPad Start] to reset a button to default values.");
-		 break;
-	  case S_MSG_EXTRACTED_ZIPFILE:
-         snprintf(str, sizeof(str), "INFO - ZIP file extracted to cache partition.");
+         break;
+      case S_MSG_EXTRACTED_ZIPFILE:
+         snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to cache partition.");
          break;
       case S_MSG_NOT_IMPLEMENTED:
          snprintf(str, sizeof(str), "TODO - Not yet implemented.");

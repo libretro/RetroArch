@@ -349,8 +349,8 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
 	    {
-           g_console.aspect_ratio_index++;
-	       if(g_console.aspect_ratio_index >= ASPECT_RATIO_END)
+           rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
+	       if(g_console.aspect_ratio_index == ASPECT_RATIO_END)
               g_console.aspect_ratio_index = 0;
 
 	       gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
