@@ -20,8 +20,8 @@
 enum
 {
    S_DELAY_180 = 180,
-   S_DELAY_270 = 270,
-} delays;
+   S_DELAY_270 = 270
+};
 
 enum
 {
@@ -44,8 +44,8 @@ enum
    S_SCALE_FACTOR_DECREMENT,
    S_SCALE_FACTOR_INCREMENT,
    S_THROTTLE,
-   S_TRIPLE_BUFFERING,
-} changed_settings;
+   S_TRIPLE_BUFFERING
+};
 
 enum
 {
@@ -56,8 +56,8 @@ enum
    S_DEF_TRIPLE_BUFFERING,
    S_DEF_SAVE_STATE,
    S_DEF_SCALE_ENABLED,
-   S_DEF_SCALE_FACTOR,
-} default_settings;
+   S_DEF_SCALE_FACTOR
+};
 
 enum
 {
@@ -69,11 +69,11 @@ enum
    S_MSG_RESTART_RARCH,
    S_MSG_SELECT_LIBRETRO_CORE,
    S_MSG_SELECT_SHADER,
-   S_MSG_SHADER_LOADING_SUCCEEDED,
+   S_MSG_SHADER_LOADING_SUCCEEDED
 };
 
-void rarch_settings_change (unsigned setting);
-void rarch_settings_default (unsigned setting);
+void rarch_settings_change(unsigned setting);
+void rarch_settings_default(unsigned setting);
 void rarch_settings_msg(unsigned setting, unsigned delay);
 
 #endif
