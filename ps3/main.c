@@ -164,10 +164,8 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
    switch (status)
    {
       case CELL_SYSUTIL_REQUEST_EXITGAME:
-         g_console.menu_enable = false;
 	 gl->quitting = true;
-	 g_console.ingame_menu_enable = false;
-	 g_console.mode_switch = MODE_EXIT;
+         rarch_settings_change(S_QUIT);
 	 break;
       case CELL_SYSUTIL_OSKDIALOG_FINISHED:
 	 oskutil_close(&g_console.oskutil_handle);
