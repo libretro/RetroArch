@@ -150,7 +150,7 @@ void * PackedResource::GetData( const char * strName ) const
 HRESULT PackedResource::Create( const char * strFilename )
 {
     unsigned long dwNumBytesRead;
-    HANDLE hFile = CreateFile( strFilename, GENERIC_READ, FILE_SHARE_READ, NULL,
+    void * hFile = CreateFile( strFilename, GENERIC_READ, FILE_SHARE_READ, NULL,
                                OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL );
     if( hFile == INVALID_HANDLE_VALUE )
     {
@@ -179,14 +179,14 @@ HRESULT PackedResource::Create( const char * strFilename )
     m_dwVidMemDataSize = xprh.dwDataSize;
 
     // Allocate memory
-    m_pSysMemData = (BYTE*)malloc(m_dwSysMemDataSize);
+    m_pSysMemData = (unsigned char*)malloc(m_dwSysMemDataSize);
     if( m_pSysMemData == NULL )
     {
         RARCH_ERR( "Could not allocate system memory.\n" );
         m_dwSysMemDataSize = 0;
         return E_FAIL;
     }
-    m_pVidMemData = ( BYTE* )XMemAlloc( m_dwVidMemDataSize, MAKE_XALLOC_ATTRIBUTES( 0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
+    m_pVidMemData = ( unsigned char* )XMemAlloc( m_dwVidMemDataSize, MAKE_XALLOC_ATTRIBUTES( 0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
 			    XALLOC_PHYSICAL_ALIGNMENT_4K, XALLOC_MEMPROTECT_WRITECOMBINE, 0, XALLOC_MEMTYPE_PHYSICAL ) );
 
     if( m_pVidMemData == NULL )
@@ -231,12 +231,12 @@ HRESULT PackedResource::Create( const char * strFilename )
 
     m_bInitialized = TRUE;
 
-    return S_OK;
+    return 0;
 }
 
 void PackedResource::Destroy()
 {
-    delete[] m_pSysMemData;
+    free(m_pSysMemData);
     m_pSysMemData = NULL;
     m_dwSysMemDataSize = 0L;
 
@@ -388,15 +388,15 @@ static void xdk360_set_rotation(void * data, unsigned orientation)
 
 static void xdk360_convert_texture_to_as16_srgb( D3DTexture *pTexture )
 {
-    pTexture->Format.SignX = GPUSIGN_GAMMA;
-    pTexture->Format.SignY = GPUSIGN_GAMMA;
-    pTexture->Format.SignZ = GPUSIGN_GAMMA;
+   pTexture->Format.SignX = GPUSIGN_GAMMA;
+   pTexture->Format.SignY = GPUSIGN_GAMMA;
+   pTexture->Format.SignZ = GPUSIGN_GAMMA;
 
-    XGTEXTURE_DESC desc;
-    XGGetTextureDesc( pTexture, 0, &desc );
+   XGTEXTURE_DESC desc;
+   XGGetTextureDesc( pTexture, 0, &desc );
 
-    //convert to AS_16_16_16_16 format
-    pTexture->Format.DataFormat = g_MapLinearToSrgbGpuFormat[ (desc.Format & D3DFORMAT_TEXTUREFORMAT_MASK) >> D3DFORMAT_TEXTUREFORMAT_SHIFT ];
+   //convert to AS_16_16_16_16 format
+   pTexture->Format.DataFormat = g_MapLinearToSrgbGpuFormat[ (desc.Format & D3DFORMAT_TEXTUREFORMAT_MASK) >> D3DFORMAT_TEXTUREFORMAT_SHIFT ];
 }
 
 static void xdk360_init_fbo(xdk360_video_t *d3d9)

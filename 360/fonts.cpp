@@ -547,7 +547,7 @@ HRESULT xdk360_console_init( LPCSTR strFontFileName, unsigned long colBackColor,
    video_console.m_fLineHeight = fCharHeight;
 
    // Allocate memory to hold the lines
-   video_console.m_Buffer = new wchar_t[ video_console.m_cScreenHeightVirtual * ( video_console.m_cScreenWidth + 1 ) ];
+   video_console.m_Buffer = (wchar_t*)malloc(sizeof(wchar_t*) * video_console.m_cScreenHeightVirtual * ( video_console.m_cScreenWidth + 1 ));
    video_console.m_Lines = new wchar_t *[ video_console.m_cScreenHeightVirtual ];
 
    // Set the line pointers as indexes into the buffer
@@ -597,7 +597,7 @@ void xdk360_console_deinit()
 
    if(video_console.m_Buffer)
    {
-      delete[] video_console.m_Buffer;
+      free(video_console.m_Buffer);
       video_console.m_Buffer = NULL;
    }
 
