@@ -1267,14 +1267,38 @@ static void gl_stop(void)
 
 static void gl_restart(void)
 {
+#ifdef HAVE_CG_MENU
+   bool should_menu_render;
+#endif
+#ifdef RARCH_CONSOLE
+   bool should_block_swap;
+#endif
    gl_t *gl = driver.video_data;
 
    if (!gl)
 	   return;
 
+#ifdef RARCH_CONSOLE
+   should_block_swap = gl->block_swap;
+#endif
+#ifdef HAVE_CG_MENU
+   should_menu_render = gl->menu_render;
+#endif
+
    gl_stop();
    gl_cg_invalidate_context();
    gl_start();
+
+#ifdef HAVE_CG_MENU
+   gl->menu_render = should_menu_render;
+#endif
+
+   gl->frame_count = 0;
+
+#ifdef RARCH_CONSOLE
+   gl->block_swap = should_block_swap;
+   SET_TIMER_EXPIRATION(gl, 30);
+#endif
 }
 #endif
 
