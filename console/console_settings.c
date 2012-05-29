@@ -60,6 +60,11 @@ void rarch_settings_change(unsigned setting)
          g_console.menu_enable = false;
          g_console.mode_switch = MODE_EMULATION;
          break;
+      case S_RETURN_TO_MENU:
+         g_console.menu_enable = false;
+         g_console.ingame_menu_item = 0;
+         g_console.mode_switch = MODE_MENU;
+         break;
       case S_ROTATION_DECREMENT:
          if(g_console.screen_orientation > ORIENTATION_NORMAL)
             g_console.screen_orientation--;

@@ -2387,9 +2387,7 @@ static void ingame_menu(uint32_t menu_id)
 	 case MENU_ITEM_RETURN_TO_MENU:
 	    if(CTRL_CROSS(state))
 	    {
-               g_console.menu_enable = false;
-	       g_console.ingame_menu_item = 0;
-	       g_console.mode_switch = MODE_MENU;
+               rarch_settings_change(S_RETURN_TO_MENU);
 	       set_delay = DELAY_MEDIUM;
 	    }
 	    strlcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.", sizeof(comment));
