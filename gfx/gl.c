@@ -542,20 +542,6 @@ static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yam
    coords[7] = yamt;
 }
 
-static void check_window(gl_t *gl)
-{
-   bool quit, resize;
-
-   gfx_ctx_check_window(&quit,
-         &resize, &gl->win_width, &gl->win_height,
-         gl->frame_count);
-
-   if (quit)
-      gl->quitting = true;
-   else if (resize)
-      gl->should_resize = true;
-}
-
 #ifdef HAVE_FBO
 static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
       unsigned vp_width, unsigned vp_height)
@@ -958,7 +944,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl_render_msg_post(gl);
    }
 
+#ifndef RARCH_CONSOLE
    gfx_ctx_update_window_title(false);
+#endif
 
 #ifdef RARCH_CONSOLE
    if (!gl->block_swap)
@@ -1189,7 +1177,17 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 static bool gl_alive(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   check_window(gl);
+   bool quit, resize;
+
+   gfx_ctx_check_window(&quit,
+         &resize, &gl->win_width, &gl->win_height,
+         gl->frame_count);
+
+   if (quit)
+      gl->quitting = true;
+   else if (resize)
+      gl->should_resize = true;
+
    return !gl->quitting;
 }
 

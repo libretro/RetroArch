@@ -49,8 +49,6 @@ void gfx_ctx_destroy(void);
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 void gfx_ctx_update_window_title(bool reset);
 
-void gfx_ctx_swap_buffers(void);
-
 bool gfx_ctx_key_pressed(int key);
 
 void gfx_ctx_check_window(bool *quit,
@@ -62,7 +60,11 @@ void gfx_ctx_set_resize(unsigned width, unsigned height);
 bool gfx_ctx_get_wm_info(SDL_SysWMinfo *info);
 #endif
 
+#ifndef HAVE_GRIFFIN
 bool gfx_ctx_window_has_focus(void);
+
+void gfx_ctx_swap_buffers(void);
+#endif
 
 void gfx_ctx_input_driver(const input_driver_t **input, void **input_data);
 

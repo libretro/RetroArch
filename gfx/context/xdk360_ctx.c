@@ -58,11 +58,13 @@ bool gfx_ctx_window_has_focus(void)
 
 void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 
+#ifndef HAVE_GRIFFIN
 void gfx_ctx_swap_buffers(void)
 {
    xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
    d3d9->d3d_render_device->Present(NULL, NULL, NULL, NULL);
 }
+#endif
 
 bool gfx_ctx_menu_init(void)
 {

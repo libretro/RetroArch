@@ -40,6 +40,9 @@
 #define video_set_rotation_func(rotation)	gl_set_rotation(driver.video_data, rotation)
 #define video_set_aspect_ratio_func(aspectratio_idx) gfx_ctx_set_aspect_ratio(driver.video_data, aspectratio_idx)
 
+#define gfx_ctx_window_has_focus()		(true)
+#define gfx_ctx_swap_buffers()                  (psglSwap())
+
 #define input_init_func()                       ps3_input_initialize()
 #define input_poll_func()                       ps3_input_poll(driver.input_data)
 #define input_input_state_func(snes_keybinds, port, device, index, id) \
@@ -64,6 +67,9 @@
 #define video_free_func()                       xdk360_free(driver.video_data)
 #define video_set_rotation_func(rotation)	xdk360_set_rotation(driver.video_data, rotation)
 #define video_set_aspect_ratio_func(aspectratio_idx) gfx_ctx_set_aspect_ratio(driver.video_data, aspectratio_idx)
+
+#define gfx_ctx_window_has_focus()		(true)
+#define gfx_ctx_swap_buffers()                  (d3d9->d3d_render_device->Present(NULL, NULL, NULL, NULL))
 
 #define input_init_func()                       xdk360_input_initialize()
 #define input_poll_func()                       xdk360_input_poll(driver.input_data)
@@ -95,5 +101,6 @@
                                                 wii_input_state(driver.input_data, snes_keybinds, port, device, index, id)
 #define input_key_pressed_func(key)             wii_key_pressed(driver.input_data, key)
 #define input_free_func()                       wii_free_input(driver.input_data)
+#define gfx_ctx_window_has_focus()		(true)
 
 #endif
