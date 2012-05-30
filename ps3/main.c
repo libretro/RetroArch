@@ -73,7 +73,9 @@ char DEFAULT_SHADER_FILE[PATH_MAX];
 char DEFAULT_MENU_SHADER_FILE[PATH_MAX];
 char SYS_CONFIG_FILE[PATH_MAX];
 char EMULATOR_CORE_SELF[PATH_MAX];
+#ifdef HAVE_MULTIMAN
 char MULTIMAN_EXECUTABLE[PATH_MAX];
+#endif
 
 int rarch_main(int argc, char *argv[]);
 
@@ -197,6 +199,7 @@ static void get_environment_settings(int argc, char *argv[])
       RARCH_ERR("System cache partition could not be mounted, it might be already mounted.\n");
    }
 
+#ifdef HAVE_MULTIMAN
    if(argc > 1)
    {
       /* launched from external launcher */
@@ -215,6 +218,7 @@ static void get_environment_settings(int argc, char *argv[])
       RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
    }
    else
+#endif
    {
       g_console.external_launcher_support = EXTERN_LAUNCHER_SALAMANDER;
       RARCH_WARN("Not started from multiMAN, auto-game start disabled.\n");
@@ -248,11 +252,13 @@ static void get_environment_settings(int argc, char *argv[])
 
       ret = cellGameContentPermit(contentInfoPath, usrDirPath);
 
+#ifdef HAVE_MULTIMAN
       if(g_console.external_launcher_support == EXTERN_LAUNCHER_MULTIMAN)
       {
          snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
 	 snprintf(usrDirPath, sizeof(usrDirPath), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
       }
+#endif
 
       if(ret < 0)
       {
@@ -370,13 +376,16 @@ int main(int argc, char *argv[])
       case EXTERN_LAUNCHER_SALAMANDER:
          g_console.mode_switch = MODE_MENU;
 	 break;
+#ifdef HAVE_MULTIMAN
       case EXTERN_LAUNCHER_MULTIMAN:
 	 RARCH_LOG("Started from multiMAN, will auto-start game.\n");
 	 strlcpy(g_console.rom_path, argv[1], sizeof(g_console.rom_path));
-	 g_console.initialize_rarch_enable = 1;
-	 g_console.mode_switch = MODE_EMULATION;
+         rarch_settings_change(S_START_RARCH);
 	 rarch_startup(SYS_CONFIG_FILE);
 	 break;
+#endif
+      default:
+         break;
    }
 
 begin_loop:

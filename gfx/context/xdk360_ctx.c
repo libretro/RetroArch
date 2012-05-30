@@ -133,3 +133,7 @@ void gfx_ctx_set_overscan(void)
    d3d9->should_resize = true;
 }
 
+int gfx_ctx_check_resolution(unsigned resolution_id)
+{
+   return 0;
+}

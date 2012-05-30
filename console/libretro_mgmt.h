@@ -19,6 +19,14 @@
 
 #include "../boolean.h"
 
+enum
+{
+   EXTERN_LAUNCHER_SALAMANDER,
+#ifdef HAVE_MULTIMAN
+   EXTERN_LAUNCHER_MULTIMAN
+#endif
+};
+
 const char *rarch_manage_libretro_install(const char *full_path, const char *path, const char *exe_ext);
 const char *rarch_manage_libretro_set_first_file(const char *libretro_path, const char * exe_ext);
 

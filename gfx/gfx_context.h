@@ -75,6 +75,7 @@ bool gfx_ctx_menu_init(void);
 #ifdef RARCH_CONSOLE
 void gfx_ctx_set_filtering(unsigned index, bool set_smooth);
 void gfx_ctx_get_available_resolutions(void);
+int gfx_ctx_check_resolution(unsigned resolution_id);
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_D3D9)

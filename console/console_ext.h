@@ -27,6 +27,10 @@
 #define IS_TIMER_EXPIRED(handle) 	(!(IS_TIMER_NOT_EXPIRED(handle)))
 #define SET_TIMER_EXPIRATION(handle, value) (g_console.timer_expiration_frame_count = handle->frame_count + value)
 
+/*============================================================
+	VIDEO
+============================================================ */
+
 enum aspect_ratio
 {
    ASPECT_RATIO_1_1 = 0,
@@ -69,6 +73,20 @@ enum rotation
 
 extern char rotation_lut[ASPECT_RATIO_END][PATH_MAX];
 
+/* ABGR color format defines */
+
+#define WHITE		0xffffffffu
+#define RED		0xff0000ffu
+#define GREEN		0xff00ff00u
+#define BLUE		0xffff0000u
+#define YELLOW		0xff00ffffu
+#define PURPLE		0xffff00ffu
+#define CYAN		0xffffff00u
+#define ORANGE		0xff0063ffu
+#define SILVER		0xff8c848cu
+#define LIGHTBLUE	0xFFFFE0E0U
+#define LIGHTORANGE	0xFFE0EEFFu
+
 struct aspect_ratio_elem
 {
    char name[64];
@@ -80,6 +98,21 @@ extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 extern void rarch_set_auto_viewport(unsigned width, unsigned height);
 
 #include "console_ext_input.h"
+
+/*============================================================
+	SOUND
+============================================================ */
+
+enum
+{
+   SOUND_MODE_NORMAL,
+#ifdef HAVE_RSOUND
+   SOUND_MODE_RSOUND,
+#endif
+#ifdef HAVE_HEADSET
+   SOUND_MODE_HEADSET,
+#endif
+};
 
 /*============================================================
 	ROM EXTENSIONS

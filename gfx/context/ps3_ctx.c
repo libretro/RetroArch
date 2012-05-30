@@ -324,7 +324,7 @@ void ps3_previous_resolution (void)
    }
 }
 
-int ps3_check_resolution(uint32_t resolution_id)
+int gfx_ctx_check_resolution(unsigned resolution_id)
 {
    return cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, resolution_id, CELL_VIDEO_OUT_ASPECT_AUTO, 0);
 }
