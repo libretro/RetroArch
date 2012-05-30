@@ -48,7 +48,6 @@ int menuStackindex = 0;
 static bool set_initial_dir_tmpbrowser;
 static bool set_libretro_core_as_launch;
 
-char special_action_msg[256];			/* message which should be overlaid on top of the screen */
 filebrowser_t browser;				/* main file browser->for rom browser*/
 filebrowser_t tmpBrowser;			/* tmp file browser->for everything else*/
 uint32_t set_shader = 0;
@@ -151,6 +150,8 @@ static menu menu_controlssettings = {
 
 static void display_menubar(uint32_t menu_enum)
 {
+   gl_t *gl = driver.video_data;
+
    cellDbgFontPuts    (0.09f,  0.05f,  FONT_SIZE,  menu_enum == GENERAL_VIDEO_MENU ? RED : GREEN,   menu_generalvideosettings.title);
    cellDbgFontPuts    (0.19f,  0.05f,  FONT_SIZE,  menu_enum == GENERAL_AUDIO_MENU ? RED : GREEN,  menu_generalaudiosettings.title);
    cellDbgFontPuts    (0.29f,  0.05f,  FONT_SIZE,  menu_enum == EMU_GENERAL_MENU ? RED : GREEN,  menu_emu_settings.title);
@@ -159,7 +160,7 @@ static void display_menubar(uint32_t menu_enum)
    cellDbgFontPuts    (0.09f,  0.09f,  FONT_SIZE,  menu_enum == PATH_MENU ? RED : GREEN,  menu_pathsettings.title);
    cellDbgFontPuts    (0.19f,  0.09f,  FONT_SIZE, menu_enum == CONTROLS_MENU ? RED : GREEN,  menu_controlssettings.title); 
    cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 }
 
 enum
@@ -199,7 +200,6 @@ static void set_delay_speed(unsigned delaymode)
 	 break;
    }
 
-   strlcpy(special_action_msg, "", sizeof(special_action_msg));
    SET_TIMER_EXPIRATION(gl, speed);
 }
 
@@ -327,6 +327,7 @@ static void browser_update(filebrowser_t * b)
 
 static void browser_render(filebrowser_t * b)
 {
+   gl_t *gl = driver.video_data;
    uint32_t file_count = b->file_count;
    int current_index, page_number, page_base, i;
    float currentX, currentY, ySpacing;
@@ -343,9 +344,9 @@ static void browser_render(filebrowser_t * b)
    {
       currentY = currentY + ySpacing;
       cellDbgFontPuts(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->cur[i].d_type == CELL_FS_TYPE_DIRECTORY ? GREEN : WHITE, b->cur[i].d_name);
-      cellDbgFontDraw();
+      gl_render_msg_post(gl);
    }
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 }
 
 static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
@@ -951,7 +952,7 @@ static void select_file(uint32_t menu_id)
    cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	title);
    cellDbgFontPrintf(0.09f, 0.92f, 0.92, YELLOW, "X - Select %s  /\\ - return to settings  START - Reset Startdir", object);
    cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s", comment);
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    browser_render(&tmpBrowser);
    old_state = state;
@@ -1051,7 +1052,7 @@ static void select_directory(uint32_t menu_id)
       "X - Enter dir  /\\ - return to settings  START - Reset Startdir");
    cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s",
       "INFO - Browse to a directory and assign it as the path by\npressing SQUARE button.");
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    browser_render(&tmpBrowser);
    old_state = state;
@@ -1180,7 +1181,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
                            if (g_console.supported_resolutions[g_console.current_resolution_index] == CELL_VIDEO_OUT_RESOLUTION_576)
 			   {
-                              if(ps3_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
+                              if(gfx_ctx_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
 			      {
                                  //ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
                                  video_gl.restart();
@@ -1870,7 +1871,7 @@ static void select_setting(menu * menu_obj)
    }
 
    display_menubar(menu_obj->enum_id);
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    for ( i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
    {
@@ -1878,7 +1879,7 @@ static void select_setting(menu * menu_obj)
       {
          cellDbgFontPuts(menu_obj->items[i].text_xpos, menu_obj->items[i].text_ypos, FONT_SIZE, menu_obj->selected == menu_obj->items[i].enum_id ? YELLOW : menu_obj->items[i].item_color, menu_obj->items[i].text);
 	 cellDbgFontPuts(0.5f, menu_obj->items[i].text_ypos, FONT_SIZE, menu_obj->items[i].text_color, menu_obj->items[i].setting_text);
-	 cellDbgFontDraw();
+	 gl_render_msg_post(gl);
       }
    }
 
@@ -1886,7 +1887,7 @@ static void select_setting(menu * menu_obj)
 
    cellDbgFontPuts(0.09f, 0.91f, FONT_SIZE, YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
    cellDbgFontPuts(0.09f, 0.95f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
    old_state = state;
 }
 
@@ -1973,7 +1974,7 @@ static void select_rom(void)
 		   "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser));
    cellDbgFontPuts   (0.09f, 0.93f, FONT_SIZE, YELLOW,
 		   "L3 + R3 - resume game           SELECT - Settings screen");
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    browser_render(&browser);
    old_state = state;
@@ -2235,7 +2236,7 @@ static void ingame_menu(uint32_t menu_id)
 		     cellDbgFontPrintf (0.09f,   0.46f, font_size,  LIGHTBLUE, "LEFT or LSTICK UP");
 		     cellDbgFontPrintf (0.5f,   0.46f, font_size, LIGHTBLUE, "- Decrease Viewport X");
 
-		     cellDbgFontDraw();
+		     gl_render_msg_post(gl);
 
 		     cellDbgFontPrintf (0.09f,   0.48f,   font_size,      LIGHTBLUE,           "RIGHT or LSTICK RIGHT");
 		     cellDbgFontPrintf (0.5f,   0.48f,   font_size,      LIGHTBLUE,           "- Increase Viewport X");
@@ -2243,7 +2244,7 @@ static void ingame_menu(uint32_t menu_id)
 		     cellDbgFontPrintf (0.09f,   0.50f,   font_size,      LIGHTBLUE,           "UP or LSTICK UP");
 		     cellDbgFontPrintf (0.5f,   0.50f,   font_size,      LIGHTBLUE,           "- Increase Viewport Y");
 
-		     cellDbgFontDraw();
+		     gl_render_msg_post(gl);
 
 		     cellDbgFontPrintf (0.09f,   0.52f,   font_size,      LIGHTBLUE,           "DOWN or LSTICK DOWN");
 		     cellDbgFontPrintf (0.5f,   0.52f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Y");
@@ -2251,7 +2252,7 @@ static void ingame_menu(uint32_t menu_id)
 		     cellDbgFontPrintf (0.09f,   0.54f,   font_size,      LIGHTBLUE,           "L1 or RSTICK LEFT");
 		     cellDbgFontPrintf (0.5f,   0.54f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Width");
 
-		     cellDbgFontDraw();
+		     gl_render_msg_post(gl);
 
 		     cellDbgFontPrintf (0.09f,   0.56f,   font_size,      LIGHTBLUE,           "R1 or RSTICK RIGHT");
 		     cellDbgFontPrintf (0.5f,   0.56f,   font_size,      LIGHTBLUE,           "- Increase Viewport Width");
@@ -2259,7 +2260,7 @@ static void ingame_menu(uint32_t menu_id)
 		     cellDbgFontPrintf (0.09f,   0.58f,   font_size,      LIGHTBLUE,           "L2 or  RSTICK UP");
 		     cellDbgFontPrintf (0.5f,   0.58f,   font_size,      LIGHTBLUE,           "- Increase Viewport Height");
 
-		     cellDbgFontDraw();
+		     gl_render_msg_post(gl);
 
 		     cellDbgFontPrintf (0.09f,   0.60f,   font_size,      LIGHTBLUE,           "R2 or RSTICK DOWN");
 		     cellDbgFontPrintf (0.5f,   0.60f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Height");
@@ -2273,10 +2274,10 @@ static void ingame_menu(uint32_t menu_id)
 		     cellDbgFontPrintf (0.09f,   0.70f,   font_size,      LIGHTBLUE,           "CIRCLE");
 		     cellDbgFontPrintf (0.5f,   0.70f,   font_size,      LIGHTBLUE,           "- Return to Ingame Menu");
 
-		     cellDbgFontDraw();
+		     gl_render_msg_post(gl);
 
 		     cellDbgFontPrintf (0.09f, 0.83f, 0.91f, LIGHTBLUE, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the menu.");
-		     cellDbgFontDraw();
+		     gl_render_msg_post(gl);
 		  }
 		  gfx_ctx_swap_buffers();
 #ifdef HAVE_SYSUTILS
@@ -2349,6 +2350,7 @@ static void ingame_menu(uint32_t menu_id)
 	    }
 	    strlcpy(comment, "Press 'CROSS' to choose a different emulator core.", sizeof(comment));
 	    break;
+#ifdef HAVE_MULTIMAN
 	 case MENU_ITEM_RETURN_TO_MULTIMAN:
 	    if(CTRL_CROSS(state) && path_file_exists(MULTIMAN_EXECUTABLE))
 	    {
@@ -2359,6 +2361,7 @@ static void ingame_menu(uint32_t menu_id)
 	    }
 	    strlcpy(comment, "Press 'CROSS' to quit the emulator and return to multiMAN.", sizeof(comment));
 	    break;
+#endif
 	 case MENU_ITEM_RETURN_TO_DASHBOARD:
 	    if(CTRL_CROSS(state))
                rarch_settings_change(S_RETURN_TO_DASHBOARD);
@@ -2397,7 +2400,7 @@ static void ingame_menu(uint32_t menu_id)
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
    cellDbgFontPrintf(x_position, ypos+(ypos_increment*MENU_ITEM_SAVE_STATE), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), strw_buffer);
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
    cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), strw_buffer);
@@ -2406,11 +2409,11 @@ static void ingame_menu(uint32_t menu_id)
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
    cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), strw_buffer);
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
    cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_SCALE_FACTOR)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), strw_buffer);
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_RESIZE_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE), "Resize Mode");
 
@@ -2418,23 +2421,25 @@ static void ingame_menu(uint32_t menu_id)
 
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_SCREENSHOT_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCREENSHOT_MODE), "Screenshot Mode");
 
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RESET)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESET), "Reset");
 
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_GAME)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME), "Return to Game");
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MENU)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU), "Return to Menu");
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_CHANGE_LIBRETRO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBRETRO), "Change libretro core");
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
+#ifdef HAVE_MULTIMAN
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");
+#endif
 
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_DASHBOARD)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_DASHBOARD), "Return to XMB");
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    struct retro_system_info info;
    retro_get_system_info(&info);
@@ -2443,11 +2448,9 @@ static void ingame_menu(uint32_t menu_id)
    cellDbgFontPuts(0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
    cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
    cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
-   cellDbgFontDraw();
-   cellDbgFontPrintf (0.05f, 0.90f, 1.10f, WHITE, special_action_msg);
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
    cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, comment);
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    old_state = state;
 }
