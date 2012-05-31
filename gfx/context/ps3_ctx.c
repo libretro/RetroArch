@@ -95,17 +95,20 @@ void gfx_ctx_check_window(bool *quit,
       *resize = true;
 }
 
+#ifndef HAVE_GRIFFIN
 bool gfx_ctx_window_has_focus(void)
 {
    return true;
 }
 
-void gfx_ctx_set_resize(unsigned width, unsigned height) { }
-
 void gfx_ctx_swap_buffers(void)
 {
    psglSwap();
 }
+#endif
+
+void gfx_ctx_set_resize(unsigned width, unsigned height) { }
+
 
 bool gfx_ctx_menu_init(void)
 {
@@ -324,7 +327,7 @@ void ps3_previous_resolution (void)
    }
 }
 
-int ps3_check_resolution(uint32_t resolution_id)
+int gfx_ctx_check_resolution(unsigned resolution_id)
 {
    return cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, resolution_id, CELL_VIDEO_OUT_ASPECT_AUTO, 0);
 }
@@ -408,4 +411,3 @@ void gfx_ctx_set_overscan(void)
 
    gl->should_resize = true;
 }
-

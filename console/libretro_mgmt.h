@@ -14,25 +14,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _360_SHARED_H
-#define _360_SHARED_H
+#ifndef LIBRETRO_MGMT_H__
+#define LIBRETRO_MGMT_H__
 
-#define MAX_PATH_LENGTH 1024
+#include "../boolean.h"
 
-enum {
-   MENU_ITEM_LOAD_STATE = 0,
-   MENU_ITEM_SAVE_STATE,
-   MENU_ITEM_KEEP_ASPECT_RATIO,
-   MENU_ITEM_OVERSCAN_AMOUNT,
-   MENU_ITEM_ORIENTATION,
-   MENU_ITEM_RESIZE_MODE,
-   MENU_ITEM_FRAME_ADVANCE,
-   MENU_ITEM_SCREENSHOT_MODE,
-   MENU_ITEM_RESET,
-   MENU_ITEM_RETURN_TO_GAME,
-   MENU_ITEM_RETURN_TO_DASHBOARD
+enum
+{
+   EXTERN_LAUNCHER_SALAMANDER,
+#ifdef HAVE_MULTIMAN
+   EXTERN_LAUNCHER_MULTIMAN
+#endif
 };
 
-#define MENU_ITEM_LAST MENU_ITEM_RETURN_TO_DASHBOARD+1
+const char *rarch_manage_libretro_install(const char *full_path, const char *path, const char *exe_ext);
+const char *rarch_manage_libretro_set_first_file(const char *libretro_path, const char * exe_ext);
 
 #endif

@@ -27,6 +27,11 @@
 #include "console_ext.h"
 #include "../file.h"
 
+#ifdef HAVE_CONFIGFILE
+#include "../conf/config_file.h"
+#include "../conf/config_file_macros.h"
+#endif
+
 #ifdef HAVE_ZLIB
 #include "rzlib/zlib.h"
 #define WRITEBUFFERSIZE (1024 * 512)
@@ -195,8 +200,8 @@ int rarch_extract_zipfile(const char *zip_path)
       }
    }
 
-   msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, "INFO - ZIP file extracted to cache partition.", 1, 180);
+   if(g_console.info_msg_enable)
+      rarch_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
 
    return 0;
 }
@@ -490,6 +495,14 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "Custom", 0.0f }
 };
 
+char rotation_lut[ASPECT_RATIO_END][PATH_MAX] =
+{
+	"Normal",
+    "Vertical",
+	"Flipped",
+    "Flipped Rotated"
+};
+
 void rarch_set_auto_viewport(unsigned width, unsigned height)
 {
    if(width == 0 || height == 0)
@@ -511,100 +524,6 @@ void rarch_set_auto_viewport(unsigned width, unsigned height)
    snprintf(aspectratio_lut[ASPECT_RATIO_AUTO].name, sizeof(aspectratio_lut[ASPECT_RATIO_AUTO].name), "%d:%d (Auto)", aspect_x, aspect_y);
    aspectratio_lut[ASPECT_RATIO_AUTO].value = (int)aspect_x / (int)aspect_y;
 }
-
-/*============================================================
-  LIBRETRO
-  ============================================================ */
-
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-bool rarch_manage_libretro_core(const char *full_path, const char *path, const char *exe_ext)
-{
-   g_extern.verbose = true;
-   bool return_code;
-
-   bool set_libretro_path = false;
-   char tmp_path2[1024], tmp_pathnewfile[1024];
-   RARCH_LOG("Assumed path of CORE executable: [%s]\n", full_path);
-
-   if (path_file_exists(full_path))
-   {
-      // if CORE executable exists, this means we have just installed
-      // a new libretro port and therefore we need to change it to a more
-      // sane name.
-
-#if defined(__CELLOS_LV2__)
-      CellFsErrno ret;
-#else
-      int ret;
-#endif
-
-      rarch_console_name_from_id(tmp_path2, sizeof(tmp_path2));
-      strlcat(tmp_path2, exe_ext, sizeof(tmp_path2));
-      snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", path, tmp_path2);
-
-      if (path_file_exists(tmp_pathnewfile))
-      {
-         // if libretro core already exists, this means we are
-         // upgrading the libretro core - so delete pre-existing
-         // file first.
-
-         RARCH_LOG("Upgrading emulator core...\n");
-#if defined(__CELLOS_LV2__)
-         ret = cellFsUnlink(tmp_pathnewfile);
-         if (ret == CELL_FS_SUCCEEDED)
-#elif defined(_XBOX)
-            ret = DeleteFile(tmp_pathnewfile);
-         if (ret != 0)
-#endif
-         {
-            RARCH_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-         }
-         else
-            RARCH_LOG("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-      }
-
-      //now attempt the renaming.
-#if defined(__CELLOS_LV2__)
-      ret = cellFsRename(full_path, tmp_pathnewfile);
-
-      if (ret != CELL_FS_SUCCEEDED)
-#elif defined(_XBOX)
-         ret = MoveFileExA(full_path, tmp_pathnewfile, NULL);
-      if (ret == 0)
-#endif
-      {
-         RARCH_ERR("Failed to rename CORE executable.\n");
-      }
-      else
-      {
-         RARCH_LOG("Libsnes core [%s] renamed to: [%s].\n", full_path, tmp_pathnewfile);
-         set_libretro_path = true;
-      }
-   }
-   else
-   {
-      RARCH_LOG("CORE executable was not found, libretro core path will be loaded from config file.\n");
-   }
-
-   if (set_libretro_path)
-   {
-      // CORE executable has been renamed, libretro path will now be set to the recently
-      // renamed new libretro core.
-      strlcpy(g_settings.libretro, tmp_pathnewfile, sizeof(g_settings.libretro));
-      return_code = 0;
-   }
-   else
-   {
-      // There was no CORE executable present, or the CORE executable file was not renamed.
-      // The libretro core path will still be loaded from the config file.
-      return_code = 1;
-   }
-
-   g_extern.verbose = false;
-
-   return return_code;
-}
-#endif
 
 /*============================================================
   RetroArch MAIN WRAP
@@ -774,12 +693,12 @@ void rarch_console_rsound_stop(void)
   ============================================================ */
 
 #ifdef _XBOX
-wchar_t * rarch_convert_char_to_wchar(const char * str)
+void rarch_convert_char_to_wchar(wchar_t *buf, const char * str, size_t size)
 {
    unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, str, -1, NULL, 0);
-   wchar_t * w_str = new wchar_t[dwNum];
-   MultiByteToWideChar(CP_ACP, 0, str, -1, w_str, dwNum);
-   return w_str;
+   size /= sizeof(wchar_t);
+   rarch_assert(size >= dwNum);
+   MultiByteToWideChar(CP_ACP, 0, str, -1, buf, dwNum);
 }
 #endif
 
@@ -789,3 +708,173 @@ const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr)
    wcstombs(str, wstr, sizeof(str));
    return str;
 }
+
+/*============================================================
+  CONFIG
+  ============================================================ */
+
+#ifdef HAVE_CONFIGFILE
+void rarch_config_create_default(const char * conf_name)
+{
+   FILE * f;
+   RARCH_WARN("Config file \"%s\" doesn't exist. Creating...\n", conf_name);
+   f = fopen(conf_name, "w");
+   fclose(f);
+}
+
+void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool find_libretro_path)
+{
+   if(!path_file_exists(conf_name))
+      rarch_config_create_default(conf_name);
+   else
+   {
+      config_file_t * conf = config_file_new(conf_name);
+
+      // g_settings
+
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+      if(find_libretro_path)
+      {
+         CONFIG_GET_STRING(libretro, "libretro_path");
+
+         if(!strcmp(g_settings.libretro, ""))
+         {
+            const char *first_file = rarch_manage_libretro_set_first_file(libretro_dir_path, exe_ext);
+            if(first_file != NULL)
+               strlcpy(g_settings.libretro, first_file, sizeof(g_settings.libretro));
+         }
+      }
+#endif
+
+      CONFIG_GET_STRING(cheat_database, "cheat_database");
+      CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
+      CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
+#ifdef HAVE_FBO
+      CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
+      CONFIG_GET_FLOAT(video.fbo_scale_x, "video_fbo_scale_x");
+      CONFIG_GET_FLOAT(video.fbo_scale_y, "video_fbo_scale_y");
+      CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
+      CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
+#endif
+#ifdef _XBOX
+      CONFIG_GET_BOOL_CONSOLE(gamma_correction_enable, "gamma_correction_enable");
+      CONFIG_GET_INT_CONSOLE(color_format, "color_format");
+#endif
+      CONFIG_GET_BOOL(video.smooth, "video_smooth");
+      CONFIG_GET_BOOL(video.vsync, "video_vsync");
+      CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
+      CONFIG_GET_STRING(audio.device, "audio_device");
+
+      for (unsigned i = 0; i < 7; i++)
+      {
+         char cfg[64];
+	 snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
+	 CONFIG_GET_INT(input.dpad_emulation[i], cfg);
+      }
+
+      // g_console
+
+#ifdef HAVE_FBO
+      CONFIG_GET_BOOL_CONSOLE(fbo_enabled, "fbo_enabled");
+#endif
+#ifdef __CELLOS_LV2__
+      CONFIG_GET_BOOL_CONSOLE(custom_bgm_enable, "custom_bgm_enable");
+#endif
+      CONFIG_GET_BOOL_CONSOLE(overscan_enable, "overscan_enable");
+      CONFIG_GET_BOOL_CONSOLE(screenshots_enable, "screenshots_enable");
+      CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
+      CONFIG_GET_BOOL_CONSOLE(triple_buffering_enable, "triple_buffering_enable");
+      CONFIG_GET_BOOL_CONSOLE(info_msg_enable, "info_msg_enable");
+      CONFIG_GET_INT_CONSOLE(aspect_ratio_index, "aspect_ratio_index");
+      CONFIG_GET_INT_CONSOLE(current_resolution_id, "current_resolution_id");
+      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.x, "custom_viewport_x");
+      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.y, "custom_viewport_y");
+      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.width, "custom_viewport_width");
+      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.height, "custom_viewport_height");
+      CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
+      CONFIG_GET_INT_CONSOLE(sound_mode, "sound_mode");
+      CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
+      CONFIG_GET_FLOAT_CONSOLE(menu_font_size, "menu_font_size");
+      CONFIG_GET_FLOAT_CONSOLE(overscan_amount, "overscan_amount");
+
+      // g_extern
+      CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
+      CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
+   }
+}
+
+void rarch_config_save(const char * conf_name)
+{
+   if(!path_file_exists(conf_name))
+      rarch_config_create_default(conf_name);
+   else
+   {
+      config_file_t * conf = config_file_new(conf_name);
+
+      if(conf == NULL)
+         conf = config_file_new(NULL);
+
+      // g_settings
+      config_set_string(conf, "libretro_path", g_settings.libretro);
+#ifdef HAVE_XML
+      config_set_string(conf, "cheat_database_path", g_settings.cheat_database);
+#endif
+      config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
+      config_set_string(conf, "video_cg_shader", g_settings.video.cg_shader_path);
+      config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
+#ifdef HAVE_FBO
+      config_set_float(conf, "video_fbo_scale_x", g_settings.video.fbo_scale_x);
+      config_set_float(conf, "video_fbo_scale_y", g_settings.video.fbo_scale_y);
+      config_set_string(conf, "video_second_pass_shader", g_settings.video.second_pass_shader);
+      config_set_bool(conf, "video_render_to_texture", g_settings.video.render_to_texture);
+      config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
+#endif
+      config_set_bool(conf, "video_smooth", g_settings.video.smooth);
+      config_set_bool(conf, "video_vsync", g_settings.video.vsync);
+      config_set_string(conf, "audio_device", g_settings.audio.device);
+
+      for (unsigned i = 0; i < 7; i++)
+      {
+         char cfg[64];
+	 snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
+	 config_set_int(conf, cfg, g_settings.input.dpad_emulation[i]);
+      }
+
+#ifdef RARCH_CONSOLE
+      config_set_bool(conf, "fbo_enabled", g_console.fbo_enabled);
+#ifdef __CELLOS_LV2__
+      config_set_bool(conf, "custom_bgm_enable", g_console.custom_bgm_enable);
+#endif
+      config_set_bool(conf, "overscan_enable", g_console.overscan_enable);
+      config_set_bool(conf, "screenshots_enable", g_console.screenshots_enable);
+#ifdef _XBOX
+      config_set_bool(conf, "gamma_correction_enable", g_console.gamma_correction_enable);
+      config_set_int(conf, "color_format", g_console.color_format);
+#endif
+      config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
+      config_set_bool(conf, "triple_buffering_enable", g_console.triple_buffering_enable);
+      config_set_bool(conf, "info_msg_enable", g_console.info_msg_enable);
+      config_set_int(conf, "sound_mode", g_console.sound_mode);
+      config_set_int(conf, "aspect_ratio_index", g_console.aspect_ratio_index);
+      config_set_int(conf, "current_resolution_id", g_console.current_resolution_id);
+      config_set_int(conf, "custom_viewport_width", g_console.viewports.custom_vp.width);
+      config_set_int(conf, "custom_viewport_height", g_console.viewports.custom_vp.height);
+      config_set_int(conf, "custom_viewport_x", g_console.viewports.custom_vp.x);
+      config_set_int(conf, "custom_viewport_y", g_console.viewports.custom_vp.y);
+      config_set_int(conf, "screen_orientation", g_console.screen_orientation);
+      config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
+      config_set_float(conf, "menu_font_size", g_console.menu_font_size);
+      config_set_float(conf, "overscan_amount", g_console.overscan_amount);
+#endif
+
+      // g_extern
+      config_set_int(conf, "state_slot", g_extern.state_slot);
+      config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
+
+      if (!config_file_write(conf, conf_name))
+         RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", conf_name);
+
+      free(conf);
+   }
+}
+#endif

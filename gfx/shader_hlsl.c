@@ -131,15 +131,11 @@ void hlsl_set_params(unsigned width, unsigned height,
 
 static bool load_program(unsigned index, const char *prog, bool path_is_file)
 {
-   bool ret, ret_fp, ret_vp;
+   HRESULT ret, ret_fp, ret_vp;
    ID3DXBuffer *listing_f = NULL;
    ID3DXBuffer *listing_v = NULL;
    ID3DXBuffer *code_f = NULL;
    ID3DXBuffer *code_v = NULL;
-
-   ret = true;
-   ret_fp = false;
-   ret_vp = false;
 
    if (path_is_file)
    {
@@ -157,7 +153,7 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
             "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &prg[index].v_ctable );
    }
 
-   if (FAILED(ret_fp) || FAILED(ret_vp) || listing_v || listing_f)
+   if (ret_fp < 0 || ret_vp < 0 || listing_v || listing_f)
    {
       RARCH_ERR("HLSL error:\n");
       if(listing_f)

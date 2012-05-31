@@ -19,11 +19,6 @@
 #ifndef RARCH_360_RESOURCES_H
 #define RARCH_360_RESOURCES_H
 
-//--------------------------------------------------------------------------------------
-// Name tag for resources. An app may initialize this structure, and pass
-// it to the resource's Create() function. From then on, the app may call
-// GetResource() to retrieve a resource using an ascii name.
-//--------------------------------------------------------------------------------------
 struct RESOURCE
 {
    unsigned long dwType;
@@ -50,73 +45,74 @@ enum
 //--------------------------------------------------------------------------------------
 class PackedResource
 {
-protected:
-   unsigned char * m_pSysMemData;        // Alloc'ed memory for resource headers etc.
-   unsigned long m_dwSysMemDataSize;
+   protected:
+      unsigned char * m_pSysMemData;        // Alloc'ed memory for resource headers etc.
+      unsigned long m_dwSysMemDataSize;
 
-   unsigned char * m_pVidMemData;        // Alloc'ed memory for resource data, etc.
-   unsigned long m_dwVidMemDataSize;
+      unsigned char * m_pVidMemData;        // Alloc'ed memory for resource data, etc.
+      unsigned long m_dwVidMemDataSize;
 
-   RESOURCE* m_pResourceTags;            // Tags to associate names with the resources
-   unsigned long m_dwNumResourceTags;    // Number of resource tags
-public:
-   int m_bInitialized;                   // Resource is fully initialized
-    HRESULT Create( const char * strFilename );
-    void    Destroy();
-    D3DResource* RegisterResource( D3DResource* pResource ) const
-    {
-        return pResource;
-    }
+      RESOURCE* m_pResourceTags;            // Tags to associate names with the resources
+      unsigned long m_dwNumResourceTags;    // Number of resource tags
+   public:
+      int m_bInitialized;                   // Resource is fully initialized
+      HRESULT Create( const char * strFilename );
+      void    Destroy();
 
-    void * GetData( unsigned long dwOffset ) const
-    {
-        return &m_pSysMemData[dwOffset];
-    }
+      D3DResource* RegisterResource( D3DResource* pResource ) const
+      {
+         return pResource;
+      }
 
-    D3DResource* GetResource( unsigned long dwOffset ) const
-    {
-        return (( D3DResource* )GetData( dwOffset ) );
-    }
+      void * GetData( unsigned long dwOffset ) const
+      {
+         return &m_pSysMemData[dwOffset];
+      }
 
-    D3DTexture* GetTexture( unsigned long dwOffset ) const
-    {
-        return ( D3DTexture* )GetResource( dwOffset );
-    }
+      D3DResource* GetResource( unsigned long dwOffset ) const
+      {
+         return (( D3DResource* )GetData( dwOffset ) );
+      }
 
-    D3DArrayTexture* GetArrayTexture( unsigned long dwOffset ) const
-    {
-        return ( D3DArrayTexture* )GetResource( dwOffset );
-    }
+      D3DTexture* GetTexture( unsigned long dwOffset ) const
+      {
+         return ( D3DTexture* )GetResource( dwOffset );
+      }
 
-    D3DVertexBuffer* GetVertexBuffer( unsigned long dwOffset ) const
-    {
-        return ( D3DVertexBuffer* )GetResource( dwOffset );
-    }
+      D3DArrayTexture* GetArrayTexture( unsigned long dwOffset ) const
+      {
+         return ( D3DArrayTexture* )GetResource( dwOffset );
+      }
 
-    void * GetData( const char * strName ) const;
+      D3DVertexBuffer* GetVertexBuffer( unsigned long dwOffset ) const
+      {
+         return ( D3DVertexBuffer* )GetResource( dwOffset );
+      }
 
-    D3DResource* GetResource( const char * strName ) const
-    {
-        return ( ( D3DResource* )GetData( strName ) );
-    }
+      void * GetData( const char * strName ) const;
 
-    D3DTexture* GetTexture( const char * strName ) const
-    {
-        return ( D3DTexture* )GetResource( strName );
-    }
+      D3DResource* GetResource( const char * strName ) const
+      {
+         return ( ( D3DResource* )GetData( strName ) );
+      }
 
-    D3DArrayTexture* GetArrayTexture( const char * strName ) const
-    {
-        return ( D3DArrayTexture* )GetResource( strName );
-    }
+      D3DTexture* GetTexture( const char * strName ) const
+      {
+         return ( D3DTexture* )GetResource( strName );
+      }
 
-    D3DVertexBuffer* GetVertexBuffer( const char * strName ) const
-    {
-        return ( D3DVertexBuffer* )GetResource( strName );
-    }
+      D3DArrayTexture* GetArrayTexture( const char * strName ) const
+      {
+         return ( D3DArrayTexture* )GetResource( strName );
+      }
 
-    PackedResource();
-    ~PackedResource();
+      D3DVertexBuffer* GetVertexBuffer( const char * strName ) const
+      {
+         return ( D3DVertexBuffer* )GetResource( strName );
+      }
+
+      PackedResource();
+      ~PackedResource();
 };
 
 #endif

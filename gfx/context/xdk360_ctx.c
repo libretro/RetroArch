@@ -51,18 +51,20 @@ void gfx_ctx_check_window(bool *quit,
       *resize = true;
 }
 
-bool gfx_ctx_window_has_focus(void)
-{
-   return true;
-}
-
 void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 
+#ifndef HAVE_GRIFFIN
 void gfx_ctx_swap_buffers(void)
 {
    xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
    d3d9->d3d_render_device->Present(NULL, NULL, NULL, NULL);
 }
+
+bool gfx_ctx_window_has_focus(void)
+{
+   return true;
+}
+#endif
 
 bool gfx_ctx_menu_init(void)
 {
@@ -133,3 +135,7 @@ void gfx_ctx_set_overscan(void)
    d3d9->should_resize = true;
 }
 
+int gfx_ctx_check_resolution(unsigned resolution_id)
+{
+   return 0;
+}

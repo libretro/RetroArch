@@ -90,9 +90,9 @@ static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
    params.nChannel = AUDIO_CHANNELS;
    params.nBlock = AUDIO_BLOCKS;
    if(g_console.sound_mode == SOUND_MODE_HEADSET)
-	   params.attr = CELL_AUDIO_PORTATTR_OUT_SECONDARY;
+      params.attr = CELL_AUDIO_PORTATTR_OUT_SECONDARY;
    else
-	   params.attr = 0;
+      params.attr = 0;
 
    if (cellAudioPortOpen(&params, &data->audio_port) != CELL_OK)
    {

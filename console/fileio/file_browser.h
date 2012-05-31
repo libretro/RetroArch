@@ -18,7 +18,6 @@
 #define FILEBROWSER_H_
 
 #define MAXJOLIET	255
-#define MAX_PATH_LENGTH	1024
 
 #include <stdint.h>
 #include <stdlib.h>

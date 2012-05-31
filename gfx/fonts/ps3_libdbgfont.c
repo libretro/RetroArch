@@ -46,4 +46,3 @@ void gl_render_msg_post(gl_t *gl)
 {
    cellDbgFontDraw();
 }
-

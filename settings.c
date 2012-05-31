@@ -212,6 +212,8 @@ void config_set_defaults(void)
    g_settings.input.netplay_client_swap_input = netplay_client_swap_input;
    for (int i = 0; i < MAX_PLAYERS; i++)
       g_settings.input.joypad_map[i] = i;
+
+   rarch_init_msg_queue();
 }
 
 #ifdef HAVE_CONFIGFILE

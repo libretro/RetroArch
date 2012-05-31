@@ -102,17 +102,10 @@ typedef struct
 
 HRESULT xdk360_console_init ( LPCSTR strFontFileName, D3DCOLOR colBackColor, D3DCOLOR colTextColor);
 void xdk360_console_deinit (void);
-void xdk360_console_format (_In_z_ _Printf_format_string_ LPCSTR strFormat, ... );
+void xdk360_console_format (LPCSTR strFormat, ... );
 void xdk360_console_draw (void);
 
-HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * strFontFileName);
-void xdk360_video_font_get_text_width(xdk360_video_font_t * font, const wchar_t * strText, float * pWidth, float * pHeight, int bFirstLineOnly);
-void xdk360_video_font_deinit(xdk360_video_font_t * font);
-void xdk360_video_font_set_cursor_position(xdk360_video_font_t *font, float fCursorX, float fCursorY );
 void xdk360_video_font_begin (xdk360_video_font_t * font);
 void xdk360_video_font_end (xdk360_video_font_t * font);
-void xdk360_video_font_set_size(float x, float y);
-void xdk360_video_font_draw_text(xdk360_video_font_t * font, float fOriginX, float fOriginY, unsigned long dwColor,
-const wchar_t * strText, float fMaxPixelWidth );
 
 #endif

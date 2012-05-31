@@ -542,20 +542,6 @@ static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yam
    coords[7] = yamt;
 }
 
-static void check_window(gl_t *gl)
-{
-   bool quit, resize;
-
-   gfx_ctx_check_window(&quit,
-         &resize, &gl->win_width, &gl->win_height,
-         gl->frame_count);
-
-   if (quit)
-      gl->quitting = true;
-   else if (resize)
-      gl->should_resize = true;
-}
-
 #ifdef HAVE_FBO
 static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
       unsigned vp_width, unsigned vp_height)
@@ -612,7 +598,7 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
    }
 }
 
-static void gl_start_frame_fbo(gl_t *gl)
+static inline void gl_start_frame_fbo(gl_t *gl)
 {
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
@@ -794,7 +780,7 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
 }
 
 #ifdef __CELLOS_LV2__
-static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
+static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
    if (!gl->fbo_inited)
       gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
@@ -838,7 +824,7 @@ static void gl_init_textures(gl_t *gl)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 #else
-static void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
+static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
    glTexSubImage2D(GL_TEXTURE_2D,
@@ -867,7 +853,7 @@ static void gl_init_textures(gl_t *gl)
 }
 #endif
 
-static void gl_next_texture_index(gl_t *gl, const struct gl_tex_info *tex_info)
+static inline void gl_next_texture_index(gl_t *gl, const struct gl_tex_info *tex_info)
 {
    memmove(gl->prev_info + 1, gl->prev_info, sizeof(*tex_info) * (TEXTURES - 1));
    memcpy(&gl->prev_info[0], tex_info, sizeof(*tex_info));
@@ -958,7 +944,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl_render_msg_post(gl);
    }
 
+#ifndef RARCH_CONSOLE
    gfx_ctx_update_window_title(false);
+#endif
 
 #ifdef RARCH_CONSOLE
    if (!gl->block_swap)
@@ -1189,7 +1177,17 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 static bool gl_alive(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   check_window(gl);
+   bool quit, resize;
+
+   gfx_ctx_check_window(&quit,
+         &resize, &gl->win_width, &gl->win_height,
+         gl->frame_count);
+
+   if (quit)
+      gl->quitting = true;
+   else if (resize)
+      gl->should_resize = true;
+
    return !gl->quitting;
 }
 
@@ -1267,14 +1265,38 @@ static void gl_stop(void)
 
 static void gl_restart(void)
 {
+#ifdef HAVE_CG_MENU
+   bool should_menu_render;
+#endif
+#ifdef RARCH_CONSOLE
+   bool should_block_swap;
+#endif
    gl_t *gl = driver.video_data;
 
    if (!gl)
 	   return;
 
+#ifdef RARCH_CONSOLE
+   should_block_swap = gl->block_swap;
+#endif
+#ifdef HAVE_CG_MENU
+   should_menu_render = gl->menu_render;
+#endif
+
    gl_stop();
    gl_cg_invalidate_context();
    gl_start();
+
+#ifdef HAVE_CG_MENU
+   gl->menu_render = should_menu_render;
+#endif
+
+   gl->frame_count = 0;
+
+#ifdef RARCH_CONSOLE
+   gl->block_swap = should_block_swap;
+   SET_TIMER_EXPIRATION(gl, 30);
+#endif
 }
 #endif
 

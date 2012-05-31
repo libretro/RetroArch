@@ -52,8 +52,6 @@
 
 #include "menu.h"
 
-#define MAX_PATH_LENGTH 1024
-
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 #define EMULATOR_CORE_DIR "cores"
 
@@ -61,21 +59,23 @@
 #define NP_POOL_SIZE (128*1024)
 
 static uint8_t np_pool[NP_POOL_SIZE];
-char contentInfoPath[MAX_PATH_LENGTH];
-char usrDirPath[MAX_PATH_LENGTH];
-char DEFAULT_PRESET_FILE[MAX_PATH_LENGTH];
-char DEFAULT_BORDER_FILE[MAX_PATH_LENGTH];
-char DEFAULT_MENU_BORDER_FILE[MAX_PATH_LENGTH];
-char PRESETS_DIR_PATH[MAX_PATH_LENGTH];
-char INPUT_PRESETS_DIR_PATH[MAX_PATH_LENGTH];
-char BORDERS_DIR_PATH[MAX_PATH_LENGTH];
-char SHADERS_DIR_PATH[MAX_PATH_LENGTH];
-char LIBRETRO_DIR_PATH[MAX_PATH_LENGTH];
-char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
-char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
-char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
-char EMULATOR_CORE_SELF[MAX_PATH_LENGTH];
-char MULTIMAN_EXECUTABLE[MAX_PATH_LENGTH];
+char contentInfoPath[PATH_MAX];
+char usrDirPath[PATH_MAX];
+char DEFAULT_PRESET_FILE[PATH_MAX];
+char DEFAULT_BORDER_FILE[PATH_MAX];
+char DEFAULT_MENU_BORDER_FILE[PATH_MAX];
+char PRESETS_DIR_PATH[PATH_MAX];
+char INPUT_PRESETS_DIR_PATH[PATH_MAX];
+char BORDERS_DIR_PATH[PATH_MAX];
+char SHADERS_DIR_PATH[PATH_MAX];
+char LIBRETRO_DIR_PATH[PATH_MAX];
+char DEFAULT_SHADER_FILE[PATH_MAX];
+char DEFAULT_MENU_SHADER_FILE[PATH_MAX];
+char SYS_CONFIG_FILE[PATH_MAX];
+char EMULATOR_CORE_SELF[PATH_MAX];
+#ifdef HAVE_MULTIMAN
+char MULTIMAN_EXECUTABLE[PATH_MAX];
+#endif
 
 int rarch_main(int argc, char *argv[]);
 
@@ -91,6 +91,7 @@ static void set_default_settings(void)
    strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
    g_settings.video.fbo_scale_x = 2.0f;
    g_settings.video.fbo_scale_y = 2.0f;
+   g_settings.video.render_to_texture = true;
    strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
    g_settings.video.second_pass_smooth = true;
    g_settings.video.smooth = true;
@@ -147,172 +148,12 @@ static void set_default_settings(void)
    g_console.viewports.custom_vp.x = 0;
    g_console.viewports.custom_vp.y = 0;
    g_console.custom_bgm_enable = true;
+   g_console.info_msg_enable = true;
 
    // g_extern
    g_extern.state_slot = 0;
    g_extern.audio_data.mute = 0;
    g_extern.verbose = true;
-}
-
-static void init_settings(bool load_libretro_path)
-{
-   if(!path_file_exists(SYS_CONFIG_FILE))
-   {
-      RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
-      FILE * f;
-      f = fopen(SYS_CONFIG_FILE, "w");
-      fclose(f);
-   }
-   else
-   {
-      config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
-
-      // g_settings
-
-      if(load_libretro_path)
-      {
-         CONFIG_GET_STRING(libretro, "libretro_path");
-
-	 if(!strcmp(g_settings.libretro, ""))
-	 {
-            //We need to set libretro to the first entry in the cores
-	    //directory so that it will be saved to the config file
-            char ** dir_list = dir_list_new(LIBRETRO_DIR_PATH, ".SELF");
-
-	    if (!dir_list)
-	    {
-               RARCH_ERR("Couldn't read %s directory.\n", EMULATOR_CORE_DIR);
-	       return;
-	    }
-
-	    const char * first_self = dir_list[0];
-
-	    if(first_self)
-	    {
-               RARCH_LOG("Set first entry in libretro %s dir: [%s] to libretro path.\n", EMULATOR_CORE_DIR, first_self);
-	       strlcpy(g_settings.libretro, first_self, sizeof(g_settings.libretro));
-	    }
-	    else
-	    {
-               RARCH_ERR("Failed to set first entry in libretro %s dir to libretro path.\n", EMULATOR_CORE_DIR);
-	    }
-
-	    dir_list_free(dir_list);
-	 }
-      }
-
-      CONFIG_GET_STRING(cheat_database, "cheat_database");
-      CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
-      CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
-      CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
-      CONFIG_GET_FLOAT(video.fbo_scale_x, "video_fbo_scale_x");
-      CONFIG_GET_FLOAT(video.fbo_scale_y, "video_fbo_scale_y");
-      CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
-      CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
-      CONFIG_GET_BOOL(video.smooth, "video_smooth");
-      CONFIG_GET_BOOL(video.vsync, "video_vsync");
-      CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
-      CONFIG_GET_STRING(audio.device, "audio_device");
-
-      for (unsigned i = 0; i < 7; i++)
-      {
-         char cfg[64];
-	 snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
-	 CONFIG_GET_INT(input.dpad_emulation[i], cfg);
-      }
-
-      // g_console
-
-      CONFIG_GET_BOOL_CONSOLE(fbo_enabled, "fbo_enabled");
-      CONFIG_GET_BOOL_CONSOLE(custom_bgm_enable, "custom_bgm_enable");
-      CONFIG_GET_BOOL_CONSOLE(overscan_enable, "overscan_enable");
-      CONFIG_GET_BOOL_CONSOLE(screenshots_enable, "screenshots_enable");
-      CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
-      CONFIG_GET_BOOL_CONSOLE(triple_buffering_enable, "triple_buffering_enable");
-      CONFIG_GET_INT_CONSOLE(aspect_ratio_index, "aspect_ratio_index");
-      CONFIG_GET_INT_CONSOLE(current_resolution_id, "current_resolution_id");
-      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.x, "custom_viewport_x");
-      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.y, "custom_viewport_y");
-      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.width, "custom_viewport_width");
-      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.height, "custom_viewport_height");
-      CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
-      CONFIG_GET_INT_CONSOLE(sound_mode, "sound_mode");
-      CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
-      CONFIG_GET_FLOAT_CONSOLE(menu_font_size, "menu_font_size");
-      CONFIG_GET_FLOAT_CONSOLE(overscan_amount, "overscan_amount");
-
-      // g_extern
-      CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
-      CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
-   }
-}
-
-static void save_settings(void)
-{
-   if(!path_file_exists(SYS_CONFIG_FILE))
-   {
-      RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
-      FILE * f;
-      f = fopen(SYS_CONFIG_FILE, "w");
-      fclose(f);
-   }
-   else
-   {
-      config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
-
-      if(conf == NULL)
-         conf = config_file_new(NULL);
-
-      // g_settings
-      config_set_string(conf, "libretro_path", g_settings.libretro);
-      config_set_string(conf, "cheat_database_path", g_settings.cheat_database);
-      config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
-      config_set_string(conf, "video_cg_shader", g_settings.video.cg_shader_path);
-      config_set_string(conf, "video_second_pass_shader", g_settings.video.second_pass_shader);
-      config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
-      config_set_float(conf, "video_fbo_scale_x", g_settings.video.fbo_scale_x);
-      config_set_float(conf, "video_fbo_scale_y", g_settings.video.fbo_scale_y);
-      config_set_bool(conf, "video_render_to_texture", g_settings.video.render_to_texture);
-      config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
-      config_set_bool(conf, "video_smooth", g_settings.video.smooth);
-      config_set_bool(conf, "video_vsync", g_settings.video.vsync);
-      config_set_string(conf, "audio_device", g_settings.audio.device);
-
-      for (unsigned i = 0; i < 7; i++)
-      {
-         char cfg[64];
-	 snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
-	 config_set_int(conf, cfg, g_settings.input.dpad_emulation[i]);
-      }
-
-      // g_console
-      config_set_bool(conf, "fbo_enabled", g_console.fbo_enabled);
-      config_set_bool(conf, "custom_bgm_enable", g_console.custom_bgm_enable);
-      config_set_bool(conf, "overscan_enable", g_console.overscan_enable);
-      config_set_bool(conf, "screenshots_enable", g_console.screenshots_enable);
-      config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
-      config_set_bool(conf, "triple_buffering_enable", g_console.triple_buffering_enable);
-      config_set_int(conf, "sound_mode", g_console.sound_mode);
-      config_set_int(conf, "aspect_ratio_index", g_console.aspect_ratio_index);
-      config_set_int(conf, "current_resolution_id", g_console.current_resolution_id);
-      config_set_int(conf, "custom_viewport_width", g_console.viewports.custom_vp.width);
-      config_set_int(conf, "custom_viewport_height", g_console.viewports.custom_vp.height);
-      config_set_int(conf, "custom_viewport_x", g_console.viewports.custom_vp.x);
-      config_set_int(conf, "custom_viewport_y", g_console.viewports.custom_vp.y);
-      config_set_int(conf, "screen_orientation", g_console.screen_orientation);
-      config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
-      config_set_float(conf, "menu_font_size", g_console.menu_font_size);
-      config_set_float(conf, "overscan_amount", g_console.overscan_amount);
-
-      // g_extern
-      config_set_int(conf, "state_slot", g_extern.state_slot);
-      config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
-
-      if (!config_file_write(conf, SYS_CONFIG_FILE))
-         RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", SYS_CONFIG_FILE);
-
-      free(conf);
-   }
 }
 
 #ifdef HAVE_SYSUTILS
@@ -325,10 +166,8 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
    switch (status)
    {
       case CELL_SYSUTIL_REQUEST_EXITGAME:
-         g_console.menu_enable = false;
 	 gl->quitting = true;
-	 g_console.ingame_menu_enable = false;
-	 g_console.mode_switch = MODE_EXIT;
+         rarch_settings_change(S_QUIT);
 	 break;
       case CELL_SYSUTIL_OSKDIALOG_FINISHED:
 	 oskutil_close(&g_console.oskutil_handle);
@@ -352,7 +191,7 @@ static void get_environment_settings(int argc, char *argv[])
    char dirName[CELL_GAME_DIRNAME_SIZE];
    CellSysCacheParam param;
    memset(&param, 0x00, sizeof(CellSysCacheParam));
-   strncpy(param.cacheId,CACHE_ID, sizeof(CellSysCacheParam));
+   strlcpy(param.cacheId,CACHE_ID, sizeof(CellSysCacheParam));
 
    ret = cellSysCacheMount(&param);
    if(ret != CELL_SYSCACHE_RET_OK_CLEARED)
@@ -360,15 +199,16 @@ static void get_environment_settings(int argc, char *argv[])
       RARCH_ERR("System cache partition could not be mounted, it might be already mounted.\n");
    }
 
+#ifdef HAVE_MULTIMAN
    if(argc > 1)
    {
       /* launched from external launcher */
-      strncpy(MULTIMAN_EXECUTABLE, argv[2], sizeof(MULTIMAN_EXECUTABLE));
+      strlcpy(MULTIMAN_EXECUTABLE, argv[2], sizeof(MULTIMAN_EXECUTABLE));
    }
    else
    {
       /* not launched from external launcher, set default path */
-      strncpy(MULTIMAN_EXECUTABLE, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
+      strlcpy(MULTIMAN_EXECUTABLE, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
          sizeof(MULTIMAN_EXECUTABLE));
    }
 
@@ -378,6 +218,7 @@ static void get_environment_settings(int argc, char *argv[])
       RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
    }
    else
+#endif
    {
       g_console.external_launcher_support = EXTERN_LAUNCHER_SALAMANDER;
       RARCH_WARN("Not started from multiMAN, auto-game start disabled.\n");
@@ -411,11 +252,13 @@ static void get_environment_settings(int argc, char *argv[])
 
       ret = cellGameContentPermit(contentInfoPath, usrDirPath);
 
+#ifdef HAVE_MULTIMAN
       if(g_console.external_launcher_support == EXTERN_LAUNCHER_MULTIMAN)
       {
          snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
 	 snprintf(usrDirPath, sizeof(usrDirPath), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
       }
+#endif
 
       if(ret < 0)
       {
@@ -476,15 +319,25 @@ int main(int argc, char *argv[])
 
    config_set_defaults();
 
-   rarch_assert(g_extern.msg_queue = msg_queue_new(8));
-
    char full_path[1024], tmp_path[1024];
    snprintf(full_path, sizeof(full_path), "%s/%s/CORE.SELF", usrDirPath, EMULATOR_CORE_DIR);
    snprintf(tmp_path, sizeof(tmp_path), "%s/%s/", usrDirPath, EMULATOR_CORE_DIR);
-   bool load_libretro_path = rarch_manage_libretro_core(full_path, tmp_path, ".SELF");
+
+   g_extern.verbose = true;
+
+   const char *libretro_core_installed = rarch_manage_libretro_install(full_path, tmp_path, ".SELF");
+
+   g_extern.verbose = false;
+
+   bool find_libretro_file = false;
+
+   if(libretro_core_installed != NULL)
+      strlcpy(g_settings.libretro, libretro_core_installed, sizeof(g_settings.libretro));
+   else
+      find_libretro_file = true;
 
    set_default_settings();
-   init_settings(load_libretro_path);
+   rarch_config_load(SYS_CONFIG_FILE, LIBRETRO_DIR_PATH, ".SELF", find_libretro_file);
    init_libretro_sym();
 
 #if(CELL_SDK_VERSION > 0x340000)
@@ -523,13 +376,16 @@ int main(int argc, char *argv[])
       case EXTERN_LAUNCHER_SALAMANDER:
          g_console.mode_switch = MODE_MENU;
 	 break;
+#ifdef HAVE_MULTIMAN
       case EXTERN_LAUNCHER_MULTIMAN:
 	 RARCH_LOG("Started from multiMAN, will auto-start game.\n");
-	 strncpy(g_console.rom_path, argv[1], sizeof(g_console.rom_path));
-	 g_console.initialize_rarch_enable = 1;
-	 g_console.mode_switch = MODE_EMULATION;
+	 strlcpy(g_console.rom_path, argv[1], sizeof(g_console.rom_path));
+         rarch_settings_change(S_START_RARCH);
 	 rarch_startup(SYS_CONFIG_FILE);
 	 break;
+#endif
+      default:
+         break;
    }
 
 begin_loop:
@@ -557,9 +413,11 @@ begin_loop:
 
 begin_shutdown:
    if(path_file_exists(SYS_CONFIG_FILE))
-      save_settings();
+      rarch_config_save(SYS_CONFIG_FILE);
+
    if(g_console.emulator_initialized)
       rarch_main_deinit();
+
    input_ps3.free(NULL);
 
    video_gl.stop();

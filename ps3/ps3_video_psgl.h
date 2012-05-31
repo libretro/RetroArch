@@ -33,7 +33,6 @@ enum
 #define MAX_SCALING_FACTOR (4.0f)
 
 const char * ps3_get_resolution_label(uint32_t resolution);
-int ps3_check_resolution(uint32_t resolution_id);
 void ps3_previous_resolution (void);
 void ps3_next_resolution (void);
 

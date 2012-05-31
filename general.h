@@ -207,8 +207,12 @@ struct console_settings
    bool default_savestate_dir_enable;
    bool fbo_enabled;
    bool frame_advance_enable;
-   bool gamma_correction_enable;
+#ifdef _XBOX
+   bool menus_hd_enable;
+#endif
    bool initialize_rarch_enable;
+   bool info_msg_enable;
+   bool gamma_correction_enable;
    bool ingame_menu_enable;
    bool menu_enable;
    bool overscan_enable;
@@ -477,6 +481,8 @@ int rarch_main_init(int argc, char *argv[]);
 bool rarch_main_iterate(void);
 void rarch_main_deinit(void);
 void rarch_render_cached_frame(void);
+void rarch_init_msg_queue(void);
+void rarch_deinit_msg_queue(void);
 
 void rarch_load_state(void);
 void rarch_save_state(void);

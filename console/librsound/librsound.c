@@ -1415,7 +1415,7 @@ int rsd_set_param(rsound_t *rd, enum rsd_settings option, void* param)
 			break;
 
 		case RSD_IDENTITY:
-			strncpy(rd->identity, param, sizeof(rd->identity));
+			strlcpy(rd->identity, param, sizeof(rd->identity));
 			rd->identity[sizeof(rd->identity)-1] = '\0';
 			break;
 

@@ -1,8 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  *
-
- * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -51,8 +49,6 @@ void gfx_ctx_destroy(void);
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 void gfx_ctx_update_window_title(bool reset);
 
-void gfx_ctx_swap_buffers(void);
-
 bool gfx_ctx_key_pressed(int key);
 
 void gfx_ctx_check_window(bool *quit,
@@ -64,7 +60,11 @@ void gfx_ctx_set_resize(unsigned width, unsigned height);
 bool gfx_ctx_get_wm_info(SDL_SysWMinfo *info);
 #endif
 
+#ifndef HAVE_GRIFFIN
 bool gfx_ctx_window_has_focus(void);
+
+void gfx_ctx_swap_buffers(void);
+#endif
 
 void gfx_ctx_input_driver(const input_driver_t **input, void **input_data);
 
@@ -75,6 +75,7 @@ bool gfx_ctx_menu_init(void);
 #ifdef RARCH_CONSOLE
 void gfx_ctx_set_filtering(unsigned index, bool set_smooth);
 void gfx_ctx_get_available_resolutions(void);
+int gfx_ctx_check_resolution(unsigned resolution_id);
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_D3D9)

@@ -91,7 +91,7 @@ const char * path, const char * extensions)
       if(!(ffd.dwFileAttributes & FS_TYPES_DIRECTORY))
       {
          char tmp_extensions[512];
-	 strncpy(tmp_extensions, extensions, sizeof(tmp_extensions));
+	 strlcpy(tmp_extensions, extensions, sizeof(tmp_extensions));
 	 const char * current_extension = filebrowser_get_extension(ffd.cFileName);
 	 bool found_rom = false;
 
@@ -158,7 +158,7 @@ const char * path, const char * extensions)
          if (dirent.d_type == FS_TYPES_FILE)
          {
             char tmp_extensions[512];
-            strncpy(tmp_extensions, extensions, sizeof(tmp_extensions));
+            strlcpy(tmp_extensions, extensions, sizeof(tmp_extensions));
             const char * current_extension = filebrowser_get_extension(dirent.d_name);
             bool found_rom = false;
 

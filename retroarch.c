@@ -1152,7 +1152,12 @@ static void init_recording(void)
       params.fb_height = next_pow2(max_height);
    }
 
-   RARCH_LOG("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u 32-bit: %s)\n", g_extern.record_path, params.out_width, params.out_height, params.fb_width, params.fb_height, params.rgb32 ? "yes" : "no");
+   RARCH_LOG("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u 32-bit: %s)\n",
+         g_extern.record_path,
+         params.out_width, params.out_height,
+         params.fb_width, params.fb_height,
+         params.rgb32 ? "yes" : "no");
+
    g_extern.rec = ffemu_new(&params);
    if (!g_extern.rec)
    {
@@ -1171,7 +1176,7 @@ static void deinit_recording(void)
 }
 #endif
 
-static void init_msg_queue(void)
+void rarch_init_msg_queue(void)
 {
    if (g_extern.msg_queue)
       return;
@@ -1179,7 +1184,7 @@ static void init_msg_queue(void)
    rarch_assert(g_extern.msg_queue = msg_queue_new(8));
 }
 
-static void deinit_msg_queue(void)
+void rarch_deinit_msg_queue(void)
 {
    if (g_extern.msg_queue)
    {
@@ -2363,7 +2368,6 @@ int rarch_main_init(int argc, char *argv[])
       goto error;
 
    init_system_av_info();
-   init_msg_queue();
 
    if (!g_extern.sram_load_disable)
       load_save_files();
@@ -2543,7 +2547,6 @@ void rarch_main_deinit(void)
 #ifdef HAVE_BSV_MOVIE
    deinit_movie();
 #endif
-   deinit_msg_queue();
 
    pretro_unload_game();
    pretro_deinit();
@@ -2560,8 +2563,10 @@ int main(int argc, char *argv[])
 #endif
    int init_ret;
    if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
+   rarch_init_msg_queue();
    while (rarch_main_iterate());
    rarch_main_deinit();
+   rarch_deinit_msg_queue();
    rarch_main_clear_state();
    return 0;
 }

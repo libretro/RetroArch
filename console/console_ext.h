@@ -17,9 +17,19 @@
 #ifndef CONSOLE_EXT_H__
 #define CONSOLE_EXT_H__
 
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+#include "libretro_mgmt.h"
+#endif
+
+#include "console_settings.h"
+
 #define IS_TIMER_NOT_EXPIRED(handle) (handle->frame_count < g_console.timer_expiration_frame_count)
 #define IS_TIMER_EXPIRED(handle) 	(!(IS_TIMER_NOT_EXPIRED(handle)))
 #define SET_TIMER_EXPIRATION(handle, value) (g_console.timer_expiration_frame_count = handle->frame_count + value)
+
+/*============================================================
+	VIDEO
+============================================================ */
 
 enum aspect_ratio
 {
@@ -59,6 +69,24 @@ enum rotation
    ORIENTATION_END
 };
 
+#define LAST_ORIENTATION (ORIENTATION_END-1)
+
+extern char rotation_lut[ASPECT_RATIO_END][PATH_MAX];
+
+/* ABGR color format defines */
+
+#define WHITE		0xffffffffu
+#define RED		0xff0000ffu
+#define GREEN		0xff00ff00u
+#define BLUE		0xffff0000u
+#define YELLOW		0xff00ffffu
+#define PURPLE		0xffff00ffu
+#define CYAN		0xffffff00u
+#define ORANGE		0xff0063ffu
+#define SILVER		0xff8c848cu
+#define LIGHTBLUE	0xFFFFE0E0U
+#define LIGHTORANGE	0xFFE0EEFFu
+
 struct aspect_ratio_elem
 {
    char name[64];
@@ -70,6 +98,21 @@ extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 extern void rarch_set_auto_viewport(unsigned width, unsigned height);
 
 #include "console_ext_input.h"
+
+/*============================================================
+	SOUND
+============================================================ */
+
+enum
+{
+   SOUND_MODE_NORMAL,
+#ifdef HAVE_RSOUND
+   SOUND_MODE_RSOUND,
+#endif
+#ifdef HAVE_HEADSET
+   SOUND_MODE_HEADSET,
+#endif
+};
 
 /*============================================================
 	ROM EXTENSIONS
@@ -100,13 +143,34 @@ void rarch_input_set_default_keybind_names_for_emulator(void);
 
 void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-bool rarch_manage_libretro_core(const char *full_path, const char *path, const char *exe_ext);
-#endif
 
 /*============================================================
   RetroArch
   ============================================================ */
+
+enum {
+   MENU_ITEM_LOAD_STATE = 0,
+   MENU_ITEM_SAVE_STATE,
+   MENU_ITEM_KEEP_ASPECT_RATIO,
+   MENU_ITEM_OVERSCAN_AMOUNT,
+   MENU_ITEM_ORIENTATION,
+#ifdef __CELLOS_LV2__
+   MENU_ITEM_SCALE_FACTOR,
+#endif
+   MENU_ITEM_RESIZE_MODE,
+   MENU_ITEM_FRAME_ADVANCE,
+   MENU_ITEM_SCREENSHOT_MODE,
+   MENU_ITEM_RESET,
+   MENU_ITEM_RETURN_TO_GAME,
+#ifdef __CELLOS_LV2__
+   MENU_ITEM_RETURN_TO_MENU,
+   MENU_ITEM_CHANGE_LIBRETRO,
+   MENU_ITEM_RETURN_TO_MULTIMAN,
+#endif
+   MENU_ITEM_RETURN_TO_DASHBOARD
+};
+
+#define MENU_ITEM_LAST MENU_ITEM_RETURN_TO_DASHBOARD+1
 
 #ifdef HAVE_RARCH_MAIN_WRAP
 
@@ -133,10 +197,13 @@ void rarch_console_rsound_stop(void);
 #endif
 
 #ifdef _XBOX
-wchar_t * rarch_convert_char_to_wchar(const char * str);
+void rarch_convert_char_to_wchar(wchar_t *buf, const char * str, size_t size);
 #endif
 
 const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr);
 
+void rarch_config_create_default(const char * conf_name);
+void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool find_libretro_path);
+void rarch_config_save(const char * conf_name);
 
 #endif

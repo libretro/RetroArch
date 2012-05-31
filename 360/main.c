@@ -29,7 +29,6 @@
 #include "../conf/config_file_macros.h"
 #include "../file.h"
 #include "../general.h"
-#include "shared.h"
 
 #define DEVICE_MEMORY_UNIT0 1
 #define DEVICE_MEMORY_UNIT1 2
@@ -49,8 +48,8 @@ typedef struct _STRING {
    char * Buffer;
 } STRING;
 
-char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
-char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
+char DEFAULT_SHADER_FILE[PATH_MAX];
+char SYS_CONFIG_FILE[PATH_MAX];
 
 extern "C" int __stdcall ObCreateSymbolicLink( STRING*, STRING*);
 
@@ -134,6 +133,8 @@ static void set_default_settings (void)
    strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
    g_settings.video.fbo_scale_x = 2.0f;
    g_settings.video.fbo_scale_y = 2.0f;
+   g_settings.video.render_to_texture = true;
+   strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
    g_settings.video.second_pass_smooth = true;
    g_settings.video.smooth = true;
    g_settings.video.vsync = true;
@@ -176,154 +177,12 @@ static void set_default_settings (void)
    g_console.viewports.custom_vp.x = 0;
    g_console.viewports.custom_vp.y = 0;
    g_console.color_format = 0;
+   g_console.info_msg_enable = true;
 
    //g_extern
    g_extern.state_slot = 0;
    g_extern.audio_data.mute = 0;
    g_extern.verbose = true;
-}
-
-static void init_settings (bool load_libretro_path)
-{
-   char fname_tmp[MAX_PATH_LENGTH];
-
-   if(!path_file_exists(SYS_CONFIG_FILE))
-   {
-      FILE * f;
-      RARCH_ERR("Config file \"%s\" desn't exist. Creating...\n", "game:\\retroarch.cfg");
-      f = fopen(SYS_CONFIG_FILE, "w");
-      fclose(f);
-   }
-
-   config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
-
-   if(load_libretro_path)
-   {
-      CONFIG_GET_STRING(libretro, "libretro_path");
-
-      if(!strcmp(g_settings.libretro, ""))
-      {
-         //We need to set libretro to the first entry in the cores
-	 //directory so that it will be saved to the config file
-	 char ** dir_list = dir_list_new("game:\\", ".xex");
-
-	 if (!dir_list)
-	 {
-            RARCH_ERR("Couldn't read directory.\n");
-	    return;
-	 }
-
-	 const char * first_xex = dir_list[0];
-
-	 if(first_xex)
-	 {
-            fill_pathname_base(fname_tmp, first_xex, sizeof(fname_tmp));
-
-	    if(strcmp(fname_tmp, "RetroArch-Salamander.xex") == 0)
-	    {
-               RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
-	       first_xex = dir_list[1];
-	       fill_pathname_base(fname_tmp, first_xex, sizeof(fname_tmp));
-
-	       if(!first_xex)
-	       {
-                  //This is very unlikely to happen
-                  RARCH_WARN("There is no second entry - no choice but to set it to RetroArch Salamander\n");
-		  first_xex = dir_list[0];
-		  fill_pathname_base(fname_tmp, first_xex, sizeof(fname_tmp));
-	       }
-	    }
-	    RARCH_LOG("Set first .xex entry in dir: [%s] to libretro path.\n", fname_tmp);
-	    snprintf(g_settings.libretro, sizeof(g_settings.libretro), "game:\\%s", fname_tmp);
-	 }
-	 else
-	 {
-            RARCH_ERR("Failed to set first .xex entry to libretro path.\n");
-	 }
-
-	 dir_list_free(dir_list);
-      }
-   }
-
-   // g_settings
-   CONFIG_GET_STRING(cheat_database, "cheat_database");
-   CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
-   CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
-   CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
-   CONFIG_GET_FLOAT(video.fbo_scale_x, "video_fbo_scale_x");
-   CONFIG_GET_FLOAT(video.fbo_scale_y, "video_fbo_scale_y");
-   CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
-   CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
-   CONFIG_GET_BOOL(video.smooth, "video_smooth");
-   CONFIG_GET_BOOL(video.vsync, "video_vsync");
-   CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
-
-   // g_console
-   CONFIG_GET_BOOL_CONSOLE(fbo_enabled, "fbo_enabled");
-   CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
-   CONFIG_GET_BOOL_CONSOLE(gamma_correction_enable, "gamma_correction_enable");
-   CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
-   CONFIG_GET_INT_CONSOLE(aspect_ratio_index, "aspect_ratio_index");
-   CONFIG_GET_INT_CONSOLE(viewports.custom_vp.x, "custom_viewport_x");
-   CONFIG_GET_INT_CONSOLE(viewports.custom_vp.y, "custom_viewport_y");
-   CONFIG_GET_INT_CONSOLE(viewports.custom_vp.width, "custom_viewport_width");
-   CONFIG_GET_INT_CONSOLE(viewports.custom_vp.height, "custom_viewport_height");
-   CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
-   CONFIG_GET_INT_CONSOLE(color_format, "color_format");
-
-   // g_extern
-   CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
-   CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
-}
-
-static void save_settings (void)
-{
-   if(!path_file_exists(SYS_CONFIG_FILE))
-   {
-      FILE * f;
-      f = fopen(SYS_CONFIG_FILE, "w");
-      fclose(f);
-   }
-
-   config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
-
-   if(conf == NULL)
-      conf = config_file_new(NULL);
-
-   // g_settings
-   config_set_string(conf, "libretro_path", g_settings.libretro);
-   config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
-   config_set_string(conf, "video_cg_shader", g_settings.video.cg_shader_path);
-   config_set_string(conf, "video_second_pass_shader", g_settings.video.second_pass_shader);
-   config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
-   config_set_float(conf, "video_fbo_scale_x", g_settings.video.fbo_scale_x);
-   config_set_float(conf, "video_fbo_scale_y", g_settings.video.fbo_scale_y);
-   config_set_bool(conf, "video_render_to_texture", g_settings.video.render_to_texture);
-   config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
-   config_set_bool(conf, "video_smooth", g_settings.video.smooth);
-   config_set_bool(conf, "video_vsync", g_settings.video.vsync);
-
-   // g_console
-   config_set_bool(conf, "fbo_enabled", g_console.fbo_enabled);
-   config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
-   config_set_bool(conf, "gamma_correction_enable", g_console.gamma_correction_enable);
-   config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
-   config_set_int(conf, "aspect_ratio_index", g_console.aspect_ratio_index);
-   config_set_int(conf, "custom_viewport_width", g_console.viewports.custom_vp.width);
-   config_set_int(conf, "custom_viewport_height", g_console.viewports.custom_vp.height);
-   config_set_int(conf, "custom_viewport_x", g_console.viewports.custom_vp.x);
-   config_set_int(conf, "custom_viewport_y", g_console.viewports.custom_vp.y);
-   config_set_int(conf, "screen_orientation", g_console.screen_orientation);
-   config_set_int(conf, "color_format", g_console.color_format);
-
-   // g_extern
-   config_set_int(conf, "state_slot", g_extern.state_slot);
-   config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
-
-   if (!config_file_write(conf, SYS_CONFIG_FILE))
-      RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", SYS_CONFIG_FILE);
-
-   free(conf);
 }
 
 static void get_environment_settings (void)
@@ -407,15 +266,24 @@ int main(int argc, char *argv[])
    rarch_main_clear_state();
    config_set_defaults();
 
-   rarch_assert(g_extern.msg_queue = msg_queue_new(8));
-
    char full_path[1024];
    snprintf(full_path, sizeof(full_path), "game:\\CORE.xex");
 
-   bool load_libretro_path = rarch_manage_libretro_core(full_path, "game:\\", ".xex");
+   g_extern.verbose = true;
+
+   const char *libretro_core_installed = rarch_manage_libretro_install(full_path, "game:\\", ".xex");
+
+   g_extern.verbose = false;
+
+   bool find_libretro_file = false;
+
+   if(libretro_core_installed != NULL)
+      strlcpy(g_settings.libretro, libretro_core_installed, sizeof(g_settings.libretro));
+   else
+      find_libretro_file = true;
 
    set_default_settings();
-   init_settings(load_libretro_path);
+   rarch_config_load(SYS_CONFIG_FILE, "game:\\", ".xex", find_libretro_file);
    init_libretro_sym();
 
    video_xdk360.start();
@@ -450,7 +318,7 @@ begin_loop:
 
 begin_shutdown:
    if(path_file_exists(SYS_CONFIG_FILE))
-      save_settings();
+      rarch_config_save(SYS_CONFIG_FILE);
 
    menu_deinit();
    video_xdk360.stop();

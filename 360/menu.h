@@ -23,6 +23,8 @@
 enum
 {
    SETTING_EMU_REWIND_ENABLED = 0,
+   SETTING_EMU_SHOW_INFO_MSG,
+   SETTING_EMU_MENUS,
    SETTING_GAMMA_CORRECTION_ENABLED,
    SETTING_COLOR_FORMAT,
    SETTING_SHADER,
@@ -35,23 +37,23 @@ enum
 
 enum
 {
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B = 0,
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y,
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT,
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START,
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP,
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN,
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT,
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT,
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A,
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X,
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L,
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R,
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2,
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2,
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3,
-	SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3,
-	SETTING_CONTROLS_DEFAULT_ALL
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B = 0,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3,
+   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3,
+   SETTING_CONTROLS_DEFAULT_ALL
 };
 
 enum
@@ -62,154 +64,154 @@ enum
 
 class CRetroArch : public CXuiModule
 {
-public:
-   HXUIOBJ		hMainScene;
-   HXUIOBJ      hControlsMenu;
-   HXUIOBJ		hFileBrowser;
-   HXUIOBJ		hCoreBrowser;
-   HXUIOBJ      hShaderBrowser;
-   HXUIOBJ		hQuickMenu;
-   HXUIOBJ		hRetroArchSettings;
-protected:
-   /* Override so that Cssnes can register classes */
-   virtual HRESULT RegisterXuiClasses();
-   /* Override so that Cssnes can unregister classes */
-   virtual HRESULT UnregisterXuiClasses();
+   public:
+      HXUIOBJ hMainScene;
+      HXUIOBJ hControlsMenu;
+      HXUIOBJ hFileBrowser;
+      HXUIOBJ hCoreBrowser;
+      HXUIOBJ hShaderBrowser;
+      HXUIOBJ hQuickMenu;
+      HXUIOBJ hRetroArchSettings;
+   protected:
+      virtual HRESULT RegisterXuiClasses();
+      virtual HRESULT UnregisterXuiClasses();
 };
 
 class CRetroArchMain: public CXuiSceneImpl
 {
-protected:
-   CXuiControl m_filebrowser;
-   CXuiControl m_quick_menu;
-   CXuiControl m_controls;
-   CXuiControl m_settings;
-   CXuiControl m_change_libretro_core;
-   CXuiControl m_quit;
-   CXuiTextElement m_title;
-   CXuiTextElement m_core;
-public:
-   HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-   HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+   protected:
+      CXuiControl m_filebrowser;
+      CXuiControl m_quick_menu;
+      CXuiControl m_controls;
+      CXuiControl m_settings;
+      CXuiControl m_change_libretro_core;
+      CXuiControl m_quit;
+      CXuiTextElement m_title;
+      CXuiTextElement m_core;
+   public:
+      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
 
-   XUI_BEGIN_MSG_MAP()
-      XUI_ON_XM_INIT( OnInit)
-      XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-   XUI_END_MSG_MAP();
+      XUI_BEGIN_MSG_MAP()
+         XUI_ON_XM_INIT( OnInit)
+         XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+      XUI_END_MSG_MAP();
 
-   XUI_IMPLEMENT_CLASS(CRetroArchMain, L"RetroArchMain", XUI_CLASS_SCENE)
+      XUI_IMPLEMENT_CLASS(CRetroArchMain, L"RetroArchMain", XUI_CLASS_SCENE)
 };
 
 class CRetroArchFileBrowser: public CXuiSceneImpl
 {
-protected:
-   CXuiList m_romlist;
-   CXuiControl m_back;
-   CXuiControl m_dir_game;
-   CXuiControl m_dir_cache;
-   CXuiTextElement m_rompathtitle;
-public:
-   HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-   HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+   protected:
+      CXuiList m_romlist;
+      CXuiControl m_back;
+      CXuiControl m_dir_game;
+      CXuiControl m_dir_cache;
+      CXuiTextElement m_rompathtitle;
+   public:
+      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
 
-   XUI_BEGIN_MSG_MAP()
-      XUI_ON_XM_INIT( OnInit)
-      XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-   XUI_END_MSG_MAP();
+      XUI_BEGIN_MSG_MAP()
+         XUI_ON_XM_INIT( OnInit)
+         XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+      XUI_END_MSG_MAP();
 
-   XUI_IMPLEMENT_CLASS(CRetroArchFileBrowser, L"RetroArchFileBrowser", XUI_CLASS_SCENE)
+      XUI_IMPLEMENT_CLASS(CRetroArchFileBrowser, L"RetroArchFileBrowser", XUI_CLASS_SCENE)
 };
 
 class CRetroArchCoreBrowser: public CXuiSceneImpl
 {
-protected:
-   CXuiList m_romlist;
-   CXuiControl m_back;
-   CXuiTextElement m_rompathtitle;
-public:
-   HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-   HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+   protected:
+      CXuiList m_romlist;
+      CXuiControl m_back;
+      CXuiTextElement m_rompathtitle;
+   public:
+      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
 
-   XUI_BEGIN_MSG_MAP()
-      XUI_ON_XM_INIT( OnInit)
-      XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-   XUI_END_MSG_MAP();
+      XUI_BEGIN_MSG_MAP()
+	      XUI_ON_XM_INIT( OnInit)
+	      XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+      XUI_END_MSG_MAP();
 
-   XUI_IMPLEMENT_CLASS(CRetroArchCoreBrowser, L"RetroArchCoreBrowser", XUI_CLASS_SCENE)
+      XUI_IMPLEMENT_CLASS(CRetroArchCoreBrowser, L"RetroArchCoreBrowser", XUI_CLASS_SCENE)
 };
 
 class CRetroArchShaderBrowser: public CXuiSceneImpl
 {
-protected:
-   CXuiList m_shaderlist;
-   CXuiControl m_back;
-   CXuiTextElement m_shaderpathtitle;
-public:
-   HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-   HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+   protected:
+      CXuiList m_shaderlist;
+      CXuiControl m_back;
+      CXuiTextElement m_shaderpathtitle;
+   public:
+      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
 
-   XUI_BEGIN_MSG_MAP()
-      XUI_ON_XM_INIT( OnInit)
-      XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-   XUI_END_MSG_MAP();
+      XUI_BEGIN_MSG_MAP()
+         XUI_ON_XM_INIT( OnInit)
+         XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+      XUI_END_MSG_MAP();
 
-   XUI_IMPLEMENT_CLASS(CRetroArchShaderBrowser, L"RetroArchShaderBrowser", XUI_CLASS_SCENE)
+      XUI_IMPLEMENT_CLASS(CRetroArchShaderBrowser, L"RetroArchShaderBrowser", XUI_CLASS_SCENE)
 };
 
 class CRetroArchQuickMenu: public CXuiSceneImpl
 {
-protected:
-   CXuiList m_quickmenulist;
-   CXuiControl m_back;
-public:
-   HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-   HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+   protected:
+      CXuiList m_quickmenulist;
+      CXuiControl m_back;
+   public:
+      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+      HRESULT OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled);
 
-   XUI_BEGIN_MSG_MAP()
-      XUI_ON_XM_INIT( OnInit)
-      XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-   XUI_END_MSG_MAP();
+      XUI_BEGIN_MSG_MAP()
+         XUI_ON_XM_INIT( OnInit)
+         XUI_ON_XM_CONTROL_NAVIGATE( OnControlNavigate )
+         XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+      XUI_END_MSG_MAP();
 
-   XUI_IMPLEMENT_CLASS(CRetroArchQuickMenu, L"RetroArchQuickMenu", XUI_CLASS_SCENE)
+      XUI_IMPLEMENT_CLASS(CRetroArchQuickMenu, L"RetroArchQuickMenu", XUI_CLASS_SCENE)
 };
 
 class CRetroArchSettings: public CXuiSceneImpl
 {
-protected:
-   CXuiList m_settingslist;
-   CXuiControl m_back;
-public:
-   HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-   HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
-   HRESULT OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled);
+   protected:
+      CXuiList m_settingslist;
+      CXuiControl m_back;
+   public:
+      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+      HRESULT OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled);
 
-   XUI_BEGIN_MSG_MAP()
-      XUI_ON_XM_INIT( OnInit)
-	  XUI_ON_XM_CONTROL_NAVIGATE( OnControlNavigate )
-      XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-   XUI_END_MSG_MAP();
+      XUI_BEGIN_MSG_MAP()
+         XUI_ON_XM_INIT( OnInit)
+         XUI_ON_XM_CONTROL_NAVIGATE( OnControlNavigate )
+         XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+      XUI_END_MSG_MAP();
 
-   XUI_IMPLEMENT_CLASS(CRetroArchSettings, L"RetroArchSettings", XUI_CLASS_SCENE)
+      XUI_IMPLEMENT_CLASS(CRetroArchSettings, L"RetroArchSettings", XUI_CLASS_SCENE)
 };
 
 class CRetroArchControls: public CXuiSceneImpl
 {
-protected:
-   CXuiList m_controlslist;
-   CXuiControl m_back;
-   CXuiSlider m_controlnoslider;
-public:
-   HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
-   HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
-   HRESULT OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled);
+   protected:
+      CXuiList m_controlslist;
+      CXuiControl m_back;
+      CXuiSlider m_controlnoslider;
+   public:
+      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+      HRESULT OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled);
 
-   XUI_BEGIN_MSG_MAP()
-      XUI_ON_XM_INIT( OnInit)
-	  XUI_ON_XM_CONTROL_NAVIGATE( OnControlNavigate )
-      XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-   XUI_END_MSG_MAP();
+      XUI_BEGIN_MSG_MAP()
+         XUI_ON_XM_INIT( OnInit)
+         XUI_ON_XM_CONTROL_NAVIGATE( OnControlNavigate )
+         XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+      XUI_END_MSG_MAP();
 
-   XUI_IMPLEMENT_CLASS(CRetroArchControls, L"RetroArchControls", XUI_CLASS_SCENE)
+      XUI_IMPLEMENT_CLASS(CRetroArchControls, L"RetroArchControls", XUI_CLASS_SCENE)
 };
 
 int menu_init (void);

@@ -46,12 +46,13 @@
 menu menuStack[25];
 int menuStackindex = 0;
 static bool set_initial_dir_tmpbrowser;
+static bool set_libretro_core_as_launch;
 
-char special_action_msg[256];			/* message which should be overlaid on top of the screen */
 filebrowser_t browser;				/* main file browser->for rom browser*/
 filebrowser_t tmpBrowser;			/* tmp file browser->for everything else*/
 uint32_t set_shader = 0;
 static uint32_t currently_selected_controller_menu = 0;
+static char strw_buffer[PATH_MAX];
 
 static menu menu_filebrowser = {
    "FILE BROWSER |",		/* title*/
@@ -149,6 +150,8 @@ static menu menu_controlssettings = {
 
 static void display_menubar(uint32_t menu_enum)
 {
+   gl_t *gl = driver.video_data;
+
    cellDbgFontPuts    (0.09f,  0.05f,  FONT_SIZE,  menu_enum == GENERAL_VIDEO_MENU ? RED : GREEN,   menu_generalvideosettings.title);
    cellDbgFontPuts    (0.19f,  0.05f,  FONT_SIZE,  menu_enum == GENERAL_AUDIO_MENU ? RED : GREEN,  menu_generalaudiosettings.title);
    cellDbgFontPuts    (0.29f,  0.05f,  FONT_SIZE,  menu_enum == EMU_GENERAL_MENU ? RED : GREEN,  menu_emu_settings.title);
@@ -157,7 +160,7 @@ static void display_menubar(uint32_t menu_enum)
    cellDbgFontPuts    (0.09f,  0.09f,  FONT_SIZE,  menu_enum == PATH_MENU ? RED : GREEN,  menu_pathsettings.title);
    cellDbgFontPuts    (0.19f,  0.09f,  FONT_SIZE, menu_enum == CONTROLS_MENU ? RED : GREEN,  menu_controlssettings.title); 
    cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 }
 
 enum
@@ -197,7 +200,6 @@ static void set_delay_speed(unsigned delaymode)
 	 break;
    }
 
-   strlcpy(special_action_msg, "", sizeof(special_action_msg));
    SET_TIMER_EXPIRATION(gl, speed);
 }
 
@@ -317,9 +319,7 @@ static void browser_update(filebrowser_t * b)
       }
 
       if (CTRL_CIRCLE(button_was_pressed))
-      {
          filebrowser_pop_directory(b);
-      }
 
       old_state = state;
    }
@@ -327,6 +327,7 @@ static void browser_update(filebrowser_t * b)
 
 static void browser_render(filebrowser_t * b)
 {
+   gl_t *gl = driver.video_data;
    uint32_t file_count = b->file_count;
    int current_index, page_number, page_base, i;
    float currentX, currentY, ySpacing;
@@ -343,9 +344,9 @@ static void browser_render(filebrowser_t * b)
    {
       currentY = currentY + ySpacing;
       cellDbgFontPuts(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->cur[i].d_type == CELL_FS_TYPE_DIRECTORY ? GREEN : WHITE, b->cur[i].d_name);
-      cellDbgFontDraw();
+      gl_render_msg_post(gl);
    }
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 }
 
 static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
@@ -354,45 +355,45 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
    {
 	   case SETTING_CHANGE_RESOLUTION:
 		   if(g_console.initial_resolution_id == g_console.supported_resolutions[g_console.current_resolution_index])
-			   menu_obj->items[currentsetting].text_color = GREEN;
+                      menu_obj->items[currentsetting].text_color = GREEN;
 		   else
-			   menu_obj->items[currentsetting].text_color = ORANGE;
+                      menu_obj->items[currentsetting].text_color = ORANGE;
 
 		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), ps3_get_resolution_label(g_console.supported_resolutions[g_console.current_resolution_index]));
 		   break;
 	   case SETTING_SHADER_PRESETS:
 		   {
-			   char fname[MAX_PATH_LENGTH];
-			   if(g_console.cgp_path == DEFAULT_PRESET_FILE)
-				   menu_obj->items[currentsetting].text_color = GREEN;
-			   else
-				   menu_obj->items[currentsetting].text_color = ORANGE;
-			   fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
-			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), fname);
+                      char fname[PATH_MAX];
+		      if(g_console.cgp_path == DEFAULT_PRESET_FILE)
+                         menu_obj->items[currentsetting].text_color = GREEN;
+		      else
+                         menu_obj->items[currentsetting].text_color = ORANGE;
+		      fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
+		      snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), fname);
 		   }
 		   break;
 	   case SETTING_SHADER:
 		   {
-			   char fname[MAX_PATH_LENGTH];
-			   fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
-			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
+                      char fname[PATH_MAX];
+		      fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
+		      snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
-			   if(strcmp(g_settings.video.cg_shader_path,DEFAULT_SHADER_FILE) == 0)
-				   menu_obj->items[currentsetting].text_color = GREEN;
-			   else
-				   menu_obj->items[currentsetting].text_color = ORANGE;
+		      if(strcmp(g_settings.video.cg_shader_path,DEFAULT_SHADER_FILE) == 0)
+                         menu_obj->items[currentsetting].text_color = GREEN;
+		      else
+                         menu_obj->items[currentsetting].text_color = ORANGE;
 		   }
 		   break;
 	   case SETTING_SHADER_2:
 		   {
-			   char fname[MAX_PATH_LENGTH];
-			   fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
-			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
+                      char fname[PATH_MAX];
+		      fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
+		      snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
-			   if(strcmp(g_settings.video.second_pass_shader,DEFAULT_SHADER_FILE) == 0)
-				   menu_obj->items[currentsetting].text_color = GREEN;
-			   else
-				   menu_obj->items[currentsetting].text_color = ORANGE;
+		      if(strcmp(g_settings.video.second_pass_shader,DEFAULT_SHADER_FILE) == 0)
+                         menu_obj->items[currentsetting].text_color = GREEN;
+		      else
+                         menu_obj->items[currentsetting].text_color = ORANGE;
 		   }
 		   break;
 	   case SETTING_FONT_SIZE:
@@ -547,6 +548,18 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%d", g_extern.state_slot);
 		   break;
 		   /* emu-specific */
+	   case SETTING_EMU_SHOW_INFO_MSG:
+		   if(g_console.info_msg_enable)
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+			   menu_obj->items[currentsetting].text_color = GREEN;
+		   }
+		   else
+		   {
+			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+			   menu_obj->items[currentsetting].text_color = ORANGE;
+		   }
+		   break;
 	   case SETTING_EMU_DEFAULT_ALL:
 		   if(menu_obj->selected == currentsetting)
 			   menu_obj->items[currentsetting].text_color = GREEN;
@@ -569,7 +582,7 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		   break;
 	   case SETTING_RARCH_DEFAULT_EMU:
 		   {
-			   char fname[MAX_PATH_LENGTH];
+			   char fname[PATH_MAX];
 			   fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
 			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname);
 
@@ -724,15 +737,15 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		   break;
 	   case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
 		   if(menu_obj->selected == currentsetting)
-			   menu_obj->items[currentsetting].text_color = GREEN;
+                      menu_obj->items[currentsetting].text_color = GREEN;
 		   else
-			   menu_obj->items[currentsetting].text_color = ORANGE;
+                      menu_obj->items[currentsetting].text_color = ORANGE;
 		   break;
 	   case SETTING_CONTROLS_DEFAULT_ALL:
 		   if(menu_obj->selected == currentsetting)
-			   menu_obj->items[currentsetting].text_color = GREEN;
+                      menu_obj->items[currentsetting].text_color = GREEN;
 		   else
-			   menu_obj->items[currentsetting].text_color = ORANGE;
+                      menu_obj->items[currentsetting].text_color = ORANGE;
 		   break;
 	   default:
 		   break;
@@ -803,8 +816,8 @@ static void apply_scaling (unsigned init_mode)
 
 static void select_file(uint32_t menu_id)
 {
-   char extensions[256], title[256], object[256], comment[256], dir_path[MAX_PATH_LENGTH],
-      path[MAX_PATH_LENGTH], *separatorslash;
+   char extensions[256], title[256], object[256], comment[256], dir_path[PATH_MAX],
+      path[PATH_MAX], *separatorslash;
    uint64_t state, diff_state, button_was_pressed;
    gl_t * gl = driver.video_data;
 
@@ -815,43 +828,43 @@ static void select_file(uint32_t menu_id)
    switch(menu_id)
    {
       case SHADER_CHOICE:
-         strncpy(dir_path, SHADERS_DIR_PATH, sizeof(dir_path));
-	 strncpy(extensions, "cg|CG", sizeof(extensions));
-	 strncpy(title, "SHADER SELECTION", sizeof(title));
-	 strncpy(object, "Shader", sizeof(object));
-	 strncpy(comment, "INFO - Select a shader from the menu by pressing the X button.", sizeof(comment));
+         strlcpy(dir_path, SHADERS_DIR_PATH, sizeof(dir_path));
+	 strlcpy(extensions, "cg|CG", sizeof(extensions));
+	 strlcpy(title, "SHADER SELECTION", sizeof(title));
+	 strlcpy(object, "Shader", sizeof(object));
+	 strlcpy(comment, "INFO - Select a shader from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case PRESET_CHOICE:
-	 strncpy(dir_path, PRESETS_DIR_PATH, sizeof(dir_path));
-	 strncpy(extensions, "cgp|CGP", sizeof(extensions));
-	 strncpy(title, "SHADER PRESETS SELECTION", sizeof(title));
-	 strncpy(object, "Shader", sizeof(object));
-	 strncpy(object, "Shader preset", sizeof(object));
-	 strncpy(comment, "INFO - Select a shader preset from the menu by pressing the X button.", sizeof(comment));
+	 strlcpy(dir_path, PRESETS_DIR_PATH, sizeof(dir_path));
+	 strlcpy(extensions, "cgp|CGP", sizeof(extensions));
+	 strlcpy(title, "SHADER PRESETS SELECTION", sizeof(title));
+	 strlcpy(object, "Shader", sizeof(object));
+	 strlcpy(object, "Shader preset", sizeof(object));
+	 strlcpy(comment, "INFO - Select a shader preset from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case INPUT_PRESET_CHOICE:
-	 strncpy(dir_path, INPUT_PRESETS_DIR_PATH, sizeof(dir_path));
-	 strncpy(extensions, "cfg|CFG", sizeof(extensions));
-	 strncpy(title, "INPUT PRESETS SELECTION", sizeof(title));
-	 strncpy(object, "Input", sizeof(object));
-	 strncpy(object, "Input preset", sizeof(object));
-	 strncpy(comment, "INFO - Select an input preset from the menu by pressing the X button.", sizeof(comment));
+	 strlcpy(dir_path, INPUT_PRESETS_DIR_PATH, sizeof(dir_path));
+	 strlcpy(extensions, "cfg|CFG", sizeof(extensions));
+	 strlcpy(title, "INPUT PRESETS SELECTION", sizeof(title));
+	 strlcpy(object, "Input", sizeof(object));
+	 strlcpy(object, "Input preset", sizeof(object));
+	 strlcpy(comment, "INFO - Select an input preset from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case BORDER_CHOICE:
-	 strncpy(dir_path, BORDERS_DIR_PATH, sizeof(dir_path));
-	 strncpy(extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(extensions));
-	 strncpy(title, "BORDER SELECTION", sizeof(title));
-	 strncpy(object, "Border", sizeof(object));
-	 strncpy(object, "Border image file", sizeof(object));
-	 strncpy(comment, "INFO - Select a border image file from the menu by pressing the X button.", sizeof(comment));
+	 strlcpy(dir_path, BORDERS_DIR_PATH, sizeof(dir_path));
+	 strlcpy(extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(extensions));
+	 strlcpy(title, "BORDER SELECTION", sizeof(title));
+	 strlcpy(object, "Border", sizeof(object));
+	 strlcpy(object, "Border image file", sizeof(object));
+	 strlcpy(comment, "INFO - Select a border image file from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case LIBRETRO_CHOICE:
-	 strncpy(dir_path, LIBRETRO_DIR_PATH, sizeof(dir_path));
-	 strncpy(extensions, "self|SELF|bin|BIN", sizeof(extensions));
-	 strncpy(title, "LIBRETRO CORE SELECTION", sizeof(title));
-	 strncpy(object, "Libretro", sizeof(object));
-	 strncpy(object, "Libretro core library", sizeof(object));
-	 strncpy(comment, "INFO - Select a Libretro core from the menu by pressing the X button.", sizeof(comment));
+	 strlcpy(dir_path, LIBRETRO_DIR_PATH, sizeof(dir_path));
+	 strlcpy(extensions, "self|SELF|bin|BIN", sizeof(extensions));
+	 strlcpy(title, "LIBRETRO CORE SELECTION", sizeof(title));
+	 strlcpy(object, "Libretro", sizeof(object));
+	 strlcpy(object, "Libretro core library", sizeof(object));
+	 strlcpy(comment, "INFO - Select a Libretro core from the menu by pressing the X button.", sizeof(comment));
 	 break;
    }
 
@@ -875,9 +888,7 @@ static void select_file(uint32_t menu_id)
             /*if 'filename' is in fact '..' - then pop back directory instead of 
 	      adding '..' to filename path */
             if(tmpBrowser.currently_selected == 0)
-	    {
                filebrowser_pop_directory(&tmpBrowser);
-	    }
 	    else
 	    {
                separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
@@ -920,10 +931,12 @@ static void select_file(uint32_t menu_id)
 		  break;
 	       case LIBRETRO_CHOICE:
 		  strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
-		  strlcpy(g_console.launch_app_on_exit, path, sizeof(g_console.launch_app_on_exit));
-		  g_console.return_to_launcher = true;
-		  g_console.menu_enable = false;
-		  g_console.mode_switch = MODE_EXIT;
+		  if(set_libretro_core_as_launch)
+		  {
+		     strlcpy(g_console.launch_app_on_exit, path, sizeof(g_console.launch_app_on_exit));
+                     set_libretro_core_as_launch = false;
+                     rarch_settings_change(S_RETURN_TO_LAUNCHER);
+		  }
 		  break;
 	    }
 
@@ -939,7 +952,7 @@ static void select_file(uint32_t menu_id)
    cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	title);
    cellDbgFontPrintf(0.09f, 0.92f, 0.92, YELLOW, "X - Select %s  /\\ - return to settings  START - Reset Startdir", object);
    cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s", comment);
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    browser_render(&tmpBrowser);
    old_state = state;
@@ -957,8 +970,8 @@ static void select_directory(uint32_t menu_id)
 
    if(set_initial_dir_tmpbrowser)
    {
-	   filebrowser_new(&tmpBrowser, "/\0", "empty");
-	   set_initial_dir_tmpbrowser = false;
+      filebrowser_new(&tmpBrowser, "/\0", "empty");
+      set_initial_dir_tmpbrowser = false;
    }
 
    browser_update(&tmpBrowser);
@@ -1021,9 +1034,7 @@ static void select_directory(uint32_t menu_id)
              * adding '..' to filename path */
 
             if(tmpBrowser.currently_selected == 0)
-	    {
                filebrowser_pop_directory(&tmpBrowser);
-	    }
 	    else
 	    {
                separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
@@ -1041,7 +1052,7 @@ static void select_directory(uint32_t menu_id)
       "X - Enter dir  /\\ - return to settings  START - Reset Startdir");
    cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s",
       "INFO - Browse to a directory and assign it as the path by\npressing SQUARE button.");
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    browser_render(&tmpBrowser);
    old_state = state;
@@ -1069,7 +1080,7 @@ static void set_keybind_digital(uint64_t state, uint64_t default_retro_joypad_id
 static void rarch_filename_input_and_save (unsigned filename_type)
 {
    bool filename_entered = false;
-   char filename_tmp[256], filepath[MAX_PATH_LENGTH];
+   char filename_tmp[256], filepath[PATH_MAX];
    oskutil_write_initial_message(&g_console.oskutil_handle, L"example");
    oskutil_write_message(&g_console.oskutil_handle, L"Enter filename for preset (with no file extension)");
 
@@ -1086,7 +1097,7 @@ static void rarch_filename_input_and_save (unsigned filename_type)
 
    if(g_console.oskutil_handle.text_can_be_fetched)
    {
-      strncpy(filename_tmp, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(filename_tmp));
+      strlcpy(filename_tmp, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(filename_tmp));
       switch(filename_type)
       {
          case CONFIG_FILE:
@@ -1158,29 +1169,29 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_CHANGE_RESOLUTION:
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) )
 			{
-				ps3_next_resolution();
-				set_delay = DELAY_SMALL;
+                           ps3_next_resolution();
+			   set_delay = DELAY_SMALL;
 			}
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) )
 			{
-				ps3_previous_resolution();
-				set_delay = DELAY_SMALL;
+                           ps3_previous_resolution();
+			   set_delay = DELAY_SMALL;
 			}
 			if(CTRL_CROSS(state))
 			{
-				if (g_console.supported_resolutions[g_console.current_resolution_index] == CELL_VIDEO_OUT_RESOLUTION_576)
-				{
-					if(ps3_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
-					{
-						//ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
-						video_gl.restart();
-					}
-				}
-				else
-				{
-					//ps3graphics_set_pal60hz(0);
-					video_gl.restart();
-				}
+                           if (g_console.supported_resolutions[g_console.current_resolution_index] == CELL_VIDEO_OUT_RESOLUTION_576)
+			   {
+                              if(gfx_ctx_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
+			      {
+                                 //ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
+                                 video_gl.restart();
+			      }
+			   }
+			   else
+			   {
+                              //ps3graphics_set_pal60hz(0);
+                              video_gl.restart();
+			   }
 			}
 			break;
 			/*
@@ -1203,52 +1214,52 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_SHADER_PRESETS:
 			if((CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state)))
 			{
-				if(g_console.emulator_initialized)
-				{
-					menuStackindex++;
-					menuStack[menuStackindex] = menu_filebrowser;
-					menuStack[menuStackindex].enum_id = PRESET_CHOICE;
-					set_initial_dir_tmpbrowser = true;
-					set_delay = DELAY_LONG;
-				}
+                           if(g_console.emulator_initialized)
+			   {
+                              menuStackindex++;
+			      menuStack[menuStackindex] = menu_filebrowser;
+			      menuStack[menuStackindex].enum_id = PRESET_CHOICE;
+			      set_initial_dir_tmpbrowser = true;
+			      set_delay = DELAY_LONG;
+			   }
 			}
 			if(CTRL_START(state))
 			{
-				strlcpy(g_console.cgp_path, "", sizeof(g_console.cgp_path));
+                           strlcpy(g_console.cgp_path, "", sizeof(g_console.cgp_path));
 			}
 			break;
 		case SETTING_SHADER:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = SHADER_CHOICE;
-				set_shader = 0;
-				set_initial_dir_tmpbrowser = true;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = SHADER_CHOICE;
+			   set_shader = 0;
+			   set_initial_dir_tmpbrowser = true;
+			   set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
-				gl_cg_load_shader(1, NULL);
-				strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
-				menu_reinit_settings();
+                           gl_cg_load_shader(1, NULL);
+			   strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
+			   menu_reinit_settings();
 			}
 			break;
 		case SETTING_SHADER_2:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = SHADER_CHOICE;
-				set_shader = 1;
-				set_initial_dir_tmpbrowser = true;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = SHADER_CHOICE;
+			   set_shader = 1;
+			   set_initial_dir_tmpbrowser = true;
+			   set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
-				gl_cg_load_shader(2, NULL);
-				strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
-				menu_reinit_settings();
+                           gl_cg_load_shader(2, NULL);
+			   strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
+			   menu_reinit_settings();
 			}
 			break;
 		case SETTING_FONT_SIZE:
@@ -1274,70 +1285,58 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_KEEP_ASPECT_RATIO:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 			{
-				if(g_console.aspect_ratio_index > 0)
-				{
-					g_console.aspect_ratio_index--;
-					gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-					set_delay = DELAY_SMALL;
-				}
+                           rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
+			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+			   set_delay = DELAY_SMALL;
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
-				g_console.aspect_ratio_index++;
-				if(g_console.aspect_ratio_index < ASPECT_RATIO_END)
-				{
-					gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-					set_delay = DELAY_SMALL;
-				}
-				else
-					g_console.aspect_ratio_index = ASPECT_RATIO_END-1;
+                           rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
+			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+			   set_delay = DELAY_SMALL;
 			}
 			if(CTRL_START(state))
 			{
-				g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
-				gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+                           rarch_settings_default(S_DEF_ASPECT_RATIO);
+			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				g_settings.video.smooth = !g_settings.video.smooth;
+                                rarch_settings_change(S_HW_TEXTURE_FILTER);
 				gfx_ctx_set_filtering(1, g_settings.video.smooth);
 				set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
-				g_settings.video.smooth = 1;
+                                rarch_settings_change(S_DEF_HW_TEXTURE_FILTER);
 				gfx_ctx_set_filtering(1, g_settings.video.smooth);
 			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER_2:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
+                                rarch_settings_change(S_HW_TEXTURE_FILTER_2);
 				gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
 				set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
-				g_settings.video.second_pass_smooth = 1;
+                                rarch_settings_change(S_DEF_HW_TEXTURE_FILTER_2);
 				gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
 			}
 			break;
 		case SETTING_SCALE_ENABLED:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				g_console.fbo_enabled = !g_console.fbo_enabled;
+                                rarch_settings_change(S_SCALE_ENABLED);
 				gfx_ctx_set_fbo(g_console.fbo_enabled);
-
 				set_delay = DELAY_MEDIUM;
-
 			}
 			if(CTRL_START(state))
 			{
-				g_console.fbo_enabled = true;
-				g_settings.video.fbo_scale_x = 2.0f;
-				g_settings.video.fbo_scale_y = 2.0f;
+                                rarch_settings_default(S_DEF_SCALE_ENABLED);
 				apply_scaling(FBO_DEINIT);
 				apply_scaling(FBO_INIT);
 			}
@@ -1345,78 +1344,66 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_SCALE_FACTOR:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 			{
-				if(g_console.fbo_enabled)
-				{
-					if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
-					{
-						g_settings.video.fbo_scale_x -= 1.0f;
-						g_settings.video.fbo_scale_y -= 1.0f;
-						apply_scaling(FBO_REINIT);
-						set_delay = DELAY_MEDIUM;
-					}
-				}
+                           if(g_console.fbo_enabled)
+			   {
+                              bool should_decrement = g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR;
+			      if(should_decrement)
+			      {
+                                 rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
+				 apply_scaling(FBO_REINIT);
+				 set_delay = DELAY_MEDIUM;
+			      }
+			   }
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				if(g_console.fbo_enabled)
-				{
-					if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
-					{
-						g_settings.video.fbo_scale_x += 1.0f;
-						g_settings.video.fbo_scale_y += 1.0f;
-						apply_scaling(FBO_REINIT);
-						set_delay = DELAY_MEDIUM;
-					}
-				}
+                           if(g_console.fbo_enabled)
+			   {
+                              bool should_increment = g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR;
+			      if(should_increment)
+			      {
+                                 rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
+				 apply_scaling(FBO_REINIT);
+				 set_delay = DELAY_MEDIUM;
+			      }
+			   }
 			}
 			if(CTRL_START(state))
 			{
-				g_settings.video.fbo_scale_x = 2.0f;
-				g_settings.video.fbo_scale_y = 2.0f;
-				apply_scaling(FBO_DEINIT);
-				apply_scaling(FBO_INIT);
+                           rarch_settings_default(S_DEF_SCALE_FACTOR);
+			   apply_scaling(FBO_DEINIT);
+			   apply_scaling(FBO_INIT);
 			}
 			break;
 		case SETTING_HW_OVERSCAN_AMOUNT:
 			if(CTRL_LEFT(state)  ||  CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
 			{
-				g_console.overscan_amount -= 0.01f;
-				g_console.overscan_enable = true;
-
-				if(g_console.overscan_amount == 0.0f)
-					g_console.overscan_enable = false;
-
+				rarch_settings_change(S_OVERSCAN_DECREMENT);
 				gfx_ctx_set_overscan();
 				set_delay = DELAY_SMALLEST;
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				g_console.overscan_amount += 0.01f;
-				g_console.overscan_enable = true;
-
-				if(g_console.overscan_amount == 0.0f)
-					g_console.overscan_enable = 0;
-
+				rarch_settings_change(S_OVERSCAN_INCREMENT);
 				gfx_ctx_set_overscan();
 				set_delay = DELAY_SMALLEST;
 			}
 			if(CTRL_START(state))
 			{
-				g_console.overscan_amount = 0.0f;
-				g_console.overscan_enable = false;
+				rarch_settings_default(S_DEF_OVERSCAN);
 				gfx_ctx_set_overscan();
 			}
 			break;
 		case SETTING_THROTTLE_MODE:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
-				g_console.throttle_enable = !g_console.throttle_enable;
+				rarch_settings_change(S_THROTTLE);
 				gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
 				set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
-				g_console.throttle_enable = true;
+				rarch_settings_default(S_DEF_THROTTLE);
 				gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
 				set_delay = DELAY_MEDIUM;
 			}
@@ -1424,54 +1411,54 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_TRIPLE_BUFFERING:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
-				g_console.triple_buffering_enable = !g_console.triple_buffering_enable;
+				rarch_settings_change(S_TRIPLE_BUFFERING);
 				video_gl.restart();
 				set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
-				if(!g_console.triple_buffering_enable)
-				{
-					g_console.triple_buffering_enable = true;
-					video_gl.restart();
-				}
+				bool old_state = g_console.triple_buffering_enable;
+				rarch_settings_default(S_DEF_TRIPLE_BUFFERING);
+
+				if(!old_state)
+                                   video_gl.restart();
 			}
 			break;
 		case SETTING_ENABLE_SCREENSHOTS:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
 #if(CELL_SDK_VERSION > 0x340000)
-				g_console.screenshots_enable = !g_console.screenshots_enable;
-				if(g_console.screenshots_enable)
-				{
-					cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
-					CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
+                           g_console.screenshots_enable = !g_console.screenshots_enable;
+			   if(g_console.screenshots_enable)
+			   {
+                              cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+			      CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
 
-					screenshot_param.photo_title = EMULATOR_NAME;
-					screenshot_param.game_title = EMULATOR_NAME;
-					cellScreenShotSetParameter (&screenshot_param);
-					cellScreenShotEnable();
-				}
-				else
-				{
-					cellScreenShotDisable();
-					cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
-				}
+			      screenshot_param.photo_title = EMULATOR_NAME;
+			      screenshot_param.game_title = EMULATOR_NAME;
+			      cellScreenShotSetParameter (&screenshot_param);
+			      cellScreenShotEnable();
+			   }
+			   else
+			   {
+                              cellScreenShotDisable();
+			      cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+			   }
 
-				set_delay = DELAY_MEDIUM;
+			   set_delay = DELAY_MEDIUM;
 #endif
 			}
 			if(CTRL_START(state))
 			{
 #if(CELL_SDK_VERSION > 0x340000)
-				g_console.screenshots_enable = true;
+                           g_console.screenshots_enable = true;
 #endif
 			}
 			break;
 		case SETTING_SAVE_SHADER_PRESET:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state)  || CTRL_RIGHT(state) | CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				rarch_filename_input_and_save(SHADER_PRESET_FILE);
+                           rarch_filename_input_and_save(SHADER_PRESET_FILE);
 			}
 			break;
 		case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
@@ -1481,98 +1468,105 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_SOUND_MODE:
 			if(CTRL_LEFT(state) ||  CTRL_LSTICK_LEFT(state))
 			{
-				if(g_console.sound_mode != SOUND_MODE_NORMAL)
-				{
-					g_console.sound_mode--;
-					set_delay = DELAY_MEDIUM;
-				}
+                           if(g_console.sound_mode != SOUND_MODE_NORMAL)
+			   {
+                              g_console.sound_mode--;
+			      set_delay = DELAY_MEDIUM;
+			   }
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				if(g_console.sound_mode < SOUND_MODE_HEADSET)
-				{
-					g_console.sound_mode++;
-					set_delay = DELAY_MEDIUM;
-				}
+                           if(g_console.sound_mode < SOUND_MODE_HEADSET)
+			   {
+                              g_console.sound_mode++;
+			      set_delay = DELAY_MEDIUM;
+			   }
 			}
 			if(CTRL_UP(state) || CTRL_LSTICK_UP(state) || CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))
 			{
-				if(g_console.sound_mode != SOUND_MODE_RSOUND)
-				{
-					rarch_console_rsound_stop();
-				}
-				else
-				{
-					rarch_console_rsound_start(g_settings.audio.device);
-				}
+                           if(g_console.sound_mode != SOUND_MODE_RSOUND)
+                              rarch_console_rsound_stop();
+			   else
+                              rarch_console_rsound_start(g_settings.audio.device);
 			}
 			if(CTRL_START(state))
 			{
-				g_console.sound_mode = SOUND_MODE_NORMAL;
-				rarch_console_rsound_stop();
-				set_delay = DELAY_MEDIUM;
+                           g_console.sound_mode = SOUND_MODE_NORMAL;
+			   rarch_console_rsound_stop();
+			   set_delay = DELAY_MEDIUM;
 			}
 			break;
 		case SETTING_RSOUND_SERVER_IP_ADDRESS:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_CROSS(state) | CTRL_LSTICK_RIGHT(state) )
 			{
-				oskutil_write_initial_message(&g_console.oskutil_handle, L"192.168.1.1");
-				oskutil_write_message(&g_console.oskutil_handle, L"Enter IP address for the RSound Server.");
-				oskutil_start(&g_console.oskutil_handle);
-				while(OSK_IS_RUNNING(g_console.oskutil_handle))
-				{
-					glClear(GL_COLOR_BUFFER_BIT);
-					gfx_ctx_swap_buffers();
+                           oskutil_write_initial_message(&g_console.oskutil_handle, L"192.168.1.1");
+			   oskutil_write_message(&g_console.oskutil_handle, L"Enter IP address for the RSound Server.");
+			   oskutil_start(&g_console.oskutil_handle);
+			   while(OSK_IS_RUNNING(g_console.oskutil_handle))
+			   {
+                              glClear(GL_COLOR_BUFFER_BIT);
+			      gfx_ctx_swap_buffers();
 #ifdef HAVE_SYSUTILS
-                                        cellSysutilCheckCallback();
+			      cellSysutilCheckCallback();
 #endif
-				}
+			   }
 
-				if(g_console.oskutil_handle.text_can_be_fetched)
-					strlcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(g_settings.audio.device));
+			   if(g_console.oskutil_handle.text_can_be_fetched)
+                              strlcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(g_settings.audio.device));
 			}
 			if(CTRL_START(state))
-				strlcpy(g_settings.audio.device, "0.0.0.0", sizeof(g_settings.audio.device));
+                           strlcpy(g_settings.audio.device, "0.0.0.0", sizeof(g_settings.audio.device));
 			break;
 		case SETTING_DEFAULT_AUDIO_ALL:
 			break;
 		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
 			{
-				if(g_extern.state_slot != 0)
-					g_extern.state_slot--;
-
-				set_delay = DELAY_MEDIUM;
+                           rarch_settings_change(S_SAVESTATE_DECREMENT);
+			   set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				g_extern.state_slot++;
-				set_delay = DELAY_MEDIUM;
+                           rarch_settings_change(S_SAVESTATE_INCREMENT);
+			   set_delay = DELAY_MEDIUM;
 			}
 
 			if(CTRL_START(state))
-				g_extern.state_slot = 0;
+                           rarch_settings_default(S_DEF_SAVE_STATE);
+			break;
+		case SETTING_EMU_SHOW_INFO_MSG:
+			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			{
+                           g_console.info_msg_enable = !g_console.info_msg_enable;
+			   set_delay = DELAY_MEDIUM;
+			}
+			if(CTRL_START(state))
+			{
+                           g_console.info_msg_enable = true;
+			   set_delay = DELAY_MEDIUM;
+			}
 			break;
 		case SETTING_EMU_REWIND_ENABLED:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				g_settings.rewind_enable = !g_settings.rewind_enable;
+                           rarch_settings_change(S_REWIND);
 
-				set_delay = DELAY_MEDIUM;
+			   set_delay = DELAY_MEDIUM;
+			   if(g_console.info_msg_enable)
+                              rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
 			}
 			if(CTRL_START(state))
-			{
-				g_settings.rewind_enable = false;
-			}
+                           g_settings.rewind_enable = false;
 			break;
 		case SETTING_RARCH_DEFAULT_EMU:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = LIBRETRO_CHOICE;
-				set_initial_dir_tmpbrowser = true;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = LIBRETRO_CHOICE;
+			   set_initial_dir_tmpbrowser = true;
+			   set_libretro_core_as_launch = false;
+			   set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
 			{
@@ -1581,26 +1575,23 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_EMU_AUDIO_MUTE:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				g_extern.audio_data.mute = !g_extern.audio_data.mute;
-
-				set_delay = DELAY_MEDIUM;
+                           g_extern.audio_data.mute = !g_extern.audio_data.mute;
+			   set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
-			{
-				g_extern.audio_data.mute = false;
-			}
+                           g_extern.audio_data.mute = false;
 			break;
 		case SETTING_ENABLE_CUSTOM_BGM:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
 #if(CELL_SDK_VERSION > 0x340000)
-				g_console.custom_bgm_enable = !g_console.custom_bgm_enable;
-				if(g_console.custom_bgm_enable)
-					cellSysutilEnableBgmPlayback();
-				else
-					cellSysutilDisableBgmPlayback();
+                           g_console.custom_bgm_enable = !g_console.custom_bgm_enable;
+			   if(g_console.custom_bgm_enable)
+                              cellSysutilEnableBgmPlayback();
+			   else
+                              cellSysutilDisableBgmPlayback();
 
-				set_delay = DELAY_MEDIUM;
+			   set_delay = DELAY_MEDIUM;
 #endif
 			}
 			if(CTRL_START(state))
@@ -1617,11 +1608,11 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = PATH_DEFAULT_ROM_DIR_CHOICE;
-				set_initial_dir_tmpbrowser = true;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = PATH_DEFAULT_ROM_DIR_CHOICE;
+			   set_initial_dir_tmpbrowser = true;
+			   set_delay = DELAY_LONG;
 			}
 
 			if(CTRL_START(state))
@@ -1630,113 +1621,111 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_PATH_SAVESTATES_DIRECTORY:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = PATH_SAVESTATES_DIR_CHOICE;
-				set_initial_dir_tmpbrowser = true;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = PATH_SAVESTATES_DIR_CHOICE;
+			   set_initial_dir_tmpbrowser = true;
+			   set_delay = DELAY_LONG;
 			}
 
 			if(CTRL_START(state))
-				strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
+                           strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
 
 			break;
 		case SETTING_PATH_SRAM_DIRECTORY:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = PATH_SRAM_DIR_CHOICE;
-				set_initial_dir_tmpbrowser = true;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = PATH_SRAM_DIR_CHOICE;
+			   set_initial_dir_tmpbrowser = true;
+			   set_delay = DELAY_LONG;
 			}
 
 			if(CTRL_START(state))
-				strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
+                           strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
 			break;
 		case SETTING_PATH_CHEATS:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = PATH_CHEATS_DIR_CHOICE;
-				set_initial_dir_tmpbrowser = true;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = PATH_CHEATS_DIR_CHOICE;
+			   set_initial_dir_tmpbrowser = true;
+			   set_delay = DELAY_LONG;
 			}
 
 			if(CTRL_START(state))
-				strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
+                           strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
 			break;
 		case SETTING_ENABLE_SRAM_PATH:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
-				g_console.default_sram_dir_enable = !g_console.default_sram_dir_enable;
-				menu_reinit_settings();
-				set_delay = DELAY_MEDIUM;
+                           g_console.default_sram_dir_enable = !g_console.default_sram_dir_enable;
+			   menu_reinit_settings();
+			   set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
-				g_console.default_sram_dir_enable = true;
-				menu_reinit_settings();
+                           g_console.default_sram_dir_enable = true;
+			   menu_reinit_settings();
 			}
 			break;
 		case SETTING_ENABLE_STATE_PATH:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
-				g_console.default_savestate_dir_enable = !g_console.default_savestate_dir_enable;
-				menu_reinit_settings();
-				set_delay = DELAY_MEDIUM;
+                           g_console.default_savestate_dir_enable = !g_console.default_savestate_dir_enable;
+			   menu_reinit_settings();
+			   set_delay = DELAY_MEDIUM;
 			}
 			if(CTRL_START(state))
 			{
-				g_console.default_savestate_dir_enable = true;
-				menu_reinit_settings();
+                           g_console.default_savestate_dir_enable = true;
+			   menu_reinit_settings();
 			}
 			break;
 		case SETTING_PATH_DEFAULT_ALL:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
 			{
-				strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
-				strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
-				strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
-				strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
+                           strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
+			   strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
+			   strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
+			   strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
 
-				menu_reinit_settings();
+			   menu_reinit_settings();
 			}
 			break;
 		case SETTING_CONTROLS_SCHEME:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) | CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				menuStackindex++;
-				menuStack[menuStackindex] = menu_filebrowser;
-				menuStack[menuStackindex].enum_id = INPUT_PRESET_CHOICE;
-				set_initial_dir_tmpbrowser = true;
-				set_delay = DELAY_LONG;
+                           menuStackindex++;
+			   menuStack[menuStackindex] = menu_filebrowser;
+			   menuStack[menuStackindex].enum_id = INPUT_PRESET_CHOICE;
+			   set_initial_dir_tmpbrowser = true;
+			   set_delay = DELAY_LONG;
 			}
 			if(CTRL_START(state))
-			{
-				menu_reinit_settings();
-			}
+                           menu_reinit_settings();
 			break;
 		case SETTING_CONTROLS_NUMBER:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
 			{
-				if(currently_selected_controller_menu != 0)
-					currently_selected_controller_menu--;
-				menu_reinit_settings();
-				set_delay = DELAY_MEDIUM;
+                           if(currently_selected_controller_menu != 0)
+                              currently_selected_controller_menu--;
+			   menu_reinit_settings();
+			   set_delay = DELAY_MEDIUM;
 			}
 
 			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				if(currently_selected_controller_menu < 6)
-					currently_selected_controller_menu++;
-				menu_reinit_settings();
-				set_delay = DELAY_MEDIUM;
+                           if(currently_selected_controller_menu < 6)
+                              currently_selected_controller_menu++;
+			   menu_reinit_settings();
+			   set_delay = DELAY_MEDIUM;
 			}
 
 			if(CTRL_START(state))
-				currently_selected_controller_menu = 0;
+                           currently_selected_controller_menu = 0;
 			break; 
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
 			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_UP);
@@ -1785,15 +1774,13 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			break;
 		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
-			{
-				rarch_filename_input_and_save(INPUT_PRESET_FILE);
-			}
+                           rarch_filename_input_and_save(INPUT_PRESET_FILE);
 			break;
 		case SETTING_CONTROLS_DEFAULT_ALL:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
 			{
-				rarch_input_set_default_keybinds(currently_selected_controller_menu);
-				menu_reinit_settings();
+                           rarch_input_set_default_keybinds(currently_selected_controller_menu);
+			   menu_reinit_settings();
 			}
 			break;
 	}
@@ -1862,7 +1849,7 @@ static void select_setting(menu * menu_obj)
 	 if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
             menu_obj->page = menu_obj->items[menu_obj->selected].page;
 
-	 set_delay = DELAY_MEDIUM;
+	 set_delay = DELAY_SMALL;
       }
 
       /* up to previous setting */
@@ -1877,14 +1864,14 @@ static void select_setting(menu * menu_obj)
 	 if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
             menu_obj->page = menu_obj->items[menu_obj->selected].page;
 
-	 set_delay = DELAY_MEDIUM;
+	 set_delay = DELAY_SMALL;
       }
 
       producesettingentry(menu_obj, menu_obj->selected);
    }
 
    display_menubar(menu_obj->enum_id);
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    for ( i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
    {
@@ -1892,7 +1879,7 @@ static void select_setting(menu * menu_obj)
       {
          cellDbgFontPuts(menu_obj->items[i].text_xpos, menu_obj->items[i].text_ypos, FONT_SIZE, menu_obj->selected == menu_obj->items[i].enum_id ? YELLOW : menu_obj->items[i].item_color, menu_obj->items[i].text);
 	 cellDbgFontPuts(0.5f, menu_obj->items[i].text_ypos, FONT_SIZE, menu_obj->items[i].text_color, menu_obj->items[i].setting_text);
-	 cellDbgFontDraw();
+	 gl_render_msg_post(gl);
       }
    }
 
@@ -1900,7 +1887,7 @@ static void select_setting(menu * menu_obj)
 
    cellDbgFontPuts(0.09f, 0.91f, FONT_SIZE, YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
    cellDbgFontPuts(0.09f, 0.95f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
    old_state = state;
 }
 
@@ -1946,7 +1933,7 @@ static void select_rom(void)
 	 }
 	 else if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
 	 {
-            char rom_path_temp[MAX_PATH_LENGTH];
+            char rom_path_temp[PATH_MAX];
 	    struct retro_system_info info;
 	    retro_get_system_info(&info);
 	    bool block_zip_extract  = info.block_extract;
@@ -1957,10 +1944,8 @@ static void select_rom(void)
                rarch_extract_zipfile(rom_path_temp);
 	    else
 	    {
-               g_console.menu_enable = false;
 	       snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
-	       g_console.initialize_rarch_enable = 1;
-	       g_console.mode_switch = MODE_EMULATION;
+               rarch_settings_change(S_START_RARCH);
 	    }
 	 }
       }
@@ -1989,7 +1974,7 @@ static void select_rom(void)
 		   "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser));
    cellDbgFontPuts   (0.09f, 0.93f, FONT_SIZE, YELLOW,
 		   "L3 + R3 - resume game           SELECT - Settings screen");
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    browser_render(&browser);
    old_state = state;
@@ -1997,17 +1982,9 @@ static void select_rom(void)
 
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
-static void return_to_game (void)
-{
-   g_console.frame_advance_enable = false;
-   g_console.ingame_menu_item = 0;
-   g_console.menu_enable = false;
-   g_console.mode_switch = MODE_EMULATION;
-}
-
 static void ingame_menu(uint32_t menu_id)
 {
-   char comment[256], msg_temp[256];
+   char comment[256];
    static uint32_t menuitem_colors[MENU_ITEM_LAST];
    uint64_t state, stuck_in_loop;
    static uint64_t blocking;
@@ -2023,7 +2000,6 @@ static void ingame_menu(uint32_t menu_id)
 
    menuitem_colors[g_console.ingame_menu_item] = RED;
 
-
    state = cell_pad_input_poll_device(0);
    stuck_in_loop = 1;
    blocking = 0;
@@ -2033,7 +2009,7 @@ static void ingame_menu(uint32_t menu_id)
       set_delay = DELAY_NONE;
 
       if(CTRL_CIRCLE(state))
-         return_to_game();
+         rarch_settings_change(S_RETURN_TO_GAME);
 
       switch(g_console.ingame_menu_item)
       {
@@ -2041,18 +2017,18 @@ static void ingame_menu(uint32_t menu_id)
             if(CTRL_CROSS(state))
 	    {
                rarch_load_state();
-	       return_to_game();
+               rarch_settings_change(S_RETURN_TO_GAME);
 	    }
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 	    {
                rarch_state_slot_decrease();
-	       set_delay = DELAY_LONG;
+	       set_delay = DELAY_MEDIUM;
 	       blocking = 0;
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 	    {
                rarch_state_slot_increase();
-	       set_delay = DELAY_LONG;
+	       set_delay = DELAY_MEDIUM;
 	       blocking = 0;
 	    }
 
@@ -2062,18 +2038,18 @@ static void ingame_menu(uint32_t menu_id)
 	    if(CTRL_CROSS(state))
 	    {
                rarch_save_state();
-	       return_to_game();
+               rarch_settings_change(S_RETURN_TO_GAME);
 	    }
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 	    {
                rarch_state_slot_decrease();
-	       set_delay = DELAY_LONG;
+	       set_delay = DELAY_MEDIUM;
 	       blocking = 0;
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 	    {
                rarch_state_slot_increase();
-	       set_delay = DELAY_LONG;
+	       set_delay = DELAY_MEDIUM;
 	       blocking = 0;
 	    }
 
@@ -2082,27 +2058,19 @@ static void ingame_menu(uint32_t menu_id)
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 	    {
-               if(g_console.aspect_ratio_index > 0)
-	       {
-                  g_console.aspect_ratio_index--;
-		  gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-		  set_delay = DELAY_LONG;
-	       }
+               rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
+	       gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+	       set_delay = DELAY_MEDIUM;
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 	    {
-               g_console.aspect_ratio_index++;
-               if(g_console.aspect_ratio_index < ASPECT_RATIO_END)
-	       {
-		  gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-		  set_delay = DELAY_LONG;
-	       }
-               else
-                  g_console.aspect_ratio_index = ASPECT_RATIO_END-1;
+               rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
+	       gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+	       set_delay = DELAY_MEDIUM;
 	    }
 	    if(CTRL_START(state))
 	    {
-               g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
+               rarch_settings_default(S_DEF_ASPECT_RATIO);
 	       gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 	    }
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.", sizeof(comment));
@@ -2110,29 +2078,19 @@ static void ingame_menu(uint32_t menu_id)
 	 case MENU_ITEM_OVERSCAN_AMOUNT:
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) || CTRL_LSTICK_LEFT(state))
 	    {
-               g_console.overscan_amount -= 0.01f;
-	       g_console.overscan_enable = true;
-
-	       if(g_console.overscan_amount == 0.00f)
-                  g_console.overscan_enable = false;
-
+               rarch_settings_change(S_OVERSCAN_DECREMENT);
 	       gfx_ctx_set_overscan();
 	       set_delay = DELAY_SMALLEST;
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_LSTICK_RIGHT(state))
 	    {
-               g_console.overscan_amount += 0.01f;
-	       g_console.overscan_enable = true;
-	       if(g_console.overscan_amount == 0.0f)
-                  g_console.overscan_amount = false;
-
+               rarch_settings_change(S_OVERSCAN_INCREMENT);
 	       gfx_ctx_set_overscan();
 	       set_delay = DELAY_SMALLEST;
 	    }
 	    if(CTRL_START(state))
 	    {
-               g_console.overscan_amount = 0.0f;
-	       g_console.overscan_enable = false;
+               rarch_settings_default(S_DEF_OVERSCAN);
 	       gfx_ctx_set_overscan();
 	    }
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.", sizeof(comment));
@@ -2140,27 +2098,21 @@ static void ingame_menu(uint32_t menu_id)
 	 case MENU_ITEM_ORIENTATION:
 	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) || CTRL_LSTICK_LEFT(state))
 	    {
-               if(g_console.screen_orientation > ORIENTATION_NORMAL)
-	       {
-                  g_console.screen_orientation--;
-		  video_gl.set_rotation(NULL, g_console.screen_orientation);
-		  set_delay = DELAY_LONG;
-	       }
+               rarch_settings_change(S_ROTATION_DECREMENT);
+	       video_gl.set_rotation(NULL, g_console.screen_orientation);
+	       set_delay = DELAY_MEDIUM;
 	    }
 
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_LSTICK_RIGHT(state))
 	    {
-               if((g_console.screen_orientation+1) < ORIENTATION_END)
-	       {
-                  g_console.screen_orientation++;
-		  video_gl.set_rotation(NULL, g_console.screen_orientation);
-		  set_delay = DELAY_LONG;
-	       }
+               rarch_settings_change(S_ROTATION_INCREMENT);
+	       video_gl.set_rotation(NULL, g_console.screen_orientation);
+	       set_delay = DELAY_MEDIUM;
 	    }
 
 	    if(CTRL_START(state))
 	    {
-               g_console.screen_orientation = ORIENTATION_NORMAL;
+               rarch_settings_default(S_DEF_ROTATION);
 	       video_gl.set_rotation(NULL, g_console.screen_orientation);
 	    }
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.", sizeof(comment));
@@ -2172,10 +2124,9 @@ static void ingame_menu(uint32_t menu_id)
 	       {
                   if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
 		  {
-                     g_settings.video.fbo_scale_x -= 1.0f;
-		     g_settings.video.fbo_scale_y -= 1.0f;
+                     rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
 		     apply_scaling(FBO_REINIT);
-		     set_delay = DELAY_LONG;
+		     set_delay = DELAY_MEDIUM;
 		  }
 	       }
 	    }
@@ -2185,17 +2136,15 @@ static void ingame_menu(uint32_t menu_id)
 	       {
                   if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
 		  {
-                     g_settings.video.fbo_scale_x += 1.0f;
-		     g_settings.video.fbo_scale_y += 1.0f;
+                     rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
 		     apply_scaling(FBO_REINIT);
-		     set_delay = DELAY_LONG;
+		     set_delay = DELAY_MEDIUM;
 		  }
 	       }
 	    }
 	    if(CTRL_START(state))
 	    {
-               g_settings.video.fbo_scale_x = 2.0f;
-	       g_settings.video.fbo_scale_y = 2.0f;
+               rarch_settings_default(S_DEF_SCALE_FACTOR);
 	       apply_scaling(FBO_REINIT);
 	    }
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Scaling] settings.\nPress START to reset back to default values.", sizeof(comment));
@@ -2203,10 +2152,8 @@ static void ingame_menu(uint32_t menu_id)
 	 case MENU_ITEM_FRAME_ADVANCE:
 	    if(CTRL_CROSS(state) || CTRL_R2(state) || CTRL_L2(state))
 	    {
-               g_console.frame_advance_enable = true;
+               rarch_settings_change(S_FRAME_ADVANCE);
 	       g_console.ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
-	       g_console.menu_enable = false;
-	       g_console.mode_switch = MODE_EMULATION;
 	    }
 	    strlcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame. Pressing the button\nrapidly will advance the frame more slowly.", sizeof(comment));
 	    break;
@@ -2229,13 +2176,9 @@ static void ingame_menu(uint32_t menu_id)
 		  rarch_render_cached_frame();
 
 		  if(CTRL_SQUARE(state))
-                  {
                      gl->menu_render = false;
-                  }
                   else
-                  {
                      gl->menu_render = true;
-                  }
 
 		  if(CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state))
 			  g_console.viewports.custom_vp.x -= 1;
@@ -2278,7 +2221,7 @@ static void ingame_menu(uint32_t menu_id)
 
 		     cellDbgFontPuts (0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
 		     cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
-		     cellDbgFontPrintf (0.9f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
+		     cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
 		     cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
 		     cellDbgFontPrintf(x_position,	ypos, font_size, GREEN,	"Viewport X: #%d", g_console.viewports.custom_vp.x);
 
@@ -2293,7 +2236,7 @@ static void ingame_menu(uint32_t menu_id)
 		     cellDbgFontPrintf (0.09f,   0.46f, font_size,  LIGHTBLUE, "LEFT or LSTICK UP");
 		     cellDbgFontPrintf (0.5f,   0.46f, font_size, LIGHTBLUE, "- Decrease Viewport X");
 
-		     cellDbgFontDraw();
+		     gl_render_msg_post(gl);
 
 		     cellDbgFontPrintf (0.09f,   0.48f,   font_size,      LIGHTBLUE,           "RIGHT or LSTICK RIGHT");
 		     cellDbgFontPrintf (0.5f,   0.48f,   font_size,      LIGHTBLUE,           "- Increase Viewport X");
@@ -2301,7 +2244,7 @@ static void ingame_menu(uint32_t menu_id)
 		     cellDbgFontPrintf (0.09f,   0.50f,   font_size,      LIGHTBLUE,           "UP or LSTICK UP");
 		     cellDbgFontPrintf (0.5f,   0.50f,   font_size,      LIGHTBLUE,           "- Increase Viewport Y");
 
-		     cellDbgFontDraw();
+		     gl_render_msg_post(gl);
 
 		     cellDbgFontPrintf (0.09f,   0.52f,   font_size,      LIGHTBLUE,           "DOWN or LSTICK DOWN");
 		     cellDbgFontPrintf (0.5f,   0.52f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Y");
@@ -2309,7 +2252,7 @@ static void ingame_menu(uint32_t menu_id)
 		     cellDbgFontPrintf (0.09f,   0.54f,   font_size,      LIGHTBLUE,           "L1 or RSTICK LEFT");
 		     cellDbgFontPrintf (0.5f,   0.54f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Width");
 
-		     cellDbgFontDraw();
+		     gl_render_msg_post(gl);
 
 		     cellDbgFontPrintf (0.09f,   0.56f,   font_size,      LIGHTBLUE,           "R1 or RSTICK RIGHT");
 		     cellDbgFontPrintf (0.5f,   0.56f,   font_size,      LIGHTBLUE,           "- Increase Viewport Width");
@@ -2317,7 +2260,7 @@ static void ingame_menu(uint32_t menu_id)
 		     cellDbgFontPrintf (0.09f,   0.58f,   font_size,      LIGHTBLUE,           "L2 or  RSTICK UP");
 		     cellDbgFontPrintf (0.5f,   0.58f,   font_size,      LIGHTBLUE,           "- Increase Viewport Height");
 
-		     cellDbgFontDraw();
+		     gl_render_msg_post(gl);
 
 		     cellDbgFontPrintf (0.09f,   0.60f,   font_size,      LIGHTBLUE,           "R2 or RSTICK DOWN");
 		     cellDbgFontPrintf (0.5f,   0.60f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Height");
@@ -2331,10 +2274,10 @@ static void ingame_menu(uint32_t menu_id)
 		     cellDbgFontPrintf (0.09f,   0.70f,   font_size,      LIGHTBLUE,           "CIRCLE");
 		     cellDbgFontPrintf (0.5f,   0.70f,   font_size,      LIGHTBLUE,           "- Return to Ingame Menu");
 
-		     cellDbgFontDraw();
+		     gl_render_msg_post(gl);
 
 		     cellDbgFontPrintf (0.09f, 0.83f, 0.91f, LIGHTBLUE, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the menu.");
-		     cellDbgFontDraw();
+		     gl_render_msg_post(gl);
 		  }
 		  gfx_ctx_swap_buffers();
 #ifdef HAVE_SYSUTILS
@@ -2353,6 +2296,7 @@ static void ingame_menu(uint32_t menu_id)
 	    {
                while(stuck_in_loop && g_console.ingame_menu_enable)
 	       {
+                  gl->menu_render = false;
                   state = cell_pad_input_poll_device(0);
 		  if(CTRL_CIRCLE(state))
 		  {
@@ -2367,20 +2311,21 @@ static void ingame_menu(uint32_t menu_id)
                   cellSysutilCheckCallback();
 #endif
 	       }
+               gl->menu_render = true;
 	    }
 
 	    strlcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
 	    if(CTRL_CROSS(state))
-               return_to_game();
+               rarch_settings_change(S_RETURN_TO_GAME);
 
 	    strlcpy(comment, "Press 'CROSS' to return back to the game.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RESET:
 	    if(CTRL_CROSS(state))
 	    {
-               return_to_game();
+               rarch_settings_change(S_RETURN_TO_GAME);
 	       rarch_game_reset();
 	    }
 	    strlcpy(comment, "Press 'CROSS' to reset the game.", sizeof(comment));
@@ -2388,10 +2333,8 @@ static void ingame_menu(uint32_t menu_id)
 	 case MENU_ITEM_RETURN_TO_MENU:
 	    if(CTRL_CROSS(state))
 	    {
-               g_console.menu_enable = false;
-	       g_console.ingame_menu_item = 0;
-	       g_console.mode_switch = MODE_MENU;
-	       set_delay = DELAY_LONG;
+               rarch_settings_change(S_RETURN_TO_MENU);
+	       set_delay = DELAY_MEDIUM;
 	    }
 	    strlcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.", sizeof(comment));
 	    break;
@@ -2401,29 +2344,27 @@ static void ingame_menu(uint32_t menu_id)
                menuStackindex++;
 	       menuStack[menuStackindex] = menu_filebrowser;
 	       menuStack[menuStackindex].enum_id = LIBRETRO_CHOICE;
+	       set_libretro_core_as_launch = true;
 	       set_initial_dir_tmpbrowser = true;
 	       set_delay = DELAY_LONG;
 	    }
 	    strlcpy(comment, "Press 'CROSS' to choose a different emulator core.", sizeof(comment));
 	    break;
+#ifdef HAVE_MULTIMAN
 	 case MENU_ITEM_RETURN_TO_MULTIMAN:
 	    if(CTRL_CROSS(state) && path_file_exists(MULTIMAN_EXECUTABLE))
 	    {
                strlcpy(g_console.launch_app_on_exit, MULTIMAN_EXECUTABLE,
                   sizeof(g_console.launch_app_on_exit));
 
-	       g_console.return_to_launcher = true;
-	       g_console.menu_enable = false;
-	       g_console.mode_switch = MODE_EXIT;
+               rarch_settings_change(S_RETURN_TO_DASHBOARD);
 	    }
 	    strlcpy(comment, "Press 'CROSS' to quit the emulator and return to multiMAN.", sizeof(comment));
 	    break;
-	 case MENU_ITEM_RETURN_TO_XMB:
+#endif
+	 case MENU_ITEM_RETURN_TO_DASHBOARD:
 	    if(CTRL_CROSS(state))
-	    {
-               g_console.menu_enable = false;
-	       g_console.mode_switch = MODE_EXIT;
-	    }
+               rarch_settings_change(S_RETURN_TO_DASHBOARD);
 
 	    strlcpy(comment, "Press 'CROSS' to quit the emulator and return to the XMB.", sizeof(comment));
 	    break;
@@ -2434,7 +2375,7 @@ static void ingame_menu(uint32_t menu_id)
          if(g_console.ingame_menu_item > 0)
 	 {
             g_console.ingame_menu_item--;
-	    set_delay = DELAY_MEDIUM;
+	    set_delay = DELAY_SMALL;
 	 }
       }
 
@@ -2443,49 +2384,36 @@ static void ingame_menu(uint32_t menu_id)
          if(g_console.ingame_menu_item < (MENU_ITEM_LAST-1))
 	 {
             g_console.ingame_menu_item++;
-	    set_delay = DELAY_MEDIUM;
+	    set_delay = DELAY_SMALL;
 	 }
       }
 
       if(CTRL_L3(state) && CTRL_R3(state))
-      {
-         return_to_game();
-      }
+         rarch_settings_change(S_RETURN_TO_GAME);
    }
 
-
-   switch(g_console.screen_orientation)
-   {
-      case ORIENTATION_NORMAL:
-         snprintf(msg_temp, sizeof(msg_temp), "Normal");
-	 break;
-      case ORIENTATION_VERTICAL:
-	 snprintf(msg_temp, sizeof(msg_temp), "Vertical");
-	 break;
-      case ORIENTATION_FLIPPED:
-	 snprintf(msg_temp, sizeof(msg_temp), "Flipped");
-	 break;
-      case ORIENTATION_FLIPPED_ROTATED:
-	 snprintf(msg_temp, sizeof(msg_temp), "Flipped Rotated");
-	 break;
-   }
 
    cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Quick Menu");
 
-   cellDbgFontPrintf(x_position, ypos, font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), "Load State #%d", g_extern.state_slot);
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
+   cellDbgFontPrintf(x_position, ypos, font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), strw_buffer);
 
-   cellDbgFontPrintf(x_position, ypos+(ypos_increment*MENU_ITEM_SAVE_STATE), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), "Save State #%d", g_extern.state_slot);
-   cellDbgFontDraw();
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
+   cellDbgFontPrintf(x_position, ypos+(ypos_increment*MENU_ITEM_SAVE_STATE), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), strw_buffer);
+   gl_render_msg_post(gl);
 
-   cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
+   cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), strw_buffer);
 
    cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), "Overscan: %f", g_console.overscan_amount);
 
-   cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), "Orientation: %s", msg_temp);
-   cellDbgFontDraw();
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+   cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), strw_buffer);
+   gl_render_msg_post(gl);
 
-   cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_SCALE_FACTOR)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), "Scale Factor: %d", (int)(g_settings.video.fbo_scale_x));
-   cellDbgFontDraw();
+   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
+   cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_SCALE_FACTOR)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), strw_buffer);
+   gl_render_msg_post(gl);
 
    cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_RESIZE_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE), "Resize Mode");
 
@@ -2493,23 +2421,25 @@ static void ingame_menu(uint32_t menu_id)
 
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_SCREENSHOT_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCREENSHOT_MODE), "Screenshot Mode");
 
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RESET)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESET), "Reset");
 
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_GAME)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME), "Return to Game");
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MENU)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU), "Return to Menu");
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_CHANGE_LIBRETRO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBRETRO), "Change libretro core");
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
+#ifdef HAVE_MULTIMAN
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");
+#endif
 
-   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_XMB)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_XMB), "Return to XMB");
-   cellDbgFontDraw();
+   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_DASHBOARD)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_DASHBOARD), "Return to XMB");
+   gl_render_msg_post(gl);
 
    struct retro_system_info info;
    retro_get_system_info(&info);
@@ -2518,11 +2448,9 @@ static void ingame_menu(uint32_t menu_id)
    cellDbgFontPuts(0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
    cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
    cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
-   cellDbgFontDraw();
-   cellDbgFontPrintf (0.05f, 0.90f, 1.10f, WHITE, special_action_msg);
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
    cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, comment);
-   cellDbgFontDraw();
+   gl_render_msg_post(gl);
 
    old_state = state;
 }
@@ -2590,7 +2518,7 @@ void menu_loop(void)
 	    break;
 	 case INGAME_MENU:
 	    if(g_console.ingame_menu_enable)
-		    ingame_menu(menuStack[menuStackindex].enum_id);
+               ingame_menu(menuStack[menuStackindex].enum_id);
 	    break;
       }
 
@@ -2625,6 +2553,18 @@ void menu_loop(void)
       if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
       {
          SET_TIMER_EXPIRATION(gl, 30);
+      }
+
+      const char * message = msg_queue_pull(g_extern.msg_queue);
+
+      if (message && g_console.info_msg_enable)
+      {
+         if(IS_TIMER_EXPIRED(gl))
+         {
+            SET_TIMER_EXPIRATION(gl, 30);
+         }
+         cellDbgFontPrintf(g_settings.video.msg_pos_x, 0.75f, 1.05f, WHITE, message);
+         gl_render_msg_post(gl);
       }
 
       gfx_ctx_swap_buffers();
