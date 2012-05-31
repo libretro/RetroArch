@@ -278,9 +278,6 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
 	vgSetParameteri(rpi->mPaintBg, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
 	vgSetParameterfv(rpi->mPaintBg, VG_PAINT_COLOR, 4, paintBg);
 
-//	vgSetPaint(myFillPaint, VG_FILL_PATH);
-//	vgSetPaint(myStrokePaint, VG_STROKE_PATH);
-
 	fail:
 #endif
 
@@ -509,8 +506,6 @@ static void rpi_draw_message(rpi_t *rpi, const char *msg)
 			while (--rpi->mMsgLength)
 				vgClearGlyph(rpi->mFont, rpi->mMsgLength);
 
-		rpi->mMsgLength = 0;
-
 		for (int i = 0; msg[i]; i++)
 		{
 			VGfloat origin[2], escapement[2];
@@ -573,7 +568,6 @@ static void rpi_draw_message(rpi_t *rpi, const char *msg)
 static bool rpi_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
 	rpi_t *rpi = (rpi_t*)data;
-	(void)msg;
 
 	if (width != rpi->mRenderWidth || height != rpi->mRenderHeight)
 	{
@@ -597,6 +591,8 @@ static bool rpi_frame(void *data, const void *frame, unsigned width, unsigned he
 #ifdef HAVE_FREETYPE
 	if (msg && rpi->mFontsOn)
 		rpi_draw_message(rpi, msg);
+#else
+	(void)msg;
 #endif
 
 	eglSwapBuffers(rpi->mDisplay, rpi->mSurface);
