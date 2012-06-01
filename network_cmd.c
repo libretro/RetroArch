@@ -14,6 +14,7 @@
  */
 
 #include "netplay_compat.h"
+#include "netplay.h"
 #include "network_cmd.h"
 #include "driver.h"
 #include "general.h"
@@ -42,6 +43,9 @@ static bool socket_nonblock(int fd)
 
 network_cmd_t *network_cmd_new(uint16_t port)
 {
+   if (!netplay_init_network())
+      return NULL;
+
    network_cmd_t *handle = (network_cmd_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
@@ -264,6 +268,9 @@ static bool verify_command(const char *cmd)
 
 bool network_cmd_send(const char *cmd_)
 {
+   if (!netplay_init_network())
+      return NULL;
+
    char *command = strdup(cmd_);
    if (!command)
       return false;

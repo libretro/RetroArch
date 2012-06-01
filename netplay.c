@@ -395,7 +395,7 @@ static bool init_udp_socket(netplay_t *handle, const char *server, uint16_t port
 }
 
 // Platform specific socket library init.
-static bool init_network(void)
+bool netplay_init_network(void)
 {
    static bool inited = false;
    if (inited)
@@ -421,7 +421,7 @@ static bool init_network(void)
 
 static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
 {
-   if (!init_network())
+   if (!netplay_init_network())
       return false;
 
    if (!init_tcp_socket(handle, server, port, handle->spectate))
