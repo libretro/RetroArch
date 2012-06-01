@@ -141,6 +141,7 @@ extern "C" {
                                            // This function can be called on a per-game basis,
                                            // as certain games an implementation can play might be
                                            // particularily demanding.
+                                           // If called, it should be called in retro_load_game().
 
 struct retro_message
 {
