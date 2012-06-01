@@ -28,5 +28,7 @@ void network_cmd_pre_frame(network_cmd_t *handle);
 void network_cmd_set(network_cmd_t *handle, unsigned id);
 bool network_cmd_get(network_cmd_t *handle, unsigned id);
 
+bool network_cmd_send(const char *cmd);
+
 #endif
 

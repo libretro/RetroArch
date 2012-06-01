@@ -178,6 +178,16 @@ Clients thus cannot interact as player 2.
 For spectating mode to work, both host and clients will need to use this flag.
 
 .TP
+\fB--command CMD\fR
+Sends a command over UDP to an already running RetroArch application, and exit.
+The command is formatted as "COMMAND:HOST:PORT".
+HOST and PORT are both optional. "COMMAND:HOST" will set PORT to
+"network_cmd_port" default setting.
+If only "COMMAND" is used, HOST and PORT will be assumed to be "localhost" and "network_cmd_port" respectively.
+
+The available commands are listed if "COMMAND" is invalid.
+
+.TP
 \fB--nick NICK\fR
 Pick a nickname for use with netplay.
 This is purely cosmetic, and only serves to help players identify each other.
