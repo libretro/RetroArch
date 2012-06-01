@@ -320,6 +320,10 @@ static bool environment_cb(unsigned cmd, void *data)
          g_extern.system.shutdown = true;
          break;
 
+      case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
+         g_extern.system.performance_level = *(const unsigned*)data;
+         break;
+
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;

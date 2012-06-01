@@ -329,6 +329,7 @@ struct global
 
       unsigned rotation;
       bool shutdown;
+      unsigned performance_level;
    } system;
 
    struct
