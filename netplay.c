@@ -738,8 +738,6 @@ netplay_t *netplay_new(const char *server, uint16_t port,
       bool spectate,
       const char *nick)
 {
-   (void)spectate;
-
    if (frames > UDP_FRAME_PACKETS)
       frames = UDP_FRAME_PACKETS;
 
