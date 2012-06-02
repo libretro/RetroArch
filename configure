@@ -2,9 +2,10 @@
 
 echo ""
 
-. qb/config.params.sh
+PACKAGE_NAME=ssnes
+PACKAGE_VERSION=0.9.6-rc1
 
-parse_input "$@"
+. qb/qb.params.sh
 
 . qb/qb.comp.sh
 . qb/config.libs.sh

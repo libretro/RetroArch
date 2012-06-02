@@ -41,7 +41,7 @@ if [ "$USE_LANG_C" = yes ]; then
 
    rm -rf $TEMP_C $TEMP_EXE
 
-   [ $answer = no ] && echo "Can't find suitable C compiler. Exiting ..." && exit 1
+   [ "$answer" = no ] && echo "Can't find suitable C compiler. Exiting ..." && exit 1
 fi
 
 # Checking for working C++ compiler
@@ -64,6 +64,6 @@ if [ "$USE_LANG_CXX" = "yes" ]; then
 
    rm -rf $TEMP_CXX $TEMP_EXE
 
-   [ $answer = no ] && echo "Can't find suitable C++ compiler. Exiting ..." && exit 1
+   [ "$answer" = no ] && echo "Can't find suitable C++ compiler. Exiting ..." && exit 1
 fi
 
