@@ -2,7 +2,7 @@
 
 echo ""
 
-PACKAGE_NAME=ssnes
+PACKAGE_NAME=retroarch
 PACKAGE_VERSION=0.9.6-rc1
 
 . qb/qb.params.sh
