@@ -1634,11 +1634,12 @@ static void load_auto_state(void)
    if (path_file_exists(savestate_name_auto))
    {
       RARCH_LOG("Found auto savestate in: %s\n", savestate_name_auto);
-      load_state(savestate_name_auto);
+      bool ret = load_state(savestate_name_auto);
 
       char msg[PATH_MAX];
-      snprintf(msg, sizeof(msg), "Auto-loaded savestate from: \"%s\"", savestate_name_auto);
+      snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" %s.", savestate_name_auto, ret ? "succeeded" : "failed");
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      RARCH_LOG("%s\n", msg);
    }
 }
 
@@ -1651,7 +1652,8 @@ static void save_auto_state(void)
    fill_pathname_noext(savestate_name_auto, g_extern.savestate_name,
          ".auto", sizeof(savestate_name_auto));
 
-   save_state(savestate_name_auto);
+   bool ret = save_state(savestate_name_auto);
+   RARCH_LOG("Auto save state to \"%s\" %s.\n", savestate_name_auto, ret ? "succeeded" : "failed");
 }
 
 void rarch_load_state(void)
