@@ -1642,6 +1642,18 @@ static void load_auto_state(void)
    }
 }
 
+static void save_auto_state(void)
+{
+   if (!g_settings.savestate_auto_save)
+      return;
+
+   char savestate_name_auto[PATH_MAX];
+   fill_pathname_noext(savestate_name_auto, g_extern.savestate_name,
+         ".auto", sizeof(savestate_name_auto));
+
+   save_state(savestate_name_auto);
+}
+
 void rarch_load_state(void)
 {
    char load_path[PATH_MAX];
@@ -2557,6 +2569,8 @@ void rarch_main_deinit(void)
 #ifdef HAVE_BSV_MOVIE
    deinit_movie();
 #endif
+
+   save_auto_state();
 
    pretro_unload_game();
    pretro_deinit();

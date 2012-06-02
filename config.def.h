@@ -277,6 +277,11 @@ static const bool block_sram_overwrite = false;
 // When the ROM is loaded, state index will be set to the highest existing value.
 static const bool savestate_auto_index = false;
 
+// Automatically saves a savestate at the end of RetroArch's lifetime.
+// The path is $SRAM_PATH.auto.
+// RetroArch will automatically load any savestate with this path on startup.
+static const bool savestate_auto_save = false;
+
 // Slowmotion ratio.
 static const float slowmotion_ratio = 3.0;
 
