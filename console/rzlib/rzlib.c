@@ -3398,3 +3398,36 @@ extern int  unzSetOffset (unzFile file, unsigned long pos)
 	s->current_file_ok = (err == UNZ_OK);
 	return err;
 }
+
+int uncompress (unsigned char *dest, unsigned int *destLen, const unsigned char *source, unsigned int sourceLen)
+{
+    z_stream stream;
+    int err;
+
+    stream.next_in = (unsigned char*)source;
+    stream.avail_in = (unsigned int)sourceLen;
+    /* Check for source > 64K on 16-bit machine: */
+    if ((unsigned int)stream.avail_in != sourceLen) return Z_BUF_ERROR;
+
+    stream.next_out = dest;
+    stream.avail_out = (unsigned int)*destLen;
+    if ((unsigned int)stream.avail_out != *destLen) return Z_BUF_ERROR;
+
+    stream.zalloc = (alloc_func)0;
+    stream.zfree = (free_func)0;
+
+    err = inflateInit(&stream);
+    if (err != Z_OK) return err;
+
+    err = inflate(&stream, Z_FINISH);
+    if (err != Z_STREAM_END) {
+        inflateEnd(&stream);
+        if (err == Z_NEED_DICT || (err == Z_BUF_ERROR && stream.avail_in == 0))
+            return Z_DATA_ERROR;
+        return err;
+    }
+    *destLen = stream.total_out;
+
+    err = inflateEnd(&stream);
+    return err;
+}
