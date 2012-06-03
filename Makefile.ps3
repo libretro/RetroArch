@@ -122,7 +122,7 @@ create-salamander:
 create-shaders:
 ifeq ($(DOWNLOAD_SHADERS),1)
 	$(RM) -rf ps3/pkg/USRDIR/cores/shaders
-	$(GIT) clone git://github.com/twinaphex/common-shaders.git ps3/pkg/USRDIR/cores/shaders
+	$(GIT) clone git://github.com/libretro/common-shaders.git ps3/pkg/USRDIR/cores/shaders
 endif
 
 pkg: $(PPU_TARGET) create-shaders create-npdrm-salamander create-npdrm-core
