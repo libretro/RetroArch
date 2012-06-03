@@ -48,7 +48,7 @@
   <PropertyGroup />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|PS3'">
     <ClCompile>
-      <UserPreprocessorDefinitions>_DEBUG;__CELL_ASSERT__;HAVE_OPENGL=1;RARCH_CONSOLE;HAVE_CG=1;HAVE_CONFIGFILE=1;HAVE_NETPLAY=1;HAVE_SOCKET_LEGACY=1;PACKAGE_VERSION="0.9.6-rc1";HAVE_SCREENSHOTS_BUILTIN=1;main=rarch_main;%(UserPreprocessorDefinitions);HAVE_RARCH_MAIN_WRAP;HAVE_RSOUND;HAVE_RARCH_EXEC;HAVE_ZLIB=1;HAVE_LIBRETRO_MANAGEMENT</UserPreprocessorDefinitions>
+      <UserPreprocessorDefinitions>_DEBUG;__CELL_ASSERT__;HAVE_OPENGL=1;RARCH_CONSOLE;HAVE_CG=1;HAVE_CONFIGFILE=1;HAVE_NETPLAY=1;HAVE_SOCKET_LEGACY=1;PACKAGE_VERSION="0.9.6";HAVE_SCREENSHOTS_BUILTIN=1;main=rarch_main;%(UserPreprocessorDefinitions);HAVE_RARCH_MAIN_WRAP;HAVE_RSOUND;HAVE_RARCH_EXEC;HAVE_ZLIB=1;HAVE_LIBRETRO_MANAGEMENT</UserPreprocessorDefinitions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <PreprocessorDefinitions>%(UserPreprocessorDefinitions);$(BuiltInDefines);__INTELLISENSE__;%(PreprocessorDefinitions);</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -60,7 +60,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|PS3'">
     <ClCompile>
-      <UserPreprocessorDefinitions>NDEBUG;HAVE_OPENGL=1;RARCH_CONSOLE;HAVE_CG=1;HAVE_CONFIGFILE=1;HAVE_NETPLAY=1;HAVE_SOCKET_LEGACY=1;PACKAGE_VERSION="0.9.6-rc1";HAVE_SCREENSHOTS_BUILTIN=1;main="rarch_main";%(UserPreprocessorDefinitions);HAVE_RARCH_MAIN_WRAP;HAVE_RSOUND;HAVE_RARCH_EXEC;HAVE_ZLIB=1;HAVE_LIBRETRO_MANAGEMENT</UserPreprocessorDefinitions>
+      <UserPreprocessorDefinitions>NDEBUG;HAVE_OPENGL=1;RARCH_CONSOLE;HAVE_CG=1;HAVE_CONFIGFILE=1;HAVE_NETPLAY=1;HAVE_SOCKET_LEGACY=1;PACKAGE_VERSION="0.9.6";HAVE_SCREENSHOTS_BUILTIN=1;main="rarch_main";%(UserPreprocessorDefinitions);HAVE_RARCH_MAIN_WRAP;HAVE_RSOUND;HAVE_RARCH_EXEC;HAVE_ZLIB=1;HAVE_LIBRETRO_MANAGEMENT</UserPreprocessorDefinitions>
       <OptimizationLevel>Level2</OptimizationLevel>
       <PreprocessorDefinitions>%(UserPreprocessorDefinitions);$(BuiltInDefines);__INTELLISENSE__;%(PreprocessorDefinitions);</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>

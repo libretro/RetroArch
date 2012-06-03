@@ -113,7 +113,7 @@
       <MinimalRebuild>true</MinimalRebuild>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PreprocessorDefinitions>_DEBUG;_XBOX;PACKAGE_VERSION="0.9.6-rc1";%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;main=rarch_main;RARCH_CONSOLE;HAVE_CONFIGFILE;HAVE_FILEBROWSER;HAVE_NETPLAY;HAVE_SOCKET_LEGACY;HAVE_ZLIB;HAVE_RARCH_MAIN_WRAP;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_VID_CONTEXT;HAVE_D3D9</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_XBOX;PACKAGE_VERSION="0.9.6";%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;main=rarch_main;RARCH_CONSOLE;HAVE_CONFIGFILE;HAVE_FILEBROWSER;HAVE_NETPLAY;HAVE_SOCKET_LEGACY;HAVE_ZLIB;HAVE_RARCH_MAIN_WRAP;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_VID_CONTEXT;HAVE_D3D9</PreprocessorDefinitions>
       <CallAttributedProfiling>Callcap</CallAttributedProfiling>
     </ClCompile>
     <Link>
@@ -151,7 +151,7 @@
       <PREfast>AnalyzeOnly</PREfast>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PreprocessorDefinitions>_DEBUG;_XBOX;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.6-rc1";_CRT_SECURE_NO_WARNINGS;main=rarch_main;HAVE_CONFIGFILE;HAVE_FILEBROWSER;RARCH_CONSOLE;HAVE_ZLIB;HAVE_RARCH_MAIN_WRAP;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_VID_CONTEXT;HAVE_D3D9</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_XBOX;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.6";_CRT_SECURE_NO_WARNINGS;main=rarch_main;HAVE_CONFIGFILE;HAVE_FILEBROWSER;RARCH_CONSOLE;HAVE_ZLIB;HAVE_RARCH_MAIN_WRAP;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_VID_CONTEXT;HAVE_D3D9</PreprocessorDefinitions>
       <CallAttributedProfiling>Callcap</CallAttributedProfiling>
     </ClCompile>
     <Link>
@@ -190,7 +190,7 @@
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.6-rc1";_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE;main=rarch_main;HAVE_CONFIGFILE;HAVE_FILEBROWSER;HAVE_ZLIB;HAVE_RARCH_MAIN_WRAP;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_VID_CONTEXT;HAVE_D3D9</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.6";_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE;main=rarch_main;HAVE_CONFIGFILE;HAVE_FILEBROWSER;HAVE_ZLIB;HAVE_RARCH_MAIN_WRAP;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_VID_CONTEXT;HAVE_D3D9</PreprocessorDefinitions>
       <CallAttributedProfiling>Callcap</CallAttributedProfiling>
     </ClCompile>
     <Link>
@@ -234,7 +234,7 @@
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;FASTCAP;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.6-rc1";_CRT_SECURE_NO_WARNINGS;main=rarch_main;HAVE_CONFIGFILE;HAVE_FILEBROWSER;HAVE_ZLIB;HAVE_RARCH_MAIN_WRAP;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_VID_CONTEXT;HAVE_D3D9</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;FASTCAP;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.6";_CRT_SECURE_NO_WARNINGS;main=rarch_main;HAVE_CONFIGFILE;HAVE_FILEBROWSER;HAVE_ZLIB;HAVE_RARCH_MAIN_WRAP;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_VID_CONTEXT;HAVE_D3D9</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -275,7 +275,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.6-rc1";_CRT_SECURE_NO_WARNINGS;main=rarch_main;RARCH_CONSOLE=1;HAVE_CONFIGFILE;HAVE_FILEBROWSER;HAVE_NETPLAY;HAVE_SOCKET_LEGACY;HAVE_ZLIB;HAVE_RARCH_MAIN_WRAP;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_VID_CONTEXT;HAVE_D3D9</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.6";_CRT_SECURE_NO_WARNINGS;main=rarch_main;RARCH_CONSOLE=1;HAVE_CONFIGFILE;HAVE_FILEBROWSER;HAVE_NETPLAY;HAVE_SOCKET_LEGACY;HAVE_ZLIB;HAVE_RARCH_MAIN_WRAP;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_VID_CONTEXT;HAVE_D3D9</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -316,7 +316,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;LTCG;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.6-rc1";_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE;main=rarch_main;HAVE_CONFIGFILE;HAVE_FILEBROWSER;HAVE_NETPLAY;HAVE_SOCKET_LEGACY;HAVE_ZLIB;HAVE_RARCH_MAIN_WRAP;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_VID_CONTEXT;HAVE_D3D9</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;LTCG;%(PreprocessorDefinitions);PACKAGE_VERSION="0.9.6";_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE;main=rarch_main;HAVE_CONFIGFILE;HAVE_FILEBROWSER;HAVE_NETPLAY;HAVE_SOCKET_LEGACY;HAVE_ZLIB;HAVE_RARCH_MAIN_WRAP;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_VID_CONTEXT;HAVE_D3D9</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

@@ -3,7 +3,7 @@
 echo ""
 
 PACKAGE_NAME=retroarch
-PACKAGE_VERSION=0.9.6-rc1
+PACKAGE_VERSION=0.9.6
 
 . qb/qb.params.sh
 
