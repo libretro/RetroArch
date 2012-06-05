@@ -30,14 +30,9 @@ enum
 };
 
 #define MIN_SCALING_FACTOR (1.0f)
-#define MAX_SCALING_FACTOR (4.0f)
+#define MAX_SCALING_FACTOR (5.0f)
 
 const char * ps3_get_resolution_label(uint32_t resolution);
-void ps3_previous_resolution (void);
-void ps3_next_resolution (void);
-
-void gl_deinit_fbo(gl_t * gl);
-void gl_init_fbo(gl_t * gl, unsigned width, unsigned height);
 
 bool gl_cg_reinit(const char *path);
 bool gl_cg_save_cgp(const char *path, const struct gl_cg_cgp_info *info);

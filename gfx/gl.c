@@ -338,7 +338,7 @@ error:
    return false;
 }
 
-static void gl_deinit_fbo(gl_t *gl)
+void gl_deinit_fbo(gl_t *gl)
 {
    if (gl->fbo_inited)
    {
@@ -352,7 +352,7 @@ static void gl_deinit_fbo(gl_t *gl)
    }
 }
 
-static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
+void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
    // No need to use FBOs.
    if (!g_settings.video.render_to_texture && gl_shader_num() == 0)

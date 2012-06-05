@@ -309,24 +309,6 @@ void gfx_ctx_get_available_resolutions (void)
    g_console.check_available_resolutions = true;
 }
 
-void ps3_next_resolution (void)
-{
-   if (g_console.current_resolution_index + 1 < g_console.supported_resolutions_count)
-   {
-      g_console.current_resolution_index++;
-      g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
-   }
-}
-
-void ps3_previous_resolution (void)
-{
-   if (g_console.current_resolution_index)
-   {
-      g_console.current_resolution_index--;
-      g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
-   }
-}
-
 int gfx_ctx_check_resolution(unsigned resolution_id)
 {
    return cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, resolution_id, CELL_VIDEO_OUT_ASPECT_AUTO, 0);

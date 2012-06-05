@@ -27,11 +27,11 @@ void rarch_settings_change(unsigned setting)
    switch(setting)
    {
       case S_ASPECT_RATIO_DECREMENT:
-	     if(g_console.aspect_ratio_index > 0)
+         if(g_console.aspect_ratio_index > 0)
             g_console.aspect_ratio_index--;
          break;
-	  case S_ASPECT_RATIO_INCREMENT:
-	     if(g_console.aspect_ratio_index < LAST_ASPECT_RATIO)
+      case S_ASPECT_RATIO_INCREMENT:
+         if(g_console.aspect_ratio_index < LAST_ASPECT_RATIO)
             g_console.aspect_ratio_index++;
          break;
       case S_FRAME_ADVANCE:
@@ -56,6 +56,20 @@ void rarch_settings_change(unsigned setting)
          g_console.overscan_enable = true;
          if(g_console.overscan_amount == 0.0f)
             g_console.overscan_enable = 0;
+         break;
+      case S_RESOLUTION_PREVIOUS:
+         if (g_console.current_resolution_index)
+         {
+            g_console.current_resolution_index--;
+            g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
+         }
+         break;
+      case S_RESOLUTION_NEXT:
+	 if (g_console.current_resolution_index + 1 < g_console.supported_resolutions_count)
+	 {
+            g_console.current_resolution_index++;
+	    g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
+	 }
          break;
       case S_QUIT:
          g_console.menu_enable = false;

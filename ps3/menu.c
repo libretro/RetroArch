@@ -1169,12 +1169,12 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_CHANGE_RESOLUTION:
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) )
 			{
-                           ps3_next_resolution();
+                           rarch_settings_change(S_RESOLUTION_NEXT);
 			   set_delay = DELAY_SMALL;
 			}
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) )
 			{
-                           ps3_previous_resolution();
+                           rarch_settings_change(S_RESOLUTION_PREVIOUS);
 			   set_delay = DELAY_SMALL;
 			}
 			if(CTRL_CROSS(state))
