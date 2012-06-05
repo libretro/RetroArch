@@ -798,6 +798,8 @@ int menu_init (void)
 
    xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
 
+   bool hdmenus_allowed = g_console.menus_hd_enable;
+
    hr = app.InitShared(vid->d3d_render_device, &vid->d3dpp, XuiPNGTextureLoader);
 
    if (hr < 0)
@@ -821,7 +823,7 @@ int menu_init (void)
       return 1;
    }
 
-   hr = XuiSceneCreate(L"file://game:/media/sd/", L"rarch_main.xur", NULL, &app.hMainScene);
+   hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_main.xur", NULL, &app.hMainScene);
    if (hr < 0)
    {
       RARCH_ERR("Failed to create scene 'rarch_main.xur'.\n");

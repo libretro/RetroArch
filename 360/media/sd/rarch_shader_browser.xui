@@ -8,7 +8,7 @@
 <Id>XuiSceneCoreFileBrowser</Id>
 <Width>575.888062</Width>
 <Height>336.017609</Height>
-<Position>353.995880,209.035965,0.000000</Position>
+<Position>32.029999,76.040001,0.000000</Position>
 <ClassOverride>RetroArchShaderBrowser</ClassOverride>
 </Properties>
 <XuiText>
@@ -31,6 +31,18 @@
 <Height>170.800018</Height>
 <Position>22.799980,81.600006,0.000000</Position>
 </Properties>
+<XuiListItem>
+<Properties>
+<Id>control_ListItem</Id>
+<Width>226.000000</Width>
+<Height>45.000000</Height>
+<Position>7.000000,22.000000,0.000000</Position>
+<Anchor>5</Anchor>
+<Show>false</Show>
+<Visual>XuiButton</Visual>
+<InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
+</Properties>
+</XuiListItem>
 <XuiListItem>
 <Properties>
 <Id>control_ListItem</Id>
