@@ -40,7 +40,6 @@
 #include <np/drm.h>
 
 #include "ps3_input.h"
-#include "ps3_video_psgl.h"
 
 #include "../console/console_ext.h"
 #include "../conf/config_file.h"
