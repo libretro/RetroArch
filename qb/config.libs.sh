@@ -18,6 +18,7 @@ fi
 if [ -d /opt/vc/lib ]; then
    add_library_dirs /opt/vc/lib
    add_include_dirs /opt/vc/include
+   add_include_dirs /opt/vc/include/interface/vcos/pthreads
    # the gles library gets messed up with the gl library if available, so turn it off
    HAVE_OPENGL=no
    HAVE_RPI=yes
