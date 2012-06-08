@@ -1214,6 +1214,7 @@ static bool gl_xml_shader(void *data, const char *path)
 }
 #endif
 
+#ifndef HAVE_RGL
 static void gl_viewport_size(void *data, unsigned *width, unsigned *height)
 {
    gl_t *gl = (gl_t*)data;
@@ -1232,6 +1233,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 
    return true;
 }
+#endif
 
 #ifdef RARCH_CONSOLE
 static void gl_start(void)
@@ -1329,7 +1331,13 @@ const video_driver_t video_gl = {
 #endif
 
    gl_set_rotation,
+
+#ifndef HAVE_RGL
    gl_viewport_size,
    gl_read_viewport,
+#else
+   NULL,
+   NULL,
+#endif
 };
 
