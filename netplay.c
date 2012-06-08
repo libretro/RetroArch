@@ -233,19 +233,86 @@ static void log_connection(const struct sockaddr_storage *their_addr,
 }
 #endif
 
+static int init_tcp_connection(const struct addrinfo *res, bool server, bool spectate,
+      struct sockaddr *other_addr, socklen_t addr_size)
+{
+   bool ret = true;
+   int fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+   if (fd < 0)
+   {
+      ret = false;
+      goto end;
+   }
+
+   if (server)
+   {
+      if (connect(fd, res->ai_addr, res->ai_addrlen) < 0)
+      {
+         ret = false;
+         goto end;
+      }
+   }
+   else if (spectate)
+   {
+      int yes = 1;
+      setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, CONST_CAST &yes, sizeof(int));
+
+      if (bind(fd, res->ai_addr, res->ai_addrlen) < 0 ||
+            listen(fd, MAX_SPECTATORS) < 0)
+      {
+         ret = false;
+         goto end;
+      }
+   }
+   else
+   {
+      int yes = 1;
+      setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, CONST_CAST &yes, sizeof(int));
+
+      if (bind(fd, res->ai_addr, res->ai_addrlen) < 0 ||
+            listen(fd, 1) < 0)
+      {
+         ret = false;
+         goto end;
+      }
+
+      int new_fd = accept(fd, other_addr, &addr_size);
+      if (new_fd < 0)
+      {
+         ret = false;
+         goto end;
+      }
+
+      close(fd);
+      fd = new_fd;
+   }
+
+end:
+   if (!ret && fd >= 0)
+   {
+      close(fd);
+      fd = -1;
+   }
+
+   return fd;
+}
+
 static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port, bool spectate)
 {
    struct addrinfo hints, *res = NULL;
    memset(&hints, 0, sizeof(hints));
+
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    hints.ai_family = AF_INET;
 #else
    hints.ai_family = AF_UNSPEC;
 #endif
+
    hints.ai_socktype = SOCK_STREAM;
    if (!server)
       hints.ai_flags = AI_PASSIVE;
 
+   bool ret = false;
    char port_buf[16];
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
    if (getaddrinfo(server, port_buf, &hints, &res) < 0)
@@ -254,75 +321,29 @@ static bool init_tcp_socket(netplay_t *handle, const char *server, uint16_t port
    if (!res)
       return false;
 
-   handle->fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-   if (handle->fd < 0)
+   // If "localhost" is used, it is important to check every possible address for ipv4/ipv6.
+   const struct addrinfo *tmp_info = res;
+   while (tmp_info)
    {
-      RARCH_ERR("Failed to init socket...\n");
-
-      if (res)
-         freeaddrinfo(res);
-      return false;
-   }
-
-   if (server)
-   {
-      if (connect(handle->fd, res->ai_addr, res->ai_addrlen) < 0)
+      int fd;
+      if ((fd = init_tcp_connection(tmp_info, server, handle->spectate,
+               (struct sockaddr*)&handle->other_addr, sizeof(handle->other_addr))) >= 0)
       {
-         RARCH_ERR("Failed to connect to server.\n");
-         close(handle->fd);
-         handle->fd = -1;
-         freeaddrinfo(res);
-         return false;
-      }
-   }
-   else if (handle->spectate)
-   {
-      int yes = 1;
-      setsockopt(handle->fd, SOL_SOCKET, SO_REUSEADDR, CONST_CAST &yes, sizeof(int));
-
-      if (bind(handle->fd, res->ai_addr, res->ai_addrlen) < 0 ||
-            listen(handle->fd, MAX_SPECTATORS) < 0)
-      {
-         RARCH_ERR("Failed to bind socket.\n");
-         close(handle->fd);
-         handle->fd = -1;
-         freeaddrinfo(res);
-         return false;
-      }
-   }
-   else
-   {
-      int yes = 1;
-      setsockopt(handle->fd, SOL_SOCKET, SO_REUSEADDR, CONST_CAST &yes, sizeof(int));
-
-      if (bind(handle->fd, res->ai_addr, res->ai_addrlen) < 0 ||
-            listen(handle->fd, 1) < 0)
-      {
-         RARCH_ERR("Failed to bind socket.\n");
-         close(handle->fd);
-         handle->fd = -1;
-         freeaddrinfo(res);
-         return false;
+         ret = true;
+         handle->fd = fd;
+         break;
       }
 
-      socklen_t addr_size = sizeof(handle->other_addr);
-      int new_fd = accept(handle->fd,
-            (struct sockaddr*)&handle->other_addr, &addr_size);
-      if (new_fd < 0)
-      {
-         RARCH_ERR("Failed to accept socket.\n");
-         close(handle->fd);
-         handle->fd = -1;
-         freeaddrinfo(res);
-         return false;
-      }
-      close(handle->fd);
-      handle->fd = new_fd;
+      tmp_info = tmp_info->ai_next;
    }
 
-   freeaddrinfo(res);
+   if (res)
+      freeaddrinfo(res);
 
-   return true;
+   if (!ret)
+      RARCH_ERR("Failed to set up netplay sockets.\n");
+
+   return ret;
 }
 
 static bool init_udp_socket(netplay_t *handle, const char *server, uint16_t port)
@@ -374,7 +395,7 @@ static bool init_udp_socket(netplay_t *handle, const char *server, uint16_t port
 }
 
 // Platform specific socket library init.
-static bool init_network(void)
+bool netplay_init_network(void)
 {
    static bool inited = false;
    if (inited)
@@ -400,7 +421,7 @@ static bool init_network(void)
 
 static bool init_socket(netplay_t *handle, const char *server, uint16_t port)
 {
-   if (!init_network())
+   if (!netplay_init_network())
       return false;
 
    if (!init_tcp_socket(handle, server, port, handle->spectate))
@@ -717,8 +738,6 @@ netplay_t *netplay_new(const char *server, uint16_t port,
       bool spectate,
       const char *nick)
 {
-   (void)spectate;
-
    if (frames > UDP_FRAME_PACKETS)
       frames = UDP_FRAME_PACKETS;
 

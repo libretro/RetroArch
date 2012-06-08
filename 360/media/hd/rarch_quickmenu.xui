@@ -8,7 +8,7 @@
 <Id>XuiScene1</Id>
 <Width>824.000061</Width>
 <Height>496.000061</Height>
-<Position>182.000031,120.000023,0.000000</Position>
+<Position>32.029999,76.040001,0.000000</Position>
 <ClassOverride>RetroArchQuickMenu</ClassOverride>
 </Properties>
 <XuiText>
@@ -43,6 +43,18 @@ Return to Game
 Return to Dashboard
 </ItemsText>
 </Properties>
+<XuiListItem>
+<Properties>
+<Id>control_ListItem</Id>
+<Width>226.000000</Width>
+<Height>45.000000</Height>
+<Position>7.000000,22.000000,0.000000</Position>
+<Anchor>5</Anchor>
+<Show>false</Show>
+<Visual>XuiButton</Visual>
+<InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
+</Properties>
+</XuiListItem>
 <XuiListItem>
 <Properties>
 <Id>control_ListItem</Id>

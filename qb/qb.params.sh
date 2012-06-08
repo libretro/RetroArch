@@ -1,153 +1,79 @@
-COMMAND_LINE_OPTS_ENABLE=""
-
-add_command_line_enable()
-{
-   COMMAND_LINE_OPTS_ENABLE="$COMMAND_LINE_OPTS_ENABLE:\"$1\" \"$2\" \"$3\":"
-   eval HAVE_$1=$3
-}
-
-add_command_line_string()
-{
-   COMMAND_LINE_OPTS_STRINGS="$COMMAND_LINE_OPTS_STRINGS:\"$1\" \"$2\" \"$3\":"
-   eval $1=$3
-}
-
 ## lvl. 43 regex dragon awaits thee.
 print_help()
-{
-   echo "===================="
-   echo " Quickbuild script"
-   echo "===================="
-   echo "Package: $PACKAGE_NAME"
-   echo "Version: $PACKAGE_VERSION"
-   echo ""
-   echo "General environment variables:"
-   echo "CC:         C compiler"
-   echo "CFLAGS:     C compiler flags"
-   echo "CXX:        C++ compiler"
-   echo "CXXFLAGS:   C++ compiler flags"
-   echo "LDFLAGS:    Linker flags"
-   echo ""
-   echo "General options:"
-   echo "--prefix=\$path: Install path prefix"
-   echo "--help: Show this help"
-   echo ""
-   echo "Custom options:"
+{	cat << EOF
+====================
+ Quickbuild script
+====================
+Package: $PACKAGE_NAME
+Version: $PACKAGE_VERSION
 
-   tmpopts="$COMMAND_LINE_OPTS_ENABLE"
-   while [ ! -z "$tmpopts" ]
-   do
-      subopts="`echo $tmpopts | sed 's|^:"\([^"]*\)"."\([^"]*\)"."\([^"]*\)":.*$|"\1":"\2":"\3"|'`"
-      tmpopts="`echo $tmpopts | sed 's|^\W*$||'`"
-      tmpopts="`echo $tmpopts | sed 's|^:"[^"]*"."[^"]*"."[^"]*":||'`"
-      print_sub_opt "$subopts"
-   done
+General environment variables:
+CC:         C compiler
+CFLAGS:     C compiler flags
+CXX:        C++ compiler
+CXXFLAGS:   C++ compiler flags
+LDFLAGS:    Linker flags
 
-   echo ""
+General options:
+--prefix=\$path: Install path prefix
+--help: Show this help
 
-   tmpopts="$COMMAND_LINE_OPTS_STRINGS"
-   while [ ! -z "$tmpopts" ]
-   do
-      subopts="`echo $tmpopts | sed 's|^:"\([^"]*\)"."\([^"]*\)"."\([^"]*\)":.*$|"\1":"\2":"\3"|'`"
-      tmpopts="`echo $tmpopts | sed 's|^\W*$||'`"
-      tmpopts="`echo $tmpopts | sed 's|^:"[^"]*"."[^"]*"."[^"]*":||'`"
-      print_sub_str_opt "$subopts"
-   done
+Custom options:
+EOF
+	while IFS='=#' read VAR VAL COMMENT; do
+		VAR=$(echo "${VAR##HAVE_}" | tr '[A-Z]' '[a-z]')
+		case "$VAL" in
+			'yes'*) echo "--disable-$VAR: $COMMENT";;
+			'no'*) echo "--enable-$VAR: $COMMENT";;
+			'auto'*) echo "--enable-$VAR: $COMMENT"; echo "--disable-$VAR";;
+			*) echo "--with-$VAR: $COMMENT";;
+		esac
+	done < 'qb/config.params.sh'
 }
 
-print_sub_opt()
+opt_exists() # $opt is returned if exists in OPTS
 {
-   arg1="`echo $1 | sed 's|^"\([^"]*\)":"\([^"]*\)":"\([^"]*\)"$|\1|'`"
-   arg2="`echo $1 | sed 's|^"\([^"]*\)":"\([^"]*\)":"\([^"]*\)"$|\2|'`"
-   arg3="`echo $1 | sed 's|^"\([^"]*\)":"\([^"]*\)":"\([^"]*\)"$|\3|'`"
-
-   lowertext="`echo $arg1 | tr '[A-Z]' '[a-z]'`"
-
-   if [ "$arg3" = "auto" ]; then
-      echo "--enable-$lowertext: $arg2"
-      echo "--disable-$lowertext"
-   elif [ "$arg3" = "yes" ]; then
-      echo "--disable-$lowertext: $arg2"
-   elif [ "$arg3" = "no" ]; then
-      echo "--enable-$lowertext: $arg2"
-   fi
+	opt=$(echo "$1" | tr '[a-z]' '[A-Z]')
+	for OPT in $OPTS; do [ "$opt" = "$OPT" ] && return; done
+	print_help; exit 1
 }
 
-print_sub_str_opt()
+parse_input() # Parse stuff :V
 {
-   arg1="`echo $1 | sed 's|^"\([^"]*\)":"\([^"]*\)":"\([^"]*\)"$|\1|'`"
-   arg2="`echo $1 | sed 's|^"\([^"]*\)":"\([^"]*\)":"\([^"]*\)"$|\2|'`"
-   arg3="`echo $1 | sed 's|^"\([^"]*\)":"\([^"]*\)":"\([^"]*\)"$|\3|'`"
+	#OPTS contains all available options in config.params.sh
+	while IFS='=' read VAR dummy; do OPTS="$OPTS ${VAR##HAVE_}"; done < 'qb/config.params.sh'
+	
+	while [ "$1" ]; do
+		case "$1" in
+			--prefix=*) PREFIX=${1##--prefix=};;
 
-   lowertext="`echo $arg1 | tr '[A-Z]' '[a-z]'`"
+			--enable-*)
+				opt_exists "${1##--enable-}" "$OPTS"
+				eval "HAVE_$opt=yes"
+			;;
 
-   echo "--with-$lowertext: $arg2"
+			--disable-*)
+				opt_exists "${1##--disable-}" "$OPTS"
+				eval "HAVE_$opt=no"
+			;;
+
+			--with-*)
+				arg=${1##--with-}
+				val=${arg##*=}
+				opt_exists "${arg%%=*}" "$OPTS"
+				eval "$opt=$val"
+			;;
+
+			-h|--help) print_help; exit 0;;
+
+			*) print_help; exit 1;;
+		esac
+		shift
+	done
 }
 
-parse_input()
-{
-   ### Parse stuff :V
+. qb/config.params.sh
 
-   while [ ! -z "$1" ]
-   do
-      
-      case "$1" in
+parse_input "$@"
 
-         --prefix=*)
-            prefix="`echo $1 | sed -e 's|^--prefix=||' -e 's|^\(.*\)/$|\1|'`"
-
-            if [ "$prefix" != "$1" ]; then
-               PREFIX="$prefix"
-            fi
-            ;;
-
-         --enable-*)
-            tmp="$1"
-            enable="${tmp#--enable-}"
-            if [ -z "`echo $COMMAND_LINE_OPTS_ENABLE | grep -i -- $enable`" ]; then
-               print_help
-               exit 1
-            fi
-            eval HAVE_`echo $enable | tr '[a-z]' '[A-Z]'`=yes
-            ;;
-
-         --disable-*)
-            tmp="$1"
-            disable="${tmp#--disable-}"
-            if [ -z "`echo $COMMAND_LINE_OPTS_ENABLE | grep -i -- $disable`" ]; then
-               print_help
-               exit 1
-            fi
-            eval HAVE_`echo $disable | tr '[a-z]' '[A-Z]'`=no
-            ;;
-
-         --with-*)
-            tmp="$1"
-            arg="${tmp#--with-*=}"
-            tmp="${tmp#--with-}"
-            with="${tmp%%=*}"
-            if [ -z "`echo $COMMAND_LINE_OPTS_STRINGS | grep -i -- $with`" ]; then
-               print_help
-               exit 1
-            fi
-            eval "`echo $with | tr '[a-z]' '[A-Z]'`=\"$arg\""
-            ;;
-
-
-         -h|--help)
-            print_help
-            exit 0
-            ;;
-         *)
-            print_help
-            exit 1
-            ;;
-
-      esac
-
-      shift
-
-   done
-}
-
-
+ 

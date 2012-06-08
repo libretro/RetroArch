@@ -24,9 +24,8 @@
 #include <sysutil/sysutil_common.h>
 
 #include "ps3_input.h"
-#include "ps3_video_psgl.h"
 #include "../driver.h"
-#include "../console/console_ext_input.h"
+#include "../console/console_ext.h"
 #include "../libretro.h"
 #include "../general.h"
 #include "shared.h"

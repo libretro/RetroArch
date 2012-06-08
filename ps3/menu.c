@@ -28,7 +28,6 @@
 
 #include "../console/console_ext.h"
 
-#include "ps3_video_psgl.h"
 #include "../gfx/gl_common.h"
 
 #include "shared.h"
@@ -147,6 +146,9 @@ static menu menu_controlssettings = {
    MAX_NO_OF_CONTROLS_SETTINGS,					/* max no of path settings*/
    items_generalsettings					/* items */
 };
+
+//forward decls
+extern const char *ps3_get_resolution_label(unsigned resolution);
 
 static void display_menubar(uint32_t menu_enum)
 {
@@ -1169,12 +1171,12 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_CHANGE_RESOLUTION:
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) )
 			{
-                           ps3_next_resolution();
+                           rarch_settings_change(S_RESOLUTION_NEXT);
 			   set_delay = DELAY_SMALL;
 			}
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) )
 			{
-                           ps3_previous_resolution();
+                           rarch_settings_change(S_RESOLUTION_PREVIOUS);
 			   set_delay = DELAY_SMALL;
 			}
 			if(CTRL_CROSS(state))

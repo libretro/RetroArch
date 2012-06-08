@@ -543,6 +543,10 @@ static void print_help(void)
    puts("\t\tHowever, the client will not be able to play. Multiple clients can connect to the host.");
    puts("\t--nick: Picks a nickname for use with netplay. Not mandatory.");
 #endif
+#ifdef HAVE_NETWORK_CMD
+   puts("\t--command: Sends a command over UDP to an already running RetroArch process.");
+   puts("\t\tAvailable commands are listed if command is invalid.");
+#endif
 
 #ifdef HAVE_FFMPEG
    puts("\t-r/--record: Path to record video file.\n\t\tUsing .mkv extension is recommended.");
@@ -699,6 +703,9 @@ static void parse_input(int argc, char *argv[])
       { "port", 1, &val, 'p' },
       { "spectate", 0, &val, 'S' },
       { "nick", 1, &val, 'N' },
+#endif
+#ifdef HAVE_NETWORK_CMD
+      { "command", 1, &val, 'c' },
 #endif
       { "ups", 1, NULL, 'U' },
       { "bps", 1, &val, 'B' },
@@ -896,8 +903,6 @@ static void parse_input(int argc, char *argv[])
 
          case 'F':
             g_extern.netplay_sync_frames = strtol(optarg, NULL, 0);
-            if (g_extern.netplay_sync_frames > 16)
-               g_extern.netplay_sync_frames = 16;
             break;
 #endif
 
@@ -930,6 +935,15 @@ static void parse_input(int argc, char *argv[])
 
                case 'N':
                   strlcpy(g_extern.netplay_nick, optarg, sizeof(g_extern.netplay_nick));
+                  break;
+#endif
+
+#ifdef HAVE_NETWORK_CMD
+               case 'c':
+                  if (network_cmd_send(optarg))
+                     exit(0);
+                  else
+                     rarch_fail(1, "network_cmd_send()");
                   break;
 #endif
 
@@ -1624,12 +1638,26 @@ static void load_auto_state(void)
    if (path_file_exists(savestate_name_auto))
    {
       RARCH_LOG("Found auto savestate in: %s\n", savestate_name_auto);
-      load_state(savestate_name_auto);
+      bool ret = load_state(savestate_name_auto);
 
       char msg[PATH_MAX];
-      snprintf(msg, sizeof(msg), "Auto-loaded savestate from: \"%s\"", savestate_name_auto);
+      snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" %s.", savestate_name_auto, ret ? "succeeded" : "failed");
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      RARCH_LOG("%s\n", msg);
    }
+}
+
+static void save_auto_state(void)
+{
+   if (!g_settings.savestate_auto_save)
+      return;
+
+   char savestate_name_auto[PATH_MAX];
+   fill_pathname_noext(savestate_name_auto, g_extern.savestate_name,
+         ".auto", sizeof(savestate_name_auto));
+
+   bool ret = save_state(savestate_name_auto);
+   RARCH_LOG("Auto save state to \"%s\" %s.\n", savestate_name_auto, ret ? "succeeded" : "failed");
 }
 
 void rarch_load_state(void)
@@ -2547,6 +2575,8 @@ void rarch_main_deinit(void)
 #ifdef HAVE_BSV_MOVIE
    deinit_movie();
 #endif
+
+   save_auto_state();
 
    pretro_unload_game();
    pretro_deinit();

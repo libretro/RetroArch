@@ -41,6 +41,8 @@ struct retro_callbacks
    retro_input_state_t state_cb;
 };
 
+bool netplay_init_network(void);
+
 // Creates a new netplay handle. A NULL host means we're hosting (player 1). :)
 netplay_t *netplay_new(const char *server,
       uint16_t port, unsigned frames,

@@ -1,35 +1,26 @@
-. qb/qb.params.sh
-
-PACKAGE_NAME=ssnes
-PACKAGE_VERSION=0.9.6-rc1
-
-# Adds a command line opt to ./configure --help
-# $1: Variable (HAVE_ALSA, HAVE_OSS, etc)   
-# $2: Comment                 
-# $3: Default arg. auto implies that HAVE_ALSA will be set according to library checks later on.
-add_command_line_enable DYNAMIC "Disable dynamic loading of libsnes library" yes
-add_command_line_string LIBRETRO "libretro library used" ""
-add_command_line_enable THREADS "Threading support" auto
-add_command_line_enable FFMPEG "Enable FFmpeg recording support" auto
-add_command_line_enable X264RGB "Enable lossless X264 RGB recording" no
-add_command_line_enable DYLIB "Enable dynamic loading support" auto
-add_command_line_enable NETPLAY "Enable netplay support" auto
-add_command_line_enable CONFIGFILE "Disable support for config file" yes
-add_command_line_enable OPENGL "Disable OpenGL support" yes
-add_command_line_enable CG "Enable Cg shader support" auto
-add_command_line_enable XML "Enable bSNES-style XML shader support" auto
-add_command_line_enable FBO "Enable render-to-texture (FBO) support" auto
-add_command_line_enable ALSA "Enable ALSA support" auto
-add_command_line_enable OSS "Enable OSS support" auto
-add_command_line_enable RSOUND "Enable RSound support" auto
-add_command_line_enable ROAR "Enable RoarAudio support" auto
-add_command_line_enable AL "Enable OpenAL support" auto
-add_command_line_enable JACK "Enable JACK support" auto
-add_command_line_enable COREAUDIO "Enable CoreAudio support" auto
-add_command_line_enable PULSE "Enable PulseAudio support" auto
-add_command_line_enable FREETYPE "Enable FreeType support" auto
-add_command_line_enable XVIDEO "Enable XVideo support" auto
-add_command_line_enable SDL_IMAGE "Enable SDL_image support" auto
-add_command_line_enable PYTHON "Enable Python 3 support for shaders" auto
-add_command_line_enable SINC "Disable SINC resampler" yes
-add_command_line_enable BSV_MOVIE "Disable BSV movie support" yes
+HAVE_DYNAMIC=yes        # Disable dynamic loading of libsnes library
+HAVE_LIBRETRO=          # libretro library used
+HAVE_THREADS=auto       # Threading support
+HAVE_FFMPEG=auto        # Enable FFmpeg recording support
+HAVE_X264RGB=no         # Enable lossless X264 RGB recording
+HAVE_DYLIB=auto         # Enable dynamic loading support
+HAVE_NETPLAY=auto       # Enable netplay support
+HAVE_CONFIGFILE=yes     # Disable support for config file
+HAVE_OPENGL=yes         # Disable OpenGL support
+HAVE_CG=auto            # Enable Cg shader support
+HAVE_XML=auto           # Enable bSNES-style XML shader support
+HAVE_FBO=auto           # Enable render-to-texture (FBO) support
+HAVE_ALSA=auto          # Enable ALSA support
+HAVE_OSS=auto           # Enable OSS support
+HAVE_RSOUND=auto        # Enable RSound support
+HAVE_ROAR=auto          # Enable RoarAudio support
+HAVE_AL=auto            # Enable OpenAL support
+HAVE_JACK=auto          # Enable JACK support
+HAVE_COREAUDIO=auto     # Enable CoreAudio support
+HAVE_PULSE=auto         # Enable PulseAudio support
+HAVE_FREETYPE=auto      # Enable FreeType support
+HAVE_XVIDEO=auto        # Enable XVideo support
+HAVE_SDL_IMAGE=auto     # Enable SDL_image support
+HAVE_PYTHON=auto        # Enable Python 3 support for shaders
+HAVE_SINC=yes           # Disable SINC resampler
+HAVE_BSV_MOVIE=yes      # Disable BSV movie support

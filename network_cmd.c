@@ -14,11 +14,16 @@
  */
 
 #include "netplay_compat.h"
+#include "netplay.h"
 #include "network_cmd.h"
 #include "driver.h"
 #include "general.h"
+#include "compat/strl.h"
+#include "compat/posix_string.h"
 #include <stdio.h>
 #include <string.h>
+
+#define DEFAULT_NETWORK_CMD_PORT 55355
 
 struct network_cmd
 {
@@ -38,9 +43,14 @@ static bool socket_nonblock(int fd)
 
 network_cmd_t *network_cmd_new(uint16_t port)
 {
+   if (!netplay_init_network())
+      return NULL;
+
    network_cmd_t *handle = (network_cmd_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
+
+   RARCH_LOG("Bringing up command interface on port %hu.\n", (unsigned short)port);
 
    handle->fd = -1;
 
@@ -76,7 +86,6 @@ network_cmd_t *network_cmd_new(uint16_t port)
    }
 
    freeaddrinfo(res);
-
    return handle;
 
 error:
@@ -188,5 +197,116 @@ void network_cmd_pre_frame(network_cmd_t *handle)
       buf[ret] = '\0';
       parse_msg(handle, buf);
    }
+}
+
+static bool send_udp_packet(const char *host, uint16_t port, const char *msg)
+{
+   struct addrinfo hints, *res = NULL;
+   memset(&hints, 0, sizeof(hints));
+#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
+   hints.ai_family   = AF_INET;
+#else
+   hints.ai_family   = AF_UNSPEC;
+#endif
+   hints.ai_socktype = SOCK_DGRAM;
+
+   int fd = -1;
+   bool ret = true;
+   char port_buf[16];
+
+   snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
+   if (getaddrinfo(host, port_buf, &hints, &res) < 0)
+      return false;
+
+   // Send to all possible targets.
+   // "localhost" might resolve to several different IPs.
+   const struct addrinfo *tmp = res;
+   while (tmp)
+   {
+      fd = socket(tmp->ai_family, tmp->ai_socktype, tmp->ai_protocol);
+      if (fd < 0)
+      {
+         ret = false;
+         goto end;
+      }
+
+      ssize_t len = strlen(msg);
+      ssize_t ret = sendto(fd, msg, len, 0, tmp->ai_addr, tmp->ai_addrlen);
+      if (ret < len)
+      {
+         ret = false;
+         goto end;
+      }
+
+      close(fd);
+      fd = -1;
+      tmp = tmp->ai_next;
+   }
+
+end:
+   freeaddrinfo(res);
+   if (fd >= 0)
+      close(fd);
+   return ret;
+}
+
+static bool verify_command(const char *cmd)
+{
+   for (unsigned i = 0; i < sizeof(map) / sizeof(map[0]); i++)
+   {
+      if (strcmp(map[i].str, cmd) == 0)
+         return true;
+   }
+
+   RARCH_ERR("Command \"%s\" is not recognized by RetroArch.\n", cmd);
+   RARCH_ERR("\tValid commands:\n");
+   for (unsigned i = 0; i < sizeof(map) / sizeof(map[0]); i++)
+      RARCH_ERR("\t\t%s\n", map[i].str);
+
+   return false;
+}
+
+bool network_cmd_send(const char *cmd_)
+{
+   if (!netplay_init_network())
+      return NULL;
+
+   char *command = strdup(cmd_);
+   if (!command)
+      return false;
+
+   bool old_verbose = g_extern.verbose;
+   g_extern.verbose = true;
+
+   const char *cmd = NULL;
+   const char *host = NULL;
+   const char *port_ = NULL;
+   uint16_t port = DEFAULT_NETWORK_CMD_PORT;
+
+   cmd = strtok(command, ":");
+   if (cmd)
+      host = strtok(NULL, ":");
+   if (host)
+      port_ = strtok(NULL, ":");
+
+   if (!host)
+   {
+#ifdef _WIN32
+      host = "127.0.0.1";
+#else
+      host = "localhost";
+#endif
+   }
+
+   if (port_)
+      port = strtoul(port_, NULL, 0);
+
+   RARCH_LOG("Sending command: \"%s\" to %s:%hu\n", cmd, host, (unsigned short)port);
+
+   bool ret = verify_command(cmd) && send_udp_packet(host, port, cmd);
+   free(command);
+
+   g_extern.verbose = old_verbose;
+   return ret;
 }
 

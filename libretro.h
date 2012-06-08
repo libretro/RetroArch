@@ -122,6 +122,27 @@ extern "C" {
                                            // Should only be used if game has a specific
                                            // way to shutdown the game from a menu item or similar.
 
+#define RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL 8
+                                           // const unsigned * --
+                                           // Gives a hint to the frontend how demanding this implementation
+                                           // is on a system. E.g. reporting a level of 2 means
+                                           // this implementation should run decently on all frontends
+                                           // of level 2 and up.
+                                           //
+                                           // It can be used by the frontend to potentially warn
+                                           // about too demanding implementations.
+                                           // 
+                                           // The levels are "floating", but roughly defined as:
+                                           // 1: Low-powered devices such as Raspberry Pi, smart phones, tablets, etc.
+                                           // 2: Medium-spec consoles, such as PS3/360, with sub-par CPUs.
+                                           // 3: Modern desktop/laptops with reasonably powerful CPUs.
+                                           // 4: High-end desktops with very powerful CPUs.
+                                           //
+                                           // This function can be called on a per-game basis,
+                                           // as certain games an implementation can play might be
+                                           // particularily demanding.
+                                           // If called, it should be called in retro_load_game().
+
 struct retro_message
 {
    const char *msg;        // Message to be displayed.
