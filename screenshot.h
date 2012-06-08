@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include "boolean.h"
 
-bool screenshot_dump(const char *folder, const uint16_t *frame, 
-      unsigned width, unsigned height, unsigned pitch);
+bool screenshot_dump(const char *folder, const void *frame, 
+      unsigned width, unsigned height, int pitch, bool bgr24);
 
 #endif

@@ -91,22 +91,58 @@ static void set_fast_forward_button(bool new_button_state, bool new_hold_button_
 }
 
 #ifdef HAVE_SCREENSHOTS
+static bool take_screenshot_viewport(void)
+{
+   unsigned width = 0, height = 0;
+   video_viewport_size_func(&width, &height);
+
+   if (!width || !height)
+      return false;
+
+   uint8_t *buffer = (uint8_t*)malloc(width * height * 3);
+   if (!buffer)
+      return false;
+
+   if (!video_read_viewport_func(buffer))
+   {
+      free(buffer);
+      return false;
+   }
+
+   if (!screenshot_dump(g_settings.screenshot_directory,
+         buffer,
+         width, height, width * 3, true))
+   {
+      free(buffer);
+      return false;
+   }
+
+   return true;
+}
+
+static bool take_screenshot_raw(void)
+{
+   const uint16_t *data = (const uint16_t*)g_extern.frame_cache.data;
+   unsigned width       = g_extern.frame_cache.width;
+   unsigned height      = g_extern.frame_cache.height;
+   int pitch            = g_extern.frame_cache.pitch;
+
+   return screenshot_dump(g_settings.screenshot_directory,
+         data + (height - 1) * (pitch >> 1), 
+         width, height, -pitch, false);
+}
+
 static void take_screenshot(void)
 {
    if (!(*g_settings.screenshot_directory))
       return;
 
    bool ret = false;
-   if (g_extern.frame_cache.data)
-   {
-      const uint16_t *data = (const uint16_t*)g_extern.frame_cache.data;
-      unsigned width = g_extern.frame_cache.width;
-      unsigned height = g_extern.frame_cache.height;
-      size_t pitch = g_extern.frame_cache.pitch;
-      ret = screenshot_dump(g_settings.screenshot_directory,
-            data, 
-            width, height, pitch);
-   }
+
+   if (driver.video->read_viewport && driver.video->viewport_size)
+      ret = take_screenshot_viewport();
+   else if (g_extern.frame_cache.data)
+      ret = take_screenshot_raw();
 
    const char *msg = NULL;
    if (ret)

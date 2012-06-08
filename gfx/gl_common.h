@@ -176,6 +176,7 @@ typedef struct gl
    unsigned win_height;
    unsigned vp_width, vp_out_width;
    unsigned vp_height, vp_out_height;
+   unsigned vp_out_x, vp_out_y;
    unsigned last_width[TEXTURES];
    unsigned last_height[TEXTURES];
    unsigned tex_w, tex_h;
@@ -225,7 +226,7 @@ void gl_shader_use(unsigned index);
 void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate);
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate);
 
-void gl_init_fbo(gl_t * gl, unsigned width, unsigned height);
+void gl_init_fbo(gl_t *gl, unsigned width, unsigned height);
 void gl_deinit_fbo(gl_t *gl);
 
 #endif

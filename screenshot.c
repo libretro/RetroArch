@@ -52,49 +52,70 @@ static void write_header(FILE *file, unsigned width, unsigned height)
    fwrite(header, 1, sizeof(header), file);
 }
 
-static void dump_content(FILE *file, const uint16_t *frame, unsigned width, unsigned height, unsigned pitch)
+static void dump_line_bgr(uint8_t *line, const uint8_t *src, unsigned width)
 {
-   pitch >>= 1;
+   memcpy(line, src, width * 3);
+}
+
+static void dump_line_16(uint8_t *line, const uint16_t *src, unsigned width)
+{
+   for (unsigned i = 0; i < width; i++)
+   {
+      uint16_t pixel = *src++;
+      uint8_t b = (pixel >>  0) & 0x1f;
+      uint8_t g = (pixel >>  5) & 0x1f;
+      uint8_t r = (pixel >> 10) & 0x1f;
+      *line++   = (b << 3) | (b >> 2);
+      *line++   = (g << 3) | (g >> 2);
+      *line++   = (r << 3) | (r >> 2);
+   }
+}
+
+static void dump_content(FILE *file, const void *frame,
+      int width, int height, int pitch, bool bgr24)
+{
+   const uint8_t  *frame_bgr = (const uint8_t*)frame;
+   const uint16_t *frame16   = (const uint16_t*)frame;
+
+   if (!bgr24)
+      pitch /= 2;
+
    unsigned line_size = (width * 3 + 3) & ~3;
    uint8_t *line = (uint8_t*)calloc(1, line_size);
    if (!line)
       return;
 
-   // BMP likes reverse ordering for some reason :v
-   for (int j = height - 1; j >= 0; j--)
+   if (bgr24)
    {
-      uint8_t *dst = line;
-      const uint16_t *src = frame + j * pitch;
-      for (unsigned i = 0; i < width; i++)
+      for (int j = 0; j < height; j++, frame_bgr += pitch)
       {
-         uint16_t pixel = *src++;
-         uint8_t b = (pixel >>  0) & 0x1f;
-         uint8_t g = (pixel >>  5) & 0x1f;
-         uint8_t r = (pixel >> 10) & 0x1f;
-         *dst++ = (b << 3) | (b >> 2);
-         *dst++ = (g << 3) | (g >> 2);
-         *dst++ = (r << 3) | (r >> 2);
+         dump_line_bgr(line, frame_bgr, width);
+         fwrite(line, 1, line_size, file);
       }
-
-      fwrite(line, 1, line_size, file);
+   }
+   else // ARGB1555
+   {
+      for (int j = 0; j < height; j++, frame16 += pitch)
+      {
+         dump_line_16(line, frame16, width);
+         fwrite(line, 1, line_size, file);
+      }
    }
 
    free(line);
 }
 
-bool screenshot_dump(const char *folder, const uint16_t *frame,
-      unsigned width, unsigned height, unsigned pitch)
+bool screenshot_dump(const char *folder, const void *frame,
+      unsigned width, unsigned height, int pitch, bool bgr24)
 {
    time_t cur_time;
    time(&cur_time);
 
    char timefmt[128];
-   strftime(timefmt, sizeof(timefmt), "SSNES-%m%d-%H%M%S.bmp", localtime(&cur_time));
+   strftime(timefmt, sizeof(timefmt), "RetroArch-%m%d-%H%M%S.bmp", localtime(&cur_time));
 
-   char filename[256];
-   strlcpy(filename, folder, sizeof(filename));
-   strlcat(filename, "/", sizeof(filename));
-   strlcat(filename, timefmt, sizeof(filename));
+   char filename[PATH_MAX];
+   snprintf(filename, sizeof(filename), "%s/%s", folder, timefmt);
 
    FILE *file = fopen(filename, "wb");
    if (!file)
@@ -104,9 +125,10 @@ bool screenshot_dump(const char *folder, const uint16_t *frame,
    }
 
    write_header(file, width, height);
-   dump_content(file, frame, width, height, pitch);
+   dump_content(file, frame, width, height, pitch, bgr24);
 
    fclose(file);
 
    return true;
 }
+
