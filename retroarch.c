@@ -109,6 +109,7 @@ static bool take_screenshot_viewport(void)
       return false;
    }
 
+   // Data read from viewport is in bottom-up order, suitable for BMP.
    if (!screenshot_dump(g_settings.screenshot_directory,
          buffer,
          width, height, width * 3, true))
@@ -127,6 +128,8 @@ static bool take_screenshot_raw(void)
    unsigned height      = g_extern.frame_cache.height;
    int pitch            = g_extern.frame_cache.pitch;
 
+   // Negative pitch is needed as screenshot takes bottom-up,
+   // but we use top-down.
    return screenshot_dump(g_settings.screenshot_directory,
          data + (height - 1) * (pitch >> 1), 
          width, height, -pitch, false);

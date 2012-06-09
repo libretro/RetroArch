@@ -85,7 +85,7 @@ static void dump_content(FILE *file, const void *frame,
    if (!line)
       return;
 
-   if (bgr24)
+   if (bgr24) // BGR24 byte order. Can directly copy.
    {
       for (int j = 0; j < height; j++, frame_bgr += pitch)
       {
