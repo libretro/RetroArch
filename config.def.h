@@ -341,7 +341,7 @@ static const struct snes_keybind snes_keybinds_1[] = {
    { true, RARCH_CHEAT_INDEX_PLUS,           SK_y,      NO_BTN,      AXIS_NONE },
    { true, RARCH_CHEAT_INDEX_MINUS,          SK_t,      NO_BTN,      AXIS_NONE },
    { true, RARCH_CHEAT_TOGGLE,               SK_u,      NO_BTN,      AXIS_NONE },
-   { true, RARCH_SCREENSHOT,                 SK_PRINT,  NO_BTN,      AXIS_NONE },
+   { true, RARCH_SCREENSHOT,                 SK_F8,     NO_BTN,      AXIS_NONE },
    { true, RARCH_DSP_CONFIG,                 SK_c,      NO_BTN,      AXIS_NONE },
    { true, RARCH_MUTE,                       SK_F9,     NO_BTN,      AXIS_NONE },
    { true, RARCH_NETPLAY_FLIP,               SK_i,      NO_BTN,      AXIS_NONE },
