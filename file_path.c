@@ -43,7 +43,7 @@
 #endif
 
 // Yep, this is C alright ;)
-char **dir_list_new(const char *dir, const char *ext)
+char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
 {
    size_t cur_ptr = 0;
    size_t cur_size = 32;
@@ -94,13 +94,29 @@ char **dir_list_new(const char *dir, const char *ext)
    {
       // Not a perfect search of course, but hopefully good enough in practice.
 #ifdef _WIN32
-      if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-         continue;
-      if (ext && !strstr(ffd.cFileName, ext))
-         continue;
+      if (include_dirs)
+      {
+         if (ext && !strstr(ffd.cFileName, ext) && !path_is_directory(ffd.cFileName))
+            continue;
+      }
+      else
+      {
+         if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+            continue;
+         if (ext && !strstr(ffd.cFileName, ext))
+            continue;
+      }
 #else
-      if (ext && !strstr(entry->d_name, ext))
-         continue;
+      if (include_dirs)
+      {
+         if (ext && !strstr(entry->d_name, ext) && !path_is_directory(entry->d_name))
+            continue;
+      }
+      else
+      {
+         if (ext && !strstr(entry->d_name, ext))
+            continue;
+      }
 #endif
 
       dir_list[cur_ptr] = (char*)malloc(PATH_MAX);
@@ -175,10 +191,6 @@ bool path_is_directory(const char *path)
       return false;
 
    return buf.st_mode & CELL_FS_S_IFDIR;
-#elif defined(XENON)
-   // Dummy
-   (void)path;
-   return false;
 #else
    struct stat buf;
    if (stat(path, &buf) < 0)

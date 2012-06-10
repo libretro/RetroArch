@@ -1535,7 +1535,7 @@ static void set_savestate_auto_index(void)
 
    unsigned max_index = 0;
 
-   char **dir_list = dir_list_new(dir, NULL);
+   char **dir_list = dir_list_new(dir, NULL, false);
    if (!dir_list)
       return;
 

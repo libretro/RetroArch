@@ -87,9 +87,9 @@ static void find_and_set_first_file(void)
    // we can find in the RetroArch cores directory
 
 #if defined(_XBOX)
-   char ** dir_list = dir_list_new("game:\\", ".xex");
+   char ** dir_list = dir_list_new("game:\\", ".xex", false);
 #elif defined(__CELLOS_LV2__)
-   char ** dir_list = dir_list_new(LIBRETRO_DIR_PATH, ".SELF");
+   char ** dir_list = dir_list_new(LIBRETRO_DIR_PATH, ".SELF", false);
 #endif
 
    if (!dir_list)
