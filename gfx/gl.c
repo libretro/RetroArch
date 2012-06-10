@@ -495,8 +495,6 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full,
    {
       gl->vp_out_width  = width;
       gl->vp_out_height = height;
-      gl->vp_out_x      = x;
-      gl->vp_out_y      = y;
    }
 
    //RARCH_LOG("Setting viewport @ %ux%u\n", width, height);
@@ -1220,18 +1218,27 @@ static bool gl_xml_shader(void *data, const char *path)
 #ifndef HAVE_RGL
 static void gl_viewport_size(void *data, unsigned *width, unsigned *height)
 {
-   gl_t *gl = (gl_t*)data;
+   (void)data;
 
-   *width  = gl->vp_out_width;
-   *height = gl->vp_out_height;
+   GLint vp[4];
+   glGetIntegerv(GL_VIEWPORT, vp);
+
+   *width  = vp[2];
+   *height = vp[3];
 }
 
 static bool gl_read_viewport(void *data, uint8_t *buffer)
 {
-   gl_t *gl = (gl_t*)data;
+   (void)data;
 
-   glReadPixels(gl->vp_out_x, gl->vp_out_y,
-         gl->vp_out_width, gl->vp_out_height,
+   GLint vp[4];
+   glGetIntegerv(GL_VIEWPORT, vp);
+
+   glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(vp[2]));
+   glPixelStorei(GL_PACK_ROW_LENGTH, vp[2]);
+
+   glReadPixels(vp[0], vp[1],
+         vp[2], vp[3],
          GL_BGR, GL_UNSIGNED_BYTE, buffer);
 
    return true;

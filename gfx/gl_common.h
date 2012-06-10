@@ -176,7 +176,6 @@ typedef struct gl
    unsigned win_height;
    unsigned vp_width, vp_out_width;
    unsigned vp_height, vp_out_height;
-   unsigned vp_out_x, vp_out_y;
    unsigned last_width[TEXTURES];
    unsigned last_height[TEXTURES];
    unsigned tex_w, tex_h;
