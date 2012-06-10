@@ -46,6 +46,9 @@
 #include "shader_glsl.h"
 #endif
 
+extern const GLfloat vertexes_flipped[];
+extern const GLfloat white_color[];
+
 // Used for the last pass when rendering to the back buffer.
 const GLfloat vertexes_flipped[] = {
    0, 0,
