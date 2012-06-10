@@ -213,9 +213,11 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
       return false;
    }
 
-   const char *cg_shader = NULL;
+   const char *cg_shader  = NULL;
    const char *xml_shader = NULL;
+
    enum rarch_shader_type type = g_settings.video.shader_type;
+
    if ((type == RARCH_SHADER_CG || type == RARCH_SHADER_AUTO) && *g_settings.video.cg_shader_path)
       cg_shader = g_settings.video.cg_shader_path;
    else if ((type == RARCH_SHADER_BSNES || type == RARCH_SHADER_AUTO) && *g_settings.video.bsnes_shader_path)
@@ -247,25 +249,25 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
    gfx_window_title(title_buf, sizeof(title_buf));
 
    rarch_video_info_t info = {0};
-   info.width = video->width;
-   info.height = video->height;
-   info.fullscreen = video->fullscreen;
-   info.vsync = video->vsync;
-   info.force_aspect = video->force_aspect;
-   info.aspect_ratio = g_settings.video.aspect_ratio;
-   info.smooth = video->smooth;
-   info.input_scale = video->input_scale;
-   info.color_format = video->rgb32 ? RARCH_COLOR_FORMAT_ARGB8888 : RARCH_COLOR_FORMAT_XRGB1555;
-   info.xml_shader = xml_shader;
-   info.cg_shader = cg_shader;
-   info.ttf_font = font;
-   info.ttf_font_size = g_settings.video.font_size;
-   info.ttf_font_color = (font_color_r << 16) | (font_color_g << 8) | (font_color_b << 0);
-   info.title_hint = title_buf;
+   info.width              = video->width;
+   info.height             = video->height;
+   info.fullscreen         = video->fullscreen;
+   info.vsync              = video->vsync;
+   info.force_aspect       = video->force_aspect;
+   info.aspect_ratio       = g_settings.video.aspect_ratio;
+   info.smooth             = video->smooth;
+   info.input_scale        = video->input_scale;
+   info.color_format       = video->rgb32 ? RARCH_COLOR_FORMAT_ARGB8888 : RARCH_COLOR_FORMAT_XRGB1555;
+   info.xml_shader         = xml_shader;
+   info.cg_shader          = cg_shader;
+   info.ttf_font           = font;
+   info.ttf_font_size      = g_settings.video.font_size;
+   info.ttf_font_color     = (font_color_r << 16) | (font_color_g << 8) | (font_color_b << 0);
+   info.title_hint         = title_buf;
 
 #ifdef HAVE_PYTHON
-   info.python_state_new = py_state_new;
-   info.python_state_get = py_state_get;
+   info.python_state_new  = py_state_new;
+   info.python_state_get  = py_state_get;
    info.python_state_free = py_state_free;
 #endif
 
@@ -335,6 +337,24 @@ error:
    return NULL;
 }
 
+static void video_set_rotation(void *data, unsigned rot)
+{
+   ext_t *ext = (ext_t*)data;
+   ext->driver->set_rotation(ext->handle, rot);
+}
+
+static void video_viewport_size(void *data, unsigned *width, unsigned *height)
+{
+   ext_t *ext = (ext_t*)data;
+   ext->driver->viewport_size(ext->handle, width, height);
+}
+
+static bool video_read_viewport(void *data, uint8_t *buffer)
+{
+   ext_t *ext = (ext_t*)data;
+   return ext->driver->read_viewport(ext->handle, buffer);
+}
+
 const video_driver_t video_ext = {
    video_ext_init,
    video_ext_frame,
@@ -343,6 +363,10 @@ const video_driver_t video_ext = {
    video_ext_focus,
    NULL,
    video_ext_free,
-   "ext"
+   "ext",
+
+   video_set_rotation,
+   video_viewport_size,
+   video_read_viewport,
 };
 

@@ -94,7 +94,7 @@ ifeq ($(HAVE_DYLIB), 1)
 endif
 
 ifeq ($(HAVE_NETPLAY), 1)
-   DEFINES += -DHAVE_NETPLAY
+   DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD
    OBJ += netplay.o network_cmd.o
    LIBS += -lws2_32
 endif
