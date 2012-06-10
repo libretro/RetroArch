@@ -204,7 +204,7 @@ typedef struct rarch_input_driver
    // The range of this is [0, 1],
    // where 0 means any displacement will register,
    // and 1 means the axis has to be pressed all the way to register.
-   void *(*init)(const int joypad_index[5], float axis_threshold);
+   void *(*init)(const int joypad_index[8], float axis_threshold);
 
    // Polls input. Called once every frame.
    void (*poll)(void *data);
