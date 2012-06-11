@@ -486,6 +486,7 @@ bool config_load_file(const char *path)
       else
          RARCH_WARN("savefile_directory is not a directory, ignoring ....\n");
    }
+
    if (!g_extern.has_set_state_path && config_get_array(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
       if (path_is_directory(tmp_str))
@@ -496,6 +497,8 @@ bool config_load_file(const char *path)
       else
          RARCH_WARN("savestate_directory is not a directory, ignoring ...\n");
    }
+
+   CONFIG_GET_STRING(system_directory, "system_directory");
 
    config_read_keybinds_conf(conf);
 
