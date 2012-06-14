@@ -46,6 +46,9 @@
 #include "shader_glsl.h"
 #endif
 
+extern const GLfloat vertexes_flipped[];
+extern const GLfloat white_color[];
+
 // Used for the last pass when rendering to the back buffer.
 const GLfloat vertexes_flipped[] = {
    0, 0,
@@ -440,20 +443,8 @@ void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
 
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
 {
-   unsigned vp_x_temp, vp_y_temp, vp_width_temp, vp_height_temp;
-   struct gl_ortho ortho = {0};
-
-   vp_x_temp = 0;
-   vp_y_temp = 0;
-   vp_width_temp = width;
-   vp_height_temp = height;
-
-   ortho.left = 0.0f;
-   ortho.right = 1.0f;
-   ortho.bottom = 0.0f;
-   ortho.top = 1.0f;
-   ortho.znear = -1.0f;
-   ortho.zfar = 1.0f;
+   unsigned x = 0, y = 0;
+   struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (gl->keep_aspect && !force_full)
    {
@@ -464,11 +455,10 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full,
 #ifdef RARCH_CONSOLE
       if (g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
       {
-         delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-         vp_x_temp = g_console.viewports.custom_vp.x;
-         vp_y_temp = g_console.viewports.custom_vp.y;
-         vp_width_temp = g_console.viewports.custom_vp.width;
-         vp_height_temp = g_console.viewports.custom_vp.height;
+         x      = g_console.viewports.custom_vp.x;
+         y      = g_console.viewports.custom_vp.y;
+         width  = g_console.viewports.custom_vp.width;
+         height = g_console.viewports.custom_vp.height;
       }
       else
 #endif
@@ -481,31 +471,29 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full,
          else if (device_aspect > desired_aspect)
          {
             delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-            vp_x_temp = (GLint)(width * (0.5 - delta));
-            vp_width_temp = (GLint)(2.0 * width * delta);
+            x     = (unsigned)(width * (0.5 - delta));
             width = (unsigned)(2.0 * width * delta);
          }
          else
          {
-            delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-            vp_y_temp = (GLint)(height * (0.5 - delta));
-            vp_height_temp = (GLint)(2.0 * height * delta);
+            delta  = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
+            y      = (unsigned)(height * (0.5 - delta));
             height = (unsigned)(2.0 * height * delta);
          }
       }
    }
 
-   glViewport(vp_x_temp, vp_y_temp, vp_width_temp, vp_height_temp);
+   glViewport(x, y, width, height);
 
    gl_set_projection(gl, &ortho, allow_rotate);
 
-   gl->vp_width = width;
+   gl->vp_width  = width;
    gl->vp_height = height;
 
    // Set last backbuffer viewport.
    if (!force_full)
    {
-      gl->vp_out_width = width;
+      gl->vp_out_width  = width;
       gl->vp_out_height = height;
    }
 
@@ -1227,6 +1215,36 @@ static bool gl_xml_shader(void *data, const char *path)
 }
 #endif
 
+#ifndef HAVE_RGL
+static void gl_viewport_size(void *data, unsigned *width, unsigned *height)
+{
+   (void)data;
+
+   GLint vp[4];
+   glGetIntegerv(GL_VIEWPORT, vp);
+
+   *width  = vp[2];
+   *height = vp[3];
+}
+
+static bool gl_read_viewport(void *data, uint8_t *buffer)
+{
+   (void)data;
+
+   GLint vp[4];
+   glGetIntegerv(GL_VIEWPORT, vp);
+
+   glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(vp[2]));
+   glPixelStorei(GL_PACK_ROW_LENGTH, vp[2]);
+
+   glReadPixels(vp[0], vp[1],
+         vp[2], vp[3],
+         GL_BGR, GL_UNSIGNED_BYTE, buffer);
+
+   return true;
+}
+#endif
+
 #ifdef RARCH_CONSOLE
 static void gl_start(void)
 {
@@ -1323,5 +1341,13 @@ const video_driver_t video_gl = {
 #endif
 
    gl_set_rotation,
+
+#ifndef HAVE_RGL
+   gl_viewport_size,
+   gl_read_viewport,
+#else
+   NULL,
+   NULL,
+#endif
 };
 

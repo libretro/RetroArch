@@ -169,6 +169,7 @@ struct settings
    char cheat_settings_path[PATH_MAX];
 
    char screenshot_directory[PATH_MAX];
+   char system_directory[PATH_MAX];
 
    bool rewind_enable;
    size_t rewind_buffer_size;

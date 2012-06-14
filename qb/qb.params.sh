@@ -23,49 +23,48 @@ EOF
 	while IFS='=#' read VAR VAL COMMENT; do
 		VAR=$(echo "${VAR##HAVE_}" | tr '[A-Z]' '[a-z]')
 		case "$VAL" in
-			'yes'*) echo "--disable-$VAR: $COMMENT";;
-			'no'*) echo "--enable-$VAR: $COMMENT";;
-			'auto'*) echo "--enable-$VAR: $COMMENT"; echo "--disable-$VAR";;
-			*) echo "--with-$VAR: $COMMENT";;
+			'yes'*)
+				echo "--disable-$VAR: $COMMENT";;
+			'no'*)
+				echo "--enable-$VAR: $COMMENT";;
+			'auto'*)
+				echo "--enable-$VAR: $COMMENT"
+				echo "--disable-$VAR";;
+			*)
+				echo "--with-$VAR: $COMMENT";;
 		esac
 	done < 'qb/config.params.sh'
 }
 
 opt_exists() # $opt is returned if exists in OPTS
-{
-	opt=$(echo "$1" | tr '[a-z]' '[A-Z]')
+{	opt=$(echo "$1" | tr '[a-z]' '[A-Z]')
 	for OPT in $OPTS; do [ "$opt" = "$OPT" ] && return; done
 	print_help; exit 1
 }
 
 parse_input() # Parse stuff :V
-{
-	#OPTS contains all available options in config.params.sh
-	while IFS='=' read VAR dummy; do OPTS="$OPTS ${VAR##HAVE_}"; done < 'qb/config.params.sh'
+{	OPTS=; while IFS='=' read VAR dummy; do OPTS="$OPTS ${VAR##HAVE_}"; done < 'qb/config.params.sh'
+#OPTS contains all available options in config.params.sh - used to speedup
+#things in opt_exists()
 	
 	while [ "$1" ]; do
 		case "$1" in
 			--prefix=*) PREFIX=${1##--prefix=};;
-
 			--enable-*)
-				opt_exists "${1##--enable-}" "$OPTS"
+				opt_exists "${1##--enable-}"
 				eval "HAVE_$opt=yes"
 			;;
-
 			--disable-*)
-				opt_exists "${1##--disable-}" "$OPTS"
+				opt_exists "${1##--disable-}"
 				eval "HAVE_$opt=no"
 			;;
-
 			--with-*)
 				arg=${1##--with-}
 				val=${arg##*=}
-				opt_exists "${arg%%=*}" "$OPTS"
+				opt_exists "${arg%%=*}"
 				eval "$opt=$val"
 			;;
-
 			-h|--help) print_help; exit 0;;
-
 			*) print_help; exit 1;;
 		esac
 		shift
@@ -74,6 +73,4 @@ parse_input() # Parse stuff :V
 
 . qb/config.params.sh
 
-parse_input "$@"
-
- 
+parse_input "$@" 

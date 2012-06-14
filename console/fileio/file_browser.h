@@ -18,6 +18,7 @@
 #define FILEBROWSER_H_
 
 #define MAXJOLIET	255
+#define MAX_DIR_STACK   25
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -28,7 +29,7 @@
 #include <sys/types.h>
 #define FS_MAX_PATH 256
 #define FS_MAX_FS_PATH_LENGTH 255
-#define MAX_FILE_LIMIT 30000
+#define MAX_FILE_LIMIT 8192
 #elif defined(_XBOX)
 #define FS_MAX_PATH MAX_PATH
 #define FS_MAX_FS_PATH_LENGTH 2048
@@ -54,9 +55,9 @@ typedef struct
    uint32_t file_count;                          /* amount of files in current dir*/
    uint32_t currently_selected;                  /* currently select browser entry*/
    uint32_t directory_stack_size;
-   char dir[128][FS_MAX_FS_PATH_LENGTH];         /* info of the current directory*/
+   char dir[MAX_DIR_STACK][FS_MAX_FS_PATH_LENGTH];         /* info of the current directory*/
    DirectoryEntry cur[MAX_FILE_LIMIT];           /* current file listing*/
-   char extensions[512];                         /* allowed extensions*/
+   char extensions[FS_MAX_PATH];                 /* allowed extensions*/
 } filebrowser_t;
 
 void filebrowser_new(filebrowser_t * filebrowser, const char * start_dir, const char * extensions);

@@ -166,6 +166,10 @@ typedef struct video_driver
 #endif
 
    void (*set_rotation)(void *data, unsigned rotation);
+   void (*viewport_size)(void *data, unsigned *width, unsigned *height);
+
+   // Reads out in BGR byte order (24bpp).
+   bool (*read_viewport)(void *data, uint8_t *buffer);
 } video_driver_t;
 
 typedef struct driver
@@ -252,6 +256,8 @@ extern const input_driver_t input_linuxraw;
 #define video_xml_shader_func(path)             driver.video->xml_shader(driver.video_data, path)
 #define video_set_rotation_func(rotate)         driver.video->set_rotation(driver.video_data, rotate)
 #define video_set_aspect_ratio_func(aspect_idx) driver.video->set_aspect_ratio(driver.video_data, aspect_idx)
+#define video_viewport_size_func(width, height) driver.video->viewport_size(driver.video_data, width, height)
+#define video_read_viewport_func(buffer)        driver.video->read_viewport(driver.video_data, buffer)
 #define video_free_func()                       driver.video->free(driver.video_data)
 
 #define input_init_func()                       driver.input->init()

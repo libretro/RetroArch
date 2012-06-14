@@ -24,7 +24,7 @@ extern "C" {
 #define RARCH_API_CALLTYPE
 #endif
 
-#define RARCH_GRAPHICS_API_VERSION 2
+#define RARCH_GRAPHICS_API_VERSION 3
 
 // Since we don't want to rely on C++ or C99 for a proper boolean type,
 // make sure return semantics are perfectly clear ... ;)
@@ -204,7 +204,7 @@ typedef struct rarch_input_driver
    // The range of this is [0, 1],
    // where 0 means any displacement will register,
    // and 1 means the axis has to be pressed all the way to register.
-   void *(*init)(const int joypad_index[5], float axis_threshold);
+   void *(*init)(const int joypad_index[8], float axis_threshold);
 
    // Polls input. Called once every frame.
    void (*poll)(void *data);
@@ -264,6 +264,16 @@ typedef struct rarch_video_driver
    // Needs to be defined to RARCH_GRAPHICS_API_VERSION. 
    // This is used to detect API/ABI mismatches.
    int api_version;
+
+   // The final image should be rotated counter-clockwise by rot * 90 degrees.
+   void (*set_rotation)(void *data, unsigned rot);
+
+   // Gets the current width/height of the viewport.
+   void (*viewport_size)(void *data, unsigned *width, unsigned *height);
+
+   // Reads the content of the viewport into memory.
+   // Tightly packed BGR888. Pitch is width * 3.
+   int (*read_viewport)(void *data, unsigned char *buffer);
 } rarch_video_driver_t;
 
 // Called by RetroArch on startup to get a driver handle.

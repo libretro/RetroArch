@@ -1,19 +1,14 @@
-. qb/qb.libs.sh
-
-check_switch_c C99 -std=gnu99
-check_critical C99 "Cannot find C99 compatible compiler."
+check_switch_c C99 -std=gnu99  "Cannot find C99 compatible compiler."
 
 check_switch_c NOUNUSED -Wno-unused-result
-add_define_make NOUNUSED $HAVE_NOUNUSED
+add_define_make NOUNUSED "$HAVE_NOUNUSED"
 
 # There are still broken 64-bit Linux distros out there. :)
-if [ -d /usr/lib64 ]; then
-   add_library_dirs /usr/lib64
-fi
+[ -d /usr/lib64 ] && add_library_dirs /usr/lib64
 
-if [ -d /opt/local/lib ]; then
-   add_library_dirs /opt/local/lib
-fi
+[ -d /opt/local/lib ] && add_library_dirs /opt/local/lib
+
+if [ "$OS" = 'BSD' ]; then DYLIB=-lc; else DYLIB=-ldl; fi
 
 if [ -d /opt/vc/lib ]; then
    add_library_dirs /opt/vc/lib
@@ -26,45 +21,38 @@ else
    HAVE_RPI=no
 fi
 
-if [ "$OS" = BSD ]; then
-   DYLIB=-lc
-else
-   DYLIB=-ldl
-fi
 
-if [ -z "$LIBRETRO" ]; then
-   LIBRETRO="-lretro"
-else
+if [ "$LIBRETRO" ]; then
    echo "Explicit libsnes used, disabling dynamic libsnes loading ..."
-   HAVE_DYNAMIC=no
+   HAVE_DYNAMIC='no'
+else LIBRETRO="-lretro"
 fi
 
-if [ "$HAVE_DYNAMIC" != yes ]; then
-   check_lib_cxx RETRO $LIBRETRO retro_init $DYLIB
-   check_critical RETRO "Cannot find libretro."
-   add_define_make libretro $LIBRETRO
-fi
+[ "$HAVE_DYNAMIC" = 'yes' ] || {
+   check_lib_cxx RETRO "$LIBRETRO" retro_init "$DYLIB" "Cannot find libretro."
+   add_define_make libretro "$LIBRETRO"
+}
 
 check_lib THREADS -lpthread pthread_create
-check_lib DYLIB $DYLIB dlopen
+check_lib DYLIB "$DYLIB" dlopen
 
 check_lib NETPLAY -lc socket
-if [ "$HAVE_NETPLAY" = yes ]; then
+if [ "$HAVE_NETPLAY" = 'yes' ]; then
    HAVE_GETADDRINFO=auto
    check_lib GETADDRINFO -lc getaddrinfo
-   if [ "$HAVE_GETADDRINFO" = yes ]; then
-      HAVE_SOCKET_LEGACY=no
+   if [ "$HAVE_GETADDRINFO" = 'yes' ]; then
+      HAVE_SOCKET_LEGACY='no'
    else
-      HAVE_SOCKET_LEGACY=yes
+      HAVE_SOCKET_LEGACY='yes'
    fi
-   HAVE_NETWORK_CMD=yes
+   HAVE_NETWORK_CMD='yes'
 else
-   HAVE_NETWORK_CMD=no
+   HAVE_NETWORK_CMD='no'
 fi
 
 check_lib GETOPT_LONG -lc getopt_long
 
-if [ "$HAVE_DYLIB" = no ] && [ "$HAVE_DYNAMIC" = yes ]; then
+if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
    echo "Dynamic loading of libsnes is enabled, but your platform does not appear to have dlopen(), use --disable-dynamic or --with-libsnes=\"-lsnes\"".
    exit 1
 fi
@@ -93,31 +81,29 @@ check_pkgconf PULSE libpulse
 
 check_lib COREAUDIO "-framework AudioUnit" AudioUnitInitialize
 
-check_pkgconf SDL sdl 1.2.10
-check_critical SDL "Cannot find SDL library."
+check_pkgconf SDL sdl 1.2.10 "Cannot find SDL library."
 
 # On some distros, -lCg doesn't link against -lstdc++ it seems ...
-if [ "$HAVE_OPENGL" != no ]; then
+if [ "$HAVE_OPENGL" != 'no' ]; then
    check_lib_cxx CG -lCg cgCreateContext
 else
    echo "Ignoring Cg. OpenGL is not enabled."
-   HAVE_CG=no
+   HAVE_CG='no'
 fi
 
 check_pkgconf XML libxml-2.0
 check_pkgconf SDL_IMAGE SDL_image
 
-if [ "$HAVE_THREADS" != no ]; then
-   if [ "$HAVE_FFMPEG" != no ]; then
+if [ "$HAVE_THREADS" != 'no' ]; then
+   if [ "$HAVE_FFMPEG" != 'no' ]; then
       check_pkgconf AVCODEC libavcodec
       check_pkgconf AVFORMAT libavformat
       check_pkgconf AVUTIL libavutil
       check_pkgconf SWSCALE libswscale
-
-      ( [ "$HAVE_FFMPEG" = auto ] && ( [ "$HAVE_AVCODEC" = no ] || [ "$HAVE_AVFORMAT" = no ] || [ "$HAVE_AVUTIL" = no ] || [ "$HAVE_SWSCALE" = no ] ) && HAVE_FFMPEG=no ) || HAVE_FFMPEG=yes
+      ( [ "$HAVE_FFMPEG" = 'auto' ] && ( [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ] ) && HAVE_FFMPEG='no' ) || HAVE_FFMPEG='yes'
    fi
 
-   if [ "$HAVE_FFMPEG" = yes ]; then
+   if [ "$HAVE_FFMPEG" = 'yes' ]; then
       check_lib FFMPEG_ALLOC_CONTEXT3 "$AVCODEC_LIBS" avcodec_alloc_context3
       check_lib FFMPEG_AVCODEC_OPEN2 "$AVCODEC_LIBS" avcodec_open2
       check_lib FFMPEG_AVCODEC_ENCODE_AUDIO2 "$AVCODEC_LIBS" avcodec_encode_audio2
@@ -127,34 +113,33 @@ if [ "$HAVE_THREADS" != no ]; then
       check_lib FFMPEG_AVCODEC_ENCODE_VIDEO2 "$AVCODEC_LIBS" avcodec_encode_video2
    fi
 
-   if [ "$HAVE_FFMPEG" = no ] && [ "$HAVE_X264RGB" = yes ]; then
+   if [ "$HAVE_FFMPEG" = 'no' ] && [ "$HAVE_X264RGB" = 'yes' ]; then
       echo "x264 RGB recording is enabled, but FFmpeg is not. --enable-x264rgb will not have any effect."
    fi
 else
    echo "Not building with threading support. Will skip FFmpeg."
-   HAVE_FFMPEG=no
+   HAVE_FFMPEG='no'
 fi
 
-check_lib DYNAMIC $DYLIB dlopen
+check_lib DYNAMIC "$DYLIB" dlopen
 
 check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
 check_pkgconf XEXT xext
-if [ "$HAVE_X11" = yes ] && [ "$HAVE_XEXT" = yes ]; then
+if [ "$HAVE_X11" = 'yes' ] && [ "$HAVE_XEXT" = 'yes' ]; then
    check_pkgconf XVIDEO xv
 else
    echo "X11 or Xext not present. Skipping XVideo."
-   HAVE_XVIDEO=no
+   HAVE_XVIDEO='no'
 fi
 
 check_lib STRL -lc strlcpy
 
 check_pkgconf PYTHON python3
 
-add_define_make OS $OS
+add_define_make OS "$OS"
 
 # Creates config.mk and config.h.
 VARS="ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK COREAUDIO PULSE SDL OPENGL DYLIB GETOPT_LONG THREADS CG XML SDL_IMAGE DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL SWSCALE CONFIGFILE FREETYPE XVIDEO X11 XEXT NETPLAY NETWORK_CMD SOCKET_LEGACY FBO STRL PYTHON FFMPEG_ALLOC_CONTEXT3 FFMPEG_AVCODEC_OPEN2 FFMPEG_AVIO_OPEN FFMPEG_AVFORMAT_WRITE_HEADER FFMPEG_AVFORMAT_NEW_STREAM FFMPEG_AVCODEC_ENCODE_AUDIO2 FFMPEG_AVCODEC_ENCODE_VIDEO2 X264RGB SINC BSV_MOVIE RPI"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
-

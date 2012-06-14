@@ -317,11 +317,18 @@ static bool environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SHUTDOWN:
+         RARCH_LOG("Environ SHUTDOWN.\n");
          g_extern.system.shutdown = true;
          break;
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
          g_extern.system.performance_level = *(const unsigned*)data;
+         RARCH_LOG("Environ PERFORMANCE_LEVEL: %u.\n", g_extern.system.performance_level);
+         break;
+
+      case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
+         *(const char **)data = *g_settings.system_directory ? g_settings.system_directory : NULL;
+         RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n", g_settings.system_directory);
          break;
 
       default:

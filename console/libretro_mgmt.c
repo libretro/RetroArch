@@ -87,7 +87,7 @@ const char *rarch_manage_libretro_set_first_file(const char *libretro_path, cons
    //We need to set libretro to the first entry in the cores
    //directory so that it will be saved to the config file
 
-   char ** dir_list = dir_list_new(libretro_path, exe_ext);
+   char ** dir_list = dir_list_new(libretro_path, exe_ext, false);
 
    const char * retstr = NULL;
    const char * first_exe;

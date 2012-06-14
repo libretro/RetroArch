@@ -121,7 +121,7 @@ extern "C" {
                                            // Requests the frontend to shutdown.
                                            // Should only be used if game has a specific
                                            // way to shutdown the game from a menu item or similar.
-
+                                           //
 #define RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL 8
                                            // const unsigned * --
                                            // Gives a hint to the frontend how demanding this implementation
@@ -142,6 +142,15 @@ extern "C" {
                                            // as certain games an implementation can play might be
                                            // particularily demanding.
                                            // If called, it should be called in retro_load_game().
+                                           //
+#define RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY 9
+                                           // const char ** --
+                                           // Returns the "system" directory of the frontend.
+                                           // This directory can be used to store system specific ROMs such as BIOSes, configuration data, etc.
+                                           // The returned value can be NULL.
+                                           // If so, no such directory is defined,
+                                           // and it's up to the implementation to find a suitable directory.
+
 
 struct retro_message
 {
