@@ -28,6 +28,8 @@ typedef struct {
 	EGLContext mContext;
 	uint32_t mScreenWidth;
 	uint32_t mScreenHeight;
+	float mScreenAspect;
+	bool mKeepAspect;
 	unsigned mTextureWidth;
 	unsigned mTextureHeight;
 	unsigned mRenderWidth;
@@ -139,56 +141,16 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
 	assert(result != EGL_FALSE);
 
 	rpi->mTexType = video->rgb32 ? VG_sABGR_8888 : VG_sARGB_1555;
+	rpi->mKeepAspect = video->force_aspect;
+
+	// check for SD televisions: they should always be 4:3
+	if (dispman_modeinfo.width == 720 && (dispman_modeinfo.height == 480 || dispman_modeinfo.height == 576))
+		rpi->mScreenAspect = 4.0f / 3.0f;
+	else
+		rpi->mScreenAspect = (float) dispman_modeinfo.width / dispman_modeinfo.height;
 
 	VGfloat clearColor[4] = {0, 0, 0, 1};
 	vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
-
-	// set viewport for aspect ratio, taken from RetroArch
-	if (video->force_aspect)
-	{
-		float desired_aspect = g_settings.video.aspect_ratio;
-		float device_aspect = (float) dispman_modeinfo.width / dispman_modeinfo.height;
-
-		// If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff),
-		// assume they are actually equal.
-		if (fabs(device_aspect - desired_aspect) < 0.0001)
-		{
-			rpi->x1 = 0;
-			rpi->y1 = 0;
-			rpi->x2 = rpi->mScreenWidth;
-			rpi->y2 = rpi->mScreenHeight;
-		}
-		else if (device_aspect > desired_aspect)
-		{
-			float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-			rpi->x1 = rpi->mScreenWidth * (0.5 - delta);
-			rpi->y1 = 0;
-			rpi->x2 = 2.0 * rpi->mScreenWidth * delta + rpi->x1;
-			rpi->y2 = rpi->mScreenHeight + rpi->y1;
-		}
-		else
-		{
-			float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-			rpi->x1 = 0;
-			rpi->y1 = rpi->mScreenHeight * (0.5 - delta);
-			rpi->x2 = rpi->mScreenWidth + rpi->x1;
-			rpi->y2 = 2.0 * rpi->mScreenHeight * delta + rpi->y1;
-		}
-	}
-	else
-	{
-		rpi->x1 = 0;
-		rpi->y1 = 0;
-		rpi->x2 = rpi->mScreenWidth;
-		rpi->y2 = rpi->mScreenHeight;
-	}
-
-	rpi->scissor[0] = rpi->x1;
-	rpi->scissor[1] = rpi->y1;
-	rpi->scissor[2] = rpi->x2 - rpi->x1;
-	rpi->scissor[3] = rpi->y2 - rpi->y1;
-
-	vgSetiv(VG_SCISSOR_RECTS, 4, rpi->scissor);
 
 	rpi->mTextureWidth = rpi->mTextureHeight = video->input_scale * RARCH_SCALE_BASE;
 	// We can't use the native format because there's no sXRGB_1555 type and
@@ -565,6 +527,55 @@ static void rpi_draw_message(rpi_t *rpi, const char *msg)
 
 #endif
 
+static void rpi_calculate_quad(rpi_t *rpi)
+{
+	// set viewport for aspect ratio, taken from the OpenGL driver
+	if (rpi->mKeepAspect)
+	{
+		float desired_aspect = g_settings.video.aspect_ratio;
+
+		// If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff),
+		// assume they are actually equal.
+		if (fabs(rpi->mScreenAspect - desired_aspect) < 0.0001)
+		{
+			rpi->x1 = 0;
+			rpi->y1 = 0;
+			rpi->x2 = rpi->mScreenWidth;
+			rpi->y2 = rpi->mScreenHeight;
+		}
+		else if (rpi->mScreenAspect > desired_aspect)
+		{
+			float delta = (desired_aspect / rpi->mScreenAspect - 1.0) / 2.0 + 0.5;
+			rpi->x1 = rpi->mScreenWidth * (0.5 - delta);
+			rpi->y1 = 0;
+			rpi->x2 = 2.0 * rpi->mScreenWidth * delta + rpi->x1;
+			rpi->y2 = rpi->mScreenHeight + rpi->y1;
+		}
+		else
+		{
+			float delta = (rpi->mScreenAspect / desired_aspect - 1.0) / 2.0 + 0.5;
+			rpi->x1 = 0;
+			rpi->y1 = rpi->mScreenHeight * (0.5 - delta);
+			rpi->x2 = rpi->mScreenWidth + rpi->x1;
+			rpi->y2 = 2.0 * rpi->mScreenHeight * delta + rpi->y1;
+		}
+	}
+	else
+	{
+		rpi->x1 = 0;
+		rpi->y1 = 0;
+		rpi->x2 = rpi->mScreenWidth;
+		rpi->y2 = rpi->mScreenHeight;
+	}
+
+	rpi->scissor[0] = rpi->x1;
+	rpi->scissor[1] = rpi->y1;
+	rpi->scissor[2] = rpi->x2 - rpi->x1;
+	rpi->scissor[3] = rpi->y2 - rpi->y1;
+
+	vgSetiv(VG_SCISSOR_RECTS, 4, rpi->scissor);
+}
+
 static bool rpi_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
 	rpi_t *rpi = (rpi_t*)data;
@@ -573,6 +584,7 @@ static bool rpi_frame(void *data, const void *frame, unsigned width, unsigned he
 	{
 		rpi->mRenderWidth = width;
 		rpi->mRenderHeight = height;
+		rpi_calculate_quad(rpi);
 		vguComputeWarpQuadToQuad(
 			rpi->x1, rpi->y1, rpi->x2, rpi->y1, rpi->x2, rpi->y2, rpi->x1, rpi->y2,
 			// needs to be flipped, Khronos loves their bottom-left origin
