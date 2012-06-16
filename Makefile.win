@@ -159,7 +159,7 @@ else
    LDCXXFLAGS += -s
 endif
 
-CFLAGS += -Wall -Wno-unused-result -O3 -I.
+CFLAGS += -Wall -Wno-unused-result -I.
 ifeq ($(CXX_BUILD), 1)
    CFLAGS += -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS
 else
