@@ -32,7 +32,6 @@ libretro ?= -lretro
 LIBS = -lm
 DEFINES = -I. -DHAVE_CONFIGFILE -DHAVE_SDL -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DPACKAGE_VERSION=\"0.9.6\"
 LDFLAGS = -L. -static-libgcc
-LDCXXFLAGS = -s
 
 ifeq ($(TDM_GCC),)
    LDCXXFLAGS += -static-libstdc++
@@ -151,6 +150,13 @@ endif
 
 ifneq ($(V), 1)
    Q := @
+endif
+
+ifeq ($(DEBUG), 1)
+   CFLAGS += -O0 -g
+else
+   CFLAGS += -O3
+   LDCXXFLAGS += -s
 endif
 
 CFLAGS += -Wall -Wno-unused-result -O3 -I.
