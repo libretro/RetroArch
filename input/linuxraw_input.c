@@ -250,11 +250,17 @@ static void linuxraw_input_poll(void *data)
 {
 	linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
 	uint8_t c;
+	uint16_t t;
 
 	while (read(0, &c, 1))
 	{
 		bool pressed = !(c & 0x80);
 		c &= ~0x80;
+
+		// ignore extended scancodes
+		if (!c)
+			read(0, &t, 2);
+
 		linuxraw->state[c] = pressed;
 	}
 
