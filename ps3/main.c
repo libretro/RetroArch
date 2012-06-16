@@ -78,7 +78,7 @@ char MULTIMAN_EXECUTABLE[PATH_MAX];
 
 int rarch_main(int argc, char *argv[]);
 
-SYS_PROCESS_PARAM(1001, 0x100000)
+SYS_PROCESS_PARAM(1001, 0x200000)
 
 #undef main
 
