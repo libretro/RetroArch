@@ -1171,7 +1171,7 @@ static void init_recording(void)
    params.filename   = g_extern.record_path;
    params.fps        = fps;
    params.samplerate = samplerate;
-   params.rgb32      = false;
+   params.rgb32      = g_extern.system.rgb32;
 
    if (g_extern.record_width || g_extern.record_height)
    {

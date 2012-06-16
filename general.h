@@ -332,6 +332,7 @@ struct global
       unsigned rotation;
       bool shutdown;
       unsigned performance_level;
+      bool rgb32;
    } system;
 
    struct

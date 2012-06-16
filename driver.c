@@ -397,6 +397,12 @@ static void init_filter(void)
    if (*g_settings.video.filter_path == '\0')
       return;
 
+   if (g_extern.system.rgb32)
+   {
+      RARCH_WARN("libretro implementation uses XRGB8888 format. CPU filters only support 0RGB1555.\n");
+      return;
+   }
+
    RARCH_LOG("Loading bSNES filter from \"%s\"\n", g_settings.video.filter_path);
    g_extern.filter.lib = dylib_load(g_settings.video.filter_path);
    if (!g_extern.filter.lib)
@@ -553,7 +559,7 @@ void init_video_input(void)
    video.force_aspect = g_settings.video.force_aspect;
    video.smooth = g_settings.video.smooth;
    video.input_scale = scale;
-   video.rgb32 = g_extern.filter.active;
+   video.rgb32 = g_extern.filter.active || g_extern.system.rgb32;
 
    const input_driver_t *tmp = driver.input;
    driver.video_data = video_init_func(&video, &driver.input, &driver.input_data);
