@@ -110,7 +110,8 @@ static void string_list_free(char **list)
 
 static char **string_split(const char *str, const char *delim)
 {
-   char *copy = NULL;
+   char *copy      = NULL;
+   const char *tmp = NULL;
    struct string_list list;
 
    if (!string_list_init(&list))
@@ -120,7 +121,7 @@ static char **string_split(const char *str, const char *delim)
    if (!copy)
       return NULL;
 
-   const char *tmp = strtok(copy, delim);
+   tmp = strtok(copy, delim);
    while (tmp)
    {
       if (!string_list_append(&list, tmp))
@@ -159,6 +160,31 @@ static const char *path_get_extension(const char *path)
       return "";
 }
 
+size_t dir_list_size(char * const *dir_list)
+{
+   if (!dir_list)
+      return 0;
+
+   size_t size = 0;
+   while (*dir_list++)
+      size++;
+
+   return size;
+}
+
+static int qstrcmp(const void *a, const void *b)
+{
+   return strcmp(*(char * const*)a, *(char * const*)b);
+}
+
+void dir_list_sort(char **dir_list)
+{
+   if (!dir_list)
+      return;
+
+   qsort(dir_list, dir_list_size(dir_list), sizeof(char*), qstrcmp);
+}
+
 #ifdef _WIN32 // Because the API is just fucked up ...
 char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
 {
@@ -188,7 +214,7 @@ char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
       if (!include_dirs && path_is_directory(name))
          continue;
 
-      if (!string_list_find_elem(ext_list, file_ext))
+      if (!path_is_directory(name) && !string_list_find_elem(ext_list, file_ext))
          continue;
 
       char file_path[PATH_MAX];
@@ -238,7 +264,7 @@ char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
       if (!include_dirs && path_is_directory(name))
          continue;
 
-      if (!string_list_find_elem(ext_list, file_ext))
+      if (!path_is_directory(name) && !string_list_find_elem(ext_list, file_ext))
          continue;
 
       char file_path[PATH_MAX];

@@ -481,17 +481,13 @@ static void init_shader_dir(void)
       return;
 
    g_extern.shader_dir.elems = dir_list_new(g_settings.video.shader_dir, "shader", false);
-   g_extern.shader_dir.size  = 0;
+   g_extern.shader_dir.size  = dir_list_size(g_extern.shader_dir.elems);
    g_extern.shader_dir.ptr   = 0;
 
-   if (g_extern.shader_dir.elems)
-   {
-      while (g_extern.shader_dir.elems[g_extern.shader_dir.size])
-      {
-         RARCH_LOG("Found shader \"%s\"\n", g_extern.shader_dir.elems[g_extern.shader_dir.size]);
-         g_extern.shader_dir.size++;
-      }
-   }
+   dir_list_sort(g_extern.shader_dir.elems);
+
+   for (unsigned i = 0; i < g_extern.shader_dir.size; i++)
+      RARCH_LOG("Found shader \"%s\"\n", g_extern.shader_dir.elems[i]);
 }
 
 static void deinit_shader_dir(void)
