@@ -43,141 +43,231 @@
 #endif
 
 // Yep, this is C alright ;)
+struct string_list
+{
+   char **data;
+   size_t size;
+   size_t cap;
+};
+
+static bool string_list_capacity(struct string_list *list, size_t cap)
+{
+   rarch_assert(cap > list->size);
+
+   char **new_data = (char**)realloc(list->data, cap * sizeof(char*));
+   if (!new_data)
+      return false;
+
+   list->data = new_data;
+   list->cap  = cap;
+   return true;
+}
+
+static bool string_list_init(struct string_list *list)
+{
+   memset(list, 0, sizeof(*list));
+   return string_list_capacity(list, 32);
+}
+
+static bool string_list_append(struct string_list *list, const char *elem)
+{
+   if (list->size + 1 >= list->cap && !string_list_capacity(list, list->cap * 2))
+      return false;
+
+   if (!(list->data[list->size] = strdup(elem)))
+      return false;
+
+   list->size++;
+   return true;
+}
+
+static char **string_list_finalize(struct string_list *list)
+{
+   rarch_assert(list->cap > list->size);
+
+   list->data[list->size] = NULL;
+   return list->data;
+}
+
+static void string_list_cleanup(struct string_list *list)
+{
+   for (size_t i = 0; i < list->size; i++)
+      free(list->data[i]);
+   free(list->data);
+   memset(list, 0, sizeof(*list));
+}
+
+static void string_list_free(char **list)
+{
+   if (!list)
+      return;
+
+   char **orig = list;
+   while (*list)
+      free(*list++);
+   free(orig);
+}
+
+static char **string_split(const char *str, const char *delim)
+{
+   char *copy = NULL;
+   struct string_list list;
+
+   if (!string_list_init(&list))
+      goto error;
+
+   copy = strdup(str);
+   if (!copy)
+      return NULL;
+
+   const char *tmp = strtok(copy, delim);
+   while (tmp)
+   {
+      if (!string_list_append(&list, tmp))
+         goto error;
+
+      tmp = strtok(NULL, delim);
+   }
+
+   free(copy);
+   return string_list_finalize(&list);
+
+error:
+   string_list_cleanup(&list);
+   free(copy);
+   return NULL;
+}
+
+static bool string_list_find_elem(char * const *list, const char *elem)
+{
+   if (!list)
+      return false;
+
+   for (; *list; list++)
+      if (strcmp(*list, elem) == 0)
+         return true;
+
+   return false;
+}
+
+static const char *path_get_extension(const char *path)
+{
+   const char *ext = strrchr(path, '.');
+   if (ext)
+      return ext + 1;
+   else
+      return "";
+}
+
+#ifdef _WIN32 // Because the API is just fucked up ...
 char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
 {
-   size_t cur_ptr = 0;
-   size_t cur_size = 32;
-   char **dir_list = NULL;
+   struct string_list list;
+   if (!string_list_init(&list))
+      return NULL;
 
-#ifdef _WIN32
-   WIN32_FIND_DATA ffd;
    HANDLE hFind = INVALID_HANDLE_VALUE;
+   WIN32_FIND_DATA ffd;
 
    char path_buf[PATH_MAX];
+   snprintf(path_buf, sizeof(path_buf), "%s\\*", dir);
 
-   if (strlcpy(path_buf, dir, sizeof(path_buf)) >= sizeof(path_buf))
-      goto error;
-#ifdef _XBOX
-   if (strlcat(path_buf, "*", sizeof(path_buf)) >= sizeof(path_buf))
-#else
-   if (strlcat(path_buf, "/*", sizeof(path_buf)) >= sizeof(path_buf))
-#endif
-      goto error;
-
+   char **ext_list = NULL;
    if (ext)
-   {
-      if (strlcat(path_buf, ext, sizeof(path_buf)) >= sizeof(path_buf))
-         goto error;
-   }
+      ext_list = string_split(ext, "|");
 
    hFind = FindFirstFile(path_buf, &ffd);
    if (hFind == INVALID_HANDLE_VALUE)
       goto error;
+
+   do
+   {
+      const char *name     = ffd.cFileName;
+      const char *file_ext = path_get_extension(name);
+
+      if (!include_dirs && path_is_directory(name))
+         continue;
+
+      if (!string_list_find_elem(ext_list, file_ext))
+         continue;
+
+      char file_path[PATH_MAX];
+      snprintf(file_path, sizeof(file_path), "%s\\%s", dir, name);
+
+      if (!string_list_append(&list, file_path))
+         goto error;
+   }
+   while (FindNextFile(hFind, &ffd) != 0);
+
+   FindClose(hFind);
+   string_list_free(ext_list);
+   return string_list_finalize(&list);
+
+error:
+   RARCH_ERR("Failed to open directory: \"%s\"\n", dir);
+   if (hFind != INVALID_HANDLE_VALUE)
+      FindClose(hFind);
+   
+   string_list_cleanup(&list);
+   string_list_free(ext_list);
+   return NULL;
+}
 #else
+char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
+{
+   struct string_list list;
+   if (!string_list_init(&list))
+      return NULL;
+
    DIR *directory = NULL;
    const struct dirent *entry = NULL;
+
+   char **ext_list = NULL;
+   if (ext)
+      ext_list = string_split(ext, "|");
 
    directory = opendir(dir);
    if (!directory)
       goto error;
-#endif
 
-   dir_list = (char**)calloc(cur_size, sizeof(char*));
-   if (!dir_list)
-      goto error;
-
-#ifdef _WIN32 // Hard to read? Blame non-POSIX heathens!
-   do
-#else
    while ((entry = readdir(directory)))
-#endif
    {
-      // Not a perfect search of course, but hopefully good enough in practice.
-#ifdef _WIN32
-      if (include_dirs)
-      {
-         if (ext && !strstr(ffd.cFileName, ext) && !path_is_directory(ffd.cFileName))
-            continue;
-      }
-      else
-      {
-         if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-            continue;
-         if (ext && !strstr(ffd.cFileName, ext))
-            continue;
-      }
-#else
-      if (include_dirs)
-      {
-         if (ext && !strstr(entry->d_name, ext) && !path_is_directory(entry->d_name))
-            continue;
-      }
-      else
-      {
-         if (ext && !strstr(entry->d_name, ext))
-            continue;
-      }
-#endif
+      const char *name     = entry->d_name;
+      const char *file_ext = path_get_extension(name);
 
-      dir_list[cur_ptr] = (char*)malloc(PATH_MAX);
-      if (!dir_list[cur_ptr])
+      if (!include_dirs && path_is_directory(name))
+         continue;
+
+      if (!string_list_find_elem(ext_list, file_ext))
+         continue;
+
+      char file_path[PATH_MAX];
+      snprintf(file_path, sizeof(file_path), "%s/%s", dir, name);
+
+      if (!string_list_append(&list, file_path))
          goto error;
-
-      strlcpy(dir_list[cur_ptr], dir, PATH_MAX);
-#ifndef _XBOX
-      strlcat(dir_list[cur_ptr], "/", PATH_MAX);
-#endif
-#ifdef _WIN32
-      strlcat(dir_list[cur_ptr], ffd.cFileName, PATH_MAX);
-#else
-      strlcat(dir_list[cur_ptr], entry->d_name, PATH_MAX);
-#endif
-
-      cur_ptr++;
-      if (cur_ptr + 1 == cur_size) // Need to reserve for NULL.
-      {
-         cur_size *= 2;
-         dir_list = (char**)realloc(dir_list, cur_size * sizeof(char*));
-         if (!dir_list)
-            goto error;
-
-         // Make sure it's all NULL'd out since we cannot rely on realloc to do this.
-         memset(dir_list + cur_ptr, 0, (cur_size - cur_ptr) * sizeof(char*));
-      }
    }
-#if defined(_WIN32)
-   while (FindNextFile(hFind, &ffd) != 0);
-#endif
 
-#ifdef _WIN32
-   FindClose(hFind);
-#else
    closedir(directory);
-#endif
-   return dir_list;
+
+   string_list_free(ext_list);
+   return string_list_finalize(&list);
 
 error:
    RARCH_ERR("Failed to open directory: \"%s\"\n", dir);
-#ifdef _WIN32
-   if (hFind != INVALID_HANDLE_VALUE)
-      FindClose(hFind);
-#else
+
    if (directory)
       closedir(directory);
-#endif
-   dir_list_free(dir_list);
+
+   string_list_cleanup(&list);
+   string_list_free(ext_list);
    return NULL;
 }
+#endif
 
 void dir_list_free(char **dir_list)
 {
-   if (!dir_list)
-      return;
-
-   char **orig = dir_list;
-   while (*dir_list)
-      free(*dir_list++);
-   free(orig);
+   string_list_free(dir_list);
 }
 
 bool path_is_directory(const char *path)
