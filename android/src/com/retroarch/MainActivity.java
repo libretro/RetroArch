@@ -2,6 +2,10 @@ package com.retroarch;
 
 import android.app.Activity;
 import android.content.Context;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.widget.Toast;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 
@@ -16,6 +20,20 @@ public class MainActivity extends Activity
         
         ctx_gl = new rgl_context(this);
         setContentView(ctx_gl);
+    }
+    
+    public boolean onCreateOptionsMenu(Menu menu)
+    {
+    	MenuInflater inflater = getMenuInflater();
+    	inflater.inflate(R.menu.main_menu, menu);
+    	return true;
+    }
+    
+    public boolean onOptionsItemSelected(MenuItem item)
+    {
+    	Toast.makeText(this, "MenuItem " + item.getTitle() + " selected.", Toast.LENGTH_SHORT).show();
+    	
+    	return true;
     }
     
     @Override
