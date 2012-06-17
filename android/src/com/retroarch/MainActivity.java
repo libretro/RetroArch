@@ -1,5 +1,6 @@
 package com.retroarch;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
 import android.view.Menu;
@@ -31,9 +32,15 @@ public class MainActivity extends Activity
     
     public boolean onOptionsItemSelected(MenuItem item)
     {
-    	Toast.makeText(this, "MenuItem " + item.getTitle() + " selected.", Toast.LENGTH_SHORT).show();
-    	
-    	return true;
+    	switch (item.getItemId())
+    	{
+    		case R.id.quit:
+    			android.os.Process.killProcess(android.os.Process.myPid());
+    			return true;
+    		default:
+    	    	Toast.makeText(this, "MenuItem " + item.getTitle() + " selected.", Toast.LENGTH_SHORT).show();
+    	    	return true;
+    	}
     }
     
     @Override
