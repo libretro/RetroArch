@@ -157,6 +157,11 @@ ifeq ($(HAVE_SDL_IMAGE), 1)
    DEFINES += $(SDL_IMAGE_CFLAGS)
 endif
 
+ifeq ($(HAVE_LIBPNG), 1)
+   LIBS += $(LIBPNG_LIBS)
+   DEFINES += $(LIBPNG_CFLAGS)
+endif
+
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/ffemu.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS)

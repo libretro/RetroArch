@@ -495,6 +495,7 @@ static void print_features(void)
    _PSUPP(cg, "Cg", "Cg pixel shaders");
    _PSUPP(xml, "XML", "bSNES XML pixel shaders");
    _PSUPP(sdl_image, "SDL_image", "SDL_image image loading");
+   _PSUPP(libpng, "libpng", "libpng screenshot support");
    _PSUPP(fbo, "FBO", "OpenGL render-to-texture (multi-pass shaders)");
    _PSUPP(dynamic, "Dynamic", "Dynamic run-time loading of libretro library");
    _PSUPP(ffmpeg, "FFmpeg", "On-the-fly recording of gameplay with libavcodec");
