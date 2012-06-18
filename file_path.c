@@ -213,14 +213,13 @@ char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
    {
       const char *name     = ffd.cFileName;
       const char *file_ext = path_get_extension(name);
+      bool is_dir          = ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 
-      if (!include_dirs && path_is_directory(name))
+      if (!include_dirs && is_dir)
          continue;
 
-#ifndef _XBOX
-      if (!path_is_directory(name) && ext_list && !string_list_find_elem(ext_list, file_ext))
+      if (!is_dir && ext_list && !string_list_find_elem(ext_list, file_ext))
          continue;
-#endif
 
       char file_path[PATH_MAX];
       snprintf(file_path, sizeof(file_path), "%s\\%s", dir, name);
