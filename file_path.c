@@ -173,43 +173,31 @@ size_t dir_list_size(char * const *dir_list)
    return size;
 }
 
-static size_t strcountelem(const char *str, const char *valid)
+static int qstrcmp_plain(const void *a, const void *b)
 {
-   size_t count = 0;
-
-   while (*str)
-   {
-      if (strchr(valid, *str++))
-         count++;
-   }
-
-   return count;
+   return strcasecmp(*(const char * const*)a, *(const char * const*)b);
 }
 
-static int qstrcmp(const void *a_, const void *b_)
+static int qstrcmp_dir(const void *a_, const void *b_)
 {
    const char *a = *(const char * const*)a_; 
    const char *b = *(const char * const*)b_; 
 
-   ssize_t a_cnt = strcountelem(a, "/\\");
-   ssize_t b_cnt = strcountelem(b, "/\\");
+   // Sort directories before files.
+   int a_dir = path_is_directory(a);
+   int b_dir = path_is_directory(b);
+   if (a_dir != b_dir)
+      return b_dir - a_dir;
 
-   // Place directories on top.
-   // It is assumed that number of '/' or '\\' in path can determine
-   // if one path is a directory and the other is not.
-
-   if (a_cnt != b_cnt)
-      return a_cnt - b_cnt;
-   else
-      return strcasecmp(a, b);
+   return strcasecmp(a, b);
 }
 
-void dir_list_sort(char **dir_list)
+void dir_list_sort(char **dir_list, bool dir_first)
 {
    if (!dir_list)
       return;
 
-   qsort(dir_list, dir_list_size(dir_list), sizeof(char*), qstrcmp);
+   qsort(dir_list, dir_list_size(dir_list), sizeof(char*), dir_first ? qstrcmp_dir : qstrcmp_plain);
 }
 
 #ifdef _WIN32 // Because the API is just fucked up ...
