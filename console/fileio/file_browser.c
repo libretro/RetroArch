@@ -66,7 +66,36 @@ void filebrowser_pop_directory (filebrowser_t * filebrowser)
    filebrowser->extensions);
 }
 
+const char * filebrowser_get_current_dir (filebrowser_t *filebrowser)
+{
+   return filebrowser->dir[filebrowser->directory_stack_size];
+}
+
 const char * filebrowser_get_current_path (filebrowser_t *filebrowser)
 {
    return filebrowser->current_dir.elems[filebrowser->current_dir.ptr];
+}
+
+size_t filebrowser_get_current_index (filebrowser_t *filebrowser)
+{
+   return filebrowser->current_dir.ptr;
+}
+
+void filebrowser_set_current_at (filebrowser_t *filebrowser, size_t pos)
+{
+   filebrowser->current_dir.ptr = pos;
+}
+
+void filebrowser_set_current_increment (filebrowser_t *filebrowser, bool allow_wraparound)
+{
+   filebrowser->current_dir.ptr++;
+   if (filebrowser->current_dir.ptr >= filebrowser->current_dir.size && allow_wraparound)
+      filebrowser->current_dir.ptr = 0;
+}
+
+void filebrowser_set_current_decrement (filebrowser_t *filebrowser, bool allow_wraparound)
+{
+   filebrowser->current_dir.ptr--;
+   if (filebrowser->current_dir.ptr >= filebrowser->current_dir.size && allow_wraparound)
+      filebrowser->current_dir.ptr = filebrowser->current_dir.size - 1;
 }

@@ -38,42 +38,11 @@ void filebrowser_new(filebrowser_t *filebrowser, const char * start_dir, const c
 void filebrowser_free(filebrowser_t *filebrowser);
 void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path, bool with_extension);
 void filebrowser_pop_directory (filebrowser_t * filebrowser);
-
-#define FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(filebrowser) (filebrowser.dir[filebrowser.directory_stack_size])
-#define FILEBROWSER_GET_CURRENT_DIRECTORY_FILE_COUNT(filebrowser) (filebrowser.current_dir.size)
-#define FILEBROWSER_GOTO_ENTRY(filebrowser, i)	filebrowser.current_dir.ptr = i;
-
-#define FILEBROWSER_INCREMENT_ENTRY(filebrowser) \
-{ \
-   filebrowser.current_dir.ptr++; \
-   if (filebrowser.current_dir.ptr >= filebrowser.current_dir.size) \
-      filebrowser.current_dir.ptr = 0; \
-}
-
-#define FILEBROWSER_INCREMENT_ENTRY_POINTER(filebrowser) \
-{ \
-   filebrowser->current_dir.ptr++; \
-   if (filebrowser->current_dir.ptr >= filebrowser->current_dir.size) \
-      filebrowser->current_dir.ptr = 0; \
-}
-
-#define FILEBROWSER_DECREMENT_ENTRY(filebrowser) \
-{ \
-   filebrowser.current_dir.ptr--; \
-   if (filebrowser.current_dir.ptr >= filebrowser.current_dir.size) \
-      filebrowser.current_dir.ptr = filebrowser.current_dir.size - 1; \
-}
-
-#define FILEBROWSER_DECREMENT_ENTRY_POINTER(filebrowser) \
-{ \
-   filebrowser->current_dir.ptr--; \
-   if (filebrowser->current_dir.ptr >= filebrowser->current_dir.size) \
-      filebrowser->current_dir.ptr = filebrowser->current_dir.size - 1; \
-}
-
-#define FILEBROWSER_GET_CURRENT_FILENAME(filebrowser)    (filebrowser.current_dir.elems[filebrowser.current_dir.ptr])
-#define FILEBROWSER_GET_CURRENT_ENTRY_INDEX(filebrowser) (filebrowser.current_dir.ptr)
-#define FILEBROWSER_IS_CURRENT_A_FILE(filebrowser)       (path_file_exists(filebrowser.current_dir.elems[filebrowser.current_dir.ptr]))
-#define FILEBROWSER_IS_CURRENT_A_DIRECTORY(filebrowser)  (path_is_directory(filebrowser.current_dir.elems[filebrowser.current_dir.ptr]))
+const char * filebrowser_get_current_dir (filebrowser_t *filebrowser);
+const char * filebrowser_get_current_path (filebrowser_t *filebrowser);
+size_t filebrowser_get_current_index (filebrowser_t *filebrowser);
+void filebrowser_set_current_at (filebrowser_t *filebrowser, size_t pos);
+void filebrowser_set_current_increment (filebrowser_t *filebrowser, bool allow_wraparound);
+void filebrowser_set_current_decrement (filebrowser_t *filebrowser, bool allow_wraparound);
 
 #endif /* FILEBROWSER_H_ */

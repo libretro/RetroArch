@@ -222,7 +222,7 @@ static void browser_update(filebrowser_t * b)
       {
          if(b->current_dir.ptr < b->current_dir.size-1)
 	 {
-            FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
+            filebrowser_set_current_increment(b, true);
 	    set_delay = DELAY_SMALLEST;
 	 }
       }
@@ -231,7 +231,7 @@ static void browser_update(filebrowser_t * b)
       {
          if(b->current_dir.ptr < b->current_dir.size-1)
 	 {
-            FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
+            filebrowser_set_current_increment(b, true);
 	    set_delay = DELAY_SMALLEST;
 	 }
       }
@@ -240,7 +240,7 @@ static void browser_update(filebrowser_t * b)
       {
          if(b->current_dir.ptr > 0)
 	 {
-            FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
+            filebrowser_set_current_decrement(b, true);
 	    set_delay = DELAY_SMALLEST;
 	 }
       }
@@ -249,7 +249,7 @@ static void browser_update(filebrowser_t * b)
       {
          if(b->current_dir.ptr > 0)
 	 {
-            FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
+            filebrowser_set_current_decrement(b, true);
 	    set_delay = DELAY_SMALLEST;
 	 }
       }
@@ -886,7 +886,7 @@ static void select_file(uint32_t menu_id)
 
       if (CTRL_CROSS(button_was_pressed))
       {
-         if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
+         if(path_is_directory(filebrowser_get_current_path(&tmpBrowser)))
 	 {
             /*if 'filename' is in fact '..' - then pop back directory instead of 
 	      adding '..' to filename path */
@@ -894,13 +894,13 @@ static void select_file(uint32_t menu_id)
                filebrowser_pop_directory(&tmpBrowser);
 	    else
 	    {
-	       snprintf(path, sizeof(path), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+	       snprintf(path, sizeof(path), filebrowser_get_current_path(&tmpBrowser));
 	       filebrowser_push_directory(&tmpBrowser, path, true);
 	    }
 	 }
-	 else if (FILEBROWSER_IS_CURRENT_A_FILE(tmpBrowser))
+	 else if (path_file_exists(filebrowser_get_current_path(&tmpBrowser)))
 	 {
-            snprintf(path, sizeof(path), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+            snprintf(path, sizeof(path), filebrowser_get_current_path(&tmpBrowser));
 
 	    switch(menu_id)
 	    {
@@ -949,7 +949,7 @@ static void select_file(uint32_t menu_id)
          menuStackindex--;
    }
 
-   cellDbgFontPrintf(0.09f, 0.09f, FONT_SIZE, YELLOW, "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
+   cellDbgFontPrintf(0.09f, 0.09f, FONT_SIZE, YELLOW, "PATH: %s", filebrowser_get_current_dir(&tmpBrowser));
    cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	title);
    cellDbgFontPrintf(0.09f, 0.92f, 0.92, YELLOW, "X - Select %s  /\\ - return to settings  START - Reset Startdir", object);
    cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s", comment);
@@ -984,9 +984,9 @@ static void select_directory(uint32_t menu_id)
 
       if (CTRL_SQUARE(button_was_pressed))
       {
-         if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
+         if(path_is_directory(filebrowser_get_current_path(&tmpBrowser)))
 	 {
-            snprintf(path, sizeof(path), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+            snprintf(path, sizeof(path), filebrowser_get_current_path(&tmpBrowser));
 	    switch(menu_id)
 	    {
                case PATH_SAVESTATES_DIR_CHOICE:
@@ -1029,7 +1029,7 @@ static void select_directory(uint32_t menu_id)
 
       if (CTRL_CROSS(button_was_pressed))
       {
-         if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
+         if(path_is_directory(filebrowser_get_current_path(&tmpBrowser)))
 	 {
             /* if 'filename' is in fact '..' - then pop back directory instead of 
              * adding '..' to filename path */
@@ -1038,7 +1038,7 @@ static void select_directory(uint32_t menu_id)
                filebrowser_pop_directory(&tmpBrowser);
 	    else
 	    {
-	       snprintf(newpath, sizeof(newpath), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+	       snprintf(newpath, sizeof(newpath), filebrowser_get_current_path(&tmpBrowser));
 	       filebrowser_push_directory(&tmpBrowser, newpath, false);
 	    }
 	 }
@@ -1046,7 +1046,7 @@ static void select_directory(uint32_t menu_id)
    }
 
    cellDbgFontPrintf (0.09f,  0.09f, FONT_SIZE, YELLOW, 
-      "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
+      "PATH: %s", filebrowser_get_current_dir(&tmpBrowser));
    cellDbgFontPuts (0.09f, 0.05f,  FONT_SIZE, RED,    "DIRECTORY SELECTION");
    cellDbgFontPuts(0.09f, 0.93f, 0.92f, YELLOW,
       "X - Enter dir  /\\ - return to settings  START - Reset Startdir");
@@ -1916,7 +1916,7 @@ static void select_rom(void)
 
       if (CTRL_CROSS(button_was_pressed))
       {
-         if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(browser))
+         if(path_is_directory(filebrowser_get_current_path(&browser)))
 	 {
             /*if 'filename' is in fact '..' - then pop back directory  instead of adding '..' to filename path */
 
@@ -1926,41 +1926,41 @@ static void select_rom(void)
 	    }
 	    else
 	    {
-	       snprintf(newpath, sizeof(newpath), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+	       snprintf(newpath, sizeof(newpath), filebrowser_get_current_path(&browser));
 	       filebrowser_push_directory(&browser, newpath, true);
 	    }
 	 }
-	 else if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
+	 else if (path_file_exists(filebrowser_get_current_path(&browser)))
 	 {
             char rom_path_temp[PATH_MAX];
 	    struct retro_system_info info;
 	    retro_get_system_info(&info);
 	    bool block_zip_extract  = info.block_extract;
 
-	    snprintf(rom_path_temp, sizeof(rom_path_temp), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+	    snprintf(rom_path_temp, sizeof(rom_path_temp), filebrowser_get_current_path(&browser));
 
 	    if((strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP")) && !block_zip_extract)
                rarch_extract_zipfile(rom_path_temp);
 	    else
 	    {
-	       snprintf(g_console.rom_path, sizeof(g_console.rom_path), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+	       snprintf(g_console.rom_path, sizeof(g_console.rom_path), filebrowser_get_current_path(&browser));
                rarch_settings_change(S_START_RARCH);
 	    }
 	 }
       }
    }
 
-   if (FILEBROWSER_IS_CURRENT_A_DIRECTORY(browser))
+   if (path_is_directory(filebrowser_get_current_path(&browser)))
    {
-      if(!strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),"app_home") || !strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),"host_root"))
+      if(!strcmp(filebrowser_get_current_path(&browser),"app_home") || !strcmp(filebrowser_get_current_path(&browser),"host_root"))
          cellDbgFontPrintf(0.09f, 0.83f, 0.91f, RED, "WARNING - This path only works on DEX PS3 systems. Do not attempt to open\n this directory on CEX PS3 systems, or you might have to restart.");
-      else if(!strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),".."))
+      else if(!strcmp(filebrowser_get_current_path(&browser),".."))
          cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to go back to the previous directory.");
       else
          cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to enter the directory.");
    }
 
-   if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
+   if (path_file_exists(filebrowser_get_current_path(&browser)))
       cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
 
    struct retro_system_info info;
@@ -1970,7 +1970,7 @@ static void select_rom(void)
    cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"FILE BROWSER");
    cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s (v%s)", id, info.library_version);
    cellDbgFontPrintf (0.09f, 0.09f, FONT_SIZE, YELLOW,
-		   "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser));
+		   "PATH: %s", filebrowser_get_current_dir(&browser));
    cellDbgFontPuts   (0.09f, 0.93f, FONT_SIZE, YELLOW,
 		   "L3 + R3 - resume game           SELECT - Settings screen");
    gl_render_msg_post(gl);
