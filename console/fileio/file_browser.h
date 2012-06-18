@@ -17,32 +17,21 @@
 #ifndef FILEBROWSER_H_
 #define FILEBROWSER_H_
 
-#define MAXJOLIET	255
 #define MAX_DIR_STACK   25
 
 #include <stdint.h>
 #include <stdlib.h>
 
-#ifdef __CELLOS_LV2__
-#include <stdbool.h>
-#include <sys/types.h>
-#define FS_MAX_PATH 256
-#define FS_MAX_FS_PATH_LENGTH 255
-#elif defined(_XBOX)
-#define FS_MAX_PATH MAX_PATH
-#define FS_MAX_FS_PATH_LENGTH 2048
-#endif
-
 typedef struct
 {
    uint32_t directory_stack_size;
-   char dir[MAX_DIR_STACK][FS_MAX_FS_PATH_LENGTH]; 
+   char dir[MAX_DIR_STACK][512]; 
    struct {
 	   char **elems;
 	   size_t size;
 	   size_t ptr;
    } current_dir;
-   char extensions[FS_MAX_PATH];
+   char extensions[PATH_MAX];
 } filebrowser_t;
 
 void filebrowser_new(filebrowser_t *filebrowser, const char * start_dir, const char * extensions);
