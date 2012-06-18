@@ -270,10 +270,8 @@ char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
       if (!include_dirs && is_dir)
          continue;
 
-#ifndef __CELLOS_LV2__
       if (!is_dir && ext_list && !string_list_find_elem(ext_list, file_ext))
          continue;
-#endif
 
       char file_path[PATH_MAX];
       snprintf(file_path, sizeof(file_path), "%s/%s", dir, name);
