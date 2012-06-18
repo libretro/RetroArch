@@ -2459,6 +2459,12 @@ void menu_init (void)
    filebrowser_new(&browser, g_console.default_rom_startup_dir, rarch_console_get_rom_ext());
 }
 
+void menu_free (void)
+{
+   filebrowser_free(&browser);
+   filebrowser_free(&tmpBrowser);
+}
+
 void menu_loop(void)
 {
    gl_t * gl = driver.video_data;

@@ -418,8 +418,8 @@ begin_shutdown:
       rarch_main_deinit();
 
    input_ps3.free(NULL);
-
    video_gl.stop();
+   menu_free();
 
    if(g_console.oskutil_handle.is_running)
       oskutil_unload(&g_console.oskutil_handle);

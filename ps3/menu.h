@@ -157,5 +157,6 @@ enum
 
 void menu_init (void);
 void menu_loop (void);
+void menu_free (void);
 
 #endif /* MENU_H_ */
