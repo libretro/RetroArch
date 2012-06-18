@@ -50,16 +50,6 @@ void filebrowser_free(filebrowser_t * filebrowser)
    filebrowser->current_dir.ptr   = 0;
 }
 
-
-void filebrowser_reset_start_directory(filebrowser_t * filebrowser, const char * start_dir, 
-const char * extensions)
-{
-   filebrowser->directory_stack_size = 0;
-   strlcpy(filebrowser->extensions, extensions, sizeof(filebrowser->extensions));
-
-   filebrowser_parse_directory(filebrowser, start_dir, extensions);
-}
-
 void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path,
 bool with_extension)
 {

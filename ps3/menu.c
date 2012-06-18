@@ -882,7 +882,7 @@ static void select_file(uint32_t menu_id)
    if(IS_TIMER_EXPIRED(gl))
    {
       if (CTRL_START(button_was_pressed))
-         filebrowser_reset_start_directory(&tmpBrowser, "/", extensions);
+         filebrowser_new(&tmpBrowser, "/", extensions);
 
       if (CTRL_CROSS(button_was_pressed))
       {
@@ -980,7 +980,7 @@ static void select_directory(uint32_t menu_id)
    if(IS_TIMER_EXPIRED(gl))
    {
       if (CTRL_START(button_was_pressed))
-         filebrowser_reset_start_directory(&tmpBrowser, "/","empty");
+         filebrowser_new(&tmpBrowser, "/","empty");
 
       if (CTRL_SQUARE(button_was_pressed))
       {
@@ -1912,7 +1912,7 @@ static void select_rom(void)
       }
 
       if (CTRL_START(button_was_pressed))
-         filebrowser_reset_start_directory(&browser, "/", rarch_console_get_rom_ext());
+         filebrowser_new(&browser, "/", rarch_console_get_rom_ext());
 
       if (CTRL_CROSS(button_was_pressed))
       {

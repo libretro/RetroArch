@@ -47,7 +47,6 @@ typedef struct
 
 void filebrowser_new(filebrowser_t *filebrowser, const char * start_dir, const char * extensions);
 void filebrowser_free(filebrowser_t *filebrowser);
-void filebrowser_reset_start_directory(filebrowser_t * filebrowser, const char * start_dir, const char * extensions);
 void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path, bool with_extension);
 void filebrowser_pop_directory (filebrowser_t * filebrowser);
 
