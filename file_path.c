@@ -214,8 +214,10 @@ char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
       if (!include_dirs && path_is_directory(name))
          continue;
 
+#ifndef _XBOX
       if (!path_is_directory(name) && !string_list_find_elem(ext_list, file_ext))
          continue;
+#endif
 
       char file_path[PATH_MAX];
       snprintf(file_path, sizeof(file_path), "%s\\%s", dir, name);
