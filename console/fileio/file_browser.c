@@ -26,7 +26,7 @@ const char * path, const char * extensions)
    filebrowser->current_dir.size  = dir_list_size(filebrowser->current_dir.elems);
    filebrowser->current_dir.ptr   = 0;
 
-   dir_list_sort(filebrowser->current_dir.elems);
+   dir_list_sort(filebrowser->current_dir.elems, true);
 }
 
 void filebrowser_new(filebrowser_t * filebrowser, const char * start_dir, 
