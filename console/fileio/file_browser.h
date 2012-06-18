@@ -25,44 +25,28 @@
 
 #ifdef __CELLOS_LV2__
 #include <stdbool.h>
-#include <cell/cell_fs.h>
 #include <sys/types.h>
 #define FS_MAX_PATH 256
 #define FS_MAX_FS_PATH_LENGTH 255
-#define MAX_FILE_LIMIT 8192
 #elif defined(_XBOX)
 #define FS_MAX_PATH MAX_PATH
 #define FS_MAX_FS_PATH_LENGTH 2048
-#define MAX_FILE_LIMIT 4096
 #endif
-
-#if defined(_XBOX)
-#define FS_TYPES_DIRECTORY (FILE_ATTRIBUTE_DIRECTORY)
-#define FS_TYPES_FILE (FILE_ATTRIBUTE_NORMAL)
-#elif defined(__CELLOS_LV2__)
-#define FS_TYPES_DIRECTORY (CELL_FS_TYPE_DIRECTORY)
-#define FS_TYPES_FILE (CELL_FS_TYPE_REGULAR)
-#endif
-
-typedef struct {
-   uint8_t d_type;
-   uint8_t d_namlen;
-   char d_name[FS_MAX_PATH];
-} DirectoryEntry;
 
 typedef struct
 {
    uint32_t directory_stack_size;
    char dir[MAX_DIR_STACK][FS_MAX_FS_PATH_LENGTH]; 
    struct {
-	   DirectoryEntry files[MAX_FILE_LIMIT];
+	   char **elems;
 	   size_t size;
 	   size_t ptr;
    } current_dir;
-   char extensions[FS_MAX_PATH];                 /* allowed extensions*/
+   char extensions[FS_MAX_PATH];
 } filebrowser_t;
 
-void filebrowser_new(filebrowser_t * filebrowser, const char * start_dir, const char * extensions);
+void filebrowser_new(filebrowser_t *filebrowser, const char * start_dir, const char * extensions);
+void filebrowser_free(filebrowser_t *filebrowser);
 void filebrowser_reset_start_directory(filebrowser_t * filebrowser, const char * start_dir, const char * extensions);
 void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path, bool with_extension);
 void filebrowser_pop_directory (filebrowser_t * filebrowser);
@@ -99,9 +83,9 @@ void filebrowser_pop_directory (filebrowser_t * filebrowser);
       filebrowser->current_dir.ptr = filebrowser->current_dir.size - 1; \
 }
 
-#define FILEBROWSER_GET_CURRENT_FILENAME(filebrowser) (filebrowser.current_dir.files[filebrowser.current_dir.ptr].d_name)
+#define FILEBROWSER_GET_CURRENT_FILENAME(filebrowser)    (filebrowser.current_dir.elems[filebrowser.current_dir.ptr])
 #define FILEBROWSER_GET_CURRENT_ENTRY_INDEX(filebrowser) (filebrowser.current_dir.ptr)
-#define FILEBROWSER_IS_CURRENT_A_FILE(filebrowser)	(filebrowser.current_dir.files[filebrowser.current_dir.ptr].d_type == CELL_FS_TYPE_REGULAR)
-#define FILEBROWSER_IS_CURRENT_A_DIRECTORY(filebrowser)	(filebrowser.current_dir.files[filebrowser.current_dir.ptr].d_type == CELL_FS_TYPE_DIRECTORY)
+#define FILEBROWSER_IS_CURRENT_A_FILE(filebrowser)       (path_file_exists(filebrowser.current_dir.elems[filebrowser.current_dir.ptr]))
+#define FILEBROWSER_IS_CURRENT_A_DIRECTORY(filebrowser)  (path_is_directory(filebrowser.current_dir.elems[filebrowser.current_dir.ptr]))
 
 #endif /* FILEBROWSER_H_ */
