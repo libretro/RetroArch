@@ -173,9 +173,35 @@ size_t dir_list_size(char * const *dir_list)
    return size;
 }
 
-static int qstrcmp(const void *a, const void *b)
+static size_t strcountelem(const char *str, const char *valid)
 {
-   return strcasecmp(*(char * const*)a, *(char * const*)b);
+   size_t count = 0;
+
+   while (*str)
+   {
+      if (strchr(valid, *str++))
+         count++;
+   }
+
+   return count;
+}
+
+static int qstrcmp(const void *a_, const void *b_)
+{
+   const char *a = *(const char * const*)a_; 
+   const char *b = *(const char * const*)b_; 
+
+   ssize_t a_cnt = strcountelem(a, "/\\");
+   ssize_t b_cnt = strcountelem(b, "/\\");
+
+   // Place directories on top.
+   // It is assumed that number of '/' or '\\' in path can determine
+   // if one path is a directory and the other is not.
+
+   if (a_cnt != b_cnt)
+      return a_cnt - b_cnt;
+   else
+      return strcasecmp(a, b);
 }
 
 void dir_list_sort(char **dir_list)
