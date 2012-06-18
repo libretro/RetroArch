@@ -20,6 +20,7 @@
 #include <string.h>
 #include <time.h>
 #include "compat/strl.h"
+#include "compat/posix_string.h"
 
 #ifdef __CELLOS_LV2__
 #include <cell/cell_fs.h>
@@ -174,7 +175,7 @@ size_t dir_list_size(char * const *dir_list)
 
 static int qstrcmp(const void *a, const void *b)
 {
-   return strcmp(*(char * const*)a, *(char * const*)b);
+   return strcasecmp(*(char * const*)a, *(char * const*)b);
 }
 
 void dir_list_sort(char **dir_list)
