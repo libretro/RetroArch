@@ -215,7 +215,7 @@ char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
          continue;
 
 #ifndef _XBOX
-      if (!path_is_directory(name) && !string_list_find_elem(ext_list, file_ext))
+      if (!path_is_directory(name) && ext_list && !string_list_find_elem(ext_list, file_ext))
          continue;
 #endif
 
@@ -267,7 +267,7 @@ char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
          continue;
 
 #ifndef __CELLOS_LV2__
-      if (!path_is_directory(name) && !string_list_find_elem(ext_list, file_ext))
+      if (!path_is_directory(name) && ext_list && !string_list_find_elem(ext_list, file_ext))
          continue;
 #endif
 
