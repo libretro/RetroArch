@@ -52,11 +52,13 @@ typedef struct {
 
 typedef struct
 {
-   uint32_t file_count;                          /* amount of files in current dir*/
-   uint32_t currently_selected;                  /* currently select browser entry*/
    uint32_t directory_stack_size;
-   char dir[MAX_DIR_STACK][FS_MAX_FS_PATH_LENGTH];         /* info of the current directory*/
-   DirectoryEntry cur[MAX_FILE_LIMIT];           /* current file listing*/
+   char dir[MAX_DIR_STACK][FS_MAX_FS_PATH_LENGTH]; 
+   struct {
+	   DirectoryEntry files[MAX_FILE_LIMIT];
+	   size_t size;
+	   size_t ptr;
+   } current_dir;
    char extensions[FS_MAX_PATH];                 /* allowed extensions*/
 } filebrowser_t;
 
@@ -66,40 +68,40 @@ void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path, 
 void filebrowser_pop_directory (filebrowser_t * filebrowser);
 
 #define FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(filebrowser) (filebrowser.dir[filebrowser.directory_stack_size])
-#define FILEBROWSER_GET_CURRENT_DIRECTORY_FILE_COUNT(filebrowser) (filebrowser.file_count)
-#define FILEBROWSER_GOTO_ENTRY(filebrowser, i)	filebrowser.currently_selected = i;
+#define FILEBROWSER_GET_CURRENT_DIRECTORY_FILE_COUNT(filebrowser) (filebrowser.current_dir.size)
+#define FILEBROWSER_GOTO_ENTRY(filebrowser, i)	filebrowser.current_dir.ptr = i;
 
 #define FILEBROWSER_INCREMENT_ENTRY(filebrowser) \
 { \
-   filebrowser.currently_selected++; \
-   if (filebrowser.currently_selected >= filebrowser.file_count) \
-      filebrowser.currently_selected = 0; \
+   filebrowser.current_dir.ptr++; \
+   if (filebrowser.current_dir.ptr >= filebrowser.current_dir.size) \
+      filebrowser.current_dir.ptr = 0; \
 }
 
 #define FILEBROWSER_INCREMENT_ENTRY_POINTER(filebrowser) \
 { \
-   filebrowser->currently_selected++; \
-   if (filebrowser->currently_selected >= filebrowser->file_count) \
-      filebrowser->currently_selected = 0; \
+   filebrowser->current_dir.ptr++; \
+   if (filebrowser->current_dir.ptr >= filebrowser->current_dir.size) \
+      filebrowser->current_dir.ptr = 0; \
 }
 
 #define FILEBROWSER_DECREMENT_ENTRY(filebrowser) \
 { \
-   filebrowser.currently_selected--; \
-   if (filebrowser.currently_selected >= filebrowser.file_count) \
-      filebrowser.currently_selected = filebrowser.file_count - 1; \
+   filebrowser.current_dir.ptr--; \
+   if (filebrowser.current_dir.ptr >= filebrowser.current_dir.size) \
+      filebrowser.current_dir.ptr = filebrowser.current_dir.size - 1; \
 }
 
 #define FILEBROWSER_DECREMENT_ENTRY_POINTER(filebrowser) \
 { \
-   filebrowser->currently_selected--; \
-   if (filebrowser->currently_selected >= filebrowser->file_count) \
-      filebrowser->currently_selected = filebrowser->file_count - 1; \
+   filebrowser->current_dir.ptr--; \
+   if (filebrowser->current_dir.ptr >= filebrowser->current_dir.size) \
+      filebrowser->current_dir.ptr = filebrowser->current_dir.size - 1; \
 }
 
-#define FILEBROWSER_GET_CURRENT_FILENAME(filebrowser) (filebrowser.cur[filebrowser.currently_selected].d_name)
-#define FILEBROWSER_GET_CURRENT_ENTRY_INDEX(filebrowser) (filebrowser.currently_selected)
-#define FILEBROWSER_IS_CURRENT_A_FILE(filebrowser)	(filebrowser.cur[filebrowser.currently_selected].d_type == CELL_FS_TYPE_REGULAR)
-#define FILEBROWSER_IS_CURRENT_A_DIRECTORY(filebrowser)	(filebrowser.cur[filebrowser.currently_selected].d_type == CELL_FS_TYPE_DIRECTORY)
+#define FILEBROWSER_GET_CURRENT_FILENAME(filebrowser) (filebrowser.current_dir.files[filebrowser.current_dir.ptr].d_name)
+#define FILEBROWSER_GET_CURRENT_ENTRY_INDEX(filebrowser) (filebrowser.current_dir.ptr)
+#define FILEBROWSER_IS_CURRENT_A_FILE(filebrowser)	(filebrowser.current_dir.files[filebrowser.current_dir.ptr].d_type == CELL_FS_TYPE_REGULAR)
+#define FILEBROWSER_IS_CURRENT_A_DIRECTORY(filebrowser)	(filebrowser.current_dir.files[filebrowser.current_dir.ptr].d_type == CELL_FS_TYPE_DIRECTORY)
 
 #endif /* FILEBROWSER_H_ */

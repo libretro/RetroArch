@@ -47,9 +47,9 @@ static void filebrowser_clear_current_entries(filebrowser_t * filebrowser)
 {
    for(uint32_t i = 0; i < MAX_FILE_LIMIT; i++)
    {
-      filebrowser->cur[filebrowser->file_count].d_type = 0;
-      filebrowser->cur[filebrowser->file_count].d_namlen = 0;
-      strlcpy(filebrowser->cur[filebrowser->file_count].d_name, "\0", sizeof(filebrowser->cur[filebrowser->file_count].d_name));
+      filebrowser->current_dir.files[i].d_type = 0;
+      filebrowser->current_dir.files[i].d_namlen = 0;
+      strlcpy(filebrowser->current_dir.files[i].d_name, "\0", sizeof(filebrowser->current_dir.files[i].d_name));
    }
 }
 
@@ -58,7 +58,7 @@ const char * path, const char * extensions)
 {
    int error = 0;
 #if defined(_XBOX)
-   filebrowser->file_count = 0;
+   filebrowser->current_dir.size = 0;
 
    WIN32_FIND_DATA ffd;
    HANDLE hFind = INVALID_HANDLE_VALUE;
@@ -115,11 +115,12 @@ const char * path, const char * extensions)
       else if (ffd.dwFileAttributes & FS_TYPES_DIRECTORY)
          found_dir = true;
 
-      filebrowser->cur[filebrowser->file_count].d_type = found_dir ? FS_TYPES_DIRECTORY : FS_TYPES_FILE;
-      snprintf(filebrowser->cur[filebrowser->file_count].d_name, sizeof(filebrowser->cur[filebrowser->file_count].d_name), ffd.cFileName);
+      filebrowser->current_dir.files[filebrowser->current_dir.ptr].d_type = found_dir ? FS_TYPES_DIRECTORY : FS_TYPES_FILE;
+      snprintf(filebrowser->current_dir.files[filebrowser->current_dir.ptr].d_name, sizeof(filebrowser->current_dir.files[filebrowser->current_dir.ptr].d_name), ffd.cFileName);
 
-      filebrowser->file_count++;
-   }while (FindNextFile(hFind, &ffd) != 0 && (filebrowser->file_count + 1) < MAX_FILE_LIMIT);
+      filebrowser->current_dir.ptr++;
+      filebrowser->current_dir.size++;
+   }while (FindNextFile(hFind, &ffd) != 0 && (filebrowser->current_dir.ptr + 1) < MAX_FILE_LIMIT);
 #elif defined(__CELLOS_LV2__)
    int fd;
 
@@ -139,8 +140,8 @@ const char * path, const char * extensions)
 
       strlcpy(filebrowser->dir[filebrowser->directory_stack_size], path, sizeof(filebrowser->dir[filebrowser->directory_stack_size]));
 
-      filebrowser->file_count = 0;
-      filebrowser->currently_selected = 0;
+      filebrowser->current_dir.size = 0;
+      filebrowser->current_dir.ptr = 0;
 
       CellFsDirent dirent;
 
@@ -180,11 +181,12 @@ const char * path, const char * extensions)
                continue;
          }
 
-         filebrowser->cur[filebrowser->file_count].d_type = dirent.d_type;
-         filebrowser->cur[filebrowser->file_count].d_namlen = dirent.d_namlen;
-         strlcpy(filebrowser->cur[filebrowser->file_count].d_name, dirent.d_name, sizeof(filebrowser->cur[filebrowser->file_count].d_name));
+         filebrowser->current_dir.files[filebrowser->current_dir.ptr].d_type = dirent.d_type;
+         filebrowser->current_dir.files[filebrowser->current_dir.ptr].d_namlen = dirent.d_namlen;
+         strlcpy(filebrowser->current_dir.files[filebrowser->current_dir.ptr].d_name, dirent.d_name, sizeof(filebrowser->current_dir.files[filebrowser->current_dir.ptr].d_name));
 
-         ++filebrowser->file_count;
+         ++filebrowser->current_dir.ptr;
+         ++filebrowser->current_dir.size;
       }
 
       cellFsClosedir(fd);
@@ -195,7 +197,8 @@ const char * path, const char * extensions)
       goto error;
    }
 #endif
-   qsort(filebrowser->cur, filebrowser->file_count, sizeof(DirectoryEntry), less_than_key);
+   qsort(filebrowser->current_dir.files, filebrowser->current_dir.size, sizeof(DirectoryEntry), less_than_key);
+   filebrowser->current_dir.ptr = 0;
    error:
    if(error)
    {

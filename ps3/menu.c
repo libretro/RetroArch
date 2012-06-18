@@ -220,7 +220,7 @@ static void browser_update(filebrowser_t * b)
 
       if (CTRL_LSTICK_DOWN(state))
       {
-         if(b->currently_selected < b->file_count-1)
+         if(b->current_dir.ptr < b->current_dir.size-1)
 	 {
             FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
 	    set_delay = DELAY_SMALLEST;
@@ -229,7 +229,7 @@ static void browser_update(filebrowser_t * b)
 
       if (CTRL_DOWN(state))
       {
-         if(b->currently_selected < b->file_count-1)
+         if(b->current_dir.ptr < b->current_dir.size-1)
 	 {
             FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
 	    set_delay = DELAY_SMALLEST;
@@ -238,7 +238,7 @@ static void browser_update(filebrowser_t * b)
 
       if (CTRL_LSTICK_UP(state))
       {
-         if(b->currently_selected > 0)
+         if(b->current_dir.ptr > 0)
 	 {
             FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
 	    set_delay = DELAY_SMALLEST;
@@ -247,7 +247,7 @@ static void browser_update(filebrowser_t * b)
 
       if (CTRL_UP(state))
       {
-         if(b->currently_selected > 0)
+         if(b->current_dir.ptr > 0)
 	 {
             FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
 	    set_delay = DELAY_SMALLEST;
@@ -256,66 +256,66 @@ static void browser_update(filebrowser_t * b)
 
       if (CTRL_RIGHT(state))
       {
-         b->currently_selected = (MIN(b->currently_selected + 5, b->file_count-1));
+         b->current_dir.ptr = (MIN(b->current_dir.ptr + 5, b->current_dir.size-1));
 	 set_delay = DELAY_SMALL;
       }
 
       if (CTRL_LSTICK_RIGHT(state))
       {
-         b->currently_selected = (MIN(b->currently_selected + 5, b->file_count-1));
+         b->current_dir.ptr = (MIN(b->current_dir.ptr + 5, b->current_dir.size-1));
 	 set_delay = DELAY_SMALLEST;
       }
 
       if (CTRL_LEFT(state))
       {
-         if (b->currently_selected <= 5)
-            b->currently_selected = 0;
+         if (b->current_dir.ptr <= 5)
+            b->current_dir.ptr = 0;
 	 else
-            b->currently_selected -= 5;
+            b->current_dir.ptr -= 5;
 
 	 set_delay = DELAY_SMALL;
       }
 
       if (CTRL_LSTICK_LEFT(state))
       {
-         if (b->currently_selected <= 5)
-            b->currently_selected = 0;
+         if (b->current_dir.ptr <= 5)
+            b->current_dir.ptr = 0;
 	 else
-            b->currently_selected -= 5;
+            b->current_dir.ptr -= 5;
 
 	 set_delay = DELAY_SMALLEST;
       }
 
       if (CTRL_R1(state))
       {
-         b->currently_selected = (MIN(b->currently_selected + NUM_ENTRY_PER_PAGE, b->file_count-1));
+         b->current_dir.ptr = (MIN(b->current_dir.ptr + NUM_ENTRY_PER_PAGE, b->current_dir.size-1));
 	 set_delay = DELAY_MEDIUM;
       }
 
       if (CTRL_R2(state))
       {
-         b->currently_selected = (MIN(b->currently_selected + 50, b->file_count-1));
-	 if(!b->currently_selected)
-            b->currently_selected = 0;
+         b->current_dir.ptr = (MIN(b->current_dir.ptr + 50, b->current_dir.size-1));
+	 if(!b->current_dir.ptr)
+            b->current_dir.ptr = 0;
 	 set_delay = DELAY_SMALL;
       }
 
       if (CTRL_L2(state))
       {
-         if (b->currently_selected <= 50)
-            b->currently_selected= 0;
+         if (b->current_dir.ptr <= 50)
+            b->current_dir.ptr= 0;
 	 else
-            b->currently_selected -= 50;
+            b->current_dir.ptr -= 50;
 
 	 set_delay = DELAY_SMALL;
       }
 
       if (CTRL_L1(state))
       {
-         if (b->currently_selected <= NUM_ENTRY_PER_PAGE)
-            b->currently_selected= 0;
+         if (b->current_dir.ptr <= NUM_ENTRY_PER_PAGE)
+            b->current_dir.ptr= 0;
 	 else
-            b->currently_selected -= NUM_ENTRY_PER_PAGE;
+            b->current_dir.ptr -= NUM_ENTRY_PER_PAGE;
 
 	 set_delay = DELAY_MEDIUM;
       }
@@ -330,11 +330,11 @@ static void browser_update(filebrowser_t * b)
 static void browser_render(filebrowser_t * b)
 {
    gl_t *gl = driver.video_data;
-   uint32_t file_count = b->file_count;
+   uint32_t file_count = b->current_dir.size;
    int current_index, page_number, page_base, i;
    float currentX, currentY, ySpacing;
 
-   current_index = b->currently_selected;
+   current_index = b->current_dir.ptr;
    page_number = current_index / NUM_ENTRY_PER_PAGE;
    page_base = page_number * NUM_ENTRY_PER_PAGE;
 
@@ -345,7 +345,7 @@ static void browser_render(filebrowser_t * b)
    for ( i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
    {
       currentY = currentY + ySpacing;
-      cellDbgFontPuts(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->cur[i].d_type == CELL_FS_TYPE_DIRECTORY ? GREEN : WHITE, b->cur[i].d_name);
+      cellDbgFontPuts(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->current_dir.files[i].d_type == CELL_FS_TYPE_DIRECTORY ? GREEN : WHITE, b->current_dir.files[i].d_name);
       gl_render_msg_post(gl);
    }
    gl_render_msg_post(gl);
@@ -889,7 +889,7 @@ static void select_file(uint32_t menu_id)
 	 {
             /*if 'filename' is in fact '..' - then pop back directory instead of 
 	      adding '..' to filename path */
-            if(tmpBrowser.currently_selected == 0)
+            if(tmpBrowser.current_dir.ptr == 0)
                filebrowser_pop_directory(&tmpBrowser);
 	    else
 	    {
@@ -1035,7 +1035,7 @@ static void select_directory(uint32_t menu_id)
             /* if 'filename' is in fact '..' - then pop back directory instead of 
              * adding '..' to filename path */
 
-            if(tmpBrowser.currently_selected == 0)
+            if(tmpBrowser.current_dir.ptr == 0)
                filebrowser_pop_directory(&tmpBrowser);
 	    else
 	    {
@@ -1922,7 +1922,7 @@ static void select_rom(void)
 	 {
             /*if 'filename' is in fact '..' - then pop back directory  instead of adding '..' to filename path */
 
-            if(browser.currently_selected == 0)
+            if(browser.current_dir.ptr == 0)
 	    {
                filebrowser_pop_directory(&browser);
 	    }
