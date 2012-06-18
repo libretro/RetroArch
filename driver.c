@@ -403,6 +403,12 @@ static void init_filter(void)
    if (*g_settings.video.filter_path == '\0')
       return;
 
+   if (g_extern.system.rgb32)
+   {
+      RARCH_WARN("libretro implementation uses XRGB8888 format. CPU filters only support 0RGB1555.\n");
+      return;
+   }
+
    RARCH_LOG("Loading bSNES filter from \"%s\"\n", g_settings.video.filter_path);
    g_extern.filter.lib = dylib_load(g_settings.video.filter_path);
    if (!g_extern.filter.lib)
@@ -417,6 +423,7 @@ static void init_filter(void)
       (void (*)(uint32_t*, uint32_t*, 
                 unsigned, const uint16_t*, 
                 unsigned, unsigned, unsigned))dylib_proc(g_extern.filter.lib, "filter_render");
+
    if (!g_extern.filter.psize || !g_extern.filter.prender)
    {
       RARCH_ERR("Failed to find functions in filter...\n");
@@ -428,28 +435,30 @@ static void init_filter(void)
    g_extern.filter.active = true;
 
    struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
-   unsigned width = geom->max_width;
+   unsigned width  = geom->max_width;
    unsigned height = geom->max_height;
    g_extern.filter.psize(&width, &height);
 
-   unsigned pow2_x = next_pow2(width);
-   unsigned pow2_y = next_pow2(height);
+   unsigned pow2_x  = next_pow2(width);
+   unsigned pow2_y  = next_pow2(height);
    unsigned maxsize = pow2_x > pow2_y ? pow2_x : pow2_y; 
    g_extern.filter.scale = maxsize / RARCH_SCALE_BASE;
 
-   g_extern.filter.buffer = (uint32_t*)malloc(RARCH_SCALE_BASE * RARCH_SCALE_BASE * g_extern.filter.scale * g_extern.filter.scale * sizeof(uint32_t));
-   g_extern.filter.pitch = RARCH_SCALE_BASE * g_extern.filter.scale * sizeof(uint32_t);
+   g_extern.filter.buffer = (uint32_t*)malloc(RARCH_SCALE_BASE * RARCH_SCALE_BASE *
+         g_extern.filter.scale * g_extern.filter.scale * sizeof(uint32_t));
    rarch_assert(g_extern.filter.buffer);
 
-   g_extern.filter.colormap = (uint32_t*)malloc(32768 * sizeof(uint32_t));
+   g_extern.filter.pitch = RARCH_SCALE_BASE * g_extern.filter.scale * sizeof(uint32_t);
+
+   g_extern.filter.colormap = (uint32_t*)malloc(0x10000 * sizeof(uint32_t));
    rarch_assert(g_extern.filter.colormap);
 
    // Set up conversion map from 16-bit XRGB1555 to 32-bit ARGB.
-   for (unsigned i = 0; i < 32768; i++)
+   for (unsigned i = 0; i < 0x10000; i++)
    {
-      unsigned r = (i >> 10) & 31;
-      unsigned g = (i >>  5) & 31;
-      unsigned b = (i >>  0) & 31;
+      unsigned r = (i >> 10) & 0x1f;
+      unsigned g = (i >>  5) & 0x1f;
+      unsigned b = (i >>  0) & 0x1f;
 
       r = (r << 3) | (r >> 2);
       g = (g << 3) | (g >> 2);
@@ -477,17 +486,14 @@ static void init_shader_dir(void)
    if (!*g_settings.video.shader_dir)
       return;
 
-   g_extern.shader_dir.elems = dir_list_new(g_settings.video.shader_dir, ".shader", false);
-   g_extern.shader_dir.size = 0;
-   g_extern.shader_dir.ptr = 0;
-   if (g_extern.shader_dir.elems)
-   {
-      while (g_extern.shader_dir.elems[g_extern.shader_dir.size])
-      {
-         RARCH_LOG("Found shader \"%s\"\n", g_extern.shader_dir.elems[g_extern.shader_dir.size]);
-         g_extern.shader_dir.size++;
-      }
-   }
+   g_extern.shader_dir.elems = dir_list_new(g_settings.video.shader_dir, "shader", false);
+   g_extern.shader_dir.size  = dir_list_size(g_extern.shader_dir.elems);
+   g_extern.shader_dir.ptr   = 0;
+
+   dir_list_sort(g_extern.shader_dir.elems, false);
+
+   for (unsigned i = 0; i < g_extern.shader_dir.size; i++)
+      RARCH_LOG("Found shader \"%s\"\n", g_extern.shader_dir.elems[i]);
 }
 
 static void deinit_shader_dir(void)
@@ -495,8 +501,8 @@ static void deinit_shader_dir(void)
    // It handles NULL, no worries :D
    dir_list_free(g_extern.shader_dir.elems);
    g_extern.shader_dir.elems = NULL;
-   g_extern.shader_dir.size = 0;
-   g_extern.shader_dir.ptr = 0;
+   g_extern.shader_dir.size  = 0;
+   g_extern.shader_dir.ptr   = 0;
 }
 #endif
 
@@ -559,7 +565,7 @@ void init_video_input(void)
    video.force_aspect = g_settings.video.force_aspect;
    video.smooth = g_settings.video.smooth;
    video.input_scale = scale;
-   video.rgb32 = g_extern.filter.active;
+   video.rgb32 = g_extern.filter.active || g_extern.system.rgb32;
 
    const input_driver_t *tmp = driver.input;
    driver.video_data = video_init_func(&video, &driver.input, &driver.input_data);

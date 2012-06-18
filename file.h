@@ -24,10 +24,6 @@
 #include <sys/types.h>
 #include "general.h"
 
-#ifdef __CELLOS_LV2__
-#include <cell/cell_fs.h>
-#endif
-
 // Generic file, path and directory handling.
 
 ssize_t read_file(const char *path, void **buf);
@@ -44,6 +40,8 @@ bool init_rom_file(enum rarch_game_type type);
 // If ext is NULL, any file will be picked.
 // If non-NULL, only files with extension ext are added.
 char **dir_list_new(const char *dir, const char *ext, bool include_dirs);
+size_t dir_list_size(char * const *dir_list);
+void dir_list_sort(char **dir_list, bool dir_first);
 void dir_list_free(char **dir_list);
 
 bool path_is_directory(const char *path);

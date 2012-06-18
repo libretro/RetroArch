@@ -43,13 +43,10 @@ const char *rarch_manage_libretro_install(const char *full_path, const char *pat
          // file first.
 
          RARCH_LOG("Upgrading emulator core...\n");
-#if defined(__CELLOS_LV2__)
-         ret = cellFsUnlink(tmp_pathnewfile);
-         if (ret == CELL_FS_SUCCEEDED)
-#elif defined(_XBOX)
-         ret = DeleteFile(tmp_pathnewfile);
-         if (ret != 0)
-#endif
+
+         ret = remove(tmp_pathnewfile);
+
+         if (ret == 0)
          {
             RARCH_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
          }
@@ -58,26 +55,21 @@ const char *rarch_manage_libretro_install(const char *full_path, const char *pat
       }
 
       //now attempt the renaming.
-#if defined(__CELLOS_LV2__)
-      ret = cellFsRename(full_path, tmp_pathnewfile);
+      ret = rename(full_path, tmp_pathnewfile);
 
-      if (ret != CELL_FS_SUCCEEDED)
-#elif defined(_XBOX)
-         ret = MoveFileExA(full_path, tmp_pathnewfile, NULL);
       if (ret == 0)
-#endif
-      {
-         RARCH_ERR("Failed to rename CORE executable.\n");
-      }
-      else
       {
          RARCH_LOG("Libsnes core [%s] renamed to: [%s].\n", full_path, tmp_pathnewfile);
 	 retstr = tmp_pathnewfile;
          goto done;
       }
+      else
+      {
+         RARCH_ERR("Failed to rename CORE executable.\n");
+	 RARCH_WARN("CORE executable was not found, or some other errors occurred. Will attempt to load libretro core path from config file.\n");
+      }
    }
 
-   RARCH_WARN("CORE executable was not found, or some other errors occurred. Will attempt to load libretro core path from config file.\n");
 done:
    return retstr;
 }

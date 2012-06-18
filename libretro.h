@@ -150,7 +150,19 @@ extern "C" {
                                            // The returned value can be NULL.
                                            // If so, no such directory is defined,
                                            // and it's up to the implementation to find a suitable directory.
+                                           //
+#define RETRO_ENVIRONMENT_SET_PIXEL_FORMAT 10
+                                           // const enum retro_pixel_format * --
+                                           // Sets the internal pixel format used by the implementation.
+                                           // The default pixel format is RETRO_PIXEL_FORMAT_XRGB1555.
+                                           // If the call returns false, the frontend does not support this pixel format.
+                                           // This function should be called inside retro_load_game() or retro_get_system_av_info().
 
+enum retro_pixel_format
+{
+   RETRO_PIXEL_FORMAT_0RGB1555 = 0, // 0RGB1555, native endian. 0 bit must be set to 0.
+   RETRO_PIXEL_FORMAT_XRGB8888      // XRGB8888, native endian. X bits are ignored.
+};
 
 struct retro_message
 {
@@ -225,7 +237,7 @@ struct retro_game_info
 // Environment callback. Gives implementations a way of performing uncommon tasks. Extensible.
 typedef bool (*retro_environment_t)(unsigned cmd, void *data);
 
-// Render a frame. Pixel format is 15-bit XRGB1555 native endian.
+// Render a frame. Pixel format is 15-bit 0RGB1555 native endian unless changed (see RETRO_ENVIRONMENT_SET_PIXEL_FORMAT).
 // Width and height specify dimensions of buffer.
 // Pitch specifices length in bytes between two lines in buffer.
 typedef void (*retro_video_refresh_t)(const void *data, unsigned width, unsigned height, size_t pitch);

@@ -220,7 +220,7 @@ static void browser_update(filebrowser_t * b)
 
       if (CTRL_LSTICK_DOWN(state))
       {
-         if(b->currently_selected < b->file_count-1)
+         if(b->current_dir.ptr < b->current_dir.size-1)
 	 {
             FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
 	    set_delay = DELAY_SMALLEST;
@@ -229,7 +229,7 @@ static void browser_update(filebrowser_t * b)
 
       if (CTRL_DOWN(state))
       {
-         if(b->currently_selected < b->file_count-1)
+         if(b->current_dir.ptr < b->current_dir.size-1)
 	 {
             FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
 	    set_delay = DELAY_SMALLEST;
@@ -238,7 +238,7 @@ static void browser_update(filebrowser_t * b)
 
       if (CTRL_LSTICK_UP(state))
       {
-         if(b->currently_selected > 0)
+         if(b->current_dir.ptr > 0)
 	 {
             FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
 	    set_delay = DELAY_SMALLEST;
@@ -247,7 +247,7 @@ static void browser_update(filebrowser_t * b)
 
       if (CTRL_UP(state))
       {
-         if(b->currently_selected > 0)
+         if(b->current_dir.ptr > 0)
 	 {
             FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
 	    set_delay = DELAY_SMALLEST;
@@ -256,66 +256,66 @@ static void browser_update(filebrowser_t * b)
 
       if (CTRL_RIGHT(state))
       {
-         b->currently_selected = (MIN(b->currently_selected + 5, b->file_count-1));
+         b->current_dir.ptr = (MIN(b->current_dir.ptr + 5, b->current_dir.size-1));
 	 set_delay = DELAY_SMALL;
       }
 
       if (CTRL_LSTICK_RIGHT(state))
       {
-         b->currently_selected = (MIN(b->currently_selected + 5, b->file_count-1));
+         b->current_dir.ptr = (MIN(b->current_dir.ptr + 5, b->current_dir.size-1));
 	 set_delay = DELAY_SMALLEST;
       }
 
       if (CTRL_LEFT(state))
       {
-         if (b->currently_selected <= 5)
-            b->currently_selected = 0;
+         if (b->current_dir.ptr <= 5)
+            b->current_dir.ptr = 0;
 	 else
-            b->currently_selected -= 5;
+            b->current_dir.ptr -= 5;
 
 	 set_delay = DELAY_SMALL;
       }
 
       if (CTRL_LSTICK_LEFT(state))
       {
-         if (b->currently_selected <= 5)
-            b->currently_selected = 0;
+         if (b->current_dir.ptr <= 5)
+            b->current_dir.ptr = 0;
 	 else
-            b->currently_selected -= 5;
+            b->current_dir.ptr -= 5;
 
 	 set_delay = DELAY_SMALLEST;
       }
 
       if (CTRL_R1(state))
       {
-         b->currently_selected = (MIN(b->currently_selected + NUM_ENTRY_PER_PAGE, b->file_count-1));
+         b->current_dir.ptr = (MIN(b->current_dir.ptr + NUM_ENTRY_PER_PAGE, b->current_dir.size-1));
 	 set_delay = DELAY_MEDIUM;
       }
 
       if (CTRL_R2(state))
       {
-         b->currently_selected = (MIN(b->currently_selected + 50, b->file_count-1));
-	 if(!b->currently_selected)
-            b->currently_selected = 0;
+         b->current_dir.ptr = (MIN(b->current_dir.ptr + 50, b->current_dir.size-1));
+	 if(!b->current_dir.ptr)
+            b->current_dir.ptr = 0;
 	 set_delay = DELAY_SMALL;
       }
 
       if (CTRL_L2(state))
       {
-         if (b->currently_selected <= 50)
-            b->currently_selected= 0;
+         if (b->current_dir.ptr <= 50)
+            b->current_dir.ptr= 0;
 	 else
-            b->currently_selected -= 50;
+            b->current_dir.ptr -= 50;
 
 	 set_delay = DELAY_SMALL;
       }
 
       if (CTRL_L1(state))
       {
-         if (b->currently_selected <= NUM_ENTRY_PER_PAGE)
-            b->currently_selected= 0;
+         if (b->current_dir.ptr <= NUM_ENTRY_PER_PAGE)
+            b->current_dir.ptr= 0;
 	 else
-            b->currently_selected -= NUM_ENTRY_PER_PAGE;
+            b->current_dir.ptr -= NUM_ENTRY_PER_PAGE;
 
 	 set_delay = DELAY_MEDIUM;
       }
@@ -330,11 +330,11 @@ static void browser_update(filebrowser_t * b)
 static void browser_render(filebrowser_t * b)
 {
    gl_t *gl = driver.video_data;
-   uint32_t file_count = b->file_count;
+   uint32_t file_count = b->current_dir.size;
    int current_index, page_number, page_base, i;
    float currentX, currentY, ySpacing;
 
-   current_index = b->currently_selected;
+   current_index = b->current_dir.ptr;
    page_number = current_index / NUM_ENTRY_PER_PAGE;
    page_base = page_number * NUM_ENTRY_PER_PAGE;
 
@@ -344,8 +344,10 @@ static void browser_render(filebrowser_t * b)
 
    for ( i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
    {
+      char fname_tmp[256];
+      fill_pathname_base(fname_tmp, b->current_dir.elems[i], sizeof(fname_tmp));
       currentY = currentY + ySpacing;
-      cellDbgFontPuts(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->cur[i].d_type == CELL_FS_TYPE_DIRECTORY ? GREEN : WHITE, b->cur[i].d_name);
+      cellDbgFontPuts(currentX, currentY, FONT_SIZE, i == current_index ? RED : WHITE, fname_tmp);
       gl_render_msg_post(gl);
    }
    gl_render_msg_post(gl);
@@ -818,8 +820,7 @@ static void apply_scaling (unsigned init_mode)
 
 static void select_file(uint32_t menu_id)
 {
-   char extensions[256], title[256], object[256], comment[256], dir_path[PATH_MAX],
-      path[PATH_MAX], *separatorslash;
+   char extensions[256], title[256], object[256], comment[256], dir_path[PATH_MAX], path[PATH_MAX];
    uint64_t state, diff_state, button_was_pressed;
    gl_t * gl = driver.video_data;
 
@@ -881,7 +882,7 @@ static void select_file(uint32_t menu_id)
    if(IS_TIMER_EXPIRED(gl))
    {
       if (CTRL_START(button_was_pressed))
-         filebrowser_reset_start_directory(&tmpBrowser, "/", extensions);
+         filebrowser_new(&tmpBrowser, "/", extensions);
 
       if (CTRL_CROSS(button_was_pressed))
       {
@@ -889,19 +890,17 @@ static void select_file(uint32_t menu_id)
 	 {
             /*if 'filename' is in fact '..' - then pop back directory instead of 
 	      adding '..' to filename path */
-            if(tmpBrowser.currently_selected == 0)
+            if(tmpBrowser.current_dir.ptr == 0)
                filebrowser_pop_directory(&tmpBrowser);
 	    else
 	    {
-               separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
-	       snprintf(path, sizeof(path), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+	       snprintf(path, sizeof(path), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
 	       filebrowser_push_directory(&tmpBrowser, path, true);
 	    }
 	 }
 	 else if (FILEBROWSER_IS_CURRENT_A_FILE(tmpBrowser))
 	 {
-            snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-	    printf("path: %s\n", path);
+            snprintf(path, sizeof(path), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
 
 	    switch(menu_id)
 	    {
@@ -962,7 +961,7 @@ static void select_file(uint32_t menu_id)
 
 static void select_directory(uint32_t menu_id)
 {
-   char path[1024], newpath[1024], *separatorslash;
+   char path[1024], newpath[1024];
    uint64_t state, diff_state, button_was_pressed;
    gl_t * gl = driver.video_data;
 
@@ -981,13 +980,13 @@ static void select_directory(uint32_t menu_id)
    if(IS_TIMER_EXPIRED(gl))
    {
       if (CTRL_START(button_was_pressed))
-         filebrowser_reset_start_directory(&tmpBrowser, "/","empty");
+         filebrowser_new(&tmpBrowser, "/","empty");
 
       if (CTRL_SQUARE(button_was_pressed))
       {
          if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
 	 {
-            snprintf(path, sizeof(path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+            snprintf(path, sizeof(path), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
 	    switch(menu_id)
 	    {
                case PATH_SAVESTATES_DIR_CHOICE:
@@ -1035,12 +1034,11 @@ static void select_directory(uint32_t menu_id)
             /* if 'filename' is in fact '..' - then pop back directory instead of 
              * adding '..' to filename path */
 
-            if(tmpBrowser.currently_selected == 0)
+            if(tmpBrowser.current_dir.ptr == 0)
                filebrowser_pop_directory(&tmpBrowser);
 	    else
 	    {
-               separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
-	       snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
+	       snprintf(newpath, sizeof(newpath), FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
 	       filebrowser_push_directory(&tmpBrowser, newpath, false);
 	    }
 	 }
@@ -1895,7 +1893,7 @@ static void select_setting(menu * menu_obj)
 
 static void select_rom(void)
 {
-   char newpath[1024], *separatorslash;
+   char newpath[1024];
    uint64_t state, diff_state, button_was_pressed;
    gl_t * gl = driver.video_data;
 
@@ -1914,7 +1912,7 @@ static void select_rom(void)
       }
 
       if (CTRL_START(button_was_pressed))
-         filebrowser_reset_start_directory(&browser, "/", rarch_console_get_rom_ext());
+         filebrowser_new(&browser, "/", rarch_console_get_rom_ext());
 
       if (CTRL_CROSS(button_was_pressed))
       {
@@ -1922,14 +1920,13 @@ static void select_rom(void)
 	 {
             /*if 'filename' is in fact '..' - then pop back directory  instead of adding '..' to filename path */
 
-            if(browser.currently_selected == 0)
+            if(browser.current_dir.ptr == 0)
 	    {
                filebrowser_pop_directory(&browser);
 	    }
 	    else
 	    {
-               separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser),"/") == 0) ? "" : "/";
-	       snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(browser));
+	       snprintf(newpath, sizeof(newpath), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 	       filebrowser_push_directory(&browser, newpath, true);
 	    }
 	 }
@@ -1940,13 +1937,13 @@ static void select_rom(void)
 	    retro_get_system_info(&info);
 	    bool block_zip_extract  = info.block_extract;
 
-	    snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+	    snprintf(rom_path_temp, sizeof(rom_path_temp), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 
 	    if((strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP")) && !block_zip_extract)
                rarch_extract_zipfile(rom_path_temp);
 	    else
 	    {
-	       snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+	       snprintf(g_console.rom_path, sizeof(g_console.rom_path), FILEBROWSER_GET_CURRENT_FILENAME(browser));
                rarch_settings_change(S_START_RARCH);
 	    }
 	 }
@@ -2460,6 +2457,12 @@ static void ingame_menu(uint32_t menu_id)
 void menu_init (void)
 {
    filebrowser_new(&browser, g_console.default_rom_startup_dir, rarch_console_get_rom_ext());
+}
+
+void menu_free (void)
+{
+   filebrowser_free(&browser);
+   filebrowser_free(&tmpBrowser);
 }
 
 void menu_loop(void)

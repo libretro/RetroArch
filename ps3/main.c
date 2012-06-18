@@ -78,7 +78,7 @@ char MULTIMAN_EXECUTABLE[PATH_MAX];
 
 int rarch_main(int argc, char *argv[]);
 
-SYS_PROCESS_PARAM(1001, 0x100000)
+SYS_PROCESS_PARAM(1001, 0x200000)
 
 #undef main
 
@@ -418,8 +418,8 @@ begin_shutdown:
       rarch_main_deinit();
 
    input_ps3.free(NULL);
-
    video_gl.stop();
+   menu_free();
 
    if(g_console.oskutil_handle.is_running)
       oskutil_unload(&g_console.oskutil_handle);

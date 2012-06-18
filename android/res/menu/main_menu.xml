@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+<item android:id="@+id/open" android:showAsAction="ifRoom|withText" android:title="Open ROM" android:icon="@drawable/ic_action_open"></item>
+<item android:id="@+id/close" android:showAsAction="collapseActionView" android:title="Close ROM" android:icon="@drawable/ic_action_close"></item>
+<item android:id="@+id/load" android:showAsAction="collapseActionView" android:title="Load" android:icon="@drawable/ic_action_load"></item>
+<item android:id="@+id/save" android:showAsAction="collapseActionView" android:title="Save" android:icon="@drawable/ic_action_save"></item>
+<item android:id="@+id/history" android:showAsAction="collapseActionView" android:title="History" android:icon="@drawable/ic_action_history"></item>
+<item android:id="@+id/settings" android:showAsAction="collapseActionView" android:title="Settings" android:icon="@drawable/ic_action_settings"></item>
+<item android:id="@+id/quit" android:showAsAction="collapseActionView" android:title="Quit" android:icon="@drawable/ic_action_quit"></item>
+
+
+</menu>
