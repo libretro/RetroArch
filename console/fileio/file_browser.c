@@ -19,7 +19,8 @@
 static void filebrowser_parse_directory(filebrowser_t * filebrowser, 
 const char * path, const char * extensions)
 {
-   strlcpy(filebrowser->dir[filebrowser->directory_stack_size], path, sizeof(filebrowser->dir[filebrowser->directory_stack_size]));
+   strlcpy(filebrowser->dir[filebrowser->directory_stack_size], path, 
+   sizeof(filebrowser->dir[filebrowser->directory_stack_size]));
 
    filebrowser->current_dir.elems = dir_list_new(path, extensions, true);
    filebrowser->current_dir.size  = dir_list_size(filebrowser->current_dir.elems);
