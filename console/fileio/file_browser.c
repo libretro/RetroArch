@@ -14,11 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef _XBOX
-#include <xtl.h>
-#endif
 #include "file_browser.h"
-
 
 static void filebrowser_parse_directory(filebrowser_t * filebrowser, 
 const char * path, const char * extensions)
