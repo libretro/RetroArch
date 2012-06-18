@@ -215,7 +215,7 @@ class CRetroArchControls: public CXuiSceneImpl
 };
 
 int menu_init (void);
-void menu_deinit (void);
+void menu_free (void);
 void menu_loop (void);
 
 extern CRetroArch app;

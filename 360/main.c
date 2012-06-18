@@ -320,7 +320,7 @@ begin_shutdown:
    if(path_file_exists(SYS_CONFIG_FILE))
       rarch_config_save(SYS_CONFIG_FILE);
 
-   menu_deinit();
+   menu_free();
    video_xdk360.stop();
    input_xdk360.free(NULL);
    rarch_exec();

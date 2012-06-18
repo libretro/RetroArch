@@ -839,8 +839,10 @@ int menu_init (void)
    return 0;
 }
 
-void menu_deinit (void)
+void menu_free (void)
 {
+   filebrowser_free(&browser);
+   filebrowser_free(&tmp_browser);
    app.Uninit();
 }
 
