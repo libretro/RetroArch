@@ -24,6 +24,8 @@
 
 #ifdef __CELLOS_LV2__
 #include <cell/cell_fs.h>
+
+#define S_ISDIR(x) (x & CELL_FS_S_IFDIR)
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
@@ -306,12 +308,6 @@ bool path_is_directory(const char *path)
 #ifdef _WIN32
    DWORD ret = GetFileAttributes(path);
    return (ret & FILE_ATTRIBUTE_DIRECTORY) && (ret != INVALID_FILE_ATTRIBUTES);
-#elif defined(__CELLOS_LV2__)
-   CellFsStat buf;
-   if (cellFsStat(path, &buf) < 0)
-      return false;
-
-   return buf.st_mode & CELL_FS_S_IFDIR;
 #else
    struct stat buf;
    if (stat(path, &buf) < 0)
