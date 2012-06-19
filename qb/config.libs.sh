@@ -10,15 +10,15 @@ add_define_make NOUNUSED "$HAVE_NOUNUSED"
 
 if [ "$OS" = 'BSD' ]; then DYLIB=-lc; else DYLIB=-ldl; fi
 
-if [ -d /opt/vc/lib ]; then
-   add_library_dirs /opt/vc/lib
-   add_include_dirs /opt/vc/include
-   add_include_dirs /opt/vc/include/interface/vcos/pthreads
+[ -d /opt/vc/lib ] && add_library_dirs /opt/vc/lib
+check_lib RPI -lbcm_host bcm_host_init
+
+if [ "$HAVE_RPI" = 'yes' ]; then
+   [ -d /opt/vc/include ] && add_include_dirs /opt/vc/include
+   [ -d /opt/vc/include/interface/vcos/pthreads ] && add_include_dirs /opt/vc/include/interface/vcos/pthreads
+
    # the gles library gets messed up with the gl library if available, so turn it off
-   HAVE_OPENGL=no
-   HAVE_RPI=yes
-else
-   HAVE_RPI=no
+   HAVE_OPENGL='no'
 fi
 
 if [ "$LIBRETRO" ]; then
