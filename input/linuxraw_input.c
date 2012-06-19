@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
- *
+ *  Copyright (C) 2012 - Michael Lelli
+ * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -16,9 +17,11 @@
 #include "../driver.h"
 
 #include <sys/ioctl.h>
+#include <linux/input.h>
 #include <linux/kd.h>
 #include <termios.h>
 #include <unistd.h>
+#include <signal.h>
 #include "../general.h"
 #include "linuxraw_input.h"
 #include "rarch_sdl_input.h"
@@ -34,111 +37,111 @@ struct key_bind
 
 static unsigned keysym_lut[SK_LAST];
 static const struct key_bind lut_binds[] = {
-	{ 1, SK_ESCAPE },
-	{ 2, SK_1 },
-	{ 3, SK_2 },
-	{ 4, SK_3},
-	{ 5, SK_4 },
-	{ 6, SK_5 },
-	{ 7, SK_6 },
-	{ 8, SK_7 },
-	{ 9, SK_8 },
-	{ 10, SK_9 },
-	{ 11, SK_0 },
-	{ 12, SK_MINUS },
-	{ 13, SK_EQUALS },
-	{ 14, SK_BACKSPACE },
-	{ 15, SK_TAB },
-	{ 16, SK_q },
-	{ 17, SK_w },
-	{ 18, SK_e },
-	{ 19, SK_r },
-	{ 20, SK_t },
-	{ 21, SK_y },
-	{ 22, SK_u },
-	{ 23, SK_i },
-	{ 24, SK_o },
-	{ 25, SK_p },
-	{ 26, SK_LEFTBRACKET },
-	{ 27, SK_RIGHTBRACKET },
-	{ 28, SK_RETURN },
-	{ 29, SK_LCTRL },
-	{ 30, SK_a },
-	{ 31, SK_s },
-	{ 32, SK_d },
-	{ 33, SK_f },
-	{ 34, SK_g },
-	{ 35, SK_h },
-	{ 36, SK_j },
-	{ 37, SK_k },
-	{ 38, SK_l },
-	{ 39, SK_SEMICOLON },
-	{ 40, SK_COMMA },
-	{ 41, SK_BACKQUOTE },
-	{ 42, SK_LSHIFT },
-	{ 43, SK_BACKSLASH },
-	{ 44, SK_z },
-	{ 45, SK_x },
-	{ 46, SK_c },
-	{ 47, SK_v },
-	{ 48, SK_b },
-	{ 49, SK_n },
-	{ 50, SK_m },
-	{ 51, SK_COMMA },
-	{ 52, SK_PERIOD },
-	{ 53, SK_SLASH },
-	{ 54, SK_RSHIFT },
-	{ 55, SK_KP_MULTIPLY },
-	{ 56, SK_LALT },
-	{ 57, SK_SPACE },
-	{ 58, SK_CAPSLOCK },
-	{ 59, SK_F1 },
-	{ 60, SK_F2 },
-	{ 61, SK_F3 },
-	{ 62, SK_F4 },
-	{ 63, SK_F5 },
-	{ 64, SK_F6 },
-	{ 65, SK_F7 },
-	{ 66, SK_F8 },
-	{ 67, SK_F9 },
-	{ 68, SK_F10 },
-	{ 69, SK_NUMLOCK },
-	{ 70, SK_SCROLLOCK },
-	{ 71, SK_KP7 },
-	{ 72, SK_KP8 },
-	{ 73, SK_KP9 },
-	{ 74, SK_KP_MINUS },
-	{ 75, SK_KP4 },
-	{ 76, SK_KP5 },
-	{ 77, SK_KP6 },
-	{ 78, SK_KP_PLUS },
-	{ 79, SK_KP1 },
-	{ 80, SK_KP2 },
-	{ 81, SK_KP3 },
-	{ 82, SK_KP0 },
-	{ 83, SK_KP_PERIOD },
+	{ KEY_ESC, SK_ESCAPE },
+	{ KEY_1, SK_1 },
+	{ KEY_2, SK_2 },
+	{ KEY_3, SK_3},
+	{ KEY_4, SK_4 },
+	{ KEY_5, SK_5 },
+	{ KEY_6, SK_6 },
+	{ KEY_7, SK_7 },
+	{ KEY_8, SK_8 },
+	{ KEY_9, SK_9 },
+	{ KEY_0, SK_0 },
+	{ KEY_MINUS, SK_MINUS },
+	{ KEY_EQUAL, SK_EQUALS },
+	{ KEY_BACKSPACE, SK_BACKSPACE },
+	{ KEY_TAB, SK_TAB },
+	{ KEY_Q, SK_q },
+	{ KEY_W, SK_w },
+	{ KEY_E, SK_e },
+	{ KEY_R, SK_r },
+	{ KEY_T, SK_t },
+	{ KEY_Y, SK_y },
+	{ KEY_U, SK_u },
+	{ KEY_I, SK_i },
+	{ KEY_O, SK_o },
+	{ KEY_P, SK_p },
+	{ KEY_LEFTBRACE, SK_LEFTBRACKET },
+	{ KEY_RIGHTBRACE, SK_RIGHTBRACKET },
+	{ KEY_ENTER, SK_RETURN },
+	{ KEY_LEFTCTRL, SK_LCTRL },
+	{ KEY_A, SK_a },
+	{ KEY_S, SK_s },
+	{ KEY_D, SK_d },
+	{ KEY_F, SK_f },
+	{ KEY_G, SK_g },
+	{ KEY_H, SK_h },
+	{ KEY_J, SK_j },
+	{ KEY_K, SK_k },
+	{ KEY_L, SK_l },
+	{ KEY_SEMICOLON, SK_SEMICOLON },
+	{ KEY_APOSTROPHE, SK_QUOTE },
+	{ KEY_GRAVE, SK_BACKQUOTE },
+	{ KEY_LEFTSHIFT, SK_LSHIFT },
+	{ KEY_BACKSLASH, SK_BACKSLASH },
+	{ KEY_Z, SK_z },
+	{ KEY_X, SK_x },
+	{ KEY_C, SK_c },
+	{ KEY_V, SK_v },
+	{ KEY_B, SK_b },
+	{ KEY_N, SK_n },
+	{ KEY_M, SK_m },
+	{ KEY_COMMA, SK_COMMA },
+	{ KEY_DOT, SK_PERIOD },
+	{ KEY_SLASH, SK_SLASH },
+	{ KEY_RIGHTSHIFT, SK_RSHIFT },
+	{ KEY_KPASTERISK, SK_KP_MULTIPLY },
+	{ KEY_LEFTALT, SK_LALT },
+	{ KEY_SPACE, SK_SPACE },
+	{ KEY_CAPSLOCK, SK_CAPSLOCK },
+	{ KEY_F1, SK_F1 },
+	{ KEY_F2, SK_F2 },
+	{ KEY_F3, SK_F3 },
+	{ KEY_F4, SK_F4 },
+	{ KEY_F5, SK_F5 },
+	{ KEY_F6, SK_F6 },
+	{ KEY_F7, SK_F7 },
+	{ KEY_F8, SK_F8 },
+	{ KEY_F9, SK_F9 },
+	{ KEY_F10, SK_F10 },
+	{ KEY_NUMLOCK, SK_NUMLOCK },
+	{ KEY_SCROLLLOCK, SK_SCROLLOCK },
+	{ KEY_KP7, SK_KP7 },
+	{ KEY_KP8, SK_KP8 },
+	{ KEY_KP9, SK_KP9 },
+	{ KEY_KPMINUS, SK_KP_MINUS },
+	{ KEY_KP4, SK_KP4 },
+	{ KEY_KP5, SK_KP5 },
+	{ KEY_KP6, SK_KP6 },
+	{ KEY_KPPLUS, SK_KP_PLUS },
+	{ KEY_KP1, SK_KP1 },
+	{ KEY_KP2, SK_KP2 },
+	{ KEY_KP3, SK_KP3 },
+	{ KEY_KP0, SK_KP0 },
+	{ KEY_KPDOT, SK_KP_PERIOD },
 
-	{ 87, SK_F11 },
-	{ 88, SK_F12 },
+	{ KEY_F11, SK_F11 },
+	{ KEY_F12, SK_F12 },
 
-	{ 96, SK_KP_ENTER },
-	{ 97, SK_RCTRL },
-	{ 98, SK_KP_DIVIDE },
-	{ 99, SK_PRINT },
-	{ 100, SK_RALT },
+	{ KEY_KPENTER, SK_KP_ENTER },
+	{ KEY_RIGHTCTRL, SK_RCTRL },
+	{ KEY_KPSLASH, SK_KP_DIVIDE },
+	{ KEY_SYSRQ, SK_PRINT },
+	{ KEY_RIGHTALT, SK_RALT },
 
-	{ 102, SK_HOME },
-	{ 103, SK_UP },
-	{ 104, SK_PAGEUP },
-	{ 105, SK_LEFT },
-	{ 106, SK_RIGHT },
-	{ 107, SK_END },
-	{ 108, SK_DOWN },
-	{ 109, SK_PAGEDOWN },
-	{ 110, SK_INSERT },
-	{ 111, SK_DELETE },
+	{ KEY_HOME, SK_HOME },
+	{ KEY_UP, SK_UP },
+	{ KEY_PAGEUP, SK_PAGEUP },
+	{ KEY_LEFT, SK_LEFT },
+	{ KEY_RIGHT, SK_RIGHT },
+	{ KEY_END, SK_END },
+	{ KEY_DOWN, SK_DOWN },
+	{ KEY_PAGEDOWN, SK_PAGEDOWN },
+	{ KEY_INSERT, SK_INSERT },
+	{ KEY_DELETE, SK_DELETE },
 
-	{ 119, SK_PAUSE },
+	{ KEY_PAUSE, SK_PAUSE },
 };
 
 static void init_lut(void)
@@ -158,8 +161,19 @@ static void linuxraw_resetKbmd()
 	}
 }
 
+static void linuxraw_exitGracefully(int sig)
+{
+	linuxraw_resetKbmd();
+	signal(sig, SIG_DFL);
+	kill(getpid(), sig);
+}
+
 static void *linuxraw_input_init(void)
 {
+	// only work on terminals
+	if (!isatty(0))
+		return NULL;
+
 	linuxraw_input_t *linuxraw = (linuxraw_input_t*)calloc(1, sizeof(*linuxraw));
 	if (!linuxraw)
 		return NULL;
@@ -185,11 +199,22 @@ static void *linuxraw_input_init(void)
 		return NULL;
 	}
 
+	// trap some standard termination codes so we can restore the keyboard before we lose control
+	signal(SIGABRT, linuxraw_exitGracefully);
+	signal(SIGBUS, linuxraw_exitGracefully);
+	signal(SIGFPE, linuxraw_exitGracefully);
+	signal(SIGILL, linuxraw_exitGracefully);
+	signal(SIGINT, linuxraw_exitGracefully);
+	signal(SIGQUIT, linuxraw_exitGracefully);
+	signal(SIGSEGV, linuxraw_exitGracefully);
+	signal(SIGTERM, linuxraw_exitGracefully);
+
 	atexit(linuxraw_resetKbmd);
 
 	linuxraw->sdl = (sdl_input_t*)input_sdl.init();
 	if (!linuxraw->sdl)
 	{
+		linuxraw_resetKbmd();
 		free(linuxraw);
 		return NULL;
 	}
