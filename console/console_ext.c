@@ -362,6 +362,8 @@ static const struct platform_bind platform_keys[] = {
 };
 #endif
 
+#ifdef HAVE_DEFAULT_RETROPAD_INPUT
+
 uint64_t rarch_input_find_previous_platform_key(uint64_t joykey)
 {
    size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
@@ -407,6 +409,8 @@ const char *rarch_input_find_platform_key_label(uint64_t joykey)
 
    return "Unknown";
 }
+
+#endif
 
 void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id)
 {
