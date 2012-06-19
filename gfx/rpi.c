@@ -66,6 +66,14 @@ typedef struct {
 #endif
 } rpi_t;
 
+static bool rpi_shutdown = false;
+
+static void rpi_kill(int sig)
+{
+   (void)sig;
+   rpi_shutdown = true;
+}
+
 static void rpi_set_nonblock_state(void *data, bool state)
 {
    rpi_t *rpi = (rpi_t*)data;
@@ -210,6 +218,9 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
       }
    }
 #endif
+
+   signal(SIGINT, rpi_kill);
+   signal(SIGTERM, rpi_kill);
 
    return rpi;
 }
@@ -402,7 +413,7 @@ static bool rpi_frame(void *data, const void *frame, unsigned width, unsigned he
 static bool rpi_alive(void *data)
 {
    (void)data;
-   return true;
+   return !rpi_shutdown;
 }
 
 static bool rpi_focus(void *data)

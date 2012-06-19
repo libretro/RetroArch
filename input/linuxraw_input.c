@@ -204,10 +204,8 @@ static void *linuxraw_input_init(void)
    signal(SIGBUS, linuxraw_exitGracefully);
    signal(SIGFPE, linuxraw_exitGracefully);
    signal(SIGILL, linuxraw_exitGracefully);
-   signal(SIGINT, linuxraw_exitGracefully);
    signal(SIGQUIT, linuxraw_exitGracefully);
    signal(SIGSEGV, linuxraw_exitGracefully);
-   signal(SIGTERM, linuxraw_exitGracefully);
 
    atexit(linuxraw_resetKbmd);
 
