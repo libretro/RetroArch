@@ -168,6 +168,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 	 gl->quitting = true;
          rarch_settings_change(S_QUIT);
 	 break;
+#ifdef HAVE_OSKUTIL
       case CELL_SYSUTIL_OSKDIALOG_FINISHED:
 	 oskutil_close(&g_console.oskutil_handle);
 	 oskutil_finished(&g_console.oskutil_handle);
@@ -175,6 +176,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
       case CELL_SYSUTIL_OSKDIALOG_UNLOADED:
 	 oskutil_unload(&g_console.oskutil_handle);
 	 break;
+#endif
    }
 }
 #endif
@@ -364,7 +366,9 @@ int main(int argc, char *argv[])
 
    input_ps3.init();
 
+#ifdef HAVE_OSKUTIL
    oskutil_init(&g_console.oskutil_handle, 0);
+#endif
 
    rarch_input_set_default_keybind_names_for_emulator();
 
@@ -421,8 +425,11 @@ begin_shutdown:
    video_gl.stop();
    menu_free();
 
+#ifdef HAVE_OSKUTIL
    if(g_console.oskutil_handle.is_running)
       oskutil_unload(&g_console.oskutil_handle);
+#endif
+
 #ifdef HAVE_LOGGER
    logger_shutdown();
 #endif

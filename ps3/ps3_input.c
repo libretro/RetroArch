@@ -18,6 +18,11 @@
 #include <stdlib.h>
 
 #include <cell/pad.h>
+
+#ifdef HAVE_MOUSE
+#include <cell/mouse.h>
+#endif
+
 #include <sdk_version.h>
 #include <sys/memory.h>
 #include <sysutil/sysutil_oskdialog.h>
@@ -31,6 +36,38 @@
 #include "shared.h"
 
 /*============================================================
+	PS3 MOUSE
+============================================================ */
+
+#ifdef HAVE_MOUSE
+
+#define MAX_MICE 7
+
+static void ps3_mouse_input_deinit(void)
+{
+   cellMouseEnd();
+}
+
+static uint32_t ps3_mouse_input_mice_connected(void)
+{
+   CellMouseInfo mouse_info;
+   cellMouseGetInfo(&mouse_info);
+   return mouse_info.now_connect;
+}
+
+CellMouseData ps3_mouse_input_poll_device(uint32_t id)
+{
+   CellMouseData mouse_data;
+
+   // Get new pad data
+   cellMouseGetData(id, &mouse_data);
+
+   return mouse_data;
+}
+
+#endif
+
+/*============================================================
 	PS3 PAD
 ============================================================ */
 
@@ -38,6 +75,7 @@
 
 static uint64_t state[MAX_PADS];
 static unsigned pads_connected;
+static unsigned mice_connected;
 
 uint32_t cell_pad_input_pads_connected(void)
 {
@@ -89,10 +127,38 @@ static void ps3_input_poll(void *data)
 {
    (void)data;
    for (unsigned i = 0; i < MAX_PADS; i++)
+   {
       state[i] = cell_pad_input_poll_device(i);
+   }
 
    pads_connected = cell_pad_input_pads_connected(); 
+#ifdef HAVE_MOUSE
+   mice_connected = ps3_mouse_input_mice_connected();
+#endif
 }
+
+#ifdef HAVE_MOUSE
+
+static int16_t ps3_mouse_device_state(void *data, unsigned player, unsigned id)
+{
+   CellMouseData mouse_state = ps3_mouse_input_poll_device(player);
+
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         return (!mice_connected ? 0 : mouse_state.buttons & CELL_MOUSE_BUTTON_1);
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         return (!mice_connected ? 0 : mouse_state.buttons & CELL_MOUSE_BUTTON_2);
+      case RETRO_DEVICE_ID_MOUSE_X:
+         return (!mice_connected ? 0 : mouse_state.x_axis);
+      case RETRO_DEVICE_ID_MOUSE_Y:
+         return (!mice_connected ? 0 : mouse_state.y_axis);
+      default:
+         return 0;
+   }
+}
+
+#endif
 
 static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
       unsigned port, unsigned device,
@@ -102,10 +168,22 @@ static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
 
    unsigned player = port;
    uint64_t button = binds[player][id].joykey;
-   int16_t retval = CTRL_MASK(state[player], button) ? 1 : 0;
+   int16_t retval = 0;
 
-   if(player >= pads_connected || device != RETRO_DEVICE_JOYPAD)
-      retval = 0;
+   if(player < pads_connected)
+   {
+      switch (device)
+      {
+         case RETRO_DEVICE_JOYPAD:
+            retval = CTRL_MASK(state[player], button) ? 1 : 0;
+            break;
+#ifdef HAVE_MOUSE
+         case RETRO_DEVICE_MOUSE:
+	    retval = ps3_mouse_device_state(data, player, id);
+            break;
+#endif
+      }
+    }
 
    return retval;
 }
@@ -113,6 +191,8 @@ static int16_t ps3_input_state(void *data, const struct snes_keybind **binds,
 /*============================================================
 	ON-SCREEN KEYBOARD UTILITY
 ============================================================ */
+
+#ifdef HAVE_OSKUTIL
 
 #define OSK_IN_USE 1
 
@@ -236,6 +316,8 @@ void oskutil_unload(oskutil_params *params)
    params->is_running = false;
 }
 
+#endif
+
 /*============================================================
 	RetroArch PS3 INPUT DRIVER 
 ============================================================ */
@@ -249,6 +331,9 @@ static void ps3_free_input(void *data)
 static void* ps3_input_initialize(void)
 {
    cellPadInit(MAX_PADS);
+#ifdef HAVE_MOUSE
+   cellMouseInit(MAX_MICE);
+#endif
    for(unsigned i = 0; i < MAX_PADS; i++)
    	ps3_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
    return (void*)-1;
