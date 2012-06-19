@@ -164,7 +164,6 @@ static void linuxraw_resetKbmd()
 static void linuxraw_exitGracefully(int sig)
 {
    linuxraw_resetKbmd();
-   signal(sig, SIG_DFL);
    kill(getpid(), sig);
 }
 
@@ -199,13 +198,17 @@ static void *linuxraw_input_init(void)
       return NULL;
    }
 
+   struct sigaction sa;
+   sa.sa_handler = linuxraw_exitGracefully;
+   sa.sa_flags = SA_RESTART | SA_RESETHAND;
+   sigemptyset(&sa.sa_mask);
    // trap some standard termination codes so we can restore the keyboard before we lose control
-   signal(SIGABRT, linuxraw_exitGracefully);
-   signal(SIGBUS, linuxraw_exitGracefully);
-   signal(SIGFPE, linuxraw_exitGracefully);
-   signal(SIGILL, linuxraw_exitGracefully);
-   signal(SIGQUIT, linuxraw_exitGracefully);
-   signal(SIGSEGV, linuxraw_exitGracefully);
+   sigaction(SIGABRT, &sa, NULL);
+   sigaction(SIGBUS, &sa, NULL);
+   sigaction(SIGFPE, &sa, NULL);
+   sigaction(SIGILL, &sa, NULL);
+   sigaction(SIGQUIT, &sa, NULL);
+   sigaction(SIGSEGV, &sa, NULL);
 
    atexit(linuxraw_resetKbmd);
 

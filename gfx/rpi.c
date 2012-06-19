@@ -66,12 +66,12 @@ typedef struct {
 #endif
 } rpi_t;
 
-static bool rpi_shutdown = false;
+static volatile sig_atomic_t rpi_shutdown = 0;
 
 static void rpi_kill(int sig)
 {
    (void)sig;
-   rpi_shutdown = true;
+   rpi_shutdown = 1;
 }
 
 static void rpi_set_nonblock_state(void *data, bool state)
@@ -219,8 +219,12 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
    }
 #endif
 
-   signal(SIGINT, rpi_kill);
-   signal(SIGTERM, rpi_kill);
+   struct sigaction sa;
+   sa.sa_handler = rpi_kill;
+   sa.sa_flags = SA_RESTART;
+   sigemptyset(&sa.sa_mask);
+   sigaction(SIGINT, &sa, NULL);
+   sigaction(SIGTERM, &sa, NULL);
 
    return rpi;
 }
