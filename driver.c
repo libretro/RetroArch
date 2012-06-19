@@ -99,6 +99,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef GEKKO
    &video_wii,
 #endif
+#ifdef HAVE_RPI
+   &video_rpi,
+#endif
 };
 
 static const input_driver_t *input_drivers[] = {
@@ -119,6 +122,9 @@ static const input_driver_t *input_drivers[] = {
 #endif
 #ifdef GEKKO
    &input_wii,
+#endif
+#ifdef IS_LINUX
+   &input_linuxraw,
 #endif
 };
 

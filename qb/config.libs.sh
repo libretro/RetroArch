@@ -10,6 +10,17 @@ add_define_make NOUNUSED "$HAVE_NOUNUSED"
 
 if [ "$OS" = 'BSD' ]; then DYLIB=-lc; else DYLIB=-ldl; fi
 
+[ -d /opt/vc/lib ] && add_library_dirs /opt/vc/lib
+check_lib RPI -lbcm_host bcm_host_init
+
+if [ "$HAVE_RPI" = 'yes' ]; then
+   [ -d /opt/vc/include ] && add_include_dirs /opt/vc/include
+   [ -d /opt/vc/include/interface/vcos/pthreads ] && add_include_dirs /opt/vc/include/interface/vcos/pthreads
+
+   # the gles library gets messed up with the gl library if available, so turn it off
+   HAVE_OPENGL='no'
+fi
+
 if [ "$LIBRETRO" ]; then
    echo "Explicit libsnes used, disabling dynamic libsnes loading ..."
    HAVE_DYNAMIC='no'
@@ -129,6 +140,6 @@ check_pkgconf PYTHON python3
 add_define_make OS "$OS"
 
 # Creates config.mk and config.h.
-VARS="ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK COREAUDIO PULSE SDL OPENGL DYLIB GETOPT_LONG THREADS CG XML SDL_IMAGE LIBPNG DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL SWSCALE CONFIGFILE FREETYPE XVIDEO X11 XEXT NETPLAY NETWORK_CMD SOCKET_LEGACY FBO STRL PYTHON FFMPEG_ALLOC_CONTEXT3 FFMPEG_AVCODEC_OPEN2 FFMPEG_AVIO_OPEN FFMPEG_AVFORMAT_WRITE_HEADER FFMPEG_AVFORMAT_NEW_STREAM FFMPEG_AVCODEC_ENCODE_AUDIO2 FFMPEG_AVCODEC_ENCODE_VIDEO2 X264RGB SINC BSV_MOVIE"
+VARS="ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK COREAUDIO PULSE SDL OPENGL DYLIB GETOPT_LONG THREADS CG XML SDL_IMAGE LIBPNG DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL SWSCALE CONFIGFILE FREETYPE XVIDEO X11 XEXT NETPLAY NETWORK_CMD SOCKET_LEGACY FBO STRL PYTHON FFMPEG_ALLOC_CONTEXT3 FFMPEG_AVCODEC_OPEN2 FFMPEG_AVIO_OPEN FFMPEG_AVFORMAT_WRITE_HEADER FFMPEG_AVFORMAT_NEW_STREAM FFMPEG_AVCODEC_ENCODE_AUDIO2 FFMPEG_AVCODEC_ENCODE_VIDEO2 X264RGB SINC BSV_MOVIE RPI"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS

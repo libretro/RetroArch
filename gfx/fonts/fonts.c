@@ -93,8 +93,12 @@ void font_renderer_msg(font_renderer_t *handle, const char *msg, struct font_out
          tmp->width = slot->bitmap.width;
          tmp->height = slot->bitmap.rows;
          tmp->pitch = slot->bitmap.pitch;
-         tmp->off_x = off_x + slot->bitmap_left;
-         tmp->off_y = off_y + slot->bitmap_top - slot->bitmap.rows;
+         tmp->advance_x = slot->advance.x >> 6;
+         tmp->advance_y = slot->advance.y >> 6;
+         tmp->char_off_x = slot->bitmap_left;
+         tmp->char_off_y = slot->bitmap_top - slot->bitmap.rows;
+         tmp->off_x = off_x + tmp->char_off_x;
+         tmp->off_y = off_y + tmp->char_off_y;
          tmp->next = NULL;
 
          if (i == 0)
@@ -147,6 +151,8 @@ static const char *font_paths[] = {
 static const char *font_paths[] = {
    "/usr/share/fonts/TTF/DejaVuSansMono.ttf",
    "/usr/share/fonts/TTF/DejaVuSans.ttf",
+   "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSansMono.ttf",
+   "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf",
 #endif
    "osd-font.ttf", // Magic font to search for, useful for distribution.
 };

@@ -38,6 +38,7 @@
 #define VIDEO_WII 24
 #define VIDEO_XENON360 25
 #define VIDEO_XDK360 28
+#define VIDEO_RPI 29
 ////////////////////////
 #define AUDIO_RSOUND 1
 #define AUDIO_OSS 2
@@ -62,9 +63,12 @@
 #define INPUT_XENON360 21
 #define INPUT_WII 23
 #define INPUT_XDK360 26
+#define INPUT_LINUXRAW 30
 ////////////////////////
 
-#if defined(HAVE_OPENGL) || defined(__CELLOS_LV2__)
+#if defined(HAVE_RPI)
+#define VIDEO_DEFAULT_DRIVER VIDEO_RPI
+#elif defined(HAVE_OPENGL) || defined(__CELLOS_LV2__)
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL
 #elif defined(GEKKO)
 #define VIDEO_DEFAULT_DRIVER VIDEO_WII

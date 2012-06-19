@@ -91,6 +91,8 @@ const char *config_get_default_video(void)
          return "sdl";
       case VIDEO_EXT:
          return "ext";
+      case VIDEO_RPI:
+         return "rpi";
       default:
          return NULL;
    }
@@ -112,6 +114,8 @@ const char *config_get_default_input(void)
          return "xdk360";
       case INPUT_WII:
          return "wii";
+      case INPUT_LINUXRAW:
+         return "linuxraw";
       default:
          return NULL;
    }
