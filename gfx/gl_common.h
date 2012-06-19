@@ -50,14 +50,6 @@ static inline bool gl_check_error(void)
       case GL_INVALID_OPERATION:
          RARCH_ERR("GL: Invalid operation.\n");
          break;
-#ifndef HAVE_OPENGLES20
-      case GL_STACK_OVERFLOW:
-         RARCH_ERR("GL: Stack overflow. (wtf)\n");
-         break;
-      case GL_STACK_UNDERFLOW:
-         RARCH_ERR("GL: Stack underflow. (:v)\n");
-         break;
-#endif
       case GL_OUT_OF_MEMORY:
          RARCH_ERR("GL: Out of memory. Harhar.\n");
          break;
