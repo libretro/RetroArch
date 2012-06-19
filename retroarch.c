@@ -55,10 +55,6 @@
 // We want to use -mconsole in Win32, so we need main().
 #endif
 
-#ifdef HAVE_RPI
-#include <bcm_host.h>
-#endif
-
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
 static void set_fast_forward_button(bool new_button_state, bool new_hold_button_state)
 {
@@ -2628,9 +2624,6 @@ void rarch_main_deinit(void)
 // Consoles use the higher level API.
 int main(int argc, char *argv[])
 {
-#ifdef HAVE_RPI
-   bcm_host_init();
-#endif
    int init_ret;
    if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
    rarch_init_msg_queue();
