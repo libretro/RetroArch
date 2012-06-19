@@ -3,6 +3,7 @@ package com.retroarch;
 import com.retroarch.R;
 import com.retroarch.R.id;
 import com.retroarch.R.menu;
+import com.retroarch.fileio.FileChooser;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -42,7 +43,7 @@ public class main extends Activity
     	    	this.finish();
     		    break;
     	    case R.id.open:
-    	    	Intent myIntent = new Intent(main.this, rombrowser.class);
+    	    	Intent myIntent = new Intent(main.this, FileChooser.class);
     	    	main.this.startActivity(myIntent);
     		    break;
     		default:
