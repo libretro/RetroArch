@@ -1,7 +1,29 @@
 TARGET = retroarch.exe
 JTARGET = retroarch-joyconfig.exe
-OBJ = retroarch.o file.o file_path.o driver.o conf/config_file.o settings.o hash.o dynamic.o message.o rewind.o movie.o gfx/gfx_common.o patch.o compat/compat.o screenshot.o audio/utils.o
-JOBJ = conf/config_file.o tools/retroarch-joyconfig.o compat/compat.o
+
+OBJ = retroarch.o \
+		file.o \
+		file_path.o \
+		driver.o \
+		conf/config_file.o \
+		settings.o \
+		hash.o \
+		dynamic.o \
+		message.o \
+		rewind.o \
+		movie.o \
+		gfx/gfx_common.o \
+		patch.o \
+		compat/compat.o \
+		screenshot.o \
+		audio/utils.o \
+		audio/null.o \
+		input/null.o \
+		gfx/null.o
+
+JOBJ := conf/config_file.o \
+	tools/retroarch-joyconfig.o \
+	compat/compat.o
 
 CC = gcc
 CXX = g++

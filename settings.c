@@ -68,6 +68,8 @@ const char *config_get_default_audio(void)
          return "ps3";
       case AUDIO_WII:
          return "wii";
+      case AUDIO_NULL:
+         return "null";
       default:
          return NULL;
    }
@@ -93,6 +95,8 @@ const char *config_get_default_video(void)
          return "ext";
       case VIDEO_RPI:
          return "rpi";
+      case VIDEO_NULL:
+         return "null";
       default:
          return NULL;
    }
@@ -116,6 +120,8 @@ const char *config_get_default_input(void)
          return "wii";
       case INPUT_LINUXRAW:
          return "linuxraw";
+      case INPUT_NULL:
+         return "null";
       default:
          return NULL;
    }
