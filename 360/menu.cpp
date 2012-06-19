@@ -536,13 +536,13 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
          if((strstr(strbuffer, ".zip") || strstr(strbuffer, ".ZIP")) && !block_zip_extract)
          {
             char path_tmp[1024];
-            snprintf(path_tmp, sizeof(path_tmp), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
+            snprintf(path_tmp, sizeof(path_tmp), "%s\\%s", filebrowser_get_current_dir(&browser), strbuffer);
             rarch_extract_zipfile(path_tmp);
          }
          else
          {
             memset(g_console.rom_path, 0, sizeof(g_console.rom_path));
-            snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
+            snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s\\%s", filebrowser_get_current_dir(&browser), strbuffer);
             rarch_settings_change(S_START_RARCH);
          }
       }
@@ -550,7 +550,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       {
 
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
-         snprintf(path, sizeof(path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), strbuffer);
+         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(&browser), strbuffer);
          filebrowser_fetch_directory_entries(path, &browser, &m_romlist, &m_rompathtitle);
       }
    }
@@ -586,11 +586,11 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
          switch(set_shader)
          {
             case 1:
-               snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+               snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), strbuffer);
                hlsl_load_shader(set_shader, g_settings.video.cg_shader_path);
                break;
             case 2:
-               snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+               snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), strbuffer);
                hlsl_load_shader(set_shader, g_settings.video.second_pass_shader);
                break;
             default:
@@ -603,7 +603,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
       else if(path_is_directory(tmp_browser.current_dir.elems[index]))
       {
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_shaderlist.GetText(index));
-         snprintf(path, sizeof(path), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), strbuffer);
          filebrowser_fetch_directory_entries(path, &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
       }
    }
@@ -623,13 +623,13 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       if(path_file_exists(tmp_browser.current_dir.elems[index]))
       {
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
-         snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s\\%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+         snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), strbuffer);
          rarch_settings_change(S_RETURN_TO_LAUNCHER);
       }
       else if(path_is_directory(tmp_browser.current_dir.elems[index]))
       {
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
-         snprintf(path, sizeof(path), "%s%s\\", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmp_browser), strbuffer);
+         snprintf(path, sizeof(path), "%s%s\\", filebrowser_get_current_dir(&tmp_browser), strbuffer);
          filebrowser_fetch_directory_entries(path, &tmp_browser, &m_romlist, &m_rompathtitle);
       }
    }
