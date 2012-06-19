@@ -22,8 +22,8 @@
 
 typedef struct linuxraw_input
 {
-	sdl_input_t *sdl;
-	bool state[0x80];
+   sdl_input_t *sdl;
+   bool state[0x80];
 } linuxraw_input_t;
 
 #endif
