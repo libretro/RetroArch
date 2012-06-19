@@ -132,7 +132,7 @@ int main(void)
 
 #ifdef HAVE_FILE_LOGGER
    g_extern.verbose = true;
-   log_fp = fopen("sd:/ssnes-log.txt", "w");
+   log_fp = fopen("sd:/retroarch-log.txt", "w");
 #endif
 
    config_set_defaults();
