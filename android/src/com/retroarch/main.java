@@ -24,6 +24,7 @@ public class main extends Activity
     {
         super.onCreate(savedInstanceState);
         
+        this.setTitle("RetroArch | Main");
         ctx_gl = new rgl_context(this);
         setContentView(ctx_gl);
     }
@@ -43,6 +44,7 @@ public class main extends Activity
     	    	this.finish();
     		    break;
     	    case R.id.open:
+    	    	Toast.makeText(this, "Select a ROM image from the Filebrowser.", Toast.LENGTH_SHORT).show();
     	    	Intent myIntent = new Intent(main.this, FileChooser.class);
     	    	main.this.startActivity(myIntent);
     		    break;

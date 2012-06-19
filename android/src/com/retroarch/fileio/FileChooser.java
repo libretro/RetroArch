@@ -152,7 +152,7 @@ public class FileChooser extends Activity
      private void fill(File f)
      {
          File[]dirs = f.listFiles();
-          this.setTitle("Current Dir: "+f.getAbsolutePath());
+          this.setTitle("Path: "+f.getAbsolutePath());
           List<Option>dir = new ArrayList<Option>();
           List<Option>fls = new ArrayList<Option>();
           try
@@ -228,7 +228,7 @@ public class FileChooser extends Activity
      
      private void onFileClick(Option o)
      {
-         Toast.makeText(this, "File Clicked: "+o.getName(), Toast.LENGTH_SHORT).show();
+         Toast.makeText(this, "Loading: "+o.getName() + "...", Toast.LENGTH_SHORT).show();
          
          Intent intent=new Intent();   
          intent.putExtra(FileChooser.PAYLOAD_FILENAME, o.getPath());
