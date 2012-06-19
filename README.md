@@ -36,6 +36,7 @@ RetroArch has been ported to the following platforms outside PC:
    - PlayStation3
    - Xbox 360 (Libxenon/XeXDK)
    - Wii (Libogc)
+   - Raspberry Pi
 
 # Dependencies (PC)
 
