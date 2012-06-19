@@ -31,18 +31,32 @@ typedef struct
 	   size_t size;
 	   size_t ptr;
    } current_dir;
+   char root_dir[PATH_MAX];
    char extensions[PATH_MAX];
 } filebrowser_t;
 
-void filebrowser_new(filebrowser_t *filebrowser, const char * start_dir, const char * extensions);
-void filebrowser_free(filebrowser_t *filebrowser);
-void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path, bool with_extension);
-void filebrowser_pop_directory (filebrowser_t * filebrowser);
+typedef enum
+{
+   FILEBROWSER_ACTION_UP,
+   FILEBROWSER_ACTION_DOWN,
+   FILEBROWSER_ACTION_LEFT,
+   FILEBROWSER_ACTION_RIGHT,
+   FILEBROWSER_ACTION_OK,
+   FILEBROWSER_ACTION_CANCEL,
+   FILEBROWSER_ACTION_SCROLL_UP,
+   FILEBROWSER_ACTION_SCROLL_UP_SMOOTH,
+   FILEBROWSER_ACTION_SCROLL_DOWN,
+   FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH,
+   FILEBROWSER_ACTION_RESET,
+   FILEBROWSER_ACTION_NOOP
+} filebrowser_action_t;
+
 const char * filebrowser_get_current_dir (filebrowser_t *filebrowser);
 const char * filebrowser_get_current_path (filebrowser_t *filebrowser);
 size_t filebrowser_get_current_index (filebrowser_t *filebrowser);
+void filebrowser_set_root(filebrowser_t *filebrowser, const char *root_dir);
+void filebrowser_free(filebrowser_t *filebrowser);
 void filebrowser_set_current_at (filebrowser_t *filebrowser, size_t pos);
-void filebrowser_set_current_increment (filebrowser_t *filebrowser, bool allow_wraparound);
-void filebrowser_set_current_decrement (filebrowser_t *filebrowser, bool allow_wraparound);
+void filebrowser_iterate(filebrowser_t *filebrowser, filebrowser_action_t action);
 
 #endif /* FILEBROWSER_H_ */

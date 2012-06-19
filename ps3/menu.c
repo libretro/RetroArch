@@ -205,7 +205,7 @@ static void set_delay_speed(unsigned delaymode)
    SET_TIMER_EXPIRATION(gl, speed);
 }
 
-static void browser_update(filebrowser_t * b)
+static void browser_update(filebrowser_t * b, const char *extensions)
 {
    uint64_t state, diff_state, button_was_pressed;
    gl_t * gl = driver.video_data;
@@ -217,111 +217,79 @@ static void browser_update(filebrowser_t * b)
    if(IS_TIMER_EXPIRED(gl))
    {
       set_delay = DELAY_NONE;
+      filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
 
       if (CTRL_LSTICK_DOWN(state))
       {
-         if(b->current_dir.ptr < b->current_dir.size-1)
-	 {
-            filebrowser_set_current_increment(b, true);
-	    set_delay = DELAY_SMALLEST;
-	 }
-      }
-
-      if (CTRL_DOWN(state))
-      {
-         if(b->current_dir.ptr < b->current_dir.size-1)
-	 {
-            filebrowser_set_current_increment(b, true);
-	    set_delay = DELAY_SMALLEST;
-	 }
-      }
-
-      if (CTRL_LSTICK_UP(state))
-      {
-         if(b->current_dir.ptr > 0)
-	 {
-            filebrowser_set_current_decrement(b, true);
-	    set_delay = DELAY_SMALLEST;
-	 }
-      }
-
-      if (CTRL_UP(state))
-      {
-         if(b->current_dir.ptr > 0)
-	 {
-            filebrowser_set_current_decrement(b, true);
-	    set_delay = DELAY_SMALLEST;
-	 }
-      }
-
-      if (CTRL_RIGHT(state))
-      {
-         b->current_dir.ptr = (MIN(b->current_dir.ptr + 5, b->current_dir.size-1));
-	 set_delay = DELAY_SMALL;
-      }
-
-      if (CTRL_LSTICK_RIGHT(state))
-      {
-         b->current_dir.ptr = (MIN(b->current_dir.ptr + 5, b->current_dir.size-1));
+         action = FILEBROWSER_ACTION_DOWN;
 	 set_delay = DELAY_SMALLEST;
       }
-
-      if (CTRL_LEFT(state))
+      else if (CTRL_DOWN(state))
       {
-         if (b->current_dir.ptr <= 5)
-            b->current_dir.ptr = 0;
-	 else
-            b->current_dir.ptr -= 5;
-
-	 set_delay = DELAY_SMALL;
-      }
-
-      if (CTRL_LSTICK_LEFT(state))
-      {
-         if (b->current_dir.ptr <= 5)
-            b->current_dir.ptr = 0;
-	 else
-            b->current_dir.ptr -= 5;
-
+         action = FILEBROWSER_ACTION_DOWN;
 	 set_delay = DELAY_SMALLEST;
       }
-
-      if (CTRL_R1(state))
+      else if (CTRL_LSTICK_UP(state))
       {
-         b->current_dir.ptr = (MIN(b->current_dir.ptr + NUM_ENTRY_PER_PAGE, b->current_dir.size-1));
-	 set_delay = DELAY_MEDIUM;
+         action = FILEBROWSER_ACTION_UP;
+	 set_delay = DELAY_SMALLEST;
       }
-
-      if (CTRL_R2(state))
+      else if (CTRL_UP(state))
       {
-         b->current_dir.ptr = (MIN(b->current_dir.ptr + 50, b->current_dir.size-1));
-	 if(!b->current_dir.ptr)
-            b->current_dir.ptr = 0;
+         action = FILEBROWSER_ACTION_UP;
+	 set_delay = DELAY_SMALLEST;
+      }
+      else if (CTRL_RIGHT(state))
+      {
+         action = FILEBROWSER_ACTION_RIGHT;
 	 set_delay = DELAY_SMALL;
       }
-
-      if (CTRL_L2(state))
+      else if (CTRL_LSTICK_RIGHT(state))
       {
-         if (b->current_dir.ptr <= 50)
-            b->current_dir.ptr= 0;
-	 else
-            b->current_dir.ptr -= 50;
-
+         action = FILEBROWSER_ACTION_RIGHT;
+	 set_delay = DELAY_SMALLEST;
+      }
+      else if (CTRL_LEFT(state))
+      {
+         action = FILEBROWSER_ACTION_LEFT;
 	 set_delay = DELAY_SMALL;
       }
-
-      if (CTRL_L1(state))
+      else if (CTRL_LSTICK_LEFT(state))
       {
-         if (b->current_dir.ptr <= NUM_ENTRY_PER_PAGE)
-            b->current_dir.ptr= 0;
-	 else
-            b->current_dir.ptr -= NUM_ENTRY_PER_PAGE;
-
+         action = FILEBROWSER_ACTION_LEFT;
+	 set_delay = DELAY_SMALLEST;
+      }
+      else if (CTRL_R1(state))
+      {
+         action = FILEBROWSER_ACTION_SCROLL_DOWN;
 	 set_delay = DELAY_MEDIUM;
       }
+      else if (CTRL_R2(state))
+      {
+         action = FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH;
+	 set_delay = DELAY_SMALL;
+      }
+      else if (CTRL_L2(state))
+      {
+         action = FILEBROWSER_ACTION_SCROLL_UP_SMOOTH;
+	 set_delay = DELAY_SMALL;
+      }
+      else if (CTRL_L1(state))
+      {
+         action = FILEBROWSER_ACTION_SCROLL_UP;
+	 set_delay = DELAY_MEDIUM;
+      }
+      else if (CTRL_CIRCLE(button_was_pressed))
+         action = FILEBROWSER_ACTION_CANCEL;
+      else if (CTRL_START(button_was_pressed))
+      {
+         action = FILEBROWSER_ACTION_RESET;
+         filebrowser_set_root(b, "/");
+	 strlcpy(b->extensions, extensions, sizeof(b->extensions));
+      }
 
-      if (CTRL_CIRCLE(button_was_pressed))
-         filebrowser_pop_directory(b);
+      if(action != FILEBROWSER_ACTION_NOOP)
+         filebrowser_iterate(b, action);
 
       old_state = state;
    }
@@ -873,16 +841,16 @@ static void select_file(uint32_t menu_id)
 
    if(set_initial_dir_tmpbrowser)
    {
-      filebrowser_new(&tmpBrowser, dir_path, extensions);
+      strlcpy(tmpBrowser.extensions, extensions, sizeof(tmpBrowser.extensions));
+      filebrowser_set_root(&tmpBrowser, dir_path);
+      filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
       set_initial_dir_tmpbrowser = false;
    }
 
-   browser_update(&tmpBrowser);
 
    if(IS_TIMER_EXPIRED(gl))
    {
-      if (CTRL_START(button_was_pressed))
-         filebrowser_new(&tmpBrowser, "/", extensions);
+      browser_update(&tmpBrowser, extensions);
 
       if (CTRL_CROSS(button_was_pressed))
       {
@@ -891,12 +859,9 @@ static void select_file(uint32_t menu_id)
             /*if 'filename' is in fact '..' - then pop back directory instead of 
 	      adding '..' to filename path */
             if(tmpBrowser.current_dir.ptr == 0)
-               filebrowser_pop_directory(&tmpBrowser);
+               filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_CANCEL);
 	    else
-	    {
-	       snprintf(path, sizeof(path), filebrowser_get_current_path(&tmpBrowser));
-	       filebrowser_push_directory(&tmpBrowser, path, true);
-	    }
+               filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
 	 }
 	 else if (path_file_exists(filebrowser_get_current_path(&tmpBrowser)))
 	 {
@@ -944,8 +909,7 @@ static void select_file(uint32_t menu_id)
             menuStackindex--;
 	 }
       }
-
-      if (CTRL_TRIANGLE(button_was_pressed))
+      else if (CTRL_TRIANGLE(button_was_pressed))
          menuStackindex--;
    }
 
@@ -961,7 +925,7 @@ static void select_file(uint32_t menu_id)
 
 static void select_directory(uint32_t menu_id)
 {
-   char path[1024], newpath[1024];
+   char path[1024];
    uint64_t state, diff_state, button_was_pressed;
    gl_t * gl = driver.video_data;
 
@@ -971,16 +935,15 @@ static void select_directory(uint32_t menu_id)
 
    if(set_initial_dir_tmpbrowser)
    {
-      filebrowser_new(&tmpBrowser, "/\0", "empty");
+      strlcpy(tmpBrowser.extensions, "empty", sizeof(tmpBrowser.extensions));
+      filebrowser_set_root(&tmpBrowser, "/");
+      filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
       set_initial_dir_tmpbrowser = false;
    }
 
-   browser_update(&tmpBrowser);
-
    if(IS_TIMER_EXPIRED(gl))
    {
-      if (CTRL_START(button_was_pressed))
-         filebrowser_new(&tmpBrowser, "/","empty");
+      browser_update(&tmpBrowser, "empty");
 
       if (CTRL_SQUARE(button_was_pressed))
       {
@@ -1005,8 +968,7 @@ static void select_directory(uint32_t menu_id)
 	    menuStackindex--;
 	 }
       }
-
-      if (CTRL_TRIANGLE(button_was_pressed))
+      else if (CTRL_TRIANGLE(button_was_pressed))
       {
          strlcpy(path, usrDirPath, sizeof(path));
 	 switch(menu_id)
@@ -1026,8 +988,7 @@ static void select_directory(uint32_t menu_id)
 	 }
 	 menuStackindex--;
       }
-
-      if (CTRL_CROSS(button_was_pressed))
+      else if (CTRL_CROSS(button_was_pressed))
       {
          if(path_is_directory(filebrowser_get_current_path(&tmpBrowser)))
 	 {
@@ -1035,12 +996,9 @@ static void select_directory(uint32_t menu_id)
              * adding '..' to filename path */
 
             if(tmpBrowser.current_dir.ptr == 0)
-               filebrowser_pop_directory(&tmpBrowser);
+               filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_CANCEL);
 	    else
-	    {
-	       snprintf(newpath, sizeof(newpath), filebrowser_get_current_path(&tmpBrowser));
-	       filebrowser_push_directory(&tmpBrowser, newpath, false);
-	    }
+               filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
 	 }
       }
    }
@@ -1788,24 +1746,40 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 	set_setting_label(menu_obj, switchvalue);
 }
 
-static void select_setting(menu * menu_obj)
+typedef enum {
+   SETTINGS_ACTION_DOWN,
+   SETTINGS_ACTION_UP,
+   SETTINGS_ACTION_TAB_PREVIOUS,
+   SETTINGS_ACTION_TAB_NEXT,
+   SETTINGS_ACTION_NOOP
+} settings_action_t;
+
+static void settings_iterate(menu * menu_obj, settings_action_t action)
 {
-   uint64_t state, diff_state, button_was_pressed, i;
-   gl_t * gl = driver.video_data;
-
-   state = cell_pad_input_poll_device(0);
-   diff_state = old_state ^ state;
-   button_was_pressed = old_state & diff_state;
-
-   if(IS_TIMER_EXPIRED(gl))
+   switch(action)
    {
-      set_delay = DELAY_NONE;
-      /* back to ROM menu if CIRCLE is pressed */
-      if (CTRL_L1(button_was_pressed) || CTRL_CIRCLE(button_was_pressed))
-         menuStackindex--;
+      case SETTINGS_ACTION_DOWN:
+         menu_obj->selected++;
 
-      if (CTRL_R1(button_was_pressed))
-      {
+	 if (menu_obj->selected >= menu_obj->max_settings)
+            menu_obj->selected = menu_obj->first_setting; 
+
+	 if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
+            menu_obj->page = menu_obj->items[menu_obj->selected].page;
+         break;
+      case SETTINGS_ACTION_UP:
+         if (menu_obj->selected == menu_obj->first_setting)
+            menu_obj->selected = menu_obj->max_settings-1;
+	 else
+            menu_obj->selected--;
+
+	 if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
+            menu_obj->page = menu_obj->items[menu_obj->selected].page;
+         break;
+      case SETTINGS_ACTION_TAB_PREVIOUS:
+         menuStackindex--;
+         break;
+      case SETTINGS_ACTION_TAB_NEXT:
          switch(menu_obj->enum_id)
 	 {
             case GENERAL_VIDEO_MENU:
@@ -1835,37 +1809,42 @@ static void select_setting(menu * menu_obj)
 	    case CONTROLS_MENU:
 	       break;
 	 }
-      }
+         break;
+   }
+}
 
-      /* down to next setting */
+static void select_setting(menu * menu_obj)
+{
+   uint64_t state, diff_state, button_was_pressed, i;
+   gl_t * gl = driver.video_data;
 
-      if (CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))
+   state = cell_pad_input_poll_device(0);
+   diff_state = old_state ^ state;
+   button_was_pressed = old_state & diff_state;
+
+   if(IS_TIMER_EXPIRED(gl))
+   {
+      settings_action_t action = SETTINGS_ACTION_NOOP;
+      set_delay = DELAY_NONE;
+
+      /* back to ROM menu if CIRCLE is pressed */
+      if (CTRL_L1(button_was_pressed) || CTRL_CIRCLE(button_was_pressed))
+         action = SETTINGS_ACTION_TAB_PREVIOUS;
+      else if (CTRL_R1(button_was_pressed))
+         action = SETTINGS_ACTION_TAB_NEXT;
+      else if (CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))
       {
-         menu_obj->selected++;
-
-	 if (menu_obj->selected >= menu_obj->max_settings)
-            menu_obj->selected = menu_obj->first_setting; 
-
-	 if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
-            menu_obj->page = menu_obj->items[menu_obj->selected].page;
-
+         action = SETTINGS_ACTION_DOWN;
+	 set_delay = DELAY_SMALL;
+      }
+      else if (CTRL_UP(state) || CTRL_LSTICK_UP(state))
+      {
+         action = SETTINGS_ACTION_UP;
 	 set_delay = DELAY_SMALL;
       }
 
-      /* up to previous setting */
-
-      if (CTRL_UP(state) || CTRL_LSTICK_UP(state))
-      {
-         if (menu_obj->selected == menu_obj->first_setting)
-            menu_obj->selected = menu_obj->max_settings-1;
-	 else
-            menu_obj->selected--;
-
-	 if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
-            menu_obj->page = menu_obj->items[menu_obj->selected].page;
-
-	 set_delay = DELAY_SMALL;
-      }
+      if(action != SETTINGS_ACTION_NOOP)
+         settings_iterate(menu_obj, action);
 
       producesettingentry(menu_obj, menu_obj->selected);
    }
@@ -1891,44 +1870,24 @@ static void select_setting(menu * menu_obj)
    old_state = state;
 }
 
-static void select_rom(void)
+typedef enum {
+   MENU_ROMSELECT_ACTION_OK,
+   MENU_ROMSELECT_ACTION_GOTO_SETTINGS,
+   MENU_ROMSELECT_ACTION_NOOP,
+} menu_romselect_action_t;
+
+static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_action_t action)
 {
-   char newpath[1024];
-   uint64_t state, diff_state, button_was_pressed;
-   gl_t * gl = driver.video_data;
-
-   state = cell_pad_input_poll_device(0);
-   diff_state = old_state ^ state;
-   button_was_pressed = old_state & diff_state;
-
-   browser_update(&browser);
-
-   if(IS_TIMER_EXPIRED(gl))
+   switch(action)
    {
-      if (CTRL_SELECT(button_was_pressed))
-      {
-         menuStackindex++;
-	 menuStack[menuStackindex] = menu_generalvideosettings;
-      }
-
-      if (CTRL_START(button_was_pressed))
-         filebrowser_new(&browser, "/", rarch_console_get_rom_ext());
-
-      if (CTRL_CROSS(button_was_pressed))
-      {
-         if(path_is_directory(filebrowser_get_current_path(&browser)))
+      case MENU_ROMSELECT_ACTION_OK:
+         if(path_is_directory(filebrowser_get_current_path(filebrowser)))
 	 {
             /*if 'filename' is in fact '..' - then pop back directory  instead of adding '..' to filename path */
-
             if(browser.current_dir.ptr == 0)
-	    {
-               filebrowser_pop_directory(&browser);
-	    }
+               filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_CANCEL);
 	    else
-	    {
-	       snprintf(newpath, sizeof(newpath), filebrowser_get_current_path(&browser));
-	       filebrowser_push_directory(&browser, newpath, true);
-	    }
+               filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
 	 }
 	 else if (path_file_exists(filebrowser_get_current_path(&browser)))
 	 {
@@ -1937,17 +1896,45 @@ static void select_rom(void)
 	    retro_get_system_info(&info);
 	    bool block_zip_extract  = info.block_extract;
 
-	    snprintf(rom_path_temp, sizeof(rom_path_temp), filebrowser_get_current_path(&browser));
+	    snprintf(rom_path_temp, sizeof(rom_path_temp), filebrowser_get_current_path(filebrowser));
 
 	    if((strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP")) && !block_zip_extract)
                rarch_extract_zipfile(rom_path_temp);
 	    else
 	    {
-	       snprintf(g_console.rom_path, sizeof(g_console.rom_path), filebrowser_get_current_path(&browser));
+	       snprintf(g_console.rom_path, sizeof(g_console.rom_path), filebrowser_get_current_path(filebrowser));
                rarch_settings_change(S_START_RARCH);
 	    }
 	 }
-      }
+         break;
+      case MENU_ROMSELECT_ACTION_GOTO_SETTINGS:
+         menuStackindex++;
+	 menuStack[menuStackindex] = menu_generalvideosettings;
+         break;
+   }
+}
+
+static void select_rom(void)
+{
+   uint64_t state, diff_state, button_was_pressed;
+   gl_t * gl = driver.video_data;
+
+   state = cell_pad_input_poll_device(0);
+   diff_state = old_state ^ state;
+   button_was_pressed = old_state & diff_state;
+
+   if(IS_TIMER_EXPIRED(gl))
+   {
+      browser_update(&browser, rarch_console_get_rom_ext());
+      menu_romselect_action_t action = MENU_ROMSELECT_ACTION_NOOP;
+
+      if (CTRL_SELECT(button_was_pressed))
+         action = MENU_ROMSELECT_ACTION_GOTO_SETTINGS;
+      else if (CTRL_CROSS(button_was_pressed))
+         action = MENU_ROMSELECT_ACTION_OK;
+
+      if (action != MENU_ROMSELECT_ACTION_NOOP)
+         menu_romselect_iterate(&browser, action);
    }
 
    if (path_is_directory(filebrowser_get_current_path(&browser)))
@@ -2456,7 +2443,10 @@ static void ingame_menu(uint32_t menu_id)
 
 void menu_init (void)
 {
-   filebrowser_new(&browser, g_console.default_rom_startup_dir, rarch_console_get_rom_ext());
+   filebrowser_set_root(&browser, "/");
+   filebrowser_set_root(&tmpBrowser, "/");
+   strlcpy(browser.extensions, rarch_console_get_rom_ext(), sizeof(browser.extensions));
+   filebrowser_iterate(&browser, FILEBROWSER_ACTION_RESET);
 }
 
 void menu_free (void)
