@@ -14,11 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../general.h"
-#include "rarch_sdl_input.h"
-
 #ifndef _LINUXRAW_INPUT_H
 #define _LINUXRAW_INPUT_H
+
+#include "../general.h"
+#include "rarch_sdl_input.h"
 
 typedef struct linuxraw_input
 {

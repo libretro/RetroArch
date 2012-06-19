@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <assert.h>
 #include <math.h>
 #include <unistd.h>
 #include <bcm_host.h>
@@ -24,9 +23,7 @@
 #include <EGL/eglext.h>
 #include "../libretro.h"
 #include "../general.h"
-//#include "../input/linuxraw_input.h"
-// SDL include messing with some defines
-typedef struct linuxraw_input linuxraw_input_t;
+#include "../input/linuxraw_input.h"
 #include "../driver.h"
 
 #ifdef HAVE_FREETYPE
@@ -113,24 +110,24 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
 
    // get an EGL display connection
    rpi->mDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-   assert(rpi->mDisplay != EGL_NO_DISPLAY);
+   rarch_assert(rpi->mDisplay != EGL_NO_DISPLAY);
 
    // initialize the EGL display connection
    result = eglInitialize(rpi->mDisplay, NULL, NULL);
-   assert(result != EGL_FALSE);
+   rarch_assert(result != EGL_FALSE);
    eglBindAPI(EGL_OPENVG_API);
 
    // get an appropriate EGL frame buffer configuration
    result = eglChooseConfig(rpi->mDisplay, attribute_list, &config, 1, &num_config);
-   assert(result != EGL_FALSE);
+   rarch_assert(result != EGL_FALSE);
 
    // create an EGL rendering context
    rpi->mContext = eglCreateContext(rpi->mDisplay, config, EGL_NO_CONTEXT, NULL);
-   assert(rpi->mContext != EGL_NO_CONTEXT);
+   rarch_assert(rpi->mContext != EGL_NO_CONTEXT);
 
    // create an EGL window surface
    success = graphics_get_display_size(0 /* LCD */, &rpi->mScreenWidth, &rpi->mScreenHeight);
-   assert(success >= 0);
+   rarch_assert(success >= 0);
 
    dst_rect.x = 0;
    dst_rect.y = 0;
@@ -156,11 +153,11 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
    vc_dispmanx_update_submit_sync(dispman_update);
 
    rpi->mSurface = eglCreateWindowSurface(rpi->mDisplay, config, &nativewindow, NULL);
-   assert(rpi->mSurface != EGL_NO_SURFACE);
+   rarch_assert(rpi->mSurface != EGL_NO_SURFACE);
 
    // connect the context to the surface
    result = eglMakeCurrent(rpi->mDisplay, rpi->mSurface, rpi->mSurface, rpi->mContext);
-   assert(result != EGL_FALSE);
+   rarch_assert(result != EGL_FALSE);
 
    rpi->mTexType = video->rgb32 ? VG_sABGR_8888 : VG_sARGB_1555;
    rpi->mKeepAspect = video->force_aspect;
@@ -426,12 +423,6 @@ static bool rpi_focus(void *data)
    return true;
 }
 
-static void rpi_set_rotation(void *data, unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
 const video_driver_t video_rpi = {
    rpi_init,
    rpi_frame,
@@ -440,6 +431,5 @@ const video_driver_t video_rpi = {
    rpi_focus,
    NULL,
    rpi_free,
-   "rpi",
-   rpi_set_rotation,
+   "rpi"
 };

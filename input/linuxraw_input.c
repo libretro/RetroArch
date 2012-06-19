@@ -278,7 +278,7 @@ static void linuxraw_input_poll(void *data)
    uint8_t c;
    uint16_t t;
 
-   while (read(0, &c, 1))
+   while (read(0, &c, 1) > 0)
    {
       bool pressed = !(c & 0x80);
       c &= ~0x80;
@@ -286,9 +286,12 @@ static void linuxraw_input_poll(void *data)
       // ignore extended scancodes
       if (!c)
          read(0, &t, 2);
-
-      linuxraw->state[c] = pressed;
+      else
+         linuxraw->state[c] = pressed;
    }
+
+   if (linuxraw->state[KEY_C] && (linuxraw->state[KEY_LEFTCTRL] || linuxraw->state[KEY_RIGHTCTRL]))
+      kill(getpid(), SIGINT);
 
    input_sdl.poll(linuxraw->sdl);
 }
