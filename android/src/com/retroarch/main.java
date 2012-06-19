@@ -1,7 +1,11 @@
 package com.retroarch;
 
-import android.app.ActionBar;
+import com.retroarch.R;
+import com.retroarch.R.id;
+import com.retroarch.R.menu;
+
 import android.app.Activity;
+import android.content.Intent;
 import android.content.Context;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -10,7 +14,7 @@ import android.widget.Toast;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 
-public class MainActivity extends Activity
+public class main extends Activity
 {
 	private GLSurfaceView ctx_gl;
 	
@@ -34,13 +38,19 @@ public class MainActivity extends Activity
     {
     	switch (item.getItemId())
     	{
-    		case R.id.quit:
-    			android.os.Process.killProcess(android.os.Process.myPid());
-    			return true;
+    	    case R.id.main:
+    	    	this.finish();
+    		    break;
+    	    case R.id.open:
+    	    	Intent myIntent = new Intent(main.this, rombrowser.class);
+    	    	main.this.startActivity(myIntent);
+    		    break;
     		default:
     	    	Toast.makeText(this, "MenuItem " + item.getTitle() + " selected.", Toast.LENGTH_SHORT).show();
-    	    	return true;
+    	    	break;
     	}
+    	
+    	return true;
     }
     
     @Override
