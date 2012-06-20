@@ -88,13 +88,13 @@ VIDEO DRIVER
 
 #ifdef HAVE_OPENGL
 #include "../../gfx/gl.c"
-#endif
-
-#if defined(_XBOX)
+#elif defined(_XBOX)
 #include "../../360/xdk360_video.cpp"
 #elif defined(GEKKO)
 #include "../../wii/video.c"
 #endif
+
+#include "../../gfx/null.c"
 
 /*============================================================
 FONTS
@@ -118,6 +118,8 @@ INPUT
 #elif defined(GEKKO)
 #include "../../wii/input.c"
 #endif
+
+#include "../../input/null.c"
 
 /*============================================================
 STATE TRACKER
@@ -162,6 +164,8 @@ AUDIO
 #elif defined(GEKKO)
 #include "../../wii/audio.c"
 #endif
+
+#include "../../audio/null.c"
 
 /*============================================================
 DYNAMIC

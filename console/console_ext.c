@@ -52,7 +52,7 @@ const char *rarch_console_get_rom_ext(void)
    const char *retval = NULL;
 
    struct retro_system_info info;
-   retro_get_system_info(&info);
+   pretro_get_system_info(&info);
 
    if (info.valid_extensions)
       retval = info.valid_extensions;
@@ -68,7 +68,7 @@ void rarch_console_name_from_id(char *name, size_t size)
       return;
 
    struct retro_system_info info;
-   retro_get_system_info(&info);
+   pretro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
 
    if (!id || strlen(id) >= size)
@@ -410,7 +410,6 @@ const char *rarch_input_find_platform_key_label(uint64_t joykey)
    return "Unknown";
 }
 
-#endif
 
 void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id)
 {
@@ -445,10 +444,12 @@ void rarch_input_set_default_keybinds(unsigned player)
    g_settings.input.dpad_emulation[player] = DPAD_EMULATION_LSTICK;
 }
 
+#endif
+
 void rarch_input_set_default_keybind_names_for_emulator(void)
 {
    struct retro_system_info info;
-   retro_get_system_info(&info);
+   pretro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
 
    // Genesis Plus GX/Next

@@ -103,4 +103,29 @@
 #define input_free_func()                       wii_free_input(driver.input_data)
 #define gfx_ctx_window_has_focus()		(true)
 
+#else
+
+/*============================================================
+	NULL
+============================================================ */
+
+#define video_init_func(video_info, input, input_data) null_gfx_init(video_info, input, input_data)
+#define video_frame_func(data, width, height, pitch, msg) \
+                                                null_gfx_frame(driver.video_data, data, width, height, pitch, msg)
+#define video_set_nonblock_state_func(state) null_gfx_set_nonblock_state(driver.video_data, state)
+#define video_alive_func()                      null_gfx_alive(driver.video_data)
+#define video_focus_func()                      null_gfx_focus(driver.video_data)
+#define video_xml_shader_func(path)             driver.video->xml_shader(driver.video_data, path)
+#define video_free_func()                       null_gfx_free(driver.video_data)
+#define video_set_rotation_func(orientation)	(true)
+#define video_set_aspect_ratio_func(aspectratio_idx) (true)
+
+#define input_init_func()                       null_input_init()
+#define input_poll_func()                       null_input_poll(driver.input_data)
+#define input_input_state_func(snes_keybinds, port, device, index, id) \
+                                                null_input_state(driver.input_data, snes_keybinds, port, device, index, id)
+#define input_key_pressed_func(key)             null_input_key_pressed(driver.input_data, key)
+#define input_free_func()                       null_input_free(driver.input_data)
+#define gfx_ctx_window_has_focus()		(true)
+
 #endif

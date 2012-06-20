@@ -148,6 +148,7 @@ int rarch_extract_zipfile(const char *zip_path);
 	INPUT EXTENSIONS
 ============================================================ */
 
+#ifdef HAVE_DEFAULT_RETROPAD_INPUT
 const char *rarch_input_find_platform_key_label(uint64_t joykey);
 uint64_t rarch_input_find_previous_platform_key(uint64_t joykey);
 uint64_t rarch_input_find_next_platform_key(uint64_t joykey);
@@ -157,6 +158,7 @@ uint64_t rarch_input_find_next_platform_key(uint64_t joykey);
 void rarch_input_set_default_keybind_names_for_emulator(void);
 
 void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
+#endif
 
 
 /*============================================================
