@@ -270,13 +270,13 @@ void rarch_render_cached_frame(void)
    // Not 100% safe, since the library might have
    // freed the memory, but no known implementations do this :D
    // It would be really stupid at any rate ...
+#ifndef RARCH_CONSOLE
    if (g_extern.frame_cache.data)
-   {
+#endif
       video_frame(g_extern.frame_cache.data,
             g_extern.frame_cache.width,
             g_extern.frame_cache.height,
             g_extern.frame_cache.pitch);
-   }
 
 #ifdef HAVE_FFMPEG
    g_extern.recording = recording;
