@@ -1,0 +1,60 @@
+RARCH_VERSION		= "0.9.6"
+
+#which compiler to build  with - GCC or SNC
+#set to GCC for debug builds for use with debugger
+CELL_BUILD_TOOLS	= SNC
+CELL_GPU_TYPE	   	= RSX
+CELL_PSGL_VERSION	= ultra-opt
+
+DEBUG			= 0
+HAVE_RGL		= 1
+HAVE_LOGGER		= 0
+
+PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.7"
+PC_DEVELOPMENT_UDP_PORT		= 3490
+
+CELL_MK_DIR		?= $(CELL_SDK)/samples/mk
+include $(CELL_MK_DIR)/sdk.makedef.mk
+
+PPU_LIB_TARGET		= libretroarch.a
+
+LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
+INCDIRS = -I. -Ips3 -Icommon
+
+PPU_SRCS		= console/griffin/griffin.c console/rzlib/rzlib.c
+
+ifeq ($(HAVE_RGL), 1)
+DEFINES			= -DHAVE_RGL
+GL_LIBS			:= -lrgl
+else
+GL_LIBS			:= -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt -lPSGL -lPSGLcgc
+endif
+
+ifeq ($(CELL_BUILD_TOOLS), SNC)
+	PPU_CXXLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe
+	PPU_CXX	= $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
+	PPU_CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
+	SNC_PPU_AR = $(CELL_SDK)/host-win32/sn/bin/ps3snarl.exe
+else
+	PPU_CXX	= $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-g++.exe
+	PPU_CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
+	PPU_CXXLD = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ld.exe
+endif
+
+DEFINES += -DHAVE_DEFAULT_RETROPAD_INPUT -DRARCH_CONSOLE -DHAVE_OPENGL -DHAVE_OPENGL_TEXREF -DHAVE_HEADSET -DHAVE_VID_CONTEXT -DHAVE_OPENGLES -DHAVE_CG -DHAVE_CG_MENU -DHAVE_FILEBROWSER -DHAVE_FBO -DHAVE_RARCH_MAIN_WRAP -DHAVE_SYSMODULES -DHAVE_SYSUTILS -DHAVE_RARCH_EXEC -DHAVE_RGL -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_RSOUND -DHAVE_ZLIB -D__CELLOS_LV2__ -DHAVE_CONFIGFILE=1 -DHAVE_NETPLAY=1 -DHAVE_SOCKET_LEGACY=1 -DHAVE_OSKUTIL -DHAVE_MOUSE -DHAVE_GRIFFIN=1 -DHAVE_MULTIMAN=1 -DPACKAGE_VERSION=\"$(RARCH_VERSION)\" -Dmain=rarch_main -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
+
+ifeq ($(DEBUG), 1)
+   PPU_OPTIMIZE_LV	:= -O0 -g
+else
+   PPU_OPTIMIZE_LV	:= -O3 -g
+endif
+
+PPU_CFLAGS = $(PPU_OPTIMIZE_LV) $(INCDIRS) $(DEFINES)
+PPU_CXXFLAGS = $(PPU_OPTIMIZE_LV) $(INCDIRS) $(DEFINES)
+
+ifeq ($(HAVE_LOGGER), 1)
+PPU_CFLAGS		+= -DHAVE_LOGGER
+PPU_SRCS		+= console/logger/logger.c
+endif
+
+include $(CELL_MK_DIR)/sdk.target.mk

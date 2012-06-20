@@ -16,7 +16,7 @@
 
 #include "../driver.h"
 #include "../general.h"
-#include "shared.h"
+#include "frontend/shared.h"
 #include <stdlib.h>
 #include <cell/audio.h>
 #include <sys/timer.h>

@@ -202,9 +202,7 @@ REWIND
 /*============================================================
 MAIN
 ============================================================ */
-#if defined(__CELLOS_LV2__)
-#include "../../ps3/main.c"
-#elif defined(_XBOX)
+#if defined(_XBOX)
 #include "../../360/main.c"
 #elif defined(GEKKO)
 #include "../../wii/main.c"
@@ -232,9 +230,7 @@ NETPLAY
 /*============================================================
 MENU
 ============================================================ */
-#if defined(__CELLOS_LV2__)
-#include "../../ps3/menu.c"
-#elif defined(_XBOX)
+#if defined(_XBOX)
 #include "../../360/menu.cpp"
 #elif defined(GEKKO)
 #include "../rgui/rgui.c"

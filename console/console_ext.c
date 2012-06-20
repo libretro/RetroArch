@@ -493,6 +493,11 @@ void rarch_input_set_controls_default (void)
       rarch_input_set_default_keybinds(x);
 }
 
+const char *rarch_input_get_default_keybind_name(unsigned id)
+{
+   return rarch_default_libretro_keybind_name_lut[id];
+}
+
 #endif
 
 void rarch_input_set_default_keybind_names_for_emulator(void)

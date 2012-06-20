@@ -39,13 +39,15 @@
 #include <np.h>
 #include <np/drm.h>
 
-#include "ps3_input.h"
+#include "../ps3_input.h"
 
-#include "../console/console_ext.h"
-#include "../conf/config_file.h"
-#include "../conf/config_file_macros.h"
-#include "../general.h"
-#include "../file.h"
+#include "../../gfx/gl_common.h"
+
+#include "../../console/console_ext.h"
+#include "../../conf/config_file.h"
+#include "../../conf/config_file_macros.h"
+#include "../../general.h"
+#include "../../file.h"
 
 #include "shared.h"
 
@@ -115,7 +117,7 @@ static void set_default_settings(void)
    g_console.fbo_enabled = true;
    g_console.mode_switch = MODE_MENU;
    g_console.screen_orientation = ORIENTATION_NORMAL;
-   g_console.current_resolution_id = CELL_VIDEO_OUT_RESOLUTION_UNDEFINED;
+   g_console.current_resolution_id = 0;
    strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
    strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
    strlcpy(g_console.default_sram_dir, usrDirPath, sizeof(g_console.default_sram_dir));
