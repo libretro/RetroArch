@@ -259,7 +259,6 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 #include "console/griffin/rarch_func_hooks.h"
 #endif
 
-#ifndef HAVE_GRIFFIN_OVERRIDE_VIDEO_FRAME_FUNC
 void rarch_render_cached_frame(void)
 {
 #ifdef HAVE_FFMPEG
@@ -271,19 +270,18 @@ void rarch_render_cached_frame(void)
    // Not 100% safe, since the library might have
    // freed the memory, but no known implementations do this :D
    // It would be really stupid at any rate ...
+#ifndef RARCH_CONSOLE
    if (g_extern.frame_cache.data)
-   {
+#endif
       video_frame(g_extern.frame_cache.data,
             g_extern.frame_cache.width,
             g_extern.frame_cache.height,
             g_extern.frame_cache.pitch);
-   }
 
 #ifdef HAVE_FFMPEG
    g_extern.recording = recording;
 #endif
 }
-#endif
 
 #ifndef HAVE_GRIFFIN_OVERRIDE_AUDIO_FLUSH_FUNC
 static bool audio_flush(const int16_t *data, size_t samples)
