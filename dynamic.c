@@ -235,13 +235,8 @@ static bool environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_CAN_DUPE:
-#ifdef HAVE_FFMPEG
          *(bool*)data = true;
          RARCH_LOG("Environ GET_CAN_DUPE: true\n");
-#else
-         *(bool*)data = false;
-         RARCH_LOG("Environ GET_CAN_DUPE: false\n");
-#endif
          break;
 
       case RETRO_ENVIRONMENT_GET_VARIABLE:

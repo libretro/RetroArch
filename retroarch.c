@@ -198,8 +198,8 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 
    // Slightly messy code,
    // but we really need to do processing before blocking on VSync for best possible scheduling.
-#ifdef HAVE_FFMPEG
    bool is_dupe = !data;
+#ifdef HAVE_FFMPEG
 
    if (g_extern.recording && (!g_extern.filter.active || !g_settings.video.post_filter_record || is_dupe))
    {
@@ -211,10 +211,9 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
       ffemu_data.is_dupe = is_dupe;
       ffemu_push_video(g_extern.rec, &ffemu_data);
    }
-
+#endif
    if (is_dupe)
       return;
-#endif
 
    const char *msg = msg_queue_pull(g_extern.msg_queue);
 
@@ -270,13 +269,10 @@ void rarch_render_cached_frame(void)
    // Not 100% safe, since the library might have
    // freed the memory, but no known implementations do this :D
    // It would be really stupid at any rate ...
-#ifndef RARCH_CONSOLE
-   if (g_extern.frame_cache.data)
-#endif
-      video_frame(g_extern.frame_cache.data,
-            g_extern.frame_cache.width,
-            g_extern.frame_cache.height,
-            g_extern.frame_cache.pitch);
+   video_frame(g_extern.frame_cache.data,
+         g_extern.frame_cache.width,
+         g_extern.frame_cache.height,
+         g_extern.frame_cache.pitch);
 
 #ifdef HAVE_FFMPEG
    g_extern.recording = recording;
