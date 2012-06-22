@@ -135,7 +135,7 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
-      snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+      snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_input_get_default_keybind_name(i), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
       rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer)); 
       m_controlslist.SetText(i, strw_buffer);
    }
@@ -154,7 +154,7 @@ HRESULT CRetroArchControls::OnControlNavigate(XUIMessageControlNavigate *pContro
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
-      snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+      snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_input_get_default_keybind_name(i), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
       rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
       m_controlslist.SetText(i, strw_buffer);
    }
@@ -165,7 +165,7 @@ HRESULT CRetroArchControls::OnControlNavigate(XUIMessageControlNavigate *pContro
          if(current_index > 0 && current_index != SETTING_CONTROLS_DEFAULT_ALL)
          {
             rarch_input_set_keybind(controlno, KEYBIND_DECREMENT, current_index);
-            snprintf(button, sizeof(button), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+            snprintf(button, sizeof(button), "%s #%d: %s", rarch_input_get_default_keybind_name(current_index), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
             rarch_convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
             m_controlslist.SetText(current_index, strw_buffer);
          }
@@ -174,7 +174,7 @@ HRESULT CRetroArchControls::OnControlNavigate(XUIMessageControlNavigate *pContro
          if(current_index < RARCH_FIRST_META_KEY && current_index != SETTING_CONTROLS_DEFAULT_ALL)
          {
             rarch_input_set_keybind(controlno, KEYBIND_INCREMENT, current_index);
-            snprintf(button, sizeof(button), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+            snprintf(button, sizeof(button), "%s #%d: %s", rarch_input_get_default_keybind_name(current_index), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
             rarch_convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
             m_controlslist.SetText(current_index, strw_buffer);
          }
@@ -204,14 +204,14 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
             for(i = 0; i < RARCH_FIRST_META_KEY; i++)
             {
-               snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[i], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+               snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_input_get_default_keybind_name(i), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
                rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
                m_controlslist.SetText(i, strw_buffer);
             }
             break;
          default:
             rarch_input_set_keybind(controlno, KEYBIND_DEFAULT, current_index);
-            snprintf(buttons[current_index], sizeof(buttons[current_index]), "%s #%d: %s", rarch_default_libretro_keybind_name_lut[current_index], controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+            snprintf(buttons[current_index], sizeof(buttons[current_index]), "%s #%d: %s", rarch_input_get_default_keybind_name(current_index), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
             rarch_convert_char_to_wchar(strw_buffer, buttons[current_index], sizeof(strw_buffer));
             m_controlslist.SetText(current_index, strw_buffer);
             break;

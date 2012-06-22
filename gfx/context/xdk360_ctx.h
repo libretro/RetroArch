@@ -17,6 +17,8 @@
 #ifndef _XDK360_CTX_H
 #define _XDK360_CTX_H
 
+#include "../../360/xdk360_video.h"
+
 void gfx_ctx_set_projection(xdk360_video_t *d3d9, const struct gl_ortho *ortho, bool allow_rotate);
 void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index);
 void gfx_ctx_set_overscan(void);
