@@ -89,6 +89,7 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiBtnCacheDir", &m_dir_cache);
 
    filebrowser_set_root(&browser, g_console.default_rom_startup_dir);
+   strlcpy(tmp_browser.extensions, rarch_console_get_rom_ext(), sizeof(tmp_browser.extensions));
    filebrowser_fetch_directory_entries(g_console.default_rom_startup_dir, &browser, &m_romlist, &m_rompathtitle);
 
    return 0;
@@ -101,7 +102,7 @@ HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiTxtRomPath", &m_rompathtitle);
 
    filebrowser_set_root(&tmp_browser, "game:");
-   filebrowser_new(&tmp_browser, "game:", "xex|XEX");
+   strlcpy(tmp_browser.extensions, "xex|XEX", sizeof(tmp_browser.extensions));
    filebrowser_fetch_directory_entries("game:", &tmp_browser, &m_romlist, &m_rompathtitle);
 
    return 0;
@@ -114,7 +115,7 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
    GetChildById(L"XuiTxtRomPath", &m_shaderpathtitle);
 
    filebrowser_set_root(&tmp_browser, "game:\\media\\shaders");
-   filebrowser_new(&tmp_browser, "game:\\media\\shaders", "cg|CG");
+   strlcpy(tmp_browser.extensions, "cg|CG", sizeof(tmp_browser.extensions));
    filebrowser_fetch_directory_entries("game:\\media\\shaders", &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
 
    return 0;
