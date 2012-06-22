@@ -18,13 +18,13 @@
 #include <crtdefs.h>
 #include <tchar.h>
 #include <xtl.h>
-#include "../console/fileio/file_browser.h"
-#include "../console/console_ext.h"
-#include "xdk360_video.h"
+#include "../../console/fileio/file_browser.h"
+#include "../../console/console_ext.h"
+#include "../xdk360_video.h"
 #include "menu.h"
-#include "../message.h"
+#include "../../message.h"
 
-#include "../general.h"
+#include "../../general.h"
 
 CRetroArch app;
 HXUIOBJ hCur;

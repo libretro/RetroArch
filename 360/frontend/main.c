@@ -21,14 +21,14 @@
 #include <string>
 #include <xbdm.h>
 #include "menu.h"
-#include "xdk360_input.h"
-#include "xdk360_video.h"
+#include "../xdk360_input.h"
+#include "../xdk360_video.h"
 
-#include "../console/console_ext.h"
-#include "../conf/config_file.h"
-#include "../conf/config_file_macros.h"
-#include "../file.h"
-#include "../general.h"
+#include "../../console/console_ext.h"
+#include "../../conf/config_file.h"
+#include "../../conf/config_file_macros.h"
+#include "../../file.h"
+#include "../../general.h"
 
 #define DEVICE_MEMORY_UNIT0 1
 #define DEVICE_MEMORY_UNIT1 2

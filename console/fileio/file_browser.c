@@ -111,7 +111,7 @@ static void filebrowser_set_current_decrement (filebrowser_t *filebrowser, bool 
 
 void filebrowser_iterate(filebrowser_t *filebrowser, filebrowser_action_t action)
 {
-   int entries_to_scroll = 19;
+   unsigned entries_to_scroll = 19;
 
    switch(action)
    {

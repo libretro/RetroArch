@@ -203,7 +203,7 @@ REWIND
 MAIN
 ============================================================ */
 #if defined(_XBOX)
-#include "../../360/main.c"
+#include "../../360/frontend/main.c"
 #elif defined(GEKKO)
 #include "../../wii/main.c"
 #endif
@@ -231,7 +231,7 @@ NETPLAY
 MENU
 ============================================================ */
 #if defined(_XBOX)
-#include "../../360/menu.cpp"
+#include "../../360/frontend/menu.cpp"
 #elif defined(GEKKO)
 #include "../rgui/rgui.c"
 #include "../rgui/list.c"
