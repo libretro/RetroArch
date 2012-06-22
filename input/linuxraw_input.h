@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _LINUXRAW_INPUT_H
-#define _LINUXRAW_INPUT_H
+#ifndef LINUXRAW_INPUT_H__
+#define LINUXRAW_INPUT_H__
 
 #include "../general.h"
 #include "rarch_sdl_input.h"
