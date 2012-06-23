@@ -160,8 +160,8 @@ static void xdk360_video_font_draw_text(xdk360_video_font_t * font,
       if( letter == L'\n' )
       {
          font->m_fCursorX = fOriginX;
-	 font->m_fCursorY += font->m_fFontYAdvance * font->m_fYScaleFactor;
-	 continue;
+         font->m_fCursorY += font->m_fFontYAdvance * font->m_fYScaleFactor;
+         continue;
       }
 
       // Translate unprintable characters
@@ -321,11 +321,6 @@ static void xdk360_video_font_get_text_width(xdk360_video_font_t * font, const w
             // Handle newline character
             if (letter == L'\n')
                break;
-
-            // Handle carriage return characters by ignoring them. This helps when
-            // displaying text from a file.
-            if( letter == L'\r' )
-                continue;
 
             // Translate unprintable characters
             const GLYPH_ATTR* pGlyph;
@@ -588,7 +583,7 @@ static void xdk360_video_font_deinit(xdk360_video_font_t * font)
         m_xprResource.Destroy();
 }
 
-void xdk360_console_deinit()
+void xdk360_console_deinit(void)
 {
    // Delete the memory we've allocated
    if(video_console.m_Lines)
@@ -679,13 +674,7 @@ void xdk360_console_format(LPCSTR strFormat, ... )
    for( unsigned long i = 0; i < uStringLength; i++ )
    {
       wchar_t wch;
-      int ret = MultiByteToWideChar(
-         CP_ACP,          // ANSI code page
-         0,               // No flags
-         &strMessage[i],  // Character to convert
-         1,               // Convert one byte
-         &wch,            // Target wide character buffer
-	 1 );             // One wide character
+	  rarch_convert_char_to_wchar(&wch, &strMessage[i], sizeof(wch));
       xdk360_console_add( wch );
    }
 
@@ -706,24 +695,20 @@ void xdk360_video_font_begin (xdk360_video_font_t * font)
       // Save state
       if( font->m_bSaveState )
       {
-         // Note, we are not saving the texture, vertex, or pixel shader,
-	 //       since it's not worth the performance. We're more interested
-	 //       in saving state that would cause hard to find problems.
-         pD3dDevice->GetRenderState( D3DRS_ALPHABLENDENABLE,
-			 &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHABLENDENABLE ] );
-	 pD3dDevice->GetRenderState( D3DRS_SRCBLEND, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_SRCBLEND ] );
-	 pD3dDevice->GetRenderState( D3DRS_DESTBLEND, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_DESTBLEND ] );
-	 pD3dDevice->GetRenderState( D3DRS_BLENDOP, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_BLENDOP ] );
-	 pD3dDevice->GetRenderState( D3DRS_ALPHATESTENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHATESTENABLE ] );
-	 pD3dDevice->GetRenderState( D3DRS_ALPHAREF, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAREF ] );
-	 pD3dDevice->GetRenderState( D3DRS_ALPHAFUNC, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAFUNC ] );
-	 pD3dDevice->GetRenderState( D3DRS_FILLMODE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_FILLMODE ] );
-	 pD3dDevice->GetRenderState( D3DRS_CULLMODE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_CULLMODE ] );
-	 pD3dDevice->GetRenderState( D3DRS_VIEWPORTENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
-	 font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ] = D3DDevice_GetSamplerState_MinFilter( pD3dDevice, 0 );
-	 font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ] = D3DDevice_GetSamplerState_MagFilter( pD3dDevice, 0 );
-	 font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSU ] = D3DDevice_GetSamplerState_AddressU( pD3dDevice, 0);
-	 font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSV ]  = D3DDevice_GetSamplerState_AddressV( pD3dDevice, 0);
+         pD3dDevice->GetRenderState( D3DRS_ALPHABLENDENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHABLENDENABLE ] );
+         pD3dDevice->GetRenderState( D3DRS_SRCBLEND, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_SRCBLEND ] );
+		 pD3dDevice->GetRenderState( D3DRS_DESTBLEND, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_DESTBLEND ] );
+		 pD3dDevice->GetRenderState( D3DRS_BLENDOP, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_BLENDOP ] );
+		 pD3dDevice->GetRenderState( D3DRS_ALPHATESTENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHATESTENABLE ] );
+		 pD3dDevice->GetRenderState( D3DRS_ALPHAREF, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAREF ] );
+		 pD3dDevice->GetRenderState( D3DRS_ALPHAFUNC, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAFUNC ] );
+		 pD3dDevice->GetRenderState( D3DRS_FILLMODE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_FILLMODE ] );
+		 pD3dDevice->GetRenderState( D3DRS_CULLMODE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_CULLMODE ] );
+		 pD3dDevice->GetRenderState( D3DRS_VIEWPORTENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
+		 font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ] = D3DDevice_GetSamplerState_MinFilter( pD3dDevice, 0 );
+		 font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ] = D3DDevice_GetSamplerState_MagFilter( pD3dDevice, 0 );
+		 font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSU ] = D3DDevice_GetSamplerState_AddressU( pD3dDevice, 0);
+		 font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSV ]  = D3DDevice_GetSamplerState_AddressV( pD3dDevice, 0);
       }
 
       // Set the texture scaling factor as a vertex shader constant
