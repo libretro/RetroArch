@@ -100,7 +100,7 @@ check_pkgconf()	#$1 = HAVE_$1	$2 = package	$3 = version	$4 = critical error mess
 		ECHOBUF="Checking for pkg-config"
 #		echo -n "Checking for pkg-config"
 		for PKG_CONF_PATH in $(which pkg-config) ''; do [ "$PKG_CONF_PATH" ] && break; done
-		[ "$PKG_CONF_PATH" ] || { echo "Not found. Exiting ..."; exit 1;}
+		[ "$PKG_CONF_PATH" ] || { echo "pkg-config not found. Exiting ..."; exit 1;}
 		echo "$ECHOBUF ... $PKG_CONF_PATH"
 	}
 

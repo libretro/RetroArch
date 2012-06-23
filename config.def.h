@@ -30,41 +30,45 @@
 
 #include "input/keysym.h"
 
-///////////////// Drivers
-#define VIDEO_GL 0
-#define VIDEO_XVIDEO 11
-#define VIDEO_SDL 13
-#define VIDEO_EXT 14
-#define VIDEO_WII 24
-#define VIDEO_XENON360 25
-#define VIDEO_XDK360 28
-#define VIDEO_RPI 29
-////////////////////////
-#define AUDIO_RSOUND 1
-#define AUDIO_OSS 2
-#define AUDIO_ALSA 3
-#define AUDIO_ROAR 4
-#define AUDIO_AL 5
-#define AUDIO_JACK 6
-#define AUDIO_SDL 8
-#define AUDIO_XAUDIO 9
-#define AUDIO_PULSE 10
-#define AUDIO_EXT 15
-#define AUDIO_DSOUND 16
-#define AUDIO_COREAUDIO 17
-#define AUDIO_PS3 18
-#define AUDIO_XENON360 20
-#define AUDIO_WII 22
-#define AUDIO_XDK360 27
-////////////////////////
-#define INPUT_SDL 7
-#define INPUT_X 12
-#define INPUT_PS3 19
-#define INPUT_XENON360 21
-#define INPUT_WII 23
-#define INPUT_XDK360 26
-#define INPUT_LINUXRAW 30
-////////////////////////
+enum 
+{
+   VIDEO_GL = 0,
+   VIDEO_XVIDEO,
+   VIDEO_SDL,
+   VIDEO_EXT,
+   VIDEO_WII,
+   VIDEO_XENON360,
+   VIDEO_XDK360,
+   VIDEO_RPI,
+   VIDEO_NULL,
+
+   AUDIO_RSOUND,
+   AUDIO_OSS,
+   AUDIO_ALSA,
+   AUDIO_ROAR,
+   AUDIO_AL,
+   AUDIO_JACK,
+   AUDIO_SDL,
+   AUDIO_XAUDIO,
+   AUDIO_PULSE,
+   AUDIO_EXT,
+   AUDIO_DSOUND,
+   AUDIO_COREAUDIO,
+   AUDIO_PS3,
+   AUDIO_XENON360,
+   AUDIO_WII,
+   AUDIO_XDK360,
+   AUDIO_NULL,
+
+   INPUT_SDL,
+   INPUT_X,
+   INPUT_PS3,
+   INPUT_XENON360,
+   INPUT_WII,
+   INPUT_XDK360,
+   INPUT_LINUXRAW,
+   INPUT_NULL
+};
 
 #if defined(HAVE_RPI)
 #define VIDEO_DEFAULT_DRIVER VIDEO_RPI
@@ -83,7 +87,7 @@
 #elif defined(HAVE_DYLIB)
 #define VIDEO_DEFAULT_DRIVER VIDEO_EXT
 #else
-#error "Need at least one video driver."
+#define VIDEO_DEFAULT_DRIVER VIDEO_NULL
 #endif
 
 #if defined(__CELLOS_LV2__)
@@ -119,7 +123,7 @@
 #elif defined(HAVE_DYLIB)
 #define AUDIO_DEFAULT_DRIVER AUDIO_EXT
 #else
-#error "Need at least one audio driver."
+#define AUDIO_DEFAULT_DRIVER AUDIO_NULL
 #endif
 
 #if defined(XENON)
@@ -135,7 +139,7 @@
 #elif defined(HAVE_XVIDEO)
 #define INPUT_DEFAULT_DRIVER INPUT_X
 #else
-#error "Need at least one input driver."
+#define INPUT_DEFAULT_DRIVER INPUT_NULL
 #endif
 
 

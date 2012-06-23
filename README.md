@@ -36,6 +36,7 @@ RetroArch has been ported to the following platforms outside PC:
    - PlayStation3
    - Xbox 360 (Libxenon/XeXDK)
    - Wii (Libogc)
+   - Raspberry Pi
 
 # Dependencies (PC)
 
@@ -99,7 +100,11 @@ RetroArch PS3 needs to be compiled in the following order:
 
 <tt>make -f Makefile.ps3.rgl</tt>
 
-3) Finally, compile RetroArch itself
+3) Compile RetroArch as a library
+
+<tt>make -f Makefile.ps3.retroarch</tt>
+
+4) Finally, compile RetroArch packed together with the GUI:
 
 <tt>make -f Makefile.ps3</tt>
 

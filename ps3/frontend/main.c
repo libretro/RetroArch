@@ -39,13 +39,15 @@
 #include <np.h>
 #include <np/drm.h>
 
-#include "ps3_input.h"
+#include "../ps3_input.h"
 
-#include "../console/console_ext.h"
-#include "../conf/config_file.h"
-#include "../conf/config_file_macros.h"
-#include "../general.h"
-#include "../file.h"
+#include "../../gfx/gl_common.h"
+
+#include "../../console/console_ext.h"
+#include "../../conf/config_file.h"
+#include "../../conf/config_file_macros.h"
+#include "../../general.h"
+#include "../../file.h"
 
 #include "shared.h"
 
@@ -100,25 +102,7 @@ static void set_default_settings(void)
    g_settings.video.msg_pos_y = 0.90f;
    g_settings.video.aspect_ratio = -1.0f;
 
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_CROSS].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_SQUARE].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	=	platform_keys[PS3_DEVICE_ID_JOYPAD_SELECT].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	=	platform_keys[PS3_DEVICE_ID_JOYPAD_START].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_UP].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]	=	platform_keys[PS3_DEVICE_ID_JOYPAD_DOWN].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]	=	platform_keys[PS3_DEVICE_ID_JOYPAD_LEFT].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	=	platform_keys[PS3_DEVICE_ID_JOYPAD_RIGHT].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_CIRCLE].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_TRIANGLE].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_L1].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_R1].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_R2].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_R3].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_L2].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]		=	platform_keys[PS3_DEVICE_ID_JOYPAD_L3].joykey;
-
-   for(uint32_t x = 0; x < MAX_PLAYERS; x++)
-      rarch_input_set_default_keybinds(x);
+   rarch_input_set_controls_default();
 
    // g_console
    g_console.block_config_read = true;
@@ -133,7 +117,7 @@ static void set_default_settings(void)
    g_console.fbo_enabled = true;
    g_console.mode_switch = MODE_MENU;
    g_console.screen_orientation = ORIENTATION_NORMAL;
-   g_console.current_resolution_id = CELL_VIDEO_OUT_RESOLUTION_UNDEFINED;
+   g_console.current_resolution_id = 0;
    strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
    strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
    strlcpy(g_console.default_sram_dir, usrDirPath, sizeof(g_console.default_sram_dir));

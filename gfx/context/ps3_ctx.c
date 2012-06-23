@@ -26,7 +26,7 @@
 
 #include "../gl_common.h"
 #include "../image.h"
-#include "../../ps3/shared.h"
+#include "../../ps3/frontend/shared.h"
 
 #include "ps3_ctx.h"
 

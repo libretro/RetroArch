@@ -52,7 +52,11 @@ const char *rarch_console_get_rom_ext(void)
    const char *retval = NULL;
 
    struct retro_system_info info;
+#ifdef ANDROID
+   pretro_get_system_info(&info);
+#else
    retro_get_system_info(&info);
+#endif
 
    if (info.valid_extensions)
       retval = info.valid_extensions;
@@ -68,7 +72,11 @@ void rarch_console_name_from_id(char *name, size_t size)
       return;
 
    struct retro_system_info info;
+#ifdef ANDROID
+   pretro_get_system_info(&info);
+#else
    retro_get_system_info(&info);
+#endif
    const char *id = info.library_name ? info.library_name : "Unknown";
 
    if (!id || strlen(id) >= size)
@@ -362,6 +370,8 @@ static const struct platform_bind platform_keys[] = {
 };
 #endif
 
+#ifdef HAVE_DEFAULT_RETROPAD_INPUT
+
 uint64_t rarch_input_find_previous_platform_key(uint64_t joykey)
 {
    size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
@@ -408,6 +418,7 @@ const char *rarch_input_find_platform_key_label(uint64_t joykey)
    return "Unknown";
 }
 
+
 void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id)
 {
    uint64_t *key = &g_settings.input.binds[player][default_retro_joypad_id].joykey;
@@ -441,10 +452,62 @@ void rarch_input_set_default_keybinds(unsigned player)
    g_settings.input.dpad_emulation[player] = DPAD_EMULATION_LSTICK;
 }
 
+void rarch_input_set_controls_default (void)
+{
+#if defined(__CELLOS_LV2__)
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[PS3_DEVICE_ID_JOYPAD_CROSS].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		= platform_keys[PS3_DEVICE_ID_JOYPAD_SQUARE].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	= platform_keys[PS3_DEVICE_ID_JOYPAD_SELECT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	= platform_keys[PS3_DEVICE_ID_JOYPAD_START].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		= platform_keys[PS3_DEVICE_ID_JOYPAD_UP].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]	= platform_keys[PS3_DEVICE_ID_JOYPAD_DOWN].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]	= platform_keys[PS3_DEVICE_ID_JOYPAD_LEFT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	= platform_keys[PS3_DEVICE_ID_JOYPAD_RIGHT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		= platform_keys[PS3_DEVICE_ID_JOYPAD_CIRCLE].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		= platform_keys[PS3_DEVICE_ID_JOYPAD_TRIANGLE].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		= platform_keys[PS3_DEVICE_ID_JOYPAD_L1].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		= platform_keys[PS3_DEVICE_ID_JOYPAD_R1].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]		= platform_keys[PS3_DEVICE_ID_JOYPAD_R2].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]		= platform_keys[PS3_DEVICE_ID_JOYPAD_R3].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]		= platform_keys[PS3_DEVICE_ID_JOYPAD_L2].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]		= platform_keys[PS3_DEVICE_ID_JOYPAD_L3].joykey;
+#elif defined(_XBOX)
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_A].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_X].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_BACK].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_START].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_UP].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_DOWN].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_LEFT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_RIGHT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_B].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_Y].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_LB].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_RB].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]         = platform_keys[XDK360_DEVICE_ID_JOYPAD_LEFT_TRIGGER].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]         = platform_keys[XDK360_DEVICE_ID_JOYPAD_RIGHT_TRIGGER].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]         = platform_keys[XDK360_DEVICE_ID_LSTICK_THUMB].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]         = platform_keys[XDK360_DEVICE_ID_RSTICK_THUMB].joykey;
+#endif
+   for(uint32_t x = 0; x < MAX_PLAYERS; x++)
+      rarch_input_set_default_keybinds(x);
+}
+
+const char *rarch_input_get_default_keybind_name(unsigned id)
+{
+   return rarch_default_libretro_keybind_name_lut[id];
+}
+
+#endif
+
 void rarch_input_set_default_keybind_names_for_emulator(void)
 {
    struct retro_system_info info;
+#ifdef ANDROID
+   pretro_get_system_info(&info);
+#else
    retro_get_system_info(&info);
+#endif
    const char *id = info.library_name ? info.library_name : "Unknown";
 
    // Genesis Plus GX/Next
@@ -466,6 +529,7 @@ void rarch_input_set_default_keybind_names_for_emulator(void)
             "Mode button", sizeof(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]));
    }
 }
+
 
 /*============================================================
   VIDEO EXTENSIONS

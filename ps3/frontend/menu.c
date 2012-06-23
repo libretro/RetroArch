@@ -23,16 +23,20 @@
 #include <sysutil/sysutil_bgmplayback.h>
 #endif
 
-#include "ps3_input.h"
-#include "../console/fileio/file_browser.h"
+#include "../ps3_input.h"
+#include "../../console/fileio/file_browser.h"
 
-#include "../console/console_ext.h"
+#include "../../console/console_ext.h"
 
-#include "../gfx/gl_common.h"
+#include "../../gfx/gl_common.h"
+#include "../../gfx/gl_font.h"
+#include "../../gfx/gfx_context.h"
+#include "../../gfx/context/ps3_ctx.h"
+#include "../../gfx/shader_cg.h"
 
 #include "shared.h"
-#include "../file.h"
-#include "../general.h"
+#include "../../file.h"
+#include "../../general.h"
 
 #include "menu.h"
 #include "menu-entries.h"
@@ -702,7 +706,8 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 			   else
 				   menu_obj->items[currentsetting].text_color = ORANGE;
 			   const char * value = rarch_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey);
-			   snprintf(menu_obj->items[currentsetting].text, sizeof(menu_obj->items[currentsetting].text), rarch_default_libretro_keybind_name_lut[currentsetting-(FIRST_CONTROL_BIND)]);
+                           unsigned id = currentsetting - FIRST_CONTROL_BIND;
+			   snprintf(menu_obj->items[currentsetting].text, sizeof(menu_obj->items[currentsetting].text), rarch_input_get_default_keybind_name(id));
 			   snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [%s] on the PS3 controller is mapped to action:\n[%s].", menu_obj->items[currentsetting].text, value);
 			   snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), value);
 		   }

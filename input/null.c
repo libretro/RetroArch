@@ -1,6 +1,5 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
- *  Copyright (C) 2012 - Michael Lelli
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,16 +13,50 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LINUXRAW_INPUT_H__
-#define LINUXRAW_INPUT_H__
-
 #include "../general.h"
-#include "rarch_sdl_input.h"
+#include "../driver.h"
 
-typedef struct linuxraw_input
+static void *null_input_init(void)
 {
-   sdl_input_t *sdl;
-   bool state[0x80];
-} linuxraw_input_t;
+   return (void*)-1;
+}
 
-#endif
+static void null_input_poll(void *data)
+{
+   (void)data;
+}
+
+static int16_t null_input_state(void *data, const struct snes_keybind **snes_keybinds, unsigned port, unsigned device, unsigned index, unsigned id)
+{
+   (void)data;
+   (void)snes_keybinds;
+   (void)port;
+   (void)device;
+   (void)index;
+   (void)id;
+
+   return 0;
+}
+
+static bool null_input_key_pressed(void *data, int key)
+{
+   (void)data;
+   (void)key;
+
+   return false;
+}
+
+static void null_input_free(void *data)
+{
+   (void)data;
+}
+
+const input_driver_t input_null = {
+   null_input_init,
+   null_input_poll,
+   null_input_state,
+   null_input_key_pressed,
+   null_input_free,
+   "null",
+};
+

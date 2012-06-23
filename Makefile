@@ -2,8 +2,28 @@ include config.mk
 
 TARGET = retroarch tools/retroarch-joyconfig
 
-OBJ = retroarch.o file.o file_path.o hash.o driver.o settings.o dynamic.o message.o rewind.o gfx/gfx_common.o patch.o compat/compat.o screenshot.o audio/utils.o
-JOYCONFIG_OBJ = tools/retroarch-joyconfig.o conf/config_file.o compat/compat.o
+OBJ = retroarch.o \
+		file.o \
+		file_path.o \
+		hash.o \
+		driver.o \
+		settings.o \
+		dynamic.o \
+		message.o \
+		rewind.o \
+		gfx/gfx_common.o \
+		patch.o \
+		compat/compat.o \
+		screenshot.o \
+		audio/utils.o \
+		audio/null.o \
+		input/null.o \
+		gfx/null.o
+
+JOYCONFIG_OBJ := tools/retroarch-joyconfig.o \
+	conf/config_file.o \
+	compat/compat.o
+
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
 LIBS = -lm

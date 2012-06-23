@@ -31,14 +31,14 @@
 #include <xenon_soc/xenon_power.h>
 #include <elf/elf.h>
 #include <dirent.h>
-#include "../compat/strl.h"
+#include "../../compat/strl.h"
 
 #undef main
 
 int rarch_main(int argc, char **argv);
-static void start_ssnes(const char *path)
+static void start_rarch(const char *path)
 {
-   char arg0[] = "ssnes";
+   char arg0[] = "retroarch";
    char arg1[256];
    strlcpy(arg1, path, sizeof(arg1));
    char *argv[3] = { arg0, arg1, NULL };
@@ -169,7 +169,7 @@ int main(void)
 
             printf("%s\n", fn);
 
-            start_ssnes(fn);
+            start_rarch(fn);
          }
       }
 

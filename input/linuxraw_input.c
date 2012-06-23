@@ -26,7 +26,7 @@
 #include "linuxraw_input.h"
 #include "rarch_sdl_input.h"
 
-static long oldKbmd = 0xFFFF;
+static long oldKbmd = 0xffff;
 static struct termios oldTerm, newTerm;
 
 struct key_bind
@@ -153,11 +153,11 @@ static void init_lut(void)
 
 static void linuxraw_resetKbmd()
 {
-   if (oldKbmd != 0xFFFF)
+   if (oldKbmd != 0xffff)
    {
       ioctl(0, KDSKBMODE, oldKbmd);
       tcsetattr(0, TCSAFLUSH, &oldTerm);
-      oldKbmd = 0xFFFF;
+      oldKbmd = 0xffff;
    }
 }
 
@@ -177,7 +177,7 @@ static void *linuxraw_input_init(void)
    if (!linuxraw)
       return NULL;
 
-   if (oldKbmd == 0xFFFF)
+   if (oldKbmd == 0xffff)
    {
       tcgetattr(0, &oldTerm);
       newTerm = oldTerm;

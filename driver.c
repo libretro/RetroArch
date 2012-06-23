@@ -75,6 +75,7 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef GEKKO
    &audio_wii,
 #endif
+   &audio_null,
 };
 
 static const video_driver_t *video_drivers[] = {
@@ -102,6 +103,7 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_RPI
    &video_rpi,
 #endif
+   &video_null,
 };
 
 static const input_driver_t *input_drivers[] = {
@@ -126,6 +128,7 @@ static const input_driver_t *input_drivers[] = {
 #ifdef IS_LINUX
    &input_linuxraw,
 #endif
+   &input_null,
 };
 
 static void find_audio_driver(void)

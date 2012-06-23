@@ -22,7 +22,7 @@
 #include "../libretro.h"
 #include "../console/console_ext.h"
 #include "xdk360_input.h"
-#include "menu.h"
+#include "frontend/menu.h"
 
 static uint64_t state[4];
 static unsigned pads_connected;

@@ -31,8 +31,8 @@
 #include "../file.h"
 #endif
 
-
-typedef struct {
+typedef struct
+{
    EGLDisplay mDisplay;
    EGLSurface mSurface;
    EGLContext mContext;
@@ -143,9 +143,9 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
    vc_dispmanx_display_get_info(dispman_display, &dispman_modeinfo);
    dispman_update = vc_dispmanx_update_start(0);
 
-   dispman_element = vc_dispmanx_element_add ( dispman_update, dispman_display,
-      0/*layer*/, &dst_rect, 0/*src*/,
-      &src_rect, DISPMANX_PROTECTION_NONE, 0 /*alpha*/, 0/*clamp*/, DISPMANX_NO_ROTATE);
+   dispman_element = vc_dispmanx_element_add(dispman_update, dispman_display,
+      0 /*layer*/, &dst_rect, 0 /*src*/,
+      &src_rect, DISPMANX_PROTECTION_NONE, 0 /*alpha*/, 0 /*clamp*/, DISPMANX_NO_ROTATE);
 
    nativewindow.element = dispman_element;
    nativewindow.width = rpi->mScreenWidth;
@@ -166,7 +166,7 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
    if (dispman_modeinfo.width == 720 && (dispman_modeinfo.height == 480 || dispman_modeinfo.height == 576))
       rpi->mScreenAspect = 4.0f / 3.0f;
    else
-      rpi->mScreenAspect = (float) dispman_modeinfo.width / dispman_modeinfo.height;
+      rpi->mScreenAspect = (float)dispman_modeinfo.width / dispman_modeinfo.height;
 
    VGfloat clearColor[4] = {0, 0, 0, 1};
    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
@@ -176,10 +176,12 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
    // emulation cores can send 0 in the top bit. We lose some speed on
    // conversion but I doubt it has any real affect, since we are only drawing
    // one image at the end of the day. Still keep the alpha channel for ABGR.
-   rpi->mImage = vgCreateImage(video->rgb32 ? VG_sABGR_8888 : VG_sXBGR_8888, rpi->mTextureWidth, rpi->mTextureHeight, video->smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
+   rpi->mImage = vgCreateImage(video->rgb32 ? VG_sABGR_8888 : VG_sXBGR_8888,
+         rpi->mTextureWidth, rpi->mTextureHeight,
+         video->smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
    rpi_set_nonblock_state(rpi, !video->vsync);
 
-   linuxraw_input_t *linuxraw_input = (linuxraw_input_t *)input_linuxraw.init();
+   linuxraw_input_t *linuxraw_input = (linuxraw_input_t*)input_linuxraw.init();
    if (linuxraw_input)
    {
       *input = (const input_driver_t *)&input_linuxraw;
@@ -258,7 +260,7 @@ static void rpi_render_message(rpi_t *rpi, const char *msg)
    free(rpi->mLastMsg);
    rpi->mLastMsg = strdup(msg);
 
-   if(rpi->mMsgLength)
+   if (rpi->mMsgLength)
    {
       while (--rpi->mMsgLength)
          vgClearGlyph(rpi->mFont, rpi->mMsgLength);
@@ -278,10 +280,10 @@ static void rpi_render_message(rpi_t *rpi, const char *msg)
       VGfloat origin[2], escapement[2];
       VGImage img;
 
-      escapement[0] = (VGfloat) (head->advance_x);
-      escapement[1] = (VGfloat) (head->advance_y);
-      origin[0] = (VGfloat) (-head->char_off_x);
-      origin[1] = (VGfloat) (head->char_off_y);
+      escapement[0] = head->advance_x;
+      escapement[1] = head->advance_y;
+      origin[0] = -head->char_off_x;
+      origin[1] = head->char_off_y;
 
       img = vgCreateImage(VG_A_8, head->width, head->height, VG_IMAGE_QUALITY_NONANTIALIASED);
 
@@ -310,7 +312,11 @@ static void rpi_draw_message(rpi_t *rpi, const char *msg)
    vgSeti(VG_SCISSORING, VG_FALSE);
    vgSeti(VG_IMAGE_MODE, VG_DRAW_IMAGE_STENCIL);
 
-   VGfloat origins[] = { rpi->mScreenWidth * g_settings.video.msg_pos_x - 2.0f, rpi->mScreenHeight * g_settings.video.msg_pos_y - 2.0f };
+   VGfloat origins[] = {
+      rpi->mScreenWidth * g_settings.video.msg_pos_x - 2.0f,
+      rpi->mScreenHeight * g_settings.video.msg_pos_y - 2.0f,
+   };
+
    vgSetfv(VG_GLYPH_ORIGIN, 2, origins);
    vgSetPaint(rpi->mPaintBg, VG_FILL_PATH);
    vgDrawGlyphs(rpi->mFont, rpi->mMsgLength, rpi->mGlyphIndices, NULL, NULL, VG_FILL_PATH, VG_TRUE);

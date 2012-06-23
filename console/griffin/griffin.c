@@ -46,8 +46,6 @@ CONFIG FILE
 #include "../../conf/config_file.c"
 #endif
 
-#include "func_hooks.h"
-
 /*============================================================
 VIDEO CONTEXT
 ============================================================ */
@@ -88,13 +86,13 @@ VIDEO DRIVER
 
 #ifdef HAVE_OPENGL
 #include "../../gfx/gl.c"
-#endif
-
-#if defined(_XBOX)
+#elif defined(_XBOX)
 #include "../../360/xdk360_video.cpp"
 #elif defined(GEKKO)
 #include "../../wii/video.c"
 #endif
+
+#include "../../gfx/null.c"
 
 /*============================================================
 FONTS
@@ -118,6 +116,8 @@ INPUT
 #elif defined(GEKKO)
 #include "../../wii/input.c"
 #endif
+
+#include "../../input/null.c"
 
 /*============================================================
 STATE TRACKER
@@ -163,6 +163,8 @@ AUDIO
 #include "../../wii/audio.c"
 #endif
 
+#include "../../audio/null.c"
+
 /*============================================================
 DYNAMIC
 ============================================================ */
@@ -200,10 +202,8 @@ REWIND
 /*============================================================
 MAIN
 ============================================================ */
-#if defined(__CELLOS_LV2__)
-#include "../../ps3/main.c"
-#elif defined(_XBOX)
-#include "../../360/main.c"
+#if defined(_XBOX)
+#include "../../360/frontend/main.c"
 #elif defined(GEKKO)
 #include "../../wii/main.c"
 #endif
@@ -230,10 +230,8 @@ NETPLAY
 /*============================================================
 MENU
 ============================================================ */
-#if defined(__CELLOS_LV2__)
-#include "../../ps3/menu.c"
-#elif defined(_XBOX)
-#include "../../360/menu.cpp"
+#if defined(_XBOX)
+#include "../../360/frontend/menu.cpp"
 #elif defined(GEKKO)
 #include "../rgui/rgui.c"
 #include "../rgui/list.c"
