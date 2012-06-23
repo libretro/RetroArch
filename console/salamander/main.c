@@ -70,7 +70,6 @@
 
 #if defined(__CELLOS_LV2__)
 static uint8_t np_pool[NP_POOL_SIZE];
-char contentInfoPath[PATH_MAX];
 char usrDirPath[PATH_MAX];
 SYS_PROCESS_PARAM(1001, 0x100000)
 #elif defined(_XBOX)
@@ -252,6 +251,7 @@ static void get_environment_settings (void)
    unsigned int get_attributes;
    CellGameContentSize size;
    char dirName[CELL_GAME_DIRNAME_SIZE];
+   char contentInfoPath[PATH_MAX];
 
    memset(&size, 0x00, sizeof(CellGameContentSize));
 

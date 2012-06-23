@@ -17,14 +17,6 @@
 #ifndef _PS3_SHARED_H
 #define _PS3_SHARED_H
 
-enum
-{
-   CONFIG_FILE,
-   SHADER_PRESET_FILE,
-   INPUT_PRESET_FILE
-};
-
-extern char contentInfoPath[PATH_MAX];
 extern char usrDirPath[PATH_MAX];
 extern char DEFAULT_PRESET_FILE[PATH_MAX];
 extern char DEFAULT_BORDER_FILE[PATH_MAX];

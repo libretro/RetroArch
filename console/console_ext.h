@@ -221,6 +221,13 @@ void rarch_console_rsound_stop(void);
 void rarch_convert_char_to_wchar(wchar_t *buf, const char * str, size_t size);
 const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr);
 
+enum
+{
+   CONFIG_FILE,
+   SHADER_PRESET_FILE,
+   INPUT_PRESET_FILE
+};
+
 void rarch_config_create_default(const char * conf_name);
 void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool find_libretro_path);
 void rarch_config_save(const char * conf_name);
