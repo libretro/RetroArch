@@ -449,8 +449,7 @@ struct global
 
    struct
    {
-      char **elems;
-      size_t size;
+      struct string_list *list;
       size_t ptr;
    } shader_dir;
 

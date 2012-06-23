@@ -1513,6 +1513,9 @@ static void set_savestate_auto_index(void)
    if (!g_settings.savestate_auto_index)
       return;
 
+   // Find the file in the same directory as g_extern.savestate_name with the largest numeral suffix.
+   // E.g. /foo/path/game.state, will try to find /foo/path/game.state%d, where %d is the largest number available.
+
    char state_path[PATH_MAX];
    strlcpy(state_path, g_extern.savestate_name, sizeof(state_path));
 
@@ -1527,22 +1530,23 @@ static void set_savestate_auto_index(void)
       *split = '\0';
       base = split + 1;
    }
+   else
+      dir = ".";
 
    unsigned max_index = 0;
 
-   char **dir_list = dir_list_new(dir, NULL, false);
+   struct string_list *dir_list = dir_list_new(dir, NULL, false);
    if (!dir_list)
       return;
 
-   unsigned index = 0;
-   const char *dir_elem;
-   while ((dir_elem = dir_list[index++]))
+   for (size_t i = 0; i < dir_list->size; i++)
    {
-      if (!strstr(dir_elem, base))
+      const char *dir_elem = dir_list->elems[i].data;
+      if (strstr(dir_elem, base) != dir_elem)
          continue;
 
       const char *end = dir_elem + strlen(dir_elem);
-      while ((end != dir_elem) && isdigit(end[-1])) end--;
+      while ((end > dir_elem) && isdigit(end[-1])) end--;
 
       unsigned index = strtoul(end, NULL, 0);
       if (index > max_index)
@@ -2128,7 +2132,7 @@ static void check_shader_dir(void)
    static bool old_pressed_next = false;
    static bool old_pressed_prev = false;
 
-   if (!g_extern.shader_dir.elems || !driver.video->xml_shader)
+   if (!g_extern.shader_dir.list || !driver.video->xml_shader)
       return;
 
    bool should_apply = false;
@@ -2137,20 +2141,20 @@ static void check_shader_dir(void)
    if (pressed_next && !old_pressed_next)
    {
       should_apply = true;
-      g_extern.shader_dir.ptr = (g_extern.shader_dir.ptr + 1) % g_extern.shader_dir.size;
+      g_extern.shader_dir.ptr = (g_extern.shader_dir.ptr + 1) % g_extern.shader_dir.list->size;
    }
    else if (pressed_prev && !old_pressed_prev)
    {
       should_apply = true;
       if (g_extern.shader_dir.ptr == 0)
-         g_extern.shader_dir.ptr = g_extern.shader_dir.size - 1;
+         g_extern.shader_dir.ptr = g_extern.shader_dir.list->size - 1;
       else
          g_extern.shader_dir.ptr--;
    }
 
    if (should_apply)
    {
-      const char *shader = g_extern.shader_dir.elems[g_extern.shader_dir.ptr];
+      const char *shader = g_extern.shader_dir.list->elems[g_extern.shader_dir.ptr].data;
 
       strlcpy(g_settings.video.bsnes_shader_path, shader, sizeof(g_settings.video.bsnes_shader_path));
       g_settings.video.shader_type = RARCH_SHADER_BSNES;

@@ -36,13 +36,30 @@ void save_ram_file(const char *path, int type);
 
 bool init_rom_file(enum rarch_game_type type);
 
-// Returns a NULL-terminated list of files in a directory with full paths.
-// If ext is NULL, any file will be picked.
-// If non-NULL, only files with extension ext are added.
-char **dir_list_new(const char *dir, const char *ext, bool include_dirs);
-size_t dir_list_size(char * const *dir_list);
-void dir_list_sort(char **dir_list, bool dir_first);
-void dir_list_free(char **dir_list);
+// Yep, this is C alright ;)
+union string_list_elem_attr
+{
+   bool  b;
+   int   i;
+   void *p;
+};
+
+struct string_list_elem
+{
+   char *data;
+   union string_list_elem_attr attr;
+};
+
+struct string_list
+{
+   struct string_list_elem *elems;
+   size_t size;
+   size_t cap;
+};
+
+struct string_list *dir_list_new(const char *dir, const char *ext, bool include_dirs);
+void dir_list_sort(struct string_list *list, bool dir_first);
+void dir_list_free(struct string_list *list);
 
 bool path_is_directory(const char *path);
 bool path_file_exists(const char *path);
