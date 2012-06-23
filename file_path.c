@@ -23,6 +23,7 @@
 #include "compat/posix_string.h"
 
 #ifdef __CELLOS_LV2__
+#include <unistd.h> //stat() is defined here
 #define S_ISDIR(x) (x & CELL_FS_S_IFDIR)
 #endif
 

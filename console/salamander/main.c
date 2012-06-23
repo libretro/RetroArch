@@ -81,59 +81,73 @@ char LIBRETRO_DIR_PATH[PATH_MAX];
 char SYS_CONFIG_FILE[PATH_MAX];
 char libretro_path[PATH_MAX];
 
+static void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext)
+{
+   //We need to set libretro to the first entry in the cores
+   //directory so that it will be saved to the config file
+
+   struct string_list *dir_list = dir_list_new(libretro_path, exe_ext, false);
+
+   const char * first_exe;
+
+   if (!dir_list)
+   {
+      RARCH_ERR("Couldn't read directory.\n");
+      RARCH_ERR("Failed to set first entry to libretro path.\n");
+      goto end;
+   }
+
+   first_exe = dir_list->elems[0].data;
+
+   if(first_exe)
+   {
+#ifdef _XBOX
+      char fname_tmp[PATH_MAX];
+      fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
+
+      if(strcmp(fname_tmp, "RetroArch-Salamander.xex") == 0)
+      {
+         RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
+	 first_exe = dir_list[1];
+	 fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
+
+	 if(!first_exe)
+	 {
+            RARCH_ERR("Unlikely error happened - no second entry - no choice but to set it to RetroArch Salamander\n");
+	    first_exe = dir_list[0];
+	    fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
+	 }
+      }
+
+      strlcpy(first_file, fname_tmp, size_of_first_file);
+#else
+      strlcpy(first_file, first_exe, size_of_first_file);
+#endif
+      RARCH_LOG("Set first entry in libretro core dir to libretro path: [%s].\n", first_file);
+   }
+
+end:
+   dir_list_free(dir_list);
+}
+
 static void find_and_set_first_file(void)
 {
    //Last fallback - we'll need to start the first executable file 
    // we can find in the RetroArch cores directory
 
+   char first_file[PATH_MAX];
+   rarch_manage_libretro_set_first_file(first_file, sizeof(first_file),
 #if defined(_XBOX)
-   char ** dir_list = dir_list_new("game:\\", "xex", false);
+   "game:\\", "xex"
 #elif defined(__CELLOS_LV2__)
-   char ** dir_list = dir_list_new(LIBRETRO_DIR_PATH, "SELF", false);
+   LIBRETRO_DIR_PATH, "SELF"
 #endif
+);
 
-   if (!dir_list)
-   {
-      RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
-      return;
-   }
-
-   char * first_executable = dir_list[0];
-
-   if(first_executable)
-   {
-#ifdef _XBOX
-      //Check if it's RetroArch Salamander itself - if so, first_executable needs to
-      //be overridden
-      char fname_tmp[PATH_MAX];
-
-      fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
-
-      if(strcmp(fname_tmp, "RetroArch-Salamander.xex") == 0)
-      {
-         RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
-	 first_executable = dir_list[1];
-	 fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
-
-	 if(!first_executable)
-	 {
-            RARCH_WARN("There is no second entry - no choice but to boot RetroArch Salamander\n");
-	    first_executable = dir_list[0];
-	    fill_pathname_base(fname_tmp, first_executable, sizeof(fname_tmp));
-	 }
-      }
-
-      snprintf(first_executable, sizeof(first_executable), "game:\\%s", fname_tmp);
-#endif
-      RARCH_LOG("Start first entry in libretro cores dir: [%s].\n", first_executable);
-      strlcpy(libretro_path, first_executable, sizeof(libretro_path));
-   }
+   if(first_file)
+      strlcpy(libretro_path, first_file, sizeof(libretro_path));
    else
-   {
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
-   }
-
-   dir_list_free(dir_list);
 }
 
 static void init_settings(void)
