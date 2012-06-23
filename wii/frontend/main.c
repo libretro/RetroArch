@@ -16,11 +16,10 @@
 #undef main
 
 #include <stdbool.h>
-#include "../console/rgui/rgui.h"
-#include "../driver.h"
-#include "../general.h"
-#include "../libretro.h"
-#include "driver.h"
+#include "../../console/rgui/rgui.h"
+#include "../../driver.h"
+#include "../../general.h"
+#include "../../libretro.h"
 
 #include <stdlib.h>
 #include <stddef.h>
