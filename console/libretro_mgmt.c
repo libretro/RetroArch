@@ -74,24 +74,23 @@ done:
    return retstr;
 }
 
-const char *rarch_manage_libretro_set_first_file(const char *libretro_path, const char * exe_ext)
+void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext)
 {
    //We need to set libretro to the first entry in the cores
    //directory so that it will be saved to the config file
 
-   // FIXME: Use struct string_list*
-   char ** dir_list = dir_list_new(libretro_path, exe_ext, false);
+   struct string_list *dir_list = dir_list_new(libretro_path, exe_ext, false);
 
-   const char * retstr = NULL;
    const char * first_exe;
 
    if (!dir_list)
    {
       RARCH_ERR("Couldn't read directory.\n");
-      goto error;
+      RARCH_ERR("Failed to set first entry to libretro path.\n");
+      goto end;
    }
 
-   first_exe = dir_list[0];
+   first_exe = dir_list->elems[0].data;
 
    if(first_exe)
    {
@@ -113,21 +112,13 @@ const char *rarch_manage_libretro_set_first_file(const char *libretro_path, cons
 	 }
       }
 
-      // FIXME: Broken, returns a pointer to data on the stack.
-      retstr = fname_tmp;
+      strlcpy(first_file, fname_tmp, size_of_first_file);
 #else
-      // FIXME: Broken, returns a pointer to dynamically allocated data
-      // which is freed before returning.
-      retstr = first_exe;
+      strlcpy(first_file, first_exe, size_of_first_file);
 #endif
-      RARCH_LOG("Set first entry in libretro core dir to libretro path: [%s].\n", retstr);
-      goto end;
+      RARCH_LOG("Set first entry in libretro core dir to libretro path: [%s].\n", first_file);
    }
 
-   // TODO: Should not use two layers of goto labels.
-error:
-   RARCH_ERR("Failed to set first entry to libretro path.\n");
 end:
    dir_list_free(dir_list);
-   return retstr;
 }

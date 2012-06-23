@@ -803,7 +803,8 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
 
          if(!strcmp(g_settings.libretro, ""))
          {
-            const char *first_file = rarch_manage_libretro_set_first_file(libretro_dir_path, exe_ext);
+            char first_file[PATH_MAX];
+            rarch_manage_libretro_set_first_file(first_file, sizeof(first_file), libretro_dir_path, exe_ext);
             if(first_file != NULL)
                strlcpy(g_settings.libretro, first_file, sizeof(g_settings.libretro));
          }

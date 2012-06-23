@@ -28,8 +28,7 @@ typedef struct
    uint32_t directory_stack_size;
    char dir[MAX_DIR_STACK][512]; 
    struct {
-	   char **elems;
-	   size_t size;
+	   struct string_list *list;
 	   size_t ptr;
    } current_dir;
    char root_dir[PATH_MAX];
@@ -54,6 +53,7 @@ typedef enum
 
 const char * filebrowser_get_current_dir (filebrowser_t *filebrowser);
 const char * filebrowser_get_current_path (filebrowser_t *filebrowser);
+bool filebrowser_get_current_path_isdir (filebrowser_t *filebrowser);
 size_t filebrowser_get_current_index (filebrowser_t *filebrowser);
 void filebrowser_set_root(filebrowser_t *filebrowser, const char *root_dir);
 void filebrowser_free(filebrowser_t *filebrowser);
