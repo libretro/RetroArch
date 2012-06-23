@@ -651,7 +651,7 @@ static void xdk360_console_add( wchar_t wch )
    video_console.m_cCurLineLength++;
 }
 
-void xdk360_console_format(LPCSTR strFormat, ... )
+void xdk360_console_format(const char * strFormat)
 {
    video_console.m_nCurLine = 0;
    video_console.m_cCurLineLength = 0;
@@ -660,27 +660,14 @@ void xdk360_console_format(LPCSTR strFormat, ... )
       video_console.m_cScreenHeightVirtual * 
       ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
 
-   va_list pArgList;
-   va_start( pArgList, strFormat );
-
-   // Count the required length of the string
-   unsigned long dwStrLen = _vscprintf( strFormat, pArgList ) + 1;    
-   // +1 = null terminator
-   char * strMessage = ( char * )malloc( dwStrLen );
-   vsprintf_s( strMessage, dwStrLen, strFormat, pArgList );
-
    // Output the string to the console
-   unsigned long uStringLength = strlen( strMessage );
+   unsigned long uStringLength = strlen( strFormat );
    for( unsigned long i = 0; i < uStringLength; i++ )
    {
       wchar_t wch;
-	  rarch_convert_char_to_wchar(&wch, &strMessage[i], sizeof(wch));
+	  rarch_convert_char_to_wchar(&wch, &strFormat[i], sizeof(wch));
       xdk360_console_add( wch );
    }
-
-   free(strMessage);
-
-   va_end( pArgList );
 }
 
 void xdk360_video_font_begin (xdk360_video_font_t * font)

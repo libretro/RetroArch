@@ -102,7 +102,7 @@ typedef struct
 
 HRESULT xdk360_console_init ( LPCSTR strFontFileName, D3DCOLOR colBackColor, D3DCOLOR colTextColor);
 void xdk360_console_deinit (void);
-void xdk360_console_format (LPCSTR strFormat, ... );
+void xdk360_console_format (const char *strFormat);
 void xdk360_console_draw (void);
 
 void xdk360_video_font_begin (xdk360_video_font_t * font);
