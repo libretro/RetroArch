@@ -756,15 +756,10 @@ void rarch_console_rsound_stop(void)
   STRING HANDLING
   ============================================================ */
 
-#ifdef _XBOX
 void rarch_convert_char_to_wchar(wchar_t *buf, const char * str, size_t size)
 {
-   unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, str, -1, NULL, 0);
-   size /= sizeof(wchar_t);
-   rarch_assert(size >= dwNum);
-   MultiByteToWideChar(CP_ACP, 0, str, -1, buf, dwNum);
+   mbstowcs(buf, str, size / sizeof(wchar_t));
 }
-#endif
 
 const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr)
 {
