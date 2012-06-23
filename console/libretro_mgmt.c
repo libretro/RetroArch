@@ -101,13 +101,13 @@ void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first
       if(strcmp(fname_tmp, "RetroArch-Salamander.xex") == 0)
       {
          RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
-	 first_exe = dir_list[1];
+	 first_exe = dir_list->elems[1].data;
 	 fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
 
 	 if(!first_exe)
 	 {
             RARCH_ERR("Unlikely error happened - no second entry - no choice but to set it to RetroArch Salamander\n");
-	    first_exe = dir_list[0];
+	    first_exe = dir_list->elems[0].data;
 	    fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
 	 }
       }

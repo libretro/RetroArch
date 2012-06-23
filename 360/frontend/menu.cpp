@@ -70,11 +70,11 @@ static void filebrowser_fetch_directory_entries(const char *path, filebrowser_t 
    rompath_title->SetText(strw_buffer);
 
    romlist->DeleteItems(0, romlist->GetItemCount());
-   romlist->InsertItems(0, browser->current_dir.size);
-   for(unsigned i = 0; i < browser->current_dir.size; i++)
+   romlist->InsertItems(0, browser->current_dir.list->size);
+   for(unsigned i = 0; i < browser->current_dir.list->size; i++)
    {
       char fname_tmp[256];
-	  fill_pathname_base(fname_tmp, browser->current_dir.elems[i], sizeof(fname_tmp));
+	  fill_pathname_base(fname_tmp, browser->current_dir.list->elems[i].data, sizeof(fname_tmp));
       rarch_convert_char_to_wchar(strw_buffer, fname_tmp, sizeof(strw_buffer));
       romlist->SetText(i, strw_buffer);
    }
@@ -530,7 +530,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    if(hObjPressed == m_romlist)
    {
       int index = m_romlist.GetCurSel();
-      if(path_file_exists(browser.current_dir.elems[index]))
+      if(path_file_exists(browser.current_dir.list->elems[index].data))
       {
          struct retro_system_info info;
          retro_get_system_info(&info);
@@ -550,7 +550,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
             rarch_settings_change(S_START_RARCH);
          }
       }
-      else if(path_is_directory(browser.current_dir.elems[index]))
+      else if(browser.current_dir.list->elems[index].attr.b)
       {
 
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
@@ -583,7 +583,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
    if(hObjPressed == m_shaderlist)
    {
       int index = m_shaderlist.GetCurSel();
-      if(path_file_exists(tmp_browser.current_dir.elems[index]))
+      if(path_file_exists(tmp_browser.current_dir.list->elems[index].data))
       {
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_shaderlist.GetText(index));
 		 
@@ -604,7 +604,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
          if (g_console.info_msg_enable)
             rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
       }
-      else if(path_is_directory(tmp_browser.current_dir.elems[index]))
+      else if(tmp_browser.current_dir.list->elems[index].attr.b)
       {
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_shaderlist.GetText(index));
          snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), strbuffer);
@@ -624,13 +624,13 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    if(hObjPressed == m_romlist)
    {
       int index = m_romlist.GetCurSel();
-      if(path_file_exists(tmp_browser.current_dir.elems[index]))
+      if(path_file_exists(tmp_browser.current_dir.list->elems[index].data))
       {
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
          snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), strbuffer);
          rarch_settings_change(S_RETURN_TO_LAUNCHER);
       }
-      else if(path_is_directory(tmp_browser.current_dir.elems[index]))
+      else if(tmp_browser.current_dir.list->elems[index].attr.b)
       {
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
          snprintf(path, sizeof(path), "%s%s\\", filebrowser_get_current_dir(&tmp_browser), strbuffer);

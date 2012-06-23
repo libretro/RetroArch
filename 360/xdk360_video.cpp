@@ -550,6 +550,9 @@ static void *xdk360_init(const video_info_t *video, const input_driver_t **input
 static bool xdk360_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
+   if (!frame)
+      return true;
+
    xdk360_video_t *d3d9 = (xdk360_video_t*)data;
    D3DSurface* pRenderTarget0;
    bool menu_enabled = g_console.menu_enable;
