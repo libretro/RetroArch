@@ -220,18 +220,17 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
    msg_queue_push(g_extern.msg_queue, str, 1, delay);
 }
 
-#ifdef _XBOX
-void rarch_settings_create_menu_item_label(wchar_t * strwbuf, unsigned setting, size_t size)
-#else
-void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t size)
-#endif
+void rarch_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size)
 {
-#ifdef _XBOX
    char str[PATH_MAX];
-   size_t SIZEOF_STR = sizeof(str);
-#else
+
+   rarch_settings_create_menu_item_label(str, setting, sizeof(str));
+   rarch_convert_char_to_wchar(strwbuf, str, size);
+}
+
+void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t size)
+{
    size_t SIZEOF_STR = size;
-#endif
 
    switch (setting)
    {
@@ -260,8 +259,4 @@ void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t 
 		 snprintf(str, SIZEOF_STR, "Save State #%d", g_extern.state_slot);
          break;
    }
-
-#ifdef _XBOX
-   rarch_convert_char_to_wchar(strwbuf, str, size);
-#endif
 }

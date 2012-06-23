@@ -235,12 +235,12 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SHADER, sizeof(strw_buffer));
+   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SHADER, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SHADER, strw_buffer);
    m_settingslist.SetText(SETTING_COLOR_FORMAT, g_console.color_format ? L"Color format: 32bit ARGB" : L"Color format: 16bit RGBA");
-   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SHADER_2, sizeof(strw_buffer));
+   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SHADER_2, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SHADER_2, strw_buffer);
-   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
+   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
 
    return 0;
@@ -265,7 +265,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                   {
                      rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
                      //xdk360_gfx_init_fbo(vid);
-                     rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
+                     rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
                      m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
                   }
                }
@@ -283,7 +283,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                    {
                        rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
                        //xdk360_gfx_init_fbo(vid);
-                       rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
+                       rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
                        m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
                    }
                 }
@@ -316,16 +316,16 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiQuickMenuList", &m_quickmenulist);
    GetChildById(L"XuiBackButton", &m_back);
 
-   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
    m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
 
-   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
+   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
    m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
    
-   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
+   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
    m_quickmenulist.SetText(MENU_ITEM_LOAD_STATE, strw_buffer);
 
-   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
+   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
    m_quickmenulist.SetText(MENU_ITEM_SAVE_STATE, strw_buffer);
 
    return 0;
@@ -347,9 +347,9 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
             case MENU_ITEM_LOAD_STATE:
 			case MENU_ITEM_SAVE_STATE:
                rarch_state_slot_decrease();
-               rarch_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
+               rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_LOAD_STATE, strw_buffer);
-               rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
+               rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_SAVE_STATE, strw_buffer);
                break;
             case MENU_ITEM_KEEP_ASPECT_RATIO:
@@ -358,7 +358,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
                break;
             case MENU_ITEM_ORIENTATION:
                rarch_settings_change(S_ROTATION_DECREMENT);
-               rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+               rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
                video_xdk360.set_rotation(driver.video_data, g_console.screen_orientation);
                break;
@@ -372,9 +372,9 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
             case MENU_ITEM_LOAD_STATE:
 			case MENU_ITEM_SAVE_STATE:
                rarch_state_slot_increase();
-               rarch_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
+               rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_LOAD_STATE, strw_buffer);
-               rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
+               rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_SAVE_STATE, strw_buffer);
                break;
             case MENU_ITEM_KEEP_ASPECT_RATIO:
@@ -383,7 +383,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
                break;
             case MENU_ITEM_ORIENTATION:
                rarch_settings_change(S_ROTATION_INCREMENT);
-               rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+               rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
                video_xdk360.set_rotation(driver.video_data, g_console.screen_orientation);
                break;
@@ -399,7 +399,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
    if(aspectratio_changed)
    {
       gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
-	  rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
+	  rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
       m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
    }
 
@@ -448,7 +448,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
            rarch_settings_default(S_DEF_ASPECT_RATIO);
 
 	       gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
-		   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
+		   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
 	       m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
 	    }
 	    break;
@@ -458,7 +458,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    break;
 	 case MENU_ITEM_ORIENTATION:
         rarch_settings_default(S_DEF_ROTATION);
-        rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+        rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
         m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
 	    video_xdk360.set_rotation(driver.video_data, g_console.screen_orientation);
 	    break;
@@ -517,7 +517,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    rarch_convert_char_to_wchar(strw_buffer, core_text, sizeof(strw_buffer));
    m_core.SetText(strw_buffer);
-   rarch_settings_create_menu_item_label(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
+   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
    m_title.SetText(strw_buffer);
 
    return 0;
