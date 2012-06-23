@@ -198,27 +198,23 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 
    // Slightly messy code,
    // but we really need to do processing before blocking on VSync for best possible scheduling.
-   bool is_dupe = !data;
 #ifdef HAVE_FFMPEG
-
-   if (g_extern.recording && (!g_extern.filter.active || !g_settings.video.post_filter_record || is_dupe))
+   if (g_extern.recording && (!g_extern.filter.active || !g_settings.video.post_filter_record || !data))
    {
       struct ffemu_video_data ffemu_data = {0};
       ffemu_data.data = data;
       ffemu_data.pitch = pitch;
       ffemu_data.width = width;
       ffemu_data.height = height;
-      ffemu_data.is_dupe = is_dupe;
+      ffemu_data.is_dupe = !data;
       ffemu_push_video(g_extern.rec, &ffemu_data);
    }
 #endif
-   if (is_dupe)
-      return;
 
    const char *msg = msg_queue_pull(g_extern.msg_queue);
 
 #ifdef HAVE_DYLIB
-   if (g_extern.filter.active)
+   if (g_extern.filter.active && data)
    {
       unsigned owidth = width;
       unsigned oheight = height;
@@ -248,10 +244,10 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
       g_extern.video_active = false;
 #endif
 
-   g_extern.frame_cache.data = data;
-   g_extern.frame_cache.width = width;
+   g_extern.frame_cache.data   = data;
+   g_extern.frame_cache.width  = width;
    g_extern.frame_cache.height = height;
-   g_extern.frame_cache.pitch = pitch;
+   g_extern.frame_cache.pitch  = pitch;
 }
 
 #ifdef HAVE_GRIFFIN

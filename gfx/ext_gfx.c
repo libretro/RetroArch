@@ -177,6 +177,9 @@ static void video_ext_set_nonblock_state(void *data, bool state)
 
 static bool video_ext_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
+   if (!frame)
+      return true;
+
    ext_t *ext = (ext_t*)data;
    return ext->driver->frame(ext->handle, frame, width, height, pitch, msg);
 }
