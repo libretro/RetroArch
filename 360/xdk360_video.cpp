@@ -722,8 +722,7 @@ void xdk360_console_draw(void)
    for( unsigned int nScreenLine = 0; nScreenLine < video_console.m_cScreenHeight; nScreenLine++ )
    {
       xdk360_video_font_draw_text(&m_Font, (float)( video_console.m_cxSafeAreaOffset ),
-      (float)( video_console.m_cySafeAreaOffset + 
-      video_console.m_fLineHeight * nScreenLine ), 
+      (float)( video_console.m_cySafeAreaOffset + video_console.m_fLineHeight * nScreenLine ), 
       video_console.m_Lines[nTextLine], 0.0f );
 
       nTextLine = ( nTextLine + 1 ) % video_console.m_cScreenHeightVirtual;

@@ -370,55 +370,6 @@ void d3d9_deinit_font(void)
       m_xprResource.Destroy();
 }
 
-static void xdk360_console_add( wchar_t wch )
-{
-   // If this is a newline, just increment lines and move on
-   if( wch == L'\n' )
-   {
-      video_console.m_nCurLine = ( video_console.m_nCurLine + 1 ) 
-         % video_console.m_cScreenHeightVirtual;
-      video_console.m_cCurLineLength = 0;
-      memset(video_console.m_Lines[video_console.m_nCurLine], 0, 
-         ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-      return;
-   }
-
-   int bIncrementLine = FALSE;  // Whether to wrap to the next line
-
-   if( video_console.m_cCurLineLength == video_console.m_cScreenWidth )
-      bIncrementLine = TRUE;
-   else
-   {
-      // Try to append the character to the line
-      video_console.m_Lines[ video_console.m_nCurLine ][ video_console.m_cCurLineLength ] = wch;
-
-      float fTextWidth, fTextHeight;
-
-      xdk360_video_font_get_text_width(&m_Font, video_console.m_Lines[ video_console.m_nCurLine ], &fTextWidth,
-         &fTextHeight);
-
-      if( fTextHeight > video_console.m_cxSafeArea )
-      {
-         // The line is too long, we need to wrap the character to the next line
-         video_console.m_Lines[video_console.m_nCurLine][ video_console.m_cCurLineLength ] = L'\0';
-	 bIncrementLine = TRUE;
-      }
-   }
-
-    // If we need to skip to the next line, do so
-   if( bIncrementLine )
-   {
-      video_console.m_nCurLine = ( video_console.m_nCurLine + 1 ) 
-         % video_console.m_cScreenHeightVirtual;
-      video_console.m_cCurLineLength = 0;
-      memset( video_console.m_Lines[video_console.m_nCurLine], 
-         0, ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-      video_console.m_Lines[video_console.m_nCurLine ][0] = wch;
-   }
-
-   video_console.m_cCurLineLength++;
-}
-
 void xdk360_console_format(const char * strFormat)
 {
    video_console.m_nCurLine = 0;
@@ -434,7 +385,50 @@ void xdk360_console_format(const char * strFormat)
    {
       wchar_t wch;
 	  rarch_convert_char_to_wchar(&wch, &strFormat[i], sizeof(wch));
-      xdk360_console_add( wch );
+
+      // If this is a newline, just increment lines and move on
+      if( wch == L'\n' )
+      {
+         video_console.m_nCurLine = ( video_console.m_nCurLine + 1 ) 
+         % video_console.m_cScreenHeightVirtual;
+         video_console.m_cCurLineLength = 0;
+         memset(video_console.m_Lines[video_console.m_nCurLine], 0, 
+        ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
+        continue;
+      }
+
+      int bIncrementLine = FALSE;  // Whether to wrap to the next line
+
+      if( video_console.m_cCurLineLength == video_console.m_cScreenWidth )
+         bIncrementLine = TRUE;
+      else
+      {
+         float fTextWidth, fTextHeight;
+         // Try to append the character to the line
+         video_console.m_Lines[ video_console.m_nCurLine ][ video_console.m_cCurLineLength ] = wch;
+         xdk360_video_font_get_text_width(&m_Font, video_console.m_Lines[ video_console.m_nCurLine ], &fTextWidth,
+		&fTextHeight);
+		 
+		 if( fTextHeight > video_console.m_cxSafeArea )
+		 {
+			 // The line is too long, we need to wrap the character to the next line
+			 video_console.m_Lines[video_console.m_nCurLine][ video_console.m_cCurLineLength ] = L'\0';
+			 bIncrementLine = TRUE;
+		 }
+	  }
+	  
+	  // If we need to skip to the next line, do so
+	  if( bIncrementLine )
+	  {
+		  video_console.m_nCurLine = ( video_console.m_nCurLine + 1 ) 
+			  % video_console.m_cScreenHeightVirtual;
+		  video_console.m_cCurLineLength = 0;
+		  memset( video_console.m_Lines[video_console.m_nCurLine], 0,
+			  ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
+		  video_console.m_Lines[video_console.m_nCurLine ][0] = wch;
+	  }
+	  
+	  video_console.m_cCurLineLength++;
    }
 }
 
