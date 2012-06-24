@@ -20,7 +20,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(VSInstallDir)\..\Microsoft Xbox SDK\xbox\include&quot;"
-				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;"
+				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				EnableEnhancedInstructionSet="1"
@@ -66,7 +66,7 @@
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(VSInstallDir)\..\Microsoft Xbox SDK\xbox\include&quot;"
-				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;"
+				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS"
 				StringPooling="TRUE"
 				BufferSecurityCheck="TRUE"
 				EnableFunctionLevelLinking="TRUE"
@@ -115,7 +115,7 @@
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(VSInstallDir)\..\Microsoft Xbox SDK\xbox\include&quot;"
-				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;"
+				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS"
 				StringPooling="TRUE"
 				EnableFunctionLevelLinking="TRUE"
 				EnableEnhancedInstructionSet="1"
@@ -156,7 +156,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(VSInstallDir)\..\Microsoft Xbox SDK\xbox\include&quot;"
-				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;"
+				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS"
 				UsePrecompiledHeader="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
@@ -191,7 +191,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(VSInstallDir)\..\Microsoft Xbox SDK\xbox\include&quot;"
-				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;"
+				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS"
 				UsePrecompiledHeader="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
