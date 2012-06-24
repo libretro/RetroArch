@@ -16,7 +16,7 @@
 #ifndef AUDIO_UTILS_H
 #define AUDIO_UTILS_H
 
-#include "../rarch_stdint.h"
+#include <stdint.h>
 #include <stddef.h>
 
 #if __SSE2__

@@ -20,7 +20,7 @@
 #include <sys/types.h>
 #include "boolean.h"
 #include <stdlib.h>
-#include "rarch_stdint.h"
+#include <stdint.h>
 #include "msvc/msvc_compat.h"
 #include "input/keysym.h"
 

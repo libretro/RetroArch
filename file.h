@@ -19,7 +19,7 @@
 
 #include "boolean.h"
 #include <stdio.h>
-#include "rarch_stdint.h"
+#include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h>
 #include "general.h"

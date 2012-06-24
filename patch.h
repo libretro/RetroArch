@@ -16,7 +16,7 @@
 #ifndef __PATCH_H
 #define __PATCH_H
 
-#include "rarch_stdint.h"
+#include <stdint.h>
 #include <stddef.h>
 
 // BPS/UPS/IPS implementation from bSNES (nall::).
