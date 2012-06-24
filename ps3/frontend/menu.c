@@ -319,7 +319,7 @@ static void browser_render(filebrowser_t * b)
       char fname_tmp[256];
       fill_pathname_base(fname_tmp, b->current_dir.list->elems[i].data, sizeof(fname_tmp));
       currentY = currentY + ySpacing;
-      cellDbgFontPuts(currentX, currentY, FONT_SIZE, i == current_index ? RED : WHITE, fname_tmp);
+      cellDbgFontPuts(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->current_dir.list->elems[i].attr.b ? GREEN : WHITE, fname_tmp);
       gl_render_msg_post(gl);
    }
    gl_render_msg_post(gl);
