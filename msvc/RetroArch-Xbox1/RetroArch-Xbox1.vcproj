@@ -32,7 +32,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro.lib"
+				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro.lib &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xperf.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xbdm.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3d8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3dx8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xgraphicsd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\dsoundd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xboxkrnl.lib&quot;"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
 				TargetMachine="1"/>
@@ -80,7 +80,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro.lib"
+				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro.lib &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xperf.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xbdm.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3d8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3dx8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xgraphicsd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\dsoundd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xboxkrnl.lib&quot;"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -129,7 +129,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro.lib"/>
+				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro.lib &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xperf.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xbdm.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3d8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3dx8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xgraphicsd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\dsoundd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xboxkrnl.lib&quot;"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -165,7 +165,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro.lib"/>
+				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro.lib &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xperf.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xbdm.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3d8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3dx8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xgraphicsd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\dsoundd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xboxkrnl.lib&quot;"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -201,7 +201,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro.lib"/>
+				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro.lib &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xperf.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xbdm.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3d8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3dx8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xgraphicsd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\dsoundd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xboxkrnl.lib&quot;"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
