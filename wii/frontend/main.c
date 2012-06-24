@@ -16,7 +16,7 @@
 #undef main
 
 #include <stdbool.h>
-#include "../../console/rgui/rgui.h"
+#include "rgui.h"
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../libretro.h"
