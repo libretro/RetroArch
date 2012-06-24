@@ -27,7 +27,7 @@
 #define S_ISDIR(x) (x & CELL_FS_S_IFDIR)
 #endif
 
-#ifdef _XBOX360
+#ifdef _XBOX
 #include <xtl.h>
 #endif
 

@@ -54,7 +54,7 @@ VIDEO CONTEXT
 
 #if defined(__CELLOS_LV2__)
 #include "../../gfx/context/ps3_ctx.c"
-#elif defined(_XBOX)
+#elif defined(_XBOX360)
 #include "../../gfx/context/xdk360_ctx.c"
 #endif
 
