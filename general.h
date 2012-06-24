@@ -64,7 +64,7 @@
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#elif defined(_XBOX360)
+#elif defined(_XBOX)
 #include <xtl.h>
 #endif
 
