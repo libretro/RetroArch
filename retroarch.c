@@ -250,10 +250,6 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
    g_extern.frame_cache.pitch  = pitch;
 }
 
-#ifdef HAVE_GRIFFIN
-#include "console/griffin/rarch_func_hooks.h"
-#endif
-
 void rarch_render_cached_frame(void)
 {
 #ifdef HAVE_FFMPEG
@@ -275,7 +271,6 @@ void rarch_render_cached_frame(void)
 #endif
 }
 
-#ifndef HAVE_GRIFFIN_OVERRIDE_AUDIO_FLUSH_FUNC
 static bool audio_flush(const int16_t *data, size_t samples)
 {
 #ifdef HAVE_FFMPEG
@@ -298,24 +293,29 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
    audio_convert_s16_to_float(g_extern.audio_data.data, data, samples);
 
+#ifdef HAVE_DYLIB
    rarch_dsp_output_t dsp_output = {0};
    dsp_output.should_resample = RARCH_TRUE;
 
-#ifdef HAVE_DYLIB
    rarch_dsp_input_t dsp_input = {0};
    dsp_input.samples = g_extern.audio_data.data;
    dsp_input.frames = samples / 2;
 
    if (g_extern.audio_data.dsp_plugin)
       g_extern.audio_data.dsp_plugin->process(g_extern.audio_data.dsp_handle, &dsp_output, &dsp_input);
-#endif
 
    if (dsp_output.should_resample)
    {
+#endif
       struct resampler_data src_data = {0};
+#ifdef HAVE_DYLIB
       src_data.data_in = dsp_output.samples ? dsp_output.samples : g_extern.audio_data.data;
-      src_data.data_out = g_extern.audio_data.outsamples;
       src_data.input_frames = dsp_output.samples ? dsp_output.frames : (samples / 2);
+#else
+      src_data.data_in = g_extern.audio_data.data;
+      src_data.input_frames = (samples / 2);
+#endif
+      src_data.data_out = g_extern.audio_data.outsamples;
 
       if (g_extern.audio_data.rate_control)
          readjust_audio_input_rate();
@@ -328,8 +328,8 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
       output_data = g_extern.audio_data.outsamples;
       output_frames = src_data.output_frames;
-   }
 #ifdef HAVE_DYLIB
+   }
    else
    {
       output_data = dsp_output.samples;
@@ -370,7 +370,6 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
    return true;
 }
-#endif
 
 static void audio_sample_rewind(int16_t left, int16_t right)
 {
