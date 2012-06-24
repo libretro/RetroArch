@@ -258,6 +258,9 @@
 						CompileAs="2"/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath="..\..\console\rzlib\rzlib.c">
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
