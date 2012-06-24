@@ -14,8 +14,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
-#include <stdbool.h>
+#include "../../rarch_stdint.h"
+#include "../../boolean.h"
 #include <stddef.h>
 #include <string.h>
 

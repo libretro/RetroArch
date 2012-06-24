@@ -1,7 +1,7 @@
 #ifndef LIBRETRO_H__
 #define LIBRETRO_H__
 
-#include <stdint.h>
+#include "rarch_stdint.h"
 #include <stddef.h>
 
 #ifdef __cplusplus

@@ -16,7 +16,7 @@
 #ifndef __FFEMU_H
 #define __FFEMU_H
 
-#include <stdint.h>
+#include "../rarch_stdint.h"
 #include <stddef.h>
 
 #ifdef __cplusplus

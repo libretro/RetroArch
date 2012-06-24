@@ -16,7 +16,7 @@
 #ifndef __RARCH_MOVIE_H
 #define __RARCH_MOVIE_H
 
-#include <stdint.h>
+#include "rarch_stdint.h"
 #include <stddef.h>
 #include "boolean.h"
 
