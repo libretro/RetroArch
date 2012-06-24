@@ -21,7 +21,7 @@
 #include "console/logger/logger.h"
 
 #define RARCH_LOG(...) do { \
-   if (g_extern.verbose) logger_send("SSNES: " __VA_ARGS__); \
+   if (g_extern.verbose) logger_send("RetroArch: " __VA_ARGS__); \
 } while(0)
 
 #define RARCH_ERR(...) do { \
@@ -36,7 +36,7 @@ extern FILE * log_fp;
 #ifndef RARCH_LOG
 #define RARCH_LOG(...) do { \
    if (g_extern.verbose) \
-      fprintf(log_fp, "SSNES: " __VA_ARGS__); \
+      fprintf(log_fp, "RetroArch: " __VA_ARGS__); \
       fflush(log_fp); \
    } while (0)
 #endif

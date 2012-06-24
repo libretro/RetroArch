@@ -501,8 +501,8 @@ extern struct console_settings g_console;
 #endif
 /////////
 
-#if defined(RARCH_CONSOLE) && (defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER))
-#include "logger_override.h"
+#if defined(RARCH_CONSOLE) && (defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER) || defined(_XBOX1))
+#include <logger_override.h>
 #else
 
 #ifndef RARCH_LOG
@@ -602,8 +602,10 @@ static inline void rarch_sleep(unsigned msec)
 {
 #ifdef __CELLOS_LV2__
    sys_timer_usleep(1000 * msec);
-#elif defined(_WIN32)
+#elif defined(_WIN32) && !defined(_XBOX1)
    Sleep(msec);
+#elif defined(_XBOX1)
+	//stub
 #elif defined(XENON)
    udelay(1000 * msec);
 #elif defined(GEKKO)
