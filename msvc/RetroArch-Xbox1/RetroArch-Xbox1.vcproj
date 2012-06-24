@@ -20,7 +20,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(VSInstallDir)\..\Microsoft Xbox SDK\xbox\include&quot;"
-				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS"
+				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				EnableEnhancedInstructionSet="1"
@@ -32,6 +32,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro.lib"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
 				TargetMachine="1"/>
@@ -66,7 +67,7 @@
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(VSInstallDir)\..\Microsoft Xbox SDK\xbox\include&quot;"
-				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS"
+				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB"
 				StringPooling="TRUE"
 				BufferSecurityCheck="TRUE"
 				EnableFunctionLevelLinking="TRUE"
@@ -79,6 +80,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro.lib"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -115,7 +117,7 @@
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(VSInstallDir)\..\Microsoft Xbox SDK\xbox\include&quot;"
-				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS"
+				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB"
 				StringPooling="TRUE"
 				EnableFunctionLevelLinking="TRUE"
 				EnableEnhancedInstructionSet="1"
@@ -126,7 +128,8 @@
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
-				Name="VCLinkerTool"/>
+				Name="VCLinkerTool"
+				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -156,12 +159,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(VSInstallDir)\..\Microsoft Xbox SDK\xbox\include&quot;"
-				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS"
+				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB"
 				UsePrecompiledHeader="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
-				Name="VCLinkerTool"/>
+				Name="VCLinkerTool"
+				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -191,12 +195,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(VSInstallDir)\..\Microsoft Xbox SDK\xbox\include&quot;"
-				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS"
+				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB"
 				UsePrecompiledHeader="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
-				Name="VCLinkerTool"/>
+				Name="VCLinkerTool"
+				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
