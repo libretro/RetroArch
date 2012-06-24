@@ -23,6 +23,7 @@ static inline void RARCH_LOG(const char *msg, ...)
 {
    va_list ap;
    va_start(ap, msg);
+   fprintf(stderr, "RetroArch: ");
    vfprintf(stderr, msg, ap);
    va_end(ap);
 }
@@ -31,6 +32,7 @@ static inline void RARCH_WARN(const char *msg, ...)
 {
    va_list ap;
    va_start(ap, msg);
+   fprintf(stderr, "RetroArch [WARN] :: ");
    vfprintf(stderr, msg, ap);
    va_end(ap);
 }
@@ -39,6 +41,7 @@ static inline void RARCH_ERR(const char *msg, ...)
 {
    va_list ap;
    va_start(ap, msg);
+   fprintf(stderr, "RetroArch [ERR] :: ");
    vfprintf(stderr, msg, ap);
    va_end(ap);
 }
