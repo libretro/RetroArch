@@ -32,15 +32,12 @@ typedef struct
 {
    float m_fLineHeight;                 // height of a single line in pixels
    unsigned int m_nScrollOffset;        // offset to display text (in lines)
-   unsigned int first_message;
    unsigned int m_cxSafeArea;
    unsigned int m_cySafeArea;
    unsigned int m_cxSafeAreaOffset;
    unsigned int m_cySafeAreaOffset;
    unsigned int m_nCurLine;             // index of current line being written to
    unsigned int m_cCurLineLength;       // length of the current line
-   unsigned long m_colBackColor;
-   unsigned long m_colTextColor;
    unsigned int m_cScreenHeight;        // height in lines of screen area
    unsigned int m_cScreenHeightVirtual; // height in lines of text storage buffer
    unsigned int m_cScreenWidth;         // width in characters
@@ -100,12 +97,12 @@ typedef struct
    const GLYPH_ATTR* m_Glyphs;          // Array of glyphs
 } xdk360_video_font_t;
 
-HRESULT xdk360_console_init ( LPCSTR strFontFileName, D3DCOLOR colBackColor, D3DCOLOR colTextColor);
-void xdk360_console_deinit (void);
-void xdk360_console_format (const char *strFormat);
-void xdk360_console_draw (void);
+HRESULT d3d9_init_font(const char *font_path);
+void d3d9_deinit_font(void);
+void xdk360_console_format(const char *strFormat);
+void xdk360_console_draw(void);
 
-void xdk360_video_font_begin (xdk360_video_font_t * font);
-void xdk360_video_font_end (xdk360_video_font_t * font);
+void d3d9_render_msg_pre(xdk360_video_font_t * font);
+void d3d9_render_msg_post(xdk360_video_font_t * font);
 
 #endif

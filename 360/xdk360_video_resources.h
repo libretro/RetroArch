@@ -59,11 +59,6 @@ class PackedResource
       HRESULT Create( const char * strFilename );
       void    Destroy();
 
-      D3DResource* RegisterResource( D3DResource* pResource ) const
-      {
-         return pResource;
-      }
-
       void * GetData( unsigned long dwOffset ) const
       {
          return &m_pSysMemData[dwOffset];

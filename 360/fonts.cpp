@@ -20,8 +20,8 @@
 #include "fonts.h"
 #include "../general.h"
 
-static video_console_t video_console;
-static xdk360_video_font_t m_Font;
+video_console_t video_console;
+xdk360_video_font_t m_Font;
 
 static PackedResource m_xprResource;
 
@@ -85,218 +85,6 @@ typedef struct {
 
 // All elements are defaulted to NULL
 static Font_Locals_t s_FontLocals;    // Global static instance
-
-static void xdk360_video_font_draw_text(xdk360_video_font_t * font, 
-   float fOriginX, float fOriginY, unsigned long dwColor,
-   const wchar_t * strText, float fMaxPixelWidth )
-{
-   if( strText == NULL || strText[0] == L'\0')
-      return;
-
-   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
-   D3DDevice *pd3dDevice = vid->d3d_render_device;
-
-   // Set the color as a vertex shader constant
-   float vColor[4];
-   vColor[0] = ( ( dwColor & 0x00ff0000 ) >> 16L ) / 255.0F;
-   vColor[1] = ( ( dwColor & 0x0000ff00 ) >> 8L ) / 255.0F;
-   vColor[2] = ( ( dwColor & 0x000000ff ) >> 0L ) / 255.0F;
-   vColor[3] = ( ( dwColor & 0xff000000 ) >> 24L ) / 255.0F;
-
-   // Set up stuff to prepare for drawing text
-   xdk360_video_font_begin(font);
-
-   // Perform the actual storing of the color constant here to prevent
-   // a load-hit-store by inserting work between the store and the use of
-   // the vColor array.
-   pd3dDevice->SetVertexShaderConstantF( 1, vColor, 1 );
-
-   // Set the starting screen position
-   if((fOriginX < 0.0f))
-      fOriginX += font->m_rcWindow.x2;
-   if( fOriginY < 0.0f )
-      fOriginY += font->m_rcWindow.y2;
-
-   font->m_fCursorX = floorf( fOriginX );
-   font->m_fCursorY = floorf( fOriginY );
-
-   // Adjust for padding
-   fOriginY -= font->m_fFontTopPadding;
-
-   // Add window offsets
-   float Winx = 0.0f;
-   float Winy = 0.0f;
-   fOriginX += Winx;
-   fOriginY += Winy;
-   font->m_fCursorX += Winx;
-   font->m_fCursorY += Winy;
-
-   // Begin drawing the vertices
-
-   // Declared as volatile to force writing in ascending
-   // address order. It prevents out of sequence writing in write combined
-   // memory.
-
-   volatile float * pVertex;
-
-   unsigned long dwNumChars = wcslen(strText);
-   HRESULT hr = pd3dDevice->BeginVertices( D3DPT_QUADLIST, 4 * dwNumChars, sizeof( XMFLOAT4 ) ,
-      ( VOID** )&pVertex );
-
-   // The ring buffer may run out of space when tiling, doing z-prepasses,
-   // or using BeginCommandBuffer. If so, make the buffer larger.
-   if( hr < 0 )
-      RARCH_ERR( "Ring buffer out of memory.\n" );
-
-   // Draw four vertices for each glyph
-   while( *strText )
-   {
-      wchar_t letter;
-
-      // Get the current letter in the string
-      letter = *strText++;
-
-      // Handle the newline character
-      if( letter == L'\n' )
-      {
-         font->m_fCursorX = fOriginX;
-         font->m_fCursorY += font->m_fFontYAdvance * font->m_fYScaleFactor;
-         continue;
-      }
-
-      // Translate unprintable characters
-      const GLYPH_ATTR * pGlyph = &font->m_Glyphs[ ( letter <= font->m_cMaxGlyph )
-      ? font->m_TranslatorTable[letter] : 0 ];
-
-      float fOffset = font->m_fXScaleFactor * (float)pGlyph->wOffset;
-      float fAdvance = font->m_fXScaleFactor * (float)pGlyph->wAdvance;
-      float fWidth = font->m_fXScaleFactor * (float)pGlyph->wWidth;
-      float fHeight = font->m_fYScaleFactor * font->m_fFontHeight;
-
-      // Setup the screen coordinates
-      font->m_fCursorX += fOffset;
-      float X4 = font->m_fCursorX;
-      float X1 = X4;
-      float X3 = X4 + fWidth;
-      float X2 = X1 + fWidth;
-      float Y1 = font->m_fCursorY;
-      float Y3 = Y1 + fHeight;
-      float Y2 = Y1;
-      float Y4 = Y3;
-
-      font->m_fCursorX += fAdvance;
-
-      // Select the RGBA channel that the compressed glyph is stored in
-      // Takes a 4 bit per pixel ARGB value and expand it to an 8 bit per pixel ARGB value
-
-      unsigned long dwChannelSelector = pGlyph->wMask;        // Convert to 32 bit
-      // Perform the conversion without branching
-
-      // Splat the 4 bit per pixels from 0x1234 to 0x01020304
-      dwChannelSelector = ((dwChannelSelector&0xF000)<<(24-12))|((dwChannelSelector&0xF00)<<(16-8))|
-	      ((dwChannelSelector&0xF0)<<(8-4))|(dwChannelSelector&0xF);
-
-      // Perform a vectorized multiply to make 0x01020304 into 0x11223344
-      dwChannelSelector *= 0x11;
-
-      // Add the vertices to draw this glyph
-
-      unsigned long tu1 = pGlyph->tu1;        // Convert shorts to 32 bit longs for in register merging
-      unsigned long tv1 = pGlyph->tv1;
-      unsigned long tu2 = pGlyph->tu2;
-      unsigned long tv2 = pGlyph->tv2;
-
-      // NOTE: The vertexs are 2 floats for the screen coordinates,
-      // followed by two USHORTS for the u/vs of the character,
-      // terminated with the ARGB 32 bit color.
-      // This makes for 16 bytes per vertex data (Easier to read)
-      // Second NOTE: The uvs are merged and written using a DWORD due
-      // to the write combining hardware being only able to handle 32,
-      // 64 and 128 writes. Never store to write combined memory with
-      // 8 or 16 bit instructions. You've been warned.
-
-      pVertex[0] = X1;
-      pVertex[1] = Y1;
-      ((volatile unsigned long *)pVertex)[2] = (tu1<<16)|tv1;         // Merged using big endian rules
-      ((volatile unsigned long *)pVertex)[3] = dwChannelSelector;
-      pVertex[4] = X2;
-      pVertex[5] = Y2;
-      ((volatile unsigned long *)pVertex)[6] = (tu2<<16)|tv1;         // Merged using big endian rules
-      ((volatile unsigned long *)pVertex)[7] = dwChannelSelector;
-      pVertex[8] = X3;
-      pVertex[9] = Y3;
-      ((volatile unsigned long *)pVertex)[10] = (tu2<<16)|tv2;        // Merged using big endian rules
-      ((volatile unsigned long *)pVertex)[11] = dwChannelSelector;
-      pVertex[12] = X4;
-      pVertex[13] = Y4;
-      ((volatile unsigned long *)pVertex)[14] = (tu1<<16)|tv2;        // Merged using big endian rules
-      ((volatile unsigned long *)pVertex)[15] = dwChannelSelector;
-      pVertex+=16;
-
-      dwNumChars--;
-   }
-
-   // Since we allocated vertex data space based on the string length, we now need to
-   // add some dummy verts for any skipped characters (like newlines, etc.)
-   while( dwNumChars )
-   {
-      pVertex[0] = 0;
-      pVertex[1] = 0;
-      pVertex[2] = 0;
-      pVertex[3] = 0;
-      pVertex[4] = 0;
-      pVertex[5] = 0;
-      pVertex[6] = 0;
-      pVertex[7] = 0;
-      pVertex[8] = 0;
-      pVertex[9] = 0;
-      pVertex[10] = 0;
-      pVertex[11] = 0;
-      pVertex[12] = 0;
-      pVertex[13] = 0;
-      pVertex[14] = 0;
-      pVertex[15] = 0;
-      pVertex+=16;
-      dwNumChars--;
-   }
-
-   // Stop drawing vertices
-   D3DDevice_EndVertices(pd3dDevice);
-
-   // Undo window offsets
-   font->m_fCursorX -= Winx;
-   font->m_fCursorY -= Winy;
-
-   // Call End() to complete the begin/end pair for drawing text
-   xdk360_video_font_end(font);
-}
-
-void xdk360_console_draw(void)
-{
-   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
-   D3DDevice *m_pd3dDevice = vid->d3d_render_device;
-
-   // The top line
-   unsigned int nTextLine = ( video_console.m_nCurLine - 
-      video_console.m_cScreenHeight + video_console.m_cScreenHeightVirtual - 
-      video_console.m_nScrollOffset + 1 )
-      % video_console.m_cScreenHeightVirtual;
-
-   xdk360_video_font_begin(&m_Font);
-
-   for( unsigned int nScreenLine = 0; nScreenLine < video_console.m_cScreenHeight; nScreenLine++ )
-   {
-      xdk360_video_font_draw_text(&m_Font, (float)( video_console.m_cxSafeAreaOffset ),
-      (float)( video_console.m_cySafeAreaOffset + 
-      video_console.m_fLineHeight * nScreenLine ),
-      video_console.m_colTextColor, 
-      video_console.m_Lines[nTextLine], 0.0f );
-
-      nTextLine = ( nTextLine + 1 ) % video_console.m_cScreenHeightVirtual;
-   }
-
-   xdk360_video_font_end(&m_Font);
-}
 
 static void xdk360_video_font_get_text_width(xdk360_video_font_t * font, const wchar_t * strText, float * pWidth, float * pHeight)
 {
@@ -499,13 +287,11 @@ static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * s
    return 0;
 }
 
-HRESULT xdk360_console_init( LPCSTR strFontFileName, unsigned long colBackColor,
-   unsigned long colTextColor)
+HRESULT d3d9_init_font(const char *font_path)
 {
    xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
    D3DDevice *m_pd3dDevice = vid->d3d_render_device;
 
-   video_console.first_message = true;
    video_console.m_Buffer = NULL;
    video_console.m_Lines = NULL;
    video_console.m_nScrollOffset = 0;
@@ -521,16 +307,12 @@ HRESULT xdk360_console_init( LPCSTR strFontFileName, unsigned long colBackColor,
    video_console.m_cySafeAreaOffset = ( vid->d3dpp.BackBufferHeight - video_console.m_cySafeArea ) / 2;
 
    // Create the font
-   HRESULT hr = xdk360_video_font_init(&m_Font, strFontFileName );
+   HRESULT hr = xdk360_video_font_init(&m_Font, font_path);
    if (hr < 0)
    {
       RARCH_ERR( "Could not create font.\n" );
       return -1;
    }
-
-   // Save the colors
-   video_console.m_colBackColor = colBackColor;
-   video_console.m_colTextColor = colTextColor;
 
    // Calculate the number of lines on the screen
    float fCharWidth, fCharHeight;
@@ -583,7 +365,7 @@ static void xdk360_video_font_deinit(xdk360_video_font_t * font)
         m_xprResource.Destroy();
 }
 
-void xdk360_console_deinit(void)
+void d3d9_deinit_font(void)
 {
    // Delete the memory we've allocated
    if(video_console.m_Lines)
@@ -670,7 +452,7 @@ void xdk360_console_format(const char * strFormat)
    }
 }
 
-void xdk360_video_font_begin (xdk360_video_font_t * font)
+void d3d9_render_msg_pre(xdk360_video_font_t * font)
 {
    // Set state on the first call
    if( font->m_dwNestedBeginCount == 0 )
@@ -740,7 +522,7 @@ void xdk360_video_font_begin (xdk360_video_font_t * font)
    font->m_dwNestedBeginCount++;
 }
 
-void xdk360_video_font_end(xdk360_video_font_t * font)
+void d3d9_render_msg_post(xdk360_video_font_t * font)
 {
    if( --font->m_dwNestedBeginCount > 0 )
       return;
