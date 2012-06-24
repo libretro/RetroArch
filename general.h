@@ -42,7 +42,7 @@
 #include <time/time.h>
 #endif
 
-#if defined(XENON) || defined(__CELLOS_LV2__)
+#if defined(XENON) || defined(__CELLOS_LV2__) || defined(_XBOX1)
 #undef PATH_MAX
 #define PATH_MAX 4096
 #endif
@@ -64,7 +64,7 @@
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#elif defined(_XBOX)
+#elif defined(_XBOX360)
 #include <xtl.h>
 #endif
 
@@ -245,7 +245,7 @@ struct console_settings
 #ifdef RARCH_CONSOLE
    uint32_t input_loop;
 #endif
-#ifdef _XBOX
+#ifdef _XBOX360
    uint32_t color_format;
    DWORD volume_device_type;
 #endif

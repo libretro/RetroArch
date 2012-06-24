@@ -20,11 +20,11 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\&quot;"
-				PreprocessorDefinitions="_XBOX;RARCH_CONSOLE"
+				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				EnableEnhancedInstructionSet="1"
-				UsePrecompiledHeader="3"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="4"/>
@@ -66,12 +66,12 @@
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\&quot;"
-				PreprocessorDefinitions="_XBOX;RARCH_CONSOLE"
+				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE"
 				StringPooling="TRUE"
 				BufferSecurityCheck="TRUE"
 				EnableFunctionLevelLinking="TRUE"
 				EnableEnhancedInstructionSet="1"
-				UsePrecompiledHeader="3"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="3"/>
@@ -115,11 +115,11 @@
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\&quot;"
-				PreprocessorDefinitions="_XBOX;RARCH_CONSOLE"
+				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE"
 				StringPooling="TRUE"
 				EnableFunctionLevelLinking="TRUE"
 				EnableEnhancedInstructionSet="1"
-				UsePrecompiledHeader="3"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="3"/>
@@ -156,7 +156,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories=""
-				PreprocessorDefinitions="_XBOX;RARCH_CONSOLE"/>
+				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE"
+				UsePrecompiledHeader="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
@@ -189,7 +190,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\&quot;"
-				PreprocessorDefinitions="_XBOX;RARCH_CONSOLE"/>
+				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE"
+				UsePrecompiledHeader="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
@@ -225,7 +227,31 @@
 			<File
 				RelativePath="..\..\console\griffin\griffin.c">
 				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Profile|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Profile_FastCap|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_LTCG|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
 						CompileAs="2"/>

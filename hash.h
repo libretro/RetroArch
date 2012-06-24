@@ -16,7 +16,7 @@
 #ifndef __RARCH_HASH_H
 #define __RARCH_HASH_H
 
-#include <stdint.h>
+#include "rarch_stdint.h"
 #include <stddef.h>
 
 // Hashes sha256 and outputs a human readable string for comparing with the cheat XML values.

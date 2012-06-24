@@ -26,12 +26,15 @@
 #include "compat/strl.h"
 #include "hash.h"
 
+#ifdef _XBOX360
+#include <xtl.h>
+#endif
+
 #if defined(_WIN32) && !defined(_XBOX)
 #include <io.h>
 #include <fcntl.h>
 #include <windows.h>
 #elif defined(_XBOX)
-#include <xtl.h>
 #define setmode _setmode
 #define INVALID_FILE_ATTRIBUTES -1
 #endif

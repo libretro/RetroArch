@@ -16,7 +16,7 @@
 #ifndef __RARCH_SNES_TRACKER_H
 #define __RARCH_SNES_TRACKER_H
 
-#include <stdint.h>
+#include "../rarch_stdint.h"
 #include "../boolean.h"
 
 #ifdef HAVE_CONFIG_H
