@@ -81,7 +81,7 @@ enum ps3_device_id
    RARCH_LAST_PLATFORM_KEY
 };
 
-#elif defined(_XBOX)
+#elif defined(_XBOX360)
 #include "../360/xdk360_input.h"
 
 enum xdk360_device_id
