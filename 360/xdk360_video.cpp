@@ -667,19 +667,19 @@ static void xdk360_video_font_draw_text(xdk360_video_font_t * font,
       pVertex[0] = X1;
       pVertex[1] = Y1;
       ((volatile unsigned long *)pVertex)[2] = (tu1<<16)|tv1;         // Merged using big endian rules
-      ((volatile unsigned long *)pVertex)[3] = 0;
+      pVertex[3] = 0;
       pVertex[4] = X2;
       pVertex[5] = Y2;
       ((volatile unsigned long *)pVertex)[6] = (tu2<<16)|tv1;         // Merged using big endian rules
-      ((volatile unsigned long *)pVertex)[7] = 0;
+      pVertex[7] = 0;
       pVertex[8] = X3;
       pVertex[9] = Y3;
       ((volatile unsigned long *)pVertex)[10] = (tu2<<16)|tv2;        // Merged using big endian rules
-      ((volatile unsigned long *)pVertex)[11] = 0;
+      pVertex[11] = 0;
       pVertex[12] = X4;
       pVertex[13] = Y4;
       ((volatile unsigned long *)pVertex)[14] = (tu1<<16)|tv2;        // Merged using big endian rules
-      ((volatile unsigned long *)pVertex)[15] = 0;
+      pVertex[15] = 0;
       pVertex+=16;
 
       dwNumChars--;
@@ -689,23 +689,10 @@ static void xdk360_video_font_draw_text(xdk360_video_font_t * font,
    // add some dummy verts for any skipped characters (like newlines, etc.)
    while( dwNumChars )
    {
-      pVertex[0] = 0;
-      pVertex[1] = 0;
-      pVertex[2] = 0;
-      pVertex[3] = 0;
-      pVertex[4] = 0;
-      pVertex[5] = 0;
-      pVertex[6] = 0;
-      pVertex[7] = 0;
-      pVertex[8] = 0;
-      pVertex[9] = 0;
-      pVertex[10] = 0;
-      pVertex[11] = 0;
-      pVertex[12] = 0;
-      pVertex[13] = 0;
-      pVertex[14] = 0;
-      pVertex[15] = 0;
-      pVertex+=16;
+      for(int i = 0; i < 16; i++)
+	     pVertex[i] = 0;
+
+      pVertex += 16;
       dwNumChars--;
    }
 

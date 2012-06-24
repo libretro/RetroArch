@@ -16,9 +16,8 @@
 
 #define NONET
 #include <xtl.h>
-#include "xdk360_video.h"
-#include "fonts.h"
-#include "../general.h"
+#include "xdk360_fonts.h"
+#include "../../general.h"
 
 video_console_t video_console;
 xdk360_video_font_t m_Font;

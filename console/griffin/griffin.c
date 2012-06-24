@@ -101,7 +101,7 @@ FONTS
 #if defined(__CELLOS_LV2__)
 #include "../../gfx/fonts/ps3_libdbgfont.c"
 #elif defined(_XBOX)
-#include "../../360/fonts.cpp"
+#include "../../gfx/fonts/xdk360_fonts.cpp"
 #elif defined(GEKKO)
 #include "../../gfx/fonts/fonts.c"
 #endif
