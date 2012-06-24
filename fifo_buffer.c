@@ -14,7 +14,7 @@
  */
 
 #include "fifo_buffer.h"
-#include "rarch_stdint.h"
+#include <stdint.h>
 
 struct fifo_buffer
 {
