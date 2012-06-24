@@ -217,20 +217,20 @@ static void xdk360_video_font_draw_text(xdk360_video_font_t * font,
 
       pVertex[0] = X1;
       pVertex[1] = Y1;
-      reinterpret_cast<volatile unsigned long *>(pVertex)[2] = (tu1<<16)|tv1;         // Merged using big endian rules
-      reinterpret_cast<volatile unsigned long *>(pVertex)[3] = dwChannelSelector;
+      ((volatile unsigned long *)pVertex)[2] = (tu1<<16)|tv1;         // Merged using big endian rules
+      ((volatile unsigned long *)pVertex)[3] = dwChannelSelector;
       pVertex[4] = X2;
       pVertex[5] = Y2;
-      reinterpret_cast<volatile unsigned long *>(pVertex)[6] = (tu2<<16)|tv1;         // Merged using big endian rules
-      reinterpret_cast<volatile unsigned long *>(pVertex)[7] = dwChannelSelector;
+      ((volatile unsigned long *)pVertex)[6] = (tu2<<16)|tv1;         // Merged using big endian rules
+      ((volatile unsigned long *)pVertex)[7] = dwChannelSelector;
       pVertex[8] = X3;
       pVertex[9] = Y3;
-      reinterpret_cast<volatile unsigned long *>(pVertex)[10] = (tu2<<16)|tv2;        // Merged using big endian rules
-      reinterpret_cast<volatile unsigned long *>(pVertex)[11] = dwChannelSelector;
+      ((volatile unsigned long *)pVertex)[10] = (tu2<<16)|tv2;        // Merged using big endian rules
+      ((volatile unsigned long *)pVertex)[11] = dwChannelSelector;
       pVertex[12] = X4;
       pVertex[13] = Y4;
-      reinterpret_cast<volatile unsigned long *>(pVertex)[14] = (tu1<<16)|tv2;        // Merged using big endian rules
-      reinterpret_cast<volatile unsigned long *>(pVertex)[15] = dwChannelSelector;
+      ((volatile unsigned long *)pVertex)[14] = (tu1<<16)|tv2;        // Merged using big endian rules
+      ((volatile unsigned long *)pVertex)[15] = dwChannelSelector;
       pVertex+=16;
 
       dwNumChars--;
@@ -448,26 +448,26 @@ static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * s
    font->m_pFontTexture = pFontTexture;
 
    // Check version of file (to make sure it matches up with the FontMaker tool)
-   const unsigned char * pData = static_cast<const unsigned char *>(pFontData);
-   unsigned long dwFileVersion = reinterpret_cast<const FontFileHeaderImage_t *>(pData)->m_dwFileVersion;
+   const unsigned char * pData = (const unsigned char*)pFontData;
+   unsigned long dwFileVersion = ((const FontFileHeaderImage_t *)pData)->m_dwFileVersion;
 
    if( dwFileVersion == FONTFILEVERSION )
    {
-      font->m_fFontHeight = reinterpret_cast<const FontFileHeaderImage_t *>(pData)->m_fFontHeight;
-      font->m_fFontTopPadding = reinterpret_cast<const FontFileHeaderImage_t *>(pData)->m_fFontTopPadding;
-      font->m_fFontBottomPadding = reinterpret_cast<const FontFileHeaderImage_t *>(pData)->m_fFontBottomPadding;
-      font->m_fFontYAdvance = reinterpret_cast<const FontFileHeaderImage_t *>(pData)->m_fFontYAdvance;
+      font->m_fFontHeight = ((const FontFileHeaderImage_t *)pData)->m_fFontHeight;
+      font->m_fFontTopPadding = ((const FontFileHeaderImage_t *)pData)->m_fFontTopPadding;
+      font->m_fFontBottomPadding = ((const FontFileHeaderImage_t *)pData)->m_fFontBottomPadding;
+      font->m_fFontYAdvance = ((const FontFileHeaderImage_t *)pData)->m_fFontYAdvance;
 
       // Point to the translator string which immediately follows the 4 floats
-      font->m_cMaxGlyph = reinterpret_cast<const FontFileHeaderImage_t *>(pData)->m_cMaxGlyph;
+      font->m_cMaxGlyph = ((const FontFileHeaderImage_t *)pData)->m_cMaxGlyph;
 
-      font->m_TranslatorTable = const_cast<FontFileHeaderImage_t*>(reinterpret_cast<const FontFileHeaderImage_t *>(pData))->m_TranslatorTable;
+      font->m_TranslatorTable = const_cast<FontFileHeaderImage_t*>((const FontFileHeaderImage_t *)pData)->m_TranslatorTable;
 
       pData += CALCFONTFILEHEADERSIZE( font->m_cMaxGlyph + 1 );
 
       // Read the glyph attributes from the file
-      font->m_dwNumGlyphs = reinterpret_cast<const FontFileStrikesImage_t *>(pData)->m_dwNumGlyphs;
-      font->m_Glyphs = reinterpret_cast<const FontFileStrikesImage_t *>(pData)->m_Glyphs;        // Pointer
+      font->m_dwNumGlyphs = ((const FontFileStrikesImage_t *)pData)->m_dwNumGlyphs;
+      font->m_Glyphs = ((const FontFileStrikesImage_t *)pData)->m_Glyphs;        // Pointer
    }
    else
    {
