@@ -602,10 +602,8 @@ static inline void rarch_sleep(unsigned msec)
 {
 #ifdef __CELLOS_LV2__
    sys_timer_usleep(1000 * msec);
-#elif defined(_WIN32) && !defined(_XBOX1)
+#elif defined(_WIN32)
    Sleep(msec);
-#elif defined(_XBOX1)
-	//stub
 #elif defined(XENON)
    udelay(1000 * msec);
 #elif defined(GEKKO)
