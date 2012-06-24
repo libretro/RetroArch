@@ -16,6 +16,7 @@
 #include "dynamic.h"
 #include "general.h"
 #include "compat/strl.h"
+#include "compat/posix_string.h"
 #include <string.h>
 
 #ifdef RARCH_CONSOLE
@@ -367,8 +368,11 @@ static void set_environment(void)
 // Assume SNES as defaults.
 static void set_environment_defaults(void)
 {
+   char *save;
+
    // Split up environment variables beforehand.
-   if (g_extern.system.environment_split && strtok(g_extern.system.environment_split, ";"))
-      while (strtok(NULL, ";"));
+   if (g_extern.system.environment_split &&
+         strtok_r(g_extern.system.environment_split, ";", &save))
+      while (strtok_r(NULL, ";", &save));
 }
 

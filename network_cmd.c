@@ -153,11 +153,12 @@ static void parse_sub_msg(network_cmd_t *handle, const char *tok)
 
 static void parse_msg(network_cmd_t *handle, char *buf)
 {
-   const char *tok = strtok(buf, "\n");
+   char *save;
+   const char *tok = strtok_r(buf, "\n", &save);
    while (tok)
    {
       parse_sub_msg(handle, tok);
-      tok = strtok(NULL, "\n");
+      tok = strtok_r(NULL, "\n", &save);
    }
 }
 
@@ -283,11 +284,12 @@ bool network_cmd_send(const char *cmd_)
    const char *port_ = NULL;
    uint16_t port = DEFAULT_NETWORK_CMD_PORT;
 
-   cmd = strtok(command, ":");
+   char *save;
+   cmd = strtok_r(command, ":", &save);
    if (cmd)
-      host = strtok(NULL, ":");
+      host = strtok_r(NULL, ":", &save);
    if (host)
-      port_ = strtok(NULL, ":");
+      port_ = strtok_r(NULL, ":", &save);
 
    if (!host)
    {

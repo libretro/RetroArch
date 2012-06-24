@@ -23,12 +23,17 @@ extern "C" {
 #endif
 
 #undef strcasecmp
+#undef strdup
+#undef isblank
+#undef strtok_r
 #define strcasecmp(a, b) strcasecmp_rarch__(a, b)
 #define strdup(orig) strdup_rarch__(orig)
 #define isblank(c) isblank_rarch__(c)
+#define strtok_r(str, delim, saveptr) strtok_r_rarch__(str, delim, saveptr)
 int strcasecmp(const char *a, const char *b);
 char *strdup(const char *orig);
 int isblank(int c);
+char *strtok_r(char *str, const char *delim, char **saveptr);
 
 #ifdef __cplusplus
 }

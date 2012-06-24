@@ -104,6 +104,7 @@ static struct string_list *string_split(const char *str, const char *delim)
 {
    char *copy      = NULL;
    const char *tmp = NULL;
+
    struct string_list *list = string_list_new();
    if (!list)
       goto error;
@@ -112,7 +113,8 @@ static struct string_list *string_split(const char *str, const char *delim)
    if (!copy)
       goto error;
 
-   tmp = strtok(copy, delim);
+   char *save;
+   tmp = strtok_r(copy, delim, &save);
    while (tmp)
    {
       union string_list_elem_attr attr;
@@ -121,7 +123,7 @@ static struct string_list *string_split(const char *str, const char *delim)
       if (!string_list_append(list, tmp, attr))
          goto error;
 
-      tmp = strtok(NULL, delim);
+      tmp = strtok_r(NULL, delim, &save);
    }
 
    free(copy);
