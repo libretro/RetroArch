@@ -37,9 +37,6 @@ typedef struct {
    wchar_t m_TranslatorTable[1];   // ASCII to Glyph lookup table, NOTE: It's m_cMaxGlyph+1 in size.
 } FontFileHeaderImage_t;
 
-// Font strike array. Immediately follows the FontFileHeaderImage_t
-// structure image
-
 typedef struct {
    unsigned long m_dwNumGlyphs;    // Size of font strike array (First entry is the unknown glyph)
    GLYPH_ATTR m_Glyphs[1];         // Array of font strike uv's etc... NOTE: It's m_dwNumGlyphs in size
@@ -77,17 +74,15 @@ static const char g_strFontShader[] =
    "}\n";
 
 typedef struct {
-   D3DVertexDeclaration* m_pFontVertexDecl;    // Shared vertex buffer
-   D3DVertexShader* m_pFontVertexShader;       // Created vertex shader
-   D3DPixelShader* m_pFontPixelShader;         // Created pixel shader
+   D3DVertexDeclaration* m_pFontVertexDecl;
+   D3DVertexShader* m_pFontVertexShader;
+   D3DPixelShader* m_pFontPixelShader;
 } Font_Locals_t;
 
-// All elements are defaulted to NULL
-static Font_Locals_t s_FontLocals;    // Global static instance
+static Font_Locals_t s_FontLocals;
 
 static void xdk360_video_font_get_text_width(xdk360_video_font_t * font, const wchar_t * strText, float * pWidth, float * pHeight)
 {
-	   // Set default text extent in output parameters
     int iWidth = 0;
     float fHeight = 0.0f;
 
@@ -340,32 +335,10 @@ HRESULT d3d9_init_font(const char *font_path)
    return hr;
 }
 
-static void xdk360_video_font_deinit(xdk360_video_font_t * font)
-{
-    font->m_pFontTexture = NULL;
-    font->m_dwNumGlyphs = 0L;
-    font->m_Glyphs = NULL;
-    font->m_cMaxGlyph = 0;
-    font->m_TranslatorTable = NULL;
-    font->m_dwNestedBeginCount = 0L;
-
-    // Safely release shaders
-    // NOTE: They are released in reverse order of creation
-    // to make sure any interdependencies are dealt with
-
-    if( ( s_FontLocals.m_pFontPixelShader != NULL ) && ( s_FontLocals.m_pFontPixelShader->Release() == 0 ) )
-        s_FontLocals.m_pFontPixelShader = NULL;
-    if( ( s_FontLocals.m_pFontVertexShader != NULL ) && ( s_FontLocals.m_pFontVertexShader->Release() == 0 ) )
-        s_FontLocals.m_pFontVertexShader = NULL;
-    if( ( s_FontLocals.m_pFontVertexDecl != NULL ) && ( s_FontLocals.m_pFontVertexDecl->Release() == 0 ) )
-        s_FontLocals.m_pFontVertexDecl = NULL;
-
-    if( m_xprResource.m_bInitialized)
-        m_xprResource.Destroy();
-}
-
 void d3d9_deinit_font(void)
 {
+   xdk360_video_font_t *font = &m_Font;
+
    // Delete the memory we've allocated
    if(video_console.m_Lines)
    {
@@ -380,7 +353,21 @@ void d3d9_deinit_font(void)
    }
 
    // Destroy the font
-   xdk360_video_font_deinit(&m_Font);
+   font->m_pFontTexture = NULL;
+   font->m_dwNumGlyphs = 0L;
+   font->m_Glyphs = NULL;
+   font->m_cMaxGlyph = 0;
+   font->m_TranslatorTable = NULL;
+   font->m_dwNestedBeginCount = 0L;
+
+   if( ( s_FontLocals.m_pFontPixelShader != NULL ) && ( s_FontLocals.m_pFontPixelShader->Release() == 0 ) )
+      s_FontLocals.m_pFontPixelShader = NULL;
+   if( ( s_FontLocals.m_pFontVertexShader != NULL ) && ( s_FontLocals.m_pFontVertexShader->Release() == 0 ) )
+      s_FontLocals.m_pFontVertexShader = NULL;
+   if( ( s_FontLocals.m_pFontVertexDecl != NULL ) && ( s_FontLocals.m_pFontVertexDecl->Release() == 0 ) )
+      s_FontLocals.m_pFontVertexDecl = NULL;
+   if( m_xprResource.m_bInitialized)
+      m_xprResource.Destroy();
 }
 
 static void xdk360_console_add( wchar_t wch )
