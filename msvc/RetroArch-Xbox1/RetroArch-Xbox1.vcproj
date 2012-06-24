@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\local-repos\RetroArch\msvc\msvc-stdint&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;"
 				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=&quot;0.9.6&quot;"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -65,7 +65,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				OmitFramePointers="TRUE"
-				AdditionalIncludeDirectories="&quot;C:\local-repos\RetroArch\msvc\msvc-stdint&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;"
 				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=&quot;0.9.6&quot;"
 				StringPooling="TRUE"
 				BufferSecurityCheck="TRUE"
@@ -114,7 +114,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				OmitFramePointers="TRUE"
-				AdditionalIncludeDirectories="&quot;C:\local-repos\RetroArch\msvc\msvc-stdint&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;"
 				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=&quot;0.9.6&quot;"
 				StringPooling="TRUE"
 				EnableFunctionLevelLinking="TRUE"
@@ -155,7 +155,7 @@
 			ConfigurationType="1">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\local-repos\RetroArch\msvc\msvc-stdint&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;"
 				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=&quot;0.9.6&quot;"
 				UsePrecompiledHeader="0"/>
 			<Tool
@@ -185,11 +185,12 @@
 		</Configuration>
 		<Configuration
 			Name="Release_LTCG|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\local-repos\RetroArch\msvc\msvc-stdint&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;"
 				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=&quot;0.9.6&quot;"
 				UsePrecompiledHeader="0"/>
 			<Tool
