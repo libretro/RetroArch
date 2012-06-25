@@ -23,9 +23,9 @@
 #include <gccore.h>
 #include <ogcsys.h>
 
-#define CHUNK_FRAMES 8
+#define CHUNK_FRAMES 64
 #define CHUNK_SIZE (CHUNK_FRAMES * sizeof(uint32_t))
-#define BLOCKS 128
+#define BLOCKS 16
 
 typedef struct
 {
@@ -40,7 +40,7 @@ typedef struct
    bool nonblock;
 } wii_audio_t;
 
-static wii_audio_t *g_audio = NULL;
+static wii_audio_t *g_audio;
 
 static void dma_callback(void)
 {
@@ -58,7 +58,7 @@ static void *wii_audio_init(const char *device, unsigned rate, unsigned latency)
    AUDIO_Init(NULL);
    AUDIO_RegisterDMACallback(dma_callback);
 
-   if (abs((int) rate - 32000) < 1000)
+   if (rate > 32000 || abs((int) rate - 32000) < 1000)
    {
       AUDIO_SetDSPSampleRate(AI_SAMPLERATE_32KHZ);
       g_settings.audio.out_rate = 32000;
