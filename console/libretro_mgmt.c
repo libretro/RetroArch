@@ -74,23 +74,23 @@ done:
    return retstr;
 }
 
-const char *rarch_manage_libretro_set_first_file(const char *libretro_path, const char * exe_ext)
+void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext)
 {
    //We need to set libretro to the first entry in the cores
    //directory so that it will be saved to the config file
 
-   char ** dir_list = dir_list_new(libretro_path, exe_ext, false);
+   struct string_list *dir_list = dir_list_new(libretro_path, exe_ext, false);
 
-   const char * retstr = NULL;
    const char * first_exe;
 
    if (!dir_list)
    {
       RARCH_ERR("Couldn't read directory.\n");
-      goto error;
+      RARCH_ERR("Failed to set first entry to libretro path.\n");
+      goto end;
    }
 
-   first_exe = dir_list[0];
+   first_exe = dir_list->elems[0].data;
 
    if(first_exe)
    {
@@ -101,28 +101,24 @@ const char *rarch_manage_libretro_set_first_file(const char *libretro_path, cons
       if(strcmp(fname_tmp, "RetroArch-Salamander.xex") == 0)
       {
          RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
-	 first_exe = dir_list[1];
+	 first_exe = dir_list->elems[1].data;
 	 fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
 
 	 if(!first_exe)
 	 {
             RARCH_ERR("Unlikely error happened - no second entry - no choice but to set it to RetroArch Salamander\n");
-	    first_exe = dir_list[0];
+	    first_exe = dir_list->elems[0].data;
 	    fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
 	 }
       }
 
-      retstr = fname_tmp;
+      strlcpy(first_file, fname_tmp, size_of_first_file);
 #else
-      retstr = first_exe;
+      strlcpy(first_file, first_exe, size_of_first_file);
 #endif
-      RARCH_LOG("Set first entry in libretro core dir to libretro path: [%s].\n", retstr);
-      goto end;
+      RARCH_LOG("Set first entry in libretro core dir to libretro path: [%s].\n", first_file);
    }
 
-error:
-   RARCH_ERR("Failed to set first entry to libretro path.\n");
 end:
    dir_list_free(dir_list);
-   return retstr;
 }

@@ -33,7 +33,6 @@
 #include "../console/console_ext.h"
 #include "../libretro.h"
 #include "../general.h"
-#include "frontend/shared.h"
 
 /*============================================================
 	PS3 MOUSE

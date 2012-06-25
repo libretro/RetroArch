@@ -302,7 +302,7 @@ static void browser_update(filebrowser_t * b, const char *extensions)
 static void browser_render(filebrowser_t * b)
 {
    gl_t *gl = driver.video_data;
-   uint32_t file_count = b->current_dir.size;
+   uint32_t file_count = b->current_dir.list->size;
    int current_index, page_number, page_base, i;
    float currentX, currentY, ySpacing;
 
@@ -317,9 +317,9 @@ static void browser_render(filebrowser_t * b)
    for ( i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
    {
       char fname_tmp[256];
-      fill_pathname_base(fname_tmp, b->current_dir.elems[i], sizeof(fname_tmp));
+      fill_pathname_base(fname_tmp, b->current_dir.list->elems[i].data, sizeof(fname_tmp));
       currentY = currentY + ySpacing;
-      cellDbgFontPuts(currentX, currentY, FONT_SIZE, i == current_index ? RED : WHITE, fname_tmp);
+      cellDbgFontPuts(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->current_dir.list->elems[i].attr.b ? GREEN : WHITE, fname_tmp);
       gl_render_msg_post(gl);
    }
    gl_render_msg_post(gl);
@@ -859,7 +859,7 @@ static void select_file(uint32_t menu_id)
 
       if (CTRL_CROSS(button_was_pressed))
       {
-         if(path_is_directory(filebrowser_get_current_path(&tmpBrowser)))
+         if(filebrowser_get_current_path_isdir(&tmpBrowser))
 	 {
             /*if 'filename' is in fact '..' - then pop back directory instead of 
 	      adding '..' to filename path */
@@ -952,7 +952,7 @@ static void select_directory(uint32_t menu_id)
 
       if (CTRL_SQUARE(button_was_pressed))
       {
-         if(path_is_directory(filebrowser_get_current_path(&tmpBrowser)))
+         if(filebrowser_get_current_path_isdir(&tmpBrowser))
 	 {
             snprintf(path, sizeof(path), filebrowser_get_current_path(&tmpBrowser));
 	    switch(menu_id)
@@ -995,7 +995,7 @@ static void select_directory(uint32_t menu_id)
       }
       else if (CTRL_CROSS(button_was_pressed))
       {
-         if(path_is_directory(filebrowser_get_current_path(&tmpBrowser)))
+         if(filebrowser_get_current_path_isdir(&tmpBrowser))
 	 {
             /* if 'filename' is in fact '..' - then pop back directory instead of 
              * adding '..' to filename path */
@@ -1886,7 +1886,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
    switch(action)
    {
       case MENU_ROMSELECT_ACTION_OK:
-         if(path_is_directory(filebrowser_get_current_path(filebrowser)))
+         if(filebrowser_get_current_path_isdir(filebrowser))
 	 {
             /*if 'filename' is in fact '..' - then pop back directory  instead of adding '..' to filename path */
             if(browser.current_dir.ptr == 0)
@@ -1942,7 +1942,7 @@ static void select_rom(void)
          menu_romselect_iterate(&browser, action);
    }
 
-   if (path_is_directory(filebrowser_get_current_path(&browser)))
+   if (filebrowser_get_current_path_isdir(&browser))
    {
       if(!strcmp(filebrowser_get_current_path(&browser),"app_home") || !strcmp(filebrowser_get_current_path(&browser),"host_root"))
          cellDbgFontPrintf(0.09f, 0.83f, 0.91f, RED, "WARNING - This path only works on DEX PS3 systems. Do not attempt to open\n this directory on CEX PS3 systems, or you might have to restart.");

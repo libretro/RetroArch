@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2012 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,32 +14,36 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_POSIX_STRING_H
-#define __RARCH_POSIX_STRING_H
+#ifndef __MSVC_71_H
+#define __MSVC_71_H
 
-#ifdef _WIN32
+#include <stdarg.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#undef strcasecmp
-#undef strdup
-#undef isblank
-#undef strtok_r
-#define strcasecmp(a, b) strcasecmp_rarch__(a, b)
-#define strdup(orig) strdup_rarch__(orig)
-#define isblank(c) isblank_rarch__(c)
-#define strtok_r(str, delim, saveptr) strtok_r_rarch__(str, delim, saveptr)
-int strcasecmp(const char *a, const char *b);
-char *strdup(const char *orig);
-int isblank(int c);
-char *strtok_r(char *str, const char *delim, char **saveptr);
-
-#ifdef __cplusplus
+static inline void RARCH_LOG(const char *msg, ...)
+{
+   va_list ap;
+   va_start(ap, msg);
+   fprintf(stderr, "RetroArch: ");
+   vfprintf(stderr, msg, ap);
+   va_end(ap);
 }
-#endif
+
+static inline void RARCH_WARN(const char *msg, ...)
+{
+   va_list ap;
+   va_start(ap, msg);
+   fprintf(stderr, "RetroArch [WARN] :: ");
+   vfprintf(stderr, msg, ap);
+   va_end(ap);
+}
+
+static inline void RARCH_ERR(const char *msg, ...)
+{
+   va_list ap;
+   va_start(ap, msg);
+   fprintf(stderr, "RetroArch [ERR] :: ");
+   vfprintf(stderr, msg, ap);
+   va_end(ap);
+}
 
 #endif
-#endif
-

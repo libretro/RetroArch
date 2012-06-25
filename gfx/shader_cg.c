@@ -500,7 +500,8 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
    if (!config_get_string(conf, "textures", &textures)) // No textures here ...
       return true;
 
-   const char *id = strtok(textures, ";");;
+   char *save;
+   const char *id = strtok_r(textures, ";", &save);
    while (id && lut_textures_num < MAX_TEXTURES)
    {
       char path[PATH_MAX];
@@ -546,7 +547,7 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
       load_texture_data(&lut_textures[lut_textures_num], &img, smooth);
       lut_textures_num++;
 
-      id = strtok(NULL, ";");
+      id = strtok_r(NULL, ";", &save);
    }
 
 end:
@@ -573,7 +574,8 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
    char *script_class = NULL; 
 #endif
 
-   const char *id = strtok(imports, ";");
+   char *save;
+   const char *id = strtok_r(imports, ";", &save);
    while (id && info_cnt < MAX_VARIABLES)
    {
       char semantic_buf[64];
@@ -692,7 +694,7 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
       info_cnt++;
       free(semantic);
 
-      id = strtok(NULL, ";");
+      id = strtok_r(NULL, ";", &save);
    }
 
    tracker_info.wram = (uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);

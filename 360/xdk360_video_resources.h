@@ -59,11 +59,6 @@ class PackedResource
       HRESULT Create( const char * strFilename );
       void    Destroy();
 
-      D3DResource* RegisterResource( D3DResource* pResource ) const
-      {
-         return pResource;
-      }
-
       void * GetData( unsigned long dwOffset ) const
       {
          return &m_pSysMemData[dwOffset];
@@ -79,16 +74,6 @@ class PackedResource
          return ( D3DTexture* )GetResource( dwOffset );
       }
 
-      D3DArrayTexture* GetArrayTexture( unsigned long dwOffset ) const
-      {
-         return ( D3DArrayTexture* )GetResource( dwOffset );
-      }
-
-      D3DVertexBuffer* GetVertexBuffer( unsigned long dwOffset ) const
-      {
-         return ( D3DVertexBuffer* )GetResource( dwOffset );
-      }
-
       void * GetData( const char * strName ) const;
 
       D3DResource* GetResource( const char * strName ) const
@@ -99,16 +84,6 @@ class PackedResource
       D3DTexture* GetTexture( const char * strName ) const
       {
          return ( D3DTexture* )GetResource( strName );
-      }
-
-      D3DArrayTexture* GetArrayTexture( const char * strName ) const
-      {
-         return ( D3DArrayTexture* )GetResource( strName );
-      }
-
-      D3DVertexBuffer* GetVertexBuffer( const char * strName ) const
-      {
-         return ( D3DVertexBuffer* )GetResource( strName );
       }
 
       PackedResource();

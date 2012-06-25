@@ -470,6 +470,9 @@ static void check_window(sdl_video_t *vid)
 
 static bool sdl_gfx_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
+   if (!frame)
+      return true;
+
    sdl_video_t *vid = (sdl_video_t*)data;
 
    if (SDL_MUSTLOCK(vid->buffer))

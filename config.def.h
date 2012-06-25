@@ -78,7 +78,7 @@ enum
 #define VIDEO_DEFAULT_DRIVER VIDEO_WII
 #elif defined(XENON)
 #define VIDEO_DEFAULT_DRIVER VIDEO_XENON360
-#elif defined(_XBOX)
+#elif defined(_XBOX360)
 #define VIDEO_DEFAULT_DRIVER VIDEO_XDK360
 #elif defined(HAVE_XVIDEO)
 #define VIDEO_DEFAULT_DRIVER VIDEO_XVIDEO
@@ -94,7 +94,7 @@ enum
 #define AUDIO_DEFAULT_DRIVER AUDIO_PS3
 #elif defined(XENON)
 #define AUDIO_DEFAULT_DRIVER AUDIO_XENON360
-#elif defined(_XBOX)
+#elif defined(_XBOX360)
 #define AUDIO_DEFAULT_DRIVER AUDIO_XDK360
 #elif defined(GEKKO)
 #define AUDIO_DEFAULT_DRIVER AUDIO_WII
@@ -128,7 +128,7 @@ enum
 
 #if defined(XENON)
 #define INPUT_DEFAULT_DRIVER INPUT_XENON360
-#elif defined(_XBOX)
+#elif defined(_XBOX360)
 #define INPUT_DEFAULT_DRIVER INPUT_XDK360
 #elif defined(HAVE_SDL)
 #define INPUT_DEFAULT_DRIVER INPUT_SDL

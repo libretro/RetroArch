@@ -239,6 +239,7 @@ size_t strlcat(char *dest, const char *source, size_t size)
 #undef strcasecmp
 #undef strdup
 #undef isblank
+#undef strtok_r
 #include <ctype.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -276,6 +277,37 @@ char *strdup_rarch__(const char *orig)
 int isblank_rarch__(int c)
 {
    return (c == ' ') || (c == '\t');
+}
+
+char *strtok_r_rarch__(char *str, const char *delim, char **saveptr)
+{
+   if (!saveptr || !delim)
+      return NULL;
+
+   if (str)
+      *saveptr = str;
+
+   char *first = NULL;
+
+   do
+   {
+      first = *saveptr;
+      while (*first && strchr(delim, *first))
+         *first++ = '\0';
+
+      if (*first == '\0')
+         return NULL;
+
+      char *ptr = first + 1;
+
+      while (*ptr && !strchr(delim, *ptr))
+         ptr++;
+
+      *saveptr = ptr + (*ptr ? 1 : 0);
+      *ptr     = '\0';
+   } while (strlen(first) == 0);
+
+   return first;
 }
 
 #endif

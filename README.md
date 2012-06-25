@@ -108,7 +108,9 @@ RetroArch PS3 needs to be compiled in the following order:
 
 <tt>make -f Makefile.ps3</tt>
 
-Finally, you can add one of the following parameters to the above line in order to make a PKG file:
+<b>PlayStation3 - Creating a PKG installable file</b><br />
+
+You can add 'pkg' as a parameter in order to make a PKG file - for example:
 
 <tt>make -f Makefile.ps3 pkg</tt>
 

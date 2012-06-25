@@ -15,7 +15,7 @@
  */
 
 #include <stdint.h>
-#include <stdbool.h>
+#include "../../boolean.h"
 #include <stddef.h>
 #include <string.h>
 
@@ -60,7 +60,6 @@
 #define NP_POOL_SIZE (128*1024)
 
 static uint8_t np_pool[NP_POOL_SIZE];
-char contentInfoPath[PATH_MAX];
 char usrDirPath[PATH_MAX];
 char DEFAULT_PRESET_FILE[PATH_MAX];
 char DEFAULT_BORDER_FILE[PATH_MAX];
@@ -174,6 +173,7 @@ static void get_environment_settings(int argc, char *argv[])
    unsigned int get_attributes;
    CellGameContentSize size;
    char dirName[CELL_GAME_DIRNAME_SIZE];
+   char contentInfoPath[PATH_MAX];
    CellSysCacheParam param;
    memset(&param, 0x00, sizeof(CellSysCacheParam));
    strlcpy(param.cacheId,CACHE_ID, sizeof(CellSysCacheParam));

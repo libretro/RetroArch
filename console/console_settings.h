@@ -95,10 +95,7 @@ void rarch_settings_change(unsigned setting);
 void rarch_settings_default(unsigned setting);
 void rarch_settings_msg(unsigned setting, unsigned delay);
 
-#ifdef _XBOX
-void rarch_settings_create_menu_item_label(wchar_t * strwbuf, unsigned setting, size_t size);
-#else
 void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t size);
-#endif
+void rarch_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size);
 
 #endif

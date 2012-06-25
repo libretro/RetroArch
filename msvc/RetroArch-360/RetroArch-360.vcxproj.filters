@@ -30,9 +30,6 @@
     <Filter Include="Header Files\compat">
       <UniqueIdentifier>{cf25b88e-c7b2-4823-876a-ed0dd8020821}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\console\griffin">
-      <UniqueIdentifier>{c868cc96-a0ac-4672-a4ca-dd7c28277972}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\media\sd">
       <UniqueIdentifier>{d50021e0-79f4-42c0-b190-1c31fa4fe2b2}</UniqueIdentifier>
     </Filter>
@@ -41,6 +38,9 @@
     </Filter>
     <Filter Include="Source Files\media\shaders">
       <UniqueIdentifier>{3a05047b-b9ec-4821-bb28-d1b0e9e3e8bb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\console\griffin">
+      <UniqueIdentifier>{c868cc96-a0ac-4672-a4ca-dd7c28277972}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

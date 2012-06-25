@@ -198,27 +198,23 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 
    // Slightly messy code,
    // but we really need to do processing before blocking on VSync for best possible scheduling.
-   bool is_dupe = !data;
 #ifdef HAVE_FFMPEG
-
-   if (g_extern.recording && (!g_extern.filter.active || !g_settings.video.post_filter_record || is_dupe))
+   if (g_extern.recording && (!g_extern.filter.active || !g_settings.video.post_filter_record || !data))
    {
       struct ffemu_video_data ffemu_data = {0};
       ffemu_data.data = data;
       ffemu_data.pitch = pitch;
       ffemu_data.width = width;
       ffemu_data.height = height;
-      ffemu_data.is_dupe = is_dupe;
+      ffemu_data.is_dupe = !data;
       ffemu_push_video(g_extern.rec, &ffemu_data);
    }
 #endif
-   if (is_dupe)
-      return;
 
    const char *msg = msg_queue_pull(g_extern.msg_queue);
 
 #ifdef HAVE_DYLIB
-   if (g_extern.filter.active)
+   if (g_extern.filter.active && data)
    {
       unsigned owidth = width;
       unsigned oheight = height;
@@ -248,15 +244,11 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
       g_extern.video_active = false;
 #endif
 
-   g_extern.frame_cache.data = data;
-   g_extern.frame_cache.width = width;
+   g_extern.frame_cache.data   = data;
+   g_extern.frame_cache.width  = width;
    g_extern.frame_cache.height = height;
-   g_extern.frame_cache.pitch = pitch;
+   g_extern.frame_cache.pitch  = pitch;
 }
-
-#ifdef HAVE_GRIFFIN
-#include "console/griffin/rarch_func_hooks.h"
-#endif
 
 void rarch_render_cached_frame(void)
 {
@@ -279,7 +271,6 @@ void rarch_render_cached_frame(void)
 #endif
 }
 
-#ifndef HAVE_GRIFFIN_OVERRIDE_AUDIO_FLUSH_FUNC
 static bool audio_flush(const int16_t *data, size_t samples)
 {
 #ifdef HAVE_FFMPEG
@@ -302,24 +293,29 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
    audio_convert_s16_to_float(g_extern.audio_data.data, data, samples);
 
+#ifdef HAVE_DYLIB
    rarch_dsp_output_t dsp_output = {0};
    dsp_output.should_resample = RARCH_TRUE;
 
-#ifdef HAVE_DYLIB
    rarch_dsp_input_t dsp_input = {0};
    dsp_input.samples = g_extern.audio_data.data;
    dsp_input.frames = samples / 2;
 
    if (g_extern.audio_data.dsp_plugin)
       g_extern.audio_data.dsp_plugin->process(g_extern.audio_data.dsp_handle, &dsp_output, &dsp_input);
-#endif
 
    if (dsp_output.should_resample)
    {
+#endif
       struct resampler_data src_data = {0};
+#ifdef HAVE_DYLIB
       src_data.data_in = dsp_output.samples ? dsp_output.samples : g_extern.audio_data.data;
-      src_data.data_out = g_extern.audio_data.outsamples;
       src_data.input_frames = dsp_output.samples ? dsp_output.frames : (samples / 2);
+#else
+      src_data.data_in = g_extern.audio_data.data;
+      src_data.input_frames = (samples / 2);
+#endif
+      src_data.data_out = g_extern.audio_data.outsamples;
 
       if (g_extern.audio_data.rate_control)
          readjust_audio_input_rate();
@@ -332,8 +328,8 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
       output_data = g_extern.audio_data.outsamples;
       output_frames = src_data.output_frames;
-   }
 #ifdef HAVE_DYLIB
+   }
    else
    {
       output_data = dsp_output.samples;
@@ -374,7 +370,6 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
    return true;
 }
-#endif
 
 static void audio_sample_rewind(int16_t left, int16_t right)
 {
@@ -1513,6 +1508,9 @@ static void set_savestate_auto_index(void)
    if (!g_settings.savestate_auto_index)
       return;
 
+   // Find the file in the same directory as g_extern.savestate_name with the largest numeral suffix.
+   // E.g. /foo/path/game.state, will try to find /foo/path/game.state%d, where %d is the largest number available.
+
    char state_path[PATH_MAX];
    strlcpy(state_path, g_extern.savestate_name, sizeof(state_path));
 
@@ -1527,22 +1525,23 @@ static void set_savestate_auto_index(void)
       *split = '\0';
       base = split + 1;
    }
+   else
+      dir = ".";
 
    unsigned max_index = 0;
 
-   char **dir_list = dir_list_new(dir, NULL, false);
+   struct string_list *dir_list = dir_list_new(dir, NULL, false);
    if (!dir_list)
       return;
 
-   unsigned index = 0;
-   const char *dir_elem;
-   while ((dir_elem = dir_list[index++]))
+   for (size_t i = 0; i < dir_list->size; i++)
    {
-      if (!strstr(dir_elem, base))
+      const char *dir_elem = dir_list->elems[i].data;
+      if (strstr(dir_elem, base) != dir_elem)
          continue;
 
       const char *end = dir_elem + strlen(dir_elem);
-      while ((end != dir_elem) && isdigit(end[-1])) end--;
+      while ((end > dir_elem) && isdigit(end[-1])) end--;
 
       unsigned index = strtoul(end, NULL, 0);
       if (index > max_index)
@@ -2128,7 +2127,7 @@ static void check_shader_dir(void)
    static bool old_pressed_next = false;
    static bool old_pressed_prev = false;
 
-   if (!g_extern.shader_dir.elems || !driver.video->xml_shader)
+   if (!g_extern.shader_dir.list || !driver.video->xml_shader)
       return;
 
    bool should_apply = false;
@@ -2137,20 +2136,20 @@ static void check_shader_dir(void)
    if (pressed_next && !old_pressed_next)
    {
       should_apply = true;
-      g_extern.shader_dir.ptr = (g_extern.shader_dir.ptr + 1) % g_extern.shader_dir.size;
+      g_extern.shader_dir.ptr = (g_extern.shader_dir.ptr + 1) % g_extern.shader_dir.list->size;
    }
    else if (pressed_prev && !old_pressed_prev)
    {
       should_apply = true;
       if (g_extern.shader_dir.ptr == 0)
-         g_extern.shader_dir.ptr = g_extern.shader_dir.size - 1;
+         g_extern.shader_dir.ptr = g_extern.shader_dir.list->size - 1;
       else
          g_extern.shader_dir.ptr--;
    }
 
    if (should_apply)
    {
-      const char *shader = g_extern.shader_dir.elems[g_extern.shader_dir.ptr];
+      const char *shader = g_extern.shader_dir.list->elems[g_extern.shader_dir.ptr].data;
 
       strlcpy(g_settings.video.bsnes_shader_path, shader, sizeof(g_settings.video.bsnes_shader_path));
       g_settings.video.shader_type = RARCH_SHADER_BSNES;

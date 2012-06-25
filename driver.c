@@ -69,7 +69,7 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef XENON
    &audio_xenon360,
 #endif
-#ifdef _XBOX
+#ifdef _XBOX360
    &audio_xdk360,
 #endif
 #ifdef GEKKO
@@ -85,7 +85,7 @@ static const video_driver_t *video_drivers[] = {
 #ifdef XENON
    &video_xenon360,
 #endif
-#ifdef _XBOX
+#ifdef _XBOX360
    &video_xdk360,
 #endif
 #ifdef HAVE_SDL
@@ -119,7 +119,7 @@ static const input_driver_t *input_drivers[] = {
 #ifdef XENON
    &input_xenon360,
 #endif
-#ifdef _XBOX
+#ifdef _XBOX360
    &input_xdk360,
 #endif
 #ifdef GEKKO
@@ -484,28 +484,31 @@ static void deinit_filter(void)
 #endif
 
 #ifdef HAVE_XML
+static void deinit_shader_dir(void)
+{
+   // It handles NULL, no worries :D
+   dir_list_free(g_extern.shader_dir.list);
+   g_extern.shader_dir.list = NULL;
+   g_extern.shader_dir.ptr  = 0;
+}
+
 static void init_shader_dir(void)
 {
    if (!*g_settings.video.shader_dir)
       return;
 
-   g_extern.shader_dir.elems = dir_list_new(g_settings.video.shader_dir, "shader", false);
-   g_extern.shader_dir.size  = dir_list_size(g_extern.shader_dir.elems);
-   g_extern.shader_dir.ptr   = 0;
+   g_extern.shader_dir.list = dir_list_new(g_settings.video.shader_dir, "shader", false);
+   if (g_extern.shader_dir.list->size == 0)
+   {
+      deinit_shader_dir();
+      return;
+   }
 
-   dir_list_sort(g_extern.shader_dir.elems, false);
+   g_extern.shader_dir.ptr  = 0;
+   dir_list_sort(g_extern.shader_dir.list, false);
 
-   for (unsigned i = 0; i < g_extern.shader_dir.size; i++)
-      RARCH_LOG("Found shader \"%s\"\n", g_extern.shader_dir.elems[i]);
-}
-
-static void deinit_shader_dir(void)
-{
-   // It handles NULL, no worries :D
-   dir_list_free(g_extern.shader_dir.elems);
-   g_extern.shader_dir.elems = NULL;
-   g_extern.shader_dir.size  = 0;
-   g_extern.shader_dir.ptr   = 0;
+   for (unsigned i = 0; i < g_extern.shader_dir.list->size; i++)
+      RARCH_LOG("Found shader \"%s\"\n", g_extern.shader_dir.list->elems[i].data);
 }
 #endif
 

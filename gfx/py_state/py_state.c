@@ -208,7 +208,8 @@ static char *align_program(const char *program)
    if (!new_prog)
       return NULL;
 
-   char *line = dupe_newline(strtok(prog, "\n"));
+   char *save;
+   char *line = dupe_newline(strtok_r(prog, "\n", &save));
    if (!line)
    {
       free(prog);
@@ -227,7 +228,7 @@ static char *align_program(const char *program)
       strlcat(new_prog, line + skip_len, prog_size);
 
       free(line);
-      line = dupe_newline(strtok(NULL, "\n"));
+      line = dupe_newline(strtok_r(NULL, "\n", &save));
    }
 
    free(prog);

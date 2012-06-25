@@ -220,48 +220,41 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
    msg_queue_push(g_extern.msg_queue, str, 1, delay);
 }
 
-#ifdef _XBOX
-void rarch_settings_create_menu_item_label(wchar_t * strwbuf, unsigned setting, size_t size)
-#else
-void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t size)
-#endif
+void rarch_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size)
 {
-#ifdef _XBOX
    char str[PATH_MAX];
-   size_t SIZEOF_STR = sizeof(str);
-#else
-   size_t SIZEOF_STR = size;
-#endif
 
+   rarch_settings_create_menu_item_label(str, setting, sizeof(str));
+   rarch_convert_char_to_wchar(strwbuf, str, size);
+}
+
+void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t size)
+{
    switch (setting)
    {
       case S_LBL_ASPECT_RATIO:
-         snprintf(str, SIZEOF_STR, "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
+         snprintf(str, size, "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
          break;
 	  case S_LBL_SHADER:
-         snprintf(str, SIZEOF_STR, "Shader #1: %s", g_settings.video.cg_shader_path);
+         snprintf(str, size, "Shader #1: %s", g_settings.video.cg_shader_path);
          break;
 	  case S_LBL_SHADER_2:
-         snprintf(str, SIZEOF_STR, "Shader #2: %s", g_settings.video.second_pass_shader);
+         snprintf(str, size, "Shader #2: %s", g_settings.video.second_pass_shader);
          break;
 	  case S_LBL_RARCH_VERSION:
-         snprintf(str, SIZEOF_STR, "RetroArch %s", PACKAGE_VERSION);
+         snprintf(str, size, "RetroArch %s", PACKAGE_VERSION);
          break;
 	  case S_LBL_SCALE_FACTOR:
-         snprintf(str, SIZEOF_STR, "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
+         snprintf(str, size, "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
          break;
 	  case S_LBL_ROTATION:
-         snprintf(str, SIZEOF_STR, "Rotation: %s", rotation_lut[g_console.screen_orientation]);
+         snprintf(str, size, "Rotation: %s", rotation_lut[g_console.screen_orientation]);
          break;
 	  case S_LBL_LOAD_STATE_SLOT:
-         snprintf(str, SIZEOF_STR, "Load State #%d", g_extern.state_slot);
+         snprintf(str, size, "Load State #%d", g_extern.state_slot);
          break;
 	  case S_LBL_SAVE_STATE_SLOT:
-		 snprintf(str, SIZEOF_STR, "Save State #%d", g_extern.state_slot);
+		 snprintf(str, size, "Save State #%d", g_extern.state_slot);
          break;
    }
-
-#ifdef _XBOX
-   rarch_convert_char_to_wchar(strwbuf, str, size);
-#endif
 }

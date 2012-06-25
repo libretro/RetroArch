@@ -897,9 +897,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl_update_resize(gl);
    }
 
-   gl_update_input_size(gl, width, height, pitch);
-
-   gl_copy_frame(gl, frame, width, height, pitch);
+   if (frame) // Can be NULL for frame dupe / NULL render.
+   {
+      gl_update_input_size(gl, width, height, pitch);
+      gl_copy_frame(gl, frame, width, height, pitch);
+   }
 
    struct gl_tex_info tex_info = {0};
    tex_info.tex           = gl->texture[gl->tex_index];

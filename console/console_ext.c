@@ -285,7 +285,7 @@ static const struct platform_bind platform_keys[] = {
    { CTRL_UP_MASK | CTRL_RSTICK_UP_MASK, "RStick D-Pad Up" },
    { CTRL_DOWN_MASK | CTRL_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
 };
-#elif defined(_XBOX)
+#elif defined(_XBOX360)
 static const struct platform_bind platform_keys[] = {
    { XINPUT_GAMEPAD_B, "B button" },
    { XINPUT_GAMEPAD_A, "A button" },
@@ -471,7 +471,7 @@ void rarch_input_set_controls_default (void)
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]		= platform_keys[PS3_DEVICE_ID_JOYPAD_R3].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]		= platform_keys[PS3_DEVICE_ID_JOYPAD_L2].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]		= platform_keys[PS3_DEVICE_ID_JOYPAD_L3].joykey;
-#elif defined(_XBOX)
+#elif defined(_XBOX360)
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_A].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		= platform_keys[XDK360_DEVICE_ID_JOYPAD_X].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	= platform_keys[XDK360_DEVICE_ID_JOYPAD_BACK].joykey;
@@ -756,15 +756,10 @@ void rarch_console_rsound_stop(void)
   STRING HANDLING
   ============================================================ */
 
-#ifdef _XBOX
 void rarch_convert_char_to_wchar(wchar_t *buf, const char * str, size_t size)
 {
-   unsigned long dwNum = MultiByteToWideChar(CP_ACP, 0, str, -1, NULL, 0);
-   size /= sizeof(wchar_t);
-   rarch_assert(size >= dwNum);
-   MultiByteToWideChar(CP_ACP, 0, str, -1, buf, dwNum);
+   mbstowcs(buf, str, size / sizeof(wchar_t));
 }
-#endif
 
 const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr)
 {
@@ -803,7 +798,8 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
 
          if(!strcmp(g_settings.libretro, ""))
          {
-            const char *first_file = rarch_manage_libretro_set_first_file(libretro_dir_path, exe_ext);
+            char first_file[PATH_MAX];
+            rarch_manage_libretro_set_first_file(first_file, sizeof(first_file), libretro_dir_path, exe_ext);
             if(first_file != NULL)
                strlcpy(g_settings.libretro, first_file, sizeof(g_settings.libretro));
          }

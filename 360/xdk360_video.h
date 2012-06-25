@@ -18,7 +18,7 @@
 #define _XDK360_VIDEO_H
 
 #include <stdint.h>
-#include "fonts.h"
+#include "../gfx/fonts/xdk360_fonts.h"
 
 #define DFONT_MAX	4096
 #define PRIM_FVF	(D3DFVF_XYZRHW | D3DFVF_TEX1)

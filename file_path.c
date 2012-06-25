@@ -23,7 +23,12 @@
 #include "compat/posix_string.h"
 
 #ifdef __CELLOS_LV2__
+#include <unistd.h> //stat() is defined here
 #define S_ISDIR(x) (x & CELL_FS_S_IFDIR)
+#endif
+
+#ifdef _XBOX
+#include <xtl.h>
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
@@ -34,7 +39,6 @@
 #define setmode _setmode
 #endif
 #elif defined(_XBOX)
-#include <xtl.h>
 #define setmode _setmode
 #define INVALID_FILE_ATTRIBUTES -1
 #else
@@ -43,111 +47,107 @@
 #include <dirent.h>
 #endif
 
-// Yep, this is C alright ;)
-struct string_list
+static void string_list_free(struct string_list *list)
 {
-   char **data;
-   size_t size;
-   size_t cap;
-};
+   if (!list)
+      return;
+
+   for (size_t i = 0; i < list->size; i++)
+      free(list->elems[i].data);
+   free(list->elems);
+   free(list);
+}
 
 static bool string_list_capacity(struct string_list *list, size_t cap)
 {
    rarch_assert(cap > list->size);
 
-   char **new_data = (char**)realloc(list->data, cap * sizeof(char*));
+   struct string_list_elem *new_data = (struct string_list_elem*)realloc(list->elems, cap * sizeof(*new_data));
    if (!new_data)
       return false;
 
-   list->data = new_data;
-   list->cap  = cap;
+   list->elems = new_data;
+   list->cap   = cap;
    return true;
 }
 
-static bool string_list_init(struct string_list *list)
+static struct string_list *string_list_new(void)
 {
-   memset(list, 0, sizeof(*list));
-   return string_list_capacity(list, 32);
+   struct string_list *list = (struct string_list*)calloc(1, sizeof(*list));
+   if (!list)
+      return NULL;
+
+   if (!string_list_capacity(list, 32))
+   {
+      string_list_free(list);
+      return NULL;
+   }
+
+   return list;
 }
 
-static bool string_list_append(struct string_list *list, const char *elem)
+static bool string_list_append(struct string_list *list, const char *elem, union string_list_elem_attr attr)
 {
-   if (list->size + 1 >= list->cap && !string_list_capacity(list, list->cap * 2))
+   if (list->size >= list->cap &&
+         !string_list_capacity(list, list->cap * 2))
       return false;
 
-   if (!(list->data[list->size] = strdup(elem)))
+   char *dup = strdup(elem);
+   if (!dup)
       return false;
+
+   list->elems[list->size].data = dup;
+   list->elems[list->size].attr = attr;
 
    list->size++;
    return true;
 }
 
-static char **string_list_finalize(struct string_list *list)
-{
-   rarch_assert(list->cap > list->size);
-
-   list->data[list->size] = NULL;
-   return list->data;
-}
-
-static void string_list_cleanup(struct string_list *list)
-{
-   for (size_t i = 0; i < list->size; i++)
-      free(list->data[i]);
-   free(list->data);
-   memset(list, 0, sizeof(*list));
-}
-
-static void string_list_free(char **list)
-{
-   if (!list)
-      return;
-
-   char **orig = list;
-   while (*list)
-      free(*list++);
-   free(orig);
-}
-
-static char **string_split(const char *str, const char *delim)
+static struct string_list *string_split(const char *str, const char *delim)
 {
    char *copy      = NULL;
    const char *tmp = NULL;
-   struct string_list list;
 
-   if (!string_list_init(&list))
+   struct string_list *list = string_list_new();
+   if (!list)
       goto error;
 
    copy = strdup(str);
    if (!copy)
-      return NULL;
+      goto error;
 
-   tmp = strtok(copy, delim);
+   char *save;
+   tmp = strtok_r(copy, delim, &save);
    while (tmp)
    {
-      if (!string_list_append(&list, tmp))
+      union string_list_elem_attr attr;
+      memset(&attr, 0, sizeof(attr));
+
+      if (!string_list_append(list, tmp, attr))
          goto error;
 
-      tmp = strtok(NULL, delim);
+      tmp = strtok_r(NULL, delim, &save);
    }
 
    free(copy);
-   return string_list_finalize(&list);
+   return list;
 
 error:
-   string_list_cleanup(&list);
+   string_list_free(list);
    free(copy);
    return NULL;
 }
 
-static bool string_list_find_elem(char * const *list, const char *elem)
+static bool string_list_find_elem(const struct string_list *list, const char *elem)
 {
    if (!list)
       return false;
 
-   for (; *list; list++)
-      if (strcmp(*list, elem) == 0)
+   for (size_t i = 0; i < list->size; i++)
+   {
+      if (strcmp(list->elems[i].data, elem) == 0)
          return true;
+   }
 
    return false;
 }
@@ -161,50 +161,42 @@ static const char *path_get_extension(const char *path)
       return "";
 }
 
-size_t dir_list_size(char * const *dir_list)
+static int qstrcmp_plain(const void *a_, const void *b_)
 {
-   if (!dir_list)
-      return 0;
+   const struct string_list_elem *a = (const struct string_list_elem*)a_; 
+   const struct string_list_elem *b = (const struct string_list_elem*)b_; 
 
-   size_t size = 0;
-   while (*dir_list++)
-      size++;
-
-   return size;
-}
-
-static int qstrcmp_plain(const void *a, const void *b)
-{
-   return strcasecmp(*(const char * const*)a, *(const char * const*)b);
+   return strcasecmp(a->data, b->data);
 }
 
 static int qstrcmp_dir(const void *a_, const void *b_)
 {
-   const char *a = *(const char * const*)a_; 
-   const char *b = *(const char * const*)b_; 
+   const struct string_list_elem *a = (const struct string_list_elem*)a_; 
+   const struct string_list_elem *b = (const struct string_list_elem*)b_; 
 
    // Sort directories before files.
-   int a_dir = path_is_directory(a);
-   int b_dir = path_is_directory(b);
+   int a_dir = a->attr.b;
+   int b_dir = b->attr.b;
    if (a_dir != b_dir)
       return b_dir - a_dir;
-
-   return strcasecmp(a, b);
+   else
+      return strcasecmp(a->data, b->data);
 }
 
-void dir_list_sort(char **dir_list, bool dir_first)
+void dir_list_sort(struct string_list *list, bool dir_first)
 {
-   if (!dir_list)
+   if (!list)
       return;
 
-   qsort(dir_list, dir_list_size(dir_list), sizeof(char*), dir_first ? qstrcmp_dir : qstrcmp_plain);
+   qsort(list->elems, list->size, sizeof(struct string_list_elem),
+         dir_first ? qstrcmp_dir : qstrcmp_plain);
 }
 
 #ifdef _WIN32 // Because the API is just fucked up ...
-char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
+struct string_list *dir_list_new(const char *dir, const char *ext, bool include_dirs)
 {
-   struct string_list list;
-   if (!string_list_init(&list))
+   struct string_list *list = string_list_new();
+   if (!list)
       return NULL;
 
    HANDLE hFind = INVALID_HANDLE_VALUE;
@@ -213,7 +205,7 @@ char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
    char path_buf[PATH_MAX];
    snprintf(path_buf, sizeof(path_buf), "%s\\*", dir);
 
-   char **ext_list = NULL;
+   struct string_list *ext_list = NULL;
    if (ext)
       ext_list = string_split(ext, "|");
 
@@ -236,35 +228,38 @@ char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
       char file_path[PATH_MAX];
       snprintf(file_path, sizeof(file_path), "%s\\%s", dir, name);
 
-      if (!string_list_append(&list, file_path))
+      union string_list_elem_attr attr;
+      attr.b = is_dir;
+
+      if (!string_list_append(list, file_path, attr))
          goto error;
    }
    while (FindNextFile(hFind, &ffd) != 0);
 
    FindClose(hFind);
    string_list_free(ext_list);
-   return string_list_finalize(&list);
+   return list;
 
 error:
    RARCH_ERR("Failed to open directory: \"%s\"\n", dir);
    if (hFind != INVALID_HANDLE_VALUE)
       FindClose(hFind);
    
-   string_list_cleanup(&list);
+   string_list_free(list);
    string_list_free(ext_list);
    return NULL;
 }
 #else
-char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
+struct string_list *dir_list_new(const char *dir, const char *ext, bool include_dirs)
 {
-   struct string_list list;
-   if (!string_list_init(&list))
+   struct string_list *list = string_list_new();
+   if (!list)
       return NULL;
 
    DIR *directory = NULL;
    const struct dirent *entry = NULL;
 
-   char **ext_list = NULL;
+   struct string_list *ext_list = NULL;
    if (ext)
       ext_list = string_split(ext, "|");
 
@@ -287,14 +282,17 @@ char **dir_list_new(const char *dir, const char *ext, bool include_dirs)
       char file_path[PATH_MAX];
       snprintf(file_path, sizeof(file_path), "%s/%s", dir, name);
 
-      if (!string_list_append(&list, file_path))
+      union string_list_elem_attr attr;
+      attr.b = is_dir;
+
+      if (!string_list_append(list, file_path, attr))
          goto error;
    }
 
    closedir(directory);
 
    string_list_free(ext_list);
-   return string_list_finalize(&list);
+   return list;
 
 error:
    RARCH_ERR("Failed to open directory: \"%s\"\n", dir);
@@ -302,15 +300,15 @@ error:
    if (directory)
       closedir(directory);
 
-   string_list_cleanup(&list);
+   string_list_free(list);
    string_list_free(ext_list);
    return NULL;
 }
 #endif
 
-void dir_list_free(char **dir_list)
+void dir_list_free(struct string_list *list)
 {
-   string_list_free(dir_list);
+   string_list_free(list);
 }
 
 bool path_is_directory(const char *path)

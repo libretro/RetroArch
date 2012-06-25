@@ -54,7 +54,7 @@ VIDEO CONTEXT
 
 #if defined(__CELLOS_LV2__)
 #include "../../gfx/context/ps3_ctx.c"
-#elif defined(_XBOX)
+#elif defined(_XBOX360)
 #include "../../gfx/context/xdk360_ctx.c"
 #endif
 
@@ -86,7 +86,7 @@ VIDEO DRIVER
 
 #ifdef HAVE_OPENGL
 #include "../../gfx/gl.c"
-#elif defined(_XBOX)
+#elif defined(_XBOX360)
 #include "../../360/xdk360_video.cpp"
 #elif defined(GEKKO)
 #include "../../wii/video.c"
@@ -100,8 +100,8 @@ FONTS
 
 #if defined(__CELLOS_LV2__)
 #include "../../gfx/fonts/ps3_libdbgfont.c"
-#elif defined(_XBOX)
-#include "../../360/fonts.cpp"
+#elif defined(_XBOX360)
+#include "../../gfx/fonts/xdk360_fonts.cpp"
 #elif defined(GEKKO)
 #include "../../gfx/fonts/fonts.c"
 #endif
@@ -111,7 +111,7 @@ INPUT
 ============================================================ */
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/ps3_input.c"
-#elif defined(_XBOX)
+#elif defined(_XBOX360)
 #include "../../360/xdk360_input.c"
 #elif defined(GEKKO)
 #include "../../wii/input.c"
@@ -157,7 +157,7 @@ AUDIO
 ============================================================ */
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/ps3_audio.c"
-#elif defined(_XBOX)
+#elif defined(_XBOX360)
 #include "../../360/xdk360_audio.cpp"
 #elif defined(GEKKO)
 #include "../../wii/audio.c"
@@ -202,10 +202,10 @@ REWIND
 /*============================================================
 MAIN
 ============================================================ */
-#if defined(_XBOX)
-#include "../../360/frontend/main.c"
+#if defined(_XBOX360)
+#include "../../360/frontend-xdk/main.c"
 #elif defined(GEKKO)
-#include "../../wii/main.c"
+#include "../../wii/frontend/main.c"
 #endif
 
 /*============================================================
@@ -230,8 +230,8 @@ NETPLAY
 /*============================================================
 MENU
 ============================================================ */
-#if defined(_XBOX)
-#include "../../360/frontend/menu.cpp"
+#if defined(_XBOX360)
+#include "../../360/frontend-xdk/menu.cpp"
 #elif defined(GEKKO)
 #include "../rgui/rgui.c"
 #include "../rgui/list.c"

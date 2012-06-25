@@ -18,6 +18,7 @@
 #include "dynamic.h"
 #include "general.h"
 #include "compat/strl.h"
+#include "compat/posix_string.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -165,14 +166,15 @@ static void cheat_manager_load_config(cheat_manager_t *handle, const char *path,
       return;
    }
 
-   const char *num = strtok(str, ";");
+   char *save;
+   const char *num = strtok_r(str, ";", &save);
    while (num)
    {
       unsigned index = strtoul(num, NULL, 0);
       if (index < handle->size)
          handle->cheats[index].state = true;
 
-      num = strtok(NULL, ";");
+      num = strtok_r(NULL, ";", &save);
    }
 
    free(str);

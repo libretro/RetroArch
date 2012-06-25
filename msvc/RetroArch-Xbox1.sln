@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RetroArch-Xbox1", "RetroArch-Xbox1/RetroArch-Xbox1.vcproj", "{D45CEB37-21F1-486B-92F0-569B10953978}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Profile = Profile
+		Profile_FastCap = Profile_FastCap
+		Release = Release
+		Release_LTCG = Release_LTCG
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{D45CEB37-21F1-486B-92F0-569B10953978}.Debug.ActiveCfg = Debug|Win32
+		{D45CEB37-21F1-486B-92F0-569B10953978}.Debug.Build.0 = Debug|Win32
+		{D45CEB37-21F1-486B-92F0-569B10953978}.Profile.ActiveCfg = Profile|Win32
+		{D45CEB37-21F1-486B-92F0-569B10953978}.Profile.Build.0 = Profile|Win32
+		{D45CEB37-21F1-486B-92F0-569B10953978}.Profile_FastCap.ActiveCfg = Profile_FastCap|Win32
+		{D45CEB37-21F1-486B-92F0-569B10953978}.Profile_FastCap.Build.0 = Profile_FastCap|Win32
+		{D45CEB37-21F1-486B-92F0-569B10953978}.Release.ActiveCfg = Release|Win32
+		{D45CEB37-21F1-486B-92F0-569B10953978}.Release.Build.0 = Release|Win32
+		{D45CEB37-21F1-486B-92F0-569B10953978}.Release_LTCG.ActiveCfg = Release_LTCG|Win32
+		{D45CEB37-21F1-486B-92F0-569B10953978}.Release_LTCG.Build.0 = Release_LTCG|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal
