@@ -58,7 +58,7 @@ static void *wii_audio_init(const char *device, unsigned rate, unsigned latency)
    AUDIO_Init(NULL);
    AUDIO_RegisterDMACallback(dma_callback);
 
-   if (rate > 32000 || abs((int) rate - 32000) < 1000)
+   if (rate < 33000)
    {
       AUDIO_SetDSPSampleRate(AI_SAMPLERATE_32KHZ);
       g_settings.audio.out_rate = 32000;
