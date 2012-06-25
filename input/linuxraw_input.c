@@ -280,6 +280,9 @@ static void linuxraw_input_poll(void *data)
 
    while (read(0, &c, 1) > 0)
    {
+      if (c == KEY_C && (linuxraw->state[KEY_LEFTCTRL] || linuxraw->state[KEY_RIGHTCTRL]))
+         kill(getpid(), SIGINT);
+
       bool pressed = !(c & 0x80);
       c &= ~0x80;
 
@@ -289,9 +292,6 @@ static void linuxraw_input_poll(void *data)
       else
          linuxraw->state[c] = pressed;
    }
-
-   if (linuxraw->state[KEY_C] && (linuxraw->state[KEY_LEFTCTRL] || linuxraw->state[KEY_RIGHTCTRL]))
-      kill(getpid(), SIGINT);
 
    input_sdl.poll(linuxraw->sdl);
 }

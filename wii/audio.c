@@ -23,9 +23,9 @@
 #include <gccore.h>
 #include <ogcsys.h>
 
-#define CHUNK_FRAMES 256
+#define CHUNK_FRAMES 64
 #define CHUNK_SIZE (CHUNK_FRAMES * sizeof(uint32_t))
-#define BLOCKS 4
+#define BLOCKS 16
 
 typedef struct
 {
@@ -55,19 +55,33 @@ static void dma_callback(void)
 
 static void *wii_audio_init(const char *device, unsigned rate, unsigned latency)
 {
-   static bool inited = false;
-   if (!inited)
+   AUDIO_Init(NULL);
+   AUDIO_RegisterDMACallback(dma_callback);
+
+   if (rate < 33000)
    {
-      AUDIO_Init(NULL);
+      AUDIO_SetDSPSampleRate(AI_SAMPLERATE_32KHZ);
+      g_settings.audio.out_rate = 32000;
+   }
+   else
+   {
       AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
       g_settings.audio.out_rate = 48000;
-      AUDIO_RegisterDMACallback(dma_callback);
-      inited = true;
    }
 
-   g_audio = memalign(32, sizeof(*g_audio));
-   memset(g_audio, 0, sizeof(*g_audio));
-   LWP_InitQueue(&g_audio->cond);
+   if (!g_audio)
+   {
+      g_audio = memalign(32, sizeof(*g_audio));
+      memset(g_audio, 0, sizeof(*g_audio));
+      LWP_InitQueue(&g_audio->cond);
+   }
+   else
+   {
+      memset(g_audio->data, 0, sizeof(g_audio->data));
+      g_audio->dma_busy = g_audio->dma_next = 0;
+      g_audio->write_ptr = 0;
+      g_audio->nonblock = false;
+   }
 
    g_audio->dma_write = BLOCKS - 1;
    DCFlushRange(g_audio->data, sizeof(g_audio->data));
@@ -130,6 +144,12 @@ static bool wii_audio_start(void *data)
 static void wii_audio_free(void *data)
 {
    AUDIO_StopDMA();
+   AUDIO_RegisterDMACallback(NULL);
+   if (g_audio && g_audio->cond)
+   {
+      LWP_CloseQueue(g_audio->cond);
+      g_audio->cond = 0;
+   }
    if (data)
       free(data);
    g_audio = NULL;
