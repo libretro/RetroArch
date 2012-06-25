@@ -158,6 +158,8 @@ int main(void)
       do{
          repeat = rarch_main_iterate();
       }while(repeat && !g_console.frame_advance_enable);
+
+      audio_stop_func();
    }
 
    if(g_console.emulator_initialized)

@@ -14,6 +14,8 @@ CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc
 CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++
 LD = $(DEVKITPPC)/bin/powerpc-eabi-ld
 
+FREETYPECONFIG = $(DEVKITPRO)/portlibs/ppc/bin/freetype-config
+
 DOL_TARGET := retroarch.dol
 ELF_TARGET := retroarch.elf
 
@@ -21,10 +23,10 @@ INCLUDE := -I. -I$(DEVKITPRO)/libogc/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
-CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
-CXXFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
-LDFLAGS := $(MACHDEP)
-LIBS := -lfat -lretro -lwiiuse -logc -lbte -lfreetype
+CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE) $(shell $(FREETYPECONFIG) --cflags)
+CXXFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE) $(shell $(FREETYPECONFIG) --cflags)
+LDFLAGS := $(MACHDEP) $(shell $(FREETYPECONFIG) --libs)
+LIBS := -lfat -lretro -lwiiuse -logc -lbte
 
 OBJ = console/griffin/griffin.o console/font.bmpobj console/rzlib/rzlib.o
 
