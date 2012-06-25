@@ -16,6 +16,7 @@
 
 #include <math.h>
 #include <unistd.h>
+#include <signal.h>
 #include <bcm_host.h>
 #include <VG/openvg.h>
 #include <VG/vgu.h>

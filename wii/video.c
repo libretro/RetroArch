@@ -25,12 +25,13 @@
 
 // All very hardcoded for now.
 
-static void *g_framebuf[3];
-static unsigned g_vi_framebuf;
-static unsigned g_render_framebuf;
+static void *g_framebuf[2];
+static unsigned g_current_framebuf;
 
 static unsigned g_filter;
 static bool g_vsync;
+static lwpq_t g_video_cond;
+static volatile bool g_draw_done;
 
 struct
 {
@@ -45,25 +46,24 @@ static size_t display_list_size;
 static void retrace_callback(u32 retrace_count)
 {
    (void)retrace_count;
-   VIDEO_SetNextFramebuffer(g_framebuf[g_vi_framebuf % 3]);
-   VIDEO_Flush();
-   if (g_vi_framebuf < g_render_framebuf)
-      g_vi_framebuf++;
+   g_draw_done = true;
+   LWP_ThreadSignal(g_video_cond);
 }
 
 static void setup_video_mode(GXRModeObj *mode)
 {
    VIDEO_Configure(mode);
-   for (unsigned i = 0; i < 3; i++)
+   for (unsigned i = 0; i < 2; i++)
    {
       g_framebuf[i] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(mode));
       VIDEO_ClearFrameBuffer(mode, g_framebuf[i], COLOR_BLACK);
    }
 
-   g_vi_framebuf = 0;
-   g_render_framebuf = 1;
+   g_current_framebuf = 0;
+   g_draw_done = true;
+   LWP_InitQueue(&g_video_cond);
    VIDEO_SetNextFramebuffer(g_framebuf[0]);
-   VIDEO_SetPreRetraceCallback(retrace_callback);
+   VIDEO_SetPostRetraceCallback(retrace_callback);
    VIDEO_SetBlack(false);
    VIDEO_Flush();
    VIDEO_WaitVSync();
@@ -171,7 +171,7 @@ void wii_video_deinit(void)
    VIDEO_SetBlack(true);
    VIDEO_Flush();
 
-   for (unsigned i = 0; i < 3; i++)
+   for (unsigned i = 0; i < 2; i++)
       free(MEM_K1_TO_K0(g_framebuf[i]));
 }
 
@@ -186,6 +186,84 @@ static void *wii_init(const video_info_t *video,
    return (void*)-1;
 }
 
+static void update_texture_asm(const uint32_t *src,
+      unsigned width, unsigned height, unsigned pitch)
+{
+   register uint32_t tmp0, tmp1, tmp2, tmp3, line2, line2b, line3, line3b, line4, line4b, line5;
+   register uint32_t ormask = 0x80008000u;
+   register uint32_t *dst = g_tex.data;
+
+   __asm__ __volatile__ (
+      "     srwi     %[width],   %[width],   2           \n"
+      "     srwi     %[height],  %[height],  2           \n"
+      "     subi     %[tmp3],    %[dst],     4           \n"
+      "     mr       %[dst],     %[tmp3]                 \n"
+      "     subi     %[dst],     %[dst],     4           \n"
+      "     mr       %[line2],   %[pitch]                \n"
+      "     addi     %[line2b],  %[line2],   4           \n"
+      "     mulli    %[line3],   %[pitch],   2           \n"
+      "     addi     %[line3b],  %[line3],   4           \n"
+      "     mulli    %[line4],   %[pitch],   3           \n"
+      "     addi     %[line4b],  %[line4],   4           \n"
+      "     mulli    %[line5],   %[pitch],   4           \n"
+
+      "2:   mtctr    %[width]                            \n"
+      "     mr       %[tmp0],    %[src]                  \n"
+
+      "1:   lwz      %[tmp1],    0(%[src])               \n"
+      "     or       %[tmp1],    %[tmp1],    %[ormask]   \n"
+      "     stwu     %[tmp1],    8(%[dst])               \n"
+      "     lwz      %[tmp2],    4(%[src])               \n"
+      "     or       %[tmp2],    %[tmp2],    %[ormask]   \n"
+      "     stwu     %[tmp2],    8(%[tmp3])              \n"
+
+      "     lwzx     %[tmp1],    %[line2],   %[src]      \n"
+      "     or       %[tmp1],    %[tmp1],    %[ormask]   \n"
+      "     stwu     %[tmp1],    8(%[dst])               \n"
+      "     lwzx     %[tmp2],    %[line2b],  %[src]      \n"
+      "     or       %[tmp2],    %[tmp2],    %[ormask]   \n"
+      "     stwu     %[tmp2],    8(%[tmp3])              \n"
+
+      "     lwzx     %[tmp1],    %[line3],   %[src]      \n"
+      "     or       %[tmp1],    %[tmp1],    %[ormask]   \n"
+      "     stwu     %[tmp1],    8(%[dst])               \n"
+      "     lwzx     %[tmp2],    %[line3b],  %[src]      \n"
+      "     or       %[tmp2],    %[tmp2],    %[ormask]   \n"
+      "     stwu     %[tmp2],    8(%[tmp3])              \n"
+
+      "     lwzx     %[tmp1],    %[line4],   %[src]      \n"
+      "     or       %[tmp1],    %[tmp1],    %[ormask]   \n"
+      "     stwu     %[tmp1],    8(%[dst])               \n"
+      "     lwzx     %[tmp2],    %[line4b],  %[src]      \n"
+      "     or       %[tmp2],    %[tmp2],    %[ormask]   \n"
+      "     stwu     %[tmp2],    8(%[tmp3])              \n"
+
+      "     addi     %[src],     %[src],     8           \n"
+      "     bdnz     1b                                  \n"
+
+      "     add      %[src],     %[tmp0],    %[line5]    \n"
+      "     subic.   %[height],  %[height],  1           \n"
+      "     bne      2b                                  \n"
+      :  [tmp0]   "=&b" (tmp0),
+         [tmp1]   "=&b" (tmp1),
+         [tmp2]   "=&b" (tmp2),
+         [tmp3]   "=&b" (tmp3),
+         [line2]  "=&b" (line2),
+         [line2b] "=&b" (line2b),
+         [line3]  "=&b" (line3),
+         [line3b] "=&b" (line3b),
+         [line4]  "=&b" (line4),
+         [line4b] "=&b" (line4b),
+         [line5]  "=&b" (line5),
+         [dst]    "+b"  (dst)
+      :  [src]    "b"   (src),
+         [width]  "b"   (width),
+         [height] "b"   (height),
+         [pitch]  "b"   (pitch),
+         [ormask] "b"   (ormask)
+   );
+}
+
 // Set MSB to get full RGB555.
 #define RGB15toRGB5A3(col) ((col) | 0x80008000u)
 
@@ -193,7 +271,7 @@ static void *wii_init(const video_info_t *video,
 { \
    const uint32_t *tmp_src = src; \
    uint32_t *tmp_dst = dst; \
-   for (unsigned x = 0; x < width; x += 8, tmp_src += 8, tmp_dst += 32) \
+   for (unsigned x = 0; x < width2; x += 8, tmp_src += 8, tmp_dst += 32) \
    { \
       tmp_dst[ 0 + off] = RGB15toRGB5A3(tmp_src[0]); \
       tmp_dst[ 1 + off] = RGB15toRGB5A3(tmp_src[1]); \
@@ -210,23 +288,30 @@ static void *wii_init(const video_info_t *video,
 static void update_texture(const uint32_t *src,
       unsigned width, unsigned height, unsigned pitch)
 {
-   pitch >>= 2;
-   width &= ~15;
-   height &= ~3;
-   width >>= 1;
-
-   // Texture data is 4x4 tiled @ 15bpp.
-   // Use 32-bit to transfer more data per cycle.
-   uint32_t *dst = g_tex.data;
-   for (unsigned i = 0; i < height; i += 4, dst += 4 * width)
+   if (!(width & 3) && !(height & 3))
    {
-      BLIT_LINE(0)
-      BLIT_LINE(2)
-      BLIT_LINE(4)
-      BLIT_LINE(6)
+      update_texture_asm(src, width, height, pitch);
    }
-   
-   init_texture(width << 1, height);
+   else
+   {
+      pitch >>= 2;
+      width &= ~15;
+      height &= ~3;
+      unsigned width2 = width >> 1;
+
+      // Texture data is 4x4 tiled @ 15bpp.
+      // Use 32-bit to transfer more data per cycle.
+      uint32_t *dst = g_tex.data;
+      for (unsigned i = 0; i < height; i += 4, dst += 4 * width2)
+      {
+         BLIT_LINE(0)
+         BLIT_LINE(2)
+         BLIT_LINE(4)
+         BLIT_LINE(6)
+      }
+   }
+
+   init_texture(width, height);
    DCFlushRange(g_tex.data, sizeof(g_tex.data));
    GX_InvalidateTexAll();
 }
@@ -238,16 +323,19 @@ static bool wii_frame(void *data, const void *frame,
    (void)data;
    (void)msg;
 
+   while (g_vsync && !g_draw_done)
+      LWP_ThreadSleep(g_video_cond);
+
+   g_draw_done = false;
+   g_current_framebuf ^= 1;
    update_texture(frame, width, height, pitch);
    GX_CallDispList(display_list, display_list_size);
    GX_DrawDone();
 
-   GX_CopyDisp(g_framebuf[g_render_framebuf % 3], GX_TRUE);
+   GX_CopyDisp(g_framebuf[g_current_framebuf], GX_TRUE);
    GX_Flush();
-
-   g_render_framebuf++;
-   if (g_vsync && g_render_framebuf >= g_vi_framebuf + 2)
-      VIDEO_WaitVSync();
+   VIDEO_SetNextFramebuffer(g_framebuf[g_current_framebuf]);
+   VIDEO_Flush();
 
    return true;
 }
@@ -255,7 +343,7 @@ static bool wii_frame(void *data, const void *frame,
 static void wii_set_nonblock_state(void *data, bool state)
 {
    (void)data;
-   (void)state;
+   g_vsync = !state;
 }
 
 static bool wii_alive(void *data)
