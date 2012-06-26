@@ -323,6 +323,9 @@ static bool wii_frame(void *data, const void *frame,
    (void)data;
    (void)msg;
 
+   if(!frame)
+      return true;
+
    while (g_vsync && !g_draw_done)
       LWP_ThreadSleep(g_video_cond);
 
