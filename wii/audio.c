@@ -103,6 +103,7 @@ static ssize_t wii_audio_write(void *data, const void *buf_, size_t size)
       if (frames < to_write)
          to_write = frames;
 
+      // FIXME: Nonblocking audio should break out of loop when it has nothing to write.
       while ((wa->dma_write == wa->dma_next || wa->dma_write == wa->dma_busy) && !wa->nonblock)
          LWP_ThreadSleep(wa->cond);
 
@@ -155,6 +156,18 @@ static void wii_audio_free(void *data)
    g_audio = NULL;
 }
 
+static size_t wii_audio_write_avail(void *data)
+{
+   wii_audio_t *wa = data;
+   return ((wa->dma_busy - wa->dma_write + BLOCKS) & (BLOCKS - 1)) * CHUNK_SIZE;
+}
+
+static size_t wii_audio_buffer_size(void *data)
+{
+   (void)data;
+   return BLOCKS * CHUNK_SIZE;
+}
+
 const audio_driver_t audio_wii = {
    .init = wii_audio_init,
    .write = wii_audio_write,
@@ -162,6 +175,8 @@ const audio_driver_t audio_wii = {
    .start = wii_audio_start,
    .set_nonblock_state = wii_audio_set_nonblock_state,
    .free = wii_audio_free,
-   .ident = "wii"
+   .ident = "wii",
+   .write_avail = wii_audio_write_avail,
+   .buffer_size = wii_audio_buffer_size,
 };
 
