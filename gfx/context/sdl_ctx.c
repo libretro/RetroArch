@@ -268,16 +268,19 @@ static void gfx_ctx_get_window_size(unsigned *width, unsigned *height)
 {
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
-   SDL_GetWMInfo(&info);
-   XWindowAttributes target;
 
-   info.info.x11.lock_func();
-   XGetWindowAttributes(info.info.x11.display, info.info.x11.window,
-         &target);
-   info.info.x11.unlock_func();
+   if (SDL_GetWMInfo(&info) > 0)
+   {
+      XWindowAttributes target;
 
-   *width = target.width;
-   *height = target.height;
+      info.info.x11.lock_func();
+      XGetWindowAttributes(info.info.x11.display, info.info.x11.window,
+            &target);
+      info.info.x11.unlock_func();
+
+      *width = target.width;
+      *height = target.height;
+   }
 }
 #endif
 
