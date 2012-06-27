@@ -2,10 +2,13 @@
 *.bmpobj
 *.so
 *.dll
-/ssnes
+*.a
+/retroarch
+/retroarch.*
 /config.h
 /config.mk
-/tools/ssnes-joyconfig
+/tools/retroarch-joyconfig
+/tools/retroarch-joyconfig.*
 *.sdf
 *.opensdf
 *.suo
