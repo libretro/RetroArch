@@ -1,6 +1,7 @@
 CELL_BUILD_TOOLS	= SNC
 CELL_SDK		?= /usr/local/cell
 HAVE_LOGGER		= 0
+CELL_MK_DIR ?= $(CELL_SDK)/samples/mk
 
 include $(CELL_MK_DIR)/sdk.makedef.mk
 
@@ -31,5 +32,7 @@ endif
 PPU_LDLIBS		+= -lm -lnet_stub -lnetctl_stub -lio_stub -lsysmodule_stub -lsysutil_stub -lsysutil_game_stub -lfs_stub -lsysutil_np_stub
 
 PPU_OPTIMIZE_LV		:= -O2
+
+MAKE_FSELF = $(CELL_SDK)/host-win32/bin/make_fself.exe
 
 include $(CELL_MK_DIR)/sdk.target.mk

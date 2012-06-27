@@ -29,7 +29,7 @@
 #define TERM_WIDTH (((RGUI_WIDTH - 30) / (FONT_WIDTH_STRIDE)))
 #define TERM_HEIGHT (((RGUI_HEIGHT - 30) / (FONT_HEIGHT_STRIDE)))
 #define TERM_START_X 15
-#define TERM_START_Y 15
+#define TERM_START_Y 30
 
 struct rgui_handle
 {
@@ -179,6 +179,8 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
 
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          RGUI_WIDTH - 10, 5, 5, RGUI_HEIGHT - 10, green_filler);
+
+   blit_line(rgui, TERM_START_X + 15, 15, "FILE BROWSER\n", true);
 
    unsigned x = TERM_START_X;
    unsigned y = TERM_START_Y;
