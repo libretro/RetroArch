@@ -102,8 +102,6 @@ FONTS
 #include "../../gfx/fonts/ps3_libdbgfont.c"
 #elif defined(_XBOX360)
 #include "../../gfx/fonts/xdk360_fonts.cpp"
-#elif defined(GEKKO)
-#include "../../gfx/fonts/fonts.c"
 #endif
 
 /*============================================================
