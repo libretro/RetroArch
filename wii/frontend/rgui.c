@@ -26,10 +26,10 @@
 #define FONT_WIDTH_STRIDE (FONT_WIDTH + 1)
 #define FONT_HEIGHT_STRIDE (FONT_HEIGHT + 1)
 
-#define TERM_WIDTH (((RGUI_WIDTH - 30) / (FONT_WIDTH_STRIDE)))
-#define TERM_HEIGHT (((RGUI_HEIGHT - 30) / (FONT_HEIGHT_STRIDE)))
 #define TERM_START_X 15
-#define TERM_START_Y 30
+#define TERM_START_Y 27
+#define TERM_WIDTH (((RGUI_WIDTH - TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
+#define TERM_HEIGHT (((RGUI_HEIGHT - TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)))
 
 struct rgui_handle
 {
@@ -202,6 +202,31 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
    }
 }
 
+static void render_messagebox(rgui_handle_t *rgui, const char *message)
+{
+   unsigned width = strlen(message) * FONT_WIDTH_STRIDE - 1 + 6 + 10;
+   unsigned height = FONT_HEIGHT + 6 + 10;
+   unsigned x = (RGUI_WIDTH - width) / 2;
+   unsigned y = (RGUI_HEIGHT - height) / 2;
+   
+   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+         x + 5, y + 5, width - 10, height - 10, gray_filler);
+
+   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+         x, y, width - 5, 5, green_filler);
+
+   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+         x + width - 5, y, 5, height - 5, green_filler);
+
+   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+         x + 5, y + height - 5, width - 5, 5, green_filler);
+
+   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+         x, y + 5, 5, height - 5, green_filler);
+
+   blit_line(rgui, x + 8, y + 8, message, false);
+}
+
 const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
    switch (action)
@@ -256,6 +281,9 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          {
             snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s",
                   strcmp(dir, "/") == 0 ? "" : dir, path);
+            char message[50];
+            snprintf(message, sizeof(message) / sizeof(message[0]), "Loading %.38s...", path);
+            render_messagebox(rgui, message);
             return rgui->path_buf;
          }
          break;

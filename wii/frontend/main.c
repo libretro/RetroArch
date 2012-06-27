@@ -109,12 +109,12 @@ static const char *get_rom_path(rgui_handle_t *rgui)
          action = RGUI_ACTION_DOWN;
 
       const char *ret = rgui_iterate(rgui, action);
-      if (ret)
-         return ret;
-
       video_wii.frame(NULL, menu_framebuf,
             RGUI_WIDTH, RGUI_HEIGHT,
             RGUI_WIDTH * sizeof(uint16_t), NULL);
+
+      if (ret)
+         return ret;
 
       old_input_state = input_state;
       rarch_sleep(10);
