@@ -263,8 +263,8 @@ bool gfx_ctx_key_pressed(int key)
 
 // 1.2 specific workaround for tiling WMs. In 1.3 we call GetSize directly, so we don't need to rely on
 // proper event handling (I hope).
-#if !defined(__APPLE__) && !defined(_WIN32) && !SDL_MODERN && !defined(XENON)
-static void gfx_ctx_get_window_size(unsigned *width, unsigned *height)
+#if !SDL_MODERN && defined(SDL_VIDEO_DRIVER_X11)
+static bool gfx_ctx_get_window_size(unsigned *width, unsigned *height)
 {
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
@@ -280,6 +280,12 @@ static void gfx_ctx_get_window_size(unsigned *width, unsigned *height)
 
       *width = target.width;
       *height = target.height;
+
+      return true;
+   }
+   else
+   {
+      return false;
    }
 }
 #endif
@@ -344,13 +350,14 @@ void gfx_ctx_check_window(bool *quit,
       }
    }
 
-#if !defined(__APPLE__) && !defined(_WIN32) && !defined(XENON)
+#ifdef SDL_VIDEO_DRIVER_X11
    // Hack to workaround limitations in tiling WMs ...
    if (!*resize && !g_fullscreen)
    {
       unsigned new_width, new_height;
-      gfx_ctx_get_window_size(&new_width, &new_height);
-      if ((new_width != *width || new_height != *height) || (frame_count == 10)) // Ugly hack :D
+
+      if (gfx_ctx_get_window_size(&new_width, &new_height) &&
+            ((new_width != *width || new_height != *height) || (frame_count == 10))) // Ugly hack :D
       {
          *resize = true;
          *width = new_width;
