@@ -207,11 +207,15 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_UP:
          if (rgui->directory_ptr > 0)
             rgui->directory_ptr--;
+         else
+            rgui->directory_ptr = rgui_list_size(rgui->folder_buf) - 1;
          break;
 
       case RGUI_ACTION_DOWN:
          if (rgui->directory_ptr + 1 < rgui_list_size(rgui->folder_buf))
             rgui->directory_ptr++;
+         else
+            rgui->directory_ptr = 0;
          break;
 
       case RGUI_ACTION_LEFT:
