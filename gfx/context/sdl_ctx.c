@@ -269,34 +269,27 @@ static bool gfx_ctx_get_window_size(unsigned *width, unsigned *height)
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
 
-   if (SDL_GetWMInfo(&info) > 0)
-   {
-      XWindowAttributes target;
-
-      info.info.x11.lock_func();
-      XGetWindowAttributes(info.info.x11.display, info.info.x11.window,
-            &target);
-      info.info.x11.unlock_func();
-
-      *width = target.width;
-      *height = target.height;
-
-      return true;
-   }
-   else
-   {
+   if (SDL_GetWMInfo(&info) != 1)
       return false;
-   }
+
+   XWindowAttributes target;
+
+   info.info.x11.lock_func();
+   XGetWindowAttributes(info.info.x11.display, info.info.x11.window,
+         &target);
+   info.info.x11.unlock_func();
+
+   *width = target.width;
+   *height = target.height;
+   return true;
 }
 #endif
 
-void gfx_ctx_check_window(bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
-{
-   *quit = false;
-   *resize = false;
-   SDL_Event event;
 #if SDL_MODERN
+static void check_window_modern(bool *quit,
+      bool *resize, unsigned *width, unsigned *height)
+{
+   SDL_Event event;
    while (SDL_PollEvent(&event))
    {
       switch (event.type)
@@ -329,11 +322,16 @@ void gfx_ctx_check_window(bool *quit,
       if (*width != (unsigned)w || *height != (unsigned)h)
       {
          *resize = true;
-         *width = w;
+         *width  = w;
          *height = h;
       }
    }
+}
 #else
+static void check_window_legacy(bool *quit,
+      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+{
+   SDL_Event event;
    while (SDL_PollEvent(&event))
    {
       switch (event.type)
@@ -344,28 +342,46 @@ void gfx_ctx_check_window(bool *quit,
 
          case SDL_VIDEORESIZE:
             *resize = true;
-            *width = event.resize.w;
+            *width  = event.resize.w;
             *height = event.resize.h;
             break;
       }
    }
 
 #ifdef SDL_VIDEO_DRIVER_X11
-   // Hack to workaround limitations in tiling WMs ...
    if (!*resize && !g_fullscreen)
    {
       unsigned new_width, new_height;
 
+      // Hack to workaround bugs in tiling WMs ... Very ugly.
+      // We trigger a resize, to force a resize event to occur.
+      // Some tiling WMs will immediately change window size, and not trigger an event in SDL to notify that the window
+      // size has in fact, changed.
+      // By forcing a dummy resize to original size, we can make sure events are triggered.
       if (gfx_ctx_get_window_size(&new_width, &new_height) &&
-            ((new_width != *width || new_height != *height) || (frame_count == 10))) // Ugly hack :D
+            ((new_width != *width || new_height != *height) || (frame_count == 10))) // 10 here is chosen arbitrarily.
       {
          *resize = true;
-         *width = new_width;
+         *width  = new_width;
          *height = new_height;
          RARCH_LOG("GL: Verified window size: %u x %u\n", *width, *height);
       }
    }
 #endif
+}
+#endif
+
+
+void gfx_ctx_check_window(bool *quit,
+      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+{
+   *quit = false;
+   *resize = false;
+
+#if SDL_MODERN
+   check_window_modern(quit, resize, width, height);
+#else
+   check_window_legacy(quit, resize, width, height, frame_count);
 #endif
 }
 
