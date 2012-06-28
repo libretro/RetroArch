@@ -45,8 +45,6 @@ typedef struct
    unsigned enum_id;			/* enum ID of menu				*/
    unsigned selected;			/* index of selected item			*/
    unsigned page;			/* page						*/
-   unsigned max_pages;			/* max pages					*/
-   unsigned refreshpage;		/* bit whether or not to refresh page		*/
    unsigned first_setting;		/* first setting				*/
    unsigned max_settings;		/* max no of settings in menu			*/
    unsigned category_id;                /* category ID                                  */

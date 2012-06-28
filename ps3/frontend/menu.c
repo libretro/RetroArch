@@ -46,7 +46,7 @@
 
 #define NUM_ENTRY_PER_PAGE 19
 
-menu menuStack[25];
+menu menuStack[10];
 int menuStackindex = 0;
 static bool set_initial_dir_tmpbrowser;
 static bool set_libretro_core_as_launch;
@@ -497,7 +497,6 @@ static void menu_stack_refresh (unsigned stack_idx)
       increment += 0.03f;
       j++;
    }
-   menu_obj->refreshpage = 0;
 }
 
 static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
@@ -511,8 +510,6 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].max_pages = 1;
-         menuStack[stack_idx].refreshpage = 1;
          menuStack[stack_idx].category_id = CATEGORY_INGAME_MENU;
          break;
       case FILE_BROWSER_MENU:
@@ -528,8 +525,6 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].max_pages = 1;
-         menuStack[stack_idx].refreshpage = 1;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(stack_idx);
          break;
@@ -538,8 +533,6 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].enum_id = GENERAL_VIDEO_MENU;
          menuStack[stack_idx].selected = FIRST_VIDEO_SETTING;
          menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].max_pages = MAX_NO_OF_VIDEO_SETTINGS/NUM_ENTRY_PER_PAGE;
-         menuStack[stack_idx].refreshpage = 1;
          menuStack[stack_idx].first_setting = FIRST_VIDEO_SETTING;
          menuStack[stack_idx].max_settings = MAX_NO_OF_VIDEO_SETTINGS;
          menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
@@ -550,8 +543,6 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].enum_id = GENERAL_AUDIO_MENU;
          menuStack[stack_idx].selected = FIRST_AUDIO_SETTING;
          menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].max_pages = MAX_NO_OF_AUDIO_SETTINGS/NUM_ENTRY_PER_PAGE;
-         menuStack[stack_idx].refreshpage = 1;
          menuStack[stack_idx].first_setting = FIRST_AUDIO_SETTING;
          menuStack[stack_idx].max_settings = MAX_NO_OF_AUDIO_SETTINGS;
          menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
@@ -562,8 +553,6 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].enum_id = EMU_GENERAL_MENU;
          menuStack[stack_idx].selected = FIRST_EMU_SETTING;
          menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].max_pages = MAX_NO_OF_EMU_SETTINGS/NUM_ENTRY_PER_PAGE;
-         menuStack[stack_idx].refreshpage = 1;
          menuStack[stack_idx].first_setting = FIRST_EMU_SETTING;
          menuStack[stack_idx].max_settings = MAX_NO_OF_EMU_SETTINGS;
          menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
@@ -574,8 +563,6 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].enum_id = EMU_VIDEO_MENU;
          menuStack[stack_idx].selected = FIRST_EMU_VIDEO_SETTING;
          menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].max_pages = MAX_NO_OF_EMU_VIDEO_SETTINGS/NUM_ENTRY_PER_PAGE;
-         menuStack[stack_idx].refreshpage = 1;
          menuStack[stack_idx].first_setting = FIRST_EMU_VIDEO_SETTING;
          menuStack[stack_idx].max_settings = MAX_NO_OF_EMU_VIDEO_SETTINGS;
          menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
@@ -586,8 +573,6 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].enum_id = EMU_AUDIO_MENU;
          menuStack[stack_idx].selected = FIRST_EMU_AUDIO_SETTING;
          menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].max_pages = MAX_NO_OF_EMU_AUDIO_SETTINGS/NUM_ENTRY_PER_PAGE;
-         menuStack[stack_idx].refreshpage = 1;
          menuStack[stack_idx].first_setting = FIRST_EMU_AUDIO_SETTING;
          menuStack[stack_idx].max_settings = MAX_NO_OF_EMU_AUDIO_SETTINGS;
          menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
@@ -598,8 +583,6 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].enum_id = PATH_MENU;
          menuStack[stack_idx].selected = FIRST_PATH_SETTING;
          menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].max_pages = MAX_NO_OF_PATH_SETTINGS/NUM_ENTRY_PER_PAGE;
-         menuStack[stack_idx].refreshpage = 1;
          menuStack[stack_idx].first_setting = FIRST_PATH_SETTING;
          menuStack[stack_idx].max_settings = MAX_NO_OF_PATH_SETTINGS;
          menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
@@ -610,8 +593,6 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].enum_id = CONTROLS_MENU;
          menuStack[stack_idx].selected = FIRST_CONTROLS_SETTING_PAGE_1;
          menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].max_pages = MAX_NO_OF_CONTROLS_SETTINGS/NUM_ENTRY_PER_PAGE;
-         menuStack[stack_idx].refreshpage = 1;
          menuStack[stack_idx].first_setting = FIRST_CONTROLS_SETTING_PAGE_1;
          menuStack[stack_idx].max_settings = MAX_NO_OF_CONTROLS_SETTINGS;
          menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
