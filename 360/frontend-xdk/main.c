@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
    rarch_main_clear_state();
    config_set_defaults();
 
-   char full_path[1024], libretro_core_installed[1024];
+   char full_path[1024];
    snprintf(full_path, sizeof(full_path), "game:\\CORE.xex");
 
    bool find_libretro_file = rarch_configure_libretro_core(full_path, "game:\\", "game:\\", 
