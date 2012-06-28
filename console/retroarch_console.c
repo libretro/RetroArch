@@ -334,22 +334,6 @@ static const struct platform_bind platform_keys[] = {
    { PAD_BUTTON_START, "(NGC) Start button" },
    { PAD_TRIGGER_L, "(NGC) Left Trigger" },
    { PAD_TRIGGER_R, "(NGC) Right Trigger" },
-   //{ XINPUT_GAMEPAD_LSTICK_LEFT_MASK, "LStick Left" },
-   //{ XINPUT_GAMEPAD_LSTICK_RIGHT_MASK, "LStick Right" },
-   //{ XINPUT_GAMEPAD_LSTICK_UP_MASK, "LStick Up" },
-   //{ XINPUT_GAMEPAD_LSTICK_DOWN_MASK, "LStick Down" },
-   //{ XINPUT_GAMEPAD_DPAD_LEFT | XINPUT_GAMEPAD_LSTICK_LEFT_MASK, "LStick D-Pad Left" },
-   //{ XINPUT_GAMEPAD_DPAD_RIGHT | XINPUT_GAMEPAD_LSTICK_RIGHT_MASK, "LStick D-Pad Right" },
-   //{ XINPUT_GAMEPAD_DPAD_UP | XINPUT_GAMEPAD_LSTICK_UP_MASK, "LStick D-Pad Up" },
-   //{ XINPUT_GAMEPAD_DPAD_DOWN | XINPUT_GAMEPAD_LSTICK_DOWN_MASK, "LStick D-Pad Down" },
-   //{ XINPUT_GAMEPAD_RSTICK_LEFT_MASK, "RStick Left" },
-   //{ XINPUT_GAMEPAD_RSTICK_RIGHT_MASK, "RStick Right" },
-   //{ XINPUT_GAMEPAD_RSTICK_UP_MASK, "RStick Up" },
-   //{ XINPUT_GAMEPAD_RSTICK_DOWN_MASK, "RStick Down" },
-   //{ XINPUT_GAMEPAD_DPAD_LEFT | XINPUT_GAMEPAD_RSTICK_LEFT_MASK, "RStick D-Pad Left" },
-   //{ XINPUT_GAMEPAD_DPAD_RIGHT | XINPUT_GAMEPAD_RSTICK_RIGHT_MASK, "RStick D-Pad Right" },
-   //{ XINPUT_GAMEPAD_DPAD_UP | XINPUT_GAMEPAD_RSTICK_UP_MASK, "RStick D-Pad Up" },
-   //{ XINPUT_GAMEPAD_DPAD_DOWN | XINPUT_GAMEPAD_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
 #ifdef HW_RVL
    { WPAD_CLASSIC_BUTTON_B, "(Wii Classici) B button" },
    { WPAD_CLASSIC_BUTTON_A, "(Wii Classic) A button" },
@@ -634,8 +618,19 @@ void rarch_startup (const char * config_path)
 
       int init_ret = rarch_main_init_wrap(&args);
       (void)init_ret;
-      g_console.emulator_initialized = 1;
-      g_console.initialize_rarch_enable = 0;
+
+      if(init_ret == 0)
+      {
+         g_console.emulator_initialized = 1;
+         g_console.initialize_rarch_enable = 0;
+      }
+      else
+      {
+         //failed to load the ROM for whatever reason
+         g_console.emulator_initialized = 0;
+         g_console.mode_switch = MODE_MENU;
+         rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
+      }
    }
 }
 

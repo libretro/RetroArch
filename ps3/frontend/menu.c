@@ -1736,7 +1736,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
 	    else
                filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
 	 }
-	 else if (path_file_exists(filebrowser_get_current_path(&browser)))
+	 else
 	 {
             char rom_path_temp[PATH_MAX];
 	    struct retro_system_info info;
