@@ -18,9 +18,6 @@
 #define MENU_H_
 
 #define FONT_SIZE (g_console.menu_font_size)
-#define EMU_MENU_TITLE "RETRO |"
-#define VIDEO_MENU_TITLE "RETRO VIDEO |"
-#define AUDIO_MENU_TITLE "RETRO AUDIO |"
 
 #define EMULATOR_NAME "RetroArch"
 #define EMULATOR_VERSION PACKAGE_VERSION
