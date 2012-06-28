@@ -34,7 +34,7 @@
 #include "compat/getopt_rarch.h"
 
 #ifdef RARCH_CONSOLE
-#include "console/console_ext_input.h"
+#include "console/retroarch_console_input.h"
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)

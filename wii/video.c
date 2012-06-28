@@ -16,7 +16,7 @@
 #include "../driver.h"
 #include "../general.h"
 #include "driver.h"
-#include "../console/console_ext.h"
+#include "../console/retroarch_console.h"
 #include <gccore.h>
 #include <ogcsys.h>
 #include <malloc.h>

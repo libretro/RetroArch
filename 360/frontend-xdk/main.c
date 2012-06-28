@@ -24,7 +24,7 @@
 #include "../xdk360_input.h"
 #include "../xdk360_video.h"
 
-#include "../../console/console_ext.h"
+#include "../../console/retroarch_console.h"
 #include "../../conf/config_file.h"
 #include "../../conf/config_file_macros.h"
 #include "../../file.h"

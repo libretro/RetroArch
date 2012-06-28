@@ -20,7 +20,7 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../libretro.h"
-#include "../console/console_ext.h"
+#include "../console/retroarch_console.h"
 #include "xdk360_input.h"
 #include "frontend-xdk/menu.h"
 

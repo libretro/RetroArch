@@ -19,7 +19,7 @@
 #include <tchar.h>
 #include <xtl.h>
 #include "../../console/fileio/file_browser.h"
-#include "../../console/console_ext.h"
+#include "../../console/retroarch_console.h"
 #include "../xdk360_video.h"
 #include "menu.h"
 #include "../../message.h"

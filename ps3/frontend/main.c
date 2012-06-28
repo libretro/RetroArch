@@ -43,7 +43,7 @@
 
 #include "../../gfx/gl_common.h"
 
-#include "../../console/console_ext.h"
+#include "../../console/retroarch_console.h"
 #include "../../conf/config_file.h"
 #include "../../conf/config_file_macros.h"
 #include "../../general.h"

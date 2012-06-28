@@ -26,7 +26,7 @@
 #include "../ps3_input.h"
 #include "../../console/fileio/file_browser.h"
 
-#include "../../console/console_ext.h"
+#include "../../console/retroarch_console.h"
 
 #include "../../gfx/gl_common.h"
 #include "../../gfx/gl_font.h"

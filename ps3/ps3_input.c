@@ -30,7 +30,7 @@
 
 #include "ps3_input.h"
 #include "../driver.h"
-#include "../console/console_ext.h"
+#include "../console/retroarch_console.h"
 #include "../libretro.h"
 #include "../general.h"
 

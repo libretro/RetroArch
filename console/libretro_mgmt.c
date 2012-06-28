@@ -16,7 +16,7 @@
 
 #include <stdint.h>
 
-#include "console_ext.h"
+#include "retroarch_console.h"
 
 const char *rarch_manage_libretro_install(const char *full_path, const char *path, const char *exe_ext)
 {

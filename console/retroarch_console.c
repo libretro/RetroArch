@@ -24,7 +24,7 @@
 #include "../libretro.h"
 #include "../general.h"
 #include "../compat/strl.h"
-#include "console_ext.h"
+#include "retroarch_console.h"
 #include "../file.h"
 
 #ifdef HAVE_CONFIGFILE
@@ -221,7 +221,7 @@ int rarch_extract_zipfile(const char *zip_path)
 	INPUT EXTENSIONS
 ============================================================ */
 
-#include "console_ext_input.h"
+#include "retroarch_console_input.h"
 
 struct platform_bind
 {
