@@ -179,6 +179,7 @@ enum
 };
 
 static uint32_t set_delay = DELAY_NONE;
+uint64_t state, diff_state, button_was_pressed;
 static uint64_t old_state = 0;
 
 static void set_delay_speed(unsigned delaymode)
@@ -211,12 +212,8 @@ static void set_delay_speed(unsigned delaymode)
 
 static void browser_update(filebrowser_t * b, const char *extensions)
 {
-   uint64_t state, diff_state, button_was_pressed;
    gl_t * gl = driver.video_data;
 
-   state = cell_pad_input_poll_device(0);
-   diff_state = old_state ^ state;
-   button_was_pressed = old_state & diff_state;
 
    if(IS_TIMER_EXPIRED(gl))
    {
@@ -294,8 +291,6 @@ static void browser_update(filebrowser_t * b, const char *extensions)
 
       if(action != FILEBROWSER_ACTION_NOOP)
          filebrowser_iterate(b, action);
-
-      old_state = state;
    }
 }
 
@@ -794,12 +789,7 @@ static void apply_scaling (unsigned init_mode)
 static void select_file(uint32_t menu_id)
 {
    char extensions[256], title[256], object[256], comment[256], dir_path[PATH_MAX], path[PATH_MAX];
-   uint64_t state, diff_state, button_was_pressed;
    gl_t * gl = driver.video_data;
-
-   state = cell_pad_input_poll_device(0);
-   diff_state = old_state ^ state;
-   button_was_pressed = old_state & diff_state;
 
    switch(menu_id)
    {
@@ -925,18 +915,12 @@ static void select_file(uint32_t menu_id)
    gl_render_msg_post(gl);
 
    browser_render(&tmpBrowser);
-   old_state = state;
 }
 
 static void select_directory(uint32_t menu_id)
 {
    char path[1024];
-   uint64_t state, diff_state, button_was_pressed;
    gl_t * gl = driver.video_data;
-
-   state = cell_pad_input_poll_device(0);
-   diff_state = old_state ^ state;
-   button_was_pressed = old_state & diff_state;
 
    if(set_initial_dir_tmpbrowser)
    {
@@ -1018,7 +1002,6 @@ static void select_directory(uint32_t menu_id)
    gl_render_msg_post(gl);
 
    browser_render(&tmpBrowser);
-   old_state = state;
 }
 
 static void set_keybind_digital(uint64_t state, uint64_t default_retro_joypad_id)
@@ -1820,12 +1803,8 @@ static void settings_iterate(menu * menu_obj, settings_action_t action)
 
 static void select_setting(menu * menu_obj)
 {
-   uint64_t state, diff_state, button_was_pressed, i;
+   unsigned i;
    gl_t * gl = driver.video_data;
-
-   state = cell_pad_input_poll_device(0);
-   diff_state = old_state ^ state;
-   button_was_pressed = old_state & diff_state;
 
    if(IS_TIMER_EXPIRED(gl))
    {
@@ -1872,7 +1851,6 @@ static void select_setting(menu * menu_obj)
    cellDbgFontPuts(0.09f, 0.91f, FONT_SIZE, YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
    cellDbgFontPuts(0.09f, 0.95f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
    gl_render_msg_post(gl);
-   old_state = state;
 }
 
 typedef enum {
@@ -1921,12 +1899,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
 
 static void select_rom(void)
 {
-   uint64_t state, diff_state, button_was_pressed;
    gl_t * gl = driver.video_data;
-
-   state = cell_pad_input_poll_device(0);
-   diff_state = old_state ^ state;
-   button_was_pressed = old_state & diff_state;
 
    if(IS_TIMER_EXPIRED(gl))
    {
@@ -1968,7 +1941,6 @@ static void select_rom(void)
    gl_render_msg_post(gl);
 
    browser_render(&browser);
-   old_state = state;
 }
 
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
@@ -2442,8 +2414,6 @@ static void ingame_menu(uint32_t menu_id)
    gl_render_msg_post(gl);
    cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, comment);
    gl_render_msg_post(gl);
-
-   old_state = state;
 }
 
 void menu_init (void)
@@ -2459,6 +2429,7 @@ void menu_free (void)
    filebrowser_free(&browser);
    filebrowser_free(&tmpBrowser);
 }
+
 
 void menu_loop(void)
 {
@@ -2488,6 +2459,10 @@ void menu_loop(void)
       glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
       glEnable(GL_BLEND);
       rarch_render_cached_frame();
+
+      state = cell_pad_input_poll_device(0);
+      diff_state = old_state ^ state;
+      button_was_pressed = old_state & diff_state;
 
       switch(menuStack[menuStackindex].enum_id)
       {
@@ -2522,6 +2497,7 @@ void menu_loop(void)
 	    break;
       }
 
+      old_state = state;
 
       if(IS_TIMER_EXPIRED(gl))
       {
