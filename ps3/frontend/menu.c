@@ -64,6 +64,7 @@ static menu menu_filebrowser = {
    0,				/* page*/
    1,				/* maxpages */
    1,				/* refreshpage*/
+   CATEGORY_FILEBROWSER,	/* ID of category */
    NULL				/* items*/
 };
 
@@ -76,6 +77,7 @@ static menu menu_generalvideosettings = {
    1,				/* refreshpage*/
    FIRST_VIDEO_SETTING,		/* first setting*/
    MAX_NO_OF_VIDEO_SETTINGS,	/* max no of path settings*/
+   CATEGORY_SETTINGS,		/* ID of category */
    items_generalsettings		/* items*/
 };
 
@@ -88,6 +90,7 @@ static menu menu_generalaudiosettings = {
    1,				/* refreshpage*/
    FIRST_AUDIO_SETTING,		/* first setting*/
    MAX_NO_OF_AUDIO_SETTINGS,	/* max no of path settings*/
+   CATEGORY_SETTINGS,		/* ID of category */
    items_generalsettings		/* items*/
 };
 
@@ -100,6 +103,7 @@ static menu menu_emu_settings = {
    1,                      				/* refreshpage*/
    FIRST_EMU_SETTING,					/* first setting*/
    MAX_NO_OF_EMU_SETTINGS,				/* max no of path settings*/
+   CATEGORY_SETTINGS,					/* ID of category */
    items_generalsettings				/* items*/
 };
 
@@ -112,6 +116,7 @@ static menu menu_emu_videosettings = {
    1,							/* refreshpage*/
    FIRST_EMU_VIDEO_SETTING,				/* first setting*/
    MAX_NO_OF_EMU_VIDEO_SETTINGS,			/* max no of settings*/
+   CATEGORY_SETTINGS,					/* ID of category */
    items_generalsettings				/* items*/
 };
 
@@ -124,6 +129,7 @@ static menu menu_emu_audiosettings = {
    1,							/* refreshpage*/
    FIRST_EMU_AUDIO_SETTING,				/* first setting*/
    MAX_NO_OF_EMU_AUDIO_SETTINGS,			/* max no of path settings*/
+   CATEGORY_SETTINGS,					/* ID of category */
    items_generalsettings				/* items*/
 };
 
@@ -136,6 +142,7 @@ static menu menu_pathsettings = {
    1,							/* refreshpage*/
    FIRST_PATH_SETTING,					/* first setting*/
    MAX_NO_OF_PATH_SETTINGS,				/* max no of path settings*/
+   CATEGORY_SETTINGS,					/* ID of category */
    items_generalsettings				/* items*/
 };
 
@@ -148,6 +155,7 @@ static menu menu_controlssettings = {
    1,								/* refreshpage */
    FIRST_CONTROLS_SETTING_PAGE_1,				/* first setting */
    MAX_NO_OF_CONTROLS_SETTINGS,					/* max no of path settings*/
+   CATEGORY_SETTINGS,						/* ID of category */
    items_generalsettings					/* items */
 };
 
@@ -169,120 +177,42 @@ static void display_menubar(uint32_t menu_enum)
    gl_render_msg_post(gl);
 }
 
-enum
-{
-   DELAY_NONE,
-   DELAY_SMALLEST,
-   DELAY_SMALL,
-   DELAY_MEDIUM,
-   DELAY_LONG
-};
-
-static uint32_t set_delay = DELAY_NONE;
-uint64_t state, diff_state, button_was_pressed;
+uint64_t state, trigger_state, held_state;
 static uint64_t old_state = 0;
-
-static void set_delay_speed(unsigned delaymode)
-{
-   unsigned speed;
-   gl_t * gl = driver.video_data;
-
-   speed = 0;
-
-   switch(delaymode)
-   {
-      case DELAY_NONE:
-         break;
-      case DELAY_SMALLEST:
-	 speed = 4;
-	 break;
-      case DELAY_SMALL:
-	 speed = 7;
-	 break;
-      case DELAY_MEDIUM:
-	 speed = 14;
-	 break;
-      case DELAY_LONG:
-	 speed = 30;
-	 break;
-   }
-
-   SET_TIMER_EXPIRATION(gl, speed);
-}
+static uint64_t older_state = 0;
 
 static void browser_update(filebrowser_t * b, const char *extensions)
 {
-   gl_t * gl = driver.video_data;
-
-
-   if(IS_TIMER_EXPIRED(gl))
    {
-      set_delay = DELAY_NONE;
       filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
 
-      if (CTRL_LSTICK_DOWN(state))
-      {
+      if (CTRL_LSTICK_DOWN(trigger_state))
          action = FILEBROWSER_ACTION_DOWN;
-	 set_delay = DELAY_SMALLEST;
-      }
-      else if (CTRL_DOWN(state))
-      {
+      else if (CTRL_DOWN(trigger_state))
          action = FILEBROWSER_ACTION_DOWN;
-	 set_delay = DELAY_SMALLEST;
-      }
-      else if (CTRL_LSTICK_UP(state))
-      {
+      else if (CTRL_LSTICK_UP(trigger_state))
          action = FILEBROWSER_ACTION_UP;
-	 set_delay = DELAY_SMALLEST;
-      }
-      else if (CTRL_UP(state))
-      {
+      else if (CTRL_UP(trigger_state))
          action = FILEBROWSER_ACTION_UP;
-	 set_delay = DELAY_SMALLEST;
-      }
-      else if (CTRL_RIGHT(state))
-      {
+      else if (CTRL_RIGHT(trigger_state))
          action = FILEBROWSER_ACTION_RIGHT;
-	 set_delay = DELAY_SMALL;
-      }
-      else if (CTRL_LSTICK_RIGHT(state))
-      {
+      else if (CTRL_LSTICK_RIGHT(trigger_state))
          action = FILEBROWSER_ACTION_RIGHT;
-	 set_delay = DELAY_SMALLEST;
-      }
-      else if (CTRL_LEFT(state))
-      {
+      else if (CTRL_LEFT(trigger_state))
          action = FILEBROWSER_ACTION_LEFT;
-	 set_delay = DELAY_SMALL;
-      }
-      else if (CTRL_LSTICK_LEFT(state))
-      {
+      else if (CTRL_LSTICK_LEFT(trigger_state))
          action = FILEBROWSER_ACTION_LEFT;
-	 set_delay = DELAY_SMALLEST;
-      }
-      else if (CTRL_R1(state))
-      {
+      else if (CTRL_R1(trigger_state))
          action = FILEBROWSER_ACTION_SCROLL_DOWN;
-	 set_delay = DELAY_MEDIUM;
-      }
-      else if (CTRL_R2(state))
-      {
+      else if (CTRL_R2(trigger_state))
          action = FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH;
-	 set_delay = DELAY_SMALL;
-      }
-      else if (CTRL_L2(state))
-      {
+      else if (CTRL_L2(trigger_state))
          action = FILEBROWSER_ACTION_SCROLL_UP_SMOOTH;
-	 set_delay = DELAY_SMALL;
-      }
-      else if (CTRL_L1(state))
-      {
+      else if (CTRL_L1(trigger_state))
          action = FILEBROWSER_ACTION_SCROLL_UP;
-	 set_delay = DELAY_MEDIUM;
-      }
-      else if (CTRL_CIRCLE(button_was_pressed))
+      else if (CTRL_CIRCLE(trigger_state))
          action = FILEBROWSER_ACTION_CANCEL;
-      else if (CTRL_START(button_was_pressed))
+      else if (CTRL_START(trigger_state))
       {
          action = FILEBROWSER_ACTION_RESET;
          filebrowser_set_root(b, "/");
@@ -843,11 +773,10 @@ static void select_file(uint32_t menu_id)
    }
 
 
-   if(IS_TIMER_EXPIRED(gl))
    {
       browser_update(&tmpBrowser, extensions);
 
-      if (CTRL_CROSS(button_was_pressed))
+      if (CTRL_CROSS(trigger_state))
       {
          if(filebrowser_get_current_path_isdir(&tmpBrowser))
 	 {
@@ -904,7 +833,7 @@ static void select_file(uint32_t menu_id)
             menuStackindex--;
 	 }
       }
-      else if (CTRL_TRIANGLE(button_was_pressed))
+      else if (CTRL_TRIANGLE(trigger_state))
          menuStackindex--;
    }
 
@@ -930,11 +859,10 @@ static void select_directory(uint32_t menu_id)
       set_initial_dir_tmpbrowser = false;
    }
 
-   if(IS_TIMER_EXPIRED(gl))
    {
       browser_update(&tmpBrowser, "empty");
 
-      if (CTRL_SQUARE(button_was_pressed))
+      if (CTRL_SQUARE(trigger_state))
       {
          if(filebrowser_get_current_path_isdir(&tmpBrowser))
 	 {
@@ -957,7 +885,7 @@ static void select_directory(uint32_t menu_id)
 	    menuStackindex--;
 	 }
       }
-      else if (CTRL_TRIANGLE(button_was_pressed))
+      else if (CTRL_TRIANGLE(trigger_state))
       {
          strlcpy(path, usrDirPath, sizeof(path));
 	 switch(menu_id)
@@ -977,7 +905,7 @@ static void select_directory(uint32_t menu_id)
 	 }
 	 menuStackindex--;
       }
-      else if (CTRL_CROSS(button_was_pressed))
+      else if (CTRL_CROSS(trigger_state))
       {
          if(filebrowser_get_current_path_isdir(&tmpBrowser))
 	 {
@@ -1004,23 +932,20 @@ static void select_directory(uint32_t menu_id)
    browser_render(&tmpBrowser);
 }
 
-static void set_keybind_digital(uint64_t state, uint64_t default_retro_joypad_id)
+static void set_keybind_digital(uint64_t control_state, uint64_t default_retro_joypad_id)
 {
    unsigned keybind_action = KEYBIND_NOACTION;
 
-   if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state))
+   if(CTRL_LEFT(control_state) | CTRL_LSTICK_LEFT(control_state))
       keybind_action = KEYBIND_DECREMENT;
 
-   if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+   if(CTRL_RIGHT(control_state)  || CTRL_LSTICK_RIGHT(control_state) || CTRL_CROSS(control_state))
       keybind_action = KEYBIND_INCREMENT;
 
-   if(CTRL_START(state))
+   if(CTRL_START(control_state))
       keybind_action = KEYBIND_DEFAULT;
 
    rarch_input_set_keybind(currently_selected_controller_menu, keybind_action, default_retro_joypad_id);
-
-   if(keybind_action != KEYBIND_NOACTION)
-      set_delay = DELAY_MEDIUM;
 }
 
 static void rarch_filename_input_and_save (unsigned filename_type)
@@ -1109,17 +1034,11 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 	switch(switchvalue)
 	{
 		case SETTING_CHANGE_RESOLUTION:
-			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) )
-			{
+			if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) )
                            rarch_settings_change(S_RESOLUTION_NEXT);
-			   set_delay = DELAY_SMALL;
-			}
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) )
-			{
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) )
                            rarch_settings_change(S_RESOLUTION_PREVIOUS);
-			   set_delay = DELAY_SMALL;
-			}
-			if(CTRL_CROSS(state))
+			if(CTRL_CROSS(trigger_state))
 			{
                            if (g_console.supported_resolutions[g_console.current_resolution_index] == CELL_VIDEO_OUT_RESOLUTION_576)
 			   {
@@ -1138,7 +1057,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			break;
 			/*
 			   case SETTING_PAL60_MODE:
-			   if(CTRL_RIGHT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) || CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
+			   if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state) || CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state))
 			   {
 			   if (Graphics->GetCurrentResolution() == CELL_VIDEO_OUT_RESOLUTION_576)
 			   {
@@ -1154,7 +1073,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			   break;
 			 */
 		case SETTING_SHADER_PRESETS:
-			if((CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state)))
+			if((CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state)))
 			{
                            if(g_console.emulator_initialized)
 			   {
@@ -1162,25 +1081,23 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			      menuStack[menuStackindex] = menu_filebrowser;
 			      menuStack[menuStackindex].enum_id = PRESET_CHOICE;
 			      set_initial_dir_tmpbrowser = true;
-			      set_delay = DELAY_LONG;
 			   }
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
                            strlcpy(g_console.cgp_path, "", sizeof(g_console.cgp_path));
 			}
 			break;
 		case SETTING_SHADER:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            menuStackindex++;
 			   menuStack[menuStackindex] = menu_filebrowser;
 			   menuStack[menuStackindex].enum_id = SHADER_CHOICE;
 			   set_shader = 0;
 			   set_initial_dir_tmpbrowser = true;
-			   set_delay = DELAY_LONG;
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
                            gl_cg_load_shader(1, NULL);
 			   strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
@@ -1188,16 +1105,15 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			break;
 		case SETTING_SHADER_2:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            menuStackindex++;
 			   menuStack[menuStackindex] = menu_filebrowser;
 			   menuStack[menuStackindex].enum_id = SHADER_CHOICE;
 			   set_shader = 1;
 			   set_initial_dir_tmpbrowser = true;
-			   set_delay = DELAY_LONG;
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
                            gl_cg_load_shader(2, NULL);
 			   strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
@@ -1205,78 +1121,71 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			break;
 		case SETTING_FONT_SIZE:
-			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state)  || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
 				if(g_console.menu_font_size > 0) 
 				{
 					g_console.menu_font_size -= 0.01f;
-					set_delay = DELAY_MEDIUM;
 				}
 			}
-			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_RIGHT(trigger_state)  || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
 				if((g_console.menu_font_size < 2.0f))
 				{
 					g_console.menu_font_size += 0.01f;
-					set_delay = DELAY_MEDIUM;
 				}
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 				g_console.menu_font_size = 1.0f;
 			break;
 		case SETTING_KEEP_ASPECT_RATIO:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state))
 			{
                            rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
 			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-			   set_delay = DELAY_SMALL;
 			}
-			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
 			{
                            rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
 			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-			   set_delay = DELAY_SMALL;
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
                            rarch_settings_default(S_DEF_ASPECT_RATIO);
 			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                                 rarch_settings_change(S_HW_TEXTURE_FILTER);
 				gfx_ctx_set_filtering(1, g_settings.video.smooth);
-				set_delay = DELAY_LONG;
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
                                 rarch_settings_change(S_DEF_HW_TEXTURE_FILTER);
 				gfx_ctx_set_filtering(1, g_settings.video.smooth);
 			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER_2:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                                 rarch_settings_change(S_HW_TEXTURE_FILTER_2);
 				gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
-				set_delay = DELAY_LONG;
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
                                 rarch_settings_change(S_DEF_HW_TEXTURE_FILTER_2);
 				gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
 			}
 			break;
 		case SETTING_SCALE_ENABLED:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                                 rarch_settings_change(S_SCALE_ENABLED);
 				gfx_ctx_set_fbo(g_console.fbo_enabled);
-				set_delay = DELAY_MEDIUM;
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
                                 rarch_settings_default(S_DEF_SCALE_ENABLED);
 				apply_scaling(FBO_DEINIT);
@@ -1284,7 +1193,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			break;
 		case SETTING_SCALE_FACTOR:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state))
 			{
                            if(g_console.fbo_enabled)
 			   {
@@ -1293,11 +1202,10 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			      {
                                  rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
 				 apply_scaling(FBO_REINIT);
-				 set_delay = DELAY_MEDIUM;
 			      }
 			   }
 			}
-			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            if(g_console.fbo_enabled)
 			   {
@@ -1306,11 +1214,10 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			      {
                                  rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
 				 apply_scaling(FBO_REINIT);
-				 set_delay = DELAY_MEDIUM;
 			      }
 			   }
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
                            rarch_settings_default(S_DEF_SCALE_FACTOR);
 			   apply_scaling(FBO_DEINIT);
@@ -1318,56 +1225,51 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			break;
 		case SETTING_HW_OVERSCAN_AMOUNT:
-			if(CTRL_LEFT(state)  ||  CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state)  ||  CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
 				rarch_settings_change(S_OVERSCAN_DECREMENT);
 				gfx_ctx_set_overscan();
-				set_delay = DELAY_SMALLEST;
 			}
-			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
 				rarch_settings_change(S_OVERSCAN_INCREMENT);
 				gfx_ctx_set_overscan();
-				set_delay = DELAY_SMALLEST;
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
 				rarch_settings_default(S_DEF_OVERSCAN);
 				gfx_ctx_set_overscan();
 			}
 			break;
 		case SETTING_THROTTLE_MODE:
-			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			if(CTRL_LEFT(trigger_state)  || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
 			{
 				rarch_settings_change(S_THROTTLE);
 				gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
-				set_delay = DELAY_MEDIUM;
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
 				rarch_settings_default(S_DEF_THROTTLE);
 				gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
-				set_delay = DELAY_MEDIUM;
 			}
 			break;
 		case SETTING_TRIPLE_BUFFERING:
-			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			if(CTRL_LEFT(trigger_state)  || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
 			{
 				rarch_settings_change(S_TRIPLE_BUFFERING);
 				video_gl.restart();
-				set_delay = DELAY_MEDIUM;
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
-				bool old_buffer_state = g_console.triple_buffering_enable;
+				bool old_buffer_trigger_state = g_console.triple_buffering_enable;
 				rarch_settings_default(S_DEF_TRIPLE_BUFFERING);
 
-				if(!old_buffer_state)
+				if(!old_buffer_trigger_state)
                                    video_gl.restart();
 			}
 			break;
 		case SETTING_ENABLE_SCREENSHOTS:
-			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			if(CTRL_LEFT(trigger_state)  || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
 			{
 #if(CELL_SDK_VERSION > 0x340000)
                            g_console.screenshots_enable = !g_console.screenshots_enable;
@@ -1386,11 +1288,9 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
                               cellScreenShotDisable();
 			      cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
 			   }
-
-			   set_delay = DELAY_MEDIUM;
 #endif
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
 #if(CELL_SDK_VERSION > 0x340000)
                            g_console.screenshots_enable = true;
@@ -1398,7 +1298,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			break;
 		case SETTING_SAVE_SHADER_PRESET:
-			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state)  || CTRL_RIGHT(state) | CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state)  || CTRL_LSTICK_LEFT(trigger_state)  || CTRL_RIGHT(trigger_state) | CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            rarch_filename_input_and_save(SHADER_PRESET_FILE);
 			}
@@ -1408,38 +1308,31 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_DEFAULT_VIDEO_ALL:
 			break;
 		case SETTING_SOUND_MODE:
-			if(CTRL_LEFT(state) ||  CTRL_LSTICK_LEFT(state))
+			if(CTRL_LEFT(trigger_state) ||  CTRL_LSTICK_LEFT(trigger_state))
 			{
                            if(g_console.sound_mode != SOUND_MODE_NORMAL)
-			   {
                               g_console.sound_mode--;
-			      set_delay = DELAY_MEDIUM;
-			   }
 			}
-			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            if(g_console.sound_mode < SOUND_MODE_HEADSET)
-			   {
                               g_console.sound_mode++;
-			      set_delay = DELAY_MEDIUM;
-			   }
 			}
-			if(CTRL_UP(state) || CTRL_LSTICK_UP(state) || CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))
+			if(CTRL_UP(trigger_state) || CTRL_LSTICK_UP(trigger_state) || CTRL_DOWN(trigger_state) || CTRL_LSTICK_DOWN(trigger_state))
 			{
                            if(g_console.sound_mode != SOUND_MODE_RSOUND)
                               rarch_console_rsound_stop();
 			   else
                               rarch_console_rsound_start(g_settings.audio.device);
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
                            g_console.sound_mode = SOUND_MODE_NORMAL;
 			   rarch_console_rsound_stop();
-			   set_delay = DELAY_MEDIUM;
 			}
 			break;
 		case SETTING_RSOUND_SERVER_IP_ADDRESS:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_CROSS(state) | CTRL_LSTICK_RIGHT(state) )
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_CROSS(trigger_state) | CTRL_LSTICK_RIGHT(trigger_state) )
 			{
                            oskutil_write_initial_message(&g_console.oskutil_handle, L"192.168.1.1");
 			   oskutil_write_message(&g_console.oskutil_handle, L"Enter IP address for the RSound Server.");
@@ -1456,75 +1349,68 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			   if(g_console.oskutil_handle.text_can_be_fetched)
                               strlcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(g_settings.audio.device));
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
                            strlcpy(g_settings.audio.device, "0.0.0.0", sizeof(g_settings.audio.device));
 			break;
 		case SETTING_DEFAULT_AUDIO_ALL:
 			break;
 		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            rarch_settings_change(S_SAVESTATE_DECREMENT);
-			   set_delay = DELAY_MEDIUM;
 			}
-			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_RIGHT(trigger_state)  || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            rarch_settings_change(S_SAVESTATE_INCREMENT);
-			   set_delay = DELAY_MEDIUM;
 			}
 
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
                            rarch_settings_default(S_DEF_SAVE_STATE);
 			break;
 		case SETTING_EMU_SHOW_INFO_MSG:
-			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			if(CTRL_LEFT(trigger_state)  || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
 			{
                            g_console.info_msg_enable = !g_console.info_msg_enable;
-			   set_delay = DELAY_MEDIUM;
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
                            g_console.info_msg_enable = true;
-			   set_delay = DELAY_MEDIUM;
 			}
 			break;
 		case SETTING_EMU_REWIND_ENABLED:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            rarch_settings_change(S_REWIND);
 
-			   set_delay = DELAY_MEDIUM;
 			   if(g_console.info_msg_enable)
                               rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
                            g_settings.rewind_enable = false;
 			break;
 		case SETTING_RARCH_DEFAULT_EMU:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            menuStackindex++;
 			   menuStack[menuStackindex] = menu_filebrowser;
 			   menuStack[menuStackindex].enum_id = LIBRETRO_CHOICE;
 			   set_initial_dir_tmpbrowser = true;
 			   set_libretro_core_as_launch = false;
-			   set_delay = DELAY_LONG;
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
 			}
 			break;
 		case SETTING_EMU_AUDIO_MUTE:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            g_extern.audio_data.mute = !g_extern.audio_data.mute;
-			   set_delay = DELAY_MEDIUM;
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
                            g_extern.audio_data.mute = false;
 			break;
 		case SETTING_ENABLE_CUSTOM_BGM:
-			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			if(CTRL_LEFT(trigger_state)  || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
 			{
 #if(CELL_SDK_VERSION > 0x340000)
                            g_console.custom_bgm_enable = !g_console.custom_bgm_enable;
@@ -1533,10 +1419,9 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			   else
                               cellSysutilDisableBgmPlayback();
 
-			   set_delay = DELAY_MEDIUM;
 #endif
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
 #if(CELL_SDK_VERSION > 0x340000)
 				g_console.custom_bgm_enable = true;
@@ -1548,86 +1433,80 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_EMU_AUDIO_DEFAULT_ALL:
 			break;
 		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            menuStackindex++;
 			   menuStack[menuStackindex] = menu_filebrowser;
 			   menuStack[menuStackindex].enum_id = PATH_DEFAULT_ROM_DIR_CHOICE;
 			   set_initial_dir_tmpbrowser = true;
-			   set_delay = DELAY_LONG;
 			}
 
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 				strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
 			break;
 		case SETTING_PATH_SAVESTATES_DIRECTORY:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            menuStackindex++;
 			   menuStack[menuStackindex] = menu_filebrowser;
 			   menuStack[menuStackindex].enum_id = PATH_SAVESTATES_DIR_CHOICE;
 			   set_initial_dir_tmpbrowser = true;
-			   set_delay = DELAY_LONG;
 			}
 
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
                            strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
 
 			break;
 		case SETTING_PATH_SRAM_DIRECTORY:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) ||  CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            menuStackindex++;
 			   menuStack[menuStackindex] = menu_filebrowser;
 			   menuStack[menuStackindex].enum_id = PATH_SRAM_DIR_CHOICE;
 			   set_initial_dir_tmpbrowser = true;
-			   set_delay = DELAY_LONG;
 			}
 
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
                            strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
 			break;
 		case SETTING_PATH_CHEATS:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) ||  CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            menuStackindex++;
 			   menuStack[menuStackindex] = menu_filebrowser;
 			   menuStack[menuStackindex].enum_id = PATH_CHEATS_DIR_CHOICE;
 			   set_initial_dir_tmpbrowser = true;
-			   set_delay = DELAY_LONG;
 			}
 
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
                            strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
 			break;
 		case SETTING_ENABLE_SRAM_PATH:
-			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			if(CTRL_LEFT(trigger_state)  || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
 			{
                            g_console.default_sram_dir_enable = !g_console.default_sram_dir_enable;
 			   menu_reinit_settings();
-			   set_delay = DELAY_MEDIUM;
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
                            g_console.default_sram_dir_enable = true;
 			   menu_reinit_settings();
 			}
 			break;
 		case SETTING_ENABLE_STATE_PATH:
-			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			if(CTRL_LEFT(trigger_state)  || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
 			{
                            g_console.default_savestate_dir_enable = !g_console.default_savestate_dir_enable;
 			   menu_reinit_settings();
-			   set_delay = DELAY_MEDIUM;
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
 			{
                            g_console.default_savestate_dir_enable = true;
 			   menu_reinit_settings();
 			}
 			break;
 		case SETTING_PATH_DEFAULT_ALL:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) ||  CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state) || CTRL_START(trigger_state))
 			{
                            strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
 			   strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
@@ -1638,88 +1517,85 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			break;
 		case SETTING_CONTROLS_SCHEME:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) | CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state) | CTRL_RIGHT(trigger_state)  || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            menuStackindex++;
 			   menuStack[menuStackindex] = menu_filebrowser;
 			   menuStack[menuStackindex].enum_id = INPUT_PRESET_CHOICE;
 			   set_initial_dir_tmpbrowser = true;
-			   set_delay = DELAY_LONG;
 			}
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
                            menu_reinit_settings();
 			break;
 		case SETTING_CONTROLS_NUMBER:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            if(currently_selected_controller_menu != 0)
                               currently_selected_controller_menu--;
 			   menu_reinit_settings();
-			   set_delay = DELAY_MEDIUM;
 			}
 
-			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			if(CTRL_RIGHT(trigger_state)  || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            if(currently_selected_controller_menu < 6)
                               currently_selected_controller_menu++;
 			   menu_reinit_settings();
-			   set_delay = DELAY_MEDIUM;
 			}
 
-			if(CTRL_START(state))
+			if(CTRL_START(trigger_state))
                            currently_selected_controller_menu = 0;
 			break; 
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_UP);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_UP);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_DOWN);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_DOWN);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_LEFT);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_LEFT);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_RIGHT);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_A);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_A);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_B);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_B);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_X);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_X);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_Y);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_Y);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_SELECT);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_SELECT);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_START);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_START);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_L);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_L);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_R);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_R);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_L2);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_L2);
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_R2);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_R2);
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_L3);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_L3);
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
-			set_keybind_digital(state, RETRO_DEVICE_ID_JOYPAD_R3);
+			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_R3);
 			break;
 		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) ||  CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state) || CTRL_START(trigger_state))
                            rarch_filename_input_and_save(INPUT_PRESET_FILE);
 			break;
 		case SETTING_CONTROLS_DEFAULT_ALL:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) ||  CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state) || CTRL_START(trigger_state))
 			{
                            rarch_input_set_default_keybinds(currently_selected_controller_menu);
 			   menu_reinit_settings();
@@ -1802,26 +1678,18 @@ static void select_setting(menu * menu_obj)
    unsigned i;
    gl_t * gl = driver.video_data;
 
-   if(IS_TIMER_EXPIRED(gl))
    {
       settings_action_t action = SETTINGS_ACTION_NOOP;
-      set_delay = DELAY_NONE;
 
       /* back to ROM menu if CIRCLE is pressed */
-      if (CTRL_L1(button_was_pressed) || CTRL_CIRCLE(button_was_pressed))
+      if (CTRL_L1(trigger_state) || CTRL_CIRCLE(trigger_state))
          action = SETTINGS_ACTION_TAB_PREVIOUS;
-      else if (CTRL_R1(button_was_pressed))
+      else if (CTRL_R1(trigger_state))
          action = SETTINGS_ACTION_TAB_NEXT;
-      else if (CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))
-      {
+      else if (CTRL_DOWN(trigger_state) || CTRL_LSTICK_DOWN(trigger_state))
          action = SETTINGS_ACTION_DOWN;
-	 set_delay = DELAY_SMALL;
-      }
-      else if (CTRL_UP(state) || CTRL_LSTICK_UP(state))
-      {
+      else if (CTRL_UP(trigger_state) || CTRL_LSTICK_UP(trigger_state))
          action = SETTINGS_ACTION_UP;
-	 set_delay = DELAY_SMALL;
-      }
 
       if(action != SETTINGS_ACTION_NOOP)
          settings_iterate(menu_obj, action);
@@ -1897,14 +1765,13 @@ static void select_rom(void)
 {
    gl_t * gl = driver.video_data;
 
-   if(IS_TIMER_EXPIRED(gl))
    {
       browser_update(&browser, rarch_console_get_rom_ext());
       menu_romselect_action_t action = MENU_ROMSELECT_ACTION_NOOP;
 
-      if (CTRL_SELECT(button_was_pressed))
+      if (CTRL_SELECT(trigger_state))
          action = MENU_ROMSELECT_ACTION_GOTO_SETTINGS;
-      else if (CTRL_CROSS(button_was_pressed))
+      else if (CTRL_CROSS(trigger_state))
          action = MENU_ROMSELECT_ACTION_OK;
 
       if (action != MENU_ROMSELECT_ACTION_NOOP)
@@ -1973,20 +1840,17 @@ static void ingame_menu_resize(void)
    else if (CTRL_RSTICK_DOWN(state) || CTRL_R2(state))
 	   g_console.viewports.custom_vp.height -= 1;
 
-   if (CTRL_TRIANGLE(state))
+   if (CTRL_TRIANGLE(trigger_state))
    {
 	   g_console.viewports.custom_vp.x = 0;
 	   g_console.viewports.custom_vp.y = 0;
 	   g_console.viewports.custom_vp.width = gl->win_width;
 	   g_console.viewports.custom_vp.height = gl->win_height;
    }
-   if(CTRL_CIRCLE(state))
-   {
-	   set_delay = DELAY_MEDIUM;
+   if(CTRL_CIRCLE(trigger_state))
 	   menuStackindex--;
-   }
 
-   if(CTRL_SQUARE(~state))
+   if(CTRL_SQUARE(~trigger_state))
    {
 	   struct retro_system_info info;
 	   retro_get_system_info(&info);
@@ -2060,9 +1924,8 @@ static void ingame_menu_screenshot(void)
 
    if(g_console.ingame_menu_enable)
    {
-      if(CTRL_CIRCLE(state))
+      if(CTRL_CIRCLE(trigger_state))
       {
-         set_delay = DELAY_MEDIUM;
 	 menuStackindex--;
 	 gl->menu_render = true;
       }
@@ -2085,67 +1948,50 @@ static void ingame_menu(uint32_t menu_id)
 
    menuitem_colors[g_console.ingame_menu_item] = RED;
 
-   if(IS_TIMER_EXPIRED(gl))
    {
-      set_delay = DELAY_NONE;
-
-      if(CTRL_CIRCLE(state))
+      if(CTRL_CIRCLE(trigger_state))
          rarch_settings_change(S_RETURN_TO_GAME);
 
       switch(g_console.ingame_menu_item)
       {
          case MENU_ITEM_LOAD_STATE:
-            if(CTRL_CROSS(state))
+            if(CTRL_CROSS(trigger_state))
 	    {
                rarch_load_state();
                rarch_settings_change(S_RETURN_TO_GAME);
 	    }
-	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
-	    {
+	    if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state))
                rarch_state_slot_decrease();
-	       set_delay = DELAY_MEDIUM;
-	    }
-	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
-	    {
+	    if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
                rarch_state_slot_increase();
-	       set_delay = DELAY_MEDIUM;
-	    }
 
-	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the state from the currently selected save state slot.", sizeof(comment));
+	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the trigger_state from the currently selected save state slot.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_SAVE_STATE:
-	    if(CTRL_CROSS(state))
+	    if(CTRL_CROSS(trigger_state))
 	    {
                rarch_save_state();
                rarch_settings_change(S_RETURN_TO_GAME);
 	    }
-	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
-	    {
+	    if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state))
                rarch_state_slot_decrease();
-	       set_delay = DELAY_MEDIUM;
-	    }
-	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
-	    {
+	    if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
                rarch_state_slot_increase();
-	       set_delay = DELAY_MEDIUM;
-	    }
 
-	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.", sizeof(comment));
+	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the trigger_state to the currently selected save state slot.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
-	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
+	    if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state))
 	    {
                rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
 	       gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-	       set_delay = DELAY_MEDIUM;
 	    }
-	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+	    if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
 	    {
                rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
 	       gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-	       set_delay = DELAY_MEDIUM;
 	    }
-	    if(CTRL_START(state))
+	    if(CTRL_START(trigger_state))
 	    {
                rarch_settings_default(S_DEF_ASPECT_RATIO);
 	       gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
@@ -2153,19 +1999,17 @@ static void ingame_menu(uint32_t menu_id)
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_OVERSCAN_AMOUNT:
-	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) || CTRL_LSTICK_LEFT(state))
+	    if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state) || CTRL_LSTICK_LEFT(trigger_state))
 	    {
                rarch_settings_change(S_OVERSCAN_DECREMENT);
 	       gfx_ctx_set_overscan();
-	       set_delay = DELAY_SMALLEST;
 	    }
-	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_LSTICK_RIGHT(state))
+	    if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
 	    {
                rarch_settings_change(S_OVERSCAN_INCREMENT);
 	       gfx_ctx_set_overscan();
-	       set_delay = DELAY_SMALLEST;
 	    }
-	    if(CTRL_START(state))
+	    if(CTRL_START(trigger_state))
 	    {
                rarch_settings_default(S_DEF_OVERSCAN);
 	       gfx_ctx_set_overscan();
@@ -2173,21 +2017,19 @@ static void ingame_menu(uint32_t menu_id)
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_ORIENTATION:
-	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) || CTRL_LSTICK_LEFT(state))
+	    if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state) || CTRL_LSTICK_LEFT(trigger_state))
 	    {
                rarch_settings_change(S_ROTATION_DECREMENT);
 	       video_gl.set_rotation(NULL, g_console.screen_orientation);
-	       set_delay = DELAY_MEDIUM;
 	    }
 
-	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_LSTICK_RIGHT(state))
+	    if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
 	    {
                rarch_settings_change(S_ROTATION_INCREMENT);
 	       video_gl.set_rotation(NULL, g_console.screen_orientation);
-	       set_delay = DELAY_MEDIUM;
 	    }
 
-	    if(CTRL_START(state))
+	    if(CTRL_START(trigger_state))
 	    {
                rarch_settings_default(S_DEF_ROTATION);
 	       video_gl.set_rotation(NULL, g_console.screen_orientation);
@@ -2195,7 +2037,7 @@ static void ingame_menu(uint32_t menu_id)
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_SCALE_FACTOR:
-	    if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
+	    if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state))
 	    {
                if(g_console.fbo_enabled)
 	       {
@@ -2203,11 +2045,10 @@ static void ingame_menu(uint32_t menu_id)
 		  {
                      rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
 		     apply_scaling(FBO_REINIT);
-		     set_delay = DELAY_MEDIUM;
 		  }
 	       }
 	    }
-	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+	    if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 	    {
                if(g_console.fbo_enabled)
 	       {
@@ -2215,11 +2056,10 @@ static void ingame_menu(uint32_t menu_id)
 		  {
                      rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
 		     apply_scaling(FBO_REINIT);
-		     set_delay = DELAY_MEDIUM;
 		  }
 	       }
 	    }
-	    if(CTRL_START(state))
+	    if(CTRL_START(trigger_state))
 	    {
                rarch_settings_default(S_DEF_SCALE_FACTOR);
 	       apply_scaling(FBO_REINIT);
@@ -2227,7 +2067,7 @@ static void ingame_menu(uint32_t menu_id)
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Scaling] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
-	    if(CTRL_CROSS(state) || CTRL_R2(state) || CTRL_L2(state))
+	    if(CTRL_CROSS(trigger_state) || CTRL_R2(trigger_state) || CTRL_L2(trigger_state))
 	    {
                rarch_settings_change(S_FRAME_ADVANCE);
 	       g_console.ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
@@ -2235,7 +2075,7 @@ static void ingame_menu(uint32_t menu_id)
 	    strlcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame. Pressing the button\nrapidly will advance the frame more slowly.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
-	    if(CTRL_CROSS(state))
+	    if(CTRL_CROSS(trigger_state))
             {
 	       menuStackindex++;
 	       menuStack[menuStackindex] = menu_filebrowser;
@@ -2244,7 +2084,7 @@ static void ingame_menu(uint32_t menu_id)
 	    strlcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
-	    if(CTRL_CROSS(state))
+	    if(CTRL_CROSS(trigger_state))
 	    {
 	       menuStackindex++;
 	       menuStack[menuStackindex] = menu_filebrowser;
@@ -2253,13 +2093,13 @@ static void ingame_menu(uint32_t menu_id)
 	    strlcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
-	    if(CTRL_CROSS(state))
+	    if(CTRL_CROSS(trigger_state))
                rarch_settings_change(S_RETURN_TO_GAME);
 
 	    strlcpy(comment, "Press 'CROSS' to return back to the game.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RESET:
-	    if(CTRL_CROSS(state))
+	    if(CTRL_CROSS(trigger_state))
 	    {
                rarch_settings_change(S_RETURN_TO_GAME);
 	       rarch_game_reset();
@@ -2267,28 +2107,26 @@ static void ingame_menu(uint32_t menu_id)
 	    strlcpy(comment, "Press 'CROSS' to reset the game.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RETURN_TO_MENU:
-	    if(CTRL_CROSS(state))
+	    if(CTRL_CROSS(trigger_state))
 	    {
                rarch_settings_change(S_RETURN_TO_MENU);
-	       set_delay = DELAY_MEDIUM;
 	    }
 	    strlcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_CHANGE_LIBRETRO:
-	    if(CTRL_CROSS(state))
+	    if(CTRL_CROSS(trigger_state))
 	    {
                menuStackindex++;
 	       menuStack[menuStackindex] = menu_filebrowser;
 	       menuStack[menuStackindex].enum_id = LIBRETRO_CHOICE;
 	       set_libretro_core_as_launch = true;
 	       set_initial_dir_tmpbrowser = true;
-	       set_delay = DELAY_LONG;
 	    }
 	    strlcpy(comment, "Press 'CROSS' to choose a different emulator core.", sizeof(comment));
 	    break;
 #ifdef HAVE_MULTIMAN
 	 case MENU_ITEM_RETURN_TO_MULTIMAN:
-	    if(CTRL_CROSS(state) && path_file_exists(MULTIMAN_EXECUTABLE))
+	    if(CTRL_CROSS(trigger_state) && path_file_exists(MULTIMAN_EXECUTABLE))
 	    {
                strlcpy(g_console.launch_app_on_exit, MULTIMAN_EXECUTABLE,
                   sizeof(g_console.launch_app_on_exit));
@@ -2299,32 +2137,26 @@ static void ingame_menu(uint32_t menu_id)
 	    break;
 #endif
 	 case MENU_ITEM_RETURN_TO_DASHBOARD:
-	    if(CTRL_CROSS(state))
+	    if(CTRL_CROSS(trigger_state))
                rarch_settings_change(S_RETURN_TO_DASHBOARD);
 
 	    strlcpy(comment, "Press 'CROSS' to quit the emulator and return to the XMB.", sizeof(comment));
 	    break;
       }
 
-      if(CTRL_UP(state) || CTRL_LSTICK_UP(state))
+      if(CTRL_UP(trigger_state) || CTRL_LSTICK_UP(trigger_state))
       {
          if(g_console.ingame_menu_item > 0)
-	 {
             g_console.ingame_menu_item--;
-	    set_delay = DELAY_SMALL;
-	 }
       }
 
-      if(CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))
+      if(CTRL_DOWN(trigger_state) || CTRL_LSTICK_DOWN(trigger_state))
       {
          if(g_console.ingame_menu_item < (MENU_ITEM_LAST-1))
-	 {
             g_console.ingame_menu_item++;
-	    set_delay = DELAY_SMALL;
-	 }
       }
 
-      if(CTRL_L3(state) && CTRL_R3(state))
+      if(CTRL_L3(trigger_state) && CTRL_R3(trigger_state))
          rarch_settings_change(S_RETURN_TO_GAME);
    }
 
@@ -2403,6 +2235,21 @@ void menu_free (void)
    filebrowser_free(&tmpBrowser);
 }
 
+static bool check_analog(uint64_t state_tmp)
+{
+  if(CTRL_LSTICK_UP(state_tmp) || CTRL_LSTICK_DOWN(state_tmp) || CTRL_LSTICK_RIGHT(state_tmp) || CTRL_LSTICK_LEFT(state_tmp))
+     return true;
+  else
+     return false;
+}
+
+static bool check_shoulder_buttons(uint64_t state_tmp)
+{
+  if(CTRL_L1(state_tmp) || CTRL_L2(state_tmp) || CTRL_R1(state_tmp) || CTRL_R2(state_tmp))
+     return true;
+  else
+     return false;
+}
 
 void menu_loop(void)
 {
@@ -2426,18 +2273,40 @@ void menu_loop(void)
 
    do
    {
+      static bool first_held = false;
       unsigned menu_id = menuStack[menuStackindex].enum_id;
+      unsigned menu_category_id = menuStack[menuStackindex].category_id;
 
       state = cell_pad_input_poll_device(0);
-      diff_state = old_state ^ state;
-      button_was_pressed = old_state & diff_state;
+      trigger_state = state & ~old_state;
+      held_state = state & older_state;
+      held_state = held_state & old_state;
+
+      if(held_state)
+      {
+         bool analog_sticks_pressed = check_analog(held_state);
+         bool shoulder_buttons_pressed = check_shoulder_buttons(held_state) && menu_category_id != CATEGORY_SETTINGS;
+         bool do_held = analog_sticks_pressed || shoulder_buttons_pressed;
+
+         if(do_held)
+         {
+            if(!first_held)
+            {
+               first_held = true;
+	       SET_TIMER_EXPIRATION(gl, 7);
+            }
+            if(IS_TIMER_EXPIRED(gl))
+            {
+               first_held = false;
+               trigger_state = held_state;
+            }
+         }
+      }
 
       gfx_ctx_clear();
 
       if(menu_id == INGAME_MENU_RESIZE && CTRL_SQUARE(state) || menu_id == INGAME_MENU_SCREENSHOT)
-      {
 	 gl->menu_render = false;
-      }
       else
       {
          gfx_ctx_set_blend(true);
@@ -2485,6 +2354,7 @@ void menu_loop(void)
             break;
       }
 
+      older_state = old_state;
       old_state = state;
 
       if(IS_TIMER_EXPIRED(gl))
@@ -2506,10 +2376,6 @@ void menu_loop(void)
 	       g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
 	    }
 	 }
-
-	 //set new timer delay after previous one has expired
-	 if(set_delay != DELAY_NONE)
-            set_delay_speed(set_delay);
       }
 
       // set a timer delay so that we don't instantly switch back to the menu when
@@ -2523,10 +2389,6 @@ void menu_loop(void)
 
       if (message && g_console.info_msg_enable)
       {
-         if(IS_TIMER_EXPIRED(gl))
-         {
-            SET_TIMER_EXPIRATION(gl, 30);
-         }
          cellDbgFontPrintf(g_settings.video.msg_pos_x, 0.75f, 1.05f, WHITE, message);
          gl_render_msg_post(gl);
       }

@@ -52,9 +52,16 @@ typedef struct
    uint32_t refreshpage;		/* bit whether or not to refresh page		*/
    uint32_t first_setting;		/* first setting				*/
    uint32_t max_settings;		/* max no of settings in menu			*/
+   uint32_t category_id;                /* category ID                                  */
    item *items;				/* menu items					*/
 } menu;
 
+enum
+{
+   CATEGORY_FILEBROWSER,
+   CATEGORY_SETTINGS,
+   CATEGORY_INGAME_MENU
+};
 
 enum
 {
