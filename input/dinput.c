@@ -190,47 +190,60 @@ static bool dinput_joykey_pressed(sdl_dinput_t *di, unsigned port_num, uint16_t 
    return false;
 }
 
-static bool dinput_joyaxis_pressed(sdl_dinput_t *di, unsigned port_num, uint32_t joyaxis)
+int16_t sdl_dinput_axis(sdl_dinput_t *di, unsigned port_num, const struct snes_keybind *key)
 {
+   uint32_t joyaxis = key->joyaxis;
+
    if (joyaxis == AXIS_NONE)
+      return 0;
+
+   int val = 0;
+
+   int axis    = -1;
+   bool is_neg = false;
+   bool is_pos = false;
+
+   if (AXIS_NEG_GET(joyaxis) <= 5)
+   {
+      axis = AXIS_NEG_GET(joyaxis);
+      is_neg = true;
+   }
+   else if (AXIS_POS_GET(joyaxis) <= 5)
+   {
+      axis = AXIS_POS_GET(joyaxis);
+      is_pos = true;
+   }
+
+   switch (axis)
+   {
+      case 0: val = di->joy_state[port_num].lX; break;
+      case 1: val = di->joy_state[port_num].lY; break;
+      case 2: val = di->joy_state[port_num].lZ; break;
+      case 3: val = di->joy_state[port_num].lRx; break;
+      case 4: val = di->joy_state[port_num].lRy; break;
+      case 5: val = di->joy_state[port_num].lRz; break;
+   }
+
+   if (val < -0x7fff) // So abs() of -0x8000 can't mess us up.
+      val = -0x7fff;
+
+   if (is_neg && val > 0)
+      val = 0;
+   else if (is_pos && val < 0)
+      val = 0;
+
+   return val;
+}
+
+static bool dinput_joyaxis_pressed(sdl_dinput_t *di, unsigned port_num, const struct snes_keybind *key)
+{
+   if (key->joyaxis == AXIS_NONE)
       return false;
 
-   int min = -32678 * g_settings.input.axis_threshold;
-   int max = 32677 * g_settings.input.axis_threshold;
+   int min = 0x7fff * g_settings.input.axis_threshold;
 
-   switch (AXIS_NEG_GET(joyaxis))
-   {
-      case 0:
-         return di->joy_state[port_num].lX <= min;
-      case 1:
-         return di->joy_state[port_num].lY <= min;
-      case 2:
-         return di->joy_state[port_num].lZ <= min;
-      case 3:
-         return di->joy_state[port_num].lRx <= min;
-      case 4:
-         return di->joy_state[port_num].lRy <= min;
-      case 5:
-         return di->joy_state[port_num].lRz <= min;
-   }
-
-   switch (AXIS_POS_GET(joyaxis))
-   {
-      case 0:
-         return di->joy_state[port_num].lX >= max;
-      case 1:
-         return di->joy_state[port_num].lY >= max;
-      case 2:
-         return di->joy_state[port_num].lZ >= max;
-      case 3:
-         return di->joy_state[port_num].lRx >= max;
-      case 4:
-         return di->joy_state[port_num].lRy >= max;
-      case 5:
-         return di->joy_state[port_num].lRz >= max;
-   }
-
-   return false;
+   int16_t val = sdl_dinput_axis(di, port_num, key);
+   return abs(val) > min;
 }
 
 bool sdl_dinput_pressed(sdl_dinput_t *di, unsigned port_num, const struct snes_keybind *key)
@@ -239,7 +252,7 @@ bool sdl_dinput_pressed(sdl_dinput_t *di, unsigned port_num, const struct snes_k
       return false;
    if (dinput_joykey_pressed(di, port_num, key->joykey))
       return true;
-   if (dinput_joyaxis_pressed(di, port_num, key->joyaxis))
+   if (dinput_joyaxis_pressed(di, port_num, key))
       return true;
 
    return false;

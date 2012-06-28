@@ -527,44 +527,35 @@ struct bind_map
 
 #define DECLARE_BIND(x, bind) { true, "input_" #x, "input_" #x "_btn", "input_" #x "_axis", bind }
 #define DECL_PLAYER(P) \
-   { \
-      DECLARE_BIND(player##P##_b,             RETRO_DEVICE_ID_JOYPAD_B), \
-      DECLARE_BIND(player##P##_y,             RETRO_DEVICE_ID_JOYPAD_Y), \
-      DECLARE_BIND(player##P##_select,        RETRO_DEVICE_ID_JOYPAD_SELECT), \
-      DECLARE_BIND(player##P##_start,         RETRO_DEVICE_ID_JOYPAD_START), \
-      DECLARE_BIND(player##P##_up,            RETRO_DEVICE_ID_JOYPAD_UP), \
-      DECLARE_BIND(player##P##_down,          RETRO_DEVICE_ID_JOYPAD_DOWN), \
-      DECLARE_BIND(player##P##_left,          RETRO_DEVICE_ID_JOYPAD_LEFT), \
-      DECLARE_BIND(player##P##_right,         RETRO_DEVICE_ID_JOYPAD_RIGHT), \
-      DECLARE_BIND(player##P##_a,             RETRO_DEVICE_ID_JOYPAD_A), \
-      DECLARE_BIND(player##P##_x,             RETRO_DEVICE_ID_JOYPAD_X), \
-      DECLARE_BIND(player##P##_l,             RETRO_DEVICE_ID_JOYPAD_L), \
-      DECLARE_BIND(player##P##_r,             RETRO_DEVICE_ID_JOYPAD_R), \
-      DECLARE_BIND(player##P##_l2,            RETRO_DEVICE_ID_JOYPAD_L2), \
-      DECLARE_BIND(player##P##_r2,            RETRO_DEVICE_ID_JOYPAD_R2), \
-      DECLARE_BIND(player##P##_l3,            RETRO_DEVICE_ID_JOYPAD_L3), \
-      DECLARE_BIND(player##P##_r3,            RETRO_DEVICE_ID_JOYPAD_R3), \
-   }
+      DECLARE_BIND(player##P##_b,         RETRO_DEVICE_ID_JOYPAD_B), \
+      DECLARE_BIND(player##P##_y,         RETRO_DEVICE_ID_JOYPAD_Y), \
+      DECLARE_BIND(player##P##_select,    RETRO_DEVICE_ID_JOYPAD_SELECT), \
+      DECLARE_BIND(player##P##_start,     RETRO_DEVICE_ID_JOYPAD_START), \
+      DECLARE_BIND(player##P##_up,        RETRO_DEVICE_ID_JOYPAD_UP), \
+      DECLARE_BIND(player##P##_down,      RETRO_DEVICE_ID_JOYPAD_DOWN), \
+      DECLARE_BIND(player##P##_left,      RETRO_DEVICE_ID_JOYPAD_LEFT), \
+      DECLARE_BIND(player##P##_right,     RETRO_DEVICE_ID_JOYPAD_RIGHT), \
+      DECLARE_BIND(player##P##_a,         RETRO_DEVICE_ID_JOYPAD_A), \
+      DECLARE_BIND(player##P##_x,         RETRO_DEVICE_ID_JOYPAD_X), \
+      DECLARE_BIND(player##P##_l,         RETRO_DEVICE_ID_JOYPAD_L), \
+      DECLARE_BIND(player##P##_r,         RETRO_DEVICE_ID_JOYPAD_R), \
+      DECLARE_BIND(player##P##_l2,        RETRO_DEVICE_ID_JOYPAD_L2), \
+      DECLARE_BIND(player##P##_r2,        RETRO_DEVICE_ID_JOYPAD_R2), \
+      DECLARE_BIND(player##P##_l3,        RETRO_DEVICE_ID_JOYPAD_L3), \
+      DECLARE_BIND(player##P##_r3,        RETRO_DEVICE_ID_JOYPAD_R3), \
+      DECLARE_BIND(player##P##_l_x_plus,  RARCH_ANALOG_LEFT_X_PLUS), \
+      DECLARE_BIND(player##P##_l_x_minus, RARCH_ANALOG_LEFT_X_MINUS), \
+      DECLARE_BIND(player##P##_l_y_plus,  RARCH_ANALOG_LEFT_Y_PLUS), \
+      DECLARE_BIND(player##P##_l_y_minus, RARCH_ANALOG_LEFT_Y_MINUS), \
+      DECLARE_BIND(player##P##_r_x_plus,  RARCH_ANALOG_RIGHT_X_PLUS), \
+      DECLARE_BIND(player##P##_r_x_minus, RARCH_ANALOG_RIGHT_X_MINUS), \
+      DECLARE_BIND(player##P##_r_y_plus,  RARCH_ANALOG_RIGHT_Y_PLUS), \
+      DECLARE_BIND(player##P##_r_y_minus, RARCH_ANALOG_RIGHT_Y_MINUS)
 
 // Big and nasty bind map... :)
 static const struct bind_map bind_maps[MAX_PLAYERS][RARCH_BIND_LIST_END_NULL] = {
    {
-      DECLARE_BIND(player1_b,             RETRO_DEVICE_ID_JOYPAD_B),
-      DECLARE_BIND(player1_y,             RETRO_DEVICE_ID_JOYPAD_Y),
-      DECLARE_BIND(player1_select,        RETRO_DEVICE_ID_JOYPAD_SELECT),
-      DECLARE_BIND(player1_start,         RETRO_DEVICE_ID_JOYPAD_START),
-      DECLARE_BIND(player1_up,            RETRO_DEVICE_ID_JOYPAD_UP),
-      DECLARE_BIND(player1_down,          RETRO_DEVICE_ID_JOYPAD_DOWN),
-      DECLARE_BIND(player1_left,          RETRO_DEVICE_ID_JOYPAD_LEFT),
-      DECLARE_BIND(player1_right,         RETRO_DEVICE_ID_JOYPAD_RIGHT),
-      DECLARE_BIND(player1_a,             RETRO_DEVICE_ID_JOYPAD_A),
-      DECLARE_BIND(player1_x,             RETRO_DEVICE_ID_JOYPAD_X),
-      DECLARE_BIND(player1_l,             RETRO_DEVICE_ID_JOYPAD_L),
-      DECLARE_BIND(player1_r,             RETRO_DEVICE_ID_JOYPAD_R),
-      DECLARE_BIND(player1_l2,            RETRO_DEVICE_ID_JOYPAD_L2),
-      DECLARE_BIND(player1_r2,            RETRO_DEVICE_ID_JOYPAD_R2),
-      DECLARE_BIND(player1_l3,            RETRO_DEVICE_ID_JOYPAD_L3),
-      DECLARE_BIND(player1_r3,            RETRO_DEVICE_ID_JOYPAD_R3),
+      DECL_PLAYER(1),
 
       DECLARE_BIND(toggle_fast_forward,   RARCH_FAST_FORWARD_KEY),
       DECLARE_BIND(hold_fast_forward,     RARCH_FAST_FORWARD_HOLD_KEY),
@@ -593,13 +584,13 @@ static const struct bind_map bind_maps[MAX_PLAYERS][RARCH_BIND_LIST_END_NULL] = 
       DECLARE_BIND(slowmotion,            RARCH_SLOWMOTION),
    },
 
-   DECL_PLAYER(2),
-   DECL_PLAYER(3),
-   DECL_PLAYER(4),
-   DECL_PLAYER(5),
-   DECL_PLAYER(6),
-   DECL_PLAYER(7),
-   DECL_PLAYER(8),
+   { DECL_PLAYER(2) },
+   { DECL_PLAYER(3) },
+   { DECL_PLAYER(4) },
+   { DECL_PLAYER(5) },
+   { DECL_PLAYER(6) },
+   { DECL_PLAYER(7) },
+   { DECL_PLAYER(8) },
 };
 
 struct key_map

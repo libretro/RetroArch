@@ -40,6 +40,9 @@ void sdl_dinput_free(sdl_dinput_t *di);
 bool sdl_dinput_pressed(sdl_dinput_t *di, unsigned port_num, 
       const struct snes_keybind *key);
 
+int16_t sdl_dinput_axis(sdl_dinput_t *di, unsigned port_num,
+      const struct snes_keybind *key);
+
 void sdl_dinput_poll(sdl_dinput_t *di);
 
 

@@ -329,6 +329,15 @@ static const struct snes_keybind snes_keybinds_1[] = {
    { true, RETRO_DEVICE_ID_JOYPAD_L3,        SK_UNKNOWN, NO_BTN,      AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_R3,        SK_UNKNOWN, NO_BTN,      AXIS_NONE },
 
+   { true, RARCH_ANALOG_LEFT_X_PLUS,         SK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_ANALOG_LEFT_X_MINUS,        SK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_ANALOG_LEFT_Y_PLUS,         SK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_ANALOG_LEFT_Y_MINUS,        SK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_ANALOG_RIGHT_X_PLUS,        SK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_ANALOG_RIGHT_X_MINUS,       SK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_ANALOG_RIGHT_Y_PLUS,        SK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_ANALOG_RIGHT_Y_MINUS,       SK_UNKNOWN, NO_BTN,      AXIS_NONE },
+
    { true, RARCH_FAST_FORWARD_KEY,           SK_SPACE,  NO_BTN,      AXIS_NONE },
    { true, RARCH_FAST_FORWARD_HOLD_KEY,      SK_l,      NO_BTN,      AXIS_NONE },
    { true, RARCH_LOAD_STATE_KEY,             SK_F4,     NO_BTN,      AXIS_NONE },
@@ -374,6 +383,15 @@ static const struct snes_keybind snes_keybinds_rest[] = {
    { true, RETRO_DEVICE_ID_JOYPAD_R2,        SK_UNKNOWN, NO_BTN, AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_L3,        SK_UNKNOWN, NO_BTN, AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_R3,        SK_UNKNOWN, NO_BTN, AXIS_NONE },
+
+   { true, RARCH_ANALOG_LEFT_X_PLUS,         SK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_ANALOG_LEFT_X_MINUS,        SK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_ANALOG_LEFT_Y_PLUS,         SK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_ANALOG_LEFT_Y_MINUS,        SK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_ANALOG_RIGHT_X_PLUS,        SK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_ANALOG_RIGHT_X_MINUS,       SK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_ANALOG_RIGHT_Y_PLUS,        SK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_ANALOG_RIGHT_Y_MINUS,       SK_UNKNOWN, NO_BTN,      AXIS_NONE },
 };
 
 #endif

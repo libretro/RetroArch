@@ -223,27 +223,38 @@ static bool sdl_joykey_pressed(sdl_input_t *sdl, int port_num, uint16_t joykey)
    }
 }
 
-static bool sdl_axis_pressed(sdl_input_t *sdl, int port_num, uint32_t joyaxis)
+static int16_t sdl_axis_analog(sdl_input_t *sdl, unsigned port_num, uint32_t joyaxis)
 {
    if (joyaxis == AXIS_NONE)
-      return false;
+      return 0;
 
+   Sint16 val = 0;
    if (AXIS_NEG_GET(joyaxis) < sdl->num_axes[port_num])
    {
-      Sint16 val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_NEG_GET(joyaxis));
-      float scaled = (float)val / 0x8000;
-      if (scaled < -g_settings.input.axis_threshold)
-         return true;
+      val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_NEG_GET(joyaxis));
+
+      if (val > 0)
+         val = 0;
+      else if (val < -0x8000) // -0x8000 can cause trouble if we later abs() it.
+         val = -0x7fff;
    }
-   if (AXIS_POS_GET(joyaxis) < sdl->num_axes[port_num])
+   else if (AXIS_POS_GET(joyaxis) < sdl->num_axes[port_num])
    {
-      Sint16 val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_POS_GET(joyaxis));
-      float scaled = (float)val / 0x8000;
-      if (scaled > g_settings.input.axis_threshold)
-         return true;
+      val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_POS_GET(joyaxis));
+
+      if (val < 0)
+         val = 0;
    }
 
-   return false;
+   return val;
+}
+
+static bool sdl_axis_pressed(sdl_input_t *sdl, unsigned port_num, uint32_t joyaxis)
+{
+   int16_t val = sdl_axis_analog(sdl, port_num, joyaxis);
+
+   float scaled = (float)abs(val) / 0x8000;
+   return scaled > g_settings.input.axis_threshold;
 }
 #endif
 
@@ -289,6 +300,69 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct snes_keybi
    }
    else
       return 0;
+}
+
+static void conv_analog_id_to_bind_id(unsigned index, unsigned id,
+      unsigned *id_minus, unsigned *id_plus)
+{
+   switch ((index << 1) | id)
+   {
+      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
+         *id_minus = RARCH_ANALOG_LEFT_X_MINUS;
+         *id_plus  = RARCH_ANALOG_LEFT_X_PLUS;
+         break;
+
+      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
+         *id_minus = RARCH_ANALOG_LEFT_Y_MINUS;
+         *id_plus  = RARCH_ANALOG_LEFT_Y_PLUS;
+         break;
+
+      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X:
+         *id_minus = RARCH_ANALOG_RIGHT_X_MINUS;
+         *id_plus  = RARCH_ANALOG_RIGHT_X_PLUS;
+         break;
+
+      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
+         *id_minus = RARCH_ANALOG_RIGHT_Y_MINUS;
+         *id_plus  = RARCH_ANALOG_RIGHT_Y_PLUS;
+         break;
+   }
+}
+
+static int16_t sdl_analog_device_state(sdl_input_t *sdl, const struct snes_keybind **binds_,
+      unsigned port_num, unsigned index, unsigned id)
+{
+   const struct snes_keybind *binds = binds_[port_num];
+   if (id >= RARCH_BIND_LIST_END)
+      return 0;
+
+   unsigned id_minus = 0;
+   unsigned id_plus  = 0;
+   conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
+
+   const struct snes_keybind *bind_minus = &binds[id_minus];
+   const struct snes_keybind *bind_plus  = &binds[id_plus];
+   if (!bind_minus->valid || !bind_plus->valid)
+      return 0;
+
+   // A user might have bound minus axis to positive axis in SDL.
+#ifdef HAVE_DINPUT
+   int16_t pressed_minus = abs(sdl_dinput_axis(sdl->di, port_num, bind_minus));
+   int16_t pressed_plus  = abs(sdl_dinput_axis(sdl->di, port_num, bind_plus));
+#else
+   int16_t pressed_minus = abs(sdl_axis_analog(sdl, port_num, bind_minus->joyaxis));
+   int16_t pressed_plus  = abs(sdl_axis_analog(sdl, port_num, bind_plus->joyaxis));
+#endif
+
+   int16_t res = pressed_plus - pressed_minus;
+
+   // TODO: Does it make sense to use axis thresholding here?
+   if (res != 0)
+      return res;
+
+   int16_t digital_left  = sdl_is_pressed(sdl, port_num, bind_minus) ? -0x7fff : 0;
+   int16_t digital_right = sdl_is_pressed(sdl, port_num, bind_plus)  ?  0x7fff : 0;
+   return digital_right + digital_left;
 }
 
 static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
@@ -338,6 +412,8 @@ static int16_t sdl_input_state(void *data_, const struct snes_keybind **binds, u
    {
       case RETRO_DEVICE_JOYPAD:
          return sdl_joypad_device_state(data, binds, port, id);
+      case RETRO_DEVICE_ANALOG:
+         return sdl_analog_device_state(data, binds, port, index, id);
       case RETRO_DEVICE_MOUSE:
          return sdl_mouse_device_state(data, id);
       case RETRO_DEVICE_LIGHTGUN:

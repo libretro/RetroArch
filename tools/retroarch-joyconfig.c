@@ -60,53 +60,62 @@ struct bind
    bool is_misc;
 };
 
-#define BIND(x, k) { x, { "input_player1_" #k "_btn", "input_player2_" #k "_btn", "input_player3_" #k "_btn", "input_player4_" #k "_btn", "input_player5_" #k "_btn" }, {"input_player1_" #k "_axis", "input_player2_" #k "_axis", "input_player3_" #k "_axis", "input_player4_" #k "_axis", "input_player5_" #k "_axis"}, false},
+#define BIND(x, k) { x, { "input_player1_" #k "_btn", "input_player2_" #k "_btn", "input_player3_" #k "_btn", "input_player4_" #k "_btn", "input_player5_" #k "_btn" }, {"input_player1_" #k "_axis", "input_player2_" #k "_axis", "input_player3_" #k "_axis", "input_player4_" #k "_axis", "input_player5_" #k "_axis"}, false}
 
-#define MISC_BIND(x, k) { x, { "input_" #k "_btn" }, { "input_" #k "_axis" }, true},
+#define MISC_BIND(x, k) { x, { "input_" #k "_btn" }, { "input_" #k "_axis" }, true}
 
 static struct bind binds[] = {
-   BIND("A button (right)", a)
-   BIND("B button (down)", b)
-   BIND("X button (top)", x)
-   BIND("Y button (left)", y)
-   BIND("L button (left shoulder)", l)
-   BIND("R button (right shoulder)", r)
-   BIND("L2 button (left shoulder #2)", l2)
-   BIND("R2 button (right shoulder #2)", r2)
-   BIND("L3 button (left analog button)", l3)
-   BIND("R3 button (right analog button)", r3)
-   BIND("Start button", start)
-   BIND("Select button", select)
-   BIND("Left D-pad", left)
-   BIND("Up D-pad", up)
-   BIND("Right D-pad", right)
-   BIND("Down D-pad", down)
+   BIND("A button (right)", a),
+   BIND("B button (down)", b),
+   BIND("X button (top)", x),
+   BIND("Y button (left)", y),
+   BIND("L button (left shoulder)", l),
+   BIND("R button (right shoulder)", r),
+   BIND("L2 button (left shoulder #2)", l2),
+   BIND("R2 button (right shoulder #2)", r2),
+   BIND("L3 button (left analog button)", l3),
+   BIND("R3 button (right analog button)", r3),
+   BIND("Start button", start),
+   BIND("Select button", select),
+   BIND("Left D-pad", left),
+   BIND("Up D-pad", up),
+   BIND("Right D-pad", right),
+   BIND("Down D-pad", down),
 
-   MISC_BIND("Save state", save_state)
-   MISC_BIND("Load state", load_state)
-   MISC_BIND("Exit emulator", exit_emulator)
-   MISC_BIND("Toggle fullscreen", toggle_fullscreen)
-   MISC_BIND("Save state slot increase", state_slot_increase)
-   MISC_BIND("Save state slot decrease", state_slot_decrease)
-   MISC_BIND("Toggle fast forward", toggle_fast_forward)
-   MISC_BIND("Hold fast forward", hold_fast_forward)
-   MISC_BIND("Audio input rate step up", rate_step_up)
-   MISC_BIND("Audio input rate step down", rate_step_down)
-   MISC_BIND("Rewind", rewind)
-   MISC_BIND("Movie recording toggle", movie_record_toggle)
-   MISC_BIND("Pause", pause_toggle)
-   MISC_BIND("Frame advance", frame_advance)
-   MISC_BIND("Reset", reset)
-   MISC_BIND("Next shader", shader_next)
-   MISC_BIND("Previous shader", shader_prev)
-   MISC_BIND("Toggle cheat on/off", cheat_toggle)
-   MISC_BIND("Cheat index plus", cheat_index_plus)
-   MISC_BIND("Cheat index minus", cheat_index_minus)
-   MISC_BIND("Screenshot", screenshot)
-   MISC_BIND("DSP config", dsp_config)
-   MISC_BIND("Audio mute/unmute", audio_mute)
-   MISC_BIND("Netplay player flip", netplay_flip_players)
-   MISC_BIND("Slow motion", slowmotion)
+   BIND("Left analog X+ (right)", l_x_plus),
+   BIND("Left analog Y+ (down)", l_y_plus),
+   BIND("Left analog X- (left)", l_x_minus),
+   BIND("Left analog Y- (up)", l_y_minus),
+   BIND("Right analog X+ (right)", r_x_plus),
+   BIND("Right analog Y+ (down)", r_y_plus),
+   BIND("Right analog X- (left)", r_x_minus),
+   BIND("Right analog Y- (up)", r_y_minus),
+
+   MISC_BIND("Save state", save_state),
+   MISC_BIND("Load state", load_state),
+   MISC_BIND("Exit emulator", exit_emulator),
+   MISC_BIND("Toggle fullscreen", toggle_fullscreen),
+   MISC_BIND("Save state slot increase", state_slot_increase),
+   MISC_BIND("Save state slot decrease", state_slot_decrease),
+   MISC_BIND("Toggle fast forward", toggle_fast_forward),
+   MISC_BIND("Hold fast forward", hold_fast_forward),
+   MISC_BIND("Audio input rate step up", rate_step_up),
+   MISC_BIND("Audio input rate step down", rate_step_down),
+   MISC_BIND("Rewind", rewind),
+   MISC_BIND("Movie recording toggle", movie_record_toggle),
+   MISC_BIND("Pause", pause_toggle),
+   MISC_BIND("Frame advance", frame_advance),
+   MISC_BIND("Reset", reset),
+   MISC_BIND("Next shader", shader_next),
+   MISC_BIND("Previous shader", shader_prev),
+   MISC_BIND("Toggle cheat on/off", cheat_toggle),
+   MISC_BIND("Cheat index plus", cheat_index_plus),
+   MISC_BIND("Cheat index minus", cheat_index_minus),
+   MISC_BIND("Screenshot", screenshot),
+   MISC_BIND("DSP config", dsp_config),
+   MISC_BIND("Audio mute/unmute", audio_mute),
+   MISC_BIND("Netplay player flip", netplay_flip_players),
+   MISC_BIND("Slow motion", slowmotion),
 };
 
 static void get_binds(config_file_t *conf, int player, int joypad)
@@ -116,6 +125,7 @@ static void get_binds(config_file_t *conf, int player, int joypad)
       fprintf(stderr, "Failed to init joystick subsystem.\n");
       exit(1);
    }
+
    SDL_Joystick *joystick;
    int num = SDL_NumJoysticks();
    if (joypad >= num)
@@ -131,8 +141,9 @@ static void get_binds(config_file_t *conf, int player, int joypad)
       exit(1);
    }
 
-   int last_axis = 0xFF;
-   int last_pos = 0;
+   int last_axis = -1;
+   bool block_axis = false;
+
    int num_axes = SDL_JoystickNumAxes(joystick);
    int *initial_axes = (int*)calloc(num_axes, sizeof(int));
    assert(initial_axes);
@@ -140,7 +151,20 @@ static void get_binds(config_file_t *conf, int player, int joypad)
    SDL_PumpEvents();
    SDL_JoystickUpdate();
    for (int i = 0; i < num_axes; i++)
-      initial_axes[i] = SDL_JoystickGetAxis(joystick, i);
+   {
+      Sint16 initial = SDL_JoystickGetAxis(joystick, i);
+      if (abs(initial) < 20000)
+         initial = 0;
+
+      // Certain joypads (such as XBox360 controller on Linux) has a default negative axis for shoulder triggers,
+      // which makes configuration very awkward.
+      // If default negative, we can't trigger on the negative axis, and similar with defaulted positive axes.
+
+      if (initial)
+         fprintf(stderr, "Axis %d is defaulted to %s axis value of %d\n", i, initial > 0 ? "positive" : "negative", (int)initial);
+
+      initial_axes[i] = initial;
+   }
 
    fprintf(stderr, "Configuring binds for player #%d on joypad #%d (%s)\n",
          player + 1, joypad, SDL_JoystickName(joypad));
@@ -168,27 +192,44 @@ static void get_binds(config_file_t *conf, int player, int joypad)
                break;
 
             case SDL_JOYAXISMOTION:
-               if ( // This is starting to look like Lisp. :D
-                     (abs((int)event.jaxis.value - initial_axes[event.jaxis.axis]) > 20000) &&
-                     (
-                        (event.jaxis.axis != last_axis) || 
-                        (
-                           (abs(event.jaxis.value) > 20000) && 
-                           (abs((int)event.jaxis.value - last_pos) > 20000)
-                        )
-                     )
-                  )
+            {
+               bool same_axis        = last_axis == event.jaxis.axis;
+               bool require_negative = initial_axes[event.jaxis.axis] > 0;
+               bool require_positive = initial_axes[event.jaxis.axis] < 0;
+
+               // Block the axis config until we're sure axes have returned to their neutral state.
+               if (same_axis)
+               {
+                  if (abs(event.jaxis.value) < 10000 ||
+                        (require_positive && event.jaxis.value < 0) ||
+                        (require_negative && event.jaxis.value > 0))
+                     block_axis = false;
+               }
+
+               // If axes are in their neutral state, we can't allow it.
+               if (require_negative && event.jaxis.value >= 0)
+                  break;
+               if (require_positive && event.jaxis.value <= 0)
+                  break;
+
+               if (block_axis)
+                  break;
+
+               if (abs(event.jaxis.value) > 20000)
                {
                   last_axis = event.jaxis.axis;
-                  last_pos = event.jaxis.value;
                   fprintf(stderr, "\tJoyaxis moved: Axis %d, Value %d\n", (int)event.jaxis.axis, (int)event.jaxis.value);
-                  done = true;
+
+                  done       = true;
+                  block_axis = true;
 
                   char buf[8];
                   snprintf(buf, sizeof(buf), event.jaxis.value > 0 ? "+%d" : "-%d", event.jaxis.axis);
                   config_set_string(conf, binds[i].confaxis[player_index], buf);
                }
+
                break;
+            }
 
             case SDL_KEYDOWN:
                fprintf(stderr, ":V\n");

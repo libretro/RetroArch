@@ -197,6 +197,9 @@ static int16_t x_input_state(void *data, const struct snes_keybind **binds, unsi
          return x_is_pressed(x11, binds[port], id) ||
             input_sdl.input_state(x11->sdl, binds, port, device, index, id);
 
+      case RETRO_DEVICE_ANALOG:
+         return input_sdl.input_state(x11->sdl, binds, port, device, index, id);
+
       default:
          return 0;
    }
