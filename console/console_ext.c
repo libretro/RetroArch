@@ -535,6 +535,12 @@ void rarch_input_set_default_keybind_names_for_emulator(void)
   VIDEO EXTENSIONS
   ============================================================ */
 
+#if defined(HAVE_HLSL)
+#include "../gfx/shader_hlsl.h"
+#elif defined(HAVE_CG) && defined(HAVE_OPENGL)
+#include "../gfx/shader_cg.h"
+#endif
+
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "1:1",    1.0f },
    { "2:1",    2.0f },
@@ -587,6 +593,22 @@ void rarch_set_auto_viewport(unsigned width, unsigned height)
 
    snprintf(aspectratio_lut[ASPECT_RATIO_AUTO].name, sizeof(aspectratio_lut[ASPECT_RATIO_AUTO].name), "%d:%d (Auto)", aspect_x, aspect_y);
    aspectratio_lut[ASPECT_RATIO_AUTO].value = (int)aspect_x / (int)aspect_y;
+}
+
+void rarch_load_shader(unsigned slot, const char *path)
+{
+#if defined(HAVE_HLSL)
+   hlsl_load_shader(slot, path);
+#elif defined(HAVE_CG) && defined(HAVE_OPENGL)
+   gl_cg_load_shader(slot, path);
+#else
+RARCH_WARN("Shader support is not implemented for this build.\n");
+#endif
+
+#if defined(HAVE_HLSL) || defined(HAVE_CG)
+   if (g_console.info_msg_enable)
+      rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+#endif
 }
 
 /*============================================================

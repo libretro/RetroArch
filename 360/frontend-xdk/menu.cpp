@@ -591,18 +591,15 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
          {
             case 1:
                snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), strbuffer);
-               hlsl_load_shader(set_shader, g_settings.video.cg_shader_path);
+               rarch_load_shader(set_shader, g_settings.video.cg_shader_path);
                break;
             case 2:
                snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), strbuffer);
-               hlsl_load_shader(set_shader, g_settings.video.second_pass_shader);
+               rarch_load_shader(set_shader, g_settings.video.second_pass_shader);
                break;
             default:
                break;
          }
-
-         if (g_console.info_msg_enable)
-            rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
       }
       else if(tmp_browser.current_dir.list->elems[index].attr.b)
       {

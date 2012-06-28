@@ -794,7 +794,7 @@ static void select_file(uint32_t menu_id)
 	    switch(menu_id)
 	    {
                case SHADER_CHOICE:
-                  gl_cg_load_shader(set_shader+1, path);
+                  rarch_load_shader(set_shader+1, path);
 		  switch(set_shader+1)
 		  {
                      case 1:
@@ -1099,7 +1099,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			if(CTRL_START(trigger_state))
 			{
-                           gl_cg_load_shader(1, NULL);
+                           rarch_load_shader(1, NULL);
 			   strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
 			   menu_reinit_settings();
 			}
@@ -1115,7 +1115,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			if(CTRL_START(trigger_state))
 			{
-                           gl_cg_load_shader(2, NULL);
+                           rarch_load_shader(2, NULL);
 			   strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
 			   menu_reinit_settings();
 			}
