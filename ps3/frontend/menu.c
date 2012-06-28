@@ -173,14 +173,18 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
 {
    switch(menu_id)
    {
-      case FILE_BROWSER_MENU:
       case INGAME_MENU:
+      case INGAME_MENU_RESIZE:
+      case INGAME_MENU_SCREENSHOT:
+         menuStack[stack_idx] = menu_filebrowser;
+         menuStack[stack_idx].enum_id = menu_id;
+         menuStack[stack_idx].category_id = CATEGORY_INGAME_MENU;
+         break;
+      case FILE_BROWSER_MENU:
       case LIBRETRO_CHOICE:
       case PATH_DEFAULT_ROM_DIR_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
       case PRESET_CHOICE:
-      case INGAME_MENU_RESIZE:
-      case INGAME_MENU_SCREENSHOT:
       case INPUT_PRESET_CHOICE:
       case SHADER_CHOICE:
       case PATH_SRAM_DIR_CHOICE:
@@ -2381,8 +2385,8 @@ void menu_loop(void)
             browser_render(fb);
             break;
          case CATEGORY_SETTINGS:
-            break;
          case CATEGORY_INGAME_MENU:
+         default:
             break;
       }
 
