@@ -24,5 +24,7 @@ void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_r
 void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index);
 void gfx_ctx_set_overscan(void);
 void gfx_ctx_set_fbo(bool enable);
+void gfx_ctx_clear(void);
+void gfx_ctx_set_blend(bool enable);
 
 #endif

@@ -1034,7 +1034,7 @@ static void rarch_filename_input_and_save (unsigned filename_type)
 
    while(OSK_IS_RUNNING(g_console.oskutil_handle))
    {
-      glClear(GL_COLOR_BUFFER_BIT);
+      gfx_ctx_clear();
       gfx_ctx_swap_buffers();
 #ifdef HAVE_SYSUTILS
       cellSysutilCheckCallback();
@@ -1069,7 +1069,7 @@ static void rarch_filename_input_and_save (unsigned filename_type)
       while(OSK_IS_RUNNING(g_console.oskutil_handle))
       {
          /* OSK Util gets updated */
-         glClear(GL_COLOR_BUFFER_BIT);
+         gfx_ctx_clear();
 	 gfx_ctx_swap_buffers();
 #ifdef HAVE_SYSUTILS
          cellSysutilCheckCallback();
@@ -1106,10 +1106,6 @@ static void rarch_filename_input_and_save (unsigned filename_type)
 
 static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 {
-	uint64_t state;
-
-	state = cell_pad_input_poll_device(0);
-
 	switch(switchvalue)
 	{
 		case SETTING_CHANGE_RESOLUTION:
@@ -1363,10 +1359,10 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			if(CTRL_START(state))
 			{
-				bool old_state = g_console.triple_buffering_enable;
+				bool old_buffer_state = g_console.triple_buffering_enable;
 				rarch_settings_default(S_DEF_TRIPLE_BUFFERING);
 
-				if(!old_state)
+				if(!old_buffer_state)
                                    video_gl.restart();
 			}
 			break;
@@ -1450,7 +1446,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			   oskutil_start(&g_console.oskutil_handle);
 			   while(OSK_IS_RUNNING(g_console.oskutil_handle))
 			   {
-                              glClear(GL_COLOR_BUFFER_BIT);
+                              gfx_ctx_clear();
 			      gfx_ctx_swap_buffers();
 #ifdef HAVE_SYSUTILS
 			      cellSysutilCheckCallback();
@@ -1945,12 +1941,138 @@ static void select_rom(void)
 
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
+static void ingame_menu_resize(void)
+{
+   gl_t * gl = driver.video_data;
+
+   float x_position = 0.3f;
+   float font_size = 1.1f;
+   float ypos = 0.19f;
+   float ypos_increment = 0.04f;
+
+   g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
+   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+
+   if(CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state))
+	   g_console.viewports.custom_vp.x -= 1;
+   else if (CTRL_LSTICK_RIGHT(state) || CTRL_RIGHT(state))
+	   g_console.viewports.custom_vp.x += 1;
+
+   if (CTRL_LSTICK_UP(state) || CTRL_UP(state))
+	   g_console.viewports.custom_vp.y += 1;
+   else if (CTRL_LSTICK_DOWN(state) || CTRL_DOWN(state)) 
+	   g_console.viewports.custom_vp.y -= 1;
+
+   if (CTRL_RSTICK_LEFT(state) || CTRL_L1(state))
+	   g_console.viewports.custom_vp.width -= 1;
+   else if (CTRL_RSTICK_RIGHT(state) || CTRL_R1(state))
+	   g_console.viewports.custom_vp.width += 1;
+
+   if (CTRL_RSTICK_UP(state) || CTRL_L2(state))
+	   g_console.viewports.custom_vp.height += 1;
+   else if (CTRL_RSTICK_DOWN(state) || CTRL_R2(state))
+	   g_console.viewports.custom_vp.height -= 1;
+
+   if (CTRL_TRIANGLE(state))
+   {
+	   g_console.viewports.custom_vp.x = 0;
+	   g_console.viewports.custom_vp.y = 0;
+	   g_console.viewports.custom_vp.width = gl->win_width;
+	   g_console.viewports.custom_vp.height = gl->win_height;
+   }
+   if(CTRL_CIRCLE(state))
+   {
+	   set_delay = DELAY_MEDIUM;
+	   menuStackindex--;
+   }
+
+   if(CTRL_SQUARE(~state))
+   {
+	   struct retro_system_info info;
+	   retro_get_system_info(&info);
+	   const char *id = info.library_name ? info.library_name : "Unknown";
+
+	   cellDbgFontPuts (0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
+	   cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
+	   cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
+	   cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
+	   cellDbgFontPrintf(x_position, ypos, font_size, GREEN, "Viewport X: #%d", g_console.viewports.custom_vp.x);
+
+	   cellDbgFontPrintf(x_position, ypos+(ypos_increment*1), font_size, GREEN, "Viewport Y: #%d", g_console.viewports.custom_vp.y);
+
+	   cellDbgFontPrintf(x_position, ypos+(ypos_increment*2), font_size, GREEN, "Viewport Width: #%d", g_console.viewports.custom_vp.width);
+
+	   cellDbgFontPrintf(x_position, ypos+(ypos_increment*3), font_size, GREEN, "Viewport Height: #%d", g_console.viewports.custom_vp.height);
+
+	   cellDbgFontPrintf (0.09f, 0.40f, font_size, LIGHTBLUE, "CONTROLS:");
+
+	   cellDbgFontPrintf (0.09f, 0.46f, font_size,  LIGHTBLUE, "LEFT or LSTICK UP");
+	   cellDbgFontPrintf (0.5f, 0.46f, font_size, LIGHTBLUE, "- Decrease Viewport X");
+
+	   gl_render_msg_post(gl);
+
+	   cellDbgFontPrintf (0.09f, 0.48f,   font_size,      LIGHTBLUE, "RIGHT or LSTICK RIGHT");
+	   cellDbgFontPrintf (0.5f, 0.48f,   font_size,      LIGHTBLUE, "- Increase Viewport X");
+
+	   cellDbgFontPrintf (0.09f, 0.50f,   font_size,      LIGHTBLUE,           "UP or LSTICK UP");
+	   cellDbgFontPrintf (0.5f, 0.50f,   font_size,      LIGHTBLUE,           "- Increase Viewport Y");
+
+	   gl_render_msg_post(gl);
+
+	   cellDbgFontPrintf (0.09f,   0.52f,   font_size,      LIGHTBLUE,           "DOWN or LSTICK DOWN");
+	   cellDbgFontPrintf (0.5f,   0.52f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Y");
+
+	   cellDbgFontPrintf (0.09f,   0.54f,   font_size,      LIGHTBLUE,           "L1 or RSTICK LEFT");
+	   cellDbgFontPrintf (0.5f,   0.54f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Width");
+
+	   gl_render_msg_post(gl);
+
+	   cellDbgFontPrintf (0.09f,   0.56f,   font_size,      LIGHTBLUE,           "R1 or RSTICK RIGHT");
+	   cellDbgFontPrintf (0.5f,   0.56f,   font_size,      LIGHTBLUE,           "- Increase Viewport Width");
+
+	   cellDbgFontPrintf (0.09f,   0.58f,   font_size,      LIGHTBLUE,           "L2 or  RSTICK UP");
+	   cellDbgFontPrintf (0.5f,   0.58f,   font_size,      LIGHTBLUE,           "- Increase Viewport Height");
+
+	   gl_render_msg_post(gl);
+
+	   cellDbgFontPrintf (0.09f,   0.60f,   font_size,      LIGHTBLUE,           "R2 or RSTICK DOWN");
+	   cellDbgFontPrintf (0.5f,   0.60f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Height");
+
+	   cellDbgFontPrintf (0.09f,   0.66f,   font_size,      LIGHTBLUE,           "TRIANGLE");
+	   cellDbgFontPrintf (0.5f,   0.66f,   font_size,      LIGHTBLUE,           "- Reset To Defaults");
+
+	   cellDbgFontPrintf (0.09f,   0.68f,   font_size,      LIGHTBLUE,           "SQUARE");
+	   cellDbgFontPrintf (0.5f,   0.68f,   font_size,      LIGHTBLUE,           "- Show Game Screen");
+
+	   cellDbgFontPrintf (0.09f,   0.70f,   font_size,      LIGHTBLUE,           "CIRCLE");
+	   cellDbgFontPrintf (0.5f,   0.70f,   font_size,      LIGHTBLUE,           "- Return to Ingame Menu");
+
+	   gl_render_msg_post(gl);
+
+	   cellDbgFontPrintf (0.09f, 0.83f, 0.91f, LIGHTBLUE, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the menu.");
+	   gl_render_msg_post(gl);
+   }
+}
+
+static void ingame_menu_screenshot(void)
+{
+   gl_t * gl = driver.video_data;
+
+   if(g_console.ingame_menu_enable)
+   {
+      if(CTRL_CIRCLE(state))
+      {
+         set_delay = DELAY_MEDIUM;
+	 menuStackindex--;
+	 gl->menu_render = true;
+      }
+   }
+}
+
 static void ingame_menu(uint32_t menu_id)
 {
    char comment[256];
    static uint32_t menuitem_colors[MENU_ITEM_LAST];
-   uint64_t state, stuck_in_loop;
-   static uint64_t blocking;
    gl_t * gl = driver.video_data;
 
    float x_position = 0.3f;
@@ -1963,11 +2085,7 @@ static void ingame_menu(uint32_t menu_id)
 
    menuitem_colors[g_console.ingame_menu_item] = RED;
 
-   state = cell_pad_input_poll_device(0);
-   stuck_in_loop = 1;
-   blocking = 0;
-
-   if(IS_TIMER_EXPIRED(gl) && blocking == false)
+   if(IS_TIMER_EXPIRED(gl))
    {
       set_delay = DELAY_NONE;
 
@@ -1986,13 +2104,11 @@ static void ingame_menu(uint32_t menu_id)
 	    {
                rarch_state_slot_decrease();
 	       set_delay = DELAY_MEDIUM;
-	       blocking = 0;
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 	    {
                rarch_state_slot_increase();
 	       set_delay = DELAY_MEDIUM;
-	       blocking = 0;
 	    }
 
 	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the state from the currently selected save state slot.", sizeof(comment));
@@ -2007,13 +2123,11 @@ static void ingame_menu(uint32_t menu_id)
 	    {
                rarch_state_slot_decrease();
 	       set_delay = DELAY_MEDIUM;
-	       blocking = 0;
 	    }
 	    if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 	    {
                rarch_state_slot_increase();
 	       set_delay = DELAY_MEDIUM;
-	       blocking = 0;
 	    }
 
 	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.", sizeof(comment));
@@ -2122,161 +2236,20 @@ static void ingame_menu(uint32_t menu_id)
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
 	    if(CTRL_CROSS(state))
-	    {
-               g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
-	       gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-	       while(stuck_in_loop && g_console.ingame_menu_enable)
-	       {
-                  state = cell_pad_input_poll_device(0);
-
-		  if(CTRL_SQUARE(~state))
-		  {
-                     glClear(GL_COLOR_BUFFER_BIT);
-		     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-		     glEnable(GL_BLEND);
-		  }
-
-		  rarch_render_cached_frame();
-
-		  if(CTRL_SQUARE(state))
-                     gl->menu_render = false;
-                  else
-                     gl->menu_render = true;
-
-		  if(CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state))
-			  g_console.viewports.custom_vp.x -= 1;
-		  else if (CTRL_LSTICK_RIGHT(state) || CTRL_RIGHT(state))
-			  g_console.viewports.custom_vp.x += 1;
-
-		  if (CTRL_LSTICK_UP(state) || CTRL_UP(state))
-			  g_console.viewports.custom_vp.y += 1;
-		  else if (CTRL_LSTICK_DOWN(state) || CTRL_DOWN(state)) 
-			  g_console.viewports.custom_vp.y -= 1;
-
-		  if (CTRL_RSTICK_LEFT(state) || CTRL_L1(state))
-			  g_console.viewports.custom_vp.width -= 1;
-		  else if (CTRL_RSTICK_RIGHT(state) || CTRL_R1(state))
-			  g_console.viewports.custom_vp.width += 1;
-
-		  if (CTRL_RSTICK_UP(state) || CTRL_L2(state))
-			  g_console.viewports.custom_vp.height += 1;
-		  else if (CTRL_RSTICK_DOWN(state) || CTRL_R2(state))
-			  g_console.viewports.custom_vp.height -= 1;
-
-		  if (CTRL_TRIANGLE(state))
-		  {
-			  g_console.viewports.custom_vp.x = 0;
-			  g_console.viewports.custom_vp.y = 0;
-			  g_console.viewports.custom_vp.width = gl->win_width;
-			  g_console.viewports.custom_vp.height = gl->win_height;
-		  }
-		  if(CTRL_CIRCLE(state))
-		  {
-			  set_delay = DELAY_MEDIUM;
-			  stuck_in_loop = 0;
-		  }
-
-		  if(CTRL_SQUARE(~state))
-		  {
-                     struct retro_system_info info;
-		     retro_get_system_info(&info);
-		     const char *id = info.library_name ? info.library_name : "Unknown";
-
-		     cellDbgFontPuts (0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
-		     cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
-		     cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
-		     cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
-		     cellDbgFontPrintf(x_position,	ypos, font_size, GREEN,	"Viewport X: #%d", g_console.viewports.custom_vp.x);
-
-		     cellDbgFontPrintf(x_position,	ypos+(ypos_increment*1), font_size, GREEN, "Viewport Y: #%d", g_console.viewports.custom_vp.y);
-
-		     cellDbgFontPrintf(x_position,	ypos+(ypos_increment*2), font_size, GREEN, "Viewport Width: #%d", g_console.viewports.custom_vp.width);
-
-		     cellDbgFontPrintf(x_position,	ypos+(ypos_increment*3), font_size, GREEN, "Viewport Height: #%d", g_console.viewports.custom_vp.height);
-
-		     cellDbgFontPrintf (0.09f,   0.40f, font_size, LIGHTBLUE, "CONTROLS:");
-
-		     cellDbgFontPrintf (0.09f,   0.46f, font_size,  LIGHTBLUE, "LEFT or LSTICK UP");
-		     cellDbgFontPrintf (0.5f,   0.46f, font_size, LIGHTBLUE, "- Decrease Viewport X");
-
-		     gl_render_msg_post(gl);
-
-		     cellDbgFontPrintf (0.09f,   0.48f,   font_size,      LIGHTBLUE,           "RIGHT or LSTICK RIGHT");
-		     cellDbgFontPrintf (0.5f,   0.48f,   font_size,      LIGHTBLUE,           "- Increase Viewport X");
-
-		     cellDbgFontPrintf (0.09f,   0.50f,   font_size,      LIGHTBLUE,           "UP or LSTICK UP");
-		     cellDbgFontPrintf (0.5f,   0.50f,   font_size,      LIGHTBLUE,           "- Increase Viewport Y");
-
-		     gl_render_msg_post(gl);
-
-		     cellDbgFontPrintf (0.09f,   0.52f,   font_size,      LIGHTBLUE,           "DOWN or LSTICK DOWN");
-		     cellDbgFontPrintf (0.5f,   0.52f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Y");
-
-		     cellDbgFontPrintf (0.09f,   0.54f,   font_size,      LIGHTBLUE,           "L1 or RSTICK LEFT");
-		     cellDbgFontPrintf (0.5f,   0.54f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Width");
-
-		     gl_render_msg_post(gl);
-
-		     cellDbgFontPrintf (0.09f,   0.56f,   font_size,      LIGHTBLUE,           "R1 or RSTICK RIGHT");
-		     cellDbgFontPrintf (0.5f,   0.56f,   font_size,      LIGHTBLUE,           "- Increase Viewport Width");
-
-		     cellDbgFontPrintf (0.09f,   0.58f,   font_size,      LIGHTBLUE,           "L2 or  RSTICK UP");
-		     cellDbgFontPrintf (0.5f,   0.58f,   font_size,      LIGHTBLUE,           "- Increase Viewport Height");
-
-		     gl_render_msg_post(gl);
-
-		     cellDbgFontPrintf (0.09f,   0.60f,   font_size,      LIGHTBLUE,           "R2 or RSTICK DOWN");
-		     cellDbgFontPrintf (0.5f,   0.60f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Height");
-
-		     cellDbgFontPrintf (0.09f,   0.66f,   font_size,      LIGHTBLUE,           "TRIANGLE");
-		     cellDbgFontPrintf (0.5f,   0.66f,   font_size,      LIGHTBLUE,           "- Reset To Defaults");
-
-		     cellDbgFontPrintf (0.09f,   0.68f,   font_size,      LIGHTBLUE,           "SQUARE");
-		     cellDbgFontPrintf (0.5f,   0.68f,   font_size,      LIGHTBLUE,           "- Show Game Screen");
-
-		     cellDbgFontPrintf (0.09f,   0.70f,   font_size,      LIGHTBLUE,           "CIRCLE");
-		     cellDbgFontPrintf (0.5f,   0.70f,   font_size,      LIGHTBLUE,           "- Return to Ingame Menu");
-
-		     gl_render_msg_post(gl);
-
-		     cellDbgFontPrintf (0.09f, 0.83f, 0.91f, LIGHTBLUE, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the menu.");
-		     gl_render_msg_post(gl);
-		  }
-		  gfx_ctx_swap_buffers();
-#ifdef HAVE_SYSUTILS
-                  cellSysutilCheckCallback();
-#endif
-		  if(CTRL_SQUARE(~state))
-		  {
-                     glDisable(GL_BLEND);
-		  }
-	       }
-	    }
+            {
+	       menuStackindex++;
+	       menuStack[menuStackindex] = menu_filebrowser;
+	       menuStack[menuStackindex].enum_id = INGAME_MENU_RESIZE;
+            }
 	    strlcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
 	    if(CTRL_CROSS(state))
 	    {
-               while(stuck_in_loop && g_console.ingame_menu_enable)
-	       {
-                  gl->menu_render = false;
-                  state = cell_pad_input_poll_device(0);
-		  if(CTRL_CIRCLE(state))
-		  {
-                     set_delay = DELAY_MEDIUM;
-		     stuck_in_loop = 0;
-		  }
-
-		  rarch_render_cached_frame();
-
-		  gfx_ctx_swap_buffers();
-#ifdef HAVE_SYSUTILS
-                  cellSysutilCheckCallback();
-#endif
-	       }
-               gl->menu_render = true;
+	       menuStackindex++;
+	       menuStack[menuStackindex] = menu_filebrowser;
+	       menuStack[menuStackindex].enum_id = INGAME_MENU_SCREENSHOT;
 	    }
-
 	    strlcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
@@ -2451,20 +2424,29 @@ void menu_loop(void)
       menuStack[menuStackindex].enum_id = INGAME_MENU;
    }
 
-   gl->menu_render = true;
-
    do
    {
-      glClear(GL_COLOR_BUFFER_BIT);
-      glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-      glEnable(GL_BLEND);
-      rarch_render_cached_frame();
+      unsigned menu_id = menuStack[menuStackindex].enum_id;
 
       state = cell_pad_input_poll_device(0);
       diff_state = old_state ^ state;
       button_was_pressed = old_state & diff_state;
 
-      switch(menuStack[menuStackindex].enum_id)
+      gfx_ctx_clear();
+
+      if(menu_id == INGAME_MENU_RESIZE && CTRL_SQUARE(state) || menu_id == INGAME_MENU_SCREENSHOT)
+      {
+	 gl->menu_render = false;
+      }
+      else
+      {
+         gfx_ctx_set_blend(true);
+	 gl->menu_render = true;
+      }
+
+      rarch_render_cached_frame();
+
+      switch(menu_id)
       {
          case FILE_BROWSER_MENU:
             select_rom();
@@ -2483,18 +2465,24 @@ void menu_loop(void)
 	 case BORDER_CHOICE:
 	 case LIBRETRO_CHOICE:
 	 case INPUT_PRESET_CHOICE:
-	    select_file(menuStack[menuStackindex].enum_id);
+	    select_file(menu_id);
 	    break;
 	 case PATH_SAVESTATES_DIR_CHOICE:
 	 case PATH_DEFAULT_ROM_DIR_CHOICE:
 	 case PATH_CHEATS_DIR_CHOICE:
 	 case PATH_SRAM_DIR_CHOICE:
-	    select_directory(menuStack[menuStackindex].enum_id);
+	    select_directory(menu_id);
 	    break;
 	 case INGAME_MENU:
 	    if(g_console.ingame_menu_enable)
-               ingame_menu(menuStack[menuStackindex].enum_id);
+               ingame_menu(menu_id);
+            break;
+         case INGAME_MENU_RESIZE:
+            ingame_menu_resize();
 	    break;
+         case INGAME_MENU_SCREENSHOT:
+            ingame_menu_screenshot();
+            break;
       }
 
       old_state = state;
@@ -2547,7 +2535,11 @@ void menu_loop(void)
 #ifdef HAVE_SYSUTILS
       cellSysutilCheckCallback();
 #endif
-      glDisable(GL_BLEND);
+      if(menu_id == INGAME_MENU_RESIZE && CTRL_SQUARE(state) || menu_id == INGAME_MENU_SCREENSHOT)
+      { }
+      else
+         gfx_ctx_set_blend(false);
+
    }while (g_console.menu_enable);
 
    gl->menu_render = false;

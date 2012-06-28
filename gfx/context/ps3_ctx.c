@@ -107,6 +107,22 @@ void gfx_ctx_swap_buffers(void)
 }
 #endif
 
+void gfx_ctx_clear(void)
+{
+   glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void gfx_ctx_set_blend(bool enable)
+{
+   if(enable)
+   {
+      glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+      glEnable(GL_BLEND);
+   }
+   else
+      glDisable(GL_BLEND);
+}
+
 void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 
 
