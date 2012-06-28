@@ -281,8 +281,11 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          {
             snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s",
                   strcmp(dir, "/") == 0 ? "" : dir, path);
-            char message[50];
-            snprintf(message, sizeof(message) / sizeof(message[0]), "Loading %.38s...", path);
+	    strlcpy(g_console.rom_path, rgui->path_buf, sizeof(g_console.rom_path));
+            rarch_settings_msg(S_MSG_LOADING_ROM, S_DELAY_0);
+
+	    const char * message = msg_queue_pull(g_extern.msg_queue);
+            
             render_messagebox(rgui, message);
             return rgui->path_buf;
          }

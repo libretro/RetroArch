@@ -183,8 +183,10 @@ void rarch_settings_default(unsigned setting)
 
 void rarch_settings_msg(unsigned setting, unsigned delay)
 {
-   char str[PATH_MAX];
+   char str[PATH_MAX], tmp[PATH_MAX];
    msg_queue_clear(g_extern.msg_queue);
+
+   (void)tmp;
 
    switch(setting)
    {
@@ -196,6 +198,10 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
          break;
       case S_MSG_EXTRACTED_ZIPFILE:
          snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to cache partition.");
+         break;
+      case S_MSG_LOADING_ROM:
+         fill_pathname_base(tmp, g_console.rom_path, sizeof(tmp));
+         snprintf(str, sizeof(str), "INFO - Loading %.38s...", tmp);
          break;
       case S_MSG_NOT_IMPLEMENTED:
          snprintf(str, sizeof(str), "TODO - Not yet implemented.");
