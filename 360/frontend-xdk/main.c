@@ -248,21 +248,11 @@ int main(int argc, char *argv[])
    rarch_main_clear_state();
    config_set_defaults();
 
-   char full_path[1024];
+   char full_path[1024], libretro_core_installed[1024];
    snprintf(full_path, sizeof(full_path), "game:\\CORE.xex");
 
-   g_extern.verbose = true;
-
-   const char *libretro_core_installed = rarch_manage_libretro_install(full_path, "game:\\", ".xex");
-
-   g_extern.verbose = false;
-
-   bool find_libretro_file = false;
-
-   if(libretro_core_installed != NULL)
-      strlcpy(g_settings.libretro, libretro_core_installed, sizeof(g_settings.libretro));
-   else
-      find_libretro_file = true;
+   bool find_libretro_file = rarch_configure_libretro_core(full_path, "game:\\", "game:\\", 
+   SYS_CONFIG_FILE, ".xex");
 
    set_default_settings();
    rarch_config_load(SYS_CONFIG_FILE, "game:\\", ".xex", find_libretro_file);

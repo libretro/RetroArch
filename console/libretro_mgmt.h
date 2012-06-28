@@ -27,7 +27,8 @@ enum
 #endif
 };
 
-const char *rarch_manage_libretro_install(const char *full_path, const char *path, const char *exe_ext);
 void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext);
+bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
+ const char *libretro_path, const char *config_path, const char *extension);
 
 #endif

@@ -308,18 +308,8 @@ int main(int argc, char *argv[])
    snprintf(full_path, sizeof(full_path), "%s/%s/CORE.SELF", usrDirPath, EMULATOR_CORE_DIR);
    snprintf(tmp_path, sizeof(tmp_path), "%s/%s/", usrDirPath, EMULATOR_CORE_DIR);
 
-   g_extern.verbose = true;
-
-   const char *libretro_core_installed = rarch_manage_libretro_install(full_path, tmp_path, ".SELF");
-
-   g_extern.verbose = false;
-
-   bool find_libretro_file = false;
-
-   if(libretro_core_installed != NULL)
-      strlcpy(g_settings.libretro, libretro_core_installed, sizeof(g_settings.libretro));
-   else
-      find_libretro_file = true;
+   bool find_libretro_file = rarch_configure_libretro_core(full_path, tmp_path, LIBRETRO_DIR_PATH, 
+   SYS_CONFIG_FILE, ".SELF");
 
    set_default_settings();
    rarch_config_load(SYS_CONFIG_FILE, LIBRETRO_DIR_PATH, ".SELF", find_libretro_file);

@@ -25,8 +25,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,                                                           /* text color */
       "INFO - Change the display resolution - press X to confirm.",     /* item comment */
       WHITE,                                                            /* color of item comment */
-      0.91f,                                                            /* font scale of item comment */
-      0.09f,                                                            /* comment X position */
       0.83f,                                                            /* comment Y position */
    },
    {
@@ -38,8 +36,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Select a [CG Preset] script.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -51,11 +47,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Select a shader as [Shader #1]. NOTE: Some shaders might be\ntoo slow at 1080p. If you experience any slowdown, try another shader.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_SHADER_2,
@@ -66,11 +58,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Select a shader as [Shader #2]. NOTE: Some shaders might be\ntoo slow at 1080p. If you experience any slowdown, try another shader.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_FONT_SIZE,
@@ -81,11 +69,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Increase or decrease the font size in the menu.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_KEEP_ASPECT_RATIO,
@@ -96,11 +80,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - [Aspect Ratio] is set to 'Scaled (4:3)' - screen will have black\nborders left/right on widescreen TVs/monitors.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      1,
-      1
    },
    {
       SETTING_HW_TEXTURE_FILTER,
@@ -111,11 +91,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Hardware filtering is set to 'Bilinear filtering' for [Shader #1].",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      1,
-      1
    },
    {
       SETTING_HW_TEXTURE_FILTER_2,
@@ -126,11 +102,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Hardware filtering is set to 'Bilinear filtering' for [Shader #2].",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      1,
-      1
    },
    {
       SETTING_SCALE_ENABLED,
@@ -141,11 +113,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - [Custom Scaling] is set to 'ON' - 2x shaders will look much\nbetter, and you can select a shader for [Shader #2].",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      1,
-      1
    },
    {
       SETTING_SCALE_FACTOR,
@@ -156,11 +124,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - [Custom Scaling Factor] is set to '2x'.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      2,
-      1
    },
    {
       SETTING_HW_OVERSCAN_AMOUNT,
@@ -171,11 +135,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Adjust or decrease [Overscan]. Set this to higher than 0.000\nif the screen doesn't fit on your TV/monitor.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_THROTTLE_MODE,
@@ -186,11 +146,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - [Throttle Mode] is set to 'ON' - VSync is enabled and sound\nis turned on.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      1,
-      1
    },
    {
       SETTING_TRIPLE_BUFFERING,
@@ -201,11 +157,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - [Triple Buffering] is set to 'ON' - faster graphics/shaders at\nthe possible expense of input lag.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      1,
-      1
    },
    {
       SETTING_ENABLE_SCREENSHOTS,
@@ -216,11 +168,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - [Enable Screenshots] feature is set to 'OFF'.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      1,
-      1
    },
    {
       SETTING_SAVE_SHADER_PRESET,
@@ -231,11 +179,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Save the current video settings to a [CG Preset] (CGP) file.",
       GREEN,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_APPLY_SHADER_PRESET_ON_STARTUP,
@@ -246,11 +190,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Automatically load the currently selected [CG Preset] file on startup.",
       GREEN,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_DEFAULT_VIDEO_ALL,
@@ -261,11 +201,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Set all [General Video Settings] back to their 'DEFAULT' values.",
       GREEN,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_SOUND_MODE,
@@ -276,11 +212,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - [Sound Output] is set to 'Normal' - normal audio output will be\nused.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_RSOUND_SERVER_IP_ADDRESS,
@@ -291,11 +223,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Enter the IP Address of the [RSound Audio Server]. IP address\nmust be an IPv4 32-bits address, eg: '192.168.1.7'.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_ENABLE_CUSTOM_BGM,
@@ -306,11 +234,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - [Enable Custom BGM] feature is set to 'ON'.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      1,
-      1
    },
    {
       SETTING_DEFAULT_AUDIO_ALL,
@@ -321,11 +245,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Set all [General Audio Settings] back to their 'DEFAULT' values.",
       GREEN,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_EMU_CURRENT_SAVE_STATE_SLOT, 
@@ -336,11 +256,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Set the current savestate slot (can also be configured ingame).",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_EMU_SHOW_INFO_MSG, 
@@ -351,11 +267,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Show onscreen info messages in the menu.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_RARCH_DEFAULT_EMU,
@@ -366,11 +278,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Select a default emulator core to launch at start-up.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_EMU_DEFAULT_ALL,
@@ -381,11 +289,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Set [all RetroArch settings] back to their 'DEFAULT' values.",
       GREEN,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_EMU_REWIND_ENABLED,
@@ -396,11 +300,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - [Rewind] feature is set to 'OFF'.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_EMU_VIDEO_DEFAULT_ALL,
@@ -411,11 +311,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Set [all RetroArch Video settings] back to their 'DEFAULT' values.",
       GREEN,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_EMU_AUDIO_MUTE,
@@ -426,11 +322,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - [Mute Audio] is set to 'OFF'.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_EMU_AUDIO_DEFAULT_ALL,
@@ -441,11 +333,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Set [all RetroArch Audio settings] back to their 'DEFAULT' values.",
       GREEN,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_PATH_DEFAULT_ROM_DIRECTORY,
@@ -456,8 +344,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Set the default [Startup ROM directory]. NOTE: You will have to\nrestart the emulator for this change to have any effect.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -469,8 +355,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Set the default path where all the savestate files will be saved to.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -482,8 +366,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Set the default SRAM (SaveRAM) directory path. All the\nbattery backup saves will be stored in this directory.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -495,8 +377,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Set the default [Cheatfile directory] path. All CHT (cheat) files\nwill be stored here.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -508,10 +388,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - [Custom SRAM Dir Path] feature is set to 'OFF'.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      1,
       1
    },
    {
@@ -523,11 +400,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - [Custom Save State Dir Path] feature is set to 'OFF'.",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
-      1,
-      1
    },
    {
       SETTING_PATH_DEFAULT_ALL,
@@ -538,8 +411,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Set [all Path settings] back to their 'DEFAULT' values.",
       GREEN,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -551,8 +422,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -564,8 +433,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -577,8 +444,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -590,8 +455,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -603,8 +466,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -616,8 +477,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -629,8 +488,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -642,8 +499,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -655,8 +510,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -668,8 +521,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -681,8 +532,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -694,8 +543,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -707,8 +554,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -720,8 +565,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -733,8 +576,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -746,8 +587,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -759,8 +598,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -772,8 +609,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "",
       WHITE,
-      0.91f,
-      0.09f,
       0.83f,
    },
    {
@@ -785,11 +620,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Save the custom control settings.",
       GREEN,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    },
    {
       SETTING_CONTROLS_DEFAULT_ALL,
@@ -800,10 +631,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       YELLOW,
       "INFO - Set all [Controls settings] back to their 'DEFAULT' values.",
       GREEN,
-      0.91f,
-      0.09f,
       0.83f,
-      0,
-      1
    }
 };

@@ -18,10 +18,9 @@
 
 #include "retroarch_console.h"
 
-const char *rarch_manage_libretro_install(const char *full_path, const char *path, const char *exe_ext)
+static void rarch_manage_libretro_install(char *libretro_core_installed, size_t sizeof_libretro_core, const char *full_path, const char *path, const char *exe_ext)
 {
    int ret;
-   const char *retstr = NULL;
    char tmp_path2[1024], tmp_pathnewfile[1024];
 
    RARCH_LOG("Assumed path of CORE executable: [%s]\n", full_path);
@@ -60,8 +59,7 @@ const char *rarch_manage_libretro_install(const char *full_path, const char *pat
       if (ret == 0)
       {
          RARCH_LOG("Libsnes core [%s] renamed to: [%s].\n", full_path, tmp_pathnewfile);
-	 retstr = tmp_pathnewfile;
-         goto done;
+         strlcpy(libretro_core_installed, tmp_pathnewfile, sizeof_libretro_core);
       }
       else
       {
@@ -69,9 +67,26 @@ const char *rarch_manage_libretro_install(const char *full_path, const char *pat
 	 RARCH_WARN("CORE executable was not found, or some other errors occurred. Will attempt to load libretro core path from config file.\n");
       }
    }
+}
 
-done:
-   return retstr;
+bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
+ const char *libretro_path, const char *config_path, const char *extension)
+{
+   char libretro_core_installed[1024];
+   g_extern.verbose = true;
+
+   rarch_manage_libretro_install(libretro_core_installed, sizeof(libretro_core_installed), full_path, tmp_path, extension);
+
+   g_extern.verbose = false;
+
+   bool find_libretro_file = false;
+
+   if(libretro_core_installed != NULL)
+      strlcpy(g_settings.libretro, libretro_core_installed, sizeof(g_settings.libretro));
+   else
+      find_libretro_file = true;
+
+   return find_libretro_file;
 }
 
 void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext)

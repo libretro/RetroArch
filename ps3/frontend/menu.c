@@ -618,7 +618,7 @@ static void display_menubar(unsigned menu_enum)
    cellDbgFontPuts    (0.57f,  0.05f,  FONT_SIZE,  menu_enum == EMU_AUDIO_MENU ? RED : GREEN, "RETRO AUDIO |");
    cellDbgFontPuts    (0.09f,  0.09f,  FONT_SIZE,  menu_enum == PATH_MENU ? RED : GREEN,  "PATH |");
    cellDbgFontPuts    (0.19f,  0.09f,  FONT_SIZE, menu_enum == CONTROLS_MENU ? RED : GREEN,  "CONTROLS |"); 
-   cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
+   cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", PACKAGE_VERSION);
    gl_render_msg_post(gl);
 }
 
@@ -1272,8 +1272,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
                               cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
 			      CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
 
-			      screenshot_param.photo_title = EMULATOR_NAME;
-			      screenshot_param.game_title = EMULATOR_NAME;
+			      screenshot_param.photo_title = "RetroArch PS3";
+			      screenshot_param.game_title = "RetroArch PS3";
 			      cellScreenShotSetParameter (&screenshot_param);
 			      cellScreenShotEnable();
 			   }
@@ -1828,7 +1828,7 @@ static void ingame_menu_resize(void)
 
       cellDbgFontPuts (0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
       cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
-      cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
+      cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", PACKAGE_VERSION);
       cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
       cellDbgFontPrintf(x_position, ypos, font_size, GREEN, "Viewport X: #%d", g_console.viewports.custom_vp.x);
 
@@ -2179,7 +2179,7 @@ static void ingame_menu(void)
 
    cellDbgFontPuts(0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
    cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
-   cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
+   cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", PACKAGE_VERSION);
    gl_render_msg_post(gl);
    cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, comment);
    gl_render_msg_post(gl);
