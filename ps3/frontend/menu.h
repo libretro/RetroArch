@@ -27,33 +27,32 @@
 
 typedef struct
 {
-   uint32_t enum_id;			/* enum ID of item				*/
+   unsigned enum_id;			/* enum ID of item				*/
    char text[256];			/* item label					*/
    char setting_text[256];		/* setting label				*/
    float text_xpos;			/* text X position (upper left corner)		*/
    float text_ypos;			/* text Y position (upper left corner)		*/
-   uint32_t text_color;			/* text color					*/
+   unsigned text_color;			/* text color					*/
    char comment[256];			/* item comment					*/
-   uint32_t item_color;			/* color of item 				*/
+   unsigned item_color;			/* color of item 				*/
    float comment_scalefont;		/* font scale of item comment			*/ 
    float comment_xpos;			/* comment X position (upper left corner)	*/
    float comment_ypos;			/* comment Y position (upper left corner)	*/
-   uint32_t default_value;		/* default value of item			*/
-   uint32_t page;			/* page						*/
+   unsigned default_value;		/* default value of item			*/
+   unsigned page;			/* page						*/
 } item;
 
 typedef struct
 {
    char title[64];			/* menu title					*/
-   uint32_t enum_id;			/* enum ID of menu				*/
-   uint32_t selected;			/* index of selected item			*/
-   uint32_t page;			/* page						*/
-   uint32_t max_pages;			/* max pages					*/
-   uint32_t refreshpage;		/* bit whether or not to refresh page		*/
-   uint32_t first_setting;		/* first setting				*/
-   uint32_t max_settings;		/* max no of settings in menu			*/
-   uint32_t category_id;                /* category ID                                  */
-   item *items;				/* menu items					*/
+   unsigned enum_id;			/* enum ID of menu				*/
+   unsigned selected;			/* index of selected item			*/
+   unsigned page;			/* page						*/
+   unsigned max_pages;			/* max pages					*/
+   unsigned refreshpage;		/* bit whether or not to refresh page		*/
+   unsigned first_setting;		/* first setting				*/
+   unsigned max_settings;		/* max no of settings in menu			*/
+   unsigned category_id;                /* category ID                                  */
 } menu;
 
 enum
