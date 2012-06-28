@@ -53,8 +53,8 @@ static bool set_libretro_core_as_launch;
 
 filebrowser_t browser;				/* main file browser->for rom browser*/
 filebrowser_t tmpBrowser;			/* tmp file browser->for everything else*/
-uint32_t set_shader = 0;
-static uint32_t currently_selected_controller_menu = 0;
+unsigned set_shader = 0;
+static unsigned currently_selected_controller_menu = 0;
 static char strw_buffer[PATH_MAX];
 
 static menu menu_filebrowser = {
@@ -159,10 +159,65 @@ static menu menu_controlssettings = {
    items_generalsettings					/* items */
 };
 
+static void menu_stack_decrement(void)
+{
+   menuStackindex--;
+}
+
+static void menu_stack_increment(void)
+{
+   menuStackindex++;
+}
+
+static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
+{
+   switch(menu_id)
+   {
+      case FILE_BROWSER_MENU:
+      case INGAME_MENU:
+      case LIBRETRO_CHOICE:
+      case PATH_DEFAULT_ROM_DIR_CHOICE:
+      case PATH_SAVESTATES_DIR_CHOICE:
+      case PRESET_CHOICE:
+      case INGAME_MENU_RESIZE:
+      case INGAME_MENU_SCREENSHOT:
+      case INPUT_PRESET_CHOICE:
+      case SHADER_CHOICE:
+      case PATH_SRAM_DIR_CHOICE:
+      case PATH_CHEATS_DIR_CHOICE:
+         menuStack[stack_idx] = menu_filebrowser;
+         menuStack[stack_idx].enum_id = menu_id;
+         break;
+      case GENERAL_VIDEO_MENU:
+	 menuStack[stack_idx] = menu_generalvideosettings;
+	 break;
+      case GENERAL_AUDIO_MENU:
+	 menuStack[stack_idx] = menu_generalaudiosettings;
+	 break;
+      case EMU_GENERAL_MENU:
+	 menuStack[stack_idx] = menu_emu_settings;
+	 break;
+      case EMU_VIDEO_MENU:
+	 menuStack[stack_idx] = menu_emu_videosettings;
+	 break;
+      case EMU_AUDIO_MENU:
+	 menuStack[stack_idx] = menu_emu_audiosettings;
+	 break;
+      case PATH_MENU:
+	 menuStack[stack_idx] = menu_pathsettings;
+         break;
+      case CONTROLS_MENU:
+	 menuStack[stack_idx] = menu_controlssettings;
+	 break;
+       default:
+         break;
+   }
+}
+
 //forward decls
 extern const char *ps3_get_resolution_label(unsigned resolution);
 
-static void display_menubar(uint32_t menu_enum)
+static void display_menubar(unsigned menu_enum)
 {
    gl_t *gl = driver.video_data;
 
@@ -183,51 +238,49 @@ static uint64_t older_state = 0;
 
 static void browser_update(filebrowser_t * b, const char *extensions)
 {
+   filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
+
+   if (CTRL_LSTICK_DOWN(trigger_state))
+      action = FILEBROWSER_ACTION_DOWN;
+   else if (CTRL_DOWN(trigger_state))
+      action = FILEBROWSER_ACTION_DOWN;
+   else if (CTRL_LSTICK_UP(trigger_state))
+      action = FILEBROWSER_ACTION_UP;
+   else if (CTRL_UP(trigger_state))
+      action = FILEBROWSER_ACTION_UP;
+   else if (CTRL_RIGHT(trigger_state))
+      action = FILEBROWSER_ACTION_RIGHT;
+   else if (CTRL_LSTICK_RIGHT(trigger_state))
+      action = FILEBROWSER_ACTION_RIGHT;
+   else if (CTRL_LEFT(trigger_state))
+      action = FILEBROWSER_ACTION_LEFT;
+   else if (CTRL_LSTICK_LEFT(trigger_state))
+      action = FILEBROWSER_ACTION_LEFT;
+   else if (CTRL_R1(trigger_state))
+      action = FILEBROWSER_ACTION_SCROLL_DOWN;
+   else if (CTRL_R2(trigger_state))
+      action = FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH;
+   else if (CTRL_L2(trigger_state))
+      action = FILEBROWSER_ACTION_SCROLL_UP_SMOOTH;
+   else if (CTRL_L1(trigger_state))
+      action = FILEBROWSER_ACTION_SCROLL_UP;
+   else if (CTRL_CIRCLE(trigger_state))
+      action = FILEBROWSER_ACTION_CANCEL;
+   else if (CTRL_START(trigger_state))
    {
-      filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
-
-      if (CTRL_LSTICK_DOWN(trigger_state))
-         action = FILEBROWSER_ACTION_DOWN;
-      else if (CTRL_DOWN(trigger_state))
-         action = FILEBROWSER_ACTION_DOWN;
-      else if (CTRL_LSTICK_UP(trigger_state))
-         action = FILEBROWSER_ACTION_UP;
-      else if (CTRL_UP(trigger_state))
-         action = FILEBROWSER_ACTION_UP;
-      else if (CTRL_RIGHT(trigger_state))
-         action = FILEBROWSER_ACTION_RIGHT;
-      else if (CTRL_LSTICK_RIGHT(trigger_state))
-         action = FILEBROWSER_ACTION_RIGHT;
-      else if (CTRL_LEFT(trigger_state))
-         action = FILEBROWSER_ACTION_LEFT;
-      else if (CTRL_LSTICK_LEFT(trigger_state))
-         action = FILEBROWSER_ACTION_LEFT;
-      else if (CTRL_R1(trigger_state))
-         action = FILEBROWSER_ACTION_SCROLL_DOWN;
-      else if (CTRL_R2(trigger_state))
-         action = FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH;
-      else if (CTRL_L2(trigger_state))
-         action = FILEBROWSER_ACTION_SCROLL_UP_SMOOTH;
-      else if (CTRL_L1(trigger_state))
-         action = FILEBROWSER_ACTION_SCROLL_UP;
-      else if (CTRL_CIRCLE(trigger_state))
-         action = FILEBROWSER_ACTION_CANCEL;
-      else if (CTRL_START(trigger_state))
-      {
-         action = FILEBROWSER_ACTION_RESET;
-         filebrowser_set_root(b, "/");
-	 strlcpy(b->extensions, extensions, sizeof(b->extensions));
-      }
-
-      if(action != FILEBROWSER_ACTION_NOOP)
-         filebrowser_iterate(b, action);
+      action = FILEBROWSER_ACTION_RESET;
+      filebrowser_set_root(b, "/");
+      strlcpy(b->extensions, extensions, sizeof(b->extensions));
    }
+
+   if(action != FILEBROWSER_ACTION_NOOP)
+      filebrowser_iterate(b, action);
 }
 
 static void browser_render(filebrowser_t * b)
 {
    gl_t *gl = driver.video_data;
-   uint32_t file_count = b->current_dir.list->size;
+   unsigned file_count = b->current_dir.list->size;
    int current_index, page_number, page_base, i;
    float currentX, currentY, ySpacing;
 
@@ -716,8 +769,9 @@ static void apply_scaling (unsigned init_mode)
    }
 }
 
-static void select_file(uint32_t menu_id)
+static void select_file(void)
 {
+   unsigned menu_id = menuStack[menuStackindex].enum_id;
    char extensions[256], title[256], object[256], comment[256], dir_path[PATH_MAX], path[PATH_MAX];
    gl_t * gl = driver.video_data;
 
@@ -772,9 +826,7 @@ static void select_file(uint32_t menu_id)
       set_initial_dir_tmpbrowser = false;
    }
 
-
-   {
-      browser_update(&tmpBrowser, extensions);
+   browser_update(&tmpBrowser, extensions);
 
       if (CTRL_CROSS(trigger_state))
       {
@@ -830,12 +882,11 @@ static void select_file(uint32_t menu_id)
 		  break;
 	    }
 
-            menuStackindex--;
+            menu_stack_decrement();
 	 }
       }
       else if (CTRL_TRIANGLE(trigger_state))
-         menuStackindex--;
-   }
+         menu_stack_decrement();
 
    cellDbgFontPrintf(0.09f, 0.09f, FONT_SIZE, YELLOW, "PATH: %s", filebrowser_get_current_dir(&tmpBrowser));
    cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	title);
@@ -843,11 +894,11 @@ static void select_file(uint32_t menu_id)
    cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s", comment);
    gl_render_msg_post(gl);
 
-   browser_render(&tmpBrowser);
 }
 
-static void select_directory(uint32_t menu_id)
+static void select_directory(void)
 {
+   unsigned menu_id = menuStack[menuStackindex].enum_id;
    char path[1024];
    gl_t * gl = driver.video_data;
 
@@ -882,7 +933,7 @@ static void select_directory(uint32_t menu_id)
 		  strlcpy(g_settings.cheat_database, path, sizeof(g_settings.cheat_database));
 		  break;
 	    }
-	    menuStackindex--;
+	    menu_stack_decrement();
 	 }
       }
       else if (CTRL_TRIANGLE(trigger_state))
@@ -903,7 +954,7 @@ static void select_directory(uint32_t menu_id)
 	       strlcpy(g_settings.cheat_database, path, sizeof(g_settings.cheat_database));
 	       break;
 	 }
-	 menuStackindex--;
+	 menu_stack_decrement();
       }
       else if (CTRL_CROSS(trigger_state))
       {
@@ -928,8 +979,6 @@ static void select_directory(uint32_t menu_id)
    cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s",
       "INFO - Browse to a directory and assign it as the path by\npressing SQUARE button.");
    gl_render_msg_post(gl);
-
-   browser_render(&tmpBrowser);
 }
 
 static void set_keybind_digital(uint64_t control_state, uint64_t default_retro_joypad_id)
@@ -1077,9 +1126,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
                            if(g_console.emulator_initialized)
 			   {
-                              menuStackindex++;
-			      menuStack[menuStackindex] = menu_filebrowser;
-			      menuStack[menuStackindex].enum_id = PRESET_CHOICE;
+                              menu_stack_increment();
+                              menu_stack_push(menuStackindex, PRESET_CHOICE);
 			      set_initial_dir_tmpbrowser = true;
 			   }
 			}
@@ -1091,9 +1139,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_SHADER:
 			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
-                           menuStackindex++;
-			   menuStack[menuStackindex] = menu_filebrowser;
-			   menuStack[menuStackindex].enum_id = SHADER_CHOICE;
+			   menu_stack_increment();
+			   menu_stack_push(menuStackindex, SHADER_CHOICE);
 			   set_shader = 0;
 			   set_initial_dir_tmpbrowser = true;
 			}
@@ -1107,9 +1154,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_SHADER_2:
 			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
-                           menuStackindex++;
-			   menuStack[menuStackindex] = menu_filebrowser;
-			   menuStack[menuStackindex].enum_id = SHADER_CHOICE;
+			   menu_stack_increment();
+			   menu_stack_push(menuStackindex, SHADER_CHOICE);
 			   set_shader = 1;
 			   set_initial_dir_tmpbrowser = true;
 			}
@@ -1158,13 +1204,13 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_HW_TEXTURE_FILTER:
 			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
-                                rarch_settings_change(S_HW_TEXTURE_FILTER);
-				gfx_ctx_set_filtering(1, g_settings.video.smooth);
+                           rarch_settings_change(S_HW_TEXTURE_FILTER);
+			   gfx_ctx_set_filtering(1, g_settings.video.smooth);
 			}
 			if(CTRL_START(trigger_state))
 			{
-                                rarch_settings_change(S_DEF_HW_TEXTURE_FILTER);
-				gfx_ctx_set_filtering(1, g_settings.video.smooth);
+                           rarch_settings_change(S_DEF_HW_TEXTURE_FILTER);
+			   gfx_ctx_set_filtering(1, g_settings.video.smooth);
 			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER_2:
@@ -1391,9 +1437,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_RARCH_DEFAULT_EMU:
 			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
-                           menuStackindex++;
-			   menuStack[menuStackindex] = menu_filebrowser;
-			   menuStack[menuStackindex].enum_id = LIBRETRO_CHOICE;
+			   menu_stack_increment();
+			   menu_stack_push(menuStackindex, LIBRETRO_CHOICE);
 			   set_initial_dir_tmpbrowser = true;
 			   set_libretro_core_as_launch = false;
 			}
@@ -1435,9 +1480,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
 			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
-                           menuStackindex++;
-			   menuStack[menuStackindex] = menu_filebrowser;
-			   menuStack[menuStackindex].enum_id = PATH_DEFAULT_ROM_DIR_CHOICE;
+			   menu_stack_increment();
+			   menu_stack_push(menuStackindex, PATH_DEFAULT_ROM_DIR_CHOICE);
 			   set_initial_dir_tmpbrowser = true;
 			}
 
@@ -1447,9 +1491,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_PATH_SAVESTATES_DIRECTORY:
 			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
-                           menuStackindex++;
-			   menuStack[menuStackindex] = menu_filebrowser;
-			   menuStack[menuStackindex].enum_id = PATH_SAVESTATES_DIR_CHOICE;
+			   menu_stack_increment();
+                           menu_stack_push(menuStackindex, PATH_SAVESTATES_DIR_CHOICE);
 			   set_initial_dir_tmpbrowser = true;
 			}
 
@@ -1460,9 +1503,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_PATH_SRAM_DIRECTORY:
 			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) ||  CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
-                           menuStackindex++;
-			   menuStack[menuStackindex] = menu_filebrowser;
-			   menuStack[menuStackindex].enum_id = PATH_SRAM_DIR_CHOICE;
+			   menu_stack_increment();
+                           menu_stack_push(menuStackindex, PATH_SRAM_DIR_CHOICE);
 			   set_initial_dir_tmpbrowser = true;
 			}
 
@@ -1472,9 +1514,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_PATH_CHEATS:
 			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) ||  CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
-                           menuStackindex++;
-			   menuStack[menuStackindex] = menu_filebrowser;
-			   menuStack[menuStackindex].enum_id = PATH_CHEATS_DIR_CHOICE;
+			   menu_stack_increment();
+                           menu_stack_push(menuStackindex, PATH_CHEATS_DIR_CHOICE);
 			   set_initial_dir_tmpbrowser = true;
 			}
 
@@ -1519,9 +1560,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 		case SETTING_CONTROLS_SCHEME:
 			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state) | CTRL_RIGHT(trigger_state)  || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
-                           menuStackindex++;
-			   menuStack[menuStackindex] = menu_filebrowser;
-			   menuStack[menuStackindex].enum_id = INPUT_PRESET_CHOICE;
+                           menu_stack_increment();
+                           menu_stack_push(menuStackindex, INPUT_PRESET_CHOICE);
 			   set_initial_dir_tmpbrowser = true;
 			}
 			if(CTRL_START(trigger_state))
@@ -1637,65 +1677,50 @@ static void settings_iterate(menu * menu_obj, settings_action_t action)
             menu_obj->page = menu_obj->items[menu_obj->selected].page;
          break;
       case SETTINGS_ACTION_TAB_PREVIOUS:
-         menuStackindex--;
+	 menu_stack_decrement();
          break;
       case SETTINGS_ACTION_TAB_NEXT:
          switch(menu_obj->enum_id)
 	 {
             case GENERAL_VIDEO_MENU:
-               menuStackindex++;
-	       menuStack[menuStackindex] = menu_generalaudiosettings;
-	       break;
 	    case GENERAL_AUDIO_MENU:
-	       menuStackindex++;
-	       menuStack[menuStackindex] = menu_emu_settings;
-	       break;
 	    case EMU_GENERAL_MENU:
-	       menuStackindex++;
-	       menuStack[menuStackindex] = menu_emu_videosettings;
-	       break;
 	    case EMU_VIDEO_MENU:
-	       menuStackindex++;
-	       menuStack[menuStackindex] = menu_emu_audiosettings;
-	       break;
 	    case EMU_AUDIO_MENU:
-	       menuStackindex++;
-	       menuStack[menuStackindex] = menu_pathsettings;
-	       break;
 	    case PATH_MENU:
-	       menuStackindex++;
-	       menuStack[menuStackindex] = menu_controlssettings;
+	       menu_stack_increment();
+               menu_stack_push(menuStackindex, menu_obj->enum_id+1);
 	       break;
 	    case CONTROLS_MENU:
+            default:
 	       break;
 	 }
          break;
    }
 }
 
-static void select_setting(menu * menu_obj)
+static void select_setting(void)
 {
    unsigned i;
    gl_t * gl = driver.video_data;
+   menu *menu_obj = &menuStack[menuStackindex];
 
-   {
-      settings_action_t action = SETTINGS_ACTION_NOOP;
+   settings_action_t action = SETTINGS_ACTION_NOOP;
 
-      /* back to ROM menu if CIRCLE is pressed */
-      if (CTRL_L1(trigger_state) || CTRL_CIRCLE(trigger_state))
-         action = SETTINGS_ACTION_TAB_PREVIOUS;
-      else if (CTRL_R1(trigger_state))
-         action = SETTINGS_ACTION_TAB_NEXT;
-      else if (CTRL_DOWN(trigger_state) || CTRL_LSTICK_DOWN(trigger_state))
-         action = SETTINGS_ACTION_DOWN;
-      else if (CTRL_UP(trigger_state) || CTRL_LSTICK_UP(trigger_state))
-         action = SETTINGS_ACTION_UP;
+   /* back to ROM menu if CIRCLE is pressed */
+   if (CTRL_L1(trigger_state) || CTRL_CIRCLE(trigger_state))
+      action = SETTINGS_ACTION_TAB_PREVIOUS;
+   else if (CTRL_R1(trigger_state))
+      action = SETTINGS_ACTION_TAB_NEXT;
+   else if (CTRL_DOWN(trigger_state) || CTRL_LSTICK_DOWN(trigger_state))
+      action = SETTINGS_ACTION_DOWN;
+   else if (CTRL_UP(trigger_state) || CTRL_LSTICK_UP(trigger_state))
+      action = SETTINGS_ACTION_UP;
 
-      if(action != SETTINGS_ACTION_NOOP)
-         settings_iterate(menu_obj, action);
+   if(action != SETTINGS_ACTION_NOOP)
+	   settings_iterate(menu_obj, action);
 
-      producesettingentry(menu_obj, menu_obj->selected);
-   }
+   producesettingentry(menu_obj, menu_obj->selected);
 
    display_menubar(menu_obj->enum_id);
    gl_render_msg_post(gl);
@@ -1755,8 +1780,8 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
 	 }
          break;
       case MENU_ROMSELECT_ACTION_GOTO_SETTINGS:
-         menuStackindex++;
-	 menuStack[menuStackindex] = menu_generalvideosettings;
+	 menu_stack_increment();
+         menu_stack_push(menuStackindex, GENERAL_VIDEO_MENU);
          break;
    }
 }
@@ -1765,18 +1790,16 @@ static void select_rom(void)
 {
    gl_t * gl = driver.video_data;
 
-   {
-      browser_update(&browser, rarch_console_get_rom_ext());
-      menu_romselect_action_t action = MENU_ROMSELECT_ACTION_NOOP;
+   browser_update(&browser, rarch_console_get_rom_ext());
+   menu_romselect_action_t action = MENU_ROMSELECT_ACTION_NOOP;
 
-      if (CTRL_SELECT(trigger_state))
-         action = MENU_ROMSELECT_ACTION_GOTO_SETTINGS;
-      else if (CTRL_CROSS(trigger_state))
-         action = MENU_ROMSELECT_ACTION_OK;
+   if (CTRL_SELECT(trigger_state))
+      action = MENU_ROMSELECT_ACTION_GOTO_SETTINGS;
+   else if (CTRL_CROSS(trigger_state))
+      action = MENU_ROMSELECT_ACTION_OK;
 
-      if (action != MENU_ROMSELECT_ACTION_NOOP)
-         menu_romselect_iterate(&browser, action);
-   }
+   if (action != MENU_ROMSELECT_ACTION_NOOP)
+      menu_romselect_iterate(&browser, action);
 
    if (filebrowser_get_current_path_isdir(&browser))
    {
@@ -1802,8 +1825,6 @@ static void select_rom(void)
    cellDbgFontPuts   (0.09f, 0.93f, FONT_SIZE, YELLOW,
 		   "L3 + R3 - resume game           SELECT - Settings screen");
    gl_render_msg_post(gl);
-
-   browser_render(&browser);
 }
 
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
@@ -1821,100 +1842,101 @@ static void ingame_menu_resize(void)
    gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 
    if(CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state))
-	   g_console.viewports.custom_vp.x -= 1;
+      g_console.viewports.custom_vp.x -= 1;
    else if (CTRL_LSTICK_RIGHT(state) || CTRL_RIGHT(state))
-	   g_console.viewports.custom_vp.x += 1;
+      g_console.viewports.custom_vp.x += 1;
 
    if (CTRL_LSTICK_UP(state) || CTRL_UP(state))
-	   g_console.viewports.custom_vp.y += 1;
+      g_console.viewports.custom_vp.y += 1;
    else if (CTRL_LSTICK_DOWN(state) || CTRL_DOWN(state)) 
-	   g_console.viewports.custom_vp.y -= 1;
+      g_console.viewports.custom_vp.y -= 1;
 
    if (CTRL_RSTICK_LEFT(state) || CTRL_L1(state))
-	   g_console.viewports.custom_vp.width -= 1;
+      g_console.viewports.custom_vp.width -= 1;
    else if (CTRL_RSTICK_RIGHT(state) || CTRL_R1(state))
-	   g_console.viewports.custom_vp.width += 1;
+      g_console.viewports.custom_vp.width += 1;
 
    if (CTRL_RSTICK_UP(state) || CTRL_L2(state))
-	   g_console.viewports.custom_vp.height += 1;
+      g_console.viewports.custom_vp.height += 1;
    else if (CTRL_RSTICK_DOWN(state) || CTRL_R2(state))
-	   g_console.viewports.custom_vp.height -= 1;
+      g_console.viewports.custom_vp.height -= 1;
 
    if (CTRL_TRIANGLE(trigger_state))
    {
-	   g_console.viewports.custom_vp.x = 0;
-	   g_console.viewports.custom_vp.y = 0;
-	   g_console.viewports.custom_vp.width = gl->win_width;
-	   g_console.viewports.custom_vp.height = gl->win_height;
+      g_console.viewports.custom_vp.x = 0;
+      g_console.viewports.custom_vp.y = 0;
+      g_console.viewports.custom_vp.width = gl->win_width;
+      g_console.viewports.custom_vp.height = gl->win_height;
    }
+
    if(CTRL_CIRCLE(trigger_state))
-	   menuStackindex--;
+      menu_stack_decrement();
 
    if(CTRL_SQUARE(~trigger_state))
    {
-	   struct retro_system_info info;
-	   retro_get_system_info(&info);
-	   const char *id = info.library_name ? info.library_name : "Unknown";
+      struct retro_system_info info;
+      retro_get_system_info(&info);
+      const char *id = info.library_name ? info.library_name : "Unknown";
 
-	   cellDbgFontPuts (0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
-	   cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
-	   cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
-	   cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
-	   cellDbgFontPrintf(x_position, ypos, font_size, GREEN, "Viewport X: #%d", g_console.viewports.custom_vp.x);
+      cellDbgFontPuts (0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
+      cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
+      cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", EMULATOR_VERSION);
+      cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
+      cellDbgFontPrintf(x_position, ypos, font_size, GREEN, "Viewport X: #%d", g_console.viewports.custom_vp.x);
 
-	   cellDbgFontPrintf(x_position, ypos+(ypos_increment*1), font_size, GREEN, "Viewport Y: #%d", g_console.viewports.custom_vp.y);
+      cellDbgFontPrintf(x_position, ypos+(ypos_increment*1), font_size, GREEN, "Viewport Y: #%d", g_console.viewports.custom_vp.y);
 
-	   cellDbgFontPrintf(x_position, ypos+(ypos_increment*2), font_size, GREEN, "Viewport Width: #%d", g_console.viewports.custom_vp.width);
+      cellDbgFontPrintf(x_position, ypos+(ypos_increment*2), font_size, GREEN, "Viewport Width: #%d", g_console.viewports.custom_vp.width);
 
-	   cellDbgFontPrintf(x_position, ypos+(ypos_increment*3), font_size, GREEN, "Viewport Height: #%d", g_console.viewports.custom_vp.height);
+      cellDbgFontPrintf(x_position, ypos+(ypos_increment*3), font_size, GREEN, "Viewport Height: #%d", g_console.viewports.custom_vp.height);
 
-	   cellDbgFontPrintf (0.09f, 0.40f, font_size, LIGHTBLUE, "CONTROLS:");
+      cellDbgFontPrintf (0.09f, 0.40f, font_size, LIGHTBLUE, "CONTROLS:");
 
-	   cellDbgFontPrintf (0.09f, 0.46f, font_size,  LIGHTBLUE, "LEFT or LSTICK UP");
-	   cellDbgFontPrintf (0.5f, 0.46f, font_size, LIGHTBLUE, "- Decrease Viewport X");
+      cellDbgFontPrintf (0.09f, 0.46f, font_size,  LIGHTBLUE, "LEFT or LSTICK UP");
+      cellDbgFontPrintf (0.5f, 0.46f, font_size, LIGHTBLUE, "- Decrease Viewport X");
 
-	   gl_render_msg_post(gl);
+      gl_render_msg_post(gl);
 
-	   cellDbgFontPrintf (0.09f, 0.48f,   font_size,      LIGHTBLUE, "RIGHT or LSTICK RIGHT");
-	   cellDbgFontPrintf (0.5f, 0.48f,   font_size,      LIGHTBLUE, "- Increase Viewport X");
+      cellDbgFontPrintf (0.09f, 0.48f,   font_size,      LIGHTBLUE, "RIGHT or LSTICK RIGHT");
+      cellDbgFontPrintf (0.5f, 0.48f,   font_size,      LIGHTBLUE, "- Increase Viewport X");
 
-	   cellDbgFontPrintf (0.09f, 0.50f,   font_size,      LIGHTBLUE,           "UP or LSTICK UP");
-	   cellDbgFontPrintf (0.5f, 0.50f,   font_size,      LIGHTBLUE,           "- Increase Viewport Y");
+      cellDbgFontPrintf (0.09f, 0.50f,   font_size,      LIGHTBLUE,           "UP or LSTICK UP");
+      cellDbgFontPrintf (0.5f, 0.50f,   font_size,      LIGHTBLUE,           "- Increase Viewport Y");
 
-	   gl_render_msg_post(gl);
+      gl_render_msg_post(gl);
 
-	   cellDbgFontPrintf (0.09f,   0.52f,   font_size,      LIGHTBLUE,           "DOWN or LSTICK DOWN");
-	   cellDbgFontPrintf (0.5f,   0.52f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Y");
+      cellDbgFontPrintf (0.09f,   0.52f,   font_size,      LIGHTBLUE,           "DOWN or LSTICK DOWN");
+      cellDbgFontPrintf (0.5f,   0.52f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Y");
 
-	   cellDbgFontPrintf (0.09f,   0.54f,   font_size,      LIGHTBLUE,           "L1 or RSTICK LEFT");
-	   cellDbgFontPrintf (0.5f,   0.54f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Width");
+      cellDbgFontPrintf (0.09f,   0.54f,   font_size,      LIGHTBLUE,           "L1 or RSTICK LEFT");
+      cellDbgFontPrintf (0.5f,   0.54f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Width");
 
-	   gl_render_msg_post(gl);
+      gl_render_msg_post(gl);
 
-	   cellDbgFontPrintf (0.09f,   0.56f,   font_size,      LIGHTBLUE,           "R1 or RSTICK RIGHT");
-	   cellDbgFontPrintf (0.5f,   0.56f,   font_size,      LIGHTBLUE,           "- Increase Viewport Width");
+      cellDbgFontPrintf (0.09f,   0.56f,   font_size,      LIGHTBLUE,           "R1 or RSTICK RIGHT");
+      cellDbgFontPrintf (0.5f,   0.56f,   font_size,      LIGHTBLUE,           "- Increase Viewport Width");
 
-	   cellDbgFontPrintf (0.09f,   0.58f,   font_size,      LIGHTBLUE,           "L2 or  RSTICK UP");
-	   cellDbgFontPrintf (0.5f,   0.58f,   font_size,      LIGHTBLUE,           "- Increase Viewport Height");
+      cellDbgFontPrintf (0.09f,   0.58f,   font_size,      LIGHTBLUE,           "L2 or  RSTICK UP");
+      cellDbgFontPrintf (0.5f,   0.58f,   font_size,      LIGHTBLUE,           "- Increase Viewport Height");
 
-	   gl_render_msg_post(gl);
+      gl_render_msg_post(gl);
 
-	   cellDbgFontPrintf (0.09f,   0.60f,   font_size,      LIGHTBLUE,           "R2 or RSTICK DOWN");
-	   cellDbgFontPrintf (0.5f,   0.60f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Height");
+      cellDbgFontPrintf (0.09f,   0.60f,   font_size,      LIGHTBLUE,           "R2 or RSTICK DOWN");
+      cellDbgFontPrintf (0.5f,   0.60f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Height");
 
-	   cellDbgFontPrintf (0.09f,   0.66f,   font_size,      LIGHTBLUE,           "TRIANGLE");
-	   cellDbgFontPrintf (0.5f,   0.66f,   font_size,      LIGHTBLUE,           "- Reset To Defaults");
+      cellDbgFontPrintf (0.09f,   0.66f,   font_size,      LIGHTBLUE,           "TRIANGLE");
+      cellDbgFontPrintf (0.5f,   0.66f,   font_size,      LIGHTBLUE,           "- Reset To Defaults");
 
-	   cellDbgFontPrintf (0.09f,   0.68f,   font_size,      LIGHTBLUE,           "SQUARE");
-	   cellDbgFontPrintf (0.5f,   0.68f,   font_size,      LIGHTBLUE,           "- Show Game Screen");
+      cellDbgFontPrintf (0.09f,   0.68f,   font_size,      LIGHTBLUE,           "SQUARE");
+      cellDbgFontPrintf (0.5f,   0.68f,   font_size,      LIGHTBLUE,           "- Show Game Screen");
 
-	   cellDbgFontPrintf (0.09f,   0.70f,   font_size,      LIGHTBLUE,           "CIRCLE");
-	   cellDbgFontPrintf (0.5f,   0.70f,   font_size,      LIGHTBLUE,           "- Return to Ingame Menu");
+      cellDbgFontPrintf (0.09f,   0.70f,   font_size,      LIGHTBLUE,           "CIRCLE");
+      cellDbgFontPrintf (0.5f,   0.70f,   font_size,      LIGHTBLUE,           "- Return to Ingame Menu");
 
-	   gl_render_msg_post(gl);
+      gl_render_msg_post(gl);
 
-	   cellDbgFontPrintf (0.09f, 0.83f, 0.91f, LIGHTBLUE, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the menu.");
-	   gl_render_msg_post(gl);
+      cellDbgFontPrintf (0.09f, 0.83f, 0.91f, LIGHTBLUE, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the menu.");
+      gl_render_msg_post(gl);
    }
 }
 
@@ -1926,16 +1948,16 @@ static void ingame_menu_screenshot(void)
    {
       if(CTRL_CIRCLE(trigger_state))
       {
-	 menuStackindex--;
+	 menu_stack_decrement();
 	 gl->menu_render = true;
       }
    }
 }
 
-static void ingame_menu(uint32_t menu_id)
+static void ingame_menu(void)
 {
    char comment[256];
-   static uint32_t menuitem_colors[MENU_ITEM_LAST];
+   static unsigned menuitem_colors[MENU_ITEM_LAST];
    gl_t * gl = driver.video_data;
 
    float x_position = 0.3f;
@@ -1948,7 +1970,6 @@ static void ingame_menu(uint32_t menu_id)
 
    menuitem_colors[g_console.ingame_menu_item] = RED;
 
-   {
       if(CTRL_CIRCLE(trigger_state))
          rarch_settings_change(S_RETURN_TO_GAME);
 
@@ -2077,18 +2098,16 @@ static void ingame_menu(uint32_t menu_id)
 	 case MENU_ITEM_RESIZE_MODE:
 	    if(CTRL_CROSS(trigger_state))
             {
-	       menuStackindex++;
-	       menuStack[menuStackindex] = menu_filebrowser;
-	       menuStack[menuStackindex].enum_id = INGAME_MENU_RESIZE;
+               menu_stack_increment();
+	       menu_stack_push(menuStackindex, INGAME_MENU_RESIZE);
             }
 	    strlcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
 	    if(CTRL_CROSS(trigger_state))
 	    {
-	       menuStackindex++;
-	       menuStack[menuStackindex] = menu_filebrowser;
-	       menuStack[menuStackindex].enum_id = INGAME_MENU_SCREENSHOT;
+               menu_stack_increment();
+	       menu_stack_push(menuStackindex, INGAME_MENU_SCREENSHOT);
 	    }
 	    strlcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.", sizeof(comment));
 	    break;
@@ -2116,9 +2135,8 @@ static void ingame_menu(uint32_t menu_id)
 	 case MENU_ITEM_CHANGE_LIBRETRO:
 	    if(CTRL_CROSS(trigger_state))
 	    {
-               menuStackindex++;
-	       menuStack[menuStackindex] = menu_filebrowser;
-	       menuStack[menuStackindex].enum_id = LIBRETRO_CHOICE;
+               menu_stack_increment();
+	       menu_stack_push(menuStackindex, LIBRETRO_CHOICE);
 	       set_libretro_core_as_launch = true;
 	       set_initial_dir_tmpbrowser = true;
 	    }
@@ -2158,8 +2176,6 @@ static void ingame_menu(uint32_t menu_id)
 
       if(CTRL_L3(trigger_state) && CTRL_R3(trigger_state))
          rarch_settings_change(S_RETURN_TO_GAME);
-   }
-
 
    cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Quick Menu");
 
@@ -2251,12 +2267,13 @@ static bool check_shoulder_buttons(uint64_t state_tmp)
      return false;
 }
 
+
+
 void menu_loop(void)
 {
    gl_t * gl = driver.video_data;
 
-   menuStack[0] = menu_filebrowser;
-   menuStack[0].enum_id = FILE_BROWSER_MENU;
+   menu_stack_push(0, FILE_BROWSER_MENU);
 
    g_console.menu_enable = true;
 
@@ -2266,9 +2283,8 @@ void menu_loop(void)
 
    if(g_console.ingame_menu_enable)
    {
-      menuStackindex++;
-      menuStack[menuStackindex] = menu_filebrowser;
-      menuStack[menuStackindex].enum_id = INGAME_MENU;
+      menu_stack_increment();
+      menu_stack_push(menuStackindex, INGAME_MENU);
    }
 
    do
@@ -2315,10 +2331,13 @@ void menu_loop(void)
 
       rarch_render_cached_frame();
 
+      filebrowser_t * fb = &browser;
+
       switch(menu_id)
       {
          case FILE_BROWSER_MENU:
             select_rom();
+            fb = &browser;
 	    break;
 	 case GENERAL_VIDEO_MENU:
 	 case GENERAL_AUDIO_MENU:
@@ -2327,30 +2346,43 @@ void menu_loop(void)
 	 case EMU_AUDIO_MENU:
 	 case PATH_MENU:
 	 case CONTROLS_MENU:
-	    select_setting(&menuStack[menuStackindex]);
+	    select_setting();
 	    break;
 	 case SHADER_CHOICE:
 	 case PRESET_CHOICE:
 	 case BORDER_CHOICE:
 	 case LIBRETRO_CHOICE:
 	 case INPUT_PRESET_CHOICE:
-	    select_file(menu_id);
+	    select_file();
+            fb = &tmpBrowser;
 	    break;
 	 case PATH_SAVESTATES_DIR_CHOICE:
 	 case PATH_DEFAULT_ROM_DIR_CHOICE:
 	 case PATH_CHEATS_DIR_CHOICE:
 	 case PATH_SRAM_DIR_CHOICE:
-	    select_directory(menu_id);
+	    select_directory();
+            fb = &tmpBrowser;
 	    break;
 	 case INGAME_MENU:
 	    if(g_console.ingame_menu_enable)
-               ingame_menu(menu_id);
+               ingame_menu();
             break;
          case INGAME_MENU_RESIZE:
             ingame_menu_resize();
 	    break;
          case INGAME_MENU_SCREENSHOT:
             ingame_menu_screenshot();
+            break;
+      }
+
+      switch(menu_category_id)
+      {
+         case CATEGORY_FILEBROWSER:
+            browser_render(fb);
+            break;
+         case CATEGORY_SETTINGS:
+            break;
+         case CATEGORY_INGAME_MENU:
             break;
       }
 
@@ -2407,7 +2439,7 @@ void menu_loop(void)
    gl->menu_render = false;
 
    if(g_console.ingame_menu_enable)
-      menuStackindex--;		// pop ingame menu from stack
+      menu_stack_decrement();
 
    gl->block_swap = false;
 
