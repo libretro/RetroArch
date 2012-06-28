@@ -601,8 +601,10 @@ RARCH_WARN("Shader support is not implemented for this build.\n");
 
 #ifdef HAVE_RARCH_MAIN_WRAP
 
-void rarch_startup (const char * config_path)
+bool rarch_startup (const char * config_path)
 {
+   bool retval = false;
+
    if(g_console.initialize_rarch_enable)
    {
       if(g_console.emulator_initialized)
@@ -623,6 +625,7 @@ void rarch_startup (const char * config_path)
       {
          g_console.emulator_initialized = 1;
          g_console.initialize_rarch_enable = 0;
+         retval = true;
       }
       else
       {
@@ -632,6 +635,8 @@ void rarch_startup (const char * config_path)
          rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
       }
    }
+
+   return retval;
 }
 
 int rarch_main_init_wrap(const struct rarch_main_wrap *args)

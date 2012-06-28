@@ -207,7 +207,7 @@ struct rarch_main_wrap
 };
 
 int rarch_main_init_wrap(const struct rarch_main_wrap *args);
-void rarch_startup (const char * config_path);
+bool rarch_startup (const char * config_path);
 #endif
 
 #ifdef HAVE_RARCH_EXEC
