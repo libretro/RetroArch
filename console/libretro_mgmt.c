@@ -18,70 +18,72 @@
 
 #include "retroarch_console.h"
 
-static void rarch_manage_libretro_install(char *libretro_core_installed, size_t sizeof_libretro_core, const char *full_path, const char *path, const char *exe_ext)
+// if a CORE executable exists (full_path), this means we have just installed
+// a new libretro port and therefore we need to change it to a more
+// sane name.
+
+static bool rarch_manage_libretro_install(char *libretro_core_installed, size_t sizeof_libretro_core, const char *full_path, const char *path, const char *exe_ext)
 {
    int ret;
    char tmp_path2[1024], tmp_pathnewfile[1024];
 
-   RARCH_LOG("Assumed path of CORE executable: [%s]\n", full_path);
+   rarch_console_name_from_id(tmp_path2, sizeof(tmp_path2));
+   strlcat(tmp_path2, exe_ext, sizeof(tmp_path2));
+   snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", path, tmp_path2);
 
-   if (path_file_exists(full_path))
+   if (path_file_exists(tmp_pathnewfile))
    {
-      // if CORE executable exists, this means we have just installed
-      // a new libretro port and therefore we need to change it to a more
-      // sane name.
+      // if libretro core already exists, this means we are
+      // upgrading the libretro core - so delete pre-existing
+      // file first.
 
-      rarch_console_name_from_id(tmp_path2, sizeof(tmp_path2));
-      strlcat(tmp_path2, exe_ext, sizeof(tmp_path2));
-      snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", path, tmp_path2);
-
-      if (path_file_exists(tmp_pathnewfile))
-      {
-         // if libretro core already exists, this means we are
-         // upgrading the libretro core - so delete pre-existing
-         // file first.
-
-         RARCH_LOG("Upgrading emulator core...\n");
-
-         ret = remove(tmp_pathnewfile);
-
-         if (ret == 0)
-         {
-            RARCH_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-         }
-         else
-            RARCH_ERR("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-      }
-
-      //now attempt the renaming.
-      ret = rename(full_path, tmp_pathnewfile);
+      RARCH_LOG("Upgrading emulator core...\n");
+      ret = remove(tmp_pathnewfile);
 
       if (ret == 0)
-      {
-         RARCH_LOG("Libsnes core [%s] renamed to: [%s].\n", full_path, tmp_pathnewfile);
-         strlcpy(libretro_core_installed, tmp_pathnewfile, sizeof_libretro_core);
-      }
+         RARCH_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
       else
-      {
-         RARCH_ERR("Failed to rename CORE executable.\n");
-	 RARCH_WARN("CORE executable was not found, or some other errors occurred. Will attempt to load libretro core path from config file.\n");
-      }
+         RARCH_ERR("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
    }
+
+   //now attempt the renaming.
+   ret = rename(full_path, tmp_pathnewfile);
+
+   if (ret == 0)
+   {
+      RARCH_LOG("Libsnes core [%s] renamed to: [%s].\n", full_path, tmp_pathnewfile);
+      strlcpy(libretro_core_installed, tmp_pathnewfile, sizeof_libretro_core);
+      ret = 1;
+   }
+   else
+   {
+      RARCH_ERR("Failed to rename CORE executable.\n");
+      RARCH_WARN("CORE executable was not found, or some other errors occurred. Will attempt to load libretro core path from config file.\n");
+      ret = 0;
+   }
+
+   return ret;
 }
 
 bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
  const char *libretro_path, const char *config_path, const char *extension)
 {
+   bool libretro_core_was_installed = false;
+   bool find_libretro_file = false;
    char libretro_core_installed[1024];
+
    g_extern.verbose = true;
 
-   rarch_manage_libretro_install(libretro_core_installed, sizeof(libretro_core_installed), full_path, tmp_path, extension);
+   //install and rename libretro core first if 'CORE' executable exists
+   if (path_file_exists(full_path))
+      libretro_core_was_installed = rarch_manage_libretro_install(
+      libretro_core_installed, sizeof(libretro_core_installed), full_path, tmp_path, extension);
 
    g_extern.verbose = false;
 
-   bool find_libretro_file = false;
+   //if we have just installed a libretro core, set libretro path in settings to newly installed libretro core
 
-   if(libretro_core_installed != NULL)
+   if(libretro_core_was_installed)
       strlcpy(g_settings.libretro, libretro_core_installed, sizeof(g_settings.libretro));
    else
       find_libretro_file = true;
