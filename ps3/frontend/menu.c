@@ -48,7 +48,6 @@
 
 menu menuStack[10];
 int menuStackindex = 0;
-static bool set_initial_dir_tmpbrowser;
 static bool set_libretro_core_as_launch;
 
 filebrowser_t browser;				/* main file browser->for rom browser*/
@@ -513,12 +512,70 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].category_id = CATEGORY_INGAME_MENU;
          break;
       case FILE_BROWSER_MENU:
+         strlcpy(menuStack[stack_idx].title, "FILE BROWSER |", sizeof(menuStack[stack_idx].title));
+         menuStack[stack_idx].enum_id = menu_id;
+         menuStack[stack_idx].selected = 0;
+         menuStack[stack_idx].page = 0;
+         menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
+         menu_stack_refresh(stack_idx);
+         break;
       case LIBRETRO_CHOICE:
+         strlcpy(menuStack[stack_idx].title, "FILE BROWSER |", sizeof(menuStack[stack_idx].title));
+         menuStack[stack_idx].enum_id = menu_id;
+         menuStack[stack_idx].selected = 0;
+         menuStack[stack_idx].page = 0;
+         menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
+         menu_stack_refresh(stack_idx);
+	 strlcpy(tmpBrowser.extensions, "self|SELF|bin|BIN", sizeof(tmpBrowser.extensions));
+	 filebrowser_set_root(&tmpBrowser, LIBRETRO_DIR_PATH);
+	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
+         break;
+      case PRESET_CHOICE:
+         strlcpy(menuStack[stack_idx].title, "FILE BROWSER |", sizeof(menuStack[stack_idx].title));
+         menuStack[stack_idx].enum_id = menu_id;
+         menuStack[stack_idx].selected = 0;
+         menuStack[stack_idx].page = 0;
+         menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
+         menu_stack_refresh(stack_idx);
+	 strlcpy(tmpBrowser.extensions, "cgp|CGP", sizeof(tmpBrowser.extensions));
+	 filebrowser_set_root(&tmpBrowser, PRESETS_DIR_PATH);
+	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
+         break;
+      case INPUT_PRESET_CHOICE:
+         strlcpy(menuStack[stack_idx].title, "FILE BROWSER |", sizeof(menuStack[stack_idx].title));
+         menuStack[stack_idx].enum_id = menu_id;
+         menuStack[stack_idx].selected = 0;
+         menuStack[stack_idx].page = 0;
+         menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
+         menu_stack_refresh(stack_idx);
+	 strlcpy(tmpBrowser.extensions, "cfg|CFG", sizeof(tmpBrowser.extensions));
+	 filebrowser_set_root(&tmpBrowser, INPUT_PRESETS_DIR_PATH);
+	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
+         break;
+      case SHADER_CHOICE:
+         strlcpy(menuStack[stack_idx].title, "FILE BROWSER |", sizeof(menuStack[stack_idx].title));
+         menuStack[stack_idx].enum_id = menu_id;
+         menuStack[stack_idx].selected = 0;
+         menuStack[stack_idx].page = 0;
+         menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
+         menu_stack_refresh(stack_idx);
+	 strlcpy(tmpBrowser.extensions, "cg|CG", sizeof(tmpBrowser.extensions));
+	 filebrowser_set_root(&tmpBrowser, SHADERS_DIR_PATH);
+	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
+         break;
+      case BORDER_CHOICE:
+         strlcpy(menuStack[stack_idx].title, "FILE BROWSER |", sizeof(menuStack[stack_idx].title));
+         menuStack[stack_idx].enum_id = menu_id;
+         menuStack[stack_idx].selected = 0;
+         menuStack[stack_idx].page = 0;
+         menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
+         menu_stack_refresh(stack_idx);
+	 strlcpy(tmpBrowser.extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(tmpBrowser.extensions));
+	 filebrowser_set_root(&tmpBrowser, BORDERS_DIR_PATH);
+	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
+         break;
       case PATH_DEFAULT_ROM_DIR_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
-      case PRESET_CHOICE:
-      case INPUT_PRESET_CHOICE:
-      case SHADER_CHOICE:
       case PATH_SRAM_DIR_CHOICE:
       case PATH_CHEATS_DIR_CHOICE:
          strlcpy(menuStack[stack_idx].title, "FILE BROWSER |", sizeof(menuStack[stack_idx].title));
@@ -527,6 +584,9 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(stack_idx);
+	 strlcpy(tmpBrowser.extensions, "empty", sizeof(tmpBrowser.extensions));
+	 filebrowser_set_root(&tmpBrowser, "/");
+	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case GENERAL_VIDEO_MENU:
          strlcpy(menuStack[stack_idx].title, "VIDEO |", sizeof(menuStack[stack_idx].title));
@@ -720,20 +780,18 @@ static void apply_scaling (unsigned init_mode)
 static void select_file(void)
 {
    unsigned menu_id = menuStack[menuStackindex].enum_id;
-   char extensions[256], title[256], object[256], comment[256], dir_path[PATH_MAX], path[PATH_MAX];
+   char extensions[256], title[256], object[256], comment[256], path[PATH_MAX];
    gl_t * gl = driver.video_data;
 
    switch(menu_id)
    {
       case SHADER_CHOICE:
-         strlcpy(dir_path, SHADERS_DIR_PATH, sizeof(dir_path));
 	 strlcpy(extensions, "cg|CG", sizeof(extensions));
 	 strlcpy(title, "SHADER SELECTION", sizeof(title));
 	 strlcpy(object, "Shader", sizeof(object));
 	 strlcpy(comment, "INFO - Select a shader from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case PRESET_CHOICE:
-	 strlcpy(dir_path, PRESETS_DIR_PATH, sizeof(dir_path));
 	 strlcpy(extensions, "cgp|CGP", sizeof(extensions));
 	 strlcpy(title, "SHADER PRESETS SELECTION", sizeof(title));
 	 strlcpy(object, "Shader", sizeof(object));
@@ -741,7 +799,6 @@ static void select_file(void)
 	 strlcpy(comment, "INFO - Select a shader preset from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case INPUT_PRESET_CHOICE:
-	 strlcpy(dir_path, INPUT_PRESETS_DIR_PATH, sizeof(dir_path));
 	 strlcpy(extensions, "cfg|CFG", sizeof(extensions));
 	 strlcpy(title, "INPUT PRESETS SELECTION", sizeof(title));
 	 strlcpy(object, "Input", sizeof(object));
@@ -749,7 +806,6 @@ static void select_file(void)
 	 strlcpy(comment, "INFO - Select an input preset from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case BORDER_CHOICE:
-	 strlcpy(dir_path, BORDERS_DIR_PATH, sizeof(dir_path));
 	 strlcpy(extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(extensions));
 	 strlcpy(title, "BORDER SELECTION", sizeof(title));
 	 strlcpy(object, "Border", sizeof(object));
@@ -757,21 +813,12 @@ static void select_file(void)
 	 strlcpy(comment, "INFO - Select a border image file from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case LIBRETRO_CHOICE:
-	 strlcpy(dir_path, LIBRETRO_DIR_PATH, sizeof(dir_path));
 	 strlcpy(extensions, "self|SELF|bin|BIN", sizeof(extensions));
 	 strlcpy(title, "LIBRETRO CORE SELECTION", sizeof(title));
 	 strlcpy(object, "Libretro", sizeof(object));
 	 strlcpy(object, "Libretro core library", sizeof(object));
 	 strlcpy(comment, "INFO - Select a Libretro core from the menu by pressing the X button.", sizeof(comment));
 	 break;
-   }
-
-   if(set_initial_dir_tmpbrowser)
-   {
-      strlcpy(tmpBrowser.extensions, extensions, sizeof(tmpBrowser.extensions));
-      filebrowser_set_root(&tmpBrowser, dir_path);
-      filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
-      set_initial_dir_tmpbrowser = false;
    }
 
    browser_update(&tmpBrowser, extensions);
@@ -849,14 +896,6 @@ static void select_directory(void)
    unsigned menu_id = menuStack[menuStackindex].enum_id;
    char path[1024];
    gl_t * gl = driver.video_data;
-
-   if(set_initial_dir_tmpbrowser)
-   {
-      strlcpy(tmpBrowser.extensions, "empty", sizeof(tmpBrowser.extensions));
-      filebrowser_set_root(&tmpBrowser, "/");
-      filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
-      set_initial_dir_tmpbrowser = false;
-   }
 
    {
       browser_update(&tmpBrowser, "empty");
@@ -1076,7 +1115,6 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			   {
                               menu_stack_increment();
                               menu_stack_push(menuStackindex, PRESET_CHOICE);
-			      set_initial_dir_tmpbrowser = true;
 			   }
 			}
 			if(CTRL_START(trigger_state))
@@ -1090,7 +1128,6 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			   menu_stack_increment();
 			   menu_stack_push(menuStackindex, SHADER_CHOICE);
 			   set_shader = 0;
-			   set_initial_dir_tmpbrowser = true;
 			}
 			if(CTRL_START(trigger_state))
 			{
@@ -1105,7 +1142,6 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			   menu_stack_increment();
 			   menu_stack_push(menuStackindex, SHADER_CHOICE);
 			   set_shader = 1;
-			   set_initial_dir_tmpbrowser = true;
 			}
 			if(CTRL_START(trigger_state))
 			{
@@ -1387,7 +1423,6 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 			   menu_stack_increment();
 			   menu_stack_push(menuStackindex, LIBRETRO_CHOICE);
-			   set_initial_dir_tmpbrowser = true;
 			   set_libretro_core_as_launch = false;
 			}
 			if(CTRL_START(trigger_state))
@@ -1430,7 +1465,6 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 			   menu_stack_increment();
 			   menu_stack_push(menuStackindex, PATH_DEFAULT_ROM_DIR_CHOICE);
-			   set_initial_dir_tmpbrowser = true;
 			}
 
 			if(CTRL_START(trigger_state))
@@ -1441,7 +1475,6 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 			   menu_stack_increment();
                            menu_stack_push(menuStackindex, PATH_SAVESTATES_DIR_CHOICE);
-			   set_initial_dir_tmpbrowser = true;
 			}
 
 			if(CTRL_START(trigger_state))
@@ -1453,7 +1486,6 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 			   menu_stack_increment();
                            menu_stack_push(menuStackindex, PATH_SRAM_DIR_CHOICE);
-			   set_initial_dir_tmpbrowser = true;
 			}
 
 			if(CTRL_START(trigger_state))
@@ -1464,7 +1496,6 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
 			   menu_stack_increment();
                            menu_stack_push(menuStackindex, PATH_CHEATS_DIR_CHOICE);
-			   set_initial_dir_tmpbrowser = true;
 			}
 
 			if(CTRL_START(trigger_state))
@@ -1510,7 +1541,6 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			{
                            menu_stack_increment();
                            menu_stack_push(menuStackindex, INPUT_PRESET_CHOICE);
-			   set_initial_dir_tmpbrowser = true;
 			}
 			if(CTRL_START(trigger_state))
 			   menu_stack_refresh(menuStackindex);
@@ -2086,7 +2116,6 @@ static void ingame_menu(void)
                menu_stack_increment();
 	       menu_stack_push(menuStackindex, LIBRETRO_CHOICE);
 	       set_libretro_core_as_launch = true;
-	       set_initial_dir_tmpbrowser = true;
 	    }
 	    strlcpy(comment, "Press 'CROSS' to choose a different emulator core.", sizeof(comment));
 	    break;
