@@ -201,7 +201,7 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
          break;
       case S_MSG_LOADING_ROM:
          fill_pathname_base(tmp, g_console.rom_path, sizeof(tmp));
-         snprintf(str, sizeof(str), "INFO - Loading %.38s...", tmp);
+         snprintf(str, sizeof(str), "INFO - Loading %s...", tmp);
          break;
       case S_MSG_ROM_LOADING_ERROR:
          snprintf(str, sizeof(str), "ERROR - An error occurred during ROM loading.");
