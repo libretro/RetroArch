@@ -374,7 +374,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
 	 filebrowser_iterate(&browser, FILEBROWSER_ACTION_RESET);
          break;
       case LIBRETRO_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "File Browser", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "Libretro cores", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
@@ -385,7 +385,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case PRESET_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "File Browser", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "Shader presets", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
@@ -396,7 +396,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case INPUT_PRESET_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "File Browser", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "Input presets", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
@@ -407,7 +407,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case SHADER_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "File Browser", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "Shaders", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
@@ -418,7 +418,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case BORDER_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "File Browser", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "Borders", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
@@ -432,7 +432,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
       case PATH_SAVESTATES_DIR_CHOICE:
       case PATH_SRAM_DIR_CHOICE:
       case PATH_CHEATS_DIR_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "File Browser", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "Path Selection", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
@@ -540,6 +540,15 @@ static void display_menubar(void)
          break;
       case CONTROLS_MENU:
       case INGAME_MENU_RESIZE:
+      case SHADER_CHOICE:
+      case PRESET_CHOICE:
+      case BORDER_CHOICE:
+      case LIBRETRO_CHOICE:
+      case INPUT_PRESET_CHOICE:
+      case PATH_SAVESTATES_DIR_CHOICE:
+      case PATH_DEFAULT_ROM_DIR_CHOICE:
+      case PATH_CHEATS_DIR_CHOICE:
+      case PATH_SRAM_DIR_CHOICE:
 	 cellDbgFontPrintf(0.09f, 0.03f, 0.91f, WHITE, "<- PREV");
          break;
       default:
@@ -549,9 +558,30 @@ static void display_menubar(void)
    retro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
 
+   filebrowser_t *fb = &browser;
+
+   switch(menu_obj->enum_id)
+   {
+      case SHADER_CHOICE:
+      case PRESET_CHOICE:
+      case BORDER_CHOICE:
+      case LIBRETRO_CHOICE:
+      case INPUT_PRESET_CHOICE:
+      case PATH_SAVESTATES_DIR_CHOICE:
+      case PATH_DEFAULT_ROM_DIR_CHOICE:
+      case PATH_CHEATS_DIR_CHOICE:
+      case PATH_SRAM_DIR_CHOICE:
+         fb = &tmpBrowser;
+      case FILE_BROWSER_MENU:
+         cellDbgFontPrintf (0.09f, 0.09f, FONT_SIZE, YELLOW, "PATH: %s", filebrowser_get_current_dir(fb));
+         break;
+      default:
+         break;
+   }
+
    cellDbgFontPrintf(0.09f, 0.05f, 1.4f, WHITE, menu_obj->title);
    cellDbgFontPrintf (0.4f, 0.06f, 0.82f, WHITE, "Libretro core: %s (v%s)", id, info.library_version);
-   cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", PACKAGE_VERSION);
+   cellDbgFontPrintf (0.8f, 0.11f, 0.82f, WHITE, "v%s", PACKAGE_VERSION);
    gl_render_msg_post(gl);
 }
 
@@ -653,43 +683,34 @@ static void apply_scaling (unsigned init_mode)
 static void select_file(void)
 {
    unsigned menu_id = menuStack[menuStackindex].enum_id;
-   char extensions[256], title[256], object[256], comment[256], path[PATH_MAX];
+   char extensions[256], object[256], comment[256], path[PATH_MAX];
    gl_t * gl = driver.video_data;
 
    switch(menu_id)
    {
       case SHADER_CHOICE:
 	 strlcpy(extensions, "cg|CG", sizeof(extensions));
-	 strlcpy(title, "SHADER SELECTION", sizeof(title));
 	 strlcpy(object, "Shader", sizeof(object));
 	 strlcpy(comment, "INFO - Select a shader from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case PRESET_CHOICE:
 	 strlcpy(extensions, "cgp|CGP", sizeof(extensions));
-	 strlcpy(title, "SHADER PRESETS SELECTION", sizeof(title));
-	 strlcpy(object, "Shader", sizeof(object));
 	 strlcpy(object, "Shader preset", sizeof(object));
 	 strlcpy(comment, "INFO - Select a shader preset from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case INPUT_PRESET_CHOICE:
 	 strlcpy(extensions, "cfg|CFG", sizeof(extensions));
-	 strlcpy(title, "INPUT PRESETS SELECTION", sizeof(title));
-	 strlcpy(object, "Input", sizeof(object));
 	 strlcpy(object, "Input preset", sizeof(object));
 	 strlcpy(comment, "INFO - Select an input preset from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case BORDER_CHOICE:
 	 strlcpy(extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(extensions));
-	 strlcpy(title, "BORDER SELECTION", sizeof(title));
-	 strlcpy(object, "Border", sizeof(object));
 	 strlcpy(object, "Border image file", sizeof(object));
 	 strlcpy(comment, "INFO - Select a border image file from the menu by pressing the X button.", sizeof(comment));
 	 break;
       case LIBRETRO_CHOICE:
 	 strlcpy(extensions, "self|SELF|bin|BIN", sizeof(extensions));
-	 strlcpy(title, "LIBRETRO CORE SELECTION", sizeof(title));
-	 strlcpy(object, "Libretro", sizeof(object));
-	 strlcpy(object, "Libretro core library", sizeof(object));
+	 strlcpy(object, "Libretro core", sizeof(object));
 	 strlcpy(comment, "INFO - Select a Libretro core from the menu by pressing the X button.", sizeof(comment));
 	 break;
    }
@@ -756,12 +777,11 @@ static void select_file(void)
       else if (CTRL_TRIANGLE(trigger_state))
          menu_stack_decrement();
 
-   cellDbgFontPrintf(0.09f, 0.09f, FONT_SIZE, YELLOW, "PATH: %s", filebrowser_get_current_dir(&tmpBrowser));
-   cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	title);
+   display_menubar();
+
    cellDbgFontPrintf(0.09f, 0.92f, 0.92, YELLOW, "X - Select %s  /\\ - return to settings  START - Reset Startdir", object);
    cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s", comment);
    gl_render_msg_post(gl);
-
 }
 
 static void select_directory(void)
@@ -831,9 +851,8 @@ static void select_directory(void)
       }
    }
 
-   cellDbgFontPrintf (0.09f,  0.09f, FONT_SIZE, YELLOW, 
-      "PATH: %s", filebrowser_get_current_dir(&tmpBrowser));
-   cellDbgFontPuts (0.09f, 0.05f,  FONT_SIZE, RED,    "DIRECTORY SELECTION");
+   display_menubar();
+
    cellDbgFontPuts(0.09f, 0.93f, 0.92f, YELLOW,
       "X - Enter dir  /\\ - return to settings  START - Reset Startdir");
    cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s",
@@ -1637,7 +1656,6 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
 static void select_rom(void)
 {
    gl_t * gl = driver.video_data;
-   menu *menu_obj = &menuStack[menuStackindex];
 
    browser_update(&browser, rarch_console_get_rom_ext());
    menu_romselect_action_t action = MENU_ROMSELECT_ACTION_NOOP;
@@ -1663,14 +1681,8 @@ static void select_rom(void)
    if (path_file_exists(filebrowser_get_current_path(&browser)))
       cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
 
-   struct retro_system_info info;
-   retro_get_system_info(&info);
-   const char *id = info.library_name ? info.library_name : "Unknown";
+   display_menubar();
 
-   cellDbgFontPrintf(0.09f, 0.05f, 1.4f, WHITE, menu_obj->title);
-   cellDbgFontPrintf (0.4f, 0.06f, 0.82f, WHITE, "Libretro core: %s (v%s)", id, info.library_version);
-   cellDbgFontPrintf (0.09f, 0.09f, FONT_SIZE, YELLOW,
-		   "PATH: %s", filebrowser_get_current_dir(&browser));
    cellDbgFontPuts   (0.09f, 0.91f, FONT_SIZE, YELLOW,
 		   "L3 + R3 - resume game           SELECT - Settings screen");
    gl_render_msg_post(gl);
