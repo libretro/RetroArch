@@ -118,6 +118,7 @@ static bool take_screenshot_viewport(void)
       return false;
    }
 
+   free(buffer);
    return true;
 }
 
