@@ -19,7 +19,9 @@
 
 enum
 {
-   S_DELAY_0 = 1, // display for one frame
+   S_DELAY_0 = 0,
+   S_DELAY_1 = 1,
+   S_DELAY_45 = 45,
    S_DELAY_90  = 90,
    S_DELAY_180 = 180,
    S_DELAY_270 = 270

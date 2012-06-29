@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
+item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 {
    {
       SETTING_CHANGE_RESOLUTION,                                        /* enum ID of item */
@@ -633,4 +633,173 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       GREEN,
       0.83f,
    }
+};
+
+item ingame_menu_settings[MENU_ITEM_LAST] =
+{
+   {
+      MENU_ITEM_LOAD_STATE,                                        /* enum ID of item */
+      "Load State",                                                     /* item label */
+      "",                                                               /* setting label */
+      0.0f,                                                             /* text X position */
+      0.0f,                                                             /* text Y position */
+      YELLOW,                                                           /* text color */
+      "INFO - Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the state from the currently selected save state slot.",
+      WHITE,                                                            /* color of item comment */
+      0.83f,                                                            /* comment Y position */
+   },
+   {
+      MENU_ITEM_SAVE_STATE,
+      "Save State",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.",
+      WHITE,
+      0.83f,
+   },
+   {
+      MENU_ITEM_KEEP_ASPECT_RATIO,
+      "Aspect Ratio",
+      "",
+      0.0f,	
+      0.0f,
+      YELLOW,
+      "INFO - Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.",
+      WHITE,
+      0.83f,
+   },
+   {
+      MENU_ITEM_OVERSCAN_AMOUNT,
+      "Overscan",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.",
+      WHITE,
+      0.83f,
+   },
+   {
+      MENU_ITEM_ORIENTATION,
+      "Rotation",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Press LEFT or RIGHT to change the [Rotation] settings.\nPress START to reset back to default values.",
+      WHITE,
+      0.83f,
+   },
+   {
+      MENU_ITEM_SCALE_FACTOR,
+      "Scale Factor",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Press LEFT or RIGHT to change the [Scaling] settings.\nPress START to reset back to default values.",
+      WHITE,
+      0.83f,
+   },
+   {
+      MENU_ITEM_RESIZE_MODE,
+      "Resize Mode",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Allows you to resize the scree by moving the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back.", 
+      GREEN,
+      0.83f,
+   },
+   {
+      MENU_ITEM_FRAME_ADVANCE,
+      "Frame Advance",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Press 'CROSS', 'L2' or 'R2' button to step one frame.",
+      GREEN,
+      0.83f,
+   },
+   {
+      MENU_ITEM_SCREENSHOT_MODE,
+      "Screenshot Mode",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Allows you to take a clean screenshot.\nPress 'CIRCLE' to go back to the in-game menu while in 'Screenshot Mode'.",
+      WHITE,
+      0.83f,
+   },
+   {
+      MENU_ITEM_RESET,
+      "Reset",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Press 'CROSS' to reset the game.",
+      WHITE,
+      0.83f,
+   },
+   {
+      MENU_ITEM_RETURN_TO_GAME,
+      "Return to Game",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Press 'CROSS' to return back to the game.",
+      WHITE,
+      0.83f,
+   },
+   {
+      MENU_ITEM_RETURN_TO_MENU,
+      "Return to Menu",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Press 'CROSS' to return back to the ROM Browser menu.",
+      WHITE,
+      0.83f,
+   },
+   {
+      MENU_ITEM_CHANGE_LIBRETRO,
+      "Change libretro core",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Press 'CROSS' to choose a different emulator core.",
+      GREEN,
+      0.83f,
+   },
+   {
+      MENU_ITEM_RETURN_TO_MULTIMAN,
+      "Return to multiMAN",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Press 'CROSS' to quit the emulator/game and return to multiMAN.",
+      GREEN,
+      0.83f,
+   },
+   {
+      MENU_ITEM_RETURN_TO_DASHBOARD,
+      "Return to XMB",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Press 'CROSS' to quit the emulator/game and return to the XMB.",
+      GREEN,
+      0.83f,
+   },
 };

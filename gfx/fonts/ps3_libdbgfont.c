@@ -38,8 +38,8 @@ void gl_deinit_font(gl_t *gl)
 
 void gl_render_msg(gl_t *gl, const char *msg)
 {
-   cellDbgFontPrintf(g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 1.11f, BLUE,	msg);
-   cellDbgFontPrintf(g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 1.10f, WHITE, msg);
+   cellDbgFontPrintf(g_settings.video.msg_pos_x, 0.75f, 1.06f, SILVER, msg);
+   cellDbgFontPrintf(g_settings.video.msg_pos_x, 0.75f, 1.05f, WHITE, msg);
 }
 
 void gl_render_msg_post(gl_t *gl)

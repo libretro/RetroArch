@@ -263,7 +263,8 @@ bool gfx_ctx_key_pressed(int key)
 
 // 1.2 specific workaround for tiling WMs. In 1.3 we call GetSize directly, so we don't need to rely on
 // proper event handling (I hope).
-#if !SDL_MODERN && defined(SDL_VIDEO_DRIVER_X11)
+#if !SDL_MODERN && !defined(__APPLE__) && defined(SDL_VIDEO_DRIVER_X11)
+// This X11 is set on OSX for some reason.
 static bool gfx_ctx_get_window_size(unsigned *width, unsigned *height)
 {
    SDL_SysWMinfo info;
@@ -348,7 +349,7 @@ static void check_window_legacy(bool *quit,
       }
    }
 
-#ifdef SDL_VIDEO_DRIVER_X11
+#if defined(SDL_VIDEO_DRIVER_X11) && !defined(__APPLE__)
    if (!*resize && !g_fullscreen)
    {
       unsigned new_width, new_height;
