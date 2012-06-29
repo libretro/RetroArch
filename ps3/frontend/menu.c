@@ -1694,10 +1694,10 @@ static void ingame_menu_resize(void)
 {
    gl_t * gl = driver.video_data;
 
-   float x_position = 0.3f;
+   float x_position = 0.09f;
    float font_size = 1.1f;
-   float ypos = 0.19f;
-   float ypos_increment = 0.04f;
+   float ypos = 0.16f;
+   float ypos_increment = 0.035f;
 
    g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
    gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
@@ -1816,10 +1816,10 @@ static void ingame_menu(void)
    gl_t * gl = driver.video_data;
    menu *menu_obj = &menuStack[menuStackindex];
 
-   float x_position = 0.3f;
+   float x_position = 0.09f;
    float font_size = 1.1f;
-   float ypos = 0.19f;
-   float ypos_increment = 0.04f;
+   float ypos = 0.16f;
+   float ypos_increment = 0.035f;
 
    for(int i = 0; i < MENU_ITEM_LAST; i++)
       menuitem_colors[i] = GREEN;
