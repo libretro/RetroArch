@@ -308,7 +308,7 @@ static void menu_stack_increment(void)
    menuStackindex++;
 }
 
-static void menu_stack_refresh (unsigned stack_idx)
+static void menu_stack_refresh (item *items, unsigned stack_idx)
 {
    menu *menu_obj = &menuStack[stack_idx];
    int page, i, j;
@@ -327,9 +327,9 @@ static void menu_stack_refresh (unsigned stack_idx)
 	 page++;
       }
 
-      items_generalsettings[i].text_xpos = 0.09f;
-      items_generalsettings[i].text_ypos = increment; 
-      items_generalsettings[i].page = page;
+      items[i].text_xpos = 0.09f;
+      items[i].text_ypos = increment; 
+      items[i].page = page;
       set_setting_label(menu_obj, i);
       increment += 0.03f;
       j++;
@@ -341,6 +341,13 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
    switch(menu_id)
    {
       case INGAME_MENU:
+         strlcpy(menuStack[stack_idx].title, "INGAME MENU", sizeof(menuStack[stack_idx].title));
+         menuStack[stack_idx].enum_id = menu_id;
+         menuStack[stack_idx].selected = 0;
+         menuStack[stack_idx].page = 0;
+         menuStack[stack_idx].category_id = CATEGORY_INGAME_MENU;
+         menu_stack_refresh(ingame_menu_settings, stack_idx);
+         break;
       case INGAME_MENU_RESIZE:
       case INGAME_MENU_SCREENSHOT:
          strlcpy(menuStack[stack_idx].title, "INGAME MENU", sizeof(menuStack[stack_idx].title));
@@ -355,7 +362,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(stack_idx);
+         menu_stack_refresh(items_generalsettings, stack_idx);
 	 strlcpy(browser.extensions, rarch_console_get_rom_ext(), sizeof(browser.extensions));
 	 filebrowser_set_root(&browser, "/");
 	 filebrowser_iterate(&browser, FILEBROWSER_ACTION_RESET);
@@ -366,7 +373,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(stack_idx);
+         menu_stack_refresh(items_generalsettings, stack_idx);
 	 strlcpy(tmpBrowser.extensions, "self|SELF|bin|BIN", sizeof(tmpBrowser.extensions));
 	 filebrowser_set_root(&tmpBrowser, LIBRETRO_DIR_PATH);
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
@@ -377,7 +384,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(stack_idx);
+         menu_stack_refresh(items_generalsettings, stack_idx);
 	 strlcpy(tmpBrowser.extensions, "cgp|CGP", sizeof(tmpBrowser.extensions));
 	 filebrowser_set_root(&tmpBrowser, PRESETS_DIR_PATH);
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
@@ -388,7 +395,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(stack_idx);
+         menu_stack_refresh(items_generalsettings, stack_idx);
 	 strlcpy(tmpBrowser.extensions, "cfg|CFG", sizeof(tmpBrowser.extensions));
 	 filebrowser_set_root(&tmpBrowser, INPUT_PRESETS_DIR_PATH);
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
@@ -399,7 +406,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(stack_idx);
+         menu_stack_refresh(items_generalsettings, stack_idx);
 	 strlcpy(tmpBrowser.extensions, "cg|CG", sizeof(tmpBrowser.extensions));
 	 filebrowser_set_root(&tmpBrowser, SHADERS_DIR_PATH);
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
@@ -410,7 +417,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(stack_idx);
+         menu_stack_refresh(items_generalsettings, stack_idx);
 	 strlcpy(tmpBrowser.extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(tmpBrowser.extensions));
 	 filebrowser_set_root(&tmpBrowser, BORDERS_DIR_PATH);
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
@@ -424,7 +431,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(stack_idx);
+         menu_stack_refresh(items_generalsettings, stack_idx);
 	 strlcpy(tmpBrowser.extensions, "empty", sizeof(tmpBrowser.extensions));
 	 filebrowser_set_root(&tmpBrowser, "/");
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
@@ -437,7 +444,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].first_setting = FIRST_VIDEO_SETTING;
          menuStack[stack_idx].max_settings = MAX_NO_OF_VIDEO_SETTINGS;
          menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(stack_idx);
+         menu_stack_refresh(items_generalsettings, stack_idx);
 	 break;
       case GENERAL_AUDIO_MENU:
          strlcpy(menuStack[stack_idx].title, "AUDIO |", sizeof(menuStack[stack_idx].title));
@@ -447,7 +454,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].first_setting = FIRST_AUDIO_SETTING;
          menuStack[stack_idx].max_settings = MAX_NO_OF_AUDIO_SETTINGS;
          menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(stack_idx);
+         menu_stack_refresh(items_generalsettings, stack_idx);
 	 break;
       case EMU_GENERAL_MENU:
          strlcpy(menuStack[stack_idx].title, "RETRO |", sizeof(menuStack[stack_idx].title));
@@ -457,7 +464,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].first_setting = FIRST_EMU_SETTING;
          menuStack[stack_idx].max_settings = MAX_NO_OF_EMU_SETTINGS;
          menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(stack_idx);
+         menu_stack_refresh(items_generalsettings, stack_idx);
 	 break;
       case EMU_VIDEO_MENU:
          strlcpy(menuStack[stack_idx].title, "RETRO VIDEO |", sizeof(menuStack[stack_idx].title));
@@ -467,7 +474,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].first_setting = FIRST_EMU_VIDEO_SETTING;
          menuStack[stack_idx].max_settings = MAX_NO_OF_EMU_VIDEO_SETTINGS;
          menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(stack_idx);
+         menu_stack_refresh(items_generalsettings, stack_idx);
 	 break;
       case EMU_AUDIO_MENU:
          strlcpy(menuStack[stack_idx].title, "RETRO AUDIO |", sizeof(menuStack[stack_idx].title));
@@ -477,7 +484,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].first_setting = FIRST_EMU_AUDIO_SETTING;
          menuStack[stack_idx].max_settings = MAX_NO_OF_EMU_AUDIO_SETTINGS;
          menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(stack_idx);
+         menu_stack_refresh(items_generalsettings, stack_idx);
 	 break;
       case PATH_MENU:
          strlcpy(menuStack[stack_idx].title, "PATH |", sizeof(menuStack[stack_idx].title));
@@ -487,7 +494,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].first_setting = FIRST_PATH_SETTING;
          menuStack[stack_idx].max_settings = MAX_NO_OF_PATH_SETTINGS;
          menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(stack_idx);
+         menu_stack_refresh(items_generalsettings, stack_idx);
          break;
       case CONTROLS_MENU:
          strlcpy(menuStack[stack_idx].title, "CONTROLS |", sizeof(menuStack[stack_idx].title));
@@ -497,7 +504,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].first_setting = FIRST_CONTROLS_SETTING_PAGE_1;
          menuStack[stack_idx].max_settings = MAX_NO_OF_CONTROLS_SETTINGS;
          menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(stack_idx);
+         menu_stack_refresh(items_generalsettings, stack_idx);
 	 break;
        default:
          break;
@@ -691,7 +698,7 @@ static void select_file(void)
 			strlcpy(g_settings.video.second_pass_shader, path, sizeof(g_settings.video.second_pass_shader));
 			break;
 		  }
-		  menu_stack_refresh(menuStackindex);
+		  menu_stack_refresh(items_generalsettings, menuStackindex);
 		  break;
 	       case PRESET_CHOICE:
 		  strlcpy(g_console.cgp_path, path, sizeof(g_console.cgp_path));
@@ -702,7 +709,7 @@ static void select_file(void)
 	       case INPUT_PRESET_CHOICE:
 		  strlcpy(g_console.input_cfg_path, path, sizeof(g_console.input_cfg_path));
 		  config_read_keybinds(path);
-		  menu_stack_refresh(menuStackindex);
+		  menu_stack_refresh(items_generalsettings, menuStackindex);
 		  break;
 	       case BORDER_CHOICE:
 		  break;
@@ -973,7 +980,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			{
                            rarch_load_shader(1, NULL);
 			   strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
-			   menu_stack_refresh(menuStackindex);
+			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 			break;
 		case SETTING_SHADER_2:
@@ -987,7 +994,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			{
                            rarch_load_shader(2, NULL);
 			   strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
-			   menu_stack_refresh(menuStackindex);
+			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 			break;
 		case SETTING_FONT_SIZE:
@@ -1341,24 +1348,24 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			if(CTRL_LEFT(trigger_state)  || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
 			{
                            g_console.default_sram_dir_enable = !g_console.default_sram_dir_enable;
-			   menu_stack_refresh(menuStackindex);
+			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 			if(CTRL_START(trigger_state))
 			{
                            g_console.default_sram_dir_enable = true;
-			   menu_stack_refresh(menuStackindex);
+			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 			break;
 		case SETTING_ENABLE_STATE_PATH:
 			if(CTRL_LEFT(trigger_state)  || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
 			{
                            g_console.default_savestate_dir_enable = !g_console.default_savestate_dir_enable;
-			   menu_stack_refresh(menuStackindex);
+			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 			if(CTRL_START(trigger_state))
 			{
                            g_console.default_savestate_dir_enable = true;
-			   menu_stack_refresh(menuStackindex);
+			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 			break;
 		case SETTING_PATH_DEFAULT_ALL:
@@ -1369,7 +1376,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			   strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
 			   strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
 
-			   menu_stack_refresh(menuStackindex);
+			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 			break;
 		case SETTING_CONTROLS_SCHEME:
@@ -1379,21 +1386,21 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
                            menu_stack_push(menuStackindex, INPUT_PRESET_CHOICE);
 			}
 			if(CTRL_START(trigger_state))
-			   menu_stack_refresh(menuStackindex);
+			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			break;
 		case SETTING_CONTROLS_NUMBER:
 			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            if(currently_selected_controller_menu != 0)
                               currently_selected_controller_menu--;
-			   menu_stack_refresh(menuStackindex);
+			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 
 			if(CTRL_RIGHT(trigger_state)  || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
                            if(currently_selected_controller_menu < 6)
                               currently_selected_controller_menu++;
-			   menu_stack_refresh(menuStackindex);
+			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 
 			if(CTRL_START(trigger_state))
@@ -1452,7 +1459,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) ||  CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state) || CTRL_START(trigger_state))
 			{
                            rarch_input_set_default_keybinds(currently_selected_controller_menu);
-			   menu_stack_refresh(menuStackindex);
+			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 			break;
 	}
