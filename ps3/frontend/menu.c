@@ -518,6 +518,9 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(stack_idx);
+	 strlcpy(browser.extensions, rarch_console_get_rom_ext(), sizeof(browser.extensions));
+	 filebrowser_set_root(&browser, "/");
+	 filebrowser_iterate(&browser, FILEBROWSER_ACTION_RESET);
          break;
       case LIBRETRO_CHOICE:
          strlcpy(menuStack[stack_idx].title, "FILE BROWSER |", sizeof(menuStack[stack_idx].title));
@@ -662,7 +665,6 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          break;
    }
 }
-
 
 //forward decls
 extern const char *ps3_get_resolution_label(unsigned resolution);
@@ -1154,19 +1156,15 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_LEFT(trigger_state)  || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
 				if(g_console.menu_font_size > 0) 
-				{
-					g_console.menu_font_size -= 0.01f;
-				}
+                                   g_console.menu_font_size -= 0.01f;
 			}
 			if(CTRL_RIGHT(trigger_state)  || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
 			{
 				if((g_console.menu_font_size < 2.0f))
-				{
-					g_console.menu_font_size += 0.01f;
-				}
+                                   g_console.menu_font_size += 0.01f;
 			}
 			if(CTRL_START(trigger_state))
-				g_console.menu_font_size = 1.0f;
+                           g_console.menu_font_size = 1.0f;
 			break;
 		case SETTING_KEEP_ASPECT_RATIO:
 			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state))
@@ -2216,10 +2214,8 @@ static void ingame_menu(void)
 
 void menu_init (void)
 {
-   filebrowser_set_root(&browser, "/");
+   menu_stack_push(0, FILE_BROWSER_MENU);
    filebrowser_set_root(&tmpBrowser, "/");
-   strlcpy(browser.extensions, rarch_console_get_rom_ext(), sizeof(browser.extensions));
-   filebrowser_iterate(&browser, FILEBROWSER_ACTION_RESET);
 }
 
 void menu_free (void)
@@ -2250,11 +2246,7 @@ void menu_loop(void)
 {
    gl_t * gl = driver.video_data;
 
-   menu_stack_push(0, FILE_BROWSER_MENU);
-
    g_console.menu_enable = true;
-
-
    gl->block_swap = true;
 
    if(g_console.ingame_menu_enable)
