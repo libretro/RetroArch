@@ -70,7 +70,7 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
    return true;
 }
 
-static const char *get_rom_path(rgui_handle_t *rgui)
+static bool get_rom_path(rgui_handle_t *rgui)
 {
    uint16_t old_input_state = 0;
    bool can_quit = false;
@@ -85,7 +85,7 @@ static const char *get_rom_path(rgui_handle_t *rgui)
       if (input_wii.key_pressed(NULL, RARCH_QUIT_KEY))
       {
          if (can_quit)
-            return NULL;
+            return false;
       }
       else
          can_quit = true;
@@ -114,7 +114,12 @@ static const char *get_rom_path(rgui_handle_t *rgui)
             RGUI_WIDTH * sizeof(uint16_t), NULL);
 
       if (ret)
-         return ret;
+      {
+         g_console.initialize_rarch_enable = true;
+         strlcpy(g_console.rom_path, ret, sizeof(g_console.rom_path));
+         if (rarch_startup(NULL))
+            return true;
+      }
 
       old_input_state = input_state;
       rarch_sleep(10);
@@ -143,13 +148,9 @@ int main(void)
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
          _binary_console_font_bmp_start, folder_cb, NULL);
 
-   const char *rom_path;
    int ret = 0;
-   while ((rom_path = get_rom_path(rgui)) && ret == 0)
+   while (get_rom_path(rgui) && ret == 0)
    {
-      g_console.initialize_rarch_enable = true;
-      strlcpy(g_console.rom_path, rom_path, sizeof(g_console.rom_path));
-      rarch_startup(NULL);
       bool repeat = false;
 
       input_wii.poll(NULL);

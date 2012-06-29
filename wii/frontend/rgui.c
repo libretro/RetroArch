@@ -44,6 +44,7 @@ struct rgui_handle
    rgui_list_t *folder_buf;
    size_t directory_ptr;
    bool need_refresh;
+   bool displaying_message;
 
    char path_buf[PATH_MAX];
 
@@ -204,7 +205,16 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
 
 static void render_messagebox(rgui_handle_t *rgui, const char *message)
 {
-   unsigned width = strlen(message) * FONT_WIDTH_STRIDE - 1 + 6 + 10;
+   char *msg = strdup(message);
+   if (strlen(msg) > TERM_WIDTH)
+   {
+      msg[TERM_WIDTH - 2] = '.';
+      msg[TERM_WIDTH - 1] = '.';
+      msg[TERM_WIDTH - 0] = '.';
+      msg[TERM_WIDTH + 1] = '\0';
+   }
+
+   unsigned width = strlen(msg) * FONT_WIDTH_STRIDE - 1 + 6 + 10;
    unsigned height = FONT_HEIGHT + 6 + 10;
    unsigned x = (RGUI_WIDTH - width) / 2;
    unsigned y = (RGUI_HEIGHT - height) / 2;
@@ -224,7 +234,8 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          x, y + 5, 5, height - 5, green_filler);
 
-   blit_line(rgui, x + 8, y + 8, message, false);
+   blit_line(rgui, x + 8, y + 8, msg, false);
+   free(msg);
 }
 
 const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
@@ -281,11 +292,9 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          {
             snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s",
                   strcmp(dir, "/") == 0 ? "" : dir, path);
-	    strlcpy(g_console.rom_path, rgui->path_buf, sizeof(g_console.rom_path));
-            rarch_settings_msg(S_MSG_LOADING_ROM, S_DELAY_45);
-
-	    const char * message = msg_queue_pull(g_extern.msg_queue);
-            
+            strlcpy(g_console.rom_path, rgui->path_buf, sizeof(g_console.rom_path));
+            rarch_settings_msg(S_MSG_LOADING_ROM, S_DELAY_1);
+            const char * message = msg_queue_pull(g_extern.msg_queue);
             render_messagebox(rgui, message);
             return rgui->path_buf;
          }
@@ -297,7 +306,18 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
 
       default:
-         return NULL;
+         if (msg_queue_pull(g_extern.msg_queue))
+         {
+            rgui->displaying_message = true;
+         }
+         else if (rgui->displaying_message)
+         {
+            rgui->displaying_message = false;
+         }
+         else
+         {
+            return NULL;
+         }
    }
 
    if (rgui->need_refresh)
@@ -327,6 +347,11 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
       end = begin + TERM_HEIGHT;
 
    render_text(rgui, begin, end);
+   const char * message = msg_queue_pull(g_extern.msg_queue);
+   
+   if (message)
+      render_messagebox(rgui, message);
+
    return NULL;
 }
 
