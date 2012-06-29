@@ -50,31 +50,40 @@ menu menuStack[10];
 int menuStackindex = 0;
 static bool set_libretro_core_as_launch;
 
-filebrowser_t browser;				/* main file browser->for rom browser*/
-filebrowser_t tmpBrowser;			/* tmp file browser->for everything else*/
+filebrowser_t browser;
+filebrowser_t tmpBrowser;
 unsigned set_shader = 0;
 static unsigned currently_selected_controller_menu = 0;
 static char strw_buffer[PATH_MAX];
 
-static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
+static void set_setting_label_write_on_or_off(bool cond, unsigned currentsetting)
+{
+   if(cond)
+      snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "ON");
+   else
+      snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "OFF");
+}
+
+static void set_setting_label_color(bool cond, unsigned currentsetting)
+{
+   if(cond)
+      items_generalsettings[currentsetting].text_color = GREEN;
+   else
+      items_generalsettings[currentsetting].text_color = ORANGE;
+}
+
+static void set_setting_label(menu * menu_obj, unsigned currentsetting)
 {
    switch(currentsetting)
    {
 	   case SETTING_CHANGE_RESOLUTION:
-		   if(g_console.initial_resolution_id == g_console.supported_resolutions[g_console.current_resolution_index])
-                      items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-                      items_generalsettings[currentsetting].text_color = ORANGE;
-
+                   set_setting_label_color(g_console.initial_resolution_id == g_console.supported_resolutions[g_console.current_resolution_index], currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), ps3_get_resolution_label(g_console.supported_resolutions[g_console.current_resolution_index]));
 		   break;
 	   case SETTING_SHADER_PRESETS:
 		   {
                       char fname[PATH_MAX];
-		      if(g_console.cgp_path == DEFAULT_PRESET_FILE)
-                         items_generalsettings[currentsetting].text_color = GREEN;
-		      else
-                         items_generalsettings[currentsetting].text_color = ORANGE;
+                      set_setting_label_color(g_console.cgp_path == DEFAULT_PRESET_FILE, currentsetting);
 		      fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
 		      snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), fname);
 		   }
@@ -84,11 +93,8 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
                       char fname[PATH_MAX];
 		      fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
 		      snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "%s", fname);
-
-		      if(strcmp(g_settings.video.cg_shader_path,DEFAULT_SHADER_FILE) == 0)
-                         items_generalsettings[currentsetting].text_color = GREEN;
-		      else
-                         items_generalsettings[currentsetting].text_color = ORANGE;
+                      set_setting_label_color(strcmp(g_settings.video.cg_shader_path,DEFAULT_SHADER_FILE) == 0, 
+                      currentsetting);
 		   }
 		   break;
 	   case SETTING_SHADER_2:
@@ -96,124 +102,58 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
                       char fname[PATH_MAX];
 		      fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
 		      snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "%s", fname);
-
-		      if(strcmp(g_settings.video.second_pass_shader,DEFAULT_SHADER_FILE) == 0)
-                         items_generalsettings[currentsetting].text_color = GREEN;
-		      else
-                         items_generalsettings[currentsetting].text_color = ORANGE;
+                      set_setting_label_color(strcmp(g_settings.video.second_pass_shader,DEFAULT_SHADER_FILE) == 0,
+                      currentsetting);
 		   }
 		   break;
 	   case SETTING_FONT_SIZE:
-		   if(g_console.menu_font_size == 1.0f)
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
+                   set_setting_label_color(g_console.menu_font_size == 1.0f, currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "%f", g_console.menu_font_size);
 		   break;
 	   case SETTING_KEEP_ASPECT_RATIO:
-		   if(g_console.aspect_ratio_index == ASPECT_RATIO_4_3)
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
+                   set_setting_label_color(g_console.aspect_ratio_index == ASPECT_RATIO_4_3, currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), aspectratio_lut[g_console.aspect_ratio_index].name);
 		   break;
 	   case SETTING_HW_TEXTURE_FILTER:
+                   set_setting_label_color(g_settings.video.smooth, currentsetting);
 		   if(g_settings.video.smooth)
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "Linear interpolation");
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   }
+                      snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "Linear interpolation");
 		   else
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "Point filtering");
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-		   }
+                      snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "Point filtering");
 		   break;
 	   case SETTING_HW_TEXTURE_FILTER_2:
+                   set_setting_label_color(g_settings.video.second_pass_smooth, currentsetting);
 		   if(g_settings.video.second_pass_smooth)
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "Linear interpolation");
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   }
+                      snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "Linear interpolation");
 		   else
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "Point filtering");
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-		   }
+                      snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "Point filtering");
 		   break;
 	   case SETTING_SCALE_ENABLED:
-		   if(g_console.fbo_enabled)
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "ON");
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   }
-		   else
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "OFF");
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-		   }
+                   set_setting_label_write_on_or_off(g_console.fbo_enabled, currentsetting);
+                   set_setting_label_color(g_console.fbo_enabled, currentsetting);
 		   break;
 	   case SETTING_SCALE_FACTOR:
-		   if(g_settings.video.fbo_scale_x == 2.0f)
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-
+                   set_setting_label_color(g_settings.video.fbo_scale_x == 2.0f, currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 		   snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [Custom Scaling Factor] is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 		   break;
 	   case SETTING_HW_OVERSCAN_AMOUNT:
-		   if(g_console.overscan_amount == 0.0f)
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-
+                   set_setting_label_color(g_console.overscan_amount == 0.0f, currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "%f", g_console.overscan_amount);
 		   break;
 	   case SETTING_THROTTLE_MODE:
-		   if(g_console.throttle_enable)
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "ON");
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   }
-		   else
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "OFF");
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-		   }
+                   set_setting_label_write_on_or_off(g_console.throttle_enable, currentsetting);
+                   set_setting_label_color(g_console.throttle_enable, currentsetting);
 		   break;
 	   case SETTING_TRIPLE_BUFFERING:
-		   if(g_console.triple_buffering_enable)
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "ON");
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   }
-		   else
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "OFF");
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-		   }
+                   set_setting_label_write_on_or_off(g_console.triple_buffering_enable, currentsetting);
+                   set_setting_label_color(g_console.triple_buffering_enable, currentsetting);
 		   break;
 	   case SETTING_ENABLE_SCREENSHOTS:
-		   if(g_console.screenshots_enable)
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "ON");
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   }
-		   else
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "OFF");
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-		   }
-		   break;
-	   case SETTING_SAVE_SHADER_PRESET:
-		   if(menu_obj->selected == currentsetting)
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
+                   set_setting_label_write_on_or_off(g_console.screenshots_enable, currentsetting);
+                   set_setting_label_color(g_console.screenshots_enable, currentsetting);
 		   break;
 	   case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
-		   break;
 	   case SETTING_DEFAULT_VIDEO_ALL:
 		   break;
 	   case SETTING_SOUND_MODE:
@@ -237,52 +177,29 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		   }
 		   break;
 	   case SETTING_RSOUND_SERVER_IP_ADDRESS:
-		   if(strcmp(g_settings.audio.device,"0.0.0.0") == 0)
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-
+                   set_setting_label_color(strcmp(g_settings.audio.device,"0.0.0.0") == 0, currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), g_settings.audio.device);
 		   break;
 	   case SETTING_DEFAULT_AUDIO_ALL:
 		   break;
 	   case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-		   if(g_extern.state_slot == 0)
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-
+                   set_setting_label_color(g_extern.state_slot == 0, currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "%d", g_extern.state_slot);
 		   break;
 		   /* emu-specific */
 	   case SETTING_EMU_SHOW_INFO_MSG:
-		   if(g_console.info_msg_enable)
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "ON");
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   }
-		   else
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "OFF");
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-		   }
-		   break;
-	   case SETTING_EMU_DEFAULT_ALL:
-		   if(menu_obj->selected == currentsetting)
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
+                   set_setting_label_write_on_or_off(g_console.info_msg_enable, currentsetting);
+                   set_setting_label_color(g_console.info_msg_enable, currentsetting);
 		   break;
 	   case SETTING_EMU_REWIND_ENABLED:
+                   set_setting_label_write_on_or_off(g_settings.rewind_enable, currentsetting);
 		   if(g_settings.rewind_enable)
 		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "ON");
 			   items_generalsettings[currentsetting].text_color = ORANGE;
 			   snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [Rewind] feature is set to 'ON'. You can rewind the game in real-time.");
 		   }
 		   else
 		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "OFF");
 			   items_generalsettings[currentsetting].text_color = GREEN;
 			   snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [Rewind] feature is set to 'OFF'.");
 		   }
@@ -297,121 +214,48 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 		   }
 		   break;
 	   case SETTING_EMU_AUDIO_MUTE:
+                   set_setting_label_write_on_or_off(g_extern.audio_data.mute, currentsetting);
+                   set_setting_label_color(!g_extern.audio_data.mute, currentsetting);
 		   if(g_extern.audio_data.mute)
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "ON");
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-			   snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [Audio Mute] feature is set to 'ON'. The game audio will be muted.");
-		   }
+                      snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [Audio Mute] feature is set to 'ON'. The game audio will be muted.");
 		   else
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "OFF");
-			   items_generalsettings[currentsetting].text_color = GREEN;
-			   snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [Audio Mute] feature is set to 'OFF'.");
-		   }
+                      snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [Audio Mute] feature is set to 'OFF'.");
 		   break;
 	   case SETTING_ENABLE_CUSTOM_BGM:
-		   if(g_console.custom_bgm_enable)
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "ON");
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   }
-		   else
-		   {
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "OFF");
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-		   }
-		   break;
-	   case SETTING_EMU_VIDEO_DEFAULT_ALL:
-		   if(menu_obj->selected == currentsetting)
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-		   break;
-	   case SETTING_EMU_AUDIO_DEFAULT_ALL:
-		   if(menu_obj->selected == currentsetting)
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
+                   set_setting_label_write_on_or_off(g_console.custom_bgm_enable, currentsetting);
+                   set_setting_label_color(g_console.custom_bgm_enable, currentsetting);
 		   break;
 	   case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-		   if(!(strcmp(g_console.default_rom_startup_dir, "/")))
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-
+                   set_setting_label_color(!(strcmp(g_console.default_rom_startup_dir, "/")), currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), g_console.default_rom_startup_dir);
 		   break;
 	   case SETTING_PATH_SAVESTATES_DIRECTORY:
-		   if(!(strcmp(g_console.default_savestate_dir, usrDirPath)))
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-
+                   set_setting_label_color(!(strcmp(g_console.default_savestate_dir, usrDirPath)), currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), g_console.default_savestate_dir);
 		   break;
 	   case SETTING_PATH_SRAM_DIRECTORY:
-		   if(!(strcmp(g_console.default_sram_dir, usrDirPath)))
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-
+                   set_setting_label_color(!(strcmp(g_console.default_sram_dir, usrDirPath)), currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), g_console.default_sram_dir);
 		   break;
 	   case SETTING_PATH_CHEATS:
-		   if(!(strcmp(g_settings.cheat_database, usrDirPath)))
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-
+                   set_setting_label_color(!(strcmp(g_settings.cheat_database, usrDirPath)), currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), g_settings.cheat_database);
 		   break;
 	   case SETTING_ENABLE_SRAM_PATH:
-		   if(g_console.default_sram_dir_enable)
-		   {
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "ON");
-		   }
-		   else
-		   {
-			   items_generalsettings[currentsetting].text_color = GREEN;
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "OFF");
-		   }
-
+                   set_setting_label_write_on_or_off(g_console.default_sram_dir_enable, currentsetting);
+                   set_setting_label_color(!g_console.default_sram_dir_enable, currentsetting);
 		   break;
 	   case SETTING_ENABLE_STATE_PATH:
-		   if(g_console.default_savestate_dir_enable)
-		   {
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "ON");
-		   }
-		   else
-		   {
-			   items_generalsettings[currentsetting].text_color = GREEN;
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "OFF");
-		   }
-		   break;
-	   case SETTING_PATH_DEFAULT_ALL:
-		   if(menu_obj->selected == currentsetting)
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
+                   set_setting_label_write_on_or_off(g_console.default_savestate_dir_enable, currentsetting);
+                   set_setting_label_color(!g_console.default_savestate_dir_enable, currentsetting);
 		   break;
 	   case SETTING_CONTROLS_SCHEME:
-		   if(strcmp(g_console.input_cfg_path,"") == 0)
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-
+                   set_setting_label_color(strcmp(g_console.input_cfg_path,"") == 0, currentsetting);
 		   snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - Input scheme preset [%s] is selected.", g_console.input_cfg_path);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), g_console.input_cfg_path);
 		   break;
 	   case SETTING_CONTROLS_NUMBER:
-		   if(currently_selected_controller_menu == 0)
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-
+                   set_setting_label_color(currently_selected_controller_menu == 0, currentsetting);
 		   snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "Controller %d is currently selected.", currently_selected_controller_menu+1);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "%d", currently_selected_controller_menu+1);
 		   break;
@@ -432,28 +276,22 @@ static void set_setting_label(menu * menu_obj, uint64_t currentsetting)
 	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3:
 	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
 		   {
-			   if(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey == rarch_default_keybind_lut[currentsetting-FIRST_CONTROL_BIND])
-				   items_generalsettings[currentsetting].text_color = GREEN;
-			   else
-				   items_generalsettings[currentsetting].text_color = ORANGE;
-			   const char * value = rarch_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey);
-                           unsigned id = currentsetting - FIRST_CONTROL_BIND;
-			   snprintf(items_generalsettings[currentsetting].text, sizeof(items_generalsettings[currentsetting].text), rarch_input_get_default_keybind_name(id));
-			   snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [%s] on the PS3 controller is mapped to action:\n[%s].", items_generalsettings[currentsetting].text, value);
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), value);
+                      set_setting_label_color(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey == rarch_default_keybind_lut[currentsetting-FIRST_CONTROL_BIND], currentsetting);
+		      const char * value = rarch_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey);
+		      unsigned id = currentsetting - FIRST_CONTROL_BIND;
+		      snprintf(items_generalsettings[currentsetting].text, sizeof(items_generalsettings[currentsetting].text), rarch_input_get_default_keybind_name(id));
+		      snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [%s] on the PS3 controller is mapped to action:\n[%s].", items_generalsettings[currentsetting].text, value);
+		      snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), value);
 		   }
 		   break;
 	   case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-		   if(menu_obj->selected == currentsetting)
-                      items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-                      items_generalsettings[currentsetting].text_color = ORANGE;
-		   break;
 	   case SETTING_CONTROLS_DEFAULT_ALL:
-		   if(menu_obj->selected == currentsetting)
-                      items_generalsettings[currentsetting].text_color = GREEN;
-		   else
-                      items_generalsettings[currentsetting].text_color = ORANGE;
+	   case SETTING_EMU_VIDEO_DEFAULT_ALL:
+	   case SETTING_EMU_AUDIO_DEFAULT_ALL:
+	   case SETTING_PATH_DEFAULT_ALL:
+	   case SETTING_EMU_DEFAULT_ALL:
+	   case SETTING_SAVE_SHADER_PRESET:
+                   set_setting_label_color(menu_obj->selected == currentsetting, currentsetting);
 		   break;
 	   default:
 		   break;
@@ -1067,7 +905,7 @@ static void rarch_filename_input_and_save (unsigned filename_type)
    }
 }
 
-static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
+static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 {
 	switch(switchvalue)
 	{
@@ -2239,8 +2077,6 @@ static bool check_shoulder_buttons(uint64_t state_tmp)
   else
      return false;
 }
-
-
 
 void menu_loop(void)
 {
