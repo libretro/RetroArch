@@ -132,7 +132,10 @@ extern uint8_t _binary_console_font_bmp_start[];
 
 int main(void)
 {
+#ifdef HW_RVL
    L2Enhance();
+#endif
+
    fatInitDefault();
 
 #ifdef HAVE_FILE_LOGGER
