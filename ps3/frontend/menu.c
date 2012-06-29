@@ -1642,6 +1642,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
 	    else
 	    {
 	       snprintf(g_console.rom_path, sizeof(g_console.rom_path), filebrowser_get_current_path(filebrowser));
+	       rarch_settings_msg(S_MSG_LOADING_ROM, S_DELAY_45);
                rarch_settings_change(S_START_RARCH);
 	    }
 	 }
