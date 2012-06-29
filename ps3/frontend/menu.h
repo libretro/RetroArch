@@ -19,9 +19,6 @@
 
 #define FONT_SIZE (g_console.menu_font_size)
 
-#define EMULATOR_NAME "RetroArch"
-#define EMULATOR_VERSION PACKAGE_VERSION
-
 typedef struct
 {
    unsigned enum_id;			/* enum ID of item				*/
@@ -32,10 +29,7 @@ typedef struct
    unsigned text_color;			/* text color					*/
    char comment[256];			/* item comment					*/
    unsigned item_color;			/* color of item 				*/
-   float comment_scalefont;		/* font scale of item comment			*/ 
-   float comment_xpos;			/* comment X position (upper left corner)	*/
    float comment_ypos;			/* comment Y position (upper left corner)	*/
-   unsigned default_value;		/* default value of item			*/
    unsigned page;			/* page						*/
 } item;
 
