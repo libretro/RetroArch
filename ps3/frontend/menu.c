@@ -1773,6 +1773,7 @@ static void ingame_menu(void)
    char comment[256];
    static unsigned menuitem_colors[MENU_ITEM_LAST];
    gl_t * gl = driver.video_data;
+   menu *menu_obj = &menuStack[menuStackindex];
 
    float x_position = 0.3f;
    float font_size = 1.1f;
@@ -1816,39 +1817,11 @@ static void ingame_menu(void)
 	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
-	    if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state))
-	    {
-               rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
-	       gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-	    }
-	    if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
-	    {
-               rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
-	       gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-	    }
-	    if(CTRL_START(trigger_state))
-	    {
-               rarch_settings_default(S_DEF_ASPECT_RATIO);
-	       gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-	    }
+            producesettingentry(menu_obj, SETTING_KEEP_ASPECT_RATIO);
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_OVERSCAN_AMOUNT:
-	    if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state) || CTRL_LSTICK_LEFT(trigger_state))
-	    {
-               rarch_settings_change(S_OVERSCAN_DECREMENT);
-	       gfx_ctx_set_overscan();
-	    }
-	    if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
-	    {
-               rarch_settings_change(S_OVERSCAN_INCREMENT);
-	       gfx_ctx_set_overscan();
-	    }
-	    if(CTRL_START(trigger_state))
-	    {
-               rarch_settings_default(S_DEF_OVERSCAN);
-	       gfx_ctx_set_overscan();
-	    }
+            producesettingentry(menu_obj, SETTING_HW_OVERSCAN_AMOUNT);
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_ORIENTATION:
@@ -1872,33 +1845,7 @@ static void ingame_menu(void)
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_SCALE_FACTOR:
-	    if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state))
-	    {
-               if(g_console.fbo_enabled)
-	       {
-                  if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
-		  {
-                     rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
-		     apply_scaling(FBO_REINIT);
-		  }
-	       }
-	    }
-	    if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
-	    {
-               if(g_console.fbo_enabled)
-	       {
-                  if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
-		  {
-                     rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
-		     apply_scaling(FBO_REINIT);
-		  }
-	       }
-	    }
-	    if(CTRL_START(trigger_state))
-	    {
-               rarch_settings_default(S_DEF_SCALE_FACTOR);
-	       apply_scaling(FBO_REINIT);
-	    }
+            producesettingentry(menu_obj, SETTING_SCALE_FACTOR);
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Scaling] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
