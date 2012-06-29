@@ -44,7 +44,7 @@
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 
-#define NUM_ENTRY_PER_PAGE 19
+#define NUM_ENTRY_PER_PAGE 17
 
 menu menuStack[10];
 int menuStackindex = 0;
@@ -341,7 +341,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
    switch(menu_id)
    {
       case INGAME_MENU:
-         strlcpy(menuStack[stack_idx].title, "INGAME MENU", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "Ingame Menu", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
@@ -349,15 +349,21 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menu_stack_refresh(ingame_menu_settings, stack_idx);
          break;
       case INGAME_MENU_RESIZE:
+         strlcpy(menuStack[stack_idx].title, "Resize Menu", sizeof(menuStack[stack_idx].title));
+         menuStack[stack_idx].enum_id = INGAME_MENU_RESIZE;
+         menuStack[stack_idx].selected = 0;
+         menuStack[stack_idx].page = 0;
+         menuStack[stack_idx].category_id = CATEGORY_INGAME_MENU;
+         break;
       case INGAME_MENU_SCREENSHOT:
-         strlcpy(menuStack[stack_idx].title, "INGAME MENU", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "Ingame Menu", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_INGAME_MENU;
          break;
       case FILE_BROWSER_MENU:
-         strlcpy(menuStack[stack_idx].title, "FILE BROWSER |", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "File Browser", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
@@ -368,7 +374,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
 	 filebrowser_iterate(&browser, FILEBROWSER_ACTION_RESET);
          break;
       case LIBRETRO_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "FILE BROWSER |", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "File Browser", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
@@ -379,7 +385,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case PRESET_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "FILE BROWSER |", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "File Browser", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
@@ -390,7 +396,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case INPUT_PRESET_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "FILE BROWSER |", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "File Browser", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
@@ -401,7 +407,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case SHADER_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "FILE BROWSER |", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "File Browser", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
@@ -412,7 +418,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case BORDER_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "FILE BROWSER |", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "File Browser", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
@@ -426,7 +432,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
       case PATH_SAVESTATES_DIR_CHOICE:
       case PATH_SRAM_DIR_CHOICE:
       case PATH_CHEATS_DIR_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "FILE BROWSER |", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "File Browser", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
          menuStack[stack_idx].page = 0;
@@ -437,7 +443,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case GENERAL_VIDEO_MENU:
-         strlcpy(menuStack[stack_idx].title, "VIDEO |", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "Video", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = GENERAL_VIDEO_MENU;
          menuStack[stack_idx].selected = FIRST_VIDEO_SETTING;
          menuStack[stack_idx].page = 0;
@@ -447,7 +453,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menu_stack_refresh(items_generalsettings, stack_idx);
 	 break;
       case GENERAL_AUDIO_MENU:
-         strlcpy(menuStack[stack_idx].title, "AUDIO |", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "Audio", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = GENERAL_AUDIO_MENU;
          menuStack[stack_idx].selected = FIRST_AUDIO_SETTING;
          menuStack[stack_idx].page = 0;
@@ -457,7 +463,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menu_stack_refresh(items_generalsettings, stack_idx);
 	 break;
       case EMU_GENERAL_MENU:
-         strlcpy(menuStack[stack_idx].title, "RETRO |", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "Retro", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = EMU_GENERAL_MENU;
          menuStack[stack_idx].selected = FIRST_EMU_SETTING;
          menuStack[stack_idx].page = 0;
@@ -467,7 +473,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menu_stack_refresh(items_generalsettings, stack_idx);
 	 break;
       case EMU_VIDEO_MENU:
-         strlcpy(menuStack[stack_idx].title, "RETRO VIDEO |", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "Retro Video", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = EMU_VIDEO_MENU;
          menuStack[stack_idx].selected = FIRST_EMU_VIDEO_SETTING;
          menuStack[stack_idx].page = 0;
@@ -477,7 +483,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menu_stack_refresh(items_generalsettings, stack_idx);
 	 break;
       case EMU_AUDIO_MENU:
-         strlcpy(menuStack[stack_idx].title, "RETRO AUDIO |", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "Retro Audio", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = EMU_AUDIO_MENU;
          menuStack[stack_idx].selected = FIRST_EMU_AUDIO_SETTING;
          menuStack[stack_idx].page = 0;
@@ -487,7 +493,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menu_stack_refresh(items_generalsettings, stack_idx);
 	 break;
       case PATH_MENU:
-         strlcpy(menuStack[stack_idx].title, "PATH |", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "Path", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = PATH_MENU;
          menuStack[stack_idx].selected = FIRST_PATH_SETTING;
          menuStack[stack_idx].page = 0;
@@ -497,7 +503,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menu_stack_refresh(items_generalsettings, stack_idx);
          break;
       case CONTROLS_MENU:
-         strlcpy(menuStack[stack_idx].title, "CONTROLS |", sizeof(menuStack[stack_idx].title));
+         strlcpy(menuStack[stack_idx].title, "Controls", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = CONTROLS_MENU;
          menuStack[stack_idx].selected = FIRST_CONTROLS_SETTING_PAGE_1;
          menuStack[stack_idx].page = 0;
@@ -514,17 +520,37 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
 //forward decls
 extern const char *ps3_get_resolution_label(unsigned resolution);
 
-static void display_menubar(unsigned menu_enum)
+static void display_menubar(void)
 {
+   struct retro_system_info info;
+   menu *menu_obj = &menuStack[menuStackindex];
    gl_t *gl = driver.video_data;
 
-   cellDbgFontPuts    (0.09f,  0.05f,  FONT_SIZE,  menu_enum == GENERAL_VIDEO_MENU ? RED : GREEN, "VIDEO |");
-   cellDbgFontPuts    (0.19f,  0.05f,  FONT_SIZE,  menu_enum == GENERAL_AUDIO_MENU ? RED : GREEN, "AUDIO |");
-   cellDbgFontPuts    (0.29f,  0.05f,  FONT_SIZE,  menu_enum == EMU_GENERAL_MENU ? RED : GREEN, "RETRO |");
-   cellDbgFontPuts    (0.39f,  0.05f,  FONT_SIZE,  menu_enum == EMU_VIDEO_MENU ? RED : GREEN, "RETRO VIDEO |");
-   cellDbgFontPuts    (0.57f,  0.05f,  FONT_SIZE,  menu_enum == EMU_AUDIO_MENU ? RED : GREEN, "RETRO AUDIO |");
-   cellDbgFontPuts    (0.09f,  0.09f,  FONT_SIZE,  menu_enum == PATH_MENU ? RED : GREEN,  "PATH |");
-   cellDbgFontPuts    (0.19f,  0.09f,  FONT_SIZE, menu_enum == CONTROLS_MENU ? RED : GREEN,  "CONTROLS |"); 
+   switch(menu_obj->enum_id)
+   {
+      case GENERAL_VIDEO_MENU:
+	 cellDbgFontPrintf(0.09f, 0.03f, 0.91f, WHITE, "NEXT ->");
+         break;
+      case GENERAL_AUDIO_MENU:
+      case EMU_GENERAL_MENU:
+      case EMU_VIDEO_MENU:
+      case EMU_AUDIO_MENU:
+      case PATH_MENU:
+	 cellDbgFontPrintf(0.09f, 0.03f, 0.91f, WHITE, "<- PREV | NEXT ->");
+         break;
+      case CONTROLS_MENU:
+      case INGAME_MENU_RESIZE:
+	 cellDbgFontPrintf(0.09f, 0.03f, 0.91f, WHITE, "<- PREV");
+         break;
+      default:
+         break;
+   }
+
+   retro_get_system_info(&info);
+   const char *id = info.library_name ? info.library_name : "Unknown";
+
+   cellDbgFontPrintf(0.09f, 0.05f, 1.4f, WHITE, menu_obj->title);
+   cellDbgFontPrintf (0.4f, 0.06f, 0.82f, WHITE, "Libretro core: %s (v%s)", id, info.library_version);
    cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", PACKAGE_VERSION);
    gl_render_msg_post(gl);
 }
@@ -1543,8 +1569,9 @@ static void select_setting(void)
 
    producesettingentry(menu_obj, menu_obj->selected);
 
-   display_menubar(menu_obj->enum_id);
+   display_menubar();
    gl_render_msg_post(gl);
+
 
    for ( i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
    {
@@ -1610,6 +1637,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
 static void select_rom(void)
 {
    gl_t * gl = driver.video_data;
+   menu *menu_obj = &menuStack[menuStackindex];
 
    browser_update(&browser, rarch_console_get_rom_ext());
    menu_romselect_action_t action = MENU_ROMSELECT_ACTION_NOOP;
@@ -1639,11 +1667,11 @@ static void select_rom(void)
    retro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
 
-   cellDbgFontPuts	(0.09f,	0.05f,	FONT_SIZE,	RED,	"FILE BROWSER");
-   cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s (v%s)", id, info.library_version);
+   cellDbgFontPrintf(0.09f, 0.05f, 1.4f, WHITE, menu_obj->title);
+   cellDbgFontPrintf (0.4f, 0.06f, 0.82f, WHITE, "Libretro core: %s (v%s)", id, info.library_version);
    cellDbgFontPrintf (0.09f, 0.09f, FONT_SIZE, YELLOW,
 		   "PATH: %s", filebrowser_get_current_dir(&browser));
-   cellDbgFontPuts   (0.09f, 0.93f, FONT_SIZE, YELLOW,
+   cellDbgFontPuts   (0.09f, 0.91f, FONT_SIZE, YELLOW,
 		   "L3 + R3 - resume game           SELECT - Settings screen");
    gl_render_msg_post(gl);
 }
@@ -1695,14 +1723,8 @@ static void ingame_menu_resize(void)
 
    if(CTRL_SQUARE(~trigger_state))
    {
-      struct retro_system_info info;
-      retro_get_system_info(&info);
-      const char *id = info.library_name ? info.library_name : "Unknown";
+      display_menubar();
 
-      cellDbgFontPuts (0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
-      cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
-      cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", PACKAGE_VERSION);
-      cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Resize Mode");
       cellDbgFontPrintf(x_position, ypos, font_size, GREEN, "Viewport X: #%d", g_console.viewports.custom_vp.x);
 
       cellDbgFontPrintf(x_position, ypos+(ypos_increment*1), font_size, GREEN, "Viewport Y: #%d", g_console.viewports.custom_vp.y);
@@ -1944,7 +1966,7 @@ static void ingame_menu(void)
       if(CTRL_L3(trigger_state) && CTRL_R3(trigger_state))
          rarch_settings_change(S_RETURN_TO_GAME);
 
-   cellDbgFontPrintf(x_position, 0.14f, 1.4f, WHITE, "Quick Menu");
+   display_menubar();
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
    cellDbgFontPrintf(x_position, ypos, font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), strw_buffer);
@@ -1992,14 +2014,6 @@ static void ingame_menu(void)
    cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_DASHBOARD)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_DASHBOARD), "Return to XMB");
    gl_render_msg_post(gl);
 
-   struct retro_system_info info;
-   retro_get_system_info(&info);
-   const char *id = info.library_name ? info.library_name : "Unknown";
-
-   cellDbgFontPuts(0.09f, 0.05f, FONT_SIZE, RED, "QUICK MENU");
-   cellDbgFontPrintf (0.3f, 0.05f, 0.82f, WHITE, "Libretro core: %s", id);
-   cellDbgFontPrintf (0.8f, 0.09f, 0.82f, WHITE, "v%s", PACKAGE_VERSION);
-   gl_render_msg_post(gl);
    cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, comment);
    gl_render_msg_post(gl);
 }
