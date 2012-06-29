@@ -132,6 +132,7 @@ extern uint8_t _binary_console_font_bmp_start[];
 
 int main(void)
 {
+   L2Enhance();
    fatInitDefault();
 
 #ifdef HAVE_FILE_LOGGER
