@@ -1934,7 +1934,7 @@ static void ingame_menu(void)
 	    if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
                rarch_state_slot_increase();
 
-	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the trigger_state from the currently selected save state slot.", sizeof(comment));
+	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the state from the currently selected save state slot.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_SAVE_STATE:
 	    if(CTRL_CROSS(trigger_state))
@@ -1947,7 +1947,7 @@ static void ingame_menu(void)
 	    if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
                rarch_state_slot_increase();
 
-	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the trigger_state to the currently selected save state slot.", sizeof(comment));
+	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
 	    if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state))
