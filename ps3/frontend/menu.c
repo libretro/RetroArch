@@ -581,7 +581,7 @@ static void display_menubar(void)
 
    cellDbgFontPrintf(0.09f, 0.05f, 1.4f, WHITE, menu_obj->title);
    cellDbgFontPrintf (0.4f, 0.06f, 0.82f, WHITE, "Libretro core: %s (v%s)", id, info.library_version);
-   cellDbgFontPrintf (0.8f, 0.11f, 0.82f, WHITE, "v%s", PACKAGE_VERSION);
+   cellDbgFontPrintf (0.8f, 0.12f, 0.82f, WHITE, "v%s", PACKAGE_VERSION);
    gl_render_msg_post(gl);
 }
 
