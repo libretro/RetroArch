@@ -16,7 +16,7 @@ PC_DEVELOPMENT_UDP_PORT		= 3490
 CELL_MK_DIR		?= $(CELL_SDK)/samples/mk
 include $(CELL_MK_DIR)/sdk.makedef.mk
 
-PPU_LIB_TARGET		= libretroarch.a
+PPU_LIB_TARGET		= libretroarch_ps3.a
 
 LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
 INCDIRS = -I. -Ips3 -Icommon
@@ -25,7 +25,7 @@ PPU_SRCS		= console/griffin/griffin.c console/rzlib/rzlib.c
 
 ifeq ($(HAVE_RGL), 1)
 DEFINES			= -DHAVE_RGL
-GL_LIBS			:= -lrgl
+GL_LIBS			:= -lrgl_ps3
 else
 GL_LIBS			:= -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt -lPSGL -lPSGLcgc
 endif

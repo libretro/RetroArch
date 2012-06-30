@@ -12,7 +12,7 @@ PC_DEVELOPMENT_UDP_PORT		= 3490
 CELL_MK_DIR		?= $(CELL_SDK)/samples/mk
 include $(CELL_MK_DIR)/sdk.makedef.mk
 
-PPU_LIB_TARGET		= librgl.a
+PPU_LIB_TARGET		= librgl_ps3.a
 
 LDDIRS = -L.
 INCDIRS = -I.
