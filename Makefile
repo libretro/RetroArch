@@ -285,6 +285,7 @@ clean:
 	rm -f gfx/fonts/*.o
 	rm -f gfx/context/*.o
 	rm -f gfx/py_state/*.o
+	rm -f compat/*.o
 	rm -f record/*.o
 	rm -f input/*.o
 	rm -f tools/*.o
