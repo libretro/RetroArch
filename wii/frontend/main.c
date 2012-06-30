@@ -48,11 +48,11 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
    if (!*directory)
    {
 #ifdef HW_RVL
-      file_cb(ctx, "sd:", RGUI_FILE_DEVICE);
-      file_cb(ctx, "usb:", RGUI_FILE_DEVICE);
+      file_cb(ctx, "sd:", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "usb:", RGUI_FILE_DEVICE, 0);
 #endif
-      file_cb(ctx, "carda:", RGUI_FILE_DEVICE);
-      file_cb(ctx, "cardb:", RGUI_FILE_DEVICE);
+      file_cb(ctx, "carda:", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "cardb:", RGUI_FILE_DEVICE, 0);
       return true;
    }
 
@@ -76,7 +76,7 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
 
       file_cb(ctx,
             entry->d_name, S_ISDIR(st.st_mode) ?
-            RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN);
+            RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
    }
 
    closedir(dir);

@@ -22,6 +22,7 @@ struct rgui_file
 {
    char *path;
    rgui_file_type_t type;
+   size_t directory_ptr;
 };
 
 struct rgui_list
@@ -42,7 +43,8 @@ bool rgui_list_empty(const rgui_list_t *list)
    return list->ptr == 0;
 }
 
-void rgui_list_push(rgui_list_t *list, const char *path, rgui_file_type_t type)
+void rgui_list_push(rgui_list_t *list,
+      const char *path, rgui_file_type_t type, size_t directory_ptr)
 {
    if (list->ptr >= list->capacity)
    {
@@ -53,6 +55,7 @@ void rgui_list_push(rgui_list_t *list, const char *path, rgui_file_type_t type)
 
    list->list[list->ptr].path = strdup(path);
    list->list[list->ptr].type = type;
+   list->list[list->ptr].directory_ptr = directory_ptr;
    list->ptr++;
 }
 
@@ -78,10 +81,10 @@ void rgui_list_clear(rgui_list_t *list)
 }
 
 void rgui_list_back(const rgui_list_t *list,
-      const char **path, rgui_file_type_t *file_type)
+      const char **path, rgui_file_type_t *file_type, size_t *directory_ptr)
 {
    if (rgui_list_size(list) > 0)
-      rgui_list_at(list, rgui_list_size(list) - 1, path, file_type);
+      rgui_list_at(list, rgui_list_size(list) - 1, path, file_type, directory_ptr);
 }
 
 size_t rgui_list_size(const rgui_list_t *list)
@@ -90,12 +93,14 @@ size_t rgui_list_size(const rgui_list_t *list)
 }
 
 void rgui_list_at(const rgui_list_t *list, size_t index,
-      const char **path, rgui_file_type_t *file_type)
+      const char **path, rgui_file_type_t *file_type, size_t *directory_ptr)
 {
    if (path)
       *path = list->list[index].path;
    if (file_type)
       *file_type = list->list[index].type;
+   if (directory_ptr)
+      *directory_ptr = list->list[index].directory_ptr;
 }
 
 static int list_comp(const void *a_, const void *b_)
