@@ -124,7 +124,7 @@ If you're using Kmeaw 3.55 firmware, the package needs to be signed:
 
 <tt>make -f Makefile.ps3 pkg-signed-cfw</tt>
 
-NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch PS3. This file needs to be called 'libretro.a'.
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch PS3. This file needs to be called <em><b>'libretro_ps3.a'</b></em>.
 
 <b> Xbox 360 (XeXDK)</b><br />
 
@@ -135,7 +135,7 @@ The solution file can be found at the following location:
 <tt>msvc-360/RetroArch-360.sln</tt>
 
 NOTE: A pre-existing libretro library needs to be present in the 'msvc-360/RetroArch-360/Release' directory in order to link RetroArch 360. This file needs to be
-called 'libretro.lib'.
+called <em><b>'libretro_xdk360.lib'</b></em>.
 
 <b> Xbox 360 (Libxenon)</b><br />
 
@@ -143,7 +143,7 @@ You will need to have the libxenon libraries and a working Devkit Xenon toolchai
 
 <tt>make -f Makefile.xenon</tt>
 
-NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch 360 Libxenon. This file needs to be called 'libretro.a'.
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch 360 Libxenon. This file needs to be called <em><b>'libretro_xenon360.a'</b></em>.
 
 <b> Wii</b><br >
 
@@ -151,5 +151,5 @@ You will need to have the libogc libraries and a working Devkit PPC toolchain in
 
 <tt>make -f Makefile.wii</tt>
 
-NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch Wii. This file needs to be called 'libretro.a'.
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch Wii. This file needs to be called <em><b>'libretro_wii.a'</b></em>.
 
