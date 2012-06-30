@@ -45,7 +45,20 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
 {
    (void)userdata;
 
-   DIR *dir = opendir(directory);
+   if (!*directory)
+   {
+#ifdef HW_RVL
+      file_cb(ctx, "sd:", RGUI_FILE_DEVICE);
+      file_cb(ctx, "usb:", RGUI_FILE_DEVICE);
+#endif
+      file_cb(ctx, "carda:", RGUI_FILE_DEVICE);
+      file_cb(ctx, "cardb:", RGUI_FILE_DEVICE);
+      return true;
+   }
+
+   char _dir[PATH_MAX];
+   snprintf(_dir, sizeof(_dir), "%s/", directory);
+   DIR *dir = opendir(_dir);
    if (!dir)
       return false;
 
@@ -152,7 +165,7 @@ int main(void)
    wii_video_init();
    input_wii.init();
 
-   rgui_handle_t *rgui = rgui_init("/",
+   rgui_handle_t *rgui = rgui_init("",
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
          _binary_console_font_bmp_start, folder_cb, NULL);
 

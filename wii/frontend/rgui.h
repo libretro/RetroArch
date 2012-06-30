@@ -28,7 +28,8 @@ extern "C" {
 typedef enum
 {
    RGUI_FILE_PLAIN,
-   RGUI_FILE_DIRECTORY
+   RGUI_FILE_DIRECTORY,
+   RGUI_FILE_DEVICE
 } rgui_file_type_t;
 
 typedef enum

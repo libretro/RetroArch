@@ -192,11 +192,24 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
       rgui_list_at(rgui->folder_buf, i, &path, &type);
 
       char message[TERM_WIDTH + 1];
+      char *type_str;
+      switch (type)
+      {
+         case RGUI_FILE_PLAIN:
+            type_str = "(FILE)";
+            break;
+         case RGUI_FILE_DIRECTORY:
+            type_str = "(DIR)";
+            break;
+         case RGUI_FILE_DEVICE:
+            type_str = "(DEV)";
+            break;
+      }
       snprintf(message, sizeof(message), "%c %-*s %6s\n",
             i == rgui->directory_ptr ? '>' : ' ',
             TERM_WIDTH - (6 + 1 + 2),
             path,
-            type == RGUI_FILE_PLAIN ? "(FILE)" : "(DIR)");
+            type_str);
 
       blit_line(rgui, x, y, message, i == rgui->directory_ptr);
    }
@@ -274,8 +287,8 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          if (rgui_list_size(rgui->folder_buf) == 0)
             return NULL;
 
-         const char *path = NULL;
-         rgui_file_type_t type = RGUI_FILE_PLAIN;
+         const char *path;
+         rgui_file_type_t type;
          rgui_list_at(rgui->folder_buf, rgui->directory_ptr,
                &path, &type);
 
@@ -285,16 +298,22 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          if (type == RGUI_FILE_DIRECTORY)
          {
             char cat_path[PATH_MAX];
-            snprintf(cat_path, sizeof(cat_path), "%s/%s",
-                  strcmp(dir, "/") == 0 ? "" : dir, path);
+            snprintf(cat_path, sizeof(cat_path), "%s/%s", dir, path);
 
-            rgui_list_push(rgui->path_stack, cat_path, RGUI_FILE_DIRECTORY);
+            if (strcmp(path, "..") == 0)
+               rgui_list_pop(rgui->path_stack);
+            else if (strcmp(path, ".") != 0)
+               rgui_list_push(rgui->path_stack, cat_path, RGUI_FILE_DIRECTORY);
+            rgui->need_refresh = true;
+         }
+         else if (type == RGUI_FILE_DEVICE)
+         {
+            rgui_list_push(rgui->path_stack, path, RGUI_FILE_DEVICE);
             rgui->need_refresh = true;
          }
          else
          {
-            snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s",
-                  strcmp(dir, "/") == 0 ? "" : dir, path);
+            snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s", dir, path);
             strlcpy(g_console.rom_path, rgui->path_buf, sizeof(g_console.rom_path));
             rarch_settings_msg(S_MSG_LOADING_ROM, S_DELAY_1);
             found = true;
@@ -323,7 +342,8 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui->userdata, rgui->folder_buf))
          return NULL;
 
-      rgui_list_sort(rgui->folder_buf);
+      if (*path)
+         rgui_list_sort(rgui->folder_buf);
 
       rgui->need_refresh = false;
    }
