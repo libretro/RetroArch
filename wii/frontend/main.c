@@ -140,7 +140,7 @@ int main(void)
 
 #ifdef HAVE_FILE_LOGGER
    g_extern.verbose = true;
-   log_fp = fopen("sd:/retroarch-log.txt", "w");
+   log_fp = fopen("/retroarch-log.txt", "w");
 #endif
 
    config_set_defaults();
@@ -152,7 +152,7 @@ int main(void)
    wii_video_init();
    input_wii.init();
 
-   rgui_handle_t *rgui = rgui_init("sd:/",
+   rgui_handle_t *rgui = rgui_init("/",
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
          _binary_console_font_bmp_start, folder_cb, NULL);
 
