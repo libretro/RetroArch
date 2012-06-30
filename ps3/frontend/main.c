@@ -25,7 +25,9 @@
 #include <sysutil/sysutil_screenshot.h>
 #include <sysutil/sysutil_common.h>
 #include <sysutil/sysutil_gamecontent.h>
+#ifdef HAVE_HDD_CACHE_PARTITION
 #include <sysutil/sysutil_syscache.h>
+#endif
 #endif
 
 #if(CELL_SDK_VERSION > 0x340000)
