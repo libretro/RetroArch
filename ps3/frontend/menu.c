@@ -41,10 +41,9 @@
 #include "menu.h"
 #include "menu-entries.h"
 
-#define MIN(x,y) ((x) < (y) ? (x) : (y))
-#define MAX(x,y) ((x) > (y) ? (x) : (y))
-
 #define NUM_ENTRY_PER_PAGE 17
+#define INPUT_SCALE 2
+#define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
 menu menuStack[10];
 int menuStackindex = 0;
@@ -55,6 +54,20 @@ filebrowser_t tmpBrowser;
 unsigned set_shader = 0;
 static unsigned currently_selected_controller_menu = 0;
 static char strw_buffer[PATH_MAX];
+
+typedef enum {
+   SETTINGS_ACTION_DOWN,
+   SETTINGS_ACTION_UP,
+   SETTINGS_ACTION_TAB_PREVIOUS,
+   SETTINGS_ACTION_TAB_NEXT,
+   SETTINGS_ACTION_NOOP
+} settings_action_t;
+
+typedef enum {
+   MENU_ROMSELECT_ACTION_OK,
+   MENU_ROMSELECT_ACTION_GOTO_SETTINGS,
+   MENU_ROMSELECT_ACTION_NOOP,
+} menu_romselect_action_t;
 
 static void set_setting_label_write_on_or_off(bool cond, unsigned currentsetting)
 {
@@ -159,21 +172,26 @@ static void set_setting_label(menu * menu_obj, unsigned currentsetting)
 	   case SETTING_SOUND_MODE:
 		   switch(g_console.sound_mode)
 		   {
-			   case SOUND_MODE_NORMAL:
-				   snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [Sound Output] is set to 'Normal' - normal audio output will be\nused.");
-				   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "Normal");
-				   items_generalsettings[currentsetting].text_color = GREEN;
-				   break;
-			   case SOUND_MODE_RSOUND:
-				   snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [Sound Output] is set to 'RSound' - the sound will be streamed over the\n network to the RSound audio server." );
-				   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "RSound");
-				   items_generalsettings[currentsetting].text_color = ORANGE;
-				   break;
-			   case SOUND_MODE_HEADSET:
-				   snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [Sound Output] is set to 'USB/Bluetooth Headset' - sound will\n be output through the headset");
-				   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "USB/Bluetooth Headset");
-				   items_generalsettings[currentsetting].text_color = ORANGE;
-				   break;
+                      case SOUND_MODE_NORMAL:
+                         snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), 
+                         "INFO - [Sound Output] is set to 'Normal' - normal audio output will be\nused.");
+			 snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "Normal");
+			 items_generalsettings[currentsetting].text_color = GREEN;
+			 break;
+                      case SOUND_MODE_RSOUND:
+                         snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), 
+                         "INFO - [Sound Output] is set to 'RSound' - the sound will be streamed over the\n network to the RSound audio server." );
+			 snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "RSound");
+			 items_generalsettings[currentsetting].text_color = ORANGE;
+			 break;
+                      case SOUND_MODE_HEADSET:
+                         snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), 
+                         "INFO - [Sound Output] is set to 'USB/Bluetooth Headset' - sound will\n be output through the headset");
+			 snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "USB/Bluetooth Headset");
+			 items_generalsettings[currentsetting].text_color = ORANGE;
+			 break;
+                      default:
+                         break;
 		   }
 		   break;
 	   case SETTING_RSOUND_SERVER_IP_ADDRESS:
@@ -310,9 +328,9 @@ static void menu_stack_increment(void)
 
 static void menu_stack_refresh (item *items, unsigned stack_idx)
 {
-   menu *menu_obj = &menuStack[stack_idx];
    int page, i, j;
    float increment;
+   menu *menu_obj = &menuStack[stack_idx];
 
    page = 0;
    j = 0;
@@ -657,7 +675,6 @@ static void browser_render(filebrowser_t * b)
 }
 
 
-#define INPUT_SCALE 2
 
 static void apply_scaling (unsigned init_mode)
 {
@@ -1010,9 +1027,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			   }
 			}
 			if(CTRL_START(trigger_state))
-			{
                            strlcpy(g_console.cgp_path, "", sizeof(g_console.cgp_path));
-			}
 			break;
 		case SETTING_SHADER:
 			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
@@ -1217,9 +1232,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			break;
 		case SETTING_SAVE_SHADER_PRESET:
 			if(CTRL_LEFT(trigger_state)  || CTRL_LSTICK_LEFT(trigger_state)  || CTRL_RIGHT(trigger_state) | CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
-			{
                            rarch_filename_input_and_save(SHADER_PRESET_FILE);
-			}
 			break;
 		case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
 			break;
@@ -1274,26 +1287,18 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			break;
 		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
 			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state))
-			{
                            rarch_settings_change(S_SAVESTATE_DECREMENT);
-			}
 			if(CTRL_RIGHT(trigger_state)  || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
-			{
                            rarch_settings_change(S_SAVESTATE_INCREMENT);
-			}
 
 			if(CTRL_START(trigger_state))
                            rarch_settings_default(S_DEF_SAVE_STATE);
 			break;
 		case SETTING_EMU_SHOW_INFO_MSG:
 			if(CTRL_LEFT(trigger_state)  || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))
-			{
                            g_console.info_msg_enable = !g_console.info_msg_enable;
-			}
 			if(CTRL_START(trigger_state))
-			{
                            g_console.info_msg_enable = true;
-			}
 			break;
 		case SETTING_EMU_REWIND_ENABLED:
 			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
@@ -1512,14 +1517,6 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 	set_setting_label(menu_obj, switchvalue);
 }
 
-typedef enum {
-   SETTINGS_ACTION_DOWN,
-   SETTINGS_ACTION_UP,
-   SETTINGS_ACTION_TAB_PREVIOUS,
-   SETTINGS_ACTION_TAB_NEXT,
-   SETTINGS_ACTION_NOOP
-} settings_action_t;
-
 static void settings_iterate(menu * menu_obj, settings_action_t action)
 {
    switch(action)
@@ -1562,6 +1559,8 @@ static void settings_iterate(menu * menu_obj, settings_action_t action)
 	       break;
 	 }
          break;
+      default:
+         break;
    }
 }
 
@@ -1592,7 +1591,7 @@ static void select_setting(void)
    gl_render_msg_post(gl);
 
 
-   for ( i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
+   for (i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
    {
       if(items_generalsettings[i].page == menu_obj->page)
       {
@@ -1608,12 +1607,6 @@ static void select_setting(void)
    cellDbgFontPuts(0.09f, 0.95f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
    gl_render_msg_post(gl);
 }
-
-typedef enum {
-   MENU_ROMSELECT_ACTION_OK,
-   MENU_ROMSELECT_ACTION_GOTO_SETTINGS,
-   MENU_ROMSELECT_ACTION_NOOP,
-} menu_romselect_action_t;
 
 static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_action_t action)
 {
@@ -1651,6 +1644,8 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
 	 menu_stack_increment();
          menu_stack_push(menuStackindex, GENERAL_VIDEO_MENU);
          break;
+      default:
+         break;
    }
 }
 
@@ -1685,11 +1680,10 @@ static void select_rom(void)
    display_menubar();
 
    cellDbgFontPuts   (0.09f, 0.91f, FONT_SIZE, YELLOW,
-		   "L3 + R3 - resume game           SELECT - Settings screen");
+   "L3 + R3 - resume game           SELECT - Settings screen");
    gl_render_msg_post(gl);
 }
 
-#define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
 static void ingame_menu_resize(void)
 {
@@ -1753,41 +1747,41 @@ static void ingame_menu_resize(void)
 
       gl_render_msg_post(gl);
 
-      cellDbgFontPrintf (0.09f, 0.48f,   font_size,      LIGHTBLUE, "RIGHT or LSTICK RIGHT");
-      cellDbgFontPrintf (0.5f, 0.48f,   font_size,      LIGHTBLUE, "- Increase Viewport X");
+      cellDbgFontPrintf (0.09f, 0.48f, font_size, LIGHTBLUE, "RIGHT or LSTICK RIGHT");
+      cellDbgFontPrintf (0.5f, 0.48f, font_size, LIGHTBLUE, "- Increase Viewport X");
 
-      cellDbgFontPrintf (0.09f, 0.50f,   font_size,      LIGHTBLUE,           "UP or LSTICK UP");
-      cellDbgFontPrintf (0.5f, 0.50f,   font_size,      LIGHTBLUE,           "- Increase Viewport Y");
-
-      gl_render_msg_post(gl);
-
-      cellDbgFontPrintf (0.09f,   0.52f,   font_size,      LIGHTBLUE,           "DOWN or LSTICK DOWN");
-      cellDbgFontPrintf (0.5f,   0.52f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Y");
-
-      cellDbgFontPrintf (0.09f,   0.54f,   font_size,      LIGHTBLUE,           "L1 or RSTICK LEFT");
-      cellDbgFontPrintf (0.5f,   0.54f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Width");
+      cellDbgFontPrintf (0.09f, 0.50f, font_size, LIGHTBLUE, "UP or LSTICK UP");
+      cellDbgFontPrintf (0.5f, 0.50f, font_size, LIGHTBLUE, "- Increase Viewport Y");
 
       gl_render_msg_post(gl);
 
-      cellDbgFontPrintf (0.09f,   0.56f,   font_size,      LIGHTBLUE,           "R1 or RSTICK RIGHT");
-      cellDbgFontPrintf (0.5f,   0.56f,   font_size,      LIGHTBLUE,           "- Increase Viewport Width");
+      cellDbgFontPrintf (0.09f, 0.52f, font_size, LIGHTBLUE, "DOWN or LSTICK DOWN");
+      cellDbgFontPrintf (0.5f, 0.52f, font_size, LIGHTBLUE, "- Decrease Viewport Y");
 
-      cellDbgFontPrintf (0.09f,   0.58f,   font_size,      LIGHTBLUE,           "L2 or  RSTICK UP");
-      cellDbgFontPrintf (0.5f,   0.58f,   font_size,      LIGHTBLUE,           "- Increase Viewport Height");
+      cellDbgFontPrintf (0.09f, 0.54f, font_size, LIGHTBLUE, "L1 or RSTICK LEFT");
+      cellDbgFontPrintf (0.5f, 0.54f, font_size, LIGHTBLUE, "- Decrease Viewport Width");
 
       gl_render_msg_post(gl);
 
-      cellDbgFontPrintf (0.09f,   0.60f,   font_size,      LIGHTBLUE,           "R2 or RSTICK DOWN");
-      cellDbgFontPrintf (0.5f,   0.60f,   font_size,      LIGHTBLUE,           "- Decrease Viewport Height");
+      cellDbgFontPrintf (0.09f, 0.56f, font_size, LIGHTBLUE, "R1 or RSTICK RIGHT");
+      cellDbgFontPrintf (0.5f, 0.56f, font_size, LIGHTBLUE, "- Increase Viewport Width");
 
-      cellDbgFontPrintf (0.09f,   0.66f,   font_size,      LIGHTBLUE,           "TRIANGLE");
-      cellDbgFontPrintf (0.5f,   0.66f,   font_size,      LIGHTBLUE,           "- Reset To Defaults");
+      cellDbgFontPrintf (0.09f, 0.58f, font_size, LIGHTBLUE, "L2 or  RSTICK UP");
+      cellDbgFontPrintf (0.5f, 0.58f, font_size, LIGHTBLUE, "- Increase Viewport Height");
 
-      cellDbgFontPrintf (0.09f,   0.68f,   font_size,      LIGHTBLUE,           "SQUARE");
-      cellDbgFontPrintf (0.5f,   0.68f,   font_size,      LIGHTBLUE,           "- Show Game Screen");
+      gl_render_msg_post(gl);
 
-      cellDbgFontPrintf (0.09f,   0.70f,   font_size,      LIGHTBLUE,           "CIRCLE");
-      cellDbgFontPrintf (0.5f,   0.70f,   font_size,      LIGHTBLUE,           "- Return to Ingame Menu");
+      cellDbgFontPrintf (0.09f, 0.60f, font_size, LIGHTBLUE, "R2 or RSTICK DOWN");
+      cellDbgFontPrintf (0.5f, 0.60f, font_size, LIGHTBLUE, "- Decrease Viewport Height");
+
+      cellDbgFontPrintf (0.09f, 0.66f, font_size, LIGHTBLUE, "TRIANGLE");
+      cellDbgFontPrintf (0.5f, 0.66f, font_size, LIGHTBLUE, "- Reset To Defaults");
+
+      cellDbgFontPrintf (0.09f, 0.68f, font_size, LIGHTBLUE, "SQUARE");
+      cellDbgFontPrintf (0.5f, 0.68f, font_size, LIGHTBLUE, "- Show Game Screen");
+
+      cellDbgFontPrintf (0.09f, 0.70f, font_size, LIGHTBLUE, "CIRCLE");
+      cellDbgFontPrintf (0.5f, 0.70f, font_size, LIGHTBLUE, "- Return to Ingame Menu");
 
       gl_render_msg_post(gl);
 
@@ -1827,8 +1821,8 @@ static void ingame_menu(void)
 
    menuitem_colors[g_console.ingame_menu_item] = RED;
 
-      if(CTRL_CIRCLE(trigger_state))
-         rarch_settings_change(S_RETURN_TO_GAME);
+   if(CTRL_CIRCLE(trigger_state))
+      rarch_settings_change(S_RETURN_TO_GAME);
 
       switch(g_console.ingame_menu_item)
       {
@@ -1964,20 +1958,20 @@ static void ingame_menu(void)
 	    break;
       }
 
-      if(CTRL_UP(trigger_state) || CTRL_LSTICK_UP(trigger_state))
-      {
-         if(g_console.ingame_menu_item > 0)
-            g_console.ingame_menu_item--;
-      }
+   if(CTRL_UP(trigger_state) || CTRL_LSTICK_UP(trigger_state))
+   {
+      if(g_console.ingame_menu_item > 0)
+         g_console.ingame_menu_item--;
+   }
 
-      if(CTRL_DOWN(trigger_state) || CTRL_LSTICK_DOWN(trigger_state))
-      {
-         if(g_console.ingame_menu_item < (MENU_ITEM_LAST-1))
-            g_console.ingame_menu_item++;
-      }
+   if(CTRL_DOWN(trigger_state) || CTRL_LSTICK_DOWN(trigger_state))
+   {
+      if(g_console.ingame_menu_item < (MENU_ITEM_LAST-1))
+         g_console.ingame_menu_item++;
+   }
 
-      if(CTRL_L3(trigger_state) && CTRL_R3(trigger_state))
-         rarch_settings_change(S_RETURN_TO_GAME);
+   if(CTRL_L3(trigger_state) && CTRL_R3(trigger_state))
+      rarch_settings_change(S_RETURN_TO_GAME);
 
    display_menubar();
 
@@ -2031,18 +2025,6 @@ static void ingame_menu(void)
    gl_render_msg_post(gl);
 }
 
-void menu_init (void)
-{
-   menu_stack_push(0, FILE_BROWSER_MENU);
-   filebrowser_set_root(&tmpBrowser, "/");
-}
-
-void menu_free (void)
-{
-   filebrowser_free(&browser);
-   filebrowser_free(&tmpBrowser);
-}
-
 static bool check_analog(uint64_t state_tmp)
 {
   if(CTRL_LSTICK_UP(state_tmp) || CTRL_LSTICK_DOWN(state_tmp) || CTRL_LSTICK_RIGHT(state_tmp) || CTRL_LSTICK_LEFT(state_tmp))
@@ -2057,6 +2039,18 @@ static bool check_shoulder_buttons(uint64_t state_tmp)
      return true;
   else
      return false;
+}
+
+void menu_init (void)
+{
+   menu_stack_push(0, FILE_BROWSER_MENU);
+   filebrowser_set_root(&tmpBrowser, "/");
+}
+
+void menu_free (void)
+{
+   filebrowser_free(&browser);
+   filebrowser_free(&tmpBrowser);
 }
 
 void menu_loop(void)
