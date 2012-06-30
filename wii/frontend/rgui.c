@@ -180,7 +180,11 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          RGUI_WIDTH - 10, 5, 5, RGUI_HEIGHT - 10, green_filler);
 
-   blit_line(rgui, TERM_START_X + 15, 15, "FILE BROWSER\n", true);
+   char title[TERM_WIDTH - 1];
+   const char *dir;
+   rgui_list_back(rgui->path_stack, &dir, NULL);
+   snprintf(title, sizeof(title), "FILE BROWSER: %s", dir); 
+   blit_line(rgui, TERM_START_X + 15, 15, title, true);
 
    unsigned x = TERM_START_X;
    unsigned y = TERM_START_Y;
@@ -331,21 +335,18 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
    if (rgui->need_refresh)
    {
+      rgui->need_refresh = false;
       rgui->directory_ptr = 0;
       rgui_list_clear(rgui->folder_buf);
 
       const char *path = NULL;
       rgui_list_back(rgui->path_stack, &path, NULL);
 
-      if (!rgui->folder_cb(path,
-            (rgui_file_enum_cb_t)rgui_list_push,
-            rgui->userdata, rgui->folder_buf))
-         return NULL;
+      rgui->folder_cb(path, (rgui_file_enum_cb_t)rgui_list_push,
+         rgui->userdata, rgui->folder_buf);
 
       if (*path)
          rgui_list_sort(rgui->folder_buf);
-
-      rgui->need_refresh = false;
    }
 
    size_t begin = rgui->directory_ptr >= TERM_HEIGHT / 2 ?
