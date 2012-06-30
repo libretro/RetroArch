@@ -24,7 +24,7 @@ MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 CXXFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
-LIBS := -lfat -lretro -lwiiuse -logc -lbte
+LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
 
 OBJ = console/griffin/griffin.o console/font.bmpobj console/rzlib/rzlib.o
 
