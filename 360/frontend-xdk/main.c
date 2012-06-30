@@ -187,6 +187,7 @@ static void get_environment_settings (void)
    Mounted[DEVICE_MEMORY_ONBOARD] = Mount(DEVICE_MEMORY_ONBOARD,"OnBoardMU:"); 
    Mounted[DEVICE_CDROM0] = Mount(DEVICE_CDROM0,"Dvd:"); 
 
+#ifdef HAVE_HDD_CACHE_PARTITION
    ret = XSetFileCacheSize(0x100000);
 
    if(ret != TRUE)
@@ -202,6 +203,8 @@ static void get_environment_settings (void)
    }
 
    XFlushUtilityDrive();
+#endif
+
    //unsigned long result = XMountUtilityDriveEx(XMOUNTUTILITYDRIVE_FORMAT0,8192, 0);
 
    //if(result != ERROR_SUCCESS)

@@ -61,8 +61,8 @@ HRESULT CRetroArch::UnregisterXuiClasses (void)
    return 0;
 }
 
-static void filebrowser_fetch_directory_entries(const char *path, filebrowser_t * browser, CXuiList * romlist, 
-   CXuiTextElement * rompath_title)
+static void filebrowser_fetch_directory_entries(const char *path, 
+ filebrowser_t * browser, CXuiList * romlist, CXuiTextElement * rompath_title)
 {
    filebrowser_push_directory(browser, path, true);
 
@@ -71,6 +71,7 @@ static void filebrowser_fetch_directory_entries(const char *path, filebrowser_t 
 
    romlist->DeleteItems(0, romlist->GetItemCount());
    romlist->InsertItems(0, browser->current_dir.list->size);
+
    for(unsigned i = 0; i < browser->current_dir.list->size; i++)
    {
       char fname_tmp[256];
@@ -90,7 +91,8 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
 
    filebrowser_set_root(&browser, g_console.default_rom_startup_dir);
    strlcpy(tmp_browser.extensions, rarch_console_get_rom_ext(), sizeof(tmp_browser.extensions));
-   filebrowser_fetch_directory_entries(g_console.default_rom_startup_dir, &browser, &m_romlist, &m_rompathtitle);
+   filebrowser_fetch_directory_entries(g_console.default_rom_startup_dir, 
+   &browser, &m_romlist, &m_rompathtitle);
 
    return 0;
 }
@@ -116,7 +118,8 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
 
    filebrowser_set_root(&tmp_browser, "game:\\media\\shaders");
    strlcpy(tmp_browser.extensions, "cg|CG", sizeof(tmp_browser.extensions));
-   filebrowser_fetch_directory_entries("game:\\media\\shaders", &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
+   filebrowser_fetch_directory_entries("game:\\media\\shaders", &tmp_browser, 
+   &m_shaderlist, &m_shaderpathtitle);
 
    return 0;
 }
@@ -136,7 +139,9 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
-      snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_input_get_default_keybind_name(i), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+      snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
+      rarch_input_get_default_keybind_name(i), controlno, 
+      rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
       rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer)); 
       m_controlslist.SetText(i, strw_buffer);
    }
@@ -144,7 +149,8 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    return 0;
 }
 
-HRESULT CRetroArchControls::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
+HRESULT CRetroArchControls::OnControlNavigate(
+ XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
 {
    char button[128];
    char buttons[RARCH_FIRST_META_KEY][128];
@@ -155,7 +161,9 @@ HRESULT CRetroArchControls::OnControlNavigate(XUIMessageControlNavigate *pContro
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
-      snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_input_get_default_keybind_name(i), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+      snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
+      rarch_input_get_default_keybind_name(i), controlno, 
+      rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
       rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
       m_controlslist.SetText(i, strw_buffer);
    }
@@ -205,7 +213,10 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
             for(i = 0; i < RARCH_FIRST_META_KEY; i++)
             {
-               snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", rarch_input_get_default_keybind_name(i), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+               snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
+               rarch_input_get_default_keybind_name(i), controlno, 
+               rarch_input_find_platform_key_label(
+               g_settings.input.binds[controlno][i].joykey));
                rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
                m_controlslist.SetText(i, strw_buffer);
             }
@@ -296,19 +307,21 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
         break;
    }
 
-    bHandled = TRUE;
+   bHandled = TRUE;
 	
-    switch(pControlNavigateData->nControlNavigate)
-	{
-       case XUI_CONTROL_NAVIGATE_LEFT:
-       case XUI_CONTROL_NAVIGATE_RIGHT:
-       case XUI_CONTROL_NAVIGATE_UP:
-       case XUI_CONTROL_NAVIGATE_DOWN:
-          pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
-          break;
+   switch(pControlNavigateData->nControlNavigate)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+      case XUI_CONTROL_NAVIGATE_UP:
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
+         break;
+      default:
+         break;
     }
 
-	return 0;
+    return 0;
 }
 
 HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
@@ -345,7 +358,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
          switch(current_index)
          {
             case MENU_ITEM_LOAD_STATE:
-			case MENU_ITEM_SAVE_STATE:
+            case MENU_ITEM_SAVE_STATE:
                rarch_state_slot_decrease();
                rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_LOAD_STATE, strw_buffer);
@@ -370,7 +383,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
          switch(current_index)
          {
             case MENU_ITEM_LOAD_STATE:
-			case MENU_ITEM_SAVE_STATE:
+            case MENU_ITEM_SAVE_STATE:
                rarch_state_slot_increase();
                rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_LOAD_STATE, strw_buffer);
@@ -379,7 +392,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
                break;
             case MENU_ITEM_KEEP_ASPECT_RATIO:
                rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
-	           aspectratio_changed = true;
+               aspectratio_changed = true;
                break;
             case MENU_ITEM_ORIENTATION:
                rarch_settings_change(S_ROTATION_INCREMENT);
@@ -399,20 +412,22 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
    if(aspectratio_changed)
    {
       gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
-	  rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
+      rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
       m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
    }
 
    bHandled = TRUE;
 
-    switch(pControlNavigateData->nControlNavigate)
-	{
-       case XUI_CONTROL_NAVIGATE_LEFT:
-       case XUI_CONTROL_NAVIGATE_RIGHT:
-       case XUI_CONTROL_NAVIGATE_UP:
-       case XUI_CONTROL_NAVIGATE_DOWN:
-          pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
-          break;
+   switch(pControlNavigateData->nControlNavigate)
+   {
+      case XUI_CONTROL_NAVIGATE_LEFT:
+      case XUI_CONTROL_NAVIGATE_RIGHT:
+      case XUI_CONTROL_NAVIGATE_UP:
+      case XUI_CONTROL_NAVIGATE_DOWN:
+         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
+	 break;
+      default:
+         break;
     }
 
    return 0;
@@ -437,35 +452,33 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             }
             break;
 	 case MENU_ITEM_SAVE_STATE:
-	    if (g_console.emulator_initialized)
-	    {
-           rarch_save_state();
-           rarch_settings_change(S_RETURN_TO_GAME);
-	    }
+            if (g_console.emulator_initialized)
+            {
+               rarch_save_state();
+               rarch_settings_change(S_RETURN_TO_GAME);
+            }
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
-	    {
-           rarch_settings_default(S_DEF_ASPECT_RATIO);
-
-	       gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
-		   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
-	       m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
-	    }
+            rarch_settings_default(S_DEF_ASPECT_RATIO);
+            gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
+            rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
+            m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
 	    break;
 	 case MENU_ITEM_OVERSCAN_AMOUNT:
-        if(g_console.info_msg_enable)
-           rarch_settings_msg(S_MSG_NOT_IMPLEMENTED, S_DELAY_180);
+            if(g_console.info_msg_enable)
+               rarch_settings_msg(S_MSG_NOT_IMPLEMENTED, S_DELAY_180);
 	    break;
 	 case MENU_ITEM_ORIENTATION:
-        rarch_settings_default(S_DEF_ROTATION);
-        rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
-        m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
+            rarch_settings_default(S_DEF_ROTATION);
+            rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+            m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
 	    video_xdk360.set_rotation(driver.video_data, g_console.screen_orientation);
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
 	    g_console.input_loop = INPUT_LOOP_RESIZE_MODE;
-	    if (g_console.info_msg_enable)
-           rarch_settings_msg(S_MSG_RESIZE_SCREEN, S_DELAY_270);
+
+            if (g_console.info_msg_enable)
+               rarch_settings_msg(S_MSG_RESIZE_SCREEN, S_DELAY_270);
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
 	    if (g_console.emulator_initialized)
@@ -476,11 +489,11 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
            rarch_settings_msg(S_MSG_NOT_IMPLEMENTED, S_DELAY_180);
 	    break;
 	 case MENU_ITEM_RESET:
-	    if (g_console.emulator_initialized)
-	    {
-           rarch_settings_change(S_RETURN_TO_GAME);
-           rarch_game_reset();
-	    }
+            if (g_console.emulator_initialized)
+            {
+               rarch_settings_change(S_RETURN_TO_GAME);
+               rarch_game_reset();
+            }
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
 	    if (g_console.emulator_initialized)
@@ -563,13 +576,16 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       filebrowser_new(&browser, g_console.default_rom_startup_dir, rarch_console_get_rom_ext());
       filebrowser_fetch_directory_entries(g_console.default_rom_startup_dir, &browser, &m_romlist, &m_rompathtitle);
    }
+#ifdef HAVE_HDD_CACHE_PARTITION
    else if (hObjPressed == m_dir_cache)
    {
       filebrowser_new(&browser, "cache:", rarch_console_get_rom_ext());
       filebrowser_fetch_directory_entries("cache:", &browser, &m_romlist, &m_rompathtitle);
+
       if (g_console.info_msg_enable)
          rarch_settings_msg(S_MSG_CACHE_PARTITION, S_DELAY_180);
    }
+#endif
 
    bHandled = TRUE;
 
@@ -682,25 +698,26 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    hr = XuiSceneCreate(g_console.menus_hd_enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
 
 	    if (hr < 0)
-	    {
                RARCH_ERR("Failed to load scene.\n");
-	    }
+
 	    hCur = app.hShaderBrowser;
 
-        if (g_console.info_msg_enable)
-           rarch_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
+            if (g_console.info_msg_enable)
+               rarch_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
+
 	    NavigateForward(app.hShaderBrowser);
 	    break;
 	 case SETTING_SHADER_2:
         set_shader = 2;
 	    hr = XuiSceneCreate(g_console.menus_hd_enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
 	    if (hr < 0)
-	    {
-		    RARCH_ERR("Failed to load scene.\n");
-	    }
+               RARCH_ERR("Failed to load scene.\n");
+
 	    hCur = app.hShaderBrowser;
-	    if (g_console.info_msg_enable)
-           rarch_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
+
+            if (g_console.info_msg_enable)
+               rarch_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
+
 	    NavigateForward(app.hShaderBrowser);
 	    break;
 	 case SETTING_HW_TEXTURE_FILTER:
@@ -746,7 +763,9 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_quickmenu.xur", NULL, &app.hQuickMenu);
 
       if (hr < 0)
+      {
          RARCH_ERR("Failed to load scene.\n");
+      }
 
       hCur = app.hQuickMenu;
       NavigateForward(app.hQuickMenu);
@@ -756,11 +775,15 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_controls.xur", NULL, &app.hControlsMenu);
 
       if (hr < 0)
+      {
          RARCH_ERR("Failed to load scene.\n");
+      }
 
       hCur = app.hControlsMenu;
+
       if (g_console.info_msg_enable)
          rarch_settings_msg(S_MSG_CHANGE_CONTROLS, S_DELAY_180);
+
       NavigateForward(app.hControlsMenu);
    }
    else if ( hObjPressed == m_change_libretro_core )
@@ -775,6 +798,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
       if (g_console.info_msg_enable)
          rarch_settings_msg(S_MSG_SELECT_LIBRETRO_CORE, S_DELAY_180);
+
       NavigateForward(app.hCoreBrowser);
    }
    else if ( hObjPressed == m_settings )
@@ -849,41 +873,39 @@ void menu_free (void)
 
 static void ingame_menu_resize (void)
 {
-	XINPUT_STATE state;
+   XINPUT_STATE state;
 
-	XInputGetState(0, &state);
+   XInputGetState(0, &state);
 
-	if(state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT || state.Gamepad.sThumbLX < -DEADZONE)
-		g_console.viewports.custom_vp.x -= 1;
-	else if (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT || state.Gamepad.sThumbLX > DEADZONE)
-		g_console.viewports.custom_vp.x += 1;
+   if(state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT || state.Gamepad.sThumbLX < -DEADZONE)
+      g_console.viewports.custom_vp.x -= 1;
+   else if (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT || state.Gamepad.sThumbLX > DEADZONE)
+      g_console.viewports.custom_vp.x += 1;
 
-	if (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP || state.Gamepad.sThumbLY > DEADZONE)
-		g_console.viewports.custom_vp.y += 1;
-	else if (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN || state.Gamepad.sThumbLY < -DEADZONE) 
-		g_console.viewports.custom_vp.y -= 1;
+   if (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP || state.Gamepad.sThumbLY > DEADZONE)
+      g_console.viewports.custom_vp.y += 1;
+   else if (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN || state.Gamepad.sThumbLY < -DEADZONE) 
+      g_console.viewports.custom_vp.y -= 1;
 
-	if (state.Gamepad.sThumbRX < -DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB)
-		g_console.viewports.custom_vp.width -= 1;
-	else if (state.Gamepad.sThumbRX > DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB)
-		g_console.viewports.custom_vp.width += 1;
+   if (state.Gamepad.sThumbRX < -DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB)
+      g_console.viewports.custom_vp.width -= 1;
+   else if (state.Gamepad.sThumbRX > DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB)
+      g_console.viewports.custom_vp.width += 1;
 
-	if (state.Gamepad.sThumbRY > DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER)
-		g_console.viewports.custom_vp.height += 1;
-	else if (state.Gamepad.sThumbRY < -DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
-		g_console.viewports.custom_vp.height -= 1;
+   if (state.Gamepad.sThumbRY > DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER)
+      g_console.viewports.custom_vp.height += 1;
+   else if (state.Gamepad.sThumbRY < -DEADZONE || state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
+      g_console.viewports.custom_vp.height -= 1;
 
-	if (state.Gamepad.wButtons & XINPUT_GAMEPAD_Y)
-	{
-		g_console.viewports.custom_vp.x = 0;
-		g_console.viewports.custom_vp.y = 0;
-		g_console.viewports.custom_vp.width = 1280; //FIXME: hardcoded
-		g_console.viewports.custom_vp.height = 720; //FIXME: hardcoded
-	}
-	if(state.Gamepad.wButtons & XINPUT_GAMEPAD_B)
-	{
-		g_console.input_loop = INPUT_LOOP_MENU;
-	}
+   if (state.Gamepad.wButtons & XINPUT_GAMEPAD_Y)
+   {
+	   g_console.viewports.custom_vp.x = 0;
+	   g_console.viewports.custom_vp.y = 0;
+	   g_console.viewports.custom_vp.width = 1280; //FIXME: hardcoded
+	   g_console.viewports.custom_vp.height = 720; //FIXME: hardcoded
+   }
+   if(state.Gamepad.wButtons & XINPUT_GAMEPAD_B)
+      g_console.input_loop = INPUT_LOOP_MENU;
 }
 
 void menu_loop(void)
@@ -900,14 +922,12 @@ void menu_loop(void)
    do
    {
       if(g_console.emulator_initialized)
-	  {
          rarch_render_cached_frame();
-	  }
-	  else
-	  {
+      else
+      {
          d3d9->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
          d3d9->frame_count++;
-	  }
+      }
 
       XINPUT_STATE state;
       XInputGetState(0, &state);
@@ -921,7 +941,7 @@ void menu_loop(void)
       switch(g_console.input_loop)
       {
          case INPUT_LOOP_MENU:
-            app.RunFrame();			/* Update XUI */
+            app.RunFrame(); /* Update XUI */
             if(state.Gamepad.wButtons & XINPUT_GAMEPAD_B && hCur != app.hMainScene)
                XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
             break;
@@ -932,8 +952,8 @@ void menu_loop(void)
             break;
       }
 
-      hr = app.Render();		/* Render XUI */
-      hr = XuiTimersRun();	/* Update XUI timers */
+      hr = app.Render();   /* Render XUI */
+      hr = XuiTimersRun(); /* Update XUI timers */
 
       if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
       {

@@ -124,10 +124,14 @@ static int rarch_extract_currentfile_in_zip(unzFile uf)
 
    char write_filename[PATH_MAX];
 
+#ifdef HAVE_HDD_CACHE_PARTITION
+
 #if defined(__CELLOS_LV2__)
    snprintf(write_filename, sizeof(write_filename), "/dev_hdd1/%s", filename_inzip);
 #elif defined(_XBOX)
    snprintf(write_filename, sizeof(write_filename), "cache:\\%s", filename_inzip);
+#endif
+
 #endif
 
    err = unzOpenCurrentFile(uf);
@@ -208,8 +212,10 @@ int rarch_extract_zipfile(const char *zip_path)
       }
    }
 
+#ifdef HAVE_HDD_CACHE_PARTITION
    if(g_console.info_msg_enable)
       rarch_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
+#endif
 
    return 0;
 }

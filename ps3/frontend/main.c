@@ -174,6 +174,8 @@ static void get_environment_settings(int argc, char *argv[])
    CellGameContentSize size;
    char dirName[CELL_GAME_DIRNAME_SIZE];
    char contentInfoPath[PATH_MAX];
+
+#ifdef HAVE_HDD_CACHE_PARTITION
    CellSysCacheParam param;
    memset(&param, 0x00, sizeof(CellSysCacheParam));
    strlcpy(param.cacheId,CACHE_ID, sizeof(CellSysCacheParam));
@@ -183,6 +185,7 @@ static void get_environment_settings(int argc, char *argv[])
    {
       RARCH_ERR("System cache partition could not be mounted, it might be already mounted.\n");
    }
+#endif
 
 #ifdef HAVE_MULTIMAN
    if(argc > 1)
@@ -417,12 +420,14 @@ begin_shutdown:
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
 #endif
 
+#ifdef HAVE_HDD_CACHE_PARTITION
    int ret = cellSysCacheClear();
 
    if(ret != CELL_SYSCACHE_RET_OK_CLEARED)
    {
       RARCH_ERR("System cache partition could not be cleared on exit.\n");
    }
+#endif
 
    rarch_exec();
 
