@@ -88,8 +88,6 @@ static bool get_rom_path(rgui_handle_t *rgui)
    uint16_t old_input_state = 0;
    bool can_quit = false;
 
-   rgui_iterate(rgui, RGUI_ACTION_REFRESH);
-
    for (;;)
    {
       uint16_t input_state = 0;
@@ -168,6 +166,7 @@ int main(void)
    rgui_handle_t *rgui = rgui_init("",
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
          _binary_console_font_bmp_start, folder_cb, NULL);
+   rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 
    int ret = 0;
    while (get_rom_path(rgui) && ret == 0)
