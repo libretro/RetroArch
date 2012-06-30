@@ -44,7 +44,6 @@ struct rgui_handle
    rgui_list_t *folder_buf;
    size_t directory_ptr;
    bool need_refresh;
-   bool displaying_message;
 
    char path_buf[PATH_MAX];
 
@@ -205,6 +204,9 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
 
 static void render_messagebox(rgui_handle_t *rgui, const char *message)
 {
+   if (!message || !*message)
+      return;
+
    char *msg = strdup(message);
    if (strlen(msg) > TERM_WIDTH)
    {
@@ -240,6 +242,7 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
 
 const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
+   bool found = false;
    switch (action)
    {
       case RGUI_ACTION_UP:
@@ -294,9 +297,7 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
                   strcmp(dir, "/") == 0 ? "" : dir, path);
             strlcpy(g_console.rom_path, rgui->path_buf, sizeof(g_console.rom_path));
             rarch_settings_msg(S_MSG_LOADING_ROM, S_DELAY_1);
-            const char * message = msg_queue_pull(g_extern.msg_queue);
-            render_messagebox(rgui, message);
-            return rgui->path_buf;
+            found = true;
          }
          break;
       }
@@ -306,18 +307,7 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
 
       default:
-         if (msg_queue_pull(g_extern.msg_queue))
-         {
-            rgui->displaying_message = true;
-         }
-         else if (rgui->displaying_message)
-         {
-            rgui->displaying_message = false;
-         }
-         else
-         {
-            return NULL;
-         }
+         break;
    }
 
    if (rgui->need_refresh)
@@ -347,11 +337,9 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
       end = begin + TERM_HEIGHT;
 
    render_text(rgui, begin, end);
-   const char * message = msg_queue_pull(g_extern.msg_queue);
-   
-   if (message)
-      render_messagebox(rgui, message);
 
-   return NULL;
+   render_messagebox(rgui, msg_queue_pull(g_extern.msg_queue));
+
+   return found ? rgui->path_buf : NULL;
 }
 
