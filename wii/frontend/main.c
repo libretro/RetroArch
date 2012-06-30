@@ -45,7 +45,20 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
 {
    (void)userdata;
 
-   DIR *dir = opendir(directory);
+   if (!*directory)
+   {
+#ifdef HW_RVL
+      file_cb(ctx, "sd:", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "usb:", RGUI_FILE_DEVICE, 0);
+#endif
+      file_cb(ctx, "carda:", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "cardb:", RGUI_FILE_DEVICE, 0);
+      return true;
+   }
+
+   char _dir[PATH_MAX];
+   snprintf(_dir, sizeof(_dir), "%s/", directory);
+   DIR *dir = opendir(_dir);
    if (!dir)
       return false;
 
@@ -63,7 +76,7 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
 
       file_cb(ctx,
             entry->d_name, S_ISDIR(st.st_mode) ?
-            RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN);
+            RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
    }
 
    closedir(dir);
@@ -74,8 +87,6 @@ static bool get_rom_path(rgui_handle_t *rgui)
 {
    uint16_t old_input_state = 0;
    bool can_quit = false;
-
-   rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 
    for (;;)
    {
@@ -140,7 +151,7 @@ int main(void)
 
 #ifdef HAVE_FILE_LOGGER
    g_extern.verbose = true;
-   log_fp = fopen("sd:/retroarch-log.txt", "w");
+   log_fp = fopen("/retroarch-log.txt", "w");
 #endif
 
    config_set_defaults();
@@ -152,9 +163,10 @@ int main(void)
    wii_video_init();
    input_wii.init();
 
-   rgui_handle_t *rgui = rgui_init("sd:/",
+   rgui_handle_t *rgui = rgui_init("",
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
          _binary_console_font_bmp_start, folder_cb, NULL);
+   rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 
    int ret = 0;
    while (get_rom_path(rgui) && ret == 0)

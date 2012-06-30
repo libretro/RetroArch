@@ -28,7 +28,8 @@ extern "C" {
 typedef enum
 {
    RGUI_FILE_PLAIN,
-   RGUI_FILE_DIRECTORY
+   RGUI_FILE_DIRECTORY,
+   RGUI_FILE_DEVICE
 } rgui_file_type_t;
 
 typedef enum
@@ -45,8 +46,8 @@ typedef enum
 
 typedef struct rgui_handle rgui_handle_t;
 
-typedef void (*rgui_file_enum_cb_t)(void *ctx, const char *path,
-      rgui_file_type_t file_type);
+typedef void (*rgui_file_enum_cb_t)(void *ctx,
+      const char *path, rgui_file_type_t file_type, size_t directory_ptr);
 typedef bool (*rgui_folder_enum_cb_t)(const char *directory,
       rgui_file_enum_cb_t file_cb, void *userdata, void *ctx);
 
