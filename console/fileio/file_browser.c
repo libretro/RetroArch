@@ -160,5 +160,8 @@ void filebrowser_iterate(filebrowser_t *filebrowser, filebrowser_action_t action
       case FILEBROWSER_ACTION_RESET:
          filebrowser_new(filebrowser, filebrowser->root_dir, filebrowser->extensions);
          break;
+      case FILEBROWSER_ACTION_NOOP:
+      default:
+         break;
    }
 }
