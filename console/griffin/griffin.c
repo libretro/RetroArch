@@ -72,6 +72,10 @@ VIDEO SHADERS
 #include "../../gfx/shader_hlsl.c"
 #endif
 
+#ifdef HAVE_GLSL
+#include "../../gfx/shader_glsl.c"
+#endif
+
 /*============================================================
 VIDEO IMAGE
 ============================================================ */
