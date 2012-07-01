@@ -21,7 +21,7 @@ LIBDIRS := -L$(PS3DEV)/ppu/lib -L.
 MACHDEP := -D__CELLOS_LV2__ -D__PSL1GHT__
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
-LIBS := -lretro_psl1ght
+LIBS := -lretro_psl1ght -laudio -lio -lm -ljpgdec -lpngdec
 
 OBJ = console/griffin/griffin.o console/rzlib/rzlib.o
 
