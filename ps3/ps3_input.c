@@ -110,7 +110,9 @@ CellMouseData ps3_mouse_input_poll_device(uint32_t id)
 
 static uint64_t state[MAX_PADS];
 static unsigned pads_connected;
+#ifdef HAVE_MOUSE
 static unsigned mice_connected;
+#endif
 
 uint32_t cell_pad_input_pads_connected(void)
 {

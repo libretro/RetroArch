@@ -17,13 +17,90 @@
 #include "../driver.h"
 #include "../general.h"
 #include <stdlib.h>
+
+#ifdef __PSL1GHT__
+#include <audio/audio.h>
+#else
 #include <cell/audio.h>
-#include <sys/timer.h>
+#endif
+
 #include <string.h>
 #include <pthread.h>
-#include <sys/synchronization.h>
 #include "../fifo_buffer.h"
+
+#ifdef __PSL1GHT__
+#include <sys/event_queue.h>
+#include <lv2/mutex.h>
+#include <lv2/cond.h>
+
+/* define all the audio/audio port functions */
+#define pAudioQuit audioQuit
+#define pAudioInit audioInit
+#define pAudioPortStart audioPortStart
+#define pAudioPortOpen audioPortOpen
+#define pAudioPortClose audioPortClose
+#define pAudioPortStop audioPortStop
+#define pAudioPortParam audioPortParam
+#define pAudioPortOpen audioPortOpen
+
+/* define all the event queue functions */
+#define pSysEventQueueReceive sysEventQueueReceive
+#define pAudioSetNotifyEventQueue audioSetNotifyEventQueue
+#define pAudioRemoveNotifyEventQueue audioRemoveNotifyEventQueue
+#define pAudioCreateNotifyEventQueue audioCreateNotifyEventQueue
+
+/* define all the lightweight mutex functions */
+#define pLwMutexDestroy sysLwMutexDestroy
+#define pLwMutexLock sysLwMutexLock
+#define pLwMutexUnlock sysLwMutexUnlock
+#define pLwMutexCreate sysLwMutexCreate
+
+/* define all the lightweight condition functions */
+#define pLwCondCreate sysLwCondCreate
+#define pLwCondDestroy sysLwCondDestroy
+#define pLwCondWait sysLwCondWait
+#define pLwCondSignal sysLwCondSignal
+
+#define CELL_AUDIO_BLOCK_SAMPLES AUDIO_BLOCK_SAMPLES
+#define SYS_NO_TIMEOUT 0
+#define param_attrib attrib
+#define sys_lwmutex_attribute_t sys_lwmutex_attr_t
+#else
 #include <sys/event.h>
+#include <sys/synchronization.h>
+
+/* define all the audio/audio port functions */
+#define pAudioQuit cellAudioQuit
+#define pAudioInit cellAudioInit
+#define pAudioPortStart cellAudioPortStart
+#define pAudioPortOpen cellAudioPortOpen
+#define pAudioPortClose cellAudioPortClose
+#define pAudioPortStop cellAudioPortStop
+#define pAudioPortParam CellAudioPortParam
+
+/* define all the event queue functions */
+#define pSysEventQueueReceive sys_event_queue_receive
+#define pAudioSetNotifyEventQueue cellAudioSetNotifyEventQueue
+#define pAudioRemoveNotifyEventQueue cellAudioRemoveNotifyEventQueue
+#define pAudioCreateNotifyEventQueue cellAudioCreateNotifyEventQueue
+
+/* define all the lightweight mutex functions */
+#define pLwMutexDestroy sys_lwmutex_destroy
+#define pLwMutexUnlock sys_lwmutex_unlock
+#define pLwMutexLock sys_lwmutex_lock
+#define pLwMutexCreate sys_lwmutex_create
+#define pLwMutexAttributeInitialize sys_lwmutex_attribute_initialize
+
+/* define all the lightweight condition functions */
+#define pLwCondCreate sys_lwcond_create
+#define pLwCondDestroy sys_lwcond_destroy
+#define pLwCondWait sys_lwcond_wait
+#define pLwCondSignal sys_lwcond_signal
+
+#define numChannels nChannel
+#define numBlocks nBlock
+#define param_attrib attr
+#endif
 
 #define AUDIO_BLOCKS 8 // 8 or 16. Guess what we choose? :)
 #define AUDIO_CHANNELS 2 // All hail glorious stereo!
@@ -48,27 +125,27 @@ static void *event_loop(void *data)
    sys_ipc_key_t key;
    sys_event_t event;
 
-   cellAudioCreateNotifyEventQueue(&id, &key);
-   cellAudioSetNotifyEventQueue(key);
+   pAudioCreateNotifyEventQueue(&id, &key);
+   pAudioSetNotifyEventQueue(key);
 
    float out_tmp[CELL_AUDIO_BLOCK_SAMPLES * AUDIO_CHANNELS] __attribute__((aligned(16)));
 
    while (!aud->quit_thread)
    {
-      sys_event_queue_receive(id, &event, SYS_NO_TIMEOUT);
+      pSysEventQueueReceive(id, &event, SYS_NO_TIMEOUT);
 
-      sys_lwmutex_lock(&aud->lock, SYS_NO_TIMEOUT);
+      pLwMutexLock(&aud->lock, SYS_NO_TIMEOUT);
       if (fifo_read_avail(aud->buffer) >= sizeof(out_tmp))
          fifo_read(aud->buffer, out_tmp, sizeof(out_tmp));
       else
          memset(out_tmp, 0, sizeof(out_tmp));
-      sys_lwmutex_unlock(&aud->lock);
-      sys_lwcond_signal(&aud->cond);
+      pLwMutexUnlock(&aud->lock);
+      pLwCondSignal(&aud->cond);
 
       cellAudioAddData(aud->audio_port, out_tmp, CELL_AUDIO_BLOCK_SAMPLES, 1.0);
    }
 
-   cellAudioRemoveNotifyEventQueue(key);
+   pAudioRemoveNotifyEventQueue(key);
    pthread_exit(NULL);
    return NULL;
 }
@@ -84,18 +161,20 @@ static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
    if (!data)
       return NULL;
 
-   CellAudioPortParam params;
-   cellAudioInit();
-   params.nChannel = AUDIO_CHANNELS;
-   params.nBlock = AUDIO_BLOCKS;
+   pAudioPortParam params;
+   pAudioInit();
+   params.numChannels = AUDIO_CHANNELS;
+   params.numBlocks = AUDIO_BLOCKS;
+#ifdef HAVE_HEADSET
    if(g_console.sound_mode == SOUND_MODE_HEADSET)
-      params.attr = CELL_AUDIO_PORTATTR_OUT_SECONDARY;
+      params.param_attrib = CELL_AUDIO_PORTATTR_OUT_SECONDARY;
    else
-      params.attr = 0;
+#endif
+      params.param_attrib = 0;
 
-   if (cellAudioPortOpen(&params, &data->audio_port) != CELL_OK)
+   if (pAudioPortOpen(&params, &data->audio_port) != CELL_OK)
    {
-      cellAudioQuit();
+      pAudioQuit();
       free(data);
       return NULL;
    }
@@ -105,15 +184,15 @@ static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
    sys_lwmutex_attribute_t lock_attr, cond_lock_attr;
    sys_lwcond_attribute_t cond_attr;
 
-   sys_lwmutex_attribute_initialize(lock_attr);
-   sys_lwmutex_attribute_initialize(cond_lock_attr);
+   pLwMutexAttributeInitialize(lock_attr);
+   pLwMutexAttributeInitialize(cond_lock_attr);
    sys_lwcond_attribute_initialize(cond_attr);
 
-   sys_lwmutex_create(&data->lock, &lock_attr);
-   sys_lwmutex_create(&data->cond_lock, &cond_lock_attr);
-   sys_lwcond_create(&data->cond, &data->cond_lock, &cond_attr);
+   pLwMutexCreate(&data->lock, &lock_attr);
+   pLwMutexCreate(&data->cond_lock, &cond_lock_attr);
+   pLwCondCreate(&data->cond, &data->cond_lock, &cond_attr);
 
-   cellAudioPortStart(data->audio_port);
+   pAudioPortStart(data->audio_port);
    pthread_create(&data->thread, NULL, event_loop, data);
    return data;
 }
@@ -130,26 +209,26 @@ static ssize_t ps3_audio_write(void *data, const void *buf, size_t size)
    else
    {
       while (fifo_write_avail(aud->buffer) < size)
-         sys_lwcond_wait(&aud->cond, 0);
+         pLwCondWait(&aud->cond, 0);
    }
 
-   sys_lwmutex_lock(&aud->lock, SYS_NO_TIMEOUT);
+   pLwMutexLock(&aud->lock, SYS_NO_TIMEOUT);
    fifo_write(aud->buffer, buf, size);
-   sys_lwmutex_unlock(&aud->lock);
+   pLwMutexUnlock(&aud->lock);
    return size;
 }
 
 static bool ps3_audio_stop(void *data)
 {
    ps3_audio_t *aud = data;
-   cellAudioPortStop(aud->audio_port);
+   pAudioPortStop(aud->audio_port);
    return true;
 }
 
 static bool ps3_audio_start(void *data)
 {
    ps3_audio_t *aud = data;
-   cellAudioPortStart(aud->audio_port);
+   pAudioPortStart(aud->audio_port);
    return true;
 }
 
@@ -164,17 +243,17 @@ static void ps3_audio_free(void *data)
    ps3_audio_t *aud = data;
 
    aud->quit_thread = true;
-   cellAudioPortStart(aud->audio_port);
+   pAudioPortStart(aud->audio_port);
    pthread_join(aud->thread, NULL);
 
-   cellAudioPortStop(aud->audio_port);
-   cellAudioPortClose(aud->audio_port);
-   cellAudioQuit();
+   pAudioPortStop(aud->audio_port);
+   pAudioPortClose(aud->audio_port);
+   pAudioQuit();
    fifo_free(aud->buffer);
 
-   sys_lwmutex_destroy(&aud->lock);
-   sys_lwmutex_destroy(&aud->cond_lock);
-   sys_lwcond_destroy(&aud->cond);
+   pLwMutexDestroy(&aud->lock);
+   pLwMutexDestroy(&aud->cond_lock);
+   pLwCondDestroy(&aud->cond);
 
    free(data);
 }
