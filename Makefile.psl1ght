@@ -21,7 +21,7 @@ LIBDIRS := -L$(PS3DEV)/ppu/lib -L.
 MACHDEP := -D__CELLOS_LV2__ -D__PSL1GHT__
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
-LIBS := -lretro_psl1ght -laudio -lio -lm -ljpgdec -lpngdec
+LIBS := -lretro_psl1ght -laudio -lio -lm -ljpgdec -lpngdec -lsysutil
 
 OBJ = console/griffin/griffin.o console/rzlib/rzlib.o
 
@@ -35,7 +35,7 @@ ifeq ($(HAVE_FILE_LOGGER), 1)
 CFLAGS		+= -DHAVE_FILE_LOGGER
 endif
 
-CFLAGS += -std=gnu99 -DHAVE_FILEBROWSER -DHAVE_MOUSE -DHAVE_DEFAULT_RETROPAD_INPUT -DRARCH_CONSOLE -DHAVE_CONFIGFILE=1 -DHAVE_ZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DPACKAGE_VERSION=\"0.9.6\" -Dmain=rarch_main -Wno-char-subscripts 
+CFLAGS += -std=gnu99 -DHAVE_FILEBROWSER -DHAVE_OSKUTIL -DHAVE_MOUSE -DHAVE_DEFAULT_RETROPAD_INPUT -DRARCH_CONSOLE -DHAVE_CONFIGFILE=1 -DHAVE_ZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DPACKAGE_VERSION=\"0.9.6\" -Dmain=rarch_main -Wno-char-subscripts 
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g

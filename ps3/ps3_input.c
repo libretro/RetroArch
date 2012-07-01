@@ -17,6 +17,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifndef __PSL1GHT__
+#include <sdk_version.h>
+#endif
+
 #ifdef __PSL1GHT__
 #include <io/pad.h>
 #else
@@ -29,10 +33,6 @@
 #else
 #include <cell/mouse.h>
 #endif
-#endif
-
-#ifndef __PSL1GHT__
-#include <sdk_version.h>
 #endif
 
 #include <sys/memory.h>
@@ -229,7 +229,7 @@ void oskutil_init(oskutil_params *params, unsigned int containersize)
 
 static bool oskutil_enable_key_layout (void)
 {
-   int ret = cellOskDialogSetKeyLayoutOption(CELL_OSKDIALOG_10KEY_PANEL | \
+   int ret = pOskSetKeyLayoutOption(CELL_OSKDIALOG_10KEY_PANEL | \
       CELL_OSKDIALOG_FULLKEY_PANEL);
    if (ret < 0)
       return (false);
@@ -243,26 +243,26 @@ static void oskutil_create_activation_parameters(oskutil_params *params)
    params->dialogParam.controlPoint.y = 0.0;
 
    int32_t LayoutMode = CELL_OSKDIALOG_LAYOUTMODE_X_ALIGN_CENTER | CELL_OSKDIALOG_LAYOUTMODE_Y_ALIGN_TOP;
-   cellOskDialogSetLayoutMode(LayoutMode);
+   pOskSetLayoutMode(LayoutMode);
 
-   params->dialogParam.allowOskPanelFlg = 
+   params->dialogParam.osk_allowed_panels = 
    CELL_OSKDIALOG_PANELMODE_ALPHABET |
    CELL_OSKDIALOG_PANELMODE_NUMERAL | 
    CELL_OSKDIALOG_PANELMODE_NUMERAL_FULL_WIDTH |
    CELL_OSKDIALOG_PANELMODE_ENGLISH;
 
    params->dialogParam.firstViewPanel = CELL_OSKDIALOG_PANELMODE_ENGLISH;
-   params->dialogParam.prohibitFlgs = 0;
+   params->dialogParam.osk_prohibit_flags = 0;
 }
 
 void oskutil_write_message(oskutil_params *params, const wchar_t* msg)
 {
-   params->inputFieldInfo.message = (uint16_t*)msg;
+   params->inputFieldInfo.osk_inputfield_message = (uint16_t*)msg;
 }
 
 void oskutil_write_initial_message(oskutil_params *params, const wchar_t* msg)
 {
-   params->inputFieldInfo.init_text = (uint16_t*)msg;
+   params->inputFieldInfo.osk_inputfield_starttext = (uint16_t*)msg;
 }
 
 bool oskutil_start(oskutil_params *params) 
@@ -275,19 +275,19 @@ bool oskutil_start(oskutil_params *params)
    if (params->flags & OSK_IN_USE)
       return (true);
 
-   int ret = sys_memory_container_create(&params->containerid, params->osk_memorycontainer);
+   int ret = pSysMemContainerCreate(&params->containerid, params->osk_memorycontainer);
 
    if(ret < 0)
       return (false);
 
-   params->inputFieldInfo.limit_length = CELL_OSKDIALOG_STRING_SIZE;	
+   params->inputFieldInfo.osk_inputfield_max_length = CELL_OSKDIALOG_STRING_SIZE;	
 
    oskutil_create_activation_parameters(params);
 
    if(!oskutil_enable_key_layout())
       return (false);
 
-   ret = cellOskDialogLoadAsync(params->containerid, &params->dialogParam, &params->inputFieldInfo);
+   ret = pOskLoadAsync(params->containerid, &params->dialogParam, &params->inputFieldInfo);
    if(ret < 0)
       return (false);
 
@@ -299,20 +299,20 @@ bool oskutil_start(oskutil_params *params)
 
 void oskutil_close(oskutil_params *params)
 {
-   cellOskDialogAbort();
+   pOskAbort();
 }
 
 void oskutil_finished(oskutil_params *params)
 {
    int num;
 
-   params->outputInfo.result = CELL_OSKDIALOG_INPUT_FIELD_RESULT_OK;
-   params->outputInfo.numCharsResultString = 256;
-   params->outputInfo.pResultString = (uint16_t *)params->osk_text_buffer;
+   params->outputInfo.osk_callback_return_param = CELL_OSKDIALOG_INPUT_FIELD_RESULT_OK;
+   params->outputInfo.osk_callback_num_chars = 256;
+   params->outputInfo.osk_callback_return_string = (uint16_t *)params->osk_text_buffer;
 
-   cellOskDialogUnloadAsync(&params->outputInfo);
+   pOskUnloadAsync(&params->outputInfo);
 
-   switch (params->outputInfo.result)
+   switch (params->outputInfo.osk_callback_return_param)
    {
       case CELL_OSKDIALOG_INPUT_FIELD_RESULT_OK:
          num = wcstombs(params->osk_text_buffer_char, params->osk_text_buffer, 256);
@@ -333,7 +333,7 @@ void oskutil_finished(oskutil_params *params)
 
 void oskutil_unload(oskutil_params *params)
 {
-   sys_memory_container_destroy(params->containerid);
+   pSysMemContainerDestroy(params->containerid);
    params->is_running = false;
 }
 
