@@ -34,7 +34,6 @@
 #include <EGL/egl.h>
 #include <GL3/gl3.h>
 #include <GL3/gl3ext.h>
-#include <GL3/rsxgl_compatibility.h>
 #define GL_QUADS 0x0007
 #else
 #define GL_GLEXT_PROTOTYPES
