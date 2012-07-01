@@ -41,6 +41,8 @@
 #include <sysutil/sysutil_common.h>
 #endif
 
+#include "sdk_defines.h"
+
 #include "ps3_input.h"
 #include "../driver.h"
 #include "../console/retroarch_console.h"
@@ -82,29 +84,6 @@ CellMouseData ps3_mouse_input_poll_device(uint32_t id)
 /*============================================================
 	PS3 PAD
 ============================================================ */
-
-#ifdef __PSL1GHT__
-#define pPadInfo padInfo2
-#define pPadData padData
-#define pPadGetInfo ioPadGetInfo2
-#define pPadGetData ioPadGetData
-#define pPadInit ioPadInit
-#define now_connect connected
-#else
-#define pPadData CellPadData
-#define pPadInit cellPadInit
-#define pPadGetData cellPadGetData
-#define pPadInfo CellPadInfo
-#define pPadGetInfo cellPadGetInfo
-#endif
-
-#if(CELL_SDK_VERSION > 0x340000)
-#undef pPadInfo
-#undef pPadGetInfo
-#define pPadInfo CellPadInfo2
-#define pPadGetInfo cellPadGetInfo2
-#endif
-
 
 #define MAP(x) (x & 0xFF)
 

@@ -28,84 +28,17 @@
 #include <pthread.h>
 #include "../fifo_buffer.h"
 
+#include "sdk_defines.h"
+
 #ifdef __PSL1GHT__
 #include <sys/event_queue.h>
 #include <lv2/mutex.h>
 #include <lv2/cond.h>
-
 //forward decl. for audioAddData
 extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float volume);
-
-/* define all the audio/audio port functions */
-#define pAudioQuit audioQuit
-#define pAudioInit audioInit
-#define pAudioPortStart audioPortStart
-#define pAudioPortOpen audioPortOpen
-#define pAudioPortClose audioPortClose
-#define pAudioPortStop audioPortStop
-#define pAudioPortParam audioPortParam
-#define pAudioPortOpen audioPortOpen
-#define pAudioAddData audioAddData
-
-/* define all the event queue functions */
-#define pSysEventQueueReceive sysEventQueueReceive
-#define pAudioSetNotifyEventQueue audioSetNotifyEventQueue
-#define pAudioRemoveNotifyEventQueue audioRemoveNotifyEventQueue
-#define pAudioCreateNotifyEventQueue audioCreateNotifyEventQueue
-
-/* define all the lightweight mutex functions */
-#define pLwMutexDestroy sysLwMutexDestroy
-#define pLwMutexLock sysLwMutexLock
-#define pLwMutexUnlock sysLwMutexUnlock
-#define pLwMutexCreate sysLwMutexCreate
-
-/* define all the lightweight condition functions */
-#define pLwCondCreate sysLwCondCreate
-#define pLwCondDestroy sysLwCondDestroy
-#define pLwCondWait sysLwCondWait
-#define pLwCondSignal sysLwCondSignal
-
-#define CELL_AUDIO_BLOCK_SAMPLES AUDIO_BLOCK_SAMPLES
-#define SYS_NO_TIMEOUT 0
-#define param_attrib attrib
-#define sys_lwmutex_attribute_t sys_lwmutex_attr_t
-#define sys_lwcond_attribute_t sys_lwcond_attr_t
 #else
 #include <sys/event.h>
 #include <sys/synchronization.h>
-
-/* define all the audio/audio port functions */
-#define pAudioQuit cellAudioQuit
-#define pAudioInit cellAudioInit
-#define pAudioPortStart cellAudioPortStart
-#define pAudioPortOpen cellAudioPortOpen
-#define pAudioPortClose cellAudioPortClose
-#define pAudioPortStop cellAudioPortStop
-#define pAudioPortParam CellAudioPortParam
-#define pAudioAddData cellAudioAddData
-
-/* define all the event queue functions */
-#define pSysEventQueueReceive sys_event_queue_receive
-#define pAudioSetNotifyEventQueue cellAudioSetNotifyEventQueue
-#define pAudioRemoveNotifyEventQueue cellAudioRemoveNotifyEventQueue
-#define pAudioCreateNotifyEventQueue cellAudioCreateNotifyEventQueue
-
-/* define all the lightweight mutex functions */
-#define pLwMutexDestroy sys_lwmutex_destroy
-#define pLwMutexUnlock sys_lwmutex_unlock
-#define pLwMutexLock sys_lwmutex_lock
-#define pLwMutexCreate sys_lwmutex_create
-#define pLwMutexAttributeInitialize sys_lwmutex_attribute_initialize
-
-/* define all the lightweight condition functions */
-#define pLwCondCreate sys_lwcond_create
-#define pLwCondDestroy sys_lwcond_destroy
-#define pLwCondWait sys_lwcond_wait
-#define pLwCondSignal sys_lwcond_signal
-
-#define numChannels nChannel
-#define numBlocks nBlock
-#define param_attrib attr
 #endif
 
 #define AUDIO_BLOCKS 8 // 8 or 16. Guess what we choose? :)
