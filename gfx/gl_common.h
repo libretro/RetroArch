@@ -27,9 +27,15 @@
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
 #elif defined(__CELLOS_LV2__)
+#if defined(__PSL1GHT__)
+#include <EGL/egl.h>
+#include <GL3/gl3.h>
+#include <GL3/gl3ext.h>
+#else
 #include <PSGL/psgl.h>
 #include <PSGL/psglu.h>
 #include <GLES/glext.h>
+#endif
 #else
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
