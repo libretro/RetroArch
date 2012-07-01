@@ -33,7 +33,7 @@
 #include "audio/ext/rarch_dsp.h"
 #include "compat/strl.h"
 
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <sys/timer.h>
 #include "ps3/ps3_input.h"
 #endif
@@ -257,7 +257,7 @@ struct console_settings
    char default_sram_dir[PATH_MAX];
    char launch_app_on_exit[PATH_MAX];
    float menu_font_size;
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    oskutil_params oskutil_handle;
 #endif
 };
@@ -600,7 +600,7 @@ static inline uint16_t swap_if_little16(uint16_t val)
 
 static inline void rarch_sleep(unsigned msec)
 {
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    sys_timer_usleep(1000 * msec);
 #elif defined(_WIN32)
    Sleep(msec);

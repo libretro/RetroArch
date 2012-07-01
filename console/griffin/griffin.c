@@ -98,7 +98,7 @@ VIDEO DRIVER
 FONTS
 ============================================================ */
 
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include "../../gfx/fonts/ps3_libdbgfont.c"
 #elif defined(_XBOX360)
 #include "../../gfx/fonts/xdk360_fonts.cpp"
@@ -107,7 +107,7 @@ FONTS
 /*============================================================
 INPUT
 ============================================================ */
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include "../../ps3/ps3_input.c"
 #elif defined(_XBOX360)
 #include "../../360/xdk360_input.c"
@@ -153,7 +153,7 @@ AUDIO UTILS
 /*============================================================
 AUDIO
 ============================================================ */
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include "../../ps3/ps3_audio.c"
 #elif defined(_XBOX360)
 #include "../../360/xdk360_audio.cpp"

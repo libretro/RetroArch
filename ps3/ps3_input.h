@@ -19,8 +19,14 @@
 
 #include <stdbool.h>
 #include <wchar.h>
+
+#ifdef HAVE_OSKUTIL
 #include <sysutil/sysutil_oskdialog.h>
+#endif
+
+#ifdef HAVE_SYSUTILS
 #include <sysutil/sysutil_common.h>
+#endif
 
 #define MAX_PADS 7
 
@@ -127,6 +133,8 @@ cell_input_state_t cell_pad_input_poll_device(uint32_t id);
 
 void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id);
 
+#ifdef HAVE_OSKUTIL
+
 typedef struct
 {
    unsigned int osk_memorycontainer;
@@ -153,5 +161,6 @@ void oskutil_finished(oskutil_params *params);
 void oskutil_close(oskutil_params *params);
 void oskutil_unload(oskutil_params *params);
 
+#endif
 
 #endif

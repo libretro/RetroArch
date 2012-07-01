@@ -27,7 +27,7 @@
 	PLAYSTATION3
 ============================================================ */
 
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #define video_init_func(video_info, input, input_data) \
                                                 gl_init(video_info, input, input_data)
 #define video_frame_func(data, width, height, pitch, msg) \
