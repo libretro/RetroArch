@@ -33,6 +33,9 @@
 #include <lv2/mutex.h>
 #include <lv2/cond.h>
 
+//forward decl. for audioAddData
+extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float volume);
+
 /* define all the audio/audio port functions */
 #define pAudioQuit audioQuit
 #define pAudioInit audioInit
@@ -42,6 +45,7 @@
 #define pAudioPortStop audioPortStop
 #define pAudioPortParam audioPortParam
 #define pAudioPortOpen audioPortOpen
+#define pAudioAddData audioAddData
 
 /* define all the event queue functions */
 #define pSysEventQueueReceive sysEventQueueReceive
@@ -65,6 +69,7 @@
 #define SYS_NO_TIMEOUT 0
 #define param_attrib attrib
 #define sys_lwmutex_attribute_t sys_lwmutex_attr_t
+#define sys_lwcond_attribute_t sys_lwcond_attr_t
 #else
 #include <sys/event.h>
 #include <sys/synchronization.h>
@@ -77,6 +82,7 @@
 #define pAudioPortClose cellAudioPortClose
 #define pAudioPortStop cellAudioPortStop
 #define pAudioPortParam CellAudioPortParam
+#define pAudioAddData cellAudioAddData
 
 /* define all the event queue functions */
 #define pSysEventQueueReceive sys_event_queue_receive
@@ -142,7 +148,7 @@ static void *event_loop(void *data)
       pLwMutexUnlock(&aud->lock);
       pLwCondSignal(&aud->cond);
 
-      cellAudioAddData(aud->audio_port, out_tmp, CELL_AUDIO_BLOCK_SAMPLES, 1.0);
+      pAudioAddData(aud->audio_port, out_tmp, CELL_AUDIO_BLOCK_SAMPLES, 1.0);
    }
 
    pAudioRemoveNotifyEventQueue(key);
@@ -181,12 +187,21 @@ static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
 
    data->buffer = fifo_new(CELL_AUDIO_BLOCK_SAMPLES * AUDIO_CHANNELS * AUDIO_BLOCKS * sizeof(float));
 
-   sys_lwmutex_attribute_t lock_attr, cond_lock_attr;
+#ifdef __PSL1GHT__
+   sys_lwmutex_attr_t lock_attr = {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, '\0'};
+   sys_lwmutex_attr_t cond_lock_attr = {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, '\0'};
+   sys_lwcond_attribute_t cond_attr = {'\0'};
+#else
+   sys_lwmutex_attribute_t lock_attr;
+   sys_lwmutex_attribute_t cond_lock_attr;
    sys_lwcond_attribute_t cond_attr;
+#endif
 
+#ifndef __PSL1GHT__
    pLwMutexAttributeInitialize(lock_attr);
    pLwMutexAttributeInitialize(cond_lock_attr);
    sys_lwcond_attribute_initialize(cond_attr);
+#endif
 
    pLwMutexCreate(&data->lock, &lock_attr);
    pLwMutexCreate(&data->cond_lock, &cond_lock_attr);
