@@ -20,6 +20,7 @@
 
 #ifdef __PSL1GHT__
 #include <audio/audio.h>
+#include <sys/thread.h>
 #else
 #include <cell/audio.h>
 #endif
@@ -56,10 +57,18 @@ typedef struct
    sys_lwcond_t cond;
 } ps3_audio_t;
 
+#ifdef __PSL1GHT__
+static void event_loop(void *data)
+#else
 static void event_loop(uint64_t data)
+#endif
 {
+#ifdef __PSL1GHT__
+   ps3_audio_t *aud = data;
+#else
    void * ptr_data = (void*)(uintptr_t)data;
    ps3_audio_t *aud = ptr_data;
+#endif
    sys_event_queue_t id;
    sys_ipc_key_t key;
    sys_event_t event;
@@ -85,7 +94,7 @@ static void event_loop(uint64_t data)
    }
 
    pAudioRemoveNotifyEventQueue(key);
-   sys_ppu_thread_exit(0);
+   pThreadExit(0);
 }
 
 static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
@@ -120,9 +129,9 @@ static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
    data->buffer = fifo_new(CELL_AUDIO_BLOCK_SAMPLES * AUDIO_CHANNELS * AUDIO_BLOCKS * sizeof(float));
 
 #ifdef __PSL1GHT__
-   sys_lwmutex_attr_t lock_attr = {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, '\0'};
-   sys_lwmutex_attr_t cond_lock_attr = {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, '\0'};
-   sys_lwcond_attribute_t cond_attr = {'\0'};
+   sys_lwmutex_attr_t lock_attr = {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, "\0"};
+   sys_lwmutex_attr_t cond_lock_attr = {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, "\0"};
+   sys_lwcond_attribute_t cond_attr = {"\0"};
 #else
    sys_lwmutex_attribute_t lock_attr;
    sys_lwmutex_attribute_t cond_lock_attr;
@@ -140,7 +149,11 @@ static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
    pLwCondCreate(&data->cond, &data->cond_lock, &cond_attr);
 
    pAudioPortStart(data->audio_port);
-   sys_ppu_thread_create(&data->thread, event_loop, (uint64_t)data, 1500, 0x1000, SYS_PPU_THREAD_CREATE_JOINABLE, (char*)"sound");
+#ifdef __PSL1GHT__
+   pThreadCreate(&data->thread, event_loop, data, 1500, 0x1000, SYS_PPU_THREAD_CREATE_JOINABLE, (char*)"sound");
+#else
+   pThreadCreate(&data->thread, event_loop, (uint64_t)data, 1500, 0x1000, SYS_PPU_THREAD_CREATE_JOINABLE, (char*)"sound");
+#endif
    return data;
 }
 
@@ -192,7 +205,7 @@ static void ps3_audio_free(void *data)
 
    aud->quit_thread = true;
    pAudioPortStart(aud->audio_port);
-   sys_ppu_thread_join(aud->thread, &val);
+   pThreadJoin(aud->thread, &val);
 
    pAudioPortStop(aud->audio_port);
    pAudioPortClose(aud->audio_port);

@@ -313,4 +313,22 @@
 
 #endif
 
+/*============================================================
+	THREADING PROTOTYPES
+============================================================ */
+
+#ifdef __PSL1GHT__
+/* define all the thread functions  */
+#define pThreadCreate sysThreadCreate
+#define pThreadJoin sysThreadJoin
+#define pThreadExit sysThreadExit
+
+#define SYS_PPU_THREAD_CREATE_JOINABLE 0 /* FIXME - not sure if this is correct */
+#else
+/* define all the thread functions  */
+#define pThreadCreate sys_ppu_thread_create
+#define pThreadJoin sys_ppu_thread_join
+#define pThreadExit sys_ppu_thread_exit
+#endif
+
 #endif
