@@ -24,7 +24,11 @@
 #endif
 
 #ifdef HAVE_MOUSE
+#ifdef __PSL1GHT__
+#include <io/mouse.h>
+#else
 #include <cell/mouse.h>
+#endif
 #endif
 
 #ifndef __PSL1GHT__
@@ -34,7 +38,11 @@
 #include <sys/memory.h>
 
 #ifdef HAVE_OSKUTIL
+#ifdef __PSL1GHT__
+#include <sysutil/osk.h>
+#else
 #include <sysutil/sysutil_oskdialog.h>
+#endif
 #endif
 
 #ifdef HAVE_SYSUTILS
