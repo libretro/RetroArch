@@ -129,6 +129,44 @@
 
 #endif
 
+#ifdef HAVE_MOUSE
+
+
+#ifdef __PSL1GHT__
+/* define ps3 mouse structs */
+#define pMouseInfo mouseInfo
+#define pMouseData mouseData
+
+/* define all the ps3 mouse functions */
+#define pMouseInit ioMouseInit
+#define pMouseGetData ioMouseGetData
+#define pMouseEnd ioMouseEnd
+#define pMouseGetInfo ioMouseGetInfo
+
+/* PSL1GHT does not define these in its header */
+#define CELL_MOUSE_BUTTON_1 (1 << 0) /* Button 1 */
+#define CELL_MOUSE_BUTTON_2 (1 << 1) /* Button 2 */
+#define CELL_MOUSE_BUTTON_3 (1 << 2) /* Button 3 */
+#define CELL_MOUSE_BUTTON_4 (1 << 3) /* Button 4 */
+#define CELL_MOUSE_BUTTON_5 (1 << 4) /* Button 5 */
+#define CELL_MOUSE_BUTTON_6 (1 << 5) /* Button 6 */
+#define CELL_MOUSE_BUTTON_7 (1 << 6) /* Button 7 */
+#define CELL_MOUSE_BUTTON_8 (1 << 7) /* Button 8 */
+
+#else
+/* define ps3 mouse structs */
+#define pMouseInfo CellMouseInfo
+#define pMouseData CellMouseData
+
+/* define all the ps3 mouse functions  */
+#define pMouseInit cellMouseInit
+#define pMouseGetData cellMouseGetData
+#define pMouseEnd cellMouseEnd
+#define pMouseGetInfo cellMouseGetInfo
+#endif
+
+#endif
+
 /*============================================================
 	JPEG/PNG DECODING/ENCODING PROTOTYPES
 ============================================================ */

@@ -63,26 +63,28 @@
 
 #ifdef HAVE_MOUSE
 
+#ifndef __PSL1GHT__
 #define MAX_MICE 7
+#endif
 
 static void ps3_mouse_input_deinit(void)
 {
-   cellMouseEnd();
+   pMouseEnd();
 }
 
 static uint32_t ps3_mouse_input_mice_connected(void)
 {
-   CellMouseInfo mouse_info;
-   cellMouseGetInfo(&mouse_info);
+   pMouseInfo mouse_info;
+   pMouseGetInfo(&mouse_info);
    return mouse_info.now_connect;
 }
 
-CellMouseData ps3_mouse_input_poll_device(uint32_t id)
+pMouseData ps3_mouse_input_poll_device(uint32_t id)
 {
-   CellMouseData mouse_data;
+   pMouseData mouse_data;
 
    // Get new pad data
-   cellMouseGetData(id, &mouse_data);
+   pMouseGetData(id, &mouse_data);
 
    return mouse_data;
 }
@@ -160,7 +162,7 @@ static void ps3_input_poll(void *data)
 
 static int16_t ps3_mouse_device_state(void *data, unsigned player, unsigned id)
 {
-   CellMouseData mouse_state = ps3_mouse_input_poll_device(player);
+   pMouseData mouse_state = ps3_mouse_input_poll_device(player);
 
    switch (id)
    {
@@ -351,7 +353,7 @@ static void* ps3_input_initialize(void)
 {
    pPadInit(MAX_PADS);
 #ifdef HAVE_MOUSE
-   cellMouseInit(MAX_MICE);
+   pMouseInit(MAX_MICE);
 #endif
    for(unsigned i = 0; i < MAX_PADS; i++)
    	ps3_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
