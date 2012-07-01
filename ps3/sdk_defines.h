@@ -107,6 +107,7 @@
 #define pPadGetInfo ioPadGetInfo2
 #define pPadGetData ioPadGetData
 #define pPadInit ioPadInit
+#define pPadEnd ioPadEnd
 
 #define now_connect connected
 
@@ -126,6 +127,7 @@
 
 /* define all the ps3 pad functions */
 #define pPadInit cellPadInit
+#define pPadEnd cellPadEnd
 #define pPadGetData cellPadGetData
 #endif
 
