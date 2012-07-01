@@ -50,7 +50,7 @@ typedef struct CtrlFreeArg
    uint32_t freeCallCounts;
 } CtrlFreeArg;
 
-void *img_malloc(uint32_t size, void * a)
+void *img_malloc(uint32_t size, void *a)
 {
 #ifndef __PSL1GHT__
    CtrlMallocArg *arg;
@@ -61,7 +61,7 @@ void *img_malloc(uint32_t size, void * a)
    return malloc(size);
 }
 
-static int img_free(void *ptr, void * a)
+static int img_free(void *ptr, void *a)
 {
 #ifndef __PSL1GHT__
    CtrlFreeArg *arg;
@@ -77,7 +77,7 @@ static int img_free(void *ptr, void * a)
 	Image decompression - libJPEG
 ********************************************************************************/
 
-static bool ps3graphics_load_jpeg(const char * path, struct texture_image *out_img)
+static bool ps3graphics_load_jpeg(const char *path, struct texture_image *out_img)
 {
 #ifndef __PSL1GHT__
    CtrlMallocArg              MallocArg;
@@ -185,7 +185,7 @@ error:
 	Image decompression - libPNG
 ********************************************************************************/
 
-static bool ps3graphics_load_png(const char * path, struct texture_image *out_img)
+static bool ps3graphics_load_png(const char *path, struct texture_image *out_img)
 {
 #ifndef __PSL1GHT__
    CtrlMallocArg              MallocArg;

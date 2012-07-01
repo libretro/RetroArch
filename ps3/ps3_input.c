@@ -103,13 +103,6 @@ static unsigned pads_connected;
 static unsigned mice_connected;
 #endif
 
-uint32_t cell_pad_input_pads_connected(void)
-{
-   pPadInfo pad_info;
-   pPadGetInfo(&pad_info);
-   return pad_info.now_connect;
-}
-
 uint64_t cell_pad_input_poll_device(uint32_t id)
 {
    pPadData pad_data;
@@ -118,9 +111,7 @@ uint64_t cell_pad_input_poll_device(uint32_t id)
    // Get new pad data
    pPadGetData(id, &pad_data);
 
-   if (pad_data.len == 0)
-      return ret[id];
-   else
+   if (pad_data.len != 0)
    {
       ret[id] = 0;
 
@@ -141,18 +132,20 @@ uint64_t cell_pad_input_poll_device(uint32_t id)
       ret[id] |= (uint64_t)(PRESSED_RIGHT_RSTICK(ret[id])) << RSTICK_RIGHT_SHIFT;
       ret[id] |= (uint64_t)(PRESSED_UP_RSTICK(ret[id])) << RSTICK_UP_SHIFT;
       ret[id] |= (uint64_t)(PRESSED_DOWN_RSTICK(ret[id])) << RSTICK_DOWN_SHIFT;
-      return ret[id];
    }
+
+   return ret[id];
 }
 static void ps3_input_poll(void *data)
 {
+   pPadInfo pad_info;
    (void)data;
-   for (unsigned i = 0; i < MAX_PADS; i++)
-   {
-      state[i] = cell_pad_input_poll_device(i);
-   }
 
-   pads_connected = cell_pad_input_pads_connected(); 
+   for (unsigned i = 0; i < MAX_PADS; i++)
+      state[i] = cell_pad_input_poll_device(i);
+
+   pPadGetInfo(&pad_info);
+   pads_connected = pad_info.now_connect; 
 #ifdef HAVE_MOUSE
    mice_connected = ps3_mouse_input_mice_connected();
 #endif

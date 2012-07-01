@@ -133,11 +133,7 @@
 #define OSK_IS_RUNNING(object) object.is_running
 #define OUTPUT_TEXT_STRING(object) object.osk_text_buffer_char
 
-typedef uint64_t cell_input_state_t;
-
-uint32_t cell_pad_input_pads_connected(void);
-
-cell_input_state_t cell_pad_input_poll_device(uint32_t id);
+uint64_t cell_pad_input_poll_device(uint32_t id);
 
 void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id);
 
