@@ -84,7 +84,7 @@ VIDEO IMAGE
 VIDEO DRIVER
 ============================================================ */
 
-#ifdef HAVE_OPENGL
+#ifdef HAVE_OPENGLES11
 #include "../../gfx/gl.c"
 #elif defined(_XBOX360)
 #include "../../360/xdk360_video.cpp"

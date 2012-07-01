@@ -30,7 +30,7 @@
 
 #include "ps3_ctx.h"
 
-#ifdef HAVE_OPENGLES
+#ifdef HAVE_OPENGLES11
 #define glOrtho glOrthof
 #endif
 

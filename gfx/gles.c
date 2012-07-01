@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Non-FF OpenGL 3 / OpenGL ES 2.0 driver */
+
 #include "../driver.h"
 
 #include <stdint.h>

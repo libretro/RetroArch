@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Legacy FF OpenGL / OpenGL ES 1.1 driver */
+
 #include "../driver.h"
 
 #include <stdint.h>
@@ -106,7 +108,7 @@ static bool load_fbo_proc(void)
    return pglGenFramebuffers && pglBindFramebuffer && pglFramebufferTexture2D && 
       pglCheckFramebufferStatus && pglDeleteFramebuffers;
 }
-#elif defined(HAVE_OPENGLES)
+#elif defined(HAVE_OPENGLES11)
 #define pglGenFramebuffers glGenFramebuffersOES
 #define pglBindFramebuffer glBindFramebufferOES
 #define pglFramebufferTexture2D glFramebufferTexture2DOES
