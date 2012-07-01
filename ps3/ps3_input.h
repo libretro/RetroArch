@@ -28,7 +28,9 @@
 #include <sysutil/sysutil_common.h>
 #endif
 
+#ifndef __PSL1GHT__
 #define MAX_PADS 7
+#endif
 
 #define CTRL_SELECT_MASK 0x01
 #define CTRL_L3_MASK 0x2

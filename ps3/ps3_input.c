@@ -17,16 +17,29 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifdef __PSL1GHT__
+#include <io/pad.h>
+#else
 #include <cell/pad.h>
+#endif
 
 #ifdef HAVE_MOUSE
 #include <cell/mouse.h>
 #endif
 
+#ifndef __PSL1GHT__
 #include <sdk_version.h>
+#endif
+
 #include <sys/memory.h>
+
+#ifdef HAVE_OSKUTIL
 #include <sysutil/sysutil_oskdialog.h>
+#endif
+
+#ifdef HAVE_SYSUTILS
 #include <sysutil/sysutil_common.h>
+#endif
 
 #include "ps3_input.h"
 #include "../driver.h"
@@ -70,6 +83,29 @@ CellMouseData ps3_mouse_input_poll_device(uint32_t id)
 	PS3 PAD
 ============================================================ */
 
+#ifdef __PSL1GHT__
+#define pPadInfo padInfo2
+#define pPadData padData
+#define pPadGetInfo ioPadGetInfo2
+#define pPadGetData ioPadGetData
+#define pPadInit ioPadInit
+#define now_connect connected
+#else
+#define pPadData CellPadData
+#define pPadInit cellPadInit
+#define pPadGetData cellPadGetData
+#define pPadInfo CellPadInfo
+#define pPadGetInfo cellPadGetInfo
+#endif
+
+#if(CELL_SDK_VERSION > 0x340000)
+#undef pPadInfo
+#undef pPadGetInfo
+#define pPadInfo CellPadInfo2
+#define pPadGetInfo cellPadGetInfo2
+#endif
+
+
 #define MAP(x) (x & 0xFF)
 
 static uint64_t state[MAX_PADS];
@@ -78,23 +114,18 @@ static unsigned mice_connected;
 
 uint32_t cell_pad_input_pads_connected(void)
 {
-#if(CELL_SDK_VERSION > 0x340000)
-   CellPadInfo2 pad_info;
-   cellPadGetInfo2(&pad_info);
-#else
-   CellPadInfo pad_info;
-   cellPadGetInfo(&pad_info);
-#endif
+   pPadInfo pad_info;
+   pPadGetInfo(&pad_info);
    return pad_info.now_connect;
 }
 
 uint64_t cell_pad_input_poll_device(uint32_t id)
 {
-   CellPadData pad_data;
+   pPadData pad_data;
    static uint64_t ret[MAX_PADS];
 
    // Get new pad data
-   cellPadGetData(id, &pad_data);
+   pPadGetData(id, &pad_data);
 
    if (pad_data.len == 0)
       return ret[id];
@@ -329,7 +360,7 @@ static void ps3_free_input(void *data)
 
 static void* ps3_input_initialize(void)
 {
-   cellPadInit(MAX_PADS);
+   pPadInit(MAX_PADS);
 #ifdef HAVE_MOUSE
    cellMouseInit(MAX_MICE);
 #endif

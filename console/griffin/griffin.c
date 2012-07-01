@@ -107,7 +107,7 @@ FONTS
 /*============================================================
 INPUT
 ============================================================ */
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+#if defined(__CELLOS_LV2__)
 #include "../../ps3/ps3_input.c"
 #elif defined(_XBOX360)
 #include "../../360/xdk360_input.c"
