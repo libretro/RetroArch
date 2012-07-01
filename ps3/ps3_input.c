@@ -388,7 +388,9 @@ void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
 static bool ps3_key_pressed(void *data, int key)
 {
    (void)data;
+#ifdef HAVE_OPENGL
    gl_t *gl = driver.video_data;
+#endif
 
    switch (key)
    {
@@ -413,6 +415,7 @@ static bool ps3_key_pressed(void *data, int key)
       case RARCH_REWIND:
          return CTRL_RSTICK_UP(state[0]) && CTRL_R2(~state[0]);
       case RARCH_QUIT_KEY:
+#ifdef HAVE_OPENGL
 	 if(IS_TIMER_EXPIRED(gl))
 	 {
             uint32_t r3_pressed = CTRL_R3(state[0]);
@@ -431,6 +434,7 @@ static bool ps3_key_pressed(void *data, int key)
 	    retval = g_console.ingame_menu_enable ? g_console.ingame_menu_enable : g_console.menu_enable;
 	    return retval;
 	 }
+#endif
       default:
          return false;
    }
