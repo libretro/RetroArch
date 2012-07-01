@@ -25,7 +25,6 @@
 #endif
 
 #include <string.h>
-#include <pthread.h>
 #include "../fifo_buffer.h"
 
 #include "sdk_defines.h"
@@ -51,15 +50,16 @@ typedef struct
    volatile bool quit_thread;
    fifo_buffer_t *buffer;
 
-   pthread_t thread;
+   sys_ppu_thread_t thread;
    sys_lwmutex_t lock;
    sys_lwmutex_t cond_lock;
    sys_lwcond_t cond;
 } ps3_audio_t;
 
-static void *event_loop(void *data)
+static void event_loop(uint64_t data)
 {
-   ps3_audio_t *aud = data;
+   void * ptr_data = (void*)(uintptr_t)data;
+   ps3_audio_t *aud = ptr_data;
    sys_event_queue_t id;
    sys_ipc_key_t key;
    sys_event_t event;
@@ -85,8 +85,7 @@ static void *event_loop(void *data)
    }
 
    pAudioRemoveNotifyEventQueue(key);
-   pthread_exit(NULL);
-   return NULL;
+   sys_ppu_thread_exit(0);
 }
 
 static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
@@ -141,7 +140,7 @@ static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
    pLwCondCreate(&data->cond, &data->cond_lock, &cond_attr);
 
    pAudioPortStart(data->audio_port);
-   pthread_create(&data->thread, NULL, event_loop, data);
+   sys_ppu_thread_create(&data->thread, event_loop, (uint64_t)data, 1500, 0x1000, SYS_PPU_THREAD_CREATE_JOINABLE, (char*)"sound");
    return data;
 }
 
@@ -188,11 +187,12 @@ static void ps3_audio_set_nonblock_state(void *data, bool state)
 
 static void ps3_audio_free(void *data)
 {
+   uint64_t val;
    ps3_audio_t *aud = data;
 
    aud->quit_thread = true;
    pAudioPortStart(aud->audio_port);
-   pthread_join(aud->thread, NULL);
+   sys_ppu_thread_join(aud->thread, &val);
 
    pAudioPortStop(aud->audio_port);
    pAudioPortClose(aud->audio_port);
