@@ -5,11 +5,13 @@
 PNDDIR=./pandora
 BINDIR=$(PNDDIR)/bin
 
-all: retroarch
+all: $(BINDIR)/retroarch
+	mkdir -p $(PNDDIR)/lib
+	@echo "Put libretro-*.so files in $(PNDDIR)/lib/ before making pnd!"
 
 pnd: retroarch.pnd
 
-install: $(BINDIR)/retroarch $(BINDIR)/retroarch-joyconfig $(PNDDIR)/readme.html
+install: all $(BINDIR)/retroarch-joyconfig $(PNDDIR)/readme.html
 
 retroarch:
 	./configure --prefix=$PND_BASEDIR/$PRJ --disable-ffmpeg --disable-cg --disable-xml --disable-python --disable-libpng --disable-pulse --disable-opengl
