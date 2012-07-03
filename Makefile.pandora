@@ -29,7 +29,7 @@ $(PNDDIR)/readme.html: README.md
 	markdown README.md > $(PNDDIR)/readme.html
 
 retroarch.pnd: install
-	pnd_make -p retroarch.pnd -d $(PNDDIR)/ -x $(PNDDIR)/PXML.xml -i $(PNDDIR)/icon.png
+	pnd_make -c -p retroarch.pnd -d $(PNDDIR)/ -x $(PNDDIR)/PXML.xml -i $(PNDDIR)/icon.png
 
 clean:
 	rm -f *.o 
