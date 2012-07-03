@@ -16,9 +16,11 @@ retroarch:
 	make -f Makefile
 
 $(BINDIR)/retroarch: retroarch
+	mkdir -p $(BINDIR)
 	cp retroarch $(BINDIR)/retroarch
 
 $(BINDIR)/retroarch-joyconfig: tools/retroarch-joyconfig
+	mkdir -p $(BINDIR)
 	cp tools/retroarch-joyconfig $(BINDIR)/retroarch-joyconfig
 
 $(PNDDIR)/readme.html: README.md
