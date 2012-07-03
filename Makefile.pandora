@@ -1,0 +1,46 @@
+# Before using this Makefile, be sure to do:
+# $ source /usr/local/angstrom/arm/environment-setup
+# $ setprj retroarch
+
+PNDDIR=./pandora
+BINDIR=$(PNDDIR)/bin
+
+all: retroarch
+
+pnd: retroarch.pnd
+
+install: $(BINDIR)/retroarch $(BINDIR)/retroarch-joyconfig $(PNDDIR)/readme.html
+
+retroarch:
+	./configure --prefix=$PND_BASEDIR/$PRJ --disable-ffmpeg --disable-cg --disable-xml --disable-python --disable-libpng --disable-pulse --disable-opengl
+	make -f Makefile
+
+$(BINDIR)/retroarch: retroarch
+	cp retroarch $(BINDIR)/retroarch
+
+$(BINDIR)/retroarch-joyconfig: tools/retroarch-joyconfig
+	cp tools/retroarch-joyconfig $(BINDIR)/retroarch-joyconfig
+
+$(PNDDIR)/readme.html: README.md
+	markdown README.md > $(PNDDIR)/readme.html
+
+retroarch.pnd: install
+	pnd_make -p retroarch.pnd -d $(PNDDIR)/ -x $(PNDDIR)/PXML.xml -i $(PNDDIR)/icon.png
+
+clean:
+	rm -f *.o 
+	rm -f audio/*.o
+	rm -f conf/*.o
+	rm -f gfx/*.o
+	rm -f gfx/fonts/*.o
+	rm -f gfx/context/*.o
+	rm -f gfx/py_state/*.o
+	rm -f compat/*.o
+	rm -f record/*.o
+	rm -f input/*.o
+	rm -f tools/*.o
+	rm -f $(BINDIR)/retroarch
+	rm -f $(BINDIR)/retroarch-joyconfig
+	rm -f $(PNDDIR)/readme.html
+	rm -f retroarch
+
