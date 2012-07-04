@@ -6,9 +6,6 @@ export HOME="/mnt/utmp/retroarch" XDG_CONFIG_HOME="/mnt/utmp/retroarch"
 if [ -d /mnt/utmp/retroarch/share ];then
 	export XDG_DATA_DIRS=/mnt/utmp/retroarch/share:$XDG_DATA_DIRS:/usr/share
 fi
-export SDL_OMAP_LAYER_SIZE="640x480"
-export SDL_VIDEODRIVER="omapdss"
-export SDL_AUDIODRIVER="alsa"
 
 cd /mnt/utmp/retroarch/lib
 BACKEND=$(ls -1 libretro*.so | zenity --list --column=Backend)
@@ -19,20 +16,28 @@ if [ -z "$BACKEND" ] ; then
 fi
 
 FILTER='All files (*)|*'
+SDL_OMAP_LAYER_SIZE="640x480"
 case "$BACKEND" in
 	libretro-fceu*.so)
 		FILTER='NES (*.nes)|*.nes'
+		SDL_OMAP_LAYER_SIZE="512x448"
 		;;
 	libretro-pocketsnes.so | libretro-snes9x*.so)
 		FILTER='SNES (*.sfc)|*.sfc'
-		;;
-	libretro-meteor.so | libretro-vba.so )
-		FILTER='GBA (*.gba)|*.gba'
-		export SDL_OMAP_LAYER_SIZE="720x480"
+		## This still looks distorted for some reason...
+		## Both for 512x448 and 512x478.
+		SDL_OMAP_LAYER_SIZE="512x448"
 		;;
 	libretro-gambatte.so)
 		FILTER='GBC (*.gb; *.gbc)|*.gb *.gbc'
-		export SDL_OMAP_LAYER_SIZE="534x480"
+		SDL_OMAP_LAYER_SIZE="480x432"
+		;;
+	libretro-meteor.so | libretro-vba.so )
+		FILTER='GBA (*.gba)|*.gba'
+		SDL_OMAP_LAYER_SIZE="720x480"
+		;;
+	libretro-imame4all.so | libretro-fba.so)
+		FILTER='Arcade (*.zip)|*.zip'
 		;;
 	libretro-genplus.so)
 		FILTER='Genesis/MegaDrive (*.md; *.gen)|*.md *.gen'
@@ -41,6 +46,11 @@ case "$BACKEND" in
 		FILTER='Doom (*.wad)|*.wad'
 		;;
 esac
+
+export SDL_OMAP_LAYER_SIZE
+
+export SDL_VIDEODRIVER="omapdss"
+export SDL_AUDIODRIVER="alsa"
 
 ROM=$(zenity --file-selection --file-filter="${FILTER}")
 
