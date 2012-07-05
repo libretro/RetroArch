@@ -1,11 +1,6 @@
 #!/bin/sh
-export PATH="/mnt/utmp/retroarch/bin:${PATH:-"/usr/bin:/bin:/usr/local/bin"}"
-export LD_LIBRARY_PATH="/mnt/utmp/retroarch/lib:${LD_LIBRARY_PATH:-"/usr/lib:/lib"}"
-export HOME="/mnt/utmp/retroarch" XDG_CONFIG_HOME="/mnt/utmp/retroarch"
 
-if [ -d /mnt/utmp/retroarch/share ] ; then
-	export XDG_DATA_DIRS=/mnt/utmp/retroarch/share:$XDG_DATA_DIRS:/usr/share
-fi
+source "/mnt/utmp/retroarch/scripts/env-vars.sh"
 
 # choose a libretro core.
 cd /mnt/utmp/retroarch/lib
@@ -53,13 +48,6 @@ ROM=$(zenity --file-selection --file-filter="${FILTER}" "${LASTROM}")
 [ -z "$ROM" ] && exit 0
 
 echo "$ROM" > "${BACKEND}-lastrom.txt"
-
-# use notaz's optimized driver
-export SDL_VIDEODRIVER="omapdss"
-export SDL_AUDIODRIVER="alsa"
-
-# integral scaling
-export SDL_OMAP_LAYER_SIZE="pixelperfect"
 
 # preload my modified SDL that knows what "pixelperfect" is
 exec env LD_PRELOAD=/mnt/utmp/retroarch/lib/libSDL-1.2.so.0.11.3 retroarch "${ROM}" -L "/mnt/utmp/retroarch/lib/${BACKEND}" "${@}"
