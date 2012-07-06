@@ -52,7 +52,7 @@ fi
 check_lib GETOPT_LONG -lc getopt_long
 
 if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
-   echo "Dynamic loading of libsnes is enabled, but your platform does not appear to have dlopen(), use --disable-dynamic or --with-libsnes=\"-lsnes\"".
+   echo "Dynamic loading of libretro is enabled, but your platform does not appear to have dlopen(), use --disable-dynamic or --with-libretro=\"-lretro\"".
    exit 1
 fi
 
