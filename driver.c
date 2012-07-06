@@ -335,6 +335,15 @@ void init_audio(void)
    if (g_extern.audio_active && driver.audio->use_float && audio_use_float_func())
       g_extern.audio_data.use_float = true;
 
+#ifdef HAVE_FIXED_POINT
+   if (g_extern.audio_data.use_float)
+   {
+      uninit_audio();
+      RARCH_ERR("RetroArch is configured for fixed point, but audio driver demands floating point. Will disable audio.\n");
+      g_extern.audio_active = false;
+   }
+#endif
+
    if (!g_settings.audio.sync && g_extern.audio_active)
    {
       audio_set_nonblock_state_func(true);
