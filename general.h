@@ -339,7 +339,10 @@ struct global
    {
       rarch_resampler_t *source;
 
+#ifndef HAVE_FIXED_POINT
       float *data;
+#endif
+
       size_t data_ptr;
       size_t chunk_size;
       size_t nonblock_chunk_size;
@@ -350,7 +353,7 @@ struct global
       bool use_float;
       bool mute;
 
-      float *outsamples;
+      sample_t *outsamples;
       int16_t *conv_outsamples;
 
       int16_t *rewind_buf;

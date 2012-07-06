@@ -33,7 +33,7 @@
 #endif
 
 #define PHASE_BITS 8
-#define SUBPHASE_BITS 16
+#define SUBPHASE_BITS 15
 
 #define PHASES (1 << PHASE_BITS)
 #define PHASES_SHIFT (SUBPHASE_BITS)
@@ -52,12 +52,11 @@
 
 struct rarch_resampler
 {
-   float phase_table[PHASES][2][TAPS];
-   float buffer_l[2 * TAPS];
-   float buffer_r[2 * TAPS];
+   sample_t phase_table[PHASES][2][TAPS];
+   sample_t buffer_l[2 * TAPS];
+   sample_t buffer_r[2 * TAPS];
 
    unsigned ptr;
-
    uint32_t time;
 };
 
@@ -83,8 +82,13 @@ static void init_sinc_table(rarch_resampler_t *resamp)
       {
          double p = (double)i / PHASES;
          double sinc_phase = M_PI * (p + (SIDELOBES - 1 - j));
-         resamp->phase_table[i][PHASE_INDEX][j] = CUTOFF * sinc(CUTOFF * sinc_phase) *
-            lanzcos(sinc_phase / SIDELOBES);
+
+         float val = CUTOFF * sinc(CUTOFF * sinc_phase) * lanzcos(sinc_phase / SIDELOBES);
+#ifdef HAVE_FIXED_POINT
+         resamp->phase_table[i][PHASE_INDEX][j] = (int16_t)(val * 0x7fff);
+#else
+         resamp->phase_table[i][PHASE_INDEX][j] = val;
+#endif
       }
    }
 
@@ -93,8 +97,13 @@ static void init_sinc_table(rarch_resampler_t *resamp)
    {
       for (int j = 0; j < TAPS; j++)
       {
+#ifdef HAVE_FIXED_POINT
+         resamp->phase_table[i][DELTA_INDEX][j] =
+            (resamp->phase_table[i + 1][PHASE_INDEX][j] - resamp->phase_table[i][PHASE_INDEX][j]);
+#else
          resamp->phase_table[i][DELTA_INDEX][j] =
             (resamp->phase_table[i + 1][PHASE_INDEX][j] - resamp->phase_table[i][PHASE_INDEX][j]) / SUBPHASES;
+#endif
       }
    }
 
@@ -105,26 +114,31 @@ static void init_sinc_table(rarch_resampler_t *resamp)
       double sinc_phase = M_PI * (p + (SIDELOBES - 1 - j));
       double phase = CUTOFF * sinc(CUTOFF * sinc_phase) * lanzcos(sinc_phase / SIDELOBES);
 
+#ifdef HAVE_FIXED_POINT
+      int16_t result = 0x7fff * phase - resamp->phase_table[PHASES - 1][PHASE_INDEX][j];
+#else
       float result = (phase - resamp->phase_table[PHASES - 1][PHASE_INDEX][j]) / SUBPHASES;
+#endif
+
       resamp->phase_table[PHASES - 1][DELTA_INDEX][j] = result;
    }
 }
 
 // No memalign() for us on Win32 ...
-static void *aligned_alloc(size_t boundary, size_t size)
+static void *aligned_alloc__(size_t boundary, size_t size)
 {
    void *ptr = malloc(boundary + size + sizeof(uintptr_t));
    if (!ptr)
       return NULL;
 
    uintptr_t addr = ((uintptr_t)ptr + sizeof(uintptr_t) + boundary) & ~(boundary - 1);
-   void **place = (void**)addr;
-   place[-1] = ptr;
+   void **place   = (void**)addr;
+   place[-1]      = ptr;
 
    return (void*)addr;
 }
 
-static void aligned_free(void *ptr)
+static void aligned_free__(void *ptr)
 {
    void **p = (void**)ptr;
    free(p[-1]);
@@ -132,7 +146,7 @@ static void aligned_free(void *ptr)
 
 rarch_resampler_t *resampler_new(void)
 {
-   rarch_resampler_t *re = (rarch_resampler_t*)aligned_alloc(16, sizeof(*re));
+   rarch_resampler_t *re = (rarch_resampler_t*)aligned_alloc__(16, sizeof(*re));
    if (!re)
       return NULL;
 
@@ -140,7 +154,9 @@ rarch_resampler_t *resampler_new(void)
 
    init_sinc_table(re);
 
-#if __SSE__
+#ifdef HAVE_FIXED_POINT
+   RARCH_LOG("Sinc resampler [Fixed]\n");
+#elif __SSE__
    RARCH_LOG("Sinc resampler [SSE]\n");
 #else
    RARCH_LOG("Sinc resampler [C]\n");
@@ -149,7 +165,41 @@ rarch_resampler_t *resampler_new(void)
    return re;
 }
 
-#if __SSE__
+#ifdef HAVE_FIXED_POINT
+static inline int16_t saturate(int32_t val)
+{
+   if (val > 0x7fff)
+      return 0x7fff;
+   else if (val < -0x8000)
+      return -0x8000;
+   else
+      return val;
+}
+
+static void process_sinc(rarch_resampler_t *resamp, int16_t *out_buffer)
+{
+   int32_t sum_l = 0;
+   int32_t sum_r = 0;
+   const int16_t *buffer_l = resamp->buffer_l + resamp->ptr;
+   const int16_t *buffer_r = resamp->buffer_r + resamp->ptr;
+
+   unsigned phase = resamp->time >> PHASES_SHIFT;
+   unsigned delta = (resamp->time >> SUBPHASES_SHIFT) & SUBPHASES_MASK;
+
+   const int16_t *phase_table = resamp->phase_table[phase][PHASE_INDEX];
+   const int16_t *delta_table = resamp->phase_table[phase][DELTA_INDEX];
+
+   for (unsigned i = 0; i < TAPS; i++)
+   {
+      int16_t sinc_val = phase_table[i] + ((delta * delta_table[i] + 0x4000) >> 15);
+      sum_l           += (buffer_l[i] * sinc_val + 0x4000) >> 15;
+      sum_r           += (buffer_r[i] * sinc_val + 0x4000) >> 15;
+   }
+
+   out_buffer[0] = saturate(sum_l);
+   out_buffer[1] = saturate(sum_r);
+}
+#elif __SSE__
 static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
 {
    __m128 sum_l = _mm_setzero_ps();
@@ -231,10 +281,10 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
 {
    uint32_t ratio = PHASES_WRAP / data->ratio;
 
-   const float *input = data->data_in;
-   float *output = data->data_out;
-   size_t frames = data->input_frames;
-   size_t out_frames = 0;
+   const sample_t *input = data->data_in;
+   sample_t *output      = data->data_out;
+   size_t frames         = data->input_frames;
+   size_t out_frames     = 0;
 
    while (frames)
    {
@@ -259,6 +309,6 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
 
 void resampler_free(rarch_resampler_t *re)
 {
-   aligned_free(re);
+   aligned_free__(re);
 }
 

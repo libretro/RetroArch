@@ -209,6 +209,10 @@ static void init_dsp_plugin(void)
 {
    if (!(*g_settings.audio.dsp_plugin))
       return;
+
+#ifdef HAVE_FIXED_POINT
+   RARCH_WARN("DSP plugins are not available in fixed point mode.\n");
+#else
    rarch_dsp_info_t info = {0};
 
    g_extern.audio_data.dsp_lib = dylib_load(g_settings.audio.dsp_plugin);
@@ -261,6 +265,7 @@ error:
       dylib_close(g_extern.audio_data.dsp_lib);
    g_extern.audio_data.dsp_plugin = NULL;
    g_extern.audio_data.dsp_lib = NULL;
+#endif
 }
 
 static void deinit_dsp_plugin(void)
@@ -302,13 +307,13 @@ void init_audio(void)
    // Used for recording even if audio isn't enabled.
    rarch_assert(g_extern.audio_data.conv_outsamples = (int16_t*)malloc(outsamples_max * sizeof(int16_t)));
 
-   g_extern.audio_data.block_chunk_size = AUDIO_CHUNK_SIZE_BLOCKING;
+   g_extern.audio_data.block_chunk_size    = AUDIO_CHUNK_SIZE_BLOCKING;
    g_extern.audio_data.nonblock_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
-   g_extern.audio_data.chunk_size = g_extern.audio_data.block_chunk_size;
+   g_extern.audio_data.chunk_size          = g_extern.audio_data.block_chunk_size;
 
    // Needs to be able to hold full content of a full max_bufsamples in addition to its own.
    rarch_assert(g_extern.audio_data.rewind_buf = (int16_t*)malloc(max_bufsamples * sizeof(int16_t)));
-   g_extern.audio_data.rewind_size = max_bufsamples;
+   g_extern.audio_data.rewind_size             = max_bufsamples;
 
    if (!g_settings.audio.enable)
    {
@@ -340,11 +345,14 @@ void init_audio(void)
    if (!g_extern.audio_data.source)
       g_extern.audio_active = false;
 
+#ifndef HAVE_FIXED_POINT
    rarch_assert(g_extern.audio_data.data = (float*)malloc(max_bufsamples * sizeof(float)));
+#endif
+
    g_extern.audio_data.data_ptr = 0;
 
    rarch_assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
-   rarch_assert(g_extern.audio_data.outsamples = (float*)malloc(outsamples_max * sizeof(float)));
+   rarch_assert(g_extern.audio_data.outsamples = (sample_t*)malloc(outsamples_max * sizeof(sample_t)));
 
    g_extern.audio_data.orig_src_ratio =
       g_extern.audio_data.src_ratio =
@@ -370,7 +378,7 @@ void uninit_audio(void)
 {
    free(g_extern.audio_data.conv_outsamples);
    g_extern.audio_data.conv_outsamples = NULL;
-   g_extern.audio_data.data_ptr = 0;
+   g_extern.audio_data.data_ptr        = 0;
 
    free(g_extern.audio_data.rewind_buf);
    g_extern.audio_data.rewind_buf = NULL;
@@ -387,8 +395,10 @@ void uninit_audio(void)
    if (g_extern.audio_data.source)
       resampler_free(g_extern.audio_data.source);
 
+#ifndef HAVE_FIXED_POINT
    free(g_extern.audio_data.data);
    g_extern.audio_data.data = NULL;
+#endif
 
    free(g_extern.audio_data.outsamples);
    g_extern.audio_data.outsamples = NULL;

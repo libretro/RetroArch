@@ -15,7 +15,6 @@ OBJ = retroarch.o \
 		patch.o \
 		compat/compat.o \
 		screenshot.o \
-		audio/utils.o \
 		audio/null.o \
 		input/null.o \
 		gfx/null.o
@@ -211,6 +210,10 @@ ifeq ($(HAVE_SINC), 1)
    OBJ += audio/sinc.o
 else
    OBJ += audio/hermite.o
+endif
+
+ifneq ($(HAVE_FIXED_POINT), 1)
+   OBJ += audio/utils.o
 endif
 
 ifneq ($(V),1)

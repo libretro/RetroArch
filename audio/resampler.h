@@ -17,7 +17,12 @@
 #ifndef __RARCH_RESAMPLER_H
 #define __RARCH_RESAMPLER_H
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include <stddef.h>
+#include <stdint.h>
 #include <math.h>
 
 // M_PI is left out of ISO C99 :(
@@ -27,10 +32,16 @@
 
 typedef struct rarch_resampler rarch_resampler_t;
 
+#ifdef HAVE_FIXED_POINT
+typedef int16_t sample_t;
+#else
+typedef float sample_t;
+#endif
+
 struct resampler_data
 {
-   const float *data_in;
-   float *data_out;
+   const sample_t *data_in;
+   sample_t *data_out;
 
    size_t input_frames;
    size_t output_frames;

@@ -278,8 +278,9 @@ static bool audio_flush(const int16_t *data, size_t samples)
    if (g_extern.recording)
    {
       struct ffemu_audio_data ffemu_data = {0};
-      ffemu_data.data = data;
-      ffemu_data.frames = samples / 2;
+      ffemu_data.data                    = data;
+      ffemu_data.frames                  = samples / 2;
+
       ffemu_push_audio(g_extern.rec, &ffemu_data);
    }
 #endif
@@ -289,18 +290,20 @@ static bool audio_flush(const int16_t *data, size_t samples)
    if (!g_extern.audio_active)
       return false;
 
-   const float *output_data = NULL;
-   unsigned output_frames = 0;
+   const sample_t *output_data = NULL;
+   unsigned output_frames      = 0;
 
+#ifndef HAVE_FIXED_POINT
    audio_convert_s16_to_float(g_extern.audio_data.data, data, samples);
+#endif
 
-#ifdef HAVE_DYLIB
+#if defined(HAVE_DYLIB) && !defined(HAVE_FIXED_POINT)
    rarch_dsp_output_t dsp_output = {0};
-   dsp_output.should_resample = RARCH_TRUE;
+   dsp_output.should_resample    = RARCH_TRUE;
 
    rarch_dsp_input_t dsp_input = {0};
-   dsp_input.samples = g_extern.audio_data.data;
-   dsp_input.frames = samples / 2;
+   dsp_input.samples           = g_extern.audio_data.data;
+   dsp_input.frames            = samples >> 1;
 
    if (g_extern.audio_data.dsp_plugin)
       g_extern.audio_data.dsp_plugin->process(g_extern.audio_data.dsp_handle, &dsp_output, &dsp_input);
@@ -309,13 +312,18 @@ static bool audio_flush(const int16_t *data, size_t samples)
    {
 #endif
       struct resampler_data src_data = {0};
-#ifdef HAVE_DYLIB
-      src_data.data_in = dsp_output.samples ? dsp_output.samples : g_extern.audio_data.data;
-      src_data.input_frames = dsp_output.samples ? dsp_output.frames : (samples / 2);
+
+#ifdef HAVE_FIXED_POINT
+      src_data.data_in      = data;
+      src_data.input_frames = samples >> 1;
+#elif defined(HAVE_DYLIB)
+      src_data.data_in      = dsp_output.samples ? dsp_output.samples : g_extern.audio_data.data;
+      src_data.input_frames = dsp_output.samples ? dsp_output.frames : (samples >> 1);
 #else
-      src_data.data_in = g_extern.audio_data.data;
-      src_data.input_frames = (samples / 2);
+      src_data.data_in      = g_extern.audio_data.data;
+      src_data.input_frames = samples >> 1;
 #endif
+
       src_data.data_out = g_extern.audio_data.outsamples;
 
       if (g_extern.audio_data.rate_control)
@@ -327,13 +335,13 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
       resampler_process(g_extern.audio_data.source, &src_data);
 
-      output_data = g_extern.audio_data.outsamples;
+      output_data   = g_extern.audio_data.outsamples;
       output_frames = src_data.output_frames;
-#ifdef HAVE_DYLIB
+#if defined(HAVE_DYLIB) && !defined(HAVE_FIXED_POINT)
    }
    else
    {
-      output_data = dsp_output.samples;
+      output_data   = dsp_output.samples;
       output_frames = dsp_output.frames;
    }
 #endif
@@ -344,6 +352,16 @@ static bool audio_flush(const int16_t *data, size_t samples)
       int16_t i[0x10000 * sizeof(float) / sizeof(int16_t)];
    } static empty_buf; // Const here would require us to statically initialize it, bloating the binary.
 
+#ifdef HAVE_FIXED_POINT
+   if (g_extern.audio_data.mute)
+      output_data = empty_buf.i;
+
+   if (audio_write_func(output_data, output_frames * sizeof(int16_t) * 2) < 0)
+   {
+      fprintf(stderr, "RetroArch [ERROR]: Audio backend failed to write. Will continue without sound.\n");
+      return false;
+   }
+#else
    if (g_extern.audio_data.use_float)
    {
       if (audio_write_func(g_extern.audio_data.mute ? empty_buf.f : output_data,
@@ -368,6 +386,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
          return false;
       }
    }
+#endif
 
    return true;
 }

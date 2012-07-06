@@ -24,4 +24,5 @@ HAVE_SDL_IMAGE=auto     # Enable SDL_image support
 HAVE_LIBPNG=auto        # Enable libpng support
 HAVE_PYTHON=auto        # Enable Python 3 support for shaders
 HAVE_SINC=yes           # Disable SINC resampler
+HAVE_FIXED_POINT=no     # Enable fixed-point resampler
 HAVE_BSV_MOVIE=yes      # Disable BSV movie support

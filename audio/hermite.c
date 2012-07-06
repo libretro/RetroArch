@@ -20,6 +20,14 @@
 #include <math.h>
 #include "../boolean.h"
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
+#ifdef HAVE_FIXED_POINT
+#error "Hermite doesn't support fixed point resampling."
+#endif
+
 #define CHANNELS 2
 
 struct rarch_resampler
