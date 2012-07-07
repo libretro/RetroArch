@@ -304,7 +304,11 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->last_height = 512;
 
    d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
-	   0, 0, 0, &d3d->vertex_buf, NULL);
+	   0, 0, 0, &d3d->vertex_buf
+#ifdef _XBOX360
+	   , NULL
+#endif
+   );
 
    static const DrawVerticeFormats init_verts[] = {
       { -1.0f, -1.0f, 0.0f, 1.0f },
@@ -313,7 +317,11 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
       {  1.0f,  1.0f, 1.0f, 0.0f },
    };
    
+#ifdef _XBOX1
+   BYTE *verts_ptr;
+#else
    void *verts_ptr;
+#endif
    d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
    memcpy(verts_ptr, init_verts, sizeof(init_verts));
    d3d->vertex_buf->Unlock();
@@ -370,7 +378,9 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       return true;
 
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+#ifdef HAVE_FBO
    D3DSurface* pRenderTarget0;
+#endif
    bool menu_enabled = g_console.menu_enable;
 
    if (d3d->last_width != width || d3d->last_height != height)
@@ -398,7 +408,11 @@ static bool xdk_d3d_frame(void *data, const void *frame,
          verts[i].y += 0.5f / 512.0f;
       }
 
+#ifdef _XBOX1
+   BYTE *verts_ptr;
+#else
       void *verts_ptr;
+#endif
       d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
       memcpy(verts_ptr, verts, sizeof(verts));
       d3d->vertex_buf->Unlock();
@@ -407,11 +421,13 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       d3d->last_height = height;
    }
 
+#ifdef HAVE_FBO
    if (d3d->fbo_enabled)
    {
       d3d->d3d_render_device->GetRenderTarget(0, &pRenderTarget0);
       d3d->d3d_render_device->SetRenderTarget(0, d3d->lpSurface);
    }
+#endif
 
    if (d3d->should_resize)
       xdk_d3d_set_viewport(false);

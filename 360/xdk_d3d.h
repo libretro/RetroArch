@@ -55,6 +55,7 @@ typedef struct DrawVerticeFormats
 #define IDirect3DVertexBuffer IDirect3DVertexBuffer8
 
 #define SetSamplerState SetTextureStageState
+#define D3DLOCK_NOSYSLOCK (0)
 
 #define D3DSAMP_ADDRESSU D3DTSS_ADDRESSU
 #define D3DSAMP_ADDRESSV D3DTSS_ADDRESSV
