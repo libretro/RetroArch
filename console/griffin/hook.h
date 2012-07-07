@@ -54,7 +54,7 @@
 	XBOX 360
 ============================================================ */
 
-#elif defined(_XBOX)
+#elif defined(_XBOX360)
 
 #define video_init_func(video_info, input, input_data) \
                                                 xdk360_init(video_info, input, input_data)

@@ -2,27 +2,29 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="RetroArch-Xbox1"
-	ProjectGUID="{D45CEB37-21F1-486B-92F0-569B10953978}"
-	RootNamespace="RetroArch-Xbox1"
+	Name="RetroArch"
+	ProjectGUID="{0E616FC4-0954-4FE3-935C-B7383B18D325}"
 	Keyword="XboxProj">
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Xbox"/>
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="Debug|Win32"
+			Name="Debug|Xbox"
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
-			ConfigurationType="1">
+			ConfigurationType="1"
+			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(VSInstallDir)\..\Microsoft Xbox SDK\xbox\include&quot;"
-				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB"
+				OptimizeForProcessor="2"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
+				PreprocessorDefinitions="_DEBUG;_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
 				EnableEnhancedInstructionSet="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -32,12 +34,14 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro_xdk1.lib &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xperf.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xbdm.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3d8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3dx8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xgraphicsd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\dsoundd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xboxkrnl.lib&quot;"
+				AdditionalDependencies="xapilibd.lib d3d8d.lib d3dx8d.lib xgraphicsd.lib dsoundd.lib dmusicd.lib xactengd.lib xsndtrkd.lib xvoiced.lib xonlined.lib xboxkrnl.lib xbdm.lib"
+				OutputFile="$(OutDir)/$(ProjectName).exe"
+				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/$(ProjectName).pdb"
 				SubSystem="2"
+				OptimizeForWindows98="1"
 				TargetMachine="1"/>
-			<Tool
-				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -45,30 +49,28 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
+				Name="XboxDeploymentTool"/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="XboxImageTool"
+				StackSize="65536"
+				IncludeDebugInfo="TRUE"
+				NoLibWarn="TRUE"/>
 		</Configuration>
 		<Configuration
-			Name="Profile|Win32"
+			Name="Profile|Xbox"
 			OutputDirectory="Profile"
 			IntermediateDirectory="Profile"
-			ConfigurationType="1">
+			ConfigurationType="1"
+			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				OmitFramePointers="TRUE"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(VSInstallDir)\..\Microsoft Xbox SDK\xbox\include&quot;"
-				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB"
+				OptimizeForProcessor="2"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;PROFILE;HAVE_GRIFFIN"
 				StringPooling="TRUE"
+				RuntimeLibrary="0"
 				BufferSecurityCheck="TRUE"
 				EnableFunctionLevelLinking="TRUE"
 				EnableEnhancedInstructionSet="1"
@@ -80,14 +82,17 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro_xdk1.lib &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xperf.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xbdm.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3d8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3dx8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xgraphicsd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\dsoundd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xboxkrnl.lib&quot;"
+				AdditionalDependencies="xapilib.lib d3d8i.lib d3dx8.lib xgraphics.lib dsound.lib dmusici.lib xactengi.lib xsndtrk.lib xvoice.lib xonlines.lib xboxkrnl.lib xbdm.lib xperf.lib"
+				OutputFile="$(OutDir)/$(ProjectName).exe"
+				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/$(ProjectName).pdb"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				OptimizeForWindows98="1"
+				SetChecksum="TRUE"
 				TargetMachine="1"/>
-			<Tool
-				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -95,30 +100,81 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
+				Name="XboxDeploymentTool"/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="XboxImageTool"
+				StackSize="65536"
+				IncludeDebugInfo="TRUE"
+				NoLibWarn="TRUE"/>
 		</Configuration>
 		<Configuration
-			Name="Profile_FastCap|Win32"
+			Name="Profile_FastCap|Xbox"
 			OutputDirectory="Profile_FastCap"
 			IntermediateDirectory="Profile_FastCap"
-			ConfigurationType="1">
+			ConfigurationType="1"
+			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				OmitFramePointers="TRUE"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(VSInstallDir)\..\Microsoft Xbox SDK\xbox\include&quot;"
-				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB"
+				OptimizeForProcessor="2"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;PROFILE;FASTCAP;HAVE_GRIFFIN"
 				StringPooling="TRUE"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="TRUE"
+				EnableFunctionLevelLinking="TRUE"
+				EnableEnhancedInstructionSet="1"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="3"
+				FastCAP="TRUE"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="xapilib.lib d3d8i.lib d3dx8.lib xgraphics.lib dsound.lib dmusici.lib xactengi.lib xsndtrk.lib xvoice.lib xonlines.lib xboxkrnl.lib xbdm.lib xperf.lib"
+				OutputFile="$(OutDir)/$(ProjectName).exe"
+				LinkIncremental="1"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/$(ProjectName).pdb"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				OptimizeForWindows98="1"
+				SetChecksum="TRUE"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="XboxDeploymentTool"/>
+			<Tool
+				Name="XboxImageTool"
+				StackSize="65536"
+				IncludeDebugInfo="TRUE"
+				NoLibWarn="TRUE"/>
+		</Configuration>
+		<Configuration
+			Name="Release|Xbox"
+			OutputDirectory="Release"
+			IntermediateDirectory="Release"
+			ConfigurationType="1"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				OmitFramePointers="TRUE"
+				OptimizeForProcessor="2"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN;inline=_inline"
+				StringPooling="TRUE"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="TRUE"
 				EnableFunctionLevelLinking="TRUE"
 				EnableEnhancedInstructionSet="1"
 				UsePrecompiledHeader="0"
@@ -129,9 +185,17 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro_xdk1.lib &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xperf.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xbdm.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3d8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3dx8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xgraphicsd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\dsoundd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xboxkrnl.lib&quot;"/>
-			<Tool
-				Name="VCMIDLTool"/>
+				AdditionalDependencies="xapilib.lib d3d8.lib d3dx8.lib xgraphics.lib dsound.lib dmusic.lib xacteng.lib xsndtrk.lib xvoice.lib xonlines.lib xboxkrnl.lib"
+				OutputFile="$(OutDir)/$(ProjectName).exe"
+				LinkIncremental="1"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/$(ProjectName).pdb"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				OptimizeForWindows98="1"
+				SetChecksum="TRUE"
+				TargetMachine="1"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -139,71 +203,49 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
+				Name="XboxDeploymentTool"/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="XboxImageTool"
+				StackSize="65536"/>
 		</Configuration>
 		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1">
+			Name="Release_LTCG|Xbox"
+			OutputDirectory="Release_LTCG"
+			IntermediateDirectory="Release_LTCG"
+			ConfigurationType="1"
+			CharacterSet="2"
+			WholeProgramOptimization="TRUE">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(VSInstallDir)\..\Microsoft Xbox SDK\xbox\include&quot;"
-				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB"
-				UsePrecompiledHeader="0"/>
+				Optimization="3"
+				OmitFramePointers="TRUE"
+				OptimizeForProcessor="2"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;LTCG;HAVE_GRIFFIN"
+				StringPooling="TRUE"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="TRUE"
+				EnableFunctionLevelLinking="TRUE"
+				EnableEnhancedInstructionSet="1"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro_xdk1.lib &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xperf.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xbdm.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3d8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3dx8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xgraphicsd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\dsoundd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xboxkrnl.lib&quot;"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="Release_LTCG|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1">
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(VSInstallDir)\..\Microsoft Xbox SDK\xbox\include&quot;"
-				PreprocessorDefinitions="_XBOX;_XBOX1;RARCH_CONSOLE;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB"
-				UsePrecompiledHeader="0"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="$(ProjectDir)\$(IntDir)\libretro_xdk1.lib &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xperf.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xbdm.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3d8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\d3dx8d.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xgraphicsd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\dsoundd.lib&quot; &quot;$(VSInstallDir)..\Microsoft Xbox SDK\xbox\lib\xboxkrnl.lib&quot;"/>
-			<Tool
-				Name="VCMIDLTool"/>
+				AdditionalDependencies="xapilib.lib d3d8ltcg.lib d3dx8.lib xgraphicsltcg.lib dsound.lib dmusicltcg.lib xactengltcg.lib xsndtrk.lib xvoice.lib xonlines.lib xboxkrnl.lib"
+				OutputFile="$(OutDir)/$(ProjectName).exe"
+				LinkIncremental="1"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/$(ProjectName).pdb"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				OptimizeForWindows98="1"
+				SetChecksum="TRUE"
+				TargetMachine="1"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -211,53 +253,23 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
+				Name="XboxDeploymentTool"/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="XboxImageTool"
+				StackSize="65536"/>
 		</Configuration>
 	</Configurations>
 	<References>
 	</References>
 	<Files>
 		<Filter
-			Name="src"
-			Filter="">
+			Name="Source Files"
+			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
 				RelativePath="..\..\console\griffin\griffin.c">
 				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						CompileAs="2"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Profile|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						CompileAs="2"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Profile_FastCap|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						CompileAs="2"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						CompileAs="2"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release_LTCG|Win32">
+					Name="Release|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
 						CompileAs="2"/>
@@ -265,7 +277,18 @@
 			</File>
 			<File
 				RelativePath="..\..\console\rzlib\rzlib.c">
+				<FileConfiguration
+					Name="Release|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
 			</File>
+		</Filter>
+		<Filter
+			Name="Header Files"
+			Filter="h;hpp;hxx;hm;inl;inc;xsd"
+			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 		</Filter>
 	</Files>
 	<Globals>
