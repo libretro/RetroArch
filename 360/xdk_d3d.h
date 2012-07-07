@@ -91,11 +91,11 @@ typedef struct xdk_d3d_video
    LPDIRECT3DTEXTURE_PTR lpTexture;
    D3DTexture lpTexture_ot_as16srgb;
    LPDIRECT3DTEXTURE_PTR lpTexture_ot;
-#ifdef _XBOX360
+#if defined(_XBOX360)
    IDirect3DVertexDeclaration9* v_decl;
+   XVIDEO_MODE video_mode;
 #endif
    D3DPRESENT_PARAMETERS d3dpp;
-   XVIDEO_MODE video_mode;
    LPDIRECT3DSURFACE_PTR lpSurface;
 } xdk_d3d_video_t;
 

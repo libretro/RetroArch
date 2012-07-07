@@ -245,7 +245,7 @@ struct console_settings
 #ifdef RARCH_CONSOLE
    uint32_t input_loop;
 #endif
-#ifdef _XBOX360
+#ifdef _XBOX
    uint32_t color_format;
    DWORD volume_device_type;
 #endif

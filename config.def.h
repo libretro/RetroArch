@@ -65,7 +65,7 @@ enum
    INPUT_PS3,
    INPUT_XENON360,
    INPUT_WII,
-   INPUT_XDK360,
+   INPUT_XINPUT,
    INPUT_LINUXRAW,
    INPUT_NULL
 };
@@ -128,8 +128,8 @@ enum
 
 #if defined(XENON)
 #define INPUT_DEFAULT_DRIVER INPUT_XENON360
-#elif defined(_XBOX360)
-#define INPUT_DEFAULT_DRIVER INPUT_XDK360
+#elif defined(_XBOX360) || defined(_XBOX) || defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1)
+#define INPUT_DEFAULT_DRIVER INPUT_XINPUT
 #elif defined(HAVE_SDL)
 #define INPUT_DEFAULT_DRIVER INPUT_SDL
 #elif defined(__CELLOS_LV2__)

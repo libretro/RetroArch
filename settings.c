@@ -114,8 +114,8 @@ const char *config_get_default_input(void)
          return "x";
       case INPUT_XENON360:
          return "xenon360";
-      case INPUT_XDK360:
-         return "xinput2";
+      case INPUT_XINPUT:
+         return "xinput";
       case INPUT_WII:
          return "wii";
       case INPUT_LINUXRAW:

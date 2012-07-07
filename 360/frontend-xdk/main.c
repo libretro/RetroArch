@@ -262,7 +262,7 @@ int main(int argc, char *argv[])
    init_libretro_sym();
 
    video_xdk_d3d.start();
-   input_xinput2.init();
+   input_xinput.init();
 
    rarch_input_set_default_keybind_names_for_emulator();
 
@@ -273,7 +273,7 @@ begin_loop:
    {
       bool repeat = false;
 
-      input_xinput2.poll(NULL);
+      input_xinput.poll(NULL);
 
       rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
 
@@ -297,7 +297,7 @@ begin_shutdown:
 
    menu_free();
    video_xdk_d3d.stop();
-   input_xinput2.free(NULL);
+   input_xinput.free(NULL);
    rarch_exec();
 
    return 0;

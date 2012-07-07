@@ -29,7 +29,7 @@
 static uint64_t state[4];
 static unsigned pads_connected;
 
-static void xinput2_input_poll(void *data)
+static void xinput_input_poll(void *data)
 {
    (void)data;
 
@@ -54,7 +54,7 @@ static void xinput2_input_poll(void *data)
    }
 }
 
-static int16_t xinput2_input_state(void *data, const struct retro_keybind **binds,
+static int16_t xinput_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
@@ -65,7 +65,7 @@ static int16_t xinput2_input_state(void *data, const struct retro_keybind **bind
    return (state[player] & button) ? 1 : 0;
 }
 
-static void xinput2_input_free_input(void *data)
+static void xinput_input_free_input(void *data)
 {
    (void)data;
 }
@@ -99,7 +99,7 @@ void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_
 }
 #endif
 
-static void* xinput2_input_init(void)
+static void* xinput_input_init(void)
 {
 #ifdef _XBOX
    for(unsigned i = 0; i < 4; i++)
@@ -108,7 +108,7 @@ static void* xinput2_input_init(void)
    return (void*)-1;
 }
 
-static bool xinput2_input_key_pressed(void *data, int key)
+static bool xinput_input_key_pressed(void *data, int key)
 {
    (void)data;
    bool retval = false;
@@ -164,12 +164,12 @@ static bool xinput2_input_key_pressed(void *data, int key)
    return retval;
 }
 
-const input_driver_t input_xinput2 = 
+const input_driver_t input_xinput = 
 {
-   xinput2_input_init,
-   xinput2_input_poll,
-   xinput2_input_state,
-   xinput2_input_key_pressed,
-   xinput2_input_free_input,
-   "xinput2"
+   xinput_input_init,
+   xinput_input_poll,
+   xinput_input_state,
+   xinput_input_key_pressed,
+   xinput_input_free_input,
+   "xinput"
 };

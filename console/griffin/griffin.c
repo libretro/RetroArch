@@ -123,7 +123,7 @@ INPUT
 #include "../../wii/input.c"
 #endif
 
-#ifdef HAVE_XINPUT2
+#if defined(HAVE_XINPUT_XBOX1) || defined(HAVE_XINPUT2)
 #include "../../input/xinput2_input.c"
 #endif
 

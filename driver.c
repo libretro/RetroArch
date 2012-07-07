@@ -119,8 +119,8 @@ static const input_driver_t *input_drivers[] = {
 #ifdef XENON
    &input_xenon360,
 #endif
-#ifdef HAVE_XINPUT2
-   &input_xinput2,
+#if defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1)
+   &input_xinput,
 #endif
 #ifdef GEKKO
    &input_wii,
