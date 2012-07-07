@@ -38,18 +38,18 @@
 #include "xdk360_video_resources.h"
 #endif
 
-static void check_window(xdk360_video_t *d3d9)
+static void check_window(xdk360_video_t *d3d)
 {
    bool quit, resize;
 
    gfx_ctx_check_window(&quit,
          &resize, NULL, NULL,
-         d3d9->frame_count);
+         d3d->frame_count);
 
    if (quit)
-      d3d9->quitting = true;
+      d3d->quitting = true;
    else if (resize)
-      d3d9->should_resize = true;
+      d3d->should_resize = true;
 }
 
 static void xdk360_free(void * data)
@@ -59,29 +59,29 @@ static void xdk360_free(void * data)
 	   return;
 #endif
 
-   xdk360_video_t *d3d9 = (xdk360_video_t*)data;
+   xdk360_video_t *d3d = (xdk360_video_t*)data;
 
-   if (!d3d9)
+   if (!d3d)
       return;
 
 #ifdef HAVE_HLSL
    hlsl_deinit();
 #endif
-   d3d9->d3d_render_device->Release();
-   d3d9->d3d_device->Release();
+   d3d->d3d_render_device->Release();
+   d3d->d3d_device->Release();
 
-   free(d3d9);
+   free(d3d);
 }
 
 static void xdk360_set_viewport(bool force_full)
 {
-   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
+   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
 
-   d3d9->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
       0xff000000, 1.0f, 0);
 
-   int width = d3d9->video_mode.fIsHiDef ? 1280 : 640;
-   int height = d3d9->video_mode.fIsHiDef ? 720 : 480;
+   int width = d3d->video_mode.fIsHiDef ? 1280 : 640;
+   int height = d3d->video_mode.fIsHiDef ? 720 : 480;
    int m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
    float m_zNear, m_zFar;
 
@@ -131,7 +131,7 @@ static void xdk360_set_viewport(bool force_full)
    vp.Y      = m_viewport_y_temp;
    vp.MinZ   = m_zNear;
    vp.MaxZ   = m_zFar;
-   d3d9->d3d_render_device->SetViewport(&vp);
+   d3d->d3d_render_device->SetViewport(&vp);
 
    //if(gl->overscan_enable && !force_full)
    //{
@@ -144,7 +144,7 @@ static void xdk360_set_viewport(bool force_full)
 static void xdk360_set_rotation(void * data, unsigned orientation)
 {
    (void)data;
-   xdk360_video_t *d3d9 = (xdk360_video_t*)data;
+   xdk360_video_t *d3d = (xdk360_video_t*)data;
    FLOAT angle;
 
    switch(orientation)
@@ -166,34 +166,34 @@ static void xdk360_set_rotation(void * data, unsigned orientation)
    /* TODO: Move to D3DXMATRIX here */
    hlsl_set_proj_matrix(XMMatrixRotationZ(angle));
 
-   d3d9->should_resize = TRUE;
+   d3d->should_resize = TRUE;
 }
 
-static void xdk360_init_fbo(xdk360_video_t *d3d9)
+static void xdk360_init_fbo(xdk360_video_t *d3d)
 {
-   if (d3d9->lpTexture_ot)
+   if (d3d->lpTexture_ot)
    {
-      d3d9->lpTexture_ot->Release();
-      d3d9->lpTexture_ot = NULL;
+      d3d->lpTexture_ot->Release();
+      d3d->lpTexture_ot = NULL;
    }
 
-   if (d3d9->lpSurface)
+   if (d3d->lpSurface)
    {
-      d3d9->lpSurface->Release();
-      d3d9->lpSurface = NULL;
+      d3d->lpSurface->Release();
+      d3d->lpSurface = NULL;
    }
 
-   d3d9->d3d_render_device->CreateTexture(512 * g_settings.video.fbo_scale_x, 512 * g_settings.video.fbo_scale_y,
+   d3d->d3d_render_device->CreateTexture(512 * g_settings.video.fbo_scale_x, 512 * g_settings.video.fbo_scale_y,
          1, 0, g_console.gamma_correction_enable ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8,
-         0, &d3d9->lpTexture_ot, NULL);
+         0, &d3d->lpTexture_ot, NULL);
 
-   d3d9->d3d_render_device->CreateRenderTarget(512 * g_settings.video.fbo_scale_x, 512 * g_settings.video.fbo_scale_y,
+   d3d->d3d_render_device->CreateRenderTarget(512 * g_settings.video.fbo_scale_x, 512 * g_settings.video.fbo_scale_y,
          g_console.gamma_correction_enable ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 
-	      0, 0, &d3d9->lpSurface, NULL);
+	      0, 0, &d3d->lpSurface, NULL);
 
-   d3d9->lpTexture_ot_as16srgb = *d3d9->lpTexture_ot;
-   xdk360_convert_texture_to_as16_srgb(d3d9->lpTexture);
-   xdk360_convert_texture_to_as16_srgb(&d3d9->lpTexture_ot_as16srgb);
+   d3d->lpTexture_ot_as16srgb = *d3d->lpTexture_ot;
+   xdk360_convert_texture_to_as16_srgb(d3d->lpTexture);
+   xdk360_convert_texture_to_as16_srgb(&d3d->lpTexture_ot_as16srgb);
 }
 
 static void *xdk360_init(const video_info_t *video, const input_driver_t **input, void **input_data)
@@ -201,74 +201,74 @@ static void *xdk360_init(const video_info_t *video, const input_driver_t **input
    if (driver.video_data)
       return driver.video_data;
 
-   xdk360_video_t *d3d9 = (xdk360_video_t*)calloc(1, sizeof(xdk360_video_t));
-   if (!d3d9)
+   xdk360_video_t *d3d = (xdk360_video_t*)calloc(1, sizeof(xdk360_video_t));
+   if (!d3d)
       return NULL;
 
-   d3d9->d3d_device = Direct3DCreate9(D3D_SDK_VERSION);
-   if (!d3d9->d3d_device)
+   d3d->d3d_device = Direct3DCreate9(D3D_SDK_VERSION);
+   if (!d3d->d3d_device)
    {
-      free(d3d9);
+      free(d3d);
       return NULL;
    }
 
    // Get video settings
 
-   memset(&d3d9->video_mode, 0, sizeof(d3d9->video_mode));
+   memset(&d3d->video_mode, 0, sizeof(d3d->video_mode));
 
-   XGetVideoMode(&d3d9->video_mode);
+   XGetVideoMode(&d3d->video_mode);
 
-   memset(&d3d9->d3dpp, 0, sizeof(d3d9->d3dpp));
+   memset(&d3d->d3dpp, 0, sizeof(d3d->d3dpp));
 
    // no letterboxing in 4:3 mode (if widescreen is
    // unsupported
-   if(!d3d9->video_mode.fIsWideScreen)
-      d3d9->d3dpp.Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
+   if(!d3d->video_mode.fIsWideScreen)
+      d3d->d3dpp.Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
 
-   g_console.menus_hd_enable = d3d9->video_mode.fIsHiDef;
+   g_console.menus_hd_enable = d3d->video_mode.fIsHiDef;
    
-   d3d9->d3dpp.BackBufferWidth         = d3d9->video_mode.fIsHiDef ? 1280 : 640;
-   d3d9->d3dpp.BackBufferHeight        = d3d9->video_mode.fIsHiDef ? 720 : 480;
+   d3d->d3dpp.BackBufferWidth         = d3d->video_mode.fIsHiDef ? 1280 : 640;
+   d3d->d3dpp.BackBufferHeight        = d3d->video_mode.fIsHiDef ? 720 : 480;
 
    if(g_console.gamma_correction_enable)
    {
-      d3d9->d3dpp.BackBufferFormat        = g_console.color_format ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : (D3DFORMAT)MAKESRGBFMT(D3DFMT_LIN_A1R5G5B5);
-      d3d9->d3dpp.FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
+      d3d->d3dpp.BackBufferFormat        = g_console.color_format ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : (D3DFORMAT)MAKESRGBFMT(D3DFMT_LIN_A1R5G5B5);
+      d3d->d3dpp.FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
    }
    else
    {
-      d3d9->d3dpp.BackBufferFormat        = g_console.color_format ? D3DFMT_A8R8G8B8 : D3DFMT_LIN_A1R5G5B5;
-      d3d9->d3dpp.FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;
+      d3d->d3dpp.BackBufferFormat        = g_console.color_format ? D3DFMT_A8R8G8B8 : D3DFMT_LIN_A1R5G5B5;
+      d3d->d3dpp.FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;
    }
 
-   d3d9->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
-   d3d9->d3dpp.MultiSampleQuality      = 0;
-   d3d9->d3dpp.BackBufferCount         = 2;
-   d3d9->d3dpp.EnableAutoDepthStencil  = FALSE;
-   d3d9->d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
-   d3d9->d3dpp.PresentationInterval    = video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+   d3d->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
+   d3d->d3dpp.MultiSampleQuality      = 0;
+   d3d->d3dpp.BackBufferCount         = 2;
+   d3d->d3dpp.EnableAutoDepthStencil  = FALSE;
+   d3d->d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
+   d3d->d3dpp.PresentationInterval    = video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 
    // D3DCREATE_HARDWARE_VERTEXPROCESSING is ignored on 360
-   d3d9->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
-	   &d3d9->d3dpp, &d3d9->d3d_render_device);
+   d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
+	   &d3d->d3dpp, &d3d->d3d_render_device);
 
-   hlsl_init(g_settings.video.cg_shader_path, d3d9->d3d_render_device);
+   hlsl_init(g_settings.video.cg_shader_path, d3d->d3d_render_device);
 
-   d3d9->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
-      0, &d3d9->lpTexture, NULL);
+   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
+      0, &d3d->lpTexture, NULL);
 
-   xdk360_init_fbo(d3d9);
+   xdk360_init_fbo(d3d);
 
    D3DLOCKED_RECT d3dlr;
-   d3d9->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
-   d3d9->lpTexture->UnlockRect(0);
+   d3d->lpTexture->UnlockRect(0);
 
-   d3d9->last_width = 512;
-   d3d9->last_height = 512;
+   d3d->last_width = 512;
+   d3d->last_height = 512;
 
-   d3d9->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
-	   0, 0, 0, &d3d9->vertex_buf, NULL);
+   d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
+	   0, 0, 0, &d3d->vertex_buf, NULL);
 
    static const DrawVerticeFormats init_verts[] = {
       { -1.0f, -1.0f, 0.0f, 1.0f },
@@ -278,9 +278,9 @@ static void *xdk360_init(const video_info_t *video, const input_driver_t **input
    };
    
    void *verts_ptr;
-   d3d9->vertex_buf->Lock(0, 0, &verts_ptr, 0);
+   d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
    memcpy(verts_ptr, init_verts, sizeof(init_verts));
-   d3d9->vertex_buf->Unlock();
+   d3d->vertex_buf->Unlock();
 
    static const D3DVERTEXELEMENT9 VertexElements[] =
    {
@@ -289,20 +289,20 @@ static void *xdk360_init(const video_info_t *video, const input_driver_t **input
       D3DDECL_END()
    };
 
-   d3d9->d3d_render_device->CreateVertexDeclaration(VertexElements, &d3d9->v_decl);
+   d3d->d3d_render_device->CreateVertexDeclaration(VertexElements, &d3d->v_decl);
    
-   d3d9->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
 	   0xff000000, 1.0f, 0);
 
-   d3d9->d3d_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-   d3d9->d3d_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
+   d3d->d3d_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+   d3d->d3d_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
 
    D3DVIEWPORT9 vp = {0};
-   vp.Width  = d3d9->video_mode.fIsHiDef ? 1280 : 640;
-   vp.Height = d3d9->video_mode.fIsHiDef ? 720 : 480;
+   vp.Width  = d3d->video_mode.fIsHiDef ? 1280 : 640;
+   vp.Height = d3d->video_mode.fIsHiDef ? 720 : 480;
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
-   d3d9->d3d_render_device->SetViewport(&vp);
+   d3d->d3d_render_device->SetViewport(&vp);
 
    if(g_console.viewports.custom_vp.width == 0)
       g_console.viewports.custom_vp.width = vp.Width;
@@ -310,12 +310,12 @@ static void *xdk360_init(const video_info_t *video, const input_driver_t **input
    if(g_console.viewports.custom_vp.height == 0)
       g_console.viewports.custom_vp.height = vp.Height;
 
-   xdk360_set_rotation(d3d9, g_console.screen_orientation);
+   xdk360_set_rotation(d3d, g_console.screen_orientation);
 
-   d3d9->fbo_enabled = 1;
-   d3d9->vsync = video->vsync;
+   d3d->fbo_enabled = 1;
+   d3d->vsync = video->vsync;
 
-   return d3d9;
+   return d3d;
 }
 
 static bool xdk360_frame(void *data, const void *frame,
@@ -324,17 +324,17 @@ static bool xdk360_frame(void *data, const void *frame,
    if (!frame)
       return true;
 
-   xdk360_video_t *d3d9 = (xdk360_video_t*)data;
+   xdk360_video_t *d3d = (xdk360_video_t*)data;
    D3DSurface* pRenderTarget0;
    bool menu_enabled = g_console.menu_enable;
 
-   if (d3d9->last_width != width || d3d9->last_height != height)
+   if (d3d->last_width != width || d3d->last_height != height)
    {
       D3DLOCKED_RECT d3dlr;
 
-      d3d9->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+      d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
       memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
-      d3d9->lpTexture->UnlockRect(0);
+      d3d->lpTexture->UnlockRect(0);
 
       float tex_w = width / 512.0f;
       float tex_h = height / 512.0f;
@@ -354,34 +354,34 @@ static bool xdk360_frame(void *data, const void *frame,
       }
 
       void *verts_ptr;
-      d3d9->vertex_buf->Lock(0, 0, &verts_ptr, 0);
+      d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
       memcpy(verts_ptr, verts, sizeof(verts));
-      d3d9->vertex_buf->Unlock();
+      d3d->vertex_buf->Unlock();
 
-      d3d9->last_width = width;
-      d3d9->last_height = height;
+      d3d->last_width = width;
+      d3d->last_height = height;
    }
 
-   if (d3d9->fbo_enabled)
+   if (d3d->fbo_enabled)
    {
-      d3d9->d3d_render_device->GetRenderTarget(0, &pRenderTarget0);
-      d3d9->d3d_render_device->SetRenderTarget(0, d3d9->lpSurface);
+      d3d->d3d_render_device->GetRenderTarget(0, &pRenderTarget0);
+      d3d->d3d_render_device->SetRenderTarget(0, d3d->lpSurface);
    }
 
-   if (d3d9->should_resize)
+   if (d3d->should_resize)
       xdk360_set_viewport(false);
 
-   d3d9->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
          0xff000000, 1.0f, 0);
-   d3d9->frame_count++;
+   d3d->frame_count++;
 
-   d3d9->d3d_render_device->SetTexture(0, d3d9->lpTexture);
+   d3d->d3d_render_device->SetTexture(0, d3d->lpTexture);
 
    hlsl_use(1);
-   if(d3d9->fbo_enabled)
+   if(d3d->fbo_enabled)
    {
       hlsl_set_params(width, height, 512, 512, g_settings.video.fbo_scale_x * width,
-            g_settings.video.fbo_scale_y * height, d3d9->frame_count);
+            g_settings.video.fbo_scale_y * height, d3d->frame_count);
       D3DVIEWPORT9 vp = {0};
       vp.Width  = g_settings.video.fbo_scale_x * width;
       vp.Height = g_settings.video.fbo_scale_y * height;
@@ -389,70 +389,72 @@ static bool xdk360_frame(void *data, const void *frame,
       vp.Y      = 0;
       vp.MinZ   = 0.0f;
       vp.MaxZ   = 1.0f;
-      d3d9->d3d_render_device->SetViewport(&vp);
+      d3d->d3d_render_device->SetViewport(&vp);
    }
    else
    {
-      hlsl_set_params(width, height, 512, 512, d3d9->d3dpp.BackBufferWidth,
-            d3d9->d3dpp.BackBufferHeight, d3d9->frame_count);
+      hlsl_set_params(width, height, 512, 512, d3d->d3dpp.BackBufferWidth,
+            d3d->d3dpp.BackBufferHeight, d3d->frame_count);
    }
 
    D3DLOCKED_RECT d3dlr;
-   d3d9->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    for (unsigned y = 0; y < height; y++)
    {
       const uint8_t *in = (const uint8_t*)frame + y * pitch;
       uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
       memcpy(out, in, width * sizeof(uint16_t));
    }
-   d3d9->lpTexture->UnlockRect(0);
+   d3d->lpTexture->UnlockRect(0);
 
-   d3d9->d3d_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3d9->d3d_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3d9->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   d3d9->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 
-   d3d9->d3d_render_device->SetVertexDeclaration(d3d9->v_decl);
-   d3d9->d3d_render_device->SetStreamSource(0, d3d9->vertex_buf, 0, sizeof(DrawVerticeFormats));
+   d3d->d3d_render_device->SetVertexDeclaration(d3d->v_decl);
+   d3d->d3d_render_device->SetStreamSource(0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
 
-   d3d9->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+   d3d->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
 
-   if(d3d9->fbo_enabled)
+   if(d3d->fbo_enabled)
    {
-      d3d9->d3d_render_device->Resolve(D3DRESOLVE_RENDERTARGET0, NULL, d3d9->lpTexture_ot,
+      d3d->d3d_render_device->Resolve(D3DRESOLVE_RENDERTARGET0, NULL, d3d->lpTexture_ot,
          NULL, 0, 0, NULL, 0, 0, NULL);
 
-      d3d9->d3d_render_device->SetRenderTarget(0, pRenderTarget0);
+      d3d->d3d_render_device->SetRenderTarget(0, pRenderTarget0);
       pRenderTarget0->Release();
-      d3d9->d3d_render_device->SetTexture(0, &d3d9->lpTexture_ot_as16srgb);
+      d3d->d3d_render_device->SetTexture(0, &d3d->lpTexture_ot_as16srgb);
 
       hlsl_use(2);
-      hlsl_set_params(g_settings.video.fbo_scale_x * width, g_settings.video.fbo_scale_y * height, g_settings.video.fbo_scale_x * 512, g_settings.video.fbo_scale_y * 512, d3d9->d3dpp.BackBufferWidth,
-            d3d9->d3dpp.BackBufferHeight, d3d9->frame_count);
+      hlsl_set_params(g_settings.video.fbo_scale_x * width, g_settings.video.fbo_scale_y * height, g_settings.video.fbo_scale_x * 512, g_settings.video.fbo_scale_y * 512, d3d->d3dpp.BackBufferWidth,
+            d3d->d3dpp.BackBufferHeight, d3d->frame_count);
       xdk360_set_viewport(false);
 
-      d3d9->d3d_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-      d3d9->d3d_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-      d3d9->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-      d3d9->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      d3d9->d3d_render_device->SetVertexDeclaration(d3d9->v_decl);
-      d3d9->d3d_render_device->SetStreamSource(0, d3d9->vertex_buf, 0, sizeof(DrawVerticeFormats));
-      d3d9->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+      d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+      d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+      d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+      d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+      d3d->d3d_render_device->SetVertexDeclaration(d3d->v_decl);
+      d3d->d3d_render_device->SetStreamSource(0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
+      d3d->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
    }
 
+#ifdef _XBOX360
    /* XBox 360 specific font code */
    if (msg && !menu_enabled)
    {
-      if(IS_TIMER_EXPIRED(d3d9))
+      if(IS_TIMER_EXPIRED(d3d))
       {
          xdk360_console_format(msg);
-         SET_TIMER_EXPIRATION(d3d9, 30);
+         SET_TIMER_EXPIRATION(d3d, 30);
       }
 
       xdk360_console_draw();
    }
+#endif
 
-   if(!d3d9->block_swap)
+   if(!d3d->block_swap)
       gfx_ctx_swap_buffers();
 
    return true;
@@ -460,9 +462,9 @@ static bool xdk360_frame(void *data, const void *frame,
 
 static void xdk360_set_nonblock_state(void *data, bool state)
 {
-   xdk360_video_t *d3d9 = (xdk360_video_t*)data;
+   xdk360_video_t *d3d = (xdk360_video_t*)data;
 
-   if(d3d9->vsync)
+   if(d3d->vsync)
    {
       RARCH_LOG("D3D Vsync => %s\n", state ? "off" : "on");
       gfx_ctx_set_swap_interval(state ? 0 : 1, TRUE);
@@ -471,9 +473,9 @@ static void xdk360_set_nonblock_state(void *data, bool state)
 
 static bool xdk360_alive(void *data)
 {
-   xdk360_video_t *d3d9 = (xdk360_video_t*)data;
-   check_window(d3d9);
-   return !d3d9->quitting;
+   xdk360_video_t *d3d = (xdk360_video_t*)data;
+   check_window(d3d);
+   return !d3d->quitting;
 }
 
 static bool xdk360_focus(void *data)
@@ -494,17 +496,18 @@ static void xdk360_start(void)
 
    driver.video_data = xdk360_init(&video_info, NULL, NULL);
 
-   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
+   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
 
-   gfx_ctx_set_swap_interval(d3d9->vsync ? 1 : 0, false);
+   gfx_ctx_set_swap_interval(d3d->vsync ? 1 : 0, false);
 
-   /* XBox 360 specific font code */
-   HRESULT hr = d3d9_init_font("game:\\media\\Arial_12.xpr");
+#ifdef _XBOX360
+   HRESULT hr = d3d_init_font("game:\\media\\Arial_12.xpr");
 
    if(hr < 0)
    {
       RARCH_ERR("Couldn't create debug console.\n");
    }
+#endif
 }
 
 static void xdk360_restart(void)
@@ -515,7 +518,7 @@ static void xdk360_stop(void)
 {
    void *data = driver.video_data;
    driver.video_data = NULL;
-   d3d9_deinit_font();
+   d3d_deinit_font();
    xdk360_free(data);
 }
 

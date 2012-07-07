@@ -348,7 +348,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
 {
    bool aspectratio_changed = false;
    int current_index;
-   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
+   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
    
    current_index = m_quickmenulist.GetCurSel();
 
@@ -411,7 +411,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
 
    if(aspectratio_changed)
    {
-      gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
+      gfx_ctx_set_aspect_ratio(d3d, g_console.aspect_ratio_index);
       rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
       m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
    }
@@ -435,7 +435,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
 
 HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
-   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
+   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
    int current_index;
 
    if ( hObjPressed == m_quickmenulist)
@@ -460,7 +460,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
             rarch_settings_default(S_DEF_ASPECT_RATIO);
-            gfx_ctx_set_aspect_ratio(d3d9, g_console.aspect_ratio_index);
+            gfx_ctx_set_aspect_ratio(d3d, g_console.aspect_ratio_index);
             rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
             m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
 	    break;
@@ -911,11 +911,11 @@ static void ingame_menu_resize (void)
 void menu_loop(void)
 {
    HRESULT hr;
-   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
+   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
 
    g_console.menu_enable = true;
 
-   d3d9->block_swap = true;
+   d3d->block_swap = true;
 
    g_console.input_loop = INPUT_LOOP_MENU;
 
@@ -925,8 +925,8 @@ void menu_loop(void)
          rarch_render_cached_frame();
       else
       {
-         d3d9->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
-         d3d9->frame_count++;
+         d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
+         d3d->frame_count++;
       }
 
       XINPUT_STATE state;
@@ -934,7 +934,7 @@ void menu_loop(void)
 
       g_console.menu_enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
       && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_console.emulator_initialized)
-      && IS_TIMER_EXPIRED(d3d9));
+      && IS_TIMER_EXPIRED(d3d));
 
       g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
 
@@ -957,17 +957,17 @@ void menu_loop(void)
 
       if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
       {
-         SET_TIMER_EXPIRATION(d3d9, 30);
+         SET_TIMER_EXPIRATION(d3d, 30);
       }
 
       const char *message = msg_queue_pull(g_extern.msg_queue);
 
       if (message)
       {
-         if(IS_TIMER_EXPIRED(d3d9))
+         if(IS_TIMER_EXPIRED(d3d))
          {
             xdk360_console_format(message);
-            SET_TIMER_EXPIRATION(d3d9, 30);
+            SET_TIMER_EXPIRATION(d3d, 30);
          }
          xdk360_console_draw();
       }
@@ -975,7 +975,7 @@ void menu_loop(void)
       gfx_ctx_swap_buffers();
    }while(g_console.menu_enable);
 
-   d3d9->block_swap = false;
+   d3d->block_swap = false;
 
    g_console.ingame_menu_enable = false;
 }
