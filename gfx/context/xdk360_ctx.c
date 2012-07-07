@@ -26,28 +26,36 @@
 
 #include "../../360/xdk360_video.h"
 
+#if defined(_XBOX1)
+// for Xbox 1
+#define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTATIONINTERVAL
+#else
+// for Xbox 360
+#define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
+#endif
+
 void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 {
    (void)inited;
-   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
+   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
 
    if (interval)
-      d3d9->d3d_render_device->SetRenderState(D3DRS_PRESENTINTERVAL, D3DPRESENT_INTERVAL_ONE);
+      d3d->d3d_render_device->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_ONE);
    else
-      d3d9->d3d_render_device->SetRenderState(D3DRS_PRESENTINTERVAL, D3DPRESENT_INTERVAL_IMMEDIATE);
+      d3d->d3d_render_device->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_IMMEDIATE);
 }
 
 void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
-   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
+   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
    *quit = false;
    *resize = false;
 
-   if (d3d9->quitting)
+   if (d3d->quitting)
       *quit = true;
 
-   if (d3d9->should_resize)
+   if (d3d->should_resize)
       *resize = true;
 }
 
@@ -56,8 +64,8 @@ void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 #ifndef HAVE_GRIFFIN
 void gfx_ctx_swap_buffers(void)
 {
-   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
-   d3d9->d3d_render_device->Present(NULL, NULL, NULL, NULL);
+   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
+   d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL);
 }
 
 bool gfx_ctx_window_has_focus(void)
@@ -101,9 +109,9 @@ void gfx_ctx_set_filtering(unsigned index, bool set_smooth) { }
 
 void gfx_ctx_set_fbo(bool enable)
 {
-   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
+   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
 
-   d3d9->fbo_enabled = enable;
+   d3d->fbo_enabled = enable;
 }
 
 /*============================================================
@@ -111,28 +119,28 @@ void gfx_ctx_set_fbo(bool enable)
         TODO: Refactor
 ============================================================ */
 
-void gfx_ctx_set_projection(xdk360_video_t *d3d9, const struct gl_ortho *ortho, bool allow_rotate) { }
+void gfx_ctx_set_projection(xdk360_video_t *d3d, const struct gl_ortho *ortho, bool allow_rotate) { }
 
 void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
    (void)data;
-   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
+   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
 
    if(g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
       rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
 
    g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
    g_settings.video.force_aspect = false;
-   d3d9->should_resize = true;
+   d3d->should_resize = true;
 }
 
 void gfx_ctx_set_overscan(void)
 {
-   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
-   if (!d3d9)
+   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
+   if (!d3d)
       return;
 
-   d3d9->should_resize = true;
+   d3d->should_resize = true;
 }
 
 int gfx_ctx_check_resolution(unsigned resolution_id)
