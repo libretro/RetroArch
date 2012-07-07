@@ -9,6 +9,7 @@
 /config.mk
 /tools/retroarch-joyconfig
 /tools/retroarch-joyconfig.*
+*.ncb
 *.sdf
 *.opensdf
 *.suo
