@@ -25,9 +25,12 @@
 #define XINPUT_GAMEPAD_RSTICK_RIGHT_MASK	(2097152)
 #define XINPUT_GAMEPAD_RSTICK_UP_MASK		(4194304)
 #define XINPUT_GAMEPAD_RSTICK_DOWN_MASK		(8388608)
-#define XINPUT_GAMEPAD_LEFT_TRIGGER             (16777216)
+
+#ifndef HAVE_XINPUT_XBOX1
+#define XINPUT_GAMEPAD_LEFT_TRIGGER         (16777216)
 #define XINPUT_GAMEPAD_RIGHT_TRIGGER		(33554432)
-#define DEADZONE                                (16000)
+#endif
+#define DEADZONE                            (16000)
 
 #ifdef _XBOX
 extern void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id);

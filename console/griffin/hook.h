@@ -71,16 +71,12 @@
 #define gfx_ctx_window_has_focus()		(true)
 #define gfx_ctx_swap_buffers()                  (d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL))
 
-#if defined(_XBOX360)
-
 #define input_init_func()                       xinput_input_init()
 #define input_poll_func()                       xinput_input_poll(driver.input_data)
 #define input_input_state_func(retro_keybinds, port, device, index, id) \
                                                 xinput_input_state(driver.input_data, retro_keybinds, port, device, index, id)
 #define input_key_pressed_func(key)             xinput_input_key_pressed(driver.input_data, key)
 #define input_free_func()                       xinput_input_free_input(driver.input_data)
-
-#endif
 
 /*============================================================
 	GAMECUBE / WII

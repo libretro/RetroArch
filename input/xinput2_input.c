@@ -27,6 +27,9 @@
 #include "rarch_xinput2.h"
 
 static uint64_t state[4];
+#ifdef HAVE_XINPUT_XBOX1
+HANDLE gamepads[4];
+#endif
 static unsigned pads_connected;
 
 static void xinput_input_poll(void *data)
@@ -38,19 +41,36 @@ static void xinput_input_poll(void *data)
    for (unsigned i = 0; i < 4; i++)
    {
       XINPUT_STATE state_tmp;
-      unsigned long retval = XInputGetState(i, &state_tmp);
-      pads_connected += (retval == ERROR_DEVICE_NOT_CONNECTED) ? 0 : 1;
-      state[i] = state_tmp.Gamepad.wButtons;
-      state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE))        << 16;
-      state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE))         << 17;
-      state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE))         << 18;
-      state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE))        << 19;
-      state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE))        << 20;
-      state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE))         << 21;
-      state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE))         << 22;
-      state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE))        << 23;
-      state[i] |= ((state_tmp.Gamepad.bLeftTrigger > 128 ? 1 : 0))  << 24;
-      state[i] |= ((state_tmp.Gamepad.bRightTrigger > 128 ? 1 : 0)) << 25;
+      unsigned long retval;
+#ifdef HAVE_XINPUT_XBOX1
+      gamepads[i] = XInputOpen(XDEVICE_TYPE_GAMEPAD, i, XDEVICE_NO_SLOT, NULL); 
+      if(gamepads[i] != NULL)
+#endif
+      {
+#ifdef HAVE_XINPUT_XBOX1
+         retval = XInputGetState(gamepads[i], &state_tmp);
+         pads_connected += (retval != ERROR_SUCCESS) ? 0 : 1;
+#else
+         retval = XInputGetState(i, &state_tmp);
+         pads_connected += (retval == ERROR_DEVICE_NOT_CONNECTED) ? 0 : 1;
+#endif
+         state[i] = state_tmp.Gamepad.wButtons;
+         state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE))        << 16;
+         state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE))         << 17;
+         state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE))         << 18;
+         state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE))        << 19;
+         state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE))        << 20;
+         state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE))         << 21;
+         state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE))         << 22;
+         state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE))        << 23;
+#ifdef HAVE_XINPUT_XBOX1
+         state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER] > 128 ? 1 : 0))  << 24;
+         state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER] > 128 ? 1 : 0)) << 25;
+#else
+         state[i] |= ((state_tmp.Gamepad.bLeftTrigger > 128 ? 1 : 0))  << 24;
+         state[i] |= ((state_tmp.Gamepad.bRightTrigger > 128 ? 1 : 0)) << 25;
+#endif
+      }
    }
 }
 
@@ -70,7 +90,7 @@ static void xinput_input_free_input(void *data)
    (void)data;
 }
 
-#ifdef _XBOX
+#ifdef _XBOX360
 #include "../console/retroarch_console.h"
 
 void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
@@ -101,10 +121,22 @@ void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_
 
 static void* xinput_input_init(void)
 {
-#ifdef _XBOX
+#ifdef HAVE_XINPUT_XBOX1
+   XDEVICE_PREALLOC_TYPE types[] =
+   {
+      {XDEVICE_TYPE_GAMEPAD, 4},
+      {XDEVICE_TYPE_MEMORY_UNIT, 2}
+   };
+
+   XInitDevices(sizeof(types) / sizeof(XDEVICE_PREALLOC_TYPE),
+   types );
+#endif
+
+#ifdef _XBOX360
    for(unsigned i = 0; i < 4; i++)
       xdk360_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
 #endif
+
    return (void*)-1;
 }
 
@@ -112,7 +144,7 @@ static bool xinput_input_key_pressed(void *data, int key)
 {
    (void)data;
    bool retval = false;
-#ifdef _XBOX
+#ifdef _XBOX360
    XINPUT_STATE state;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
