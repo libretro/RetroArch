@@ -564,7 +564,7 @@ const video_driver_t video_xdk360 = {
    xdk360_focus,
    NULL,
    xdk360_free,
-   "xdk_gfx",
+   "xdk_d3d",
    xdk360_start,
    xdk360_stop,
    xdk360_restart,

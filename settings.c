@@ -86,7 +86,7 @@ const char *config_get_default_video(void)
       case VIDEO_XENON360:
          return "xenon360";
       case VIDEO_XDK360:
-         return "xdk360";
+         return "xdk_d3d";
       case VIDEO_XVIDEO:
          return "xvideo";
       case VIDEO_SDL:
@@ -115,7 +115,7 @@ const char *config_get_default_input(void)
       case INPUT_XENON360:
          return "xenon360";
       case INPUT_XDK360:
-         return "xdk360";
+         return "xinput2";
       case INPUT_WII:
          return "wii";
       case INPUT_LINUXRAW:
