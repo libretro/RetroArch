@@ -21,7 +21,7 @@
 #include <string>
 #include <xbdm.h>
 #include "menu.h"
-#include "../xdk360_input.h"
+#include "../../input/rarch_xinput2.h"
 #include "../xdk360_video.h"
 
 #include "../../console/retroarch_console.h"
@@ -262,7 +262,7 @@ int main(int argc, char *argv[])
    init_libretro_sym();
 
    video_xdk360.start();
-   input_xdk360.init();
+   input_xinput2.init();
 
    rarch_input_set_default_keybind_names_for_emulator();
 
@@ -273,7 +273,7 @@ begin_loop:
    {
       bool repeat = false;
 
-      input_xdk360.poll(NULL);
+      input_xinput2.poll(NULL);
 
       rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
 
@@ -297,7 +297,7 @@ begin_shutdown:
 
    menu_free();
    video_xdk360.stop();
-   input_xdk360.free(NULL);
+   input_xinput2.free(NULL);
    rarch_exec();
 
    return 0;

@@ -246,7 +246,7 @@ extern const input_driver_t input_x;
 extern const input_driver_t input_ps3;
 extern const input_driver_t input_xenon360;
 extern const input_driver_t input_wii;
-extern const input_driver_t input_xdk360;
+extern const input_driver_t input_xinput2;
 extern const input_driver_t input_linuxraw;
 extern const input_driver_t input_null;
 ////////////////////////////////////////////////

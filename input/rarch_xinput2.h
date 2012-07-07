@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _XDK360_INPUT_H
-#define _XDK360_INPUT_H
+#ifndef __RARCH_XINPUT2_H
+#define __RARCH_XINPUT2_H
 
 #define XINPUT_GAMEPAD_LSTICK_LEFT_MASK		(65536)
 #define XINPUT_GAMEPAD_LSTICK_RIGHT_MASK	(131072)
@@ -29,6 +29,8 @@
 #define XINPUT_GAMEPAD_RIGHT_TRIGGER		(33554432)
 #define DEADZONE                                (16000)
 
+#ifdef _XBOX
 extern void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id);
+#endif
 
 #endif

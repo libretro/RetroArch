@@ -16,17 +16,20 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+
+#ifdef _XBOX
 #include <xtl.h>
+#endif
+
 #include "../driver.h"
 #include "../general.h"
 #include "../libretro.h"
-#include "../console/retroarch_console.h"
-#include "xdk360_input.h"
+#include "rarch_xinput2.h"
 
 static uint64_t state[4];
 static unsigned pads_connected;
 
-static void xdk360_input_poll(void *data)
+static void xinput2_input_poll(void *data)
 {
    (void)data;
 
@@ -51,7 +54,7 @@ static void xdk360_input_poll(void *data)
    }
 }
 
-static int16_t xdk360_input_state(void *data, const struct snes_keybind **binds,
+static int16_t xinput2_input_state(void *data, const struct snes_keybind **binds,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
@@ -62,17 +65,13 @@ static int16_t xdk360_input_state(void *data, const struct snes_keybind **binds,
    return (state[player] & button) ? 1 : 0;
 }
 
-static void xdk360_free_input(void *data)
+static void xinput2_input_free_input(void *data)
 {
    (void)data;
 }
 
-static void* xdk360_input_initialize(void)
-{
-   for(unsigned i = 0; i < 4; i++)
-      xdk360_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
-   return (void*)-1;
-}
+#ifdef _XBOX
+#include "../console/retroarch_console.h"
 
 void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
 {
@@ -98,16 +97,26 @@ void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_
 	 break;
    }
 }
+#endif
 
-static bool xdk360_key_pressed(void *data, int key)
+static void* xinput2_input_init(void)
+{
+#ifdef _XBOX
+   for(unsigned i = 0; i < 4; i++)
+      xdk360_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
+#endif
+   return (void*)-1;
+}
+
+static bool xinput2_input_key_pressed(void *data, int key)
 {
    (void)data;
+   bool retval = false;
+#ifdef _XBOX
    XINPUT_STATE state;
-   bool retval;
    xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
 
    XInputGetState(0, &state);
-   retval = false;
 
    switch(key)
    {
@@ -150,16 +159,17 @@ static bool xdk360_key_pressed(void *data, int key)
 	    retval = g_console.ingame_menu_enable ? g_console.ingame_menu_enable : g_console.menu_enable;
 	 }
    }
+#endif
 
    return retval;
 }
 
-const input_driver_t input_xdk360 = 
+const input_driver_t input_xinput2 = 
 {
-   xdk360_input_initialize,
-   xdk360_input_poll,
-   xdk360_input_state,
-   xdk360_key_pressed,
-   xdk360_free_input,
-   "xdk360"
+   xinput2_input_init,
+   xinput2_input_poll,
+   xinput2_input_state,
+   xinput2_input_key_pressed,
+   xinput2_input_free_input,
+   "xinput2"
 };

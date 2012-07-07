@@ -82,7 +82,7 @@ enum ps3_device_id
 };
 
 #elif defined(_XBOX360)
-#include "../360/xdk360_input.h"
+#include "../input/rarch_xinput2.h"
 
 enum xdk360_device_id
 {
