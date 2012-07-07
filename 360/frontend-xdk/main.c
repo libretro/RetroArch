@@ -22,10 +22,10 @@
 
 #ifdef _XBOX360
 #include <xfilecache.h>
+#include "menu.h"
 #endif
 
 #include <xbdm.h>
-#include "menu.h"
 #include "../../input/rarch_xinput2.h"
 #include "../xdk_d3d.h"
 
@@ -261,6 +261,12 @@ static void configure_libretro(const char * extension)
    rarch_config_load(SYS_CONFIG_FILE, "game:\\", extension, find_libretro_file);
    init_libretro_sym();
 }
+
+#ifdef _XBOX1
+static void menu_init(void) {}
+static void menu_free(void) {}
+static void menu_loop(void) { g_console.mode_switch = MODE_EMULATION; }
+#endif
 
 int main(int argc, char *argv[])
 {
