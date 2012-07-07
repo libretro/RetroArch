@@ -17,8 +17,10 @@
 #ifndef _MENU_XUI_H_
 #define _MENU_XUI_H_
 
+#ifdef _XBOX360
 #include <xui.h>
 #include <xuiapp.h>
+#endif
 
 enum
 {
@@ -62,6 +64,7 @@ enum
    INPUT_LOOP_RESIZE_MODE
 };
 
+#ifdef _XBOX360
 class CRetroArch : public CXuiModule
 {
    public:
@@ -214,10 +217,11 @@ class CRetroArchControls: public CXuiSceneImpl
       XUI_IMPLEMENT_CLASS(CRetroArchControls, L"RetroArchControls", XUI_CLASS_SCENE)
 };
 
+extern CRetroArch app;
+#endif
+
 int menu_init (void);
 void menu_free (void);
 void menu_loop (void);
-
-extern CRetroArch app;
 
 #endif

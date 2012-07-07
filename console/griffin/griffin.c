@@ -216,7 +216,7 @@ REWIND
 /*============================================================
 MAIN
 ============================================================ */
-#if defined(_XBOX360)
+#if defined(_XBOX)
 #include "../../360/frontend-xdk/main.c"
 #elif defined(GEKKO)
 #include "../../wii/frontend/main.c"

@@ -15,10 +15,15 @@
  */
 
 #include <xtl.h>
-#include <xfilecache.h>
+
 #include <stddef.h>
 #include <stdint.h>
 #include <string>
+
+#ifdef _XBOX360
+#include <xfilecache.h>
+#endif
+
 #include <xbdm.h>
 #include "menu.h"
 #include "../../input/rarch_xinput2.h"
@@ -51,7 +56,9 @@ typedef struct _STRING {
 char DEFAULT_SHADER_FILE[PATH_MAX];
 char SYS_CONFIG_FILE[PATH_MAX];
 
+#ifdef _XBOX360
 extern "C" int __stdcall ObCreateSymbolicLink( STRING*, STRING*);
+#endif
 
 int Mounted[20];
 
@@ -59,6 +66,7 @@ int rarch_main(int argc, char *argv[]);
 
 #undef main
 
+#ifdef _XBOX360
 static int DriveMounted(std::string path)
 {
    WIN32_FIND_DATA findFileData;
@@ -73,7 +81,6 @@ static int DriveMounted(std::string path)
 
    return 1;
 }
-
 
 static int Mount( int Device, char* MountPoint )
 {
@@ -125,6 +132,7 @@ static int Mount( int Device, char* MountPoint )
 
    return DriveMounted(MountPoint);
 }
+#endif
 
 static void set_default_settings (void)
 {
@@ -169,6 +177,7 @@ static void set_default_settings (void)
 
 static void get_environment_settings (void)
 {
+#ifdef _XBOX360
    DWORD ret;
 
    //for devkits only, we will need to mount all partitions for retail
@@ -186,6 +195,7 @@ static void get_environment_settings (void)
    Mounted[DEVICE_MEMORY_UNIT1] = Mount(DEVICE_MEMORY_UNIT1,"Memunit1:");
    Mounted[DEVICE_MEMORY_ONBOARD] = Mount(DEVICE_MEMORY_ONBOARD,"OnBoardMU:"); 
    Mounted[DEVICE_CDROM0] = Mount(DEVICE_CDROM0,"Dvd:"); 
+#endif
 
 #ifdef HAVE_HDD_CACHE_PARTITION
    ret = XSetFileCacheSize(0x100000);
@@ -205,13 +215,7 @@ static void get_environment_settings (void)
    XFlushUtilityDrive();
 #endif
 
-   //unsigned long result = XMountUtilityDriveEx(XMOUNTUTILITYDRIVE_FORMAT0,8192, 0);
-
-   //if(result != ERROR_SUCCESS)
-   //{
-   //	RARCH_ERR("Couldn't mount/format utility drive.\n");
-   //}
-
+#ifdef _XBOX360
    // detect install environment
    unsigned long license_mask;
 
@@ -239,9 +243,23 @@ static void get_environment_settings (void)
 	    break;
       }
    }
+#endif
 
    strlcpy(DEFAULT_SHADER_FILE, "game:\\media\\shaders\\stock.cg", sizeof(DEFAULT_SHADER_FILE));
    strlcpy(SYS_CONFIG_FILE, "game:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
+}
+
+static void configure_libretro(const char * extension)
+{
+   char full_path[1024];
+   snprintf(full_path, sizeof(full_path), "game:\\CORE%s", extension);
+
+   bool find_libretro_file = rarch_configure_libretro_core(full_path, "game:\\", "game:\\", 
+   SYS_CONFIG_FILE, extension);
+
+   set_default_settings();
+   rarch_config_load(SYS_CONFIG_FILE, "game:\\", extension, find_libretro_file);
+   init_libretro_sym();
 }
 
 int main(int argc, char *argv[])
@@ -250,16 +268,12 @@ int main(int argc, char *argv[])
 
    rarch_main_clear_state();
    config_set_defaults();
-
-   char full_path[1024];
-   snprintf(full_path, sizeof(full_path), "game:\\CORE.xex");
-
-   bool find_libretro_file = rarch_configure_libretro_core(full_path, "game:\\", "game:\\", 
-   SYS_CONFIG_FILE, ".xex");
-
-   set_default_settings();
-   rarch_config_load(SYS_CONFIG_FILE, "game:\\", ".xex", find_libretro_file);
-   init_libretro_sym();
+   
+#ifdef _XBOX1
+   configure_libretro(".xbe");
+#else
+   configure_libretro(".xex");
+#endif
 
    video_xdk_d3d.start();
    input_xinput.init();

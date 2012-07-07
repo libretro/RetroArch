@@ -41,6 +41,10 @@ enum
    DPAD_EMULATION_RSTICK
 };
 
+#ifdef _XBOX
+#include "../input/rarch_xinput2.h"
+#endif
+
 #if defined(__CELLOS_LV2__)
 #include "../ps3/ps3_input.h"
 enum ps3_device_id
@@ -82,7 +86,6 @@ enum ps3_device_id
 };
 
 #elif defined(_XBOX360)
-#include "../input/rarch_xinput2.h"
 
 enum xdk360_device_id
 {
