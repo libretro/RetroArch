@@ -16,7 +16,6 @@
 
 #ifdef _XBOX
 #include <xtl.h>
-#include <xgraphics.h>
 #endif
 
 #include "../driver.h"

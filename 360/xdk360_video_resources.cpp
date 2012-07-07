@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <xgraphics.h>
 #include "xdk360_video_resources.h"
 
 struct XPR_HEADER
