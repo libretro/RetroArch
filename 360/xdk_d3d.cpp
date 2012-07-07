@@ -169,8 +169,12 @@ static void xdk_d3d_set_rotation(void * data, unsigned orientation)
    d3d->should_resize = TRUE;
 }
 
+#ifdef HAVE_FBO
 static void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
 {
+   if(!g_settings.video.render_to_texture)
+      return;
+
    if (d3d->lpTexture_ot)
    {
       d3d->lpTexture_ot->Release();
@@ -200,7 +204,9 @@ static void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
    xdk360_convert_texture_to_as16_srgb(d3d->lpTexture);
    xdk360_convert_texture_to_as16_srgb(&d3d->lpTexture_ot_as16srgb);
 #endif
+   d3d->fbo_enabled = 1;
 }
+#endif
 
 static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
@@ -272,7 +278,9 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
       0, &d3d->lpTexture, NULL);
 
+#ifdef HAVE_FBO
    xdk_d3d_init_fbo(d3d);
+#endif
 
    D3DLOCKED_RECT d3dlr;
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
@@ -327,7 +335,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    xdk_d3d_set_rotation(d3d, g_console.screen_orientation);
 
-   d3d->fbo_enabled = 1;
    d3d->vsync = video->vsync;
 
    return d3d;
@@ -396,6 +403,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    hlsl_use(1);
 #endif
 
+#ifdef HAVE_FBO
    if(d3d->fbo_enabled)
    {
 #ifdef HAVE_HLSL
@@ -411,13 +419,14 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       vp.MaxZ   = 1.0f;
       d3d->d3d_render_device->SetViewport(&vp);
    }
-#ifdef HAVE_HLSL
    else
+#endif
    {
+#ifdef HAVE_HLSL
       hlsl_set_params(width, height, 512, 512, d3d->d3dpp.BackBufferWidth,
             d3d->d3dpp.BackBufferHeight, d3d->frame_count);
-   }
 #endif
+   }
 
    D3DLOCKED_RECT d3dlr;
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
@@ -443,6 +452,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
    d3d->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
 
+#ifdef HAVE_FBO
    if(d3d->fbo_enabled)
    {
       d3d->d3d_render_device->Resolve(D3DRESOLVE_RENDERTARGET0, NULL, d3d->lpTexture_ot,
@@ -471,6 +481,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 		  sizeof(DrawVerticeFormats));
       d3d->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
    }
+#endif
 
 #ifdef _XBOX360
    /* XBox 360 specific font code */
