@@ -45,8 +45,8 @@
 
 #define input_init_func()                       ps3_input_initialize()
 #define input_poll_func()                       ps3_input_poll(driver.input_data)
-#define input_input_state_func(snes_keybinds, port, device, index, id) \
-                                                ps3_input_state(driver.input_data, snes_keybinds, port, device, index, id)
+#define input_input_state_func(retro_keybinds, port, device, index, id) \
+                                                ps3_input_state(driver.input_data, retro_keybinds, port, device, index, id)
 #define input_key_pressed_func(key)             ps3_key_pressed(driver.input_data, key)
 #define input_free_func()                       ps3_free_input(driver.input_data)
 
@@ -71,12 +71,12 @@
 #define gfx_ctx_window_has_focus()		(true)
 #define gfx_ctx_swap_buffers()                  (d3d9->d3d_render_device->Present(NULL, NULL, NULL, NULL))
 
-#define input_init_func()                       xdk360_input_initialize()
-#define input_poll_func()                       xdk360_input_poll(driver.input_data)
-#define input_input_state_func(snes_keybinds, port, device, index, id) \
-                                                xdk360_input_state(driver.input_data, snes_keybinds, port, device, index, id)
-#define input_key_pressed_func(key)             xdk360_key_pressed(driver.input_data, key)
-#define input_free_func()                       xdk360_free_input(driver.input_data)
+#define input_init_func()                       xinput2_input_init()
+#define input_poll_func()                       xinput2_input_poll(driver.input_data)
+#define input_input_state_func(retro_keybinds, port, device, index, id) \
+                                                xinput2_input_state(driver.input_data, retro_keybinds, port, device, index, id)
+#define input_key_pressed_func(key)             xinput2_input_key_pressed(driver.input_data, key)
+#define input_free_func()                       xinput2_input_free_input(driver.input_data)
 
 /*============================================================
 	GAMECUBE / WII
@@ -97,8 +97,8 @@
 
 #define input_init_func()                       wii_input_initialize()
 #define input_poll_func()                       wii_input_poll(driver.input_data)
-#define input_input_state_func(snes_keybinds, port, device, index, id) \
-                                                wii_input_state(driver.input_data, snes_keybinds, port, device, index, id)
+#define input_input_state_func(retro_keybinds, port, device, index, id) \
+                                                wii_input_state(driver.input_data, retro_keybinds, port, device, index, id)
 #define input_key_pressed_func(key)             wii_key_pressed(driver.input_data, key)
 #define input_free_func()                       wii_free_input(driver.input_data)
 #define gfx_ctx_window_has_focus()		(true)
@@ -122,8 +122,8 @@
 
 #define input_init_func()                       null_input_init()
 #define input_poll_func()                       null_input_poll(driver.input_data)
-#define input_input_state_func(snes_keybinds, port, device, index, id) \
-                                                null_input_state(driver.input_data, snes_keybinds, port, device, index, id)
+#define input_input_state_func(retro_keybinds, port, device, index, id) \
+                                                null_input_state(driver.input_data, retro_keybinds, port, device, index, id)
 #define input_key_pressed_func(key)             null_input_key_pressed(driver.input_data, key)
 #define input_free_func()                       null_input_free(driver.input_data)
 #define gfx_ctx_window_has_focus()		(true)
