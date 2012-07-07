@@ -92,7 +92,7 @@ enum // RetroArch specific bind IDs.
    RARCH_BIND_LIST_END_NULL
 };
 
-struct snes_keybind
+struct retro_keybind
 {
    bool valid;
    int id;
@@ -156,7 +156,7 @@ typedef struct input_driver
 {
    void *(*init)(void);
    void (*poll)(void *data);
-   int16_t (*input_state)(void *data, const struct snes_keybind **snes_keybinds, unsigned port, unsigned device, unsigned index, unsigned id);
+   int16_t (*input_state)(void *data, const struct retro_keybind **retro_keybinds, unsigned port, unsigned device, unsigned index, unsigned id);
    bool (*key_pressed)(void *data, int key);
    void (*free)(void *data);
    const char *ident;
@@ -282,8 +282,8 @@ extern const input_driver_t input_null;
 
 #define input_init_func()                       driver.input->init()
 #define input_poll_func()                       driver.input->poll(driver.input_data)
-#define input_input_state_func(snes_keybinds, port, device, index, id) \
-                                                driver.input->input_state(driver.input_data, snes_keybinds, port, device, index, id)
+#define input_input_state_func(retro_keybinds, port, device, index, id) \
+                                                driver.input->input_state(driver.input_data, retro_keybinds, port, device, index, id)
 #define input_free_func()                       driver.input->free(driver.input_data)
 
 static inline bool input_key_pressed_func(int key)

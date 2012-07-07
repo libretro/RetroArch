@@ -35,7 +35,7 @@ static void xenon360_input_poll(void *data)
    }
 }
 
-static int16_t xenon360_input_state(void *data, const struct snes_keybind **binds,
+static int16_t xenon360_input_state(void *data, const struct retro_keybind **binds,
       bool port, unsigned device,
       unsigned index, unsigned id)
 {

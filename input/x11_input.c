@@ -169,11 +169,11 @@ static bool x_key_pressed(x11_input_t *x11, int key)
    return ret;
 }
 
-static bool x_is_pressed(x11_input_t *x11, const struct snes_keybind *binds, unsigned id)
+static bool x_is_pressed(x11_input_t *x11, const struct retro_keybind *binds, unsigned id)
 {
    if (id < RARCH_BIND_LIST_END)
    {
-      const struct snes_keybind *bind = &binds[id];
+      const struct retro_keybind *bind = &binds[id];
       return bind->valid && x_key_pressed(x11, binds[id].key);
    }
    else
@@ -187,7 +187,7 @@ static bool x_bind_button_pressed(void *data, int key)
       input_sdl.key_pressed(x11->sdl, key);
 }
 
-static int16_t x_input_state(void *data, const struct snes_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
+static int16_t x_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
    x11_input_t *x11 = (x11_input_t*)data;
 

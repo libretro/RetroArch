@@ -231,11 +231,11 @@ static bool linuxraw_key_pressed(linuxraw_input_t *linuxraw, int key)
    return linuxraw->state[keysym_lut[key]];
 }
 
-static bool linuxraw_is_pressed(linuxraw_input_t *linuxraw, const struct snes_keybind *binds, unsigned id)
+static bool linuxraw_is_pressed(linuxraw_input_t *linuxraw, const struct retro_keybind *binds, unsigned id)
 {
    if (id < RARCH_BIND_LIST_END)
    {
-      const struct snes_keybind *bind = &binds[id];
+      const struct retro_keybind *bind = &binds[id];
       return bind->valid && linuxraw_key_pressed(linuxraw, binds[id].key);
    }
    else
@@ -249,7 +249,7 @@ static bool linuxraw_bind_button_pressed(void *data, int key)
       input_sdl.key_pressed(linuxraw->sdl, key);
 }
 
-static int16_t linuxraw_input_state(void *data, const struct snes_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
+static int16_t linuxraw_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
 

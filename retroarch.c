@@ -449,7 +449,7 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
    }
 #endif
 
-   static const struct snes_keybind *binds[MAX_PLAYERS] = {
+   static const struct retro_keybind *binds[MAX_PLAYERS] = {
       g_settings.input.binds[0],
       g_settings.input.binds[1],
       g_settings.input.binds[2],

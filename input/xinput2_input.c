@@ -54,7 +54,7 @@ static void xinput2_input_poll(void *data)
    }
 }
 
-static int16_t xinput2_input_state(void *data, const struct snes_keybind **binds,
+static int16_t xinput2_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {

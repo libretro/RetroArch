@@ -26,10 +26,10 @@ static void null_input_poll(void *data)
    (void)data;
 }
 
-static int16_t null_input_state(void *data, const struct snes_keybind **snes_keybinds, unsigned port, unsigned device, unsigned index, unsigned id)
+static int16_t null_input_state(void *data, const struct retro_keybind **retro_keybinds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
    (void)data;
-   (void)snes_keybinds;
+   (void)retro_keybinds;
    (void)port;
    (void)device;
    (void)index;

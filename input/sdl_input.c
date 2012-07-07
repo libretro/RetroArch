@@ -258,7 +258,7 @@ static bool sdl_axis_pressed(sdl_input_t *sdl, unsigned port_num, uint32_t joyax
 }
 #endif
 
-static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num, const struct snes_keybind *key)
+static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num, const struct retro_keybind *key)
 {
    if (sdl->use_keyboard && sdl_key_pressed(key->key))
       return true;
@@ -279,23 +279,23 @@ static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num, const struct sne
 
 static bool sdl_bind_button_pressed(void *data, int key)
 {
-   const struct snes_keybind *binds = g_settings.input.binds[0];
+   const struct retro_keybind *binds = g_settings.input.binds[0];
    if (key >= 0 && key < RARCH_BIND_LIST_END)
    {
-      const struct snes_keybind *bind = &binds[key];
+      const struct retro_keybind *bind = &binds[key];
       return sdl_is_pressed((sdl_input_t*)data, 0, bind);
    }
    else
       return false;
 }
 
-static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct snes_keybind **binds_, 
+static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keybind **binds_, 
       unsigned port_num, unsigned id)
 {
-   const struct snes_keybind *binds = binds_[port_num];
+   const struct retro_keybind *binds = binds_[port_num];
    if (id < RARCH_BIND_LIST_END)
    {
-      const struct snes_keybind *bind = &binds[id];
+      const struct retro_keybind *bind = &binds[id];
       return bind->valid ? (sdl_is_pressed(sdl, port_num, bind) ? 1 : 0) : 0;
    }
    else
@@ -329,10 +329,10 @@ static void conv_analog_id_to_bind_id(unsigned index, unsigned id,
    }
 }
 
-static int16_t sdl_analog_device_state(sdl_input_t *sdl, const struct snes_keybind **binds_,
+static int16_t sdl_analog_device_state(sdl_input_t *sdl, const struct retro_keybind **binds_,
       unsigned port_num, unsigned index, unsigned id)
 {
-   const struct snes_keybind *binds = binds_[port_num];
+   const struct retro_keybind *binds = binds_[port_num];
    if (id >= RARCH_BIND_LIST_END)
       return 0;
 
@@ -340,8 +340,8 @@ static int16_t sdl_analog_device_state(sdl_input_t *sdl, const struct snes_keybi
    unsigned id_plus  = 0;
    conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
 
-   const struct snes_keybind *bind_minus = &binds[id_minus];
-   const struct snes_keybind *bind_plus  = &binds[id_plus];
+   const struct retro_keybind *bind_minus = &binds[id_minus];
+   const struct retro_keybind *bind_plus  = &binds[id_plus];
    if (!bind_minus->valid || !bind_plus->valid)
       return 0;
 
@@ -405,7 +405,7 @@ static int16_t sdl_lightgun_device_state(sdl_input_t *sdl, unsigned id)
    }
 }
 
-static int16_t sdl_input_state(void *data_, const struct snes_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
+static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
    sdl_input_t *data = (sdl_input_t*)data_;
    switch (device)

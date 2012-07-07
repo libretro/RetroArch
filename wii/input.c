@@ -32,7 +32,7 @@ static bool wpad_state[5][RARCH_FIRST_META_KEY];  /* Wii Classic pads */
 
 static bool g_quit;
 
-static int16_t wii_input_state(void *data, const struct snes_keybind **binds,
+static int16_t wii_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {

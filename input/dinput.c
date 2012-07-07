@@ -190,7 +190,7 @@ static bool dinput_joykey_pressed(sdl_dinput_t *di, unsigned port_num, uint16_t 
    return false;
 }
 
-int16_t sdl_dinput_axis(sdl_dinput_t *di, unsigned port_num, const struct snes_keybind *key)
+int16_t sdl_dinput_axis(sdl_dinput_t *di, unsigned port_num, const struct retro_keybind *key)
 {
    uint32_t joyaxis = key->joyaxis;
 
@@ -235,7 +235,7 @@ int16_t sdl_dinput_axis(sdl_dinput_t *di, unsigned port_num, const struct snes_k
    return val;
 }
 
-static bool dinput_joyaxis_pressed(sdl_dinput_t *di, unsigned port_num, const struct snes_keybind *key)
+static bool dinput_joyaxis_pressed(sdl_dinput_t *di, unsigned port_num, const struct retro_keybind *key)
 {
    if (key->joyaxis == AXIS_NONE)
       return false;
@@ -246,7 +246,7 @@ static bool dinput_joyaxis_pressed(sdl_dinput_t *di, unsigned port_num, const st
    return abs(val) > min;
 }
 
-bool sdl_dinput_pressed(sdl_dinput_t *di, unsigned port_num, const struct snes_keybind *key)
+bool sdl_dinput_pressed(sdl_dinput_t *di, unsigned port_num, const struct retro_keybind *key)
 {
    if (di->joypad[port_num] == NULL)
       return false;

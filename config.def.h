@@ -310,7 +310,7 @@ static const float axis_threshold = 0.5;
 // SDL sometimes reverses the axes for some odd reason, but hey. :D
 
 // Player 1
-static const struct snes_keybind snes_keybinds_1[] = {
+static const struct retro_keybind retro_keybinds_1[] = {
            // SNES button               | keyboard key | js btn | js axis |
    { true, RETRO_DEVICE_ID_JOYPAD_B,         SK_z,       NO_BTN,      AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_Y,         SK_a,       NO_BTN,      AXIS_NONE },
@@ -366,7 +366,7 @@ static const struct snes_keybind snes_keybinds_1[] = {
 };
 
 // Player 2-5
-static const struct snes_keybind snes_keybinds_rest[] = {
+static const struct retro_keybind retro_keybinds_rest[] = {
    { true, RETRO_DEVICE_ID_JOYPAD_B,         SK_UNKNOWN, NO_BTN, AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_Y,         SK_UNKNOWN, NO_BTN, AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_SELECT,    SK_UNKNOWN, NO_BTN, AXIS_NONE },

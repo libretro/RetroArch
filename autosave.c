@@ -31,7 +31,7 @@ struct autosave
    sthread_t *thread;
 
    void *buffer;
-   const void *snes_buffer;
+   const void *retro_buffer;
    const char *path;
    size_t bufsize;
    unsigned interval;
@@ -46,9 +46,9 @@ static void autosave_thread(void *data)
    while (!save->quit)
    {
       autosave_lock(save);
-      bool differ = memcmp(save->buffer, save->snes_buffer, save->bufsize) != 0;
+      bool differ = memcmp(save->buffer, save->retro_buffer, save->bufsize) != 0;
       if (differ)
-         memcpy(save->buffer, save->snes_buffer, save->bufsize);
+         memcpy(save->buffer, save->retro_buffer, save->bufsize);
       autosave_unlock(save);
 
       if (differ)
@@ -92,14 +92,14 @@ autosave_t *autosave_new(const char *path, const void *data, size_t size, unsign
    handle->interval = interval;
    handle->path = path;
    handle->buffer = malloc(size);
-   handle->snes_buffer = data;
+   handle->retro_buffer = data;
 
    if (!handle->buffer)
    {
       free(handle);
       return NULL;
    }
-   memcpy(handle->buffer, handle->snes_buffer, handle->bufsize);
+   memcpy(handle->buffer, handle->retro_buffer, handle->bufsize);
 
    handle->lock = slock_new();
    handle->cond_lock = slock_new();

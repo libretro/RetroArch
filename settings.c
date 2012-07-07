@@ -203,11 +203,11 @@ void config_set_defaults(void)
    g_settings.network_cmd_enable   = network_cmd_enable;
    g_settings.network_cmd_port     = network_cmd_port;
 
-   rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(snes_keybinds_1));
-   rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(snes_keybinds_rest));
-   memcpy(g_settings.input.binds[0], snes_keybinds_1, sizeof(snes_keybinds_1));
+   rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
+   rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
+   memcpy(g_settings.input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
    for (unsigned i = 1; i < MAX_PLAYERS; i++)
-      memcpy(g_settings.input.binds[i], snes_keybinds_rest, sizeof(snes_keybinds_rest));
+      memcpy(g_settings.input.binds[i], retro_keybinds_rest, sizeof(retro_keybinds_rest));
 
    // Verify that binds are in proper order.
    for (int i = 0; i < MAX_PLAYERS; i++)
@@ -522,7 +522,7 @@ struct bind_map
    const char *key;
    const char *btn;
    const char *axis;
-   int snes_key;
+   int retro_key;
 };
 
 #define DECLARE_BIND(x, bind) { true, "input_" #x, "input_" #x "_btn", "input_" #x "_axis", bind }
@@ -671,9 +671,9 @@ static const struct key_map sk_map[] = {
    { "nul", SK_UNKNOWN },
 };
 
-static struct snes_keybind *find_snes_bind(unsigned port, int id)
+static struct retro_keybind *find_retro_bind(unsigned port, int id)
 {
-   struct snes_keybind *binds = g_settings.input.binds[port];
+   struct retro_keybind *binds = g_settings.input.binds[port];
    return binds[id].valid ? &binds[id] : NULL;
 }
 
@@ -696,7 +696,7 @@ static int find_sk_key(const char *str)
       return find_sk_bind(str);
 }
 
-static void read_keybinds_keyboard(config_file_t *conf, unsigned player, unsigned index, struct snes_keybind *bind)
+static void read_keybinds_keyboard(config_file_t *conf, unsigned player, unsigned index, struct retro_keybind *bind)
 {
    char tmp[64];
 
@@ -710,7 +710,7 @@ static void read_keybinds_keyboard(config_file_t *conf, unsigned player, unsigne
    }
 }
 
-static void parse_hat(struct snes_keybind *bind, const char *str)
+static void parse_hat(struct retro_keybind *bind, const char *str)
 {
    if (!isdigit(*str))
       return;
@@ -738,7 +738,7 @@ static void parse_hat(struct snes_keybind *bind, const char *str)
       bind->joykey = HAT_MAP(hat, hat_dir);
 }
 
-static void read_keybinds_button(config_file_t *conf, unsigned player, unsigned index, struct snes_keybind *bind)
+static void read_keybinds_button(config_file_t *conf, unsigned player, unsigned index, struct retro_keybind *bind)
 {
    char tmp[64];
    if (bind_maps[player][index].btn &&
@@ -757,7 +757,7 @@ static void read_keybinds_button(config_file_t *conf, unsigned player, unsigned 
    }
 }
 
-static void read_keybinds_axis(config_file_t *conf, unsigned player, unsigned index, struct snes_keybind *bind)
+static void read_keybinds_axis(config_file_t *conf, unsigned player, unsigned index, struct retro_keybind *bind)
 {
    char tmp[64];
    if (bind_maps[player][index].axis &&
@@ -781,7 +781,7 @@ static void read_keybinds_player(config_file_t *conf, unsigned player)
 {
    for (unsigned i = 0; bind_maps[player][i].valid; i++)
    {
-      struct snes_keybind *bind = find_snes_bind(player, bind_maps[player][i].snes_key);
+      struct retro_keybind *bind = find_retro_bind(player, bind_maps[player][i].retro_key);
       rarch_assert(bind);
 
       read_keybinds_keyboard(conf, player, i, bind);
@@ -807,7 +807,7 @@ bool config_read_keybinds(const char *path)
 }
 
 static void save_keybind_key(config_file_t *conf,
-      const struct bind_map *map, const struct snes_keybind *bind)
+      const struct bind_map *map, const struct retro_keybind *bind)
 {
    char ascii[2] = {0};
    const char *btn = ascii;
@@ -831,7 +831,7 @@ static void save_keybind_key(config_file_t *conf,
 
 #ifndef RARCH_CONSOLE
 static void save_keybind_hat(config_file_t *conf,
-      const struct bind_map *map, const struct snes_keybind *bind)
+      const struct bind_map *map, const struct retro_keybind *bind)
 {
    unsigned hat = GET_HAT(bind->joykey);
    const char *dir = NULL;
@@ -865,7 +865,7 @@ static void save_keybind_hat(config_file_t *conf,
 #endif
 
 static void save_keybind_joykey(config_file_t *conf,
-      const struct bind_map *map, const struct snes_keybind *bind)
+      const struct bind_map *map, const struct retro_keybind *bind)
 {
    if (bind->joykey == NO_BTN)
       config_set_string(conf, map->btn, "nul");
@@ -878,7 +878,7 @@ static void save_keybind_joykey(config_file_t *conf,
 }
 
 static void save_keybind_axis(config_file_t *conf,
-      const struct bind_map *map, const struct snes_keybind *bind)
+      const struct bind_map *map, const struct retro_keybind *bind)
 {
    unsigned axis = 0;
    char dir = '\0';
@@ -902,7 +902,7 @@ static void save_keybind_axis(config_file_t *conf,
 }
 
 static void save_keybind(config_file_t *conf,
-      const struct bind_map *map, const struct snes_keybind *bind)
+      const struct bind_map *map, const struct retro_keybind *bind)
 {
    if (!map->valid)
       return;

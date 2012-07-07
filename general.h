@@ -154,7 +154,7 @@ struct settings
    struct
    {
       char driver[32];
-      struct snes_keybind binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
+      struct retro_keybind binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
       float axis_threshold;
       int joypad_map[MAX_PLAYERS];
 #ifdef RARCH_CONSOLE

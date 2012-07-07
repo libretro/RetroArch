@@ -57,7 +57,7 @@ static void input_ext_poll(void *data)
    ext->driver->poll(ext->handle);
 }
 
-static int16_t input_ext_input_state(void *data, const struct snes_keybind **snes_keybinds, unsigned port, unsigned device, unsigned index, unsigned id)
+static int16_t input_ext_input_state(void *data, const struct retro_keybind **retro_keybinds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
    input_ext_t *ext = (input_ext_t*)data;
 
@@ -65,7 +65,7 @@ static int16_t input_ext_input_state(void *data, const struct snes_keybind **sne
 
    if (id < RARCH_BIND_LIST_END)
    {
-      const struct snes_keybind *rarch_bind = &snes_keybinds[player - 1][id];
+      const struct retro_keybind *rarch_bind = &retro_keybinds[player - 1][id];
       if (!rarch_bind->valid)
          return 0;
 
@@ -86,7 +86,7 @@ static bool input_ext_key_pressed(void *data, int key)
 
    if (key >= 0 && key < RARCH_BIND_LIST_END)
    {
-      const struct snes_keybind *rarch_bind = &g_settings.input.binds[0][key];
+      const struct retro_keybind *rarch_bind = &g_settings.input.binds[0][key];
       if (!rarch_bind->valid)
          return false;
 

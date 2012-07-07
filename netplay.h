@@ -53,9 +53,9 @@ void netplay_free(netplay_t *handle);
 // On regular netplay, flip who controls player 1 and 2.
 void netplay_flip_players(netplay_t *handle);
 
-// Call this before running snes_run()
+// Call this before running retro_run()
 void netplay_pre_frame(netplay_t *handle);
-// Call this after running snes_run()
+// Call this after running retro_run()
 void netplay_post_frame(netplay_t *handle);
 
 #endif

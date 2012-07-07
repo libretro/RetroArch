@@ -68,7 +68,7 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    if (player > MAX_PLAYERS || player < 1 || key >= RARCH_FIRST_META_KEY)
       return NULL;
 
-   static const struct snes_keybind *binds[MAX_PLAYERS] = {
+   static const struct retro_keybind *binds[MAX_PLAYERS] = {
       g_settings.input.binds[0],
       g_settings.input.binds[1],
       g_settings.input.binds[2],
