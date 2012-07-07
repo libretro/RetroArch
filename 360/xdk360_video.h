@@ -19,10 +19,6 @@
 
 #include <stdint.h>
 
-#ifdef _XBOX360
-#include "../gfx/fonts/xdk360_fonts.h"
-#endif
-
 #define DFONT_MAX	4096
 #define PRIM_FVF	(D3DFVF_XYZRHW | D3DFVF_TEX1)
 
