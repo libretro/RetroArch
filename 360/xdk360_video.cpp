@@ -501,7 +501,7 @@ static void xdk360_start(void)
    gfx_ctx_set_swap_interval(d3d->vsync ? 1 : 0, false);
 
 #ifdef _XBOX360
-   HRESULT hr = d3d_init_font("game:\\media\\Arial_12.xpr");
+   HRESULT hr = d3d9_init_font("game:\\media\\Arial_12.xpr");
 
    if(hr < 0)
    {
@@ -518,7 +518,7 @@ static void xdk360_stop(void)
 {
    void *data = driver.video_data;
    driver.video_data = NULL;
-   d3d_deinit_font();
+   d3d9_deinit_font();
    xdk360_free(data);
 }
 

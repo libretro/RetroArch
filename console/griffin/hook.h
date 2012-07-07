@@ -69,7 +69,7 @@
 #define video_set_aspect_ratio_func(aspectratio_idx) gfx_ctx_set_aspect_ratio(driver.video_data, aspectratio_idx)
 
 #define gfx_ctx_window_has_focus()		(true)
-#define gfx_ctx_swap_buffers()                  (d3d9->d3d_render_device->Present(NULL, NULL, NULL, NULL))
+#define gfx_ctx_swap_buffers()                  (d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL))
 
 #define input_init_func()                       xdk360_input_initialize()
 #define input_poll_func()                       xdk360_input_poll(driver.input_data)
