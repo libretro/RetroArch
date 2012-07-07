@@ -27,8 +27,8 @@
 #ifdef HAVE_GETOPT_LONG
 #include <getopt.h>
 #else
-// Avoid possible naming collitions during link since we prefer to use the actual name.
-#define getopt_long(argc, argv, optstring, longopts, longindex) __getopt_long_ssnes(argc, argv, optstring, longopts, longindex)
+// Avoid possible naming collisions during link since we prefer to use the actual name.
+#define getopt_long(argc, argv, optstring, longopts, longindex) __getopt_long_rarch(argc, argv, optstring, longopts, longindex)
 
 #ifdef __cplusplus
 extern "C" {
