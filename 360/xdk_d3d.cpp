@@ -303,12 +303,13 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->last_width = 512;
    d3d->last_height = 512;
 
+#ifdef _XBOX1
    d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
-	   0, 0, 0, &d3d->vertex_buf
-#ifdef _XBOX360
-	   , NULL
+	   D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf);
+#else
+   d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
+	   0, 0, 0, &d3d->vertex_buf, NULL);
 #endif
-   );
 
    static const DrawVerticeFormats init_verts[] = {
       { -1.0f, -1.0f, 0.0f, 1.0f },
@@ -336,7 +337,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    d3d->d3d_render_device->CreateVertexDeclaration(VertexElements, &d3d->v_decl);
 #else
-   //TODO: Xbox 1
+   d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
 #endif
    
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
@@ -409,7 +410,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       }
 
 #ifdef _XBOX1
-   BYTE *verts_ptr;
+      BYTE *verts_ptr;
 #else
       void *verts_ptr;
 #endif
@@ -482,10 +483,10 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 
-#ifdef _XBOX360
-   d3d->d3d_render_device->SetVertexDeclaration(d3d->v_decl);
+#ifdef _XBOX1
+   d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
 #else
-   // TODO: Xbox 1
+   d3d->d3d_render_device->SetVertexDeclaration(d3d->v_decl);
 #endif
    d3d->d3d_render_device->SetStreamSource(0, d3d->vertex_buf,
 #ifdef _XBOX360
