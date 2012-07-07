@@ -85,7 +85,7 @@ const char *config_get_default_video(void)
          return "wii";
       case VIDEO_XENON360:
          return "xenon360";
-      case VIDEO_XDK360:
+      case VIDEO_XDK_D3D:
          return "xdk_d3d";
       case VIDEO_XVIDEO:
          return "xvideo";

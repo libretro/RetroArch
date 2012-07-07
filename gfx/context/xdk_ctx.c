@@ -22,9 +22,7 @@
 #include "config.h"
 #endif
 
-#include "xdk360_ctx.h"
-
-#include "../../360/xdk360_video.h"
+#include "xdk_ctx.h"
 
 #if defined(_XBOX1)
 // for Xbox 1
@@ -37,7 +35,7 @@
 void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 {
    (void)inited;
-   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    if (interval)
       d3d->d3d_render_device->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_ONE);
@@ -48,7 +46,7 @@ void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
-   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    *quit = false;
    *resize = false;
 
@@ -64,7 +62,7 @@ void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 #ifndef HAVE_GRIFFIN
 void gfx_ctx_swap_buffers(void)
 {
-   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL);
 }
 
@@ -109,7 +107,7 @@ void gfx_ctx_set_filtering(unsigned index, bool set_smooth) { }
 
 void gfx_ctx_set_fbo(bool enable)
 {
-   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    d3d->fbo_enabled = enable;
 }
@@ -119,12 +117,12 @@ void gfx_ctx_set_fbo(bool enable)
         TODO: Refactor
 ============================================================ */
 
-void gfx_ctx_set_projection(xdk360_video_t *d3d, const struct gl_ortho *ortho, bool allow_rotate) { }
+void gfx_ctx_set_projection(xdk_d3d_video_t *d3d, const struct gl_ortho *ortho, bool allow_rotate) { }
 
 void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
    (void)data;
-   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    if(g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
       rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
@@ -136,7 +134,7 @@ void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index)
 
 void gfx_ctx_set_overscan(void)
 {
-   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    if (!d3d)
       return;
 

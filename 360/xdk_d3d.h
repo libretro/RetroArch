@@ -75,7 +75,7 @@ typedef struct DrawVerticeFormats
 #define IDirect3DVertexDeclaration IDirect3DVertexDeclaration9
 #endif
 
-typedef struct xdk360_video
+typedef struct xdk_d3d_video
 {
    bool block_swap;
    bool fbo_enabled;
@@ -97,6 +97,6 @@ typedef struct xdk360_video
    D3DPRESENT_PARAMETERS d3dpp;
    XVIDEO_MODE video_mode;
    LPDIRECT3DSURFACE_PTR lpSurface;
-} xdk360_video_t;
+} xdk_d3d_video_t;
 
 #endif

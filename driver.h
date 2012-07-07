@@ -236,7 +236,7 @@ extern const video_driver_t video_gl;
 extern const video_driver_t video_wii;
 extern const video_driver_t video_xenon360;
 extern const video_driver_t video_xvideo;
-extern const video_driver_t video_xdk360;
+extern const video_driver_t video_xdk_d3d;
 extern const video_driver_t video_sdl;
 extern const video_driver_t video_rpi;
 extern const video_driver_t video_ext;

@@ -249,7 +249,7 @@ void xdk360_video_font_draw_text(xdk360_video_font_t * font,
    if( strText == NULL || strText[0] == L'\0')
       return;
 
-   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
    D3DDevice *pd3dDevice = vid->d3d_render_device;
 
    // Set the color as a vertex shader constant
@@ -401,7 +401,7 @@ void xdk360_video_font_draw_text(xdk360_video_font_t * font,
 
 void xdk360_console_draw(void)
 {
-   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
    D3DDevice *m_pd3dDevice = vid->d3d_render_device;
 
    // The top line

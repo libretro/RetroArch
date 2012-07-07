@@ -19,7 +19,7 @@
 #endif
 
 #include "../driver.h"
-#include "xdk360_video.h"
+#include "xdk_d3d.h"
 
 #ifdef HAVE_HLSL
 #include "../gfx/shader_hlsl.h"
@@ -38,7 +38,7 @@
 #include "xdk360_video_resources.h"
 #endif
 
-static void check_window(xdk360_video_t *d3d)
+static void check_window(xdk_d3d_video_t *d3d)
 {
    bool quit, resize;
 
@@ -52,14 +52,14 @@ static void check_window(xdk360_video_t *d3d)
       d3d->should_resize = true;
 }
 
-static void xdk360_free(void * data)
+static void xdk_d3d_free(void * data)
 {
 #ifdef RARCH_CONSOLE
    if (driver.video_data)
 	   return;
 #endif
 
-   xdk360_video_t *d3d = (xdk360_video_t*)data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
    if (!d3d)
       return;
@@ -73,9 +73,9 @@ static void xdk360_free(void * data)
    free(d3d);
 }
 
-static void xdk360_set_viewport(bool force_full)
+static void xdk_d3d_set_viewport(bool force_full)
 {
-   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
       0xff000000, 1.0f, 0);
@@ -141,10 +141,10 @@ static void xdk360_set_viewport(bool force_full)
    //}
 }
 
-static void xdk360_set_rotation(void * data, unsigned orientation)
+static void xdk_d3d_set_rotation(void * data, unsigned orientation)
 {
    (void)data;
-   xdk360_video_t *d3d = (xdk360_video_t*)data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    FLOAT angle;
 
    switch(orientation)
@@ -169,7 +169,7 @@ static void xdk360_set_rotation(void * data, unsigned orientation)
    d3d->should_resize = TRUE;
 }
 
-static void xdk360_init_fbo(xdk360_video_t *d3d)
+static void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
 {
    if (d3d->lpTexture_ot)
    {
@@ -202,12 +202,12 @@ static void xdk360_init_fbo(xdk360_video_t *d3d)
 #endif
 }
 
-static void *xdk360_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    if (driver.video_data)
       return driver.video_data;
 
-   xdk360_video_t *d3d = (xdk360_video_t*)calloc(1, sizeof(xdk360_video_t));
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)calloc(1, sizeof(xdk_d3d_video_t));
    if (!d3d)
       return NULL;
 
@@ -272,7 +272,7 @@ static void *xdk360_init(const video_info_t *video, const input_driver_t **input
    d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
       0, &d3d->lpTexture, NULL);
 
-   xdk360_init_fbo(d3d);
+   xdk_d3d_init_fbo(d3d);
 
    D3DLOCKED_RECT d3dlr;
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
@@ -325,7 +325,7 @@ static void *xdk360_init(const video_info_t *video, const input_driver_t **input
    if(g_console.viewports.custom_vp.height == 0)
       g_console.viewports.custom_vp.height = vp.Height;
 
-   xdk360_set_rotation(d3d, g_console.screen_orientation);
+   xdk_d3d_set_rotation(d3d, g_console.screen_orientation);
 
    d3d->fbo_enabled = 1;
    d3d->vsync = video->vsync;
@@ -333,13 +333,13 @@ static void *xdk360_init(const video_info_t *video, const input_driver_t **input
    return d3d;
 }
 
-static bool xdk360_frame(void *data, const void *frame,
+static bool xdk_d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    if (!frame)
       return true;
 
-   xdk360_video_t *d3d = (xdk360_video_t*)data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    D3DSurface* pRenderTarget0;
    bool menu_enabled = g_console.menu_enable;
 
@@ -384,7 +384,7 @@ static bool xdk360_frame(void *data, const void *frame,
    }
 
    if (d3d->should_resize)
-      xdk360_set_viewport(false);
+      xdk_d3d_set_viewport(false);
 
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
          0xff000000, 1.0f, 0);
@@ -457,7 +457,7 @@ static bool xdk360_frame(void *data, const void *frame,
       hlsl_set_params(g_settings.video.fbo_scale_x * width, g_settings.video.fbo_scale_y * height, g_settings.video.fbo_scale_x * 512, g_settings.video.fbo_scale_y * 512, d3d->d3dpp.BackBufferWidth,
             d3d->d3dpp.BackBufferHeight, d3d->frame_count);
 #endif
-      xdk360_set_viewport(false);
+      xdk_d3d_set_viewport(false);
 
       d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
       d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
@@ -492,9 +492,9 @@ static bool xdk360_frame(void *data, const void *frame,
    return true;
 }
 
-static void xdk360_set_nonblock_state(void *data, bool state)
+static void xdk_d3d_set_nonblock_state(void *data, bool state)
 {
-   xdk360_video_t *d3d = (xdk360_video_t*)data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
    if(d3d->vsync)
    {
@@ -503,20 +503,20 @@ static void xdk360_set_nonblock_state(void *data, bool state)
    }
 }
 
-static bool xdk360_alive(void *data)
+static bool xdk_d3d_alive(void *data)
 {
-   xdk360_video_t *d3d = (xdk360_video_t*)data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    check_window(d3d);
    return !d3d->quitting;
 }
 
-static bool xdk360_focus(void *data)
+static bool xdk_d3d_focus(void *data)
 {
    (void)data;
    return gfx_ctx_window_has_focus();
 }
 
-static void xdk360_start(void)
+static void xdk_d3d_start(void)
 {
    video_info_t video_info = {0};
 
@@ -526,9 +526,9 @@ static void xdk360_start(void)
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
 
-   driver.video_data = xdk360_init(&video_info, NULL, NULL);
+   driver.video_data = xdk_d3d_init(&video_info, NULL, NULL);
 
-   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    gfx_ctx_set_swap_interval(d3d->vsync ? 1 : 0, false);
 
@@ -542,31 +542,31 @@ static void xdk360_start(void)
 #endif
 }
 
-static void xdk360_restart(void)
+static void xdk_d3d_restart(void)
 {
 }
 
-static void xdk360_stop(void)
+static void xdk_d3d_stop(void)
 {
    void *data = driver.video_data;
    driver.video_data = NULL;
 #ifdef _XBOX360
    d3d9_deinit_font();
 #endif
-   xdk360_free(data);
+   xdk_d3d_free(data);
 }
 
-const video_driver_t video_xdk360 = {
-   xdk360_init,
-   xdk360_frame,
-   xdk360_set_nonblock_state,
-   xdk360_alive,
-   xdk360_focus,
+const video_driver_t video_xdk_d3d = {
+   xdk_d3d_init,
+   xdk_d3d_frame,
+   xdk_d3d_set_nonblock_state,
+   xdk_d3d_alive,
+   xdk_d3d_focus,
    NULL,
-   xdk360_free,
+   xdk_d3d_free,
    "xdk_d3d",
-   xdk360_start,
-   xdk360_stop,
-   xdk360_restart,
-   xdk360_set_rotation,
+   xdk_d3d_start,
+   xdk_d3d_stop,
+   xdk_d3d_restart,
+   xdk_d3d_set_rotation,
 };

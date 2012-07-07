@@ -55,7 +55,7 @@ VIDEO CONTEXT
 #if defined(__CELLOS_LV2__)
 #include "../../gfx/context/ps3_ctx.c"
 #elif defined(_XBOX)
-#include "../../gfx/context/xdk360_ctx.c"
+#include "../../gfx/context/xdk_ctx.c"
 #endif
 
 #endif
@@ -99,7 +99,7 @@ VIDEO DRIVER
 #endif
 
 #ifdef _XBOX
-#include "../../360/xdk360_video.cpp"
+#include "../../360/xdk_d3d.cpp"
 #endif
 
 #include "../../gfx/null.c"

@@ -22,7 +22,7 @@
 #include <xbdm.h>
 #include "menu.h"
 #include "../../input/rarch_xinput2.h"
-#include "../xdk360_video.h"
+#include "../xdk_d3d.h"
 
 #include "../../console/retroarch_console.h"
 #include "../../conf/config_file.h"
@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
    rarch_config_load(SYS_CONFIG_FILE, "game:\\", ".xex", find_libretro_file);
    init_libretro_sym();
 
-   video_xdk360.start();
+   video_xdk_d3d.start();
    input_xinput2.init();
 
    rarch_input_set_default_keybind_names_for_emulator();
@@ -296,7 +296,7 @@ begin_shutdown:
       rarch_config_save(SYS_CONFIG_FILE);
 
    menu_free();
-   video_xdk360.stop();
+   video_xdk_d3d.stop();
    input_xinput2.free(NULL);
    rarch_exec();
 

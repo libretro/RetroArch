@@ -51,25 +51,27 @@
 #define input_free_func()                       ps3_free_input(driver.input_data)
 
 /*============================================================
-	XBOX 360
+	XBOX 1 / XBOX 360
 ============================================================ */
 
-#elif defined(_XBOX360)
+#elif defined(_XBOX)
 
 #define video_init_func(video_info, input, input_data) \
-                                                xdk360_init(video_info, input, input_data)
+                                                xdk_d3d_init(video_info, input, input_data)
 #define video_frame_func(data, width, height, pitch, msg) \
-                                                xdk360_frame(driver.video_data, data, width, height, pitch, msg)
+                                                xdk_d3d_frame(driver.video_data, data, width, height, pitch, msg)
 #define video_set_nonblock_state_func(state) driver.video->set_nonblock_state(driver.video_data, state)
-#define video_alive_func()                      xdk360_alive(driver.video_data)
-#define video_focus_func()                      xdk360_focus(driver.video_data)
+#define video_alive_func()                      xdk_d3d_alive(driver.video_data)
+#define video_focus_func()                      xdk_d3d_focus(driver.video_data)
 #define video_xml_shader_func(path)             driver.video->xml_shader(driver.video_data, path)
-#define video_free_func()                       xdk360_free(driver.video_data)
-#define video_set_rotation_func(rotation)	xdk360_set_rotation(driver.video_data, rotation)
+#define video_free_func()                       xdk_d3d_free(driver.video_data)
+#define video_set_rotation_func(rotation)	xdk_d3d_set_rotation(driver.video_data, rotation)
 #define video_set_aspect_ratio_func(aspectratio_idx) gfx_ctx_set_aspect_ratio(driver.video_data, aspectratio_idx)
 
 #define gfx_ctx_window_has_focus()		(true)
 #define gfx_ctx_swap_buffers()                  (d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL))
+
+#if defined(_XBOX360)
 
 #define input_init_func()                       xinput2_input_init()
 #define input_poll_func()                       xinput2_input_poll(driver.input_data)
@@ -77,6 +79,8 @@
                                                 xinput2_input_state(driver.input_data, retro_keybinds, port, device, index, id)
 #define input_key_pressed_func(key)             xinput2_input_key_pressed(driver.input_data, key)
 #define input_free_func()                       xinput2_input_free_input(driver.input_data)
+
+#endif
 
 /*============================================================
 	GAMECUBE / WII

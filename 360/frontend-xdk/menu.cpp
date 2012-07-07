@@ -20,7 +20,7 @@
 #include <xtl.h>
 #include "../../console/fileio/file_browser.h"
 #include "../../console/retroarch_console.h"
-#include "../xdk360_video.h"
+#include "../xdk_d3d.h"
 #include "menu.h"
 #include "../../message.h"
 
@@ -260,7 +260,7 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
 {
    int current_index;
-   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
    
    current_index = m_settingslist.GetCurSel();
 
@@ -348,7 +348,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
 {
    bool aspectratio_changed = false;
    int current_index;
-   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    
    current_index = m_quickmenulist.GetCurSel();
 
@@ -373,7 +373,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
                rarch_settings_change(S_ROTATION_DECREMENT);
                rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
-               video_xdk360.set_rotation(driver.video_data, g_console.screen_orientation);
+               video_xdk_d3d.set_rotation(driver.video_data, g_console.screen_orientation);
                break;
             default:
                break;
@@ -398,7 +398,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
                rarch_settings_change(S_ROTATION_INCREMENT);
                rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
-               video_xdk360.set_rotation(driver.video_data, g_console.screen_orientation);
+               video_xdk_d3d.set_rotation(driver.video_data, g_console.screen_orientation);
                break;
             default:
                break;
@@ -435,7 +435,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
 
 HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
-   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    int current_index;
 
    if ( hObjPressed == m_quickmenulist)
@@ -472,7 +472,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             rarch_settings_default(S_DEF_ROTATION);
             rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
             m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
-	    video_xdk360.set_rotation(driver.video_data, g_console.screen_orientation);
+	    video_xdk_d3d.set_rotation(driver.video_data, g_console.screen_orientation);
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
 	    g_console.input_loop = INPUT_LOOP_RESIZE_MODE;
@@ -742,7 +742,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
 HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
-   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
 
    bool hdmenus_allowed = g_console.menus_hd_enable;
 
@@ -822,7 +822,7 @@ int menu_init (void)
 {
    HRESULT hr;
 
-   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
 
    bool hdmenus_allowed = g_console.menus_hd_enable;
 
@@ -911,7 +911,7 @@ static void ingame_menu_resize (void)
 void menu_loop(void)
 {
    HRESULT hr;
-   xdk360_video_t *d3d = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    g_console.menu_enable = true;
 

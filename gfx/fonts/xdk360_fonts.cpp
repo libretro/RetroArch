@@ -149,7 +149,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
                 D3DDECL_END()
             };
             
-            xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
+            xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
             D3DDevice *pd3dDevice = vid->d3d_render_device;
 
             hr = pd3dDevice->CreateVertexDeclaration( decl, &s_FontLocals.m_pFontVertexDecl );
@@ -264,7 +264,7 @@ static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * s
       return E_FAIL;
    }
 
-   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
    D3DDevice *pd3dDevice = vid->d3d_render_device;
 
    // Initialize the window
@@ -283,7 +283,7 @@ static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * s
 
 HRESULT d3d9_init_font(const char *font_path)
 {
-   xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
    D3DDevice *m_pd3dDevice = vid->d3d_render_device;
 
    video_console.m_Buffer = NULL;
@@ -438,7 +438,7 @@ void d3d9_render_msg_pre(xdk360_video_font_t * font)
    if( font->m_dwNestedBeginCount == 0 )
    {
       // Cache the global pointer into a register
-      xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
+      xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
       D3DDevice *pD3dDevice = vid->d3d_render_device;
 
       // Save state
@@ -511,7 +511,7 @@ void d3d9_render_msg_post(xdk360_video_font_t * font)
    if( font->m_bSaveState )
    {
       // Cache the global pointer into a register
-      xdk360_video_t *vid = (xdk360_video_t*)driver.video_data;
+      xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
       D3DDevice *pD3dDevice = vid->d3d_render_device;
 
       D3DDevice_SetTexture_Inline(pD3dDevice, 0, NULL);

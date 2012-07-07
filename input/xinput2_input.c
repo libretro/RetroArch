@@ -114,7 +114,7 @@ static bool xinput2_input_key_pressed(void *data, int key)
    bool retval = false;
 #ifdef _XBOX
    XINPUT_STATE state;
-   xdk360_video_t *d3d9 = (xdk360_video_t*)driver.video_data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    XInputGetState(0, &state);
 
@@ -133,7 +133,7 @@ static bool xinput2_input_key_pressed(void *data, int key)
       case RARCH_FRAMEADVANCE:
 	 if(g_console.frame_advance_enable)
 	 {
-            g_console.menu_enable = true;
+        g_console.menu_enable = true;
 	    g_console.ingame_menu_enable = true;
 	    g_console.mode_switch = MODE_MENU;
 	 }
@@ -141,18 +141,18 @@ static bool xinput2_input_key_pressed(void *data, int key)
       case RARCH_REWIND:
 	 return ((state.Gamepad.sThumbRY > DEADZONE) && !(state.Gamepad.bRightTrigger > 128));
       case RARCH_QUIT_KEY:
-	 if(IS_TIMER_EXPIRED(d3d9))
+	 if(IS_TIMER_EXPIRED(d3d))
 	 {
             uint32_t left_thumb_pressed = (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB);
 	    uint32_t right_thumb_pressed = (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
 
-	    g_console.menu_enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED(d3d9);
+	    g_console.menu_enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED(d3d);
 	    g_console.ingame_menu_enable = right_thumb_pressed && !left_thumb_pressed;
 
 	    if(g_console.menu_enable || (g_console.ingame_menu_enable && !g_console.menu_enable))
 	    {
                g_console.mode_switch = MODE_MENU;
-	       SET_TIMER_EXPIRATION(d3d9, 30);
+	       SET_TIMER_EXPIRATION(d3d, 30);
 	       retval = g_console.menu_enable;
 	    }
 
