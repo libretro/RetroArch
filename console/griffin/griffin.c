@@ -93,9 +93,13 @@ VIDEO DRIVER
 #elif defined(HAVE_OPENGLES20)
 #include "../../gfx/gles.c"
 #elif defined(_XBOX360)
-#include "../../360/xdk360_video.cpp"
+#include "../../360/xdk360_video_resources.cpp"
 #elif defined(GEKKO)
 #include "../../wii/video.c"
+#endif
+
+#ifdef _XBOX
+#include "../../360/xdk360_video.cpp"
 #endif
 
 #include "../../gfx/null.c"

@@ -14,8 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
 #ifndef RARCH_360_RESOURCES_H
 #define RARCH_360_RESOURCES_H
 
@@ -39,21 +37,15 @@ enum
    RESOURCETYPE_EOF            = 0xffffffff
 };
 
-
-//--------------------------------------------------------------------------------------
-// Name: PackedResource
-//--------------------------------------------------------------------------------------
 class PackedResource
 {
    protected:
       unsigned char * m_pSysMemData;        // Alloc'ed memory for resource headers etc.
-      unsigned long m_dwSysMemDataSize;
-
       unsigned char * m_pVidMemData;        // Alloc'ed memory for resource data, etc.
+      unsigned long m_dwSysMemDataSize;
       unsigned long m_dwVidMemDataSize;
-
-      RESOURCE* m_pResourceTags;            // Tags to associate names with the resources
       unsigned long m_dwNumResourceTags;    // Number of resource tags
+      RESOURCE* m_pResourceTags;            // Tags to associate names with the resources
    public:
       int m_bInitialized;                   // Resource is fully initialized
       HRESULT Create( const char * strFilename );
