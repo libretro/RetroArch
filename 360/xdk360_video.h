@@ -41,6 +41,40 @@ typedef struct DrawVerticeFormats
    float u, v;
 } DrawVerticeFormats;
 
+#ifdef _XBOX1
+/* Direct3D 8 */
+#define LPDIRECT3D_PTR LPDIRECT3D8
+#define LPDIRECT3DDEVICE_PTR LPDIRECT3DDEVICE8
+#define LPDIRECT3DTEXTURE_PTR LPDIRECT3DTEXTURE8
+#define LPDIRECT3DSURFACE_PTR LPDIRECT3DSURFACE8
+
+#define D3DVIEWPORT D3DVIEWPORT8
+#define D3DVERTEXELEMENT D3DVERTEXELEMENT8
+
+#define direct3d_create_ctx Direct3DCreate8
+#define IDirect3DVertexBuffer IDirect3DVertexBuffer8
+
+#define SetSamplerState SetTextureStageState
+
+#define D3DSAMP_ADDRESSU D3DTSS_ADDRESSU
+#define D3DSAMP_ADDRESSV D3DTSS_ADDRESSV
+#define D3DSAMP_MAGFILTER D3DTSS_MAGFILTER
+#define D3DSAMP_MINFILTER D3DTSS_MINFILTER
+#else
+/* Direct3D 9 */
+#define LPDIRECT3D_PTR LPDIRECT3D9
+#define LPDIRECT3DDEVICE_PTR LPDIRECT3DDEVICE9
+#define LPDIRECT3DTEXTURE_PTR LPDIRECT3DTEXTURE9
+#define LPDIRECT3DSURFACE_PTR LPDIRECT3DSURFACE9
+
+#define D3DVIEWPORT D3DVIEWPORT9
+#define D3DVERTEXELEMENT D3DVERTEXELEMENT9
+
+#define direct3d_create_ctx Direct3DCreate9
+#define IDirect3DVertexBuffer IDirect3DVertexBuffer9
+#define IDirect3DVertexDeclaration IDirect3DVertexDeclaration9
+#endif
+
 typedef struct xdk360_video
 {
    bool block_swap;
@@ -51,16 +85,18 @@ typedef struct xdk360_video
    unsigned frame_count;
    unsigned last_width;
    unsigned last_height;
-   IDirect3D9* d3d_device;
-   IDirect3DDevice9* d3d_render_device;
-   IDirect3DVertexBuffer9* vertex_buf;
-   IDirect3DTexture9* lpTexture;
+   LPDIRECT3D_PTR d3d_device;
+   LPDIRECT3DDEVICE_PTR d3d_render_device;
+   IDirect3DVertexBuffer *vertex_buf;
+   LPDIRECT3DTEXTURE_PTR lpTexture;
    D3DTexture lpTexture_ot_as16srgb;
-   LPDIRECT3DTEXTURE9 lpTexture_ot;
+   LPDIRECT3DTEXTURE_PTR lpTexture_ot;
+#ifdef _XBOX360
    IDirect3DVertexDeclaration9* v_decl;
+#endif
    D3DPRESENT_PARAMETERS d3dpp;
    XVIDEO_MODE video_mode;
-   LPDIRECT3DSURFACE9 lpSurface;
+   LPDIRECT3DSURFACE_PTR lpSurface;
 } xdk360_video_t;
 
 #endif
