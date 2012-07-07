@@ -43,7 +43,7 @@
 <Height>30.799988</Height>
 <Position>38.127960,196.615982,0.000000</Position>
 <NavUp>XuiBtnControls</NavUp>
-<NavDown>XuiBtnLibsnesCore</NavDown>
+<NavDown>XuiBtnLibretroCore</NavDown>
 <Text>Settings</Text>
 </Properties>
 </XuiButton>
@@ -54,7 +54,7 @@
 <Height>30.799988</Height>
 <Position>38.327736,287.007996,0.000000</Position>
 <Pivot>245.162109,-84.153275,0.000000</Pivot>
-<NavUp>XuiBtnLibsnesCore</NavUp>
+<NavUp>XuiBtnLibretroCore</NavUp>
 <NavDown>XuiBtnRomBrowser</NavDown>
 <Text>Quit</Text>
 </Properties>
@@ -103,7 +103,7 @@
 </XuiButton>
 <XuiButton>
 <Properties>
-<Id>XuiBtnLibsnesCore</Id>
+<Id>XuiBtnLibretroCore</Id>
 <Width>488.312012</Width>
 <Height>30.799988</Height>
 <Position>38.127960,241.615982,0.000000</Position>

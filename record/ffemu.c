@@ -475,7 +475,7 @@ bool ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
 
    slock_lock(handle->lock);
 
-   // Tightly pack our frame to conserve memory. libsnes tends to use a very large pitch.
+   // Tightly pack our frame to conserve memory. libretro tends to use a very large pitch.
    struct ffemu_video_data attr_data = *data;
 
    if (attr_data.is_dupe)

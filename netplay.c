@@ -568,7 +568,7 @@ static bool get_info(netplay_t *handle)
 
    if (implementation_magic_value() != ntohl(header[1]))
    {
-      RARCH_ERR("Implementations differ, make sure you're using exact same libsnes implementations and RetroArch version.\n");
+      RARCH_ERR("Implementations differ, make sure you're using exact same libretro implementations and RetroArch version.\n");
       return false;
    }
 

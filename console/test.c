@@ -13,9 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Test module to check re-entrancy of libsnes implementations.
+// Test module to check re-entrancy of libretro implementations.
 // Reruns RetroArch main loop with all roms defined on command-line
-// to check if libsnes can load multiple roms after each other.
+// to check if libretro can load multiple roms after each other.
 
 #include "../getopt_rarch.h"
 #include "../general.h"

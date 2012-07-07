@@ -1,4 +1,4 @@
-HAVE_DYNAMIC=yes        # Disable dynamic loading of libsnes library
+HAVE_DYNAMIC=yes        # Disable dynamic loading of libretro library
 HAVE_LIBRETRO=          # libretro library used
 HAVE_THREADS=auto       # Threading support
 HAVE_FFMPEG=auto        # Enable FFmpeg recording support

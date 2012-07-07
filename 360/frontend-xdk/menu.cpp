@@ -523,7 +523,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiBtnQuit", &m_quit);
    GetChildById(L"XuiTxtTitle", &m_title);
    GetChildById(L"XuiTxtCoreText", &m_core);
-   GetChildById(L"XuiBtnLibsnesCore", &m_change_libretro_core);
+   GetChildById(L"XuiBtnLibretroCore", &m_change_libretro_core);
 
    char core_text[256];
    snprintf(core_text, sizeof(core_text), "%s (v%s)", id, info.library_version);

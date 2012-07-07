@@ -22,7 +22,7 @@ if [ "$HAVE_RPI" = 'yes' ]; then
 fi
 
 if [ "$LIBRETRO" ]; then
-   echo "Explicit libsnes used, disabling dynamic libsnes loading ..."
+   echo "Explicit libretro used, disabling dynamic libretro loading ..."
    HAVE_DYNAMIC='no'
 else LIBRETRO="-lretro"
 fi
