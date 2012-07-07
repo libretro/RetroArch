@@ -51,7 +51,7 @@ static bool rarch_manage_libretro_install(char *libretro_core_installed, size_t 
 
    if (ret == 0)
    {
-      RARCH_LOG("Libsnes core [%s] renamed to: [%s].\n", full_path, tmp_pathnewfile);
+      RARCH_LOG("libretro core [%s] renamed to: [%s].\n", full_path, tmp_pathnewfile);
       strlcpy(libretro_core_installed, tmp_pathnewfile, sizeof_libretro_core);
       ret = 1;
    }

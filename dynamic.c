@@ -93,7 +93,7 @@ static void set_environment_defaults(void);
 static void load_symbols(void)
 {
 #ifdef HAVE_DYNAMIC
-   RARCH_LOG("Loading dynamic libsnes from: \"%s\"\n", g_settings.libretro);
+   RARCH_LOG("Loading dynamic libretro from: \"%s\"\n", g_settings.libretro);
    lib_handle = dylib_load(g_settings.libretro);
    if (!lib_handle)
    {
@@ -144,13 +144,13 @@ void init_libretro_sym(void)
    rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
 
 #ifdef HAVE_DYNAMIC
-   // Try to verify that -lsnes was not linked in from other modules
+   // Try to verify that -lretro was not linked in from other modules
    // since loading it dynamically and with -l will fail hard.
    function_t sym = dylib_proc(NULL, "retro_init");
    if (sym)
    {
-      RARCH_ERR("Serious problem. RetroArch wants to load libsnes dyamically, but it is already linked.\n"); 
-      RARCH_ERR("This could happen if other modules RetroArch depends on link against libsnes directly.\n");
+      RARCH_ERR("Serious problem. RetroArch wants to load libretro dyamically, but it is already linked.\n"); 
+      RARCH_ERR("This could happen if other modules RetroArch depends on link against libretro directly.\n");
       RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
       rarch_fail(1, "init_libretro_sym()");
    }

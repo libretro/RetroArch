@@ -41,7 +41,7 @@ static void print_help(void)
    puts("==================");
    puts("retroarch-joyconfig");
    puts("==================");
-   puts("Usage: ssnes-joyconfig [ -p/--player <1-5> | -j/--joypad <num> | -i/--input <file> | -o/--output <file> | -h/--help ]");
+   puts("Usage: retroarch-joyconfig [ -p/--player <1-5> | -j/--joypad <num> | -i/--input <file> | -o/--output <file> | -h/--help ]");
    puts("");
    puts("-p/--player: Which player to configure for (1 up to and including 5).");
    puts("-j/--joypad: Which joypad to use when configuring (first joypad is 0).");
