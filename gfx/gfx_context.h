@@ -29,7 +29,7 @@
 #define VID_HANDLE gl_t
 #endif
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D8) || defined(HAVE_D3D9)
 #define VID_HANDLE xdk_d3d_video_t
 #endif
 

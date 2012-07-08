@@ -158,6 +158,8 @@ static void xdk_d3d_set_rotation(void * data, unsigned orientation)
 
 static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+   unsigned size_d3d = sizeof(xdk_d3d_video_t);
+   RARCH_LOG("size of d3d: %d\n", size_d3d);
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)calloc(1, sizeof(xdk_d3d_video_t));
    if (!d3d)
       return NULL;
