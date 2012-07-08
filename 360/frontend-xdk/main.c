@@ -263,8 +263,13 @@ static void configure_libretro(const char * extension)
    snprintf(full_path, sizeof(full_path), "game:\\CORE%s", extension);
 #endif
 
+#ifdef _XBOX1
+   bool find_libretro_file = rarch_configure_libretro_core(full_path, "D:\\", "D:\\", 
+   SYS_CONFIG_FILE, extension);
+#else
    bool find_libretro_file = rarch_configure_libretro_core(full_path, "game:\\", "game:\\", 
    SYS_CONFIG_FILE, extension);
+#endif
 
    set_default_settings();
 #ifdef _XBOX1
@@ -300,6 +305,7 @@ int main(int argc, char *argv[])
    rarch_input_set_default_keybind_names_for_emulator();
 
    menu_init();
+
 
 begin_loop:
    if(g_console.mode_switch == MODE_EMULATION)

@@ -50,7 +50,8 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="XboxDeploymentTool"/>
+				Name="XboxDeploymentTool"
+				RemotePath="xe:\$(SolutionName)\CORE.xbe"/>
 			<Tool
 				Name="XboxImageTool"
 				StackSize="65536"
@@ -101,7 +102,8 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="XboxDeploymentTool"/>
+				Name="XboxDeploymentTool"
+				RemotePath="xe:\$(SolutionName)\CORE.xbe"/>
 			<Tool
 				Name="XboxImageTool"
 				StackSize="65536"
@@ -153,7 +155,8 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="XboxDeploymentTool"/>
+				Name="XboxDeploymentTool"
+				RemotePath="xe:\$(SolutionName)\CORE.xbe"/>
 			<Tool
 				Name="XboxImageTool"
 				StackSize="65536"
@@ -204,7 +207,8 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="XboxDeploymentTool"/>
+				Name="XboxDeploymentTool"
+				RemotePath="xe:\$(SolutionName)\CORE.xbe"/>
 			<Tool
 				Name="XboxImageTool"
 				StackSize="65536"/>
@@ -254,7 +258,8 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="XboxDeploymentTool"/>
+				Name="XboxDeploymentTool"
+				RemotePath="xe:\$(SolutionName)\CORE.xbe"/>
 			<Tool
 				Name="XboxImageTool"
 				StackSize="65536"/>

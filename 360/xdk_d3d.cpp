@@ -218,8 +218,10 @@ static void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
 
 static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+#ifndef _XBOX1
    if (driver.video_data)
       return driver.video_data;
+#endif
 
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)calloc(1, sizeof(xdk_d3d_video_t));
    if (!d3d)
