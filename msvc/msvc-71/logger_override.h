@@ -21,28 +21,37 @@
 
 static inline void RARCH_LOG(const char *msg, ...)
 {
+   char msg_new[1024], buffer[1024];
+   snprintf(msg_new, sizeof(msg_new), "RetroArch: %s", msg);
    va_list ap;
    va_start(ap, msg);
-   fprintf(stderr, "RetroArch: ");
-   vfprintf(stderr, msg, ap);
+   wvsprintf(buffer, msg_new, ap);
+   buffer[ (sizeof(buffer) / sizeof( *buffer)) - 1] = '\0';
+   OutputDebugStringA(buffer);
    va_end(ap);
 }
 
 static inline void RARCH_WARN(const char *msg, ...)
 {
+   char msg_new[1024], buffer[1024];
+   snprintf(msg_new, sizeof(msg_new), "RetroArch [WARN] :: %s", msg);
    va_list ap;
    va_start(ap, msg);
-   fprintf(stderr, "RetroArch [WARN] :: ");
-   vfprintf(stderr, msg, ap);
+   wvsprintf(buffer, msg_new, ap);
+   buffer[ (sizeof(buffer) / sizeof( *buffer)) - 1] = '\0';
+   OutputDebugStringA(buffer);
    va_end(ap);
 }
 
 static inline void RARCH_ERR(const char *msg, ...)
 {
+   char msg_new[1024], buffer[1024];
+   snprintf(msg_new, sizeof(msg_new), "RetroArch [ERR] :: %s", msg);
    va_list ap;
    va_start(ap, msg);
-   fprintf(stderr, "RetroArch [ERR] :: ");
-   vfprintf(stderr, msg, ap);
+   wvsprintf(buffer, msg_new, ap);
+   buffer[ (sizeof(buffer) / sizeof( *buffer)) - 1] = '\0';
+   OutputDebugStringA(buffer);
    va_end(ap);
 }
 

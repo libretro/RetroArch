@@ -923,6 +923,8 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       // g_extern
       CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
       CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
+
+	  config_file_free(conf);
    }
 }
 

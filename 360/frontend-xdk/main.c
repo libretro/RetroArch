@@ -246,19 +246,32 @@ static void get_environment_settings (void)
 #endif
 
    strlcpy(DEFAULT_SHADER_FILE, "game:\\media\\shaders\\stock.cg", sizeof(DEFAULT_SHADER_FILE));
+#ifdef _XBOX1
+   /* FIXME: Hardcoded */
+   strlcpy(SYS_CONFIG_FILE, "D:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
+#else
    strlcpy(SYS_CONFIG_FILE, "game:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
+#endif
 }
 
 static void configure_libretro(const char * extension)
 {
    char full_path[1024];
+#ifdef _XBOX1
+   snprintf(full_path, sizeof(full_path), "D:\\CORE%s", extension);
+#else
    snprintf(full_path, sizeof(full_path), "game:\\CORE%s", extension);
+#endif
 
    bool find_libretro_file = rarch_configure_libretro_core(full_path, "game:\\", "game:\\", 
    SYS_CONFIG_FILE, extension);
 
    set_default_settings();
+#ifdef _XBOX1
+   rarch_config_load(SYS_CONFIG_FILE, "D:\\", extension, find_libretro_file);
+#else
    rarch_config_load(SYS_CONFIG_FILE, "game:\\", extension, find_libretro_file);
+#endif
    init_libretro_sym();
 }
 
@@ -322,4 +335,3 @@ begin_shutdown:
 
    return 0;
 }
-
