@@ -153,6 +153,10 @@ static void xdk_d3d_set_rotation(void * data, unsigned orientation)
          break;
    }
 
+   D3DXMATRIX p_out;
+   D3DXMatrixIdentity(&p_out);
+   d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &p_out);
+
    d3d->should_resize = TRUE;
 }
 
@@ -310,6 +314,12 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+
+   D3DXMATRIX p_out;
+   D3DXMatrixIdentity(&p_out);
+   d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &p_out);
+   d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &p_out);
+   d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &p_out);
 
    d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
    d3d->d3d_render_device->SetStreamSource(0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
