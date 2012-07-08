@@ -254,29 +254,16 @@ static void get_environment_settings (void)
 #endif
 }
 
-static void configure_libretro(const char * extension)
+static void configure_libretro(const char *path_prefix, const char * extension)
 {
    char full_path[1024];
-#ifdef _XBOX1
-   snprintf(full_path, sizeof(full_path), "D:\\CORE%s", extension);
-#else
-   snprintf(full_path, sizeof(full_path), "game:\\CORE%s", extension);
-#endif
+   snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
 
-#ifdef _XBOX1
-   bool find_libretro_file = rarch_configure_libretro_core(full_path, "D:\\", "D:\\", 
+   bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
    SYS_CONFIG_FILE, extension);
-#else
-   bool find_libretro_file = rarch_configure_libretro_core(full_path, "game:\\", "game:\\", 
-   SYS_CONFIG_FILE, extension);
-#endif
 
    set_default_settings();
-#ifdef _XBOX1
-   rarch_config_load(SYS_CONFIG_FILE, "D:\\", extension, find_libretro_file);
-#else
-   rarch_config_load(SYS_CONFIG_FILE, "game:\\", extension, find_libretro_file);
-#endif
+   rarch_config_load(SYS_CONFIG_FILE, path_prefix, extension, find_libretro_file);
    init_libretro_sym();
 }
 
@@ -294,9 +281,9 @@ int main(int argc, char *argv[])
    config_set_defaults();
    
 #ifdef _XBOX1
-   configure_libretro(".xbe");
+   configure_libretro("D:\\", ".xbe");
 #else
-   configure_libretro(".xex");
+   configure_libretro("game:\\", ".xex");
 #endif
 
    video_xdk_d3d.start();
