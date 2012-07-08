@@ -270,7 +270,11 @@ static void configure_libretro(const char *path_prefix, const char * extension)
 #ifdef _XBOX1
 static void menu_init(void) {}
 static void menu_free(void) {}
-static void menu_loop(void) { g_console.mode_switch = MODE_EMULATION; }
+static void menu_loop(void)
+{
+   rarch_console_load_game("D:\\ssf2x.gba");
+   g_console.mode_switch = MODE_EMULATION;
+}
 #endif
 
 int main(int argc, char *argv[])
