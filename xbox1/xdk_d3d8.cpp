@@ -163,21 +163,15 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)calloc(1, sizeof(xdk_d3d_video_t));
    if (!d3d)
-   {
-	   RARCH_LOG("error #1\n");
       return NULL;
-   }
 
-   RARCH_LOG("step 2\n");
    d3d->d3d_device = direct3d_create_ctx(D3D_SDK_VERSION);
    if (!d3d->d3d_device)
    {
-      RARCH_LOG("error 2\n");
       free(d3d);
       return NULL;
    }
 
-   RARCH_LOG("step 3\n");
    memset(&d3d->d3dpp, 0, sizeof(d3d->d3dpp));
 
    // no letterboxing in 4:3 mode (if widescreen is
@@ -186,28 +180,23 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    //FIXME: Hardcoded right now
    d3d->d3dpp.BackBufferWidth         = 640;
    d3d->d3dpp.BackBufferHeight        = 480;
-   RARCH_LOG("step 3.1\n");
 
    d3d->d3dpp.FullScreen_PresentationInterval    = video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
    d3d->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
    d3d->d3dpp.BackBufferCount         = 2;
    d3d->d3dpp.EnableAutoDepthStencil  = FALSE;
    d3d->d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
-   RARCH_LOG("step 3.2\n");
 
    d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
 	   &d3d->d3dpp, &d3d->d3d_render_device);
-   RARCH_LOG("step 3.3\n");
 
    d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
       0, &d3d->lpTexture);
-   RARCH_LOG("step 3.4\n");
 
    D3DLOCKED_RECT d3dlr;
-   d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   d3d->lpTexture->LockRect(0, &d3dlr, NULL, 0);
    memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
    d3d->lpTexture->UnlockRect(0);
-   RARCH_LOG("step 3.5\n");
 
    d3d->last_width = 512;
    d3d->last_height = 512;
@@ -216,10 +205,10 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 	   D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf);
 
    static const DrawVerticeFormats init_verts[] = {
-      { -1.0f, -1.0f, 0.0f, 1.0f },
-      {  1.0f, -1.0f, 1.0f, 1.0f },
-      { -1.0f,  1.0f, 0.0f, 0.0f },
-      {  1.0f,  1.0f, 1.0f, 0.0f },
+      { -1.0f, -1.0f, 1.0f, 0.0f, 1.0f },
+      {  1.0f, -1.0f, 1.0f, 1.0f, 1.0f },
+      { -1.0f,  1.0f, 1.0f, 0.0f, 0.0f },
+      {  1.0f,  1.0f, 1.0f, 1.0f, 0.0f },
    };
    
    BYTE *verts_ptr;
@@ -268,7 +257,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    {
       D3DLOCKED_RECT d3dlr;
 
-      d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+      d3d->lpTexture->LockRect(0, &d3dlr, NULL, 0);
       memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
       d3d->lpTexture->UnlockRect(0);
 
@@ -276,10 +265,10 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       float tex_h = height / 512.0f;
 
       DrawVerticeFormats verts[] = {
-         { -1.0f, -1.0f, 0.0f,  tex_h },
-         {  1.0f, -1.0f, tex_w, tex_h },
-         { -1.0f,  1.0f, 0.0f,  0.0f },
-         {  1.0f,  1.0f, tex_w, 0.0f },
+         { -1.0f, -1.0f, 1.0f, 0.0f,  tex_h },
+         {  1.0f, -1.0f, 1.0f, tex_w, tex_h },
+         { -1.0f,  1.0f, 1.0f, 0.0f,  0.0f },
+         {  1.0f,  1.0f, 1.0f, tex_w, 0.0f },
       };
 
       // Align texels and vertices (D3D9 quirk).
@@ -308,7 +297,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    d3d->d3d_render_device->SetTexture(0, d3d->lpTexture);
 
    D3DLOCKED_RECT d3dlr;
-   d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   d3d->lpTexture->LockRect(0, &d3dlr, NULL, 0);
    for (unsigned y = 0; y < height; y++)
    {
       const uint8_t *in = (const uint8_t*)frame + y * pitch;

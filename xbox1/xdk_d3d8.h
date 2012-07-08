@@ -38,7 +38,7 @@ typedef struct
 
 typedef struct DrawVerticeFormats
 {
-   float x, y;
+   float x, y, z;
    float u, v;
 } DrawVerticeFormats;
 
