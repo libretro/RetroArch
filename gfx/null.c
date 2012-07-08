@@ -62,9 +62,11 @@ static void null_gfx_free(void *data)
    (void)data;
 }
 
+#ifdef RARCH_CONSOLE
 static void null_gfx_start(void) {}
 static void null_gfx_restart(void) {}
 static void null_gfx_stop(void) {}
+#endif
 
 const video_driver_t video_null = {
    null_gfx_init,
@@ -75,6 +77,7 @@ const video_driver_t video_null = {
    NULL,
    null_gfx_free,
    "null",
+
 #ifdef RARCH_CONSOLE
    null_gfx_start,
    null_gfx_stop,
