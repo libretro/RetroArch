@@ -26,7 +26,6 @@ static inline void RARCH_LOG(const char *msg, ...)
    va_list ap;
    va_start(ap, msg);
    wvsprintf(buffer, msg_new, ap);
-   buffer[ (sizeof(buffer) / sizeof( *buffer)) - 1] = '\0';
    OutputDebugStringA(buffer);
    va_end(ap);
 }
@@ -38,7 +37,6 @@ static inline void RARCH_WARN(const char *msg, ...)
    va_list ap;
    va_start(ap, msg);
    wvsprintf(buffer, msg_new, ap);
-   buffer[ (sizeof(buffer) / sizeof( *buffer)) - 1] = '\0';
    OutputDebugStringA(buffer);
    va_end(ap);
 }
@@ -50,7 +48,6 @@ static inline void RARCH_ERR(const char *msg, ...)
    va_list ap;
    va_start(ap, msg);
    wvsprintf(buffer, msg_new, ap);
-   buffer[ (sizeof(buffer) / sizeof( *buffer)) - 1] = '\0';
    OutputDebugStringA(buffer);
    va_end(ap);
 }
