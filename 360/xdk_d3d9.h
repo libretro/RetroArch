@@ -21,7 +21,6 @@
 
 #define DFONT_MAX	4096
 #define PRIM_FVF	(D3DFVF_XYZRHW | D3DFVF_TEX1)
-#define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZ | D3DFVF_NORMAL)
 
 #define MIN_SCALING_FACTOR (1.0f)
 #define MAX_SCALING_FACTOR (2.0f)
@@ -42,27 +41,6 @@ typedef struct DrawVerticeFormats
    float u, v;
 } DrawVerticeFormats;
 
-#ifdef _XBOX1
-/* Direct3D 8 */
-#define LPDIRECT3D_PTR LPDIRECT3D8
-#define LPDIRECT3DDEVICE_PTR LPDIRECT3DDEVICE8
-#define LPDIRECT3DTEXTURE_PTR LPDIRECT3DTEXTURE8
-#define LPDIRECT3DSURFACE_PTR LPDIRECT3DSURFACE8
-
-#define D3DVIEWPORT D3DVIEWPORT8
-#define D3DVERTEXELEMENT D3DVERTEXELEMENT8
-
-#define direct3d_create_ctx Direct3DCreate8
-#define IDirect3DVertexBuffer IDirect3DVertexBuffer8
-
-#define SetSamplerState SetTextureStageState
-#define D3DLOCK_NOSYSLOCK (0)
-
-#define D3DSAMP_ADDRESSU D3DTSS_ADDRESSU
-#define D3DSAMP_ADDRESSV D3DTSS_ADDRESSV
-#define D3DSAMP_MAGFILTER D3DTSS_MAGFILTER
-#define D3DSAMP_MINFILTER D3DTSS_MINFILTER
-#else
 /* Direct3D 9 */
 #define LPDIRECT3D_PTR LPDIRECT3D9
 #define LPDIRECT3DDEVICE_PTR LPDIRECT3DDEVICE9
@@ -75,7 +53,6 @@ typedef struct DrawVerticeFormats
 #define direct3d_create_ctx Direct3DCreate9
 #define IDirect3DVertexBuffer IDirect3DVertexBuffer9
 #define IDirect3DVertexDeclaration IDirect3DVertexDeclaration9
-#endif
 
 typedef struct xdk_d3d_video
 {
@@ -93,10 +70,8 @@ typedef struct xdk_d3d_video
    LPDIRECT3DTEXTURE_PTR lpTexture;
    D3DTexture lpTexture_ot_as16srgb;
    LPDIRECT3DTEXTURE_PTR lpTexture_ot;
-#if defined(_XBOX360)
    IDirect3DVertexDeclaration9* v_decl;
    XVIDEO_MODE video_mode;
-#endif
    D3DPRESENT_PARAMETERS d3dpp;
    LPDIRECT3DSURFACE_PTR lpSurface;
 } xdk_d3d_video_t;

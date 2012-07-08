@@ -27,7 +27,14 @@
 
 #include <xbdm.h>
 #include "../../input/rarch_xinput2.h"
-#include "../xdk_d3d.h"
+
+#ifdef _XBOX
+#if defined(_XBOX1)
+#include "../../xbox1/xdk_d3d8.h"
+#elif defined(_XBOX360)
+#include "../xdk_d3d9.h"
+#endif
+#endif
 
 #include "../../console/retroarch_console.h"
 #include "../../conf/config_file.h"

@@ -28,7 +28,7 @@
 
 #ifndef HAVE_XINPUT_XBOX1
 #define XINPUT_GAMEPAD_LEFT_TRIGGER         (16777216)
-#define XINPUT_GAMEPAD_RIGHT_TRIGGER		(33554432)
+#define XINPUT_GAMEPAD_RIGHT_TRIGGER        (33554432)
 #endif
 #define DEADZONE                            (16000)
 

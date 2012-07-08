@@ -98,8 +98,12 @@ VIDEO DRIVER
 #include "../../wii/video.c"
 #endif
 
-#if defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9))
-#include "../../360/xdk_d3d.cpp"
+#ifdef _XBOX
+#if defined(HAVE_D3D9)
+#include "../../360/xdk_d3d9.cpp"
+#elif defined(HAVE_D3D8)
+#include "../../xbox1/xdk_d3d8.cpp"
+#endif
 #endif
 
 #include "../../gfx/null.c"
@@ -123,8 +127,12 @@ INPUT
 #include "../../wii/input.c"
 #endif
 
-#if defined(HAVE_XINPUT_XBOX1) || defined(HAVE_XINPUT2)
+#ifdef _XBOX
+#if defined(HAVE_XINPUT_XBOX1)
+#include "../../xbox1/xinput_xbox_input.c"
+#elif defined(HAVE_XINPUT2)
 #include "../../input/xinput2_input.c"
+#endif
 #endif
 
 #include "../../input/null.c"

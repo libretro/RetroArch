@@ -17,7 +17,13 @@
 #ifndef _XDK360_CTX_H
 #define _XDK360_CTX_H
 
-#include "../../360/xdk_d3d.h"
+#ifdef _XBOX
+#if defined(_XBOX1)
+#include "../../360/xdk_d3d8.h"
+#elif defined(_XBOX360)
+#include "../../360/xdk_d3d9.h"
+#endif
+#endif
 
 void gfx_ctx_set_projection(xdk_d3d_video_t *d3d, const struct gl_ortho *ortho, bool allow_rotate);
 void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index);
