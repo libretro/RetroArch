@@ -13,6 +13,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _XBOX
+// The buffer memory has been lost, and must be restored
+#define DSERR_BUFFERLOST                MAKE_DSHRESULT(150)
+// An invalid parameter was passed to the returning function
+#define DSERR_INVALIDPARAM              E_INVALIDARG
+// The caller does not have the priority level required for the function to
+// succeed
+#define DSERR_PRIOLEVELNEEDED           MAKE_DSHRESULT(70)
+#endif
+
 #include "../driver.h"
 #include <stdlib.h>
 #include "../boolean.h"
@@ -280,13 +290,17 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
       dev.device = strtoul(device, NULL, 0);
 
    RARCH_LOG("DirectSound devices:\n");
+#ifndef _XBOX
    DirectSoundEnumerate(enumerate_cb, &dev);
+#endif
 
    if (DirectSoundCreate(dev.guid, &ds->ds, NULL) != DS_OK)
       goto error;
 
+#ifndef _XBOX
    if (IDirectSound_SetCooperativeLevel(ds->ds, GetDesktopWindow(), DSSCL_PRIORITY) != DS_OK)
       goto error;
+#endif
 
    wfx.wFormatTag = WAVE_FORMAT_PCM;
    wfx.nChannels = 2;
@@ -305,7 +319,11 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
    RARCH_LOG("[DirectSound]: Latency = %u ms\n", (unsigned)((1000 * ds->buffer_size) / wfx.nAvgBytesPerSec));
 
    bufdesc.dwSize = sizeof(DSBUFFERDESC);
+#ifdef _XBOX
+   bufdesc.dwFlags = 0;
+#else
    bufdesc.dwFlags = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_GLOBALFOCUS;
+#endif
    bufdesc.dwBufferBytes = ds->buffer_size;
    bufdesc.lpwfxFormat = &wfx;
 

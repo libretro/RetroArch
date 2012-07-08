@@ -177,6 +177,10 @@ AUDIO
 #include "../../wii/audio.c"
 #endif
 
+#ifdef HAVE_DSOUND
+#include "../../audio/dsound.c"
+#endif
+
 #include "../../audio/null.c"
 
 /*============================================================

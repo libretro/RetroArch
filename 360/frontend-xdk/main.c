@@ -273,7 +273,6 @@ static void menu_free(void) {}
 static void menu_loop(void)
 {
    rarch_console_load_game("D:\\ssf2x.gba");
-   g_console.mode_switch = MODE_EMULATION;
 }
 #endif
 
