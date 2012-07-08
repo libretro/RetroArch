@@ -47,6 +47,12 @@
 	ROM EXTENSIONS
 ============================================================ */
 
+void rarch_console_load_game(const char *path)
+{
+   snprintf(g_console.rom_path, sizeof(g_console.rom_path), path);
+   rarch_settings_change(S_START_RARCH);
+}
+
 const char *rarch_console_get_rom_ext(void)
 {
    const char *retval = NULL;

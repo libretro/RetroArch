@@ -543,30 +543,22 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    if(hObjPressed == m_romlist)
    {
       int index = m_romlist.GetCurSel();
+      const char *strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
       if(path_file_exists(browser.current_dir.list->elems[index].data))
       {
+         char path_tmp[1024];
          struct retro_system_info info;
          retro_get_system_info(&info);
          bool block_zip_extract  = info.block_extract;
-		 const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t*)m_romlist.GetText(index));
 
+         snprintf(path_tmp, sizeof(path_tmp), "%s\\%s", filebrowser_get_current_dir(&browser), strbuffer);
          if((strstr(strbuffer, ".zip") || strstr(strbuffer, ".ZIP")) && !block_zip_extract)
-         {
-            char path_tmp[1024];
-            snprintf(path_tmp, sizeof(path_tmp), "%s\\%s", filebrowser_get_current_dir(&browser), strbuffer);
             rarch_extract_zipfile(path_tmp);
-         }
          else
-         {
-            memset(g_console.rom_path, 0, sizeof(g_console.rom_path));
-            snprintf(g_console.rom_path, sizeof(g_console.rom_path), "%s\\%s", filebrowser_get_current_dir(&browser), strbuffer);
-            rarch_settings_change(S_START_RARCH);
-         }
+            rarch_console_load_game(path_tmp);
       }
       else if(browser.current_dir.list->elems[index].attr.b)
       {
-
-         const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
          snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(&browser), strbuffer);
          filebrowser_fetch_directory_entries(path, &browser, &m_romlist, &m_rompathtitle);
       }
