@@ -19,7 +19,7 @@
 
 #ifdef _XBOX
 #if defined(_XBOX1)
-#include "../../360/xdk_d3d8.h"
+#include "../../xbox1/xdk_d3d8.h"
 #elif defined(_XBOX360)
 #include "../../360/xdk_d3d9.h"
 #endif
