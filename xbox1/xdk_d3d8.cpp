@@ -158,8 +158,9 @@ static void xdk_d3d_set_rotation(void * data, unsigned orientation)
 
 static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-   unsigned size_d3d = sizeof(xdk_d3d_video_t);
-   RARCH_LOG("size of d3d: %d\n", size_d3d);
+   if (driver.video_data)
+      return driver.video_data;
+
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)calloc(1, sizeof(xdk_d3d_video_t));
    if (!d3d)
    {
@@ -181,8 +182,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    // no letterboxing in 4:3 mode (if widescreen is
    // unsupported
-   /* Xbox 1 */
-   d3d->d3dpp.BackBufferFormat        = g_console.color_format ? D3DFMT_A8R8G8B8 : D3DFMT_LIN_A1R5G5B5;
 
    //FIXME: Hardcoded right now
    d3d->d3dpp.BackBufferWidth         = 640;
