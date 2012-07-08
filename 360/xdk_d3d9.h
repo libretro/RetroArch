@@ -46,12 +46,12 @@ typedef struct DrawVerticeFormats
 #define LPDIRECT3DDEVICE_PTR LPDIRECT3DDEVICE9
 #define LPDIRECT3DTEXTURE_PTR LPDIRECT3DTEXTURE9
 #define LPDIRECT3DSURFACE_PTR LPDIRECT3DSURFACE9
+#define LPDIRECT3DVERTEXBUFFER_PTR LPDIRECT3DVERTEXBUFFER9
 
 #define D3DVIEWPORT D3DVIEWPORT9
 #define D3DVERTEXELEMENT D3DVERTEXELEMENT9
 
 #define direct3d_create_ctx Direct3DCreate9
-#define IDirect3DVertexBuffer IDirect3DVertexBuffer9
 #define IDirect3DVertexDeclaration IDirect3DVertexDeclaration9
 
 typedef struct xdk_d3d_video
@@ -66,7 +66,7 @@ typedef struct xdk_d3d_video
    unsigned last_height;
    LPDIRECT3D_PTR d3d_device;
    LPDIRECT3DDEVICE_PTR d3d_render_device;
-   IDirect3DVertexBuffer *vertex_buf;
+   LPDIRECT3DVERTEXBUFFER_PTR vertex_buf;
    LPDIRECT3DTEXTURE_PTR lpTexture;
    D3DTexture lpTexture_ot_as16srgb;
    LPDIRECT3DTEXTURE_PTR lpTexture_ot;
