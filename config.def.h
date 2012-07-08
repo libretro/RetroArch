@@ -78,7 +78,7 @@ enum
 #define VIDEO_DEFAULT_DRIVER VIDEO_WII
 #elif defined(XENON)
 #define VIDEO_DEFAULT_DRIVER VIDEO_XENON360
-#elif defined(_XBOX1) || defined(_XBOX360)
+#elif (defined(_XBOX1) || defined(_XBOX360)) && (defined(HAVE_D3D8) || defined(HAVE_D3D9))
 #define VIDEO_DEFAULT_DRIVER VIDEO_XDK_D3D
 #elif defined(HAVE_XVIDEO)
 #define VIDEO_DEFAULT_DRIVER VIDEO_XVIDEO

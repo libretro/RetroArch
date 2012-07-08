@@ -286,13 +286,16 @@ int main(int argc, char *argv[])
    configure_libretro("game:\\", ".xex");
 #endif
 
+#if defined(HAVE_D3D8) || defined(HAVE_D3D9)
    video_xdk_d3d.start();
+#else
+   video_null.start();
+#endif
    input_xinput.init();
 
    rarch_input_set_default_keybind_names_for_emulator();
 
    menu_init();
-
 
 begin_loop:
    if(g_console.mode_switch == MODE_EMULATION)
@@ -322,7 +325,11 @@ begin_shutdown:
       rarch_config_save(SYS_CONFIG_FILE);
 
    menu_free();
+#if defined(HAVE_D3D8) || defined(HAVE_D3D9)
    video_xdk_d3d.stop();
+#else
+   video_null.stop();
+#endif
    input_xinput.free(NULL);
    rarch_exec();
 

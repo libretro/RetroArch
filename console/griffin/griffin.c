@@ -98,7 +98,7 @@ VIDEO DRIVER
 #include "../../wii/video.c"
 #endif
 
-#ifdef _XBOX
+#if defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9))
 #include "../../360/xdk_d3d.cpp"
 #endif
 

@@ -85,7 +85,7 @@ static const video_driver_t *video_drivers[] = {
 #ifdef XENON
    &video_xenon360,
 #endif
-#ifdef _XBOX
+#if defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9))
    &video_xdk_d3d,
 #endif
 #ifdef HAVE_SDL

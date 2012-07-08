@@ -54,7 +54,7 @@
 	XBOX 1 / XBOX 360
 ============================================================ */
 
-#elif defined(_XBOX)
+#elif defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9))
 
 #define video_init_func(video_info, input, input_data) \
                                                 xdk_d3d_init(video_info, input, input_data)
