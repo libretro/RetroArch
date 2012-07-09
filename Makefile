@@ -125,8 +125,9 @@ ifeq ($(HAVE_SDL), 1)
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
 
-ifneq ($(OSX), 1)
-   LIBS += -lX11
+ifeq ($(HAVE_X11), 1)
+   LIBS += $(X11_LIBS)
+   DEFINES += $(X11_CFLAGS)
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
