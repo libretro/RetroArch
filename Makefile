@@ -125,19 +125,23 @@ ifeq ($(HAVE_SDL), 1)
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
 
+ifneq ($(OSX), 1)
+   LIBS += -lX11
+endif
+
 ifeq ($(HAVE_OPENGL), 1)
-	OBJ += gfx/gl.o gfx/fonts/freetype.o
+   OBJ += gfx/gl.o gfx/fonts/freetype.o
 ifeq ($(OSX),1)
-	LIBS += -framework OpenGL
+   LIBS += -framework OpenGL
 else
-	LIBS += -lGL
+   LIBS += -lGL
 endif
 endif
 endif
 
 ifeq ($(HAVE_RPI), 1)
    OBJ += gfx/rpi.o
-   LIBS += -lOpenVG -lGLESv2 -lEGL -lbcm_host
+   LIBS += -lOpenVG -lGLESv2 -lEGL -lbcm_host -lvcos -lvchiq_arm
 endif
 
 ifeq ($(HAVE_XVIDEO), 1)
