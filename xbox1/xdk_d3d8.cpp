@@ -251,8 +251,10 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 static bool xdk_d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
+#if 0
    if (!frame)
       return true;
+#endif
 
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    bool menu_enabled = g_console.menu_enable;
@@ -324,7 +326,9 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
    d3d->d3d_render_device->SetStreamSource(0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
 
+   d3d->d3d_render_device->BeginScene();
    d3d->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+   d3d->d3d_render_device->EndScene();
 
    if(!d3d->block_swap)
       gfx_ctx_swap_buffers();
