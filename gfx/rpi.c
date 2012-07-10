@@ -284,7 +284,7 @@ static void rpi_render_message(rpi_t *rpi, const char *msg)
       escapement[0] = head->advance_x;
       escapement[1] = head->advance_y;
       origin[0] = -head->char_off_x;
-      origin[1] = head->char_off_y;
+      origin[1] = -head->char_off_y;
 
       img = vgCreateImage(VG_A_8, head->width, head->height, VG_IMAGE_QUALITY_NONANTIALIASED);
 
