@@ -153,8 +153,8 @@ static void set_default_settings (void)
    g_settings.video.second_pass_smooth = true;
    g_settings.video.smooth = true;
    g_settings.video.vsync = true;
-   strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
-   strlcpy(g_settings.system_directory, usrDirPath, sizeof(g_settings.system_directory));
+   strlcpy(g_settings.cheat_database, "game:", sizeof(g_settings.cheat_database));
+   strlcpy(g_settings.system_directory, "game:", sizeof(g_settings.system_directory));
    g_settings.video.aspect_ratio = -1.0f;
 
    rarch_input_set_controls_default();
