@@ -380,6 +380,17 @@ item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       0.83f,
    },
    {
+      SETTING_PATH_SYSTEM,
+      "System Directory",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Set the default [System directory] path. System files like\nBIOS files, etc. will be stored here.",
+      WHITE,
+      0.83f,
+   },
+   {
       SETTING_ENABLE_SRAM_PATH,
       "Custom SRAM Dir Path",
       "",

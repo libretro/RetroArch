@@ -259,6 +259,10 @@ static void set_setting_label(menu * menu_obj, unsigned currentsetting)
                    set_setting_label_color(!(strcmp(g_settings.cheat_database, usrDirPath)), currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), g_settings.cheat_database);
 		   break;
+	   case SETTING_PATH_SYSTEM:
+                   set_setting_label_color(!(strcmp(g_settings.system_directory, systemDirPath)), currentsetting);
+		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), g_settings.cheat_database);
+		   break;
 	   case SETTING_ENABLE_SRAM_PATH:
                    set_setting_label_write_on_or_off(g_console.default_sram_dir_enable, currentsetting);
                    set_setting_label_color(!g_console.default_sram_dir_enable, currentsetting);
@@ -450,6 +454,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
       case PATH_SAVESTATES_DIR_CHOICE:
       case PATH_SRAM_DIR_CHOICE:
       case PATH_CHEATS_DIR_CHOICE:
+      case PATH_SYSTEM_DIR_CHOICE:
          strlcpy(menuStack[stack_idx].title, "Path Selection", sizeof(menuStack[stack_idx].title));
          menuStack[stack_idx].enum_id = menu_id;
          menuStack[stack_idx].selected = 0;
@@ -1393,6 +1398,16 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 
 			if(CTRL_START(trigger_state))
                            strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
+			break;
+		case SETTING_PATH_SYSTEM:
+			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) ||  CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
+			{
+			   menu_stack_increment();
+                           menu_stack_push(menuStackindex, PATH_SYSTEM_DIR_CHOICE);
+			}
+
+			if(CTRL_START(trigger_state))
+                           strlcpy(g_settings.system_directory, systemDirPath, sizeof(g_settings.system_directory));
 			break;
 		case SETTING_ENABLE_SRAM_PATH:
 			if(CTRL_LEFT(trigger_state)  || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state))

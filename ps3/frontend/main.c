@@ -62,6 +62,7 @@
 #define NP_POOL_SIZE (128*1024)
 
 static uint8_t np_pool[NP_POOL_SIZE];
+char systemDirPath[PATH_MAX];
 char usrDirPath[PATH_MAX];
 char DEFAULT_PRESET_FILE[PATH_MAX];
 char DEFAULT_BORDER_FILE[PATH_MAX];
@@ -99,6 +100,7 @@ static void set_default_settings(void)
    g_settings.video.smooth = true;
    g_settings.video.vsync = true;
    strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
+   strlcpy(g_settings.system_directory, systemDirPath, sizeof(g_settings.system_directory));
    g_settings.video.msg_pos_x = 0.05f;
    g_settings.video.msg_pos_y = 0.90f;
    g_settings.video.aspect_ratio = -1.0f;
@@ -260,6 +262,8 @@ static void get_environment_settings(int argc, char *argv[])
 	 RARCH_LOG("contentInfoPath : [%s].\n", contentInfoPath);
 	 RARCH_LOG("usrDirPath : [%s].\n", usrDirPath);
       }
+
+      snprintf(systemDirPath, sizeof(systemDirPath), "%s/%s/system/", usrDirPath, EMULATOR_CORE_DIR);
 
       /* now we fill in all the variables */
       snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/%s/presets/stock.conf", usrDirPath, EMULATOR_CORE_DIR);

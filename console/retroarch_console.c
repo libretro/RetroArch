@@ -875,6 +875,7 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       }
 #endif
 
+      CONFIG_GET_STRING(system_directory, "system_directory");
       CONFIG_GET_STRING(cheat_database, "cheat_database");
       CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
       CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
