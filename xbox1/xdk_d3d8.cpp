@@ -173,6 +173,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    if (!d3d->d3d_device)
    {
       free(d3d);
+	  OutputDebugString("RetroArch: Failed to create a D3D8 object!");
       return NULL;
    }
 
@@ -184,17 +185,53 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    //FIXME: Hardcoded right now
    d3d->d3dpp.BackBufferWidth         = 640;
    d3d->d3dpp.BackBufferHeight        = 480;
+   d3d->d3dpp.BackBufferFormat		  = D3DFMT_LIN_A8R8G8B8;
+
 
    d3d->d3dpp.FullScreen_PresentationInterval    = video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
    d3d->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
-   d3d->d3dpp.BackBufferCount         = 2;
+   d3d->d3dpp.BackBufferCount         = 1;//2
    d3d->d3dpp.EnableAutoDepthStencil  = FALSE;
    d3d->d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
 
+	//video flags
+   DWORD videoFlags = XGetVideoFlags();
+   if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
+   {
+		if(videoFlags & XC_VIDEO_FLAGS_PAL_60Hz)		// PAL 60 user
+			d3d->d3dpp.FullScreen_RefreshRateInHz = 60;
+		else
+			d3d->d3dpp.FullScreen_RefreshRateInHz = 50;
+   }
+/*
+   //FIXME: this is just a test, 720p output will be forced if component cables are being detected
+   if(XGetAVPack() == XC_AV_PACK_HDTV)
+   {
+		if(videoFlags & XC_VIDEO_FLAGS_HDTV_720p)
+		{
+			d3d->d3dpp.BackBufferWidth	= 1280;
+			d3d->d3dpp.BackBufferHeight = 720;
+			d3d->d3dpp.Flags			= D3DPRESENTFLAG_PROGRESSIVE | D3DPRESENTFLAG_WIDESCREEN;
+		}
+   }
+*/
    d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
 	   &d3d->d3dpp, &d3d->d3d_render_device);
 
-   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
+
+	// use an orthogonal matrix for the projection matrix
+    D3DXMATRIX mat;
+
+	D3DXMatrixOrthoOffCenterLH(&mat, 0,  d3d->d3dpp.BackBufferWidth ,  d3d->d3dpp.BackBufferHeight , 0, 0.0f, 1.0f);
+
+   d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &mat);
+
+	// use an identity matrix for the world and view matrices
+	D3DXMatrixIdentity(&mat);
+	d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &mat);
+	d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &mat);
+
+   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_A8R8G8B8,
       0, &d3d->lpTexture);
 
    D3DLOCKED_RECT d3dlr;
@@ -214,7 +251,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
       { -1.0f,  1.0f, 1.0f, 0.0f, 0.0f },
       {  1.0f,  1.0f, 1.0f, 1.0f, 0.0f },
    };
-   
+
    BYTE *verts_ptr;
    d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
    memcpy(verts_ptr, init_verts, sizeof(init_verts));
@@ -224,13 +261,19 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
 	   0xff000000, 1.0f, 0);
 
+   // disable lighting
+   d3d->d3d_render_device->SetRenderState(D3DRS_LIGHTING, FALSE);
+
+   // no culling
    d3d->d3d_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+
+   // disable z-buffer
    d3d->d3d_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
 
    D3DVIEWPORT vp = {0};
    /* FIXME: Xbox 1 - hardcoded */
-   vp.Width  = 640;
-   vp.Height = 480;
+   vp.Width  = d3d->d3dpp.BackBufferWidth;
+   vp.Height = d3d->d3dpp.BackBufferHeight;
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
    d3d->d3d_render_device->SetViewport(&vp);
