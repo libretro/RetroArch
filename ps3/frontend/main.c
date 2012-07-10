@@ -263,7 +263,7 @@ static void get_environment_settings(int argc, char *argv[])
 	 RARCH_LOG("usrDirPath : [%s].\n", usrDirPath);
       }
 
-      snprintf(systemDirPath, sizeof(systemDirPath), "%s/%s/system/", usrDirPath, EMULATOR_CORE_DIR);
+      snprintf(systemDirPath, sizeof(systemDirPath), "%s/%s/system", usrDirPath, EMULATOR_CORE_DIR);
 
       /* now we fill in all the variables */
       snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/%s/presets/stock.conf", usrDirPath, EMULATOR_CORE_DIR);
