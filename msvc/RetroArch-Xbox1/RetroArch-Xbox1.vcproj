@@ -172,7 +172,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="3"
+				GlobalOptimizations="TRUE"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="TRUE"
+				ImproveFloatingPointConsistency="TRUE"
+				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
+				EnableFiberSafeOptimizations="TRUE"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
 				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN;inline=_inline;HAVE_RARCH_MAIN_WRAP;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DEFAULT_RETROPAD_INPUT;HAVE_CONFIGFILE;HAVE_VID_CONTEXT;HAVE_DSOUND;HAVE_D3D8"
