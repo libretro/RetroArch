@@ -233,9 +233,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &mat);
    d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &mat);
 
-   	//Create a temporary surface
-   d3d->d3d_render_device->CreateImageSurface(512, 512, D3DFMT_A8R8G8B8, &d3d->lpSurface);
-
    d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5, 0, &d3d->lpTexture);
    D3DLOCKED_RECT d3dlr;
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, 0);

@@ -80,7 +80,6 @@ typedef struct xdk_d3d_video
    D3DTexture lpTexture_ot_as16srgb;
    LPDIRECT3DTEXTURE_PTR lpTexture_ot;
    D3DPRESENT_PARAMETERS d3dpp;
-   LPDIRECT3DSURFACE_PTR lpSurface;
 } xdk_d3d_video_t;
 
 #endif
