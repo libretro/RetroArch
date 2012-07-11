@@ -275,7 +275,31 @@
 			<File
 				RelativePath="..\..\console\griffin\griffin.c">
 				<FileConfiguration
+					Name="Debug|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Profile|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Profile_FastCap|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_LTCG|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
 						CompileAs="2"/>
@@ -284,7 +308,31 @@
 			<File
 				RelativePath="..\..\console\rzlib\rzlib.c">
 				<FileConfiguration
+					Name="Debug|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Profile|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Profile_FastCap|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Xbox">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_LTCG|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
 						CompileAs="2"/>
