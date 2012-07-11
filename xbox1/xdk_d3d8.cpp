@@ -16,6 +16,7 @@
 
 #ifdef _XBOX
 #include <xtl.h>
+#include <xgraphics.h>
 #endif
 
 #include "../driver.h"
@@ -29,7 +30,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
+#define HAVE_FBO
 static void check_window(xdk_d3d_video_t *d3d)
 {
    bool quit, resize;
@@ -179,22 +180,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    memset(&d3d->d3dpp, 0, sizeof(d3d->d3dpp));
 
-   // no letterboxing in 4:3 mode (if widescreen is
-   // unsupported
-
-   //FIXME: Hardcoded right now
-   d3d->d3dpp.BackBufferWidth         = 640;
-   d3d->d3dpp.BackBufferHeight        = 480;
-   d3d->d3dpp.BackBufferFormat		  = D3DFMT_LIN_A8R8G8B8;
-
-
-   d3d->d3dpp.FullScreen_PresentationInterval    = video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
-   d3d->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
-   d3d->d3dpp.BackBufferCount         = 1;//2
-   d3d->d3dpp.EnableAutoDepthStencil  = FALSE;
-   d3d->d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
-
-	//video flags
+   // "video mode"
    DWORD videoFlags = XGetVideoFlags();
    if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
    {
@@ -203,7 +189,8 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 		else
 			d3d->d3dpp.FullScreen_RefreshRateInHz = 50;
    }
-/*
+
+   /*
    //FIXME: this is just a test, 720p output will be forced if component cables are being detected
    if(XGetAVPack() == XC_AV_PACK_HDTV)
    {
@@ -215,25 +202,41 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 		}
    }
 */
+
+   // no letterboxing in 4:3 mode (if widescreen is
+   // unsupported
+
+   //FIXME: Hardcoded right now ( g_console.menus_hd_enable = d3d->video_mode.fIsHiDef;)
+   d3d->d3dpp.BackBufferWidth         = 640;
+   d3d->d3dpp.BackBufferHeight        = 480;
+   d3d->d3dpp.BackBufferFormat		  = D3DFMT_A8R8G8B8;
+
+
+   d3d->d3dpp.FullScreen_PresentationInterval    = video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+   d3d->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
+   d3d->d3dpp.BackBufferCount         = 2;
+   d3d->d3dpp.EnableAutoDepthStencil  = FALSE;
+   d3d->d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
+
    d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
 	   &d3d->d3dpp, &d3d->d3d_render_device);
 
 
 	// use an orthogonal matrix for the projection matrix
-    D3DXMATRIX mat;
-
-	D3DXMatrixOrthoOffCenterLH(&mat, 0,  d3d->d3dpp.BackBufferWidth ,  d3d->d3dpp.BackBufferHeight , 0, 0.0f, 1.0f);
+   D3DXMATRIX mat;
+   D3DXMatrixOrthoOffCenterLH(&mat, 0,  d3d->d3dpp.BackBufferWidth ,  d3d->d3dpp.BackBufferHeight , 0, 0.0f, 1.0f);
 
    d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &mat);
 
-	// use an identity matrix for the world and view matrices
-	D3DXMatrixIdentity(&mat);
-	d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &mat);
-	d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &mat);
+   // use an identity matrix for the world and view matrices
+   D3DXMatrixIdentity(&mat);
+   d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &mat);
+   d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &mat);
 
-   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_A8R8G8B8,
-      0, &d3d->lpTexture);
+   	//Create a temporary surface
+   d3d->d3d_render_device->CreateImageSurface(512, 512, D3DFMT_A8R8G8B8, &d3d->lpSurface);
 
+   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5, 0, &d3d->lpTexture);
    D3DLOCKED_RECT d3dlr;
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, 0);
    memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
@@ -264,7 +267,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    // disable lighting
    d3d->d3d_render_device->SetRenderState(D3DRS_LIGHTING, FALSE);
 
-   // no culling
+   // disable culling
    d3d->d3d_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 
    // disable z-buffer
@@ -302,16 +305,17 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    bool menu_enabled = g_console.menu_enable;
 
-   if (d3d->last_width != width || d3d->last_height != height)
+   if (d3d->last_width != width || d3d->last_height != height) //240*160
    {
+
       D3DLOCKED_RECT d3dlr;
 
       d3d->lpTexture->LockRect(0, &d3dlr, NULL, 0);
       memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
       d3d->lpTexture->UnlockRect(0);
 
-      float tex_w = width / 512.0f;
-      float tex_h = height / 512.0f;
+      float tex_w = width;  // / 512.0f;
+      float tex_h = height; // / 512.0f;
 
       DrawVerticeFormats verts[] = {
          { -1.0f, -1.0f, 1.0f, 0.0f,  tex_h },
@@ -346,6 +350,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    d3d->d3d_render_device->SetTexture(0, d3d->lpTexture);
 
    D3DLOCKED_RECT d3dlr;
+
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, 0);
    for (unsigned y = 0; y < height; y++)
    {
@@ -354,6 +359,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       memcpy(out, in, width * sizeof(uint16_t));
    }
    d3d->lpTexture->UnlockRect(0);
+
 
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
