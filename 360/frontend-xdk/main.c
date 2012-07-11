@@ -154,7 +154,6 @@ static void set_default_settings (void)
    g_settings.video.smooth = true;
    g_settings.video.vsync = true;
    strlcpy(g_settings.cheat_database, "game:", sizeof(g_settings.cheat_database));
-   strlcpy(g_settings.system_directory, "game:", sizeof(g_settings.system_directory));
    g_settings.video.aspect_ratio = -1.0f;
 
    rarch_input_set_controls_default();
@@ -258,8 +257,10 @@ static void get_environment_settings (void)
 #ifdef _XBOX1
    /* FIXME: Hardcoded */
    strlcpy(SYS_CONFIG_FILE, "D:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
+   strlcpy(g_settings.system_directory, "D:\\system\\", sizeof(g_settings.system_directory));
 #else
    strlcpy(SYS_CONFIG_FILE, "game:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
+   strlcpy(g_settings.system_directory, "game:\\system\\", sizeof(g_settings.system_directory));
 #endif
 }
 
@@ -287,9 +288,9 @@ static void menu_loop(void)
 
 int main(int argc, char *argv[])
 {
+   rarch_main_clear_state();
    get_environment_settings();
 
-   rarch_main_clear_state();
    config_set_defaults();
    
 #ifdef _XBOX1
