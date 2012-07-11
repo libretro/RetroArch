@@ -261,7 +261,7 @@ static void set_setting_label(menu * menu_obj, unsigned currentsetting)
 		   break;
 	   case SETTING_PATH_SYSTEM:
                    set_setting_label_color(!(strcmp(g_settings.system_directory, systemDirPath)), currentsetting);
-		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), g_settings.cheat_database);
+		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), g_settings.system_directory);
 		   break;
 	   case SETTING_ENABLE_SRAM_PATH:
                    set_setting_label_write_on_or_off(g_console.default_sram_dir_enable, currentsetting);
