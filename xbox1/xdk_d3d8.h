@@ -77,8 +77,7 @@ typedef struct xdk_d3d_video
    LPDIRECT3DDEVICE_PTR d3d_render_device;
    LPDIRECT3DVERTEXBUFFER_PTR vertex_buf;
    LPDIRECT3DTEXTURE_PTR lpTexture;
-   D3DTexture lpTexture_ot_as16srgb;
-   LPDIRECT3DTEXTURE_PTR lpTexture_ot;
+   DWORD video_mode;
    D3DPRESENT_PARAMETERS d3dpp;
 } xdk_d3d_video_t;
 
