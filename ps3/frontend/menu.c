@@ -392,7 +392,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(items_generalsettings, stack_idx);
 	 strlcpy(browser.extensions, rarch_console_get_rom_ext(), sizeof(browser.extensions));
-	 filebrowser_set_root(&browser, "/");
+	 filebrowser_set_root(&browser, g_console.default_rom_startup_dir);
 	 filebrowser_iterate(&browser, FILEBROWSER_ACTION_RESET);
          break;
       case LIBRETRO_CHOICE:
