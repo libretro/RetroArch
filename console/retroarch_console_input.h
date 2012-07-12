@@ -89,7 +89,7 @@ enum ps3_device_id
 
 enum xdk_device_id
 {
-   XDKK_DEVICE_ID_JOYPAD_B = 0,
+   XDK_DEVICE_ID_JOYPAD_B = 0,
    XDK_DEVICE_ID_JOYPAD_A,
    XDK_DEVICE_ID_JOYPAD_Y,
    XDK_DEVICE_ID_JOYPAD_X,
