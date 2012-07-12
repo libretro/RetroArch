@@ -30,7 +30,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#define HAVE_FBO
+
 static void check_window(xdk_d3d_video_t *d3d)
 {
    bool quit, resize;
@@ -70,9 +70,24 @@ static void xdk_d3d_set_viewport(bool force_full)
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
       0xff000000, 1.0f, 0);
 
-   // FIXME: Hardcoded for Xbox 1 for now
-   int width = 640;
-   int height = 480;
+   // Get the "video mode"
+   d3d->video_mode = XGetVideoFlags();
+
+   // Make sure we are actually able to using component cables
+   // FIXME: Note that we will also use 640x480 if the user has selected 1080i as HDTV resolution
+   int width, height;
+
+   if(XGetAVPack() == XC_AV_PACK_HDTV)
+   {
+		width = d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p ? 1280 : 640;
+		height = d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p ? 720 : 480;
+   }
+   else
+   {
+		width = 640;
+		height = 480;
+   }
+
    int m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
    float m_zNear, m_zFar;
 
@@ -180,35 +195,72 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    memset(&d3d->d3dpp, 0, sizeof(d3d->d3dpp));
 
-   // "video mode"
-   DWORD videoFlags = XGetVideoFlags();
+   // Get the "video mode"
+   d3d->video_mode = XGetVideoFlags();
+
+   // Set default (safe) values
+   d3d->d3dpp.BackBufferWidth = 640;
+   d3d->d3dpp.BackBufferHeight = 480;
+   d3d->d3dpp.FullScreen_RefreshRateInHz = D3DPRESENT_RATE_DEFAULT;
+
+
+   // Only valid in PAL mode, not valid for HDTV modes!
    if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
    {
-		if(videoFlags & XC_VIDEO_FLAGS_PAL_60Hz)		// PAL 60 user
+		if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)		// PAL 60 user
 			d3d->d3dpp.FullScreen_RefreshRateInHz = 60;
 		else
 			d3d->d3dpp.FullScreen_RefreshRateInHz = 50;
+		
+
+		// Standard video cables (RGB, SVIDEO)
+		g_console.menus_hd_enable = false;
+			
+		//FIXME: i don't know if this will work, someone with standard video cables should check it out
+		if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+		{
+				d3d->d3dpp.BackBufferWidth = 720;
+				d3d->d3dpp.BackBufferHeight = 480; //576 ??
+				d3d->d3dpp.Flags			= D3DPRESENTFLAG_INTERLACED | D3DPRESENTFLAG_WIDESCREEN;
+		}
+
+		else if(d3d->video_mode & XC_VIDEO_FLAGS_LETTERBOX)
+		{
+				d3d->d3dpp.BackBufferWidth = 720;
+				d3d->d3dpp.BackBufferHeight = 480; //576 ??
+				d3d->d3dpp.Flags			= D3DPRESENTFLAG_INTERLACED;
+		}
+
+		else
+		{
+				d3d->d3dpp.BackBufferWidth	= 640;
+				d3d->d3dpp.BackBufferHeight = 480;
+				d3d->d3dpp.Flags			= D3DPRESENTFLAG_INTERLACED;
+		}
    }
 
-   /*
-   //FIXME: this is just a test, 720p output will be forced if component cables are being detected
-   if(XGetAVPack() == XC_AV_PACK_HDTV)
+  else if(XGetAVPack() == XC_AV_PACK_HDTV)
    {
-		if(videoFlags & XC_VIDEO_FLAGS_HDTV_720p)
+	   	if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
 		{
+			g_console.menus_hd_enable = false; //true?
+			d3d->d3dpp.BackBufferWidth	= 640;
+			d3d->d3dpp.BackBufferHeight = 480;
+			d3d->d3dpp.Flags			= D3DPRESENTFLAG_PROGRESSIVE;
+		}
+
+	   	else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
+		{
+			g_console.menus_hd_enable = true;
 			d3d->d3dpp.BackBufferWidth	= 1280;
 			d3d->d3dpp.BackBufferHeight = 720;
 			d3d->d3dpp.Flags			= D3DPRESENTFLAG_PROGRESSIVE | D3DPRESENTFLAG_WIDESCREEN;
 		}
+
    }
-*/
 
    // no letterboxing in 4:3 mode (if widescreen is
    // unsupported
-
-   //FIXME: Hardcoded right now ( g_console.menus_hd_enable = d3d->video_mode.fIsHiDef;)
-   d3d->d3dpp.BackBufferWidth         = 640;
-   d3d->d3dpp.BackBufferHeight        = 480;
    d3d->d3dpp.BackBufferFormat		  = D3DFMT_A8R8G8B8;
 
 
@@ -271,7 +323,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->d3d_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
 
    D3DVIEWPORT vp = {0};
-   /* FIXME: Xbox 1 - hardcoded */
    vp.Width  = d3d->d3dpp.BackBufferWidth;
    vp.Height = d3d->d3dpp.BackBufferHeight;
    vp.MinZ   = 0.0f;
