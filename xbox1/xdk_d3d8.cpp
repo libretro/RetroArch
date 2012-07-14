@@ -67,26 +67,16 @@ static void xdk_d3d_set_viewport(bool force_full)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
-   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
-      0xff000000, 1.0f, 0);
+   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
    // Get the "video mode"
    d3d->video_mode = XGetVideoFlags();
 
-   // Make sure we are actually able to using component cables
-   // FIXME: Note that we will also use 640x480 if the user has selected 1080i as HDTV resolution
+   // Set the viewport based on the current resolution
    int width, height;
 
-   if(XGetAVPack() == XC_AV_PACK_HDTV)
-   {
-		width = d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p ? 1280 : 640;
-		height = d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p ? 720 : 480;
-   }
-   else
-   {
-		width = 640;
-		height = 480;
-   }
+   width  = d3d->d3dpp.BackBufferWidth;
+   height = d3d->d3dpp.BackBufferHeight;
 
    int m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
    float m_zNear, m_zFar;
@@ -198,55 +188,59 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    // Get the "video mode"
    d3d->video_mode = XGetVideoFlags();
 
-   // Set default (safe) values
-   d3d->d3dpp.BackBufferWidth = 640;
-   d3d->d3dpp.BackBufferHeight = 480;
-   d3d->d3dpp.FullScreen_RefreshRateInHz = D3DPRESENT_RATE_DEFAULT;
+   // Check if we are able to use progressive mode
+   if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+        d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
+    else
+        d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;
 
+    // Safe mode
+   	d3d->d3dpp.BackBufferWidth	= 640;
+	d3d->d3dpp.BackBufferHeight = 480;
+	g_console.menus_hd_enable = false;
 
    // Only valid in PAL mode, not valid for HDTV modes!
    if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
    {
-		if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)		// PAL 60 user
+		if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
 			d3d->d3dpp.FullScreen_RefreshRateInHz = 60;
 		else
 			d3d->d3dpp.FullScreen_RefreshRateInHz = 50;
 		
-
-		// Standard video cables (RGB, SVIDEO)
-		g_console.menus_hd_enable = false;
-			
-		//FIXME: i don't know if this will work, someone with standard video cables should check it out
+		// Check for 16:9 mode (PAL REGION)
+		if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+		{
+			if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+			{	//60 Hz, 720x480i
+				d3d->d3dpp.BackBufferWidth = 720;
+				d3d->d3dpp.BackBufferHeight = 480;
+			}
+			else
+			{	//50 Hz, 720x576i
+				d3d->d3dpp.BackBufferWidth = 720;
+				d3d->d3dpp.BackBufferHeight = 576;
+			}
+		}
+   }
+		else
+   {
+		// Check for 16:9 mode (NTSC REGIONS)
 		if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
 		{
 				d3d->d3dpp.BackBufferWidth = 720;
-				d3d->d3dpp.BackBufferHeight = 480; //576 ??
-				d3d->d3dpp.Flags			= D3DPRESENTFLAG_INTERLACED | D3DPRESENTFLAG_WIDESCREEN;
-		}
-
-		else if(d3d->video_mode & XC_VIDEO_FLAGS_LETTERBOX)
-		{
-				d3d->d3dpp.BackBufferWidth = 720;
-				d3d->d3dpp.BackBufferHeight = 480; //576 ??
-				d3d->d3dpp.Flags			= D3DPRESENTFLAG_INTERLACED;
-		}
-
-		else
-		{
-				d3d->d3dpp.BackBufferWidth	= 640;
 				d3d->d3dpp.BackBufferHeight = 480;
-				d3d->d3dpp.Flags			= D3DPRESENTFLAG_INTERLACED;
 		}
    }
 
-  else if(XGetAVPack() == XC_AV_PACK_HDTV)
-   {
+		
+	if(XGetAVPack() == XC_AV_PACK_HDTV)
+	{
 	   	if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
 		{
-			g_console.menus_hd_enable = false; //true?
+			g_console.menus_hd_enable = false;
 			d3d->d3dpp.BackBufferWidth	= 640;
 			d3d->d3dpp.BackBufferHeight = 480;
-			d3d->d3dpp.Flags			= D3DPRESENTFLAG_PROGRESSIVE;
+			d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
 		}
 
 	   	else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
@@ -254,27 +248,39 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 			g_console.menus_hd_enable = true;
 			d3d->d3dpp.BackBufferWidth	= 1280;
 			d3d->d3dpp.BackBufferHeight = 720;
-			d3d->d3dpp.Flags			= D3DPRESENTFLAG_PROGRESSIVE | D3DPRESENTFLAG_WIDESCREEN;
+			d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
 		}
 
-   }
-
-   // no letterboxing in 4:3 mode (if widescreen is
-   // unsupported
-   d3d->d3dpp.BackBufferFormat		  = D3DFMT_A8R8G8B8;
-
-
-   d3d->d3dpp.FullScreen_PresentationInterval    = video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
-   d3d->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
-   d3d->d3dpp.BackBufferCount         = 2;
-   d3d->d3dpp.EnableAutoDepthStencil  = FALSE;
-   d3d->d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
-
-   d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
-	   &d3d->d3dpp, &d3d->d3d_render_device);
+		else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+		{
+			g_console.menus_hd_enable = true;
+			d3d->d3dpp.BackBufferWidth	= 1920;
+			d3d->d3dpp.BackBufferHeight = 1080;
+			d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;
+		}
+	}
 
 
-	// use an orthogonal matrix for the projection matrix
+    if(d3d->d3dpp.BackBufferWidth > 640 && ((float)d3d->d3dpp.BackBufferHeight / (float)d3d->d3dpp.BackBufferWidth != 0.75) ||
+                            ((d3d->d3dpp.BackBufferWidth == 720) && (d3d->d3dpp.BackBufferHeight == 576))) // 16:9
+    {
+        d3d->d3dpp.Flags |= D3DPRESENTFLAG_WIDESCREEN;
+    }
+
+
+   // no letterboxing in 4:3 mode (if widescreen is unsupported
+   d3d->d3dpp.BackBufferFormat						= D3DFMT_A8R8G8B8;
+   d3d->d3dpp.FullScreen_PresentationInterval		= video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+   d3d->d3dpp.MultiSampleType						= D3DMULTISAMPLE_NONE;
+   d3d->d3dpp.BackBufferCount						= 2;
+   d3d->d3dpp.EnableAutoDepthStencil				= FALSE;
+   d3d->d3dpp.SwapEffect							= D3DSWAPEFFECT_COPY; //D3DSWAPEFFECT_DISCARD;
+
+   d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &d3d->d3dpp, &d3d->d3d_render_device);
+
+   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+
+   // use an orthogonal matrix for the projection matrix
    D3DXMATRIX mat;
    D3DXMatrixOrthoOffCenterLH(&mat, 0,  d3d->d3dpp.BackBufferWidth ,  d3d->d3dpp.BackBufferHeight , 0, 0.0f, 1.0f);
 
@@ -310,8 +316,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->vertex_buf->Unlock();
 
    d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
-   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
-	   0xff000000, 1.0f, 0);
 
    // disable lighting
    d3d->d3d_render_device->SetRenderState(D3DRS_LIGHTING, FALSE);
@@ -391,8 +395,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (d3d->should_resize)
       xdk_d3d_set_viewport(false);
 
-   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
-         0xff000000, 1.0f, 0);
    d3d->frame_count++;
 
    d3d->d3d_render_device->SetTexture(0, d3d->lpTexture);
@@ -422,6 +424,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
    d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
    d3d->d3d_render_device->SetStreamSource(0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
+   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
    d3d->d3d_render_device->BeginScene();
    d3d->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
