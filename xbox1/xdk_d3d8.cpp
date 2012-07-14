@@ -72,20 +72,11 @@ static void xdk_d3d_set_viewport(bool force_full)
    // Get the "video mode"
    d3d->video_mode = XGetVideoFlags();
 
-   // Make sure we are actually able to using component cables
-   // FIXME: Note that we will also use 640x480 if the user has selected 1080i as HDTV resolution
+   // Set the viewport based on the current resolution
    int width, height;
 
-   if(XGetAVPack() == XC_AV_PACK_HDTV)
-   {
-		width = d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p ? 1280 : 640;
-		height = d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p ? 720 : 480;
-   }
-   else
-   {
-		width = 640;
-		height = 480;
-   }
+   width  = d3d->d3dpp.BackBufferWidth;
+   height = d3d->d3dpp.BackBufferHeight;
 
    int m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
    float m_zNear, m_zFar;
