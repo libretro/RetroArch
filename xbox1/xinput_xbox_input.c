@@ -111,15 +111,6 @@ static void xinput_input_free_input(void *data)
 
 static void* xinput_input_init(void)
 {
-   //XDEVICE_PREALLOC_TYPE types[] =
-   //{
-   //   {XDEVICE_TYPE_GAMEPAD, 4},
-   //   {XDEVICE_TYPE_MEMORY_UNIT, 2}
-   //};
-
-   //XInitDevices(sizeof(types) / sizeof(XDEVICE_PREALLOC_TYPE),
-   //types );
-
    XInitDevices(0, NULL);
 
    dwDeviceMask = XGetDevices(XDEVICE_TYPE_GAMEPAD);

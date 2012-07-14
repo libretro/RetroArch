@@ -475,7 +475,7 @@ void rarch_input_set_controls_default (void)
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]		= platform_keys[PS3_DEVICE_ID_JOYPAD_R3].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]		= platform_keys[PS3_DEVICE_ID_JOYPAD_L2].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]		= platform_keys[PS3_DEVICE_ID_JOYPAD_L3].joykey;
-#elif defined(_XBOX360)
+#elif defined(_XBOX)
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[XDK_DEVICE_ID_JOYPAD_A].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		= platform_keys[XDK_DEVICE_ID_JOYPAD_X].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	= platform_keys[XDK_DEVICE_ID_JOYPAD_BACK].joykey;
