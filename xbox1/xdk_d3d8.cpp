@@ -261,18 +261,14 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    // no letterboxing in 4:3 mode (if widescreen is
    // unsupported
-   d3d->d3dpp.BackBufferFormat		  = D3DFMT_A8R8G8B8;
+   d3d->d3dpp.BackBufferFormat						= D3DFMT_A8R8G8B8;
+   d3d->d3dpp.FullScreen_PresentationInterval		= video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+   d3d->d3dpp.MultiSampleType						= D3DMULTISAMPLE_NONE;
+   d3d->d3dpp.BackBufferCount						= 2;
+   d3d->d3dpp.EnableAutoDepthStencil				= FALSE;
+   d3d->d3dpp.SwapEffect							= D3DSWAPEFFECT_DISCARD;
 
-
-   d3d->d3dpp.FullScreen_PresentationInterval    = video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
-   d3d->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
-   d3d->d3dpp.BackBufferCount         = 2;
-   d3d->d3dpp.EnableAutoDepthStencil  = FALSE;
-   d3d->d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
-
-   d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
-	   &d3d->d3dpp, &d3d->d3d_render_device);
-
+   d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &d3d->d3dpp, &d3d->d3d_render_device);
 
 	// use an orthogonal matrix for the projection matrix
    D3DXMATRIX mat;
