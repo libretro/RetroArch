@@ -297,7 +297,7 @@ static const struct platform_bind platform_keys[] = {
    { CTRL_UP_MASK | CTRL_RSTICK_UP_MASK, "RStick D-Pad Up" },
    { CTRL_DOWN_MASK | CTRL_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
 };
-#elif defined(_XBOX)
+#elif defined(_XBOX360)
 static const struct platform_bind platform_keys[] = {
    { XINPUT_GAMEPAD_B, "B button" },
    { XINPUT_GAMEPAD_A, "A button" },
@@ -309,18 +309,10 @@ static const struct platform_bind platform_keys[] = {
    { XINPUT_GAMEPAD_DPAD_RIGHT, "D-Pad Right" },
    { XINPUT_GAMEPAD_BACK, "Back button" },
    { XINPUT_GAMEPAD_START, "Start button" },
-#ifdef _XBOX1
-   { XINPUT_GAMEPAD_WHITE, "White button" },
-#else
    { XINPUT_GAMEPAD_LEFT_SHOULDER, "Left Shoulder" },
-#endif
    { XINPUT_GAMEPAD_LEFT_TRIGGER, "Left Trigger" },
    { XINPUT_GAMEPAD_LEFT_THUMB, "Left Thumb" },
-#ifdef _XBOX1
-   { XINPUT_GAMEPAD_BLACK, "Black button" },
-#else
    { XINPUT_GAMEPAD_RIGHT_SHOULDER, "Right Shoulder" },
-#endif
    { XINPUT_GAMEPAD_RIGHT_TRIGGER, "Right Trigger" },
    { XINPUT_GAMEPAD_RIGHT_THUMB, "Right Thumb" },
    { XINPUT_GAMEPAD_LSTICK_LEFT_MASK, "LStick Left" },
@@ -339,6 +331,41 @@ static const struct platform_bind platform_keys[] = {
    { XINPUT_GAMEPAD_DPAD_RIGHT | XINPUT_GAMEPAD_RSTICK_RIGHT_MASK, "RStick D-Pad Right" },
    { XINPUT_GAMEPAD_DPAD_UP | XINPUT_GAMEPAD_RSTICK_UP_MASK, "RStick D-Pad Up" },
    { XINPUT_GAMEPAD_DPAD_DOWN | XINPUT_GAMEPAD_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
+};
+#elif defined(_XBOX1)
+static const struct platform_bind platform_keys[] = {
+   { XINPUT1_GAMEPAD_B, "B button" },
+   { XINPUT1_GAMEPAD_A, "A button" },
+   { XINPUT1_GAMEPAD_Y, "Y button" },
+   { XINPUT1_GAMEPAD_X, "X button" },
+   { XINPUT1_GAMEPAD_DPAD_UP, "D-Pad Up" },
+   { XINPUT1_GAMEPAD_DPAD_DOWN, "D-Pad Down" },
+   { XINPUT1_GAMEPAD_DPAD_LEFT, "D-Pad Left" },
+   { XINPUT1_GAMEPAD_DPAD_RIGHT, "D-Pad Right" },
+   { XINPUT1_GAMEPAD_BACK, "Back button" },
+   { XINPUT1_GAMEPAD_START, "Start button" },
+   { XINPUT1_GAMEPAD_WHITE, "White button" },
+   { XINPUT1_GAMEPAD_LEFT_TRIGGER, "Left Trigger" },
+   { XINPUT1_GAMEPAD_LEFT_THUMB, "Left Thumb" },
+   { XINPUT1_GAMEPAD_BLACK, "Black button" },
+   { XINPUT1_GAMEPAD_RIGHT_TRIGGER, "Right Trigger" },
+   { XINPUT1_GAMEPAD_RIGHT_THUMB, "Right Thumb" },
+   { XINPUT1_GAMEPAD_LSTICK_LEFT_MASK, "LStick Left" },
+   { XINPUT1_GAMEPAD_LSTICK_RIGHT_MASK, "LStick Right" },
+   { XINPUT1_GAMEPAD_LSTICK_UP_MASK, "LStick Up" },
+   { XINPUT1_GAMEPAD_LSTICK_DOWN_MASK, "LStick Down" },
+   { XINPUT1_GAMEPAD_DPAD_LEFT | XINPUT1_GAMEPAD_LSTICK_LEFT_MASK, "LStick D-Pad Left" },
+   { XINPUT1_GAMEPAD_DPAD_RIGHT | XINPUT1_GAMEPAD_LSTICK_RIGHT_MASK, "LStick D-Pad Right" },
+   { XINPUT1_GAMEPAD_DPAD_UP | XINPUT1_GAMEPAD_LSTICK_UP_MASK, "LStick D-Pad Up" },
+   { XINPUT1_GAMEPAD_DPAD_DOWN | XINPUT1_GAMEPAD_LSTICK_DOWN_MASK, "LStick D-Pad Down" },
+   { XINPUT1_GAMEPAD_RSTICK_LEFT_MASK, "RStick Left" },
+   { XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK, "RStick Right" },
+   { XINPUT1_GAMEPAD_RSTICK_UP_MASK, "RStick Up" },
+   { XINPUT1_GAMEPAD_RSTICK_DOWN_MASK, "RStick Down" },
+   { XINPUT1_GAMEPAD_DPAD_LEFT | XINPUT1_GAMEPAD_RSTICK_LEFT_MASK, "RStick D-Pad Left" },
+   { XINPUT1_GAMEPAD_DPAD_RIGHT | XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK, "RStick D-Pad Right" },
+   { XINPUT1_GAMEPAD_DPAD_UP | XINPUT1_GAMEPAD_RSTICK_UP_MASK, "RStick D-Pad Up" },
+   { XINPUT1_GAMEPAD_DPAD_DOWN | XINPUT1_GAMEPAD_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
 };
 #elif defined(GEKKO)
 static const struct platform_bind platform_keys[] = {

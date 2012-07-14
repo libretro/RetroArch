@@ -25,6 +25,7 @@
 #include "../general.h"
 #include "../libretro.h"
 #include "../input/rarch_xinput2.h"
+#include "xinput_xbox_input.h"
 
 static uint64_t state[4];
 HANDLE gamepads[4];
@@ -61,35 +62,91 @@ static void xinput_input_poll(void *data)
 
 	  // handle inserted devices
 	  bInserted[i] = (dwInsertions & (1<<i)) ? true : false;
+
+	  if(bInserted[i])
+	  {
+		 XINPUT_POLLING_PARAMETERS m_pollingParameters;
+         m_pollingParameters.fAutoPoll = TRUE;
+         m_pollingParameters.fInterruptOut = TRUE;
+         m_pollingParameters.bInputInterval = 8;
+         m_pollingParameters.bOutputInterval = 8;
+         gamepads[i] = XInputOpen(XDEVICE_TYPE_GAMEPAD, i, XDEVICE_NO_SLOT, NULL);
+	  }
 	  
+	  if (gamepads[i])
+	  {
          XINPUT_STATE state_tmp;
          unsigned long retval;
-		 XINPUT_POLLING_PARAMETERS m_pollingParameters;
 
          // if the controller is removed after XGetDeviceChanges but before
          // XInputOpen, the device handle will be NULL
-		 m_pollingParameters.fAutoPoll = TRUE;
-		m_pollingParameters.fInterruptOut = TRUE;
-		m_pollingParameters.bInputInterval = 8;
-		m_pollingParameters.bOutputInterval = 8;
-         gamepads[i] = XInputOpen(XDEVICE_TYPE_GAMEPAD, i, XDEVICE_NO_SLOT, NULL);
 
-		 if(gamepads[i])
-		 {
-            retval = XInputGetState(gamepads[i], &state_tmp);
-			pads_connected += (retval != ERROR_SUCCESS) ? 0 : 1;
-			state[i] = state_tmp.Gamepad.wButtons;
-			state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE))        << 16;
-			state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE))         << 17;
-			state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE))         << 18;
-			state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE))        << 19;
-			state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE))        << 20;
-			state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE))         << 21;
-			state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE))         << 22;
-			state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE))        << 23;
-			state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER] > 128 ? 1 : 0))  << 24;
-			state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER] > 128 ? 1 : 0)) << 25;
-		 }
+         retval = XInputGetState(gamepads[i], &state_tmp);
+         pads_connected += (retval != ERROR_SUCCESS) ? 0 : 1;
+		 state[i] = 0;
+
+		 //GBA Button B
+		 state[i] |= (state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_B] ? 1 : 0) << XINPUT1_GAMEPAD_B;
+
+		 // Unknown button (probably not mapped in VBA)
+		 state[i] |= (state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A] ? 1 : 0) << XINPUT1_GAMEPAD_A;
+
+		 // Up (D-Pad)
+		 state[i] |= (state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_Y] ? 1 : 0) << XINPUT1_GAMEPAD_Y;
+
+		// Unknown button (probably not mapped in VBA)
+		 state[i] |= (state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X] ? 1 : 0) << XINPUT1_GAMEPAD_X;
+
+		 // Unknown button (probably not mapped in VBA)
+		 state[i] |= (state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) << XINPUT1_GAMEPAD_DPAD_UP;
+
+		 // Unknown button (probably not mapped in VBA)
+		 state[i] |= (state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) << XINPUT1_GAMEPAD_DPAD_DOWN;
+
+		 // Unknown button (probably not mapped in VBA)
+		 state[i] |= (state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) << XINPUT1_GAMEPAD_DPAD_LEFT;
+
+		 // Unknown button (probably not mapped in VBA)
+		 state[i] |= (state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) << XINPUT1_GAMEPAD_DPAD_RIGHT;
+
+		 // Down
+		 state[i] |= (state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) << XINPUT1_GAMEPAD_BACK;
+
+		 // Up (D-Pad)
+		 state[i] |= (state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_START) << XINPUT1_GAMEPAD_START;
+
+		 // Analog buttons seem to all report the same thing - GBA Button A
+
+		// GBA Button A
+		 state[i] |= (state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_WHITE] ? 1 : 0) << XINPUT1_GAMEPAD_WHITE;
+
+		// GBA Button A
+		 state[i] |= (state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER] ? 1 : 0) << XINPUT1_GAMEPAD_LEFT_TRIGGER;
+
+		 // Left
+		 state[i] |= (state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) << XINPUT1_GAMEPAD_LEFT_THUMB;
+
+		// GBA Button A
+		 state[i] |= (state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_BLACK] ? 1 : 0) << XINPUT1_GAMEPAD_BLACK;
+
+		 // Right
+ 		 state[i] |= (state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) << XINPUT1_GAMEPAD_RIGHT_THUMB;
+
+         //state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE))        << 16;
+         //state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE))         << 17;
+         //state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE))         << 18;
+         //state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE))        << 19;
+         //state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE))        << 20;
+         //state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE))         << 21;
+         //state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE))         << 22;
+         //state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE))        << 23;
+
+		 // GBA Button A
+         state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER] ? 1 : 0))  << XINPUT1_GAMEPAD_LEFT_TRIGGER;
+
+		 // GBA Button A
+         state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER] ? 1 : 0)) << XINPUT1_GAMEPAD_RIGHT_TRIGGER;
+      }
    }
 }
 

@@ -124,6 +124,10 @@ enum xdk_device_id
 
    RARCH_LAST_PLATFORM_KEY
 };
+
+#ifdef _XBOX1
+#include "../xbox1/xinput_xbox_input.h"
+#endif
 #elif defined(GEKKO)
 #include <ogc/pad.h>
 #ifdef HW_RVL
