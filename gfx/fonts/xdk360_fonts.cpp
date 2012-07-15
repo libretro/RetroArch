@@ -460,7 +460,7 @@ void d3d9_render_msg_pre(xdk360_video_font_t * font)
       D3DTexture_GetLevelDesc(font->m_pFontTexture, 0, &TextureDesc); // Get the description
 
       // Set render state
-      D3DDevice_SetTexture_Inline(pD3dDevice, 0, font->m_pFontTexture);
+      pD3dDevice->SetTexture(0, font->m_pFontTexture);
 
       // Read the TextureDesc here to ensure no load/hit/store from GetLevelDesc()
       float vTexScale[4];
@@ -476,10 +476,10 @@ void d3d9_render_msg_pre(xdk360_video_font_t * font)
       pD3dDevice->SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL );
       pD3dDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID );
       pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, FALSE );
-      D3DDevice_SetSamplerState_MinFilter(pD3dDevice, 0, D3DTEXF_LINEAR );
-      D3DDevice_SetSamplerState_MagFilter(pD3dDevice, 0, D3DTEXF_LINEAR );
+      pD3dDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+      pD3dDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 
-      D3DDevice_SetVertexDeclaration(pD3dDevice, s_FontLocals.m_pFontVertexDecl );
+      pD3dDevice->SetVertexDeclaration(s_FontLocals.m_pFontVertexDecl);
       D3DDevice_SetVertexShader(pD3dDevice, s_FontLocals.m_pFontVertexShader );
       D3DDevice_SetPixelShader(pD3dDevice, s_FontLocals.m_pFontPixelShader );
 
@@ -503,9 +503,9 @@ void d3d9_render_msg_post(xdk360_video_font_t * font)
       // Cache the global pointer into a register
       xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
       D3DDevice *pD3dDevice = vid->d3d_render_device;
-
-      D3DDevice_SetTexture_Inline(pD3dDevice, 0, NULL);
-      D3DDevice_SetVertexDeclaration(pD3dDevice, NULL);
+	  
+      pD3dDevice->SetTexture(0, NULL);
+	  pD3dDevice->SetVertexDeclaration(NULL);
       D3DDevice_SetVertexShader(pD3dDevice, NULL );
       D3DDevice_SetPixelShader(pD3dDevice, NULL );
       D3DDevice_SetRenderState_AlphaBlendEnable(pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHABLENDENABLE ]);
@@ -514,7 +514,7 @@ void d3d9_render_msg_post(xdk360_video_font_t * font)
       pD3dDevice->SetRenderState( D3DRS_ALPHAREF, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAREF ] );
       pD3dDevice->SetRenderState( D3DRS_ALPHAFUNC, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAFUNC ] );
       pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
-      D3DDevice_SetSamplerState_MinFilter(pD3dDevice, 0, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ] );
-      D3DDevice_SetSamplerState_MagFilter(pD3dDevice, 0, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ] );
+      pD3dDevice->SetSamplerState(0, D3DSAMP_MINFILTER, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ]);
+      pD3dDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ]);
    }
 }
