@@ -526,7 +526,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiBtnLibretroCore", &m_change_libretro_core);
 
    char core_text[256];
-   snprintf(core_text, sizeof(core_text), "%s (v%s)", id, info.library_version);
+   snprintf(core_text, sizeof(core_text), "%s %s", id, info.library_version);
 
    rarch_convert_char_to_wchar(strw_buffer, core_text, sizeof(strw_buffer));
    m_core.SetText(strw_buffer);
