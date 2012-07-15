@@ -321,7 +321,7 @@ HRESULT d3d9_init_font(const char *font_path)
 
    // Allocate memory to hold the lines
    video_console.m_Buffer = (wchar_t*)malloc(sizeof(wchar_t*) * video_console.m_cScreenHeightVirtual * ( video_console.m_cScreenWidth + 1 ));
-   video_console.m_Lines = new wchar_t *[ video_console.m_cScreenHeightVirtual ];
+   video_console.m_Lines = (wchar_t**)malloc( video_console.m_cScreenHeightVirtual * sizeof(wchar_t*));
 
    // Set the line pointers as indexes into the buffer
    for( unsigned int i = 0; i < video_console.m_cScreenHeightVirtual; i++ )
@@ -342,7 +342,7 @@ void d3d9_deinit_font(void)
    // Delete the memory we've allocated
    if(video_console.m_Lines)
    {
-      delete[] video_console.m_Lines;
+      free(video_console.m_Lines);
       video_console.m_Lines = NULL;
    }
 
@@ -511,7 +511,6 @@ void d3d9_render_msg_post(xdk360_video_font_t * font)
       D3DDevice_SetRenderState_AlphaBlendEnable(pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHABLENDENABLE ]);
       D3DDevice_SetRenderState_SrcBlend(pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_SRCBLEND ] );
       D3DDevice_SetRenderState_DestBlend( pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_DESTBLEND ] );
-      pD3dDevice->SetRenderState( D3DRS_ALPHATESTENABLE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHATESTENABLE ] );
       pD3dDevice->SetRenderState( D3DRS_ALPHAREF, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAREF ] );
       pD3dDevice->SetRenderState( D3DRS_ALPHAFUNC, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAFUNC ] );
       pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
