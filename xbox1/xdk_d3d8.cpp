@@ -31,6 +31,8 @@
 #include "config.h"
 #endif
 
+wchar_t strw_buffer[128];
+
 static void check_window(xdk_d3d_video_t *d3d)
 {
    bool quit, resize;
@@ -441,22 +443,29 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
 
    //Output memory usage
-   d3d->debug_font->TextOut(d3d->pFrontBuffer, L"RetroArch XBOX1", (unsigned)-1, 30, 30 );
-   d3d->debug_font->TextOut(d3d->pBackBuffer, L"RetroArch XBOX1", (unsigned)-1, 30, 30 );
 
-   swprintf(d3d->buffer, L"%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
-   d3d->debug_font->TextOut(d3d->pFrontBuffer, d3d->buffer, (unsigned)-1, 30, 50 );
-   d3d->debug_font->TextOut(d3d->pBackBuffer, d3d->buffer, (unsigned)-1, 30, 50 );
+   char buf[128], buf2[128], buf_fps_last[128];
+   bool ret = false;
+   sprintf(buf, "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
+   rarch_convert_char_to_wchar(strw_buffer, buf, sizeof(strw_buffer));
+   d3d->debug_font->TextOut(d3d->pFrontBuffer, strw_buffer, (unsigned)-1, 30, 50 );
+   d3d->debug_font->TextOut(d3d->pBackBuffer, strw_buffer, (unsigned)-1, 30, 50 );
 
-   // FIXME: Add fps counter
-   /*
-   swprintf(buffer, L"%02d / %02d FPS", fps, IsPal ? 50 : 60);
-   d3d->debug_font->TextOut(d3d->pFrontBuffer, d3d->buffer, (unsigned)-1, 30, 70 );
-   d3d->debug_font->TextOut(d3d->pBackBuffer,	 d3d->buffer, (unsigned)-1, 30, 70 );
-   */
+   if(ret = gfx_window_title(buf2, sizeof(buf2)) || buf_fps_last)
+   {
+      if(ret)
+      {
+         sprintf(buf_fps_last, buf2);
+         rarch_convert_char_to_wchar(strw_buffer, buf2, sizeof(strw_buffer));
+      }
+      else if(buf_fps_last)
+         rarch_convert_char_to_wchar(strw_buffer, buf_fps_last, sizeof(strw_buffer));
 
-   d3d->pFrontBuffer->Release();
-   d3d->pBackBuffer->Release();
+      d3d->debug_font->TextOut(d3d->pFrontBuffer, strw_buffer, (unsigned)-1, 30, 70 );
+      d3d->debug_font->TextOut(d3d->pBackBuffer, strw_buffer, (unsigned)-1, 30, 70 );
+      d3d->pFrontBuffer->Release();
+      d3d->pBackBuffer->Release();
+   }
 #endif
 
    if(!d3d->block_swap)

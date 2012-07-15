@@ -19,8 +19,10 @@
 #ifndef _MSC_VER
 #include <sys/time.h>
 #else
+#ifndef _XBOX
 #include <winsock2.h>
 #include <mmsystem.h>
+#endif
 static int gettimeofday(struct timeval *val, void *dummy)
 {
    (void)dummy;
@@ -96,7 +98,7 @@ bool gfx_window_title(char *buf, size_t size)
    return ret;
 }
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
 #include "../dynamic.h"
 // We only load this library once, so we let it be unloaded at application shutdown,

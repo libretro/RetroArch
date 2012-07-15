@@ -98,6 +98,8 @@ VIDEO DRIVER
 #include "../../wii/video.c"
 #endif
 
+#include "../../gfx/gfx_common.c"
+
 #ifdef _XBOX
 #if defined(HAVE_D3D9)
 #include "../../360/xdk_d3d9.cpp"

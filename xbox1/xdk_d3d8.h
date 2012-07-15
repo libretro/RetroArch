@@ -83,7 +83,6 @@ typedef struct xdk_d3d_video
    DWORD video_mode;
    D3DPRESENT_PARAMETERS d3dpp;
    XFONT *debug_font;
-   WCHAR buffer[1000];
    D3DSurface *pBackBuffer, *pFrontBuffer;
 } xdk_d3d_video_t;
 
