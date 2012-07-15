@@ -52,12 +52,7 @@ static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, i
 
 static unsigned gl_frames = 0;
 
-void gfx_window_title_reset(void)
-{
-   gl_frames = 0;
-}
-
-bool gfx_window_title(char *buf, size_t size)
+bool gfx_get_fps(char *buf, size_t size)
 {
    static struct timeval tv;
    struct timeval new_tv;
@@ -80,6 +75,18 @@ bool gfx_window_title(char *buf, size_t size)
       snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, fps, gl_frames);
       ret = true;
    }
+
+   return ret;
+}
+
+void gfx_window_title_reset(void)
+{
+   gl_frames = 0;
+}
+
+bool gfx_window_title(char *buf, size_t size)
+{
+   bool ret = gfx_get_fps(buf, size);
 
    gl_frames++;
    return ret;
