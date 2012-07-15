@@ -234,28 +234,26 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    if(XGetAVPack() == XC_AV_PACK_HDTV)
    {
-	   if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
-	   {
-		   g_console.menus_hd_enable = false;
-		   d3d->d3dpp.BackBufferWidth	= 640;
-		   d3d->d3dpp.BackBufferHeight = 480;
-		   d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
-	   }
-
+      if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+      {
+         g_console.menus_hd_enable = false;
+         d3d->d3dpp.BackBufferWidth	= 640;
+         d3d->d3dpp.BackBufferHeight = 480;
+         d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
+      }
 	   else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
 	   {
-		   g_console.menus_hd_enable = true;
-		   d3d->d3dpp.BackBufferWidth	= 1280;
-		   d3d->d3dpp.BackBufferHeight = 720;
-		   d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
+         g_console.menus_hd_enable = true;
+         d3d->d3dpp.BackBufferWidth	= 1280;
+         d3d->d3dpp.BackBufferHeight = 720;
+         d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
 	   }
-
 	   else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
 	   {
-		   g_console.menus_hd_enable = true;
-		   d3d->d3dpp.BackBufferWidth	= 1920;
-		   d3d->d3dpp.BackBufferHeight = 1080;
-		   d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;
+         g_console.menus_hd_enable = true;
+         d3d->d3dpp.BackBufferWidth	= 1920;
+         d3d->d3dpp.BackBufferHeight = 1080;
+         d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;
 	   }
    }
 
@@ -264,14 +262,13 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
       ((d3d->d3dpp.BackBufferWidth == 720) && (d3d->d3dpp.BackBufferHeight == 576))) // 16:9
         d3d->d3dpp.Flags |= D3DPRESENTFLAG_WIDESCREEN;
 
-
    // no letterboxing in 4:3 mode (if widescreen is unsupported
-   d3d->d3dpp.BackBufferFormat				= D3DFMT_A8R8G8B8;
+   d3d->d3dpp.BackBufferFormat                     = D3DFMT_A8R8G8B8;
    d3d->d3dpp.FullScreen_PresentationInterval		= video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
-   d3d->d3dpp.MultiSampleType				= D3DMULTISAMPLE_NONE;
-   d3d->d3dpp.BackBufferCount				= 2;
-   d3d->d3dpp.EnableAutoDepthStencil			= FALSE;
-   d3d->d3dpp.SwapEffect				= D3DSWAPEFFECT_COPY;
+   d3d->d3dpp.MultiSampleType                      = D3DMULTISAMPLE_NONE;
+   d3d->d3dpp.BackBufferCount                      = 2;
+   d3d->d3dpp.EnableAutoDepthStencil               = FALSE;
+   d3d->d3dpp.SwapEffect                           = D3DSWAPEFFECT_COPY;
 
    d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &d3d->d3dpp, &d3d->d3d_render_device);
 
@@ -340,7 +337,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    d3d->vsync = video->vsync;
 
-	// load debug font (toggle option in later revisions ?)
+   // load debug font (toggle option in later revisions ?)
 #ifdef SHOW_DEBUG_INFO
    XFONT_OpenDefaultFont(&d3d->debug_font);
    d3d->debug_font->SetBkMode(XFONT_TRANSPARENT);
@@ -453,10 +450,10 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
    // FIXME: Add fps counter
    /*
-      swprintf(buffer, L"%02d / %02d FPS", fps, IsPal ? 50 : 60);
-      d3d->debug_font->TextOut(d3d->pFrontBuffer, d3d->buffer, (unsigned)-1, 30, 70 );
-      d3d->debug_font->TextOut(d3d->pBackBuffer,	 d3d->buffer, (unsigned)-1, 30, 70 );
-      */
+   swprintf(buffer, L"%02d / %02d FPS", fps, IsPal ? 50 : 60);
+   d3d->debug_font->TextOut(d3d->pFrontBuffer, d3d->buffer, (unsigned)-1, 30, 70 );
+   d3d->debug_font->TextOut(d3d->pBackBuffer,	 d3d->buffer, (unsigned)-1, 30, 70 );
+   */
 
    d3d->pFrontBuffer->Release();
    d3d->pBackBuffer->Release();
