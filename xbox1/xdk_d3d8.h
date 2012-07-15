@@ -18,6 +18,9 @@
 #define _XDK_VIDEO_H
 
 #include <stdint.h>
+#include <xfont.h>
+
+#define SHOW_DEBUG_INFO
 
 #define DFONT_MAX	4096
 #define PRIM_FVF	(D3DFVF_XYZRHW | D3DFVF_TEX1)
@@ -79,6 +82,9 @@ typedef struct xdk_d3d_video
    LPDIRECT3DTEXTURE_PTR lpTexture;
    DWORD video_mode;
    D3DPRESENT_PARAMETERS d3dpp;
+   XFONT *debug_font;
+   WCHAR buffer[1000];
+   D3DSurface *pBackBuffer, *pFrontBuffer;
 } xdk_d3d_video_t;
 
 #endif

@@ -111,16 +111,16 @@ static int16_t xinput_input_state(void *data, const struct retro_keybind **binds
 		  retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X]) ? 1 : 0;
          break;
 	  case RETRO_DEVICE_ID_JOYPAD_LEFT:
-		 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? 1 : 0;
+		 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) || (state[player].Gamepad.sThumbLX < -DEADZONE) ? 1 : 0;
          break;
 	  case RETRO_DEVICE_ID_JOYPAD_RIGHT:
-		 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? 1 : 0;
+		 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) || (state[player].Gamepad.sThumbLX > DEADZONE) ? 1 : 0;
          break;
 	  case RETRO_DEVICE_ID_JOYPAD_UP:
-  		 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? 1 : 0;
+  		 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) || (state[player].Gamepad.sThumbLY > DEADZONE) ? 1 : 0;
          break;
 	  case RETRO_DEVICE_ID_JOYPAD_DOWN:
-  		 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? 1 : 0;
+  		 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN)|| (state[player].Gamepad.sThumbLY < -DEADZONE) ? 1 : 0;
          break;
 	  case RETRO_DEVICE_ID_JOYPAD_START:
 		 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_START) ? 1 : 0;
