@@ -195,86 +195,83 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
         d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;
 
     // Safe mode
-   	d3d->d3dpp.BackBufferWidth	= 640;
-	d3d->d3dpp.BackBufferHeight = 480;
-	g_console.menus_hd_enable = false;
+    d3d->d3dpp.BackBufferWidth	= 640;
+    d3d->d3dpp.BackBufferHeight = 480;
+    g_console.menus_hd_enable = false;
 
    // Only valid in PAL mode, not valid for HDTV modes!
    if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
    {
-		if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
-			d3d->d3dpp.FullScreen_RefreshRateInHz = 60;
-		else
-			d3d->d3dpp.FullScreen_RefreshRateInHz = 50;
-		
-		// Check for 16:9 mode (PAL REGION)
-		if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
-		{
-			if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
-			{	//60 Hz, 720x480i
-				d3d->d3dpp.BackBufferWidth = 720;
-				d3d->d3dpp.BackBufferHeight = 480;
-			}
-			else
-			{	//50 Hz, 720x576i
-				d3d->d3dpp.BackBufferWidth = 720;
-				d3d->d3dpp.BackBufferHeight = 576;
-			}
-		}
+      if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+         d3d->d3dpp.FullScreen_RefreshRateInHz = 60;
+      else
+         d3d->d3dpp.FullScreen_RefreshRateInHz = 50;
+
+      // Check for 16:9 mode (PAL REGION)
+      if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+      {
+         if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+	 {	//60 Hz, 720x480i
+            d3d->d3dpp.BackBufferWidth = 720;
+	    d3d->d3dpp.BackBufferHeight = 480;
+	 }
+	 else
+	 {	//50 Hz, 720x576i
+            d3d->d3dpp.BackBufferWidth = 720;
+	    d3d->d3dpp.BackBufferHeight = 576;
+	 }
+      }
    }
-		else
+   else
    {
-		// Check for 16:9 mode (NTSC REGIONS)
-		if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
-		{
-				d3d->d3dpp.BackBufferWidth = 720;
-				d3d->d3dpp.BackBufferHeight = 480;
-		}
+      // Check for 16:9 mode (NTSC REGIONS)
+      if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+      {
+         d3d->d3dpp.BackBufferWidth = 720;
+	 d3d->d3dpp.BackBufferHeight = 480;
+      }
    }
 
-		
-	if(XGetAVPack() == XC_AV_PACK_HDTV)
-	{
-	   	if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
-		{
-			g_console.menus_hd_enable = false;
-			d3d->d3dpp.BackBufferWidth	= 640;
-			d3d->d3dpp.BackBufferHeight = 480;
-			d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
-		}
+   if(XGetAVPack() == XC_AV_PACK_HDTV)
+   {
+	   if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+	   {
+		   g_console.menus_hd_enable = false;
+		   d3d->d3dpp.BackBufferWidth	= 640;
+		   d3d->d3dpp.BackBufferHeight = 480;
+		   d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
+	   }
 
-	   	else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
-		{
-			g_console.menus_hd_enable = true;
-			d3d->d3dpp.BackBufferWidth	= 1280;
-			d3d->d3dpp.BackBufferHeight = 720;
-			d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
-		}
+	   else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
+	   {
+		   g_console.menus_hd_enable = true;
+		   d3d->d3dpp.BackBufferWidth	= 1280;
+		   d3d->d3dpp.BackBufferHeight = 720;
+		   d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
+	   }
 
-		else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
-		{
-			g_console.menus_hd_enable = true;
-			d3d->d3dpp.BackBufferWidth	= 1920;
-			d3d->d3dpp.BackBufferHeight = 1080;
-			d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;
-		}
-	}
+	   else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+	   {
+		   g_console.menus_hd_enable = true;
+		   d3d->d3dpp.BackBufferWidth	= 1920;
+		   d3d->d3dpp.BackBufferHeight = 1080;
+		   d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;
+	   }
+   }
 
 
-    if(d3d->d3dpp.BackBufferWidth > 640 && ((float)d3d->d3dpp.BackBufferHeight / (float)d3d->d3dpp.BackBufferWidth != 0.75) ||
-                            ((d3d->d3dpp.BackBufferWidth == 720) && (d3d->d3dpp.BackBufferHeight == 576))) // 16:9
-    {
+   if(d3d->d3dpp.BackBufferWidth > 640 && ((float)d3d->d3dpp.BackBufferHeight / (float)d3d->d3dpp.BackBufferWidth != 0.75) ||
+      ((d3d->d3dpp.BackBufferWidth == 720) && (d3d->d3dpp.BackBufferHeight == 576))) // 16:9
         d3d->d3dpp.Flags |= D3DPRESENTFLAG_WIDESCREEN;
-    }
 
 
    // no letterboxing in 4:3 mode (if widescreen is unsupported
-   d3d->d3dpp.BackBufferFormat						= D3DFMT_A8R8G8B8;
+   d3d->d3dpp.BackBufferFormat				= D3DFMT_A8R8G8B8;
    d3d->d3dpp.FullScreen_PresentationInterval		= video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
-   d3d->d3dpp.MultiSampleType						= D3DMULTISAMPLE_NONE;
-   d3d->d3dpp.BackBufferCount						= 2;
-   d3d->d3dpp.EnableAutoDepthStencil				= FALSE;
-   d3d->d3dpp.SwapEffect							= D3DSWAPEFFECT_COPY; //D3DSWAPEFFECT_DISCARD;
+   d3d->d3dpp.MultiSampleType				= D3DMULTISAMPLE_NONE;
+   d3d->d3dpp.BackBufferCount				= 2;
+   d3d->d3dpp.EnableAutoDepthStencil			= FALSE;
+   d3d->d3dpp.SwapEffect				= D3DSWAPEFFECT_COPY;
 
    d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &d3d->d3dpp, &d3d->d3d_render_device);
 
@@ -345,11 +342,11 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
 	// load debug font (toggle option in later revisions ?)
 #ifdef SHOW_DEBUG_INFO
-	XFONT_OpenDefaultFont(&d3d->debug_font);
-	d3d->debug_font->SetBkMode(XFONT_TRANSPARENT);
-	d3d->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
-	d3d->debug_font->SetTextHeight(14);
-	d3d->debug_font->SetTextAntialiasLevel(d3d->debug_font->GetTextAntialiasLevel());
+   XFONT_OpenDefaultFont(&d3d->debug_font);
+   d3d->debug_font->SetBkMode(XFONT_TRANSPARENT);
+   d3d->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
+   d3d->debug_font->SetTextHeight(14);
+   d3d->debug_font->SetTextAntialiasLevel(d3d->debug_font->GetTextAntialiasLevel());
 #endif
 
    return d3d;
@@ -441,28 +438,28 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
 
 #ifdef SHOW_DEBUG_INFO
-    static MEMORYSTATUS stat;
-    GlobalMemoryStatus(&stat);
-	d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
-	d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
+   static MEMORYSTATUS stat;
+   GlobalMemoryStatus(&stat);
+   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
+   d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
 
-	//Output memory usage
-	d3d->debug_font->TextOut(d3d->pFrontBuffer, L"RetroArch XBOX1", (unsigned)-1, 30, 30 );
-	d3d->debug_font->TextOut(d3d->pBackBuffer, L"RetroArch XBOX1", (unsigned)-1, 30, 30 );
+   //Output memory usage
+   d3d->debug_font->TextOut(d3d->pFrontBuffer, L"RetroArch XBOX1", (unsigned)-1, 30, 30 );
+   d3d->debug_font->TextOut(d3d->pBackBuffer, L"RetroArch XBOX1", (unsigned)-1, 30, 30 );
 
-	swprintf(d3d->buffer, L"%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
-	d3d->debug_font->TextOut(d3d->pFrontBuffer, d3d->buffer, (unsigned)-1, 30, 50 );
-	d3d->debug_font->TextOut(d3d->pBackBuffer, d3d->buffer, (unsigned)-1, 30, 50 );
+   swprintf(d3d->buffer, L"%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
+   d3d->debug_font->TextOut(d3d->pFrontBuffer, d3d->buffer, (unsigned)-1, 30, 50 );
+   d3d->debug_font->TextOut(d3d->pBackBuffer, d3d->buffer, (unsigned)-1, 30, 50 );
 
-	// FIXME: Add fps counter
-	/*
-	swprintf(buffer, L"%02d / %02d FPS", fps, IsPal ? 50 : 60);
-	d3d->debug_font->TextOut(d3d->pFrontBuffer, d3d->buffer, (unsigned)-1, 30, 70 );
-	d3d->debug_font->TextOut(d3d->pBackBuffer,	 d3d->buffer, (unsigned)-1, 30, 70 );
-	*/
+   // FIXME: Add fps counter
+   /*
+      swprintf(buffer, L"%02d / %02d FPS", fps, IsPal ? 50 : 60);
+      d3d->debug_font->TextOut(d3d->pFrontBuffer, d3d->buffer, (unsigned)-1, 30, 70 );
+      d3d->debug_font->TextOut(d3d->pBackBuffer,	 d3d->buffer, (unsigned)-1, 30, 70 );
+      */
 
-	d3d->pFrontBuffer->Release();
-	d3d->pBackBuffer->Release();
+   d3d->pFrontBuffer->Release();
+   d3d->pBackBuffer->Release();
 #endif
 
    if(!d3d->block_swap)
