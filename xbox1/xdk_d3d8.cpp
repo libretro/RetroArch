@@ -179,7 +179,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    if (!d3d->d3d_device)
    {
       free(d3d);
-	  OutputDebugString("RetroArch: Failed to create a D3D8 object!");
+	   OutputDebugString("RetroArch: Failed to create a D3D8 object!");
       return NULL;
    }
 
@@ -190,12 +190,12 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    // Check if we are able to use progressive mode
    if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
-        d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
-    else
-        d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;
+      d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
+   else
+      d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;
 
     // Safe mode
-    d3d->d3dpp.BackBufferWidth	= 640;
+    d3d->d3dpp.BackBufferWidth = 640;
     d3d->d3dpp.BackBufferHeight = 480;
     g_console.menus_hd_enable = false;
 
@@ -211,15 +211,15 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
       if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
          if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
-	 {	//60 Hz, 720x480i
+	      {	//60 Hz, 720x480i
             d3d->d3dpp.BackBufferWidth = 720;
-	    d3d->d3dpp.BackBufferHeight = 480;
-	 }
-	 else
-	 {	//50 Hz, 720x576i
-            d3d->d3dpp.BackBufferWidth = 720;
-	    d3d->d3dpp.BackBufferHeight = 576;
-	 }
+	         d3d->d3dpp.BackBufferHeight = 480;
+	      }
+	    else
+	      {	//50 Hz, 720x576i
+           d3d->d3dpp.BackBufferWidth = 720;
+           d3d->d3dpp.BackBufferHeight = 576;
+	      }
       }
    }
    else
@@ -228,7 +228,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
       if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
          d3d->d3dpp.BackBufferWidth = 720;
-	 d3d->d3dpp.BackBufferHeight = 480;
+	      d3d->d3dpp.BackBufferHeight = 480;
       }
    }
 
