@@ -380,7 +380,7 @@ void xdk360_console_format(const char * strFormat)
       ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
 
    // Output the string to the console
-   unsigned long uStringLength = strlen( strFormat );
+   unsigned long uStringLength = strlen(strFormat);
    for( unsigned long i = 0; i < uStringLength; i++ )
    {
       wchar_t wch;
@@ -407,7 +407,7 @@ void xdk360_console_format(const char * strFormat)
          // Try to append the character to the line
          video_console.m_Lines[ video_console.m_nCurLine ][ video_console.m_cCurLineLength ] = wch;
          xdk360_video_font_get_text_width(&m_Font, video_console.m_Lines[ video_console.m_nCurLine ], &fTextWidth,
-		&fTextHeight);
+            &fTextHeight);
 		 
 		 if( fTextHeight > video_console.m_cxSafeArea )
 		 {
@@ -447,17 +447,12 @@ void d3d9_render_msg_pre(xdk360_video_font_t * font)
          pD3dDevice->GetRenderState( D3DRS_ALPHABLENDENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHABLENDENABLE ] );
          pD3dDevice->GetRenderState( D3DRS_SRCBLEND, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_SRCBLEND ] );
 		 pD3dDevice->GetRenderState( D3DRS_DESTBLEND, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_DESTBLEND ] );
-		 pD3dDevice->GetRenderState( D3DRS_BLENDOP, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_BLENDOP ] );
-		 pD3dDevice->GetRenderState( D3DRS_ALPHATESTENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHATESTENABLE ] );
 		 pD3dDevice->GetRenderState( D3DRS_ALPHAREF, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAREF ] );
 		 pD3dDevice->GetRenderState( D3DRS_ALPHAFUNC, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAFUNC ] );
 		 pD3dDevice->GetRenderState( D3DRS_FILLMODE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_FILLMODE ] );
-		 pD3dDevice->GetRenderState( D3DRS_CULLMODE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_CULLMODE ] );
 		 pD3dDevice->GetRenderState( D3DRS_VIEWPORTENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
 		 font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ] = D3DDevice_GetSamplerState_MinFilter( pD3dDevice, 0 );
 		 font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ] = D3DDevice_GetSamplerState_MagFilter( pD3dDevice, 0 );
-		 font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSU ] = D3DDevice_GetSamplerState_AddressU( pD3dDevice, 0);
-		 font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSV ]  = D3DDevice_GetSamplerState_AddressV( pD3dDevice, 0);
       }
 
       // Set the texture scaling factor as a vertex shader constant
@@ -477,17 +472,12 @@ void d3d9_render_msg_pre(xdk360_video_font_t * font)
       D3DDevice_SetRenderState_AlphaBlendEnable( pD3dDevice, TRUE );
       D3DDevice_SetRenderState_SrcBlend(pD3dDevice, D3DBLEND_SRCALPHA );
       D3DDevice_SetRenderState_DestBlend( pD3dDevice, D3DBLEND_INVSRCALPHA );
-      D3DDevice_SetRenderState_BlendOp( pD3dDevice, D3DBLENDOP_ADD );
-      pD3dDevice->SetRenderState( D3DRS_ALPHATESTENABLE, TRUE );
       pD3dDevice->SetRenderState( D3DRS_ALPHAREF, 0x08 );
       pD3dDevice->SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL );
       pD3dDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID );
-      pD3dDevice->SetRenderState( D3DRS_CULLMODE, D3DCULL_CCW );
       pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, FALSE );
       D3DDevice_SetSamplerState_MinFilter(pD3dDevice, 0, D3DTEXF_LINEAR );
       D3DDevice_SetSamplerState_MagFilter(pD3dDevice, 0, D3DTEXF_LINEAR );
-      D3DDevice_SetSamplerState_AddressU_Inline(pD3dDevice, 0, D3DTADDRESS_CLAMP );
-      D3DDevice_SetSamplerState_AddressV_Inline(pD3dDevice, 0, D3DTADDRESS_CLAMP );
 
       D3DDevice_SetVertexDeclaration(pD3dDevice, s_FontLocals.m_pFontVertexDecl );
       D3DDevice_SetVertexShader(pD3dDevice, s_FontLocals.m_pFontVertexShader );
@@ -521,16 +511,11 @@ void d3d9_render_msg_post(xdk360_video_font_t * font)
       D3DDevice_SetRenderState_AlphaBlendEnable(pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHABLENDENABLE ]);
       D3DDevice_SetRenderState_SrcBlend(pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_SRCBLEND ] );
       D3DDevice_SetRenderState_DestBlend( pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_DESTBLEND ] );
-      D3DDevice_SetRenderState_BlendOp( pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_BLENDOP ] );
       pD3dDevice->SetRenderState( D3DRS_ALPHATESTENABLE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHATESTENABLE ] );
       pD3dDevice->SetRenderState( D3DRS_ALPHAREF, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAREF ] );
       pD3dDevice->SetRenderState( D3DRS_ALPHAFUNC, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAFUNC ] );
-      pD3dDevice->SetRenderState( D3DRS_FILLMODE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_FILLMODE ] );
-      pD3dDevice->SetRenderState( D3DRS_CULLMODE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_CULLMODE ] );
       pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
       D3DDevice_SetSamplerState_MinFilter(pD3dDevice, 0, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ] );
       D3DDevice_SetSamplerState_MagFilter(pD3dDevice, 0, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ] );
-      D3DDevice_SetSamplerState_AddressU_Inline(pD3dDevice, 0, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSU ] );
-      D3DDevice_SetSamplerState_AddressV_Inline(pD3dDevice, 0, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_ADDRESSV ] );
    }
 }
