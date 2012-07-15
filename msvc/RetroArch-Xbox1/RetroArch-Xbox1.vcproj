@@ -19,18 +19,18 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
+				Optimization="3"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
 				PreprocessorDefinitions="_DEBUG;_XBOX;_XBOX1;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN;HAVE_RARCH_MAIN_WRAP;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DEFAULT_RETROPAD_INPUT;HAVE_CONFIGFILE;HAVE_VID_CONTEXT;HAVE_DSOUND;HAVE_D3D8"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
 				EnableEnhancedInstructionSet="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="FALSE"
-				DebugInformationFormat="4"/>
+				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
