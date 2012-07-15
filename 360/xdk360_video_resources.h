@@ -17,10 +17,6 @@
 #ifndef RARCH_360_RESOURCES_H
 #define RARCH_360_RESOURCES_H
 
-#ifdef _XBOX360
-#include "../gfx/fonts/xdk360_fonts.h"
-#endif
-
 struct RESOURCE
 {
    unsigned long dwType;
@@ -41,8 +37,6 @@ enum
    RESOURCETYPE_EOF            = 0xffffffff
 };
 
-extern video_console_t video_console;
-extern xdk360_video_font_t m_Font;
 
 class PackedResource
 {
@@ -88,10 +82,5 @@ class PackedResource
       PackedResource();
       ~PackedResource();
 };
-
-extern void xdk360_convert_texture_to_as16_srgb( D3DTexture *pTexture );
-
-extern void xdk360_video_font_draw_text(xdk360_video_font_t * font, 
-   float fOriginX, float fOriginY, const wchar_t * strText, float fMaxPixelWidth );
 
 #endif
