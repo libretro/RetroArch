@@ -343,6 +343,15 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    d3d->vsync = video->vsync;
 
+	// load debug font (toggle option in later revisions ?)
+#ifdef SHOW_DEBUG_INFO
+	XFONT_OpenDefaultFont(&d3d->debug_font);
+	d3d->debug_font->SetBkMode(XFONT_TRANSPARENT);
+	d3d->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
+	d3d->debug_font->SetTextHeight(14);
+	d3d->debug_font->SetTextAntialiasLevel(d3d->debug_font->GetTextAntialiasLevel());
+#endif
+
    return d3d;
 }
 
@@ -429,6 +438,32 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    d3d->d3d_render_device->BeginScene();
    d3d->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
    d3d->d3d_render_device->EndScene();
+
+
+#ifdef SHOW_DEBUG_INFO
+    static MEMORYSTATUS stat;
+    GlobalMemoryStatus(&stat);
+	d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
+	d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
+
+	//Output memory usage
+	d3d->debug_font->TextOut(d3d->pFrontBuffer, L"RetroArch XBOX1", (unsigned)-1, 30, 30 );
+	d3d->debug_font->TextOut(d3d->pBackBuffer, L"RetroArch XBOX1", (unsigned)-1, 30, 30 );
+
+	swprintf(d3d->buffer, L"%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
+	d3d->debug_font->TextOut(d3d->pFrontBuffer, d3d->buffer, (unsigned)-1, 30, 50 );
+	d3d->debug_font->TextOut(d3d->pBackBuffer, d3d->buffer, (unsigned)-1, 30, 50 );
+
+	// FIXME: Add fps counter
+	/*
+	swprintf(buffer, L"%02d / %02d FPS", fps, IsPal ? 50 : 60);
+	d3d->debug_font->TextOut(d3d->pFrontBuffer, d3d->buffer, (unsigned)-1, 30, 70 );
+	d3d->debug_font->TextOut(d3d->pBackBuffer,	 d3d->buffer, (unsigned)-1, 30, 70 );
+	*/
+
+	d3d->pFrontBuffer->Release();
+	d3d->pBackBuffer->Release();
+#endif
 
    if(!d3d->block_swap)
       gfx_ctx_swap_buffers();
