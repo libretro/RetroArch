@@ -32,6 +32,7 @@
 #endif
 
 wchar_t strw_buffer[128];
+unsigned font_x, font_y;
 
 static void check_window(xdk_d3d_video_t *d3d)
 {
@@ -130,6 +131,9 @@ static void xdk_d3d_set_viewport(bool force_full)
    vp.MinZ   = m_zNear;
    vp.MaxZ   = m_zFar;
    d3d->d3d_render_device->SetViewport(&vp);
+
+   font_x = vp.X;
+   font_y = vp.Y;
 
    //if(gl->overscan_enable && !force_full)
    //{
@@ -346,6 +350,9 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
    d3d->debug_font->SetTextHeight(14);
    d3d->debug_font->SetTextAntialiasLevel(d3d->debug_font->GetTextAntialiasLevel());
+
+   font_x = 0;
+   font_y = 0;
 #endif
 
    return d3d;
@@ -448,10 +455,10 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    bool ret = false;
    sprintf(buf, "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
    rarch_convert_char_to_wchar(strw_buffer, buf, sizeof(strw_buffer));
-   d3d->debug_font->TextOut(d3d->pFrontBuffer, strw_buffer, (unsigned)-1, 30, 50 );
-   d3d->debug_font->TextOut(d3d->pBackBuffer, strw_buffer, (unsigned)-1, 30, 50 );
+   d3d->debug_font->TextOut(d3d->pFrontBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 50 );
+   d3d->debug_font->TextOut(d3d->pBackBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 50 );
 
-   if(ret = gfx_window_title(buf2, sizeof(buf2)) || buf_fps_last)
+   if(ret = gfx_window_title(buf2, sizeof(buf2)) || sizeof(buf_fps_last))
    {
       if(ret)
       {
@@ -459,10 +466,12 @@ static bool xdk_d3d_frame(void *data, const void *frame,
          rarch_convert_char_to_wchar(strw_buffer, buf2, sizeof(strw_buffer));
       }
       else if(buf_fps_last)
+      {
          rarch_convert_char_to_wchar(strw_buffer, buf_fps_last, sizeof(strw_buffer));
+      }
 
-      d3d->debug_font->TextOut(d3d->pFrontBuffer, strw_buffer, (unsigned)-1, 30, 70 );
-      d3d->debug_font->TextOut(d3d->pBackBuffer, strw_buffer, (unsigned)-1, 30, 70 );
+      d3d->debug_font->TextOut(d3d->pFrontBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 70 );
+      d3d->debug_font->TextOut(d3d->pBackBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 70 );
       d3d->pFrontBuffer->Release();
       d3d->pBackBuffer->Release();
    }
