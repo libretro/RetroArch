@@ -19,7 +19,6 @@
 #include <stddef.h>
 #include "../boolean.h"
 
-bool gfx_get_fps(char *buf, size_t size);
 bool gfx_window_title(char *buf, size_t size);
 void gfx_window_title_reset(void);
 

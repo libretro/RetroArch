@@ -52,7 +52,7 @@ static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, i
 
 static unsigned gl_frames = 0;
 
-bool gfx_get_fps(char *buf, size_t size)
+static bool gfx_get_fps(char *buf, size_t size)
 {
    static struct timeval tv;
    struct timeval new_tv;
@@ -72,7 +72,11 @@ bool gfx_get_fps(char *buf, size_t size)
 
       float fps = tv_to_fps(&tmp_tv, &new_tv, 180);
 
+#ifdef RARCH_CONSOLE
+      snprintf(buf, size, "FPS: %6.1f || Frames: %d", fps, gl_frames);
+#else
       snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, fps, gl_frames);
+#endif
       ret = true;
    }
 
