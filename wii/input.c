@@ -42,7 +42,11 @@ static int16_t wii_input_state(void *data, const struct retro_keybind **binds,
 
    unsigned player = port;
 
-   return pad_state[player][id] || wpad_state[player][id];
+   return pad_state[player][id]
+#ifdef HW_RVL
+      || wpad_state[player][id]
+#endif
+   ;
 }
 
 static void wii_free_input(void *data)
@@ -102,18 +106,22 @@ static void wii_input_poll(void *data)
       uint32_t down = WPAD_ButtonsHeld(i) | WPAD_ButtonsDown(i);
       down &= ~WPAD_ButtonsUp(i);
 
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_B] = down & WPAD_CLASSIC_BUTTON_B;
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_B] = down & (WPAD_BUTTON_B | WPAD_CLASSIC_BUTTON_B);
       wpad_state[i][RETRO_DEVICE_ID_JOYPAD_Y] = down & WPAD_CLASSIC_BUTTON_Y;
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_SELECT] = down & WPAD_CLASSIC_BUTTON_MINUS;
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_START] = down & WPAD_CLASSIC_BUTTON_PLUS;
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_UP] = down & WPAD_CLASSIC_BUTTON_UP;
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_DOWN] = down & WPAD_CLASSIC_BUTTON_DOWN;
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_LEFT] = down & WPAD_CLASSIC_BUTTON_LEFT;
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_RIGHT] = down & WPAD_CLASSIC_BUTTON_RIGHT;
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_A] = down & WPAD_CLASSIC_BUTTON_A;
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_SELECT] = down & (WPAD_BUTTON_MINUS | WPAD_CLASSIC_BUTTON_MINUS);
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_START] = down & (WPAD_BUTTON_PLUS | WPAD_CLASSIC_BUTTON_PLUS);
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_UP] = down & (WPAD_BUTTON_UP | WPAD_CLASSIC_BUTTON_UP);
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_DOWN] = down & (WPAD_BUTTON_DOWN | WPAD_CLASSIC_BUTTON_DOWN);
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_LEFT] = down & (WPAD_BUTTON_LEFT | WPAD_CLASSIC_BUTTON_LEFT);
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_RIGHT] = down & (WPAD_BUTTON_RIGHT | WPAD_CLASSIC_BUTTON_RIGHT);
+      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_A] = down & (WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A);
       wpad_state[i][RETRO_DEVICE_ID_JOYPAD_X] = down & WPAD_CLASSIC_BUTTON_X;
       wpad_state[i][RETRO_DEVICE_ID_JOYPAD_L] = down & WPAD_CLASSIC_BUTTON_FULL_L;
       wpad_state[i][RETRO_DEVICE_ID_JOYPAD_R] = down & WPAD_CLASSIC_BUTTON_FULL_R;
+
+      if (down & (WPAD_BUTTON_HOME | WPAD_CLASSIC_BUTTON_HOME) && i == 0)
+         wpad_state[0][RETRO_DEVICE_ID_JOYPAD_L] = wpad_state[0][RETRO_DEVICE_ID_JOYPAD_R] =
+            wpad_state[0][RETRO_DEVICE_ID_JOYPAD_START] = wpad_state[0][RETRO_DEVICE_ID_JOYPAD_SELECT] = true;
    }
 #endif
 }
@@ -124,19 +132,23 @@ static bool wii_key_pressed(void *data, int key)
    switch (key)
    {
       case RARCH_QUIT_KEY:
-         return g_quit ||
+      {
+         bool r = g_quit ||
             (pad_state[0][RETRO_DEVICE_ID_JOYPAD_SELECT] &&
              pad_state[0][RETRO_DEVICE_ID_JOYPAD_START] &&
              pad_state[0][RETRO_DEVICE_ID_JOYPAD_L] &&
              pad_state[0][RETRO_DEVICE_ID_JOYPAD_R])
 #ifdef HW_RVL
-		||
+         ||
             (wpad_state[0][RETRO_DEVICE_ID_JOYPAD_SELECT] &&
              wpad_state[0][RETRO_DEVICE_ID_JOYPAD_START] &&
              wpad_state[0][RETRO_DEVICE_ID_JOYPAD_L] &&
              wpad_state[0][RETRO_DEVICE_ID_JOYPAD_R])
 #endif
-	;
+         ;
+         g_quit = false;
+         return r;
+      }
       default:
          return false;
    }
