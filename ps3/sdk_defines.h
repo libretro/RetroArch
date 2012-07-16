@@ -189,28 +189,28 @@
 
 #ifdef __PSL1GHT__
 /* define all of the JPEG/PNG structs */
-#define pJpgDecMainHandle int
-#define pPngDecMainHandle int
-#define pJpgDecSubHandle int
-#define pPngDecSubHandle int
-#define pJpgDecThreadInParam jpgDecThreadInParam
-#define pPngDecThreadInParam pngDecThreadInParam
-#define pJpgDecThreadOutParam jpgDecThreadOutParam
-#define pPngDecThreadOutParam pngDecThreadOutParam
-#define pJpgDecSrc jpgDecSource
-#define pPngDecSrc pngDecSource
-#define pJpgDecOpnInfo uint32_t
-#define pPngDecOpnInfo uint32_t
-#define pJpgDecInfo jpgDecInfo
-#define pPngDecInfo pngDecInfo
-#define pJpgDecInParam jpgDecInParam
-#define pPngDecInParam pngDecInParam
-#define pJpgDecOutParam jpgDecOutParam
-#define pPngDecOutParam pngDecOutParam
-#define pJpgDecDataOutInfo jpgDecDataInfo
-#define pPngDecDataOutInfo pngDecDataInfo
-#define pJpgDecDataCtrlParam uint64_t
-#define pPngDecDataCtrlParam uint64_t
+#define CellJpgDecMainHandle int
+#define CellPngDecMainHandle int
+#define CellJpgDecSubHandle int
+#define CellPngDecSubHandle int
+#define CellJpgDecThreadInParam jpgDecThreadInParam
+#define CellPngDecThreadInParam pngDecThreadInParam
+#define CellJpgDecThreadOutParam jpgDecThreadOutParam
+#define CellPngDecThreadOutParam pngDecThreadOutParam
+#define CellJpgDecSrc jpgDecSource
+#define CellPngDecSrc pngDecSource
+#define CellJpgDecOpnInfo uint32_t
+#define CellPngDecOpnInfo uint32_t
+#define CellJpgDecInfo jpgDecInfo
+#define CellPngDecInfo pngDecInfo
+#define CellJpgDecInParam jpgDecInParam
+#define CellPngDecInParam pngDecInParam
+#define CellJpgDecOutParam jpgDecOutParam
+#define CellPngDecOutParam pngDecOutParam
+#define CellJpgDecDataOutInfo jpgDecDataInfo
+#define CellPngDecDataOutInfo pngDecDataInfo
+#define CellJpgDecDataCtrlParam uint64_t
+#define CellPngDecDataCtrlParam uint64_t
 
 #define spu_enable enable
 #define stream_select stream
@@ -222,21 +222,21 @@
 #define output_height height
 
 /* define all of the JPEG/PNG functions */
-#define pJpgDecCreate jpgDecCreate
-#define pJpgDecOpen jpgDecOpen
-#define pJpgDecReadHeader jpgDecReadHeader
-#define pJpgDecSetParameter jpgDecSetParameter
-#define pJpgDecDecodeData jpgDecDecodeData
-#define pJpgDecClose jpgDecClose
-#define pJpgDecDestroy jpgDecDestroy
+#define cellJpgDecCreate jpgDecCreate
+#define cellJpgDecOpen jpgDecOpen
+#define cellJpgDecReadHeader jpgDecReadHeader
+#define cellJpgDecSetParameter jpgDecSetParameter
+#define cellJpgDecDecodeData jpgDecDecodeData
+#define cellJpgDecClose jpgDecClose
+#define cellJpgDecDestroy jpgDecDestroy
 
-#define pPngDecCreate pngDecCreate
-#define pPngDecOpen pngDecOpen
-#define pPngDecReadHeader pngDecReadHeader
-#define pPngDecSetParameter pngDecSetParameter
-#define pPngDecDecodeData pngDecDecodeData
-#define pPngDecClose pngDecClose
-#define pPngDecDestroy pngDecDestroy
+#define cellPngDecCreate pngDecCreate
+#define cellPngDecOpen pngDecOpen
+#define cellPngDecReadHeader pngDecReadHeader
+#define cellPngDecSetParameter pngDecSetParameter
+#define cellPngDecDecodeData pngDecDecodeData
+#define cellPngDecClose pngDecClose
+#define cellPngDecDestroy pngDecDestroy
 
 /* define all of the JPEG/PNG defines */
 #define CELL_PNGDEC_SPU_THREAD_ENABLE 1
@@ -257,30 +257,6 @@
 #define PTR_NULL 0
 
 #else
-/* define all of the JPEG/PNG structs */
-#define pJpgDecMainHandle CellJpgDecMainHandle
-#define pPngDecMainHandle CellPngDecMainHandle
-#define pJpgDecSubHandle CellJpgDecSubHandle
-#define pPngDecSubHandle CellPngDecSubHandle
-#define pJpgDecThreadInParam CellJpgDecThreadInParam
-#define pPngDecThreadInParam CellPngDecThreadInParam
-#define pJpgDecThreadOutParam CellJpgDecThreadOutParam
-#define pPngDecThreadOutParam CellPngDecThreadOutParam
-#define pJpgDecSrc CellJpgDecSrc
-#define pPngDecSrc CellPngDecSrc
-#define pJpgDecOpnInfo CellJpgDecOpnInfo
-#define pPngDecOpnInfo CellPngDecOpnInfo
-#define pJpgDecInfo CellJpgDecInfo
-#define pPngDecInfo CellPngDecInfo
-#define pJpgDecInParam CellJpgDecInParam
-#define pPngDecInParam CellPngDecInParam
-#define pJpgDecOutParam CellJpgDecOutParam
-#define pPngDecOutParam CellPngDecOutParam
-#define pJpgDecDataOutInfo CellJpgDecDataOutInfo
-#define pPngDecDataOutInfo CellPngDecDataOutInfo
-#define pJpgDecDataCtrlParam CellJpgDecDataCtrlParam
-#define pPngDecDataCtrlParam CellPngDecDataCtrlParam
-
 /* define the JPEG/PNG struct member names */
 #define spu_enable spuThreadEnable
 #define ppu_prio ppuThreadPriority
@@ -307,23 +283,6 @@
 #define bit_depth outputBitDepth
 #define pack_flag outputPackFlag
 #define alpha_select outputAlphaSelect
-
-/* define all the JPEG/PNG functions */
-#define pJpgDecCreate cellJpgDecCreate
-#define pJpgDecOpen cellJpgDecOpen
-#define pJpgDecReadHeader cellJpgDecReadHeader
-#define pJpgDecSetParameter cellJpgDecSetParameter
-#define pJpgDecDecodeData cellJpgDecDecodeData
-#define pJpgDecClose cellJpgDecClose
-#define pJpgDecDestroy cellJpgDecDestroy
-
-#define pPngDecCreate cellPngDecCreate
-#define pPngDecOpen cellPngDecOpen
-#define pPngDecReadHeader cellPngDecReadHeader
-#define pPngDecSetParameter cellPngDecSetParameter
-#define pPngDecDecodeData cellPngDecDecodeData
-#define pPngDecClose cellPngDecClose
-#define pPngDecDestroy cellPngDecDestroy
 
 #define PTR_NULL NULL
 
