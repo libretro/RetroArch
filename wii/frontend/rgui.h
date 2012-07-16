@@ -33,7 +33,8 @@ typedef enum
 
    // settings options are done here too
    //RGUI_SETTINGS_VIDEO_STRETCH,
-   RGUI_SETTINGS_VIDEO_FILTER
+   RGUI_SETTINGS_VIDEO_FILTER,
+   RGUI_SETTINGS_AUDIO_MUTE
 } rgui_file_type_t;
 
 typedef enum

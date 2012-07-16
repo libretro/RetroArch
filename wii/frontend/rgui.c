@@ -226,7 +226,11 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
             w = 5;
             break;
          case RGUI_SETTINGS_VIDEO_FILTER:
-            type_str = g_settings.video.smooth ? "Bilinear" : "None";
+            type_str = g_settings.video.smooth ? "Bilinear filtering" : "Point filtering";
+            w = 8;
+            break;
+         case RGUI_SETTINGS_AUDIO_MUTE:
+            type_str = g_extern.audio_data.mute ? "ON" : "OFF";
             w = 8;
             break;
          default:
@@ -292,9 +296,11 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting)
          break;*/
 
       case RGUI_SETTINGS_VIDEO_FILTER:
-         g_settings.video.smooth = !g_settings.video.smooth;
+	 rarch_settings_change(S_HW_TEXTURE_FILTER);
          break;
-
+      case RGUI_SETTINGS_AUDIO_MUTE:
+	 rarch_settings_change(S_AUDIO_MUTE);
+         break;
       default:
          break;
    }
@@ -304,7 +310,8 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->folder_buf);
    
-   rgui_list_push(rgui->folder_buf, "Filter", RGUI_SETTINGS_VIDEO_FILTER, 0);
+   rgui_list_push(rgui->folder_buf, "Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER, 0);
+   rgui_list_push(rgui->folder_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 1);
 }
 
 static bool rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)

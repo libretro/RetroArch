@@ -34,6 +34,9 @@ void rarch_settings_change(unsigned setting)
          if(g_console.aspect_ratio_index < LAST_ASPECT_RATIO)
             g_console.aspect_ratio_index++;
          break;
+      case S_AUDIO_MUTE:
+	 g_extern.audio_data.mute = !g_extern.audio_data.mute;
+         break;
       case S_FRAME_ADVANCE:
          g_console.frame_advance_enable = true;
          g_console.menu_enable = false;
@@ -146,6 +149,9 @@ void rarch_settings_default(unsigned setting)
    {
       case S_DEF_ASPECT_RATIO:
          g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
+         break;
+      case S_DEF_AUDIO_MUTE:
+	 g_extern.audio_data.mute = false;
          break;
       case S_DEF_HW_TEXTURE_FILTER:
          g_settings.video.smooth = 1;
