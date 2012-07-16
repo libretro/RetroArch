@@ -21,7 +21,7 @@
 
 typedef struct
 {
-   unsigned enum_id;			/* enum ID of item				*/
+   unsigned char enum_id;		/* enum ID of item				*/
    char text[256];			/* item label					*/
    char setting_text[256];		/* setting label				*/
    float text_xpos;			/* text X position (upper left corner)		*/
@@ -30,18 +30,18 @@ typedef struct
    char comment[256];			/* item comment					*/
    unsigned item_color;			/* color of item 				*/
    float comment_ypos;			/* comment Y position (upper left corner)	*/
-   unsigned page;			/* page						*/
+   unsigned char page;			/* page						*/
 } item;
 
 typedef struct
 {
-   char title[64];			/* menu title					*/
-   unsigned enum_id;			/* enum ID of menu				*/
-   unsigned selected;			/* index of selected item			*/
-   unsigned page;			/* page						*/
-   unsigned first_setting;		/* first setting				*/
-   unsigned max_settings;		/* max no of settings in menu			*/
-   unsigned category_id;                /* category ID                                  */
+   char title[64];
+   unsigned char enum_id;
+   unsigned char selected;
+   unsigned char page;
+   unsigned char first_setting;
+   unsigned char max_settings;
+   unsigned char category_id;
 } menu;
 
 enum

@@ -25,6 +25,10 @@
 #endif
 #endif
 
+#ifdef __CELLOS_LV2__
+#include <sys/sys_time.h>
+#endif
+
 #if defined(__CELLOS_LV2__) || defined(_MSC_VER)
 static int gettimeofday(struct timeval *val, void *dummy)
 {
@@ -36,7 +40,6 @@ static int gettimeofday(struct timeval *val, void *dummy)
 #endif
 
 #if defined(__CELLOS_LV2__)
-#include <sys/sys_time.h>
    uint64_t usec = sys_time_get_system_time();
 #else
    uint64_t usec = msec * 1000;
