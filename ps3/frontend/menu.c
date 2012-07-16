@@ -49,8 +49,8 @@ menu menuStack[10];
 int menuStackindex = 0;
 static bool set_libretro_core_as_launch;
 
-filebrowser_t *browser;
-filebrowser_t *tmpBrowser;
+filebrowser_t browser;
+filebrowser_t tmpBrowser;
 unsigned set_shader = 0;
 static unsigned currently_selected_controller_menu = 0;
 static char strw_buffer[PATH_MAX];
@@ -391,9 +391,9 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(items_generalsettings, stack_idx);
-	 strlcpy(browser->extensions, rarch_console_get_rom_ext(), sizeof(browser->extensions));
-	 filebrowser_set_root(browser, g_console.default_rom_startup_dir);
-	 filebrowser_iterate(browser, FILEBROWSER_ACTION_RESET);
+	 strlcpy(browser.extensions, rarch_console_get_rom_ext(), sizeof(browser.extensions));
+	 filebrowser_set_root(&browser, g_console.default_rom_startup_dir);
+	 filebrowser_iterate(&browser, FILEBROWSER_ACTION_RESET);
          break;
       case LIBRETRO_CHOICE:
          strlcpy(menuStack[stack_idx].title, "Libretro cores", sizeof(menuStack[stack_idx].title));
@@ -402,9 +402,9 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(items_generalsettings, stack_idx);
-	 strlcpy(tmpBrowser->extensions, "self|SELF|bin|BIN", sizeof(tmpBrowser->extensions));
-	 filebrowser_set_root(tmpBrowser, LIBRETRO_DIR_PATH);
-	 filebrowser_iterate(tmpBrowser, FILEBROWSER_ACTION_RESET);
+	 strlcpy(tmpBrowser.extensions, "self|SELF|bin|BIN", sizeof(tmpBrowser.extensions));
+	 filebrowser_set_root(&tmpBrowser, LIBRETRO_DIR_PATH);
+	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case PRESET_CHOICE:
          strlcpy(menuStack[stack_idx].title, "Shader presets", sizeof(menuStack[stack_idx].title));
@@ -413,9 +413,9 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(items_generalsettings, stack_idx);
-	 strlcpy(tmpBrowser->extensions, "cgp|CGP", sizeof(tmpBrowser->extensions));
-	 filebrowser_set_root(tmpBrowser, PRESETS_DIR_PATH);
-	 filebrowser_iterate(tmpBrowser, FILEBROWSER_ACTION_RESET);
+	 strlcpy(tmpBrowser.extensions, "cgp|CGP", sizeof(tmpBrowser.extensions));
+	 filebrowser_set_root(&tmpBrowser, PRESETS_DIR_PATH);
+	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case INPUT_PRESET_CHOICE:
          strlcpy(menuStack[stack_idx].title, "Input presets", sizeof(menuStack[stack_idx].title));
@@ -424,9 +424,9 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(items_generalsettings, stack_idx);
-	 strlcpy(tmpBrowser->extensions, "cfg|CFG", sizeof(tmpBrowser->extensions));
-	 filebrowser_set_root(tmpBrowser, INPUT_PRESETS_DIR_PATH);
-	 filebrowser_iterate(tmpBrowser, FILEBROWSER_ACTION_RESET);
+	 strlcpy(tmpBrowser.extensions, "cfg|CFG", sizeof(tmpBrowser.extensions));
+	 filebrowser_set_root(&tmpBrowser, INPUT_PRESETS_DIR_PATH);
+	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case SHADER_CHOICE:
          strlcpy(menuStack[stack_idx].title, "Shaders", sizeof(menuStack[stack_idx].title));
@@ -435,9 +435,9 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(items_generalsettings, stack_idx);
-	 strlcpy(tmpBrowser->extensions, "cg|CG", sizeof(tmpBrowser->extensions));
-	 filebrowser_set_root(tmpBrowser, SHADERS_DIR_PATH);
-	 filebrowser_iterate(tmpBrowser, FILEBROWSER_ACTION_RESET);
+	 strlcpy(tmpBrowser.extensions, "cg|CG", sizeof(tmpBrowser.extensions));
+	 filebrowser_set_root(&tmpBrowser, SHADERS_DIR_PATH);
+	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case BORDER_CHOICE:
          strlcpy(menuStack[stack_idx].title, "Borders", sizeof(menuStack[stack_idx].title));
@@ -446,9 +446,9 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(items_generalsettings, stack_idx);
-	 strlcpy(tmpBrowser->extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(tmpBrowser->extensions));
-	 filebrowser_set_root(tmpBrowser, BORDERS_DIR_PATH);
-	 filebrowser_iterate(tmpBrowser, FILEBROWSER_ACTION_RESET);
+	 strlcpy(tmpBrowser.extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(tmpBrowser.extensions));
+	 filebrowser_set_root(&tmpBrowser, BORDERS_DIR_PATH);
+	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case PATH_DEFAULT_ROM_DIR_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
@@ -461,9 +461,9 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].page = 0;
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(items_generalsettings, stack_idx);
-	 strlcpy(tmpBrowser->extensions, "empty", sizeof(tmpBrowser->extensions));
-	 filebrowser_set_root(tmpBrowser, "/");
-	 filebrowser_iterate(tmpBrowser, FILEBROWSER_ACTION_RESET);
+	 strlcpy(tmpBrowser.extensions, "empty", sizeof(tmpBrowser.extensions));
+	 filebrowser_set_root(&tmpBrowser, "/");
+	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case GENERAL_VIDEO_MENU:
          strlcpy(menuStack[stack_idx].title, "Video", sizeof(menuStack[stack_idx].title));
@@ -581,7 +581,7 @@ static void display_menubar(void)
    retro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
 
-   filebrowser_t *fb = browser;
+   filebrowser_t *fb = &browser;
 
    switch(menu_obj->enum_id)
    {
@@ -594,7 +594,7 @@ static void display_menubar(void)
       case PATH_DEFAULT_ROM_DIR_CHOICE:
       case PATH_CHEATS_DIR_CHOICE:
       case PATH_SRAM_DIR_CHOICE:
-         fb = tmpBrowser;
+         fb = &tmpBrowser;
       case FILE_BROWSER_MENU:
          cellDbgFontPrintf (0.09f, 0.09f, FONT_SIZE, YELLOW, "PATH: %s", filebrowser_get_current_dir(fb));
          break;
@@ -737,22 +737,22 @@ static void select_file(void)
 	 break;
    }
 
-   browser_update(tmpBrowser, extensions);
+   browser_update(&tmpBrowser, extensions);
 
       if (CTRL_CROSS(trigger_state))
       {
-         if(filebrowser_get_current_path_isdir(tmpBrowser))
+         if(filebrowser_get_current_path_isdir(&tmpBrowser))
 	 {
             /*if 'filename' is in fact '..' - then pop back directory instead of 
 	      adding '..' to filename path */
-            if(tmpBrowser->current_dir.ptr == 0)
-               filebrowser_iterate(tmpBrowser, FILEBROWSER_ACTION_CANCEL);
+            if(tmpBrowser.current_dir.ptr == 0)
+               filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_CANCEL);
 	    else
-               filebrowser_iterate(tmpBrowser, FILEBROWSER_ACTION_OK);
+               filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
 	 }
-	 else if (path_file_exists(filebrowser_get_current_path(tmpBrowser)))
+	 else if (path_file_exists(filebrowser_get_current_path(&tmpBrowser)))
 	 {
-            snprintf(path, sizeof(path), filebrowser_get_current_path(tmpBrowser));
+            snprintf(path, sizeof(path), filebrowser_get_current_path(&tmpBrowser));
 
 	    switch(menu_id)
 	    {
@@ -813,13 +813,13 @@ static void select_directory(void)
    gl_t * gl = driver.video_data;
 
    {
-      browser_update(tmpBrowser, "empty");
+      browser_update(&tmpBrowser, "empty");
 
       if (CTRL_SQUARE(trigger_state))
       {
-         if(filebrowser_get_current_path_isdir(tmpBrowser))
+         if(filebrowser_get_current_path_isdir(&tmpBrowser))
 	 {
-            snprintf(path, sizeof(path), filebrowser_get_current_path(tmpBrowser));
+            snprintf(path, sizeof(path), filebrowser_get_current_path(&tmpBrowser));
 	    switch(menu_id)
 	    {
                case PATH_SAVESTATES_DIR_CHOICE:
@@ -860,15 +860,15 @@ static void select_directory(void)
       }
       else if (CTRL_CROSS(trigger_state))
       {
-         if(filebrowser_get_current_path_isdir(tmpBrowser))
+         if(filebrowser_get_current_path_isdir(&tmpBrowser))
 	 {
             /* if 'filename' is in fact '..' - then pop back directory instead of 
              * adding '..' to filename path */
 
-            if(tmpBrowser->current_dir.ptr == 0)
-               filebrowser_iterate(tmpBrowser, FILEBROWSER_ACTION_CANCEL);
+            if(tmpBrowser.current_dir.ptr == 0)
+               filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_CANCEL);
 	    else
-               filebrowser_iterate(tmpBrowser, FILEBROWSER_ACTION_OK);
+               filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
 	 }
       }
    }
@@ -1631,7 +1631,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
          if(filebrowser_get_current_path_isdir(filebrowser))
 	 {
             /*if 'filename' is in fact '..' - then pop back directory  instead of adding '..' to filename path */
-            if(browser->current_dir.ptr == 0)
+            if(browser.current_dir.ptr == 0)
                filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_CANCEL);
 	    else
                filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
@@ -1667,7 +1667,7 @@ static void select_rom(void)
 {
    gl_t * gl = driver.video_data;
 
-   browser_update(browser, rarch_console_get_rom_ext());
+   browser_update(&browser, rarch_console_get_rom_ext());
    menu_romselect_action_t action = MENU_ROMSELECT_ACTION_NOOP;
 
    if (CTRL_SELECT(trigger_state))
@@ -1676,19 +1676,19 @@ static void select_rom(void)
       action = MENU_ROMSELECT_ACTION_OK;
 
    if (action != MENU_ROMSELECT_ACTION_NOOP)
-      menu_romselect_iterate(browser, action);
+      menu_romselect_iterate(&browser, action);
 
-   if (filebrowser_get_current_path_isdir(browser))
+   if (filebrowser_get_current_path_isdir(&browser))
    {
-      if(!strcmp(filebrowser_get_current_path(browser),"app_home") || !strcmp(filebrowser_get_current_path(browser),"host_root"))
+      if(!strcmp(filebrowser_get_current_path(&browser),"app_home") || !strcmp(filebrowser_get_current_path(&browser),"host_root"))
          cellDbgFontPrintf(0.09f, 0.83f, 0.91f, RED, "WARNING - This path only works on DEX PS3 systems. Do not attempt to open\n this directory on CEX PS3 systems, or you might have to restart.");
-      else if(!strcmp(filebrowser_get_current_path(browser),".."))
+      else if(!strcmp(filebrowser_get_current_path(&browser),".."))
          cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to go back to the previous directory.");
       else
          cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to enter the directory.");
    }
 
-   if (path_file_exists(filebrowser_get_current_path(browser)))
+   if (path_file_exists(filebrowser_get_current_path(&browser)))
       cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
 
    display_menubar();
@@ -2057,18 +2057,14 @@ static bool check_shoulder_buttons(uint64_t state_tmp)
 
 void menu_init (void)
 {
-   browser = (filebrowser_t*)malloc(1 * sizeof(filebrowser_t));
-   tmpBrowser = (filebrowser_t*)malloc(1 * sizeof(filebrowser_t));
    menu_stack_push(0, FILE_BROWSER_MENU);
-   filebrowser_set_root(tmpBrowser, "/");
+   filebrowser_set_root(&tmpBrowser, "/");
 }
 
 void menu_free (void)
 {
-   filebrowser_free(browser);
-   filebrowser_free(tmpBrowser);
-   free(browser);
-   free(tmpBrowser);
+   filebrowser_free(&browser);
+   filebrowser_free(&tmpBrowser);
 }
 
 void menu_loop(void)
@@ -2128,13 +2124,13 @@ void menu_loop(void)
 
       rarch_render_cached_frame();
 
-      filebrowser_t * fb = browser;
+      filebrowser_t * fb = &browser;
 
       switch(menu_id)
       {
          case FILE_BROWSER_MENU:
             select_rom();
-            fb = browser;
+            fb = &browser;
 	    break;
 	 case GENERAL_VIDEO_MENU:
 	 case GENERAL_AUDIO_MENU:
@@ -2151,14 +2147,14 @@ void menu_loop(void)
 	 case LIBRETRO_CHOICE:
 	 case INPUT_PRESET_CHOICE:
 	    select_file();
-            fb = tmpBrowser;
+            fb = &tmpBrowser;
 	    break;
 	 case PATH_SAVESTATES_DIR_CHOICE:
 	 case PATH_DEFAULT_ROM_DIR_CHOICE:
 	 case PATH_CHEATS_DIR_CHOICE:
 	 case PATH_SRAM_DIR_CHOICE:
 	    select_directory();
-            fb = tmpBrowser;
+            fb = &tmpBrowser;
 	    break;
 	 case INGAME_MENU:
 	    if(g_console.ingame_menu_enable)
