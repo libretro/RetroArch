@@ -608,12 +608,12 @@ static void display_menubar(void)
    gl_render_msg_post(gl);
 }
 
-uint64_t state, trigger_state;
+uint64_t state;
 uint16_t input_state, old_input_state = 0;
 uint16_t trigger_st = 0;
 static uint64_t old_state = 0;
 
-static void control_update_wrap(void)
+static void control_update_wrap(uint64_t trigger_state)
 {
    input_state = 0;
    input_ps3.poll(NULL);
@@ -1784,7 +1784,8 @@ static void ingame_menu_resize(void)
    if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_A))
       menu_stack_decrement();
 
-   if(CTRL_SQUARE(~trigger_state))
+   if(trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_Y)) { }
+   else
    {
       display_menubar();
 
@@ -1941,7 +1942,7 @@ static void ingame_menu(void)
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Scaling] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
-	    if(CTRL_CROSS(trigger_state) || CTRL_R2(trigger_state) || CTRL_L2(trigger_state))
+            if((trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_R2)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_L2)))
 	    {
                rarch_settings_change(S_FRAME_ADVANCE);
 	       g_console.ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
@@ -2132,7 +2133,7 @@ void menu_loop(void)
       unsigned menu_category_id = menuStack[menuStackindex].category_id;
 
       state = cell_pad_input_poll_device(0);
-      trigger_state = state & ~old_state;
+      uint64_t trigger_state = state & ~old_state;
 
       {
          //second button input
@@ -2156,8 +2157,7 @@ void menu_loop(void)
          }
       }
 
-      control_update_wrap();
-      trigger_st = 0;
+      control_update_wrap(trigger_state);
       trigger_st = input_state & ~old_input_state;
 
       gfx_ctx_clear();
