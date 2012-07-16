@@ -69,22 +69,22 @@
 
 static void ps3_mouse_input_deinit(void)
 {
-   pMouseEnd();
+   cellMouseEnd();
 }
 
 static uint32_t ps3_mouse_input_mice_connected(void)
 {
-   pMouseInfo mouse_info;
-   pMouseGetInfo(&mouse_info);
+   CellMouseInfo mouse_info;
+   cellMouseGetInfo(&mouse_info);
    return mouse_info.now_connect;
 }
 
-pMouseData ps3_mouse_input_poll_device(uint32_t id)
+CellMouseData ps3_mouse_input_poll_device(uint32_t id)
 {
-   pMouseData mouse_data;
+   CellMouseData mouse_data;
 
    // Get new pad data
-   pMouseGetData(id, &mouse_data);
+   cellMouseGetData(id, &mouse_data);
 
    return mouse_data;
 }
@@ -105,11 +105,11 @@ static unsigned mice_connected;
 
 uint64_t cell_pad_input_poll_device(uint32_t id)
 {
-   pPadData pad_data;
+   CellPadData pad_data;
    static uint64_t ret[MAX_PADS];
 
    // Get new pad data
-   pPadGetData(id, &pad_data);
+   cellPadGetData(id, &pad_data);
 
    if (pad_data.len != 0)
    {
@@ -138,13 +138,13 @@ uint64_t cell_pad_input_poll_device(uint32_t id)
 }
 static void ps3_input_poll(void *data)
 {
-   pPadInfo pad_info;
+   CellPadInfo2 pad_info;
    (void)data;
 
    for (unsigned i = 0; i < MAX_PADS; i++)
       state[i] = cell_pad_input_poll_device(i);
 
-   pPadGetInfo(&pad_info);
+   cellPadGetInfo2(&pad_info);
    pads_connected = pad_info.now_connect; 
 #ifdef HAVE_MOUSE
    mice_connected = ps3_mouse_input_mice_connected();
@@ -155,7 +155,7 @@ static void ps3_input_poll(void *data)
 
 static int16_t ps3_mouse_device_state(void *data, unsigned player, unsigned id)
 {
-   pMouseData mouse_state = ps3_mouse_input_poll_device(player);
+   CellMouseData mouse_state = ps3_mouse_input_poll_device(player);
 
    switch (id)
    {
@@ -268,7 +268,7 @@ bool oskutil_start(oskutil_params *params)
    if (params->flags & OSK_IN_USE)
       return (true);
 
-   int ret = pSysMemContainerCreate(&params->containerid, params->osk_memorycontainer);
+   int ret = sys_memory_container_create(&params->containerid, params->osk_memorycontainer);
 
    if(ret < 0)
       return (false);
@@ -326,7 +326,7 @@ void oskutil_finished(oskutil_params *params)
 
 void oskutil_unload(oskutil_params *params)
 {
-   pSysMemContainerDestroy(params->containerid);
+   sys_memory_container_destroy(params->containerid);
    params->is_running = false;
 }
 
@@ -339,14 +339,14 @@ void oskutil_unload(oskutil_params *params)
 static void ps3_free_input(void *data)
 {
    (void)data;
-   //pPadEnd();
+   //cellPadEnd();
 }
 
 static void* ps3_input_initialize(void)
 {
-   pPadInit(MAX_PADS);
+   cellPadInit(MAX_PADS);
 #ifdef HAVE_MOUSE
-   pMouseInit(MAX_MICE);
+   cellMouseInit(MAX_MICE);
 #endif
    for(unsigned i = 0; i < MAX_PADS; i++)
    	ps3_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);

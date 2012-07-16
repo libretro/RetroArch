@@ -23,33 +23,33 @@
 
 #ifdef __PSL1GHT__
 /* define all the audio/audio port functions */
-#define pAudioQuit audioQuit
-#define pAudioInit audioInit
-#define pAudioPortStart audioPortStart
-#define pAudioPortOpen audioPortOpen
-#define pAudioPortClose audioPortClose
-#define pAudioPortStop audioPortStop
-#define pAudioPortParam audioPortParam
-#define pAudioPortOpen audioPortOpen
-#define pAudioAddData audioAddData
+#define cellAudioQuit audioQuit
+#define cellAudioInit audioInit
+#define cellAudioPortStart audioPortStart
+#define cellAudioPortOpen audioPortOpen
+#define cellAudioPortClose audioPortClose
+#define cellAudioPortStop audioPortStop
+#define CellAudioPortParam audioPortParam
+#define cellAudioPortOpen audioPortOpen
+#define cellAudioAddData audioAddData
 
 /* define all the event queue functions */
-#define pSysEventQueueReceive sysEventQueueReceive
-#define pAudioSetNotifyEventQueue audioSetNotifyEventQueue
-#define pAudioRemoveNotifyEventQueue audioRemoveNotifyEventQueue
-#define pAudioCreateNotifyEventQueue audioCreateNotifyEventQueue
+#define sys_event_queue_receive sysEventQueueReceive
+#define cellAudioSetNotifyEventQueue audioSetNotifyEventQueue
+#define cellAudioRemoveNotifyEventQueue audioRemoveNotifyEventQueue
+#define cellAudioCreateNotifyEventQueue audioCreateNotifyEventQueue
 
 /* define all the lightweight mutex functions */
-#define pLwMutexDestroy sysLwMutexDestroy
-#define pLwMutexLock sysLwMutexLock
-#define pLwMutexUnlock sysLwMutexUnlock
-#define pLwMutexCreate sysLwMutexCreate
+#define sys_lwmutex_destroy sysLwMutexDestroy
+#define sys_lwmutex_lock sysLwMutexLock
+#define sys_lwmutex_unlock sysLwMutexUnlock
+#define sys_lwmutex_create sysLwMutexCreate
 
 /* define all the lightweight condition functions */
-#define pLwCondCreate sysLwCondCreate
-#define pLwCondDestroy sysLwCondDestroy
-#define pLwCondWait sysLwCondWait
-#define pLwCondSignal sysLwCondSignal
+#define sys_lwcond_create sysLwCondCreate
+#define sys_lwcond_destroy sysLwCondDestroy
+#define sys_lwcond_wait sysLwCondWait
+#define sys_lwcond_signal sysLwCondSignal
 
 #define CELL_AUDIO_BLOCK_SAMPLES AUDIO_BLOCK_SAMPLES
 #define SYS_NO_TIMEOUT 0
@@ -58,36 +58,6 @@
 #define sys_lwcond_attribute_t sys_lwcond_attr_t
 
 #else
-
-/* define all the audio/audio port functions */
-#define pAudioQuit cellAudioQuit
-#define pAudioInit cellAudioInit
-#define pAudioPortStart cellAudioPortStart
-#define pAudioPortOpen cellAudioPortOpen
-#define pAudioPortClose cellAudioPortClose
-#define pAudioPortStop cellAudioPortStop
-#define pAudioPortParam CellAudioPortParam
-#define pAudioAddData cellAudioAddData
-
-/* define all the event queue functions */
-#define pSysEventQueueReceive sys_event_queue_receive
-#define pAudioSetNotifyEventQueue cellAudioSetNotifyEventQueue
-#define pAudioRemoveNotifyEventQueue cellAudioRemoveNotifyEventQueue
-#define pAudioCreateNotifyEventQueue cellAudioCreateNotifyEventQueue
-
-/* define all the lightweight mutex functions */
-#define pLwMutexDestroy sys_lwmutex_destroy
-#define pLwMutexUnlock sys_lwmutex_unlock
-#define pLwMutexLock sys_lwmutex_lock
-#define pLwMutexCreate sys_lwmutex_create
-#define pLwMutexAttributeInitialize sys_lwmutex_attribute_initialize
-
-/* define all the lightweight condition functions */
-#define pLwCondCreate sys_lwcond_create
-#define pLwCondDestroy sys_lwcond_destroy
-#define pLwCondWait sys_lwcond_wait
-#define pLwCondSignal sys_lwcond_signal
-
 #define numChannels nChannel
 #define numBlocks nBlock
 #define param_attrib attr
@@ -100,35 +70,16 @@
 
 #ifdef __PSL1GHT__
 /* define all the ps3 pad structs */
-#define pPadInfo padInfo2
-#define pPadData padData
+#define CellPadInfo2 padInfo2
+#define CellPadData padData
 
 /* define all the ps3 pad functions */
-#define pPadGetInfo ioPadGetInfo2
-#define pPadGetData ioPadGetData
-#define pPadInit ioPadInit
-#define pPadEnd ioPadEnd
+#define cellPadGetInfo2 ioPadGetInfo2
+#define cellPadGetData ioPadGetData
+#define cellPadInit ioPadInit
+#define cellPadEnd ioPadEnd
 
 #define now_connect connected
-
-#else
-/* define all the ps3 pad structs */
-/* #if (CELL_SDK_VERSION > 0x340000) */
-#define pPadInfo CellPadInfo2
-#define pPadGetInfo cellPadGetInfo2
-/*
-#else
-#define pPadInfo CellPadInfo
-#define pPadGetInfo cellPadGetInfo
-#endif
-*/
-
-#define pPadData CellPadData
-
-/* define all the ps3 pad functions */
-#define pPadInit cellPadInit
-#define pPadEnd cellPadEnd
-#define pPadGetData cellPadGetData
 #endif
 
 /*============================================================
@@ -137,17 +88,16 @@
 
 #ifdef HAVE_MOUSE
 
-
 #ifdef __PSL1GHT__
 /* define ps3 mouse structs */
-#define pMouseInfo mouseInfo
-#define pMouseData mouseData
+#define CellMouseInfo mouseInfo
+#define CellMouseData mouseData
 
 /* define all the ps3 mouse functions */
-#define pMouseInit ioMouseInit
-#define pMouseGetData ioMouseGetData
-#define pMouseEnd ioMouseEnd
-#define pMouseGetInfo ioMouseGetInfo
+#define cellMouseInit ioMouseInit
+#define cellMouseGetData ioMouseGetData
+#define cellMouseEnd ioMouseEnd
+#define cellMouseGetInfo ioMouseGetInfo
 
 /* PSL1GHT does not define these in its header */
 #define CELL_MOUSE_BUTTON_1 (1 << 0) /* Button 1 */
@@ -159,16 +109,6 @@
 #define CELL_MOUSE_BUTTON_7 (1 << 6) /* Button 7 */
 #define CELL_MOUSE_BUTTON_8 (1 << 7) /* Button 8 */
 
-#else
-/* define ps3 mouse structs */
-#define pMouseInfo CellMouseInfo
-#define pMouseData CellMouseData
-
-/* define all the ps3 mouse functions  */
-#define pMouseInit cellMouseInit
-#define pMouseGetData cellMouseGetData
-#define pMouseEnd cellMouseEnd
-#define pMouseGetInfo cellMouseGetInfo
 #endif
 
 #endif
@@ -395,16 +335,11 @@
 
 #ifdef __PSL1GHT__
 /* define all the thread functions  */
-#define pThreadCreate sysThreadCreate
-#define pThreadJoin sysThreadJoin
-#define pThreadExit sysThreadExit
+#define sys_ppu_thread_create sysThreadCreate
+#define sys_ppu_thread_join sysThreadJoin
+#define sys_ppu_thread_exit sysThreadExit
 
 #define SYS_PPU_THREAD_CREATE_JOINABLE 0 /* FIXME - not sure if this is correct */
-#else
-/* define all the thread functions  */
-#define pThreadCreate sys_ppu_thread_create
-#define pThreadJoin sys_ppu_thread_join
-#define pThreadExit sys_ppu_thread_exit
 #endif
 
 /*============================================================
@@ -412,11 +347,8 @@
 ============================================================ */
 
 #ifdef __PSL1GHT__
-#define pSysMemContainerCreate sysMemContainerCreate
-#define pSysMemContainerDestroy sysMemContainerDestroy
-#else
-#define pSysMemContainerCreate sys_memory_container_create
-#define pSysMemContainerDestroy sys_memory_container_destroy
+#define sys_memory_container_create sysMemContainerCreate
+#define sys_memory_container_destroy sysMemContainerDestroy
 #endif
 
 #endif
