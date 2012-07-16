@@ -23,27 +23,25 @@
 #include <winsock2.h>
 #include <mmsystem.h>
 #endif
-static int gettimeofday(struct timeval *val, void *dummy)
-{
-   (void)dummy;
-#ifdef _XBOX360
-   DWORD msec = GetTickCount();
-#else
-   DWORD msec = timeGetTime();
-#endif
-   uint64_t usec = msec * 1000;
-   val->tv_sec = usec / 1000000;
-   val->tv_usec = usec % 1000000;
-   return 0;
-}
 #endif
 
-#ifdef __CELLOS_LV2__
-#include <sys/sys_time.h>
+#if defined(__CELLOS_LV2__) || defined(_MSC_VER)
 static int gettimeofday(struct timeval *val, void *dummy)
 {
    (void)dummy;
+#if defined(_MSC_VER) && !defined(_XBOX360)
+   DWORD msec = timeGetTime();
+#elif defined(_XBOX360)
+   DWORD msec = GetTickCount();
+#endif
+
+#if defined(__CELLOS_LV2__)
+#include <sys/sys_time.h>
    uint64_t usec = sys_time_get_system_time();
+#else
+   uint64_t usec = msec * 1000;
+#endif
+
    val->tv_sec = usec / 1000000;
    val->tv_usec = usec % 1000000;
    return 0;
