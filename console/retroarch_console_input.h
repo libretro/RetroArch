@@ -42,7 +42,7 @@ enum
 };
 
 #ifdef _XBOX
-#include "../input/rarch_xinput2.h"
+#include "../360/xinput_360_input.h"
 #endif
 
 #if defined(__CELLOS_LV2__)

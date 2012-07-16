@@ -14,10 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_XINPUT2_H
-#define __RARCH_XINPUT2_H
-
-#ifndef _XBOX1
+#ifndef _XDK360_XINPUT2_H
+#define _XDK360_XINPUT2_H
 
 enum {
    XINPUT_GAMEPAD_LSTICK_LEFT_MASK         = 1 << 16,
@@ -31,7 +29,7 @@ enum {
    XINPUT_GAMEPAD_LEFT_TRIGGER             = 1 << 24,
    XINPUT_GAMEPAD_RIGHT_TRIGGER            = 1 << 25
 };
-#endif
+
 #define DEADZONE                            (16000)
 
 #ifdef _XBOX

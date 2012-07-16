@@ -132,7 +132,7 @@ INPUT
 #if defined(HAVE_XINPUT_XBOX1)
 #include "../../xbox1/xinput_xbox_input.c"
 #elif defined(HAVE_XINPUT2)
-#include "../../input/xinput2_input.c"
+#include "../../360/xinput_360_input.c"
 #endif
 #endif
 

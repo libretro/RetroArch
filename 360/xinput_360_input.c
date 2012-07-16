@@ -24,7 +24,7 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../libretro.h"
-#include "rarch_xinput2.h"
+#include "xinput_360_input.h"
 
 static uint64_t state[4];
 static unsigned pads_connected;

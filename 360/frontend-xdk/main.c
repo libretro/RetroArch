@@ -26,7 +26,7 @@
 #endif
 
 #include <xbdm.h>
-#include "../../input/rarch_xinput2.h"
+#include "../../360/xinput_360_input.h"
 
 #ifdef _XBOX
 #if defined(_XBOX1)
