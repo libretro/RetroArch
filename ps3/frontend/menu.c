@@ -609,40 +609,70 @@ static void display_menubar(void)
 }
 
 uint64_t state, trigger_state, held_state;
+uint16_t input_state, old_input_state = 0;
 static uint64_t old_state = 0;
 static uint64_t older_state = 0;
 
-static void browser_update(filebrowser_t * b, const char *extensions)
+static void control_update_wrap(void)
 {
-   filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
+   input_state = 0;
+   input_ps3.poll(NULL);
 
    if (CTRL_LSTICK_DOWN(trigger_state))
-      action = FILEBROWSER_ACTION_DOWN;
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
    else if (CTRL_DOWN(trigger_state))
-      action = FILEBROWSER_ACTION_DOWN;
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
    else if (CTRL_LSTICK_UP(trigger_state))
-      action = FILEBROWSER_ACTION_UP;
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
    else if (CTRL_UP(trigger_state))
-      action = FILEBROWSER_ACTION_UP;
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
    else if (CTRL_RIGHT(trigger_state))
-      action = FILEBROWSER_ACTION_RIGHT;
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
    else if (CTRL_LSTICK_RIGHT(trigger_state))
-      action = FILEBROWSER_ACTION_RIGHT;
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
    else if (CTRL_LEFT(trigger_state))
-      action = FILEBROWSER_ACTION_LEFT;
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
    else if (CTRL_LSTICK_LEFT(trigger_state))
-      action = FILEBROWSER_ACTION_LEFT;
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
    else if (CTRL_R1(trigger_state))
-      action = FILEBROWSER_ACTION_SCROLL_DOWN;
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_R);
    else if (CTRL_R2(trigger_state))
-      action = FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH;
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_R2);
    else if (CTRL_L2(trigger_state))
-      action = FILEBROWSER_ACTION_SCROLL_UP_SMOOTH;
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_L2);
    else if (CTRL_L1(trigger_state))
-      action = FILEBROWSER_ACTION_SCROLL_UP;
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_L);
    else if (CTRL_CIRCLE(trigger_state))
-      action = FILEBROWSER_ACTION_CANCEL;
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_X);
    else if (CTRL_START(trigger_state))
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
+}
+
+static void browser_update(filebrowser_t * b, const char *extensions)
+{
+   control_update_wrap();
+   filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
+   uint16_t trigger_st = input_state & ~old_input_state;
+
+   if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+      action = FILEBROWSER_ACTION_DOWN;
+   else if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+      action = FILEBROWSER_ACTION_UP;
+   else if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      action = FILEBROWSER_ACTION_RIGHT;
+   else if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+      action = FILEBROWSER_ACTION_LEFT;
+   else if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_R))
+      action = FILEBROWSER_ACTION_SCROLL_DOWN;
+   else if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_R2))
+      action = FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH;
+   else if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_L2))
+      action = FILEBROWSER_ACTION_SCROLL_UP_SMOOTH;
+   else if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_L))
+      action = FILEBROWSER_ACTION_SCROLL_UP;
+   else if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_A))
+      action = FILEBROWSER_ACTION_CANCEL;
+   else if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
    {
       action = FILEBROWSER_ACTION_RESET;
       filebrowser_set_root(b, "/");
