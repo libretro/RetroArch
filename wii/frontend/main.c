@@ -87,6 +87,7 @@ static bool get_rom_path(rgui_handle_t *rgui)
 {
    uint16_t old_input_state = 0;
    bool can_quit = false;
+   bool first = true;
 
    for (;;)
    {
@@ -118,6 +119,8 @@ static bool get_rom_path(rgui_handle_t *rgui)
          action = RGUI_ACTION_UP;
       else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
          action = RGUI_ACTION_DOWN;
+      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) && !first) // don't catch start+select+l+r when exiting
+         action = RGUI_ACTION_SETTINGS;
 
       const char *ret = rgui_iterate(rgui, action);
       video_wii.frame(NULL, menu_framebuf,
@@ -133,6 +136,7 @@ static bool get_rom_path(rgui_handle_t *rgui)
       }
 
       old_input_state = input_state;
+      first = false;
       rarch_sleep(10);
    }
 }
