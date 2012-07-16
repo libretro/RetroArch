@@ -44,6 +44,7 @@ struct rgui_handle
    rgui_list_t *folder_buf;
    size_t directory_ptr;
    bool need_refresh;
+   rgui_mode_t mode;
 
    char path_buf[PATH_MAX];
 
@@ -163,7 +164,7 @@ static void blit_line(rgui_handle_t *rgui,
    }
 }
 
-static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
+static void render_background(rgui_handle_t *rgui)
 {
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          0, 0, RGUI_WIDTH, RGUI_HEIGHT, gray_filler);
@@ -179,11 +180,23 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
 
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          RGUI_WIDTH - 10, 5, 5, RGUI_HEIGHT - 10, green_filler);
+}
 
-   char title[TERM_WIDTH - 1];
-   const char *dir;
-   rgui_list_back(rgui->path_stack, &dir, NULL, NULL);
-   snprintf(title, sizeof(title), "FILE BROWSER: %s", dir); 
+static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
+{
+   render_background(rgui);
+
+   char title[TERM_WIDTH];
+   if (rgui->mode == RGUI_FILEBROWSER)
+   {
+      const char *dir;
+      rgui_list_back(rgui->path_stack, &dir, NULL, NULL);
+      snprintf(title, sizeof(title), "FILE BROWSER: %s", dir); 
+   }
+   else
+   {
+      snprintf(title, sizeof(title), "SETTINGS"); 
+   }
    blit_line(rgui, TERM_START_X + 15, 15, title, true);
 
    unsigned x = TERM_START_X;
@@ -197,22 +210,35 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
 
       char message[TERM_WIDTH + 1];
       char *type_str;
+      int w;
       switch (type)
       {
          case RGUI_FILE_PLAIN:
             type_str = "(FILE)";
+            w = 6;
             break;
          case RGUI_FILE_DIRECTORY:
             type_str = "(DIR)";
+            w = 5;
             break;
          case RGUI_FILE_DEVICE:
             type_str = "(DEV)";
+            w = 5;
+            break;
+         case RGUI_SETTINGS_VIDEO_FILTER:
+            type_str = g_settings.video.smooth ? "Bilinear" : "None";
+            w = 8;
+            break;
+         default:
+            type_str = "";
+            w = 0;
             break;
       }
-      snprintf(message, sizeof(message), "%c %-*s %6s\n",
+      snprintf(message, sizeof(message), "%c %-*s %-*s\n",
             i == rgui->directory_ptr ? '>' : ' ',
-            TERM_WIDTH - (6 + 1 + 2),
+            TERM_WIDTH - (w + 1 + 2),
             path,
+            w,
             type_str);
 
       blit_line(rgui, x, y, message, i == rgui->directory_ptr);
@@ -257,8 +283,102 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
    free(msg);
 }
 
+static void rgui_settings_toggle_setting(rgui_file_type_t setting)
+{
+   switch (setting)
+   {
+      /*case RGUI_SETTINGS_VIDEO_STRETCH:
+         
+         break;*/
+
+      case RGUI_SETTINGS_VIDEO_FILTER:
+         g_settings.video.smooth = !g_settings.video.smooth;
+         break;
+
+      default:
+         break;
+   }
+}
+
+static void rgui_settings_populate_entries(rgui_handle_t *rgui)
+{
+   rgui_list_clear(rgui->folder_buf);
+   
+   rgui_list_push(rgui->folder_buf, "Filter", RGUI_SETTINGS_VIDEO_FILTER, 0);
+}
+
+static bool rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
+{
+   switch (action)
+   {
+      case RGUI_ACTION_UP:
+         if (rgui->directory_ptr > 0)
+            rgui->directory_ptr--;
+         else
+            rgui->directory_ptr = rgui_list_size(rgui->folder_buf) - 1;
+         break;
+
+      case RGUI_ACTION_DOWN:
+         if (rgui->directory_ptr + 1 < rgui_list_size(rgui->folder_buf))
+            rgui->directory_ptr++;
+         else
+            rgui->directory_ptr = 0;
+         break;
+
+      case RGUI_ACTION_LEFT:
+      case RGUI_ACTION_CANCEL:
+      case RGUI_ACTION_SETTINGS:
+         rgui->mode = RGUI_FILEBROWSER;
+         return true;
+         break;
+
+      case RGUI_ACTION_RIGHT:
+      case RGUI_ACTION_OK:
+      {
+         rgui_file_type_t type;
+         rgui_list_at(rgui->folder_buf, rgui->directory_ptr, NULL, &type, NULL);
+         rgui_settings_toggle_setting(type);
+         break;
+      }
+
+      case RGUI_ACTION_REFRESH:
+         rgui_settings_populate_entries(rgui);
+         rgui->directory_ptr = 0;
+         break;
+
+      default:
+         break;
+   }
+
+   size_t begin = rgui->directory_ptr >= TERM_HEIGHT / 2 ?
+      rgui->directory_ptr - TERM_HEIGHT / 2 : 0;
+   size_t end = rgui->directory_ptr + TERM_HEIGHT <= rgui_list_size(rgui->folder_buf) ?
+      rgui->directory_ptr + TERM_HEIGHT : rgui_list_size(rgui->folder_buf);
+
+   if (end - begin > TERM_HEIGHT)
+      end = begin + TERM_HEIGHT;
+
+   render_text(rgui, begin, end);
+
+   return false;
+}
+
 const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
+   start:
+   if (rgui->mode == RGUI_SETTINGS)
+   {
+      if (rgui_settings_iterate(rgui, action))
+      {
+         action = RGUI_ACTION_REFRESH;
+         goto start;
+      }
+      else
+      {
+         return NULL;
+      }
+   }
+
    bool found = false;
    switch (action)
    {
@@ -339,6 +459,11 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          rgui->directory_ptr = 0;
          rgui->need_refresh = true;
          break;
+
+      case RGUI_ACTION_SETTINGS:
+         rgui->mode = RGUI_SETTINGS;
+         action = RGUI_ACTION_REFRESH;
+         goto start;
 
       default:
          break;
