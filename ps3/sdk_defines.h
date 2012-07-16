@@ -351,4 +351,33 @@
 #define sys_memory_container_destroy sysMemContainerDestroy
 #endif
 
+/*============================================================
+	RSX PROTOTYPES
+============================================================ */
+
+#ifdef __PSL1GHT__
+#define CELL_GCM_FALSE GCM_FALSE
+#define CELL_GCM_TRUE GCM_TRUE
+
+#define CELL_GCM_TEXTURE_NEAREST GCM_TEXTURE_NEAREST
+
+#define CELL_GCM_ONE GCM_ONE
+#define CELL_GCM_ZERO GCM_ZERO
+
+#define CELL_GCM_SMOOTH GCM_SMOOTH
+
+#define CellGcmSurface gcmSurface
+#define CellGcmTexture gcmTexture
+
+#define cellGcmSetWaitFlip gcmSetWaitFlip
+#define cellGcmFlush rsxFlushBuffer
+#define cellGcmSetFlipMode gcmSetFlipMode
+#define cellGcmSetFlip gcmSetFlip
+#define cellGcmGetLabelAddress gcmGetLabelAddress
+#define cellGcmUnbindTile gcmUnbindTile
+#define cellGcmBindTile gcmBindTile
+#define cellGcmSetTileInfo gcmSetTileInfo
+#define cellGcmAddressToOffset gcmAddressToOffset
+#endif
+
 #endif

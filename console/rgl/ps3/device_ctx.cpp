@@ -2,11 +2,21 @@
 #include "rgl.h"
 #include "private.h"
 #include <string.h>
+#ifdef __PSL1GHT__
+#include <rsx/resc.h>
+#else
 #include <sdk_version.h>
 #include <cell/gcm.h>
 #include <cell/resc.h>
+#endif
+#include "../../../ps3/sdk_defines.h"
+
+#ifdef __PSL1GHT__
+#include <sysutil/sysutil.h>
+#else
 #include <sysutil/sysutil_sysparam.h>
 #include <sys/synchronization.h>
+#endif
 
 using namespace cell::Gcm;
 

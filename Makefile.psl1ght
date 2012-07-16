@@ -11,6 +11,7 @@ PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.7"
 PC_DEVELOPMENT_UDP_PORT		= 3490
 
 CC = $(PS3DEV)/ppu/bin/ppu-gcc
+CXX = $(PS3DEV)/ppu/bin/ppu-g++
 LD = $(PS3DEV)/ppu/bin/ppu-ld
 
 ELF_TARGET := retroarch_psl1ght.elf
@@ -19,11 +20,13 @@ INCLUDE := -I. -I$(PS3DEV)/ppu/include
 LIBDIRS := -L$(PS3DEV)/ppu/lib -L$(PS3DEV)/portlibs/ppu/lib -L.
 
 MACHDEP := -D__CELLOS_LV2__ -D__PSL1GHT__
-CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
+CFLAGS += -Wall $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
 LIBS := -lretro_psl1ght -laudio -lEGL -lGL -lio -lm -ljpgdec -lpngdec -lsysutil
 
 OBJ = console/griffin/griffin.o console/rzlib/rzlib.o
+
+#OBJ += console/rgl/ps3/device_ctx.o console/rgl/ps3/rgl.o console/rgl/ps3/cgbio.o console/rgl/ps3/cgnv2rt.o
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -37,12 +40,15 @@ endif
 
 RSXGL_DEFINES = -D__RSX__ -DGL3_PROTOTYPES
 
-CFLAGS += -std=gnu99 -DHAVE_FILEBROWSER $(RSXGL_DEFINES) -DHAVE_OSKUTIL -DHAVE_MOUSE -DHAVE_DEFAULT_RETROPAD_INPUT -DRARCH_CONSOLE -DHAVE_CONFIGFILE=1 -DHAVE_ZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DPACKAGE_VERSION=\"0.9.6\" -Dmain=rarch_main -Wno-char-subscripts 
+SHARED_FLAGS := -DHAVE_FILEBROWSER $(RSXGL_DEFINES) -DHAVE_OSKUTIL -DHAVE_MOUSE -DHAVE_DEFAULT_RETROPAD_INPUT -DRARCH_CONSOLE -DHAVE_CONFIGFILE=1 -DHAVE_ZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DPACKAGE_VERSION=\"0.9.6\" -Dmain=rarch_main -Wno-char-subscripts
+CFLAGS += -std=gnu99 $(SHARED_FLAGS)
+CXXFLAGS += $(SHARED_FLAGS)
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
 else
-   CLFAGS += -O3
+   CFLAGS += -O3
+   CXXFLAGS += -03
 endif
 
 all: $(ELF_TARGET)
@@ -52,6 +58,9 @@ $(ELF_TARGET): $(OBJ)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+%.o: %.cpp
+	$(CXX) $(CFLAGS) -c -o $@ $<
 
 clean:
 	rm -f $(ELF_TARGET)
