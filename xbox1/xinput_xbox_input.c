@@ -96,59 +96,59 @@ static int16_t xinput_input_state(void *data, const struct retro_keybind **binds
    DWORD button = binds[player][id].joykey;
    int16_t retval = 0;
 
-   //Hardcoded binds (WIP)
+   //FIXME: Hardcoded binds
    switch(id)
    {
       case RETRO_DEVICE_ID_JOYPAD_A:
          retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_B]) ? 1 : 0;
          break;
       case RETRO_DEVICE_ID_JOYPAD_B:
-			retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A]) ? 1 : 0;
-			break;
+         retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A]) ? 1 : 0;
+	 break;
       case RETRO_DEVICE_ID_JOYPAD_X:
-			retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_Y]) ? 1 : 0;
-			break;
+         retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_Y]) ? 1 : 0;
+	 break;
       case RETRO_DEVICE_ID_JOYPAD_Y:
-			retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X]) ? 1 : 0;
-			break;
+	 retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X]) ? 1 : 0;
+	 break;
       case RETRO_DEVICE_ID_JOYPAD_LEFT:
-			retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) || (state[player].Gamepad.sThumbLX < -DEADZONE) ? 1 : 0;
-			break;
+	 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) || (state[player].Gamepad.sThumbLX < -DEADZONE) ? 1 : 0;
+	 break;
       case RETRO_DEVICE_ID_JOYPAD_RIGHT:
-			retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) || (state[player].Gamepad.sThumbLX > DEADZONE) ? 1 : 0;
-			break;
+	 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) || (state[player].Gamepad.sThumbLX > DEADZONE) ? 1 : 0;
+	 break;
       case RETRO_DEVICE_ID_JOYPAD_UP:
-			retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) || (state[player].Gamepad.sThumbLY > DEADZONE) ? 1 : 0;
-			break;
+	 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) || (state[player].Gamepad.sThumbLY > DEADZONE) ? 1 : 0;
+	 break;
       case RETRO_DEVICE_ID_JOYPAD_DOWN:
-			retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN)|| (state[player].Gamepad.sThumbLY < -DEADZONE) ? 1 : 0;
-			break;
+	 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN)|| (state[player].Gamepad.sThumbLY < -DEADZONE) ? 1 : 0;
+	 break;
       case RETRO_DEVICE_ID_JOYPAD_START:
-			retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_START) ? 1 : 0;
-			break;
+	 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_START) ? 1 : 0;
+	 break;
       case RETRO_DEVICE_ID_JOYPAD_SELECT:
-			retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? 1 : 0;
-			break;
+	 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? 1 : 0;
+	 break;
       case RETRO_DEVICE_ID_JOYPAD_L:
-			retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER]) ? 1 : 0;
-			break;
+	 retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER]) ? 1 : 0;
+	 break;
       case RETRO_DEVICE_ID_JOYPAD_R:
-			retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER]) ? 1 : 0;
-			break;
+	 retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER]) ? 1 : 0;
+	 break;
       case RETRO_DEVICE_ID_JOYPAD_L2:
-			retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_WHITE]) ? 1 : 0;
-			break;
+	 retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_WHITE]) ? 1 : 0;
+	 break;
       case RETRO_DEVICE_ID_JOYPAD_R2:
-			retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_BLACK]) ? 1 : 0;
-			break;
+	 retval = (state[player].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_BLACK]) ? 1 : 0;
+	 break;
       case RETRO_DEVICE_ID_JOYPAD_L3:
-			retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? 1 : 0;
-			break;
+	 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? 1 : 0;
+	 break;
       case RETRO_DEVICE_ID_JOYPAD_R3:
-			retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? 1 : 0;
-			break;
+	 retval = (state[player].Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? 1 : 0;
+	 break;
       default:
-			break;
+	 break;
    }
 
    return retval;

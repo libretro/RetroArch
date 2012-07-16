@@ -200,14 +200,13 @@ typedef struct
 
 struct console_settings
 {
-#ifdef __CELLOS_LV2__
    bool custom_bgm_enable;
-#endif
    bool check_available_resolutions;
    bool block_config_read;
    bool default_sram_dir_enable;
    bool default_savestate_dir_enable;
    bool fbo_enabled;
+   bool fps_info_enable;
    bool frame_advance_enable;
 #ifdef _XBOX
    bool menus_hd_enable;
@@ -242,9 +241,7 @@ struct console_settings
    uint32_t supported_resolutions_count;
    uint32_t control_timer_expiration_frame_count;
    uint32_t timer_expiration_frame_count;
-#ifdef RARCH_CONSOLE
    uint32_t input_loop;
-#endif
 #ifdef _XBOX
    uint32_t color_format;
    DWORD volume_device_type;
@@ -257,7 +254,7 @@ struct console_settings
    char default_sram_dir[PATH_MAX];
    char launch_app_on_exit[PATH_MAX];
    float menu_font_size;
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+#if defined(__CELLOS_LV2__)
    oskutil_params oskutil_handle;
 #endif
 };

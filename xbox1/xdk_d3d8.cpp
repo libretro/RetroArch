@@ -185,7 +185,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    if (!d3d->d3d_device)
    {
       free(d3d);
-	   OutputDebugString("RetroArch: Failed to create a D3D8 object!");
+      RARCH_ERR("Failed to create a D3D8 object.\n");
       return NULL;
    }
 
@@ -344,7 +344,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->vsync = video->vsync;
 
    // load debug font (toggle option in later revisions ?)
-#ifdef SHOW_DEBUG_INFO
    XFONT_OpenDefaultFont(&d3d->debug_font);
    d3d->debug_font->SetBkMode(XFONT_TRANSPARENT);
    d3d->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
@@ -353,6 +352,10 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    font_x = 0;
    font_y = 0;
+
+   // TODO: place this somewhere else outside of xdk_d3d8.cpp
+#ifdef SHOW_DEBUG_INFO
+   g_console.fps_info_enable = true;
 #endif
 
    return d3d;
@@ -361,13 +364,12 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 static bool xdk_d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-#if 0
    if (!frame)
       return true;
-#endif
 
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    bool menu_enabled = g_console.menu_enable;
+   bool fps_enable = g_console.fps_info_enable;
 
    if (d3d->last_width != width || d3d->last_height != height) //240*160
    {
@@ -442,40 +444,38 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    d3d->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
    d3d->d3d_render_device->EndScene();
 
-
-#ifdef SHOW_DEBUG_INFO
-   static MEMORYSTATUS stat;
-   GlobalMemoryStatus(&stat);
-   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
-   d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
-
-   //Output memory usage
-
-   char buf[128], buf2[128], buf_fps_last[128];
-   bool ret = false;
-   sprintf(buf, "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
-   rarch_convert_char_to_wchar(strw_buffer, buf, sizeof(strw_buffer));
-   d3d->debug_font->TextOut(d3d->pFrontBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 50 );
-   d3d->debug_font->TextOut(d3d->pBackBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 50 );
-
-   if(ret = gfx_window_title(buf2, sizeof(buf2)) || sizeof(buf_fps_last))
+   if(fps_enable)
    {
-      if(ret)
-      {
-         sprintf(buf_fps_last, buf2);
-         rarch_convert_char_to_wchar(strw_buffer, buf2, sizeof(strw_buffer));
-      }
-      else if(buf_fps_last)
-      {
-         rarch_convert_char_to_wchar(strw_buffer, buf_fps_last, sizeof(strw_buffer));
-      }
+      static MEMORYSTATUS stat;
+      GlobalMemoryStatus(&stat);
+      d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
+      d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
 
-      d3d->debug_font->TextOut(d3d->pFrontBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 70 );
-      d3d->debug_font->TextOut(d3d->pBackBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 70 );
-      d3d->pFrontBuffer->Release();
-      d3d->pBackBuffer->Release();
+      //Output memory usage
+
+      char buf[128], buf2[128], buf_fps_last[128];
+      bool ret = false;
+      sprintf(buf, "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
+      rarch_convert_char_to_wchar(strw_buffer, buf, sizeof(strw_buffer));
+      d3d->debug_font->TextOut(d3d->pFrontBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 50 );
+      d3d->debug_font->TextOut(d3d->pBackBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 50 );
+
+      if(ret = gfx_window_title(buf2, sizeof(buf2)) || sizeof(buf_fps_last))
+      {
+         if(ret)
+	 {
+            sprintf(buf_fps_last, buf2);
+	    rarch_convert_char_to_wchar(strw_buffer, buf2, sizeof(strw_buffer));
+	 }
+         else if(buf_fps_last)
+            rarch_convert_char_to_wchar(strw_buffer, buf_fps_last, sizeof(strw_buffer));
+
+	 d3d->debug_font->TextOut(d3d->pFrontBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 70 );
+	 d3d->debug_font->TextOut(d3d->pBackBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 70 );
+	 d3d->pFrontBuffer->Release();
+	 d3d->pBackBuffer->Release();
+      }
    }
-#endif
 
    if(!d3d->block_swap)
       gfx_ctx_swap_buffers();
