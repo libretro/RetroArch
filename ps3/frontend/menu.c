@@ -610,6 +610,7 @@ static void display_menubar(void)
 
 uint64_t state, trigger_state;
 uint16_t input_state, old_input_state = 0;
+uint16_t trigger_st = 0;
 static uint64_t old_state = 0;
 
 static void control_update_wrap(void)
@@ -657,9 +658,7 @@ static void control_update_wrap(void)
 
 static void browser_update(filebrowser_t * b, const char *extensions)
 {
-   control_update_wrap();
    filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
-   uint16_t trigger_st = input_state & ~old_input_state;
 
    if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
       action = FILEBROWSER_ACTION_DOWN;
@@ -775,7 +774,6 @@ static void select_file(void)
    }
 
    browser_update(&tmpBrowser, extensions);
-   uint16_t trigger_st = input_state & ~old_input_state;
 
       if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
       {
@@ -1706,7 +1704,6 @@ static void select_rom(void)
    gl_t * gl = driver.video_data;
 
    browser_update(&browser, rarch_console_get_rom_ext());
-   uint16_t trigger_st = input_state & ~old_input_state;
 
    menu_romselect_action_t action = MENU_ROMSELECT_ACTION_NOOP;
 
@@ -2150,6 +2147,10 @@ void menu_loop(void)
             }
          }
       }
+
+      control_update_wrap();
+      trigger_st = 0;
+      trigger_st = input_state & ~old_input_state;
 
       gfx_ctx_clear();
 
