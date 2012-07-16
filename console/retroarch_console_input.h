@@ -41,7 +41,7 @@ enum
    DPAD_EMULATION_RSTICK
 };
 
-#ifdef _XBOX
+#ifdef _XBOX360
 #include "../360/xinput_360_input.h"
 #endif
 

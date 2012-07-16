@@ -230,7 +230,7 @@ REWIND
 MAIN
 ============================================================ */
 #if defined(_XBOX)
-#include "../../360/frontend-xdk/main.c"
+#include "../../xdk/frontend/main.c"
 #elif defined(GEKKO)
 #include "../../wii/frontend/main.c"
 #endif
