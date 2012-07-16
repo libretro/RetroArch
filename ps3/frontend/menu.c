@@ -608,10 +608,9 @@ static void display_menubar(void)
    gl_render_msg_post(gl);
 }
 
-uint64_t state, trigger_state, held_state;
+uint64_t state, trigger_state;
 uint16_t input_state, old_input_state = 0;
 static uint64_t old_state = 0;
-static uint64_t older_state = 0;
 
 static void control_update_wrap(void)
 {
@@ -2129,11 +2128,10 @@ void menu_loop(void)
 
       state = cell_pad_input_poll_device(0);
       trigger_state = state & ~old_state;
-      held_state = state & older_state;
-      held_state = held_state & old_state;
 
-      if(held_state)
       {
+         //second button input
+         uint64_t held_state = cell_pad_input_poll_device(0);
          bool analog_sticks_pressed = check_analog(held_state);
          bool shoulder_buttons_pressed = check_shoulder_buttons(held_state) && menu_category_id != CATEGORY_SETTINGS;
          bool do_held = analog_sticks_pressed || shoulder_buttons_pressed;
@@ -2220,7 +2218,6 @@ void menu_loop(void)
             break;
       }
 
-      older_state = old_state;
       old_state = state;
 
       if(IS_TIMER_EXPIRED(gl))
