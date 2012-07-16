@@ -100,7 +100,7 @@ static void rarch_manage_libretro_set_first_file(char *first_file, size_t size_o
 
    if(first_exe)
    {
-#ifdef _XBOX
+#ifdef _XBOX360
       char fname_tmp[PATH_MAX];
       fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
 
@@ -136,8 +136,10 @@ static void find_and_set_first_file(void)
 
    char first_file[PATH_MAX];
    rarch_manage_libretro_set_first_file(first_file, sizeof(first_file),
-#if defined(_XBOX)
+#if defined(_XBOX360)
    "game:\\", "xex"
+#elif defined(_XBOX1)
+   "D:\\", "xbe"
 #elif defined(__CELLOS_LV2__)
    LIBRETRO_DIR_PATH, "SELF"
 #endif
@@ -167,8 +169,10 @@ static void init_settings(void)
 
    //try to find CORE executable
    char core_executable[1024];
-#if defined(_XBOX)
+#if defined(_XBOX360)
    snprintf(core_executable, sizeof(core_executable), "game:\\CORE.xex");
+#if defined(_XBOX1)
+   snprintf(core_executable, sizeof(core_executable), "D:\\CORE.xbe");
 #elif defined(__CELLOS_LV2__)
    snprintf(core_executable, sizeof(core_executable), "%s/CORE.SELF", LIBRETRO_DIR_PATH);
 #endif
@@ -199,7 +203,7 @@ static void init_settings(void)
 
 static void get_environment_settings (void)
 {
-#if defined(_XBOX)
+#if defined(_XBOX360)
    //for devkits only, we will need to mount all partitions for retail
    //in a different way
    //DmMapDevkitDrive();
@@ -244,8 +248,8 @@ static void get_environment_settings (void)
 	    break;
       }
    }
-
-   strlcpy(SYS_CONFIG_FILE, "game:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
+#elif defined(_XBOX1)
+   strlcpy(SYS_CONFIG_FILE, "D:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
 #elif defined(__CELLOS_LV2__)
    unsigned int get_type;
    unsigned int get_attributes;
@@ -317,6 +321,8 @@ int main(int argc, char *argv[])
 
    get_environment_settings();
 
+   //WIP - no Xbox 1 controller input yet
+#ifdef _XBOX360
    XInputGetState(0, &state);
 
    if(state.Gamepad.wButtons & XINPUT_GAMEPAD_Y)
@@ -326,6 +332,7 @@ int main(int argc, char *argv[])
       find_and_set_first_file();
    }
    else
+#endif
    {
       //normal executable loading path
       init_settings();
