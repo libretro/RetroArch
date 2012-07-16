@@ -28,8 +28,8 @@
 
 CRetroArch app;
 HXUIOBJ hCur;
-filebrowser_t browser;
-filebrowser_t tmp_browser;
+filebrowser_t *browser;
+filebrowser_t *tmp_browser;
 uint32_t set_shader = 0;
 wchar_t strw_buffer[PATH_MAX];
 
@@ -89,10 +89,10 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiBtnGameDir", &m_dir_game);
    GetChildById(L"XuiBtnCacheDir", &m_dir_cache);
 
-   filebrowser_set_root(&browser, g_console.default_rom_startup_dir);
-   strlcpy(tmp_browser.extensions, rarch_console_get_rom_ext(), sizeof(tmp_browser.extensions));
+   filebrowser_set_root(browser, g_console.default_rom_startup_dir);
+   strlcpy(tmp_browser->extensions, rarch_console_get_rom_ext(), sizeof(tmp_browser->extensions));
    filebrowser_fetch_directory_entries(g_console.default_rom_startup_dir, 
-   &browser, &m_romlist, &m_rompathtitle);
+   browser, &m_romlist, &m_rompathtitle);
 
    return 0;
 }
@@ -103,9 +103,9 @@ HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiBackButton1", &m_back);
    GetChildById(L"XuiTxtRomPath", &m_rompathtitle);
 
-   filebrowser_set_root(&tmp_browser, "game:");
-   strlcpy(tmp_browser.extensions, "xex|XEX", sizeof(tmp_browser.extensions));
-   filebrowser_fetch_directory_entries("game:", &tmp_browser, &m_romlist, &m_rompathtitle);
+   filebrowser_set_root(tmp_browser, "game:");
+   strlcpy(tmp_browser->extensions, "xex|XEX", sizeof(tmp_browser->extensions));
+   filebrowser_fetch_directory_entries("game:", tmp_browser, &m_romlist, &m_rompathtitle);
 
    return 0;
 }
@@ -116,9 +116,9 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
    GetChildById(L"XuiBackButton1", &m_back);
    GetChildById(L"XuiTxtRomPath", &m_shaderpathtitle);
 
-   filebrowser_set_root(&tmp_browser, "game:\\media\\shaders");
-   strlcpy(tmp_browser.extensions, "cg|CG", sizeof(tmp_browser.extensions));
-   filebrowser_fetch_directory_entries("game:\\media\\shaders", &tmp_browser, 
+   filebrowser_set_root(tmp_browser, "game:\\media\\shaders");
+   strlcpy(tmp_browser->extensions, "cg|CG", sizeof(tmp_browser->extensions));
+   filebrowser_fetch_directory_entries("game:\\media\\shaders", tmp_browser, 
    &m_shaderlist, &m_shaderpathtitle);
 
    return 0;
@@ -544,35 +544,35 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    {
       int index = m_romlist.GetCurSel();
       const char *strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
-      if(path_file_exists(browser.current_dir.list->elems[index].data))
+      if(path_file_exists(browser->current_dir.list->elems[index].data))
       {
          char path_tmp[1024];
          struct retro_system_info info;
          retro_get_system_info(&info);
          bool block_zip_extract  = info.block_extract;
 
-         snprintf(path_tmp, sizeof(path_tmp), "%s\\%s", filebrowser_get_current_dir(&browser), strbuffer);
+         snprintf(path_tmp, sizeof(path_tmp), "%s\\%s", filebrowser_get_current_dir(browser), strbuffer);
          if((strstr(strbuffer, ".zip") || strstr(strbuffer, ".ZIP")) && !block_zip_extract)
             rarch_extract_zipfile(path_tmp);
          else
             rarch_console_load_game(path_tmp);
       }
-      else if(browser.current_dir.list->elems[index].attr.b)
+      else if(browser->current_dir.list->elems[index].attr.b)
       {
-         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(&browser), strbuffer);
-         filebrowser_fetch_directory_entries(path, &browser, &m_romlist, &m_rompathtitle);
+         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), strbuffer);
+         filebrowser_fetch_directory_entries(path, browser, &m_romlist, &m_rompathtitle);
       }
    }
    else if (hObjPressed == m_dir_game)
    {
-      filebrowser_new(&browser, g_console.default_rom_startup_dir, rarch_console_get_rom_ext());
-      filebrowser_fetch_directory_entries(g_console.default_rom_startup_dir, &browser, &m_romlist, &m_rompathtitle);
+      filebrowser_new(browser, g_console.default_rom_startup_dir, rarch_console_get_rom_ext());
+      filebrowser_fetch_directory_entries(g_console.default_rom_startup_dir, browser, &m_romlist, &m_rompathtitle);
    }
 #ifdef HAVE_HDD_CACHE_PARTITION
    else if (hObjPressed == m_dir_cache)
    {
-      filebrowser_new(&browser, "cache:", rarch_console_get_rom_ext());
-      filebrowser_fetch_directory_entries("cache:", &browser, &m_romlist, &m_rompathtitle);
+      filebrowser_new(browser, "cache:", rarch_console_get_rom_ext());
+      filebrowser_fetch_directory_entries("cache:", browser, &m_romlist, &m_rompathtitle);
 
       if (g_console.info_msg_enable)
          rarch_settings_msg(S_MSG_CACHE_PARTITION, S_DELAY_180);
@@ -591,29 +591,29 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
    if(hObjPressed == m_shaderlist)
    {
       int index = m_shaderlist.GetCurSel();
-      if(path_file_exists(tmp_browser.current_dir.list->elems[index].data))
+      if(path_file_exists(tmp_browser->current_dir.list->elems[index].data))
       {
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_shaderlist.GetText(index));
 		 
          switch(set_shader)
          {
             case 1:
-               snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), strbuffer);
+               snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", filebrowser_get_current_dir(tmp_browser), strbuffer);
                rarch_load_shader(set_shader, g_settings.video.cg_shader_path);
                break;
             case 2:
-               snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), strbuffer);
+               snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", filebrowser_get_current_dir(tmp_browser), strbuffer);
                rarch_load_shader(set_shader, g_settings.video.second_pass_shader);
                break;
             default:
                break;
          }
       }
-      else if(tmp_browser.current_dir.list->elems[index].attr.b)
+      else if(tmp_browser->current_dir.list->elems[index].attr.b)
       {
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_shaderlist.GetText(index));
-         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), strbuffer);
-         filebrowser_fetch_directory_entries(path, &tmp_browser, &m_shaderlist, &m_shaderpathtitle);
+         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(tmp_browser), strbuffer);
+         filebrowser_fetch_directory_entries(path, tmp_browser, &m_shaderlist, &m_shaderpathtitle);
       }
    }
 
@@ -629,17 +629,17 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    if(hObjPressed == m_romlist)
    {
       int index = m_romlist.GetCurSel();
-      if(path_file_exists(tmp_browser.current_dir.list->elems[index].data))
+      if(path_file_exists(tmp_browser->current_dir.list->elems[index].data))
       {
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
-         snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), strbuffer);
+         snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s\\%s", filebrowser_get_current_dir(tmp_browser), strbuffer);
          rarch_settings_change(S_RETURN_TO_LAUNCHER);
       }
-      else if(tmp_browser.current_dir.list->elems[index].attr.b)
+      else if(tmp_browser->current_dir.list->elems[index].attr.b)
       {
          const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
-         snprintf(path, sizeof(path), "%s%s\\", filebrowser_get_current_dir(&tmp_browser), strbuffer);
-         filebrowser_fetch_directory_entries(path, &tmp_browser, &m_romlist, &m_rompathtitle);
+         snprintf(path, sizeof(path), "%s%s\\", filebrowser_get_current_dir(tmp_browser), strbuffer);
+         filebrowser_fetch_directory_entries(path, tmp_browser, &m_romlist, &m_rompathtitle);
       }
    }
 
@@ -851,15 +851,19 @@ int menu_init (void)
    hCur = app.hMainScene;
    XuiSceneNavigateFirst(app.GetRootObj(), app.hMainScene, XUSER_INDEX_FOCUS);
 
-   filebrowser_new(&browser, g_console.default_rom_startup_dir, rarch_console_get_rom_ext());
+   browser = (filebrowser_t*)malloc(1 * sizeof(filebrowser_t));
+   tmp_browser = (filebrowser_t*)malloc(1 * sizeof(filebrowser_t));
+   filebrowser_new(browser, g_console.default_rom_startup_dir, rarch_console_get_rom_ext());
 
    return 0;
 }
 
 void menu_free (void)
 {
-   filebrowser_free(&browser);
-   filebrowser_free(&tmp_browser);
+   filebrowser_free(browser);
+   filebrowser_free(tmp_browser);
+   free(browser);
+   free(tmp_browser);
    app.Uninit();
 }
 
