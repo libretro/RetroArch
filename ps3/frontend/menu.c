@@ -642,10 +642,18 @@ static void control_update_wrap(void)
       input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_L2);
    else if (CTRL_L1(trigger_state))
       input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_L);
-   else if (CTRL_CIRCLE(trigger_state))
+   else if (CTRL_SQUARE(trigger_state))
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_Y);
+   else if (CTRL_TRIANGLE(trigger_state))
       input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_X);
+   else if (CTRL_CIRCLE(trigger_state))
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_A);
+   else if (CTRL_CROSS(trigger_state))
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_B);
    else if (CTRL_START(trigger_state))
       input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
+   else if (CTRL_SELECT(trigger_state))
+      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
 }
 
 static void browser_update(filebrowser_t * b, const char *extensions)
@@ -768,8 +776,9 @@ static void select_file(void)
    }
 
    browser_update(&tmpBrowser, extensions);
+   uint16_t trigger_st = input_state & ~old_input_state;
 
-      if (CTRL_CROSS(trigger_state))
+      if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
       {
          if(filebrowser_get_current_path_isdir(&tmpBrowser))
 	 {
@@ -826,7 +835,7 @@ static void select_file(void)
             menu_stack_decrement();
 	 }
       }
-      else if (CTRL_TRIANGLE(trigger_state))
+      else if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_X))
          menu_stack_decrement();
 
    display_menubar();
@@ -1698,11 +1707,13 @@ static void select_rom(void)
    gl_t * gl = driver.video_data;
 
    browser_update(&browser, rarch_console_get_rom_ext());
+   uint16_t trigger_st = input_state & ~old_input_state;
+
    menu_romselect_action_t action = MENU_ROMSELECT_ACTION_NOOP;
 
-   if (CTRL_SELECT(trigger_state))
+   if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT))
       action = MENU_ROMSELECT_ACTION_GOTO_SETTINGS;
-   else if (CTRL_CROSS(trigger_state))
+   else if (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
       action = MENU_ROMSELECT_ACTION_OK;
 
    if (action != MENU_ROMSELECT_ACTION_NOOP)
