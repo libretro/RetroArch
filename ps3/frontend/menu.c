@@ -87,6 +87,9 @@ static void set_setting_label_color(bool cond, unsigned currentsetting)
 
 static void set_setting_label(menu * menu_obj, unsigned currentsetting)
 {
+   char fname[PATH_MAX];
+   (void)fname;
+
    switch(currentsetting)
    {
 	   case SETTING_CHANGE_RESOLUTION:
@@ -94,30 +97,21 @@ static void set_setting_label(menu * menu_obj, unsigned currentsetting)
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), ps3_get_resolution_label(g_console.supported_resolutions[g_console.current_resolution_index]));
 		   break;
 	   case SETTING_SHADER_PRESETS:
-		   {
-                      char fname[PATH_MAX];
-                      set_setting_label_color(g_console.cgp_path == DEFAULT_PRESET_FILE, currentsetting);
-		      fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
-		      snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), fname);
-		   }
+                   set_setting_label_color(g_console.cgp_path == DEFAULT_PRESET_FILE, currentsetting);
+		   fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
+		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), fname);
 		   break;
 	   case SETTING_SHADER:
-		   {
-                      char fname[PATH_MAX];
-		      fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
-		      snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "%s", fname);
-                      set_setting_label_color(strcmp(g_settings.video.cg_shader_path,DEFAULT_SHADER_FILE) == 0, 
-                      currentsetting);
-		   }
+		   fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
+		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "%s", fname);
+                   set_setting_label_color(strcmp(g_settings.video.cg_shader_path,DEFAULT_SHADER_FILE) == 0, 
+                   currentsetting);
 		   break;
 	   case SETTING_SHADER_2:
-		   {
-                      char fname[PATH_MAX];
-		      fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
-		      snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "%s", fname);
-                      set_setting_label_color(strcmp(g_settings.video.second_pass_shader,DEFAULT_SHADER_FILE) == 0,
-                      currentsetting);
-		   }
+		   fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
+		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "%s", fname);
+                   set_setting_label_color(strcmp(g_settings.video.second_pass_shader,DEFAULT_SHADER_FILE) == 0,
+                   currentsetting);
 		   break;
 	   case SETTING_FONT_SIZE:
                    set_setting_label_color(g_console.menu_font_size == 1.0f, currentsetting);
@@ -213,23 +207,20 @@ static void set_setting_label(menu * menu_obj, unsigned currentsetting)
                    set_setting_label_write_on_or_off(g_settings.rewind_enable, currentsetting);
 		   if(g_settings.rewind_enable)
 		   {
-			   items_generalsettings[currentsetting].text_color = ORANGE;
-			   snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [Rewind] feature is set to 'ON'. You can rewind the game in real-time.");
+                      items_generalsettings[currentsetting].text_color = ORANGE;
+		      snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [Rewind] feature is set to 'ON'. You can rewind the game in real-time.");
 		   }
 		   else
 		   {
-			   items_generalsettings[currentsetting].text_color = GREEN;
-			   snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [Rewind] feature is set to 'OFF'.");
+                      items_generalsettings[currentsetting].text_color = GREEN;
+		      snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [Rewind] feature is set to 'OFF'.");
 		   }
 		   break;
 	   case SETTING_RARCH_DEFAULT_EMU:
-		   {
-			   char fname[PATH_MAX];
-			   fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
-			   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "%s", fname);
+                  fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
+		  snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "%s", fname);
 
-			   items_generalsettings[currentsetting].text_color = GREEN;
-		   }
+		  items_generalsettings[currentsetting].text_color = GREEN;
 		   break;
 	   case SETTING_EMU_AUDIO_MUTE:
                    set_setting_label_write_on_or_off(g_extern.audio_data.mute, currentsetting);
@@ -609,7 +600,7 @@ static void display_menubar(void)
 }
 
 uint64_t state;
-uint16_t input_state, old_input_state = 0;
+uint16_t input_state = 0;
 uint16_t trigger_st = 0;
 static uint64_t old_state = 0;
 
@@ -2158,7 +2149,7 @@ void menu_loop(void)
       }
 
       control_update_wrap(trigger_state);
-      trigger_st = input_state & ~old_input_state;
+      trigger_st = input_state;
 
       gfx_ctx_clear();
 
