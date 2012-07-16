@@ -920,17 +920,17 @@ static void select_directory(void)
    gl_render_msg_post(gl);
 }
 
-static void set_keybind_digital(uint64_t control_state, uint64_t default_retro_joypad_id)
+static void set_keybind_digital(uint64_t default_retro_joypad_id)
 {
    unsigned keybind_action = KEYBIND_NOACTION;
 
-   if(CTRL_LEFT(control_state) | CTRL_LSTICK_LEFT(control_state))
+   if(trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
       keybind_action = KEYBIND_DECREMENT;
 
-   if(CTRL_RIGHT(control_state)  || CTRL_LSTICK_RIGHT(control_state) || CTRL_CROSS(control_state))
+   if((trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
       keybind_action = KEYBIND_INCREMENT;
 
-   if(CTRL_START(control_state))
+   if(trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
       keybind_action = KEYBIND_DEFAULT;
 
    rarch_input_set_keybind(currently_selected_controller_menu, keybind_action, default_retro_joypad_id);
@@ -1026,7 +1026,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
                            rarch_settings_change(S_RESOLUTION_NEXT);
 			if(trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
                            rarch_settings_change(S_RESOLUTION_PREVIOUS);
-			if(CTRL_CROSS(trigger_state))
+			if(trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 			{
                            if (g_console.supported_resolutions[g_console.current_resolution_index] == CELL_VIDEO_OUT_RESOLUTION_576)
 			   {
@@ -1106,7 +1106,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 				if(g_console.menu_font_size > 0) 
                                    g_console.menu_font_size -= 0.01f;
 			}
-			if(CTRL_RIGHT(trigger_state)  || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
+                        if((trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 				if((g_console.menu_font_size < 2.0f))
                                    g_console.menu_font_size += 0.01f;
@@ -1181,7 +1181,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			      }
 			   }
 			}
-			if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
+			if((trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
                            if(g_console.fbo_enabled)
 			   {
@@ -1206,7 +1206,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 				rarch_settings_change(S_OVERSCAN_DECREMENT);
 				gfx_ctx_set_overscan();
 			}
-			if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
+			if((trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 				rarch_settings_change(S_OVERSCAN_INCREMENT);
 				gfx_ctx_set_overscan();
@@ -1287,12 +1287,12 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
                            if(g_console.sound_mode != SOUND_MODE_NORMAL)
                               g_console.sound_mode--;
 			}
-			if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
+			if((trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
                            if(g_console.sound_mode < SOUND_MODE_HEADSET)
                               g_console.sound_mode++;
 			}
-			if(CTRL_UP(trigger_state) || CTRL_LSTICK_UP(trigger_state) || CTRL_DOWN(trigger_state) || CTRL_LSTICK_DOWN(trigger_state))
+			if((trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_UP)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)))
 			{
                            if(g_console.sound_mode != SOUND_MODE_RSOUND)
                               rarch_console_rsound_stop();
@@ -1329,9 +1329,9 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 		case SETTING_DEFAULT_AUDIO_ALL:
 			break;
 		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state))
+			if(trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
                            rarch_settings_change(S_SAVESTATE_DECREMENT);
-			if(CTRL_RIGHT(trigger_state)  || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
+			if((trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
                            rarch_settings_change(S_SAVESTATE_INCREMENT);
 
 			if(trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1472,7 +1472,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			}
 			break;
 		case SETTING_PATH_DEFAULT_ALL:
-			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) ||  CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state) || CTRL_START(trigger_state))
+			if((trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
 			{
                            strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
 			   strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
@@ -1483,7 +1483,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			}
 			break;
 		case SETTING_CONTROLS_SCHEME:
-			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state) | CTRL_RIGHT(trigger_state)  || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
+			if((trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
 			{
                            menu_stack_increment();
                            menu_stack_push(menuStackindex, INPUT_PRESET_CHOICE);
@@ -1492,14 +1492,14 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			break;
 		case SETTING_CONTROLS_NUMBER:
-			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_CROSS(trigger_state))
+			if(trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
 			{
                            if(currently_selected_controller_menu != 0)
                               currently_selected_controller_menu--;
 			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 
-			if(CTRL_RIGHT(trigger_state)  || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
+			if((trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
                            if(currently_selected_controller_menu < 6)
                               currently_selected_controller_menu++;
@@ -1510,56 +1510,59 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
                            currently_selected_controller_menu = 0;
 			break; 
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_UP);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_UP);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_DOWN);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_DOWN);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_LEFT);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_LEFT);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_RIGHT);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_A);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_A);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_B);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_B);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_X);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_X);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_Y);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_Y);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_SELECT);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_SELECT);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_START);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_START);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_L);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_L);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_R);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R);
 			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_L2);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_L2);
+			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_R2);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R2);
+			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_L3);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_L3);
+			break;
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
-			set_keybind_digital(trigger_state, RETRO_DEVICE_ID_JOYPAD_R3);
+			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R3);
 			break;
 		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) ||  CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state) || CTRL_START(trigger_state))
+			if((trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
                            rarch_filename_input_and_save(INPUT_PRESET_FILE);
 			break;
 		case SETTING_CONTROLS_DEFAULT_ALL:
-			if(CTRL_LEFT(trigger_state) || CTRL_LSTICK_LEFT(trigger_state) || CTRL_RIGHT(trigger_state) ||  CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state) || CTRL_START(trigger_state))
+			if((trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
 			{
                            rarch_input_set_default_keybinds(currently_selected_controller_menu);
 			   menu_stack_refresh(items_generalsettings, menuStackindex);
@@ -1920,7 +1923,7 @@ static void ingame_menu(void)
 	       video_gl.set_rotation(NULL, g_console.screen_orientation);
 	    }
 
-	    if(CTRL_RIGHT(trigger_state) || CTRL_LSTICK_RIGHT(trigger_state) || CTRL_CROSS(trigger_state))
+            if((trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (trigger_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 	    {
                rarch_settings_change(S_ROTATION_INCREMENT);
 	       video_gl.set_rotation(NULL, g_console.screen_orientation);
