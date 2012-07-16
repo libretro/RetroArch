@@ -22,17 +22,16 @@
 
 #ifdef _XBOX360
 #include <xfilecache.h>
-#include "menu.h"
+#include "../../360/frontend-xdk/menu.h"
 #endif
 
 #include <xbdm.h>
-#include "../../input/rarch_xinput2.h"
 
 #ifdef _XBOX
 #if defined(_XBOX1)
 #include "../../xbox1/xdk_d3d8.h"
 #elif defined(_XBOX360)
-#include "../xdk_d3d9.h"
+#include "../../360/xdk_d3d9.h"
 #endif
 #endif
 

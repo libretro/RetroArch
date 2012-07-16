@@ -41,8 +41,8 @@ enum
    DPAD_EMULATION_RSTICK
 };
 
-#ifdef _XBOX
-#include "../input/rarch_xinput2.h"
+#ifdef _XBOX360
+#include "../360/xinput_360_input.h"
 #endif
 
 #if defined(__CELLOS_LV2__)

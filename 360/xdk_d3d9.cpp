@@ -38,7 +38,7 @@
 #include "../gfx/fonts/xdk360_fonts.h"
 #endif
 
-#include "xdk360_video_resources.h"
+#include "../xdk/xdk_resources.h"
 
 extern video_console_t video_console;
 extern xdk360_video_font_t m_Font;

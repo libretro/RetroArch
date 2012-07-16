@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include <xfont.h>
 
+#include "../xdk/xdk_defines.h"
+
 #define SHOW_DEBUG_INFO
 
 #define DFONT_MAX	4096
@@ -45,27 +47,6 @@ typedef struct DrawVerticeFormats
    float u, v;
 } DrawVerticeFormats;
 
-/* Direct3D 8 */
-#define LPDIRECT3D_PTR LPDIRECT3D8
-#define LPDIRECT3DDEVICE_PTR LPDIRECT3DDEVICE8
-#define LPDIRECT3DTEXTURE_PTR LPDIRECT3DTEXTURE8
-#define LPDIRECT3DSURFACE_PTR LPDIRECT3DSURFACE8
-#define LPDIRECT3DVERTEXBUFFER_PTR LPDIRECT3DVERTEXBUFFER8
-
-#define D3DVIEWPORT D3DVIEWPORT8
-#define D3DVERTEXELEMENT D3DVERTEXELEMENT8
-
-#define direct3d_create_ctx Direct3DCreate8
-#define IDirect3DVertexBuffer IDirect3DVertexBuffer8
-
-#define SetSamplerState SetTextureStageState
-#define D3DLOCK_NOSYSLOCK (0)
-
-#define D3DSAMP_ADDRESSU D3DTSS_ADDRESSU
-#define D3DSAMP_ADDRESSV D3DTSS_ADDRESSV
-#define D3DSAMP_MAGFILTER D3DTSS_MAGFILTER
-#define D3DSAMP_MINFILTER D3DTSS_MINFILTER
-
 typedef struct xdk_d3d_video
 {
    bool block_swap;
@@ -76,10 +57,10 @@ typedef struct xdk_d3d_video
    unsigned frame_count;
    unsigned last_width;
    unsigned last_height;
-   LPDIRECT3D_PTR d3d_device;
-   LPDIRECT3DDEVICE_PTR d3d_render_device;
-   LPDIRECT3DVERTEXBUFFER_PTR vertex_buf;
-   LPDIRECT3DTEXTURE_PTR lpTexture;
+   LPDIRECT3D d3d_device;
+   LPDIRECT3DDEVICE d3d_render_device;
+   LPDIRECT3DVERTEXBUFFER vertex_buf;
+   LPDIRECT3DTEXTURE lpTexture;
    DWORD video_mode;
    D3DPRESENT_PARAMETERS d3dpp;
    XFONT *debug_font;

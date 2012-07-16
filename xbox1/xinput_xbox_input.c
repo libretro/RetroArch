@@ -24,7 +24,6 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../libretro.h"
-#include "../input/rarch_xinput2.h"
 #include "xinput_xbox_input.h"
 
 static XINPUT_STATE state[4];
@@ -33,6 +32,8 @@ DWORD dwDeviceMask;
 bool bInserted[4];
 bool bRemoved[4];
 XINPUT_CAPABILITIES caps[4];
+
+#define DEADZONE (16000)
 
 static unsigned pads_connected;
 

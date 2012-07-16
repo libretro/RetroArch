@@ -366,7 +366,7 @@ void d3d9_deinit_font(void)
       s_FontLocals.m_pFontVertexShader = NULL;
    if( ( s_FontLocals.m_pFontVertexDecl != NULL ) && ( s_FontLocals.m_pFontVertexDecl->Release() == 0 ) )
       s_FontLocals.m_pFontVertexDecl = NULL;
-   if( m_xprResource.m_bInitialized)
+   if( m_xprResource.Initialized())
       m_xprResource.Destroy();
 }
 

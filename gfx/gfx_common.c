@@ -26,7 +26,11 @@
 static int gettimeofday(struct timeval *val, void *dummy)
 {
    (void)dummy;
+#ifdef _XBOX360
+   DWORD msec = GetTickCount();
+#else
    DWORD msec = timeGetTime();
+#endif
    uint64_t usec = msec * 1000;
    val->tv_sec = usec / 1000000;
    val->tv_usec = usec % 1000000;

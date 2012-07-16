@@ -92,8 +92,6 @@ VIDEO DRIVER
 #include "../../gfx/gl.c"
 #elif defined(HAVE_OPENGLES20)
 #include "../../gfx/gles.c"
-#elif defined(_XBOX360)
-#include "../../360/xdk360_video_resources.cpp"
 #elif defined(GEKKO)
 #include "../../wii/video.c"
 #endif
@@ -101,6 +99,7 @@ VIDEO DRIVER
 #include "../../gfx/gfx_common.c"
 
 #ifdef _XBOX
+#include "../../xdk/xdk_resources.cpp"
 #if defined(HAVE_D3D9)
 #include "../../360/xdk_d3d9.cpp"
 #elif defined(HAVE_D3D8)
@@ -133,7 +132,7 @@ INPUT
 #if defined(HAVE_XINPUT_XBOX1)
 #include "../../xbox1/xinput_xbox_input.c"
 #elif defined(HAVE_XINPUT2)
-#include "../../input/xinput2_input.c"
+#include "../../360/xinput_360_input.c"
 #endif
 #endif
 
@@ -231,7 +230,7 @@ REWIND
 MAIN
 ============================================================ */
 #if defined(_XBOX)
-#include "../../360/frontend-xdk/main.c"
+#include "../../xdk/frontend/main.c"
 #elif defined(GEKKO)
 #include "../../wii/frontend/main.c"
 #endif
