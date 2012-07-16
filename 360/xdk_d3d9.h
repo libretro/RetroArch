@@ -18,6 +18,7 @@
 #define _XDK360_VIDEO_H
 
 #include <stdint.h>
+#include "../xdk/xdk_defines.h"
 
 #define DFONT_MAX	4096
 #define PRIM_FVF	(D3DFVF_XYZRHW | D3DFVF_TEX1)
@@ -41,19 +42,6 @@ typedef struct DrawVerticeFormats
    float u, v;
 } DrawVerticeFormats;
 
-/* Direct3D 9 */
-#define LPDIRECT3D_PTR LPDIRECT3D9
-#define LPDIRECT3DDEVICE_PTR LPDIRECT3DDEVICE9
-#define LPDIRECT3DTEXTURE_PTR LPDIRECT3DTEXTURE9
-#define LPDIRECT3DSURFACE_PTR LPDIRECT3DSURFACE9
-#define LPDIRECT3DVERTEXBUFFER_PTR LPDIRECT3DVERTEXBUFFER9
-
-#define D3DVIEWPORT D3DVIEWPORT9
-#define D3DVERTEXELEMENT D3DVERTEXELEMENT9
-
-#define direct3d_create_ctx Direct3DCreate9
-#define IDirect3DVertexDeclaration IDirect3DVertexDeclaration9
-
 typedef struct xdk_d3d_video
 {
    bool block_swap;
@@ -64,16 +52,16 @@ typedef struct xdk_d3d_video
    unsigned frame_count;
    unsigned last_width;
    unsigned last_height;
-   LPDIRECT3D_PTR d3d_device;
-   LPDIRECT3DDEVICE_PTR d3d_render_device;
-   LPDIRECT3DVERTEXBUFFER_PTR vertex_buf;
-   LPDIRECT3DTEXTURE_PTR lpTexture;
+   LPDIRECT3D d3d_device;
+   LPDIRECT3DDEVICE d3d_render_device;
+   LPDIRECT3DVERTEXBUFFER vertex_buf;
+   LPDIRECT3DTEXTURE lpTexture;
    D3DTexture lpTexture_ot_as16srgb;
-   LPDIRECT3DTEXTURE_PTR lpTexture_ot;
+   LPDIRECT3DTEXTURE lpTexture_ot;
    IDirect3DVertexDeclaration9* v_decl;
    XVIDEO_MODE video_mode;
    D3DPRESENT_PARAMETERS d3dpp;
-   LPDIRECT3DSURFACE_PTR lpSurface;
+   LPDIRECT3DSURFACE lpSurface;
 } xdk_d3d_video_t;
 
 #endif

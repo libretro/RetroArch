@@ -17,7 +17,7 @@
 #ifndef RARCH_360_FONTS_H
 #define RARCH_360_FONTS_H
 
-#include "../../360/xdk_resources.h"
+#include "../../xdk/xdk_resources.h"
 
 #define PAGE_UP               (255)
 #define PAGE_DOWN             (-255)

@@ -99,7 +99,7 @@ VIDEO DRIVER
 #include "../../gfx/gfx_common.c"
 
 #ifdef _XBOX
-#include "../../360/xdk_resources.cpp"
+#include "../../xdk/xdk_resources.cpp"
 #if defined(HAVE_D3D9)
 #include "../../360/xdk_d3d9.cpp"
 #elif defined(HAVE_D3D8)
