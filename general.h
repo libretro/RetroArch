@@ -254,7 +254,7 @@ struct console_settings
    char default_sram_dir[PATH_MAX];
    char launch_app_on_exit[PATH_MAX];
    float menu_font_size;
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    oskutil_params oskutil_handle;
 #endif
 };

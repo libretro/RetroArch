@@ -26,10 +26,14 @@
 #endif
 
 #ifdef __CELLOS_LV2__
+#ifdef __PSL1GHT__
+#include <sys/time.h>
+#else
 #include <sys/sys_time.h>
 #endif
+#endif
 
-#if defined(__CELLOS_LV2__) || defined(_MSC_VER)
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__) || defined(_MSC_VER)
 static int gettimeofday(struct timeval *val, void *dummy)
 {
    (void)dummy;

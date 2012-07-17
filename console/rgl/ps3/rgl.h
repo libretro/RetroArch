@@ -5,7 +5,11 @@
 #include "glext.h"
 #include "base.hpp"
 
+#ifdef __PSL1GHT__
+#include <rsx/resc.h>
+#else
 #include <cell/resc.h>
+#endif
 
 #define RGL_ALIGN_FAST_TRANSFER 128
 #define _RGL_MAX_COLOR_ATTACHMENTS 4

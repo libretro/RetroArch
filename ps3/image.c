@@ -82,18 +82,18 @@ static bool ps3graphics_load_jpeg(const char *path, struct texture_image *out_im
 #ifndef __PSL1GHT__
    CtrlMallocArg              MallocArg;
    CtrlFreeArg                FreeArg;
-   pJpgDecDataCtrlParam       dCtrlParam;
+   CellJpgDecDataCtrlParam       dCtrlParam;
 #endif
-   pJpgDecMainHandle          mHandle = PTR_NULL;
-   pJpgDecSubHandle           sHandle = PTR_NULL;
-   pJpgDecThreadInParam       InParam;
-   pJpgDecThreadOutParam      OutParam;
-   pJpgDecSrc                 src;
-   pJpgDecOpnInfo             opnInfo;
-   pJpgDecInfo                info;
-   pJpgDecInParam             inParam;
-   pJpgDecOutParam            outParam;
-   pJpgDecDataOutInfo         dOutInfo;
+   CellJpgDecMainHandle          mHandle = PTR_NULL;
+   CellJpgDecSubHandle           sHandle = PTR_NULL;
+   CellJpgDecThreadInParam       InParam;
+   CellJpgDecThreadOutParam      OutParam;
+   CellJpgDecSrc                 src;
+   CellJpgDecOpnInfo             opnInfo;
+   CellJpgDecInfo                info;
+   CellJpgDecInParam             inParam;
+   CellJpgDecOutParam            outParam;
+   CellJpgDecDataOutInfo         dOutInfo;
 
    InParam.spu_enable = CELL_JPGDEC_SPU_THREAD_ENABLE;
    InParam.ppu_prio = 1001;
@@ -113,12 +113,12 @@ static bool ps3graphics_load_jpeg(const char *path, struct texture_image *out_im
 #endif
 
    int ret_jpeg, ret = -1;
-   ret_jpeg = pJpgDecCreate(&mHandle, &InParam, &OutParam);
+   ret_jpeg = cellJpgDecCreate(&mHandle, &InParam, &OutParam);
 
    if (ret_jpeg != CELL_OK)
       goto error;
 
-   memset(&src, 0, sizeof(pJpgDecSrc));
+   memset(&src, 0, sizeof(CellJpgDecSrc));
    src.stream_select    = CELL_JPGDEC_FILE;
 #ifdef __PSL1GHT__
    src.file_name        = __get_addr32(path);
@@ -132,12 +132,12 @@ static bool ps3graphics_load_jpeg(const char *path, struct texture_image *out_im
 
    src.spu_enable  = CELL_JPGDEC_SPU_THREAD_ENABLE;
 
-   ret = pJpgDecOpen(mHandle, &sHandle, &src, &opnInfo);
+   ret = cellJpgDecOpen(mHandle, &sHandle, &src, &opnInfo);
 
    if (ret != CELL_OK)
       goto error;
 
-   ret = pJpgDecReadHeader(mHandle, sHandle, &info);
+   ret = cellJpgDecReadHeader(mHandle, sHandle, &info);
 
    if (ret != CELL_OK)
       goto error;
@@ -148,17 +148,17 @@ static bool ps3graphics_load_jpeg(const char *path, struct texture_image *out_im
    inParam.color_space        = CELL_JPG_ARGB;
    inParam.down_scale         = 1;
    inParam.color_alpha        = 0xfe;
-   ret = pJpgDecSetParameter(mHandle, sHandle, &inParam, &outParam);
+   ret = cellJpgDecSetParameter(mHandle, sHandle, &inParam, &outParam);
 
    if (ret != CELL_OK)
       goto error;
 
 #ifdef __PSL1GHT__
    uint64_t output_bytes_per_line = outParam.output_width * 4;
-   ret = pJpgDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &output_bytes_per_line, &dOutInfo);
+   ret = cellJpgDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &output_bytes_per_line, &dOutInfo);
 #else
    dCtrlParam.output_bytes_per_line = outParam.output_width * 4;
-   ret = pJpgDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &dCtrlParam, &dOutInfo);
+   ret = cellJpgDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &dCtrlParam, &dOutInfo);
 #endif
 
    if (ret != CELL_OK || dOutInfo.status != CELL_JPGDEC_DEC_STATUS_FINISH)
@@ -167,17 +167,17 @@ static bool ps3graphics_load_jpeg(const char *path, struct texture_image *out_im
    out_img->width = outParam.output_width;
    out_img->height = outParam.output_height;
 
-   pJpgDecClose(mHandle, sHandle);
-   pJpgDecDestroy(mHandle);
+   cellJpgDecClose(mHandle, sHandle);
+   cellJpgDecDestroy(mHandle);
 
    return true;
 
 error:
    RARCH_ERR("ps3graphics_load_jpeg(): error.\n");
    if (mHandle && sHandle)
-	   pJpgDecClose(mHandle, sHandle);
+	   cellJpgDecClose(mHandle, sHandle);
    if (mHandle)
-	   pJpgDecDestroy(mHandle);
+	   cellJpgDecDestroy(mHandle);
    return false;
 }
 
@@ -190,18 +190,18 @@ static bool ps3graphics_load_png(const char *path, struct texture_image *out_img
 #ifndef __PSL1GHT__
    CtrlMallocArg              MallocArg;
    CtrlFreeArg                FreeArg;
-   pPngDecDataCtrlParam       dCtrlParam;
+   CellPngDecDataCtrlParam       dCtrlParam;
 #endif
-   pPngDecMainHandle          mHandle = PTR_NULL;
-   pPngDecSubHandle           sHandle = PTR_NULL;
-   pPngDecThreadInParam       InParam;
-   pPngDecThreadOutParam      OutParam;
-   pPngDecSrc                 src;
-   pPngDecOpnInfo             opnInfo;
-   pPngDecInfo                info;
-   pPngDecInParam             inParam;
-   pPngDecOutParam            outParam;
-   pPngDecDataOutInfo         dOutInfo;
+   CellPngDecMainHandle          mHandle = PTR_NULL;
+   CellPngDecSubHandle           sHandle = PTR_NULL;
+   CellPngDecThreadInParam       InParam;
+   CellPngDecThreadOutParam      OutParam;
+   CellPngDecSrc                 src;
+   CellPngDecOpnInfo             opnInfo;
+   CellPngDecInfo                info;
+   CellPngDecInParam             inParam;
+   CellPngDecOutParam            outParam;
+   CellPngDecDataOutInfo         dOutInfo;
 
    InParam.spu_enable         = CELL_PNGDEC_SPU_THREAD_ENABLE;
    InParam.ppu_prio           = 512;
@@ -221,12 +221,12 @@ static bool ps3graphics_load_png(const char *path, struct texture_image *out_img
 #endif
 
    int ret_png, ret = -1;
-   ret_png = pPngDecCreate(&mHandle, &InParam, &OutParam);
+   ret_png = cellPngDecCreate(&mHandle, &InParam, &OutParam);
 
    if (ret_png != CELL_OK)
       goto error;
 
-   memset(&src, 0, sizeof(pPngDecSrc));
+   memset(&src, 0, sizeof(CellPngDecSrc));
    src.stream_select    = CELL_PNGDEC_FILE;
 #ifdef __PSL1GHT__
    src.file_name        = __get_addr32(path);
@@ -240,12 +240,12 @@ static bool ps3graphics_load_png(const char *path, struct texture_image *out_img
 
    src.spu_enable  = CELL_PNGDEC_SPU_THREAD_ENABLE;
 
-   ret = pPngDecOpen(mHandle, &sHandle, &src, &opnInfo);
+   ret = cellPngDecOpen(mHandle, &sHandle, &src, &opnInfo);
 
    if (ret != CELL_OK)
       goto error;
 
-   ret = pPngDecReadHeader(mHandle, sHandle, &info);
+   ret = cellPngDecReadHeader(mHandle, sHandle, &info);
 
    if (ret != CELL_OK)
       goto error;
@@ -256,17 +256,17 @@ static bool ps3graphics_load_png(const char *path, struct texture_image *out_img
    inParam.bit_depth          = 8;
    inParam.pack_flag          = CELL_PNGDEC_1BYTE_PER_1PIXEL;
    inParam.alpha_select       = CELL_PNGDEC_STREAM_ALPHA;
-   ret = pPngDecSetParameter(mHandle, sHandle, &inParam, &outParam);
+   ret = cellPngDecSetParameter(mHandle, sHandle, &inParam, &outParam);
 
    if (ret != CELL_OK)
       goto error;
 
 #ifdef __PSL1GHT__
    uint64_t output_bytes_per_line = outParam.output_width * 4;
-   ret = pPngDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &output_bytes_per_line, &dOutInfo);
+   ret = cellPngDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &output_bytes_per_line, &dOutInfo);
 #else
    dCtrlParam.output_bytes_per_line = outParam.output_width * 4;
-   ret = pPngDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &dCtrlParam, &dOutInfo);
+   ret = cellPngDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &dCtrlParam, &dOutInfo);
 #endif
 
    if (ret != CELL_OK || dOutInfo.status != CELL_PNGDEC_DEC_STATUS_FINISH)
@@ -275,8 +275,8 @@ static bool ps3graphics_load_png(const char *path, struct texture_image *out_img
    out_img->width = outParam.output_width;
    out_img->height = outParam.output_height;
 
-   pPngDecClose(mHandle, sHandle);
-   pPngDecDestroy(mHandle);
+   cellPngDecClose(mHandle, sHandle);
+   cellPngDecDestroy(mHandle);
 
    return true;
 
@@ -284,9 +284,9 @@ error:
    RARCH_ERR("ps3graphics_load_png(): error.\n");
 
    if (mHandle && sHandle)
-      pPngDecClose(mHandle, sHandle);
+      cellPngDecClose(mHandle, sHandle);
    if (mHandle)
-      pPngDecDestroy(mHandle);
+      cellPngDecDestroy(mHandle);
 
    return false;
 }

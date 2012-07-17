@@ -29,7 +29,12 @@ typedef enum
 {
    RGUI_FILE_PLAIN,
    RGUI_FILE_DIRECTORY,
-   RGUI_FILE_DEVICE
+   RGUI_FILE_DEVICE,
+
+   // settings options are done here too
+   //RGUI_SETTINGS_VIDEO_STRETCH,
+   RGUI_SETTINGS_VIDEO_FILTER,
+   RGUI_SETTINGS_AUDIO_MUTE
 } rgui_file_type_t;
 
 typedef enum
@@ -41,10 +46,17 @@ typedef enum
    RGUI_ACTION_OK,
    RGUI_ACTION_CANCEL,
    RGUI_ACTION_REFRESH,
+   RGUI_ACTION_SETTINGS,
    RGUI_ACTION_NOOP
 } rgui_action_t;
 
 typedef struct rgui_handle rgui_handle_t;
+
+typedef enum
+{
+   RGUI_FILEBROWSER = 0,
+   RGUI_SETTINGS
+} rgui_mode_t;
 
 typedef void (*rgui_file_enum_cb_t)(void *ctx,
       const char *path, rgui_file_type_t file_type, size_t directory_ptr);

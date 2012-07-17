@@ -1357,11 +1357,10 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			break;
 		case SETTING_EMU_AUDIO_MUTE:
 			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
-                           g_extern.audio_data.mute = !g_extern.audio_data.mute;
-			}
+                           rarch_settings_change(S_AUDIO_MUTE);
+
 			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           g_extern.audio_data.mute = false;
+                           rarch_settings_default(S_DEF_AUDIO_MUTE);
 			break;
 		case SETTING_ENABLE_CUSTOM_BGM:
 			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
