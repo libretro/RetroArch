@@ -42,7 +42,7 @@ struct rgui_handle
 
    rgui_list_t *path_stack;
    rgui_list_t *folder_buf;
-   size_t directory_ptr;
+   int directory_ptr;
    bool need_refresh;
    rgui_mode_t mode;
 
@@ -209,32 +209,33 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
       rgui_list_at(rgui->folder_buf, i, &path, &type, NULL);
 
       char message[TERM_WIDTH + 1];
-      char *type_str;
-      int w;
+      char type_str[TERM_WIDTH + 1];
+      int w = 18;
       switch (type)
       {
          case RGUI_FILE_PLAIN:
-            type_str = "(FILE)";
+            snprintf(type_str, sizeof(type_str), "(FILE)");
             w = 6;
             break;
          case RGUI_FILE_DIRECTORY:
-            type_str = "(DIR)";
+            snprintf(type_str, sizeof(type_str), "(DIR)");
             w = 5;
             break;
          case RGUI_FILE_DEVICE:
-            type_str = "(DEV)";
+            snprintf(type_str, sizeof(type_str), "(DEV)");
             w = 5;
             break;
          case RGUI_SETTINGS_VIDEO_FILTER:
-            type_str = g_settings.video.smooth ? "Bilinear filtering" : "Point filtering";
-            w = 18;
+            snprintf(type_str, sizeof(type_str), g_settings.video.smooth ? "Bilinear filtering" : "Point filtering");
             break;
          case RGUI_SETTINGS_AUDIO_MUTE:
-            type_str = g_extern.audio_data.mute ? "ON" : "OFF";
-            w = 18;
+            snprintf(type_str, sizeof(type_str), g_extern.audio_data.mute ? "ON" : "OFF");
+            break;
+         case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
+            snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
             break;
          default:
-            type_str = "";
+            type_str[0] = 0;
             w = 0;
             break;
       }
@@ -287,19 +288,29 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
    free(msg);
 }
 
-static void rgui_settings_toggle_setting(rgui_file_type_t setting)
+static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t action)
 {
    switch (setting)
    {
-      /*case RGUI_SETTINGS_VIDEO_STRETCH:
-         
-         break;*/
-
       case RGUI_SETTINGS_VIDEO_FILTER:
-	 rarch_settings_change(S_HW_TEXTURE_FILTER);
+         if (action == RGUI_ACTION_START)
+            rarch_settings_default(S_DEF_HW_TEXTURE_FILTER);
+         else
+            rarch_settings_change(S_HW_TEXTURE_FILTER);
          break;
       case RGUI_SETTINGS_AUDIO_MUTE:
-	 rarch_settings_change(S_AUDIO_MUTE);
+         if (action == RGUI_ACTION_START)
+            rarch_settings_default(S_DEF_AUDIO_MUTE);
+         else
+            rarch_settings_change(S_AUDIO_MUTE);
+         break;
+      case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
+         if (action == RGUI_ACTION_START)
+            rarch_settings_default(S_DEF_AUDIO_CONTROL_RATE);
+         else if (action == RGUI_ACTION_LEFT)
+            rarch_settings_change(S_AUDIO_CONTROL_RATE_DECREMENT);
+         else if (action == RGUI_ACTION_RIGHT)
+            rarch_settings_change(S_AUDIO_CONTROL_RATE_INCREMENT);
          break;
       default:
          break;
@@ -312,6 +323,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    
    rgui_list_push(rgui->folder_buf, "Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER, 0);
    rgui_list_push(rgui->folder_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
+   rgui_list_push(rgui->folder_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
 }
 
 static bool rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
@@ -332,19 +344,20 @@ static bool rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui->directory_ptr = 0;
          break;
 
-      case RGUI_ACTION_LEFT:
       case RGUI_ACTION_CANCEL:
       case RGUI_ACTION_SETTINGS:
          rgui->mode = RGUI_FILEBROWSER;
          return true;
          break;
 
+      case RGUI_ACTION_LEFT:
       case RGUI_ACTION_RIGHT:
       case RGUI_ACTION_OK:
+      case RGUI_ACTION_START:
       {
          rgui_file_type_t type;
          rgui_list_at(rgui->folder_buf, rgui->directory_ptr, NULL, &type, NULL);
-         rgui_settings_toggle_setting(type);
+         rgui_settings_toggle_setting(type, action);
          break;
       }
 
@@ -404,6 +417,19 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
 
       case RGUI_ACTION_LEFT:
+         if (rgui->directory_ptr - 8 > 0)
+            rgui->directory_ptr -= 8;
+         else
+            rgui->directory_ptr = 0;
+         break;
+
+      case RGUI_ACTION_RIGHT:
+         if (rgui->directory_ptr + 8 < rgui_list_size(rgui->folder_buf))
+            rgui->directory_ptr += 8;
+         else
+            rgui->directory_ptr = rgui_list_size(rgui->folder_buf) - 1;
+         break;
+      
       case RGUI_ACTION_CANCEL:
          if (rgui_list_size(rgui->path_stack) > 1)
          {
@@ -415,7 +441,6 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          break;
 
-      case RGUI_ACTION_RIGHT:
       case RGUI_ACTION_OK:
       {
          if (rgui_list_size(rgui->folder_buf) == 0)
