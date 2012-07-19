@@ -21,6 +21,18 @@
 // The caller does not have the priority level required for the function to
 // succeed
 #define DSERR_PRIOLEVELNEEDED           MAKE_DSHRESULT(70)
+// Send the audio signal (stereo, without attenuation) to all existing speakers
+DSMIXBINVOLUMEPAIR dsmbvp[8] = {
+   {DSMIXBIN_FRONT_LEFT, DSBVOLUME_MAX},
+   {DSMIXBIN_FRONT_RIGHT, DSBVOLUME_MAX},
+   {DSMIXBIN_FRONT_CENTER, DSBVOLUME_MAX},
+   {DSMIXBIN_FRONT_CENTER, DSBVOLUME_MAX},
+   {DSMIXBIN_BACK_LEFT, DSBVOLUME_MAX},
+   {DSMIXBIN_BACK_RIGHT, DSBVOLUME_MAX},
+   {DSMIXBIN_LOW_FREQUENCY, DSBVOLUME_MAX},
+   {DSMIXBIN_LOW_FREQUENCY, DSBVOLUME_MAX}};
+   
+DSMIXBINS dsmb;
 #endif
 
 #include "../driver.h"
@@ -337,6 +349,16 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
 
    if (IDirectSound_CreateSoundBuffer(ds->ds, &bufdesc, &ds->dsb, 0) != DS_OK)
       goto error;
+
+   IDirectSoundBuffer_SetVolume(ds->dsb, DSBVOLUME_MAX);
+
+#ifdef _XBOX
+   dsmb.dwMixBinCount = 8;
+   dsmb.lpMixBinVolumePairs = dsmbvp;
+
+   IDirectSoundBuffer_SetHeadroom(ds->dsb, DSBHEADROOM_MIN);
+   IDirectSoundBuffer_SetMixBins(ds->dsb, &dsmb);
+#endif
 
    IDirectSoundBuffer_SetCurrentPosition(ds->dsb, 0);
 
