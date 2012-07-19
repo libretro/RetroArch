@@ -119,6 +119,12 @@ static bool get_rom_path(rgui_handle_t *rgui)
          action = RGUI_ACTION_UP;
       else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
          action = RGUI_ACTION_DOWN;
+      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+         action = RGUI_ACTION_LEFT;
+      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+         action = RGUI_ACTION_RIGHT;
+      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+         action = RGUI_ACTION_START;
       else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) && !first) // don't catch start+select+l+r when exiting
          action = RGUI_ACTION_SETTINGS;
 

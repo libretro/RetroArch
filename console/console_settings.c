@@ -35,7 +35,20 @@ void rarch_settings_change(unsigned setting)
             g_console.aspect_ratio_index++;
          break;
       case S_AUDIO_MUTE:
-	 g_extern.audio_data.mute = !g_extern.audio_data.mute;
+         g_extern.audio_data.mute = !g_extern.audio_data.mute;
+         break;
+      case S_AUDIO_CONTROL_RATE_DECREMENT:
+         if (g_settings.audio.rate_control_delta > 0.0)
+            g_settings.audio.rate_control_delta -= 0.001;
+         if (g_settings.audio.rate_control_delta == 0.0)
+            g_settings.audio.rate_control = false;
+         else
+            g_settings.audio.rate_control = true;
+         break;
+      case S_AUDIO_CONTROL_RATE_INCREMENT:
+         if (g_settings.audio.rate_control_delta < 0.2)
+            g_settings.audio.rate_control_delta += 0.001;
+         g_settings.audio.rate_control = true;
          break;
       case S_FRAME_ADVANCE:
          g_console.frame_advance_enable = true;
@@ -68,11 +81,11 @@ void rarch_settings_change(unsigned setting)
          }
          break;
       case S_RESOLUTION_NEXT:
-	 if (g_console.current_resolution_index + 1 < g_console.supported_resolutions_count)
-	 {
+         if (g_console.current_resolution_index + 1 < g_console.supported_resolutions_count)
+         {
             g_console.current_resolution_index++;
-	    g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
-	 }
+            g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
+         }
          break;
       case S_QUIT:
          g_console.menu_enable = false;
@@ -139,7 +152,7 @@ void rarch_settings_change(unsigned setting)
          break;
       case S_TRIPLE_BUFFERING:
          g_console.triple_buffering_enable = !g_console.triple_buffering_enable;
-         break; 
+         break;
    }
 }
 
@@ -151,7 +164,16 @@ void rarch_settings_default(unsigned setting)
          g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
          break;
       case S_DEF_AUDIO_MUTE:
-	 g_extern.audio_data.mute = false;
+         g_extern.audio_data.mute = false;
+         break;
+      case S_DEF_AUDIO_CONTROL_RATE:
+#ifdef GEKKO
+         g_settings.audio.rate_control_delta = 0.004;
+         g_settings.audio.rate_control = true;
+#else
+         g_settings.audio.rate_control_delta = 0.0;
+         g_settings.audio.rate_control = false;
+#endif
          break;
       case S_DEF_HW_TEXTURE_FILTER:
          g_settings.video.smooth = 1;
@@ -163,7 +185,7 @@ void rarch_settings_default(unsigned setting)
          g_console.overscan_amount = 0.0f;
          g_console.overscan_enable = false;
          break;
-	  case S_DEF_ROTATION:
+      case S_DEF_ROTATION:
          g_console.screen_orientation = ORIENTATION_NORMAL;
          break;
       case S_DEF_THROTTLE:
@@ -215,19 +237,19 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
       case S_MSG_NOT_IMPLEMENTED:
          snprintf(str, sizeof(str), "TODO - Not yet implemented.");
          break;
-	  case S_MSG_RESIZE_SCREEN:
+      case S_MSG_RESIZE_SCREEN:
          snprintf(str, sizeof(str), "INFO - Resize the screen by moving around the two analog sticks.\nPress [RetroPad X] to reset to default values, and [RetroPad A] to go back.\nTo select the resized screen mode, set Aspect Ratio to: 'Custom'.");
          break;
-	  case S_MSG_RESTART_RARCH:
+      case S_MSG_RESTART_RARCH:
          snprintf(str, sizeof(str), "INFO - You need to restart RetroArch for this change to take effect.");
          break;
-	  case S_MSG_SELECT_LIBRETRO_CORE:
+      case S_MSG_SELECT_LIBRETRO_CORE:
          snprintf(str, sizeof(str), "INFO - Select a Libretro core from the menu by pressing [RetroPad B].");
          break;
-	  case S_MSG_SELECT_SHADER:
+      case S_MSG_SELECT_SHADER:
          snprintf(str, sizeof(str), "INFO - Select a shader from the menu by pressing [RetroPad A].");
          break;
-	  case S_MSG_SHADER_LOADING_SUCCEEDED:
+      case S_MSG_SHADER_LOADING_SUCCEEDED:
          snprintf(str, sizeof(str), "INFO - Shader successfully loaded.");
          break;
    }
@@ -250,26 +272,26 @@ void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t 
       case S_LBL_ASPECT_RATIO:
          snprintf(str, size, "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
          break;
-	  case S_LBL_SHADER:
+      case S_LBL_SHADER:
          snprintf(str, size, "Shader #1: %s", g_settings.video.cg_shader_path);
          break;
-	  case S_LBL_SHADER_2:
+      case S_LBL_SHADER_2:
          snprintf(str, size, "Shader #2: %s", g_settings.video.second_pass_shader);
          break;
-	  case S_LBL_RARCH_VERSION:
+      case S_LBL_RARCH_VERSION:
          snprintf(str, size, "RetroArch %s", PACKAGE_VERSION);
          break;
-	  case S_LBL_SCALE_FACTOR:
+      case S_LBL_SCALE_FACTOR:
          snprintf(str, size, "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
          break;
-	  case S_LBL_ROTATION:
+      case S_LBL_ROTATION:
          snprintf(str, size, "Rotation: %s", rotation_lut[g_console.screen_orientation]);
          break;
-	  case S_LBL_LOAD_STATE_SLOT:
+      case S_LBL_LOAD_STATE_SLOT:
          snprintf(str, size, "Load State #%d", g_extern.state_slot);
          break;
-	  case S_LBL_SAVE_STATE_SLOT:
-		 snprintf(str, size, "Save State #%d", g_extern.state_slot);
+      case S_LBL_SAVE_STATE_SLOT:
+         snprintf(str, size, "Save State #%d", g_extern.state_slot);
          break;
    }
 }

@@ -32,9 +32,9 @@ typedef enum
    RGUI_FILE_DEVICE,
 
    // settings options are done here too
-   //RGUI_SETTINGS_VIDEO_STRETCH,
    RGUI_SETTINGS_VIDEO_FILTER,
-   RGUI_SETTINGS_AUDIO_MUTE
+   RGUI_SETTINGS_AUDIO_MUTE,
+   RGUI_SETTINGS_AUDIO_CONTROL_RATE
 } rgui_file_type_t;
 
 typedef enum
@@ -47,6 +47,7 @@ typedef enum
    RGUI_ACTION_CANCEL,
    RGUI_ACTION_REFRESH,
    RGUI_ACTION_SETTINGS,
+   RGUI_ACTION_START,
    RGUI_ACTION_NOOP
 } rgui_action_t;
 
