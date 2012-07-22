@@ -27,7 +27,7 @@ bool g_bExit = false;
 
 void __cdecl main()
 {
-	g_debug.Print("Starting Launcher CE\n");
+	g_debug.Print("Starting RetroLaunch\n");
 
 	// Set file cache size
 	XSetFileCacheSize(8 * 1024 * 1024);
