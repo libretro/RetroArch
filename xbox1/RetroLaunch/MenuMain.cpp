@@ -128,7 +128,7 @@ void CMenuMain::Render()
 
 	//Display some text
 	//g_font.Render("Retro Arch", m_menuMainTitle_x, m_menuMainTitle_y, 20, XFONT_NORMAL, m_menuMainTitle_c);
-	g_font.Render("Press RIGHT ANALOG STICK to exit. Press START to launch a rom.", 65, 450, 16, XFONT_NORMAL, m_menuMainTitle_c);
+	g_font.Render("Press RIGHT ANALOG STICK to exit. Press START to launch a rom.", 65, 430, 16, XFONT_NORMAL, m_menuMainTitle_c);
 
 	//Begin with the rom selector panel
 	//FIXME: Width/Height needs to be current Rom texture width/height (or should we just leave it at a fixed size?)

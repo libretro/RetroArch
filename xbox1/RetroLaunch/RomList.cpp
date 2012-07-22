@@ -27,7 +27,7 @@ RomList::RomList(void)
 	m_romListMode = All;
 	m_iBaseIndex = 0;
 	m_bLoaded = false;
-	m_szRomPath = "D:\\Roms\\";
+	m_szRomPath = "D:\\";
 }
 
 RomList::~RomList(void)
