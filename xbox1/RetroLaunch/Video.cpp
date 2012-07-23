@@ -29,8 +29,15 @@ CVideo::~CVideo(void)
 {
 }
 
+bool CVideo::SetDevice(IDirect3DDevice8 *D3D_Device)
+{
+   m_pD3DDevice = D3D_Device;
+   return true;
+}
+
 bool CVideo::Create(HWND hDeviceWindow, bool bWindowed)
 {
+   /*
 	// Create the Direct3D object (leave it DX8 or should we try DX9 for WIN32 ?)
 	m_pD3D = Direct3DCreate8(D3D_SDK_VERSION);
 
@@ -85,7 +92,7 @@ bool CVideo::Create(HWND hDeviceWindow, bool bWindowed)
 
 	// disable z-buffer (see autodepthstencil)
 	m_pD3DDevice->SetRenderState(D3DRS_ZENABLE, FALSE );
-
+*/
 	return true;
 }
 

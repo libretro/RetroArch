@@ -18,8 +18,9 @@
 #include "Global.h"
 
 #undef D3DFVF_CUSTOMVERTEX
-#define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1)
+//#define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1)
 
+/*
 typedef struct CustomVertex
 {
     float x, y, z;
@@ -27,7 +28,7 @@ typedef struct CustomVertex
 	float u, v;
 	//float rhw;
 }CustomVertex;
-
+*/
 
 class CVideo
 {
@@ -36,6 +37,7 @@ public:
 	~CVideo(void);
 
 	bool Create(HWND hDeviceWindow, bool bWindowed); //Device creation
+   bool SetDevice(IDirect3DDevice8 *D3D_Device);
 
 	void BeginRender();
 	void EndRender();
