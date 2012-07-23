@@ -26,7 +26,6 @@
 
 #include "../gl_common.h"
 #include "../image.h"
-#include "../../ps3/frontend/shared.h"
 
 #include "ps3_ctx.h"
 
@@ -137,7 +136,7 @@ bool gfx_ctx_menu_init(void)
    glGenTextures(1, &gl->menu_texture_id);
 
    RARCH_LOG("Loading texture image for menu...\n");
-   if (!texture_image_load(DEFAULT_MENU_BORDER_FILE, &menu_texture))
+   if (!texture_image_load(default_paths.menu_border_file, &menu_texture))
    {
       RARCH_ERR("Failed to load texture image for menu.\n");
       return false;

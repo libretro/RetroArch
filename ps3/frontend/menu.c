@@ -34,7 +34,6 @@
 #include "../../gfx/context/ps3_ctx.h"
 #include "../../gfx/shader_cg.h"
 
-#include "shared.h"
 #include "../../file.h"
 #include "../../general.h"
 
@@ -97,7 +96,7 @@ static void set_setting_label(menu * menu_obj, unsigned currentsetting)
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), ps3_get_resolution_label(g_console.supported_resolutions[g_console.current_resolution_index]));
 		   break;
 	   case SETTING_SHADER_PRESETS:
-                   set_setting_label_color(g_console.cgp_path == DEFAULT_PRESET_FILE, currentsetting);
+                   set_setting_label_color(true, currentsetting);
 		   fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), fname);
 		   break;
@@ -405,7 +404,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(items_generalsettings, stack_idx);
 	 strlcpy(tmpBrowser.extensions, "cgp|CGP", sizeof(tmpBrowser.extensions));
-	 filebrowser_set_root(&tmpBrowser, PRESETS_DIR_PATH);
+	 filebrowser_set_root(&tmpBrowser, default_paths.cgp_dir);
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case INPUT_PRESET_CHOICE:
@@ -416,7 +415,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(items_generalsettings, stack_idx);
 	 strlcpy(tmpBrowser.extensions, "cfg|CFG", sizeof(tmpBrowser.extensions));
-	 filebrowser_set_root(&tmpBrowser, INPUT_PRESETS_DIR_PATH);
+	 filebrowser_set_root(&tmpBrowser, default_paths.input_presets_dir);
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case SHADER_CHOICE:
@@ -952,10 +951,10 @@ static void rarch_filename_input_and_save (unsigned filename_type)
          case CONFIG_FILE:
             break;
 	 case SHADER_PRESET_FILE:
-	    snprintf(filepath, sizeof(filepath), "%s/%s.cgp", PRESETS_DIR_PATH, filename_tmp);
+	    snprintf(filepath, sizeof(filepath), "%s/%s.cgp", default_paths.cgp_dir, filename_tmp);
 	    break;
 	 case INPUT_PRESET_FILE:
-	    snprintf(filepath, sizeof(filepath), "%s/%s.cfg", INPUT_PRESETS_DIR_PATH, filename_tmp);
+	    snprintf(filepath, sizeof(filepath), "%s/%s.cfg", default_paths.input_presets_dir, filename_tmp);
 	    break;
       }
 
@@ -1988,9 +1987,9 @@ static void ingame_menu(void)
 	 case MENU_ITEM_RETURN_TO_MULTIMAN:
 	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	    {
-               if(path_file_exists(MULTIMAN_EXECUTABLE))
+               if(path_file_exists(default_paths.multiman_self_file))
                {
-                  strlcpy(g_console.launch_app_on_exit, MULTIMAN_EXECUTABLE,
+                  strlcpy(g_console.launch_app_on_exit, default_paths.multiman_self_file,
                   sizeof(g_console.launch_app_on_exit));
 
                   rarch_settings_change(S_RETURN_TO_DASHBOARD);

@@ -136,10 +136,16 @@ enum
 ============================================================ */
 typedef struct
 {
+   char menu_border_file[PATH_MAX];
    char border_file[PATH_MAX];
    char border_dir[PATH_MAX];
+   char cgp_dir[PATH_MAX];
    char config_file[PATH_MAX];
    char core_dir[PATH_MAX];
+   char input_presets_dir[PATH_MAX];
+#ifdef HAVE_MULTIMAN
+   char multiman_self_file[PATH_MAX];
+#endif
    char port_dir[PATH_MAX];
    char savestate_dir[PATH_MAX];
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)

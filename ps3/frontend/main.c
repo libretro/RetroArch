@@ -51,8 +51,6 @@
 #include "../../general.h"
 #include "../../file.h"
 
-#include "shared.h"
-
 #include "menu.h"
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
@@ -61,14 +59,6 @@
 #define NP_POOL_SIZE (128*1024)
 
 static uint8_t np_pool[NP_POOL_SIZE];
-char DEFAULT_PRESET_FILE[PATH_MAX];
-char DEFAULT_MENU_BORDER_FILE[PATH_MAX];
-char PRESETS_DIR_PATH[PATH_MAX];
-char INPUT_PRESETS_DIR_PATH[PATH_MAX];
-char EMULATOR_CORE_SELF[PATH_MAX];
-#ifdef HAVE_MULTIMAN
-char MULTIMAN_EXECUTABLE[PATH_MAX];
-#endif
 
 int rarch_main(int argc, char *argv[]);
 
@@ -185,16 +175,16 @@ static void get_environment_settings(int argc, char *argv[])
    if(argc > 1)
    {
       /* launched from external launcher */
-      strlcpy(MULTIMAN_EXECUTABLE, argv[2], sizeof(MULTIMAN_EXECUTABLE));
+      strlcpy(default_paths.multiman_self_file, argv[2], sizeof(default_paths.multiman_self_file));
    }
    else
    {
       /* not launched from external launcher, set default path */
-      strlcpy(MULTIMAN_EXECUTABLE, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
-         sizeof(MULTIMAN_EXECUTABLE));
+      strlcpy(default_paths.multiman_self_file, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
+         sizeof(default_paths.multiman_self_file));
    }
 
-   if(path_file_exists(MULTIMAN_EXECUTABLE) && argc > 1 &&  path_file_exists(argv[1]))
+   if(path_file_exists(default_paths.multiman_self_file) && argc > 1 &&  path_file_exists(argv[1]))
    {
       g_console.external_launcher_support = EXTERN_LAUNCHER_MULTIMAN;
       RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
@@ -260,11 +250,10 @@ static void get_environment_settings(int argc, char *argv[])
       snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.core_dir);
 
       /* now we fill in all the variables */
-      snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/presets/stock.conf", default_paths.core_dir);
       snprintf(default_paths.border_file, sizeof(default_paths.border_file), "%s/borders/Centered-1080p/mega-man-2.png", default_paths.core_dir);
-      snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/borders/Menu/main-menu.png", default_paths.core_dir);
-      snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/presets", default_paths.core_dir);
-      snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/input", PRESETS_DIR_PATH);
+      snprintf(default_paths.menu_border_file, sizeof(default_paths.menu_border_file), "%s/borders/Menu/main-menu.png", default_paths.core_dir);
+      snprintf(default_paths.cgp_dir, sizeof(default_paths.cgp_dir), "%s/presets", default_paths.core_dir);
+      snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.cgp_dir);
       snprintf(default_paths.border_dir, sizeof(default_paths.border_dir), "%s/borders", default_paths.core_dir);
       snprintf(default_paths.shader_dir, sizeof(default_paths.shader_dir), "%s/shaders", default_paths.core_dir);
       snprintf(default_paths.shader_file, sizeof(default_paths.shader_file), "%s/shaders/stock.cg", default_paths.core_dir);
