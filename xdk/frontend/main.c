@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include <string>
 
+#include "../../xdk/menu_shared.h"
+
 #ifdef _XBOX360
 #include <xfilecache.h>
 #include "../../360/frontend-xdk/menu.h"
@@ -49,11 +51,13 @@ static void set_default_settings (void)
 {
    //g_settings
    g_settings.rewind_enable = false;
+#ifdef _XBOX360
    strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
+   strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
+#endif
    g_settings.video.fbo_scale_x = 2.0f;
    g_settings.video.fbo_scale_y = 2.0f;
    g_settings.video.render_to_texture = true;
-   strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
    g_settings.video.second_pass_smooth = true;
    g_settings.video.smooth = true;
    g_settings.video.vsync = true;
@@ -139,12 +143,12 @@ static void get_environment_settings (void)
    }
 #endif
 
-   strlcpy(default_paths.shader_file, "game:\\media\\shaders\\stock.cg", sizeof(default_paths.shader_file));
 #ifdef _XBOX1
    /* FIXME: Hardcoded */
    strlcpy(default_paths.config_file, "D:\\retroarch.cfg", sizeof(default_paths.config_file));
    strlcpy(g_settings.system_directory, "D:\\system\\", sizeof(g_settings.system_directory));
 #else
+   strlcpy(default_paths.shader_file, "game:\\media\\shaders\\stock.cg", sizeof(default_paths.shader_file));
    strlcpy(default_paths.config_file, "game:\\retroarch.cfg", sizeof(default_paths.config_file));
    strlcpy(g_settings.system_directory, "game:\\system\\", sizeof(g_settings.system_directory));
 #endif
@@ -163,78 +167,6 @@ static void configure_libretro(const char *path_prefix, const char * extension)
    init_libretro_sym();
 }
 
-#ifdef _XBOX1
-#include "../../xbox1/RetroLaunch/Global.h"
-#include "../../xbox1/RetroLaunch/IniFile.h"
-#include "../../xbox1/RetroLaunch/IoSupport.h"
-#include "../../xbox1/RetroLaunch/Input.h"
-#include "../../xbox1/RetroLaunch/Debug.h"
-#include "../../xbox1/RetroLaunch/Font.h"
-#include "../../xbox1/RetroLaunch/MenuManager.h"
-#include "../../xbox1/RetroLaunch/RomList.h"
-
-bool g_bExit = false;
-
-static void menu_init(void)
-{
-	g_debug.Print("Starting RetroLaunch\n");
-
-	// Set file cache size
-	XSetFileCacheSize(8 * 1024 * 1024);
-
-	// Mount drives
-	g_IOSupport.Mount("A:", "cdrom0");
-	g_IOSupport.Mount("E:", "Harddisk0\\Partition1");
-	g_IOSupport.Mount("Z:", "Harddisk0\\Partition2");
-	g_IOSupport.Mount("F:", "Harddisk0\\Partition6");
-	g_IOSupport.Mount("G:", "Harddisk0\\Partition7");
-
-   // Get RetroArch's native d3d device
-
-	// Parse ini file for settings
-	g_iniFile.CheckForIniEntry();
-
-	// Load the rom list if it isn't already loaded
-	if (!g_romList.IsLoaded()) {
-		g_romList.Load();
-	}
-
-	// Init input here
-	g_input.Create();
-
-	// Load the font here
-	g_font.Create();
-
-	// Build menu here (Menu state -> Main Menu)
-	g_menuManager.Create();
-
-   g_console.mode_switch = MODE_MENU;
-}
-
-static void menu_free(void) {}
-static void menu_loop(void)
-{
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   //rarch_console_load_game("D:\\ssf2x.gba");
-	// Loop the app
-	while (!g_bExit)
-	{
-      d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
-         D3DCOLOR_XRGB(0, 0, 0),
-         1.0f, 0);
-      
-      d3d->d3d_render_device->BeginScene();
-      d3d->d3d_render_device->SetFlickerFilter(g_iniFile.m_currentIniEntry.dwFlickerFilter);
-      d3d->d3d_render_device->SetSoftDisplayFilter(g_iniFile.m_currentIniEntry.bSoftDisplayFilter);
-
-		g_input.GetInput();
-		g_menuManager.Update();
-      
-      d3d->d3d_render_device->EndScene();
-      d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL);
-	}
-}
-#endif
 
 int main(int argc, char *argv[])
 {

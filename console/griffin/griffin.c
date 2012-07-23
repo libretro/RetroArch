@@ -259,6 +259,8 @@ MENU
 ============================================================ */
 #if defined(_XBOX360)
 #include "../../360/frontend-xdk/menu.cpp"
+#elif defined(_XBOX1)
+#include "../../xbox1/frontend/menu.cpp"
 #elif defined(GEKKO)
 #include "../../wii/frontend/rgui.c"
 #include "../../wii/frontend/list.c"
