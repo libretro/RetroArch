@@ -92,6 +92,7 @@ static void set_default_settings (void)
 
 static void get_environment_settings (void)
 {
+   HRESULT ret;
 #ifdef HAVE_HDD_CACHE_PARTITION
    ret = XSetFileCacheSize(0x100000);
 
