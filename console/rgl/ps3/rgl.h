@@ -7,6 +7,11 @@
 
 #ifdef __PSL1GHT__
 #include <rsx/resc.h>
+#include <sysutil/video.h>
+#include "../../../ps3/sdk_defines.h"
+#define CGerror int
+typedef void (* CGerrorCallbackFunc)(void);
+typedef struct _CGcontext *CGcontext;
 #else
 #include <cell/resc.h>
 #endif

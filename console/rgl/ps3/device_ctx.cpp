@@ -20,7 +20,9 @@
 
 #include "../../../general.h"
 
+#ifndef __PSL1GHT__
 using namespace cell::Gcm;
+#endif
 
 #define _RGL_MAX_TILED_REGIONS 15
 
