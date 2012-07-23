@@ -12,9 +12,9 @@ extern "C"
 {
 #endif
 
-    typedef intptr_t GLintptr;
-    typedef intptr_t GLsizeiptr;
-    typedef unsigned short GLhalfARB;
+typedef intptr_t GLintptr;
+typedef intptr_t GLsizeiptr;
+typedef unsigned short GLhalfARB;
 
 #define GL_QUADS			  0x0007
 #define GL_QUAD_STRIP			  0x0008
@@ -248,24 +248,24 @@ extern "C"
 #define GL_BUFFER_SIZE 0x8764
 #define GL_BUFFER_PITCH_SCE 0x6041
 
-    GLAPI void APIENTRY glBlendEquation( GLenum mode );
-    GLAPI void APIENTRY glBlendColor( GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha );
-    GLAPI void APIENTRY glGetFloatv( GLenum pname, GLfloat* params );
-    GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param );
+GLAPI void APIENTRY glBlendEquation( GLenum mode );
+GLAPI void APIENTRY glBlendColor( GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha );
+GLAPI void APIENTRY glGetFloatv( GLenum pname, GLfloat* params );
+GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param );
 
-    GLAPI void APIENTRY glBindBuffer( GLenum target, GLuint name );
-    GLAPI void APIENTRY glDeleteBuffers( GLsizei n, const GLuint *buffers );
-    GLAPI void APIENTRY glGenBuffers( GLsizei n, GLuint *buffers );
-    GLAPI void APIENTRY glBufferData( GLenum target, GLsizeiptr size, const GLvoid * data, GLenum usage );
-    GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data );
+GLAPI void APIENTRY glBindBuffer( GLenum target, GLuint name );
+GLAPI void APIENTRY glDeleteBuffers( GLsizei n, const GLuint *buffers );
+GLAPI void APIENTRY glGenBuffers( GLsizei n, GLuint *buffers );
+GLAPI void APIENTRY glBufferData( GLenum target, GLsizeiptr size, const GLvoid * data, GLenum usage );
+GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data );
 
-    GLAPI void APIENTRY glBindFramebufferOES( GLenum, GLuint );
-    GLAPI void APIENTRY glDeleteFramebuffersOES( GLsizei, const GLuint * );
-    GLAPI void APIENTRY glGenFramebuffersOES( GLsizei, GLuint * );
-    GLAPI GLenum APIENTRY glCheckFramebufferStatusOES( GLenum );
-    GLAPI void APIENTRY glFramebufferTexture2DOES( GLenum, GLenum, GLenum, GLuint, GLint );
+GLAPI void APIENTRY glBindFramebufferOES( GLenum, GLuint );
+GLAPI void APIENTRY glDeleteFramebuffersOES( GLsizei, const GLuint * );
+GLAPI void APIENTRY glGenFramebuffersOES( GLsizei, GLuint * );
+GLAPI GLenum APIENTRY glCheckFramebufferStatusOES( GLenum );
+GLAPI void APIENTRY glFramebufferTexture2DOES( GLenum, GLenum, GLenum, GLuint, GLint );
 
-    GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels, GLuint baseWidth, GLuint baseHeight, GLuint baseDepth, GLenum internalFormat, GLuint pitch, GLintptr offset );
+GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels, GLuint baseWidth, GLuint baseHeight, GLuint baseDepth, GLenum internalFormat, GLuint pitch, GLintptr offset );
 
 #ifdef __cplusplus
 }

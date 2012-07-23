@@ -57,22 +57,22 @@ extern "C"
 #define GLAPI extern
 #endif
 
-    typedef unsigned int GLenum;
-    typedef unsigned char GLboolean;
-    typedef unsigned int GLbitfield;
-    typedef signed char GLbyte;
-    typedef short GLshort;
-    typedef int GLint;
-    typedef int GLsizei;
-    typedef unsigned char GLubyte;
-    typedef unsigned short GLushort;
-    typedef unsigned int GLuint;
-    typedef float GLfloat;
-    typedef float GLclampf;
-    typedef void GLvoid;
-    typedef int GLfixed;
-    typedef int GLclampx;
-    typedef void( *_GLfuncptr )();
+typedef unsigned int GLenum;
+typedef unsigned char GLboolean;
+typedef unsigned int GLbitfield;
+typedef signed char GLbyte;
+typedef short GLshort;
+typedef int GLint;
+typedef int GLsizei;
+typedef unsigned char GLubyte;
+typedef unsigned short GLushort;
+typedef unsigned int GLuint;
+typedef float GLfloat;
+typedef float GLclampf;
+typedef void GLvoid;
+typedef int GLfixed;
+typedef int GLclampx;
+typedef void( *_GLfuncptr )();
 
 #define GL_OES_VERSION_1_0                1
 #define GL_OES_read_format                1
@@ -290,35 +290,35 @@ extern "C"
 #define GL_REPEAT                         0x2901
 #define GL_CLAMP_TO_EDGE                  0x812F
 
-    GLAPI void APIENTRY glActiveTexture( GLenum texture );
-    GLAPI void APIENTRY glBindTexture( GLenum target, GLuint texture );
-    GLAPI void APIENTRY glBlendFunc( GLenum sfactor, GLenum dfactor );
-    GLAPI void APIENTRY glClear( GLbitfield mask );
-    GLAPI void APIENTRY glClearColor( GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha );
-    GLAPI void APIENTRY glClearColorx( GLclampx red, GLclampx green, GLclampx blue, GLclampx alpha );
-    GLAPI void APIENTRY glClientActiveTexture( GLenum texture );
-    GLAPI void APIENTRY glColorPointer( GLint size, GLenum type, GLsizei stride, const GLvoid *pointer );
-    GLAPI void APIENTRY glCopyTexSubImage2D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height );
-    GLAPI void APIENTRY glDeleteTextures( GLsizei n, const GLuint *textures );
-    GLAPI void APIENTRY glDisable( GLenum cap );
-    GLAPI void APIENTRY glDisableClientState( GLenum array );
-    GLAPI void APIENTRY glDrawArrays( GLenum mode, GLint first, GLsizei count );
-    GLAPI void APIENTRY glEnable( GLenum cap );
-    GLAPI void APIENTRY glEnableClientState( GLenum array );
-    GLAPI void APIENTRY glFinish( void );
-    GLAPI void APIENTRY glFlush( void );
-    GLAPI void APIENTRY glGenTextures( GLsizei n, GLuint *textures );
-    GLAPI GLenum APIENTRY glGetError( void );
-    GLAPI const GLubyte * APIENTRY glGetString( GLenum name );
-    GLAPI void APIENTRY glLoadIdentity( void );
-    GLAPI void APIENTRY glMatrixMode( GLenum mode );
-    GLAPI void APIENTRY glOrthof( GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar );
-    GLAPI void APIENTRY glRotatef( GLfloat angle, GLfloat x, GLfloat y, GLfloat z );
-    GLAPI void APIENTRY glPixelStorei( GLenum pname, GLint param );
-    GLAPI void APIENTRY glTexCoordPointer( GLint size, GLenum type, GLsizei stride, const GLvoid *pointer );
-    GLAPI void APIENTRY glTexImage2D( GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels );
-    GLAPI void APIENTRY glVertexPointer( GLint size, GLenum type, GLsizei stride, const GLvoid *pointer );
-    GLAPI void APIENTRY glViewport( GLint x, GLint y, GLsizei width, GLsizei height );
+GLAPI void APIENTRY glActiveTexture( GLenum texture );
+GLAPI void APIENTRY glBindTexture( GLenum target, GLuint texture );
+GLAPI void APIENTRY glBlendFunc( GLenum sfactor, GLenum dfactor );
+GLAPI void APIENTRY glClear( GLbitfield mask );
+GLAPI void APIENTRY glClearColor( GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha );
+GLAPI void APIENTRY glClearColorx( GLclampx red, GLclampx green, GLclampx blue, GLclampx alpha );
+GLAPI void APIENTRY glClientActiveTexture( GLenum texture );
+GLAPI void APIENTRY glColorPointer( GLint size, GLenum type, GLsizei stride, const GLvoid *pointer );
+GLAPI void APIENTRY glCopyTexSubImage2D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height );
+GLAPI void APIENTRY glDeleteTextures( GLsizei n, const GLuint *textures );
+GLAPI void APIENTRY glDisable( GLenum cap );
+GLAPI void APIENTRY glDisableClientState( GLenum array );
+GLAPI void APIENTRY glDrawArrays( GLenum mode, GLint first, GLsizei count );
+GLAPI void APIENTRY glEnable( GLenum cap );
+GLAPI void APIENTRY glEnableClientState( GLenum array );
+GLAPI void APIENTRY glFinish( void );
+GLAPI void APIENTRY glFlush( void );
+GLAPI void APIENTRY glGenTextures( GLsizei n, GLuint *textures );
+GLAPI GLenum APIENTRY glGetError( void );
+GLAPI const GLubyte * APIENTRY glGetString( GLenum name );
+GLAPI void APIENTRY glLoadIdentity( void );
+GLAPI void APIENTRY glMatrixMode( GLenum mode );
+GLAPI void APIENTRY glOrthof( GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar );
+GLAPI void APIENTRY glRotatef( GLfloat angle, GLfloat x, GLfloat y, GLfloat z );
+GLAPI void APIENTRY glPixelStorei( GLenum pname, GLint param );
+GLAPI void APIENTRY glTexCoordPointer( GLint size, GLenum type, GLsizei stride, const GLvoid *pointer );
+GLAPI void APIENTRY glTexImage2D( GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels );
+GLAPI void APIENTRY glVertexPointer( GLint size, GLenum type, GLsizei stride, const GLvoid *pointer );
+GLAPI void APIENTRY glViewport( GLint x, GLint y, GLsizei width, GLsizei height );
 
 #ifdef __cplusplus
 }

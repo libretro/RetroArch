@@ -477,9 +477,8 @@ static unsigned int findValidPitch( unsigned int pitch )
     else
     {
         for ( GLuint i = 0;i < validPitchCount - 1;++i )
-        {
             if (( pitch > validPitch[i] ) && ( pitch <= validPitch[i+1] ) ) return validPitch[i+1];
-        }
+
         return validPitch[validPitchCount-1];
     }
 }

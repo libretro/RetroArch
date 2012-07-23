@@ -12,7 +12,6 @@ extern "C"
 {
 #endif
 
-
 #ifdef __cplusplus
 #define _RGL_EXTERN_C extern "C"
 #else
@@ -52,8 +51,8 @@ extern PSGLdevice *_CurrentDevice;
 
 typedef union
 {
-	unsigned int i;
-	float f;
+   unsigned int i;
+   float f;
 } jsIntAndFloat;
 
 static const jsIntAndFloat _RGLNan = {i: 0x7fc00000U};
@@ -63,39 +62,36 @@ static const jsIntAndFloat _RGLInfinity = {i: 0x7f800000U};
 typedef struct RGLRenderTargetEx RGLRenderTargetEx;
 struct RGLRenderTargetEx
 {
-	RGLEnum   colorFormat;
-	GLuint      colorBufferCount;
-	GLuint      colorId[RGL_SETRENDERTARGET_MAXCOUNT];
-	GLuint      colorIdOffset[RGL_SETRENDERTARGET_MAXCOUNT];
-	GLuint      colorPitch[RGL_SETRENDERTARGET_MAXCOUNT];
-	GLboolean   yInverted;
-	GLuint      xOffset;
-	GLuint      yOffset;
-	GLuint      width;
-	GLuint      height;
+   RGLEnum   colorFormat;
+   GLuint      colorBufferCount;
+   GLuint      colorId[RGL_SETRENDERTARGET_MAXCOUNT];
+   GLuint      colorIdOffset[RGL_SETRENDERTARGET_MAXCOUNT];
+   GLuint      colorPitch[RGL_SETRENDERTARGET_MAXCOUNT];
+   GLboolean   yInverted;
+   GLuint      xOffset;
+   GLuint      yOffset;
+   GLuint      width;
+   GLuint      height;
 };
 
 struct jsPlatformFramebuffer: public jsFramebuffer
 {
-    RGLRenderTargetEx rt;
-    GLuint colorBufferMask;
-    GLboolean complete;
-    jsPlatformFramebuffer(): jsFramebuffer()
-    {
-        memset( &rt, 0, sizeof( rt ) );
-    };
-    virtual ~jsPlatformFramebuffer() {};
+   RGLRenderTargetEx rt;
+   GLuint colorBufferMask;
+   GLboolean complete;
+   jsPlatformFramebuffer(): jsFramebuffer() { memset( &rt, 0, sizeof( rt ) ); };
+   virtual ~jsPlatformFramebuffer() {};
 };
 
 typedef struct _RGLDriver_
 {
-    RGLRenderTargetEx rt;
-    GLuint colorBufferMask;
-    GLboolean rtValid;
-    GLboolean invalidateVertexCache;
-    GLuint flushBufferCount;
-    GLuint fpLoadProgramId;
-    GLuint fpLoadProgramOffset;
+   RGLRenderTargetEx rt;
+   GLuint colorBufferMask;
+   GLboolean rtValid;
+   GLboolean invalidateVertexCache;
+   GLuint flushBufferCount;
+   GLuint fpLoadProgramId;
+   GLuint fpLoadProgramOffset;
 }
 RGLDriver;
 
@@ -142,99 +138,99 @@ typedef struct
 
 typedef struct
 {
-    GLenum pool;
-    RGLTextureMethodParams 	gcmMethods;
-    CellGcmTexture		gcmTexture;
-    GLuint 			gpuAddressId;
-    GLuint                      gpuAddressIdOffset;
-    GLuint 			gpuSize;
-    RGLTextureLayout 		gpuLayout;
-    jsBufferObject* pbo;
+   GLenum pool;
+   RGLTextureMethodParams 	gcmMethods;
+   CellGcmTexture		gcmTexture;
+   GLuint 			gpuAddressId;
+   GLuint                      gpuAddressIdOffset;
+   GLuint 			gpuSize;
+   RGLTextureLayout 		gpuLayout;
+   jsBufferObject* pbo;
 } RGLTexture;
 
 typedef struct  _tagMODESTRUC
 {
-	GLushort  wHorizVisible;
-	GLushort  wVertVisible;
-	GLushort  wInterlacedMode;
-	GLushort  wRefresh;
-	GLushort  wHorizTotal;
-	GLushort  wHorizBlankStart;
-	GLushort  wHorizSyncStart;
-	GLushort  wHorizSyncEnd;
-	GLushort  wHorizBlankEnd;
-	GLushort  wVertTotal;
-	GLushort  wVertBlankStart;
-	GLushort  wVertSyncStart;
-	GLushort  wVertSyncEnd;
-	GLushort  wVertBlankEnd;
-	GLuint      dwDotClock;
-	GLushort  wHSyncPolarity;
-	GLushort  wVSyncPolarity;
+   GLushort  wHorizVisible;
+   GLushort  wVertVisible;
+   GLushort  wInterlacedMode;
+   GLushort  wRefresh;
+   GLushort  wHorizTotal;
+   GLushort  wHorizBlankStart;
+   GLushort  wHorizSyncStart;
+   GLushort  wHorizSyncEnd;
+   GLushort  wHorizBlankEnd;
+   GLushort  wVertTotal;
+   GLushort  wVertBlankStart;
+   GLushort  wVertSyncStart;
+   GLushort  wVertSyncEnd;
+   GLushort  wVertBlankEnd;
+   GLuint      dwDotClock;
+   GLushort  wHSyncPolarity;
+   GLushort  wVSyncPolarity;
 }
 MODESTRUC;
 
 enum {
-	_RGL_SURFACE_SOURCE_TEMPORARY,
-	_RGL_SURFACE_SOURCE_DEVICE,
-	_RGL_SURFACE_SOURCE_TEXTURE,
-	_RGL_SURFACE_SOURCE_PBO,
+   _RGL_SURFACE_SOURCE_TEMPORARY,
+   _RGL_SURFACE_SOURCE_DEVICE,
+   _RGL_SURFACE_SOURCE_TEXTURE,
+   _RGL_SURFACE_SOURCE_PBO,
 };
 
 enum {
-	_RGL_SURFACE_POOL_NONE,
-	_RGL_SURFACE_POOL_LINEAR,
-	_RGL_SURFACE_POOL_SYSTEM,
+   _RGL_SURFACE_POOL_NONE,
+   _RGL_SURFACE_POOL_LINEAR,
+   _RGL_SURFACE_POOL_SYSTEM,
 };
 
 
 typedef struct
 {
-	GLenum source;
-	GLuint width, height;
-	GLuint bpp;
-	GLuint pitch;
-	RGLEnum format;
-	GLenum pool;
-	char* ppuData;
-	GLuint dataId;
-	GLuint dataIdOffset;
+   GLenum source;
+   GLuint width, height;
+   GLuint bpp;
+   GLuint pitch;
+   RGLEnum format;
+   GLenum pool;
+   char* ppuData;
+   GLuint dataId;
+   GLuint dataIdOffset;
 } RGLSurface;
 
 
 typedef struct
 {
-	RGLRenderTargetEx rt;
-	RGLSurface color[3];
-	GLuint drawBuffer;
-	GLuint scanBuffer;
-	GLuint RescColorBuffersId;
-	GLuint RescVertexArrayId;
-	GLuint RescFragmentShaderId;
+   RGLRenderTargetEx rt;
+   RGLSurface color[3];
+   GLuint drawBuffer;
+   GLuint scanBuffer;
+   GLuint RescColorBuffersId;
+   GLuint RescVertexArrayId;
+   GLuint RescFragmentShaderId;
 
-	const MODESTRUC *ms;
-	GLboolean vsync;
-	GLenum deviceType;
-	GLenum TVStandard;
-	GLenum TVFormat;
-	GLuint swapFifoRef;
-	GLuint swapFifoRef2;
-	GLboolean setOffset;
-	GLboolean signal;
-	GLuint semaValue;
-	unsigned int syncMethod;
+   const MODESTRUC *ms;
+   GLboolean vsync;
+   GLenum deviceType;
+   GLenum TVStandard;
+   GLenum TVFormat;
+   GLuint swapFifoRef;
+   GLuint swapFifoRef2;
+   GLboolean setOffset;
+   GLboolean signal;
+   GLuint semaValue;
+   unsigned int syncMethod;
 } RGLDevice;
 
 int32_t _RGLOutOfSpaceCallback( struct CellGcmContextData *con, uint32_t space );
 
 typedef struct _RGLShader_
 {
-    GLuint loadAddressId;
-    CgBinaryProgram __attribute__(( aligned( 16 ) ) ) program;
+   GLuint loadAddressId;
+   CgBinaryProgram __attribute__(( aligned( 16 ) ) ) program;
 } RGLShader;
 
 
-void        _RGLFifoFinish( RGLFifo *fifo );
+void _RGLFifoFinish( RGLFifo *fifo );
 
 #define _RGLFifoFlush(fifo) \
 { \
@@ -249,17 +245,16 @@ void        _RGLFifoFinish( RGLFifo *fifo );
 #define RGL_PAGE_SIZE                             0x1000
 #define RGL_LM_MAX_TOTAL_QUERIES		    800
 
-
-
 typedef struct RGLTextureState RGLTextureState;
+
 struct RGLTextureState
 {
-	GLuint hwTexAddress;
-	GLuint hwTexFilter;
-	GLuint hwTexControl0;
+   GLuint hwTexAddress;
+   GLuint hwTexFilter;
+   GLuint hwTexControl0;
 };
 
-void        _RGLDestroy( void );
+void _RGLDestroy( void );
 
 typedef void( * RGLcontextHookFunction )( PSGLcontext *context );
 extern RGLcontextHookFunction _RGLContextCreateHook;
@@ -283,22 +278,23 @@ extern void _RGLDeviceExit (void);
 
 static inline GLuint RGL_QUICK_FLOAT2UINT( const GLfloat f )
 {
-    union
-    {
-        GLfloat f;
-        GLuint ui;
-    } t;
-    t.f = f + RGL_F0_DOT_0;
-    return t.ui & 0xffff;
+   union
+   {
+      GLfloat f;
+      GLuint ui;
+   } t;
+   t.f = f + RGL_F0_DOT_0;
+   return t.ui & 0xffff;
 }
 
-static inline void RGL_CALC_COLOR_LE_ARGB8( GLuint *color0, const GLfloat r, const GLfloat g, const GLfloat b, const GLfloat a )
+static inline void RGL_CALC_COLOR_LE_ARGB8( GLuint *color0, const GLfloat r, 
+const GLfloat g, const GLfloat b, const GLfloat a )
 {
-    GLuint r2 = RGL_QUICK_FLOAT2UINT( r * 255.0f );
-    GLuint g2 = RGL_QUICK_FLOAT2UINT( g * 255.0f );
-    GLuint b2 = RGL_QUICK_FLOAT2UINT( b * 255.0f );
-    GLuint a2 = RGL_QUICK_FLOAT2UINT( a * 255.0f );
-    *color0 = ( a2 << 24 ) | ( r2 << 16 ) | ( g2 << 8 ) | ( b2 << 0 );
+   GLuint r2 = RGL_QUICK_FLOAT2UINT( r * 255.0f );
+   GLuint g2 = RGL_QUICK_FLOAT2UINT( g * 255.0f );
+   GLuint b2 = RGL_QUICK_FLOAT2UINT( b * 255.0f );
+   GLuint a2 = RGL_QUICK_FLOAT2UINT( a * 255.0f );
+   *color0 = ( a2 << 24 ) | ( r2 << 16 ) | ( g2 << 8 ) | ( b2 << 0 );
 }
 
 static inline GLuint _RGLMapMinTextureFilter( GLenum filter )
@@ -323,14 +319,14 @@ static inline GLuint _RGLMapMinTextureFilter( GLenum filter )
 
 static inline GLuint _RGLMapMagTextureFilter( GLenum filter )
 {
-    switch ( filter )
-    {
-        case GL_NEAREST:
-            return CELL_GCM_TEXTURE_NEAREST;
-        case GL_LINEAR:
-            return CELL_GCM_TEXTURE_LINEAR;
-    }
-    return filter;
+   switch ( filter )
+   {
+      case GL_NEAREST:
+         return CELL_GCM_TEXTURE_NEAREST;
+      case GL_LINEAR:
+	 return CELL_GCM_TEXTURE_LINEAR;
+   }
+   return filter;
 }
 
 static inline void _RGLMapTextureFormat( GLuint internalFormat, uint8_t & gcmFormat, uint32_t & remap )
@@ -339,71 +335,58 @@ static inline void _RGLMapTextureFormat( GLuint internalFormat, uint8_t & gcmFor
 
     switch ( internalFormat )
     {
-	    case RGL_ALPHA8:                 // in_rgba = xxAx, out_rgba = 000A
-		    {
-			    gcmFormat =  CELL_GCM_TEXTURE_B8;
-			    remap = CELL_GCM_REMAP_MODE(
-					    CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
-					    CELL_GCM_TEXTURE_REMAP_FROM_B,
-					    CELL_GCM_TEXTURE_REMAP_FROM_R,
-					    CELL_GCM_TEXTURE_REMAP_FROM_B,
-					    CELL_GCM_TEXTURE_REMAP_FROM_B,
-					    CELL_GCM_TEXTURE_REMAP_REMAP,
-					    CELL_GCM_TEXTURE_REMAP_ZERO,
-					    CELL_GCM_TEXTURE_REMAP_ZERO,
-					    CELL_GCM_TEXTURE_REMAP_ZERO );
+	    case RGL_ALPHA8: // in_rgba = xxAx, out_rgba = 000A
+               gcmFormat =  CELL_GCM_TEXTURE_B8;
+	       remap = CELL_GCM_REMAP_MODE(
+			       CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
+			       CELL_GCM_TEXTURE_REMAP_FROM_B,
+			       CELL_GCM_TEXTURE_REMAP_FROM_R,
+			       CELL_GCM_TEXTURE_REMAP_FROM_B,
+			       CELL_GCM_TEXTURE_REMAP_FROM_B,
+			       CELL_GCM_TEXTURE_REMAP_REMAP,
+			       CELL_GCM_TEXTURE_REMAP_ZERO,
+			       CELL_GCM_TEXTURE_REMAP_ZERO,
+			       CELL_GCM_TEXTURE_REMAP_ZERO );
 
-		    }
 		    break;
-	    case RGL_ARGB8:                  // in_rgba = RGBA, out_rgba = RGBA
-		    {
-			    gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
-			    remap = CELL_GCM_REMAP_MODE(
-					    CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
-					    CELL_GCM_TEXTURE_REMAP_FROM_A,
-					    CELL_GCM_TEXTURE_REMAP_FROM_R,
-					    CELL_GCM_TEXTURE_REMAP_FROM_G,
-					    CELL_GCM_TEXTURE_REMAP_FROM_B,
-					    CELL_GCM_TEXTURE_REMAP_REMAP,
-					    CELL_GCM_TEXTURE_REMAP_REMAP,
-					    CELL_GCM_TEXTURE_REMAP_REMAP,
-					    CELL_GCM_TEXTURE_REMAP_REMAP );
-
-		    }
+	    case RGL_ARGB8: // in_rgba = RGBA, out_rgba = RGBA
+               gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
+	       remap = CELL_GCM_REMAP_MODE(
+			       CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
+			       CELL_GCM_TEXTURE_REMAP_FROM_A,
+			       CELL_GCM_TEXTURE_REMAP_FROM_R,
+			       CELL_GCM_TEXTURE_REMAP_FROM_G,
+			       CELL_GCM_TEXTURE_REMAP_FROM_B,
+			       CELL_GCM_TEXTURE_REMAP_REMAP,
+			       CELL_GCM_TEXTURE_REMAP_REMAP,
+			       CELL_GCM_TEXTURE_REMAP_REMAP,
+			       CELL_GCM_TEXTURE_REMAP_REMAP );
 		    break;
-	    case RGL_RGB5_A1_SCE:          // in_rgba = RGBA, out_rgba = RGBA
-		    {
-			    gcmFormat =  CELL_GCM_TEXTURE_A1R5G5B5;
-			    remap = CELL_GCM_REMAP_MODE(
-					    CELL_GCM_TEXTURE_REMAP_ORDER_XXXY,
-					    CELL_GCM_TEXTURE_REMAP_FROM_A,
-					    CELL_GCM_TEXTURE_REMAP_FROM_R,
-					    CELL_GCM_TEXTURE_REMAP_FROM_G,
-					    CELL_GCM_TEXTURE_REMAP_FROM_B,
-					    CELL_GCM_TEXTURE_REMAP_REMAP,
-					    CELL_GCM_TEXTURE_REMAP_REMAP,
-					    CELL_GCM_TEXTURE_REMAP_REMAP,
-					    CELL_GCM_TEXTURE_REMAP_REMAP );
-
-		    }
+	    case RGL_RGB5_A1_SCE: // in_rgba = RGBA, out_rgba = RGBA
+               gcmFormat =  CELL_GCM_TEXTURE_A1R5G5B5;
+	       remap = CELL_GCM_REMAP_MODE(
+			       CELL_GCM_TEXTURE_REMAP_ORDER_XXXY,
+			       CELL_GCM_TEXTURE_REMAP_FROM_A,
+			       CELL_GCM_TEXTURE_REMAP_FROM_R,
+			       CELL_GCM_TEXTURE_REMAP_FROM_G,
+			       CELL_GCM_TEXTURE_REMAP_FROM_B,
+			       CELL_GCM_TEXTURE_REMAP_REMAP,
+			       CELL_GCM_TEXTURE_REMAP_REMAP,
+			       CELL_GCM_TEXTURE_REMAP_REMAP,
+			       CELL_GCM_TEXTURE_REMAP_REMAP );
 		    break;
-	    case RGL_RGB565_SCE:          // in_rgba = RGBA, out_rgba = RGBA
-		    {
-			    gcmFormat =  CELL_GCM_TEXTURE_R5G6B5;
-			    remap = CELL_GCM_REMAP_MODE(
-					    CELL_GCM_TEXTURE_REMAP_ORDER_XXXY,
-					    CELL_GCM_TEXTURE_REMAP_FROM_A,
-					    CELL_GCM_TEXTURE_REMAP_FROM_R,
-					    CELL_GCM_TEXTURE_REMAP_FROM_G,
-					    CELL_GCM_TEXTURE_REMAP_FROM_B,
-					    CELL_GCM_TEXTURE_REMAP_ONE,
-					    CELL_GCM_TEXTURE_REMAP_REMAP,
-					    CELL_GCM_TEXTURE_REMAP_REMAP,
-					    CELL_GCM_TEXTURE_REMAP_REMAP );
-
-		    }
-		    break;
-	    default:
+	    case RGL_RGB565_SCE: // in_rgba = RGBA, out_rgba = RGBA
+               gcmFormat =  CELL_GCM_TEXTURE_R5G6B5;
+	       remap = CELL_GCM_REMAP_MODE(
+			       CELL_GCM_TEXTURE_REMAP_ORDER_XXXY,
+			       CELL_GCM_TEXTURE_REMAP_FROM_A,
+			       CELL_GCM_TEXTURE_REMAP_FROM_R,
+			       CELL_GCM_TEXTURE_REMAP_FROM_G,
+			       CELL_GCM_TEXTURE_REMAP_FROM_B,
+			       CELL_GCM_TEXTURE_REMAP_ONE,
+			       CELL_GCM_TEXTURE_REMAP_REMAP,
+			       CELL_GCM_TEXTURE_REMAP_REMAP,
+			       CELL_GCM_TEXTURE_REMAP_REMAP );
 		    break;
     };
 

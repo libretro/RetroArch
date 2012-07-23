@@ -14,16 +14,17 @@
 typedef size_t ptrdiff_t;
 typedef size_t ptrdiff_t;
 
-typedef struct _Elf32_cgParameter {
-	unsigned int cgp_name;
-	unsigned int cgp_semantic;
-	unsigned short cgp_default;
-	unsigned short cgp_reloc;
-	unsigned short cgp_resource;
-	unsigned short cgp_resource_index;
-	unsigned char cgp_type;
-	unsigned short cgp_info;
-	unsigned char unused;
+typedef struct _Elf32_cgParameter
+{
+   unsigned int cgp_name;
+   unsigned int cgp_semantic;
+   unsigned short cgp_default;
+   unsigned short cgp_reloc;
+   unsigned short cgp_resource;
+   unsigned short cgp_resource_index;
+   unsigned char cgp_type;
+   unsigned short cgp_info;
+   unsigned char unused;
 } Elf32_cgParameter;
 
 #define ET_NONE        0
@@ -173,21 +174,22 @@ typedef struct _Elf32_cgParameter {
 #define R_RSX_NONE      0
 #define R_RSX_FLOAT4	1
 
-struct Elf32_Ehdr {
-    unsigned char e_ident[EI_NIDENT];
-    unsigned short    e_type;
-    unsigned short    e_machine;
-    unsigned int    e_version;
-    unsigned int    e_entry;
-    unsigned int     e_phoff;
-    unsigned int     e_shoff;
-    unsigned int    e_flags;
-    unsigned short    e_ehsize;
-    unsigned short    e_phentsize;
-    unsigned short    e_phnum;
-    unsigned short    e_shentsize;
-    unsigned short    e_shnum;
-    unsigned short    e_shstrndx;
+struct Elf32_Ehdr
+{
+   unsigned char e_ident[EI_NIDENT];
+   unsigned short    e_type;
+   unsigned short    e_machine;
+   unsigned int    e_version;
+   unsigned int    e_entry;
+   unsigned int     e_phoff;
+   unsigned int     e_shoff;
+   unsigned int    e_flags;
+   unsigned short    e_ehsize;
+   unsigned short    e_phentsize;
+   unsigned short    e_phnum;
+   unsigned short    e_shentsize;
+   unsigned short    e_shnum;
+   unsigned short    e_shstrndx;
 };
 
 struct Elf32_Shdr {
@@ -223,30 +225,31 @@ struct Elf32_Sym {
     unsigned short    st_shndx;
 };
 
-struct Elf32_Note {
-	unsigned int	n_namesz;	/* Name size */
-	unsigned int	n_descsz;	/* Content size */
-	unsigned int	n_type;		/* Content type */
+struct Elf32_Note
+{
+   unsigned int	n_namesz;	/* Name size */
+   unsigned int	n_descsz;	/* Content size */
+   unsigned int	n_type;		/* Content type */
 };
 
 
 struct Elf32_Rel {
-    unsigned int r_offset;
-    unsigned int r_info;
+   unsigned int r_offset;
+   unsigned int r_info;
 };
 
 struct Elf32_Rela {
-    unsigned int  r_offset;
-    unsigned int  r_info;
-    signed int r_addend;
+   unsigned int  r_offset;
+   unsigned int  r_info;
+   signed int r_addend;
 };
 
 struct Elf32_Dyn {
-    signed int d_tag;
-    union {
-        unsigned int d_val;
-        unsigned int d_ptr;
-    } d_un;
+   signed int d_tag;
+   union {
+      unsigned int d_val;
+      unsigned int d_ptr;
+   } d_un;
 };
 
 using std::istream;
@@ -255,21 +258,21 @@ namespace cgc {
 namespace bio {
 
 enum CGBIO_ERROR {
-    CGBIO_ERROR_NO_ERROR,
-    CGBIO_ERROR_LOADED,
-    CGBIO_ERROR_FILEIO,
-    CGBIO_ERROR_FORMAT,
-    CGBIO_ERROR_INDEX,
-    CGBIO_ERROR_MEMORY,
-    CGBIO_ERROR_RELOC,
-    CGBIO_ERROR_SYMBOL,
-    CGBIO_ERROR_UNKNOWN_TYPE
+   CGBIO_ERROR_NO_ERROR,
+   CGBIO_ERROR_LOADED,
+   CGBIO_ERROR_FILEIO,
+   CGBIO_ERROR_FORMAT,
+   CGBIO_ERROR_INDEX,
+   CGBIO_ERROR_MEMORY,
+   CGBIO_ERROR_RELOC,
+   CGBIO_ERROR_SYMBOL,
+   CGBIO_ERROR_UNKNOWN_TYPE
 };
 
 typedef enum {
-    CGBIODATANONE = ELFDATANONE,
-    CGBIODATALSB = ELFDATA2LSB,
-    CGBIODATAMSB = ELFDATA2MSB
+   CGBIODATANONE = ELFDATANONE,
+   CGBIODATALSB = ELFDATA2LSB,
+   CGBIODATAMSB = ELFDATA2MSB
 } HOST_ENDIANNESS;
 
 class elf_reader
