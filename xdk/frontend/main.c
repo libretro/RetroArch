@@ -41,104 +41,12 @@
 #include "../../file.h"
 #include "../../general.h"
 
-#define DEVICE_MEMORY_UNIT0 1
-#define DEVICE_MEMORY_UNIT1 2
-#define DEVICE_MEMORY_ONBOARD 3
-#define DEVICE_CDROM0 4
-#define DEVICE_HARDISK0_PART1 5
-#define DEVICE_HARDISK0_SYSPART 6
-#define DEVICE_USB0 7
-#define DEVICE_USB1 8
-#define DEVICE_USB2 9
-#define DEVICE_TEST 10
-#define DEVICE_CACHE 11
-
-typedef struct _STRING {
-   unsigned short Length;
-   unsigned short MaximumLength;
-   char * Buffer;
-} STRING;
-
 char DEFAULT_SHADER_FILE[PATH_MAX];
 char SYS_CONFIG_FILE[PATH_MAX];
-
-#ifdef _XBOX360
-extern "C" int __stdcall ObCreateSymbolicLink( STRING*, STRING*);
-#endif
-
-int Mounted[20];
 
 int rarch_main(int argc, char *argv[]);
 
 #undef main
-
-#ifdef _XBOX360
-static int DriveMounted(std::string path)
-{
-   WIN32_FIND_DATA findFileData;
-   memset(&findFileData,0,sizeof(WIN32_FIND_DATA));
-   std::string searchcmd = path + "\\*.*";
-   HANDLE hFind = FindFirstFile(searchcmd.c_str(), &findFileData);
-
-   if (hFind == INVALID_HANDLE_VALUE)
-      return 0;
-
-   FindClose(hFind);
-
-   return 1;
-}
-
-static int Mount( int Device, char* MountPoint )
-{
-   char MountConv[260];
-   char * SysPath = NULL;
-
-   snprintf( MountConv, sizeof(MountConv), "\\??\\%s", MountPoint );
-
-   switch( Device )
-   {
-      case DEVICE_MEMORY_UNIT0:
-         SysPath = "\\Device\\Mu0";
-	 break;
-      case DEVICE_MEMORY_UNIT1:
-	 SysPath = "\\Device\\Mu1";
-	 break;
-      case DEVICE_MEMORY_ONBOARD:
-	 SysPath = "\\Device\\BuiltInMuSfc";
-	 break;
-      case DEVICE_CDROM0:
-	 SysPath = "\\Device\\Cdrom0";
-	 break;
-      case DEVICE_HARDISK0_PART1:
-	 SysPath = "\\Device\\Harddisk0\\Partition1";
-	 break;
-      case DEVICE_HARDISK0_SYSPART:
-	 SysPath = "\\Device\\Harddisk0\\SystemPartition";
-	 break;
-      case DEVICE_USB0:
-	 SysPath = "\\Device\\Mass0";
-	 break;
-      case DEVICE_USB1:
-	 SysPath = "\\Device\\Mass1";
-	 break;
-      case DEVICE_USB2:
-	 SysPath = "\\Device\\Mass2";
-	 break;
-      case DEVICE_CACHE:
-	 SysPath = "\\Device\\Harddisk0\\Cache0";
-	 break;
-   }
-
-   STRING sSysPath = { (USHORT)strlen( SysPath ), (USHORT)strlen( SysPath ) + 1, SysPath };
-   STRING sMountConv = { (USHORT)strlen( MountConv ), (USHORT)strlen( MountConv ) + 1, MountConv };
-   int res = ObCreateSymbolicLink( &sMountConv, &sSysPath );
-
-   if (res != 0)
-      return res;
-
-   return DriveMounted(MountPoint);
-}
-#endif
 
 static void set_default_settings (void)
 {
@@ -184,26 +92,6 @@ static void set_default_settings (void)
 
 static void get_environment_settings (void)
 {
-#ifdef _XBOX360
-   DWORD ret;
-
-   //for devkits only, we will need to mount all partitions for retail
-   //in a different way
-   //DmMapDevkitDrive();
-
-   memset(&Mounted, 0, 20);
-
-   Mounted[DEVICE_USB0] = Mount(DEVICE_USB0,"Usb0:");
-   Mounted[DEVICE_USB1] = Mount(DEVICE_USB1,"Usb1:");
-   Mounted[DEVICE_USB2] = Mount(DEVICE_USB2,"Usb2:");
-   Mounted[DEVICE_HARDISK0_PART1] = Mount(DEVICE_HARDISK0_PART1,"Hdd1:");
-   Mounted[DEVICE_HARDISK0_SYSPART] = Mount(DEVICE_HARDISK0_SYSPART,"HddX:");
-   Mounted[DEVICE_MEMORY_UNIT0] = Mount(DEVICE_MEMORY_UNIT0,"Memunit0:");
-   Mounted[DEVICE_MEMORY_UNIT1] = Mount(DEVICE_MEMORY_UNIT1,"Memunit1:");
-   Mounted[DEVICE_MEMORY_ONBOARD] = Mount(DEVICE_MEMORY_ONBOARD,"OnBoardMU:"); 
-   Mounted[DEVICE_CDROM0] = Mount(DEVICE_CDROM0,"Dvd:"); 
-#endif
-
 #ifdef HAVE_HDD_CACHE_PARTITION
    ret = XSetFileCacheSize(0x100000);
 
