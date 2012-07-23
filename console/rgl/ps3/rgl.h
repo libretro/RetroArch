@@ -620,26 +620,10 @@ typedef struct
 #pragma warning ( pop )
 #endif
 
-#ifndef MSVC
-#define MAX(A,B) ({				\
-	__typeof__(A) At=(A);	\
-	__typeof__(B) Bt=(B);	\
-	At>Bt?At:Bt; })
-
-#define MIN(A,B) ({				\
-	__typeof__(A) At=(A);	\
-	__typeof__(B) Bt=(B);	\
-	At<Bt?At:Bt; })
-
-#define RGL_LIKELY(COND) __builtin_expect((COND),1)
-#define RGL_UNLIKELY(COND) __builtin_expect((COND),0)
-
-#else
 #define MAX(A,B) ((A)>(B)?(A):(B))
 #define MIN(A,B) ((A)<(B)?(A):(B))
 #define RGL_LIKELY(COND) (COND)
 #define RGL_UNLIKELY(COND) (COND)
-#endif
 
 #define _RGL_ALLOC_FIRST_FIT 0
 #define _RGL_ALLOC_BEST_FIT 1

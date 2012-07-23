@@ -307,24 +307,16 @@ static inline GLuint _RGLMapMinTextureFilter( GLenum filter )
     {
         case GL_NEAREST:
             return CELL_GCM_TEXTURE_NEAREST;
-            break;
         case GL_LINEAR:
             return CELL_GCM_TEXTURE_LINEAR;
-            break;
         case GL_NEAREST_MIPMAP_NEAREST:
             return CELL_GCM_TEXTURE_NEAREST_NEAREST;
-            break;
         case GL_NEAREST_MIPMAP_LINEAR:
             return CELL_GCM_TEXTURE_NEAREST_LINEAR;
-            break;
         case GL_LINEAR_MIPMAP_NEAREST:
             return CELL_GCM_TEXTURE_LINEAR_NEAREST;
-            break;
         case GL_LINEAR_MIPMAP_LINEAR:
             return CELL_GCM_TEXTURE_LINEAR_LINEAR;
-            break;
-        default:
-            return 0;
     }
     return filter;
 }
@@ -335,12 +327,8 @@ static inline GLuint _RGLMapMagTextureFilter( GLenum filter )
     {
         case GL_NEAREST:
             return CELL_GCM_TEXTURE_NEAREST;
-            break;
         case GL_LINEAR:
             return CELL_GCM_TEXTURE_LINEAR;
-            break;
-        default:
-            return 0;
     }
     return filter;
 }

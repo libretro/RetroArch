@@ -21,6 +21,7 @@
 #include <cell/sysmodule.h>
 
 #include "../../../compat/strl.h"
+#include "../../../general.h"
 
 #define RGL_ALIGN_FAST_TRANSFER 128
 
@@ -933,7 +934,7 @@ static GLenum _RGLPlatformFramebufferCheckStatus( jsFramebuffer* framebuffer )
       {
          if ( !_RGLTextureIsValid( colorTexture ) )
 	 {
-            printf("RGL ERR: Framebuffer color attachment texture is not complete.\n");
+            RARCH_ERR("Framebuffer color attachment texture is not complete.\n");
 	    return GL_FRAMEBUFFER_UNSUPPORTED_OES;
 	 }
 
@@ -941,7 +942,7 @@ static GLenum _RGLPlatformFramebufferCheckStatus( jsFramebuffer* framebuffer )
 
 	 if ( colorFormat && colorFormat != image[nBuffers]->internalFormat )
 	 {
-            printf("RGL ERR: Framebuffer attachments have inconsistent color formats.\n" );
+            RARCH_ERR("Framebuffer attachments have inconsistent color formats.\n" );
 	    return GL_FRAMEBUFFER_INCOMPLETE_FORMATS_OES;
 	 }
 	 colorFormat = image[nBuffers]->internalFormat;
@@ -952,7 +953,7 @@ static GLenum _RGLPlatformFramebufferCheckStatus( jsFramebuffer* framebuffer )
 
    if ( nBuffers && colorFormat != RGL_ARGB8)
    {
-      printf("RGL: Color attachment to framebuffer must be a supported drawable format (GL_ARGB_SCE)\n");
+      RARCH_ERR("Color attachment to framebuffer must be a supported drawable format (GL_ARGB_SCE)\n");
       return GL_FRAMEBUFFER_UNSUPPORTED_OES;
    }
 
@@ -4813,7 +4814,7 @@ static GLboolean _RGLPlatformTexturePBOImage(
                                 LContext->unpackAlignment );
     if (( pboPitch&3 ) != 0 )
     {
-        printf("RGL WARN: PBO image pitch not a multiple of 4, using slow path.\n" );
+        RARCH_WARN("PBO image pitch not a multiple of 4, using slow path.\n" );
         return GL_FALSE;
     }
 
@@ -4822,7 +4823,7 @@ static GLboolean _RGLPlatformTexturePBOImage(
 
     if ( gmmIdToOffset(gpuId)+gpuIdOffset & 63 )
     {
-        printf("RGL: PBO offset not 64-byte aligned, using slow path.\n");
+        RARCH_WARN("PBO offset not 64-byte aligned, using slow path.\n");
         return GL_FALSE;
     }
 
@@ -4850,13 +4851,13 @@ static GLboolean _RGLPlatformTexturePBOImage(
 
     if ( !formatOK )
     {
-        printf("RGL: PBO format/type requires conversion to texture internal format, using slow path.\n");
+        RARCH_WARN("PBO format/type requires conversion to texture internal format, using slow path.\n");
         return GL_FALSE;
     }
 
     if ( !_RGLTextureIsValid( texture ) )
     {
-        printf("RGL: PBO transfering to incomplete texture, using slow path.\n");
+        RARCH_WARN("PBO transfering to incomplete texture, using slow path.\n");
         return GL_FALSE;
     }
 
@@ -6083,7 +6084,7 @@ static GLboolean _RGLPlatformNeedsConversion( const jsAttributeState* as, GLuint
         default:
             break;
     }
-    printf("RGL WARN: Attribute %d needs conversion. Slow path ahead.\n", index);
+    RARCH_WARN("Attribute %d needs conversion. Slow path ahead.\n", index);
     return GL_TRUE;
 }
 
@@ -7004,7 +7005,7 @@ CG_API CGprogram cgCreateProgram( CGcontext ctx,
         }
         else
         {
-            printf("RGL ERR: The CG runtime compiler hasn't been setup. cgRTCgcInit() should be called prior to this function.\n" );
+            RARCH_ERR("The CG runtime compiler hasn't been setup. cgRTCgcInit() should be called prior to this function.\n" );
             _RGLCgRaiseError( CG_INVALID_ENUMERANT_ERROR );
             return NULL;
         }
@@ -7026,7 +7027,7 @@ CG_API CGprogram cgCreateProgram( CGcontext ctx,
         // don't throw the warning if it was source, cause clearly that would have been on purpose.
         if ( program_type == CG_BINARY )
         {
-            printf("RGL WARN: A binary shader is being loaded using a deprecated binary format.  Please use the cgnv2elf tool to convert to the new, memory-saving, faster-loading format.\n");
+            RARCH_WARN("A binary shader is being loaded using a deprecated binary format.  Please use the cgnv2elf tool to convert to the new, memory-saving, faster-loading format.\n");
         }
 
         //convert from NV format to the runtime format
@@ -7048,7 +7049,7 @@ CG_API CGprogram cgCreateProgram( CGcontext ctx,
         int res = convertNvToElfFromMemory( binaryBuffer, totalSize, 2, 0, ( void** ) & runtimeElfShader, &compiled_program_size, stringTableArray, defaultValuesArray );
         if ( res != 0 )
         {
-            printf("RGL ERR: invalid CG binary program.\n");
+            RARCH_ERR("Invalid CG binary program.\n");
             _RGLCgRaiseError( CG_COMPILER_ERROR );
             if ( compiled_program )
                 _cgRTCgcFreeCompiledProgramHook( compiled_program );
@@ -7098,20 +7099,20 @@ CG_API CGprogram cgCreateProgram( CGcontext ctx,
         CGELFProgram elfProgram;
         if ((( intptr_t )binaryBuffer ) & 15 )
         {
-            printf("RGL ERR: CG Binary not aligned on 16 bytes, needed for ucode section.\n");
+            RARCH_ERR("CG Binary not aligned on 16 bytes, needed for ucode section.\n");
             _RGLCgRaiseError( CG_PROGRAM_LOAD_ERROR );
             return NULL;
         }
         bool res = cgOpenElf( binaryBuffer, 0, &elfBinary );
         if ( !res )
         {
-            printf("RGL ERR: not a valid ELF.\n");
+            RARCH_ERR("Not a valid ELF.\n");
             _RGLCgRaiseError( CG_PROGRAM_LOAD_ERROR );
             return NULL;
         }
         if ( !cgGetElfProgramByName( &elfBinary, entry, &elfProgram ) )
         {
-            printf("RGL ERR: couldn't find the shader entry in the CG binary.\n");
+            RARCH_ERR("Couldn't find the shader entry in the CG binary.\n");
             return NULL;
         }
 
@@ -7227,7 +7228,7 @@ CG_API CGprogram cgCreateProgramFromFile( CGcontext ctx,
                         int index = _RGLCgGetProgramIndex( group, entry );
                         if ( index == -1 )
                         {
-                            printf("RGL ERR: couldn't find the shader entry in the CG binary.\n");
+                            RARCH_ERR("Couldn't find the shader entry in the CG binary.\n");
                         }
                         else
                         {
@@ -7691,39 +7692,26 @@ CG_API CGprofile cgGetProfile( const char* profile_string )
     return CG_PROFILE_UNKNOWN;
 }
 
-CG_API CGerror cgGetError( void )
+CG_API CGerror cgGetError(void)
 {
-    CGerror err = _CurrentContext->RGLcgLastError;
-    _CurrentContext->RGLcgLastError = CG_NO_ERROR;
-    return err;
+   CGerror err = _CurrentContext->RGLcgLastError;
+   _CurrentContext->RGLcgLastError = CG_NO_ERROR;
+   return err;
 }
+
 
 CG_API const char* cgGetErrorString( CGerror error )
 {
-	return "cgGetErrorString: N/A\n";
-}
-
-CG_API const char* cgGetLastErrorString( CGerror* error )
-{
-	return "cgGetErrorString: N/A\n";
-}
-
-CG_API void cgSetErrorCallback( CGerrorCallbackFunc func )
-{
-    _CurrentContext->RGLcgErrorCallbackFunction = func;
-}
-
-
-CG_API CGerrorCallbackFunc cgGetErrorCallback( void )
-{
-    return _CurrentContext->RGLcgErrorCallbackFunction;
+   static char strbuf[256];
+   snprintf(strbuf, sizeof(strbuf), "%d", error);
+   return strbuf;
 }
 
 void _RGLCgDestroyContextParam( CgRuntimeParameter* ptr )
 {
-    if ( _cgParameterDestroyHook ) _cgParameterDestroyHook( ptr );
-    _RGLEraseName( &_CurrentContext->cgParameterNameSpace, ( jsName )( ptr->id ) );
-    free( ptr );
+   if ( _cgParameterDestroyHook ) _cgParameterDestroyHook( ptr );
+      _RGLEraseName( &_CurrentContext->cgParameterNameSpace, ( jsName )( ptr->id ) );
+   free( ptr );
 }
 
 static int _RGLGetSizeofSubArray( const short *dimensions, int count )
@@ -8400,8 +8388,7 @@ void _RGLCgRaiseError( CGerror error )
 {
     _CurrentContext->RGLcgLastError = error;
 
-
-    printf("RGL: Cg error:%s.\n", cgGetErrorString( error ) );
+    RARCH_ERR("Cg error: %d.\n", error);
 
     if ( _CurrentContext->RGLcgErrorCallbackFunction )
         _CurrentContext->RGLcgErrorCallbackFunction();
