@@ -118,7 +118,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf)
 
    if (err != UNZ_OK)
    {
-      RARCH_ERR("Error %d with ZIP file in unzGetCurrentFileInfo.\n", err);
+      RARCH_ERR("Error %d while trying to get ZIP file information.\n", err);
       return err;
    }
 
@@ -126,7 +126,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf)
    void *buf = malloc(size_buf);
    if (!buf)
    {
-      RARCH_ERR("Error allocating memory\n");
+      RARCH_ERR("Error allocating memory for ZIP extract operation.\n");
       return UNZ_INTERNALERROR;
    }
 
@@ -144,7 +144,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf)
 
    err = unzOpenCurrentFile(uf);
    if (err != UNZ_OK)
-      RARCH_ERR("Error %d with ZIP file in unzOpenCurrentFile.\n", err);
+      RARCH_ERR("Error %d while trying to open ZIP file.\n", err);
    else
    {
       /* success */
@@ -156,14 +156,14 @@ static int rarch_extract_currentfile_in_zip(unzFile uf)
 
    if (fout)
    {
-      RARCH_LOG("Extracting: %s\n", write_filename);
+      RARCH_LOG("Extracting: %s..\n", write_filename);
 
       do
       {
          err = unzReadCurrentFile(uf, buf, size_buf);
          if (err < 0)
          {
-            RARCH_ERR("error %d with ZIP file in unzReadCurrentFile.\n", err);
+            RARCH_ERR("Error %d while reading from ZIP file.\n", err);
             break;
          }
 
@@ -171,7 +171,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf)
          {
             if (fwrite(buf, err, 1, fout) != 1)
             {
-               RARCH_ERR("Error in writing extracted file.\n");
+               RARCH_ERR("Error while extracting file(s) from ZIP.\n");
                err = UNZ_ERRNO;
                break;
             }
@@ -186,7 +186,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf)
    {
       err = unzCloseCurrentFile (uf);
       if (err != UNZ_OK)
-         RARCH_ERR("Error %d with ZIP file in unzCloseCurrentFile.\n", err);
+         RARCH_ERR("Error %d while trying to close ZIP file.\n", err);
    }
    else
       unzCloseCurrentFile(uf); 
@@ -202,7 +202,7 @@ int rarch_extract_zipfile(const char *zip_path)
    unz_global_info gi;
    int err = unzGetGlobalInfo(uf, &gi);
    if (err != UNZ_OK)
-      RARCH_ERR("error %d with ZIP file in unzGetGlobalInfo \n",err);
+      RARCH_ERR("Error %d while trying to get ZIP file global info.\n",err);
 
    for (unsigned i = 0; i < gi.number_entry; i++)
    {
@@ -214,7 +214,7 @@ int rarch_extract_zipfile(const char *zip_path)
          err = unzGoToNextFile(uf);
          if (err != UNZ_OK)
          {
-            RARCH_ERR("error %d with ZIP file in unzGoToNextFile\n",err);
+            RARCH_ERR("Error %d while trying to go to the next file in the  ZIP archive.\n",err);
             break;
          }
       }
@@ -600,10 +600,10 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
 
 char rotation_lut[ASPECT_RATIO_END][PATH_MAX] =
 {
-	"Normal",
-    "Vertical",
-	"Flipped",
-    "Flipped Rotated"
+   "Normal",
+   "Vertical",
+   "Flipped",
+   "Flipped Rotated"
 };
 
 void rarch_set_auto_viewport(unsigned width, unsigned height)
@@ -888,7 +888,7 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
       CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
 #endif
-#ifdef _XBOX
+#ifdef _XBOX360
       CONFIG_GET_BOOL_CONSOLE(gamma_correction_enable, "gamma_correction_enable");
       CONFIG_GET_INT_CONSOLE(color_format, "color_format");
 #endif
