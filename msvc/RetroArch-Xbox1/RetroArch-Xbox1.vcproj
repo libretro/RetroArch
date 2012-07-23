@@ -51,7 +51,9 @@
 				Name="VCPreLinkEventTool"/>
 			<Tool
 				Name="XboxDeploymentTool"
-				RemotePath="xe:\$(SolutionName)\CORE.xbe"/>
+				RemotePath="xe:\$(SolutionName)\CORE.xbe"
+				AdditionalFiles="..\..\xbox1\Media;roms;system"
+				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
 				StackSize="65536"
@@ -103,7 +105,9 @@
 				Name="VCPreLinkEventTool"/>
 			<Tool
 				Name="XboxDeploymentTool"
-				RemotePath="xe:\$(SolutionName)\CORE.xbe"/>
+				RemotePath="xe:\$(SolutionName)\CORE.xbe"
+				AdditionalFiles="..\..\xbox1\Media;roms;system"
+				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
 				StackSize="65536"
@@ -156,7 +160,9 @@
 				Name="VCPreLinkEventTool"/>
 			<Tool
 				Name="XboxDeploymentTool"
-				RemotePath="xe:\$(SolutionName)\CORE.xbe"/>
+				RemotePath="xe:\$(SolutionName)\CORE.xbe"
+				AdditionalFiles="..\..\xbox1\Media;roms;system"
+				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
 				StackSize="65536"
@@ -214,7 +220,9 @@
 				Name="VCPreLinkEventTool"/>
 			<Tool
 				Name="XboxDeploymentTool"
-				RemotePath="xe:\$(SolutionName)\CORE.xbe"/>
+				RemotePath="xe:\$(SolutionName)\CORE.xbe"
+				AdditionalFiles="..\..\xbox1\Media;roms;system"
+				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
 				StackSize="65536"/>
@@ -265,7 +273,9 @@
 				Name="VCPreLinkEventTool"/>
 			<Tool
 				Name="XboxDeploymentTool"
-				RemotePath="xe:\$(SolutionName)\CORE.xbe"/>
+				RemotePath="xe:\$(SolutionName)\CORE.xbe"
+				AdditionalFiles="..\..\xbox1\Media;roms;system"
+				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
 				StackSize="65536"/>
