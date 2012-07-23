@@ -327,33 +327,73 @@
 					Name="Debug|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Profile|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Profile_FastCap|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release_LTCG|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 			</File>
+			<Filter
+				Name="RetroLaunch"
+				Filter="">
+				<File
+					RelativePath="..\..\xbox1\RetroLaunch\Debug.cpp">
+				</File>
+				<File
+					RelativePath="..\..\xbox1\RetroLaunch\Font.cpp">
+				</File>
+				<File
+					RelativePath="..\..\xbox1\RetroLaunch\IniFile.cpp">
+				</File>
+				<File
+					RelativePath="..\..\xbox1\RetroLaunch\Input.cpp">
+				</File>
+				<File
+					RelativePath="..\..\xbox1\RetroLaunch\IoSupport.cpp">
+				</File>
+				<File
+					RelativePath="..\..\xbox1\RetroLaunch\Launcher.cpp">
+				</File>
+				<File
+					RelativePath="..\..\xbox1\RetroLaunch\MenuMain.cpp">
+				</File>
+				<File
+					RelativePath="..\..\xbox1\RetroLaunch\MenuManager.cpp">
+				</File>
+				<File
+					RelativePath="..\..\xbox1\RetroLaunch\Rom.cpp">
+				</File>
+				<File
+					RelativePath="..\..\xbox1\RetroLaunch\RomList.cpp">
+				</File>
+				<File
+					RelativePath="..\..\xbox1\RetroLaunch\Surface.cpp">
+				</File>
+				<File
+					RelativePath="..\..\xbox1\RetroLaunch\Video.cpp">
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"

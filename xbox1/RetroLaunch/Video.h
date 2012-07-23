@@ -17,6 +17,7 @@
 
 #include "Global.h"
 
+#undef D3DFVF_CUSTOMVERTEX
 #define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1)
 
 typedef struct CustomVertex

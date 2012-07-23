@@ -166,11 +166,67 @@ static void configure_libretro(const char *path_prefix, const char * extension)
 }
 
 #ifdef _XBOX1
-static void menu_init(void) {}
+#include "../../xbox1/RetroLaunch/Global.h"
+#include "../../xbox1/RetroLaunch/Video.h"
+#include "../../xbox1/RetroLaunch/IniFile.h"
+#include "../../xbox1/RetroLaunch/IoSupport.h"
+#include "../../xbox1/RetroLaunch/Input.h"
+#include "../../xbox1/RetroLaunch/Debug.h"
+#include "../../xbox1/RetroLaunch/Font.h"
+#include "../../xbox1/RetroLaunch/MenuManager.h"
+#include "../../xbox1/RetroLaunch/RomList.h"
+
+bool g_bExit = false;
+
+static void menu_init(void)
+{
+	//g_debug.Print("Starting RetroLaunch\n");
+
+	//// Set file cache size
+	//XSetFileCacheSize(8 * 1024 * 1024);
+
+	//// Mount drives
+	//g_IOSupport.Mount("A:", "cdrom0");
+	//g_IOSupport.Mount("E:", "Harddisk0\\Partition1");
+	//g_IOSupport.Mount("Z:", "Harddisk0\\Partition2");
+	//g_IOSupport.Mount("F:", "Harddisk0\\Partition6");
+	//g_IOSupport.Mount("G:", "Harddisk0\\Partition7");
+
+
+	//// Initialize Direct3D
+	//if (!g_video.Create(NULL, false))
+	//	return;
+
+	//// Parse ini file for settings
+	//g_iniFile.CheckForIniEntry();
+
+	//// Load the rom list if it isn't already loaded
+	//if (!g_romList.IsLoaded()) {
+	//	g_romList.Load();
+	//}
+
+	//// Init input here
+	//g_input.Create();
+
+	//// Load the font here
+	//g_font.Create();
+
+	//// Build menu here (Menu state -> Main Menu)
+	//g_menuManager.Create();
+}
+
 static void menu_free(void) {}
 static void menu_loop(void)
 {
    rarch_console_load_game("D:\\ssf2x.gba");
+	// Loop the app
+	//while (!g_bExit)
+	//{
+	//	g_video.BeginRender();
+	//	g_input.GetInput();
+	//	g_menuManager.Update();
+	//	g_video.EndRender();
+	//}
 }
 #endif
 
