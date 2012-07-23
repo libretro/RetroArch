@@ -17,19 +17,10 @@
 #ifndef _PS3_SHARED_H
 #define _PS3_SHARED_H
 
-extern char usrDirPath[PATH_MAX];
-extern char systemDirPath[PATH_MAX];
 extern char DEFAULT_PRESET_FILE[PATH_MAX];
-extern char DEFAULT_BORDER_FILE[PATH_MAX];
 extern char DEFAULT_MENU_BORDER_FILE[PATH_MAX];
 extern char PRESETS_DIR_PATH[PATH_MAX];
 extern char INPUT_PRESETS_DIR_PATH[PATH_MAX];
-extern char BORDERS_DIR_PATH[PATH_MAX];
-extern char SHADERS_DIR_PATH[PATH_MAX];
-extern char DEFAULT_SHADER_FILE[PATH_MAX];
-extern char DEFAULT_MENU_SHADER_FILE[PATH_MAX];
-extern char LIBRETRO_DIR_PATH[PATH_MAX];
-extern char SYS_CONFIG_FILE[PATH_MAX];
 extern char MULTIMAN_EXECUTABLE[PATH_MAX];
 
 #endif

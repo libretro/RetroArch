@@ -47,6 +47,8 @@
 	ROM EXTENSIONS
 ============================================================ */
 
+default_paths_t default_paths;
+
 void rarch_console_load_game(const char *path)
 {
    snprintf(g_console.rom_path, sizeof(g_console.rom_path), path);

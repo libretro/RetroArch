@@ -1065,9 +1065,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    RARCH_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
 
-#ifdef HAVE_CG_MENU
+#if defined(HAVE_CG_MENU) && defined(RARCH_CONSOLE)
    RARCH_LOG("Initializing menu shader ...\n");
-   gl_cg_set_menu_shader(DEFAULT_MENU_SHADER_FILE);
+   gl_cg_set_menu_shader(default_paths.menu_shader_file);
 #endif
 
    if (!gl_shader_init())

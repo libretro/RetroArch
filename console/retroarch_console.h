@@ -134,6 +134,24 @@ enum
 /*============================================================
 	ROM EXTENSIONS
 ============================================================ */
+typedef struct
+{
+   char border_file[PATH_MAX];
+   char border_dir[PATH_MAX];
+   char config_file[PATH_MAX];
+   char core_dir[PATH_MAX];
+   char port_dir[PATH_MAX];
+   char savestate_dir[PATH_MAX];
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+   char menu_shader_file[PATH_MAX];
+   char shader_file[PATH_MAX];
+   char shader_dir[PATH_MAX];
+#endif
+   char sram_dir[PATH_MAX];
+   char system_dir[PATH_MAX];
+} default_paths_t;
+
+extern default_paths_t default_paths;
 
 void rarch_console_load_game(const char *path);
 

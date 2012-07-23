@@ -56,25 +56,15 @@
 #include "menu.h"
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
-#define EMULATOR_CORE_DIR "cores"
 
 #define CACHE_ID "ABCD12345"
 #define NP_POOL_SIZE (128*1024)
 
 static uint8_t np_pool[NP_POOL_SIZE];
-char systemDirPath[PATH_MAX];
-char usrDirPath[PATH_MAX];
 char DEFAULT_PRESET_FILE[PATH_MAX];
-char DEFAULT_BORDER_FILE[PATH_MAX];
 char DEFAULT_MENU_BORDER_FILE[PATH_MAX];
 char PRESETS_DIR_PATH[PATH_MAX];
 char INPUT_PRESETS_DIR_PATH[PATH_MAX];
-char BORDERS_DIR_PATH[PATH_MAX];
-char SHADERS_DIR_PATH[PATH_MAX];
-char LIBRETRO_DIR_PATH[PATH_MAX];
-char DEFAULT_SHADER_FILE[PATH_MAX];
-char DEFAULT_MENU_SHADER_FILE[PATH_MAX];
-char SYS_CONFIG_FILE[PATH_MAX];
 char EMULATOR_CORE_SELF[PATH_MAX];
 #ifdef HAVE_MULTIMAN
 char MULTIMAN_EXECUTABLE[PATH_MAX];
@@ -89,18 +79,18 @@ SYS_PROCESS_PARAM(1001, 0x200000)
 static void set_default_settings(void)
 {
    // g_settings
-   strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
+   strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
    g_settings.rewind_enable = false;
-   strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
+   strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
    g_settings.video.fbo_scale_x = 2.0f;
    g_settings.video.fbo_scale_y = 2.0f;
    g_settings.video.render_to_texture = true;
-   strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
+   strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
    g_settings.video.second_pass_smooth = true;
    g_settings.video.smooth = true;
    g_settings.video.vsync = true;
-   strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
-   strlcpy(g_settings.system_directory, systemDirPath, sizeof(g_settings.system_directory));
+   strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
+   strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
    g_settings.video.msg_pos_x = 0.05f;
    g_settings.video.msg_pos_y = 0.90f;
    g_settings.video.aspect_ratio = -1.0f;
@@ -122,8 +112,8 @@ static void set_default_settings(void)
    g_console.screen_orientation = ORIENTATION_NORMAL;
    g_console.current_resolution_id = 0;
    strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
-   strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
-   strlcpy(g_console.default_sram_dir, usrDirPath, sizeof(g_console.default_sram_dir));
+   strlcpy(g_console.default_savestate_dir, default_paths.savestate_dir, sizeof(g_console.default_savestate_dir));
+   strlcpy(g_console.default_sram_dir, default_paths.sram_dir, sizeof(g_console.default_sram_dir));
    g_console.aspect_ratio_index = 0;
    g_console.menu_font_size = 1.0f;
    g_console.overscan_enable = false;
@@ -242,13 +232,13 @@ static void get_environment_settings(int argc, char *argv[])
       if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) == CELL_GAME_ATTRIBUTE_APP_HOME)
          RARCH_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 
-      ret = cellGameContentPermit(contentInfoPath, usrDirPath);
+      ret = cellGameContentPermit(contentInfoPath, default_paths.port_dir);
 
 #ifdef HAVE_MULTIMAN
       if(g_console.external_launcher_support == EXTERN_LAUNCHER_MULTIMAN)
       {
          snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
-	 snprintf(usrDirPath, sizeof(usrDirPath), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
+	 snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
       }
 #endif
 
@@ -260,23 +250,26 @@ static void get_environment_settings(int argc, char *argv[])
       {
          RARCH_LOG("cellGameContentPermit() OK.\n");
 	 RARCH_LOG("contentInfoPath : [%s].\n", contentInfoPath);
-	 RARCH_LOG("usrDirPath : [%s].\n", usrDirPath);
+	 RARCH_LOG("usrDirPath : [%s].\n", default_paths.port_dir);
       }
 
-      snprintf(systemDirPath, sizeof(systemDirPath), "%s/%s/system", usrDirPath, EMULATOR_CORE_DIR);
+      snprintf(default_paths.core_dir, sizeof(default_paths.core_dir), "%s/cores", default_paths.port_dir);
+      snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.core_dir);
+      snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.core_dir);
+
+      snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.core_dir);
 
       /* now we fill in all the variables */
-      snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/%s/presets/stock.conf", usrDirPath, EMULATOR_CORE_DIR);
-      snprintf(DEFAULT_BORDER_FILE, sizeof(DEFAULT_BORDER_FILE), "%s/%s/borders/Centered-1080p/mega-man-2.png", usrDirPath, EMULATOR_CORE_DIR);
-      snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/%s/borders/Menu/main-menu.png", usrDirPath, EMULATOR_CORE_DIR);
-      snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/%s/presets", usrDirPath, EMULATOR_CORE_DIR);
+      snprintf(DEFAULT_PRESET_FILE, sizeof(DEFAULT_PRESET_FILE), "%s/presets/stock.conf", default_paths.core_dir);
+      snprintf(default_paths.border_file, sizeof(default_paths.border_file), "%s/borders/Centered-1080p/mega-man-2.png", default_paths.core_dir);
+      snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/borders/Menu/main-menu.png", default_paths.core_dir);
+      snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/presets", default_paths.core_dir);
       snprintf(INPUT_PRESETS_DIR_PATH, sizeof(INPUT_PRESETS_DIR_PATH), "%s/input", PRESETS_DIR_PATH);
-      snprintf(LIBRETRO_DIR_PATH, sizeof(LIBRETRO_DIR_PATH), "%s/%s", usrDirPath, EMULATOR_CORE_DIR);
-      snprintf(BORDERS_DIR_PATH, sizeof(BORDERS_DIR_PATH), "%s/%s/borders", usrDirPath, EMULATOR_CORE_DIR);
-      snprintf(SHADERS_DIR_PATH, sizeof(SHADERS_DIR_PATH), "%s/%s/shaders", usrDirPath, EMULATOR_CORE_DIR);
-      snprintf(DEFAULT_SHADER_FILE, sizeof(DEFAULT_SHADER_FILE), "%s/%s/shaders/stock.cg", usrDirPath, EMULATOR_CORE_DIR);
-      snprintf(DEFAULT_MENU_SHADER_FILE, sizeof(DEFAULT_MENU_SHADER_FILE), "%s/%s/shaders/Borders/Menu/border-only-rarch.cg", usrDirPath, EMULATOR_CORE_DIR);
-      snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/retroarch.cfg", usrDirPath);
+      snprintf(default_paths.border_dir, sizeof(default_paths.border_dir), "%s/borders", default_paths.core_dir);
+      snprintf(default_paths.shader_dir, sizeof(default_paths.shader_dir), "%s/shaders", default_paths.core_dir);
+      snprintf(default_paths.shader_file, sizeof(default_paths.shader_file), "%s/shaders/stock.cg", default_paths.core_dir);
+      snprintf(default_paths.menu_shader_file, sizeof(default_paths.menu_shader_file), "%s/shaders/Borders/Menu/border-only-rarch.cg", default_paths.core_dir);
+      snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
    }
 
    g_extern.verbose = false;
@@ -314,14 +307,14 @@ int main(int argc, char *argv[])
    config_set_defaults();
 
    char full_path[1024], tmp_path[1024];
-   snprintf(full_path, sizeof(full_path), "%s/%s/CORE.SELF", usrDirPath, EMULATOR_CORE_DIR);
-   snprintf(tmp_path, sizeof(tmp_path), "%s/%s/", usrDirPath, EMULATOR_CORE_DIR);
+   snprintf(full_path, sizeof(full_path), "%s/CORE.SELF", default_paths.core_dir);
+   snprintf(tmp_path, sizeof(tmp_path), "%s/", default_paths.core_dir);
 
-   bool find_libretro_file = rarch_configure_libretro_core(full_path, tmp_path, LIBRETRO_DIR_PATH, 
-   SYS_CONFIG_FILE, ".SELF");
+   bool find_libretro_file = rarch_configure_libretro_core(full_path, tmp_path, default_paths.core_dir, 
+   default_paths.config_file, ".SELF");
 
    set_default_settings();
-   rarch_config_load(SYS_CONFIG_FILE, LIBRETRO_DIR_PATH, ".SELF", find_libretro_file);
+   rarch_config_load(default_paths.config_file, default_paths.core_dir, ".SELF", find_libretro_file);
    init_libretro_sym();
 
 #if(CELL_SDK_VERSION > 0x340000)
@@ -367,7 +360,7 @@ int main(int argc, char *argv[])
 	 RARCH_LOG("Started from multiMAN, will auto-start game.\n");
 	 strlcpy(g_console.rom_path, argv[1], sizeof(g_console.rom_path));
          rarch_settings_change(S_START_RARCH);
-	 rarch_startup(SYS_CONFIG_FILE);
+	 rarch_startup(default_paths.config_file);
 	 break;
 #endif
       default:
@@ -390,7 +383,7 @@ begin_loop:
    else if(g_console.mode_switch == MODE_MENU)
    {
       menu_loop();
-      rarch_startup(SYS_CONFIG_FILE);
+      rarch_startup(default_paths.config_file);
    }
    else
       goto begin_shutdown;
@@ -398,8 +391,8 @@ begin_loop:
    goto begin_loop;
 
 begin_shutdown:
-   if(path_file_exists(SYS_CONFIG_FILE))
-      rarch_config_save(SYS_CONFIG_FILE);
+   if(path_file_exists(default_paths.config_file))
+      rarch_config_save(default_paths.config_file);
 
    if(g_console.emulator_initialized)
       rarch_main_deinit();

@@ -41,9 +41,6 @@
 #include "../../file.h"
 #include "../../general.h"
 
-char DEFAULT_SHADER_FILE[PATH_MAX];
-char SYS_CONFIG_FILE[PATH_MAX];
-
 int rarch_main(int argc, char *argv[]);
 
 #undef main
@@ -52,11 +49,11 @@ static void set_default_settings (void)
 {
    //g_settings
    g_settings.rewind_enable = false;
-   strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
+   strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
    g_settings.video.fbo_scale_x = 2.0f;
    g_settings.video.fbo_scale_y = 2.0f;
    g_settings.video.render_to_texture = true;
-   strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
+   strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
    g_settings.video.second_pass_smooth = true;
    g_settings.video.smooth = true;
    g_settings.video.vsync = true;
@@ -142,13 +139,13 @@ static void get_environment_settings (void)
    }
 #endif
 
-   strlcpy(DEFAULT_SHADER_FILE, "game:\\media\\shaders\\stock.cg", sizeof(DEFAULT_SHADER_FILE));
+   strlcpy(default_paths.shader_file, "game:\\media\\shaders\\stock.cg", sizeof(default_paths.shader_file));
 #ifdef _XBOX1
    /* FIXME: Hardcoded */
-   strlcpy(SYS_CONFIG_FILE, "D:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
+   strlcpy(default_paths.config_file, "D:\\retroarch.cfg", sizeof(default_paths.config_file));
    strlcpy(g_settings.system_directory, "D:\\system\\", sizeof(g_settings.system_directory));
 #else
-   strlcpy(SYS_CONFIG_FILE, "game:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
+   strlcpy(default_paths.config_file, "game:\\retroarch.cfg", sizeof(default_paths.config_file));
    strlcpy(g_settings.system_directory, "game:\\system\\", sizeof(g_settings.system_directory));
 #endif
 }
@@ -159,10 +156,10 @@ static void configure_libretro(const char *path_prefix, const char * extension)
    snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
 
    bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
-   SYS_CONFIG_FILE, extension);
+   default_paths.config_file, extension);
 
    set_default_settings();
-   rarch_config_load(SYS_CONFIG_FILE, path_prefix, extension, find_libretro_file);
+   rarch_config_load(default_paths.config_file, path_prefix, extension, find_libretro_file);
    init_libretro_sym();
 }
 
@@ -279,7 +276,7 @@ begin_loop:
    else if(g_console.mode_switch == MODE_MENU)
    {
       menu_loop();
-      rarch_startup(SYS_CONFIG_FILE);
+      rarch_startup(default_paths.config_file);
    }
    else
       goto begin_shutdown;
@@ -287,8 +284,8 @@ begin_loop:
    goto begin_loop;
 
 begin_shutdown:
-   if(path_file_exists(SYS_CONFIG_FILE))
-      rarch_config_save(SYS_CONFIG_FILE);
+   if(path_file_exists(default_paths.config_file))
+      rarch_config_save(default_paths.config_file);
 
    menu_free();
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9)

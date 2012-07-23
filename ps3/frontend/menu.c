@@ -104,13 +104,13 @@ static void set_setting_label(menu * menu_obj, unsigned currentsetting)
 	   case SETTING_SHADER:
 		   fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "%s", fname);
-                   set_setting_label_color(strcmp(g_settings.video.cg_shader_path,DEFAULT_SHADER_FILE) == 0, 
+                   set_setting_label_color(strcmp(g_settings.video.cg_shader_path, default_paths.shader_file) == 0, 
                    currentsetting);
 		   break;
 	   case SETTING_SHADER_2:
 		   fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "%s", fname);
-                   set_setting_label_color(strcmp(g_settings.video.second_pass_shader,DEFAULT_SHADER_FILE) == 0,
+                   set_setting_label_color(strcmp(g_settings.video.second_pass_shader, default_paths.shader_file) == 0,
                    currentsetting);
 		   break;
 	   case SETTING_FONT_SIZE:
@@ -239,19 +239,19 @@ static void set_setting_label(menu * menu_obj, unsigned currentsetting)
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), g_console.default_rom_startup_dir);
 		   break;
 	   case SETTING_PATH_SAVESTATES_DIRECTORY:
-                   set_setting_label_color(!(strcmp(g_console.default_savestate_dir, usrDirPath)), currentsetting);
+                   set_setting_label_color(!(strcmp(g_console.default_savestate_dir, default_paths.port_dir)), currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), g_console.default_savestate_dir);
 		   break;
 	   case SETTING_PATH_SRAM_DIRECTORY:
-                   set_setting_label_color(!(strcmp(g_console.default_sram_dir, usrDirPath)), currentsetting);
+                   set_setting_label_color(!(strcmp(g_console.default_sram_dir, default_paths.port_dir)), currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), g_console.default_sram_dir);
 		   break;
 	   case SETTING_PATH_CHEATS:
-                   set_setting_label_color(!(strcmp(g_settings.cheat_database, usrDirPath)), currentsetting);
+                   set_setting_label_color(!(strcmp(g_settings.cheat_database, default_paths.port_dir)), currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), g_settings.cheat_database);
 		   break;
 	   case SETTING_PATH_SYSTEM:
-                   set_setting_label_color(!(strcmp(g_settings.system_directory, systemDirPath)), currentsetting);
+                   set_setting_label_color(!(strcmp(g_settings.system_directory, default_paths.system_dir)), currentsetting);
 		   snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), g_settings.system_directory);
 		   break;
 	   case SETTING_ENABLE_SRAM_PATH:
@@ -394,7 +394,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(items_generalsettings, stack_idx);
 	 strlcpy(tmpBrowser.extensions, "self|SELF|bin|BIN", sizeof(tmpBrowser.extensions));
-	 filebrowser_set_root(&tmpBrowser, LIBRETRO_DIR_PATH);
+	 filebrowser_set_root(&tmpBrowser, default_paths.core_dir);
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case PRESET_CHOICE:
@@ -427,7 +427,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(items_generalsettings, stack_idx);
 	 strlcpy(tmpBrowser.extensions, "cg|CG", sizeof(tmpBrowser.extensions));
-	 filebrowser_set_root(&tmpBrowser, SHADERS_DIR_PATH);
+	 filebrowser_set_root(&tmpBrowser, default_paths.shader_dir);
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case BORDER_CHOICE:
@@ -438,7 +438,7 @@ static void menu_stack_push(unsigned stack_idx, unsigned menu_id)
          menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
          menu_stack_refresh(items_generalsettings, stack_idx);
 	 strlcpy(tmpBrowser.extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(tmpBrowser.extensions));
-	 filebrowser_set_root(&tmpBrowser, BORDERS_DIR_PATH);
+	 filebrowser_set_root(&tmpBrowser, default_paths.border_dir);
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case PATH_DEFAULT_ROM_DIR_CHOICE:
@@ -868,7 +868,7 @@ static void select_directory(void)
       }
       else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_X))
       {
-         strlcpy(path, usrDirPath, sizeof(path));
+         strlcpy(path, default_paths.port_dir, sizeof(path));
 	 switch(menu_id)
 	 {
             case PATH_SAVESTATES_DIR_CHOICE:
@@ -1072,7 +1072,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
                            rarch_load_shader(1, NULL);
-			   strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
+			   strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
 			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 			break;
@@ -1086,7 +1086,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
                            rarch_load_shader(2, NULL);
-			   strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
+			   strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
 			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 			break;
@@ -1403,7 +1403,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			}
 
 			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
+                           strlcpy(g_console.default_savestate_dir, default_paths.savestate_dir, sizeof(g_console.default_savestate_dir));
 
 			break;
 		case SETTING_PATH_SRAM_DIRECTORY:
@@ -1414,7 +1414,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			}
 
 			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
+                           strlcpy(g_console.default_sram_dir, default_paths.sram_dir, sizeof(g_console.default_sram_dir));
 			break;
 		case SETTING_PATH_CHEATS:
 			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
@@ -1424,7 +1424,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			}
 
 			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
+                           strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
 			break;
 		case SETTING_PATH_SYSTEM:
 			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
@@ -1434,7 +1434,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			}
 
 			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           strlcpy(g_settings.system_directory, systemDirPath, sizeof(g_settings.system_directory));
+                           strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
 			break;
 		case SETTING_ENABLE_SRAM_PATH:
 			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)))
@@ -1464,8 +1464,8 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
 			{
                            strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
-			   strlcpy(g_console.default_savestate_dir, usrDirPath, sizeof(g_console.default_savestate_dir));
-			   strlcpy(g_settings.cheat_database, usrDirPath, sizeof(g_settings.cheat_database));
+			   strlcpy(g_console.default_savestate_dir, default_paths.port_dir, sizeof(g_console.default_savestate_dir));
+			   strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
 			   strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
 
 			   menu_stack_refresh(items_generalsettings, menuStackindex);
