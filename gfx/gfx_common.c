@@ -25,15 +25,13 @@
 #endif
 #endif
 
-#ifdef __CELLOS_LV2__
-#ifdef __PSL1GHT__
+#if defined(__PSL1GHT__)
 #include <sys/time.h>
-#else
+#elif defined(__CELLOS_LV2__)
 #include <sys/sys_time.h>
 #endif
-#endif
 
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__) || defined(_MSC_VER)
+#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(_MSC_VER)
 static int gettimeofday(struct timeval *val, void *dummy)
 {
    (void)dummy;
@@ -49,7 +47,7 @@ static int gettimeofday(struct timeval *val, void *dummy)
    uint64_t usec = msec * 1000;
 #endif
 
-   val->tv_sec = usec / 1000000;
+   val->tv_sec  = usec / 1000000;
    val->tv_usec = usec % 1000000;
    return 0;
 }
@@ -57,7 +55,7 @@ static int gettimeofday(struct timeval *val, void *dummy)
 
 static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)
 {
-   float time = new_tv->tv_sec - tv->tv_sec + (new_tv->tv_usec - tv->tv_usec)/1000000.0;
+   float time = new_tv->tv_sec - tv->tv_sec + (new_tv->tv_usec - tv->tv_usec) / 1000000.0;
    return frames/time;
 }
 
