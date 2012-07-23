@@ -26,19 +26,8 @@
 #include <list>
 #include <vector>
 #include <algorithm>
-#ifdef _XBOX
-	#include <xtl.h>
-	#include <xgraphics.h>
-#else
-	#pragma comment(lib,"d3d8.lib")
-	#pragma comment(lib,"d3dx8.lib")
-	#pragma comment(lib,"DxErr8.lib")
-	#define WIN32_LEAN_AND_MEAN
-	#include <windows.h>
-	#include <d3d8.h>
-	#include <d3dx8.h>
-	#include <dxerr8.h>
-#endif
+#include <xtl.h>
+#include <xgraphics.h>
 
 
 using namespace std;

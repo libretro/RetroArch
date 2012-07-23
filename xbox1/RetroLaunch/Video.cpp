@@ -59,30 +59,13 @@ bool CVideo::Create(HWND hDeviceWindow, bool bWindowed)
 		}
 	}
 
-
-#ifdef _XBOX
 	g_hResult = m_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, NULL,
 	                                 D3DCREATE_HARDWARE_VERTEXPROCESSING,
 	                                 &d3dpp, &m_pD3DDevice);
-#else //WIN32
-
-	D3DDISPLAYMODE d3ddm;
-	g_hResult = m_pD3D->GetAdapterDisplayMode( D3DADAPTER_DEFAULT, &d3ddm );
-	d3dpp.BackBufferFormat                                  = d3ddm.Format;
-	d3dpp.Windowed                                                  = bWindowed;
-	d3dpp.hDeviceWindow                                             = hDeviceWindow;
-
-	g_hResult = m_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hDeviceWindow,
-	                                 D3DCREATE_HARDWARE_VERTEXPROCESSING,
-	                                 &d3dpp, &m_pD3DDevice);
-#endif //#ifdef _XBOX
 
 	if (FAILED(g_hResult))
 	{
 		g_debug.Print("Error: D3DCreate(), CreateDevice()");
-#ifndef _XBOX
-		DXTrace(__FILE__, __LINE__, g_hResult, "D3DCreate(), CreateDevice()", TRUE);
-#endif
 		return false;
 	}
 	// use an orthogonal matrix for the projection matrix
@@ -114,10 +97,8 @@ void CVideo::BeginRender()
 	                    1.0f, 0);
 
 	m_pD3DDevice->BeginScene();
-#ifdef _XBOX
 	m_pD3DDevice->SetFlickerFilter(g_iniFile.m_currentIniEntry.dwFlickerFilter);
 	m_pD3DDevice->SetSoftDisplayFilter(g_iniFile.m_currentIniEntry.bSoftDisplayFilter);
-#endif
 }
 
 void CVideo::EndRender()

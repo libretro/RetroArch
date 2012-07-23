@@ -201,12 +201,7 @@ bool CSurface::Render(int x, int y, dword w, dword h)
 	g_video.m_pD3DDevice->SetTexture(0, m_pTexture);
 	g_video.m_pD3DDevice->SetStreamSource(0, m_pVertexBuffer, sizeof(CustomVertex));
 	g_video.m_pD3DDevice->SetVertexShader(D3DFVF_CUSTOMVERTEX);
-#ifdef _XBOX
 	g_video.m_pD3DDevice->DrawPrimitive(D3DPT_QUADLIST, 0, 1);
-#else
-	//FIXME: vertices order !
-	g_video.m_pD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, 2);
-#endif
 	return true;
 }
 
