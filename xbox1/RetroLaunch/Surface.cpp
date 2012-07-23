@@ -17,6 +17,8 @@
 
 #include "Surface.h"
 #include "Debug.h"
+
+#include "../../general.h"
 #include "../xdk_d3d8.h"
 
 CSurface::CSurface()
@@ -45,10 +47,11 @@ CSurface::~CSurface()
 
 bool CSurface::Create(const string &szFilename)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 	if (m_bLoaded)
 		Destroy();
 
-	g_hResult = D3DXCreateTextureFromFileExA(g_video.m_pD3DDevice,                    // d3d device
+	HRESULT g_hResult = D3DXCreateTextureFromFileExA(d3d->d3d_render_device,                    // d3d device
 	                                         ("D:\\" +  szFilename).c_str(),          // filename
 	                                         D3DX_DEFAULT, D3DX_DEFAULT,              // width/height
 	                                         D3DX_DEFAULT,                            // mipmaps
@@ -69,7 +72,7 @@ bool CSurface::Create(const string &szFilename)
 	}
 
 	// create a vertex buffer for the quad that will display the texture
-	g_hResult = g_video.m_pD3DDevice->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats),
+   g_hResult = d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats),
 	                                                   D3DUSAGE_WRITEONLY,
 	                                                   D3DFVF_CUSTOMVERTEX,
 	                                                   D3DPOOL_MANAGED, &m_pVertexBuffer);
@@ -87,10 +90,11 @@ bool CSurface::Create(const string &szFilename)
 
 bool CSurface::Create(dword width, dword height)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 	if (m_bLoaded)
 		Destroy();
 
-	g_hResult = g_video.m_pD3DDevice->CreateTexture(width, height, 1, 0,
+   HRESULT g_hResult = d3d->d3d_render_device->CreateTexture(width, height, 1, 0,
 	                                              D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
 	                                              &m_pTexture);
 
@@ -105,7 +109,7 @@ bool CSurface::Create(dword width, dword height)
 	m_imageInfo.Format = D3DFMT_A8R8G8B8;
 
 	// create a vertex buffer for the quad that will display the texture
-	g_hResult = g_video.m_pD3DDevice->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats),
+   g_hResult = d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats),
 	                                                   D3DUSAGE_WRITEONLY,
 	                                                   D3DFVF_CUSTOMVERTEX,
 	                                                   D3DPOOL_MANAGED, &m_pVertexBuffer);
@@ -157,6 +161,7 @@ bool CSurface::Render(int x, int y)
 
 bool CSurface::Render(int x, int y, dword w, dword h)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 	if (m_pTexture == NULL || m_pVertexBuffer == NULL || m_bLoaded == false)
 		return false;
 
@@ -176,7 +181,7 @@ bool CSurface::Render(int x, int y, dword w, dword h)
 	// load the existing vertices
 	/*CustomVertex*/DrawVerticeFormats *pCurVerts;
 
-	g_hResult = m_pVertexBuffer->Lock(0, 0, (byte **)&pCurVerts, 0);
+	HRESULT g_hResult = m_pVertexBuffer->Lock(0, 0, (byte **)&pCurVerts, 0);
 
 	if (FAILED(g_hResult))
 	{
@@ -189,20 +194,20 @@ bool CSurface::Render(int x, int y, dword w, dword h)
 	m_pVertexBuffer->Unlock();
 
 
-	g_video.m_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-	g_video.m_pD3DDevice->SetRenderState(D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
-	g_video.m_pD3DDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+	d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
+	d3d->d3d_render_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 
 	// also blend the texture with the set alpha value
-	g_video.m_pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-	g_video.m_pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
-	g_video.m_pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
+	d3d->d3d_render_device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+	d3d->d3d_render_device->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
+	d3d->d3d_render_device->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
 
 	// draw the quad
-	g_video.m_pD3DDevice->SetTexture(0, m_pTexture);
-	g_video.m_pD3DDevice->SetStreamSource(0, m_pVertexBuffer, sizeof(DrawVerticeFormats));
-	g_video.m_pD3DDevice->SetVertexShader(D3DFVF_CUSTOMVERTEX);
-	g_video.m_pD3DDevice->DrawPrimitive(D3DPT_QUADLIST, 0, 1);
+	d3d->d3d_render_device->SetTexture(0, m_pTexture);
+	d3d->d3d_render_device->SetStreamSource(0, m_pVertexBuffer, sizeof(DrawVerticeFormats));
+	d3d->d3d_render_device->SetVertexShader(D3DFVF_CUSTOMVERTEX);
+	d3d->d3d_render_device->DrawPrimitive(D3DPT_QUADLIST, 0, 1);
 	return true;
 }
 

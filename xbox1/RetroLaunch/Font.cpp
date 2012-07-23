@@ -17,7 +17,8 @@
 #ifdef _XBOX
 #include "Font.h"
 
-#include <xgraphics.h>
+#include "../../general.h"
+#include "../xdk_d3d8.h"
 
 Font g_font;
 
@@ -43,7 +44,7 @@ bool Font::Create(const string &szTTFFilename)
 		m_pFont->Release();
 
 	word *wcPathBuf = StringToWChar(szTTFFilename);
-	g_hResult = XFONT_OpenTrueTypeFont(wcPathBuf, 256 * 1024, &m_pFont);
+	HRESULT g_hResult = XFONT_OpenTrueTypeFont(wcPathBuf, 256 * 1024, &m_pFont);
 
 	delete [] wcPathBuf;
 
@@ -80,6 +81,7 @@ void Font::Render(const string &str, int x, int y, dword height, dword style, D3
 
 void Font::RenderToTexture(CSurface &texture, const string &str, dword height, dword style, D3DXCOLOR color, int maxWidth, bool fade)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 	if (m_pFont == NULL)
 		return;
 
@@ -114,7 +116,7 @@ void Font::RenderToTexture(CSurface &texture, const string &str, dword height, d
 
 	// create an temporary image surface to render to
 	D3DSurface *pTempSurface;
-	g_video.m_pD3DDevice->CreateImageSurface(dwTextureWidth, dwTextureHeight, D3DFMT_LIN_A8R8G8B8, &pTempSurface);
+   d3d->d3d_render_device->CreateImageSurface(dwTextureWidth, dwTextureHeight, D3DFMT_LIN_A8R8G8B8, &pTempSurface);
 
 	// clear the temporary surface
 	{

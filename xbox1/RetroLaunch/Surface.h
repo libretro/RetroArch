@@ -18,7 +18,6 @@
 #pragma once
 
 #include "Global.h"
-#include "Video.h"
 
 class CSurface
 {

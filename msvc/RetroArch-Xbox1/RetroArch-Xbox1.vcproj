@@ -373,9 +373,6 @@
 					RelativePath="..\..\xbox1\RetroLaunch\IoSupport.cpp">
 				</File>
 				<File
-					RelativePath="..\..\xbox1\RetroLaunch\Launcher.cpp">
-				</File>
-				<File
 					RelativePath="..\..\xbox1\RetroLaunch\MenuMain.cpp">
 				</File>
 				<File
@@ -389,9 +386,6 @@
 				</File>
 				<File
 					RelativePath="..\..\xbox1\RetroLaunch\Surface.cpp">
-				</File>
-				<File
-					RelativePath="..\..\xbox1\RetroLaunch\Video.cpp">
 				</File>
 			</Filter>
 		</Filter>
