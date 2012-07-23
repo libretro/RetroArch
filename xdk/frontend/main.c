@@ -192,10 +192,15 @@ static void menu_init(void)
 	g_IOSupport.Mount("F:", "Harddisk0\\Partition6");
 	g_IOSupport.Mount("G:", "Harddisk0\\Partition7");
 
+   // Get RetroArch's native d3d device
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
 	// Initialize Direct3D
-	if (!g_video.Create(NULL, false))
-		return;
+	//if (!g_video.Create(NULL, false))
+		//return;
+
+   if(!g_video.SetDevice(d3d->d3d_render_device))
+      return;
 
 	// Parse ini file for settings
 	g_iniFile.CheckForIniEntry();

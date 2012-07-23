@@ -17,6 +17,7 @@
 
 #include "Surface.h"
 #include "Debug.h"
+#include "../xdk_d3d8.h"
 
 CSurface::CSurface()
 {
@@ -68,7 +69,7 @@ bool CSurface::Create(const string &szFilename)
 	}
 
 	// create a vertex buffer for the quad that will display the texture
-	g_hResult = g_video.m_pD3DDevice->CreateVertexBuffer(4 * sizeof(CustomVertex),
+	g_hResult = g_video.m_pD3DDevice->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats),
 	                                                   D3DUSAGE_WRITEONLY,
 	                                                   D3DFVF_CUSTOMVERTEX,
 	                                                   D3DPOOL_MANAGED, &m_pVertexBuffer);
@@ -104,7 +105,7 @@ bool CSurface::Create(dword width, dword height)
 	m_imageInfo.Format = D3DFMT_A8R8G8B8;
 
 	// create a vertex buffer for the quad that will display the texture
-	g_hResult = g_video.m_pD3DDevice->CreateVertexBuffer(4 * sizeof(CustomVertex),
+	g_hResult = g_video.m_pD3DDevice->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats),
 	                                                   D3DUSAGE_WRITEONLY,
 	                                                   D3DFVF_CUSTOMVERTEX,
 	                                                   D3DPOOL_MANAGED, &m_pVertexBuffer);
@@ -163,17 +164,17 @@ bool CSurface::Render(int x, int y, dword w, dword h)
 	float fY = static_cast<float>(y);
 
 	// create the new vertices
-	CustomVertex newVerts[] =
+	/*CustomVertex*/DrawVerticeFormats newVerts[] =
 	{
 		// x,		y,			z,	  color,					    u ,v
-		{fX,            fY,                     0.0f, D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB), 0, 0},
-		{fX + w,        fY,                     0.0f, D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB), 1, 0},
-		{fX + w,        fY + h,         0.0f, D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB), 1, 1},
-		{fX,            fY + h,         0.0f, D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB), 0, 1}
+		{fX,            fY,             0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 0, 0},
+		{fX + w,        fY,             0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 1, 0},
+		{fX + w,        fY + h,         0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 1, 1},
+		{fX,            fY + h,         0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 0, 1}
 	};
 
 	// load the existing vertices
-	CustomVertex *pCurVerts;
+	/*CustomVertex*/DrawVerticeFormats *pCurVerts;
 
 	g_hResult = m_pVertexBuffer->Lock(0, 0, (byte **)&pCurVerts, 0);
 
@@ -183,7 +184,7 @@ bool CSurface::Render(int x, int y, dword w, dword h)
 		return false;
 	}
 	// copy the new verts over the old verts
-	memcpy(pCurVerts, newVerts, 4 * sizeof(CustomVertex));
+	memcpy(pCurVerts, newVerts, 4 * sizeof(DrawVerticeFormats));
 
 	m_pVertexBuffer->Unlock();
 
@@ -199,7 +200,7 @@ bool CSurface::Render(int x, int y, dword w, dword h)
 
 	// draw the quad
 	g_video.m_pD3DDevice->SetTexture(0, m_pTexture);
-	g_video.m_pD3DDevice->SetStreamSource(0, m_pVertexBuffer, sizeof(CustomVertex));
+	g_video.m_pD3DDevice->SetStreamSource(0, m_pVertexBuffer, sizeof(DrawVerticeFormats));
 	g_video.m_pD3DDevice->SetVertexShader(D3DFVF_CUSTOMVERTEX);
 	g_video.m_pD3DDevice->DrawPrimitive(D3DPT_QUADLIST, 0, 1);
 	return true;
