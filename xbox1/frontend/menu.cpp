@@ -18,7 +18,6 @@
 #include "../../xbox1/RetroLaunch/IniFile.h"
 #include "../../xbox1/RetroLaunch/IoSupport.h"
 #include "../../xbox1/RetroLaunch/Input.h"
-#include "../../xbox1/RetroLaunch/Debug.h"
 #include "../../xbox1/RetroLaunch/Font.h"
 #include "../../xbox1/RetroLaunch/MenuManager.h"
 #include "../../xbox1/RetroLaunch/RomList.h"
@@ -27,7 +26,7 @@ bool g_bExit = false;
 
 int menu_init(void)
 {
-   g_debug.Print("Starting RetroLaunch\n");
+   RARCH_LOG("Starting RetroLaunch.\n");
 
    // Set file cache size
    XSetFileCacheSize(8 * 1024 * 1024);

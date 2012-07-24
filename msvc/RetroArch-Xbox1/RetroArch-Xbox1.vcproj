@@ -358,9 +358,6 @@
 				Name="RetroLaunch"
 				Filter="">
 				<File
-					RelativePath="..\..\xbox1\RetroLaunch\Debug.cpp">
-				</File>
-				<File
 					RelativePath="..\..\xbox1\RetroLaunch\Font.cpp">
 				</File>
 				<File

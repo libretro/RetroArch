@@ -14,11 +14,11 @@
  */
 
 #include "MenuMain.h"
-#include "Debug.h"
 #include "Font.h"
 #include "RomList.h"
 #include "Input.h"
 
+#include "../../general.h"
 
 CMenuMain g_menuMain;
 
@@ -64,7 +64,7 @@ CMenuMain::~CMenuMain()
 
 bool CMenuMain::Create()
 {
-	g_debug.Print("CMenuMain::Create()");
+	RARCH_LOG("CMenuMain::Create().");
 
 	// Title coords with color
 	m_menuMainTitle_x = 305;
@@ -157,7 +157,7 @@ void CMenuMain::ProcessInput()
 			{
 				m_menuMainRomSelectPanel_y += m_menuMainRomListSpacing;
 				m_romListSelectedRom++;
-				g_debug.Print("SELECTED ROM: "); g_debug.Print("%d", m_romListSelectedRom);
+				RARCH_LOG("SELECTED ROM: %d.\n", m_romListSelectedRom);
 			}
 
 			if(m_menuMainRomSelectPanel_y > (m_menuMainRomListPos_y + (m_menuMainRomListSpacing * (m_romListEndRender))))
@@ -170,11 +170,11 @@ void CMenuMain::ProcessInput()
 				}
 
 
-				g_debug.Print("SELECTED ROM AFTER CORRECTION: "); g_debug.Print("%d", m_romListSelectedRom);
+				RARCH_LOG("SELECTED ROM AFTER CORRECTION: %d.\n", m_romListSelectedRom);
 
 				if(m_romListSelectedRom < g_romList.GetRomListSize() - 1 && m_romListOffset < g_romList.GetRomListSize() - 1 - m_romListEndRender - 1) {
 					m_romListOffset++;
-					g_debug.Print("OFFSET: "); g_debug.Print("%d", m_romListOffset);
+					RARCH_LOG("OFFSET: %d.\n", m_romListOffset);
 				}
 			}
 
@@ -192,7 +192,7 @@ void CMenuMain::ProcessInput()
 			{
 				m_menuMainRomSelectPanel_y -= m_menuMainRomListSpacing;
 				m_romListSelectedRom--;
-				g_debug.Print("SELECTED ROM: "); g_debug.Print("%d", m_romListSelectedRom);
+				RARCH_LOG("SELECTED ROM: %d.\n", m_romListSelectedRom);
 			}
 
 			if(m_menuMainRomSelectPanel_y < (m_menuMainRomListPos_y - m_menuMainRomListSpacing))
@@ -205,11 +205,11 @@ void CMenuMain::ProcessInput()
 				}
 
 
-				g_debug.Print("SELECTED ROM AFTER CORRECTION: "); g_debug.Print("%d", m_romListSelectedRom);
+				RARCH_LOG("SELECTED ROM AFTER CORRECTION: %d.\n", m_romListSelectedRom);
 
 				if(m_romListSelectedRom > 0 && m_romListOffset > 0) {
 					m_romListOffset--;
-					g_debug.Print("OFFSET: "); g_debug.Print("%d", m_romListOffset);
+					RARCH_LOG("OFFSET: %d.\n", m_romListOffset);
 				}
 			}
 		}

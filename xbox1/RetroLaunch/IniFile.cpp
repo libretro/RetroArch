@@ -16,6 +16,7 @@
 #include "SimpleIni.h"
 #include "IniFile.h"
 
+#include "../../general.h"
 
 IniFile g_iniFile;
 
@@ -46,15 +47,13 @@ bool IniFile::Save(const string &szIniFileName)
 
 	rc = ini.SaveFile(szIniFileName.c_str());
 
-	OutputDebugStringA(szIniFileName.c_str());
-
 	if (rc < 0)
 	{
-		OutputDebugStringA(" failed to save!\n");
+      RARCH_ERR("Failed to save RetroLaunch INI file: %s.\n", szIniFileName.c_str());
 		return false;
 	}
 
-	OutputDebugStringA(" saved successfully!\n");
+   RARCH_LOG("Saved RetroLaunch INI file: %s.\n", szIniFileName.c_str());
 	return true;
 }
 
@@ -70,15 +69,11 @@ bool IniFile::Load(const string &szIniFileName)
 
 	if (rc < 0)
 	{
-		OutputDebugString("Failed to load ");
-		OutputDebugString(szIniFileName.c_str());
-		OutputDebugString("\n");
+      RARCH_ERR("Failed to load RetroLaunch INI file: %s.\n", szIniFileName.c_str());
 		return false;
 	}
 
-	OutputDebugStringA("Successfully loaded ");
-	OutputDebugString(szIniFileName.c_str());
-	OutputDebugString("\n");
+   RARCH_LOG("Successfully loaded RetroLaunch INI file: %s.\n", szIniFileName.c_str());
 
 	//GENERAL SETTINGS
 	m_currentIniEntry.bShowDebugInfo = ini.GetBoolValue("GENERAL SETTINGS", "SHOW DEBUG INFO", NULL );
@@ -134,15 +129,13 @@ bool IniFile::SaveTempRomFileName(const string &szFileName)
 	DeleteFile("T:\\tmp.retro");
 	rc = ini.SaveFile("T:\\tmp.retro");
 
-	OutputDebugStringA("T:\\tmp.retro");
-
 	if (rc < 0)
 	{
-		OutputDebugStringA(" failed to save!\n");
+      RARCH_ERR("Failed to save temporary ROM file: %s.\n", "T:\\tmp.retro");
 		return false;
 	}
 
-	OutputDebugStringA(" saved successfully!\n");
+   RARCH_LOG("Successfully saved temporary ROM file %s.\n", "T:\\tmp.retro");
 	return true;
 
 }

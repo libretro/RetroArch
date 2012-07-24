@@ -15,8 +15,9 @@
 
 #include "MenuManager.h"
 #include "MenuMain.h"
-#include "Debug.h"
 #include "Input.h"
+
+#include "../../general.h"
 
 
 CMenuManager g_menuManager;
@@ -32,7 +33,7 @@ CMenuManager::~CMenuManager()
 bool CMenuManager::Create()
 {
 	//Create the MenuManager, set to Main Menu
-	g_debug.Print("Create MenuManager, set state to MENU_MAIN");
+	RARCH_LOG("Create MenuManager, set state to MENU_MAIN.\n");
 	SetMenuState(MENU_MAIN);
 
 	return true;

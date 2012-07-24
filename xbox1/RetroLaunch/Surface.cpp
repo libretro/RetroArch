@@ -16,7 +16,6 @@
  */
 
 #include "Surface.h"
-#include "Debug.h"
 
 #include "../../general.h"
 #include "../xdk_d3d8.h"
@@ -67,7 +66,7 @@ bool CSurface::Create(const string &szFilename)
 
 	if (FAILED(g_hResult))
 	{
-		g_debug.Print("Failed: D3DXCreateTextureFromFileExA()\n");
+		RARCH_ERR("Error occurred during D3DXCreateTextureFromFileExA().\n");
 		return false;
 	}
 
@@ -78,7 +77,7 @@ bool CSurface::Create(const string &szFilename)
 	                                                   D3DPOOL_MANAGED, &m_pVertexBuffer);
 	if (FAILED(g_hResult))
 	{
-		g_debug.Print("Failed: CreateVertexBuffer()\n");
+		RARCH_ERR("Error occurred during CreateVertexBuffer().\n");
 		m_pTexture->Release();
 		return false;
 	}
@@ -100,7 +99,7 @@ bool CSurface::Create(dword width, dword height)
 
 	if (FAILED(g_hResult))
 	{
-		g_debug.Print("Failed: CreateTexture()\n");
+		RARCH_ERR("Error occurred during CreateTexture().\n");
 		return false;
 	}
 
@@ -115,7 +114,7 @@ bool CSurface::Create(dword width, dword height)
 	                                                   D3DPOOL_MANAGED, &m_pVertexBuffer);
 	if (FAILED(g_hResult))
 	{
-		g_debug.Print("Failed: CreateVertexBuffer()\n");
+		RARCH_ERR("Error occurred during CreateVertexBuffer().\n");
 		m_pTexture->Release();
 		return false;
 	}
@@ -185,7 +184,7 @@ bool CSurface::Render(int x, int y, dword w, dword h)
 
 	if (FAILED(g_hResult))
 	{
-		g_debug.Print("Failed: m_pVertexBuffer->Lock()\n");
+		RARCH_ERR("Error occurred during m_pVertexBuffer->Lock().\n");
 		return false;
 	}
 	// copy the new verts over the old verts
