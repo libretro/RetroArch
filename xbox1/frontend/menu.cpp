@@ -73,4 +73,6 @@ void menu_loop(void)
       d3d->d3d_render_device->EndScene();
       d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL);
    }while(g_console.menu_enable);
+
+   g_console.ingame_menu_enable = false;
 }
