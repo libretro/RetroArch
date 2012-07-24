@@ -36,26 +36,10 @@ bool Rom::Load(const char *szFilename)
 	return true;
 }
 
-bool Rom::LoadFromCache(const string &szFilename)
-{
-	m_szFilename = szFilename;
-
-	m_bLoaded = true;
-
-	return true;
-}
-
 string Rom::GetFileName()
 {
 	return m_szFilename;
 }
-
-string Rom::GetComments()
-{
-	//return string(m_iniEntry->szComments);
-	return "blah";
-}
-
 
 CSurface &Rom::GetTexture()
 {

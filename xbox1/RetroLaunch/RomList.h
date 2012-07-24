@@ -22,10 +22,9 @@ class RomList
 {
 public:
 	RomList(void);
-	virtual ~RomList(void);
+	~RomList(void);
 
 	void Load();
-	void Save();
 	void Refresh();
 
 	bool IsLoaded();

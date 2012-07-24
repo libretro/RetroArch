@@ -47,7 +47,7 @@ bool CMenuManager::SetMenuState(int nMenuID)
       case MENU_MAIN:
          //Create the Main Menu
          g_menuMain.Create();
-	 break;
+         break;
    }
    return true;
 }
@@ -60,8 +60,8 @@ void CMenuManager::Update()
    {
       case MENU_MAIN:
          g_menuMain.ProcessInput();
-	 g_menuMain.Render();
-	 break;
+         g_menuMain.Render();
+         break;
    }
 }
 

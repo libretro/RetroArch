@@ -26,30 +26,10 @@ CMenuMain::CMenuMain()
 {
    // we think that the rom list is unloaded until we know otherwise
    m_bRomListLoadedState = false;
-
-   ifstream stateFile;
-   stateFile.open("T:\\RomlistState.dat");
-
-   if (stateFile.is_open())
-   {
-      int baseIndex;
-
-      stateFile >> baseIndex;
-
-      g_romList.m_iBaseIndex = baseIndex;
-
-      stateFile.close();
-   }
 }
 
 CMenuMain::~CMenuMain()
 {
-   ofstream stateFile;
-   stateFile.open("T:\\RomlistState.dat");
-
-   stateFile << g_romList.GetBaseIndex() << endl;
-
-   stateFile.close();
 }
 
 bool CMenuMain::Create()

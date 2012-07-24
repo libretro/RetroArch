@@ -25,10 +25,8 @@ public:
 	~Rom();
 
 	bool Load(const char *szFilename);
-	bool LoadFromCache(const string &szFilename);
 
 	string GetFileName();
-	string GetComments();
 	CSurface &GetTexture();
 private:
 	string m_szFilename;

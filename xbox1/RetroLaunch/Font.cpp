@@ -38,10 +38,7 @@ bool Font::Create()
 	if (m_pFont)
 		m_pFont->Release();
 
-   word *wcPathBuf = StringToWChar("D:\\Media\\arial.ttf");
-	HRESULT g_hResult = XFONT_OpenTrueTypeFont(wcPathBuf, 256 * 1024, &m_pFont);
-
-	delete [] wcPathBuf;
+	HRESULT g_hResult = XFONT_OpenTrueTypeFont(L"D:\\Media\\arial.ttf", 256 * 1024, &m_pFont);
 
 	if (FAILED(g_hResult))
 		return false;

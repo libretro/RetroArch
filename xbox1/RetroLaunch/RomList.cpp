@@ -36,62 +36,14 @@ RomList::~RomList(void)
 
 void RomList::Load()
 {
-	ifstream cacheFile;
-
-	cacheFile.open("T:\\RomlistCache.dat");
-
-	// try and open the cache file, if it doesnt exist, generate the rom list
-	if (!cacheFile.is_open())
-	{
-		Build();
-	}
-	else
-	{
-		while (!cacheFile.eof())
-		{
-			string szFilename;
-
-			getline(cacheFile, szFilename);
-
-			Rom *rom = new Rom();
-
-			bool bSuccess = rom->LoadFromCache(szFilename);
-
-			if (bSuccess)
-				m_romList.push_back(rom);
-			else
-				delete rom;
-		}
-
-		cacheFile.close();
-	}
+   Build();
 
 	m_bLoaded = true;
-}
-
-void RomList::Save()
-{
-	vector<Rom *>::iterator i;
-	ofstream cacheFile;
-
-	// open/overwrite the rom cache
-	cacheFile.open("T:\\RomlistCache.dat");
-
-	for (i = m_romList.begin(); i != m_romList.end(); i++)
-	{
-		Rom *rom = *i;
-
-		cacheFile << rom->GetFileName() << endl;
-	}
-
-	cacheFile.close();
 }
 
 void RomList::Refresh()
 {
 	Destroy();
-	DeleteFile("T:\\RomlistCache.dat");
-	DeleteFile("T:\\RomlistState.dat");
 }
 
 bool RomList::IsLoaded()
