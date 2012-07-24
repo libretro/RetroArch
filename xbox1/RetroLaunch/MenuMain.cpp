@@ -16,7 +16,6 @@
 #include "MenuMain.h"
 #include "Font.h"
 #include "RomList.h"
-#include "Input.h"
 
 #include "../../console/retroarch_console.h"
 #include "../../general.h"

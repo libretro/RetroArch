@@ -16,7 +16,6 @@
 
 #include "../../xbox1/RetroLaunch/Global.h"
 #include "../../xbox1/RetroLaunch/IoSupport.h"
-#include "../../xbox1/RetroLaunch/Input.h"
 #include "../../xbox1/RetroLaunch/Font.h"
 #include "../../xbox1/RetroLaunch/MenuManager.h"
 #include "../../xbox1/RetroLaunch/RomList.h"

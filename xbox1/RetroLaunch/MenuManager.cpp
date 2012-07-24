@@ -15,7 +15,6 @@
 
 #include "MenuManager.h"
 #include "MenuMain.h"
-#include "Input.h"
 
 #include "../../general.h"
 
@@ -73,21 +72,6 @@ void CMenuManager::Update()
 
 void CMenuManager::ProcessInput()
 {
-	//ADD: ProcessTarget -> switch to another menu
-
-	//Return to Dashboard
-	if(g_input.IsLTriggerPressed() &&
-	   g_input.IsRTriggerPressed() &&
-	   g_input.IsButtonPressed(XboxBlack) &&
-	   g_input.IsButtonPressed(XboxWhite) &&
-	   g_input.IsButtonPressed(XboxBack) &&
-	   g_input.IsButtonPressed(XboxStart))
-	{
-
-		LD_LAUNCH_DASHBOARD LaunchData = { XLD_LAUNCH_DASHBOARD_MAIN_MENU };
-		XLaunchNewImage( NULL, (LAUNCH_DATA*)&LaunchData );
-
-	}
 }
 
 
