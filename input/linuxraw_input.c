@@ -173,6 +173,12 @@ static void *linuxraw_input_init(void)
    if (!isatty(0))
       return NULL;
 
+   if (driver.stdin_claimed)
+   {
+      RARCH_WARN("stdin is already used for ROM loading. Cannot use stdin for input.\n");
+      return NULL;
+   }
+
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)calloc(1, sizeof(*linuxraw));
    if (!linuxraw)
       return NULL;
@@ -279,7 +285,7 @@ static void linuxraw_input_poll(void *data)
    uint8_t c;
    uint16_t t;
 
-   while (read(0, &c, 1) > 0)
+   while (read(STDIN_FILENO, &c, 1) > 0)
    {
       if (c == KEY_C && (linuxraw->state[KEY_LEFTCTRL] || linuxraw->state[KEY_RIGHTCTRL]))
          kill(getpid(), SIGINT);
@@ -289,7 +295,7 @@ static void linuxraw_input_poll(void *data)
 
       // ignore extended scancodes
       if (!c)
-         read(0, &t, 2);
+         read(STDIN_FILENO, &t, 2);
       else
          linuxraw->state[c] = pressed;
    }
