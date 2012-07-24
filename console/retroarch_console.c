@@ -515,10 +515,17 @@ void rarch_input_set_controls_default (void)
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	= platform_keys[XDK_DEVICE_ID_JOYPAD_RIGHT].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		= platform_keys[XDK_DEVICE_ID_JOYPAD_B].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		= platform_keys[XDK_DEVICE_ID_JOYPAD_Y].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		= platform_keys[XDK_DEVICE_ID_JOYPAD_LB].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		= platform_keys[XDK_DEVICE_ID_JOYPAD_RB].joykey;
+#if defined(_XBOX1)
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		= platform_keys[XDK_DEVICE_ID_JOYPAD_LEFT_TRIGGER].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		= platform_keys[XDK_DEVICE_ID_JOYPAD_RIGHT_TRIGGER].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = platform_keys[XDK_DEVICE_ID_JOYPAD_LB].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]     = platform_keys[XDK_DEVICE_ID_JOYPAD_RB].joykey;
+#elif defined(_XBOX360)
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[XDK_DEVICE_ID_JOYPAD_LB].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[XDK_DEVICE_ID_JOYPAD_RB].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = platform_keys[XDK_DEVICE_ID_JOYPAD_LEFT_TRIGGER].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]     = platform_keys[XDK_DEVICE_ID_JOYPAD_RIGHT_TRIGGER].joykey;
+#endif
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]     = platform_keys[XDK_DEVICE_ID_LSTICK_THUMB].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]     = platform_keys[XDK_DEVICE_ID_RSTICK_THUMB].joykey;
 #endif
