@@ -18,11 +18,6 @@
 #include "Global.h"
 #include "Rom.h"
 
-enum RomListMode
-{
-	All
-};
-
 class RomList
 {
 public:
@@ -34,9 +29,6 @@ public:
 	void Refresh();
 
 	bool IsLoaded();
-
-	void SetRomListMode(int mode);
-	int GetRomListMode();
 
 	void AddRomToList(Rom *rom, int mode);
 	void RemoveRomFromList(Rom *rom, int mode);
@@ -61,11 +53,7 @@ private:
 	void Destroy();
 
 private:
-	
 	bool m_bLoaded;
-
-	int m_romListMode;
-
 	string m_szRomPath;
 };
 

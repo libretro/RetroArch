@@ -14,7 +14,6 @@
  */
 
 #include "Rom.h"
-//#include "BoxArtTable.h"
 
 Rom::Rom()
 {
@@ -25,28 +24,21 @@ Rom::~Rom(void)
 {
 }
 
-bool Rom::Load(const string &szFilename)
+bool Rom::Load(const char *szFilename)
 {
 	if (m_bLoaded)
 		return true;
 
 	m_szFilename = szFilename;
 
-	// get the filename for the box art image
-	//FIXME: Add BoxArtTable.cpp/h, open iso file, grab header, extract ID ie. T-6003G, use for boxartfilename
-	{
-		m_szBoxArtFilename = "D:\\boxart\\default.jpg"; //g_boxArtTable.GetBoxArtFilename(m_dwCrc1);
-	}
-
 	m_bLoaded = true;
 
 	return true;
 }
 
-bool Rom::LoadFromCache(const string &szFilename, const string &szBoxArtFilename)
+bool Rom::LoadFromCache(const string &szFilename)
 {
 	m_szFilename = szFilename;
-	m_szBoxArtFilename = szBoxArtFilename;
 
 	m_bLoaded = true;
 
@@ -56,11 +48,6 @@ bool Rom::LoadFromCache(const string &szFilename, const string &szBoxArtFilename
 string Rom::GetFileName()
 {
 	return m_szFilename;
-}
-
-string Rom::GetBoxArtFilename()
-{
-	return m_szBoxArtFilename;
 }
 
 string Rom::GetComments()

@@ -31,42 +31,38 @@ CMenuManager::~CMenuManager()
 
 bool CMenuManager::Create()
 {
-	//Create the MenuManager, set to Main Menu
-	RARCH_LOG("Create MenuManager, set state to MENU_MAIN.\n");
-	SetMenuState(MENU_MAIN);
+   //Create the MenuManager, set to Main Menu
+   RARCH_LOG("Create MenuManager, set state to MENU_MAIN.\n");
+   SetMenuState(MENU_MAIN);
 
-	return true;
+   return true;
 }
 
 bool CMenuManager::SetMenuState(int nMenuID)
 {
-	m_pMenuID = nMenuID;
+   m_pMenuID = nMenuID;
 
-	switch (m_pMenuID) {
-	case MENU_MAIN:
-		//Create the Main Menu
-		g_menuMain.Create();
-		break;
-	}
-	return true;
+   switch (m_pMenuID)
+   {
+      case MENU_MAIN:
+         //Create the Main Menu
+         g_menuMain.Create();
+	 break;
+   }
+   return true;
 }
 
 void CMenuManager::Update()
 {
-	//Process overall input
-	ProcessInput();
+   ProcessInput();
 
-	switch (m_pMenuID) {
-	case MENU_MAIN:
-
-		// Process menu specific input
-		g_menuMain.ProcessInput();
-
-		// Render the Main Menu
-		g_menuMain.Render();
-		break;
-	}
-
+   switch (m_pMenuID)
+   {
+      case MENU_MAIN:
+         g_menuMain.ProcessInput();
+	 g_menuMain.Render();
+	 break;
+   }
 }
 
 
@@ -74,10 +70,8 @@ void CMenuManager::ProcessInput()
 {
 }
 
-
-
 int CMenuManager::GetMenuState()
 {
-	return m_pMenuID;
+   return m_pMenuID;
 }
 

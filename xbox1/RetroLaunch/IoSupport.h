@@ -38,10 +38,6 @@ public:
 	HRESULT EjectTray();
 	HRESULT CloseTray();
 	HRESULT Shutdown();
-
-	HANDLE  CreateFile();
-	BOOL	GetFirstFile(CHAR* szFilename);
-
 private:
 	DWORD m_dwTrayState;
 	DWORD m_dwTrayCount;

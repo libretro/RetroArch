@@ -27,7 +27,6 @@ enum eMenuState
 	MENU_LAUNCHER
 };
 
-
 class CMenuManager
 {
 public:

@@ -35,7 +35,6 @@ public:
 	~Font(void);
 
 	bool Create();
-	bool Create(const string &szTTFFilename);
 
 	void Render(const string &str, int x, int y, dword height, dword style = XFONT_NORMAL, D3DXCOLOR color = D3DCOLOR_XRGB(0, 0, 0), int dwMaxWidth = -1, bool fade = false, Align alignment = Left);
 	void RenderToTexture(CSurface &texture, const string &str, dword height, dword style = XFONT_NORMAL, D3DXCOLOR color = D3DCOLOR_XRGB(0, 0, 0), int maxWidth = -1, bool fade = false);
@@ -44,7 +43,6 @@ public:
 	int GetRequiredHeight(const string &str, dword height, dword style);
 
 	word *StringToWChar(const string &str);
-
 private:
 	XFONT *m_pFont;
 };

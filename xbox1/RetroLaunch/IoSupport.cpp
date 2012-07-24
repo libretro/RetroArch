@@ -1,7 +1,6 @@
 // IoSupport.cpp: implementation of the CIoSupport class.
 //
 //////////////////////////////////////////////////////////////////////
-#ifdef _XBOX
 #include "iosupport.h"
 #include "undocumented.h"
 
@@ -189,73 +188,3 @@ HRESULT CIoSupport::Shutdown()
 	HalInitiateShutdown();
 	return S_OK;
 }
-
-HANDLE CIoSupport::CreateFile()
-{
-	ANSI_STRING filename;
-	OBJECT_ATTRIBUTES attributes;
-	IO_STATUS_BLOCK status;
-	HANDLE hDevice;
-	NTSTATUS error;
-
-	RtlInitAnsiString(&filename, "\\Device\\Cdrom0");
-	InitializeObjectAttributes(&attributes, &filename, OBJ_CASE_INSENSITIVE, NULL);
-
-	if (!NT_SUCCESS(error = NtCreateFile(&hDevice, GENERIC_READ |
-	                                     SYNCHRONIZE | FILE_READ_ATTRIBUTES, &attributes, &status, NULL, 0,
-	                                     FILE_SHARE_READ, FILE_OPEN,     FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT)))
-	{
-		return NULL;
-	}
-
-	return hDevice;
-}
-
-BOOL CIoSupport::GetFirstFile(CHAR* szFilename)
-{
-	ANSI_STRING filename;
-	OBJECT_ATTRIBUTES attributes;
-	IO_STATUS_BLOCK status;
-	HANDLE hDevice;
-	NTSTATUS error;
-
-	RtlInitAnsiString(&filename, "\\Device\\Cdrom0");
-	InitializeObjectAttributes(&attributes, &filename, OBJ_CASE_INSENSITIVE, NULL);
-
-	if (!NT_SUCCESS(error = NtCreateFile(&hDevice, GENERIC_READ |
-	                                     SYNCHRONIZE | FILE_READ_ATTRIBUTES, &attributes, &status, NULL, 0,
-	                                     FILE_SHARE_READ, FILE_OPEN,     FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT)))
-	{
-		OutputDebugString("Unable to open Cdrom0.\n");
-		return FALSE;
-	}
-
-
-	CHAR* szBuffer = new CHAR[2048];
-	DWORD dwRead = 0;
-
-	SetFilePointer(hDevice, 19 * 2048, NULL, FILE_BEGIN);
-	if (!ReadFile(hDevice, szBuffer, 2048, &dwRead, NULL))
-	{
-		OutputDebugString("Unable to read ISO9660 root directory.\n");
-		CloseHandle(hDevice);
-		return FALSE;
-	}
-
-	CloseHandle(hDevice);
-	szBuffer[2047] = 0;
-
-	int offset = 0;
-	while (szBuffer[offset] == 0x22) offset += 0x22;
-	offset += 33; // jump to start of filename
-
-	strcpy(szFilename, "#");
-	strcat(szFilename, &szBuffer[offset]);
-
-	if (szBuffer)
-		delete [] szBuffer;
-
-	return TRUE;
-}
-
-#endif

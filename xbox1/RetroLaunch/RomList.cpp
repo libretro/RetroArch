@@ -24,7 +24,6 @@ bool RLessThan(Rom *elem1, Rom *elem2)
 
 RomList::RomList(void)
 {
-	m_romListMode = All;
 	m_iBaseIndex = 0;
 	m_bLoaded = false;
 	m_szRomPath = "D:\\";
@@ -51,14 +50,12 @@ void RomList::Load()
 		while (!cacheFile.eof())
 		{
 			string szFilename;
-			string szBoxArtFilename;
 
 			getline(cacheFile, szFilename);
-			getline(cacheFile, szBoxArtFilename);
 
 			Rom *rom = new Rom();
 
-			bool bSuccess = rom->LoadFromCache(szFilename, szBoxArtFilename);
+			bool bSuccess = rom->LoadFromCache(szFilename);
 
 			if (bSuccess)
 				m_romList.push_back(rom);
@@ -85,7 +82,6 @@ void RomList::Save()
 		Rom *rom = *i;
 
 		cacheFile << rom->GetFileName() << endl;
-		cacheFile << rom->GetBoxArtFilename() << endl;
 	}
 
 	cacheFile.close();
@@ -103,29 +99,11 @@ bool RomList::IsLoaded()
 	return m_bLoaded;
 }
 
-void RomList::SetRomListMode(int mode)
-{
-	m_iBaseIndex = 0;
-	m_romListMode = mode;
-}
-
-int RomList::GetRomListMode()
-{
-	return m_romListMode;
-}
-
 void RomList::AddRomToList(Rom *rom, int mode)
 {
 	vector<Rom *> *pList;
 
-	switch (mode)
-	{
-	case All:
-		pList = &m_romList;
-		break;
-	default:
-		return;
-	}
+   pList = &m_romList;
 
 	// look to see if the rom is already in the list, we dont want duplicates
 	for (int i = 0; i < static_cast<int>(pList->size()); i++)
@@ -141,15 +119,8 @@ void RomList::AddRomToList(Rom *rom, int mode)
 void RomList::RemoveRomFromList(Rom *rom, int mode)
 {
 	vector<Rom *> *pList;
-
-	switch (mode)
-	{
-	case All:
-		pList = &m_romList;
-		break;
-	default:
-		return;
-	}
+   
+   pList = &m_romList;
 
 	vector<Rom *>::iterator i;
 
@@ -186,38 +157,19 @@ void RomList::SetBaseIndex(int index)
 
 int RomList::GetRomListSize()
 {
-	switch (m_romListMode)
-	{
-	case All:
-		return m_romList.size();
-	}
-
-	return 0;
+   return m_romList.size();
 }
 
 Rom *RomList::GetRomAt(int index)
 {
-	switch (m_romListMode)
-	{
-	case All:
-		return m_romList[index];
-	}
-
-	return 0;
+   return m_romList[index];
 }
 
 int RomList::FindRom(Rom *rom, int mode)
 {
 	vector<Rom *> *pList;
-
-	switch (mode)
-	{
-	case All:
-		pList = &m_romList;
-		break;
-	default:
-		return -1;
-	}
+   
+   pList = &m_romList;
 
 	for (int i = 0; i < static_cast<int>(pList->size()); i++)
 	{

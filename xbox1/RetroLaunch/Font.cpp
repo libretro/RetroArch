@@ -34,16 +34,11 @@ Font::~Font(void)
 }
 
 bool Font::Create()
-{  //Hardcoded
-	return Create("D:\\Media\\arial.ttf");
-}
-
-bool Font::Create(const string &szTTFFilename)
 {
 	if (m_pFont)
 		m_pFont->Release();
 
-	word *wcPathBuf = StringToWChar(szTTFFilename);
+   word *wcPathBuf = StringToWChar("D:\\Media\\arial.ttf");
 	HRESULT g_hResult = XFONT_OpenTrueTypeFont(wcPathBuf, 256 * 1024, &m_pFont);
 
 	delete [] wcPathBuf;
@@ -67,13 +62,9 @@ void Font::Render(const string &str, int x, int y, dword height, dword style, D3
 		delete [] wcBuf;
 
 		if (alignment == Center)
-		{
 			x -= (dwRequiredWidth / 2);
-		}
 		else if (alignment == Right)
-		{
 			x -= dwRequiredWidth;
-		}
 	}
 
 	texture.Render(x, y);
@@ -102,13 +93,10 @@ void Font::RenderToTexture(CSurface &texture, const string &str, dword height, d
 		// because the textures are swizzled we make sure
 		// the dimensions are a power of two
 		for(dword wmask = 1; dwTextureWidth &(dwTextureWidth - 1); wmask = (wmask << 1 ) + 1)
-		{
 			dwTextureWidth = (dwTextureWidth + wmask) & ~wmask;
-		}
+
 		for(dword hmask = 1; dwTextureHeight &(dwTextureHeight - 1); hmask = (hmask << 1) + 1)
-		{
 			dwTextureHeight = ( dwTextureHeight + hmask ) & ~hmask;
-		}
 
 		// also enforce a minimum pitch of 64 bytes
 		dwTextureWidth = max(64 / XGBytesPerPixelFromFormat(D3DFMT_A8R8G8B8), dwTextureWidth);

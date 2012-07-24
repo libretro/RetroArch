@@ -24,20 +24,14 @@ public:
 	Rom();
 	~Rom();
 
-	bool Load(const string &szFilename);
-	bool LoadFromCache(const string &szFilename, const string &szBoxArtFilename);
+	bool Load(const char *szFilename);
+	bool LoadFromCache(const string &szFilename);
 
 	string GetFileName();
-	string GetBoxArtFilename();
 	string GetComments();
-
 	CSurface &GetTexture();
-	
 private:
 	string m_szFilename;
-	string m_szBoxArtFilename;
-
 	bool m_bLoaded;
-
 	CSurface m_texture;
 };

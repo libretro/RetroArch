@@ -215,13 +215,6 @@ void CSurface::SetOpacity(byte opacity)
 	m_byOpacity = opacity;
 }
 
-void CSurface::SetTint(byte r, byte g, byte b)
-{
-	m_byR = r;
-	m_byG = g;
-	m_byB = b;
-}
-
 void CSurface::MoveTo(int x, int y)
 {
 	m_x = x;

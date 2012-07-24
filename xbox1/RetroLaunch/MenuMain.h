@@ -17,12 +17,6 @@
 #include "Global.h"
 #include "Surface.h"
 
-enum DisplayMode
-{
-	Box,
-	List
-};
-
 class CMenuMain
 {
 public:
@@ -68,21 +62,6 @@ dword m_menuMainTitle_c;
 int m_menuMainRomListPos_x;
 int m_menuMainRomListPos_y;
 int m_menuMainRomListSpacing;
-
-
-
-
-/**
-* The Rom List menu buttons. The size can be variable so we use a list
-*/
-//list<MenuButton *> m_romListButtons;//list<Texture *>
-//no menu buttons, we will use plain textures
-list<CSurface *> m_romListButtons;
-
-/** 
-* The current mode the rom list is in
-*/
-int m_displayMode;
 
 /**
 * The current loaded state the rom list is in

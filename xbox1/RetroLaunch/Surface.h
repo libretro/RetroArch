@@ -43,7 +43,6 @@ public:
 	 * Set functions
 	 */
 	void SetOpacity(byte opacity);
-	void SetTint(byte r, byte g, byte b);
 
 	void MoveTo(int x, int y);
 
