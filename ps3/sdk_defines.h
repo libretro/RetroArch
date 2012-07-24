@@ -431,7 +431,7 @@
 #define cellGcmSetFlipHandler gcmSetFlipHandler
 #define cellGcmSetVBlankHandler gcmSetVBlankHandler
 #define cellGcmGetConfiguration gcmGetConfiguration
-#define cellGcmSetJumpCommand gcmSetJumpCommand
+#define cellGcmSetJumpCommand rsxSetJumpCommand
 #define cellGcmFlush rsxFlushBuffer
 #define cellGcmSetFlipMode gcmSetFlipMode
 #define cellGcmSetFlip gcmSetFlip
@@ -455,6 +455,22 @@
 #define cellVideoOutConfigure videoConfigure
 #define cellVideoOutGetState videoGetState
 #define cellVideoOutGetResolution videoGetResolution
+
+#define cellGcmSetViewportInline rsxSetViewport
+#define cellGcmSetReferenceCommandInline rsxSetReferenceCommand
+#define cellGcmSetBlendEquationInline rsxSetBlendEquation
+#define cellGcmSetWriteBackEndLabelInline rsxSetWriteBackendLabel
+#define cellGcmSetWaitLabelInline rsxSetWaitLabel
+#define cellGcmSetDepthTestEnableInline rsxSetDepthTestEnable
+#define cellGcmSetScissorInline rsxSetScissor
+#define cellGcmSetBlendEnableInline rsxSetBlendEnable
+#define cellGcmSetClearColorInline rsxSetClearColor
+#define cellGcmSetBlendFuncInline rsxSetBlendFunc
+#define cellGcmSetBlendColorInline rsxSetBlendColor
+#define cellGcmSetTextureFilterInline rsxTextureFilter
+#define cellGcmSetTextureControlInline rsxTextureControl
+#define cellGcmSetCullFaceEnableInline rsxSetCullFaceEnable
+#define cellGcmSetShadeModeInline rxSetShadeModel
 #endif
 
 #endif
