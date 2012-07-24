@@ -172,10 +172,10 @@ bool CSurface::Render(int x, int y, dword w, dword h)
 	/*CustomVertex*/DrawVerticeFormats newVerts[] =
 	{
 		// x,		y,			z,	  color,					    u ,v
-		{fX,            fY,             0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 0, 0},
-		{fX + w,        fY,             0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 1, 0},
-		{fX + w,        fY + h,         0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 1, 1},
-		{fX,            fY + h,         0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 0, 1}
+		{fX,            fY,             0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 0, 0, 0},
+		{fX + w,        fY,             0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 0, 1, 0},
+		{fX + w,        fY + h,         0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 0, 1, 1},
+		{fX,            fY + h,         0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 0, 0, 1}
 	};
 
 	// load the existing vertices

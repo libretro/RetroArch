@@ -67,23 +67,23 @@ void menu_free(void) {}
 void menu_loop(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   rarch_console_load_game("D:\\ssf2x.gba");
+   //rarch_console_load_game("D:\\ssf2x.gba");
 
    // Loop the app
-   //while (!g_bExit)
-   //{
-   //   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
-   //      D3DCOLOR_XRGB(0, 0, 0),
-   //      1.0f, 0);
-   //   
-   //   d3d->d3d_render_device->BeginScene();
-   //   d3d->d3d_render_device->SetFlickerFilter(g_iniFile.m_currentIniEntry.dwFlickerFilter);
-   //   d3d->d3d_render_device->SetSoftDisplayFilter(g_iniFile.m_currentIniEntry.bSoftDisplayFilter);
+   while (!g_bExit)
+   {
+      d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+         D3DCOLOR_XRGB(0, 0, 0),
+         1.0f, 0);
+      
+      d3d->d3d_render_device->BeginScene();
+      d3d->d3d_render_device->SetFlickerFilter(g_iniFile.m_currentIniEntry.dwFlickerFilter);
+      d3d->d3d_render_device->SetSoftDisplayFilter(g_iniFile.m_currentIniEntry.bSoftDisplayFilter);
 
-   //   //g_input.GetInput();
-   //   g_menuManager.Update();
-   //   
-   //   d3d->d3d_render_device->EndScene();
-   //   d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL);
-   //}
+      //g_input.GetInput();
+      g_menuManager.Update();
+      
+      d3d->d3d_render_device->EndScene();
+      d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL);
+   }
 }
