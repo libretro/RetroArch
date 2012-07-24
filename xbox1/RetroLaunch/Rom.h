@@ -16,7 +16,6 @@
 #pragma once
 
 #include "Global.h"
-#include "IniFile.h"
 #include "Surface.h"
 
 class Rom

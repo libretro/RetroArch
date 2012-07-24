@@ -18,6 +18,7 @@
 #include "RomList.h"
 #include "Input.h"
 
+#include "../../console/retroarch_console.h"
 #include "../../general.h"
 
 CMenuMain g_menuMain;
@@ -127,8 +128,7 @@ void CMenuMain::Render()
 	m_menuMainBG.Render(m_menuMainBG_x, m_menuMainBG_y);
 
 	//Display some text
-	//g_font.Render("Retro Arch", m_menuMainTitle_x, m_menuMainTitle_y, 20, XFONT_NORMAL, m_menuMainTitle_c);
-	g_font.Render("Press RIGHT ANALOG STICK to exit. Press START to launch a rom.", 65, 430, 16, XFONT_NORMAL, m_menuMainTitle_c);
+	g_font.Render("Press RSTICK THUMB to exit. Press START and/or A to launch a rom.", 65, 430, 16, XFONT_NORMAL, m_menuMainTitle_c);
 
 	//Begin with the rom selector panel
 	//FIXME: Width/Height needs to be current Rom texture width/height (or should we just leave it at a fixed size?)
@@ -143,13 +143,23 @@ void CMenuMain::Render()
 	}
 }
 
+static uint16_t old_input_state = 0;
 
 void CMenuMain::ProcessInput()
 {
-	//FIXME: The calculations might be wrong :-/
-	if(g_input.IsButtonPressed(XboxDPadDown) || g_input.IsButtonPressed(XboxLeftThumbDown) || g_input.IsRTriggerPressed())
-	{
+   uint16_t input_state = 0;
+   input_xinput.poll(NULL);
 
+   for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
+   {
+      input_state |= input_xinput.input_state(NULL, NULL, false,
+         RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
+   }
+
+   uint16_t trigger_state = input_state & ~old_input_state;
+
+	if(trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+	{
 		if(m_romListSelectedRom < g_romList.GetRomListSize())
 		{
 
@@ -177,14 +187,10 @@ void CMenuMain::ProcessInput()
 					RARCH_LOG("OFFSET: %d.\n", m_romListOffset);
 				}
 			}
-
-/////////////////////////////////////////////
-
 		}
 	}
 
-	// Go up and stop if less than 0 (item 0)
-	if(g_input.IsButtonPressed(XboxDPadUp) || g_input.IsButtonPressed(XboxLeftThumbUp) || g_input.IsLTriggerPressed())
+	if(trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
 	{
 		if(m_romListSelectedRom > -1)
 		{
@@ -213,26 +219,15 @@ void CMenuMain::ProcessInput()
 				}
 			}
 		}
-
-
-
 	}
 
 	// Press A to launch, selected rom filename is saved into T:\\tmp.retro
-	if(g_input.IsButtonPressed(XboxA))
+	if(trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_B) || trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 	{
-		//OutputDebugString(g_romList.GetRomAt(m_romListSelectedRom)->GetFileName().c_str());
-		//OutputDebugString("\n");
-		g_iniFile.SaveTempRomFileName(g_romList.GetRomAt(m_romListSelectedRom)->GetFileName());
-		XLaunchNewImage("D:\\core.xbe", NULL);
+      rarch_console_load_game(g_romList.GetRomAt(m_romListSelectedRom)->GetFileName().c_str());
 	}
 
-	if (g_input.IsButtonPressed(XboxStart))
-	{
-		XLaunchNewImage("D:\\core.xbe", NULL);
-	}
-
-	if (g_input.IsButtonPressed(XboxRightThumbButton))
+	if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_R3))
 	{
 		LD_LAUNCH_DASHBOARD LaunchData = { XLD_LAUNCH_DASHBOARD_MAIN_MENU };
 		XLaunchNewImage( NULL, (LAUNCH_DATA*)&LaunchData );

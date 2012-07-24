@@ -361,9 +361,6 @@
 					RelativePath="..\..\xbox1\RetroLaunch\Font.cpp">
 				</File>
 				<File
-					RelativePath="..\..\xbox1\RetroLaunch\IniFile.cpp">
-				</File>
-				<File
 					RelativePath="..\..\xbox1\RetroLaunch\Input.cpp">
 				</File>
 				<File
