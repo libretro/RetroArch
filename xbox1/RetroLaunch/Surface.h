@@ -23,13 +23,12 @@ class CSurface
 {
 public:
 	CSurface();
-	CSurface(const string &szFilename);
 	~CSurface();
 
 	/**
 	 * Do functions
 	 */
-	bool Create(const string &szFilename);
+	bool Create(const char *szFilename);
 	bool Create(dword width, dword height);
 	void Destroy();
 

@@ -42,7 +42,7 @@ bool CMenuMain::Create()
    m_menuMainTitle_c = 0xFFFFFFFF;
 
    // Load background image
-   m_menuMainBG.Create("Media\\menuMainBG.png");
+   m_menuMainBG.Create("D:\\Media\\menuMainBG.png");
    m_menuMainBG_x = 0;
    m_menuMainBG_y = 0;
    m_menuMainBG_w = 640;
@@ -54,7 +54,7 @@ bool CMenuMain::Create()
    m_menuMainRomListSpacing = 20;
 
    // Load rom selector panel
-   m_menuMainRomSelectPanel.Create("Media\\menuMainRomSelectPanel.png");
+   m_menuMainRomSelectPanel.Create("D:\\Media\\menuMainRomSelectPanel.png");
    m_menuMainRomSelectPanel_x = m_menuMainRomListPos_x - 5;
    m_menuMainRomSelectPanel_y = m_menuMainRomListPos_y - 2;
    m_menuMainRomSelectPanel_w = 440;

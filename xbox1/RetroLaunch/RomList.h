@@ -24,8 +24,8 @@ public:
 	RomList(void);
 	~RomList(void);
 
-	void Load();
 	void Refresh();
+	void Build();
 
 	bool IsLoaded();
 
@@ -38,7 +38,6 @@ public:
 	int GetRomListSize();
 
 	Rom *GetRomAt(int index);
-	int FindRom(Rom *rom, int mode);
 
 	void CleanUpTextures();
 	void DestroyAllTextures();
@@ -48,7 +47,6 @@ public:
 	vector<Rom *> m_romList;
 
 private:
-	void Build();
 	void Destroy();
 
 private:

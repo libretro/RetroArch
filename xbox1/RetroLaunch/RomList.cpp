@@ -34,13 +34,6 @@ RomList::~RomList(void)
 	Destroy();
 }
 
-void RomList::Load()
-{
-   Build();
-
-	m_bLoaded = true;
-}
-
 void RomList::Refresh()
 {
 	Destroy();
@@ -117,21 +110,6 @@ Rom *RomList::GetRomAt(int index)
    return m_romList[index];
 }
 
-int RomList::FindRom(Rom *rom, int mode)
-{
-	vector<Rom *> *pList;
-   
-   pList = &m_romList;
-
-	for (int i = 0; i < static_cast<int>(pList->size()); i++)
-	{
-		if (rom == (*pList)[i])
-			return i;
-	}
-
-	return -1;
-}
-
 void RomList::CleanUpTextures()
 {
 	if (!IsLoaded())
@@ -139,14 +117,10 @@ void RomList::CleanUpTextures()
 
 	// keep the 25 textures above and below the base index
 	for (int i = 0; i < m_iBaseIndex - 25; i++)
-	{
 		m_romList[i]->GetTexture().Destroy();
-	}
 
 	for (int i = m_iBaseIndex + 25; i < GetRomListSize(); i++)
-	{
 		m_romList[i]->GetTexture().Destroy();
-	}
 }
 
 void RomList::DestroyAllTextures()
@@ -205,9 +179,7 @@ void RomList::Destroy()
 	vector<Rom *>::iterator i;
 
 	for (i = m_romList.begin(); i != m_romList.end(); i++)
-	{
 		delete *i;
-	}
 
 	m_romList.clear();
 }

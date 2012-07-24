@@ -36,7 +36,7 @@ int menu_init(void)
 
    // Load the rom list if it isn't already loaded
    if (!g_romList.IsLoaded())
-      g_romList.Load();
+      g_romList.Build();
 
    // Load the font here
    g_font.Create();

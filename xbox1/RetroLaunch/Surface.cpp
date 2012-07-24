@@ -33,25 +33,19 @@ CSurface::CSurface()
 	m_y                     = 0;
 }
 
-CSurface::CSurface(const string &szFilename)
-{
-	CSurface();
-	Create(szFilename);
-}
-
 CSurface::~CSurface()
 {
 	Destroy();
 }
 
-bool CSurface::Create(const string &szFilename)
+bool CSurface::Create(const char *szFilename)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 	if (m_bLoaded)
 		Destroy();
 
 	HRESULT g_hResult = D3DXCreateTextureFromFileExA(d3d->d3d_render_device,                    // d3d device
-	                                         ("D:\\" +  szFilename).c_str(),          // filename
+	                                         szFilename,                              // filename
 	                                         D3DX_DEFAULT, D3DX_DEFAULT,              // width/height
 	                                         D3DX_DEFAULT,                            // mipmaps
 	                                         0,                                       // usage
