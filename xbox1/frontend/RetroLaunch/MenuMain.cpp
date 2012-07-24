@@ -115,9 +115,20 @@ void CMenuMain::ProcessInput()
    uint16_t input_state = 0;
    input_xinput.poll(NULL);
 
+   static const struct retro_keybind *binds[MAX_PLAYERS] = {
+      g_settings.input.binds[0],
+      g_settings.input.binds[1],
+      g_settings.input.binds[2],
+      g_settings.input.binds[3],
+      g_settings.input.binds[4],
+      g_settings.input.binds[5],
+      g_settings.input.binds[6],
+      g_settings.input.binds[7],
+   };
+
    for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
-      input_state |= input_xinput.input_state(NULL, NULL, false,
+      input_state |= input_xinput.input_state(NULL, binds, false,
          RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
    }
 
