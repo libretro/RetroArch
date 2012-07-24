@@ -322,6 +322,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\..\xbox1\retrolaunch.cpp">
+			</File>
+			<File
 				RelativePath="..\..\console\rzlib\rzlib.c">
 				<FileConfiguration
 					Name="Debug|Xbox">
@@ -354,31 +357,6 @@
 						CompileAs="1"/>
 				</FileConfiguration>
 			</File>
-			<Filter
-				Name="RetroLaunch"
-				Filter="">
-				<File
-					RelativePath="..\..\xbox1\RetroLaunch\Font.cpp">
-				</File>
-				<File
-					RelativePath="..\..\xbox1\RetroLaunch\IoSupport.cpp">
-				</File>
-				<File
-					RelativePath="..\..\xbox1\RetroLaunch\MenuMain.cpp">
-				</File>
-				<File
-					RelativePath="..\..\xbox1\RetroLaunch\MenuManager.cpp">
-				</File>
-				<File
-					RelativePath="..\..\xbox1\RetroLaunch\Rom.cpp">
-				</File>
-				<File
-					RelativePath="..\..\xbox1\RetroLaunch\RomList.cpp">
-				</File>
-				<File
-					RelativePath="..\..\xbox1\RetroLaunch\Surface.cpp">
-				</File>
-			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
