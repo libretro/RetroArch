@@ -28,8 +28,8 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_NETWORK_CMD
-#include "network_cmd.h"
+#ifdef HAVE_COMMAND
+#include "command.h"
 #endif
 
 #define AUDIO_CHUNK_SIZE_BLOCKING 64
@@ -198,9 +198,10 @@ typedef struct driver
    void *video_data;
    void *input_data;
 
-#ifdef HAVE_NETWORK_CMD
-   network_cmd_t *network_cmd;
+#ifdef HAVE_COMMAND
+   rarch_cmd_t *command;
 #endif
+   bool stdin_claimed;
 } driver_t;
 
 void init_drivers(void);
@@ -289,9 +290,9 @@ extern const input_driver_t input_null;
 static inline bool input_key_pressed_func(int key)
 {
    bool ret = driver.input->key_pressed(driver.input_data, key);
-#ifdef HAVE_NETWORK_CMD
-   if (!ret && driver.network_cmd)
-      ret = network_cmd_get(driver.network_cmd, key);
+#ifdef HAVE_COMMAND
+   if (!ret && driver.command)
+      ret = rarch_cmd_get(driver.command, key);
 #endif
    return ret;
 }

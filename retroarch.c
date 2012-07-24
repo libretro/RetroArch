@@ -694,6 +694,8 @@ static void verify_stdin_paths(void)
       rarch_fail(1, "verify_stdin_paths()");
    }
 #endif
+
+   driver.stdin_claimed = true;
 }
 
 static void parse_input(int argc, char *argv[])
@@ -1407,23 +1409,31 @@ static void deinit_netplay(void)
 }
 #endif
 
-#ifdef HAVE_NETWORK_CMD
-static void init_network_cmd(void)
+#ifdef HAVE_COMMAND
+static void init_command(void)
 {
-   if (!g_settings.network_cmd_enable)
+   if (!g_settings.stdin_cmd_enable && !g_settings.network_cmd_enable)
       return;
 
-   driver.network_cmd = network_cmd_new(g_settings.network_cmd_port);
-   if (!driver.network_cmd)
-      RARCH_ERR("Failed to initialize network command interface.\n");
+   if (g_settings.stdin_cmd_enable && driver.stdin_claimed)
+   {
+      RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin."
+            "Cannot use this command interface.\n");
+   }
+
+   driver.command = rarch_cmd_new(g_settings.stdin_cmd_enable && !driver.stdin_claimed,
+         g_settings.network_cmd_enable, g_settings.network_cmd_port);
+
+   if (!driver.command)
+      RARCH_ERR("Failed to initialize command interface.\n");
 }
 
-static void deinit_network_cmd(void)
+static void deinit_command(void)
 {
-   if (driver.network_cmd)
+   if (driver.command)
    {
-      network_cmd_free(driver.network_cmd);
-      driver.network_cmd = NULL;
+      rarch_cmd_free(driver.command);
+      driver.command = NULL;
    }
 }
 #endif
@@ -2460,11 +2470,12 @@ int rarch_main_init(int argc, char *argv[])
 #ifdef HAVE_NETPLAY
    init_netplay();
 #endif
-#ifdef HAVE_NETWORK_CMD
-   init_network_cmd();
-#endif
 
    init_drivers();
+
+#ifdef HAVE_COMMAND
+   init_command();
+#endif
 
 #ifdef HAVE_NETPLAY
    if (!g_extern.netplay)
@@ -2537,9 +2548,9 @@ bool rarch_main_iterate(void)
          !video_alive_func())
       return false;
 
-#ifdef HAVE_NETWORK_CMD
-   if (driver.network_cmd)
-      network_cmd_pre_frame(driver.network_cmd);
+#ifdef HAVE_COMMAND
+   if (driver.command)
+      rarch_cmd_pre_frame(driver.command);
 #endif
 
    // Checks for stuff like fullscreen, save states, etc.
@@ -2596,8 +2607,8 @@ void rarch_main_deinit(void)
 #ifdef HAVE_NETPLAY
    deinit_netplay();
 #endif
-#ifdef HAVE_NETWORK_CMD
-   deinit_network_cmd();
+#ifdef HAVE_COMMAND
+   deinit_command();
 #endif
 
 #ifdef HAVE_THREADS

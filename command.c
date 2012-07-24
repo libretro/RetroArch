@@ -13,9 +13,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "command.h"
+
+#ifdef HAVE_NETWORK_CMD
 #include "netplay_compat.h"
 #include "netplay.h"
-#include "network_cmd.h"
+#endif
+
 #include "driver.h"
 #include "general.h"
 #include "compat/strl.h"
@@ -24,10 +28,20 @@
 #include <string.h>
 
 #define DEFAULT_NETWORK_CMD_PORT 55355
+#define STDIN_BUF_SIZE 4096
 
-struct network_cmd
+struct rarch_cmd
 {
-   int fd;
+#ifdef HAVE_STDIN_CMD
+   bool stdin_enable;
+   char stdin_buf[STDIN_BUF_SIZE];
+   size_t stdin_buf_ptr;
+#endif
+
+#ifdef HAVE_NETWORK_CMD
+   int net_fd;
+#endif
+
    bool state[RARCH_BIND_LIST_END];
 };
 
@@ -41,18 +55,19 @@ static bool socket_nonblock(int fd)
 #endif
 }
 
-network_cmd_t *network_cmd_new(uint16_t port)
+rarch_cmd_t *rarch_cmd_new(bool stdin_enable, bool network_enable, uint16_t port)
 {
-   if (!netplay_init_network())
+   rarch_cmd_t *handle = (rarch_cmd_t*)calloc(1, sizeof(*handle));
+   if (!handle)
       return NULL;
 
-   network_cmd_t *handle = (network_cmd_t*)calloc(1, sizeof(*handle));
-   if (!handle)
+#ifdef HAVE_NETWORK_CMD
+   if (network_enable && !netplay_init_network())
       return NULL;
 
    RARCH_LOG("Bringing up command interface on port %hu.\n", (unsigned short)port);
 
-   handle->fd = -1;
+   handle->net_fd = -1;
 
    struct addrinfo hints, *res = NULL;
    memset(&hints, 0, sizeof(hints));
@@ -71,34 +86,49 @@ network_cmd_t *network_cmd_new(uint16_t port)
    if (getaddrinfo(NULL, port_buf, &hints, &res) < 0)
       goto error;
 
-   handle->fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-   if (handle->fd < 0)
+   handle->net_fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+   if (handle->net_fd < 0)
       goto error;
 
-   if (!socket_nonblock(handle->fd))
+   if (!socket_nonblock(handle->net_fd))
       goto error;
 
-   setsockopt(handle->fd, SOL_SOCKET, SO_REUSEADDR, CONST_CAST &yes, sizeof(int));
-   if (bind(handle->fd, res->ai_addr, res->ai_addrlen) < 0)
+   setsockopt(handle->net_fd, SOL_SOCKET, SO_REUSEADDR, CONST_CAST &yes, sizeof(int));
+   if (bind(handle->net_fd, res->ai_addr, res->ai_addrlen) < 0)
    {
       RARCH_ERR("Failed to bind socket.\n");
       goto error;
    }
+#else
+   (void)network_enable;
+   (void)port;
+#endif
+
+#if defined(HAVE_STDIN_CMD) && !defined(_WIN32)
+   if (stdin_enable && !socket_nonblock(STDIN_FILENO))
+      goto error;
+
+   handle->stdin_enable = stdin_enable;
+#else
+   (void)stdin_enable;
+#endif
 
    freeaddrinfo(res);
    return handle;
 
 error:
+#ifdef HAVE_NETWORK_CMD
    if (res)
       freeaddrinfo(res);
-   network_cmd_free(handle);
+#endif
+   rarch_cmd_free(handle);
    return NULL;
 }
 
-void network_cmd_free(network_cmd_t *handle)
+void rarch_cmd_free(rarch_cmd_t *handle)
 {
-   if (handle->fd >= 0)
-      close(handle->fd);
+   if (handle->net_fd >= 0)
+      close(handle->net_fd);
 
    free(handle);
 }
@@ -137,7 +167,7 @@ static const struct cmd_map map[] = {
    { "SLOWMOTION",             RARCH_SLOWMOTION },
 };
 
-static void parse_sub_msg(network_cmd_t *handle, const char *tok)
+static void parse_sub_msg(rarch_cmd_t *handle, const char *tok)
 {
    for (unsigned i = 0; i < sizeof(map) / sizeof(map[0]); i++)
    {
@@ -151,7 +181,7 @@ static void parse_sub_msg(network_cmd_t *handle, const char *tok)
    RARCH_WARN("Unrecognized command \"%s\" received.\n", tok);
 }
 
-static void parse_msg(network_cmd_t *handle, char *buf)
+static void parse_msg(rarch_cmd_t *handle, char *buf)
 {
    char *save;
    const char *tok = strtok_r(buf, "\n", &save);
@@ -162,36 +192,38 @@ static void parse_msg(network_cmd_t *handle, char *buf)
    }
 }
 
-void network_cmd_set(network_cmd_t *handle, unsigned id)
+void rarch_cmd_set(rarch_cmd_t *handle, unsigned id)
 {
    if (id < RARCH_BIND_LIST_END)
       handle->state[id] = true;
 }
 
-bool network_cmd_get(network_cmd_t *handle, unsigned id)
+bool rarch_cmd_get(rarch_cmd_t *handle, unsigned id)
 {
    return id < RARCH_BIND_LIST_END && handle->state[id];
 }
 
-void network_cmd_pre_frame(network_cmd_t *handle)
+#ifdef HAVE_NETWORK_CMD
+static void network_cmd_pre_frame(rarch_cmd_t *handle)
 {
-   memset(handle->state, 0, sizeof(handle->state));
+   if (handle->net_fd < 0)
+      return;
 
    fd_set fds;
    FD_ZERO(&fds);
-   FD_SET(handle->fd, &fds);
+   FD_SET(handle->net_fd, &fds);
 
    struct timeval tmp_tv = {0};
-   if (select(handle->fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
+   if (select(handle->net_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
       return;
 
-   if (!FD_ISSET(handle->fd, &fds))
+   if (!FD_ISSET(handle->net_fd, &fds))
       return;
 
    for (;;)
    {
       char buf[1024];
-      ssize_t ret = recvfrom(handle->fd, buf, sizeof(buf) - 1, 0, NULL, NULL);
+      ssize_t ret = recvfrom(handle->net_fd, buf, sizeof(buf) - 1, 0, NULL, NULL);
       if (ret <= 0)
          break;
 
@@ -199,7 +231,71 @@ void network_cmd_pre_frame(network_cmd_t *handle)
       parse_msg(handle, buf);
    }
 }
+#endif
 
+#ifdef HAVE_STDIN_CMD
+
+#ifdef _WIN32
+#else
+static size_t read_stdin(char *buf, size_t size)
+{
+   size_t has_read = 0;
+   while (size)
+   {
+      ssize_t ret = read(STDIN_FILENO, buf, size);
+
+      if (ret <= 0)
+         break;
+
+      buf      += ret;
+      has_read += ret;
+      size     -= ret;
+   }
+
+   return has_read;
+}
+#endif
+
+static void stdin_cmd_pre_frame(rarch_cmd_t *handle)
+{
+   if (!handle->stdin_enable)
+      return;
+
+   size_t ret = read_stdin(handle->stdin_buf, STDIN_BUF_SIZE - handle->stdin_buf_ptr - 1);
+   if (ret == 0)
+      return;
+
+   handle->stdin_buf_ptr += ret;
+   handle->stdin_buf[handle->stdin_buf_ptr] = '\0';
+
+   char *last_newline = strrchr(handle->stdin_buf, '\n');
+   if (!last_newline)
+      return;
+
+   *last_newline++ = '\0';
+   ptrdiff_t msg_len = last_newline - handle->stdin_buf;
+
+   parse_msg(handle, handle->stdin_buf);
+
+   memmove(handle->stdin_buf, last_newline, handle->stdin_buf_ptr - msg_len);
+   handle->stdin_buf_ptr -= msg_len;
+}
+#endif
+
+void rarch_cmd_pre_frame(rarch_cmd_t *handle)
+{
+   memset(handle->state, 0, sizeof(handle->state));
+
+#ifdef HAVE_NETWORK_CMD
+   network_cmd_pre_frame(handle);
+#endif
+
+#ifdef HAVE_STDIN_CMD
+   stdin_cmd_pre_frame(handle);
+#endif
+}
+
+#ifdef HAVE_NETWORK_CMD
 static bool send_udp_packet(const char *host, uint16_t port, const char *msg)
 {
    struct addrinfo hints, *res = NULL;
@@ -311,4 +407,6 @@ bool network_cmd_send(const char *cmd_)
    g_extern.verbose = old_verbose;
    return ret;
 }
+#endif
+
 

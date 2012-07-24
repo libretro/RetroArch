@@ -202,6 +202,7 @@ void config_set_defaults(void)
    g_settings.savestate_auto_save  = savestate_auto_save;
    g_settings.network_cmd_enable   = network_cmd_enable;
    g_settings.network_cmd_port     = network_cmd_port;
+   g_settings.stdin_cmd_enable     = stdin_cmd_enable;
 
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
@@ -473,6 +474,7 @@ bool config_load_file(const char *path)
 
    CONFIG_GET_BOOL(network_cmd_enable, "network_cmd_enable");
    CONFIG_GET_INT(network_cmd_port, "network_cmd_port");
+   CONFIG_GET_BOOL(stdin_cmd_enable, "stdin_cmd_enable");
 
    if (config_get_string(conf, "environment_variables",
             &g_extern.system.environment))

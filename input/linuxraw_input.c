@@ -223,6 +223,7 @@ static void *linuxraw_input_init(void)
    init_lut();
 
    linuxraw->sdl->use_keyboard = false;
+   driver.stdin_claimed = true; // We need to disable use of stdin command interface if stdin is supposed to be used for input.
    return linuxraw;
 }
 

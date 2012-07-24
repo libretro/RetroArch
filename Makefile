@@ -67,7 +67,11 @@ ifeq ($(HAVE_BSV_MOVIE), 1)
 endif
 
 ifeq ($(HAVE_NETPLAY), 1)
-   OBJ += netplay.o network_cmd.o
+   OBJ += netplay.o
+endif
+
+ifeq ($(HAVE_COMMAND), 1)
+   OBJ += command.o
 endif
 
 ifeq ($(HAVE_RSOUND), 1)

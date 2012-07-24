@@ -293,9 +293,10 @@ static const bool savestate_auto_save = false;
 // Slowmotion ratio.
 static const float slowmotion_ratio = 3.0;
 
-// Enable network command interface
+// Enable stdin/network command interface
 static const bool network_cmd_enable = false;
 static const uint16_t network_cmd_port = 55355;
+static const bool stdin_cmd_enable = false;
 
 
 ////////////////////

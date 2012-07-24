@@ -55,8 +55,8 @@
 #include "netplay.h"
 #endif
 
-#ifdef HAVE_NETWORK_CMD
-#include "network_cmd.h"
+#ifdef HAVE_COMMAND
+#include "command.h"
 #endif
 
 #include "audio/resampler.h"
@@ -186,6 +186,7 @@ struct settings
 
    bool network_cmd_enable;
    uint16_t network_cmd_port;
+   bool stdin_cmd_enable;
 };
 
 // Settings and/or global state that is specific to a console-style implementation.
