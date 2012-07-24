@@ -139,3 +139,16 @@ void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first
 end:
    dir_list_free(dir_list);
 }
+
+void rarch_configure_libretro(const char *path_prefix, const char * extension)
+{
+   char full_path[1024];
+   snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
+
+   bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
+   default_paths.config_file, extension);
+
+   rarch_settings_set_default();
+   rarch_config_load(default_paths.config_file, path_prefix, extension, find_libretro_file);
+   init_libretro_sym();
+}

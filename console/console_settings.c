@@ -295,3 +295,76 @@ void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t 
          break;
    }
 }
+
+void rarch_settings_set_default (void)
+{
+   // g_settings
+   g_settings.rewind_enable = false;
+   strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
+
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+   strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
+   strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
+   g_settings.video.second_pass_smooth = true;
+#endif
+
+#ifdef HAVE_FBO
+   g_settings.video.fbo_scale_x = 2.0f;
+   g_settings.video.fbo_scale_y = 2.0f;
+#endif
+
+   g_settings.video.render_to_texture = true;
+   g_settings.video.smooth = true;
+   g_settings.video.vsync = true;
+
+   strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
+
+   g_settings.video.msg_pos_x = 0.05f;
+   g_settings.video.msg_pos_y = 0.90f;
+   g_settings.video.aspect_ratio = -1.0f;
+
+   rarch_input_set_controls_default();
+
+   // g_console
+   g_console.block_config_read = true;
+   g_console.frame_advance_enable = false;
+   g_console.emulator_initialized = 0;
+   g_console.screenshots_enable = true;
+   g_console.throttle_enable = true;
+   g_console.initialize_rarch_enable = false;
+   g_console.triple_buffering_enable = true;
+   g_console.default_savestate_dir_enable = false;
+   g_console.default_sram_dir_enable = false;
+
+#ifdef HAVE_FBO
+   g_console.fbo_enabled = true;
+#else
+   g_console.fbo_enabled = false;
+#endif
+
+   g_console.mode_switch = MODE_MENU;
+   g_console.screen_orientation = ORIENTATION_NORMAL;
+   g_console.current_resolution_id = 0;
+   strlcpy(g_console.default_rom_startup_dir, default_paths.filesystem_root_dir, sizeof(g_console.default_rom_startup_dir));
+   strlcpy(g_console.default_savestate_dir, default_paths.savestate_dir, sizeof(g_console.default_savestate_dir));
+   strlcpy(g_console.default_sram_dir, default_paths.sram_dir, sizeof(g_console.default_sram_dir));
+   g_console.aspect_ratio_index = 0;
+   g_console.menu_font_size = 1.0f;
+   g_console.overscan_enable = false;
+   g_console.overscan_amount = 0.0f;
+   g_console.sound_mode = SOUND_MODE_NORMAL;
+   g_console.viewports.custom_vp.width = 0;
+   g_console.viewports.custom_vp.height = 0;
+   g_console.viewports.custom_vp.x = 0;
+   g_console.viewports.custom_vp.y = 0;
+   g_console.custom_bgm_enable = true;
+   g_console.info_msg_enable = true;
+#ifdef _XBOX360
+   g_console.color_format = 0;
+#endif
+
+   // g_extern
+   g_extern.state_slot = 0;
+   g_extern.audio_data.mute = 0;
+   g_extern.verbose = true;
+}

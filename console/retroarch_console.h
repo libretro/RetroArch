@@ -142,6 +142,8 @@ typedef struct
    char cgp_dir[PATH_MAX];
    char config_file[PATH_MAX];
    char core_dir[PATH_MAX];
+   char executable_extension[PATH_MAX];
+   char filesystem_root_dir[PATH_MAX];
    char input_presets_dir[PATH_MAX];
 #ifdef HAVE_MULTIMAN
    char multiman_self_file[PATH_MAX];

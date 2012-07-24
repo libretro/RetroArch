@@ -66,62 +66,6 @@ SYS_PROCESS_PARAM(1001, 0x200000)
 
 #undef main
 
-static void set_default_settings(void)
-{
-   // g_settings
-   strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
-   g_settings.rewind_enable = false;
-   strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
-   g_settings.video.fbo_scale_x = 2.0f;
-   g_settings.video.fbo_scale_y = 2.0f;
-   g_settings.video.render_to_texture = true;
-   strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
-   g_settings.video.second_pass_smooth = true;
-   g_settings.video.smooth = true;
-   g_settings.video.vsync = true;
-   strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
-   strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
-   g_settings.video.msg_pos_x = 0.05f;
-   g_settings.video.msg_pos_y = 0.90f;
-   g_settings.video.aspect_ratio = -1.0f;
-
-   rarch_input_set_controls_default();
-
-   // g_console
-   g_console.block_config_read = true;
-   g_console.frame_advance_enable = false;
-   g_console.emulator_initialized = 0;
-   g_console.screenshots_enable = true;
-   g_console.throttle_enable = true;
-   g_console.initialize_rarch_enable = false;
-   g_console.triple_buffering_enable = true;
-   g_console.default_savestate_dir_enable = false;
-   g_console.default_sram_dir_enable = false;
-   g_console.fbo_enabled = true;
-   g_console.mode_switch = MODE_MENU;
-   g_console.screen_orientation = ORIENTATION_NORMAL;
-   g_console.current_resolution_id = 0;
-   strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
-   strlcpy(g_console.default_savestate_dir, default_paths.savestate_dir, sizeof(g_console.default_savestate_dir));
-   strlcpy(g_console.default_sram_dir, default_paths.sram_dir, sizeof(g_console.default_sram_dir));
-   g_console.aspect_ratio_index = 0;
-   g_console.menu_font_size = 1.0f;
-   g_console.overscan_enable = false;
-   g_console.overscan_amount = 0.0f;
-   g_console.sound_mode = SOUND_MODE_NORMAL;
-   g_console.viewports.custom_vp.width = 0;
-   g_console.viewports.custom_vp.height = 0;
-   g_console.viewports.custom_vp.x = 0;
-   g_console.viewports.custom_vp.y = 0;
-   g_console.custom_bgm_enable = true;
-   g_console.info_msg_enable = true;
-
-   // g_extern
-   g_extern.state_slot = 0;
-   g_extern.audio_data.mute = 0;
-   g_extern.verbose = true;
-}
-
 #ifdef HAVE_SYSUTILS
 static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
 {
@@ -244,7 +188,9 @@ static void get_environment_settings(int argc, char *argv[])
       }
 
       snprintf(default_paths.core_dir, sizeof(default_paths.core_dir), "%s/cores", default_paths.port_dir);
+      snprintf(default_paths.executable_extension, sizeof(default_paths.executable_extension), ".SELF");
       snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.core_dir);
+      snprintf(default_paths.filesystem_root_dir, sizeof(default_paths.filesystem_root_dir), "/");
       snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.core_dir);
 
       snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.core_dir);
@@ -295,16 +241,9 @@ int main(int argc, char *argv[])
 
    config_set_defaults();
 
-   char full_path[1024], tmp_path[1024];
-   snprintf(full_path, sizeof(full_path), "%s/CORE.SELF", default_paths.core_dir);
+   char tmp_path[PATH_MAX];
    snprintf(tmp_path, sizeof(tmp_path), "%s/", default_paths.core_dir);
-
-   bool find_libretro_file = rarch_configure_libretro_core(full_path, tmp_path, default_paths.core_dir, 
-   default_paths.config_file, ".SELF");
-
-   set_default_settings();
-   rarch_config_load(default_paths.config_file, default_paths.core_dir, ".SELF", find_libretro_file);
-   init_libretro_sym();
+   rarch_configure_libretro(tmp_path, default_paths.executable_extension);
 
 #if(CELL_SDK_VERSION > 0x340000)
    if (g_console.screenshots_enable)

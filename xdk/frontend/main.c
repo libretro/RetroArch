@@ -47,50 +47,6 @@ int rarch_main(int argc, char *argv[]);
 
 #undef main
 
-static void set_default_settings (void)
-{
-   //g_settings
-   g_settings.rewind_enable = false;
-#ifdef _XBOX360
-   strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
-   strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
-#endif
-   g_settings.video.fbo_scale_x = 2.0f;
-   g_settings.video.fbo_scale_y = 2.0f;
-   g_settings.video.render_to_texture = true;
-   g_settings.video.second_pass_smooth = true;
-   g_settings.video.smooth = true;
-   g_settings.video.vsync = true;
-   strlcpy(g_settings.cheat_database, "game:", sizeof(g_settings.cheat_database));
-   g_settings.video.aspect_ratio = -1.0f;
-
-   rarch_input_set_controls_default();
-
-   //g_console
-   g_console.block_config_read = true;
-   g_console.frame_advance_enable = false;
-   g_console.emulator_initialized = 0;
-   g_console.gamma_correction_enable = true;
-   g_console.initialize_rarch_enable = false;
-   g_console.fbo_enabled = true;
-   g_console.mode_switch = MODE_MENU;
-   g_console.screen_orientation = ORIENTATION_NORMAL;
-   g_console.throttle_enable = true;
-   g_console.aspect_ratio_index = 0;
-   strlcpy(g_console.default_rom_startup_dir, "game:", sizeof(g_console.default_rom_startup_dir));
-   g_console.viewports.custom_vp.width = 0;
-   g_console.viewports.custom_vp.height = 0;
-   g_console.viewports.custom_vp.x = 0;
-   g_console.viewports.custom_vp.y = 0;
-   g_console.color_format = 0;
-   g_console.info_msg_enable = true;
-
-   //g_extern
-   g_extern.state_slot = 0;
-   g_extern.audio_data.mute = 0;
-   g_extern.verbose = true;
-}
-
 static void get_environment_settings (void)
 {
    HRESULT ret;
@@ -147,26 +103,16 @@ static void get_environment_settings (void)
    /* FIXME: Hardcoded */
    strlcpy(default_paths.config_file, "D:\\retroarch.cfg", sizeof(default_paths.config_file));
    strlcpy(g_settings.system_directory, "D:\\system\\", sizeof(g_settings.system_directory));
+   strlcpy(default_paths.filesystem_root_dir, "D:\\", sizeof(default_paths.filesystem_root_dir));
+   strlcpy(default_paths.executable_extension, ".xbe", sizeof(default_paths.executable_extension));
 #else
+   strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.shader_file, "game:\\media\\shaders\\stock.cg", sizeof(default_paths.shader_file));
    strlcpy(default_paths.config_file, "game:\\retroarch.cfg", sizeof(default_paths.config_file));
    strlcpy(g_settings.system_directory, "game:\\system\\", sizeof(g_settings.system_directory));
+   strlcpy(default_paths.executable_extension, ".xex", sizeof(default_paths.executable_extension));
 #endif
 }
-
-static void configure_libretro(const char *path_prefix, const char * extension)
-{
-   char full_path[1024];
-   snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
-
-   bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
-   default_paths.config_file, extension);
-
-   set_default_settings();
-   rarch_config_load(default_paths.config_file, path_prefix, extension, find_libretro_file);
-   init_libretro_sym();
-}
-
 
 int main(int argc, char *argv[])
 {
@@ -175,11 +121,7 @@ int main(int argc, char *argv[])
 
    config_set_defaults();
    
-#ifdef _XBOX1
-   configure_libretro("D:\\", ".xbe");
-#else
-   configure_libretro("game:\\", ".xex");
-#endif
+   rarch_configure_libretro(default_paths.filesystem_root_dir, default_paths.executable_extension);
 
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9)
    video_xdk_d3d.start();
