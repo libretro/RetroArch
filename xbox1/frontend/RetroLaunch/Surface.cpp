@@ -17,8 +17,8 @@
 
 #include "Surface.h"
 
-#include "../../general.h"
-#include "../xdk_d3d8.h"
+#include "../../../general.h"
+#include "../../xdk_d3d8.h"
 
 CSurface::CSurface()
 {

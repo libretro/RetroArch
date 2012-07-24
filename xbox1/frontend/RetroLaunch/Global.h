@@ -29,7 +29,6 @@
 #include <xtl.h>
 #include <xgraphics.h>
 
-
 using namespace std;
 
 #define XBUILD "Launcher CE"

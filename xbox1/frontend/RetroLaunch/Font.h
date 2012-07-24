@@ -14,12 +14,8 @@
  */
 
 #pragma once
-#ifdef _XBOX
 #include "Global.h"
 #include "Surface.h"
-
-#define XFONT_TRUETYPE // use true type fonts
-#include <xfont.h>
 
 enum Align
 {
@@ -48,4 +44,3 @@ private:
 };
 
 extern Font g_font;
-#endif

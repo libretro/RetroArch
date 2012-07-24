@@ -14,11 +14,10 @@
  */
 
 
-#ifdef _XBOX
 #include "Font.h"
 
-#include "../../general.h"
-#include "../xdk_d3d8.h"
+#include "../../../general.h"
+#include "../../xdk_d3d8.h"
 
 Font g_font;
 
@@ -213,4 +212,3 @@ word *Font::StringToWChar(const string &str)
 
 	return retVal;
 }
-#endif

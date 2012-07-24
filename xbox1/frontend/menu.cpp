@@ -14,11 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../xbox1/RetroLaunch/Global.h"
-#include "../../xbox1/RetroLaunch/IoSupport.h"
-#include "../../xbox1/RetroLaunch/Font.h"
-#include "../../xbox1/RetroLaunch/MenuManager.h"
-#include "../../xbox1/RetroLaunch/RomList.h"
+#include "RetroLaunch/Global.h"
+#include "RetroLaunch/IoSupport.h"
+#include "RetroLaunch/Font.h"
+#include "RetroLaunch/MenuManager.h"
+#include "RetroLaunch/RomList.h"
 
 int menu_init(void)
 {

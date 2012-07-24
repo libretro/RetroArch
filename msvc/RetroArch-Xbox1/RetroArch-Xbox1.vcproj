@@ -322,9 +322,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\xbox1\retrolaunch.cpp">
-			</File>
-			<File
 				RelativePath="..\..\console\rzlib\rzlib.c">
 				<FileConfiguration
 					Name="Debug|Xbox">

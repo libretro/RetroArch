@@ -18,6 +18,11 @@
 #define _XDK_VIDEO_H
 
 #include <stdint.h>
+
+#ifdef _XBOX1
+#define XFONT_TRUETYPE // use true type fonts
+#endif
+
 #include <xfont.h>
 
 #include "../xdk/xdk_defines.h"
