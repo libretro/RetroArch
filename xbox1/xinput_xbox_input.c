@@ -26,13 +26,11 @@
 #include "../libretro.h"
 #include "xinput_xbox_input.h"
 
-static XINPUT_STATE state[4];
 static uint64_t real_state[4];
 HANDLE gamepads[4];
 DWORD dwDeviceMask;
 bool bInserted[4];
 bool bRemoved[4];
-XINPUT_CAPABILITIES caps[4];
 
 #define DEADZONE (16000)
 
@@ -49,6 +47,8 @@ static void xinput_input_poll(void *data)
 
    for (unsigned i = 0; i < 4; i++)
    {
+      XINPUT_STATE state[4];
+      XINPUT_CAPABILITIES caps[4];
       real_state[i] = 0;
       // handle removed devices
       bRemoved[i] = (dwRemovals & (1<<i)) ? true : false;
