@@ -64,7 +64,7 @@ void menu_loop(void)
          1.0f, 0);
       
       d3d->d3d_render_device->BeginScene();
-      d3d->d3d_render_device->SetFlickerFilter(5);
+      d3d->d3d_render_device->SetFlickerFilter(1);
       d3d->d3d_render_device->SetSoftDisplayFilter(1);
 
       //g_input.GetInput();
