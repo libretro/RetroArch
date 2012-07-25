@@ -30,6 +30,40 @@ static bool pad_state[5][RARCH_FIRST_META_KEY];   /* Gamecube pads */
 static bool wpad_state[5][RARCH_FIRST_META_KEY];  /* Wii Classic pads */
 #endif
 
+const struct platform_bind platform_keys[] = {
+   { PAD_BUTTON_B, "(NGC) B button" },
+   { PAD_BUTTON_A, "(NGC) A button" },
+   { PAD_BUTTON_Y, "(NGC) Y button" },
+   { PAD_BUTTON_X, "(NGC) X button" },
+   { PAD_BUTTON_UP, "(NGC) D-Pad Up" },
+   { PAD_BUTTON_DOWN, "(NGC) D-Pad Down" },
+   { PAD_BUTTON_LEFT, "(NGC) D-Pad Left" },
+   { PAD_BUTTON_RIGHT, "(NGC) D-Pad Right" },
+   { PAD_TRIGGER_Z, "(NGC) Z trigger" },
+   { PAD_BUTTON_START, "(NGC) Start button" },
+   { PAD_TRIGGER_L, "(NGC) Left Trigger" },
+   { PAD_TRIGGER_R, "(NGC) Right Trigger" },
+#ifdef HW_RVL
+   { WPAD_CLASSIC_BUTTON_B, "(Wii Classici) B button" },
+   { WPAD_CLASSIC_BUTTON_A, "(Wii Classic) A button" },
+   { WPAD_CLASSIC_BUTTON_Y, "(Wii Classic) Y button" },
+   { WPAD_CLASSIC_BUTTON_X, "(Wii Classic) X button" },
+   { WPAD_CLASSIC_BUTTON_UP, "(Wii Classic) D-Pad Up" },
+   { WPAD_CLASSIC_BUTTON_DOWN, "(Wii Classic) D-Pad Down" },
+   { WPAD_CLASSIC_BUTTON_LEFT, "(Wii Classic) D-Pad Left" },
+   { WPAD_CLASSIC_BUTTON_RIGHT, "(Wii Classic) D-Pad Right" },
+   { WPAD_CLASSIC_BUTTON_MINUS, "(Wii Classic) Select/Minus button" },
+   { WPAD_CLASSIC_BUTTON_PLUS, "(Wii Classic) Start/Plus button" },
+   { WPAD_CLASSIC_BUTTON_HOME, "(Wii Classic) Home button" },
+   { WPAD_CLASSIC_BUTTON_FULL_L, "(Wii Classic) Left Trigger" },
+   { WPAD_CLASSIC_BUTTON_FULL_R, "(Wii Classic) Right Trigger" },
+   { WPAD_CLASSIC_BUTTON_ZL, "(Wii Classic) ZL button" },
+   { WPAD_CLASSIC_BUTTON_ZR, "(Wii Classic) ZR button" },
+#endif
+};
+
+const unsigned int platform_keys_size = sizeof(platform_keys);
+
 static bool g_quit;
 
 static int16_t wii_input_state(void *data, const struct retro_keybind **binds,

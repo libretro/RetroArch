@@ -97,6 +97,43 @@ CellMouseData ps3_mouse_input_poll_device(uint32_t id)
 
 #define MAP(x) (x & 0xFF)
 
+const struct platform_bind platform_keys[] = {
+   { CTRL_CIRCLE_MASK, "Circle button" },
+   { CTRL_CROSS_MASK, "Cross button" },
+   { CTRL_TRIANGLE_MASK, "Triangle button" },
+   { CTRL_SQUARE_MASK, "Square button" },
+   { CTRL_UP_MASK, "D-Pad Up" },
+   { CTRL_DOWN_MASK, "D-Pad Down" },
+   { CTRL_LEFT_MASK, "D-Pad Left" },
+   { CTRL_RIGHT_MASK, "D-Pad Right" },
+   { CTRL_SELECT_MASK, "Select button" },
+   { CTRL_START_MASK, "Start button" },
+   { CTRL_L1_MASK, "L1 button" },
+   { CTRL_L2_MASK, "L2 button" },
+   { CTRL_L3_MASK, "L3 button" },
+   { CTRL_R1_MASK, "R1 button" },
+   { CTRL_R2_MASK, "R2 button" },
+   { CTRL_R3_MASK, "R3 button" },
+   { CTRL_LSTICK_LEFT_MASK, "LStick Left" },
+   { CTRL_LSTICK_RIGHT_MASK, "LStick Right" },
+   { CTRL_LSTICK_UP_MASK, "LStick Up" },
+   { CTRL_LSTICK_DOWN_MASK, "LStick Down" },
+   { CTRL_LEFT_MASK | CTRL_LSTICK_LEFT_MASK, "LStick D-Pad Left" },
+   { CTRL_RIGHT_MASK | CTRL_LSTICK_RIGHT_MASK, "LStick D-Pad Right" },
+   { CTRL_UP_MASK | CTRL_LSTICK_UP_MASK, "LStick D-Pad Up" },
+   { CTRL_DOWN_MASK | CTRL_LSTICK_DOWN_MASK, "LStick D-Pad Down" },
+   { CTRL_RSTICK_LEFT_MASK, "RStick Left" },
+   { CTRL_RSTICK_RIGHT_MASK, "RStick Right" },
+   { CTRL_RSTICK_UP_MASK, "RStick Up" },
+   { CTRL_RSTICK_DOWN_MASK, "RStick Down" },
+   { CTRL_LEFT_MASK | CTRL_RSTICK_LEFT_MASK, "RStick D-Pad Left" },
+   { CTRL_RIGHT_MASK | CTRL_RSTICK_RIGHT_MASK, "RStick D-Pad Right" },
+   { CTRL_UP_MASK | CTRL_RSTICK_UP_MASK, "RStick D-Pad Up" },
+   { CTRL_DOWN_MASK | CTRL_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
+};
+
+const unsigned int platform_keys_size = sizeof(platform_keys);
+
 static uint64_t state[MAX_PADS];
 static unsigned pads_connected;
 #ifdef HAVE_MOUSE

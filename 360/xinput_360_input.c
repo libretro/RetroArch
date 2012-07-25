@@ -27,6 +27,43 @@
 static uint64_t state[4];
 static unsigned pads_connected;
 
+const struct platform_bind platform_keys[] = {
+   { XINPUT_GAMEPAD_B, "B button" },
+   { XINPUT_GAMEPAD_A, "A button" },
+   { XINPUT_GAMEPAD_Y, "Y button" },
+   { XINPUT_GAMEPAD_X, "X button" },
+   { XINPUT_GAMEPAD_DPAD_UP, "D-Pad Up" },
+   { XINPUT_GAMEPAD_DPAD_DOWN, "D-Pad Down" },
+   { XINPUT_GAMEPAD_DPAD_LEFT, "D-Pad Left" },
+   { XINPUT_GAMEPAD_DPAD_RIGHT, "D-Pad Right" },
+   { XINPUT_GAMEPAD_BACK, "Back button" },
+   { XINPUT_GAMEPAD_START, "Start button" },
+   { XINPUT_GAMEPAD_LEFT_SHOULDER, "Left Shoulder" },
+   { XINPUT_GAMEPAD_LEFT_TRIGGER, "Left Trigger" },
+   { XINPUT_GAMEPAD_LEFT_THUMB, "Left Thumb" },
+   { XINPUT_GAMEPAD_RIGHT_SHOULDER, "Right Shoulder" },
+   { XINPUT_GAMEPAD_RIGHT_TRIGGER, "Right Trigger" },
+   { XINPUT_GAMEPAD_RIGHT_THUMB, "Right Thumb" },
+   { XINPUT_GAMEPAD_LSTICK_LEFT_MASK, "LStick Left" },
+   { XINPUT_GAMEPAD_LSTICK_RIGHT_MASK, "LStick Right" },
+   { XINPUT_GAMEPAD_LSTICK_UP_MASK, "LStick Up" },
+   { XINPUT_GAMEPAD_LSTICK_DOWN_MASK, "LStick Down" },
+   { XINPUT_GAMEPAD_DPAD_LEFT | XINPUT_GAMEPAD_LSTICK_LEFT_MASK, "LStick D-Pad Left" },
+   { XINPUT_GAMEPAD_DPAD_RIGHT | XINPUT_GAMEPAD_LSTICK_RIGHT_MASK, "LStick D-Pad Right" },
+   { XINPUT_GAMEPAD_DPAD_UP | XINPUT_GAMEPAD_LSTICK_UP_MASK, "LStick D-Pad Up" },
+   { XINPUT_GAMEPAD_DPAD_DOWN | XINPUT_GAMEPAD_LSTICK_DOWN_MASK, "LStick D-Pad Down" },
+   { XINPUT_GAMEPAD_RSTICK_LEFT_MASK, "RStick Left" },
+   { XINPUT_GAMEPAD_RSTICK_RIGHT_MASK, "RStick Right" },
+   { XINPUT_GAMEPAD_RSTICK_UP_MASK, "RStick Up" },
+   { XINPUT_GAMEPAD_RSTICK_DOWN_MASK, "RStick Down" },
+   { XINPUT_GAMEPAD_DPAD_LEFT | XINPUT_GAMEPAD_RSTICK_LEFT_MASK, "RStick D-Pad Left" },
+   { XINPUT_GAMEPAD_DPAD_RIGHT | XINPUT_GAMEPAD_RSTICK_RIGHT_MASK, "RStick D-Pad Right" },
+   { XINPUT_GAMEPAD_DPAD_UP | XINPUT_GAMEPAD_RSTICK_UP_MASK, "RStick D-Pad Up" },
+   { XINPUT_GAMEPAD_DPAD_DOWN | XINPUT_GAMEPAD_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
+};
+
+const unsigned int platform_keys_size = sizeof(platform_keys);
+
 static void xinput_input_poll(void *data)
 {
    (void)data;

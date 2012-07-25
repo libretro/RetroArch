@@ -171,27 +171,6 @@ const char *rarch_console_get_rom_ext(void);
 void rarch_console_name_from_id(char *name, size_t size);
 
 /*============================================================
-	INPUT EXTENSIONS
-============================================================ */
-
-#ifdef HAVE_DEFAULT_RETROPAD_INPUT
-const char *rarch_input_find_platform_key_label(uint64_t joykey);
-uint64_t rarch_input_find_previous_platform_key(uint64_t joykey);
-uint64_t rarch_input_find_next_platform_key(uint64_t joykey);
-
-// Sets custom default keybind names (some systems emulated by the emulator
-// will need different keybind names for buttons, etc.)
-void rarch_input_set_default_keybind_names_for_emulator(void);
-void rarch_input_set_default_keybinds(unsigned player);
-
-void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
-
-void rarch_input_set_controls_default (void);
-const char *rarch_input_get_default_keybind_name (unsigned id);
-#endif
-
-
-/*============================================================
   RetroArch
   ============================================================ */
 
