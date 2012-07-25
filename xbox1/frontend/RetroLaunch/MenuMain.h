@@ -73,6 +73,10 @@ int m_romListEndRender;
 int m_romListSelectedRom;
 int m_romListOffset;
 
+// Backbuffer width, height
+int width; 
+int height;
+
 };
 
 extern CMenuMain g_menuMain;

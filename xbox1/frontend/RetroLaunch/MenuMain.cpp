@@ -36,21 +36,38 @@ bool CMenuMain::Create()
 {
    RARCH_LOG("CMenuMain::Create().");
 
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   
+   width  = d3d->d3dpp.BackBufferWidth;
+   //height = d3d->d3dpp.BackBufferHeight;
+
    // Title coords with color
    m_menuMainTitle_x = 305;
    m_menuMainTitle_y = 30;
    m_menuMainTitle_c = 0xFFFFFFFF;
 
-   // Load background image
-   m_menuMainBG.Create("D:\\Media\\menuMainBG.png");
    m_menuMainBG_x = 0;
    m_menuMainBG_y = 0;
-   m_menuMainBG_w = 640;
-   m_menuMainBG_h = 480;
+   //m_menuMainBG_w = width;
+   //m_menuMainBG_h = height;
 
+   // Quick hack to properly center the romlist in 720p, 
+   // it might need more work though (font size and rom selector size -> needs more memory)
    // Init rom list coords
-   m_menuMainRomListPos_x = 100;
-   m_menuMainRomListPos_y = 100;
+   // Load background image
+   if(width == 640)
+   {
+      m_menuMainBG.Create("D:\\Media\\menuMainBG.png");
+      m_menuMainRomListPos_x = 100;
+      m_menuMainRomListPos_y = 100;
+   }
+   else if(width == 1280)
+   {
+      m_menuMainBG.Create("D:\\Media\\menuMainBG_720p.png");
+      m_menuMainRomListPos_x = 400;
+      m_menuMainRomListPos_y = 150;
+   }
+
    m_menuMainRomListSpacing = 20;
 
    // Load rom selector panel
@@ -93,7 +110,11 @@ void CMenuMain::Render()
    m_menuMainBG.Render(m_menuMainBG_x, m_menuMainBG_y);
 
    //Display some text
-   g_font.Render("Press RSTICK THUMB to exit. Press START and/or A to launch a rom.", 65, 430, 16, XFONT_NORMAL, m_menuMainTitle_c);
+   //Center the text (hardcoded)
+   int xpos = width == 640 ? 65 : 400;
+   int ypos = width == 640 ? 430 : 670;
+
+   g_font.Render("Press RSTICK THUMB to exit. Press START and/or A to launch a rom.", xpos, ypos, 16, XFONT_NORMAL, m_menuMainTitle_c);
 
    //Begin with the rom selector panel
    //FIXME: Width/Height needs to be current Rom texture width/height (or should we just leave it at a fixed size?)
