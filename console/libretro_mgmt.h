@@ -18,6 +18,7 @@
 #define LIBRETRO_MGMT_H__
 
 #include "../boolean.h"
+#include "../driver.h"
 
 enum
 {
@@ -30,6 +31,6 @@ enum
 void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext);
 bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
  const char *libretro_path, const char *config_path, const char *extension);
-void rarch_configure_libretro(const char *path_prefix, const char * extension);
+void rarch_configure_libretro(const input_driver_t *input, const char *path_prefix, const char * extension);
 
 #endif

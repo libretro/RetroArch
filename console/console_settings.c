@@ -296,7 +296,7 @@ void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t 
    }
 }
 
-void rarch_settings_set_default (void)
+void rarch_settings_set_default (const input_driver_t *input)
 {
    // g_settings
    g_settings.rewind_enable = false;
@@ -323,7 +323,7 @@ void rarch_settings_set_default (void)
    g_settings.video.msg_pos_y = 0.90f;
    g_settings.video.aspect_ratio = -1.0f;
 
-   rarch_input_set_controls_default();
+   rarch_input_set_controls_default(input);
 
    // g_console
    g_console.block_config_read = true;

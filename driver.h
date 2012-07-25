@@ -159,6 +159,9 @@ typedef struct input_driver
    int16_t (*input_state)(void *data, const struct retro_keybind **retro_keybinds, unsigned port, unsigned device, unsigned index, unsigned id);
    bool (*key_pressed)(void *data, int key);
    void (*free)(void *data);
+#ifdef RARCH_CONSOLE
+   void (*set_default_keybind_lut)(void);
+#endif
    const char *ident;
 } input_driver_t;
 

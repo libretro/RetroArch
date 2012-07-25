@@ -121,14 +121,14 @@ int main(int argc, char *argv[])
 
    config_set_defaults();
    
-   rarch_configure_libretro(default_paths.filesystem_root_dir, default_paths.executable_extension);
+   input_xinput.init();
+   rarch_configure_libretro(&input_xinput, default_paths.filesystem_root_dir, default_paths.executable_extension);
 
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9)
    video_xdk_d3d.start();
 #else
    video_null.start();
 #endif
-   input_xinput.init();
 
    rarch_input_set_default_keybind_names_for_emulator();
 

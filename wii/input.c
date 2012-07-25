@@ -188,12 +188,16 @@ static bool wii_key_pressed(void *data, int key)
    }
 }
 
+static void wii_set_default_keybind_lut(void)
+{
+}
+
 const input_driver_t input_wii = {
    .init = wii_input_initialize,
    .poll = wii_input_poll,
    .input_state = wii_input_state,
    .key_pressed = wii_key_pressed,
    .free = wii_free_input,
+   .set_default_keybind_lut = wii_set_default_keybind_lut,
    .ident = "wii",
 };
-

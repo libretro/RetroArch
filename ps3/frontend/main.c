@@ -240,10 +240,11 @@ int main(int argc, char *argv[])
    get_environment_settings(argc, argv);
 
    config_set_defaults();
+   input_ps3.init();
 
    char tmp_path[PATH_MAX];
    snprintf(tmp_path, sizeof(tmp_path), "%s/", default_paths.core_dir);
-   rarch_configure_libretro(tmp_path, default_paths.executable_extension);
+   rarch_configure_libretro(&input_ps3, tmp_path, default_paths.executable_extension);
 
 #if(CELL_SDK_VERSION > 0x340000)
    if (g_console.screenshots_enable)
@@ -268,7 +269,6 @@ int main(int argc, char *argv[])
 
    video_gl.start();
 
-   input_ps3.init();
 
 #ifdef HAVE_OSKUTIL
    oskutil_init(&g_console.oskutil_handle, 0);

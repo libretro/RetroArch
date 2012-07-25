@@ -140,7 +140,7 @@ end:
    dir_list_free(dir_list);
 }
 
-void rarch_configure_libretro(const char *path_prefix, const char * extension)
+void rarch_configure_libretro(const input_driver_t *input, const char *path_prefix, const char * extension)
 {
    char full_path[1024];
    snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
@@ -148,7 +148,7 @@ void rarch_configure_libretro(const char *path_prefix, const char * extension)
    bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
    default_paths.config_file, extension);
 
-   rarch_settings_set_default();
+   rarch_settings_set_default(input);
    rarch_config_load(default_paths.config_file, path_prefix, extension, find_libretro_file);
    init_libretro_sym();
 }
