@@ -22,6 +22,11 @@
 CONSOLE EXTENSIONS
 ============================================================ */
 #include "../retroarch_console.c"
+
+#ifdef HAVE_ZLIB
+#include "../retroarch_rzlib.c"
+#endif
+
 #include "../console_settings.c"
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT

@@ -170,10 +170,6 @@ const char *rarch_console_get_rom_ext(void);
 // Transforms a library id to a name suitable as a pathname.
 void rarch_console_name_from_id(char *name, size_t size);
 
-#ifdef HAVE_ZLIB
-int rarch_extract_zipfile(const char *zip_path);
-#endif
-
 /*============================================================
 	INPUT EXTENSIONS
 ============================================================ */

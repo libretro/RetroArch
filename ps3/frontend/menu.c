@@ -28,6 +28,10 @@
 
 #include "../../console/retroarch_console.h"
 
+#ifdef HAVE_ZLIB
+#include "../../console/retroarch_rzlib.h"
+#endif
+
 #include "../../gfx/gl_common.h"
 #include "../../gfx/gl_font.h"
 #include "../../gfx/gfx_context.h"
