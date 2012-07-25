@@ -17,6 +17,10 @@
 #include <stdint.h>
 #include <ctype.h>
 
+#ifdef _WIN32
+#include "../compat/posix_string.h"
+#endif
+
 #include "../general.h"
 
 #include "console_settings.h"

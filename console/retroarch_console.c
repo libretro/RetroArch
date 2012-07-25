@@ -26,10 +26,6 @@
 #include "retroarch_console.h"
 #include "../file.h"
 
-#ifdef _WIN32
-#include "../compat/posix_string.h"
-#endif
-
 #define MAX_ARGS 32
 
 default_paths_t default_paths;

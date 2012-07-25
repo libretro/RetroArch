@@ -86,6 +86,7 @@ static void xinput_input_poll(void *data)
    {
       XINPUT_STATE state[4];
       XINPUT_CAPABILITIES caps[4];
+      (void)caps;
       real_state[i] = 0;
       // handle removed devices
       bRemoved[i] = (dwRemovals & (1<<i)) ? true : false;
