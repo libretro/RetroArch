@@ -301,7 +301,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
             RARCH_SCALE_BASE * video->input_scale, 15,
             fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
    }
-   RARCH_LOG("[Debug]: SDL Pixel format: Rshift = %u, Gshift = %u, Bshift = %u\n", 
+   RARCH_LOG("[Debug]: SDL Pixel format: Rshift = %u, Gshift = %u, Bshift = %u\n",
          (unsigned)fmt->Rshift, (unsigned)fmt->Gshift, (unsigned)fmt->Bshift);
 
    if (!vid->buffer)
@@ -491,7 +491,7 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width, unsigne
    // 32-bit -> 32-bit
    else
       vid->convert_32_func((uint32_t*)vid->buffer->pixels, vid->buffer->pitch, (const uint32_t*)frame, width, height, pitch, vid->screen->format);
-   
+
    if (SDL_MUSTLOCK(vid->buffer))
       SDL_UnlockSurface(vid->buffer);
 

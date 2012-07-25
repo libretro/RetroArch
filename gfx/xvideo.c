@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -109,7 +109,7 @@ static void init_yuv_tables(xv_t *xv)
    xv->utable = (uint8_t*)malloc(0x8000);
    xv->vtable = (uint8_t*)malloc(0x8000);
 
-   for (unsigned i = 0; i < 0x8000; i++) 
+   for (unsigned i = 0; i < 0x8000; i++)
    {
       // Extract RGB555 color data from i
       unsigned r = (i >> 10) & 0x1F, g = (i >> 5) & 0x1F, b = (i) & 0x1F;
@@ -212,14 +212,14 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
 }
 
 // We render @ 2x scale to combat chroma downsampling. Also makes fonts more bearable :)
-static void render16_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
+static void render16_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch)
 {
    const uint16_t *input = (const uint16_t*)input_;
    uint8_t *output = (uint8_t*)xv->image->data;
 
-   for (unsigned y = 0; y < height; y++) 
+   for (unsigned y = 0; y < height; y++)
    {
-      for (unsigned x = 0; x < width; x++) 
+      for (unsigned x = 0; x < width; x++)
       {
          uint16_t p = *input++;
 
@@ -240,14 +240,14 @@ static void render16_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned
    }
 }
 
-static void render16_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
+static void render16_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch)
 {
    const uint16_t *input = (const uint16_t*)input_;
    uint8_t *output = (uint8_t*)xv->image->data;
 
-   for (unsigned y = 0; y < height; y++) 
+   for (unsigned y = 0; y < height; y++)
    {
-      for (unsigned x = 0; x < width; x++) 
+      for (unsigned x = 0; x < width; x++)
       {
          uint16_t p = *input++;
 
@@ -268,7 +268,7 @@ static void render16_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned
    }
 }
 
-static void render32_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
+static void render32_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch)
 {
    const uint32_t *input = (const uint32_t*)input_;
    uint8_t *output = (uint8_t*)xv->image->data;
@@ -297,12 +297,12 @@ static void render32_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned
    }
 }
 
-static void render32_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch) 
+static void render32_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch)
 {
    const uint32_t *input = (const uint32_t*)input_;
    uint16_t *output = (uint16_t*)xv->image->data;
 
-   for (unsigned y = 0; y < height; y++) 
+   for (unsigned y = 0; y < height; y++)
    {
       for (unsigned x = 0; x < width; x++)
       {
@@ -364,16 +364,16 @@ static bool adaptor_set_format(xv_t *xv, Display *dpy, XvPortID port, const vide
    if (!format)
       return false;
 
-   for (int i = 0; i < format_count; i++) 
+   for (int i = 0; i < format_count; i++)
    {
       for (unsigned j = 0; j < sizeof(formats) / sizeof(formats[0]); j++)
       {
-         if (format[i].type == XvYUV && format[i].bits_per_pixel == 16 && format[i].format == XvPacked) 
+         if (format[i].type == XvYUV && format[i].bits_per_pixel == 16 && format[i].format == XvPacked)
          {
             if (format[i].component_order[0] == formats[j].components[0] &&
                   format[i].component_order[1] == formats[j].components[1] &&
                   format[i].component_order[2] == formats[j].components[2] &&
-                  format[i].component_order[3] == formats[j].components[3]) 
+                  format[i].component_order[3] == formats[j].components[3])
             {
                xv->fourcc = format[i].id;
                xv->render_func = video->rgb32 ? formats[j].render_32 : formats[j].render_16;
@@ -426,7 +426,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    xv->port = 0;
    XvAdaptorInfo *adaptor_info;
    XvQueryAdaptors(xv->display, DefaultRootWindow(xv->display), &adaptor_count, &adaptor_info);
-   for (unsigned i = 0; i < adaptor_count; i++) 
+   for (unsigned i = 0; i < adaptor_count; i++)
    {
       // Find adaptor that supports both input (memory->drawable) and image (drawable->screen) masks.
       if (adaptor_info[i].num_formats < 1) continue;
@@ -443,7 +443,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    }
    XvFreeAdaptorInfo(adaptor_info);
 
-   if (xv->port == 0) 
+   if (xv->port == 0)
    {
       RARCH_ERR("XVideo: Failed to find valid XvPort or format.\n");
       goto error;
@@ -454,7 +454,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    visualtemplate.depth    = xv->depth;
    visualtemplate.visual   = 0;
    visualinfo = XGetVisualInfo(xv->display, VisualIDMask | VisualScreenMask | VisualDepthMask, &visualtemplate, &visualmatches);
-   if (visualmatches < 1 || !visualinfo->visual) 
+   if (visualmatches < 1 || !visualinfo->visual)
    {
       if (visualinfo) XFree(visualinfo);
       RARCH_ERR("XVideo: Unable to find Xv-compatible visual.\n");
@@ -495,7 +495,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    xv->height = geom->max_height;
 
    xv->image = XvShmCreateImage(xv->display, xv->port, xv->fourcc, NULL, xv->width, xv->height, &xv->shminfo);
-   if (!xv->image) 
+   if (!xv->image)
    {
       RARCH_ERR("XVideo: XShmCreateImage failed.\n");
       goto error;
@@ -506,7 +506,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    xv->shminfo.shmid = shmget(IPC_PRIVATE, xv->image->data_size, IPC_CREAT | 0777);
    xv->shminfo.shmaddr = xv->image->data = (char*)shmat(xv->shminfo.shmid, NULL, 0);
    xv->shminfo.readOnly = false;
-   if (!XShmAttach(xv->display, &xv->shminfo)) 
+   if (!XShmAttach(xv->display, &xv->shminfo))
    {
       RARCH_ERR("XVideo: XShmAttach failed.\n");
       goto error;
@@ -579,7 +579,7 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
 
       xv->shminfo.shmaddr = xv->image->data = (char*)shmat(xv->shminfo.shmid, NULL, 0);
       xv->shminfo.readOnly = false;
-      
+
       if (!XShmAttach(xv->display, &xv->shminfo))
       {
          RARCH_ERR("Failed to reattch XvShm image.\n");
@@ -602,7 +602,7 @@ static void calc_out_rect(bool keep_aspect, unsigned *x, unsigned *y, unsigned *
       float desired_aspect = g_settings.video.aspect_ratio;
       float device_aspect = (float)vp_width / vp_height;
 
-      // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
+      // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff),
       // assume they are actually equal.
       if (fabs(device_aspect - desired_aspect) < 0.0001)
       {
@@ -741,7 +741,7 @@ static bool xv_alive(void *data)
       XNextEvent(xv->display, &event);
       switch (event.type)
       {
-         case ClientMessage: 
+         case ClientMessage:
             if ((Atom)event.xclient.data.l[0] == xv->quit_atom)
                return false;
             break;
@@ -776,9 +776,9 @@ static void xv_free(void *data)
    shmctl(xv->shminfo.shmid, IPC_RMID, NULL);
    XFree(xv->image);
 
-   if (xv->window) 
+   if (xv->window)
       XUnmapWindow(xv->display, xv->window);
-   if (xv->colormap) 
+   if (xv->colormap)
       XFreeColormap(xv->display, xv->colormap);
 
    XCloseDisplay(xv->display);
