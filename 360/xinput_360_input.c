@@ -17,9 +17,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#ifdef _XBOX
 #include <xtl.h>
-#endif
 
 #include "../driver.h"
 #include "../general.h"
@@ -73,7 +71,6 @@ static void xinput_input_free_input(void *data)
    (void)data;
 }
 
-#ifdef _XBOX360
 #include "../console/retroarch_console.h"
 
 void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
@@ -100,14 +97,11 @@ void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_
 	 break;
    }
 }
-#endif
 
 static void* xinput_input_init(void)
 {
-#ifdef _XBOX360
    for(unsigned i = 0; i < 4; i++)
       xdk360_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
-#endif
 
    return (void*)-1;
 }
@@ -116,7 +110,6 @@ static bool xinput_input_key_pressed(void *data, int key)
 {
    (void)data;
    bool retval = false;
-#ifdef _XBOX360
    XINPUT_STATE state;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
@@ -163,7 +156,6 @@ static bool xinput_input_key_pressed(void *data, int key)
 	    retval = g_console.ingame_menu_enable ? g_console.ingame_menu_enable : g_console.menu_enable;
 	 }
    }
-#endif
 
    return retval;
 }

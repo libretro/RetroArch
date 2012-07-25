@@ -32,8 +32,6 @@ enum {
 
 #define DEADZONE                            (16000)
 
-#ifdef _XBOX
 extern void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id);
-#endif
 
 #endif
