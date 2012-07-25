@@ -33,6 +33,12 @@
 #endif
 #endif
 
+#if IS_LINUX
+#include <unistd.h>
+#include <errno.h>
+#include <sys/wait.h>
+#endif
+
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__) || defined(_MSC_VER)
 static int gettimeofday(struct timeval *val, void *dummy)
 {
@@ -106,6 +112,37 @@ bool gfx_window_title(char *buf, size_t size)
    gl_frames++;
    return ret;
 }
+
+#ifdef IS_LINUX
+void suspend_screensaver(Window wnd) {
+    char wid[20];
+    snprintf(wid, 20, "%d", (int) wnd);
+    wid[19] = '\0';
+    char* args[4];
+    args[0] = "xdg-screensaver";
+    args[1] = "suspend";
+    args[2] = wid;
+    args[3] = NULL;
+
+    int cpid = fork();
+    if (cpid < 0) {
+        RARCH_WARN("Could not suspend screen saver: %s\n", strerror(errno));
+        return;
+    }
+
+    if (!cpid) {
+        execvp(args[0], args);
+        exit(errno);
+    }
+
+    int err = 0;
+    waitpid(cpid, &err, 0);
+    if (err) {
+        RARCH_WARN("Could not suspend screen saver: %s\n", strerror(err));
+    }
+}
+#endif
+
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
