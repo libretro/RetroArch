@@ -187,6 +187,9 @@ static void get_environment_settings(int argc, char *argv[])
 	 RARCH_LOG("usrDirPath : [%s].\n", default_paths.port_dir);
       }
 
+#ifdef HAVE_HDD_CACHE_PARTITION
+      snprintf(default_paths.cache_dir, sizeof(default_paths.cache_dir), "/dev_hdd1/");
+#endif
       snprintf(default_paths.core_dir, sizeof(default_paths.core_dir), "%s/cores", default_paths.port_dir);
       snprintf(default_paths.executable_extension, sizeof(default_paths.executable_extension), ".SELF");
       snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.core_dir);

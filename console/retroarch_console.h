@@ -139,6 +139,9 @@ typedef struct
    char menu_border_file[PATH_MAX];
    char border_file[PATH_MAX];
    char border_dir[PATH_MAX];
+#ifdef HAVE_HDD_CACHE_PARTITION
+   char cache_dir[PATH_MAX];
+#endif
    char cgp_dir[PATH_MAX];
    char config_file[PATH_MAX];
    char core_dir[PATH_MAX];

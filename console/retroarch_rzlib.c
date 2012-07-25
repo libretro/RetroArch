@@ -49,13 +49,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf)
    char write_filename[PATH_MAX];
 
 #ifdef HAVE_HDD_CACHE_PARTITION
-
-#if defined(__CELLOS_LV2__)
-   snprintf(write_filename, sizeof(write_filename), "/dev_hdd1/%s", filename_inzip);
-#elif defined(_XBOX)
-   snprintf(write_filename, sizeof(write_filename), "cache:\\%s", filename_inzip);
-#endif
-
+   snprintf(write_filename, sizeof(write_filename), "%s%s", default_paths.cache_dir, filename_inzip);
 #endif
 
    err = unzOpenCurrentFile(uf);
