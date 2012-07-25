@@ -29,13 +29,6 @@ enum keybind_set_id
 
 enum
 {
-   MODE_EMULATION = 0,
-   MODE_MENU,
-   MODE_EXIT
-};
-
-enum
-{
    DPAD_EMULATION_NONE = 0,
    DPAD_EMULATION_LSTICK,
    DPAD_EMULATION_RSTICK

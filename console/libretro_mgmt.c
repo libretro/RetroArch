@@ -65,7 +65,7 @@ static bool rarch_manage_libretro_install(char *libretro_core_installed, size_t 
    return ret;
 }
 
-bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
+static bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
  const char *libretro_path, const char *config_path, const char *extension)
 {
    bool libretro_core_was_installed = false;

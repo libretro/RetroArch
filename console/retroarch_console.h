@@ -114,12 +114,6 @@ extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 extern void rarch_set_auto_viewport(unsigned width, unsigned height);
 extern void rarch_load_shader(unsigned slot, const char *path);
 
-#include "retroarch_console_input.h"
-
-/*============================================================
-	SOUND
-============================================================ */
-
 enum
 {
    SOUND_MODE_NORMAL,
@@ -131,9 +125,6 @@ enum
 #endif
 };
 
-/*============================================================
-	ROM EXTENSIONS
-============================================================ */
 typedef struct
 {
    char menu_border_file[PATH_MAX];
@@ -163,15 +154,6 @@ typedef struct
 } default_paths_t;
 
 extern default_paths_t default_paths;
-
-void rarch_console_load_game(const char *path);
-
-// Get rom extensions for current library.
-// Returns NULL if library doesn't have any preferences in particular.
-const char *rarch_console_get_rom_ext(void);
-
-// Transforms a library id to a name suitable as a pathname.
-void rarch_console_name_from_id(char *name, size_t size);
 
 /*============================================================
   RetroArch
@@ -230,13 +212,9 @@ const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr);
 
 enum
 {
-   CONFIG_FILE,
-   SHADER_PRESET_FILE,
-   INPUT_PRESET_FILE
+   MODE_EMULATION = 0,
+   MODE_MENU,
+   MODE_EXIT
 };
-
-void rarch_config_create_default(const char * conf_name);
-void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool find_libretro_path);
-void rarch_config_save(const char * conf_name);
 
 #endif

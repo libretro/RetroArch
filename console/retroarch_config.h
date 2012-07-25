@@ -14,21 +14,18 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBRETRO_MGMT_H__
-#define LIBRETRO_MGMT_H__
-
-#include "../boolean.h"
-#include "../driver.h"
+#ifndef _RARCH_CONSOLE_CONFIG_H
+#define _RARCH_CONSOLE_CONFIG_H
 
 enum
 {
-   EXTERN_LAUNCHER_SALAMANDER,
-#ifdef HAVE_MULTIMAN
-   EXTERN_LAUNCHER_MULTIMAN
-#endif
+   CONFIG_FILE,
+   SHADER_PRESET_FILE,
+   INPUT_PRESET_FILE
 };
 
-void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext);
-void rarch_configure_libretro(const input_driver_t *input, const char *path_prefix, const char * extension);
+void rarch_config_create_default(const char * conf_name);
+void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool find_libretro_path);
+void rarch_config_save(const char * conf_name);
 
 #endif

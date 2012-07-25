@@ -27,6 +27,9 @@
 #include "../../console/fileio/file_browser.h"
 
 #include "../../console/retroarch_console.h"
+#include "../../console/retroarch_rom_ext.h"
+#include "../../console/retroarch_console_input.h"
+#include "../../console/retroarch_config.h"
 
 #ifdef HAVE_ZLIB
 #include "../../console/retroarch_rzlib.h"

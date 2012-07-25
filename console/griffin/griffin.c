@@ -21,7 +21,13 @@
 /*============================================================
 CONSOLE EXTENSIONS
 ============================================================ */
+#include "../retroarch_rom_ext.c"
 #include "../retroarch_console.c"
+
+#ifdef HAVE_CONFIGFILE
+#include "../retroarch_config.c"
+#endif
+
 #include "../retroarch_console_input.c"
 
 #ifdef HAVE_ZLIB
