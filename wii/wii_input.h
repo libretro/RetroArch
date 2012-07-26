@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2012 - Michael Lelli
+ *  Copyright (C) 2012 - Michael Lelli
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -172,7 +172,5 @@ enum wii_device_id
 
    RARCH_LAST_PLATFORM_KEY
 };
-
-uint64_t wii_input_update(unsigned port);
 
 #endif

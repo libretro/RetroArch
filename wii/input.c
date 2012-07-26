@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2012 - Michael Lelli
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -192,169 +193,165 @@ static void *wii_input_initialize(void)
 #define wii_stick_x(x) ((s8)((sin((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
 #define wii_stick_y(x) ((s8)((cos((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
 
-uint64_t wii_input_update(unsigned port)
-{
-   unsigned pads = PAD_ScanPads();
-#ifdef HW_RVL
-   unsigned wpads = WPAD_ScanPads();
-#endif
-   uint64_t state = 0;
-   if (port < pads)
-   {
-      uint16_t down = PAD_ButtonsHeld(port) | PAD_ButtonsDown(port);
-      down &= ~PAD_ButtonsUp(port);
-
-      state |= (down & PAD_BUTTON_A) ? WII_GC_A : 0;
-      state |= (down & PAD_BUTTON_B) ? WII_GC_B : 0;
-      state |= (down & PAD_BUTTON_X) ? WII_GC_X : 0;
-      state |= (down & PAD_BUTTON_Y) ? WII_GC_Y : 0;
-      state |= (down & PAD_BUTTON_UP) ? WII_GC_UP : 0;
-      state |= (down & PAD_BUTTON_DOWN) ? WII_GC_DOWN : 0;
-      state |= (down & PAD_BUTTON_LEFT) ? WII_GC_LEFT : 0;
-      state |= (down & PAD_BUTTON_RIGHT) ? WII_GC_RIGHT : 0;
-      state |= (down & PAD_BUTTON_START) ? WII_GC_START : 0;
-      state |= (down & PAD_TRIGGER_Z) ? WII_GC_Z_TRIGGER : 0;
-      state |= (PAD_TriggerL(port) > 127) ? WII_GC_L_TRIGGER : 0;
-      state |= (PAD_TriggerR(port) > 127) ? WII_GC_R_TRIGGER : 0;
-
-      s8 x = PAD_StickX(port);
-      s8 y = PAD_StickY(port);
-
-      if (abs(x) > JOYSTICK_THRESHOLD)
-      {
-         state |= x > 0 ? WII_GC_LSTICK_RIGHT : WII_GC_LSTICK_LEFT;
-      }
-      if (abs(y) > JOYSTICK_THRESHOLD)
-      {
-         state |= y > 0 ? WII_GC_LSTICK_UP : WII_GC_LSTICK_DOWN;
-      }
-      
-      x = PAD_SubStickX(port);
-      y = PAD_SubStickY(port);
-
-      if (abs(x) > JOYSTICK_THRESHOLD)
-      {
-         state |= x > 0 ? WII_GC_RSTICK_RIGHT : WII_GC_RSTICK_LEFT;
-      }
-      if (abs(y) > JOYSTICK_THRESHOLD)
-      {
-         state |= y > 0 ? WII_GC_RSTICK_UP : WII_GC_RSTICK_DOWN;
-      }
-   }
-
-#ifdef HW_RVL
-   if (port < wpads)
-   {
-      uint32_t down = WPAD_ButtonsHeld(port) | WPAD_ButtonsDown(port);
-      down &= ~WPAD_ButtonsUp(port);
-
-      state |= (down & WPAD_BUTTON_A) ? WII_WIIMOTE_A : 0;
-      state |= (down & WPAD_BUTTON_B) ? WII_WIIMOTE_B : 0;
-      state |= (down & WPAD_BUTTON_1) ? WII_WIIMOTE_1 : 0;
-      state |= (down & WPAD_BUTTON_2) ? WII_WIIMOTE_2 : 0;
-      state |= (down & WPAD_BUTTON_PLUS) ? WII_WIIMOTE_PLUS : 0;
-      state |= (down & WPAD_BUTTON_MINUS) ? WII_WIIMOTE_MINUS : 0;
-      state |= (down & WPAD_BUTTON_HOME) ? WII_WIIMOTE_HOME : 0;
-
-      expansion_t exp;
-      WPAD_Expansion(port, &exp);
-      switch (exp.type)
-      {
-         case WPAD_EXP_NUNCHUK:
-         {
-            // wiimote is held upright with nunchuk, do not change d-pad orientation
-            state |= (down & WPAD_BUTTON_UP) ? WII_WIIMOTE_UP : 0;
-            state |= (down & WPAD_BUTTON_DOWN) ? WII_WIIMOTE_DOWN : 0;
-            state |= (down & WPAD_BUTTON_LEFT) ? WII_WIIMOTE_LEFT : 0;
-            state |= (down & WPAD_BUTTON_RIGHT) ? WII_WIIMOTE_RIGHT : 0;
-
-            state |= (down & WPAD_NUNCHUK_BUTTON_Z) ? WII_NUNCHUK_Z : 0;
-            state |= (down & WPAD_NUNCHUK_BUTTON_C) ? WII_NUNCHUK_C : 0;
-
-            s8 x = wii_stick_x(exp.nunchuk.js);
-            s8 y = wii_stick_y(exp.nunchuk.js);
-
-            if (abs(x) > JOYSTICK_THRESHOLD)
-            {
-               state |= x > 0 ? WII_NUNCHUK_RIGHT : WII_NUNCHUK_LEFT;
-            }
-            if (abs(y) > JOYSTICK_THRESHOLD)
-            {
-               state |= y > 0 ? WII_NUNCHUK_UP : WII_NUNCHUK_DOWN;
-            }
-            break;
-         }
-         case WPAD_EXP_CLASSIC:
-         {
-            state |= (down & WPAD_CLASSIC_BUTTON_A) ? WII_CLASSIC_A : 0;
-            state |= (down & WPAD_CLASSIC_BUTTON_B) ? WII_CLASSIC_B : 0;
-            state |= (down & WPAD_CLASSIC_BUTTON_X) ? WII_CLASSIC_X : 0;
-            state |= (down & WPAD_CLASSIC_BUTTON_Y) ? WII_CLASSIC_Y : 0;
-            state |= (down & WPAD_CLASSIC_BUTTON_PLUS) ? WII_CLASSIC_PLUS : 0;
-            state |= (down & WPAD_CLASSIC_BUTTON_MINUS) ? WII_CLASSIC_MINUS : 0;
-            state |= (down & WPAD_CLASSIC_BUTTON_HOME) ? WII_CLASSIC_HOME : 0;
-            state |= (down & WPAD_CLASSIC_BUTTON_FULL_L) ? WII_CLASSIC_L_TRIGGER : 0;
-            state |= (down & WPAD_CLASSIC_BUTTON_FULL_R) ? WII_CLASSIC_R_TRIGGER : 0;
-            state |= (down & WPAD_CLASSIC_BUTTON_ZL) ? WII_CLASSIC_ZL_TRIGGER : 0;
-            state |= (down & WPAD_CLASSIC_BUTTON_ZR) ? WII_CLASSIC_ZR_TRIGGER : 0;
-
-            s8 x = wii_stick_x(exp.classic.ljs);
-            s8 y = wii_stick_y(exp.classic.ljs);
-
-            if (abs(x) > JOYSTICK_THRESHOLD)
-            {
-               state |= x > 0 ? WII_CLASSIC_LSTICK_RIGHT : WII_CLASSIC_LSTICK_LEFT;
-            }
-            if (abs(y) > JOYSTICK_THRESHOLD)
-            {
-               state |= y > 0 ? WII_CLASSIC_LSTICK_UP : WII_CLASSIC_LSTICK_DOWN;
-            }
-
-            x = wii_stick_x(exp.classic.rjs);
-            y = wii_stick_y(exp.classic.rjs);
-
-            if (abs(x) > JOYSTICK_THRESHOLD)
-            {
-               state |= x > 0 ? WII_CLASSIC_RSTICK_RIGHT : WII_CLASSIC_RSTICK_LEFT;
-            }
-            if (abs(y) > JOYSTICK_THRESHOLD)
-            {
-               state |= y > 0 ? WII_CLASSIC_RSTICK_UP : WII_CLASSIC_RSTICK_DOWN;
-            }
-            // do not return, fall through for wiimote d-pad
-         }
-         default:
-            // rotated d-pad
-            state |= (down & WPAD_BUTTON_UP) ? WII_WIIMOTE_LEFT : 0;
-            state |= (down & WPAD_BUTTON_DOWN) ? WII_WIIMOTE_RIGHT : 0;
-            state |= (down & WPAD_BUTTON_LEFT) ? WII_WIIMOTE_DOWN : 0;
-            state |= (down & WPAD_BUTTON_RIGHT) ? WII_WIIMOTE_UP : 0;
-            break;
-      }
-   }
-#endif
-
-   if ((state & (WII_GC_START | WII_GC_Z_TRIGGER | WII_GC_L_TRIGGER | WII_GC_R_TRIGGER)) == (WII_GC_START | WII_GC_Z_TRIGGER | WII_GC_L_TRIGGER | WII_GC_R_TRIGGER))
-   {
-      state |= WII_WIIMOTE_HOME;
-   }
-
-   if (port == 0 && g_quit)
-   {
-      state |= WII_WIIMOTE_HOME;
-      g_quit = false;
-   }
-
-   return state;
-}
-
 static void wii_input_poll(void *data)
 {
    (void)data;
 
-   for (unsigned i = 0; i < 4; i++)
+   unsigned pads = PAD_ScanPads();
+#ifdef HW_RVL
+   unsigned wpads = WPAD_ScanPads();
+#endif
+
+   for (unsigned port = 0; port < 4; port++)
    {
-      pad_state[i] = wii_input_update(i);
+      uint64_t state = 0;
+      if (port < pads)
+      {
+         uint16_t down = PAD_ButtonsHeld(port) | PAD_ButtonsDown(port);
+         down &= ~PAD_ButtonsUp(port);
+
+         state |= (down & PAD_BUTTON_A) ? WII_GC_A : 0;
+         state |= (down & PAD_BUTTON_B) ? WII_GC_B : 0;
+         state |= (down & PAD_BUTTON_X) ? WII_GC_X : 0;
+         state |= (down & PAD_BUTTON_Y) ? WII_GC_Y : 0;
+         state |= (down & PAD_BUTTON_UP) ? WII_GC_UP : 0;
+         state |= (down & PAD_BUTTON_DOWN) ? WII_GC_DOWN : 0;
+         state |= (down & PAD_BUTTON_LEFT) ? WII_GC_LEFT : 0;
+         state |= (down & PAD_BUTTON_RIGHT) ? WII_GC_RIGHT : 0;
+         state |= (down & PAD_BUTTON_START) ? WII_GC_START : 0;
+         state |= (down & PAD_TRIGGER_Z) ? WII_GC_Z_TRIGGER : 0;
+         state |= (PAD_TriggerL(port) > 127) ? WII_GC_L_TRIGGER : 0;
+         state |= (PAD_TriggerR(port) > 127) ? WII_GC_R_TRIGGER : 0;
+
+         s8 x = PAD_StickX(port);
+         s8 y = PAD_StickY(port);
+
+         if (abs(x) > JOYSTICK_THRESHOLD)
+         {
+            state |= x > 0 ? WII_GC_LSTICK_RIGHT : WII_GC_LSTICK_LEFT;
+         }
+         if (abs(y) > JOYSTICK_THRESHOLD)
+         {
+            state |= y > 0 ? WII_GC_LSTICK_UP : WII_GC_LSTICK_DOWN;
+         }
+         
+         x = PAD_SubStickX(port);
+         y = PAD_SubStickY(port);
+
+         if (abs(x) > JOYSTICK_THRESHOLD)
+         {
+            state |= x > 0 ? WII_GC_RSTICK_RIGHT : WII_GC_RSTICK_LEFT;
+         }
+         if (abs(y) > JOYSTICK_THRESHOLD)
+         {
+            state |= y > 0 ? WII_GC_RSTICK_UP : WII_GC_RSTICK_DOWN;
+         }
+      }
+
+#ifdef HW_RVL
+      if (port < wpads)
+      {
+         uint32_t down = WPAD_ButtonsHeld(port) | WPAD_ButtonsDown(port);
+         down &= ~WPAD_ButtonsUp(port);
+
+         state |= (down & WPAD_BUTTON_A) ? WII_WIIMOTE_A : 0;
+         state |= (down & WPAD_BUTTON_B) ? WII_WIIMOTE_B : 0;
+         state |= (down & WPAD_BUTTON_1) ? WII_WIIMOTE_1 : 0;
+         state |= (down & WPAD_BUTTON_2) ? WII_WIIMOTE_2 : 0;
+         state |= (down & WPAD_BUTTON_PLUS) ? WII_WIIMOTE_PLUS : 0;
+         state |= (down & WPAD_BUTTON_MINUS) ? WII_WIIMOTE_MINUS : 0;
+         state |= (down & WPAD_BUTTON_HOME) ? WII_WIIMOTE_HOME : 0;
+
+         expansion_t exp;
+         WPAD_Expansion(port, &exp);
+         switch (exp.type)
+         {
+            case WPAD_EXP_NUNCHUK:
+            {
+               // wiimote is held upright with nunchuk, do not change d-pad orientation
+               state |= (down & WPAD_BUTTON_UP) ? WII_WIIMOTE_UP : 0;
+               state |= (down & WPAD_BUTTON_DOWN) ? WII_WIIMOTE_DOWN : 0;
+               state |= (down & WPAD_BUTTON_LEFT) ? WII_WIIMOTE_LEFT : 0;
+               state |= (down & WPAD_BUTTON_RIGHT) ? WII_WIIMOTE_RIGHT : 0;
+
+               state |= (down & WPAD_NUNCHUK_BUTTON_Z) ? WII_NUNCHUK_Z : 0;
+               state |= (down & WPAD_NUNCHUK_BUTTON_C) ? WII_NUNCHUK_C : 0;
+
+               s8 x = wii_stick_x(exp.nunchuk.js);
+               s8 y = wii_stick_y(exp.nunchuk.js);
+
+               if (abs(x) > JOYSTICK_THRESHOLD)
+               {
+                  state |= x > 0 ? WII_NUNCHUK_RIGHT : WII_NUNCHUK_LEFT;
+               }
+               if (abs(y) > JOYSTICK_THRESHOLD)
+               {
+                  state |= y > 0 ? WII_NUNCHUK_UP : WII_NUNCHUK_DOWN;
+               }
+               break;
+            }
+            case WPAD_EXP_CLASSIC:
+            {
+               state |= (down & WPAD_CLASSIC_BUTTON_A) ? WII_CLASSIC_A : 0;
+               state |= (down & WPAD_CLASSIC_BUTTON_B) ? WII_CLASSIC_B : 0;
+               state |= (down & WPAD_CLASSIC_BUTTON_X) ? WII_CLASSIC_X : 0;
+               state |= (down & WPAD_CLASSIC_BUTTON_Y) ? WII_CLASSIC_Y : 0;
+               state |= (down & WPAD_CLASSIC_BUTTON_PLUS) ? WII_CLASSIC_PLUS : 0;
+               state |= (down & WPAD_CLASSIC_BUTTON_MINUS) ? WII_CLASSIC_MINUS : 0;
+               state |= (down & WPAD_CLASSIC_BUTTON_HOME) ? WII_CLASSIC_HOME : 0;
+               state |= (down & WPAD_CLASSIC_BUTTON_FULL_L) ? WII_CLASSIC_L_TRIGGER : 0;
+               state |= (down & WPAD_CLASSIC_BUTTON_FULL_R) ? WII_CLASSIC_R_TRIGGER : 0;
+               state |= (down & WPAD_CLASSIC_BUTTON_ZL) ? WII_CLASSIC_ZL_TRIGGER : 0;
+               state |= (down & WPAD_CLASSIC_BUTTON_ZR) ? WII_CLASSIC_ZR_TRIGGER : 0;
+
+               s8 x = wii_stick_x(exp.classic.ljs);
+               s8 y = wii_stick_y(exp.classic.ljs);
+
+               if (abs(x) > JOYSTICK_THRESHOLD)
+               {
+                  state |= x > 0 ? WII_CLASSIC_LSTICK_RIGHT : WII_CLASSIC_LSTICK_LEFT;
+               }
+               if (abs(y) > JOYSTICK_THRESHOLD)
+               {
+                  state |= y > 0 ? WII_CLASSIC_LSTICK_UP : WII_CLASSIC_LSTICK_DOWN;
+               }
+
+               x = wii_stick_x(exp.classic.rjs);
+               y = wii_stick_y(exp.classic.rjs);
+
+               if (abs(x) > JOYSTICK_THRESHOLD)
+               {
+                  state |= x > 0 ? WII_CLASSIC_RSTICK_RIGHT : WII_CLASSIC_RSTICK_LEFT;
+               }
+               if (abs(y) > JOYSTICK_THRESHOLD)
+               {
+                  state |= y > 0 ? WII_CLASSIC_RSTICK_UP : WII_CLASSIC_RSTICK_DOWN;
+               }
+               // do not return, fall through for wiimote d-pad
+            }
+            default:
+               // rotated d-pad
+               state |= (down & WPAD_BUTTON_UP) ? WII_WIIMOTE_LEFT : 0;
+               state |= (down & WPAD_BUTTON_DOWN) ? WII_WIIMOTE_RIGHT : 0;
+               state |= (down & WPAD_BUTTON_LEFT) ? WII_WIIMOTE_DOWN : 0;
+               state |= (down & WPAD_BUTTON_RIGHT) ? WII_WIIMOTE_UP : 0;
+               break;
+         }
+      }
+#endif
+
+      if ((state & (WII_GC_START | WII_GC_Z_TRIGGER | WII_GC_L_TRIGGER | WII_GC_R_TRIGGER)) == (WII_GC_START | WII_GC_Z_TRIGGER | WII_GC_L_TRIGGER | WII_GC_R_TRIGGER))
+      {
+         state |= WII_WIIMOTE_HOME;
+      }
+
+      pad_state[port] = state;
+   }
+
+   if (g_quit)
+   {
+      pad_state[0] |= WII_WIIMOTE_HOME;
+      g_quit = false;
    }
 }
 
