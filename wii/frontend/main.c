@@ -20,6 +20,7 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../libretro.h"
+#include "../../console/retroarch_console_input.h"
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -39,6 +40,31 @@ FILE * log_fp;
 #endif
 
 static uint16_t menu_framebuf[RGUI_WIDTH * RGUI_HEIGHT];
+
+static const uint64_t wii_nav_buttons[9] = {
+   WII_GC_UP | WII_GC_LSTICK_UP | WII_GC_RSTICK_UP | WII_CLASSIC_UP | WII_CLASSIC_LSTICK_UP | WII_CLASSIC_RSTICK_UP | WII_WIIMOTE_UP | WII_NUNCHUK_UP,
+   WII_GC_DOWN | WII_GC_LSTICK_DOWN | WII_GC_RSTICK_DOWN | WII_CLASSIC_DOWN | WII_CLASSIC_LSTICK_DOWN | WII_CLASSIC_RSTICK_DOWN | WII_WIIMOTE_DOWN | WII_NUNCHUK_DOWN,
+   WII_GC_LEFT | WII_GC_LSTICK_LEFT | WII_GC_RSTICK_LEFT | WII_CLASSIC_LEFT | WII_CLASSIC_LSTICK_LEFT | WII_CLASSIC_RSTICK_LEFT | WII_WIIMOTE_LEFT | WII_NUNCHUK_LEFT,
+   WII_GC_RIGHT | WII_GC_LSTICK_RIGHT | WII_GC_RSTICK_RIGHT | WII_CLASSIC_RIGHT | WII_CLASSIC_LSTICK_RIGHT | WII_CLASSIC_RSTICK_RIGHT | WII_WIIMOTE_RIGHT | WII_NUNCHUK_RIGHT,
+   WII_GC_A | WII_CLASSIC_A | WII_WIIMOTE_A | WII_WIIMOTE_2,
+   WII_GC_B | WII_CLASSIC_B | WII_WIIMOTE_B | WII_WIIMOTE_1,
+   WII_GC_START | WII_CLASSIC_PLUS | WII_WIIMOTE_PLUS,
+   WII_GC_Z_TRIGGER | WII_CLASSIC_MINUS | WII_WIIMOTE_MINUS,
+   WII_WIIMOTE_HOME | WII_CLASSIC_HOME,
+};
+
+enum
+{
+   WII_DEVICE_NAV_UP = 0,
+   WII_DEVICE_NAV_DOWN,
+   WII_DEVICE_NAV_LEFT,
+   WII_DEVICE_NAV_RIGHT,
+   WII_DEVICE_NAV_A,
+   WII_DEVICE_NAV_B,
+   WII_DEVICE_NAV_START,
+   WII_DEVICE_NAV_SELECT,
+   WII_DEVICE_NAV_EXIT,
+};
 
 static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       void *userdata, void *ctx)
@@ -92,40 +118,42 @@ static bool get_rom_path(rgui_handle_t *rgui)
    for (;;)
    {
       uint16_t input_state = 0;
-      input_wii.poll(NULL);
+      uint64_t input_poll = wii_input_update(0);
 
-      if (input_wii.key_pressed(NULL, RARCH_QUIT_KEY))
+      for (unsigned i = 0; i < sizeof(wii_nav_buttons) / sizeof(wii_nav_buttons[0]); i++)
       {
-         if (can_quit)
-            return false;
-      }
-      else
-         can_quit = true;
-
-      for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
-      {
-         input_state |= input_wii.input_state(NULL, NULL, false,
-               RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
+         input_state |= input_poll & wii_nav_buttons[i] ? (1 << i) : 0;
       }
 
       uint16_t trigger_state = input_state & ~old_input_state;
 
+      if (!first)
+      {
+         if (trigger_state & (1 << WII_DEVICE_NAV_EXIT))
+         {
+            if (can_quit)
+               return false;
+         }
+         else
+            can_quit = true;
+      }
+
       rgui_action_t action = RGUI_ACTION_NOOP;
-      if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+      if (trigger_state & (1 << WII_DEVICE_NAV_B))
          action = RGUI_ACTION_CANCEL;
-      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_A))
+      else if (trigger_state & (1 << WII_DEVICE_NAV_A))
          action = RGUI_ACTION_OK;
-      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+      else if (trigger_state & (1 << WII_DEVICE_NAV_UP))
          action = RGUI_ACTION_UP;
-      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+      else if (trigger_state & (1 << WII_DEVICE_NAV_DOWN))
          action = RGUI_ACTION_DOWN;
-      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+      else if (trigger_state & (1 << WII_DEVICE_NAV_LEFT))
          action = RGUI_ACTION_LEFT;
-      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      else if (trigger_state & (1 << WII_DEVICE_NAV_RIGHT))
          action = RGUI_ACTION_RIGHT;
-      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+      else if (trigger_state & (1 << WII_DEVICE_NAV_START))
          action = RGUI_ACTION_START;
-      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) && !first) // don't catch start+select+l+r when exiting
+      else if (trigger_state & (1 << WII_DEVICE_NAV_SELECT) && !first) // don't catch start+select+l+r when exiting
          action = RGUI_ACTION_SETTINGS;
 
       const char *ret = rgui_iterate(rgui, action);
@@ -172,6 +200,7 @@ int main(void)
 
    wii_video_init();
    input_wii.init();
+   rarch_input_set_controls_default();
 
    rgui_handle_t *rgui = rgui_init("",
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),

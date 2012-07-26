@@ -20,16 +20,20 @@
 #include <wiiuse/wpad.h>
 #endif
 #include <string.h>
+#include <math.h>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846264338327
+#endif
+
+#include "wii_input.h"
 #include "../driver.h"
 #include "../libretro.h"
 #include <stdlib.h>
 
-static bool pad_state[5][RARCH_FIRST_META_KEY];   /* Gamecube pads */
-#ifdef HW_RVL
-static bool wpad_state[5][RARCH_FIRST_META_KEY];  /* Wii Classic pads */
-#endif
+#define JOYSTICK_THRESHOLD 64
 
+static uint64_t pad_state[4];
 static bool g_quit;
 
 static int16_t wii_input_state(void *data, const struct retro_keybind **binds,
@@ -37,16 +41,12 @@ static int16_t wii_input_state(void *data, const struct retro_keybind **binds,
       unsigned index, unsigned id)
 {
    (void)data;
-   (void)binds;
    (void)index;
 
-   unsigned player = port;
+   if (port >= 4 || device != RETRO_DEVICE_JOYPAD)
+      return 0;
 
-   return pad_state[player][id]
-#ifdef HW_RVL
-      || wpad_state[player][id]
-#endif
-   ;
+   return (binds[port][id].joykey & pad_state[port]) ? 1 : 0;
 }
 
 static void wii_free_input(void *data)
@@ -59,6 +59,32 @@ static void reset_callback(void)
    g_quit = true;
 }
 
+void wii_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
+{
+   // TODO: how do we choose a classic controller configuration over a gc controller one?
+   switch(map_dpad_enum)
+   {
+      case DPAD_EMULATION_NONE:
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_GC_ID_JOYPAD_UP].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_GC_ID_JOYPAD_DOWN].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_GC_ID_JOYPAD_LEFT].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_GC_ID_JOYPAD_RIGHT].joykey;
+         break;
+      case DPAD_EMULATION_LSTICK:
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_GC_ID_LSTICK_UP_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_GC_ID_LSTICK_DOWN_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_GC_ID_LSTICK_LEFT_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_GC_ID_LSTICK_RIGHT_DPAD].joykey;
+         break;
+      case DPAD_EMULATION_RSTICK:
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_GC_ID_RSTICK_UP_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_GC_ID_RSTICK_DOWN_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_GC_ID_RSTICK_LEFT_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_GC_ID_RSTICK_RIGHT_DPAD].joykey;
+         break;
+   }
+}
+
 static void *wii_input_initialize(void)
 {
    PAD_Init();
@@ -67,63 +93,178 @@ static void *wii_input_initialize(void)
 #endif
    SYS_SetResetCallback(reset_callback);
    SYS_SetPowerCallback(reset_callback);
+   for(unsigned i = 0; i < 4; i++)
+      wii_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
    return (void*)-1;
+}
+
+#define wii_stick_x(x) ((s8)((sin((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
+#define wii_stick_y(x) ((s8)((cos((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
+
+uint64_t wii_input_update(unsigned port)
+{
+   unsigned pads = PAD_ScanPads();
+#ifdef HW_RVL
+   unsigned wpads = WPAD_ScanPads();
+#endif
+   uint64_t state = 0;
+   if (port < pads)
+   {
+      uint16_t down = PAD_ButtonsHeld(port) | PAD_ButtonsDown(port);
+      down &= ~PAD_ButtonsUp(port);
+
+      state |= (down & PAD_BUTTON_A) ? WII_GC_A : 0;
+      state |= (down & PAD_BUTTON_B) ? WII_GC_B : 0;
+      state |= (down & PAD_BUTTON_X) ? WII_GC_X : 0;
+      state |= (down & PAD_BUTTON_Y) ? WII_GC_Y : 0;
+      state |= (down & PAD_BUTTON_UP) ? WII_GC_UP : 0;
+      state |= (down & PAD_BUTTON_DOWN) ? WII_GC_DOWN : 0;
+      state |= (down & PAD_BUTTON_LEFT) ? WII_GC_LEFT : 0;
+      state |= (down & PAD_BUTTON_RIGHT) ? WII_GC_RIGHT : 0;
+      state |= (down & PAD_BUTTON_START) ? WII_GC_START : 0;
+      state |= (down & PAD_TRIGGER_Z) ? WII_GC_Z_TRIGGER : 0;
+      state |= (PAD_TriggerL(port) > 127) ? WII_GC_L_TRIGGER : 0;
+      state |= (PAD_TriggerR(port) > 127) ? WII_GC_R_TRIGGER : 0;
+
+      s8 x = PAD_StickX(port);
+      s8 y = PAD_StickY(port);
+
+      if (abs(x) > JOYSTICK_THRESHOLD)
+      {
+         state |= x > 0 ? WII_GC_LSTICK_RIGHT : WII_GC_LSTICK_LEFT;
+      }
+      if (abs(y) > JOYSTICK_THRESHOLD)
+      {
+         state |= y > 0 ? WII_GC_LSTICK_UP : WII_GC_LSTICK_DOWN;
+      }
+      
+      x = PAD_SubStickX(port);
+      y = PAD_SubStickY(port);
+
+      if (abs(x) > JOYSTICK_THRESHOLD)
+      {
+         state |= x > 0 ? WII_GC_RSTICK_RIGHT : WII_GC_RSTICK_LEFT;
+      }
+      if (abs(y) > JOYSTICK_THRESHOLD)
+      {
+         state |= y > 0 ? WII_GC_RSTICK_UP : WII_GC_RSTICK_DOWN;
+      }
+   }
+
+#ifdef HW_RVL
+   if (port < wpads)
+   {
+      uint32_t down = WPAD_ButtonsHeld(port) | WPAD_ButtonsDown(port);
+      down &= ~WPAD_ButtonsUp(port);
+
+      state |= (down & WPAD_BUTTON_A) ? WII_WIIMOTE_A : 0;
+      state |= (down & WPAD_BUTTON_B) ? WII_WIIMOTE_B : 0;
+      state |= (down & WPAD_BUTTON_1) ? WII_WIIMOTE_1 : 0;
+      state |= (down & WPAD_BUTTON_2) ? WII_WIIMOTE_2 : 0;
+      state |= (down & WPAD_BUTTON_PLUS) ? WII_WIIMOTE_PLUS : 0;
+      state |= (down & WPAD_BUTTON_MINUS) ? WII_WIIMOTE_MINUS : 0;
+      state |= (down & WPAD_BUTTON_HOME) ? WII_WIIMOTE_HOME : 0;
+
+      expansion_t exp;
+      WPAD_Expansion(port, &exp);
+      switch (exp.type)
+      {
+         case WPAD_EXP_NUNCHUK:
+         {
+            // wiimote is held upright with nunchuk, do not change d-pad orientation
+            state |= (down & WPAD_BUTTON_UP) ? WII_WIIMOTE_UP : 0;
+            state |= (down & WPAD_BUTTON_DOWN) ? WII_WIIMOTE_DOWN : 0;
+            state |= (down & WPAD_BUTTON_LEFT) ? WII_WIIMOTE_LEFT : 0;
+            state |= (down & WPAD_BUTTON_RIGHT) ? WII_WIIMOTE_RIGHT : 0;
+
+            state |= (down & WPAD_NUNCHUK_BUTTON_Z) ? WII_NUNCHUK_Z : 0;
+            state |= (down & WPAD_NUNCHUK_BUTTON_C) ? WII_NUNCHUK_C : 0;
+
+            s8 x = wii_stick_x(exp.nunchuk.js);
+            s8 y = wii_stick_y(exp.nunchuk.js);
+
+            if (abs(x) > JOYSTICK_THRESHOLD)
+            {
+               state |= x > 0 ? WII_NUNCHUK_RIGHT : WII_NUNCHUK_LEFT;
+            }
+            if (abs(y) > JOYSTICK_THRESHOLD)
+            {
+               state |= y > 0 ? WII_NUNCHUK_UP : WII_NUNCHUK_DOWN;
+            }
+            break;
+         }
+         case WPAD_EXP_CLASSIC:
+         {
+            state |= (down & WPAD_CLASSIC_BUTTON_A) ? WII_CLASSIC_A : 0;
+            state |= (down & WPAD_CLASSIC_BUTTON_B) ? WII_CLASSIC_B : 0;
+            state |= (down & WPAD_CLASSIC_BUTTON_X) ? WII_CLASSIC_X : 0;
+            state |= (down & WPAD_CLASSIC_BUTTON_Y) ? WII_CLASSIC_Y : 0;
+            state |= (down & WPAD_CLASSIC_BUTTON_PLUS) ? WII_CLASSIC_PLUS : 0;
+            state |= (down & WPAD_CLASSIC_BUTTON_MINUS) ? WII_CLASSIC_MINUS : 0;
+            state |= (down & WPAD_CLASSIC_BUTTON_HOME) ? WII_CLASSIC_HOME : 0;
+            state |= (down & WPAD_CLASSIC_BUTTON_FULL_L) ? WII_CLASSIC_L_TRIGGER : 0;
+            state |= (down & WPAD_CLASSIC_BUTTON_FULL_R) ? WII_CLASSIC_R_TRIGGER : 0;
+            state |= (down & WPAD_CLASSIC_BUTTON_ZL) ? WII_CLASSIC_ZL_TRIGGER : 0;
+            state |= (down & WPAD_CLASSIC_BUTTON_ZR) ? WII_CLASSIC_ZR_TRIGGER : 0;
+
+            s8 x = wii_stick_x(exp.classic.ljs);
+            s8 y = wii_stick_y(exp.classic.ljs);
+
+            if (abs(x) > JOYSTICK_THRESHOLD)
+            {
+               state |= x > 0 ? WII_CLASSIC_LSTICK_RIGHT : WII_CLASSIC_LSTICK_LEFT;
+            }
+            if (abs(y) > JOYSTICK_THRESHOLD)
+            {
+               state |= y > 0 ? WII_CLASSIC_LSTICK_UP : WII_CLASSIC_LSTICK_DOWN;
+            }
+
+            x = wii_stick_x(exp.classic.rjs);
+            y = wii_stick_y(exp.classic.rjs);
+
+            if (abs(x) > JOYSTICK_THRESHOLD)
+            {
+               state |= x > 0 ? WII_CLASSIC_RSTICK_RIGHT : WII_CLASSIC_RSTICK_LEFT;
+            }
+            if (abs(y) > JOYSTICK_THRESHOLD)
+            {
+               state |= y > 0 ? WII_CLASSIC_RSTICK_UP : WII_CLASSIC_RSTICK_DOWN;
+            }
+            // do not return, fall through for wiimote d-pad
+         }
+         default:
+            // rotated d-pad
+            state |= (down & WPAD_BUTTON_UP) ? WII_WIIMOTE_LEFT : 0;
+            state |= (down & WPAD_BUTTON_DOWN) ? WII_WIIMOTE_RIGHT : 0;
+            state |= (down & WPAD_BUTTON_LEFT) ? WII_WIIMOTE_DOWN : 0;
+            state |= (down & WPAD_BUTTON_RIGHT) ? WII_WIIMOTE_UP : 0;
+            break;
+      }
+   }
+#endif
+
+   if ((state & (WII_GC_START | WII_GC_Z_TRIGGER | WII_GC_L_TRIGGER | WII_GC_R_TRIGGER)) == (WII_GC_START | WII_GC_Z_TRIGGER | WII_GC_L_TRIGGER | WII_GC_R_TRIGGER))
+   {
+      state |= WII_WIIMOTE_HOME;
+   }
+
+   if (port == 0 && g_quit)
+   {
+      state |= WII_WIIMOTE_HOME;
+      g_quit = false;
+   }
+
+   return state;
 }
 
 static void wii_input_poll(void *data)
 {
    (void)data;
 
-   unsigned pads = PAD_ScanPads();
-#ifdef HW_RVL
-   unsigned wpads = WPAD_ScanPads();
-#endif
-
-   /* Gamecube controller */
-   for (unsigned i = 0; i < pads; i++)
+   for (unsigned i = 0; i < 4; i++)
    {
-      uint16_t down = PAD_ButtonsHeld(i) | PAD_ButtonsDown(i);
-      down &= ~PAD_ButtonsUp(i);
-
-      pad_state[i][RETRO_DEVICE_ID_JOYPAD_B] = down & PAD_BUTTON_B;
-      pad_state[i][RETRO_DEVICE_ID_JOYPAD_Y] = down & PAD_BUTTON_Y;
-      pad_state[i][RETRO_DEVICE_ID_JOYPAD_SELECT] = down & PAD_TRIGGER_Z;
-      pad_state[i][RETRO_DEVICE_ID_JOYPAD_START] = down & PAD_BUTTON_START;
-      pad_state[i][RETRO_DEVICE_ID_JOYPAD_UP] = down & PAD_BUTTON_UP;
-      pad_state[i][RETRO_DEVICE_ID_JOYPAD_DOWN] = down & PAD_BUTTON_DOWN;
-      pad_state[i][RETRO_DEVICE_ID_JOYPAD_LEFT] = down & PAD_BUTTON_LEFT;
-      pad_state[i][RETRO_DEVICE_ID_JOYPAD_RIGHT] = down & PAD_BUTTON_RIGHT;
-      pad_state[i][RETRO_DEVICE_ID_JOYPAD_A] = down & PAD_BUTTON_A;
-      pad_state[i][RETRO_DEVICE_ID_JOYPAD_X] = down & PAD_BUTTON_X;
-      pad_state[i][RETRO_DEVICE_ID_JOYPAD_L] = down & PAD_TRIGGER_L;
-      pad_state[i][RETRO_DEVICE_ID_JOYPAD_R] = down & PAD_TRIGGER_R;
+      pad_state[i] = wii_input_update(i);
    }
-
-#ifdef HW_RVL
-   /* Wii Classic controller */
-   for (unsigned i = 0; i < wpads; i++)
-   {
-      uint32_t down = WPAD_ButtonsHeld(i) | WPAD_ButtonsDown(i);
-      down &= ~WPAD_ButtonsUp(i);
-
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_B] = down & (WPAD_BUTTON_B | WPAD_CLASSIC_BUTTON_B);
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_Y] = down & WPAD_CLASSIC_BUTTON_Y;
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_SELECT] = down & (WPAD_BUTTON_MINUS | WPAD_CLASSIC_BUTTON_MINUS);
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_START] = down & (WPAD_BUTTON_PLUS | WPAD_CLASSIC_BUTTON_PLUS);
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_UP] = down & (WPAD_BUTTON_UP | WPAD_CLASSIC_BUTTON_UP);
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_DOWN] = down & (WPAD_BUTTON_DOWN | WPAD_CLASSIC_BUTTON_DOWN);
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_LEFT] = down & (WPAD_BUTTON_LEFT | WPAD_CLASSIC_BUTTON_LEFT);
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_RIGHT] = down & (WPAD_BUTTON_RIGHT | WPAD_CLASSIC_BUTTON_RIGHT);
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_A] = down & (WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A);
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_X] = down & WPAD_CLASSIC_BUTTON_X;
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_L] = down & WPAD_CLASSIC_BUTTON_FULL_L;
-      wpad_state[i][RETRO_DEVICE_ID_JOYPAD_R] = down & WPAD_CLASSIC_BUTTON_FULL_R;
-
-      if (down & (WPAD_BUTTON_HOME | WPAD_CLASSIC_BUTTON_HOME) && i == 0)
-         wpad_state[0][RETRO_DEVICE_ID_JOYPAD_L] = wpad_state[0][RETRO_DEVICE_ID_JOYPAD_R] =
-            wpad_state[0][RETRO_DEVICE_ID_JOYPAD_START] = wpad_state[0][RETRO_DEVICE_ID_JOYPAD_SELECT] = true;
-   }
-#endif
 }
 
 static bool wii_key_pressed(void *data, int key)
@@ -132,23 +273,7 @@ static bool wii_key_pressed(void *data, int key)
    switch (key)
    {
       case RARCH_QUIT_KEY:
-      {
-         bool r = g_quit ||
-            (pad_state[0][RETRO_DEVICE_ID_JOYPAD_SELECT] &&
-             pad_state[0][RETRO_DEVICE_ID_JOYPAD_START] &&
-             pad_state[0][RETRO_DEVICE_ID_JOYPAD_L] &&
-             pad_state[0][RETRO_DEVICE_ID_JOYPAD_R])
-#ifdef HW_RVL
-         ||
-            (wpad_state[0][RETRO_DEVICE_ID_JOYPAD_SELECT] &&
-             wpad_state[0][RETRO_DEVICE_ID_JOYPAD_START] &&
-             wpad_state[0][RETRO_DEVICE_ID_JOYPAD_L] &&
-             wpad_state[0][RETRO_DEVICE_ID_JOYPAD_R])
-#endif
-         ;
-         g_quit = false;
-         return r;
-      }
+         return pad_state[0] & (WII_CLASSIC_HOME | WII_WIIMOTE_HOME) ? true : false;
       default:
          return false;
    }
