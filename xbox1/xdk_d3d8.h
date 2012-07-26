@@ -18,6 +18,11 @@
 #define _XDK_VIDEO_H
 
 #include <stdint.h>
+
+#ifdef _XBOX1
+#define XFONT_TRUETYPE // use true type fonts
+#endif
+
 #include <xfont.h>
 
 #include "../xdk/xdk_defines.h"
@@ -25,8 +30,7 @@
 #define SHOW_DEBUG_INFO
 
 #define DFONT_MAX	4096
-#define PRIM_FVF	(D3DFVF_XYZRHW | D3DFVF_TEX1)
-#define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZ | D3DFVF_NORMAL)
+#define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZRHW | D3DFVF_TEX1)
 
 #define MIN_SCALING_FACTOR (1.0f)
 #define MAX_SCALING_FACTOR (2.0f)
@@ -44,6 +48,7 @@ typedef struct
 typedef struct DrawVerticeFormats
 {
    float x, y, z;
+   float rhw;
    float u, v;
 } DrawVerticeFormats;
 

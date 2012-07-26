@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include <string>
 
+#include "../../xdk/menu_shared.h"
+
 #ifdef _XBOX360
 #include <xfilecache.h>
 #include "../../360/frontend-xdk/menu.h"
@@ -36,174 +38,20 @@
 #endif
 
 #include "../../console/retroarch_console.h"
+#include "../../console/retroarch_config.h"
 #include "../../conf/config_file.h"
 #include "../../conf/config_file_macros.h"
 #include "../../file.h"
 #include "../../general.h"
 
-#define DEVICE_MEMORY_UNIT0 1
-#define DEVICE_MEMORY_UNIT1 2
-#define DEVICE_MEMORY_ONBOARD 3
-#define DEVICE_CDROM0 4
-#define DEVICE_HARDISK0_PART1 5
-#define DEVICE_HARDISK0_SYSPART 6
-#define DEVICE_USB0 7
-#define DEVICE_USB1 8
-#define DEVICE_USB2 9
-#define DEVICE_TEST 10
-#define DEVICE_CACHE 11
-
-typedef struct _STRING {
-   unsigned short Length;
-   unsigned short MaximumLength;
-   char * Buffer;
-} STRING;
-
-char DEFAULT_SHADER_FILE[PATH_MAX];
-char SYS_CONFIG_FILE[PATH_MAX];
-
-#ifdef _XBOX360
-extern "C" int __stdcall ObCreateSymbolicLink( STRING*, STRING*);
-#endif
-
-int Mounted[20];
-
 int rarch_main(int argc, char *argv[]);
 
 #undef main
 
-#ifdef _XBOX360
-static int DriveMounted(std::string path)
-{
-   WIN32_FIND_DATA findFileData;
-   memset(&findFileData,0,sizeof(WIN32_FIND_DATA));
-   std::string searchcmd = path + "\\*.*";
-   HANDLE hFind = FindFirstFile(searchcmd.c_str(), &findFileData);
-
-   if (hFind == INVALID_HANDLE_VALUE)
-      return 0;
-
-   FindClose(hFind);
-
-   return 1;
-}
-
-static int Mount( int Device, char* MountPoint )
-{
-   char MountConv[260];
-   char * SysPath = NULL;
-
-   snprintf( MountConv, sizeof(MountConv), "\\??\\%s", MountPoint );
-
-   switch( Device )
-   {
-      case DEVICE_MEMORY_UNIT0:
-         SysPath = "\\Device\\Mu0";
-	 break;
-      case DEVICE_MEMORY_UNIT1:
-	 SysPath = "\\Device\\Mu1";
-	 break;
-      case DEVICE_MEMORY_ONBOARD:
-	 SysPath = "\\Device\\BuiltInMuSfc";
-	 break;
-      case DEVICE_CDROM0:
-	 SysPath = "\\Device\\Cdrom0";
-	 break;
-      case DEVICE_HARDISK0_PART1:
-	 SysPath = "\\Device\\Harddisk0\\Partition1";
-	 break;
-      case DEVICE_HARDISK0_SYSPART:
-	 SysPath = "\\Device\\Harddisk0\\SystemPartition";
-	 break;
-      case DEVICE_USB0:
-	 SysPath = "\\Device\\Mass0";
-	 break;
-      case DEVICE_USB1:
-	 SysPath = "\\Device\\Mass1";
-	 break;
-      case DEVICE_USB2:
-	 SysPath = "\\Device\\Mass2";
-	 break;
-      case DEVICE_CACHE:
-	 SysPath = "\\Device\\Harddisk0\\Cache0";
-	 break;
-   }
-
-   STRING sSysPath = { (USHORT)strlen( SysPath ), (USHORT)strlen( SysPath ) + 1, SysPath };
-   STRING sMountConv = { (USHORT)strlen( MountConv ), (USHORT)strlen( MountConv ) + 1, MountConv };
-   int res = ObCreateSymbolicLink( &sMountConv, &sSysPath );
-
-   if (res != 0)
-      return res;
-
-   return DriveMounted(MountPoint);
-}
-#endif
-
-static void set_default_settings (void)
-{
-   //g_settings
-   g_settings.rewind_enable = false;
-   strlcpy(g_settings.video.cg_shader_path, DEFAULT_SHADER_FILE, sizeof(g_settings.video.cg_shader_path));
-   g_settings.video.fbo_scale_x = 2.0f;
-   g_settings.video.fbo_scale_y = 2.0f;
-   g_settings.video.render_to_texture = true;
-   strlcpy(g_settings.video.second_pass_shader, DEFAULT_SHADER_FILE, sizeof(g_settings.video.second_pass_shader));
-   g_settings.video.second_pass_smooth = true;
-   g_settings.video.smooth = true;
-   g_settings.video.vsync = true;
-   strlcpy(g_settings.cheat_database, "game:", sizeof(g_settings.cheat_database));
-   g_settings.video.aspect_ratio = -1.0f;
-
-   rarch_input_set_controls_default();
-
-   //g_console
-   g_console.block_config_read = true;
-   g_console.frame_advance_enable = false;
-   g_console.emulator_initialized = 0;
-   g_console.gamma_correction_enable = true;
-   g_console.initialize_rarch_enable = false;
-   g_console.fbo_enabled = true;
-   g_console.mode_switch = MODE_MENU;
-   g_console.screen_orientation = ORIENTATION_NORMAL;
-   g_console.throttle_enable = true;
-   g_console.aspect_ratio_index = 0;
-   strlcpy(g_console.default_rom_startup_dir, "game:", sizeof(g_console.default_rom_startup_dir));
-   g_console.viewports.custom_vp.width = 0;
-   g_console.viewports.custom_vp.height = 0;
-   g_console.viewports.custom_vp.x = 0;
-   g_console.viewports.custom_vp.y = 0;
-   g_console.color_format = 0;
-   g_console.info_msg_enable = true;
-
-   //g_extern
-   g_extern.state_slot = 0;
-   g_extern.audio_data.mute = 0;
-   g_extern.verbose = true;
-}
-
 static void get_environment_settings (void)
 {
-#ifdef _XBOX360
-   DWORD ret;
-
-   //for devkits only, we will need to mount all partitions for retail
-   //in a different way
-   //DmMapDevkitDrive();
-
-   memset(&Mounted, 0, 20);
-
-   Mounted[DEVICE_USB0] = Mount(DEVICE_USB0,"Usb0:");
-   Mounted[DEVICE_USB1] = Mount(DEVICE_USB1,"Usb1:");
-   Mounted[DEVICE_USB2] = Mount(DEVICE_USB2,"Usb2:");
-   Mounted[DEVICE_HARDISK0_PART1] = Mount(DEVICE_HARDISK0_PART1,"Hdd1:");
-   Mounted[DEVICE_HARDISK0_SYSPART] = Mount(DEVICE_HARDISK0_SYSPART,"HddX:");
-   Mounted[DEVICE_MEMORY_UNIT0] = Mount(DEVICE_MEMORY_UNIT0,"Memunit0:");
-   Mounted[DEVICE_MEMORY_UNIT1] = Mount(DEVICE_MEMORY_UNIT1,"Memunit1:");
-   Mounted[DEVICE_MEMORY_ONBOARD] = Mount(DEVICE_MEMORY_ONBOARD,"OnBoardMU:"); 
-   Mounted[DEVICE_CDROM0] = Mount(DEVICE_CDROM0,"Dvd:"); 
-#endif
-
+   HRESULT ret;
+   (void)ret;
 #ifdef HAVE_HDD_CACHE_PARTITION
    ret = XSetFileCacheSize(0x100000);
 
@@ -252,38 +100,23 @@ static void get_environment_settings (void)
    }
 #endif
 
-   strlcpy(DEFAULT_SHADER_FILE, "game:\\media\\shaders\\stock.cg", sizeof(DEFAULT_SHADER_FILE));
-#ifdef _XBOX1
+#if defined(_XBOX1)
    /* FIXME: Hardcoded */
-   strlcpy(SYS_CONFIG_FILE, "D:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
+   strlcpy(default_paths.config_file, "D:\\retroarch.cfg", sizeof(default_paths.config_file));
    strlcpy(g_settings.system_directory, "D:\\system\\", sizeof(g_settings.system_directory));
-#else
-   strlcpy(SYS_CONFIG_FILE, "game:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
+   strlcpy(default_paths.filesystem_root_dir, "D:\\", sizeof(default_paths.filesystem_root_dir));
+   strlcpy(default_paths.executable_extension, ".xbe", sizeof(default_paths.executable_extension));
+#elif defined(_XBOX360)
+#ifdef HAVE_HDD_CACHE_PARTITION
+   strlcpy(default_paths.cache_dir, "cache:\\", sizeof(default_paths.cache_dir));
+#endif
+   strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));
+   strlcpy(default_paths.shader_file, "game:\\media\\shaders\\stock.cg", sizeof(default_paths.shader_file));
+   strlcpy(default_paths.config_file, "game:\\retroarch.cfg", sizeof(default_paths.config_file));
    strlcpy(g_settings.system_directory, "game:\\system\\", sizeof(g_settings.system_directory));
+   strlcpy(default_paths.executable_extension, ".xex", sizeof(default_paths.executable_extension));
 #endif
 }
-
-static void configure_libretro(const char *path_prefix, const char * extension)
-{
-   char full_path[1024];
-   snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
-
-   bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
-   SYS_CONFIG_FILE, extension);
-
-   set_default_settings();
-   rarch_config_load(SYS_CONFIG_FILE, path_prefix, extension, find_libretro_file);
-   init_libretro_sym();
-}
-
-#ifdef _XBOX1
-static void menu_init(void) {}
-static void menu_free(void) {}
-static void menu_loop(void)
-{
-   rarch_console_load_game("D:\\ssf2x.gba");
-}
-#endif
 
 int main(int argc, char *argv[])
 {
@@ -292,18 +125,14 @@ int main(int argc, char *argv[])
 
    config_set_defaults();
    
-#ifdef _XBOX1
-   configure_libretro("D:\\", ".xbe");
-#else
-   configure_libretro("game:\\", ".xex");
-#endif
+   input_xinput.init();
+   rarch_configure_libretro(&input_xinput, default_paths.filesystem_root_dir, default_paths.executable_extension);
 
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9)
    video_xdk_d3d.start();
 #else
    video_null.start();
 #endif
-   input_xinput.init();
 
    rarch_input_set_default_keybind_names_for_emulator();
 
@@ -325,7 +154,7 @@ begin_loop:
    else if(g_console.mode_switch == MODE_MENU)
    {
       menu_loop();
-      rarch_startup(SYS_CONFIG_FILE);
+      rarch_startup(default_paths.config_file);
    }
    else
       goto begin_shutdown;
@@ -333,8 +162,8 @@ begin_loop:
    goto begin_loop;
 
 begin_shutdown:
-   if(path_file_exists(SYS_CONFIG_FILE))
-      rarch_config_save(SYS_CONFIG_FILE);
+   if(path_file_exists(default_paths.config_file))
+      rarch_config_save(default_paths.config_file);
 
    menu_free();
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9)

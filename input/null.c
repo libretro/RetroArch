@@ -51,12 +51,17 @@ static void null_input_free(void *data)
    (void)data;
 }
 
+static void null_set_default_keybind_lut(void) { }
+
 const input_driver_t input_null = {
    null_input_init,
    null_input_poll,
    null_input_state,
    null_input_key_pressed,
    null_input_free,
+#ifdef RARCH_CONSOLE
+   null_set_default_keybind_lut,
+#endif
    "null",
 };
 

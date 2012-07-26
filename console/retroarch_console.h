@@ -114,12 +114,6 @@ extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 extern void rarch_set_auto_viewport(unsigned width, unsigned height);
 extern void rarch_load_shader(unsigned slot, const char *path);
 
-#include "retroarch_console_input.h"
-
-/*============================================================
-	SOUND
-============================================================ */
-
 enum
 {
    SOUND_MODE_NORMAL,
@@ -131,43 +125,35 @@ enum
 #endif
 };
 
-/*============================================================
-	ROM EXTENSIONS
-============================================================ */
-
-void rarch_console_load_game(const char *path);
-
-// Get rom extensions for current library.
-// Returns NULL if library doesn't have any preferences in particular.
-const char *rarch_console_get_rom_ext(void);
-
-// Transforms a library id to a name suitable as a pathname.
-void rarch_console_name_from_id(char *name, size_t size);
-
-#ifdef HAVE_ZLIB
-int rarch_extract_zipfile(const char *zip_path);
+typedef struct
+{
+   char menu_border_file[PATH_MAX];
+   char border_file[PATH_MAX];
+   char border_dir[PATH_MAX];
+#ifdef HAVE_HDD_CACHE_PARTITION
+   char cache_dir[PATH_MAX];
 #endif
-
-/*============================================================
-	INPUT EXTENSIONS
-============================================================ */
-
-#ifdef HAVE_DEFAULT_RETROPAD_INPUT
-const char *rarch_input_find_platform_key_label(uint64_t joykey);
-uint64_t rarch_input_find_previous_platform_key(uint64_t joykey);
-uint64_t rarch_input_find_next_platform_key(uint64_t joykey);
-
-// Sets custom default keybind names (some systems emulated by the emulator
-// will need different keybind names for buttons, etc.)
-void rarch_input_set_default_keybind_names_for_emulator(void);
-void rarch_input_set_default_keybinds(unsigned player);
-
-void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
-
-void rarch_input_set_controls_default (void);
-const char *rarch_input_get_default_keybind_name (unsigned id);
+   char cgp_dir[PATH_MAX];
+   char config_file[PATH_MAX];
+   char core_dir[PATH_MAX];
+   char executable_extension[PATH_MAX];
+   char filesystem_root_dir[PATH_MAX];
+   char input_presets_dir[PATH_MAX];
+#ifdef HAVE_MULTIMAN
+   char multiman_self_file[PATH_MAX];
 #endif
+   char port_dir[PATH_MAX];
+   char savestate_dir[PATH_MAX];
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+   char menu_shader_file[PATH_MAX];
+   char shader_file[PATH_MAX];
+   char shader_dir[PATH_MAX];
+#endif
+   char sram_dir[PATH_MAX];
+   char system_dir[PATH_MAX];
+} default_paths_t;
 
+extern default_paths_t default_paths;
 
 /*============================================================
   RetroArch
@@ -226,13 +212,9 @@ const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr);
 
 enum
 {
-   CONFIG_FILE,
-   SHADER_PRESET_FILE,
-   INPUT_PRESET_FILE
+   MODE_EMULATION = 0,
+   MODE_MENU,
+   MODE_EXIT
 };
-
-void rarch_config_create_default(const char * conf_name);
-void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool find_libretro_path);
-void rarch_config_save(const char * conf_name);
 
 #endif

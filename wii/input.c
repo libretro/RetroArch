@@ -34,6 +34,97 @@
 #define JOYSTICK_THRESHOLD 64
 
 static uint64_t pad_state[4];
+
+const struct platform_bind platform_keys[] = {
+   { WII_GC_A, "GC A button" },
+   { WII_GC_B, "GC B button" },
+   { WII_GC_X, "GC X button" },
+   { WII_GC_Y, "GC Y button" },
+   { WII_GC_UP, "GC D-Pad Up" },
+   { WII_GC_DOWN, "GC D-Pad Down" },
+   { WII_GC_LEFT, "GC D-Pad Left" },
+   { WII_GC_RIGHT, "GC D-Pad Right" },
+   { WII_GC_Z_TRIGGER, "GC Z Trigger" },
+   { WII_GC_START, "GC Start button" },
+   { WII_GC_L_TRIGGER, "GC Left Trigger" },
+   { WII_GC_R_TRIGGER, "GC Right Trigger" },
+   { WII_GC_LSTICK_LEFT, "GC Main Stick Left" },
+   { WII_GC_LSTICK_RIGHT, "GC Main Stick Right" },
+   { WII_GC_LSTICK_UP, "GC Main Stick Up" },
+   { WII_GC_LSTICK_DOWN, "GC Main Stick Down" },
+   { WII_GC_LSTICK_LEFT | WII_GC_LEFT, "GC Main Stick D-Pad Left" },
+   { WII_GC_LSTICK_RIGHT | WII_GC_RIGHT, "GC Main Stick D-Pad Right" },
+   { WII_GC_LSTICK_UP | WII_GC_UP, "GC Main Stick D-Pad Up" },
+   { WII_GC_LSTICK_DOWN | WII_GC_DOWN, "GC Main Stick D-Pad Down" },
+   { WII_GC_RSTICK_LEFT, "GC C-Stick Left" },
+   { WII_GC_RSTICK_RIGHT, "GC C-Stick Right" },
+   { WII_GC_RSTICK_UP, "GC C-Stick Up" },
+   { WII_GC_RSTICK_DOWN, "GC C-Stick Down" },
+   { WII_GC_RSTICK_LEFT | WII_GC_LEFT, "GC C-Stick D-Pad Left" },
+   { WII_GC_RSTICK_RIGHT | WII_GC_RIGHT, "GC C-Stick D-Pad Right" },
+   { WII_GC_RSTICK_UP | WII_GC_UP, "GC C-Stick D-Pad Up" },
+   { WII_GC_RSTICK_DOWN | WII_GC_DOWN, "GC C-Stick D-Pad Down" },
+
+#ifdef HW_RVL
+   // CLASSIC CONTROLLER
+   { WII_CLASSIC_A, "Classic A button" },
+   { WII_CLASSIC_B, "Classic B button" },
+   { WII_CLASSIC_X, "Classic X button" },
+   { WII_CLASSIC_Y, "Classic Y button" },
+   { WII_CLASSIC_UP, "Classic D-Pad Up" },
+   { WII_CLASSIC_DOWN, "Classic D-Pad Down" },
+   { WII_CLASSIC_LEFT, "Classic D-Pad Left" },
+   { WII_CLASSIC_RIGHT, "Classic D-Pad Right" },
+   { WII_CLASSIC_PLUS, "Classic Plus button" },
+   { WII_CLASSIC_MINUS, "Classic Minus button" },
+   { WII_CLASSIC_HOME, "Classic Home button" },
+   { WII_CLASSIC_L_TRIGGER, "Classic L Trigger" },
+   { WII_CLASSIC_R_TRIGGER, "Classic R Trigger" },
+   { WII_CLASSIC_ZL_TRIGGER, "Classic ZL Trigger" },
+   { WII_CLASSIC_ZR_TRIGGER, "Classic ZR Trigger" },
+   { WII_CLASSIC_LSTICK_LEFT, "Classic LStick Left" },
+   { WII_CLASSIC_LSTICK_RIGHT, "Classic LStick Right" },
+   { WII_CLASSIC_LSTICK_UP, "Classic LStick Up" },
+   { WII_CLASSIC_LSTICK_DOWN, "Classic LStick Down" },
+   { WII_CLASSIC_LSTICK_LEFT | WII_CLASSIC_LEFT, "Classic LStick D-Pad Left" },
+   { WII_CLASSIC_LSTICK_RIGHT | WII_CLASSIC_RIGHT, "Classic LStick D-Pad Right" },
+   { WII_CLASSIC_LSTICK_UP | WII_CLASSIC_UP, "Classic LStick D-Pad Up" },
+   { WII_CLASSIC_LSTICK_DOWN | WII_CLASSIC_DOWN, "Classic LStick D-Pad Down" },
+   { WII_CLASSIC_RSTICK_LEFT, "Classic RStick Left" },
+   { WII_CLASSIC_RSTICK_RIGHT, "Classic RStick Right" },
+   { WII_CLASSIC_RSTICK_UP, "Classic RStick Up" },
+   { WII_CLASSIC_RSTICK_DOWN, "Classic RStick Down" },
+   { WII_CLASSIC_RSTICK_LEFT | WII_CLASSIC_LEFT, "Classic RStick D-Pad Left" },
+   { WII_CLASSIC_RSTICK_RIGHT | WII_CLASSIC_RIGHT, "Classic RStick D-Pad Right" },
+   { WII_CLASSIC_RSTICK_UP | WII_CLASSIC_UP, "Classic RStick D-Pad Up" },
+   { WII_CLASSIC_RSTICK_DOWN | WII_CLASSIC_DOWN, "Classic RStick D-Pad Down" },
+
+   // WIIMOTE (PLUS OPTIONAL NUNCHUK)
+   { WII_WIIMOTE_A, "Wiimote A button" },
+   { WII_WIIMOTE_B, "Wiimote B button" },
+   { WII_WIIMOTE_1, "Wiimote 1 button" },
+   { WII_WIIMOTE_2, "Wiimote 2 button" },
+   { WII_WIIMOTE_UP, "Wiimote D-Pad Up" },
+   { WII_WIIMOTE_DOWN, "Wiimote D-Pad Down" },
+   { WII_WIIMOTE_LEFT, "Wiimote D-Pad Left" },
+   { WII_WIIMOTE_RIGHT, "Wiimote D-Pad Right" },
+   { WII_WIIMOTE_PLUS, "Wiimote Plus button" },
+   { WII_WIIMOTE_MINUS, "Wiimote Minus button" },
+   { WII_WIIMOTE_HOME, "Wiimote Home button" },
+   { WII_NUNCHUK_Z, "Nunchuk Z button" },
+   { WII_NUNCHUK_C, "Nunchuk C button" },
+   { WII_NUNCHUK_LEFT, "Nunchuk Stick Left" },
+   { WII_NUNCHUK_RIGHT, "Nunchuk Stick Right" },
+   { WII_NUNCHUK_UP, "Nunchuk Stick Up" },
+   { WII_NUNCHUK_DOWN, "Nunchuk Stick Down" },
+   { WII_NUNCHUK_LEFT | WII_WIIMOTE_LEFT, "Nunchuk Stick D-Pad Left" },
+   { WII_NUNCHUK_RIGHT | WII_WIIMOTE_RIGHT, "Nunchuk Stick D-Pad Right" },
+   { WII_NUNCHUK_UP | WII_WIIMOTE_UP, "Nunchuk Stick D-Pad Up" },
+   { WII_NUNCHUK_DOWN | WII_WIIMOTE_DOWN, "Nunchuk Stick D-Pad Down" },
+#endif
+};
+
+const unsigned int platform_keys_size = sizeof(platform_keys);
 static bool g_quit;
 
 static int16_t wii_input_state(void *data, const struct retro_keybind **binds,
@@ -279,12 +370,32 @@ static bool wii_key_pressed(void *data, int key)
    }
 }
 
+static void wii_set_default_keybind_lut(void)
+{
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_B].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_Y].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[WII_DEVICE_GC_ID_JOYPAD_Z_TRIGGER].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[WII_DEVICE_GC_ID_JOYPAD_START].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[WII_DEVICE_GC_ID_JOYPAD_UP].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[WII_DEVICE_GC_ID_JOYPAD_DOWN].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[WII_DEVICE_GC_ID_JOYPAD_LEFT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[WII_DEVICE_GC_ID_JOYPAD_RIGHT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_A].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_X].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_L_TRIGGER].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_R_TRIGGER].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = 0;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]     = 0;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]     = 0;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]     = 0;
+}
+
 const input_driver_t input_wii = {
    .init = wii_input_initialize,
    .poll = wii_input_poll,
    .input_state = wii_input_state,
    .key_pressed = wii_key_pressed,
    .free = wii_free_input,
+   .set_default_keybind_lut = wii_set_default_keybind_lut,
    .ident = "wii",
 };
-

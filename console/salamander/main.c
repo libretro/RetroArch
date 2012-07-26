@@ -171,7 +171,7 @@ static void init_settings(void)
    char core_executable[1024];
 #if defined(_XBOX360)
    snprintf(core_executable, sizeof(core_executable), "game:\\CORE.xex");
-#if defined(_XBOX1)
+#elif defined(_XBOX1)
    snprintf(core_executable, sizeof(core_executable), "D:\\CORE.xbe");
 #elif defined(__CELLOS_LV2__)
    snprintf(core_executable, sizeof(core_executable), "%s/CORE.SELF", LIBRETRO_DIR_PATH);

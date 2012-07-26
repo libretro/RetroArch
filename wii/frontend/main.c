@@ -200,7 +200,7 @@ int main(void)
 
    wii_video_init();
    input_wii.init();
-   rarch_input_set_controls_default();
+   rarch_input_set_controls_default(&input_wii);
 
    rgui_handle_t *rgui = rgui_init("",
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),

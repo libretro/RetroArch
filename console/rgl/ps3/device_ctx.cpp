@@ -18,7 +18,11 @@
 #include <sys/synchronization.h>
 #endif
 
+#include "../../../general.h"
+
+#ifndef __PSL1GHT__
 using namespace cell::Gcm;
+#endif
 
 #define _RGL_MAX_TILED_REGIONS 15
 
@@ -185,8 +189,6 @@ void _RGLFifoFinish( RGLFifo *fifo )
    {
       if ( !_RGLFifoReferenceInUse( fifo, ref ) )
          break;
-
-      sys_timer_usleep( 10 );
    }
 }
 
@@ -221,7 +223,6 @@ static void _RGLFifoInit( RGLFifo *fifo, void *dmaControl, unsigned long dmaPush
       {
          if ( _RGLFifoReadReference( fifo ) == 0 )
             break;
-	 sys_timer_usleep( 10 );
       }
    }
    fifo->dmaPushBufferGPU = dmaPushBuffer;
@@ -307,7 +308,7 @@ GLboolean _RGLInit( PSGLinitOptions* options, RGLResource *resource )
 {
     if ( !_RGLInitFromRM( resource ) )
     {
-        fprintf( stderr, "PSGL GCM failed initialisation" );
+        RARCH_ERR("RGL GCM failed initialisation.\n");
         return GL_FALSE;
     }
 
@@ -318,7 +319,7 @@ GLboolean _RGLInit( PSGLinitOptions* options, RGLResource *resource )
                   resource->hostMemoryBase + resource->hostMemoryReserved,
                   resource->hostMemorySize - resource->hostMemoryReserved ) == GMM_ERROR )
     {
-        fprintf( stderr, "Could not init GPU memory manager" );
+        RARCH_ERR("Could not initialize GPU memory manager.\n");
         _RGLDestroy();
         return GL_FALSE;
     }
@@ -405,7 +406,7 @@ const VideoMode *_RGLDetectVideoMode (void)
     int ret = cellVideoOutGetState( CELL_VIDEO_OUT_PRIMARY, 0, &videoState );
     if ( ret < 0 )
     {
-        printf("RGL WARN: couldn't read the video configuration, using a default 720p resolution.\n");
+        RARCH_WARN("Couldn't read the video configuration, using a default 720p resolution.\n");
         videoState.displayMode.scanMode = CELL_VIDEO_OUT_SCAN_MODE_PROGRESSIVE;
         videoState.displayMode.resolutionId = CELL_VIDEO_OUT_RESOLUTION_720;
     }
@@ -473,9 +474,8 @@ static unsigned int findValidPitch( unsigned int pitch )
     else
     {
         for ( GLuint i = 0;i < validPitchCount - 1;++i )
-        {
             if (( pitch > validPitch[i] ) && ( pitch <= validPitch[i+1] ) ) return validPitch[i+1];
-        }
+
         return validPitch[validPitchCount-1];
     }
 }
@@ -518,7 +518,6 @@ int32_t _RGLOutOfSpaceCallback( struct CellGcmContextData* fifoContext, uint32_t
    || (get < fifo->dmaPushBufferOffset) || (get > fifo->dmaPushBufferOffset + 
    fifo->dmaPushBufferSizeInWords*sizeof(uint32_t))) 
    {
-      sys_timer_usleep(30);
       get = fifo->dmaControl->Get;
    }
 
@@ -538,15 +537,15 @@ void _RGLGraphicsHandler( const uint32_t head )
    uint32_t *tmp = ( uint32_t * )(( char* )fifo->dmaPushBufferBegin - fifo->dmaPushBufferOffset + ( *(( volatile GLuint* ) & fifo->dmaControl->Get ) ) );
    if (( tmp >= fifo->begin ) && ( tmp <= fifo->end ) ) fifo->lastGetRead = tmp;
 
-   printf("RGL: Current PSGL FIFO info \n" ); 
-   printf("RGL: Fifo Begin %p End %p Current %p and Get %p \n", 
+   RARCH_ERR("Current PSGL FIFO info:\n" ); 
+   RARCH_ERR("FIFO Begin %p End %p Current %p and Get %p \n", 
    _RGLState.fifo.begin, _RGLState.fifo.end, _RGLState.fifo.current,
    _RGLState.fifo.lastGetRead ); 
 
-   printf("RGL: Last 10 words of the PSGL Fifo from the ppu put/current position \n" );  
+   RARCH_ERR("Last 10 words of the PSGL Fifo from the ppu put/current position \n" );  
    _RGLPrintFifoFromPut( 10 ); 
 
-   printf("RGL: Last 10 words of the PSGL Fifo from the gpu get position \n" );  
+   RARCH_ERR("Last 10 words of the PSGL Fifo from the gpu get position \n" );  
    _RGLPrintFifoFromGet( 10 ); 
 }
 
@@ -565,7 +564,7 @@ static int _RGLInitRM( RGLResource *gcmResource, unsigned int hostMemorySize, in
 
     if ( cellGcmInit( _RGL_FIFO_SIZE, gcmResource->hostMemorySize, gcmResource->hostMemoryBase ) != 0 )
     {
-        printf("RGL: RSXIF failed initialization\n" );
+        RARCH_ERR("RSXIF failed initialization.\n");
         return GL_FALSE;
     }
     
@@ -583,7 +582,7 @@ static int _RGLInitRM( RGLResource *gcmResource, unsigned int hostMemorySize, in
     gcmResource->semaphores = ( RGLSemaphoreMemory * )cellGcmGetLabelAddress( 0 );
     gcmResource->dmaControl = ( char* ) cellGcmGetControlRegister() - (( char * ) & (( RGLControlDma* )0 )->Put - ( char * )0 );
 
-    cellGcmFinish( 1 );
+    cellGcmFinish(1);
 
     gcmResource->hostMemorySize -= dmaPushBufferSize + _RGL_DMA_PUSH_BUFFER_PREFETCH_PADDING;
     gcmResource->dmaPushBuffer = gcmResource->hostMemoryBase + gcmResource->hostMemorySize;
@@ -595,13 +594,14 @@ static int _RGLInitRM( RGLResource *gcmResource, unsigned int hostMemorySize, in
 
     gCellGcmCurrentContext->callback = ( CellGcmContextCallback )_RGLOutOfSpaceCallback;
 
-
-    printf( "RGL: MClk: %f Mhz NVClk: %f Mhz\n", ( float )gcmResource->MemoryClock / 1E6, ( float )gcmResource->GraphicsClock / 1E6 );
-    printf( "RGL: Video Memory: %i MB\n", gcmResource->localSize / ( 1024*1024 ) );
-    printf( "RGL: localAddress mapped at %p\n", gcmResource->localAddress );
-    printf( "RGL: push buffer at %p - %p (size = 0x%X), offset=0x%lx\n",
-                  gcmResource->dmaPushBuffer, ( char* )gcmResource->dmaPushBuffer + gcmResource->dmaPushBufferSize, gcmResource->dmaPushBufferSize, gcmResource->dmaPushBufferOffset );
-    printf( "RGL: dma control at %p\n", gcmResource->dmaControl );
+#ifdef LOG_VERBOSE
+    RARCH_LOG("MClk: %f Mhz NVClk: %f Mhz.\n", ( float )gcmResource->MemoryClock / 1E6, ( float )gcmResource->GraphicsClock / 1E6 );
+    RARCH_LOG("Video Memory: %i MB.\n", gcmResource->localSize / ( 1024*1024 ) );
+    RARCH_LOG("Local address mapped at %p.\n", gcmResource->localAddress );
+    RARCH_LOG("Push buffer at %p - %p (size = 0x%X), offset=0x%lx.\n",
+    gcmResource->dmaPushBuffer, ( char* )gcmResource->dmaPushBuffer + gcmResource->dmaPushBufferSize, gcmResource->dmaPushBufferSize, gcmResource->dmaPushBufferOffset );
+    RARCH_LOG("DMA control at %p.\n", gcmResource->dmaControl );
+#endif
     
     return 1;
 }
@@ -621,7 +621,7 @@ void _RGLDeviceInit( PSGLinitOptions* options )
 
     if ( !_RGLInitRM( &_RGLResource, hostSize, 0, fifoSize ) )
     {
-        printf("RGL: RM resource failed initialisation\n" );
+        RARCH_ERR("RM resource failed initialization.\n" );
         return;
     }
 
@@ -714,7 +714,9 @@ GLboolean _RGLAllocateColorSurface(
         *pitchAllocated = 0;
     }
     else
-        printf("RGL: Allocating GPU memory (tiled): %d bytes allocated at id 0x%08x.\n", *bytesAllocated, *id );
+    {
+        RARCH_LOG("Allocating GPU memory (tiled): %d bytes allocated at id 0x%08x.\n", *bytesAllocated, *id );
+    }
 
     return *bytesAllocated > 0;
 }
@@ -731,8 +733,7 @@ GLboolean _RGLAllocateColorSurface(
 
 static void rescInit( const PSGLdeviceParameters* params, RGLDevice *gcmDevice )
 {
-   printf("RGL WARN: RESC is enabled.\n");
-   GLboolean result = 0;
+   RARCH_WARN("RESC is enabled.\n");
 
    CellRescBufferMode dstBufferMode;
    if ( params->width == 720  && params->height == 480 )  dstBufferMode = CELL_RESC_720x480;
@@ -742,7 +743,7 @@ static void rescInit( const PSGLdeviceParameters* params, RGLDevice *gcmDevice )
    else
    {
       dstBufferMode = CELL_RESC_720x480;
-      printf("RGL: Invalid display resolution for resolution conversion: %ux%u. Defaulting to 720x480...\n", params->width, params->height );
+      RARCH_ERR("Invalid display resolution for resolution conversion: %ux%u. Defaulting to 720x480...\n", params->width, params->height );
    }
 
    CellRescInitConfig conf;
@@ -763,7 +764,7 @@ static void rescInit( const PSGLdeviceParameters* params, RGLDevice *gcmDevice )
    GLuint colorBuffersPitch;
    uint32_t numColorBuffers = cellRescGetNumColorBuffers( dstBufferMode, ( CellRescPalTemporalMode )conf.palTemporalMode, 0 );
 
-   result = _RGLAllocateColorSurface( params->width, params->height * numColorBuffers,
+   _RGLAllocateColorSurface( params->width, params->height * numColorBuffers,
 		   4*8, &(gcmDevice->RescColorBuffersId), &colorBuffersPitch, &size );
 
    CellRescDsts dsts = { CELL_RESC_SURFACE_A8R8G8B8, colorBuffersPitch, 1 };
@@ -814,13 +815,10 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
    jsTiledMemoryManager* mm = &_RGLTiledMemoryManager;
 
    _RGLDuringDestroyDevice = GL_FALSE;
-   GLboolean result = 0;
-
-   int32_t retVal;
 
    memset( mm->region, 0, sizeof( mm->region ) );
    for ( int i = 0;i < _RGL_MAX_TILED_REGIONS;++i )
-      retVal = cellGcmUnbindTile( i );
+      cellGcmUnbindTile( i );
 
 
    const VideoMode *vm = NULL;
@@ -873,7 +871,7 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
       gcmDevice->color[i].pool = _RGL_SURFACE_POOL_LINEAR;
 
       GLuint size;
-      result = _RGLAllocateColorSurface(width, height,
+      _RGLAllocateColorSurface(width, height,
       gcmDevice->color[i].bpp*8, &gcmDevice->color[i].dataId,
       &gcmDevice->color[i].pitch, &size );
    }
@@ -961,7 +959,7 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
 
 	 if ( cellRescSetSrc( i, &rescSrc ) != CELL_OK )
 	 {
-            printf("RGL: Registering display buffer %d failed\n", i );
+            RARCH_ERR("Registering display buffer %d failed.\n", i );
 	    return -1;
 	 }
       }
@@ -978,7 +976,7 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
       {
          if ( cellGcmSetDisplayBuffer( i, gmmIdToOffset( gcmDevice->color[i].dataId ), gcmDevice->color[i].pitch , width, height ) != CELL_OK )
 	 {
-            printf("RGL: Registering display buffer %d failed\n", i );
+            RARCH_ERR("Registering display buffer %d failed.\n", i );
 	    return -1;
 	 }
       }
@@ -1221,7 +1219,7 @@ GLAPI void psglSwap( void )
       int32_t res = cellRescSetConvertAndFlip(( uint8_t ) drawBuffer ); 
       if ( res != CELL_OK )
       {
-         printf("RGL WARN: RESC cellRescSetConvertAndFlip returned error code %d.\n", res);
+         RARCH_WARN("RESC cellRescSetConvertAndFlip returned error code %d.\n", res);
 	 if ( _CurrentContext ) _CurrentContext->needValidate |= PSGL_VALIDATE_FRAMEBUFFER;
 	 return;
       }
@@ -1292,8 +1290,7 @@ static inline void _RGLUtilWaitForIdle (void)
    cellGcmSetWriteBackEndLabelInline( &_RGLState.fifo, RGL_UTIL_LABEL_INDEX, _RGLState.labelValue);
    cellGcmFlush();
 
-   while( *(cellGcmGetLabelAddress( RGL_UTIL_LABEL_INDEX)) != _RGLState.labelValue)
-      sys_timer_usleep(30);
+   while( *(cellGcmGetLabelAddress( RGL_UTIL_LABEL_INDEX)) != _RGLState.labelValue);
 
    _RGLState.labelValue++;
 }
@@ -1301,7 +1298,6 @@ static inline void _RGLUtilWaitForIdle (void)
 GLboolean _RGLTryResizeTileRegion( GLuint address, GLuint size, void* data )
 {
    jsTiledRegion* region = ( jsTiledRegion* )data;
-   int32_t retVal = 0;
 
    if ( size == 0 )
    {
@@ -1312,7 +1308,7 @@ GLboolean _RGLTryResizeTileRegion( GLuint address, GLuint size, void* data )
       if ( ! _RGLDuringDestroyDevice ) 
       {
          _RGLUtilWaitForIdle(); 
-	 retVal = cellGcmUnbindTile( region->id );
+	 cellGcmUnbindTile( region->id );
 	 _RGLFifoFinish( &_RGLState.fifo );
       }
       return GL_TRUE;
@@ -1322,11 +1318,11 @@ GLboolean _RGLTryResizeTileRegion( GLuint address, GLuint size, void* data )
 
    _RGLUtilWaitForIdle(); 
 
-   retVal = cellGcmSetTileInfo(region->id, CELL_GCM_LOCATION_LOCAL,
+   cellGcmSetTileInfo(region->id, CELL_GCM_LOCATION_LOCAL,
    region->offset, region->size, region->pitch, CELL_GCM_COMPMODE_DISABLED, 0,
    region->bank );
 
-   retVal = cellGcmBindTile( region->id ); 
+   cellGcmBindTile( region->id ); 
 
    _RGLFifoFinish( &_RGLState.fifo );
 

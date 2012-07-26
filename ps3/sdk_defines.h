@@ -56,6 +56,7 @@
 #define param_attrib attrib
 #define sys_lwmutex_attribute_t sys_lwmutex_attr_t
 #define sys_lwcond_attribute_t sys_lwcond_attr_t
+#define sys_semaphore_t sys_sem_t
 
 #else
 #define numChannels nChannel
@@ -289,6 +290,14 @@
 #endif
 
 /*============================================================
+	TIMER PROTOTYPES
+============================================================ */
+
+#ifdef __PSL1GHT__
+#define sys_timer_usleep usleep
+#endif
+
+/*============================================================
 	THREADING PROTOTYPES
 ============================================================ */
 
@@ -318,17 +327,112 @@
 #define CELL_GCM_FALSE GCM_FALSE
 #define CELL_GCM_TRUE GCM_TRUE
 
-#define CELL_GCM_TEXTURE_NEAREST GCM_TEXTURE_NEAREST
-
 #define CELL_GCM_ONE GCM_ONE
 #define CELL_GCM_ZERO GCM_ZERO
+#define CELL_GCM_ALWAYS GCM_ALWAYS
 
-#define CELL_GCM_SMOOTH GCM_SMOOTH
+#define CELL_GCM_LOCATION_LOCAL GCM_LOCATION_RSX
+#define CELL_GCM_LOCATION_MAIN GCM_LOCATION_CELL
+
+#define CELL_GCM_MAX_RT_DIMENSION (4096)
+
+#define CELL_GCM_TEXTURE_LINEAR_NEAREST GCM_TEXTURE_LINEAR_MIPMAP_NEAREST
+#define CELL_GCM_TEXTURE_LINEAR_LINEAR GCM_TEXTURE_LINEAR_MIPMAP_LINEAR
+#define CELL_GCM_TEXTURE_NEAREST_LINEAR GCM_TEXTURE_NEAREST_MIPMAP_LINEAR
+#define CELL_GCM_TEXTURE_NEAREST_NEAREST GCM_TEXTURE_NEAREST_MIPMAP_NEAREST
+#define CELL_GCM_TEXTURE_NEAREST GCM_TEXTURE_NEAREST
+#define CELL_GCM_TEXTURE_LINEAR GCM_TEXTURE_LINEAR
+
+#define CELL_GCM_TEXTURE_A8R8G8B8 GCM_TEXTURE_FORMAT_A8R8G8B8
+#define CELL_GCM_TEXTURE_R5G6B5 GCM_TEXTURE_FORMAT_R5G6B5
+#define CELL_GCM_TEXTURE_A1R5G5B5 GCM_TEXTURE_FORMAT_A1R5G5B5
+
+#define CELL_GCM_TEXTURE_CLAMP_TO_EDGE GCM_TEXTURE_CLAMP_TO_EDGE
+
+#define CELL_GCM_TEXTURE_MAX_ANISO_1 GCM_TEXTURE_MAX_ANISO_1
+#define CELL_GCM_TEXTURE_CONVOLUTION_QUINCUNX GCM_TEXTURE_CONVOLUTION_QUINCUNX
+#define CELL_GCM_TEXTURE_ZFUNC_NEVER GCM_TEXTURE_ZFUNC_NEVER
+
+#define CELL_GCM_DISPLAY_HSYNC GCM_FLIP_HSYNC
+#define CELL_GCM_DISPLAY_VSYNC GCM_FLIP_VSYNC
+
+#define CELL_GCM_CLEAR_R GCM_CLEAR_R
+#define CELL_GCM_CLEAR_G GCM_CLEAR_G
+#define CELL_GCM_CLEAR_B GCM_CLEAR_B
+#define CELL_GCM_CLEAR_A GCM_CLEAR_A
+
+#define CELL_GCM_FUNC_ADD GCM_FUNC_ADD
+
+#define CELL_RESC_720x480 RESC_720x480
+#define CELL_RESC_720x576 RESC_720x576
+#define CELL_RESC_1280x720 RESC_1280x720
+#define CELL_RESC_1920x1080 RESC_1920x1080
+
+#define CELL_RESC_FULLSCREEN RESC_FULLSCREEN
+#define CELL_RESC_PANSCAN RESC_PANSCAN
+#define CELL_RESC_LETTERBOX RESC_LETTERBOX
+#define CELL_RESC_CONSTANT_VRAM RESC_CONSTANT_VRAM
+#define CELL_RESC_MINIMUM_GPU_LOAD RESC_MINIMUM_GPU_LOAD
+
+#define CELL_RESC_PAL_50 RESC_PAL_50
+#define CELL_RESC_PAL_60_DROP RESC_PAL_60_DROP
+#define CELL_RESC_PAL_60_INTERPOLATE RESC_PAL_60_INTERPOLATE
+#define CELL_RESC_PAL_60_INTERPOLATE_30_DROP RESC_PAL_60_INTERPOLATE_30_DROP
+#define CELL_RESC_PAL_60_INTERPOLATE_DROP_FLEXIBLE RESC_PAL_60_INTERPOLATE_DROP_FLEXIBLE
+
+#define CELL_RESC_INTERLACE_FILTER RESC_INTERLACE_FILTER
+#define CELL_RESC_NORMAL_BILINEAR RESC_NORMAL_BILINEAR
+
+#define CELL_RESC_ELEMENT_HALF RESC_ELEMENT_HALF
+
+#define CELL_VIDEO_OUT_ASPECT_AUTO VIDEO_ASPECT_AUTO
+#define CELL_VIDEO_OUT_ASPECT_4_3 VIDEO_ASPECT_4_3
+#define CELL_VIDEO_OUT_ASPECT_16_9 VIDEO_ASPECT_16_9
+
+#define CELL_VIDEO_OUT_RESOLUTION_480 VIDEO_RESOLUTION_480
+#define CELL_VIDEO_OUT_RESOLUTION_576 VIDEO_RESOLUTION_576
+#define CELL_VIDEO_OUT_RESOLUTION_720 VIDEO_RESOLUTION_720
+#define CELL_VIDEO_OUT_RESOLUTION_1080 VIDEO_RESOLUTION_1080
+#define CELL_VIDEO_OUT_RESOLUTION_960x1080 VIDEO_RESOLUTION_960x1080
+#define CELL_VIDEO_OUT_RESOLUTION_1280x1080 VIDEO_RESOLUTION_1280x1080
+#define CELL_VIDEO_OUT_RESOLUTION_1440x1080 VIDEO_RESOLUTION_1440x1080
+#define CELL_VIDEO_OUT_RESOLUTION_1600x1080 VIDEO_RESOLUTION_1600x1080
+
+#define CELL_VIDEO_OUT_SCAN_MODE_PROGRESSIVE VIDEO_SCANMODE_PROGRESSIVE
+
+#define CELL_VIDEO_OUT_PRIMARY VIDEO_PRIMARY
+
+#define CELL_VIDEO_OUT_BUFFER_COLOR_FORMAT_X8R8G8B8 VIDEO_BUFFER_FORMAT_XRGB
+#define CELL_VIDEO_OUT_BUFFER_COLOR_FORMAT_R16G16B16X16_FLOAT VIDEO_BUFFER_FORMAT_FLOAT
 
 #define CellGcmSurface gcmSurface
 #define CellGcmTexture gcmTexture
+#define CellGcmContextData _gcmCtxData
+#define CellGcmConfig gcmConfiguration
+#define CellVideoOutConfiguration videoConfiguration
+#define CellVideoOutResolution videoResolution
+#define CellVideoOutState videoState
 
+#define CellRescInitConfig rescInitConfig
+#define CellRescSrc rescSrc
+#define CellRescBufferMode rescBufferMode
+
+#define resolutionId resolution
+#define memoryFrequency memoryFreq
+#define coreFrequency coreFreq
+
+#define cellGcmFinish rsxFinish
+
+#define cellGcmGetFlipStatus gcmGetFlipStatus
+#define cellGcmResetFlipStatus gcmResetFlipStatus
 #define cellGcmSetWaitFlip gcmSetWaitFlip
+#define cellGcmSetDebugOutputLevel gcmSetDebugOutputLevel
+#define cellGcmSetDisplayBuffer gcmSetDisplayBuffer
+#define cellGcmSetGraphicsHandler gcmSetGraphicsHandler
+#define cellGcmSetFlipHandler gcmSetFlipHandler
+#define cellGcmSetVBlankHandler gcmSetVBlankHandler
+#define cellGcmGetConfiguration gcmGetConfiguration
+#define cellGcmSetJumpCommand rsxSetJumpCommand
 #define cellGcmFlush rsxFlushBuffer
 #define cellGcmSetFlipMode gcmSetFlipMode
 #define cellGcmSetFlip gcmSetFlip
@@ -337,6 +441,42 @@
 #define cellGcmBindTile gcmBindTile
 #define cellGcmSetTileInfo gcmSetTileInfo
 #define cellGcmAddressToOffset gcmAddressToOffset
+
+#define cellRescCreateInterlaceTable rescCreateInterlaceTable
+#define cellRescSetDisplayMode rescSetDisplayMode
+#define cellRescGetNumColorBuffers rescGetNumColorBuffers
+#define cellRescGetBufferSize rescGetBufferSize
+#define cellRescSetBufferAddress rescSetBufferAddress
+#define cellRescGetFlipStatus rescGetFlipStatus
+#define cellRescResetFlipStatus rescResetFlipStatus
+#define cellRescSetConvertAndFlip rescSetConvertAndFlip
+#define cellRescSetVBlankHandler rescSetVBlankHandler
+#define cellRescSetFlipHandler rescSetFlipHandler
+#define cellRescAdjustAspectRatio rescAdjustAspectRatio
+#define cellRescSetWaitFlip rescSetWaitFlip
+#define cellRescSetSrc rescSetSrc
+#define cellRescInit rescInit
+#define cellRescExit rescExit
+
+#define cellVideoOutConfigure videoConfigure
+#define cellVideoOutGetState videoGetState
+#define cellVideoOutGetResolution videoGetResolution
+
+#define cellGcmSetViewportInline rsxSetViewport
+#define cellGcmSetReferenceCommandInline rsxSetReferenceCommand
+#define cellGcmSetBlendEquationInline rsxSetBlendEquation
+#define cellGcmSetWriteBackEndLabelInline rsxSetWriteBackendLabel
+#define cellGcmSetWaitLabelInline rsxSetWaitLabel
+#define cellGcmSetDepthTestEnableInline rsxSetDepthTestEnable
+#define cellGcmSetScissorInline rsxSetScissor
+#define cellGcmSetBlendEnableInline rsxSetBlendEnable
+#define cellGcmSetClearColorInline rsxSetClearColor
+#define cellGcmSetBlendFuncInline rsxSetBlendFunc
+#define cellGcmSetBlendColorInline rsxSetBlendColor
+#define cellGcmSetTextureFilterInline rsxTextureFilter
+#define cellGcmSetTextureControlInline rsxTextureControl
+#define cellGcmSetCullFaceEnableInline rsxSetCullFaceEnable
+#define cellGcmSetShadeModeInline rxSetShadeModel
 #endif
 
 #endif

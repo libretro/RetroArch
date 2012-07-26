@@ -1,9 +1,5 @@
-// vector standard header
-
 #ifndef _VECTOR_
 #define _VECTOR_
-
-#define RGL_STD_VECTOR
 
 #include <memory>
 #include <stdexcept>

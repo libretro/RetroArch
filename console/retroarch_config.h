@@ -14,22 +14,18 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _PS3_SHARED_H
-#define _PS3_SHARED_H
+#ifndef _RARCH_CONSOLE_CONFIG_H
+#define _RARCH_CONSOLE_CONFIG_H
 
-extern char usrDirPath[PATH_MAX];
-extern char systemDirPath[PATH_MAX];
-extern char DEFAULT_PRESET_FILE[PATH_MAX];
-extern char DEFAULT_BORDER_FILE[PATH_MAX];
-extern char DEFAULT_MENU_BORDER_FILE[PATH_MAX];
-extern char PRESETS_DIR_PATH[PATH_MAX];
-extern char INPUT_PRESETS_DIR_PATH[PATH_MAX];
-extern char BORDERS_DIR_PATH[PATH_MAX];
-extern char SHADERS_DIR_PATH[PATH_MAX];
-extern char DEFAULT_SHADER_FILE[PATH_MAX];
-extern char DEFAULT_MENU_SHADER_FILE[PATH_MAX];
-extern char LIBRETRO_DIR_PATH[PATH_MAX];
-extern char SYS_CONFIG_FILE[PATH_MAX];
-extern char MULTIMAN_EXECUTABLE[PATH_MAX];
+enum
+{
+   CONFIG_FILE,
+   SHADER_PRESET_FILE,
+   INPUT_PRESET_FILE
+};
+
+void rarch_config_create_default(const char * conf_name);
+void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool find_libretro_path);
+void rarch_config_save(const char * conf_name);
 
 #endif
