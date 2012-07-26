@@ -105,7 +105,7 @@ VIDEO DRIVER
 #elif defined(HAVE_OPENGLES20)
 #include "../../gfx/gles.c"
 #elif defined(GEKKO)
-#include "../../wii/video.c"
+#include "../../wii/gx_video.c"
 #endif
 
 #include "../../gfx/gfx_common.c"
@@ -137,7 +137,7 @@ INPUT
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/ps3_input.c"
 #elif defined(GEKKO)
-#include "../../wii/input.c"
+#include "../../wii/gx_input.c"
 #endif
 
 #ifdef _XBOX
@@ -195,7 +195,7 @@ AUDIO
 #elif defined(_XBOX360)
 #include "../../360/xdk360_audio.cpp"
 #elif defined(GEKKO)
-#include "../../wii/audio.c"
+#include "../../wii/gx_audio.c"
 #endif
 
 #ifdef HAVE_DSOUND

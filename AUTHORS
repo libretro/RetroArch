@@ -1,5 +1,6 @@
 Hans-Kristian Arntzen - <maister@archlinux.us>
    - Main code, maintainer
+   - Gamecube/Wii libogc port
 
 Devin J. Pohly - <djpohly@djpohly.com>
    - Joypad axis support
@@ -10,7 +11,9 @@ Chris Moeller - <kode54@gmail.com>
 Daniel De Matteis - <autechre1024@hotmail.com>
    - PlayStation 3 port
    - XBox 360 XDK port
+   - Libxenon port
    - XBox 1 port
+   - Gamecube/Wii libogc port
 
 David Reichelt - <freakdave@hotmail.com>
    - XBox 1 port
@@ -19,6 +22,7 @@ tukuyomi - <tukuyomi@free.fr>
    - Cleanups in quickbuild
 
 Michael Lelli - <toadking@toadking.com>
+   - Gamecube/Wii libogc port
    - Raspberry Pi video driver
    - Linux Raw keyboard input driver
 
