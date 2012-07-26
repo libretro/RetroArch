@@ -21,6 +21,12 @@
 
 #define WRITEBUFFERSIZE (1024 * 512)
 
-int rarch_extract_zipfile(const char *zip_path);
+enum
+{
+   ZIP_EXTRACT_TO_CURRENT_DIR,
+   ZIP_EXTRACT_TO_CACHE_DIR
+};
+
+int rarch_extract_zipfile(const char *zip_path, const char *current_dir);
 
 #endif

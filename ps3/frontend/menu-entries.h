@@ -270,6 +270,17 @@ item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
       0.83f,
    },
    {
+      SETTING_ZIP_EXTRACT, 
+      "ZIP extract", 
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Select the [ZIP Extract] mode. This setting controls how ZIP files are extracted.",
+      WHITE,
+      0.83f,
+   },
+   {
       SETTING_RARCH_DEFAULT_EMU,
       "Default emulator core",
       "",

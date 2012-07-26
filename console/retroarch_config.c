@@ -102,6 +102,9 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       CONFIG_GET_INT_CONSOLE(viewports.custom_vp.height, "custom_viewport_height");
       CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
       CONFIG_GET_INT_CONSOLE(sound_mode, "sound_mode");
+#ifdef HAVE_ZLIB
+      CONFIG_GET_INT_CONSOLE(zip_extract_mode, "zip_extract_mode");
+#endif
       CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
       CONFIG_GET_FLOAT_CONSOLE(menu_font_size, "menu_font_size");
       CONFIG_GET_FLOAT_CONSOLE(overscan_amount, "overscan_amount");
@@ -174,6 +177,9 @@ void rarch_config_save(const char * conf_name)
       config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
       config_set_float(conf, "menu_font_size", g_console.menu_font_size);
       config_set_float(conf, "overscan_amount", g_console.overscan_amount);
+#ifdef HAVE_ZLIB
+      config_set_int(conf, "zip_extract_mode", g_console.zip_extract_mode);
+#endif
 #endif
 
       // g_extern

@@ -225,7 +225,17 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
          snprintf(str, sizeof(str), "INFO - Press LEFT/RIGHT to change the controls, and press\n[RetroPad Start] to reset a button to default values.");
          break;
       case S_MSG_EXTRACTED_ZIPFILE:
-         snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to cache partition.");
+         switch(g_console.zip_extract_mode)
+         {
+            case ZIP_EXTRACT_TO_CURRENT_DIR:
+               snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to current directory.");
+               break;
+#ifdef HAVE_HDD_CACHE_PARTITION
+            case ZIP_EXTRACT_TO_CACHE_DIR:
+	       snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to cache partition.");
+               break;
+#endif
+         }
          break;
       case S_MSG_LOADING_ROM:
          fill_pathname_base(tmp, g_console.rom_path, sizeof(tmp));
@@ -361,6 +371,9 @@ void rarch_settings_set_default (const input_driver_t *input)
    g_console.info_msg_enable = true;
 #ifdef _XBOX360
    g_console.color_format = 0;
+#endif
+#ifdef HAVE_ZLIB
+   g_console.zip_extract_mode = 0;
 #endif
 
    // g_extern

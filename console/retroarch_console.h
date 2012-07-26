@@ -209,6 +209,7 @@ void rarch_console_rsound_stop(void);
 
 void rarch_convert_char_to_wchar(wchar_t *buf, const char * str, size_t size);
 const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr);
+void rarch_extract_directory(char *buf, const char *path, size_t size);
 
 enum
 {

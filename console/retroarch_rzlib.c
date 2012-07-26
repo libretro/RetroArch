@@ -22,7 +22,7 @@
 
 #include "retroarch_rzlib.h"
 
-static int rarch_extract_currentfile_in_zip(unzFile uf)
+static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir)
 {
    char filename_inzip[PATH_MAX];
    FILE *file_out = NULL;
@@ -48,9 +48,17 @@ static int rarch_extract_currentfile_in_zip(unzFile uf)
 
    char write_filename[PATH_MAX];
 
+   switch(g_console.zip_extract_mode)
+   {
+      case ZIP_EXTRACT_TO_CURRENT_DIR:
+         snprintf(write_filename, sizeof(write_filename), "%s/%s", current_dir, filename_inzip);
+         break;
 #ifdef HAVE_HDD_CACHE_PARTITION
-   snprintf(write_filename, sizeof(write_filename), "%s%s", default_paths.cache_dir, filename_inzip);
+      case ZIP_EXTRACT_TO_CACHE_DIR:
+         snprintf(write_filename, sizeof(write_filename), "%s%s", default_paths.cache_dir, filename_inzip);
+         break;
 #endif
+   }
 
    err = unzOpenCurrentFile(uf);
    if (err != UNZ_OK)
@@ -105,7 +113,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf)
    return err;
 }
 
-int rarch_extract_zipfile(const char *zip_path)
+int rarch_extract_zipfile(const char *zip_path, const char *current_dir)
 {
    unzFile uf = unzOpen(zip_path); 
 
@@ -116,7 +124,7 @@ int rarch_extract_zipfile(const char *zip_path)
 
    for (unsigned i = 0; i < gi.number_entry; i++)
    {
-      if (rarch_extract_currentfile_in_zip(uf) != UNZ_OK)
+      if (rarch_extract_currentfile_in_zip(uf, current_dir) != UNZ_OK)
          break;
 
       if ((i + 1) < gi.number_entry)
@@ -130,10 +138,8 @@ int rarch_extract_zipfile(const char *zip_path)
       }
    }
 
-#ifdef HAVE_HDD_CACHE_PARTITION
    if(g_console.info_msg_enable)
       rarch_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
-#endif
 
    return 0;
 }

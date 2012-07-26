@@ -242,6 +242,9 @@ struct console_settings
    uint32_t control_timer_expiration_frame_count;
    uint32_t timer_expiration_frame_count;
    uint32_t input_loop;
+#ifdef HAVE_ZLIB
+   uint32_t zip_extract_mode;
+#endif
 #ifdef _XBOX
    uint32_t color_format;
    DWORD volume_device_type;

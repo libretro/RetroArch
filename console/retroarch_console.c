@@ -304,3 +304,18 @@ const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr)
    wcstombs(str, wstr, sizeof(str));
    return str;
 }
+
+void rarch_extract_directory(char *buf, const char *path, size_t size)
+{
+   strncpy(buf, path, size - 1);
+   buf[size - 1] = '\0';
+
+   char *base = strrchr(buf, '/');
+   if (!base)
+      base = strrchr(buf, '\\');
+
+   if (base)
+      *base = '\0';
+   else
+      buf[0] = '\0';
+}
