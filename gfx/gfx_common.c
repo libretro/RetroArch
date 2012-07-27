@@ -111,36 +111,18 @@ bool gfx_window_title(char *buf, size_t size)
    return ret;
 }
 
-#ifdef IS_LINUX
-void suspend_screensaver(Window wnd) {
-    char wid[20];
-    snprintf(wid, 20, "%d", (int) wnd);
-    wid[19] = '\0';
-    char* args[4];
-    args[0] = "xdg-screensaver";
-    args[1] = "suspend";
-    args[2] = wid;
-    args[3] = NULL;
+#ifdef HAVE_X11
+void gfx_suspend_screensaver(Window wnd)
+{
+   char cmd[64];
+   snprintf(cmd, sizeof(cmd), "xdg-screensaver suspend %d", (int)wnd);
 
-    int cpid = fork();
-    if (cpid < 0) {
-        RARCH_WARN("Could not suspend screen saver: %s\n", strerror(errno));
-        return;
-    }
+   int ret = system(cmd);
 
-    if (!cpid) {
-        execvp(args[0], args);
-        exit(errno);
-    }
-
-    int err = 0;
-    waitpid(cpid, &err, 0);
-    if (err) {
-        RARCH_WARN("Could not suspend screen saver: %s\n", strerror(err));
-    }
+   if (ret != 0)
+      RARCH_WARN("Could not suspend screen saver.\n");
 }
 #endif
-
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>

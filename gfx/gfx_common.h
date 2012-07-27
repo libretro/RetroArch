@@ -19,12 +19,16 @@
 #include <stddef.h>
 #include "../boolean.h"
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 bool gfx_window_title(char *buf, size_t size);
 void gfx_window_title_reset(void);
 
-#ifdef IS_LINUX
+#ifdef HAVE_X11
 #include <X11/Xlib.h>
-void suspend_screensaver(Window wnd);
+void gfx_suspend_screensaver(Window wnd);
 #endif
 
 #ifdef _WIN32
