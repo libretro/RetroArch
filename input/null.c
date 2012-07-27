@@ -21,12 +21,6 @@ static void *null_input_init(void)
    return (void*)-1;
 }
 
-#ifdef RARCH_CONSOLE
-static void null_input_post_init(void)
-{
-}
-#endif
-
 static void null_input_poll(void *data)
 {
    (void)data;
@@ -58,8 +52,9 @@ static void null_input_free(void *data)
 }
 
 #ifdef RARCH_CONSOLE
-static void null_set_default_keybind_lut(void) { }
-static void null_set_analog_dpad_mapping(unsigned map_dpad_enum, unsigned controller_id) { }
+static void null_set_default_keybind_lut(void) {}
+static void null_set_analog_dpad_mapping(unsigned map_dpad_enum, unsigned controller_id) {}
+static void null_input_post_init(void) {}
 #endif
 
 const input_driver_t input_null = {
