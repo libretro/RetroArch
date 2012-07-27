@@ -135,8 +135,6 @@
 
 uint64_t cell_pad_input_poll_device(uint32_t id);
 
-void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id);
-
 #ifdef HAVE_OSKUTIL
 
 typedef struct

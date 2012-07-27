@@ -21,16 +21,18 @@
 #include <xtl.h>
 #endif
 
+#define MAX_PADS 4
+
 #include "../driver.h"
 #include "../general.h"
 #include "../libretro.h"
 #include "xinput_xbox_input.h"
 
-static uint64_t real_state[4];
-HANDLE gamepads[4];
+static uint64_t real_state[MAX_PADS];
+HANDLE gamepads[MAX_PADS];
 DWORD dwDeviceMask;
-bool bInserted[4];
-bool bRemoved[4];
+bool bInserted[MAX_PADS];
+bool bRemoved[MAX_PADS];
 
 const struct platform_bind platform_keys[] = {
    { XINPUT1_GAMEPAD_B, "B button" },
@@ -82,10 +84,10 @@ static void xinput_input_poll(void *data)
 
    pads_connected = 0;
 
-   for (unsigned i = 0; i < 4; i++)
+   for (unsigned i = 0; i < MAX_PADS; i++)
    {
-      XINPUT_STATE state[4];
-      XINPUT_CAPABILITIES caps[4];
+      XINPUT_STATE state[MAX_PADS];
+      XINPUT_CAPABILITIES caps[MAX_PADS];
       (void)caps;
       real_state[i] = 0;
       // handle removed devices
@@ -162,36 +164,6 @@ static void xinput_input_free_input(void *data)
    (void)data;
 }
 
-static void* xinput_input_init(void)
-{
-   XInitDevices(0, NULL);
-
-   dwDeviceMask = XGetDevices(XDEVICE_TYPE_GAMEPAD);
-   
-   //Check the device status
-   switch(XGetDeviceEnumerationStatus())
-   {
-      case XDEVICE_ENUMERATION_IDLE:
-         RARCH_LOG("Input state status: XDEVICE_ENUMERATION_IDLE\n");
-			break;
-      case XDEVICE_ENUMERATION_BUSY:
-			RARCH_LOG("Input state status: XDEVICE_ENUMERATION_BUSY\n");
-			break;
-   }
-
-   while(XGetDeviceEnumerationStatus() == XDEVICE_ENUMERATION_BUSY) {}
-
-   return (void*)-1;
-}
-
-static bool xinput_input_key_pressed(void *data, int key)
-{
-   (void)data;
-   bool retval = false;
-
-   return retval;
-}
-
 static void xinput_set_default_keybind_lut(void)
 {
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[XDK_DEVICE_ID_JOYPAD_A].joykey;
@@ -219,6 +191,46 @@ static void xinput_set_default_keybind_lut(void)
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]     = platform_keys[XDK_DEVICE_ID_RSTICK_THUMB].joykey;
 }
 
+static void xinput_input_set_analog_dpad_mapping(unsigned map_dpad_enum, unsigned controller_id)
+{
+}
+
+static void* xinput_input_init(void)
+{
+   XInitDevices(0, NULL);
+
+   dwDeviceMask = XGetDevices(XDEVICE_TYPE_GAMEPAD);
+   
+   //Check the device status
+   switch(XGetDeviceEnumerationStatus())
+   {
+      case XDEVICE_ENUMERATION_IDLE:
+         RARCH_LOG("Input state status: XDEVICE_ENUMERATION_IDLE\n");
+			break;
+      case XDEVICE_ENUMERATION_BUSY:
+			RARCH_LOG("Input state status: XDEVICE_ENUMERATION_BUSY\n");
+			break;
+   }
+
+   while(XGetDeviceEnumerationStatus() == XDEVICE_ENUMERATION_BUSY) {}
+
+   return (void*)-1;
+}
+
+static void xinput_input_post_init(void)
+{
+   for(unsigned i = 0; i < MAX_PADS; i++)
+      xinput_input_set_analog_pad_mapping(g_settings.input.dpad_emulation[i], i);
+}
+
+static bool xinput_input_key_pressed(void *data, int key)
+{
+   (void)data;
+   bool retval = false;
+
+   return retval;
+}
+
 const input_driver_t input_xinput = 
 {
    xinput_input_init,
@@ -227,5 +239,8 @@ const input_driver_t input_xinput =
    xinput_input_key_pressed,
    xinput_input_free_input,
    xinput_set_default_keybind_lut,
+   xinput_input_set_analog_dpad_mapping,
+   xinput_input_post_init,
+   MAX_PADS,
    "xinput"
 };

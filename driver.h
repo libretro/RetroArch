@@ -161,6 +161,9 @@ typedef struct input_driver
    void (*free)(void *data);
 #ifdef RARCH_CONSOLE
    void (*set_default_keybind_lut)(void);
+   void (*set_analog_dpad_mapping)(unsigned map_dpad_enum, unsigned controller_id);
+   void (*post_init)(void);
+   unsigned max_pads;
 #endif
    const char *ident;
 } input_driver_t;

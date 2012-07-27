@@ -35,7 +35,9 @@
 
 #define JOYSTICK_THRESHOLD 64
 
-static uint64_t pad_state[4];
+#define MAX_PADS 4
+
+static uint64_t pad_state[MAX_PADS];
 
 const struct platform_bind platform_keys[] = {
    { WII_GC_A, "GC A button" },
@@ -136,7 +138,7 @@ static int16_t wii_input_state(void *data, const struct retro_keybind **binds,
    (void)data;
    (void)index;
 
-   if (port >= 4 || device != RETRO_DEVICE_JOYPAD)
+   if (port >= MAX_PADS || device != RETRO_DEVICE_JOYPAD)
       return 0;
 
    return (binds[port][id].joykey & pad_state[port]) ? 1 : 0;
@@ -152,7 +154,7 @@ static void reset_callback(void)
    g_quit = true;
 }
 
-void wii_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
+static void wii_input_set_analog_dpad_mapping(unsigned map_dpad_enum, unsigned controller_id)
 {
    // TODO: how do we choose a classic controller configuration over a gc controller one?
    switch(map_dpad_enum)
@@ -186,9 +188,13 @@ static void *wii_input_initialize(void)
 #endif
    SYS_SetResetCallback(reset_callback);
    SYS_SetPowerCallback(reset_callback);
-   for(unsigned i = 0; i < 4; i++)
-      wii_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
    return (void*)-1;
+}
+
+static void wii_input_post_init(void)
+{
+   for(unsigned i = 0; i < MAX_PADS; i++)
+      wii_input_set_analog_dpad_mapping(g_settings.input.dpad_emulation[i], i);
 }
 
 #define wii_stick_x(x) ((s8)((sin((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
@@ -203,7 +209,7 @@ static void wii_input_poll(void *data)
    unsigned wpads = WPAD_ScanPads();
 #endif
 
-   for (unsigned port = 0; port < 4; port++)
+   for (unsigned port = 0; port < MAX_PADS; port++)
    {
       uint64_t state = 0;
       if (port < pads)
@@ -395,5 +401,8 @@ const input_driver_t input_wii = {
    .key_pressed = wii_key_pressed,
    .free = wii_free_input,
    .set_default_keybind_lut = wii_set_default_keybind_lut,
+   .set_analog_dpad_mapping = wii_input_set_analog_dpad_mapping,
+   .post_init = wii_input_post_init,
+   .max_pads = MAX_PADS,
    .ident = "wii",
 };

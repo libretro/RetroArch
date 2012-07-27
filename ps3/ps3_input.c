@@ -373,24 +373,7 @@ void oskutil_unload(oskutil_params *params)
 	RetroArch PS3 INPUT DRIVER 
 ============================================================ */
 
-static void ps3_free_input(void *data)
-{
-   (void)data;
-   //cellPadEnd();
-}
-
-static void* ps3_input_initialize(void)
-{
-   cellPadInit(MAX_PADS);
-#ifdef HAVE_MOUSE
-   cellMouseInit(MAX_MICE);
-#endif
-   for(unsigned i = 0; i < MAX_PADS; i++)
-   	ps3_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
-   return (void*)-1;
-}
-
-void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
+static void ps3_input_set_analog_dpad_mapping(unsigned map_dpad_enum, unsigned controller_id)
 {
    switch(map_dpad_enum)
    {
@@ -413,6 +396,27 @@ void ps3_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
 	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[PS3_DEVICE_ID_RSTICK_RIGHT_DPAD].joykey;
 	 break;
    }
+}
+
+static void ps3_free_input(void *data)
+{
+   (void)data;
+   //cellPadEnd();
+}
+
+static void* ps3_input_initialize(void)
+{
+   cellPadInit(MAX_PADS);
+#ifdef HAVE_MOUSE
+   cellMouseInit(MAX_MICE);
+#endif
+   return (void*)-1;
+}
+
+static void ps3_input_post_init(void)
+{
+   for(unsigned i = 0; i < MAX_PADS; i++)
+      ps3_input_set_analog_dpad_mapping(g_settings.input.dpad_emulation[i], i);
 }
 
 static bool ps3_key_pressed(void *data, int key)
@@ -497,6 +501,9 @@ const input_driver_t input_ps3 = {
    .key_pressed = ps3_key_pressed,
    .free = ps3_free_input,
    .set_default_keybind_lut = ps3_set_default_keybind_lut,
+   .set_analog_dpad_mapping = ps3_input_set_analog_dpad_mapping,
+   .post_init = ps3_input_post_init,
+   .max_pads = MAX_PADS,
    .ident = "ps3",
 };
 

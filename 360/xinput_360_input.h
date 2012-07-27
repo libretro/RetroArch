@@ -70,6 +70,4 @@ enum xdk_device_id
 
 #define DEADZONE                            (16000)
 
-extern void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id);
-
 #endif

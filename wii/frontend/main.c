@@ -214,6 +214,8 @@ int main(void)
    input_wii.init();
    rarch_input_set_controls_default(&input_wii);
 
+   input_wii.post_init();
+
    rgui_handle_t *rgui = rgui_init("",
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
          _binary_console_font_bmp_start, folder_cb, NULL);

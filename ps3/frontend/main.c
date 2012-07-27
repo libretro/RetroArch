@@ -251,6 +251,8 @@ int main(int argc, char *argv[])
    snprintf(tmp_path, sizeof(tmp_path), "%s/", default_paths.core_dir);
    rarch_configure_libretro(&input_ps3, tmp_path, default_paths.executable_extension);
 
+   input_ps3.post_init();
+
 #if(CELL_SDK_VERSION > 0x340000)
    if (g_console.screenshots_enable)
    {

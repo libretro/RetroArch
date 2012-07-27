@@ -128,6 +128,8 @@ int main(int argc, char *argv[])
    input_xinput.init();
    rarch_configure_libretro(&input_xinput, default_paths.filesystem_root_dir, default_paths.executable_extension);
 
+   input_xinput.post_init();
+
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9)
    video_xdk_d3d.start();
 #else

@@ -24,11 +24,13 @@
 #include <input/input.h>
 #include <usb/usbmain.h>
 
-static struct controller_data_s pad[4];
+#define MAX_PADS
+
+static struct controller_data_s pad[MAX_PADS];
 static void xenon360_input_poll(void *data)
 {
    (void)data;
-   for (unsigned i = 0; i < 4; i++)
+   for (unsigned i = 0; i < MAX_PADS; i++)
    {
       usb_do_poll();
       get_controller_data(&pad[i], i);
@@ -117,12 +119,18 @@ static bool xenon360_key_pressed(void *data, int key)
    return false;
 }
 
+static void xenon360_input_set_default_keybind_lut(void) {}
+static void xenon360_input_set_analog_dpad_mapping(unsigned map_dpad_enum, unsigned controller_id) {}
+
 const input_driver_t input_xenon360 = {
    .init = xenon360_input_init,
    .poll = xenon360_input_poll,
    .input_state = xenon360_input_state,
    .key_pressed = xenon360_key_pressed,
    .free = xenon360_free_input,
+   .set_default_keybind_lut = xenon360_input_set_default_keybind_lut,
+   .set_analog_dpad_mapping = xenon360_input_set_analog_dpad_mapping,
+   .max_pads = MAX_PADS,
    .ident = "xenon360",
 };
 

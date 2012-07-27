@@ -19,12 +19,14 @@
 
 #include <xtl.h>
 
+#define MAX_PADS 4
+
 #include "../driver.h"
 #include "../general.h"
 #include "../libretro.h"
 #include "xinput_360_input.h"
 
-static uint64_t state[4];
+static uint64_t state[MAX_PADS];
 static unsigned pads_connected;
 
 const struct platform_bind platform_keys[] = {
@@ -70,7 +72,7 @@ static void xinput_input_poll(void *data)
 
    pads_connected = 0;
 
-   for (unsigned i = 0; i < 4; i++)
+   for (unsigned i = 0; i < MAX_PADS; i++)
    {
       XINPUT_STATE state_tmp;
       unsigned long retval;
@@ -110,7 +112,7 @@ static void xinput_input_free_input(void *data)
 
 #include "../console/retroarch_console.h"
 
-void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_id)
+static void xinput_input_set_analog_dpad_mapping(unsigned map_dpad_enum, unsigned controller_id)
 {
    switch(map_dpad_enum)
    {
@@ -137,10 +139,13 @@ void xdk360_input_map_dpad_to_stick(uint32_t map_dpad_enum, uint32_t controller_
 
 static void* xinput_input_init(void)
 {
-   for(unsigned i = 0; i < 4; i++)
-      xdk360_input_map_dpad_to_stick(g_settings.input.dpad_emulation[i], i);
-
    return (void*)-1;
+}
+
+static void xinput_input_post_init(void)
+{
+   for(unsigned i = 0; i < MAX_PADS; i++)
+      xinput_input_analog_pad_mapping(g_settings.input.dpad_emulation[i], i);
 }
 
 static bool xinput_input_key_pressed(void *data, int key)
@@ -232,5 +237,8 @@ const input_driver_t input_xinput =
    xinput_input_key_pressed,
    xinput_input_free_input,
    xinput_set_default_keybind_lut,
+   xinput_input_set_analog_dpad_mapping,
+   xinput_input_post_init,
+   MAX_PADS,
    "xinput"
 };
