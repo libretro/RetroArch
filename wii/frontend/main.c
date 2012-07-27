@@ -191,6 +191,19 @@ int rarch_main(int argc, char **argv);
 
 extern uint8_t _binary_console_font_bmp_start[];
 
+static void get_environment_settings(void)
+{
+   getcwd(default_paths.port_dir, MAXPATHLEN);
+   snprintf(default_paths.core_dir, sizeof(default_paths.core_dir), "%scores", default_paths.port_dir);
+   snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%sretroarch.cfg", default_paths.port_dir);
+   snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.core_dir);
+   snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.core_dir);
+   snprintf(default_paths.filesystem_root_dir, sizeof(default_paths.filesystem_root_dir), "/");
+   snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.core_dir);
+   snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/presets/input", default_paths.core_dir);
+   strlcpy(default_paths.executable_extension, ".dol", sizeof(default_paths.executable_extension));
+}
+
 int main(void)
 {
 #ifdef HW_RVL
@@ -198,6 +211,8 @@ int main(void)
 #endif
 
    fatInitDefault();
+
+   get_environment_settings();
 
 #ifdef HAVE_FILE_LOGGER
    g_extern.verbose = true;
@@ -222,6 +237,7 @@ int main(void)
    rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 
    int ret = 0;
+
    while (get_rom_path(rgui) && ret == 0)
    {
       bool repeat = false;
