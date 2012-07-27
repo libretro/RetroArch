@@ -20,6 +20,10 @@
 #include <string.h>
 #include "../boolean.h"
 
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+#include "libretro_mgmt.h"
+#endif
+
 #include "retroarch_rzlib.h"
 
 static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir, char *slash, char *write_filename, size_t write_filename_size)
@@ -115,6 +119,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir,
 int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *first_file, size_t first_file_size)
 {
    bool found_first_file = false;
+   (void)found_first_file;
    unzFile uf = unzOpen(zip_path); 
 
    unz_global_info gi;
@@ -138,6 +143,7 @@ int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *f
       }
       else
       {
+#ifdef HAVE_LIBRETRO_MANAGEMENT
          if(!found_first_file)
          {
             found_first_file = rarch_manage_libretro_extension_supported(write_filename);
@@ -145,6 +151,7 @@ int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *f
             if(found_first_file)
                snprintf(first_file, first_file_size, write_filename);
          }
+#endif
       }
 
       if ((i + 1) < gi.number_entry)

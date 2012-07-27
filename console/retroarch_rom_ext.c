@@ -41,7 +41,9 @@ static void rarch_console_load_game(const char *path)
 void rarch_console_load_game_wrap(const char *path, unsigned delay)
 {
    const char *game_to_load;
+#ifdef HAVE_ZLIB
    char first_file[PATH_MAX];
+#endif
    char rom_path_temp[PATH_MAX];
    char dir_path_temp[PATH_MAX];
    struct retro_system_info info;
@@ -55,13 +57,8 @@ void rarch_console_load_game_wrap(const char *path, unsigned delay)
 #ifdef HAVE_ZLIB
    bool extract_zip_cond = (strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP"))
    && !block_zip_extract;
-   bool extract_zip_and_load_game_cond = (extract_zip_cond && 
-   g_console.zip_extract_mode == ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE && first_file);
-   bool load_game = (extract_zip_and_load_game_cond) || (!extract_zip_cond);
 #else
    bool extract_zip_cond = false;
-   bool extract_zip_and_load_game_cond = false;
-   bool load_game = !extract_zip_cond;
 #endif
 
 #ifdef HAVE_ZLIB
@@ -70,6 +67,15 @@ void rarch_console_load_game_wrap(const char *path, unsigned delay)
       rarch_extract_directory(dir_path_temp, rom_path_temp, sizeof(dir_path_temp));
       rarch_extract_zipfile(rom_path_temp, dir_path_temp, first_file, sizeof(first_file));
    }
+#endif
+
+#ifdef HAVE_ZLIB
+   bool extract_zip_and_load_game_cond = (extract_zip_cond && 
+   g_console.zip_extract_mode == ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE);
+   bool load_game = (extract_zip_and_load_game_cond) || (!extract_zip_cond);
+#else
+   bool extract_zip_and_load_game_cond = false;
+   bool load_game = !extract_zip_cond;
 #endif
 
 #ifdef HAVE_ZLIB
