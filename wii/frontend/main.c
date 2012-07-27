@@ -215,6 +215,7 @@ int main(void)
    get_environment_settings();
 
 #ifdef HAVE_LOGGER
+   g_extern.verbose = true;
    logger_init();
 #endif
 #ifdef HAVE_FILE_LOGGER
