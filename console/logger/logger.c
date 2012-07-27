@@ -52,8 +52,8 @@ static int sock;
 static struct sockaddr_in target;
 static char sendbuf[4096];
 
-#ifdef HW_RVL
-#define sendto(s, msg, len, flags, addr, tolen) net_sendto(s, msg, len, flags, addr, tolen)
+#ifdef GEKKO
+#define sendto(s, msg, len, flags, addr, tolen) net_sendto(s, msg, len, 0, addr, 8)
 #define socket(domain, type, protocol) net_socket(domain, type, protocol)
 
 static int inet_pton(int af, const char *src, void *dst)
@@ -100,16 +100,21 @@ static int if_up_with(int index)
       }
    }
 #elif defined(GEKKO)
-   if (if_config(NULL, NULL, NULL, TRUE) < 0)
+   char t[16];
+   if (if_config(t, NULL, NULL, TRUE) < 0)
    {
       return (-1);
    }
 #endif
 
-   sock=socket(AF_INET,SOCK_DGRAM ,0);
+   sock=socket(AF_INET, SOCK_DGRAM, 0);
 
    target.sin_family = AF_INET;
    target.sin_port = htons(PC_DEVELOPMENT_UDP_PORT);
+#ifdef GEKKO
+   target.sin_len = 8;
+#endif
+
    inet_pton(AF_INET, PC_DEVELOPMENT_IP_ADDRESS, &target.sin_addr);
 
    return (0);
@@ -120,6 +125,8 @@ static int if_down(int sid)
    (void)sid;
 #ifdef __CELLOS_LV2__
    cellNetCtlTerm();
+#elif defined(GEKKO)
+   net_deinit();
 #endif
    return (0);
 }

@@ -214,6 +214,9 @@ int main(void)
 
    get_environment_settings();
 
+#ifdef HAVE_LOGGER
+   logger_init();
+#endif
 #ifdef HAVE_FILE_LOGGER
    g_extern.verbose = true;
    log_fp = fopen("/retroarch-log.txt", "w");
@@ -259,6 +262,9 @@ int main(void)
 
 #ifdef HAVE_FILE_LOGGER
    fclose(log_fp);
+#endif
+#ifdef HAVE_LOGGER
+   logger_shutdown();
 #endif
 
    rgui_free(rgui);
