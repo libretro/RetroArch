@@ -244,18 +244,16 @@ static void wii_input_poll(void *data)
 {
    (void)data;
 
-   unsigned pads = PAD_ScanPads();
+   PAD_ScanPads();
 #ifdef HW_RVL
-   unsigned wpads = WPAD_ScanPads();
+   WPAD_ScanPads();
 #endif
 
    for (unsigned port = 0; port < MAX_PADS; port++)
    {
       uint64_t state = 0;
-      if (port < pads)
       {
-         uint16_t down = PAD_ButtonsHeld(port) | PAD_ButtonsDown(port);
-         down &= ~PAD_ButtonsUp(port);
+         uint16_t down = PAD_ButtonsHeld(port);
 
          state |= (down & PAD_BUTTON_A) ? WII_GC_A : 0;
          state |= (down & PAD_BUTTON_B) ? WII_GC_B : 0;
@@ -296,10 +294,8 @@ static void wii_input_poll(void *data)
       }
 
 #ifdef HW_RVL
-      if (port < wpads)
       {
-         uint32_t down = WPAD_ButtonsHeld(port) | WPAD_ButtonsDown(port);
-         down &= ~WPAD_ButtonsUp(port);
+         uint32_t down = WPAD_ButtonsHeld(port);
 
          state |= (down & WPAD_BUTTON_A) ? WII_WIIMOTE_A : 0;
          state |= (down & WPAD_BUTTON_B) ? WII_WIIMOTE_B : 0;
