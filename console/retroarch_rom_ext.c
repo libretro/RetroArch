@@ -89,7 +89,9 @@ void rarch_console_load_game_wrap(const char *path, unsigned delay)
    {
       rarch_console_load_game(game_to_load);
 
+#ifndef GEKKO
       if (g_console.info_msg_enable)
+#endif
          rarch_settings_msg(S_MSG_LOADING_ROM, delay);
    }
 }
