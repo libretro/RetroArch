@@ -127,7 +127,7 @@ int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *f
       static char write_filename[PATH_MAX];
       char slash[6];
 #ifdef _XBOX
-      snprintf(slash, sizeof(slash), "\0");
+      snprintf(slash, sizeof(slash), "\\");
 #else
       snprintf(slash, sizeof(slash), "/");
 #endif

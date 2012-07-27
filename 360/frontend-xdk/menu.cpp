@@ -546,8 +546,8 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       const char *strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
       if(path_file_exists(browser->current_dir.list->elems[index].data))
       {
-         snprintf(path_temp, sizeof(path_temp), "%s\\%s", filebrowser_get_current_dir(browser), strbuffer);
-         rarch_console_load_game_wrap(path_temp, S_DELAY_45);
+         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), strbuffer);
+         rarch_console_load_game_wrap(path, S_DELAY_45);
       }
       else if(browser->current_dir.list->elems[index].attr.b)
       {

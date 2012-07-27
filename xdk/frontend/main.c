@@ -103,7 +103,7 @@ static void get_environment_settings (void)
 #if defined(_XBOX1)
    /* FIXME: Hardcoded */
    strlcpy(default_paths.config_file, "D:\\retroarch.cfg", sizeof(default_paths.config_file));
-   strlcpy(g_settings.system_directory, "D:\\system\\", sizeof(g_settings.system_directory));
+   strlcpy(default_paths.system_dir, "D:\\system\\", sizeof(default_paths.system_dir));
    strlcpy(default_paths.filesystem_root_dir, "D:\\", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.executable_extension, ".xbe", sizeof(default_paths.executable_extension));
 #elif defined(_XBOX360)
@@ -113,7 +113,7 @@ static void get_environment_settings (void)
    strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.shader_file, "game:\\media\\shaders\\stock.cg", sizeof(default_paths.shader_file));
    strlcpy(default_paths.config_file, "game:\\retroarch.cfg", sizeof(default_paths.config_file));
-   strlcpy(g_settings.system_directory, "game:\\system\\", sizeof(g_settings.system_directory));
+   strlcpy(default_paths.system_dir, "game:\\system\\", sizeof(default_paths.system_dir));
    strlcpy(default_paths.executable_extension, ".xex", sizeof(default_paths.executable_extension));
 #endif
 }
