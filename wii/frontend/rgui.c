@@ -480,8 +480,7 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          else
          {
             snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s", dir, path);
-            rarch_console_load_game(rgui->path_buf);
-            rarch_settings_msg(S_MSG_LOADING_ROM, S_DELAY_1);
+            rarch_console_load_game_wrap(rgui->path_buf, S_DELAY_1);
             found = true;
          }
          break;

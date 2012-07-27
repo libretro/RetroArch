@@ -21,6 +21,10 @@
 #include "../input/rarch_sdl_input.h"
 #include "gfx_common.h"
 
+#ifdef IS_LINUX
+#include "SDL_syswm.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -243,6 +247,21 @@ static void sdl_render_msg_32(sdl_video_t *vid, SDL_Surface *buffer, const char 
 #endif
 }
 
+#ifdef IS_LINUX
+static Window sdl_get_window_id() {
+    SDL_SysWMinfo sys_info;
+    SDL_VERSION(&sys_info.version);
+
+    if(SDL_GetWMInfo(&sys_info) <= 0) {
+        RARCH_WARN("%s", SDL_GetError());
+        return -1;
+    }
+
+    Window wid = sys_info.info.x11.window;
+    return wid;
+}
+#endif
+
 static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
 #ifdef _WIN32
@@ -269,6 +288,13 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 
    vid->render32 = video->rgb32 && !g_settings.video.force_16bit;
    vid->screen = SDL_SetVideoMode(video->width, video->height, vid->render32 ? 32 : 15, SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
+
+#ifdef IS_LINUX
+   int wid = sdl_get_window_id();
+   if (wid > 0) {
+       suspend_screensaver(wid);
+   }
+#endif
 
    if (!vid->screen && !g_settings.video.force_16bit && !video->rgb32)
    {
@@ -301,7 +327,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
             RARCH_SCALE_BASE * video->input_scale, 15,
             fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
    }
-   RARCH_LOG("[Debug]: SDL Pixel format: Rshift = %u, Gshift = %u, Bshift = %u\n", 
+   RARCH_LOG("[Debug]: SDL Pixel format: Rshift = %u, Gshift = %u, Bshift = %u\n",
          (unsigned)fmt->Rshift, (unsigned)fmt->Gshift, (unsigned)fmt->Bshift);
 
    if (!vid->buffer)
@@ -491,7 +517,7 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width, unsigne
    // 32-bit -> 32-bit
    else
       vid->convert_32_func((uint32_t*)vid->buffer->pixels, vid->buffer->pitch, (const uint32_t*)frame, width, height, pitch, vid->screen->format);
-   
+
    if (SDL_MUSTLOCK(vid->buffer))
       SDL_UnlockSurface(vid->buffer);
 

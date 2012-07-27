@@ -136,9 +136,7 @@ static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
    sys_lwmutex_attribute_t lock_attr;
    sys_lwmutex_attribute_t cond_lock_attr;
    sys_lwcond_attribute_t cond_attr;
-#endif
 
-#ifndef __PSL1GHT__
    sys_lwmutex_attribute_initialize(lock_attr);
    sys_lwmutex_attribute_initialize(cond_lock_attr);
    sys_lwcond_attribute_initialize(cond_attr);

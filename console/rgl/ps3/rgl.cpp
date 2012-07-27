@@ -2414,8 +2414,6 @@ char *gmmIdToAddress(const uint32_t id)
 
 	    if (cachedLockValue == 0)
 		    break;
-
-	    sys_timer_usleep(30);
     }while(1);
 
     return (char *)pBaseBlock->address;

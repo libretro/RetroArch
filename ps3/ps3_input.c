@@ -97,6 +97,43 @@ CellMouseData ps3_mouse_input_poll_device(uint32_t id)
 
 #define MAP(x) (x & 0xFF)
 
+const struct platform_bind platform_keys[] = {
+   { CTRL_CIRCLE_MASK, "Circle button" },
+   { CTRL_CROSS_MASK, "Cross button" },
+   { CTRL_TRIANGLE_MASK, "Triangle button" },
+   { CTRL_SQUARE_MASK, "Square button" },
+   { CTRL_UP_MASK, "D-Pad Up" },
+   { CTRL_DOWN_MASK, "D-Pad Down" },
+   { CTRL_LEFT_MASK, "D-Pad Left" },
+   { CTRL_RIGHT_MASK, "D-Pad Right" },
+   { CTRL_SELECT_MASK, "Select button" },
+   { CTRL_START_MASK, "Start button" },
+   { CTRL_L1_MASK, "L1 button" },
+   { CTRL_L2_MASK, "L2 button" },
+   { CTRL_L3_MASK, "L3 button" },
+   { CTRL_R1_MASK, "R1 button" },
+   { CTRL_R2_MASK, "R2 button" },
+   { CTRL_R3_MASK, "R3 button" },
+   { CTRL_LSTICK_LEFT_MASK, "LStick Left" },
+   { CTRL_LSTICK_RIGHT_MASK, "LStick Right" },
+   { CTRL_LSTICK_UP_MASK, "LStick Up" },
+   { CTRL_LSTICK_DOWN_MASK, "LStick Down" },
+   { CTRL_LEFT_MASK | CTRL_LSTICK_LEFT_MASK, "LStick D-Pad Left" },
+   { CTRL_RIGHT_MASK | CTRL_LSTICK_RIGHT_MASK, "LStick D-Pad Right" },
+   { CTRL_UP_MASK | CTRL_LSTICK_UP_MASK, "LStick D-Pad Up" },
+   { CTRL_DOWN_MASK | CTRL_LSTICK_DOWN_MASK, "LStick D-Pad Down" },
+   { CTRL_RSTICK_LEFT_MASK, "RStick Left" },
+   { CTRL_RSTICK_RIGHT_MASK, "RStick Right" },
+   { CTRL_RSTICK_UP_MASK, "RStick Up" },
+   { CTRL_RSTICK_DOWN_MASK, "RStick Down" },
+   { CTRL_LEFT_MASK | CTRL_RSTICK_LEFT_MASK, "RStick D-Pad Left" },
+   { CTRL_RIGHT_MASK | CTRL_RSTICK_RIGHT_MASK, "RStick D-Pad Right" },
+   { CTRL_UP_MASK | CTRL_RSTICK_UP_MASK, "RStick D-Pad Up" },
+   { CTRL_DOWN_MASK | CTRL_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
+};
+
+const unsigned int platform_keys_size = sizeof(platform_keys);
+
 static uint64_t state[MAX_PADS];
 static unsigned pads_connected;
 #ifdef HAVE_MOUSE
@@ -433,12 +470,33 @@ static bool ps3_key_pressed(void *data, int key)
    }
 }
 
+static void ps3_set_default_keybind_lut(void)
+{
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[PS3_DEVICE_ID_JOYPAD_CROSS].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		= platform_keys[PS3_DEVICE_ID_JOYPAD_SQUARE].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	= platform_keys[PS3_DEVICE_ID_JOYPAD_SELECT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	= platform_keys[PS3_DEVICE_ID_JOYPAD_START].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		= platform_keys[PS3_DEVICE_ID_JOYPAD_UP].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]	= platform_keys[PS3_DEVICE_ID_JOYPAD_DOWN].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]	= platform_keys[PS3_DEVICE_ID_JOYPAD_LEFT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	= platform_keys[PS3_DEVICE_ID_JOYPAD_RIGHT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		= platform_keys[PS3_DEVICE_ID_JOYPAD_CIRCLE].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		= platform_keys[PS3_DEVICE_ID_JOYPAD_TRIANGLE].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]		= platform_keys[PS3_DEVICE_ID_JOYPAD_L1].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]		= platform_keys[PS3_DEVICE_ID_JOYPAD_R1].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]		= platform_keys[PS3_DEVICE_ID_JOYPAD_R2].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]		= platform_keys[PS3_DEVICE_ID_JOYPAD_R3].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]		= platform_keys[PS3_DEVICE_ID_JOYPAD_L2].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]		= platform_keys[PS3_DEVICE_ID_JOYPAD_L3].joykey;
+}
+
 const input_driver_t input_ps3 = {
    .init = ps3_input_initialize,
    .poll = ps3_input_poll,
    .input_state = ps3_input_state,
    .key_pressed = ps3_key_pressed,
    .free = ps3_free_input,
+   .set_default_keybind_lut = ps3_set_default_keybind_lut,
    .ident = "ps3",
 };
 

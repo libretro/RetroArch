@@ -413,7 +413,6 @@
 #define CellVideoOutResolution videoResolution
 #define CellVideoOutState videoState
 
-#define CellRescPalTemporalMode rescPalTemporalMode
 #define CellRescInitConfig rescInitConfig
 #define CellRescSrc rescSrc
 #define CellRescBufferMode rescBufferMode
@@ -421,6 +420,8 @@
 #define resolutionId resolution
 #define memoryFrequency memoryFreq
 #define coreFrequency coreFreq
+
+#define cellGcmFinish rsxFinish
 
 #define cellGcmGetFlipStatus gcmGetFlipStatus
 #define cellGcmResetFlipStatus gcmResetFlipStatus
@@ -441,6 +442,11 @@
 #define cellGcmSetTileInfo gcmSetTileInfo
 #define cellGcmAddressToOffset gcmAddressToOffset
 
+#define cellRescCreateInterlaceTable rescCreateInterlaceTable
+#define cellRescSetDisplayMode rescSetDisplayMode
+#define cellRescGetNumColorBuffers rescGetNumColorBuffers
+#define cellRescGetBufferSize rescGetBufferSize
+#define cellRescSetBufferAddress rescSetBufferAddress
 #define cellRescGetFlipStatus rescGetFlipStatus
 #define cellRescResetFlipStatus rescResetFlipStatus
 #define cellRescSetConvertAndFlip rescSetConvertAndFlip

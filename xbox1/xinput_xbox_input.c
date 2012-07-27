@@ -32,6 +32,43 @@ DWORD dwDeviceMask;
 bool bInserted[4];
 bool bRemoved[4];
 
+const struct platform_bind platform_keys[] = {
+   { XINPUT1_GAMEPAD_B, "B button" },
+   { XINPUT1_GAMEPAD_A, "A button" },
+   { XINPUT1_GAMEPAD_Y, "Y button" },
+   { XINPUT1_GAMEPAD_X, "X button" },
+   { XINPUT1_GAMEPAD_DPAD_UP, "D-Pad Up" },
+   { XINPUT1_GAMEPAD_DPAD_DOWN, "D-Pad Down" },
+   { XINPUT1_GAMEPAD_DPAD_LEFT, "D-Pad Left" },
+   { XINPUT1_GAMEPAD_DPAD_RIGHT, "D-Pad Right" },
+   { XINPUT1_GAMEPAD_BACK, "Back button" },
+   { XINPUT1_GAMEPAD_START, "Start button" },
+   { XINPUT1_GAMEPAD_WHITE, "White button" },
+   { XINPUT1_GAMEPAD_LEFT_TRIGGER, "Left Trigger" },
+   { XINPUT1_GAMEPAD_LEFT_THUMB, "Left Thumb" },
+   { XINPUT1_GAMEPAD_BLACK, "Black button" },
+   { XINPUT1_GAMEPAD_RIGHT_TRIGGER, "Right Trigger" },
+   { XINPUT1_GAMEPAD_RIGHT_THUMB, "Right Thumb" },
+   { XINPUT1_GAMEPAD_LSTICK_LEFT_MASK, "LStick Left" },
+   { XINPUT1_GAMEPAD_LSTICK_RIGHT_MASK, "LStick Right" },
+   { XINPUT1_GAMEPAD_LSTICK_UP_MASK, "LStick Up" },
+   { XINPUT1_GAMEPAD_LSTICK_DOWN_MASK, "LStick Down" },
+   { XINPUT1_GAMEPAD_DPAD_LEFT | XINPUT1_GAMEPAD_LSTICK_LEFT_MASK, "LStick D-Pad Left" },
+   { XINPUT1_GAMEPAD_DPAD_RIGHT | XINPUT1_GAMEPAD_LSTICK_RIGHT_MASK, "LStick D-Pad Right" },
+   { XINPUT1_GAMEPAD_DPAD_UP | XINPUT1_GAMEPAD_LSTICK_UP_MASK, "LStick D-Pad Up" },
+   { XINPUT1_GAMEPAD_DPAD_DOWN | XINPUT1_GAMEPAD_LSTICK_DOWN_MASK, "LStick D-Pad Down" },
+   { XINPUT1_GAMEPAD_RSTICK_LEFT_MASK, "RStick Left" },
+   { XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK, "RStick Right" },
+   { XINPUT1_GAMEPAD_RSTICK_UP_MASK, "RStick Up" },
+   { XINPUT1_GAMEPAD_RSTICK_DOWN_MASK, "RStick Down" },
+   { XINPUT1_GAMEPAD_DPAD_LEFT | XINPUT1_GAMEPAD_RSTICK_LEFT_MASK, "RStick D-Pad Left" },
+   { XINPUT1_GAMEPAD_DPAD_RIGHT | XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK, "RStick D-Pad Right" },
+   { XINPUT1_GAMEPAD_DPAD_UP | XINPUT1_GAMEPAD_RSTICK_UP_MASK, "RStick D-Pad Up" },
+   { XINPUT1_GAMEPAD_DPAD_DOWN | XINPUT1_GAMEPAD_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
+};
+
+const unsigned int platform_keys_size = sizeof(platform_keys);
+
 #define DEADZONE (16000)
 
 static unsigned pads_connected;
@@ -49,6 +86,7 @@ static void xinput_input_poll(void *data)
    {
       XINPUT_STATE state[4];
       XINPUT_CAPABILITIES caps[4];
+      (void)caps;
       real_state[i] = 0;
       // handle removed devices
       bRemoved[i] = (dwRemovals & (1<<i)) ? true : false;
@@ -154,6 +192,33 @@ static bool xinput_input_key_pressed(void *data, int key)
    return retval;
 }
 
+static void xinput_set_default_keybind_lut(void)
+{
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[XDK_DEVICE_ID_JOYPAD_A].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		= platform_keys[XDK_DEVICE_ID_JOYPAD_X].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	= platform_keys[XDK_DEVICE_ID_JOYPAD_BACK].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	= platform_keys[XDK_DEVICE_ID_JOYPAD_START].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		= platform_keys[XDK_DEVICE_ID_JOYPAD_UP].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]	= platform_keys[XDK_DEVICE_ID_JOYPAD_DOWN].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]	= platform_keys[XDK_DEVICE_ID_JOYPAD_LEFT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	= platform_keys[XDK_DEVICE_ID_JOYPAD_RIGHT].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		= platform_keys[XDK_DEVICE_ID_JOYPAD_B].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		= platform_keys[XDK_DEVICE_ID_JOYPAD_Y].joykey;
+#if defined(_XBOX1)
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[XDK_DEVICE_ID_JOYPAD_LEFT_TRIGGER].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[XDK_DEVICE_ID_JOYPAD_RIGHT_TRIGGER].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = platform_keys[XDK_DEVICE_ID_JOYPAD_LB].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]     = platform_keys[XDK_DEVICE_ID_JOYPAD_RB].joykey;
+#elif defined(_XBOX360)
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[XDK_DEVICE_ID_JOYPAD_LB].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[XDK_DEVICE_ID_JOYPAD_RB].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = platform_keys[XDK_DEVICE_ID_JOYPAD_LEFT_TRIGGER].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]     = platform_keys[XDK_DEVICE_ID_JOYPAD_RIGHT_TRIGGER].joykey;
+#endif
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]     = platform_keys[XDK_DEVICE_ID_LSTICK_THUMB].joykey;
+   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]     = platform_keys[XDK_DEVICE_ID_RSTICK_THUMB].joykey;
+}
+
 const input_driver_t input_xinput = 
 {
    xinput_input_init,
@@ -161,5 +226,6 @@ const input_driver_t input_xinput =
    xinput_input_state,
    xinput_input_key_pressed,
    xinput_input_free_input,
+   xinput_set_default_keybind_lut,
    "xinput"
 };

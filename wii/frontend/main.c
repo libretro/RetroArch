@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2012 - Michael Lelli
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -20,6 +21,7 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../libretro.h"
+#include "../../console/retroarch_console_input.h"
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -39,6 +41,36 @@ FILE * log_fp;
 #endif
 
 static uint16_t menu_framebuf[RGUI_WIDTH * RGUI_HEIGHT];
+
+static const struct retro_keybind _wii_nav_binds[] = {
+   { 0, 0, 0, WII_GC_UP | WII_GC_LSTICK_UP | WII_GC_RSTICK_UP | WII_CLASSIC_UP | WII_CLASSIC_LSTICK_UP | WII_CLASSIC_RSTICK_UP | WII_WIIMOTE_UP | WII_NUNCHUK_UP, 0 },
+   { 0, 0, 0, WII_GC_DOWN | WII_GC_LSTICK_DOWN | WII_GC_RSTICK_DOWN | WII_CLASSIC_DOWN | WII_CLASSIC_LSTICK_DOWN | WII_CLASSIC_RSTICK_DOWN | WII_WIIMOTE_DOWN | WII_NUNCHUK_DOWN, 0 },
+   { 0, 0, 0, WII_GC_LEFT | WII_GC_LSTICK_LEFT | WII_GC_RSTICK_LEFT | WII_CLASSIC_LEFT | WII_CLASSIC_LSTICK_LEFT | WII_CLASSIC_RSTICK_LEFT | WII_WIIMOTE_LEFT | WII_NUNCHUK_LEFT, 0 },
+   { 0, 0, 0, WII_GC_RIGHT | WII_GC_LSTICK_RIGHT | WII_GC_RSTICK_RIGHT | WII_CLASSIC_RIGHT | WII_CLASSIC_LSTICK_RIGHT | WII_CLASSIC_RSTICK_RIGHT | WII_WIIMOTE_RIGHT | WII_NUNCHUK_RIGHT, 0 },
+   { 0, 0, 0, WII_GC_A | WII_CLASSIC_A | WII_WIIMOTE_A | WII_WIIMOTE_2, 0 },
+   { 0, 0, 0, WII_GC_B | WII_CLASSIC_B | WII_WIIMOTE_B | WII_WIIMOTE_1, 0 },
+   { 0, 0, 0, WII_GC_START | WII_CLASSIC_PLUS | WII_WIIMOTE_PLUS, 0 },
+   { 0, 0, 0, WII_GC_Z_TRIGGER | WII_CLASSIC_MINUS | WII_WIIMOTE_MINUS, 0 },
+   { 0, 0, 0, WII_WIIMOTE_HOME | WII_CLASSIC_HOME, 0 },
+};
+
+static const struct retro_keybind *wii_nav_binds[] = {
+   _wii_nav_binds
+};
+
+enum
+{
+   WII_DEVICE_NAV_UP = 0,
+   WII_DEVICE_NAV_DOWN,
+   WII_DEVICE_NAV_LEFT,
+   WII_DEVICE_NAV_RIGHT,
+   WII_DEVICE_NAV_A,
+   WII_DEVICE_NAV_B,
+   WII_DEVICE_NAV_START,
+   WII_DEVICE_NAV_SELECT,
+   WII_DEVICE_NAV_EXIT,
+   WII_DEVICE_NAV_LAST
+};
 
 static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       void *userdata, void *ctx)
@@ -92,41 +124,50 @@ static bool get_rom_path(rgui_handle_t *rgui)
    for (;;)
    {
       uint16_t input_state = 0;
+
       input_wii.poll(NULL);
 
-      if (input_wii.key_pressed(NULL, RARCH_QUIT_KEY))
+      for (unsigned i = 0; i < WII_DEVICE_NAV_LAST; i++)
       {
-         if (can_quit)
-            return false;
-      }
-      else
-         can_quit = true;
-
-      for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
-      {
-         input_state |= input_wii.input_state(NULL, NULL, false,
+         input_state |= input_wii.input_state(NULL, wii_nav_binds, 0,
                RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
       }
 
       uint16_t trigger_state = input_state & ~old_input_state;
-
       rgui_action_t action = RGUI_ACTION_NOOP;
-      if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
-         action = RGUI_ACTION_CANCEL;
-      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_A))
-         action = RGUI_ACTION_OK;
-      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
-         action = RGUI_ACTION_UP;
-      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
-         action = RGUI_ACTION_DOWN;
-      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
-         action = RGUI_ACTION_LEFT;
-      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
-         action = RGUI_ACTION_RIGHT;
-      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-         action = RGUI_ACTION_START;
-      else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) && !first) // don't catch start+select+l+r when exiting
-         action = RGUI_ACTION_SETTINGS;
+
+      // don't run anything first frame, only capture held inputs for old_input_state
+      if (!first)
+      {
+         if (trigger_state & (1 << WII_DEVICE_NAV_EXIT))
+         {
+            if (can_quit)
+               return false;
+         }
+         else
+            can_quit = true;
+
+         if (trigger_state & (1 << WII_DEVICE_NAV_B))
+            action = RGUI_ACTION_CANCEL;
+         else if (trigger_state & (1 << WII_DEVICE_NAV_A))
+            action = RGUI_ACTION_OK;
+         else if (trigger_state & (1 << WII_DEVICE_NAV_UP))
+            action = RGUI_ACTION_UP;
+         else if (trigger_state & (1 << WII_DEVICE_NAV_DOWN))
+            action = RGUI_ACTION_DOWN;
+         else if (trigger_state & (1 << WII_DEVICE_NAV_LEFT))
+            action = RGUI_ACTION_LEFT;
+         else if (trigger_state & (1 << WII_DEVICE_NAV_RIGHT))
+            action = RGUI_ACTION_RIGHT;
+         else if (trigger_state & (1 << WII_DEVICE_NAV_START))
+            action = RGUI_ACTION_START;
+         else if (trigger_state & (1 << WII_DEVICE_NAV_SELECT))
+            action = RGUI_ACTION_SETTINGS;
+      }
+      else
+      {
+         first = false;
+      }
 
       const char *ret = rgui_iterate(rgui, action);
       video_wii.frame(NULL, menu_framebuf,
@@ -142,7 +183,6 @@ static bool get_rom_path(rgui_handle_t *rgui)
       }
 
       old_input_state = input_state;
-      first = false;
       rarch_sleep(10);
    }
 }
@@ -172,6 +212,7 @@ int main(void)
 
    wii_video_init();
    input_wii.init();
+   rarch_input_set_controls_default(&input_wii);
 
    rgui_handle_t *rgui = rgui_init("",
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),

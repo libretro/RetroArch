@@ -189,8 +189,6 @@ void _RGLFifoFinish( RGLFifo *fifo )
    {
       if ( !_RGLFifoReferenceInUse( fifo, ref ) )
          break;
-
-      sys_timer_usleep( 10 );
    }
 }
 
@@ -225,7 +223,6 @@ static void _RGLFifoInit( RGLFifo *fifo, void *dmaControl, unsigned long dmaPush
       {
          if ( _RGLFifoReadReference( fifo ) == 0 )
             break;
-	 sys_timer_usleep( 10 );
       }
    }
    fifo->dmaPushBufferGPU = dmaPushBuffer;
@@ -521,7 +518,6 @@ int32_t _RGLOutOfSpaceCallback( struct CellGcmContextData* fifoContext, uint32_t
    || (get < fifo->dmaPushBufferOffset) || (get > fifo->dmaPushBufferOffset + 
    fifo->dmaPushBufferSizeInWords*sizeof(uint32_t))) 
    {
-      sys_timer_usleep(30);
       get = fifo->dmaControl->Get;
    }
 
@@ -586,7 +582,7 @@ static int _RGLInitRM( RGLResource *gcmResource, unsigned int hostMemorySize, in
     gcmResource->semaphores = ( RGLSemaphoreMemory * )cellGcmGetLabelAddress( 0 );
     gcmResource->dmaControl = ( char* ) cellGcmGetControlRegister() - (( char * ) & (( RGLControlDma* )0 )->Put - ( char * )0 );
 
-    cellGcmFinish( 1 );
+    cellGcmFinish(1);
 
     gcmResource->hostMemorySize -= dmaPushBufferSize + _RGL_DMA_PUSH_BUFFER_PREFETCH_PADDING;
     gcmResource->dmaPushBuffer = gcmResource->hostMemoryBase + gcmResource->hostMemorySize;
@@ -1294,8 +1290,7 @@ static inline void _RGLUtilWaitForIdle (void)
    cellGcmSetWriteBackEndLabelInline( &_RGLState.fifo, RGL_UTIL_LABEL_INDEX, _RGLState.labelValue);
    cellGcmFlush();
 
-   while( *(cellGcmGetLabelAddress( RGL_UTIL_LABEL_INDEX)) != _RGLState.labelValue)
-      sys_timer_usleep(30);
+   while( *(cellGcmGetLabelAddress( RGL_UTIL_LABEL_INDEX)) != _RGLState.labelValue);
 
    _RGLState.labelValue++;
 }

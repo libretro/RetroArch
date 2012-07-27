@@ -29,113 +29,28 @@ enum keybind_set_id
 
 enum
 {
-   MODE_EMULATION = 0,
-   MODE_MENU,
-   MODE_EXIT
-};
-
-enum
-{
    DPAD_EMULATION_NONE = 0,
    DPAD_EMULATION_LSTICK,
    DPAD_EMULATION_RSTICK
 };
 
-#ifdef _XBOX360
-#include "../360/xinput_360_input.h"
-#endif
-
-#if defined(__CELLOS_LV2__)
-#include "../ps3/ps3_input.h"
-enum ps3_device_id
-{
-   PS3_DEVICE_ID_JOYPAD_CIRCLE = 0,
-   PS3_DEVICE_ID_JOYPAD_CROSS,
-   PS3_DEVICE_ID_JOYPAD_TRIANGLE,
-   PS3_DEVICE_ID_JOYPAD_SQUARE,
-   PS3_DEVICE_ID_JOYPAD_UP,
-   PS3_DEVICE_ID_JOYPAD_DOWN,
-   PS3_DEVICE_ID_JOYPAD_LEFT,
-   PS3_DEVICE_ID_JOYPAD_RIGHT,
-   PS3_DEVICE_ID_JOYPAD_SELECT,
-   PS3_DEVICE_ID_JOYPAD_START,
-   PS3_DEVICE_ID_JOYPAD_L1,
-   PS3_DEVICE_ID_JOYPAD_L2,
-   PS3_DEVICE_ID_JOYPAD_L3,
-   PS3_DEVICE_ID_JOYPAD_R1,
-   PS3_DEVICE_ID_JOYPAD_R2,
-   PS3_DEVICE_ID_JOYPAD_R3,
-   PS3_DEVICE_ID_LSTICK_LEFT,
-   PS3_DEVICE_ID_LSTICK_RIGHT,
-   PS3_DEVICE_ID_LSTICK_UP,
-   PS3_DEVICE_ID_LSTICK_DOWN,
-   PS3_DEVICE_ID_LSTICK_LEFT_DPAD,
-   PS3_DEVICE_ID_LSTICK_RIGHT_DPAD,
-   PS3_DEVICE_ID_LSTICK_UP_DPAD,
-   PS3_DEVICE_ID_LSTICK_DOWN_DPAD,
-   PS3_DEVICE_ID_RSTICK_LEFT,
-   PS3_DEVICE_ID_RSTICK_RIGHT,
-   PS3_DEVICE_ID_RSTICK_UP,
-   PS3_DEVICE_ID_RSTICK_DOWN,
-   PS3_DEVICE_ID_RSTICK_LEFT_DPAD,
-   PS3_DEVICE_ID_RSTICK_RIGHT_DPAD,
-   PS3_DEVICE_ID_RSTICK_UP_DPAD,
-   PS3_DEVICE_ID_RSTICK_DOWN_DPAD,
-
-   RARCH_LAST_PLATFORM_KEY
-};
-
-#elif defined(_XBOX)
-
-enum xdk_device_id
-{
-   XDK_DEVICE_ID_JOYPAD_B = 0,
-   XDK_DEVICE_ID_JOYPAD_A,
-   XDK_DEVICE_ID_JOYPAD_Y,
-   XDK_DEVICE_ID_JOYPAD_X,
-   XDK_DEVICE_ID_JOYPAD_UP,
-   XDK_DEVICE_ID_JOYPAD_DOWN,
-   XDK_DEVICE_ID_JOYPAD_LEFT,
-   XDK_DEVICE_ID_JOYPAD_RIGHT,
-   XDK_DEVICE_ID_JOYPAD_BACK,
-   XDK_DEVICE_ID_JOYPAD_START,
-   XDK_DEVICE_ID_JOYPAD_LB,
-   XDK_DEVICE_ID_JOYPAD_LEFT_TRIGGER,
-   XDK_DEVICE_ID_LSTICK_THUMB,
-   XDK_DEVICE_ID_JOYPAD_RB,
-   XDK_DEVICE_ID_JOYPAD_RIGHT_TRIGGER,
-   XDK_DEVICE_ID_RSTICK_THUMB,
-   XDK_DEVICE_ID_LSTICK_LEFT,
-   XDK_DEVICE_ID_LSTICK_RIGHT,
-   XDK_DEVICE_ID_LSTICK_UP,
-   XDK_DEVICE_ID_LSTICK_DOWN,
-   XDK_DEVICE_ID_LSTICK_LEFT_DPAD,
-   XDK_DEVICE_ID_LSTICK_RIGHT_DPAD,
-   XDK_DEVICE_ID_LSTICK_UP_DPAD,
-   XDK_DEVICE_ID_LSTICK_DOWN_DPAD,
-   XDK_DEVICE_ID_RSTICK_LEFT,
-   XDK_DEVICE_ID_RSTICK_RIGHT,
-   XDK_DEVICE_ID_RSTICK_UP,
-   XDK_DEVICE_ID_RSTICK_DOWN,
-   XDK_DEVICE_ID_RSTICK_LEFT_DPAD,
-   XDK_DEVICE_ID_RSTICK_RIGHT_DPAD,
-   XDK_DEVICE_ID_RSTICK_UP_DPAD,
-   XDK_DEVICE_ID_RSTICK_DOWN_DPAD,
-
-   RARCH_LAST_PLATFORM_KEY
-};
-
-#ifdef _XBOX1
-#include "../xbox1/xinput_xbox_input.h"
-#endif
-#elif defined(GEKKO)
-#include <ogc/pad.h>
-#ifdef HW_RVL
-#include <wiiuse/wpad.h>
-#endif
-#endif
-
 extern uint64_t rarch_default_keybind_lut[RARCH_FIRST_META_KEY];
 extern char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][256];
+
+#ifdef HAVE_DEFAULT_RETROPAD_INPUT
+const char *rarch_input_find_platform_key_label(uint64_t joykey);
+uint64_t rarch_input_find_previous_platform_key(uint64_t joykey);
+uint64_t rarch_input_find_next_platform_key(uint64_t joykey);
+
+// Sets custom default keybind names (some systems emulated by the emulator
+// will need different keybind names for buttons, etc.)
+void rarch_input_set_default_keybind_names_for_emulator(void);
+void rarch_input_set_default_keybinds(unsigned player);
+
+void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
+
+void rarch_input_set_controls_default (const input_driver_t *input);
+const char *rarch_input_get_default_keybind_name (unsigned id);
+#endif
 
 #endif

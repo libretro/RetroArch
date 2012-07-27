@@ -14,22 +14,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBRETRO_MGMT_H__
-#define LIBRETRO_MGMT_H__
+#ifndef _RARCH_CONSOLE_RZLIB_H
+#define _RARCH_CONSOLE_RZLIB_H
 
-#include "../boolean.h"
-#include "../driver.h"
+#include "rzlib/zlib.h"
+
+#define WRITEBUFFERSIZE (1024 * 512)
 
 enum
 {
-   EXTERN_LAUNCHER_SALAMANDER,
-#ifdef HAVE_MULTIMAN
-   EXTERN_LAUNCHER_MULTIMAN
-#endif
+   ZIP_EXTRACT_TO_CURRENT_DIR,
+   ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE,
+   ZIP_EXTRACT_TO_CACHE_DIR
 };
 
-void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext);
-void rarch_configure_libretro(const input_driver_t *input, const char *path_prefix, const char * extension);
-bool rarch_manage_libretro_extension_supported(const char *filename);
+int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *first_file, size_t first_file_size);
 
 #endif

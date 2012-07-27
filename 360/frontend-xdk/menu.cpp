@@ -546,16 +546,8 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       const char *strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
       if(path_file_exists(browser->current_dir.list->elems[index].data))
       {
-         char path_tmp[1024];
-         struct retro_system_info info;
-         retro_get_system_info(&info);
-         bool block_zip_extract  = info.block_extract;
-
-         snprintf(path_tmp, sizeof(path_tmp), "%s\\%s", filebrowser_get_current_dir(browser), strbuffer);
-         if((strstr(strbuffer, ".zip") || strstr(strbuffer, ".ZIP")) && !block_zip_extract)
-            rarch_extract_zipfile(path_tmp);
-         else
-            rarch_console_load_game(path_tmp);
+         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), strbuffer);
+         rarch_console_load_game_wrap(path, S_DELAY_45);
       }
       else if(browser->current_dir.list->elems[index].attr.b)
       {

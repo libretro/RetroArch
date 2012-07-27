@@ -21,7 +21,19 @@
 /*============================================================
 CONSOLE EXTENSIONS
 ============================================================ */
+#include "../retroarch_rom_ext.c"
 #include "../retroarch_console.c"
+
+#ifdef HAVE_CONFIGFILE
+#include "../retroarch_config.c"
+#endif
+
+#include "../retroarch_console_input.c"
+
+#ifdef HAVE_ZLIB
+#include "../retroarch_rzlib.c"
+#endif
+
 #include "../console_settings.c"
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
@@ -93,7 +105,7 @@ VIDEO DRIVER
 #elif defined(HAVE_OPENGLES20)
 #include "../../gfx/gles.c"
 #elif defined(GEKKO)
-#include "../../wii/video.c"
+#include "../../wii/gx_video.c"
 #endif
 
 #include "../../gfx/gfx_common.c"
@@ -125,7 +137,7 @@ INPUT
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/ps3_input.c"
 #elif defined(GEKKO)
-#include "../../wii/input.c"
+#include "../../wii/gx_input.c"
 #endif
 
 #ifdef _XBOX
@@ -183,7 +195,7 @@ AUDIO
 #elif defined(_XBOX360)
 #include "../../360/xdk360_audio.cpp"
 #elif defined(GEKKO)
-#include "../../wii/audio.c"
+#include "../../wii/gx_audio.c"
 #endif
 
 #ifdef HAVE_DSOUND

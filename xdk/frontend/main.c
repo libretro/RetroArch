@@ -38,6 +38,7 @@
 #endif
 
 #include "../../console/retroarch_console.h"
+#include "../../console/retroarch_config.h"
 #include "../../conf/config_file.h"
 #include "../../conf/config_file_macros.h"
 #include "../../file.h"
@@ -99,17 +100,20 @@ static void get_environment_settings (void)
    }
 #endif
 
-#ifdef _XBOX1
+#if defined(_XBOX1)
    /* FIXME: Hardcoded */
    strlcpy(default_paths.config_file, "D:\\retroarch.cfg", sizeof(default_paths.config_file));
-   strlcpy(g_settings.system_directory, "D:\\system\\", sizeof(g_settings.system_directory));
+   strlcpy(default_paths.system_dir, "D:\\system\\", sizeof(default_paths.system_dir));
    strlcpy(default_paths.filesystem_root_dir, "D:\\", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.executable_extension, ".xbe", sizeof(default_paths.executable_extension));
-#else
+#elif defined(_XBOX360)
+#ifdef HAVE_HDD_CACHE_PARTITION
+   strlcpy(default_paths.cache_dir, "cache:\\", sizeof(default_paths.cache_dir));
+#endif
    strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.shader_file, "game:\\media\\shaders\\stock.cg", sizeof(default_paths.shader_file));
    strlcpy(default_paths.config_file, "game:\\retroarch.cfg", sizeof(default_paths.config_file));
-   strlcpy(g_settings.system_directory, "game:\\system\\", sizeof(g_settings.system_directory));
+   strlcpy(default_paths.system_dir, "game:\\system\\", sizeof(default_paths.system_dir));
    strlcpy(default_paths.executable_extension, ".xex", sizeof(default_paths.executable_extension));
 #endif
 }
@@ -121,14 +125,14 @@ int main(int argc, char *argv[])
 
    config_set_defaults();
    
-   rarch_configure_libretro(default_paths.filesystem_root_dir, default_paths.executable_extension);
+   input_xinput.init();
+   rarch_configure_libretro(&input_xinput, default_paths.filesystem_root_dir, default_paths.executable_extension);
 
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9)
    video_xdk_d3d.start();
 #else
    video_null.start();
 #endif
-   input_xinput.init();
 
    rarch_input_set_default_keybind_names_for_emulator();
 

@@ -103,7 +103,7 @@ static bool string_list_append(struct string_list *list, const char *elem, union
    return true;
 }
 
-static struct string_list *string_split(const char *str, const char *delim)
+struct string_list *string_split(const char *str, const char *delim)
 {
    char *copy      = NULL;
    const char *tmp = NULL;
@@ -138,7 +138,7 @@ error:
    return NULL;
 }
 
-static bool string_list_find_elem(const struct string_list *list, const char *elem)
+bool string_list_find_elem(const struct string_list *list, const char *elem)
 {
    if (!list)
       return false;
@@ -152,7 +152,7 @@ static bool string_list_find_elem(const struct string_list *list, const char *el
    return false;
 }
 
-static const char *path_get_extension(const char *path)
+const char *path_get_extension(const char *path)
 {
    const char *ext = strrchr(path, '.');
    if (ext)
