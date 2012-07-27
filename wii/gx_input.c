@@ -37,7 +37,7 @@
 
 #define MAX_PADS 4
 
-//#define CLASSIC
+//#define CLASSIC_PAD
 #define GAMECUBE_PAD
 //#define NUNCHUK_PAD
 //#define WIIMOTE_PAD
