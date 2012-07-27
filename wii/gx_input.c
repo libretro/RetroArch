@@ -303,6 +303,10 @@ static void wii_input_poll(void *data)
                state |= (down & WPAD_CLASSIC_BUTTON_B) ? WII_CLASSIC_B : 0;
                state |= (down & WPAD_CLASSIC_BUTTON_X) ? WII_CLASSIC_X : 0;
                state |= (down & WPAD_CLASSIC_BUTTON_Y) ? WII_CLASSIC_Y : 0;
+               state |= (down & WPAD_CLASSIC_BUTTON_UP) ? WII_CLASSIC_UP : 0;
+               state |= (down & WPAD_CLASSIC_BUTTON_DOWN) ? WII_CLASSIC_DOWN : 0;
+               state |= (down & WPAD_CLASSIC_BUTTON_LEFT) ? WII_CLASSIC_LEFT : 0;
+               state |= (down & WPAD_CLASSIC_BUTTON_RIGHT) ? WII_CLASSIC_RIGHT : 0;
                state |= (down & WPAD_CLASSIC_BUTTON_PLUS) ? WII_CLASSIC_PLUS : 0;
                state |= (down & WPAD_CLASSIC_BUTTON_MINUS) ? WII_CLASSIC_MINUS : 0;
                state |= (down & WPAD_CLASSIC_BUTTON_HOME) ? WII_CLASSIC_HOME : 0;
