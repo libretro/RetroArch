@@ -373,8 +373,10 @@ void oskutil_unload(oskutil_params *params)
 	RetroArch PS3 INPUT DRIVER 
 ============================================================ */
 
-static void ps3_input_set_analog_dpad_mapping(unsigned map_dpad_enum, unsigned controller_id)
+static void ps3_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
 {
+   (void)device;
+
    switch(map_dpad_enum)
    {
       case DPAD_EMULATION_NONE:
@@ -413,10 +415,12 @@ static void* ps3_input_initialize(void)
    return (void*)-1;
 }
 
+#define STUB_DEVICE 0
+
 static void ps3_input_post_init(void)
 {
    for(unsigned i = 0; i < MAX_PADS; i++)
-      ps3_input_set_analog_dpad_mapping(g_settings.input.dpad_emulation[i], i);
+      ps3_input_set_analog_dpad_mapping(STUB_DEVICE, g_settings.input.dpad_emulation[i], i);
 }
 
 static bool ps3_key_pressed(void *data, int key)
@@ -474,8 +478,10 @@ static bool ps3_key_pressed(void *data, int key)
    }
 }
 
-static void ps3_set_default_keybind_lut(void)
+static void ps3_set_default_keybind_lut(unsigned device)
 {
+   (void)device;
+
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[PS3_DEVICE_ID_JOYPAD_CROSS].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		= platform_keys[PS3_DEVICE_ID_JOYPAD_SQUARE].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	= platform_keys[PS3_DEVICE_ID_JOYPAD_SELECT].joykey;

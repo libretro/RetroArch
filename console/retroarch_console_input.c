@@ -134,9 +134,11 @@ void rarch_input_set_default_keybinds(unsigned player)
    g_settings.input.dpad_emulation[player] = DPAD_EMULATION_LSTICK;
 }
 
+#define STUB_DEVICE 0
+
 void rarch_input_set_controls_default (const input_driver_t *input)
 {
-   input->set_default_keybind_lut();
+   input->set_default_keybind_lut(STUB_DEVICE);
 
    for(uint32_t x = 0; x < MAX_PLAYERS; x++)
       rarch_input_set_default_keybinds(x);

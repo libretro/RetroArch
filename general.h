@@ -160,6 +160,7 @@ struct settings
 #ifdef RARCH_CONSOLE
       unsigned currently_selected_controller_no;
       unsigned dpad_emulation[MAX_PLAYERS];
+      unsigned device[MAX_PLAYERS];
 #endif
       bool netplay_client_swap_input;
    } input;

@@ -119,8 +119,17 @@ static bool xenon360_key_pressed(void *data, int key)
    return false;
 }
 
-static void xenon360_input_set_default_keybind_lut(void) {}
-static void xenon360_input_set_analog_dpad_mapping(unsigned map_dpad_enum, unsigned controller_id) {}
+static void xenon360_input_set_default_keybind_lut(unsigned device)
+{
+   (void)device;
+}
+
+static void xenon360_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
+{
+   (void)device;
+   (void)map_dpad_enum;
+   (void)controller_id;
+}
 
 const input_driver_t input_xenon360 = {
    .init = xenon360_input_init,

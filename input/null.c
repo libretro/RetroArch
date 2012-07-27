@@ -52,8 +52,18 @@ static void null_input_free(void *data)
 }
 
 #ifdef RARCH_CONSOLE
-static void null_set_default_keybind_lut(void) {}
-static void null_set_analog_dpad_mapping(unsigned map_dpad_enum, unsigned controller_id) {}
+static void null_set_default_keybind_lut(unsigned device)
+{
+   (void)device;
+}
+
+static void null_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
+{
+   (void)device;
+   (void)map_dpad_enum;
+   (void)controller_id;
+}
+
 static void null_input_post_init(void) {}
 #endif
 

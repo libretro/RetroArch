@@ -164,8 +164,10 @@ static void xinput_input_free_input(void *data)
    (void)data;
 }
 
-static void xinput_set_default_keybind_lut(void)
+static void xinput_set_default_keybind_lut(unsigned device)
 {
+   (void)device;
+
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[XDK_DEVICE_ID_JOYPAD_A].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		= platform_keys[XDK_DEVICE_ID_JOYPAD_X].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	= platform_keys[XDK_DEVICE_ID_JOYPAD_BACK].joykey;
@@ -191,8 +193,11 @@ static void xinput_set_default_keybind_lut(void)
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]     = platform_keys[XDK_DEVICE_ID_RSTICK_THUMB].joykey;
 }
 
-static void xinput_input_set_analog_dpad_mapping(unsigned map_dpad_enum, unsigned controller_id)
+static void xinput_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
 {
+   (void)device;
+   (void)map_dpad_enum;
+   (void)controller_id;
 }
 
 static void* xinput_input_init(void)
@@ -217,10 +222,12 @@ static void* xinput_input_init(void)
    return (void*)-1;
 }
 
+#define STUB_DEVICE 0
+
 static void xinput_input_post_init(void)
 {
    for(unsigned i = 0; i < MAX_PADS; i++)
-      xinput_input_set_analog_dpad_mapping(g_settings.input.dpad_emulation[i], i);
+      xinput_input_set_analog_dpad_mapping(STUB_DEVICE, g_settings.input.dpad_emulation[i], i);
 }
 
 static bool xinput_input_key_pressed(void *data, int key)

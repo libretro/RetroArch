@@ -159,8 +159,10 @@ static void reset_callback(void)
    g_quit = true;
 }
 
-static void wii_input_set_analog_dpad_mapping(unsigned map_dpad_enum, unsigned controller_id)
+static void wii_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
 {
+   (void)device; //TODO: Remove when you start using it in this function
+
 #if defined(CLASSIC_PAD)
    switch(map_dpad_enum)
    {
@@ -248,10 +250,12 @@ static void *wii_input_initialize(void)
    return (void*)-1;
 }
 
+#define STUB_DEVICE 0
+
 static void wii_input_post_init(void)
 {
    for(unsigned i = 0; i < MAX_PADS; i++)
-      wii_input_set_analog_dpad_mapping(g_settings.input.dpad_emulation[i], i);
+      wii_input_set_analog_dpad_mapping(STUB_DEVICE, g_settings.input.dpad_emulation[i], i);
 }
 
 #define wii_stick_x(x) ((s8)((sin((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
@@ -431,8 +435,9 @@ static bool wii_key_pressed(void *data, int key)
    }
 }
 
-static void wii_set_default_keybind_lut(void)
+static void wii_set_default_keybind_lut(unsigned device)
 {
+   (void)device; //TODO: Remove when you start using it in this function
 #if defined(CLASSIC_PAD)
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_B].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_Y].joykey;

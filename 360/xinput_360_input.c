@@ -112,8 +112,10 @@ static void xinput_input_free_input(void *data)
    (void)data;
 }
 
-static void xinput_input_set_analog_dpad_mapping(unsigned map_dpad_enum, unsigned controller_id)
+static void xinput_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
 {
+   (void)device;
+
    switch(map_dpad_enum)
    {
       case DPAD_EMULATION_NONE:
@@ -202,8 +204,10 @@ static bool xinput_input_key_pressed(void *data, int key)
    return retval;
 }
 
-static void xinput_set_default_keybind_lut(void)
+static void xinput_set_default_keybind_lut(unsigned device)
 {
+   (void)device;
+
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[XDK_DEVICE_ID_JOYPAD_A].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		= platform_keys[XDK_DEVICE_ID_JOYPAD_X].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	= platform_keys[XDK_DEVICE_ID_JOYPAD_BACK].joykey;

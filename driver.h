@@ -160,8 +160,8 @@ typedef struct input_driver
    bool (*key_pressed)(void *data, int key);
    void (*free)(void *data);
 #ifdef RARCH_CONSOLE
-   void (*set_default_keybind_lut)(void);
-   void (*set_analog_dpad_mapping)(unsigned map_dpad_enum, unsigned controller_id);
+   void (*set_default_keybind_lut)(unsigned device);
+   void (*set_analog_dpad_mapping)(unsigned device, unsigned map_dpad_enum, unsigned controller_id);
    void (*post_init)(void);
    unsigned max_pads;
 #endif
