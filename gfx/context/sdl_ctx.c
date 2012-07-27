@@ -33,7 +33,7 @@
 //
 
 #if SDL_MODERN
-static SDL_Window* g_window;
+static SDL_Window *g_window;
 static SDL_GLContext g_ctx;
 #endif
 
@@ -118,6 +118,7 @@ bool gfx_ctx_init(void)
 #endif
    if (!ret)
       RARCH_ERR("Failed to init SDL video.\n");
+
    return ret;
 }
 
@@ -212,6 +213,17 @@ bool gfx_ctx_set_video_mode(
 
    // Remove that ugly mouse :D
    SDL_ShowCursor(SDL_DISABLE);
+
+   // Suspend screensaver on X11.
+#ifdef HAVE_X11
+   RARCH_LOG("Suspending screensaver (X11).\n");
+   SDL_SysWMinfo info;
+
+   if (gfx_ctx_get_wm_info(&info))
+      gfx_suspend_screensaver(info.info.x11.window);
+   else
+      RARCH_ERR("Failed to get SDL WM info, cannot suspend screensaver.\n");
+#endif
 
    return true;
 }
@@ -392,11 +404,13 @@ bool gfx_ctx_get_wm_info(SDL_SysWMinfo *info)
    (void)info;
    return false;
 #elif SDL_MODERN
+   SDL_VERSION(&info->version);
    if (g_window)
       return SDL_GetWindowWMInfo(g_window, info);
    else
       return SDL_GetWMInfo(info) == 1;
 #else
+   SDL_VERSION(&info->version);
    return SDL_GetWMInfo(info) == 1;
 #endif
 }

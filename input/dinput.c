@@ -106,8 +106,6 @@ sdl_dinput_t* sdl_dinput_init(void)
    CoInitialize(NULL);
 
    SDL_SysWMinfo info;
-   SDL_VERSION(&info.version);
-
    if (!gfx_ctx_get_wm_info(&info))
    {
       RARCH_ERR("Failed to get SysWM info.\n");
