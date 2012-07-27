@@ -152,3 +152,19 @@ void rarch_configure_libretro(const input_driver_t *input, const char *path_pref
    rarch_config_load(default_paths.config_file, path_prefix, extension, find_libretro_file);
    init_libretro_sym();
 }
+
+bool rarch_manage_libretro_extension_supported(const char *filename)
+{
+   bool ext_supported = false;
+   struct string_list *ext_list = NULL;
+   const char *file_ext = path_get_extension(filename);
+   const char *ext = rarch_console_get_rom_ext();
+
+   if (ext)
+      ext_list = string_split(ext, "|");
+
+   if (ext_list && string_list_find_elem(ext_list, file_ext))
+      ext_supported = true; 
+
+   return ext_supported;
+}

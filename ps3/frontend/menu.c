@@ -230,6 +230,10 @@ static void set_setting_label(menu * menu_obj, unsigned currentsetting)
 			snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "Current dir");
                         snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [ZIP Extract Mode] is set to 'Current dir'.\nZIP files are extracted to the current directory.");
                         break;
+                     case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
+			snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "Current dir and load first file");
+                        snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [ZIP Extract Mode] is set to 'Current dir and load first file'.\nZIP files are extracted to the current directory, and the first game is automatically loaded.");
+                        break;
                      case ZIP_EXTRACT_TO_CACHE_DIR:
 			snprintf(items_generalsettings[currentsetting].setting_text, sizeof(items_generalsettings[currentsetting].setting_text), "Cache dir");
                         snprintf(items_generalsettings[currentsetting].comment, sizeof(items_generalsettings[currentsetting].comment), "INFO - [ZIP Extract Mode] is set to 'Cache dir'.\nZIP files are extracted to the cache directory (dev_hdd1).");
@@ -1365,9 +1369,15 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
                            g_settings.rewind_enable = false;
 			break;
                 case SETTING_ZIP_EXTRACT:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)))
                         {
-                           g_console.zip_extract_mode = g_console.zip_extract_mode == ZIP_EXTRACT_TO_CURRENT_DIR ? ZIP_EXTRACT_TO_CACHE_DIR : ZIP_EXTRACT_TO_CURRENT_DIR;
+                           if(g_console.zip_extract_mode > 0)
+                              g_console.zip_extract_mode--;
+                        }
+			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+                        {
+                           if(g_console.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
+                              g_console.zip_extract_mode++;
                         }
 			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
@@ -1697,26 +1707,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
                filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
 	 }
 	 else
-	 {
-            char rom_path_temp[PATH_MAX];
-            char dir_path_temp[PATH_MAX];
-	    struct retro_system_info info;
-	    retro_get_system_info(&info);
-	    bool block_zip_extract  = info.block_extract;
-
-	    snprintf(rom_path_temp, sizeof(rom_path_temp), filebrowser_get_current_path(filebrowser));
-
-	    if((strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP")) && !block_zip_extract)
-            {
-               rarch_extract_directory(dir_path_temp, rom_path_temp, sizeof(dir_path_temp));
-               rarch_extract_zipfile(rom_path_temp, dir_path_temp);
-            }
-	    else
-	    {
-               rarch_console_load_game(filebrowser_get_current_path(filebrowser));
-	       rarch_settings_msg(S_MSG_LOADING_ROM, S_DELAY_45);
-	    }
-	 }
+            rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), S_DELAY_45);
          break;
       case MENU_ROMSELECT_ACTION_GOTO_SETTINGS:
 	 menu_stack_increment();

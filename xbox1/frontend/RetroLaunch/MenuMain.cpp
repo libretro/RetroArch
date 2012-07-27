@@ -213,9 +213,9 @@ void CMenuMain::ProcessInput()
       }
    }
 
-   // Press A to launch, selected rom filename is saved into T:\\tmp.retro
+   // Press A to launch
    if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_B) || trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-      rarch_console_load_game(g_romList.GetRomAt(m_romListSelectedRom)->GetFileName().c_str());
+      rarch_console_load_game_wrap(g_romList.GetRomAt(m_romListSelectedRom)->GetFileName().c_str(), S_DELAY_1);
 
    if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_R3))
    {

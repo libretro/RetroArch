@@ -24,9 +24,10 @@
 enum
 {
    ZIP_EXTRACT_TO_CURRENT_DIR,
+   ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE,
    ZIP_EXTRACT_TO_CACHE_DIR
 };
 
-int rarch_extract_zipfile(const char *zip_path, const char *current_dir);
+int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *first_file, size_t first_file_size);
 
 #endif

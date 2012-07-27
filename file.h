@@ -60,9 +60,12 @@ struct string_list
 struct string_list *dir_list_new(const char *dir, const char *ext, bool include_dirs);
 void dir_list_sort(struct string_list *list, bool dir_first);
 void dir_list_free(struct string_list *list);
+bool string_list_find_elem(const struct string_list *list, const char *elem);
+struct string_list *string_split(const char *str, const char *delim);
 
 bool path_is_directory(const char *path);
 bool path_file_exists(const char *path);
+const char *path_get_extension(const char *path);
 
 // Path-name operations.
 // If any of these operation are detected to overflow, the application will be terminated.

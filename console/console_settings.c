@@ -230,6 +230,9 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
             case ZIP_EXTRACT_TO_CURRENT_DIR:
                snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to current directory.");
                break;
+            case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
+               snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted, now loading first file.");
+               break;
 #ifdef HAVE_HDD_CACHE_PARTITION
             case ZIP_EXTRACT_TO_CACHE_DIR:
 	       snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to cache partition.");

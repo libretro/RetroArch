@@ -17,7 +17,7 @@
 #ifndef RARCH_ROM_EXT_H__
 #define RARCH_ROM_EXT_H__
 
-void rarch_console_load_game(const char *path);
+void rarch_console_load_game_wrap(const char *path, unsigned delay);
 
 // Get rom extensions for current library.
 // Returns NULL if library doesn't have any preferences in particular.

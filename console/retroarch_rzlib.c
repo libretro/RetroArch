@@ -22,7 +22,7 @@
 
 #include "retroarch_rzlib.h"
 
-static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir)
+static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir, char *slash, char *write_filename, size_t write_filename_size)
 {
    char filename_inzip[PATH_MAX];
    FILE *file_out = NULL;
@@ -46,16 +46,15 @@ static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir)
       return UNZ_INTERNALERROR;
    }
 
-   char write_filename[PATH_MAX];
-
    switch(g_console.zip_extract_mode)
    {
       case ZIP_EXTRACT_TO_CURRENT_DIR:
-         snprintf(write_filename, sizeof(write_filename), "%s/%s", current_dir, filename_inzip);
+      case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
+         snprintf(write_filename, write_filename_size, "%s%s%s", current_dir, slash, filename_inzip);
          break;
 #ifdef HAVE_HDD_CACHE_PARTITION
       case ZIP_EXTRACT_TO_CACHE_DIR:
-         snprintf(write_filename, sizeof(write_filename), "%s%s", default_paths.cache_dir, filename_inzip);
+         snprintf(write_filename, write_filename_size, "%s%s", default_paths.cache_dir, filename_inzip);
          break;
 #endif
    }
@@ -113,8 +112,9 @@ static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir)
    return err;
 }
 
-int rarch_extract_zipfile(const char *zip_path, const char *current_dir)
+int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *first_file, size_t first_file_size)
 {
+   bool found_first_file = false;
    unzFile uf = unzOpen(zip_path); 
 
    unz_global_info gi;
@@ -124,8 +124,28 @@ int rarch_extract_zipfile(const char *zip_path, const char *current_dir)
 
    for (unsigned i = 0; i < gi.number_entry; i++)
    {
-      if (rarch_extract_currentfile_in_zip(uf, current_dir) != UNZ_OK)
+      static char write_filename[PATH_MAX];
+      char slash[6];
+#ifdef _XBOX
+      snprintf(slash, sizeof(slash), "\0");
+#else
+      snprintf(slash, sizeof(slash), "/");
+#endif
+      if (rarch_extract_currentfile_in_zip(uf, current_dir, slash, write_filename, sizeof(write_filename)) != UNZ_OK)
+      {
+         RARCH_ERR("Failed to extract current file from ZIP archive.\n");
          break;
+      }
+      else
+      {
+         if(!found_first_file)
+         {
+            found_first_file = rarch_manage_libretro_extension_supported(write_filename);
+
+            if(found_first_file)
+               snprintf(first_file, first_file_size, write_filename);
+         }
+      }
 
       if ((i + 1) < gi.number_entry)
       {
