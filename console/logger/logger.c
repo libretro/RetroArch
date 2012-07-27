@@ -99,6 +99,11 @@ static int if_up_with(int index)
 	 return (0);
       }
    }
+#elif defined(GEKKO)
+   if (if_config(NULL, NULL, NULL, TRUE) < 0)
+   {
+      return (-1);
+   }
 #endif
 
    sock=socket(AF_INET,SOCK_DGRAM ,0);
