@@ -26,6 +26,8 @@
 #include "../libretro.h"
 #include "xinput_360_input.h"
 
+#include "../console/retroarch_console.h"
+
 static uint64_t state[MAX_PADS];
 static unsigned pads_connected;
 
@@ -110,8 +112,6 @@ static void xinput_input_free_input(void *data)
    (void)data;
 }
 
-#include "../console/retroarch_console.h"
-
 static void xinput_input_set_analog_dpad_mapping(unsigned map_dpad_enum, unsigned controller_id)
 {
    switch(map_dpad_enum)
@@ -145,7 +145,7 @@ static void* xinput_input_init(void)
 static void xinput_input_post_init(void)
 {
    for(unsigned i = 0; i < MAX_PADS; i++)
-      xinput_input_analog_pad_mapping(g_settings.input.dpad_emulation[i], i);
+      xinput_input_set_analog_dpad_mapping(g_settings.input.dpad_emulation[i], i);
 }
 
 static bool xinput_input_key_pressed(void *data, int key)
