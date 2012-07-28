@@ -22,100 +22,99 @@
 #include <stdlib.h>
 #include "../libretro.h"
 #include "rarch_sdl_input.h"
-#include "keysym.h"
 
 struct key_bind
 {
    unsigned sdl;
-   enum rarch_key sk;
+   enum retro_key sk;
 };
 
-static unsigned keysym_lut[SK_LAST];
+static unsigned keysym_lut[RETROK_LAST];
 static const struct key_bind lut_binds[] = {
-   { SDLK_LEFT, SK_LEFT },
-   { SDLK_RIGHT, SK_RIGHT },
-   { SDLK_UP, SK_UP },
-   { SDLK_DOWN, SK_DOWN },
-   { SDLK_RETURN, SK_RETURN },
-   { SDLK_TAB, SK_TAB },
-   { SDLK_INSERT, SK_INSERT },
-   { SDLK_DELETE, SK_DELETE },
-   { SDLK_RSHIFT, SK_RSHIFT },
-   { SDLK_LSHIFT, SK_LSHIFT },
-   { SDLK_LCTRL, SK_LCTRL },
-   { SDLK_END, SK_END },
-   { SDLK_HOME, SK_HOME },
-   { SDLK_PAGEDOWN, SK_PAGEDOWN },
-   { SDLK_PAGEUP, SK_PAGEUP },
-   { SDLK_LALT, SK_LALT },
-   { SDLK_SPACE, SK_SPACE },
-   { SDLK_ESCAPE, SK_ESCAPE },
-   { SDLK_BACKSPACE, SK_BACKSPACE },
-   { SDLK_KP_ENTER, SK_KP_ENTER },
-   { SDLK_KP_PLUS, SK_KP_PLUS },
-   { SDLK_KP_MINUS, SK_KP_MINUS },
-   { SDLK_KP_MULTIPLY, SK_KP_MULTIPLY },
-   { SDLK_KP_DIVIDE, SK_KP_DIVIDE },
-   { SDLK_BACKQUOTE, SK_BACKQUOTE },
-   { SDLK_PAUSE, SK_PAUSE },
-   { SDLK_KP0, SK_KP0 },
-   { SDLK_KP1, SK_KP1 },
-   { SDLK_KP2, SK_KP2 },
-   { SDLK_KP3, SK_KP3 },
-   { SDLK_KP4, SK_KP4 },
-   { SDLK_KP5, SK_KP5 },
-   { SDLK_KP6, SK_KP6 },
-   { SDLK_KP7, SK_KP7 },
-   { SDLK_KP8, SK_KP8 },
-   { SDLK_KP9, SK_KP9 },
-   { SDLK_0, SK_0 },
-   { SDLK_1, SK_1 },
-   { SDLK_2, SK_2 },
-   { SDLK_3, SK_3 },
-   { SDLK_4, SK_4 },
-   { SDLK_5, SK_5 },
-   { SDLK_6, SK_6 },
-   { SDLK_7, SK_7 },
-   { SDLK_8, SK_8 },
-   { SDLK_9, SK_9 },
-   { SDLK_F1, SK_F1 },
-   { SDLK_F2, SK_F2 },
-   { SDLK_F3, SK_F3 },
-   { SDLK_F4, SK_F4 },
-   { SDLK_F5, SK_F5 },
-   { SDLK_F6, SK_F6 },
-   { SDLK_F7, SK_F7 },
-   { SDLK_F8, SK_F8 },
-   { SDLK_F9, SK_F9 },
-   { SDLK_F10, SK_F10 },
-   { SDLK_F11, SK_F11 },
-   { SDLK_F12, SK_F12 },
-   { SDLK_a, SK_a },
-   { SDLK_b, SK_b },
-   { SDLK_c, SK_c },
-   { SDLK_d, SK_d },
-   { SDLK_e, SK_e },
-   { SDLK_f, SK_f },
-   { SDLK_g, SK_g },
-   { SDLK_h, SK_h },
-   { SDLK_i, SK_i },
-   { SDLK_j, SK_j },
-   { SDLK_k, SK_k },
-   { SDLK_l, SK_l },
-   { SDLK_m, SK_m },
-   { SDLK_n, SK_n },
-   { SDLK_o, SK_o },
-   { SDLK_p, SK_p },
-   { SDLK_q, SK_q },
-   { SDLK_r, SK_r },
-   { SDLK_s, SK_s },
-   { SDLK_t, SK_t },
-   { SDLK_u, SK_u },
-   { SDLK_v, SK_v },
-   { SDLK_w, SK_w },
-   { SDLK_x, SK_x },
-   { SDLK_y, SK_y },
-   { SDLK_z, SK_z },
+   { SDLK_LEFT, RETROK_LEFT },
+   { SDLK_RIGHT, RETROK_RIGHT },
+   { SDLK_UP, RETROK_UP },
+   { SDLK_DOWN, RETROK_DOWN },
+   { SDLK_RETURN, RETROK_RETURN },
+   { SDLK_TAB, RETROK_TAB },
+   { SDLK_INSERT, RETROK_INSERT },
+   { SDLK_DELETE, RETROK_DELETE },
+   { SDLK_RSHIFT, RETROK_RSHIFT },
+   { SDLK_LSHIFT, RETROK_LSHIFT },
+   { SDLK_LCTRL, RETROK_LCTRL },
+   { SDLK_END, RETROK_END },
+   { SDLK_HOME, RETROK_HOME },
+   { SDLK_PAGEDOWN, RETROK_PAGEDOWN },
+   { SDLK_PAGEUP, RETROK_PAGEUP },
+   { SDLK_LALT, RETROK_LALT },
+   { SDLK_SPACE, RETROK_SPACE },
+   { SDLK_ESCAPE, RETROK_ESCAPE },
+   { SDLK_BACKSPACE, RETROK_BACKSPACE },
+   { SDLK_KP_ENTER, RETROK_KP_ENTER },
+   { SDLK_KP_PLUS, RETROK_KP_PLUS },
+   { SDLK_KP_MINUS, RETROK_KP_MINUS },
+   { SDLK_KP_MULTIPLY, RETROK_KP_MULTIPLY },
+   { SDLK_KP_DIVIDE, RETROK_KP_DIVIDE },
+   { SDLK_BACKQUOTE, RETROK_BACKQUOTE },
+   { SDLK_PAUSE, RETROK_PAUSE },
+   { SDLK_KP0, RETROK_KP0 },
+   { SDLK_KP1, RETROK_KP1 },
+   { SDLK_KP2, RETROK_KP2 },
+   { SDLK_KP3, RETROK_KP3 },
+   { SDLK_KP4, RETROK_KP4 },
+   { SDLK_KP5, RETROK_KP5 },
+   { SDLK_KP6, RETROK_KP6 },
+   { SDLK_KP7, RETROK_KP7 },
+   { SDLK_KP8, RETROK_KP8 },
+   { SDLK_KP9, RETROK_KP9 },
+   { SDLK_0, RETROK_0 },
+   { SDLK_1, RETROK_1 },
+   { SDLK_2, RETROK_2 },
+   { SDLK_3, RETROK_3 },
+   { SDLK_4, RETROK_4 },
+   { SDLK_5, RETROK_5 },
+   { SDLK_6, RETROK_6 },
+   { SDLK_7, RETROK_7 },
+   { SDLK_8, RETROK_8 },
+   { SDLK_9, RETROK_9 },
+   { SDLK_F1, RETROK_F1 },
+   { SDLK_F2, RETROK_F2 },
+   { SDLK_F3, RETROK_F3 },
+   { SDLK_F4, RETROK_F4 },
+   { SDLK_F5, RETROK_F5 },
+   { SDLK_F6, RETROK_F6 },
+   { SDLK_F7, RETROK_F7 },
+   { SDLK_F8, RETROK_F8 },
+   { SDLK_F9, RETROK_F9 },
+   { SDLK_F10, RETROK_F10 },
+   { SDLK_F11, RETROK_F11 },
+   { SDLK_F12, RETROK_F12 },
+   { SDLK_a, RETROK_a },
+   { SDLK_b, RETROK_b },
+   { SDLK_c, RETROK_c },
+   { SDLK_d, RETROK_d },
+   { SDLK_e, RETROK_e },
+   { SDLK_f, RETROK_f },
+   { SDLK_g, RETROK_g },
+   { SDLK_h, RETROK_h },
+   { SDLK_i, RETROK_i },
+   { SDLK_j, RETROK_j },
+   { SDLK_k, RETROK_k },
+   { SDLK_l, RETROK_l },
+   { SDLK_m, RETROK_m },
+   { SDLK_n, RETROK_n },
+   { SDLK_o, RETROK_o },
+   { SDLK_p, RETROK_p },
+   { SDLK_q, RETROK_q },
+   { SDLK_r, RETROK_r },
+   { SDLK_s, RETROK_s },
+   { SDLK_t, RETROK_t },
+   { SDLK_u, RETROK_u },
+   { SDLK_v, RETROK_v },
+   { SDLK_w, RETROK_w },
+   { SDLK_x, RETROK_x },
+   { SDLK_y, RETROK_y },
+   { SDLK_z, RETROK_z },
 };
 
 static void init_lut(void)
@@ -183,7 +182,7 @@ static void *sdl_input_init(void)
 
 static bool sdl_key_pressed(int key)
 {
-   return gfx_ctx_key_pressed(keysym_lut[key]);
+   return key < RETROK_LAST && gfx_ctx_key_pressed(keysym_lut[key]);
 }
 
 #ifndef HAVE_DINPUT
@@ -365,6 +364,11 @@ static int16_t sdl_analog_device_state(sdl_input_t *sdl, const struct retro_keyb
    return digital_right + digital_left;
 }
 
+static int16_t sdl_keyboard_device_state(sdl_input_t *sdl, unsigned id)
+{
+   return sdl->use_keyboard && sdl_key_pressed(id);
+}
+
 static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
 {
    switch (id)
@@ -416,6 +420,8 @@ static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds, 
          return sdl_analog_device_state(data, binds, port, index, id);
       case RETRO_DEVICE_MOUSE:
          return sdl_mouse_device_state(data, id);
+      case RETRO_DEVICE_KEYBOARD:
+         return sdl_keyboard_device_state(data, id);
       case RETRO_DEVICE_LIGHTGUN:
          return sdl_lightgun_device_state(data, id);
 

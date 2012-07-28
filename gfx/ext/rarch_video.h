@@ -183,7 +183,7 @@ struct rarch_keybind
 
    // Keyboard key. The key values use the SDL 1.2 keysyms, 
    // which probably need to be transformed to the native format.
-   // The actual keysyms RetroArch uses are found in input/keysym.h.
+   // The actual keysyms RetroArch uses are found in libretro.h.
    unsigned short key;
 
    // Joypad key. Joypad POV (hats) are embedded into this key as well.

@@ -16,7 +16,6 @@
 #include "general.h"
 #include "conf/config_file.h"
 #include "conf/config_file_macros.h"
-#include "input/keysym.h"
 #include "compat/strl.h"
 #include "config.def.h"
 #include "file.h"
@@ -604,73 +603,73 @@ struct key_map
 // Edit: Not portable to different input systems atm. Might move this map into the driver itself or something.
 // However, this should map nicely over to other systems aswell since the definition are mostly the same anyways.
 static const struct key_map sk_map[] = {
-   { "left", SK_LEFT },
-   { "right", SK_RIGHT },
-   { "up", SK_UP },
-   { "down", SK_DOWN },
-   { "enter", SK_RETURN },
-   { "kp_enter", SK_KP_ENTER },
-   { "tab", SK_TAB },
-   { "insert", SK_INSERT },
-   { "del", SK_DELETE },
-   { "end", SK_END },
-   { "home", SK_HOME },
-   { "rshift", SK_RSHIFT },
-   { "shift", SK_LSHIFT },
-   { "ctrl", SK_LCTRL },
-   { "alt", SK_LALT },
-   { "space", SK_SPACE },
-   { "escape", SK_ESCAPE },
-   { "add", SK_KP_PLUS },
-   { "subtract", SK_KP_MINUS },
-   { "kp_plus", SK_KP_PLUS },
-   { "kp_minus", SK_KP_MINUS },
-   { "f1", SK_F1 },
-   { "f2", SK_F2 },
-   { "f3", SK_F3 },
-   { "f4", SK_F4 },
-   { "f5", SK_F5 },
-   { "f6", SK_F6 },
-   { "f7", SK_F7 },
-   { "f8", SK_F8 },
-   { "f9", SK_F9 },
-   { "f10", SK_F10 },
-   { "f11", SK_F11 },
-   { "f12", SK_F12 },
-   { "num0", SK_0 },
-   { "num1", SK_1 },
-   { "num2", SK_2 },
-   { "num3", SK_3 },
-   { "num4", SK_4 },
-   { "num5", SK_5 },
-   { "num6", SK_6 },
-   { "num7", SK_7 },
-   { "num8", SK_8 },
-   { "num9", SK_9 },
-   { "pageup", SK_PAGEUP },
-   { "pagedown", SK_PAGEDOWN },
-   { "keypad0", SK_KP0 },
-   { "keypad1", SK_KP1 },
-   { "keypad2", SK_KP2 },
-   { "keypad3", SK_KP3 },
-   { "keypad4", SK_KP4 },
-   { "keypad5", SK_KP5 },
-   { "keypad6", SK_KP6 },
-   { "keypad7", SK_KP7 },
-   { "keypad8", SK_KP8 },
-   { "keypad9", SK_KP9 },
-   { "period", SK_PERIOD },
-   { "capslock", SK_CAPSLOCK },
-   { "numlock", SK_NUMLOCK },
-   { "backspace", SK_BACKSPACE },
-   { "multiply", SK_KP_MULTIPLY },
-   { "divide", SK_KP_DIVIDE },
-   { "print_screen", SK_PRINT },
-   { "scroll_lock", SK_SCROLLOCK },
-   { "tilde", SK_BACKQUOTE },
-   { "backquote", SK_BACKQUOTE },
-   { "pause", SK_PAUSE },
-   { "nul", SK_UNKNOWN },
+   { "left", RETROK_LEFT },
+   { "right", RETROK_RIGHT },
+   { "up", RETROK_UP },
+   { "down", RETROK_DOWN },
+   { "enter", RETROK_RETURN },
+   { "kp_enter", RETROK_KP_ENTER },
+   { "tab", RETROK_TAB },
+   { "insert", RETROK_INSERT },
+   { "del", RETROK_DELETE },
+   { "end", RETROK_END },
+   { "home", RETROK_HOME },
+   { "rshift", RETROK_RSHIFT },
+   { "shift", RETROK_LSHIFT },
+   { "ctrl", RETROK_LCTRL },
+   { "alt", RETROK_LALT },
+   { "space", RETROK_SPACE },
+   { "escape", RETROK_ESCAPE },
+   { "add", RETROK_KP_PLUS },
+   { "subtract", RETROK_KP_MINUS },
+   { "kp_plus", RETROK_KP_PLUS },
+   { "kp_minus", RETROK_KP_MINUS },
+   { "f1", RETROK_F1 },
+   { "f2", RETROK_F2 },
+   { "f3", RETROK_F3 },
+   { "f4", RETROK_F4 },
+   { "f5", RETROK_F5 },
+   { "f6", RETROK_F6 },
+   { "f7", RETROK_F7 },
+   { "f8", RETROK_F8 },
+   { "f9", RETROK_F9 },
+   { "f10", RETROK_F10 },
+   { "f11", RETROK_F11 },
+   { "f12", RETROK_F12 },
+   { "num0", RETROK_0 },
+   { "num1", RETROK_1 },
+   { "num2", RETROK_2 },
+   { "num3", RETROK_3 },
+   { "num4", RETROK_4 },
+   { "num5", RETROK_5 },
+   { "num6", RETROK_6 },
+   { "num7", RETROK_7 },
+   { "num8", RETROK_8 },
+   { "num9", RETROK_9 },
+   { "pageup", RETROK_PAGEUP },
+   { "pagedown", RETROK_PAGEDOWN },
+   { "keypad0", RETROK_KP0 },
+   { "keypad1", RETROK_KP1 },
+   { "keypad2", RETROK_KP2 },
+   { "keypad3", RETROK_KP3 },
+   { "keypad4", RETROK_KP4 },
+   { "keypad5", RETROK_KP5 },
+   { "keypad6", RETROK_KP6 },
+   { "keypad7", RETROK_KP7 },
+   { "keypad8", RETROK_KP8 },
+   { "keypad9", RETROK_KP9 },
+   { "period", RETROK_PERIOD },
+   { "capslock", RETROK_CAPSLOCK },
+   { "numlock", RETROK_NUMLOCK },
+   { "backspace", RETROK_BACKSPACE },
+   { "multiply", RETROK_KP_MULTIPLY },
+   { "divide", RETROK_KP_DIVIDE },
+   { "print_screen", RETROK_PRINT },
+   { "scroll_lock", RETROK_SCROLLOCK },
+   { "tilde", RETROK_BACKQUOTE },
+   { "backquote", RETROK_BACKQUOTE },
+   { "pause", RETROK_PAUSE },
+   { "nul", RETROK_UNKNOWN },
 };
 
 static struct retro_keybind *find_retro_bind(unsigned port, int id)
@@ -693,7 +692,7 @@ static int find_sk_bind(const char *str)
 static int find_sk_key(const char *str)
 {
    if (strlen(str) == 1 && isalpha(*str))
-      return (int)SK_a + (tolower(*str) - (int)'a');
+      return (int)RETROK_a + (tolower(*str) - (int)'a');
    else
       return find_sk_bind(str);
 }
@@ -708,7 +707,7 @@ static void read_keybinds_keyboard(config_file_t *conf, unsigned player, unsigne
       int key = find_sk_key(tmp);
 
       if (key >= 0)
-         bind->key = (enum rarch_key)key;
+         bind->key = (enum retro_key)key;
    }
 }
 
@@ -814,8 +813,8 @@ static void save_keybind_key(config_file_t *conf,
    char ascii[2] = {0};
    const char *btn = ascii;
 
-   if (bind->key >= SK_a && bind->key <= SK_z)
-      ascii[0] = 'a' + (bind->key - SK_a);
+   if (bind->key >= RETROK_a && bind->key <= RETROK_z)
+      ascii[0] = 'a' + (bind->key - RETROK_a);
    else
    {
       for (unsigned i = 0; i < sizeof(sk_map) / sizeof(sk_map[0]); i++)

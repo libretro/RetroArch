@@ -19,10 +19,10 @@
 
 #include <sys/types.h>
 #include "boolean.h"
+#include "libretro.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include "msvc/msvc_compat.h"
-#include "input/keysym.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -96,7 +96,7 @@ struct retro_keybind
 {
    bool valid;
    int id;
-   enum rarch_key key;
+   enum retro_key key;
 
    // PC only uses lower 16-bits.
    // Full 64-bit can be used for port-specific purposes, like simplifying multiple binds, etc.
