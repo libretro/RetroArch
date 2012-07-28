@@ -384,7 +384,7 @@ void xdk360_console_format(const char * strFormat)
    for( unsigned long i = 0; i < uStringLength; i++ )
    {
       wchar_t wch;
-	  rarch_convert_char_to_wchar(&wch, &strFormat[i], sizeof(wch));
+	  convert_char_to_wchar(&wch, &strFormat[i], sizeof(wch));
 
       // If this is a newline, just increment lines and move on
       if( wch == L'\n' )

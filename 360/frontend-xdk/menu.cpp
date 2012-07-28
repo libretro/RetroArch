@@ -37,7 +37,7 @@ filebrowser_t *tmp_browser;
 uint32_t set_shader = 0;
 
 wchar_t strw_buffer[PATH_MAX];
-char_t str_buffer[PATH_MAX];
+char str_buffer[PATH_MAX];
 
 /* Register custom classes */
 HRESULT CRetroArch::RegisterXuiClasses (void)
