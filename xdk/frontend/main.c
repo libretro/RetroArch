@@ -129,7 +129,15 @@ int main(int argc, char *argv[])
    config_set_defaults();
    
    input_xinput.init();
-   rarch_configure_libretro(&input_xinput, default_paths.filesystem_root_dir, default_paths.executable_extension);
+
+   const char *path_prefix = default_paths.filesystem_root_dir;
+   const char *extension = default_paths.executable_extension;
+   const input_driver_t *input = &input_xinput;
+   bool find_libretro_file = rarch_configure_libretro(input, path_prefix, extension);
+
+   rarch_settings_set_default(input);
+   rarch_config_load(default_paths.config_file, path_prefix, extension, find_libretro_file);
+   init_libretro_sym();
 
    input_xinput.post_init();
 

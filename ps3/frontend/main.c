@@ -254,7 +254,15 @@ int main(int argc, char *argv[])
 
    char tmp_path[PATH_MAX];
    snprintf(tmp_path, sizeof(tmp_path), "%s/", default_paths.core_dir);
-   rarch_configure_libretro(&input_ps3, tmp_path, default_paths.executable_extension);
+   const char *path_prefix = tmp_path; 
+   const char *extension = default_paths.executable_extension;
+   const input_driver_t *input = &input_ps3;
+
+   bool find_libretro_file = rarch_configure_libretro(input, path_prefix, extension);
+
+   rarch_settings_set_default(input);
+   rarch_config_load(default_paths.config_file, path_prefix, extension, find_libretro_file);
+   init_libretro_sym();
 
    input_ps3.post_init();
 
