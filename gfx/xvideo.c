@@ -527,6 +527,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    xv_set_nonblock_state(xv, !video->vsync);
    xv->focus = true;
 
+   RARCH_LOG("Suspending screensaver (X11).\n");
    gfx_suspend_screensaver(xv->window);
 
    xinput = input_x.init();
