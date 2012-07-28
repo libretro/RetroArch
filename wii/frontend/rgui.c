@@ -272,7 +272,6 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
             snprintf(type_str, sizeof(type_str), "...");
             break;
          case RGUI_SETTINGS_BIND_DEVICE:
-            RARCH_LOG("%d\n", port);
             snprintf(type_str, sizeof(type_str), "%s", rgui_device_lables[g_settings.input.device[port]]);
             break;
          case RGUI_SETTINGS_BIND_UP:
@@ -385,6 +384,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          g_settings.input.device[port] %= RARCH_DEVICE_LAST;
          input_wii.set_default_keybind_lut(g_settings.input.device[port], port);
          rarch_input_set_default_keybinds(port);
+         input_wii.set_analog_dpad_mapping(g_settings.input.device[port], g_settings.input.dpad_emulation[port], port);
          break;
       case RGUI_SETTINGS_BIND_UP:
       case RGUI_SETTINGS_BIND_DOWN:
