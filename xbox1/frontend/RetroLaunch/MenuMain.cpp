@@ -215,7 +215,7 @@ void CMenuMain::ProcessInput()
 
    // Press A to launch
    if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_B) || trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-      rarch_console_load_game_wrap(g_romList.GetRomAt(m_romListSelectedRom)->GetFileName().c_str(), S_DELAY_1);
+      rarch_console_load_game_wrap(g_romList.GetRomAt(m_romListSelectedRom)->GetFileName().c_str(), g_console.zip_extract_mode, S_DELAY_1);
 
    if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_R3))
    {
