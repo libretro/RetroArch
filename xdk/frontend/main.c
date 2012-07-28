@@ -38,6 +38,7 @@
 #endif
 
 #include "../../console/rarch_console.h"
+#include "../../console/rarch_console_exec.h"
 #include "../../console/rarch_console_config.h"
 #include "../../console/rarch_console_main_wrap.h"
 #include "../../conf/config_file.h"
@@ -175,7 +176,7 @@ begin_shutdown:
    video_null.stop();
 #endif
    input_xinput.free(NULL);
-   rarch_exec();
+   rarch_console_exec();
 
    return 0;
 }

@@ -29,6 +29,10 @@ CONSOLE EXTENSIONS
 #include "../rarch_console_main_wrap.c"
 #endif
 
+#ifdef HAVE_RARCH_EXEC
+#include "../rarch_console_exec.c"
+#endif
+
 #include "../rarch_console.c"
 
 #ifdef HAVE_CONFIGFILE

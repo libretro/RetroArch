@@ -34,6 +34,35 @@ enum
 #endif
 };
 
+enum {
+   MENU_ITEM_LOAD_STATE = 0,
+   MENU_ITEM_SAVE_STATE,
+   MENU_ITEM_KEEP_ASPECT_RATIO,
+   MENU_ITEM_OVERSCAN_AMOUNT,
+   MENU_ITEM_ORIENTATION,
+#ifdef __CELLOS_LV2__
+   MENU_ITEM_SCALE_FACTOR,
+#endif
+   MENU_ITEM_RESIZE_MODE,
+   MENU_ITEM_FRAME_ADVANCE,
+   MENU_ITEM_SCREENSHOT_MODE,
+   MENU_ITEM_RESET,
+   MENU_ITEM_RETURN_TO_GAME,
+#ifdef __CELLOS_LV2__
+   MENU_ITEM_RETURN_TO_MENU,
+   MENU_ITEM_CHANGE_LIBRETRO,
+   MENU_ITEM_RETURN_TO_MULTIMAN,
+#endif
+   MENU_ITEM_RETURN_TO_DASHBOARD
+};
+
+enum
+{
+   MODE_EMULATION = 0,
+   MODE_MENU,
+   MODE_EXIT
+};
+
 typedef struct
 {
    char menu_border_file[PATH_MAX];
@@ -64,37 +93,7 @@ typedef struct
 
 extern default_paths_t default_paths;
 
-/*============================================================
-  RetroArch
-  ============================================================ */
-
-enum {
-   MENU_ITEM_LOAD_STATE = 0,
-   MENU_ITEM_SAVE_STATE,
-   MENU_ITEM_KEEP_ASPECT_RATIO,
-   MENU_ITEM_OVERSCAN_AMOUNT,
-   MENU_ITEM_ORIENTATION,
-#ifdef __CELLOS_LV2__
-   MENU_ITEM_SCALE_FACTOR,
-#endif
-   MENU_ITEM_RESIZE_MODE,
-   MENU_ITEM_FRAME_ADVANCE,
-   MENU_ITEM_SCREENSHOT_MODE,
-   MENU_ITEM_RESET,
-   MENU_ITEM_RETURN_TO_GAME,
-#ifdef __CELLOS_LV2__
-   MENU_ITEM_RETURN_TO_MENU,
-   MENU_ITEM_CHANGE_LIBRETRO,
-   MENU_ITEM_RETURN_TO_MULTIMAN,
-#endif
-   MENU_ITEM_RETURN_TO_DASHBOARD
-};
-
 #define MENU_ITEM_LAST MENU_ITEM_RETURN_TO_DASHBOARD+1
-
-#ifdef HAVE_RARCH_EXEC
-void rarch_exec (void);
-#endif
 
 #ifdef HAVE_RSOUND
 bool rarch_console_rsound_start(const char *ip);
@@ -104,12 +103,5 @@ void rarch_console_rsound_stop(void);
 void rarch_convert_char_to_wchar(wchar_t *buf, const char * str, size_t size);
 const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr);
 void rarch_extract_directory(char *buf, const char *path, size_t size);
-
-enum
-{
-   MODE_EMULATION = 0,
-   MODE_MENU,
-   MODE_EXIT
-};
 
 #endif
