@@ -27,15 +27,3 @@
 #include "rarch_console.h"
 
 default_paths_t default_paths;
-
-void rarch_convert_char_to_wchar(wchar_t *buf, const char * str, size_t size)
-{
-   mbstowcs(buf, str, size / sizeof(wchar_t));
-}
-
-const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr)
-{
-   static char str[256];
-   wcstombs(str, wstr, sizeof(str));
-   return str;
-}

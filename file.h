@@ -97,4 +97,7 @@ void fill_pathname_base(char *out_path, const char *in_path, size_t size);
 // Copies base directory of in_path into out_path.
 void fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
 
+void convert_char_to_wchar(wchar_t *out_wchar, const char *in_char, size_t size);
+void convert_wchar_to_char(char *out_char, const wchar_t * in_wchar, size_t size);
+
 #endif

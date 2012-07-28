@@ -78,7 +78,4 @@ extern default_paths_t default_paths;
 
 #define MENU_ITEM_LAST MENU_ITEM_RETURN_TO_DASHBOARD+1
 
-void rarch_convert_char_to_wchar(wchar_t *buf, const char * str, size_t size);
-const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr);
-
 #endif

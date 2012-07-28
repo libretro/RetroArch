@@ -275,7 +275,7 @@ void rarch_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting,
    char str[PATH_MAX];
 
    rarch_settings_create_menu_item_label(str, setting, sizeof(str));
-   rarch_convert_char_to_wchar(strwbuf, str, size);
+   convert_char_to_wchar(strwbuf, str, size);
 }
 
 void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t size)

@@ -35,7 +35,9 @@ HXUIOBJ hCur;
 filebrowser_t *browser;
 filebrowser_t *tmp_browser;
 uint32_t set_shader = 0;
+
 wchar_t strw_buffer[PATH_MAX];
+char_t str_buffer[PATH_MAX];
 
 /* Register custom classes */
 HRESULT CRetroArch::RegisterXuiClasses (void)
@@ -70,7 +72,7 @@ static void filebrowser_fetch_directory_entries(const char *path,
 {
    filebrowser_push_directory(browser, path, true);
 
-   rarch_convert_char_to_wchar(strw_buffer, path, sizeof(strw_buffer));
+   convert_char_to_wchar(strw_buffer, path, sizeof(strw_buffer));
    rompath_title->SetText(strw_buffer);
 
    romlist->DeleteItems(0, romlist->GetItemCount());
@@ -80,7 +82,7 @@ static void filebrowser_fetch_directory_entries(const char *path,
    {
       char fname_tmp[256];
 	  fill_pathname_base(fname_tmp, browser->current_dir.list->elems[i].data, sizeof(fname_tmp));
-      rarch_convert_char_to_wchar(strw_buffer, fname_tmp, sizeof(strw_buffer));
+      convert_char_to_wchar(strw_buffer, fname_tmp, sizeof(strw_buffer));
       romlist->SetText(i, strw_buffer);
    }
 }
@@ -146,7 +148,7 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
       snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
       rarch_input_get_default_keybind_name(i), controlno, 
       rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
-      rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer)); 
+      convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer)); 
       m_controlslist.SetText(i, strw_buffer);
    }
    
@@ -168,7 +170,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
       snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
       rarch_input_get_default_keybind_name(i), controlno, 
       rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
-      rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
+      convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
       m_controlslist.SetText(i, strw_buffer);
    }
 
@@ -179,7 +181,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
          {
             rarch_input_set_keybind(controlno, KEYBIND_DECREMENT, current_index);
             snprintf(button, sizeof(button), "%s #%d: %s", rarch_input_get_default_keybind_name(current_index), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
-            rarch_convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
+            convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
             m_controlslist.SetText(current_index, strw_buffer);
          }
          break;
@@ -188,7 +190,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
          {
             rarch_input_set_keybind(controlno, KEYBIND_INCREMENT, current_index);
             snprintf(button, sizeof(button), "%s #%d: %s", rarch_input_get_default_keybind_name(current_index), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
-            rarch_convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
+            convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
             m_controlslist.SetText(current_index, strw_buffer);
          }
          break;
@@ -221,14 +223,14 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
                rarch_input_get_default_keybind_name(i), controlno, 
                rarch_input_find_platform_key_label(
                g_settings.input.binds[controlno][i].joykey));
-               rarch_convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
+               convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
                m_controlslist.SetText(i, strw_buffer);
             }
             break;
          default:
             rarch_input_set_keybind(controlno, KEYBIND_DEFAULT, current_index);
             snprintf(buttons[current_index], sizeof(buttons[current_index]), "%s #%d: %s", rarch_input_get_default_keybind_name(current_index), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
-            rarch_convert_char_to_wchar(strw_buffer, buttons[current_index], sizeof(strw_buffer));
+            convert_char_to_wchar(strw_buffer, buttons[current_index], sizeof(strw_buffer));
             m_controlslist.SetText(current_index, strw_buffer);
             break;
       }
@@ -532,7 +534,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    char core_text[256];
    snprintf(core_text, sizeof(core_text), "%s %s", id, info.library_version);
 
-   rarch_convert_char_to_wchar(strw_buffer, core_text, sizeof(strw_buffer));
+   convert_char_to_wchar(strw_buffer, core_text, sizeof(strw_buffer));
    m_core.SetText(strw_buffer);
    rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
    m_title.SetText(strw_buffer);
@@ -547,15 +549,15 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    if(hObjPressed == m_romlist)
    {
       int index = m_romlist.GetCurSel();
-      const char *strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
+      convert_wchar_to_char(str_buffer, (const wchar_t *)m_romlist.GetText(index), sizeof(str_buffer));
       if(path_file_exists(browser->current_dir.list->elems[index].data))
       {
-         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), strbuffer);
+         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), str_buffer);
          rarch_console_load_game_wrap(path, g_console.zip_extract_mode, S_DELAY_45);
       }
       else if(browser->current_dir.list->elems[index].attr.b)
       {
-         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), strbuffer);
+         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), str_buffer);
          filebrowser_fetch_directory_entries(path, browser, &m_romlist, &m_rompathtitle);
       }
    }
@@ -589,16 +591,16 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
       int index = m_shaderlist.GetCurSel();
       if(path_file_exists(tmp_browser->current_dir.list->elems[index].data))
       {
-         const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_shaderlist.GetText(index));
+         convert_wchar_to_char(str_buffer, (const wchar_t *)m_shaderlist.GetText(index), sizeof(str_buffer));
 		 
          switch(set_shader)
          {
             case 1:
-               snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", filebrowser_get_current_dir(tmp_browser), strbuffer);
+               snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
                rarch_load_shader(set_shader, g_settings.video.cg_shader_path);
                break;
             case 2:
-               snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", filebrowser_get_current_dir(tmp_browser), strbuffer);
+               snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
                rarch_load_shader(set_shader, g_settings.video.second_pass_shader);
                break;
             default:
@@ -607,8 +609,8 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
       }
       else if(tmp_browser->current_dir.list->elems[index].attr.b)
       {
-         const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_shaderlist.GetText(index));
-         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(tmp_browser), strbuffer);
+         convert_wchar_to_char(str_buffer, (const wchar_t *)m_shaderlist.GetText(index), sizeof(str_buffer));
+         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
          filebrowser_fetch_directory_entries(path, tmp_browser, &m_shaderlist, &m_shaderpathtitle);
       }
    }
@@ -627,14 +629,14 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       int index = m_romlist.GetCurSel();
       if(path_file_exists(tmp_browser->current_dir.list->elems[index].data))
       {
-         const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
-         snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s\\%s", filebrowser_get_current_dir(tmp_browser), strbuffer);
+         convert_wchar_to_char(str_buffer, (const wchar_t *)m_romlist.GetText(index), sizeof(str_buffer));
+         snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
          rarch_settings_change(S_RETURN_TO_LAUNCHER);
       }
       else if(tmp_browser->current_dir.list->elems[index].attr.b)
       {
-         const char * strbuffer = rarch_convert_wchar_to_const_char((const wchar_t *)m_romlist.GetText(index));
-         snprintf(path, sizeof(path), "%s%s\\", filebrowser_get_current_dir(tmp_browser), strbuffer);
+         convert_wchar_to_char(str_buffer, (const wchar_t *)m_romlist.GetText(index), sizeof(str_buffer));
+         snprintf(path, sizeof(path), "%s%s\\", filebrowser_get_current_dir(tmp_browser), str_buffer);
          filebrowser_fetch_directory_entries(path, tmp_browser, &m_romlist, &m_rompathtitle);
       }
    }
