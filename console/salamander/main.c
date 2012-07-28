@@ -44,28 +44,7 @@
 #define PATH_MAX 512
 #endif
 
-#ifdef HAVE_LOGGER
-#include "logger.h"
-#define RARCH_LOG(...) logger_send("RetroArch Salamander: " __VA_ARGS__);
-#define RARCH_ERR(...) logger_send("RetroArch Salamander [ERROR] :: " __VA_ARGS__);
-#define RARCH_WARN(...) logger_send("RetroArch Salamander [WARN] :: " __VA_ARGS__);
-#else
-#define RARCH_LOG(...) do { \
-      fprintf(stderr, "RetroArch Salamander: " __VA_ARGS__); \
-      fflush(stderr); \
-   } while (0)
-
-#define RARCH_ERR(...) do { \
-      fprintf(stderr, "RetroArch Salamander [ERROR] :: " __VA_ARGS__); \
-      fflush(stderr); \
-   } while (0)
-
-#define RARCH_WARN(...) do { \
-      fprintf(stderr, "RetroArch Salamander [WARN] :: " __VA_ARGS__); \
-      fflush(stderr); \
-   } while (0)
-#endif
-
+#include "../../retroarch_logger.h"
 #include "../../file.h"
 
 #if defined(__CELLOS_LV2__)

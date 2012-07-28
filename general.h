@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __RARCH_GENERAL_H
 #define __RARCH_GENERAL_H
 
@@ -506,32 +505,7 @@ extern struct console_settings g_console;
 #endif
 /////////
 
-#if defined(RARCH_CONSOLE) && (defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER) || defined(_XBOX1))
-#include <logger_override.h>
-#else
-
-#ifndef RARCH_LOG
-#define RARCH_LOG(...) do { \
-   if (g_extern.verbose) \
-      fprintf(stderr, "RetroArch: " __VA_ARGS__); \
-      fflush(stderr); \
-   } while (0)
-#endif
-
-#ifndef RARCH_ERR
-#define RARCH_ERR(...) do { \
-      fprintf(stderr, "RetroArch [ERROR] :: " __VA_ARGS__); \
-      fflush(stderr); \
-   } while (0)
-#endif
-
-#ifndef RARCH_WARN
-#define RARCH_WARN(...) do { \
-      fprintf(stderr, "RetroArch [WARN] :: " __VA_ARGS__); \
-      fflush(stderr); \
-   } while (0)
-#endif
-#endif
+#include "retroarch_logger.h"
 
 #ifndef max
 #define max(a, b) ((a) > (b) ? (a) : (b))

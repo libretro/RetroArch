@@ -18,10 +18,26 @@
 #define __RARCH_LOGGER_OVERRIDE_H
 
 #if defined(HAVE_LOGGER)
-#include "console/logger/logger.h"
+#include "logger.h"
+
+#ifdef IS_SALAMANDER
 
 #define RARCH_LOG(...) do { \
-   if (g_extern.verbose) logger_send("RetroArch: " __VA_ARGS__); \
+   logger_send("RetroArch Salamander: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_ERR(...) do { \
+   logger_send("RetroArch Salamander [ERROR] :: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_WARN(...) do { \
+   logger_send("RetroArch Salamander [WARN] :: " __VA_ARGS__); \
+} while(0)
+
+#else
+
+#define RARCH_LOG(...) do { \
+   logger_send("RetroArch: " __VA_ARGS__); \
 } while(0)
 
 #define RARCH_ERR(...) do { \
@@ -31,11 +47,39 @@
 #define RARCH_WARN(...) do { \
    logger_send("RetroArch [WARN] :: " __VA_ARGS__); \
 } while(0)
+
+#endif
+
 #elif defined(HAVE_FILE_LOGGER)
 extern FILE * log_fp;
+
+#ifdef IS_SALAMANDER
+
 #ifndef RARCH_LOG
 #define RARCH_LOG(...) do { \
-   if (g_extern.verbose) \
+      fprintf(log_fp, "RetroArch Salamander: " __VA_ARGS__); \
+      fflush(log_fp); \
+   } while (0)
+#endif
+
+#ifndef RARCH_ERR
+#define RARCH_ERR(...) do { \
+      fprintf(log_fp, "RetroArch Salamander [ERROR] :: " __VA_ARGS__); \
+      fflush(log_fp); \
+   } while (0)
+#endif
+
+#ifndef RARCH_WARN
+#define RARCH_WARN(...) do { \
+      fprintf(log_fp, "RetroArch Salamander [WARN] :: " __VA_ARGS__); \
+      fflush(log_fp); \
+   } while (0)
+#endif
+
+#else
+
+#ifndef RARCH_LOG
+#define RARCH_LOG(...) do { \
       fprintf(log_fp, "RetroArch: " __VA_ARGS__); \
       fflush(log_fp); \
    } while (0)
@@ -53,6 +97,8 @@ extern FILE * log_fp;
       fprintf(log_fp, "RetroArch [WARN] :: " __VA_ARGS__); \
       fflush(log_fp); \
    } while (0)
+#endif
+
 #endif
 
 #endif
