@@ -26,8 +26,6 @@
 #include "../libretro.h"
 #include "xinput_360_input.h"
 
-#include "../console/retroarch_console.h"
-
 static uint64_t state[MAX_PADS];
 static unsigned pads_connected;
 
