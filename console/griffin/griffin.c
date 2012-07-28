@@ -25,6 +25,10 @@ CONSOLE EXTENSIONS
 
 #include "../rarch_console_video.c"
 
+#ifdef HAVE_RARCH_MAIN_WRAP
+#include "../rarch_console_main_wrap.c"
+#endif
+
 #include "../rarch_console.c"
 
 #ifdef HAVE_CONFIGFILE

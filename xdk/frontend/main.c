@@ -39,6 +39,7 @@
 
 #include "../../console/rarch_console.h"
 #include "../../console/rarch_console_config.h"
+#include "../../console/rarch_console_main_wrap.h"
 #include "../../conf/config_file.h"
 #include "../../conf/config_file_macros.h"
 #include "../../file.h"

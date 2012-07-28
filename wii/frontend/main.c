@@ -23,6 +23,7 @@
 #include "../../libretro.h"
 
 #include "../../console/rarch_console_input.h"
+#include "../../console/rarch_console_main_wrap.h"
 
 #include <stdlib.h>
 #include <stddef.h>

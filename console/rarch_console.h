@@ -92,20 +92,6 @@ enum {
 
 #define MENU_ITEM_LAST MENU_ITEM_RETURN_TO_DASHBOARD+1
 
-#ifdef HAVE_RARCH_MAIN_WRAP
-
-struct rarch_main_wrap
-{
-   const char *rom_path;
-   const char *sram_path;
-   const char *state_path;
-   const char *config_path;
-   bool verbose;
-};
-
-bool rarch_startup (const char * config_path);
-#endif
-
 #ifdef HAVE_RARCH_EXEC
 void rarch_exec (void);
 #endif
