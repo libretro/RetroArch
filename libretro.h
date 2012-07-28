@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+// Hack applied for MSVC when compiling in C89 mode as it isn't C99 compliant.
 #ifdef __cplusplus
 extern "C" {
 #else
@@ -16,21 +17,51 @@ extern "C" {
 #endif
 #endif
 
+// Used for checking API/ABI mismatches that can break libretro implementations.
+// It is not incremented for compatible changes.
 #define RETRO_API_VERSION         1
 
+// Libretro's fundamental device abstractions.
 #define RETRO_DEVICE_MASK         0xff
 #define RETRO_DEVICE_NONE         0
+
+// The JOYPAD is called RetroPad. It is essentially a Super Nintendo controller,
+// but with additional L2/R2/L3/R3 buttons, similar to a PS1 DualShock.
 #define RETRO_DEVICE_JOYPAD       1
+
+// The mouse is a simple mouse, similar to Super Nintendo's mouse.
+// X and Y coordinates are reported relatively to last poll (poll callback).
+// It is up to the libretro implementation to keep track of where the mouse pointer is supposed to be on the screen.
+// The frontend must make sure not to interfere with its own hardware mouse pointer.
 #define RETRO_DEVICE_MOUSE        2
+
+// KEYBOARD device lets one poll for raw key pressed.
+// It is poll based, so input callback will return with the current pressed state.
 #define RETRO_DEVICE_KEYBOARD     3
+
+// Lightgun X/Y coordinates are reported relatively to last poll, similar to mouse.
 #define RETRO_DEVICE_LIGHTGUN     4
+
+// The ANALOG device is an extension to JOYPAD (RetroPad).
+// Similar to DualShock it adds two analog sticks.
+// This is treated as a separate device type as it returns values in the full analog range
+// of [-0x8000, 0x7fff]. Positive X axis is right. Positive Y axis is down.
+// Only use ANALOG type when polling for analog values of the axes.
 #define RETRO_DEVICE_ANALOG       5
 
+// These device types are specializations of the base types above.
+// They should only be used in retro_set_controller_type() to inform libretro implementations
+// about use of a very specific device type.
+//
+// In input state callback, however, only the base type should be used in the 'device' field.
 #define RETRO_DEVICE_JOYPAD_MULTITAP        ((1 << 8) | RETRO_DEVICE_JOYPAD)
 #define RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE   ((1 << 8) | RETRO_DEVICE_LIGHTGUN)
 #define RETRO_DEVICE_LIGHTGUN_JUSTIFIER     ((2 << 8) | RETRO_DEVICE_LIGHTGUN)
 #define RETRO_DEVICE_LIGHTGUN_JUSTIFIERS    ((3 << 8) | RETRO_DEVICE_LIGHTGUN)
 
+// Buttons for the RetroPad (JOYPAD).
+// The placement of these is equivalent to placements on the Super Nintendo controller.
+// L2/R2/L3/R3 buttons correspond to the PS1 DualShock.
 #define RETRO_DEVICE_ID_JOYPAD_B        0
 #define RETRO_DEVICE_ID_JOYPAD_Y        1
 #define RETRO_DEVICE_ID_JOYPAD_SELECT   2
@@ -48,16 +79,19 @@ extern "C" {
 #define RETRO_DEVICE_ID_JOYPAD_L3      14
 #define RETRO_DEVICE_ID_JOYPAD_R3      15
 
+// Index / Id values for ANALOG device.
 #define RETRO_DEVICE_INDEX_ANALOG_LEFT   0
 #define RETRO_DEVICE_INDEX_ANALOG_RIGHT  1
 #define RETRO_DEVICE_ID_ANALOG_X         0
 #define RETRO_DEVICE_ID_ANALOG_Y         1
 
+// Id values for MOUSE.
 #define RETRO_DEVICE_ID_MOUSE_X      0
 #define RETRO_DEVICE_ID_MOUSE_Y      1
 #define RETRO_DEVICE_ID_MOUSE_LEFT   2
 #define RETRO_DEVICE_ID_MOUSE_RIGHT  3
 
+// Id values for LIGHTGUN types.
 #define RETRO_DEVICE_ID_LIGHTGUN_X        0
 #define RETRO_DEVICE_ID_LIGHTGUN_Y        1
 #define RETRO_DEVICE_ID_LIGHTGUN_TRIGGER  2
@@ -66,15 +100,30 @@ extern "C" {
 #define RETRO_DEVICE_ID_LIGHTGUN_PAUSE    5
 #define RETRO_DEVICE_ID_LIGHTGUN_START    6
 
+// Returned from retro_get_region().
 #define RETRO_REGION_NTSC  0
 #define RETRO_REGION_PAL   1
 
+// Passed to retro_get_memory_data/size().
+// If the memory type doesn't apply to the implementation NULL/0 can be returned.
 #define RETRO_MEMORY_MASK        0xff
+
+// Regular save ram. This ram is usually found on a game cartridge, backed up by a battery.
+// If save game data is too complex for a single memory buffer,
+// the SYSTEM_DIRECTORY environment callback can be used.
 #define RETRO_MEMORY_SAVE_RAM    0
+
+// Some games have a built-in clock to keep track of time.
+// This memory is usually just a couple of bytes to keep track of time.
 #define RETRO_MEMORY_RTC         1
+
+// System ram lets a frontend peek into a game systems main RAM.
 #define RETRO_MEMORY_SYSTEM_RAM  2
+
+// Video ram lets a frontend peek into a game systems video RAM (VRAM).
 #define RETRO_MEMORY_VIDEO_RAM   3
 
+// Special memory types.
 #define RETRO_MEMORY_SNES_BSX_RAM             ((1 << 8) | RETRO_MEMORY_SAVE_RAM)
 #define RETRO_MEMORY_SNES_BSX_PRAM            ((2 << 8) | RETRO_MEMORY_SAVE_RAM)
 #define RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM  ((3 << 8) | RETRO_MEMORY_SAVE_RAM)
@@ -82,11 +131,14 @@ extern "C" {
 #define RETRO_MEMORY_SNES_GAME_BOY_RAM        ((5 << 8) | RETRO_MEMORY_SAVE_RAM)
 #define RETRO_MEMORY_SNES_GAME_BOY_RTC        ((6 << 8) | RETRO_MEMORY_RTC)
 
+// Special game types passed into retro_load_game_special().
+// Only used when multiple ROMs are required.
 #define RETRO_GAME_TYPE_BSX             0x101
 #define RETRO_GAME_TYPE_BSX_SLOTTED     0x102
 #define RETRO_GAME_TYPE_SUFAMI_TURBO    0x103
 #define RETRO_GAME_TYPE_SUPER_GAME_BOY  0x104
 
+// Keysyms used for ID in input state callback when polling RETRO_KEYBOARD.
 enum retro_key
 {
    RETROK_UNKNOWN        = 0,
