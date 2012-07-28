@@ -144,10 +144,12 @@ static void* xinput_input_init(void)
    return (void*)-1;
 }
 
+#define STUB_DEVICE 0
+
 static void xinput_input_post_init(void)
 {
    for(unsigned i = 0; i < MAX_PADS; i++)
-      xinput_input_set_analog_dpad_mapping(g_settings.input.dpad_emulation[i], i);
+      xinput_input_set_analog_dpad_mapping(STUB_DEVICE, g_settings.input.dpad_emulation[i], i);
 }
 
 static bool xinput_input_key_pressed(void *data, int key)
