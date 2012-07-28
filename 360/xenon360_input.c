@@ -119,9 +119,10 @@ static bool xenon360_key_pressed(void *data, int key)
    return false;
 }
 
-static void xenon360_input_set_default_keybind_lut(unsigned device)
+static void xenon360_input_set_default_keybind_lut(unsigned device, unsigned port)
 {
    (void)device;
+   (void)port;
 }
 
 static void xenon360_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)

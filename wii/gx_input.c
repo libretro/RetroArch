@@ -435,9 +435,11 @@ static bool wii_key_pressed(void *data, int key)
    }
 }
 
-static void wii_set_default_keybind_lut(unsigned device)
+static void wii_set_default_keybind_lut(unsigned device, unsigned port)
 {
    (void)device; //TODO: Remove when you start using it in this function
+   (void)port;
+
 #if defined(CLASSIC_PAD)
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_B].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_Y].joykey;

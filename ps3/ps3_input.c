@@ -478,9 +478,10 @@ static bool ps3_key_pressed(void *data, int key)
    }
 }
 
-static void ps3_set_default_keybind_lut(unsigned device)
+static void ps3_set_default_keybind_lut(unsigned device, unsigned port)
 {
    (void)device;
+   (void)port;
 
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[PS3_DEVICE_ID_JOYPAD_CROSS].joykey;
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		= platform_keys[PS3_DEVICE_ID_JOYPAD_SQUARE].joykey;

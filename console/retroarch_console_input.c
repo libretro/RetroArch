@@ -138,10 +138,11 @@ void rarch_input_set_default_keybinds(unsigned player)
 
 void rarch_input_set_controls_default (const input_driver_t *input)
 {
-   input->set_default_keybind_lut(STUB_DEVICE);
-
    for(uint32_t x = 0; x < MAX_PLAYERS; x++)
+   {
+      input->set_default_keybind_lut(STUB_DEVICE, x);
       rarch_input_set_default_keybinds(x);
+   }
 }
 
 const char *rarch_input_get_default_keybind_name(unsigned id)
