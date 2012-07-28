@@ -16,7 +16,7 @@
 
 #include <stdint.h>
 
-#include "retroarch_console.h"
+#include "rarch_console.h"
 
 // if a CORE executable exists (full_path), this means we have just installed
 // a new libretro port and therefore we need to change it to a more

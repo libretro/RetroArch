@@ -17,7 +17,7 @@
 #include "Font.h"
 #include "RomList.h"
 
-#include "../../console/retroarch_console.h"
+#include "../../console/rarch_console.h"
 #include "../../general.h"
 
 CMenuMain g_menuMain;

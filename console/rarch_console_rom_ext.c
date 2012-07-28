@@ -24,12 +24,12 @@
 #include "../general.h"
 #include "../file.h"
 
-#include "console_settings.h"
-#include "retroarch_console.h"
-#include "retroarch_rom_ext.h"
+#include "rarch_console_settings.h"
+#include "rarch_console.h"
+#include "rarch_console_rom_ext.h"
 
 #ifdef HAVE_ZLIB
-#include "retroarch_rzlib.h"
+#include "rarch_console_rzlib.h"
 #endif
 
 static void rarch_console_load_game(const char *path)

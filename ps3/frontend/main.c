@@ -45,9 +45,9 @@
 
 #include "../../gfx/gl_common.h"
 
-#include "../../console/retroarch_console.h"
-#include "../../console/retroarch_console_input.h"
-#include "../../console/retroarch_config.h"
+#include "../../console/rarch_console.h"
+#include "../../console/rarch_console_input.h"
+#include "../../console/rarch_console_config.h"
 #include "../../conf/config_file.h"
 #include "../../conf/config_file_macros.h"
 #include "../../general.h"

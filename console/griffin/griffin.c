@@ -21,23 +21,23 @@
 /*============================================================
 CONSOLE EXTENSIONS
 ============================================================ */
-#include "../retroarch_rom_ext.c"
-#include "../retroarch_console.c"
+#include "../rarch_console_rom_ext.c"
+#include "../rarch_console.c"
 
 #ifdef HAVE_CONFIGFILE
-#include "../retroarch_config.c"
+#include "../rarch_console_config.c"
 #endif
 
-#include "../retroarch_console_input.c"
+#include "../rarch_console_input.c"
 
 #ifdef HAVE_ZLIB
-#include "../retroarch_rzlib.c"
+#include "../rarch_console_rzlib.c"
 #endif
 
-#include "../console_settings.c"
+#include "../rarch_console_settings.c"
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-#include "../libretro_mgmt.c"
+#include "../rarch_console_libretro_mgmt.c"
 #endif
 
 /*============================================================

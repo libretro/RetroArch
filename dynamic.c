@@ -20,7 +20,7 @@
 #include <string.h>
 
 #ifdef RARCH_CONSOLE
-#include "console/retroarch_console.h"
+#include "console/rarch_console.h"
 #endif
 
 #ifdef HAVE_CONFIG_H

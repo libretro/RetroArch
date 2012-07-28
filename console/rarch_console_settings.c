@@ -20,7 +20,7 @@
 #include <string.h>
 
 #include "../general.h"
-#include "console_settings.h"
+#include "rarch_console_settings.h"
 
 void rarch_settings_change(unsigned setting)
 {

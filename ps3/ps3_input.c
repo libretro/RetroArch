@@ -53,7 +53,6 @@
 
 #include "ps3_input.h"
 #include "../driver.h"
-#include "../console/retroarch_console.h"
 #include "../libretro.h"
 #include "../general.h"
 

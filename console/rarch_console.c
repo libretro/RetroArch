@@ -23,8 +23,9 @@
 #include "../libretro.h"
 #include "../general.h"
 #include "../compat/strl.h"
-#include "retroarch_console.h"
 #include "../file.h"
+
+#include "rarch_console.h"
 
 #define MAX_ARGS 32
 

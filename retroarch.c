@@ -33,10 +33,6 @@
 #include "cheats.h"
 #include "compat/getopt_rarch.h"
 
-#ifdef RARCH_CONSOLE
-#include "console/retroarch_console_input.h"
-#endif
-
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>

@@ -16,10 +16,10 @@
 
 #include <stdio.h>
 
-#include "retroarch_config.h"
-
 #include "../conf/config_file.h"
 #include "../conf/config_file_macros.h"
+
+#include "rarch_console_config.h"
 
 void rarch_config_create_default(const char * conf_name)
 {

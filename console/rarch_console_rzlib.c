@@ -21,10 +21,10 @@
 #include "../boolean.h"
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-#include "libretro_mgmt.h"
+#include "rarch_console_libretro_mgmt.h"
 #endif
 
-#include "retroarch_rzlib.h"
+#include "rarch_console_rzlib.h"
 
 static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir, char *slash, char *write_filename, size_t write_filename_size)
 {

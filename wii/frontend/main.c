@@ -21,7 +21,8 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../libretro.h"
-#include "../../console/retroarch_console_input.h"
+
+#include "../../console/rarch_console_input.h"
 
 #include <stdlib.h>
 #include <stddef.h>

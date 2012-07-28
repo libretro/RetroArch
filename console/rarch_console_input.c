@@ -19,7 +19,8 @@
 #include <stddef.h>
 #include <string.h>
 #include "../boolean.h"
-#include "retroarch_console_input.h"
+
+#include "rarch_console_input.h"
 
 struct platform_bind
 {

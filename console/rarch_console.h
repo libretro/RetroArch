@@ -18,11 +18,12 @@
 #define CONSOLE_EXT_H__
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-#include "libretro_mgmt.h"
+#include "rarch_console_libretro_mgmt.h"
 #endif
 
 #include "../general.h"
-#include "console_settings.h"
+
+#include "rarch_console_settings.h"
 
 #define IS_TIMER_NOT_EXPIRED(handle) (handle->frame_count < g_console.timer_expiration_frame_count)
 #define IS_TIMER_EXPIRED(handle) 	(!(IS_TIMER_NOT_EXPIRED(handle)))
