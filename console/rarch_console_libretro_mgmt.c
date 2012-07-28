@@ -14,14 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
-
-#include "rarch_console.h"
+#include <stdio.h>
+#include "../boolean.h"
+#include "../file.h"
 
 // if a CORE executable exists (full_path), this means we have just installed
 // a new libretro port and therefore we need to change it to a more
 // sane name.
 
+#ifndef IS_SALAMANDER
 static bool rarch_manage_libretro_install(char *libretro_core_installed, size_t sizeof_libretro_core, const char *full_path, const char *path, const char *exe_ext)
 {
    int ret;
@@ -91,6 +92,34 @@ static bool rarch_configure_libretro_core(const char *full_path, const char *tmp
    return find_libretro_file;
 }
 
+bool rarch_configure_libretro(const input_driver_t *input, const char *path_prefix, const char * extension)
+{
+   char full_path[1024];
+   snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
+
+   bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
+   default_paths.config_file, extension);
+
+   return find_libretro_file;
+}
+
+bool rarch_manage_libretro_extension_supported(const char *filename)
+{
+   bool ext_supported = false;
+   struct string_list *ext_list = NULL;
+   const char *file_ext = path_get_extension(filename);
+   const char *ext = rarch_console_get_rom_ext();
+
+   if (ext)
+      ext_list = string_split(ext, "|");
+
+   if (ext_list && string_list_find_elem(ext_list, file_ext))
+      ext_supported = true; 
+
+   return ext_supported;
+}
+#endif
+
 void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext)
 {
    //We need to set libretro to the first entry in the cores
@@ -138,31 +167,4 @@ void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first
 
 end:
    dir_list_free(dir_list);
-}
-
-bool rarch_configure_libretro(const input_driver_t *input, const char *path_prefix, const char * extension)
-{
-   char full_path[1024];
-   snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
-
-   bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
-   default_paths.config_file, extension);
-
-   return find_libretro_file;
-}
-
-bool rarch_manage_libretro_extension_supported(const char *filename)
-{
-   bool ext_supported = false;
-   struct string_list *ext_list = NULL;
-   const char *file_ext = path_get_extension(filename);
-   const char *ext = rarch_console_get_rom_ext();
-
-   if (ext)
-      ext_list = string_split(ext, "|");
-
-   if (ext_list && string_list_find_elem(ext_list, file_ext))
-      ext_supported = true; 
-
-   return ext_supported;
 }
