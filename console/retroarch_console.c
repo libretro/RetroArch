@@ -94,6 +94,7 @@ void rarch_set_auto_viewport(unsigned width, unsigned height)
    aspectratio_lut[ASPECT_RATIO_AUTO].value = (int)aspect_x / (int)aspect_y;
 }
 
+#if defined(HAVE_HLSL) || defined(HAVE_CG) || defined(HAVE_GLSL)
 void rarch_load_shader(unsigned slot, const char *path)
 {
 #if defined(HAVE_HLSL)
@@ -104,11 +105,10 @@ void rarch_load_shader(unsigned slot, const char *path)
 RARCH_WARN("Shader support is not implemented for this build.\n");
 #endif
 
-#if defined(HAVE_HLSL) || defined(HAVE_CG)
    if (g_console.info_msg_enable)
       rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
-#endif
 }
+#endif
 
 /*============================================================
   RetroArch MAIN WRAP
@@ -116,45 +116,7 @@ RARCH_WARN("Shader support is not implemented for this build.\n");
 
 #ifdef HAVE_RARCH_MAIN_WRAP
 
-bool rarch_startup (const char * config_path)
-{
-   bool retval = false;
-
-   if(g_console.initialize_rarch_enable)
-   {
-      if(g_console.emulator_initialized)
-         rarch_main_deinit();
-
-      struct rarch_main_wrap args = {0};
-
-      args.verbose = g_extern.verbose;
-      args.config_path = config_path;
-      args.sram_path = g_console.default_sram_dir_enable ? g_console.default_sram_dir : NULL,
-      args.state_path = g_console.default_savestate_dir_enable ? g_console.default_savestate_dir : NULL,
-      args.rom_path = g_console.rom_path;
-
-      int init_ret = rarch_main_init_wrap(&args);
-      (void)init_ret;
-
-      if(init_ret == 0)
-      {
-         g_console.emulator_initialized = 1;
-         g_console.initialize_rarch_enable = 0;
-         retval = true;
-      }
-      else
-      {
-         //failed to load the ROM for whatever reason
-         g_console.emulator_initialized = 0;
-         g_console.mode_switch = MODE_MENU;
-         rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
-      }
-   }
-
-   return retval;
-}
-
-int rarch_main_init_wrap(const struct rarch_main_wrap *args)
+static int rarch_main_init_wrap(const struct rarch_main_wrap *args)
 {
    int argc = 0;
    char *argv[MAX_ARGS] = {NULL};
@@ -201,9 +163,47 @@ int rarch_main_init_wrap(const struct rarch_main_wrap *args)
       tmp++;
    }
 
-
    return ret;
 }
+
+bool rarch_startup (const char * config_path)
+{
+   bool retval = false;
+
+   if(g_console.initialize_rarch_enable)
+   {
+      if(g_console.emulator_initialized)
+         rarch_main_deinit();
+
+      struct rarch_main_wrap args = {0};
+
+      args.verbose = g_extern.verbose;
+      args.config_path = config_path;
+      args.sram_path = g_console.default_sram_dir_enable ? g_console.default_sram_dir : NULL,
+      args.state_path = g_console.default_savestate_dir_enable ? g_console.default_savestate_dir : NULL,
+      args.rom_path = g_console.rom_path;
+
+      int init_ret = rarch_main_init_wrap(&args);
+      (void)init_ret;
+
+      if(init_ret == 0)
+      {
+         g_console.emulator_initialized = 1;
+         g_console.initialize_rarch_enable = 0;
+         retval = true;
+      }
+      else
+      {
+         //failed to load the ROM for whatever reason
+         g_console.emulator_initialized = 0;
+         g_console.mode_switch = MODE_MENU;
+         rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
+      }
+   }
+
+   return retval;
+}
+
 
 #endif
 
