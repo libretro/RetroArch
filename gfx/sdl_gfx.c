@@ -20,10 +20,7 @@
 #include "../general.h"
 #include "../input/rarch_sdl_input.h"
 #include "gfx_common.h"
-
-#ifdef IS_LINUX
-#include "SDL_syswm.h"
-#endif
+#include "gfx_context.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -247,22 +244,6 @@ static void sdl_render_msg_32(sdl_video_t *vid, SDL_Surface *buffer, const char 
 #endif
 }
 
-#ifdef HAVE_X11
-static Window sdl_get_window_id(void)
-{
-   SDL_SysWMinfo sys_info;
-   SDL_VERSION(&sys_info.version);
-
-   if (SDL_GetWMInfo(&sys_info) <= 0)
-   {
-      RARCH_WARN("%s\n", SDL_GetError());
-      return -1;
-   }
-
-   return sys_info.info.x11.window;
-}
-#endif
-
 static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
 #ifdef _WIN32
@@ -290,12 +271,6 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    vid->render32 = video->rgb32 && !g_settings.video.force_16bit;
    vid->screen = SDL_SetVideoMode(video->width, video->height, vid->render32 ? 32 : 15, SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
 
-#ifdef HAVE_X11
-   int wid = sdl_get_window_id();
-   if (wid > 0)
-      gfx_suspend_screensaver(wid);
-#endif
-
    if (!vid->screen && !g_settings.video.force_16bit && !video->rgb32)
    {
       vid->upsample = true;
@@ -311,6 +286,15 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    }
 
    SDL_ShowCursor(SDL_DISABLE);
+
+#ifdef HAVE_X11
+   RARCH_LOG("Suspending screensaver (X11).\n");
+   SDL_SysWMinfo wm_info;
+   if (gfx_ctx_get_wm_info(&wm_info))
+      gfx_suspend_screensaver(wm_info.info.x11.window);
+   else
+      RARCH_ERR("Failed to suspend screensaver.\n");
+#endif
 
    fmt = vid->screen->format;
    if (vid->render32)
