@@ -161,82 +161,79 @@ static void reset_callback(void)
 
 static void wii_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
 {
-   (void)device; //TODO: Remove when you start using it in this function
-
-#if defined(CLASSIC_PAD)
-   switch(map_dpad_enum)
+   switch (device)
    {
-      case DPAD_EMULATION_NONE:
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_UP].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_DOWN].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_LEFT].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_RIGHT].joykey;
-         break;
-      case DPAD_EMULATION_LSTICK:
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_CLASSIC_ID_LSTICK_UP_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_CLASSIC_ID_LSTICK_DOWN_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_CLASSIC_ID_LSTICK_LEFT_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_CLASSIC_ID_LSTICK_RIGHT_DPAD].joykey;
-         break;
-      case DPAD_EMULATION_RSTICK:
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_CLASSIC_ID_RSTICK_UP_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_CLASSIC_ID_RSTICK_DOWN_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_CLASSIC_ID_RSTICK_LEFT_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_CLASSIC_ID_RSTICK_RIGHT_DPAD].joykey;
-         break;
-   }
-#elif defined(WIIMOTE_PAD)
-   switch(map_dpad_enum)
-   {
-      case DPAD_EMULATION_LSTICK:
-      case DPAD_EMULATION_RSTICK:
-      case DPAD_EMULATION_NONE:
+      case WII_DEVICE_WIIMOTE:
          g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_UP].joykey;
          g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_DOWN].joykey;
          g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_LEFT].joykey;
          g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_RIGHT].joykey;
          break;
+      case WII_DEVICE_NUNCHUK:
+         if (map_dpad_enum == DPAD_EMULATION_NONE)
+         {
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_UP].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_DOWN].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_LEFT].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_RIGHT].joykey;
+         }
+         else
+         {
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_WIIMOTE_ID_LSTICK_UP_DPAD].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_WIIMOTE_ID_LSTICK_DOWN_DPAD].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_WIIMOTE_ID_LSTICK_LEFT_DPAD].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_WIIMOTE_ID_LSTICK_RIGHT_DPAD].joykey;
+         }
+         break;
+      case WII_DEVICE_CLASSIC:
+         if (map_dpad_enum == DPAD_EMULATION_NONE)
+         {
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_UP].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_DOWN].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_LEFT].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_RIGHT].joykey;
+         }
+         else if (map_dpad_enum == DPAD_EMULATION_LSTICK)
+         {
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_CLASSIC_ID_LSTICK_UP_DPAD].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_CLASSIC_ID_LSTICK_DOWN_DPAD].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_CLASSIC_ID_LSTICK_LEFT_DPAD].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_CLASSIC_ID_LSTICK_RIGHT_DPAD].joykey;
+         }
+         else if (map_dpad_enum == DPAD_EMULATION_RSTICK)
+         {
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_CLASSIC_ID_RSTICK_UP_DPAD].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_CLASSIC_ID_RSTICK_DOWN_DPAD].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_CLASSIC_ID_RSTICK_LEFT_DPAD].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_CLASSIC_ID_RSTICK_RIGHT_DPAD].joykey;
+         }
+         break;
+      case WII_DEVICE_GAMECUBE:
+         if (map_dpad_enum == DPAD_EMULATION_NONE)
+         {
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_GC_ID_JOYPAD_UP].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_GC_ID_JOYPAD_DOWN].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_GC_ID_JOYPAD_LEFT].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_GC_ID_JOYPAD_RIGHT].joykey;
+         }
+         else if (map_dpad_enum == DPAD_EMULATION_LSTICK)
+         {
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_GC_ID_LSTICK_UP_DPAD].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_GC_ID_LSTICK_DOWN_DPAD].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_GC_ID_LSTICK_LEFT_DPAD].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_GC_ID_LSTICK_RIGHT_DPAD].joykey;
+         }
+         else if (map_dpad_enum == DPAD_EMULATION_RSTICK)
+         {
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_GC_ID_RSTICK_UP_DPAD].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_GC_ID_RSTICK_DOWN_DPAD].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_GC_ID_RSTICK_LEFT_DPAD].joykey;
+            g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_GC_ID_RSTICK_RIGHT_DPAD].joykey;
+         }
+         break;
+      default:
+         break;
    }
-#elif defined(NUNCHUK_PAD)
-   switch(map_dpad_enum)
-   {
-      case DPAD_EMULATION_LSTICK:
-      case DPAD_EMULATION_RSTICK:
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_WIIMOTE_ID_LSTICK_UP_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_WIIMOTE_ID_LSTICK_DOWN_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_WIIMOTE_ID_LSTICK_LEFT_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_WIIMOTE_ID_LSTICK_RIGHT_DPAD].joykey;
-         break;
-      case DPAD_EMULATION_NONE:
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_UP].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_DOWN].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_LEFT].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_RIGHT].joykey;
-         break;
-   }
-#elif defined(GAMECUBE_PAD)
-   switch(map_dpad_enum)
-   {
-      case DPAD_EMULATION_NONE:
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_GC_ID_JOYPAD_UP].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_GC_ID_JOYPAD_DOWN].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_GC_ID_JOYPAD_LEFT].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_GC_ID_JOYPAD_RIGHT].joykey;
-         break;
-      case DPAD_EMULATION_LSTICK:
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_GC_ID_LSTICK_UP_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_GC_ID_LSTICK_DOWN_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_GC_ID_LSTICK_LEFT_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_GC_ID_LSTICK_RIGHT_DPAD].joykey;
-         break;
-      case DPAD_EMULATION_RSTICK:
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = platform_keys[WII_DEVICE_GC_ID_RSTICK_UP_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = platform_keys[WII_DEVICE_GC_ID_RSTICK_DOWN_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = platform_keys[WII_DEVICE_GC_ID_RSTICK_LEFT_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = platform_keys[WII_DEVICE_GC_ID_RSTICK_RIGHT_DPAD].joykey;
-         break;
-   }
-#endif
 }
 
 static void *wii_input_initialize(void)
@@ -437,78 +434,85 @@ static bool wii_key_pressed(void *data, int key)
 
 static void wii_set_default_keybind_lut(unsigned device, unsigned port)
 {
-   (void)device; //TODO: Remove when you start using it in this function
    (void)port;
 
-#if defined(CLASSIC_PAD)
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_B].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_Y].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_MINUS].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_PLUS].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_UP].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_DOWN].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_LEFT].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_RIGHT].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_A].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_X].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_L_TRIGGER].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_R_TRIGGER].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_ZL_TRIGGER].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]     = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_ZR_TRIGGER].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]     = 0;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]     = 0;
-#elif defined(WIIMOTE_PAD)
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_B].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_A].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_MINUS].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_PLUS].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_UP].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_DOWN].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_LEFT].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_RIGHT].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_1].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_2].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]      = 0;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]      = 0;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = 0;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]     = 0;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]     = 0;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]     = 0;
-#elif defined(NUNCHUK_PAD)
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_B].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_2].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_MINUS].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_PLUS].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_UP].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_DOWN].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_LEFT].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_RIGHT].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_A].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_1].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_Z].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_C].joykey;;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = 0;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]     = 0;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]     = 0;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]     = 0;
-#elif defined(GAMECUBE_PAD)
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_B].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_Y].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[WII_DEVICE_GC_ID_JOYPAD_Z_TRIGGER].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[WII_DEVICE_GC_ID_JOYPAD_START].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[WII_DEVICE_GC_ID_JOYPAD_UP].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[WII_DEVICE_GC_ID_JOYPAD_DOWN].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[WII_DEVICE_GC_ID_JOYPAD_LEFT].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[WII_DEVICE_GC_ID_JOYPAD_RIGHT].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_A].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_X].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_L_TRIGGER].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_R_TRIGGER].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = 0;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]     = 0;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]     = 0;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]     = 0;
-#endif
+   switch (device)
+   {
+      case WII_DEVICE_WIIMOTE:
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_B].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_A].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_MINUS].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_PLUS].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_UP].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_DOWN].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_LEFT].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_RIGHT].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_1].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_2].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]      = 0;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]      = 0;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = 0;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]     = 0;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]     = 0;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]     = 0;
+         break;
+      case WII_DEVICE_NUNCHUK:
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_B].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_2].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_MINUS].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_PLUS].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_UP].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_DOWN].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_LEFT].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_RIGHT].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_A].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_1].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_Z].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[WII_DEVICE_WIIMOTE_ID_JOYPAD_C].joykey;;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = 0;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]     = 0;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]     = 0;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]     = 0;
+         break;
+      case WII_DEVICE_CLASSIC:
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_B].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_Y].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_MINUS].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_PLUS].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_UP].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_DOWN].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_LEFT].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_RIGHT].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_A].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_X].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_L_TRIGGER].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_R_TRIGGER].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_ZL_TRIGGER].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]     = platform_keys[WII_DEVICE_CLASSIC_ID_JOYPAD_ZR_TRIGGER].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]     = 0;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]     = 0;
+         break;
+      case WII_DEVICE_GAMECUBE:
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_B].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_Y].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[WII_DEVICE_GC_ID_JOYPAD_Z_TRIGGER].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[WII_DEVICE_GC_ID_JOYPAD_START].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[WII_DEVICE_GC_ID_JOYPAD_UP].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[WII_DEVICE_GC_ID_JOYPAD_DOWN].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[WII_DEVICE_GC_ID_JOYPAD_LEFT].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[WII_DEVICE_GC_ID_JOYPAD_RIGHT].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_A].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_X].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_L_TRIGGER].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[WII_DEVICE_GC_ID_JOYPAD_R_TRIGGER].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = 0;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]     = 0;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]     = 0;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]     = 0;
+         break;
+      default:
+         break;
+   }
 }
 
 const input_driver_t input_wii = {

@@ -44,7 +44,6 @@ struct rgui_handle
    rgui_list_t *folder_buf;
    int directory_ptr;
    bool need_refresh;
-   rgui_mode_t mode;
 
    char path_buf[PATH_MAX];
 
@@ -52,12 +51,36 @@ struct rgui_handle
    uint16_t font_green[256][FONT_HEIGHT][FONT_WIDTH];
 };
 
-static char *rgui_device_lables[] = {
+static const char *rgui_device_lables[] = {
+   "GameCube Controller",
    "Wiimote",
    "Wiimote + Nunchuk",
    "Classic Controller",
-   "GameCube Controller"
 };
+
+static const unsigned rgui_controller_lut[] = {
+   RETRO_DEVICE_ID_JOYPAD_UP,
+   RETRO_DEVICE_ID_JOYPAD_DOWN,
+   RETRO_DEVICE_ID_JOYPAD_LEFT,
+   RETRO_DEVICE_ID_JOYPAD_RIGHT,
+   RETRO_DEVICE_ID_JOYPAD_A,
+   RETRO_DEVICE_ID_JOYPAD_B,
+   RETRO_DEVICE_ID_JOYPAD_X,
+   RETRO_DEVICE_ID_JOYPAD_Y,
+   RETRO_DEVICE_ID_JOYPAD_START,
+   RETRO_DEVICE_ID_JOYPAD_SELECT,
+   RETRO_DEVICE_ID_JOYPAD_L,
+   RETRO_DEVICE_ID_JOYPAD_R,
+   RETRO_DEVICE_ID_JOYPAD_L2,
+   RETRO_DEVICE_ID_JOYPAD_R2,
+   RETRO_DEVICE_ID_JOYPAD_L3,
+   RETRO_DEVICE_ID_JOYPAD_R3,
+};
+
+static inline bool rgui_is_controller_menu(rgui_file_type_t menu_type)
+{
+   return (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4);
+}
 
 static void copy_glyph(uint16_t glyph_white[FONT_HEIGHT][FONT_WIDTH],
       uint16_t glyph_green[FONT_HEIGHT][FONT_WIDTH],
@@ -194,15 +217,16 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
    render_background(rgui);
 
    char title[TERM_WIDTH];
-   if (rgui->mode == RGUI_FILEBROWSER)
+   const char *dir;
+   rgui_file_type_t menu_type;
+   rgui_list_back(rgui->path_stack, &dir, &menu_type, NULL);
+   if (!rgui_is_controller_menu(menu_type) && menu_type != RGUI_SETTINGS)
    {
-      const char *dir;
-      rgui_list_back(rgui->path_stack, &dir, NULL, NULL);
       snprintf(title, sizeof(title), "FILE BROWSER: %s", dir); 
    }
    else
    {
-      snprintf(title, sizeof(title), "SETTINGS"); 
+      snprintf(title, sizeof(title), "SETTINGS: %s", dir); 
    }
    blit_line(rgui, TERM_START_X + 15, 15, title, true);
 
@@ -214,10 +238,10 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
       const char *path;
       rgui_file_type_t type;
       rgui_list_at(rgui->folder_buf, i, &path, &type, NULL);
-
       char message[TERM_WIDTH + 1];
       char type_str[TERM_WIDTH + 1];
-      int w = 19;
+      int w = rgui_is_controller_menu(menu_type) ? 26 : 19;
+      unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
       switch (type)
       {
          case RGUI_FILE_PLAIN:
@@ -241,15 +265,34 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
          case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
             snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
             break;
-         case RGUI_SETTINGS_CONTROLLER_DEVICE_1:
-         case RGUI_SETTINGS_CONTROLLER_DEVICE_2:
-         case RGUI_SETTINGS_CONTROLLER_DEVICE_3:
-         case RGUI_SETTINGS_CONTROLLER_DEVICE_4:
-         {
-            unsigned i = type - RGUI_SETTINGS_CONTROLLER_DEVICE_1;
-            snprintf(type_str, sizeof(type_str), "%s", rgui_device_lables[g_settings.input.device[i]]);
+         case RGUI_SETTINGS_CONTROLLER_1:
+         case RGUI_SETTINGS_CONTROLLER_2:
+         case RGUI_SETTINGS_CONTROLLER_3:
+         case RGUI_SETTINGS_CONTROLLER_4:
+            snprintf(type_str, sizeof(type_str), "...");
             break;
-         }
+         case RGUI_SETTINGS_BIND_DEVICE:
+            RARCH_LOG("%d\n", port);
+            snprintf(type_str, sizeof(type_str), "%s", rgui_device_lables[g_settings.input.device[port]]);
+            break;
+         case RGUI_SETTINGS_BIND_UP:
+         case RGUI_SETTINGS_BIND_DOWN:
+         case RGUI_SETTINGS_BIND_LEFT:
+         case RGUI_SETTINGS_BIND_RIGHT:
+         case RGUI_SETTINGS_BIND_A:
+         case RGUI_SETTINGS_BIND_B:
+         case RGUI_SETTINGS_BIND_X:
+         case RGUI_SETTINGS_BIND_Y:
+         case RGUI_SETTINGS_BIND_START:
+         case RGUI_SETTINGS_BIND_SELECT:
+         case RGUI_SETTINGS_BIND_L:
+         case RGUI_SETTINGS_BIND_R:
+         case RGUI_SETTINGS_BIND_L2:
+         case RGUI_SETTINGS_BIND_R2:
+         case RGUI_SETTINGS_BIND_L3:
+         case RGUI_SETTINGS_BIND_R3:
+            snprintf(type_str, sizeof(type_str), "%s", rarch_input_find_platform_key_label(g_settings.input.binds[port][rgui_controller_lut[type - RGUI_SETTINGS_BIND_UP]].joykey));
+            break;
          default:
             type_str[0] = 0;
             w = 0;
@@ -304,8 +347,9 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
    free(msg);
 }
 
-static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t action)
+static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t action, rgui_file_type_t menu_type)
 {
+   unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
    switch (setting)
    {
       case RGUI_SETTINGS_VIDEO_FILTER:
@@ -328,43 +372,100 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          else if (action == RGUI_ACTION_RIGHT)
             rarch_settings_change(S_AUDIO_CONTROL_RATE_INCREMENT);
          break;
-      case RGUI_SETTINGS_CONTROLLER_DEVICE_1:
-      case RGUI_SETTINGS_CONTROLLER_DEVICE_2:
-      case RGUI_SETTINGS_CONTROLLER_DEVICE_3:
-      case RGUI_SETTINGS_CONTROLLER_DEVICE_4:
-      {
-         unsigned i = setting - RGUI_SETTINGS_CONTROLLER_DEVICE_1;
-         g_settings.input.device[i] += RARCH_DEVICE_LAST;
-         if (action == RGUI_ACTION_START)
-            g_settings.input.device[i] = 0;
-         else if (action == RGUI_ACTION_LEFT)
-            g_settings.input.device[i]--;
-         else if (action == RGUI_ACTION_RIGHT)
-            g_settings.input.device[i]++;
 
-         g_settings.input.device[i] %= RARCH_DEVICE_LAST;
+      // controllers
+      case RGUI_SETTINGS_BIND_DEVICE:
+         g_settings.input.device[port] += RARCH_DEVICE_LAST;
+         if (action == RGUI_ACTION_START)
+            g_settings.input.device[port] = 0;
+         else if (action == RGUI_ACTION_LEFT)
+            g_settings.input.device[port]--;
+         else if (action == RGUI_ACTION_RIGHT)
+            g_settings.input.device[port]++;
+         g_settings.input.device[port] %= RARCH_DEVICE_LAST;
+         input_wii.set_default_keybind_lut(g_settings.input.device[port], port);
+         rarch_input_set_default_keybinds(port);
+         break;
+      case RGUI_SETTINGS_BIND_UP:
+      case RGUI_SETTINGS_BIND_DOWN:
+      case RGUI_SETTINGS_BIND_LEFT:
+      case RGUI_SETTINGS_BIND_RIGHT:
+      case RGUI_SETTINGS_BIND_A:
+      case RGUI_SETTINGS_BIND_B:
+      case RGUI_SETTINGS_BIND_X:
+      case RGUI_SETTINGS_BIND_Y:
+      case RGUI_SETTINGS_BIND_START:
+      case RGUI_SETTINGS_BIND_SELECT:
+      case RGUI_SETTINGS_BIND_L:
+      case RGUI_SETTINGS_BIND_R:
+      case RGUI_SETTINGS_BIND_L2:
+      case RGUI_SETTINGS_BIND_R2:
+      case RGUI_SETTINGS_BIND_L3:
+      case RGUI_SETTINGS_BIND_R3:
+      {
+         unsigned keybind_action;
+
+         if (action == RGUI_ACTION_START)
+            keybind_action = KEYBIND_DEFAULT;
+         else if (action == RGUI_ACTION_LEFT)
+            keybind_action = KEYBIND_DECREMENT;
+         else if (action == RGUI_ACTION_RIGHT)
+            keybind_action = KEYBIND_INCREMENT;
+         else
+            break;
+
+         rarch_input_set_keybind(port, keybind_action, rgui_controller_lut[setting - RGUI_SETTINGS_BIND_UP]);
       }
       default:
          break;
    }
 }
 
+#define RGUI_MENU_ITEM(x, y) rgui_list_push(rgui->folder_buf, x, y, 0)
+
 static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->folder_buf);
 
-#define RGUI_MENU_ITEM(x, y) rgui_list_push(rgui->folder_buf, x, y, 0)
    RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
    RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
    RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);
-   RGUI_MENU_ITEM("Controller #1 Device", RGUI_SETTINGS_CONTROLLER_DEVICE_1);
-   RGUI_MENU_ITEM("Controller #2 Device", RGUI_SETTINGS_CONTROLLER_DEVICE_2);
-   RGUI_MENU_ITEM("Controller #3 Device", RGUI_SETTINGS_CONTROLLER_DEVICE_3);
-   RGUI_MENU_ITEM("Controller #4 Device", RGUI_SETTINGS_CONTROLLER_DEVICE_4);
+   RGUI_MENU_ITEM("Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1);
+   RGUI_MENU_ITEM("Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2);
+   RGUI_MENU_ITEM("Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3);
+   RGUI_MENU_ITEM("Controller #4 Config", RGUI_SETTINGS_CONTROLLER_4);
 }
 
-static bool rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
+static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 {
+   rgui_list_clear(rgui->folder_buf);
+
+   RGUI_MENU_ITEM("Device", RGUI_SETTINGS_BIND_DEVICE);
+   RGUI_MENU_ITEM("Up", RGUI_SETTINGS_BIND_UP);
+   RGUI_MENU_ITEM("Down", RGUI_SETTINGS_BIND_DOWN);
+   RGUI_MENU_ITEM("Left", RGUI_SETTINGS_BIND_LEFT);
+   RGUI_MENU_ITEM("Right", RGUI_SETTINGS_BIND_RIGHT);
+   RGUI_MENU_ITEM("A", RGUI_SETTINGS_BIND_A);
+   RGUI_MENU_ITEM("B", RGUI_SETTINGS_BIND_B);
+   RGUI_MENU_ITEM("X", RGUI_SETTINGS_BIND_X);
+   RGUI_MENU_ITEM("Y", RGUI_SETTINGS_BIND_Y);
+   RGUI_MENU_ITEM("Start", RGUI_SETTINGS_BIND_START);
+   RGUI_MENU_ITEM("Select", RGUI_SETTINGS_BIND_SELECT);
+   RGUI_MENU_ITEM("L", RGUI_SETTINGS_BIND_L);
+   RGUI_MENU_ITEM("R", RGUI_SETTINGS_BIND_R);
+   RGUI_MENU_ITEM("L2", RGUI_SETTINGS_BIND_L2);
+   RGUI_MENU_ITEM("R2", RGUI_SETTINGS_BIND_R2);
+   RGUI_MENU_ITEM("L3", RGUI_SETTINGS_BIND_L3);
+   RGUI_MENU_ITEM("R3", RGUI_SETTINGS_BIND_R3);
+}
+
+static const char *rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
+{
+   rgui_file_type_t type;
+   const char *label;
+   rgui_list_at(rgui->folder_buf, rgui->directory_ptr, &label, &type, NULL);
+   rgui_file_type_t menu_type;
+   rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
    switch (action)
    {
       case RGUI_ACTION_UP:
@@ -383,28 +484,49 @@ static bool rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
       case RGUI_ACTION_CANCEL:
       case RGUI_ACTION_SETTINGS:
-         rgui->mode = RGUI_FILEBROWSER;
-         return true;
+      {
+         size_t directory_ptr;
+         rgui_list_back(rgui->path_stack, NULL, NULL, &directory_ptr);
+         rgui_list_pop(rgui->path_stack);
+         rgui->directory_ptr = directory_ptr;
+         rgui->need_refresh = true;
+         rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
+         if (menu_type != RGUI_SETTINGS && !rgui_is_controller_menu(menu_type))
+            return NULL;
          break;
+      }
 
       case RGUI_ACTION_LEFT:
       case RGUI_ACTION_RIGHT:
       case RGUI_ACTION_OK:
       case RGUI_ACTION_START:
-      {
-         rgui_file_type_t type;
-         rgui_list_at(rgui->folder_buf, rgui->directory_ptr, NULL, &type, NULL);
-         rgui_settings_toggle_setting(type, action);
+         if (rgui_is_controller_menu(type) && action == RGUI_ACTION_OK)
+         {
+            rgui_list_push(rgui->path_stack, label, type, rgui->directory_ptr);
+            rgui->directory_ptr = 0;
+            rgui->need_refresh = true;
+         }
+         else
+         {
+            rgui_settings_toggle_setting(type, action, menu_type);
+         }
          break;
-      }
 
       case RGUI_ACTION_REFRESH:
-         rgui_settings_populate_entries(rgui);
          rgui->directory_ptr = 0;
+         rgui->need_refresh = true;
          break;
 
       default:
          break;
+   }
+
+   if (rgui->need_refresh)
+   {
+      if (rgui_is_controller_menu(menu_type))
+         rgui_settings_controller_populate_entries(rgui);
+      else
+         rgui_settings_populate_entries(rgui);
    }
 
    size_t begin = rgui->directory_ptr >= TERM_HEIGHT / 2 ?
@@ -417,23 +539,17 @@ static bool rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
    render_text(rgui, begin, end);
 
-   return false;
+   return NULL;
 }
 
 const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
-   start:
-   if (rgui->mode == RGUI_SETTINGS)
+   rgui_file_type_t menu_type;
+   rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
+
+   if (menu_type == RGUI_SETTINGS || rgui_is_controller_menu(menu_type))
    {
-      if (rgui_settings_iterate(rgui, action))
-      {
-         action = RGUI_ACTION_REFRESH;
-         goto start;
-      }
-      else
-      {
-         return NULL;
-      }
+      return rgui_settings_iterate(rgui, action);
    }
 
    bool found = false;
@@ -529,9 +645,9 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
 
       case RGUI_ACTION_SETTINGS:
-         rgui->mode = RGUI_SETTINGS;
-         action = RGUI_ACTION_REFRESH;
-         goto start;
+         rgui_list_push(rgui->path_stack, "", RGUI_SETTINGS, rgui->directory_ptr);
+         rgui->directory_ptr = 0;
+         return rgui_settings_iterate(rgui, RGUI_ACTION_REFRESH);
 
       default:
          break;
