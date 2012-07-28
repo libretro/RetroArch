@@ -226,7 +226,7 @@ int main(void)
    config_set_defaults();
 
    g_settings.audio.rate_control = true;
-   g_settings.audio.rate_control_delta = 0.004;
+   g_settings.audio.rate_control_delta = 0.006;
    g_console.block_config_read = true;
 
    wii_video_init();

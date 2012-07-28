@@ -168,7 +168,7 @@ void rarch_settings_default(unsigned setting)
          break;
       case S_DEF_AUDIO_CONTROL_RATE:
 #ifdef GEKKO
-         g_settings.audio.rate_control_delta = 0.004;
+         g_settings.audio.rate_control_delta = 0.006;
          g_settings.audio.rate_control = true;
 #else
          g_settings.audio.rate_control_delta = 0.0;

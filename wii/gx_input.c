@@ -37,11 +37,6 @@
 
 #define MAX_PADS 4
 
-//#define CLASSIC_PAD
-#define GAMECUBE_PAD
-//#define NUNCHUK_PAD
-//#define WIIMOTE_PAD
-
 static uint64_t pad_state[MAX_PADS];
 
 const struct platform_bind platform_keys[] = {
