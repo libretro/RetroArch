@@ -94,4 +94,7 @@ void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replac
 // Copies basename of in_path into out_path.
 void fill_pathname_base(char *out_path, const char *in_path, size_t size);
 
+// Copies base directory of in_path into out_path.
+void fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
+
 #endif

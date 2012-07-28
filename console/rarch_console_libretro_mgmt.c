@@ -23,6 +23,9 @@
 // sane name.
 
 #ifndef IS_SALAMANDER
+
+// Transforms a library id to a name suitable as a pathname.
+
 static void rarch_console_name_from_id(char *name, size_t size)
 {
    if (size == 0)
@@ -150,7 +153,6 @@ bool rarch_manage_libretro_extension_supported(const char *filename)
    return ext_supported;
 }
 
-// Transforms a library id to a name suitable as a pathname.
 
 #endif
 

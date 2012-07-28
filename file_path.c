@@ -386,3 +386,17 @@ void fill_pathname_base(char *out_dir, const char *in_path, size_t size)
    rarch_assert(strlcpy(out_dir, ptr, size) < size);
 }
 
+void fill_pathname_basedir(char *out_dir, const char *in_path, size_t size)
+{
+   strncpy(out_dir, in_path, size - 1);
+   out_dir[size - 1] = '\0';
+
+   char *base = strrchr(out_dir, '/');
+   if (!base)
+      base = strrchr(out_dir, '\\');
+
+   if (base)
+      *base = '\0';
+   else
+      out_dir[0] = '\0';
+}

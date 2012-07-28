@@ -64,7 +64,7 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, u
 #ifdef HAVE_ZLIB
    if(extract_zip_cond)
    {
-      rarch_extract_directory(dir_path_temp, rom_path_temp, sizeof(dir_path_temp));
+      fill_pathname_basedir(dir_path_temp, rom_path_temp, sizeof(dir_path_temp));
       rarch_extract_zipfile(rom_path_temp, dir_path_temp, first_file, sizeof(first_file), extract_zip_mode);
 
 #ifndef GEKKO
