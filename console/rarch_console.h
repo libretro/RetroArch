@@ -46,32 +46,34 @@ enum
    MODE_EXIT
 };
 
+#define MAXIMUM_PATH 512
+
 typedef struct
 {
-   char menu_border_file[PATH_MAX];
-   char border_file[PATH_MAX];
-   char border_dir[PATH_MAX];
+   char menu_border_file[MAXIMUM_PATH];
+   char border_file[MAXIMUM_PATH];
+   char border_dir[MAXIMUM_PATH];
 #ifdef HAVE_HDD_CACHE_PARTITION
-   char cache_dir[PATH_MAX];
+   char cache_dir[MAXIMUM_PATH];
 #endif
-   char cgp_dir[PATH_MAX];
-   char config_file[PATH_MAX];
-   char core_dir[PATH_MAX];
-   char executable_extension[PATH_MAX];
-   char filesystem_root_dir[PATH_MAX];
-   char input_presets_dir[PATH_MAX];
+   char cgp_dir[MAXIMUM_PATH];
+   char config_file[MAXIMUM_PATH];
+   char core_dir[MAXIMUM_PATH];
+   char executable_extension[MAXIMUM_PATH];
+   char filesystem_root_dir[MAXIMUM_PATH];
+   char input_presets_dir[MAXIMUM_PATH];
 #ifdef HAVE_MULTIMAN
-   char multiman_self_file[PATH_MAX];
+   char multiman_self_file[MAXIMUM_PATH];
 #endif
-   char port_dir[PATH_MAX];
-   char savestate_dir[PATH_MAX];
+   char port_dir[MAXIMUM_PATH];
+   char savestate_dir[MAXIMUM_PATH];
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-   char menu_shader_file[PATH_MAX];
-   char shader_file[PATH_MAX];
-   char shader_dir[PATH_MAX];
+   char menu_shader_file[MAXIMUM_PATH];
+   char shader_file[MAXIMUM_PATH];
+   char shader_dir[MAXIMUM_PATH];
 #endif
-   char sram_dir[PATH_MAX];
-   char system_dir[PATH_MAX];
+   char sram_dir[MAXIMUM_PATH];
+   char system_dir[MAXIMUM_PATH];
 } default_paths_t;
 
 extern default_paths_t default_paths;

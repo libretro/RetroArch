@@ -18,6 +18,10 @@
 #include "../../msvc/msvc_compat.h"
 #endif
 
+#include "../rarch_console.h"
+
+default_paths_t default_paths;
+
 /*============================================================
 CONSOLE EXTENSIONS
 ============================================================ */
@@ -34,8 +38,6 @@ CONSOLE EXTENSIONS
 #endif
 
 #include "../rarch_console_sound.c"
-
-#include "../rarch_console.c"
 
 #ifdef HAVE_CONFIGFILE
 #include "../rarch_console_config.c"
