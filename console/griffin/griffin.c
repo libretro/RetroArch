@@ -26,7 +26,6 @@ default_paths_t default_paths;
 CONSOLE EXTENSIONS
 ============================================================ */
 #include "../rarch_console_rom_ext.c"
-
 #include "../rarch_console_video.c"
 
 #ifdef HAVE_RARCH_MAIN_WRAP
@@ -115,10 +114,8 @@ VIDEO IMAGE
 VIDEO DRIVER
 ============================================================ */
 
-#if defined(HAVE_OPENGLES11)
+#if defined(HAVE_OPENGL)
 #include "../../gfx/gl.c"
-#elif defined(HAVE_OPENGLES20)
-#include "../../gfx/gles.c"
 #elif defined(GEKKO)
 #include "../../wii/gx_video.c"
 #endif
