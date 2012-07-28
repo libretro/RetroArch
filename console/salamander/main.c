@@ -44,6 +44,7 @@
 #define PATH_MAX 512
 #endif
 
+#include "../rarch_console_libretro_mgmt.h"
 #include "../rarch_console_exec.h"
 
 #include "../../retroarch_logger.h"
@@ -60,55 +61,6 @@ DWORD volume_device_type;
 char LIBRETRO_DIR_PATH[PATH_MAX];
 char SYS_CONFIG_FILE[PATH_MAX];
 char libretro_path[PATH_MAX];
-
-static void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext)
-{
-   //We need to set libretro to the first entry in the cores
-   //directory so that it will be saved to the config file
-
-   struct string_list *dir_list = dir_list_new(libretro_path, exe_ext, false);
-
-   const char * first_exe;
-
-   if (!dir_list)
-   {
-      RARCH_ERR("Couldn't read directory.\n");
-      RARCH_ERR("Failed to set first entry to libretro path.\n");
-      goto end;
-   }
-
-   first_exe = dir_list->elems[0].data;
-
-   if(first_exe)
-   {
-#ifdef _XBOX360
-      char fname_tmp[PATH_MAX];
-      fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
-
-      if(strcmp(fname_tmp, "RetroArch-Salamander.xex") == 0)
-      {
-         RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
-	 first_exe = dir_list->elems[1].data;
-	 fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
-
-	 if(!first_exe)
-	 {
-        RARCH_ERR("Unlikely error happened - no second entry - no choice but to set it to RetroArch Salamander\n");
-	    first_exe = dir_list->elems[0].data;
-	    fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
-	 }
-      }
-
-      strlcpy(first_file, fname_tmp, size_of_first_file);
-#else
-      strlcpy(first_file, first_exe, size_of_first_file);
-#endif
-      RARCH_LOG("Set first entry in libretro core dir to libretro path: [%s].\n", first_file);
-   }
-
-end:
-   dir_list_free(dir_list);
-}
 
 static void find_and_set_first_file(void)
 {
