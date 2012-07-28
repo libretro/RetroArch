@@ -19,7 +19,11 @@
 #include <tchar.h>
 #include <xtl.h>
 #include "../../console/fileio/file_browser.h"
+
 #include "../../console/rarch_console.h"
+#include "../../console/rarch_console_settings.h"
+#include "../../console/rarch_console_video.h"
+
 #include "../xdk_d3d9.h"
 #include "menu.h"
 #include "../../message.h"

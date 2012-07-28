@@ -22,6 +22,9 @@
 CONSOLE EXTENSIONS
 ============================================================ */
 #include "../rarch_console_rom_ext.c"
+
+#include "../rarch_console_video.c"
+
 #include "../rarch_console.c"
 
 #ifdef HAVE_CONFIGFILE
