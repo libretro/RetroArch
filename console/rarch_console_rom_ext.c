@@ -119,34 +119,3 @@ const char *rarch_console_get_rom_ext(void)
 
    return retval;
 }
-
-void rarch_console_name_from_id(char *name, size_t size)
-{
-   if (size == 0)
-      return;
-
-   struct retro_system_info info;
-#ifdef ANDROID
-   pretro_get_system_info(&info);
-#else
-   retro_get_system_info(&info);
-#endif
-   const char *id = info.library_name ? info.library_name : "Unknown";
-
-   if (!id || strlen(id) >= size)
-   {
-      name[0] = '\0';
-      return;
-   }
-
-   name[strlen(id)] = '\0';
-
-   for (size_t i = 0; id[i] != '\0'; i++)
-   {
-      char c = id[i];
-      if (isspace(c) || isblank(c))
-         name[i] = '_';
-      else
-         name[i] = tolower(c);
-   }
-}

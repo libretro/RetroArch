@@ -23,6 +23,37 @@
 // sane name.
 
 #ifndef IS_SALAMANDER
+static void rarch_console_name_from_id(char *name, size_t size)
+{
+   if (size == 0)
+      return;
+
+   struct retro_system_info info;
+#ifdef ANDROID
+   pretro_get_system_info(&info);
+#else
+   retro_get_system_info(&info);
+#endif
+   const char *id = info.library_name ? info.library_name : "Unknown";
+
+   if (!id || strlen(id) >= size)
+   {
+      name[0] = '\0';
+      return;
+   }
+
+   name[strlen(id)] = '\0';
+
+   for (size_t i = 0; id[i] != '\0'; i++)
+   {
+      char c = id[i];
+      if (isspace(c) || isblank(c))
+         name[i] = '_';
+      else
+         name[i] = tolower(c);
+   }
+}
+
 static bool rarch_manage_libretro_install(char *libretro_core_installed, size_t sizeof_libretro_core, const char *full_path, const char *path, const char *exe_ext)
 {
    int ret;
@@ -118,6 +149,9 @@ bool rarch_manage_libretro_extension_supported(const char *filename)
 
    return ext_supported;
 }
+
+// Transforms a library id to a name suitable as a pathname.
+
 #endif
 
 void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext)

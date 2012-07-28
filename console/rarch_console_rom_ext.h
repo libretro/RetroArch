@@ -22,8 +22,4 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, u
 // Get rom extensions for current library.
 // Returns NULL if library doesn't have any preferences in particular.
 const char *rarch_console_get_rom_ext(void);
-
-// Transforms a library id to a name suitable as a pathname.
-void rarch_console_name_from_id(char *name, size_t size);
-
 #endif
