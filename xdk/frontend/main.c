@@ -79,7 +79,7 @@ static void get_environment_settings (void)
 
    if (XContentGetLicenseMask(&license_mask, NULL) != ERROR_SUCCESS)
    {
-      printf("RetroArch was launched as a standalone DVD, or using DVD emulation, or from the development area of the HDD.\n");
+      RARCH_LOG("RetroArch was launched as a standalone DVD, or using DVD emulation, or from the development area of the HDD.\n");
    }
    else
    {
@@ -88,16 +88,16 @@ static void get_environment_settings (void)
       switch(g_console.volume_device_type)
       {
          case XCONTENTDEVICETYPE_HDD:
-            printf("RetroArch was launched from a content package on HDD.\n");
+            RARCH_LOG("RetroArch was launched from a content package on HDD.\n");
 	    break;
 	 case XCONTENTDEVICETYPE_MU:
-	    printf("RetroArch was launched from a content package on USB or Memory Unit.\n");
+	    RARCH_LOG("RetroArch was launched from a content package on USB or Memory Unit.\n");
 	    break;
 	 case XCONTENTDEVICETYPE_ODD:
-	    printf("RetroArch was launched from a content package on Optical Disc Drive.\n");
+	    RARCH_LOG("RetroArch was launched from a content package on Optical Disc Drive.\n");
 	    break;
 	 default:
-	    printf("RetroArch was launched from a content package on an unknown device type.\n");
+	    RARCH_LOG("RetroArch was launched from a content package on an unknown device type.\n");
 	    break;
       }
    }
