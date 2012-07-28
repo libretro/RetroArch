@@ -217,8 +217,8 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
    render_background(rgui);
 
    char title[TERM_WIDTH];
-   const char *dir;
-   rgui_file_type_t menu_type;
+   const char *dir = 0;
+   rgui_file_type_t menu_type = 0;
    rgui_list_back(rgui->path_stack, &dir, &menu_type, NULL);
    if (!rgui_is_controller_menu(menu_type) && menu_type != RGUI_SETTINGS)
    {
@@ -235,8 +235,8 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
 
    for (size_t i = begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
-      const char *path;
-      rgui_file_type_t type;
+      const char *path = 0;
+      rgui_file_type_t type = 0;
       rgui_list_at(rgui->folder_buf, i, &path, &type, NULL);
       char message[TERM_WIDTH + 1];
       char type_str[TERM_WIDTH + 1];
@@ -461,10 +461,10 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 
 static const char *rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
-   rgui_file_type_t type;
-   const char *label;
+   rgui_file_type_t type = 0;
+   const char *label = 0;
    rgui_list_at(rgui->folder_buf, rgui->directory_ptr, &label, &type, NULL);
-   rgui_file_type_t menu_type;
+   rgui_file_type_t menu_type = 0;
    rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
    switch (action)
    {
@@ -485,7 +485,7 @@ static const char *rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t acti
       case RGUI_ACTION_CANCEL:
       case RGUI_ACTION_SETTINGS:
       {
-         size_t directory_ptr;
+         size_t directory_ptr = 0;
          rgui_list_back(rgui->path_stack, NULL, NULL, &directory_ptr);
          rgui_list_pop(rgui->path_stack);
          rgui->directory_ptr = directory_ptr;
@@ -544,7 +544,7 @@ static const char *rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t acti
 
 const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
-   rgui_file_type_t menu_type;
+   rgui_file_type_t menu_type = 0;
    rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
 
    if (menu_type == RGUI_SETTINGS || rgui_is_controller_menu(menu_type))
@@ -599,12 +599,12 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          if (rgui_list_size(rgui->folder_buf) == 0)
             return NULL;
 
-         const char *path;
-         rgui_file_type_t type;
+         const char *path = 0;
+         rgui_file_type_t type = 0;
          rgui_list_at(rgui->folder_buf, rgui->directory_ptr, &path, &type, NULL);
 
-         const char *dir;
-         size_t directory_ptr;
+         const char *dir = 0;
+         size_t directory_ptr = 0;
          rgui_list_back(rgui->path_stack, &dir, NULL, &directory_ptr);
 
          if (type == RGUI_FILE_DIRECTORY)
