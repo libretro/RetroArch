@@ -40,11 +40,11 @@
 #include "logger.h"
 
 #if !defined(PC_DEVELOPMENT_IP_ADDRESS)
-#define PC_DEVELOPMENT_IP_ADDRESS "192.168.1.7"
+#error "An IP address for the PC logging server was not set in the Makefile, cannot continue."
 #endif
 
 #if !defined(PC_DEVELOPMENT_UDP_PORT)
-#define PC_DEVELOPMENT_UDP_PORT 3490
+#error "An UDP port for the PC logging server was not set in the Makefile, cannot continue."
 #endif
 
 static int g_sid;
