@@ -368,7 +368,8 @@ begin_shutdown:
    }
 #endif
 
-   rarch_console_exec();
+   if(g_console.return_to_launcher)
+      rarch_console_exec(g_console.launch_app_on_exit);
 
    return 1;
 }

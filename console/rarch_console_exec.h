@@ -17,6 +17,6 @@
 #ifndef RARCH_CONSOLE_EXEC_H__
 #define RARCH_CONSOLE_EXEC_H__
 
-void rarch_console_exec (void);
+void rarch_console_exec(const char *path);
 
 #endif

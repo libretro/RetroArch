@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
+#include <stdio.h>
 
 #if defined(__CELLOS_LV2__)
 #include <cell/sysmodule.h>
@@ -28,41 +28,42 @@
 #endif
 
 #include "rarch_console_exec.h"
+#include "../retroarch_logger.h"
 
-void rarch_console_exec (void)
+void rarch_console_exec(const char *path)
 {
-   if(g_console.return_to_launcher)
-   {
-      RARCH_LOG("Attempt to load executable: [%s].\n", g_console.launch_app_on_exit);
+   RARCH_LOG("Attempt to load executable: [%s].\n", path);
 #if defined(_XBOX)
-      XLaunchNewImage(g_console.launch_app_on_exit, NULL);
+   XLaunchNewImage(path, NULL);
 #elif defined(__CELLOS_LV2__)
-      char spawn_data[256];
-      for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
-         spawn_data[i] = i & 0xff;
+   char spawn_data[256];
+   for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
+      spawn_data[i] = i & 0xff;
 
-      char spawn_data_size[16];
-      snprintf(spawn_data_size, sizeof(spawn_data_size), "%d", 256);
+   char spawn_data_size[16];
+   snprintf(spawn_data_size, sizeof(spawn_data_size), "%d", 256);
 
-      const char * const spawn_argv[] = {
-         spawn_data_size,
-         "test argv for",
-         "sceNpDrmProcessExitSpawn2()",
-         NULL
-      };
+   const char * const spawn_argv[] = {
+      spawn_data_size,
+      "test argv for",
+      "sceNpDrmProcessExitSpawn2()",
+      NULL
+   };
 
-      SceNpDrmKey * k_licensee = NULL;
-      int ret = sceNpDrmProcessExitSpawn2(k_licensee, g_console.launch_app_on_exit, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-      if(ret <  0)
-      {
-         RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
-	 sys_game_process_exitspawn(g_console.launch_app_on_exit, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-      }
-      sceNpTerm();
-      cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);
-      cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
-#else
-    RARCH_WARN("External loading of executables is not supported for this platform.\n");
-#endif
+   SceNpDrmKey * k_licensee = NULL;
+   int ret = sceNpDrmProcessExitSpawn2(k_licensee, path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+
+   if(ret <  0)
+   {
+      RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
+      sys_game_process_exitspawn(path, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
    }
+
+   sceNpTerm();
+   sys_net_finalize_network();
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
+#else
+   RARCH_WARN("External loading of executables is not supported for this platform.\n");
+#endif
 }

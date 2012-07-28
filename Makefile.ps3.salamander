@@ -8,7 +8,7 @@ include $(CELL_MK_DIR)/sdk.makedef.mk
 STRIP			= $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-strip.exe
 
 PPU_CFLAGS		+= -I. -D__CELLOS_LV2__ -DIS_SALAMANDER
-PPU_SRCS		= console/salamander/main.c file_path.c compat/compat.c conf/config_file.c
+PPU_SRCS		= console/salamander/main.c console/rarch_console_exec.c file_path.c compat/compat.c conf/config_file.c
 
 ifeq ($(HAVE_LOGGER), 1)
 PPU_CFLAGS		+= -DHAVE_LOGGER -Iconsole/logger

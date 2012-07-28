@@ -44,6 +44,8 @@
 #define PATH_MAX 512
 #endif
 
+#include "../rarch_console_exec.h"
+
 #include "../../retroarch_logger.h"
 #include "../../file.h"
 
@@ -294,7 +296,6 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 
 int main(int argc, char *argv[])
 {
-   int ret;
 #if defined(_XBOX)
    XINPUT_STATE state;
 
@@ -316,13 +317,8 @@ int main(int argc, char *argv[])
       //normal executable loading path
       init_settings();
    }
-
-   XLaunchNewImage(libretro_path, NULL);
-   RARCH_LOG("Launch libretro core: [%s] (return code: %x]).\n", libretro_path, ret);
 #elif defined(__CELLOS_LV2__)
    CellPadData pad_data;
-   char spawn_data[256], spawn_data_size[16];
-   SceNpDrmKey * k_licensee = NULL;
 
    cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
 
@@ -364,35 +360,11 @@ int main(int argc, char *argv[])
 #ifdef HAVE_LOGGER
    logger_shutdown();
 #endif
+#endif
 
-   for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
-      spawn_data[i] = i & 0xff;
+   rarch_console_exec(libretro_path);
 
-   snprintf(spawn_data_size, sizeof(spawn_data_size), "%d", 256);
-
-   const char * const spawn_argv[] = {
-	   spawn_data_size,
-	   "test argv for",
-	   "sceNpDrmProcessExitSpawn2()",
-	   NULL
-   };
-
-   ret = sceNpDrmProcessExitSpawn2(k_licensee, libretro_path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-   RARCH_LOG("Launch libretro core: [%s] (return code: %x]).\n", libretro_path, ret);
-
-   if(ret < 0)
-   {
-      RARCH_LOG("Executable file is not of NPDRM type, trying another approach to boot it...\n");
-      sys_game_process_exitspawn2(libretro_path, NULL, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-   }
-
-   sceNpTerm();
-
-   sys_net_finalize_network();
-
-   cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);
-
-   cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
+#ifdef __CELLOS_LV2__
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
    cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
