@@ -53,7 +53,7 @@ char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][256] = {
 extern const struct platform_bind platform_keys[];
 extern const unsigned int platform_keys_size;
 
-uint64_t rarch_input_find_previous_platform_key(uint64_t joykey)
+static uint64_t rarch_input_find_previous_platform_key(uint64_t joykey)
 {
    size_t arr_size = platform_keys_size / sizeof(platform_keys[0]);
 
@@ -69,7 +69,7 @@ uint64_t rarch_input_find_previous_platform_key(uint64_t joykey)
    return NO_BTN;
 }
 
-uint64_t rarch_input_find_next_platform_key(uint64_t joykey)
+static uint64_t rarch_input_find_next_platform_key(uint64_t joykey)
 {
    size_t arr_size = platform_keys_size / sizeof(platform_keys[0]);
 

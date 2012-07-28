@@ -39,8 +39,6 @@ extern char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][256];
 
 #ifdef HAVE_DEFAULT_RETROPAD_INPUT
 const char *rarch_input_find_platform_key_label(uint64_t joykey);
-uint64_t rarch_input_find_previous_platform_key(uint64_t joykey);
-uint64_t rarch_input_find_next_platform_key(uint64_t joykey);
 
 // Sets custom default keybind names (some systems emulated by the emulator
 // will need different keybind names for buttons, etc.)
