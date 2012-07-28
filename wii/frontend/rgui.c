@@ -52,6 +52,13 @@ struct rgui_handle
    uint16_t font_green[256][FONT_HEIGHT][FONT_WIDTH];
 };
 
+static char *rgui_device_lables[] = {
+   "Wiimote",
+   "Wiimote + Nunchuk",
+   "Classic Controller",
+   "GameCube Controller"
+};
+
 static void copy_glyph(uint16_t glyph_white[FONT_HEIGHT][FONT_WIDTH],
       uint16_t glyph_green[FONT_HEIGHT][FONT_WIDTH],
       const uint8_t *buf)
@@ -234,6 +241,15 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
          case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
             snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
             break;
+         case RGUI_SETTINGS_CONTROLLER_DEVICE_1:
+         case RGUI_SETTINGS_CONTROLLER_DEVICE_2:
+         case RGUI_SETTINGS_CONTROLLER_DEVICE_3:
+         case RGUI_SETTINGS_CONTROLLER_DEVICE_4:
+         {
+            unsigned i = type - RGUI_SETTINGS_CONTROLLER_DEVICE_1;
+            snprintf(type_str, sizeof(type_str), "%s", rgui_device_lables[g_settings.input.device[i]]);
+            break;
+         }
          default:
             type_str[0] = 0;
             w = 0;
@@ -312,6 +328,22 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          else if (action == RGUI_ACTION_RIGHT)
             rarch_settings_change(S_AUDIO_CONTROL_RATE_INCREMENT);
          break;
+      case RGUI_SETTINGS_CONTROLLER_DEVICE_1:
+      case RGUI_SETTINGS_CONTROLLER_DEVICE_2:
+      case RGUI_SETTINGS_CONTROLLER_DEVICE_3:
+      case RGUI_SETTINGS_CONTROLLER_DEVICE_4:
+      {
+         unsigned i = setting - RGUI_SETTINGS_CONTROLLER_DEVICE_1;
+         g_settings.input.device[i] += RARCH_DEVICE_LAST;
+         if (action == RGUI_ACTION_START)
+            g_settings.input.device[i] = 0;
+         else if (action == RGUI_ACTION_LEFT)
+            g_settings.input.device[i]--;
+         else if (action == RGUI_ACTION_RIGHT)
+            g_settings.input.device[i]++;
+
+         g_settings.input.device[i] %= RARCH_DEVICE_LAST;
+      }
       default:
          break;
    }
@@ -320,10 +352,15 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
 static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->folder_buf);
-   
-   rgui_list_push(rgui->folder_buf, "Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER, 0);
-   rgui_list_push(rgui->folder_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
-   rgui_list_push(rgui->folder_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
+
+#define RGUI_MENU_ITEM(x, y) rgui_list_push(rgui->folder_buf, x, y, 0)
+   RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
+   RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
+   RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);
+   RGUI_MENU_ITEM("Controller #1 Device", RGUI_SETTINGS_CONTROLLER_DEVICE_1);
+   RGUI_MENU_ITEM("Controller #2 Device", RGUI_SETTINGS_CONTROLLER_DEVICE_2);
+   RGUI_MENU_ITEM("Controller #3 Device", RGUI_SETTINGS_CONTROLLER_DEVICE_3);
+   RGUI_MENU_ITEM("Controller #4 Device", RGUI_SETTINGS_CONTROLLER_DEVICE_4);
 }
 
 static bool rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)

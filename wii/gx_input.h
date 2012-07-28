@@ -174,4 +174,14 @@ enum wii_device_id
    RARCH_LAST_PLATFORM_KEY
 };
 
+enum
+{
+   WII_DEVICE_WIIMOTE = 0,
+   WII_DEVICE_NUNCHUK,
+   WII_DEVICE_CLASSIC,
+   WII_DEVICE_GAMECUBE,
+
+   RARCH_DEVICE_LAST
+};
+
 #endif
