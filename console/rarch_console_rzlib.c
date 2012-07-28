@@ -26,7 +26,7 @@
 
 #include "rarch_console_rzlib.h"
 
-static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir, char *slash, char *write_filename, size_t write_filename_size)
+static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir, char *slash, char *write_filename, size_t write_filename_size, unsigned extract_zip_mode)
 {
    char filename_inzip[PATH_MAX];
    FILE *file_out = NULL;
@@ -50,7 +50,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir,
       return UNZ_INTERNALERROR;
    }
 
-   switch(g_console.zip_extract_mode)
+   switch(extract_zip_mode)
    {
       case ZIP_EXTRACT_TO_CURRENT_DIR:
       case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
@@ -116,7 +116,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir,
    return err;
 }
 
-int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *first_file, size_t first_file_size)
+int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *first_file, size_t first_file_size, unsigned extract_zip_mode)
 {
    bool found_first_file = false;
    (void)found_first_file;
@@ -136,7 +136,7 @@ int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *f
 #else
       snprintf(slash, sizeof(slash), "/");
 #endif
-      if (rarch_extract_currentfile_in_zip(uf, current_dir, slash, write_filename, sizeof(write_filename)) != UNZ_OK)
+      if (rarch_extract_currentfile_in_zip(uf, current_dir, slash, write_filename, sizeof(write_filename), extract_zip_mode) != UNZ_OK)
       {
          RARCH_ERR("Failed to extract current file from ZIP archive.\n");
          break;
@@ -164,9 +164,6 @@ int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *f
          }
       }
    }
-
-   if(g_console.info_msg_enable)
-      rarch_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
 
    return 0;
 }

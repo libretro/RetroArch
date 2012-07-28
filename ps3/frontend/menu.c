@@ -1710,7 +1710,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
                filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
 	 }
 	 else
-            rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), S_DELAY_45);
+            rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_console.zip_extract_mode, S_DELAY_45);
          break;
       case MENU_ROMSELECT_ACTION_GOTO_SETTINGS:
 	 menu_stack_increment();

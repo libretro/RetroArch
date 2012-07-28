@@ -38,7 +38,7 @@ static void rarch_console_load_game(const char *path)
    rarch_settings_change(S_START_RARCH);
 }
 
-void rarch_console_load_game_wrap(const char *path, unsigned delay)
+void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, unsigned delay)
 {
    const char *game_to_load;
 #ifdef HAVE_ZLIB
@@ -65,7 +65,12 @@ void rarch_console_load_game_wrap(const char *path, unsigned delay)
    if(extract_zip_cond)
    {
       rarch_extract_directory(dir_path_temp, rom_path_temp, sizeof(dir_path_temp));
-      rarch_extract_zipfile(rom_path_temp, dir_path_temp, first_file, sizeof(first_file));
+      rarch_extract_zipfile(rom_path_temp, dir_path_temp, first_file, sizeof(first_file), extract_zip_mode);
+
+#ifndef GEKKO
+      if(g_console.info_msg_enable)
+#endif
+         rarch_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
    }
 #endif
 
@@ -90,7 +95,7 @@ void rarch_console_load_game_wrap(const char *path, unsigned delay)
       rarch_console_load_game(game_to_load);
 
 #ifndef GEKKO
-      if (g_console.info_msg_enable)
+      if(g_console.info_msg_enable)
 #endif
          rarch_settings_msg(S_MSG_LOADING_ROM, delay);
    }

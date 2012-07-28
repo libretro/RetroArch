@@ -551,7 +551,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       if(path_file_exists(browser->current_dir.list->elems[index].data))
       {
          snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), strbuffer);
-         rarch_console_load_game_wrap(path, S_DELAY_45);
+         rarch_console_load_game_wrap(path, g_console.zip_extract_mode, S_DELAY_45);
       }
       else if(browser->current_dir.list->elems[index].attr.b)
       {
