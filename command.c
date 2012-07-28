@@ -104,10 +104,11 @@ rarch_cmd_t *rarch_cmd_new(bool stdin_enable, bool network_enable, uint16_t port
    (void)port;
 #endif
 
-#if defined(HAVE_STDIN_CMD) && !defined(_WIN32)
+#ifdef HAVE_STDIN_CMD
+#ifndef _WIN32
    if (stdin_enable && !socket_nonblock(STDIN_FILENO))
       goto error;
-
+#endif
    handle->stdin_enable = stdin_enable;
 #else
    (void)stdin_enable;
@@ -236,6 +237,51 @@ static void network_cmd_pre_frame(rarch_cmd_t *handle)
 #ifdef HAVE_STDIN_CMD
 
 #ifdef _WIN32
+// Oh you, Win32 ... <_<
+// TODO: Untested! Might not compile nor work.
+static size_t read_stdin(char *buf, size_t size)
+{
+   HANDLE hnd = GetStdHandle(STD_INPUT_HANDLE);
+   if (hnd == INVALID_HANDLE_VALUE)
+      return 0;
+
+   // Check first if we're a pipe
+   // (not console).
+   DWORD avail = 0;
+   BOOL ret = PeekNamedPipe(hnd, NULL, 0, NULL, &avail, NULL);
+
+   if (!ret) // If not a pipe, check if we're running in a console.
+   {
+      DWORD mode = 0;
+      if (!GetConsoleMode(hnd, &mode))
+         return 0;
+
+      INPUT_RECORD rec = {0};
+      DWORD has_read = 0;
+
+      do
+      {
+         has_read = 0;
+         PeekConsoleInput(hnd, &rec, 1, &has_read);
+      } while (has_read && rec.EventType != KEY_EVENT);
+
+      if (rec.EventType == KEY_EVENT)
+         avail = size;
+   }
+
+   if (!avail)
+      return 0;
+
+   if (avail > size)
+      avail = size;
+
+   DWORD has_read = 0;
+   ret = ReadFile(hnd, buf, avail, &has_read, NULL);
+   if (!ret)
+      return 0;
+
+   return has_read;
+}
 #else
 static size_t read_stdin(char *buf, size_t size)
 {
@@ -270,7 +316,17 @@ static void stdin_cmd_pre_frame(rarch_cmd_t *handle)
 
    char *last_newline = strrchr(handle->stdin_buf, '\n');
    if (!last_newline)
+   {
+      // We're receiving bogus data in pipe (no terminating newline),
+      // flush out the buffer.
+      if (handle->stdin_buf_ptr + 1 >= STDIN_BUF_SIZE)
+      {
+         handle->stdin_buf_ptr = 0;
+         handle->stdin_buf[0] = '\0';
+      }
+
       return;
+   }
 
    *last_newline++ = '\0';
    ptrdiff_t msg_len = last_newline - handle->stdin_buf;
