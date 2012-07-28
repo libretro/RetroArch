@@ -3,19 +3,9 @@
 
 #include "rgl.h"
 
-#ifndef OS_VERSION_NUMERIC
-#define OS_VERSION_NUMERIC 0x160
-#endif
-
 #ifdef __cplusplus
 extern "C"
 {
-#endif
-
-#ifdef __cplusplus
-#define _RGL_EXTERN_C extern "C"
-#else
-#define _RGL_EXTERN_C
 #endif
 
 extern PSGLcontext *_CurrentContext;
@@ -37,7 +27,7 @@ extern PSGLdevice *_CurrentDevice;
 #define RGL_NOP                     (0x00000000)
 #define DEFAULT_FIFO_BLOCK_SIZE     (0x10000)
 
-#define RGL_ATTRIB_COUNT                          16
+#define RGL_ATTRIB_COUNT        16
 
 #define RGL_F0_DOT_0		12582912.0f
 

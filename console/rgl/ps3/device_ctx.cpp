@@ -29,7 +29,7 @@ using namespace cell::Gcm;
 #define _RGL_TILED_BUFFER_ALIGNMENT 0x10000
 #define _RGL_TILED_BUFFER_HEIGHT_ALIGNMENT 64
 
-#define _RGL_FIFO_SIZE (65536)
+#define FIFO_SIZE (65536)
 #define _RGL_DMA_PUSH_BUFFER_PREFETCH_PADDING 0x1000
 #define RGL_UTIL_LABEL_INDEX 253
 
@@ -124,75 +124,71 @@ static inline void _RGLPrintIt( unsigned int v )
     printf( "%02x %02x %02x %02x : ", ( v >> 24 )&0xff, ( v >> 16 )&0xff, ( v >> 8 )&0xff, v&0xff );
 
     for ( unsigned int mask = ( 0x1 << 31 ), i = 1; mask != 0; mask >>= 1, i++ )
-        printf( "%d%s", ( v & mask ) ? 1 : 0, ( i % 8 == 0 ) ? " " : "" );
+        printf("%d%s", ( v & mask ) ? 1 : 0, ( i % 8 == 0 ) ? " " : "");
     printf( "\n" );
 }
 
-static inline void _RGLPrintFifoFromPut( unsigned int numWords ) 
+static inline void _RGLPrintFifoFromPut(unsigned int numWords) 
 {
-    for ( int i = -numWords; i <= -1; i++ )
-        _RGLPrintIt((( uint32_t* )_RGLState.fifo.current )[i] );
+   for ( int i = -numWords; i <= -1; i++ )
+      _RGLPrintIt((( uint32_t* )_RGLState.fifo.current )[i]);
 }
 
-static inline void _RGLPrintFifoFromGet( unsigned int numWords ) 
+static inline void _RGLPrintFifoFromGet(unsigned int numWords) 
 {
-    for ( int i = -numWords; i <= -1; i++ )
-        _RGLPrintIt((( uint32_t* )_RGLState.fifo.lastGetRead )[i] );
+   for ( int i = -numWords; i <= -1; i++)
+      _RGLPrintIt((( uint32_t* )_RGLState.fifo.lastGetRead )[i]);
 }
 
-static GLuint _RGLFifoReadReference( RGLFifo *fifo )
+static GLuint _RGLFifoReadReference(RGLFifo *fifo)
 {
-   GLuint ref = *(( volatile GLuint * ) & fifo->dmaControl->Reference );
+   GLuint ref = *((volatile GLuint *) & fifo->dmaControl->Reference );
    fifo->lastHWReferenceRead = ref;
    return ref;
 }
 
-static GLboolean _RGLFifoReferenceInUse( RGLFifo *fifo, GLuint reference )
+static GLboolean _RGLFifoReferenceInUse(RGLFifo *fifo, GLuint reference)
 {
-   if ( !(( fifo->lastHWReferenceRead - reference ) & 0x80000000 ) )
+   if (!((fifo->lastHWReferenceRead - reference) & 0x80000000))
       return GL_FALSE;
 
-   if (( fifo->lastSWReferenceFlushed - reference ) & 0x80000000 )
-   {
+   if ((fifo->lastSWReferenceFlushed - reference) & 0x80000000)
       _RGLFifoFlush( fifo );
-   }
 
    _RGLFifoReadReference( fifo );
 
-   if ( !(( fifo->lastHWReferenceRead - reference ) & 0x80000000 ) )
+   if (!((fifo->lastHWReferenceRead - reference) & 0x80000000))
       return GL_FALSE;
 
    return GL_TRUE;
 }
 
-static GLuint _RGLFifoPutReference( RGLFifo *fifo )
+static GLuint _RGLFifoPutReference(RGLFifo *fifo)
 {
    fifo->lastSWReferenceWritten++;
 
-   cellGcmSetReferenceCommandInline ( &_RGLState.fifo, fifo->lastSWReferenceWritten );
+   cellGcmSetReferenceCommandInline(&_RGLState.fifo, fifo->lastSWReferenceWritten);
 
-   if (( fifo->lastSWReferenceWritten & 0x7fffffff ) == 0 )
-   {
-      _RGLFifoFinish( fifo );
-   }
+   if ((fifo->lastSWReferenceWritten & 0x7fffffff) == 0)
+      _RGLFifoFinish(fifo);
 
    return fifo->lastSWReferenceWritten;
 }
 
-void _RGLFifoFinish( RGLFifo *fifo )
+void _RGLFifoFinish(RGLFifo *fifo)
 {
-   GLuint ref = _RGLFifoPutReference( fifo );
+   GLuint ref = _RGLFifoPutReference(fifo);
 
    _RGLFifoFlush( fifo );
 
-   for ( ;; )
+   for (;;)
    {
-      if ( !_RGLFifoReferenceInUse( fifo, ref ) )
+      if (!_RGLFifoReferenceInUse(fifo, ref))
          break;
    }
 }
 
-static void _RGLFifoInit( RGLFifo *fifo, void *dmaControl, unsigned long dmaPushBufferOffset, uint32_t *dmaPushBuffer, GLuint dmaPushBufferSize )
+static void _RGLFifoInit(RGLFifo *fifo, void *dmaControl, unsigned long dmaPushBufferOffset, uint32_t *dmaPushBuffer, GLuint dmaPushBufferSize)
 {
    fifo->fifoBlockSize  = DEFAULT_FIFO_BLOCK_SIZE;
    fifo->begin          = ( uint32_t * ) dmaPushBuffer;
@@ -256,7 +252,7 @@ static GLboolean _RGLInitFromRM( RGLResource *rmResource )
    blend->alphaFunc = CELL_GCM_ALWAYS;
    blend->alphaRef = ref;
 
-   ref = RGL_CLAMPF_01( ref );
+   ref = RGL_CLAMPF_01(ref);
 
    cellGcmSetAlphaFuncInline( &_RGLState.fifo, CELL_GCM_ALWAYS, RGL_QUICK_FLOAT2UINT( ref * 255.0f ));
 
@@ -290,7 +286,7 @@ static GLboolean _RGLInitFromRM( RGLResource *rmResource )
    cellGcmSetRestartIndexInline( &_RGLState.fifo, 0);
    cellGcmSetShadeModeInline( &_RGLState.fifo, CELL_GCM_SMOOTH);
 
-   for ( i = 0; i < CELL_GCM_MAX_TEXIMAGE_COUNT; i++ )
+   for (i = 0; i < CELL_GCM_MAX_TEXIMAGE_COUNT; i++)
    {
       cellGcmSetTextureAddressInline( &_RGLState.fifo, i, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_CLAMP_TO_EDGE, CELL_GCM_TEXTURE_UNSIGNED_REMAP_NORMAL, CELL_GCM_TEXTURE_ZFUNC_NEVER, 0 );
       cellGcmSetTextureFilterInline( &_RGLState.fifo, i, 0, CELL_GCM_TEXTURE_NEAREST_LINEAR, CELL_GCM_TEXTURE_LINEAR, CELL_GCM_TEXTURE_CONVOLUTION_QUINCUNX );
@@ -304,9 +300,9 @@ static GLboolean _RGLInitFromRM( RGLResource *rmResource )
    return GL_TRUE;
 }
 
-GLboolean _RGLInit( PSGLinitOptions* options, RGLResource *resource )
+GLboolean _RGLInit(PSGLinitOptions* options, RGLResource *resource)
 {
-    if ( !_RGLInitFromRM( resource ) )
+    if (!_RGLInitFromRM(resource))
     {
         RARCH_ERR("RGL GCM failed initialisation.\n");
         return GL_FALSE;
@@ -331,14 +327,13 @@ GLboolean _RGLInit( PSGLinitOptions* options, RGLResource *resource )
     return GL_TRUE;
 }
 
-
-void _RGLDestroy( void )
+void _RGLDestroy(void)
 {
     RGLState *RGLSt = &_RGLState;
     memset( RGLSt, 0, sizeof( *RGLSt ) );
 }
 
-static inline int rescIsEnabled( PSGLdeviceParameters* params )
+static inline int rescIsEnabled(PSGLdeviceParameters* params)
 {
    return params->enable & ( PSGL_DEVICE_PARAMETERS_RESC_RENDER_WIDTH_HEIGHT |
    PSGL_DEVICE_PARAMETERS_RESC_RATIO_MODE | 
@@ -347,9 +342,9 @@ static inline int rescIsEnabled( PSGLdeviceParameters* params )
    PSGL_DEVICE_PARAMETERS_RESC_ADJUST_ASPECT_RATIO );
 }
 
-static inline const VideoMode *findModeByResolution( int width, int height )
+static inline const VideoMode *findModeByResolution(int width, int height)
 {
-    for ( int i = 0;i < sysutilModeCount;++i )
+    for (int i = 0; i < sysutilModeCount; ++i)
     {
         const VideoMode *vm = sysutilModes + i;
         if (( vm->width == width ) && ( vm->height  == height ) ) return vm;
@@ -433,7 +428,7 @@ static void _RGLVblankCallbackFunction(const uint32_t head)
     switch(status)
     {
        case 2:
-          if (cellGcmGetFlipStatus()==0)
+          if (cellGcmGetFlipStatus() == 0)
 	  {
              cellGcmResetFlipStatus();
 	     *labelAddress=1;
@@ -454,7 +449,7 @@ static void _RGLRescVblankCallbackFunction(const uint32_t head)
    switch(status)
    {
       case 2:
-         if (cellRescGetFlipStatus()==0)
+         if (cellRescGetFlipStatus() == 0)
 	 {
             cellRescResetFlipStatus();
 	    *labelAddress=1;
@@ -521,7 +516,7 @@ int32_t _RGLOutOfSpaceCallback( struct CellGcmContextData* fifoContext, uint32_t
       get = fifo->dmaControl->Get;
    }
 
-   for ( GLuint i = 0; i < nopsAtBegin; i++ )
+   for(GLuint i = 0; i < nopsAtBegin; i++)
    {
       fifo->current[0] = RGL_NOP;
       fifo->current++;
@@ -553,16 +548,14 @@ static int _RGLInitRM( RGLResource *gcmResource, unsigned int hostMemorySize, in
 {
     memset( gcmResource, 0, sizeof( RGLResource ) );
 
-    const unsigned int iDPM2DataAreaSize = 0;
-
     dmaPushBufferSize = _RGLPad( dmaPushBufferSize, _RGL_HOST_BUFFER_ALIGNMENT );
 
-    gcmResource->hostMemorySize = _RGLPad( _RGL_FIFO_SIZE + hostMemorySize + dmaPushBufferSize + _RGL_DMA_PUSH_BUFFER_PREFETCH_PADDING  + iDPM2DataAreaSize + (RGL_LM_MAX_TOTAL_QUERIES * sizeof( GLuint )), 1 << 20 );
+    gcmResource->hostMemorySize = _RGLPad( FIFO_SIZE + hostMemorySize + dmaPushBufferSize + _RGL_DMA_PUSH_BUFFER_PREFETCH_PADDING  + (RGL_LM_MAX_TOTAL_QUERIES * sizeof( GLuint )), 1 << 20 );
 
     if ( gcmResource->hostMemorySize > 0 )
         gcmResource->hostMemoryBase = ( char * )memalign( 1 << 20, gcmResource->hostMemorySize  );
 
-    if ( cellGcmInit( _RGL_FIFO_SIZE, gcmResource->hostMemorySize, gcmResource->hostMemoryBase ) != 0 )
+    if ( cellGcmInit(FIFO_SIZE, gcmResource->hostMemorySize, gcmResource->hostMemoryBase ) != 0 )
     {
         RARCH_ERR("RSXIF failed initialization.\n");
         return GL_FALSE;
@@ -588,7 +581,7 @@ static int _RGLInitRM( RGLResource *gcmResource, unsigned int hostMemorySize, in
     gcmResource->dmaPushBuffer = gcmResource->hostMemoryBase + gcmResource->hostMemorySize;
     gcmResource->dmaPushBufferOffset = ( char * )gcmResource->dmaPushBuffer - ( char * )gcmResource->hostMemoryBase;
     gcmResource->dmaPushBufferSize = dmaPushBufferSize;
-    gcmResource->hostMemoryReserved = _RGL_FIFO_SIZE;
+    gcmResource->hostMemoryReserved = FIFO_SIZE;
 
     cellGcmSetJumpCommand(( char * )gcmResource->dmaPushBuffer - ( char * )gcmResource->hostMemoryBase );
 
@@ -765,7 +758,7 @@ static void rescInit( const PSGLdeviceParameters* params, RGLDevice *gcmDevice )
    uint32_t numColorBuffers = cellRescGetNumColorBuffers( dstBufferMode, ( CellRescPalTemporalMode )conf.palTemporalMode, 0 );
 
    _RGLAllocateColorSurface( params->width, params->height * numColorBuffers,
-		   4*8, &(gcmDevice->RescColorBuffersId), &colorBuffersPitch, &size );
+    4*8, &(gcmDevice->RescColorBuffersId), &colorBuffersPitch, &size );
 
    CellRescDsts dsts = { CELL_RESC_SURFACE_A8R8G8B8, colorBuffersPitch, 1 };
    cellRescSetDsts( dstBufferMode, &dsts );
@@ -807,7 +800,6 @@ static void _RGLSetDisplayMode( const VideoMode *vm, GLushort bitsPerPixel, GLui
     cellVideoOutConfigure( CELL_VIDEO_OUT_PRIMARY, &videocfg, NULL, 0 );
 }
 
-
 static int _RGLPlatformCreateDevice( PSGLdevice* device )
 {
    RGLDevice *gcmDevice = ( RGLDevice * )device->platformDevice;
@@ -825,19 +817,28 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
    if ( params->enable & PSGL_DEVICE_PARAMETERS_TV_STANDARD )
    {
       vm = findModeByEnum( params->TVStandard );
-      if ( !vm ) return -1;
+
+      if(!vm)
+         return -1;
+
       params->width = vm->width;
       params->height = vm->height;
    }
    else if ( params->enable & PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT )
    {
       vm = findModeByResolution( params->width, params->height );
-      if ( !vm ) return -1;
+
+      if(!vm)
+         return -1;
+
    }
    else
    {
       vm = _RGLDetectVideoMode();
-      if ( !vm ) return -1;
+
+      if(!vm)
+         return -1;
+
       params->width = vm->width;
       params->height = vm->height;
    }
@@ -933,22 +934,22 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
    int res = sys_semaphore_create(&FlipSem, &attr, initial_val, max_val);
    (void)res;
 
-   if ( rescIsEnabled( params ) )
-	   cellRescSetFlipHandler(_RGLFlipCallbackFunction);
+   if(rescIsEnabled(params))
+      cellRescSetFlipHandler(_RGLFlipCallbackFunction);
    else
-	   cellGcmSetFlipHandler(_RGLFlipCallbackFunction);
+      cellGcmSetFlipHandler(_RGLFlipCallbackFunction);
 
    labelAddress = (volatile uint32_t *)cellGcmGetLabelAddress(WaitLabelIndex);	
    *labelAddress = 0;
 
-   if ( rescIsEnabled( params ) )
+   if(rescIsEnabled(params))
 	   cellRescSetVBlankHandler(_RGLRescVblankCallbackFunction);
    else
 	   cellGcmSetVBlankHandler(_RGLVblankCallbackFunction);
 
-   if ( rescIsEnabled( params ) )
+   if (rescIsEnabled(params))
    {
-      for ( int i = 0; i < params->bufferingMode; ++i )
+      for (int i = 0; i < params->bufferingMode; ++i)
       {
          CellRescSrc rescSrc;
 	 rescSrc.format = CELL_GCM_TEXTURE_A8R8G8B8 | CELL_GCM_TEXTURE_LN | CELL_GCM_TEXTURE_NR;
@@ -966,15 +967,15 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
    }
    else
    {
-      _RGLSetDisplayMode( vm, gcmDevice->color[0].bpp*8, gcmDevice->color[0].pitch );
+      _RGLSetDisplayMode(vm, gcmDevice->color[0].bpp*8, gcmDevice->color[0].pitch);
 
-      cellGcmSetFlipMode( gcmDevice->vsync ? CELL_GCM_DISPLAY_VSYNC : CELL_GCM_DISPLAY_HSYNC );
+      cellGcmSetFlipMode(gcmDevice->vsync ? CELL_GCM_DISPLAY_VSYNC : CELL_GCM_DISPLAY_HSYNC);
       cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
       _RGLFifoFinish( &_RGLState.fifo );
 
-      for ( int i = 0; i < params->bufferingMode; ++i )
+      for (int i = 0; i < params->bufferingMode; ++i)
       {
-         if ( cellGcmSetDisplayBuffer( i, gmmIdToOffset( gcmDevice->color[i].dataId ), gcmDevice->color[i].pitch , width, height ) != CELL_OK )
+         if (cellGcmSetDisplayBuffer( i, gmmIdToOffset( gcmDevice->color[i].dataId ), gcmDevice->color[i].pitch , width, height) != CELL_OK)
 	 {
             RARCH_ERR("Registering display buffer %d failed.\n", i );
 	    return -1;
@@ -983,13 +984,12 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
    }
 
    gcmDevice->swapFifoRef = _RGLFifoPutReference( &_RGLState.fifo );
-
    gcmDevice->swapFifoRef2 = gcmDevice->swapFifoRef;
 
    return 0;
 }
 
- PSGLdevice*	psglCreateDeviceExtended( const PSGLdeviceParameters *parameters )
+PSGLdevice* psglCreateDeviceExtended(const PSGLdeviceParameters *parameters )
 {
     PSGLdevice *device = ( PSGLdevice * )malloc( sizeof( PSGLdevice ) + sizeof(RGLDevice) );
     if ( !device )
@@ -1070,7 +1070,7 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
     return device;
 }
 
- GLfloat psglGetDeviceAspectRatio( const PSGLdevice * device )
+GLfloat psglGetDeviceAspectRatio(const PSGLdevice * device)
 {
    CellVideoOutState videoState;
    cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &videoState);
@@ -1086,19 +1086,19 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
    return 16.0f/9.0f;
 }
 
- void psglGetDeviceDimensions( const PSGLdevice * device, GLuint *width, GLuint *height )
+void psglGetDeviceDimensions(const PSGLdevice * device, GLuint *width, GLuint *height)
 {
    *width = device->deviceParameters.width;
    *height = device->deviceParameters.height;
 }
 
- void psglGetRenderBufferDimensions( const PSGLdevice * device, GLuint *width, GLuint *height )
+void psglGetRenderBufferDimensions(const PSGLdevice * device, GLuint *width, GLuint *height)
 {
    *width = device->deviceParameters.renderWidth;
    *height = device->deviceParameters.renderHeight;
 }
 
- void psglDestroyDevice( PSGLdevice *device )
+void psglDestroyDevice(PSGLdevice *device)
 {
    if ( _CurrentDevice == device ) psglMakeCurrent( NULL, NULL );
 
@@ -1141,12 +1141,12 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
    _RGLDuringDestroyDevice = GL_FALSE;
 
    if(device != NULL)
-	   free( device );
+      free( device );
 }
 
 static void *_RGLPlatformRasterInit (void)
 {
-   RGLDriver *driver = ( RGLDriver * )malloc( sizeof( RGLDriver ) );
+   RGLDriver *driver = (RGLDriver *)malloc( sizeof( RGLDriver ) );
 
    cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
    _RGLFifoFinish( &_RGLState.fifo );
@@ -1158,32 +1158,32 @@ static void *_RGLPlatformRasterInit (void)
    return driver;
 }
 
-void  psglMakeCurrent( PSGLcontext *context, PSGLdevice *device )
+void  psglMakeCurrent(PSGLcontext *context, PSGLdevice *device)
 {
-    if ( context && device )
-    {
-        _CurrentContext = context;
-        _CurrentDevice = device;
-        if ( !device->rasterDriver )
-            device->rasterDriver = _RGLPlatformRasterInit();
+   if ( context && device )
+   {
+      _CurrentContext = context;
+      _CurrentDevice = device;
+      if ( !device->rasterDriver )
+         device->rasterDriver = _RGLPlatformRasterInit();
 
-        _RGLAttachContext( device, context );
-    }
-    else
-    {
-        _CurrentContext = NULL;
-        _CurrentDevice = NULL;
-    }
+      _RGLAttachContext( device, context );
+   }
+   else
+   {
+      _CurrentContext = NULL;
+      _CurrentDevice = NULL;
+   }
 }
 
-PSGLdevice *psglGetCurrentDevice()
+PSGLdevice *psglGetCurrentDevice(void)
 {
-    return _CurrentDevice;
+   return _CurrentDevice;
 }
 
 extern void gmmUpdateFreeList (const uint8_t location);
 
-GLAPI void psglSwap( void )
+GLAPI void psglSwap(void)
 {
    PSGLcontext *LContext = _CurrentContext;
    PSGLdevice *device = _CurrentDevice;
@@ -1197,39 +1197,42 @@ GLAPI void psglSwap( void )
    const GLuint drawBuffer = gcmDevice->drawBuffer;
 
    GLboolean vsync = _CurrentContext->VSync;
-   if ( vsync != gcmDevice->vsync )
+   if(vsync != gcmDevice->vsync )
    {
-      if ( ! rescIsEnabled( &device->deviceParameters ) )
+      if (!rescIsEnabled( &device->deviceParameters))
       {
          cellGcmSetFlipMode( vsync ? CELL_GCM_DISPLAY_VSYNC : CELL_GCM_DISPLAY_HSYNC );
 	 gcmDevice->vsync = vsync;
       }
    }
 
-   if ( device->deviceParameters.bufferingMode == PSGL_BUFFERING_MODE_TRIPLE )
+   if(device->deviceParameters.bufferingMode == PSGL_BUFFERING_MODE_TRIPLE )
    {
-      if ( rescIsEnabled( &device->deviceParameters ) )
+      if (rescIsEnabled( &device->deviceParameters))
          cellRescSetWaitFlip();
       else
          cellGcmSetWaitFlip();
    }
 
-   if ( rescIsEnabled( &device->deviceParameters ) )
+   if(rescIsEnabled( &device->deviceParameters))
    {
-      int32_t res = cellRescSetConvertAndFlip(( uint8_t ) drawBuffer ); 
+      int32_t res = cellRescSetConvertAndFlip((uint8_t)drawBuffer); 
       if ( res != CELL_OK )
       {
          RARCH_WARN("RESC cellRescSetConvertAndFlip returned error code %d.\n", res);
-	 if ( _CurrentContext ) _CurrentContext->needValidate |= PSGL_VALIDATE_FRAMEBUFFER;
+
+	 if(_CurrentContext)
+            _CurrentContext->needValidate |= PSGL_VALIDATE_FRAMEBUFFER;
+
 	 return;
       }
    }
    else
       cellGcmSetFlip(( uint8_t ) drawBuffer );
 
-   if ( device->deviceParameters.bufferingMode != PSGL_BUFFERING_MODE_TRIPLE )
+   if(device->deviceParameters.bufferingMode != PSGL_BUFFERING_MODE_TRIPLE )
    {
-      if ( rescIsEnabled( &device->deviceParameters ) )
+      if (rescIsEnabled( &device->deviceParameters))
          cellRescSetWaitFlip();
       else
          cellGcmSetWaitFlip();
@@ -1243,7 +1246,7 @@ GLAPI void psglSwap( void )
 
    LContext->needValidate = PSGL_VALIDATE_ALL;
 
-   for ( int unit = 0;unit < _RGL_MAX_TEXTURE_UNITS;unit++ )
+   for(int unit = 0; unit < _RGL_MAX_TEXTURE_UNITS; unit++)
       LContext->TextureCoordsUnits[unit].TextureMatrixStack.dirty = GL_TRUE;
 
    LContext->ModelViewMatrixStack.dirty = GL_TRUE;
@@ -1252,14 +1255,14 @@ GLAPI void psglSwap( void )
 
    cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
 
-   _RGLFifoFlush( fifo );
+   _RGLFifoFlush(fifo);
 
    while(sys_semaphore_wait(FlipSem, 1000) != CELL_OK);
 
-   cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
-   _RGLFifoFlush( fifo );
+   cellGcmSetInvalidateVertexCacheInline(&_RGLState.fifo);
+   _RGLFifoFlush(fifo);
 
-   if ( device->deviceParameters.bufferingMode == PSGL_BUFFERING_MODE_DOUBLE )
+   if (device->deviceParameters.bufferingMode == PSGL_BUFFERING_MODE_DOUBLE)
    {
       gcmDevice->drawBuffer = gcmDevice->scanBuffer;
       gcmDevice->scanBuffer = drawBuffer;
@@ -1267,10 +1270,10 @@ GLAPI void psglSwap( void )
       gcmDevice->rt.colorId[0] = gcmDevice->color[gcmDevice->drawBuffer].dataId;
       gcmDevice->rt.colorPitch[0] = gcmDevice->color[gcmDevice->drawBuffer].pitch;
    }
-   else if ( device->deviceParameters.bufferingMode == PSGL_BUFFERING_MODE_TRIPLE )
+   else if(device->deviceParameters.bufferingMode == PSGL_BUFFERING_MODE_TRIPLE)
    {
       gcmDevice->drawBuffer = gcmDevice->scanBuffer;
-      if ( gcmDevice->scanBuffer == 2 )
+      if (gcmDevice->scanBuffer == 2)
          gcmDevice->scanBuffer = 0;
       else
          gcmDevice->scanBuffer++;
@@ -1280,7 +1283,7 @@ GLAPI void psglSwap( void )
    }
 }
 
-static inline void _RGLUtilWaitForIdle (void)
+static inline void _RGLUtilWaitForIdle(void)
 {
    cellGcmSetWriteBackEndLabelInline( &_RGLState.fifo, RGL_UTIL_LABEL_INDEX, _RGLState.labelValue);
    cellGcmSetWaitLabelInline( &_RGLState.fifo, RGL_UTIL_LABEL_INDEX, _RGLState.labelValue);
@@ -1295,21 +1298,21 @@ static inline void _RGLUtilWaitForIdle (void)
    _RGLState.labelValue++;
 }
 
-GLboolean _RGLTryResizeTileRegion( GLuint address, GLuint size, void* data )
+GLboolean _RGLTryResizeTileRegion(GLuint address, GLuint size, void* data)
 {
-   jsTiledRegion* region = ( jsTiledRegion* )data;
+   jsTiledRegion* region = (jsTiledRegion*)data;
 
-   if ( size == 0 )
+   if (size == 0)
    {
       region->offset = 0;
       region->size = 0;
       region->pitch = 0;
 
-      if ( ! _RGLDuringDestroyDevice ) 
+      if (!_RGLDuringDestroyDevice) 
       {
          _RGLUtilWaitForIdle(); 
 	 cellGcmUnbindTile( region->id );
-	 _RGLFifoFinish( &_RGLState.fifo );
+	 _RGLFifoFinish(&_RGLState.fifo);
       }
       return GL_TRUE;
    }
@@ -1329,7 +1332,7 @@ GLboolean _RGLTryResizeTileRegion( GLuint address, GLuint size, void* data )
    return GL_TRUE;
 }
 
-void _RGLGetTileRegionInfo( void* data, GLuint *address, GLuint *size )
+void _RGLGetTileRegionInfo(void* data, GLuint *address, GLuint *size)
 {
    jsTiledRegion* region = ( jsTiledRegion* )data;
 

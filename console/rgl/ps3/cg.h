@@ -186,9 +186,9 @@ typedef struct CgProgramHeader
 }
 CgProgramHeader;
 
-typedef void( *_cgSetFunction )( struct CgRuntimeParameter* _RGL_RESTRICT, const void* _RGL_RESTRICT );
+typedef void( *_cgSetFunction )( struct CgRuntimeParameter* __restrict, const void* __restrict);
 
-typedef void( *_cgSetArrayIndexFunction )( struct CgRuntimeParameter* _RGL_RESTRICT, const void* _RGL_RESTRICT, const int index );
+typedef void( *_cgSetArrayIndexFunction )( struct CgRuntimeParameter* __restrict, const void* __restrict, const int index );
 
 typedef struct _CgUniform
 {
@@ -394,17 +394,14 @@ int _RGLPlatformCopyProgram( _CGprogram* source, _CGprogram* destination );
 
 void _RGLPlatformProgramErase( void* platformProgram );
 
-int _RGLPlatformGenerateVertexProgram( _CGprogram *program, const CgProgramHeader *programHeader, const void *ucode, const CgParameterTableHeader *parameterHeader, const char *stringTable, const float *defaultValues );
-
-int _RGLPlatformGenerateFragmentProgram( _CGprogram *program, const CgProgramHeader *programHeader, const void *ucode, const CgParameterTableHeader *parameterHeader, const char *stringTable, const float *defaultValues );
 CGbool _RGLPlatformSupportsFragmentProgram( CGprofile p );
 
 
 
-void _RGLPlatformSetVertexRegister4fv( unsigned int reg, const float * _RGL_RESTRICT v );
-void _RGLPlatformSetVertexRegisterBlock( unsigned int reg, unsigned int count, const float * _RGL_RESTRICT v );
-void _RGLPlatformSetFragmentRegister4fv( unsigned int reg, const float * _RGL_RESTRICT v );
-void _RGLPlatformSetFragmentRegisterBlock( unsigned int reg, unsigned int count, const float * _RGL_RESTRICT v );
+void _RGLPlatformSetVertexRegister4fv( unsigned int reg, const float * __restrict v );
+void _RGLPlatformSetVertexRegisterBlock( unsigned int reg, unsigned int count, const float * __restrict v );
+void _RGLPlatformSetFragmentRegister4fv( unsigned int reg, const float * __restrict v );
+void _RGLPlatformSetFragmentRegisterBlock( unsigned int reg, unsigned int count, const float * __restrict v );
 
 unsigned int _cgHashString( const char *str );
 

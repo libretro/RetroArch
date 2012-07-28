@@ -167,19 +167,6 @@ struct jsFramebuffer
 #define RGLBIT_FALSE(f,n)		((f) &= ~(1<<(n)))
 #define RGLBIT_ASSIGN(f,n,val)	do { if(val) RGLBIT_TRUE(f,n); else RGLBIT_FALSE(f,n); } while(0)
 
-#ifndef MSVC
-#define ALIGN16 __attribute__((aligned (16)))
-#define _RGL_RESTRICT __restrict
-#else
-#define ALIGN16
-#define _RGL_RESTRICT
-#pragma warning( push )
-#pragma warning ( disable : 4200 )
-#endif
-
-typedef intptr_t RGLintptr;
-typedef size_t RGLsizeiptr;
-
 typedef struct
 {
    GLfloat	X, Y , Z, W;
@@ -208,7 +195,7 @@ typedef struct
 } jsViewPort;
 
 #define _RGL_IMAGE_STORAGE_RASTER	0
-#define _RGL_IMAGE_STORAGE_BLOCK		1
+#define _RGL_IMAGE_STORAGE_BLOCK	1
 
 enum {
    _RGL_IMAGE_DATASTATE_UNSET = 0x0,
@@ -225,7 +212,7 @@ typedef struct jsImage_
    GLenum type;
    GLsizei width;
    GLsizei height;
-   GLsizei	alignment;
+   GLsizei alignment;
 
    GLsizei storageSize;
    GLsizei xstride, ystride;
@@ -454,8 +441,7 @@ typedef struct
    GLfloat	value[4];
    GLuint  frequency;
    GLboolean normalized;
-}
-ALIGN16 jsAttribute;
+} __attribute__((aligned (16))) jsAttribute;
 
 typedef struct
 {
@@ -465,8 +451,7 @@ typedef struct
    unsigned int NeedsConversionMask;
    unsigned int HasVBOMask;
    unsigned int ModuloMask;
-}
-ALIGN16 jsAttributeState;
+} __attribute__((aligned (16))) jsAttributeState;
 
 typedef struct
 {
@@ -475,8 +460,7 @@ typedef struct
    unsigned int	beenUpdatedMask;
    GLvoid*		cmdBuffer;
    GLuint		cmdNumWords;
-}
-ALIGN16 jsAttribSet;
+} __attribute__((aligned (16))) jsAttribSet;
 
 struct jsBufferObject
 {
@@ -506,8 +490,7 @@ typedef struct jsNameSpace
    void** data;
    void** firstFree;
    unsigned long capacity;
-}
-jsNameSpace;
+} jsNameSpace;
 
 typedef void *( *jsTexNameSpaceCreateFunction )( void );
 typedef void( *jsTexNameSpaceDestroyFunction )( void * );
@@ -607,10 +590,6 @@ struct PSGLcontext
 	if (mMatrixStack) mMatrix = (mMatrixStack)->MatrixStackf+(mMatrixStack)->MatrixStackPtr*ELEMENTS_IN_MATRIX;\
 } while (0)
 
-#if defined(MSVC)
-#pragma warning ( pop )
-#endif
-
 #define MAX(A,B) ((A)>(B)?(A):(B))
 #define MIN(A,B) ((A)<(B)?(A):(B))
 #define RGL_LIKELY(COND) (COND)
@@ -641,14 +620,14 @@ static inline int _RGLLog2( unsigned int i )
    return l -1;
 }
 
-static inline unsigned long _RGLPad( unsigned long x, unsigned long pad )
+static inline unsigned long _RGLPad(unsigned long x, unsigned long pad)
 {
    return ( x + pad - 1 ) / pad*pad;
 }
 
-static inline char* _RGLPadPtr( const char* p, unsigned int pad )
+static inline char* _RGLPadPtr(const char* p, unsigned int pad)
 {
-   RGLintptr x = ( RGLintptr )p;
+   intptr_t x = (intptr_t)p;
    x = ( x + pad - 1 ) / pad * pad;
    return ( char* )x;
 }
