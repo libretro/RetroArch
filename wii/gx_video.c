@@ -185,6 +185,9 @@ static void *wii_init(const video_info_t *video,
    return (void*)-1;
 }
 
+#if 0
+// TODO: Fix
+
 static void update_texture_asm(const uint32_t *src,
       unsigned width, unsigned height, unsigned pitch)
 {
@@ -263,6 +266,8 @@ static void update_texture_asm(const uint32_t *src,
    );
 }
 
+#endif
+
 // Set MSB to get full RGB555.
 #define RGB15toRGB5A3(col) ((col) | 0x80008000u)
 
@@ -287,11 +292,13 @@ static void update_texture_asm(const uint32_t *src,
 static void update_texture(const uint32_t *src,
       unsigned width, unsigned height, unsigned pitch)
 {
+#if 0
    if (!(width & 3) && !(height & 3))
    {
       update_texture_asm(src, width, height, pitch);
    }
    else
+#endif
    {
       pitch >>= 2;
       width &= ~15;
