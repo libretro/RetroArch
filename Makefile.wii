@@ -22,7 +22,6 @@ LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
-CXXFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
 LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
 
@@ -32,24 +31,20 @@ ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
 CFLAGS          += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
 CFLAGS          += -Iconsole/logger
-CXXFLAGS        += -Iconsole/logger
 OBJ             += console/logger/logger.o
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
 CFLAGS		+= -DHAVE_FILE_LOGGER
 CFLAGS          += -Iconsole/logger
-CXXFLAGS        += -Iconsole/logger
 endif
 
 CFLAGS += -std=gnu99 -DHAVE_DEFAULT_RETROPAD_INPUT -DRARCH_CONSOLE -DHAVE_CONFIGFILE=1 -DGEKKO -DHW_RVL -DHAVE_ZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DPACKAGE_VERSION=\"0.9.6\" -Dmain=rarch_main -Wno-char-subscripts 
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
-   CXXFLAGS += -O0 -g
 else
-   CLFAGS += -O3
-   CXXFLAGS += -O3
+   CFLAGS += -O3
 endif
 
 all: $(DOL_TARGET)
