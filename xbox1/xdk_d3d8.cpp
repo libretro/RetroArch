@@ -23,7 +23,6 @@
 #include "xdk_d3d8.h"
 
 #include "./../gfx/gfx_context.h"
-#include "../console/retroarch_console.h"
 #include "../general.h"
 #include "../message.h"
 
