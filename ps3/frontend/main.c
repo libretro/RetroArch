@@ -47,6 +47,7 @@
 
 #include "../../console/rarch_console.h"
 #include "../../console/rarch_console_exec.h"
+#include "../../console/rarch_console_libretro_mgmt.h"
 #include "../../console/rarch_console_input.h"
 #include "../../console/rarch_console_config.h"
 #include "../../console/rarch_console_settings.h"

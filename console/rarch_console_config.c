@@ -20,6 +20,7 @@
 #include "../conf/config_file_macros.h"
 
 #include "rarch_console_config.h"
+#include "rarch_console_libretro_mgmt.h"
 
 void rarch_config_create_default(const char * conf_name)
 {

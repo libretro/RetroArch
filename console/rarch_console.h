@@ -17,23 +17,6 @@
 #ifndef CONSOLE_EXT_H__
 #define CONSOLE_EXT_H__
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-#include "rarch_console_libretro_mgmt.h"
-#endif
-
-#include "../general.h"
-
-enum
-{
-   SOUND_MODE_NORMAL,
-#ifdef HAVE_RSOUND
-   SOUND_MODE_RSOUND,
-#endif
-#ifdef HAVE_HEADSET
-   SOUND_MODE_HEADSET,
-#endif
-};
-
 enum {
    MENU_ITEM_LOAD_STATE = 0,
    MENU_ITEM_SAVE_STATE,
@@ -94,11 +77,6 @@ typedef struct
 extern default_paths_t default_paths;
 
 #define MENU_ITEM_LAST MENU_ITEM_RETURN_TO_DASHBOARD+1
-
-#ifdef HAVE_RSOUND
-bool rarch_console_rsound_start(const char *ip);
-void rarch_console_rsound_stop(void);
-#endif
 
 void rarch_convert_char_to_wchar(wchar_t *buf, const char * str, size_t size);
 const char * rarch_convert_wchar_to_const_char(const wchar_t * wstr);
