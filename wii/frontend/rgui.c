@@ -217,7 +217,7 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
 
       char message[TERM_WIDTH + 1];
       char type_str[TERM_WIDTH + 1];
-      int w = 18;
+      int w = 19;
       switch (type)
       {
          case RGUI_FILE_PLAIN:
