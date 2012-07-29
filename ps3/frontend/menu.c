@@ -627,79 +627,79 @@ static void display_menubar(void)
 }
 
 uint64_t state;
-uint16_t input_state = 0;
+uint16_t input_st = 0;
 static uint64_t old_state = 0;
 
 static void control_update_wrap(uint64_t trigger_state)
 {
-   input_state = 0;
+   input_st = 0;
    input_ps3.poll(NULL);
 
    if (CTRL_LSTICK_DOWN(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
    else if (CTRL_DOWN(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
    else if (CTRL_LSTICK_UP(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
    else if (CTRL_UP(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
    else if (CTRL_RIGHT(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
    else if (CTRL_LSTICK_RIGHT(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
    else if (CTRL_LEFT(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
    else if (CTRL_LSTICK_LEFT(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
    else if (CTRL_R1(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_R);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_R);
    else if (CTRL_R2(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_R2);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_R2);
    else if (CTRL_R3(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_R3);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_R3);
    else if (CTRL_L1(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_L);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_L);
    else if (CTRL_L2(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_L2);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_L2);
    else if (CTRL_L3(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_L3);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_L3);
    else if (CTRL_SQUARE(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_Y);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_Y);
    else if (CTRL_TRIANGLE(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_X);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_X);
    else if (CTRL_CIRCLE(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_A);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_A);
    else if (CTRL_CROSS(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_B);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_B);
    else if (CTRL_START(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
    else if (CTRL_SELECT(trigger_state))
-      input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+      input_st |= (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
 }
 
-static void browser_update(filebrowser_t * b, const char *extensions)
+static void browser_update(filebrowser_t * b, uint16_t inp_state, const char *extensions)
 {
    filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
 
-   if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+   if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
       action = FILEBROWSER_ACTION_DOWN;
-   else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
       action = FILEBROWSER_ACTION_UP;
-   else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
       action = FILEBROWSER_ACTION_RIGHT;
-   else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
       action = FILEBROWSER_ACTION_LEFT;
-   else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_R))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_R))
       action = FILEBROWSER_ACTION_SCROLL_DOWN;
-   else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_R2))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_R2))
       action = FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH;
-   else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_L2))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_L2))
       action = FILEBROWSER_ACTION_SCROLL_UP_SMOOTH;
-   else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_L))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_L))
       action = FILEBROWSER_ACTION_SCROLL_UP;
-   else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_A))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_A))
       action = FILEBROWSER_ACTION_CANCEL;
-   else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
    {
       action = FILEBROWSER_ACTION_RESET;
       filebrowser_set_root(b, "/");
@@ -710,7 +710,7 @@ static void browser_update(filebrowser_t * b, const char *extensions)
       filebrowser_iterate(b, action);
 }
 
-static void browser_render(filebrowser_t * b)
+static void browser_render(filebrowser_t * b, float current_x, float current_y, float y_spacing)
 {
    gl_t *gl = driver.video_data;
    unsigned file_count = b->current_dir.list->size;
@@ -721,9 +721,9 @@ static void browser_render(filebrowser_t * b)
    page_number = current_index / NUM_ENTRY_PER_PAGE;
    page_base = page_number * NUM_ENTRY_PER_PAGE;
 
-   currentX = 0.09f;
-   currentY = 0.10f;
-   ySpacing = 0.035f;
+   currentX = current_x;
+   currentY = current_y;
+   ySpacing = y_spacing;
 
    for ( i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
    {
@@ -792,9 +792,9 @@ static void select_file(void)
 	 break;
    }
 
-   browser_update(&tmpBrowser, extensions);
+   browser_update(&tmpBrowser, input_st, extensions);
 
-      if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+      if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
       {
          if(filebrowser_get_current_path_isdir(&tmpBrowser))
 	 {
@@ -851,7 +851,7 @@ static void select_file(void)
             menu_stack_decrement();
 	 }
       }
-      else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_X))
+      else if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_X))
          menu_stack_decrement();
 
    display_menubar();
@@ -868,9 +868,9 @@ static void select_directory(void)
    gl_t * gl = driver.video_data;
 
    {
-      browser_update(&tmpBrowser, "empty");
+      browser_update(&tmpBrowser, input_st, "empty");
 
-      if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_Y))
+      if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_Y))
       {
          if(filebrowser_get_current_path_isdir(&tmpBrowser))
 	 {
@@ -893,7 +893,7 @@ static void select_directory(void)
 	    menu_stack_decrement();
 	 }
       }
-      else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_X))
+      else if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_X))
       {
          strlcpy(path, default_paths.port_dir, sizeof(path));
 	 switch(menu_id)
@@ -913,7 +913,7 @@ static void select_directory(void)
 	 }
 	 menu_stack_decrement();
       }
-      else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+      else if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
       {
          if(filebrowser_get_current_path_isdir(&tmpBrowser))
 	 {
@@ -941,13 +941,13 @@ static void set_keybind_digital(uint64_t default_retro_joypad_id)
 {
    unsigned keybind_action = KEYBIND_NOACTION;
 
-   if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
       keybind_action = KEYBIND_DECREMENT;
 
-   if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
       keybind_action = KEYBIND_INCREMENT;
 
-   if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
       keybind_action = KEYBIND_DEFAULT;
 
    rarch_input_set_keybind(currently_selected_controller_menu, keybind_action, default_retro_joypad_id);
@@ -1039,11 +1039,11 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 	switch(switchvalue)
 	{
 		case SETTING_CHANGE_RESOLUTION:
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
                            rarch_settings_change(S_RESOLUTION_NEXT);
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
                            rarch_settings_change(S_RESOLUTION_PREVIOUS);
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 			{
                            if (g_console.supported_resolutions[g_console.current_resolution_index] == CELL_VIDEO_OUT_RESOLUTION_576)
 			   {
@@ -1062,7 +1062,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			break;
 			/*
 			   case SETTING_PAL60_MODE:
-			   if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			   {
 			   if (Graphics->GetCurrentResolution() == CELL_VIDEO_OUT_RESOLUTION_576)
 			   {
@@ -1078,7 +1078,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			   break;
 			 */
 		case SETTING_SHADER_PRESETS:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
                            if(g_console.emulator_initialized)
 			   {
@@ -1086,17 +1086,17 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
                               menu_stack_push(menuStackindex, PRESET_CHOICE);
 			   }
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
                            strlcpy(g_console.cgp_path, "", sizeof(g_console.cgp_path));
 			break;
 		case SETTING_SHADER:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 			   menu_stack_increment();
 			   menu_stack_push(menuStackindex, SHADER_CHOICE);
 			   set_shader = 0;
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
                            rarch_load_shader(1, NULL);
 			   strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
@@ -1104,13 +1104,13 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			}
 			break;
 		case SETTING_SHADER_2:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 			   menu_stack_increment();
 			   menu_stack_push(menuStackindex, SHADER_CHOICE);
 			   set_shader = 1;
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
                            rarch_load_shader(2, NULL);
 			   strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
@@ -1118,67 +1118,67 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			}
 			break;
 		case SETTING_FONT_SIZE:
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
 			{
 				if(g_console.menu_font_size > 0) 
                                    g_console.menu_font_size -= 0.01f;
 			}
-                        if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+                        if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 				if((g_console.menu_font_size < 2.0f))
                                    g_console.menu_font_size += 0.01f;
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
                            g_console.menu_font_size = 1.0f;
 			break;
 		case SETTING_KEEP_ASPECT_RATIO:
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
 			{
                            rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
 			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
 			{
                            rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
 			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
                            rarch_settings_default(S_DEF_ASPECT_RATIO);
 			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
                            rarch_settings_change(S_HW_TEXTURE_FILTER);
 			   gfx_ctx_set_filtering(1, g_settings.video.smooth);
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
                            rarch_settings_change(S_DEF_HW_TEXTURE_FILTER);
 			   gfx_ctx_set_filtering(1, g_settings.video.smooth);
 			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER_2:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
                                 rarch_settings_change(S_HW_TEXTURE_FILTER_2);
 				gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
                                 rarch_settings_change(S_DEF_HW_TEXTURE_FILTER_2);
 				gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
 			}
 			break;
 		case SETTING_SCALE_ENABLED:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
                                 rarch_settings_change(S_SCALE_ENABLED);
 				gfx_ctx_set_fbo(g_console.fbo_enabled);
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
                                 rarch_settings_default(S_DEF_SCALE_ENABLED);
 				apply_scaling(FBO_DEINIT);
@@ -1186,7 +1186,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			}
 			break;
 		case SETTING_SCALE_FACTOR:
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
 			{
                            if(g_console.fbo_enabled)
 			   {
@@ -1198,7 +1198,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			      }
 			   }
 			}
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
                            if(g_console.fbo_enabled)
 			   {
@@ -1210,7 +1210,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			      }
 			   }
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
                            rarch_settings_default(S_DEF_SCALE_FACTOR);
 			   apply_scaling(FBO_DEINIT);
@@ -1218,51 +1218,51 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			}
 			break;
 		case SETTING_HW_OVERSCAN_AMOUNT:
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
 			{
 				rarch_settings_change(S_OVERSCAN_DECREMENT);
 				gfx_ctx_set_overscan();
 			}
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 				rarch_settings_change(S_OVERSCAN_INCREMENT);
 				gfx_ctx_set_overscan();
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
 				rarch_settings_default(S_DEF_OVERSCAN);
 				gfx_ctx_set_overscan();
 			}
 			break;
 		case SETTING_THROTTLE_MODE:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 				rarch_settings_change(S_THROTTLE);
 				gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
 				rarch_settings_default(S_DEF_THROTTLE);
 				gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
 			}
 			break;
 		case SETTING_TRIPLE_BUFFERING:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 				rarch_settings_change(S_TRIPLE_BUFFERING);
 				video_gl.restart();
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
-				bool old_buffer_input_stateate = g_console.triple_buffering_enable;
+				bool old_buffer_input_st = g_console.triple_buffering_enable;
 				rarch_settings_default(S_DEF_TRIPLE_BUFFERING);
 
-				if(!old_buffer_input_stateate)
+				if(!old_buffer_input_st)
                                    video_gl.restart();
 			}
 			break;
 		case SETTING_ENABLE_SCREENSHOTS:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 #if(CELL_SDK_VERSION > 0x340000)
                            g_console.screenshots_enable = !g_console.screenshots_enable;
@@ -1283,7 +1283,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			   }
 #endif
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
 #if(CELL_SDK_VERSION > 0x340000)
                            g_console.screenshots_enable = true;
@@ -1291,7 +1291,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			}
 			break;
 		case SETTING_SAVE_SHADER_PRESET:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
                            rarch_filename_input_and_save(SHADER_PRESET_FILE);
 			break;
 		case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
@@ -1299,31 +1299,31 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 		case SETTING_DEFAULT_VIDEO_ALL:
 			break;
 		case SETTING_SOUND_MODE:
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
 			{
                            if(g_console.sound_mode != SOUND_MODE_NORMAL)
                               g_console.sound_mode--;
 			}
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
                            if(g_console.sound_mode < SOUND_MODE_HEADSET)
                               g_console.sound_mode++;
 			}
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_UP)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)))
 			{
                            if(g_console.sound_mode != SOUND_MODE_RSOUND)
                               rarch_console_rsound_stop();
 			   else
                               rarch_console_rsound_start(g_settings.audio.device);
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
                            g_console.sound_mode = SOUND_MODE_NORMAL;
 			   rarch_console_rsound_stop();
 			}
 			break;
 		case SETTING_RSOUND_SERVER_IP_ADDRESS:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
                            oskutil_write_initial_message(&g_console.oskutil_handle, L"192.168.1.1");
 			   oskutil_write_message(&g_console.oskutil_handle, L"Enter IP address for the RSound Server.");
@@ -1340,73 +1340,73 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			   if(g_console.oskutil_handle.text_can_be_fetched)
                               strlcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(g_settings.audio.device));
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
                            strlcpy(g_settings.audio.device, "0.0.0.0", sizeof(g_settings.audio.device));
 			break;
 		case SETTING_DEFAULT_AUDIO_ALL:
 			break;
 		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
                            rarch_settings_change(S_SAVESTATE_DECREMENT);
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
                            rarch_settings_change(S_SAVESTATE_INCREMENT);
 
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
                            rarch_settings_default(S_DEF_SAVE_STATE);
 			break;
 		case SETTING_EMU_SHOW_INFO_MSG:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
                            g_console.info_msg_enable = !g_console.info_msg_enable;
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
                            g_console.info_msg_enable = true;
 			break;
 		case SETTING_EMU_REWIND_ENABLED:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
                            rarch_settings_change(S_REWIND);
 
 			   if(g_console.info_msg_enable)
                               rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
                            g_settings.rewind_enable = false;
 			break;
                 case SETTING_ZIP_EXTRACT:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)))
                         {
                            if(g_console.zip_extract_mode > 0)
                               g_console.zip_extract_mode--;
                         }
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
                         {
                            if(g_console.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
                               g_console.zip_extract_mode++;
                         }
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
                            g_console.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR;
 			}
                         break;
 		case SETTING_RARCH_DEFAULT_EMU:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 			   menu_stack_increment();
 			   menu_stack_push(menuStackindex, LIBRETRO_CHOICE);
 			   set_libretro_core_as_launch = false;
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
 			}
 			break;
 		case SETTING_EMU_AUDIO_MUTE:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
                            rarch_settings_change(S_AUDIO_MUTE);
 
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
                            rarch_settings_default(S_DEF_AUDIO_MUTE);
 			break;
 		case SETTING_ENABLE_CUSTOM_BGM:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 #if(CELL_SDK_VERSION > 0x340000)
                            g_console.custom_bgm_enable = !g_console.custom_bgm_enable;
@@ -1417,7 +1417,7 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 
 #endif
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
 #if(CELL_SDK_VERSION > 0x340000)
 				g_console.custom_bgm_enable = true;
@@ -1429,82 +1429,82 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 		case SETTING_EMU_AUDIO_DEFAULT_ALL:
 			break;
 		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 			   menu_stack_increment();
 			   menu_stack_push(menuStackindex, PATH_DEFAULT_ROM_DIR_CHOICE);
 			}
 
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 				strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
 			break;
 		case SETTING_PATH_SAVESTATES_DIRECTORY:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 			   menu_stack_increment();
                            menu_stack_push(menuStackindex, PATH_SAVESTATES_DIR_CHOICE);
 			}
 
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
                            strlcpy(g_console.default_savestate_dir, default_paths.savestate_dir, sizeof(g_console.default_savestate_dir));
 
 			break;
 		case SETTING_PATH_SRAM_DIRECTORY:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 			   menu_stack_increment();
                            menu_stack_push(menuStackindex, PATH_SRAM_DIR_CHOICE);
 			}
 
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
                            strlcpy(g_console.default_sram_dir, default_paths.sram_dir, sizeof(g_console.default_sram_dir));
 			break;
 		case SETTING_PATH_CHEATS:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 			   menu_stack_increment();
                            menu_stack_push(menuStackindex, PATH_CHEATS_DIR_CHOICE);
 			}
 
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
                            strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
 			break;
 		case SETTING_PATH_SYSTEM:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
 			   menu_stack_increment();
                            menu_stack_push(menuStackindex, PATH_SYSTEM_DIR_CHOICE);
 			}
 
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
                            strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
 			break;
 		case SETTING_ENABLE_SRAM_PATH:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)))
 			{
                            g_console.default_sram_dir_enable = !g_console.default_sram_dir_enable;
 			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
                            g_console.default_sram_dir_enable = true;
 			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 			break;
 		case SETTING_ENABLE_STATE_PATH:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)))
 			{
                            g_console.default_savestate_dir_enable = !g_console.default_savestate_dir_enable;
 			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			{
                            g_console.default_savestate_dir_enable = true;
 			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 			break;
 		case SETTING_PATH_DEFAULT_ALL:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
 			{
                            strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
 			   strlcpy(g_console.default_savestate_dir, default_paths.port_dir, sizeof(g_console.default_savestate_dir));
@@ -1515,30 +1515,30 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			}
 			break;
 		case SETTING_CONTROLS_SCHEME:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
 			{
                            menu_stack_increment();
                            menu_stack_push(menuStackindex, INPUT_PRESET_CHOICE);
 			}
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			break;
 		case SETTING_CONTROLS_NUMBER:
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
 			{
                            if(currently_selected_controller_menu != 0)
                               currently_selected_controller_menu--;
 			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			{
                            if(currently_selected_controller_menu < 6)
                               currently_selected_controller_menu++;
 			   menu_stack_refresh(items_generalsettings, menuStackindex);
 			}
 
-			if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
                            currently_selected_controller_menu = 0;
 			break; 
 		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
@@ -1590,11 +1590,11 @@ static void producesettingentry(menu * menu_obj, unsigned switchvalue)
 			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R3);
 			break;
 		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
                            rarch_filename_input_and_save(INPUT_PRESET_FILE);
 			break;
 		case SETTING_CONTROLS_DEFAULT_ALL:
-			if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
+			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
 			{
                            rarch_input_set_default_keybinds(currently_selected_controller_menu);
 			   menu_stack_refresh(items_generalsettings, menuStackindex);
@@ -1661,13 +1661,13 @@ static void select_setting(void)
    settings_action_t action = SETTINGS_ACTION_NOOP;
 
    /* back to ROM menu if CIRCLE is pressed */
-   if ((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_L)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_A)))
+   if ((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_L)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_A)))
       action = SETTINGS_ACTION_TAB_PREVIOUS;
-   else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_R))
+   else if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_R))
       action = SETTINGS_ACTION_TAB_NEXT;
-   else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+   else if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
       action = SETTINGS_ACTION_DOWN;
-   else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+   else if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
       action = SETTINGS_ACTION_UP;
 
    if(action != SETTINGS_ACTION_NOOP)
@@ -1725,13 +1725,13 @@ static void select_rom(void)
 {
    gl_t * gl = driver.video_data;
 
-   browser_update(&browser, rarch_console_get_rom_ext());
+   browser_update(&browser, input_st, rarch_console_get_rom_ext());
 
    menu_romselect_action_t action = MENU_ROMSELECT_ACTION_NOOP;
 
-   if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT))
+   if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT))
       action = MENU_ROMSELECT_ACTION_GOTO_SETTINGS;
-   else if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+   else if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
       action = MENU_ROMSELECT_ACTION_OK;
 
    if (action != MENU_ROMSELECT_ACTION_NOOP)
@@ -1770,14 +1770,14 @@ static void ingame_menu_resize(void)
    g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
    gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 
-   if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
       g_console.viewports.custom_vp.x -= 1;
-   else if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+   else if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
       g_console.viewports.custom_vp.x += 1;
 
-   if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
       g_console.viewports.custom_vp.y += 1;
-   else if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+   else if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
       g_console.viewports.custom_vp.y -= 1;
 
    if (CTRL_RSTICK_LEFT(state) || CTRL_L1(state))
@@ -1790,7 +1790,7 @@ static void ingame_menu_resize(void)
    else if (CTRL_RSTICK_DOWN(state) || CTRL_R2(state))
       g_console.viewports.custom_vp.height -= 1;
 
-   if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_X))
+   if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_X))
    {
       g_console.viewports.custom_vp.x = 0;
       g_console.viewports.custom_vp.y = 0;
@@ -1798,10 +1798,10 @@ static void ingame_menu_resize(void)
       g_console.viewports.custom_vp.height = gl->win_height;
    }
 
-   if (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_A))
+   if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_A))
       menu_stack_decrement();
 
-   if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_Y)) { }
+   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_Y)) { }
    else
    {
       display_menubar();
@@ -1870,7 +1870,7 @@ static void ingame_menu_screenshot(void)
 
    if(g_console.ingame_menu_enable)
    {
-      if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_A))
+      if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_A))
       {
 	 menu_stack_decrement();
 	 gl->menu_render = true;
@@ -1895,33 +1895,33 @@ static void ingame_menu(void)
 
    menuitem_colors[g_console.ingame_menu_item] = RED;
 
-   if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_A))
+   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_A))
       rarch_settings_change(S_RETURN_TO_GAME);
 
       switch(g_console.ingame_menu_item)
       {
          case MENU_ITEM_LOAD_STATE:
-	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	    {
                rarch_load_state();
                rarch_settings_change(S_RETURN_TO_GAME);
 	    }
-	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
                rarch_state_slot_decrease();
-	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
                rarch_state_slot_increase();
 
 	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the state from the currently selected save state slot.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_SAVE_STATE:
-	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	    {
                rarch_save_state();
                rarch_settings_change(S_RETURN_TO_GAME);
 	    }
-	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
                rarch_state_slot_decrease();
-	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
                rarch_state_slot_increase();
 
 	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.", sizeof(comment));
@@ -1935,19 +1935,19 @@ static void ingame_menu(void)
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_ORIENTATION:
-	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
 	    {
                rarch_settings_change(S_ROTATION_DECREMENT);
 	       video_gl.set_rotation(NULL, g_console.screen_orientation);
 	    }
 
-            if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+            if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 	    {
                rarch_settings_change(S_ROTATION_INCREMENT);
 	       video_gl.set_rotation(NULL, g_console.screen_orientation);
 	    }
 
-            if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+            if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 	    {
                rarch_settings_default(S_DEF_ROTATION);
 	       video_gl.set_rotation(NULL, g_console.screen_orientation);
@@ -1959,7 +1959,7 @@ static void ingame_menu(void)
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Scaling] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
-            if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_R2)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_L2)))
+            if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_R2)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_L2)))
 	    {
                rarch_settings_change(S_FRAME_ADVANCE);
 	       g_console.ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
@@ -1967,7 +1967,7 @@ static void ingame_menu(void)
 	    strlcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame. Pressing the button\nrapidly will advance the frame more slowly.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
-	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
             {
                menu_stack_increment();
 	       menu_stack_push(menuStackindex, INGAME_MENU_RESIZE);
@@ -1975,7 +1975,7 @@ static void ingame_menu(void)
 	    strlcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
-	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	    {
                menu_stack_increment();
 	       menu_stack_push(menuStackindex, INGAME_MENU_SCREENSHOT);
@@ -1983,13 +1983,13 @@ static void ingame_menu(void)
 	    strlcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
-	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
                rarch_settings_change(S_RETURN_TO_GAME);
 
 	    strlcpy(comment, "Press 'CROSS' to return back to the game.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RESET:
-	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	    {
                rarch_settings_change(S_RETURN_TO_GAME);
 	       rarch_game_reset();
@@ -1997,14 +1997,14 @@ static void ingame_menu(void)
 	    strlcpy(comment, "Press 'CROSS' to reset the game.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RETURN_TO_MENU:
-	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	    {
                rarch_settings_change(S_RETURN_TO_MENU);
 	    }
 	    strlcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_CHANGE_LIBRETRO:
-	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	    {
                menu_stack_increment();
 	       menu_stack_push(menuStackindex, LIBRETRO_CHOICE);
@@ -2014,7 +2014,7 @@ static void ingame_menu(void)
 	    break;
 #ifdef HAVE_MULTIMAN
 	 case MENU_ITEM_RETURN_TO_MULTIMAN:
-	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	    {
                if(path_file_exists(default_paths.multiman_self_file))
                {
@@ -2028,26 +2028,26 @@ static void ingame_menu(void)
 	    break;
 #endif
 	 case MENU_ITEM_RETURN_TO_DASHBOARD:
-	    if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
                rarch_settings_change(S_RETURN_TO_DASHBOARD);
 
 	    strlcpy(comment, "Press 'CROSS' to quit the emulator and return to the XMB.", sizeof(comment));
 	    break;
       }
 
-   if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
    {
       if(g_console.ingame_menu_item > 0)
          g_console.ingame_menu_item--;
    }
 
-   if(input_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
    {
       if(g_console.ingame_menu_item < (MENU_ITEM_LAST-1))
          g_console.ingame_menu_item++;
    }
 
-   if((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_L3)) && (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_R3)))
+   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_L3)) && (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_R3)))
       rarch_settings_change(S_RETURN_TO_GAME);
 
    display_menubar();
@@ -2235,7 +2235,7 @@ void menu_loop(void)
       switch(menu_category_id)
       {
          case CATEGORY_FILEBROWSER:
-            browser_render(fb);
+            browser_render(fb, 0.09f, 0.10f, 0.035f);
             break;
          case CATEGORY_SETTINGS:
          case CATEGORY_INGAME_MENU:
