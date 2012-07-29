@@ -23,13 +23,7 @@ typedef struct
 {
    LPDIRECT3DTEXTURE m_pTexture;
 	LPDIRECT3DVERTEXBUFFER m_pVertexBuffer;
-	int m_x;
-   int m_y;
 	D3DXIMAGE_INFO m_imageInfo;
-	unsigned char m_byR;
-   unsigned char m_byG;
-   unsigned char m_byB;
-   bool m_bLoaded;
 } d3d_surface_t;
 
 bool d3d_surface_new(d3d_surface_t *surface, const char *filename);

@@ -24,12 +24,6 @@ bool d3d_surface_new(d3d_surface_t *surface, const char *filename)
 
 	surface->m_pTexture              = NULL;
 	surface->m_pVertexBuffer         = NULL;
-	surface->m_byR                   = 255;
-	surface->m_byG                   = 255;
-	surface->m_byB                   = 255;
-	surface->m_bLoaded               = false;
-	surface->m_x                     = 0;
-	surface->m_y                     = 0;
 
 	HRESULT ret = D3DXCreateTextureFromFileExA(d3d->d3d_render_device,                // d3d device
 	                                         filename,                                // filename
@@ -63,8 +57,6 @@ bool d3d_surface_new(d3d_surface_t *surface, const char *filename)
 		return false;
 	}
 
-	surface->m_bLoaded = true;
-
 	return true;
 }
 
@@ -83,15 +75,13 @@ void d3d_surface_free(d3d_surface_t *surface)
 		surface->m_pTexture->Release();
 		surface->m_pTexture = NULL;
 	}
-
-	surface->m_bLoaded = false;
 }
 
 bool d3d_surface_render(d3d_surface_t *surface, int x, int y, int32_t w, int32_t h)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
-	if (surface->m_pTexture == NULL || surface->m_pVertexBuffer == NULL || surface->m_bLoaded == false)
+	if (surface->m_pTexture == NULL || surface->m_pVertexBuffer == NULL)
 		return false;
 
 	float fX = static_cast<float>(x);
