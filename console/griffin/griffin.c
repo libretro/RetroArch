@@ -286,8 +286,6 @@ MENU
 #elif defined(_XBOX1)
 #include "../../xbox1/frontend/menu.cpp"
 #include "../../xbox1/frontend/RetroLaunch/IoSupport.cpp"
-#include "../../xbox1/frontend/RetroLaunch/MenuMain.cpp"
-#include "../../xbox1/frontend/RetroLaunch/MenuManager.cpp"
 #include "../../xbox1/frontend/RetroLaunch/Surface.cpp"
 #elif defined(GEKKO)
 #include "../../wii/frontend/rgui.c"
