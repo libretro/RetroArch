@@ -26,6 +26,13 @@ CMenuMain::CMenuMain()
 {
    // we think that the rom list is unloaded until we know otherwise
    m_bRomListLoadedState = false;
+
+   struct retro_system_info info;
+   retro_get_system_info(&info);
+   const char *id = info.library_name ? info.library_name : "Unknown";
+   char core_text[256];
+   snprintf(core_text, sizeof(core_text), "%s %s", id, info.library_version);
+   convert_char_to_wchar(m_title, core_text, sizeof(m_title));
 }
 
 CMenuMain::~CMenuMain()
@@ -91,21 +98,14 @@ bool CMenuMain::Create()
    if(m_romListEndRender > g_romList.GetRomListSize() - 1)
       m_romListEndRender = g_romList.GetRomListSize() - 1;
 
-   //Generate the rom list textures only once
-   vector<Rom *>::iterator i;
-   dword y = 0;
-   for (i = g_romList.m_romList.begin(); i != g_romList.m_romList.end(); i++)
-   {
-      Rom *rom = *i;
-      g_font.RenderToTexture(rom->GetTexture(), rom->GetFileName(), 18, XFONT_BOLD, 0xff808080, -1, false);
-   }
-
    return true;
 }
 
 
 void CMenuMain::Render()
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
    //Render background image
    m_menuMainBG.Render(m_menuMainBG_x, m_menuMainBG_y);
 
@@ -113,8 +113,15 @@ void CMenuMain::Render()
    //Center the text (hardcoded)
    int xpos = width == 640 ? 65 : 400;
    int ypos = width == 640 ? 430 : 670;
-
-   g_font.Render("Press RSTICK THUMB to exit. Press START and/or A to launch a rom.", xpos, ypos, 16, XFONT_NORMAL, m_menuMainTitle_c);
+   
+   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
+   d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
+   d3d->debug_font->TextOut(d3d->pFrontBuffer, L"Libretro core:", (unsigned)-1, xpos, ypos);
+   d3d->debug_font->TextOut(d3d->pBackBuffer, L"Libretro core:", (unsigned)-1, xpos, ypos);
+   d3d->debug_font->TextOut(d3d->pFrontBuffer, m_title, (unsigned)-1, xpos + 140, ypos);
+   d3d->debug_font->TextOut(d3d->pBackBuffer, m_title, (unsigned)-1, xpos + 140, ypos);
+   d3d->pFrontBuffer->Release();
+   d3d->pBackBuffer->Release();
 
    //Begin with the rom selector panel
    //FIXME: Width/Height needs to be current Rom texture width/height (or should we just leave it at a fixed size?)
@@ -124,7 +131,13 @@ void CMenuMain::Render()
 
    for (int i = m_romListBeginRender; i <= m_romListEndRender; i++)
    {
-      g_romList.GetRomAt(i + m_romListOffset)->GetTexture().Render(m_menuMainRomListPos_x, m_menuMainRomListPos_y + dwSpacing);
+      const wchar_t *rom_basename = g_romList.GetRomAt(i + m_romListOffset)->GetFileName();
+      d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
+      d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
+      d3d->debug_font->TextOut(d3d->pFrontBuffer, rom_basename, (unsigned)-1, m_menuMainRomListPos_x, m_menuMainRomListPos_y + dwSpacing);
+      d3d->debug_font->TextOut(d3d->pBackBuffer, rom_basename, (unsigned)-1, m_menuMainRomListPos_x, m_menuMainRomListPos_y + dwSpacing);
+      d3d->pFrontBuffer->Release();
+      d3d->pBackBuffer->Release();
       dwSpacing += m_menuMainRomListSpacing;
    }
 }
@@ -215,7 +228,11 @@ void CMenuMain::ProcessInput()
 
    // Press A to launch
    if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_B) || trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-      rarch_console_load_game_wrap(g_romList.GetRomAt(m_romListSelectedRom)->GetFileName().c_str(), g_console.zip_extract_mode, S_DELAY_1);
+   {
+      char rom_filename[PATH_MAX];
+      convert_wchar_to_char(rom_filename, g_romList.GetRomAt(m_romListSelectedRom)->GetFileName(), sizeof(rom_filename));
+      rarch_console_load_game_wrap(rom_filename, g_console.zip_extract_mode, S_DELAY_1);
+   }
 
    if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_R3))
    {

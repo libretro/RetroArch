@@ -76,7 +76,7 @@ int m_romListOffset;
 // Backbuffer width, height
 int width; 
 int height;
-
+wchar_t m_title[128];
 };
 
 extern CMenuMain g_menuMain;

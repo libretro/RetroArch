@@ -39,9 +39,6 @@ public:
 
 	Rom *GetRomAt(int index);
 
-	void CleanUpTextures();
-	void DestroyAllTextures();
-
 	int m_iBaseIndex;
 
 	vector<Rom *> m_romList;

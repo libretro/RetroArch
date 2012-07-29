@@ -29,19 +29,13 @@ bool Rom::Load(const char *szFilename)
 	if (m_bLoaded)
 		return true;
 
-	m_szFilename = szFilename;
-
+   convert_char_to_wchar(m_szFilename, szFilename, sizeof(m_szFilename));
 	m_bLoaded = true;
 
 	return true;
 }
 
-string Rom::GetFileName()
+const wchar_t *Rom::GetFileName()
 {
 	return m_szFilename;
-}
-
-CSurface &Rom::GetTexture()
-{
-	return m_texture;
 }

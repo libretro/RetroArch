@@ -110,30 +110,6 @@ Rom *RomList::GetRomAt(int index)
    return m_romList[index];
 }
 
-void RomList::CleanUpTextures()
-{
-	if (!IsLoaded())
-		return;
-
-	// keep the 25 textures above and below the base index
-	for (int i = 0; i < m_iBaseIndex - 25; i++)
-		m_romList[i]->GetTexture().Destroy();
-
-	for (int i = m_iBaseIndex + 25; i < GetRomListSize(); i++)
-		m_romList[i]->GetTexture().Destroy();
-}
-
-void RomList::DestroyAllTextures()
-{
-	vector<Rom *>::iterator i;
-
-	for (i = m_romList.begin(); i != m_romList.end(); i++)
-	{
-		Rom *rom = *i;
-		rom->GetTexture().Destroy();
-	}
-}
-
 void RomList::Build()
 {
 	WIN32_FIND_DATA fd;

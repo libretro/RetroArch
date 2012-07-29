@@ -16,7 +16,6 @@
 #pragma once
 
 #include "Global.h"
-#include "Surface.h"
 
 class Rom
 {
@@ -26,10 +25,8 @@ public:
 
 	bool Load(const char *szFilename);
 
-	string GetFileName();
-	CSurface &GetTexture();
+	const wchar_t *GetFileName();
 private:
-	string m_szFilename;
+	wchar_t m_szFilename[256];
 	bool m_bLoaded;
-	CSurface m_texture;
 };
