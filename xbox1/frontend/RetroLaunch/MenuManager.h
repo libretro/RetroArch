@@ -15,8 +15,6 @@
 
 #pragma once
 
-#include "Global.h"
-
 enum eMenuState
 {
 	MENU_MAIN = 0,

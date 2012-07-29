@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "RetroLaunch/Global.h"
 #include "RetroLaunch/IoSupport.h"
 #include "RetroLaunch/MenuManager.h"
 #include "RetroLaunch/RomList.h"

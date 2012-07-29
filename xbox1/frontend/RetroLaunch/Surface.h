@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include "Global.h"
-
 class CSurface
 {
 public:
@@ -29,14 +27,14 @@ public:
 	 * Do functions
 	 */
 	bool Create(const char *szFilename);
-	bool Create(dword width, dword height);
+	bool Create(int32_t width, int32_t height);
 	void Destroy();
 
 	bool IsLoaded();
 
 	bool Render();
 	bool Render(int x, int y);
-	bool Render(int x, int y, dword w, dword h);
+	bool Render(int x, int y, int32_t w, int32_t h);
 
 	/**
 	 * Set functions
@@ -48,10 +46,10 @@ public:
 	/**
 	 * Get functions
 	 */
-	dword GetWidth();
-	dword GetHeight();
+	int32_t GetWidth();
+	int32_t GetHeight();
 
-	byte GetOpacity();
+	int8_t GetOpacity();
 
 	IDirect3DTexture8 *GetTexture();
 

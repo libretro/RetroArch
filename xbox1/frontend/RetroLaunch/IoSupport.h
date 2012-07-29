@@ -10,7 +10,6 @@
 #endif // _MSC_VER > 1000
 #ifdef _XBOX
 #include <xtl.h>
-#include "global.h"
 
 #define TRAY_OPEN					16
 #define TRAY_CLOSED_NO_MEDIA		64

@@ -12,7 +12,7 @@
  * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. To contact the
  * authors: Surreal64 CE Team (http://www.emuxtras.net)
  */
-
+#include <algorithm>
 #include "RomList.h"
 
 RomList g_romList;
@@ -46,7 +46,7 @@ bool RomList::IsLoaded()
 
 void RomList::AddRomToList(Rom *rom, int mode)
 {
-	vector<Rom *> *pList;
+   std::vector<Rom *> *pList;
 
    pList = &m_romList;
 
@@ -58,16 +58,15 @@ void RomList::AddRomToList(Rom *rom, int mode)
 	}
 
 	pList->push_back(rom);
-	sort(pList->begin(), pList->end(), RLessThan);
+   std::sort(pList->begin(), pList->end(), RLessThan);
 }
 
 void RomList::RemoveRomFromList(Rom *rom, int mode)
 {
-	vector<Rom *> *pList;
+   std::vector<Rom *> *pList;
+   std::vector<Rom *>::iterator i;
    
    pList = &m_romList;
-
-	vector<Rom *>::iterator i;
 
 	// look to see if the rom is already in the list, we dont want duplicates
 	for (i = pList->begin(); i != pList->end(); i++)
@@ -152,7 +151,7 @@ void RomList::Destroy()
 	m_bLoaded = false;
 	m_iBaseIndex = 0;
 
-	vector<Rom *>::iterator i;
+   std::vector<Rom *>::iterator i;
 
 	for (i = m_romList.begin(); i != m_romList.end(); i++)
 		delete *i;

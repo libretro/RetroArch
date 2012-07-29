@@ -126,7 +126,7 @@ void CMenuMain::Render()
    //FIXME: Width/Height needs to be current Rom texture width/height (or should we just leave it at a fixed size?)
    m_menuMainRomSelectPanel.Render(m_menuMainRomSelectPanel_x, m_menuMainRomSelectPanel_y, m_menuMainRomSelectPanel_w, m_menuMainRomSelectPanel_h);
 
-   dword dwSpacing = 0;
+   int32_t dwSpacing = 0;
 
    for (int i = m_romListBeginRender; i <= m_romListEndRender; i++)
    {

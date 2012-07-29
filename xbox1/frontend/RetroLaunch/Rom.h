@@ -15,8 +15,6 @@
 
 #pragma once
 
-#include "Global.h"
-
 class Rom
 {
 public:

@@ -14,7 +14,6 @@
  */
 
 #pragma once
-#include "Global.h"
 #include "Surface.h"
 
 class CMenuMain
@@ -43,20 +42,20 @@ _c = color,
 CSurface m_menuMainBG;
 int m_menuMainBG_x;
 int m_menuMainBG_y;
-dword m_menuMainBG_w;
-dword m_menuMainBG_h;
+int32_t m_menuMainBG_w;
+int32_t m_menuMainBG_h;
 
 // Rom selector panel with coords
 CSurface m_menuMainRomSelectPanel;
 int m_menuMainRomSelectPanel_x;
 int m_menuMainRomSelectPanel_y;
-dword m_menuMainRomSelectPanel_w;
-dword m_menuMainRomSelectPanel_h;
+int32_t m_menuMainRomSelectPanel_w;
+int32_t m_menuMainRomSelectPanel_h;
 
 // Title coords with color
 int m_menuMainTitle_x;
 int m_menuMainTitle_y;
-dword m_menuMainTitle_c;
+int32_t m_menuMainTitle_c;
 
 // Rom list coords
 int m_menuMainRomListPos_x;

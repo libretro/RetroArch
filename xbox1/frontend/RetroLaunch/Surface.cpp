@@ -81,7 +81,7 @@ bool CSurface::Create(const char *szFilename)
 	return true;
 }
 
-bool CSurface::Create(dword width, dword height)
+bool CSurface::Create(int32_t width, int32_t height)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 	if (m_bLoaded)
@@ -152,7 +152,7 @@ bool CSurface::Render(int x, int y)
 	return Render(x, y, m_imageInfo.Width, m_imageInfo.Height);
 }
 
-bool CSurface::Render(int x, int y, dword w, dword h)
+bool CSurface::Render(int x, int y, int32_t w, int32_t h)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 	if (m_pTexture == NULL || m_pVertexBuffer == NULL || m_bLoaded == false)
@@ -215,7 +215,7 @@ void CSurface::MoveTo(int x, int y)
 	m_y = y;
 }
 
-dword CSurface::GetWidth()
+int32_t CSurface::GetWidth()
 {
 	if (m_pTexture == NULL || m_pVertexBuffer == NULL)
 		return 0;
@@ -223,7 +223,7 @@ dword CSurface::GetWidth()
 	return m_imageInfo.Width;
 }
 
-dword CSurface::GetHeight()
+int32_t CSurface::GetHeight()
 {
 	if (m_pTexture == NULL || m_pVertexBuffer == NULL)
 		return 0;
@@ -231,7 +231,7 @@ dword CSurface::GetHeight()
 	return m_imageInfo.Height;
 }
 
-byte CSurface::GetOpacity()
+int8_t CSurface::GetOpacity()
 {
 	return m_byOpacity;
 }

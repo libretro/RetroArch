@@ -15,7 +15,7 @@
 
 #pragma once
 
-#include "Global.h"
+#include <vector>
 #include "Rom.h"
 
 class RomList
@@ -41,14 +41,14 @@ public:
 
 	int m_iBaseIndex;
 
-	vector<Rom *> m_romList;
+   std::vector<Rom *> m_romList;
 
 private:
 	void Destroy();
 
 private:
 	bool m_bLoaded;
-	string m_szRomPath;
+   std::string m_szRomPath;
 };
 
 extern RomList g_romList;
