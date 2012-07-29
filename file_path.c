@@ -388,8 +388,7 @@ void fill_pathname_base(char *out_dir, const char *in_path, size_t size)
 
 void fill_pathname_basedir(char *out_dir, const char *in_path, size_t size)
 {
-   strncpy(out_dir, in_path, size - 1);
-   out_dir[size - 1] = '\0';
+   rarch_assert(strlcpy(out_dir, in_path, size) < size);
 
    char *base = strrchr(out_dir, '/');
    if (!base)
@@ -397,16 +396,19 @@ void fill_pathname_basedir(char *out_dir, const char *in_path, size_t size)
 
    if (base)
       *base = '\0';
-   else
-      out_dir[0] = '\0';
+   else if (size >= 2)
+   {
+      out_dir[0] = '.';
+      out_dir[1] = '\0';
+   }
 }
 
-void convert_char_to_wchar(wchar_t *out_wchar, const char *in_char, size_t size)
+size_t convert_char_to_wchar(wchar_t *out_wchar, const char *in_char, size_t size)
 {
-   mbstowcs(out_wchar, in_char, size / sizeof(wchar_t));
+   return mbstowcs(out_wchar, in_char, size / sizeof(wchar_t));
 }
 
-void convert_wchar_to_char(char *out_char, const wchar_t * in_wchar, size_t size)
+size_t convert_wchar_to_char(char *out_char, const wchar_t *in_wchar, size_t size)
 {
-   wcstombs(out_char, in_wchar, size / sizeof(char));
+   return wcstombs(out_char, in_wchar, size);
 }
