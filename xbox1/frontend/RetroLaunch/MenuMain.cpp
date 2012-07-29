@@ -42,9 +42,6 @@ CMenuMain g_menuMain;
 
 CMenuMain::CMenuMain()
 {
-   // we think that the rom list is unloaded until we know otherwise
-   m_bRomListLoadedState = false;
-
    struct retro_system_info info;
    retro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
