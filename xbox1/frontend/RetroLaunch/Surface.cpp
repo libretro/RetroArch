@@ -24,7 +24,6 @@ CSurface::CSurface()
 {
 	m_pTexture              = NULL;
 	m_pVertexBuffer         = NULL;
-	m_byOpacity             = 255;
 	m_byR                   = 255;
 	m_byG                   = 255;
 	m_byB                   = 255;
@@ -41,6 +40,7 @@ CSurface::~CSurface()
 bool CSurface::Create(const char *szFilename)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
 	if (m_bLoaded)
 		Destroy();
 
@@ -81,43 +81,6 @@ bool CSurface::Create(const char *szFilename)
 	return true;
 }
 
-bool CSurface::Create(int32_t width, int32_t height)
-{
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-	if (m_bLoaded)
-		Destroy();
-
-   HRESULT g_hResult = d3d->d3d_render_device->CreateTexture(width, height, 1, 0,
-	                                              D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
-	                                              &m_pTexture);
-
-	if (FAILED(g_hResult))
-	{
-		RARCH_ERR("Error occurred during CreateTexture().\n");
-		return false;
-	}
-
-	m_imageInfo.Width = width;
-	m_imageInfo.Height = height;
-	m_imageInfo.Format = D3DFMT_A8R8G8B8;
-
-	// create a vertex buffer for the quad that will display the texture
-   g_hResult = d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats),
-	                                                   D3DUSAGE_WRITEONLY,
-	                                                   D3DFVF_CUSTOMVERTEX,
-	                                                   D3DPOOL_MANAGED, &m_pVertexBuffer);
-	if (FAILED(g_hResult))
-	{
-		RARCH_ERR("Error occurred during CreateVertexBuffer().\n");
-		m_pTexture->Release();
-		return false;
-	}
-
-	m_bLoaded = true;
-
-	return true;
-}
-
 void CSurface::Destroy()
 {
 	// free the vertex buffer
@@ -137,16 +100,6 @@ void CSurface::Destroy()
 	m_bLoaded = false;
 }
 
-bool CSurface::IsLoaded()
-{
-	return m_bLoaded;
-}
-
-bool CSurface::Render()
-{
-	return Render(m_x, m_y);
-}
-
 bool CSurface::Render(int x, int y)
 {
 	return Render(x, y, m_imageInfo.Width, m_imageInfo.Height);
@@ -162,7 +115,7 @@ bool CSurface::Render(int x, int y, int32_t w, int32_t h)
 	float fY = static_cast<float>(y);
 
 	// create the new vertices
-	/*CustomVertex*/DrawVerticeFormats newVerts[] =
+   DrawVerticeFormats newVerts[] =
 	{
 		// x,		y,			z,	  color,					    u ,v
 		{fX,            fY,             0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 0, 0, 0},
@@ -202,41 +155,4 @@ bool CSurface::Render(int x, int y, int32_t w, int32_t h)
 	d3d->d3d_render_device->SetVertexShader(D3DFVF_CUSTOMVERTEX);
 	d3d->d3d_render_device->DrawPrimitive(D3DPT_QUADLIST, 0, 1);
 	return true;
-}
-
-void CSurface::SetOpacity(byte opacity)
-{
-	m_byOpacity = opacity;
-}
-
-void CSurface::MoveTo(int x, int y)
-{
-	m_x = x;
-	m_y = y;
-}
-
-int32_t CSurface::GetWidth()
-{
-	if (m_pTexture == NULL || m_pVertexBuffer == NULL)
-		return 0;
-
-	return m_imageInfo.Width;
-}
-
-int32_t CSurface::GetHeight()
-{
-	if (m_pTexture == NULL || m_pVertexBuffer == NULL)
-		return 0;
-
-	return m_imageInfo.Height;
-}
-
-int8_t CSurface::GetOpacity()
-{
-	return m_byOpacity;
-}
-
-IDirect3DTexture8 *CSurface::GetTexture()
-{
-	return m_pTexture;
 }

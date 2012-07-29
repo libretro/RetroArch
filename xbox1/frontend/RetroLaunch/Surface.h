@@ -27,32 +27,10 @@ public:
 	 * Do functions
 	 */
 	bool Create(const char *szFilename);
-	bool Create(int32_t width, int32_t height);
 	void Destroy();
 
-	bool IsLoaded();
-
-	bool Render();
 	bool Render(int x, int y);
 	bool Render(int x, int y, int32_t w, int32_t h);
-
-	/**
-	 * Set functions
-	 */
-	void SetOpacity(byte opacity);
-
-	void MoveTo(int x, int y);
-
-	/**
-	 * Get functions
-	 */
-	int32_t GetWidth();
-	int32_t GetHeight();
-
-	int8_t GetOpacity();
-
-	IDirect3DTexture8 *GetTexture();
-
 private:
 	/**
 	 * A d3d texture object that will contain the loaded texture
@@ -71,11 +49,6 @@ private:
 	 * The width and height of the texture
 	 */
 	D3DXIMAGE_INFO m_imageInfo;
-
-	/**
-	 * The opacity of the texture
-	 */
-	byte m_byOpacity;
 	byte m_byR, m_byG, m_byB;
 
 	/**
