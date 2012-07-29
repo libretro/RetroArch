@@ -14,23 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef RARCH_CONSOLE_SOUND_H
-#define RARCH_CONSOLE_SOUND_H
+#ifndef RARCH_CONSOLE_RSOUND_H
+#define RARCH_CONSOLE_RSOUND_H
 
-enum
-{
-   SOUND_MODE_NORMAL,
-#ifdef HAVE_RSOUND
-   SOUND_MODE_RSOUND,
-#endif
-#ifdef HAVE_HEADSET
-   SOUND_MODE_HEADSET,
-#endif
-};
-
-#ifdef HAVE_RSOUND
 bool rarch_console_rsound_start(const char *ip);
 void rarch_console_rsound_stop(void);
-#endif
 
 #endif

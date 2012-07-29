@@ -31,7 +31,7 @@
 #include "../../console/rarch_console_input.h"
 #include "../../console/rarch_console_config.h"
 #include "../../console/rarch_console_settings.h"
-#include "../../console/rarch_console_sound.h"
+#include "../../console/rarch_console_rsound.h"
 #include "../../console/rarch_console_video.h"
 
 #ifdef HAVE_ZLIB

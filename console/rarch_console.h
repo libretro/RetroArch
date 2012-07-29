@@ -46,6 +46,17 @@ enum
    MODE_EXIT
 };
 
+enum
+{
+   SOUND_MODE_NORMAL,
+#ifdef HAVE_RSOUND
+   SOUND_MODE_RSOUND,
+#endif
+#ifdef HAVE_HEADSET
+   SOUND_MODE_HEADSET,
+#endif
+};
+
 #define MAXIMUM_PATH 512
 
 typedef struct

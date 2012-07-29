@@ -36,7 +36,9 @@ CONSOLE EXTENSIONS
 #include "../rarch_console_exec.c"
 #endif
 
-#include "../rarch_console_sound.c"
+#ifdef HAVE_RSOUND
+#include "../rarch_console_rsound.c"
+#endif
 
 #ifdef HAVE_CONFIGFILE
 #include "../rarch_console_config.c"

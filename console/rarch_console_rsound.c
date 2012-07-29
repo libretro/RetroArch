@@ -16,9 +16,8 @@
 
 #include <stdint.h>
 
-#include "rarch_console_sound.h"
+#include "rarch_console_rsound.h"
 
-#ifdef HAVE_RSOUND
 bool rarch_console_rsound_start(const char *ip)
 {
    strlcpy(g_settings.audio.driver, "rsound", sizeof(g_settings.audio.driver));
@@ -49,4 +48,3 @@ void rarch_console_rsound_stop(void)
       init_audio();
    }
 }
-#endif
