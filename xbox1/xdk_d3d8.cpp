@@ -455,24 +455,24 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       char buf[128], buf2[128], buf_fps_last[128];
       bool ret = false;
       sprintf(buf, "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
-      rarch_convert_char_to_wchar(strw_buffer, buf, sizeof(strw_buffer));
+      convert_char_to_wchar(strw_buffer, buf, sizeof(strw_buffer));
       d3d->debug_font->TextOut(d3d->pFrontBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 50 );
       d3d->debug_font->TextOut(d3d->pBackBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 50 );
 
       if(ret = gfx_window_title(buf2, sizeof(buf2)) || sizeof(buf_fps_last))
       {
          if(ret)
-	 {
+         {
             sprintf(buf_fps_last, buf2);
-	    rarch_convert_char_to_wchar(strw_buffer, buf2, sizeof(strw_buffer));
-	 }
+            convert_char_to_wchar(strw_buffer, buf2, sizeof(strw_buffer));
+         }
          else if(buf_fps_last)
-            rarch_convert_char_to_wchar(strw_buffer, buf_fps_last, sizeof(strw_buffer));
-
-	 d3d->debug_font->TextOut(d3d->pFrontBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 70 );
-	 d3d->debug_font->TextOut(d3d->pBackBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 70 );
-	 d3d->pFrontBuffer->Release();
-	 d3d->pBackBuffer->Release();
+            convert_char_to_wchar(strw_buffer, buf_fps_last, sizeof(strw_buffer));
+         
+         d3d->debug_font->TextOut(d3d->pFrontBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 70 );
+         d3d->debug_font->TextOut(d3d->pBackBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 70 );
+         d3d->pFrontBuffer->Release();
+         d3d->pBackBuffer->Release();
       }
    }
 

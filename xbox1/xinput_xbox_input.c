@@ -131,10 +131,18 @@ static void xinput_input_poll(void *data)
             real_state[i] |= ((state[i].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A]) ? XINPUT1_GAMEPAD_A : 0);
             real_state[i] |= ((state[i].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_Y]) ? XINPUT1_GAMEPAD_Y : 0);
             real_state[i] |= ((state[i].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X]) ? XINPUT1_GAMEPAD_X : 0);
-            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) || (state[i].Gamepad.sThumbLX < -DEADZONE) ? XINPUT1_GAMEPAD_DPAD_LEFT : 0);
-            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) || (state[i].Gamepad.sThumbLX > DEADZONE) ? XINPUT1_GAMEPAD_DPAD_RIGHT : 0);
-            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) || (state[i].Gamepad.sThumbLY > DEADZONE) ? XINPUT1_GAMEPAD_DPAD_UP : 0);
-            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN)|| (state[i].Gamepad.sThumbLY < -DEADZONE) ? XINPUT1_GAMEPAD_DPAD_DOWN : 0);
+            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? XINPUT1_GAMEPAD_DPAD_LEFT : 0);
+            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? XINPUT1_GAMEPAD_DPAD_RIGHT : 0);
+            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? XINPUT1_GAMEPAD_DPAD_UP : 0);
+            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? XINPUT1_GAMEPAD_DPAD_DOWN : 0);
+            real_state[i] |= ((state[i].Gamepad.sThumbLX < -DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_LEFT_MASK : 0);
+            real_state[i] |= ((state[i].Gamepad.sThumbLX > DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_RIGHT_MASK : 0);
+            real_state[i] |= ((state[i].Gamepad.sThumbLY > DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_UP_MASK : 0);
+            real_state[i] |= ((state[i].Gamepad.sThumbLY < -DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_DOWN_MASK : 0);
+            real_state[i] |= ((state[i].Gamepad.sThumbRX < -DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_LEFT_MASK : 0);
+            real_state[i] |= ((state[i].Gamepad.sThumbRX > DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK : 0);
+            real_state[i] |= ((state[i].Gamepad.sThumbRY > DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_UP_MASK : 0);
+            real_state[i] |= ((state[i].Gamepad.sThumbRY < -DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_DOWN_MASK : 0);
             real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_START) ? XINPUT1_GAMEPAD_START : 0);
             real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? XINPUT1_GAMEPAD_BACK : 0);
             real_state[i] |= ((state[i].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER]) ? XINPUT1_GAMEPAD_LEFT_TRIGGER : 0);
@@ -197,8 +205,28 @@ static void xinput_set_default_keybind_lut(unsigned device, unsigned port)
 static void xinput_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
 {
    (void)device;
-   (void)map_dpad_enum;
-   (void)controller_id;
+   
+   switch(map_dpad_enum)
+   {
+      case DPAD_EMULATION_NONE:
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[XDK_DEVICE_ID_JOYPAD_UP].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[XDK_DEVICE_ID_JOYPAD_DOWN].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[XDK_DEVICE_ID_JOYPAD_LEFT].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[XDK_DEVICE_ID_JOYPAD_RIGHT].joykey;
+         break;
+      case DPAD_EMULATION_LSTICK:
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[XDK_DEVICE_ID_LSTICK_UP_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[XDK_DEVICE_ID_LSTICK_DOWN_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[XDK_DEVICE_ID_LSTICK_LEFT_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[XDK_DEVICE_ID_LSTICK_RIGHT_DPAD].joykey;
+         break;
+      case DPAD_EMULATION_RSTICK:
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[XDK_DEVICE_ID_RSTICK_UP_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[XDK_DEVICE_ID_RSTICK_DOWN_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[XDK_DEVICE_ID_RSTICK_LEFT_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[XDK_DEVICE_ID_RSTICK_RIGHT_DPAD].joykey;
+         break;
+   }
 }
 
 static void* xinput_input_init(void)
