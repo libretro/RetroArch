@@ -235,7 +235,7 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
                break;
 #ifdef HAVE_HDD_CACHE_PARTITION
             case ZIP_EXTRACT_TO_CACHE_DIR:
-	       snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to cache partition.");
+               snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to cache partition.");
                break;
 #endif
          }
@@ -358,14 +358,7 @@ void rarch_settings_set_default (const input_driver_t *input)
    g_console.mode_switch = MODE_MENU;
    g_console.screen_orientation = ORIENTATION_NORMAL;
    g_console.current_resolution_id = 0;
-#if defined(_XBOX360)
-   //Ugly but necessary hack
-   strlcpy(g_console.default_rom_startup_dir, "game:", sizeof(g_console.default_rom_startup_dir));
-#elif defined(_XBOX1)
-   strlcpy(g_console.default_rom_startup_dir, "D:", sizeof(g_console.default_rom_startup_dir));
-#else
-   strlcpy(g_console.default_rom_startup_dir, default_paths.filesystem_root_dir, sizeof(g_console.default_rom_startup_dir));
-#endif
+   strlcpy(g_console.default_rom_startup_dir, default_paths.filebrowser_startup_dir, sizeof(g_console.default_rom_startup_dir));
    strlcpy(g_console.default_savestate_dir, default_paths.savestate_dir, sizeof(g_console.default_savestate_dir));
    strlcpy(g_console.default_sram_dir, default_paths.sram_dir, sizeof(g_console.default_sram_dir));
    g_console.aspect_ratio_index = 0;
