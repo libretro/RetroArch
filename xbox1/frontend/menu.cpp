@@ -108,7 +108,7 @@ static void browser_render(filebrowser_t *b, float current_x, float current_y, f
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    unsigned file_count = b->current_dir.list->size;
-   int current_index, page_number, page_base, i;
+   unsigned current_index, page_number, page_base, i;
    float currentX, currentY, ySpacing;
 
    current_index = b->current_dir.ptr;
