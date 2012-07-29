@@ -147,8 +147,6 @@ int main(int argc, char *argv[])
    video_null.start();
 #endif
 
-   rarch_input_set_default_keybind_names_for_emulator();
-
    menu_init();
 
 begin_loop:

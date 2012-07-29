@@ -152,35 +152,3 @@ const char *rarch_input_get_default_keybind_name(unsigned id)
 }
 
 #endif
-
-/* TODO: Hackish, try to do this in a cleaner, more extensible and less hardcoded way */
-
-void rarch_input_set_default_keybind_names_for_emulator(void)
-{
-   struct retro_system_info info;
-#ifdef ANDROID
-   pretro_get_system_info(&info);
-#else
-   retro_get_system_info(&info);
-#endif
-   const char *id = info.library_name ? info.library_name : "Unknown";
-
-   // Genesis Plus GX/Next
-   if (strstr(id, "Genesis Plus GX"))
-   {
-      strlcpy(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_B],
-            "B button", sizeof(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_B]));
-      strlcpy(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_A],
-            "C button", sizeof(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_A]));
-      strlcpy(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_X],
-            "Y button", sizeof(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_X]));
-      strlcpy(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_Y],
-            "A button", sizeof(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_Y]));
-      strlcpy(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_L],
-            "X button", sizeof(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_L]));
-      strlcpy(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_R],
-            "Z button", sizeof(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_R]));
-      strlcpy(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_SELECT],
-            "Mode button", sizeof(rarch_default_libretro_keybind_name_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]));
-   }
-}
