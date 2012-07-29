@@ -28,13 +28,13 @@ CIoSupport::~CIoSupport()
 // szDrive e.g. "D:"
 // szDevice e.g. "Cdrom0" or "Harddisk0\Partition6"
 
-HRESULT CIoSupport::Mount(CHAR* szDrive, CHAR* szDevice)
+HRESULT CIoSupport::Mount(char *szDrive, char *szDevice)
 {
-	CHAR szSourceDevice[48];
-	CHAR szDestinationDrive[16];
+	char szSourceDevice[48];
+	char szDestinationDrive[16];
 
-	sprintf(szSourceDevice, "\\Device\\%s", szDevice);
-	sprintf(szDestinationDrive, "\\??\\%s", szDrive);
+	snprintf(szSourceDevice, sizeof(szSourceDevice), "\\Device\\%s", szDevice);
+	snprintf(szDestinationDrive, sizeof(szDestinationDrive), "\\??\\%s", szDrive);
 
 	STRING DeviceName =
 	{
@@ -59,10 +59,10 @@ HRESULT CIoSupport::Mount(CHAR* szDrive, CHAR* szDevice)
 
 // szDrive e.g. "D:"
 
-HRESULT CIoSupport::Unmount(CHAR* szDrive)
+HRESULT CIoSupport::Unmount(char *szDrive)
 {
 	char szDestinationDrive[16];
-	sprintf(szDestinationDrive, "\\??\\%s", szDrive);
+	snprintf(szDestinationDrive, sizeof(szDestinationDrive), "\\??\\%s", szDrive);
 
 	STRING LinkName =
 	{
@@ -76,14 +76,10 @@ HRESULT CIoSupport::Unmount(CHAR* szDrive)
 	return S_OK;
 }
 
-
-
-
-
-HRESULT CIoSupport::Remount(CHAR* szDrive, CHAR* szDevice)
+HRESULT CIoSupport::Remount(char *szDrive, char *szDevice)
 {
-	CHAR szSourceDevice[48];
-	sprintf(szSourceDevice, "\\Device\\%s", szDevice);
+	char szSourceDevice[48];
+	snprintf(szSourceDevice, sizeof(szSourceDevice), "\\Device\\%s", szDevice);
 
 	Unmount(szDrive);
 
@@ -117,12 +113,12 @@ HRESULT CIoSupport::Remount(CHAR* szDrive, CHAR* szDevice)
 	return S_OK;
 }
 
-HRESULT CIoSupport::Remap(CHAR* szMapping)
+HRESULT CIoSupport::Remap(char *szMapping)
 {
 	char szMap[32];
 	strlcpy(szMap, szMapping, sizeof(szMap));
 
-	char* pComma = strstr(szMap, ",");
+	char *pComma = strstr(szMap, ",");
 	if (pComma)
 	{
 		*pComma = 0;

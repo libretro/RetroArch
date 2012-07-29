@@ -107,8 +107,8 @@ static HRESULT FindMediaFile( char *strPath, const char *strFilename, size_t str
 
     // Check for the ':' character to see if the filename is a fully
     // qualified path. If not, pre-pend the media directory
-    if( strFilename[1] != ':' )
-        sprintf( strPath, "%s%s", g_strMediaPath, strFilename );
+    if(strFilename[1] != ':')
+        snprintf(strPath, strPathsize, "%s%s", g_strMediaPath, strFilename);
 
     // Try to open the file
     HANDLE hFile = CreateFile( strPath, GENERIC_READ, FILE_SHARE_READ, NULL, 

@@ -28,11 +28,11 @@ public:
 	CIoSupport();
 	virtual ~CIoSupport();
 
-	HRESULT Mount(CHAR* szDrive, CHAR* szDevice);
-	HRESULT Unmount(CHAR* szDrive);
+	HRESULT Mount(char *szDrive, char *szDevice);
+	HRESULT Unmount(char *szDrive);
 
-	HRESULT Remount(CHAR* szDrive, CHAR* szDevice);
-	HRESULT Remap(CHAR* szMapping);
+	HRESULT Remount(char *szDrive, char *szDevice);
+	HRESULT Remap(char *szMapping);
 
 	DWORD	GetTrayState();
 	HRESULT EjectTray();
