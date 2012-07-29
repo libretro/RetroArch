@@ -44,7 +44,9 @@ CONSOLE EXTENSIONS
 #include "../rarch_console_config.c"
 #endif
 
+#ifdef HAVE_DEFAULT_RETROPAD_INPUT
 #include "../rarch_console_input.c"
+#endif
 
 #ifdef HAVE_ZLIB
 #include "../rarch_console_rzlib.c"

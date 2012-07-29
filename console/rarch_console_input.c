@@ -49,8 +49,6 @@ char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][256] = {
    "RetroPad Button R3",         /* RETRO_DEVICE_ID_JOYPAD_R3     */
 };
 
-#ifdef HAVE_DEFAULT_RETROPAD_INPUT
-
 extern const struct platform_bind platform_keys[];
 extern const unsigned int platform_keys_size;
 
@@ -150,5 +148,3 @@ const char *rarch_input_get_default_keybind_name(unsigned id)
 {
    return rarch_default_libretro_keybind_name_lut[id];
 }
-
-#endif
