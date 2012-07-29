@@ -120,7 +120,7 @@ HRESULT CIoSupport::Remount(CHAR* szDrive, CHAR* szDevice)
 HRESULT CIoSupport::Remap(CHAR* szMapping)
 {
 	char szMap[32];
-	strcpy(szMap, szMapping );
+	strlcpy(szMap, szMapping, sizeof(szMap));
 
 	char* pComma = strstr(szMap, ",");
 	if (pComma)

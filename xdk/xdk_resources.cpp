@@ -92,7 +92,8 @@ static __forceinline void FreeContiguousMemory( void* pData )
 
 #ifdef _XBOX1
 char g_strMediaPath[512] = "D:\\Media\\";
-static HRESULT FindMediaFile( char *strPath, const char *strFilename )
+
+static HRESULT FindMediaFile( char *strPath, const char *strFilename, size_t strPathsize)
 {
     // Check for valid arguments
     if( strFilename == NULL || strPath == NULL )
@@ -102,7 +103,7 @@ static HRESULT FindMediaFile( char *strPath, const char *strFilename )
     }
 
     // Default path is the filename itself as a fully qualified path
-    strcpy( strPath, strFilename );
+    strlcpy( strPath, strFilename, strPathsize);
 
     // Check for the ':' character to see if the filename is a fully
     // qualified path. If not, pre-pend the media directory
@@ -115,11 +116,7 @@ static HRESULT FindMediaFile( char *strPath, const char *strFilename )
 
     if( hFile == INVALID_HANDLE_VALUE )
     {
-        // Return error
-        CHAR strBuffer[80];
-        sprintf( strBuffer, "FindMediaFile(): Could not find file [%s]\n", 
-                            strFilename );
-        RARCH_ERR( strBuffer );
+        RARCH_ERR("FindMediaFile(): Could not find file.\n");
         return 0x82000004;
     }
 
@@ -143,7 +140,7 @@ HRESULT PackedResource::Create( const char *strFilename )
 
     // Find the media file
     CHAR strResourcePath[512];
-    if( FAILED( FindMediaFile( strResourcePath, strFilename ) ) )
+    if( FAILED(FindMediaFile(strResourcePath, strFilename, sizeof(strResourcePath))))
         return E_FAIL;
     else
         strFilename = strResourcePath;
