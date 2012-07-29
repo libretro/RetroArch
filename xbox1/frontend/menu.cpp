@@ -237,8 +237,6 @@ int menu_init(void)
 	strlcpy(browser.extensions, rarch_console_get_rom_ext(), sizeof(browser.extensions));
    filebrowser_set_root(&browser, g_console.default_rom_startup_dir);
    filebrowser_iterate(&browser, FILEBROWSER_ACTION_RESET);
-
-   RARCH_LOG("CMenuMain::Create().\n");
    
    width  = d3d->d3dpp.BackBufferWidth;
 
