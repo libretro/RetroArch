@@ -24,7 +24,6 @@ enum
    INPUT_PRESET_FILE
 };
 
-void rarch_config_create_default(const char * conf_name);
 void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool find_libretro_path);
 void rarch_config_save(const char * conf_name);
 

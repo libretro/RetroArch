@@ -22,21 +22,12 @@
 #include "rarch_console_config.h"
 #include "rarch_console_libretro_mgmt.h"
 
-void rarch_config_create_default(const char * conf_name)
-{
-   FILE * f;
-   RARCH_WARN("Config file \"%s\" doesn't exist. Creating...\n", conf_name);
-   f = fopen(conf_name, "w");
-   fclose(f);
-}
-
 void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool find_libretro_path)
 {
-   if(!path_file_exists(conf_name))
-      rarch_config_create_default(conf_name);
-   else
-   {
       config_file_t * conf = config_file_new(conf_name);
+
+      if(!conf)
+         return;
 
       // g_settings
 
@@ -113,19 +104,14 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       // g_extern
       CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
       CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
-   }
 }
 
 void rarch_config_save(const char * conf_name)
 {
-   if(!path_file_exists(conf_name))
-      rarch_config_create_default(conf_name);
-   else
-   {
       config_file_t * conf = config_file_new(conf_name);
 
-      if(conf == NULL)
-         conf = config_file_new(NULL);
+      if(!conf)
+         return;
 
       // g_settings
       config_set_string(conf, "libretro_path", g_settings.libretro);
@@ -191,5 +177,4 @@ void rarch_config_save(const char * conf_name)
          RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", conf_name);
 
       free(conf);
-   }
 }

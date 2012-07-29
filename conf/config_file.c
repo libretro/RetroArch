@@ -43,6 +43,12 @@
 #endif
 #endif
 
+#ifdef RARCH_CONSOLE
+#define CREATE_FILE_IF_NOT_EXISTS 1
+#else
+#define CREATE_FILE_IF_NOT_EXISTS 0
+#endif
+
 #define MAX_INCLUDE_DEPTH 16
 
 struct entry_list
@@ -69,7 +75,7 @@ struct config_file
    struct include_list *includes;
 };
 
-static config_file_t *config_file_new_internal(const char *path, unsigned depth);
+static config_file_t *config_file_new_internal(const char *path, unsigned depth, unsigned create_if_not_exists);
 
 static char *getaline(FILE *file)
 {
@@ -249,7 +255,7 @@ static void add_sub_conf(config_file_t *conf, char *line)
    }
 #endif
 
-   config_file_t *sub_conf = config_file_new_internal(real_path, conf->include_depth + 1);
+   config_file_t *sub_conf = config_file_new_internal(real_path, conf->include_depth + 1, CREATE_FILE_IF_NOT_EXISTS);
    if (!sub_conf)
    {
       free(path);
@@ -314,7 +320,7 @@ static bool parse_line(config_file_t *conf, struct entry_list *list, char *line)
    return true;
 }
 
-static config_file_t *config_file_new_internal(const char *path, unsigned depth)
+static config_file_t *config_file_new_internal(const char *path, unsigned depth, unsigned create_if_not_exists)
 {
    struct config_file *conf = (struct config_file*)calloc(1, sizeof(*conf));
    if (!conf)
@@ -333,7 +339,15 @@ static config_file_t *config_file_new_internal(const char *path, unsigned depth)
    conf->include_depth = depth;
 
    FILE *file = fopen(path, "r");
-   if (!file)
+
+   if (!file && create_if_not_exists)
+   {
+      file = fopen(path, "w");
+      fclose(file);
+      file = fopen(path, "r"); // try again to open
+   }
+
+   if(!file)
    {
       free(conf->path);
       free(conf);
@@ -374,7 +388,7 @@ static config_file_t *config_file_new_internal(const char *path, unsigned depth)
 
 config_file_t *config_file_new(const char *path)
 {
-   return config_file_new_internal(path, 0);
+   return config_file_new_internal(path, 0, CREATE_FILE_IF_NOT_EXISTS);
 }
 
 void config_file_free(config_file_t *conf)
