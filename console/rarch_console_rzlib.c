@@ -32,14 +32,14 @@ static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir,
    FILE *file_out = NULL;
 
    unz_file_info file_info;
-   int err = unzGetCurrentFileInfo(uf,
+   int ret = unzGetCurrentFileInfo(uf,
          &file_info, filename_inzip, sizeof(filename_inzip),
          NULL, 0, NULL, 0);
 
-   if (err != UNZ_OK)
+   if (ret != UNZ_OK)
    {
-      RARCH_ERR("Error %d while trying to get ZIP file information.\n", err);
-      return err;
+      RARCH_ERR("Error %d while trying to get ZIP file information.\n", ret);
+      return ret;
    }
 
    size_t size_buf = WRITEBUFFERSIZE;
@@ -63,9 +63,9 @@ static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir,
 #endif
    }
 
-   err = unzOpenCurrentFile(uf);
-   if (err != UNZ_OK)
-      RARCH_ERR("Error %d while trying to open ZIP file.\n", err);
+   ret = unzOpenCurrentFile(uf);
+   if (ret != UNZ_OK)
+      RARCH_ERR("Error %d while trying to open ZIP file.\n", ret);
    else
    {
       /* success */
@@ -81,39 +81,39 @@ static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir,
 
       do
       {
-         err = unzReadCurrentFile(uf, buf, size_buf);
-         if (err < 0)
+         ret = unzReadCurrentFile(uf, buf, size_buf);
+         if (ret < 0)
          {
-            RARCH_ERR("Error %d while reading from ZIP file.\n", err);
+            RARCH_ERR("Error %d while reading from ZIP file.\n", ret);
             break;
          }
 
-         if (err > 0)
+         if (ret > 0)
          {
-            if (fwrite(buf, err, 1, file_out) != 1)
+            if (fwrite(buf, ret, 1, file_out) != 1)
             {
                RARCH_ERR("Error while extracting file(s) from ZIP.\n");
-               err = UNZ_ERRNO;
+               ret = UNZ_ERRNO;
                break;
             }
          }
-      }while (err > 0);
+      }while (ret > 0);
 
       if (file_out)
          fclose(file_out);
    }
 
-   if (err == UNZ_OK)
+   if (ret == UNZ_OK)
    {
-      err = unzCloseCurrentFile (uf);
-      if (err != UNZ_OK)
-         RARCH_ERR("Error %d while trying to close ZIP file.\n", err);
+      ret = unzCloseCurrentFile (uf);
+      if (ret != UNZ_OK)
+         RARCH_ERR("Error %d while trying to close ZIP file.\n", ret);
    }
    else
       unzCloseCurrentFile(uf); 
 
    free(buf);
-   return err;
+   return ret;
 }
 
 int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *first_file, size_t first_file_size, unsigned extract_zip_mode)
@@ -123,9 +123,9 @@ int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *f
    unzFile uf = unzOpen(zip_path); 
 
    unz_global_info gi;
-   int err = unzGetGlobalInfo(uf, &gi);
-   if (err != UNZ_OK)
-      RARCH_ERR("Error %d while trying to get ZIP file global info.\n",err);
+   int ret = unzGetGlobalInfo(uf, &gi);
+   if(ret != UNZ_OK)
+      RARCH_ERR("Error %d while trying to get ZIP file global info.\n", ret);
 
    for (unsigned i = 0; i < gi.number_entry; i++)
    {
@@ -156,10 +156,10 @@ int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *f
 
       if ((i + 1) < gi.number_entry)
       {
-         err = unzGoToNextFile(uf);
-         if (err != UNZ_OK)
+         ret = unzGoToNextFile(uf);
+         if (ret != UNZ_OK)
          {
-            RARCH_ERR("Error %d while trying to go to the next file in the ZIP archive.\n",err);
+            RARCH_ERR("Error %d while trying to go to the next file in the ZIP archive.\n", ret);
             break;
          }
       }
