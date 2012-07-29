@@ -1,52 +1,40 @@
-/**
- * Surreal 64 Launcher (C) 2003
- *
- * This program is free software; you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation; either version 2 of the License, or (at your option) any later
- * version. This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details. You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. To contact the
- * authors: email: buttza@hotmail.com, lantus@lantus-x.com
- *
- * Additional code and cleanups: Surreal64 CE Team (http://www.emuxtras.net)
- */
+/* RetroArch - A frontend for libretro.
+* Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+* Copyright (C) 2011-2012 - Daniel De Matteis
+*
+* RetroArch is free software: you can redistribute it and/or modify it under the terms
+* of the GNU General Public License as published by the Free Software Found-
+* ation, either version 3 of the License, or (at your option) any later version.
+*
+* RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+* PURPOSE. See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with RetroArch.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "Surface.h"
 
-#include "../../../general.h"
 #include "../../xdk_d3d8.h"
 
-CSurface::CSurface()
-{
-	m_pTexture              = NULL;
-	m_pVertexBuffer         = NULL;
-	m_byR                   = 255;
-	m_byG                   = 255;
-	m_byB                   = 255;
-	m_bLoaded               = false;
-	m_x                     = 0;
-	m_y                     = 0;
-}
-
-CSurface::~CSurface()
-{
-	Destroy();
-}
-
-bool CSurface::Create(const char *szFilename)
+bool d3d_surface_new(d3d_surface_t *surface, const char *filename)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
-	if (m_bLoaded)
-		Destroy();
+	surface->m_pTexture              = NULL;
+	surface->m_pVertexBuffer         = NULL;
+	surface->m_byR                   = 255;
+	surface->m_byG                   = 255;
+	surface->m_byB                   = 255;
+	surface->m_bLoaded               = false;
+	surface->m_x                     = 0;
+	surface->m_y                     = 0;
 
-	HRESULT g_hResult = D3DXCreateTextureFromFileExA(d3d->d3d_render_device,                    // d3d device
-	                                         szFilename,                              // filename
-	                                         D3DX_DEFAULT, D3DX_DEFAULT,              // width/height
+	HRESULT ret = D3DXCreateTextureFromFileExA(d3d->d3d_render_device,                // d3d device
+	                                         filename,                                // filename
+	                                         D3DX_DEFAULT,                            // width
+                                            D3DX_DEFAULT,                            // height
 	                                         D3DX_DEFAULT,                            // mipmaps
 	                                         0,                                       // usage
 	                                         D3DFMT_A8R8G8B8,                         // format
@@ -54,61 +42,56 @@ bool CSurface::Create(const char *szFilename)
 	                                         D3DX_DEFAULT,                            // texture filter
 	                                         D3DX_DEFAULT,                            // mipmapping
 	                                         0,                                       // colorkey
-	                                         &m_imageInfo,                            // image info
+	                                         &surface->m_imageInfo,                   // image info
 	                                         NULL,                                    // pallete
-	                                         &m_pTexture);                            // texture
+	                                         &surface->m_pTexture);                   // texture
 
-	if (FAILED(g_hResult))
+	if (FAILED(ret))
 	{
 		RARCH_ERR("Error occurred during D3DXCreateTextureFromFileExA().\n");
 		return false;
 	}
 
 	// create a vertex buffer for the quad that will display the texture
-   g_hResult = d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats),
-	                                                   D3DUSAGE_WRITEONLY,
-	                                                   D3DFVF_CUSTOMVERTEX,
-	                                                   D3DPOOL_MANAGED, &m_pVertexBuffer);
-	if (FAILED(g_hResult))
+   ret = d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats),
+      D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &surface->m_pVertexBuffer);
+
+	if (FAILED(ret))
 	{
 		RARCH_ERR("Error occurred during CreateVertexBuffer().\n");
-		m_pTexture->Release();
+		surface->m_pTexture->Release();
 		return false;
 	}
 
-	m_bLoaded = true;
+	surface->m_bLoaded = true;
 
 	return true;
 }
 
-void CSurface::Destroy()
+void d3d_surface_free(d3d_surface_t *surface)
 {
 	// free the vertex buffer
-	if (m_pVertexBuffer)
+	if (surface->m_pVertexBuffer)
 	{
-		m_pVertexBuffer->Release();
-		m_pVertexBuffer = NULL;
+		surface->m_pVertexBuffer->Release();
+		surface->m_pVertexBuffer = NULL;
 	}
 
 	// free the texture
-	if (m_pTexture)
+	if (surface->m_pTexture)
 	{
-		m_pTexture->Release();
-		m_pTexture = NULL;
+		surface->m_pTexture->Release();
+		surface->m_pTexture = NULL;
 	}
 
-	m_bLoaded = false;
+	surface->m_bLoaded = false;
 }
 
-bool CSurface::Render(int x, int y)
-{
-	return Render(x, y, m_imageInfo.Width, m_imageInfo.Height);
-}
-
-bool CSurface::Render(int x, int y, int32_t w, int32_t h)
+bool d3d_surface_render(d3d_surface_t *surface, int x, int y, int32_t w, int32_t h)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-	if (m_pTexture == NULL || m_pVertexBuffer == NULL || m_bLoaded == false)
+
+	if (surface->m_pTexture == NULL || surface->m_pVertexBuffer == NULL || surface->m_bLoaded == false)
 		return false;
 
 	float fX = static_cast<float>(x);
@@ -117,28 +100,28 @@ bool CSurface::Render(int x, int y, int32_t w, int32_t h)
 	// create the new vertices
    DrawVerticeFormats newVerts[] =
 	{
-		// x,		y,			z,	  color,					    u ,v
-		{fX,            fY,             0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 0, 0, 0},
-		{fX + w,        fY,             0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 0, 1, 0},
-		{fX + w,        fY + h,         0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 0, 1, 1},
-		{fX,            fY + h,         0.0f, /*D3DCOLOR_ARGB(m_byOpacity, m_byR, m_byG, m_byB),*/ 0, 0, 1}
+		// x,           y,              z,	   color, u ,v
+		{fX,            fY,             0.0f,  0,     0, 0},
+		{fX + w,        fY,             0.0f,  0,     1, 0},
+		{fX + w,        fY + h,         0.0f,  0,     1, 1},
+		{fX,            fY + h,         0.0f,  0,     0, 1}
 	};
 
 	// load the existing vertices
-	/*CustomVertex*/DrawVerticeFormats *pCurVerts;
+   DrawVerticeFormats *pCurVerts;
 
-	HRESULT g_hResult = m_pVertexBuffer->Lock(0, 0, (byte **)&pCurVerts, 0);
+	HRESULT ret = surface->m_pVertexBuffer->Lock(0, 0, (unsigned char**)&pCurVerts, 0);
 
-	if (FAILED(g_hResult))
+	if (FAILED(ret))
 	{
 		RARCH_ERR("Error occurred during m_pVertexBuffer->Lock().\n");
 		return false;
 	}
+
 	// copy the new verts over the old verts
 	memcpy(pCurVerts, newVerts, 4 * sizeof(DrawVerticeFormats));
 
-	m_pVertexBuffer->Unlock();
-
+	surface->m_pVertexBuffer->Unlock();
 
    d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 	d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
@@ -150,9 +133,10 @@ bool CSurface::Render(int x, int y, int32_t w, int32_t h)
 	d3d->d3d_render_device->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
 
 	// draw the quad
-	d3d->d3d_render_device->SetTexture(0, m_pTexture);
-	d3d->d3d_render_device->SetStreamSource(0, m_pVertexBuffer, sizeof(DrawVerticeFormats));
+	d3d->d3d_render_device->SetTexture(0, surface->m_pTexture);
+	d3d->d3d_render_device->SetStreamSource(0, surface->m_pVertexBuffer, sizeof(DrawVerticeFormats));
 	d3d->d3d_render_device->SetVertexShader(D3DFVF_CUSTOMVERTEX);
 	d3d->d3d_render_device->DrawPrimitive(D3DPT_QUADLIST, 0, 1);
+
 	return true;
 }

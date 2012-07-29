@@ -34,9 +34,9 @@
 filebrowser_t browser;
 
 // Rom selector panel with coords
-CSurface m_menuMainRomSelectPanel;
+d3d_surface_t m_menuMainRomSelectPanel;
 // Background image with coords
-CSurface m_menuMainBG;
+d3d_surface_t m_menuMainBG;
 
 // Rom list coords
 int m_menuMainRomListPos_x;
@@ -54,7 +54,8 @@ static uint16_t old_input_st = 0;
 static void display_menubar(void)
 {
    //Render background image
-   m_menuMainBG.Render(MENU_MAIN_BG_X, MENU_MAIN_BG_Y);
+   d3d_surface_render(&m_menuMainBG, MENU_MAIN_BG_X, MENU_MAIN_BG_Y,
+   m_menuMainBG.m_imageInfo.Width, m_menuMainBG.m_imageInfo.Height);
 }
 
 typedef enum {
@@ -137,7 +138,7 @@ static void browser_render(filebrowser_t *b, float current_x, float current_y, f
       //check if this is the currently selected file
       const char *current_pathname = filebrowser_get_current_path(b);
       if(strcmp(current_pathname, b->current_dir.list->elems[i].data) == 0)
-         m_menuMainRomSelectPanel.Render(currentX, currentY, ROM_PANEL_WIDTH, ROM_PANEL_HEIGHT);
+         d3d_surface_render(&m_menuMainRomSelectPanel, currentX, currentY, ROM_PANEL_WIDTH, ROM_PANEL_HEIGHT);
 
       convert_char_to_wchar(rom_basename_w, rom_basename, sizeof(rom_basename_w));
       d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
@@ -254,19 +255,19 @@ int menu_init(void)
    // Load background image
    if(width == 640)
    {
-      m_menuMainBG.Create("D:\\Media\\menuMainBG.png");
+      d3d_surface_new(&m_menuMainBG, "D:\\Media\\menuMainBG.png");
       m_menuMainRomListPos_x = 100;
       m_menuMainRomListPos_y = 100;
    }
    else if(width == 1280)
    {
-      m_menuMainBG.Create("D:\\Media\\menuMainBG_720p.png");
+      d3d_surface_new(&m_menuMainBG, "D:\\Media\\menuMainBG_720p.png");
       m_menuMainRomListPos_x = 400;
       m_menuMainRomListPos_y = 150;
    }
 
    // Load rom selector panel
-   m_menuMainRomSelectPanel.Create("D:\\Media\\menuMainRomSelectPanel.png");
+   d3d_surface_new(&m_menuMainRomSelectPanel, "D:\\Media\\menuMainRomSelectPanel.png");
 
    g_console.mode_switch = MODE_MENU;
 
@@ -276,6 +277,8 @@ int menu_init(void)
 void menu_free(void)
 {
    filebrowser_free(&browser);
+   d3d_surface_free(&m_menuMainBG);
+   d3d_surface_free(&m_menuMainRomSelectPanel);
 }
 
 void menu_loop(void)
