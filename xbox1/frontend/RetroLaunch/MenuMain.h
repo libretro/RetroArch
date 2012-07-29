@@ -40,37 +40,12 @@ _c = color,
 
 // Background image with coords
 CSurface m_menuMainBG;
-int m_menuMainBG_x;
-int m_menuMainBG_y;
-int32_t m_menuMainBG_w;
-int32_t m_menuMainBG_h;
-
 // Rom selector panel with coords
 CSurface m_menuMainRomSelectPanel;
-int m_menuMainRomSelectPanel_x;
-int m_menuMainRomSelectPanel_y;
-int32_t m_menuMainRomSelectPanel_w;
-int32_t m_menuMainRomSelectPanel_h;
-
-// Title coords with color
-int m_menuMainTitle_x;
-int m_menuMainTitle_y;
-int32_t m_menuMainTitle_c;
 
 // Rom list coords
 int m_menuMainRomListPos_x;
 int m_menuMainRomListPos_y;
-int m_menuMainRomListSpacing;
-
-/**
-* The current loaded state the rom list is in
-*/
-bool m_bRomListLoadedState;
-
-int m_romListBeginRender;
-int m_romListEndRender;
-int m_romListSelectedRom;
-int m_romListOffset;
 
 // Backbuffer width, height
 int width; 

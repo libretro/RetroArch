@@ -22,6 +22,16 @@
 
 #define NUM_ENTRY_PER_PAGE 17
 
+#define ROM_PANEL_WIDTH 440
+#define ROM_PANEL_HEIGHT 20
+
+#define MAIN_TITLE_X 305
+#define MAIN_TITLE_Y 30
+#define MAIN_TITLE_COLOR 0xFFFFFFFF
+
+#define MENU_MAIN_BG_X 0
+#define MENU_MAIN_BG_Y 0
+
 extern filebrowser_t browser;
 
 uint16_t input_st;
@@ -54,17 +64,6 @@ bool CMenuMain::Create()
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    
    width  = d3d->d3dpp.BackBufferWidth;
-   //height = d3d->d3dpp.BackBufferHeight;
-
-   // Title coords with color
-   m_menuMainTitle_x = 305;
-   m_menuMainTitle_y = 30;
-   m_menuMainTitle_c = 0xFFFFFFFF;
-
-   m_menuMainBG_x = 0;
-   m_menuMainBG_y = 0;
-   //m_menuMainBG_w = width;
-   //m_menuMainBG_h = height;
 
    // Quick hack to properly center the romlist in 720p, 
    // it might need more work though (font size and rom selector size -> needs more memory)
@@ -83,25 +82,8 @@ bool CMenuMain::Create()
       m_menuMainRomListPos_y = 150;
    }
 
-   m_menuMainRomListSpacing = 20;
-
    // Load rom selector panel
    m_menuMainRomSelectPanel.Create("D:\\Media\\menuMainRomSelectPanel.png");
-   m_menuMainRomSelectPanel_x = m_menuMainRomListPos_x - 5;
-   m_menuMainRomSelectPanel_y = m_menuMainRomListPos_y - 2;
-   m_menuMainRomSelectPanel_w = 440;
-   m_menuMainRomSelectPanel_h = 20;
-
-   m_romListSelectedRom = 0;
-
-   //The first element in the romlist to render
-   m_romListBeginRender = 0;
-
-   //The last element in the romlist to render
-   m_romListEndRender = 18;
-
-   //The offset in the romlist
-   m_romListOffset = 0;
 
    return true;
 }
@@ -112,7 +94,7 @@ void CMenuMain::Render()
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    //Render background image
-   m_menuMainBG.Render(m_menuMainBG_x, m_menuMainBG_y);
+   m_menuMainBG.Render(MENU_MAIN_BG_X, MENU_MAIN_BG_Y);
 
    //Display some text
    //Center the text (hardcoded)
@@ -128,10 +110,6 @@ void CMenuMain::Render()
    d3d->pFrontBuffer->Release();
    d3d->pBackBuffer->Release();
 
-   //Begin with the rom selector panel
-   //FIXME: Width/Height needs to be current Rom texture width/height (or should we just leave it at a fixed size?)
-
-
    filebrowser_t *b = &browser;
    unsigned file_count = b->current_dir.list->size;
    int current_index, page_number, page_base, i;
@@ -143,7 +121,7 @@ void CMenuMain::Render()
 
    currentX = m_menuMainRomListPos_x;
    currentY = m_menuMainRomListPos_y;
-   ySpacing = m_menuMainRomListSpacing;
+   ySpacing = 20;
 
    for (i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
    {
@@ -156,9 +134,7 @@ void CMenuMain::Render()
       //check if this is the currently selected file
       const char *current_pathname = filebrowser_get_current_path(b);
       if(strcmp(current_pathname, b->current_dir.list->elems[i].data) == 0)
-      {
-         m_menuMainRomSelectPanel.Render(currentX, currentY, m_menuMainRomSelectPanel_w, m_menuMainRomSelectPanel_h);
-      }
+         m_menuMainRomSelectPanel.Render(currentX, currentY, ROM_PANEL_WIDTH, ROM_PANEL_HEIGHT);
 
       convert_char_to_wchar(rom_basename_w, rom_basename, sizeof(rom_basename_w));
       d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
