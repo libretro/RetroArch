@@ -108,6 +108,7 @@ static void browser_render(filebrowser_t *b, float current_x, float current_y, f
       char fname_tmp[256];
       fill_pathname_base(fname_tmp, b->current_dir.list->elems[i].data, sizeof(fname_tmp));
       currentY = currentY + ySpacing;
+
       const char *rom_basename = fname_tmp;
       wchar_t rom_basename_w[256];
 
@@ -203,29 +204,29 @@ static void control_update_wrap(void)
    }
 }
 
-static void browser_update(filebrowser_t * b, const char *extensions)
+static void browser_update(filebrowser_t * b, uint16_t inp_state, const char *extensions)
 {
    filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
 
-   if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+   if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
       action = FILEBROWSER_ACTION_DOWN;
-   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
       action = FILEBROWSER_ACTION_UP;
-   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
       action = FILEBROWSER_ACTION_RIGHT;
-   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
       action = FILEBROWSER_ACTION_LEFT;
-   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_R))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_R))
       action = FILEBROWSER_ACTION_SCROLL_DOWN;
-   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_R2))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_R2))
       action = FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH;
-   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_L2))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_L2))
       action = FILEBROWSER_ACTION_SCROLL_UP_SMOOTH;
-   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_L))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_L))
       action = FILEBROWSER_ACTION_SCROLL_UP;
-   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_A))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_A))
       action = FILEBROWSER_ACTION_CANCEL;
-   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
    {
       action = FILEBROWSER_ACTION_RESET;
       filebrowser_set_root(b, "/");
@@ -236,13 +237,9 @@ static void browser_update(filebrowser_t * b, const char *extensions)
       filebrowser_iterate(b, action);
 }
 
-void CMenuMain::ProcessInput()
+static void select_rom(void)
 {
-   control_update_wrap();
-
-   trigger_state = input_st & ~old_input_st;
-
-   browser_update(&browser, rarch_console_get_rom_ext());
+   browser_update(&browser, trigger_state, rarch_console_get_rom_ext());
    
    menu_romselect_action_t action = MENU_ROMSELECT_ACTION_NOOP;
    
@@ -256,6 +253,15 @@ void CMenuMain::ProcessInput()
 
    if (action != MENU_ROMSELECT_ACTION_NOOP)
       menu_romselect_iterate(&browser, action);
+}
+
+void CMenuMain::ProcessInput()
+{
+   control_update_wrap();
+
+   trigger_state = input_st & ~old_input_st;
+
+   select_rom();
 
    old_input_st = input_st;
 }
