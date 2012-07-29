@@ -40,8 +40,6 @@ _c = color,
 
 // Background image with coords
 CSurface m_menuMainBG;
-// Rom selector panel with coords
-CSurface m_menuMainRomSelectPanel;
 
 // Rom list coords
 int m_menuMainRomListPos_x;

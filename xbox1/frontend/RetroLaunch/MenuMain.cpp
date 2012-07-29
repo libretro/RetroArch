@@ -34,6 +34,9 @@
 
 extern filebrowser_t browser;
 
+// Rom selector panel with coords
+CSurface m_menuMainRomSelectPanel;
+
 uint16_t input_st;
 uint16_t trigger_state;
 static uint16_t old_input_st = 0;
@@ -85,29 +88,9 @@ bool CMenuMain::Create()
    return true;
 }
 
-
-void CMenuMain::Render()
+static void browser_render(filebrowser_t *b, float current_x, float current_y, float y_spacing)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-
-   //Render background image
-   m_menuMainBG.Render(MENU_MAIN_BG_X, MENU_MAIN_BG_Y);
-
-   //Display some text
-   //Center the text (hardcoded)
-   int xpos = width == 640 ? 65 : 400;
-   int ypos = width == 640 ? 430 : 670;
-   
-   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
-   d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
-   d3d->debug_font->TextOut(d3d->pFrontBuffer, L"Libretro core:", (unsigned)-1, xpos, ypos);
-   d3d->debug_font->TextOut(d3d->pBackBuffer, L"Libretro core:", (unsigned)-1, xpos, ypos);
-   d3d->debug_font->TextOut(d3d->pFrontBuffer, m_title, (unsigned)-1, xpos + 140, ypos);
-   d3d->debug_font->TextOut(d3d->pBackBuffer, m_title, (unsigned)-1, xpos + 140, ypos);
-   d3d->pFrontBuffer->Release();
-   d3d->pBackBuffer->Release();
-
-   filebrowser_t *b = &browser;
    unsigned file_count = b->current_dir.list->size;
    int current_index, page_number, page_base, i;
    float currentX, currentY, ySpacing;
@@ -116,9 +99,9 @@ void CMenuMain::Render()
    page_number = current_index / NUM_ENTRY_PER_PAGE;
    page_base = page_number * NUM_ENTRY_PER_PAGE;
 
-   currentX = m_menuMainRomListPos_x;
-   currentY = m_menuMainRomListPos_y;
-   ySpacing = 20;
+   currentX = current_x;
+   currentY = current_y;
+   ySpacing = y_spacing;
 
    for (i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
    {
@@ -141,6 +124,30 @@ void CMenuMain::Render()
       d3d->pFrontBuffer->Release();
       d3d->pBackBuffer->Release();
    }
+}
+
+void CMenuMain::Render()
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
+   //Render background image
+   m_menuMainBG.Render(MENU_MAIN_BG_X, MENU_MAIN_BG_Y);
+
+   //Display some text
+   //Center the text (hardcoded)
+   int xpos = width == 640 ? 65 : 400;
+   int ypos = width == 640 ? 430 : 670;
+   
+   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
+   d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
+   d3d->debug_font->TextOut(d3d->pFrontBuffer, L"Libretro core:", (unsigned)-1, xpos, ypos);
+   d3d->debug_font->TextOut(d3d->pBackBuffer, L"Libretro core:", (unsigned)-1, xpos, ypos);
+   d3d->debug_font->TextOut(d3d->pFrontBuffer, m_title, (unsigned)-1, xpos + 140, ypos);
+   d3d->debug_font->TextOut(d3d->pBackBuffer, m_title, (unsigned)-1, xpos + 140, ypos);
+   d3d->pFrontBuffer->Release();
+   d3d->pBackBuffer->Release();
+
+   browser_render(&browser, m_menuMainRomListPos_x, m_menuMainRomListPos_y, 20);
 }
 
 typedef enum {
@@ -252,4 +259,3 @@ void CMenuMain::ProcessInput()
 
    old_input_st = input_st;
 }
-
