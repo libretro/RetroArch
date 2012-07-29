@@ -16,7 +16,10 @@
 
 #include "RetroLaunch/IoSupport.h"
 #include "RetroLaunch/MenuManager.h"
-#include "RetroLaunch/RomList.h"
+
+#include "../../console/fileio/file_browser.h"
+
+filebrowser_t browser;
 
 int menu_init(void)
 {
@@ -32,9 +35,9 @@ int menu_init(void)
    g_IOSupport.Mount("F:", "Harddisk0\\Partition6");
    g_IOSupport.Mount("G:", "Harddisk0\\Partition7");
 
-   // Load the rom list if it isn't already loaded
-   if (!g_romList.IsLoaded())
-      g_romList.Build();
+	strlcpy(browser.extensions, rarch_console_get_rom_ext(), sizeof(browser.extensions));
+   filebrowser_set_root(&browser, g_console.default_rom_startup_dir);
+   filebrowser_iterate(&browser, FILEBROWSER_ACTION_RESET);
 
    // Build menu here (Menu state -> Main Menu)
    g_menuManager.Create();
@@ -44,7 +47,10 @@ int menu_init(void)
    return 0;
 }
 
-void menu_free(void) {}
+void menu_free(void)
+{
+   filebrowser_free(&browser);
+}
 
 void menu_loop(void)
 {

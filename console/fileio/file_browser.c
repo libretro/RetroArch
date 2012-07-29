@@ -149,10 +149,11 @@ void filebrowser_iterate(filebrowser_t *filebrowser, filebrowser_action_t action
       case FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH:
          filebrowser->current_dir.ptr = (min(filebrowser->current_dir.ptr + 50, 
          filebrowser->current_dir.list->size-1));
-	 if(!filebrowser->current_dir.ptr) filebrowser->current_dir.ptr = 0;
+         if(!filebrowser->current_dir.ptr)
+            filebrowser->current_dir.ptr = 0;
          break;
       case FILEBROWSER_ACTION_OK:
-	 filebrowser_push_directory(filebrowser, filebrowser_get_current_path(filebrowser), true);
+         filebrowser_push_directory(filebrowser, filebrowser_get_current_path(filebrowser), true);
          break;
       case FILEBROWSER_ACTION_CANCEL:
          filebrowser_pop_directory(filebrowser);

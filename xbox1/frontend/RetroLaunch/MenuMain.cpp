@@ -14,10 +14,19 @@
  */
 
 #include "MenuMain.h"
-#include "RomList.h"
 
 #include "../../console/rarch_console.h"
 #include "../../general.h"
+
+#include "../../console/fileio/file_browser.h"
+
+#define NUM_ENTRY_PER_PAGE 17
+
+extern filebrowser_t browser;
+
+uint16_t input_st;
+uint16_t trigger_state;
+static uint16_t old_input_st = 0;
 
 CMenuMain g_menuMain;
 
@@ -40,7 +49,7 @@ CMenuMain::~CMenuMain()
 
 bool CMenuMain::Create()
 {
-   RARCH_LOG("CMenuMain::Create().");
+   RARCH_LOG("CMenuMain::Create().\n");
 
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    
@@ -94,9 +103,6 @@ bool CMenuMain::Create()
    //The offset in the romlist
    m_romListOffset = 0;
 
-   if(m_romListEndRender > g_romList.GetRomListSize() - 1)
-      m_romListEndRender = g_romList.GetRomListSize() - 1;
-
    return true;
 }
 
@@ -124,28 +130,79 @@ void CMenuMain::Render()
 
    //Begin with the rom selector panel
    //FIXME: Width/Height needs to be current Rom texture width/height (or should we just leave it at a fixed size?)
-   m_menuMainRomSelectPanel.Render(m_menuMainRomSelectPanel_x, m_menuMainRomSelectPanel_y, m_menuMainRomSelectPanel_w, m_menuMainRomSelectPanel_h);
 
-   int32_t dwSpacing = 0;
 
-   for (int i = m_romListBeginRender; i <= m_romListEndRender; i++)
+   filebrowser_t *b = &browser;
+   unsigned file_count = b->current_dir.list->size;
+   int current_index, page_number, page_base, i;
+   float currentX, currentY, ySpacing;
+
+   current_index = b->current_dir.ptr;
+   page_number = current_index / NUM_ENTRY_PER_PAGE;
+   page_base = page_number * NUM_ENTRY_PER_PAGE;
+
+   currentX = m_menuMainRomListPos_x;
+   currentY = m_menuMainRomListPos_y;
+   ySpacing = m_menuMainRomListSpacing;
+
+   for (i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
    {
-      const wchar_t *rom_basename = g_romList.GetRomAt(i + m_romListOffset)->GetFileName();
+      char fname_tmp[256];
+      fill_pathname_base(fname_tmp, b->current_dir.list->elems[i].data, sizeof(fname_tmp));
+      currentY = currentY + ySpacing;
+      const char *rom_basename = fname_tmp;
+      wchar_t rom_basename_w[256];
+
+      //check if this is the currently selected file
+      const char *current_pathname = filebrowser_get_current_path(b);
+      if(strcmp(current_pathname, b->current_dir.list->elems[i].data) == 0)
+      {
+         m_menuMainRomSelectPanel.Render(currentX, currentY, m_menuMainRomSelectPanel_w, m_menuMainRomSelectPanel_h);
+      }
+
+      convert_char_to_wchar(rom_basename_w, rom_basename, sizeof(rom_basename_w));
       d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
       d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
-      d3d->debug_font->TextOut(d3d->pFrontBuffer, rom_basename, (unsigned)-1, m_menuMainRomListPos_x, m_menuMainRomListPos_y + dwSpacing);
-      d3d->debug_font->TextOut(d3d->pBackBuffer, rom_basename, (unsigned)-1, m_menuMainRomListPos_x, m_menuMainRomListPos_y + dwSpacing);
+      d3d->debug_font->TextOut(d3d->pFrontBuffer, rom_basename_w, (unsigned)-1, currentX, currentY);
+      d3d->debug_font->TextOut(d3d->pBackBuffer, rom_basename_w, (unsigned)-1, currentX, currentY);
       d3d->pFrontBuffer->Release();
       d3d->pBackBuffer->Release();
-      dwSpacing += m_menuMainRomListSpacing;
    }
 }
 
-static uint16_t old_input_state = 0;
+typedef enum {
+   MENU_ROMSELECT_ACTION_OK,
+   MENU_ROMSELECT_ACTION_GOTO_SETTINGS,
+   MENU_ROMSELECT_ACTION_NOOP,
+} menu_romselect_action_t;
 
-void CMenuMain::ProcessInput()
+static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_action_t action)
 {
-   uint16_t input_state = 0;
+   switch(action)
+   {
+      case MENU_ROMSELECT_ACTION_OK:
+         if(filebrowser_get_current_path_isdir(filebrowser))
+         {
+            /*if 'filename' is in fact '..' - then pop back directory instead of adding '..' to filename path */
+            //hacky - need to fix this
+            //if(browser.current_dir.ptr == 0)
+            //   filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_CANCEL);
+            //else
+               filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
+         }
+         else
+            rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_console.zip_extract_mode, S_DELAY_45);
+         break;
+      case MENU_ROMSELECT_ACTION_GOTO_SETTINGS:
+         break;
+      default:
+         break;
+   }
+}
+
+static void control_update_wrap(void)
+{
+   input_st = 0;
    input_xinput.poll(NULL);
 
    static const struct retro_keybind *binds[MAX_PLAYERS] = {
@@ -161,82 +218,65 @@ void CMenuMain::ProcessInput()
 
    for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
-      input_state |= input_xinput.input_state(NULL, binds, false,
+      input_st |= input_xinput.input_state(NULL, binds, false,
          RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
    }
+}
 
-   uint16_t trigger_state = input_state & ~old_input_state;
+static void browser_update(filebrowser_t * b, const char *extensions)
+{
+   filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
 
-   if(trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+   if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+      action = FILEBROWSER_ACTION_DOWN;
+   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+      action = FILEBROWSER_ACTION_UP;
+   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      action = FILEBROWSER_ACTION_RIGHT;
+   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+      action = FILEBROWSER_ACTION_LEFT;
+   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_R))
+      action = FILEBROWSER_ACTION_SCROLL_DOWN;
+   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_R2))
+      action = FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH;
+   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_L2))
+      action = FILEBROWSER_ACTION_SCROLL_UP_SMOOTH;
+   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_L))
+      action = FILEBROWSER_ACTION_SCROLL_UP;
+   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_A))
+      action = FILEBROWSER_ACTION_CANCEL;
+   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
    {
-      if(m_romListSelectedRom < g_romList.GetRomListSize())
-      {
-         if(m_menuMainRomSelectPanel_y < (m_menuMainRomListPos_y + (m_menuMainRomListSpacing * m_romListEndRender)))
-	 {
-            m_menuMainRomSelectPanel_y += m_menuMainRomListSpacing;
-	    m_romListSelectedRom++;
-	    RARCH_LOG("SELECTED ROM: %d.\n", m_romListSelectedRom);
-	 }
-
-         if(m_menuMainRomSelectPanel_y > (m_menuMainRomListPos_y + (m_menuMainRomListSpacing * (m_romListEndRender))))
-	 {
-            m_menuMainRomSelectPanel_y -= m_menuMainRomListSpacing;
-	    m_romListSelectedRom++;
-	    if(m_romListSelectedRom > g_romList.GetRomListSize() - 1)
-               m_romListSelectedRom = g_romList.GetRomListSize() - 1;
-
-	    RARCH_LOG("SELECTED ROM AFTER CORRECTION: %d.\n", m_romListSelectedRom);
-
-	    if(m_romListSelectedRom < g_romList.GetRomListSize() - 1 && m_romListOffset < g_romList.GetRomListSize() - 1 - m_romListEndRender - 1)
-            {
-               m_romListOffset++;
-	       RARCH_LOG("OFFSET: %d.\n", m_romListOffset);
-	    }
-	 }
-      }
+      action = FILEBROWSER_ACTION_RESET;
+      filebrowser_set_root(b, "/");
+      strlcpy(b->extensions, extensions, sizeof(b->extensions));
    }
 
-   if(trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
-   {
-      if(m_romListSelectedRom > -1)
-      {
-         if(m_menuMainRomSelectPanel_y > (m_menuMainRomListPos_y - m_menuMainRomListSpacing))
-	 {
-            m_menuMainRomSelectPanel_y -= m_menuMainRomListSpacing;
-	    m_romListSelectedRom--;
-	    RARCH_LOG("SELECTED ROM: %d.\n", m_romListSelectedRom);
-	 }
+   if(action != FILEBROWSER_ACTION_NOOP)
+      filebrowser_iterate(b, action);
+}
 
-         if(m_menuMainRomSelectPanel_y < (m_menuMainRomListPos_y - m_menuMainRomListSpacing))
-	 {
-            m_menuMainRomSelectPanel_y += m_menuMainRomListSpacing;
-	    m_romListSelectedRom--;
-	    if(m_romListSelectedRom < 0)
-               m_romListSelectedRom = 0;
+void CMenuMain::ProcessInput()
+{
+   control_update_wrap();
 
-	    RARCH_LOG("SELECTED ROM AFTER CORRECTION: %d.\n", m_romListSelectedRom);
+   trigger_state = input_st & ~old_input_st;
 
-	    if(m_romListSelectedRom > 0 && m_romListOffset > 0)
-            {
-               m_romListOffset--;
-	       RARCH_LOG("OFFSET: %d.\n", m_romListOffset);
-	    }
-	 }
-      }
-   }
-
-   // Press A to launch
-   if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_B) || trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-   {
-      char rom_filename[PATH_MAX];
-      convert_wchar_to_char(rom_filename, g_romList.GetRomAt(m_romListSelectedRom)->GetFileName(), sizeof(rom_filename));
-      rarch_console_load_game_wrap(rom_filename, g_console.zip_extract_mode, S_DELAY_1);
-   }
-
-   if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_R3))
+   browser_update(&browser, rarch_console_get_rom_ext());
+   
+   menu_romselect_action_t action = MENU_ROMSELECT_ACTION_NOOP;
+   
+   if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+      action = MENU_ROMSELECT_ACTION_OK;
+   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_R3))
    {
       LD_LAUNCH_DASHBOARD LaunchData = { XLD_LAUNCH_DASHBOARD_MAIN_MENU };
       XLaunchNewImage( NULL, (LAUNCH_DATA*)&LaunchData );
    }
+
+   if (action != MENU_ROMSELECT_ACTION_NOOP)
+      menu_romselect_iterate(&browser, action);
+
+   old_input_st = input_st;
 }
 
