@@ -276,6 +276,9 @@ struct string_list *dir_list_new(const char *dir, const char *ext, bool include_
       if (!include_dirs && is_dir)
          continue;
 
+      if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
+         continue;
+
       if (!is_dir && ext_list && !string_list_find_elem(ext_list, file_ext))
          continue;
 

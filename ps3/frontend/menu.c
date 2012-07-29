@@ -797,14 +797,7 @@ static void select_file(void)
       if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
       {
          if(filebrowser_get_current_path_isdir(&tmpBrowser))
-	 {
-            /*if 'filename' is in fact '..' - then pop back directory instead of 
-	      adding '..' to filename path */
-            if(tmpBrowser.current_dir.ptr == 0)
-               filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_CANCEL);
-	    else
-               filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
-	 }
+            filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
 	 else if (path_file_exists(filebrowser_get_current_path(&tmpBrowser)))
 	 {
             snprintf(path, sizeof(path), filebrowser_get_current_path(&tmpBrowser));
@@ -916,15 +909,7 @@ static void select_directory(void)
       else if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
       {
          if(filebrowser_get_current_path_isdir(&tmpBrowser))
-	 {
-            /* if 'filename' is in fact '..' - then pop back directory instead of 
-             * adding '..' to filename path */
-
-            if(tmpBrowser.current_dir.ptr == 0)
-               filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_CANCEL);
-	    else
-               filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
-	 }
+            filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
       }
    }
 
@@ -1702,13 +1687,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
    {
       case MENU_ROMSELECT_ACTION_OK:
          if(filebrowser_get_current_path_isdir(filebrowser))
-	 {
-            /*if 'filename' is in fact '..' - then pop back directory  instead of adding '..' to filename path */
-            if(browser.current_dir.ptr == 0)
-               filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_CANCEL);
-	    else
-               filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
-	 }
+            filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
 	 else
             rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_console.zip_extract_mode, S_DELAY_45);
          break;

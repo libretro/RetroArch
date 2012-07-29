@@ -70,14 +70,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
    {
       case MENU_ROMSELECT_ACTION_OK:
          if(filebrowser_get_current_path_isdir(filebrowser))
-         {
-            /*if 'filename' is in fact '..' - then pop back directory instead of adding '..' to filename path */
-            //hacky - need to fix this
-            //if(browser.current_dir.ptr == 0)
-            //   filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_CANCEL);
-            //else
-               filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
-         }
+            filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
          else
             rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_console.zip_extract_mode, S_DELAY_45);
          break;
