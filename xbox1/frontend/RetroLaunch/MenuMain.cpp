@@ -14,7 +14,6 @@
  */
 
 #include "MenuMain.h"
-#include "Font.h"
 #include "RomList.h"
 
 #include "../../console/rarch_console.h"

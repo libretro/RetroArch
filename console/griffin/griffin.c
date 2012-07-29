@@ -285,7 +285,6 @@ MENU
 #include "../../360/frontend-xdk/menu.cpp"
 #elif defined(_XBOX1)
 #include "../../xbox1/frontend/menu.cpp"
-#include "../../xbox1/frontend/RetroLaunch/Font.cpp"
 #include "../../xbox1/frontend/RetroLaunch/IoSupport.cpp"
 #include "../../xbox1/frontend/RetroLaunch/MenuMain.cpp"
 #include "../../xbox1/frontend/RetroLaunch/MenuManager.cpp"

@@ -16,7 +16,6 @@
 
 #include "RetroLaunch/Global.h"
 #include "RetroLaunch/IoSupport.h"
-#include "RetroLaunch/Font.h"
 #include "RetroLaunch/MenuManager.h"
 #include "RetroLaunch/RomList.h"
 
@@ -37,9 +36,6 @@ int menu_init(void)
    // Load the rom list if it isn't already loaded
    if (!g_romList.IsLoaded())
       g_romList.Build();
-
-   // Load the font here
-   g_font.Create();
 
    // Build menu here (Menu state -> Main Menu)
    g_menuManager.Create();
