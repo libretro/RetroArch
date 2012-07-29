@@ -204,10 +204,8 @@ static void select_rom(void)
    
    d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
    d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
-   d3d->debug_font->TextOut(d3d->pFrontBuffer, L"Libretro core:", (unsigned)-1, xpos, ypos);
-   d3d->debug_font->TextOut(d3d->pBackBuffer, L"Libretro core:", (unsigned)-1, xpos, ypos);
-   d3d->debug_font->TextOut(d3d->pFrontBuffer, m_title, (unsigned)-1, xpos + 140, ypos);
-   d3d->debug_font->TextOut(d3d->pBackBuffer, m_title, (unsigned)-1, xpos + 140, ypos);
+   d3d->debug_font->TextOut(d3d->pFrontBuffer, m_title, (unsigned)-1, xpos, ypos);
+   d3d->debug_font->TextOut(d3d->pBackBuffer, m_title, (unsigned)-1, xpos, ypos);
    d3d->pFrontBuffer->Release();
    d3d->pBackBuffer->Release();
 }
@@ -221,7 +219,7 @@ int menu_init(void)
    retro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
    char core_text[256];
-   snprintf(core_text, sizeof(core_text), "%s %s", id, info.library_version);
+   snprintf(core_text, sizeof(core_text), "Libretro core: %s %s", id, info.library_version);
    convert_char_to_wchar(m_title, core_text, sizeof(m_title));
 
    // Set file cache size
