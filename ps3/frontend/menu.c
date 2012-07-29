@@ -63,6 +63,7 @@ filebrowser_t tmpBrowser;
 unsigned set_shader = 0;
 static unsigned currently_selected_controller_menu = 0;
 static char strw_buffer[PATH_MAX];
+char core_text[256];
 
 typedef enum {
    SETTINGS_ACTION_DOWN,
@@ -563,7 +564,6 @@ extern const char *ps3_get_resolution_label(unsigned resolution);
 
 static void display_menubar(void)
 {
-   struct retro_system_info info;
    menu *menu_obj = &menuStack[menuStackindex];
    gl_t *gl = driver.video_data;
 
@@ -596,9 +596,6 @@ static void display_menubar(void)
          break;
    }
 
-   retro_get_system_info(&info);
-   const char *id = info.library_name ? info.library_name : "Unknown";
-
    filebrowser_t *fb = &browser;
 
    switch(menu_obj->enum_id)
@@ -621,8 +618,8 @@ static void display_menubar(void)
    }
 
    cellDbgFontPrintf(0.09f, 0.05f, 1.4f, WHITE, menu_obj->title);
-   cellDbgFontPrintf (0.4f, 0.06f, 0.82f, WHITE, "Libretro core: %s %s", id, info.library_version);
-   cellDbgFontPrintf (0.8f, 0.12f, 0.82f, WHITE, "v%s", PACKAGE_VERSION);
+   cellDbgFontPrintf(0.3f, 0.06f, 0.82f, WHITE, core_text);
+   cellDbgFontPrintf(0.8f, 0.12f, 0.82f, WHITE, "v%s", PACKAGE_VERSION);
    gl_render_msg_post(gl);
 }
 
@@ -796,9 +793,10 @@ static void select_file(void)
 
       if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
       {
-         if(filebrowser_get_current_path_isdir(&tmpBrowser))
+         bool is_dir = filebrowser_get_current_path_isdir(&tmpBrowser);
+         if(is_dir)
             filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
-	 else if (path_file_exists(filebrowser_get_current_path(&tmpBrowser)))
+	 else
 	 {
             snprintf(path, sizeof(path), filebrowser_get_current_path(&tmpBrowser));
 
@@ -861,11 +859,12 @@ static void select_directory(void)
    gl_t * gl = driver.video_data;
 
    {
+      bool is_dir = filebrowser_get_current_path_isdir(&tmpBrowser);
       browser_update(&tmpBrowser, input_st, "empty");
 
       if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_Y))
       {
-         if(filebrowser_get_current_path_isdir(&tmpBrowser))
+         if(is_dir)
 	 {
             snprintf(path, sizeof(path), filebrowser_get_current_path(&tmpBrowser));
 	    switch(menu_id)
@@ -908,7 +907,7 @@ static void select_directory(void)
       }
       else if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
       {
-         if(filebrowser_get_current_path_isdir(&tmpBrowser))
+         if(is_dir)
             filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
       }
    }
@@ -1716,17 +1715,17 @@ static void select_rom(void)
    if (action != MENU_ROMSELECT_ACTION_NOOP)
       menu_romselect_iterate(&browser, action);
 
-   if (filebrowser_get_current_path_isdir(&browser))
+   bool is_dir = filebrowser_get_current_path_isdir(&browser);
+
+   if (is_dir)
    {
-      if(!strcmp(filebrowser_get_current_path(&browser),"app_home") || !strcmp(filebrowser_get_current_path(&browser),"host_root"))
+      const char *current_path = filebrowser_get_current_path(&browser);
+      if(!strcmp(current_path,"app_home") || !strcmp(current_path, "host_root"))
          cellDbgFontPrintf(0.09f, 0.83f, 0.91f, RED, "WARNING - This path only works on DEX PS3 systems. Do not attempt to open\n this directory on CEX PS3 systems, or you might have to restart.");
-      else if(!strcmp(filebrowser_get_current_path(&browser),".."))
-         cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to go back to the previous directory.");
       else
          cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to enter the directory.");
    }
-
-   if (path_file_exists(filebrowser_get_current_path(&browser)))
+   else
       cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
 
    display_menubar();
@@ -2099,6 +2098,12 @@ static bool check_shoulder_buttons(uint64_t state_tmp)
 
 void menu_init (void)
 {
+   //Set libretro filename and version to variable
+   struct retro_system_info info;
+   retro_get_system_info(&info);
+   const char *id = info.library_name ? info.library_name : "Unknown";
+   snprintf(core_text, sizeof(core_text), "Libretro core: %s %s", id, info.library_version);
+
    menu_stack_push(0, FILE_BROWSER_MENU);
    filebrowser_set_root(&tmpBrowser, "/");
 }
