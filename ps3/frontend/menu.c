@@ -95,7 +95,7 @@ static void set_setting_label_color(item *items, bool cond, unsigned currentsett
       items[currentsetting].text_color = ORANGE;
 }
 
-static void set_setting_label(menu * menu_obj, item *items, unsigned currentsetting)
+static void set_setting_label(menu * current_menu, item *items, unsigned currentsetting)
 {
    char fname[PATH_MAX];
    (void)fname;
@@ -332,7 +332,7 @@ static void set_setting_label(menu * menu_obj, item *items, unsigned currentsett
 	   case SETTING_PATH_DEFAULT_ALL:
 	   case SETTING_EMU_DEFAULT_ALL:
 	   case SETTING_SAVE_SHADER_PRESET:
-                   set_setting_label_color(items,menu_obj->selected == currentsetting, currentsetting);
+                   set_setting_label_color(items, current_menu->selected == currentsetting, currentsetting);
 		   break;
 	   default:
 		   break;
@@ -349,17 +349,16 @@ static void menu_stack_increment(void)
    menuStackindex++;
 }
 
-static void menu_stack_refresh (item *items, unsigned stack_idx)
+static void menu_stack_refresh (item *items, menu *current_menu)
 {
    int page, i, j;
    float increment;
-   menu *menu_obj = &menuStack[stack_idx];
 
    page = 0;
    j = 0;
    increment = 0.16f;
 
-   for(i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
+   for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
    {
       if(!(j < (NUM_ENTRY_PER_PAGE)))
       {
@@ -371,7 +370,7 @@ static void menu_stack_refresh (item *items, unsigned stack_idx)
       items[i].text_xpos = 0.09f;
       items[i].text_ypos = increment; 
       items[i].page = page;
-      set_setting_label(menu_obj, items, i);
+      set_setting_label(current_menu, items, i);
       increment += 0.03f;
       j++;
    }
@@ -379,92 +378,94 @@ static void menu_stack_refresh (item *items, unsigned stack_idx)
 
 static void menu_stack_push(unsigned stack_idx, item *items, unsigned menu_id)
 {
+   menu *current_menu = &menuStack[stack_idx];
+
    switch(menu_id)
    {
       case INGAME_MENU:
-         strlcpy(menuStack[stack_idx].title, "Ingame Menu", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = menu_id;
-         menuStack[stack_idx].selected = 0;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].category_id = CATEGORY_INGAME_MENU;
-         menu_stack_refresh(ingame_menu_settings, stack_idx);
+         strlcpy(current_menu->title, "Ingame Menu", sizeof(current_menu->title));
+         current_menu->enum_id = menu_id;
+         current_menu->selected = 0;
+         current_menu->page = 0;
+         current_menu->category_id = CATEGORY_INGAME_MENU;
+         menu_stack_refresh(ingame_menu_settings, current_menu);
          break;
       case INGAME_MENU_RESIZE:
-         strlcpy(menuStack[stack_idx].title, "Resize Menu", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = INGAME_MENU_RESIZE;
-         menuStack[stack_idx].selected = 0;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].category_id = CATEGORY_INGAME_MENU;
+         strlcpy(current_menu->title, "Resize Menu", sizeof(current_menu->title));
+         current_menu->enum_id = INGAME_MENU_RESIZE;
+         current_menu->selected = 0;
+         current_menu->page = 0;
+         current_menu->category_id = CATEGORY_INGAME_MENU;
          break;
       case INGAME_MENU_SCREENSHOT:
-         strlcpy(menuStack[stack_idx].title, "Ingame Menu", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = menu_id;
-         menuStack[stack_idx].selected = 0;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].category_id = CATEGORY_INGAME_MENU;
+         strlcpy(current_menu->title, "Ingame Menu", sizeof(current_menu->title));
+         current_menu->enum_id = menu_id;
+         current_menu->selected = 0;
+         current_menu->page = 0;
+         current_menu->category_id = CATEGORY_INGAME_MENU;
          break;
       case FILE_BROWSER_MENU:
-         strlcpy(menuStack[stack_idx].title, "File Browser", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = menu_id;
-         menuStack[stack_idx].selected = 0;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(items, stack_idx);
+         strlcpy(current_menu->title, "File Browser", sizeof(current_menu->title));
+         current_menu->enum_id = menu_id;
+         current_menu->selected = 0;
+         current_menu->page = 0;
+         current_menu->category_id = CATEGORY_FILEBROWSER;
+         menu_stack_refresh(items, current_menu);
 	 strlcpy(browser.extensions, rarch_console_get_rom_ext(), sizeof(browser.extensions));
 	 filebrowser_set_root(&browser, g_console.default_rom_startup_dir);
 	 filebrowser_iterate(&browser, FILEBROWSER_ACTION_RESET);
          break;
       case LIBRETRO_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "Libretro cores", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = menu_id;
-         menuStack[stack_idx].selected = 0;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(items, stack_idx);
+         strlcpy(current_menu->title, "Libretro cores", sizeof(current_menu->title));
+         current_menu->enum_id = menu_id;
+         current_menu->selected = 0;
+         current_menu->page = 0;
+         current_menu->category_id = CATEGORY_FILEBROWSER;
+         menu_stack_refresh(items, current_menu);
 	 strlcpy(tmpBrowser.extensions, "self|SELF|bin|BIN", sizeof(tmpBrowser.extensions));
 	 filebrowser_set_root(&tmpBrowser, default_paths.core_dir);
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case PRESET_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "Shader presets", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = menu_id;
-         menuStack[stack_idx].selected = 0;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(items, stack_idx);
+         strlcpy(current_menu->title, "Shader presets", sizeof(current_menu->title));
+         current_menu->enum_id = menu_id;
+         current_menu->selected = 0;
+         current_menu->page = 0;
+         current_menu->category_id = CATEGORY_FILEBROWSER;
+         menu_stack_refresh(items, current_menu);
 	 strlcpy(tmpBrowser.extensions, "cgp|CGP", sizeof(tmpBrowser.extensions));
 	 filebrowser_set_root(&tmpBrowser, default_paths.cgp_dir);
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case INPUT_PRESET_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "Input presets", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = menu_id;
-         menuStack[stack_idx].selected = 0;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(items, stack_idx);
+         strlcpy(current_menu->title, "Input presets", sizeof(current_menu->title));
+         current_menu->enum_id = menu_id;
+         current_menu->selected = 0;
+         current_menu->page = 0;
+         current_menu->category_id = CATEGORY_FILEBROWSER;
+         menu_stack_refresh(items, current_menu);
 	 strlcpy(tmpBrowser.extensions, "cfg|CFG", sizeof(tmpBrowser.extensions));
 	 filebrowser_set_root(&tmpBrowser, default_paths.input_presets_dir);
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case SHADER_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "Shaders", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = menu_id;
-         menuStack[stack_idx].selected = 0;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(items, stack_idx);
+         strlcpy(current_menu->title, "Shaders", sizeof(current_menu->title));
+         current_menu->enum_id = menu_id;
+         current_menu->selected = 0;
+         current_menu->page = 0;
+         current_menu->category_id = CATEGORY_FILEBROWSER;
+         menu_stack_refresh(items, current_menu);
 	 strlcpy(tmpBrowser.extensions, "cg|CG", sizeof(tmpBrowser.extensions));
 	 filebrowser_set_root(&tmpBrowser, default_paths.shader_dir);
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case BORDER_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "Borders", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = menu_id;
-         menuStack[stack_idx].selected = 0;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(items, stack_idx);
+         strlcpy(current_menu->title, "Borders", sizeof(current_menu->title));
+         current_menu->enum_id = menu_id;
+         current_menu->selected = 0;
+         current_menu->page = 0;
+         current_menu->category_id = CATEGORY_FILEBROWSER;
+         menu_stack_refresh(items, current_menu);
 	 strlcpy(tmpBrowser.extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(tmpBrowser.extensions));
 	 filebrowser_set_root(&tmpBrowser, default_paths.border_dir);
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
@@ -474,85 +475,85 @@ static void menu_stack_push(unsigned stack_idx, item *items, unsigned menu_id)
       case PATH_SRAM_DIR_CHOICE:
       case PATH_CHEATS_DIR_CHOICE:
       case PATH_SYSTEM_DIR_CHOICE:
-         strlcpy(menuStack[stack_idx].title, "Path Selection", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = menu_id;
-         menuStack[stack_idx].selected = 0;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(items, stack_idx);
+         strlcpy(current_menu->title, "Path Selection", sizeof(current_menu->title));
+         current_menu->enum_id = menu_id;
+         current_menu->selected = 0;
+         current_menu->page = 0;
+         current_menu->category_id = CATEGORY_FILEBROWSER;
+         menu_stack_refresh(items, current_menu);
 	 strlcpy(tmpBrowser.extensions, "empty", sizeof(tmpBrowser.extensions));
 	 filebrowser_set_root(&tmpBrowser, "/");
 	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case GENERAL_VIDEO_MENU:
-         strlcpy(menuStack[stack_idx].title, "Video", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = GENERAL_VIDEO_MENU;
-         menuStack[stack_idx].selected = FIRST_VIDEO_SETTING;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].first_setting = FIRST_VIDEO_SETTING;
-         menuStack[stack_idx].max_settings = MAX_NO_OF_VIDEO_SETTINGS;
-         menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(items, stack_idx);
+         strlcpy(current_menu->title, "Video", sizeof(current_menu->title));
+         current_menu->enum_id = GENERAL_VIDEO_MENU;
+         current_menu->selected = FIRST_VIDEO_SETTING;
+         current_menu->page = 0;
+         current_menu->first_setting = FIRST_VIDEO_SETTING;
+         current_menu->max_settings = MAX_NO_OF_VIDEO_SETTINGS;
+         current_menu->category_id = CATEGORY_SETTINGS;
+         menu_stack_refresh(items, current_menu);
 	 break;
       case GENERAL_AUDIO_MENU:
-         strlcpy(menuStack[stack_idx].title, "Audio", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = GENERAL_AUDIO_MENU;
-         menuStack[stack_idx].selected = FIRST_AUDIO_SETTING;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].first_setting = FIRST_AUDIO_SETTING;
-         menuStack[stack_idx].max_settings = MAX_NO_OF_AUDIO_SETTINGS;
-         menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(items, stack_idx);
+         strlcpy(current_menu->title, "Audio", sizeof(current_menu->title));
+         current_menu->enum_id = GENERAL_AUDIO_MENU;
+         current_menu->selected = FIRST_AUDIO_SETTING;
+         current_menu->page = 0;
+         current_menu->first_setting = FIRST_AUDIO_SETTING;
+         current_menu->max_settings = MAX_NO_OF_AUDIO_SETTINGS;
+         current_menu->category_id = CATEGORY_SETTINGS;
+         menu_stack_refresh(items, current_menu);
 	 break;
       case EMU_GENERAL_MENU:
-         strlcpy(menuStack[stack_idx].title, "Retro", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = EMU_GENERAL_MENU;
-         menuStack[stack_idx].selected = FIRST_EMU_SETTING;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].first_setting = FIRST_EMU_SETTING;
-         menuStack[stack_idx].max_settings = MAX_NO_OF_EMU_SETTINGS;
-         menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(items, stack_idx);
+         strlcpy(current_menu->title, "Retro", sizeof(current_menu->title));
+         current_menu->enum_id = EMU_GENERAL_MENU;
+         current_menu->selected = FIRST_EMU_SETTING;
+         current_menu->page = 0;
+         current_menu->first_setting = FIRST_EMU_SETTING;
+         current_menu->max_settings = MAX_NO_OF_EMU_SETTINGS;
+         current_menu->category_id = CATEGORY_SETTINGS;
+         menu_stack_refresh(items, current_menu);
 	 break;
       case EMU_VIDEO_MENU:
-         strlcpy(menuStack[stack_idx].title, "Retro Video", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = EMU_VIDEO_MENU;
-         menuStack[stack_idx].selected = FIRST_EMU_VIDEO_SETTING;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].first_setting = FIRST_EMU_VIDEO_SETTING;
-         menuStack[stack_idx].max_settings = MAX_NO_OF_EMU_VIDEO_SETTINGS;
-         menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(items, stack_idx);
+         strlcpy(current_menu->title, "Retro Video", sizeof(current_menu->title));
+         current_menu->enum_id = EMU_VIDEO_MENU;
+         current_menu->selected = FIRST_EMU_VIDEO_SETTING;
+         current_menu->page = 0;
+         current_menu->first_setting = FIRST_EMU_VIDEO_SETTING;
+         current_menu->max_settings = MAX_NO_OF_EMU_VIDEO_SETTINGS;
+         current_menu->category_id = CATEGORY_SETTINGS;
+         menu_stack_refresh(items, current_menu);
 	 break;
       case EMU_AUDIO_MENU:
-         strlcpy(menuStack[stack_idx].title, "Retro Audio", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = EMU_AUDIO_MENU;
-         menuStack[stack_idx].selected = FIRST_EMU_AUDIO_SETTING;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].first_setting = FIRST_EMU_AUDIO_SETTING;
-         menuStack[stack_idx].max_settings = MAX_NO_OF_EMU_AUDIO_SETTINGS;
-         menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(items, stack_idx);
+         strlcpy(current_menu->title, "Retro Audio", sizeof(current_menu->title));
+         current_menu->enum_id = EMU_AUDIO_MENU;
+         current_menu->selected = FIRST_EMU_AUDIO_SETTING;
+         current_menu->page = 0;
+         current_menu->first_setting = FIRST_EMU_AUDIO_SETTING;
+         current_menu->max_settings = MAX_NO_OF_EMU_AUDIO_SETTINGS;
+         current_menu->category_id = CATEGORY_SETTINGS;
+         menu_stack_refresh(items, current_menu);
 	 break;
       case PATH_MENU:
-         strlcpy(menuStack[stack_idx].title, "Path", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = PATH_MENU;
-         menuStack[stack_idx].selected = FIRST_PATH_SETTING;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].first_setting = FIRST_PATH_SETTING;
-         menuStack[stack_idx].max_settings = MAX_NO_OF_PATH_SETTINGS;
-         menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(items, stack_idx);
+         strlcpy(current_menu->title, "Path", sizeof(current_menu->title));
+         current_menu->enum_id = PATH_MENU;
+         current_menu->selected = FIRST_PATH_SETTING;
+         current_menu->page = 0;
+         current_menu->first_setting = FIRST_PATH_SETTING;
+         current_menu->max_settings = MAX_NO_OF_PATH_SETTINGS;
+         current_menu->category_id = CATEGORY_SETTINGS;
+         menu_stack_refresh(items, current_menu);
          break;
       case CONTROLS_MENU:
-         strlcpy(menuStack[stack_idx].title, "Controls", sizeof(menuStack[stack_idx].title));
-         menuStack[stack_idx].enum_id = CONTROLS_MENU;
-         menuStack[stack_idx].selected = FIRST_CONTROLS_SETTING_PAGE_1;
-         menuStack[stack_idx].page = 0;
-         menuStack[stack_idx].first_setting = FIRST_CONTROLS_SETTING_PAGE_1;
-         menuStack[stack_idx].max_settings = MAX_NO_OF_CONTROLS_SETTINGS;
-         menuStack[stack_idx].category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(items, stack_idx);
+         strlcpy(current_menu->title, "Controls", sizeof(current_menu->title));
+         current_menu->enum_id = CONTROLS_MENU;
+         current_menu->selected = FIRST_CONTROLS_SETTING_PAGE_1;
+         current_menu->page = 0;
+         current_menu->first_setting = FIRST_CONTROLS_SETTING_PAGE_1;
+         current_menu->max_settings = MAX_NO_OF_CONTROLS_SETTINGS;
+         current_menu->category_id = CATEGORY_SETTINGS;
+         menu_stack_refresh(items, current_menu);
 	 break;
        default:
          break;
@@ -562,12 +563,11 @@ static void menu_stack_push(unsigned stack_idx, item *items, unsigned menu_id)
 //forward decls
 extern const char *ps3_get_resolution_label(unsigned resolution);
 
-static void display_menubar(void)
+static void display_menubar(menu *current_menu)
 {
-   menu *menu_obj = &menuStack[menuStackindex];
    gl_t *gl = driver.video_data;
 
-   switch(menu_obj->enum_id)
+   switch(current_menu->enum_id)
    {
       case GENERAL_VIDEO_MENU:
 	 cellDbgFontPrintf(0.09f, 0.03f, 0.91f, WHITE, "NEXT ->");
@@ -598,7 +598,7 @@ static void display_menubar(void)
 
    filebrowser_t *fb = &browser;
 
-   switch(menu_obj->enum_id)
+   switch(current_menu->enum_id)
    {
       case SHADER_CHOICE:
       case PRESET_CHOICE:
@@ -617,7 +617,7 @@ static void display_menubar(void)
          break;
    }
 
-   cellDbgFontPrintf(0.09f, 0.05f, 1.4f, WHITE, menu_obj->title);
+   cellDbgFontPrintf(0.09f, 0.05f, 1.4f, WHITE, current_menu->title);
    cellDbgFontPrintf(0.3f, 0.06f, 0.82f, WHITE, core_text);
    cellDbgFontPrintf(0.8f, 0.12f, 0.82f, WHITE, "v%s", PACKAGE_VERSION);
    gl_render_msg_post(gl);
@@ -754,13 +754,12 @@ static void apply_scaling (unsigned init_mode)
    }
 }
 
-static void select_file(item *items)
+static void select_file(item *items, menu *current_menu)
 {
-   unsigned menu_id = menuStack[menuStackindex].enum_id;
    char extensions[256], object[256], comment[256], path[PATH_MAX];
    gl_t * gl = driver.video_data;
 
-   switch(menu_id)
+   switch(current_menu->enum_id)
    {
       case SHADER_CHOICE:
 	 strlcpy(extensions, "cg|CG", sizeof(extensions));
@@ -800,7 +799,7 @@ static void select_file(item *items)
 	 {
             snprintf(path, sizeof(path), filebrowser_get_current_path(&tmpBrowser));
 
-	    switch(menu_id)
+	    switch(current_menu->enum_id)
 	    {
                case SHADER_CHOICE:
                   rarch_load_shader(set_shader+1, path);
@@ -813,7 +812,7 @@ static void select_file(item *items)
 			strlcpy(g_settings.video.second_pass_shader, path, sizeof(g_settings.video.second_pass_shader));
 			break;
 		  }
-		  menu_stack_refresh(items, menuStackindex);
+		  menu_stack_refresh(items, current_menu);
 		  break;
 	       case PRESET_CHOICE:
 		  strlcpy(g_console.cgp_path, path, sizeof(g_console.cgp_path));
@@ -824,7 +823,7 @@ static void select_file(item *items)
 	       case INPUT_PRESET_CHOICE:
 		  strlcpy(g_console.input_cfg_path, path, sizeof(g_console.input_cfg_path));
 		  config_read_keybinds(path);
-		  menu_stack_refresh(items, menuStackindex);
+		  menu_stack_refresh(items, current_menu);
 		  break;
 	       case BORDER_CHOICE:
 		  break;
@@ -845,16 +844,15 @@ static void select_file(item *items)
       else if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_X))
          menu_stack_decrement();
 
-   display_menubar();
+   display_menubar(current_menu);
 
    cellDbgFontPrintf(0.09f, 0.92f, 0.92, YELLOW, "X - Select %s  /\\ - return to settings  START - Reset Startdir", object);
    cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s", comment);
    gl_render_msg_post(gl);
 }
 
-static void select_directory(item *items)
+static void select_directory(item *items, menu *current_menu)
 {
-   unsigned menu_id = menuStack[menuStackindex].enum_id;
    char path[1024];
    gl_t * gl = driver.video_data;
 
@@ -867,7 +865,7 @@ static void select_directory(item *items)
          if(is_dir)
 	 {
             snprintf(path, sizeof(path), filebrowser_get_current_path(&tmpBrowser));
-	    switch(menu_id)
+	    switch(current_menu->enum_id)
 	    {
                case PATH_SAVESTATES_DIR_CHOICE:
                   strlcpy(g_console.default_savestate_dir, path, sizeof(g_console.default_savestate_dir));
@@ -888,7 +886,7 @@ static void select_directory(item *items)
       else if (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_X))
       {
          strlcpy(path, default_paths.port_dir, sizeof(path));
-	 switch(menu_id)
+	 switch(current_menu->enum_id)
 	 {
             case PATH_SAVESTATES_DIR_CHOICE:
                strlcpy(g_console.default_savestate_dir, path, sizeof(g_console.default_savestate_dir));
@@ -912,7 +910,7 @@ static void select_directory(item *items)
       }
    }
 
-   display_menubar();
+   display_menubar(current_menu);
 
    cellDbgFontPuts(0.09f, 0.93f, 0.92f, YELLOW,
       "X - Enter dir  /\\ - return to settings  START - Reset Startdir");
@@ -1018,604 +1016,604 @@ static void rarch_filename_input_and_save (unsigned filename_type)
    }
 }
 
-static void producesettingentry(menu * menu_obj, item *items, unsigned switchvalue)
+static void producesettingentry(menu *current_menu, item *items, unsigned switchvalue)
 {
-	switch(switchvalue)
-	{
-		case SETTING_CHANGE_RESOLUTION:
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
-                           rarch_settings_change(S_RESOLUTION_NEXT);
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
-                           rarch_settings_change(S_RESOLUTION_PREVIOUS);
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
-			{
-                           if (g_console.supported_resolutions[g_console.current_resolution_index] == CELL_VIDEO_OUT_RESOLUTION_576)
+   switch(switchvalue)
+   {
+	   case SETTING_CHANGE_RESOLUTION:
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+			   rarch_settings_change(S_RESOLUTION_NEXT);
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+			   rarch_settings_change(S_RESOLUTION_PREVIOUS);
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+		   {
+			   if (g_console.supported_resolutions[g_console.current_resolution_index] == CELL_VIDEO_OUT_RESOLUTION_576)
 			   {
-                              if(gfx_ctx_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
-			      {
-                                 //ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
-                                 video_gl.restart();
-			      }
+				   if(gfx_ctx_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
+				   {
+					   //ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
+					   video_gl.restart();
+				   }
 			   }
 			   else
 			   {
-                              //ps3graphics_set_pal60hz(0);
-                              video_gl.restart();
+				   //ps3graphics_set_pal60hz(0);
+				   video_gl.restart();
 			   }
-			}
-			break;
-			/*
-			   case SETTING_PAL60_MODE:
-			   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			   {
-			   if (Graphics->GetCurrentResolution() == CELL_VIDEO_OUT_RESOLUTION_576)
-			   {
-			   if(Graphics->CheckResolution(CELL_VIDEO_OUT_RESOLUTION_576))
-			   {
-			   Settings.PS3PALTemporalMode60Hz = !Settings.PS3PALTemporalMode60Hz;
-			   Graphics->SetPAL60Hz(Settings.PS3PALTemporalMode60Hz);
-			   Graphics->SwitchResolution(Graphics->GetCurrentResolution(), Settings.PS3PALTemporalMode60Hz, Settings.TripleBuffering);
-			   }
-			   }
+		   }
+		   break;
+		   /*
+		      case SETTING_PAL60_MODE:
+		      if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		      {
+		      if (Graphics->GetCurrentResolution() == CELL_VIDEO_OUT_RESOLUTION_576)
+		      {
+		      if(Graphics->CheckResolution(CELL_VIDEO_OUT_RESOLUTION_576))
+		      {
+		      Settings.PS3PALTemporalMode60Hz = !Settings.PS3PALTemporalMode60Hz;
+		      Graphics->SetPAL60Hz(Settings.PS3PALTemporalMode60Hz);
+		      Graphics->SwitchResolution(Graphics->GetCurrentResolution(), Settings.PS3PALTemporalMode60Hz, Settings.TripleBuffering);
+		      }
+		      }
 
-			   }
-			   break;
-			 */
-		case SETTING_SHADER_PRESETS:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
-                           if(g_console.emulator_initialized)
+		      }
+		      break;
+		      */
+	   case SETTING_SHADER_PRESETS:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
+			   if(g_console.emulator_initialized)
 			   {
-                              menu_stack_increment();
-                              menu_stack_push(menuStackindex, items, PRESET_CHOICE);
+				   menu_stack_increment();
+				   menu_stack_push(menuStackindex, items, PRESET_CHOICE);
 			   }
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           strlcpy(g_console.cgp_path, "", sizeof(g_console.cgp_path));
-			break;
-		case SETTING_SHADER:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			   strlcpy(g_console.cgp_path, "", sizeof(g_console.cgp_path));
+		   break;
+	   case SETTING_SHADER:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
 			   menu_stack_increment();
 			   menu_stack_push(menuStackindex, items, SHADER_CHOICE);
 			   set_shader = 0;
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
-                           rarch_load_shader(1, NULL);
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+			   rarch_load_shader(1, NULL);
 			   strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
-			   menu_stack_refresh(items, menuStackindex);
-			}
-			break;
-		case SETTING_SHADER_2:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
+			   menu_stack_refresh(items, current_menu);
+		   }
+		   break;
+	   case SETTING_SHADER_2:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
 			   menu_stack_increment();
 			   menu_stack_push(menuStackindex, items, SHADER_CHOICE);
 			   set_shader = 1;
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
-                           rarch_load_shader(2, NULL);
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+			   rarch_load_shader(2, NULL);
 			   strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
-			   menu_stack_refresh(items, menuStackindex);
-			}
-			break;
-		case SETTING_FONT_SIZE:
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
-			{
-				if(g_console.menu_font_size > 0) 
-                                   g_console.menu_font_size -= 0.01f;
-			}
-                        if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
-				if((g_console.menu_font_size < 2.0f))
-                                   g_console.menu_font_size += 0.01f;
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           g_console.menu_font_size = 1.0f;
-			break;
-		case SETTING_KEEP_ASPECT_RATIO:
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
-			{
-                           rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
+			   menu_stack_refresh(items, current_menu);
+		   }
+		   break;
+	   case SETTING_FONT_SIZE:
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+		   {
+			   if(g_console.menu_font_size > 0) 
+				   g_console.menu_font_size -= 0.01f;
+		   }
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
+			   if((g_console.menu_font_size < 2.0f))
+				   g_console.menu_font_size += 0.01f;
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			   g_console.menu_font_size = 1.0f;
+		   break;
+	   case SETTING_KEEP_ASPECT_RATIO:
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+		   {
+			   rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
 			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
-			{
-                           rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+		   {
+			   rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
 			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
-                           rarch_settings_default(S_DEF_ASPECT_RATIO);
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+			   rarch_settings_default(S_DEF_ASPECT_RATIO);
 			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
-			}
-			break;
-		case SETTING_HW_TEXTURE_FILTER:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
-                           rarch_settings_change(S_HW_TEXTURE_FILTER);
+		   }
+		   break;
+	   case SETTING_HW_TEXTURE_FILTER:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
+			   rarch_settings_change(S_HW_TEXTURE_FILTER);
 			   gfx_ctx_set_filtering(1, g_settings.video.smooth);
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
-                           rarch_settings_change(S_DEF_HW_TEXTURE_FILTER);
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+			   rarch_settings_change(S_DEF_HW_TEXTURE_FILTER);
 			   gfx_ctx_set_filtering(1, g_settings.video.smooth);
-			}
-			break;
-		case SETTING_HW_TEXTURE_FILTER_2:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
-                                rarch_settings_change(S_HW_TEXTURE_FILTER_2);
-				gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
-                                rarch_settings_change(S_DEF_HW_TEXTURE_FILTER_2);
-				gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
-			}
-			break;
-		case SETTING_SCALE_ENABLED:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
-                                rarch_settings_change(S_SCALE_ENABLED);
-				gfx_ctx_set_fbo(g_console.fbo_enabled);
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
-                                rarch_settings_default(S_DEF_SCALE_ENABLED);
-				apply_scaling(FBO_DEINIT);
-				apply_scaling(FBO_INIT);
-			}
-			break;
-		case SETTING_SCALE_FACTOR:
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
-			{
-                           if(g_console.fbo_enabled)
-			   {
-                              bool should_decrement = g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR;
-			      if(should_decrement)
-			      {
-                                 rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
-				 apply_scaling(FBO_REINIT);
-			      }
-			   }
-			}
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
-                           if(g_console.fbo_enabled)
-			   {
-                              bool should_increment = g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR;
-			      if(should_increment)
-			      {
-                                 rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
-				 apply_scaling(FBO_REINIT);
-			      }
-			   }
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
-                           rarch_settings_default(S_DEF_SCALE_FACTOR);
+		   }
+		   break;
+	   case SETTING_HW_TEXTURE_FILTER_2:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
+			   rarch_settings_change(S_HW_TEXTURE_FILTER_2);
+			   gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+			   rarch_settings_change(S_DEF_HW_TEXTURE_FILTER_2);
+			   gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
+		   }
+		   break;
+	   case SETTING_SCALE_ENABLED:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
+			   rarch_settings_change(S_SCALE_ENABLED);
+			   gfx_ctx_set_fbo(g_console.fbo_enabled);
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+			   rarch_settings_default(S_DEF_SCALE_ENABLED);
 			   apply_scaling(FBO_DEINIT);
 			   apply_scaling(FBO_INIT);
-			}
-			break;
-		case SETTING_HW_OVERSCAN_AMOUNT:
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
-			{
-				rarch_settings_change(S_OVERSCAN_DECREMENT);
-				gfx_ctx_set_overscan();
-			}
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
-				rarch_settings_change(S_OVERSCAN_INCREMENT);
-				gfx_ctx_set_overscan();
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
-				rarch_settings_default(S_DEF_OVERSCAN);
-				gfx_ctx_set_overscan();
-			}
-			break;
-		case SETTING_THROTTLE_MODE:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
-				rarch_settings_change(S_THROTTLE);
-				gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
-				rarch_settings_default(S_DEF_THROTTLE);
-				gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
-			}
-			break;
-		case SETTING_TRIPLE_BUFFERING:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
-				rarch_settings_change(S_TRIPLE_BUFFERING);
-				video_gl.restart();
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
-				bool old_buffer_input_st = g_console.triple_buffering_enable;
-				rarch_settings_default(S_DEF_TRIPLE_BUFFERING);
+		   }
+		   break;
+	   case SETTING_SCALE_FACTOR:
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+		   {
+			   if(g_console.fbo_enabled)
+			   {
+				   bool should_decrement = g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR;
+				   if(should_decrement)
+				   {
+					   rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
+					   apply_scaling(FBO_REINIT);
+				   }
+			   }
+		   }
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
+			   if(g_console.fbo_enabled)
+			   {
+				   bool should_increment = g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR;
+				   if(should_increment)
+				   {
+					   rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
+					   apply_scaling(FBO_REINIT);
+				   }
+			   }
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+			   rarch_settings_default(S_DEF_SCALE_FACTOR);
+			   apply_scaling(FBO_DEINIT);
+			   apply_scaling(FBO_INIT);
+		   }
+		   break;
+	   case SETTING_HW_OVERSCAN_AMOUNT:
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+		   {
+			   rarch_settings_change(S_OVERSCAN_DECREMENT);
+			   gfx_ctx_set_overscan();
+		   }
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
+			   rarch_settings_change(S_OVERSCAN_INCREMENT);
+			   gfx_ctx_set_overscan();
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+			   rarch_settings_default(S_DEF_OVERSCAN);
+			   gfx_ctx_set_overscan();
+		   }
+		   break;
+	   case SETTING_THROTTLE_MODE:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
+			   rarch_settings_change(S_THROTTLE);
+			   gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+			   rarch_settings_default(S_DEF_THROTTLE);
+			   gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
+		   }
+		   break;
+	   case SETTING_TRIPLE_BUFFERING:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
+			   rarch_settings_change(S_TRIPLE_BUFFERING);
+			   video_gl.restart();
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+			   bool old_buffer_input_st = g_console.triple_buffering_enable;
+			   rarch_settings_default(S_DEF_TRIPLE_BUFFERING);
 
-				if(!old_buffer_input_st)
-                                   video_gl.restart();
-			}
-			break;
-		case SETTING_ENABLE_SCREENSHOTS:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
+			   if(!old_buffer_input_st)
+				   video_gl.restart();
+		   }
+		   break;
+	   case SETTING_ENABLE_SCREENSHOTS:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
 #if(CELL_SDK_VERSION > 0x340000)
-                           g_console.screenshots_enable = !g_console.screenshots_enable;
+			   g_console.screenshots_enable = !g_console.screenshots_enable;
 			   if(g_console.screenshots_enable)
 			   {
-                              cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
-			      CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
+				   cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+				   CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
 
-			      screenshot_param.photo_title = "RetroArch PS3";
-			      screenshot_param.game_title = "RetroArch PS3";
-			      cellScreenShotSetParameter (&screenshot_param);
-			      cellScreenShotEnable();
+				   screenshot_param.photo_title = "RetroArch PS3";
+				   screenshot_param.game_title = "RetroArch PS3";
+				   cellScreenShotSetParameter (&screenshot_param);
+				   cellScreenShotEnable();
 			   }
 			   else
 			   {
-                              cellScreenShotDisable();
-			      cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+				   cellScreenShotDisable();
+				   cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
 			   }
 #endif
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
 #if(CELL_SDK_VERSION > 0x340000)
-                           g_console.screenshots_enable = true;
+			   g_console.screenshots_enable = true;
 #endif
-			}
-			break;
-		case SETTING_SAVE_SHADER_PRESET:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-                           rarch_filename_input_and_save(SHADER_PRESET_FILE);
-			break;
-		case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
-			break;
-		case SETTING_DEFAULT_VIDEO_ALL:
-			break;
-		case SETTING_SOUND_MODE:
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
-			{
-                           if(g_console.sound_mode != SOUND_MODE_NORMAL)
-                              g_console.sound_mode--;
-			}
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
-                           if(g_console.sound_mode < SOUND_MODE_HEADSET)
-                              g_console.sound_mode++;
-			}
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_UP)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)))
-			{
-                           if(g_console.sound_mode != SOUND_MODE_RSOUND)
-                              rarch_console_rsound_stop();
+		   }
+		   break;
+	   case SETTING_SAVE_SHADER_PRESET:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			   rarch_filename_input_and_save(SHADER_PRESET_FILE);
+		   break;
+	   case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
+		   break;
+	   case SETTING_DEFAULT_VIDEO_ALL:
+		   break;
+	   case SETTING_SOUND_MODE:
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+		   {
+			   if(g_console.sound_mode != SOUND_MODE_NORMAL)
+				   g_console.sound_mode--;
+		   }
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
+			   if(g_console.sound_mode < SOUND_MODE_HEADSET)
+				   g_console.sound_mode++;
+		   }
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_UP)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)))
+		   {
+			   if(g_console.sound_mode != SOUND_MODE_RSOUND)
+				   rarch_console_rsound_stop();
 			   else
-                              rarch_console_rsound_start(g_settings.audio.device);
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
-                           g_console.sound_mode = SOUND_MODE_NORMAL;
+				   rarch_console_rsound_start(g_settings.audio.device);
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+			   g_console.sound_mode = SOUND_MODE_NORMAL;
 			   rarch_console_rsound_stop();
-			}
-			break;
-		case SETTING_RSOUND_SERVER_IP_ADDRESS:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
-                           oskutil_write_initial_message(&g_console.oskutil_handle, L"192.168.1.1");
+		   }
+		   break;
+	   case SETTING_RSOUND_SERVER_IP_ADDRESS:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
+			   oskutil_write_initial_message(&g_console.oskutil_handle, L"192.168.1.1");
 			   oskutil_write_message(&g_console.oskutil_handle, L"Enter IP address for the RSound Server.");
 			   oskutil_start(&g_console.oskutil_handle);
 			   while(OSK_IS_RUNNING(g_console.oskutil_handle))
 			   {
-                              gfx_ctx_clear();
-			      gfx_ctx_swap_buffers();
+				   gfx_ctx_clear();
+				   gfx_ctx_swap_buffers();
 #ifdef HAVE_SYSUTILS
-			      cellSysutilCheckCallback();
+				   cellSysutilCheckCallback();
 #endif
 			   }
 
 			   if(g_console.oskutil_handle.text_can_be_fetched)
-                              strlcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(g_settings.audio.device));
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           strlcpy(g_settings.audio.device, "0.0.0.0", sizeof(g_settings.audio.device));
-			break;
-		case SETTING_DEFAULT_AUDIO_ALL:
-			break;
-		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
-                           rarch_settings_change(S_SAVESTATE_DECREMENT);
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-                           rarch_settings_change(S_SAVESTATE_INCREMENT);
+				   strlcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(g_settings.audio.device));
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			   strlcpy(g_settings.audio.device, "0.0.0.0", sizeof(g_settings.audio.device));
+		   break;
+	   case SETTING_DEFAULT_AUDIO_ALL:
+		   break;
+	   case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+			   rarch_settings_change(S_SAVESTATE_DECREMENT);
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			   rarch_settings_change(S_SAVESTATE_INCREMENT);
 
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           rarch_settings_default(S_DEF_SAVE_STATE);
-			break;
-		case SETTING_EMU_SHOW_INFO_MSG:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-                           g_console.info_msg_enable = !g_console.info_msg_enable;
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           g_console.info_msg_enable = true;
-			break;
-		case SETTING_EMU_REWIND_ENABLED:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
-                           rarch_settings_change(S_REWIND);
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			   rarch_settings_default(S_DEF_SAVE_STATE);
+		   break;
+	   case SETTING_EMU_SHOW_INFO_MSG:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			   g_console.info_msg_enable = !g_console.info_msg_enable;
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			   g_console.info_msg_enable = true;
+		   break;
+	   case SETTING_EMU_REWIND_ENABLED:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
+			   rarch_settings_change(S_REWIND);
 
 			   if(g_console.info_msg_enable)
-                              rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           g_settings.rewind_enable = false;
-			break;
-                case SETTING_ZIP_EXTRACT:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)))
-                        {
-                           if(g_console.zip_extract_mode > 0)
-                              g_console.zip_extract_mode--;
-                        }
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-                        {
-                           if(g_console.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
-                              g_console.zip_extract_mode++;
-                        }
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
-                           g_console.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR;
-			}
-                        break;
-		case SETTING_RARCH_DEFAULT_EMU:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
+				   rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			   g_settings.rewind_enable = false;
+		   break;
+	   case SETTING_ZIP_EXTRACT:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)))
+		   {
+			   if(g_console.zip_extract_mode > 0)
+				   g_console.zip_extract_mode--;
+		   }
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
+			   if(g_console.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
+				   g_console.zip_extract_mode++;
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+			   g_console.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR;
+		   }
+		   break;
+	   case SETTING_RARCH_DEFAULT_EMU:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
 			   menu_stack_increment();
 			   menu_stack_push(menuStackindex, items, LIBRETRO_CHOICE);
 			   set_libretro_core_as_launch = false;
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
-			}
-			break;
-		case SETTING_EMU_AUDIO_MUTE:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-                           rarch_settings_change(S_AUDIO_MUTE);
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+		   }
+		   break;
+	   case SETTING_EMU_AUDIO_MUTE:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			   rarch_settings_change(S_AUDIO_MUTE);
 
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           rarch_settings_default(S_DEF_AUDIO_MUTE);
-			break;
-		case SETTING_ENABLE_CUSTOM_BGM:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			   rarch_settings_default(S_DEF_AUDIO_MUTE);
+		   break;
+	   case SETTING_ENABLE_CUSTOM_BGM:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
 #if(CELL_SDK_VERSION > 0x340000)
-                           g_console.custom_bgm_enable = !g_console.custom_bgm_enable;
+			   g_console.custom_bgm_enable = !g_console.custom_bgm_enable;
 			   if(g_console.custom_bgm_enable)
-                              cellSysutilEnableBgmPlayback();
+				   cellSysutilEnableBgmPlayback();
 			   else
-                              cellSysutilDisableBgmPlayback();
+				   cellSysutilDisableBgmPlayback();
 
 #endif
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
 #if(CELL_SDK_VERSION > 0x340000)
-				g_console.custom_bgm_enable = true;
+			   g_console.custom_bgm_enable = true;
 #endif
-			}
-			break;
-		case SETTING_EMU_VIDEO_DEFAULT_ALL:
-			break;
-		case SETTING_EMU_AUDIO_DEFAULT_ALL:
-			break;
-		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
+		   }
+		   break;
+	   case SETTING_EMU_VIDEO_DEFAULT_ALL:
+		   break;
+	   case SETTING_EMU_AUDIO_DEFAULT_ALL:
+		   break;
+	   case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
 			   menu_stack_increment();
 			   menu_stack_push(menuStackindex, items, PATH_DEFAULT_ROM_DIR_CHOICE);
-			}
+		   }
 
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-				strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
-			break;
-		case SETTING_PATH_SAVESTATES_DIRECTORY:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			   strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
+		   break;
+	   case SETTING_PATH_SAVESTATES_DIRECTORY:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
 			   menu_stack_increment();
-                           menu_stack_push(menuStackindex, items, PATH_SAVESTATES_DIR_CHOICE);
-			}
+			   menu_stack_push(menuStackindex, items, PATH_SAVESTATES_DIR_CHOICE);
+		   }
 
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           strlcpy(g_console.default_savestate_dir, default_paths.savestate_dir, sizeof(g_console.default_savestate_dir));
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			   strlcpy(g_console.default_savestate_dir, default_paths.savestate_dir, sizeof(g_console.default_savestate_dir));
 
-			break;
-		case SETTING_PATH_SRAM_DIRECTORY:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
+		   break;
+	   case SETTING_PATH_SRAM_DIRECTORY:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
 			   menu_stack_increment();
-                           menu_stack_push(menuStackindex, items, PATH_SRAM_DIR_CHOICE);
-			}
+			   menu_stack_push(menuStackindex, items, PATH_SRAM_DIR_CHOICE);
+		   }
 
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           strlcpy(g_console.default_sram_dir, default_paths.sram_dir, sizeof(g_console.default_sram_dir));
-			break;
-		case SETTING_PATH_CHEATS:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			   strlcpy(g_console.default_sram_dir, default_paths.sram_dir, sizeof(g_console.default_sram_dir));
+		   break;
+	   case SETTING_PATH_CHEATS:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
 			   menu_stack_increment();
-                           menu_stack_push(menuStackindex, items, PATH_CHEATS_DIR_CHOICE);
-			}
+			   menu_stack_push(menuStackindex, items, PATH_CHEATS_DIR_CHOICE);
+		   }
 
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
-			break;
-		case SETTING_PATH_SYSTEM:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			   strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
+		   break;
+	   case SETTING_PATH_SYSTEM:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
 			   menu_stack_increment();
-                           menu_stack_push(menuStackindex, items, PATH_SYSTEM_DIR_CHOICE);
-			}
+			   menu_stack_push(menuStackindex, items, PATH_SYSTEM_DIR_CHOICE);
+		   }
 
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
-			break;
-		case SETTING_ENABLE_SRAM_PATH:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)))
-			{
-                           g_console.default_sram_dir_enable = !g_console.default_sram_dir_enable;
-			   menu_stack_refresh(items, menuStackindex);
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
-                           g_console.default_sram_dir_enable = true;
-			   menu_stack_refresh(items, menuStackindex);
-			}
-			break;
-		case SETTING_ENABLE_STATE_PATH:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)))
-			{
-                           g_console.default_savestate_dir_enable = !g_console.default_savestate_dir_enable;
-			   menu_stack_refresh(items, menuStackindex);
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			{
-                           g_console.default_savestate_dir_enable = true;
-			   menu_stack_refresh(items, menuStackindex);
-			}
-			break;
-		case SETTING_PATH_DEFAULT_ALL:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
-			{
-                           strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			   strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
+		   break;
+	   case SETTING_ENABLE_SRAM_PATH:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)))
+		   {
+			   g_console.default_sram_dir_enable = !g_console.default_sram_dir_enable;
+			   menu_stack_refresh(items, current_menu);
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+			   g_console.default_sram_dir_enable = true;
+			   menu_stack_refresh(items, current_menu);
+		   }
+		   break;
+	   case SETTING_ENABLE_STATE_PATH:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)))
+		   {
+			   g_console.default_savestate_dir_enable = !g_console.default_savestate_dir_enable;
+			   menu_stack_refresh(items, current_menu);
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+			   g_console.default_savestate_dir_enable = true;
+			   menu_stack_refresh(items, current_menu);
+		   }
+		   break;
+	   case SETTING_PATH_DEFAULT_ALL:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
+		   {
+			   strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
 			   strlcpy(g_console.default_savestate_dir, default_paths.port_dir, sizeof(g_console.default_savestate_dir));
 			   strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
 			   strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
 
-			   menu_stack_refresh(items, menuStackindex);
-			}
-			break;
-		case SETTING_CONTROLS_SCHEME:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
-			{
-                           menu_stack_increment();
-                           menu_stack_push(menuStackindex, items, INPUT_PRESET_CHOICE);
-			}
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			   menu_stack_refresh(items, menuStackindex);
-			break;
-		case SETTING_CONTROLS_NUMBER:
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
-			{
-                           if(currently_selected_controller_menu != 0)
-                              currently_selected_controller_menu--;
-			   menu_stack_refresh(items, menuStackindex);
-			}
+			   menu_stack_refresh(items, current_menu);
+		   }
+		   break;
+	   case SETTING_CONTROLS_SCHEME:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
+		   {
+			   menu_stack_increment();
+			   menu_stack_push(menuStackindex, items, INPUT_PRESET_CHOICE);
+		   }
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			   menu_stack_refresh(items, current_menu);
+		   break;
+	   case SETTING_CONTROLS_NUMBER:
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+		   {
+			   if(currently_selected_controller_menu != 0)
+				   currently_selected_controller_menu--;
+			   menu_stack_refresh(items, current_menu);
+		   }
 
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
-			{
-                           if(currently_selected_controller_menu < 6)
-                              currently_selected_controller_menu++;
-			   menu_stack_refresh(items, menuStackindex);
-			}
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
+			   if(currently_selected_controller_menu < 6)
+				   currently_selected_controller_menu++;
+			   menu_stack_refresh(items, current_menu);
+		   }
 
-			if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-                           currently_selected_controller_menu = 0;
-			break; 
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_UP);
-			break;
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_DOWN);
-			break;
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_LEFT);
-			break;
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_RIGHT);
-			break;
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_A);
-			break;
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_B);
-			break;
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_X);
-			break;
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_Y);
-			break;
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_SELECT);
-			break;
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_START);
-			break;
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_L);
-			break;
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R);
-			break;
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_L2);
-			break;
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R2);
-			break;
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_L3);
-			break;
-		case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
-			set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R3);
-			break;
-		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
-                           rarch_filename_input_and_save(INPUT_PRESET_FILE);
-			break;
-		case SETTING_CONTROLS_DEFAULT_ALL:
-			if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
-			{
-                           rarch_input_set_default_keybinds(currently_selected_controller_menu);
-			   menu_stack_refresh(items, menuStackindex);
-			}
-			break;
-	}
+		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			   currently_selected_controller_menu = 0;
+		   break; 
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_UP);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_DOWN);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_LEFT);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_RIGHT);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_A);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_B);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_X);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_Y);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_SELECT);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_START);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_L);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_L2);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R2);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_L3);
+		   break;
+	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
+		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R3);
+		   break;
+	   case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
+			   rarch_filename_input_and_save(INPUT_PRESET_FILE);
+		   break;
+	   case SETTING_CONTROLS_DEFAULT_ALL:
+		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
+		   {
+			   rarch_input_set_default_keybinds(currently_selected_controller_menu);
+			   menu_stack_refresh(items, current_menu);
+		   }
+		   break;
+   }
 
-	set_setting_label(menu_obj, items, switchvalue);
+   set_setting_label(current_menu, items, switchvalue);
 }
 
-static void settings_iterate(menu * menu_obj, item *items, settings_action_t action)
+static void settings_iterate(menu *current_menu, item *items, settings_action_t action)
 {
    switch(action)
    {
       case SETTINGS_ACTION_DOWN:
-         menu_obj->selected++;
+         current_menu->selected++;
 
-	 if (menu_obj->selected >= menu_obj->max_settings)
-            menu_obj->selected = menu_obj->first_setting; 
+	 if (current_menu->selected >= current_menu->max_settings)
+            current_menu->selected = current_menu->first_setting; 
 
-	 if (items[menu_obj->selected].page != menu_obj->page)
-            menu_obj->page = items[menu_obj->selected].page;
+	 if (items[current_menu->selected].page != current_menu->page)
+            current_menu->page = items[current_menu->selected].page;
          break;
       case SETTINGS_ACTION_UP:
-         if (menu_obj->selected == menu_obj->first_setting)
-            menu_obj->selected = menu_obj->max_settings-1;
+         if (current_menu->selected == current_menu->first_setting)
+            current_menu->selected = current_menu->max_settings-1;
 	 else
-            menu_obj->selected--;
+            current_menu->selected--;
 
-	 if (items[menu_obj->selected].page != menu_obj->page)
-            menu_obj->page = items[menu_obj->selected].page;
+	 if (items[current_menu->selected].page != current_menu->page)
+            current_menu->page = items[current_menu->selected].page;
          break;
       case SETTINGS_ACTION_TAB_PREVIOUS:
 	 menu_stack_decrement();
          break;
       case SETTINGS_ACTION_TAB_NEXT:
-         switch(menu_obj->enum_id)
+         switch(current_menu->enum_id)
 	 {
             case GENERAL_VIDEO_MENU:
 	    case GENERAL_AUDIO_MENU:
@@ -1624,7 +1622,7 @@ static void settings_iterate(menu * menu_obj, item *items, settings_action_t act
 	    case EMU_AUDIO_MENU:
 	    case PATH_MENU:
 	       menu_stack_increment();
-               menu_stack_push(menuStackindex, items, menu_obj->enum_id+1);
+               menu_stack_push(menuStackindex, items, current_menu->enum_id + 1);
 	       break;
 	    case CONTROLS_MENU:
             default:
@@ -1636,11 +1634,10 @@ static void settings_iterate(menu * menu_obj, item *items, settings_action_t act
    }
 }
 
-static void select_setting(item *items)
+static void select_setting(item *items, menu *current_menu)
 {
    unsigned i;
    gl_t * gl = driver.video_data;
-   menu *menu_obj = &menuStack[menuStackindex];
 
    settings_action_t action = SETTINGS_ACTION_NOOP;
 
@@ -1655,25 +1652,25 @@ static void select_setting(item *items)
       action = SETTINGS_ACTION_UP;
 
    if(action != SETTINGS_ACTION_NOOP)
-	   settings_iterate(menu_obj, items, action);
+	   settings_iterate(current_menu, items, action);
 
-   producesettingentry(menu_obj, items, menu_obj->selected);
+   producesettingentry(current_menu, items, current_menu->selected);
 
-   display_menubar();
+   display_menubar(current_menu);
    gl_render_msg_post(gl);
 
 
-   for (i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
+   for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
    {
-      if(items[i].page == menu_obj->page)
+      if(items[i].page == current_menu->page)
       {
-         cellDbgFontPuts(items[i].text_xpos, items[i].text_ypos, FONT_SIZE, menu_obj->selected == items[i].enum_id ? YELLOW : items[i].item_color, items[i].text);
+         cellDbgFontPuts(items[i].text_xpos, items[i].text_ypos, FONT_SIZE, current_menu->selected == items[i].enum_id ? YELLOW : items[i].item_color, items[i].text);
 	 cellDbgFontPuts(0.5f, items[i].text_ypos, FONT_SIZE, items[i].text_color, items[i].setting_text);
 	 gl_render_msg_post(gl);
       }
    }
 
-   cellDbgFontPuts(0.09f, COMMENT_YPOS, 0.86f, LIGHTBLUE, items[menu_obj->selected].comment);
+   cellDbgFontPuts(0.09f, COMMENT_YPOS, 0.86f, LIGHTBLUE, items[current_menu->selected].comment);
 
    cellDbgFontPuts(0.09f, 0.91f, FONT_SIZE, YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
    cellDbgFontPuts(0.09f, 0.95f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
@@ -1699,7 +1696,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, item *items, menu
    }
 }
 
-static void select_rom(item *items)
+static void select_rom(item *items, menu *current_menu)
 {
    gl_t * gl = driver.video_data;
 
@@ -1728,7 +1725,7 @@ static void select_rom(item *items)
    else
       cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
 
-   display_menubar();
+   display_menubar(current_menu);
 
    cellDbgFontPuts   (0.09f, 0.91f, FONT_SIZE, YELLOW,
    "L3 + R3 - resume game           SELECT - Settings screen");
@@ -1736,7 +1733,7 @@ static void select_rom(item *items)
 }
 
 
-static void ingame_menu_resize(item *items)
+static void ingame_menu_resize(item *items, menu *current_menu)
 {
    (void)items;
 
@@ -1784,7 +1781,7 @@ static void ingame_menu_resize(item *items)
    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_Y)) { }
    else
    {
-      display_menubar();
+      display_menubar(current_menu);
 
       cellDbgFontPrintf(x_position, ypos, font_size, GREEN, "Viewport X: #%d", g_console.viewports.custom_vp.x);
 
@@ -1844,9 +1841,10 @@ static void ingame_menu_resize(item *items)
    }
 }
 
-static void ingame_menu_screenshot(item *items)
+static void ingame_menu_screenshot(item *items, menu *current_menu)
 {
    (void)items;
+   (void)current_menu;
 
    gl_t * gl = driver.video_data;
 
@@ -1860,12 +1858,11 @@ static void ingame_menu_screenshot(item *items)
    }
 }
 
-static void ingame_menu(item *items)
+static void ingame_menu(item *items, menu *current_menu)
 {
    char comment[256];
    static unsigned menuitem_colors[MENU_ITEM_LAST];
    gl_t * gl = driver.video_data;
-   menu *menu_obj = &menuStack[menuStackindex];
 
    float x_position = 0.09f;
    float font_size = 1.1f;
@@ -1909,11 +1906,11 @@ static void ingame_menu(item *items)
 	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
-            producesettingentry(menu_obj, items, SETTING_KEEP_ASPECT_RATIO);
+            producesettingentry(current_menu, items, SETTING_KEEP_ASPECT_RATIO);
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_OVERSCAN_AMOUNT:
-            producesettingentry(menu_obj, items, SETTING_HW_OVERSCAN_AMOUNT);
+            producesettingentry(current_menu, items, SETTING_HW_OVERSCAN_AMOUNT);
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_ORIENTATION:
@@ -1937,7 +1934,7 @@ static void ingame_menu(item *items)
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_SCALE_FACTOR:
-            producesettingentry(menu_obj, items, SETTING_SCALE_FACTOR);
+            producesettingentry(current_menu, items, SETTING_SCALE_FACTOR);
 	    strlcpy(comment, "Press LEFT or RIGHT to change the [Scaling] settings.\nPress START to reset back to default values.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
@@ -2032,7 +2029,7 @@ static void ingame_menu(item *items)
    if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_L3)) && (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_R3)))
       rarch_settings_change(S_RETURN_TO_GAME);
 
-   display_menubar();
+   display_menubar(current_menu);
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
    cellDbgFontPrintf(x_position, ypos, font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), strw_buffer);
@@ -2134,8 +2131,7 @@ void menu_loop(void)
    do
    {
       static bool first_held = false;
-      unsigned menu_id = menuStack[menuStackindex].enum_id;
-      unsigned menu_category_id = menuStack[menuStackindex].category_id;
+      menu *current_menu = &menuStack[menuStackindex];
 
       state = cell_pad_input_poll_device(0);
       uint64_t trig_state = state & ~old_state;
@@ -2144,7 +2140,7 @@ void menu_loop(void)
          //second button input
          uint64_t held_state = cell_pad_input_poll_device(0);
          bool analog_sticks_pressed = check_analog(held_state);
-         bool shoulder_buttons_pressed = check_shoulder_buttons(held_state) && menu_category_id != CATEGORY_SETTINGS;
+         bool shoulder_buttons_pressed = check_shoulder_buttons(held_state) && current_menu->category_id != CATEGORY_SETTINGS;
          bool do_held = analog_sticks_pressed || shoulder_buttons_pressed;
 
          if(do_held)
@@ -2166,7 +2162,7 @@ void menu_loop(void)
 
       gfx_ctx_clear();
 
-      if(menu_id == INGAME_MENU_RESIZE && CTRL_SQUARE(state) || menu_id == INGAME_MENU_SCREENSHOT)
+      if(current_menu->enum_id == INGAME_MENU_RESIZE && CTRL_SQUARE(state) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
 	 gl->menu_render = false;
       else
       {
@@ -2178,10 +2174,10 @@ void menu_loop(void)
 
       filebrowser_t * fb = &browser;
 
-      switch(menu_id)
+      switch(current_menu->enum_id)
       {
          case FILE_BROWSER_MENU:
-            select_rom(menu_items);
+            select_rom(menu_items, current_menu);
             fb = &browser;
 	    break;
 	 case GENERAL_VIDEO_MENU:
@@ -2191,36 +2187,36 @@ void menu_loop(void)
 	 case EMU_AUDIO_MENU:
 	 case PATH_MENU:
 	 case CONTROLS_MENU:
-	    select_setting(menu_items);
+	    select_setting(menu_items, current_menu);
 	    break;
 	 case SHADER_CHOICE:
 	 case PRESET_CHOICE:
 	 case BORDER_CHOICE:
 	 case LIBRETRO_CHOICE:
 	 case INPUT_PRESET_CHOICE:
-	    select_file(menu_items);
+	    select_file(menu_items, current_menu);
             fb = &tmpBrowser;
 	    break;
 	 case PATH_SAVESTATES_DIR_CHOICE:
 	 case PATH_DEFAULT_ROM_DIR_CHOICE:
 	 case PATH_CHEATS_DIR_CHOICE:
 	 case PATH_SRAM_DIR_CHOICE:
-	    select_directory(menu_items);
+	    select_directory(menu_items, current_menu);
             fb = &tmpBrowser;
 	    break;
 	 case INGAME_MENU:
 	    if(g_console.ingame_menu_enable)
-               ingame_menu(menu_items);
+               ingame_menu(menu_items, current_menu);
             break;
          case INGAME_MENU_RESIZE:
-            ingame_menu_resize(menu_items);
+            ingame_menu_resize(menu_items, current_menu);
 	    break;
          case INGAME_MENU_SCREENSHOT:
-            ingame_menu_screenshot(menu_items);
+            ingame_menu_screenshot(menu_items, current_menu);
             break;
       }
 
-      switch(menu_category_id)
+      switch(current_menu->category_id)
       {
          case CATEGORY_FILEBROWSER:
             browser_render(fb, 0.09f, 0.10f, 0.035f);
@@ -2273,7 +2269,7 @@ void menu_loop(void)
 #ifdef HAVE_SYSUTILS
       cellSysutilCheckCallback();
 #endif
-      if(menu_id == INGAME_MENU_RESIZE && CTRL_SQUARE(state) || menu_id == INGAME_MENU_SCREENSHOT)
+      if(current_menu->enum_id == INGAME_MENU_RESIZE && CTRL_SQUARE(state) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
       { }
       else
          gfx_ctx_set_blend(false);
