@@ -9,10 +9,6 @@
 #include "rgl.h"
 #include "private.h"
 
-#ifndef STL_NAMESPACE
-#define STL_NAMESPACE std::
-#endif
-
 #include <string.h> 
 
 #define RGL_BOOLEAN_REGISTERS_COUNT 32
@@ -66,23 +62,23 @@ typedef struct CgBinaryProgram          CgBinaryProgram;
 
 typedef struct _CGnamedProgram
 {
-	const char *name;
-	CGprogram program;
-	int refCount;
+   const char *name;
+   CGprogram program;
+   int refCount;
 } _CGnamedProgram;
 
 typedef struct _CGprogramGroup
 {
-	struct _CGprogramGroup *next;
-	CGcontext ctx;
-	unsigned int *constantTable;
-	unsigned int *stringTable;
-	unsigned int programCount;
-	_CGnamedProgram *programs;
-	int refCount;
-	bool userCreated;
-	char *filedata;
-	char *name;
+   struct _CGprogramGroup *next;
+   CGcontext ctx;
+   unsigned int *constantTable;
+   unsigned int *stringTable;
+   unsigned int programCount;
+   _CGnamedProgram *programs;
+   int refCount;
+   bool userCreated;
+   char *filedata;
+   char *name;
 } _CGprogramGroup;
 
 typedef struct _CGprogramGroup *CGprogramGroup;
@@ -99,90 +95,77 @@ const char *_RGLCgGetProgramGroupName( CGprogramGroup group );
 
 typedef struct _CgParameterTableHeader
 {
-	unsigned short entryCount;
-	unsigned short resourceTableOffset;
-	unsigned short defaultValueIndexTableOffset;
-	unsigned short defaultValueIndexCount;
-	unsigned short semanticIndexTableOffset;
-	unsigned short semanticIndexCount;
+   unsigned short entryCount;
+   unsigned short resourceTableOffset;
+   unsigned short defaultValueIndexTableOffset;
+   unsigned short defaultValueIndexCount;
+   unsigned short semanticIndexTableOffset;
+   unsigned short semanticIndexCount;
 } CgParameterTableHeader;
 
 typedef struct _CgParameterEntry
 {
-	unsigned int nameOffset;
-	unsigned short typeIndex;
-	unsigned short flags;
+   unsigned int nameOffset;
+   unsigned short typeIndex;
+   unsigned short flags;
 } CgParameterEntry;
-
-#ifdef MSVC
-#pragma warning( push )
-#pragma warning ( disable : 4200 )
-#endif
 
 typedef struct _CgParameterArray
 {
-	unsigned short arrayType;
-	unsigned short dimensionCount;
-	unsigned short dimensions[];
+   unsigned short arrayType;
+   unsigned short dimensionCount;
+   unsigned short dimensions[];
 } CgParameterArray;
-
-#ifdef MSVC
-#pragma warning( pop )
-#endif
 
 typedef struct _CgParameterStructure
 {
-	unsigned short memberCount;
-	unsigned short reserved;
-}
-CgParameterStructure;
+   unsigned short memberCount;
+   unsigned short reserved;
+} CgParameterStructure;
 
 typedef struct _CgParameterResource
 {
-	unsigned short type;
-	unsigned short resource;
-}
-CgParameterResource;
+   unsigned short type;
+   unsigned short resource;
+} CgParameterResource;
 
 typedef struct _CgParameterSemantic
 {
-	unsigned short entryIndex;
-	unsigned short reserved;
-	unsigned int semanticOffset;
-}
-CgParameterSemantic;
+   unsigned short entryIndex;
+   unsigned short reserved;
+   unsigned int semanticOffset;
+} CgParameterSemantic;
 
 typedef struct _CgParameterDefaultValue
 {
-	unsigned short entryIndex;
-	unsigned short defaultValueIndex;
-}
-CgParameterDefaultValue;
+   unsigned short entryIndex;
+   unsigned short defaultValueIndex;
+} CgParameterDefaultValue;
 
 typedef struct CgProgramHeader
 {
-	unsigned short profile;
-	unsigned short compilerVersion;
-	unsigned int instructionCount;
-	unsigned int attributeInputMask;
-	union
-	{
-		struct
-		{
-			unsigned int instructionSlot;
-			unsigned int registerCount;
-			unsigned int attributeOutputMask;
-		} vertexProgram;
-		struct
-		{
-			unsigned int partialTexType;
-			unsigned short texcoordInputMask;
-			unsigned short texcoord2d;
-			unsigned short texcoordCentroid;
-			unsigned char registerCount;
-			unsigned char flags;
-		} fragmentProgram;
-	};
+   unsigned short profile;
+   unsigned short compilerVersion;
+   unsigned int instructionCount;
+   unsigned int attributeInputMask;
+   union
+   {
+      struct
+      {
+         unsigned int instructionSlot;
+	 unsigned int registerCount;
+	 unsigned int attributeOutputMask;
+      } vertexProgram;
+      struct
+      {
+         unsigned int partialTexType;
+	 unsigned short texcoordInputMask;
+	 unsigned short texcoord2d;
+	 unsigned short texcoordCentroid;
+	 unsigned char registerCount;
+	 unsigned char flags;
+      } fragmentProgram;
+   };
 }
 CgProgramHeader;
 
@@ -192,79 +175,78 @@ typedef void( *_cgSetArrayIndexFunction )( struct CgRuntimeParameter* __restrict
 
 typedef struct _CgUniform
 {
-	void *pushBufferPtr;
+   void *pushBufferPtr;
 } _CgUniform;
 
 typedef struct _CGprogram _CGprogram;
 
 typedef struct CgRuntimeParameter
 {
-	_cgSetArrayIndexFunction samplerSetter;
+   _cgSetArrayIndexFunction samplerSetter;
+   _cgSetArrayIndexFunction  setterIndex;
+   _cgSetArrayIndexFunction settercIndex;
+   _cgSetArrayIndexFunction setterrIndex;
 
-	_cgSetArrayIndexFunction  setterIndex;
-	_cgSetArrayIndexFunction settercIndex;
-	_cgSetArrayIndexFunction setterrIndex;
-
-	void *pushBufferPointer;
-	const CgParameterEntry *parameterEntry;
-	_CGprogram *program;
-	int glType;
-	CGparameter id;
+   void *pushBufferPointer;
+   const CgParameterEntry *parameterEntry;
+   _CGprogram *program;
+   int glType;
+   CGparameter id;
 } CgRuntimeParameter;
 
 struct _CGprogram
 {
-	struct _CGprogram*   next;
-	CGprogram            id;
-	struct _CGcontext*   parentContext;
-	void*                parentEffect;
-	bool		 inLocalMemory;
-	unsigned int         constantPushBufferWordSize;
-	unsigned int*        constantPushBuffer;
-	void*     platformProgram;
-	void*     platformProgramBinary;
-	unsigned int         samplerCount;
-	unsigned int *       samplerIndices;
-	unsigned int *       samplerUnits;
-	unsigned int         controlFlowBools;
-	CgProgramHeader header;
-	const char *name;
-	const void *ucode;
-	GLuint loadProgramId;
-	GLuint loadProgramOffset; 
-	int version;
-	char *parameterResources;
-	int rtParametersCount;
-	CgRuntimeParameter *runtimeParameters;
-	const CgParameterEntry *parametersEntries;
-	unsigned short *resources;
-	unsigned short *pushBufferPointers;
-	int defaultValuesIndexCount;
-	const CgParameterDefaultValue *defaultValuesIndices;
-	int defaultValueCount;
-	const float *defaultValues;
-	const char *stringTable;
-	unsigned int **constantPushBufferPointers;
-	unsigned int *samplerValuesLocation;
-	void *memoryBlock;
-	_CGprogramGroup *programGroup;
-	int programIndexInGroup;
-	void *runtimeElf;
+   struct _CGprogram*   next;
+   CGprogram            id;
+   struct _CGcontext*   parentContext;
+   void*                parentEffect;
+   bool		 inLocalMemory;
+   unsigned int         constantPushBufferWordSize;
+   unsigned int*        constantPushBuffer;
+   void*     platformProgram;
+   void*     platformProgramBinary;
+   unsigned int         samplerCount;
+   unsigned int *       samplerIndices;
+   unsigned int *       samplerUnits;
+   unsigned int         controlFlowBools;
+   CgProgramHeader header;
+   const char *name;
+   const void *ucode;
+   GLuint loadProgramId;
+   GLuint loadProgramOffset; 
+   int version;
+   char *parameterResources;
+   int rtParametersCount;
+   CgRuntimeParameter *runtimeParameters;
+   const CgParameterEntry *parametersEntries;
+   unsigned short *resources;
+   unsigned short *pushBufferPointers;
+   int defaultValuesIndexCount;
+   const CgParameterDefaultValue *defaultValuesIndices;
+   int defaultValueCount;
+   const float *defaultValues;
+   const char *stringTable;
+   unsigned int **constantPushBufferPointers;
+   unsigned int *samplerValuesLocation;
+   void *memoryBlock;
+   _CGprogramGroup *programGroup;
+   int programIndexInGroup;
+   void *runtimeElf;
 };
 
 typedef struct _CGcontext
 {
-	struct _CGcontext* next;
-	CGcontext          id;
-	unsigned int       programCount;
-	struct _CGprogram* programList;
-	CGenum             compileType;
-	unsigned int         controlFlowBoolsSharedMask;
-	unsigned int         controlFlowBoolsShared;
-	_CGprogram        defaultProgram;
-	CGprogramGroup groupList;
-	double currentParameterValue[16];
-	char currentParameterName[128];
+   struct _CGcontext* next;
+   CGcontext          id;
+   unsigned int       programCount;
+   struct _CGprogram* programList;
+   CGenum             compileType;
+   unsigned int         controlFlowBoolsSharedMask;
+   unsigned int         controlFlowBoolsShared;
+   _CGprogram        defaultProgram;
+   CGprogramGroup groupList;
+   double currentParameterValue[16];
+   char currentParameterName[128];
 } _CGcontext;
 
 
@@ -286,25 +268,19 @@ void _cgIgnoreSetParamIndex( CgRuntimeParameter*p, const void*v, const int index
 #define CG_IS_PARAMETER(_param) _RGLIsName(&_CurrentContext->cgParameterNameSpace, (jsName)(((unsigned int)_param)&CG_PARAMETERMASK))
 
 #define CG_PARAMETERSIZE 22 
-#define CG_PARAMETERMASK ((1<<CG_PARAMETERSIZE)-1)
+#define CG_PARAMETERMASK ((1 << CG_PARAMETERSIZE)-1)
 #define CG_GETINDEX(param) (int)((unsigned int)(param)>>CG_PARAMETERSIZE)
 
 static inline bool isMatrix( CGtype type )
 {
-	if (( type >= CG_FLOAT1x1 && type <= CG_FLOAT4x4 ) ||
-			( type >= CG_HALF1x1 && type <= CG_HALF4x4 ) ||
-			( type >= CG_INT1x1 && type <= CG_INT4x4 ) ||
-			( type >= CG_BOOL1x1 && type <= CG_BOOL4x4 ) ||
-			( type >= CG_FIXED1x1 && type <= CG_FIXED4x4 ))
-		return true;
-	return false;
+   if (( type >= CG_FLOAT1x1 && type <= CG_FLOAT4x4 ) ||
+		   ( type >= CG_HALF1x1 && type <= CG_HALF4x4 ) ||
+		   ( type >= CG_INT1x1 && type <= CG_INT4x4 ) ||
+		   ( type >= CG_BOOL1x1 && type <= CG_BOOL4x4 ) ||
+		   ( type >= CG_FIXED1x1 && type <= CG_FIXED4x4 ))
+	   return true;
+   return false;
 }
-
-static inline bool isSampler( CGtype type )
-{
-	return ( type >= CG_SAMPLER1D && type <= CG_SAMPLERCUBE );
-}
-
 
 unsigned int _RGLCountFloatsInCgType( CGtype type );
 CGbool _cgMatrixDimensions( CGtype type, unsigned int* nrows, unsigned int* ncols );
@@ -314,33 +290,25 @@ unsigned int _RGLGetTypeColCount( CGtype parameterType );
 
 inline static CgRuntimeParameter* _cgGetParamPtr( CGparameter p )
 {
-	return ( CgRuntimeParameter* )_RGLGetNamedValue( &_CurrentContext->cgParameterNameSpace, ( jsName )((( unsigned int )p )&CG_PARAMETERMASK ) );
+   return ( CgRuntimeParameter* )_RGLGetNamedValue( &_CurrentContext->cgParameterNameSpace, ( jsName )((( unsigned int )p )&CG_PARAMETERMASK ) );
 }
 
 inline static _CGprogram* _cgGetProgPtr( CGprogram p )
 {
-	return ( _CGprogram* )_RGLGetNamedValue( &_CurrentContext->cgProgramNameSpace, ( jsName )p );
+   return ( _CGprogram* )_RGLGetNamedValue( &_CurrentContext->cgProgramNameSpace, ( jsName )p );
 }
 
 inline static _CGcontext* _cgGetContextPtr( CGcontext c )
 {
-	return ( _CGcontext* )_RGLGetNamedValue( &_CurrentContext->cgContextNameSpace, ( jsName )c );
+   return ( _CGcontext* )_RGLGetNamedValue( &_CurrentContext->cgContextNameSpace, ( jsName )c );
 }
-
-inline static CgRuntimeParameter* _RGLCgGLTestParameter( CGparameter param )
-{
-	return _cgGetParamPtr( param );
-}
-
-CgRuntimeParameter* _cgGLTestArrayParameter( CGparameter paramIn, long offset, long nelements );
-CgRuntimeParameter* _cgGLTestTextureParameter( CGparameter param );
 
 inline static int _RGLGetSizeofSubArray( const unsigned short *dimensions, unsigned short count )
 {
-	int res = 1;
-	for ( int i = 0;i < count;i++ )
-		res *= ( int )( *( dimensions++ ) );
-	return res;
+   int res = 1;
+   for ( int i = 0;i < count;i++ )
+      res *= ( int )( *( dimensions++ ) );
+   return res;
 }
 
 inline static CGresource _RGLGetBaseResource( CGresource resource )
@@ -396,8 +364,6 @@ void _RGLPlatformProgramErase( void* platformProgram );
 
 CGbool _RGLPlatformSupportsFragmentProgram( CGprofile p );
 
-
-
 void _RGLPlatformSetVertexRegister4fv( unsigned int reg, const float * __restrict v );
 void _RGLPlatformSetVertexRegisterBlock( unsigned int reg, unsigned int count, const float * __restrict v );
 void _RGLPlatformSetFragmentRegister4fv( unsigned int reg, const float * __restrict v );
@@ -407,22 +373,21 @@ unsigned int _cgHashString( const char *str );
 
 static inline GLenum _RGLCgGetSamplerGLTypeFromCgType( CGtype type )
 {
-	switch ( type )
-	{
-		case CG_SAMPLER1D:
-		case CG_SAMPLER2D:
-		case CG_SAMPLERRECT:
-			return GL_TEXTURE_2D;
-		default:
-			return 0;
-	}
+   switch ( type )
+   {
+      case CG_SAMPLER1D:
+      case CG_SAMPLER2D:
+      case CG_SAMPLERRECT:
+         return GL_TEXTURE_2D;
+      default:
+         return 0;
+   }
 }
 
 struct jsNameSpace;
 
-int _RGLNVGenerateProgram( _CGprogram *program, int profileIndex, const CgProgramHeader *programHeader, const void *ucode,
-		const CgParameterTableHeader *parameterHeader, const CgParameterEntry *parameterEntries,
-		const char *stringTable, const float *defaultValues );
+int _RGLNVGenerateProgram( _CGprogram *program, int profileIndex, const CgProgramHeader *programHeader, const void *ucode, const CgParameterTableHeader *parameterHeader, const CgParameterEntry *parameterEntries,
+const char *stringTable, const float *defaultValues );
 
 _cgSetArrayIndexFunction getVectorTypeIndexSetterFunction( unsigned short a, unsigned short b, unsigned short c, unsigned short d );
 _cgSetArrayIndexFunction getMatrixTypeIndexSetterFunction( unsigned short a, unsigned short b, unsigned short c, unsigned short d, unsigned short e, unsigned short f );
@@ -451,44 +416,41 @@ extern  cgRTCgcFreeHookFunction _cgRTCgcFreeCompiledProgramHook;
 
 static inline const CgParameterResource *_RGLGetParameterResource( const _CGprogram *program, const CgParameterEntry *entry )
 {
-	return ( CgParameterResource * )( program->parameterResources + entry->typeIndex );
+   return ( CgParameterResource * )( program->parameterResources + entry->typeIndex );
 }
 
 static inline CGtype _RGLGetParameterCGtype( const _CGprogram *program, const CgParameterEntry *entry )
 {
-	if ( entry->flags & CGP_RTCREATED )
-	{
-		return ( CGtype )entry->typeIndex;
-	}
-	else
-	{
-		const CgParameterResource *parameterResource = _RGLGetParameterResource( program, entry );
-		if ( parameterResource )
-		{
-			return ( CGtype )parameterResource->type;
-		}
-	}
-	return CG_UNKNOWN_TYPE;
+   if ( entry->flags & CGP_RTCREATED )
+      return ( CGtype )entry->typeIndex;
+   else
+   {
+      const CgParameterResource *parameterResource = _RGLGetParameterResource( program, entry );
+      if ( parameterResource )
+         return ( CGtype )parameterResource->type;
+   }
+
+   return CG_UNKNOWN_TYPE;
 }
 
 static inline const CgParameterArray *_RGLGetParameterArray( const _CGprogram *program, const CgParameterEntry *entry )
 {
-	return ( CgParameterArray* )( program->parameterResources + entry->typeIndex );
+   return ( CgParameterArray* )( program->parameterResources + entry->typeIndex );
 }
 
 static inline const CgParameterStructure *_RGLGetParameterStructure( const _CGprogram *program, const CgParameterEntry *entry )
 {
-	return ( CgParameterStructure* )( program->parameterResources + entry->typeIndex );
+   return ( CgParameterStructure* )( program->parameterResources + entry->typeIndex );
 }
 
 inline int _RGLGetProgramProfileIndex( CGprofile profile )
 {
-	if ( profile == CG_PROFILE_SCE_FP_TYPEB || profile == CG_PROFILE_SCE_FP_TYPEC || profile == CG_PROFILE_SCE_FP_RSX )
-		return FRAGMENT_PROFILE_INDEX;
-	else if ( profile == CG_PROFILE_SCE_VP_TYPEB || profile == CG_PROFILE_SCE_VP_TYPEC || profile == CG_PROFILE_SCE_VP_RSX )
-		return VERTEX_PROFILE_INDEX;
-	else
-		return -1;
+   if ( profile == CG_PROFILE_SCE_FP_TYPEB || profile == CG_PROFILE_SCE_FP_TYPEC || profile == CG_PROFILE_SCE_FP_RSX )
+      return FRAGMENT_PROFILE_INDEX;
+   else if ( profile == CG_PROFILE_SCE_VP_TYPEB || profile == CG_PROFILE_SCE_VP_TYPEC || profile == CG_PROFILE_SCE_VP_RSX )
+      return VERTEX_PROFILE_INDEX;
+   else
+      return -1;
 }
 
 #ifdef __cplusplus

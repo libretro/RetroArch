@@ -23,8 +23,6 @@
 #include "../../../compat/strl.h"
 #include "../../../general.h"
 
-#define RGL_ALIGN_FAST_TRANSFER 128
-
 #define ENDIAN_32(X, F) ((F) ? endianSwapWord(X) : (X))
 #define SWAP_IF_BIG_ENDIAN(arg) endianSwapWordByHalf(arg)
 
@@ -136,21 +134,15 @@ static inline float _RGLFloatFrom_GL_FLOAT(type_GL_FLOAT v)
 
 typedef GLhalfARB type_GL_HALF_FLOAT_ARB;
 
-static const char *_getStringTable(const Elf32_Ehdr *ehdr)
-{
-   const char *sectionHeaderStart = (const char*)ehdr + ehdr->e_shoff;
-   const Elf32_Shdr *shstrtabHeader = (const Elf32_Shdr*)sectionHeaderStart + ehdr->e_shstrndx;
-   return (const char*)ehdr + shstrtabHeader->sh_offset;
-}
-
 const char *findSectionInPlace(const char* memory,unsigned int /*size*/,const char *name, size_t *sectionSize)
 {
    const Elf32_Ehdr *ehdr = (const Elf32_Ehdr*)memory;
 	
-   const char *shstrtab = _getStringTable(ehdr);
+   const char *sectionHeaderStart = (const char*)ehdr + ehdr->e_shoff;
+   const Elf32_Shdr *shstrtabHeader = (const Elf32_Shdr*)sectionHeaderStart + ehdr->e_shstrndx;
+   const char *shstrtab = (const char*)ehdr + shstrtabHeader->sh_offset;
 
    size_t sectionCount = ehdr->e_shnum;
-   const char *sectionHeaderStart = (const char*)ehdr + ehdr->e_shoff;
 
    for(size_t i=0; i < sectionCount; i++)
    {
@@ -187,7 +179,6 @@ const char *findSymbolSectionInPlace(const char *memory, unsigned int /*size*/, 
    }
    return NULL;
 }
-
 
 int lookupSymbolValueInPlace(const char* symbolSection, size_t symbolSize, size_t symbolCount, const char *symbolstrtab, const char *name)
 {
@@ -270,7 +261,6 @@ static inline void _RGLFifoGlVertexAttribPointer
     GLboolean       normalized,
     GLsizei         stride,
     GLushort        frequency,
-    GLboolean       isMain,
     GLuint          offset
 )
 {
@@ -322,12 +312,7 @@ static inline void _RGLFifoGlVertexAttribPointer
             break;
     }
 
-    uint8_t location = CELL_GCM_LOCATION_LOCAL;
-
-    if ( isMain )
-        location = CELL_GCM_LOCATION_MAIN;
-
-    cellGcmSetVertexDataArrayInline( &_RGLState.fifo, index, frequency, stride, size, gcmType, location, offset );
+    cellGcmSetVertexDataArrayInline( &_RGLState.fifo, index, frequency, stride, size, gcmType, CELL_GCM_LOCATION_LOCAL, offset );
 }
 
 static void _RGLResetAttributeState( jsAttributeState* as )
@@ -392,14 +377,9 @@ static void _RGLDestroyAttribSet( jsAttribSet* attribSet )
    free( attribSet );
 }
 
-static inline jsBufferObject *_RGLGetBufferObject( PSGLcontext *LContext, GLuint name )
-{
-   return ( jsBufferObject * )LContext->bufferObjectNameSpace.data[name];
-}
-
 static void _RGLAttribSetDeleteBuffer( PSGLcontext *LContext, GLuint buffName )
 {
-   jsBufferObject *bufferObject = _RGLGetBufferObject( LContext, buffName );
+   jsBufferObject *bufferObject = ( jsBufferObject * )LContext->bufferObjectNameSpace.data[buffName];
    GLuint attrSetCount = bufferObject->attribSets.getCount();
    if ( attrSetCount == 0 ) return;
    for ( unsigned int i = 0;i < attrSetCount;++i )
@@ -416,20 +396,6 @@ static void _RGLAttribSetDeleteBuffer( PSGLcontext *LContext, GLuint buffName )
    bufferObject->attribSets.clear();
 }
 
-static inline jsAttribSet* _RGLGetAttribSet( GLuint name )
-{
-   PSGLcontext* LContext = _CurrentContext;
-   return ( jsAttribSet* ) LContext->attribSetNameSpace.data[name];
-}
-
-static void _RGLAttribSetMarkDirty (void)
-{
-   PSGLcontext* LContext = _CurrentContext;
-   jsAttribSet* attribSet = _RGLGetAttribSet( LContext->attribSetName );
-   attribSet->dirty = GL_TRUE;
-   LContext->attribSetDirty = GL_TRUE;
-}
-
 static jsBufferObject *_RGLCreateBufferObject (void)
 {
    GLuint size = sizeof( jsBufferObject ) + sizeof( RGLBufferObject);
@@ -438,7 +404,7 @@ static jsBufferObject *_RGLCreateBufferObject (void)
    if( !buffer )
       return NULL;
 
-   memset( buffer, 0, size );
+   memset(buffer, 0, size);
 
    buffer->refCount = 1;
    new( &buffer->textureReferences ) RGL::Vector<jsTexture *>();
@@ -526,10 +492,10 @@ GLAPI void APIENTRY glDeleteBuffers(GLsizei n, const GLuint *buffers)
    PSGLcontext *LContext = _CurrentContext;
    for(int i = 0; i < n; ++i)
    {
-      if ( !_RGLTexNameSpaceIsName( &LContext->bufferObjectNameSpace, buffers[i] ) )
+      if(!_RGLTexNameSpaceIsName( &LContext->bufferObjectNameSpace, buffers[i] ) )
          continue;
 
-      if ( buffers[i] )
+      if(buffers[i] )
          _RGLUnbindBufferObject( LContext, buffers[i] );
    }
    _RGLTexNameSpaceDeleteNames( &LContext->bufferObjectNameSpace, n, buffers );
@@ -748,13 +714,14 @@ GLAPI void APIENTRY glBufferData( GLenum target, GLsizeiptr size, const GLvoid *
 	 return;
    }
 
-   jsBufferObject* bufferObject = _RGLGetBufferObject( LContext, name );
+   jsBufferObject* bufferObject = (jsBufferObject *)LContext->bufferObjectNameSpace.data[name];
 
    if(bufferObject->refCount > 1)
    {
       _RGLTexNameSpaceDeleteNames( &LContext->bufferObjectNameSpace, 1, &name );
       _RGLTexNameSpaceCreateNameLazy( &LContext->bufferObjectNameSpace, name );
-      bufferObject = _RGLGetBufferObject( LContext, name );
+      bufferObject = (jsBufferObject *)LContext->bufferObjectNameSpace.data[name];
+
    }
 
    if (bufferObject->size > 0)
@@ -838,7 +805,8 @@ GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr 
             return;
     }
 
-    jsBufferObject* bufferObject = _RGLGetBufferObject( LContext, name );
+    jsBufferObject* bufferObject = (jsBufferObject *)LContext->bufferObjectNameSpace.data[name];
+
 
 
     if ( bufferObject->refCount > 1 )
@@ -848,7 +816,7 @@ GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr 
         _RGLTexNameSpaceDeleteNames( &LContext->bufferObjectNameSpace, 1, &name );
         _RGLTexNameSpaceCreateNameLazy( &LContext->bufferObjectNameSpace, name );
 
-        bufferObject = _RGLGetBufferObject( LContext, name );
+        bufferObject = (jsBufferObject *)LContext->bufferObjectNameSpace.data[name];
         bufferObject->size = oldBufferObject->size;
         bufferObject->usage = oldBufferObject->usage;
 
@@ -863,37 +831,22 @@ GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr 
     _RGLPlatformBufferObjectSetData( bufferObject, offset, size, data, GL_FALSE );
 }
 
-
-static inline jsTexture* _RGLGetTexture( PSGLcontext *LContext, GLuint name )
-{
-   return ( jsTexture* )LContext->textureNameSpace.data[name];
-}
-
-static inline jsTexture* _RGLGetTextureSafe( PSGLcontext *LContext, GLuint name )
-{
-   return _RGLTexNameSpaceIsName( &LContext->textureNameSpace, name ) ? ( jsTexture* )LContext->textureNameSpace.data[name] : NULL;
-}
-
 static void _RGLFramebufferGetAttachmentTexture(
     const jsFramebufferAttachment* attachment,
-    jsTexture** texture,
-    GLuint* face )
+    jsTexture** texture)
 {
    PSGLcontext* LContext = _CurrentContext;
     switch ( attachment->type )
     {
         case _RGL_FRAMEBUFFER_ATTACHMENT_NONE:
             *texture = NULL;
-            *face = 0;
             break;
         case _RGL_FRAMEBUFFER_ATTACHMENT_RENDERBUFFER:
             break;
         case _RGL_FRAMEBUFFER_ATTACHMENT_TEXTURE:
-            *texture = _RGLGetTextureSafe( LContext, attachment->name );
-            *face = 0;
+            *texture = _RGLTexNameSpaceIsName( &LContext->textureNameSpace, attachment->name ) ? ( jsTexture* )LContext->textureNameSpace.data[attachment->name] : NULL;
             break;
         default:
-            *face = 0;
             *texture = NULL;
 	    break;
     }
@@ -941,8 +894,7 @@ static GLenum _RGLPlatformFramebufferCheckStatus( jsFramebuffer* framebuffer )
    for ( int i = 0; i < _RGL_MAX_COLOR_ATTACHMENTS; ++i )
    {
       jsTexture* colorTexture = NULL;
-      GLuint colorFace = 0;
-      _RGLFramebufferGetAttachmentTexture(&framebuffer->color[i], &colorTexture, &colorFace );
+      _RGLFramebufferGetAttachmentTexture(&framebuffer->color[i], &colorTexture);
 
       if ( colorTexture != NULL )
       {
@@ -1298,7 +1250,7 @@ int _RGLGetPixelSize( GLenum format, GLenum type )
 {
     int componentSize;
 
-    switch ( type )
+    switch(type)
     {
 
 #define DECLARE_PACKED_TYPE(REALTYPE,TYPE,N,S1,S2,S3,S4,REV) \
@@ -1474,7 +1426,8 @@ static void _RGLPlatformValidateTextureResources( jsTexture *texture )
     }
     texture->isComplete = GL_TRUE;
 
-    if ( texture->revalidate & _RGL_TEXTURE_REVALIDATE_IMAGES || texture->revalidate & _RGL_TEXTURE_REVALIDATE_LAYOUT )
+    if ( texture->revalidate & _RGL_TEXTURE_REVALIDATE_IMAGES ||
+    texture->revalidate & _RGL_TEXTURE_REVALIDATE_LAYOUT )
     {
 	    _RGLPlatformReallocateGcmTexture( texture );
 	    RGLTexture *gcmTexture = ( RGLTexture * )texture->platformTexture;
@@ -1559,10 +1512,10 @@ source:		_RGL_SURFACE_SOURCE_TEXTURE,
 
     GLuint gamma = 0;
     GLuint remap = texture->gammaRemap;
-    gamma |= ( remap & RGL_GAMMA_REMAP_RED_BIT ) 	? CELL_GCM_TEXTURE_GAMMA_R : 0;
-    gamma |= ( remap & RGL_GAMMA_REMAP_GREEN_BIT )	? CELL_GCM_TEXTURE_GAMMA_G : 0;
-    gamma |= ( remap & RGL_GAMMA_REMAP_BLUE_BIT ) 	? CELL_GCM_TEXTURE_GAMMA_B : 0;
-    gamma |= ( remap & RGL_GAMMA_REMAP_ALPHA_BIT ) 	? CELL_GCM_TEXTURE_GAMMA_A : 0;
+    gamma |= ( remap & RGL_GAMMA_REMAP_RED_BIT ) ? CELL_GCM_TEXTURE_GAMMA_R : 0;
+    gamma |= ( remap & RGL_GAMMA_REMAP_GREEN_BIT ) ? CELL_GCM_TEXTURE_GAMMA_G : 0;
+    gamma |= ( remap & RGL_GAMMA_REMAP_BLUE_BIT ) ? CELL_GCM_TEXTURE_GAMMA_B : 0;
+    gamma |= ( remap & RGL_GAMMA_REMAP_ALPHA_BIT ) ? CELL_GCM_TEXTURE_GAMMA_A : 0;
 
     platformTexture->gcmMethods.address.gamma = gamma;
 
@@ -1609,8 +1562,7 @@ static void jsPlatformFramebuffer_validate( jsPlatformFramebuffer * fb, PSGLcont
    for ( int i = 0; i < RGL_SETRENDERTARGET_MAXCOUNT; ++i )
    {
       jsTexture* colorTexture = NULL;
-      GLuint face = 0;
-      _RGLFramebufferGetAttachmentTexture(&fb->color[i], &colorTexture, &face );
+      _RGLFramebufferGetAttachmentTexture(&fb->color[i], &colorTexture);
 
       if(colorTexture == NULL)
          continue;
@@ -1703,17 +1655,19 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
       return;
 
    GLbitfield newmask = 0;
-   if (driver->rt.colorBufferCount ) newmask |= RGL_COLOR_BUFFER_BIT;
 
-   if ( !newmask )
+   if(driver->rt.colorBufferCount)
+      newmask |= RGL_COLOR_BUFFER_BIT;
+
+   if(!newmask)
       return;
 
    GLbitfield clearMask = newmask;
 
-   if ( driver->rt.colorBufferCount > 1 )
-	   clearMask &= ~RGL_COLOR_BUFFER_BIT;
+   if(driver->rt.colorBufferCount > 1)
+      clearMask &= ~RGL_COLOR_BUFFER_BIT;
 
-   if ( clearMask )
+   if (clearMask)
    {
       GLuint hwColor;
       RGL_CALC_COLOR_LE_ARGB8( &hwColor, RGL_CLAMPF_01(LContext->ClearColor.R), RGL_CLAMPF_01(LContext->ClearColor.G), RGL_CLAMPF_01(LContext->ClearColor.B), RGL_CLAMPF_01(LContext->ClearColor.A) );
@@ -1729,7 +1683,7 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
       cellGcmSetDepthTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
       cellGcmSetStencilTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
 
-      static float _RGLClearVertexBuffer[12] __attribute__(( aligned( RGL_ALIGN_FAST_TRANSFER ) ) ) =
+      static float _RGLClearVertexBuffer[12] __attribute__((aligned(128))) =
       {
          -1.f, -1.f, 0.f,
 	 -1.f, 1.f, 0.f,
@@ -1744,12 +1698,12 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
 
       GLuint bufferId = gmmAlloc(0, sizeof(_RGLClearVertexBuffer));
       memcpy( gmmIdToAddress(bufferId), _RGLClearVertexBuffer, sizeof( _RGLClearVertexBuffer ) );
-      _RGLFifoGlVertexAttribPointer( 0, 3, RGL_FLOAT, CELL_GCM_FALSE, 3*sizeof( GLfloat ), 1, 0, gmmIdToOffset(bufferId) );
+      _RGLFifoGlVertexAttribPointer( 0, 3, RGL_FLOAT, CELL_GCM_FALSE, 3*sizeof( GLfloat ), 1, gmmIdToOffset(bufferId) );
       RGLBIT_TRUE( LContext->attribs->DirtyMask, 0 );
 
       for(int i = 1; i < _RGL_MAX_VERTEX_ATTRIBS; ++i)
       {
-         _RGLFifoGlVertexAttribPointer( i, 0, RGL_FLOAT, 0, 0, 0, 0, 0 );
+         _RGLFifoGlVertexAttribPointer( i, 0, RGL_FLOAT, 0, 0, 0, 0 );
 	 RGLBIT_TRUE( LContext->attribs->DirtyMask, i );
       }
       cellGcmSetVertexData4fInline( &_RGLState.fifo, _RGL_ATTRIB_PRIMARY_COLOR_INDEX, (GLfloat*)&LContext->ClearColor);
@@ -1879,8 +1833,7 @@ GLAPI void APIENTRY glFramebufferTexture2DOES( GLenum target, GLenum attachment,
       return;
 
    jsTexture *textureObject = NULL;
-   GLuint face;
-   _RGLFramebufferGetAttachmentTexture(attach, &textureObject, &face );
+   _RGLFramebufferGetAttachmentTexture(attach, &textureObject);
 
    if ( textureObject )
       textureObject->framebuffers.removeElement( framebuffer );
@@ -1888,7 +1841,7 @@ GLAPI void APIENTRY glFramebufferTexture2DOES( GLenum target, GLenum attachment,
    if ( texture )
    {
       attach->type = _RGL_FRAMEBUFFER_ATTACHMENT_TEXTURE;
-      textureObject = _RGLGetTexture( LContext, texture );
+      textureObject = ( jsTexture* )LContext->textureNameSpace.data[texture];
       textureObject->framebuffers.pushBack( framebuffer );
    }
    else
@@ -3304,24 +3257,6 @@ static void _RGLUnloadFPShader( _CGprogram *program )
    }
 }
 
-typedef struct RGLparamUIDRec
-{
-   char * string;
-   GLboolean global;
-} RGLparamUID;
-
-typedef struct RGLparamUIDTableRec
-{
-   int count;
-   RGLparamUID* uids;
-} RGLparamUIDTable;
-
-
-RGLparamUID getParamUIDByIndex( const RGLparamUIDTable* st, int index )
-{
-   return st->uids[index];
-}
-
 void _RGLPlatformSetVertexRegister4fv( unsigned int reg, const float * __restrict v ) {}
 void _RGLPlatformSetVertexRegisterBlock( unsigned int reg, unsigned int count, const float * __restrict v ) {}
 void _RGLPlatformSetFragmentRegister4fv( unsigned int reg, const float * __restrict v ) {}
@@ -4644,9 +4579,11 @@ static GLenum _RGLPlatformChooseInternalStorage( jsImage* image, GLenum internal
    return GL_NO_ERROR;
 }
 
-static inline GLuint _RGLGetBufferObjectOrigin( GLuint buffer )
+static inline GLuint _RGLGetBufferObjectOrigin(GLuint buffer)
 {
-    jsBufferObject *bufferObject = _RGLGetBufferObject( _CurrentContext, buffer );
+    PSGLcontext*	LContext = _CurrentContext;
+    jsBufferObject *bufferObject = (jsBufferObject *)LContext->bufferObjectNameSpace.data[buffer];
+
     RGLBufferObject *gcmBuffer = ( RGLBufferObject * ) & bufferObject->platformBufferObject;
     return gcmBuffer->bufferId;
 }
@@ -4764,13 +4701,13 @@ static GLboolean _RGLPlatformTexturePBOImage(
             formatOK = GL_FALSE;
     }
 
-    if ( !formatOK )
+    if (!formatOK )
     {
         RARCH_WARN("PBO format/type requires conversion to texture internal format, using slow path.\n");
         return GL_FALSE;
     }
 
-    if ( !_RGLTextureIsValid( texture ) )
+    if (!_RGLTextureIsValid(texture))
     {
         RARCH_WARN("PBO transfering to incomplete texture, using slow path.\n");
         return GL_FALSE;
@@ -4779,7 +4716,7 @@ static GLboolean _RGLPlatformTexturePBOImage(
     RGLTextureLayout newLayout;
     _RGLPlatformChooseGPUFormatAndLayout( texture, GL_TRUE, pboPitch, &newLayout );
 
-    jsBufferObject* bufferObject = _RGLGetBufferObject( LContext, LContext->PixelUnpackBuffer );
+    jsBufferObject* bufferObject = (jsBufferObject *)LContext->bufferObjectNameSpace.data[LContext->PixelUnpackBuffer];
     if ( newLayout.pitch != 0 && !bufferObject->mapped )
     {
         gcmTexture->gpuLayout = newLayout;
@@ -4918,20 +4855,9 @@ static inline void _RGLSetColorDepthBuffers( RGLRenderTarget *rt, RGLRenderTarge
 
     if (( grt->height != oldHeight ) | ( rt->yInverted != oldyInverted ) )
     {
-	    RGLViewportState *v = &_RGLState.state.viewport;
-	    _RGLFifoGlViewport( v->x, v->y, v->w, v->h );
+       RGLViewportState *v = &_RGLState.state.viewport;
+       _RGLFifoGlViewport( v->x, v->y, v->w, v->h );
     }
-}
-
-static inline void _RGLSetColorDepthFormats( RGLRenderTarget *rt, RGLRenderTargetEx const * const args )
-{
-	CellGcmSurface *   grt = &rt->gcmRenderTarget;
-
-	grt->colorFormat = CELL_GCM_SURFACE_A8R8G8B8;
-	grt->depthFormat = CELL_GCM_SURFACE_Z24S8;
-	grt->depthLocation = CELL_GCM_LOCATION_LOCAL;
-	grt->depthOffset = 0;
-	grt->depthPitch = 64;
 }
 
 static inline void _RGLSetTarget( RGLRenderTarget *rt, RGLRenderTargetEx const * const args )
@@ -4962,21 +4888,27 @@ static inline void _RGLSetTarget( RGLRenderTarget *rt, RGLRenderTargetEx const *
 
 void _RGLFifoGlSetRenderTarget( RGLRenderTargetEx const * const args )
 {
-    RGLRenderTarget *rt = &_RGLState.renderTarget;
-    CellGcmSurface *   grt = &_RGLState.renderTarget.gcmRenderTarget;
+   RGLRenderTarget *rt = &_RGLState.renderTarget;
+   CellGcmSurface *   grt = &_RGLState.renderTarget.gcmRenderTarget;
 
-    _RGLSetColorDepthBuffers( rt, args );
-    _RGLSetColorDepthFormats( rt, args );
+   _RGLSetColorDepthBuffers( rt, args );
 
-    grt->antialias = CELL_GCM_SURFACE_CENTER_1;
+   //set color depth formats
+   grt->colorFormat = CELL_GCM_SURFACE_A8R8G8B8;
+   grt->depthFormat = CELL_GCM_SURFACE_Z24S8;
+   grt->depthLocation = CELL_GCM_LOCATION_LOCAL;
+   grt->depthOffset = 0;
+   grt->depthPitch = 64;
 
-    cellGcmSetAntiAliasingControlInline( &_RGLState.fifo, CELL_GCM_FALSE, CELL_GCM_FALSE, CELL_GCM_FALSE, 0xFFFF);
+   grt->antialias = CELL_GCM_SURFACE_CENTER_1;
 
-    grt->type = CELL_GCM_SURFACE_PITCH;
-    _RGLSetTarget( rt, args );
+   cellGcmSetAntiAliasingControlInline( &_RGLState.fifo, CELL_GCM_FALSE, CELL_GCM_FALSE, CELL_GCM_FALSE, 0xFFFF);
 
-    cellGcmSetSurfaceInline( &_RGLState.fifo, grt);
-    cellGcmSetDepthTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
+   grt->type = CELL_GCM_SURFACE_PITCH;
+   _RGLSetTarget( rt, args );
+
+   cellGcmSetSurfaceInline( &_RGLState.fifo, grt);
+   cellGcmSetDepthTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
 }
 
 void _RGLSetError( GLenum error ) {}
@@ -5004,12 +4936,14 @@ static uint32_t * _RGLFifoWaitForFreeSpace( RGLFifo *fifo, GLuint spaceInWords )
 
 static inline void _RGLPushProgramPushBuffer( _CGprogram * cgprog )
 {
-	_RGLFifoWaitForFreeSpace( &_RGLState.fifo,  cgprog->constantPushBufferWordSize + 4 + 32); 
-	uint32_t padding_in_word = ( ( 0x10-(((uint32_t)_RGLState.fifo.current)&0xf))&0xf )>>2;
-	uint32_t padded_size = ( ((cgprog->constantPushBufferWordSize)<<2) + 0xf )&~0xf;
-	cellGcmSetNopCommandUnsafeInline( &_RGLState.fifo, padding_in_word);
-	memcpy16(_RGLState.fifo.current, cgprog->constantPushBuffer, padded_size);
-	_RGLState.fifo.current+=cgprog->constantPushBufferWordSize;
+   _RGLFifoWaitForFreeSpace( &_RGLState.fifo,  cgprog->constantPushBufferWordSize + 4 + 32); 
+
+   uint32_t padding_in_word = ( ( 0x10-(((uint32_t)_RGLState.fifo.current)&0xf))&0xf )>>2;
+   uint32_t padded_size = ( ((cgprog->constantPushBufferWordSize)<<2) + 0xf )&~0xf;
+   cellGcmSetNopCommandUnsafeInline( &_RGLState.fifo, padding_in_word);
+
+   memcpy(_RGLState.fifo.current, cgprog->constantPushBuffer, padded_size);
+   _RGLState.fifo.current+=cgprog->constantPushBufferWordSize;
 }
 
 static GLuint _RGLValidateStates( void )
@@ -5335,8 +5269,6 @@ static void _RGLResetContext( PSGLcontext *LContext )
     LContext->BlendFactorSrcAlpha = GL_ONE;
     LContext->BlendFactorDestAlpha = GL_ZERO;
 
-    LContext->Dithering = GL_TRUE;
-
     for ( int i = 0;i < _RGL_MAX_TEXTURE_COORDS;++i )
     {
         jsTextureCoordsUnit *tu = LContext->TextureCoordsUnits + i;
@@ -5427,25 +5359,26 @@ static jsTexture *_RGLAllocateTexture (void)
 
 static void _RGLFreeTexture( jsTexture *texture )
 {
-    _RGLTextureTouchFBOs( texture );
-    texture->framebuffers.~Vector<jsFramebuffer *>();
-    if ( texture->image )
-    {
-	    for ( GLuint i = 0;i < texture->imageCount;++i )
-	    {
-		    jsImage *image = texture->image + i;
-		    _RGLImageFreeCPUStorage( image );
-	    }
-	    if(texture->image != NULL)
-		    free( texture->image );
-    }
-    if ( texture->referenceBuffer )
-    {
-        texture->referenceBuffer->textureReferences.removeElement( texture );
-    }
-    _RGLPlatformDestroyTexture( texture );
-    if(texture != NULL)
-	    free( texture );
+   _RGLTextureTouchFBOs( texture );
+   texture->framebuffers.~Vector<jsFramebuffer *>();
+   if ( texture->image )
+   {
+      for ( GLuint i = 0;i < texture->imageCount;++i )
+      {
+         jsImage *image = texture->image + i;
+	 _RGLImageFreeCPUStorage( image );
+      }
+      if(texture->image != NULL)
+         free( texture->image );
+   }
+
+   if ( texture->referenceBuffer )
+      texture->referenceBuffer->textureReferences.removeElement( texture );
+
+   _RGLPlatformDestroyTexture( texture );
+
+   if(texture != NULL)
+      free( texture );
 }
 
 PSGLcontext* psglCreateContext (void)
@@ -5528,7 +5461,8 @@ void  psglResetCurrentContext (void)
 
 static void _RGLMatrixStackClear( jsMatrixStack* LMatrixStack )
 {
-    if ( LMatrixStack->MatrixStackf ) free( LMatrixStack->MatrixStackf );
+    if(LMatrixStack->MatrixStackf)
+       free( LMatrixStack->MatrixStackf );
     LMatrixStack->MatrixStackf = NULL;
     LMatrixStack->MatrixStackPtr = 0;
     LMatrixStack->dirty = GL_FALSE;
@@ -5610,11 +5544,9 @@ GLAPI void APIENTRY glGetFloatv( GLenum pname, GLfloat* params )
         case GL_MODELVIEW_MATRIX:
             jsContextGetMatrixf( LContext, GL_MODELVIEW, LMatrixStack, LMatrix );
             break;
-
         case GL_PROJECTION_MATRIX:
             jsContextGetMatrixf( LContext, GL_PROJECTION, LMatrixStack, LMatrix );
             break;
-
         case GL_TEXTURE_MATRIX:
             jsContextGetMatrixf( LContext, GL_TEXTURE, LMatrixStack, LMatrix );
             break;
@@ -5663,7 +5595,6 @@ GLAPI void APIENTRY glEnable( GLenum cap )
         case GL_POINT_SMOOTH:
             break;
         case GL_DITHER:
-            LContext->Dithering = GL_TRUE;
             break;
         case GL_POINT_SPRITE_OES:
         case GL_VERTEX_PROGRAM_POINT_SIZE_ARB:
@@ -5722,7 +5653,6 @@ GLAPI void APIENTRY glDisable( GLenum cap )
         case GL_LINE_SMOOTH:
             break;
         case GL_DITHER:
-            LContext->Dithering = GL_FALSE;
             break;
         case GL_POINT_SPRITE_OES:
         case GL_VERTEX_PROGRAM_POINT_SIZE_ARB:
@@ -5791,22 +5721,22 @@ GLAPI void APIENTRY glDisableClientState( GLenum array )
 
 GLAPI void APIENTRY glFlush()
 {
-    PSGLcontext *LContext = _CurrentContext;
-    RGLFifo *fifo = &_RGLState.fifo;
+   PSGLcontext *LContext = _CurrentContext;
+   RGLFifo *fifo = &_RGLState.fifo;
 
-    if ( RGL_UNLIKELY( LContext->needValidate ) )
-	_RGLValidateStates();
+   if ( RGL_UNLIKELY( LContext->needValidate ) )
+      _RGLValidateStates();
 
-    cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+   cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
 
-    _RGLFifoFlush( fifo );
+   _RGLFifoFlush( fifo );
 }
 
 GLAPI void APIENTRY glFinish (void)
 {
-    glFlush();
-    cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
-    _RGLFifoFinish( &_RGLState.fifo );
+   glFlush();
+   cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+   _RGLFifoFinish( &_RGLState.fifo );
 }
 
 GLAPI const GLubyte* APIENTRY glGetString( GLenum name )
@@ -5946,9 +5876,6 @@ GLAPI void APIENTRY glOrthof( GLfloat left, GLfloat right, GLfloat bottom, GLflo
         LContext->InverseModelViewValid = GL_FALSE;
 }
 
-
-int _psglCheckDrawElementsVBOBounds = 0;
-
 GLAPI void APIENTRY glVertexPointer( GLint size, GLenum type, GLsizei stride, const GLvoid* pointer )
 {
     _RGLVertexAttribPointerNV( _RGL_ATTRIB_POSITION_INDEX, size, type, GL_FALSE, stride, pointer );
@@ -6063,50 +5990,64 @@ void _RGLVertexAttribPointerNV(
 
     if ( LContext->attribSetName )
     {
-        jsAttribSet* attribSet = _RGLGetAttribSet( LContext->attribSetName );
+        jsAttribSet* attribSet = (jsAttribSet*)LContext->attribSetNameSpace.data[LContext->attribSetName];
 
         if ( oldArrayBuffer )
         {
             int refcount = 0;
-            for ( unsigned int i = 0; i < _RGL_MAX_VERTEX_ATTRIBS; ++i )
+            for(unsigned int i = 0; i < _RGL_MAX_VERTEX_ATTRIBS; ++i )
             {
                 if ( attribSet->attribs.attrib[i].arrayBuffer == oldArrayBuffer ) ++refcount;
             }
-            if ( refcount == 1 ) _RGLGetBufferObject( LContext, oldArrayBuffer )->attribSets.removeElement( attribSet );
+            if(refcount == 1)
+            {
+               jsBufferObject *buffer = (jsBufferObject *)LContext->bufferObjectNameSpace.data[oldArrayBuffer];
+               buffer->attribSets.removeElement(attribSet);
+            }
         }
 
         if ( attrib->arrayBuffer )
         {
-            _RGLGetBufferObject( LContext, attrib->arrayBuffer )->attribSets.appendUnique( attribSet );
+	    jsBufferObject *buffer = (jsBufferObject *)LContext->bufferObjectNameSpace.data[attrib->arrayBuffer];
+	    buffer->attribSets.appendUnique(attribSet);
         }
 
-        _RGLAttribSetMarkDirty();
+	attribSet->dirty = GL_TRUE;
+	LContext->attribSetDirty = GL_TRUE;
     }
 }
 
 void _RGLEnableVertexAttribArrayNV( GLuint index )
 {
-    PSGLcontext *LContext = _CurrentContext;
+   PSGLcontext *LContext = _CurrentContext;
+   jsAttribSet* attribSet = (jsAttribSet*)LContext->attribSetNameSpace.data[LContext->attribSetName];
 
     RGLBIT_TRUE( LContext->attribs->EnabledMask, index );
     RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
 
     if ( LContext->attribSetName )
-	    _RGLAttribSetMarkDirty();
+    {
+       attribSet->dirty = GL_TRUE;
+       LContext->attribSetDirty = GL_TRUE;
+    }
 }
 
 void _RGLDisableVertexAttribArrayNV( GLuint index )
 {
     PSGLcontext *LContext = _CurrentContext;
+   jsAttribSet* attribSet = (jsAttribSet*)LContext->attribSetNameSpace.data[LContext->attribSetName];
 
     RGLBIT_FALSE( LContext->attribs->EnabledMask, index );
     RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
 
     if ( LContext->attribSetName )
-	    _RGLAttribSetMarkDirty();
+    {
+       attribSet->dirty = GL_TRUE;
+       LContext->attribSetDirty = GL_TRUE;
+    }
 }
 
-static GLuint _RGLValidateAttributesSlow( jsDrawParams *dparams, GLboolean *isMain )
+static GLuint _RGLValidateAttributesSlow( jsDrawParams *dparams)
 {
 	PSGLcontext*	LContext = _CurrentContext;
 	RGLDriver *driver= (RGLDriver *)_CurrentDevice->rasterDriver;
@@ -6149,30 +6090,27 @@ static GLuint _RGLValidateAttributesSlow( jsDrawParams *dparams, GLboolean *isMa
 					else
 						offset = ( dparams->firstVertex / freq ) * stride;
 
-					char * b = ( char * )xferBuffer + dparams->attribXferOffset[i];
+					char *b = (char *)xferBuffer + dparams->attribXferOffset[i];
 					memcpy( b + offset,
 							( char * )attrib->clientData + offset,
 							dparams->attribXferSize[i] - offset );
 
-					*isMain = gmmIdIsMain(xferId);
 					gpuOffset = gmmIdToOffset(xferId) + (b - ( char * )xferBuffer);
 
 				}
 				else
 				{
 					VBOId = _RGLGetBufferObjectOrigin( attrib->arrayBuffer );
-					*isMain = gmmIdIsMain(VBOId);
-					gpuOffset = gmmIdToOffset(VBOId)
-						+ (( const GLubyte* )attrib->clientData - ( const GLubyte* )NULL );
+					gpuOffset = gmmIdToOffset(VBOId) + (( const GLubyte* )attrib->clientData - ( const GLubyte* )NULL );
 				}
 
 				_RGLFifoGlVertexAttribPointer( i, attrib->clientSize,
 						( RGLEnum )attrib->clientType, attrib->normalized,
-						stride, freq, *isMain, gpuOffset );
+						stride, freq, gpuOffset );
 			}
 			else
 			{
-				_RGLFifoGlVertexAttribPointer( i, 0, RGL_FLOAT, 0, 0, 0, 0, 0 );
+				_RGLFifoGlVertexAttribPointer( i, 0, RGL_FLOAT, 0, 0, 0, 0 );
 				cellGcmSetVertexData4fInline( &_RGLState.fifo, i,attrib->value);
 			}
 		}
@@ -6246,17 +6184,12 @@ GLAPI void APIENTRY glDrawArrays( GLenum mode, GLint first, GLsizei count )
    if ( driver->flushBufferCount != 0 )
 	   driver->invalidateVertexCache = GL_TRUE;
 
-   GLboolean isMain = 0;
-
-   if ( LContext->attribSetDirty && LContext->attribSetName )
-	   jsAttribSet* attribSet = _RGLGetAttribSet( LContext->attribSetName );
-
    uint32_t totalXfer = 0;
 
    for (GLuint i = 0; i < _RGL_MAX_VERTEX_ATTRIBS; ++i)
       totalXfer += dparams->attribXferSize[i];
 
-   GLuint gpuOffset = _RGLValidateAttributesSlow( dparams, &isMain );
+   GLuint gpuOffset = _RGLValidateAttributesSlow( dparams);
    (void)gpuOffset;
 
    if(driver->invalidateVertexCache)
@@ -6279,7 +6212,7 @@ GLAPI void APIENTRY glGenTextures( GLsizei n, GLuint *textures )
 static void _RGLTextureUnbind( PSGLcontext* context, GLuint name )
 {
     int unit;
-    for ( unit = 0;unit < _RGL_MAX_TEXTURE_IMAGE_UNITS;++unit )
+    for (unit = 0; unit < _RGL_MAX_TEXTURE_IMAGE_UNITS; ++unit)
     {
         jsTextureImageUnit *tu = context->TextureImageUnits + unit;
         GLboolean dirty = GL_FALSE;
@@ -6294,7 +6227,7 @@ static void _RGLTextureUnbind( PSGLcontext* context, GLuint name )
             context->needValidate |= PSGL_VALIDATE_TEXTURES_USED;
         }
     }
-    if ( _RGLTexNameSpaceIsName( &context->textureNameSpace, name ) )
+    if(_RGLTexNameSpaceIsName( &context->textureNameSpace, name))
     {
         jsTexture*texture = ( jsTexture * )context->textureNameSpace.data[name];
         for ( unit = 0;unit < _RGL_MAX_VERTEX_TEXTURE_IMAGE_UNITS; ++unit )
@@ -6440,7 +6373,7 @@ GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const G
         jsBufferObject* bufferObject = NULL;
         if ( LContext->PixelUnpackBuffer != 0 )
         {
-            bufferObject = _RGLGetBufferObject( LContext, LContext->PixelUnpackBuffer );
+            bufferObject = (jsBufferObject *)LContext->bufferObjectNameSpace.data[LContext->PixelUnpackBuffer];
             pixels = _RGLPlatformBufferObjectMap( bufferObject, GL_READ_ONLY ) +
                      (( const GLubyte* )pixels - ( const GLubyte* )NULL );
         }
@@ -6521,7 +6454,7 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels, GLuint 
    PSGLcontext*	LContext = _CurrentContext;
 
    jsTexture *texture = _RGLGetCurrentTexture( LContext->CurrentImageUnit, GL_TEXTURE_2D);
-   jsBufferObject *bufferObject = _RGLGetBufferObject( LContext, LContext->TextureBuffer );
+   jsBufferObject *bufferObject = (jsBufferObject *)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
    _RGLReallocateImages( texture, MAX( baseWidth, MAX( baseHeight, baseDepth ) ) );
 
    GLuint width = baseWidth;
@@ -6744,7 +6677,7 @@ static bool cgOpenElf( const void *ptr, size_t size, CGELFBinary *elfBinary )
 
 static bool cgGetElfProgramByIndex( CGELFBinary *elfBinary, int index, CGELFProgram *elfProgram )
 {
-    while ( true )
+    while(1)
     {
         char sectionName[64];
         snprintf( sectionName, sizeof(sectionName), ".text%04i", index );
@@ -6771,15 +6704,15 @@ static bool cgGetElfProgramByIndex( CGELFBinary *elfBinary, int index, CGELFProg
 static bool cgGetElfProgramByName( CGELFBinary *elfBinary, const char *name, CGELFProgram *elfProgram )
 {
    //if no name try to return the first program
-   int res;
+   int ret;
 
    if ( name == NULL || name[0] == '\0' )
-      res = 0;
+      ret = 0;
    else
-      res = lookupSymbolValueInPlace( elfBinary->symtab, elfBinary->symbolSize, elfBinary->symbolCount, elfBinary->symbolstrtab, name );
+      ret = lookupSymbolValueInPlace( elfBinary->symtab, elfBinary->symbolSize, elfBinary->symbolCount, elfBinary->symbolstrtab, name );
 
-   if ( res != -1 )
-      return cgGetElfProgramByIndex( elfBinary, res, elfProgram );
+   if (ret != -1)
+      return cgGetElfProgramByIndex( elfBinary, ret, elfProgram );
    else
       return false;
 }
@@ -6931,8 +6864,8 @@ CG_API CGprogram cgCreateProgram( CGcontext ctx,
 
         //convert from NV format to the runtime format
         int compiled_program_size = 0;
-        STL_NAMESPACE vector<char> stringTableArray;
-        STL_NAMESPACE vector<float> defaultValuesArray;
+        std::vector<char> stringTableArray;
+        std::vector<float> defaultValuesArray;
         CgBinaryProgram* nvProgram = ( CgBinaryProgram* )binaryBuffer;
         char *runtimeElfShader = NULL;
 
@@ -7101,9 +7034,9 @@ CG_API CGprogram cgCreateProgramFromFile( CGcontext ctx,
 
             unsigned int filetag = 0;
             int res = fread( &filetag, sizeof( filetag ), 1, fp );
-            if ( !res )
+            if (!res)
             {
-                fclose( fp );
+                fclose(fp);
                 _RGLCgRaiseError( CG_FILE_READ_ERROR );
                 return ( CGprogram )NULL;
             }
@@ -7382,9 +7315,9 @@ static void _RGLCgRemoveGroup( CGcontext ctx, CGprogramGroup group )
 
 CGprogramGroup _RGLCgCreateProgramGroupFromFile( CGcontext ctx, const char *group_file )
 {
-    FILE* fp = fopen( group_file, "rb" );
+    FILE *fp = fopen(group_file, "rb");
 
-    if ( fp == NULL )
+    if(fp == NULL)
     {
         _RGLCgRaiseError( CG_FILE_READ_ERROR );
         return ( CGprogramGroup )NULL;
@@ -7395,8 +7328,8 @@ CGprogramGroup _RGLCgCreateProgramGroupFromFile( CGcontext ctx, const char *grou
     file_size = ftell( fp );
     rewind( fp );
 
-    char* ptr = ( char* )malloc( file_size + 1 );
-    if ( ptr == NULL )
+    char *ptr = ( char* )malloc(file_size + 1);
+    if(ptr == NULL)
     {
         _RGLCgRaiseError( CG_MEMORY_ALLOC_ERROR );
         return ( CGprogramGroup )NULL;
@@ -8002,7 +7935,7 @@ CGGL_API void cgGLUnbindProgram( CGprofile profile )
 
 CGGL_API void cgGLSetParameter1f( CGparameter param, float x )
 {
-   CgRuntimeParameter *ptr = _RGLCgGLTestParameter( param );
+   CgRuntimeParameter *ptr = _cgGetParamPtr( param );
 
    float v[4] = {x, x, x, x};
    ptr->setterIndex( ptr, v, CG_GETINDEX( param ) );
@@ -8010,7 +7943,7 @@ CGGL_API void cgGLSetParameter1f( CGparameter param, float x )
 
 CGGL_API void cgGLSetParameter2f( CGparameter param, float x, float y )
 {
-   CgRuntimeParameter *ptr = _RGLCgGLTestParameter( param );
+   CgRuntimeParameter *ptr = _cgGetParamPtr( param );
 
    float v[4] = {x, y, y, y};
    ptr->setterIndex( ptr, v, CG_GETINDEX( param ) );
@@ -8024,7 +7957,7 @@ CGGL_API void cgGLSetParameterPointer
   const GLvoid *pointer )
 {
 
-   CgRuntimeParameter *_ptr = _RGLCgGLTestParameter( param );
+   CgRuntimeParameter *_ptr = _cgGetParamPtr( param );
 
    const CgParameterResource *parameterResource = _RGLGetParameterResource( _ptr->program, _ptr->parameterEntry );
    GLuint index = ( GLuint )( parameterResource->resource - CG_ATTR0 );
@@ -8040,7 +7973,7 @@ CGGL_API void cgGLSetParameterPointer
 
 CGGL_API void cgGLEnableClientState( CGparameter param )
 {
-   CgRuntimeParameter *_ptr = _RGLCgGLTestParameter( param );
+   CgRuntimeParameter *_ptr = _cgGetParamPtr( param );
 
    const CgParameterResource *parameterResource = _RGLGetParameterResource( _ptr->program, _ptr->parameterEntry );
 
@@ -8050,7 +7983,7 @@ CGGL_API void cgGLEnableClientState( CGparameter param )
 
 CGGL_API void cgGLDisableClientState( CGparameter param )
 {
-    CgRuntimeParameter *_ptr = _RGLCgGLTestParameter( param );
+    CgRuntimeParameter *_ptr = _cgGetParamPtr( param );
 
     const CgParameterResource *parameterResource = _RGLGetParameterResource( _ptr->program, _ptr->parameterEntry );
 
@@ -8094,7 +8027,7 @@ CGGL_API void cgGLSetStateMatrixParameter( CGparameter param,
             return;
     }
 
-    CgRuntimeParameter* ptr = _RGLCgGLTestParameter( param );
+    CgRuntimeParameter* ptr = _cgGetParamPtr( param );
 
     CGtype parameterType = _RGLGetParameterCGtype( ptr->program, ptr->parameterEntry );
     if ( RGL_LIKELY( parameterType == CG_FLOAT4x4 ) )
@@ -8115,14 +8048,14 @@ CGGL_API void cgGLSetStateMatrixParameter( CGparameter param,
 
 CGGL_API void cgGLSetTextureParameter( CGparameter param, GLuint texobj )
 {
-    CgRuntimeParameter* ptr = _cgGLTestTextureParameter( param );
+    CgRuntimeParameter* ptr = _cgGetParamPtr(param);
 
     ptr->samplerSetter( ptr, &texobj, 0 );
 }
 
 CGGL_API void cgGLEnableTextureParameter( CGparameter param )
 {
-    CgRuntimeParameter* ptr = _cgGLTestTextureParameter( param );
+    CgRuntimeParameter* ptr = _cgGetParamPtr(param);
     ptr->samplerSetter( ptr, NULL, 0 );
 }
 
@@ -8166,7 +8099,11 @@ CG_API CGcontext cgCreateContext(void)
     _RGLCgContextZero( ptr );
 
     CGcontext result = ( CGcontext )_RGLCreateName( &_CurrentContext->cgContextNameSpace, ptr );
-    if ( !result ) { free( ptr ); return NULL; }
+    if ( !result )
+    {
+       free( ptr );
+       return NULL;
+    }
 
     ptr->id = result;
     ptr->defaultProgram.parentContext = ptr;
@@ -8214,13 +8151,9 @@ CG_API void cgDestroyContext(CGcontext c)
         destroy_context( head );
 
         if ( second )
-        {
             _CurrentContext->RGLcgContextHead = second->id;
-        }
         else
-        {
             _CurrentContext->RGLcgContextHead = 0;
-        }
     }
 }
 
@@ -8478,13 +8411,6 @@ void _cgRaiseNotMatrixParamIndex( CgRuntimeParameter*p, const void*v, const int 
 
 void _cgIgnoreSetParam( CgRuntimeParameter*p, const void*v ) {}
 void _cgIgnoreSetParamIndex( CgRuntimeParameter*p, const void*v, const int index ) {}
-
-CgRuntimeParameter* _cgGLTestTextureParameter( CGparameter param )
-{
-   CgRuntimeParameter* ptr = _RGLCgGLTestParameter( param );
-   return ptr;
-}
-
 
 #define CG_DATATYPE_MACRO(name, compiler_name, enum_name, base_enum, nrows, ncols,classname) \
 	nrows ,

@@ -65,7 +65,7 @@ public:
 		}
 	}
 
-	STL_NAMESPACE vector<CgStructuralElement> _elements;
+	std::vector<CgStructuralElement> _elements;
 	bool _insideArray;
 	bool _root;
 };
@@ -92,11 +92,11 @@ typedef float _float4[4];
 
 typedef struct
 {
-	STL_NAMESPACE vector<short> _resources;
-	STL_NAMESPACE vector<unsigned short> _defaultValuesIndices;
-	STL_NAMESPACE vector<unsigned short> _elfDefaultsIndices;
-	STL_NAMESPACE vector<short> _dimensions;
-	STL_NAMESPACE vector<CgParameterSemantic> _semanticIndices;
+   std::vector<short> _resources;
+   std::vector<unsigned short> _defaultValuesIndices;
+   std::vector<unsigned short> _elfDefaultsIndices;
+   std::vector<short> _dimensions;
+   std::vector<CgParameterSemantic> _semanticIndices;
 } _CGNVCONTAINERS;
 
 static bool bIsVertexProgram = true;
@@ -104,23 +104,23 @@ static bool bIsVertexProgram = true;
 
 static int getStride(CgBaseType *type);
 static int getSizeofSubArray(_CGNVCONTAINERS &containers, int dimensionIndex, int dimensionCount, int endianness);
-static unsigned int stringTableFind( STL_NAMESPACE vector<char> &stringTable, const char* str);
-static unsigned int stringTableAdd( STL_NAMESPACE vector<char> &stringTable, const char* str );
-static unsigned int stringTableAddUnique( STL_NAMESPACE vector<char> &stringTable, const char* str );
-template<class Type> static size_t array_size(STL_NAMESPACE vector<Type> &array);
-template<class Type> static void array_push(char* &parameterOffset, STL_NAMESPACE vector<Type> &array);
+static unsigned int stringTableFind( std::vector<char> &stringTable, const char* str);
+static unsigned int stringTableAdd( std::vector<char> &stringTable, const char* str );
+static unsigned int stringTableAddUnique( std::vector<char> &stringTable, const char* str );
+template<class Type> static size_t array_size(std::vector<Type> &array);
+template<class Type> static void array_push(char* &parameterOffset, std::vector<Type> &array);
 inline static unsigned int swap16(const unsigned int v);
 static unsigned short getFlags(CGenum var, CGenum dir, int no,	bool is_referenced, bool is_shared, int paramIndex);
 
 static void fillStructureItems(_CGNVCONTAINERS &containers, CgStructureType *structure,
 							   int endianness,
-							   STL_NAMESPACE vector<CgParameterEntry> &parameterEntries,
-							   STL_NAMESPACE vector<char> &parameterResources, STL_NAMESPACE vector<char> &stringTable, unsigned short *arrayResourceIndex = NULL,
+							   std::vector<CgParameterEntry> &parameterEntries,
+							   std::vector<char> &parameterResources, std::vector<char> &stringTable, unsigned short *arrayResourceIndex = NULL,
 							   unsigned short *arrayDefaultValueIndex = NULL);
 
 
 int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness, int constTableOffset, void **binaryShader, int *binarySize,
-							 STL_NAMESPACE vector<char> &stringTable, STL_NAMESPACE vector<float> &defaultValues)
+							 std::vector<char> &stringTable, std::vector<float> &defaultValues)
 {
 	_CGNVCONTAINERS containers;
 
@@ -260,8 +260,8 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
 		CGenum var;
 		int rin;
 		const char *name;
-		STL_NAMESPACE vector<float> dv;
-		STL_NAMESPACE vector<unsigned int> ec;
+		std::vector<float> dv;
+		std::vector<unsigned int> ec;
 		const char *sem;
 		CGenum dir;
 		int no;
@@ -664,8 +664,8 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
 	nvbr->release();
 	bin_io::delete_instance();
 
-	STL_NAMESPACE vector<CgParameterEntry> parameterEntries;
-	STL_NAMESPACE vector<char> parameterResources;
+	std::vector<CgParameterEntry> parameterEntries;
+	std::vector<char> parameterResources;
 	fillStructureItems(containers,&root,endianness,parameterEntries,parameterResources,stringTable);
 
 	CgParameterTableHeader header;
@@ -728,7 +728,7 @@ int convertNvToElfFreeBinaryShader(void *binaryShader)
 	return 0;
 }
 
-static void pushbackUnsignedShort(STL_NAMESPACE vector<char> &parameterResources, unsigned short value)
+static void pushbackUnsignedShort(std::vector<char> &parameterResources, unsigned short value)
 {
 	size_t size = parameterResources.size();
 	parameterResources.resize(size + 2);
@@ -736,8 +736,8 @@ static void pushbackUnsignedShort(STL_NAMESPACE vector<char> &parameterResources
 }
 
 static void fillStructureItems(_CGNVCONTAINERS &containers, CgStructureType *structure, int endianness,
-						STL_NAMESPACE vector<CgParameterEntry> &parameterEntries,STL_NAMESPACE vector<char> &parameterResources,
-						STL_NAMESPACE vector<char> &stringTable, unsigned short *arrayResourceIndex, unsigned short *arrayDefaultValueIndex)
+						std::vector<CgParameterEntry> &parameterEntries,std::vector<char> &parameterResources,
+						std::vector<char> &stringTable, unsigned short *arrayResourceIndex, unsigned short *arrayDefaultValueIndex)
 {
 	unsigned char elfEndianness = endianness;
 
@@ -1021,12 +1021,12 @@ static int getSizeofSubArray(_CGNVCONTAINERS &containers, int dimensionIndex, in
 	return res;
 }
 
-template<class Type> static size_t array_size(STL_NAMESPACE vector<Type> &array)
+template<class Type> static size_t array_size(std::vector<Type> &array)
 {
 	return (unsigned int)array.size()*sizeof(array[0]);
 }
 
-template<class Type> static void array_push(char* &parameterOffset, STL_NAMESPACE vector<Type> &array)
+template<class Type> static void array_push(char* &parameterOffset, std::vector<Type> &array)
 {
 	size_t dataSize = array.size()*sizeof(array[0]);
 	memcpy(parameterOffset,&array[0],dataSize);

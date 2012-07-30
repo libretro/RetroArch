@@ -1,8 +1,6 @@
 #ifndef ELF_H
 #define ELF_H 1
 
-#define RGL_ALIGN_FAST_TRANSFER 128
-
 #define EI_MAG0		0
 #define EI_MAG1		1
 #define EI_MAG2		2

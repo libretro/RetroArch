@@ -282,7 +282,6 @@ static GLboolean _RGLInitFromRM( RGLResource *rmResource )
    cellGcmSetPointSpriteControlInline( &_RGLState.fifo, CELL_GCM_FALSE, 1, 0);
    cellGcmSetFrequencyDividerOperationInline( &_RGLState.fifo, 0);
 
-   cellGcmSetDitherEnableInline( &_RGLState.fifo, CELL_GCM_TRUE);
    cellGcmSetRestartIndexInline( &_RGLState.fifo, 0);
    cellGcmSetShadeModeInline( &_RGLState.fifo, CELL_GCM_SMOOTH);
 
@@ -892,6 +891,7 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
    cellGcmSetClearColorInline( &_RGLState.fifo, hwColor);
 
    gcmDevice->rt.colorFormat = RGL_ARGB8;
+
    for ( int i = 0; i < params->bufferingMode; ++i )
    {
       gcmDevice->rt.colorId[0] = gcmDevice->color[i].dataId;
@@ -991,7 +991,8 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
 
 PSGLdevice* psglCreateDeviceExtended(const PSGLdeviceParameters *parameters )
 {
-    PSGLdevice *device = ( PSGLdevice * )malloc( sizeof( PSGLdevice ) + sizeof(RGLDevice) );
+    PSGLdevice *device = (PSGLdevice *)malloc(sizeof(PSGLdevice) + sizeof(RGLDevice));
+
     if ( !device )
     {
         _RGLSetError( GL_OUT_OF_MEMORY );
@@ -1000,6 +1001,7 @@ PSGLdevice* psglCreateDeviceExtended(const PSGLdeviceParameters *parameters )
     memset( device, 0, sizeof( PSGLdevice ) + sizeof(RGLDevice) );
 
     PSGLdeviceParameters defaultParameters;
+
     defaultParameters.enable = 0;
     defaultParameters.colorFormat = GL_ARGB_SCE;
     defaultParameters.depthFormat = GL_NONE;
@@ -1092,12 +1094,6 @@ void psglGetDeviceDimensions(const PSGLdevice * device, GLuint *width, GLuint *h
    *height = device->deviceParameters.height;
 }
 
-void psglGetRenderBufferDimensions(const PSGLdevice * device, GLuint *width, GLuint *height)
-{
-   *width = device->deviceParameters.renderWidth;
-   *height = device->deviceParameters.renderHeight;
-}
-
 void psglDestroyDevice(PSGLdevice *device)
 {
    if ( _CurrentDevice == device ) psglMakeCurrent( NULL, NULL );
@@ -1146,7 +1142,7 @@ void psglDestroyDevice(PSGLdevice *device)
 
 static void *_RGLPlatformRasterInit (void)
 {
-   RGLDriver *driver = (RGLDriver *)malloc( sizeof( RGLDriver ) );
+   RGLDriver *driver = (RGLDriver*)malloc(sizeof(RGLDriver));
 
    cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
    _RGLFifoFinish( &_RGLState.fifo );
@@ -1242,7 +1238,6 @@ GLAPI void psglSwap(void)
    cellGcmSetLineStippleEnableInline( &_RGLState.fifo, CELL_GCM_FALSE );
    cellGcmSetPolygonStippleEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
    cellGcmSetDepthBoundsTestEnable( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetDitherEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
 
    LContext->needValidate = PSGL_VALIDATE_ALL;
 

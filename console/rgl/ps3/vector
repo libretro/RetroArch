@@ -4,8 +4,6 @@
 #include <memory>
 #include <stdexcept>
 
-#define STL_NAMESPACE ::RGL::
-
 namespace RGL
 {
 

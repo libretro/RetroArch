@@ -3,10 +3,6 @@
 
 #include <vector>
 
-#ifndef STL_NAMESPACE
-#define STL_NAMESPACE ::std::
-#endif
-
 #define CGF_OUTPUTFROMH0 0x01
 #define CGF_DEPTHREPLACE 0x02
 #define CGF_PIXELKILL 0x04
@@ -338,8 +334,8 @@ class nvb_reader
 					CGenum&	variability,
 					int&	resource_index,
 					const char** name,
-					STL_NAMESPACE vector<float>&	default_value,
-					STL_NAMESPACE vector<unsigned int>& embedded_constants,
+					std::vector<float>&	default_value,
+					std::vector<unsigned int>& embedded_constants,
 					const char**	semantic,
 					int&	paramno,
 					bool&	is_referenced,
@@ -405,7 +401,7 @@ class elf_reader_impl : public elf_reader
 	istream*	stream_;
 	bool		initialized_;
 	Elf32_Ehdr	header_;
-	STL_NAMESPACE vector<const isection*> sections_;
+	std::vector<const isection*> sections_;
 };
 
 inline HOST_ENDIANNESS host_endianness()
@@ -530,8 +526,8 @@ class nvb_reader_impl : public nvb_reader
 		        CGenum&	variability,
 		           int&	resource_index,
 		   const char ** name,
-	    STL_NAMESPACE vector<float>&	default_value,
-     STL_NAMESPACE vector<unsigned int>&	embedded_constants,
+	    std::vector<float>&	default_value,
+     std::vector<unsigned int>&	embedded_constants,
 		   const char ** semantic,
 			   int&	paramno,
 			  bool&	is_referenced,

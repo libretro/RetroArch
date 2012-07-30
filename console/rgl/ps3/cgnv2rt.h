@@ -5,10 +5,6 @@
 #include <vector>
 #include <string.h>
 
-#ifndef STL_NAMESPACE
-#define STL_NAMESPACE ::std::
-#endif
-
 #ifndef CGNV2ELF_VERSION
 #define CGNV2ELF_VERSION 6365
 #define CGNV2ELF_PRODUCT_STRING "cgnv2elf"
@@ -18,7 +14,7 @@
 #define CNV2END(val) convert_endianness((val), elfEndianness)
 #define ENDSWAP(val) convert_endianness((val), (host_endianness() == 1) ? 2 : 1)
 
-static unsigned int stringTableAdd( STL_NAMESPACE vector<char> &stringTable, const char* str )
+static unsigned int stringTableAdd( std::vector<char> &stringTable, const char* str )
 {
    unsigned int ret = (unsigned int)stringTable.size();
 
@@ -35,7 +31,7 @@ static unsigned int stringTableAdd( STL_NAMESPACE vector<char> &stringTable, con
    return ret;
 }
 
-static unsigned int stringTableFind( STL_NAMESPACE vector<char> &stringTable, const char* str  )
+static unsigned int stringTableFind( std::vector<char> &stringTable, const char* str  )
 {
    const char* data = &stringTable[0];
    size_t size = stringTable.size();
@@ -60,7 +56,7 @@ static unsigned int stringTableFind( STL_NAMESPACE vector<char> &stringTable, co
    return 0;
 }
 
-static unsigned int stringTableAddUnique( STL_NAMESPACE vector<char> &stringTable, const char* str )
+static unsigned int stringTableAddUnique( std::vector<char> &stringTable, const char* str )
 {
    if ( stringTable.size() == 0 )
       stringTable.push_back('\0');
@@ -73,8 +69,8 @@ static unsigned int stringTableAddUnique( STL_NAMESPACE vector<char> &stringTabl
    return ret;
 }
 
-int convertNvToElfFromFile(const char *sourceFile, int endianness, int constTableOffset, void **binaryShader, int *size, STL_NAMESPACE vector<char> &stringTable, STL_NAMESPACE vector<float> &defaultValues);
-int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness, int constTableOffset, void **binaryShader, int *binarySize, STL_NAMESPACE vector<char> &stringTable, STL_NAMESPACE vector<float> &defaultValues);
+int convertNvToElfFromFile(const char *sourceFile, int endianness, int constTableOffset, void **binaryShader, int *size, std::vector<char> &stringTable, std::vector<float> &defaultValues);
+int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness, int constTableOffset, void **binaryShader, int *binarySize, std::vector<char> &stringTable, std::vector<float> &defaultValues);
 
 int convertNvToElfFreeBinaryShader(void *binaryShader);
 

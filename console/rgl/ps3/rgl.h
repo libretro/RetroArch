@@ -18,10 +18,8 @@ typedef struct _CGcontext *CGcontext;
 #include <cell/resc.h>
 #endif
 
-#define RGL_ALIGN_FAST_TRANSFER 128
 #define _RGL_MAX_COLOR_ATTACHMENTS 4
 #define RGL_SUBPIXEL_ADJUST (0.5/(1<<12))
-#define RGL_VIEWPORT_EPSILON (0.0f)
 
 #define gmmIdIsMain(id) (((GmmBaseBlock *)id)->isMain)
 
@@ -532,7 +530,6 @@ struct PSGLcontext
    GLenum			BlendFactorSrcAlpha;
    GLenum			BlendFactorDestAlpha;
    jsColorRGBAf	BlendColor;
-   GLboolean		Dithering;
    jsTexNameSpace textureNameSpace;
    GLuint			ActiveTexture;
    GLuint			CS_ActiveTexture;
@@ -1035,7 +1032,7 @@ void static inline _RGLFifoGlViewport( GLint x, GLint y, GLsizei width, GLsizei 
    if ( rt->yInverted )
    {
       vp->yScale *= -0.5f;
-      vp->yCenter = ( GLfloat )( rt->gcmRenderTarget.height - RGL_VIEWPORT_EPSILON - y +  vp->yScale + RGL_SUBPIXEL_ADJUST );
+      vp->yCenter = ( GLfloat )( rt->gcmRenderTarget.height - y +  vp->yScale + RGL_SUBPIXEL_ADJUST );
    }
    else
    {
@@ -1106,7 +1103,6 @@ PSGLdevice*	psglCreateDeviceAuto( GLenum colorFormat, GLenum depthFormat, GLenum
 PSGLdevice*	psglCreateDeviceExtended( const PSGLdeviceParameters *parameters );
 GLfloat psglGetDeviceAspectRatio( const PSGLdevice * device );
 void psglGetDeviceDimensions( const PSGLdevice * device, GLuint *width, GLuint *height );
-void psglGetRenderBufferDimensions( const PSGLdevice * device, GLuint *width, GLuint *height );
 void psglDestroyDevice( PSGLdevice* device );
 
 void psglMakeCurrent( PSGLcontext* context, PSGLdevice* device );
@@ -1115,7 +1111,7 @@ void psglDestroyContext( PSGLcontext* LContext );
 void psglResetCurrentContext();
 PSGLcontext* psglGetCurrentContext();
 PSGLdevice* psglGetCurrentDevice();
-void psglSwap( void );
+void psglSwap(void);
 
 #ifdef __cplusplus
 }
