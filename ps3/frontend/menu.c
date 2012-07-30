@@ -548,14 +548,14 @@ static void display_menubar(menu *current_menu)
    switch(current_menu->enum_id)
    {
       case GENERAL_VIDEO_MENU:
-	 cellDbgFontPrintf(0.09f, 0.03f, 0.91f, WHITE, "NEXT ->");
+	 gl_render_msg_place(0.09f, 0.03f, 0.91f, WHITE, "NEXT ->");
          break;
       case GENERAL_AUDIO_MENU:
       case EMU_GENERAL_MENU:
       case EMU_VIDEO_MENU:
       case EMU_AUDIO_MENU:
       case PATH_MENU:
-	 cellDbgFontPrintf(0.09f, 0.03f, 0.91f, WHITE, "<- PREV | NEXT ->");
+	 gl_render_msg_place(0.09f, 0.03f, 0.91f, WHITE, "<- PREV | NEXT ->");
          break;
       case CONTROLS_MENU:
       case INGAME_MENU_RESIZE:
@@ -568,7 +568,7 @@ static void display_menubar(menu *current_menu)
       case PATH_DEFAULT_ROM_DIR_CHOICE:
       case PATH_CHEATS_DIR_CHOICE:
       case PATH_SRAM_DIR_CHOICE:
-	 cellDbgFontPrintf(0.09f, 0.03f, 0.91f, WHITE, "<- PREV");
+	 gl_render_msg_place(0.09f, 0.03f, 0.91f, WHITE, "<- PREV");
          break;
       default:
          break;
@@ -589,15 +589,15 @@ static void display_menubar(menu *current_menu)
       case PATH_SRAM_DIR_CHOICE:
          fb = &tmpBrowser;
       case FILE_BROWSER_MENU:
-         cellDbgFontPrintf (0.09f, 0.09f, FONT_SIZE, YELLOW, "PATH: %s", filebrowser_get_current_dir(fb));
+         gl_render_msg_place (0.09f, 0.09f, FONT_SIZE, YELLOW, "PATH: %s", filebrowser_get_current_dir(fb));
          break;
       default:
          break;
    }
 
-   cellDbgFontPrintf(0.09f, 0.05f, 1.4f, WHITE, current_menu->title);
-   cellDbgFontPrintf(0.3f, 0.06f, 0.82f, WHITE, core_text);
-   cellDbgFontPrintf(0.8f, 0.12f, 0.82f, WHITE, "v%s", PACKAGE_VERSION);
+   gl_render_msg_place(0.09f, 0.05f, 1.4f, WHITE, current_menu->title);
+   gl_render_msg_place(0.3f, 0.06f, 0.82f, WHITE, core_text);
+   gl_render_msg_place(0.8f, 0.12f, 0.82f, WHITE, "v%s", PACKAGE_VERSION);
    gl_render_msg_post(gl);
 }
 
@@ -705,7 +705,7 @@ static void browser_render(filebrowser_t * b, float current_x, float current_y, 
       char fname_tmp[256];
       fill_pathname_base(fname_tmp, b->current_dir.list->elems[i].data, sizeof(fname_tmp));
       currentY = currentY + ySpacing;
-      cellDbgFontPuts(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->current_dir.list->elems[i].attr.b ? GREEN : WHITE, fname_tmp);
+      gl_render_msg_place(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->current_dir.list->elems[i].attr.b ? GREEN : WHITE, fname_tmp);
       gl_render_msg_post(gl);
    }
    gl_render_msg_post(gl);
@@ -824,8 +824,8 @@ static void select_file(item *items, menu *current_menu)
 
    display_menubar(current_menu);
 
-   cellDbgFontPrintf(0.09f, 0.92f, 0.92, YELLOW, "X - Select %s  /\\ - return to settings  START - Reset Startdir", object);
-   cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s", comment);
+   gl_render_msg_place(0.09f, 0.92f, 0.92, YELLOW, "X - Select %s  /\\ - return to settings  START - Reset Startdir", object);
+   gl_render_msg_place(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s", comment);
    gl_render_msg_post(gl);
 }
 
@@ -890,9 +890,9 @@ static void select_directory(item *items, menu *current_menu)
 
    display_menubar(current_menu);
 
-   cellDbgFontPuts(0.09f, 0.93f, 0.92f, YELLOW,
+   gl_render_msg_place(0.09f, 0.93f, 0.92f, YELLOW,
       "X - Enter dir  /\\ - return to settings  START - Reset Startdir");
-   cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s",
+   gl_render_msg_place(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s",
       "INFO - Browse to a directory and assign it as the path by\npressing SQUARE button.");
    gl_render_msg_post(gl);
 }
@@ -1641,16 +1641,16 @@ static void select_setting(item *items, menu *current_menu)
    {
       if(items[i].page == current_menu->page)
       {
-         cellDbgFontPuts(items[i].text_xpos, items[i].text_ypos, FONT_SIZE, current_menu->selected == items[i].enum_id ? YELLOW : items[i].item_color, items[i].text);
-	 cellDbgFontPuts(0.5f, items[i].text_ypos, FONT_SIZE, items[i].text_color, items[i].setting_text);
+         gl_render_msg_place(items[i].text_xpos, items[i].text_ypos, FONT_SIZE, current_menu->selected == items[i].enum_id ? YELLOW : items[i].item_color, items[i].text);
+	 gl_render_msg_place(0.5f, items[i].text_ypos, FONT_SIZE, items[i].text_color, items[i].setting_text);
 	 gl_render_msg_post(gl);
       }
    }
 
-   cellDbgFontPuts(0.09f, COMMENT_YPOS, 0.86f, LIGHTBLUE, items[current_menu->selected].comment);
+   gl_render_msg_place(0.09f, COMMENT_YPOS, 0.86f, LIGHTBLUE, items[current_menu->selected].comment);
 
-   cellDbgFontPuts(0.09f, 0.91f, FONT_SIZE, YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
-   cellDbgFontPuts(0.09f, 0.95f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
+   gl_render_msg_place(0.09f, 0.91f, FONT_SIZE, YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
+   gl_render_msg_place(0.09f, 0.95f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
    gl_render_msg_post(gl);
 }
 
@@ -1694,16 +1694,16 @@ static void select_rom(item *items, menu *current_menu)
    {
       const char *current_path = filebrowser_get_current_path(&browser);
       if(!strcmp(current_path,"app_home") || !strcmp(current_path, "host_root"))
-         cellDbgFontPrintf(0.09f, 0.83f, 0.91f, RED, "WARNING - This path only works on DEX PS3 systems. Do not attempt to open\n this directory on CEX PS3 systems, or you might have to restart.");
+         gl_render_msg_place(0.09f, 0.83f, 0.91f, RED, "WARNING - This path only works on DEX PS3 systems. Do not attempt to open\n this directory on CEX PS3 systems, or you might have to restart.");
       else
-         cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to enter the directory.");
+         gl_render_msg_place(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to enter the directory.");
    }
    else
-      cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
+      gl_render_msg_place(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
 
    display_menubar(current_menu);
 
-   cellDbgFontPuts   (0.09f, 0.91f, FONT_SIZE, YELLOW,
+   gl_render_msg_place   (0.09f, 0.91f, FONT_SIZE, YELLOW,
    "L3 + R3 - resume game           SELECT - Settings screen");
    gl_render_msg_post(gl);
 }
@@ -1759,60 +1759,60 @@ static void ingame_menu_resize(item *items, menu *current_menu)
    {
       display_menubar(current_menu);
 
-      cellDbgFontPrintf(x_position, ypos, font_size, GREEN, "Viewport X: #%d", g_console.viewports.custom_vp.x);
+      gl_render_msg_place(x_position, ypos, font_size, GREEN, "Viewport X: #%d", g_console.viewports.custom_vp.x);
 
-      cellDbgFontPrintf(x_position, ypos+(ypos_increment*1), font_size, GREEN, "Viewport Y: #%d", g_console.viewports.custom_vp.y);
+      gl_render_msg_place(x_position, ypos+(ypos_increment*1), font_size, GREEN, "Viewport Y: #%d", g_console.viewports.custom_vp.y);
 
-      cellDbgFontPrintf(x_position, ypos+(ypos_increment*2), font_size, GREEN, "Viewport Width: #%d", g_console.viewports.custom_vp.width);
+      gl_render_msg_place(x_position, ypos+(ypos_increment*2), font_size, GREEN, "Viewport Width: #%d", g_console.viewports.custom_vp.width);
 
-      cellDbgFontPrintf(x_position, ypos+(ypos_increment*3), font_size, GREEN, "Viewport Height: #%d", g_console.viewports.custom_vp.height);
+      gl_render_msg_place(x_position, ypos+(ypos_increment*3), font_size, GREEN, "Viewport Height: #%d", g_console.viewports.custom_vp.height);
 
-      cellDbgFontPrintf (0.09f, 0.40f, font_size, LIGHTBLUE, "CONTROLS:");
+      gl_render_msg_place(0.09f, 0.40f, font_size, LIGHTBLUE, "CONTROLS:");
 
-      cellDbgFontPrintf (0.09f, 0.46f, font_size,  LIGHTBLUE, "LEFT or LSTICK UP");
-      cellDbgFontPrintf (0.5f, 0.46f, font_size, LIGHTBLUE, "- Decrease Viewport X");
-
-      gl_render_msg_post(gl);
-
-      cellDbgFontPrintf (0.09f, 0.48f, font_size, LIGHTBLUE, "RIGHT or LSTICK RIGHT");
-      cellDbgFontPrintf (0.5f, 0.48f, font_size, LIGHTBLUE, "- Increase Viewport X");
-
-      cellDbgFontPrintf (0.09f, 0.50f, font_size, LIGHTBLUE, "UP or LSTICK UP");
-      cellDbgFontPrintf (0.5f, 0.50f, font_size, LIGHTBLUE, "- Increase Viewport Y");
+      gl_render_msg_place (0.09f, 0.46f, font_size,  LIGHTBLUE, "LEFT or LSTICK UP");
+      gl_render_msg_place (0.5f, 0.46f, font_size, LIGHTBLUE, "- Decrease Viewport X");
 
       gl_render_msg_post(gl);
 
-      cellDbgFontPrintf (0.09f, 0.52f, font_size, LIGHTBLUE, "DOWN or LSTICK DOWN");
-      cellDbgFontPrintf (0.5f, 0.52f, font_size, LIGHTBLUE, "- Decrease Viewport Y");
+      gl_render_msg_place (0.09f, 0.48f, font_size, LIGHTBLUE, "RIGHT or LSTICK RIGHT");
+      gl_render_msg_place (0.5f, 0.48f, font_size, LIGHTBLUE, "- Increase Viewport X");
 
-      cellDbgFontPrintf (0.09f, 0.54f, font_size, LIGHTBLUE, "L1 or RSTICK LEFT");
-      cellDbgFontPrintf (0.5f, 0.54f, font_size, LIGHTBLUE, "- Decrease Viewport Width");
-
-      gl_render_msg_post(gl);
-
-      cellDbgFontPrintf (0.09f, 0.56f, font_size, LIGHTBLUE, "R1 or RSTICK RIGHT");
-      cellDbgFontPrintf (0.5f, 0.56f, font_size, LIGHTBLUE, "- Increase Viewport Width");
-
-      cellDbgFontPrintf (0.09f, 0.58f, font_size, LIGHTBLUE, "L2 or  RSTICK UP");
-      cellDbgFontPrintf (0.5f, 0.58f, font_size, LIGHTBLUE, "- Increase Viewport Height");
+      gl_render_msg_place (0.09f, 0.50f, font_size, LIGHTBLUE, "UP or LSTICK UP");
+      gl_render_msg_place (0.5f, 0.50f, font_size, LIGHTBLUE, "- Increase Viewport Y");
 
       gl_render_msg_post(gl);
 
-      cellDbgFontPrintf (0.09f, 0.60f, font_size, LIGHTBLUE, "R2 or RSTICK DOWN");
-      cellDbgFontPrintf (0.5f, 0.60f, font_size, LIGHTBLUE, "- Decrease Viewport Height");
+      gl_render_msg_place (0.09f, 0.52f, font_size, LIGHTBLUE, "DOWN or LSTICK DOWN");
+      gl_render_msg_place (0.5f, 0.52f, font_size, LIGHTBLUE, "- Decrease Viewport Y");
 
-      cellDbgFontPrintf (0.09f, 0.66f, font_size, LIGHTBLUE, "TRIANGLE");
-      cellDbgFontPrintf (0.5f, 0.66f, font_size, LIGHTBLUE, "- Reset To Defaults");
-
-      cellDbgFontPrintf (0.09f, 0.68f, font_size, LIGHTBLUE, "SQUARE");
-      cellDbgFontPrintf (0.5f, 0.68f, font_size, LIGHTBLUE, "- Show Game Screen");
-
-      cellDbgFontPrintf (0.09f, 0.70f, font_size, LIGHTBLUE, "CIRCLE");
-      cellDbgFontPrintf (0.5f, 0.70f, font_size, LIGHTBLUE, "- Return to Ingame Menu");
+      gl_render_msg_place (0.09f, 0.54f, font_size, LIGHTBLUE, "L1 or RSTICK LEFT");
+      gl_render_msg_place (0.5f, 0.54f, font_size, LIGHTBLUE, "- Decrease Viewport Width");
 
       gl_render_msg_post(gl);
 
-      cellDbgFontPrintf (0.09f, 0.83f, 0.91f, LIGHTBLUE, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the menu.");
+      gl_render_msg_place (0.09f, 0.56f, font_size, LIGHTBLUE, "R1 or RSTICK RIGHT");
+      gl_render_msg_place (0.5f, 0.56f, font_size, LIGHTBLUE, "- Increase Viewport Width");
+
+      gl_render_msg_place (0.09f, 0.58f, font_size, LIGHTBLUE, "L2 or  RSTICK UP");
+      gl_render_msg_place (0.5f, 0.58f, font_size, LIGHTBLUE, "- Increase Viewport Height");
+
+      gl_render_msg_post(gl);
+
+      gl_render_msg_place (0.09f, 0.60f, font_size, LIGHTBLUE, "R2 or RSTICK DOWN");
+      gl_render_msg_place (0.5f, 0.60f, font_size, LIGHTBLUE, "- Decrease Viewport Height");
+
+      gl_render_msg_place (0.09f, 0.66f, font_size, LIGHTBLUE, "TRIANGLE");
+      gl_render_msg_place (0.5f, 0.66f, font_size, LIGHTBLUE, "- Reset To Defaults");
+
+      gl_render_msg_place (0.09f, 0.68f, font_size, LIGHTBLUE, "SQUARE");
+      gl_render_msg_place (0.5f, 0.68f, font_size, LIGHTBLUE, "- Show Game Screen");
+
+      gl_render_msg_place (0.09f, 0.70f, font_size, LIGHTBLUE, "CIRCLE");
+      gl_render_msg_place (0.5f, 0.70f, font_size, LIGHTBLUE, "- Return to Ingame Menu");
+
+      gl_render_msg_post(gl);
+
+      gl_render_msg_place (0.09f, 0.83f, 0.91f, LIGHTBLUE, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the menu.");
       gl_render_msg_post(gl);
    }
 }
@@ -2002,52 +2002,52 @@ static void ingame_menu(item *items, menu *current_menu)
    display_menubar(current_menu);
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
-   cellDbgFontPrintf(x_position, ypos, font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), strw_buffer);
+   gl_render_msg_place(x_position, ypos, font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), strw_buffer);
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
-   cellDbgFontPrintf(x_position, ypos+(ypos_increment*MENU_ITEM_SAVE_STATE), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), strw_buffer);
+   gl_render_msg_place(x_position, ypos+(ypos_increment*MENU_ITEM_SAVE_STATE), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), strw_buffer);
    gl_render_msg_post(gl);
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
-   cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), strw_buffer);
+   gl_render_msg_place(x_position, (ypos+(ypos_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), strw_buffer);
 
-   cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), "Overscan: %f", g_console.overscan_amount);
+   gl_render_msg_place(x_position, (ypos+(ypos_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), "Overscan: %f", g_console.overscan_amount);
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
-   cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), strw_buffer);
+   gl_render_msg_place (x_position, (ypos+(ypos_increment*MENU_ITEM_ORIENTATION)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), strw_buffer);
    gl_render_msg_post(gl);
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
-   cellDbgFontPrintf (x_position, (ypos+(ypos_increment*MENU_ITEM_SCALE_FACTOR)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), strw_buffer);
+   gl_render_msg_place (x_position, (ypos+(ypos_increment*MENU_ITEM_SCALE_FACTOR)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), strw_buffer);
    gl_render_msg_post(gl);
 
-   cellDbgFontPrintf(x_position, (ypos+(ypos_increment*MENU_ITEM_RESIZE_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE), "Resize Mode");
+   gl_render_msg_place(x_position, (ypos+(ypos_increment*MENU_ITEM_RESIZE_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE), "Resize Mode");
 
-   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_FRAME_ADVANCE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_FRAME_ADVANCE), "Frame Advance");
+   gl_render_msg_place(x_position, (ypos+(ypos_increment*MENU_ITEM_FRAME_ADVANCE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_FRAME_ADVANCE), "Frame Advance");
 
-   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_SCREENSHOT_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCREENSHOT_MODE), "Screenshot Mode");
+   gl_render_msg_place(x_position, (ypos+(ypos_increment*MENU_ITEM_SCREENSHOT_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCREENSHOT_MODE), "Screenshot Mode");
 
    gl_render_msg_post(gl);
 
-   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RESET)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESET), "Reset");
+   gl_render_msg_place(x_position, (ypos+(ypos_increment*MENU_ITEM_RESET)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESET), "Reset");
 
-   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_GAME)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME), "Return to Game");
+   gl_render_msg_place(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_GAME)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME), "Return to Game");
    gl_render_msg_post(gl);
 
-   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MENU)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU), "Return to Menu");
+   gl_render_msg_place(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MENU)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU), "Return to Menu");
    gl_render_msg_post(gl);
 
-   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_CHANGE_LIBRETRO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBRETRO), "Change libretro core");
+   gl_render_msg_place(x_position, (ypos+(ypos_increment*MENU_ITEM_CHANGE_LIBRETRO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBRETRO), "Change libretro core");
    gl_render_msg_post(gl);
 
 #ifdef HAVE_MULTIMAN
-   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");
+   gl_render_msg_place(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");
 #endif
 
-   cellDbgFontPuts(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_DASHBOARD)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_DASHBOARD), "Return to XMB");
+   gl_render_msg_place(x_position, (ypos+(ypos_increment*MENU_ITEM_RETURN_TO_DASHBOARD)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_DASHBOARD), "Return to XMB");
    gl_render_msg_post(gl);
 
-   cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, comment);
+   gl_render_msg_place(0.09f, 0.83f, 0.91f, LIGHTBLUE, comment);
    gl_render_msg_post(gl);
 }
 
@@ -2229,7 +2229,7 @@ void menu_loop(void)
 
       if (message && g_console.info_msg_enable)
       {
-         cellDbgFontPrintf(g_settings.video.msg_pos_x, 0.75f, 1.05f, WHITE, message);
+         gl_render_msg_place(g_settings.video.msg_pos_x, 0.75f, 1.05f, WHITE, message);
          gl_render_msg_post(gl);
       }
 

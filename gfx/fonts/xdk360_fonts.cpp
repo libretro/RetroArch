@@ -505,7 +505,7 @@ void d3d9_render_msg_post(xdk360_video_font_t * font)
       D3DDevice *pD3dDevice = vid->d3d_render_device;
 	  
       pD3dDevice->SetTexture(0, NULL);
-	  pD3dDevice->SetVertexDeclaration(NULL);
+      pD3dDevice->SetVertexDeclaration(NULL);
       D3DDevice_SetVertexShader(pD3dDevice, NULL );
       D3DDevice_SetPixelShader(pD3dDevice, NULL );
       D3DDevice_SetRenderState_AlphaBlendEnable(pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHABLENDENABLE ]);
