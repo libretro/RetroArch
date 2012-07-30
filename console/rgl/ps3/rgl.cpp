@@ -5546,13 +5546,22 @@ GLAPI void APIENTRY glGetFloatv( GLenum pname, GLfloat* params )
     switch (pname)
     {
         case GL_MODELVIEW_MATRIX:
-            jsContextGetMatrixf( LContext, GL_MODELVIEW, LMatrixStack, LMatrix );
+	    LMatrixStack = &((LContext)->ModelViewMatrixStack);
+	    if (LMatrixStack)
+               LMatrix = LMatrixStack->MatrixStackf + LMatrixStack->MatrixStackPtr * ELEMENTS_IN_MATRIX;
             break;
         case GL_PROJECTION_MATRIX:
-            jsContextGetMatrixf( LContext, GL_PROJECTION, LMatrixStack, LMatrix );
+	    LMatrixStack = &((LContext)->ProjectionMatrixStack);
+	    if (LMatrixStack)
+               LMatrix = LMatrixStack->MatrixStackf + LMatrixStack->MatrixStackPtr * ELEMENTS_IN_MATRIX;
             break;
         case GL_TEXTURE_MATRIX:
-            jsContextGetMatrixf( LContext, GL_TEXTURE, LMatrixStack, LMatrix );
+	    if ((LContext)->CurrentCoordsUnit)
+               LMatrixStack = &((LContext)->CurrentCoordsUnit->TextureMatrixStack);
+	    else
+               LMatrixStack = NULL;
+	    if (LMatrixStack)
+               LMatrix = LMatrixStack->MatrixStackf + LMatrixStack->MatrixStackPtr * ELEMENTS_IN_MATRIX;
             break;
         case GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT:
 	    return;
@@ -5560,7 +5569,7 @@ GLAPI void APIENTRY glGetFloatv( GLenum pname, GLfloat* params )
             _RGLSetError( GL_INVALID_ENUM );
             return;
     }
-    memcpy( params, LMatrixStack->MatrixStackf + LMatrixStack->MatrixStackPtr * ELEMENTS_IN_MATRIX, sizeof(GLfloat)*ELEMENTS_IN_MATRIX );
+    memcpy(params, LMatrixStack->MatrixStackf + LMatrixStack->MatrixStackPtr * ELEMENTS_IN_MATRIX, sizeof(GLfloat) * ELEMENTS_IN_MATRIX);
 }
 
 GLAPI void APIENTRY glEnable( GLenum cap )
@@ -5804,7 +5813,23 @@ GLAPI void APIENTRY glLoadIdentity(void)
    PSGLcontext* LContext = _CurrentContext;
    jsMatrixStack* LMatrixStack = NULL;
 
-   jsContextGetMatrixStack(LContext, LContext->MatrixMode, LMatrixStack);
+   switch(LContext->MatrixMode)
+   {
+      case GL_MODELVIEW:
+         LMatrixStack = &((LContext)->ModelViewMatrixStack);
+	 break;
+      case GL_PROJECTION:
+	 LMatrixStack = &((LContext)->ProjectionMatrixStack);
+	 break;
+      case GL_TEXTURE:
+	 if ((LContext)->CurrentCoordsUnit)
+            LMatrixStack = &((LContext)->CurrentCoordsUnit->TextureMatrixStack);
+	 else 
+            LMatrixStack=NULL;
+	 break;
+      default:
+	 break;
+   }
 
    memcpy( LMatrixStack->MatrixStackf + LMatrixStack->MatrixStackPtr * ELEMENTS_IN_MATRIX, _RGLIdentityMatrixf, sizeof(GLfloat)*ELEMENTS_IN_MATRIX );
 
@@ -5823,7 +5848,23 @@ GLAPI void APIENTRY glOrthof( GLfloat left, GLfloat right, GLfloat bottom, GLflo
     jsMatrixStack* LMatrixStack = NULL;
     GLfloat *LMatrix = NULL;
 
-    jsContextGetMatrixStack(LContext, LContext->MatrixMode, LMatrixStack);
+    switch(LContext->MatrixMode)
+    {
+       case GL_MODELVIEW:
+          LMatrixStack = &((LContext)->ModelViewMatrixStack);
+	  break;
+       case GL_PROJECTION:
+	  LMatrixStack = &((LContext)->ProjectionMatrixStack);
+	  break;
+       case GL_TEXTURE:
+	  if ((LContext)->CurrentCoordsUnit)
+             LMatrixStack = &((LContext)->CurrentCoordsUnit->TextureMatrixStack);
+	  else 
+             LMatrixStack=NULL;
+	  break;
+       default:
+	  break;
+    }
 
     if (LMatrixStack)
        LMatrix = LMatrixStack->MatrixStackf + LMatrixStack->MatrixStackPtr * ELEMENTS_IN_MATRIX;
@@ -5882,7 +5923,7 @@ GLAPI void APIENTRY glOrthof( GLfloat left, GLfloat right, GLfloat bottom, GLflo
 
 GLAPI void APIENTRY glVertexPointer( GLint size, GLenum type, GLsizei stride, const GLvoid* pointer )
 {
-    _RGLVertexAttribPointerNV( _RGL_ATTRIB_POSITION_INDEX, size, type, GL_FALSE, stride, pointer );
+   _RGLVertexAttribPointerNV( _RGL_ATTRIB_POSITION_INDEX, size, type, GL_FALSE, stride, pointer );
 }
 
 GLAPI void APIENTRY glTexCoordPointer( GLint size, GLenum type, GLsizei stride, const GLvoid* pointer )

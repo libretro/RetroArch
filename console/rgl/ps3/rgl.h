@@ -19,7 +19,7 @@ typedef struct _CGcontext *CGcontext;
 #endif
 
 #define _RGL_MAX_COLOR_ATTACHMENTS 4
-#define RGL_SUBPIXEL_ADJUST (0.5/(1<<12))
+#define SUBPIXEL_ADJUST (0.5/(1<<12))
 
 #define gmmIdIsMain(id) (((GmmBaseBlock *)id)->isMain)
 
@@ -271,8 +271,6 @@ jsTexture;
 
 #define _RGL_MAX_TEXTURE_SIZE_LOG2	12
 #define _RGL_MAX_TEXTURE_SIZE	(4096)
-#define _RGL_MAX_TEXTURE_SIZE_3D_LOG2	9
-#define _RGL_MAX_TEXTURE_SIZE_3D	(512)
 #define _RGL_MAX_MODELVIEW_STACK_DEPTH 16
 #define _RGL_MAX_PROJECTION_STACK_DEPTH 2
 #define _RGL_MAX_TEXTURE_STACK_DEPTH 2
@@ -431,19 +429,19 @@ typedef struct
 
 typedef struct
 {
-   GLvoid*	clientData;
-   GLuint	clientSize;
-   GLenum	clientType;
-   GLsizei	clientStride;
+   GLvoid *clientData;
+   GLuint clientSize;
+   GLenum clientType;
+   GLsizei clientStride;
    GLuint  arrayBuffer;
-   GLfloat	value[4];
+   GLfloat value[4];
    GLuint  frequency;
    GLboolean normalized;
 } __attribute__((aligned (16))) jsAttribute;
 
 typedef struct
 {
-   jsAttribute		attrib[_RGL_MAX_VERTEX_ATTRIBS];
+   jsAttribute attrib[_RGL_MAX_VERTEX_ATTRIBS];
    unsigned int DirtyMask;
    unsigned int EnabledMask;
    unsigned int NeedsConversionMask;
@@ -454,10 +452,10 @@ typedef struct
 typedef struct
 {
    jsAttributeState attribs;
-   GLboolean	dirty;
+   GLboolean dirty;
    unsigned int	beenUpdatedMask;
-   GLvoid*		cmdBuffer;
-   GLuint		cmdNumWords;
+   GLvoid *cmdBuffer;
+   GLuint cmdNumWords;
 } __attribute__((aligned (16))) jsAttribSet;
 
 struct jsBufferObject
@@ -490,8 +488,8 @@ typedef struct jsNameSpace
    unsigned long capacity;
 } jsNameSpace;
 
-typedef void *( *jsTexNameSpaceCreateFunction )( void );
-typedef void( *jsTexNameSpaceDestroyFunction )( void * );
+typedef void *(*jsTexNameSpaceCreateFunction)(void);
+typedef void(*jsTexNameSpaceDestroyFunction)(void *);
 
 typedef struct jsTexNameSpace
 {
@@ -504,14 +502,14 @@ jsTexNameSpace;
 
 struct PSGLcontext
 {
-   GLenum			error;
+   GLenum		error;
    int			MatrixMode;
    jsMatrixStack	ModelViewMatrixStack;
    jsMatrixStack	ProjectionMatrixStack;
-   GLfloat			LocalToScreenMatrixf[ELEMENTS_IN_MATRIX];
+   GLfloat		LocalToScreenMatrixf[ELEMENTS_IN_MATRIX];
    GLfloat 		InverseModelViewMatrixf[ELEMENTS_IN_MATRIX];
    GLboolean		InverseModelViewValid;
-   GLfloat			ScalingFactor;
+   GLfloat		ScalingFactor;
    jsViewPort		ViewPort;
    jsAttributeState defaultAttribs0;
    jsAttributeState *attribs;
@@ -561,31 +559,6 @@ struct PSGLcontext
    jsNameSpace  cgProgramNameSpace;
    jsNameSpace  cgParameterNameSpace;
 };
-
-#define jsContextGetMatrixStack(mContext, mMatrixMode, mMatrixStack) do \
-{\
-	switch(mMatrixMode)\
-	{\
-		case GL_MODELVIEW:\
-			mMatrixStack = &((mContext)->ModelViewMatrixStack);\
-			break;\
-		case GL_PROJECTION:\
-			mMatrixStack = &((mContext)->ProjectionMatrixStack);\
-			break;\
-		case GL_TEXTURE:\
-			if ((mContext)->CurrentCoordsUnit) mMatrixStack = &((mContext)->CurrentCoordsUnit->TextureMatrixStack);\
-			else mMatrixStack=NULL; \
-			break;\
-		default: \
-			break; \
-	}\
-} while(0)
-
-#define jsContextGetMatrixf(mContext, mMatrixMode, mMatrixStack, mMatrix) do \
-{\
-	jsContextGetMatrixStack(mContext, mMatrixMode, mMatrixStack);\
-	if (mMatrixStack) mMatrix = (mMatrixStack)->MatrixStackf+(mMatrixStack)->MatrixStackPtr*ELEMENTS_IN_MATRIX;\
-} while (0)
 
 #define MAX(A,B) ((A)>(B)?(A):(B))
 #define MIN(A,B) ((A)<(B)?(A):(B))
@@ -650,7 +623,7 @@ void _RGLEraseName( struct jsNameSpace* ns, jsName name );
 
 static inline void * _RGLGetNamedValue( struct jsNameSpace* ns, jsName name )
 {
-	return ns->data[name - 1];
+   return ns->data[name - 1];
 }
 
 void _RGLTexNameSpaceInit( jsTexNameSpace *ns, jsTexNameSpaceCreateFunction create, jsTexNameSpaceDestroyFunction destroy );
@@ -772,12 +745,7 @@ uint32_t gmmFree(const uint32_t freeId);
 uint32_t gmmAlloc(const uint8_t isTile, const uint32_t size);
 uint32_t gmmAllocExtendedTileBlock(const uint32_t size, const uint32_t tag);
 
-void gmmSetTileAttrib(
-    const uint32_t id,
-    const uint32_t tag,
-    void *pData
-);
-
+void gmmSetTileAttrib(const uint32_t id, const uint32_t tag, void *pData);
 
 #define GCM_FUNC_BUFFERED( GCM_FUNCTION, COMMAND_BUFFER, ...) \
 					  { \
@@ -797,18 +765,11 @@ void gmmSetTileAttrib(
 
 #define _RGLTransferDataVidToVid(dstId, dstIdOffset, dstPitch, dstX, dstY, srcId, srcIdOffset, srcPitch, srcX, srcY, width, height, bytesPerPixel) \
 { \
-    GLuint dstOffset_tmp, srcOffset_tmp; \
-    uint8_t mode; \
-    dstOffset_tmp = gmmIdToOffset(dstId) + dstIdOffset; \
-    srcOffset_tmp = gmmIdToOffset(srcId) + srcIdOffset; \
-    mode = CELL_GCM_TRANSFER_LOCAL_TO_LOCAL; \
-    if ( gmmIdIsMain(srcId) && gmmIdIsMain(dstId) ) \
-        mode = CELL_GCM_TRANSFER_MAIN_TO_MAIN; \
-    else if ( gmmIdIsMain(srcId) )	/* choose source DMA context */ \
-        mode = CELL_GCM_TRANSFER_MAIN_TO_LOCAL; \
-    else if ( gmmIdIsMain(dstId) )	/* choose destination DMA context */ \
-        mode = CELL_GCM_TRANSFER_LOCAL_TO_MAIN; \
-    cellGcmSetTransferImageInline( &_RGLState.fifo, mode, dstOffset_tmp, (dstPitch), (dstX), (dstY), (srcOffset_tmp), (srcPitch), (srcX), (srcY), (width), (height), (bytesPerPixel) ); \
+    GmmBaseBlock *pBaseBlock_dst = (GmmBaseBlock *)dstId; \
+    GmmBaseBlock *pBaseBlock_src = (GmmBaseBlock *)srcId; \
+    GLuint dstOffset_tmp = gmmAddressToOffset(pBaseBlock_dst->address, pBaseBlock_dst->isMain) + dstIdOffset; \
+    GLuint srcOffset_tmp = gmmAddressToOffset(pBaseBlock_src->address, pBaseBlock_src->isMain) + srcIdOffset; \
+    cellGcmSetTransferImageInline( &_RGLState.fifo, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, dstOffset_tmp, (dstPitch), (dstX), (dstY), (srcOffset_tmp), (srcPitch), (srcX), (srcY), (width), (height), (bytesPerPixel) ); \
 }
 
 #define RGL_BIG_ENDIAN
@@ -823,7 +784,6 @@ void gmmSetTileAttrib(
 #define _RGL_TRANSIENT_ENTRIES_DEFAULT	64
 
 #define _RGL_BUFFER_OBJECT_BLOCK_SIZE 128
-#define SUBPIXEL_ADJUST (0.5/4096)
 
 typedef struct PSGLinitOptions
 {
@@ -1026,22 +986,22 @@ void static inline _RGLFifoGlViewport( GLint x, GLint y, GLsizei width, GLsizei 
       clipX0 = clipY0 = clipX1 = clipY1 = 0;
 
    vp->xScale = width * 0.5f;
-   vp->xCenter = ( GLfloat )( x + vp->xScale + RGL_SUBPIXEL_ADJUST );
+   vp->xCenter = (GLfloat)(x + vp->xScale + SUBPIXEL_ADJUST);
    vp->yScale = height;
 
    if ( rt->yInverted )
    {
       vp->yScale *= -0.5f;
-      vp->yCenter = ( GLfloat )( rt->gcmRenderTarget.height - y +  vp->yScale + RGL_SUBPIXEL_ADJUST );
+      vp->yCenter = (GLfloat)(rt->gcmRenderTarget.height - y +  vp->yScale + SUBPIXEL_ADJUST);
    }
    else
    {
       vp->yScale *= 0.5f;
-      vp->yCenter = ( GLfloat )( y +  vp->yScale + RGL_SUBPIXEL_ADJUST );
+      vp->yCenter = (GLfloat)(y +  vp->yScale + SUBPIXEL_ADJUST);
    }
 
-   float scale[4] = {  vp->xScale,  vp->yScale,  0.5f, 0.0f };
-   float offset[4] = {   vp->xCenter,  vp->yCenter,  0.5f, 0.0f };
+   float scale[4] = { vp->xScale,  vp->yScale,  0.5f, 0.0f };
+   float offset[4] = { vp->xCenter,  vp->yCenter,  0.5f, 0.0f };
 
    cellGcmSetViewportInline( &_RGLState.fifo, clipX0, clipY0, clipX1 - clipX0,
 		   clipY1 - clipY0, zNear, zFar, scale, offset );
@@ -1096,21 +1056,21 @@ void static inline _RGLFifoGlViewport( GLint x, GLint y, GLsizei width, GLsizei 
 #define PSGL_INIT_USE_PMQUERIES			0x0080
 
 
-extern void	psglInit( PSGLinitOptions* options );
-extern void	psglExit();
+extern void psglInit( PSGLinitOptions* options );
+extern void psglExit();
 
-PSGLdevice*	psglCreateDeviceAuto( GLenum colorFormat, GLenum depthFormat, GLenum multisamplingMode );
-PSGLdevice*	psglCreateDeviceExtended( const PSGLdeviceParameters *parameters );
-GLfloat psglGetDeviceAspectRatio( const PSGLdevice * device );
-void psglGetDeviceDimensions( const PSGLdevice * device, GLuint *width, GLuint *height );
+PSGLdevice *psglCreateDeviceAuto( GLenum colorFormat, GLenum depthFormat, GLenum multisamplingMode );
+PSGLdevice *psglCreateDeviceExtended( const PSGLdeviceParameters *parameters );
+GLfloat psglGetDeviceAspectRatio(const PSGLdevice *device );
+void psglGetDeviceDimensions(const PSGLdevice *device, GLuint *width, GLuint *height );
 void psglDestroyDevice( PSGLdevice* device );
 
 void psglMakeCurrent( PSGLcontext* context, PSGLdevice* device );
-PSGLcontext* psglCreateContext();
+PSGLcontext *psglCreateContext(void);
 void psglDestroyContext( PSGLcontext* LContext );
-void psglResetCurrentContext();
-PSGLcontext* psglGetCurrentContext();
-PSGLdevice* psglGetCurrentDevice();
+void psglResetCurrentContext(void);
+PSGLcontext *psglGetCurrentContext(void);
+PSGLdevice *psglGetCurrentDevice(void);
 void psglSwap(void);
 
 #ifdef __cplusplus
