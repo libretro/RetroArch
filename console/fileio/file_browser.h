@@ -56,6 +56,7 @@ const char * filebrowser_get_current_path (filebrowser_t *filebrowser);
 bool filebrowser_get_current_path_isdir (filebrowser_t *filebrowser);
 size_t filebrowser_get_current_index (filebrowser_t *filebrowser);
 void filebrowser_set_root(filebrowser_t *filebrowser, const char *root_dir);
+void filebrowser_set_root_and_ext(filebrowser_t *browser, const char *ext, const char *root_dir);
 void filebrowser_free(filebrowser_t *filebrowser);
 void filebrowser_set_current_at (filebrowser_t *filebrowser, size_t pos);
 void filebrowser_iterate(filebrowser_t *filebrowser, filebrowser_action_t action);

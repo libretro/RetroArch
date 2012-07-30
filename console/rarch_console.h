@@ -17,6 +17,21 @@
 #ifndef CONSOLE_EXT_H__
 #define CONSOLE_EXT_H__
 
+#if defined(__CELLOS_LV2__)
+#define EXT_EXECUTABLES "self|SELF|bin|BIN"
+#elif defined(_XBOX1)
+#define EXT_EXECUTABLES "xbe|XBE"
+#elif defineD(_XBOX360)
+#define EXT_EXECUTABLES "xex|XEX"
+#elif defined(GEKKO)
+#define EXT_EXECUTABLES "dol|DOL"
+#endif
+
+#define EXT_IMAGES "png|PNG|jpg|JPG|JPEG|jpeg"
+#define EXT_SHADERS "cg|CG"
+#define EXT_CGP_PRESETS "cgp|CGP"
+#define EXT_INPUT_PRESETS "cfg|CFG"
+
 enum {
    MENU_ITEM_LOAD_STATE = 0,
    MENU_ITEM_SAVE_STATE,

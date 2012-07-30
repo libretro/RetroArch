@@ -42,6 +42,13 @@ void filebrowser_set_root(filebrowser_t *filebrowser, const char *root_dir)
    strlcpy(filebrowser->root_dir, root_dir, sizeof(filebrowser->root_dir));
 }
 
+void filebrowser_set_root_and_ext(filebrowser_t *browser, const char *ext, const char *root_dir)
+{
+   strlcpy(browser->extensions, ext, sizeof(browser->extensions));
+   filebrowser_set_root(browser, root_dir);
+   filebrowser_iterate(browser, FILEBROWSER_ACTION_RESET);
+}
+
 void filebrowser_free(filebrowser_t * filebrowser)
 {
    dir_list_free(filebrowser->current_dir.list);
