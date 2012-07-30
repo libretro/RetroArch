@@ -341,12 +341,14 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 
 static void menu_stack_decrement(void)
 {
-   menuStackindex--;
+   if(menuStackindex > 0)
+      menuStackindex--;
 }
 
-static void menu_stack_increment(void)
+menu *menu_stack_get_current_ptr (void)
 {
-   menuStackindex++;
+   menu *current_menu = &menuStack[menuStackindex];
+   return current_menu;
 }
 
 static void menu_stack_refresh (item *items, menu *current_menu)
@@ -376,9 +378,16 @@ static void menu_stack_refresh (item *items, menu *current_menu)
    }
 }
 
-static void menu_stack_push(unsigned stack_idx, item *items, unsigned menu_id)
+static void menu_stack_push(item *items, unsigned menu_id)
 {
-   menu *current_menu = &menuStack[stack_idx];
+   static bool first_push_do_not_increment = true;
+
+   if(!first_push_do_not_increment)
+      menuStackindex++;
+   else
+      first_push_do_not_increment = false;
+
+   menu *current_menu = menu_stack_get_current_ptr();
 
    switch(menu_id)
    {
@@ -1064,8 +1073,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   {
 			   if(g_console.emulator_initialized)
 			   {
-				   menu_stack_increment();
-				   menu_stack_push(menuStackindex, items, PRESET_CHOICE);
+				   menu_stack_push(items, PRESET_CHOICE);
 			   }
 		   }
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1074,8 +1082,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 	   case SETTING_SHADER:
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
-			   menu_stack_increment();
-			   menu_stack_push(menuStackindex, items, SHADER_CHOICE);
+			   menu_stack_push(items, SHADER_CHOICE);
 			   set_shader = 0;
 		   }
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1088,8 +1095,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 	   case SETTING_SHADER_2:
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
-			   menu_stack_increment();
-			   menu_stack_push(menuStackindex, items, SHADER_CHOICE);
+			   menu_stack_push( items, SHADER_CHOICE);
 			   set_shader = 1;
 		   }
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1372,8 +1378,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 	   case SETTING_RARCH_DEFAULT_EMU:
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
-			   menu_stack_increment();
-			   menu_stack_push(menuStackindex, items, LIBRETRO_CHOICE);
+			   menu_stack_push(items, LIBRETRO_CHOICE);
 			   set_libretro_core_as_launch = false;
 		   }
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1413,8 +1418,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 	   case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
-			   menu_stack_increment();
-			   menu_stack_push(menuStackindex, items, PATH_DEFAULT_ROM_DIR_CHOICE);
+			   menu_stack_push(items, PATH_DEFAULT_ROM_DIR_CHOICE);
 		   }
 
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1423,8 +1427,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 	   case SETTING_PATH_SAVESTATES_DIRECTORY:
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
-			   menu_stack_increment();
-			   menu_stack_push(menuStackindex, items, PATH_SAVESTATES_DIR_CHOICE);
+			   menu_stack_push(items, PATH_SAVESTATES_DIR_CHOICE);
 		   }
 
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1434,8 +1437,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 	   case SETTING_PATH_SRAM_DIRECTORY:
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
-			   menu_stack_increment();
-			   menu_stack_push(menuStackindex, items, PATH_SRAM_DIR_CHOICE);
+			   menu_stack_push(items, PATH_SRAM_DIR_CHOICE);
 		   }
 
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1444,8 +1446,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 	   case SETTING_PATH_CHEATS:
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
-			   menu_stack_increment();
-			   menu_stack_push(menuStackindex, items, PATH_CHEATS_DIR_CHOICE);
+			   menu_stack_push(items, PATH_CHEATS_DIR_CHOICE);
 		   }
 
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1454,8 +1455,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 	   case SETTING_PATH_SYSTEM:
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
-			   menu_stack_increment();
-			   menu_stack_push(menuStackindex, items, PATH_SYSTEM_DIR_CHOICE);
+			   menu_stack_push(items, PATH_SYSTEM_DIR_CHOICE);
 		   }
 
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1499,8 +1499,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 	   case SETTING_CONTROLS_SCHEME:
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
 		   {
-			   menu_stack_increment();
-			   menu_stack_push(menuStackindex, items, INPUT_PRESET_CHOICE);
+			   menu_stack_push(items, INPUT_PRESET_CHOICE);
 		   }
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			   menu_stack_refresh(items, current_menu);
@@ -1621,8 +1620,7 @@ static void settings_iterate(menu *current_menu, item *items, settings_action_t 
 	    case EMU_VIDEO_MENU:
 	    case EMU_AUDIO_MENU:
 	    case PATH_MENU:
-	       menu_stack_increment();
-               menu_stack_push(menuStackindex, items, current_menu->enum_id + 1);
+               menu_stack_push(items, current_menu->enum_id + 1);
 	       break;
 	    case CONTROLS_MENU:
             default:
@@ -1688,8 +1686,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, item *items, menu
             rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_console.zip_extract_mode, S_DELAY_45);
          break;
       case MENU_ROMSELECT_ACTION_GOTO_SETTINGS:
-	 menu_stack_increment();
-         menu_stack_push(menuStackindex, items, GENERAL_VIDEO_MENU);
+         menu_stack_push(items, GENERAL_VIDEO_MENU);
          break;
       default:
          break;
@@ -1947,18 +1944,12 @@ static void ingame_menu(item *items, menu *current_menu)
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
 	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
-            {
-               menu_stack_increment();
-	       menu_stack_push(menuStackindex, items, INGAME_MENU_RESIZE);
-            }
+	       menu_stack_push(items, INGAME_MENU_RESIZE);
 	    strlcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
 	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
-	    {
-               menu_stack_increment();
-	       menu_stack_push(menuStackindex, items, INGAME_MENU_SCREENSHOT);
-	    }
+	       menu_stack_push(items, INGAME_MENU_SCREENSHOT);
 	    strlcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.", sizeof(comment));
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
@@ -1985,8 +1976,7 @@ static void ingame_menu(item *items, menu *current_menu)
 	 case MENU_ITEM_CHANGE_LIBRETRO:
 	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	    {
-               menu_stack_increment();
-	       menu_stack_push(menuStackindex, items, LIBRETRO_CHOICE);
+	       menu_stack_push(items, LIBRETRO_CHOICE);
 	       set_libretro_core_as_launch = true;
 	    }
 	    strlcpy(comment, "Press 'CROSS' to choose a different emulator core.", sizeof(comment));
@@ -2105,7 +2095,7 @@ void menu_init (void)
    const char *id = info.library_name ? info.library_name : "Unknown";
    snprintf(core_text, sizeof(core_text), "Libretro core: %s %s", id, info.library_version);
 
-   menu_stack_push(0, menu_items, FILE_BROWSER_MENU);
+   menu_stack_push(menu_items, FILE_BROWSER_MENU);
    filebrowser_set_root(&tmpBrowser, "/");
 }
 
@@ -2123,15 +2113,12 @@ void menu_loop(void)
    gl->block_swap = true;
 
    if(g_console.ingame_menu_enable)
-   {
-      menu_stack_increment();
-      menu_stack_push(menuStackindex, menu_items, INGAME_MENU);
-   }
+      menu_stack_push(menu_items, INGAME_MENU);
 
    do
    {
       static bool first_held = false;
-      menu *current_menu = &menuStack[menuStackindex];
+      menu *current_menu = menu_stack_get_current_ptr();
 
       state = cell_pad_input_poll_device(0);
       uint64_t trig_state = state & ~old_state;
