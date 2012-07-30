@@ -5468,8 +5468,12 @@ static void _RGLMatrixStackClear( jsMatrixStack* LMatrixStack )
     LMatrixStack->dirty = GL_FALSE;
 }
 
+static bool context_shutdown = false;
+
 void  psglDestroyContext( PSGLcontext* LContext )
 {
+    context_shutdown = true;
+
     if ( _CurrentContext == LContext )
     {
 	cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
@@ -8172,10 +8176,13 @@ void _RGLCgRaiseError( CGerror error )
 {
     _CurrentContext->RGLcgLastError = error;
 
-    RARCH_ERR("Cg error: %d.\n", error);
+    if(!context_shutdown)
+    {
+       RARCH_ERR("Cg error: %d.\n", error);
 
-    if ( _CurrentContext->RGLcgErrorCallbackFunction )
-        _CurrentContext->RGLcgErrorCallbackFunction();
+       if ( _CurrentContext->RGLcgErrorCallbackFunction )
+          _CurrentContext->RGLcgErrorCallbackFunction();
+    }
 }
 
 unsigned int _RGLCountFloatsInCgType( CGtype type )
