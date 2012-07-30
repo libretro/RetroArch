@@ -143,6 +143,8 @@ FONTS
 
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include "../../gfx/fonts/ps3_libdbgfont.c"
+#elif defined(_XBOX1)
+#include "../../gfx/fonts/xdk1_xfonts.c"
 #elif defined(_XBOX360)
 #include "../../gfx/fonts/xdk360_fonts.cpp"
 #endif

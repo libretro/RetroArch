@@ -22,6 +22,7 @@
 #include "../driver.h"
 #include "xdk_d3d8.h"
 
+#include "../../gfx/fonts/xdk1_xfonts.h"
 #include "./../gfx/gfx_context.h"
 #include "../general.h"
 #include "../message.h"
@@ -447,8 +448,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    {
       static MEMORYSTATUS stat;
       GlobalMemoryStatus(&stat);
-      d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
-      d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
+      xfonts_render_msg_pre(d3d);
 
       //Output memory usage
 
@@ -456,8 +456,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       bool ret = false;
       snprintf(buf, sizeof(buf), "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
       convert_char_to_wchar(strw_buffer, buf, sizeof(strw_buffer));
-      d3d->debug_font->TextOut(d3d->pFrontBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 50 );
-      d3d->debug_font->TextOut(d3d->pBackBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 50 );
+      xfonts_render_msg_place(d3d, font_x + 30, font_y + 50, 0 /* scale */, strw_buffer);
 
       if(ret = gfx_window_title(buf2, sizeof(buf2)) || sizeof(buf_fps_last))
       {
@@ -469,10 +468,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
          else if(buf_fps_last)
             convert_char_to_wchar(strw_buffer, buf_fps_last, sizeof(strw_buffer));
          
-         d3d->debug_font->TextOut(d3d->pFrontBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 70 );
-         d3d->debug_font->TextOut(d3d->pBackBuffer, strw_buffer, (unsigned)-1, font_x + 30, font_y + 70 );
-         d3d->pFrontBuffer->Release();
-         d3d->pBackBuffer->Release();
+         xfonts_render_msg_place(d3d, font_x + 30, font_y + 70, 0 /* scale */, strw_buffer);
+         xfonts_render_msg_post(d3d);
       }
    }
 

@@ -17,16 +17,9 @@
 #ifndef RARCH_XDK1_FONTS_H
 #define RARCH_XDK1_FONTS_H
 
-#ifdef _XBOX1
-#define XFONT_TRUETYPE
-#endif
-
-#include <xfont.h>
-
-HRESULT xfonts_init_font(XFONT *font);
 void xfonts_deinit_font(void);
-void xfonts_render_msg_pre(LPDIRECT3DDEVICE d3d);
-void xfonts_render_msg_place(LPDIRECT3DDEVICE d3d, float x, float y, float scale, const wchar_t *msg, ...);
-void xfonts_render_msg_post(LPDIRECT3DDEVICE d3d);
+void xfonts_render_msg_pre(xdk_d3d_video_t *d3d);
+void xfonts_render_msg_place(xdk_d3d_video_t *d3d, float x, float y, float scale, const wchar_t *msg, ...);
+void xfonts_render_msg_post(xdk_d3d_video_t *d3d);
 
 #endif

@@ -18,6 +18,7 @@
 #include "RetroLaunch/Surface.h"
 
 #include "../../console/fileio/file_browser.h"
+#include "../../gfx/fonts/xdk1_xfonts.h"
 
 #define NUM_ENTRY_PER_PAGE 17
 
@@ -134,12 +135,9 @@ static void browser_render(filebrowser_t *b, float current_x, float current_y, f
          d3d_surface_render(&m_menuMainRomSelectPanel, currentX, currentY, ROM_PANEL_WIDTH, ROM_PANEL_HEIGHT);
 
       convert_char_to_wchar(rom_basename_w, rom_basename, sizeof(rom_basename_w));
-      d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
-      d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
-      d3d->debug_font->TextOut(d3d->pFrontBuffer, rom_basename_w, (unsigned)-1, currentX, currentY);
-      d3d->debug_font->TextOut(d3d->pBackBuffer, rom_basename_w, (unsigned)-1, currentX, currentY);
-      d3d->pFrontBuffer->Release();
-      d3d->pBackBuffer->Release();
+      xfonts_render_msg_pre(d3d);
+      xfonts_render_msg_place(d3d, currentX, currentY, 0 /* scale */, rom_basename_w);
+      xfonts_render_msg_post(d3d);
    }
 }
 
@@ -202,12 +200,9 @@ static void select_rom(void)
    int xpos = width == 640 ? 65 : 400;
    int ypos = width == 640 ? 430 : 670;
    
-   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
-   d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
-   d3d->debug_font->TextOut(d3d->pFrontBuffer, m_title, (unsigned)-1, xpos, ypos);
-   d3d->debug_font->TextOut(d3d->pBackBuffer, m_title, (unsigned)-1, xpos, ypos);
-   d3d->pFrontBuffer->Release();
-   d3d->pBackBuffer->Release();
+   xfonts_render_msg_pre(d3d);
+   xfonts_render_msg_place(d3d, xpos, ypos, 0 /* scale */, m_title);
+   xfonts_render_msg_post(d3d);
 }
 
 int menu_init(void)

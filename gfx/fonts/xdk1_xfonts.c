@@ -18,34 +18,23 @@
 #include "xdk1_xfonts.h"
 #include "../../general.h"
 
-HRESULT xfonts_init_font(XFONT *font)
-{
-   XFONT_OpenDefaultFont(font);
-   font->SetBkMode(XFONT_TRANSPARENT);
-   font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
-   font->SetTextHeight(14);
-   font->SetTextAntialiasLevel(font->GetTextAntialiasLevel());
-
-   return S_OK;
-}
-
 void xfonts_deinit_font(void)
 {
 }
 
-void xfonts_render_msg_pre(LPDIRECT3DDEVICE d3d)
+void xfonts_render_msg_pre(xdk_d3d_video_t *d3d)
 {
    d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
    d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
 }
 
-void xfonts_render_msg_place(LPDIRECT3DDEVICE d3d, float x, float y, float scale, const wchar_t *msg, ...)
+void xfonts_render_msg_place(xdk_d3d_video_t *d3d, float x, float y, float scale, const wchar_t *msg, ...)
 {
    d3d->debug_font->TextOut(d3d->pFrontBuffer, msg, (unsigned)-1, x, y);
    d3d->debug_font->TextOut(d3d->pBackBuffer, msg, (unsigned)-1, x, y);
 }
 
-void xfonts_render_msg_post(LPDIRECT3DDEVICE d3d)
+void xfonts_render_msg_post(xdk_d3d_video_t *d3d)
 {
    d3d->pFrontBuffer->Release();
    d3d->pBackBuffer->Release();
