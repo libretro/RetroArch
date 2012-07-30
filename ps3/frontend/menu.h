@@ -18,18 +18,18 @@
 #define MENU_H_
 
 #define FONT_SIZE (g_console.menu_font_size)
+#define COMMENT_YPOS 0.83f
 
 typedef struct
 {
    unsigned char enum_id;		/* enum ID of item				*/
-   char text[256];			/* item label					*/
+   char text[128];			/* item label					*/
    char setting_text[256];		/* setting label				*/
    float text_xpos;			/* text X position (upper left corner)		*/
    float text_ypos;			/* text Y position (upper left corner)		*/
    unsigned text_color;			/* text color					*/
    char comment[256];			/* item comment					*/
    unsigned item_color;			/* color of item 				*/
-   float comment_ypos;			/* comment Y position (upper left corner)	*/
    unsigned char page;			/* page						*/
 } item;
 
