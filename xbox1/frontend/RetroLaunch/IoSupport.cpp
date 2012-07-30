@@ -1,6 +1,19 @@
-// IoSupport.cpp: implementation of the CIoSupport class.
-//
-//////////////////////////////////////////////////////////////////////
+/* RetroArch - A frontend for libretro.
+* Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+* Copyright (C) 2011-2012 - Daniel De Matteis
+*
+* RetroArch is free software: you can redistribute it and/or modify it under the terms
+* of the GNU General Public License as published by the Free Software Found-
+* ation, either version 3 of the License, or (at your option) any later version.
+*
+* RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+* PURPOSE. See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with RetroArch.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "iosupport.h"
 #include "undocumented.h"
 
@@ -9,26 +22,7 @@
 #define CTLCODE(DeviceType, Function, Method, Access) ( ((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method)  )
 #define FSCTL_DISMOUNT_VOLUME  CTLCODE( FILE_DEVICE_FILE_SYSTEM, 0x08, METHOD_BUFFERED, FILE_ANY_ACCESS )
 
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
-
-CIoSupport g_IOSupport;
-
-CIoSupport::CIoSupport()
-{
-	m_dwLastTrayState = 0;
-}
-
-CIoSupport::~CIoSupport()
-{
-
-}
-
-// szDrive e.g. "D:"
-// szDevice e.g. "Cdrom0" or "Harddisk0\Partition6"
-
-HRESULT CIoSupport::Mount(char *szDrive, char *szDevice)
+HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 {
 	char szSourceDevice[48];
 	char szDestinationDrive[16];
@@ -55,11 +49,7 @@ HRESULT CIoSupport::Mount(char *szDrive, char *szDevice)
 	return S_OK;
 }
 
-
-
-// szDrive e.g. "D:"
-
-HRESULT CIoSupport::Unmount(char *szDrive)
+HRESULT xbox_io_unmount(char *szDrive)
 {
 	char szDestinationDrive[16];
 	snprintf(szDestinationDrive, sizeof(szDestinationDrive), "\\??\\%s", szDrive);
@@ -76,12 +66,12 @@ HRESULT CIoSupport::Unmount(char *szDrive)
 	return S_OK;
 }
 
-HRESULT CIoSupport::Remount(char *szDrive, char *szDevice)
+HRESULT xbox_io_remount(char *szDrive, char *szDevice)
 {
 	char szSourceDevice[48];
 	snprintf(szSourceDevice, sizeof(szSourceDevice), "\\Device\\%s", szDevice);
 
-	Unmount(szDrive);
+	xbox_io_unmount(szDrive);
 
 	ANSI_STRING filename;
 	OBJECT_ATTRIBUTES attributes;
@@ -108,12 +98,12 @@ HRESULT CIoSupport::Remount(char *szDrive, char *szDevice)
 	}
 
 	CloseHandle(hDevice);
-	Mount(szDrive, szDevice);
+	xbox_io_mount(szDrive, szDevice);
 
 	return S_OK;
 }
 
-HRESULT CIoSupport::Remap(char *szMapping)
+HRESULT xbox_io_remap(char *szMapping)
 {
 	char szMap[32];
 	strlcpy(szMap, szMapping, sizeof(szMap));
@@ -124,62 +114,15 @@ HRESULT CIoSupport::Remap(char *szMapping)
 		*pComma = 0;
 
 		// map device to drive letter
-		Unmount(szMap);
-		Mount(szMap, &pComma[1]);
+		xbox_io_unmount(szMap);
+		xbox_io_mount(szMap, &pComma[1]);
 		return S_OK;
 	}
 
 	return E_FAIL;
 }
 
-
-HRESULT CIoSupport::EjectTray()
-{
-	HalWriteSMBusValue(0x20, 0x0C, FALSE, 0);  // eject tray
-	return S_OK;
-}
-
-HRESULT CIoSupport::CloseTray()
-{
-	HalWriteSMBusValue(0x20, 0x0C, FALSE, 1);  // close tray
-	return S_OK;
-}
-
-DWORD CIoSupport::GetTrayState()
-{
-	HalReadSMCTrayState(&m_dwTrayState, &m_dwTrayCount);
-
-	if(m_dwTrayState == TRAY_CLOSED_MEDIA_PRESENT)
-	{
-		if (m_dwLastTrayState != TRAY_CLOSED_MEDIA_PRESENT)
-		{
-			m_dwLastTrayState = m_dwTrayState;
-			return DRIVE_CLOSED_MEDIA_PRESENT;
-		}
-		else
-		{
-			return DRIVE_READY;
-		}
-	}
-	else if(m_dwTrayState == TRAY_CLOSED_NO_MEDIA)
-	{
-		m_dwLastTrayState = m_dwTrayState;
-		return DRIVE_CLOSED_NO_MEDIA;
-	}
-	else if(m_dwTrayState == TRAY_OPEN)
-	{
-		m_dwLastTrayState = m_dwTrayState;
-		return DRIVE_OPEN;
-	}
-	else
-	{
-		m_dwLastTrayState = m_dwTrayState;
-	}
-
-	return DRIVE_NOT_READY;
-}
-
-HRESULT CIoSupport::Shutdown()
+HRESULT xbox_io_shutdown(void)
 {
 	HalInitiateShutdown();
 	return S_OK;

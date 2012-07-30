@@ -1,48 +1,30 @@
-// IoSupport.h: interface for the CIoSupport class.
-//
-//////////////////////////////////////////////////////////////////////
+/* RetroArch - A frontend for libretro.
+* Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+* Copyright (C) 2011-2012 - Daniel De Matteis
+*
+* RetroArch is free software: you can redistribute it and/or modify it under the terms
+* of the GNU General Public License as published by the Free Software Found-
+* ation, either version 3 of the License, or (at your option) any later version.
+*
+* RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+* PURPOSE. See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with RetroArch.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
 
-#if !defined(AFX_IOSUPPORT_H__F084A488_BD6E_49D5_8CD3_0BE62149DB40__INCLUDED_)
-#define AFX_IOSUPPORT_H__F084A488_BD6E_49D5_8CD3_0BE62149DB40__INCLUDED_
+#ifndef _XBOX_IO_SUPPORT_H
+#define _XBOX_IO_SUPPORT_H
 
-#if _MSC_VER > 1000
-#pragma once
-#endif // _MSC_VER > 1000
 #ifdef _XBOX
 #include <xtl.h>
 
-#define TRAY_OPEN					16
-#define TRAY_CLOSED_NO_MEDIA		64
-#define TRAY_CLOSED_MEDIA_PRESENT	96
-
-#define DRIVE_OPEN						0 // Open...
-#define DRIVE_NOT_READY					1 // Opening.. Closing... 
-#define DRIVE_READY						2  
-#define DRIVE_CLOSED_NO_MEDIA			3 // CLOSED...but no media in drive
-#define DRIVE_CLOSED_MEDIA_PRESENT		4 // Will be send once when the drive just have closed
-
-class CIoSupport  
-{
-public:
-	CIoSupport();
-	virtual ~CIoSupport();
-
-	HRESULT Mount(char *szDrive, char *szDevice);
-	HRESULT Unmount(char *szDrive);
-
-	HRESULT Remount(char *szDrive, char *szDevice);
-	HRESULT Remap(char *szMapping);
-
-	DWORD	GetTrayState();
-	HRESULT EjectTray();
-	HRESULT CloseTray();
-	HRESULT Shutdown();
-private:
-	DWORD m_dwTrayState;
-	DWORD m_dwTrayCount;
-	DWORD m_dwLastTrayState;
-};
-
-extern CIoSupport g_IOSupport;
+HRESULT xbox_io_mount(char *szdrive, char *szdevice);
+HRESULT xbox_io_unmount(char *szdrive, char *szdevice);
+HRESULT xbox_io_remount(char *szdrive, char *szdevice);
+HRESULT xbox_io_remap(char *szmapping);
+HRESULT xbox_io_shutdown(void);
 #endif
-#endif // !defined(AFX_IOSUPPORT_H__F084A488_BD6E_49D5_8CD3_0BE62149DB40__INCLUDED_)
+
+#endif

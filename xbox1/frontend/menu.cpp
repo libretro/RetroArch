@@ -226,11 +226,11 @@ int menu_init(void)
    XSetFileCacheSize(8 * 1024 * 1024);
 
    // Mount drives
-   g_IOSupport.Mount("A:", "cdrom0");
-   g_IOSupport.Mount("E:", "Harddisk0\\Partition1");
-   g_IOSupport.Mount("Z:", "Harddisk0\\Partition2");
-   g_IOSupport.Mount("F:", "Harddisk0\\Partition6");
-   g_IOSupport.Mount("G:", "Harddisk0\\Partition7");
+   xbox_io_mount("A:", "cdrom0");
+   xbox_io_mount("E:", "Harddisk0\\Partition1");
+   xbox_io_mount("Z:", "Harddisk0\\Partition2");
+   xbox_io_mount("F:", "Harddisk0\\Partition6");
+   xbox_io_mount("G:", "Harddisk0\\Partition7");
 
 	strlcpy(browser.extensions, rarch_console_get_rom_ext(), sizeof(browser.extensions));
    filebrowser_set_root(&browser, g_console.default_rom_startup_dir);
