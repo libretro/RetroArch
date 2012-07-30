@@ -378,9 +378,57 @@ static void menu_stack_refresh (item *items, menu *current_menu)
    }
 }
 
+static void filebrowser_set_menu(unsigned menu_id, filebrowser_t *browser)
+{
+   bool do_reset = true;
+
+   switch(menu_id)
+   {
+      case FILE_BROWSER_MENU:
+	 strlcpy(browser->extensions, rarch_console_get_rom_ext(), sizeof(browser->extensions));
+	 filebrowser_set_root(browser, g_console.default_rom_startup_dir);
+         break;
+      case LIBRETRO_CHOICE:
+	 strlcpy(browser->extensions, "self|SELF|bin|BIN", sizeof(browser->extensions));
+	 filebrowser_set_root(browser, default_paths.core_dir);
+         break;
+      case PRESET_CHOICE:
+	 strlcpy(browser->extensions, "cgp|CGP", sizeof(browser->extensions));
+	 filebrowser_set_root(browser, default_paths.cgp_dir);
+         break;
+      case INPUT_PRESET_CHOICE:
+	 strlcpy(browser->extensions, "cfg|CFG", sizeof(browser->extensions));
+	 filebrowser_set_root(browser, default_paths.input_presets_dir);
+         break;
+      case SHADER_CHOICE:
+	 strlcpy(browser->extensions, "cg|CG", sizeof(browser->extensions));
+	 filebrowser_set_root(browser, default_paths.shader_dir);
+         break;
+      case BORDER_CHOICE:
+	 strlcpy(browser->extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(browser->extensions));
+	 filebrowser_set_root(browser, default_paths.border_dir);
+         break;
+      case PATH_DEFAULT_ROM_DIR_CHOICE:
+      case PATH_SAVESTATES_DIR_CHOICE:
+      case PATH_SRAM_DIR_CHOICE:
+      case PATH_CHEATS_DIR_CHOICE:
+      case PATH_SYSTEM_DIR_CHOICE:
+	 strlcpy(browser->extensions, "empty", sizeof(browser->extensions));
+	 filebrowser_set_root(browser, "/");
+         break;
+       default:
+         do_reset = false;
+         break;
+   }
+
+   if(do_reset)
+      filebrowser_iterate(browser, FILEBROWSER_ACTION_RESET);
+}
+
 static void menu_stack_push(item *items, unsigned menu_id)
 {
    static bool first_push_do_not_increment = true;
+   bool do_refresh = true;
 
    if(!first_push_do_not_increment)
       menuStackindex++;
@@ -388,6 +436,8 @@ static void menu_stack_push(item *items, unsigned menu_id)
       first_push_do_not_increment = false;
 
    menu *current_menu = menu_stack_get_current_ptr();
+
+   item *current_items = items;
 
    switch(menu_id)
    {
@@ -397,7 +447,7 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_INGAME_MENU;
-         menu_stack_refresh(ingame_menu_settings, current_menu);
+         current_items = ingame_menu_settings;
          break;
       case INGAME_MENU_RESIZE:
          strlcpy(current_menu->title, "Resize Menu", sizeof(current_menu->title));
@@ -419,10 +469,6 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(items, current_menu);
-	 strlcpy(browser.extensions, rarch_console_get_rom_ext(), sizeof(browser.extensions));
-	 filebrowser_set_root(&browser, g_console.default_rom_startup_dir);
-	 filebrowser_iterate(&browser, FILEBROWSER_ACTION_RESET);
          break;
       case LIBRETRO_CHOICE:
          strlcpy(current_menu->title, "Libretro cores", sizeof(current_menu->title));
@@ -430,10 +476,6 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(items, current_menu);
-	 strlcpy(tmpBrowser.extensions, "self|SELF|bin|BIN", sizeof(tmpBrowser.extensions));
-	 filebrowser_set_root(&tmpBrowser, default_paths.core_dir);
-	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case PRESET_CHOICE:
          strlcpy(current_menu->title, "Shader presets", sizeof(current_menu->title));
@@ -441,10 +483,6 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(items, current_menu);
-	 strlcpy(tmpBrowser.extensions, "cgp|CGP", sizeof(tmpBrowser.extensions));
-	 filebrowser_set_root(&tmpBrowser, default_paths.cgp_dir);
-	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case INPUT_PRESET_CHOICE:
          strlcpy(current_menu->title, "Input presets", sizeof(current_menu->title));
@@ -452,10 +490,6 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(items, current_menu);
-	 strlcpy(tmpBrowser.extensions, "cfg|CFG", sizeof(tmpBrowser.extensions));
-	 filebrowser_set_root(&tmpBrowser, default_paths.input_presets_dir);
-	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case SHADER_CHOICE:
          strlcpy(current_menu->title, "Shaders", sizeof(current_menu->title));
@@ -463,10 +497,6 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(items, current_menu);
-	 strlcpy(tmpBrowser.extensions, "cg|CG", sizeof(tmpBrowser.extensions));
-	 filebrowser_set_root(&tmpBrowser, default_paths.shader_dir);
-	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case BORDER_CHOICE:
          strlcpy(current_menu->title, "Borders", sizeof(current_menu->title));
@@ -474,10 +504,6 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(items, current_menu);
-	 strlcpy(tmpBrowser.extensions, "png|PNG|jpg|JPG|JPEG|jpeg", sizeof(tmpBrowser.extensions));
-	 filebrowser_set_root(&tmpBrowser, default_paths.border_dir);
-	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case PATH_DEFAULT_ROM_DIR_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
@@ -489,10 +515,6 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
-         menu_stack_refresh(items, current_menu);
-	 strlcpy(tmpBrowser.extensions, "empty", sizeof(tmpBrowser.extensions));
-	 filebrowser_set_root(&tmpBrowser, "/");
-	 filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_RESET);
          break;
       case GENERAL_VIDEO_MENU:
          strlcpy(current_menu->title, "Video", sizeof(current_menu->title));
@@ -502,7 +524,6 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->first_setting = FIRST_VIDEO_SETTING;
          current_menu->max_settings = MAX_NO_OF_VIDEO_SETTINGS;
          current_menu->category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(items, current_menu);
 	 break;
       case GENERAL_AUDIO_MENU:
          strlcpy(current_menu->title, "Audio", sizeof(current_menu->title));
@@ -512,7 +533,6 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->first_setting = FIRST_AUDIO_SETTING;
          current_menu->max_settings = MAX_NO_OF_AUDIO_SETTINGS;
          current_menu->category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(items, current_menu);
 	 break;
       case EMU_GENERAL_MENU:
          strlcpy(current_menu->title, "Retro", sizeof(current_menu->title));
@@ -522,7 +542,6 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->first_setting = FIRST_EMU_SETTING;
          current_menu->max_settings = MAX_NO_OF_EMU_SETTINGS;
          current_menu->category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(items, current_menu);
 	 break;
       case EMU_VIDEO_MENU:
          strlcpy(current_menu->title, "Retro Video", sizeof(current_menu->title));
@@ -532,7 +551,6 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->first_setting = FIRST_EMU_VIDEO_SETTING;
          current_menu->max_settings = MAX_NO_OF_EMU_VIDEO_SETTINGS;
          current_menu->category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(items, current_menu);
 	 break;
       case EMU_AUDIO_MENU:
          strlcpy(current_menu->title, "Retro Audio", sizeof(current_menu->title));
@@ -542,7 +560,6 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->first_setting = FIRST_EMU_AUDIO_SETTING;
          current_menu->max_settings = MAX_NO_OF_EMU_AUDIO_SETTINGS;
          current_menu->category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(items, current_menu);
 	 break;
       case PATH_MENU:
          strlcpy(current_menu->title, "Path", sizeof(current_menu->title));
@@ -552,7 +569,6 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->first_setting = FIRST_PATH_SETTING;
          current_menu->max_settings = MAX_NO_OF_PATH_SETTINGS;
          current_menu->category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(items, current_menu);
          break;
       case CONTROLS_MENU:
          strlcpy(current_menu->title, "Controls", sizeof(current_menu->title));
@@ -562,11 +578,14 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->first_setting = FIRST_CONTROLS_SETTING_PAGE_1;
          current_menu->max_settings = MAX_NO_OF_CONTROLS_SETTINGS;
          current_menu->category_id = CATEGORY_SETTINGS;
-         menu_stack_refresh(items, current_menu);
 	 break;
        default:
+         do_refresh = false;
          break;
    }
+
+   if(do_refresh)
+      menu_stack_refresh(current_items, current_menu);
 }
 
 //forward decls
@@ -1074,6 +1093,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 			   if(g_console.emulator_initialized)
 			   {
 				   menu_stack_push(items, PRESET_CHOICE);
+                                   filebrowser_set_menu(PRESET_CHOICE, &tmpBrowser);
 			   }
 		   }
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1083,6 +1103,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
 			   menu_stack_push(items, SHADER_CHOICE);
+			   filebrowser_set_menu(SHADER_CHOICE, &tmpBrowser);
 			   set_shader = 0;
 		   }
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1096,6 +1117,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
 			   menu_stack_push( items, SHADER_CHOICE);
+			   filebrowser_set_menu(SHADER_CHOICE, &tmpBrowser);
 			   set_shader = 1;
 		   }
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1379,6 +1401,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
 			   menu_stack_push(items, LIBRETRO_CHOICE);
+			   filebrowser_set_menu(LIBRETRO_CHOICE, &tmpBrowser);
 			   set_libretro_core_as_launch = false;
 		   }
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1419,6 +1442,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
 			   menu_stack_push(items, PATH_DEFAULT_ROM_DIR_CHOICE);
+			   filebrowser_set_menu(PATH_DEFAULT_ROM_DIR_CHOICE, &tmpBrowser);
 		   }
 
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1428,6 +1452,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
 			   menu_stack_push(items, PATH_SAVESTATES_DIR_CHOICE);
+			   filebrowser_set_menu(PATH_SAVESTATES_DIR_CHOICE, &tmpBrowser);
 		   }
 
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1438,6 +1463,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
 			   menu_stack_push(items, PATH_SRAM_DIR_CHOICE);
+			   filebrowser_set_menu(PATH_SRAM_DIR_CHOICE, &tmpBrowser);
 		   }
 
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1447,6 +1473,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
 			   menu_stack_push(items, PATH_CHEATS_DIR_CHOICE);
+			   filebrowser_set_menu(PATH_CHEATS_DIR_CHOICE, &tmpBrowser);
 		   }
 
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1456,6 +1483,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
 			   menu_stack_push(items, PATH_SYSTEM_DIR_CHOICE);
+			   filebrowser_set_menu(PATH_SYSTEM_DIR_CHOICE, &tmpBrowser);
 		   }
 
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1500,6 +1528,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input_st & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
 		   {
 			   menu_stack_push(items, INPUT_PRESET_CHOICE);
+			   filebrowser_set_menu(INPUT_PRESET_CHOICE, &tmpBrowser);
 		   }
 		   if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			   menu_stack_refresh(items, current_menu);
@@ -1977,6 +2006,7 @@ static void ingame_menu(item *items, menu *current_menu)
 	    if(input_st & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	    {
 	       menu_stack_push(items, LIBRETRO_CHOICE);
+	       filebrowser_set_menu(LIBRETRO_CHOICE, &tmpBrowser);
 	       set_libretro_core_as_launch = true;
 	    }
 	    strlcpy(comment, "Press 'CROSS' to choose a different emulator core.", sizeof(comment));
@@ -2096,6 +2126,7 @@ void menu_init (void)
    snprintf(core_text, sizeof(core_text), "Libretro core: %s %s", id, info.library_version);
 
    menu_stack_push(menu_items, FILE_BROWSER_MENU);
+   filebrowser_set_menu(FILE_BROWSER_MENU, &browser);
    filebrowser_set_root(&tmpBrowser, "/");
 }
 
