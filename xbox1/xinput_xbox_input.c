@@ -28,7 +28,7 @@
 #include "../libretro.h"
 #include "xinput_xbox_input.h"
 
-static uint64_t real_state[MAX_PADS];
+static uint64_t state[MAX_PADS];
 HANDLE gamepads[MAX_PADS];
 DWORD dwDeviceMask;
 bool bInserted[MAX_PADS];
@@ -86,10 +86,9 @@ static void xinput_input_poll(void *data)
 
    for (unsigned i = 0; i < MAX_PADS; i++)
    {
-      XINPUT_STATE state[MAX_PADS];
       XINPUT_CAPABILITIES caps[MAX_PADS];
       (void)caps;
-      real_state[i] = 0;
+      state[i] = 0;
       // handle removed devices
       bRemoved[i] = (dwRemovals & (1<<i)) ? true : false;
 
@@ -122,35 +121,35 @@ static void xinput_input_poll(void *data)
 
          // if the controller is removed after XGetDeviceChanges but before
          // XInputOpen, the device handle will be NULL
-
-         retval = XInputGetState(gamepads[i], &state[i]);
+         XINPUT_STATE state_tmp;
+         retval = XInputGetState(gamepads[i], &state_tmp);
          if(retval == ERROR_SUCCESS)
          {
             pads_connected++;
-            real_state[i] |= ((state[i].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_B]) ? XINPUT1_GAMEPAD_B : 0);
-            real_state[i] |= ((state[i].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A]) ? XINPUT1_GAMEPAD_A : 0);
-            real_state[i] |= ((state[i].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_Y]) ? XINPUT1_GAMEPAD_Y : 0);
-            real_state[i] |= ((state[i].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X]) ? XINPUT1_GAMEPAD_X : 0);
-            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? XINPUT1_GAMEPAD_DPAD_LEFT : 0);
-            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? XINPUT1_GAMEPAD_DPAD_RIGHT : 0);
-            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? XINPUT1_GAMEPAD_DPAD_UP : 0);
-            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? XINPUT1_GAMEPAD_DPAD_DOWN : 0);
-            real_state[i] |= ((state[i].Gamepad.sThumbLX < -DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_LEFT_MASK : 0);
-            real_state[i] |= ((state[i].Gamepad.sThumbLX > DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_RIGHT_MASK : 0);
-            real_state[i] |= ((state[i].Gamepad.sThumbLY > DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_UP_MASK : 0);
-            real_state[i] |= ((state[i].Gamepad.sThumbLY < -DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_DOWN_MASK : 0);
-            real_state[i] |= ((state[i].Gamepad.sThumbRX < -DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_LEFT_MASK : 0);
-            real_state[i] |= ((state[i].Gamepad.sThumbRX > DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK : 0);
-            real_state[i] |= ((state[i].Gamepad.sThumbRY > DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_UP_MASK : 0);
-            real_state[i] |= ((state[i].Gamepad.sThumbRY < -DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_DOWN_MASK : 0);
-            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_START) ? XINPUT1_GAMEPAD_START : 0);
-            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? XINPUT1_GAMEPAD_BACK : 0);
-            real_state[i] |= ((state[i].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER]) ? XINPUT1_GAMEPAD_LEFT_TRIGGER : 0);
-            real_state[i] |= ((state[i].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER]) ? XINPUT1_GAMEPAD_RIGHT_TRIGGER : 0);
-            real_state[i] |= ((state[i].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_WHITE]) ? XINPUT1_GAMEPAD_WHITE : 0);
-            real_state[i] |= ((state[i].Gamepad.bAnalogButtons[XINPUT_GAMEPAD_BLACK]) ? XINPUT1_GAMEPAD_BLACK : 0);
-            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? XINPUT1_GAMEPAD_LEFT_THUMB : 0);
-            real_state[i] |= ((state[i].Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? XINPUT1_GAMEPAD_RIGHT_THUMB : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_B]) ? XINPUT1_GAMEPAD_B : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A]) ? XINPUT1_GAMEPAD_A : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_Y]) ? XINPUT1_GAMEPAD_Y : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X]) ? XINPUT1_GAMEPAD_X : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? XINPUT1_GAMEPAD_DPAD_LEFT : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? XINPUT1_GAMEPAD_DPAD_RIGHT : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? XINPUT1_GAMEPAD_DPAD_UP : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? XINPUT1_GAMEPAD_DPAD_DOWN : 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_LEFT_MASK : 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_RIGHT_MASK : 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_UP_MASK : 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_DOWN_MASK : 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_LEFT_MASK : 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK : 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_UP_MASK : 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_DOWN_MASK : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_START) ? XINPUT1_GAMEPAD_START : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? XINPUT1_GAMEPAD_BACK : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER]) ? XINPUT1_GAMEPAD_LEFT_TRIGGER : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER]) ? XINPUT1_GAMEPAD_RIGHT_TRIGGER : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_WHITE]) ? XINPUT1_GAMEPAD_WHITE : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_BLACK]) ? XINPUT1_GAMEPAD_BLACK : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? XINPUT1_GAMEPAD_LEFT_THUMB : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? XINPUT1_GAMEPAD_RIGHT_THUMB : 0);
          }
       }
    }
@@ -164,7 +163,7 @@ static int16_t xinput_input_state(void *data, const struct retro_keybind **binds
    unsigned player = port;
    uint64_t button = binds[player][id].joykey;
 
-   return (real_state[player] & button) ? 1 : 0;
+   return (state[player] & button) ? 1 : 0;
 }
 
 static void xinput_input_free_input(void *data)
@@ -268,15 +267,15 @@ static bool xinput_input_key_pressed(void *data, int key)
    switch(key)
    {
       case RARCH_FAST_FORWARD_HOLD_KEY:
-         return ((real_state[0] & XINPUT1_GAMEPAD_RSTICK_DOWN_MASK) && !(real_state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
+         return ((state[0] & XINPUT1_GAMEPAD_RSTICK_DOWN_MASK) && !(state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
       case RARCH_LOAD_STATE_KEY:
-         return ((real_state[0] & XINPUT1_GAMEPAD_RSTICK_UP_MASK) && (real_state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
+         return ((state[0] & XINPUT1_GAMEPAD_RSTICK_UP_MASK) && (state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
       case RARCH_SAVE_STATE_KEY:
-         return ((real_state[0] & XINPUT1_GAMEPAD_RSTICK_DOWN_MASK) && (real_state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
+         return ((state[0] & XINPUT1_GAMEPAD_RSTICK_DOWN_MASK) && (state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
       case RARCH_STATE_SLOT_PLUS:
-         return ((real_state[0] & XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK) && (real_state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
+         return ((state[0] & XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK) && (state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
       case RARCH_STATE_SLOT_MINUS:
-         return ((real_state[0] & XINPUT1_GAMEPAD_RSTICK_LEFT_MASK) && (real_state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
+         return ((state[0] & XINPUT1_GAMEPAD_RSTICK_LEFT_MASK) && (state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
       case RARCH_FRAMEADVANCE:
          if(g_console.frame_advance_enable)
          {
@@ -286,12 +285,12 @@ static bool xinput_input_key_pressed(void *data, int key)
          }
          return false;
       case RARCH_REWIND:
-         return ((real_state[0] & XINPUT1_GAMEPAD_RSTICK_UP_MASK) && !(real_state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
+         return ((state[0] & XINPUT1_GAMEPAD_RSTICK_UP_MASK) && !(state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
       case RARCH_QUIT_KEY:
          if(IS_TIMER_EXPIRED(d3d))
          {
-            uint32_t left_thumb_pressed = (real_state[0] & XINPUT1_GAMEPAD_LEFT_THUMB);
-            uint32_t right_thumb_pressed = (real_state[0] & XINPUT1_GAMEPAD_RIGHT_THUMB);
+            uint32_t left_thumb_pressed = (state[0] & XINPUT1_GAMEPAD_LEFT_THUMB);
+            uint32_t right_thumb_pressed = (state[0] & XINPUT1_GAMEPAD_RIGHT_THUMB);
 
             g_console.menu_enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED(d3d);
             g_console.ingame_menu_enable = right_thumb_pressed && !left_thumb_pressed;

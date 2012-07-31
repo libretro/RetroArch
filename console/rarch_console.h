@@ -21,7 +21,7 @@
 #define EXT_EXECUTABLES "self|SELF|bin|BIN"
 #elif defined(_XBOX1)
 #define EXT_EXECUTABLES "xbe|XBE"
-#elif defineD(_XBOX360)
+#elif defined(_XBOX360)
 #define EXT_EXECUTABLES "xex|XEX"
 #elif defined(GEKKO)
 #define EXT_EXECUTABLES "dol|DOL"
