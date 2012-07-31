@@ -154,6 +154,33 @@ typedef struct
    CellOskDialogParam dialogParam;
 } oskutil_params;
 
+enum {
+   PS3_GAMEPAD_CIRCLE =			1 << 0,
+   PS3_GAMEPAD_CROSS =			1 << 1,
+   PS3_GAMEPAD_TRIANGLE =		1 << 2,
+   PS3_GAMEPAD_SQUARE =			1 << 3,
+   PS3_GAMEPAD_DPAD_UP =		1 << 4,
+   PS3_GAMEPAD_DPAD_DOWN =		1 << 5,
+   PS3_GAMEPAD_DPAD_LEFT =		1 << 6,
+   PS3_GAMEPAD_DPAD_RIGHT =		1 << 7,
+   PS3_GAMEPAD_SELECT =			1 << 8,
+   PS3_GAMEPAD_START =			1 << 9,
+   PS3_GAMEPAD_L1 =			1 << 10,
+   PS3_GAMEPAD_L2 =			1 << 11,
+   PS3_GAMEPAD_L3 =			1 << 12,
+   PS3_GAMEPAD_R1 =			1 << 13,
+   PS3_GAMEPAD_R2 =			1 << 14,
+   PS3_GAMEPAD_R3 =			1 << 15,
+   PS3_GAMEPAD_LSTICK_LEFT_MASK =	1 << 16,
+   PS3_GAMEPAD_LSTICK_RIGHT_MASK =	1 << 17,
+   PS3_GAMEPAD_LSTICK_UP_MASK	 =	1 << 18,
+   PS3_GAMEPAD_LSTICK_DOWN_MASK =	1 << 19,
+   PS3_GAMEPAD_RSTICK_LEFT_MASK =	1 << 20,
+   PS3_GAMEPAD_RSTICK_RIGHT_MASK =	1 << 21,
+   PS3_GAMEPAD_RSTICK_UP_MASK 	=	1 << 22,
+   PS3_GAMEPAD_RSTICK_DOWN_MASK =	1 << 23,
+};
+
 enum ps3_device_id
 {
    PS3_DEVICE_ID_JOYPAD_CIRCLE = 0,

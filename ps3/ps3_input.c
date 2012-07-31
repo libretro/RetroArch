@@ -97,38 +97,38 @@ CellMouseData ps3_mouse_input_poll_device(uint32_t id)
 #define MAP(x) (x & 0xFF)
 
 const struct platform_bind platform_keys[] = {
-   { CTRL_CIRCLE_MASK, "Circle button" },
-   { CTRL_CROSS_MASK, "Cross button" },
-   { CTRL_TRIANGLE_MASK, "Triangle button" },
-   { CTRL_SQUARE_MASK, "Square button" },
-   { CTRL_UP_MASK, "D-Pad Up" },
-   { CTRL_DOWN_MASK, "D-Pad Down" },
-   { CTRL_LEFT_MASK, "D-Pad Left" },
-   { CTRL_RIGHT_MASK, "D-Pad Right" },
-   { CTRL_SELECT_MASK, "Select button" },
-   { CTRL_START_MASK, "Start button" },
-   { CTRL_L1_MASK, "L1 button" },
-   { CTRL_L2_MASK, "L2 button" },
-   { CTRL_L3_MASK, "L3 button" },
-   { CTRL_R1_MASK, "R1 button" },
-   { CTRL_R2_MASK, "R2 button" },
-   { CTRL_R3_MASK, "R3 button" },
-   { CTRL_LSTICK_LEFT_MASK, "LStick Left" },
-   { CTRL_LSTICK_RIGHT_MASK, "LStick Right" },
-   { CTRL_LSTICK_UP_MASK, "LStick Up" },
-   { CTRL_LSTICK_DOWN_MASK, "LStick Down" },
-   { CTRL_LEFT_MASK | CTRL_LSTICK_LEFT_MASK, "LStick D-Pad Left" },
-   { CTRL_RIGHT_MASK | CTRL_LSTICK_RIGHT_MASK, "LStick D-Pad Right" },
-   { CTRL_UP_MASK | CTRL_LSTICK_UP_MASK, "LStick D-Pad Up" },
-   { CTRL_DOWN_MASK | CTRL_LSTICK_DOWN_MASK, "LStick D-Pad Down" },
-   { CTRL_RSTICK_LEFT_MASK, "RStick Left" },
-   { CTRL_RSTICK_RIGHT_MASK, "RStick Right" },
-   { CTRL_RSTICK_UP_MASK, "RStick Up" },
-   { CTRL_RSTICK_DOWN_MASK, "RStick Down" },
-   { CTRL_LEFT_MASK | CTRL_RSTICK_LEFT_MASK, "RStick D-Pad Left" },
-   { CTRL_RIGHT_MASK | CTRL_RSTICK_RIGHT_MASK, "RStick D-Pad Right" },
-   { CTRL_UP_MASK | CTRL_RSTICK_UP_MASK, "RStick D-Pad Up" },
-   { CTRL_DOWN_MASK | CTRL_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
+   { PS3_GAMEPAD_CIRCLE, "Circle button" },
+   { PS3_GAMEPAD_CROSS, "Cross button" },
+   { PS3_GAMEPAD_TRIANGLE, "Triangle button" },
+   { PS3_GAMEPAD_SQUARE, "Square button" },
+   { PS3_GAMEPAD_DPAD_UP, "D-Pad Up" },
+   { PS3_GAMEPAD_DPAD_DOWN, "D-Pad Down" },
+   { PS3_GAMEPAD_DPAD_LEFT, "D-Pad Left" },
+   { PS3_GAMEPAD_DPAD_RIGHT, "D-Pad Right" },
+   { PS3_GAMEPAD_SELECT, "Select button" },
+   { PS3_GAMEPAD_START, "Start button" },
+   { PS3_GAMEPAD_L1, "L1 button" },
+   { PS3_GAMEPAD_L2, "L2 button" },
+   { PS3_GAMEPAD_L3, "L3 button" },
+   { PS3_GAMEPAD_R1, "R1 button" },
+   { PS3_GAMEPAD_R2, "R2 button" },
+   { PS3_GAMEPAD_R3, "R3 button" },
+   { PS3_GAMEPAD_LSTICK_LEFT_MASK, "LStick Left" },
+   { PS3_GAMEPAD_LSTICK_RIGHT_MASK, "LStick Right" },
+   { PS3_GAMEPAD_LSTICK_UP_MASK, "LStick Up" },
+   { PS3_GAMEPAD_LSTICK_DOWN_MASK, "LStick Down" },
+   { PS3_GAMEPAD_DPAD_LEFT | PS3_GAMEPAD_LSTICK_LEFT_MASK, "LStick D-Pad Left" },
+   { PS3_GAMEPAD_DPAD_RIGHT | PS3_GAMEPAD_LSTICK_RIGHT_MASK, "LStick D-Pad Right" },
+   { PS3_GAMEPAD_DPAD_UP | PS3_GAMEPAD_LSTICK_UP_MASK, "LStick D-Pad Up" },
+   { PS3_GAMEPAD_DPAD_DOWN | PS3_GAMEPAD_LSTICK_DOWN_MASK, "LStick D-Pad Down" },
+   { PS3_GAMEPAD_RSTICK_LEFT_MASK, "RStick Left" },
+   { PS3_GAMEPAD_RSTICK_RIGHT_MASK, "RStick Right" },
+   { PS3_GAMEPAD_RSTICK_UP_MASK, "RStick Up" },
+   { PS3_GAMEPAD_RSTICK_DOWN_MASK, "RStick Down" },
+   { PS3_GAMEPAD_DPAD_LEFT | PS3_GAMEPAD_RSTICK_LEFT_MASK, "RStick D-Pad Left" },
+   { PS3_GAMEPAD_DPAD_RIGHT | PS3_GAMEPAD_RSTICK_RIGHT_MASK, "RStick D-Pad Right" },
+   { PS3_GAMEPAD_DPAD_UP | PS3_GAMEPAD_RSTICK_UP_MASK, "RStick D-Pad Up" },
+   { PS3_GAMEPAD_DPAD_DOWN | PS3_GAMEPAD_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
 };
 
 const unsigned int platform_keys_size = sizeof(platform_keys);
@@ -178,7 +178,39 @@ static void ps3_input_poll(void *data)
    (void)data;
 
    for (unsigned i = 0; i < MAX_PADS; i++)
-      state[i] = cell_pad_input_poll_device(i);
+   {
+      static CellPadData state_tmp;
+      cellPadGetData(i, &state_tmp);
+
+      if (state_tmp.len != 0)
+      {
+         state[i] = 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_LEFT) ? PS3_GAMEPAD_DPAD_LEFT : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_DOWN) ? PS3_GAMEPAD_DPAD_DOWN : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_RIGHT) ? PS3_GAMEPAD_DPAD_RIGHT : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_UP) ? PS3_GAMEPAD_DPAD_UP : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_START) ? PS3_GAMEPAD_START : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_R3) ? PS3_GAMEPAD_R3 : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_L3) ? PS3_GAMEPAD_L3 : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_SELECT) ? PS3_GAMEPAD_SELECT : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_TRIANGLE) ? PS3_GAMEPAD_TRIANGLE : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_SQUARE) ? PS3_GAMEPAD_SQUARE : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_CROSS) ? PS3_GAMEPAD_CROSS : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_CIRCLE) ? PS3_GAMEPAD_CIRCLE : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_R1) ? PS3_GAMEPAD_R1 : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L1) ? PS3_GAMEPAD_L1 : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_R2) ? PS3_GAMEPAD_R2 : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? PS3_GAMEPAD_L2 : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X] <= DEADZONE_LOW) ? PS3_GAMEPAD_LSTICK_LEFT_MASK : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X] >= DEADZONE_HIGH) ? PS3_GAMEPAD_LSTICK_RIGHT_MASK : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y] <= DEADZONE_LOW) ? PS3_GAMEPAD_LSTICK_UP_MASK : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y] >= DEADZONE_HIGH) ? PS3_GAMEPAD_LSTICK_DOWN_MASK : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X] <= DEADZONE_LOW) ? PS3_GAMEPAD_RSTICK_LEFT_MASK : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X] >= DEADZONE_HIGH) ? PS3_GAMEPAD_RSTICK_RIGHT_MASK : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y] <= DEADZONE_LOW) ? PS3_GAMEPAD_RSTICK_UP_MASK : 0;
+         state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y] >= DEADZONE_HIGH) ? PS3_GAMEPAD_RSTICK_DOWN_MASK : 0;
+      }
+   }
 
    cellPadGetInfo2(&pad_info);
    pads_connected = pad_info.now_connect; 
@@ -225,7 +257,7 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
       switch (device)
       {
          case RETRO_DEVICE_JOYPAD:
-            retval = CTRL_MASK(state[player], button) ? 1 : 0;
+            retval = (state[player] & button) ? 1 : 0;
             break;
 #ifdef HAVE_MOUSE
          case RETRO_DEVICE_MOUSE:
@@ -432,15 +464,15 @@ static bool ps3_key_pressed(void *data, int key)
    switch (key)
    {
       case RARCH_FAST_FORWARD_HOLD_KEY:
-         return CTRL_RSTICK_DOWN(state[0]) && CTRL_R2(~state[0]);
+         return (state[0] & PS3_GAMEPAD_RSTICK_DOWN_MASK) && !(state[0] & PS3_GAMEPAD_R2 );
       case RARCH_LOAD_STATE_KEY:
-         return (CTRL_RSTICK_UP(state[0]) && CTRL_R2(state[0]));
+         return ((state[0] & PS3_GAMEPAD_RSTICK_UP_MASK) && (state[0] & PS3_GAMEPAD_R2));
       case RARCH_SAVE_STATE_KEY:
-         return (CTRL_RSTICK_DOWN(state[0]) && CTRL_R2(state[0]));
+         return ((state[0] & PS3_GAMEPAD_RSTICK_DOWN_MASK) && (state[0] & PS3_GAMEPAD_R2));
       case RARCH_STATE_SLOT_PLUS:
-         return (CTRL_RSTICK_RIGHT(state[0]) && CTRL_R2(state[0]));
+         return ((state[0] & PS3_GAMEPAD_RSTICK_RIGHT_MASK) && (state[0] & PS3_GAMEPAD_R2));
       case RARCH_STATE_SLOT_MINUS:
-         return (CTRL_RSTICK_LEFT(state[0]) && CTRL_R2(state[0]));
+         return ((state[0] & PS3_GAMEPAD_RSTICK_LEFT_MASK) && (state[0] & PS3_GAMEPAD_R2));
       case RARCH_FRAMEADVANCE:
       	if(g_console.frame_advance_enable)
 	{
@@ -450,13 +482,13 @@ static bool ps3_key_pressed(void *data, int key)
 	}
 	 return false;
       case RARCH_REWIND:
-         return CTRL_RSTICK_UP(state[0]) && CTRL_R2(~state[0]);
+         return (state[0] & PS3_GAMEPAD_RSTICK_UP_MASK) && !(state[0] & PS3_GAMEPAD_R2);
       case RARCH_QUIT_KEY:
 #ifdef HAVE_OPENGL
 	 if(IS_TIMER_EXPIRED(gl))
 	 {
-            uint32_t r3_pressed = CTRL_R3(state[0]);
-	    uint32_t l3_pressed = CTRL_L3(state[0]);
+            uint32_t r3_pressed = state[0] & PS3_GAMEPAD_R3;
+	    uint32_t l3_pressed = state[0] & PS3_GAMEPAD_L3;
 	    bool retval = false;
 	    g_console.menu_enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED(gl));
 	    g_console.ingame_menu_enable = r3_pressed && !l3_pressed;
