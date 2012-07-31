@@ -263,6 +263,48 @@ static bool xinput_input_key_pressed(void *data, int key)
 {
    (void)data;
    bool retval = false;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   
+   switch(key)
+   {
+      case RARCH_FAST_FORWARD_HOLD_KEY:
+         return ((real_state[0] & XINPUT1_GAMEPAD_RSTICK_DOWN_MASK) && !(real_state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
+      case RARCH_LOAD_STATE_KEY:
+         return ((real_state[0] & XINPUT1_GAMEPAD_RSTICK_UP_MASK) && (real_state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
+      case RARCH_SAVE_STATE_KEY:
+         return ((real_state[0] & XINPUT1_GAMEPAD_RSTICK_DOWN_MASK) && (real_state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
+      case RARCH_STATE_SLOT_PLUS:
+         return ((real_state[0] & XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK) && (real_state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
+      case RARCH_STATE_SLOT_MINUS:
+         return ((real_state[0] & XINPUT1_GAMEPAD_RSTICK_LEFT_MASK) && (real_state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
+      case RARCH_FRAMEADVANCE:
+         if(g_console.frame_advance_enable)
+         {
+            g_console.menu_enable = true;
+            g_console.ingame_menu_enable = true;
+            g_console.mode_switch = MODE_MENU;
+         }
+         return false;
+      case RARCH_REWIND:
+         return ((real_state[0] & XINPUT1_GAMEPAD_RSTICK_UP_MASK) && !(real_state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
+      case RARCH_QUIT_KEY:
+         if(IS_TIMER_EXPIRED(d3d))
+         {
+            uint32_t left_thumb_pressed = (real_state[0] & XINPUT1_GAMEPAD_LEFT_THUMB);
+            uint32_t right_thumb_pressed = (real_state[0] & XINPUT1_GAMEPAD_RIGHT_THUMB);
+
+            g_console.menu_enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED(d3d);
+            g_console.ingame_menu_enable = right_thumb_pressed && !left_thumb_pressed;
+            
+            if(g_console.menu_enable || (g_console.ingame_menu_enable && !g_console.menu_enable))
+            {
+               g_console.mode_switch = MODE_MENU;
+               SET_TIMER_EXPIRATION(d3d, 30);
+               retval = g_console.menu_enable;
+            }
+            retval = g_console.ingame_menu_enable ? g_console.ingame_menu_enable : g_console.menu_enable;
+         }
+   }
 
    return retval;
 }

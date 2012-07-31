@@ -164,41 +164,40 @@ static bool xinput_input_key_pressed(void *data, int key)
       case RARCH_FAST_FORWARD_HOLD_KEY:
          return ((state.Gamepad.sThumbRY < -DEADZONE) && !(state.Gamepad.bRightTrigger > 128));
       case RARCH_LOAD_STATE_KEY:
-	 return ((state.Gamepad.sThumbRY > DEADZONE) && (state.Gamepad.bRightTrigger > 128));
+         return ((state.Gamepad.sThumbRY > DEADZONE) && (state.Gamepad.bRightTrigger > 128));
       case RARCH_SAVE_STATE_KEY:
-	 return ((state.Gamepad.sThumbRY < -DEADZONE) && (state.Gamepad.bRightTrigger > 128));
+         return ((state.Gamepad.sThumbRY < -DEADZONE) && (state.Gamepad.bRightTrigger > 128));
       case RARCH_STATE_SLOT_PLUS:
-	 return ((state.Gamepad.sThumbRX > DEADZONE) && (state.Gamepad.bRightTrigger > 128));
+         return ((state.Gamepad.sThumbRX > DEADZONE) && (state.Gamepad.bRightTrigger > 128));
       case RARCH_STATE_SLOT_MINUS:
-	 return ((state.Gamepad.sThumbRX < -DEADZONE) && (state.Gamepad.bRightTrigger > 128));
+         return ((state.Gamepad.sThumbRX < -DEADZONE) && (state.Gamepad.bRightTrigger > 128));
       case RARCH_FRAMEADVANCE:
-	 if(g_console.frame_advance_enable)
-	 {
-        g_console.menu_enable = true;
-	    g_console.ingame_menu_enable = true;
-	    g_console.mode_switch = MODE_MENU;
-	 }
-	 return false;
+         if(g_console.frame_advance_enable)
+         {
+            g_console.menu_enable = true;
+            g_console.ingame_menu_enable = true;
+            g_console.mode_switch = MODE_MENU;
+         }
+         return false;
       case RARCH_REWIND:
-	 return ((state.Gamepad.sThumbRY > DEADZONE) && !(state.Gamepad.bRightTrigger > 128));
+         return ((state.Gamepad.sThumbRY > DEADZONE) && !(state.Gamepad.bRightTrigger > 128));
       case RARCH_QUIT_KEY:
-	 if(IS_TIMER_EXPIRED(d3d))
-	 {
+         if(IS_TIMER_EXPIRED(d3d))
+         {
             uint32_t left_thumb_pressed = (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB);
-	    uint32_t right_thumb_pressed = (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
+            uint32_t right_thumb_pressed = (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
 
-	    g_console.menu_enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED(d3d);
-	    g_console.ingame_menu_enable = right_thumb_pressed && !left_thumb_pressed;
-
-	    if(g_console.menu_enable || (g_console.ingame_menu_enable && !g_console.menu_enable))
-	    {
+            g_console.menu_enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED(d3d);
+            g_console.ingame_menu_enable = right_thumb_pressed && !left_thumb_pressed;
+            
+            if(g_console.menu_enable || (g_console.ingame_menu_enable && !g_console.menu_enable))
+            {
                g_console.mode_switch = MODE_MENU;
-	       SET_TIMER_EXPIRATION(d3d, 30);
-	       retval = g_console.menu_enable;
-	    }
-
-	    retval = g_console.ingame_menu_enable ? g_console.ingame_menu_enable : g_console.menu_enable;
-	 }
+               SET_TIMER_EXPIRATION(d3d, 30);
+               retval = g_console.menu_enable;
+            }
+            retval = g_console.ingame_menu_enable ? g_console.ingame_menu_enable : g_console.menu_enable;
+         }
    }
 
    return retval;
