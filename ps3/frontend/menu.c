@@ -580,6 +580,16 @@ static void display_menubar(menu *current_menu)
 
    switch(current_menu->enum_id)
    {
+      case SHADER_CHOICE:
+      case PRESET_CHOICE:
+      case BORDER_CHOICE:
+      case LIBRETRO_CHOICE:
+      case INPUT_PRESET_CHOICE:
+      case PATH_SAVESTATES_DIR_CHOICE:
+      case PATH_DEFAULT_ROM_DIR_CHOICE:
+      case PATH_CHEATS_DIR_CHOICE:
+      case PATH_SRAM_DIR_CHOICE:
+         fb = &tmpBrowser;
       case FILE_BROWSER_MENU:
          render_msg_place_func (0.09f, 0.09f, FONT_SIZE, YELLOW, current_path);
          break;
