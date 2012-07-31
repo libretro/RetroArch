@@ -20,6 +20,20 @@
 #define FONT_SIZE (g_console.menu_font_size)
 #define COMMENT_YPOS 0.83f
 
+#if defined(__CELLOS_LV2__)
+#define DEVICE_CAST gl_t*
+#define DEVICE_PTR device_ptr
+#define render_msg_pre_func() gl_render_msg_pre(DEVICE_PTR)
+#define render_msg_place_func(xpos, ypos, scale, color, msg, ...) gl_render_msg_place(xpos, ypos, scale, color, msg)
+#define render_msg_post_func() gl_render_msg_post(DEVICE_PTR)
+#elif defined(_XBOX1)
+#define DEVICE_CAST xdk_d3d_video_t*
+#define DEVICE_PTR device_ptr
+#define render_msg_pre_func() xfonts_render_msg_pre(DEVICE_PTR)
+#define render_msg_place_func(xpos, ypos, scale, color, msg) xfonts_render_msg_place(DEVICE_PTR, xpos, ypos, scale, msg)
+#define render_msg_post_func() xfonts_render_msg_post(DEVICE_PTR)
+#endif
+
 typedef struct
 {
    unsigned char enum_id;		/* enum ID of item				*/
