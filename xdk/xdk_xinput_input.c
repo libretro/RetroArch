@@ -26,13 +26,17 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../libretro.h"
-#include "xinput_xbox_input.h"
+#include "xdk_xinput_input.h"
 
 static uint64_t state[MAX_PADS];
+static unsigned pads_connected;
+
+#ifdef _XBOX1
 HANDLE gamepads[MAX_PADS];
 DWORD dwDeviceMask;
 bool bInserted[MAX_PADS];
 bool bRemoved[MAX_PADS];
+#endif
 
 const struct platform_bind platform_keys[] = {
    { XINPUT1_GAMEPAD_B, "B button" },
@@ -45,10 +49,18 @@ const struct platform_bind platform_keys[] = {
    { XINPUT1_GAMEPAD_DPAD_RIGHT, "D-Pad Right" },
    { XINPUT1_GAMEPAD_BACK, "Back button" },
    { XINPUT1_GAMEPAD_START, "Start button" },
+#if defined(_XBOX1)
    { XINPUT1_GAMEPAD_WHITE, "White button" },
+#elif defined(_XBOX360)
+   { XINPUT1_GAMEPAD_WHITE, "Right shoulder" },
+#endif
    { XINPUT1_GAMEPAD_LEFT_TRIGGER, "Left Trigger" },
    { XINPUT1_GAMEPAD_LEFT_THUMB, "Left Thumb" },
+#if defined(_XBOX1)
    { XINPUT1_GAMEPAD_BLACK, "Black button" },
+#elif defined(_XBOX360)
+   { XINPUT1_GAMEPAD_BLACK, "Left shoulder" },
+#endif
    { XINPUT1_GAMEPAD_RIGHT_TRIGGER, "Right Trigger" },
    { XINPUT1_GAMEPAD_RIGHT_THUMB, "Right Thumb" },
    { XINPUT1_GAMEPAD_LSTICK_LEFT_MASK, "LStick Left" },
@@ -71,18 +83,16 @@ const struct platform_bind platform_keys[] = {
 
 const unsigned int platform_keys_size = sizeof(platform_keys);
 
-#define DEADZONE (16000)
-
-static unsigned pads_connected;
-
 static void xinput_input_poll(void *data)
 {
    (void)data;
+   
+   pads_connected = 0;
+
+#if defined(_XBOX1)
    unsigned int dwInsertions, dwRemovals;
    
    XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD, reinterpret_cast<PDWORD>(&dwInsertions), reinterpret_cast<PDWORD>(&dwRemovals));
-
-   pads_connected = 0;
 
    for (unsigned i = 0; i < MAX_PADS; i++)
    {
@@ -153,6 +163,42 @@ static void xinput_input_poll(void *data)
          }
       }
    }
+#elif defined(_XBOX360)
+   for (unsigned i = 0; i < MAX_PADS; i++)
+   {
+      XINPUT_STATE state_tmp;
+      unsigned long retval;
+      {
+         retval = XInputGetState(i, &state_tmp);
+         pads_connected += (retval == ERROR_DEVICE_NOT_CONNECTED) ? 0 : 1;
+         state[i] = 0;
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_B) ? XINPUT1_GAMEPAD_B : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_A) ? XINPUT1_GAMEPAD_A : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_Y) ? XINPUT1_GAMEPAD_Y : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_X) ? XINPUT1_GAMEPAD_X : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? XINPUT1_GAMEPAD_DPAD_LEFT : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? XINPUT1_GAMEPAD_DPAD_RIGHT : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? XINPUT1_GAMEPAD_DPAD_UP : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? XINPUT1_GAMEPAD_DPAD_DOWN : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_LEFT_MASK : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_RIGHT_MASK : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_UP_MASK : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_DOWN_MASK : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_LEFT_MASK : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_UP_MASK : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_DOWN_MASK : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_START) ? XINPUT1_GAMEPAD_START : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? XINPUT1_GAMEPAD_BACK : 0);
+         state[i] |= ((state_tmp.Gamepad.bLeftTrigger > 128) ? XINPUT1_GAMEPAD_LEFT_TRIGGER : 0);
+         state[i] |= ((state_tmp.Gamepad.bRightTrigger > 128) ? XINPUT1_GAMEPAD_RIGHT_TRIGGER : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) ? XINPUT1_GAMEPAD_WHITE : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) ? XINPUT1_GAMEPAD_BLACK : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? XINPUT1_GAMEPAD_LEFT_THUMB : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? XINPUT1_GAMEPAD_RIGHT_THUMB : 0);
+      }
+   }
+#endif
 }
 
 static int16_t xinput_input_state(void *data, const struct retro_keybind **binds,
@@ -230,6 +276,7 @@ static void xinput_input_set_analog_dpad_mapping(unsigned device, unsigned map_d
 
 static void* xinput_input_init(void)
 {
+#ifdef _XBOX1
    XInitDevices(0, NULL);
 
    dwDeviceMask = XGetDevices(XDEVICE_TYPE_GAMEPAD);
@@ -246,6 +293,7 @@ static void* xinput_input_init(void)
    }
 
    while(XGetDeviceEnumerationStatus() == XDEVICE_ENUMERATION_BUSY) {}
+#endif
 
    return (void*)-1;
 }

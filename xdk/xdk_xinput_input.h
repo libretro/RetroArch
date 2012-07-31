@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _XDK360_XINPUT2_H
-#define _XDK360_XINPUT2_H
+#ifndef _XDK_XINPUT_H
+#define _XDK_XINPUT_H
 
 enum {
    XINPUT1_GAMEPAD_B =			1 << 0,
@@ -82,6 +82,6 @@ enum xdk_device_id
    RARCH_LAST_PLATFORM_KEY
 };
 
-#define DEADZONE                            (16000)
+#define DEADZONE (16000)
 
 #endif

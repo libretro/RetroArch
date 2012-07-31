@@ -156,14 +156,8 @@ INPUT
 #include "../../ps3/ps3_input.c"
 #elif defined(GEKKO)
 #include "../../wii/gx_input.c"
-#endif
-
-#ifdef _XBOX
-#if defined(HAVE_XINPUT_XBOX1)
-#include "../../xbox1/xinput_xbox_input.c"
-#elif defined(HAVE_XINPUT2)
-#include "../../360/xinput_360_input.c"
-#endif
+#elif defined(_XBOX)
+#include "../../xdk/xdk_xinput_input.c"
 #endif
 
 #include "../../input/null.c"
