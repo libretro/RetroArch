@@ -17,6 +17,7 @@
 #include "RetroLaunch/IoSupport.h"
 #include "RetroLaunch/Surface.h"
 
+#include "../../ps3/frontend/menu.h"
 #include "../../console/fileio/file_browser.h"
 #include "../../gfx/fonts/xdk1_xfonts.h"
 
@@ -48,9 +49,11 @@ int width;
 int height;
 wchar_t m_title[128];
 
-uint16_t input_st;
-uint16_t trigger_state;
-static uint16_t old_input_st = 0;
+typedef enum {
+   MENU_ROMSELECT_ACTION_OK,
+   MENU_ROMSELECT_ACTION_GOTO_SETTINGS,
+   MENU_ROMSELECT_ACTION_NOOP,
+} menu_romselect_action_t;
 
 static void display_menubar(void)
 {
@@ -59,32 +62,11 @@ static void display_menubar(void)
    m_menuMainBG.m_imageInfo.Width, m_menuMainBG.m_imageInfo.Height);
 }
 
-typedef enum {
-   MENU_ROMSELECT_ACTION_OK,
-   MENU_ROMSELECT_ACTION_GOTO_SETTINGS,
-   MENU_ROMSELECT_ACTION_NOOP,
-} menu_romselect_action_t;
-
-static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_action_t action)
+static void control_update_wrap(uint16_t *input_state, uint16_t trigger_state)
 {
-   switch(action)
-   {
-      case MENU_ROMSELECT_ACTION_OK:
-         if(filebrowser_get_current_path_isdir(filebrowser))
-            filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
-         else
-            rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_console.zip_extract_mode, S_DELAY_45);
-         break;
-      case MENU_ROMSELECT_ACTION_GOTO_SETTINGS:
-         break;
-      default:
-         break;
-   }
-}
+   (void)trigger_state;
 
-static void control_update_wrap(void)
-{
-   input_st = 0;
+   *input_state = 0;
    input_xinput.poll(NULL);
 
    static const struct retro_keybind *binds[MAX_PLAYERS] = {
@@ -100,9 +82,42 @@ static void control_update_wrap(void)
 
    for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
-      input_st |= input_xinput.input_state(NULL, binds, false,
+      *input_state |= input_xinput.input_state(NULL, binds, false,
          RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
    }
+}
+
+static void browser_update(filebrowser_t * b, uint16_t input, const char *extensions)
+{
+   filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
+
+   if (input & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+      action = FILEBROWSER_ACTION_DOWN;
+   else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+      action = FILEBROWSER_ACTION_UP;
+   else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      action = FILEBROWSER_ACTION_RIGHT;
+   else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+      action = FILEBROWSER_ACTION_LEFT;
+   else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_R))
+      action = FILEBROWSER_ACTION_SCROLL_DOWN;
+   else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_R2))
+      action = FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH;
+   else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_L2))
+      action = FILEBROWSER_ACTION_SCROLL_UP_SMOOTH;
+   else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_L))
+      action = FILEBROWSER_ACTION_SCROLL_UP;
+   else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_A))
+      action = FILEBROWSER_ACTION_CANCEL;
+   else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+   {
+      action = FILEBROWSER_ACTION_RESET;
+      filebrowser_set_root(b, "/");
+      strlcpy(b->extensions, extensions, sizeof(b->extensions));
+   }
+
+   if(action != FILEBROWSER_ACTION_NOOP)
+      filebrowser_iterate(b, action);
 }
 
 static void browser_render(filebrowser_t *b, float current_x, float current_y, float y_spacing)
@@ -141,50 +156,34 @@ static void browser_render(filebrowser_t *b, float current_x, float current_y, f
    }
 }
 
-static void browser_update(filebrowser_t * b, uint16_t inp_state, const char *extensions)
+static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_action_t action)
 {
-   filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
-
-   if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
-      action = FILEBROWSER_ACTION_DOWN;
-   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
-      action = FILEBROWSER_ACTION_UP;
-   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
-      action = FILEBROWSER_ACTION_RIGHT;
-   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
-      action = FILEBROWSER_ACTION_LEFT;
-   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_R))
-      action = FILEBROWSER_ACTION_SCROLL_DOWN;
-   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_R2))
-      action = FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH;
-   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_L2))
-      action = FILEBROWSER_ACTION_SCROLL_UP_SMOOTH;
-   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_L))
-      action = FILEBROWSER_ACTION_SCROLL_UP;
-   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_A))
-      action = FILEBROWSER_ACTION_CANCEL;
-   else if (inp_state & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+   switch(action)
    {
-      action = FILEBROWSER_ACTION_RESET;
-      filebrowser_set_root(b, "/");
-      strlcpy(b->extensions, extensions, sizeof(b->extensions));
+      case MENU_ROMSELECT_ACTION_OK:
+         if(filebrowser_get_current_path_isdir(filebrowser))
+            filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
+         else
+            rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_console.zip_extract_mode, S_DELAY_45);
+         break;
+      case MENU_ROMSELECT_ACTION_GOTO_SETTINGS:
+         break;
+      default:
+         break;
    }
-
-   if(action != FILEBROWSER_ACTION_NOOP)
-      filebrowser_iterate(b, action);
 }
 
-static void select_rom(void)
+static void select_rom(uint16_t input)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
-   browser_update(&browser, trigger_state, rarch_console_get_rom_ext());
+   browser_update(&browser, input, rarch_console_get_rom_ext());
    
    menu_romselect_action_t action = MENU_ROMSELECT_ACTION_NOOP;
    
-   if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_B))
+   if (input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
       action = MENU_ROMSELECT_ACTION_OK;
-   else if (trigger_state & (1 << RETRO_DEVICE_ID_JOYPAD_R3))
+   else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_R3))
    {
       LD_LAUNCH_DASHBOARD LaunchData = { XLD_LAUNCH_DASHBOARD_MAIN_MENU };
       XLaunchNewImage( NULL, (LAUNCH_DATA*)&LaunchData );
@@ -273,22 +272,25 @@ void menu_loop(void)
 
    do
    {
+      uint16_t input_st = 0;
+      uint16_t trig_state;
+      static uint16_t old_state = 0;
+
       d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
          D3DCOLOR_ARGB(0, 0, 0, 0),
          1.0f, 0);
+      
+      control_update_wrap(&input_st, 0 /* normally trig_state */);
+      trig_state = input_st & ~old_state;
       
       d3d->d3d_render_device->BeginScene();
       d3d->d3d_render_device->SetFlickerFilter(1);
       d3d->d3d_render_device->SetSoftDisplayFilter(1);
       
-      control_update_wrap();
-      
-      trigger_state = input_st & ~old_input_st;
-      
-      select_rom();
+      select_rom(trig_state);
       browser_render(&browser, m_menuMainRomListPos_x, m_menuMainRomListPos_y, 20);
       
-      old_input_st = input_st;
+      old_state = input_st;
       
       d3d->d3d_render_device->EndScene();
       d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL);
