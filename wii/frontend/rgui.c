@@ -31,6 +31,8 @@
 #define TERM_WIDTH (((RGUI_WIDTH - TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
 #define TERM_HEIGHT (((RGUI_HEIGHT - TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)))
 
+extern char app_dir[PATH_MAX];
+
 struct rgui_handle
 {
    uint16_t *frame_buf;
@@ -372,6 +374,23 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             rarch_settings_change(S_AUDIO_CONTROL_RATE_INCREMENT);
          break;
 
+      case RGUI_SETTINGS_CORE:
+      {
+         // !!JUST FOR TESTING!!
+         char boot_dol[PATH_MAX];
+         char temp_dol[PATH_MAX];
+         char temp2_dol[PATH_MAX];
+
+         snprintf(boot_dol, sizeof(boot_dol), "%s%s", app_dir, "boot.dol");
+         snprintf(temp_dol, sizeof(temp_dol), "%s%s", app_dir, "temp.dol");
+         snprintf(temp2_dol, sizeof(temp2_dol), "%s%s", app_dir, "temp2.dol");
+
+         rename(boot_dol, temp2_dol);
+         rename(temp_dol, boot_dol);
+         rename(temp2_dol, temp_dol);
+         break;
+      }
+
       // controllers
       case RGUI_SETTINGS_BIND_DEVICE:
          g_settings.input.device[port] += RARCH_DEVICE_LAST;
@@ -430,6 +449,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
    RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
    RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);
+   //RGUI_MENU_ITEM("Core", RGUI_SETTINGS_CORE);
    RGUI_MENU_ITEM("Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1);
    RGUI_MENU_ITEM("Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2);
    RGUI_MENU_ITEM("Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3);

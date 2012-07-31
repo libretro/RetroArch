@@ -44,6 +44,9 @@ FILE * log_fp;
 
 static uint16_t menu_framebuf[RGUI_WIDTH * RGUI_HEIGHT];
 
+char app_dir[PATH_MAX];
+struct retro_system_info wii_core_info;
+
 static const struct retro_keybind _wii_nav_binds[] = {
    { 0, 0, 0, WII_GC_UP | WII_GC_LSTICK_UP | WII_GC_RSTICK_UP | WII_CLASSIC_UP | WII_CLASSIC_LSTICK_UP | WII_CLASSIC_RSTICK_UP | WII_WIIMOTE_UP | WII_NUNCHUK_UP, 0 },
    { 0, 0, 0, WII_GC_DOWN | WII_GC_LSTICK_DOWN | WII_GC_RSTICK_DOWN | WII_CLASSIC_DOWN | WII_CLASSIC_LSTICK_DOWN | WII_CLASSIC_RSTICK_DOWN | WII_WIIMOTE_DOWN | WII_NUNCHUK_DOWN, 0 },
@@ -214,6 +217,7 @@ int main(void)
 #endif
 
    fatInitDefault();
+   getcwd(app_dir, sizeof(app_dir));
 
    get_environment_settings();
 
@@ -227,6 +231,9 @@ int main(void)
 #endif
 
    config_set_defaults();
+
+   retro_get_system_info(&wii_core_info);
+   RARCH_LOG("Core: %s\n", wii_core_info.library_name);
 
    g_settings.audio.rate_control = true;
    g_settings.audio.rate_control_delta = 0.006;
