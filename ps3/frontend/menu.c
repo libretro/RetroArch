@@ -1669,10 +1669,7 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
    if (is_dir)
    {
       const char *current_path = filebrowser_get_current_path(&browser);
-      if(!strcmp(current_path,"app_home") || !strcmp(current_path, "host_root"))
-         render_msg_place_func(x_position, comment_y_position, font_size, RED, "WARNING - This path only works on DEX PS3 systems. Do not attempt to open\n this directory on CEX PS3 systems, or you might have to restart.");
-      else
-         render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, "INFO - Press X to enter the directory.");
+      render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, "INFO - Press X to enter the directory.");
    }
    else
       render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, "INFO - Press X to load the game. ");
