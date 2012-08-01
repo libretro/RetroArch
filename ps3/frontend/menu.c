@@ -1637,7 +1637,7 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
    render_msg_place_func(x_position, comment_y_position, 0.86f, LIGHTBLUE, items[current_menu->selected].comment);
 
    render_msg_place_func(x_position, comment_two_y_position, FONT_SIZE, YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
-   render_msg_place_func(x_position, 0.95f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
+   render_msg_place_func(x_position, comment_two_y_position + 0.04f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
    render_msg_post_func();
 }
 
