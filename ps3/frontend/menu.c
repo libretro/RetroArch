@@ -812,6 +812,7 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
 
    float x_position = 0.09f;
    float comment_y_position = 0.83f;
+   float comment_two_y_position = 0.91f;
    float font_size = 0.91f;
 
    bool is_dir = filebrowser_get_current_path_isdir(&tmpBrowser);
@@ -872,7 +873,7 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
 
    display_menubar(current_menu);
 
-   render_msg_place_func(x_position, 0.93f, font_size, YELLOW, "X - Enter dir  /\\ - return to settings  START - Reset Startdir");
+   render_msg_place_func(x_position, comment_two_y_position, font_size, YELLOW, "X - Enter dir  /\\ - return to settings  START - Reset Startdir");
    render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, "INFO - Browse to a directory and assign it as the path by\npressing SQUARE button.");
    render_msg_post_func();
 }
@@ -1598,6 +1599,7 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    float x_position = 0.09f;
+   float x_position_center = 0.5f;
    float comment_y_position = 0.83f;
    float comment_two_y_position = 0.91f;
 
@@ -1627,7 +1629,7 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
       if(items[i].page == current_menu->page)
       {
          render_msg_place_func(items[i].text_xpos, items[i].text_ypos, FONT_SIZE, current_menu->selected == items[i].enum_id ? YELLOW : items[i].item_color, items[i].text);
-	 render_msg_place_func(0.5f, items[i].text_ypos, FONT_SIZE, items[i].text_color, items[i].setting_text);
+	 render_msg_place_func(x_position_center, items[i].text_ypos, FONT_SIZE, items[i].text_color, items[i].setting_text);
 	 render_msg_post_func();
       }
    }
@@ -1670,6 +1672,7 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
    float x_position = 0.09f;
    float comment_y_position = 0.83f;
    float font_size = 0.91f;
+   float comment_two_y_position = 0.91f;
 
    browser_update(&browser, input, rarch_console_get_rom_ext());
 
@@ -1695,7 +1698,7 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
 
    display_menubar(current_menu);
 
-   render_msg_place_func   (x_position, font_size, FONT_SIZE, YELLOW,
+   render_msg_place_func   (x_position, comment_two_y_position, FONT_SIZE, YELLOW,
    "L3 + R3 - resume game           SELECT - Settings screen");
    render_msg_post_func();
 }
@@ -1708,6 +1711,7 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    float x_position = 0.09f;
+   float x_position_center = 0.5f;
    float font_size = 0.91f;
 
    float y_position = 0.16f;
@@ -1787,45 +1791,45 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
       render_msg_place_func(x_position, y_position+(y_position_increment*4), font_size, LIGHTBLUE, "CONTROLS:");
 
       render_msg_place_func (x_position, y_position+(y_position_increment*5), font_size,  LIGHTBLUE, "LEFT or LSTICK UP");
-      render_msg_place_func (0.5f, y_position+(y_position_increment*5), font_size, LIGHTBLUE, "- Decrease Viewport X");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*5), font_size, LIGHTBLUE, "- Decrease Viewport X");
 
       render_msg_post_func();
 
       render_msg_place_func (x_position, y_position+(y_position_increment*6), font_size, LIGHTBLUE, "RIGHT or LSTICK RIGHT");
-      render_msg_place_func (0.5f, y_position+(y_position_increment*6), font_size, LIGHTBLUE, "- Increase Viewport X");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*6), font_size, LIGHTBLUE, "- Increase Viewport X");
 
       render_msg_place_func (x_position, y_position+(y_position_increment*7), font_size, LIGHTBLUE, "UP or LSTICK UP");
-      render_msg_place_func (0.5f, y_position+(y_position_increment*7), font_size, LIGHTBLUE, "- Increase Viewport Y");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*7), font_size, LIGHTBLUE, "- Increase Viewport Y");
 
       render_msg_post_func();
 
       render_msg_place_func (x_position, y_position+(y_position_increment*8), font_size, LIGHTBLUE, "DOWN or LSTICK DOWN");
-      render_msg_place_func (0.5f, y_position+(y_position_increment*8), font_size, LIGHTBLUE, "- Decrease Viewport Y");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*8), font_size, LIGHTBLUE, "- Decrease Viewport Y");
 
       render_msg_place_func (x_position, y_position+(y_position_increment*9), font_size, LIGHTBLUE, "L1 or RSTICK LEFT");
-      render_msg_place_func (0.5f, y_position+(y_position_increment*9), font_size, LIGHTBLUE, "- Decrease Viewport Width");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*9), font_size, LIGHTBLUE, "- Decrease Viewport Width");
 
       render_msg_post_func();
 
       render_msg_place_func (x_position, y_position+(y_position_increment*10), font_size, LIGHTBLUE, "R1 or RSTICK RIGHT");
-      render_msg_place_func (0.5f, y_position+(y_position_increment*10), font_size, LIGHTBLUE, "- Increase Viewport Width");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*10), font_size, LIGHTBLUE, "- Increase Viewport Width");
 
       render_msg_place_func (x_position, y_position+(y_position_increment*11), font_size, LIGHTBLUE, "L2 or  RSTICK UP");
-      render_msg_place_func (0.5f, y_position+(y_position_increment*11), font_size, LIGHTBLUE, "- Increase Viewport Height");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*11), font_size, LIGHTBLUE, "- Increase Viewport Height");
 
       render_msg_post_func();
 
       render_msg_place_func (x_position, y_position+(y_position_increment*12), font_size, LIGHTBLUE, "R2 or RSTICK DOWN");
-      render_msg_place_func (0.5f, y_position+(y_position_increment*12), font_size, LIGHTBLUE, "- Decrease Viewport Height");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*12), font_size, LIGHTBLUE, "- Decrease Viewport Height");
 
       render_msg_place_func (x_position, y_position+(y_position_increment*13), font_size, LIGHTBLUE, "TRIANGLE");
-      render_msg_place_func (0.5f, y_position+(y_position_increment*13), font_size, LIGHTBLUE, "- Reset To Defaults");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*13), font_size, LIGHTBLUE, "- Reset To Defaults");
 
       render_msg_place_func (x_position, y_position+(y_position_increment*14), font_size, LIGHTBLUE, "SQUARE");
-      render_msg_place_func (0.5f, y_position+(y_position_increment*14), font_size, LIGHTBLUE, "- Show Game Screen");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*14), font_size, LIGHTBLUE, "- Show Game Screen");
 
       render_msg_place_func (x_position, y_position+(y_position_increment*15), font_size, LIGHTBLUE, "CIRCLE");
-      render_msg_place_func (0.5f, y_position+(y_position_increment*15), font_size, LIGHTBLUE, "- Return to Ingame Menu");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*15), font_size, LIGHTBLUE, "- Return to Ingame Menu");
 
       render_msg_post_func();
 
@@ -2313,10 +2317,12 @@ void menu_loop(void)
       }
 
       const char * message = msg_queue_pull(g_extern.msg_queue);
+      float message_y_position = 0.75f;
+      float message_scale = 1.05f;
 
       if (message && g_console.info_msg_enable)
       {
-         render_msg_place_func(g_settings.video.msg_pos_x, 0.75f, 1.05f, WHITE, message);
+         render_msg_place_func(g_settings.video.msg_pos_x, message_y_position, message_scale, WHITE, message);
          render_msg_post_func();
       }
 
