@@ -59,6 +59,6 @@ void filebrowser_set_root(filebrowser_t *filebrowser, const char *root_dir);
 void filebrowser_set_root_and_ext(filebrowser_t *browser, const char *ext, const char *root_dir);
 void filebrowser_free(filebrowser_t *filebrowser);
 void filebrowser_set_current_at (filebrowser_t *filebrowser, size_t pos);
-void filebrowser_iterate(filebrowser_t *filebrowser, filebrowser_action_t action);
+bool filebrowser_iterate(filebrowser_t *filebrowser, filebrowser_action_t action);
 
 #endif /* FILEBROWSER_H_ */

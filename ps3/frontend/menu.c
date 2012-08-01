@@ -613,6 +613,7 @@ static uint64_t old_state = 0;
 
 static void browser_update(filebrowser_t * b, uint64_t input, const char *extensions)
 {
+   bool ret = true;
    filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
 
    if (input & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
@@ -641,7 +642,10 @@ static void browser_update(filebrowser_t * b, uint64_t input, const char *extens
    }
 
    if(action != FILEBROWSER_ACTION_NOOP)
-      filebrowser_iterate(b, action);
+      ret = filebrowser_iterate(b, action);
+
+   if(!ret)
+      rarch_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
 }
 
 static void browser_render(filebrowser_t * b, float current_x, float current_y, float y_spacing)
@@ -697,6 +701,8 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
    char extensions[256], object[256], comment[256], comment_two[256], path[PATH_MAX];
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
+   bool ret = true;
+
    float x_position = 0.09f;
    float comment_y_position = 0.83f;
    float comment_two_y_position = 0.91f;
@@ -737,7 +743,7 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
    {
       bool is_dir = filebrowser_get_current_path_isdir(&tmpBrowser);
       if(is_dir)
-         filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
+         ret = filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
       else
       {
          snprintf(path, sizeof(path), filebrowser_get_current_path(&tmpBrowser));
@@ -783,6 +789,9 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
 
 	 menu_stack_decrement();
       }
+
+      if(!ret)
+         rarch_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
    }
    else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_X))
       menu_stack_decrement();
@@ -798,6 +807,7 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
 static void select_directory(item *items, menu *current_menu, uint64_t input)
 {
    char path[1024];
+   bool ret = true;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    float x_position = 0.09f;
@@ -854,8 +864,11 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
    else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
    {
       if(is_dir)
-         filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
+         ret = filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
    }
+
+   if(!ret)
+      rarch_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
 
    display_menubar(current_menu);
 
@@ -1628,11 +1641,13 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
 
 static void menu_romselect_iterate(filebrowser_t *filebrowser, item *items, menu_romselect_action_t action)
 {
+   bool ret = true;
+
    switch(action)
    {
       case MENU_ROMSELECT_ACTION_OK:
          if(filebrowser_get_current_path_isdir(filebrowser))
-            filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
+            ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
 	 else
             rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_console.zip_extract_mode, S_DELAY_45);
          break;
@@ -1642,6 +1657,10 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, item *items, menu
       default:
          break;
    }
+
+   if(!ret)
+      rarch_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
+
 }
 
 static void select_rom(item *items, menu *current_menu, uint64_t input)
