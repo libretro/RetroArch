@@ -17,8 +17,6 @@
 #ifndef MENU_H_
 #define MENU_H_
 
-#define COMMENT_YPOS 0.83f
-
 #if defined(__CELLOS_LV2__)
 #define DEVICE_CAST gl_t*
 #define DEVICE_PTR device_ptr
