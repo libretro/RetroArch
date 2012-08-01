@@ -624,13 +624,9 @@ static void browser_update(filebrowser_t * b, uint64_t input, const char *extens
       action = FILEBROWSER_ACTION_RIGHT;
    else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
       action = FILEBROWSER_ACTION_LEFT;
-   else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_R))
-      action = FILEBROWSER_ACTION_SCROLL_DOWN;
    else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_R2))
-      action = FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH;
+      action = FILEBROWSER_ACTION_SCROLL_DOWN;
    else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_L2))
-      action = FILEBROWSER_ACTION_SCROLL_UP_SMOOTH;
-   else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_L))
       action = FILEBROWSER_ACTION_SCROLL_UP;
    else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_A))
       action = FILEBROWSER_ACTION_CANCEL;
@@ -713,27 +709,27 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
       case SHADER_CHOICE:
 	 strlcpy(extensions, EXT_SHADERS, sizeof(extensions));
 	 strlcpy(object, "Shader", sizeof(object));
-	 strlcpy(comment, "INFO - Select a shader from the menu by pressing the X button.", sizeof(comment));
+	 snprintf(comment, sizeof(comment), "INFO - Select a shader from the menu by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	 break;
       case PRESET_CHOICE:
 	 strlcpy(extensions, EXT_CGP_PRESETS, sizeof(extensions));
 	 strlcpy(object, "Shader preset", sizeof(object));
-	 strlcpy(comment, "INFO - Select a shader preset from the menu by pressing the X button.", sizeof(comment));
+	 snprintf(comment, sizeof(comment), "INFO - Select a shader preset from the menu by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	 break;
       case INPUT_PRESET_CHOICE:
 	 strlcpy(extensions, EXT_INPUT_PRESETS, sizeof(extensions));
 	 strlcpy(object, "Input preset", sizeof(object));
-	 strlcpy(comment, "INFO - Select an input preset from the menu by pressing the X button.", sizeof(comment));
+	 snprintf(comment, sizeof(comment), "INFO - Select an input preset from the menu by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	 break;
       case BORDER_CHOICE:
 	 strlcpy(extensions, EXT_IMAGES, sizeof(extensions));
 	 strlcpy(object, "Border image file", sizeof(object));
-	 strlcpy(comment, "INFO - Select a border image file from the menu by pressing the X button.", sizeof(comment));
+	 snprintf(comment, sizeof(comment), "INFO - Select a border image file from the menu by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	 break;
       case LIBRETRO_CHOICE:
 	 strlcpy(extensions, EXT_EXECUTABLES, sizeof(extensions));
 	 strlcpy(object, "Libretro core", sizeof(object));
-	 strlcpy(comment, "INFO - Select a Libretro core from the menu by pressing the X button.", sizeof(comment));
+	 snprintf(comment, sizeof(comment), "INFO - Select a Libretro core from the menu by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	 break;
    }
 
@@ -1636,8 +1632,8 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
 
    render_msg_place_func(x_position, comment_y_position, 0.86f, LIGHTBLUE, items[current_menu->selected].comment);
 
-   render_msg_place_func(x_position, comment_two_y_position, FONT_SIZE, YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
-   render_msg_place_func(x_position, comment_two_y_position + 0.04f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
+   render_msg_place_func(x_position, comment_two_y_position, FONT_SIZE, YELLOW, "L3+R3 - resume game   R1 - go forward");
+   render_msg_place_func(x_position, comment_two_y_position + 0.04f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back");
    render_msg_post_func();
 }
 
@@ -1688,18 +1684,25 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
 
    bool is_dir = filebrowser_get_current_path_isdir(&browser);
 
+   char msg[128], msg2[128];
+
    if (is_dir)
    {
       const char *current_path = filebrowser_get_current_path(&browser);
-      render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, "INFO - Press X to enter the directory.");
+      snprintf(msg, sizeof(msg), "INFO - Press [%s] to enter the directory.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
    }
    else
-      render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, "INFO - Press X to load the game. ");
+      snprintf(msg, sizeof(msg), "INFO - Press [%s] to load the game.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
+
+   render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, msg);
 
    display_menubar(current_menu);
 
-   render_msg_place_func   (x_position, comment_two_y_position, FONT_SIZE, YELLOW,
-   "L3 + R3 - resume game           SELECT - Settings screen");
+   snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3));
+   snprintf(msg2, sizeof(msg2), "[%s] - Settings", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_SELECT));
+
+   render_msg_place_func   (x_position, comment_two_y_position, FONT_SIZE, YELLOW, msg);
+   render_msg_place_func(x_position, comment_two_y_position + 0.04f, FONT_SIZE, YELLOW, msg2);
    render_msg_post_func();
 }
 
@@ -1814,7 +1817,7 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
       render_msg_place_func (x_position, y_position+(y_position_increment*10), font_size, LIGHTBLUE, "R1 or RSTICK RIGHT");
       render_msg_place_func (x_position_center, y_position+(y_position_increment*10), font_size, LIGHTBLUE, "- Increase Viewport Width");
 
-      render_msg_place_func (x_position, y_position+(y_position_increment*11), font_size, LIGHTBLUE, "L2 or  RSTICK UP");
+      render_msg_place_func (x_position, y_position+(y_position_increment*11), font_size, LIGHTBLUE, "L2 or RSTICK UP");
       render_msg_place_func (x_position_center, y_position+(y_position_increment*11), font_size, LIGHTBLUE, "- Increase Viewport Height");
 
       render_msg_post_func();
@@ -1833,7 +1836,7 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
 
       render_msg_post_func();
 
-      render_msg_place_func (x_position, comment_y_position, font_size, LIGHTBLUE, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the menu.");
+      render_msg_place_func (x_position, comment_y_position, font_size, LIGHTBLUE, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to defaults, and CIRCLE to go back.");
       render_msg_post_func();
    }
 }
@@ -1889,7 +1892,7 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
                rarch_state_slot_increase();
 
-	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the state from the currently selected save state slot.", sizeof(comment));
+	    snprintf(comment, sizeof(comment), "Press [%s] or [%s] to change the current save state slot.\nPress [%s] to load the state from the current state slot.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
 	 case MENU_ITEM_SAVE_STATE:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
@@ -1902,15 +1905,15 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
                rarch_state_slot_increase();
 
-	    strlcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.", sizeof(comment));
+	    snprintf(comment, sizeof(comment), "Press [%s] or [%s] to change the current save state slot.\nPress [%s] to save the state to the current state slot.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
             producesettingentry(current_menu, items, SETTING_KEEP_ASPECT_RATIO, input);
-	    strlcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.", sizeof(comment));
+	    snprintf(comment, sizeof(comment), "Press [%s] or [%s] to change the [Aspect Ratio].\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
 	    break;
 	 case MENU_ITEM_OVERSCAN_AMOUNT:
             producesettingentry(current_menu, items, SETTING_HW_OVERSCAN_AMOUNT, input);
-	    strlcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.", sizeof(comment));
+	    snprintf(comment, sizeof(comment), "Press [%s] or [%s] to change the [Overscan] settings.\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
 	    break;
 	 case MENU_ITEM_ORIENTATION:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
@@ -1930,11 +1933,11 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
                rarch_settings_default(S_DEF_ROTATION);
 	       video_gl.set_rotation(NULL, g_console.screen_orientation);
 	    }
-	    strlcpy(comment, "Press LEFT or RIGHT to change the [Orientation] settings.\nPress START to reset back to default values.", sizeof(comment));
+	    snprintf(comment, sizeof(comment), "Press [%s] or [%s] to change the [Orientation] settings.\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
 	    break;
 	 case MENU_ITEM_SCALE_FACTOR:
             producesettingentry(current_menu, items, SETTING_SCALE_FACTOR, input);
-	    strlcpy(comment, "Press LEFT or RIGHT to change the [Scaling] settings.\nPress START to reset back to default values.", sizeof(comment));
+	    snprintf(comment, sizeof(comment), "Press [%s] or [%s] to change the [Scaling] settings.\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
 	    break;
 	 case MENU_ITEM_FRAME_ADVANCE:
             if((input & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_R2)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_L2)))
@@ -1942,23 +1945,23 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
                rarch_settings_change(S_FRAME_ADVANCE);
 	       g_console.ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
 	    }
-	    strlcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame. Pressing the button\nrapidly will advance the frame more slowly.", sizeof(comment));
+	    snprintf(comment, sizeof(comment), "Press [%s], [%s] or [%s] button to step one frame.\nPressing the button rapidly will advance the frame more slowly.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L2), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R2));
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	       menu_stack_push(items, INGAME_MENU_RESIZE);
-	    strlcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back.", sizeof(comment));
+	    snprintf(comment, sizeof(comment), "Allows you to resize the screen by moving around the two analog sticks.\nPress [%s] to reset to defaults, and [%s] to go back.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	       menu_stack_push(items, INGAME_MENU_SCREENSHOT);
-	    strlcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.", sizeof(comment));
+	    snprintf(comment, sizeof(comment), "Allows you to take a screenshot without any text clutter.\nPress [%s] to go back to the in-game menu while in 'Screenshot Mode'.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
                rarch_settings_change(S_RETURN_TO_GAME);
 
-	    strlcpy(comment, "Press 'CROSS' to return back to the game.", sizeof(comment));
+	    snprintf(comment, sizeof(comment), "Press [%s] to return back to the game.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
 	 case MENU_ITEM_RESET:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
@@ -1966,14 +1969,14 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
                rarch_settings_change(S_RETURN_TO_GAME);
 	       rarch_game_reset();
 	    }
-	    strlcpy(comment, "Press 'CROSS' to reset the game.", sizeof(comment));
+	    snprintf(comment, sizeof(comment), "Press [%s] to reset the game.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
 	 case MENU_ITEM_RETURN_TO_MENU:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	    {
                rarch_settings_change(S_RETURN_TO_MENU);
 	    }
-	    strlcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.", sizeof(comment));
+	    snprintf(comment, sizeof(comment), "Press [%s] to return to the ROM Browser menu.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
 	 case MENU_ITEM_CHANGE_LIBRETRO:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
@@ -1982,7 +1985,7 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 	       filebrowser_set_root_and_ext(&tmpBrowser, EXT_EXECUTABLES, default_paths.core_dir);
 	       set_libretro_core_as_launch = true;
 	    }
-	    strlcpy(comment, "Press 'CROSS' to choose a different emulator core.", sizeof(comment));
+	    snprintf(comment, sizeof(comment), "Press [%s] to choose a different emulator core.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
 #ifdef HAVE_MULTIMAN
 	 case MENU_ITEM_RETURN_TO_MULTIMAN:
@@ -1996,14 +1999,14 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
                   rarch_settings_change(S_RETURN_TO_DASHBOARD);
                }
 	    }
-	    strlcpy(comment, "Press 'CROSS' to quit the emulator and return to multiMAN.", sizeof(comment));
+	    snprintf(comment, sizeof(comment), "Press [%s] to quit the emulator and return to multiMAN.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
 #endif
 	 case MENU_ITEM_RETURN_TO_DASHBOARD:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
                rarch_settings_change(S_RETURN_TO_DASHBOARD);
 
-	    strlcpy(comment, "Press 'CROSS' to quit the emulator and return to the XMB.", sizeof(comment));
+	    snprintf(comment, sizeof(comment), "Press [%s] to quit the emulator and return to the XMB.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
       }
 
