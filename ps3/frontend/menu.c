@@ -2079,14 +2079,14 @@ void menu_loop(void)
       };
 
       static const struct retro_keybind _analog_binds[] = {
-	      { 0, 0, 0, PS3_GAMEPAD_LSTICK_LEFT_MASK, 0 },
-	      { 0, 0, 0, PS3_GAMEPAD_LSTICK_RIGHT_MASK, 0 },
-	      { 0, 0, 0, PS3_GAMEPAD_LSTICK_UP_MASK, 0 },
-	      { 0, 0, 0, PS3_GAMEPAD_LSTICK_DOWN_MASK, 0 },
-	      { 0, 0, 0, PS3_GAMEPAD_RSTICK_LEFT_MASK, 0 },
-	      { 0, 0, 0, PS3_GAMEPAD_RSTICK_RIGHT_MASK, 0 },
-	      { 0, 0, 0, PS3_GAMEPAD_RSTICK_UP_MASK, 0 },
-	      { 0, 0, 0, PS3_GAMEPAD_RSTICK_DOWN_MASK, 0 },
+	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_LSTICK_LEFT_MASK, 0 },
+	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_LSTICK_RIGHT_MASK, 0 },
+	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_LSTICK_UP_MASK, 0 },
+	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_LSTICK_DOWN_MASK, 0 },
+	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_RSTICK_LEFT_MASK, 0 },
+	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_RSTICK_RIGHT_MASK, 0 },
+	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_RSTICK_UP_MASK, 0 },
+	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_RSTICK_DOWN_MASK, 0 },
       };
 
       const struct retro_keybind *analog_binds[] = {
