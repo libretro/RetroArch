@@ -94,8 +94,6 @@ CellMouseData ps3_mouse_input_poll_device(uint32_t id)
 	PS3 PAD
 ============================================================ */
 
-#define MAP(x) (x & 0xFF)
-
 const struct platform_bind platform_keys[] = {
    { PS3_GAMEPAD_CIRCLE, "Circle button" },
    { PS3_GAMEPAD_CROSS, "Cross button" },
@@ -139,39 +137,6 @@ static unsigned pads_connected;
 static unsigned mice_connected;
 #endif
 
-uint64_t cell_pad_input_poll_device(uint32_t id)
-{
-   CellPadData pad_data;
-   static uint64_t ret[MAX_PADS];
-
-   // Get new pad data
-   cellPadGetData(id, &pad_data);
-
-   if (pad_data.len != 0)
-   {
-      ret[id] = 0;
-
-      // Build the return value.
-      ret[id] |= (uint64_t)MAP(pad_data.button[LOWER_BUTTONS]);
-      ret[id] |= (uint64_t)MAP(pad_data.button[HIGHER_BUTTONS]) << 8;
-      ret[id] |= (uint64_t)MAP(pad_data.button[RSTICK_X]) << 32;
-      ret[id] |= (uint64_t)MAP(pad_data.button[RSTICK_Y]) << 40;
-      ret[id] |= (uint64_t)MAP(pad_data.button[LSTICK_X]) << 16;
-      ret[id] |= (uint64_t)MAP(pad_data.button[LSTICK_Y]) << 24;
-
-      ret[id] |= (uint64_t)(PRESSED_LEFT_LSTICK(ret[id])) << LSTICK_LEFT_SHIFT;
-      ret[id] |= (uint64_t)(PRESSED_RIGHT_LSTICK(ret[id])) << LSTICK_RIGHT_SHIFT;
-      ret[id] |= (uint64_t)(PRESSED_UP_LSTICK(ret[id])) << LSTICK_UP_SHIFT;
-      ret[id] |= (uint64_t)(PRESSED_DOWN_LSTICK(ret[id])) << LSTICK_DOWN_SHIFT;
-
-      ret[id] |= (uint64_t)(PRESSED_LEFT_RSTICK(ret[id])) << RSTICK_LEFT_SHIFT;
-      ret[id] |= (uint64_t)(PRESSED_RIGHT_RSTICK(ret[id])) << RSTICK_RIGHT_SHIFT;
-      ret[id] |= (uint64_t)(PRESSED_UP_RSTICK(ret[id])) << RSTICK_UP_SHIFT;
-      ret[id] |= (uint64_t)(PRESSED_DOWN_RSTICK(ret[id])) << RSTICK_DOWN_SHIFT;
-   }
-
-   return ret[id];
-}
 static void ps3_input_poll(void *data)
 {
    CellPadInfo2 pad_info;
