@@ -84,6 +84,11 @@ static inline bool rgui_is_controller_menu(rgui_file_type_t menu_type)
    return (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4);
 }
 
+static inline bool rgui_is_filebrowser_menu(rgui_file_type_t menu_type)
+{
+   return (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE);
+}
+
 static void copy_glyph(uint16_t glyph_white[FONT_HEIGHT][FONT_WIDTH],
       uint16_t glyph_green[FONT_HEIGHT][FONT_WIDTH],
       const uint8_t *buf)
@@ -214,21 +219,74 @@ static void render_background(rgui_handle_t *rgui)
          RGUI_WIDTH - 10, 5, 5, RGUI_HEIGHT - 10, green_filler);
 }
 
-static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
+static void render_messagebox(rgui_handle_t *rgui, const char *message)
 {
+   if (!message || !*message)
+      return;
+
+   char *msg = strdup(message);
+   if (strlen(msg) > TERM_WIDTH)
+   {
+      msg[TERM_WIDTH - 2] = '.';
+      msg[TERM_WIDTH - 1] = '.';
+      msg[TERM_WIDTH - 0] = '.';
+      msg[TERM_WIDTH + 1] = '\0';
+   }
+
+   unsigned width = strlen(msg) * FONT_WIDTH_STRIDE - 1 + 6 + 10;
+   unsigned height = FONT_HEIGHT + 6 + 10;
+   unsigned x = (RGUI_WIDTH - width) / 2;
+   unsigned y = (RGUI_HEIGHT - height) / 2;
+   
+   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+         x + 5, y + 5, width - 10, height - 10, gray_filler);
+
+   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+         x, y, width - 5, 5, green_filler);
+
+   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+         x + width - 5, y, 5, height - 5, green_filler);
+
+   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+         x + 5, y + height - 5, width - 5, 5, green_filler);
+
+   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+         x, y + 5, 5, height - 5, green_filler);
+
+   blit_line(rgui, x + 8, y + 8, msg, false);
+   free(msg);
+}
+
+static void render_text(rgui_handle_t *rgui)
+{
+   if (rgui->need_refresh)
+      return;
+
+   size_t begin = rgui->directory_ptr >= TERM_HEIGHT / 2 ?
+      rgui->directory_ptr - TERM_HEIGHT / 2 : 0;
+   size_t end = rgui->directory_ptr + TERM_HEIGHT <= rgui_list_size(rgui->folder_buf) ?
+      rgui->directory_ptr + TERM_HEIGHT : rgui_list_size(rgui->folder_buf);
+
+   if (end - begin > TERM_HEIGHT)
+      end = begin + TERM_HEIGHT;
+
    render_background(rgui);
 
    char title[TERM_WIDTH];
    const char *dir = 0;
    rgui_file_type_t menu_type = 0;
    rgui_list_back(rgui->path_stack, &dir, &menu_type, NULL);
-   if (!rgui_is_controller_menu(menu_type) && menu_type != RGUI_SETTINGS)
+   if (menu_type == RGUI_SETTINGS_CORE)
    {
-      snprintf(title, sizeof(title), "FILE BROWSER: %s", dir); 
+      snprintf(title, sizeof(title), "CORE SELECTION");
+   }
+   else if (rgui_is_controller_menu(menu_type) || menu_type == RGUI_SETTINGS)
+   {
+      snprintf(title, sizeof(title), "SETTINGS: %s", dir);
    }
    else
    {
-      snprintf(title, sizeof(title), "SETTINGS: %s", dir); 
+      snprintf(title, sizeof(title), "FILE BROWSER: %s", dir);
    }
    blit_line(rgui, TERM_START_X + 15, 15, title, true);
 
@@ -267,6 +325,7 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
          case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
             snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
             break;
+         case RGUI_SETTINGS_CORE:
          case RGUI_SETTINGS_CONTROLLER_1:
          case RGUI_SETTINGS_CONTROLLER_2:
          case RGUI_SETTINGS_CONTROLLER_3:
@@ -308,44 +367,8 @@ static void render_text(rgui_handle_t *rgui, size_t begin, size_t end)
 
       blit_line(rgui, x, y, message, i == rgui->directory_ptr);
    }
-}
 
-static void render_messagebox(rgui_handle_t *rgui, const char *message)
-{
-   if (!message || !*message)
-      return;
-
-   char *msg = strdup(message);
-   if (strlen(msg) > TERM_WIDTH)
-   {
-      msg[TERM_WIDTH - 2] = '.';
-      msg[TERM_WIDTH - 1] = '.';
-      msg[TERM_WIDTH - 0] = '.';
-      msg[TERM_WIDTH + 1] = '\0';
-   }
-
-   unsigned width = strlen(msg) * FONT_WIDTH_STRIDE - 1 + 6 + 10;
-   unsigned height = FONT_HEIGHT + 6 + 10;
-   unsigned x = (RGUI_WIDTH - width) / 2;
-   unsigned y = (RGUI_HEIGHT - height) / 2;
-   
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         x + 5, y + 5, width - 10, height - 10, gray_filler);
-
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         x, y, width - 5, 5, green_filler);
-
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         x + width - 5, y, 5, height - 5, green_filler);
-
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         x + 5, y + height - 5, width - 5, 5, green_filler);
-
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         x, y + 5, 5, height - 5, green_filler);
-
-   blit_line(rgui, x + 8, y + 8, msg, false);
-   free(msg);
+   render_messagebox(rgui, msg_queue_pull(g_extern.msg_queue));
 }
 
 static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t action, rgui_file_type_t menu_type)
@@ -374,7 +397,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             rarch_settings_change(S_AUDIO_CONTROL_RATE_INCREMENT);
          break;
 
-      case RGUI_SETTINGS_CORE:
+      /*case RGUI_SETTINGS_CORE:
       {
          // !!JUST FOR TESTING!!
          char boot_dol[PATH_MAX];
@@ -389,7 +412,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          rename(temp_dol, boot_dol);
          rename(temp2_dol, temp_dol);
          break;
-      }
+      }*/
 
       // controllers
       case RGUI_SETTINGS_BIND_DEVICE:
@@ -449,7 +472,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
    RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
    RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);
-   //RGUI_MENU_ITEM("Core", RGUI_SETTINGS_CORE);
+   RGUI_MENU_ITEM("Core", RGUI_SETTINGS_CORE);
    RGUI_MENU_ITEM("Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1);
    RGUI_MENU_ITEM("Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2);
    RGUI_MENU_ITEM("Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3);
@@ -484,8 +507,16 @@ static const char *rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t acti
    rgui_file_type_t type = 0;
    const char *label = 0;
    rgui_list_at(rgui->folder_buf, rgui->directory_ptr, &label, &type, NULL);
+   if (type == RGUI_SETTINGS_CORE)
+      label = app_dir;
+   const char *dir = 0;
    rgui_file_type_t menu_type = 0;
-   rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
+   size_t directory_ptr;
+   rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
+
+   if (rgui->need_refresh)
+      action = RGUI_ACTION_NOOP;
+
    switch (action)
    {
       case RGUI_ACTION_UP:
@@ -505,14 +536,9 @@ static const char *rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t acti
       case RGUI_ACTION_CANCEL:
       case RGUI_ACTION_SETTINGS:
       {
-         size_t directory_ptr = 0;
-         rgui_list_back(rgui->path_stack, NULL, NULL, &directory_ptr);
          rgui_list_pop(rgui->path_stack);
          rgui->directory_ptr = directory_ptr;
          rgui->need_refresh = true;
-         rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
-         if (menu_type != RGUI_SETTINGS && !rgui_is_controller_menu(menu_type))
-            return NULL;
          break;
       }
 
@@ -520,7 +546,7 @@ static const char *rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t acti
       case RGUI_ACTION_RIGHT:
       case RGUI_ACTION_OK:
       case RGUI_ACTION_START:
-         if (rgui_is_controller_menu(type) && action == RGUI_ACTION_OK)
+         if ((rgui_is_controller_menu(type) || type == RGUI_SETTINGS_CORE) && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->path_stack, label, type, rgui->directory_ptr);
             rgui->directory_ptr = 0;
@@ -541,38 +567,38 @@ static const char *rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t acti
          break;
    }
 
-   if (rgui->need_refresh)
+   rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
+
+   if (rgui->need_refresh && !rgui_is_filebrowser_menu(menu_type))
    {
+      rgui->need_refresh = false;
       if (rgui_is_controller_menu(menu_type))
          rgui_settings_controller_populate_entries(rgui);
       else
          rgui_settings_populate_entries(rgui);
    }
 
-   size_t begin = rgui->directory_ptr >= TERM_HEIGHT / 2 ?
-      rgui->directory_ptr - TERM_HEIGHT / 2 : 0;
-   size_t end = rgui->directory_ptr + TERM_HEIGHT <= rgui_list_size(rgui->folder_buf) ?
-      rgui->directory_ptr + TERM_HEIGHT : rgui_list_size(rgui->folder_buf);
-
-   if (end - begin > TERM_HEIGHT)
-      end = begin + TERM_HEIGHT;
-
-   render_text(rgui, begin, end);
+   render_text(rgui);
 
    return NULL;
 }
 
 const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
+   bool found = false;
+   const char *dir = 0;
    rgui_file_type_t menu_type = 0;
-   rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
+   size_t directory_ptr;
+   rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
    if (menu_type == RGUI_SETTINGS || rgui_is_controller_menu(menu_type))
    {
       return rgui_settings_iterate(rgui, action);
    }
 
-   bool found = false;
+   if (rgui->need_refresh)
+      action = RGUI_ACTION_NOOP;
+
    switch (action)
    {
       case RGUI_ACTION_UP:
@@ -606,11 +632,9 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_CANCEL:
          if (rgui_list_size(rgui->path_stack) > 1)
          {
-            size_t directory_ptr;
-            rgui_list_back(rgui->path_stack, NULL, NULL, &directory_ptr);
-            rgui_list_pop(rgui->path_stack);
-            rgui->directory_ptr = directory_ptr;
             rgui->need_refresh = true;
+            rgui->directory_ptr = directory_ptr;
+            rgui_list_pop(rgui->path_stack);
          }
          break;
 
@@ -622,10 +646,6 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          const char *path = 0;
          rgui_file_type_t type = 0;
          rgui_list_at(rgui->folder_buf, rgui->directory_ptr, &path, &type, NULL);
-
-         const char *dir = 0;
-         size_t directory_ptr = 0;
-         rgui_list_back(rgui->path_stack, &dir, NULL, &directory_ptr);
 
          if (type == RGUI_FILE_DIRECTORY)
          {
@@ -652,9 +672,20 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else
          {
-            snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s", dir, path);
-            rarch_console_load_game_wrap(rgui->path_buf, g_console.zip_extract_mode, S_DELAY_1);
-            found = true;
+            if (menu_type == RGUI_SETTINGS_CORE)
+            {
+               // CORE SWITCHING CODE GOES HERE
+               rgui->directory_ptr = directory_ptr;
+               rgui->need_refresh = true;
+               rgui_list_pop(rgui->path_stack);
+               msg_queue_push(g_extern.msg_queue, "Change requires restart to take effect", 1, S_DELAY_90);
+            }
+            else
+            {
+               snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s", dir, path);
+               rarch_console_load_game_wrap(rgui->path_buf, g_console.zip_extract_mode, S_DELAY_1);
+               found = true;
+            }
          }
          break;
       }
@@ -665,40 +696,39 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
 
       case RGUI_ACTION_SETTINGS:
-         rgui_list_push(rgui->path_stack, "", RGUI_SETTINGS, rgui->directory_ptr);
-         rgui->directory_ptr = 0;
+         if (menu_type == RGUI_SETTINGS_CORE)
+         {
+            rgui->directory_ptr = directory_ptr;
+            rgui->need_refresh = true;
+            rgui_list_pop(rgui->path_stack);
+         }
+         else
+         {
+            rgui_list_push(rgui->path_stack, "", RGUI_SETTINGS, rgui->directory_ptr);
+            rgui->directory_ptr = 0;
+         }
          return rgui_settings_iterate(rgui, RGUI_ACTION_REFRESH);
 
       default:
          break;
    }
 
-   if (rgui->need_refresh)
+   // refresh values in case the stack changed
+   rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
+
+   if (rgui->need_refresh && rgui_is_filebrowser_menu(menu_type))
    {
       rgui->need_refresh = false;
       rgui_list_clear(rgui->folder_buf);
 
-      const char *path = NULL;
-      rgui_list_back(rgui->path_stack, &path, NULL, NULL);
+      rgui->folder_cb(dir, (rgui_file_enum_cb_t)rgui_list_push,
+         &menu_type, rgui->folder_buf);
 
-      rgui->folder_cb(path, (rgui_file_enum_cb_t)rgui_list_push,
-         rgui->userdata, rgui->folder_buf);
-
-      if (*path)
+      if (*dir)
          rgui_list_sort(rgui->folder_buf);
    }
 
-   size_t begin = rgui->directory_ptr >= TERM_HEIGHT / 2 ?
-      rgui->directory_ptr - TERM_HEIGHT / 2 : 0;
-   size_t end = rgui->directory_ptr + TERM_HEIGHT <= rgui_list_size(rgui->folder_buf) ?
-      rgui->directory_ptr + TERM_HEIGHT : rgui_list_size(rgui->folder_buf);
-
-   if (end - begin > TERM_HEIGHT)
-      end = begin + TERM_HEIGHT;
-
-   render_text(rgui, begin, end);
-
-   render_messagebox(rgui, msg_queue_pull(g_extern.msg_queue));
+   render_text(rgui);
 
    return found ? rgui->path_buf : NULL;
 }

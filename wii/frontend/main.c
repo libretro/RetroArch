@@ -80,7 +80,7 @@ enum
 static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       void *userdata, void *ctx)
 {
-   (void)userdata;
+   bool core_chooser = (userdata) ? *(rgui_file_type_t *)userdata == RGUI_SETTINGS_CORE : false;
 
    if (!*directory)
    {
@@ -109,6 +109,9 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
          continue;
 
       if (!S_ISDIR(st.st_mode) && !S_ISREG(st.st_mode))
+         continue;
+
+      if (core_chooser && strstr(entry->d_name, ".dol") != entry->d_name + strlen(entry->d_name) - 4)
          continue;
 
       file_cb(ctx,
