@@ -603,57 +603,9 @@ static void display_menubar(menu *current_menu)
    render_msg_post_func();
 }
 
-uint64_t state;
 static uint64_t old_state = 0;
 
-static void control_update_wrap(uint16_t *input_state, uint64_t trigger_state)
-{
-   *input_state = 0;
-   input_ps3.poll(NULL);
-
-   if (CTRL_LSTICK_DOWN(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
-   else if (CTRL_DOWN(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
-   else if (CTRL_LSTICK_UP(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
-   else if (CTRL_UP(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
-   else if (CTRL_RIGHT(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
-   else if (CTRL_LSTICK_RIGHT(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
-   else if (CTRL_LEFT(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
-   else if (CTRL_LSTICK_LEFT(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
-   else if (CTRL_R1(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_R);
-   else if (CTRL_R2(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_R2);
-   else if (CTRL_R3(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_R3);
-   else if (CTRL_L1(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_L);
-   else if (CTRL_L2(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_L2);
-   else if (CTRL_L3(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_L3);
-   else if (CTRL_SQUARE(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_Y);
-   else if (CTRL_TRIANGLE(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_X);
-   else if (CTRL_CIRCLE(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_A);
-   else if (CTRL_CROSS(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_B);
-   else if (CTRL_START(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
-   else if (CTRL_SELECT(trigger_state))
-      *input_state |= (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
-}
-
-static void browser_update(filebrowser_t * b, uint16_t input, const char *extensions)
+static void browser_update(filebrowser_t * b, uint64_t input, const char *extensions)
 {
    filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
 
@@ -734,7 +686,7 @@ static void apply_scaling (unsigned init_mode)
    }
 }
 
-static void select_file(item *items, menu *current_menu, uint16_t input)
+static void select_file(item *items, menu *current_menu, uint64_t input)
 {
    char extensions[256], object[256], comment[256], comment_two[256], path[PATH_MAX];
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
@@ -832,7 +784,7 @@ static void select_file(item *items, menu *current_menu, uint16_t input)
    render_msg_post_func();
 }
 
-static void select_directory(item *items, menu *current_menu, uint16_t input)
+static void select_directory(item *items, menu *current_menu, uint64_t input)
 {
    char path[1024];
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
@@ -897,7 +849,7 @@ static void select_directory(item *items, menu *current_menu, uint16_t input)
    render_msg_post_func();
 }
 
-static void set_keybind_digital(uint64_t default_retro_joypad_id, uint16_t input)
+static void set_keybind_digital(uint64_t default_retro_joypad_id, uint64_t input)
 {
    unsigned keybind_action = KEYBIND_NOACTION;
 
@@ -995,7 +947,7 @@ static void rarch_filename_input_and_save (unsigned filename_type)
 }
 
 
-static void producesettingentry(menu *current_menu, item *items, unsigned switchvalue, uint16_t input)
+static void producesettingentry(menu *current_menu, item *items, unsigned switchvalue, uint64_t input)
 {
    switch(switchvalue)
    {
@@ -1612,7 +1564,7 @@ static void settings_iterate(menu *current_menu, item *items, settings_action_t 
    }
 }
 
-static void select_setting(item *items, menu *current_menu, uint16_t input)
+static void select_setting(item *items, menu *current_menu, uint64_t input)
 {
    unsigned i;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
@@ -1673,7 +1625,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, item *items, menu
    }
 }
 
-static void select_rom(item *items, menu *current_menu, uint16_t input)
+static void select_rom(item *items, menu *current_menu, uint64_t input)
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
@@ -1710,7 +1662,7 @@ static void select_rom(item *items, menu *current_menu, uint16_t input)
 }
 
 
-static void ingame_menu_resize(item *items, menu *current_menu, uint16_t input)
+static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
 {
    (void)items;
 
@@ -1724,24 +1676,44 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint16_t input)
    g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
    gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 
-   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+   if(input & PS3_GAMEPAD_LSTICK_LEFT_MASK)
+      g_console.viewports.custom_vp.x -= 4;
+   else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
       g_console.viewports.custom_vp.x -= 1;
+
+   if(input & PS3_GAMEPAD_LSTICK_RIGHT_MASK)
+      g_console.viewports.custom_vp.x += 4;
    else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
       g_console.viewports.custom_vp.x += 1;
 
-   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+   if(input & PS3_GAMEPAD_LSTICK_UP_MASK)
+      g_console.viewports.custom_vp.y += 4;
+   else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
       g_console.viewports.custom_vp.y += 1;
+
+   if(input & PS3_GAMEPAD_LSTICK_DOWN_MASK)
+      g_console.viewports.custom_vp.y -= 4;
    else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
       g_console.viewports.custom_vp.y -= 1;
 
-   if (CTRL_RSTICK_LEFT(state) || CTRL_L1(state))
+   if(input & PS3_GAMEPAD_RSTICK_LEFT_MASK)
+      g_console.viewports.custom_vp.width -= 4;
+   else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_L))
       g_console.viewports.custom_vp.width -= 1;
-   else if (CTRL_RSTICK_RIGHT(state) || CTRL_R1(state))
+
+   if (input & PS3_GAMEPAD_RSTICK_RIGHT_MASK)
+      g_console.viewports.custom_vp.width += 4;
+   else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_R))
       g_console.viewports.custom_vp.width += 1;
 
-   if (CTRL_RSTICK_UP(state) || CTRL_L2(state))
+   if(input & PS3_GAMEPAD_RSTICK_UP_MASK)
+      g_console.viewports.custom_vp.height += 4;
+   else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_L2))
       g_console.viewports.custom_vp.height += 1;
-   else if (CTRL_RSTICK_DOWN(state) || CTRL_R2(state))
+
+   if(input & PS3_GAMEPAD_RSTICK_DOWN_MASK)
+      g_console.viewports.custom_vp.height -= 4;
+   else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_R2))
       g_console.viewports.custom_vp.height -= 1;
 
    if (input & (1 << RETRO_DEVICE_ID_JOYPAD_X))
@@ -1755,7 +1727,7 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint16_t input)
    if (input & (1 << RETRO_DEVICE_ID_JOYPAD_A))
       menu_stack_decrement();
 
-   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_Y)) { }
+   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_Y)) && (old_state & (1 << RETRO_DEVICE_ID_JOYPAD_Y))) { }
    else
    {
       char viewport_x[64], viewport_y[64], viewport_w[64], viewport_h[64];
@@ -1821,7 +1793,7 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint16_t input)
    }
 }
 
-static void ingame_menu_screenshot(item *items, menu *current_menu, uint16_t input)
+static void ingame_menu_screenshot(item *items, menu *current_menu, uint64_t input)
 {
    (void)items;
    (void)current_menu;
@@ -1838,7 +1810,7 @@ static void ingame_menu_screenshot(item *items, menu *current_menu, uint16_t inp
    }
 }
 
-static void ingame_menu(item *items, menu *current_menu, uint16_t input)
+static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 {
    char comment[256], overscan_msg[64];
    static unsigned menuitem_colors[MENU_ITEM_LAST];
@@ -2056,22 +2028,6 @@ static void ingame_menu(item *items, menu *current_menu, uint16_t input)
    render_msg_post_func();
 }
 
-static bool check_analog(uint64_t state_tmp)
-{
-  if(CTRL_LSTICK_UP(state_tmp) || CTRL_LSTICK_DOWN(state_tmp) || CTRL_LSTICK_RIGHT(state_tmp) || CTRL_LSTICK_LEFT(state_tmp))
-     return true;
-  else
-     return false;
-}
-
-static bool check_shoulder_buttons(uint64_t state_tmp)
-{
-  if(CTRL_L1(state_tmp) || CTRL_L2(state_tmp) || CTRL_R1(state_tmp) || CTRL_R2(state_tmp))
-     return true;
-  else
-     return false;
-}
-
 void menu_init (void)
 {
    //Set libretro filename and version to variable
@@ -2103,17 +2059,98 @@ void menu_loop(void)
 
    do
    {
-      uint16_t input_st = 0;
+      //first button input frame
+      uint64_t input_state_first_frame = 0;
+      uint64_t input_state = 0;
       static bool first_held = false;
       menu *current_menu = menu_stack_get_current_ptr();
 
-      state = cell_pad_input_poll_device(0);
-      uint64_t trig_state = state & ~old_state;
+      input_ps3.poll(NULL);
 
-      //second button input
-      uint64_t held_state = cell_pad_input_poll_device(0);
-      bool analog_sticks_pressed = check_analog(held_state);
-      bool shoulder_buttons_pressed = check_shoulder_buttons(held_state) && current_menu->category_id != CATEGORY_SETTINGS;
+      static const struct retro_keybind *binds[MAX_PLAYERS] = {
+	      g_settings.input.binds[0],
+	      g_settings.input.binds[1],
+	      g_settings.input.binds[2],
+	      g_settings.input.binds[3],
+	      g_settings.input.binds[4],
+	      g_settings.input.binds[5],
+	      g_settings.input.binds[6],
+	      g_settings.input.binds[7],
+      };
+
+      static const struct retro_keybind _analog_binds[] = {
+	      { 0, 0, 0, PS3_GAMEPAD_LSTICK_LEFT_MASK, 0 },
+	      { 0, 0, 0, PS3_GAMEPAD_LSTICK_RIGHT_MASK, 0 },
+	      { 0, 0, 0, PS3_GAMEPAD_LSTICK_UP_MASK, 0 },
+	      { 0, 0, 0, PS3_GAMEPAD_LSTICK_DOWN_MASK, 0 },
+	      { 0, 0, 0, PS3_GAMEPAD_RSTICK_LEFT_MASK, 0 },
+	      { 0, 0, 0, PS3_GAMEPAD_RSTICK_RIGHT_MASK, 0 },
+	      { 0, 0, 0, PS3_GAMEPAD_RSTICK_UP_MASK, 0 },
+	      { 0, 0, 0, PS3_GAMEPAD_RSTICK_DOWN_MASK, 0 },
+      };
+
+      const struct retro_keybind *analog_binds[] = {
+	      _analog_binds
+      };
+
+      for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
+      {
+         input_state |= input_ps3.input_state(NULL, binds, false,
+            RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
+      }
+
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 0) ? PS3_GAMEPAD_LSTICK_LEFT_MASK : 0;
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 1) ? PS3_GAMEPAD_LSTICK_RIGHT_MASK : 0;
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 2) ? PS3_GAMEPAD_LSTICK_UP_MASK : 0;
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 3) ? PS3_GAMEPAD_LSTICK_DOWN_MASK : 0;
+
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 4) ? PS3_GAMEPAD_RSTICK_LEFT_MASK : 0;
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 5) ? PS3_GAMEPAD_RSTICK_RIGHT_MASK : 0;
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 6) ? PS3_GAMEPAD_RSTICK_UP_MASK : 0;
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 7) ? PS3_GAMEPAD_RSTICK_DOWN_MASK : 0;
+
+      uint64_t trig_state = input_state & ~old_state; //set first button input frame as trigger
+      input_state_first_frame = input_state;          //hold onto first button input frame
+
+      //second button input frame
+      input_state = 0;
+      input_ps3.poll(NULL);
+
+
+      for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
+      {
+         input_state |= input_ps3.input_state(NULL, binds, false,
+            RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
+      }
+
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 0) ? PS3_GAMEPAD_LSTICK_LEFT_MASK : 0;
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 1) ? PS3_GAMEPAD_LSTICK_RIGHT_MASK : 0;
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 2) ? PS3_GAMEPAD_LSTICK_UP_MASK : 0;
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 3) ? PS3_GAMEPAD_LSTICK_DOWN_MASK : 0;
+
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 4) ? PS3_GAMEPAD_RSTICK_LEFT_MASK : 0;
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 5) ? PS3_GAMEPAD_RSTICK_RIGHT_MASK : 0;
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 6) ? PS3_GAMEPAD_RSTICK_UP_MASK : 0;
+      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 7) ? PS3_GAMEPAD_RSTICK_DOWN_MASK : 0;
+
+      bool analog_sticks_pressed = (input_state & PS3_GAMEPAD_LSTICK_LEFT_MASK) || (input_state & PS3_GAMEPAD_LSTICK_RIGHT_MASK) || (input_state & PS3_GAMEPAD_LSTICK_UP_MASK) || (input_state & PS3_GAMEPAD_LSTICK_DOWN_MASK) || (input_state & PS3_GAMEPAD_RSTICK_LEFT_MASK) || (input_state & PS3_GAMEPAD_RSTICK_RIGHT_MASK) || (input_state & PS3_GAMEPAD_RSTICK_UP_MASK) || (input_state & PS3_GAMEPAD_RSTICK_DOWN_MASK);
+      bool shoulder_buttons_pressed = ((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_L2)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_R2))) && current_menu->category_id != CATEGORY_SETTINGS;
       bool do_held = analog_sticks_pressed || shoulder_buttons_pressed;
 
       if(do_held)
@@ -2127,15 +2164,13 @@ void menu_loop(void)
 	 if(IS_TIMER_EXPIRED(device_ptr))
 	 {
             first_held = false;
-	    trig_state = held_state;
+	    trig_state = input_state; //second input frame set as current frame
 	 }
       }
 
-      control_update_wrap(&input_st, trig_state);
-
       gfx_ctx_clear();
 
-      if(current_menu->enum_id == INGAME_MENU_RESIZE && CTRL_SQUARE(state) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
+      if(current_menu->enum_id == INGAME_MENU_RESIZE && (trig_state & RETRO_DEVICE_ID_JOYPAD_Y) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
 	 device_ptr->menu_render = false;
       else
       {
@@ -2149,45 +2184,46 @@ void menu_loop(void)
 
       switch(current_menu->enum_id)
       {
-         case FILE_BROWSER_MENU:
-            select_rom(menu_items, current_menu, input_st);
-            fb = &browser;
-	    break;
-	 case GENERAL_VIDEO_MENU:
-	 case GENERAL_AUDIO_MENU:
-	 case EMU_GENERAL_MENU:
-	 case EMU_VIDEO_MENU:
-	 case EMU_AUDIO_MENU:
-	 case PATH_MENU:
-	 case CONTROLS_MENU:
-	    select_setting(menu_items, current_menu, input_st);
-	    break;
-	 case SHADER_CHOICE:
-	 case PRESET_CHOICE:
-	 case BORDER_CHOICE:
-	 case LIBRETRO_CHOICE:
-	 case INPUT_PRESET_CHOICE:
-	    select_file(menu_items, current_menu, input_st);
-            fb = &tmpBrowser;
-	    break;
-	 case PATH_SAVESTATES_DIR_CHOICE:
-	 case PATH_DEFAULT_ROM_DIR_CHOICE:
-	 case PATH_CHEATS_DIR_CHOICE:
-	 case PATH_SRAM_DIR_CHOICE:
-	    select_directory(menu_items, current_menu, input_st);
-            fb = &tmpBrowser;
-	    break;
-	 case INGAME_MENU:
-	    if(g_console.ingame_menu_enable)
-               ingame_menu(menu_items, current_menu, input_st);
-            break;
-         case INGAME_MENU_RESIZE:
-            ingame_menu_resize(menu_items, current_menu, input_st);
-	    break;
-         case INGAME_MENU_SCREENSHOT:
-            ingame_menu_screenshot(menu_items, current_menu, input_st);
-            break;
+	      case FILE_BROWSER_MENU:
+		      select_rom(menu_items, current_menu, trig_state);
+		      fb = &browser;
+		      break;
+	      case GENERAL_VIDEO_MENU:
+	      case GENERAL_AUDIO_MENU:
+	      case EMU_GENERAL_MENU:
+	      case EMU_VIDEO_MENU:
+	      case EMU_AUDIO_MENU:
+	      case PATH_MENU:
+	      case CONTROLS_MENU:
+		      select_setting(menu_items, current_menu, trig_state);
+		      break;
+	      case SHADER_CHOICE:
+	      case PRESET_CHOICE:
+	      case BORDER_CHOICE:
+	      case LIBRETRO_CHOICE:
+	      case INPUT_PRESET_CHOICE:
+		      select_file(menu_items, current_menu, trig_state);
+		      fb = &tmpBrowser;
+		      break;
+	      case PATH_SAVESTATES_DIR_CHOICE:
+	      case PATH_DEFAULT_ROM_DIR_CHOICE:
+	      case PATH_CHEATS_DIR_CHOICE:
+	      case PATH_SRAM_DIR_CHOICE:
+		      select_directory(menu_items, current_menu, trig_state);
+		      fb = &tmpBrowser;
+		      break;
+	      case INGAME_MENU:
+		      if(g_console.ingame_menu_enable)
+			      ingame_menu(menu_items, current_menu, trig_state);
+		      break;
+	      case INGAME_MENU_RESIZE:
+		      ingame_menu_resize(menu_items, current_menu, trig_state);
+		      break;
+	      case INGAME_MENU_SCREENSHOT:
+		      ingame_menu_screenshot(menu_items, current_menu, trig_state);
+		      break;
       }
+
 
       switch(current_menu->category_id)
       {
@@ -2200,7 +2236,7 @@ void menu_loop(void)
             break;
       }
 
-      old_state = state;
+      old_state = input_state_first_frame;
 
       if(IS_TIMER_EXPIRED(device_ptr))
       {
@@ -2213,11 +2249,11 @@ void menu_loop(void)
 	    {
                //we want to force exit when mode_switch is set to MODE_EXIT
                if(g_console.mode_switch != MODE_EXIT)
-                  g_console.mode_switch = ((CTRL_L3(old_state) && CTRL_R3(old_state) && g_console.emulator_initialized)) ? MODE_EMULATION : MODE_MENU;
+                  g_console.mode_switch = (((old_state & (1 << RETRO_DEVICE_ID_JOYPAD_L3)) && (old_state & (1 << RETRO_DEVICE_ID_JOYPAD_R3)) && g_console.emulator_initialized)) ? MODE_EMULATION : MODE_MENU;
 	    }
 	    else
 	    {
-               g_console.menu_enable = !((CTRL_L3(old_state) && CTRL_R3(old_state) && g_console.emulator_initialized));
+               g_console.menu_enable = !(((old_state & (1 << RETRO_DEVICE_ID_JOYPAD_L3)) && (old_state & (1 << RETRO_DEVICE_ID_JOYPAD_R3)) && g_console.emulator_initialized));
 	       g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
 	    }
 	 }
@@ -2242,7 +2278,7 @@ void menu_loop(void)
 #ifdef HAVE_SYSUTILS
       cellSysutilCheckCallback();
 #endif
-      if(current_menu->enum_id == INGAME_MENU_RESIZE && CTRL_SQUARE(state) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
+      if(current_menu->enum_id == INGAME_MENU_RESIZE && (old_state & (1 << RETRO_DEVICE_ID_JOYPAD_Y)) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
       { }
       else
          gfx_ctx_set_blend(false);
