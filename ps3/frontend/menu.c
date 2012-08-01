@@ -1676,42 +1676,42 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
    g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
    gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 
-   if(input & PS3_GAMEPAD_LSTICK_LEFT_MASK)
+   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT))
       g_console.viewports.custom_vp.x -= 4;
    else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
       g_console.viewports.custom_vp.x -= 1;
 
-   if(input & PS3_GAMEPAD_LSTICK_RIGHT_MASK)
+   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT))
       g_console.viewports.custom_vp.x += 4;
    else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
       g_console.viewports.custom_vp.x += 1;
 
-   if(input & PS3_GAMEPAD_LSTICK_UP_MASK)
+   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP))
       g_console.viewports.custom_vp.y += 4;
    else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_UP))
       g_console.viewports.custom_vp.y += 1;
 
-   if(input & PS3_GAMEPAD_LSTICK_DOWN_MASK)
+   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN))
       g_console.viewports.custom_vp.y -= 4;
    else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
       g_console.viewports.custom_vp.y -= 1;
 
-   if(input & PS3_GAMEPAD_RSTICK_LEFT_MASK)
+   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT))
       g_console.viewports.custom_vp.width -= 4;
    else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_L))
       g_console.viewports.custom_vp.width -= 1;
 
-   if (input & PS3_GAMEPAD_RSTICK_RIGHT_MASK)
+   if (input & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT))
       g_console.viewports.custom_vp.width += 4;
    else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_R))
       g_console.viewports.custom_vp.width += 1;
 
-   if(input & PS3_GAMEPAD_RSTICK_UP_MASK)
+   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_UP))
       g_console.viewports.custom_vp.height += 4;
    else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_L2))
       g_console.viewports.custom_vp.height += 1;
 
-   if(input & PS3_GAMEPAD_RSTICK_DOWN_MASK)
+   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN))
       g_console.viewports.custom_vp.height -= 4;
    else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_R2))
       g_console.viewports.custom_vp.height -= 1;
@@ -2079,14 +2079,14 @@ void menu_loop(void)
       };
 
       static const struct retro_keybind _analog_binds[] = {
-	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_LSTICK_LEFT_MASK, 0 },
-	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_LSTICK_RIGHT_MASK, 0 },
-	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_LSTICK_UP_MASK, 0 },
-	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_LSTICK_DOWN_MASK, 0 },
-	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_RSTICK_LEFT_MASK, 0 },
-	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_RSTICK_RIGHT_MASK, 0 },
-	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_RSTICK_UP_MASK, 0 },
-	      { 0, 0, (enum retro_key)0, PS3_GAMEPAD_RSTICK_DOWN_MASK, 0 },
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT), 0 },
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT), 0 },
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP), 0 },
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN), 0 },
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT), 0 },
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT), 0 },
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_UP), 0 },
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN), 0 },
       };
 
       const struct retro_keybind *analog_binds[] = {
@@ -2100,22 +2100,22 @@ void menu_loop(void)
       }
 
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 0) ? PS3_GAMEPAD_LSTICK_LEFT_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 0) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT) : 0;
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 1) ? PS3_GAMEPAD_LSTICK_RIGHT_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 1) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT) : 0;
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 2) ? PS3_GAMEPAD_LSTICK_UP_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 2) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP) : 0;
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 3) ? PS3_GAMEPAD_LSTICK_DOWN_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 3) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN) : 0;
 
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 4) ? PS3_GAMEPAD_RSTICK_LEFT_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 4) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT) : 0;
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 5) ? PS3_GAMEPAD_RSTICK_RIGHT_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 5) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT) : 0;
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 6) ? PS3_GAMEPAD_RSTICK_UP_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 6) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_UP) : 0;
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 7) ? PS3_GAMEPAD_RSTICK_DOWN_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 7) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN) : 0;
 
       uint64_t trig_state = input_state & ~old_state; //set first button input frame as trigger
       input_state_first_frame = input_state;          //hold onto first button input frame
@@ -2132,24 +2132,24 @@ void menu_loop(void)
       }
 
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 0) ? PS3_GAMEPAD_LSTICK_LEFT_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 0) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT) : 0;
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 1) ? PS3_GAMEPAD_LSTICK_RIGHT_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 1) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT) : 0;
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 2) ? PS3_GAMEPAD_LSTICK_UP_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 2) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP) : 0;
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 3) ? PS3_GAMEPAD_LSTICK_DOWN_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 3) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN) : 0;
 
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 4) ? PS3_GAMEPAD_RSTICK_LEFT_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 4) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT) : 0;
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 5) ? PS3_GAMEPAD_RSTICK_RIGHT_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 5) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT) : 0;
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 6) ? PS3_GAMEPAD_RSTICK_UP_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 6) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_UP) : 0;
       input_state |= input_ps3.input_state(NULL, analog_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 7) ? PS3_GAMEPAD_RSTICK_DOWN_MASK : 0;
+         RETRO_DEVICE_JOYPAD, 0, 7) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN) : 0;
 
-      bool analog_sticks_pressed = (input_state & PS3_GAMEPAD_LSTICK_LEFT_MASK) || (input_state & PS3_GAMEPAD_LSTICK_RIGHT_MASK) || (input_state & PS3_GAMEPAD_LSTICK_UP_MASK) || (input_state & PS3_GAMEPAD_LSTICK_DOWN_MASK) || (input_state & PS3_GAMEPAD_RSTICK_LEFT_MASK) || (input_state & PS3_GAMEPAD_RSTICK_RIGHT_MASK) || (input_state & PS3_GAMEPAD_RSTICK_UP_MASK) || (input_state & PS3_GAMEPAD_RSTICK_DOWN_MASK);
+      bool analog_sticks_pressed = (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_UP)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN));
       bool shoulder_buttons_pressed = ((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_L2)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_R2))) && current_menu->category_id != CATEGORY_SETTINGS;
       bool do_held = analog_sticks_pressed || shoulder_buttons_pressed;
 
