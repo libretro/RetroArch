@@ -802,7 +802,7 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
 
 static void select_directory(item *items, menu *current_menu, uint64_t input)
 {
-   char path[1024];
+   char path[1024], msg[256];
    bool ret = true;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
@@ -869,8 +869,14 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
 
    display_menubar(current_menu);
 
-   render_msg_place_func(x_position, comment_two_y_position, font_size, YELLOW, "X - Enter dir  /\\ - return to settings  START - Reset Startdir");
-   render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, "INFO - Browse to a directory and assign it as the path by\npressing SQUARE button.");
+   snprintf(msg, sizeof(msg), "[%s] - Enter dir | [%s] - Return to settings", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X));
+   render_msg_place_func(x_position, comment_two_y_position, font_size, YELLOW, msg);
+
+   snprintf(msg, sizeof(msg), "[%s] - Reset to startdir", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
+   render_msg_place_func(x_position, comment_two_y_position + 0.04f, FONT_SIZE, YELLOW, msg);
+
+   snprintf(msg, sizeof(msg), "INFO - Browse to a directory and assign it as the path by\npressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_Y));
+   render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, msg);
    render_msg_post_func();
 }
 
