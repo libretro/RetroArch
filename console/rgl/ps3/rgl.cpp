@@ -85,14 +85,6 @@ DECLARE_FORMAT(GL_GREEN,1) \
 DECLARE_FORMAT(GL_BLUE,1) \
 DECLARE_FORMAT(GL_ALPHA,1)
 
-enum
-{
-   M10 = 1, M20, M30,
-   M01, M11, M21, M31,
-   M02, M12, M22, M32,
-   M03, M13, M23, M33
-};
-
 static int _RGLInitCompleted = 0;
 static char *_RGLVendorString = "Retro Arch";
 static char *_RGLRendererString = "RGL";
@@ -317,7 +309,7 @@ static inline void _RGLFifoGlVertexAttribPointer
 
 static void _RGLResetAttributeState( jsAttributeState* as )
 {
-    for ( int i = 0; i < _RGL_MAX_VERTEX_ATTRIBS; ++i )
+    for(int i = 0; i < MAX_VERTEX_ATTRIBS; ++i)
     {
         as->attrib[i].clientSize = 4;
         as->attrib[i].clientType = GL_FLOAT;
@@ -349,7 +341,7 @@ static void _RGLResetAttributeState( jsAttributeState* as )
     as->attrib[_RGL_ATTRIB_NORMAL_INDEX].value[1] = 0.f;
     as->attrib[_RGL_ATTRIB_NORMAL_INDEX].value[2] = 1.f;
 
-    as->DirtyMask = ( 1 << _RGL_MAX_VERTEX_ATTRIBS ) - 1;
+    as->DirtyMask = (1 << MAX_VERTEX_ATTRIBS) - 1;
     as->EnabledMask = 0;
     as->NeedsConversionMask = 0;
     as->HasVBOMask = 0;
@@ -386,7 +378,7 @@ static void _RGLAttribSetDeleteBuffer( PSGLcontext *LContext, GLuint buffName )
    {
       jsAttribSet *attribSet = bufferObject->attribSets[i];
 
-      for ( GLuint j = 0; j < _RGL_MAX_VERTEX_ATTRIBS; ++j )
+      for(GLuint j = 0; j < MAX_VERTEX_ATTRIBS; ++j)
          if ( attribSet->attribs.attrib[j].arrayBuffer == buffName )
             attribSet->attribs.attrib[j].arrayBuffer = 0;
 
@@ -419,17 +411,17 @@ static void _RGLPlatformDestroyBufferObject( jsBufferObject* bufferObject )
 
    switch ( jsBuffer->pool )
    {
-      case _RGL_SURFACE_POOL_SYSTEM:
-      case _RGL_SURFACE_POOL_LINEAR:
+      case SURFACE_POOL_SYSTEM:
+      case SURFACE_POOL_LINEAR:
          gmmFree( jsBuffer->bufferId );
 	 break;
-      case _RGL_SURFACE_POOL_NONE:
+      case SURFACE_POOL_NONE:
          break;
       default:
 	 break;
    }
 
-   jsBuffer->pool = _RGL_SURFACE_POOL_NONE;
+   jsBuffer->pool = SURFACE_POOL_NONE;
    jsBuffer->bufferId = GMM_ERROR;
 }
 
@@ -447,17 +439,6 @@ static void _RGLFreeBufferObject( jsBufferObject *buffer )
 
 static void _RGLUnbindBufferObject( PSGLcontext *LContext, GLuint name )
 {
-    if ( LContext->ArrayBuffer == name ) LContext->ArrayBuffer = 0;
-    if ( LContext->PixelUnpackBuffer == name ) LContext->PixelUnpackBuffer = 0;
-    for ( int i = 0;i < _RGL_MAX_VERTEX_ATTRIBS;++i )
-    {
-        if ( LContext->attribs->attrib[i].arrayBuffer == name )
-        {
-            LContext->attribs->attrib[i].arrayBuffer = 0;
-            LContext->attribs->HasVBOMask &= ~( 1 << i );
-        }
-    }
-    _RGLAttribSetDeleteBuffer( LContext, name );
 }
 
 GLAPI void APIENTRY glBindBuffer( GLenum target, GLuint name )
@@ -496,7 +477,23 @@ GLAPI void APIENTRY glDeleteBuffers(GLsizei n, const GLuint *buffers)
          continue;
 
       if(buffers[i] )
-         _RGLUnbindBufferObject( LContext, buffers[i] );
+      {
+         GLuint name = buffers[i];
+	 if(LContext->ArrayBuffer == name)
+            LContext->ArrayBuffer = 0;
+	 if(LContext->PixelUnpackBuffer == name)
+            LContext->PixelUnpackBuffer = 0;
+
+	 for(int i = 0;i < MAX_VERTEX_ATTRIBS; ++i)
+	 {
+            if(LContext->attribs->attrib[i].arrayBuffer == name)
+	    {
+               LContext->attribs->attrib[i].arrayBuffer = 0;
+	       LContext->attribs->HasVBOMask &= ~( 1 << i );
+	    }
+	 }
+	 _RGLAttribSetDeleteBuffer( LContext, name );
+      }
    }
    _RGLTexNameSpaceDeleteNames( &LContext->bufferObjectNameSpace, n, buffers );
 }
@@ -507,12 +504,12 @@ GLAPI void APIENTRY glGenBuffers(GLsizei n, GLuint *buffers)
    _RGLTexNameSpaceGenNames( &LContext->bufferObjectNameSpace, n, buffers );
 }
 
-static inline jsFramebuffer *_RGLGetFramebuffer( PSGLcontext *LContext, GLuint name )
+static inline jsFramebuffer *_RGLGetFramebuffer(PSGLcontext *LContext, GLuint name)
 {
-   return ( jsFramebuffer * )LContext->framebufferNameSpace.data[name];
+   return (jsFramebuffer *)LContext->framebufferNameSpace.data[name];
 }
 
-static inline void _RGLTextureTouchFBOs( jsTexture *texture )
+static inline void _RGLTextureTouchFBOs(jsTexture *texture)
 {
    PSGLcontext *LContext = _CurrentContext;
    if(!LContext)
@@ -522,11 +519,13 @@ static inline void _RGLTextureTouchFBOs( jsTexture *texture )
    if(fbCount > 0)
    {
       jsFramebuffer *contextFramebuffer = LContext->framebuffer ? _RGLGetFramebuffer( LContext, LContext->framebuffer ) : NULL;
-      for ( GLuint i = 0;i < fbCount;++i )
+
+      for (GLuint i = 0; i < fbCount; ++i)
       {
          jsFramebuffer* framebuffer = texture->framebuffers[i];
 	 framebuffer->needValidate = GL_TRUE;
-	 if ( RGL_UNLIKELY( framebuffer == contextFramebuffer ) ) LContext->needValidate |= PSGL_VALIDATE_FRAMEBUFFER;
+	 if(RGL_UNLIKELY(framebuffer == contextFramebuffer))
+            LContext->needValidate |= PSGL_VALIDATE_FRAMEBUFFER;
       }
    }
 }
@@ -537,12 +536,12 @@ static void _RGLAllocateBuffer( jsBufferObject* bufferObject )
 
    _RGLPlatformDestroyBufferObject( bufferObject );
 
-   jsBuffer->pool = _RGL_SURFACE_POOL_LINEAR;
+   jsBuffer->pool = SURFACE_POOL_LINEAR;
    jsBuffer->bufferId = gmmAlloc(0, jsBuffer->bufferSize);
    jsBuffer->pitch = 0;
 
    if ( jsBuffer->bufferId == GMM_ERROR )
-      jsBuffer->pool = _RGL_SURFACE_POOL_NONE;
+      jsBuffer->pool = SURFACE_POOL_NONE;
 
    GLuint referenceCount = bufferObject->textureReferences.getCount();
    if ( referenceCount > 0 )
@@ -553,7 +552,7 @@ static void _RGLAllocateBuffer( jsBufferObject* bufferObject )
 	 RGLTexture *gcmTexture = ( RGLTexture * )texture->platformTexture;
 	 gcmTexture->gpuAddressId = jsBuffer->bufferId;
 	 gcmTexture->gpuAddressIdOffset = texture->offset;
-	 texture->revalidate |= _RGL_TEXTURE_REVALIDATE_PARAMETERS;
+	 texture->revalidate |= TEXTURE_REVALIDATE_PARAMETERS;
 	 _RGLTextureTouchFBOs( texture );
       }
       _CurrentContext->needValidate |= PSGL_VALIDATE_TEXTURES_USED | PSGL_VALIDATE_VERTEX_TEXTURES_USED ;
@@ -628,7 +627,7 @@ static void _RGLPlatformBufferObjectSetData( jsBufferObject* bufferObject, GLint
 
             switch ( jsBuffer->pool )
             {
-                case _RGL_SURFACE_POOL_NONE:
+                case SURFACE_POOL_NONE:
                     _RGLSetError( GL_OUT_OF_MEMORY );
                     return;
                 default:
@@ -678,7 +677,7 @@ static GLboolean _RGLPlatformCreateBufferObject( jsBufferObject* bufferObject )
 {
    RGLBufferObject *jsBuffer = ( RGLBufferObject * )bufferObject->platformBufferObject;
 
-   jsBuffer->pool = _RGL_SURFACE_POOL_NONE;
+   jsBuffer->pool = SURFACE_POOL_NONE;
    jsBuffer->bufferId = GMM_ERROR;
    jsBuffer->mapCount = 0;
    jsBuffer->mapAccess = GL_NONE;
@@ -767,10 +766,10 @@ static GLvoid _RGLPlatformBufferObjectCopyData( jsBufferObject* bufferObjectDst,
 
     switch ( dst->pool )
     {
-        case _RGL_SURFACE_POOL_LINEAR:
+        case SURFACE_POOL_LINEAR:
             _RGLMemcpy( dst->bufferId, 0, dst->pitch, src->bufferId, src->bufferSize );
             break;
-        case _RGL_SURFACE_POOL_SYSTEM:
+        case SURFACE_POOL_SYSTEM:
 	    cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
 	    _RGLFifoFinish( &_RGLState.fifo );
             memcpy( gmmIdToAddress( dst->bufferId ), gmmIdToAddress( src->bufferId ),
@@ -838,12 +837,12 @@ static void _RGLFramebufferGetAttachmentTexture(
    PSGLcontext* LContext = _CurrentContext;
     switch ( attachment->type )
     {
-        case _RGL_FRAMEBUFFER_ATTACHMENT_NONE:
+        case FRAMEBUFFER_ATTACHMENT_NONE:
             *texture = NULL;
             break;
-        case _RGL_FRAMEBUFFER_ATTACHMENT_RENDERBUFFER:
+        case FRAMEBUFFER_ATTACHMENT_RENDERBUFFER:
             break;
-        case _RGL_FRAMEBUFFER_ATTACHMENT_TEXTURE:
+        case FRAMEBUFFER_ATTACHMENT_TEXTURE:
             *texture = _RGLTexNameSpaceIsName( &LContext->textureNameSpace, attachment->name ) ? ( jsTexture* )LContext->textureNameSpace.data[attachment->name] : NULL;
             break;
         default:
@@ -884,14 +883,14 @@ static GLboolean _RGLTextureIsValid( const jsTexture* texture )
     return GL_TRUE;
 }
 
-static GLenum _RGLPlatformFramebufferCheckStatus( jsFramebuffer* framebuffer )
+static GLenum _RGLPlatformFramebufferCheckStatus(jsFramebuffer* framebuffer)
 {
    GLuint nBuffers = 0;
 
-   jsImage* image[_RGL_MAX_COLOR_ATTACHMENTS + 2] = {0};
+   jsImage* image[MAX_COLOR_ATTACHMENTS + 2] = {0};
 
    GLuint colorFormat = 0;
-   for ( int i = 0; i < _RGL_MAX_COLOR_ATTACHMENTS; ++i )
+   for ( int i = 0; i < MAX_COLOR_ATTACHMENTS; ++i )
    {
       jsTexture* colorTexture = NULL;
       _RGLFramebufferGetAttachmentTexture(&framebuffer->color[i], &colorTexture);
@@ -1173,7 +1172,7 @@ static void _RGLPlatformCopyGPUTexture( jsTexture* texture )
 
    jsImage* image = texture->image;
 
-   if ( image->dataState == _RGL_IMAGE_DATASTATE_GPU )
+   if ( image->dataState == IMAGE_DATASTATE_GPU )
    {
       _RGLImageAllocCPUStorage( image );
 
@@ -1195,7 +1194,7 @@ static void _RGLPlatformCopyGPUTexture( jsTexture* texture )
 
       _RGLRasterToImage( &raster, image);
 
-      image->dataState = _RGL_IMAGE_DATASTATE_HOST;
+      image->dataState = IMAGE_DATASTATE_HOST;
    }
 }
 
@@ -1204,13 +1203,13 @@ static void _RGLPlatformFreeGcmTexture( jsTexture* texture )
     RGLTexture *gcmTexture = ( RGLTexture * )texture->platformTexture;
     switch ( gcmTexture->pool )
     {
-        case _RGL_SURFACE_POOL_LINEAR:
-        case _RGL_SURFACE_POOL_SYSTEM:
+        case SURFACE_POOL_LINEAR:
+        case SURFACE_POOL_SYSTEM:
             gmmFree( gcmTexture->gpuAddressId );
-        case _RGL_SURFACE_POOL_NONE:
+        case SURFACE_POOL_NONE:
             break;
         default:
-		break;
+            break;
     }
 
     gcmTexture->gpuAddressId = GMM_ERROR;
@@ -1228,21 +1227,21 @@ void _RGLPlatformDropTexture( jsTexture *texture )
       gcmTexture->pbo = NULL;
       gcmTexture->gpuAddressId = GMM_ERROR;
       gcmTexture->gpuAddressIdOffset = 0;
-      gcmTexture->pool = _RGL_SURFACE_POOL_NONE;
+      gcmTexture->pool = SURFACE_POOL_NONE;
       gcmTexture->gpuSize = 0;
    }
 
-   if(gcmTexture->pool != _RGL_SURFACE_POOL_NONE)
+   if(gcmTexture->pool != SURFACE_POOL_NONE)
    {
       _RGLPlatformCopyGPUTexture( texture );
       _RGLPlatformFreeGcmTexture( texture );
    }
 
-   gcmTexture->pool = _RGL_SURFACE_POOL_NONE;
+   gcmTexture->pool = SURFACE_POOL_NONE;
    gcmTexture->gpuAddressId = GMM_ERROR;
    gcmTexture->gpuAddressIdOffset = 0;
    gcmTexture->gpuSize = 0;
-   texture->revalidate |= _RGL_TEXTURE_REVALIDATE_IMAGES;
+   texture->revalidate |= TEXTURE_REVALIDATE_IMAGES;
    _RGLTextureTouchFBOs(texture);
 }
 
@@ -1329,7 +1328,7 @@ void _RGLPlatformDropUnboundTextures( GLenum pool )
       if ( gcmTexture->pbo != NULL && gcmTexture->pbo->refCount > 1 )
          continue;
 
-      if ( pool != _RGL_SURFACE_POOL_NONE && pool != gcmTexture->pool )
+      if ( pool != SURFACE_POOL_NONE && pool != gcmTexture->pool )
          continue;
 
       _RGLPlatformDropTexture( texture );
@@ -1360,7 +1359,7 @@ static void _RGLPlatformReallocateGcmTexture( jsTexture* texture )
                 _RGLPlatformChooseGPUFormatAndLayout( texture, GL_TRUE, 0, &newLayout );
 		size = _RGLPad( newLayout.baseHeight * newLayout.pitch, 1);
 
-                if ( gcmTexture->pool == _RGL_SURFACE_POOL_LINEAR )
+                if ( gcmTexture->pool == SURFACE_POOL_LINEAR )
                 {
                     if ( currentSize >= size && newLayout.pitch == currentLayout.pitch )
                     {
@@ -1376,10 +1375,10 @@ static void _RGLPlatformReallocateGcmTexture( jsTexture* texture )
 		    id = gmmAlloc(0, size);
                     if ( id != GMM_ERROR )
                     {
-                        if ( gcmTexture->pool != _RGL_SURFACE_POOL_NONE )
+                        if ( gcmTexture->pool != SURFACE_POOL_NONE )
                             _RGLPlatformDropTexture( texture );
 
-                        gcmTexture->pool = _RGL_SURFACE_POOL_LINEAR;
+                        gcmTexture->pool = SURFACE_POOL_LINEAR;
                         gcmTexture->gpuAddressId = id;
                         gcmTexture->gpuAddressIdOffset = 0;
                         gcmTexture->gpuSize = size;
@@ -1390,7 +1389,7 @@ static void _RGLPlatformReallocateGcmTexture( jsTexture* texture )
                 }
                 break;
             case _RGL_TEXTURE_STRATEGY_UNTILED_CLEAR:
-                _RGLPlatformDropUnboundTextures( _RGL_SURFACE_POOL_LINEAR );
+                _RGLPlatformDropUnboundTextures(SURFACE_POOL_LINEAR);
                 break;
             case _RGL_TEXTURE_STRATEGY_END:
                 _RGLSetError( GL_OUT_OF_MEMORY );
@@ -1414,7 +1413,7 @@ static void _RGLImageFreeCPUStorage( jsImage *image )
    image->mallocStorageSize = 0;
    image->data = NULL;
    image->mallocData = NULL;
-   image->dataState &= ~_RGL_IMAGE_DATASTATE_HOST;
+   image->dataState &= ~IMAGE_DATASTATE_HOST;
 }
 
 static void _RGLPlatformValidateTextureResources( jsTexture *texture )
@@ -1426,8 +1425,8 @@ static void _RGLPlatformValidateTextureResources( jsTexture *texture )
     }
     texture->isComplete = GL_TRUE;
 
-    if ( texture->revalidate & _RGL_TEXTURE_REVALIDATE_IMAGES ||
-    texture->revalidate & _RGL_TEXTURE_REVALIDATE_LAYOUT )
+    if ( texture->revalidate & TEXTURE_REVALIDATE_IMAGES ||
+    texture->revalidate & TEXTURE_REVALIDATE_LAYOUT )
     {
 	    _RGLPlatformReallocateGcmTexture( texture );
 	    RGLTexture *gcmTexture = ( RGLTexture * )texture->platformTexture;
@@ -1436,26 +1435,26 @@ static void _RGLPlatformValidateTextureResources( jsTexture *texture )
 	    const GLuint pixelBytes = layout->pixelBits / 8;
 
 	    RGLSurface src = {
-source:		_RGL_SURFACE_SOURCE_TEMPORARY,
+		source:		SURFACE_SOURCE_TEMPORARY,
 		width:		0,
 		height:		0,
 		bpp:		pixelBytes,
 		pitch:		0,
 		format:		layout->internalFormat,
-		pool:		_RGL_SURFACE_POOL_LINEAR,
+		pool:		SURFACE_POOL_LINEAR,
 		ppuData:     NULL,
 		dataId:      GMM_ERROR,
 		dataIdOffset:0,
 	    };
 
 	    RGLSurface dst = {
-source:		_RGL_SURFACE_SOURCE_TEXTURE,
+		source:		SURFACE_SOURCE_TEXTURE,
 		width:		0,
 		height:		0,
 		bpp:		pixelBytes,
 		pitch:		layout->pitch,
 		format:		layout->internalFormat,
-		pool:		_RGL_SURFACE_POOL_SYSTEM,
+		pool:		SURFACE_POOL_SYSTEM,
 		ppuData:     NULL,
 		dataId:      GMM_ERROR,
 		dataIdOffset:0,
@@ -1463,7 +1462,7 @@ source:		_RGL_SURFACE_SOURCE_TEXTURE,
 
 	    GLuint bounceBufferId = GMM_ERROR;
 	    jsImage *image = texture->image;
-	    if ( image->dataState == _RGL_IMAGE_DATASTATE_HOST )
+	    if(image->dataState == IMAGE_DATASTATE_HOST)
 	    {
 		    src.ppuData = image->data;
 
@@ -1491,7 +1490,7 @@ source:		_RGL_SURFACE_SOURCE_TEXTURE,
 		    _RGLTransferDataVidToVid( dst.dataId, dst.dataIdOffset, dst.pitch ? dst.pitch : (dst.bpp * dst.width), 0, 0, src.dataId, src.dataIdOffset, src.pitch ? src.pitch : (src.bpp * src.width), 0, 0, src.width, src.height, src.bpp );
 
 		    _RGLImageFreeCPUStorage( image );
-		    image->dataState |= _RGL_IMAGE_DATASTATE_GPU;
+		    image->dataState |= IMAGE_DATASTATE_GPU;
 	    }
 
 	    if ( bounceBufferId != GMM_ERROR )
@@ -1572,10 +1571,10 @@ static void jsPlatformFramebuffer_validate( jsPlatformFramebuffer * fb, PSGLcont
       if ( !colorTexture->isRenderTarget )
       {
          colorTexture->isRenderTarget = GL_TRUE;
-	 colorTexture->revalidate |= _RGL_TEXTURE_REVALIDATE_LAYOUT;
+	 colorTexture->revalidate |= TEXTURE_REVALIDATE_LAYOUT;
       }
       _RGLPlatformValidateTextureResources( colorTexture );
-      colorTexture->image->dataState = _RGL_IMAGE_DATASTATE_GPU;
+      colorTexture->image->dataState = IMAGE_DATASTATE_GPU;
 
       fb->rt.colorId[i] = nvTexture->gpuAddressId;
       fb->rt.colorIdOffset[i] = nvTexture->gpuAddressIdOffset;
@@ -1698,10 +1697,11 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
 
       GLuint bufferId = gmmAlloc(0, sizeof(_RGLClearVertexBuffer));
       memcpy( gmmIdToAddress(bufferId), _RGLClearVertexBuffer, sizeof( _RGLClearVertexBuffer ) );
-      _RGLFifoGlVertexAttribPointer( 0, 3, RGL_FLOAT, CELL_GCM_FALSE, 3*sizeof( GLfloat ), 1, gmmIdToOffset(bufferId) );
+      GmmBaseBlock *pBaseBlock = (GmmBaseBlock *)bufferId;
+      _RGLFifoGlVertexAttribPointer( 0, 3, RGL_FLOAT, CELL_GCM_FALSE, 3*sizeof( GLfloat ), 1, gmmAddressToOffset(pBaseBlock->address, pBaseBlock->isMain));
       RGLBIT_TRUE( LContext->attribs->DirtyMask, 0 );
 
-      for(int i = 1; i < _RGL_MAX_VERTEX_ATTRIBS; ++i)
+      for(int i = 1; i < MAX_VERTEX_ATTRIBS; ++i)
       {
          _RGLFifoGlVertexAttribPointer( i, 0, RGL_FLOAT, 0, 0, 0, 0 );
 	 RGLBIT_TRUE( LContext->attribs->DirtyMask, i );
@@ -1840,12 +1840,12 @@ GLAPI void APIENTRY glFramebufferTexture2DOES( GLenum target, GLenum attachment,
 
    if ( texture )
    {
-      attach->type = _RGL_FRAMEBUFFER_ATTACHMENT_TEXTURE;
+      attach->type = FRAMEBUFFER_ATTACHMENT_TEXTURE;
       textureObject = ( jsTexture* )LContext->textureNameSpace.data[texture];
       textureObject->framebuffers.pushBack( framebuffer );
    }
    else
-      attach->type = _RGL_FRAMEBUFFER_ATTACHMENT_NONE;
+      attach->type = FRAMEBUFFER_ATTACHMENT_NONE;
 
    attach->name = texture;
    attach->textureTarget = GL_TEXTURE_2D;
@@ -2165,7 +2165,6 @@ static void gmmAddFree(GmmAllocator *pAllocator, GmmBlock *pBlock)
 {
     uint8_t freeIndex = gmmSizeToFreeIndex(pBlock->base.size);
 
-
     if (pAllocator->pFreeHead[freeIndex])
     {
         GmmBlock *pInsertBefore = pAllocator->pFreeHead[freeIndex];
@@ -2209,7 +2208,7 @@ static void gmmAddFree(GmmAllocator *pAllocator, GmmBlock *pBlock)
 void gmmUpdateFreeList (const uint8_t location)
 {
     GmmAllocator    *pAllocator;
-    const uint32_t  fence = _RGLState.semaphores->userSemaphores[_RGL_SEMA_FENCE].val;
+    const uint32_t  fence = _RGLState.semaphores->userSemaphores[SEMA_FENCE].val;
     GmmBlock        *pBlock = NULL;
     GmmBlock        *pTemp = NULL;
 
@@ -2626,7 +2625,8 @@ uint32_t gmmAllocExtendedTileBlock(const uint32_t size, const uint32_t tag)
 
                     if (pNewBlock->pPrev->pData != pNewBlock->pNext->pData)
                     {
-                        resizeSucceed = _RGLTryResizeTileRegion( (GLuint)gmmIdToOffset((uint32_t)pNewBlock), tileSize+newSize, pBlock->pData );
+                        GmmBaseBlock *pBaseBlock = (GmmBaseBlock *)(uint32_t)(pNewBlock);
+                        resizeSucceed = _RGLTryResizeTileRegion((GLuint)gmmAddressToOffset(pBaseBlock->address, pBaseBlock->isMain), tileSize+newSize, pBlock->pData);
                     }
                 }
                 gmmSetTileAttrib( retId, tag, pBlock->pData );
@@ -2747,7 +2747,7 @@ static void gmmAddPendingFree(GmmBlock *pBlock)
 
     GLuint* ref = &pBlock->fence;
     ++nvFenceCounter;
-    cellGcmSetWriteBackEndLabelInline( &_RGLState.fifo, _RGL_SEMA_FENCE, nvFenceCounter);
+    cellGcmSetWriteBackEndLabelInline( &_RGLState.fifo, SEMA_FENCE, nvFenceCounter);
     *ref = nvFenceCounter;
 }
 
@@ -3197,7 +3197,7 @@ uint32_t gmmAlloc(const uint8_t isTile, const uint32_t size)
       else
          retId = (uint32_t)gmmAllocBlock(pAllocator, newSize);
 
-      if (retId == RGL_MEMORY_ALLOC_ERROR)
+      if (retId == MEMORY_ALLOC_ERROR)
       {
          gmmFreeAll();
 
@@ -3215,7 +3215,7 @@ uint32_t gmmAlloc(const uint8_t isTile, const uint32_t size)
 	 else
             retId = (uint32_t)gmmAllocBlock(pAllocator, newSize);
 
-	 if (!isTile && retId == RGL_MEMORY_ALLOC_ERROR)
+	 if (!isTile && retId == MEMORY_ALLOC_ERROR)
             retId = gmmFindFreeBlock(pAllocator, newSize);
       }
    }
@@ -4343,7 +4343,7 @@ static char *_RGLPlatformBufferObjectMap( jsBufferObject* bufferObject, GLenum a
         if ( access == GL_WRITE_ONLY )
         {
             _RGLAllocateBuffer( bufferObject );
-            if ( jsBuffer->pool == _RGL_SURFACE_POOL_NONE )
+            if ( jsBuffer->pool == SURFACE_POOL_NONE )
             {
                 _RGLSetError( GL_OUT_OF_MEMORY );
                 return NULL;
@@ -4396,7 +4396,7 @@ static void _RGLPlatformDestroyTexture( jsTexture* texture )
         {
             _RGLFreeBufferObject( gcmTexture->pbo );
             gcmTexture->pbo = NULL;
-            gcmTexture->pool = _RGL_SURFACE_POOL_NONE;
+            gcmTexture->pool = SURFACE_POOL_NONE;
             gcmTexture->gpuAddressId = GMM_ERROR;
             gcmTexture->gpuAddressIdOffset = 0;
             gcmTexture->gpuSize = 0;
@@ -4428,7 +4428,8 @@ static void _RGLPlatformValidateTextureStage( int unit, jsTexture* texture )
     if ( RGL_LIKELY( isCompleteCache ) )
     {
         RGLTexture *platformTexture = ( RGLTexture * )texture->platformTexture;
-	const GLuint imageOffset = gmmIdToOffset(platformTexture->gpuAddressId) + platformTexture->gpuAddressIdOffset;
+        GmmBaseBlock *pBaseBlock = (GmmBaseBlock *)platformTexture->gpuAddressId;
+	const GLuint imageOffset = gmmAddressToOffset(pBaseBlock->address, pBaseBlock->isMain) + platformTexture->gpuAddressIdOffset;
 	platformTexture->gcmTexture.offset = imageOffset; 
 
 	cellGcmSetTexture( &_RGLState.fifo, unit, &platformTexture->gcmTexture);
@@ -4634,10 +4635,10 @@ static void _RGLSetImage( jsImage *image, GLint internalFormat, GLsizei width, G
         raster.ystride = ( raster.width * raster.xstride + alignment - 1 ) / alignment * alignment;
 
         _RGLRasterToImage( &raster, image);
-        image->dataState = _RGL_IMAGE_DATASTATE_HOST;
+        image->dataState = IMAGE_DATASTATE_HOST;
     }
     else
-        image->dataState = _RGL_IMAGE_DATASTATE_UNSET;
+        image->dataState = IMAGE_DATASTATE_UNSET;
 }
 
 static GLboolean _RGLPlatformTexturePBOImage(
@@ -4652,7 +4653,7 @@ static GLboolean _RGLPlatformTexturePBOImage(
 
     RGLTexture *gcmTexture = ( RGLTexture * )texture->platformTexture;
 
-    image->dataState = _RGL_IMAGE_DATASTATE_UNSET;
+    image->dataState = IMAGE_DATASTATE_UNSET;
     if ( gcmTexture->pbo != NULL )
         _RGLPlatformDropTexture( texture );
 
@@ -4727,7 +4728,7 @@ static GLboolean _RGLPlatformTexturePBOImage(
         gcmTexture->pbo = bufferObject;
         gcmTexture->gpuAddressId = gpuId; 
         gcmTexture->gpuAddressIdOffset = gpuIdOffset;
-        gcmTexture->pool = _RGL_SURFACE_POOL_LINEAR;
+        gcmTexture->pool = SURFACE_POOL_LINEAR;
         gcmTexture->gpuSize = _RGLPlatformTextureGetGPUSize( texture );
         ++bufferObject->refCount;
     }
@@ -4736,24 +4737,24 @@ static GLboolean _RGLPlatformTexturePBOImage(
         const GLuint bytesPerPixel = newLayout.pixelBits / 8;
         RGLSurface src =
 	{
-                source:		_RGL_SURFACE_SOURCE_PBO,
+                source:		SURFACE_SOURCE_PBO,
 		width:		image->width,
 		height:		image->height,
 		bpp:		bytesPerPixel,
 		pitch:		pboPitch,
 		format:		newLayout.internalFormat,
-		pool:		_RGL_SURFACE_POOL_LINEAR,
+		pool:		SURFACE_POOL_LINEAR,
 		ppuData:    NULL,
 		dataId:     gpuId,
 		dataIdOffset: gpuIdOffset, 
 	};
 
-        texture->revalidate |= _RGL_TEXTURE_REVALIDATE_LAYOUT;
+        texture->revalidate |= TEXTURE_REVALIDATE_LAYOUT;
         _RGLPlatformValidateTextureResources( texture );
 
         RGLSurface dst =
 	{
-                source:		_RGL_SURFACE_SOURCE_TEXTURE,
+                source:		SURFACE_SOURCE_TEXTURE,
 		width:		image->width,
 		height:		image->height,
 		bpp:		bytesPerPixel,
@@ -4769,10 +4770,10 @@ static GLboolean _RGLPlatformTexturePBOImage(
     }
 
     _RGLImageFreeCPUStorage( image );
-    image->dataState = _RGL_IMAGE_DATASTATE_GPU;
+    image->dataState = IMAGE_DATASTATE_GPU;
 
-    texture->revalidate &= ~( _RGL_TEXTURE_REVALIDATE_LAYOUT | _RGL_TEXTURE_REVALIDATE_IMAGES );
-    texture->revalidate |= _RGL_TEXTURE_REVALIDATE_PARAMETERS;
+    texture->revalidate &= ~( TEXTURE_REVALIDATE_LAYOUT | TEXTURE_REVALIDATE_IMAGES );
+    texture->revalidate |= TEXTURE_REVALIDATE_PARAMETERS;
     _RGLTextureTouchFBOs( texture );
 
     return GL_TRUE;
@@ -4798,8 +4799,8 @@ static GLboolean _RGLPlatformTextureReference( jsTexture *texture, GLuint pitch,
     gcmTexture->gpuAddressIdOffset = offset;
     gcmTexture->gpuSize = _RGLPad( newLayout.baseHeight * newLayout.pitch, 1);
 
-    texture->revalidate &= ~( _RGL_TEXTURE_REVALIDATE_LAYOUT | _RGL_TEXTURE_REVALIDATE_IMAGES );
-    texture->revalidate |= _RGL_TEXTURE_REVALIDATE_PARAMETERS;
+    texture->revalidate &= ~( TEXTURE_REVALIDATE_LAYOUT | TEXTURE_REVALIDATE_IMAGES );
+    texture->revalidate |= TEXTURE_REVALIDATE_PARAMETERS;
     _RGLTextureTouchFBOs( texture );
     return GL_TRUE;
 }
@@ -4834,6 +4835,7 @@ static inline void _RGLSetColorDepthBuffers( RGLRenderTarget *rt, RGLRenderTarge
                     grt->colorLocation[i] = CELL_GCM_LOCATION_MAIN;
                 else
                     grt->colorLocation[i] = CELL_GCM_LOCATION_LOCAL;
+
                 grt->colorOffset[i] = gmmIdToOffset(args->colorId[i]) + args->colorIdOffset[i];
                 grt->colorPitch[i] = args->colorPitch[i];
             }
@@ -5331,7 +5333,7 @@ static void _RGLMatrixStackInit( jsMatrixStack* LMatrixStack, GLuint depth )
    if (!LMatrixStack->MatrixStackf)
       return;
 
-   _RGLMatrixStackReset( LMatrixStack );
+   _RGLMatrixStackReset(LMatrixStack);
 }
 
 static jsTexture *_RGLAllocateTexture (void)
@@ -5339,6 +5341,7 @@ static jsTexture *_RGLAllocateTexture (void)
     GLuint size = sizeof( jsTexture ) + sizeof( RGLTexture);
     jsTexture *texture = ( jsTexture * )malloc( size );
     memset( texture, 0, size );
+
     texture->target = 0;
     texture->minFilter = GL_NEAREST_MIPMAP_LINEAR;
     texture->magFilter = GL_LINEAR;
@@ -5406,7 +5409,7 @@ PSGLcontext* psglCreateContext (void)
 
     for ( int i = 0; i < _RGL_MAX_TEXTURE_COORDS; i++ )
     {
-        _RGLMatrixStackInit( &( LContext->TextureCoordsUnits[i].TextureMatrixStack ), _RGL_MAX_TEXTURE_STACK_DEPTH );
+        _RGLMatrixStackInit(&( LContext->TextureCoordsUnits[i].TextureMatrixStack), MAX_TEXTURE_STACK_DEPTH);
         if ( !LContext->TextureCoordsUnits[i].TextureMatrixStack.MatrixStackf )
         {
             psglDestroyContext( LContext );
@@ -5529,12 +5532,12 @@ void _RGLAttachContext( PSGLdevice *device, PSGLcontext* context )
    }
    context->needValidate = PSGL_VALIDATE_ALL;
 
-   for ( int unit = 0;unit < _RGL_MAX_TEXTURE_UNITS;unit++ )
+   for (int unit = 0; unit < MAX_TEXTURE_UNITS; unit++)
       context->TextureCoordsUnits[unit].TextureMatrixStack.dirty = GL_TRUE;
 
    context->ModelViewMatrixStack.dirty = GL_TRUE;
    context->ProjectionMatrixStack.dirty = GL_TRUE;
-   context->attribs->DirtyMask = ( 1 << _RGL_MAX_VERTEX_ATTRIBS ) - 1;
+   context->attribs->DirtyMask = ( 1 << MAX_VERTEX_ATTRIBS ) - 1;
 }
 
 GLAPI void APIENTRY glGetFloatv( GLenum pname, GLfloat* params )
@@ -5625,7 +5628,7 @@ GLAPI void APIENTRY glEnable( GLenum cap )
     }
 }
 
-GLAPI void APIENTRY glDisable( GLenum cap )
+GLAPI void APIENTRY glDisable(GLenum cap)
 {
     PSGLcontext* LContext = _CurrentContext;
 
@@ -5684,7 +5687,7 @@ GLAPI void APIENTRY glDisable( GLenum cap )
     }
 }
 
-GLAPI void APIENTRY glEnableClientState( GLenum array )
+GLAPI void APIENTRY glEnableClientState(GLenum array)
 {
     PSGLcontext* LContext = _CurrentContext;
 
@@ -5708,7 +5711,7 @@ GLAPI void APIENTRY glEnableClientState( GLenum array )
     }
 }
 
-GLAPI void APIENTRY glDisableClientState( GLenum array )
+GLAPI void APIENTRY glDisableClientState(GLenum array)
 {
     PSGLcontext* LContext = _CurrentContext;
 
@@ -5732,7 +5735,7 @@ GLAPI void APIENTRY glDisableClientState( GLenum array )
     }
 }
 
-GLAPI void APIENTRY glFlush()
+GLAPI void APIENTRY glFlush(void)
 {
    PSGLcontext *LContext = _CurrentContext;
    RGLFifo *fifo = &_RGLState.fifo;
@@ -5745,7 +5748,7 @@ GLAPI void APIENTRY glFlush()
    _RGLFifoFlush( fifo );
 }
 
-GLAPI void APIENTRY glFinish (void)
+GLAPI void APIENTRY glFinish(void)
 {
    glFlush();
    cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
@@ -5871,7 +5874,6 @@ GLAPI void APIENTRY glOrthof( GLfloat left, GLfloat right, GLfloat bottom, GLflo
 
     GLfloat L00, L01, L02, L03, L10, L11, L12, L13, L20, L21, L22, L23, L30, L31, L32, L33;
 
-
     GLfloat m00 = 2.f / ( right - left );
     GLfloat m03 = -( right + left ) / ( right - left );
     GLfloat m11 = 2.f / ( top - bottom );
@@ -5880,41 +5882,41 @@ GLAPI void APIENTRY glOrthof( GLfloat left, GLfloat right, GLfloat bottom, GLflo
     GLfloat m23 = -( zFar + zNear ) / ( zFar - zNear );
 
     L00 = LMatrix[0];
-    L01 = LMatrix[M01];
-    L02 = LMatrix[M02];
-    L03 = LMatrix[M03];
-    L10 = LMatrix[M10];
-    L11 = LMatrix[M11];
-    L12 = LMatrix[M12];
-    L13 = LMatrix[M13];
-    L20 = LMatrix[M20];
-    L21 = LMatrix[M21];
-    L22 = LMatrix[M22];
-    L23 = LMatrix[M23];
-    L30 = LMatrix[M30];
-    L31 = LMatrix[M31];
-    L32 = LMatrix[M32];
-    L33 = LMatrix[M33];
+    L01 = LMatrix[4];
+    L02 = LMatrix[8];
+    L03 = LMatrix[12];
+    L10 = LMatrix[1];
+    L11 = LMatrix[5];
+    L12 = LMatrix[9];
+    L13 = LMatrix[13];
+    L20 = LMatrix[2];
+    L21 = LMatrix[6];
+    L22 = LMatrix[10];
+    L23 = LMatrix[14];
+    L30 = LMatrix[3];
+    L31 = LMatrix[7];
+    L32 = LMatrix[11];
+    L33 = LMatrix[15];
 
-    LMatrix[0] = L00 * m00;
-    LMatrix[M01] = L01 * m11;
-    LMatrix[M02] = L02 * m22;
-    LMatrix[M03] = L00 * m03 + L01 * m13 + L02 * m23 + L03;
+    LMatrix[0] *= m00;
+    LMatrix[4] *= m11;
+    LMatrix[8] *= m22;
+    LMatrix[12] = L00 * m03 + L01 * m13 + L02 * m23 + L03;
 
-    LMatrix[M10] = L10 * m00;
-    LMatrix[M11] = L11 * m11;
-    LMatrix[M12] = L12 * m22;
-    LMatrix[M13] = L10 * m03 + L11 * m13 + L12 * m23 + L13;
+    LMatrix[1] *= m00;
+    LMatrix[5] *= m11;
+    LMatrix[9] *= m22;
+    LMatrix[13] = L10 * m03 + L11 * m13 + L12 * m23 + L13;
 
-    LMatrix[M20] = L20 * m00;
-    LMatrix[M21] = L21 * m11;
-    LMatrix[M22] = L22 * m22;
-    LMatrix[M23] = L20 * m03 + L21 * m13 + L22 * m23 + L23;
+    LMatrix[2] *= m00;
+    LMatrix[6] *= m11;
+    LMatrix[10] *= m22;
+    LMatrix[14] = L20 * m03 + L21 * m13 + L22 * m23 + L23;
 
-    LMatrix[M30] = L30 * m00;
-    LMatrix[M31] = L31 * m11;
-    LMatrix[M32] = L32 * m22;
-    LMatrix[M33] = L30 * m03 + L31 * m13 + L32 * m23 + L33;
+    LMatrix[3] *= m00;
+    LMatrix[7] *= m11;
+    LMatrix[11] *= m22;
+    LMatrix[15] = L30 * m03 + L31 * m13 + L32 * m23 + L33;
 
     LMatrixStack->dirty = GL_TRUE;
     if ( LContext->MatrixMode == GL_MODELVIEW )
@@ -6040,7 +6042,7 @@ void _RGLVertexAttribPointerNV(
         if ( oldArrayBuffer )
         {
             int refcount = 0;
-            for(unsigned int i = 0; i < _RGL_MAX_VERTEX_ATTRIBS; ++i )
+            for(unsigned int i = 0; i < MAX_VERTEX_ATTRIBS; ++i )
             {
                 if ( attribSet->attribs.attrib[i].arrayBuffer == oldArrayBuffer ) ++refcount;
             }
@@ -6094,80 +6096,82 @@ void _RGLDisableVertexAttribArrayNV( GLuint index )
 
 static GLuint _RGLValidateAttributesSlow( jsDrawParams *dparams)
 {
-	PSGLcontext*	LContext = _CurrentContext;
-	RGLDriver *driver= (RGLDriver *)_CurrentDevice->rasterDriver;
-	jsAttributeState* as = LContext->attribs;
+   PSGLcontext*	LContext = _CurrentContext;
+   RGLDriver *driver= (RGLDriver *)_CurrentDevice->rasterDriver;
+   jsAttributeState* as = LContext->attribs;
 
-	void* xferBuffer = NULL;
-	GLuint xferId = GMM_ERROR;
-	GLuint VBOId = GMM_ERROR;
-	GLuint gpuOffset;
-	if ( RGL_UNLIKELY( dparams->xferTotalSize ) )
-	{
-		xferId = gmmAlloc(0, dparams->xferTotalSize);
-		xferBuffer = gmmIdToAddress(xferId);
-	}
+   void* xferBuffer = NULL;
+   GLuint xferId = GMM_ERROR;
+   GLuint VBOId = GMM_ERROR;
+   GLuint gpuOffset;
 
-	unsigned int needsUpdateMask = ( as->DirtyMask | ( as->EnabledMask & ~as->HasVBOMask ) );
+   if(RGL_UNLIKELY( dparams->xferTotalSize))
+   {
+      xferId = gmmAlloc(0, dparams->xferTotalSize);
+      xferBuffer = gmmIdToAddress(xferId);
+   }
 
-	LContext->attribSetDirty = GL_FALSE;
+   unsigned int needsUpdateMask = (as->DirtyMask | (as->EnabledMask & ~as->HasVBOMask));
 
-	if ( needsUpdateMask )
-	{
-		for ( GLuint i = 0; i < _RGL_MAX_VERTEX_ATTRIBS; ++i )
-		{
-			if ( ! RGLBIT_GET( needsUpdateMask, i ) )
-				continue;
+   LContext->attribSetDirty = GL_FALSE;
 
-			jsAttribute* attrib = as->attrib + i;
-			if ( RGLBIT_GET( as->EnabledMask, i ) )
-			{
-				const GLsizei stride = attrib->clientStride;
-				const GLuint freq = attrib->frequency;
+   if ( needsUpdateMask )
+   {
+      for ( GLuint i = 0; i < MAX_VERTEX_ATTRIBS; ++i )
+      {
+         if(!RGLBIT_GET(needsUpdateMask, i))
+            continue;
 
-				if ( RGL_UNLIKELY( dparams->attribXferSize[i] ) )
-				{
-					GLuint maxElements = dparams->firstVertex + dparams->vertexCount;
+	 jsAttribute* attrib = as->attrib + i;
+	 if ( RGLBIT_GET( as->EnabledMask, i ) )
+	 {
+            const GLsizei stride = attrib->clientStride;
+	    const GLuint freq = attrib->frequency;
 
-					GLuint offset;
-					if ( RGLBIT_GET( as->ModuloMask, i ) )
-						offset = ( maxElements > freq ) ? 0 : dparams->firstVertex * stride;
-					else
-						offset = ( dparams->firstVertex / freq ) * stride;
+	    if ( RGL_UNLIKELY( dparams->attribXferSize[i] ) )
+	    {
+               GmmBaseBlock *pBaseBlock = (GmmBaseBlock *)xferId;
 
-					char *b = (char *)xferBuffer + dparams->attribXferOffset[i];
-					memcpy( b + offset,
-							( char * )attrib->clientData + offset,
-							dparams->attribXferSize[i] - offset );
+               GLuint maxElements = dparams->firstVertex + dparams->vertexCount;
 
-					gpuOffset = gmmIdToOffset(xferId) + (b - ( char * )xferBuffer);
+	       GLuint offset;
+	       if(RGLBIT_GET( as->ModuloMask, i))
+                  offset = ( maxElements > freq ) ? 0 : dparams->firstVertex * stride;
+	       else
+                  offset = ( dparams->firstVertex / freq ) * stride;
 
-				}
-				else
-				{
-					VBOId = _RGLGetBufferObjectOrigin( attrib->arrayBuffer );
-					gpuOffset = gmmIdToOffset(VBOId) + (( const GLubyte* )attrib->clientData - ( const GLubyte* )NULL );
-				}
+	       char *b = (char *)xferBuffer + dparams->attribXferOffset[i];
+	       memcpy( b + offset, ( char * )attrib->clientData + offset,
+               dparams->attribXferSize[i] - offset );
 
-				_RGLFifoGlVertexAttribPointer( i, attrib->clientSize,
-						( RGLEnum )attrib->clientType, attrib->normalized,
-						stride, freq, gpuOffset );
-			}
-			else
-			{
-				_RGLFifoGlVertexAttribPointer( i, 0, RGL_FLOAT, 0, 0, 0, 0 );
-				cellGcmSetVertexData4fInline( &_RGLState.fifo, i,attrib->value);
-			}
-		}
-		cellGcmSetFrequencyDividerOperationInline( &_RGLState.fifo, as->ModuloMask);
-		driver->invalidateVertexCache = GL_TRUE;
-	}
-	as->DirtyMask = 0;
+	       gpuOffset = gmmAddressToOffset(pBaseBlock->address, pBaseBlock->isMain) + (b - ( char * )xferBuffer);
+	    }
+	    else
+	    {
+               VBOId = _RGLGetBufferObjectOrigin( attrib->arrayBuffer );
+               GmmBaseBlock *pBaseBlock = (GmmBaseBlock *)VBOId;
+	       gpuOffset = gmmAddressToOffset(pBaseBlock->address, pBaseBlock->isMain) + (( const GLubyte* )attrib->clientData - ( const GLubyte* )NULL );
+	    }
 
-	if ( xferId != GMM_ERROR )
-		gmmFree( xferId );
+	    _RGLFifoGlVertexAttribPointer( i, attrib->clientSize,
+            ( RGLEnum )attrib->clientType, attrib->normalized, stride, freq, gpuOffset );
+	 }
+	 else
+	 {
+            _RGLFifoGlVertexAttribPointer( i, 0, RGL_FLOAT, 0, 0, 0, 0 );
+	    cellGcmSetVertexData4fInline( &_RGLState.fifo, i,attrib->value);
+	 }
+      }
+      cellGcmSetFrequencyDividerOperationInline( &_RGLState.fifo, as->ModuloMask);
+      driver->invalidateVertexCache = GL_TRUE;
+   }
 
-	return 0;
+   as->DirtyMask = 0;
+
+   if ( xferId != GMM_ERROR )
+      gmmFree( xferId );
+
+   return 0;
 }
 
 GLAPI void APIENTRY glDrawArrays( GLenum mode, GLint first, GLsizei count )
@@ -6195,11 +6199,11 @@ GLAPI void APIENTRY glDrawArrays( GLenum mode, GLint first, GLsizei count )
    GLuint maxElements = dparams->firstVertex + dparams->vertexCount;
 
    if ( LContext->needValidate )
-	   _RGLValidateStates();
+      _RGLValidateStates();
 
    if ( RGL_UNLIKELY( clientSideMask ) )
    {
-      for ( int i = 0; i < _RGL_MAX_VERTEX_ATTRIBS; ++i )
+      for ( int i = 0; i < MAX_VERTEX_ATTRIBS; ++i )
       {
          dparams->attribXferOffset[i] = 0;
 	 dparams->attribXferSize[i] = 0;
@@ -6231,7 +6235,7 @@ GLAPI void APIENTRY glDrawArrays( GLenum mode, GLint first, GLsizei count )
 
    uint32_t totalXfer = 0;
 
-   for (GLuint i = 0; i < _RGL_MAX_VERTEX_ATTRIBS; ++i)
+   for (GLuint i = 0; i < MAX_VERTEX_ATTRIBS; ++i)
       totalXfer += dparams->attribXferSize[i];
 
    GLuint gpuOffset = _RGLValidateAttributesSlow( dparams);
@@ -6243,7 +6247,8 @@ GLAPI void APIENTRY glDrawArrays( GLenum mode, GLint first, GLsizei count )
       cellGcmSetInvalidateVertexCacheInline ( &_RGLState.fifo);
    }
 
-   cellGcmSetUpdateFragmentProgramParameterInline( &_RGLState.fifo, gmmIdToOffset( driver->fpLoadProgramId) +driver->fpLoadProgramOffset );
+   GmmBaseBlock *pBaseBlock = (GmmBaseBlock *)driver->fpLoadProgramId;
+   cellGcmSetUpdateFragmentProgramParameterInline( &_RGLState.fifo, gmmAddressToOffset(pBaseBlock->address, pBaseBlock->isMain) +driver->fpLoadProgramOffset );
 
    cellGcmSetDrawArraysInline( &_RGLState.fifo, CELL_GCM_PRIMITIVE_QUADS, dparams->firstVertex, dparams->vertexCount);
 }
@@ -6306,7 +6311,7 @@ GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param )
 		   texture->minFilter = param;
 		   if ( texture->referenceBuffer == 0 )
 		   {
-			   texture->revalidate |= _RGL_TEXTURE_REVALIDATE_LAYOUT; }
+			   texture->revalidate |= TEXTURE_REVALIDATE_LAYOUT; }
 		   break;
 	   case GL_TEXTURE_MAG_FILTER:
 		   texture->magFilter = param;
@@ -6319,7 +6324,7 @@ GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param )
 		   break;
 	   case GL_TEXTURE_ALLOCATION_HINT_SCE:
 		   texture->usage = param;
-		   texture->revalidate |= _RGL_TEXTURE_REVALIDATE_LAYOUT;
+		   texture->revalidate |= TEXTURE_REVALIDATE_LAYOUT;
 		   break;
 	   case GL_TEXTURE_MIN_LOD:
 	   case GL_TEXTURE_MAX_LOD:
@@ -6344,7 +6349,7 @@ GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param )
 		   return;
    }
 
-   texture->revalidate |= _RGL_TEXTURE_REVALIDATE_PARAMETERS;
+   texture->revalidate |= TEXTURE_REVALIDATE_PARAMETERS;
    LContext->needValidate |= PSGL_VALIDATE_TEXTURES_USED | PSGL_VALIDATE_VERTEX_TEXTURES_USED;
 }
 
@@ -6399,7 +6404,7 @@ GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const G
 
      _RGLGetImage( GL_TEXTURE_2D, 0, &texture, &image, MAX( width, height ) );
 
-    image->dataState = _RGL_IMAGE_DATASTATE_UNSET;
+    image->dataState = IMAGE_DATASTATE_UNSET;
 
     GLboolean directPBO = GL_FALSE;
     if ( LContext->PixelUnpackBuffer != 0 )
@@ -6452,7 +6457,7 @@ GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const G
 	   }
 	}
 
-        texture->revalidate |= _RGL_TEXTURE_REVALIDATE_IMAGES;
+        texture->revalidate |= TEXTURE_REVALIDATE_IMAGES;
     }
 
     _RGLTextureTouchFBOs( texture );
@@ -7882,7 +7887,7 @@ CGGL_API void cgGLDisableProfile( CGprofile profile )
         case CG_PROFILE_SCE_FP_TYPEB:
         case CG_PROFILE_SCE_FP_RSX:
             LContext->FragmentProgram = GL_FALSE;
-	    for ( GLuint unit = 0; unit < _RGL_MAX_TEXTURE_UNITS; ++unit )
+	    for (GLuint unit = 0; unit < MAX_TEXTURE_UNITS; ++unit)
 		    LContext->TextureImageUnits[unit].currentTexture = _RGLGetCurrentTexture( &LContext->TextureImageUnits[unit], GL_TEXTURE_2D );
 
 	    LContext->needValidate |= PSGL_VALIDATE_FFX_FRAGMENT_PROGRAM | PSGL_VALIDATE_TEXTURES_USED;
@@ -7966,7 +7971,7 @@ CGGL_API void cgGLUnbindProgram( CGprofile profile )
         case CG_PROFILE_SCE_FP_RSX:
         case 7006:
 	    _CurrentContext->BoundFragmentProgram = NULL;
-	    for ( GLuint unit = 0; unit < _RGL_MAX_TEXTURE_UNITS; ++unit )
+	    for (GLuint unit = 0; unit < MAX_TEXTURE_UNITS; ++unit)
 		    _CurrentContext->TextureImageUnits[unit].currentTexture = _RGLGetCurrentTexture( &_CurrentContext->TextureImageUnits[unit], GL_TEXTURE_2D );
 
 	    _CurrentContext->needValidate |= PSGL_VALIDATE_FFX_FRAGMENT_PROGRAM | PSGL_VALIDATE_TEXTURES_USED;

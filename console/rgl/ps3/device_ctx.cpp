@@ -24,14 +24,14 @@
 using namespace cell::Gcm;
 #endif
 
-#define _RGL_MAX_TILED_REGIONS 15
+#define MAX_TILED_REGIONS 15
 
-#define _RGL_TILED_BUFFER_ALIGNMENT 0x10000
-#define _RGL_TILED_BUFFER_HEIGHT_ALIGNMENT 64
+#define TILED_BUFFER_ALIGNMENT 0x10000
+#define TILED_BUFFER_HEIGHT_ALIGNMENT 64
 
 #define FIFO_SIZE (65536)
 #define _RGL_DMA_PUSH_BUFFER_PREFETCH_PADDING 0x1000
-#define RGL_UTIL_LABEL_INDEX 253
+#define UTIL_LABEL_INDEX 253
 
 extern void _RGLFifoGlSetRenderTarget( RGLRenderTargetEx const * const args );
 
@@ -46,7 +46,7 @@ typedef struct
 
 typedef struct
 {
-   jsTiledRegion region[_RGL_MAX_TILED_REGIONS];
+   jsTiledRegion region[MAX_TILED_REGIONS];
 } jsTiledMemoryManager;
 
 PSGLdevice *_CurrentDevice = NULL;
@@ -319,7 +319,7 @@ GLboolean _RGLInit(PSGLinitOptions* options, RGLResource *resource)
         return GL_FALSE;
     }
 
-    _RGLState.semaphores->userSemaphores[_RGL_SEMA_FENCE].val = nvFenceCounter;
+    _RGLState.semaphores->userSemaphores[SEMA_FENCE].val = nvFenceCounter;
 
     _RGLState.labelValue = 1; 
 
@@ -517,7 +517,7 @@ int32_t _RGLOutOfSpaceCallback( struct CellGcmContextData* fifoContext, uint32_t
 
    for(GLuint i = 0; i < nopsAtBegin; i++)
    {
-      fifo->current[0] = RGL_NOP;
+      fifo->current[0] = NOP;
       fifo->current++;
    }
 
@@ -545,11 +545,11 @@ void _RGLGraphicsHandler( const uint32_t head )
 
 static int _RGLInitRM( RGLResource *gcmResource, unsigned int hostMemorySize, int inSysMem, unsigned int dmaPushBufferSize )
 {
-    memset( gcmResource, 0, sizeof( RGLResource ) );
+    memset(gcmResource, 0, sizeof(RGLResource));
 
-    dmaPushBufferSize = _RGLPad( dmaPushBufferSize, _RGL_HOST_BUFFER_ALIGNMENT );
+    dmaPushBufferSize = _RGLPad(dmaPushBufferSize, HOST_BUFFER_ALIGNMENT);
 
-    gcmResource->hostMemorySize = _RGLPad( FIFO_SIZE + hostMemorySize + dmaPushBufferSize + _RGL_DMA_PUSH_BUFFER_PREFETCH_PADDING  + (RGL_LM_MAX_TOTAL_QUERIES * sizeof( GLuint )), 1 << 20 );
+    gcmResource->hostMemorySize = _RGLPad( FIFO_SIZE + hostMemorySize + dmaPushBufferSize + _RGL_DMA_PUSH_BUFFER_PREFETCH_PADDING  + (LM_MAX_TOTAL_QUERIES * sizeof( GLuint )), 1 << 20 );
 
     if ( gcmResource->hostMemorySize > 0 )
         gcmResource->hostMemoryBase = ( char * )memalign( 1 << 20, gcmResource->hostMemorySize  );
@@ -672,11 +672,11 @@ GLboolean _RGLAllocateColorSurface(
     else
         *pitchAllocated = tiledPitch;
 
-    GLuint padSize = _RGL_TILED_BUFFER_ALIGNMENT;
+    GLuint padSize = TILED_BUFFER_ALIGNMENT;
     while (( padSize % ( tiledPitch*8 ) ) != 0 )
-        padSize += _RGL_TILED_BUFFER_ALIGNMENT;
+        padSize += TILED_BUFFER_ALIGNMENT;
 
-    height = _RGLPad( height, _RGL_TILED_BUFFER_HEIGHT_ALIGNMENT );
+    height = _RGLPad(height, TILED_BUFFER_HEIGHT_ALIGNMENT);
     *bytesAllocated = _RGLPad(( *pitchAllocated ) * height, padSize );
 
     const GLuint tag = *pitchAllocated | ( 0x0 );
@@ -685,7 +685,7 @@ GLboolean _RGLAllocateColorSurface(
 
     if ( *id == GMM_ERROR )
     {
-        for ( int i = 0; i < _RGL_MAX_TILED_REGIONS; ++i )
+        for ( int i = 0; i < MAX_TILED_REGIONS; ++i )
         {
             if ( mm->region[i].size == 0 )
             {
@@ -808,7 +808,7 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
    _RGLDuringDestroyDevice = GL_FALSE;
 
    memset( mm->region, 0, sizeof( mm->region ) );
-   for ( int i = 0;i < _RGL_MAX_TILED_REGIONS;++i )
+   for(int i = 0; i < MAX_TILED_REGIONS; ++i)
       cellGcmUnbindTile( i );
 
 
@@ -863,12 +863,12 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
 
    for ( int i = 0; i < params->bufferingMode; ++i )
    {
-      gcmDevice->color[i].source = _RGL_SURFACE_SOURCE_DEVICE;
+      gcmDevice->color[i].source = SURFACE_SOURCE_DEVICE;
       gcmDevice->color[i].width = width;
       gcmDevice->color[i].height = height;
       gcmDevice->color[i].bpp = 4;
       gcmDevice->color[i].format = RGL_ARGB8;
-      gcmDevice->color[i].pool = _RGL_SURFACE_POOL_LINEAR;
+      gcmDevice->color[i].pool = SURFACE_POOL_LINEAR;
 
       GLuint size;
       _RGLAllocateColorSurface(width, height,
@@ -993,12 +993,12 @@ PSGLdevice* psglCreateDeviceExtended(const PSGLdeviceParameters *parameters )
 {
     PSGLdevice *device = (PSGLdevice *)malloc(sizeof(PSGLdevice) + sizeof(RGLDevice));
 
-    if ( !device )
+    if(!device)
     {
-        _RGLSetError( GL_OUT_OF_MEMORY );
+        _RGLSetError(GL_OUT_OF_MEMORY);
         return NULL;
     }
-    memset( device, 0, sizeof( PSGLdevice ) + sizeof(RGLDevice) );
+    memset(device, 0, sizeof(PSGLdevice) + sizeof(RGLDevice));
 
     PSGLdeviceParameters defaultParameters;
 
@@ -1019,15 +1019,15 @@ PSGLdevice* psglCreateDeviceExtended(const PSGLdeviceParameters *parameters )
     defaultParameters.horizontalScale = 1.0f;
     defaultParameters.verticalScale = 1.0f;
 
-    memcpy( &device->deviceParameters, parameters, sizeof( PSGLdeviceParameters ) );
+    memcpy(&device->deviceParameters, parameters, sizeof( PSGLdeviceParameters));
 
-    if (( parameters->enable & PSGL_DEVICE_PARAMETERS_COLOR_FORMAT ) == 0 )
+    if ((parameters->enable & PSGL_DEVICE_PARAMETERS_COLOR_FORMAT) == 0)
        device->deviceParameters.colorFormat = defaultParameters.colorFormat;
 
-    if (( parameters->enable & PSGL_DEVICE_PARAMETERS_TV_STANDARD ) == 0 )
+    if ((parameters->enable & PSGL_DEVICE_PARAMETERS_TV_STANDARD ) == 0)
        device->deviceParameters.TVStandard = defaultParameters.TVStandard;
 
-    if (( parameters->enable & PSGL_DEVICE_PARAMETERS_CONNECTOR ) == 0 )
+    if ((parameters->enable & PSGL_DEVICE_PARAMETERS_CONNECTOR) == 0)
         device->deviceParameters.connector = defaultParameters.connector;
 
     if (( parameters->enable & PSGL_DEVICE_PARAMETERS_BUFFERING_MODE ) == 0 )
@@ -1131,7 +1131,7 @@ void psglDestroyDevice(PSGLdevice *device)
    _RGLDuringDestroyDevice = GL_TRUE;
    for ( int i = 0; i < params->bufferingMode; ++i )
    {
-      if ( gcmDevice->color[i].pool != _RGL_SURFACE_POOL_NONE )
+      if (gcmDevice->color[i].pool != SURFACE_POOL_NONE)
          gmmFree( gcmDevice->color[i].dataId );
    }
    _RGLDuringDestroyDevice = GL_FALSE;
@@ -1241,12 +1241,12 @@ GLAPI void psglSwap(void)
 
    LContext->needValidate = PSGL_VALIDATE_ALL;
 
-   for(int unit = 0; unit < _RGL_MAX_TEXTURE_UNITS; unit++)
+   for(int unit = 0; unit < MAX_TEXTURE_UNITS; unit++)
       LContext->TextureCoordsUnits[unit].TextureMatrixStack.dirty = GL_TRUE;
 
    LContext->ModelViewMatrixStack.dirty = GL_TRUE;
    LContext->ProjectionMatrixStack.dirty = GL_TRUE;
-   LContext->attribs->DirtyMask = ( 1 << _RGL_MAX_VERTEX_ATTRIBS ) - 1;
+   LContext->attribs->DirtyMask = (1 << MAX_VERTEX_ATTRIBS) - 1;
 
    cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
 
@@ -1280,15 +1280,15 @@ GLAPI void psglSwap(void)
 
 static inline void _RGLUtilWaitForIdle(void)
 {
-   cellGcmSetWriteBackEndLabelInline( &_RGLState.fifo, RGL_UTIL_LABEL_INDEX, _RGLState.labelValue);
-   cellGcmSetWaitLabelInline( &_RGLState.fifo, RGL_UTIL_LABEL_INDEX, _RGLState.labelValue);
+   cellGcmSetWriteBackEndLabelInline( &_RGLState.fifo, UTIL_LABEL_INDEX, _RGLState.labelValue);
+   cellGcmSetWaitLabelInline( &_RGLState.fifo, UTIL_LABEL_INDEX, _RGLState.labelValue);
 
    _RGLState.labelValue++; 
 
-   cellGcmSetWriteBackEndLabelInline( &_RGLState.fifo, RGL_UTIL_LABEL_INDEX, _RGLState.labelValue);
+   cellGcmSetWriteBackEndLabelInline( &_RGLState.fifo, UTIL_LABEL_INDEX, _RGLState.labelValue);
    cellGcmFlush();
 
-   while( *(cellGcmGetLabelAddress( RGL_UTIL_LABEL_INDEX)) != _RGLState.labelValue);
+   while( *(cellGcmGetLabelAddress(UTIL_LABEL_INDEX)) != _RGLState.labelValue);
 
    _RGLState.labelValue++;
 }

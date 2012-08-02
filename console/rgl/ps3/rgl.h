@@ -18,7 +18,7 @@ typedef struct _CGcontext *CGcontext;
 #include <cell/resc.h>
 #endif
 
-#define _RGL_MAX_COLOR_ATTACHMENTS 4
+#define MAX_COLOR_ATTACHMENTS 4
 #define SUBPIXEL_ADJUST (0.5/(1<<12))
 
 #define gmmIdIsMain(id) (((GmmBaseBlock *)id)->isMain)
@@ -154,7 +154,7 @@ struct jsFramebufferAttachment
 
 struct jsFramebuffer
 {
-   jsFramebufferAttachment color[_RGL_MAX_COLOR_ATTACHMENTS];
+   jsFramebufferAttachment color[MAX_COLOR_ATTACHMENTS];
    GLboolean needValidate;
    jsFramebuffer(): needValidate( GL_TRUE ) {};
    virtual ~jsFramebuffer() {};
@@ -192,13 +192,11 @@ typedef struct
    int	X, Y, XSize, YSize;
 } jsViewPort;
 
-#define _RGL_IMAGE_STORAGE_RASTER	0
-#define _RGL_IMAGE_STORAGE_BLOCK	1
-
-enum {
-   _RGL_IMAGE_DATASTATE_UNSET = 0x0,
-   _RGL_IMAGE_DATASTATE_HOST  = 0x1,
-   _RGL_IMAGE_DATASTATE_GPU   = 0x2
+enum
+{
+   IMAGE_DATASTATE_UNSET = 0x0,
+   IMAGE_DATASTATE_HOST  = 0x1,
+   IMAGE_DATASTATE_GPU   = 0x2
 };
 
 typedef struct jsImage_
@@ -233,9 +231,9 @@ typedef struct
    void* data;
 } jsRaster;
 
-#define _RGL_TEXTURE_REVALIDATE_LAYOUT   	0x01
-#define _RGL_TEXTURE_REVALIDATE_IMAGES		0x02
-#define _RGL_TEXTURE_REVALIDATE_PARAMETERS	0x04
+#define TEXTURE_REVALIDATE_LAYOUT   	0x01
+#define TEXTURE_REVALIDATE_IMAGES	0x02
+#define TEXTURE_REVALIDATE_PARAMETERS	0x04
 
 typedef struct jsBufferObject jsBufferObject;
 
@@ -267,27 +265,21 @@ jsTexture;
 #define _RGL_MAX_TEXTURE_IMAGE_UNITS	16
 #define _RGL_MAX_VERTEX_TEXTURE_IMAGE_UNITS	4
 
-#define _RGL_MAX_TEXTURE_UNITS 4
+#define MAX_TEXTURE_UNITS 4
 
-#define _RGL_MAX_TEXTURE_SIZE_LOG2	12
-#define _RGL_MAX_TEXTURE_SIZE	(4096)
 #define _RGL_MAX_MODELVIEW_STACK_DEPTH 16
 #define _RGL_MAX_PROJECTION_STACK_DEPTH 2
-#define _RGL_MAX_TEXTURE_STACK_DEPTH 2
+#define MAX_TEXTURE_STACK_DEPTH 2
 
-#define _RGL_MAX_VERTEX_ATTRIBS	16
+#define MAX_VERTEX_ATTRIBS	16
 
 typedef struct
 {
    GLuint		bound2D;
-
    jsTexture*	default2D;
-
    GLenum      fragmentTarget;
-
    GLenum		envMode;
    jsColorRGBAf	envColor;
-
    jsTexture* currentTexture;
 } jsTextureImageUnit;
 
@@ -299,9 +291,9 @@ typedef struct
 
 enum
 {
-   _RGL_FRAMEBUFFER_ATTACHMENT_NONE,
-   _RGL_FRAMEBUFFER_ATTACHMENT_RENDERBUFFER,
-   _RGL_FRAMEBUFFER_ATTACHMENT_TEXTURE,
+   FRAMEBUFFER_ATTACHMENT_NONE,
+   FRAMEBUFFER_ATTACHMENT_RENDERBUFFER,
+   FRAMEBUFFER_ATTACHMENT_TEXTURE,
 };
 
 typedef enum PSGLtvStandard
@@ -406,8 +398,8 @@ typedef struct
    GLuint	indexXferOffset;
    GLuint	indexXferSize;
    GLuint	attribXferTotalSize;
-   GLuint	attribXferOffset[_RGL_MAX_VERTEX_ATTRIBS];
-   GLuint	attribXferSize[_RGL_MAX_VERTEX_ATTRIBS];
+   GLuint	attribXferOffset[MAX_VERTEX_ATTRIBS];
+   GLuint	attribXferSize[MAX_VERTEX_ATTRIBS];
 } jsDrawParams;
 
 #define _RGL_ATTRIB_POSITION_INDEX			0
@@ -441,7 +433,7 @@ typedef struct
 
 typedef struct
 {
-   jsAttribute attrib[_RGL_MAX_VERTEX_ATTRIBS];
+   jsAttribute attrib[MAX_VERTEX_ATTRIBS];
    unsigned int DirtyMask;
    unsigned int EnabledMask;
    unsigned int NeedsConversionMask;
@@ -471,13 +463,6 @@ struct jsBufferObject
    RGL::Vector<jsAttribSet *> attribSets;
    void *platformBufferObject[];
 };
-
-#define _RGL_CONTEXT_RED_MASK				0x01
-#define _RGL_CONTEXT_GREEN_MASK				0x02
-#define _RGL_CONTEXT_BLUE_MASK				0x04
-#define _RGL_CONTEXT_ALPHA_MASK				0x08
-#define _RGL_CONTEXT_DEPTH_MASK				0x10
-#define _RGL_CONTEXT_COLOR_MASK				0x0F
 
 #define ELEMENTS_IN_MATRIX	16
 
@@ -521,16 +506,16 @@ struct PSGLcontext
    GLboolean		ShaderSRGBRemap;
    GLboolean		Blending;
    GLboolean		BlendingMrt[3];
-   GLenum			BlendEquationRGB;
-   GLenum			BlendEquationAlpha;
-   GLenum			BlendFactorSrcRGB;
-   GLenum			BlendFactorDestRGB;
-   GLenum			BlendFactorSrcAlpha;
-   GLenum			BlendFactorDestAlpha;
+   GLenum		BlendEquationRGB;
+   GLenum		BlendEquationAlpha;
+   GLenum		BlendFactorSrcRGB;
+   GLenum		BlendFactorDestRGB;
+   GLenum		BlendFactorSrcAlpha;
+   GLenum		BlendFactorDestAlpha;
    jsColorRGBAf	BlendColor;
    jsTexNameSpace textureNameSpace;
-   GLuint			ActiveTexture;
-   GLuint			CS_ActiveTexture;
+   GLuint		ActiveTexture;
+   GLuint		CS_ActiveTexture;
    jsTextureImageUnit	TextureImageUnits[_RGL_MAX_TEXTURE_IMAGE_UNITS];
    jsTextureImageUnit* CurrentImageUnit;
    jsTextureCoordsUnit	TextureCoordsUnits[_RGL_MAX_TEXTURE_COORDS];
@@ -564,9 +549,6 @@ struct PSGLcontext
 #define MIN(A,B) ((A)<(B)?(A):(B))
 #define RGL_LIKELY(COND) (COND)
 #define RGL_UNLIKELY(COND) (COND)
-
-#define _RGL_ALLOC_FIRST_FIT 0
-#define _RGL_ALLOC_BEST_FIT 1
 
 static inline float _RGLClampf( const float value )
 {
@@ -636,7 +618,7 @@ void _RGLTexNameSpaceGenNames( jsTexNameSpace *ns, GLsizei n, GLuint *names );
 void _RGLTexNameSpaceDeleteNames( jsTexNameSpace *ns, GLsizei n, const GLuint *names );
 void _RGLTexNameSpaceReinit( jsTexNameSpace * saved, jsTexNameSpace * active );
 
-#define RGL_MEMORY_ALLOC_ERROR	0
+#define MEMORY_ALLOC_ERROR	0
 
 #define GMM_ERROR                   0xFFFFFFFF
 #define GMM_TILE_ALIGNMENT          0x10000
@@ -772,12 +754,9 @@ void gmmSetTileAttrib(const uint32_t id, const uint32_t tag, void *pData);
     cellGcmSetTransferImageInline( &_RGLState.fifo, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, dstOffset_tmp, (dstPitch), (dstX), (dstY), (srcOffset_tmp), (srcPitch), (srcX), (srcY), (width), (height), (bytesPerPixel) ); \
 }
 
-#define RGL_BIG_ENDIAN
+#define HOST_BUFFER_ALIGNMENT 128
 
-#define _RGL_LINEAR_BUFFER_ALIGNMENT 128
-#define _RGL_HOST_BUFFER_ALIGNMENT 128
-
-#define _RGL_TRANSIENT_MEMORY_DEFAULT		(32 << 20)
+#define _RGL_TRANSIENT_MEMORY_DEFAULT	(32 << 20)
 #define _RGL_PERSISTENT_MEMORY_DEFAULT	(160 << 20)
 #define _RGL_FIFO_SIZE_DEFAULT		(256 * 1024)
 #define _RGL_HOST_SIZE_DEFAULT		(0)
@@ -787,10 +766,10 @@ void gmmSetTileAttrib(const uint32_t id, const uint32_t tag, void *pData);
 
 typedef struct PSGLinitOptions
 {
-   GLuint			enable;
-   int				errorConsole;
-   GLuint			fifoSize;
-   GLuint			hostMemorySize;
+   GLuint enable;
+   int    errorConsole;
+   GLuint fifoSize;
+   GLuint hostMemorySize;
 } PSGLinitOptions;
 
 struct  RGLSemaphore
@@ -903,9 +882,9 @@ struct RGLState
 
 GLboolean _RGLInit( PSGLinitOptions* options, RGLResource *resource );
 
-#define _RGL_SEMA_NEVENTS	128
-#define _RGL_SEMA_BASE	64
-#define _RGL_SEMA_FENCE	(_RGL_SEMA_BASE+_RGL_SEMA_NEVENTS+0)
+#define SEMA_NEVENTS	128
+#define SEMA_BASE	64
+#define SEMA_FENCE	(SEMA_BASE + SEMA_NEVENTS)
 
 void _RGLIncFenceRef( GLuint* ref );
 

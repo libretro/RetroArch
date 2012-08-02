@@ -24,10 +24,8 @@ extern PSGLdevice *_CurrentDevice;
 
 #define RGL_SETRENDERTARGET_MAXCOUNT  4
 
-#define RGL_NOP                     (0x00000000)
+#define NOP                     (0x00000000)
 #define DEFAULT_FIFO_BLOCK_SIZE     (0x10000)
-
-#define RGL_ATTRIB_COUNT        16
 
 #define RGL_F0_DOT_0		12582912.0f
 
@@ -37,7 +35,6 @@ extern PSGLdevice *_CurrentDevice;
 
 #define VERTEX_PROFILE_INDEX 0
 #define FRAGMENT_PROFILE_INDEX 1
-
 
 typedef union
 {
@@ -95,8 +92,7 @@ typedef struct
     GLuint SET_TEXTURE_CONTROL1;
     GLuint SET_TEXTURE_FILTER;
     GLuint SET_TEXTURE_IMAGE_RECT;
-}
-RGLTextureMethods;
+} RGLTextureMethods;
 
 struct RGLTextureAddress
 {
@@ -154,23 +150,25 @@ typedef struct  _tagMODESTRUC
    GLushort  wVertSyncStart;
    GLushort  wVertSyncEnd;
    GLushort  wVertBlankEnd;
-   GLuint      dwDotClock;
+   GLuint    dwDotClock;
    GLushort  wHSyncPolarity;
    GLushort  wVSyncPolarity;
 }
 MODESTRUC;
 
-enum {
-   _RGL_SURFACE_SOURCE_TEMPORARY,
-   _RGL_SURFACE_SOURCE_DEVICE,
-   _RGL_SURFACE_SOURCE_TEXTURE,
-   _RGL_SURFACE_SOURCE_PBO,
+enum
+{
+   SURFACE_SOURCE_TEMPORARY,
+   SURFACE_SOURCE_DEVICE,
+   SURFACE_SOURCE_TEXTURE,
+   SURFACE_SOURCE_PBO,
 };
 
-enum {
-   _RGL_SURFACE_POOL_NONE,
-   _RGL_SURFACE_POOL_LINEAR,
-   _RGL_SURFACE_POOL_SYSTEM,
+enum
+{
+   SURFACE_POOL_NONE,
+   SURFACE_POOL_LINEAR,
+   SURFACE_POOL_SYSTEM,
 };
 
 
@@ -232,8 +230,7 @@ void _RGLFifoFinish( RGLFifo *fifo );
     fifo->lastSWReferenceFlushed = fifo->lastSWReferenceWritten; \
 }
 
-#define RGL_PAGE_SIZE                             0x1000
-#define RGL_LM_MAX_TOTAL_QUERIES		    800
+#define LM_MAX_TOTAL_QUERIES 800
 
 typedef struct RGLTextureState RGLTextureState;
 
