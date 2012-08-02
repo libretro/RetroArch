@@ -337,8 +337,8 @@ static bool xinput_input_key_pressed(void *data, int key)
       case RARCH_QUIT_KEY:
          if(IS_TIMER_EXPIRED(d3d))
          {
-            uint32_t left_thumb_pressed = (state[0] & XINPUT1_GAMEPAD_LEFT_THUMB);
-            uint32_t right_thumb_pressed = (state[0] & XINPUT1_GAMEPAD_RIGHT_THUMB);
+            uint32_t left_thumb_pressed = (state[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L3));
+            uint32_t right_thumb_pressed = (state[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R3));
 
             g_console.menu_enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED(d3d);
             g_console.ingame_menu_enable = right_thumb_pressed && !left_thumb_pressed;

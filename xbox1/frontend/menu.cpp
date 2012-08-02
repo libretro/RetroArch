@@ -49,6 +49,8 @@ int width;
 int height;
 wchar_t m_title[128];
 
+static uint64_t old_state = 0;
+
 typedef enum {
    MENU_ROMSELECT_ACTION_OK,
    MENU_ROMSELECT_ACTION_GOTO_SETTINGS,
@@ -60,31 +62,6 @@ static void display_menubar(void)
    //Render background image
    d3d_surface_render(&m_menuMainBG, MENU_MAIN_BG_X, MENU_MAIN_BG_Y,
    m_menuMainBG.m_imageInfo.Width, m_menuMainBG.m_imageInfo.Height);
-}
-
-static void control_update_wrap(uint16_t *input_state, uint16_t trigger_state)
-{
-   (void)trigger_state;
-
-   *input_state = 0;
-   input_xinput.poll(NULL);
-
-   static const struct retro_keybind *binds[MAX_PLAYERS] = {
-      g_settings.input.binds[0],
-      g_settings.input.binds[1],
-      g_settings.input.binds[2],
-      g_settings.input.binds[3],
-      g_settings.input.binds[4],
-      g_settings.input.binds[5],
-      g_settings.input.binds[6],
-      g_settings.input.binds[7],
-   };
-
-   for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
-   {
-      *input_state |= input_xinput.input_state(NULL, binds, false,
-         RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
-   }
 }
 
 static void browser_update(filebrowser_t * b, uint16_t input, const char *extensions)
@@ -262,34 +239,163 @@ void menu_free(void)
 
 void menu_loop(void)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    g_console.menu_enable = true;
 
    do
    {
-      uint16_t input_st = 0;
-      uint16_t trig_state;
-      static uint16_t old_state = 0;
+      //first button input frame
+      uint64_t input_state_first_frame = 0;
+      uint64_t input_state = 0;
+      static bool first_held = false;
 
-      d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+       input_xinput.poll(NULL);
+
+      static const struct retro_keybind *binds[MAX_PLAYERS] = {
+	      g_settings.input.binds[0],
+	      g_settings.input.binds[1],
+	      g_settings.input.binds[2],
+	      g_settings.input.binds[3],
+	      g_settings.input.binds[4],
+	      g_settings.input.binds[5],
+	      g_settings.input.binds[6],
+	      g_settings.input.binds[7],
+      };
+
+      static const struct retro_keybind _analog_binds[] = {
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT), 0 },
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT), 0 },
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP), 0 },
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN), 0 },
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT), 0 },
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT), 0 },
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_UP), 0 },
+	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN), 0 },
+      };
+
+      const struct retro_keybind *analog_binds[] = {
+	      _analog_binds
+      };
+
+      for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
+      {
+         input_state |= input_xinput.input_state(NULL, binds, false,
+            RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
+      }
+
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 0) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT) : 0;
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 1) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT) : 0;
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 2) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP) : 0;
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 3) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN) : 0;
+
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 4) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT) : 0;
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 5) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT) : 0;
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 6) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_UP) : 0;
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 7) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN) : 0;
+
+      uint64_t trig_state = input_state & ~old_state; //set first button input frame as trigger
+      input_state_first_frame = input_state;          //hold onto first button input frame
+
+      //second button input frame
+      input_state = 0;
+      input_xinput.poll(NULL);
+
+
+      for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
+      {
+         input_state |= input_xinput.input_state(NULL, binds, false,
+            RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
+      }
+
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 0) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT) : 0;
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 1) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT) : 0;
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 2) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP) : 0;
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 3) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN) : 0;
+
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 4) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT) : 0;
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 5) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT) : 0;
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 6) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_UP) : 0;
+      input_state |= input_xinput.input_state(NULL, analog_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 7) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN) : 0;
+
+      bool analog_sticks_pressed = (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_UP)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN));
+      bool shoulder_buttons_pressed = ((input_state & (1 << RETRO_DEVICE_ID_JOYPAD_L2)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_R2))) /*&& current_menu->category_id != CATEGORY_SETTINGS*/;
+      bool do_held = analog_sticks_pressed || shoulder_buttons_pressed;
+
+      if(do_held)
+      {
+         if(!first_held)
+         {
+            first_held = true;
+            SET_TIMER_EXPIRATION(device_ptr, 7);
+         }
+         
+         if(IS_TIMER_EXPIRED(device_ptr))
+         {
+            first_held = false;
+            trig_state = input_state; //second input frame set as current frame
+         }
+      }
+
+      device_ptr->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
          D3DCOLOR_ARGB(0, 0, 0, 0),
          1.0f, 0);
       
-      control_update_wrap(&input_st, 0 /* normally trig_state */);
-      trig_state = input_st & ~old_state;
-      
-      d3d->d3d_render_device->BeginScene();
-      d3d->d3d_render_device->SetFlickerFilter(1);
-      d3d->d3d_render_device->SetSoftDisplayFilter(1);
+      device_ptr->d3d_render_device->BeginScene();
+      device_ptr->d3d_render_device->SetFlickerFilter(1);
+      device_ptr->d3d_render_device->SetSoftDisplayFilter(1);
       
       select_rom(trig_state);
       browser_render(&browser, m_menuMainRomListPos_x, m_menuMainRomListPos_y, 20);
       
-      old_state = input_st;
+      old_state = input_state_first_frame;
+
+      if(IS_TIMER_EXPIRED(device_ptr))
+      {
+         // if we want to force goto the emulation loop, skip this
+         if(g_console.mode_switch != MODE_EMULATION)
+         {
+            // for ingame menu, we need a different precondition because menu_enable
+            // can be set to false when going back from ingame menu to menu
+            if(g_console.ingame_menu_enable == true)
+            {
+               //we want to force exit when mode_switch is set to MODE_EXIT
+               if(g_console.mode_switch != MODE_EXIT)
+                  g_console.mode_switch = (((old_state & (1 << RETRO_DEVICE_ID_JOYPAD_L3)) && (old_state & (1 << RETRO_DEVICE_ID_JOYPAD_R3)) && g_console.emulator_initialized)) ? MODE_EMULATION : MODE_MENU;
+            }
+            else
+            {
+               g_console.menu_enable = !(((old_state & (1 << RETRO_DEVICE_ID_JOYPAD_L3)) && (old_state & (1 << RETRO_DEVICE_ID_JOYPAD_R3)) && g_console.emulator_initialized));
+               g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
+            }
+         }
+      }
+
+      // set a timer delay so that we don't instantly switch back to the menu when
+      // press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
+      if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
+      {
+         SET_TIMER_EXPIRATION(device_ptr, 30);
+      }
       
-      d3d->d3d_render_device->EndScene();
-      d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL);
+      device_ptr->d3d_render_device->EndScene();
+      device_ptr->d3d_render_device->Present(NULL, NULL, NULL, NULL);
    }while(g_console.menu_enable);
 
    g_console.ingame_menu_enable = false;
