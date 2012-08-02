@@ -101,10 +101,6 @@ static void browser_update(filebrowser_t * b, uint16_t input, const char *extens
       action = FILEBROWSER_ACTION_LEFT;
    else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_R))
       action = FILEBROWSER_ACTION_SCROLL_DOWN;
-   else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_R2))
-      action = FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH;
-   else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_L2))
-      action = FILEBROWSER_ACTION_SCROLL_UP_SMOOTH;
    else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_L))
       action = FILEBROWSER_ACTION_SCROLL_UP;
    else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_A))

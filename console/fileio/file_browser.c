@@ -182,21 +182,9 @@ bool filebrowser_iterate(filebrowser_t *filebrowser, filebrowser_action_t action
          else
             filebrowser->current_dir.ptr -= entries_to_scroll;
          break;
-      case FILEBROWSER_ACTION_SCROLL_UP_SMOOTH:
-         if (filebrowser->current_dir.ptr <= 50)
-            filebrowser->current_dir.ptr= 0;
-         else
-            filebrowser->current_dir.ptr -= 50;
-         break;
       case FILEBROWSER_ACTION_SCROLL_DOWN:
          filebrowser->current_dir.ptr = (min(filebrowser->current_dir.ptr + 
          entries_to_scroll, filebrowser->current_dir.list->size-1));
-         break;
-      case FILEBROWSER_ACTION_SCROLL_DOWN_SMOOTH:
-         filebrowser->current_dir.ptr = (min(filebrowser->current_dir.ptr + 50, 
-         filebrowser->current_dir.list->size-1));
-         if(!filebrowser->current_dir.ptr)
-            filebrowser->current_dir.ptr = 0;
          break;
       case FILEBROWSER_ACTION_OK:
          ret = filebrowser_push_directory(filebrowser, filebrowser_get_current_path(filebrowser), true);
