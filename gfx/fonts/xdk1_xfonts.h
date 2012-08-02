@@ -19,7 +19,7 @@
 
 void xfonts_deinit_font(void);
 void xfonts_render_msg_pre(xdk_d3d_video_t *d3d);
-void xfonts_render_msg_place(xdk_d3d_video_t *d3d, float x, float y, float scale, const wchar_t *msg, ...);
+void xfonts_render_msg_place(xdk_d3d_video_t *d3d, float x, float y, float scale, const char *msg);
 void xfonts_render_msg_post(xdk_d3d_video_t *d3d);
 
 #endif

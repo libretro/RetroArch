@@ -8,7 +8,7 @@
 #ifdef __cplusplus
 extern "C" {
 #else
-#if defined(_MSC_VER) && !defined(__cplusplus)
+#if defined(_MSC_VER) && !defined(SN_TARGET_PS3) && !defined(__cplusplus)
 #define bool unsigned char
 #define true 1
 #define false 0

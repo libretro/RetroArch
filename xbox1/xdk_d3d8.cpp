@@ -455,20 +455,19 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       char buf[128], buf2[128], buf_fps_last[128];
       bool ret = false;
       snprintf(buf, sizeof(buf), "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
-      convert_char_to_wchar(strw_buffer, buf, sizeof(strw_buffer));
-      xfonts_render_msg_place(d3d, font_x + 30, font_y + 50, 0 /* scale */, strw_buffer);
+      xfonts_render_msg_place(d3d, font_x + 30, font_y + 50, 0 /* scale */, buf);
 
       if(ret = gfx_window_title(buf2, sizeof(buf2)) || sizeof(buf_fps_last))
       {
          if(ret)
          {
             snprintf(buf_fps_last, sizeof(buf_fps_last), buf2);
+            xfonts_render_msg_place(d3d, font_x + 30, font_y + 70, 0 /* scale */, buf_fps_last);
             convert_char_to_wchar(strw_buffer, buf2, sizeof(strw_buffer));
          }
          else if(buf_fps_last)
-            convert_char_to_wchar(strw_buffer, buf_fps_last, sizeof(strw_buffer));
-         
-         xfonts_render_msg_place(d3d, font_x + 30, font_y + 70, 0 /* scale */, strw_buffer);
+            xfonts_render_msg_place(d3d, font_x + 30, font_y + 70, 0 /* scale */, buf2);
+
          xfonts_render_msg_post(d3d);
       }
    }

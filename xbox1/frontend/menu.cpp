@@ -47,7 +47,7 @@ int m_menuMainRomListPos_y;
 // Backbuffer width, height
 int width; 
 int height;
-wchar_t m_title[128];
+char m_title[128];
 
 static uint64_t old_state = 0;
 
@@ -115,16 +115,14 @@ static void browser_render(filebrowser_t *b, float current_x, float current_y, f
       currentY = currentY + ySpacing;
 
       const char *rom_basename = fname_tmp;
-      wchar_t rom_basename_w[256];
 
       //check if this is the currently selected file
       const char *current_pathname = filebrowser_get_current_path(b);
       if(strcmp(current_pathname, b->current_dir.list->elems[i].data) == 0)
          d3d_surface_render(&m_menuMainRomSelectPanel, currentX, currentY, ROM_PANEL_WIDTH, ROM_PANEL_HEIGHT);
 
-      convert_char_to_wchar(rom_basename_w, rom_basename, sizeof(rom_basename_w));
       xfonts_render_msg_pre(d3d);
-      xfonts_render_msg_place(d3d, currentX, currentY, 0 /* scale */, rom_basename_w);
+      xfonts_render_msg_place(d3d, currentX, currentY, 0 /* scale */, rom_basename);
       xfonts_render_msg_post(d3d);
    }
 }
@@ -185,9 +183,7 @@ int menu_init(void)
    struct retro_system_info info;
    retro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
-   char core_text[256];
-   snprintf(core_text, sizeof(core_text), "Libretro core: %s %s", id, info.library_version);
-   convert_char_to_wchar(m_title, core_text, sizeof(m_title));
+   snprintf(m_title, sizeof(m_title), "Libretro core: %s %s", id, info.library_version);
 
    // Set file cache size
    XSetFileCacheSize(8 * 1024 * 1024);
