@@ -2140,7 +2140,7 @@ void menu_loop(void)
       static bool first_held = false;
       menu *current_menu = menu_stack_get_current_ptr();
 
-      input_ps3.poll(NULL);
+      input_ptr.poll(NULL);
 
       static const struct retro_keybind *binds[MAX_PLAYERS] = {
 	      g_settings.input.binds[0],
@@ -2170,26 +2170,26 @@ void menu_loop(void)
 
       for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
-         input_state |= input_ps3.input_state(NULL, binds, false,
+         input_state |= input_ptr.input_state(NULL, binds, false,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
       }
 
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 0) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT) : 0;
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 1) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT) : 0;
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 2) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP) : 0;
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 3) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN) : 0;
 
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 4) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT) : 0;
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 5) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT) : 0;
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 6) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_UP) : 0;
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 7) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN) : 0;
 
       uint64_t trig_state = input_state & ~old_state; //set first button input frame as trigger
@@ -2197,31 +2197,31 @@ void menu_loop(void)
 
       //second button input frame
       input_state = 0;
-      input_ps3.poll(NULL);
+      input_ptr.poll(NULL);
 
 
       for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
-         input_state |= input_ps3.input_state(NULL, binds, false,
+         input_state |= input_ptr.input_state(NULL, binds, false,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
       }
 
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 0) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT) : 0;
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 1) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT) : 0;
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 2) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP) : 0;
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 3) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN) : 0;
 
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 4) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT) : 0;
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 5) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT) : 0;
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 6) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_UP) : 0;
-      input_state |= input_ps3.input_state(NULL, analog_binds, false,
+      input_state |= input_ptr.input_state(NULL, analog_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 7) ? (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN) : 0;
 
       bool analog_sticks_pressed = (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_UP)) || (input_state & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN));
