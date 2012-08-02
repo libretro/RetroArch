@@ -23,7 +23,7 @@ item menu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       0.0f,                                                             /* text X position */
       0.0f,                                                             /* text Y position */
       YELLOW,                                                           /* text color */
-      "INFO - Change the display resolution - press X to confirm.",     /* item comment */
+      "INFO - Change the display resolution.",				/* item comment */
       WHITE,                                                            /* color of item comment */
    },
    {

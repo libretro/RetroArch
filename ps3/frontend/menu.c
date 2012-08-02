@@ -794,7 +794,7 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
 
    display_menubar(current_menu);
 
-   snprintf(comment_two, sizeof(comment_two), "X - Select %s  /\\ - return to settings  START - Reset Startdir", object);
+   snprintf(comment_two, sizeof(comment_two), "[%s] - return to settings [%s] - Reset Startdir", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
    render_msg_place_func(x_position, comment_two_y_position, font_size, YELLOW, comment_two);
    render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, comment);
    render_msg_post_func();
@@ -1592,12 +1592,14 @@ static void settings_iterate(menu *current_menu, item *items, settings_action_t 
 static void select_setting(item *items, menu *current_menu, uint64_t input)
 {
    unsigned i;
+   char msg[256];
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    float x_position = 0.09f;
    float x_position_center = 0.5f;
    float comment_y_position = 0.83f;
    float comment_two_y_position = 0.91f;
+   float font_size = 0.91f;
 
    settings_action_t action = SETTINGS_ACTION_NOOP;
 
@@ -1630,10 +1632,12 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
       }
    }
 
-   render_msg_place_func(x_position, comment_y_position, 0.86f, LIGHTBLUE, items[current_menu->selected].comment);
+   render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, items[current_menu->selected].comment);
 
-   render_msg_place_func(x_position, comment_two_y_position, FONT_SIZE, YELLOW, "L3+R3 - resume game   R1 - go forward");
-   render_msg_place_func(x_position, comment_two_y_position + 0.04f, FONT_SIZE, YELLOW, "START - default   L1/CIRCLE - go back");
+   snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game | [%s] -go forward", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R));
+   render_msg_place_func(x_position, comment_two_y_position, FONT_SIZE, YELLOW, msg);
+   snprintf(msg, sizeof(msg), "[%s] - default | [%s]/[%s] - go back", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
+   render_msg_place_func(x_position, comment_two_y_position + 0.04f, FONT_SIZE, YELLOW, msg);
    render_msg_post_func();
 }
 
@@ -1779,6 +1783,7 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
    else
    {
       char viewport_x[64], viewport_y[64], viewport_w[64], viewport_h[64];
+      char msg[256];
       display_menubar(current_menu);
 
       snprintf(viewport_x, sizeof(viewport_x), "Viewport X: #%d", g_console.viewports.custom_vp.x);
@@ -1793,50 +1798,62 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
 
       render_msg_place_func(x_position, y_position+(y_position_increment*4), font_size, LIGHTBLUE, "CONTROLS:");
 
-      render_msg_place_func (x_position, y_position+(y_position_increment*5), font_size,  LIGHTBLUE, "LEFT or LSTICK UP");
+      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT));
+      render_msg_place_func (x_position, y_position+(y_position_increment*5), font_size,  LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*5), font_size, LIGHTBLUE, "- Decrease Viewport X");
 
       render_msg_post_func();
 
-      render_msg_place_func (x_position, y_position+(y_position_increment*6), font_size, LIGHTBLUE, "RIGHT or LSTICK RIGHT");
+      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT));
+      render_msg_place_func (x_position, y_position+(y_position_increment*6), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*6), font_size, LIGHTBLUE, "- Increase Viewport X");
 
-      render_msg_place_func (x_position, y_position+(y_position_increment*7), font_size, LIGHTBLUE, "UP or LSTICK UP");
+      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_UP), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP));
+      render_msg_place_func (x_position, y_position+(y_position_increment*7), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*7), font_size, LIGHTBLUE, "- Increase Viewport Y");
 
       render_msg_post_func();
 
-      render_msg_place_func (x_position, y_position+(y_position_increment*8), font_size, LIGHTBLUE, "DOWN or LSTICK DOWN");
+      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_DOWN), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN));
+      render_msg_place_func (x_position, y_position+(y_position_increment*8), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*8), font_size, LIGHTBLUE, "- Decrease Viewport Y");
 
-      render_msg_place_func (x_position, y_position+(y_position_increment*9), font_size, LIGHTBLUE, "L1 or RSTICK LEFT");
+      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT));
+      render_msg_place_func (x_position, y_position+(y_position_increment*9), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*9), font_size, LIGHTBLUE, "- Decrease Viewport Width");
 
       render_msg_post_func();
 
-      render_msg_place_func (x_position, y_position+(y_position_increment*10), font_size, LIGHTBLUE, "R1 or RSTICK RIGHT");
+      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT));
+      render_msg_place_func (x_position, y_position+(y_position_increment*10), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*10), font_size, LIGHTBLUE, "- Increase Viewport Width");
 
-      render_msg_place_func (x_position, y_position+(y_position_increment*11), font_size, LIGHTBLUE, "L2 or RSTICK UP");
+      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L2), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_UP));
+      render_msg_place_func (x_position, y_position+(y_position_increment*11), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*11), font_size, LIGHTBLUE, "- Increase Viewport Height");
 
       render_msg_post_func();
 
-      render_msg_place_func (x_position, y_position+(y_position_increment*12), font_size, LIGHTBLUE, "R2 or RSTICK DOWN");
+      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R2), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN));
+      render_msg_place_func (x_position, y_position+(y_position_increment*12), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*12), font_size, LIGHTBLUE, "- Decrease Viewport Height");
 
-      render_msg_place_func (x_position, y_position+(y_position_increment*13), font_size, LIGHTBLUE, "TRIANGLE");
+      snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X));
+      render_msg_place_func (x_position, y_position+(y_position_increment*13), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*13), font_size, LIGHTBLUE, "- Reset To Defaults");
 
-      render_msg_place_func (x_position, y_position+(y_position_increment*14), font_size, LIGHTBLUE, "SQUARE");
+      snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_Y));
+      render_msg_place_func (x_position, y_position+(y_position_increment*14), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*14), font_size, LIGHTBLUE, "- Show Game Screen");
 
-      render_msg_place_func (x_position, y_position+(y_position_increment*15), font_size, LIGHTBLUE, "CIRCLE");
+      snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
+      render_msg_place_func (x_position, y_position+(y_position_increment*15), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*15), font_size, LIGHTBLUE, "- Return to Ingame Menu");
 
       render_msg_post_func();
 
-      render_msg_place_func (x_position, comment_y_position, font_size, LIGHTBLUE, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to defaults, and CIRCLE to go back.");
+      snprintf(msg, sizeof(msg), "Allows you to resize the screen by moving around the two analog sticks.\nPress [%s] to reset to defaults, and [%s] to go back.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
+      render_msg_place_func (x_position, comment_y_position, font_size, LIGHTBLUE, msg);
       render_msg_post_func();
    }
 }
@@ -1955,7 +1972,7 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 	 case MENU_ITEM_SCREENSHOT_MODE:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	       menu_stack_push(items, INGAME_MENU_SCREENSHOT);
-	    snprintf(comment, sizeof(comment), "Allows you to take a screenshot without any text clutter.\nPress [%s] to go back to the in-game menu while in 'Screenshot Mode'.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
+	    snprintf(comment, sizeof(comment), "Allows you to take a screenshot without any text clutter.\nPress [%s] to go back to the in-game menu.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
