@@ -104,10 +104,12 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 
    switch(currentsetting)
    {
+#ifdef __CELLOS_LV2__
 	   case SETTING_CHANGE_RESOLUTION:
          set_setting_label_color(items,g_console.initial_resolution_id == g_console.supported_resolutions[g_console.current_resolution_index], currentsetting);
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), ps3_get_resolution_label(g_console.supported_resolutions[g_console.current_resolution_index]));
 		   break;
+#endif
 	   case SETTING_SHADER_PRESETS:
          set_setting_label_color(items,true, currentsetting);
 		   fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
