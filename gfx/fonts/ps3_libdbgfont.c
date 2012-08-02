@@ -42,7 +42,7 @@ void gl_render_msg(gl_t *gl, const char *msg)
    cellDbgFontPrintf(g_settings.video.msg_pos_x, 0.75f, 1.05f, WHITE, msg);
 }
 
-void gl_render_msg_place(float x, float y, float scale, uint32_t color, const char *msg, ...)
+void gl_render_msg_place(float x, float y, float scale, uint32_t color, const char *msg)
 {
    cellDbgFontPrintf(x, y, scale, color, msg);
 }
