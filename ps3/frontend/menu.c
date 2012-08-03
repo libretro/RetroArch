@@ -63,7 +63,7 @@ filebrowser_t tmpBrowser;
 unsigned set_shader = 0;
 static unsigned currently_selected_controller_menu = 0;
 static char strw_buffer[PATH_MAX];
-char core_text[256];
+char m_title[256];
 
 static uint64_t old_state = 0;
 
@@ -612,7 +612,7 @@ static void display_menubar(menu *current_menu)
    }
 
    render_msg_place_func(x_position, 0.05f, 1.4f, WHITE, current_menu->title);
-   render_msg_place_func(0.3f, 0.06f, 0.82f, WHITE, core_text);
+   render_msg_place_func(0.3f, 0.06f, 0.82f, WHITE, m_title);
    render_msg_place_func(0.8f, 0.12f, 0.82f, WHITE, rarch_version);
    render_msg_post_func();
 }
@@ -2126,7 +2126,7 @@ void menu_init (void)
    struct retro_system_info info;
    retro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
-   snprintf(core_text, sizeof(core_text), "Libretro core: %s %s", id, info.library_version);
+   snprintf(m_title, sizeof(m_title), "Libretro core: %s %s", id, info.library_version);
 
    menu_stack_push(menu_items, FILE_BROWSER_MENU);
    filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), default_paths.filebrowser_startup_dir);

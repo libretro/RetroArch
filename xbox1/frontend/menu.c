@@ -545,7 +545,11 @@ static void display_menubar(menu *current_menu)
 
    float x_position = POSITION_X;
    float current_y_position = POSITION_Y_START;
+#ifdef _XBOX1
    float font_size = m_menuMainRomListPos_y;
+#else
+   float font_size = 0.91f;
+#endif
 
    snprintf(rarch_version, sizeof(rarch_version), "v%s", PACKAGE_VERSION);
 
@@ -592,15 +596,26 @@ static void display_menubar(menu *current_menu)
          fb = &tmpBrowser;
       case FILE_BROWSER_MENU:
          snprintf(current_path, sizeof(current_path), "PATH: %s", filebrowser_get_current_dir(fb));
+#ifdef _XBOX1
          render_msg_place_func(x_position, current_y_position, 0, 0, current_path);
+#else
+         render_msg_place_func(x_position, 0.09f, FONT_SIZE, YELLOW, current_path);
+#endif
          break;
       default:
          break;
    }
 
+#ifdef _XBOX1
    //Render background image
    d3d_surface_render(&m_menuMainBG, MENU_MAIN_BG_X, MENU_MAIN_BG_Y,
    m_menuMainBG.m_imageInfo.Width, m_menuMainBG.m_imageInfo.Height);
+#else
+   render_msg_place_func(x_position, 0.05f, 1.4f, WHITE, current_menu->title);
+   render_msg_place_func(0.3f, 0.06f, 0.82f, WHITE, m_title);
+   render_msg_place_func(0.8f, 0.12f, 0.82f, WHITE, rarch_version);
+   render_msg_post_func();
+#endif
 }
 
 static void browser_update(filebrowser_t * b, uint16_t input, const char *extensions)
@@ -624,6 +639,7 @@ static void browser_update(filebrowser_t * b, uint16_t input, const char *extens
    else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
    {
       action = FILEBROWSER_ACTION_RESET;
+      //TODO - Dehardcode this
       filebrowser_set_root(b, "/");
       strlcpy(b->extensions, extensions, sizeof(b->extensions));
    }
@@ -654,32 +670,44 @@ static void browser_render(filebrowser_t *b, float current_x, float current_y, f
       fill_pathname_base(fname_tmp, b->current_dir.list->elems[i].data, sizeof(fname_tmp));
       currentY = currentY + ySpacing;
 
-      const char *rom_basename = fname_tmp;
-
+#ifdef _XBOX1
       //check if this is the currently selected file
       const char *current_pathname = filebrowser_get_current_path(b);
       if(strcmp(current_pathname, b->current_dir.list->elems[i].data) == 0)
          d3d_surface_render(&m_menuMainRomSelectPanel, currentX, currentY, ROM_PANEL_WIDTH, ROM_PANEL_HEIGHT);
 
-      render_msg_place_func(currentX, currentY, 0, 0, rom_basename);
+      render_msg_place_func(currentX, currentY, 0, 0, fname_tmp);
+#else
+      render_msg_place_func(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->current_dir.list->elems[i].attr.b ? GREEN : WHITE, fname_tmp);
+      render_msg_post_func();
+#endif
    }
+#ifndef _XBOX1
+   render_msg_post_func();
+#endif
 }
 
 static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_action_t action)
 {
+   bool ret = true;
+
    switch(action)
    {
       case MENU_ROMSELECT_ACTION_OK:
          if(filebrowser_get_current_path_isdir(filebrowser))
-            filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
-         else
+            ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
+	 else
             rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_console.zip_extract_mode, S_DELAY_45);
          break;
       case MENU_ROMSELECT_ACTION_GOTO_SETTINGS:
+         menu_stack_push(items, GENERAL_VIDEO_MENU);
          break;
       default:
          break;
    }
+
+   if(!ret)
+      rarch_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
 }
 
 static void select_rom(item *items, menu *current_menu, uint64_t input)
@@ -716,7 +744,15 @@ int menu_init(void)
    const char *id = info.library_name ? info.library_name : "Unknown";
    snprintf(m_title, sizeof(m_title), "Libretro core: %s %s", id, info.library_version);
 
+   menu_stack_push(menu_items, FILE_BROWSER_MENU);
+   filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), g_console.default_rom_startup_dir);
+#ifdef _XBOX1
+   filebrowser_set_root(&tmpBrowser, "D:");
+#else
+   filebrowser_set_root(&tmpBrowser, "/");
+#endif
 
+#ifdef _XBOX1
    // Set file cache size
    XSetFileCacheSize(8 * 1024 * 1024);
 
@@ -727,11 +763,6 @@ int menu_init(void)
    xbox_io_mount("F:", "Harddisk0\\Partition6");
    xbox_io_mount("G:", "Harddisk0\\Partition7");
 
-	strlcpy(browser.extensions, rarch_console_get_rom_ext(), sizeof(browser.extensions));
-   menu_stack_push(menu_items, FILE_BROWSER_MENU);
-   filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), g_console.default_rom_startup_dir);
-   filebrowser_set_root(&tmpBrowser, "/");
-   
    width  = d3d->d3dpp.BackBufferWidth;
 
    // Quick hack to properly center the romlist in 720p, 
@@ -758,8 +789,7 @@ int menu_init(void)
    //Center the text (hardcoded)
    xpos = width == 640 ? 65 : 400;
    ypos = width == 640 ? 430 : 670;
-
-   g_console.mode_switch = MODE_MENU;
+#endif
 
    return 0;
 }
@@ -769,8 +799,10 @@ void menu_free(void)
    filebrowser_free(&browser);
    filebrowser_free(&tmpBrowser);
 
+#ifdef _XBOX1
    d3d_surface_free(&m_menuMainBG);
    d3d_surface_free(&m_menuMainRomSelectPanel);
+#endif
 }
 
 void menu_loop(void)
@@ -898,6 +930,20 @@ void menu_loop(void)
 #ifdef _XBOX1
       device_ptr->frame_count++;
 #endif
+
+      if(current_menu->enum_id == INGAME_MENU_RESIZE && (trig_state & RETRO_DEVICE_ID_JOYPAD_Y) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
+      {
+#ifdef __CELLOS_LV2__
+         device_ptr->menu_render = false;
+#endif
+      }
+      else
+      {
+         gfx_ctx_set_blend(true);
+#ifdef __CELLOS_LV2__
+         device_ptr->menu_render = true;
+#endif
+      }
       
       filebrowser_t * fb = &browser;
 
@@ -989,7 +1035,18 @@ void menu_loop(void)
       }
 
       gfx_ctx_swap_buffers();
+#ifdef HAVE_SYSUTILS
+      cellSysutilCheckCallback();
+#endif
+      if(current_menu->enum_id == INGAME_MENU_RESIZE && (old_state & (1 << RETRO_DEVICE_ID_JOYPAD_Y)) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
+      { }
+      else
+         gfx_ctx_set_blend(false);
    }while(g_console.menu_enable);
+
+#ifdef __CELLOS_LV2__
+   device_ptr->menu_render = false;
+#endif
 
    if(g_console.ingame_menu_enable)
       menu_stack_decrement();
