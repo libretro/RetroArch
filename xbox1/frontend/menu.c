@@ -95,12 +95,12 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), ps3_get_resolution_label(g_console.supported_resolutions[g_console.current_resolution_index]));
 		   break;
 #endif
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 	   case SETTING_SHADER_PRESETS:
          set_setting_label_color(items,true, currentsetting);
 		   fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), fname);
 		   break;
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 	   case SETTING_SHADER:
 		   fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%s", fname);
@@ -135,6 +135,7 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 		   else
             snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Point filtering");
 		   break;
+#ifdef HAVE_FBO
 	   case SETTING_SCALE_ENABLED:
          set_setting_label_write_on_or_off(items, g_console.fbo_enabled, currentsetting);
          set_setting_label_color(items,g_console.fbo_enabled, currentsetting);
@@ -144,6 +145,7 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 		   snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [Custom Scaling Factor] is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 		   break;
+#endif
 	   case SETTING_HW_OVERSCAN_AMOUNT:
          set_setting_label_color(items,g_console.overscan_amount == 0.0f, currentsetting);
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%f", g_console.overscan_amount);
@@ -160,7 +162,9 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
          set_setting_label_write_on_or_off(items, g_console.screenshots_enable, currentsetting);
          set_setting_label_color(items,g_console.screenshots_enable, currentsetting);
 		   break;
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 	   case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
+#endif
 	   case SETTING_DEFAULT_VIDEO_ALL:
 		   break;
 	   case SETTING_SOUND_MODE:
@@ -192,10 +196,12 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
                break;
          }
 		   break;
+#ifdef HAVE_RSOUND
 	   case SETTING_RSOUND_SERVER_IP_ADDRESS:
          set_setting_label_color(items,strcmp(g_settings.audio.device,"0.0.0.0") == 0, currentsetting);
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), g_settings.audio.device);
 		   break;
+#endif
 	   case SETTING_DEFAULT_AUDIO_ALL:
 		   break;
 	   case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
@@ -324,7 +330,9 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 	   case SETTING_EMU_AUDIO_DEFAULT_ALL:
 	   case SETTING_PATH_DEFAULT_ALL:
 	   case SETTING_EMU_DEFAULT_ALL:
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 	   case SETTING_SAVE_SHADER_PRESET:
+#endif
          set_setting_label_color(items, current_menu->selected == currentsetting, currentsetting);
 		   break;
 	   default:
@@ -730,7 +738,7 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
    render_msg_place_func(xpos, ypos, 0, 0, m_title);
 }
 
-int menu_init(void)
+void menu_init(void)
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
@@ -787,8 +795,6 @@ int menu_init(void)
    xpos = width == 640 ? 65 : 400;
    ypos = width == 640 ? 430 : 670;
 #endif
-
-   return 0;
 }
 
 void menu_free(void)

@@ -16,6 +16,7 @@
 
 item menu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
 {
+#ifdef __CELLOS_LV2__
    {
       SETTING_CHANGE_RESOLUTION,                                        /* enum ID of item */
       "Resolution",                                                     /* item label */
@@ -26,6 +27,8 @@ item menu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       "INFO - Change the display resolution.",				/* item comment */
       WHITE,                                                            /* color of item comment */
    },
+#endif
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    {
       SETTING_SHADER_PRESETS,
       "Shader Preset (CGP)",
@@ -56,6 +59,7 @@ item menu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       "INFO - Select a shader as [Shader #2]. NOTE: Some shaders might be\ntoo slow at 1080p. If you experience any slowdown, try another shader.",
       WHITE,
    },
+#endif
    {
       SETTING_FONT_SIZE,
       "Font Size",
@@ -86,6 +90,7 @@ item menu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       "INFO - Hardware filtering is set to 'Bilinear filtering' for [Shader #1].",
       WHITE,
    },
+#ifdef HAVE_FBO
    {
       SETTING_HW_TEXTURE_FILTER_2,
       "Hardware Filtering shader #2",
@@ -116,6 +121,7 @@ item menu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       "INFO - [Custom Scaling Factor] is set to '2x'.",
       WHITE,
    },
+#endif
    {
       SETTING_HW_OVERSCAN_AMOUNT,
       "Overscan",
@@ -156,6 +162,7 @@ item menu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       "INFO - [Enable Screenshots] feature is set to 'OFF'.",
       WHITE,
    },
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    {
       SETTING_SAVE_SHADER_PRESET,
       "SAVE SETTINGS AS CGP PRESET ",
@@ -176,6 +183,7 @@ item menu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       "INFO - Automatically load the currently selected [CG Preset] file on startup.",
       GREEN,
    },
+#endif
    {
       SETTING_DEFAULT_VIDEO_ALL,
       "DEFAULT",
@@ -196,6 +204,7 @@ item menu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       "INFO - [Sound Output] is set to 'Normal' - normal audio output will be\nused.",
       WHITE,
    },
+#ifdef HAVE_RSOUND
    {
       SETTING_RSOUND_SERVER_IP_ADDRESS,
       "RSound Audio Server IP Address",
@@ -206,6 +215,7 @@ item menu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       "INFO - Enter the IP Address of the [RSound Audio Server]. IP address\nmust be an IPv4 32-bits address, eg: '192.168.1.7'.",
       WHITE,
    },
+#endif
    {
       SETTING_ENABLE_CUSTOM_BGM,
       "Enable Custom BGM Feature",

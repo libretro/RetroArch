@@ -190,6 +190,7 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 		   else
             snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Point filtering");
 		   break;
+#ifdef HAVE_FBO
 	   case SETTING_SCALE_ENABLED:
          set_setting_label_write_on_or_off(items, g_console.fbo_enabled, currentsetting);
          set_setting_label_color(items,g_console.fbo_enabled, currentsetting);
@@ -199,6 +200,7 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 		   snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [Custom Scaling Factor] is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 		   break;
+#endif
 	   case SETTING_HW_OVERSCAN_AMOUNT:
          set_setting_label_color(items,g_console.overscan_amount == 0.0f, currentsetting);
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%f", g_console.overscan_amount);
@@ -215,7 +217,9 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
          set_setting_label_write_on_or_off(items, g_console.screenshots_enable, currentsetting);
          set_setting_label_color(items,g_console.screenshots_enable, currentsetting);
 		   break;
-	   case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+      case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
+#endif
 	   case SETTING_DEFAULT_VIDEO_ALL:
 		   break;
 	   case SETTING_SOUND_MODE:
@@ -247,10 +251,12 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
                break;
          }
 		   break;
+#ifdef HAVE_RSOUND
 	   case SETTING_RSOUND_SERVER_IP_ADDRESS:
          set_setting_label_color(items,strcmp(g_settings.audio.device,"0.0.0.0") == 0, currentsetting);
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), g_settings.audio.device);
 		   break;
+#endif
 	   case SETTING_DEFAULT_AUDIO_ALL:
 		   break;
 	   case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
@@ -379,7 +385,9 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 	   case SETTING_EMU_AUDIO_DEFAULT_ALL:
 	   case SETTING_PATH_DEFAULT_ALL:
 	   case SETTING_EMU_DEFAULT_ALL:
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 	   case SETTING_SAVE_SHADER_PRESET:
+#endif
          set_setting_label_color(items, current_menu->selected == currentsetting, currentsetting);
 		   break;
 	   default:
@@ -2183,6 +2191,8 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 
 void menu_init (void)
 {
+   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
+
    //Set libretro filename and version to variable
    struct retro_system_info info;
    retro_get_system_info(&info);
@@ -2191,13 +2201,62 @@ void menu_init (void)
 
    menu_stack_push(menu_items, FILE_BROWSER_MENU);
    filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), default_paths.filebrowser_startup_dir);
+#ifdef _XBOX1
+   filebrowser_set_root(&tmpBrowser, "D:");
+#else
    filebrowser_set_root(&tmpBrowser, "/");
+#endif
+
+#ifdef _XBOX1
+   // Set file cache size
+   XSetFileCacheSize(8 * 1024 * 1024);
+
+   // Mount drives
+   xbox_io_mount("A:", "cdrom0");
+   xbox_io_mount("E:", "Harddisk0\\Partition1");
+   xbox_io_mount("Z:", "Harddisk0\\Partition2");
+   xbox_io_mount("F:", "Harddisk0\\Partition6");
+   xbox_io_mount("G:", "Harddisk0\\Partition7");
+
+   // Backbuffer width
+   int width  = device_ptr->d3dpp.BackBufferWidth;
+
+   // Quick hack to properly center the romlist in 720p, 
+   // it might need more work though (font size and rom selector size -> needs more memory)
+   // Init rom list coords
+   // Load background image
+   if(width == 640)
+   {
+      d3d_surface_new(&m_menuMainBG, "D:\\Media\\menuMainBG.png");
+      m_menuMainRomListPos_x = 100;
+      m_menuMainRomListPos_y = 100;
+   }
+   else if(width == 1280)
+   {
+      d3d_surface_new(&m_menuMainBG, "D:\\Media\\menuMainBG_720p.png");
+      m_menuMainRomListPos_x = 400;
+      m_menuMainRomListPos_y = 150;
+   }
+
+   // Load rom selector panel
+   d3d_surface_new(&m_menuMainRomSelectPanel, "D:\\Media\\menuMainRomSelectPanel.png");
+   
+   //Display some text
+   //Center the text (hardcoded)
+   xpos = width == 640 ? 65 : 400;
+   ypos = width == 640 ? 430 : 670;
+#endif
 }
 
 void menu_free (void)
 {
    filebrowser_free(&browser);
    filebrowser_free(&tmpBrowser);
+
+#ifdef _XBOX1
+   d3d_surface_free(&m_menuMainBG);
+   d3d_surface_free(&m_menuMainRomSelectPanel);
+#endif
 }
 
 void menu_loop(void)
@@ -2337,7 +2396,9 @@ void menu_loop(void)
 #endif
       }
 
+#ifdef __CELLOS_LV2__
       rarch_render_cached_frame();
+#endif
 
       filebrowser_t * fb = &browser;
 
