@@ -23,6 +23,7 @@
 
 #include "../../console/rarch_console.h"
 
+#ifdef _XBOX1
 #include "../../gfx/fonts/xdk1_xfonts.h"
 
 #define NUM_ENTRY_PER_PAGE 17
@@ -37,13 +38,7 @@
 #define MENU_MAIN_BG_X 0
 #define MENU_MAIN_BG_Y 0
 
-menu menuStack[10];
-int menuStackindex = 0;
-
-filebrowser_t browser;
-filebrowser_t tmpBrowser;
-static unsigned currently_selected_controller_menu = 0;
-
+int xpos, ypos;
 // Rom selector panel with coords
 d3d_surface_t m_menuMainRomSelectPanel;
 // Background image with coords
@@ -56,6 +51,15 @@ int m_menuMainRomListPos_y;
 // Backbuffer width, height
 int width; 
 int height;
+#endif
+
+menu menuStack[10];
+int menuStackindex = 0;
+
+filebrowser_t browser;
+filebrowser_t tmpBrowser;
+static unsigned currently_selected_controller_menu = 0;
+
 char m_title[128];
 
 static uint64_t old_state = 0;
@@ -588,7 +592,7 @@ static void display_menubar(menu *current_menu)
          fb = &tmpBrowser;
       case FILE_BROWSER_MENU:
          snprintf(current_path, sizeof(current_path), "PATH: %s", filebrowser_get_current_dir(fb));
-         render_msg_place_func(x_position, current_y_position, /* size */0, /* color */0, current_path);
+         render_msg_place_func(x_position, current_y_position, 0, 0, current_path);
          break;
       default:
          break;
@@ -657,7 +661,7 @@ static void browser_render(filebrowser_t *b, float current_x, float current_y, f
       if(strcmp(current_pathname, b->current_dir.list->elems[i].data) == 0)
          d3d_surface_render(&m_menuMainRomSelectPanel, currentX, currentY, ROM_PANEL_WIDTH, ROM_PANEL_HEIGHT);
 
-      xfonts_render_msg_place(device_ptr, currentX, currentY, 0 /* scale */, rom_basename);
+      render_msg_place_func(currentX, currentY, 0, 0, rom_basename);
    }
 }
 
@@ -680,7 +684,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
 
 static void select_rom(item *items, menu *current_menu, uint64_t input)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    browser_update(&browser, input, rarch_console_get_rom_ext());
    
@@ -698,13 +702,8 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
       menu_romselect_iterate(&browser, action);
 
    display_menubar(current_menu);
-
-   //Display some text
-   //Center the text (hardcoded)
-   int xpos = width == 640 ? 65 : 400;
-   int ypos = width == 640 ? 430 : 670;
    
-   xfonts_render_msg_place(d3d, xpos, ypos, 0 /* scale */, m_title);
+   render_msg_place_func(xpos, ypos, 0, 0, m_title);
 }
 
 int menu_init(void)
@@ -754,6 +753,11 @@ int menu_init(void)
 
    // Load rom selector panel
    d3d_surface_new(&m_menuMainRomSelectPanel, "D:\\Media\\menuMainRomSelectPanel.png");
+   
+   //Display some text
+   //Center the text (hardcoded)
+   xpos = width == 640 ? 65 : 400;
+   ypos = width == 640 ? 430 : 670;
 
    g_console.mode_switch = MODE_MENU;
 
