@@ -165,11 +165,13 @@ static void xdk_d3d_set_rotation(void * data, unsigned orientation)
          break;
    }
 
+   /*
    D3DXMATRIX p_out;
    D3DXMatrixIdentity(&p_out);
    d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &p_out);
 
    d3d->should_resize = TRUE;
+   */
 }
 
 static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **input, void **input_data)
