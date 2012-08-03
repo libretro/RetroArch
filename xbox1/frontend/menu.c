@@ -990,9 +990,8 @@ void menu_loop(void)
       {
          SET_TIMER_EXPIRATION(device_ptr, 30);
       }
-      
-      device_ptr->d3d_render_device->EndScene();
-      device_ptr->d3d_render_device->Present(NULL, NULL, NULL, NULL);
+
+      gfx_ctx_swap_buffers();
    }while(g_console.menu_enable);
 
    if(g_console.ingame_menu_enable)

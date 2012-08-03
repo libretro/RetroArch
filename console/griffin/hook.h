@@ -41,7 +41,6 @@
 #define video_set_aspect_ratio_func(aspectratio_idx) gfx_ctx_set_aspect_ratio(driver.video_data, aspectratio_idx)
 
 #define gfx_ctx_window_has_focus()		(true)
-#define gfx_ctx_swap_buffers()                  (psglSwap())
 
 #define input_init_func()                       ps3_input_initialize()
 #define input_poll_func()                       ps3_input_poll(driver.input_data)
@@ -69,7 +68,6 @@
 #define video_set_aspect_ratio_func(aspectratio_idx) gfx_ctx_set_aspect_ratio(driver.video_data, aspectratio_idx)
 
 #define gfx_ctx_window_has_focus()		(true)
-#define gfx_ctx_swap_buffers()                  (d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL))
 
 #define input_init_func()                       xinput_input_init()
 #define input_poll_func()                       xinput_input_poll(driver.input_data)

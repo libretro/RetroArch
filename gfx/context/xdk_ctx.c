@@ -59,13 +59,23 @@ void gfx_ctx_check_window(bool *quit,
 
 void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 
-#ifndef HAVE_GRIFFIN
 void gfx_ctx_swap_buffers(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+#ifdef _XBOX1
+   d3d->d3d_render_device->EndScene();
+#endif
    d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL);
 }
 
+void gfx_ctx_clear(void)
+{
+   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
+   device_ptr->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+      D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
+}
+
+#ifndef HAVE_GRIFFIN
 bool gfx_ctx_window_has_focus(void)
 {
    return true;

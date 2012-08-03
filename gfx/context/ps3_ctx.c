@@ -99,12 +99,12 @@ bool gfx_ctx_window_has_focus(void)
 {
    return true;
 }
+#endif
 
 void gfx_ctx_swap_buffers(void)
 {
    psglSwap();
 }
-#endif
 
 void gfx_ctx_clear(void)
 {
