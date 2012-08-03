@@ -683,7 +683,7 @@ static void browser_render(filebrowser_t *b, float current_x, float current_y, f
 #endif
 }
 
-static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_action_t action)
+static void menu_romselect_iterate(filebrowser_t *filebrowser, item *items, menu_romselect_action_t action)
 {
    bool ret = true;
 
@@ -723,7 +723,7 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
    }
 
    if (action != MENU_ROMSELECT_ACTION_NOOP)
-      menu_romselect_iterate(&browser, action);
+      menu_romselect_iterate(&browser, items, action);
 
    display_menubar(current_menu);
    

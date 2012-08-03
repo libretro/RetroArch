@@ -32,6 +32,11 @@
 #define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
 #endif
 
+void gfx_ctx_set_blend(bool enable)
+{
+   (void)enable;
+}
+
 void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 {
    (void)inited;
