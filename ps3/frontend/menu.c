@@ -51,6 +51,8 @@
 
 #if defined(__CELLOS_LV2__)
 #include "../../gfx/context/ps3_ctx.h"
+#elif defined(_XBOX)
+#include "../../gfx/context/xdk_ctx.h"
 #endif
 
 #if defined(HAVE_CG)
@@ -607,6 +609,7 @@ static void display_menubar(menu *current_menu)
 
    float x_position = POSITION_X;
 #ifdef _XBOX1
+   float current_y_position = m_menuMainRomListPos_y;
    float font_size = m_menuMainRomListPos_y;
 #else
    float font_size = HARDCODE_FONT_SIZE;
@@ -2298,6 +2301,7 @@ void menu_loop(void)
 
    do
    {
+      RARCH_LOG("reaches here #0\n");
       //first button input frame
       uint64_t input_state_first_frame = 0;
       uint64_t input_state = 0;
@@ -2406,6 +2410,8 @@ void menu_loop(void)
             trig_state = input_state; //second input frame set as current frame
          }
       }
+      
+      RARCH_LOG("reaches here #1\n");
 
       gfx_ctx_clear();
 
@@ -2471,6 +2477,8 @@ void menu_loop(void)
 		      break;
       }
 
+      RARCH_LOG("reaches here #1.1\n");
+
       float x_position = POSITION_X;
       float starting_y_position = POSITION_Y_START;
       float y_position_increment = POSITION_Y_INCREMENT;
@@ -2487,6 +2495,8 @@ void menu_loop(void)
       }
 
       old_state = input_state_first_frame;
+      
+      RARCH_LOG("reaches here #1.2\n");
 
       if(IS_TIMER_EXPIRED(device_ptr))
       {
@@ -2516,6 +2526,7 @@ void menu_loop(void)
          SET_TIMER_EXPIRATION(device_ptr, 30);
       }
 
+#ifndef _XBOX1
       const char * message = msg_queue_pull(g_extern.msg_queue);
       float message_y_position = 0.75f;
       float message_scale = 1.05f;
@@ -2525,19 +2536,26 @@ void menu_loop(void)
          render_msg_place_func(g_settings.video.msg_pos_x, message_y_position, message_scale, WHITE, message);
          render_msg_post_func();
       }
+#endif
+
+      RARCH_LOG("reaches here #1.3\n");
 
       gfx_ctx_swap_buffers();
 #ifdef HAVE_SYSUTILS
       cellSysutilCheckCallback();
 #endif
-#ifdef _XBOX1
-      device_ptr->frame_count++;
-#endif
+      RARCH_LOG("reaches here #1.4\n");
 
+#ifndef _XBOX1
       if(current_menu->enum_id == INGAME_MENU_RESIZE && (old_state & (1 << RETRO_DEVICE_ID_JOYPAD_Y)) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
       { }
       else
          gfx_ctx_set_blend(false);
+#endif
+      
+      RARCH_LOG("reaches here #1.5\n");
+
+      RARCH_LOG("reaches here #2\n");
    }while(g_console.menu_enable);
 
 #ifdef __CELLOS_LV2__

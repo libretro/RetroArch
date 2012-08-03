@@ -657,7 +657,7 @@ static void browser_render(filebrowser_t *b, float current_x, float current_y, f
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    unsigned file_count = b->current_dir.list->size;
-   unsigned current_index, page_number, page_base, i;
+   unsigned int current_index, page_number, page_base, i;
    float currentX, currentY, ySpacing;
 
    current_index = b->current_dir.ptr;
