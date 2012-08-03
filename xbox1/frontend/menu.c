@@ -47,10 +47,6 @@ d3d_surface_t m_menuMainBG;
 // Rom list coords
 int m_menuMainRomListPos_x;
 int m_menuMainRomListPos_y;
-
-// Backbuffer width, height
-int width; 
-int height;
 #endif
 
 menu menuStack[10];
@@ -351,28 +347,28 @@ menu *menu_stack_get_current_ptr (void)
 static void menu_stack_refresh (item *items, menu *current_menu)
 {
    int page, i, j;
-   float increment;
-   float increment_step = 0.03f;
+   float y_position;
+   float increment_step = POSITION_Y_INCREMENT;
    float x_position = POSITION_X;
 
    page = 0;
    j = 0;
-   increment = 0.16f;
+   y_position = 0.16f;
 
    for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
    {
       if(!(j < (NUM_ENTRY_PER_PAGE)))
       {
          j = 0;
-         increment = 0.16f;
+         y_position = 0.16f;
          page++;
       }
 
       items[i].text_xpos = x_position;
-      items[i].text_ypos = increment; 
+      items[i].text_ypos = y_position; 
       items[i].page = page;
       set_setting_label(current_menu, items, i);
-      increment += increment_step;
+      y_position += increment_step;
       j++;
    }
 }
@@ -736,7 +732,7 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
 
 int menu_init(void)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    // Set libretro filename and version to variable
    struct retro_system_info info;
@@ -763,7 +759,8 @@ int menu_init(void)
    xbox_io_mount("F:", "Harddisk0\\Partition6");
    xbox_io_mount("G:", "Harddisk0\\Partition7");
 
-   width  = d3d->d3dpp.BackBufferWidth;
+   // Backbuffer width
+   int width  = device_ptr->d3dpp.BackBufferWidth;
 
    // Quick hack to properly center the romlist in 720p, 
    // it might need more work though (font size and rom selector size -> needs more memory)
@@ -991,7 +988,7 @@ void menu_loop(void)
 
       float x_position = POSITION_X;
       float starting_y_position = POSITION_Y_START;
-      float y_position_increment = 20;
+      float y_position_increment = POSITION_Y_INCREMENT; 
 
       switch(current_menu->category_id)
       {

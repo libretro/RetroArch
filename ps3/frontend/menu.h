@@ -21,6 +21,7 @@
 #define DEVICE_CAST gl_t*
 #define input_ptr input_ps3
 #define DEVICE_PTR device_ptr
+#define HARDCODE_FONT_SIZE 0.91f
 #define FONT_SIZE (g_console.menu_font_size)
 #define render_msg_pre_func() gl_render_msg_pre(DEVICE_PTR)
 #define render_msg_place_func(xpos, ypos, scale, color, msg) gl_render_msg_place(xpos, ypos, scale, color, msg)
@@ -28,6 +29,9 @@
 
 #define POSITION_X 0.09f
 #define POSITION_Y_START 0.10f
+#define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
+#define POSITION_Y_INCREMENT 0.035f
+#define COMMENT_Y_POSITION 0.83f
 #elif defined(_XBOX1)
 #define DEVICE_CAST xdk_d3d_video_t*
 #define input_ptr input_xinput
@@ -39,6 +43,9 @@
 
 #define POSITION_X m_menuMainRomListPos_x
 #define POSITION_Y_START m_menuMainRomListPos_y
+#define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
+#define POSITION_Y_INCREMENT 20
+#define COMMENT_Y_POSITION (ypos - POSITION_Y_INCREMENT)
 #endif
 
 typedef struct

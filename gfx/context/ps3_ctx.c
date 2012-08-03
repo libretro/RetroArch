@@ -334,11 +334,11 @@ const char *ps3_get_resolution_label(uint32_t resolution)
    switch (resolution)
    {
       case CELL_VIDEO_OUT_RESOLUTION_480:
-	      return  "720x480 (480p)";
+	      return  "720x480";
       case CELL_VIDEO_OUT_RESOLUTION_576:
-	      return "720x576 (576p)"; 
+	      return "720x576"; 
       case CELL_VIDEO_OUT_RESOLUTION_720:
-	      return "1280x720 (720p)";
+	      return "1280x720";
       case CELL_VIDEO_OUT_RESOLUTION_960x1080:
 	      return "960x1080";
       case CELL_VIDEO_OUT_RESOLUTION_1280x1080:
@@ -348,7 +348,7 @@ const char *ps3_get_resolution_label(uint32_t resolution)
       case CELL_VIDEO_OUT_RESOLUTION_1600x1080:
 	      return "1600x1080";
       case CELL_VIDEO_OUT_RESOLUTION_1080:
-	      return "1920x1080 (1080p)";
+	      return "1920x1080";
       default:
 	      return "Unknown";
    }

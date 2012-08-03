@@ -14,16 +14,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if defined(__CELLOS_LV2__)
 #include <sdk_version.h>
 #include <cell/sysmodule.h>
 #include <sysutil/sysutil_screenshot.h>
-#include <cell/dbgfont.h>
 
 #if(CELL_SDK_VERSION > 0x340000)
 #include <sysutil/sysutil_bgmplayback.h>
 #endif
 
-#include "../ps3_input.h"
+#endif
+
 #include "../../console/fileio/file_browser.h"
 
 #include "../../console/rarch_console.h"
@@ -31,18 +32,30 @@
 #include "../../console/rarch_console_input.h"
 #include "../../console/rarch_console_config.h"
 #include "../../console/rarch_console_settings.h"
+
+#ifdef HAVE_RSOUND
 #include "../../console/rarch_console_rsound.h"
+#endif
+
 #include "../../console/rarch_console_video.h"
 
 #ifdef HAVE_ZLIB
 #include "../../console/rarch_console_rzlib.h"
 #endif
 
+#if defined(HAVE_OPENGL)
 #include "../../gfx/gl_common.h"
 #include "../../gfx/gl_font.h"
+#endif
 #include "../../gfx/gfx_context.h"
+
+#if defined(__CELLOS_LV2__)
 #include "../../gfx/context/ps3_ctx.h"
+#endif
+
+#if defined(HAVE_CG)
 #include "../../gfx/shader_cg.h"
+#endif
 
 #include "../../file.h"
 #include "../../general.h"
@@ -62,7 +75,6 @@ filebrowser_t browser;
 filebrowser_t tmpBrowser;
 unsigned set_shader = 0;
 static unsigned currently_selected_controller_menu = 0;
-static char strw_buffer[PATH_MAX];
 char m_title[256];
 
 static uint64_t old_state = 0;
@@ -362,28 +374,28 @@ menu *menu_stack_get_current_ptr (void)
 static void menu_stack_refresh (item *items, menu *current_menu)
 {
    int page, i, j;
-   float increment;
-   float increment_step = 0.03f;
+   float y_position;
+   float increment_step = POSITION_Y_INCREMENT;
    float x_position = POSITION_X;
 
    page = 0;
    j = 0;
-   increment = 0.16f;
+   y_position = POSITION_Y_BEGIN;
 
    for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
    {
       if(!(j < (NUM_ENTRY_PER_PAGE)))
       {
          j = 0;
-         increment = 0.16f;
+         y_position = POSITION_Y_BEGIN;
          page++;
       }
 
       items[i].text_xpos = x_position;
-      items[i].text_ypos = increment; 
+      items[i].text_ypos = y_position; 
       items[i].page = page;
       set_setting_label(current_menu, items, i);
-      increment += increment_step;
+      y_position += increment_step;
       j++;
    }
 }
@@ -558,7 +570,7 @@ static void display_menubar(menu *current_menu)
    char current_path[256], rarch_version[128];
 
    float x_position = POSITION_X;
-   float font_size = 0.91f;
+   float font_size = HARDCODE_FONT_SIZE;
 
    snprintf(rarch_version, sizeof(rarch_version), "v%s", PACKAGE_VERSION);
 
@@ -706,9 +718,9 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
    bool ret = true;
 
    float x_position = POSITION_X;
-   float comment_y_position = 0.83f;
+   float comment_y_position = COMMENT_Y_POSITION;
    float comment_two_y_position = 0.91f;
-   float font_size = 0.91f;
+   float font_size = HARDCODE_FONT_SIZE;
 
    switch(current_menu->enum_id)
    {
@@ -814,9 +826,9 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    float x_position = POSITION_X;
-   float comment_y_position = 0.83f;
+   float comment_y_position = COMMENT_Y_POSITION;
    float comment_two_y_position = 0.91f;
-   float font_size = 0.91f;
+   float font_size = HARDCODE_FONT_SIZE;
 
    bool is_dir = filebrowser_get_current_path_isdir(&tmpBrowser);
    browser_update(&tmpBrowser, input, "empty");
@@ -1621,9 +1633,9 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
 
    float x_position = POSITION_X;
    float x_position_center = 0.5f;
-   float comment_y_position = 0.83f;
+   float comment_y_position = COMMENT_Y_POSITION;
    float comment_two_y_position = 0.91f;
-   float font_size = 0.91f;
+   float font_size = HARDCODE_FONT_SIZE;
 
    settings_action_t action = SETTINGS_ACTION_NOOP;
 
@@ -1694,9 +1706,9 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    float x_position = POSITION_X;
-   float comment_y_position = 0.83f;
-   float font_size = 0.91f;
+   float comment_y_position = COMMENT_Y_POSITION;
    float comment_two_y_position = 0.91f;
+   float font_size = HARDCODE_FONT_SIZE;
 
    browser_update(&browser, input, rarch_console_get_rom_ext());
 
@@ -1743,11 +1755,11 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
 
    float x_position = POSITION_X;
    float x_position_center = 0.5f;
-   float font_size = 0.91f;
+   float font_size = HARDCODE_FONT_SIZE;
 
-   float y_position = 0.16f;
-   float y_position_increment = 0.035f;
-   float comment_y_position = 0.83f;
+   float y_position = POSITION_Y_BEGIN;
+   float y_position_increment = POSITION_Y_INCREMENT;
+   float comment_y_position = COMMENT_Y_POSITION;
 
    g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
    gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
@@ -1902,15 +1914,16 @@ static void ingame_menu_screenshot(item *items, menu *current_menu, uint64_t inp
 static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 {
    char comment[256], overscan_msg[64];
+   char strw_buffer[256];
    static unsigned menuitem_colors[MENU_ITEM_LAST];
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    float x_position = POSITION_X;
-   float y_position = 0.16f;
-   float comment_y_position = 0.83f;
-   float font_size = 0.91f;
+   float y_position = POSITION_Y_BEGIN;
+   float comment_y_position = COMMENT_Y_POSITION;
+   float font_size = HARDCODE_FONT_SIZE;
 
-   float y_position_increment = 0.035f;
+   float y_position_increment = POSITION_Y_INCREMENT;
 
    for(int i = 0; i < MENU_ITEM_LAST; i++)
       menuitem_colors[i] = GREEN;
@@ -2318,7 +2331,7 @@ void menu_loop(void)
 
       float x_position = POSITION_X;
       float starting_y_position = POSITION_Y_START;
-      float y_position_increment = 0.035f;
+      float y_position_increment = POSITION_Y_INCREMENT;
 
       switch(current_menu->category_id)
       {

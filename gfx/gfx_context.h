@@ -62,9 +62,8 @@ bool gfx_ctx_get_wm_info(SDL_SysWMinfo *info);
 
 #ifndef HAVE_GRIFFIN
 bool gfx_ctx_window_has_focus(void);
-
-void gfx_ctx_swap_buffers(void);
 #endif
+void gfx_ctx_swap_buffers(void);
 
 void gfx_ctx_input_driver(const input_driver_t **input, void **input_data);
 
