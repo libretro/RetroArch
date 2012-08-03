@@ -73,6 +73,11 @@ void gfx_ctx_clear(void)
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
    device_ptr->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
       D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
+#ifdef _XBOX1
+   device_ptr->d3d_render_device->BeginScene();
+   device_ptr->d3d_render_device->SetFlickerFilter(1);
+   device_ptr->d3d_render_device->SetSoftDisplayFilter(1);
+#endif
 }
 
 #ifndef HAVE_GRIFFIN

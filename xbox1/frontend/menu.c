@@ -895,13 +895,8 @@ void menu_loop(void)
       }
 
       gfx_ctx_clear();
-
 #ifdef _XBOX1
       device_ptr->frame_count++;
-
-      device_ptr->d3d_render_device->BeginScene();
-      device_ptr->d3d_render_device->SetFlickerFilter(1);
-      device_ptr->d3d_render_device->SetSoftDisplayFilter(1);
 #endif
       
       filebrowser_t * fb = &browser;
