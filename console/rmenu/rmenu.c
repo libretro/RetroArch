@@ -74,17 +74,8 @@
 #include "../../xbox1/frontend/RetroLaunch/Surface.h"
 #include "../../gfx/fonts/xdk1_xfonts.h"
 
-#define NUM_ENTRY_PER_PAGE 17
-
 #define ROM_PANEL_WIDTH 440
 #define ROM_PANEL_HEIGHT 20
-
-#define MAIN_TITLE_X 305
-#define MAIN_TITLE_Y 30
-#define MAIN_TITLE_COLOR 0xFFFFFFFF
-
-#define MENU_MAIN_BG_X 0
-#define MENU_MAIN_BG_Y 0
 
 int xpos, ypos;
 // Rom selector panel with coords
@@ -672,7 +663,7 @@ static void display_menubar(menu *current_menu)
 
 #ifdef _XBOX1
    //Render background image
-   d3d_surface_render(&m_menuMainBG, MENU_MAIN_BG_X, MENU_MAIN_BG_Y,
+   d3d_surface_render(&m_menuMainBG, 0, 0,
    m_menuMainBG.m_imageInfo.Width, m_menuMainBG.m_imageInfo.Height);
 #else
    render_msg_place_func(x_position, 0.05f, 1.4f, WHITE, current_menu->title);
