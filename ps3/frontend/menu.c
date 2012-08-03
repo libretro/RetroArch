@@ -1818,12 +1818,16 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
 
    display_menubar(current_menu);
 
+#ifdef __CELLOS_LV2__
    snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3));
    snprintf(msg2, sizeof(msg2), "[%s] - Settings", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_SELECT));
+#endif
 
    render_msg_place_func   (x_position, comment_two_y_position, FONT_SIZE, YELLOW, msg);
    render_msg_place_func(x_position, comment_two_y_position + 0.04f, FONT_SIZE, YELLOW, msg2);
+#ifdef __CELLOS_LV2__
    render_msg_post_func();
+#endif
 }
 
 
@@ -2222,6 +2226,7 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 void menu_init (void)
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
+   (void)device_ptr;
 
    //Set libretro filename and version to variable
    struct retro_system_info info;
