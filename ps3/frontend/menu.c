@@ -67,6 +67,34 @@
 #define INPUT_SCALE 2
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
+#ifdef _XBOX1
+#include "../../xbox1/frontend/RetroLaunch/IoSupport.h"
+#include "../../xbox1/frontend/RetroLaunch/Surface.h"
+#include "../../gfx/fonts/xdk1_xfonts.h"
+
+#define NUM_ENTRY_PER_PAGE 17
+
+#define ROM_PANEL_WIDTH 440
+#define ROM_PANEL_HEIGHT 20
+
+#define MAIN_TITLE_X 305
+#define MAIN_TITLE_Y 30
+#define MAIN_TITLE_COLOR 0xFFFFFFFF
+
+#define MENU_MAIN_BG_X 0
+#define MENU_MAIN_BG_Y 0
+
+int xpos, ypos;
+// Rom selector panel with coords
+d3d_surface_t m_menuMainRomSelectPanel;
+// Background image with coords
+d3d_surface_t m_menuMainBG;
+
+// Rom list coords
+int m_menuMainRomListPos_x;
+int m_menuMainRomListPos_y;
+#endif
+
 menu menuStack[10];
 int menuStackindex = 0;
 static bool set_libretro_core_as_launch;
@@ -667,7 +695,7 @@ static void browser_render(filebrowser_t * b, float current_x, float current_y, 
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    unsigned file_count = b->current_dir.list->size;
-   int current_index, page_number, page_base, i;
+   unsigned int current_index, page_number, page_base, i;
    float currentX, currentY, ySpacing;
 
    current_index = b->current_dir.ptr;
@@ -689,6 +717,7 @@ static void browser_render(filebrowser_t * b, float current_x, float current_y, 
    render_msg_post_func();
 }
 
+#ifdef __CELLOS_LV2__
 static void apply_scaling (unsigned init_mode)
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
@@ -709,6 +738,7 @@ static void apply_scaling (unsigned init_mode)
          break;
    }
 }
+#endif
 
 static void select_file(item *items, menu *current_menu, uint64_t input)
 {
@@ -764,6 +794,7 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
          
          switch(current_menu->enum_id)
          {
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
             case SHADER_CHOICE:
                rarch_load_shader(set_shader+1, path);
                switch(set_shader+1)
@@ -780,9 +811,12 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
             case PRESET_CHOICE:
                strlcpy(g_console.cgp_path, path, sizeof(g_console.cgp_path));
                apply_scaling(FBO_DEINIT);
+#ifdef HAVE_OPENGL
                gl_cg_reinit(path);
+#endif
                apply_scaling(FBO_INIT);
                break;
+#endif
             case INPUT_PRESET_CHOICE:
                strlcpy(g_console.input_cfg_path, path, sizeof(g_console.input_cfg_path));
                config_read_keybinds(path);
@@ -1017,13 +1051,13 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 				   if(gfx_ctx_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
 				   {
 					   //ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
-					   video_gl.restart();
+					   video_ptr.restart();
 				   }
 			   }
 			   else
 			   {
 				   //ps3graphics_set_pal60hz(0);
-				   video_gl.restart();
+				   video_ptr.restart();
 			   }
 		   }
 		   break;
@@ -1142,6 +1176,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 			   gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
 		   }
 		   break;
+#ifdef HAVE_FBO
 	   case SETTING_SCALE_ENABLED:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
@@ -1188,6 +1223,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 			   apply_scaling(FBO_INIT);
 		   }
 		   break;
+#endif
 	   case SETTING_HW_OVERSCAN_AMOUNT:
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
 		   {
@@ -1221,7 +1257,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
 			   rarch_settings_change(S_TRIPLE_BUFFERING);
-			   video_gl.restart();
+			   video_ptr.restart();
 		   }
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 		   {
@@ -1229,7 +1265,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 			   rarch_settings_default(S_DEF_TRIPLE_BUFFERING);
 
 			   if(!old_buffer_input)
-				   video_gl.restart();
+				   video_ptr.restart();
 		   }
 		   break;
 	   case SETTING_ENABLE_SCREENSHOTS:
@@ -1279,20 +1315,24 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   }
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
-			   if(g_console.sound_mode < SOUND_MODE_HEADSET)
+			   if(g_console.sound_mode < (SOUND_MODE_LAST-1))
 				   g_console.sound_mode++;
 		   }
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_UP)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)))
 		   {
+#ifdef HAVE_RSOUND
 			   if(g_console.sound_mode != SOUND_MODE_RSOUND)
 				   rarch_console_rsound_stop();
 			   else
 				   rarch_console_rsound_start(g_settings.audio.device);
+#endif
 		   }
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 		   {
 			   g_console.sound_mode = SOUND_MODE_NORMAL;
+#ifdef HAVE_RSOUND
 			   rarch_console_rsound_stop();
+#endif
 		   }
 		   break;
 #ifdef HAVE_RSOUND
@@ -1564,10 +1604,12 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
 		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R3, input);
 		   break;
+#ifdef __CELLOS_LV2__
 	   case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
             rarch_filename_input_and_save(INPUT_PRESET_FILE);
 		   break;
+#endif
 	   case SETTING_CONTROLS_DEFAULT_ALL:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
 		   {
@@ -1905,8 +1947,10 @@ static void ingame_menu_screenshot(item *items, menu *current_menu, uint64_t inp
    {
       if(input & (1 << RETRO_DEVICE_ID_JOYPAD_A))
       {
-	 menu_stack_decrement();
-	 device_ptr->menu_render = true;
+         menu_stack_decrement();
+#ifdef __CELLOS_LV2__
+         device_ptr->menu_render = true;
+#endif
       }
    }
 }
@@ -1974,26 +2018,28 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
             if(input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
             {
                rarch_settings_change(S_ROTATION_DECREMENT);
-               video_gl.set_rotation(NULL, g_console.screen_orientation);
+               video_ptr.set_rotation(NULL, g_console.screen_orientation);
             }
             
             if((input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
             {
                rarch_settings_change(S_ROTATION_INCREMENT);
-               video_gl.set_rotation(NULL, g_console.screen_orientation);
+               video_ptr.set_rotation(NULL, g_console.screen_orientation);
             }
             
             if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
             {
                rarch_settings_default(S_DEF_ROTATION);
-               video_gl.set_rotation(NULL, g_console.screen_orientation);
+               video_ptr.set_rotation(NULL, g_console.screen_orientation);
             }
             snprintf(comment, sizeof(comment), "Press [%s] or [%s] to change the [Orientation] settings.\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
             break;
+#ifdef HAVE_FBO
 	 case MENU_ITEM_SCALE_FACTOR:
        producesettingentry(current_menu, items, SETTING_SCALE_FACTOR, input);
 	    snprintf(comment, sizeof(comment), "Press [%s] or [%s] to change the [Scaling] settings.\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
 	    break;
+#endif
 	 case MENU_ITEM_FRAME_ADVANCE:
        if((input & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_R2)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_L2)))
 	    {
@@ -2099,9 +2145,11 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
    render_msg_place_func (x_position, (y_position+(y_position_increment*MENU_ITEM_ORIENTATION)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), strw_buffer);
    render_msg_post_func();
 
+#ifdef HAVE_FBO
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
    render_msg_place_func (x_position, (y_position+(y_position_increment*MENU_ITEM_SCALE_FACTOR)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), strw_buffer);
    render_msg_post_func();
+#endif
 
    render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_RESIZE_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE), "Resize Mode");
 
@@ -2276,11 +2324,17 @@ void menu_loop(void)
       gfx_ctx_clear();
 
       if(current_menu->enum_id == INGAME_MENU_RESIZE && (trig_state & RETRO_DEVICE_ID_JOYPAD_Y) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
+      {
+#ifdef __CELLOS_LV2__
          device_ptr->menu_render = false;
+#endif
+      }
       else
       {
          gfx_ctx_set_blend(true);
+#ifdef __CELLOS_LV2__
          device_ptr->menu_render = true;
+#endif
       }
 
       rarch_render_cached_frame();
@@ -2394,7 +2448,9 @@ void menu_loop(void)
          gfx_ctx_set_blend(false);
    }while(g_console.menu_enable);
 
+#ifdef __CELLOS_LV2__
    device_ptr->menu_render = false;
+#endif
 
    if(g_console.ingame_menu_enable)
       menu_stack_decrement();

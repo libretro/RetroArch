@@ -20,6 +20,7 @@
 #if defined(__CELLOS_LV2__)
 #define DEVICE_CAST gl_t*
 #define input_ptr input_ps3
+#define video_ptr video_gl
 #define DEVICE_PTR device_ptr
 #define HARDCODE_FONT_SIZE 0.91f
 #define FONT_SIZE (g_console.menu_font_size)
@@ -35,8 +36,10 @@
 #elif defined(_XBOX1)
 #define DEVICE_CAST xdk_d3d_video_t*
 #define input_ptr input_xinput
+#define video_ptr video_xdk_d3d
 #define DEVICE_PTR device_ptr
-#define FONT_SIZE 0
+#define HARDCODE_FONT_SIZE 21
+#define FONT_SIZE 21
 #define render_msg_pre_func() xfonts_render_msg_pre(DEVICE_PTR)
 #define render_msg_place_func(xpos, ypos, scale, color, msg) xfonts_render_msg_place(DEVICE_PTR, xpos, ypos, scale, msg)
 #define render_msg_post_func() xfonts_render_msg_post(DEVICE_PTR)

@@ -263,6 +263,8 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 	   }
    }
 
+   d3d->win_width = d3d->d3dpp.BackBufferWidth;
+   d3d->win_height = d3d->d3dpp.BackBufferHeight;
 
    if(d3d->d3dpp.BackBufferWidth > 640 && ((float)d3d->d3dpp.BackBufferHeight / (float)d3d->d3dpp.BackBufferWidth != 0.75) ||
       ((d3d->d3dpp.BackBufferWidth == 720) && (d3d->d3dpp.BackBufferHeight == 576))) // 16:9

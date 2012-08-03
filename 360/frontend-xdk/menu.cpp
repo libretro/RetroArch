@@ -808,7 +808,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
    return 0;
 }
 
-int menu_init (void)
+void menu_init (void)
 {
    HRESULT hr;
 
@@ -821,7 +821,7 @@ int menu_init (void)
    if (hr < 0)
    {
       RARCH_ERR("Failed initializing XUI application.\n");
-      return 1;
+      return;
    }
 
    /* Register font */
@@ -829,21 +829,21 @@ int menu_init (void)
    if (hr < 0)
    {
       RARCH_ERR("Failed to register default typeface.\n");
-      return 1;
+      return;
    }
 
    hr = app.LoadSkin( L"file://game:/media/rarch_scene_skin.xur");
    if (hr < 0)
    {
       RARCH_ERR("Failed to load skin.\n");
-      return 1;
+      return;
    }
 
    hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_main.xur", NULL, &app.hMainScene);
    if (hr < 0)
    {
       RARCH_ERR("Failed to create scene 'rarch_main.xur'.\n");
-      return 1;
+      return;
    }
 
    hCur = app.hMainScene;
@@ -852,8 +852,6 @@ int menu_init (void)
    browser = (filebrowser_t*)malloc(1 * sizeof(filebrowser_t));
    tmp_browser = (filebrowser_t*)malloc(1 * sizeof(filebrowser_t));
    filebrowser_new(browser, g_console.default_rom_startup_dir, rarch_console_get_rom_ext());
-
-   return 0;
 }
 
 void menu_free (void)

@@ -70,6 +70,7 @@ enum
 #ifdef HAVE_HEADSET
    SOUND_MODE_HEADSET,
 #endif
+   SOUND_MODE_LAST
 };
 
 #define MAXIMUM_PATH 512

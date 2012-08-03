@@ -62,6 +62,8 @@ typedef struct xdk_d3d_video
    unsigned frame_count;
    unsigned last_width;
    unsigned last_height;
+   unsigned win_width;
+   unsigned win_height;
    LPDIRECT3D d3d_device;
    LPDIRECT3DDEVICE d3d_render_device;
    LPDIRECT3DVERTEXBUFFER vertex_buf;
