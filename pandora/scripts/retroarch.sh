@@ -22,14 +22,17 @@ case "$BACKEND" in
 	libretro-gambatte.so)
 		FILTER='GBC (*.gb; *.gbc)|*.gb *.gbc'
 		;;
-	libretro-meteor.so | libretro-vba.so )
+	libretro-meteor.so | libretro-vba.so)
 		FILTER='GBA (*.gba)|*.gba'
 		;;
-	libretro-imame4all.so) # does libretro-fba.so belong here?
+	libretro-imame4all.so | libretro-fba.so)
 		FILTER='Arcade (*.zip)|*.zip'
 		;;
 	libretro-genplus.so)
 		FILTER='Genesis/MegaDrive (*.md; *.gen)|*.md *.gen'
+		;;
+	libretro-pcsx-rearmed.so)
+		FILTER='Disc image (*.iso; *.bin; *.img)|*.iso *.bin *.img'
 		;;
 	libretro-prboom.so)
 		FILTER='Doom (*.wad)|*.wad'
