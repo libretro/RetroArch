@@ -364,7 +364,7 @@ static void menu_stack_refresh (item *items, menu *current_menu)
    int page, i, j;
    float increment;
    float increment_step = 0.03f;
-   float x_position = 0.09f;
+   float x_position = POSITION_X;
 
    page = 0;
    j = 0;
@@ -557,7 +557,7 @@ static void display_menubar(menu *current_menu)
    filebrowser_t *fb = &browser;
    char current_path[256], rarch_version[128];
 
-   float x_position = 0.09f;
+   float x_position = POSITION_X;
    float font_size = 0.91f;
 
    snprintf(rarch_version, sizeof(rarch_version), "v%s", PACKAGE_VERSION);
@@ -705,7 +705,7 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
 
    bool ret = true;
 
-   float x_position = 0.09f;
+   float x_position = POSITION_X;
    float comment_y_position = 0.83f;
    float comment_two_y_position = 0.91f;
    float font_size = 0.91f;
@@ -813,7 +813,7 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
    bool ret = true;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   float x_position = 0.09f;
+   float x_position = POSITION_X;
    float comment_y_position = 0.83f;
    float comment_two_y_position = 0.91f;
    float font_size = 0.91f;
@@ -1619,7 +1619,7 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
    char msg[256];
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   float x_position = 0.09f;
+   float x_position = POSITION_X;
    float x_position_center = 0.5f;
    float comment_y_position = 0.83f;
    float comment_two_y_position = 0.91f;
@@ -1638,7 +1638,7 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
       action = SETTINGS_ACTION_UP;
 
    if(action != SETTINGS_ACTION_NOOP)
-	   settings_iterate(current_menu, items, action);
+      settings_iterate(current_menu, items, action);
 
    producesettingentry(current_menu, items, current_menu->selected, input);
 
@@ -1693,7 +1693,7 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   float x_position = 0.09f;
+   float x_position = POSITION_X;
    float comment_y_position = 0.83f;
    float font_size = 0.91f;
    float comment_two_y_position = 0.91f;
@@ -1741,7 +1741,7 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
 
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   float x_position = 0.09f;
+   float x_position = POSITION_X;
    float x_position_center = 0.5f;
    float font_size = 0.91f;
 
@@ -1905,7 +1905,7 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
    static unsigned menuitem_colors[MENU_ITEM_LAST];
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   float x_position = 0.09f;
+   float x_position = POSITION_X;
    float y_position = 0.16f;
    float comment_y_position = 0.83f;
    float font_size = 0.91f;
@@ -2316,8 +2316,8 @@ void menu_loop(void)
 		      break;
       }
 
-      float x_position = 0.09f;
-      float starting_y_position = 0.10f;
+      float x_position = POSITION_X;
+      float starting_y_position = POSITION_Y_START;
       float y_position_increment = 0.035f;
 
       switch(current_menu->category_id)

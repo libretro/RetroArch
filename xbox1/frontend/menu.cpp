@@ -349,7 +349,7 @@ static void menu_stack_refresh (item *items, menu *current_menu)
    int page, i, j;
    float increment;
    float increment_step = 0.03f;
-   float x_position = 0.09f;
+   float x_position = POSITION_X;
 
    page = 0;
    j = 0;
@@ -539,8 +539,8 @@ static void display_menubar(menu *current_menu)
    filebrowser_t *fb = &browser;
    char current_path[256], rarch_version[128];
 
-   float x_position = m_menuMainRomListPos_x;
-   float current_y_position = m_menuMainRomListPos_y;
+   float x_position = POSITION_X;
+   float current_y_position = POSITION_Y_START;
    float font_size = m_menuMainRomListPos_y;
 
    snprintf(rarch_version, sizeof(rarch_version), "v%s", PACKAGE_VERSION);
@@ -942,8 +942,8 @@ void menu_loop(void)
             break;
       }
 
-      float x_position = m_menuMainRomListPos_x;
-      float starting_y_position = m_menuMainRomListPos_y;
+      float x_position = POSITION_X;
+      float starting_y_position = POSITION_Y_START;
       float y_position_increment = 20;
 
       switch(current_menu->category_id)
