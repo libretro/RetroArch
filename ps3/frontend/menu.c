@@ -606,7 +606,11 @@ static void display_menubar(menu *current_menu)
    char current_path[256], rarch_version[128];
 
    float x_position = POSITION_X;
+#ifdef _XBOX1
+   float font_size = m_menuMainRomListPos_y;
+#else
    float font_size = HARDCODE_FONT_SIZE;
+#endif
 
    snprintf(rarch_version, sizeof(rarch_version), "v%s", PACKAGE_VERSION);
 
@@ -653,16 +657,26 @@ static void display_menubar(menu *current_menu)
          fb = &tmpBrowser;
       case FILE_BROWSER_MENU:
 	 snprintf(current_path, sizeof(current_path), "PATH: %s", filebrowser_get_current_dir(fb));
+#ifdef _XBOX1
+         render_msg_place_func(x_position, current_y_position, 0, 0, current_path);
+#else
          render_msg_place_func(x_position, 0.09f, FONT_SIZE, YELLOW, current_path);
+#endif
          break;
       default:
          break;
    }
 
+#ifdef _XBOX1
+   //Render background image
+   d3d_surface_render(&m_menuMainBG, MENU_MAIN_BG_X, MENU_MAIN_BG_Y,
+   m_menuMainBG.m_imageInfo.Width, m_menuMainBG.m_imageInfo.Height);
+#else
    render_msg_place_func(x_position, 0.05f, 1.4f, WHITE, current_menu->title);
    render_msg_place_func(0.3f, 0.06f, 0.82f, WHITE, m_title);
    render_msg_place_func(0.8f, 0.12f, 0.82f, WHITE, rarch_version);
    render_msg_post_func();
+#endif
 }
 
 static void browser_update(filebrowser_t * b, uint64_t input, const char *extensions)
@@ -687,6 +701,7 @@ static void browser_update(filebrowser_t * b, uint64_t input, const char *extens
    else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
    {
       action = FILEBROWSER_ACTION_RESET;
+      //TODO - Dehardcode this
       filebrowser_set_root(b, "/");
       strlcpy(b->extensions, extensions, sizeof(b->extensions));
    }
@@ -719,10 +734,22 @@ static void browser_render(filebrowser_t * b, float current_x, float current_y, 
       char fname_tmp[256];
       fill_pathname_base(fname_tmp, b->current_dir.list->elems[i].data, sizeof(fname_tmp));
       currentY = currentY + ySpacing;
+
+#ifdef _XBOX1
+      //check if this is the currently selected file
+      const char *current_pathname = filebrowser_get_current_path(b);
+      if(strcmp(current_pathname, b->current_dir.list->elems[i].data) == 0)
+         d3d_surface_render(&m_menuMainRomSelectPanel, currentX, currentY, ROM_PANEL_WIDTH, ROM_PANEL_HEIGHT);
+
+      render_msg_place_func(currentX, currentY, 0, 0, fname_tmp);
+#else
       render_msg_place_func(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->current_dir.list->elems[i].attr.b ? GREEN : WHITE, fname_tmp);
       render_msg_post_func();
+#endif
    }
+#ifndef _XBOX1
    render_msg_post_func();
+#endif
 }
 
 #ifdef __CELLOS_LV2__
@@ -2503,6 +2530,10 @@ void menu_loop(void)
 #ifdef HAVE_SYSUTILS
       cellSysutilCheckCallback();
 #endif
+#ifdef _XBOX1
+      device_ptr->frame_count++;
+#endif
+
       if(current_menu->enum_id == INGAME_MENU_RESIZE && (old_state & (1 << RETRO_DEVICE_ID_JOYPAD_Y)) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
       { }
       else
