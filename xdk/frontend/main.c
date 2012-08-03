@@ -20,11 +20,12 @@
 #include <stdint.h>
 #include <string>
 
-#include "../../xdk/menu_shared.h"
-
-#ifdef _XBOX360
+#if defined(_XBOX360)
 #include <xfilecache.h>
 #include "../../360/frontend-xdk/menu.h"
+#include "../../xdk/menu_shared.h"
+#elif defined(_XBOX1)
+#include "../../console/rmenu/rmenu.h"
 #endif
 
 #include <xbdm.h>

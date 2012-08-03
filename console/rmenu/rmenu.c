@@ -62,8 +62,8 @@
 #include "../../file.h"
 #include "../../general.h"
 
-#include "menu.h"
-#include "menu-entries.h"
+#include "rmenu.h"
+#include "rmenu_entries.h"
 
 #define NUM_ENTRY_PER_PAGE 17
 #define INPUT_SCALE 2
@@ -2234,7 +2234,7 @@ void menu_init (void)
    const char *id = info.library_name ? info.library_name : "Unknown";
    snprintf(m_title, sizeof(m_title), "Libretro core: %s %s", id, info.library_version);
 
-   menu_stack_push(menu_items, FILE_BROWSER_MENU);
+   menu_stack_push(rmenu_items, FILE_BROWSER_MENU);
    filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), default_paths.filebrowser_startup_dir);
 #ifdef _XBOX1
    filebrowser_set_root(&tmpBrowser, "D:");
@@ -2306,7 +2306,6 @@ void menu_loop(void)
 
    do
    {
-      RARCH_LOG("reaches here #0\n");
       //first button input frame
       uint64_t input_state_first_frame = 0;
       uint64_t input_state = 0;
@@ -2416,8 +2415,6 @@ void menu_loop(void)
          }
       }
       
-      RARCH_LOG("reaches here #1\n");
-
       gfx_ctx_clear();
 
       if(current_menu->enum_id == INGAME_MENU_RESIZE && (trig_state & RETRO_DEVICE_ID_JOYPAD_Y) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
@@ -2443,7 +2440,7 @@ void menu_loop(void)
       switch(current_menu->enum_id)
       {
 	      case FILE_BROWSER_MENU:
-		      select_rom(menu_items, current_menu, trig_state);
+		      select_rom(rmenu_items, current_menu, trig_state);
 		      fb = &browser;
 		      break;
 	      case GENERAL_VIDEO_MENU:
@@ -2453,36 +2450,34 @@ void menu_loop(void)
 	      case EMU_AUDIO_MENU:
 	      case PATH_MENU:
 	      case CONTROLS_MENU:
-		      select_setting(menu_items, current_menu, trig_state);
+		      select_setting(rmenu_items, current_menu, trig_state);
 		      break;
 	      case SHADER_CHOICE:
 	      case PRESET_CHOICE:
 	      case BORDER_CHOICE:
 	      case LIBRETRO_CHOICE:
 	      case INPUT_PRESET_CHOICE:
-		      select_file(menu_items, current_menu, trig_state);
+		      select_file(rmenu_items, current_menu, trig_state);
 		      fb = &tmpBrowser;
 		      break;
 	      case PATH_SAVESTATES_DIR_CHOICE:
 	      case PATH_DEFAULT_ROM_DIR_CHOICE:
 	      case PATH_CHEATS_DIR_CHOICE:
 	      case PATH_SRAM_DIR_CHOICE:
-		      select_directory(menu_items, current_menu, trig_state);
+		      select_directory(rmenu_items, current_menu, trig_state);
 		      fb = &tmpBrowser;
 		      break;
 	      case INGAME_MENU:
 		      if(g_console.ingame_menu_enable)
-			      ingame_menu(menu_items, current_menu, trig_state);
+			      ingame_menu(rmenu_items, current_menu, trig_state);
 		      break;
 	      case INGAME_MENU_RESIZE:
-		      ingame_menu_resize(menu_items, current_menu, trig_state);
+		      ingame_menu_resize(rmenu_items, current_menu, trig_state);
 		      break;
 	      case INGAME_MENU_SCREENSHOT:
-		      ingame_menu_screenshot(menu_items, current_menu, trig_state);
+		      ingame_menu_screenshot(rmenu_items, current_menu, trig_state);
 		      break;
       }
-
-      RARCH_LOG("reaches here #1.1\n");
 
       float x_position = POSITION_X;
       float starting_y_position = POSITION_Y_START;
@@ -2501,8 +2496,6 @@ void menu_loop(void)
 
       old_state = input_state_first_frame;
       
-      RARCH_LOG("reaches here #1.2\n");
-
       if(IS_TIMER_EXPIRED(device_ptr))
       {
          // if we want to force goto the emulation loop, skip this
@@ -2543,13 +2536,10 @@ void menu_loop(void)
       }
 #endif
 
-      RARCH_LOG("reaches here #1.3\n");
-
       gfx_ctx_swap_buffers();
 #ifdef HAVE_SYSUTILS
       cellSysutilCheckCallback();
 #endif
-      RARCH_LOG("reaches here #1.4\n");
 
 #ifndef _XBOX1
       if(current_menu->enum_id == INGAME_MENU_RESIZE && (old_state & (1 << RETRO_DEVICE_ID_JOYPAD_Y)) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
@@ -2557,10 +2547,6 @@ void menu_loop(void)
       else
          gfx_ctx_set_blend(false);
 #endif
-      
-      RARCH_LOG("reaches here #1.5\n");
-
-      RARCH_LOG("reaches here #2\n");
    }while(g_console.menu_enable);
 
 #ifdef __CELLOS_LV2__

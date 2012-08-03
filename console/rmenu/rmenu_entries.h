@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-item menu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
+item rmenu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
 {
 #ifdef __CELLOS_LV2__
    {

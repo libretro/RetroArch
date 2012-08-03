@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MENU_H_
-#define MENU_H_
+#ifndef _RMENU_H_
+#define _RMENU_H_
 
 #if defined(__CELLOS_LV2__)
 #define DEVICE_CAST gl_t*
@@ -196,10 +196,8 @@ enum
 #define MAX_NO_OF_PATH_SETTINGS				SETTING_PATH_DEFAULT_ALL+1
 #define MAX_NO_OF_CONTROLS_SETTINGS			SETTING_CONTROLS_DEFAULT_ALL+1
 
-#ifndef _XBOX
 void menu_init (void);
 void menu_loop (void);
 void menu_free (void);
-#endif
 
 #endif /* MENU_H_ */

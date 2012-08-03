@@ -58,7 +58,7 @@
 #include "../../general.h"
 #include "../../file.h"
 
-#include "menu.h"
+#include "../../console/rmenu/rmenu.h"
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 
