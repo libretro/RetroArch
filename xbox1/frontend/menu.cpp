@@ -18,7 +18,11 @@
 #include "RetroLaunch/Surface.h"
 
 #include "../../ps3/frontend/menu.h"
+#include "../../ps3/frontend/menu-entries.h"
 #include "../../console/fileio/file_browser.h"
+
+#include "../../console/rarch_console.h"
+
 #include "../../gfx/fonts/xdk1_xfonts.h"
 
 #define NUM_ENTRY_PER_PAGE 17
@@ -36,8 +40,8 @@
 menu menuStack[10];
 int menuStackindex = 0;
 
-filebrowser_t *browser;
-filebrowser_t *tmpBrowser;
+filebrowser_t browser;
+filebrowser_t tmpBrowser;
 static unsigned currently_selected_controller_menu = 0;
 
 // Rom selector panel with coords
@@ -529,8 +533,67 @@ static void menu_stack_push(item *items, unsigned menu_id)
       menu_stack_refresh(items, current_menu);
 }
 
-static void display_menubar(void)
+static void display_menubar(menu *current_menu)
 {
+   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
+   filebrowser_t *fb = &browser;
+   char current_path[256], rarch_version[128];
+
+   float x_position = m_menuMainRomListPos_x;
+   float current_y_position = m_menuMainRomListPos_y;
+   float font_size = m_menuMainRomListPos_y;
+
+   snprintf(rarch_version, sizeof(rarch_version), "v%s", PACKAGE_VERSION);
+
+   switch(current_menu->enum_id)
+   {
+      case GENERAL_VIDEO_MENU:
+         render_msg_place_func(x_position, 0.03f, font_size, WHITE, "NEXT ->");
+         break;
+      case GENERAL_AUDIO_MENU:
+      case EMU_GENERAL_MENU:
+      case EMU_VIDEO_MENU:
+      case EMU_AUDIO_MENU:
+      case PATH_MENU:
+         render_msg_place_func(x_position, 0.03f, font_size, WHITE, "<- PREV | NEXT ->");
+         break;
+      case CONTROLS_MENU:
+      case INGAME_MENU_RESIZE:
+      case SHADER_CHOICE:
+      case PRESET_CHOICE:
+      case BORDER_CHOICE:
+      case LIBRETRO_CHOICE:
+      case INPUT_PRESET_CHOICE:
+      case PATH_SAVESTATES_DIR_CHOICE:
+      case PATH_DEFAULT_ROM_DIR_CHOICE:
+      case PATH_CHEATS_DIR_CHOICE:
+      case PATH_SRAM_DIR_CHOICE:
+         render_msg_place_func(x_position, 0.03f, font_size, WHITE, "<- PREV");
+         break;
+      default:
+         break;
+   }
+
+   switch(current_menu->enum_id)
+   {
+      case SHADER_CHOICE:
+      case PRESET_CHOICE:
+      case BORDER_CHOICE:
+      case LIBRETRO_CHOICE:
+      case INPUT_PRESET_CHOICE:
+      case PATH_SAVESTATES_DIR_CHOICE:
+      case PATH_DEFAULT_ROM_DIR_CHOICE:
+      case PATH_CHEATS_DIR_CHOICE:
+      case PATH_SRAM_DIR_CHOICE:
+         fb = &tmpBrowser;
+      case FILE_BROWSER_MENU:
+         snprintf(current_path, sizeof(current_path), "PATH: %s", filebrowser_get_current_dir(fb));
+         render_msg_place_func(x_position, current_y_position, /* size */0, /* color */0, current_path);
+         break;
+      default:
+         break;
+   }
+
    //Render background image
    d3d_surface_render(&m_menuMainBG, MENU_MAIN_BG_X, MENU_MAIN_BG_Y,
    m_menuMainBG.m_imageInfo.Width, m_menuMainBG.m_imageInfo.Height);
@@ -567,7 +630,8 @@ static void browser_update(filebrowser_t * b, uint16_t input, const char *extens
 
 static void browser_render(filebrowser_t *b, float current_x, float current_y, float y_spacing)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
+
    unsigned file_count = b->current_dir.list->size;
    unsigned current_index, page_number, page_base, i;
    float currentX, currentY, ySpacing;
@@ -593,9 +657,7 @@ static void browser_render(filebrowser_t *b, float current_x, float current_y, f
       if(strcmp(current_pathname, b->current_dir.list->elems[i].data) == 0)
          d3d_surface_render(&m_menuMainRomSelectPanel, currentX, currentY, ROM_PANEL_WIDTH, ROM_PANEL_HEIGHT);
 
-      xfonts_render_msg_pre(d3d);
-      xfonts_render_msg_place(d3d, currentX, currentY, 0 /* scale */, rom_basename);
-      xfonts_render_msg_post(d3d);
+      xfonts_render_msg_place(device_ptr, currentX, currentY, 0 /* scale */, rom_basename);
    }
 }
 
@@ -616,11 +678,11 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
    }
 }
 
-static void select_rom(uint16_t input)
+static void select_rom(item *items, menu *current_menu, uint64_t input)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
-   browser_update(browser, input, rarch_console_get_rom_ext());
+   browser_update(&browser, input, rarch_console_get_rom_ext());
    
    menu_romselect_action_t action = MENU_ROMSELECT_ACTION_NOOP;
    
@@ -633,32 +695,28 @@ static void select_rom(uint16_t input)
    }
 
    if (action != MENU_ROMSELECT_ACTION_NOOP)
-      menu_romselect_iterate(browser, action);
+      menu_romselect_iterate(&browser, action);
 
-   display_menubar();
+   display_menubar(current_menu);
 
    //Display some text
    //Center the text (hardcoded)
    int xpos = width == 640 ? 65 : 400;
    int ypos = width == 640 ? 430 : 670;
    
-   xfonts_render_msg_pre(d3d);
    xfonts_render_msg_place(d3d, xpos, ypos, 0 /* scale */, m_title);
-   xfonts_render_msg_post(d3d);
 }
 
 int menu_init(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
-   browser = (filebrowser_t*)malloc(sizeof(filebrowser_t));
-   tmpBrowser = (filebrowser_t*)malloc(sizeof(filebrowser_t));
-
    // Set libretro filename and version to variable
    struct retro_system_info info;
    retro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
    snprintf(m_title, sizeof(m_title), "Libretro core: %s %s", id, info.library_version);
+
 
    // Set file cache size
    XSetFileCacheSize(8 * 1024 * 1024);
@@ -670,9 +728,10 @@ int menu_init(void)
    xbox_io_mount("F:", "Harddisk0\\Partition6");
    xbox_io_mount("G:", "Harddisk0\\Partition7");
 
-	strlcpy(browser->extensions, rarch_console_get_rom_ext(), sizeof(browser->extensions));
-   filebrowser_set_root(browser, g_console.default_rom_startup_dir);
-   filebrowser_iterate(browser, FILEBROWSER_ACTION_RESET);
+	strlcpy(browser.extensions, rarch_console_get_rom_ext(), sizeof(browser.extensions));
+   menu_stack_push(menu_items, FILE_BROWSER_MENU);
+   filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), g_console.default_rom_startup_dir);
+   filebrowser_set_root(&tmpBrowser, "/");
    
    width  = d3d->d3dpp.BackBufferWidth;
 
@@ -703,11 +762,9 @@ int menu_init(void)
 
 void menu_free(void)
 {
-   filebrowser_free(browser);
-   filebrowser_free(tmpBrowser);
+   filebrowser_free(&browser);
+   filebrowser_free(&tmpBrowser);
 
-   free(browser);
-   free(tmpBrowser);
    d3d_surface_free(&m_menuMainBG);
    d3d_surface_free(&m_menuMainRomSelectPanel);
 }
@@ -717,6 +774,10 @@ void menu_loop(void)
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    g_console.menu_enable = true;
+   device_ptr->block_swap = true;
+
+   if(g_console.ingame_menu_enable)
+      menu_stack_push(ingame_menu_settings, INGAME_MENU);
 
    do
    {
@@ -724,6 +785,7 @@ void menu_loop(void)
       uint64_t input_state_first_frame = 0;
       uint64_t input_state = 0;
       static bool first_held = false;
+      menu *current_menu = menu_stack_get_current_ptr();
 
        input_ptr.poll(NULL);
 
@@ -836,8 +898,64 @@ void menu_loop(void)
       device_ptr->d3d_render_device->SetFlickerFilter(1);
       device_ptr->d3d_render_device->SetSoftDisplayFilter(1);
       
-      select_rom(trig_state);
-      browser_render(browser, m_menuMainRomListPos_x, m_menuMainRomListPos_y, 20);
+      filebrowser_t * fb = &browser;
+
+      switch(current_menu->enum_id)
+      {
+         case FILE_BROWSER_MENU:
+            select_rom(menu_items, current_menu, trig_state);
+            fb = &browser;
+            break;
+         case GENERAL_VIDEO_MENU:
+         case GENERAL_AUDIO_MENU:
+         case EMU_GENERAL_MENU:
+         case EMU_VIDEO_MENU:
+         case EMU_AUDIO_MENU:
+         case PATH_MENU:
+         case CONTROLS_MENU:
+            //select_setting(menu_items, current_menu, trig_state);
+            break;
+         case SHADER_CHOICE:
+         case PRESET_CHOICE:
+         case BORDER_CHOICE:
+         case LIBRETRO_CHOICE:
+         case INPUT_PRESET_CHOICE:
+            //select_file(menu_items, current_menu, trig_state);
+            fb = &tmpBrowser;
+            break;
+         case PATH_SAVESTATES_DIR_CHOICE:
+         case PATH_DEFAULT_ROM_DIR_CHOICE:
+         case PATH_CHEATS_DIR_CHOICE:
+         case PATH_SRAM_DIR_CHOICE:
+            //select_directory(menu_items, current_menu, trig_state);
+            fb = &tmpBrowser;
+            break;
+         case INGAME_MENU:
+            //if(g_console.ingame_menu_enable)
+               //ingame_menu(menu_items, current_menu, trig_state);
+            break;
+         case INGAME_MENU_RESIZE:
+            //ingame_menu_resize(menu_items, current_menu, trig_state);
+            break;
+         case INGAME_MENU_SCREENSHOT:
+            //ingame_menu_screenshot(menu_items, current_menu, trig_state);
+            break;
+      }
+
+      float x_position = m_menuMainRomListPos_x;
+      float starting_y_position = m_menuMainRomListPos_y;
+      float y_position_increment = 20;
+
+      switch(current_menu->category_id)
+      {
+         case CATEGORY_FILEBROWSER:
+            browser_render(fb, x_position, starting_y_position, y_position_increment);
+            break;
+         case CATEGORY_SETTINGS:
+         case CATEGORY_INGAME_MENU:
+         default:
+            break;
+      }
       
       old_state = input_state_first_frame;
 
@@ -872,6 +990,11 @@ void menu_loop(void)
       device_ptr->d3d_render_device->EndScene();
       device_ptr->d3d_render_device->Present(NULL, NULL, NULL, NULL);
    }while(g_console.menu_enable);
+
+   if(g_console.ingame_menu_enable)
+      menu_stack_decrement();
+
+   device_ptr->block_swap = false;
 
    g_console.ingame_menu_enable = false;
 }

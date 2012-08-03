@@ -110,6 +110,7 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), ps3_get_resolution_label(g_console.supported_resolutions[g_console.current_resolution_index]));
 		   break;
 #endif
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 	   case SETTING_SHADER_PRESETS:
          set_setting_label_color(items,true, currentsetting);
 		   fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
@@ -126,6 +127,7 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
          set_setting_label_color(items,strcmp(g_settings.video.second_pass_shader, default_paths.shader_file) == 0,
             currentsetting);
 		   break;
+#endif
 	   case SETTING_FONT_SIZE:
          set_setting_label_color(items,g_console.menu_font_size == 1.0f, currentsetting);
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%f", g_console.menu_font_size);
@@ -185,18 +187,22 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
                snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Normal");
                items[currentsetting].text_color = GREEN;
                break;
+#ifdef HAVE_RSOUND
             case SOUND_MODE_RSOUND:
                snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), 
                   "INFO - [Sound Output] is set to 'RSound' - the sound will be streamed over the\n network to the RSound audio server." );
                snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "RSound");
                items[currentsetting].text_color = ORANGE;
                break;
+#endif
+#ifdef HAVE_HEADSET
             case SOUND_MODE_HEADSET:
                snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), 
                   "INFO - [Sound Output] is set to 'USB/Bluetooth Headset' - sound will\n be output through the headset");
                snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "USB/Bluetooth Headset");
                items[currentsetting].text_color = ORANGE;
                break;
+#endif
             default:
                break;
          }
@@ -898,6 +904,7 @@ static void set_keybind_digital(uint64_t default_retro_joypad_id, uint64_t input
    rarch_input_set_keybind(currently_selected_controller_menu, keybind_action, default_retro_joypad_id);
 }
 
+#ifdef __CELLOS_LV2__
 static void rarch_filename_input_and_save (unsigned filename_type)
 {
    bool filename_entered = false;
@@ -979,12 +986,13 @@ static void rarch_filename_input_and_save (unsigned filename_type)
       }
    }
 }
-
+#endif
 
 static void producesettingentry(menu *current_menu, item *items, unsigned switchvalue, uint64_t input)
 {
    switch(switchvalue)
    {
+#ifdef __CELLOS_LV2__
 	   case SETTING_CHANGE_RESOLUTION:
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
 			   rarch_settings_change(S_RESOLUTION_NEXT);
@@ -1024,6 +1032,8 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		      }
 		      break;
 		      */
+#endif
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 	   case SETTING_SHADER_PRESETS:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
@@ -1064,6 +1074,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 			   menu_stack_refresh(items, current_menu);
 		   }
 		   break;
+#endif
 	   case SETTING_FONT_SIZE:
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
 		   {
@@ -1238,12 +1249,14 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 #endif
 		   }
 		   break;
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 	   case SETTING_SAVE_SHADER_PRESET:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 			   rarch_filename_input_and_save(SHADER_PRESET_FILE);
 		   break;
 	   case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
 		   break;
+#endif
 	   case SETTING_DEFAULT_VIDEO_ALL:
 		   break;
 	   case SETTING_SOUND_MODE:
@@ -1270,6 +1283,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 			   rarch_console_rsound_stop();
 		   }
 		   break;
+#ifdef HAVE_RSOUND
 	   case SETTING_RSOUND_SERVER_IP_ADDRESS:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
@@ -1291,6 +1305,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			   strlcpy(g_settings.audio.device, "0.0.0.0", sizeof(g_settings.audio.device));
 		   break;
+#endif
 	   case SETTING_DEFAULT_AUDIO_ALL:
 		   break;
 	   case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:

@@ -651,6 +651,7 @@ item ingame_menu_settings[MENU_ITEM_LAST] =
       "INFO - Press LEFT or RIGHT to change the [Rotation] settings.\nPress START to reset back to default values.",
       WHITE,
    },
+#ifdef __CELLOS_LV2__
    {
       MENU_ITEM_SCALE_FACTOR,
       "Scale Factor",
@@ -661,6 +662,7 @@ item ingame_menu_settings[MENU_ITEM_LAST] =
       "INFO - Press LEFT or RIGHT to change the [Scaling] settings.\nPress START to reset back to default values.",
       WHITE,
    },
+#endif
    {
       MENU_ITEM_RESIZE_MODE,
       "Resize Mode",

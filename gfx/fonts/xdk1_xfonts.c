@@ -30,10 +30,14 @@ void xfonts_render_msg_pre(xdk_d3d_video_t *d3d)
 
 void xfonts_render_msg_place(xdk_d3d_video_t *d3d, float x, float y, float scale, const char *msg)
 {
+   xfonts_render_msg_pre(d3d);
+
    wchar_t str[256];
    convert_char_to_wchar(str, msg, sizeof(str));
    d3d->debug_font->TextOut(d3d->pFrontBuffer, str, (unsigned)-1, x, y);
    d3d->debug_font->TextOut(d3d->pBackBuffer, str, (unsigned)-1, x, y);
+
+   xfonts_render_msg_post(d3d);
 }
 
 void xfonts_render_msg_post(xdk_d3d_video_t *d3d)
