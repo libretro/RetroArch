@@ -893,14 +893,16 @@ void menu_loop(void)
             trig_state = input_state; //second input frame set as current frame
          }
       }
-      
-      device_ptr->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
-         D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
+
+      gfx_ctx_clear();
+
+#ifdef _XBOX1
       device_ptr->frame_count++;
 
       device_ptr->d3d_render_device->BeginScene();
       device_ptr->d3d_render_device->SetFlickerFilter(1);
       device_ptr->d3d_render_device->SetSoftDisplayFilter(1);
+#endif
       
       filebrowser_t * fb = &browser;
 
