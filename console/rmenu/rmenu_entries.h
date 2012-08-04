@@ -207,7 +207,7 @@ item rmenu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
 #ifdef HAVE_RSOUND
    {
       SETTING_RSOUND_SERVER_IP_ADDRESS,
-      "RSound Audio Server IP Address",
+      "RSound Server IP Address",
       "",
       0.0f,
       0.0f,
@@ -218,12 +218,12 @@ item rmenu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
 #endif
    {
       SETTING_ENABLE_CUSTOM_BGM,
-      "Enable Custom BGM Feature",
+      "Custom BGM Feature",
       "",
       0.0f,
       0.0f,
       YELLOW,
-      "INFO - [Enable Custom BGM] feature is set to 'ON'.",
+      "INFO - [Custom BGM] feature is set to 'ON'.",
       WHITE,
    },
    {
@@ -757,7 +757,7 @@ item ingame_menu_settings[MENU_ITEM_LAST] =
 #endif
    {
       MENU_ITEM_RETURN_TO_DASHBOARD,
-      "Return to XMB",
+      "Return to Dashboard",
       "",
       0.0f,
       0.0f,
