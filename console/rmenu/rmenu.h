@@ -24,9 +24,7 @@
 #define DEVICE_PTR device_ptr
 #define HARDCODE_FONT_SIZE 0.91f
 #define FONT_SIZE (g_console.menu_font_size)
-#define render_msg_pre_func() gl_render_msg_pre(DEVICE_PTR)
-#define render_msg_place_func(xpos, ypos, scale, color, msg) gl_render_msg_place(xpos, ypos, scale, color, msg)
-#define render_msg_post_func() gl_render_msg_post(DEVICE_PTR)
+#define render_msg_place_func(xpos, ypos, scale, color, msg) gl_render_msg_place(DEVICE_PTR, xpos, ypos, scale, color, msg)
 
 #define POSITION_X 0.09f
 #define POSITION_Y_START 0.10f
@@ -40,9 +38,7 @@
 #define DEVICE_PTR device_ptr
 #define HARDCODE_FONT_SIZE 21
 #define FONT_SIZE 21
-#define render_msg_pre_func() xfonts_render_msg_pre(DEVICE_PTR)
 #define render_msg_place_func(xpos, ypos, scale, color, msg) xfonts_render_msg_place(DEVICE_PTR, xpos, ypos, scale, msg)
-#define render_msg_post_func() xfonts_render_msg_post(DEVICE_PTR)
 
 #define POSITION_X m_menuMainRomListPos_x
 #define POSITION_Y_START m_menuMainRomListPos_y

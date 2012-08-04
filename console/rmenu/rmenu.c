@@ -669,7 +669,6 @@ static void display_menubar(menu *current_menu)
    render_msg_place_func(x_position, 0.05f, 1.4f, WHITE, current_menu->title);
    render_msg_place_func(0.3f, 0.06f, 0.82f, WHITE, m_title);
    render_msg_place_func(0.8f, 0.12f, 0.82f, WHITE, rarch_version);
-   render_msg_post_func();
 #endif
 }
 
@@ -738,12 +737,8 @@ static void browser_render(filebrowser_t * b, float current_x, float current_y, 
       render_msg_place_func(currentX, currentY, 0, 0, fname_tmp);
 #else
       render_msg_place_func(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->current_dir.list->elems[i].attr.b ? GREEN : WHITE, fname_tmp);
-      render_msg_post_func();
 #endif
    }
-#ifndef _XBOX1
-   render_msg_post_func();
-#endif
 }
 
 #ifdef __CELLOS_LV2__
@@ -879,7 +874,6 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
    snprintf(comment_two, sizeof(comment_two), "[%s] - return to settings [%s] - Reset Startdir", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
    render_msg_place_func(x_position, comment_two_y_position, font_size, YELLOW, comment_two);
    render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, comment);
-   render_msg_post_func();
 }
 
 static void select_directory(item *items, menu *current_menu, uint64_t input)
@@ -960,7 +954,6 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
 
    snprintf(msg, sizeof(msg), "INFO - Browse to a directory and assign it as the path by\npressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_Y));
    render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, msg);
-   render_msg_post_func();
 }
 
 static void set_keybind_digital(uint64_t default_retro_joypad_id, uint64_t input)
@@ -1726,9 +1719,6 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
    producesettingentry(current_menu, items, current_menu->selected, input);
 
    display_menubar(current_menu);
-#ifdef __CELLOS_LV2__
-   render_msg_post_func();
-#endif
 
    for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
    {
@@ -1736,9 +1726,6 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
       {
          render_msg_place_func(items[i].text_xpos, items[i].text_ypos, FONT_SIZE, current_menu->selected == items[i].enum_id ? YELLOW : items[i].item_color, items[i].text);
          render_msg_place_func(x_position_center, items[i].text_ypos, FONT_SIZE, items[i].text_color, items[i].setting_text);
-#ifdef __CELLOS_LV2__
-         render_msg_post_func();
-#endif
       }
    }
 
@@ -1748,9 +1735,6 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
    render_msg_place_func(x_position, comment_two_y_position, FONT_SIZE, YELLOW, msg);
    snprintf(msg, sizeof(msg), "[%s] - default | [%s]/[%s] - go back", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
    render_msg_place_func(x_position, comment_two_y_position + 0.04f, FONT_SIZE, YELLOW, msg);
-#ifdef __CELLOS_LV2__
-   render_msg_post_func();
-#endif
 }
 
 static void menu_romselect_iterate(filebrowser_t *filebrowser, item *items, menu_romselect_action_t action)
@@ -1821,9 +1805,6 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
 
    render_msg_place_func   (x_position, comment_two_y_position, FONT_SIZE, YELLOW, msg);
    render_msg_place_func(x_position, comment_two_y_position + 0.04f, FONT_SIZE, YELLOW, msg2);
-#ifdef __CELLOS_LV2__
-   render_msg_post_func();
-#endif
 }
 
 
@@ -1918,10 +1899,6 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
       render_msg_place_func (x_position, y_position+(y_position_increment*5), font_size,  LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*5), font_size, LIGHTBLUE, "- Decrease Viewport X");
 
-#ifdef __CELLOS_LV2__
-      render_msg_post_func();
-#endif
-
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT));
       render_msg_place_func (x_position, y_position+(y_position_increment*6), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*6), font_size, LIGHTBLUE, "- Increase Viewport X");
@@ -1929,10 +1906,6 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_UP), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP));
       render_msg_place_func (x_position, y_position+(y_position_increment*7), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*7), font_size, LIGHTBLUE, "- Increase Viewport Y");
-
-#ifdef __CELLOS_LV2__
-      render_msg_post_func();
-#endif
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_DOWN), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN));
       render_msg_place_func (x_position, y_position+(y_position_increment*8), font_size, LIGHTBLUE, msg);
@@ -1942,10 +1915,6 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
       render_msg_place_func (x_position, y_position+(y_position_increment*9), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*9), font_size, LIGHTBLUE, "- Decrease Viewport Width");
 
-#ifdef __CELLOS_LV2__
-      render_msg_post_func();
-#endif
-
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT));
       render_msg_place_func (x_position, y_position+(y_position_increment*10), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*10), font_size, LIGHTBLUE, "- Increase Viewport Width");
@@ -1954,9 +1923,6 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
       render_msg_place_func (x_position, y_position+(y_position_increment*11), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*11), font_size, LIGHTBLUE, "- Increase Viewport Height");
 
-#ifdef __CELLOS_LV2__
-      render_msg_post_func();
-#endif
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R2), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN));
       render_msg_place_func (x_position, y_position+(y_position_increment*12), font_size, LIGHTBLUE, msg);
@@ -1974,15 +1940,8 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
       render_msg_place_func (x_position, y_position+(y_position_increment*15), font_size, LIGHTBLUE, msg);
       render_msg_place_func (x_position_center, y_position+(y_position_increment*15), font_size, LIGHTBLUE, "- Return to Ingame Menu");
 
-#ifdef __CELLOS_LV2__
-      render_msg_post_func();
-#endif
-
       snprintf(msg, sizeof(msg), "Allows you to resize the screen by moving around the two analog sticks.\nPress [%s] to reset to defaults, and [%s] to go back.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
       render_msg_place_func (x_position, comment_y_position, font_size, LIGHTBLUE, msg);
-#ifdef __CELLOS_LV2__
-      render_msg_post_func();
-#endif
    }
 }
 
@@ -2183,9 +2142,6 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
    render_msg_place_func(x_position, y_position+(y_position_increment*MENU_ITEM_SAVE_STATE), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), strw_buffer);
-#ifdef __CELLOS_LV2__
-   render_msg_post_func();
-#endif
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
    render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), strw_buffer);
@@ -2195,14 +2151,10 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
    render_msg_place_func (x_position, (y_position+(y_position_increment*MENU_ITEM_ORIENTATION)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), strw_buffer);
-#ifdef __CELLOS_LV2__
-   render_msg_post_func();
-#endif
 
 #ifdef HAVE_FBO
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
    render_msg_place_func (x_position, (y_position+(y_position_increment*MENU_ITEM_SCALE_FACTOR)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), strw_buffer);
-   render_msg_post_func();
 #endif
 
    render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_RESIZE_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE), "Resize Mode");
@@ -2211,40 +2163,21 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 
    render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_SCREENSHOT_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCREENSHOT_MODE), "Screenshot Mode");
 
-#ifdef __CELLOS_LV2__
-   render_msg_post_func();
-#endif
-
    render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_RESET)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESET), "Reset");
 
    render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_RETURN_TO_GAME)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME), "Return to Game");
-#ifdef __CELLOS_LV2__
-   render_msg_post_func();
-#endif
 
    render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_RETURN_TO_MENU)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU), "Return to Menu");
-#ifdef __CELLOS_LV2__
-   render_msg_post_func();
-#endif
 
    render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_CHANGE_LIBRETRO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBRETRO), "Change libretro core");
-#ifdef __CELLOS_LV2__
-   render_msg_post_func();
-#endif
 
 #ifdef HAVE_MULTIMAN
    render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");
 #endif
 
    render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_RETURN_TO_DASHBOARD)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_DASHBOARD), "Return to XMB");
-#ifdef __CELLOS_LV2__
-   render_msg_post_func();
-#endif
 
    render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, comment);
-#ifdef __CELLOS_LV2__
-   render_msg_post_func();
-#endif
 }
 
 void menu_init (void)
@@ -2556,7 +2489,6 @@ void menu_loop(void)
       if (message && g_console.info_msg_enable)
       {
          render_msg_place_func(g_settings.video.msg_pos_x, message_y_position, message_scale, WHITE, message);
-         render_msg_post_func();
       }
 #endif
 

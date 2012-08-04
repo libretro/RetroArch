@@ -28,8 +28,10 @@ void xfonts_render_msg_pre(xdk_d3d_video_t *d3d)
    d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
 }
 
-void xfonts_render_msg_place(xdk_d3d_video_t *d3d, float x, float y, float scale, const char *msg)
+void xfonts_render_msg_place(void *data, float x, float y, float scale, const char *msg)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+
    xfonts_render_msg_pre(d3d);
 
    wchar_t str[256];

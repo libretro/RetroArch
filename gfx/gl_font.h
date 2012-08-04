@@ -24,7 +24,7 @@ void gl_render_msg(gl_t *gl, const char *msg);
 void gl_render_msg_post(gl_t *gl);
 
 #ifdef RARCH_CONSOLE
-void gl_render_msg_place(float x, float y, float scale, uint32_t color, const char *msg);
+void gl_render_msg_place(void *data, float x, float y, float scale, uint32_t color, const char *msg);
 #endif
 
 #endif
