@@ -316,7 +316,9 @@ void rarch_settings_set_default (const input_driver_t *input)
 {
    // g_settings
    g_settings.rewind_enable = false;
+#ifdef HAVE_XML
    strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
+#endif
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
