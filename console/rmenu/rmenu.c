@@ -176,6 +176,7 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 		   else
             snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Point filtering");
 		   break;
+#ifdef HAVE_FBO
 	   case SETTING_HW_TEXTURE_FILTER_2:
          set_setting_label_color(items,g_settings.video.second_pass_smooth, currentsetting);
 		   if(g_settings.video.second_pass_smooth)
@@ -183,7 +184,6 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 		   else
             snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Point filtering");
 		   break;
-#ifdef HAVE_FBO
 	   case SETTING_SCALE_ENABLED:
          set_setting_label_write_on_or_off(items, g_console.fbo_enabled, currentsetting);
          set_setting_label_color(items,g_console.fbo_enabled, currentsetting);
@@ -1186,6 +1186,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 			   gfx_ctx_set_filtering(1, g_settings.video.smooth);
 		   }
 		   break;
+#ifdef HAVE_FBO
 	   case SETTING_HW_TEXTURE_FILTER_2:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
@@ -1198,7 +1199,6 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 			   gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
 		   }
 		   break;
-#ifdef HAVE_FBO
 	   case SETTING_SCALE_ENABLED:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
@@ -1726,6 +1726,10 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
       {
          render_msg_place_func(items[i].text_xpos, items[i].text_ypos, FONT_SIZE, current_menu->selected == items[i].enum_id ? YELLOW : items[i].item_color, items[i].text);
          render_msg_place_func(x_position_center, items[i].text_ypos, FONT_SIZE, items[i].text_color, items[i].setting_text);
+#ifdef _XBOX1
+         if(current_menu->selected == items[i].enum_id)
+            d3d_surface_render(&m_menuMainRomSelectPanel, x_position, items[i].text_ypos, ROM_PANEL_WIDTH, ROM_PANEL_HEIGHT);
+#endif
       }
    }
 
@@ -2178,6 +2182,10 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
    render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_RETURN_TO_DASHBOARD)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_DASHBOARD), "Return to XMB");
 
    render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, comment);
+   
+#ifdef _XBOX1
+   d3d_surface_render(&m_menuMainRomSelectPanel, x_position, (y_position+(y_position_increment*g_console.ingame_menu_item)), ROM_PANEL_WIDTH, ROM_PANEL_HEIGHT);
+#endif
 }
 
 void menu_init (void)
@@ -2497,12 +2505,10 @@ void menu_loop(void)
       cellSysutilCheckCallback();
 #endif
 
-#ifndef _XBOX1
       if(current_menu->enum_id == INGAME_MENU_RESIZE && (old_state & (1 << RETRO_DEVICE_ID_JOYPAD_Y)) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
       { }
       else
          gfx_ctx_set_blend(false);
-#endif
    }while(g_console.menu_enable);
 
 #ifdef __CELLOS_LV2__
