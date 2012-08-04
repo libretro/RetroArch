@@ -31,6 +31,7 @@
 #define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
 #define POSITION_Y_INCREMENT 0.035f
 #define COMMENT_Y_POSITION 0.83f
+
 #elif defined(_XBOX1)
 #define DEVICE_CAST xdk_d3d_video_t*
 #define input_ptr input_xinput
