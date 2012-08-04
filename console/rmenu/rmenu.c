@@ -608,20 +608,22 @@ static void display_menubar(menu *current_menu)
 #else
    float font_size = HARDCODE_FONT_SIZE;
 #endif
+   float current_path_y_position = CURRENT_PATH_Y_POSITION;
+   float msg_prev_next_y_position = MSG_PREV_NEXT_Y_POSITION;
 
    snprintf(rarch_version, sizeof(rarch_version), "v%s", PACKAGE_VERSION);
 
    switch(current_menu->enum_id)
    {
       case GENERAL_VIDEO_MENU:
-	 render_msg_place_func(x_position, 0.03f, font_size, WHITE, "NEXT ->");
+	 render_msg_place_func(x_position, msg_prev_next_y_position, font_size, WHITE, "NEXT ->");
          break;
       case GENERAL_AUDIO_MENU:
       case EMU_GENERAL_MENU:
       case EMU_VIDEO_MENU:
       case EMU_AUDIO_MENU:
       case PATH_MENU:
-	 render_msg_place_func(x_position, 0.03f, font_size, WHITE, "<- PREV | NEXT ->");
+	 render_msg_place_func(x_position, msg_prev_next_y_position, font_size, WHITE, "<- PREV | NEXT ->");
          break;
       case CONTROLS_MENU:
       case INGAME_MENU_RESIZE:
@@ -636,7 +638,7 @@ static void display_menubar(menu *current_menu)
       case PATH_CHEATS_DIR_CHOICE:
 #endif
       case PATH_SRAM_DIR_CHOICE:
-	 render_msg_place_func(x_position, 0.03f, font_size, WHITE, "<- PREV");
+	 render_msg_place_func(x_position, msg_prev_next_y_position, font_size, WHITE, "<- PREV");
          break;
       default:
          break;
@@ -658,11 +660,7 @@ static void display_menubar(menu *current_menu)
          fb = &tmpBrowser;
       case FILE_BROWSER_MENU:
 	 snprintf(current_path, sizeof(current_path), "PATH: %s", filebrowser_get_current_dir(fb));
-#ifdef _XBOX1
-         render_msg_place_func(x_position, current_y_position, 0, 0, current_path);
-#else
-         render_msg_place_func(x_position, 0.09f, FONT_SIZE, YELLOW, current_path);
-#endif
+         render_msg_place_func(x_position, current_path_y_position, FONT_SIZE, YELLOW, current_path);
          break;
       default:
          break;
@@ -784,7 +782,7 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
 
    float x_position = POSITION_X;
    float comment_y_position = COMMENT_Y_POSITION;
-   float comment_two_y_position = 0.91f;
+   float comment_two_y_position = COMMENT_TWO_Y_POSITION;
    float font_size = HARDCODE_FONT_SIZE;
 
    switch(current_menu->enum_id)
@@ -895,7 +893,8 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
 
    float x_position = POSITION_X;
    float comment_y_position = COMMENT_Y_POSITION;
-   float comment_two_y_position = 0.91f;
+   float y_position_increment = POSITION_Y_INCREMENT;
+   float comment_two_y_position = COMMENT_TWO_Y_POSITION;
    float font_size = HARDCODE_FONT_SIZE;
 
    bool is_dir = filebrowser_get_current_path_isdir(&tmpBrowser);
@@ -965,7 +964,7 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
    render_msg_place_func(x_position, comment_two_y_position, font_size, YELLOW, msg);
 
    snprintf(msg, sizeof(msg), "[%s] - Reset to startdir", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
-   render_msg_place_func(x_position, comment_two_y_position + 0.04f, FONT_SIZE, YELLOW, msg);
+   render_msg_place_func(x_position, comment_two_y_position + (y_position_increment * 1), FONT_SIZE, YELLOW, msg);
 
    snprintf(msg, sizeof(msg), "INFO - Browse to a directory and assign it as the path by\npressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_Y));
    render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, msg);
@@ -1741,7 +1740,7 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
    float x_position = POSITION_X;
    float x_position_center = POSITION_X_CENTER;
    float comment_y_position = COMMENT_Y_POSITION;
-   float comment_two_y_position = 0.91f;
+   float comment_two_y_position = COMMENT_TWO_Y_POSITION;
    float font_size = HARDCODE_FONT_SIZE;
 
    settings_action_t action = SETTINGS_ACTION_NOOP;
@@ -1778,7 +1777,7 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
 
    render_msg_place_func(x_position, comment_y_position, font_size, LIGHTBLUE, items[current_menu->selected].comment);
 
-   snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game | [%s] -go forward", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R));
+   snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game | [%s] - go forward", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R));
    render_msg_place_func(x_position, comment_two_y_position, FONT_SIZE, YELLOW, msg);
    snprintf(msg, sizeof(msg), "[%s] - default | [%s]/[%s] - go back", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
    render_msg_place_func(x_position, comment_two_y_position + 0.04f, FONT_SIZE, YELLOW, msg);
@@ -1814,7 +1813,8 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
 
    float x_position = POSITION_X;
    float comment_y_position = COMMENT_Y_POSITION;
-   float comment_two_y_position = 0.91f;
+   float y_position_increment = POSITION_Y_INCREMENT;
+   float comment_two_y_position = COMMENT_TWO_Y_POSITION;
    float font_size = HARDCODE_FONT_SIZE;
 
    browser_update(&browser, input, rarch_console_get_rom_ext());
@@ -1851,7 +1851,7 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
 #endif
 
    render_msg_place_func   (x_position, comment_two_y_position, FONT_SIZE, YELLOW, msg);
-   render_msg_place_func(x_position, comment_two_y_position + 0.04f, FONT_SIZE, YELLOW, msg2);
+   render_msg_place_func(x_position, comment_two_y_position + (y_position_increment * 1), FONT_SIZE, YELLOW, msg2);
 }
 
 
@@ -1932,8 +1932,8 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
 
       snprintf(viewport_x, sizeof(viewport_x), "Viewport X: #%d", g_console.viewports.custom_vp.x);
       snprintf(viewport_y, sizeof(viewport_y), "Viewport Y: #%d", g_console.viewports.custom_vp.y);
-      snprintf(viewport_w, sizeof(viewport_w), "Viewport Width: #%d", g_console.viewports.custom_vp.width);
-      snprintf(viewport_h, sizeof(viewport_h), "Viewport Height: #%d", g_console.viewports.custom_vp.height);
+      snprintf(viewport_w, sizeof(viewport_w), "Viewport W: #%d", g_console.viewports.custom_vp.width);
+      snprintf(viewport_h, sizeof(viewport_h), "Viewport Ht: #%d", g_console.viewports.custom_vp.height);
 
       render_msg_place_func(x_position, y_position, font_size, GREEN, viewport_x);
       render_msg_place_func(x_position, y_position+(y_position_increment*1), font_size, GREEN, viewport_y);
