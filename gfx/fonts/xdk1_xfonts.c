@@ -34,7 +34,6 @@ void xfonts_render_msg_place(void *data, float x, float y, float scale, const ch
    d3d->debug_font->TextOut(d3d->pFrontBuffer, str, (unsigned)-1, x, y);
    d3d->debug_font->TextOut(d3d->pBackBuffer, str, (unsigned)-1, x, y);
 
-   xfonts_render_msg_post(d3d);
    d3d->pFrontBuffer->Release();
    d3d->pBackBuffer->Release();
 }
