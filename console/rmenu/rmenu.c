@@ -2270,14 +2270,14 @@ void menu_init (void)
    if(width == 640)
    {
       d3d_surface_new(&m_menuMainBG, "D:\\Media\\menuMainBG.png");
-      m_menuMainRomListPos_x = 100;
-      m_menuMainRomListPos_y = 100;
+      m_menuMainRomListPos_x = 60;
+      m_menuMainRomListPos_y = 80;
    }
    else if(width == 1280)
    {
       d3d_surface_new(&m_menuMainBG, "D:\\Media\\menuMainBG_720p.png");
-      m_menuMainRomListPos_x = 400;
-      m_menuMainRomListPos_y = 150;
+      m_menuMainRomListPos_x = 360;
+      m_menuMainRomListPos_y = 130;
    }
 
    // Load rom selector panel
