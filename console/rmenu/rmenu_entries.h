@@ -356,6 +356,7 @@ item rmenu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       "INFO - Set the default SRAM (SaveRAM) directory path. All the\nbattery backup saves will be stored in this directory.",
       WHITE,
    },
+#ifdef HAVE_XML
    {
       SETTING_PATH_CHEATS,
       "Cheatfile Directory",
@@ -366,6 +367,7 @@ item rmenu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       "INFO - Set the default [Cheatfile directory] path. All CHT (cheat) files\nwill be stored here.",
       WHITE,
    },
+#endif
    {
       SETTING_PATH_SYSTEM,
       "System Directory",

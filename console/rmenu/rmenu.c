@@ -320,10 +320,12 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
          set_setting_label_color(items,!(strcmp(g_console.default_sram_dir, default_paths.port_dir)), currentsetting);
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), g_console.default_sram_dir);
 		   break;
+#ifdef HAVE_XML
 	   case SETTING_PATH_CHEATS:
          set_setting_label_color(items,!(strcmp(g_settings.cheat_database, default_paths.port_dir)), currentsetting);
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), g_settings.cheat_database);
 		   break;
+#endif
 	   case SETTING_PATH_SYSTEM:
          set_setting_label_color(items,!(strcmp(g_settings.system_directory, default_paths.system_dir)), currentsetting);
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), g_settings.system_directory);
@@ -508,7 +510,9 @@ static void menu_stack_push(item *items, unsigned menu_id)
       case PATH_DEFAULT_ROM_DIR_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
       case PATH_SRAM_DIR_CHOICE:
+#ifdef HAVE_XML
       case PATH_CHEATS_DIR_CHOICE:
+#endif
       case PATH_SYSTEM_DIR_CHOICE:
          strlcpy(current_menu->title, "Path Selection", sizeof(current_menu->title));
          current_menu->enum_id = menu_id;
@@ -628,7 +632,9 @@ static void display_menubar(menu *current_menu)
       case INPUT_PRESET_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
       case PATH_DEFAULT_ROM_DIR_CHOICE:
+#ifdef HAVE_XML
       case PATH_CHEATS_DIR_CHOICE:
+#endif
       case PATH_SRAM_DIR_CHOICE:
 	 render_msg_place_func(x_position, 0.03f, font_size, WHITE, "<- PREV");
          break;
@@ -645,7 +651,9 @@ static void display_menubar(menu *current_menu)
       case INPUT_PRESET_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
       case PATH_DEFAULT_ROM_DIR_CHOICE:
+#ifdef HAVE_XML
       case PATH_CHEATS_DIR_CHOICE:
+#endif
       case PATH_SRAM_DIR_CHOICE:
          fb = &tmpBrowser;
       case FILE_BROWSER_MENU:
@@ -910,9 +918,11 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
             case PATH_DEFAULT_ROM_DIR_CHOICE:
                strlcpy(g_console.default_rom_startup_dir, path, sizeof(g_console.default_rom_startup_dir));
                break;
+#ifdef HAVE_XML
             case PATH_CHEATS_DIR_CHOICE:
                strlcpy(g_settings.cheat_database, path, sizeof(g_settings.cheat_database));
                break;
+#endif
          }
          menu_stack_decrement();
       }
@@ -931,9 +941,11 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
          case PATH_DEFAULT_ROM_DIR_CHOICE:
             strlcpy(g_console.default_rom_startup_dir, path, sizeof(g_console.default_rom_startup_dir));
             break;
+#ifdef HAVE_XML
          case PATH_CHEATS_DIR_CHOICE:
             strlcpy(g_settings.cheat_database, path, sizeof(g_settings.cheat_database));
             break;
+#endif
       }
 
       menu_stack_decrement();
@@ -1515,6 +1527,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			   strlcpy(g_console.default_sram_dir, default_paths.sram_dir, sizeof(g_console.default_sram_dir));
 		   break;
+#ifdef HAVE_XML
 	   case SETTING_PATH_CHEATS:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
@@ -1529,6 +1542,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
             strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
 		   break;
+#endif
 	   case SETTING_PATH_SYSTEM:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
@@ -1572,7 +1586,9 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   {
             strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
 		      strlcpy(g_console.default_savestate_dir, default_paths.port_dir, sizeof(g_console.default_savestate_dir));
+#ifdef HAVE_XML
 		      strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
+#endif
 		      strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
 
 		      menu_stack_refresh(items, current_menu);
@@ -2452,7 +2468,9 @@ void menu_loop(void)
 		      break;
 	      case PATH_SAVESTATES_DIR_CHOICE:
 	      case PATH_DEFAULT_ROM_DIR_CHOICE:
+#ifdef HAVE_XML
 	      case PATH_CHEATS_DIR_CHOICE:
+#endif
 	      case PATH_SRAM_DIR_CHOICE:
 		      select_directory(rmenu_items, current_menu, trig_state);
 		      fb = &tmpBrowser;
