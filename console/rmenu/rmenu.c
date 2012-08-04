@@ -466,28 +466,28 @@ static void menu_stack_push(item *items, unsigned menu_id)
          current_menu->category_id = CATEGORY_INGAME_MENU;
          break;
       case FILE_BROWSER_MENU:
-         strlcpy(current_menu->title, "File Browser", sizeof(current_menu->title));
+         strlcpy(current_menu->title, "Filebrowser", sizeof(current_menu->title));
          current_menu->enum_id = menu_id;
          current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          break;
       case LIBRETRO_CHOICE:
-         strlcpy(current_menu->title, "Libretro cores", sizeof(current_menu->title));
+         strlcpy(current_menu->title, "Libretro", sizeof(current_menu->title));
          current_menu->enum_id = menu_id;
          current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          break;
       case PRESET_CHOICE:
-         strlcpy(current_menu->title, "Shader presets", sizeof(current_menu->title));
+         strlcpy(current_menu->title, "Shader", sizeof(current_menu->title));
          current_menu->enum_id = menu_id;
          current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          break;
       case INPUT_PRESET_CHOICE:
-         strlcpy(current_menu->title, "Input presets", sizeof(current_menu->title));
+         strlcpy(current_menu->title, "Input", sizeof(current_menu->title));
          current_menu->enum_id = menu_id;
          current_menu->selected = 0;
          current_menu->page = 0;
@@ -514,7 +514,7 @@ static void menu_stack_push(item *items, unsigned menu_id)
       case PATH_CHEATS_DIR_CHOICE:
 #endif
       case PATH_SYSTEM_DIR_CHOICE:
-         strlcpy(current_menu->title, "Path Selection", sizeof(current_menu->title));
+         strlcpy(current_menu->title, "Path", sizeof(current_menu->title));
          current_menu->enum_id = menu_id;
          current_menu->selected = 0;
          current_menu->page = 0;

@@ -26,14 +26,14 @@
 #define FONT_SIZE (g_console.menu_font_size)
 #define render_msg_place_func(xpos, ypos, scale, color, msg) gl_render_msg_place(DEVICE_PTR, xpos, ypos, scale, color, msg)
 
-#define NUM_ENTRY_PER_PAGE 17
+#define NUM_ENTRY_PER_PAGE 16
 #define POSITION_X 0.09f
 #define POSITION_X_CENTER 0.5f
-#define POSITION_Y_START 0.10f
+#define POSITION_Y_START 0.13f
 #define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
 #define POSITION_Y_INCREMENT 0.035f
 #define COMMENT_TWO_Y_POSITION 0.91f
-#define COMMENT_Y_POSITION 0.83f
+#define COMMENT_Y_POSITION 0.82f
 
 #define MSG_QUEUE_X_POSITION g_settings.video.msg_pos_x
 #define MSG_QUEUE_Y_POSITION 0.75f
