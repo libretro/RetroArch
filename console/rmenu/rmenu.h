@@ -26,11 +26,17 @@
 #define FONT_SIZE (g_console.menu_font_size)
 #define render_msg_place_func(xpos, ypos, scale, color, msg) gl_render_msg_place(DEVICE_PTR, xpos, ypos, scale, color, msg)
 
+#define NUM_ENTRY_PER_PAGE 17
 #define POSITION_X 0.09f
+#define POSITION_X_CENTER 0.5f
 #define POSITION_Y_START 0.10f
 #define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
 #define POSITION_Y_INCREMENT 0.035f
 #define COMMENT_Y_POSITION 0.83f
+
+#define MSG_QUEUE_X_POSITION g_settings.video.msg_pos_x
+#define MSG_QUEUE_Y_POSITION 0.75f
+#define MSG_QUEUE_FONT_SIZE 1.05f
 #elif defined(_XBOX1)
 #define DEVICE_CAST xdk_d3d_video_t*
 #define input_ptr input_xinput
@@ -40,11 +46,17 @@
 #define FONT_SIZE 21
 #define render_msg_place_func(xpos, ypos, scale, color, msg) xfonts_render_msg_place(DEVICE_PTR, xpos, ypos, scale, msg)
 
+#define NUM_ENTRY_PER_PAGE 12
 #define POSITION_X m_menuMainRomListPos_x
+#define POSITION_X_CENTER (m_menuMainRomListPos_x + 350)
 #define POSITION_Y_START m_menuMainRomListPos_y
 #define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
 #define POSITION_Y_INCREMENT 20
 #define COMMENT_Y_POSITION (ypos - POSITION_Y_INCREMENT)
+
+#define MSG_QUEUE_X_POSITION POSITION_X
+#define MSG_QUEUE_Y_POSITION (ypos - (POSITION_Y_INCREMENT * 2))
+#define MSG_QUEUE_FONT_SIZE HARDCODE_FONT_SIZE
 #endif
 
 typedef struct

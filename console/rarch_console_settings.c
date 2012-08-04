@@ -257,13 +257,13 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
          snprintf(str, sizeof(str), "INFO - Resize the screen by moving around the two analog sticks.\nPress [RetroPad X] to reset to default values, and [RetroPad A] to go back.\nTo select the resized screen mode, set Aspect Ratio to: 'Custom'.");
          break;
       case S_MSG_RESTART_RARCH:
-         snprintf(str, sizeof(str), "INFO - You need to restart RetroArch for this change to take effect.");
+         snprintf(str, sizeof(str), "INFO - You need to restart RetroArch.");
          break;
       case S_MSG_SELECT_LIBRETRO_CORE:
-         snprintf(str, sizeof(str), "INFO - Select a Libretro core from the menu by pressing [RetroPad B].");
+         snprintf(str, sizeof(str), "INFO - Select a Libretro core from the menu.");
          break;
       case S_MSG_SELECT_SHADER:
-         snprintf(str, sizeof(str), "INFO - Select a shader from the menu by pressing [RetroPad A].");
+         snprintf(str, sizeof(str), "INFO - Select a shader from the menu.");
          break;
       case S_MSG_SHADER_LOADING_SUCCEEDED:
          snprintf(str, sizeof(str), "INFO - Shader successfully loaded.");

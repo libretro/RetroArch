@@ -65,7 +65,6 @@
 #include "rmenu.h"
 #include "rmenu_entries.h"
 
-#define NUM_ENTRY_PER_PAGE 17
 #define INPUT_SCALE 2
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
@@ -74,7 +73,7 @@
 #include "../../xbox1/frontend/RetroLaunch/Surface.h"
 #include "../../gfx/fonts/xdk1_xfonts.h"
 
-#define ROM_PANEL_WIDTH 440
+#define ROM_PANEL_WIDTH 510
 #define ROM_PANEL_HEIGHT 20
 
 int xpos, ypos;
@@ -172,17 +171,17 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 	   case SETTING_HW_TEXTURE_FILTER:
          set_setting_label_color(items,g_settings.video.smooth, currentsetting);
 		   if(g_settings.video.smooth)
-            snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Linear interpolation");
+            snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Bilinear");
 		   else
-            snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Point filtering");
+            snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Point");
 		   break;
 #ifdef HAVE_FBO
 	   case SETTING_HW_TEXTURE_FILTER_2:
          set_setting_label_color(items,g_settings.video.second_pass_smooth, currentsetting);
 		   if(g_settings.video.second_pass_smooth)
-            snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Linear interpolation");
+            snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Bilinear");
 		   else
-            snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Point filtering");
+            snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Point");
 		   break;
 	   case SETTING_SCALE_ENABLED:
          set_setting_label_write_on_or_off(items, g_console.fbo_enabled, currentsetting);
@@ -220,14 +219,14 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 		   {
             case SOUND_MODE_NORMAL:
                snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), 
-                  "INFO - [Sound Output] is set to 'Normal' - normal audio output will be\nused.");
+                  "INFO - [Sound Output] is set to 'Normal'.");
                snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Normal");
                items[currentsetting].text_color = GREEN;
                break;
 #ifdef HAVE_RSOUND
             case SOUND_MODE_RSOUND:
                snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), 
-                  "INFO - [Sound Output] is set to 'RSound' - the sound will be streamed over the\n network to the RSound audio server." );
+                  "INFO - [Sound Output] is set to 'RSound'." );
                snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "RSound");
                items[currentsetting].text_color = ORANGE;
                break;
@@ -235,7 +234,7 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 #ifdef HAVE_HEADSET
             case SOUND_MODE_HEADSET:
                snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), 
-                  "INFO - [Sound Output] is set to 'USB/Bluetooth Headset' - sound will\n be output through the headset");
+                  "INFO - [Sound Output] is set to 'USB/Bluetooth Headset'.");
                snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "USB/Bluetooth Headset");
                items[currentsetting].text_color = ORANGE;
                break;
@@ -266,7 +265,7 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 		   if(g_settings.rewind_enable)
 		   {
             items[currentsetting].text_color = ORANGE;
-		      snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [Rewind] feature is set to 'ON'. You can rewind the game in real-time.");
+		      snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [Rewind] feature is set to 'ON'.");
 		   }
 		   else
 		   {
@@ -368,7 +367,7 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 		      const char * value = rarch_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey);
 		      unsigned id = currentsetting - FIRST_CONTROL_BIND;
 		      snprintf(items[currentsetting].text, sizeof(items[currentsetting].text), rarch_input_get_default_keybind_name(id));
-		      snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [%s] on the PS3 controller is mapped to action:\n[%s].", items[currentsetting].text, value);
+		      snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [%s] is mapped to action:\n[%s].", items[currentsetting].text, value);
 		      snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), value);
 		   }
 		   break;
@@ -1696,7 +1695,7 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    float x_position = POSITION_X;
-   float x_position_center = 0.5f;
+   float x_position_center = POSITION_X_CENTER;
    float comment_y_position = COMMENT_Y_POSITION;
    float comment_two_y_position = 0.91f;
    float font_size = HARDCODE_FONT_SIZE;
@@ -1819,7 +1818,7 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    float x_position = POSITION_X;
-   float x_position_center = 0.5f;
+   float x_position_center = POSITION_X_CENTER;
    float font_size = HARDCODE_FONT_SIZE;
 
    float y_position = POSITION_Y_BEGIN;
@@ -2489,16 +2488,15 @@ void menu_loop(void)
          SET_TIMER_EXPIRATION(device_ptr, 30);
       }
 
-#ifndef _XBOX1
       const char * message = msg_queue_pull(g_extern.msg_queue);
-      float message_y_position = 0.75f;
-      float message_scale = 1.05f;
+      float msg_queue_x_position = MSG_QUEUE_X_POSITION;
+      float msg_queue_y_position = MSG_QUEUE_Y_POSITION;
+      float msg_queue_font_size= MSG_QUEUE_FONT_SIZE;
 
       if (message && g_console.info_msg_enable)
       {
-         render_msg_place_func(g_settings.video.msg_pos_x, message_y_position, message_scale, WHITE, message);
+         render_msg_place_func(msg_queue_x_position, msg_queue_y_position, msg_queue_font_size, WHITE, message);
       }
-#endif
 
       gfx_ctx_swap_buffers();
 #ifdef HAVE_SYSUTILS

@@ -67,7 +67,7 @@ item rmenu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       0.0f,
       0.0f,
       YELLOW,
-      "INFO - Increase or decrease the font size in the menu.",
+      "INFO - Increase or decrease the font size.",
       WHITE,
    },
    {
@@ -77,7 +77,7 @@ item rmenu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       0.0f,
       0.0f,
       YELLOW,
-      "INFO - [Aspect Ratio] is set to 'Scaled (4:3)' - screen will have black\nborders left/right on widescreen TVs/monitors.",
+      "INFO - [Aspect Ratio] is set to 'Scaled (4:3)'.",
       WHITE,
    },
    {
@@ -87,7 +87,7 @@ item rmenu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       0.0f,
       0.0f,
       YELLOW,
-      "INFO - Hardware filtering #1 is set to 'Bilinear filtering'.",
+      "INFO - Hardware filtering #1 is set to 'Bilinear'.",
       WHITE,
    },
 #ifdef HAVE_FBO
@@ -98,7 +98,7 @@ item rmenu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       0.0f,
       0.0f,
       YELLOW,
-      "INFO - Hardware filtering #2 is set to 'Bilinear filtering'.",
+      "INFO - Hardware filtering #2 is set to 'Bilinear'.",
       WHITE,
    },
    {
@@ -604,7 +604,7 @@ item rmenu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       0.0f,
       0.0f,
       YELLOW,
-      "INFO - Set all [Controls settings] back to their 'DEFAULT' values.",
+      "INFO - Set all [Controls] back to their 'DEFAULT' values.",
       GREEN,
    }
 };
