@@ -2538,6 +2538,7 @@ void menu_loop(void)
 
       if (message && g_console.info_msg_enable)
       {
+         RARCH_LOG("x: %f, y: %f\n", msg_queue_x_position, msg_queue_y_position);
          render_msg_place_func(msg_queue_x_position, msg_queue_y_position, msg_queue_font_size, WHITE, message);
       }
 

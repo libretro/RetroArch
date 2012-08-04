@@ -474,7 +474,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    }
 
    if (msg)
-      xfonts_render_msg_place(d3d, 100, 390, 0, msg); //TODO: dehardcode x/y here for HD (720p) mode
+      xfonts_render_msg_place(d3d, 60, 365, 0, msg); //TODO: dehardcode x/y here for HD (720p) mode
 
    if(!d3d->block_swap)
       gfx_ctx_swap_buffers();
