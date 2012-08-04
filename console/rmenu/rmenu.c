@@ -1901,36 +1901,36 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT));
       render_msg_place_func (x_position, y_position+(y_position_increment*5), font_size,  LIGHTBLUE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*5), font_size, LIGHTBLUE, "- Decrease Viewport X");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*5), font_size, LIGHTBLUE, "- Viewport X --");
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT));
       render_msg_place_func (x_position, y_position+(y_position_increment*6), font_size, LIGHTBLUE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*6), font_size, LIGHTBLUE, "- Increase Viewport X");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*6), font_size, LIGHTBLUE, "- Viewport X ++");
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_UP), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP));
       render_msg_place_func (x_position, y_position+(y_position_increment*7), font_size, LIGHTBLUE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*7), font_size, LIGHTBLUE, "- Increase Viewport Y");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*7), font_size, LIGHTBLUE, "- Viewport Y ++");
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_DOWN), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN));
       render_msg_place_func (x_position, y_position+(y_position_increment*8), font_size, LIGHTBLUE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*8), font_size, LIGHTBLUE, "- Decrease Viewport Y");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*8), font_size, LIGHTBLUE, "- Viewport Y --");
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT));
       render_msg_place_func (x_position, y_position+(y_position_increment*9), font_size, LIGHTBLUE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*9), font_size, LIGHTBLUE, "- Decrease Viewport Width");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*9), font_size, LIGHTBLUE, "- Viewport Width --");
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT));
       render_msg_place_func (x_position, y_position+(y_position_increment*10), font_size, LIGHTBLUE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*10), font_size, LIGHTBLUE, "- Increase Viewport Width");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*10), font_size, LIGHTBLUE, "- Viewport Width ++");
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L2), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_UP));
       render_msg_place_func (x_position, y_position+(y_position_increment*11), font_size, LIGHTBLUE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*11), font_size, LIGHTBLUE, "- Increase Viewport Height");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*11), font_size, LIGHTBLUE, "- Viewport Height ++");
 
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R2), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN));
       render_msg_place_func (x_position, y_position+(y_position_increment*12), font_size, LIGHTBLUE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*12), font_size, LIGHTBLUE, "- Decrease Viewport Height");
+      render_msg_place_func (x_position_center, y_position+(y_position_increment*12), font_size, LIGHTBLUE, "- Viewport Height --");
 
       snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X));
       render_msg_place_func (x_position, y_position+(y_position_increment*13), font_size, LIGHTBLUE, msg);
@@ -2003,7 +2003,7 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
             if(input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
                rarch_state_slot_increase();
             
-            snprintf(comment, sizeof(comment), "Press [%s] or [%s] to change the current save state slot.\nPress [%s] to load the state from the current state slot.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
+            snprintf(comment, sizeof(comment), "Press [%s] / [%s] to change slots.\nPress [%s] to load the state from the current state slot.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
             break;
          case MENU_ITEM_SAVE_STATE:
             if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
@@ -2017,15 +2017,15 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
             if(input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
                rarch_state_slot_increase();
             
-            snprintf(comment, sizeof(comment), "Press [%s] or [%s] to change the current save state slot.\nPress [%s] to save the state to the current state slot.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
+            snprintf(comment, sizeof(comment), "Press [%s] / [%s] to change slots.\nPress [%s] to save the state to the current state slot.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
             break;
          case MENU_ITEM_KEEP_ASPECT_RATIO:
             producesettingentry(current_menu, items, SETTING_KEEP_ASPECT_RATIO, input);
-            snprintf(comment, sizeof(comment), "Press [%s] or [%s] to change the [Aspect Ratio].\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
+            snprintf(comment, sizeof(comment), "Press [%s] / [%s] to change the [Aspect Ratio].\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
             break;
          case MENU_ITEM_OVERSCAN_AMOUNT:
             producesettingentry(current_menu, items, SETTING_HW_OVERSCAN_AMOUNT, input);
-            snprintf(comment, sizeof(comment), "Press [%s] or [%s] to change the [Overscan] settings.\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
+            snprintf(comment, sizeof(comment), "Press [%s] / [%s] to change the [Overscan] settings.\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
             break;
          case MENU_ITEM_ORIENTATION:
             if(input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
@@ -2045,12 +2045,12 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
                rarch_settings_default(S_DEF_ROTATION);
                video_ptr.set_rotation(NULL, g_console.screen_orientation);
             }
-            snprintf(comment, sizeof(comment), "Press [%s] or [%s] to change the [Orientation] settings.\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
+            snprintf(comment, sizeof(comment), "Press [%s] / [%s] to change the [Orientation] settings.\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
             break;
 #ifdef HAVE_FBO
 	 case MENU_ITEM_SCALE_FACTOR:
        producesettingentry(current_menu, items, SETTING_SCALE_FACTOR, input);
-	    snprintf(comment, sizeof(comment), "Press [%s] or [%s] to change the [Scaling] settings.\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
+	    snprintf(comment, sizeof(comment), "Press [%s] / [%s] to change the [Scaling] settings.\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
 	    break;
 #endif
 	 case MENU_ITEM_FRAME_ADVANCE:
@@ -2059,23 +2059,23 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
           rarch_settings_change(S_FRAME_ADVANCE);
 	       g_console.ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
 	    }
-	    snprintf(comment, sizeof(comment), "Press [%s], [%s] or [%s] button to step one frame.\nPressing the button rapidly will advance the frame more slowly.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L2), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R2));
+	    snprintf(comment, sizeof(comment), "Press [%s], [%s] or [%s] to step one frame.\nPressing the button rapidly will advance the frame more slowly.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L2), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R2));
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	       menu_stack_push(items, INGAME_MENU_RESIZE);
-	    snprintf(comment, sizeof(comment), "Allows you to resize the screen by moving around the two analog sticks.\nPress [%s] to reset to defaults, and [%s] to go back.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
+	    snprintf(comment, sizeof(comment), "Allows you to resize the screen.\nPress [%s] to reset to defaults, and [%s] to go back.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	       menu_stack_push(items, INGAME_MENU_SCREENSHOT);
-	    snprintf(comment, sizeof(comment), "Allows you to take a screenshot without any text clutter.\nPress [%s] to go back to the in-game menu.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
+	    snprintf(comment, sizeof(comment), "Allows you to take a screenshot without any text.\nPress [%s] to go back to the in-game menu.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
           rarch_settings_change(S_RETURN_TO_GAME);
 
-	    snprintf(comment, sizeof(comment), "Press [%s] to return back to the game.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
+	    snprintf(comment, sizeof(comment), "Press [%s] to return to the game.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
 	 case MENU_ITEM_RESET:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
@@ -2090,7 +2090,7 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 	    {
           rarch_settings_change(S_RETURN_TO_MENU);
 	    }
-	    snprintf(comment, sizeof(comment), "Press [%s] to return to the ROM Browser menu.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
+	    snprintf(comment, sizeof(comment), "Press [%s] to return to the ROM Browser.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
 	 case MENU_ITEM_CHANGE_LIBRETRO:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
@@ -2099,7 +2099,7 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 	       filebrowser_set_root_and_ext(&tmpBrowser, EXT_EXECUTABLES, default_paths.core_dir);
 	       set_libretro_core_as_launch = true;
 	    }
-	    snprintf(comment, sizeof(comment), "Press [%s] to choose a different emulator core.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
+	    snprintf(comment, sizeof(comment), "Press [%s] to choose another core.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
 #ifdef HAVE_MULTIMAN
 	 case MENU_ITEM_RETURN_TO_MULTIMAN:
@@ -2113,14 +2113,14 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
              rarch_settings_change(S_RETURN_TO_DASHBOARD);
           }
 	    }
-	    snprintf(comment, sizeof(comment), "Press [%s] to quit the emulator and return to multiMAN.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
+	    snprintf(comment, sizeof(comment), "Press [%s] to quit RetroArch and return to multiMAN.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
 #endif
 	 case MENU_ITEM_RETURN_TO_DASHBOARD:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
           rarch_settings_change(S_RETURN_TO_DASHBOARD);
 
-	    snprintf(comment, sizeof(comment), "Press [%s] to quit the emulator and return to the XMB.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
+	    snprintf(comment, sizeof(comment), "Press [%s] to quit RetroArch.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
       }
 
