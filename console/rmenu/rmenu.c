@@ -694,7 +694,11 @@ static void browser_update(filebrowser_t * b, uint64_t input, const char *extens
    {
       action = FILEBROWSER_ACTION_RESET;
       //TODO - Dehardcode this
+#ifdef _XBOX1
+      filebrowser_set_root(b, "D:");
+#else
       filebrowser_set_root(b, "/");
+#endif
       strlcpy(b->extensions, extensions, sizeof(b->extensions));
    }
 
@@ -780,27 +784,27 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
       case SHADER_CHOICE:
          strlcpy(extensions, EXT_SHADERS, sizeof(extensions));
          strlcpy(object, "Shader", sizeof(object));
-         snprintf(comment, sizeof(comment), "INFO - Select a shader from the menu by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(comment, sizeof(comment), "INFO - Select a shader by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
          break;
       case PRESET_CHOICE:
          strlcpy(extensions, EXT_CGP_PRESETS, sizeof(extensions));
          strlcpy(object, "Shader preset", sizeof(object));
-         snprintf(comment, sizeof(comment), "INFO - Select a shader preset from the menu by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(comment, sizeof(comment), "INFO - Select a shader preset by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
          break;
       case INPUT_PRESET_CHOICE:
          strlcpy(extensions, EXT_INPUT_PRESETS, sizeof(extensions));
          strlcpy(object, "Input preset", sizeof(object));
-         snprintf(comment, sizeof(comment), "INFO - Select an input preset from the menu by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(comment, sizeof(comment), "INFO - Select an input preset by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
          break;
       case BORDER_CHOICE:
          strlcpy(extensions, EXT_IMAGES, sizeof(extensions));
          strlcpy(object, "Border image file", sizeof(object));
-         snprintf(comment, sizeof(comment), "INFO - Select a border image file from the menu by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(comment, sizeof(comment), "INFO - Select a border image file by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
          break;
       case LIBRETRO_CHOICE:
          strlcpy(extensions, EXT_EXECUTABLES, sizeof(extensions));
          strlcpy(object, "Libretro core", sizeof(object));
-         snprintf(comment, sizeof(comment), "INFO - Select a Libretro core from the menu by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(comment, sizeof(comment), "INFO - Select a Libretro core by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
          break;
    }
 
@@ -1468,17 +1472,29 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
 			   menu_stack_push(items, PATH_DEFAULT_ROM_DIR_CHOICE);
+#ifdef _XBOX1
+            filebrowser_set_root_and_ext(&tmpBrowser, "empty", "D:");
+#else
 			   filebrowser_set_root_and_ext(&tmpBrowser, "empty", "/");
+#endif
 		   }
 
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+#ifdef _XBOX1
+            strlcpy(g_console.default_rom_startup_dir, "D:", sizeof(g_console.default_rom_startup_dir));
+#else
 			   strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
+#endif
 		   break;
 	   case SETTING_PATH_SAVESTATES_DIRECTORY:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
 			   menu_stack_push(items, PATH_SAVESTATES_DIR_CHOICE);
+#ifdef _XBOX1
+            filebrowser_set_root_and_ext(&tmpBrowser, "empty", "D:");
+#else
 			   filebrowser_set_root_and_ext(&tmpBrowser, "empty", "/");
+#endif
 		   }
 
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1489,7 +1505,11 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
 			   menu_stack_push(items, PATH_SRAM_DIR_CHOICE);
+#ifdef _XBOX1
+            filebrowser_set_root_and_ext(&tmpBrowser, "empty", "D:");
+#else
 			   filebrowser_set_root_and_ext(&tmpBrowser, "empty", "/");
+#endif
 		   }
 
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1499,7 +1519,11 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
             menu_stack_push(items, PATH_CHEATS_DIR_CHOICE);
+#ifdef _XBOX1
+            filebrowser_set_root_and_ext(&tmpBrowser, "empty", "D:");
+#else
 		      filebrowser_set_root_and_ext(&tmpBrowser, "empty", "/");
+#endif
 		   }
 
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1509,7 +1533,11 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
             menu_stack_push(items, PATH_SYSTEM_DIR_CHOICE);
+#ifdef _XBOX1
+            filebrowser_set_root_and_ext(&tmpBrowser, "empty", "D:");
+#else
 		      filebrowser_set_root_and_ext(&tmpBrowser, "empty", "/");
+#endif
 		   }
 
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
