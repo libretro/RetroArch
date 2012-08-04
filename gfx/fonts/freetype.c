@@ -225,27 +225,10 @@ extern const GLfloat white_color[];
 
 #endif
 
-void gl_render_msg_post(gl_t *gl)
+void gl_render_msg(void *data, const char *msg)
 {
 #ifdef HAVE_FREETYPE
-   // Go back to old rendering path.
-   glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
-   glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);
-   glColorPointer(4, GL_FLOAT, 0, white_color);
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-
-   glDisable(GL_BLEND);
-
-   struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
-   gl_set_projection(gl, &ortho, true);
-#else
-   (void)gl;
-#endif
-}
-
-void gl_render_msg(gl_t *gl, const char *msg)
-{
-#ifdef HAVE_FREETYPE
+   gl_t *gl = (gl_t*)data;
    if (!gl->font)
       return;
 
@@ -287,6 +270,17 @@ void gl_render_msg(gl_t *gl, const char *msg)
    glVertexPointer(2, GL_FLOAT, 0, font_vertex);
    glColorPointer(4, GL_FLOAT, 0, gl->font_color);
    glDrawArrays(GL_QUADS, 0, 4);
+
+   // Post - Go back to old rendering path.
+   glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
+   glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);
+   glColorPointer(4, GL_FLOAT, 0, white_color);
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+
+   glDisable(GL_BLEND);
+
+   struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
+   gl_set_projection(gl, &ortho, true);
 #else
    (void)gl;
    (void)msg;

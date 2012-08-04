@@ -931,10 +931,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_next_texture_index(gl, &tex_info);
 
    if (msg)
-   {
       gl_render_msg(gl, msg);
-      gl_render_msg_post(gl);
-   }
 
 #ifndef RARCH_CONSOLE
    gfx_ctx_update_window_title(false);

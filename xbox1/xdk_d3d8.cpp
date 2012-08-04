@@ -452,7 +452,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    {
       static MEMORYSTATUS stat;
       GlobalMemoryStatus(&stat);
-      xfonts_render_msg_pre(d3d);
 
       //Output memory usage
 
@@ -471,8 +470,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
          }
          else if(buf_fps_last)
             xfonts_render_msg_place(d3d, font_x + 30, font_y + 70, 0 /* scale */, buf2);
-
-         xfonts_render_msg_post(d3d);
       }
    }
 
