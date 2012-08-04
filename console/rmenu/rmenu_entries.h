@@ -82,23 +82,23 @@ item rmenu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
    },
    {
       SETTING_HW_TEXTURE_FILTER,
-      "Hardware Filtering shader #1",
+      "Hardware Filtering #1",
       "",
       0.0f,
       0.0f,
       YELLOW,
-      "INFO - Hardware filtering is set to 'Bilinear filtering' for [Shader #1].",
+      "INFO - Hardware filtering #1 is set to 'Bilinear filtering'.",
       WHITE,
    },
 #ifdef HAVE_FBO
    {
       SETTING_HW_TEXTURE_FILTER_2,
-      "Hardware Filtering shader #2",
+      "Hardware Filtering #2",
       "",
       0.0f,
       0.0f,
       YELLOW,
-      "INFO - Hardware filtering is set to 'Bilinear filtering' for [Shader #2].",
+      "INFO - Hardware filtering #2 is set to 'Bilinear filtering'.",
       WHITE,
    },
    {
@@ -154,12 +154,12 @@ item rmenu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
    },
    {
       SETTING_ENABLE_SCREENSHOTS,
-      "Enable Screenshots Feature",
+      "Screenshots Feature",
       "",
       0.0f,
       0.0f,
       YELLOW,
-      "INFO - [Enable Screenshots] feature is set to 'OFF'.",
+      "INFO - [Screenshots] feature is set to 'OFF'.",
       WHITE,
    },
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
