@@ -2423,9 +2423,7 @@ void menu_loop(void)
 #endif
       }
 
-#ifdef __CELLOS_LV2__
       rarch_render_cached_frame();
-#endif
 
       filebrowser_t * fb = &browser;
 
