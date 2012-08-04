@@ -732,4 +732,3 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
    return found ? rgui->path_buf : NULL;
 }
-

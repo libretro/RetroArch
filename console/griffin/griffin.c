@@ -285,12 +285,14 @@ MENU
 #include "../rmenu/rmenu.c"
 #endif
 
+#ifdef HAVE_RGUI
+#include "../rgui/rgui.c"
+#include "../rgui/list.c"
+#endif
+
 #if defined(_XBOX360)
 #include "../../360/frontend-xdk/menu.cpp"
 #elif defined(_XBOX1)
 #include "../../xbox1/frontend/RetroLaunch/IoSupport.cpp"
 #include "../../xbox1/frontend/RetroLaunch/Surface.cpp"
-#elif defined(GEKKO)
-#include "../../wii/frontend/rgui.c"
-#include "../../wii/frontend/list.c"
 #endif

@@ -17,10 +17,11 @@
 #undef main
 
 #include <stdbool.h>
-#include "rgui.h"
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../libretro.h"
+
+#include "../../console/rgui/rgui.h"
 
 #include "../../console/rarch_console_input.h"
 #include "../../console/rarch_console_main_wrap.h"
