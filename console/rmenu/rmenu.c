@@ -1739,6 +1739,7 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
 
    float x_position = POSITION_X;
    float x_position_center = POSITION_X_CENTER;
+   float y_position_increment = POSITION_Y_INCREMENT;
    float comment_y_position = COMMENT_Y_POSITION;
    float comment_two_y_position = COMMENT_TWO_Y_POSITION;
    float font_size = HARDCODE_FONT_SIZE;
@@ -1780,7 +1781,7 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
    snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game | [%s] - go forward", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R));
    render_msg_place_func(x_position, comment_two_y_position, FONT_SIZE, YELLOW, msg);
    snprintf(msg, sizeof(msg), "[%s] - default | [%s]/[%s] - go back", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
-   render_msg_place_func(x_position, comment_two_y_position + 0.04f, FONT_SIZE, YELLOW, msg);
+   render_msg_place_func(x_position, comment_two_y_position + (y_position_increment * 1), FONT_SIZE, YELLOW, msg);
 }
 
 static void menu_romselect_iterate(filebrowser_t *filebrowser, item *items, menu_romselect_action_t action)
@@ -1845,10 +1846,8 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
 
    display_menubar(current_menu);
 
-#ifdef __CELLOS_LV2__
    snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3));
    snprintf(msg2, sizeof(msg2), "[%s] - Settings", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_SELECT));
-#endif
 
    render_msg_place_func   (x_position, comment_two_y_position, FONT_SIZE, YELLOW, msg);
    render_msg_place_func(x_position, comment_two_y_position + (y_position_increment * 1), FONT_SIZE, YELLOW, msg2);
