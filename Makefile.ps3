@@ -45,7 +45,7 @@ PYTHON2			= python2.exe
 GIT			= git.exe
 endif
 
-PPU_SRCS		= ps3/frontend/main.c console/rmenu/rmenu.c
+PPU_SRCS		= ps3/frontend/main.c
 
 ifeq ($(HAVE_RGL), 1)
 DEFINES			= -DHAVE_RGL
