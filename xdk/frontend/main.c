@@ -133,7 +133,12 @@ int main(int argc, char *argv[])
    
    input_xinput.init();
 
+#ifdef _XBOX1
+   char path_prefix[256];
+   snprintf(path_prefix, sizeof(path_prefix), "D:\\");
+#else
    const char *path_prefix = default_paths.filesystem_root_dir;
+#endif
    const char *extension = default_paths.executable_extension;
    const input_driver_t *input = &input_xinput;
    bool find_libretro_file = rarch_configure_libretro(input, path_prefix, extension);
