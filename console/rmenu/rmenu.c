@@ -700,12 +700,7 @@ static void browser_update(filebrowser_t * b, uint64_t input, const char *extens
    else if (input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
    {
       action = FILEBROWSER_ACTION_RESET;
-      //TODO - Dehardcode this
-#ifdef _XBOX1
-      filebrowser_set_root(b, "D:");
-#else
-      filebrowser_set_root(b, "/");
-#endif
+      filebrowser_set_root(b, default_paths.filesystem_root_dir);
       strlcpy(b->extensions, extensions, sizeof(b->extensions));
    }
 
@@ -1484,29 +1479,17 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
 			   menu_stack_push(items, PATH_DEFAULT_ROM_DIR_CHOICE);
-#ifdef _XBOX1
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", "D:");
-#else
-			   filebrowser_set_root_and_ext(&tmpBrowser, "empty", "/");
-#endif
+            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
 		   }
 
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-#ifdef _XBOX1
-            strlcpy(g_console.default_rom_startup_dir, "D:", sizeof(g_console.default_rom_startup_dir));
-#else
-			   strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
-#endif
+            strlcpy(g_console.default_rom_startup_dir, default_paths.filesystem_root_dir, sizeof(g_console.default_rom_startup_dir));
 		   break;
 	   case SETTING_PATH_SAVESTATES_DIRECTORY:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
 			   menu_stack_push(items, PATH_SAVESTATES_DIR_CHOICE);
-#ifdef _XBOX1
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", "D:");
-#else
-			   filebrowser_set_root_and_ext(&tmpBrowser, "empty", "/");
-#endif
+            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
 		   }
 
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1517,11 +1500,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
 			   menu_stack_push(items, PATH_SRAM_DIR_CHOICE);
-#ifdef _XBOX1
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", "D:");
-#else
-			   filebrowser_set_root_and_ext(&tmpBrowser, "empty", "/");
-#endif
+            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
 		   }
 
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1532,11 +1511,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
             menu_stack_push(items, PATH_CHEATS_DIR_CHOICE);
-#ifdef _XBOX1
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", "D:");
-#else
-		      filebrowser_set_root_and_ext(&tmpBrowser, "empty", "/");
-#endif
+            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
 		   }
 
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1547,11 +1522,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
             menu_stack_push(items, PATH_SYSTEM_DIR_CHOICE);
-#ifdef _XBOX1
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", "D:");
-#else
-		      filebrowser_set_root_and_ext(&tmpBrowser, "empty", "/");
-#endif
+            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
 		   }
 
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -2244,11 +2215,7 @@ void menu_init (void)
 
    menu_stack_push(rmenu_items, FILE_BROWSER_MENU);
    filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), default_paths.filebrowser_startup_dir);
-#ifdef _XBOX1
-   filebrowser_set_root(&tmpBrowser, "D:");
-#else
-   filebrowser_set_root(&tmpBrowser, "/");
-#endif
+   filebrowser_set_root(&tmpBrowser, default_paths.filesystem_root_dir);
 
 #ifdef _XBOX1
    // Set file cache size
