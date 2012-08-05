@@ -638,6 +638,7 @@ static void display_menubar(menu *current_menu)
       case PATH_CHEATS_DIR_CHOICE:
 #endif
       case PATH_SRAM_DIR_CHOICE:
+      case PATH_SYSTEM_DIR_CHOICE:
 	 render_msg_place_func(x_position, msg_prev_next_y_position, font_size, WHITE, "<- PREV");
          break;
       default:
@@ -657,6 +658,7 @@ static void display_menubar(menu *current_menu)
       case PATH_CHEATS_DIR_CHOICE:
 #endif
       case PATH_SRAM_DIR_CHOICE:
+      case PATH_SYSTEM_DIR_CHOICE:
          fb = &tmpBrowser;
       case FILE_BROWSER_MENU:
 	 snprintf(current_path, sizeof(current_path), "PATH: %s", filebrowser_get_current_dir(fb));
@@ -924,6 +926,9 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
                strlcpy(g_settings.cheat_database, path, sizeof(g_settings.cheat_database));
                break;
 #endif
+            case PATH_SYSTEM_DIR_CHOICE:
+               strlcpy(g_settings.system_directory, path, sizeof(g_settings.system_directory));
+               break;
          }
          menu_stack_decrement();
       }
@@ -947,6 +952,9 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
             strlcpy(g_settings.cheat_database, path, sizeof(g_settings.cheat_database));
             break;
 #endif
+         case PATH_SYSTEM_DIR_CHOICE:
+            strlcpy(g_settings.system_directory, path, sizeof(g_settings.system_directory));
+            break;
       }
 
       menu_stack_decrement();
@@ -2454,7 +2462,8 @@ void menu_loop(void)
 #ifdef HAVE_XML
 	      case PATH_CHEATS_DIR_CHOICE:
 #endif
-	      case PATH_SRAM_DIR_CHOICE:
+         case PATH_SRAM_DIR_CHOICE:
+         case PATH_SYSTEM_DIR_CHOICE:
 		      select_directory(rmenu_items, current_menu, trig_state);
 		      fb = &tmpBrowser;
 		      break;
