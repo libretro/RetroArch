@@ -248,25 +248,16 @@ static size_t read_stdin(char *buf, size_t size)
    // Check first if we're a pipe
    // (not console).
    DWORD avail = 0;
-   BOOL ret = PeekNamedPipe(hnd, NULL, 0, NULL, &avail, NULL);
 
-   if (!ret) // If not a pipe, check if we're running in a console.
+   // If not a pipe, check if we're running in a console.
+   if (!PeekNamedPipe(hnd, NULL, 0, NULL, &avail, NULL))
    {
-      DWORD mode = 0;
+      DWORD mode;
       if (!GetConsoleMode(hnd, &mode))
          return 0;
 
-      INPUT_RECORD rec = {0};
-      DWORD has_read = 0;
-
-      do
-      {
-         has_read = 0;
-         PeekConsoleInput(hnd, &rec, 1, &has_read);
-      } while (has_read && rec.EventType != KEY_EVENT);
-
-      if (rec.EventType == KEY_EVENT)
-         avail = size;
+      if (!GetNumberOfConsoleInputEvents(hnd, &avail))
+         return 0;
    }
 
    if (!avail)
