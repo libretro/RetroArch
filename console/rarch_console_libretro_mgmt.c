@@ -18,6 +18,8 @@
 #include "../boolean.h"
 #include "../file.h"
 
+#include "rarch_console_libretro_mgmt.h"
+
 // if a CORE executable exists (full_path), this means we have just installed
 // a new libretro port and therefore we need to change it to a more
 // sane name.
@@ -100,7 +102,7 @@ static bool rarch_manage_libretro_install(char *libretro_core_installed, size_t 
    return ret;
 }
 
-static bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
+bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
  const char *libretro_path, const char *config_path, const char *extension)
 {
    bool libretro_core_was_installed = false;
