@@ -20,13 +20,7 @@
 
 #include "rarch_console_libretro_mgmt.h"
 
-// if a CORE executable exists (full_path), this means we have just installed
-// a new libretro port and therefore we need to change it to a more
-// sane name.
-
 #ifndef IS_SALAMANDER
-
-// Transforms a library id to a name suitable as a pathname.
 
 static void rarch_console_name_from_id(char *name, size_t size)
 {
@@ -138,14 +132,10 @@ bool rarch_manage_libretro_extension_supported(const char *filename)
    return ext_supported;
 }
 
-
 #endif
 
 void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext)
 {
-   //We need to set libretro to the first entry in the cores
-   //directory so that it will be saved to the config file
-
    struct string_list *dir_list = dir_list_new(libretro_path, exe_ext, false);
 
    const char * first_exe;
