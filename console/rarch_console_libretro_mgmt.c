@@ -128,17 +128,6 @@ bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
    return find_libretro_file;
 }
 
-bool rarch_configure_libretro(const input_driver_t *input, const char *path_prefix, const char * extension)
-{
-   char full_path[1024];
-   snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
-
-   bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
-   default_paths.config_file, extension);
-
-   return find_libretro_file;
-}
-
 bool rarch_manage_libretro_extension_supported(const char *filename)
 {
    bool ext_supported = false;

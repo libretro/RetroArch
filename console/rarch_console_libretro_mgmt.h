@@ -32,7 +32,6 @@ void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first
 #ifndef IS_SALAMANDER
 bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
  const char *libretro_path, const char *config_path, const char *extension);
-bool rarch_configure_libretro(const input_driver_t *input, const char *path_prefix, const char * extension);
 bool rarch_manage_libretro_extension_supported(const char *filename);
 #endif
 
