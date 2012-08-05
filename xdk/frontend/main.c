@@ -106,10 +106,10 @@ static void get_environment_settings (void)
 
 #if defined(_XBOX1)
    /* FIXME: Hardcoded */
-   strlcpy(default_paths.core_dir, "D:\\", sizeof(default_paths.core_dir));
+   strlcpy(default_paths.core_dir, "D:", sizeof(default_paths.core_dir));
    strlcpy(default_paths.config_file, "D:\\retroarch.cfg", sizeof(default_paths.config_file));
    strlcpy(default_paths.system_dir, "D:\\system\\", sizeof(default_paths.system_dir));
-   strlcpy(default_paths.filesystem_root_dir, "D:\\", sizeof(default_paths.filesystem_root_dir));
+   strlcpy(default_paths.filesystem_root_dir, "D:", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.executable_extension, ".xbe", sizeof(default_paths.executable_extension));
    strlcpy(default_paths.filebrowser_startup_dir, "D:", sizeof(default_paths.filebrowser_startup_dir));
 #elif defined(_XBOX360)

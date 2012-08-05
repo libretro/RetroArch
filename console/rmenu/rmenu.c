@@ -720,6 +720,7 @@ static void browser_render(filebrowser_t * b, float current_x, float current_y, 
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
+   RARCH_LOG("pointer b: %p\n", b);
    unsigned file_count = b->current_dir.list->size;
    unsigned int current_index, page_number, page_base, i;
    float currentX, currentY, ySpacing;
