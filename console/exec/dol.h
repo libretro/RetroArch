@@ -24,7 +24,7 @@
 
 #include <gctypes.h>
 
-u32 load_dol_image (void *dolstart);
+uint32_t load_dol_image (void *dolstart);
 
 extern void __exception_closeall(void);
 extern int32_t __IOS_ShutdownSubSystems(void);
