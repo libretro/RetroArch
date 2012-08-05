@@ -112,6 +112,8 @@ VIDEO IMAGE
 
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/image.c"
+#elif defined(_XBOX1)
+#include "../../xbox1/image.c"
 #endif
 
 /*============================================================
@@ -294,5 +296,4 @@ MENU
 #include "../../360/frontend-xdk/menu.cpp"
 #elif defined(_XBOX1)
 #include "../../xbox1/frontend/RetroLaunch/IoSupport.cpp"
-#include "../../xbox1/frontend/RetroLaunch/Surface.cpp"
 #endif

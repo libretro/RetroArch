@@ -14,19 +14,20 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "Surface.h"
+#include "../gfx/image.h"
+#include "xdk_d3d8.h"
 
-#include "../../xdk_d3d8.h"
-
-bool d3d_surface_new(d3d_surface_t *surface, const char *filename)
+bool texture_image_load(const char *path, struct texture_image *out_img)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   
+   D3DXIMAGE_INFO m_imageInfo;
 
-   surface->m_pTexture      = NULL;
-   surface->m_pVertexBuffer = NULL;
+   out_img->pixels      = NULL;
+   out_img->vertex_buf  = NULL;
 
    HRESULT ret = D3DXCreateTextureFromFileExA(d3d->d3d_render_device,                // d3d device
-	                                         filename,                                // filename
+	                                         path,                                    // filename
 	                                         D3DX_DEFAULT,                            // width
                                             D3DX_DEFAULT,                            // height
 	                                         D3DX_DEFAULT,                            // mipmaps
@@ -36,9 +37,9 @@ bool d3d_surface_new(d3d_surface_t *surface, const char *filename)
 	                                         D3DX_DEFAULT,                            // texture filter
 	                                         D3DX_DEFAULT,                            // mipmapping
 	                                         0,                                       // colorkey
-	                                         &surface->m_imageInfo,                   // image info
-	                                         NULL,                                    // pallete
-	                                         &surface->m_pTexture);                   // texture
+	                                         &m_imageInfo,                            // image info
+	                                         NULL,                                    // palette
+	                                         &out_img->pixels);                       // texture
 
    if(FAILED(ret))
    {
@@ -48,41 +49,49 @@ bool d3d_surface_new(d3d_surface_t *surface, const char *filename)
 
    // create a vertex buffer for the quad that will display the texture
    ret = d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats),
-      D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &surface->m_pVertexBuffer);
+      D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &out_img->vertex_buf);
 
    if (FAILED(ret))
    {
       RARCH_ERR("Error occurred during CreateVertexBuffer().\n");
-      surface->m_pTexture->Release();
+      out_img->pixels->Release();
       return false;
    }
+   
+   out_img->width = m_imageInfo.Width;
+   out_img->height = m_imageInfo.Height;
 
    return true;
 }
 
-void d3d_surface_free(d3d_surface_t *surface)
+void texture_image_free(struct texture_image *out_img)
 {
    // free the vertex buffer
-   if (surface->m_pVertexBuffer)
+   if (out_img->vertex_buf)
    {
-      surface->m_pVertexBuffer->Release();
-      surface->m_pVertexBuffer = NULL;
+      out_img->vertex_buf->Release();
+      out_img->vertex_buf = NULL;
    }
 
    // free the texture
-   if (surface->m_pTexture)
+   if (out_img->pixels)
    {
-      surface->m_pTexture->Release();
-      surface->m_pTexture = NULL;
+      out_img->pixels->Release();
+      out_img->pixels = NULL;
    }
 }
 
-bool d3d_surface_render(d3d_surface_t *surface, int x, int y, int32_t w, int32_t h)
+bool texture_image_render(struct texture_image *out_img)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
-   if (surface->m_pTexture == NULL || surface->m_pVertexBuffer == NULL)
+   if (out_img->pixels == NULL || out_img->vertex_buf == NULL)
       return false;
+
+   int x = out_img->x;
+   int y = out_img->y;
+   int w = out_img->width;
+   int h = out_img->height;
 
    float fX = static_cast<float>(x);
    float fY = static_cast<float>(y);
@@ -100,7 +109,7 @@ bool d3d_surface_render(d3d_surface_t *surface, int x, int y, int32_t w, int32_t
    // load the existing vertices
    DrawVerticeFormats *pCurVerts;
 
-   HRESULT ret = surface->m_pVertexBuffer->Lock(0, 0, (unsigned char**)&pCurVerts, 0);
+   HRESULT ret = out_img->vertex_buf->Lock(0, 0, (unsigned char**)&pCurVerts, 0);
 
    if (FAILED(ret))
    {
@@ -111,7 +120,7 @@ bool d3d_surface_render(d3d_surface_t *surface, int x, int y, int32_t w, int32_t
    // copy the new verts over the old verts
    memcpy(pCurVerts, newVerts, 4 * sizeof(DrawVerticeFormats));
 
-   surface->m_pVertexBuffer->Unlock();
+   out_img->vertex_buf->Unlock();
 
    d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
    d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
@@ -123,8 +132,8 @@ bool d3d_surface_render(d3d_surface_t *surface, int x, int y, int32_t w, int32_t
    d3d->d3d_render_device->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
 
    // draw the quad
-   d3d->d3d_render_device->SetTexture(0, surface->m_pTexture);
-   d3d->d3d_render_device->SetStreamSource(0, surface->m_pVertexBuffer, sizeof(DrawVerticeFormats));
+   d3d->d3d_render_device->SetTexture(0, out_img->pixels);
+   d3d->d3d_render_device->SetStreamSource(0, out_img->vertex_buf, sizeof(DrawVerticeFormats));
    d3d->d3d_render_device->SetVertexShader(D3DFVF_CUSTOMVERTEX);
    d3d->d3d_render_device->DrawPrimitive(D3DPT_QUADLIST, 0, 1);
 

@@ -33,6 +33,8 @@
 #include "../../console/rarch_console_config.h"
 #include "../../console/rarch_console_settings.h"
 
+#include "../../gfx/image.h"
+
 #ifdef HAVE_RSOUND
 #include "../../console/rarch_console_rsound.h"
 #endif
@@ -70,17 +72,14 @@
 
 #ifdef _XBOX1
 #include "../../xbox1/frontend/RetroLaunch/IoSupport.h"
-#include "../../xbox1/frontend/RetroLaunch/Surface.h"
 #include "../../gfx/fonts/xdk1_xfonts.h"
 
 #define ROM_PANEL_WIDTH 510
 #define ROM_PANEL_HEIGHT 20
 
 int xpos, ypos;
-// Rom selector panel with coords
-d3d_surface_t m_menuMainRomSelectPanel;
-// Background image with coords
-d3d_surface_t m_menuMainBG;
+texture_image m_menuMainRomSelectPanel;
+texture_image m_menuMainBG;
 
 // Rom list coords
 int m_menuMainRomListPos_x;
@@ -669,8 +668,9 @@ static void display_menubar(menu *current_menu)
 
 #ifdef _XBOX1
    //Render background image
-   d3d_surface_render(&m_menuMainBG, 0, 0,
-   m_menuMainBG.m_imageInfo.Width, m_menuMainBG.m_imageInfo.Height);
+   m_menuMainBG.x = 0;
+   m_menuMainBG.y = 0;
+   texture_image_render(&m_menuMainBG);
 #else
    render_msg_place_func(x_position, 0.05f, 1.4f, WHITE, current_menu->title);
    render_msg_place_func(0.3f, 0.06f, 0.82f, WHITE, m_title);
@@ -737,7 +737,13 @@ static void browser_render(filebrowser_t * b, float current_x, float current_y, 
       //check if this is the currently selected file
       const char *current_pathname = filebrowser_get_current_path(b);
       if(strcmp(current_pathname, b->current_dir.list->elems[i].data) == 0)
-         d3d_surface_render(&m_menuMainRomSelectPanel, currentX, currentY, ROM_PANEL_WIDTH, ROM_PANEL_HEIGHT);
+      {
+         m_menuMainRomSelectPanel.x = currentX;
+         m_menuMainRomSelectPanel.y = currentY;
+         m_menuMainRomSelectPanel.width = ROM_PANEL_WIDTH;
+         m_menuMainRomSelectPanel.height = ROM_PANEL_HEIGHT;
+         texture_image_render(&m_menuMainRomSelectPanel);
+      }
 
       render_msg_place_func(currentX, currentY, 0, 0, fname_tmp);
 #else
@@ -1743,7 +1749,13 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
          render_msg_place_func(x_position_center, items[i].text_ypos, FONT_SIZE, items[i].text_color, items[i].setting_text);
 #ifdef _XBOX1
          if(current_menu->selected == items[i].enum_id)
-            d3d_surface_render(&m_menuMainRomSelectPanel, x_position, items[i].text_ypos, ROM_PANEL_WIDTH, ROM_PANEL_HEIGHT);
+         {
+            m_menuMainRomSelectPanel.x = x_position;
+            m_menuMainRomSelectPanel.y = items[i].text_ypos;
+            m_menuMainRomSelectPanel.width = ROM_PANEL_WIDTH;
+            m_menuMainRomSelectPanel.height = ROM_PANEL_HEIGHT;
+            texture_image_render(&m_menuMainRomSelectPanel);
+         }
 #endif
       }
    }
@@ -2198,7 +2210,11 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
    render_msg_place_func(x_position, comment_y_position, font_size, WHITE, comment);
    
 #ifdef _XBOX1
-   d3d_surface_render(&m_menuMainRomSelectPanel, x_position, (y_position+(y_position_increment*g_console.ingame_menu_item)), ROM_PANEL_WIDTH, ROM_PANEL_HEIGHT);
+   m_menuMainRomSelectPanel.x = x_position;
+   m_menuMainRomSelectPanel.y = (y_position+(y_position_increment*g_console.ingame_menu_item));
+   m_menuMainRomSelectPanel.width = ROM_PANEL_WIDTH;
+   m_menuMainRomSelectPanel.height = ROM_PANEL_HEIGHT;
+   texture_image_render(&m_menuMainRomSelectPanel);
 #endif
 }
 
@@ -2237,19 +2253,19 @@ void menu_init (void)
    // Load background image
    if(width == 640)
    {
-      d3d_surface_new(&m_menuMainBG, "D:\\Media\\main-menu_480p.png");
+      texture_image_load("D:\\Media\\main-menu_480p.png", &m_menuMainBG);
       m_menuMainRomListPos_x = 60;
       m_menuMainRomListPos_y = 80;
    }
    else if(width == 1280)
    {
-      d3d_surface_new(&m_menuMainBG, "D:\\Media\\main-menu_720p.png");
+      texture_image_load("D:\\Media\\main-menu_720p.png", &m_menuMainBG);
       m_menuMainRomListPos_x = 360;
       m_menuMainRomListPos_y = 130;
    }
 
    // Load rom selector panel
-   d3d_surface_new(&m_menuMainRomSelectPanel, "D:\\Media\\menuMainRomSelectPanel.png");
+   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &m_menuMainRomSelectPanel);
    
    //Display some text
    //Center the text (hardcoded)
@@ -2264,8 +2280,8 @@ void menu_free (void)
    filebrowser_free(&tmpBrowser);
 
 #ifdef _XBOX1
-   d3d_surface_free(&m_menuMainBG);
-   d3d_surface_free(&m_menuMainRomSelectPanel);
+   texture_image_free(&m_menuMainBG);
+   texture_image_free(&m_menuMainRomSelectPanel);
 #endif
 }
 
