@@ -113,7 +113,8 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       if (!S_ISDIR(st.st_mode) && !S_ISREG(st.st_mode))
          continue;
 
-      if (core_chooser && strstr(entry->d_name, ".dol") != entry->d_name + strlen(entry->d_name) - 4)
+      if (core_chooser && (strstr(entry->d_name, ".dol") != entry->d_name + strlen(entry->d_name) - 4 ||
+         strcasecmp(entry->d_name, "boot.dol") == 0))
          continue;
 
       file_cb(ctx,
