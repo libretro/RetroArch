@@ -18,16 +18,9 @@
 #define _XDK_VIDEO_H
 
 #include <stdint.h>
-
-#ifdef _XBOX1
-#define XFONT_TRUETYPE // use true type fonts
-#endif
-
 #include <xfont.h>
 
 #include "../xdk/xdk_defines.h"
-
-#define SHOW_DEBUG_INFO
 
 #define DFONT_MAX	4096
 #define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZRHW | D3DFVF_TEX1)

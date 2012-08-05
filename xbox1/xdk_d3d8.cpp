@@ -357,11 +357,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    font_x = 0;
    font_y = 0;
 
-   // TODO: place this somewhere else outside of xdk_d3d8.cpp
-#ifdef SHOW_DEBUG_INFO
-   g_console.fps_info_enable = true;
-#endif
-
    return d3d;
 }
 
