@@ -25,6 +25,9 @@
 #include <np/drm.h>
 #elif defined(_XBOX)
 #include <xtl.h>
+#elif defined(GEKKO)
+#include <ogc/machine/processor.h>
+#include "exec/dol.h"
 #endif
 
 #include "rarch_console_exec.h"
@@ -63,6 +66,29 @@ void rarch_console_exec(const char *path)
    sys_net_finalize_network();
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
+#elif defined(GEKKO)
+   uint32_t level;
+   FILE * fp = fopen(path, "rb");
+   if (fp == NULL)
+   {
+      RARCH_ERR("Could not execute DOL file.\n");
+      return;
+   }
+   fseek(fp, 0, SEEK_END);
+   size_t size = ftell(fp);
+   fseek(fp, 0, SEEK_SET);
+   u8 *mem = (u8 *)0x92000000; // should be safe for this small program to use
+   fread(mem, 1, size, fp);
+   fclose(fp);
+   void (*ep)() = (void(*)())load_dol_image(mem);
+   RARCH_LOG("jumping to 0x%08X\n", (unsigned int)ep);
+
+   __IOS_ShutdownSubsystems();
+   _CPU_ISR_Disable (level);
+   __exception_closeall ();
+   RARCH_LOG("__exception_closeall() done. Jumping to ep now...\n");
+   ep();
+   _CPU_ISR_Restore (level);
 #else
    RARCH_WARN("External loading of executables is not supported for this platform.\n");
 #endif

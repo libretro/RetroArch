@@ -32,6 +32,10 @@ CONSOLE EXTENSIONS
 #include "../rarch_console_main_wrap.c"
 #endif
 
+#if defined(GEKKO)
+#include "../exec/dol.c"
+#endif
+
 #ifdef HAVE_RARCH_EXEC
 #include "../rarch_console_exec.c"
 #endif

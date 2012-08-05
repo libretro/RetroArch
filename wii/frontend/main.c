@@ -23,6 +23,7 @@
 
 #include "../../console/rgui/rgui.h"
 
+#include "../../console/rarch_console_exec.h"
 #include "../../console/rarch_console_input.h"
 #include "../../console/rarch_console_main_wrap.h"
 
@@ -235,6 +236,7 @@ int main(void)
 #endif
 
    config_set_defaults();
+   input_wii.init();
 
    retro_get_system_info(&wii_core_info);
    RARCH_LOG("Core: %s\n", wii_core_info.library_name);
@@ -244,8 +246,12 @@ int main(void)
    g_console.block_config_read = true;
 
    wii_video_init();
-   input_wii.init();
-   rarch_input_set_controls_default(&input_wii);
+
+   const char *extension = default_paths.executable_extension;
+
+   rarch_settings_set_default(&input_wii);
+   rarch_config_load(default_paths.config_file, /* path_prefix */ NULL, extension, /* find_libretro_file */ false);
+   init_libretro_sym();
 
    input_wii.post_init();
 
@@ -269,6 +275,9 @@ int main(void)
       audio_stop_func();
    }
 
+   if(path_file_exists(default_paths.config_file))
+      rarch_config_save(default_paths.config_file);
+
    if(g_console.emulator_initialized)
       rarch_main_deinit();
 
@@ -283,6 +292,10 @@ int main(void)
 #endif
 
    rgui_free(rgui);
+
+   if(g_console.return_to_launcher)
+      rarch_console_exec(g_console.launch_app_on_exit);
+
    return ret;
 }
 
