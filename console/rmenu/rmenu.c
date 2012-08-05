@@ -1522,7 +1522,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
             menu_stack_push(items, PATH_SYSTEM_DIR_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
+            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.system_dir);
 		   }
 
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
