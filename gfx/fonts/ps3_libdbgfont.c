@@ -40,8 +40,8 @@ void gl_render_msg(void *data, const char *msg)
 {
    (void)data;
 
-   cellDbgFontPrintf(g_settings.video.msg_pos_x, 0.75f, 1.06f, SILVER, msg);
-   cellDbgFontPrintf(g_settings.video.msg_pos_x, 0.75f, 1.05f, WHITE, msg);
+   cellDbgFontPrintf(g_settings.video.msg_pos_x, 0.76f, 1.04f, SILVER, msg);
+   cellDbgFontPrintf(g_settings.video.msg_pos_x, 0.76f, 1.03f, WHITE, msg);
    cellDbgFontDraw();		//post
 }
 
