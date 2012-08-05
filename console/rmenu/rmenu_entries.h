@@ -246,6 +246,16 @@ item rmenu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       "INFO - Set the current savestate slot (can also be configured ingame).",
       WHITE,
    },
+      {
+      SETTING_EMU_SHOW_DEBUG_INFO_MSG, 
+      "Debug Info messages", 
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Show onscreen debug messages.",
+      WHITE,
+   },
    {
       SETTING_EMU_SHOW_INFO_MSG, 
       "Info messages", 

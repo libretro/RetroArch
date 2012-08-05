@@ -207,7 +207,7 @@ struct console_settings
    bool default_sram_dir_enable;
    bool default_savestate_dir_enable;
    bool fbo_enabled;
-   bool fps_info_enable;
+   bool fps_info_msg_enable;
    bool frame_advance_enable;
 #ifdef _XBOX
    bool menus_hd_enable;

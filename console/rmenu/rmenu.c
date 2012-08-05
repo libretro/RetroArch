@@ -255,6 +255,10 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%d", g_extern.state_slot);
 		   break;
 		   /* emu-specific */
+	   case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
+         set_setting_label_write_on_or_off(items, g_console.fps_info_msg_enable, currentsetting);
+         set_setting_label_color(items,g_console.fps_info_msg_enable, currentsetting);
+		   break;
 	   case SETTING_EMU_SHOW_INFO_MSG:
          set_setting_label_write_on_or_off(items, g_console.info_msg_enable, currentsetting);
          set_setting_label_color(items,g_console.info_msg_enable, currentsetting);
@@ -1414,6 +1418,12 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
 			   rarch_settings_default(S_DEF_SAVE_STATE);
+		   break;
+	   case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
+		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+			   g_console.fps_info_msg_enable = !g_console.fps_info_msg_enable;
+		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+			   g_console.fps_info_msg_enable = false;
 		   break;
 	   case SETTING_EMU_SHOW_INFO_MSG:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))

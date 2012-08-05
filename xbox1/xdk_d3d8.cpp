@@ -368,7 +368,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    bool menu_enabled = g_console.menu_enable;
-   bool fps_enable = g_console.fps_info_enable;
+   bool fps_enable = g_console.fps_info_msg_enable;
 
    if (d3d->last_width != width || d3d->last_height != height) //240*160
    {
