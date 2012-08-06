@@ -604,11 +604,7 @@ static void display_menubar(menu *current_menu)
    char current_path[256], rarch_version[128];
 
    float x_position = POSITION_X;
-#ifdef _XBOX1
-   float font_size = m_menuMainRomListPos_y;
-#else
    float font_size = HARDCODE_FONT_SIZE;
-#endif
    float current_path_y_position = CURRENT_PATH_Y_POSITION;
    float current_path_font_size = CURRENT_PATH_FONT_SIZE;
    float msg_prev_next_y_position = MSG_PREV_NEXT_Y_POSITION;
