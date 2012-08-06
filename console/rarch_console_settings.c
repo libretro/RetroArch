@@ -331,6 +331,11 @@ void rarch_settings_set_default (const input_driver_t *input)
    g_settings.video.fbo_scale_y = 2.0f;
 #endif
 
+#ifdef GEKKO
+   g_settings.audio.rate_control_delta = 0.006;
+   g_settings.audio.rate_control = true;
+#endif
+
    g_settings.video.render_to_texture = true;
    g_settings.video.smooth = true;
    g_settings.video.vsync = true;
