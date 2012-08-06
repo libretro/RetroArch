@@ -29,6 +29,7 @@
 #include <fat.h>
 #include <ogc/lwp_threads.h>
 #include <ogc/system.h>
+#include <gctypes.h>
 #include "exec/dol.h"
 #endif
 
@@ -87,12 +88,16 @@ void rarch_console_exec(const char *path)
 #endif
    fatUnmount("carda:");
    fatUnmount("cardb:");
-   void (*ep)() = (void(*)())load_dol_image(mem);
-   RARCH_LOG("jumping to 0x%08X\n", (uint32_t)ep);
+   uint32_t *ep = load_dol_image(mem);
+   
+   if (ep[1] == ARGV_MAGIC)
+      dol_copy_argv((struct __argv *) &ep[2]);
+
+   RARCH_LOG("jumping to 0x%08X\n", (uint32_t) ep);
 
    SYS_ResetSystem(SYS_SHUTDOWN,0,0);
 
-   __lwp_thread_stopmultitasking(ep);
+   __lwp_thread_stopmultitasking((void(*)()) ep);
 #else
    RARCH_WARN("External loading of executables is not supported for this platform.\n");
 #endif

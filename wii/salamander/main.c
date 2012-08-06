@@ -48,11 +48,11 @@ static void find_and_set_first_file(void)
    //Last fallback - we'll need to start the first executable file 
    // we can find in the RetroArch cores directory
 
-   char first_file[512];
+   char first_file[512] = {0};
    rarch_manage_libretro_set_first_file(first_file, sizeof(first_file),
    LIBRETRO_DIR_PATH, "dol");
 
-   if(first_file)
+   if(first_file[0])
       strlcpy(libretro_path, first_file, sizeof(libretro_path));
    else
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
@@ -89,8 +89,8 @@ static void init_settings(void)
       if(config_file_exists)
       {
          config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
-	 config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
-	 snprintf(libretro_path, sizeof(libretro_path), tmp_str);
+         config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
+         snprintf(libretro_path, sizeof(libretro_path), tmp_str);
       }
 
       if(!config_file_exists || !strcmp(libretro_path, ""))
@@ -111,12 +111,12 @@ static void get_environment_settings(void)
 
 int main(int argc, char *argv[])
 {
-#ifdef HAVE_LOGGER
-   logger_init();
-#endif
-
 #ifdef HW_RVL
    L2Enhance();
+#endif
+
+#ifdef HAVE_LOGGER
+   logger_init();
 #endif
 
    fatInitDefault();
