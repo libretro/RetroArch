@@ -50,15 +50,15 @@ char app_dir[PATH_MAX];
 struct retro_system_info wii_core_info;
 
 static const struct retro_keybind _wii_nav_binds[] = {
-   { 0, 0, 0, WII_GC_UP | WII_GC_LSTICK_UP | WII_GC_RSTICK_UP | WII_CLASSIC_UP | WII_CLASSIC_LSTICK_UP | WII_CLASSIC_RSTICK_UP | WII_WIIMOTE_UP | WII_NUNCHUK_UP, 0 },
-   { 0, 0, 0, WII_GC_DOWN | WII_GC_LSTICK_DOWN | WII_GC_RSTICK_DOWN | WII_CLASSIC_DOWN | WII_CLASSIC_LSTICK_DOWN | WII_CLASSIC_RSTICK_DOWN | WII_WIIMOTE_DOWN | WII_NUNCHUK_DOWN, 0 },
-   { 0, 0, 0, WII_GC_LEFT | WII_GC_LSTICK_LEFT | WII_GC_RSTICK_LEFT | WII_CLASSIC_LEFT | WII_CLASSIC_LSTICK_LEFT | WII_CLASSIC_RSTICK_LEFT | WII_WIIMOTE_LEFT | WII_NUNCHUK_LEFT, 0 },
-   { 0, 0, 0, WII_GC_RIGHT | WII_GC_LSTICK_RIGHT | WII_GC_RSTICK_RIGHT | WII_CLASSIC_RIGHT | WII_CLASSIC_LSTICK_RIGHT | WII_CLASSIC_RSTICK_RIGHT | WII_WIIMOTE_RIGHT | WII_NUNCHUK_RIGHT, 0 },
-   { 0, 0, 0, WII_GC_A | WII_CLASSIC_A | WII_WIIMOTE_A | WII_WIIMOTE_2, 0 },
-   { 0, 0, 0, WII_GC_B | WII_CLASSIC_B | WII_WIIMOTE_B | WII_WIIMOTE_1, 0 },
-   { 0, 0, 0, WII_GC_START | WII_CLASSIC_PLUS | WII_WIIMOTE_PLUS, 0 },
-   { 0, 0, 0, WII_GC_Z_TRIGGER | WII_CLASSIC_MINUS | WII_WIIMOTE_MINUS, 0 },
-   { 0, 0, 0, WII_WIIMOTE_HOME | WII_CLASSIC_HOME, 0 },
+   { 0, 0, 0, GX_GC_UP | GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_CLASSIC_UP | GX_CLASSIC_LSTICK_UP | GX_CLASSIC_RSTICK_UP | GX_WIIMOTE_UP | GX_NUNCHUK_UP, 0 },
+   { 0, 0, 0, GX_GC_DOWN | GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_CLASSIC_DOWN | GX_CLASSIC_LSTICK_DOWN | GX_CLASSIC_RSTICK_DOWN | GX_WIIMOTE_DOWN | GX_NUNCHUK_DOWN, 0 },
+   { 0, 0, 0, GX_GC_LEFT | GX_GC_LSTICK_LEFT | GX_GC_RSTICK_LEFT | GX_CLASSIC_LEFT | GX_CLASSIC_LSTICK_LEFT | GX_CLASSIC_RSTICK_LEFT | GX_WIIMOTE_LEFT | GX_NUNCHUK_LEFT, 0 },
+   { 0, 0, 0, GX_GC_RIGHT | GX_GC_LSTICK_RIGHT | GX_GC_RSTICK_RIGHT | GX_CLASSIC_RIGHT | GX_CLASSIC_LSTICK_RIGHT | GX_CLASSIC_RSTICK_RIGHT | GX_WIIMOTE_RIGHT | GX_NUNCHUK_RIGHT, 0 },
+   { 0, 0, 0, GX_GC_A | GX_CLASSIC_A | GX_WIIMOTE_A | GX_WIIMOTE_2, 0 },
+   { 0, 0, 0, GX_GC_B | GX_CLASSIC_B | GX_WIIMOTE_B | GX_WIIMOTE_1, 0 },
+   { 0, 0, 0, GX_GC_START | GX_CLASSIC_PLUS | GX_WIIMOTE_PLUS, 0 },
+   { 0, 0, 0, GX_GC_Z_TRIGGER | GX_CLASSIC_MINUS | GX_WIIMOTE_MINUS, 0 },
+   { 0, 0, 0, GX_WIIMOTE_HOME | GX_CLASSIC_HOME, 0 },
 };
 
 static const struct retro_keybind *wii_nav_binds[] = {
@@ -67,16 +67,16 @@ static const struct retro_keybind *wii_nav_binds[] = {
 
 enum
 {
-   WII_DEVICE_NAV_UP = 0,
-   WII_DEVICE_NAV_DOWN,
-   WII_DEVICE_NAV_LEFT,
-   WII_DEVICE_NAV_RIGHT,
-   WII_DEVICE_NAV_A,
-   WII_DEVICE_NAV_B,
-   WII_DEVICE_NAV_START,
-   WII_DEVICE_NAV_SELECT,
-   WII_DEVICE_NAV_EXIT,
-   WII_DEVICE_NAV_LAST
+   GX_DEVICE_NAV_UP = 0,
+   GX_DEVICE_NAV_DOWN,
+   GX_DEVICE_NAV_LEFT,
+   GX_DEVICE_NAV_RIGHT,
+   GX_DEVICE_NAV_A,
+   GX_DEVICE_NAV_B,
+   GX_DEVICE_NAV_START,
+   GX_DEVICE_NAV_SELECT,
+   GX_DEVICE_NAV_EXIT,
+   GX_DEVICE_NAV_LAST
 };
 
 static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
@@ -138,7 +138,7 @@ static bool get_rom_path(rgui_handle_t *rgui)
 
       input_wii.poll(NULL);
 
-      for (unsigned i = 0; i < WII_DEVICE_NAV_LAST; i++)
+      for (unsigned i = 0; i < GX_DEVICE_NAV_LAST; i++)
       {
          input_state |= input_wii.input_state(NULL, wii_nav_binds, 0,
                RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
@@ -150,7 +150,7 @@ static bool get_rom_path(rgui_handle_t *rgui)
       // don't run anything first frame, only capture held inputs for old_input_state
       if (!first)
       {
-         if (trigger_state & (1 << WII_DEVICE_NAV_EXIT))
+         if (trigger_state & (1 << GX_DEVICE_NAV_EXIT))
          {
             if (can_quit)
                return false;
@@ -158,21 +158,21 @@ static bool get_rom_path(rgui_handle_t *rgui)
          else
             can_quit = true;
 
-         if (trigger_state & (1 << WII_DEVICE_NAV_B))
+         if (trigger_state & (1 << GX_DEVICE_NAV_B))
             action = RGUI_ACTION_CANCEL;
-         else if (trigger_state & (1 << WII_DEVICE_NAV_A))
+         else if (trigger_state & (1 << GX_DEVICE_NAV_A))
             action = RGUI_ACTION_OK;
-         else if (trigger_state & (1 << WII_DEVICE_NAV_UP))
+         else if (trigger_state & (1 << GX_DEVICE_NAV_UP))
             action = RGUI_ACTION_UP;
-         else if (trigger_state & (1 << WII_DEVICE_NAV_DOWN))
+         else if (trigger_state & (1 << GX_DEVICE_NAV_DOWN))
             action = RGUI_ACTION_DOWN;
-         else if (trigger_state & (1 << WII_DEVICE_NAV_LEFT))
+         else if (trigger_state & (1 << GX_DEVICE_NAV_LEFT))
             action = RGUI_ACTION_LEFT;
-         else if (trigger_state & (1 << WII_DEVICE_NAV_RIGHT))
+         else if (trigger_state & (1 << GX_DEVICE_NAV_RIGHT))
             action = RGUI_ACTION_RIGHT;
-         else if (trigger_state & (1 << WII_DEVICE_NAV_START))
+         else if (trigger_state & (1 << GX_DEVICE_NAV_START))
             action = RGUI_ACTION_START;
-         else if (trigger_state & (1 << WII_DEVICE_NAV_SELECT))
+         else if (trigger_state & (1 << GX_DEVICE_NAV_SELECT))
             action = RGUI_ACTION_SETTINGS;
       }
       else
