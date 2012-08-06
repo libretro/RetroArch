@@ -25,6 +25,7 @@
 #include "../../360/frontend-xdk/menu.h"
 #include "../../xdk/menu_shared.h"
 #elif defined(_XBOX1)
+#include "../../xbox1/frontend/RetroLaunch/IoSupport.h"
 #include "../../console/rmenu/rmenu.h"
 #endif
 
@@ -124,6 +125,21 @@ static void get_environment_settings (void)
 #endif
 }
 
+static void system_init(void)
+{
+#ifdef _XBOX1
+   // Set file cache size
+   XSetFileCacheSize(8 * 1024 * 1024);
+
+   // Mount drives
+   xbox_io_mount("A:", "cdrom0");
+   xbox_io_mount("E:", "Harddisk0\\Partition1");
+   xbox_io_mount("Z:", "Harddisk0\\Partition2");
+   xbox_io_mount("F:", "Harddisk0\\Partition6");
+   xbox_io_mount("G:", "Harddisk0\\Partition7");
+#endif
+}
+
 int main(int argc, char *argv[])
 {
    rarch_main_clear_state();
@@ -159,6 +175,8 @@ int main(int argc, char *argv[])
 #else
    video_null.start();
 #endif
+
+   system_init();
 
    menu_init();
 

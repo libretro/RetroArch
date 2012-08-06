@@ -71,7 +71,6 @@
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
 #ifdef _XBOX1
-#include "../../xbox1/frontend/RetroLaunch/IoSupport.h"
 #include "../../gfx/fonts/xdk1_xfonts.h"
 
 #define ROM_PANEL_WIDTH 510
@@ -2263,16 +2262,6 @@ void menu_init (void)
    filebrowser_set_root(&tmpBrowser, default_paths.filesystem_root_dir);
 
 #ifdef _XBOX1
-   // Set file cache size
-   XSetFileCacheSize(8 * 1024 * 1024);
-
-   // Mount drives
-   xbox_io_mount("A:", "cdrom0");
-   xbox_io_mount("E:", "Harddisk0\\Partition1");
-   xbox_io_mount("Z:", "Harddisk0\\Partition2");
-   xbox_io_mount("F:", "Harddisk0\\Partition6");
-   xbox_io_mount("G:", "Harddisk0\\Partition7");
-
    // Backbuffer width
    int width  = device_ptr->d3dpp.BackBufferWidth;
 
