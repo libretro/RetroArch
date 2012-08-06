@@ -22,7 +22,7 @@ LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
-LDFLAGS := $(MACHDEP)
+LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $@).map,--section-start,.init=0x81200000
 LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
 
 OBJ = wii/salamander/main.o console/rarch_console_exec.o console/rarch_console_libretro_mgmt.o file_path.o compat/compat.o conf/config_file.o console/exec/dol.o
