@@ -606,7 +606,6 @@ static void display_menubar(menu *current_menu)
 
    float x_position = POSITION_X;
 #ifdef _XBOX1
-   float current_y_position = m_menuMainRomListPos_y;
    float font_size = m_menuMainRomListPos_y;
 #else
    float font_size = HARDCODE_FONT_SIZE;
