@@ -3,7 +3,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RetroArch", "RetroArch-Xbox
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RetroArch-Salamander", "RetroArch-Salamander\RetroArch-Salamander.vcproj", "{EA17F7A7-7E66-4E32-9BA3-DEC11E4BBA8E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RetroArch-Salamander", "RetroArch-Xbox1-Salamander\RetroArch-Salamander.vcproj", "{EA17F7A7-7E66-4E32-9BA3-DEC11E4BBA8E}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject

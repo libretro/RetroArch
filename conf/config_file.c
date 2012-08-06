@@ -329,7 +329,7 @@ static config_file_t *config_file_new_internal(const char *path, unsigned depth)
    }
 
    conf->include_depth = depth;
-   FILE *file = fopen(path, "r+");
+   FILE *file = fopen(path, "r");
 
    if (!file)
    {

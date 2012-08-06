@@ -29,8 +29,6 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       if(!conf)
          return;
 
-      // g_settings
-
 #ifdef HAVE_LIBRETRO_MANAGEMENT
       if(find_libretro_path)
       {
@@ -45,6 +43,8 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
          }
       }
 #endif
+
+      // g_settings
 
       CONFIG_GET_STRING(system_directory, "system_directory");
 #ifdef HAVE_XML
