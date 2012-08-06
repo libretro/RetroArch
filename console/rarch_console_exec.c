@@ -28,6 +28,7 @@
 #elif defined(GEKKO)
 #include <fat.h>
 #include <ogc/lwp_threads.h>
+#include <ogc/system.h>
 #include "exec/dol.h"
 #endif
 

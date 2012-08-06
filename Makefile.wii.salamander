@@ -14,8 +14,8 @@ CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc
 CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++
 LD = $(DEVKITPPC)/bin/powerpc-eabi-ld
 
-DOL_TARGET := retroarch.dol
-ELF_TARGET := retroarch.elf
+DOL_TARGET := retroarch-salamander_gx.dol
+ELF_TARGET := retroarch-salamander_gx.elf
 
 INCLUDE := -I. -I$(DEVKITPRO)/libogc/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
@@ -25,7 +25,7 @@ CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
 LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
 
-OBJ = console/griffin/griffin.o console/font.bmpobj console/rzlib/rzlib.o
+OBJ = wii/salamander/main.o console/rarch_console_exec.o console/rarch_console_libretro_mgmt.o file_path.o compat/compat.o conf/config_file.o console/exec/dol.o
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -39,7 +39,7 @@ CFLAGS		+= -DHAVE_FILE_LOGGER
 CFLAGS          += -Iconsole/logger
 endif
 
-CFLAGS += -std=gnu99 -DHAVE_DEFAULT_RETROPAD_INPUT -DHAVE_RGUI -DRARCH_CONSOLE -DHAVE_RARCH_EXEC -DHAVE_CONFIGFILE=1 -DGEKKO -DHW_RVL -DHAVE_ZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DPACKAGE_VERSION=\"0.9.6\" -Dmain=rarch_main -Wno-char-subscripts 
+CFLAGS += -std=gnu99 -DHAVE_DEFAULT_RETROPAD_INPUT -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_RARCH_EXEC -DHAVE_CONFIGFILE=1 -DGEKKO -DHW_RVL -DPACKAGE_VERSION=\"0.9.6\" -Wno-char-subscripts 
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
@@ -62,7 +62,7 @@ $(ELF_TARGET): $(OBJ)
 	$(LD) -r -b binary -o $@ $<
 
 pkg: all
-	cp -r $(DOL_TARGET) wii/pkg/CORE.dol
+	cp -r $(DOL_TARGET) wii/pkg/boot.dol
 
 clean:
 	rm -f $(DOL_TARGET)
