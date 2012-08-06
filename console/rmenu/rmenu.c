@@ -1874,10 +1874,14 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
    gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
 
    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT))
+#ifdef _XBOX1
       if(g_console.viewports.custom_vp.x >= 4)
+#endif
          g_console.viewports.custom_vp.x -= 4;
    else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+#ifdef _XBOX1
       if(g_console.viewports.custom_vp.x > 0)
+#endif
          g_console.viewports.custom_vp.x -= 1;
 
    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT))
@@ -1891,10 +1895,14 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
       g_console.viewports.custom_vp.y += 1;
 
    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN))
+#ifdef _XBOX1
       if(g_console.viewports.custom_vp.y >= 4)
+#endif
          g_console.viewports.custom_vp.y -= 4;
    else if(input & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+#ifdef _XBOX1
       if(g_console.viewports.custom_vp.y > 0)
+#endif
          g_console.viewports.custom_vp.y -= 1;
 
    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT))
